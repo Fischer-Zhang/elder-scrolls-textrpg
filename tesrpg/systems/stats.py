@@ -1,8 +1,8 @@
 """衍生數值的重算與夾限。
 
-生命上限基底(base_max_health)是「累積」的(創建設定、升級累加),不由屬性重算;
+生命上限基底(base_max_health)= 創建耐力×2,不隨耐力逐級長(消除耐力時機陷阱);
 魔力/體力上限可由當前屬性直接推得,屬性一變就重算。
-有效上限 = 基底/公式 + 穿戴護甲的 armor_fortify 加成(傳入 gamedata 才會計入)。
+有效上限 = 基底/公式 + 升級三選一累積(resource_levels)+ 穿戴護甲 armor_fortify(需 gamedata)。
 """
 
 from __future__ import annotations
@@ -29,13 +29,14 @@ def recompute_max_resources(char: Character, gamedata=None,
         from tesrpg.systems import inventory   # 區域 import:避免與 inventory→stats 形成循環
         fort = inventory.armor_fortify_totals(char, gamedata)
 
-    char.max_health = char.base_max_health + fort.get("health", 0)
+    res = char.resource_levels   # 升級三選一累積的資源加成
+    char.max_health = char.base_max_health + res.get("health", 0) + fort.get("health", 0)
     char.max_magicka = (formulas.max_magicka(char.attr("intelligence"), char.magicka_bonus)
-                        + fort.get("magicka", 0))
+                        + res.get("magicka", 0) + fort.get("magicka", 0))
     char.max_fatigue = (formulas.max_fatigue(
         char.attr("strength"), char.attr("willpower"),
         char.attr("agility"), char.attr("endurance"),
-    ) + fort.get("fatigue", 0))
+    ) + res.get("fatigue", 0) + fort.get("fatigue", 0))
 
     if restore_full:
         char.health = char.max_health

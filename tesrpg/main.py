@@ -78,7 +78,7 @@ def _create_custom_class(gamedata: GameData) -> dict:
     ui.message("挑選 2 個偏好屬性:")
     favored = _pick_distinct(
         [(a, formulas.ATTRIBUTE_NAMES[a]) for a in formulas.ATTRIBUTES], 2, "偏好屬性")
-    ui.message("挑選 7 個主修技能(升點會計入升級):")
+    ui.message("挑選 7 個主修技能(升點給 ×1.5 等級經驗、起始較高):")
     skill_opts = [(sid, f"{s['name']}（{formulas.SPEC_NAMES[s['spec']]}）")
                   for sid, s in gamedata.skills.items()]
     majors = _pick_distinct(skill_opts, 7, "主修技能")
@@ -153,29 +153,45 @@ def action_rest(state: GameState, gamedata: GameData) -> str | None:
 def action_level_up(state: GameState, gamedata: GameData) -> None:
     char = state.player
     if not char.can_level_up():
-        ui.message("還不能升級 —— 多練些主修技能吧。", style="yellow")
+        ui.message("還不能升級 —— 多練些技能累積等級經驗吧。", style="yellow")
         return
 
-    preview = progression.preview_levelup(char)
     ui.rule(f"升級 → Lv {char.level + 1}")
-    ui.message("依你這段時間的鍛鍊,各屬性可提升的幅度:")
-    for a in formulas.ATTRIBUTES:
-        ups = char.level_skillups.get(a, 0)
-        ui.message(
-            f"{formulas.ATTRIBUTE_NAMES[a]} {char.attr(a)} → 可 +{preview[a]}"
-            f"（本級相關技能升 {ups} 點)",
-            style="grey70",
-        )
-    ui.message(f"請挑選 {formulas.LEVELUP_ATTRIBUTES_CHOSEN} 個屬性提升:", style="bold")
 
-    opts = [(a, f"{formulas.ATTRIBUTE_NAMES[a]}（+{preview[a]})") for a in formulas.ATTRIBUTES]
-    chosen = _pick_distinct(opts, formulas.LEVELUP_ATTRIBUTES_CHOSEN, "提升屬性")
+    # ① 三選一:強化哪條資源
+    gains = formulas.LEVELUP_RESOURCE_GAIN
+    resource = ui.menu("這一級要強化哪條資源?", [
+        ("health", f"生命 +{gains['health']}"),
+        ("magicka", f"魔力 +{gains['magicka']}"),
+        ("fatigue", f"體力 +{gains['fatigue']}"),
+    ])
 
-    summary = progression.apply_level_up(char, gamedata, chosen)
+    # ② 自由分配屬性點(逐點挑屬性,clamp 100;選到已滿的不耗點,重挑)
+    points = formulas.LEVELUP_ATTRIBUTE_POINTS
+    alloc: dict[str, int] = {}
+
+    def _cur(a):   # 該屬性「含本次尚未送出的分配」的當前值
+        return char.attr(a) + alloc.get(a, 0)
+
+    ui.message(f"分配 {points} 點屬性(可集中或分散):", style="bold")
+    remaining = points
+    while remaining > 0:
+        if all(_cur(a) >= formulas.ATTRIBUTE_CAP for a in formulas.ATTRIBUTES):
+            break   # 八屬性全滿(極高等),無處可加
+        opts = [(a, f"{formulas.ATTRIBUTE_NAMES[a]} {_cur(a)}"
+                 + ("（已滿）" if _cur(a) >= formulas.ATTRIBUTE_CAP else ""))
+                for a in formulas.ATTRIBUTES]
+        a = ui.menu(f"剩 {remaining} 點 →", opts)
+        if _cur(a) < formulas.ATTRIBUTE_CAP:
+            alloc[a] = alloc.get(a, 0) + 1
+            remaining -= 1
+
+    summary = progression.apply_level_up(char, gamedata, alloc, resource)
     ui.message(f"★ 升級!現在是 Lv {summary['level']}。", style="bold yellow")
     for a, g in summary["attr_gains"].items():
         ui.message(f"  {formulas.ATTRIBUTE_NAMES[a]} +{g}", style="green")
-    ui.message(f"  生命上限 +{summary['hp_gain']},三圍已回滿。", style="green")
+    rname = {"health": "生命", "magicka": "魔力", "fatigue": "體力"}[summary["resource_choice"]]
+    ui.message(f"  {rname}上限 +{summary['resource_gain']},三圍已回滿。", style="green")
     if summary["can_level_again"]:
         ui.message("  你還能再升一級!", style="yellow")
 

@@ -113,7 +113,7 @@ def character_sheet(char: Character, gamedata: GameData) -> None:
     header.append(f"{char.name}\n", style=f"bold {GOLD}")
     header.append(f"{race} · {sex} · {sign} · {cls}（{spec}專精）\n", style=PARCH)
     header.append(f"等級 {char.level}", style=GOLD)
-    header.append(f"   升級進度 {char.level_progress}/{formulas.LEVELUP_MAJOR_SKILLUPS} 主修升點",
+    header.append(f"   等級經驗 {int(char.level_xp)}/{int(formulas.levelup_xp_threshold(char.level))}",
                   style=INK)
 
     # 資源
@@ -173,7 +173,7 @@ def skill_table(char: Character, gamedata: GameData) -> None:
         tbl.add_row(*cells)
 
     console.print(_panel(tbl, title="技能"))
-    console.print(f"  [{FAINT}]✦ = 主修技能(升點計入升級);右欄為技能等級[/]")
+    console.print(f"  [{FAINT}]✦ = 主修技能(升點給 ×1.5 等級經驗);右欄為技能等級[/]")
 
 
 # --- 事件訊息 -----------------------------------------------------------

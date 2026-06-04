@@ -87,12 +87,12 @@ Faction       data/factions.json   公會
 ## 3. 系統設計
 
 ### 3.1 技能成長 (Skill Progression) — learn-by-doing,本作靈魂 ★
-- **沒有共用經驗池**。每次「使用」一個技能就給該技能 `skill_xp`(揮劍命中 → blade、施法成功 → 對應學派、撬開鎖 → security、討價還價 → mercantile…)
-- xp 滿門檻 → 該技能 **+1 點**;門檻**隨技能等級遞增**(越高越難練,呈現 TES 的成長曲線)
-- **升級觸發**:技能升點時,若是你的 **major skill(主修)**,計入 `level_progress`;主修累積升 10 點 → **可升級**
-- **升級畫面**:依你「這一級期間練了哪些技能的主導屬性」給屬性加成倍率(練了很多 blade/heavy armor → strength/endurance 升幅大)。升級回滿三資源、提升衍生上限
-- **衍生數值**:`max_health = f(endurance, level)`、`max_magicka = f(intelligence, 種族/星座)`、`max_fatigue = f(strength+agility+speed+willpower)`、負重上限 = f(strength)
-- 訓練師(城鎮服務)可付錢直接練技能(每級上限,受金錢/聲望限制),作為 learn-by-doing 的補充
+- **技能成長 = learn-by-doing(不變)**:每次「使用」一個技能就給該技能 `skill_xp`(揮劍命中 → blade、施法成功 → 對應學派、撬開鎖 → security、討價還價 → mercantile…);xp 滿門檻 → 該技能 **+1 點**,門檻**隨技能等級遞增**。
+- **升級 = 混合 Skyrim 式(M15 改版)**:每次技能 +1 都餵養「**等級 XP 池** `level_xp`」,**所有技能都計入**(主修 ×1.5,保留職業認同);`level_xp` 達 `levelup_xp_threshold(level)=12+(level-1)` → **可升級**。
+- **升級給予**:① 生命/魔力/體力**三選一** +固定值(累積進 `resource_levels`);② **`LEVELUP_ATTRIBUTE_POINTS`(=4)點屬性點自由分配**(含 Luck),**無倍率**。升級回滿三資源。
+- **衍生數值**:`max_health = 創建耐力×2 + resource_levels[health]`(**不隨耐力逐級長**)、`max_magicka = 智力×2 + 種族/星座 + resource_levels[magicka]`、`max_fatigue = 力+意+敏+耐 + resource_levels[fatigue]`(均再疊加護甲 fortify)、負重上限 = f(strength)。
+- **改版動機**:舊 Oblivion 式(主修觸發升級 + 練功倍率)有兩個量化驗證過的結構缺陷 —— **屬性倍率 min-max**(囤非主修升點換 +5/+5/+5)與**耐力時機陷阱**(早衝耐力多賺終身血)。混合制把「升級觸發 / 屬性成長 / 血量成長」全部解耦點數化,一次消除兩者,並讓 Luck 可投資。
+- 訓練師(城鎮服務)可付錢直接練技能(技能升點同樣餵 `level_xp`),作為 learn-by-doing 的補充。
 
 ### 3.2 角色塑造與創建 (Character Creation)
 - 流程:**姓名/性別 → 種族 → 出生星座 → 職業**

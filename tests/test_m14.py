@@ -153,17 +153,19 @@ def test_legacy_save_migration_no_collapse():
 
 
 def test_legacy_save_levelup_no_collapse():
-    """舊存檔升級時也不可崩血(ensure_base_health 必須在 base += 之前)。"""
+    """改版前存檔(無 base_max_health)升級時不可崩血;ensure_base_health 仍生效。"""
+    from tesrpg import formulas
     char = _new_char()
     d = char.to_dict()
-    del d["base_max_health"]
+    del d["base_max_health"]               # 模擬 M14 之前的存檔
     old = Character.from_dict(d)
     old_hp = old.max_health
-    old.level_progress = 99               # 確保可升級
+    old.level_xp = formulas.levelup_xp_threshold(old.level)   # 直接設成可升級
 
-    progression.apply_level_up(old, gd, ["endurance", "strength"])
-    assert old.max_health > old_hp, "升級後血量應上升,而非崩塌"
-    assert old.base_max_health == old.max_health, "無護甲時有效=基底"
+    progression.apply_level_up(old, gd, {"strength": 4}, "health")
+    assert old.base_max_health == old_hp, "ensure_base_health 應把現值搬成基底"
+    assert old.max_health == old_hp + formulas.LEVELUP_RESOURCE_GAIN["health"], \
+        "選『生命』→ 上限上升,且不崩塌"
 
 
 # ---------------------------------------------------------------------------

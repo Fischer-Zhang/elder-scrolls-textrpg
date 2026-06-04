@@ -112,8 +112,13 @@ class GameState:
         # 舊版(無 start_time)存檔:一律以遊戲起始時刻(預設紀元)為準,而非當前時間,
         # 否則在世年數會被算成 0。
         start = GameTime.from_dict(d["start_time"]) if "start_time" in d else GameTime()
+        player = Character.from_dict(d["player"])
+        # 改版前存檔:把停用的 level_progress 進度遷移成 level_xp,讓載入當下 can_level_up 即正確
+        # (否則已可升級的舊存檔,升級入口要等到下次 use_skill 才出現)。區域 import 避免循環。
+        from tesrpg.systems import progression
+        progression.ensure_level_xp(player)
         return cls(
-            player=Character.from_dict(d["player"]),
+            player=player,
             time=time,
             rng=rng,
             start_time=start,

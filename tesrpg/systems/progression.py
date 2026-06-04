@@ -1,10 +1,11 @@
-"""learn-by-doing 技能成長與升級 —— 本作的核心系統。
+"""learn-by-doing 技能成長與升級 —— 本作的核心系統(混合 Skyrim 式)。
 
 流程:
   使用技能 → 累積該技能 xp → 滿門檻則 +1 點
-         → 記錄該技能主導屬性的「本級升點數」(供升級時換算屬性加成)
-         → 若是主修技能,計入 level_progress
-  level_progress 達 10 → 可升級 → 玩家挑 3 個屬性 → 依本級升點數決定加成幅度
+         → 該次升點餵給「等級 XP 池」level_xp(所有技能都計入,主修 ×1.5)
+  level_xp 達 levelup_xp_threshold(level) → 可升級
+         → 升級時玩家:① 生命/魔力/體力三選一 ② 自由分配屬性點(無倍率)
+  技能成長本身完全沿用 learn-by-doing;只有「升級觸發與給予」改為 RPG 點數制。
 """
 
 from __future__ import annotations
@@ -13,6 +14,18 @@ from tesrpg import formulas
 from tesrpg.gamedata import GameData
 from tesrpg.models import Character
 from tesrpg.systems import stats
+
+
+def ensure_level_xp(char: Character) -> None:
+    """舊存檔遷移:把停用的 level_progress 進度搬成等級經驗 level_xp(只搬一次)。
+
+    舊系統需「主修升 10 點」可升級;新系統用 level_xp。把殘餘 level_progress 直接當經驗
+    搬過去(不浪費玩家進度),搬完歸零避免重複觸發。
+    """
+    if char.level_xp <= 0 and char.level_progress > 0:
+        char.level_xp = float(char.level_progress)
+        char.level_progress = 0
+        char.level_skillups = {}
 
 
 def use_skill(char: Character, gamedata: GameData, skill_id: str, xp: float) -> list[dict]:
@@ -26,6 +39,7 @@ def use_skill(char: Character, gamedata: GameData, skill_id: str, xp: float) -> 
     if skill_id not in char.skills:
         return events
 
+    ensure_level_xp(char)
     could_level_before = char.can_level_up()
     char.skill_xp[skill_id] = char.skill_xp.get(skill_id, 0.0) + xp
 
@@ -47,62 +61,54 @@ def use_skill(char: Character, gamedata: GameData, skill_id: str, xp: float) -> 
 
 
 def _on_skill_increase(char: Character, gamedata: GameData, skill_id: str, events: list[dict]) -> None:
-    gov_attr = gamedata.skill_attr(skill_id)
-    char.level_skillups[gov_attr] = char.level_skillups.get(gov_attr, 0) + 1
-    if char.is_major_skill(skill_id):
-        char.level_progress += 1
+    char.level_xp += formulas.levelup_xp_for_skillup(
+        char.skills[skill_id], char.is_major_skill(skill_id))
     events.append({"type": "skill_up", "skill": skill_id, "level": char.skills[skill_id]})
 
 
-def preview_levelup(char: Character) -> dict[str, int]:
-    """預覽:若現在升級,各屬性可獲得的加成幅度 (+1..+5)。
+def apply_level_up(char: Character, gamedata: GameData,
+                   attribute_points: dict[str, int], resource_choice: str) -> dict:
+    """套用升級:分配屬性點 + 生命/魔力/體力三選一,回滿資源。回傳結算摘要供 UI。
 
-    供升級畫面顯示,讓玩家看到「練得勤的屬性漲得多」。
+    attribute_points: {attr: 點數};總和上限 LEVELUP_ATTRIBUTE_POINTS,逐屬夾 ATTRIBUTE_CAP。
+    resource_choice: "health"|"magicka"|"fatigue",加 LEVELUP_RESOURCE_GAIN[choice] 到對應上限。
     """
-    return {
-        attr: formulas.attribute_bonus_from_skillups(char.level_skillups.get(attr, 0))
-        for attr in formulas.ATTRIBUTES
-    }
-
-
-def apply_level_up(char: Character, gamedata: GameData, chosen_attributes: list[str]) -> dict:
-    """套用升級:提升所選屬性、提高生命上限、回滿資源。
-
-    回傳結算摘要供 UI 呈現。chosen_attributes 最多取前 3 個有效屬性。
-    """
+    ensure_level_xp(char)
     if not char.can_level_up():
         raise ValueError("尚未滿足升級條件")
 
-    bonuses = preview_levelup(char)
-    chosen = []
-    for attr in chosen_attributes:
-        if attr in formulas.ATTRIBUTES and attr not in chosen:
-            chosen.append(attr)
-        if len(chosen) >= formulas.LEVELUP_ATTRIBUTES_CHOSEN:
-            break
-
+    # 屬性點(無倍率,自由分配;防禦性夾限總量與單屬上限)
     attr_gains: dict[str, int] = {}
-    for attr in chosen:
-        gain = bonuses[attr]
-        new_val = min(formulas.ATTRIBUTE_CAP, char.attr(attr) + gain)
+    spent = 0   # 以「實際套用點數」計帳:屬性觸頂時剩餘預算留給其它屬性,不憑空吞點
+    for attr, pts in attribute_points.items():
+        if attr not in formulas.ATTRIBUTES or pts <= 0:
+            continue
+        pts = min(pts, formulas.LEVELUP_ATTRIBUTE_POINTS - spent)
+        if pts <= 0:
+            break
+        new_val = min(formulas.ATTRIBUTE_CAP, char.attr(attr) + pts)
         applied = new_val - char.attr(attr)
         char.attributes[attr] = new_val
+        spent += applied
         if applied:
             attr_gains[attr] = applied
 
+    # 資源三選一
+    resource_gain = 0
+    if resource_choice in formulas.LEVELUP_RESOURCE_GAIN:
+        resource_gain = formulas.LEVELUP_RESOURCE_GAIN[resource_choice]
+        char.resource_levels[resource_choice] = (
+            char.resource_levels.get(resource_choice, 0) + resource_gain)
+
+    char.level_xp -= formulas.levelup_xp_threshold(char.level)  # 保留溢出
     char.level += 1
-    stats.ensure_base_health(char)   # 舊存檔遷移:務必在加到 base_max_health 之前
-    hp_gain = formulas.health_gain_on_levelup(char.attr("endurance"))
-    char.base_max_health += hp_gain
-
-    char.level_progress -= formulas.LEVELUP_MAJOR_SKILLUPS  # 保留溢出
-    char.level_skillups = {}
-
+    stats.ensure_base_health(char)
     stats.recompute_max_resources(char, gamedata, restore_full=True)  # 升級回滿三資源
 
     return {
         "level": char.level,
         "attr_gains": attr_gains,
-        "hp_gain": hp_gain,
+        "resource_choice": resource_choice,
+        "resource_gain": resource_gain,
         "can_level_again": char.can_level_up(),
     }

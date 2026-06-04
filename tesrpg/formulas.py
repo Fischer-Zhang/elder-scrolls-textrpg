@@ -13,9 +13,12 @@ SKILL_BASE = 5               # 角色創建時每個技能的底值
 SKILL_MAJOR_BONUS = 20       # 主修技能額外起始值(→ 25)
 SKILL_SPEC_BONUS = 5         # 與職業專精同類的技能額外起始值
 
-# --- 升級 ---------------------------------------------------------------
-LEVELUP_MAJOR_SKILLUPS = 10  # 主修技能合計升 10 點 → 可升級
-LEVELUP_ATTRIBUTES_CHOSEN = 3  # 每級可挑選提升的屬性數
+# --- 升級(混合 Skyrim 式:技能成長餵養等級 XP 池) ---------------------
+LEVELUP_XP_BASE = 12         # Lv1→2 所需等級經驗
+LEVELUP_XP_STEP = 1          # 每級遞增的門檻(平緩曲線,避免高等過於肝)
+MAJOR_SKILL_XP_MULT = 1.5    # 主修技能升點給的等級經驗倍率(保留職業認同)
+LEVELUP_ATTRIBUTE_POINTS = 4  # 每級可自由分配的屬性點(無倍率)
+LEVELUP_RESOURCE_GAIN = {"health": 14, "magicka": 12, "fatigue": 12}  # 升級三選一各自加量
 
 ATTRIBUTES = [
     "strength", "intelligence", "willpower", "agility",
@@ -33,13 +36,9 @@ SPEC_NAMES = {"combat": "戰鬥", "magic": "魔法", "stealth": "潛行"}
 
 # --- 衍生數值 -----------------------------------------------------------
 def base_max_health(endurance: int) -> int:
-    """創建時的生命上限。之後每級的成長另計(見 health_gain_on_levelup)。"""
+    """創建時的生命上限基底(耐力×2)。之後生命只由升級時的「生命」選擇成長,
+    不再隨耐力逐級長 —— 消除「早衝耐力」的時機陷阱。"""
     return endurance * 2
-
-
-def health_gain_on_levelup(endurance: int) -> int:
-    """升級時生命上限的增加量(隨耐力提高)。"""
-    return max(1, round(endurance * 0.1))
 
 
 def max_magicka(intelligence: int, magicka_bonus: int) -> int:
@@ -66,21 +65,16 @@ def skill_threshold(skill_level: int) -> float:
     return 1.0 + skill_level * 0.08
 
 
-# --- 升級時屬性加成倍率 -------------------------------------------------
-def attribute_bonus_from_skillups(skillups: int) -> int:
-    """該屬性所轄技能在本級內升了幾點 → 升級可獲得的加成 (+1..+5)。
+# --- 等級 XP 池 ---------------------------------------------------------
+def levelup_xp_for_skillup(skill_level: int, is_major: bool) -> float:
+    """一次技能 +1 餵給「等級 XP 池」的量。所有技能都計入(無 major-only 套利);
+    主修技能 ×MAJOR_SKILL_XP_MULT 以保留職業認同。"""
+    return MAJOR_SKILL_XP_MULT if is_major else 1.0
 
-    仿 Oblivion:練得越勤,屬性漲幅越大。
-    """
-    if skillups >= 10:
-        return 5
-    if skillups >= 8:
-        return 4
-    if skillups >= 5:
-        return 3
-    if skillups >= 2:
-        return 2
-    return 1  # 0–1 次也至少 +1(幸運等無技能所轄的屬性永遠 +1)
+
+def levelup_xp_threshold(level: int) -> float:
+    """從 level 升到 level+1 所需的等級經驗(隨等級遞增)。"""
+    return LEVELUP_XP_BASE + (level - 1) * LEVELUP_XP_STEP
 
 
 # --- 戰鬥 ---------------------------------------------------------------
