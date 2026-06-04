@@ -5,10 +5,13 @@
 
 from __future__ import annotations
 
+from rich import box
+from rich.align import Align
 from rich.columns import Columns
 from rich.console import Console, Group
 from rich.panel import Panel
 from rich.prompt import IntPrompt, Prompt
+from rich.rule import Rule
 from rich.table import Table
 from rich.text import Text
 from rich.tree import Tree
@@ -20,17 +23,35 @@ from tesrpg.state import GameState
 
 console = Console()
 
+# --- 視覺識別 -----------------------------------------------------------
+# 金=主結構/強調色(面板邊框、選項編號、標題);語意色維持(紅戰鬥/青魔法/綠潛行)。
+GOLD = "gold1"
+GOLD_DIM = "gold3"
+PARCH = "wheat1"   # 面板內文淺色(羊皮紙感)
+INK = "grey70"     # 次要資訊
+FAINT = "grey50"   # 註腳/分隔
+
+PANEL = box.ROUNDED       # 一般面板
+HERO = box.DOUBLE_EDGE    # 標題/結算/升級等重點畫面
+
 SPEC_COLOR = {"combat": "red", "magic": "cyan", "stealth": "green"}
 RESOURCE_STYLE = {"health": "red", "magicka": "cyan", "fatigue": "green"}
 
 
+def _panel(body, title: str | None = None, style: str = GOLD,
+           box_=PANEL, **kw) -> Panel:
+    """統一框線風格的面板工廠。"""
+    return Panel(body, title=title, border_style=style, box=box_,
+                 title_align="left", **kw)
+
+
 # --- 基本元件 -----------------------------------------------------------
 def banner() -> None:
-    console.print(Panel.fit(
-        Text("流  亡  者", justify="center", style="bold yellow"),
-        subtitle="上古卷軸風格 · 技能驅動沙盒文字 RPG",
-        border_style="yellow",
-    ))
+    title = Text("流   亡   者", justify="center", style=f"bold {GOLD}")
+    orn = Text("⚔  ◈  ✦  ◈  ⚔", justify="center", style=GOLD_DIM)
+    sub = Text("上古卷軸風格 · 技能驅動沙盒文字 RPG", justify="center", style=PARCH)
+    body = Group(Text(), title, Text(), orn, Text(), sub, Text())
+    console.print(Align.center(_panel(body, box_=HERO, padding=(0, 4), width=54)))
 
 
 def _bar(cur: float, mx: float, color: str, width: int = 16) -> Text:
@@ -44,30 +65,39 @@ def _bar(cur: float, mx: float, color: str, width: int = 16) -> Text:
 
 
 def status_line(state: GameState) -> None:
-    """行動之間的精簡狀態列。"""
+    """行動之間的精簡狀態列(金色頂欄分隔)。"""
     c = state.player
     t = Text()
+    t.append("❖ ", style=GOLD)
     t.append(f"{c.name}", style="bold")
-    t.append(f"  Lv.{c.level}", style="yellow")
-    t.append(f"  ⏿ {state.time.label()}", style="grey70")
-    console.print(t)
-    grid = Table.grid(padding=(0, 2))
-    grid.add_row(
-        Text("生命", style="red"), _bar(c.health, c.max_health, "red"),
-        Text("魔力", style="cyan"), _bar(c.magicka, c.max_magicka, "cyan"),
-        Text("體力", style="green"), _bar(c.fatigue, c.max_fatigue, "green"),
-    )
-    console.print(grid)
+    t.append(f"  Lv.{c.level}", style=GOLD)
+    t.append(f"   ◷ {state.time.label()}", style=INK)
     extra = []
     if c.fame:
         extra.append(f"[cyan]聲望 {c.fame}[/]")
     total_bounty = sum(c.bounties.values())
     if total_bounty:
         extra.append(f"[red]通緝 {total_bounty}[/]")
+    console.print(t)
+    rsrc = (("生命", c.health, c.max_health, "red"),
+            ("魔力", c.magicka, c.max_magicka, "cyan"),
+            ("體力", c.fatigue, c.max_fatigue, "green"))
+    if console.width >= 84:   # 寬終端:血條
+        grid = Table.grid(padding=(0, 2))
+        grid.add_row(*[x for label, cur, mx, color in rsrc
+                       for x in (Text(label, style=color), _bar(cur, mx, color))])
+        console.print(grid)
+    else:                     # 窄終端:一行純數字,避免折行
+        line = Text()
+        for label, cur, mx, color in rsrc:
+            line.append(f"{label} ", style=color)
+            line.append(f"{int(cur)}/{int(mx)}", style=f"bold {color}")
+            line.append("   ")
+        console.print(line)
     if extra:
-        console.print("  " + "  ".join(extra))
+        console.print(" " + "   ".join(extra))
     if c.can_level_up():
-        console.print("  [bold yellow]★ 可以升級了![/]")
+        console.print(f"  [bold {GOLD}]★ 可以升級了![/]")
 
 
 # --- 角色卡 -------------------------------------------------------------
@@ -80,58 +110,70 @@ def character_sheet(char: Character, gamedata: GameData) -> None:
     spec = formulas.SPEC_NAMES.get(char.specialization, char.specialization)
 
     header = Text()
-    header.append(f"{char.name}\n", style="bold yellow")
-    header.append(f"{race} · {sex} · {sign} · {cls}（{spec}專精）\n", style="white")
-    header.append(f"等級 {char.level}", style="yellow")
+    header.append(f"{char.name}\n", style=f"bold {GOLD}")
+    header.append(f"{race} · {sex} · {sign} · {cls}（{spec}專精）\n", style=PARCH)
+    header.append(f"等級 {char.level}", style=GOLD)
     header.append(f"   升級進度 {char.level_progress}/{formulas.LEVELUP_MAJOR_SKILLUPS} 主修升點",
-                  style="grey70")
+                  style=INK)
 
     # 資源
     res = Table.grid(padding=(0, 2))
     res.add_row(Text("生命", style="red"), _bar(char.health, char.max_health, "red"))
     res.add_row(Text("魔力", style="cyan"), _bar(char.magicka, char.max_magicka, "cyan"))
     res.add_row(Text("體力", style="green"), _bar(char.fatigue, char.max_fatigue, "green"))
-    res.add_row(Text("負重", style="yellow"),
-                Text(f"上限 {formulas.max_encumbrance(char.attr('strength'))}", style="grey70"))
-    res.add_row(Text("金幣", style="yellow"), Text(str(char.gold), style="white"))
-    res.add_row(Text("武器", style="yellow"), Text(weapon_line(char, gamedata), style="white"))
+    res.add_row(Text("負重", style=GOLD),
+                Text(f"上限 {formulas.max_encumbrance(char.attr('strength'))}", style=INK))
+    res.add_row(Text("金幣", style=GOLD), Text(str(char.gold), style=PARCH))
+    res.add_row(Text("武器", style=GOLD), Text(weapon_line(char, gamedata), style=PARCH))
 
     # 屬性
-    attr_tbl = Table(title="屬性", title_style="bold", box=None, pad_edge=False)
-    attr_tbl.add_column("", style="grey70")
-    attr_tbl.add_column("", justify="right")
-    attr_tbl.add_column("", style="grey70")
-    attr_tbl.add_column("", justify="right")
+    attr_tbl = Table(title="屬性", title_style=f"bold {GOLD}", box=None, pad_edge=False)
+    attr_tbl.add_column("", style=INK)
+    attr_tbl.add_column("", justify="right", style=PARCH)
+    attr_tbl.add_column("", style=INK)
+    attr_tbl.add_column("", justify="right", style=PARCH)
     items = [(k, formulas.ATTRIBUTE_NAMES[k], char.attr(k)) for k in formulas.ATTRIBUTES]
     for i in range(0, len(items), 2):
         left = items[i]
         right = items[i + 1] if i + 1 < len(items) else ("", "", "")
-        fav_l = "★" if left[0] in char.favored_attributes else " "
-        fav_r = "★" if right and right[0] in char.favored_attributes else " "
+        fav_l = f"[{GOLD}]★[/]" if left[0] in char.favored_attributes else " "
+        fav_r = f"[{GOLD}]★[/]" if right and right[0] in char.favored_attributes else " "
         attr_tbl.add_row(f"{fav_l}{left[1]}", str(left[2]),
                          (f"{fav_r}{right[1]}" if right[1] else ""),
                          (str(right[2]) if right[1] else ""))
 
-    console.print(Panel(Group(header, Text(), Columns([res, attr_tbl], padding=(0, 6))),
-                        border_style="yellow"))
+    console.print(_panel(Group(header, Rule(style=GOLD_DIM),
+                               Columns([res, attr_tbl], padding=(0, 6)))))
     skill_table(char, gamedata)
 
 
 def skill_table(char: Character, gamedata: GameData) -> None:
-    cols = []
-    for spec in ("combat", "magic", "stealth"):
-        tbl = Table(title=formulas.SPEC_NAMES[spec], title_style=f"bold {SPEC_COLOR[spec]}",
-                    box=None, pad_edge=False)
-        tbl.add_column("技能")
-        tbl.add_column("", justify="right")
-        for sid in gamedata.skills_by_spec(spec):
-            name = gamedata.skill_name(sid)
-            lvl = char.skill(sid)
-            star = "[yellow]✦[/]" if char.is_major_skill(sid) else " "
-            tbl.add_row(f"{star} {name}", f"[bold]{lvl}[/]")
-        cols.append(tbl)
-    console.print(Columns(cols, padding=(0, 4), equal=True))
-    console.print("[grey50]✦ = 主修技能(升點計入升級);右欄為技能等級[/]")
+    """三系技能並排成單一對齊格線(去除冗餘欄頭)。"""
+    specs = ("combat", "magic", "stealth")
+    lists = {s: gamedata.skills_by_spec(s) for s in specs}
+    rows = max(len(v) for v in lists.values())
+
+    tbl = Table(box=box.SIMPLE_HEAD, pad_edge=False, padding=(0, 1),
+                header_style="", border_style=GOLD_DIM, expand=True)
+    for s in specs:
+        tbl.add_column(formulas.SPEC_NAMES[s], header_style=f"bold {SPEC_COLOR[s]}",
+                       style=PARCH, ratio=3, no_wrap=True)
+        tbl.add_column("", justify="right", style="bold", ratio=1)
+
+    for i in range(rows):
+        cells: list[str] = []
+        for s in specs:
+            ids = lists[s]
+            if i < len(ids):
+                sid = ids[i]
+                star = f"[{GOLD}]✦[/]" if char.is_major_skill(sid) else "·"
+                cells += [f"{star} {gamedata.skill_name(sid)}", str(char.skill(sid))]
+            else:
+                cells += ["", ""]
+        tbl.add_row(*cells)
+
+    console.print(_panel(tbl, title="技能"))
+    console.print(f"  [{FAINT}]✦ = 主修技能(升點計入升級);右欄為技能等級[/]")
 
 
 # --- 事件訊息 -----------------------------------------------------------
@@ -149,21 +191,21 @@ def message(text: str, style: str = "white") -> None:
 
 
 def event_panel(event: dict) -> None:
-    console.print(Panel(Text(event["text"], style="white"),
-                        title=f"✦ {event['title']}", border_style="magenta"))
+    console.print(_panel(Text(event["text"], style=PARCH),
+                         title=f"✦ {event['title']}", style="magenta"))
 
 
 def legacy_screen(s: dict) -> None:
-    """一生傳奇總結畫面。"""
-    head = "⚰ 傳奇落幕" if s["ending"] == "death" else "🌅 功成身退"
-    title = Text()
-    title.append(f"{s['name']}\n", style="bold yellow")
-    title.append(f"{s['race']} · {s['sex']} · {s['birthsign']} · {s['class']}\n", style="white")
+    """一生傳奇總結畫面(英雄級結算)。"""
+    head = "⚰  傳 奇 落 幕" if s["ending"] == "death" else "🌅  功 成 身 退"
+    title = Text(justify="center")
+    title.append(f"{s['name']}\n", style=f"bold {GOLD}")
+    title.append(f"{s['race']} · {s['sex']} · {s['birthsign']} · {s['class']}\n", style=PARCH)
     title.append(f"{s['playstyle']}", style="cyan")
 
     body = Table.grid(padding=(0, 3))
-    body.add_column(justify="right", style="grey70")
-    body.add_column(style="white")
+    body.add_column(justify="right", style=GOLD)
+    body.add_column(style=PARCH)
     body.add_row("等級", str(s["level"]))
     body.add_row("在世", f"{s['years']} 年 {s['days']} 天")
     body.add_row("足跡", f"踏遍 {s['places_visited']}/{s['total_locations']} 處地點")
@@ -177,14 +219,17 @@ def legacy_screen(s: dict) -> None:
 
     skills = "  ".join(f"{n} {lv}" for n, lv in s["top_skills"])
 
-    score = Text()
-    score.append("傳奇分數  ", style="grey70")
-    score.append(str(s["score"]), style="bold yellow")
+    score = Text(justify="center")
+    score.append("✦ 傳 奇 分 數 ✦\n", style=GOLD_DIM)
+    score.append(str(s["score"]), style=f"bold {GOLD}")
     score.append(f"\n「{s['title']}」", style="bold magenta")
 
-    console.print(Panel(Group(title, Text(), body, Text(),
-                              Text(f"最高技能:{skills}", style="grey70"), Text(), score),
-                        title=head, border_style="yellow", padding=(1, 4)))
+    console.print(Align.center(_panel(
+        Group(title, Rule(style=GOLD_DIM),
+              Align.center(body), Text(),
+              Text(f"最高技能:{skills}", style=INK, justify="center"),
+              Rule(style=GOLD_DIM), score),
+        title=head, box_=HERO, padding=(1, 4), width=58)))
 
 
 # --- 戰鬥 ---------------------------------------------------------------
@@ -198,9 +243,9 @@ def weapon_line(char: Character, gamedata: GameData) -> str:
 
 
 def combat_intro(creature, player: Character, gamedata: GameData) -> None:
-    console.print(Panel(
-        Text(creature.flavor or f"你遇上了{creature.name}!", style="white"),
-        title=f"⚔ 遭遇:{creature.name}", border_style="red"))
+    console.print(_panel(
+        Text(creature.flavor or f"你遇上了{creature.name}!", style=PARCH),
+        title=f"⚔ 遭遇:{creature.name}", style="red", box_=box.HEAVY))
 
 
 def combat_status(player: Character, creature, gamedata: GameData) -> None:
@@ -236,7 +281,7 @@ def combat_status_group(player: Character, allies: list, enemies: list, gamedata
             side.add_row(Text("└ " + a.name, style="cyan"), _bar(a.health, a.max_health, "cyan"),
                          Text(""), Text(""), Text(_status_tags(a), style="cyan"))
     console.print(side)
-    console.print("  [grey50]──── VS ────[/]")
+    console.print(Rule("[bold red]⚔ VS ⚔[/]", style="red", characters="─"))
     foes = Table.grid(padding=(0, 2))
     n = 0
     for e in enemies:
@@ -256,18 +301,18 @@ LOC_TYPE_NAME = {"city": "大城", "town": "城鎮", "dungeon": "地城", "wilde
 def location_panel(char: Character, gamedata: GameData) -> None:
     loc = gamedata.location(char.location_id)
     body = Text()
-    body.append(loc["desc"] + "\n\n", style="white")
+    body.append(loc["desc"] + "\n", style=PARCH)
     exits = loc.get("links", {})
     if exits:
-        body.append("出口:", style="grey70")
-        body.append("、".join(
-            f"{gamedata.location(d)['name']}({h}時)" for d, h in exits.items()), style="grey70")
+        body.append("出口  ", style=GOLD)
+        body.append("　".join(
+            f"{gamedata.location(d)['name']}（{h}時）" for d, h in exits.items()), style=INK)
     danger = loc.get("danger", 0)
-    dtag = "" if danger == 0 else f"  危險度 {danger}"
-    console.print(Panel(
+    dtag = "" if danger == 0 else f"  [red]⚠危險度 {danger}[/]"
+    console.print(_panel(
         body,
-        title=f"📍 {loc['name']} · {loc['province']}({LOC_TYPE_NAME.get(loc['type'], loc['type'])}){dtag}",
-        border_style="cyan"))
+        title=f"📍 {loc['name']} · {loc['province']}"
+              f"（{LOC_TYPE_NAME.get(loc['type'], loc['type'])}）{dtag}"))
 
 
 def item_label(gamedata: GameData, char: Character, item_id: str, qty: int = 1) -> str:
@@ -289,20 +334,22 @@ def item_label(gamedata: GameData, char: Character, item_id: str, qty: int = 1) 
 def inventory_panel(char: Character, gamedata: GameData) -> None:
     from tesrpg.systems import inventory as inv
     if not char.inventory:
-        console.print(Panel("背包空空如也。", title="🎒 背包", border_style="yellow"))
+        console.print(_panel(f"[{INK}]背包空空如也。[/]", title="🎒 背包"))
         return
     tbl = Table(box=None, pad_edge=False)
-    tbl.add_column("物品")
+    tbl.add_column("物品", style=PARCH)
     order = {"weapon": 0, "armor": 1, "potion": 2, "misc": 3}
     stacks = sorted(char.inventory, key=lambda s: order.get(gamedata.item(s["id"])["kind"], 9))
     for s in stacks:
         tbl.add_row(item_label(gamedata, char, s["id"], s["qty"]))
     w = inv.total_weight(char, gamedata)
     mx = inv.max_weight(char)
-    over = "[red](超重!)[/]" if w > mx else ""
-    foot = Text(f"負重 {w:g}/{mx}  {('' if not over else '超重!')}  金幣 {char.gold}",
-                style="yellow")
-    console.print(Panel(Group(tbl, foot), title="🎒 背包", border_style="yellow"))
+    over = " [red]超重![/]" if w > mx else ""
+    foot = Text()
+    foot.append(f"負重 {w:g}/{mx}", style=GOLD if w <= mx else "red")
+    foot.append(over, style="")
+    foot.append(f"   金幣 {char.gold}", style=GOLD)
+    console.print(_panel(Group(tbl, Rule(style=GOLD_DIM), foot), title="🎒 背包"))
 
 
 def loot_report(result: dict, gamedata: GameData) -> None:
@@ -319,47 +366,48 @@ def guild_panel(char: Character, gamedata: GameData, faction_id: str) -> None:
     from tesrpg.systems import factions
     f = gamedata.factions[faction_id]
     body = Text()
-    body.append(f["blurb"] + "\n\n", style="white")
+    body.append(f["blurb"] + "\n\n", style=PARCH)
     if factions.is_member(char, faction_id):
-        body.append(f"你的階級:{factions.rank_name(char, gamedata, faction_id)}", style="yellow")
+        body.append("你的階級  ", style=GOLD)
+        body.append(factions.rank_name(char, gamedata, faction_id), style=f"bold {PARCH}")
     else:
-        body.append("你尚未加入此公會。", style="grey70")
-    console.print(Panel(body, title=f"🏛 {f['name']}", border_style="cyan"))
+        body.append("你尚未加入此公會。", style=INK)
+    console.print(_panel(body, title=f"🏛 {f['name']}"))
 
 
 def quest_log(char: Character, gamedata: GameData) -> None:
     from tesrpg.systems import quests
     if not char.quests:
-        console.print(Panel("目前沒有進行中的任務。", title="📜 任務日誌", border_style="yellow"))
+        console.print(_panel(f"[{INK}]目前沒有進行中的任務。[/]", title="📜 任務日誌"))
     else:
-        tbl = Table(box=None, pad_edge=False)
-        tbl.add_column("任務")
-        tbl.add_column("目標")
+        tbl = Table(box=None, pad_edge=False, padding=(0, 2))
+        tbl.add_column("任務", style=f"bold {PARCH}")
+        tbl.add_column("目標", style=INK)
         for qid in char.quests:
             q = gamedata.quests[qid]
-            fac = f"[{gamedata.factions[q['faction']]['name']}] " if q.get("faction") else ""
+            fac = f"[{GOLD_DIM}]〔{gamedata.factions[q['faction']]['name']}〕[/]" if q.get("faction") else ""
             tbl.add_row(f"{fac}{q['name']}", quests.objective_text(char, gamedata, qid))
-        console.print(Panel(tbl, title="📜 任務日誌", border_style="yellow"))
+        console.print(_panel(tbl, title="📜 任務日誌"))
     if char.completed_quests:
-        console.print(f"  [grey62]已完成 {len(char.completed_quests)} 件委託。[/]")
+        console.print(f"  [{FAINT}]已完成 {len(char.completed_quests)} 件委託。[/]")
 
 
 def npc_panel(npc: dict, disposition: int) -> None:
     body = Text()
-    body.append(npc["greeting"] + "\n\n", style="italic white")
+    body.append(npc["greeting"] + "\n\n", style="italic " + PARCH)
     filled = disposition // 10
-    body.append("好感 ", style="grey70")
+    body.append("好感 ", style=INK)
     body.append("♥" * filled, style="red")
     body.append("·" * (10 - filled), style="grey37")
-    body.append(f" {disposition}/100", style="grey70")
-    console.print(Panel(body, title=f"💬 {npc['name']}", border_style="green"))
+    body.append(f" {disposition}/100", style=INK)
+    console.print(_panel(body, title=f"💬 {npc['name']}", style="green"))
 
 
 def dungeon_room(name: str, idx: int, total: int, desc: str, is_boss: bool = False) -> None:
-    tag = "首領" if is_boss else f"第 {idx}/{total} 室"
-    console.print(Panel(Text(desc, style="white"),
-                        title=f"🏚 {name} · {tag}",
-                        border_style="magenta" if is_boss else "blue"))
+    tag = "✦ 首領 ✦" if is_boss else f"第 {idx}/{total} 室"
+    console.print(_panel(Text(desc, style=PARCH),
+                         title=f"🏚 {name} · {tag}",
+                         style="magenta" if is_boss else "blue"))
 
 
 _ELEM_CN = {"fire": "火焰", "frost": "冰霜", "shock": "雷電", "poison": "毒素", "magic": "魔法"}
@@ -423,15 +471,22 @@ def grouped_menu(title: str, groups: list) -> str:
     groups: [(分類名, [(key, 顯示文字), ...]), ...];空分類自動略過。
     """
     if title:
-        console.print(f"\n[bold]{title}[/]")
+        console.print(f"\n[bold {GOLD}]❖ {title}[/]")
     flat: list[str] = []
+    blocks = []
     for header, opts in groups:
         if not opts:
             continue
-        console.print(f"  [grey50]── {header} ──[/]")
+        blk = Text()
+        blk.append(f"{header}\n", style=f"bold {GOLD_DIM}")
         for key, label in opts:
             flat.append(key)
-            console.print(f"   [yellow]{len(flat)}[/]. {label}")
+            blk.append(f"{len(flat):>2}", style=GOLD)
+            blk.append(" ", style=FAINT)
+            blk.append(f"{label}\n", style=PARCH)
+        blocks.append(blk)
+    # 分組區塊並排成多欄,避免長選單塞滿整個畫面
+    console.print(Columns(blocks, padding=(0, 4), equal=False, column_first=True))
     while True:
         n = IntPrompt.ask("  請選擇", default=1)
         if 1 <= n <= len(flat):
@@ -455,7 +510,7 @@ def world_map(char: Character, gamedata: GameData) -> None:
         if p not in order:
             order.append(p)
 
-    tree = Tree("[bold yellow]🗺  Tamriel 地圖[/]")
+    tree = Tree(f"[bold {GOLD}]Tamriel · 泰姆瑞爾[/]", guide_style=GOLD_DIM)
     for prov in order:
         pb = tree.add(f"[bold cyan]{prov}[/]")
         for lid in by_prov[prov]:
@@ -474,9 +529,10 @@ def world_map(char: Character, gamedata: GameData) -> None:
             if exits:
                 ex = "、".join(f"{locs[d]['name']}{h}時" for d, h in exits.items())
                 node.add(f"[grey42]→ {ex}[/]")
-    console.print(tree)
-    console.print("  [grey50]★=所在 ◆城 ◇鎮 ✦地城 ·荒野 ⚠危險度 ?未到訪"
-                  "  服務:宿商訓法戰盜鐵板[/]")
+    legend = (f"[{FAINT}]★=所在 ◆城 ◇鎮 ✦地城 ·荒野 ⚠危險度 ?未到訪"
+              "  服務:宿商訓法戰盜鐵板[/]")
+    console.print(_panel(Group(tree, Rule(style=GOLD_DIM), Text.from_markup(legend)),
+                         title="🗺 世界地圖"))
 
 
 def menu(title: str, options: list[tuple[str, str]], allow_back: bool = False) -> str | None:
@@ -485,11 +541,11 @@ def menu(title: str, options: list[tuple[str, str]], allow_back: bool = False) -
     options: [(key, 顯示文字), ...]
     """
     if title:
-        console.print(f"\n[bold]{title}[/]")
+        console.print(f"\n[bold {GOLD}]❖ {title}[/]")
     for i, (_key, label) in enumerate(options, 1):
-        console.print(f"  [yellow]{i}[/]. {label}")
+        console.print(f"  [{GOLD}]{i:>2}[/][{FAINT}].[/] {label}")
     if allow_back:
-        console.print("  [yellow]0[/]. 返回")
+        console.print(f"  [{GOLD}] 0[/][{FAINT}].[/] [{INK}]返回[/]")
     lo = 0 if allow_back else 1
     while True:
         n = IntPrompt.ask("  請選擇", default=lo)

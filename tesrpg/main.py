@@ -1101,28 +1101,27 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
         # --- 冒險 ---
         adventure: list = []
         if loc["type"] == "dungeon":
-            adventure.append(("dungeon", "深入探索地城 ⚔"))
+            adventure.append(("dungeon", "深入地城 ⚔"))
         if loc.get("danger", 0) > 0 and loc["type"] != "dungeon":
-            adventure.append(("explore", "在周邊探索狩獵 ⚔"))
-        adventure.append(("travel", "旅行前往他處"))
-        adventure.append(("map", "查看 Tamriel 地圖"))
+            adventure.append(("explore", "探索狩獵 ⚔"))
+        adventure.append(("travel", "旅行"))
+        adventure.append(("map", "世界地圖"))
         # --- 城鎮服務 ---
         town: list = []
         if "merchant" in services:
-            town.append(("shop", "逛商店"))
+            town.append(("shop", "商店"))
         if "inn" in services:
-            town.append(("inn", "旅店過夜(10 金,完全回復)"))
+            town.append(("inn", "旅店(10金)"))
         if "trainer" in services:
-            town.append(("trainer", "找訓練師"))
+            town.append(("trainer", "訓練師"))
         if "mages_guild" in services:
-            town.append(("spells", "法師公會(學習法術)"))
-            town.append(("mg_hall", "法師公會(入會/任務)"))
+            town.append(("guild_mages", "法師公會"))   # 學習法術 + 入會/任務,進子選單
         if "fighters_guild" in services:
             town.append(("fg_hall", "戰士公會"))
         if "thieves_guild" in services:
             town.append(("tg_hall", "盜賊公會"))
         if "task_board" in services:
-            town.append(("board", "查看告示板"))
+            town.append(("board", "告示板"))
         if gamedata.npcs_at(player.location_id):
             town.append(("talk", "與人攀談"))
         if "armorer" in services or inventory.count_item(player, "repair_hammer") > 0:
@@ -1130,22 +1129,22 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
         # --- 施法與製作 ---
         craft: list = []
         if player.spells:
-            craft.append(("cast", "施法(自我增益)"))
+            craft.append(("cast", "施法增益"))
         if powers.usable_in(player, state, gamedata, "utility"):
             pdef = powers.power_def(powers.power_id(player, gamedata))
             craft.append(("power", f"星座之力({pdef['name']})"))
-        craft.append(("alchemy", "煉金調藥"))
+        craft.append(("alchemy", "煉金"))
         if any(gamedata.item(s["id"]).get("kind") == "poison" for s in player.inventory):
-            craft.append(("coat", "塗抹毒藥"))
+            craft.append(("coat", "塗毒"))
         if enchanting.filled_soul_gems(player, gamedata):
             craft.append(("enchant", "附魔武器"))
         # --- 角色與物品 ---
-        character: list = [("quests", "任務日誌"), ("inventory", "背包與裝備"),
-                           ("practice", "練習技能"), ("rest", "原地休息"), ("sheet", "查看角色卡")]
+        character: list = [("quests", "任務日誌"), ("inventory", "背包"),
+                           ("practice", "練習技能"), ("rest", "原地休息"), ("sheet", "角色卡")]
         if player.can_level_up():
             character.insert(0, ("levelup", "★ 升級"))
         # --- 系統 ---
-        system = [("save", "存檔"), ("retire", "隱退江湖(結算傳奇一生)"), ("quit", "離開到主選單")]
+        system = [("save", "存檔"), ("retire", "隱退江湖"), ("quit", "回主選單")]
 
         choice = ui.grouped_menu("要做什麼?", [
             ("冒險", adventure), ("城鎮服務", town),
@@ -1166,10 +1165,13 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
             action_inn(state, gamedata)
         elif choice == "trainer":
             action_trainer(state, gamedata)
-        elif choice == "spells":
-            action_spell_vendor(state, gamedata)
-        elif choice == "mg_hall":
-            action_guild_hall(state, gamedata, "mages_guild")
+        elif choice == "guild_mages":
+            sub = ui.menu("法師公會", [("spells", "學習法術"),
+                                       ("mg_hall", "公會事務(入會 / 任務)")], allow_back=True)
+            if sub == "spells":
+                action_spell_vendor(state, gamedata)
+            elif sub == "mg_hall":
+                action_guild_hall(state, gamedata, "mages_guild")
         elif choice == "fg_hall":
             action_guild_hall(state, gamedata, "fighters_guild")
         elif choice == "tg_hall":
