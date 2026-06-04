@@ -216,6 +216,22 @@ def flee_chance(player_speed: int, player_agility: int, foe_speed: int) -> float
     return max(0.10, min(0.90, chance))
 
 
+# --- 隱遁再襲(戰鬥中重新潛入陰影:成功則跳過本回合挨打 + 重置偷襲)---------
+VANISH_MIN_SNEAK = 20         # 低於此潛行不提供「隱遁」選項(非潛行流派不適用)
+RESTEALTH_BASE = 0.55
+RESTEALTH_SKILL_SCALE = 0.0035    # (sneak + acrobatics×0.5) × 此係數
+RESTEALTH_CROWD_PENALTY = 0.18    # 每多一個存活敵人,隱遁更難
+RESTEALTH_REUSE_PENALTY = 0.25    # 同場每用過一次,下次隱遁更難(防無限風箏)
+
+
+def restealth_chance(sneak: int, acrobatics: int, n_alive: int, used: int) -> float:
+    """隱遁成功率:吃潛行+雜技,敵人越多越難、同場重複用遞減。夾限 [0.05, 0.90]。"""
+    chance = (RESTEALTH_BASE + (sneak + acrobatics * 0.5) * RESTEALTH_SKILL_SCALE
+              - max(0, n_alive - 1) * RESTEALTH_CROWD_PENALTY
+              - max(0, used) * RESTEALTH_REUSE_PENALTY)
+    return max(0.05, min(0.90, chance))
+
+
 # --- 抗性與元素 ---------------------------------------------------------
 MAGIC_ELEMENTS = ("fire", "frost", "shock")   # 受「magic」總抗性影響的學派元素
 

@@ -371,6 +371,20 @@ def try_flee(player: Character, creature: Creature, rng: RNG) -> bool:
     return rng.chance(formulas.flee_chance(_speed(player), _agility(player), _speed(creature)))
 
 
+def can_vanish(player: Character) -> bool:
+    """潛行達門檻才能在戰鬥中嘗試隱遁(非潛行流派不適用)。"""
+    return player.skill("sneak") >= formulas.VANISH_MIN_SNEAK
+
+
+def vanish_chance(player: Character, n_alive: int, used: int) -> float:
+    return formulas.restealth_chance(player.skill("sneak"), player.skill("acrobatics"), n_alive, used)
+
+
+def try_vanish(player: Character, n_alive: int, used: int, rng: RNG) -> bool:
+    """嘗試隱遁再襲:成功回傳 True(由 run_battle 跳過本回合敵人攻擊並重置偷襲)。"""
+    return rng.chance(vanish_chance(player, n_alive, used))
+
+
 def grant_loot(player: Character, creature: Creature, gamedata: GameData, rng: RNG) -> dict:
     """結算怪物戰利品,金幣與物品入袋。回傳 {"gold", "items":[(id,qty)]}。"""
     result = loot.creature_loot(creature, rng)

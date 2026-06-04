@@ -220,7 +220,7 @@ def _choose_enemy_target(gamedata: GameData, enemies: list):
     return alive[int(ui.menu("攻擊哪個目標?", opts))]
 
 
-def _choose_combat_action(state: GameState, gamedata: GameData, enemies: list):
+def _choose_combat_action(state: GameState, gamedata: GameData, enemies: list, vanish_used: int = 0):
     """回傳玩家本回合的行動 dict:{type, spell_id?, target?}。"""
     player = state.player
     opts = [("attack", f"攻擊（{gamedata.item(player.weapon)['name']})")]
@@ -232,6 +232,10 @@ def _choose_combat_action(state: GameState, gamedata: GameData, enemies: list):
         opts.append(("power", f"{plabel}({powers.power_def(powers.power_id(player, gamedata))['name']})"))
     if not inventory.is_dual_wielding(player, gamedata):   # 雙持占用雙手 → 不能格擋
         opts.append(("block", "格擋"))
+    if combat.can_vanish(player):
+        n_alive = len([e for e in enemies if combat.is_alive(e)])
+        pct = int(combat.vanish_chance(player, n_alive, vanish_used) * 100)
+        opts.append(("vanish", f"隱遁再襲（成功率 {pct}%)"))
     opts.append(("flee", "逃跑"))
     choice = ui.menu("你的回合", opts)
 
@@ -243,7 +247,7 @@ def _choose_combat_action(state: GameState, gamedata: GameData, enemies: list):
                       for s in castable]
         sid = ui.menu("施放哪道法術?", spell_opts, allow_back=True)
         if sid is None:
-            return _choose_combat_action(state, gamedata, enemies)
+            return _choose_combat_action(state, gamedata, enemies, vanish_used)
         target = _choose_enemy_target(gamedata, enemies) if gamedata.spells[sid]["target"] == "enemy" else None
         return {"type": "cast", "spell_id": sid, "target": target}
     if choice == "power":
@@ -268,6 +272,7 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None) -
     battle = {"allies": [combat.spawn_companion(gamedata, cid, state.rng) for cid in party]}
     trapped_kills: set[int] = set()
     opening = True   # 開場偷襲:玩家「第一個行動」若是攻擊,依潛行給致命一擊
+    vanishes_done = 0  # 本場已成功隱遁次數(成功率遞減,防無限風箏)
 
     def alive_e():
         return [e for e in enemies if combat.is_alive(e)]
@@ -278,8 +283,9 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None) -
 
     while combat.is_alive(player) and alive_e():
         ui.combat_status_group(player, battle["allies"], enemies, gamedata)
-        action = _choose_combat_action(state, gamedata, enemies)
+        action = _choose_combat_action(state, gamedata, enemies, vanishes_done)
         blocking = action["type"] == "block"
+        vanish_success = False        # 本回合是否成功隱遁(成功 → 重置偷襲 + 跳過敵人階段)
 
         # ---- 玩家階段 ----
         if action["type"] == "flee":
@@ -312,8 +318,21 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None) -
         elif action["type"] == "block":
             combat.player_block_cost(player)
             ui.message("你舉盾戒備,準備擋下來襲。", style="grey70")
+        elif action["type"] == "vanish":
+            if combat.try_vanish(player, len(alive_e()), vanishes_done, state.rng):
+                vanish_success = True
+                vanishes_done += 1
+                ui.show_events(progression.use_skill(player, gamedata, "sneak",
+                                                     formulas.COMBAT_SNEAK_XP), gamedata)
+                ui.show_events(progression.use_skill(player, gamedata, "acrobatics",
+                                                     formulas.COMBAT_DODGE_XP), gamedata)
+                ui.message("你翻身遁入陰影 —— 敵人一時失去了你的蹤跡,下一擊將再度致命。",
+                           style="bold magenta")
+            else:
+                ui.message("隱遁失敗!你的身形仍暴露在敵人眼前。", style="red")
 
-        opening = False   # 第一個行動結束 → 敵人已警覺,之後不再有偷襲
+        # 隱遁成功 → 重新點亮偷襲(下一次攻擊再吃 sneak 倍率);其餘行動後敵人已警覺
+        opening = vanish_success
 
         # 玩家階段可能殺死(被擒魂的)敵人 → 統一記錄(涵蓋單體/AoE/星座之力)
         for e in enemies:
@@ -329,8 +348,8 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None) -
             ui.combat_event(combat.resolve_attack(a, tgt, gamedata, state.rng), gamedata)
             note_trap(tgt)
 
-        # ---- 敵人階段(各自挑我方一個目標)----
-        for e in enemies:
+        # ---- 敵人階段(各自挑我方一個目標)----隱遁成功則本回合敵人撲空 ----
+        for e in (enemies if not vanish_success else []):
             if not combat.is_alive(player):
                 break
             if not combat.is_alive(e):

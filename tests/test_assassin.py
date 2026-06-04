@@ -160,6 +160,23 @@ def test_drop_breaks_pair_ends_dualwield():
     assert not inventory.is_dual_wielding(c, gd)       # 自動退出雙持
 
 
+# --- 隱遁再襲 -----------------------------------------------------------
+def test_restealth_chance_drops_with_crowd_and_reuse():
+    from tesrpg import formulas
+    base = formulas.restealth_chance(70, 50, 1, 0)
+    assert formulas.restealth_chance(70, 50, 3, 0) < base       # 敵人越多越難
+    assert formulas.restealth_chance(70, 50, 1, 2) < base       # 重複用遞減
+    assert 0.05 <= formulas.restealth_chance(0, 0, 9, 9) <= 0.90  # 夾限
+    assert formulas.restealth_chance(100, 100, 1, 0) > formulas.restealth_chance(20, 0, 1, 0)
+
+
+def test_can_vanish_needs_sneak_threshold():
+    gd, c = _assassin(sneak=5)
+    assert not combat.can_vanish(c)            # 非潛行流派沒有隱遁
+    c.skills["sneak"] = 40
+    assert combat.can_vanish(c)
+
+
 def run():
     for name, fn in sorted(globals().items()):
         if name.startswith("test_") and callable(fn):
