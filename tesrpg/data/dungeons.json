@@ -167,7 +167,7 @@
       },
       {
         "desc": "湧出熔岩光的內室,一名魔人鎮守於此。",
-        "enemy": "draugr",
+        "enemy": "dremora",
         "container": {
           "locked": 30,
           "loot": [
