@@ -258,7 +258,8 @@ def _choose_combat_action(state: GameState, gamedata: GameData, enemies: list, v
     return {"type": choice}
 
 
-def run_battle(state: GameState, gamedata: GameData, enemies, companions=None) -> str:
+def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
+               alerted: bool = False) -> str:
     """團隊/多敵回合制戰鬥。階段制回合:玩家 → 同伴 → 敵人 → 結算。
 
     enemies:敵方 Creature 清單(也接受單一 Creature)。companions 未指定時用玩家隊伍。
@@ -271,7 +272,7 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None) -
     party = [cid for cid in party if cid in gamedata.companions]   # 略過已不存在的同伴(存檔前向相容)
     battle = {"allies": [combat.spawn_companion(gamedata, cid, state.rng) for cid in party]}
     trapped_kills: set[int] = set()
-    opening = True   # 開場偷襲:玩家「第一個行動」若是攻擊,依潛行給致命一擊
+    opening = not alerted   # 開場偷襲:首個攻擊吃潛行加成;若敵人已警覺(撤退失敗)則無
     vanishes_done = 0  # 本場已成功隱遁次數(成功率遞減,防無限風箏)
 
     def alive_e():
@@ -491,22 +492,64 @@ def _group_name(enemies: list) -> str:
     return "、".join(f"{n}×{c}" if c > 1 else n for n, c in counts.items())
 
 
+def _scout_report(state: GameState, gamedata: GameData, enemies: list) -> None:
+    """偵查敵情:依偵查技能逐級揭露情報(數量→血量/危險度→偷襲估傷→抗性弱點),並練偵查。"""
+    char = state.player
+    sk = char.skill("scout")
+    ui.rule("偵查敵情")
+    if sk < 20:
+        ui.message(f"你壓低身形觀察,但看不真切 —— 約莫有 {len(enemies)} 個敵人。"
+                   "(偵查越高,看得越清楚)", style="grey70")
+    else:
+        for e in enemies:
+            parts = [e.name, f"HP {int(e.health)}/{e.max_health}", f"危險度 {e.danger}"]
+            if sk >= 50:
+                est = combat.estimate_sneak_damage(char, gamedata, e)
+                verdict = ("可一擊斃命" if est >= e.health
+                           else "重傷但秒不掉" if est >= e.health * 0.5 else "搔癢而已")
+                parts.append(f"偷襲約 {est} 傷 → {verdict}")
+            if sk >= 75 and e.resist:
+                weak = [magic._ELEMENT_CN.get(k, k) for k, v in e.resist.items() if v < 0]
+                tough = [magic._ELEMENT_CN.get(k, k) for k, v in e.resist.items() if v >= 50]
+                if weak:
+                    parts.append("弱點:" + "/".join(weak))
+                if tough:
+                    parts.append("抗:" + "/".join(tough))
+            ui.message("· " + "  |  ".join(parts), style="white")
+    ui.show_events(progression.use_skill(char, gamedata, "scout", formulas.COMBAT_SNEAK_XP), gamedata)
+
+
 def offer_battle(state: GameState, gamedata: GameData, enemies, ambush_chance: float = 0.25) -> str | None:
-    """呈現遭遇 → 接戰/避開。enemies 為 Creature 清單或單一。回傳結果或 None(避開成功)。"""
+    """呈現遭遇 → 接戰 / 偵查 / 潛行撤退。回傳結果或 None(撤退成功,未交戰)。
+
+    ambush_chance 保留作簽名相容(舊呼叫端傳入);實際避戰已改為吃潛行/速度的潛行撤退。
+    """
     if not isinstance(enemies, list):
         enemies = [enemies]
+    char = state.player
     name = _group_name(enemies)
     ui.combat_intro(enemies[0], state.player, gamedata)
     if len(enemies) > 1:
         ui.message(f"來者不止一個 —— 你面對的是:{name}!", style="bold red")
-    choice = ui.menu(f"要與{name}交戰嗎?", [("fight", "接戰"), ("avoid", "避開")])
-    if choice == "avoid":
-        if state.rng.chance(ambush_chance):
-            ui.message(f"{name}不肯罷休 —— 被迫應戰!", style="yellow")
-        else:
-            ui.message("你悄悄退開,沒有交手。")
-            return None
-    return run_battle(state, gamedata, enemies)
+    scouted = False
+    while True:
+        opts = [("fight", "接戰")]
+        if not scouted:
+            opts.append(("scout", "偵查敵情"))
+        rpct = int(combat.stealth_retreat_chance(char, enemies) * 100)
+        opts.append(("retreat", f"潛行撤退（成功率 {rpct}%)"))
+        choice = ui.menu(f"要與{name}交戰嗎?", opts)
+        if choice == "scout":
+            _scout_report(state, gamedata, enemies)
+            scouted = True
+            continue
+        if choice == "retreat":
+            if combat.try_stealth_retreat(char, enemies, state.rng):
+                ui.message("你悄無聲息地退入暗處,沒有驚動任何人。", style="grey70")
+                return None
+            ui.message("撤退失敗 —— 敵人發現了你,且已有戒備!", style="red")
+            return run_battle(state, gamedata, enemies, alerted=True)
+        return run_battle(state, gamedata, enemies)
 
 
 def _maybe_sunburn(state: GameState, gamedata: GameData, hours: int) -> None:

@@ -385,6 +385,27 @@ def try_vanish(player: Character, n_alive: int, used: int, rng: RNG) -> bool:
     return rng.chance(vanish_chance(player, n_alive, used))
 
 
+def stealth_retreat_chance(player: Character, enemies: list) -> float:
+    foe_speed = max((e.speed for e in enemies), default=0)
+    return formulas.stealth_retreat_chance(player.skill("sneak"), _speed(player),
+                                           foe_speed, len(enemies))
+
+
+def try_stealth_retreat(player: Character, enemies: list, rng: RNG) -> bool:
+    return rng.chance(stealth_retreat_chance(player, enemies))
+
+
+def estimate_sneak_damage(player: Character, gamedata: GameData, creature: Creature) -> int:
+    """偵查用:玩家對該敵人一記偷襲的『中位』傷害估算(roll=1.0,過甲後)。"""
+    wpn_dmg, wpn_skill, _ = _weapon_profile(player, gamedata)
+    wpn_dmg += inventory.dual_wield_bonus_damage(player, gamedata)
+    archetype = gamedata.item(player.weapon).get("archetype")
+    raw = formulas.attack_damage(wpn_dmg, wpn_skill, _strength(player), 1.0)
+    raw *= formulas.sneak_attack_multiplier(player.skill("sneak")) * formulas.archetype_sneak_bonus(archetype)
+    pen = formulas.archetype_armor_pen(archetype)
+    return int(round(formulas.damage_after_armor(raw, creature.armor_rating, pen)))
+
+
 def grant_loot(player: Character, creature: Creature, gamedata: GameData, rng: RNG) -> dict:
     """結算怪物戰利品,金幣與物品入袋。回傳 {"gold", "items":[(id,qty)]}。"""
     result = loot.creature_loot(creature, rng)

@@ -232,6 +232,18 @@ def restealth_chance(sneak: int, acrobatics: int, n_alive: int, used: int) -> fl
     return max(0.05, min(0.90, chance))
 
 
+# --- 戰前潛行撤退(偵查到不利 → 體面退場;吃潛行+速度,群越大越難)----------
+STEALTH_RETREAT_BASE = 0.55
+RETREAT_GROUP_PENALTY = 0.10      # 每多一個敵人,撤退更難
+
+
+def stealth_retreat_chance(sneak: int, speed: int, foe_speed: int, group_size: int) -> float:
+    """潛行撤退成功率:吃潛行與速度差,敵群越大越難。夾限 [0.10, 0.92](保留失敗率)。"""
+    chance = (STEALTH_RETREAT_BASE + sneak * 0.004 + (speed - foe_speed) * 0.004
+              - max(0, group_size - 1) * RETREAT_GROUP_PENALTY)
+    return max(0.10, min(0.92, chance))
+
+
 # --- 抗性與元素 ---------------------------------------------------------
 MAGIC_ELEMENTS = ("fire", "frost", "shock")   # 受「magic」總抗性影響的學派元素
 

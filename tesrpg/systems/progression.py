@@ -28,6 +28,14 @@ def ensure_level_xp(char: Character) -> None:
         char.level_skillups = {}
 
 
+def ensure_all_skills(char: Character, gamedata: GameData) -> None:
+    """舊存檔遷移:補上資料新增、但存檔缺漏的技能(如第 22 技能 scout)為底值。"""
+    for sid in gamedata.skills:
+        if sid not in char.skills:
+            char.skills[sid] = formulas.SKILL_BASE
+            char.skill_xp.setdefault(sid, 0.0)
+
+
 def use_skill(char: Character, gamedata: GameData, skill_id: str, xp: float) -> list[dict]:
     """對某技能灌注 xp,結算升點。回傳事件列表(供 UI 呈現)。
 
@@ -36,8 +44,11 @@ def use_skill(char: Character, gamedata: GameData, skill_id: str, xp: float) -> 
       {"type": "level_ready"}                      # 本次首度達到可升級
     """
     events: list[dict] = []
-    if skill_id not in char.skills:
-        return events
+    if skill_id not in gamedata.skills:
+        return events                      # 防呆:拒絕不存在的技能 id(打錯字)
+    # 自癒:合法但缺漏的技能(如舊存檔遇到新增的第 22 技能 scout)→ 初始化為底值再成長
+    char.skills.setdefault(skill_id, formulas.SKILL_BASE)
+    char.skill_xp.setdefault(skill_id, 0.0)
 
     ensure_level_xp(char)
     could_level_before = char.can_level_up()

@@ -115,8 +115,10 @@ class GameState:
         player = Character.from_dict(d["player"])
         # 改版前存檔:把停用的 level_progress 進度遷移成 level_xp,讓載入當下 can_level_up 即正確
         # (否則已可升級的舊存檔,升級入口要等到下次 use_skill 才出現)。區域 import 避免循環。
+        from tesrpg.gamedata import get_gamedata
         from tesrpg.systems import progression
         progression.ensure_level_xp(player)
+        progression.ensure_all_skills(player, get_gamedata())   # 補上新增技能(scout 等)
         return cls(
             player=player,
             time=time,

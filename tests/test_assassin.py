@@ -177,6 +177,47 @@ def test_can_vanish_needs_sneak_threshold():
     assert combat.can_vanish(c)
 
 
+# --- 偵查技能(第 22 個技能)+ 潛行撤退 ---------------------------------
+def test_scout_is_a_real_stealth_skill():
+    gd = get_gamedata()
+    assert "scout" in gd.skills and gd.skills["scout"]["spec"] == "stealth"
+    assert "scout" in gd.skills_by_spec("stealth")
+    assert len(gd.skills) == 22                       # 21 → 22
+
+
+def test_new_character_has_scout_trained_by_use():
+    from tesrpg.models import Character
+    from tesrpg.systems import progression
+    gd, c = _assassin()
+    assert "scout" in c.skills                          # 新角色含偵查
+    # 舊存檔(缺 scout)仍可載入並靠 use_skill 成長
+    d = c.to_dict(); d["skills"].pop("scout", None); d["skill_xp"].pop("scout", None)
+    old = Character.from_dict(d)
+    assert old.skill("scout") == 0
+    before = old.skill("scout")
+    for _ in range(200):
+        progression.use_skill(old, gd, "scout", 1.0)
+    assert old.skill("scout") > before                 # learn-by-doing 對新技能照常運作
+
+
+def test_estimate_sneak_damage_reflects_build():
+    from tesrpg.systems import inventory
+    gd, c = _assassin(sneak=80, blade=60, weapon="steel_dagger")
+    foe = _dummy(hp=200, armor=10)
+    single = combat.estimate_sneak_damage(c, gd, foe)
+    inventory.add_item(c, "steel_dagger", 2); inventory.equip_offhand(c, gd, "steel_dagger")
+    dual = combat.estimate_sneak_damage(c, gd, foe)
+    assert dual > single > 0                           # 雙持估傷更高
+
+
+def test_stealth_retreat_chance_drops_with_group():
+    from tesrpg import formulas
+    solo = formulas.stealth_retreat_chance(70, 50, 40, 1)
+    pack = formulas.stealth_retreat_chance(70, 50, 40, 4)
+    assert pack < solo
+    assert 0.10 <= formulas.stealth_retreat_chance(0, 0, 99, 9) <= 0.92
+
+
 def run():
     for name, fn in sorted(globals().items()):
         if name.startswith("test_") and callable(fn):
