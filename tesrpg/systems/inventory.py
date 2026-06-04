@@ -48,6 +48,9 @@ def remove_item(char: Character, item_id: str, qty: int = 1) -> bool:
                 for slot, wid in list(char.equipped.items()):
                     if wid == item_id:
                         del char.equipped[slot]
+            # 雙持一致性:同型雙持丟到剩 1 把(stack 未清空)→ 副手失效,清掉殘留
+            if char.offhand == item_id and count_item(char, item_id) < (2 if char.weapon == item_id else 1):
+                char.offhand = ""
             return True
     return False
 

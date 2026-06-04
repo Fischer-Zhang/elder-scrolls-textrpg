@@ -158,6 +158,28 @@ def test_drop_breaks_pair_ends_dualwield():
     assert inventory.is_dual_wielding(c, gd)
     inventory.remove_item(c, "iron_dagger", 1)        # 只剩 1 把
     assert not inventory.is_dual_wielding(c, gd)       # 自動退出雙持
+    assert c.offhand == ""                             # 殘留副手已被清除(修正 review minor)
+
+
+def test_offhand_not_amplified_by_sneak_attack():
+    """回歸(review major):副手傷害不吃偷襲倍率 → 滿練雙持仍秒不掉高血精英 frost_troll。"""
+    from tesrpg.systems import inventory, stats
+    gd = get_gamedata()
+    c = build_character(gd, name="x", sex="male", race="khajiit", birthsign="shadow", class_id="assassin")
+    c.skills.update(sneak=100, blade=100, alchemy=100); c.weapon = "glass_dagger"
+    inventory.add_item(c, "glass_dagger", 2); inventory.equip_offhand(c, gd, "glass_dagger")
+    stats.recompute_max_resources(c, gd, restore_full=True)
+    kills = sum(combat.resolve_attack(c, combat.spawn_creature(gd, "frost_troll", RNG(i + 1)),
+                                      gd, RNG(i * 7 + 3), sneak_attack=True)["defender_dead"]
+                for i in range(600))
+    assert kills / 600 < 0.30, f"雙持偷襲秒殺 frost_troll 率過高:{kills/600:.0%}"
+
+
+def test_vanish_costs_fatigue():
+    gd, c = _assassin()
+    c.fatigue = c.max_fatigue
+    combat.player_vanish_cost(c)
+    assert c.fatigue < c.max_fatigue                   # 隱遁耗體力(壓制無限風箏)
 
 
 # --- 隱遁再襲 -----------------------------------------------------------

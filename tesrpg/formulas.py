@@ -83,6 +83,7 @@ ARMOR_SKILL_IDS = ["heavy_armor", "light_armor"]
 
 ATTACK_FATIGUE_COST = 6      # 每次近戰攻擊消耗體力
 BLOCK_FATIGUE_COST = 4
+VANISH_FATIGUE_COST = 18     # 隱遁翻滾耗體力(高;連續隱遁會耗竭 → 後續攻擊命中下降)
 COMBAT_HIT_XP = 0.5          # 成功命中 → 武器技能 xp
 COMBAT_ARMOR_XP = 0.4        # 被擊中 → 護甲技能 xp
 COMBAT_BLOCK_XP = 0.5        # 成功格擋 → 格擋技能 xp
@@ -218,6 +219,7 @@ def flee_chance(player_speed: int, player_agility: int, foe_speed: int) -> float
 
 # --- 隱遁再襲(戰鬥中重新潛入陰影:成功則跳過本回合挨打 + 重置偷襲)---------
 VANISH_MIN_SNEAK = 20         # 低於此潛行不提供「隱遁」選項(非潛行流派不適用)
+MAX_VANISHES_PER_BATTLE = 3   # 每場最多嘗試隱遁次數(硬上限:隱遁是有限脫離手段,非無限風箏)
 RESTEALTH_BASE = 0.55
 RESTEALTH_SKILL_SCALE = 0.0035    # (sneak + acrobatics×0.5) × 此係數
 RESTEALTH_CROWD_PENALTY = 0.18    # 每多一個存活敵人,隱遁更難

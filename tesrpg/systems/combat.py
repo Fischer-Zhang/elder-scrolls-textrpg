@@ -206,8 +206,8 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
     """
     sneaking = sneak_attack and _is_player(attacker)
     wpn_dmg, wpn_skill, wpn_skill_id = _weapon_profile(attacker, gamedata)
-    if _is_player(attacker):    # 雙持匕首:副手傷害折入每一擊(偷襲倍率也一併放大)
-        wpn_dmg += inventory.dual_wield_bonus_damage(attacker, gamedata)
+    # 雙持副手傷害另計:作為一記「普通補刀」疊上,不吃偷襲倍率(避免偷襲秒精英)
+    offhand_dmg = inventory.dual_wield_bonus_damage(attacker, gamedata) if _is_player(attacker) else 0.0
     wdef = gamedata.item(attacker.weapon) if _is_player(attacker) else None
     archetype = wdef.get("archetype") if wdef else None
     speed = wdef.get("speed", formulas.WEAPON_SPEED_DEFAULT) if wdef else formulas.WEAPON_SPEED_DEFAULT
@@ -235,10 +235,14 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
 
     if hit:
         cond_mult = inventory.weapon_damage_mult(attacker) if _is_player(attacker) else 1.0
+        roll = rng.roll(0.85, 1.15)
         raw = formulas.attack_damage(wpn_dmg, wpn_skill, _strength(attacker),
-                                     rng.roll(0.85, 1.15), defender_blocking) * cond_mult
+                                     roll, defender_blocking) * cond_mult
         if sneaking:
             raw *= sneak_mult
+        if offhand_dmg:    # 雙持副手補刀:照常吃技能/力量/耐久,但不吃偷襲倍率
+            raw += formulas.attack_damage(offhand_dmg, wpn_skill, _strength(attacker),
+                                          roll, defender_blocking) * cond_mult
         atk_element = None if _is_player(attacker) else attacker.attack.get("element")
         if not _is_player(attacker):
             raw *= magic.weaken_factor(attacker)        # 怪物受耗弱影響
@@ -367,6 +371,12 @@ def player_block_cost(player: Character) -> None:
     player.fatigue = max(0, player.fatigue - cost)
 
 
+def player_vanish_cost(player: Character) -> None:
+    """隱遁消耗大量體力(運動越高越省);連續隱遁會耗竭體力,壓制無限風箏。"""
+    cost = formulas.VANISH_FATIGUE_COST * formulas.fatigue_cost_factor(player.skill("athletics"))
+    player.fatigue = max(0, player.fatigue - cost)
+
+
 def try_flee(player: Character, creature: Creature, rng: RNG) -> bool:
     return rng.chance(formulas.flee_chance(_speed(player), _agility(player), _speed(creature)))
 
@@ -398,10 +408,12 @@ def try_stealth_retreat(player: Character, enemies: list, rng: RNG) -> bool:
 def estimate_sneak_damage(player: Character, gamedata: GameData, creature: Creature) -> int:
     """偵查用:玩家對該敵人一記偷襲的『中位』傷害估算(roll=1.0,過甲後)。"""
     wpn_dmg, wpn_skill, _ = _weapon_profile(player, gamedata)
-    wpn_dmg += inventory.dual_wield_bonus_damage(player, gamedata)
+    offhand_dmg = inventory.dual_wield_bonus_damage(player, gamedata)
     archetype = gamedata.item(player.weapon).get("archetype")
     raw = formulas.attack_damage(wpn_dmg, wpn_skill, _strength(player), 1.0)
     raw *= formulas.sneak_attack_multiplier(player.skill("sneak")) * formulas.archetype_sneak_bonus(archetype)
+    if offhand_dmg:    # 副手補刀不吃偷襲倍率(與 resolve_attack 一致)
+        raw += formulas.attack_damage(offhand_dmg, wpn_skill, _strength(player), 1.0)
     pen = formulas.archetype_armor_pen(archetype)
     return int(round(formulas.damage_after_armor(raw, creature.armor_rating, pen)))
 

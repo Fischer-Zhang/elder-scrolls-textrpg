@@ -232,10 +232,11 @@ def _choose_combat_action(state: GameState, gamedata: GameData, enemies: list, v
         opts.append(("power", f"{plabel}({powers.power_def(powers.power_id(player, gamedata))['name']})"))
     if not inventory.is_dual_wielding(player, gamedata):   # 雙持占用雙手 → 不能格擋
         opts.append(("block", "格擋"))
-    if combat.can_vanish(player):
+    if combat.can_vanish(player) and vanish_used < formulas.MAX_VANISHES_PER_BATTLE:
         n_alive = len([e for e in enemies if combat.is_alive(e)])
         pct = int(combat.vanish_chance(player, n_alive, vanish_used) * 100)
-        opts.append(("vanish", f"隱遁再襲（成功率 {pct}%)"))
+        left = formulas.MAX_VANISHES_PER_BATTLE - vanish_used
+        opts.append(("vanish", f"隱遁再襲（成功率 {pct}%,剩 {left} 次)"))
     opts.append(("flee", "逃跑"))
     choice = ui.menu("你的回合", opts)
 
@@ -320,9 +321,11 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
             combat.player_block_cost(player)
             ui.message("你舉盾戒備,準備擋下來襲。", style="grey70")
         elif action["type"] == "vanish":
-            if combat.try_vanish(player, len(alive_e()), vanishes_done, state.rng):
+            combat.player_vanish_cost(player)        # 隱遁耗大量體力(連續隱遁會耗竭)
+            attempt_used = vanishes_done
+            vanishes_done += 1                       # 每次「嘗試」即遞增 → 成功率遞減真正生效
+            if combat.try_vanish(player, len(alive_e()), attempt_used, state.rng):
                 vanish_success = True
-                vanishes_done += 1
                 ui.show_events(progression.use_skill(player, gamedata, "sneak",
                                                      formulas.COMBAT_SNEAK_XP), gamedata)
                 ui.show_events(progression.use_skill(player, gamedata, "acrobatics",
