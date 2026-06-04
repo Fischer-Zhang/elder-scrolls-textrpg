@@ -297,8 +297,15 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
 
 
 def player_attack_cost(player: Character) -> None:
-    """玩家近戰一擊消耗體力。"""
-    player.fatigue = max(0, player.fatigue - formulas.ATTACK_FATIGUE_COST)
+    """玩家攻擊一擊消耗體力(運動越高越省)。"""
+    cost = formulas.ATTACK_FATIGUE_COST * formulas.fatigue_cost_factor(player.skill("athletics"))
+    player.fatigue = max(0, player.fatigue - cost)
+
+
+def player_block_cost(player: Character) -> None:
+    """玩家舉盾格擋消耗體力(運動越高越省)。"""
+    cost = formulas.BLOCK_FATIGUE_COST * formulas.fatigue_cost_factor(player.skill("athletics"))
+    player.fatigue = max(0, player.fatigue - cost)
 
 
 def try_flee(player: Character, creature: Creature, rng: RNG) -> bool:

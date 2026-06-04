@@ -113,6 +113,14 @@ def athletics_travel_factor(athletics_skill: int) -> float:
     return max(0.5, 1.0 - athletics_skill * ATHLETICS_TRAVEL_SCALE)
 
 
+ATHLETICS_FATIGUE_SCALE = 0.004  # 運動降低戰鬥體力消耗的係數
+
+
+def fatigue_cost_factor(athletics_skill: int) -> float:
+    """運動降低戰鬥(攻擊/格擋)體力消耗:運動 0→×1.0、100→×0.6(最多省 40%)。"""
+    return max(0.6, 1.0 - athletics_skill * ATHLETICS_FATIGUE_SCALE)
+
+
 def hit_chance(atk_skill: int, atk_agility: int, def_agility: int,
                attacker_fatigue_ratio: float, defender_blocking: bool = False,
                defender_evasion: float = 0.0) -> float:

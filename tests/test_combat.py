@@ -142,6 +142,27 @@ def test_acrobatics_trains_on_dodge():
     combat.resolve_attack(c, rat, gd, RNG(1))
 
 
+def test_athletics_reduces_combat_fatigue_and_block_costs():
+    """運動降低攻擊/格擋體力消耗;格擋現在確實會扣體力(原本是死常數)。"""
+    gd, c = _warrior()
+    assert formulas.fatigue_cost_factor(0) == 1.0
+    assert formulas.fatigue_cost_factor(100) < formulas.fatigue_cost_factor(0)
+
+    def spent(cost_fn, athletics):
+        c.skills["athletics"] = athletics
+        c.fatigue = c.max_fatigue
+        before = c.fatigue
+        cost_fn(c)
+        return before - c.fatigue
+
+    # 攻擊:運動 0 = 名目;運動高 → 更省
+    assert spent(combat.player_attack_cost, 0) == formulas.ATTACK_FATIGUE_COST
+    assert spent(combat.player_attack_cost, 100) < formulas.ATTACK_FATIGUE_COST
+    # 格擋:現在真的會扣(過去 BLOCK_FATIGUE_COST 未被引用 = 0)
+    assert spent(combat.player_block_cost, 0) == formulas.BLOCK_FATIGUE_COST
+    assert 0 < spent(combat.player_block_cost, 100) < formulas.BLOCK_FATIGUE_COST
+
+
 def run():
     test_formulas_monotonic()
     test_starter_weapon_assigned()
@@ -153,6 +174,7 @@ def run():
     test_sneak_attack_trains_sneak_and_is_player_only()
     test_acrobatics_dodge_reduces_hit_chance()
     test_acrobatics_trains_on_dodge()
+    test_athletics_reduces_combat_fatigue_and_block_costs()
 
 
 if __name__ == "__main__":

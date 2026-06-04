@@ -299,6 +299,7 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None) -
                 state.time.advance(1)
                 return "fled"
         elif action["type"] == "block":
+            combat.player_block_cost(player)
             ui.message("你舉盾戒備,準備擋下來襲。", style="grey70")
 
         opening = False   # 第一個行動結束 → 敵人已警覺,之後不再有偷襲
