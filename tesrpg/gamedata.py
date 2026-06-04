@@ -37,6 +37,7 @@ class GameData:
         self.events: dict = _load("events.json")
         self.companions: dict = _load("companions.json")
         self.origins: dict = _load("origins.json")   # 開局背景(不一樣的人生)
+        self.rulers: dict = _load("rulers.json")     # 各城統治者(湮滅期大空位、各城自治;城戰前置)
         self._misc: dict = _load("items.json")
 
         # 統一物品索引:武器/護甲/雜項/材料共用一份 {id: {**def, "kind": ...}}
@@ -77,6 +78,10 @@ class GameData:
 
     def npcs_at(self, loc_id: str) -> list[str]:
         return [nid for nid, n in self.npcs.items() if n["location"] == loc_id]
+
+    def ruler_at(self, loc_id: str) -> dict | None:
+        """該地點的統治者(無則 None;荒野/地城本就無城主)。"""
+        return self.rulers.get(loc_id)
 
 
 # 單一共享實例(資料是唯讀的,全程式共用一份即可)

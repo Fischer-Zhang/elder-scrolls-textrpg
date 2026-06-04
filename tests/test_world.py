@@ -121,6 +121,23 @@ def test_dungeon_enemies_and_loot_valid():
             assert boss["enemy"] in gd.bestiary, f"{did} 首領 {boss['enemy']} 不在 bestiary"
 
 
+def test_every_settlement_has_a_ruler():
+    """城戰前置:每座大城/城鎮都有合法的統治者(湮滅期各城自治);荒野/地城無城主。"""
+    gd, _ = _char()
+    for lid, loc in gd.world["locations"].items():
+        ruler = gd.ruler_at(lid)
+        if loc["type"] in ("city", "town"):
+            assert ruler is not None, f"{lid} 缺統治者"
+            assert ruler.get("name") and ruler.get("title"), f"{lid} 統治者缺名/銜"
+            assert ruler.get("race") in gd.races, f"{lid} 統治者種族非法:{ruler.get('race')}"
+            assert isinstance(ruler.get("garrison"), int) and ruler["garrison"] > 0
+        else:
+            assert ruler is None, f"{lid}（{loc['type']})不該有城主"
+    # rulers.json 的每個 key 都對應真實地點(防打錯字)
+    for lid in gd.rulers:
+        assert lid in gd.world["locations"], f"rulers.json 的 {lid} 不是有效地點"
+
+
 def test_travel_moves_and_advances_time():
     gd, c = _char()
     from tesrpg.state import GameTime

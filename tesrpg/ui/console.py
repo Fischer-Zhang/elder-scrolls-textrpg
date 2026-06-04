@@ -316,6 +316,11 @@ def location_panel(char: Character, gamedata: GameData) -> None:
     loc = gamedata.location(char.location_id)
     body = Text()
     body.append(loc["desc"] + "\n", style=PARCH)
+    ruler = gamedata.ruler_at(char.location_id)
+    if ruler:
+        body.append("👑 統治者  ", style=GOLD)
+        body.append(f"{ruler['title']}·{ruler['name']}", style=PARCH)
+        body.append("（大空位·自治)\n", style=FAINT)
     exits = loc.get("links", {})
     if exits:
         body.append("出口  ", style=GOLD)
