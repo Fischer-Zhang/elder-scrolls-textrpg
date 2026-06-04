@@ -256,6 +256,7 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None) -
     party = [cid for cid in party if cid in gamedata.companions]   # 略過已不存在的同伴(存檔前向相容)
     battle = {"allies": [combat.spawn_companion(gamedata, cid, state.rng) for cid in party]}
     trapped_kills: set[int] = set()
+    opening = True   # 開場偷襲:玩家「第一個行動」若是攻擊,依潛行給致命一擊
 
     def alive_e():
         return [e for e in enemies if combat.is_alive(e)]
@@ -282,7 +283,8 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None) -
             tgt = action["target"]
             if combat.is_alive(tgt):
                 combat.player_attack_cost(player)
-                ui.combat_event(combat.resolve_attack(player, tgt, gamedata, state.rng), gamedata)
+                ui.combat_event(combat.resolve_attack(player, tgt, gamedata, state.rng,
+                                                      sneak_attack=opening), gamedata)
         elif action["type"] == "cast":
             res = magic.cast(player, gamedata, action["spell_id"], state.rng,
                              target=action.get("target"), battle=battle, enemies=alive_e())
@@ -298,6 +300,8 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None) -
                 return "fled"
         elif action["type"] == "block":
             ui.message("你舉盾戒備,準備擋下來襲。", style="grey70")
+
+        opening = False   # 第一個行動結束 → 敵人已警覺,之後不再有偷襲
 
         # 玩家階段可能殺死(被擒魂的)敵人 → 統一記錄(涵蓋單體/AoE/星座之力)
         for e in enemies:

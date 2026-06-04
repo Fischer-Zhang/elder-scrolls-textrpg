@@ -186,27 +186,36 @@ def initiative_order(player: Character, creature: Creature) -> list:
 # 結算單次攻擊
 # ======================================================================
 def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
-                   defender_blocking: bool = False) -> dict:
+                   defender_blocking: bool = False, sneak_attack: bool = False) -> dict:
     """attacker 攻擊 defender,套用傷害、發放玩家技能 xp。回傳事件 dict。
 
+    sneak_attack:玩家開場偷襲(不察之敵)→ 傷害依潛行加倍、命中下限拉高、鍛鍊潛行。
+
     事件:{"attacker","defender","hit":bool,"damage":int,"blocked":bool,
-           "skill_events":[...], "defender_dead":bool}
+           "skill_events":[...], "defender_dead":bool, "sneak":倍率|None}
     """
+    sneaking = sneak_attack and _is_player(attacker)
     wpn_dmg, wpn_skill, wpn_skill_id = _weapon_profile(attacker, gamedata)
     fr = _fatigue_ratio(attacker)
+    evasion = formulas.dodge_evasion(defender.skill("acrobatics")) if _is_player(defender) else 0.0
     chance = formulas.hit_chance(wpn_skill, _agility(attacker), _agility(defender),
-                                 fr, defender_blocking)
+                                 fr, defender_blocking, defender_evasion=evasion)
+    if sneaking:
+        chance = max(chance, formulas.SNEAK_ATTACK_HIT_FLOOR)
     skill_events: list[dict] = []
     hit = rng.chance(chance)
     dmg_done = 0
     absorbed = False
     status_applied = None
     poison_applied = None
+    sneak_mult = formulas.sneak_attack_multiplier(attacker.skill("sneak")) if sneaking else None
 
     if hit:
         cond_mult = inventory.weapon_damage_mult(attacker) if _is_player(attacker) else 1.0
         raw = formulas.attack_damage(wpn_dmg, wpn_skill, _strength(attacker),
                                      rng.roll(0.85, 1.15), defender_blocking) * cond_mult
+        if sneaking:
+            raw *= sneak_mult
         atk_element = None if _is_player(attacker) else attacker.attack.get("element")
         if not _is_player(attacker):
             raw *= magic.weaken_factor(attacker)        # 怪物受耗弱影響
@@ -260,6 +269,9 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
         if _is_player(attacker) and wpn_skill_id:
             skill_events += progression.use_skill(attacker, gamedata, wpn_skill_id,
                                                   formulas.COMBAT_HIT_XP)
+        if sneaking:   # 偷襲命中 → 鍛鍊潛行(讓 sneak 也能在戰鬥中成長)
+            skill_events += progression.use_skill(attacker, gamedata, "sneak",
+                                                  formulas.COMBAT_SNEAK_XP)
         if _is_player(defender):
             skill_events += progression.use_skill(defender, gamedata,
                                                   _player_armor_skill(defender, gamedata),
@@ -271,12 +283,16 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
             stats.clamp_resources(attacker)
         if _is_player(defender):
             stats.clamp_resources(defender)
+    elif _is_player(defender):             # 敵人攻擊落空 + 防守方是玩家 → 成功閃避 → 鍛鍊雜技
+        skill_events += progression.use_skill(defender, gamedata, "acrobatics",
+                                              formulas.COMBAT_DODGE_XP)
 
     return {
         "attacker": _name(attacker), "defender": _name(defender),
         "hit": hit, "damage": dmg_done, "blocked": defender_blocking,
         "skill_events": skill_events, "defender_dead": not is_alive(defender),
         "absorbed": absorbed, "status_applied": status_applied, "poison_applied": poison_applied,
+        "sneak": sneak_mult,
     }
 
 

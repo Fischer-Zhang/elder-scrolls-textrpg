@@ -86,16 +86,34 @@ BLOCK_FATIGUE_COST = 4
 COMBAT_HIT_XP = 0.5          # 成功命中 → 武器技能 xp
 COMBAT_ARMOR_XP = 0.4        # 被擊中 → 護甲技能 xp
 COMBAT_BLOCK_XP = 0.5        # 成功格擋 → 格擋技能 xp
+COMBAT_SNEAK_XP = 0.6        # 開場偷襲命中 → 潛行技能 xp(讓 sneak 也能戰鬥中成長)
+COMBAT_DODGE_XP = 0.4        # 成功閃避(敵人攻擊落空)→ 雜技技能 xp
+
+SNEAK_ATTACK_SCALE = 0.03    # 偷襲傷害倍率係數
+SNEAK_ATTACK_HIT_FLOOR = 0.90  # 偷襲命中率下限(伏擊不察之敵,極少落空)
+DODGE_EVASION_SCALE = 0.0025   # 雜技閃避係數(acrobatics 100 → 敵人命中 −0.25)
+
+
+def sneak_attack_multiplier(sneak_skill: int) -> float:
+    """開場偷襲的傷害倍率:潛行越高,致命一擊越狠(sneak 0→×1.0、50→×2.5、100→×4.0)。"""
+    return 1.0 + sneak_skill * SNEAK_ATTACK_SCALE
+
+
+def dodge_evasion(acrobatics_skill: int) -> float:
+    """雜技帶來的閃避量(直接從敵人命中率扣除):acrobatics 40→0.10、100→0.25。"""
+    return acrobatics_skill * DODGE_EVASION_SCALE
 
 
 def hit_chance(atk_skill: int, atk_agility: int, def_agility: int,
-               attacker_fatigue_ratio: float, defender_blocking: bool = False) -> float:
-    """命中率。武器技能為主、敏捷差為輔、低體力受罰、對方格擋更難打中。"""
+               attacker_fatigue_ratio: float, defender_blocking: bool = False,
+               defender_evasion: float = 0.0) -> float:
+    """命中率。武器技能為主、敏捷差為輔、低體力受罰、對方格擋/閃避更難打中。"""
     chance = 0.50 + (atk_skill - 25) * 0.006        # 技能 25→0.5、75→0.8、100→0.95
     chance += (atk_agility - def_agility) * 0.004
     chance -= (1.0 - max(0.0, min(1.0, attacker_fatigue_ratio))) * 0.25
     if defender_blocking:
         chance -= 0.15
+    chance -= defender_evasion                       # 雜技閃避(僅玩家防守時)
     return max(0.05, min(0.95, chance))
 
 

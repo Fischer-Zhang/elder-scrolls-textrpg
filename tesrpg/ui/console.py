@@ -418,10 +418,16 @@ def combat_event(ev: dict, gamedata: GameData) -> None:
         console.print(f"  [bold cyan]{ev['defender']} 吸收了來襲的魔法,化為魔力![/]")
     elif ev["hit"]:
         blk = "(被格擋)" if ev["blocked"] else ""
-        console.print(f"  [white]{ev['attacker']}[/] 命中 [white]{ev['defender']}[/]"
-                      f",造成 [bold red]{ev['damage']}[/] 傷害{blk}")
+        if ev.get("sneak"):
+            console.print(f"  [bold magenta]🗡 偷襲![/] [white]{ev['attacker']}[/] 自暗處突襲 "
+                          f"[white]{ev['defender']}[/],致命一擊造成 "
+                          f"[bold red]{ev['damage']}[/] 傷害(×{ev['sneak']:.1f}){blk}")
+        else:
+            console.print(f"  [white]{ev['attacker']}[/] 命中 [white]{ev['defender']}[/]"
+                          f",造成 [bold red]{ev['damage']}[/] 傷害{blk}")
     else:
-        console.print(f"  [grey62]{ev['attacker']} 的攻擊被 {ev['defender']} 閃過了。[/]")
+        sneak_miss = "[magenta](偷襲落空!)[/] " if ev.get("sneak") else ""
+        console.print(f"  {sneak_miss}[grey62]{ev['attacker']} 的攻擊被 {ev['defender']} 閃過了。[/]")
     if ev.get("status_applied"):
         console.print(f"  [magenta]{ev['defender']} 中了{_ELEM_CN.get(ev['status_applied'], '異常')}![/]")
     if ev.get("poison_applied"):
