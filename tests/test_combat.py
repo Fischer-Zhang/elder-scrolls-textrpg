@@ -163,6 +163,40 @@ def test_athletics_reduces_combat_fatigue_and_block_costs():
     assert 0 < spent(combat.player_block_cost, 100) < formulas.BLOCK_FATIGUE_COST
 
 
+def test_elite_enemies_gated_by_min_level():
+    """高階 elite 受 min_level 把關:低等玩家不會遇到,高等玩家在高危區會遇到。"""
+    gd, _ = _warrior()
+    ELITE = {"frost_troll", "storm_atronach", "daedroth", "lich",
+             "dremora_lord", "frost_giant", "ancient_dragon"}
+    low = {combat.random_encounter(gd, 3, RNG(s), max_danger=5).template_id for s in range(300)}
+    assert not (low & {"dremora_lord", "frost_giant", "ancient_dragon"}), "低等玩家不該遇到高階 elite"
+    high = {combat.random_encounter(gd, 16, RNG(s), max_danger=5).template_id for s in range(400)}
+    assert high & ELITE, "高等玩家在高危區應能遇到 elite"
+
+
+def test_group_size_scales_with_danger():
+    """危險度越高,遭遇群體平均越大。"""
+    gd, _ = _warrior()
+    def avg(md, n=300):
+        return sum(len(combat.random_encounter_group(gd, 1, RNG(s), max_danger=md))
+                   for s in range(n)) / n
+    assert avg(5) > avg(3) > avg(1)
+
+
+def test_boss_elites_appear_solo():
+    """BOSS 級(solo)敵人一次只單獨出現,不成群、不與雜兵同場。"""
+    gd, _ = _warrior()
+    SOLO = {"dremora_lord", "frost_giant", "ancient_dragon"}
+    saw = False
+    for s in range(800):
+        g = combat.random_encounter_group(gd, 16, RNG(s), max_danger=5)
+        ids = [e.template_id for e in g]
+        if any(i in SOLO for i in ids):
+            saw = True
+            assert len(g) == 1, f"BOSS 不應與他人同場:{ids}"
+    assert saw, "高等危險區應曾遇到 solo BOSS"
+
+
 def run():
     test_formulas_monotonic()
     test_starter_weapon_assigned()
@@ -175,6 +209,9 @@ def run():
     test_acrobatics_dodge_reduces_hit_chance()
     test_acrobatics_trains_on_dodge()
     test_athletics_reduces_combat_fatigue_and_block_costs()
+    test_elite_enemies_gated_by_min_level()
+    test_group_size_scales_with_danger()
+    test_boss_elites_appear_solo()
 
 
 if __name__ == "__main__":

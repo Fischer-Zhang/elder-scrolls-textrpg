@@ -33,10 +33,20 @@ def spawn_creature(gamedata: GameData, template_id: str, rng: RNG) -> Creature:
 
 def random_encounter_group(gamedata: GameData, player_level: int, rng: RNG,
                            max_danger: int | None = None) -> list[Creature]:
-    """隨機遭遇一「群」敵人:多半 1 隻,偶爾成群(2–3 隻)。"""
+    """隨機遭遇一「群」敵人;危險度越高越容易成群、規模越大(最危險區可達 4)。"""
     roll = rng.random()
-    size = 1 if roll < 0.6 else (2 if roll < 0.88 else 3)
-    return [random_encounter(gamedata, player_level, rng, max_danger) for _ in range(size)]
+    d = max_danger or 1
+    if d >= 5:        # 最危險區:常成群
+        size = 1 if roll < 0.35 else (2 if roll < 0.68 else (3 if roll < 0.90 else 4))
+    elif d >= 3:      # 中危區
+        size = 1 if roll < 0.55 else (2 if roll < 0.85 else 3)
+    else:             # 低危區
+        size = 1 if roll < 0.75 else (2 if roll < 0.94 else 3)
+    group = [random_encounter(gamedata, player_level, rng, max_danger) for _ in range(size)]
+    # BOSS 級(solo)只單獨出現:群中若含 solo 敵人,收斂成那一隻(避免一次多隻王)
+    boss = next((e for e in group
+                 if gamedata.bestiary.get(e.template_id, {}).get("solo")), None)
+    return [boss] if boss is not None else group
 
 
 def spawn_companion(gamedata: GameData, companion_id: str, rng: RNG) -> Creature:

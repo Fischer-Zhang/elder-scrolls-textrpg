@@ -434,5 +434,78 @@
       }
     ],
     "flavor": "一道盤旋的冰魂呼嘯而至,所過之處凝結成霜。"
+  },
+  "frost_troll": {
+    "name": "霜巨魔", "strength": 58, "agility": 38, "speed": 45,
+    "max_health": 135, "armor_rating": 8,
+    "attack": {"name": "雙爪猛擊", "damage": 22, "skill": 55, "element": "frost"},
+    "danger": 5, "min_level": 6, "weight": 2,
+    "resist": {"frost": 50},
+    "loot_gold": [10, 30],
+    "loot": [{"item": "healing_potion", "chance": 0.35}, {"item": "wolf_pelt", "chance": 0.3}],
+    "flavor": "一頭三眼霜巨魔咆哮著撲來,傷口轉眼結霜癒合。"
+  },
+  "storm_atronach": {
+    "name": "雷暴元素", "strength": 58, "agility": 42, "speed": 40,
+    "max_health": 150, "armor_rating": 16,
+    "attack": {"name": "雷殛", "damage": 24, "skill": 58, "element": "shock"},
+    "danger": 5, "min_level": 8, "weight": 2,
+    "resist": {"shock": 100, "fire": -25},
+    "loot_gold": [0, 0],
+    "loot": [{"item": "filled_greater_soul_gem", "chance": 0.4}, {"item": "glow_dust", "chance": 0.5}],
+    "flavor": "盤旋的岩塊間迸射雷弧,一尊雷暴元素轟然成形。"
+  },
+  "daedroth": {
+    "name": "魔蜥", "strength": 68, "agility": 45, "speed": 45,
+    "max_health": 178, "armor_rating": 16,
+    "attack": {"name": "巨顎撕咬", "damage": 26, "skill": 58, "element": "poison",
+               "on_hit": {"status": "dot", "element": "poison", "magnitude": 4, "turns": 3, "chance": 0.5}},
+    "danger": 5, "min_level": 9, "weight": 2,
+    "resist": {"fire": 50, "poison": 75},
+    "loot_gold": [20, 60],
+    "loot": [{"item": "ebony_sword", "chance": 0.15}, {"item": "healing_potion", "chance": 0.45}],
+    "flavor": "一頭魔界巨蜥踏地而來,毒涎自利齒滴落灼地。"
+  },
+  "lich": {
+    "name": "巫妖", "strength": 45, "agility": 46, "speed": 45,
+    "max_health": 175, "armor_rating": 12,
+    "attack": {"name": "寒冰枯萎", "damage": 28, "skill": 64, "element": "frost",
+               "on_hit": {"status": "dot", "element": "frost", "magnitude": 5, "turns": 3, "chance": 0.5}},
+    "danger": 5, "min_level": 11, "weight": 1,
+    "resist": {"frost": 75, "poison": 100, "magic": 30},
+    "loot_gold": [40, 90],
+    "loot": [{"item": "filled_greater_soul_gem", "chance": 0.5}, {"item": "elven_sword", "chance": 0.2}],
+    "flavor": "枯骨法師巫妖浮空而至,空氣在它周身凝成霜霧。"
+  },
+  "dremora_lord": {
+    "name": "魔人領主", "strength": 74, "agility": 50, "speed": 48,
+    "max_health": 218, "armor_rating": 22,
+    "attack": {"name": "湮滅巨刃", "damage": 29, "skill": 66, "element": "fire"},
+    "danger": 5, "min_level": 12, "weight": 1, "solo": true,
+    "resist": {"fire": 75, "magic": 30},
+    "loot_gold": [60, 140],
+    "loot": [{"item": "ebony_sword", "chance": 0.3}, {"item": "ebony_shield", "chance": 0.2}, {"item": "healing_potion", "chance": 0.5}],
+    "flavor": "一名魔人領主跨界而降,黑檀重鎧燃著湮滅位面的怒焰。"
+  },
+  "frost_giant": {
+    "name": "霜巨人", "strength": 88, "agility": 35, "speed": 40,
+    "max_health": 290, "armor_rating": 16,
+    "attack": {"name": "冰錘橫掃", "damage": 35, "skill": 60, "element": "frost"},
+    "danger": 5, "min_level": 14, "weight": 1, "solo": true,
+    "resist": {"frost": 50},
+    "loot_gold": [80, 180],
+    "loot": [{"item": "dwarven_cuirass", "chance": 0.25}, {"item": "healing_potion", "chance": 0.6}],
+    "flavor": "一尊霜巨人踏雪而來,每一步都震得山道顫動。"
+  },
+  "ancient_dragon": {
+    "name": "上古巨龍", "strength": 92, "agility": 45, "speed": 50,
+    "max_health": 400, "armor_rating": 22,
+    "attack": {"name": "烈焰吐息", "damage": 40, "skill": 70, "element": "fire",
+               "on_hit": {"status": "dot", "element": "fire", "magnitude": 6, "turns": 3, "chance": 0.5}},
+    "danger": 5, "min_level": 16, "weight": 1, "solo": true,
+    "resist": {"fire": 80, "frost": 50, "magic": 40},
+    "loot_gold": [150, 350],
+    "loot": [{"item": "ebony_sword", "chance": 0.4}, {"item": "dwarven_cuirass", "chance": 0.3}, {"item": "filled_greater_soul_gem", "chance": 0.5}, {"item": "healing_potion", "chance": 0.8}],
+    "flavor": "天色驟暗——一頭上古巨龍盤旋而下,烈焰吐息燒紅了半邊天。"
   }
 }
