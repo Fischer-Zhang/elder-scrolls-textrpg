@@ -356,39 +356,80 @@
     "faction": "fighters_guild",
     "rank": 6,
     "source": "guild",
-    "stages": [
-      {
-        "objective": {
-          "type": "clear_dungeon",
-          "dungeon": "ashfall_barrow"
-        },
-        "text": "深入灰燼墓塚,搗毀魔人的巢穴。"
-      },
-      {
-        "objective": {
-          "type": "kill",
-          "creature": "dremora",
-          "count": 2
-        },
-        "text": "斬除殘餘的 2 名魔人。"
-      },
-      {
-        "objective": {
-          "type": "reach",
-          "location": "kvatch"
-        },
-        "text": "返回凱瓦奇大廳,接掌公會會長之位。"
-      }
-    ],
-    "reward": {
-      "gold": 800,
-      "fame": 40,
-      "items": [
-        "ebony_sword"
-      ]
-    },
     "turn_in": "auto",
-    "text": "老會長指定你為繼承人 —— 完成最後的試煉,證明你配得上這個位置。"
+    "text": "老會長指定你為繼承人 —— 但要以什麼方式服眾,由你決定。",
+    "branches": [
+      {
+        "label": "以武立威 —— 搗毀魔人巢穴,以實力證明",
+        "text": "深入灰燼墓塚搗毀魔人巢穴,再返回凱瓦奇接掌會長之位。",
+        "stages": [
+          {
+            "objective": {
+              "type": "clear_dungeon",
+              "dungeon": "ashfall_barrow"
+            },
+            "text": "深入灰燼墓塚,搗毀魔人的巢穴。"
+          },
+          {
+            "objective": {
+              "type": "kill",
+              "creature": "dremora",
+              "count": 2
+            },
+            "text": "斬除殘餘的 2 名魔人。"
+          },
+          {
+            "objective": {
+              "type": "reach",
+              "location": "kvatch"
+            },
+            "text": "返回凱瓦奇大廳,接掌公會會長之位。"
+          }
+        ],
+        "reward": {
+          "gold": 800,
+          "fame": 40,
+          "items": [
+            "ebony_sword"
+          ]
+        }
+      },
+      {
+        "label": "掃境安民 —— 肅清匪患,以民心服眾",
+        "text": "掃蕩橫行的強盜、肅清冰風廢墟的威脅,再返回凱瓦奇接掌會長之位。",
+        "stages": [
+          {
+            "objective": {
+              "type": "kill",
+              "creature": "bandit",
+              "count": 6
+            },
+            "text": "掃蕩盤踞商道的 6 名強盜。"
+          },
+          {
+            "objective": {
+              "type": "clear_dungeon",
+              "dungeon": "frostwind_ruin"
+            },
+            "text": "肅清冰風廢墟,解除北境的威脅。"
+          },
+          {
+            "objective": {
+              "type": "reach",
+              "location": "kvatch"
+            },
+            "text": "返回凱瓦奇大廳,接掌公會會長之位。"
+          }
+        ],
+        "reward": {
+          "gold": 700,
+          "fame": 48,
+          "items": [
+            "ebony_shield"
+          ]
+        }
+      }
+    ]
   },
   "mg4": {
     "name": "奧術研究",
@@ -428,40 +469,82 @@
     "faction": "mages_guild",
     "rank": 4,
     "source": "guild",
-    "stages": [
-      {
-        "objective": {
-          "type": "clear_dungeon",
-          "dungeon": "frostwind_ruin"
-        },
-        "text": "淨化冰風廢墟的亡靈。"
-      },
-      {
-        "objective": {
-          "type": "kill",
-          "creature": "dremora",
-          "count": 1
-        },
-        "text": "封印闖入位面的魔人。"
-      },
-      {
-        "objective": {
-          "type": "reach",
-          "location": "haafingar"
-        },
-        "text": "返回海芬古學院,受任首席法師。"
-      }
-    ],
-    "reward": {
-      "gold": 750,
-      "fame": 35,
-      "items": [
-        "filled_greater_soul_gem",
-        "ebony_shield"
-      ]
-    },
     "turn_in": "auto",
-    "text": "首席法師之位虛懸已久 —— 通過試煉,接掌學院。"
+    "text": "首席法師之位虛懸已久 —— 你要以鎮壓之力、還是鑽研之功來接掌學院?",
+    "branches": [
+      {
+        "label": "降伏位面 —— 封印闖入的魔人",
+        "text": "淨化冰風廢墟、封印闖入位面的魔人,再返回海芬古學院受任。",
+        "stages": [
+          {
+            "objective": {
+              "type": "clear_dungeon",
+              "dungeon": "frostwind_ruin"
+            },
+            "text": "淨化冰風廢墟的亡靈。"
+          },
+          {
+            "objective": {
+              "type": "kill",
+              "creature": "dremora",
+              "count": 1
+            },
+            "text": "封印闖入位面的魔人。"
+          },
+          {
+            "objective": {
+              "type": "reach",
+              "location": "haafingar"
+            },
+            "text": "返回海芬古學院,受任首席法師。"
+          }
+        ],
+        "reward": {
+          "gold": 750,
+          "fame": 35,
+          "items": [
+            "filled_greater_soul_gem",
+            "ebony_shield"
+          ]
+        }
+      },
+      {
+        "label": "亡靈研究 —— 鑽研死靈之秘",
+        "text": "獵取亡者樣本、肅清灰燼墓塚的不死族,以研究成果叩開首席之位。",
+        "stages": [
+          {
+            "objective": {
+              "type": "kill",
+              "creature": "draugr",
+              "count": 4
+            },
+            "text": "獵取 4 具屍鬼作為研究樣本。"
+          },
+          {
+            "objective": {
+              "type": "clear_dungeon",
+              "dungeon": "ashfall_barrow"
+            },
+            "text": "肅清灰燼墓塚,取得死靈核心。"
+          },
+          {
+            "objective": {
+              "type": "reach",
+              "location": "haafingar"
+            },
+            "text": "返回海芬古學院,受任首席法師。"
+          }
+        ],
+        "reward": {
+          "gold": 750,
+          "fame": 30,
+          "items": [
+            "filled_greater_soul_gem",
+            "filled_greater_soul_gem"
+          ]
+        }
+      }
+    ]
   },
   "tg4": {
     "name": "大買賣",
@@ -500,38 +583,80 @@
     "faction": "thieves_guild",
     "rank": 4,
     "source": "guild",
-    "stages": [
-      {
-        "objective": {
-          "type": "reach",
-          "location": "haafingar"
-        },
-        "text": "踩點海芬古的金庫。"
-      },
-      {
-        "objective": {
-          "type": "collect",
-          "item": "ruby",
-          "count": 2
-        },
-        "text": "順走 2 顆紅寶石作為投名狀。"
-      },
-      {
-        "objective": {
-          "type": "reach",
-          "location": "bruma"
-        },
-        "text": "回到布魯瑪總部,加冕大師竊賊。"
-      }
-    ],
-    "reward": {
-      "gold": 800,
-      "fame": 25,
-      "items": [
-        "glass_dagger"
-      ]
-    },
     "turn_in": "auto",
-    "text": "大師竊賊之位空懸 —— 完成這趟跨省盜途,證明你是當之無愧的接班人。"
+    "text": "大師竊賊之位空懸 —— 你要靠一票驚天大劫、還是綿密的銷贓網絡來證明自己?",
+    "branches": [
+      {
+        "label": "金庫大劫 —— 一票驚天的盜途",
+        "text": "潛入海芬古金庫盜走紅寶石,再帶著贓物回到布魯瑪總部加冕。",
+        "stages": [
+          {
+            "objective": {
+              "type": "reach",
+              "location": "haafingar"
+            },
+            "text": "踩點海芬古的金庫。"
+          },
+          {
+            "objective": {
+              "type": "collect",
+              "item": "ruby",
+              "count": 2
+            },
+            "text": "順走 2 顆紅寶石作為投名狀。"
+          },
+          {
+            "objective": {
+              "type": "reach",
+              "location": "bruma"
+            },
+            "text": "回到布魯瑪總部,加冕大師竊賊。"
+          }
+        ],
+        "reward": {
+          "gold": 800,
+          "fame": 25,
+          "items": [
+            "glass_dagger"
+          ]
+        }
+      },
+      {
+        "label": "銷贓網絡 —— 壟斷三省的黑市",
+        "text": "蒐羅大批贓寶、打通黑光城的銷路,再回到布魯瑪總部加冕。",
+        "stages": [
+          {
+            "objective": {
+              "type": "collect",
+              "item": "ruby",
+              "count": 4
+            },
+            "text": "蒐羅 4 顆紅寶石,堆出你的家底。"
+          },
+          {
+            "objective": {
+              "type": "reach",
+              "location": "blacklight"
+            },
+            "text": "打通黑光城的銷贓路線。"
+          },
+          {
+            "objective": {
+              "type": "reach",
+              "location": "bruma"
+            },
+            "text": "回到布魯瑪總部,加冕大師竊賊。"
+          }
+        ],
+        "reward": {
+          "gold": 700,
+          "fame": 20,
+          "items": [
+            "glass_dagger",
+            "ruby"
+          ]
+        }
+      }
+    ]
   }
 }

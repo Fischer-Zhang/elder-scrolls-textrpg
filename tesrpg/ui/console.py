@@ -367,13 +367,32 @@ def loot_report(result: dict, gamedata: GameData) -> None:
 def guild_panel(char: Character, gamedata: GameData, faction_id: str) -> None:
     from tesrpg.systems import factions
     f = gamedata.factions[faction_id]
+    gate = factions.gate_level(char, gamedata, faction_id)
     body = Text()
     body.append(f["blurb"] + "\n\n", style=PARCH)
+
     if factions.is_member(char, faction_id):
         body.append("你的階級  ", style=GOLD)
-        body.append(factions.rank_name(char, gamedata, faction_id), style=f"bold {PARCH}")
+        body.append(factions.rank_name(char, gamedata, faction_id) + "\n", style=f"bold {PARCH}")
+        perk = factions.perk_desc(char, gamedata, faction_id)
+        if perk:
+            body.append("會員福利  ", style=GOLD)
+            body.append(perk + "\n", style="green")
+        reason = factions.advance_block_reason(char, gamedata, faction_id)
+        body.append("晉升      ", style=GOLD)
+        body.append((reason or "已可接取下一階晉升任務") + "\n",
+                    style=INK if reason else "cyan")
     else:
-        body.append("你尚未加入此公會。", style=INK)
+        body.append("入會條件  ", style=GOLD)
+        body.append(f"{factions.gate_skill_names(gamedata, faction_id)} 任一達 "
+                    f"{f.get('join_skill', 0)}(你目前 {gate})\n", style=INK)
+        if f.get("rivals"):
+            rn = "、".join(gamedata.factions[r]["name"] for r in f["rivals"])
+            body.append("敵對公會  ", style=GOLD)
+            body.append(rn + "\n", style=INK)
+        reason = factions.join_block_reason(char, gamedata, faction_id)
+        body.append(reason or "你已符合入會資格,可申請加入。",
+                    style="yellow" if reason else "cyan")
     console.print(_panel(body, title=f"🏛 {f['name']}"))
 
 

@@ -101,6 +101,8 @@ def test_objective_text_shows_stage_indicator():
 # --- 全公會登頂 ---------------------------------------------------------
 def test_full_guild_ascension_to_master():
     gd, c = _char()
+    for s in gd.skills:
+        c.skills[s] = 100        # 滿足各公會「晉升技能門檻」(L1),專注驗證任務鏈本身
     for fid in ("fighters_guild", "mages_guild", "thieves_guild"):
         factions.join(c, fid)
         ranks = gd.factions[fid]["ranks"]

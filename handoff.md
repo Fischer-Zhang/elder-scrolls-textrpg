@@ -13,7 +13,7 @@
 - **GitHub**:`git@github.com:Fischer-Zhang/elder-scrolls-textrpg.git`(分支 `main`,SSH 已認證為 Fischer-Zhang)
 - **Python 3.12**;`rich` 由**系統套件**提供(`python3-rich`)—— ⚠️ **本機沒有 `pip`、沒有 `pytest`、sudo 需密碼**。
 - **執行遊戲**:`python3 -m tesrpg`
-- **跑測試**:`python3 tests/run_all.py`(不需 pytest;17 個測試模組,目前**全綠**)
+- **跑測試**:`python3 tests/run_all.py`(不需 pytest;18 個測試模組,目前**全綠**)
 - **編譯檢查**:`python3 -m py_compile tesrpg/**/*.py tesrpg/*.py tests/*.py`
 - 存檔在 `~/.tesrpg/save.json`(在 repo 外;測試/煙霧測試後記得 `rm -f ~/.tesrpg/save.json`)
 
@@ -56,9 +56,18 @@
 - **種子開放給玩家(重玩性)**:`rng.make_seed(text)`(空白=隨機但可知整數、純數字直用、文字走 `zlib.crc32` 穩定雜湊);
   新遊戲入口輸入種子 → 創角與遊戲 RNG 同種子 → **同種子+同選擇=同世界同命運**;一生傳奇總結顯示種子(可分享「種子→分數」)。
 
+**公會深度化(評估後直作:修正「公會太扁平」,四層全做)**:原本公會=純稱號(入會零門檻、晉升只靠單一任務、階級無回報、三會互不相干)。
+- **L1 入會/晉升技能門檻**(落實 DESIGN §3.7「技能門檻 + 任務」):`factions.json` 加 `gate_skills`(取最高)+ `join_skill` + `rank_skill_req[rank]`;
+  `factions.join_block_reason / advance_block_reason` 回傳繁中原因;`quests.available_quests` 對 guild 加技能門檻過濾 → 技能不夠就接不到晉升任務。給職業認同(法師難當戰士會長)。
+- **L2 階級福利**(`factions.json` 的 `perk`,隨階級成長夾限 cap):戰士=修理折扣(`repair_discount`,會長免費)、法師=法術折扣(`spell_discount`)、盜賊=銷贓加成(`sell_bonus`,接進 `world.sell_price`);
+  接進 `action_repair / action_spell_vendor / action_shop`。晉升另發**俸祿**(`quests.STIPEND_PER_RANK × 新階級`)。
+- **L3 對立排他**(`rivals` + `lawful`):戰士⇄盜賊勢不兩立(不可雙修);戰士公會(`lawful`)拒收/不升有未繳賞金者。`can_join` 走 `join_block_reason`。
+- **L4 晉升任務敘事分支**(任務引擎支援 `branches`):任務頂層放 `branches:[{label,text,stages,reward}]`(**不放** 頂層 objective/stages);
+  `quests._resolved` 依 `char.quests[qid]["branch"]` 套用;接取時 UI 選路線;分支隨階段推進保留。三條壓軸(fg7/mg5/tg5)各有 2 條路線(武力 vs 民心/研究/銷贓)。
+
 **內容量**:10 種族 / 13 星座 / 8 職業 / 21 技能 / 15 武器 / 16 護甲 / 25 法術(5 AoE) /
-14 材料 / **21 生物(含 7 高階 elite)** / 3 傭兵 / **13 地點(有環圖)** / **4 地城** / 24 任務(7 多階段) / 3 公會 / 4 NPC / 15 事件。
-程式:17 個 `systems` 模組 + models/ui/synth 等,共約 33 個 `.py`;18 個 `data/*.json`;**17 測試模組**。
+14 材料 / **21 生物(含 7 高階 elite)** / 3 傭兵 / **13 地點(有環圖)** / **4 地城** / 24 任務(含 3 分支壓軸) / **3 公會(有門檻/福利/對立/分支)** / 4 NPC / 15 事件。
+程式:17 個 `systems` 模組 + models/ui/synth 等,共約 33 個 `.py`;18 個 `data/*.json`;**18 測試模組**。
 
 ---
 
@@ -120,6 +129,8 @@ tesrpg/
 - **運動 athletics**:`world.travel` 依 `athletics_travel_factor` 縮短耗時並練運動;`combat.player_attack_cost/player_block_cost` 依 `fatigue_cost_factor` 折扣體力。`格擋` 實扣 `BLOCK_FATIGUE_COST`(別再當死常數)。
 - **敵人/難度(內容驅動,不做數值縮放)**:難度靠 `min_level` 解鎖更強物種 + 地點 `danger`,**不** scale 怪物數值(刻意,避免 Oblivion 詬病)。bestiary 加 `"solo": true` 的 BOSS 在 `random_encounter_group` 會收斂成單獨一隻;地城 `boss` 加 `"raw": true` 則以原始強度登場(`action_dungeon` 不再 `spawn_boss` ×1.6)。新敵人/地城純改 JSON。
 - **元素**:`fire/frost/shock` 受 `magic` 總抗性疊加;`poison`/`disease` 不受 `magic` 影響(見 `formulas.MAGIC_ELEMENTS`)。
+- **公會(深度化)**:入會/晉升規則全在 `systems/factions.py`(`join_block_reason`/`advance_block_reason`/perk),資料在 `factions.json`(`gate_skills`/`join_skill`/`rank_skill_req`/`rivals`/`lawful`/`perk`)——**加門檻/福利/對立純改 JSON**。
+  晉升技能門檻由 `quests.available_quests`(guild)強制;perk 接在 `world.sell_price` + `action_repair`/`action_spell_vendor`。**分支任務**:頂層放 `branches`(各含自足的 `stages`+`reward`,**勿**再放頂層 objective/stages,否則 `_stages` 會誤取),`char.quests[qid]["branch"]` 存選擇、`_advance` 推進階段時務必**保留 branch**。
 - **AoE/狀態**:每個敵人各自 `make_status_effect(...)` 取**獨立 dict**(切勿共用同一個 → 會別名汙染計時)。
 
 ---
@@ -158,7 +169,10 @@ tesrpg/
 5. **半成品/微調**:創角問答推職業;護甲附魔可再擴(目前只 fortify 生命/魔力/體力);更多事件/任務。
 6. (天花板更高、工程量大)主線劇情、同伴持久 HP/羈絆、坐騎/房產。
 
-> ✅ 已完成(本輪):**世界拓樸改造**(走廊→有環圖,§1)、**種子開放給玩家**(原 §6.4 前置,`rng.make_seed` + 創角入口 + 結算顯示)。
+> ✅ 已完成(近期):**世界拓樸改造**(走廊→有環圖,§1)、**種子開放給玩家**(原 §6.4 前置)、
+> **公會深度化**(§1:入會/晉升技能門檻 + 階級福利/俸祿 + 對立排他 + 晉升任務敘事分支,修正「公會太扁平」)。
+>
+> 公會後續可再加:更多分支壓軸 / 階級設施權限(專屬商店、訓練、據點)/ 公會委託告示(非晉升的日常任務)/ 暗殺者公會(第 4 會)。
 
 > ⚠️ 開新功能務必沿用「§4 開發節奏」:實作 → 測試 → 平衡 → 煙霧 →(ultracode 開時)對抗式審查 → 覆核修正。
 

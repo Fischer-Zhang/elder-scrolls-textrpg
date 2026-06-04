@@ -2,9 +2,14 @@
   "fighters_guild": {
     "name": "戰士公會",
     "hall": "kvatch",
-    "join_req": {
-      "skill": null
-    },
+    "blurb": "受雇於民、討伐匪獸的傭兵組織,重武勇與榮譽 —— 也最痛恨竊賊與通緝犯。",
+    "gate_skills": ["blade", "blunt", "hand_to_hand", "marksman", "block"],
+    "join_skill": 10,
+    "rank_skill_req": [0, 14, 26, 38, 50, 62, 76],
+    "rivals": ["thieves_guild"],
+    "lawful": true,
+    "perk": {"kind": "repair_discount", "per_rank": 0.15, "cap": 1.0,
+             "desc": "階級越高,鐵匠修理越便宜(會長免費)"},
     "ranks": [
       "協會員",
       "學徒守衛",
@@ -23,15 +28,19 @@
       "fg5",
       "fg6",
       "fg7"
-    ],
-    "blurb": "受雇於民、討伐匪獸的傭兵組織,重武勇與榮譽。"
+    ]
   },
   "mages_guild": {
     "name": "法師公會",
     "hall": "bruma",
-    "join_req": {
-      "skill": null
-    },
+    "blurb": "研究奧術、管理魔法知識的學院,亦對外販售法術。",
+    "gate_skills": ["destruction", "restoration", "alteration", "conjuration", "illusion", "mysticism", "alchemy"],
+    "join_skill": 10,
+    "rank_skill_req": [0, 16, 30, 44, 60],
+    "rivals": [],
+    "lawful": false,
+    "perk": {"kind": "spell_discount", "per_rank": 0.08, "cap": 0.45,
+             "desc": "階級越高,公會販售的法術越便宜"},
     "ranks": [
       "學徒",
       "護衛術士",
@@ -46,15 +55,19 @@
       "mg3",
       "mg4",
       "mg5"
-    ],
-    "blurb": "研究奧術、管理魔法知識的學院,亦對外販售法術。"
+    ]
   },
   "thieves_guild": {
     "name": "盜賊公會",
     "hall": "bruma",
-    "join_req": {
-      "skill": null
-    },
+    "blurb": "潛伏於陰影中的竊賊網絡,只在後巷對識途者開門 —— 與戰士公會勢不兩立。",
+    "gate_skills": ["sneak", "security", "light_armor", "acrobatics", "marksman"],
+    "join_skill": 10,
+    "rank_skill_req": [0, 16, 30, 44, 60],
+    "rivals": ["fighters_guild"],
+    "lawful": false,
+    "perk": {"kind": "sell_bonus", "per_rank": 0.07, "cap": 0.4,
+             "desc": "階級越高,銷贓(出售)得到的金幣越多"},
     "ranks": [
       "新手",
       "步行者",
@@ -69,7 +82,6 @@
       "tg3",
       "tg4",
       "tg5"
-    ],
-    "blurb": "潛伏於陰影中的竊賊網絡,只在後巷對識途者開門。"
+    ]
   }
 }

@@ -66,8 +66,11 @@ def buy_price(char: Character, gamedata: GameData, item_id: str) -> int:
 
 
 def sell_price(char: Character, gamedata: GameData, item_id: str) -> int:
+    from tesrpg.systems import factions
     value = gamedata.item(item_id)["value"]
-    return max(1, round(value * (0.3 + _disposition_factor(char) * 0.5)))
+    base = value * (0.3 + _disposition_factor(char) * 0.5)
+    base *= 1 + factions.sell_bonus(char, gamedata)   # 盜賊公會銷贓加成(階級越高越多)
+    return max(1, round(base))
 
 
 # --- 訓練師 -------------------------------------------------------------

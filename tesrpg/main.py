@@ -398,6 +398,8 @@ def _report_quests(state: GameState, gamedata: GameData) -> None:
         if ev["promoted"]:
             fac, rank = ev["promoted"]
             ui.message(f"  ★ 你在{gamedata.factions[fac]['name']}晉升為「{rank}」!", style="bold magenta")
+            if ev.get("stipend"):
+                ui.message(f"  ◈ 晉升俸祿 {ev['stipend']} 金", style="yellow")
 
 
 # ======================================================================
@@ -862,12 +864,17 @@ def action_spell_vendor(state: GameState, gamedata: GameData) -> None:
     if not for_sale:
         ui.message("公會裡沒有你還沒學會的法術了。", style="grey70")
         return
-    opts = [(s, f"{gamedata.spells[s]['name']}（{gamedata.spells[s]['school']}) — "
-             f"{world.spell_price(gamedata, s)} 金") for s in for_sale]
-    sid = ui.menu(f"學習法術(你有 {char.gold} 金)", opts, allow_back=True)
+    disc = factions.spell_discount(char, gamedata)   # 法師公會階級折扣
+    def _sp(s):
+        return max(1, round(world.spell_price(gamedata, s) * (1 - disc)))
+    label = f"學習法術(你有 {char.gold} 金"
+    label += f",會員 -{int(disc*100)}%)" if disc else ")"
+    opts = [(s, f"{gamedata.spells[s]['name']}（{gamedata.spells[s]['school']}) — {_sp(s)} 金")
+            for s in for_sale]
+    sid = ui.menu(label, opts, allow_back=True)
     if sid is None:
         return
-    price = world.spell_price(gamedata, sid)
+    price = _sp(sid)
     if char.gold < price:
         ui.message("金幣不足。", style="red")
         return
@@ -962,9 +969,12 @@ def action_repair(state: GameState, gamedata: GameData) -> None:
     loc = world.current_location(char, gamedata)
     at_smith = "armorer" in loc.get("services", [])
     has_hammer = inventory.count_item(char, "repair_hammer") > 0
+    repair_disc = factions.repair_discount(char, gamedata)            # 戰士公會階級折扣
+    smith_fee = max(0, round(world.repair_fee() * (1 - repair_disc)))
     opts = []
     if at_smith:
-        opts.append(("smith", f"請鐵匠修復全部裝備({world.repair_fee()} 金,修到全新)"))
+        fee_txt = "免費" if smith_fee == 0 else f"{smith_fee} 金"
+        opts.append(("smith", f"請鐵匠修復全部裝備({fee_txt},修到全新)"))
     if has_hammer:
         cap = int(inventory.repairable_cap(char.skill("armorer")))
         opts.append(("hammer", f"用修理鎚自行修理(修到 {cap}%,鍛鍊護甲修理)"))
@@ -973,11 +983,10 @@ def action_repair(state: GameState, gamedata: GameData) -> None:
         return
     choice = ui.menu("如何修理?", opts, allow_back=True)
     if choice == "smith":
-        fee = world.repair_fee()
-        if char.gold < fee:
+        if char.gold < smith_fee:
             ui.message("金幣不足。", style="red")
             return
-        char.gold -= fee
+        char.gold -= smith_fee
         inventory.repair_all(char, 100.0)
         ui.message("鐵匠叮叮噹噹一陣,你的裝備煥然一新。", style="green")
     elif choice == "hammer":
@@ -1024,37 +1033,33 @@ def action_guild_hall(state: GameState, gamedata: GameData, faction_id: str) -> 
     ui.guild_panel(char, gamedata, faction_id)
 
     opts = []
-    member = factions.is_member(char, faction_id)
-    if not member:
+    if not factions.is_member(char, faction_id):
+        reason = factions.join_block_reason(char, gamedata, faction_id)
+        if reason is not None:                       # 門檻/對立/通緝 → 說明原因
+            ui.message(reason, style="yellow")
+            return
         opts.append(("join", "申請入會"))
     else:
         avail = quests.available_quests(char, gamedata, "guild", faction_id)
         if avail:
             opts.append(("accept", "接取晉升任務"))
-    if not opts:
-        # 區分「手上還有公會任務沒交」與「已達目前開放階級的頂點」
-        has_active = any(gamedata.quests[q].get("faction") == faction_id for q in char.quests)
-        rank_quests = gamedata.factions[faction_id]["rank_quests"]
-        if has_active:
-            ui.message("先完成你手上的公會任務,再回來談晉升。", style="grey70")
-        elif factions.rank_index(char, faction_id) >= len(rank_quests):
-            ui.message("你已達公會目前開放的最高階級,暫無新委託(更多晉升內容待後續更新)。",
-                       style="grey70")
         else:
-            ui.message("公會目前沒有你能接的委託。", style="grey70")
-        return
+            # 區分「手上還有公會任務沒交」與「技能/通緝/已達頂點擋住晉升」
+            has_active = any(gamedata.quests[q].get("faction") == faction_id for q in char.quests)
+            if has_active:
+                ui.message("先完成你手上的公會任務,再回來談晉升。", style="grey70")
+            else:
+                ui.message(factions.advance_block_reason(char, gamedata, faction_id)
+                           or "公會目前沒有你能接的委託。", style="grey70")
+            return
     choice = ui.menu("公會事務", opts, allow_back=True)
     if choice == "join":
-        if factions.can_join(char, gamedata, faction_id):
-            factions.join(char, faction_id)
-            ui.message(f"你加入了{f['name']},現為「{factions.rank_name(char, gamedata, faction_id)}」。",
-                       style="bold green")
-        else:
-            ui.message("你還不符合入會資格。", style="yellow")
+        factions.join(char, faction_id)
+        ui.message(f"你加入了{f['name']},現為「{factions.rank_name(char, gamedata, faction_id)}」。",
+                   style="bold green")
     elif choice == "accept":
         avail = quests.available_quests(char, gamedata, "guild", faction_id)
-        qid = avail[0]
-        _accept_and_brief(state, gamedata, qid)
+        _accept_and_brief(state, gamedata, avail[0])
 
 
 def action_board(state: GameState, gamedata: GameData) -> None:
@@ -1072,9 +1077,19 @@ def action_board(state: GameState, gamedata: GameData) -> None:
 
 
 def _accept_and_brief(state: GameState, gamedata: GameData, qid: str) -> None:
-    quests.accept_quest(state.player, gamedata, qid)
-    ui.message(gamedata.quests[qid]["text"], style="white")
-    ui.message(f"已接取任務:{gamedata.quests[qid]['name']}", style="bold yellow")
+    q = gamedata.quests[qid]
+    branch = 0
+    brs = quests.branches(q)
+    if brs:                                  # 敘事分支:接取前先選路線
+        ui.message(q.get("text", ""), style="white")
+        pick = ui.menu("選擇你的路線", [(str(i), b["label"]) for i, b in enumerate(brs)],
+                       allow_back=True)
+        if pick is None:
+            return
+        branch = int(pick)
+    quests.accept_quest(state.player, gamedata, qid, branch)
+    ui.message(brs[branch]["text"] if brs else q.get("text", ""), style="white")
+    ui.message(f"已接取任務:{q['name']}", style="bold yellow")
     _report_quests(state, gamedata)   # 可能當下即達標(如已持有上繳物)
 
 

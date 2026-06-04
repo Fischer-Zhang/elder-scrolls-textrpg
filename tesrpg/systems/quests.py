@@ -11,7 +11,9 @@ from __future__ import annotations
 
 from tesrpg.gamedata import GameData
 from tesrpg.models import Character
-from tesrpg.systems import inventory
+from tesrpg.systems import factions, inventory
+
+STIPEND_PER_RANK = 40   # 晉升俸祿:每升一階,公會額外發 40×新階級 金
 
 
 # --- 進度記錄(由戰鬥/探索/旅行 hook 呼叫)-----------------------------
@@ -22,6 +24,26 @@ def record_kill(char: Character, creature_tid: str) -> None:
 def record_dungeon_clear(char: Character, dungeon_id: str) -> None:
     if dungeon_id not in char.cleared_dungeons:
         char.cleared_dungeons.append(dungeon_id)
+
+
+# --- 分支(敘事抉擇)----------------------------------------------------
+def branches(quest: dict) -> list[dict]:
+    """任務的可選路線;無分支則空列表。"""
+    return quest.get("branches", [])
+
+
+def _resolved(char: Character, gamedata: GameData, quest_id: str) -> dict:
+    """套用玩家選定的分支,回傳「實際生效」的任務 dict。
+
+    分支任務的頂層**不放** objective/stages(由分支提供),分支可覆寫
+    text/objective/stages/reward;未接取時預設第 0 條分支(供列表預覽)。
+    """
+    q = gamedata.quests[quest_id]
+    brs = branches(q)
+    if not brs:
+        return q
+    idx = max(0, min(char.quests.get(quest_id, {}).get("branch", 0), len(brs) - 1))
+    return {**q, **brs[idx]}
 
 
 # --- 階段存取 -----------------------------------------------------------
@@ -39,7 +61,7 @@ def _stage_index(char: Character, quest_id: str, total: int) -> int:
 
 def current_objective(char: Character, gamedata: GameData, quest_id: str) -> tuple[dict, int, int]:
     """回傳 (當前階段 objective, 階段索引, 階段總數)。"""
-    stages = _stages(gamedata.quests[quest_id])
+    stages = _stages(_resolved(char, gamedata, quest_id))
     idx = _stage_index(char, quest_id, len(stages))
     return stages[idx]["objective"], idx, len(stages)
 
@@ -64,6 +86,8 @@ def available_quests(char: Character, gamedata: GameData, source: str,
                 continue
             if q.get("rank", 0) != char.factions[faction]:   # 只給當前階級的晉升任務
                 continue
+            if not factions.meets_rank_skill(char, gamedata, faction):  # 技能門檻未達 → 暫不開放
+                continue
         out.append(qid)
     return out
 
@@ -73,9 +97,10 @@ def _kill_base(char: Character, obj: dict) -> int:
     return char.kill_counts.get(obj["creature"], 0) if obj["type"] == "kill" else 0
 
 
-def accept_quest(char: Character, gamedata: GameData, quest_id: str) -> None:
-    obj = _stages(gamedata.quests[quest_id])[0]["objective"]
-    char.quests[quest_id] = {"stage": 0, "base": _kill_base(char, obj)}
+def accept_quest(char: Character, gamedata: GameData, quest_id: str, branch: int = 0) -> None:
+    char.quests[quest_id] = {"stage": 0, "branch": branch}   # 先記分支,_resolved 才取得到
+    obj = _stages(_resolved(char, gamedata, quest_id))[0]["objective"]
+    char.quests[quest_id]["base"] = _kill_base(char, obj)
 
 
 # --- 目標判定 -----------------------------------------------------------
@@ -141,7 +166,7 @@ def check_completion(char: Character, gamedata: GameData) -> list[dict]:
 
 
 def _advance(char: Character, gamedata: GameData, quest_id: str) -> list[dict]:
-    q = gamedata.quests[quest_id]
+    q = _resolved(char, gamedata, quest_id)
     stages = _stages(q)
     events: list[dict] = []
 
@@ -157,9 +182,10 @@ def _advance(char: Character, gamedata: GameData, quest_id: str) -> list[dict]:
             events.append(_complete(char, gamedata, quest_id))
             break
 
-        # 推進到下一階段(若為 kill 則重設基準)
+        # 推進到下一階段(若為 kill 則重設基準;保留已選分支)
         nxt = stages[idx + 1]["objective"]
-        char.quests[quest_id] = {"stage": idx + 1, "base": _kill_base(char, nxt)}
+        char.quests[quest_id] = {"stage": idx + 1, "base": _kill_base(char, nxt),
+                                 "branch": char.quests[quest_id].get("branch", 0)}
         events.append({"type": "stage_advanced", "quest_id": quest_id, "name": q["name"],
                        "stage_text": stages[idx + 1].get("text", ""),
                        "stage_idx": idx + 1, "total": len(stages)})
@@ -167,7 +193,7 @@ def _advance(char: Character, gamedata: GameData, quest_id: str) -> list[dict]:
 
 
 def _complete(char: Character, gamedata: GameData, quest_id: str) -> dict:
-    q = gamedata.quests[quest_id]
+    q = _resolved(char, gamedata, quest_id)
     reward = q.get("reward", {})
     char.gold += reward.get("gold", 0)
     char.fame += reward.get("fame", 0)
@@ -175,14 +201,17 @@ def _complete(char: Character, gamedata: GameData, quest_id: str) -> dict:
         inventory.add_item(char, item_id, 1)
 
     promoted = None
+    stipend = 0
     if q.get("faction") and q.get("rank") is not None and q["faction"] in char.factions:
         if char.factions[q["faction"]] == q["rank"]:
             ranks = gamedata.factions[q["faction"]]["ranks"]
             new_rank = min(q["rank"] + 1, len(ranks) - 1)   # 夾限,階級索引不可越界
             char.factions[q["faction"]] = new_rank
             promoted = (q["faction"], ranks[new_rank])
+            stipend = STIPEND_PER_RANK * new_rank           # 晉升俸祿(階級越高給越多)
+            char.gold += stipend
 
     char.quests.pop(quest_id, None)
     char.completed_quests.append(quest_id)
     return {"type": "completed", "quest_id": quest_id, "name": q["name"],
-            "reward": reward, "promoted": promoted}
+            "reward": reward, "promoted": promoted, "stipend": stipend}
