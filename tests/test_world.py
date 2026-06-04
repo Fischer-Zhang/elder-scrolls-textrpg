@@ -78,6 +78,36 @@ def test_world_graph_bidirectional_and_valid():
             assert loc["dungeon"] in gd.dungeons
 
 
+def test_world_graph_connected_and_has_loops():
+    """世界是『有環的連通圖』,不是單線走廊:
+    從起點 BFS 能到所有地點,且邊數 >= 點數(連通圖必含環路)。"""
+    gd, _ = _char()
+    locs = gd.world["locations"]
+    start = gd.world["start_location"]
+
+    seen = {start}
+    frontier = [start]
+    while frontier:
+        cur = frontier.pop()
+        for dest in locs[cur].get("links", {}):
+            if dest not in seen:
+                seen.add(dest)
+                frontier.append(dest)
+    assert seen == set(locs), f"圖不連通,孤立地點:{set(locs) - seen}"
+
+    undirected = {frozenset((lid, dest))
+                  for lid, loc in locs.items() for dest in loc.get("links", {})}
+    assert len(undirected) >= len(locs), "邊數 < 點數 → 是樹/走廊,沒有環路"
+
+
+def test_dungeons_are_through_routes_not_dead_ends():
+    """地城捷徑:這些地城有 2 條以上連結(可穿越),不再是 degree-1 盲腸。"""
+    gd, _ = _char()
+    locs = gd.world["locations"]
+    for did in ("cedernoc_cave", "frostwind_ruin", "ashfall_barrow"):
+        assert len(locs[did].get("links", {})) >= 2, f"{did} 仍是死路"
+
+
 def test_dungeon_enemies_and_loot_valid():
     """所有地城房間/首領的敵人 id 都存在於 bestiary(防新增內容打錯字)。"""
     gd, _ = _char()

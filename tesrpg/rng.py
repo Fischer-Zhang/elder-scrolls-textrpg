@@ -7,6 +7,24 @@
 from __future__ import annotations
 
 import random
+import zlib
+
+
+def make_seed(text: str | None) -> int:
+    """把玩家輸入轉成一個具體、可重現的整數種子。
+
+    - 空白/None → 隨機產生一個**可知**的種子(用 OS 熵抽一個整數再回傳,
+      讓玩家事後仍能看到、分享、重玩同一個世界)。
+    - 純數字(可帶負號)→ 直接當種子。
+    - 其餘文字 → 穩定雜湊(`zlib.crc32`,跨執行一致,不受 PYTHONHASHSEED 影響)。
+    """
+    if text is not None:
+        text = text.strip()
+    if not text:
+        return random.Random().randrange(1, 2 ** 31)
+    if text.lstrip("-").isdigit():
+        return int(text)
+    return zlib.crc32(text.encode("utf-8"))
 
 
 class RNG:

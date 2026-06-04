@@ -93,6 +93,7 @@ def compute(state, gamedata: GameData, ending: str = "death") -> dict:
         "playstyle": playstyle(char, gamedata),
         "score": score,
         "title": title_for(score),
+        "seed": state.rng.seed,
     }
 
 

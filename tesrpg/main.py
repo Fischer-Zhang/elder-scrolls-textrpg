@@ -10,7 +10,7 @@ from pathlib import Path
 
 from tesrpg import creation, formulas
 from tesrpg.gamedata import GameData, get_gamedata
-from tesrpg.rng import RNG
+from tesrpg.rng import RNG, make_seed
 from tesrpg.state import GameState
 from tesrpg.systems import (alchemy, combat, crime, dialogue, dungeon, enchanting,
                             events, factions, inventory, legacy, magic, powers,
@@ -1305,9 +1305,11 @@ def main() -> None:
                 ("adventure", "冒險模式 —— 死亡可讀檔重來,適合悠閒探索"),
                 ("legend", "傳奇模式 —— 永久死亡(roguelike),一條命定生死"),
             ])
-            char = create_character(gamedata, RNG())
-            state = GameState(player=char, rng=RNG(), game_mode=mode)
+            seed = make_seed(ui.ask_text("世界種子(留空=隨機;可輸入數字或任意文字)", default=""))
+            char = create_character(gamedata, RNG(seed))
+            state = GameState(player=char, rng=RNG(seed), game_mode=mode)
             ui.character_sheet(char, gamedata)
+            ui.message(f"世界種子:{seed}（記下它,即可重玩同一個世界與命運)", style="grey70")
 
         game_loop(state, gamedata)
 

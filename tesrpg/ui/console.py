@@ -216,6 +216,8 @@ def legacy_screen(s: dict) -> None:
         body.add_row("公會", "、".join(f"{n}「{r}」" for n, r in s["factions"]))
     body.add_row("聲望", f"{s['fame']}" + (f"  惡名 {s['infamy']}" if s["infamy"] else ""))
     body.add_row("財富", f"{s['gold']} 金" + (f"  通緝 {s['bounty']}" if s["bounty"] else ""))
+    if s.get("seed") is not None:
+        body.add_row("種子", str(s["seed"]))
 
     skills = "  ".join(f"{n} {lv}" for n, lv in s["top_skills"])
 

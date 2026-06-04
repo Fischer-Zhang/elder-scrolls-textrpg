@@ -62,7 +62,8 @@
       "services": [],
       "dungeon": "cedernoc_cave",
       "links": {
-        "imperial_road": 2
+        "imperial_road": 2,
+        "kvatch": 3
       }
     },
     "kvatch": {
@@ -88,7 +89,9 @@
         "repair_hammer"
       ],
       "links": {
-        "imperial_road": 4
+        "imperial_road": 4,
+        "cedernoc_cave": 3,
+        "dragon_bridge": 7
       }
     },
     "pale_pass": {
@@ -128,7 +131,8 @@
       "links": {
         "pale_pass": 4,
         "haafingar": 3,
-        "frostwind_ruin": 3
+        "frostwind_ruin": 3,
+        "kvatch": 7
       }
     },
     "haafingar": {
@@ -181,7 +185,8 @@
       ],
       "links": {
         "dragon_bridge": 3,
-        "sea_route": 4
+        "sea_route": 4,
+        "frostwind_ruin": 2
       }
     },
     "frostwind_ruin": {
@@ -193,7 +198,8 @@
       "services": [],
       "dungeon": "frostwind_ruin",
       "links": {
-        "dragon_bridge": 3
+        "dragon_bridge": 3,
+        "haafingar": 2
       }
     },
     "sea_route": {
@@ -282,7 +288,8 @@
       ],
       "links": {
         "blacklight": 3,
-        "dragon_lair": 4
+        "dragon_lair": 4,
+        "ashfall_barrow": 2
       }
     },
     "ashfall_barrow": {
@@ -294,7 +301,8 @@
       "services": [],
       "dungeon": "ashfall_barrow",
       "links": {
-        "blacklight": 3
+        "blacklight": 3,
+        "molag_mar": 2
       }
     },
     "dragon_lair": {
