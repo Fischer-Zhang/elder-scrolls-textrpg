@@ -1,0 +1,12 @@
+{
+  "altmer":   {"male": ["Aicantar", "Calcelmo", "Earendil", "Faelian", "Quintilius"], "female": ["Ancarie", "Estelle", "Nairume", "Sinderion", "Ungarion"]},
+  "bosmer":   {"male": ["Anvil", "Glârthir", "Faldrus", "Beragond", "Telaendril"], "female": ["Aelwin", "Galathil", "Maesa", "Niruin", "Renald"]},
+  "dunmer":   {"male": ["Athis", "Brand-Shei", "Dralas", "Faryl", "Teldryn"], "female": ["Brelyna", "Dravynea", "Idesa", "Mirri", "Suvaris"]},
+  "nord":     {"male": ["Balgruuf", "Hadvar", "Ralof", "Torvar", "Vignar"], "female": ["Carlotta", "Frea", "Gerdur", "Lydia", "Mjoll"]},
+  "imperial": {"male": ["Cicero", "Lucan", "Marcurio", "Quintus", "Vittoria"], "female": ["Adara", "Carlotta", "Hulda", "Maven", "Sabine"]},
+  "breton":   {"male": ["Calder", "Erandur", "Nelacar", "Onmund", "Revyn"], "female": ["Colette", "Dravynea", "Illia", "Muiri", "Vivienne"]},
+  "redguard": {"male": ["Amren", "Kematu", "Nazir", "Saadia", "Yisra"], "female": ["Adara", "Iman", "Kerah", "Rayya", "Saffir"]},
+  "orsimer":  {"male": ["Borgakh", "Durak", "Gularzob", "Mauhulakh", "Yamarz"], "female": ["Bolar", "Ghorza", "Lash", "Shel", "Urog"]},
+  "argonian": {"male": ["Beem-Ja", "Derkeethus", "Madras", "Scouts-Many", "Veezara"], "female": ["Deekus", "Keerava", "Neetrenaza", "Shahvee", "Walks-Softly"]},
+  "khajiit":  {"male": ["Ahkari", "Dro'marash", "J'zargo", "Kharjo", "Ra'kheran"], "female": ["Ahkari", "Khayla", "Shavari", "Tsrava", "Zaynabi"]}
+}

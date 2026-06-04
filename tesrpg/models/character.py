@@ -1,0 +1,129 @@
+"""角色資料模型。
+
+只存資料 + 純查詢/序列化;成長、戰鬥等規則放在 systems/。
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+
+from tesrpg import formulas
+
+
+@dataclass
+class Character:
+    id: str
+    name: str
+    race: str
+    sex: str                       # "male" / "female"
+    birthsign: str
+    class_id: str                  # 預設職業 id,自訂則為 "custom"
+
+    # 職業快照(支援自訂職業:直接存在角色上,不依賴 classes.json)
+    specialization: str = "combat"
+    favored_attributes: list[str] = field(default_factory=list)
+    major_skills: list[str] = field(default_factory=list)
+
+    attributes: dict[str, int] = field(default_factory=dict)   # 8 屬性
+    skills: dict[str, int] = field(default_factory=dict)       # 21 技能 0–100
+    skill_xp: dict[str, float] = field(default_factory=dict)   # learn-by-doing 進度
+
+    level: int = 1
+    level_progress: int = 0                                    # 主修技能本級已升點數
+    level_skillups: dict[str, int] = field(default_factory=dict)  # 本級各屬性所轄技能升點數
+
+    magicka_bonus: int = 0          # 種族+星座的固定魔力加成
+
+    max_health: int = 0
+    max_magicka: int = 0
+    max_fatigue: int = 0
+    health: float = 0
+    magicka: float = 0
+    fatigue: float = 0
+
+    gold: int = 0
+    weapon: str = "fists"           # 目前裝備的武器 id(對應 data/weapons.json)
+    weapon_poison: dict | None = None        # 武器塗毒 {"status","charges","name"};None=未塗
+    weapon_condition: float = 100.0          # 武器耐久 0–100(影響傷害)
+    armor_condition: dict = field(default_factory=dict)  # {slot: 耐久 0–100}
+    location_id: str = "start"
+
+    # 後續里程碑會用到,先留好欄位讓存檔格式穩定
+    inventory: list = field(default_factory=list)
+    equipped: dict = field(default_factory=dict)
+    spells: list = field(default_factory=list)
+    factions: dict = field(default_factory=dict)         # faction_id -> 階級索引(已入會)
+    active_effects: list = field(default_factory=list)
+    fame: int = 0
+    infamy: int = 0
+    bounty: int = 0
+    disposition: int = 50
+
+    # M5:任務、犯罪、聲望追蹤
+    quests: dict = field(default_factory=dict)            # quest_id -> {"progress":...}
+    completed_quests: list = field(default_factory=list)
+    kill_counts: dict = field(default_factory=dict)       # creature_tid -> 擊殺數
+    cleared_dungeons: list = field(default_factory=list)
+    bounties: dict = field(default_factory=dict)          # province -> 賞金
+    npc_disposition: dict = field(default_factory=dict)   # npc_id -> 好感
+
+    # M6:一生軌跡(供傳奇總結)
+    visited_locations: list = field(default_factory=list)
+
+    # M12:隊伍(雇用的傭兵同伴 template id;戰鬥時為你而戰)
+    companions: list = field(default_factory=list)
+
+    # M8:出生星座能力(每日一次)冷卻 + 塔之鑰開鎖充能
+    power_last_day: dict = field(default_factory=dict)    # power_id -> 上次使用的絕對日
+    tower_key_charge: bool = False
+
+    is_player: bool = False
+
+    # --- 查詢 -------------------------------------------------------------
+    def attr(self, key: str) -> int:
+        return self.attributes.get(key, formulas.BASE_ATTRIBUTE)
+
+    def skill(self, key: str) -> int:
+        return self.skills.get(key, 0)
+
+    def is_major_skill(self, skill_id: str) -> bool:
+        return skill_id in self.major_skills
+
+    def can_level_up(self) -> bool:
+        return self.level_progress >= formulas.LEVELUP_MAJOR_SKILLUPS
+
+    # --- 序列化 -----------------------------------------------------------
+    def to_dict(self) -> dict:
+        return {
+            "id": self.id, "name": self.name, "race": self.race, "sex": self.sex,
+            "birthsign": self.birthsign, "class_id": self.class_id,
+            "specialization": self.specialization,
+            "favored_attributes": self.favored_attributes,
+            "major_skills": self.major_skills,
+            "attributes": self.attributes, "skills": self.skills, "skill_xp": self.skill_xp,
+            "level": self.level, "level_progress": self.level_progress,
+            "level_skillups": self.level_skillups,
+            "magicka_bonus": self.magicka_bonus,
+            "max_health": self.max_health, "max_magicka": self.max_magicka,
+            "max_fatigue": self.max_fatigue,
+            "health": self.health, "magicka": self.magicka, "fatigue": self.fatigue,
+            "gold": self.gold, "weapon": self.weapon, "weapon_poison": self.weapon_poison,
+            "weapon_condition": self.weapon_condition, "armor_condition": self.armor_condition,
+            "location_id": self.location_id,
+            "inventory": self.inventory, "equipped": self.equipped, "spells": self.spells,
+            "factions": self.factions,
+            # active_effects 是「戰鬥內」臨時效果(護盾/中毒/再生),不寫入存檔,
+            # 載入時由 dataclass 預設為空 list(避免臨時效果被永久化)。
+            "fame": self.fame, "infamy": self.infamy, "bounty": self.bounty,
+            "disposition": self.disposition, "is_player": self.is_player,
+            "quests": self.quests, "completed_quests": self.completed_quests,
+            "kill_counts": self.kill_counts, "cleared_dungeons": self.cleared_dungeons,
+            "bounties": self.bounties, "npc_disposition": self.npc_disposition,
+            "visited_locations": self.visited_locations,
+            "power_last_day": self.power_last_day, "tower_key_charge": self.tower_key_charge,
+            "companions": self.companions,
+        }
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "Character":
+        return cls(**d)

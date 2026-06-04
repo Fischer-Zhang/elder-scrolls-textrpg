@@ -1,0 +1,438 @@
+{
+  "giant_rat": {
+    "name": "巨鼠",
+    "danger": 1,
+    "min_level": 1,
+    "weight": 5,
+    "strength": 30,
+    "agility": 40,
+    "speed": 40,
+    "max_health": 14,
+    "armor_rating": 2,
+    "attack": {
+      "name": "撕咬",
+      "damage": 4,
+      "skill": 20
+    },
+    "loot_gold": [
+      0,
+      3
+    ],
+    "loot": [
+      {
+        "item": "bone_meal",
+        "chance": 0.15
+      }
+    ],
+    "flavor": "一隻髒污的巨鼠,從排水溝竄出,露出黃牙。"
+  },
+  "mudcrab": {
+    "name": "泥蟹",
+    "danger": 1,
+    "min_level": 1,
+    "weight": 4,
+    "strength": 35,
+    "agility": 25,
+    "speed": 25,
+    "max_health": 18,
+    "armor_rating": 12,
+    "attack": {
+      "name": "鉗夾",
+      "damage": 5,
+      "skill": 25
+    },
+    "loot_gold": [
+      0,
+      2
+    ],
+    "loot": [],
+    "flavor": "硬殼泥蟹橫著逼近,雙鉗咔咔作響。"
+  },
+  "wolf": {
+    "name": "野狼",
+    "danger": 2,
+    "min_level": 1,
+    "weight": 4,
+    "strength": 35,
+    "agility": 50,
+    "speed": 55,
+    "max_health": 22,
+    "armor_rating": 4,
+    "attack": {
+      "name": "撲咬",
+      "damage": 7,
+      "skill": 35
+    },
+    "loot_gold": [
+      0,
+      4
+    ],
+    "loot": [
+      {
+        "item": "wolf_pelt",
+        "chance": 0.6
+      },
+      {
+        "item": "minor_healing_potion",
+        "chance": 0.08
+      }
+    ],
+    "flavor": "一頭灰狼壓低身軀,喉間發出低吼。"
+  },
+  "skeleton": {
+    "name": "骷髏戰士",
+    "danger": 3,
+    "min_level": 2,
+    "weight": 3,
+    "strength": 40,
+    "agility": 35,
+    "speed": 35,
+    "max_health": 28,
+    "armor_rating": 12,
+    "attack": {
+      "name": "鏽劍劈砍",
+      "damage": 9,
+      "skill": 40
+    },
+    "loot_gold": [
+      2,
+      8
+    ],
+    "loot": [
+      {
+        "item": "bone_meal",
+        "chance": 0.5
+      },
+      {
+        "item": "iron_sword",
+        "chance": 0.2
+      },
+      {
+        "item": "minor_healing_potion",
+        "chance": 0.1
+      }
+    ],
+    "flavor": "白骨在塵土中卡卡作響,舉起一柄鏽蝕的劍。",
+    "resist": {
+      "frost": 50,
+      "poison": 100
+    }
+  },
+  "bandit": {
+    "name": "強盜",
+    "danger": 3,
+    "min_level": 2,
+    "weight": 4,
+    "strength": 45,
+    "agility": 40,
+    "speed": 40,
+    "max_health": 34,
+    "armor_rating": 18,
+    "attack": {
+      "name": "鐵斧揮擊",
+      "damage": 11,
+      "skill": 45
+    },
+    "loot_gold": [
+      5,
+      20
+    ],
+    "loot": [
+      {
+        "item": "iron_sword",
+        "chance": 0.25
+      },
+      {
+        "item": "iron_helmet",
+        "chance": 0.18
+      },
+      {
+        "item": "leather_cuirass",
+        "chance": 0.18
+      },
+      {
+        "item": "minor_healing_potion",
+        "chance": 0.2
+      }
+    ],
+    "flavor": "一名衣衫襤褸的強盜攔路而立:「留下買路財,不然留下命!」"
+  },
+  "bear": {
+    "name": "棕熊",
+    "danger": 4,
+    "min_level": 3,
+    "weight": 2,
+    "strength": 60,
+    "agility": 35,
+    "speed": 40,
+    "max_health": 55,
+    "armor_rating": 14,
+    "attack": {
+      "name": "熊掌橫掃",
+      "damage": 16,
+      "skill": 45
+    },
+    "loot_gold": [
+      0,
+      6
+    ],
+    "loot": [
+      {
+        "item": "healing_potion",
+        "chance": 0.15
+      }
+    ],
+    "flavor": "一頭巨大的棕熊人立而起,咆哮震得林木簌簌。",
+    "resist": {
+      "frost": 25
+    }
+  },
+  "summoned_familiar": {
+    "name": "魔靈伴",
+    "danger": 2,
+    "min_level": 99,
+    "weight": 0,
+    "strength": 35,
+    "agility": 50,
+    "speed": 55,
+    "max_health": 20,
+    "armor_rating": 4,
+    "attack": {
+      "name": "靈爪",
+      "damage": 8,
+      "skill": 40
+    },
+    "loot_gold": [
+      0,
+      0
+    ],
+    "loot": [],
+    "flavor": "一頭由魔族界召喚而來的靈狼。"
+  },
+  "summoned_atronach": {
+    "name": "火焰元素",
+    "danger": 3,
+    "min_level": 99,
+    "weight": 0,
+    "strength": 45,
+    "agility": 40,
+    "speed": 40,
+    "max_health": 32,
+    "armor_rating": 8,
+    "attack": {
+      "name": "烈焰拳",
+      "damage": 14,
+      "skill": 50
+    },
+    "loot_gold": [
+      0,
+      0
+    ],
+    "loot": [],
+    "flavor": "熊熊燃燒的火焰元素,聽命於召喚者。"
+  },
+  "city_guard": {
+    "name": "城衛兵",
+    "danger": 4,
+    "min_level": 99,
+    "weight": 0,
+    "strength": 50,
+    "agility": 45,
+    "speed": 45,
+    "max_health": 60,
+    "armor_rating": 28,
+    "attack": {
+      "name": "衛兵長劍",
+      "damage": 14,
+      "skill": 55
+    },
+    "loot_gold": [
+      5,
+      15
+    ],
+    "loot": [
+      {
+        "item": "iron_sword",
+        "chance": 0.2
+      }
+    ],
+    "flavor": "一名披甲執劍的城衛兵厲聲喝道:「站住!以法律之名!」"
+  },
+  "frostbite_spider": {
+    "name": "霜咬蜘蛛",
+    "danger": 2,
+    "min_level": 1,
+    "weight": 3,
+    "strength": 35,
+    "agility": 45,
+    "speed": 45,
+    "max_health": 24,
+    "armor_rating": 4,
+    "attack": {
+      "name": "毒牙",
+      "damage": 8,
+      "skill": 35,
+      "on_hit": {
+        "status": "dot",
+        "element": "poison",
+        "magnitude": 3,
+        "turns": 3,
+        "chance": 0.5
+      }
+    },
+    "loot_gold": [
+      0,
+      3
+    ],
+    "loot": [
+      {
+        "item": "scrib_jelly",
+        "chance": 0.3
+      }
+    ],
+    "flavor": "一隻人頭大的霜咬蜘蛛自陰影垂下。",
+    "resist": {
+      "frost": 50,
+      "poison": 75,
+      "fire": -25
+    }
+  },
+  "ash_hopper": {
+    "name": "灰蹦蟲",
+    "danger": 2,
+    "min_level": 2,
+    "weight": 3,
+    "strength": 40,
+    "agility": 40,
+    "speed": 50,
+    "max_health": 26,
+    "armor_rating": 10,
+    "attack": {
+      "name": "甲殼撞擊",
+      "damage": 9,
+      "skill": 38
+    },
+    "loot_gold": [
+      0,
+      4
+    ],
+    "loot": [
+      {
+        "item": "ash_yam",
+        "chance": 0.3
+      }
+    ],
+    "flavor": "火山灰中彈跳而出的硬殼灰蹦蟲。"
+  },
+  "draugr": {
+    "name": "屍鬼",
+    "danger": 3,
+    "min_level": 2,
+    "weight": 3,
+    "strength": 48,
+    "agility": 35,
+    "speed": 35,
+    "max_health": 40,
+    "armor_rating": 16,
+    "attack": {
+      "name": "古劍橫斬",
+      "damage": 12,
+      "skill": 45
+    },
+    "loot_gold": [
+      5,
+      15
+    ],
+    "loot": [
+      {
+        "item": "bone_meal",
+        "chance": 0.6
+      },
+      {
+        "item": "ebony_sword",
+        "chance": 0.05
+      }
+    ],
+    "flavor": "乾枯的屍鬼睜開幽藍眼眶,自石棺中坐起。",
+    "resist": {
+      "frost": 50,
+      "poison": 100,
+      "fire": -25
+    }
+  },
+  "dremora": {
+    "name": "魔人",
+    "danger": 5,
+    "min_level": 3,
+    "weight": 2,
+    "strength": 60,
+    "agility": 50,
+    "speed": 45,
+    "max_health": 75,
+    "armor_rating": 24,
+    "attack": {
+      "name": "黑檀巨劍",
+      "damage": 20,
+      "skill": 60,
+      "element": "fire"
+    },
+    "loot_gold": [
+      20,
+      50
+    ],
+    "loot": [
+      {
+        "item": "ebony_sword",
+        "chance": 0.25
+      },
+      {
+        "item": "healing_potion",
+        "chance": 0.4
+      }
+    ],
+    "flavor": "一名魔界戰士魔人現身,渾身燃著湮滅位面的怒火。",
+    "resist": {
+      "fire": 60,
+      "magic": 20
+    }
+  },
+  "ice_wraith": {
+    "name": "冰魂",
+    "danger": 3,
+    "min_level": 2,
+    "weight": 3,
+    "strength": 40,
+    "agility": 55,
+    "speed": 55,
+    "max_health": 30,
+    "armor_rating": 8,
+    "attack": {
+      "name": "霜噬",
+      "damage": 11,
+      "skill": 45,
+      "element": "frost",
+      "on_hit": {
+        "status": "dot",
+        "element": "frost",
+        "magnitude": 2,
+        "turns": 2,
+        "chance": 0.4
+      }
+    },
+    "resist": {
+      "frost": 100,
+      "fire": -50
+    },
+    "loot_gold": [
+      3,
+      10
+    ],
+    "loot": [
+      {
+        "item": "glow_dust",
+        "chance": 0.3
+      }
+    ],
+    "flavor": "一道盤旋的冰魂呼嘯而至,所過之處凝結成霜。"
+  }
+}

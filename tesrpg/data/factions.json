@@ -1,0 +1,75 @@
+{
+  "fighters_guild": {
+    "name": "戰士公會",
+    "hall": "kvatch",
+    "join_req": {
+      "skill": null
+    },
+    "ranks": [
+      "協會員",
+      "學徒守衛",
+      "步兵",
+      "劍客",
+      "護衛",
+      "勇士",
+      "聖騎士",
+      "公會會長"
+    ],
+    "rank_quests": [
+      "fg1",
+      "fg2",
+      "fg3",
+      "fg4",
+      "fg5",
+      "fg6",
+      "fg7"
+    ],
+    "blurb": "受雇於民、討伐匪獸的傭兵組織,重武勇與榮譽。"
+  },
+  "mages_guild": {
+    "name": "法師公會",
+    "hall": "bruma",
+    "join_req": {
+      "skill": null
+    },
+    "ranks": [
+      "學徒",
+      "護衛術士",
+      "魔導士",
+      "巫師",
+      "大法師",
+      "首席法師"
+    ],
+    "rank_quests": [
+      "mg1",
+      "mg2",
+      "mg3",
+      "mg4",
+      "mg5"
+    ],
+    "blurb": "研究奧術、管理魔法知識的學院,亦對外販售法術。"
+  },
+  "thieves_guild": {
+    "name": "盜賊公會",
+    "hall": "bruma",
+    "join_req": {
+      "skill": null
+    },
+    "ranks": [
+      "新手",
+      "步行者",
+      "拉拔手",
+      "暗影腳",
+      "夜行者",
+      "大師竊賊"
+    ],
+    "rank_quests": [
+      "tg1",
+      "tg2",
+      "tg3",
+      "tg4",
+      "tg5"
+    ],
+    "blurb": "潛伏於陰影中的竊賊網絡,只在後巷對識途者開門。"
+  }
+}

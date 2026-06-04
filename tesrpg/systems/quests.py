@@ -1,0 +1,188 @@
+"""任務引擎:接取、(多階段)目標追蹤、自動結算獎勵、公會晉升。
+
+目標型別:kill(擊殺 N 隻)、clear_dungeon(肅清地城)、reach(抵達地點)、
+collect(持有 N 件物品,結算時消耗)。
+
+任務可為單一目標(`objective`)或多階段任務線(`stages`,每階段一個 objective + 文字)。
+單目標任務在內部視為一階段;達標即自動推進/完成並發獎。
+"""
+
+from __future__ import annotations
+
+from tesrpg.gamedata import GameData
+from tesrpg.models import Character
+from tesrpg.systems import inventory
+
+
+# --- 進度記錄(由戰鬥/探索/旅行 hook 呼叫)-----------------------------
+def record_kill(char: Character, creature_tid: str) -> None:
+    char.kill_counts[creature_tid] = char.kill_counts.get(creature_tid, 0) + 1
+
+
+def record_dungeon_clear(char: Character, dungeon_id: str) -> None:
+    if dungeon_id not in char.cleared_dungeons:
+        char.cleared_dungeons.append(dungeon_id)
+
+
+# --- 階段存取 -----------------------------------------------------------
+def _stages(quest: dict) -> list[dict]:
+    """把任務正規化成階段列表;單目標任務 = 一個階段。"""
+    if "stages" in quest:
+        return quest["stages"]
+    return [{"objective": quest["objective"], "text": quest.get("text", "")}]
+
+
+def _stage_index(char: Character, quest_id: str, total: int) -> int:
+    # 夾限至 [0, total-1];max(0,...) 防毀損存檔的負值經 Python 負索引取到錯誤階段
+    return max(0, min(char.quests.get(quest_id, {}).get("stage", 0), total - 1))
+
+
+def current_objective(char: Character, gamedata: GameData, quest_id: str) -> tuple[dict, int, int]:
+    """回傳 (當前階段 objective, 階段索引, 階段總數)。"""
+    stages = _stages(gamedata.quests[quest_id])
+    idx = _stage_index(char, quest_id, len(stages))
+    return stages[idx]["objective"], idx, len(stages)
+
+
+# --- 接取 ---------------------------------------------------------------
+def is_active(char: Character, quest_id: str) -> bool:
+    return quest_id in char.quests
+
+
+def is_done(char: Character, quest_id: str) -> bool:
+    return quest_id in char.completed_quests
+
+
+def available_quests(char: Character, gamedata: GameData, source: str,
+                     faction: str | None = None) -> list[str]:
+    out = []
+    for qid, q in gamedata.quests.items():
+        if q.get("source") != source or is_active(char, qid) or is_done(char, qid):
+            continue
+        if source == "guild":
+            if q.get("faction") != faction or faction not in char.factions:
+                continue
+            if q.get("rank", 0) != char.factions[faction]:   # 只給當前階級的晉升任務
+                continue
+        out.append(qid)
+    return out
+
+
+def _kill_base(char: Character, obj: dict) -> int:
+    """進入一個 kill 階段時,記下當下擊殺數作基準(避免回溯計入既往擊殺)。"""
+    return char.kill_counts.get(obj["creature"], 0) if obj["type"] == "kill" else 0
+
+
+def accept_quest(char: Character, gamedata: GameData, quest_id: str) -> None:
+    obj = _stages(gamedata.quests[quest_id])[0]["objective"]
+    char.quests[quest_id] = {"stage": 0, "base": _kill_base(char, obj)}
+
+
+# --- 目標判定 -----------------------------------------------------------
+def _objective_met(char: Character, gamedata: GameData, obj: dict, base: int) -> bool:
+    t = obj["type"]
+    if t == "kill":
+        return char.kill_counts.get(obj["creature"], 0) - base >= obj["count"]
+    if t == "clear_dungeon":
+        return obj["dungeon"] in char.cleared_dungeons
+    if t == "reach":
+        return char.location_id == obj["location"]
+    if t == "collect":
+        return inventory.count_item(char, obj["item"]) >= obj["count"]
+    return False
+
+
+def objective_met(char: Character, gamedata: GameData, quest_id: str) -> bool:
+    obj, _, _ = current_objective(char, gamedata, quest_id)
+    return _objective_met(char, gamedata, obj, char.quests.get(quest_id, {}).get("base", 0))
+
+
+def kill_progress(char: Character, gamedata: GameData, quest_id: str) -> tuple[int, int]:
+    """當前 kill 階段的進度。未接取則顯示 0(避免告示板誤顯示既往擊殺)。"""
+    obj, _, _ = current_objective(char, gamedata, quest_id)
+    if quest_id not in char.quests:
+        return 0, obj["count"]
+    base = char.quests[quest_id].get("base", 0)
+    return max(0, char.kill_counts.get(obj["creature"], 0) - base), obj["count"]
+
+
+def objective_text(char: Character, gamedata: GameData, quest_id: str) -> str:
+    obj, idx, total = current_objective(char, gamedata, quest_id)
+    t = obj["type"]
+    if t == "kill":
+        got, need = kill_progress(char, gamedata, quest_id)
+        body = f"擊殺 {gamedata.bestiary[obj['creature']]['name']} {got}/{need}"
+    elif t == "clear_dungeon":
+        done = "✔" if obj["dungeon"] in char.cleared_dungeons else "✘"
+        body = f"肅清 {gamedata.dungeons[obj['dungeon']]['name']} {done}"
+    elif t == "reach":
+        done = "✔" if char.location_id == obj["location"] else "✘"
+        body = f"抵達 {gamedata.location(obj['location'])['name']} {done}"
+    elif t == "collect":
+        have = inventory.count_item(char, obj["item"])
+        body = f"取得 {gamedata.item_name(obj['item'])} {have}/{obj['count']}"
+    else:
+        body = ""
+    return f"[{idx + 1}/{total}] {body}" if total > 1 else body
+
+
+# --- 完成與階段推進 -----------------------------------------------------
+def check_completion(char: Character, gamedata: GameData) -> list[dict]:
+    """掃描進行中任務,推進已達標階段並結算完成者。
+
+    回傳事件列表,每個事件為:
+      {"type": "stage_advanced", "quest_id","name","stage_text","stage_idx","total"}
+      {"type": "completed",      "quest_id","name","reward","promoted"}
+    """
+    events: list[dict] = []
+    for qid in list(char.quests.keys()):
+        events += _advance(char, gamedata, qid)
+    return events
+
+
+def _advance(char: Character, gamedata: GameData, quest_id: str) -> list[dict]:
+    q = gamedata.quests[quest_id]
+    stages = _stages(q)
+    events: list[dict] = []
+
+    while quest_id in char.quests:
+        idx = max(0, min(char.quests[quest_id].get("stage", 0), len(stages) - 1))
+        obj = stages[idx]["objective"]
+        if not _objective_met(char, gamedata, obj, char.quests[quest_id].get("base", 0)):
+            break
+        if obj["type"] == "collect":            # 該階段達標 → 上繳消耗物品
+            inventory.remove_item(char, obj["item"], obj["count"])
+
+        if idx + 1 >= len(stages):              # 最後一階段 → 完成整個任務
+            events.append(_complete(char, gamedata, quest_id))
+            break
+
+        # 推進到下一階段(若為 kill 則重設基準)
+        nxt = stages[idx + 1]["objective"]
+        char.quests[quest_id] = {"stage": idx + 1, "base": _kill_base(char, nxt)}
+        events.append({"type": "stage_advanced", "quest_id": quest_id, "name": q["name"],
+                       "stage_text": stages[idx + 1].get("text", ""),
+                       "stage_idx": idx + 1, "total": len(stages)})
+    return events
+
+
+def _complete(char: Character, gamedata: GameData, quest_id: str) -> dict:
+    q = gamedata.quests[quest_id]
+    reward = q.get("reward", {})
+    char.gold += reward.get("gold", 0)
+    char.fame += reward.get("fame", 0)
+    for item_id in reward.get("items", []):
+        inventory.add_item(char, item_id, 1)
+
+    promoted = None
+    if q.get("faction") and q.get("rank") is not None and q["faction"] in char.factions:
+        if char.factions[q["faction"]] == q["rank"]:
+            ranks = gamedata.factions[q["faction"]]["ranks"]
+            new_rank = min(q["rank"] + 1, len(ranks) - 1)   # 夾限,階級索引不可越界
+            char.factions[q["faction"]] = new_rank
+            promoted = (q["faction"], ranks[new_rank])
+
+    char.quests.pop(quest_id, None)
+    char.completed_quests.append(quest_id)
+    return {"type": "completed", "quest_id": quest_id, "name": q["name"],
+            "reward": reward, "promoted": promoted}

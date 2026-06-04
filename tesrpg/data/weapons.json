@@ -1,0 +1,107 @@
+{
+  "fists": {
+    "name": "徒手",
+    "skill": "hand_to_hand",
+    "damage": 4,
+    "value": 0,
+    "weight": 0
+  },
+  "iron_dagger": {
+    "name": "鐵匕首",
+    "skill": "blade",
+    "damage": 7,
+    "value": 8,
+    "weight": 3
+  },
+  "iron_sword": {
+    "name": "鐵長劍",
+    "skill": "blade",
+    "damage": 10,
+    "value": 25,
+    "weight": 9
+  },
+  "iron_mace": {
+    "name": "鐵釘錘",
+    "skill": "blunt",
+    "damage": 11,
+    "value": 30,
+    "weight": 12
+  },
+  "iron_war_axe": {
+    "name": "鐵戰斧",
+    "skill": "blunt",
+    "damage": 12,
+    "value": 35,
+    "weight": 13
+  },
+  "hunting_bow": {
+    "name": "獵弓",
+    "skill": "marksman",
+    "damage": 9,
+    "value": 30,
+    "weight": 7
+  },
+  "steel_dagger": {
+    "name": "鋼匕首",
+    "skill": "blade",
+    "damage": 9,
+    "value": 30,
+    "weight": 4
+  },
+  "steel_sword": {
+    "name": "鋼長劍",
+    "skill": "blade",
+    "damage": 13,
+    "value": 90,
+    "weight": 11
+  },
+  "steel_mace": {
+    "name": "鋼釘錘",
+    "skill": "blunt",
+    "damage": 15,
+    "value": 110,
+    "weight": 14
+  },
+  "long_bow": {
+    "name": "長弓",
+    "skill": "marksman",
+    "damage": 12,
+    "value": 100,
+    "weight": 9
+  },
+  "glass_dagger": {
+    "name": "玻璃匕首",
+    "skill": "blade",
+    "damage": 12,
+    "value": 150,
+    "weight": 4
+  },
+  "elven_sword": {
+    "name": "精靈長劍",
+    "skill": "blade",
+    "damage": 16,
+    "value": 280,
+    "weight": 11
+  },
+  "ebony_sword": {
+    "name": "黑檀長劍",
+    "skill": "blade",
+    "damage": 19,
+    "value": 720,
+    "weight": 13
+  },
+  "dwarven_mace": {
+    "name": "矮人釘錘",
+    "skill": "blunt",
+    "damage": 18,
+    "value": 310,
+    "weight": 15
+  },
+  "elven_bow": {
+    "name": "精靈弓",
+    "skill": "marksman",
+    "damage": 15,
+    "value": 270,
+    "weight": 9
+  }
+}

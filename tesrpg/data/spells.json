@@ -1,0 +1,294 @@
+{
+  "flames": {
+    "name": "火焰",
+    "school": "destruction",
+    "cost": 14,
+    "target": "enemy",
+    "effect": {
+      "kind": "damage",
+      "element": "fire",
+      "magnitude": 14
+    }
+  },
+  "frostbite": {
+    "name": "霜寒",
+    "school": "destruction",
+    "cost": 16,
+    "target": "enemy",
+    "effect": {
+      "kind": "damage",
+      "element": "frost",
+      "magnitude": 16
+    }
+  },
+  "sparks": {
+    "name": "電花",
+    "school": "destruction",
+    "cost": 16,
+    "target": "enemy",
+    "effect": {
+      "kind": "damage",
+      "element": "shock",
+      "magnitude": 15
+    }
+  },
+  "fireball": {
+    "name": "火球術",
+    "school": "destruction",
+    "cost": 32,
+    "target": "enemy",
+    "effect": {
+      "kind": "damage",
+      "element": "fire",
+      "magnitude": 30
+    }
+  },
+  "minor_heal": {
+    "name": "次級治療",
+    "school": "restoration",
+    "cost": 12,
+    "target": "self",
+    "effect": {
+      "kind": "heal",
+      "magnitude": 25
+    }
+  },
+  "heal": {
+    "name": "治療",
+    "school": "restoration",
+    "cost": 26,
+    "target": "self",
+    "effect": {
+      "kind": "heal",
+      "magnitude": 55
+    }
+  },
+  "close_wounds": {
+    "name": "癒合創傷",
+    "school": "restoration",
+    "cost": 44,
+    "target": "self",
+    "effect": {
+      "kind": "heal",
+      "magnitude": 95
+    }
+  },
+  "oakflesh": {
+    "name": "橡木膚",
+    "school": "alteration",
+    "cost": 16,
+    "target": "self",
+    "effect": {
+      "kind": "shield",
+      "magnitude": 30,
+      "turns": 5
+    }
+  },
+  "stoneflesh": {
+    "name": "石膚",
+    "school": "alteration",
+    "cost": 30,
+    "target": "self",
+    "effect": {
+      "kind": "shield",
+      "magnitude": 55,
+      "turns": 5
+    }
+  },
+  "fear": {
+    "name": "恐懼",
+    "school": "illusion",
+    "cost": 18,
+    "target": "enemy",
+    "effect": {
+      "kind": "fear",
+      "turns": 2
+    }
+  },
+  "demoralize": {
+    "name": "挫志",
+    "school": "illusion",
+    "cost": 16,
+    "target": "enemy",
+    "effect": {
+      "kind": "weaken",
+      "magnitude": 0.4,
+      "turns": 4
+    }
+  },
+  "conjure_familiar": {
+    "name": "召喚魔靈伴",
+    "school": "conjuration",
+    "cost": 24,
+    "target": "self",
+    "effect": {
+      "kind": "summon",
+      "creature": "summoned_familiar",
+      "turns": 6
+    }
+  },
+  "conjure_flame_atronach": {
+    "name": "召喚火焰元素",
+    "school": "conjuration",
+    "cost": 44,
+    "target": "self",
+    "effect": {
+      "kind": "summon",
+      "creature": "summoned_atronach",
+      "turns": 6
+    }
+  },
+  "soul_trap": {
+    "name": "擒魂術",
+    "school": "mysticism",
+    "cost": 18,
+    "target": "enemy",
+    "effect": {
+      "kind": "soul_trap",
+      "turns": 4
+    }
+  },
+  "restore_mind": {
+    "name": "凝神",
+    "school": "mysticism",
+    "cost": 16,
+    "target": "self",
+    "effect": {
+      "kind": "restore_fatigue",
+      "magnitude": 40
+    }
+  },
+  "lightning_bolt": {
+    "name": "閃電束",
+    "school": "destruction",
+    "cost": 40,
+    "target": "enemy",
+    "effect": {
+      "kind": "damage",
+      "element": "shock",
+      "magnitude": 40
+    }
+  },
+  "ironflesh": {
+    "name": "鐵膚",
+    "school": "alteration",
+    "cost": 42,
+    "target": "self",
+    "effect": {
+      "kind": "shield",
+      "magnitude": 75,
+      "turns": 5
+    }
+  },
+  "ignite": {
+    "name": "延燒",
+    "school": "destruction",
+    "cost": 24,
+    "target": "enemy",
+    "effect": {
+      "kind": "damage_status",
+      "element": "fire",
+      "magnitude": 8,
+      "status": {
+        "status": "dot",
+        "element": "fire",
+        "magnitude": 6,
+        "turns": 3
+      }
+    }
+  },
+  "poison_cloud": {
+    "name": "毒雲",
+    "school": "destruction",
+    "cost": 22,
+    "target": "enemy",
+    "effect": {
+      "kind": "apply_status",
+      "status": {
+        "status": "dot",
+        "element": "poison",
+        "magnitude": 6,
+        "turns": 4
+      }
+    }
+  },
+  "renewal": {
+    "name": "生機",
+    "school": "restoration",
+    "cost": 28,
+    "target": "self",
+    "effect": {
+      "kind": "apply_status",
+      "status": {
+        "status": "regen",
+        "magnitude": 10,
+        "turns": 4
+      }
+    }
+  },
+  "fire_storm": {
+    "name": "火焰風暴",
+    "school": "destruction",
+    "cost": 46,
+    "target": "all",
+    "effect": {
+      "kind": "damage_all",
+      "element": "fire",
+      "magnitude": 24
+    }
+  },
+  "chain_lightning": {
+    "name": "連鎖閃電",
+    "school": "destruction",
+    "cost": 50,
+    "target": "all",
+    "effect": {
+      "kind": "damage_all",
+      "element": "shock",
+      "magnitude": 22
+    }
+  },
+  "frost_nova": {
+    "name": "寒霜爆",
+    "school": "destruction",
+    "cost": 40,
+    "target": "all",
+    "effect": {
+      "kind": "damage_status_all",
+      "element": "frost",
+      "magnitude": 16,
+      "status": {
+        "status": "dot",
+        "element": "frost",
+        "magnitude": 4,
+        "turns": 2
+      }
+    }
+  },
+  "mass_paralysis": {
+    "name": "群體麻痺",
+    "school": "illusion",
+    "cost": 60,
+    "target": "all",
+    "effect": {
+      "kind": "status_all",
+      "status": {
+        "status": "paralyze",
+        "turns": 2
+      }
+    }
+  },
+  "rout": {
+    "name": "潰逃",
+    "school": "illusion",
+    "cost": 34,
+    "target": "all",
+    "effect": {
+      "kind": "status_all",
+      "status": {
+        "status": "fear",
+        "turns": 2
+      }
+    }
+  }
+}

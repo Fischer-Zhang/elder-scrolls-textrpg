@@ -1,0 +1,1252 @@
+"""進入點與主行動迴圈(M1:練功場沙盒)。
+
+目前可玩內容:創角 → 在練功場「做什麼練什麼」累積技能 → 升級選屬性 → 存讀檔。
+戰鬥、世界探索、魔法製作、公會任務見 DESIGN.md 後續里程碑。
+"""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+from tesrpg import creation, formulas
+from tesrpg.gamedata import GameData, get_gamedata
+from tesrpg.rng import RNG
+from tesrpg.state import GameState
+from tesrpg.systems import (alchemy, combat, crime, dialogue, dungeon, enchanting,
+                            events, factions, inventory, legacy, magic, powers,
+                            progression, quests, world)
+from tesrpg.ui import console as ui
+
+SAVE_PATH = Path.home() / ".tesrpg" / "save.json"
+
+
+# ======================================================================
+# 角色創建
+# ======================================================================
+def create_character(gamedata: GameData, rng: RNG):
+    ui.rule("創建角色")
+    if ui.confirm("快速開始(隨機種族/職業)?"):
+        return _quick_character(gamedata, rng)
+
+    sex = ui.menu("性別", [("male", "男"), ("female", "女")])
+
+    race = ui.menu("種族", [
+        (rid, f"{r['name']} — {r['ability']}")
+        for rid, r in gamedata.races.items()
+    ])
+
+    sign = ui.menu("出生星座", [
+        (sid, f"{s['name']} — {s['note']}")
+        for sid, s in gamedata.birthsigns.items()
+    ])
+
+    class_opts = [(cid, f"{c['name']} — {c['desc']}") for cid, c in gamedata.classes.items()]
+    class_opts.append(("custom", "自訂職業（選專精、偏好屬性、主修技能）"))
+    class_id = ui.menu("職業", class_opts)
+    custom = _create_custom_class(gamedata) if class_id == "custom" else None
+
+    default_name = creation.random_name(gamedata, race, sex, rng)
+    name = ui.ask_text("姓名", default=default_name)
+
+    char = creation.build_character(
+        gamedata, name=name, sex=sex, race=race, birthsign=sign,
+        class_id=class_id, custom_class=custom, rng=rng,
+    )
+    ui.message(f"歡迎來到 Tamriel,{char.name}。", style="bold green")
+    return char
+
+
+def _quick_character(gamedata: GameData, rng: RNG):
+    sex = rng.choice(["male", "female"])
+    race = rng.choice(list(gamedata.races.keys()))
+    sign = rng.choice(list(gamedata.birthsigns.keys()))
+    class_id = rng.choice(list(gamedata.classes.keys()))
+    name = creation.random_name(gamedata, race, sex, rng)
+    char = creation.build_character(
+        gamedata, name=name, sex=sex, race=race, birthsign=sign, class_id=class_id, rng=rng,
+    )
+    ui.message(
+        f"{name} —— {gamedata.races[race]['name']}·"
+        f"{gamedata.birthsigns[sign]['name']}·{gamedata.classes[class_id]['name']}",
+        style="bold green",
+    )
+    return char
+
+
+def _create_custom_class(gamedata: GameData) -> dict:
+    spec = ui.menu("專精", [(s, formulas.SPEC_NAMES[s]) for s in ("combat", "magic", "stealth")])
+    ui.message("挑選 2 個偏好屬性:")
+    favored = _pick_distinct(
+        [(a, formulas.ATTRIBUTE_NAMES[a]) for a in formulas.ATTRIBUTES], 2, "偏好屬性")
+    ui.message("挑選 7 個主修技能(升點會計入升級):")
+    skill_opts = [(sid, f"{s['name']}（{formulas.SPEC_NAMES[s['spec']]}）")
+                  for sid, s in gamedata.skills.items()]
+    majors = _pick_distinct(skill_opts, 7, "主修技能")
+    return {"specialization": spec, "favored_attributes": favored, "major_skills": majors}
+
+
+def _pick_distinct(options: list[tuple[str, str]], count: int, label: str) -> list[str]:
+    chosen: list[str] = []
+    remaining = list(options)
+    for i in range(count):
+        key = ui.menu(f"{label} ({i + 1}/{count})", remaining)
+        chosen.append(key)
+        remaining = [o for o in remaining if o[0] != key]
+    return chosen
+
+
+# ======================================================================
+# 行動
+# ======================================================================
+def action_practice(state: GameState, gamedata: GameData) -> None:
+    spec = ui.menu("要練哪一類?", [
+        ("combat", "戰鬥技能"), ("magic", "魔法技能"), ("stealth", "潛行技能"),
+    ], allow_back=True)
+    if spec is None:
+        return
+    char = state.player
+    opts = []
+    for sid in gamedata.skills_by_spec(spec):
+        s = gamedata.skills[sid]
+        opts.append((sid, f"{s['name']} (Lv {char.skill(sid)}) — {s['practice']['label']}"))
+    sid = ui.menu("練習哪項技能?", opts, allow_back=True)
+    if sid is None:
+        return
+
+    pdef = gamedata.skills[sid]["practice"]
+    tired = char.fatigue < pdef["fatigue"]
+    xp = pdef["xp"] * (0.5 if tired else 1.0)
+    char.fatigue = max(0, char.fatigue - pdef["fatigue"])
+
+    events = progression.use_skill(char, gamedata, sid, xp)
+    state.time.advance(pdef["hours"])
+
+    ui.message(f"你{pdef['label']}……（{pdef['hours']} 小時)")
+    if tired:
+        ui.message("體力不濟,訓練成效減半。先休息會更有效率。", style="yellow")
+    ui.show_events(events, gamedata)
+    if not events:
+        need = formulas.skill_threshold(char.skill(sid))
+        prog = char.skill_xp.get(sid, 0.0)
+        ui.message(f"{gamedata.skill_name(sid)} 熟練度 {prog:.1f}/{need:.1f} → 下一點",
+                   style="grey70")
+
+
+def action_rest(state: GameState, gamedata: GameData) -> str | None:
+    hours = ui.ask_int("休息幾小時?", default=8, lo=1, hi=24)
+    char = state.player
+    no_magicka_regen = char.birthsign == "atronach"
+
+    char.fatigue = min(char.max_fatigue, char.fatigue + char.max_fatigue * hours / 8)
+    char.health = min(char.max_health, char.health + char.max_health * hours / 24)
+    if not no_magicka_regen:
+        char.magicka = min(char.max_magicka, char.magicka + char.max_magicka * hours / 12)
+
+    state.time.advance(hours)
+    ui.message(f"你休息了 {hours} 小時,神清氣爽。")
+    if no_magicka_regen:
+        ui.message("（巨魔像座:魔力不會自然回復,需靠吸收魔法補充。)", style="grey70")
+
+    return "dead" if maybe_event(state, gamedata, "rest") == "dead" else None
+
+
+def action_level_up(state: GameState, gamedata: GameData) -> None:
+    char = state.player
+    if not char.can_level_up():
+        ui.message("還不能升級 —— 多練些主修技能吧。", style="yellow")
+        return
+
+    preview = progression.preview_levelup(char)
+    ui.rule(f"升級 → Lv {char.level + 1}")
+    ui.message("依你這段時間的鍛鍊,各屬性可提升的幅度:")
+    for a in formulas.ATTRIBUTES:
+        ups = char.level_skillups.get(a, 0)
+        ui.message(
+            f"{formulas.ATTRIBUTE_NAMES[a]} {char.attr(a)} → 可 +{preview[a]}"
+            f"（本級相關技能升 {ups} 點)",
+            style="grey70",
+        )
+    ui.message(f"請挑選 {formulas.LEVELUP_ATTRIBUTES_CHOSEN} 個屬性提升:", style="bold")
+
+    opts = [(a, f"{formulas.ATTRIBUTE_NAMES[a]}（+{preview[a]})") for a in formulas.ATTRIBUTES]
+    chosen = _pick_distinct(opts, formulas.LEVELUP_ATTRIBUTES_CHOSEN, "提升屬性")
+
+    summary = progression.apply_level_up(char, gamedata, chosen)
+    ui.message(f"★ 升級!現在是 Lv {summary['level']}。", style="bold yellow")
+    for a, g in summary["attr_gains"].items():
+        ui.message(f"  {formulas.ATTRIBUTE_NAMES[a]} +{g}", style="green")
+    ui.message(f"  生命上限 +{summary['hp_gain']},三圍已回滿。", style="green")
+    if summary["can_level_again"]:
+        ui.message("  你還能再升一級!", style="yellow")
+
+
+def action_save(state: GameState) -> None:
+    state.save(SAVE_PATH)
+    ui.message(f"已存檔 → {SAVE_PATH}", style="green")
+
+
+# ======================================================================
+# 戰鬥
+# ======================================================================
+def _choose_enemy_target(gamedata: GameData, enemies: list):
+    """從存活敵人中選一個目標(僅一個時自動選)。"""
+    alive = [e for e in enemies if combat.is_alive(e)]
+    if len(alive) == 1:
+        return alive[0]
+    opts = [(str(i), f"{e.name}（{int(e.health)}/{e.max_health})") for i, e in enumerate(alive)]
+    return alive[int(ui.menu("攻擊哪個目標?", opts))]
+
+
+def _choose_combat_action(state: GameState, gamedata: GameData, enemies: list):
+    """回傳玩家本回合的行動 dict:{type, spell_id?, target?}。"""
+    player = state.player
+    opts = [("attack", f"攻擊（{gamedata.item(player.weapon)['name']})")]
+    castable = [s for s in player.spells if magic.can_cast(player, gamedata, s)]
+    if castable:
+        opts.append(("cast", "施法"))
+    if powers.usable_in(player, state, gamedata, "combat"):
+        opts.append(("power", f"星座之力({powers.power_def(powers.power_id(player, gamedata))['name']})"))
+    opts += [("block", "格擋"), ("flee", "逃跑")]
+    choice = ui.menu("你的回合", opts)
+
+    if choice == "attack":
+        return {"type": "attack", "target": _choose_enemy_target(gamedata, enemies)}
+    if choice == "cast":
+        spell_opts = [(s, f"{gamedata.spells[s]['name']}"
+                       f"（{magic.effective_cost(player, gamedata, s)} 魔力 · {gamedata.spells[s]['school']})")
+                      for s in castable]
+        sid = ui.menu("施放哪道法術?", spell_opts, allow_back=True)
+        if sid is None:
+            return _choose_combat_action(state, gamedata, enemies)
+        target = _choose_enemy_target(gamedata, enemies) if gamedata.spells[sid]["target"] == "enemy" else None
+        return {"type": "cast", "spell_id": sid, "target": target}
+    if choice == "power":
+        eff = powers.power_def(powers.power_id(player, gamedata))["effect"]
+        target = _choose_enemy_target(gamedata, enemies) if ("paralyze" in eff or "poison" in eff) else None
+        return {"type": "power", "target": target}
+    return {"type": choice}
+
+
+def run_battle(state: GameState, gamedata: GameData, enemies, companions=None) -> str:
+    """團隊/多敵回合制戰鬥。階段制回合:玩家 → 同伴 → 敵人 → 結算。
+
+    enemies:敵方 Creature 清單(也接受單一 Creature)。companions 未指定時用玩家隊伍。
+    回傳 'victory' / 'fled' / 'dead'。
+    """
+    player = state.player
+    if not isinstance(enemies, list):
+        enemies = [enemies]
+    party = player.companions if companions is None else companions
+    party = [cid for cid in party if cid in gamedata.companions]   # 略過已不存在的同伴(存檔前向相容)
+    battle = {"allies": [combat.spawn_companion(gamedata, cid, state.rng) for cid in party]}
+    trapped_kills: set[int] = set()
+
+    def alive_e():
+        return [e for e in enemies if combat.is_alive(e)]
+
+    def note_trap(e):
+        if not combat.is_alive(e) and magic.has_soul_trap(e):
+            trapped_kills.add(id(e))
+
+    while combat.is_alive(player) and alive_e():
+        ui.combat_status_group(player, battle["allies"], enemies, gamedata)
+        action = _choose_combat_action(state, gamedata, enemies)
+        blocking = action["type"] == "block"
+
+        # ---- 玩家階段 ----
+        if action["type"] == "flee":
+            foe = max(alive_e(), key=lambda e: e.speed)
+            if combat.try_flee(player, foe, state.rng):
+                ui.message("你成功擺脫了敵人,脫離戰鬥!", style="yellow")
+                player.active_effects.clear()
+                state.time.advance(1)
+                return "fled"
+            ui.message("逃跑失敗!", style="red")
+        elif action["type"] == "attack":
+            tgt = action["target"]
+            if combat.is_alive(tgt):
+                combat.player_attack_cost(player)
+                ui.combat_event(combat.resolve_attack(player, tgt, gamedata, state.rng), gamedata)
+        elif action["type"] == "cast":
+            res = magic.cast(player, gamedata, action["spell_id"], state.rng,
+                             target=action.get("target"), battle=battle, enemies=alive_e())
+            ui.message(res["message"], style="cyan")
+            ui.show_events(res["skill_events"], gamedata)
+        elif action["type"] == "power":
+            pres = powers.use(player, state, gamedata, target=action.get("target"))
+            for m in pres["messages"]:
+                ui.message(m, style="bold magenta")
+            if pres["escape"]:
+                player.active_effects.clear()
+                state.time.advance(1)
+                return "fled"
+        elif action["type"] == "block":
+            ui.message("你舉盾戒備,準備擋下來襲。", style="grey70")
+
+        # 玩家階段可能殺死(被擒魂的)敵人 → 統一記錄(涵蓋單體/AoE/星座之力)
+        for e in enemies:
+            note_trap(e)
+
+        # ---- 同伴階段(各自攻擊一個隨機存活敵人)----
+        for a in battle["allies"]:
+            if not alive_e():
+                break
+            if not combat.is_alive(a) or magic.is_incapacitated(a):
+                continue
+            tgt = state.rng.choice(alive_e())
+            ui.combat_event(combat.resolve_attack(a, tgt, gamedata, state.rng), gamedata)
+            note_trap(tgt)
+
+        # ---- 敵人階段(各自挑我方一個目標)----
+        for e in enemies:
+            if not combat.is_alive(player):
+                break
+            if not combat.is_alive(e):
+                continue
+            if magic.is_incapacitated(e):
+                why = "恐懼" if magic.is_feared(e) else "麻痺"
+                ui.message(f"{e.name}因{why}而無法行動。", style="blue")
+                continue
+            tgt = combat.pick_player_side_target(player, battle["allies"], state.rng)
+            blk = blocking if tgt is player else False
+            ui.combat_event(combat.resolve_attack(e, tgt, gamedata, state.rng, defender_blocking=blk),
+                            gamedata)
+
+        # ---- 回合結束:持續傷害/狀態計時 ----
+        pre_trap = {id(e): magic.has_soul_trap(e) for e in enemies if combat.is_alive(e)}
+        ui.combat_tick(magic.tick_effects(player, gamedata))
+        for a in battle["allies"]:
+            if combat.is_alive(a):
+                ui.combat_tick(magic.tick_effects(a, gamedata))
+        for e in enemies:
+            if combat.is_alive(e):
+                ui.combat_tick(magic.tick_effects(e, gamedata))
+        for e in enemies:                       # 持續傷害收掉的、原本被擒魂的敵人
+            if not combat.is_alive(e) and pre_trap.get(id(e)):
+                trapped_kills.add(id(e))
+        # 召喚物計時、移除陣亡/到期的同伴
+        for a in battle["allies"]:
+            if a.summon_turns is not None:
+                a.summon_turns -= 1
+        battle["allies"] = [a for a in battle["allies"]
+                            if combat.is_alive(a) and (a.summon_turns is None or a.summon_turns > 0)]
+
+    player.active_effects.clear()
+    state.time.advance(1)
+    if not combat.is_alive(player):
+        return "dead"
+
+    # ---- 勝利結算:全部敵人的戰利品 / 擒魂 / 擊殺與任務 ----
+    if len(enemies) == 1:
+        ui.message(f"你擊敗了{enemies[0].name}!", style="bold green")
+    else:
+        ui.message(f"你擊敗了所有敵人({len(enemies)} 名)!", style="bold green")
+    total = {"gold": 0, "items": []}
+    for e in enemies:
+        r = combat.grant_loot(player, e, gamedata, state.rng)
+        total["gold"] += r["gold"]
+        total["items"] += r["items"]
+        if id(e) in trapped_kills:
+            gem = magic.soul_gem_for(e)
+            if gem:
+                inventory.add_item(player, gem, 1)
+                ui.message(f"擒魂成功 —— 獲得{gamedata.item_name(gem)}。", style="magenta")
+        quests.record_kill(player, e.template_id)
+    ui.loot_report(total, gamedata)
+    _report_quests(state, gamedata)
+    return "victory"
+
+
+def _report_quests(state: GameState, gamedata: GameData) -> None:
+    """結算任務的階段推進與完成,並向玩家報告。"""
+    for ev in quests.check_completion(state.player, gamedata):
+        if ev["type"] == "stage_advanced":
+            ui.message(f"▸ 任務推進:{ev['name']}(階段 {ev['stage_idx'] + 1}/{ev['total']})",
+                       style="yellow")
+            if ev["stage_text"]:
+                ui.message(f"  {ev['stage_text']}", style="white")
+            continue
+        ui.message(f"✔ 任務完成:{ev['name']}", style="bold yellow")
+        r = ev["reward"]
+        if r.get("gold"):
+            ui.message(f"  獎勵 {r['gold']} 金", style="yellow")
+        for iid in r.get("items", []):
+            ui.message(f"  獎勵 {gamedata.item_name(iid)}", style="green")
+        if r.get("fame"):
+            ui.message(f"  聲望 +{r['fame']}", style="cyan")
+        if ev["promoted"]:
+            fac, rank = ev["promoted"]
+            ui.message(f"  ★ 你在{gamedata.factions[fac]['name']}晉升為「{rank}」!", style="bold magenta")
+
+
+# ======================================================================
+# 事件引擎(DESIGN 3.8)
+# ======================================================================
+def run_event(state: GameState, gamedata: GameData, event_id: str) -> str | None:
+    """呈現一個事件並結算所選選項。回傳 'dead'(若觸發的戰鬥致死)或 None。"""
+    e = gamedata.events[event_id]
+    ui.event_panel(e)
+
+    opts = [(str(i), opt["text"]) for i, opt in enumerate(e["options"])
+            if events.option_available(state.player, gamedata, opt)]
+    if not opts:                       # 全部選項都不符資格(理論上事件應留安全選項)
+        ui.message("你權衡之後,選擇了離開。", style="grey70")
+        return None
+    idx = int(ui.menu("你要怎麼做?", opts))
+    opt = e["options"][idx]
+
+    if "check" in opt:
+        ok = events.resolve_check(state.player, opt["check"], state.rng)
+        branch = opt["check"]["success" if ok else "failure"]
+        ui.message(branch.get("text", "成功!" if ok else "失敗……"),
+                   style="green" if ok else "yellow")
+        result = events.apply_effects(state, gamedata, branch.get("effects", []), state.rng)
+    else:
+        result = events.apply_effects(state, gamedata, opt.get("effects", []), state.rng)
+
+    for m in result["messages"]:
+        ui.message(m)
+    for tid in result["combat"]:
+        foe = combat.spawn_creature(gamedata, tid, state.rng)
+        ui.combat_intro(foe, state.player, gamedata)
+        if run_battle(state, gamedata, foe) == "dead":
+            return "dead"
+    if state.player.health <= 0:       # 例如陷阱傷害致死
+        return "dead"
+    _report_quests(state, gamedata)
+    return None
+
+
+def maybe_event(state: GameState, gamedata: GameData, context: str) -> str | None:
+    """按情境機率擲一次事件。回傳 'dead' / 'fired'(有事件發生)/ None(無)。"""
+    if not state.rng.chance(events.CONTEXT_CHANCE.get(context, 0.0)):
+        return None
+    eid = events.pick_event(state, gamedata, context, state.rng)
+    if eid is None:
+        return None
+    return "dead" if run_event(state, gamedata, eid) == "dead" else "fired"
+
+
+def _group_name(enemies: list) -> str:
+    """把敵群摘要成「強盜×2、野狼」之類的字串。"""
+    counts: dict[str, int] = {}
+    for e in enemies:
+        counts[e.name] = counts.get(e.name, 0) + 1
+    return "、".join(f"{n}×{c}" if c > 1 else n for n, c in counts.items())
+
+
+def offer_battle(state: GameState, gamedata: GameData, enemies, ambush_chance: float = 0.25) -> str | None:
+    """呈現遭遇 → 接戰/避開。enemies 為 Creature 清單或單一。回傳結果或 None(避開成功)。"""
+    if not isinstance(enemies, list):
+        enemies = [enemies]
+    name = _group_name(enemies)
+    ui.combat_intro(enemies[0], state.player, gamedata)
+    if len(enemies) > 1:
+        ui.message(f"來者不止一個 —— 你面對的是:{name}!", style="bold red")
+    choice = ui.menu(f"要與{name}交戰嗎?", [("fight", "接戰"), ("avoid", "避開")])
+    if choice == "avoid":
+        if state.rng.chance(ambush_chance):
+            ui.message(f"{name}不肯罷休 —— 被迫應戰!", style="yellow")
+        else:
+            ui.message("你悄悄退開,沒有交手。")
+            return None
+    return run_battle(state, gamedata, enemies)
+
+
+def action_explore(state: GameState, gamedata: GameData) -> str | None:
+    """荒野探索:隨機遭遇一隻敵人(回傳 'dead' 表示陣亡)。"""
+    player = state.player
+    if player.fatigue < formulas.ATTACK_FATIGUE_COST:
+        ui.message("你太疲憊了,先休息再出發吧。", style="yellow")
+        return None
+    state.time.advance(1)
+    ev = maybe_event(state, gamedata, "explore")    # 探索可能引發奇遇而非戰鬥
+    if ev == "dead":
+        return "dead"
+    if ev == "fired":
+        return None
+    danger = world.current_location(player, gamedata).get("danger", 1)
+    enemies = combat.random_encounter_group(gamedata, player.level, state.rng, max_danger=danger + 1)
+    return offer_battle(state, gamedata, enemies)
+
+
+def end_run(state: GameState, gamedata: GameData, ending: str) -> None:
+    """結束此生:呈現傳奇總結;依模式決定是否抹除存檔。
+
+    ending = 'death'(陣亡)或 'retire'(隱退)。
+    """
+    c = state.player
+    if ending == "death":
+        ui.rule("陣亡")
+        ui.message(f"{c.name} 倒下了……一生的冒險就此終結。", style="bold red")
+    else:
+        ui.rule("隱退")
+        ui.message(f"{c.name} 卸下行囊,從此歸隱山林。", style="yellow")
+
+    ui.legacy_screen(legacy.compute(state, gamedata, ending=ending))
+
+    if state.game_mode == GameState.LEGEND and ending == "death":
+        SAVE_PATH.unlink(missing_ok=True)   # 傳奇模式只在「死亡」時永久抹除存檔(隱退保留)
+        ui.message("【傳奇模式】此生已成定局,存檔已封存。", style="magenta")
+    elif ending == "death" and state.game_mode == GameState.ADVENTURE and SAVE_PATH.exists():
+        ui.message("(冒險模式:可從主選單『讀取存檔』回到上次存檔點。)", style="grey70")
+
+
+# ======================================================================
+# 旅行
+# ======================================================================
+def action_travel(state: GameState, gamedata: GameData) -> str | None:
+    opts = [(dest, f"{gamedata.location(dest)['name']}（{h} 時)")
+            for dest, h in world.travel_options(state.player, gamedata)]
+    dest = ui.menu("前往何處?", opts, allow_back=True)
+    if dest is None:
+        return None
+    foe = world.travel(state.player, gamedata, dest, state.time, state.rng)
+    if dest not in state.player.visited_locations:   # 已抵達(location_id 已更新)→ 先記足跡,
+        state.player.visited_locations.append(dest)  # 即使途中埋伏致死也算到過此地
+    ui.message(f"你啟程前往{gamedata.location(dest)['name']}……", style="grey70")
+    if foe is not None:
+        ui.message("途中遭遇了埋伏!", style="yellow")
+        result = offer_battle(state, gamedata, foe, ambush_chance=0.4)
+        if result == "dead":
+            return "dead"
+    ui.message(f"你抵達了{gamedata.location(dest)['name']}。", style="cyan")
+    _report_quests(state, gamedata)              # 「抵達」類任務結算
+
+    # 旅途中的奇遇(途中事件)
+    if maybe_event(state, gamedata, "travel") == "dead":
+        return "dead"
+
+    loc = gamedata.location(dest)
+    # 抵達城鎮的見聞事件
+    if loc["type"] in ("city", "town"):
+        if maybe_event(state, gamedata, "arrive") == "dead":
+            return "dead"
+    # 帶著賞金進城 → 衛兵盤查
+    if loc["type"] in ("city", "town") and crime.bounty(state.player, loc["province"]) > 0:
+        if guard_confrontation(state, gamedata) == "dead":
+            return "dead"
+    return None
+
+
+# ======================================================================
+# 地城探索
+# ======================================================================
+def _resolve_container(state: GameState, gamedata: GameData, container: dict, label: str) -> None:
+    if container is None:
+        return
+    lock = container.get("locked", 0)
+    if lock > 0:
+        ch = dungeon.pick_lock_chance(state.player.skill("security"), lock)
+        if not ui.confirm(f"發現一個上鎖的{label}(鎖難度 {lock},你的成功率約 {int(ch*100)}%),嘗試撬鎖?"):
+            return
+        while True:
+            r = dungeon.pick_lock(state.player, gamedata, lock, state.rng)
+            ui.show_events(r["skill_events"], gamedata)
+            if r["success"]:
+                ui.message("塔之鑰應驗,鎖無聲而開。" if r.get("tower_key") else "喀噠 —— 鎖開了!",
+                           style="green")
+                break
+            if not ui.confirm("撬鎖失敗。再試一次?"):
+                return
+    spoils = dungeon.open_container(state.player, gamedata, container, state.rng)
+    ui.message(f"你打開了{label}:", style="green")
+    ui.loot_report(spoils, gamedata)
+
+
+def _room_enemies(gamedata: GameData, room: dict, rng: RNG) -> list:
+    """房間敵人:支援 'enemies'(清單)或 'enemy'(單一)。"""
+    ids = room.get("enemies") or ([room["enemy"]] if room.get("enemy") else [])
+    return [combat.spawn_creature(gamedata, tid, rng) for tid in ids]
+
+
+def action_dungeon(state: GameState, gamedata: GameData) -> str | None:
+    loc = world.current_location(state.player, gamedata)
+    dg = gamedata.dungeons[loc["dungeon"]]
+    rooms = dg["rooms"]
+    total = len(rooms) + 1
+    ui.message(f"你踏入了{dg['name']}的幽暗深處……", style="magenta")
+
+    for i, room in enumerate(rooms, 1):
+        ui.dungeon_room(dg["name"], i, total, room["desc"])
+        room_enemies = _room_enemies(gamedata, room, state.rng)
+        if room_enemies and run_battle(state, gamedata, room_enemies) == "dead":
+            return "dead"
+        _resolve_container(state, gamedata, room.get("container"), "箱子")
+        if i < len(rooms) and not ui.confirm("繼續深入?"):
+            ui.message("你循原路退出了地城。", style="grey70")
+            state.time.advance(1)
+            return None
+
+    boss = dg["boss"]
+    ui.dungeon_room(dg["name"], total, total, boss["desc"], is_boss=True)
+    if boss.get("enemy"):
+        foe = combat.spawn_boss(gamedata, boss["enemy"], state.rng, name=f"{dg['name']}首領")
+        if run_battle(state, gamedata, foe) == "dead":
+            return "dead"
+    _resolve_container(state, gamedata, boss.get("treasure"), "首領寶藏")
+    ui.message(f"你肅清了{dg['name']}!", style="bold green")
+    quests.record_dungeon_clear(state.player, loc["dungeon"])
+    _report_quests(state, gamedata)
+    state.time.advance(1)
+    return None
+
+
+# ======================================================================
+# 背包與裝備
+# ======================================================================
+def action_inventory(state: GameState, gamedata: GameData) -> None:
+    char = state.player
+    while True:
+        ui.inventory_panel(char, gamedata)
+        if not char.inventory:
+            return
+        opts = [(s["id"], ui.item_label(gamedata, char, s["id"], s["qty"])) for s in char.inventory]
+        item_id = ui.menu("選擇物品(查看/操作)", opts, allow_back=True)
+        if item_id is None:
+            return
+        _item_actions(state, gamedata, item_id)
+
+
+def _item_actions(state: GameState, gamedata: GameData, item_id: str) -> None:
+    char = state.player
+    d = gamedata.item(item_id)
+    acts = []
+    if d["kind"] == "weapon" and char.weapon != item_id:
+        acts.append(("equip_w", "裝備為手持武器"))
+    if d["kind"] == "armor" and char.equipped.get(d["slot"]) != item_id:
+        acts.append(("equip_a", "穿戴"))
+    if item_id in char.equipped.values():
+        acts.append(("unequip", "卸下"))
+    if d["kind"] == "potion":
+        acts.append(("use", "使用"))
+    acts.append(("drop", "丟棄一件"))
+    act = ui.menu(d["name"], acts, allow_back=True)
+    if act == "equip_w":
+        inventory.equip_weapon(char, gamedata, item_id)
+        ui.message(f"你握起了{d['name']}。", style="green")
+    elif act == "equip_a":
+        inventory.equip_armor(char, gamedata, item_id)
+        ui.message(f"你穿上了{d['name']}。", style="green")
+    elif act == "unequip":
+        inventory.unequip(char, d["slot"])
+        ui.message(f"你卸下了{d['name']}。", style="grey70")
+    elif act == "use":
+        msg = inventory.use_item(char, gamedata, item_id)
+        ui.message(msg or "無法使用。", style="green")
+    elif act == "drop":
+        inventory.remove_item(char, item_id, 1)
+        ui.message(f"你丟棄了一件{d['name']}。", style="grey70")
+
+
+# ======================================================================
+# 城鎮服務:商店 / 旅店 / 訓練師
+# ======================================================================
+def action_shop(state: GameState, gamedata: GameData) -> None:
+    char = state.player
+    loc = world.current_location(char, gamedata)
+    stock = loc.get("merchant_stock", [])
+    while True:
+        mode = ui.menu(f"商店(你有 {char.gold} 金幣)", [
+            ("buy", "購買"), ("sell", "出售"), ("steal", "行竊(觸法)"),
+        ], allow_back=True)
+        if mode is None:
+            return
+        if mode == "steal":
+            opts = [(iid, f"{gamedata.item_name(iid)}（價值 {gamedata.item(iid)['value']})")
+                    for iid in stock]
+            iid = ui.menu(f"行竊哪件?(得手率約 {int(crime.steal_chance(char)*100)}%)",
+                          opts, allow_back=True)
+            if iid is None:
+                continue
+            r = crime.steal_item(char, gamedata, iid, state.rng)
+            if r["ok"]:
+                ui.message(f"你神不知鬼不覺地摸走了{gamedata.item_name(iid)}。", style="green")
+            else:
+                ui.message(f"「住手!小偷!」 —— 你被逮個正著,賞金 +{r['bounty_added']}。", style="red")
+            ui.show_events(r["skill_events"], gamedata)
+            continue
+        if mode == "buy":
+            opts = [(iid, f"{gamedata.item_name(iid)} — {world.buy_price(char, gamedata, iid)} 金")
+                    for iid in stock]
+            iid = ui.menu("買什麼?", opts, allow_back=True)
+            if iid is None:
+                continue
+            price = world.buy_price(char, gamedata, iid)
+            if char.gold < price:
+                ui.message("金幣不足。", style="red")
+            elif not inventory.can_carry(char, gamedata, iid):
+                ui.message("背負不下,太重了。", style="red")
+            else:
+                char.gold -= price
+                inventory.add_item(char, iid, 1)
+                ui.message(f"買下了{gamedata.item_name(iid)}。", style="green")
+        else:
+            sellable = [s for s in char.inventory if gamedata.item(s["id"])["value"] > 0]
+            if not sellable:
+                ui.message("沒有可賣的東西。", style="grey70")
+                continue
+            opts = [(s["id"], f"{ui.item_label(gamedata, char, s['id'], s['qty'])} — 售 "
+                     f"{world.sell_price(char, gamedata, s['id'])} 金") for s in sellable]
+            iid = ui.menu("賣什麼?", opts, allow_back=True)
+            if iid is None:
+                continue
+            price = world.sell_price(char, gamedata, iid)
+            inventory.remove_item(char, iid, 1)
+            char.gold += price
+            progression.use_skill(char, gamedata, "mercantile", 0.3)
+            ui.message(f"賣出{gamedata.item_name(iid)},得 {price} 金。", style="green")
+
+
+MAX_PARTY = 2
+
+
+def action_inn(state: GameState, gamedata: GameData) -> None:
+    char = state.player
+    while True:
+        party = "、".join(gamedata.companions[c]["name"] for c in char.companions) or "無"
+        opts = [("rest", "過夜(10 金,完全回復)"), ("hire", "雇用傭兵同伴")]
+        if char.companions:
+            opts.append(("dismiss", "解散傭兵"))
+        choice = ui.menu(f"旅店(目前隊伍:{party})", opts, allow_back=True)
+        if choice is None:
+            return
+        if choice == "rest":
+            fee = 10
+            if char.gold < fee:
+                ui.message(f"住一晚要 {fee} 金,你付不起。", style="red")
+            else:
+                char.gold -= fee
+                char.health, char.magicka, char.fatigue = char.max_health, char.max_magicka, char.max_fatigue
+                state.time.advance(8)
+                ui.message("一夜好眠,氣力盡復。", style="green")
+        elif choice == "hire":
+            _hire_mercenary(state, gamedata)
+        elif choice == "dismiss":
+            _dismiss_mercenary(state, gamedata)
+
+
+def _hire_mercenary(state: GameState, gamedata: GameData) -> None:
+    char = state.player
+    if len(char.companions) >= MAX_PARTY:
+        ui.message(f"隊伍已滿(最多 {MAX_PARTY} 名傭兵),先解散一名吧。", style="yellow")
+        return
+    avail = [cid for cid in gamedata.companions if cid not in char.companions]
+    opts = [(cid, f"{gamedata.companions[cid]['name']} — {gamedata.companions[cid]['cost']} 金:"
+             f"{gamedata.companions[cid]['blurb']}") for cid in avail]
+    cid = ui.menu(f"雇用哪位?(你有 {char.gold} 金)", opts, allow_back=True)
+    if cid is None:
+        return
+    cost = gamedata.companions[cid]["cost"]
+    if char.gold < cost:
+        ui.message("金幣不足。", style="red")
+        return
+    char.gold -= cost
+    char.companions.append(cid)
+    ui.message(f"{gamedata.companions[cid]['name']}加入了你的隊伍,將在戰鬥中並肩作戰。", style="bold green")
+
+
+def _dismiss_mercenary(state: GameState, gamedata: GameData) -> None:
+    char = state.player
+    opts = [(cid, gamedata.companions[cid]["name"]) for cid in char.companions]
+    cid = ui.menu("解散哪位傭兵?", opts, allow_back=True)
+    if cid is None:
+        return
+    char.companions.remove(cid)
+    ui.message(f"{gamedata.companions[cid]['name']}拿了酬勞,就此別過。", style="grey70")
+
+
+def action_trainer(state: GameState, gamedata: GameData) -> None:
+    char = state.player
+    spec = ui.menu("向訓練師學哪一類?", [
+        ("combat", "戰鬥"), ("magic", "魔法"), ("stealth", "潛行"),
+    ], allow_back=True)
+    if spec is None:
+        return
+    opts = []
+    for sid in gamedata.skills_by_spec(spec):
+        cost = world.train_cost(char.skill(sid))
+        opts.append((sid, f"{gamedata.skill_name(sid)} (Lv {char.skill(sid)}) — {cost} 金 +1"))
+    sid = ui.menu("訓練哪項技能?", opts, allow_back=True)
+    if sid is None:
+        return
+    if char.skill(sid) >= formulas.SKILL_CAP:
+        ui.message("此技能已臻化境,無需再學。", style="grey70")
+        return
+    cost = world.train_cost(char.skill(sid))
+    if char.gold < cost:
+        ui.message("金幣不足。", style="red")
+        return
+    char.gold -= cost
+    events = progression.use_skill(char, gamedata, sid, formulas.skill_threshold(char.skill(sid)))
+    ui.message(f"訓練師指點了你的{gamedata.skill_name(sid)}。", style="green")
+    ui.show_events(events, gamedata)
+
+
+# ======================================================================
+# 魔法與製作:施法 / 法師公會 / 煉金 / 附魔 / 修理
+# ======================================================================
+def action_cast_self(state: GameState, gamedata: GameData) -> None:
+    """戰鬥外施法:治療、回體力等自我增益(練功也行)。"""
+    char = state.player
+    usable = [s for s in char.spells
+              if gamedata.spells[s]["target"] == "self"
+              and gamedata.spells[s]["effect"]["kind"] in ("heal", "restore_fatigue")]
+    if not usable:
+        ui.message("你沒有可在戰鬥外施放的法術。", style="grey70")
+        return
+    opts = [(s, f"{gamedata.spells[s]['name']}（{magic.effective_cost(char, gamedata, s)} 魔力)")
+            for s in usable]
+    sid = ui.menu(f"施放哪道法術?(魔力 {int(char.magicka)}/{char.max_magicka})", opts, allow_back=True)
+    if sid is None:
+        return
+    if not magic.can_cast(char, gamedata, sid):
+        ui.message("魔力不足。", style="red")
+        return
+    res = magic.cast(char, gamedata, sid, state.rng)
+    ui.message(res["message"], style="cyan")
+    ui.show_events(res["skill_events"], gamedata)
+
+
+def action_use_power(state: GameState, gamedata: GameData) -> None:
+    """平時施展出生星座能力(治療/淨化/塔之鑰)。"""
+    pid = powers.power_id(state.player, gamedata)
+    pdef = powers.power_def(pid)
+    if not ui.confirm(f"施展「{pdef['name']}」?({pdef['desc']}每日一次)"):
+        return
+    res = powers.use(state.player, state, gamedata)
+    for m in res["messages"]:
+        ui.message(m, style="bold magenta")
+
+
+def action_spell_vendor(state: GameState, gamedata: GameData) -> None:
+    char = state.player
+    loc = world.current_location(char, gamedata)
+    for_sale = [s for s in loc.get("spell_stock", []) if s not in char.spells]
+    if not for_sale:
+        ui.message("公會裡沒有你還沒學會的法術了。", style="grey70")
+        return
+    opts = [(s, f"{gamedata.spells[s]['name']}（{gamedata.spells[s]['school']}) — "
+             f"{world.spell_price(gamedata, s)} 金") for s in for_sale]
+    sid = ui.menu(f"學習法術(你有 {char.gold} 金)", opts, allow_back=True)
+    if sid is None:
+        return
+    price = world.spell_price(gamedata, sid)
+    if char.gold < price:
+        ui.message("金幣不足。", style="red")
+        return
+    char.gold -= price
+    char.spells.append(sid)
+    ui.message(f"你習得了{gamedata.spells[sid]['name']}!", style="bold green")
+
+
+def action_alchemy(state: GameState, gamedata: GameData) -> None:
+    char = state.player
+    ings = [s["id"] for s in char.inventory if gamedata.item(s["id"]).get("kind") == "ingredient"]
+    if len(ings) < 2:
+        ui.message("材料不足,至少需要兩種煉金材料。", style="grey70")
+        return
+
+    def _ing_opts(exclude=None):
+        out = []
+        for iid in ings:
+            if iid == exclude:
+                continue
+            effs = "、".join(_EFFECT_CN.get(e["kind"], e["kind"])
+                            for e in alchemy.ingredient_effects(gamedata, iid))
+            out.append((iid, f"{gamedata.item_name(iid)} ×{inventory.count_item(char, iid)}（{effs})"))
+        return out
+
+    a = ui.menu("選第一種材料", _ing_opts(), allow_back=True)
+    if a is None:
+        return
+    b = ui.menu("選第二種材料", _ing_opts(exclude=a), allow_back=True)
+    if b is None:
+        return
+    res = alchemy.brew(char, gamedata, a, b, state.rng)
+    ui.message(res["message"], style="green" if res["ok"] else "yellow")
+    ui.show_events(res["skill_events"], gamedata)
+
+
+def action_enchant(state: GameState, gamedata: GameData) -> None:
+    char = state.player
+    gems = enchanting.filled_soul_gems(char, gamedata)
+    weapons = enchanting.enchantable_weapons(char, gamedata)
+    if not gems:
+        ui.message("你沒有充能的靈魂石(用『擒魂術』擊殺敵人可獲得)。", style="grey70")
+        return
+    if not weapons:
+        ui.message("沒有可附魔的武器。", style="grey70")
+        return
+    wid = ui.menu("為哪把武器附魔?", [(w, gamedata.item_name(w)) for w in weapons], allow_back=True)
+    if wid is None:
+        return
+    gem = ui.menu("使用哪顆靈魂石?",
+                  [(g, f"{gamedata.item_name(g)}(靈魂 {gamedata.item(g)['soul']})") for g in gems],
+                  allow_back=True)
+    if gem is None:
+        return
+    elem = ui.menu("附上哪種元素?", [("fire", "烈焰"), ("frost", "冰霜"), ("shock", "雷電")],
+                   allow_back=True)
+    if elem is None:
+        return
+    res = enchanting.enchant_weapon(char, gamedata, wid, elem, gem)
+    ui.message(res["message"], style="bold green" if res["ok"] else "red")
+    ui.show_events(res["skill_events"], gamedata)
+
+
+def action_repair(state: GameState, gamedata: GameData) -> None:
+    char = state.player
+    loc = world.current_location(char, gamedata)
+    at_smith = "armorer" in loc.get("services", [])
+    has_hammer = inventory.count_item(char, "repair_hammer") > 0
+    opts = []
+    if at_smith:
+        opts.append(("smith", f"請鐵匠修復全部裝備({world.repair_fee()} 金,修到全新)"))
+    if has_hammer:
+        cap = int(inventory.repairable_cap(char.skill("armorer")))
+        opts.append(("hammer", f"用修理鎚自行修理(修到 {cap}%,鍛鍊護甲修理)"))
+    if not opts:
+        ui.message("這裡沒有鐵匠,你也沒有修理鎚。", style="grey70")
+        return
+    choice = ui.menu("如何修理?", opts, allow_back=True)
+    if choice == "smith":
+        fee = world.repair_fee()
+        if char.gold < fee:
+            ui.message("金幣不足。", style="red")
+            return
+        char.gold -= fee
+        inventory.repair_all(char, 100.0)
+        ui.message("鐵匠叮叮噹噹一陣,你的裝備煥然一新。", style="green")
+    elif choice == "hammer":
+        cap = inventory.repairable_cap(char.skill("armorer"))
+        inventory.repair_all(char, cap)
+        inventory.remove_item(char, "repair_hammer", 1)
+        events = progression.use_skill(char, gamedata, "armorer", 0.8)
+        ui.message(f"你用修理鎚整備了裝備(上限 {int(cap)}%)。", style="green")
+        ui.show_events(events, gamedata)
+
+
+_EFFECT_CN = {"heal": "回血", "restore_magicka": "回魔", "restore_fatigue": "回體",
+              "damage_health": "毒傷", "paralyze": "麻痺"}
+
+
+def action_coat_weapon(state: GameState, gamedata: GameData) -> None:
+    """把一瓶毒藥塗到手持武器上。"""
+    char = state.player
+    if char.weapon == "fists":
+        ui.message("徒手無從塗毒,先裝備一把武器。", style="yellow")
+        return
+    poisons = [s["id"] for s in char.inventory if gamedata.item(s["id"]).get("kind") == "poison"]
+    if not poisons:
+        ui.message("你沒有可用的毒藥(用煉金把有害材料調成毒藥)。", style="grey70")
+        return
+    if char.weapon_poison:
+        ui.message(f"目前武器已塗:{char.weapon_poison['name']}(剩 {char.weapon_poison['charges']} 次)。",
+                   style="grey70")
+    opts = [(p, f"{gamedata.item_name(p)} ×{inventory.count_item(char, p)}") for p in poisons]
+    pid = ui.menu(f"塗哪瓶毒?(可附著 {inventory.poison_charges(char)} 次攻擊)", opts, allow_back=True)
+    if pid is None:
+        return
+    if inventory.coat_weapon(char, gamedata, pid):
+        ui.message(f"你把{gamedata.item_name(pid)}抹上了{gamedata.item(char.weapon)['name']}的刃口。",
+                   style="green")
+
+
+# ======================================================================
+# 公會、任務、犯罪、對話
+# ======================================================================
+def action_guild_hall(state: GameState, gamedata: GameData, faction_id: str) -> None:
+    char = state.player
+    f = gamedata.factions[faction_id]
+    ui.guild_panel(char, gamedata, faction_id)
+
+    opts = []
+    member = factions.is_member(char, faction_id)
+    if not member:
+        opts.append(("join", "申請入會"))
+    else:
+        avail = quests.available_quests(char, gamedata, "guild", faction_id)
+        if avail:
+            opts.append(("accept", "接取晉升任務"))
+    if not opts:
+        # 區分「手上還有公會任務沒交」與「已達目前開放階級的頂點」
+        has_active = any(gamedata.quests[q].get("faction") == faction_id for q in char.quests)
+        rank_quests = gamedata.factions[faction_id]["rank_quests"]
+        if has_active:
+            ui.message("先完成你手上的公會任務,再回來談晉升。", style="grey70")
+        elif factions.rank_index(char, faction_id) >= len(rank_quests):
+            ui.message("你已達公會目前開放的最高階級,暫無新委託(更多晉升內容待後續更新)。",
+                       style="grey70")
+        else:
+            ui.message("公會目前沒有你能接的委託。", style="grey70")
+        return
+    choice = ui.menu("公會事務", opts, allow_back=True)
+    if choice == "join":
+        if factions.can_join(char, gamedata, faction_id):
+            factions.join(char, faction_id)
+            ui.message(f"你加入了{f['name']},現為「{factions.rank_name(char, gamedata, faction_id)}」。",
+                       style="bold green")
+        else:
+            ui.message("你還不符合入會資格。", style="yellow")
+    elif choice == "accept":
+        avail = quests.available_quests(char, gamedata, "guild", faction_id)
+        qid = avail[0]
+        _accept_and_brief(state, gamedata, qid)
+
+
+def action_board(state: GameState, gamedata: GameData) -> None:
+    char = state.player
+    avail = quests.available_quests(char, gamedata, "board")
+    if not avail:
+        ui.message("告示板上沒有你還沒接的委託。", style="grey70")
+        return
+    opts = [(qid, f"{gamedata.quests[qid]['name']} — {quests.objective_text(char, gamedata, qid)}"
+             f"(賞 {gamedata.quests[qid]['reward'].get('gold', 0)} 金)") for qid in avail]
+    qid = ui.menu("告示板委託", opts, allow_back=True)
+    if qid is None:
+        return
+    _accept_and_brief(state, gamedata, qid)
+
+
+def _accept_and_brief(state: GameState, gamedata: GameData, qid: str) -> None:
+    quests.accept_quest(state.player, gamedata, qid)
+    ui.message(gamedata.quests[qid]["text"], style="white")
+    ui.message(f"已接取任務:{gamedata.quests[qid]['name']}", style="bold yellow")
+    _report_quests(state, gamedata)   # 可能當下即達標(如已持有上繳物)
+
+
+def action_quest_log(state: GameState, gamedata: GameData) -> None:
+    ui.quest_log(state.player, gamedata)
+
+
+def action_talk(state: GameState, gamedata: GameData) -> None:
+    char = state.player
+    npc_ids = gamedata.npcs_at(char.location_id)
+    if not npc_ids:
+        ui.message("這裡沒有可攀談的人。", style="grey70")
+        return
+    nid = ui.menu("與誰攀談?", [(n, gamedata.npcs[n]["name"]) for n in npc_ids], allow_back=True)
+    if nid is None:
+        return
+    while True:
+        npc = gamedata.npcs[nid]
+        disp = dialogue.disposition(char, gamedata, nid)
+        ui.npc_panel(npc, disp)
+        offered = dialogue.offered_quest(char, gamedata, nid)
+        opts = []
+        if offered:
+            opts.append(("quest", f"接受委託:{gamedata.quests[offered]['name']}"))
+        opts += [("persuade", "說服(口才)"), ("bribe", f"賄賂({dialogue.BRIBE_COST} 金)")]
+        choice = ui.menu("對話", opts, allow_back=True)
+        if choice is None:
+            return
+        if choice == "quest":
+            _accept_and_brief(state, gamedata, offered)
+            return
+        elif choice == "persuade":
+            r = dialogue.persuade(char, gamedata, nid, state.rng)
+            ui.message("對方頗為受用,好感提升。" if r["ok"] else "話不投機,對方有些不悅。",
+                       style="green" if r["ok"] else "yellow")
+            ui.show_events(r["skill_events"], gamedata)
+        elif choice == "bribe":
+            r = dialogue.bribe(char, gamedata, nid)
+            ui.message(r["message"], style="green" if r["ok"] else "red")
+
+
+def guard_confrontation(state: GameState, gamedata: GameData) -> str | None:
+    char = state.player
+    province = crime.province_of(char, gamedata)
+    ui.message(f"城門衛兵攔住了你:「你在{province}的賞金是 {crime.bounty(char, province)} 金 —— 束手就擒!」",
+               style="red")
+    while crime.bounty(char, province) > 0:
+        choice = ui.menu("如何應對?", [
+            ("pay", f"繳清罰金({crime.bounty(char, province)} 金)"),
+            ("jail", "乖乖入獄服刑"),
+            ("resist", "拔劍反抗(與衛兵開戰)"),
+        ])
+        if choice == "pay":
+            r = crime.pay_fine(char, gamedata)
+            if r["ok"]:
+                ui.message(f"你繳清了 {r['paid']} 金罰金,衛兵讓開了路。", style="green")
+            else:
+                ui.message(f"你付不起 {r['owed']} 金 —— 只能服刑或反抗。", style="yellow")
+        elif choice == "jail":
+            r = crime.serve_sentence(char, gamedata, state.time)
+            ui.message(f"你被關押了 {r['hours']} 小時,{province}的賞金一筆勾銷。", style="grey70")
+        elif choice == "resist":
+            # 賞金越高,出動的衛兵越多(1–3 名)
+            n = 1 + min(2, crime.bounty(char, province) // 80)
+            guards = [combat.spawn_creature(gamedata, "city_guard", state.rng) for _ in range(n)]
+            if run_battle(state, gamedata, guards) == "dead":
+                return "dead"
+            crime.add_bounty(char, province, 40)   # 拒捕罪加一等
+            ui.message("你殺出重圍逃進巷弄 —— 但賞金又添了一筆,你仍是通緝犯。", style="red")
+            return None
+    return None
+
+
+# ======================================================================
+# 主迴圈
+# ======================================================================
+def game_loop(state: GameState, gamedata: GameData) -> None:
+    while True:
+        ui.rule()
+        ui.status_line(state)
+        ui.location_panel(state.player, gamedata)
+        loc = world.current_location(state.player, gamedata)
+        services = loc.get("services", [])
+
+        player = state.player
+        # --- 冒險 ---
+        adventure: list = []
+        if loc["type"] == "dungeon":
+            adventure.append(("dungeon", "深入探索地城 ⚔"))
+        if loc.get("danger", 0) > 0 and loc["type"] != "dungeon":
+            adventure.append(("explore", "在周邊探索狩獵 ⚔"))
+        adventure.append(("travel", "旅行前往他處"))
+        adventure.append(("map", "查看 Tamriel 地圖"))
+        # --- 城鎮服務 ---
+        town: list = []
+        if "merchant" in services:
+            town.append(("shop", "逛商店"))
+        if "inn" in services:
+            town.append(("inn", "旅店過夜(10 金,完全回復)"))
+        if "trainer" in services:
+            town.append(("trainer", "找訓練師"))
+        if "mages_guild" in services:
+            town.append(("spells", "法師公會(學習法術)"))
+            town.append(("mg_hall", "法師公會(入會/任務)"))
+        if "fighters_guild" in services:
+            town.append(("fg_hall", "戰士公會"))
+        if "thieves_guild" in services:
+            town.append(("tg_hall", "盜賊公會"))
+        if "task_board" in services:
+            town.append(("board", "查看告示板"))
+        if gamedata.npcs_at(player.location_id):
+            town.append(("talk", "與人攀談"))
+        if "armorer" in services or inventory.count_item(player, "repair_hammer") > 0:
+            town.append(("repair", "修理裝備"))
+        # --- 施法與製作 ---
+        craft: list = []
+        if player.spells:
+            craft.append(("cast", "施法(自我增益)"))
+        if powers.usable_in(player, state, gamedata, "utility"):
+            pdef = powers.power_def(powers.power_id(player, gamedata))
+            craft.append(("power", f"星座之力({pdef['name']})"))
+        craft.append(("alchemy", "煉金調藥"))
+        if any(gamedata.item(s["id"]).get("kind") == "poison" for s in player.inventory):
+            craft.append(("coat", "塗抹毒藥"))
+        if enchanting.filled_soul_gems(player, gamedata):
+            craft.append(("enchant", "附魔武器"))
+        # --- 角色與物品 ---
+        character: list = [("quests", "任務日誌"), ("inventory", "背包與裝備"),
+                           ("practice", "練習技能"), ("rest", "原地休息"), ("sheet", "查看角色卡")]
+        if player.can_level_up():
+            character.insert(0, ("levelup", "★ 升級"))
+        # --- 系統 ---
+        system = [("save", "存檔"), ("retire", "隱退江湖(結算傳奇一生)"), ("quit", "離開到主選單")]
+
+        choice = ui.grouped_menu("要做什麼?", [
+            ("冒險", adventure), ("城鎮服務", town),
+            ("施法與製作", craft), ("角色與物品", character), ("系統", system),
+        ])
+        died = None
+        if choice == "map":
+            ui.world_map(player, gamedata)
+        elif choice == "dungeon":
+            died = action_dungeon(state, gamedata)
+        elif choice == "explore":
+            died = action_explore(state, gamedata)
+        elif choice == "travel":
+            died = action_travel(state, gamedata)
+        elif choice == "shop":
+            action_shop(state, gamedata)
+        elif choice == "inn":
+            action_inn(state, gamedata)
+        elif choice == "trainer":
+            action_trainer(state, gamedata)
+        elif choice == "spells":
+            action_spell_vendor(state, gamedata)
+        elif choice == "mg_hall":
+            action_guild_hall(state, gamedata, "mages_guild")
+        elif choice == "fg_hall":
+            action_guild_hall(state, gamedata, "fighters_guild")
+        elif choice == "tg_hall":
+            action_guild_hall(state, gamedata, "thieves_guild")
+        elif choice == "board":
+            action_board(state, gamedata)
+        elif choice == "talk":
+            action_talk(state, gamedata)
+        elif choice == "quests":
+            action_quest_log(state, gamedata)
+        elif choice == "repair":
+            action_repair(state, gamedata)
+        elif choice == "cast":
+            action_cast_self(state, gamedata)
+        elif choice == "power":
+            action_use_power(state, gamedata)
+        elif choice == "alchemy":
+            action_alchemy(state, gamedata)
+        elif choice == "coat":
+            action_coat_weapon(state, gamedata)
+        elif choice == "enchant":
+            action_enchant(state, gamedata)
+        elif choice == "inventory":
+            action_inventory(state, gamedata)
+        elif choice == "practice":
+            action_practice(state, gamedata)
+        elif choice == "rest":
+            died = action_rest(state, gamedata)
+        elif choice == "sheet":
+            ui.character_sheet(state.player, gamedata)
+        elif choice == "levelup":
+            action_level_up(state, gamedata)
+        elif choice == "save":
+            action_save(state)
+        elif choice == "retire":
+            if ui.confirm("確定就此封劍隱退、結束這趟冒險?"):
+                end_run(state, gamedata, "retire")
+                return
+        elif choice == "quit":
+            if ui.confirm("離開這趟冒險、回到主選單?(未存檔的進度會遺失)"):
+                if ui.confirm("離開前要存檔嗎?"):
+                    action_save(state)
+                return
+
+        if died == "dead":
+            end_run(state, gamedata, "death")
+            return
+
+
+def main() -> None:
+    gamedata = get_gamedata()
+    ui.banner()
+
+    while True:   # 主選單迴圈:一趟冒險(死亡/隱退/離開)結束後回到這裡
+        opts = [("new", "新遊戲")]
+        if SAVE_PATH.exists():
+            opts.append(("load", "讀取存檔"))
+        opts.append(("quit", "離開遊戲"))
+        choice = ui.menu("主選單", opts)
+
+        if choice == "quit":
+            ui.message("再會,旅人。", style="yellow")
+            return
+        if choice == "load":
+            state = GameState.load(SAVE_PATH)
+            ui.message(f"歡迎回來,{state.player.name}。", style="green")
+        else:
+            mode = ui.menu("選擇遊戲模式", [
+                ("adventure", "冒險模式 —— 死亡可讀檔重來,適合悠閒探索"),
+                ("legend", "傳奇模式 —— 永久死亡(roguelike),一條命定生死"),
+            ])
+            char = create_character(gamedata, RNG())
+            state = GameState(player=char, rng=RNG(), game_mode=mode)
+            ui.character_sheet(char, gamedata)
+
+        game_loop(state, gamedata)
+
+
+if __name__ == "__main__":
+    main()

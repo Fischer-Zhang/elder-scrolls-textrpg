@@ -1,0 +1,184 @@
+"""M8:元素抗性/弱點、狀態效果(DoT/麻痺/再生)、出生星座能力。"""
+
+import tempfile
+from pathlib import Path
+
+from tesrpg import formulas
+from tesrpg.creation import build_character
+from tesrpg.gamedata import get_gamedata
+from tesrpg.rng import RNG
+from tesrpg.state import GameState, GameTime
+from tesrpg.systems import combat, dungeon, magic, powers
+
+
+def _mage():
+    gd = get_gamedata()
+    c = build_character(gd, name="法", sex="female", race="breton",
+                        birthsign="mage", class_id="mage")
+    c.skills["destruction"] = 50
+    c.magicka = 999
+    return gd, c
+
+
+def _st(c):
+    return GameState(player=c, time=GameTime())
+
+
+# --- 抗性公式 -----------------------------------------------------------
+def test_resist_multiplier():
+    assert formulas.resist_multiplier({"fire": 75}, "fire") == 0.25
+    assert formulas.resist_multiplier({"fire": -50}, "fire") == 1.5      # 弱點放大
+    assert formulas.resist_multiplier({"frost": 100}, "frost") == 0.0    # 完全免疫
+    # magic 抗性疊加在魔法元素上,但不影響毒素
+    assert formulas.resist_multiplier({"magic": 50}, "fire") == 0.5
+    assert formulas.resist_multiplier({"magic": 50}, "poison") == 1.0
+
+
+def test_cast_respects_resist_and_weakness():
+    gd, c = _mage()
+    # dremora 強抗火、不抗冰 → 火傷遠低於冰傷
+    fire = magic.cast(c, gd, "flames", RNG(1), target=combat.spawn_creature(gd, "dremora", RNG(1)))
+    frost = magic.cast(c, gd, "frostbite", RNG(1), target=combat.spawn_creature(gd, "dremora", RNG(1)))
+    assert fire["damage"] < frost["damage"]
+    assert "被抵抗" in fire["message"]
+    # ice_wraith 弱火 → 火傷被放大,且命中弱點標記
+    weak = magic.cast(c, gd, "flames", RNG(1), target=combat.spawn_creature(gd, "ice_wraith", RNG(1)))
+    assert "弱點" in weak["message"]
+
+
+# --- 狀態效果 -----------------------------------------------------------
+def test_dot_ticks_and_respects_resist():
+    gd, c = _mage()
+    wolf = combat.spawn_creature(gd, "wolf", RNG(2))
+    magic.cast(c, gd, "poison_cloud", RNG(2), target=wolf)
+    hp0 = wolf.health
+    msgs = magic.tick_effects(wolf, gd)
+    assert wolf.health < hp0 and msgs
+    # 亞龍人免疫毒素 → DoT 0
+    arg = build_character(gd, name="A", sex="m", race="argonian", birthsign="warrior", class_id="warrior")
+    arg.active_effects = [{"kind": "dot", "element": "poison", "magnitude": 10, "turns": 2}]
+    h0 = arg.health
+    magic.tick_effects(arg, gd)
+    assert arg.health == h0
+
+
+def test_regen_and_paralyze():
+    gd, c = _mage()
+    c.health = 1
+    c.active_effects = [{"kind": "regen", "magnitude": 10, "turns": 2}]
+    magic.tick_effects(c, gd)
+    assert c.health == 11
+    foe = combat.spawn_creature(gd, "wolf", RNG(0))
+    foe.active_effects = [{"kind": "paralyze", "turns": 2}]
+    assert magic.is_paralyzed(foe) and magic.is_incapacitated(foe)
+
+
+def test_creature_on_hit_status():
+    gd, _ = _mage()
+    p = build_character(gd, name="P", sex="m", race="nord", birthsign="warrior", class_id="warrior")
+    spider = combat.spawn_creature(gd, "frostbite_spider", RNG(5))
+    applied = any(combat.resolve_attack(spider, p, gd, RNG(i)).get("status_applied") for i in range(25))
+    assert applied
+    assert any(e["kind"] == "dot" for e in p.active_effects)
+
+
+def test_status_effect_normalization():
+    """資料用 {'status':'dot'};放進 active_effects 須正規化成 {'kind':'dot'}。"""
+    gd, c = _mage()
+    foe = combat.spawn_creature(gd, "wolf", RNG(0))
+    magic.cast(c, gd, "poison_cloud", RNG(0), target=foe)
+    assert all("kind" in e for e in foe.active_effects)
+    assert any(e["kind"] == "dot" for e in foe.active_effects)
+
+
+# --- 巨魔像吸收 ---------------------------------------------------------
+def test_atronach_absorbs_elemental():
+    gd, _ = _mage()
+    c = build_character(gd, name="At", sex="m", race="nord", birthsign="atronach", class_id="warrior")
+    c.max_magicka = 200
+    c.magicka = 0
+    dre = combat.spawn_creature(gd, "dremora", RNG(0))     # fire 攻擊
+    absorbed = any(combat.resolve_attack(dre, c, gd, RNG(i)).get("absorbed") for i in range(40))
+    assert absorbed and c.magicka > 0
+
+
+# --- 出生星座能力 -------------------------------------------------------
+def test_power_id_per_sign():
+    gd, _ = _mage()
+    def pid(sign):
+        c = build_character(gd, name="X", sex="m", race="nord", birthsign=sign, class_id="warrior")
+        return powers.power_id(c, gd)
+    assert pid("lord") == "heal_self"
+    assert pid("lover") == "paralyze_touch"
+    assert pid("warrior") is None          # 三大守護星無主動能力
+    assert pid("mage") is None
+
+
+def test_power_cooldown_per_day():
+    gd, _ = _mage()
+    c = build_character(gd, name="L", sex="m", race="nord", birthsign="lord", class_id="warrior")
+    st = _st(c)
+    assert powers.available(c, st, gd)
+    c.health = 1
+    powers.use(c, st, gd)
+    assert not powers.available(c, st, gd)         # 同日不可再用
+    st.time.advance(24)
+    assert powers.available(c, st, gd)             # 隔日恢復
+
+
+def test_tower_key_auto_unlock():
+    gd, _ = _mage()
+    c = build_character(gd, name="T", sex="m", race="nord", birthsign="tower", class_id="thief")
+    st = _st(c)
+    powers.use(c, st, gd)
+    assert c.tower_key_charge
+    r = dungeon.pick_lock(c, gd, 95, RNG(0))        # 高難度鎖
+    assert r["success"] and r["tower_key"] and not c.tower_key_charge   # 必開且消耗
+
+
+def test_mara_cure_removes_dot():
+    gd, _ = _mage()
+    c = build_character(gd, name="R", sex="m", race="nord", birthsign="ritual", class_id="warrior")
+    c.active_effects = [{"kind": "dot", "element": "fire", "magnitude": 5, "turns": 3},
+                        {"kind": "shield", "magnitude": 20, "turns": 3}]
+    powers.use(c, _st(c), gd)
+    assert not any(e["kind"] == "dot" for e in c.active_effects)
+    assert any(e["kind"] == "shield" for e in c.active_effects)   # 只淨化 DoT,不動護盾
+
+
+# --- 存讀檔 -------------------------------------------------------------
+def test_active_effects_not_persisted():
+    """回歸審查 [2]:戰鬥內臨時效果(護盾/中毒)不可寫入存檔(否則離線永久 tick)。"""
+    gd, _ = _mage()
+    c = build_character(gd, name="P", sex="m", race="nord", birthsign="warrior", class_id="warrior")
+    c.active_effects = [{"kind": "dot", "element": "poison", "magnitude": 5, "turns": 10}]
+    st = _st(c)
+    with tempfile.TemporaryDirectory() as d:
+        p = Path(d) / "s.json"
+        st.save(p)
+        lo = GameState.load(p)
+    assert lo.player.active_effects == []           # 載入後為空,不會在休息/旅途中持續扣血
+
+
+def test_power_state_roundtrip():
+    gd, _ = _mage()
+    c = build_character(gd, name="S", sex="m", race="nord", birthsign="tower", class_id="thief")
+    st = _st(c)
+    powers.use(c, st, gd)              # 設定冷卻 + tower_key_charge
+    with tempfile.TemporaryDirectory() as d:
+        p = Path(d) / "s.json"
+        st.save(p)
+        lo = GameState.load(p)
+    assert lo.player.power_last_day == c.power_last_day
+    assert lo.player.tower_key_charge == c.tower_key_charge
+
+
+def run():
+    for name, fn in sorted(globals().items()):
+        if name.startswith("test_") and callable(fn):
+            fn()
+
+
+if __name__ == "__main__":
+    run()
+    print("test_m8 OK")

@@ -1,0 +1,210 @@
+{
+  "highwayman": {
+    "weight": 5, "trigger": {"contexts": ["travel"]},
+    "title": "攔路強盜", "text": "一名強盜從路旁松林閃出,擋住去路:「留下五十金,饒你一命。」",
+    "options": [
+      {"text": "乖乖付過路費", "requirements": {"gold_min": 50},
+       "effects": [{"type": "gold", "amount": -50}, {"type": "message", "text": "你掏出金幣,強盜冷笑著放行。"}]},
+      {"text": "出言威嚇(口才)",
+       "check": {"skill": "speechcraft", "difficulty": 40,
+                 "success": {"text": "你不動聲色地報出幾個名號,強盜臉色一變,悻悻退去。",
+                             "effects": [{"type": "fame", "amount": 4}]},
+                 "failure": {"text": "強盜被你激怒,拔刀撲來!",
+                             "effects": [{"type": "combat", "creature": "bandit"}]}}},
+      {"text": "拔劍相向", "effects": [{"type": "combat", "creature": "bandit"}]}
+    ]
+  },
+  "injured_traveler": {
+    "weight": 4, "trigger": {"contexts": ["travel"]},
+    "title": "路旁傷者", "text": "一名旅人倒在路邊呻吟,腿上有道深可見骨的傷口。",
+    "options": [
+      {"text": "用治療藥水救他", "requirements": {"item": "minor_healing_potion"},
+       "effects": [{"type": "item", "item": "minor_healing_potion", "qty": -1},
+                   {"type": "gold", "amount": 35}, {"type": "fame", "amount": 5},
+                   {"type": "message", "text": "傷者感激涕零,塞給你一袋金幣作謝。"}]},
+      {"text": "施捨幾枚金幣", "requirements": {"gold_min": 10},
+       "effects": [{"type": "gold", "amount": -10}, {"type": "fame", "amount": 3},
+                   {"type": "message", "text": "你留下些錢,傷者連聲道謝。"}]},
+      {"text": "搜刮他的財物", "effects": [{"type": "gold", "amount": 25}, {"type": "infamy", "amount": 5},
+                   {"type": "bounty", "amount": 40},
+                   {"type": "message", "text": "你翻走了傷者的錢袋 —— 遠處似乎有人看見了。"}]},
+      {"text": "視而不見地走開", "effects": [{"type": "message", "text": "你別過頭,加快了腳步。"}]}
+    ]
+  },
+  "wandering_scholar": {
+    "weight": 3, "trigger": {"contexts": ["travel"]},
+    "title": "雲遊學者", "text": "一位披著藍袍的法師坐在路邊石上,願意以見聞換取交流。",
+    "options": [
+      {"text": "付費聆聽奧秘(智慧之談)", "requirements": {"gold_min": 40},
+       "effects": [{"type": "gold", "amount": -40},
+                   {"type": "skill_xp", "skill": "mysticism", "amount": 3.0},
+                   {"type": "message", "text": "你聽他講述靈魂與位面之理,獲益良多。"}]},
+      {"text": "以你的見識交換(口才)",
+       "check": {"skill": "speechcraft", "difficulty": 35,
+                 "success": {"text": "你侃侃而談,學者大為讚賞,傾囊相授。",
+                             "effects": [{"type": "skill_xp", "skill": "alteration", "amount": 2.0}]},
+                 "failure": {"text": "你言不及義,學者搖頭轉開了視線。", "effects": []}}},
+      {"text": "婉拒後離開", "effects": []}
+    ]
+  },
+  "wayshrine": {
+    "weight": 3, "trigger": {"contexts": ["travel", "explore"]},
+    "title": "八聖路碑", "text": "路旁立著一座風化的八聖神碑,隱隱透出溫暖的光。",
+    "options": [
+      {"text": "虔誠祈禱", "effects": [{"type": "heal", "amount": "full"},
+                   {"type": "restore_magicka", "amount": "full"},
+                   {"type": "message", "text": "聖光洗去你的傷痛與疲憊。"}]},
+      {"text": "捐獻香火", "requirements": {"gold_min": 10},
+       "effects": [{"type": "gold", "amount": -10}, {"type": "fame", "amount": 3},
+                   {"type": "heal", "amount": "full"},
+                   {"type": "message", "text": "你留下香火錢,神碑回以祝福。"}]},
+      {"text": "路過不理", "effects": []}
+    ]
+  },
+  "merchant_caravan": {
+    "weight": 3, "trigger": {"contexts": ["travel"]},
+    "title": "行商隊", "text": "一支商隊在路旁紮營歇腳,商人朝你揮手招攬。",
+    "options": [
+      {"text": "購買補給", "requirements": {"gold_min": 30},
+       "effects": [{"type": "gold", "amount": -30}, {"type": "item", "item": "healing_potion", "qty": 1},
+                   {"type": "message", "text": "你換得一瓶治療藥水。"}]},
+      {"text": "打聽道上見聞", "requirements": {"quest_available": "job_bandit"},
+       "effects": [{"type": "start_quest", "quest": "job_bandit"},
+                   {"type": "skill_xp", "skill": "speechcraft", "amount": 0.5}]},
+      {"text": "繼續趕路", "effects": []}
+    ]
+  },
+  "camp_ambush": {
+    "weight": 4, "trigger": {"contexts": ["rest"], "location_types": ["wilderness", "dungeon"]},
+    "title": "營地襲擊", "text": "半夜你被低吼驚醒 —— 一頭野狼循著火光摸了過來!",
+    "options": [
+      {"text": "起身迎戰", "effects": [{"type": "combat", "creature": "wolf"}]},
+      {"text": "悄悄遁入暗處(潛行)",
+       "check": {"skill": "sneak", "difficulty": 35,
+                 "success": {"text": "你屏息潛入陰影,野狼悻悻離去。", "effects": []},
+                 "failure": {"text": "枯枝在腳下一響,野狼撲了上來!",
+                             "effects": [{"type": "combat", "creature": "wolf"}]}}}
+    ]
+  },
+  "thief_in_night": {
+    "weight": 3, "trigger": {"contexts": ["rest"]},
+    "title": "夜半竊手", "text": "睡夢中,一隻手悄悄探向你的錢袋……",
+    "options": [
+      {"text": "猛然驚醒、反擒其手(安全)",
+       "check": {"skill": "security", "difficulty": 40,
+                 "success": {"text": "你一把扣住竊賊手腕,反倒摸走了他的錢囊!",
+                             "effects": [{"type": "gold", "amount": 18},
+                                         {"type": "skill_xp", "skill": "security", "amount": 0.6}]},
+                 "failure": {"text": "你醒得太遲,竊賊已沒入夜色。",
+                             "effects": [{"type": "gold", "amount": -25}]}}},
+      {"text": "繼續沉睡", "effects": [{"type": "gold", "amount": -25},
+                   {"type": "message", "text": "天明時你發現錢袋輕了不少。"}]}
+    ]
+  },
+  "campfire_companion": {
+    "weight": 3, "trigger": {"contexts": ["rest"], "location_types": ["wilderness"]},
+    "title": "同火夜談", "text": "一名旅人前來分享你的營火,聊起道聽途說的傳聞。",
+    "options": [
+      {"text": "交換旅途見聞", "effects": [{"type": "fame", "amount": 3},
+                   {"type": "skill_xp", "skill": "speechcraft", "amount": 0.6}]},
+      {"text": "打探古墓寶藏(委託)", "requirements": {"quest_available": "event_relic"},
+       "effects": [{"type": "start_quest", "quest": "event_relic"}]},
+      {"text": "早早就寢", "effects": [{"type": "restore_fatigue", "amount": "full"}]}
+    ]
+  },
+  "herb_patch": {
+    "weight": 4, "trigger": {"contexts": ["explore"]},
+    "title": "野生藥草", "text": "一叢沾著晨露的煉金材料在岩縫間搖曳。",
+    "options": [
+      {"text": "細心採集", "effects": [{"type": "item", "item": "blue_mountain_flower", "qty": 1},
+                   {"type": "item", "item": "lavender", "qty": 1},
+                   {"type": "skill_xp", "skill": "alchemy", "amount": 0.5},
+                   {"type": "message", "text": "你採下了幾株藥草。"}]},
+      {"text": "沒興趣", "effects": []}
+    ]
+  },
+  "ancient_ruin": {
+    "weight": 4, "trigger": {"contexts": ["explore"]},
+    "title": "半埋的遺跡", "text": "風沙下露出一截古老石階,深處幽暗,似有機關。",
+    "options": [
+      {"text": "謹慎探入(安全)",
+       "check": {"skill": "security", "difficulty": 30,
+                 "success": {"text": "你避開了暗藏的陷阱,在石室裡尋得寶物。",
+                             "effects": [{"type": "item", "item": "ruby", "qty": 1},
+                                         {"type": "gold", "amount": 20}]},
+                 "failure": {"text": "喀噠 —— 一支毒鏢從牆縫射出!",
+                             "effects": [{"type": "damage", "amount": 14}]}}},
+      {"text": "不入險地", "effects": []}
+    ]
+  },
+  "trapped_chest": {
+    "weight": 3, "trigger": {"contexts": ["explore"]},
+    "title": "可疑的箱子", "text": "草叢裡藏著一只老舊木箱,鎖孔旁有焦黑的痕跡。",
+    "options": [
+      {"text": "仔細拆解機關後開啟", "requirements": {"skill_min": {"security": 30}},
+       "effects": [{"type": "item", "item": "minor_magicka_potion", "qty": 1},
+                   {"type": "gold", "amount": 25},
+                   {"type": "skill_xp", "skill": "security", "amount": 0.6},
+                   {"type": "message", "text": "你穩穩拆掉了陷阱,取出箱中之物。"}]},
+      {"text": "直接撬開(安全)",
+       "check": {"skill": "security", "difficulty": 35,
+                 "success": {"text": "運氣不錯,鎖應聲而開。",
+                             "effects": [{"type": "gold", "amount": 25}]},
+                 "failure": {"text": "轟!箱裡的符文炸開。",
+                             "effects": [{"type": "damage", "amount": 12}]}}},
+      {"text": "放著別碰", "effects": []}
+    ]
+  },
+  "wild_beast": {
+    "weight": 4, "trigger": {"contexts": ["explore"]},
+    "title": "草叢異動", "text": "灌木叢中傳來窸窣聲,一對泛光的眼睛盯上了你。",
+    "options": [
+      {"text": "搶先出手", "effects": [{"type": "combat", "creature": "frostbite_spider"}]},
+      {"text": "緩緩後退(潛行)",
+       "check": {"skill": "sneak", "difficulty": 30,
+                 "success": {"text": "你輕手輕腳地退開,那東西沒有追來。", "effects": []},
+                 "failure": {"text": "你踩斷了枯枝,牠撲了上來!",
+                             "effects": [{"type": "combat", "creature": "frostbite_spider"}]}}}
+    ]
+  },
+  "town_crier": {
+    "weight": 4, "trigger": {"contexts": ["arrive"], "location_types": ["city", "town"]},
+    "title": "街頭佈告", "text": "城鎮廣場上,佈告員高聲宣讀一樁懸賞。",
+    "options": [
+      {"text": "接下這樁懸賞", "requirements": {"quest_available": "job_draugr"},
+       "effects": [{"type": "start_quest", "quest": "job_draugr"}]},
+      {"text": "聽過便罷", "effects": [{"type": "skill_xp", "skill": "speechcraft", "amount": 0.3}]}
+    ]
+  },
+  "festival": {
+    "weight": 3, "trigger": {"contexts": ["arrive"], "location_types": ["city", "town"]},
+    "title": "市集慶典", "text": "城裡正逢節慶,街上人聲鼎沸、酒香四溢。",
+    "options": [
+      {"text": "與民同樂", "requirements": {"gold_min": 5},
+       "effects": [{"type": "gold", "amount": -5}, {"type": "fame", "amount": 5},
+                   {"type": "restore_fatigue", "amount": "full"},
+                   {"type": "message", "text": "你在歡騰中暢飲一番,神清氣爽。"}]},
+      {"text": "趁亂行竊(潛行)",
+       "check": {"skill": "sneak", "difficulty": 40,
+                 "success": {"text": "人群正好掩護,你的手悄悄滑進幾個錢袋。",
+                             "effects": [{"type": "gold", "amount": 30},
+                                         {"type": "skill_xp", "skill": "sneak", "amount": 0.6}]},
+                 "failure": {"text": "「抓賊啊!」 —— 你被當場識破。",
+                             "effects": [{"type": "bounty", "amount": 50}, {"type": "infamy", "amount": 5}]}}},
+      {"text": "靜靜離開", "effects": []}
+    ]
+  },
+  "street_urchin": {
+    "weight": 3, "trigger": {"contexts": ["arrive"], "location_types": ["city", "town"]},
+    "title": "市井扒手", "text": "一個衣衫襤褸的孩子撞了你一下,轉身就要鑽進巷子。",
+    "options": [
+      {"text": "一把抓住他的手(安全)",
+       "check": {"skill": "security", "difficulty": 35,
+                 "success": {"text": "你扣住小扒手的腕子,要回了被摸走的錢。",
+                             "effects": [{"type": "skill_xp", "skill": "security", "amount": 0.4}]},
+                 "failure": {"text": "孩子滑溜得很,眨眼就沒了蹤影。",
+                             "effects": [{"type": "gold", "amount": -10}]}}},
+      {"text": "由他去吧", "effects": [{"type": "gold", "amount": -10}]}
+    ]
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "minor_healing_potion": {"name": "次級治療藥水", "kind": "potion", "effect": {"type": "heal", "magnitude": 25}, "value": 15, "weight": 0.5},
+  "healing_potion":       {"name": "治療藥水", "kind": "potion", "effect": {"type": "heal", "magnitude": 50}, "value": 40, "weight": 0.5},
+  "minor_magicka_potion": {"name": "次級魔力藥水", "kind": "potion", "effect": {"type": "restore_magicka", "magnitude": 25}, "value": 18, "weight": 0.5},
+  "ruby":        {"name": "紅寶石", "kind": "misc", "value": 50,  "weight": 0.1},
+  "gold_ingot":  {"name": "金錠", "kind": "misc", "value": 100, "weight": 1},
+  "wolf_pelt":   {"name": "狼皮", "kind": "misc", "value": 6,   "weight": 1},
+  "bone_meal":   {"name": "骨粉", "kind": "misc", "value": 4,   "weight": 0.5},
+
+  "repair_hammer": {"name": "修理鎚", "kind": "misc", "value": 5, "weight": 2},
+
+  "filled_petty_soul_gem":   {"name": "微魂石(已充能)", "kind": "soul_gem", "soul": 1, "value": 20, "weight": 0.5},
+  "filled_lesser_soul_gem":  {"name": "次魂石(已充能)", "kind": "soul_gem", "soul": 2, "value": 40, "weight": 0.5},
+  "filled_common_soul_gem":  {"name": "普魂石(已充能)", "kind": "soul_gem", "soul": 3, "value": 80, "weight": 0.5},
+  "filled_greater_soul_gem": {"name": "上魂石(已充能)", "kind": "soul_gem", "soul": 4, "value": 160, "weight": 0.5}
+}

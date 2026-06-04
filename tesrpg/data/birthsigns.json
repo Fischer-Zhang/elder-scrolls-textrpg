@@ -1,0 +1,15 @@
+{
+  "warrior":    {"name": "戰士座", "attr_mods": {"strength": 5, "endurance": 5}, "magicka_bonus": 0,   "powers": [], "note": "戰士守護星之下,體魄與耐力天生強健。"},
+  "mage":       {"name": "法師座", "attr_mods": {"intelligence": 5}, "magicka_bonus": 50,              "powers": [], "note": "法師守護星之下,魔力上限提升。"},
+  "thief":      {"name": "竊賊座", "attr_mods": {"agility": 5, "speed": 5, "luck": 5}, "magicka_bonus": 0, "powers": [], "note": "竊賊守護星之下,身手與運氣俱佳。"},
+  "lady":       {"name": "淑女座", "attr_mods": {"personality": 10, "endurance": 5}, "magicka_bonus": 0, "powers": [], "note": "親和與堅韌兼具。"},
+  "steed":      {"name": "駿馬座", "attr_mods": {"speed": 10}, "magicka_bonus": 0,                    "powers": [], "note": "天生迅捷。"},
+  "lord":       {"name": "領主座", "attr_mods": {"endurance": 5}, "magicka_bonus": 0,                 "powers": ["heal_self"], "note": "帶有再生之力,但血脈對火略為脆弱。"},
+  "apprentice": {"name": "學徒座", "attr_mods": {"intelligence": 5}, "magicka_bonus": 100,            "powers": [], "note": "魔力大增,但更容易受魔法所傷。"},
+  "atronach":   {"name": "巨魔像座", "attr_mods": {}, "magicka_bonus": 150,                           "powers": ["spell_absorption"], "note": "魔力極為雄厚、可吸收魔法,但魔力不會自然回復。"},
+  "ritual":     {"name": "儀式座", "attr_mods": {"personality": 5}, "magicka_bonus": 0,               "powers": ["mara_blessing"], "note": "受瑪拉祝福,帶有治療與驅亡之力。"},
+  "lover":      {"name": "戀人座", "attr_mods": {"agility": 10}, "magicka_bonus": 0,                  "powers": ["paralyze_touch"], "note": "魅惑之力,可使目標短暫麻痺。"},
+  "shadow":     {"name": "陰影座", "attr_mods": {}, "magicka_bonus": 0,                               "powers": ["invisibility"], "note": "每日可遁入陰影隱身。"},
+  "tower":      {"name": "塔座", "attr_mods": {"luck": 5}, "magicka_bonus": 0,                         "powers": ["tower_key"], "note": "帶有開啟鎖具之力。"},
+  "serpent":    {"name": "蛇座", "attr_mods": {}, "magicka_bonus": 0,                                  "powers": ["serpent_curse"], "note": "最難捉摸的星座,帶有毒擊與自癒的雙面之力。"}
+}

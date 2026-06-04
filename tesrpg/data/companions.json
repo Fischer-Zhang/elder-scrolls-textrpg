@@ -1,0 +1,20 @@
+{
+  "sellsword": {
+    "name": "傭兵劍士", "cost": 200,
+    "strength": 58, "agility": 45, "speed": 45, "max_health": 78, "armor_rating": 22,
+    "attack": {"name": "傭兵之劍", "damage": 14, "skill": 52},
+    "blurb": "久經沙場的劍客,收錢辦事、可靠耐打。"
+  },
+  "shieldmaiden": {
+    "name": "盾女", "cost": 240,
+    "strength": 50, "agility": 38, "speed": 38, "max_health": 100, "armor_rating": 28,
+    "attack": {"name": "盾擊", "damage": 11, "skill": 48},
+    "blurb": "以重盾聞名的女戰士,血厚甲硬,替你扛下傷害。"
+  },
+  "hedge_mage": {
+    "name": "野法師", "cost": 260,
+    "strength": 40, "agility": 46, "speed": 50, "max_health": 50, "armor_rating": 8,
+    "attack": {"name": "火焰飛彈", "damage": 15, "skill": 56, "element": "fire"},
+    "blurb": "流浪的火系術士,輸出兇猛但體質脆弱,攻擊無視護甲。"
+  }
+}

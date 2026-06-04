@@ -1,0 +1,301 @@
+{
+  "locations": {
+    "bruma": {
+      "name": "布魯瑪",
+      "province": "賽羅迪爾",
+      "type": "city",
+      "danger": 0,
+      "desc": "帝國最北的雪城,石屋覆雪、商旅雲集,城門外便是通往天際的山道。",
+      "services": [
+        "inn",
+        "merchant",
+        "trainer",
+        "mages_guild",
+        "armorer",
+        "thieves_guild",
+        "task_board"
+      ],
+      "merchant_stock": [
+        "minor_healing_potion",
+        "healing_potion",
+        "iron_dagger",
+        "iron_sword",
+        "iron_helmet",
+        "leather_cuirass",
+        "wooden_shield",
+        "hunting_bow",
+        "repair_hammer",
+        "blue_mountain_flower",
+        "garlic"
+      ],
+      "spell_stock": [
+        "flames",
+        "minor_heal",
+        "oakflesh",
+        "fear",
+        "soul_trap"
+      ],
+      "links": {
+        "imperial_road": 2,
+        "pale_pass": 3
+      }
+    },
+    "imperial_road": {
+      "name": "帝國大道",
+      "province": "賽羅迪爾",
+      "type": "wilderness",
+      "danger": 1,
+      "desc": "貫穿賽羅迪爾的古老石板路,兩旁松林深邃,偶有強盜出沒。",
+      "services": [],
+      "links": {
+        "bruma": 2,
+        "cedernoc_cave": 2,
+        "kvatch": 4
+      }
+    },
+    "cedernoc_cave": {
+      "name": "切德納寇洞窟",
+      "province": "賽羅迪爾",
+      "type": "dungeon",
+      "danger": 2,
+      "desc": "一處隱沒在山壁間的潮濕洞窟,傳聞曾是強盜的巢穴。",
+      "services": [],
+      "dungeon": "cedernoc_cave",
+      "links": {
+        "imperial_road": 2
+      }
+    },
+    "kvatch": {
+      "name": "凱瓦奇",
+      "province": "賽羅迪爾",
+      "type": "town",
+      "danger": 0,
+      "desc": "山丘上的小城,以競技場與虔誠的信徒聞名。",
+      "services": [
+        "inn",
+        "merchant",
+        "armorer",
+        "fighters_guild",
+        "task_board"
+      ],
+      "merchant_stock": [
+        "minor_healing_potion",
+        "minor_magicka_potion",
+        "steel_dagger",
+        "leather_helmet",
+        "leather_boots",
+        "iron_gauntlets",
+        "repair_hammer"
+      ],
+      "links": {
+        "imperial_road": 4
+      }
+    },
+    "pale_pass": {
+      "name": "白隘",
+      "province": "邊境",
+      "type": "wilderness",
+      "danger": 2,
+      "desc": "橫亙在賽羅迪爾與天際之間的高山隘口,風雪凜冽,野獸成群。",
+      "services": [],
+      "links": {
+        "bruma": 3,
+        "dragon_bridge": 4
+      }
+    },
+    "dragon_bridge": {
+      "name": "龍橋鎮",
+      "province": "天際",
+      "type": "town",
+      "danger": 0,
+      "desc": "因一座古老龍首石橋而得名的天際邊鎮,木屋炊煙裊裊。",
+      "services": [
+        "inn",
+        "merchant",
+        "armorer",
+        "task_board"
+      ],
+      "merchant_stock": [
+        "minor_healing_potion",
+        "healing_potion",
+        "steel_sword",
+        "iron_shield",
+        "iron_boots",
+        "long_bow",
+        "repair_hammer",
+        "monarch_wing"
+      ],
+      "links": {
+        "pale_pass": 4,
+        "haafingar": 3,
+        "frostwind_ruin": 3
+      }
+    },
+    "haafingar": {
+      "name": "海芬古",
+      "province": "天際",
+      "type": "city",
+      "danger": 0,
+      "desc": "天際的海港大城,白塔聳立、商船往來,是北方的權力中心。",
+      "services": [
+        "inn",
+        "merchant",
+        "trainer",
+        "mages_guild",
+        "armorer",
+        "task_board"
+      ],
+      "merchant_stock": [
+        "healing_potion",
+        "minor_magicka_potion",
+        "steel_sword",
+        "steel_mace",
+        "steel_cuirass",
+        "steel_helmet",
+        "iron_shield",
+        "long_bow",
+        "ruby",
+        "repair_hammer",
+        "glow_dust",
+        "lavender"
+      ],
+      "spell_stock": [
+        "frostbite",
+        "sparks",
+        "fireball",
+        "heal",
+        "close_wounds",
+        "stoneflesh",
+        "demoralize",
+        "conjure_familiar",
+        "conjure_flame_atronach",
+        "restore_mind",
+        "ignite",
+        "poison_cloud",
+        "renewal",
+        "fire_storm",
+        "chain_lightning",
+        "frost_nova",
+        "mass_paralysis",
+        "rout"
+      ],
+      "links": {
+        "dragon_bridge": 3,
+        "sea_route": 4
+      }
+    },
+    "frostwind_ruin": {
+      "name": "冰風廢墟",
+      "province": "天際",
+      "type": "dungeon",
+      "danger": 3,
+      "desc": "半埋於雪中的古諾德墓穴,寒風自門縫呼嘯,亡者並未長眠。",
+      "services": [],
+      "dungeon": "frostwind_ruin",
+      "links": {
+        "dragon_bridge": 3
+      }
+    },
+    "sea_route": {
+      "name": "灰海航道",
+      "province": "邊境",
+      "type": "wilderness",
+      "danger": 3,
+      "desc": "連接天際與晨風的灰色海路,濃霧裡潛伏著掠食者。",
+      "services": [],
+      "links": {
+        "haafingar": 4,
+        "blacklight": 4
+      }
+    },
+    "blacklight": {
+      "name": "黑光城",
+      "province": "晨風",
+      "type": "city",
+      "danger": 0,
+      "desc": "晨風的邊境大城,蘑菇塔與火山岩屋交錯,空氣中飄著灰燼味。",
+      "services": [
+        "inn",
+        "merchant",
+        "mages_guild",
+        "armorer",
+        "task_board"
+      ],
+      "merchant_stock": [
+        "healing_potion",
+        "minor_magicka_potion",
+        "elven_sword",
+        "dwarven_mace",
+        "elven_cuirass",
+        "dwarven_cuirass",
+        "ebony_sword",
+        "repair_hammer",
+        "glow_dust",
+        "ash_yam",
+        "scrib_jelly",
+        "nightshade",
+        "deathbell",
+        "imp_stool"
+      ],
+      "spell_stock": [
+        "lightning_bolt",
+        "ironflesh",
+        "fireball",
+        "close_wounds",
+        "conjure_flame_atronach",
+        "ignite",
+        "poison_cloud",
+        "renewal",
+        "fire_storm",
+        "chain_lightning",
+        "frost_nova",
+        "mass_paralysis",
+        "rout"
+      ],
+      "links": {
+        "sea_route": 4,
+        "molag_mar": 3,
+        "ashfall_barrow": 3
+      }
+    },
+    "molag_mar": {
+      "name": "莫拉格瑪",
+      "province": "晨風",
+      "type": "town",
+      "danger": 0,
+      "desc": "火山陰影下的朝聖小鎮,信徒在熔岩裂隙旁築起石屋。",
+      "services": [
+        "inn",
+        "merchant",
+        "armorer",
+        "task_board"
+      ],
+      "merchant_stock": [
+        "healing_potion",
+        "ash_yam",
+        "scrib_jelly",
+        "elven_helmet",
+        "repair_hammer",
+        "canis_root",
+        "imp_stool",
+        "nightshade"
+      ],
+      "links": {
+        "blacklight": 3
+      }
+    },
+    "ashfall_barrow": {
+      "name": "灰燼墓塚",
+      "province": "晨風",
+      "type": "dungeon",
+      "danger": 4,
+      "desc": "埋在火山灰下的古老墓塚,亡者與魔族在其中徘徊。",
+      "services": [],
+      "dungeon": "ashfall_barrow",
+      "links": {
+        "blacklight": 3
+      }
+    }
+  },
+  "start_location": "bruma"
+}

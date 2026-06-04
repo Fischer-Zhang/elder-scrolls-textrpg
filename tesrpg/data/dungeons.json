@@ -1,0 +1,205 @@
+{
+  "cedernoc_cave": {
+    "name": "切德納寇洞窟",
+    "rooms": [
+      {
+        "desc": "潮濕的洞口,水滴回響。一隻巨鼠從陰影中竄出。",
+        "enemy": "giant_rat",
+        "container": null
+      },
+      {
+        "desc": "狹窄的通道,牆角有個被遺棄的補給箱。",
+        "enemy": null,
+        "container": {
+          "locked": 12,
+          "loot": [
+            "minor_healing_potion",
+            {
+              "gold": [
+                5,
+                15
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "desc": "蛛網密布的穴室,一頭野狼盤踞於此。",
+        "enemy": "wolf",
+        "container": null
+      },
+      {
+        "desc": "強盜的營地,餘火未熄。一名強盜與他的看門巨鼠一齊撲來。",
+        "container": {
+          "locked": 20,
+          "loot": [
+            "leather_cuirass",
+            {
+              "gold": [
+                10,
+                25
+              ]
+            }
+          ]
+        },
+        "enemies": [
+          "bandit",
+          "giant_rat"
+        ]
+      }
+    ],
+    "boss": {
+      "desc": "洞窟最深處的首領巢穴 —— 強盜頭目堵住了去路。",
+      "enemy": "bandit",
+      "treasure": {
+        "locked": 25,
+        "loot": [
+          "steel_sword",
+          "healing_potion",
+          {
+            "gold": [
+              30,
+              60
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "frostwind_ruin": {
+    "name": "冰風廢墟",
+    "rooms": [
+      {
+        "desc": "結霜的前廳,一具骷髏戰士自石棺中爬起。",
+        "enemy": "skeleton",
+        "container": null
+      },
+      {
+        "desc": "崩塌的長廊,冰柱垂懸。盡頭有一只古老的供品箱。",
+        "enemy": null,
+        "container": {
+          "locked": 20,
+          "loot": [
+            "bone_meal",
+            "ruby",
+            {
+              "gold": [
+                10,
+                30
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "desc": "祭祀大廳,兩具骷髏戰士並肩而立,一齊舉劍。",
+        "container": null,
+        "enemies": [
+          "skeleton",
+          "skeleton"
+        ]
+      },
+      {
+        "desc": "雪水滲入的墓室,一頭闖入棲身的棕熊被驚醒。",
+        "enemy": "bear",
+        "container": {
+          "locked": 25,
+          "loot": [
+            "steel_helmet",
+            {
+              "gold": [
+                20,
+                40
+              ]
+            }
+          ]
+        }
+      }
+    ],
+    "boss": {
+      "desc": "廢墟核心的王座廳 —— 一具佩戴鋼甲的骷髏領主緩緩起身。",
+      "enemy": "skeleton",
+      "treasure": {
+        "locked": 35,
+        "loot": [
+          "steel_cuirass",
+          "healing_potion",
+          "ruby",
+          {
+            "gold": [
+              50,
+              100
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "ashfall_barrow": {
+    "name": "灰燼墓塚",
+    "rooms": [
+      {
+        "desc": "灰燼覆蓋的墓道,一隻霜咬蜘蛛垂網而下。",
+        "enemy": "frostbite_spider",
+        "container": null
+      },
+      {
+        "desc": "崩落的祭壇,壇上有個密封的骨灰甕。",
+        "enemy": null,
+        "container": {
+          "locked": 25,
+          "loot": [
+            "scrib_jelly",
+            "ruby",
+            {
+              "gold": [
+                15,
+                35
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "desc": "古老的安息廳,一具屍鬼自石棺中起身。",
+        "enemy": "draugr",
+        "container": null
+      },
+      {
+        "desc": "湧出熔岩光的內室,一名魔人鎮守於此。",
+        "enemy": "draugr",
+        "container": {
+          "locked": 30,
+          "loot": [
+            "elven_cuirass",
+            {
+              "gold": [
+                30,
+                60
+              ]
+            }
+          ]
+        }
+      }
+    ],
+    "boss": {
+      "desc": "墓塚核心的湮滅祭壇 —— 一名強大的魔人領主擋在黑檀寶物前。",
+      "enemy": "dremora",
+      "treasure": {
+        "locked": 40,
+        "loot": [
+          "ebony_sword",
+          "ebony_shield",
+          "healing_potion",
+          "ruby",
+          {
+            "gold": [
+              80,
+              160
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

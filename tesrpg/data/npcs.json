@@ -1,0 +1,14 @@
+{
+  "olfina":  {"name": "歐菲娜", "location": "bruma", "disposition": 45,
+              "greeting": "「雪下個不停……你不是本地人吧?」",
+              "quest": "favor_bruma", "quest_disposition": 60},
+  "jovan":   {"name": "喬凡", "location": "dragon_bridge", "disposition": 50,
+              "greeting": "「龍橋的木材是天際最好的,旅人。」",
+              "quest": null, "quest_disposition": 60},
+  "seridia": {"name": "賽莉迪雅", "location": "haafingar", "disposition": 40,
+              "greeting": "「海芬古的高塔下,什麼樣的人都有。」",
+              "quest": null, "quest_disposition": 60},
+  "marcus":  {"name": "馬庫斯", "location": "kvatch", "disposition": 50,
+              "greeting": "「願八聖庇佑你,陌生人。」",
+              "quest": null, "quest_disposition": 60}
+}

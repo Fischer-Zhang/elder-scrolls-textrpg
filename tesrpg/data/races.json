@@ -1,0 +1,82 @@
+{
+  "altmer": {
+    "name": "高精靈", "kind": "mer",
+    "attr_mods": {"intelligence": 10, "willpower": 10, "strength": -10, "endurance": -10},
+    "skill_bonuses": {"destruction": 10, "alteration": 5, "conjuration": 5, "illusion": 5, "mysticism": 5, "alchemy": 5},
+    "magicka_bonus": 100,
+    "ability": "魔力天賦極高,但體魄孱弱;對魔法較敏感。",
+    "resist": {"disease": 75}
+  },
+  "bosmer": {
+    "name": "木精靈", "kind": "mer",
+    "attr_mods": {"agility": 10, "speed": 10, "strength": -10, "personality": -10},
+    "skill_bonuses": {"marksman": 10, "sneak": 5, "alchemy": 5, "light_armor": 5, "acrobatics": 5, "alteration": 5},
+    "magicka_bonus": 0,
+    "ability": "林間獵手,擅長弓術與潛行,可短暫驅使野獸。",
+    "resist": {"disease": 75, "poison": 75}
+  },
+  "dunmer": {
+    "name": "暗精靈", "kind": "mer",
+    "attr_mods": {"speed": 10, "intelligence": 5, "agility": 5, "willpower": -5, "personality": -5},
+    "skill_bonuses": {"blade": 5, "destruction": 10, "marksman": 5, "athletics": 5, "mysticism": 5, "light_armor": 5},
+    "magicka_bonus": 0,
+    "ability": "晨風之民,劍與火兼修,血脈帶有抗火天賦。",
+    "resist": {"fire": 75}
+  },
+  "nord": {
+    "name": "諾德人", "kind": "men",
+    "attr_mods": {"strength": 10, "endurance": 10, "intelligence": -10, "willpower": -5, "personality": -5},
+    "skill_bonuses": {"blade": 5, "blunt": 10, "heavy_armor": 5, "block": 5, "armorer": 5, "restoration": 5},
+    "magicka_bonus": 0,
+    "ability": "天際的戰士民族,天生抗寒,戰意如火。",
+    "resist": {"frost": 50}
+  },
+  "imperial": {
+    "name": "帝國人", "kind": "men",
+    "attr_mods": {"personality": 10, "willpower": 5, "agility": -5},
+    "skill_bonuses": {"blade": 5, "blunt": 5, "heavy_armor": 5, "speechcraft": 10, "mercantile": 10, "hand_to_hand": 5},
+    "magicka_bonus": 0,
+    "ability": "帝都之民,八面玲瓏的外交與經商長才。",
+    "resist": {}
+  },
+  "breton": {
+    "name": "布萊頓人", "kind": "men",
+    "attr_mods": {"intelligence": 10, "willpower": 10, "strength": -10, "endurance": -5},
+    "skill_bonuses": {"conjuration": 5, "mysticism": 5, "restoration": 10, "alchemy": 5, "alteration": 5, "illusion": 5},
+    "magicka_bonus": 50,
+    "ability": "高石之民,血脈帶有強大的抗魔屏障。",
+    "resist": {"magic": 50}
+  },
+  "redguard": {
+    "name": "紅衛人", "kind": "men",
+    "attr_mods": {"strength": 10, "endurance": 10, "agility": 5, "intelligence": -10, "willpower": -5},
+    "skill_bonuses": {"blade": 10, "blunt": 5, "heavy_armor": 5, "light_armor": 5, "athletics": 5, "mercantile": 5},
+    "magicka_bonus": 0,
+    "ability": "天生劍客,精力旺盛,對疾病與毒素有抗性。",
+    "resist": {"disease": 75, "poison": 75}
+  },
+  "orsimer": {
+    "name": "獸人", "kind": "mer",
+    "attr_mods": {"strength": 10, "endurance": 10, "willpower": 5, "intelligence": -10, "personality": -10},
+    "skill_bonuses": {"blunt": 10, "heavy_armor": 10, "block": 5, "armorer": 5, "hand_to_hand": 5},
+    "magicka_bonus": 0,
+    "ability": "鐵壁般的戰士,可進入狂怒爆發。",
+    "resist": {"magic": 25}
+  },
+  "argonian": {
+    "name": "亞龍人", "kind": "beast",
+    "attr_mods": {"speed": 10, "intelligence": 5, "agility": 5, "strength": -5, "endurance": -5},
+    "skill_bonuses": {"blade": 5, "alchemy": 5, "illusion": 5, "mysticism": 5, "security": 10, "athletics": 5, "hand_to_hand": 5},
+    "magicka_bonus": 0,
+    "ability": "黑沼澤的蜥人,水下呼吸,免疫毒素、抗疾病。",
+    "resist": {"poison": 100, "disease": 75}
+  },
+  "khajiit": {
+    "name": "虎人", "kind": "beast",
+    "attr_mods": {"agility": 10, "speed": 5, "personality": 5, "willpower": -10, "endurance": -5},
+    "skill_bonuses": {"blade": 5, "hand_to_hand": 10, "athletics": 5, "acrobatics": 5, "light_armor": 5, "sneak": 5, "security": 5},
+    "magicka_bonus": 0,
+    "ability": "艾斯維爾的貓族,擁有夜視與致命的徒手利爪。",
+    "resist": {}
+  }
+}

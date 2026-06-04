@@ -1,0 +1,192 @@
+{
+  "wheat": {
+    "name": "小麥",
+    "value": 1,
+    "weight": 0.1,
+    "effects": [
+      {
+        "kind": "heal",
+        "magnitude": 8
+      },
+      {
+        "kind": "restore_fatigue",
+        "magnitude": 6
+      }
+    ]
+  },
+  "blue_mountain_flower": {
+    "name": "藍山花",
+    "value": 2,
+    "weight": 0.1,
+    "effects": [
+      {
+        "kind": "restore_magicka",
+        "magnitude": 10
+      },
+      {
+        "kind": "heal",
+        "magnitude": 6
+      }
+    ]
+  },
+  "lavender": {
+    "name": "薰衣草",
+    "value": 2,
+    "weight": 0.1,
+    "effects": [
+      {
+        "kind": "restore_magicka",
+        "magnitude": 8
+      }
+    ]
+  },
+  "garlic": {
+    "name": "大蒜",
+    "value": 1,
+    "weight": 0.1,
+    "effects": [
+      {
+        "kind": "restore_fatigue",
+        "magnitude": 10
+      }
+    ]
+  },
+  "monarch_wing": {
+    "name": "帝王蝶翅",
+    "value": 3,
+    "weight": 0.1,
+    "effects": [
+      {
+        "kind": "heal",
+        "magnitude": 7
+      },
+      {
+        "kind": "restore_magicka",
+        "magnitude": 6
+      }
+    ]
+  },
+  "charred_skeever_hide": {
+    "name": "焦皮鼠革",
+    "value": 2,
+    "weight": 0.2,
+    "effects": [
+      {
+        "kind": "heal",
+        "magnitude": 6
+      },
+      {
+        "kind": "restore_fatigue",
+        "magnitude": 8
+      }
+    ]
+  },
+  "red_apple": {
+    "name": "紅蘋果",
+    "value": 1,
+    "weight": 0.2,
+    "effects": [
+      {
+        "kind": "restore_fatigue",
+        "magnitude": 9
+      }
+    ]
+  },
+  "glow_dust": {
+    "name": "螢光粉",
+    "value": 5,
+    "weight": 0.1,
+    "effects": [
+      {
+        "kind": "restore_magicka",
+        "magnitude": 14
+      }
+    ]
+  },
+  "ash_yam": {
+    "name": "灰燼薯",
+    "value": 3,
+    "weight": 0.2,
+    "effects": [
+      {
+        "kind": "restore_fatigue",
+        "magnitude": 12
+      },
+      {
+        "kind": "heal",
+        "magnitude": 7
+      }
+    ]
+  },
+  "scrib_jelly": {
+    "name": "史克利伯凍",
+    "value": 4,
+    "weight": 0.2,
+    "effects": [
+      {
+        "kind": "restore_magicka",
+        "magnitude": 12
+      },
+      {
+        "kind": "heal",
+        "magnitude": 8
+      }
+    ]
+  },
+  "nightshade": {
+    "name": "龍葵",
+    "value": 6,
+    "weight": 0.1,
+    "effects": [
+      {
+        "kind": "damage_health",
+        "magnitude": 7
+      },
+      {
+        "kind": "paralyze",
+        "magnitude": 1
+      }
+    ]
+  },
+  "deathbell": {
+    "name": "死亡鐘",
+    "value": 6,
+    "weight": 0.1,
+    "effects": [
+      {
+        "kind": "damage_health",
+        "magnitude": 9
+      }
+    ]
+  },
+  "imp_stool": {
+    "name": "魔菌",
+    "value": 5,
+    "weight": 0.1,
+    "effects": [
+      {
+        "kind": "damage_health",
+        "magnitude": 6
+      },
+      {
+        "kind": "paralyze",
+        "magnitude": 1
+      }
+    ]
+  },
+  "canis_root": {
+    "name": "犬根草",
+    "value": 4,
+    "weight": 0.1,
+    "effects": [
+      {
+        "kind": "paralyze",
+        "magnitude": 1
+      },
+      {
+        "kind": "restore_fatigue",
+        "magnitude": 8
+      }
+    ]
+  }
+}

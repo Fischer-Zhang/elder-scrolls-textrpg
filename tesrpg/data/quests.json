@@ -1,0 +1,537 @@
+{
+  "fg1": {
+    "name": "證明身手",
+    "faction": "fighters_guild",
+    "rank": 0,
+    "source": "guild",
+    "objective": {
+      "type": "kill",
+      "creature": "wolf",
+      "count": 2
+    },
+    "reward": {
+      "gold": 80,
+      "fame": 5
+    },
+    "turn_in": "auto",
+    "text": "公會接了清剿野狼的委託 —— 獵殺 2 頭野狼,證明你的身手。"
+  },
+  "fg2": {
+    "name": "肅清匪窟",
+    "faction": "fighters_guild",
+    "rank": 1,
+    "source": "guild",
+    "objective": {
+      "type": "clear_dungeon",
+      "dungeon": "cedernoc_cave"
+    },
+    "reward": {
+      "gold": 200,
+      "fame": 10,
+      "items": [
+        "steel_sword"
+      ]
+    },
+    "turn_in": "auto",
+    "text": "切德納寇洞窟的強盜為患,把整窟肅清。"
+  },
+  "mg1": {
+    "name": "採集試劑",
+    "faction": "mages_guild",
+    "rank": 0,
+    "source": "guild",
+    "objective": {
+      "type": "collect",
+      "item": "bone_meal",
+      "count": 2
+    },
+    "reward": {
+      "gold": 60,
+      "items": [
+        "minor_magicka_potion",
+        "minor_magicka_potion"
+      ]
+    },
+    "turn_in": "auto",
+    "text": "研究需要骨粉 —— 帶 2 份骨粉回來(可從亡者身上取得)。"
+  },
+  "mg2": {
+    "name": "肅清亡者",
+    "faction": "mages_guild",
+    "rank": 1,
+    "source": "guild",
+    "objective": {
+      "type": "kill",
+      "creature": "skeleton",
+      "count": 2
+    },
+    "reward": {
+      "gold": 180,
+      "fame": 8,
+      "items": [
+        "filled_common_soul_gem"
+      ]
+    },
+    "turn_in": "auto",
+    "text": "古墓中的亡者再度活動 —— 摧毀 2 具骷髏戰士。"
+  },
+  "tg1": {
+    "name": "投名狀",
+    "faction": "thieves_guild",
+    "rank": 0,
+    "source": "guild",
+    "objective": {
+      "type": "collect",
+      "item": "ruby",
+      "count": 1
+    },
+    "reward": {
+      "gold": 100
+    },
+    "turn_in": "auto",
+    "text": "想入夥?弄一顆紅寶石來當投名狀 —— 偷的、搶的、撿的,公會不問來路。"
+  },
+  "tg2": {
+    "name": "踩點海芬古",
+    "faction": "thieves_guild",
+    "rank": 1,
+    "source": "guild",
+    "objective": {
+      "type": "reach",
+      "location": "haafingar"
+    },
+    "reward": {
+      "gold": 150,
+      "items": [
+        "ruby"
+      ]
+    },
+    "turn_in": "auto",
+    "text": "親自走一趟海芬古,替公會踩點未來的買賣。"
+  },
+  "job_wolf": {
+    "name": "懸賞:野狼",
+    "faction": null,
+    "rank": null,
+    "source": "board",
+    "objective": {
+      "type": "kill",
+      "creature": "wolf",
+      "count": 3
+    },
+    "reward": {
+      "gold": 120
+    },
+    "turn_in": "auto",
+    "text": "告示板懸賞:獵殺 3 頭野狼。"
+  },
+  "job_bandit": {
+    "name": "懸賞:強盜",
+    "faction": null,
+    "rank": null,
+    "source": "board",
+    "objective": {
+      "type": "kill",
+      "creature": "bandit",
+      "count": 2
+    },
+    "reward": {
+      "gold": 160,
+      "fame": 5
+    },
+    "turn_in": "auto",
+    "text": "告示板懸賞:剷除 2 名攔路強盜。"
+  },
+  "job_cave": {
+    "name": "委託:清理洞窟",
+    "faction": null,
+    "rank": null,
+    "source": "board",
+    "objective": {
+      "type": "clear_dungeon",
+      "dungeon": "cedernoc_cave"
+    },
+    "reward": {
+      "gold": 180
+    },
+    "turn_in": "auto",
+    "text": "委託:把切德納寇洞窟清理乾淨。"
+  },
+  "favor_bruma": {
+    "name": "委託:雪原藥草",
+    "faction": null,
+    "rank": null,
+    "source": "npc",
+    "objective": {
+      "type": "collect",
+      "item": "wolf_pelt",
+      "count": 1
+    },
+    "reward": {
+      "gold": 70,
+      "fame": 3
+    },
+    "turn_in": "auto",
+    "text": "一位布魯瑪居民請你帶一張狼皮回來,願意付酬。"
+  },
+  "fg3": {
+    "name": "巨獸狩獵",
+    "faction": "fighters_guild",
+    "rank": 2,
+    "source": "guild",
+    "objective": {
+      "type": "kill",
+      "creature": "bear",
+      "count": 1
+    },
+    "reward": {
+      "gold": 300,
+      "fame": 15,
+      "items": [
+        "ebony_shield"
+      ]
+    },
+    "turn_in": "auto",
+    "text": "證明你配得上更高的階級 —— 獵殺一頭棕熊。"
+  },
+  "mg3": {
+    "name": "封印魔人",
+    "faction": "mages_guild",
+    "rank": 2,
+    "source": "guild",
+    "objective": {
+      "type": "clear_dungeon",
+      "dungeon": "ashfall_barrow"
+    },
+    "reward": {
+      "gold": 350,
+      "fame": 15,
+      "items": [
+        "filled_greater_soul_gem"
+      ]
+    },
+    "turn_in": "auto",
+    "text": "灰燼墓塚的魔人威脅日增,深入將其封印。"
+  },
+  "tg3": {
+    "name": "黑光城的買賣",
+    "faction": "thieves_guild",
+    "rank": 2,
+    "source": "guild",
+    "objective": {
+      "type": "collect",
+      "item": "ebony_sword",
+      "count": 1
+    },
+    "reward": {
+      "gold": 400
+    },
+    "turn_in": "auto",
+    "text": "替公會弄一柄黑檀長劍 —— 怎麼弄到的,公會不過問。"
+  },
+  "job_draugr": {
+    "name": "懸賞:屍鬼",
+    "faction": null,
+    "rank": null,
+    "source": "board",
+    "objective": {
+      "type": "kill",
+      "creature": "draugr",
+      "count": 2
+    },
+    "reward": {
+      "gold": 200,
+      "fame": 5
+    },
+    "turn_in": "auto",
+    "text": "告示板懸賞:摧毀 2 具徘徊的屍鬼。"
+  },
+  "job_barrow": {
+    "name": "委託:灰燼墓塚",
+    "faction": null,
+    "rank": null,
+    "source": "board",
+    "objective": {
+      "type": "clear_dungeon",
+      "dungeon": "ashfall_barrow"
+    },
+    "reward": {
+      "gold": 320,
+      "fame": 10
+    },
+    "turn_in": "auto",
+    "text": "委託:肅清灰燼墓塚的亡者與魔族。"
+  },
+  "event_relic": {
+    "name": "委託:古墓遺寶",
+    "faction": null,
+    "rank": null,
+    "source": "npc",
+    "objective": {
+      "type": "collect",
+      "item": "ruby",
+      "count": 1
+    },
+    "reward": {
+      "gold": 90,
+      "fame": 5
+    },
+    "turn_in": "auto",
+    "text": "營火旁的旅人說起一座古墓藏著紅寶石 —— 替他弄一顆來,必有重謝。"
+  },
+  "fg4": {
+    "name": "剿匪",
+    "faction": "fighters_guild",
+    "rank": 3,
+    "source": "guild",
+    "objective": {
+      "type": "kill",
+      "creature": "bandit",
+      "count": 4
+    },
+    "reward": {
+      "gold": 350,
+      "fame": 18,
+      "items": [
+        "steel_mace"
+      ]
+    },
+    "turn_in": "auto",
+    "text": "公會接了清剿匪幫的大單 —— 剷除 4 名攔路強盜。"
+  },
+  "fg5": {
+    "name": "肅清冰風",
+    "faction": "fighters_guild",
+    "rank": 4,
+    "source": "guild",
+    "objective": {
+      "type": "clear_dungeon",
+      "dungeon": "frostwind_ruin"
+    },
+    "reward": {
+      "gold": 450,
+      "fame": 22,
+      "items": [
+        "dwarven_cuirass"
+      ]
+    },
+    "turn_in": "auto",
+    "text": "天際古墓亡者橫行 —— 把冰風廢墟徹底肅清。"
+  },
+  "fg6": {
+    "name": "聖騎士的試煉",
+    "faction": "fighters_guild",
+    "rank": 5,
+    "source": "guild",
+    "stages": [
+      {
+        "objective": {
+          "type": "kill",
+          "creature": "skeleton",
+          "count": 3
+        },
+        "text": "先清剿古墓的 3 具骷髏戰士。"
+      },
+      {
+        "objective": {
+          "type": "kill",
+          "creature": "bear",
+          "count": 2
+        },
+        "text": "再獵殺擾民的 2 頭巨熊。"
+      }
+    ],
+    "reward": {
+      "gold": 550,
+      "fame": 26,
+      "items": [
+        "ebony_shield"
+      ]
+    },
+    "turn_in": "auto",
+    "text": "晉升聖騎士需通過雙重試煉,證明你的武勇。"
+  },
+  "fg7": {
+    "name": "會長的繼承",
+    "faction": "fighters_guild",
+    "rank": 6,
+    "source": "guild",
+    "stages": [
+      {
+        "objective": {
+          "type": "clear_dungeon",
+          "dungeon": "ashfall_barrow"
+        },
+        "text": "深入灰燼墓塚,搗毀魔人的巢穴。"
+      },
+      {
+        "objective": {
+          "type": "kill",
+          "creature": "dremora",
+          "count": 2
+        },
+        "text": "斬除殘餘的 2 名魔人。"
+      },
+      {
+        "objective": {
+          "type": "reach",
+          "location": "kvatch"
+        },
+        "text": "返回凱瓦奇大廳,接掌公會會長之位。"
+      }
+    ],
+    "reward": {
+      "gold": 800,
+      "fame": 40,
+      "items": [
+        "ebony_sword"
+      ]
+    },
+    "turn_in": "auto",
+    "text": "老會長指定你為繼承人 —— 完成最後的試煉,證明你配得上這個位置。"
+  },
+  "mg4": {
+    "name": "奧術研究",
+    "faction": "mages_guild",
+    "rank": 3,
+    "source": "guild",
+    "stages": [
+      {
+        "objective": {
+          "type": "kill",
+          "creature": "ice_wraith",
+          "count": 3
+        },
+        "text": "研究需要冰魂精華 —— 獵殺 3 隻冰魂。"
+      },
+      {
+        "objective": {
+          "type": "collect",
+          "item": "ruby",
+          "count": 2
+        },
+        "text": "再湊齊 2 顆紅寶石作為法器核心。"
+      }
+    ],
+    "reward": {
+      "gold": 500,
+      "fame": 20,
+      "items": [
+        "filled_greater_soul_gem"
+      ]
+    },
+    "turn_in": "auto",
+    "text": "大法師交付你一項晉升研究。"
+  },
+  "mg5": {
+    "name": "首席法師",
+    "faction": "mages_guild",
+    "rank": 4,
+    "source": "guild",
+    "stages": [
+      {
+        "objective": {
+          "type": "clear_dungeon",
+          "dungeon": "frostwind_ruin"
+        },
+        "text": "淨化冰風廢墟的亡靈。"
+      },
+      {
+        "objective": {
+          "type": "kill",
+          "creature": "dremora",
+          "count": 1
+        },
+        "text": "封印闖入位面的魔人。"
+      },
+      {
+        "objective": {
+          "type": "reach",
+          "location": "haafingar"
+        },
+        "text": "返回海芬古學院,受任首席法師。"
+      }
+    ],
+    "reward": {
+      "gold": 750,
+      "fame": 35,
+      "items": [
+        "filled_greater_soul_gem",
+        "ebony_shield"
+      ]
+    },
+    "turn_in": "auto",
+    "text": "首席法師之位虛懸已久 —— 通過試煉,接掌學院。"
+  },
+  "tg4": {
+    "name": "大買賣",
+    "faction": "thieves_guild",
+    "rank": 3,
+    "source": "guild",
+    "stages": [
+      {
+        "objective": {
+          "type": "collect",
+          "item": "ruby",
+          "count": 3
+        },
+        "text": "替公會湊齊 3 顆紅寶石 —— 偷的搶的買的,不問來路。"
+      },
+      {
+        "objective": {
+          "type": "reach",
+          "location": "blacklight"
+        },
+        "text": "把貨送到黑光城的銷贓窩點。"
+      }
+    ],
+    "reward": {
+      "gold": 500,
+      "fame": 12,
+      "items": [
+        "glass_dagger"
+      ]
+    },
+    "turn_in": "auto",
+    "text": "公會要做一筆跨省的大買賣,需要你出手。"
+  },
+  "tg5": {
+    "name": "大師竊賊",
+    "faction": "thieves_guild",
+    "rank": 4,
+    "source": "guild",
+    "stages": [
+      {
+        "objective": {
+          "type": "reach",
+          "location": "haafingar"
+        },
+        "text": "踩點海芬古的金庫。"
+      },
+      {
+        "objective": {
+          "type": "collect",
+          "item": "ruby",
+          "count": 2
+        },
+        "text": "順走 2 顆紅寶石作為投名狀。"
+      },
+      {
+        "objective": {
+          "type": "reach",
+          "location": "bruma"
+        },
+        "text": "回到布魯瑪總部,加冕大師竊賊。"
+      }
+    ],
+    "reward": {
+      "gold": 800,
+      "fame": 25,
+      "items": [
+        "glass_dagger"
+      ]
+    },
+    "turn_in": "auto",
+    "text": "大師竊賊之位空懸 —— 完成這趟跨省盜途,證明你是當之無愧的接班人。"
+  }
+}

@@ -1,0 +1,130 @@
+{
+  "leather_helmet": {
+    "name": "皮盔",
+    "slot": "helmet",
+    "weight_class": "light",
+    "armor_rating": 3,
+    "value": 12,
+    "weight": 2
+  },
+  "leather_cuirass": {
+    "name": "皮甲",
+    "slot": "cuirass",
+    "weight_class": "light",
+    "armor_rating": 7,
+    "value": 40,
+    "weight": 5
+  },
+  "leather_bracers": {
+    "name": "皮護腕",
+    "slot": "gauntlets",
+    "weight_class": "light",
+    "armor_rating": 2,
+    "value": 10,
+    "weight": 2
+  },
+  "leather_boots": {
+    "name": "皮靴",
+    "slot": "boots",
+    "weight_class": "light",
+    "armor_rating": 2,
+    "value": 10,
+    "weight": 2
+  },
+  "iron_helmet": {
+    "name": "鐵盔",
+    "slot": "helmet",
+    "weight_class": "heavy",
+    "armor_rating": 5,
+    "value": 20,
+    "weight": 4
+  },
+  "iron_cuirass": {
+    "name": "鐵胸甲",
+    "slot": "cuirass",
+    "weight_class": "heavy",
+    "armor_rating": 11,
+    "value": 70,
+    "weight": 12
+  },
+  "iron_gauntlets": {
+    "name": "鐵護手",
+    "slot": "gauntlets",
+    "weight_class": "heavy",
+    "armor_rating": 3,
+    "value": 15,
+    "weight": 5
+  },
+  "iron_boots": {
+    "name": "鐵靴",
+    "slot": "boots",
+    "weight_class": "heavy",
+    "armor_rating": 4,
+    "value": 20,
+    "weight": 6
+  },
+  "wooden_shield": {
+    "name": "木盾",
+    "slot": "shield",
+    "weight_class": "light",
+    "armor_rating": 4,
+    "value": 25,
+    "weight": 6
+  },
+  "iron_shield": {
+    "name": "鐵盾",
+    "slot": "shield",
+    "weight_class": "heavy",
+    "armor_rating": 7,
+    "value": 45,
+    "weight": 12
+  },
+  "steel_cuirass": {
+    "name": "鋼胸甲",
+    "slot": "cuirass",
+    "weight_class": "heavy",
+    "armor_rating": 15,
+    "value": 150,
+    "weight": 14
+  },
+  "steel_helmet": {
+    "name": "鋼盔",
+    "slot": "helmet",
+    "weight_class": "heavy",
+    "armor_rating": 7,
+    "value": 55,
+    "weight": 5
+  },
+  "elven_helmet": {
+    "name": "精靈盔",
+    "slot": "helmet",
+    "weight_class": "light",
+    "armor_rating": 9,
+    "value": 110,
+    "weight": 3
+  },
+  "elven_cuirass": {
+    "name": "精靈胸甲",
+    "slot": "cuirass",
+    "weight_class": "light",
+    "armor_rating": 18,
+    "value": 340,
+    "weight": 6
+  },
+  "dwarven_cuirass": {
+    "name": "矮人胸甲",
+    "slot": "cuirass",
+    "weight_class": "heavy",
+    "armor_rating": 22,
+    "value": 400,
+    "weight": 15
+  },
+  "ebony_shield": {
+    "name": "黑檀盾",
+    "slot": "shield",
+    "weight_class": "heavy",
+    "armor_rating": 10,
+    "value": 260,
+    "weight": 13
+  }
+}
