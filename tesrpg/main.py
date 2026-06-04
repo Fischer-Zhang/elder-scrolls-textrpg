@@ -607,7 +607,11 @@ def action_dungeon(state: GameState, gamedata: GameData) -> str | None:
     boss = dg["boss"]
     ui.dungeon_room(dg["name"], total, total, boss["desc"], is_boss=True)
     if boss.get("enemy"):
-        foe = combat.spawn_boss(gamedata, boss["enemy"], state.rng, name=f"{dg['name']}首領")
+        if boss.get("raw"):   # 已是 elite 的首領以原始強度登場(避免 spawn_boss 再 ×1.6 疊加)
+            foe = combat.spawn_creature(gamedata, boss["enemy"], state.rng)
+            foe.name = f"{dg['name']}首領"
+        else:
+            foe = combat.spawn_boss(gamedata, boss["enemy"], state.rng, name=f"{dg['name']}首領")
         if run_battle(state, gamedata, foe) == "dead":
             return "dead"
     _resolve_container(state, gamedata, boss.get("treasure"), "首領寶藏")

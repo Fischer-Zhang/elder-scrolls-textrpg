@@ -78,6 +78,19 @@ def test_world_graph_bidirectional_and_valid():
             assert loc["dungeon"] in gd.dungeons
 
 
+def test_dungeon_enemies_and_loot_valid():
+    """所有地城房間/首領的敵人 id 都存在於 bestiary(防新增內容打錯字)。"""
+    gd, _ = _char()
+    for did, dg in gd.dungeons.items():
+        for room in dg.get("rooms", []):
+            ids = room.get("enemies") or ([room["enemy"]] if room.get("enemy") else [])
+            for tid in ids:
+                assert tid in gd.bestiary, f"{did} 房間敵人 {tid} 不在 bestiary"
+        boss = dg.get("boss", {})
+        if boss.get("enemy"):
+            assert boss["enemy"] in gd.bestiary, f"{did} 首領 {boss['enemy']} 不在 bestiary"
+
+
 def test_travel_moves_and_advances_time():
     gd, c = _char()
     from tesrpg.state import GameTime

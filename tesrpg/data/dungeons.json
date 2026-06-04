@@ -184,7 +184,8 @@
     ],
     "boss": {
       "desc": "墓塚核心的湮滅祭壇 —— 一名強大的魔人領主擋在黑檀寶物前。",
-      "enemy": "dremora",
+      "enemy": "dremora_lord",
+      "raw": true,
       "treasure": {
         "locked": 40,
         "loot": [
@@ -198,6 +199,54 @@
               160
             ]
           }
+        ]
+      }
+    }
+  },
+  "dragon_lair": {
+    "name": "龍喉巢穴",
+    "rooms": [
+      {
+        "desc": "焦黑的山腹甬道,熱氣蒸騰。一頭三眼霜巨魔守在洞口。",
+        "enemy": "frost_troll",
+        "container": null
+      },
+      {
+        "desc": "佈滿龍骸的長廊,半埋的寶箱在餘燼中泛光。",
+        "enemy": null,
+        "container": {
+          "locked": 40,
+          "loot": ["filled_greater_soul_gem", "ruby", {"gold": [40, 90]}]
+        }
+      },
+      {
+        "desc": "懸著冰霜霧氣的古墓室,一具巫妖自龍骨王座上浮起。",
+        "enemies": ["lich"],
+        "container": null
+      },
+      {
+        "desc": "通往巢穴的最後一道隘口,一尊霜巨人橫亙其間。",
+        "enemy": "frost_giant",
+        "container": {
+          "locked": 45,
+          "loot": ["dwarven_cuirass", "healing_potion", {"gold": [60, 120]}]
+        }
+      }
+    ],
+    "boss": {
+      "desc": "巢穴頂端的熔岩天井 —— 一頭上古巨龍盤踞於成堆的黑檀寶藏之上,烈焰自齒間溢出。",
+      "enemy": "ancient_dragon",
+      "raw": true,
+      "treasure": {
+        "locked": 55,
+        "loot": [
+          "ebony_sword",
+          "dwarven_cuirass",
+          "filled_greater_soul_gem",
+          "healing_potion",
+          "healing_potion",
+          "ruby",
+          {"gold": [300, 600]}
         ]
       }
     }

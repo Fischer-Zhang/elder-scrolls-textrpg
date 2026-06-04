@@ -281,7 +281,8 @@
         "nightshade"
       ],
       "links": {
-        "blacklight": 3
+        "blacklight": 3,
+        "dragon_lair": 4
       }
     },
     "ashfall_barrow": {
@@ -294,6 +295,18 @@
       "dungeon": "ashfall_barrow",
       "links": {
         "blacklight": 3
+      }
+    },
+    "dragon_lair": {
+      "name": "龍喉峰",
+      "province": "晨風",
+      "type": "dungeon",
+      "danger": 5,
+      "desc": "晨風最險惡的火山峰頂,傳說一頭上古巨龍盤踞於熔岩巢穴,連魔族也不敢近。",
+      "services": [],
+      "dungeon": "dragon_lair",
+      "links": {
+        "molag_mar": 4
       }
     }
   },
