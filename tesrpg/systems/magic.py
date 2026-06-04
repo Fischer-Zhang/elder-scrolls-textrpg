@@ -175,6 +175,11 @@ def is_paralyzed(creature) -> bool:
     return any(e["kind"] == "paralyze" and e["turns"] > 0 for e in creature.active_effects)
 
 
+def is_staggered(creature) -> bool:
+    """陣腳大亂(暗殺殘響):攻擊命中率下降一回合(不等於失能,仍會行動)。"""
+    return any(e["kind"] == "stagger" and e["turns"] > 0 for e in creature.active_effects)
+
+
 def is_incapacitated(creature) -> bool:
     """恐懼或麻痺 → 本回合無法行動。"""
     return is_feared(creature) or is_paralyzed(creature)
@@ -193,7 +198,8 @@ def has_soul_trap(creature) -> bool:
     return any(e["kind"] == "soul_trap" and e["turns"] > 0 for e in creature.active_effects)
 
 
-_ELEMENT_CN = {"fire": "火焰", "frost": "冰霜", "shock": "雷電", "poison": "毒素", "magic": "魔法"}
+_ELEMENT_CN = {"fire": "火焰", "frost": "冰霜", "shock": "雷電", "poison": "毒素",
+               "magic": "魔法", "bleed": "撕裂"}
 
 
 def entity_resist(entity, gamedata) -> dict:

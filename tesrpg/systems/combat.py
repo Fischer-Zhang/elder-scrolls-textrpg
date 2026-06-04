@@ -215,6 +215,8 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
                                  fr, defender_blocking, defender_evasion=evasion)
     if _is_player(attacker):    # 武器速度:快武器更易命中、慢武器較難
         chance = max(0.05, min(0.95, chance + formulas.weapon_speed_hit(speed)))
+    if magic.is_staggered(attacker):   # 暗殺殘響:陣腳大亂的單位本回合更難命中
+        chance = max(0.05, chance - formulas.STAGGER_HIT_PENALTY)
     if sneaking:
         chance = max(chance, formulas.SNEAK_ATTACK_HIT_FLOOR)
     skill_events: list[dict] = []
@@ -225,6 +227,7 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
     poison_applied = None
     self_restored = None
     infected = False
+    aftermath = None
     sneak_mult = (formulas.sneak_attack_multiplier(attacker.skill("sneak"))
                   * formulas.archetype_sneak_bonus(archetype)) if sneaking else None
 
@@ -290,6 +293,23 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
             if wp["charges"] <= 0:
                 attacker.weapon_poison = None
 
+        # 暗殺殘響:偷襲命中但沒秒殺 → 依武器流派留下踉蹌(命中減成)/撕裂傷(DoT),
+        # 強度吃潛行+煉金。讓「失手的暗殺」不再是斷崖,而是 combo 的第一段。
+        if sneaking and is_alive(defender):
+            am = formulas.sneak_aftermath(archetype)
+            staggered = bool(am.get("stagger"))
+            bleed_mag = 0
+            if staggered:
+                defender.active_effects.append({"kind": "stagger", "turns": 1})
+            if am.get("bleed"):
+                bleed_mag = formulas.sneak_bleed_magnitude(
+                    attacker.skill("sneak"), attacker.skill("alchemy"))
+                defender.active_effects.append({"kind": "dot", "element": "bleed",
+                                                "magnitude": bleed_mag,
+                                                "turns": formulas.SNEAK_BLEED_TURNS})
+            if staggered or bleed_mag:
+                aftermath = {"staggered": staggered, "bleed": bleed_mag}
+
         # 耐久折損:玩家攻擊磨損武器、被擊中磨損護甲
         if _is_player(attacker):
             inventory.degrade_weapon(attacker)
@@ -324,6 +344,7 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
         "skill_events": skill_events, "defender_dead": not is_alive(defender),
         "absorbed": absorbed, "status_applied": status_applied, "poison_applied": poison_applied,
         "sneak": sneak_mult, "self_restored": self_restored, "infected": infected,
+        "aftermath": aftermath,
     }
 
 

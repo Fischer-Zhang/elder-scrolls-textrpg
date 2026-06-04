@@ -93,6 +93,27 @@ SNEAK_ATTACK_SCALE = 0.03    # 偷襲傷害倍率係數
 SNEAK_ATTACK_HIT_FLOOR = 0.90  # 偷襲命中率下限(伏擊不察之敵,極少落空)
 DODGE_EVASION_SCALE = 0.0025   # 雜技閃避係數(acrobatics 100 → 敵人命中 −0.25)
 
+# --- 暗殺殘響(偷襲命中但沒秒殺 → alpha strike 仍留下實質後果)------------
+STAGGER_HIT_PENALTY = 0.30   # 陣腳大亂的單位攻擊命中減成(命中-0.30,給刺客喘息窗)
+SNEAK_BLEED_BASE = 2         # 撕裂傷每回合基礎傷害
+SNEAK_BLEED_PER_SNEAK = 25   # 每 25 點潛行 → 撕裂傷 +1
+SNEAK_BLEED_PER_ALCHEMY = 40  # 每 40 點煉金 → 撕裂傷 +1(刺客主修,learn-by-doing)
+SNEAK_BLEED_TURNS = 3        # 撕裂傷持續回合
+# 各武器流派偷襲未殺時的殘響:匕首=踉蹌+撕裂、弓=踉蹌(射倒拖節奏);劍/鈍器無(守住刺客身份)
+_ARCHETYPE_SNEAK_AFTERMATH = {"dagger": {"stagger": True, "bleed": True},
+                              "bow": {"stagger": True}}
+
+
+def sneak_aftermath(archetype: str | None) -> dict:
+    """該武器流派『偷襲未殺』時施加的殘響效果(無則空 dict)。"""
+    return _ARCHETYPE_SNEAK_AFTERMATH.get(archetype, {})
+
+
+def sneak_bleed_magnitude(sneak_skill: int, alchemy_skill: int) -> int:
+    """撕裂傷每回合傷害,隨潛行與煉金成長(技巧驅動而非無腦數值)。"""
+    return (SNEAK_BLEED_BASE + sneak_skill // SNEAK_BLEED_PER_SNEAK
+            + alchemy_skill // SNEAK_BLEED_PER_ALCHEMY)
+
 
 def sneak_attack_multiplier(sneak_skill: int) -> float:
     """開場偷襲的傷害倍率:潛行越高,致命一擊越狠(sneak 0→×1.0、50→×2.5、100→×4.0)。"""

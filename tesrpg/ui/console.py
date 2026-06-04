@@ -479,6 +479,15 @@ def combat_event(ev: dict, gamedata: GameData) -> None:
         console.print(f"  [magenta]{ev['defender']} 中了{_ELEM_CN.get(ev['status_applied'], '異常')}![/]")
     if ev.get("poison_applied"):
         console.print(f"  [green]武器上的{ev['poison_applied']}滲入了{ev['defender']}的傷口![/]")
+    if ev.get("aftermath"):
+        am = ev["aftermath"]
+        bits = []
+        if am.get("staggered"):
+            bits.append("陣腳大亂(這一擊更難命中你)")
+        if am.get("bleed"):
+            bits.append(f"傷口撕裂(每回合 {am['bleed']} 傷)")
+        if bits:
+            console.print(f"  [magenta]🩸 暗殺殘響 —— {ev['defender']}{'、'.join(bits)}![/]")
     if ev.get("self_restored"):
         stat, amt = ev["self_restored"]
         console.print(f"  [cyan]法杖將生機回流,{_STAT_CN.get(stat, stat)} +{amt}。[/]")
