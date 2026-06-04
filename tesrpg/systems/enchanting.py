@@ -14,7 +14,12 @@ from tesrpg.systems import inventory, progression
 
 ELEMENTS = ["fire", "frost", "shock"]
 FORTIFY_STATS = ["health", "magicka", "fatigue"]   # 護甲附魔可強化的最大資源
+RESIST_ELEMENTS = ["fire", "frost", "shock", "poison", "magic"]   # 飾品可抗的元素
 ENCHANT_XP = 1.0
+
+# 飾品附魔的 4 種型別(供 UI 列表):(kind, 顯示名)
+JEWELRY_KINDS = [("skill", "強化技能"), ("attr", "強化屬性"),
+                 ("resist", "抗元素"), ("res", "強化最大資源")]
 
 
 def filled_soul_gems(char: Character, gamedata: GameData) -> list[str]:
@@ -41,6 +46,43 @@ def enchantable_armor(char: Character, gamedata: GameData) -> list[str]:
 
 def enchant_magnitude(soul: int, mysticism_skill: int) -> int:
     return max(1, round(soul * 3 * (0.6 + mysticism_skill / 100.0)))
+
+
+def enchantable_jewelry(char: Character, gamedata: GameData) -> list[str]:
+    out = []
+    for s in char.inventory:
+        d = gamedata.item(s["id"])
+        if d.get("kind") == "jewelry" and not d.get("enchant"):
+            out.append(s["id"])
+    return out
+
+
+def jewelry_magnitude(kind: str, soul: int, mysticism_skill: int) -> int:
+    """各型別的附魔強度(屬性最珍貴給最少、抗性以百分比給較多)。"""
+    base = 0.5 + mysticism_skill / 100.0
+    factor = {"skill": 2.0, "attr": 1.2, "resist": 5.0, "res": 3.0}[kind]
+    floor = 2 if kind == "resist" else 1
+    return max(floor, round(soul * factor * base))
+
+
+def enchant_jewelry(char: Character, gamedata: GameData, base_jewelry: str,
+                    kind: str, param: str, gem_id: str) -> dict:
+    """為飾品附上 強化技能/屬性/抗元素/強化資源。回傳同 enchant_weapon。"""
+    if inventory.count_item(char, base_jewelry) < 1 or inventory.count_item(char, gem_id) < 1:
+        return {"ok": False, "message": "缺少飾品或靈魂石。", "skill_events": []}
+    if kind not in ("skill", "attr", "resist", "res"):
+        return {"ok": False, "message": "未知的附魔型別。", "skill_events": []}
+
+    soul = gamedata.item(gem_id).get("soul", 1)
+    mag = jewelry_magnitude(kind, soul, char.skill("mysticism"))
+
+    inventory.remove_item(char, base_jewelry, 1)
+    inventory.remove_item(char, gem_id, 1)
+    item_id = synth.enchant_jewelry_id(base_jewelry, kind, param, mag)
+    inventory.add_item(char, item_id, 1)
+    events = progression.use_skill(char, gamedata, "mysticism", ENCHANT_XP)
+    return {"ok": True, "message": f"靈魂石碎裂,{gamedata.item(item_id)['name']} 完成了!",
+            "item_id": item_id, "skill_events": events}
 
 
 def enchant_weapon(char: Character, gamedata: GameData, base_weapon: str,

@@ -640,15 +640,26 @@ def action_inventory(state: GameState, gamedata: GameData) -> None:
         _item_actions(state, gamedata, item_id)
 
 
+def _equipped_slot_of(char: Character, item_id: str) -> str | None:
+    """找出該物品實際佔用的裝備槽鍵(護甲=slot;飾品=ring1/ring2/amulet)。"""
+    for slot, wid in char.equipped.items():
+        if wid == item_id:
+            return slot
+    return None
+
+
 def _item_actions(state: GameState, gamedata: GameData, item_id: str) -> None:
     char = state.player
     d = gamedata.item(item_id)
+    worn = sum(1 for v in char.equipped.values() if v == item_id)
     acts = []
     if d["kind"] == "weapon" and char.weapon != item_id:
         acts.append(("equip_w", "裝備為手持武器"))
     if d["kind"] == "armor" and char.equipped.get(d["slot"]) != item_id:
         acts.append(("equip_a", "穿戴"))
-    if item_id in char.equipped.values():
+    if d["kind"] == "jewelry" and inventory.count_item(char, item_id) > worn:
+        acts.append(("equip_j", "戴上"))
+    if worn > 0:
         acts.append(("unequip", "卸下"))
     if d["kind"] == "potion":
         acts.append(("use", "使用"))
@@ -659,11 +670,15 @@ def _item_actions(state: GameState, gamedata: GameData, item_id: str) -> None:
         ui.message(f"你握起了{d['name']}。", style="green")
     elif act == "equip_a":
         inventory.equip_armor(char, gamedata, item_id)
-        stats.recompute_max_resources(char, gamedata)   # 套用護甲 fortify
+        stats.recompute_max_resources(char, gamedata)   # 套用護甲 fortify/套裝
         ui.message(f"你穿上了{d['name']}。", style="green")
+    elif act == "equip_j":
+        slot = inventory.equip_jewelry(char, gamedata, item_id)
+        stats.recompute_max_resources(char, gamedata)   # 套用飾品附魔
+        ui.message(f"你戴上了{d['name']}。", style="green")
     elif act == "unequip":
-        inventory.unequip(char, d["slot"])
-        stats.recompute_max_resources(char, gamedata)   # 移除護甲 fortify
+        inventory.unequip(char, _equipped_slot_of(char, item_id))
+        stats.recompute_max_resources(char, gamedata)   # 移除護甲/飾品加成
         ui.message(f"你卸下了{d['name']}。", style="grey70")
     elif act == "use":
         msg = inventory.use_item(char, gamedata, item_id)
@@ -919,14 +934,17 @@ def action_enchant(state: GameState, gamedata: GameData) -> None:
         return
     weapons = enchanting.enchantable_weapons(char, gamedata)
     armors = enchanting.enchantable_armor(char, gamedata)
+    jewels = enchanting.enchantable_jewelry(char, gamedata)
 
     kinds = []
     if weapons:
         kinds.append(("weapon", "武器(附元素傷害)"))
     if armors:
         kinds.append(("armor", "護甲(強化生命/魔力/體力)"))
+    if jewels:
+        kinds.append(("jewelry", "飾品(強化技能/屬性/抗性/資源)"))
     if not kinds:
-        ui.message("沒有可附魔的武器或護甲。", style="grey70")
+        ui.message("沒有可附魔的武器、護甲或飾品。", style="grey70")
         return
     kind = kinds[0][0] if len(kinds) == 1 else ui.menu("附魔什麼?", kinds, allow_back=True)
     if kind is None:
@@ -948,7 +966,7 @@ def action_enchant(state: GameState, gamedata: GameData) -> None:
         if elem is None:
             return
         res = enchanting.enchant_weapon(char, gamedata, wid, elem, gem)
-    else:
+    elif kind == "armor":
         aid = ui.menu("為哪件護甲附魔?",
                       [(a, gamedata.item_name(a)) for a in armors], allow_back=True)
         if aid is None:
@@ -959,6 +977,28 @@ def action_enchant(state: GameState, gamedata: GameData) -> None:
         if stat is None:
             return
         res = enchanting.enchant_armor(char, gamedata, aid, stat, gem)
+    else:   # jewelry
+        jid = ui.menu("為哪件飾品附魔?",
+                      [(j, gamedata.item_name(j)) for j in jewels], allow_back=True)
+        if jid is None:
+            return
+        jkind = ui.menu("附魔型別?", enchanting.JEWELRY_KINDS, allow_back=True)
+        if jkind is None:
+            return
+        if jkind == "skill":
+            param_opts = [(sid, gamedata.skill_name(sid)) for sid in gamedata.skills]
+        elif jkind == "attr":
+            param_opts = [(a, formulas.ATTRIBUTE_NAMES[a]) for a in formulas.ATTRIBUTES]
+        elif jkind == "resist":
+            param_opts = [(e, n) for e, n in
+                          [("fire", "烈焰"), ("frost", "冰霜"), ("shock", "雷電"),
+                           ("poison", "毒素"), ("magic", "魔法")]]
+        else:  # res
+            param_opts = [("health", "生命"), ("magicka", "魔力"), ("fatigue", "體力")]
+        param = ui.menu("強化哪一項?", param_opts, allow_back=True)
+        if param is None:
+            return
+        res = enchanting.enchant_jewelry(char, gamedata, jid, jkind, param, gem)
 
     ui.message(res["message"], style="bold green" if res["ok"] else "red")
     ui.show_events(res["skill_events"], gamedata)

@@ -197,9 +197,13 @@ _ELEMENT_CN = {"fire": "火焰", "frost": "冰霜", "shock": "雷電", "poison":
 
 
 def entity_resist(entity, gamedata) -> dict:
-    """玩家抗性取自種族;怪物取自自身 resist。"""
+    """玩家抗性取自種族 + 穿戴裝備附魔/套裝(加總);怪物取自自身 resist。"""
     if isinstance(entity, Character):
-        return gamedata.races[entity.race].get("resist", {}) if gamedata else {}
+        race = gamedata.races[entity.race].get("resist", {}) if gamedata else {}
+        merged = dict(race)
+        for elem, val in entity.equip_resist.items():     # 裝備抗性與種族抗性相加
+            merged[elem] = merged.get(elem, 0) + val
+        return merged
     return getattr(entity, "resist", {}) or {}
 
 

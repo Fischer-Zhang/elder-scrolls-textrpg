@@ -329,6 +329,11 @@ def item_label(gamedata: GameData, char: Character, item_id: str, qty: int = 1) 
         extra = f" 傷害{d['damage']}/{gamedata.skill_name(d['skill'])}"
     elif d["kind"] == "armor":
         extra = f" 護甲{d['armor_rating']}/{d['slot']}"
+    elif d["kind"] == "jewelry":
+        extra = " 飾品"
+        ench = d.get("enchant")
+        if ench:
+            extra += "·已附魔"
     qtystr = f" ×{qty}" if qty > 1 else ""
     return f"{d['name']}{qtystr}（{d['weight']:g}斤{extra}){tag}"
 

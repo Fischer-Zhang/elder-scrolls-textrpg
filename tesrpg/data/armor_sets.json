@@ -1,0 +1,9 @@
+{
+  "leather":  {"name": "皮革套裝", "bonus": {"kind": "fortify_skill", "skill": "sneak", "magnitude": 15}},
+  "iron":     {"name": "鐵製套裝", "bonus": {"kind": "fortify_resource", "stat": "health", "magnitude": 15}},
+  "steel":    {"name": "鋼製套裝", "bonus": {"kind": "fortify_resource", "stat": "health", "magnitude": 25}},
+  "elven":    {"name": "精靈套裝", "bonus": {"kind": "fortify_resource", "stat": "magicka", "magnitude": 30}},
+  "glass":    {"name": "玻璃套裝", "bonus": {"kind": "fortify_skill", "skill": "acrobatics", "magnitude": 15}},
+  "dwarven":  {"name": "矮人套裝", "bonus": {"kind": "fortify_attribute", "attr": "endurance", "magnitude": 10}},
+  "ebony":    {"name": "黑檀套裝", "bonus": {"kind": "resist_element", "element": "magic", "magnitude": 15}}
+}

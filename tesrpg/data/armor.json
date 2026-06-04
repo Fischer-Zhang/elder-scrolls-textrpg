@@ -5,7 +5,8 @@
     "weight_class": "light",
     "armor_rating": 3,
     "value": 12,
-    "weight": 2
+    "weight": 2,
+    "material": "leather"
   },
   "leather_cuirass": {
     "name": "皮甲",
@@ -13,7 +14,8 @@
     "weight_class": "light",
     "armor_rating": 7,
     "value": 40,
-    "weight": 5
+    "weight": 5,
+    "material": "leather"
   },
   "leather_bracers": {
     "name": "皮護腕",
@@ -21,7 +23,8 @@
     "weight_class": "light",
     "armor_rating": 2,
     "value": 10,
-    "weight": 2
+    "weight": 2,
+    "material": "leather"
   },
   "leather_boots": {
     "name": "皮靴",
@@ -29,7 +32,8 @@
     "weight_class": "light",
     "armor_rating": 2,
     "value": 10,
-    "weight": 2
+    "weight": 2,
+    "material": "leather"
   },
   "iron_helmet": {
     "name": "鐵盔",
@@ -37,7 +41,8 @@
     "weight_class": "heavy",
     "armor_rating": 5,
     "value": 20,
-    "weight": 4
+    "weight": 4,
+    "material": "iron"
   },
   "iron_cuirass": {
     "name": "鐵胸甲",
@@ -45,7 +50,8 @@
     "weight_class": "heavy",
     "armor_rating": 11,
     "value": 70,
-    "weight": 12
+    "weight": 12,
+    "material": "iron"
   },
   "iron_gauntlets": {
     "name": "鐵護手",
@@ -53,7 +59,8 @@
     "weight_class": "heavy",
     "armor_rating": 3,
     "value": 15,
-    "weight": 5
+    "weight": 5,
+    "material": "iron"
   },
   "iron_boots": {
     "name": "鐵靴",
@@ -61,7 +68,8 @@
     "weight_class": "heavy",
     "armor_rating": 4,
     "value": 20,
-    "weight": 6
+    "weight": 6,
+    "material": "iron"
   },
   "wooden_shield": {
     "name": "木盾",
@@ -77,7 +85,8 @@
     "weight_class": "heavy",
     "armor_rating": 7,
     "value": 45,
-    "weight": 12
+    "weight": 12,
+    "material": "iron"
   },
   "steel_cuirass": {
     "name": "鋼胸甲",
@@ -85,7 +94,8 @@
     "weight_class": "heavy",
     "armor_rating": 15,
     "value": 150,
-    "weight": 14
+    "weight": 14,
+    "material": "steel"
   },
   "steel_helmet": {
     "name": "鋼盔",
@@ -93,7 +103,8 @@
     "weight_class": "heavy",
     "armor_rating": 7,
     "value": 55,
-    "weight": 5
+    "weight": 5,
+    "material": "steel"
   },
   "elven_helmet": {
     "name": "精靈盔",
@@ -101,7 +112,8 @@
     "weight_class": "light",
     "armor_rating": 9,
     "value": 110,
-    "weight": 3
+    "weight": 3,
+    "material": "elven"
   },
   "elven_cuirass": {
     "name": "精靈胸甲",
@@ -109,7 +121,8 @@
     "weight_class": "light",
     "armor_rating": 18,
     "value": 340,
-    "weight": 6
+    "weight": 6,
+    "material": "elven"
   },
   "dwarven_cuirass": {
     "name": "矮人胸甲",
@@ -117,7 +130,8 @@
     "weight_class": "heavy",
     "armor_rating": 22,
     "value": 400,
-    "weight": 15
+    "weight": 15,
+    "material": "dwarven"
   },
   "ebony_shield": {
     "name": "黑檀盾",
@@ -125,6 +139,169 @@
     "weight_class": "heavy",
     "armor_rating": 10,
     "value": 260,
-    "weight": 13
+    "weight": 13,
+    "material": "ebony"
+  },
+  "steel_gauntlets": {
+    "name": "鋼護手",
+    "slot": "gauntlets",
+    "weight_class": "heavy",
+    "armor_rating": 5,
+    "value": 60,
+    "weight": 6,
+    "material": "steel"
+  },
+  "steel_boots": {
+    "name": "鋼靴",
+    "slot": "boots",
+    "weight_class": "heavy",
+    "armor_rating": 6,
+    "value": 65,
+    "weight": 6,
+    "material": "steel"
+  },
+  "steel_shield": {
+    "name": "鋼盾",
+    "slot": "shield",
+    "weight_class": "heavy",
+    "armor_rating": 9,
+    "value": 90,
+    "weight": 13,
+    "material": "steel"
+  },
+  "elven_gauntlets": {
+    "name": "精靈護手",
+    "slot": "gauntlets",
+    "weight_class": "light",
+    "armor_rating": 5,
+    "value": 100,
+    "weight": 3,
+    "material": "elven"
+  },
+  "elven_boots": {
+    "name": "精靈靴",
+    "slot": "boots",
+    "weight_class": "light",
+    "armor_rating": 5,
+    "value": 100,
+    "weight": 3,
+    "material": "elven"
+  },
+  "dwarven_helmet": {
+    "name": "矮人盔",
+    "slot": "helmet",
+    "weight_class": "heavy",
+    "armor_rating": 11,
+    "value": 180,
+    "weight": 6,
+    "material": "dwarven"
+  },
+  "dwarven_gauntlets": {
+    "name": "矮人護手",
+    "slot": "gauntlets",
+    "weight_class": "heavy",
+    "armor_rating": 6,
+    "value": 120,
+    "weight": 6,
+    "material": "dwarven"
+  },
+  "dwarven_boots": {
+    "name": "矮人靴",
+    "slot": "boots",
+    "weight_class": "heavy",
+    "armor_rating": 7,
+    "value": 130,
+    "weight": 7,
+    "material": "dwarven"
+  },
+  "dwarven_shield": {
+    "name": "矮人盾",
+    "slot": "shield",
+    "weight_class": "heavy",
+    "armor_rating": 11,
+    "value": 260,
+    "weight": 14,
+    "material": "dwarven"
+  },
+  "ebony_helmet": {
+    "name": "黑檀盔",
+    "slot": "helmet",
+    "weight_class": "heavy",
+    "armor_rating": 13,
+    "value": 400,
+    "weight": 6,
+    "material": "ebony"
+  },
+  "ebony_cuirass": {
+    "name": "黑檀胸甲",
+    "slot": "cuirass",
+    "weight_class": "heavy",
+    "armor_rating": 26,
+    "value": 700,
+    "weight": 16,
+    "material": "ebony"
+  },
+  "ebony_gauntlets": {
+    "name": "黑檀護手",
+    "slot": "gauntlets",
+    "weight_class": "heavy",
+    "armor_rating": 8,
+    "value": 300,
+    "weight": 7,
+    "material": "ebony"
+  },
+  "ebony_boots": {
+    "name": "黑檀靴",
+    "slot": "boots",
+    "weight_class": "heavy",
+    "armor_rating": 9,
+    "value": 340,
+    "weight": 8,
+    "material": "ebony"
+  },
+  "glass_helmet": {
+    "name": "玻璃盔",
+    "slot": "helmet",
+    "weight_class": "light",
+    "armor_rating": 11,
+    "value": 140,
+    "weight": 3,
+    "material": "glass"
+  },
+  "glass_cuirass": {
+    "name": "玻璃胸甲",
+    "slot": "cuirass",
+    "weight_class": "light",
+    "armor_rating": 20,
+    "value": 400,
+    "weight": 6,
+    "material": "glass"
+  },
+  "glass_gauntlets": {
+    "name": "玻璃護手",
+    "slot": "gauntlets",
+    "weight_class": "light",
+    "armor_rating": 5,
+    "value": 110,
+    "weight": 2,
+    "material": "glass"
+  },
+  "glass_boots": {
+    "name": "玻璃靴",
+    "slot": "boots",
+    "weight_class": "light",
+    "armor_rating": 5,
+    "value": 110,
+    "weight": 2,
+    "material": "glass"
+  },
+  "glass_shield": {
+    "name": "玻璃盾",
+    "slot": "shield",
+    "weight_class": "light",
+    "armor_rating": 8,
+    "value": 200,
+    "weight": 6,
+    "material": "glass"
   }
 }

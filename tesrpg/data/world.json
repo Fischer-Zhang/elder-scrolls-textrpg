@@ -26,7 +26,9 @@
         "hunting_bow",
         "repair_hammer",
         "blue_mountain_flower",
-        "garlic"
+        "garlic",
+        "silver_ring",
+        "silver_amulet"
       ],
       "spell_stock": [
         "flames",
@@ -161,7 +163,10 @@
         "ruby",
         "repair_hammer",
         "glow_dust",
-        "lavender"
+        "lavender",
+        "silver_ring",
+        "gold_ring",
+        "gold_amulet"
       ],
       "spell_stock": [
         "frostbite",
@@ -241,7 +246,9 @@
         "scrib_jelly",
         "nightshade",
         "deathbell",
-        "imp_stool"
+        "imp_stool",
+        "gold_ring",
+        "silver_amulet"
       ],
       "spell_stock": [
         "lightning_bolt",

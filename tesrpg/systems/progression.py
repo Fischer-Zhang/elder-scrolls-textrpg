@@ -86,8 +86,9 @@ def apply_level_up(char: Character, gamedata: GameData,
         pts = min(pts, formulas.LEVELUP_ATTRIBUTE_POINTS - spent)
         if pts <= 0:
             break
-        new_val = min(formulas.ATTRIBUTE_CAP, char.attr(attr) + pts)
-        applied = new_val - char.attr(attr)
+        cur = char.base_attr(attr)                       # 用原始屬性,勿把裝備加成寫進 base
+        new_val = min(formulas.ATTRIBUTE_CAP, cur + pts)
+        applied = new_val - cur
         char.attributes[attr] = new_val
         spent += applied
         if applied:

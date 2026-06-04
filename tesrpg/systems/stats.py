@@ -21,13 +21,26 @@ def ensure_base_health(char: Character) -> None:
         char.base_max_health = char.max_health
 
 
+def recompute_equipment(char: Character, gamedata) -> dict:
+    """重算「穿戴裝備加成」並寫回 char(供 skill()/attr()/抗性 直接讀)。
+
+    回傳該次彙整(含 resources,供 recompute_max_resources 套用)。必須在
+    recompute_max_resources 讀 char.attr() 之前先跑,fortify_attribute 才會流進衍生值。
+    """
+    from tesrpg.systems import inventory   # 區域 import:避免 inventory→stats 循環
+    bonuses = inventory.equipment_bonuses(char, gamedata)
+    char.equip_skill_bonus = bonuses["skills"]
+    char.equip_attr_bonus = bonuses["attrs"]
+    char.equip_resist = bonuses["resist"]
+    return bonuses
+
+
 def recompute_max_resources(char: Character, gamedata=None,
                             restore_full: bool = False) -> None:
     ensure_base_health(char)
     fort: dict[str, int] = {}
     if gamedata is not None:
-        from tesrpg.systems import inventory   # 區域 import:避免與 inventory→stats 形成循環
-        fort = inventory.armor_fortify_totals(char, gamedata)
+        fort = recompute_equipment(char, gamedata)["resources"]   # 含護甲/飾品/套裝
 
     res = char.resource_levels   # 升級三選一累積的資源加成
     char.max_health = char.base_max_health + res.get("health", 0) + fort.get("health", 0)

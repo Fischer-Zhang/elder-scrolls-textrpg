@@ -25,6 +25,7 @@ class GameData:
         self.names: dict = _load("names.json")
         self.weapons: dict = _load("weapons.json")
         self.armor: dict = _load("armor.json")
+        self.armor_sets: dict = _load("armor_sets.json")   # 材質 → 套裝加成
         self.bestiary: dict = _load("bestiary.json")
         self.world: dict = _load("world.json")
         self.dungeons: dict = _load("dungeons.json")

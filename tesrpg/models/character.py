@@ -57,6 +57,11 @@ class Character:
     inventory: list = field(default_factory=list)
     equipped: dict = field(default_factory=dict)
     spells: list = field(default_factory=list)
+    # 穿戴裝備(護甲/飾品附魔 + 套裝)疊進的加成 —— 由 stats.recompute_equipment 重算後寫入,
+    # 讓 skill()/attr()/抗性 能在不帶 gamedata 的情況下直接讀(隨裝備變動即時更新)。
+    equip_skill_bonus: dict = field(default_factory=dict)   # skill_id -> +點數
+    equip_attr_bonus: dict = field(default_factory=dict)    # attr_id -> +點數
+    equip_resist: dict = field(default_factory=dict)        # element -> +百分比
     factions: dict = field(default_factory=dict)         # faction_id -> 階級索引(已入會)
     active_effects: list = field(default_factory=list)
     fame: int = 0
@@ -86,9 +91,16 @@ class Character:
 
     # --- 查詢 -------------------------------------------------------------
     def attr(self, key: str) -> int:
-        return self.attributes.get(key, formulas.BASE_ATTRIBUTE)
+        return self.attributes.get(key, formulas.BASE_ATTRIBUTE) + self.equip_attr_bonus.get(key, 0)
 
     def skill(self, key: str) -> int:
+        return self.skills.get(key, 0) + self.equip_skill_bonus.get(key, 0)
+
+    def base_attr(self, key: str) -> int:
+        """不含裝備加成的原始屬性(供成長/夾限用)。"""
+        return self.attributes.get(key, formulas.BASE_ATTRIBUTE)
+
+    def base_skill(self, key: str) -> int:
         return self.skills.get(key, 0)
 
     def is_major_skill(self, skill_id: str) -> bool:
@@ -119,6 +131,8 @@ class Character:
             "weapon_condition": self.weapon_condition, "armor_condition": self.armor_condition,
             "location_id": self.location_id,
             "inventory": self.inventory, "equipped": self.equipped, "spells": self.spells,
+            "equip_skill_bonus": self.equip_skill_bonus, "equip_attr_bonus": self.equip_attr_bonus,
+            "equip_resist": self.equip_resist,
             "factions": self.factions,
             # active_effects 是「戰鬥內」臨時效果(護盾/中毒/再生),不寫入存檔,
             # 載入時由 dataclass 預設為空 list(避免臨時效果被永久化)。

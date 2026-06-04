@@ -15,6 +15,8 @@ from tesrpg.models import Character
 from tesrpg.systems import stats
 
 ARMOR_SLOTS = ["helmet", "cuirass", "gauntlets", "boots", "shield"]
+JEWELRY_SLOTS = ["amulet", "ring1", "ring2"]        # 飾品槽(不占重量、無護甲值,純附魔載體)
+SET_SLOTS = ["helmet", "cuirass", "gauntlets", "boots"]   # 判定「同材質整套」的四件
 
 
 # --- 增減 ---------------------------------------------------------------
@@ -84,8 +86,68 @@ def equip_armor(char: Character, gamedata: GameData, item_id: str) -> bool:
     return True
 
 
+def equip_jewelry(char: Character, gamedata: GameData, item_id: str) -> str | None:
+    """戴上飾品(amulet/ring)。戒指有兩個槽,填第一個空槽(都滿則換掉 ring1)。
+
+    回傳實際使用的槽位(供 UI),不可戴回傳 None。
+    """
+    d = gamedata.item(item_id)
+    if d.get("kind") != "jewelry" or count_item(char, item_id) <= 0:
+        return None
+    slot = d["slot"]
+    if slot == "ring":
+        target = "ring1" if "ring1" not in char.equipped else (
+            "ring2" if "ring2" not in char.equipped else "ring1")
+    else:
+        target = "amulet"
+    char.equipped[target] = item_id
+    return target
+
+
 def unequip(char: Character, slot: str) -> None:
     char.equipped.pop(slot, None)
+
+
+# --- 穿戴裝備的總加成(附魔 + 套裝)------------------------------------
+def _apply_enchant(out: dict, ench: dict | None) -> None:
+    """把單一附魔/套裝效果累加進 out({skills,attrs,resist,resources})。"""
+    if not ench:
+        return
+    k = ench.get("kind")
+    mag = int(ench.get("magnitude", 0))
+    if k in ("armor_fortify", "fortify_resource"):
+        out["resources"][ench["stat"]] = out["resources"].get(ench["stat"], 0) + mag
+    elif k == "fortify_skill":
+        out["skills"][ench["skill"]] = out["skills"].get(ench["skill"], 0) + mag
+    elif k == "fortify_attribute":
+        out["attrs"][ench["attr"]] = out["attrs"].get(ench["attr"], 0) + mag
+    elif k == "resist_element":
+        out["resist"][ench["element"]] = out["resist"].get(ench["element"], 0) + mag
+
+
+def active_set_bonus(char: Character, gamedata: GameData) -> dict | None:
+    """穿戴 helmet/cuirass/gauntlets/boots 四件同材質 → 回傳該套裝 bonus(否則 None)。"""
+    mats = []
+    for slot in SET_SLOTS:
+        iid = char.equipped.get(slot)
+        if not iid:
+            return None
+        mat = gamedata.item(iid).get("material")
+        if not mat:
+            return None
+        mats.append(mat)
+    if len(set(mats)) != 1:
+        return None
+    return gamedata.armor_sets.get(mats[0], {}).get("bonus")
+
+
+def equipment_bonuses(char: Character, gamedata: GameData) -> dict:
+    """穿戴護甲/飾品的所有附魔 + 套裝加成,彙整成 {skills,attrs,resist,resources}。"""
+    out = {"skills": {}, "attrs": {}, "resist": {}, "resources": {}}
+    for iid in char.equipped.values():
+        _apply_enchant(out, gamedata.item(iid).get("enchant"))
+    _apply_enchant(out, active_set_bonus(char, gamedata))
+    return out
 
 
 # --- 武器塗毒 -----------------------------------------------------------
