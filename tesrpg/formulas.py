@@ -104,6 +104,15 @@ def dodge_evasion(acrobatics_skill: int) -> float:
     return acrobatics_skill * DODGE_EVASION_SCALE
 
 
+ATHLETICS_TRAVEL_SCALE = 0.004   # 運動旅行加速係數
+ATHLETICS_TRAVEL_XP = 0.5        # 每次旅行 → 運動 xp(讓運動靠移動成長)
+
+
+def athletics_travel_factor(athletics_skill: int) -> float:
+    """運動帶來的旅行耗時倍率(越高越快):運動 0→×1.0、100→×0.6(最多省 40%)。"""
+    return max(0.5, 1.0 - athletics_skill * ATHLETICS_TRAVEL_SCALE)
+
+
 def hit_chance(atk_skill: int, atk_agility: int, def_agility: int,
                attacker_fatigue_ratio: float, defender_blocking: bool = False,
                defender_evasion: float = 0.0) -> float:

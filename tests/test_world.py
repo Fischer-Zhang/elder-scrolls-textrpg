@@ -141,6 +141,28 @@ def test_boss_is_tougher():
     assert boss.name == "領主"
 
 
+def test_athletics_speeds_travel_and_trains():
+    """運動越高旅行越快;旅行也會鍛鍊運動(補上原本的死技能)。"""
+    from tesrpg.state import GameTime
+    gd, slow = _char()
+    route = [(d, h) for d, h in world.travel_options(slow, gd) if h >= 2]
+    dest, base = route[0]
+    slow.skills["athletics"] = 0
+    gd2, fast = _char()
+    fast.skills["athletics"] = 100
+    r_slow = world.travel(slow, gd, dest, GameTime(), RNG(1))
+    r_fast = world.travel(fast, gd2, dest, GameTime(), RNG(1))
+    assert r_slow["hours"] == base                      # 運動 0 → 名目耗時
+    assert r_fast["base_hours"] == base
+    assert r_fast["hours"] < r_slow["hours"]            # 運動 100 → 更快
+    # 旅行鍛鍊運動
+    gd3, c3 = _char()
+    c3.skills["athletics"] = 20
+    x0 = c3.skill_xp.get("athletics", 0.0)
+    world.travel(c3, gd3, dest, GameTime(), RNG(2))
+    assert c3.skill_xp.get("athletics", 0.0) > x0
+
+
 def run():
     for name, fn in sorted(globals().items()):
         if name.startswith("test_") and callable(fn):

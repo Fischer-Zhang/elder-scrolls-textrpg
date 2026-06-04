@@ -521,10 +521,15 @@ def action_travel(state: GameState, gamedata: GameData) -> str | None:
     dest = ui.menu("前往何處?", opts, allow_back=True)
     if dest is None:
         return None
-    foe = world.travel(state.player, gamedata, dest, state.time, state.rng)
+    res = world.travel(state.player, gamedata, dest, state.time, state.rng)
+    foe = res["foe"]
     if dest not in state.player.visited_locations:   # 已抵達(location_id 已更新)→ 先記足跡,
         state.player.visited_locations.append(dest)  # 即使途中埋伏致死也算到過此地
     ui.message(f"你啟程前往{gamedata.location(dest)['name']}……", style="grey70")
+    if res["hours"] < res["base_hours"]:
+        ui.message(f"矯健的身手讓旅程縮短到 {res['hours']} 時(原需 {res['base_hours']} 時)。",
+                   style="grey70")
+    ui.show_events(res["skill_events"], gamedata)
     if foe is not None:
         ui.message("途中遭遇了埋伏!", style="yellow")
         result = offer_battle(state, gamedata, foe, ambush_chance=0.4)

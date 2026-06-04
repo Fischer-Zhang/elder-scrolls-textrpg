@@ -6,10 +6,11 @@
 
 from __future__ import annotations
 
+from tesrpg import formulas
 from tesrpg.gamedata import GameData
 from tesrpg.models import Character
 from tesrpg.rng import RNG
-from tesrpg.systems import combat
+from tesrpg.systems import combat, progression
 
 
 # --- 地點 / 旅行 --------------------------------------------------------
@@ -32,13 +33,15 @@ def encounter_chance(dest_danger: int, hour: int) -> float:
     return min(0.85, chance)
 
 
-def travel(char: Character, gamedata: GameData, dest_id: str, time, rng: RNG):
-    """執行旅行:推進時間、移動到目的地,回傳途中遭遇(Creature)或 None。
+def travel(char: Character, gamedata: GameData, dest_id: str, time, rng: RNG) -> dict:
+    """執行旅行:依運動加速耗時、推進時間、移動、鍛鍊運動。
 
-    回傳的遭遇尚未開打 —— 由上層決定接戰/逃避。
+    回傳 {"foe":遭遇 Creature 或 None, "hours":實際耗時, "base_hours":名目耗時,
+          "skill_events":運動升點事件}。遭遇尚未開打 —— 由上層決定接戰/逃避。
     """
     links = current_location(char, gamedata).get("links", {})
-    hours = links[dest_id]
+    base_hours = links[dest_id]
+    hours = max(1, round(base_hours * formulas.athletics_travel_factor(char.skill("athletics"))))
     dest = gamedata.location(dest_id)
 
     foe = None
@@ -48,7 +51,8 @@ def travel(char: Character, gamedata: GameData, dest_id: str, time, rng: RNG):
 
     time.advance(hours)
     char.location_id = dest_id
-    return foe
+    skill_events = progression.use_skill(char, gamedata, "athletics", formulas.ATHLETICS_TRAVEL_XP)
+    return {"foe": foe, "hours": hours, "base_hours": base_hours, "skill_events": skill_events}
 
 
 # --- 商店定價(受 交易 + 魅力 影響)-----------------------------------
