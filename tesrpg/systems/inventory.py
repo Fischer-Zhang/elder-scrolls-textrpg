@@ -109,6 +109,20 @@ def worn_armor_rating(char: Character, gamedata: GameData) -> int:
     return sum(gamedata.item(i)["armor_rating"] for i in char.equipped.values())
 
 
+def armor_fortify_totals(char: Character, gamedata: GameData) -> dict[str, int]:
+    """穿戴護甲上的 armor_fortify 附魔加總 → {stat: 總強化值}。
+
+    供 stats.recompute_max_resources 把「穿上時強化生命/魔力/體力」套進有效上限。
+    fortify 不受耐久折損影響(附魔效果 ≠ 物理護甲值)。
+    """
+    totals: dict[str, int] = {}
+    for iid in char.equipped.values():
+        ench = gamedata.item(iid).get("enchant")
+        if ench and ench.get("kind") == "armor_fortify":
+            totals[ench["stat"]] = totals.get(ench["stat"], 0) + int(ench["magnitude"])
+    return totals
+
+
 # --- 耐久 (condition) ---------------------------------------------------
 def _cond_mult(condition: float) -> float:
     """耐久 → 效能倍率(100→1.0、0→0.5)。"""

@@ -34,7 +34,8 @@ class Character:
 
     magicka_bonus: int = 0          # 種族+星座的固定魔力加成
 
-    max_health: int = 0
+    base_max_health: int = 0        # 生命上限基底(創建+升級累積;不含護甲 fortify)
+    max_health: int = 0             # 有效生命上限(= base + 穿戴護甲 fortify_health)
     max_magicka: int = 0
     max_fatigue: int = 0
     health: float = 0
@@ -104,6 +105,7 @@ class Character:
             "level": self.level, "level_progress": self.level_progress,
             "level_skillups": self.level_skillups,
             "magicka_bonus": self.magicka_bonus,
+            "base_max_health": self.base_max_health,
             "max_health": self.max_health, "max_magicka": self.max_magicka,
             "max_fatigue": self.max_fatigue,
             "health": self.health, "magicka": self.magicka, "fatigue": self.fatigue,

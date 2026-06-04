@@ -14,7 +14,7 @@ from tesrpg.rng import RNG
 from tesrpg.state import GameState
 from tesrpg.systems import (alchemy, combat, crime, dialogue, dungeon, enchanting,
                             events, factions, inventory, legacy, magic, powers,
-                            progression, quests, world)
+                            progression, quests, stats, world)
 from tesrpg.ui import console as ui
 
 SAVE_PATH = Path.home() / ".tesrpg" / "save.json"
@@ -627,15 +627,19 @@ def _item_actions(state: GameState, gamedata: GameData, item_id: str) -> None:
         ui.message(f"你握起了{d['name']}。", style="green")
     elif act == "equip_a":
         inventory.equip_armor(char, gamedata, item_id)
+        stats.recompute_max_resources(char, gamedata)   # 套用護甲 fortify
         ui.message(f"你穿上了{d['name']}。", style="green")
     elif act == "unequip":
         inventory.unequip(char, d["slot"])
+        stats.recompute_max_resources(char, gamedata)   # 移除護甲 fortify
         ui.message(f"你卸下了{d['name']}。", style="grey70")
     elif act == "use":
         msg = inventory.use_item(char, gamedata, item_id)
         ui.message(msg or "無法使用。", style="green")
     elif act == "drop":
         inventory.remove_item(char, item_id, 1)
+        # 丟棄最後一件會自動卸下;若是 fortify 護甲,須重算以移除其加成並夾限當前值
+        stats.recompute_max_resources(char, gamedata)
         ui.message(f"你丟棄了一件{d['name']}。", style="grey70")
 
 
@@ -693,6 +697,8 @@ def action_shop(state: GameState, gamedata: GameData) -> None:
                 continue
             price = world.sell_price(char, gamedata, iid)
             inventory.remove_item(char, iid, 1)
+            # 賣掉最後一件會自動卸下;若是 fortify 護甲,須重算以移除其加成並夾限當前值
+            stats.recompute_max_resources(char, gamedata)
             char.gold += price
             progression.use_skill(char, gamedata, "mercantile", 0.3)
             ui.message(f"賣出{gamedata.item_name(iid)},得 {price} 金。", style="green")
@@ -871,26 +877,52 @@ def action_alchemy(state: GameState, gamedata: GameData) -> None:
 def action_enchant(state: GameState, gamedata: GameData) -> None:
     char = state.player
     gems = enchanting.filled_soul_gems(char, gamedata)
-    weapons = enchanting.enchantable_weapons(char, gamedata)
     if not gems:
         ui.message("你沒有充能的靈魂石(用『擒魂術』擊殺敵人可獲得)。", style="grey70")
         return
-    if not weapons:
-        ui.message("沒有可附魔的武器。", style="grey70")
+    weapons = enchanting.enchantable_weapons(char, gamedata)
+    armors = enchanting.enchantable_armor(char, gamedata)
+
+    kinds = []
+    if weapons:
+        kinds.append(("weapon", "武器(附元素傷害)"))
+    if armors:
+        kinds.append(("armor", "護甲(強化生命/魔力/體力)"))
+    if not kinds:
+        ui.message("沒有可附魔的武器或護甲。", style="grey70")
         return
-    wid = ui.menu("為哪把武器附魔?", [(w, gamedata.item_name(w)) for w in weapons], allow_back=True)
-    if wid is None:
+    kind = kinds[0][0] if len(kinds) == 1 else ui.menu("附魔什麼?", kinds, allow_back=True)
+    if kind is None:
         return
+
     gem = ui.menu("使用哪顆靈魂石?",
                   [(g, f"{gamedata.item_name(g)}(靈魂 {gamedata.item(g)['soul']})") for g in gems],
                   allow_back=True)
     if gem is None:
         return
-    elem = ui.menu("附上哪種元素?", [("fire", "烈焰"), ("frost", "冰霜"), ("shock", "雷電")],
-                   allow_back=True)
-    if elem is None:
-        return
-    res = enchanting.enchant_weapon(char, gamedata, wid, elem, gem)
+
+    if kind == "weapon":
+        wid = ui.menu("為哪把武器附魔?",
+                      [(w, gamedata.item_name(w)) for w in weapons], allow_back=True)
+        if wid is None:
+            return
+        elem = ui.menu("附上哪種元素?", [("fire", "烈焰"), ("frost", "冰霜"), ("shock", "雷電")],
+                       allow_back=True)
+        if elem is None:
+            return
+        res = enchanting.enchant_weapon(char, gamedata, wid, elem, gem)
+    else:
+        aid = ui.menu("為哪件護甲附魔?",
+                      [(a, gamedata.item_name(a)) for a in armors], allow_back=True)
+        if aid is None:
+            return
+        stat = ui.menu("穿戴時強化哪項?",
+                       [("health", "生命"), ("magicka", "魔力"), ("fatigue", "體力")],
+                       allow_back=True)
+        if stat is None:
+            return
+        res = enchanting.enchant_armor(char, gamedata, aid, stat, gem)
+
     ui.message(res["message"], style="bold green" if res["ok"] else "red")
     ui.show_events(res["skill_events"], gamedata)
 
@@ -1137,7 +1169,7 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
         if any(gamedata.item(s["id"]).get("kind") == "poison" for s in player.inventory):
             craft.append(("coat", "塗毒"))
         if enchanting.filled_soul_gems(player, gamedata):
-            craft.append(("enchant", "附魔武器"))
+            craft.append(("enchant", "附魔"))
         # --- 角色與物品 ---
         character: list = [("quests", "任務日誌"), ("inventory", "背包"),
                            ("practice", "練習技能"), ("rest", "原地休息"), ("sheet", "角色卡")]

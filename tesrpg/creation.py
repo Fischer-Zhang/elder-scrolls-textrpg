@@ -91,8 +91,8 @@ def build_character(
     inventory.add_item(char, "blue_mountain_flower", 2)
 
     # --- 衍生數值 --------------------------------------------------------
-    char.max_health = formulas.base_max_health(char.attr("endurance"))
-    stats.recompute_max_resources(char, restore_full=True)
+    char.base_max_health = formulas.base_max_health(char.attr("endurance"))
+    stats.recompute_max_resources(char, gamedata, restore_full=True)
     return char
 
 

@@ -91,13 +91,14 @@ def apply_level_up(char: Character, gamedata: GameData, chosen_attributes: list[
             attr_gains[attr] = applied
 
     char.level += 1
+    stats.ensure_base_health(char)   # 舊存檔遷移:務必在加到 base_max_health 之前
     hp_gain = formulas.health_gain_on_levelup(char.attr("endurance"))
-    char.max_health += hp_gain
+    char.base_max_health += hp_gain
 
     char.level_progress -= formulas.LEVELUP_MAJOR_SKILLUPS  # 保留溢出
     char.level_skillups = {}
 
-    stats.recompute_max_resources(char, restore_full=True)  # 升級回滿三資源
+    stats.recompute_max_resources(char, gamedata, restore_full=True)  # 升級回滿三資源
 
     return {
         "level": char.level,
