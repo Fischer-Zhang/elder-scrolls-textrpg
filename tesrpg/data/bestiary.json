@@ -540,5 +540,59 @@
     "loot_gold": [50, 120],
     "loot": [{"item": "gold_amulet", "chance": 0.25}, {"item": "filled_common_soul_gem", "chance": 0.3}, {"item": "healing_potion", "chance": 0.5}],
     "flavor": "一名身披華服的吸血鬼貴族緩步而出,數百年的飢渴在猩紅雙眼中燃燒。"
+  },
+  "swamp_lizard": {
+    "name": "沼澤蜥蜴", "strength": 42, "agility": 48, "speed": 50,
+    "max_health": 26, "armor_rating": 6,
+    "attack": {"name": "突咬", "damage": 8, "skill": 38, "element": "poison",
+               "on_hit": {"status": "dot", "element": "poison", "magnitude": 2, "turns": 2, "chance": 0.35}},
+    "danger": 2, "min_level": 1, "weight": 5,
+    "resist": {"poison": 50},
+    "loot_gold": [0, 4],
+    "loot": [{"item": "scrib_jelly", "chance": 0.3}],
+    "flavor": "一頭半人高的沼澤巨蜥自蘆葦間竄出,鱗甲滴著泥水,毒涎自顎間垂落。"
+  },
+  "marsh_zombie": {
+    "name": "沼澤腐屍", "strength": 50, "agility": 30, "speed": 30,
+    "max_health": 62, "armor_rating": 10,
+    "attack": {"name": "腐爛撕抓", "damage": 13, "skill": 44, "element": "poison",
+               "on_hit": {"status": "dot", "element": "poison", "magnitude": 4, "turns": 3, "chance": 0.5}},
+    "danger": 4, "min_level": 4, "weight": 4,
+    "resist": {"poison": 100, "frost": 25},
+    "loot_gold": [4, 16],
+    "loot": [{"item": "bone_meal", "chance": 0.5}, {"item": "deathbell", "chance": 0.2}],
+    "flavor": "沼泥中爬起一具腐爛的屍體,瘟疫的惡臭隨它每一步翻湧而出。"
+  },
+  "will_o_wisp": {
+    "name": "鬼火", "strength": 30, "agility": 66, "speed": 60,
+    "max_health": 46, "armor_rating": 4,
+    "attack": {"name": "蝕魂電擊", "damage": 16, "skill": 56, "element": "shock",
+               "on_hit": {"status": "dot", "element": "shock", "magnitude": 3, "turns": 2, "chance": 0.45}},
+    "danger": 4, "min_level": 5, "weight": 3,
+    "resist": {"shock": 100, "poison": 100, "fire": -25, "magic": 25},
+    "loot_gold": [0, 6],
+    "loot": [{"item": "glow_dust", "chance": 0.5}, {"item": "filled_lesser_soul_gem", "chance": 0.15}],
+    "flavor": "一團幽幽飄盪的沼澤鬼火逼近,光芒下藏著噬人的電弧。"
+  },
+  "bog_troll": {
+    "name": "泥沼巨魔", "strength": 62, "agility": 36, "speed": 42,
+    "max_health": 150, "armor_rating": 8,
+    "attack": {"name": "雙爪猛擊", "damage": 23, "skill": 55},
+    "danger": 5, "min_level": 7, "weight": 2,
+    "resist": {"poison": 75, "fire": -50},
+    "loot_gold": [10, 30],
+    "loot": [{"item": "healing_potion", "chance": 0.35}, {"item": "imp_stool", "chance": 0.3}],
+    "flavor": "一頭覆滿藻苔的泥沼巨魔自爛泥中起身,撕裂的傷口轉眼便重新癒合。"
+  },
+  "wamasu": {
+    "name": "瓦瑪蘇", "strength": 80, "agility": 50, "speed": 50,
+    "max_health": 255, "armor_rating": 18,
+    "attack": {"name": "雷霆巨顎", "damage": 30, "skill": 64, "element": "shock",
+               "on_hit": {"status": "dot", "element": "shock", "magnitude": 5, "turns": 3, "chance": 0.5}},
+    "danger": 5, "min_level": 13, "weight": 1, "solo": true,
+    "resist": {"shock": 100, "poison": 75, "fire": -25, "frost": 25},
+    "loot_gold": [70, 160],
+    "loot": [{"item": "filled_greater_soul_gem", "chance": 0.5}, {"item": "ebony_sword", "chance": 0.2}, {"item": "glow_dust", "chance": 0.5}],
+    "flavor": "廟心的積水驟然沸騰——一頭上古雷蜥瓦瑪蘇破水而出,鱗甲間迸射的雷弧照亮了整座沉廟。"
   }
 }

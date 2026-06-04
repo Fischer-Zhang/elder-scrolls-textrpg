@@ -52,7 +52,8 @@
       "links": {
         "bruma": 2,
         "cedernoc_cave": 2,
-        "kvatch": 4
+        "kvatch": 4,
+        "niben_marsh": 4
       }
     },
     "cedernoc_cave": {
@@ -301,7 +302,8 @@
       "links": {
         "blacklight": 3,
         "dragon_lair": 4,
-        "ashfall_barrow": 2
+        "ashfall_barrow": 2,
+        "thorn_fen": 5
       }
     },
     "ashfall_barrow": {
@@ -327,6 +329,157 @@
       "dungeon": "dragon_lair",
       "links": {
         "molag_mar": 4
+      }
+    },
+    "niben_marsh": {
+      "name": "尼本河沼",
+      "province": "邊境",
+      "type": "wilderness",
+      "danger": 2,
+      "desc": "尼本河南流匯成的廣袤濕地,蘆葦沒頂、瘴氣浮動,是賽羅迪爾通往黑沼澤的泥濘門檻。",
+      "services": [],
+      "links": {
+        "imperial_road": 4,
+        "gideon": 3
+      }
+    },
+    "gideon": {
+      "name": "吉迪恩",
+      "province": "黑沼澤",
+      "type": "city",
+      "danger": 0,
+      "desc": "黑沼澤西北的木造大城,高腳屋立於沼水之上。帝國總督仍勉力維繫著一座搖搖欲墜的邊陲秩序。",
+      "services": [
+        "inn",
+        "merchant",
+        "trainer",
+        "mages_guild",
+        "armorer",
+        "task_board"
+      ],
+      "merchant_stock": [
+        "minor_healing_potion",
+        "healing_potion",
+        "minor_magicka_potion",
+        "steel_dagger",
+        "steel_sword",
+        "leather_cuirass",
+        "leather_boots",
+        "iron_shield",
+        "long_bow",
+        "repair_hammer",
+        "deathbell",
+        "nightshade",
+        "imp_stool",
+        "scrib_jelly",
+        "silver_ring",
+        "gold_amulet",
+        "magicka_staff"
+      ],
+      "spell_stock": [
+        "minor_heal",
+        "heal",
+        "close_wounds",
+        "poison_cloud",
+        "frostbite",
+        "sparks",
+        "lightning_bolt",
+        "conjure_familiar",
+        "restore_mind",
+        "ignite",
+        "frost_nova"
+      ],
+      "links": {
+        "niben_marsh": 3,
+        "murkmire": 3,
+        "xanmeer": 4
+      }
+    },
+    "murkmire": {
+      "name": "幽沼濕地",
+      "province": "黑沼澤",
+      "type": "wilderness",
+      "danger": 3,
+      "desc": "終年不見天日的深沼,藤蔓垂落如簾,鬼火在霧氣間明滅游移,引誘迷途者步入泥潭。",
+      "services": [],
+      "links": {
+        "gideon": 3,
+        "stormhold": 3,
+        "hist_grove": 2
+      }
+    },
+    "hist_grove": {
+      "name": "希斯特聖林",
+      "province": "黑沼澤",
+      "type": "wilderness",
+      "danger": 3,
+      "desc": "亞龍人世代膜拜的希斯特神樹環抱成林,樹液的氣息令人恍惚。外族在此總覺有無數雙眼睛在葉影後凝視。",
+      "services": [],
+      "links": {
+        "murkmire": 2,
+        "stormhold": 3
+      }
+    },
+    "stormhold": {
+      "name": "石落城",
+      "province": "黑沼澤",
+      "type": "town",
+      "danger": 0,
+      "desc": "沼澤腹地的古老石城,曾是帝國的行省首府。如今帝國退潮,一位希斯特樹語祭司領著亞龍人重掌了這座城。",
+      "services": [
+        "inn",
+        "merchant",
+        "armorer",
+        "thieves_guild",
+        "task_board"
+      ],
+      "merchant_stock": [
+        "healing_potion",
+        "minor_healing_potion",
+        "glass_dagger",
+        "elven_sword",
+        "leather_helmet",
+        "leather_bracers",
+        "iron_shield",
+        "long_bow",
+        "repair_hammer",
+        "deathbell",
+        "imp_stool",
+        "canis_root",
+        "scrib_jelly",
+        "glow_dust",
+        "silver_amulet"
+      ],
+      "links": {
+        "murkmire": 3,
+        "hist_grove": 3,
+        "xanmeer": 2,
+        "thorn_fen": 4
+      }
+    },
+    "xanmeer": {
+      "name": "贊密爾沉廟",
+      "province": "黑沼澤",
+      "type": "dungeon",
+      "danger": 4,
+      "desc": "半沒於沼水的上古亞龍人金字塔,石階通向幽暗深處。傳說廟心盤踞著一頭雷霆巨蜥,守著被遺忘的寶藏。",
+      "services": [],
+      "dungeon": "xanmeer",
+      "links": {
+        "gideon": 4,
+        "stormhold": 2
+      }
+    },
+    "thorn_fen": {
+      "name": "荊棘沼澤",
+      "province": "邊境",
+      "type": "wilderness",
+      "danger": 4,
+      "desc": "黑沼澤與晨風交界的險惡澤地,棘藤如刃、毒蟲遍布,卻是不願繞行灰海航道者通往莫拉格瑪的捷徑。",
+      "services": [],
+      "links": {
+        "stormhold": 4,
+        "molag_mar": 5
       }
     }
   },

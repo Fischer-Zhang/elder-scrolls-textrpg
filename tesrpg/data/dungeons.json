@@ -250,5 +250,60 @@
         ]
       }
     }
+  },
+  "xanmeer": {
+    "name": "贊密爾沉廟",
+    "rooms": [
+      {
+        "desc": "沒入沼水的石階入口,水面浮著腐葉。一頭沼澤蜥蜴自暗處突咬而出。",
+        "enemy": "swamp_lizard",
+        "container": null
+      },
+      {
+        "desc": "佈滿藤蔓的祭祀甬道,牆龕裡擱著一只封蠟的陶甕。",
+        "enemy": null,
+        "container": {
+          "locked": 30,
+          "loot": [
+            "scrib_jelly",
+            "deathbell",
+            {"gold": [15, 35]}
+          ]
+        }
+      },
+      {
+        "desc": "幽暗的浸水廳堂,兩團鬼火自水面緩緩升起,電弧在指間躍動。",
+        "container": null,
+        "enemies": ["will_o_wisp", "swamp_lizard"]
+      },
+      {
+        "desc": "供奉希斯特根須的內殿,一頭泥沼巨魔盤踞於祭壇之前,守著殿後的寶箱。",
+        "enemy": "bog_troll",
+        "container": {
+          "locked": 35,
+          "loot": [
+            "glass_dagger",
+            "ruby",
+            {"gold": [30, 60]}
+          ]
+        }
+      }
+    ],
+    "boss": {
+      "desc": "沉廟廟心的雷光天井 —— 一頭上古雷蜥瓦瑪蘇盤踞在被遺忘的寶藏之上,鱗甲迸射著刺目的電弧。",
+      "enemy": "wamasu",
+      "raw": true,
+      "treasure": {
+        "locked": 45,
+        "loot": [
+          "glass_cuirass",
+          "ebony_sword",
+          "filled_greater_soul_gem",
+          "healing_potion",
+          "ruby",
+          {"gold": [90, 180]}
+        ]
+      }
+    }
   }
 }

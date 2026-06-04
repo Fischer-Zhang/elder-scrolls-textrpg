@@ -104,7 +104,7 @@ def test_dungeons_are_through_routes_not_dead_ends():
     """地城捷徑:這些地城有 2 條以上連結(可穿越),不再是 degree-1 盲腸。"""
     gd, _ = _char()
     locs = gd.world["locations"]
-    for did in ("cedernoc_cave", "frostwind_ruin", "ashfall_barrow"):
+    for did in ("cedernoc_cave", "frostwind_ruin", "ashfall_barrow", "xanmeer"):
         assert len(locs[did].get("links", {})) >= 2, f"{did} 仍是死路"
 
 
@@ -136,6 +136,46 @@ def test_every_settlement_has_a_ruler():
     # rulers.json 的每個 key 都對應真實地點(防打錯字)
     for lid in gd.rulers:
         assert lid in gd.world["locations"], f"rulers.json 的 {lid} 不是有效地點"
+
+
+def test_black_marsh_closes_the_world_into_a_grand_loop():
+    """黑沼澤 = 賽羅迪爾↔晨風 的南方平行路線,把原本的開放鏈閉合成世界大環。
+
+    判定:拔掉整條北線(天際全部節點 + 兩段原北方邊境野外),
+    從起點(賽羅迪爾·布魯瑪)仍能『經黑沼澤』抵達晨風(黑光城)。
+    這證明南線是獨立於北線的回環,而非又一條死路尾巴。"""
+    gd, _ = _char()
+    locs = gd.world["locations"]
+
+    # 黑沼澤省份存在且含預期的五個省內地點
+    black_marsh = {lid for lid, l in locs.items() if l["province"] == "黑沼澤"}
+    assert {"gideon", "murkmire", "hist_grove", "stormhold", "xanmeer"} <= black_marsh
+
+    # 北線:天際全部 + 原本串接三省的兩段邊境野外
+    northern = {lid for lid, l in locs.items() if l["province"] == "天際"}
+    northern |= {"pale_pass", "sea_route"}
+
+    seen = {"bruma"}
+    frontier = ["bruma"]
+    while frontier:
+        cur = frontier.pop()
+        for dest in locs[cur].get("links", {}):
+            if dest in northern or dest in seen:
+                continue
+            seen.add(dest)
+            frontier.append(dest)
+    assert "blacklight" in seen, "拔掉北線後仍須能經黑沼澤抵達晨風 → 大環未閉合"
+
+
+def test_shop_stock_ids_are_valid():
+    """每個商店的 merchant_stock / 法師公會 spell_stock 都引用得到真實物品/法術
+    (防新增城鎮時打錯 id;此前無此防線)。"""
+    gd, _ = _char()
+    for lid, loc in gd.world["locations"].items():
+        for iid in loc.get("merchant_stock", []):
+            assert gd.item(iid), f"{lid} 商店販售不存在的物品:{iid}"
+        for sid in loc.get("spell_stock", []):
+            assert sid in gd.spells, f"{lid} 法師公會販售不存在的法術:{sid}"
 
 
 def test_travel_moves_and_advances_time():
