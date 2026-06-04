@@ -240,6 +240,32 @@ def test_stealth_retreat_chance_drops_with_group():
     assert 0.10 <= formulas.stealth_retreat_chance(0, 0, 99, 9) <= 0.92
 
 
+# --- 入場潛行檢定(B+C+E)----------------------------------------------
+def test_stealth_approach_chance_factors():
+    from tesrpg import formulas as F
+    base = F.stealth_approach_chance(70, 40, 1, "light")
+    assert F.stealth_approach_chance(100, 40, 1, "light") > base           # 潛行越高越易
+    assert F.stealth_approach_chance(70, 40, 3, "light") < base            # 敵多更難
+    assert F.stealth_approach_chance(70, 40, 1, "heavy") < base            # E:重甲噪音懲罰
+    assert F.stealth_approach_chance(70, 40, 1, "light", night=True) > base   # 夜間掩護
+    assert F.stealth_approach_chance(70, 40, 1, "light", scouted=True) > base  # B:偵查加成
+    assert F.stealth_approach_chance(70, 40, 1, "light", surprise=True) < base  # C:被伏擊難先機
+    assert 0.05 <= F.stealth_approach_chance(0, 99, 9, "heavy", surprise=True) <= 0.97
+    # 重甲莽夫幾乎偷不到、輕甲高潛行很可靠
+    assert F.stealth_approach_chance(10, 40, 1, "heavy") < 0.20
+    assert F.stealth_approach_chance(100, 40, 1, "light", night=True) > 0.85
+
+
+def test_combat_stealth_approach_uses_armor_class():
+    from tesrpg.systems import inventory, stats
+    gd, c = _assassin(sneak=80)
+    light = combat.stealth_approach_chance(c, [_dummy()], gd)
+    inventory.add_item(c, "iron_cuirass", 1); inventory.equip_armor(c, gd, "iron_cuirass")
+    stats.recompute_max_resources(c, gd)
+    heavy = combat.stealth_approach_chance(c, [_dummy()], gd)
+    assert heavy < light                                   # 穿上重甲後入場先機下降
+
+
 def run():
     for name, fn in sorted(globals().items()):
         if name.startswith("test_") and callable(fn):

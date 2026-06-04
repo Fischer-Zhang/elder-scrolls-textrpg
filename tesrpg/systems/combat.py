@@ -405,6 +405,20 @@ def try_stealth_retreat(player: Character, enemies: list, rng: RNG) -> bool:
     return rng.chance(stealth_retreat_chance(player, enemies))
 
 
+def stealth_approach_chance(player: Character, enemies: list, gamedata: GameData,
+                            night: bool = False, scouted: bool = False, surprise: bool = False) -> float:
+    foe_agi = max((e.agility for e in enemies), default=0)
+    armor_class = inventory.dominant_weight_class(player, gamedata)
+    return formulas.stealth_approach_chance(player.skill("sneak"), foe_agi, len(enemies),
+                                            armor_class, night, scouted, surprise)
+
+
+def try_stealth_approach(player: Character, enemies: list, rng: RNG, gamedata: GameData,
+                         night: bool = False, scouted: bool = False, surprise: bool = False) -> bool:
+    """接戰時擲一次入場潛行檢定;成功 → 取得開場偷襲先機。"""
+    return rng.chance(stealth_approach_chance(player, enemies, gamedata, night, scouted, surprise))
+
+
 def estimate_sneak_damage(player: Character, gamedata: GameData, creature: Creature) -> int:
     """偵查用:玩家對該敵人一記偷襲的『中位』傷害估算(roll=1.0,過甲後)。"""
     wpn_dmg, wpn_skill, _ = _weapon_profile(player, gamedata)

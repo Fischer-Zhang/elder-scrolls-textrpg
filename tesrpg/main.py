@@ -522,23 +522,30 @@ def _scout_report(state: GameState, gamedata: GameData, enemies: list) -> None:
     ui.show_events(progression.use_skill(char, gamedata, "scout", formulas.COMBAT_SNEAK_XP), gamedata)
 
 
-def offer_battle(state: GameState, gamedata: GameData, enemies, ambush_chance: float = 0.25) -> str | None:
+def offer_battle(state: GameState, gamedata: GameData, enemies, ambush_chance: float = 0.25,
+                 surprise: bool = False) -> str | None:
     """呈現遭遇 → 接戰 / 偵查 / 潛行撤退。回傳結果或 None(撤退成功,未交戰)。
 
-    ambush_chance 保留作簽名相容(舊呼叫端傳入);實際避戰已改為吃潛行/速度的潛行撤退。
+    接戰時擲「入場潛行檢定」決定有無開場偷襲(吃潛行/敵警覺/敵數/護甲/夜間/偵查)。
+    surprise=True(被伏擊)大幅扣減先機 → 受害者難以反偷襲加害者。
+    ambush_chance 保留作簽名相容(舊呼叫端傳入);避戰已改為吃潛行/速度的潛行撤退。
     """
     if not isinstance(enemies, list):
         enemies = [enemies]
     char = state.player
     name = _group_name(enemies)
+    night = state.time.hour < 6 or state.time.hour >= 21
     ui.combat_intro(enemies[0], state.player, gamedata)
     if len(enemies) > 1:
         ui.message(f"來者不止一個 —— 你面對的是:{name}!", style="bold red")
+    if surprise:
+        ui.message("猝不及防 —— 你已陷入埋伏,難以搶得先機!", style="bold red")
     scouted = False
     while True:
-        opts = [("fight", "接戰")]
-        if not scouted:
-            opts.append(("scout", "偵查敵情"))
+        apct = int(combat.stealth_approach_chance(char, enemies, gamedata, night, scouted, surprise) * 100)
+        opts = [("fight", f"接戰（偷襲先機 {apct}%)")]
+        if not scouted and not surprise:
+            opts.append(("scout", "偵查敵情(看清敵情並提升偷襲先機)"))
         rpct = int(combat.stealth_retreat_chance(char, enemies) * 100)
         opts.append(("retreat", f"潛行撤退（成功率 {rpct}%)"))
         choice = ui.menu(f"要與{name}交戰嗎?", opts)
@@ -552,7 +559,13 @@ def offer_battle(state: GameState, gamedata: GameData, enemies, ambush_chance: f
                 return None
             ui.message("撤退失敗 —— 敵人發現了你,且已有戒備!", style="red")
             return run_battle(state, gamedata, enemies, alerted=True)
-        return run_battle(state, gamedata, enemies)
+        # 接戰 → 入場潛行檢定:成功取得開場偷襲先機,失敗則敵人警覺(無偷襲)
+        got_drop = combat.try_stealth_approach(char, enemies, state.rng, gamedata, night, scouted, surprise)
+        if got_drop:
+            ui.message("你屏息潛近,敵人渾然未覺 —— 搶得致命先機!", style="bold green")
+        else:
+            ui.message("你的接近被察覺了,沒能搶到偷襲的先機。", style="yellow")
+        return run_battle(state, gamedata, enemies, alerted=not got_drop)
 
 
 def _maybe_sunburn(state: GameState, gamedata: GameData, hours: int) -> None:
@@ -623,7 +636,7 @@ def action_travel(state: GameState, gamedata: GameData) -> str | None:
     ui.show_events(res["skill_events"], gamedata)
     if foe is not None:
         ui.message("途中遭遇了埋伏!", style="yellow")
-        result = offer_battle(state, gamedata, foe, ambush_chance=0.4)
+        result = offer_battle(state, gamedata, foe, ambush_chance=0.4, surprise=True)
         if result == "dead":
             return "dead"
     ui.message(f"你抵達了{gamedata.location(dest)['name']}。", style="cyan")

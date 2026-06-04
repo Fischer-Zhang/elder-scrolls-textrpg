@@ -246,6 +246,36 @@ def stealth_retreat_chance(sneak: int, speed: int, foe_speed: int, group_size: i
     return max(0.10, min(0.92, chance))
 
 
+# --- 入場潛行檢定(接戰時:能否搶到開場偷襲先機)----------------------------
+STEALTH_APPROACH_BASE = 0.55
+STEALTH_APPROACH_SNEAK = 0.0045       # 每點潛行
+STEALTH_APPROACH_PERCEPT = 0.003      # 敵方最高敏捷(警覺)扣減
+STEALTH_APPROACH_CROWD = 0.08         # 每多一個敵人(更多眼睛)
+STEALTH_APPROACH_NIGHT = 0.10         # 夜間(黑暗掩護)
+STEALTH_APPROACH_SCOUT = 0.25         # 先成功偵查 → 知道動線(B:偵查解博弈)
+STEALTH_APPROACH_SURPRISE = 0.45      # 被伏擊(C:受害者難以反偷襲加害者)
+# E:護甲噪音 —— 重甲鏗鏘難潛、輕甲幾乎無礙
+STEALTH_APPROACH_ARMOR_PENALTY = {"heavy": 0.40, "light": 0.05}
+
+
+def stealth_approach_chance(sneak: int, foe_agility: int, group_size: int,
+                            armor_class: str | None, night: bool = False,
+                            scouted: bool = False, surprise: bool = False) -> float:
+    """接戰時搶到開場偷襲的機率。吃潛行/敵警覺/敵數/護甲噪音/夜間/偵查/是否被伏擊。
+    夾限 [0.05, 0.97](高潛行可靠、但永不保證;重甲莽夫幾乎偷不到)。"""
+    chance = (STEALTH_APPROACH_BASE + sneak * STEALTH_APPROACH_SNEAK
+              - foe_agility * STEALTH_APPROACH_PERCEPT
+              - max(0, group_size - 1) * STEALTH_APPROACH_CROWD
+              - STEALTH_APPROACH_ARMOR_PENALTY.get(armor_class, 0.0))
+    if night:
+        chance += STEALTH_APPROACH_NIGHT
+    if scouted:
+        chance += STEALTH_APPROACH_SCOUT
+    if surprise:
+        chance -= STEALTH_APPROACH_SURPRISE
+    return max(0.05, min(0.97, chance))
+
+
 # --- 抗性與元素 ---------------------------------------------------------
 MAGIC_ELEMENTS = ("fire", "frost", "shock")   # 受「magic」總抗性影響的學派元素
 
