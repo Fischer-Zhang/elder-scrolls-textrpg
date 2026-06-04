@@ -1,6 +1,7 @@
 {
   "locations": {
     "bruma": {
+      "biome": "heartland",
       "name": "布魯瑪",
       "province": "賽羅迪爾",
       "type": "city",
@@ -44,6 +45,7 @@
       }
     },
     "imperial_road": {
+      "biome": "heartland",
       "name": "帝國大道",
       "province": "賽羅迪爾",
       "type": "wilderness",
@@ -58,6 +60,7 @@
       }
     },
     "cedernoc_cave": {
+      "biome": "heartland",
       "name": "切德納寇洞窟",
       "province": "賽羅迪爾",
       "type": "dungeon",
@@ -71,6 +74,7 @@
       }
     },
     "kvatch": {
+      "biome": "heartland",
       "name": "凱瓦奇",
       "province": "賽羅迪爾",
       "type": "town",
@@ -99,6 +103,7 @@
       }
     },
     "pale_pass": {
+      "biome": "snow",
       "name": "白隘",
       "province": "邊境",
       "type": "wilderness",
@@ -111,6 +116,7 @@
       }
     },
     "dragon_bridge": {
+      "biome": "snow",
       "name": "龍橋鎮",
       "province": "天際",
       "type": "town",
@@ -136,10 +142,13 @@
         "pale_pass": 4,
         "haafingar": 3,
         "frostwind_ruin": 3,
-        "kvatch": 7
+        "kvatch": 7,
+        "falkreath_wood": 2,
+        "lostknife_cave": 3
       }
     },
     "haafingar": {
+      "biome": "snow",
       "name": "海芬古",
       "province": "天際",
       "type": "city",
@@ -196,10 +205,12 @@
       "links": {
         "dragon_bridge": 3,
         "sea_route": 4,
-        "frostwind_ruin": 2
+        "frostwind_ruin": 2,
+        "falkreath_wood": 3
       }
     },
     "frostwind_ruin": {
+      "biome": "snow",
       "name": "冰風廢墟",
       "province": "天際",
       "type": "dungeon",
@@ -212,7 +223,36 @@
         "haafingar": 2
       }
     },
+    "falkreath_wood": {
+      "biome": "snow",
+      "name": "佛克瑞斯林",
+      "province": "天際",
+      "type": "wilderness",
+      "danger": 2,
+      "desc": "天際南境的針葉密林,松濤覆雪、暮色幽深,獵人與逃犯都在林間留下足跡。",
+      "services": [],
+      "links": {
+        "dragon_bridge": 2,
+        "haafingar": 3,
+        "lostknife_cave": 2
+      }
+    },
+    "lostknife_cave": {
+      "biome": "snow",
+      "name": "迷刀洞窟",
+      "province": "天際",
+      "type": "dungeon",
+      "danger": 2,
+      "desc": "藏在佛克瑞斯林深處的洞窟,一夥盜匪盤踞於此,洞穴深處還連著一座荒廢的古諾德墓室。",
+      "services": [],
+      "dungeon": "lostknife_cave",
+      "links": {
+        "falkreath_wood": 2,
+        "dragon_bridge": 3
+      }
+    },
     "sea_route": {
+      "biome": "ashland",
       "name": "灰海航道",
       "province": "邊境",
       "type": "wilderness",
@@ -225,6 +265,7 @@
       }
     },
     "blacklight": {
+      "biome": "ashland",
       "name": "黑光城",
       "province": "晨風",
       "type": "city",
@@ -276,10 +317,12 @@
       "links": {
         "sea_route": 4,
         "molag_mar": 3,
-        "ashfall_barrow": 3
+        "ashfall_barrow": 3,
+        "ashland_waste": 2
       }
     },
     "molag_mar": {
+      "biome": "ashland",
       "name": "莫拉格瑪",
       "province": "晨風",
       "type": "town",
@@ -305,10 +348,12 @@
         "blacklight": 3,
         "dragon_lair": 4,
         "ashfall_barrow": 2,
-        "thorn_fen": 5
+        "thorn_fen": 5,
+        "ashland_waste": 2
       }
     },
     "ashfall_barrow": {
+      "biome": "ashland",
       "name": "灰燼墓塚",
       "province": "晨風",
       "type": "dungeon",
@@ -322,6 +367,7 @@
       }
     },
     "dragon_lair": {
+      "biome": "ashland",
       "name": "龍喉峰",
       "province": "晨風",
       "type": "dungeon",
@@ -333,7 +379,21 @@
         "molag_mar": 4
       }
     },
+    "ashland_waste": {
+      "biome": "ashland",
+      "name": "灰燼荒原",
+      "province": "晨風",
+      "type": "wilderness",
+      "danger": 2,
+      "desc": "黑光城外綿延的火山灰原,灰蹦蟲在焦黑的灰田間彈跳,空氣裡浮著硫磺與灰燼。",
+      "services": [],
+      "links": {
+        "blacklight": 2,
+        "molag_mar": 2
+      }
+    },
     "niben_marsh": {
+      "biome": "swamp",
       "name": "尼本河沼",
       "province": "邊境",
       "type": "wilderness",
@@ -346,6 +406,7 @@
       }
     },
     "gideon": {
+      "biome": "swamp",
       "name": "吉迪恩",
       "province": "黑沼澤",
       "type": "city",
@@ -398,6 +459,7 @@
       }
     },
     "murkmire": {
+      "biome": "swamp",
       "name": "幽沼濕地",
       "province": "黑沼澤",
       "type": "wilderness",
@@ -411,6 +473,7 @@
       }
     },
     "hist_grove": {
+      "biome": "swamp",
       "name": "希斯特聖林",
       "province": "黑沼澤",
       "type": "wilderness",
@@ -423,6 +486,7 @@
       }
     },
     "stormhold": {
+      "biome": "swamp",
       "name": "石落城",
       "province": "黑沼澤",
       "type": "town",
@@ -460,6 +524,7 @@
       }
     },
     "xanmeer": {
+      "biome": "swamp",
       "name": "贊密爾沉廟",
       "province": "黑沼澤",
       "type": "dungeon",
@@ -473,6 +538,7 @@
       }
     },
     "thorn_fen": {
+      "biome": "swamp",
       "name": "荊棘沼澤",
       "province": "邊境",
       "type": "wilderness",

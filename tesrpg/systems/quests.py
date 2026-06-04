@@ -82,7 +82,7 @@ def is_done(char: Character, quest_id: str) -> bool:
 
 
 def available_quests(char: Character, gamedata: GameData, source: str,
-                     faction: str | None = None) -> list[str]:
+                     faction: str | None = None, province: str | None = None) -> list[str]:
     out = []
     for qid, q in gamedata.quests.items():
         if q.get("source") != source or is_active(char, qid) or is_done(char, qid):
@@ -93,6 +93,12 @@ def available_quests(char: Character, gamedata: GameData, source: str,
             if q.get("rank", 0) != char.factions[faction]:   # 只給當前階級的晉升任務
                 continue
             if not factions.meets_rank_skill(char, gamedata, faction):  # 技能門檻未達 → 暫不開放
+                continue
+        # 告示板委託可帶 provinces 做「在地懸賞」:只在指定行省的告示板出現;
+        # 無 provinces 者=全圖通用(向後相容,既有 board 委託照舊到處可接)。
+        if source == "board" and province is not None:
+            provs = q.get("provinces")
+            if provs and province not in provs:
                 continue
         out.append(qid)
     return out

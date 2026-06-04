@@ -251,6 +251,58 @@
       }
     }
   },
+  "lostknife_cave": {
+    "name": "迷刀洞窟",
+    "rooms": [
+      {
+        "desc": "洞口的碎石坡,兩頭看門的野狼自暗處撲出。",
+        "container": null,
+        "enemies": ["wolf", "wolf"]
+      },
+      {
+        "desc": "盜匪堆放贓物的側室,角落有個上鎖的木箱。",
+        "enemy": null,
+        "container": {
+          "locked": 15,
+          "loot": [
+            "leather_cuirass",
+            "minor_healing_potion",
+            {"gold": [8, 20]}
+          ]
+        }
+      },
+      {
+        "desc": "煙燻黑的主洞,一名盜匪與他豢養的惡狼一齊迎戰。",
+        "container": null,
+        "enemies": ["bandit", "wolf"]
+      },
+      {
+        "desc": "洞窟深處接著一座坍塌的古諾德墓室,一具骷髏戰士自石棺中爬起。",
+        "enemy": "skeleton",
+        "container": {
+          "locked": 20,
+          "loot": [
+            "iron_helmet",
+            "bone_meal",
+            {"gold": [12, 30]}
+          ]
+        }
+      }
+    ],
+    "boss": {
+      "desc": "洞窟最深的盜匪營帳 —— 迷刀幫的頭目堵住了通往寶箱的去路。",
+      "enemy": "bandit",
+      "treasure": {
+        "locked": 25,
+        "loot": [
+          "steel_sword",
+          "healing_potion",
+          "ruby",
+          {"gold": [35, 70]}
+        ]
+      }
+    }
+  },
   "xanmeer": {
     "name": "贊密爾沉廟",
     "rooms": [

@@ -611,7 +611,8 @@ def action_explore(state: GameState, gamedata: GameData) -> str | None:
     if ev == "fired":
         return None
     danger = world.current_location(player, gamedata).get("danger", 1)
-    enemies = combat.random_encounter_group(gamedata, player.level, state.rng, max_danger=danger + 1)
+    enemies = combat.random_encounter_group(gamedata, player.level, state.rng, max_danger=danger + 1,
+                                            biome=world.current_location(player, gamedata).get("biome"))
     return offer_battle(state, gamedata, enemies)
 
 
@@ -1395,7 +1396,8 @@ def action_guild_hall(state: GameState, gamedata: GameData, faction_id: str) -> 
 
 def action_board(state: GameState, gamedata: GameData) -> None:
     char = state.player
-    avail = quests.available_quests(char, gamedata, "board")
+    province = world.current_location(char, gamedata)["province"]
+    avail = quests.available_quests(char, gamedata, "board", province=province)
     if not avail:
         ui.message("告示板上沒有你還沒接的委託。", style="grey70")
         return

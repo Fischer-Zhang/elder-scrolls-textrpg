@@ -206,5 +206,98 @@
                              "effects": [{"type": "gold", "amount": -10}]}}},
       {"text": "由他去吧", "effects": [{"type": "gold", "amount": -10}]}
     ]
+  },
+  "skyrim_blizzard": {
+    "weight": 4, "trigger": {"contexts": ["travel", "explore"], "provinces": ["天際"]},
+    "title": "暴風雪", "text": "天際的風雪驟然轉急,白茫茫一片中連路都看不清。",
+    "options": [
+      {"text": "頂風硬闖(運動)",
+       "check": {"skill": "athletics", "difficulty": 35,
+                 "success": {"text": "你裹緊衣物、踏雪而行,總算穿了過去。",
+                             "effects": [{"type": "skill_xp", "skill": "athletics", "amount": 0.6}]},
+                 "failure": {"text": "刺骨寒風凍得你直打哆嗦。",
+                             "effects": [{"type": "damage", "amount": 6}]}}},
+      {"text": "找處岩壁避風", "effects": [{"type": "message", "text": "你蜷在背風處,等風雪稍歇才再上路。"}]}
+    ]
+  },
+  "skyrim_predator": {
+    "weight": 3, "trigger": {"contexts": ["explore"], "provinces": ["天際"], "location_types": ["wilderness"]},
+    "title": "雪地裡的低嘯", "text": "雪幕之後,一道泛著寒光的身影盤旋逼近 —— 是冰魂。",
+    "options": [
+      {"text": "拔劍迎敵", "effects": [{"type": "combat", "creature": "ice_wraith"}]},
+      {"text": "悄悄繞開(潛行)",
+       "check": {"skill": "sneak", "difficulty": 35,
+                 "success": {"text": "你借著風雪掩護,悄然退開。", "effects": []},
+                 "failure": {"text": "牠嗅到了你的氣息,呼嘯而至!",
+                             "effects": [{"type": "combat", "creature": "ice_wraith"}]}}}
+    ]
+  },
+  "morrowind_ashstorm": {
+    "weight": 4, "trigger": {"contexts": ["travel", "explore"], "provinces": ["晨風"]},
+    "title": "灰燼風暴", "text": "紅山吹來的灰燼風暴遮天蔽日,火山灰刮得皮膚生疼。",
+    "options": [
+      {"text": "拉起頭巾趕路", "effects": [{"type": "damage", "amount": 5},
+                                  {"type": "message", "text": "你頂著灰暴前行,嗆了一肺的火山灰。"}]},
+      {"text": "就地掩蔽等風停", "effects": [{"type": "message", "text": "你躲進岩屋背風處,直到天色重新泛紅。"}]}
+    ]
+  },
+  "morrowind_forage": {
+    "weight": 3, "trigger": {"contexts": ["explore"], "provinces": ["晨風"]},
+    "title": "火山灰田", "text": "灰燼覆蓋的田壟間,冒出幾叢火山特有的菌菇與作物。",
+    "options": [
+      {"text": "採集火山材料",
+       "effects": [{"type": "item", "item": "ash_yam", "qty": 1},
+                   {"type": "item", "item": "scrib_jelly", "qty": 1},
+                   {"type": "skill_xp", "skill": "alchemy", "amount": 0.5},
+                   {"type": "message", "text": "你採下了灰薯與彈蟲凍。"}]},
+      {"text": "沒興趣", "effects": []}
+    ]
+  },
+  "blackmarsh_hist": {
+    "weight": 4, "trigger": {"contexts": ["travel", "rest"], "provinces": ["黑沼澤"]},
+    "title": "希斯特低語", "text": "沼霧深處,一株希斯特神樹的根鬚滲出微光的樹液,空氣裡浮動著古老的低語。",
+    "options": [
+      {"text": "靜心聆聽樹語",
+       "effects": [{"type": "heal", "amount": "full"},
+                   {"type": "restore_magicka", "amount": "full"},
+                   {"type": "message", "text": "希斯特的低語撫平了你的傷與疲憊,心神為之一清。"}]},
+      {"text": "敬而遠之", "effects": [{"type": "message", "text": "你避開那株神樹,不願招惹沼澤的古神。"}]}
+    ]
+  },
+  "blackmarsh_predator": {
+    "weight": 3, "trigger": {"contexts": ["explore"], "provinces": ["黑沼澤"], "location_types": ["wilderness"]},
+    "title": "沼澤裡的幽光", "text": "爛泥水面浮起一團飄忽的幽光,引著你越走越深 —— 是鬼火。",
+    "options": [
+      {"text": "識破陷阱、搶先出手", "effects": [{"type": "combat", "creature": "will_o_wisp"}]},
+      {"text": "循原路退回(潛行)",
+       "check": {"skill": "sneak", "difficulty": 40,
+                 "success": {"text": "你看穿幽光的誘引,悄悄退出泥潭。", "effects": []},
+                 "failure": {"text": "你陷進爛泥,幽光趁機撲來!",
+                             "effects": [{"type": "combat", "creature": "will_o_wisp"}]}}}
+    ]
+  },
+  "blackmarsh_forage": {
+    "weight": 3, "trigger": {"contexts": ["explore"], "provinces": ["黑沼澤"]},
+    "title": "沼澤毒草", "text": "陰濕的水窪邊,毒茄參與傘菌在腐葉間悄然生長。",
+    "options": [
+      {"text": "採集沼澤材料",
+       "effects": [{"type": "item", "item": "deathbell", "qty": 1},
+                   {"type": "item", "item": "imp_stool", "qty": 1},
+                   {"type": "skill_xp", "skill": "alchemy", "amount": 0.5},
+                   {"type": "message", "text": "你小心採下了毒茄參與傘菌。"}]},
+      {"text": "沒興趣", "effects": []}
+    ]
+  },
+  "cyrodiil_patrol": {
+    "weight": 3, "trigger": {"contexts": ["travel"], "provinces": ["賽羅迪爾"]},
+    "title": "帝國巡邏隊", "text": "一隊帝國軍團士兵沿著帝國大道走來,長官打量了你一眼。",
+    "options": [
+      {"text": "頷首致意", "effects": [{"type": "message", "text": "「路上小心,公民。」士兵們列隊而過。"}]},
+      {"text": "打聽路況(口才)",
+       "check": {"skill": "speechcraft", "difficulty": 25,
+                 "success": {"text": "長官多說了幾句,點出前方哪段路近來不太平。",
+                             "effects": [{"type": "skill_xp", "skill": "speechcraft", "amount": 0.4}]},
+                 "failure": {"text": "「無可奉告。」長官板著臉走開了。", "effects": []}}}
+    ]
   }
 }

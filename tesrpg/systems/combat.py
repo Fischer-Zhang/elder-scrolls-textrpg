@@ -31,9 +31,27 @@ def spawn_creature(gamedata: GameData, template_id: str, rng: RNG) -> Creature:
     )
 
 
+# 生態遭遇表:野外抽怪依「地點 biome」加權,讓各省玩起來不同(細化省分)。
+# 帶 biomes 標籤的怪在符合 biome 處更常出現、在他鄉罕見;無標籤怪=四海皆有的通用池
+# (giant_rat/wolf/bandit…),確保任何 biome 的池都不會被抽空。
+BIOME_MATCH_WEIGHT = 3.0      # 怪的 biomes 含當地 → 權重 ×3(在地常見)
+BIOME_MISMATCH_WEIGHT = 0.25  # 怪有 biomes 但不含當地 → 權重 ×0.25(離鄉的遊蕩者,罕見)
+
+
+def _biome_weight(template: dict, biome: str | None) -> float:
+    """依當地 biome 調整某怪的抽取權重。無當地 biome 或怪無 biomes 標籤 → 不調整。"""
+    base = template.get("weight", 1)
+    biomes = template.get("biomes")
+    if not biome or not biomes:
+        return base
+    return base * (BIOME_MATCH_WEIGHT if biome in biomes else BIOME_MISMATCH_WEIGHT)
+
+
 def random_encounter_group(gamedata: GameData, player_level: int, rng: RNG,
-                           max_danger: int | None = None) -> list[Creature]:
-    """隨機遭遇一「群」敵人;危險度越高越容易成群、規模越大(最危險區可達 4)。"""
+                           max_danger: int | None = None,
+                           biome: str | None = None) -> list[Creature]:
+    """隨機遭遇一「群」敵人;危險度越高越容易成群、規模越大(最危險區可達 4)。
+    biome:當地生態(雪原/火山/沼澤…),影響抽到哪些怪(見 _biome_weight)。"""
     roll = rng.random()
     d = max_danger or 1
     if d >= 5:        # 最危險區:常成群
@@ -42,7 +60,7 @@ def random_encounter_group(gamedata: GameData, player_level: int, rng: RNG,
         size = 1 if roll < 0.55 else (2 if roll < 0.85 else 3)
     else:             # 低危區
         size = 1 if roll < 0.75 else (2 if roll < 0.94 else 3)
-    group = [random_encounter(gamedata, player_level, rng, max_danger) for _ in range(size)]
+    group = [random_encounter(gamedata, player_level, rng, max_danger, biome) for _ in range(size)]
     # BOSS 級(solo)只單獨出現:群中若含 solo 敵人,收斂成那一隻(避免一次多隻王)
     boss = next((e for e in group
                  if gamedata.bestiary.get(e.template_id, {}).get("solo")), None)
@@ -89,8 +107,9 @@ def spawn_boss(gamedata: GameData, template_id: str, rng: RNG, name: str | None 
 
 
 def random_encounter(gamedata: GameData, player_level: int, rng: RNG,
-                     max_danger: int | None = None) -> Creature:
-    """依玩家等級加權抽一隻敵人(危險度越高越罕見);max_danger 限制最高危險度。"""
+                     max_danger: int | None = None, biome: str | None = None) -> Creature:
+    """依玩家等級加權抽一隻敵人(危險度越高越罕見);max_danger 限制最高危險度;
+    biome 依當地生態調整各怪權重(在地怪常見、他鄉怪罕見,通用怪不受影響)。"""
     pool = []
     weights = []
     for tid, t in gamedata.bestiary.items():
@@ -99,7 +118,7 @@ def random_encounter(gamedata: GameData, player_level: int, rng: RNG,
         if max_danger is not None and t.get("danger", 1) > max_danger:
             continue
         pool.append(tid)
-        weights.append(t.get("weight", 1))
+        weights.append(_biome_weight(t, biome))
     if not pool:  # 後備:至少給最弱的
         pool, weights = ["giant_rat"], [1]
     # 以權重做加權隨機(不依賴 random.choices,維持 RNG 介面單純)

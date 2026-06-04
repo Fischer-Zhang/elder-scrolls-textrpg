@@ -47,7 +47,8 @@ def travel(char: Character, gamedata: GameData, dest_id: str, time, rng: RNG) ->
     foe = None
     if rng.chance(encounter_chance(dest.get("danger", 0), time.hour)):
         foe = combat.random_encounter(gamedata, char.level, rng,
-                                      max_danger=dest.get("danger", 1) + 1)
+                                      max_danger=dest.get("danger", 1) + 1,
+                                      biome=dest.get("biome"))
 
     time.advance(hours)
     char.location_id = dest_id

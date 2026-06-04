@@ -735,6 +735,65 @@
     "turn_in": "auto",
     "text": "競技場的冠軍,萬人擁戴、身經百戰。讓喝采化為哀嚎 —— 這一刀,將傳遍三省。"
   },
+  "favor_lostknife": {
+    "name": "委託:肅清迷刀幫",
+    "faction": null, "rank": null, "source": "npc",
+    "objective": {"type": "clear_dungeon", "dungeon": "lostknife_cave"},
+    "reward": {"gold": 160, "fame": 5, "items": ["steel_sword"]},
+    "turn_in": "auto",
+    "text": "龍橋鎮的喬凡受夠了佛克瑞斯林的迷刀盜匪:「把他們的洞窟端了,鎮上湊得出謝禮。」"
+  },
+  "favor_blacklight": {
+    "name": "委託:灰田除蟲",
+    "faction": null, "rank": null, "source": "npc",
+    "objective": {"type": "kill", "creature": "ash_hopper", "count": 3},
+    "reward": {"gold": 110, "fame": 3},
+    "turn_in": "auto",
+    "text": "黑光城商人維蘭德苦於灰蹦蟲糟蹋灰田,請你獵殺 3 隻(火山灰原野外可尋)。"
+  },
+  "favor_gideon": {
+    "name": "委託:偵察沉廟",
+    "faction": null, "rank": null, "source": "npc",
+    "objective": {"type": "reach", "location": "xanmeer"},
+    "reward": {"gold": 130, "fame": 4, "items": ["scrib_jelly"]},
+    "turn_in": "auto",
+    "text": "吉迪恩總督副官盧修斯要你潛抵贊密爾沉廟、查探虛實:「活著回來,賞金加倍。」"
+  },
+  "favor_stormhold": {
+    "name": "委託:鎮壓沼蜥",
+    "faction": null, "rank": null, "source": "npc",
+    "objective": {"type": "kill", "creature": "swamp_lizard", "count": 3},
+    "reward": {"gold": 120, "fame": 3},
+    "turn_in": "auto",
+    "text": "石落城的樹語者靜水-觀霧請你獵殺 3 頭擾亂希斯特清夢的沼澤巨蜥(沼澤野外可尋)。"
+  },
+  "job_xanmeer": {
+    "name": "懸賞:沉廟之患",
+    "faction": null, "rank": null, "source": "board",
+    "provinces": ["黑沼澤"],
+    "objective": {"type": "clear_dungeon", "dungeon": "xanmeer"},
+    "reward": {"gold": 260, "fame": 12},
+    "turn_in": "auto",
+    "text": "黑沼澤告示板高額懸賞:肅清贊密爾沉廟,終結廟中那頭雷蜥之患。"
+  },
+  "job_ashland": {
+    "name": "懸賞:灰原蟲群",
+    "faction": null, "rank": null, "source": "board",
+    "provinces": ["晨風"],
+    "objective": {"type": "kill", "creature": "ash_hopper", "count": 4},
+    "reward": {"gold": 130},
+    "turn_in": "auto",
+    "text": "晨風告示板懸賞:灰蹦蟲成災,獵殺 4 隻者有賞。"
+  },
+  "job_falkreath": {
+    "name": "懸賞:林中狼患",
+    "faction": null, "rank": null, "source": "board",
+    "provinces": ["天際"],
+    "objective": {"type": "kill", "creature": "wolf", "count": 4},
+    "reward": {"gold": 130},
+    "turn_in": "auto",
+    "text": "天際告示板懸賞:佛克瑞斯林的狼群襲擊商旅,獵殺 4 頭者有賞。"
+  },
   "db6": {
     "name": "合約:聆聽者之試",
     "faction": "dark_brotherhood",
