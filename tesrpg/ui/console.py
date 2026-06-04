@@ -73,6 +73,11 @@ def status_line(state: GameState) -> None:
     t.append(f"  Lv.{c.level}", style=GOLD)
     t.append(f"   ◷ {state.time.label()}", style=INK)
     extra = []
+    if getattr(c, "is_vampire", False):
+        from tesrpg.systems import vampirism
+        extra.append(f"[bold red]🩸 {vampirism.STAGE_NAMES[min(3, max(0, c.vampire_stage))]}吸血鬼[/]")
+    elif getattr(c, "vampire_infected_day", -1) >= 0:
+        extra.append("[red]🦠 吸血熱潛伏中[/]")
     if c.fame:
         extra.append(f"[cyan]聲望 {c.fame}[/]")
     total_bounty = sum(c.bounties.values())
@@ -208,6 +213,8 @@ def legacy_screen(s: dict) -> None:
     body.add_column(style=PARCH)
     if s.get("origin"):
         body.add_row("出身", str(s["origin"]))
+    if s.get("condition"):
+        body.add_row("詛咒", str(s["condition"]))
     body.add_row("等級", str(s["level"]))
     body.add_row("在世", f"{s['years']} 年 {s['days']} 天")
     body.add_row("足跡", f"踏遍 {s['places_visited']}/{s['total_locations']} 處地點")

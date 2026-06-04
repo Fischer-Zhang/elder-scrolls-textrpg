@@ -27,10 +27,15 @@ POWERS = {
                          "effect": {"unlock_charge": True}, "desc": "下一次撬鎖必定成功。"},
     "spell_absorption": {"name": "巨魔像吸收", "contexts": ["passive"],
                          "effect": {}, "desc": "(被動)有機率將來襲的元素魔法吸收為魔力。"},
+    # 吸血鬼專屬(轉化後取代出生星座之力):每日一次的汲血擁抱
+    "vampiric_drain":   {"name": "汲血擁抱", "contexts": ["combat"],
+                         "effect": {"drain": 40}, "desc": "撕咬汲取敵人 40 點生命為己用。"},
 }
 
 
 def power_id(char: Character, gamedata: GameData) -> str | None:
+    if getattr(char, "is_vampire", False):   # 吸血鬼:詛咒之力取代出生星座之力
+        return "vampiric_drain"
     powers = gamedata.birthsigns[char.birthsign].get("powers", [])
     pid = powers[0] if powers else None
     return pid if pid in POWERS else None
@@ -82,6 +87,11 @@ def use(char: Character, state, gamedata: GameData, target=None) -> dict:
         target.active_effects.append({"kind": "dot", "element": "poison",
                                       "magnitude": p["magnitude"], "turns": p["turns"]})
         messages.append(f"{target.name}中了蛇毒({p['turns']} 回合)。")
+    if "drain" in eff and target is not None:
+        amount = min(eff["drain"], int(target.health))
+        target.health = max(0, target.health - eff["drain"])
+        char.health = min(char.max_health, char.health + amount)
+        messages.append(f"{pdef['name']}撕咬{target.name},汲取了 {amount} 點生命。")
     if eff.get("escape"):
         escape = True
         messages.append(f"{pdef['name']} —— 你隱入陰影,悄然脫身。")

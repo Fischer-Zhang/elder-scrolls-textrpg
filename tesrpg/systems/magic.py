@@ -203,6 +203,8 @@ def entity_resist(entity, gamedata) -> dict:
         merged = dict(race)
         for elem, val in entity.equip_resist.items():     # 裝備抗性與種族抗性相加
             merged[elem] = merged.get(elem, 0) + val
+        for elem, val in entity.vampire_resist.items():   # 吸血鬼階級:耐霜/免疫疾病/火焰弱點
+            merged[elem] = merged.get(elem, 0) + val
         return merged
     return getattr(entity, "resist", {}) or {}
 

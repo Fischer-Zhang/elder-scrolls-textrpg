@@ -44,5 +44,13 @@
     "gold": 250,
     "equip": ["gold_amulet"],
     "items": [["healing_potion", 1]]
+  },
+  "nightborn": {
+    "name": "夜之裔(吸血鬼)",
+    "blurb": "你早已不是活人。被詛咒纏身、以鮮血為食——力量隨飢餓增長,陽光與世人的目光卻是你的枷鎖。最具挑戰、也最異色的開局:得在強大與融入之間,夜夜抉擇。",
+    "location": "bruma",
+    "gold": 40,
+    "items": [["minor_healing_potion", 1]],
+    "vampire": true
   }
 }

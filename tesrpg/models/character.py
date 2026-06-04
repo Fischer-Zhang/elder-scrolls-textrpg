@@ -63,6 +63,15 @@ class Character:
     equip_skill_bonus: dict = field(default_factory=dict)   # skill_id -> +點數
     equip_attr_bonus: dict = field(default_factory=dict)    # attr_id -> +點數
     equip_resist: dict = field(default_factory=dict)        # element -> +百分比
+    # 吸血鬼化(力量↔詛咒;持久狀態,進存檔)。階級加成走獨立層,與裝備加成同模式:
+    # attr()/skill() 疊加、成長/夾限只用 base_*。詳見 systems/vampirism.py。
+    is_vampire: bool = False
+    vampire_infected_day: int = -1      # 染吸血熱的絕對日(-1=未感染);潛伏滿 INCUBATION 轉化
+    vampire_fed_day: int = 0            # 上次進食的絕對日(階級由「距今天數」推導)
+    vampire_stage: int = 0             # 目前套用中的階級 0..3(供變化偵測/結算)
+    vampire_attr_bonus: dict = field(default_factory=dict)   # attr_id -> +點數(階級加成)
+    vampire_skill_bonus: dict = field(default_factory=dict)  # skill_id -> +點數
+    vampire_resist: dict = field(default_factory=dict)       # element -> +百分比(含火焰弱點負值)
     factions: dict = field(default_factory=dict)         # faction_id -> 階級索引(已入會)
     active_effects: list = field(default_factory=list)
     fame: int = 0
@@ -92,10 +101,12 @@ class Character:
 
     # --- 查詢 -------------------------------------------------------------
     def attr(self, key: str) -> int:
-        return self.attributes.get(key, formulas.BASE_ATTRIBUTE) + self.equip_attr_bonus.get(key, 0)
+        return (self.attributes.get(key, formulas.BASE_ATTRIBUTE)
+                + self.equip_attr_bonus.get(key, 0) + self.vampire_attr_bonus.get(key, 0))
 
     def skill(self, key: str) -> int:
-        return self.skills.get(key, 0) + self.equip_skill_bonus.get(key, 0)
+        return (self.skills.get(key, 0)
+                + self.equip_skill_bonus.get(key, 0) + self.vampire_skill_bonus.get(key, 0))
 
     def base_attr(self, key: str) -> int:
         """不含裝備加成的原始屬性(供成長/夾限用)。"""
@@ -135,6 +146,10 @@ class Character:
             "inventory": self.inventory, "equipped": self.equipped, "spells": self.spells,
             "equip_skill_bonus": self.equip_skill_bonus, "equip_attr_bonus": self.equip_attr_bonus,
             "equip_resist": self.equip_resist,
+            "is_vampire": self.is_vampire, "vampire_infected_day": self.vampire_infected_day,
+            "vampire_fed_day": self.vampire_fed_day, "vampire_stage": self.vampire_stage,
+            "vampire_attr_bonus": self.vampire_attr_bonus,
+            "vampire_skill_bonus": self.vampire_skill_bonus, "vampire_resist": self.vampire_resist,
             "factions": self.factions,
             # active_effects 是「戰鬥內」臨時效果(護盾/中毒/再生),不寫入存檔,
             # 載入時由 dataclass 預設為空 list(避免臨時效果被永久化)。

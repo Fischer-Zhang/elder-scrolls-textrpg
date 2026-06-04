@@ -224,6 +224,7 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
     status_applied = None
     poison_applied = None
     self_restored = None
+    infected = False
     sneak_mult = (formulas.sneak_attack_multiplier(attacker.skill("sneak"))
                   * formulas.archetype_sneak_bonus(archetype)) if sneaking else None
 
@@ -273,6 +274,12 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
                 defender.active_effects.append({"kind": oh["status"], "element": oh.get("element"),
                                                 "magnitude": oh["magnitude"], "turns": oh["turns"]})
                 status_applied = oh.get("element")
+            # 吸血鬼咬擊傳染「吸血熱」:命中機率 × 疾病抗性削弱(只標記,轉化由 vampirism 驅動)
+            inf = attacker.attack.get("infect")
+            if inf and not defender.is_vampire:
+                dmult = formulas.resist_multiplier(magic.entity_resist(defender, gamedata), "disease")
+                if dmult > 0 and rng.chance(inf * dmult):
+                    infected = True
 
         # 玩家武器塗毒 → 命中即把毒效附到敵人身上,消耗一次塗層
         if _is_player(attacker) and attacker.weapon_poison and attacker.weapon_poison["charges"] > 0:
@@ -316,7 +323,7 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
         "hit": hit, "damage": dmg_done, "blocked": defender_blocking,
         "skill_events": skill_events, "defender_dead": not is_alive(defender),
         "absorbed": absorbed, "status_applied": status_applied, "poison_applied": poison_applied,
-        "sneak": sneak_mult, "self_restored": self_restored,
+        "sneak": sneak_mult, "self_restored": self_restored, "infected": infected,
     }
 
 

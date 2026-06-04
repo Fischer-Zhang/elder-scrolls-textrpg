@@ -159,6 +159,11 @@ def apply_origin(gamedata: GameData, char: Character, origin_id: str | None) -> 
         if cid in gamedata.companions and cid not in char.companions:
             char.companions.append(cid)
 
+    # 開局即吸血鬼(夜之裔):只標記身分;階級加成/進食日由 vampirism.update 在
+    # 進入主迴圈第一回合初始化(build_character 此時沒有 state/時間)。
+    if odef.get("vampire"):
+        char.is_vampire = True
+
 
 # 各武器技能 → 預設起始武器
 _WEAPON_FOR_SKILL = {

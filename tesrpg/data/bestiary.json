@@ -507,5 +507,38 @@
     "loot_gold": [150, 350],
     "loot": [{"item": "ebony_sword", "chance": 0.4}, {"item": "dwarven_cuirass", "chance": 0.3}, {"item": "filled_greater_soul_gem", "chance": 0.5}, {"item": "healing_potion", "chance": 0.8}],
     "flavor": "天色驟暗——一頭上古巨龍盤旋而下,烈焰吐息燒紅了半邊天。"
+  },
+  "vampire_fledgling": {
+    "name": "吸血鬼新血",
+    "danger": 3,
+    "min_level": 3,
+    "weight": 2,
+    "strength": 50,
+    "agility": 48,
+    "speed": 48,
+    "max_health": 48,
+    "armor_rating": 14,
+    "attack": {"name": "嗜血撕咬", "damage": 12, "skill": 50, "infect": 0.3},
+    "resist": {"frost": 50, "poison": 50, "fire": -25},
+    "loot_gold": [8, 24],
+    "loot": [{"item": "silver_ring", "chance": 0.15}, {"item": "minor_healing_potion", "chance": 0.2}, {"item": "filled_lesser_soul_gem", "chance": 0.1}],
+    "flavor": "一個面色慘白的身影自暗處欺近,獠牙在月光下泛著寒光:「你的血,聞起來真甜。」"
+  },
+  "vampire_lord": {
+    "name": "吸血鬼貴族",
+    "danger": 4,
+    "min_level": 10,
+    "weight": 1,
+    "solo": true,
+    "strength": 68,
+    "agility": 55,
+    "speed": 55,
+    "max_health": 160,
+    "armor_rating": 18,
+    "attack": {"name": "貴族之噬", "damage": 22, "skill": 62, "infect": 0.45},
+    "resist": {"frost": 50, "poison": 75, "fire": -25, "magic": 20},
+    "loot_gold": [50, 120],
+    "loot": [{"item": "gold_amulet", "chance": 0.25}, {"item": "filled_common_soul_gem", "chance": 0.3}, {"item": "healing_potion", "chance": 0.5}],
+    "flavor": "一名身披華服的吸血鬼貴族緩步而出,數百年的飢渴在猩紅雙眼中燃燒。"
   }
 }

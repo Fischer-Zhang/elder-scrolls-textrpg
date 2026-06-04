@@ -14,7 +14,7 @@ from tesrpg.rng import RNG, make_seed
 from tesrpg.state import GameState
 from tesrpg.systems import (alchemy, combat, crime, dialogue, dungeon, enchanting,
                             events, factions, inventory, legacy, magic, powers,
-                            progression, quests, stats, world)
+                            progression, quests, stats, vampirism, world)
 from tesrpg.ui import console as ui
 
 SAVE_PATH = Path.home() / ".tesrpg" / "save.json"
@@ -228,7 +228,8 @@ def _choose_combat_action(state: GameState, gamedata: GameData, enemies: list):
     if castable:
         opts.append(("cast", "施法"))
     if powers.usable_in(player, state, gamedata, "combat"):
-        opts.append(("power", f"星座之力({powers.power_def(powers.power_id(player, gamedata))['name']})"))
+        plabel = "吸血之力" if player.is_vampire else "星座之力"
+        opts.append(("power", f"{plabel}({powers.power_def(powers.power_id(player, gamedata))['name']})"))
     opts += [("block", "格擋"), ("flee", "逃跑")]
     choice = ui.menu("你的回合", opts)
 
@@ -245,7 +246,8 @@ def _choose_combat_action(state: GameState, gamedata: GameData, enemies: list):
         return {"type": "cast", "spell_id": sid, "target": target}
     if choice == "power":
         eff = powers.power_def(powers.power_id(player, gamedata))["effect"]
-        target = _choose_enemy_target(gamedata, enemies) if ("paralyze" in eff or "poison" in eff) else None
+        needs_target = any(k in eff for k in ("paralyze", "poison", "drain"))
+        target = _choose_enemy_target(gamedata, enemies) if needs_target else None
         return {"type": "power", "target": target}
     return {"type": choice}
 
@@ -337,8 +339,11 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None) -
                 continue
             tgt = combat.pick_player_side_target(player, battle["allies"], state.rng)
             blk = blocking if tgt is player else False
-            ui.combat_event(combat.resolve_attack(e, tgt, gamedata, state.rng, defender_blocking=blk),
-                            gamedata)
+            ev = combat.resolve_attack(e, tgt, gamedata, state.rng, defender_blocking=blk)
+            ui.combat_event(ev, gamedata)
+            if ev.get("infected") and vampirism.infect(player, state):
+                ui.message("獠牙刺入你的頸側 —— 傷口隱隱發燙。你染上了某種不祥的熱症……",
+                           style="bold red")
 
         # ---- 回合結束:持續傷害/狀態計時 ----
         pre_trap = {id(e): magic.has_soul_trap(e) for e in enemies if combat.is_alive(e)}
@@ -483,6 +488,13 @@ def offer_battle(state: GameState, gamedata: GameData, enemies, ambush_chance: f
     return run_battle(state, gamedata, enemies)
 
 
+def _maybe_sunburn(state: GameState, gamedata: GameData, hours: int) -> None:
+    """吸血鬼在戶外、白天活動 hours 小時 → 陽光灼傷(不致死,只削血)。"""
+    burn = vampirism.expose_to_sun(state, gamedata, hours)
+    if burn:
+        ui.message(f"烈日炙烤著你不死的血肉 —— 灼傷 {burn} 點生命。", style="red")
+
+
 def action_explore(state: GameState, gamedata: GameData) -> str | None:
     """荒野探索:隨機遭遇一隻敵人(回傳 'dead' 表示陣亡)。"""
     player = state.player
@@ -490,6 +502,7 @@ def action_explore(state: GameState, gamedata: GameData) -> str | None:
         ui.message("你太疲憊了,先休息再出發吧。", style="yellow")
         return None
     state.time.advance(1)
+    _maybe_sunburn(state, gamedata, 1)
     ev = maybe_event(state, gamedata, "explore")    # 探索可能引發奇遇而非戰鬥
     if ev == "dead":
         return "dead"
@@ -536,6 +549,7 @@ def action_travel(state: GameState, gamedata: GameData) -> str | None:
     if dest not in state.player.visited_locations:   # 已抵達(location_id 已更新)→ 先記足跡,
         state.player.visited_locations.append(dest)  # 即使途中埋伏致死也算到過此地
     ui.message(f"你啟程前往{gamedata.location(dest)['name']}……", style="grey70")
+    _maybe_sunburn(state, gamedata, res["hours"])    # 吸血鬼:白天趕路會被日光灼傷
     if res["hours"] < res["base_hours"]:
         ui.message(f"矯健的身手讓旅程縮短到 {res['hours']} 時(原需 {res['base_hours']} 時)。",
                    style="grey70")
@@ -784,6 +798,25 @@ def action_inn(state: GameState, gamedata: GameData) -> None:
             _hire_mercenary(state, gamedata)
         elif choice == "dismiss":
             _dismiss_mercenary(state, gamedata)
+
+
+def action_feed(state: GameState, gamedata: GameData) -> None:
+    """吸血鬼進食:獵取活人 → 飢餓歸零(階級 0)、回血;白天易被撞見而染上賞金。"""
+    char = state.player
+    stg = vampirism.stage(char, state)
+    if stg == 0:
+        if not ui.confirm("你尚未飢渴(已是初擁之境),仍要進食嗎?"):
+            return
+    if not ui.confirm("你潛近一名落單的活人,獠牙逼近其頸動脈 —— 下手嗎?"):
+        return
+    res = vampirism.feed(state, gamedata)
+    ui.message(f"溫熱的鮮血湧入,飢渴退去 —— 回復了 {res['healed']} 點生命,血之飢餓重歸初擁。",
+               style="bold red")
+    if res["caught"]:
+        ui.message(f"但你被人撞見了!{res['province']}懸起了你的賞金(+{res['bounty']}),惡名加身。",
+                   style="yellow")
+    else:
+        ui.message("夜色掩護了你,無人知曉。", style="grey70")
 
 
 def _hire_mercenary(state: GameState, gamedata: GameData) -> None:
@@ -1215,6 +1248,17 @@ def guard_confrontation(state: GameState, gamedata: GameData) -> str | None:
 # ======================================================================
 def game_loop(state: GameState, gamedata: GameData) -> None:
     while True:
+        # 吸血鬼狀態先結算(潛伏轉化 / 階級升降),再呈現本回合
+        for ev in vampirism.update(state, gamedata):
+            if ev["kind"] == "turn":
+                ui.rule("血色甦醒")
+                ui.message("高燒退去,飢渴湧上 —— 你已不再是活人。從此夜行嗜血,直到詛咒解除或永滅。",
+                           style="bold red")
+            elif ev["kind"] == "stage" and ev.get("rising"):
+                name = vampirism.STAGE_NAMES[ev["stage"]]
+                ui.message(f"血之飢渴加深 —— 你進入「{name}」之境:力量更盛,卻更難見容於日光與世人。",
+                           style="magenta")
+
         ui.rule()
         ui.status_line(state)
         ui.location_panel(state.player, gamedata)
@@ -1222,6 +1266,7 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
         services = loc.get("services", [])
 
         player = state.player
+        shunned = vampirism.is_shunned(player, state)   # 高階吸血鬼被世人拒於門外
         # --- 冒險 ---
         adventure: list = []
         if loc["type"] == "dungeon":
@@ -1232,11 +1277,16 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
         adventure.append(("map", "世界地圖"))
         # --- 城鎮服務 ---
         town: list = []
-        if "merchant" in services:
+        if player.is_vampire and loc["type"] in ("town", "city"):
+            town.append(("feed", "🩸 吸血進食(獵取活人,重置飢餓)"))
+        if shunned:
+            ui.message("世人察覺了你的真面目,紛紛走避 —— 高階吸血鬼無法與人交易,先進食壓下飢渴吧。",
+                       style="red")
+        if "merchant" in services and not shunned:
             town.append(("shop", "商店"))
-        if "inn" in services:
+        if "inn" in services and not shunned:
             town.append(("inn", "旅店(10金)"))
-        if "trainer" in services:
+        if "trainer" in services and not shunned:
             town.append(("trainer", "訓練師"))
         if "mages_guild" in services:
             town.append(("guild_mages", "法師公會"))   # 學習法術 + 入會/任務,進子選單
@@ -1246,7 +1296,7 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
             town.append(("tg_hall", "盜賊公會"))
         if "task_board" in services:
             town.append(("board", "告示板"))
-        if gamedata.npcs_at(player.location_id):
+        if gamedata.npcs_at(player.location_id) and not shunned:
             town.append(("talk", "與人攀談"))
         if "armorer" in services or inventory.count_item(player, "repair_hammer") > 0:
             town.append(("repair", "修理裝備"))
@@ -1287,6 +1337,8 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
             action_shop(state, gamedata)
         elif choice == "inn":
             action_inn(state, gamedata)
+        elif choice == "feed":
+            action_feed(state, gamedata)
         elif choice == "trainer":
             action_trainer(state, gamedata)
         elif choice == "guild_mages":
