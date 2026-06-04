@@ -594,5 +594,84 @@
     "loot_gold": [70, 160],
     "loot": [{"item": "filled_greater_soul_gem", "chance": 0.5}, {"item": "ebony_sword", "chance": 0.2}, {"item": "glow_dust", "chance": 0.5}],
     "flavor": "廟心的積水驟然沸騰——一頭上古雷蜥瓦瑪蘇破水而出,鱗甲間迸射的雷弧照亮了整座沉廟。"
+  },
+  "townsperson": {
+    "name": "城鎮居民", "strength": 35, "agility": 35, "speed": 35,
+    "max_health": 28, "armor_rating": 4,
+    "attack": {"name": "驚慌揮拳", "damage": 5, "skill": 25},
+    "danger": 1, "min_level": 99, "weight": 0,
+    "loot_gold": [2, 12],
+    "loot": [{"item": "minor_healing_potion", "chance": 0.1}],
+    "flavor": "一名手無寸鐵的尋常居民,驚恐地想護住自己的性命。"
+  },
+  "greedy_merchant": {
+    "name": "貪婪的商人", "strength": 42, "agility": 38, "speed": 36,
+    "max_health": 44, "armor_rating": 8,
+    "attack": {"name": "藏身短刀", "damage": 9, "skill": 40},
+    "danger": 3, "min_level": 99, "weight": 0,
+    "loot_gold": [30, 70],
+    "loot": [{"item": "gold_ring", "chance": 0.4}, {"item": "healing_potion", "chance": 0.3}],
+    "flavor": "一名腦滿腸肥的奸商,袖中藏著防身的短刀,眼裡只有金幣。"
+  },
+  "rogue_thief": {
+    "name": "變節的盜賊", "strength": 44, "agility": 58, "speed": 56,
+    "max_health": 58, "armor_rating": 12,
+    "attack": {"name": "毒刃突刺", "damage": 13, "skill": 50,
+               "on_hit": {"status": "dot", "element": "poison", "magnitude": 3, "turns": 3, "chance": 0.4}},
+    "danger": 4, "min_level": 99, "weight": 0,
+    "loot_gold": [25, 60],
+    "loot": [{"item": "glass_dagger", "chance": 0.25}, {"item": "silver_ring", "chance": 0.3}],
+    "flavor": "一名出賣了同夥的盜賊,身手敏捷、刀尖淬毒,深知自己被盯上了。"
+  },
+  "reclusive_mage": {
+    "name": "隱居的法師", "strength": 38, "agility": 46, "speed": 44,
+    "max_health": 66, "armor_rating": 6,
+    "attack": {"name": "烈焰箭", "damage": 17, "skill": 56, "element": "fire",
+               "on_hit": {"status": "dot", "element": "fire", "magnitude": 3, "turns": 3, "chance": 0.45}},
+    "danger": 4, "min_level": 99, "weight": 0,
+    "resist": {"fire": 30, "magic": 20},
+    "loot_gold": [40, 90],
+    "loot": [{"item": "filled_common_soul_gem", "chance": 0.4}, {"item": "magicka_staff", "chance": 0.15}],
+    "flavor": "一名離群索居的法師,指尖凝著奧術的火光 —— 他似乎早料到死亡會找上門。"
+  },
+  "disgraced_knight": {
+    "name": "落魄的騎士", "strength": 58, "agility": 42, "speed": 38,
+    "max_health": 120, "armor_rating": 28,
+    "attack": {"name": "重劍劈斬", "damage": 19, "skill": 56},
+    "danger": 5, "min_level": 99, "weight": 0,
+    "loot_gold": [50, 110],
+    "loot": [{"item": "steel_cuirass", "chance": 0.3}, {"item": "healing_potion", "chance": 0.4}],
+    "flavor": "一名失了名譽的騎士,雖已落魄,一身重甲與劍術仍不容小覷。"
+  },
+  "arena_champion": {
+    "name": "競技場冠軍", "strength": 70, "agility": 52, "speed": 50,
+    "max_health": 165, "armor_rating": 22,
+    "attack": {"name": "鬥技連擊", "damage": 25, "skill": 62},
+    "danger": 5, "min_level": 99, "weight": 0,
+    "loot_gold": [80, 160],
+    "loot": [{"item": "ebony_sword", "chance": 0.25}, {"item": "healing_potion", "chance": 0.5}],
+    "flavor": "萬眾矚目的競技場冠軍,身經百戰、力大招沉 —— 取他性命絕非易事。"
+  },
+  "brotherhood_traitor": {
+    "name": "叛變的會員", "strength": 60, "agility": 60, "speed": 58,
+    "max_health": 140, "armor_rating": 18,
+    "attack": {"name": "背刺淬毒", "damage": 26, "skill": 64,
+               "on_hit": {"status": "dot", "element": "poison", "magnitude": 5, "turns": 3, "chance": 0.5}},
+    "danger": 5, "min_level": 99, "weight": 0,
+    "resist": {"poison": 50},
+    "loot_gold": [70, 150],
+    "loot": [{"item": "glass_dagger", "chance": 0.4}, {"item": "filled_greater_soul_gem", "chance": 0.3}],
+    "flavor": "一名背棄了五戒的兄弟會叛徒,深諳暗殺之道 —— 他知道你為何而來,也絕不會束手就擒。"
+  },
+  "dark_speaker": {
+    "name": "聖所代言人", "strength": 64, "agility": 58, "speed": 56,
+    "max_health": 170, "armor_rating": 20,
+    "attack": {"name": "夜影之刃", "damage": 27, "skill": 66, "element": "frost",
+               "on_hit": {"status": "dot", "element": "frost", "magnitude": 4, "turns": 3, "chance": 0.5}},
+    "danger": 5, "min_level": 99, "weight": 0,
+    "resist": {"poison": 50, "magic": 20},
+    "loot_gold": [90, 180],
+    "loot": [{"item": "glass_dagger", "chance": 0.5}, {"item": "filled_greater_soul_gem", "chance": 0.4}, {"item": "gold_amulet", "chance": 0.3}],
+    "flavor": "你曾奉其號令的聖所代言人,夜母之意的轉述者 —— 如今刀鋒相向,他眼中只有冷冽的了然。"
   }
 }

@@ -121,6 +121,19 @@ def sneak_attack_multiplier(sneak_skill: int) -> float:
     return 1.0 + sneak_skill * SNEAK_ATTACK_SCALE
 
 
+NIGHT_MOTHER_SNEAK_PER_RANK = 0.03   # 黑暗兄弟會每階對偷襲倍率的加成(夜母祝福)
+
+
+def night_mother_sneak_bonus(db_rank: int) -> float:
+    """夜母祝福:黑暗兄弟會階級越高,潛殺越致命(乘進偷襲倍率)。
+
+    刻意溫和(每階僅 +0.03,聆聽者滿階 ×1.18;新血階 0 不加成)—— 經模擬:即使滿階 +
+    頂級雙持玻璃匕首刺客,所有 BOSS(solo)單擊秒殺率仍 ≤1.5%,守住「偷襲不可秒精英」。
+    調整此常數後務必重跑 sim_assassin.py 與精英秒殺率覆核。非會員(rank<0)回 1.0。
+    """
+    return 1.0 + max(0, db_rank) * NIGHT_MOTHER_SNEAK_PER_RANK
+
+
 def dodge_evasion(acrobatics_skill: int) -> float:
     """雜技帶來的閃避量(直接從敵人命中率扣除):acrobatics 40→0.10、100→0.25。"""
     return acrobatics_skill * DODGE_EVASION_SCALE

@@ -74,6 +74,11 @@ class Character:
     vampire_skill_bonus: dict = field(default_factory=dict)  # skill_id -> +點數
     vampire_resist: dict = field(default_factory=dict)       # element -> +百分比(含火焰弱點負值)
     factions: dict = field(default_factory=dict)         # faction_id -> 階級索引(已入會)
+    # 黑暗兄弟會(里程碑;血債招募 → 合約晉升 → 夜母祝福)。詳見 systems/brotherhood.py。
+    # 階級存在 factions["dark_brotherhood"];此處只記入會「前」的狀態機欄位:
+    murders: int = 0                # 謀殺無辜者的次數(血債);達門檻 → 夜母遣使招募
+    db_invited: bool = False        # 黑暗兄弟會使者是否已現身招募過(避免每次休息重複觸發)
+    murdered_npcs: list = field(default_factory=list)     # 已被你滅口的具名 NPC(從可攀談名單消失)
     active_effects: list = field(default_factory=list)
     fame: int = 0
     infamy: int = 0
@@ -153,6 +158,8 @@ class Character:
             "vampire_attr_bonus": self.vampire_attr_bonus,
             "vampire_skill_bonus": self.vampire_skill_bonus, "vampire_resist": self.vampire_resist,
             "factions": self.factions,
+            "murders": self.murders, "db_invited": self.db_invited,
+            "murdered_npcs": self.murdered_npcs,
             # active_effects 是「戰鬥內」臨時效果(護盾/中毒/再生),不寫入存檔,
             # 載入時由 dataclass 預設為空 list(避免臨時效果被永久化)。
             "fame": self.fame, "infamy": self.infamy, "bounty": self.bounty,

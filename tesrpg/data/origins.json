@@ -52,5 +52,14 @@
     "gold": 40,
     "items": [["minor_healing_potion", 1]],
     "vampire": true
+  },
+  "dark_initiate": {
+    "name": "黑暗兄弟會新血",
+    "blurb": "你早已沾過血,夜母也早已選中了你——一入場便是黑暗兄弟會的一員。提著鋼匕、揣著聖所的暗號,等著你的是一張張合約。最契合刺客之道的開局。",
+    "location": "haafingar",
+    "gold": 50,
+    "weapon": "steel_dagger",
+    "faction": {"dark_brotherhood": 0},
+    "items": [["minor_healing_potion", 2]]
   }
 }

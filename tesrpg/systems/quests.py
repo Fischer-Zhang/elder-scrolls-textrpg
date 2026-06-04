@@ -32,6 +32,12 @@ def branches(quest: dict) -> list[dict]:
     return quest.get("branches", [])
 
 
+def resolved(char: Character, gamedata: GameData, quest_id: str) -> dict:
+    """公開存取「套用玩家分支後實際生效」的任務 dict(供 UI/動作讀自訂欄位,如合約的
+    escort/clean_bonus)。"""
+    return _resolved(char, gamedata, quest_id)
+
+
 def _resolved(char: Character, gamedata: GameData, quest_id: str) -> dict:
     """套用玩家選定的分支,回傳「實際生效」的任務 dict。
 

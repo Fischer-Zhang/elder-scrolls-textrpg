@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from tesrpg import formulas
 from tesrpg.gamedata import GameData
-from tesrpg.systems import vampirism
+from tesrpg.systems import brotherhood, vampirism
 
 DAYS_PER_YEAR = 360   # 12 月 × 30 天
 
@@ -82,6 +82,7 @@ def compute(state, gamedata: GameData, ending: str = "death") -> dict:
         # 開局背景:舊存檔/已移除的 id → None(結算畫面省略此行)
         "origin": gamedata.origins.get(char.origin, {}).get("name"),
         "condition": vampirism.legacy_label(char),   # 吸血鬼身分(否則 None)
+        "dark_deeds": brotherhood.legacy_label(char, gamedata),   # 黑暗兄弟會/謀殺事蹟(否則 None)
         "level": char.level,
         "years": years, "days": days,
         "top_skills": tops,

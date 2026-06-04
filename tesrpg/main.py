@@ -12,8 +12,8 @@ from tesrpg import creation, formulas
 from tesrpg.gamedata import GameData, get_gamedata
 from tesrpg.rng import RNG, make_seed
 from tesrpg.state import GameState
-from tesrpg.systems import (alchemy, combat, crime, dialogue, dungeon, enchanting,
-                            events, factions, inventory, legacy, magic, powers,
+from tesrpg.systems import (alchemy, brotherhood, combat, crime, dialogue, dungeon,
+                            enchanting, events, factions, inventory, legacy, magic, powers,
                             progression, quests, stats, vampirism, world)
 from tesrpg.ui import console as ui
 
@@ -154,7 +154,29 @@ def action_rest(state: GameState, gamedata: GameData) -> str | None:
     if no_magicka_regen:
         ui.message("（巨魔像座:魔力不會自然回復,需靠吸收魔法補充。)", style="grey70")
 
+    _maybe_db_recruit(state, gamedata)   # 血債在身者,夜母使者入夢招募
+
     return "dead" if maybe_event(state, gamedata, "rest") == "dead" else None
+
+
+def _maybe_db_recruit(state: GameState, gamedata: GameData) -> None:
+    """血債招募:謀殺過無辜者、尚未入會者,在睡夢中被黑暗兄弟會使者找上門。"""
+    char = state.player
+    if not brotherhood.should_recruit(char, gamedata):
+        return
+    ui.rule("夢中的訪客")
+    ui.message("你自夢中驚醒 —— 床畔的暗影裡,一個兜帽身影端坐如石,聲音如墓中低語:", style="bold magenta")
+    ui.message("「你奪人性命的手藝,夜母都看在眼裡。黑暗兄弟會……想請你入會。」", style="magenta")
+    if ui.confirm("接受黑暗兄弟會的邀請、踏入暗影之中嗎?"):
+        brotherhood.recruit(char)
+        ui.message(f"「{brotherhood.SANCTUARY_PASSWORD_A}」—— 你已是兄弟會的『"
+                   f"{brotherhood.rank_name(char, gamedata)}』。聖所之門,自此為你而開。",
+                   style="bold green")
+        ui.message("(在設有聖所的城市可找到『黑暗兄弟會』,接取與執行合約。)", style="grey70")
+    else:
+        brotherhood.decline_recruit(char)
+        ui.message("兜帽身影微微頷首:「想清楚了,便來尋我們。聖所,設於海芬古與布魯瑪的暗處。」",
+                   style="grey70")
 
 
 def action_level_up(state: GameState, gamedata: GameData) -> None:
@@ -947,6 +969,107 @@ def action_vampire_cure(state: GameState, gamedata: GameData) -> None:
         _report_quests(state, gamedata)
 
 
+# ======================================================================
+# 黑暗兄弟會聖所(合約晉升 + 夜母祝福 + 洗白賞金)
+# ======================================================================
+def _active_db_quest(state: GameState, gamedata: GameData) -> str | None:
+    """目前進行中的黑暗兄弟會合約 id(沒有則 None)。"""
+    for qid in state.player.quests:
+        if gamedata.quests.get(qid, {}).get("faction") == brotherhood.FACTION:
+            return qid
+    return None
+
+
+def action_sanctuary(state: GameState, gamedata: GameData) -> str | None:
+    """黑暗兄弟會聖所:接取/執行合約、洗白賞金、重溫五戒。回傳 'dead'|None。"""
+    char = state.player
+    if not brotherhood.is_member(char):
+        return None
+    _report_quests(state, gamedata)   # 先結算可能已交付的合約
+    ui.guild_panel(char, gamedata, brotherhood.FACTION)
+    rk = brotherhood.rank(char)
+    if rk > 0:
+        ui.message(f"夜母祝福:潛殺傷害 +{int(round(rk * formulas.NIGHT_MOTHER_SNEAK_PER_RANK * 100))}%。",
+                   style="magenta")
+
+    while True:
+        opts: list = []
+        active = _active_db_quest(state, gamedata)
+        if active:
+            obj, _, _ = quests.current_objective(char, gamedata, active)
+            tname = gamedata.bestiary[obj["creature"]]["name"]
+            opts.append(("execute", f"執行合約 —— 行刺{tname}"))
+        else:
+            avail = quests.available_quests(char, gamedata, "guild", brotherhood.FACTION)
+            if avail:
+                opts.append(("accept", "接取新合約"))
+        province = crime.province_of(char, gamedata)
+        if crime.bounty(char, province) > 0:
+            owed = crime.bounty(char, province)
+            cost = brotherhood.launder_cost(char, gamedata, owed)
+            opts.append(("launder", f"洗白{province}的賞金({owed} → {cost} 金)"))
+        opts.append(("tenets", "重溫五戒"))
+        choice = ui.menu("聖所", opts, allow_back=True)
+        if choice is None:
+            return None
+        if choice == "accept":
+            avail = quests.available_quests(char, gamedata, "guild", brotherhood.FACTION)
+            if avail:
+                _accept_and_brief(state, gamedata, avail[0])
+        elif choice == "execute":
+            died = action_contract(state, gamedata, active)
+            if died == "dead":
+                return "dead"
+        elif choice == "launder":
+            r = brotherhood.launder_bounty(state, gamedata)
+            if r["ok"]:
+                ui.message(f"兄弟會的門路替你抹去了{r['province']}的 {r['cleared']} 金賞金"
+                           f"(花費 {r['paid']} 金)。", style="green")
+            elif "owed" in r:
+                ui.message(f"洗白需 {r['owed']} 金,你付不起。", style="red")
+        elif choice == "tenets":
+            ui.message("黑暗兄弟會五戒:", style="bold magenta")
+            for t in brotherhood.TENETS:
+                ui.message(f"  {t}", style="white")
+
+
+def action_contract(state: GameState, gamedata: GameData, qid: str) -> str | None:
+    """執行一張合約:前往行刺目標(可先靠潛行搶得先機)。回傳 'dead'|None。"""
+    char = state.player
+    rq = quests.resolved(char, gamedata, qid)
+    obj, _, _ = quests.current_objective(char, gamedata, qid)
+    target_id = obj["creature"]
+    tname = gamedata.bestiary[target_id]["name"]
+    if not ui.confirm(f"潛入目標所在,取「{tname}」的性命嗎?"):
+        return None
+
+    enemies = [combat.spawn_creature(gamedata, target_id, state.rng)]
+    for eid in rq.get("escort", []):
+        enemies.append(combat.spawn_creature(gamedata, eid, state.rng))
+
+    night = state.time.hour < 6 or state.time.hour >= 21
+    got_drop = combat.try_stealth_approach(char, enemies, state.rng, gamedata, night, False, False)
+    if got_drop:
+        ui.message("你如影潛近,目標渾然未覺 —— 致命先機在握。", style="bold green")
+    else:
+        ui.message("你的接近驚動了目標,沒能搶到偷襲先機。", style="yellow")
+
+    result = run_battle(state, gamedata, enemies, alerted=not got_drop)
+    if result == "dead":
+        return "dead"
+    if result == "fled":
+        ui.message("你暫且退去 —— 合約仍懸而未決。", style="grey70")
+        return None
+    # 勝利:結算合約晉升,並對「無人目擊的乾淨擊殺」額外發賞
+    _report_quests(state, gamedata)
+    if got_drop:
+        bonus = rq.get("clean_bonus", 0)
+        if bonus:
+            char.gold += bonus
+            ui.message(f"無人目擊、一擊致命 —— 兄弟會額外賞你 {bonus} 金。", style="bold green")
+    return None
+
+
 def _hire_mercenary(state: GameState, gamedata: GameData) -> None:
     char = state.player
     if len(char.companions) >= MAX_PARTY:
@@ -1305,15 +1428,21 @@ def action_quest_log(state: GameState, gamedata: GameData) -> None:
     ui.quest_log(state.player, gamedata)
 
 
-def action_talk(state: GameState, gamedata: GameData) -> None:
+def _living_npcs_at(state: GameState, gamedata: GameData) -> list[str]:
+    """當地仍在世(未被你滅口)的可攀談 NPC。"""
+    return [n for n in gamedata.npcs_at(state.player.location_id)
+            if n not in state.player.murdered_npcs]
+
+
+def action_talk(state: GameState, gamedata: GameData) -> str | None:
     char = state.player
-    npc_ids = gamedata.npcs_at(char.location_id)
+    npc_ids = _living_npcs_at(state, gamedata)
     if not npc_ids:
         ui.message("這裡沒有可攀談的人。", style="grey70")
-        return
+        return None
     nid = ui.menu("與誰攀談?", [(n, gamedata.npcs[n]["name"]) for n in npc_ids], allow_back=True)
     if nid is None:
-        return
+        return None
     while True:
         npc = gamedata.npcs[nid]
         disp = dialogue.disposition(char, gamedata, nid)
@@ -1323,12 +1452,13 @@ def action_talk(state: GameState, gamedata: GameData) -> None:
         if offered:
             opts.append(("quest", f"接受委託:{gamedata.quests[offered]['name']}"))
         opts += [("persuade", "說服(口才)"), ("bribe", f"賄賂({dialogue.BRIBE_COST} 金)")]
+        opts.append(("murder", "🔪 暗殺此人"))
         choice = ui.menu("對話", opts, allow_back=True)
         if choice is None:
-            return
+            return None
         if choice == "quest":
             _accept_and_brief(state, gamedata, offered)
-            return
+            return None
         elif choice == "persuade":
             r = dialogue.persuade(char, gamedata, nid, state.rng)
             ui.message("對方頗為受用,好感提升。" if r["ok"] else "話不投機,對方有些不悅。",
@@ -1337,6 +1467,41 @@ def action_talk(state: GameState, gamedata: GameData) -> None:
         elif choice == "bribe":
             r = dialogue.bribe(char, gamedata, nid)
             ui.message(r["message"], style="green" if r["ok"] else "red")
+        elif choice == "murder":
+            return action_murder(state, gamedata, nid)
+
+
+def action_murder(state: GameState, gamedata: GameData, nid: str) -> str | None:
+    """謀殺一名無辜城民:重罪(高額賞金 + 惡名),但血債會引來黑暗兄弟會的青睞。
+
+    回傳 'dead'(玩家在反抗中喪命)或 None。"""
+    char = state.player
+    name = gamedata.npcs[nid]["name"]
+    ui.message("殺害手無寸鐵的無辜者是滔天重罪 —— 一旦動手,全城都會與你為敵。", style="red")
+    if not ui.confirm(f"當真要取「{name}」的性命嗎?"):
+        return None
+    # 偷襲先機:看你潛行(背後一刀);旁人遲早會察覺尖叫
+    victim = combat.spawn_creature(gamedata, "townsperson", state.rng)
+    victim.name = name
+    night = state.time.hour < 6 or state.time.hour >= 21
+    got_drop = combat.try_stealth_approach(char, [victim], state.rng, gamedata, night, False, False)
+    if got_drop:
+        ui.message(f"你自{name}背後欺近,寒光一閃 ——", style="magenta")
+    result = run_battle(state, gamedata, victim, alerted=not got_drop)
+    if result == "dead":
+        return "dead"
+    if result == "fled":
+        ui.message(f"你收手退去,{name}僥倖逃過一劫。", style="grey70")
+        return None
+    if result == "victory":
+        res = brotherhood.record_murder(state, gamedata, nid)
+        ui.rule("血債")
+        ui.message(f"{name}倒在血泊之中 —— 你成了殺人兇手。", style="bold red")
+        ui.message(f"消息驚動全城,{res['province']}懸起 {res['bounty']} 金的賞金,惡名加身。",
+                   style="yellow")
+        if not brotherhood.is_member(char):
+            ui.message("……某雙眼睛,正從暗處注視著你的手藝。", style="magenta")
+    return None
 
 
 def guard_confrontation(state: GameState, gamedata: GameData) -> str | None:
@@ -1422,9 +1587,12 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
             town.append(("fg_hall", "戰士公會"))
         if "thieves_guild" in services:
             town.append(("tg_hall", "盜賊公會"))
+        # 黑暗兄弟會聖所:唯有入會者才知其所在(血債招募後解鎖)
+        if "dark_brotherhood" in services and brotherhood.is_member(player):
+            town.append(("db_hall", "黑暗兄弟會聖所 🗡"))
         if "task_board" in services:
             town.append(("board", "告示板"))
-        if gamedata.npcs_at(player.location_id) and not shunned:
+        if _living_npcs_at(state, gamedata) and not shunned:
             town.append(("talk", "與人攀談"))
         if "armorer" in services or inventory.count_item(player, "repair_hammer") > 0:
             town.append(("repair", "修理裝備"))
@@ -1484,10 +1652,12 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
             action_guild_hall(state, gamedata, "fighters_guild")
         elif choice == "tg_hall":
             action_guild_hall(state, gamedata, "thieves_guild")
+        elif choice == "db_hall":
+            died = action_sanctuary(state, gamedata)
         elif choice == "board":
             action_board(state, gamedata)
         elif choice == "talk":
-            action_talk(state, gamedata)
+            died = action_talk(state, gamedata)
         elif choice == "quests":
             action_quest_log(state, gamedata)
         elif choice == "repair":

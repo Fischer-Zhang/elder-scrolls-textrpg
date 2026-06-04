@@ -231,7 +231,9 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
     infected = False
     aftermath = None
     sneak_mult = (formulas.sneak_attack_multiplier(attacker.skill("sneak"))
-                  * formulas.archetype_sneak_bonus(archetype)) if sneaking else None
+                  * formulas.archetype_sneak_bonus(archetype)
+                  * formulas.night_mother_sneak_bonus(attacker.factions.get("dark_brotherhood", -1))
+                  ) if sneaking else None
 
     if hit:
         cond_mult = inventory.weapon_damage_mult(attacker) if _is_player(attacker) else 1.0
@@ -425,7 +427,9 @@ def estimate_sneak_damage(player: Character, gamedata: GameData, creature: Creat
     offhand_dmg = inventory.dual_wield_bonus_damage(player, gamedata)
     archetype = gamedata.item(player.weapon).get("archetype")
     raw = formulas.attack_damage(wpn_dmg, wpn_skill, _strength(player), 1.0)
-    raw *= formulas.sneak_attack_multiplier(player.skill("sneak")) * formulas.archetype_sneak_bonus(archetype)
+    raw *= (formulas.sneak_attack_multiplier(player.skill("sneak"))
+            * formulas.archetype_sneak_bonus(archetype)
+            * formulas.night_mother_sneak_bonus(player.factions.get("dark_brotherhood", -1)))
     if offhand_dmg:    # 副手補刀不吃偷襲倍率(與 resolve_attack 一致)
         raw += formulas.attack_damage(offhand_dmg, wpn_skill, _strength(player), 1.0)
     pen = formulas.archetype_armor_pen(archetype)

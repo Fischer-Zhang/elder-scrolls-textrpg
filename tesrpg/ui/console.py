@@ -215,6 +215,8 @@ def legacy_screen(s: dict) -> None:
         body.add_row("出身", str(s["origin"]))
     if s.get("condition"):
         body.add_row("詛咒", str(s["condition"]))
+    if s.get("dark_deeds"):
+        body.add_row("血業", str(s["dark_deeds"]))
     body.add_row("等級", str(s["level"]))
     body.add_row("在世", f"{s['years']} 年 {s['days']} 天")
     body.add_row("足跡", f"踏遍 {s['places_visited']}/{s['total_locations']} 處地點")

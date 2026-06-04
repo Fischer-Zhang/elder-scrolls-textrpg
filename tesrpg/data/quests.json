@@ -678,5 +678,85 @@
       }
     ],
     "reward": {"fame": 5}
+  },
+  "db1": {
+    "name": "合約:斷財路",
+    "faction": "dark_brotherhood",
+    "rank": 0,
+    "source": "guild",
+    "objective": {"type": "kill", "creature": "greedy_merchant", "count": 1},
+    "reward": {"gold": 120},
+    "clean_bonus": 60,
+    "turn_in": "auto",
+    "text": "你的第一份合約 —— 一名囤積居奇、害苦了一城窮人的奸商。夜母要他閉嘴。到聖所選『執行合約』動手;若能不驚動旁人、一擊斃命,額外有賞。"
+  },
+  "db2": {
+    "name": "合約:滅口叛徒",
+    "faction": "dark_brotherhood",
+    "rank": 1,
+    "source": "guild",
+    "objective": {"type": "kill", "creature": "rogue_thief", "count": 1},
+    "reward": {"gold": 180},
+    "clean_bonus": 90,
+    "turn_in": "auto",
+    "text": "一名出賣同夥、又欠了兄弟會血債的盜賊。他身手敏捷、刀上淬毒 —— 別讓他先咬你一口。"
+  },
+  "db3": {
+    "name": "合約:奧術之死",
+    "faction": "dark_brotherhood",
+    "rank": 2,
+    "source": "guild",
+    "objective": {"type": "kill", "creature": "reclusive_mage", "count": 1},
+    "reward": {"gold": 250},
+    "clean_bonus": 120,
+    "turn_in": "auto",
+    "text": "一名隱居的法師握有不該外洩的祕密。趁他來不及點起火焰 —— 越快越好。"
+  },
+  "db4": {
+    "name": "合約:折斷的劍",
+    "faction": "dark_brotherhood",
+    "rank": 3,
+    "source": "guild",
+    "objective": {"type": "kill", "creature": "disgraced_knight", "count": 1},
+    "reward": {"gold": 350},
+    "clean_bonus": 160,
+    "escort": ["city_guard"],
+    "turn_in": "auto",
+    "text": "一名落魄卻仍受人庇護的騎士,身邊還跟著衛兵。重甲難破,但你的刀懂得找縫隙。"
+  },
+  "db5": {
+    "name": "合約:萬眾之死",
+    "faction": "dark_brotherhood",
+    "rank": 4,
+    "source": "guild",
+    "objective": {"type": "kill", "creature": "arena_champion", "count": 1},
+    "reward": {"gold": 500},
+    "clean_bonus": 220,
+    "turn_in": "auto",
+    "text": "競技場的冠軍,萬人擁戴、身經百戰。讓喝采化為哀嚎 —— 這一刀,將傳遍三省。"
+  },
+  "db6": {
+    "name": "合約:聆聽者之試",
+    "faction": "dark_brotherhood",
+    "rank": 5,
+    "source": "guild",
+    "turn_in": "auto",
+    "text": "夜母選中了你。但通往聆聽者之位的最後一道試煉,逼你直面五戒:是忠於兄弟會、清除背叛者,還是親手『淨化』這座聖所、走自己的路?",
+    "branches": [
+      {
+        "label": "忠誠之路 —— 清除背叛者",
+        "text": "一名會員背棄了五戒。以夜母之名,將他靜默 —— 證明你的忠誠。",
+        "objective": {"type": "kill", "creature": "brotherhood_traitor", "count": 1},
+        "clean_bonus": 300,
+        "reward": {"gold": 700, "fame": 15, "items": ["glass_dagger"]}
+      },
+      {
+        "label": "淨化之路 —— 背叛聖所",
+        "text": "你不願再受號令。趁夜潛入聖所,連代言人一併『淨化』—— 從此你只聽自己的夜母。",
+        "objective": {"type": "kill", "creature": "dark_speaker", "count": 1},
+        "clean_bonus": 300,
+        "reward": {"gold": 800, "items": ["glass_dagger", "gold_amulet"]}
+      }
+    ]
   }
 }

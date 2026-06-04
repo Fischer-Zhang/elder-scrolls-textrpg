@@ -6,7 +6,7 @@
     "gate_skills": ["blade", "blunt", "hand_to_hand", "marksman", "block"],
     "join_skill": 10,
     "rank_skill_req": [0, 14, 26, 38, 50, 62, 76],
-    "rivals": ["thieves_guild"],
+    "rivals": ["thieves_guild", "dark_brotherhood"],
     "lawful": true,
     "perk": {"kind": "repair_discount", "per_rank": 0.15, "cap": 1.0,
              "desc": "階級越高,鐵匠修理越便宜(會長免費)"},
@@ -82,6 +82,35 @@
       "tg3",
       "tg4",
       "tg5"
+    ]
+  },
+  "dark_brotherhood": {
+    "name": "黑暗兄弟會",
+    "hall": "haafingar",
+    "blurb": "以暗殺為業、奉夜母與暗影之主西斯爾為尊的刺客結社。不對外開門 —— 唯有血債在身、被夜母看中者,才會在夢中收到聖所的邀請。與戰士公會勢不兩立。",
+    "gate_skills": ["sneak", "marksman", "blade", "acrobatics", "scout"],
+    "join_skill": 0,
+    "rank_skill_req": [0, 12, 22, 34, 46, 58],
+    "rivals": ["fighters_guild"],
+    "lawful": false,
+    "perk": {"kind": "bounty_launder", "per_rank": 0.12, "cap": 0.7,
+             "desc": "階級越高,兄弟會替你擺平官府、洗白賞金的花費越低"},
+    "ranks": [
+      "新血",
+      "殺手",
+      "清除者",
+      "暗殺者",
+      "沉默者",
+      "代言人",
+      "聆聽者"
+    ],
+    "rank_quests": [
+      "db1",
+      "db2",
+      "db3",
+      "db4",
+      "db5",
+      "db6"
     ]
   }
 }

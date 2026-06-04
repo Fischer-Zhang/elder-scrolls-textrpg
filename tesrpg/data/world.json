@@ -13,6 +13,7 @@
         "mages_guild",
         "armorer",
         "thieves_guild",
+        "dark_brotherhood",
         "task_board"
       ],
       "merchant_stock": [
@@ -150,6 +151,7 @@
         "trainer",
         "mages_guild",
         "armorer",
+        "dark_brotherhood",
         "task_board"
       ],
       "merchant_stock": [
