@@ -282,7 +282,7 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None) -
         elif action["type"] == "attack":
             tgt = action["target"]
             if combat.is_alive(tgt):
-                combat.player_attack_cost(player)
+                combat.player_attack_cost(player, gamedata)
                 ui.combat_event(combat.resolve_attack(player, tgt, gamedata, state.rng,
                                                       sneak_attack=opening), gamedata)
         elif action["type"] == "cast":

@@ -4,104 +4,189 @@
     "skill": "hand_to_hand",
     "damage": 4,
     "value": 0,
-    "weight": 0
+    "weight": 0,
+    "archetype": "hand_to_hand",
+    "speed": 1.2
   },
   "iron_dagger": {
     "name": "鐵匕首",
     "skill": "blade",
     "damage": 7,
     "value": 8,
-    "weight": 3
+    "weight": 3,
+    "archetype": "dagger",
+    "speed": 1.4
   },
   "iron_sword": {
     "name": "鐵長劍",
     "skill": "blade",
     "damage": 10,
     "value": 25,
-    "weight": 9
+    "weight": 9,
+    "archetype": "sword",
+    "speed": 1.0
   },
   "iron_mace": {
     "name": "鐵釘錘",
     "skill": "blunt",
     "damage": 11,
     "value": 30,
-    "weight": 12
+    "weight": 12,
+    "archetype": "blunt",
+    "speed": 0.75
   },
   "iron_war_axe": {
     "name": "鐵戰斧",
     "skill": "blunt",
     "damage": 12,
     "value": 35,
-    "weight": 13
+    "weight": 13,
+    "archetype": "blunt",
+    "speed": 0.75
   },
   "hunting_bow": {
     "name": "獵弓",
     "skill": "marksman",
     "damage": 9,
     "value": 30,
-    "weight": 7
+    "weight": 7,
+    "archetype": "bow",
+    "speed": 0.9
   },
   "steel_dagger": {
     "name": "鋼匕首",
     "skill": "blade",
     "damage": 9,
     "value": 30,
-    "weight": 4
+    "weight": 4,
+    "archetype": "dagger",
+    "speed": 1.4
   },
   "steel_sword": {
     "name": "鋼長劍",
     "skill": "blade",
     "damage": 13,
     "value": 90,
-    "weight": 11
+    "weight": 11,
+    "archetype": "sword",
+    "speed": 1.0
   },
   "steel_mace": {
     "name": "鋼釘錘",
     "skill": "blunt",
     "damage": 15,
     "value": 110,
-    "weight": 14
+    "weight": 14,
+    "archetype": "blunt",
+    "speed": 0.75
   },
   "long_bow": {
     "name": "長弓",
     "skill": "marksman",
     "damage": 12,
     "value": 100,
-    "weight": 9
+    "weight": 9,
+    "archetype": "bow",
+    "speed": 0.9
   },
   "glass_dagger": {
     "name": "玻璃匕首",
     "skill": "blade",
     "damage": 12,
     "value": 150,
-    "weight": 4
+    "weight": 4,
+    "archetype": "dagger",
+    "speed": 1.4
   },
   "elven_sword": {
     "name": "精靈長劍",
     "skill": "blade",
     "damage": 16,
     "value": 280,
-    "weight": 11
+    "weight": 11,
+    "archetype": "sword",
+    "speed": 1.0
   },
   "ebony_sword": {
     "name": "黑檀長劍",
     "skill": "blade",
     "damage": 19,
     "value": 720,
-    "weight": 13
+    "weight": 13,
+    "archetype": "sword",
+    "speed": 1.0
   },
   "dwarven_mace": {
     "name": "矮人釘錘",
     "skill": "blunt",
     "damage": 18,
     "value": 310,
-    "weight": 15
+    "weight": 15,
+    "archetype": "blunt",
+    "speed": 0.75
   },
   "elven_bow": {
     "name": "精靈弓",
     "skill": "marksman",
     "damage": 15,
     "value": 270,
-    "weight": 9
+    "weight": 9,
+    "archetype": "bow",
+    "speed": 0.9
+  },
+  "flame_staff": {
+    "name": "烈焰法杖",
+    "skill": "destruction",
+    "damage": 6,
+    "value": 260,
+    "weight": 8,
+    "archetype": "staff",
+    "speed": 1.0,
+    "enchant": {
+      "kind": "weapon_element",
+      "element": "fire",
+      "magnitude": 12
+    }
+  },
+  "frost_staff": {
+    "name": "冰霜法杖",
+    "skill": "destruction",
+    "damage": 6,
+    "value": 260,
+    "weight": 8,
+    "archetype": "staff",
+    "speed": 1.0,
+    "enchant": {
+      "kind": "weapon_element",
+      "element": "frost",
+      "magnitude": 12
+    }
+  },
+  "storm_staff": {
+    "name": "雷暴法杖",
+    "skill": "destruction",
+    "damage": 6,
+    "value": 300,
+    "weight": 8,
+    "archetype": "staff",
+    "speed": 1.0,
+    "enchant": {
+      "kind": "weapon_element",
+      "element": "shock",
+      "magnitude": 14
+    }
+  },
+  "magicka_staff": {
+    "name": "法力法杖",
+    "skill": "mysticism",
+    "damage": 5,
+    "value": 320,
+    "weight": 7,
+    "archetype": "staff",
+    "speed": 1.0,
+    "on_hit_self": {
+      "stat": "magicka",
+      "magnitude": 8
+    }
   }
 }

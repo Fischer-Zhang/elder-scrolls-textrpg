@@ -241,7 +241,10 @@ def weapon_line(char: Character, gamedata: GameData) -> str:
     poison = ""
     if char.weapon_poison:
         poison = f" [green]· 塗毒:{char.weapon_poison['name']}×{char.weapon_poison['charges']}[/]"
-    return f"{wp['name']}（{gamedata.skill_name(wp['skill'])} {char.skill(wp['skill'])}{cond})" + poison
+    arch = _ARCHETYPE_CN.get(wp.get("archetype"), "")
+    arch_tag = f"·{arch}" if arch and char.weapon != "fists" else ""
+    return (f"{wp['name']}（{gamedata.skill_name(wp['skill'])} {char.skill(wp['skill'])}"
+            f"{arch_tag}{cond})" + poison)
 
 
 def combat_intro(creature, player: Character, gamedata: GameData) -> None:
@@ -326,7 +329,8 @@ def item_label(gamedata: GameData, char: Character, item_id: str, qty: int = 1) 
         tag = " [green](穿戴)[/]"
     extra = ""
     if d["kind"] == "weapon":
-        extra = f" 傷害{d['damage']}/{gamedata.skill_name(d['skill'])}"
+        arch = _ARCHETYPE_CN.get(d.get("archetype"), "")
+        extra = f" 傷害{d['damage']}/{gamedata.skill_name(d['skill'])}" + (f"/{arch}" if arch else "")
     elif d["kind"] == "armor":
         extra = f" 護甲{d['armor_rating']}/{d['slot']}"
     elif d["kind"] == "jewelry":
@@ -437,6 +441,9 @@ def dungeon_room(name: str, idx: int, total: int, desc: str, is_boss: bool = Fal
 
 
 _ELEM_CN = {"fire": "火焰", "frost": "冰霜", "shock": "雷電", "poison": "毒素", "magic": "魔法"}
+_STAT_CN = {"health": "生命", "magicka": "魔力", "fatigue": "體力"}
+_ARCHETYPE_CN = {"dagger": "匕首", "sword": "劍", "blunt": "鈍器", "bow": "弓",
+                 "staff": "法杖", "hand_to_hand": "徒手"}
 
 
 def combat_event(ev: dict, gamedata: GameData) -> None:
@@ -458,6 +465,9 @@ def combat_event(ev: dict, gamedata: GameData) -> None:
         console.print(f"  [magenta]{ev['defender']} 中了{_ELEM_CN.get(ev['status_applied'], '異常')}![/]")
     if ev.get("poison_applied"):
         console.print(f"  [green]武器上的{ev['poison_applied']}滲入了{ev['defender']}的傷口![/]")
+    if ev.get("self_restored"):
+        stat, amt = ev["self_restored"]
+        console.print(f"  [cyan]法杖將生機回流,{_STAT_CN.get(stat, stat)} +{amt}。[/]")
     show_events(ev.get("skill_events", []), gamedata)
 
 

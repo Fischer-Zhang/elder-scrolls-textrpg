@@ -148,10 +148,38 @@ def attack_damage(weapon_damage: float, weapon_skill: int, strength: int,
     return dmg
 
 
-def damage_after_armor(damage: float, armor_rating: int) -> float:
-    """護甲減傷:遞減收益,最多擋 85%,至少造成 1 點。"""
-    reduction = min(0.85, armor_rating / (armor_rating + 100.0))
+def damage_after_armor(damage: float, armor_rating: int, armor_pen: float = 0.0) -> float:
+    """護甲減傷:遞減收益,最多擋 85%,至少造成 1 點。
+
+    armor_pen(0..1):破甲 —— 視同對方護甲先被無視掉這個比例(鈍器專長)。
+    """
+    eff = armor_rating * max(0.0, 1.0 - armor_pen)
+    reduction = min(0.85, eff / (eff + 100.0))
     return max(1.0, damage * (1.0 - reduction))
+
+
+# --- 武器流派(B:讓武器選擇是 build 而非純傷害數字)--------------------
+WEAPON_SPEED_DEFAULT = 1.0
+_ARCHETYPE_ARMOR_PEN = {"blunt": 0.30}          # 鈍器破甲:無視 30% 護甲
+_ARCHETYPE_SNEAK_BONUS = {"dagger": 1.6, "bow": 1.3}   # 潛襲倍率額外加成(刺客/獵手)
+
+
+def weapon_speed_hit(speed: float) -> float:
+    """武器速度對命中的修正:快武器多揮幾下→更易命中,慢武器較難。"""
+    return (speed - WEAPON_SPEED_DEFAULT) * 0.10
+
+
+def weapon_attack_fatigue_factor(speed: float) -> float:
+    """一擊的體力消耗倍率:慢重武器更耗、輕快武器更省(2 - speed,夾限)。"""
+    return max(0.5, min(1.6, 2.0 - speed))
+
+
+def archetype_armor_pen(archetype: str | None) -> float:
+    return _ARCHETYPE_ARMOR_PEN.get(archetype, 0.0)
+
+
+def archetype_sneak_bonus(archetype: str | None) -> float:
+    return _ARCHETYPE_SNEAK_BONUS.get(archetype, 1.0)
 
 
 def player_armor_rating(heavy_armor_skill: int, light_armor_skill: int) -> int:

@@ -166,7 +166,9 @@
         "lavender",
         "silver_ring",
         "gold_ring",
-        "gold_amulet"
+        "gold_amulet",
+        "flame_staff",
+        "magicka_staff"
       ],
       "spell_stock": [
         "frostbite",
@@ -248,7 +250,10 @@
         "deathbell",
         "imp_stool",
         "gold_ring",
-        "silver_amulet"
+        "silver_amulet",
+        "frost_staff",
+        "storm_staff",
+        "magicka_staff"
       ],
       "spell_stock": [
         "lightning_bolt",

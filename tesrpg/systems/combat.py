@@ -206,10 +206,15 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
     """
     sneaking = sneak_attack and _is_player(attacker)
     wpn_dmg, wpn_skill, wpn_skill_id = _weapon_profile(attacker, gamedata)
+    wdef = gamedata.item(attacker.weapon) if _is_player(attacker) else None
+    archetype = wdef.get("archetype") if wdef else None
+    speed = wdef.get("speed", formulas.WEAPON_SPEED_DEFAULT) if wdef else formulas.WEAPON_SPEED_DEFAULT
     fr = _fatigue_ratio(attacker)
     evasion = formulas.dodge_evasion(defender.skill("acrobatics")) if _is_player(defender) else 0.0
     chance = formulas.hit_chance(wpn_skill, _agility(attacker), _agility(defender),
                                  fr, defender_blocking, defender_evasion=evasion)
+    if _is_player(attacker):    # 武器速度:快武器更易命中、慢武器較難
+        chance = max(0.05, min(0.95, chance + formulas.weapon_speed_hit(speed)))
     if sneaking:
         chance = max(chance, formulas.SNEAK_ATTACK_HIT_FLOOR)
     skill_events: list[dict] = []
@@ -218,7 +223,9 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
     absorbed = False
     status_applied = None
     poison_applied = None
-    sneak_mult = formulas.sneak_attack_multiplier(attacker.skill("sneak")) if sneaking else None
+    self_restored = None
+    sneak_mult = (formulas.sneak_attack_multiplier(attacker.skill("sneak"))
+                  * formulas.archetype_sneak_bonus(archetype)) if sneaking else None
 
     if hit:
         cond_mult = inventory.weapon_damage_mult(attacker) if _is_player(attacker) else 1.0
@@ -241,7 +248,8 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
                 mult = formulas.resist_multiplier(magic.entity_resist(defender, gamedata), atk_element)
                 dmg = magic._scaled_damage(raw, mult)
         else:
-            dmg = formulas.damage_after_armor(raw, _armor_rating(defender, gamedata))
+            pen = formulas.archetype_armor_pen(archetype)   # 鈍器破甲
+            dmg = formulas.damage_after_armor(raw, _armor_rating(defender, gamedata), pen)
             # 武器附魔:額外元素傷害(無視護甲,受對方元素抗性)
             if _is_player(attacker):
                 ench = gamedata.item(attacker.weapon).get("enchant")
@@ -251,6 +259,12 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
 
         dmg_done = int(round(dmg))
         _set_hp(defender, _get_hp(defender) - dmg_done)
+
+        # 法杖等「命中回復施術者資源」(D:on_hit_self)→ 由後面的 clamp_resources 夾限
+        if _is_player(attacker) and wdef and wdef.get("on_hit_self"):
+            ohs = wdef["on_hit_self"]
+            setattr(attacker, ohs["stat"], getattr(attacker, ohs["stat"]) + ohs["magnitude"])
+            self_restored = (ohs["stat"], ohs["magnitude"])
 
         # 怪物攻擊的觸發狀態(中毒/凍傷等)→ 加到玩家身上
         if not _is_player(attacker) and _is_player(defender):
@@ -302,13 +316,18 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
         "hit": hit, "damage": dmg_done, "blocked": defender_blocking,
         "skill_events": skill_events, "defender_dead": not is_alive(defender),
         "absorbed": absorbed, "status_applied": status_applied, "poison_applied": poison_applied,
-        "sneak": sneak_mult,
+        "sneak": sneak_mult, "self_restored": self_restored,
     }
 
 
-def player_attack_cost(player: Character) -> None:
-    """玩家攻擊一擊消耗體力(運動越高越省)。"""
-    cost = formulas.ATTACK_FATIGUE_COST * formulas.fatigue_cost_factor(player.skill("athletics"))
+def player_attack_cost(player: Character, gamedata: GameData | None = None) -> None:
+    """玩家攻擊一擊消耗體力(運動越高越省;慢重武器更耗、輕快武器更省)。"""
+    speed = formulas.WEAPON_SPEED_DEFAULT
+    if gamedata is not None:
+        speed = gamedata.item(player.weapon).get("speed", formulas.WEAPON_SPEED_DEFAULT)
+    cost = (formulas.ATTACK_FATIGUE_COST
+            * formulas.fatigue_cost_factor(player.skill("athletics"))
+            * formulas.weapon_attack_fatigue_factor(speed))
     player.fatigue = max(0, player.fatigue - cost)
 
 
@@ -343,7 +362,7 @@ def auto_resolve(player: Character, creature: Creature, gamedata: GameData,
             if not (is_alive(player) and is_alive(creature)):
                 break
             if _is_player(actor):
-                player_attack_cost(player)
+                player_attack_cost(player, gamedata)
                 resolve_attack(player, creature, gamedata, rng)
             else:
                 resolve_attack(creature, player, gamedata, rng)
