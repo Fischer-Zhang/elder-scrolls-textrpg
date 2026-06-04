@@ -206,6 +206,8 @@ def legacy_screen(s: dict) -> None:
     body = Table.grid(padding=(0, 3))
     body.add_column(justify="right", style=GOLD)
     body.add_column(style=PARCH)
+    if s.get("origin"):
+        body.add_row("出身", str(s["origin"]))
     body.add_row("等級", str(s["level"]))
     body.add_row("在世", f"{s['years']} 年 {s['days']} 天")
     body.add_row("足跡", f"踏遍 {s['places_visited']}/{s['total_locations']} 處地點")

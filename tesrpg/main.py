@@ -45,12 +45,16 @@ def create_character(gamedata: GameData, rng: RNG):
     class_id = ui.menu("職業", class_opts)
     custom = _create_custom_class(gamedata) if class_id == "custom" else None
 
+    origin_id = ui.menu("開局背景(不一樣的人生)", [
+        (oid, f"{o['name']} — {o['blurb']}") for oid, o in gamedata.origins.items()
+    ])
+
     default_name = creation.random_name(gamedata, race, sex, rng)
     name = ui.ask_text("姓名", default=default_name)
 
     char = creation.build_character(
         gamedata, name=name, sex=sex, race=race, birthsign=sign,
-        class_id=class_id, custom_class=custom, rng=rng,
+        class_id=class_id, custom_class=custom, origin_id=origin_id, rng=rng,
     )
     ui.message(f"歡迎來到 Tamriel,{char.name}。", style="bold green")
     return char
@@ -61,13 +65,16 @@ def _quick_character(gamedata: GameData, rng: RNG):
     race = rng.choice(list(gamedata.races.keys()))
     sign = rng.choice(list(gamedata.birthsigns.keys()))
     class_id = rng.choice(list(gamedata.classes.keys()))
+    origin_id = rng.choice(list(gamedata.origins.keys()))
     name = creation.random_name(gamedata, race, sex, rng)
     char = creation.build_character(
-        gamedata, name=name, sex=sex, race=race, birthsign=sign, class_id=class_id, rng=rng,
+        gamedata, name=name, sex=sex, race=race, birthsign=sign, class_id=class_id,
+        origin_id=origin_id, rng=rng,
     )
     ui.message(
         f"{name} —— {gamedata.races[race]['name']}·"
-        f"{gamedata.birthsigns[sign]['name']}·{gamedata.classes[class_id]['name']}",
+        f"{gamedata.birthsigns[sign]['name']}·{gamedata.classes[class_id]['name']}·"
+        f"{gamedata.origins[origin_id]['name']}",
         style="bold green",
     )
     return char

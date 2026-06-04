@@ -18,6 +18,7 @@ class Character:
     sex: str                       # "male" / "female"
     birthsign: str
     class_id: str                  # 預設職業 id,自訂則為 "custom"
+    origin: str = ""               # 開局背景 id(不一樣的人生);舊存檔缺此欄 → 預設空字串
 
     # 職業快照(支援自訂職業:直接存在角色上,不依賴 classes.json)
     specialization: str = "combat"
@@ -114,6 +115,7 @@ class Character:
         return {
             "id": self.id, "name": self.name, "race": self.race, "sex": self.sex,
             "birthsign": self.birthsign, "class_id": self.class_id,
+            "origin": self.origin,
             "specialization": self.specialization,
             "favored_attributes": self.favored_attributes,
             "major_skills": self.major_skills,

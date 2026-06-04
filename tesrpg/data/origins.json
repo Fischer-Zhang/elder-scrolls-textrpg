@@ -1,0 +1,48 @@
+{
+  "newcomer": {
+    "name": "布魯瑪的新移民",
+    "blurb": "一文不名,從帝國北疆的邊城布魯瑪重新開始。最四平八穩的開局——標準裝備、標準起點,一切由你親手掙得。"
+  },
+  "fugitive": {
+    "name": "逃獄的囚徒",
+    "blurb": "你掙脫了枷鎖,赤手空拳逃進賽羅迪爾的荒野。身無分文、頭上還掛著賞金——回城就得提防衛兵。最硬的開局,也最像上古卷軸的傳統。",
+    "location": "imperial_road",
+    "gold": 0,
+    "items": [["minor_healing_potion", 1]],
+    "bounty": {"賽羅迪爾": 40}
+  },
+  "sellsword": {
+    "name": "海芬古的傭兵",
+    "blurb": "你是天際省海芬古的雇傭劍客,身邊還跟著一名信得過的同袍。提著鋼劍、帶著弟兄,生意就是戰鬥。",
+    "location": "haafingar",
+    "gold": 80,
+    "weapon": "steel_sword",
+    "items": [["minor_healing_potion", 2]],
+    "companions": ["sellsword"]
+  },
+  "mage_initiate": {
+    "name": "法師公會的學徒",
+    "blurb": "你已是法師公會的一員,在海芬古的塔樓裡研習奧術。手持一把烈焰法杖,初窺毀滅之道——縱使天賦未顯,身分已在。",
+    "location": "haafingar",
+    "gold": 50,
+    "faction": {"mages_guild": 0},
+    "weapon": "flame_staff",
+    "spells": ["flames"],
+    "items": [["minor_magicka_potion", 2]]
+  },
+  "pilgrim": {
+    "name": "晨風的朝聖者",
+    "blurb": "你遠渡重洋,來到火山灰瀰漫的晨風省莫拉格瑪朝聖。命運把你拋到 Tamriel 的另一端——這裡的探索順序,將與眾不同。",
+    "location": "molag_mar",
+    "gold": 40,
+    "items": [["ash_yam", 2], ["scrib_jelly", 1], ["minor_healing_potion", 1]]
+  },
+  "fallen_noble": {
+    "name": "落魄的貴族",
+    "blurb": "家道中落,你帶著最後的家當與一條祖傳金項鍊回到布魯瑪。錢袋還算殷實——只是,金幣買不來真本事。",
+    "location": "bruma",
+    "gold": 250,
+    "equip": ["gold_amulet"],
+    "items": [["healing_potion", 1]]
+  }
+}

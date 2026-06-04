@@ -78,6 +78,8 @@ def compute(state, gamedata: GameData, ending: str = "death") -> dict:
         "sex": "男" if char.sex == "male" else "女",
         "birthsign": gamedata.birthsigns[char.birthsign]["name"],
         "class": "自訂" if char.class_id == "custom" else gamedata.classes[char.class_id]["name"],
+        # 開局背景:舊存檔/已移除的 id → None(結算畫面省略此行)
+        "origin": gamedata.origins.get(char.origin, {}).get("name"),
         "level": char.level,
         "years": years, "days": days,
         "top_skills": tops,

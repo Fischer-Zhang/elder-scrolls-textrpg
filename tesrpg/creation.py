@@ -37,6 +37,7 @@ def build_character(
     birthsign: str,
     class_id: str,
     custom_class: dict | None = None,
+    origin_id: str | None = None,
     rng: RNG | None = None,
     is_player: bool = True,
 ) -> Character:
@@ -90,10 +91,73 @@ def build_character(
     inventory.add_item(char, "wheat", 2)
     inventory.add_item(char, "blue_mountain_flower", 2)
 
+    # --- 開局背景(不一樣的人生):在標準起始之上做資料驅動覆寫 ----------
+    apply_origin(gamedata, char, origin_id)
+
     # --- 衍生數值 --------------------------------------------------------
+    # base_max_health 只看耐力(開局不動屬性);recompute 收尾,讓開局換上的護甲/飾品
+    # fortify 流進有效上限,並補滿三資源。
     char.base_max_health = formulas.base_max_health(char.attr("endurance"))
     stats.recompute_max_resources(char, gamedata, restore_full=True)
     return char
+
+
+def apply_origin(gamedata: GameData, char: Character, origin_id: str | None) -> None:
+    """把一個「開局背景」的資料覆寫疊到已建好的標準角色上(就地修改)。
+
+    只給「處境」差異(地點/金幣/裝備/公會/賞金/同伴),不給屬性/技能點——
+    刻意維持「練什麼成長什麼」的成長軸,避免重蹈 min-max。所有欄位皆可選,
+    留空即沿用標準起始;未知 id 視為「布魯瑪新移民」(無覆寫)以防毀損存檔。
+    """
+    char.origin = origin_id or "newcomer"
+    odef = gamedata.origins.get(char.origin)
+    if not odef:
+        char.origin = "newcomer"
+        return
+
+    if "location" in odef:
+        char.location_id = odef["location"]
+        char.visited_locations = [char.location_id]
+    if "gold" in odef:
+        char.gold = int(odef["gold"])
+
+    # 背包:在標準起始包之上「追加」(不取代)
+    for entry in odef.get("items", []):
+        item_id, qty = entry[0], (entry[1] if len(entry) > 1 else 1)
+        inventory.add_item(char, item_id, qty)
+
+    # 武器:加進背包並裝備(取代依技能配發的起始武器,含法杖)
+    weapon_id = odef.get("weapon")
+    if weapon_id:
+        inventory.add_item(char, weapon_id, 1)
+        inventory.equip_weapon(char, gamedata, weapon_id)
+
+    # 護甲/飾品:加進背包並穿戴(recompute 由 build_character 收尾統一處理)
+    for item_id in odef.get("equip", []):
+        inventory.add_item(char, item_id, 1)
+        kind = gamedata.item(item_id).get("kind")
+        if kind == "armor":
+            inventory.equip_armor(char, gamedata, item_id)
+        elif kind == "jewelry":
+            inventory.equip_jewelry(char, gamedata, item_id)
+
+    # 額外法術(疊加,不重覆)
+    for spell_id in odef.get("spells", []):
+        if spell_id not in char.spells:
+            char.spells.append(spell_id)
+
+    # 公會起始會籍:rank 為階級索引(繞過 join_skill 門檻;作者需自行確保不與賞金/對立矛盾)
+    for fid, rank in odef.get("faction", {}).items():
+        char.factions[fid] = int(rank)
+
+    # 起始賞金:key 為行省顯示名(對齊 crime/world 的 province),value 為賞金額
+    for province, amount in odef.get("bounty", {}).items():
+        char.bounties[province] = char.bounties.get(province, 0) + int(amount)
+
+    # 起始同伴:傭兵 template id(忽略未知者,向後相容)
+    for cid in odef.get("companions", []):
+        if cid in gamedata.companions and cid not in char.companions:
+            char.companions.append(cid)
 
 
 # 各武器技能 → 預設起始武器
