@@ -658,5 +658,25 @@
         }
       }
     ]
+  },
+  "cure_vampirism": {
+    "name": "驅逐血咒",
+    "source": "vampire_cure",
+    "text": "法師公會深處,女巫梅莉桑德端詳著你蒼白的臉:「血咒可解,但古法繁複。為我備齊淨化之物,並取一名古老吸血鬼受詛的血——再回到任一法師公會,行最後的儀式。」",
+    "stages": [
+      {
+        "objective": {"type": "collect", "item": "garlic", "count": 4},
+        "text": "採集 4 株大蒜(驅邪聖物;布魯瑪市集有售)。"
+      },
+      {
+        "objective": {"type": "collect", "item": "nightshade", "count": 3},
+        "text": "採集 3 株毒茄參(淨血媒介;晨風省的商人有售)。"
+      },
+      {
+        "objective": {"type": "kill", "creature": "vampire_lord", "count": 1},
+        "text": "獵殺一名吸血鬼貴族,取其受詛之血(危險區野外可尋)。"
+      }
+    ],
+    "reward": {"fame": 5}
   }
 }

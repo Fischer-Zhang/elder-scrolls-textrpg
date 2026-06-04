@@ -169,6 +169,39 @@ def test_old_save_without_vampire_fields_loads():
     assert c2.is_vampire is False and c2.vampire_infected_day == -1
 
 
+def test_cure_clears_vampire_state():
+    gd, c, st = _state(origin="nightborn")
+    vampirism.update(st, gd)
+    st.time.advance(vampirism.STAGE_DAYS * 3 * 24)
+    vampirism.update(st, gd)
+    assert c.is_vampire and c.attr("strength") > c.base_attr("strength")
+    assert powers.power_id(c, gd) == "vampiric_drain"
+    vampirism.cure(c, gd)
+    assert not c.is_vampire
+    assert c.attr("strength") == c.base_attr("strength")       # 階級加成清除
+    assert c.vampire_resist == {} and c.vampire_attr_bonus == {}
+    assert powers.power_id(c, gd) != "vampiric_drain"          # 星座之力回歸
+    assert vampirism.susceptible(c)                             # 日後仍可再被感染
+
+
+def test_cure_quest_flow_and_repeatable():
+    from tesrpg.systems import quests, inventory
+    gd, c, st = _state(origin="nightborn")
+    vampirism.update(st, gd)
+    qid = "cure_vampirism"
+    quests.accept_quest(c, gd, qid)
+    assert quests.is_active(c, qid)
+    inventory.add_item(c, "garlic", 4); quests.check_completion(c, gd)      # 階段1
+    inventory.add_item(c, "nightshade", 3); quests.check_completion(c, gd)  # 階段2
+    quests.record_kill(c, "vampire_lord"); quests.check_completion(c, gd)   # 階段3
+    assert quests.is_done(c, qid)
+    assert inventory.count_item(c, "garlic") == 0                # 採集物上繳消耗
+    # 儀式解咒(=action_vampire_cure 的核心)
+    vampirism.cure(c, gd)
+    c.completed_quests.remove(qid)
+    assert not c.is_vampire and not quests.is_done(c, qid)       # 可重複求咒
+
+
 def test_legacy_label():
     gd, c, st = _state(origin="nightborn")
     vampirism.update(st, gd)
@@ -192,6 +225,8 @@ def run():
     test_nightborn_origin_is_vampire()
     test_save_roundtrip_preserves_vampire_state()
     test_old_save_without_vampire_fields_loads()
+    test_cure_clears_vampire_state()
+    test_cure_quest_flow_and_repeatable()
     test_legacy_label()
 
 

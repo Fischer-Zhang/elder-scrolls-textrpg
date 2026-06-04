@@ -819,6 +819,40 @@ def action_feed(state: GameState, gamedata: GameData) -> None:
         ui.message("夜色掩護了你,無人知曉。", style="grey70")
 
 
+CURE_QID = "cure_vampirism"
+
+
+def action_vampire_cure(state: GameState, gamedata: GameData) -> None:
+    """探詢/推進/完成「驅逐血咒」——D 治療任務(任何法師公會,僅吸血鬼可見)。"""
+    char = state.player
+    if not char.is_vampire:
+        return
+    _report_quests(state, gamedata)   # 先結算可能已達標的採集/擊殺階段
+
+    if quests.is_done(char, CURE_QID):
+        ui.message("梅莉桑德取出你備齊的大蒜、毒茄參與那瓶受詛之血,在燭火與符文間低聲誦咒……",
+                   style="white")
+        if not ui.confirm("血咒之根將在此夜被斬斷 —— 進行解咒儀式嗎?"):
+            return
+        vampirism.cure(char, gamedata)
+        char.completed_quests.remove(CURE_QID)   # 解咒可重複(日後再被感染,可再求一次)
+        ui.rule("血咒已解")
+        ui.message("一陣撕裂般的劇痛後,暖意重回血脈 —— 你的心臟再度跳動,恢復了凡人之身。",
+                   style="bold green")
+        return
+
+    if quests.is_active(char, CURE_QID):
+        ui.message(f"解咒進度:{quests.objective_text(char, gamedata, CURE_QID)}", style="white")
+        ui.message("備齊媒介、取得受詛之血後,回到任一法師公會行儀式。", style="grey70")
+        return
+
+    ui.message(gamedata.quests[CURE_QID]["text"], style="white")
+    if ui.confirm("接下『驅逐血咒』,踏上解咒之路嗎?"):
+        quests.accept_quest(char, gamedata, CURE_QID)
+        ui.message("已接取任務:驅逐血咒", style="bold yellow")
+        _report_quests(state, gamedata)
+
+
 def _hire_mercenary(state: GameState, gamedata: GameData) -> None:
     char = state.player
     if len(char.companions) >= MAX_PARTY:
@@ -1342,12 +1376,16 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
         elif choice == "trainer":
             action_trainer(state, gamedata)
         elif choice == "guild_mages":
-            sub = ui.menu("法師公會", [("spells", "學習法術"),
-                                       ("mg_hall", "公會事務(入會 / 任務)")], allow_back=True)
+            mg_opts = [("spells", "學習法術"), ("mg_hall", "公會事務(入會 / 任務)")]
+            if player.is_vampire:
+                mg_opts.append(("cure", "✦ 探詢血咒的解法"))
+            sub = ui.menu("法師公會", mg_opts, allow_back=True)
             if sub == "spells":
                 action_spell_vendor(state, gamedata)
             elif sub == "mg_hall":
                 action_guild_hall(state, gamedata, "mages_guild")
+            elif sub == "cure":
+                action_vampire_cure(state, gamedata)
         elif choice == "fg_hall":
             action_guild_hall(state, gamedata, "fighters_guild")
         elif choice == "tg_hall":

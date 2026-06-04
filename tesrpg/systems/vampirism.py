@@ -123,6 +123,17 @@ def infect(char: Character, state) -> bool:
     return True
 
 
+def cure(char: Character, gamedata: GameData) -> None:
+    """解除吸血鬼化(D 治療任務的儀式收尾):清空所有狀態、卸除階級加成、重算資源。
+
+    治癒後玩家恢復凡人之身(出生星座之力也隨之回歸);日後仍可再被感染。
+    """
+    char.is_vampire = False
+    char.vampire_infected_day = -1
+    char.vampire_fed_day = 0
+    apply_to_character(char, None, gamedata)   # 非吸血鬼分支:清空 vampire_* 並 recompute
+
+
 def update(state, gamedata: GameData) -> list[dict]:
     """每個主迴圈回合呼叫:處理潛伏→轉化、初始化 fed_day、同步階級加成。
 
