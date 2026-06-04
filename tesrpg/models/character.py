@@ -49,6 +49,7 @@ class Character:
 
     gold: int = 0
     weapon: str = "fists"           # 目前裝備的武器 id(對應 data/weapons.json)
+    offhand: str = ""               # 副手武器 id(僅雙持匕首用;"" = 無)
     weapon_poison: dict | None = None        # 武器塗毒 {"status","charges","name"};None=未塗
     weapon_condition: float = 100.0          # 武器耐久 0–100(影響傷害)
     armor_condition: dict = field(default_factory=dict)  # {slot: 耐久 0–100}
@@ -140,7 +141,8 @@ class Character:
             "max_health": self.max_health, "max_magicka": self.max_magicka,
             "max_fatigue": self.max_fatigue,
             "health": self.health, "magicka": self.magicka, "fatigue": self.fatigue,
-            "gold": self.gold, "weapon": self.weapon, "weapon_poison": self.weapon_poison,
+            "gold": self.gold, "weapon": self.weapon, "offhand": self.offhand,
+            "weapon_poison": self.weapon_poison,
             "weapon_condition": self.weapon_condition, "armor_condition": self.armor_condition,
             "location_id": self.location_id,
             "inventory": self.inventory, "equipped": self.equipped, "spells": self.spells,

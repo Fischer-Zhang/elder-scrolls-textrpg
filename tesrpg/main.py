@@ -230,7 +230,9 @@ def _choose_combat_action(state: GameState, gamedata: GameData, enemies: list):
     if powers.usable_in(player, state, gamedata, "combat"):
         plabel = "吸血之力" if player.is_vampire else "星座之力"
         opts.append(("power", f"{plabel}({powers.power_def(powers.power_id(player, gamedata))['name']})"))
-    opts += [("block", "格擋"), ("flee", "逃跑")]
+    if not inventory.is_dual_wielding(player, gamedata):   # 雙持占用雙手 → 不能格擋
+        opts.append(("block", "格擋"))
+    opts.append(("flee", "逃跑"))
     choice = ui.menu("你的回合", opts)
 
     if choice == "attack":
@@ -676,6 +678,13 @@ def _item_actions(state: GameState, gamedata: GameData, item_id: str) -> None:
     acts = []
     if d["kind"] == "weapon" and char.weapon != item_id:
         acts.append(("equip_w", "裝備為手持武器"))
+    # 雙持匕首:主手是匕首、此物也是匕首、且持有足夠(同型需 2 把)→ 可作副手
+    if (d["kind"] == "weapon" and d.get("archetype") == "dagger" and char.offhand != item_id
+            and gamedata.item(char.weapon).get("archetype") == "dagger"
+            and inventory.count_item(char, item_id) >= (2 if item_id == char.weapon else 1)):
+        acts.append(("equip_off", "雙持(副手匕首)"))
+    if char.offhand == item_id:
+        acts.append(("unequip_off", "卸下副手"))
     if d["kind"] == "armor" and char.equipped.get(d["slot"]) != item_id:
         acts.append(("equip_a", "穿戴"))
     if d["kind"] == "jewelry" and inventory.count_item(char, item_id) > worn:
@@ -689,6 +698,13 @@ def _item_actions(state: GameState, gamedata: GameData, item_id: str) -> None:
     if act == "equip_w":
         inventory.equip_weapon(char, gamedata, item_id)
         ui.message(f"你握起了{d['name']}。", style="green")
+    elif act == "equip_off":
+        inventory.equip_offhand(char, gamedata, item_id)
+        ui.message(f"你以副手握起了另一把{d['name']},擺出雙持架式 —— 傷害大增,但無法再格擋。",
+                   style="green")
+    elif act == "unequip_off":
+        inventory.unequip_offhand(char)
+        ui.message("你收起了副手匕首。", style="grey70")
     elif act == "equip_a":
         inventory.equip_armor(char, gamedata, item_id)
         stats.recompute_max_resources(char, gamedata)   # 套用護甲 fortify/套裝

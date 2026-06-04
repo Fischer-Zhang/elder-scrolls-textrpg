@@ -103,6 +103,63 @@ def test_staggered_enemy_hits_less_often():
     assert hit_rate(True) < hit_rate(False) - 0.15   # 踉蹌顯著降低敵人命中
 
 
+# --- 雙持匕首 -----------------------------------------------------------
+def test_equip_offhand_dagger_rules():
+    from tesrpg.systems import inventory
+    from tesrpg.models import Character
+    gd, c = _assassin(weapon="iron_dagger")
+    inventory.add_item(c, "iron_dagger", 1)        # 主手 1 把,需第 2 把才能同型雙持
+    assert not inventory.equip_offhand(c, gd, "iron_dagger")   # 只有 1 把 → 不行
+    inventory.add_item(c, "iron_dagger", 1)        # 現在共 2 把
+    assert inventory.equip_offhand(c, gd, "iron_dagger")
+    assert inventory.is_dual_wielding(c, gd)
+    # 劍不能當副手
+    inventory.add_item(c, "iron_sword", 1)
+    assert not inventory.equip_offhand(c, gd, "iron_sword")
+    # 存檔往返保留副手
+    assert Character.from_dict(c.to_dict()).offhand == "iron_dagger"
+
+
+def test_dual_wield_needs_dagger_mainhand():
+    from tesrpg.systems import inventory
+    gd, c = _assassin(weapon="iron_sword")          # 主手是劍
+    inventory.add_item(c, "steel_dagger", 1)
+    inventory.equip_offhand(c, gd, "steel_dagger")
+    assert not inventory.is_dual_wielding(c, gd)     # 主手非匕首 → 雙持不成立
+    assert inventory.dual_wield_bonus_damage(c, gd) == 0.0
+
+
+def test_dual_wield_adds_damage():
+    from tesrpg import formulas
+    from tesrpg.systems import inventory
+    gd, c = _assassin(weapon="steel_dagger", sneak=0)   # 關掉偷襲倍率,純比基礎傷
+    target = _dummy(hp=999999, armor=0)
+
+    def avg_hit(n=400):
+        tot = 0
+        for i in range(n):
+            target.health = target.max_health
+            ev = combat.resolve_attack(c, target, gd, RNG(i), sneak_attack=False)
+            tot += ev["damage"]
+        return tot / n
+
+    single = avg_hit()
+    inventory.add_item(c, "steel_dagger", 2)
+    assert inventory.equip_offhand(c, gd, "steel_dagger")
+    assert inventory.dual_wield_bonus_damage(c, gd) == gd.item("steel_dagger")["damage"] * formulas.OFFHAND_DAMAGE_FACTOR
+    assert avg_hit() > single * 1.3                  # 雙持顯著增傷
+
+
+def test_drop_breaks_pair_ends_dualwield():
+    from tesrpg.systems import inventory
+    gd, c = _assassin(weapon="iron_dagger")
+    inventory.add_item(c, "iron_dagger", 2)          # 主手+副手共 2 把
+    assert inventory.equip_offhand(c, gd, "iron_dagger")
+    assert inventory.is_dual_wielding(c, gd)
+    inventory.remove_item(c, "iron_dagger", 1)        # 只剩 1 把
+    assert not inventory.is_dual_wielding(c, gd)       # 自動退出雙持
+
+
 def run():
     for name, fn in sorted(globals().items()):
         if name.startswith("test_") and callable(fn):

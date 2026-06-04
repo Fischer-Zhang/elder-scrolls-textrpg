@@ -252,8 +252,11 @@ def weapon_line(char: Character, gamedata: GameData) -> str:
         poison = f" [green]· 塗毒:{char.weapon_poison['name']}×{char.weapon_poison['charges']}[/]"
     arch = _ARCHETYPE_CN.get(wp.get("archetype"), "")
     arch_tag = f"·{arch}" if arch and char.weapon != "fists" else ""
+    from tesrpg.systems import inventory
+    dual = (f" [bold red]· 雙持 {gamedata.item(char.offhand)['name']}[/]"
+            if inventory.is_dual_wielding(char, gamedata) else "")
     return (f"{wp['name']}（{gamedata.skill_name(wp['skill'])} {char.skill(wp['skill'])}"
-            f"{arch_tag}{cond})" + poison)
+            f"{arch_tag}{cond})" + poison + dual)
 
 
 def combat_intro(creature, player: Character, gamedata: GameData) -> None:

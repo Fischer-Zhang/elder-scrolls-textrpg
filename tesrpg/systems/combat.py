@@ -206,6 +206,8 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
     """
     sneaking = sneak_attack and _is_player(attacker)
     wpn_dmg, wpn_skill, wpn_skill_id = _weapon_profile(attacker, gamedata)
+    if _is_player(attacker):    # 雙持匕首:副手傷害折入每一擊(偷襲倍率也一併放大)
+        wpn_dmg += inventory.dual_wield_bonus_damage(attacker, gamedata)
     wdef = gamedata.item(attacker.weapon) if _is_player(attacker) else None
     archetype = wdef.get("archetype") if wdef else None
     speed = wdef.get("speed", formulas.WEAPON_SPEED_DEFAULT) if wdef else formulas.WEAPON_SPEED_DEFAULT

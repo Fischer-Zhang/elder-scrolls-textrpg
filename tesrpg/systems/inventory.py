@@ -43,6 +43,8 @@ def remove_item(char: Character, item_id: str, qty: int = 1) -> bool:
                 # 移除最後一件 → 一併卸下
                 if char.weapon == item_id:
                     char.weapon = "fists"
+                if getattr(char, "offhand", "") == item_id:
+                    char.offhand = ""
                 for slot, wid in list(char.equipped.items()):
                     if wid == item_id:
                         del char.equipped[slot]
@@ -76,6 +78,42 @@ def equip_weapon(char: Character, gamedata: GameData, item_id: str) -> bool:
         return False
     char.weapon = item_id
     return True
+
+
+def is_dual_wielding(char: Character, gamedata: GameData) -> bool:
+    """雙持成立:主手與副手都是匕首,且確實持有足夠的實體匕首(同型需 2 把)。"""
+    if not getattr(char, "offhand", ""):
+        return False
+    if gamedata.item(char.weapon).get("archetype") != "dagger":
+        return False
+    if gamedata.item(char.offhand).get("archetype") != "dagger":
+        return False
+    if char.offhand == char.weapon and count_item(char, char.offhand) < 2:
+        return False   # 同型雙持需 2 把(丟掉一把後自動退出雙持)
+    return True
+
+
+def dual_wield_bonus_damage(char: Character, gamedata: GameData) -> float:
+    """雙持時副手匕首折入每一擊的額外基礎傷害(非雙持為 0)。"""
+    if not is_dual_wielding(char, gamedata):
+        return 0.0
+    return gamedata.item(char.offhand)["damage"] * formulas.OFFHAND_DAMAGE_FACTOR
+
+
+def equip_offhand(char: Character, gamedata: GameData, item_id: str) -> bool:
+    """以副手裝備一把匕首(僅匕首可雙持)。同型與主手需持有 2 把。"""
+    d = gamedata.item(item_id)
+    if d.get("kind") != "weapon" or d.get("archetype") != "dagger":
+        return False
+    need = 2 if item_id == char.weapon else 1
+    if count_item(char, item_id) < need:
+        return False
+    char.offhand = item_id
+    return True
+
+
+def unequip_offhand(char: Character) -> None:
+    char.offhand = ""
 
 
 def equip_armor(char: Character, gamedata: GameData, item_id: str) -> bool:

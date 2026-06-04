@@ -185,6 +185,9 @@ _ARCHETYPE_ARMOR_PEN = {"blunt": 0.30}          # 鈍器破甲:無視 30% 護甲
 _ARCHETYPE_SNEAK_BONUS = {"dagger": 1.6, "bow": 1.3}   # 潛襲倍率額外加成(刺客/獵手)
 
 
+OFFHAND_DAMAGE_FACTOR = 0.6   # 雙持時副手匕首傷害折入每一擊的比例(大幅增傷,代價=不能格擋)
+
+
 def weapon_speed_hit(speed: float) -> float:
     """武器速度對命中的修正:快武器多揮幾下→更易命中,慢武器較難。"""
     return (speed - WEAPON_SPEED_DEFAULT) * 0.10
