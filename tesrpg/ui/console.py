@@ -471,8 +471,9 @@ def npc_panel(npc: dict, disposition: int) -> None:
 
 
 def court_panel(ruler: dict, gamedata: GameData, reception: str,
-                standing: int | None = None, thane: bool = False) -> None:
-    """謁見領主:接待語氣 + 考據背景 + 種族/駐軍/時局,並顯示功勳/武士身分(領主區)。"""
+                standing: int | None = None, thane: bool = False,
+                politics: dict | None = None) -> None:
+    """謁見領主:接待語氣 + 考據背景 + 種族/駐軍/時局/政治立場,並顯示功勳/武士身分(領主區)。"""
     race = gamedata.races.get(ruler["race"], {}).get("name", ruler["race"])
     body = Text()
     body.append(reception + "\n\n", style="italic " + PARCH)
@@ -480,7 +481,10 @@ def court_panel(ruler: dict, gamedata: GameData, reception: str,
     body.append("種族  ", style=GOLD)
     body.append(f"{race}\n", style=INK)
     body.append("駐軍  ", style=GOLD)
-    body.append(f"{ruler['garrison']} 兵\n", style=INK)
+    body.append(f"{(politics or {}).get('garrison', ruler['garrison'])} 兵\n", style=INK)
+    if politics:
+        body.append("立場  ", style=GOLD)
+        body.append(f"{politics['stance']} · 與你 {politics['relation']}\n", style=INK)
     body.append("時局  ", style=GOLD)
     body.append("大空位 · 各城自治(紅寶石王座空懸)", style=FAINT)
     if thane:

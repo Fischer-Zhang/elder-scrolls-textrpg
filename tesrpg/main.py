@@ -13,7 +13,7 @@ from tesrpg.gamedata import GameData, get_gamedata
 from tesrpg.rng import RNG, make_seed
 from tesrpg.state import GameState
 from tesrpg.systems import (alchemy, brotherhood, combat, court, crafting, crime, dialogue, dungeon,
-                            enchanting, events, factions, inventory, legacy, magic, powers,
+                            enchanting, events, factions, inventory, legacy, magic, politics, powers,
                             progression, quests, stats, vampirism, world)
 from tesrpg.ui import console as ui
 
@@ -1247,29 +1247,95 @@ def _court_reception(char) -> str:
     return "領主端坐王座,以例行的禮節接見你。"
 
 
-def action_court(state: GameState, gamedata: GameData) -> None:
-    """領主區:謁見領主 + 領主委託 + 受封武士(Phase 2;Phase 3+ 再加效忠/外交)。"""
+def action_court(state: GameState, gamedata: GameData) -> str | None:
+    """領主區:謁見 + 領主委託 + 受封武士 + 選邊/攻城(Phase 2+3+4)。回傳 'dead'(攻城陣亡)或 None。"""
     char = state.player
     loc_id = char.location_id
     ruler = gamedata.ruler_at(loc_id)
     if not ruler:
         ui.message("此地沒有領主可謁見。", style="grey70")
-        return
+        return None
+    rel = politics.relationship(char, gamedata, loc_id)
+    pol = {"stance": politics.stance_label(politics.faction_of(char, gamedata, loc_id)),
+           "relation": politics.REL_LABEL.get(rel, rel),
+           "garrison": politics.garrison_of(char, gamedata, loc_id)}
     ui.court_panel(ruler, gamedata, _court_reception(char),
-                   standing=court.standing(char, loc_id), thane=court.is_thane(char, loc_id))
+                   standing=court.standing(char, loc_id), thane=court.is_thane(char, loc_id),
+                   politics=pol)
     opts = []
     offered = court.offered_ruler_quest(char, gamedata, loc_id)
-    if offered:
+    if rel != "enemy" and offered:              # 敵城不接你的委託
         opts.append(("quest", f"領取委託:{gamedata.quests[offered]['name']}"))
-    if court.can_become_thane(char, gamedata, loc_id):
+    if rel != "enemy" and court.can_become_thane(char, gamedata, loc_id):
         opts.append(("thane", "✦ 受封武士"))
+    if not char.allegiance:
+        opts.append(("pledge", "宣誓效忠 —— 選擇你的大義"))
+    if politics.can_siege(char, gamedata, loc_id):
+        opts.append(("siege", f"⚔ 發動攻城(守軍 {politics.garrison_of(char, gamedata, loc_id)})"))
     if not opts:
-        return                                  # 純謁見:領主暫無吩咐
+        return None                             # 純謁見:領主暫無吩咐
     choice = ui.menu("領主有何吩咐?", opts, allow_back=True)
     if choice == "quest":
         _accept_and_brief(state, gamedata, offered)
     elif choice == "thane":
         _become_thane(state, gamedata, loc_id, ruler)
+    elif choice == "pledge":
+        _pledge_allegiance(state, gamedata)
+    elif choice == "siege":
+        return action_siege(state, gamedata, loc_id)
+    return None
+
+
+def _pledge_allegiance(state: GameState, gamedata: GameData) -> None:
+    char = state.player
+    ui.message("大空位之世,紅寶石王座空懸 —— 你決意擁護哪一方大義?", style="white")
+    cause = ui.menu("宣誓效忠", [(c, politics.cause_name(c)) for c in politics.CAUSES],
+                    allow_back=True)
+    if cause is None:
+        return
+    politics.pledge(char, cause)
+    ui.message(f"你宣誓擁護「{politics.cause_name(cause)}」。從此同道之城以你為友,"
+               f"對立之城則成你刀鋒所向。", style="bold gold1")
+
+
+def action_siege(state: GameState, gamedata: GameData, loc_id: str) -> str | None:
+    """對對立大義之城發動攻城:消耗戰 —— 每破一波永久削減守軍(進度保留,可分次圍攻),
+    削到 0 則城池易幟。波間可趁隙重整。回傳 'dead'(陣亡)或 None。"""
+    char = state.player
+    city = gamedata.location(loc_id)["name"]
+    remaining = politics.garrison_of(char, gamedata, loc_id)
+    if not ui.confirm(f"對「{city}」發動攻城?現存守軍約 {remaining} —— 這是連場血戰的消耗戰,"
+                      f"戰果會保留(可分次圍攻),但一旦力竭敗陣便是死路。"):
+        return None
+    ui.message(f"號角長鳴,你向{city}的城牆發起猛攻 ——", style="bold magenta")
+    base = politics.base_garrison(gamedata, loc_id)
+    wave_no = 0
+    while politics.garrison_of(char, gamedata, loc_id) > 0:
+        wave_no += 1
+        rem = politics.garrison_of(char, gamedata, loc_id)
+        wave = politics.siege_wave(rem, base)
+        enemies = [combat.spawn_creature(gamedata, politics.SIEGE_SOLDIER, state.rng)
+                   for _ in range(wave["guards"])]
+        if wave["boss"]:
+            enemies.append(combat.spawn_boss(gamedata, politics.SIEGE_SOLDIER, state.rng,
+                                             name=f"{city}守將"))
+        if wave_no > 1:                         # 破上一波後趁隙重整(部分回復,非全補)
+            politics.regroup(char)
+            ui.message("你退到殘垣後包紮喘息,稍稍恢復了氣力。", style="grey70")
+        ui.message(f"⚔ 守軍迎面殺到(殘軍約 {rem})!", style="magenta")
+        res = run_battle(state, gamedata, enemies)
+        if res == "dead":
+            return "dead"
+        if res == "fled":
+            ui.message(f"你且戰且退 —— 城未下,但守軍已折損,戰果保留,改日可再續攻。", style="yellow")
+            return None
+        politics.deplete_garrison(char, gamedata, loc_id, wave["strength"])   # 永久削減,進度持久
+    politics.conquer(char, gamedata, loc_id)
+    char.fame += politics.SIEGE_FAME
+    ui.message(f"城門洞開,守將伏誅 —— 「{city}」易幟,自此歸於{politics.cause_name(char.allegiance)}!",
+               style="bold gold1")
+    ui.message(f"你的威名響徹四方(聲望 +{politics.SIEGE_FAME})。", style="cyan")
+    return None
 
 
 def _become_thane(state: GameState, gamedata: GameData, loc_id: str, ruler: dict) -> None:
@@ -1876,7 +1942,7 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
         elif choice == "trainer":
             action_trainer(state, gamedata)
         elif choice == "court":
-            action_court(state, gamedata)
+            died = action_court(state, gamedata)
         elif choice == "guild_mages":
             mg_opts = [("spells", "學習法術"), ("mg_hall", "公會事務(入會 / 任務)")]
             if player.is_vampire:

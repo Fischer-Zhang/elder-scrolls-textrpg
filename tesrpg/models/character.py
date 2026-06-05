@@ -116,6 +116,13 @@ class Character:
     city_standing: dict = field(default_factory=dict)     # loc_id -> 城邦功勳(完成領主委託累積)
     thaneships: list = field(default_factory=list)        # 已受封武士的 loc_id(享賞金寬待 + 侍從)
 
+    # 城戰(Phase 3+4):政治立場 + 攻城戰況。詳見 systems/politics.py。
+    # 城為單位:各城立場種子在 rulers.json `stance`;玩家選 allegiance(大義)後對立城可攻。
+    # 動態戰況掛 Character(存檔)、首次存取時由種子懶初始化(同 shop_stock 模式)。
+    allegiance: str = ""                                  # 玩家擁護的大義:""=未選 / imperial / independent
+    city_faction: dict = field(default_factory=dict)      # loc_id -> 現時歸屬立場(攻城會翻轉)
+    garrison_current: dict = field(default_factory=dict)  # loc_id -> 現存駐軍(攻城消耗)
+
     is_player: bool = False
 
     # --- 查詢 -------------------------------------------------------------
@@ -185,6 +192,8 @@ class Character:
             "power_last_day": self.power_last_day, "tower_key_charge": self.tower_key_charge,
             "shop_stock": self.shop_stock, "shop_restock_at": self.shop_restock_at,
             "city_standing": self.city_standing, "thaneships": self.thaneships,
+            "allegiance": self.allegiance, "city_faction": self.city_faction,
+            "garrison_current": self.garrison_current,
             "companions": self.companions,
         }
 
