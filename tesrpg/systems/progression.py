@@ -13,7 +13,7 @@ from __future__ import annotations
 from tesrpg import formulas
 from tesrpg.gamedata import GameData
 from tesrpg.models import Character
-from tesrpg.systems import stats
+from tesrpg.systems import mastery, stats
 
 
 def ensure_level_xp(char: Character) -> None:
@@ -72,9 +72,13 @@ def use_skill(char: Character, gamedata: GameData, skill_id: str, xp: float) -> 
 
 
 def _on_skill_increase(char: Character, gamedata: GameData, skill_id: str, events: list[dict]) -> None:
+    new_level = char.skills[skill_id]
     char.level_xp += formulas.levelup_xp_for_skillup(
-        char.skills[skill_id], char.is_major_skill(skill_id))
-    events.append({"type": "skill_up", "skill": skill_id, "level": char.skills[skill_id]})
+        new_level, char.is_major_skill(skill_id))
+    events.append({"type": "skill_up", "skill": skill_id, "level": new_level})
+    # 技能里程碑:恰好跨過門檻這一級 → 解鎖播報(精確判定避免跨多級時漏/重報)
+    for e in mastery.newly_unlocked(char, gamedata, skill_id, new_level):
+        events.append({"type": "mastery_unlocked", "name": e["name"], "desc": e["desc"]})
 
 
 def apply_level_up(char: Character, gamedata: GameData,

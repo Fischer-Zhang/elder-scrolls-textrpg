@@ -156,15 +156,21 @@ def fatigue_cost_factor(athletics_skill: int) -> float:
     return max(0.6, 1.0 - athletics_skill * ATHLETICS_FATIGUE_SCALE)
 
 
+BLOCK_HIT_PENALTY = 0.15        # 對方格擋時攻擊命中率的基礎扣減(里程碑「盾陣」會加深)
+
+
 def hit_chance(atk_skill: int, atk_agility: int, def_agility: int,
                attacker_fatigue_ratio: float, defender_blocking: bool = False,
-               defender_evasion: float = 0.0) -> float:
-    """命中率。武器技能為主、敏捷差為輔、低體力受罰、對方格擋/閃避更難打中。"""
+               defender_evasion: float = 0.0, block_penalty: float = BLOCK_HIT_PENALTY) -> float:
+    """命中率。武器技能為主、敏捷差為輔、低體力受罰、對方格擋/閃避更難打中。
+
+    block_penalty 由呼叫端帶入(預設 BLOCK_HIT_PENALTY;里程碑「盾陣」會傳更深的值)。
+    """
     chance = 0.50 + (atk_skill - 25) * 0.006        # 技能 25→0.5、75→0.8、100→0.95
     chance += (atk_agility - def_agility) * 0.004
     chance -= (1.0 - max(0.0, min(1.0, attacker_fatigue_ratio))) * 0.25
     if defender_blocking:
-        chance -= 0.15
+        chance -= block_penalty
     chance -= defender_evasion                       # 雜技閃避(僅玩家防守時)
     return max(0.05, min(0.95, chance))
 

@@ -12,7 +12,7 @@ from tesrpg import formulas
 from tesrpg.gamedata import GameData
 from tesrpg.models import Character, Creature
 from tesrpg.rng import RNG
-from tesrpg.systems import inventory, loot, magic, progression, stats
+from tesrpg.systems import inventory, loot, magic, mastery, progression, stats
 
 
 # ======================================================================
@@ -232,8 +232,10 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
     speed = wdef.get("speed", formulas.WEAPON_SPEED_DEFAULT) if wdef else formulas.WEAPON_SPEED_DEFAULT
     fr = _fatigue_ratio(attacker)
     evasion = formulas.dodge_evasion(defender.skill("acrobatics")) if _is_player(defender) else 0.0
+    block_pen = mastery.block_hit_penalty(defender, gamedata) if defender_blocking else formulas.BLOCK_HIT_PENALTY
     chance = formulas.hit_chance(wpn_skill, _agility(attacker), _agility(defender),
-                                 fr, defender_blocking, defender_evasion=evasion)
+                                 fr, defender_blocking, defender_evasion=evasion,
+                                 block_penalty=block_pen)
     if _is_player(attacker):    # 武器速度:快武器更易命中、慢武器較難
         chance = max(0.05, min(0.95, chance + formulas.weapon_speed_hit(speed)))
     if magic.is_staggered(attacker):   # 暗殺殘響:陣腳大亂的單位本回合更難命中
@@ -283,6 +285,7 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
         else:
             pen = formulas.archetype_armor_pen(archetype)   # 鈍器破甲
             dmg = formulas.damage_after_armor(raw, _armor_rating(defender, gamedata), pen)
+            dmg *= mastery.incoming_physical_factor(defender, gamedata)   # 里程碑「壁壘」:物理再減傷
             # 武器附魔:額外元素傷害(無視護甲,受對方元素抗性)
             if _is_player(attacker):
                 ench = gamedata.item(attacker.weapon).get("enchant")
@@ -385,6 +388,8 @@ def player_attack_cost(player: Character, gamedata: GameData | None = None) -> N
     cost = (formulas.ATTACK_FATIGUE_COST
             * formulas.fatigue_cost_factor(player.skill("athletics"))
             * formulas.weapon_attack_fatigue_factor(speed))
+    if gamedata is not None:                       # 里程碑「壁壘」同源代價:揮擊更耗體
+        cost *= mastery.attack_fatigue_factor(player, gamedata)
     player.fatigue = max(0, player.fatigue - cost)
 
 

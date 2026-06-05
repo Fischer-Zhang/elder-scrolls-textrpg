@@ -38,6 +38,7 @@ class GameData:
         self.companions: dict = _load("companions.json")
         self.origins: dict = _load("origins.json")   # 開局背景(不一樣的人生)
         self.rulers: dict = _load("rulers.json")     # 各城統治者(湮滅期大空位、各城自治;城戰前置)
+        self.mastery: list = _load("mastery.json")   # 技能里程碑(達門檻自動解鎖;見 systems/mastery.py)
         self._misc: dict = _load("items.json")
 
         # 統一物品索引:武器/護甲/雜項/材料共用一份 {id: {**def, "kind": ...}}

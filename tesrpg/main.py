@@ -369,6 +369,10 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
     opening = not alerted   # 開場偷襲:首個攻擊吃潛行加成;若敵人已警覺(撤退失敗)則無
     vanishes_done = 0  # 本場已成功隱遁次數(成功率遞減,防無限風箏)
 
+    # active_effects 是「戰鬥內」臨時效果 —— 進場先清,杜絕戰鬥外施法(如里程碑「聖光·溢盾」)
+    # 殘留的護盾/效果洩漏進本場。必須在 _prep_phase「之前」清(備戰施放的增益在清除後才套用,照常保留)。
+    player.active_effects.clear()
+
     # 偵查掙得的開戰前備戰空間:在第一個交戰回合「之前」進行(opening 因此保留;
     # buff/召喚的計時從第一回合照 tick,故不延長時效、只省下開場那一動)。
     if prep_budget > 0:
@@ -767,7 +771,7 @@ def _resolve_container(state: GameState, gamedata: GameData, container: dict, la
         return
     lock = container.get("locked", 0)
     if lock > 0:
-        ch = dungeon.pick_lock_chance(state.player.skill("security"), lock)
+        ch = dungeon.effective_pick_lock_chance(state.player, gamedata, lock)
         if not ui.confirm(f"發現一個上鎖的{label}(鎖難度 {lock},你的成功率約 {int(ch*100)}%),嘗試撬鎖?"):
             return
         while True:

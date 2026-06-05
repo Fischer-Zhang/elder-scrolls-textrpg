@@ -20,6 +20,7 @@ from tesrpg import formulas
 from tesrpg.gamedata import GameData
 from tesrpg.models import Character
 from tesrpg.state import GameState
+from tesrpg.systems import mastery
 
 console = Console()
 
@@ -179,6 +180,16 @@ def skill_table(char: Character, gamedata: GameData) -> None:
 
     console.print(_panel(tbl, title="技能"))
     console.print(f"  [{FAINT}]✦ = 主修技能(升點給 ×1.5 等級經驗);右欄為技能等級[/]")
+    unlocked = mastery.unlocked(char, gamedata)
+    if unlocked:
+        lines = Text()
+        for i, e in enumerate(unlocked):
+            sk = gamedata.skill_name(e["skill"])
+            lines.append(f"✦ {e['name']}", style="bold magenta")
+            lines.append(f"（{sk} {e['threshold']}） {e['desc']}", style=INK)
+            if i < len(unlocked) - 1:
+                lines.append("\n")
+        console.print(_panel(lines, title="技能里程碑"))
 
 
 # --- 事件訊息 -----------------------------------------------------------
@@ -189,6 +200,8 @@ def show_events(events: list[dict], gamedata: GameData) -> None:
             console.print(f"  [bold green]↑ {name} 提升到 {ev['level']}![/]")
         elif ev["type"] == "level_ready":
             console.print("  [bold yellow]★ 你感到脫胎換骨 —— 可以升級了!（選單選「升級」）[/]")
+        elif ev["type"] == "mastery_unlocked":
+            console.print(f"  [bold magenta]✦ 技能里程碑「{ev['name']}」解鎖![/] [grey70]{ev['desc']}[/]")
 
 
 def message(text: str, style: str = "white") -> None:
@@ -217,6 +230,8 @@ def legacy_screen(s: dict) -> None:
         body.add_row("詛咒", str(s["condition"]))
     if s.get("dark_deeds"):
         body.add_row("血業", str(s["dark_deeds"]))
+    if s.get("masteries"):
+        body.add_row("精通", "、".join(s["masteries"]))
     body.add_row("等級", str(s["level"]))
     body.add_row("在世", f"{s['years']} 年 {s['days']} 天")
     body.add_row("足跡", f"踏遍 {s['places_visited']}/{s['total_locations']} 處地點")

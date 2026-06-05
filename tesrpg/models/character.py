@@ -85,6 +85,10 @@ class Character:
     bounty: int = 0
     disposition: int = 50
 
+    # 技能里程碑(辯舌·折服):已被「必定說服」折服過的 NPC(每人一次)。
+    # 其餘里程碑皆由 base_skill 即時推導、零存檔種子;唯此條需記錄一次性狀態。
+    persuaded_npcs: list = field(default_factory=list)
+
     # M5:任務、犯罪、聲望追蹤
     quests: dict = field(default_factory=dict)            # quest_id -> {"progress":...}
     completed_quests: list = field(default_factory=list)
@@ -167,6 +171,7 @@ class Character:
             "quests": self.quests, "completed_quests": self.completed_quests,
             "kill_counts": self.kill_counts, "cleared_dungeons": self.cleared_dungeons,
             "bounties": self.bounties, "npc_disposition": self.npc_disposition,
+            "persuaded_npcs": self.persuaded_npcs,
             "visited_locations": self.visited_locations,
             "power_last_day": self.power_last_day, "tower_key_charge": self.tower_key_charge,
             "companions": self.companions,

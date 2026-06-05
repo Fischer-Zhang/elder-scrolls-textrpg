@@ -8,7 +8,7 @@ from __future__ import annotations
 from tesrpg.gamedata import GameData
 from tesrpg.models import Character
 from tesrpg.rng import RNG
-from tesrpg.systems import progression
+from tesrpg.systems import mastery, progression
 
 BRIBE_COST = 10
 PERSUADE_XP = 0.5
@@ -26,8 +26,13 @@ def _adjust(char: Character, npc_id: str, delta: int) -> None:
 def persuade(char: Character, gamedata: GameData, npc_id: str, rng: RNG) -> dict:
     """以口才說服。成功提升好感,失敗略降。回傳 {ok, delta, skill_events}。"""
     skill = char.skill("speechcraft")
-    chance = max(0.1, min(0.9, 0.35 + (skill + char.attr("personality") - 50) * 0.005))
     events = progression.use_skill(char, gamedata, "speechcraft", PERSUADE_XP)
+    # 里程碑「辯舌·折服」:口才大師對每個 NPC 可一次性必定說服(記入 persuaded_npcs)。
+    if mastery.can_guaranteed_persuade(char, gamedata, npc_id):
+        char.persuaded_npcs.append(npc_id)
+        _adjust(char, npc_id, 10)
+        return {"ok": True, "delta": 10, "charmed": True, "skill_events": events}
+    chance = max(0.1, min(0.9, 0.35 + (skill + char.attr("personality") - 50) * 0.005))
     if rng.chance(chance):
         _adjust(char, npc_id, 10)
         return {"ok": True, "delta": 10, "skill_events": events}

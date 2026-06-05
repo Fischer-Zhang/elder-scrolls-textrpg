@@ -11,7 +11,7 @@ from tesrpg import formulas
 from tesrpg.gamedata import GameData
 from tesrpg.models import Character
 from tesrpg.rng import RNG
-from tesrpg.systems import progression, stats
+from tesrpg.systems import mastery, progression, stats
 
 CAST_XP = 0.5
 SOUL_GEM_BY_DANGER = {
@@ -26,15 +26,17 @@ def _fail(message: str) -> dict:
 
 
 def effective_cost(char: Character, gamedata: GameData, spell_id: str) -> int:
-    """技能越高,魔力消耗越低(最多打到原價的 60%)。"""
+    """技能越高,魔力消耗越低(最多打到原價的 60%);里程碑「過載」會抬高該學派魔耗。"""
     sp = gamedata.spells[spell_id]
     skill = char.skill(sp["school"])
-    return max(1, round(sp["cost"] * (1.0 - min(0.4, skill / 250.0))))
+    cost = sp["cost"] * (1.0 - min(0.4, skill / 250.0))
+    cost *= mastery.spell_cost_factor(char, gamedata, sp["school"])
+    return max(1, round(cost))
 
 
-def _power(char: Character, school: str) -> float:
-    """學派技能對效果強度的加成(0.7x ~ 1.37x)。"""
-    return 0.7 + char.skill(school) / 150.0
+def _power(char: Character, gamedata: GameData, school: str) -> float:
+    """學派技能對效果強度的加成(0.7x ~ 1.37x);里程碑「過載」再疊加。"""
+    return 0.7 + char.skill(school) / 150.0 + mastery.spell_power_bonus(char, gamedata, school)
 
 
 def can_cast(char: Character, gamedata: GameData, spell_id: str) -> bool:
@@ -60,7 +62,7 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
     char.magicka -= cost
     eff = sp["effect"]
     kind = eff["kind"]
-    power = _power(char, sp["school"])
+    power = _power(char, gamedata, sp["school"])
     msg = ""
     damage = 0
     killed = False
@@ -86,6 +88,21 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
         before = char.health
         char.health = min(char.max_health, char.health + amt)
         msg = f"{sp['name']}回復了 {int(char.health - before)} 點生命。"
+        # 里程碑「聖光·溢盾」:溢出生命上限的治療量轉為臨時護盾(走既有 shield 管線)。
+        # cap 夾「溢盾總量」而非單次 → 反覆施放不能疊破 cap_ratio×生命上限(審查抓到的破口);
+        # 用 source 標記只夾自家溢盾,不污染戰鬥內逐回合施放的一般 shield 法術額度。
+        ward = mastery.overheal_ward(char, gamedata)
+        if ward:
+            overflow = (before + amt) - char.max_health
+            if overflow > 0:
+                cap_total = round(char.max_health * ward["cap_ratio"])
+                current = sum(e["magnitude"] for e in char.active_effects
+                              if e["kind"] == "shield" and e.get("source") == "overheal_ward")
+                mag = min(round(overflow * ward["convert"]), max(0, cap_total - current))
+                if mag > 0:
+                    char.active_effects.append({"kind": "shield", "magnitude": mag,
+                                                "turns": ward["turns"], "source": "overheal_ward"})
+                    msg += f" 滿溢的聖光凝成護盾(護甲 +{mag},{ward['turns']} 回合)。"
 
     elif kind == "restore_fatigue":
         before = char.fatigue
