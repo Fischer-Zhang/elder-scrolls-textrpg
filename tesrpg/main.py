@@ -1228,6 +1228,33 @@ def action_trainer(state: GameState, gamedata: GameData) -> None:
 
 
 # ======================================================================
+# 領主區(宮廷):謁見領主(Phase 1)
+#   後續分層(藍圖見 handoff §6):Phase 2 領主委託 + 武士冊封;
+#   Phase 3 政治/選邊;Phase 4 攻城戰(複用 combat 群戰)。
+# ======================================================================
+def _court_reception(char) -> str:
+    """依聲望決定領主的接待語氣(Oblivion 風:榮耀/惡名影響貴族態度)。"""
+    fame, infamy = char.fame, char.infamy
+    if infamy >= 15 and infamy >= fame:
+        return "守衛按劍戒備,領主冷眼端詳你這聲名狼藉之徒,語氣中盡是提防。"
+    if fame >= 15 and fame > infamy:
+        return "領主起身相迎,對你赫赫威名禮遇有加,左右無不側目。"
+    if fame == 0 and infamy == 0:
+        return "領主只略一頷首 —— 在這朝堂上,你不過是個無名過客。"
+    return "領主端坐王座,以例行的禮節接見你。"
+
+
+def action_court(state: GameState, gamedata: GameData) -> None:
+    """領主區:謁見當地領主(Phase 1 純謁見;Phase 2+ 在此加委託/效忠/外交)。"""
+    char = state.player
+    ruler = gamedata.ruler_at(char.location_id)
+    if not ruler:
+        ui.message("此地沒有領主可謁見。", style="grey70")
+        return
+    ui.court_panel(ruler, gamedata, _court_reception(char))
+
+
+# ======================================================================
 # 魔法與製作:施法 / 法師公會 / 煉金 / 附魔 / 修理
 # ======================================================================
 def action_cast_self(state: GameState, gamedata: GameData) -> None:
@@ -1742,6 +1769,9 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
             plaza.append(("board", "告示板"))
         if _living_npcs_at(state, gamedata) and not shunned:
             plaza.append(("talk", "與人攀談"))
+        court: list = []     # 領主區:謁見領主(Phase 1);後續加委託/效忠/外交
+        if gamedata.ruler_at(player.location_id) and loc["type"] in ("city", "town") and not shunned:
+            court.append(("court", "謁見領主"))
         # 只列出有內容的城區;頂層只顯示區域入口(進入後才見區內服務)
         districts = []
         if market:
@@ -1750,6 +1780,8 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
             districts.append(("_guilds", "公會區 ⚜", guilds))
         if plaza:
             districts.append(("_plaza", "廣場 🏛", plaza))
+        if court:
+            districts.append(("_court", "領主區 👑", court))
         city_group = [(k, lbl) for k, lbl, _ in districts]
         # --- 施法與製作 ---
         craft: list = []
@@ -1798,6 +1830,8 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
             action_feed(state, gamedata)
         elif choice == "trainer":
             action_trainer(state, gamedata)
+        elif choice == "court":
+            action_court(state, gamedata)
         elif choice == "guild_mages":
             mg_opts = [("spells", "學習法術"), ("mg_hall", "公會事務(入會 / 任務)")]
             if player.is_vampire:

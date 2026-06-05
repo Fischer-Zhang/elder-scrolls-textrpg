@@ -13,7 +13,7 @@
 - **GitHub**:`git@github.com:Fischer-Zhang/elder-scrolls-textrpg.git`(分支 `main`,SSH 已認證為 Fischer-Zhang)
 - **Python 3.12**;`rich` 由**系統套件**提供(`python3-rich`)—— ⚠️ **本機沒有 `pip`、沒有 `pytest`、sudo 需密碼**。
 - **執行遊戲**:`python3 -m tesrpg`
-- **跑測試**:`python3 tests/run_all.py`(不需 pytest;20 個測試模組,目前**全綠**)
+- **跑測試**:`python3 tests/run_all.py`(不需 pytest;30 個測試模組,目前**全綠**)
 - **編譯檢查**:`python3 -m py_compile tesrpg/**/*.py tesrpg/*.py tests/*.py`
 - 存檔在 `~/.tesrpg/save.json`(在 repo 外;測試/煙霧測試後記得 `rm -f ~/.tesrpg/save.json`)
 
@@ -181,9 +181,15 @@
 - **平衡**:狼皮不在任何商店(僅獵狼掉落=有限+耗時)→ 製作非無限金幣;皮甲配方多半「賣價低於原料生賣」,皮甲 +9 屬邊際且獵殺/工時閘住;`bone_meal` 為恢復系材料(煉不出毒藥)→ 不餵毒藥套利。
 - **驗證**:29 測試模組全綠(新增 `test_crafting`:配方合法性/加工消耗產出+practice 成本/材料不足零成本/station 閘/**15 材料全有野外途徑**/bone_meal 成材料/鐵匠處煙霧)+ 對抗審查(bone_meal 搬移無破壞、events province 過濾、craft 邊界、無新套利/存檔欄位)。
 
+**領主區(宮廷)Phase 1:謁見領主(使用者拍板「以 Oblivion/Skyrim 為參考規劃,預期後續加攻城戰」→ 先做 Phase 1 + 立藍圖)**:讓原本**純顯示**的 `rulers.json`(21 城主)「活起來」—— 第 4 個城區。
+- **接點**:城市選單第 4 區 `領主區 👑`(僅 city/town、有領主、非吸血鬼社交封鎖時出現)→ `action_court` 謁見。`ui.court_panel` 顯示考據背景(blurb)、種族、駐軍兵力、時局(大空位·各城自治);`_court_reception` 依 fame/infamy 給 4 級接待語氣(Oblivion 風:無名/揚名/惡名/例行)。
+- **零新狀態**(純顯示;謁見不耗時、無交易)。**加領主互動沿用此入口**:Phase 2+ 在 `court` district list / `action_court` 內加選項。
+- **驗證**:30 測試模組全綠(新增 `test_court`:接待分級/謁見顯示城主/無領主安全)。
+- **藍圖(見 §6「城戰/領主區路線」,已立為正式分層)**:Phase 2 領主委託 + 武士冊封(Thaneship);Phase 3 政治/選邊(`politics.json`);Phase 4 攻城戰(複用 `combat` 群戰)。
+
 **內容量**:10 種族 / 13 星座 / 8 職業 / **22 技能(+偵查 scout)** / **19 武器(4 法杖)** / **34 護甲(7 材質整套)** / 25 法術(5 AoE) /
 **15 材料(全部可野外採集/獵取)** / **4 飾品** / **製作配方系統(4 皮甲配方)** / **38 生物(7 高階 elite + 2 吸血鬼 + 5 黑沼澤 + 8 黑兄目標 + 2 heartland;18 隻帶 biome 生態標籤)** / 3 傭兵 / **36 地點(有環圖+生態 biome,世界閉合成大環;各省補全城市 賽8/天9/晨8/黑7/邊4,共 17 城+4 鎮)** / **6 地城** / **41 任務(3 分支壓軸 + 解咒 + 6 黑兄合約 + 10 在地任務含 2 任務鏈)** / **4 公會** / **7 開局背景** / **59 NPC(每城 3 / 每鎮 2,角色多樣、greeting + rumor 指路;8 名掛在地委託)** / **25 事件(含 10 省份限定;4 野採採集點)** / **吸血鬼化系統** / **黑暗兄弟會系統** / **技能里程碑系統(6 條 MVP,達門檻自動解鎖)** / **21 城主(各城自治)**。
-程式:**21 個 `systems` 模組**(+vampirism +brotherhood +mastery +crafting)+ models/ui/synth 等,共約 37 個 `.py` + `sim_assassin.py`(平衡回歸);**24 個 `data/*.json`**(+mastery.json +recipes.json;黑兄/細化省分全靠改既有檔);**29 測試模組**(+test_mastery +test_practice_cost +test_shop +test_crafting)。
+程式:**21 個 `systems` 模組**(+vampirism +brotherhood +mastery +crafting)+ models/ui/synth 等,共約 37 個 `.py` + `sim_assassin.py`(平衡回歸);**24 個 `data/*.json`**(+mastery.json +recipes.json;黑兄/細化省分全靠改既有檔);**30 測試模組**(+test_mastery +test_practice_cost +test_shop +test_crafting +test_court)。
 
 ---
 
@@ -299,7 +305,11 @@ tesrpg/
 
 ## 6. 下一步候選(依槓桿排序)
 
-0. **城戰**(城主前置已備,見 §1「各城統治者」+「城市補全」):`rulers.json` 已有 **21 城主** + `garrison` 兵力(各城自治,湮滅期大空位)。城市補全後城戰的可佔領目標大增。下一步可在此資料上長出:城邦歸屬/交戰狀態、攻城玩法(複用 `combat` 群戰)、佔領後換城主/收稅、公會/玩家選邊。政治狀態建議仍寫在 `rulers.json`(或新 `politics.json`)而非 world.json。動手前先評估(沿用前幾輪「評估→直作」節奏)。
+0. **城戰/領主區路線(已立藍圖,Oblivion+Skyrim 參考,逐 Phase 推進)** —— ✅ **Phase 1 已做**(見 §1「領主區 Phase 1」:第 4 城區 `領主區 👑` + 謁見領主,讓 21 城主活起來)。藍圖:
+   - **Phase 2 — 領主委託 + 武士冊封(Thaneship)**:領主發委託(source `ruler`,複用任務引擎、不漏進告示板)→ 完成累積 `city_standing`;達門檻(+選配獻金/置產)→ 受封武士。Perk(仿 `factions.perk`):該省賞金寬待、**侍從 housecarl**(複用 companions)、贈禮、進階服務。**新 Character 欄** `city_standing: dict[loc->int]`、`thaneships: list`(dataclass 預設、向後相容)。
+   - **Phase 3 — 政治/選邊(攻城前置)**:新 `data/politics.json`(每城 `faction` 歸屬:帝國 vs 地方獨立/敵對 claimant、`at_war`、`garrison_current`=初始 garrison),與 world.json 地理**解耦**。領主區可查駐軍、宣誓效忠、外交;Character 加 `allegiance`。
+   - **Phase 4 — 攻城戰(payoff)**:圍城/守城**複用 `combat` 群戰**(守軍波次依 garrison_current → 守將/領主 boss);佔領 → 翻轉 `politics.faction`/換領主、**收稅**(週期金幣,複用商店補貨的時間鉤子)、駐軍隨時間重建;公會/玩家選邊決定可參戰陣營。平衡用 `auto_resolve` 跑兵力差↔勝率曲線,守住「不可偷襲秒城」。
+   - **鐵律**:政治可變狀態寫 `politics.json`/Character(預設值向後相容),地理永遠在 world.json;加領主對話/委託/陣營儘量純改 JSON;每 Phase 走完整 §4 節奏。
 1. **內容難度第二階段 / 實機微調**:elite 已上但只在 danger≥4 野外 + 龍喉巢穴/灰燼墓塚出現;可加更多終局區、把 elite 接進更多地城首領池、跑過後微調 elite 數值(魔人領主/巨龍仍偏硬,模擬是 no-heal 下限)。
 2. **新省份擴充**(高價值/低風險,純資料):地圖 UI 與群戰都已能撐;加 `world.json` 地點 + `dungeons.json` + `bestiary` 生物 + `rulers.json` 城主即可。
    ⭐ 世界已**閉合成大環**(見 §1「地圖擴展:黑沼澤」——黑沼澤已把賽羅迪爾↔晨風接成環)。再加新省請沿用該模式:**雙向連通、最好再閉一個環**(別接成走廊尾巴);新城/鎮**務必同步加 `rulers.json` 城主**(否則 `test_world` 紅);新地城首領是 elite 就加 `"raw": true`;**新地點記得加 `biome`、主題新怪加 `biomes`**(見 §1「細化省分」,讓生態遭遇分流);新省可加 `trigger.provinces` 風味事件 + `provinces` 在地懸賞。**可候選**:漢默法爾(西部沙漠環,接賽羅迪爾/天際)、高岩、瓦倫森林。
@@ -325,7 +335,11 @@ tesrpg/
 > **格擋接上技能縮放**(技能健檢抓到格擋等級空轉 → `block_damage_factor` ×0.9→×0.4)、
 > **技能里程碑 Skill Mastery P1**(§1:6 條被動達門檻 50/75/100 自動解鎖,反 min-max;含對抗審查覆核修正;P2/P3 路線已拍板)、
 > **飾品實戰崩潰修正**(§1:戴飾品被物理擊 `KeyError`,既有 bug)、
-> **反 min-max 補洞:說服/撬鎖/行竊接上 practice 成本**(§1:三個零成本刷技能漏洞統一接上各技能 practice 體力+時間;對抗審查擋下「fatigue=0 擋下動作」錯誤修法,只加撬鎖耗盡停手閘門)。
+> **反 min-max 補洞:說服/撬鎖/行竊接上 practice 成本**(§1)、
+> **反 min-max 補洞二:煉金/附魔/修理接上 practice 成本**(§1:製作/維護系同型零成本刷技能,全堵)、
+> **Skyrim 式商店庫存**(§1:有限數量+定時補貨+補貨變化,堵煉金套利無限金幣)、
+> **煉金材料採集全覆蓋 + 製作系統**(§1:15 材料全可野外採/獵;第一個泛用配方加工 recipes.json,獸皮→皮甲)、
+> **領主區 Phase 1**(§1:第 4 城區 👑 謁見領主,讓 21 城主活起來;§6 #0 立攻城戰分層藍圖)。
 >
 > 地圖後續可再加:黑沼澤**起手任務鉤子 / 開局背景**(亞龍人沼澤出身,純改 quests/origins JSON);再開一省(漢默法爾/高岩…)續閉環;贊密爾沉廟可加後門讓它變環上節點。
 > 公會後續可再加:更多分支壓軸 / 階級設施權限 / 公會委託告示。(✅ 暗殺者公會=黑暗兄弟會已做,見 §1)

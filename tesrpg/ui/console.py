@@ -470,6 +470,21 @@ def npc_panel(npc: dict, disposition: int) -> None:
     console.print(_panel(body, title=f"💬 {npc['name']}", style="green"))
 
 
+def court_panel(ruler: dict, gamedata: GameData, reception: str) -> None:
+    """謁見領主:接待語氣 + 考據背景 + 種族/駐軍/時局(領主區 Phase 1)。"""
+    race = gamedata.races.get(ruler["race"], {}).get("name", ruler["race"])
+    body = Text()
+    body.append(reception + "\n\n", style="italic " + PARCH)
+    body.append(ruler["blurb"] + "\n\n", style=PARCH)
+    body.append("種族  ", style=GOLD)
+    body.append(f"{race}\n", style=INK)
+    body.append("駐軍  ", style=GOLD)
+    body.append(f"{ruler['garrison']} 兵\n", style=INK)
+    body.append("時局  ", style=GOLD)
+    body.append("大空位 · 各城自治(紅寶石王座空懸)", style=FAINT)
+    console.print(_panel(body, title=f"👑 {ruler['title']}·{ruler['name']}", style=GOLD))
+
+
 def dungeon_room(name: str, idx: int, total: int, desc: str, is_boss: bool = False) -> None:
     tag = "✦ 首領 ✦" if is_boss else f"第 {idx}/{total} 室"
     console.print(_panel(Text(desc, style=PARCH),
