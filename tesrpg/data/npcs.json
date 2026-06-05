@@ -278,5 +278,205 @@
     "greeting": "新鮮的死亡鐘與妖菌,獄卒們搶著買來煉藥,你也來一份?",
     "rumor": "南邊贊密爾沉廟近來爬出不少巨蜥,堡裡派去吉迪恩報信的隊伍在沼路上吃了大虧。",
     "quest": null
+  },
+  "bruma_innkeeper_helga": {
+    "name": "海爾嘉",
+    "location": "bruma",
+    "disposition": 48,
+    "greeting": "「進來烤烤火吧,旅人。雪城的爐子整夜不熄,熱蜜酒管夠——錢袋掏出來就行。」",
+    "rumor": "南下走帝國大道便是切德納寇洞窟,那窩強盜近來連雪城的商隊都敢劫,押貨的最好結伴而行。",
+    "quest": null
+  },
+  "bruma_legion_veteran_brand": {
+    "name": "布蘭德·瓦倫",
+    "location": "bruma",
+    "disposition": 50,
+    "greeting": "「軍團的旗早就不南下了,可這道北門還得有人守。看你的眼神,不像來惹事的。」",
+    "rumor": "順著帝國大道一路往南能直抵帝都,白金塔下如今全靠長老議會撐著,人心惶惶得很。",
+    "quest": null
+  },
+  "kvatch_arena_fighter_torvald": {
+    "name": "托瓦爾·凱恩",
+    "location": "kvatch",
+    "disposition": 47,
+    "greeting": "「競技場的沙子喝過不少血,陌生人。想討口飯吃?先掂量掂量自己的劍。」",
+    "rumor": "城北山路下的切德納寇洞窟盤著一夥硬骨頭強盜,衛隊抽不出人去清,賞金可都掛在公會的板子上。",
+    "quest": null
+  },
+  "imperial_city_scribe_aurelia": {
+    "name": "奧蕾莉雅·門狄斯",
+    "location": "imperial_city",
+    "disposition": 50,
+    "greeting": "「議會書記室什麼卷宗都經我的手,旅人。可惜墨水寫不出個皇帝來。」",
+    "rumor": "往北走帝國大道便到布魯瑪雪城,卡薇恩伯爵一人撐著北疆門戶,聽說連天際那邊的山道都得她費心提防。",
+    "quest": null
+  },
+  "skingrad_vintner_pelagius": {
+    "name": "佩拉吉烏斯·維諾",
+    "location": "skingrad",
+    "disposition": 49,
+    "greeting": "「來一桶史金格拉德的陳釀吧,旅人——這葡萄藤比帝國的命還硬。要批貨還是要解渴?」",
+    "rumor": "我的酒大半順著西南的路運往安維爾的海港,可碼頭上手腳不乾淨的多,押運的桶子總得少幾個。",
+    "quest": null
+  },
+  "cheydinhal_priest_sevarine": {
+    "name": "賽瓦琳·瑟羅",
+    "location": "cheydinhal",
+    "disposition": 46,
+    "greeting": "「願瑪拉的慈光照看你,旅人。這城裡半是丹莫的信眾,神龕前倒是不分種族。」",
+    "rumor": "往西過帝都,再北行便是布魯瑪雪城;城裡逃難來的人說,北疆的雪一年比一年深,日子愈發難熬。",
+    "quest": null
+  },
+  "anvil_sailor_dabienne": {
+    "name": "妲碧恩·寇爾",
+    "location": "anvil",
+    "disposition": 48,
+    "greeting": "「阿比西亞灣的鹹風灌進骨頭縫,水手都這德性,旅人。要搭船還是只想聽幾句海上的閒話?」",
+    "rumor": "走東北的山道過史金格拉德的葡萄園,再往北就能上腹地正路;那片葡萄丘陵的酒,連我們船上的老饕都念著。",
+    "quest": null
+  },
+  "haafingar_companion_hjornskar": {
+    "name": "戰友 約恩斯卡",
+    "location": "haafingar",
+    "disposition": 48,
+    "greeting": "「劍上要見真章,別只動嘴皮子。海芬古的酒館裡盡是吹噓的軟骨頭,真戰友該去刀口上掙名聲。」",
+    "rumor": "城南的冰風廢墟裡躺著古諾德的亡者,聽說有勇士進去取墓中寶劍,至今沒一個活著回來——那才是試膽的好去處。",
+    "quest": null
+  },
+  "haafingar_dockworker_torvald": {
+    "name": "碼頭工 托瓦德",
+    "location": "haafingar",
+    "disposition": 45,
+    "greeting": "「白塔底下卸了一整天的貨,腰都快斷了。商船是來了不少,可這世道,誰知道哪船載的是貨、哪船載的是兵。」",
+    "rumor": "西邊去馬卡斯城那條山道難走得很,銀血氏族把礦上的好鋼都攥在手裡,卻沒幾個敢替他們押貨翻那道險峽。",
+    "quest": null
+  },
+  "dragon_bridge_huntress_ingrid": {
+    "name": "獵人 英格麗",
+    "location": "dragon_bridge",
+    "disposition": 50,
+    "greeting": "「龍首石橋下的河灘有鹿群飲水,要弓還是要肉乾,我這都有。出鎮可帶上眼睛,別丟了性命。」",
+    "rumor": "南邊佛克瑞斯林的雪林深得能吞人,迷刀洞窟那夥盜匪就盤在林子裡,連我設的獸夾都被他們順走過。",
+    "quest": null
+  },
+  "whiterun_bard_mikael": {
+    "name": "吟遊詩人 米卡爾",
+    "location": "whiterun",
+    "disposition": 52,
+    "greeting": "「來,給你唱一段龍臨堡的舊歌?在圖密爾蜜酒大廳,一首好曲子換一杯蜜酒,公道得很。」",
+    "rumor": "往南過佛克瑞斯林那片雪林,聽說近來有獨行劍客在松濤間失了蹤,連我這愛探聽消息的都湊不齊那故事的下半段。",
+    "quest": null
+  },
+  "windhelm_miner_torbjorn": {
+    "name": "礦工 托爾比昂",
+    "location": "windhelm",
+    "disposition": 46,
+    "greeting": "「雪鬃王宮的牆是真諾德的牆,擋得住暴雪,也擋得住帝國的鳥氣。礦坑裡待久了,這風雪反倒讓人清醒。」",
+    "rumor": "南去裂谷城那條道我熟得很,礦上的粗鐵都得運到那邊換蜜酒換錢;只是黑荊棘家把秤桿攥死,賣力氣的人撈不著幾個子兒。",
+    "quest": null
+  },
+  "riften_meadbrewer_solveig": {
+    "name": "蜜酒坊主 索薇格",
+    "location": "riften",
+    "disposition": 50,
+    "greeting": "「運河邊飄的甜香,就是我家蜜酒桶冒出來的。在裂谷城啊,蜜酒比金幣可靠,金幣會被黑荊棘家的人摸走。」",
+    "rumor": "城西那片佛克瑞斯林林子,蜜酒坊收蜂蜜的腳夫總抄那條道,可近來盜匪鬧得兇,押貨的回來時臉都白了。",
+    "quest": null
+  },
+  "markarth_guard_eltrys": {
+    "name": "守衛 埃爾崔斯",
+    "location": "markarth",
+    "disposition": 44,
+    "greeting": "「矮人石牆下,睜一隻眼閉一隻眼才活得久,陌生人。銀血氏族的眼睛比我多,你的話最好過過腦子再出口。」",
+    "rumor": "南邊那片佛克瑞斯林雪林是西境最不太平的去處,棄誓者與盜匪都往松林裡鑽,出城巡邏的弟兄沒一個願意往那頭走遠。",
+    "quest": null
+  },
+  "blacklight_ashminer_velam": {
+    "name": "灰燼礦工 韋拉姆·薩德拉斯",
+    "location": "blacklight",
+    "disposition": 44,
+    "greeting": "「灰塔底下挖了二十年硫磺礦,旅人。這城的肺,早被灰燼醃透了——你聞,連我吐的氣都是灰味。」",
+    "rumor": "城外那片灰燼荒原,灰蹦蟲愈鬧愈兇,礦工都說是灰燼墓塚那頭的死氣把蟲子逼出了灰田。",
+    "quest": null
+  },
+  "blacklight_mushroomfarmer_idrene": {
+    "name": "蘑菇農 伊德蓮·瑟蘭",
+    "location": "blacklight",
+    "disposition": 47,
+    "greeting": "「我這幾座菌塔的灰孢菇,連雷多然議長的廚子都來收。落灰多的年頭,菇反倒長得肥。」",
+    "rumor": "想換好貨就順著河谷往南去巴爾莫拉,哈拉魯家把奧迪河谷攥得死緊,連我的菌貨也得先過他們的市集才賣得出去。",
+    "quest": null
+  },
+  "molag_mar_pilgrim_seralen": {
+    "name": "朝聖者 瑟拉蓮·賓巴",
+    "location": "molag_mar",
+    "disposition": 50,
+    "greeting": "「三相神庇佑,外鄉人。我從黑光城一路徒步而來,只為在熔岩裂隙旁向神王獻上敬香。」",
+    "rumor": "守正軍封了北去灰燼墓塚的岔道——說那墓塚裡爬出的亡者連這朝聖鎮的香火都壓不住,虔信者也莫要靠近。",
+    "quest": null
+  },
+  "vivec_ordinator_aurane": {
+    "name": "守正軍衛兵 奧拉妮·伊倫",
+    "location": "vivec",
+    "disposition": 48,
+    "greeting": "「神王的城裡,腳步要輕,心要正。外邦客,守正軍的金面具盯著每一道石橋——別在神廟區生事。」",
+    "rumor": "近來只放掛著莫拉格瑪法蘿司祭長印信的信使過橋——你若要往南去那座朝聖鎮,路上守正軍盤查得緊,記得備好敬香。",
+    "quest": null
+  },
+  "balmora_armsdealer_neloth": {
+    "name": "軍械商 內洛斯·歐索",
+    "location": "balmora",
+    "disposition": 43,
+    "greeting": "「運河南岸的鋪子,武具一應俱全,客人。哈拉魯的稅吏抽得狠,可只要你出得起價,什麼甲我都調得到。」",
+    "rumor": "黑光城的精靈裝甲在這兒翻倍都難買,雷多然把好貨全鎖進城防了;真要矮人甲,還是順河往北去奧德盧恩最齊全。",
+    "quest": null
+  },
+  "ald_ruhn_smith_dralor": {
+    "name": "雷多然鐵匠 德拉洛·薩魯",
+    "location": "ald_ruhn",
+    "disposition": 46,
+    "greeting": "「蟹殼之下,我這爐子日夜替甲士打矮人甲。灰暴將起,客人,要修甲要打兵器趁早,風大了爐火留不住。」",
+    "rumor": "大議員正向巴爾莫拉催兵餉——哈拉魯那邊只肯給空頭支票,他寧可從黑光城調議長的家族甲士來補灰原邊防的缺口。",
+    "quest": null
+  },
+  "gideon_legionary": {
+    "name": "鏽矛-守關",
+    "location": "gideon",
+    "disposition": 44,
+    "greeting": "「總督的旗子還掛著,可咱們這些守關的,早分不清是替帝國站崗,還是替沼澤看門了。要進城就快些,別讓瘴氣灌進門縫。」",
+    "rumor": "東邊黑荊棘堡近來頻頻向吉迪恩討兵,押解的隊伍在沼路上折損了大半,連高腳屋下的衛兵都被抽調走了。",
+    "quest": null
+  },
+  "gideon_apothecary": {
+    "name": "黃眼-煎藥",
+    "location": "gideon",
+    "disposition": 48,
+    "greeting": "「死亡鐘、妖菌、沼蟲膽……我這小爐子煎出的解瘴湯,連總督府的帝國軍醫都偷偷來討。外鄉人,你的氣色可不太好。」",
+    "rumor": "南邊那座贊密爾沉廟近來潮氣異常,聽說廟裡爬出的巨蜥連採藥人都避得遠遠的,但廟階縫裡的妖菌,是煎藥的上好藥引。",
+    "quest": null
+  },
+  "stormhold_hunter": {
+    "name": "緩流-探沼",
+    "location": "stormhold",
+    "disposition": 46,
+    "greeting": "「沼裡的路,得用腳趾去聽。城裡那些石屋住久了,鼻子就鈍了——外鄉人,跟緊我的足印,別踩進冒泡的黑泥。」",
+    "rumor": "順著沼路往北不遠便是贊密爾沉廟,那金字塔近來巨蜥放肆,連我設在廟外的陷阱都被撞翻,獵物倒是肥得很。",
+    "quest": null
+  },
+  "helstrom_treesinger": {
+    "name": "綠藤-聆樹",
+    "location": "helstrom",
+    "disposition": 47,
+    "greeting": "「噓——神樹正在說話。外族客,在 An-Xileel 之心,先學會閉嘴聆聽,沼澤之民從不向不懂傾聽的人開口。」",
+    "rumor": "神樹的低語近年愈發焦躁,議長已遣使前往石落城,要那邊的樹語祭司一同問詢希斯特之意——往北那座古城,如今也只向神樹俯首了。",
+    "quest": null
+  },
+  "blackrose_jailer": {
+    "name": "缺齒-提燈",
+    "location": "blackrose",
+    "disposition": 43,
+    "greeting": "「鐵柵後頭的事,你最好別問。提著燈巡牢一輩子,我學會一件事——多看少說的人,才活得過這座堡。要住店,左邊那排泥屋。」",
+    "rumor": "堡主近來向西邊赫爾斯壯的議長送了好幾批囚徒,聽說那座聖城的神樹要這些俘虜去贖罪;押解隊穿過沼澤時,折在泥潭裡的看守可不少。",
+    "quest": null
   }
 }
