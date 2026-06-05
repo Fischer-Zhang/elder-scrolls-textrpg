@@ -121,14 +121,11 @@ def action_practice(state: GameState, gamedata: GameData) -> None:
         return
 
     pdef = gamedata.skills[sid]["practice"]
-    tired = char.fatigue < pdef["fatigue"]
-    xp = pdef["xp"] * (0.5 if tired else 1.0)
-    char.fatigue = max(0, char.fatigue - pdef["fatigue"])
-
+    xp, hours, tired = progression.practice_cost(char, gamedata, sid)
     events = progression.use_skill(char, gamedata, sid, xp)
-    state.time.advance(pdef["hours"])
+    state.time.advance(hours)
 
-    ui.message(f"你{pdef['label']}……（{pdef['hours']} 小時)")
+    ui.message(f"你{pdef['label']}……（{hours} 小時)")
     if tired:
         ui.message("體力不濟,訓練成效減半。先休息會更有效率。", style="yellow")
     ui.show_events(events, gamedata)
@@ -776,11 +773,17 @@ def _resolve_container(state: GameState, gamedata: GameData, container: dict, la
             return
         while True:
             r = dungeon.pick_lock(state.player, gamedata, lock, state.rng)
+            state.time.advance(r["hours"])
             ui.show_events(r["skill_events"], gamedata)
             if r["success"]:
                 ui.message("塔之鑰應驗,鎖無聲而開。" if r.get("tower_key") else "喀噠 —— 鎖開了!",
                            style="green")
                 break
+            if r["tired"]:
+                # 體力耗盡 → 停止這個自動重試迴圈(讓體力成為「單場撬鎖次數」的真實上限,
+                # 而非以半額效率無限重試同一把鎖刷 security)。要再撬得先休息。
+                ui.message("你精疲力竭,手抖得使不上力 —— 得先歇口氣才撬得動這把鎖。", style="yellow")
+                return
             if not ui.confirm("撬鎖失敗。再試一次?"):
                 return
     spoils = dungeon.open_container(state.player, gamedata, container, state.rng)
@@ -931,10 +934,13 @@ def action_shop(state: GameState, gamedata: GameData) -> None:
             if iid is None:
                 continue
             r = crime.steal_item(char, gamedata, iid, state.rng)
+            state.time.advance(r["hours"])
             if r["ok"]:
                 ui.message(f"你神不知鬼不覺地摸走了{gamedata.item_name(iid)}。", style="green")
             else:
                 ui.message(f"「住手!小偷!」 —— 你被逮個正著,賞金 +{r['bounty_added']}。", style="red")
+            if r["tired"]:
+                ui.message("體力不濟,手腳不聽使喚,差點失風。", style="yellow")
             ui.show_events(r["skill_events"], gamedata)
             continue
         if mode == "buy":
@@ -1546,8 +1552,11 @@ def action_talk(state: GameState, gamedata: GameData) -> str | None:
             return None
         elif choice == "persuade":
             r = dialogue.persuade(char, gamedata, nid, state.rng)
+            state.time.advance(r["hours"])
             ui.message("對方頗為受用,好感提升。" if r["ok"] else "話不投機,對方有些不悅。",
                        style="green" if r["ok"] else "yellow")
+            if r["tired"]:
+                ui.message("舌乾口燥,話都說不利索了。", style="yellow")
             ui.show_events(r["skill_events"], gamedata)
         elif choice == "bribe":
             r = dialogue.bribe(char, gamedata, nid)

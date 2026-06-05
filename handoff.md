@@ -154,9 +154,16 @@
 
 **飾品實戰崩潰修正(對抗審查後順手抓到的既有 bug)**:飾品(amulet/ring,無 `armor_rating` 鍵)戴上後,`inventory.effective_armor_rating`(唯一呼叫端=`combat` 玩家受物理擊時)原以 `["armor_rating"]` 直取 → **戴戒指/項鍊後第一次被物理擊中即 `KeyError` 崩潰**。改 `.get` 略過飾品(計 0 護甲)、`worn_armor_rating` 一併防禦化;補回歸測試(還原 HEAD 版可重現)。commit `a10aaeb`。
 
+**反 min-max 補洞:說服/撬鎖/行竊接上 practice 成本(使用者點名三個零成本刷技能漏洞 → 評估 workflow → 直作 → 對抗審查)**:使用者指出三處名實不符 ——「偷竊沒處罰、開鎖沒代價、可一直說服刷口才」。先跑**評估 workflow**(調查→設計→對抗驗證),確認三者皆 `confirmed_gap`,且挖出共同根因:**遊戲早就替每個技能定好 `practice` 價碼**(`data/skills.json` 每技能 `practice`={xp,fatigue,hours},訓練師 `action_practice` 就按此收費),而行竊/撬鎖/說服是**繞過該價碼的實戰捷徑**(同樣 xp、零時間、零體力)。修法=讓三者統一付各自技能的 practice 成本。
+- **核心**:`progression.practice_cost(char, gd, skill_id)→(xp, hours, tired)`(共用「體力不濟 xp 減半」模型:扣體力、回傳 xp/時數/tired;**呼叫端**負責推進時間與 `use_skill`)。`action_practice` 重構為呼叫它(單一真實來源,行為逐位等價)。
+- **三處系統函式**(簽章不變,皆被測試以位置引數呼叫):`crime.steal_item` 付 sneak practice 成本 + **得手才給潛行 xp**(被抓 `skill_events=[]` → 杜絕「故意被抓刷潛行」);`dungeon.pick_lock` 真實擲骰付 security practice 成本(**塔之鑰仍免體力、免耗時 `hours=0`**,守招牌);`dialogue.persuade` 付 speechcraft practice 成本(**折服必成路徑也付**,非免費必成)。三者回傳加 `hours/tired`。移除 `LOCKPICK_XP`/`PERSUADE_XP` 常數改讀 practice。
+- **三處呼叫端**(`main.py`):`action_shop` 行竊 / `_resolve_container` 撬鎖 / `action_talk` 說服 —— 各 `state.time.advance(r["hours"])` + tired 提示。
+- **對抗審查覆核(1 confirmed,擋下 1 錯誤修法)**:四個「exploit」發現其實同一根因、驗證者**分裂**。3 個判 `not_a_bug`(理由一致且嚴謹:tired 每次仍付「1 不可逆遊戲小時」、是與訓練師 `action_practice` 完全一致的既定經濟、好感有效值封頂 100;建議的「fatigue=0 擋下動作」會破壞 tired 半額回歸測試、背離訓練師對等、且若寫成 `return(0,0)` 反而**重開零『時間』成本重試洞**)。**採納其結論、擋下該錯誤修法**。1 個判 `isReal/major` 屬實:`_resolve_container` 的 `while True` 是唯一**自動重試**迴圈(最低摩擦刷取)。→ 只加**安全閘門**:撬鎖失敗且已 `tired`(體力耗盡)即**收手退出**(讓體力成為「單場撬鎖次數」的真實上限,非半額無限重試),不動 `practice_cost`、不破任何測試、不開新洞。
+- **驗證**:27 測試模組全綠(新增 `test_practice_cost`:11 條,含**反向驗證**——還原舊碼會紅——與**接線煙霧**:三入口真實推進時間、撬鎖耗盡停手)+ `sim_assassin` 零位移(本輪不碰戰鬥)。**鐵律**:這三個動作的 xp/時間/體力**只走 `progression.practice_cost`**;調平衡改 `data/skills.json` 各技能 `practice`(純 JSON);tired→0.5× 是刻意的退化狀態(與訓練師一致),別誤當漏洞去擋。
+
 **內容量**:10 種族 / 13 星座 / 8 職業 / **22 技能(+偵查 scout)** / **19 武器(4 法杖)** / **34 護甲(7 材質整套)** / 25 法術(5 AoE) /
 14 材料 / **4 飾品** / **38 生物(7 高階 elite + 2 吸血鬼 + 5 黑沼澤 + 8 黑兄目標 + 2 heartland;18 隻帶 biome 生態標籤)** / 3 傭兵 / **36 地點(有環圖+生態 biome,世界閉合成大環;各省補全城市 賽8/天9/晨8/黑7/邊4,共 17 城+4 鎮)** / **6 地城** / **41 任務(3 分支壓軸 + 解咒 + 6 黑兄合約 + 10 在地任務含 2 任務鏈)** / **4 公會** / **7 開局背景** / **59 NPC(每城 3 / 每鎮 2,角色多樣、greeting + rumor 指路;8 名掛在地委託)** / **24 事件(含 9 省份限定)** / **吸血鬼化系統** / **黑暗兄弟會系統** / **技能里程碑系統(6 條 MVP,達門檻自動解鎖)** / **21 城主(各城自治)**。
-程式:**20 個 `systems` 模組**(+vampirism +brotherhood +mastery)+ models/ui/synth 等,共約 36 個 `.py` + `sim_assassin.py`(平衡回歸);**23 個 `data/*.json`**(+mastery.json;黑兄/細化省分全靠改既有檔);**26 測試模組**(+test_mastery)。
+程式:**20 個 `systems` 模組**(+vampirism +brotherhood +mastery)+ models/ui/synth 等,共約 36 個 `.py` + `sim_assassin.py`(平衡回歸);**23 個 `data/*.json`**(+mastery.json;黑兄/細化省分全靠改既有檔);**27 測試模組**(+test_mastery +test_practice_cost)。
 
 ---
 
@@ -297,7 +304,8 @@ tesrpg/
 > **偵查→開戰前備戰空間**(潛近成功+未被伏擊時,依偵查技能換得 1/2/3 個備戰動作:施增益/召喚(鎖 scout≥50)/喝藥/塗毒;順解召喚開場佔回合痛點)、
 > **格擋接上技能縮放**(技能健檢抓到格擋等級空轉 → `block_damage_factor` ×0.9→×0.4)、
 > **技能里程碑 Skill Mastery P1**(§1:6 條被動達門檻 50/75/100 自動解鎖,反 min-max;含對抗審查覆核修正;P2/P3 路線已拍板)、
-> **飾品實戰崩潰修正**(§1:戴飾品被物理擊 `KeyError`,既有 bug)。
+> **飾品實戰崩潰修正**(§1:戴飾品被物理擊 `KeyError`,既有 bug)、
+> **反 min-max 補洞:說服/撬鎖/行竊接上 practice 成本**(§1:三個零成本刷技能漏洞統一接上各技能 practice 體力+時間;對抗審查擋下「fatigue=0 擋下動作」錯誤修法,只加撬鎖耗盡停手閘門)。
 >
 > 地圖後續可再加:黑沼澤**起手任務鉤子 / 開局背景**(亞龍人沼澤出身,純改 quests/origins JSON);再開一省(漢默法爾/高岩…)續閉環;贊密爾沉廟可加後門讓它變環上節點。
 > 公會後續可再加:更多分支壓軸 / 階級設施權限 / 公會委託告示。(✅ 暗殺者公會=黑暗兄弟會已做,見 §1)

@@ -11,7 +11,6 @@ from tesrpg.rng import RNG
 from tesrpg.systems import mastery, progression
 
 BRIBE_COST = 10
-PERSUADE_XP = 0.5
 
 
 def disposition(char: Character, gamedata: GameData, npc_id: str) -> int:
@@ -24,20 +23,26 @@ def _adjust(char: Character, npc_id: str, delta: int) -> None:
 
 
 def persuade(char: Character, gamedata: GameData, npc_id: str, rng: RNG) -> dict:
-    """以口才說服。成功提升好感,失敗略降。回傳 {ok, delta, skill_events}。"""
+    """以口才說服。成功提升好感,失敗略降。回傳 {ok, delta, hours, tired, skill_events}。
+
+    每次說服付出口才 practice 的體力 + 時間成本(時間由呼叫端推進),與酒館練說服
+    對齊,讓「對話磨嘴皮」不再是零代價的免費刷口才/刷好感(折服里程碑路徑同樣付費)。
+    """
     skill = char.skill("speechcraft")
-    events = progression.use_skill(char, gamedata, "speechcraft", PERSUADE_XP)
+    xp, hours, tired = progression.practice_cost(char, gamedata, "speechcraft")
+    events = progression.use_skill(char, gamedata, "speechcraft", xp)
     # 里程碑「辯舌·折服」:口才大師對每個 NPC 可一次性必定說服(記入 persuaded_npcs)。
     if mastery.can_guaranteed_persuade(char, gamedata, npc_id):
         char.persuaded_npcs.append(npc_id)
         _adjust(char, npc_id, 10)
-        return {"ok": True, "delta": 10, "charmed": True, "skill_events": events}
+        return {"ok": True, "delta": 10, "charmed": True,
+                "hours": hours, "tired": tired, "skill_events": events}
     chance = max(0.1, min(0.9, 0.35 + (skill + char.attr("personality") - 50) * 0.005))
     if rng.chance(chance):
         _adjust(char, npc_id, 10)
-        return {"ok": True, "delta": 10, "skill_events": events}
+        return {"ok": True, "delta": 10, "hours": hours, "tired": tired, "skill_events": events}
     _adjust(char, npc_id, -5)
-    return {"ok": False, "delta": -5, "skill_events": events}
+    return {"ok": False, "delta": -5, "hours": hours, "tired": tired, "skill_events": events}
 
 
 def bribe(char: Character, gamedata: GameData, npc_id: str) -> dict:

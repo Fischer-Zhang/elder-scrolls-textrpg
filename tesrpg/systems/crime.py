@@ -36,17 +36,25 @@ def steal_chance(char: Character) -> float:
 
 
 def steal_item(char: Character, gamedata: GameData, item_id: str, rng: RNG) -> dict:
-    """嘗試從商店順手牽羊。回傳 {ok, caught, bounty_added, skill_events}。"""
+    """嘗試從商店順手牽羊。回傳 {ok, caught, bounty_added, hours, tired, skill_events}。
+
+    每次嘗試付出潛行 practice 的體力 + 時間成本(由呼叫端推進時間),
+    讓行竊不再繞過正規訓練的代價;且**得手才學到手藝**(被抓不給潛行 xp →
+    杜絕「故意被抓刷潛行」)。
+    """
     from tesrpg.systems import inventory
     province = province_of(char, gamedata)
     value = gamedata.item(item_id)["value"]
-    events = progression.use_skill(char, gamedata, "sneak", 0.4)
+    xp, hours, tired = progression.practice_cost(char, gamedata, "sneak")
     if rng.chance(steal_chance(char)):
         inventory.add_item(char, item_id, 1)
-        return {"ok": True, "caught": False, "bounty_added": 0, "skill_events": events}
+        events = progression.use_skill(char, gamedata, "sneak", xp)
+        return {"ok": True, "caught": False, "bounty_added": 0,
+                "hours": hours, "tired": tired, "skill_events": events}
     fine = max(20, value * 2)
     add_bounty(char, province, fine)
-    return {"ok": False, "caught": True, "bounty_added": fine, "skill_events": events}
+    return {"ok": False, "caught": True, "bounty_added": fine,
+            "hours": hours, "tired": tired, "skill_events": []}
 
 
 # --- 衛兵盤查 -----------------------------------------------------------

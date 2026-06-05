@@ -36,6 +36,20 @@ def ensure_all_skills(char: Character, gamedata: GameData) -> None:
             char.skill_xp.setdefault(sid, 0.0)
 
 
+def practice_cost(char: Character, gamedata: GameData, skill_id: str) -> tuple[float, int, bool]:
+    """套用該技能 data/skills.json 的 practice 體力成本,算出本次 xp 與耗時。
+
+    與訓練師 action_practice 共用同一份 practice 價碼,讓「實戰中順手練技能」
+    (行竊/撬鎖/說服)不再繞過正規訓練的代價:扣體力、體力不濟時 xp 減半。
+    回傳 (xp, hours, tired);**呼叫端**負責推進時間(state.time)與授予 xp(use_skill)。
+    """
+    pdef = gamedata.skills[skill_id]["practice"]
+    tired = char.fatigue < pdef["fatigue"]
+    xp = pdef["xp"] * (0.5 if tired else 1.0)
+    char.fatigue = max(0, char.fatigue - pdef["fatigue"])
+    return xp, pdef["hours"], tired
+
+
 def use_skill(char: Character, gamedata: GameData, skill_id: str, xp: float) -> list[dict]:
     """對某技能灌注 xp,結算升點。回傳事件列表(供 UI 呈現)。
 
