@@ -1299,37 +1299,55 @@ def _pledge_allegiance(state: GameState, gamedata: GameData) -> None:
 
 
 def action_siege(state: GameState, gamedata: GameData, loc_id: str) -> str | None:
-    """對對立大義之城發動攻城:消耗戰 —— 每破一波永久削減守軍(進度保留,可分次圍攻),
-    削到 0 則城池易幟。波間可趁隙重整。回傳 'dead'(陣亡)或 None。"""
+    """圍攻敵城:混合制 —— 先施圍城方略(全套技能各有用)削弱守軍,再發動輕量化強攻。
+    回傳 'dead'(強攻陣亡)或 None。"""
     char = state.player
     city = gamedata.location(loc_id)["name"]
-    remaining = politics.garrison_of(char, gamedata, loc_id)
-    if not ui.confirm(f"對「{city}」發動攻城?現存守軍約 {remaining} —— 這是連場血戰的消耗戰,"
-                      f"戰果會保留(可分次圍攻),但一旦力竭敗陣便是死路。"):
-        return None
-    ui.message(f"號角長鳴,你向{city}的城牆發起猛攻 ——", style="bold magenta")
-    base = politics.base_garrison(gamedata, loc_id)
-    wave_no = 0
-    while politics.garrison_of(char, gamedata, loc_id) > 0:
-        wave_no += 1
-        rem = politics.garrison_of(char, gamedata, loc_id)
-        wave = politics.siege_wave(rem, base)
-        enemies = [combat.spawn_creature(gamedata, politics.SIEGE_SOLDIER, state.rng)
-                   for _ in range(wave["guards"])]
-        if wave["boss"]:
-            enemies.append(combat.spawn_boss(gamedata, politics.SIEGE_SOLDIER, state.rng,
-                                             name=f"{city}守將"))
-        if wave_no > 1:                         # 破上一波後趁隙重整(部分回復,非全補)
-            politics.regroup(char)
-            ui.message("你退到殘垣後包紮喘息,稍稍恢復了氣力。", style="grey70")
-        ui.message(f"⚔ 守軍迎面殺到(殘軍約 {rem})!", style="magenta")
-        res = run_battle(state, gamedata, enemies)
-        if res == "dead":
-            return "dead"
-        if res == "fled":
-            ui.message(f"你且戰且退 —— 城未下,但守軍已折損,戰果保留,改日可再續攻。", style="yellow")
+    while True:
+        remaining = politics.garrison_of(char, gamedata, loc_id)
+        opts = []
+        for op in politics.available_ops(char, gamedata, loc_id):
+            est = politics.op_deplete_amount(char, op)
+            cost = "、".join(f"{v}{ {'gold':'金','magicka':'魔','fatigue':'體'}[k] }"
+                            for k, v in op["cost"].items()) or "免"
+            tag = "" if politics.can_afford_op(char, op) else "(資源不足)"
+            risk = "(有風險)" if op["risk"] else ""
+            opts.append((op["id"], f"{op['name']}〔{gamedata.skill_name(op['skill'])}〕"
+                                   f"耗 {op['hours']}時/{cost}{risk} → 削守軍約 {est}{tag}"))
+        opts.append(("assault", f"⚔ 發動強攻(現存守軍 {remaining})"))
+        choice = ui.menu(f"圍攻「{city}」—— 守軍 {remaining}", opts, allow_back=True)
+        if choice is None:
             return None
-        politics.deplete_garrison(char, gamedata, loc_id, wave["strength"])   # 永久削減,進度持久
+        if choice == "assault":
+            return _siege_assault(state, gamedata, loc_id, city)
+        op = politics.SIEGE_OP_BY_ID[choice]
+        if not politics.can_afford_op(char, op):
+            ui.message("資源不足,難以施行此略。", style="red")
+            continue
+        r = politics.resolve_op(char, gamedata, loc_id, choice, state.rng)
+        state.time.advance(op["hours"])
+        if r["ok"]:
+            ui.message(f"{op['desc']} 守軍折損約 {r['deplete']}。", style="green")
+        else:
+            ui.message("行動被守軍察覺,無功而返 —— 此略已不可再用。", style="yellow")
+
+
+def _siege_assault(state: GameState, gamedata: GameData, loc_id: str, city: str) -> str | None:
+    char = state.player
+    remaining = politics.garrison_of(char, gamedata, loc_id)
+    n = politics.assault_force(remaining)
+    if not ui.confirm(f"向「{city}」發動最後強攻?守軍 {remaining}(約 {n} 名守兵 + 守將)—— "
+                      f"一戰定生死,敗陣便是死路。"):
+        return None
+    ui.message(f"號角長鳴,你率眾撞開{city}的城門 ——", style="bold magenta")
+    enemies = [combat.spawn_creature(gamedata, politics.SIEGE_SOLDIER, state.rng) for _ in range(n)]
+    enemies.append(combat.spawn_boss(gamedata, politics.SIEGE_SOLDIER, state.rng, name=f"{city}守將"))
+    res = run_battle(state, gamedata, enemies)
+    if res == "dead":
+        return "dead"
+    if res == "fled":
+        ui.message("你且戰且退 —— 城未下,但圍城方略的戰果仍在,改日可再攻。", style="yellow")
+        return None
     politics.conquer(char, gamedata, loc_id)
     char.fame += politics.SIEGE_FAME
     ui.message(f"城門洞開,守將伏誅 —— 「{city}」易幟,自此歸於{politics.cause_name(char.allegiance)}!",

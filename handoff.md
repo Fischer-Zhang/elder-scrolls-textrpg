@@ -196,11 +196,14 @@
 
 **城戰(Phase 3+4 合併:政治立場 + 選邊 + 攻城戰)(使用者拍板:城為單位、各城主自有立場;Phase 3 直接併進 Phase 4)**:領主區從「能差遣」升到「能征伐」—— 完整的城邦戰爭迴圈。核心在 `systems/politics.py`。
 - **城為單位的立場**:21 城各有 `stance`(rulers.json:`imperial` 復辟 / `independent` 獨立 / `neutral` 觀望),依各城主考據指派、**刻意跨省混合**(如天際:獨立溫德赫 + 中立白漫 + 復辟海芬古)。玩家在領主區「宣誓效忠」一個大義(`char.allegiance`)→ `relationship`:同=盟、對立=敵(可攻)、中立=觀望。
-- **攻城=消耗戰(複用 `combat` 群戰)**:對敵城發動 → `action_siege` 連場守軍波次(`run_battle`,每波 city_guard×N + 最後一波守將 `spawn_boss`),波間 `regroup`(部分回復、非全補)。**駐軍是可消耗的戰力條**:每破一波**永久削減** `garrison_current`(進度持久化,可分多次圍攻)→ 削到 0 破城、`conquer` 翻轉 `city_faction` 為你的大義 + 由你方重新駐軍 + 聲望。
-- **平衡(sim 背書,單調遞增)**:`siege_params(base)` 波數與每波守軍皆隨基準駐軍單調升。保守 sim(2 同伴每波滿血 + 波間重整、無玩家藥水/格擋/偷襲):**mid 攻不下(終局門檻)/ strong 取小城(g80-110 ~87%)/ elite 取中城(g210-260 ~90%)/ 帝都 g400 是終局王冠**(floor 0%,須滿配+全套消耗品)。調平衡只動 `politics.SIEGE_*`/`siege_params`。
+- **攻城=混合制(使用者拍板:不同戰鬥方式、盡量運用各種技能)**——兩階段:
+  - **① 圍城方略(`SIEGE_OPS`,7 核心)**:技能門檻開放的作戰選項,讓**潛行/社交/工具/魔法系**也有攻城用途:偵查(scout)/夜襲(sneak)/撬側門(security)/勸降(speechcraft)/賄賂(mercantile)/法術轟城(destruction)/召喚襲擾(conjuration)。各耗時間+資源(金/魔/體)、**每役每略限一次**(`char.siege_ops` 持久),成功則 `deplete_garrison` 削守軍;風險型(夜襲/撬門)依技能擲成功。
+  - **② 輕量化強攻**:單場 `run_battle`(守軍數 `assault_force(剩餘守軍)` + 守將 boss);勝 → `conquer` 翻轉 `city_faction` + 重新駐軍 + 清 siege_ops + 聲望。守軍削得越少 → 強攻越輕鬆 → 方略與強攻成 build 取捨。
+- **平衡(sim 背書)**:`assault_force` 隨剩餘守軍單調升 —— **小城(g≤120)可強攻硬下;大城(g200-400)須靠方略削弱**(帝都 400 須廣技能佈局才打得下,純戰士只能靠 recon/bribe 微軟化 → 真·全技能里程碑)。調平衡改 `politics.SIEGE_OPS`/`assault_force`。
 - **新 Character 欄**`allegiance`/`city_faction`/`garrison_current`(dataclass 預設、進 to_dict、向後相容;動態戰況懶初始化自 rulers 種子)。接點:`action_court` 加宣誓效忠/發動攻城、`court_panel` 顯示立場·關係·現存駐軍、hub 捕捉攻城 `died`。
-- **對抗審查修掉自身 MAJOR**:原本逃跑會讓清掉的波重生 → 可「清波→逃→重刷」無限farm city_guard(野外不刷的兵種)戰利/技能 XP/擊殺。改為**駐軍永久削減 + 進度持久**(清掉的波不重生)根治;順手修 neutral 立場顯示中文、波數梯度死碼。
-- **驗證**:31 測試模組全綠(新增 `test_politics`:立場跨省混合/關係判定/選邊/僅敵可攻/消耗戰單調收斂+破城/進度持久杜絕重刷/攻城煙霧 勝-死-逃-半途逃/存檔向後相容)+ 平衡 sim + 端到端煙霧(經 action_court:宣誓→攻敵城→破城易幟→變盟)。
+- **新 Character 欄**`allegiance`/`city_faction`/`garrison_current`/`siege_ops`(皆 dataclass 預設、進 to_dict、向後相容、懶初始化)。
+- **防 farm**:圍城方略 once-each(不可重複)、強攻單場(無波次可分段刷)、方略耗資源為淨流出、強攻 fled 不發戰利 → 杜絕重刷(初版波次模型曾被審查抓到「清波→逃→重刷」MAJOR,改混合制後結構性根治)。
+- **驗證**:31 測試模組全綠(`test_politics`:立場跨省混合/關係/選邊/僅敵可攻/方略技能門檻+once-each/扣資源/風險型失敗仍計次/強攻單調+夾限/conquer 清 ops/攻城煙霧 方略→強攻 勝-死-逃/存檔向後相容)+ 平衡 sim + 端到端煙霧(經 action_court:宣誓→7 技能方略軟化→強攻破城)+ 對抗審查(無真 bug、farm 已封堵;順手修 gold 夾 0、刪死碼 base_garrison)。
 - **後續(藍圖 §6 #0;此里程碑刻意未做)**:佔領後收稅(週期金幣,複用補貨時間鉤子)/ 駐軍隨時間重建 / 自走 AI 陣營戰爭 / 攻下後可安插自己為領主 / 公會與大義綁定 / 武士所在城翻給敵方時 Thane 特權暫停。**加城/改立場純改 rulers.json**。
 
 **內容量**:10 種族 / 13 星座 / 8 職業 / **22 技能(+偵查 scout)** / **19 武器(4 法杖)** / **34 護甲(7 材質整套)** / 25 法術(5 AoE) /
@@ -323,7 +326,7 @@ tesrpg/
 
 0. **城戰/領主區路線(已立藍圖,Oblivion+Skyrim 參考,逐 Phase 推進)** —— ✅ **Phase 1 已做**(見 §1「領主區 Phase 1」:第 4 城區 `領主區 👑` + 謁見領主,讓 21 城主活起來)。藍圖:
    - ✅ **Phase 2 已做**(見 §1「領主區 Phase 2」):領主委託(source `ruler`)→ `city_standing` → 達 `THANE_STANDING` 受封武士;特權=該省賞金寬待 + 侍從 + 信物。新 Character 欄 `city_standing`/`thaneships`。其餘 20 城委託=內容 TODO(純 JSON)。
-   - ✅ **Phase 3+4 已做(合併)**(見 §1「城戰」):**城為單位、各城主自有立場**(rulers.json `stance`,使用者拍板,非省分綁定);選邊(`allegiance`)→ 對敵城發動攻城(`systems/politics.py`,消耗戰削減 `garrison_current` 至 0 破城)→ 翻轉 `city_faction`。平衡 sim 背書(單調遞增、帝都=終局王冠)。
+   - ✅ **Phase 3+4 已做(合併,混合戰鬥制)**(見 §1「城戰」):**城為單位、各城主自有立場**(rulers.json `stance`,使用者拍板);選邊(`allegiance`)→ 對敵城**圍城方略**(7 個技能門檻作戰選項,潛行/社交/工具/魔法系都有攻城用途,削守軍)+**輕量化強攻**(單場 `combat`)→ 破城翻轉 `city_faction`。平衡 sim 背書(小城可強攻、大城須廣技能佈局)。`systems/politics.py`。
    - **後續(此里程碑刻意未做)**:佔領後收稅(週期金幣)、駐軍隨時間重建、自走 AI 陣營戰爭、攻下可安插自己為領主、公會與大義綁定、武士所在城翻敵時 Thane 特權暫停。
    - **鐵律**:政治可變狀態寫 `politics.json`/Character(預設值向後相容),地理永遠在 world.json;加領主對話/委託/陣營儘量純改 JSON;每 Phase 走完整 §4 節奏。
 1. **內容難度第二階段 / 實機微調**:elite 已上但只在 danger≥4 野外 + 龍喉巢穴/灰燼墓塚出現;可加更多終局區、把 elite 接進更多地城首領池、跑過後微調 elite 數值(魔人領主/巨龍仍偏硬,模擬是 no-heal 下限)。
@@ -357,7 +360,7 @@ tesrpg/
 > **煉金材料採集全覆蓋 + 製作系統**(§1:15 材料全可野外採/獵;第一個泛用配方加工 recipes.json,獸皮→皮甲)、
 > **領主區 Phase 1**(§1:第 4 城區 👑 謁見領主,讓 21 城主活起來;§6 #0 立攻城戰分層藍圖)、
 > **領主區 Phase 2**(§1:領主委託 source `ruler` → 城邦功勳 → 武士冊封 Thaneship;特權=該省賞金寬待+侍從+信物;布魯瑪 2 委託為 MVP 範例)、
-> **城戰 Phase 3+4 合併**(§1:城為單位立場 stance + 宣誓效忠 + 攻城消耗戰 → 破城易幟;平衡 sim 背書、帝都終局王冠;對抗審查修掉清波重刷漏洞 → 駐軍永久削減/進度持久)。
+> **城戰 Phase 3+4 合併(混合戰鬥制)**(§1:城為單位立場 + 宣誓效忠 + **圍城方略 7 技能作戰 + 輕量強攻** → 破城易幟;平衡 sim 背書;對抗審查確認 farm 已結構性根治)。
 >
 > 地圖後續可再加:黑沼澤**起手任務鉤子 / 開局背景**(亞龍人沼澤出身,純改 quests/origins JSON);再開一省(漢默法爾/高岩…)續閉環;贊密爾沉廟可加後門讓它變環上節點。
 > 公會後續可再加:更多分支壓軸 / 階級設施權限 / 公會委託告示。(✅ 暗殺者公會=黑暗兄弟會已做,見 §1)

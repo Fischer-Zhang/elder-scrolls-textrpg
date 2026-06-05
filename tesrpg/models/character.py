@@ -121,7 +121,8 @@ class Character:
     # 動態戰況掛 Character(存檔)、首次存取時由種子懶初始化(同 shop_stock 模式)。
     allegiance: str = ""                                  # 玩家擁護的大義:""=未選 / imperial / independent
     city_faction: dict = field(default_factory=dict)      # loc_id -> 現時歸屬立場(攻城會翻轉)
-    garrison_current: dict = field(default_factory=dict)  # loc_id -> 現存駐軍(攻城消耗)
+    garrison_current: dict = field(default_factory=dict)  # loc_id -> 現存駐軍(圍城方略消耗)
+    siege_ops: dict = field(default_factory=dict)         # loc_id -> [已施行的圍城方略 id](每役每略一次)
 
     is_player: bool = False
 
@@ -193,7 +194,7 @@ class Character:
             "shop_stock": self.shop_stock, "shop_restock_at": self.shop_restock_at,
             "city_standing": self.city_standing, "thaneships": self.thaneships,
             "allegiance": self.allegiance, "city_faction": self.city_faction,
-            "garrison_current": self.garrison_current,
+            "garrison_current": self.garrison_current, "siege_ops": self.siege_ops,
             "companions": self.companions,
         }
 

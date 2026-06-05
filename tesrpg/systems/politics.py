@@ -2,27 +2,26 @@
 
 立場種子在 rulers.json 的 `stance`(imperial 復辟 / independent 獨立 / neutral 觀望),依各城主考據
 指派(刻意跨省混合)。玩家擁護一個「大義」(allegiance)後:同立場=盟、對立=可攻、中立=觀望。
-攻城=連場 `combat` 群戰波次(其間無休整);攻下 → 該城歸屬翻轉為你的大義。
 
-動態戰況掛 Character(存檔):city_faction(歸屬翻轉)、garrison_current(駐軍),首次存取時由
-rulers 種子懶初始化。加城/改立場純改 rulers.json;調攻城規模/獎勵改本檔常數。
+**攻城=混合制**(讓全套技能都有用武之地,不只戰鬥系):
+  1. 圍城方略(SIEGE_OPS):一批**技能門檻**的作戰選項(偵查/夜襲/撬側門/勸降/賄賂/轟城/召喚襲擾…),
+     各自耗時間/資源、**每役每略限一次**,成功則**削減守軍**(deplete_garrison)。涵蓋潛行/社交/工具/魔法系。
+  2. 強攻(輕量化單場決戰):一場 `combat` 群戰,守軍數 = `assault_force(剩餘守軍)` + 守將 boss;
+     勝 → 破城易幟。守軍越少(方略削得越多)強攻越輕鬆 → 方略與強攻形成 build 取捨。
+
+動態戰況掛 Character(存檔):city_faction(歸屬)、garrison_current(守軍,被方略削)、siege_ops(已用方略);
+首次存取由 rulers 種子懶初始化。加城/改立場純改 rulers.json;加圍城方略改 SIEGE_OPS;調平衡改本檔常數。
 """
 
 from __future__ import annotations
-
-import math
 
 from tesrpg.gamedata import GameData
 from tesrpg.models import Character
 
 CAUSES = {"imperial": "帝國復辟派", "independent": "獨立同盟"}   # 玩家可擁護的兩大義
 STANCE_LABEL = {"imperial": "帝國復辟派", "independent": "獨立同盟", "neutral": "中立觀望"}
-SIEGE_SOLDIER = "city_guard"   # 攻城守軍兵種(複用既有衛兵)
+SIEGE_SOLDIER = "city_guard"   # 守軍/守將兵種(複用既有衛兵)
 SIEGE_FAME = 30                # 攻下一城的聲望獎勵
-# 波間「重整」:每破一波,趁隙退後包紮喘息(非全補)→ 讓連場攻城可承受而非送死。
-SIEGE_REGROUP_HEALTH = 0.35
-SIEGE_REGROUP_FATIGUE = 0.6
-SIEGE_REGROUP_MAGICKA = 0.3
 
 
 def stance_label(stance: str | None) -> str:
@@ -36,11 +35,6 @@ def cause_name(cause: str) -> str:
 def base_stance(gamedata: GameData, loc_id: str) -> str | None:
     ruler = gamedata.ruler_at(loc_id)
     return ruler.get("stance", "neutral") if ruler else None
-
-
-def base_garrison(gamedata: GameData, loc_id: str) -> int:
-    ruler = gamedata.ruler_at(loc_id)
-    return ruler.get("garrison", 0) if ruler else 0
 
 
 def faction_of(char: Character, gamedata: GameData, loc_id: str) -> str | None:
@@ -83,40 +77,92 @@ def can_siege(char: Character, gamedata: GameData, loc_id: str) -> bool:
     return relationship(char, gamedata, loc_id) == "enemy"
 
 
-def siege_params(base: int) -> tuple[int, int]:
-    """依城池「基準駐軍」定出攻城波數與每波守軍數 —— 兩者皆隨駐軍**單調遞增**,
-    故守軍越多的城越難攻(帝都 400 是終局王冠)。回傳 (waves, guards_per_wave)。"""
-    waves = max(2, min(5, round(base / 90)))
-    guards = max(2, min(6, 1 + base // 90))
-    return waves, guards
-
-
-def siege_wave(remaining: int, base: int) -> dict:
-    """這一波的編成。攻城是消耗戰:每破一波就**永久**削減守軍(deplete_garrison),
-    清掉的波次不重生 —— 杜絕「清波→逃跑→重刷戰利/技能」,也讓玩家可分多次圍攻(進度保留)。
-    削到 0 即破城;最後一波(削完守軍者)守將親臨。回傳 {guards, boss, strength}。"""
-    waves, guards = siege_params(base)
-    chunk = math.ceil(base / waves)
-    return {"guards": guards, "boss": remaining <= chunk, "strength": min(chunk, remaining)}
-
-
 def deplete_garrison(char: Character, gamedata: GameData, loc_id: str, amount: int) -> None:
-    """破一波 → 永久削減該城現存駐軍(進度持久化;清掉的守軍不再重生)。"""
+    """圍城方略削減該城現存守軍(永久、進度持久化;清掉的守軍不再重生)。"""
     char.garrison_current[loc_id] = max(0, garrison_of(char, gamedata, loc_id) - amount)
 
 
-def regroup(char: Character) -> None:
-    """破一波後趁隙喘息:部分回復生命/體力/魔力(非全補)。"""
-    char.health = min(char.max_health, char.health + char.max_health * SIEGE_REGROUP_HEALTH)
-    char.fatigue = min(char.max_fatigue, char.fatigue + char.max_fatigue * SIEGE_REGROUP_FATIGUE)
-    char.magicka = min(char.max_magicka, char.magicka + char.max_magicka * SIEGE_REGROUP_MAGICKA)
+# --- 圍城方略(siege operations:讓潛行/社交/工具/魔法系都有攻城用途)-----
+# 每略:skill 門檻才開放、耗時間 + 資源、**每役每略限一次**(siege_ops 持久),成功削守軍。
+# risk=True 者(夜襲/撬門)依技能擲成功;失敗不削、仍耗成本(被守軍察覺)。加略純改本表。
+SIEGE_OPS = [
+    {"id": "recon",     "name": "偵查弱點", "skill": "scout",       "min": 20, "hours": 2,
+     "cost": {}, "base": 10, "per": 0.30, "risk": False,
+     "desc": "摸清守軍布防與換崗,標出城防破綻。"},
+    {"id": "nightraid", "name": "夜襲哨兵", "skill": "sneak",       "min": 30, "hours": 4,
+     "cost": {"fatigue": 25}, "base": 15, "per": 0.55, "risk": True,
+     "desc": "趁夜潛入,無聲清除哨兵與巡騎。"},
+    {"id": "postern",   "name": "撬開側門", "skill": "security",    "min": 40, "hours": 2,
+     "cost": {"fatigue": 10}, "base": 25, "per": 0.60, "risk": True,
+     "desc": "撬開無人看守的側門,放細作入城製造混亂。"},
+    {"id": "parley",    "name": "勸降策反", "skill": "speechcraft", "min": 40, "hours": 3,
+     "cost": {}, "base": 15, "per": 0.70, "risk": False,
+     "desc": "遣使勸降,策動守軍中的不滿者倒戈。"},
+    {"id": "bribe",     "name": "賄賂守軍", "skill": "mercantile",  "min": 25, "hours": 1,
+     "cost": {"gold": 150}, "base": 20, "per": 0.45, "risk": False,
+     "desc": "金幣開路,買通守將麾下的隊長放水。"},
+    {"id": "bombard",   "name": "法術轟城", "skill": "destruction", "min": 40, "hours": 1,
+     "cost": {"magicka": 35}, "base": 20, "per": 0.65, "risk": False,
+     "desc": "以毀滅法術轟擊城垛,在城牆上炸開缺口。"},
+    {"id": "harry",     "name": "召喚襲擾", "skill": "conjuration", "min": 50, "hours": 1,
+     "cost": {"magicka": 30}, "base": 20, "per": 0.55, "risk": False,
+     "desc": "召喚魔物日夜襲擾,消磨守軍士氣與兵力。"},
+]
+SIEGE_OP_BY_ID = {op["id"]: op for op in SIEGE_OPS}
+
+
+def ops_done(char: Character, loc_id: str) -> list[str]:
+    return char.siege_ops.get(loc_id, [])
+
+
+def can_afford_op(char: Character, op: dict) -> bool:
+    c = op["cost"]
+    return (char.gold >= c.get("gold", 0) and char.magicka >= c.get("magicka", 0)
+            and char.fatigue >= c.get("fatigue", 0))
+
+
+def available_ops(char: Character, gamedata: GameData, loc_id: str) -> list[dict]:
+    """技能達門檻、且此役尚未施行過的圍城方略(可能因資源不足而仍列出但不可執行)。"""
+    done = ops_done(char, loc_id)
+    return [op for op in SIEGE_OPS
+            if op["id"] not in done and char.skill(op["skill"]) >= op["min"]]
+
+
+def op_deplete_amount(char: Character, op: dict) -> int:
+    return round(op["base"] + char.skill(op["skill"]) * op["per"])
+
+
+def resolve_op(char: Character, gamedata: GameData, loc_id: str, op_id: str, rng) -> dict:
+    """施行一個圍城方略:扣成本、(風險型)擲成功、成功則削守軍、記為已用。
+
+    回傳 {ok, deplete, reason?}。呼叫端須先確認 can_afford_op + 未用過。
+    """
+    op = SIEGE_OP_BY_ID[op_id]
+    c = op["cost"]
+    char.gold = max(0, char.gold - c.get("gold", 0))
+    char.magicka = max(0, char.magicka - c.get("magicka", 0))
+    char.fatigue = max(0, char.fatigue - c.get("fatigue", 0))
+    char.siege_ops.setdefault(loc_id, []).append(op_id)   # 每役每略限一次(無論成敗)
+    if op["risk"]:
+        chance = max(0.1, min(0.95, 0.30 + char.skill(op["skill"]) * 0.006))
+        if not rng.chance(chance):
+            return {"ok": False, "deplete": 0, "reason": "alarm"}   # 被守軍察覺,無功而返
+    amount = op_deplete_amount(char, op)
+    deplete_garrison(char, gamedata, loc_id, amount)
+    return {"ok": True, "deplete": amount}
+
+
+def assault_force(remaining: int) -> int:
+    """輕量化強攻的守軍數(隨剩餘守軍單調遞增;守將另計)。守軍削得越少 → 強攻越硬。"""
+    return max(2, min(8, round(remaining / 55)))
 
 
 def conquer(char: Character, gamedata: GameData, loc_id: str) -> None:
-    """攻下:該城歸屬翻轉為你的大義,並由你方重新駐軍。"""
+    """攻下:該城歸屬翻轉為你的大義,由你方重新駐軍,並清掉本役方略紀錄(下次可重新佈局)。"""
     char.city_faction[loc_id] = char.allegiance
     ruler = gamedata.ruler_at(loc_id) or {}
     char.garrison_current[loc_id] = ruler.get("garrison", 100)
+    char.siege_ops.pop(loc_id, None)
 
 
 def held_cities(char: Character, gamedata: GameData) -> list[str]:
