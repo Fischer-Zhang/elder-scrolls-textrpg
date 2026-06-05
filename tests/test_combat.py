@@ -163,6 +163,43 @@ def test_athletics_reduces_combat_fatigue_and_block_costs():
     assert 0 < spent(combat.player_block_cost, 100) < formulas.BLOCK_FATIGUE_COST
 
 
+def test_block_damage_factor_scales_with_skill():
+    """格擋減傷隨格擋技能成長:0→×0.9、100→×0.4、單調遞減、超出範圍夾限。"""
+    assert formulas.block_damage_factor(0) == 0.9
+    assert formulas.block_damage_factor(100) == 0.4
+    assert (formulas.block_damage_factor(0) >
+            formulas.block_damage_factor(50) >
+            formulas.block_damage_factor(100))
+    assert formulas.block_damage_factor(-10) == 0.9
+    assert formulas.block_damage_factor(150) == 0.4
+
+
+def test_block_skill_actually_read_in_combat():
+    """格擋時高格擋技能的防守方實際受到更少傷害(證明 block 等級不再空轉)。
+
+    同一 seed → 命中與傷害骰一致(格擋不影響命中),唯一變因是格擋技能。
+    """
+    gd, c = _warrior()
+    foe = combat.spawn_creature(gd, "giant_rat", RNG(1))
+    foe.attack["damage"] = 60     # 放大傷害 → 捨入後仍顯出技能差
+    foe.attack["skill"] = 100
+
+    def blocked_damage(block_skill, seed):
+        c.skills["block"] = block_skill
+        c.health = c.max_health
+        before = c.health
+        combat.resolve_attack(foe, c, gd, RNG(seed), defender_blocking=True)
+        return before - c.health
+
+    compared = 0
+    for seed in range(50):
+        low, high = blocked_damage(5, seed), blocked_damage(100, seed)
+        if low > 0 and high > 0:          # 兩次都命中才可比較
+            assert high < low, f"高格擋應更會擋:seed={seed} high={high} low={low}"
+            compared += 1
+    assert compared >= 5, "命中樣本不足,無法證明格擋縮放"
+
+
 def test_elite_enemies_gated_by_min_level():
     """高階 elite 受 min_level 把關:低等玩家不會遇到,高等玩家在高危區會遇到。"""
     gd, _ = _warrior()
@@ -209,6 +246,8 @@ def run():
     test_acrobatics_dodge_reduces_hit_chance()
     test_acrobatics_trains_on_dodge()
     test_athletics_reduces_combat_fatigue_and_block_costs()
+    test_block_damage_factor_scales_with_skill()
+    test_block_skill_actually_read_in_combat()
     test_elite_enemies_gated_by_min_level()
     test_group_size_scales_with_danger()
     test_boss_elites_appear_solo()

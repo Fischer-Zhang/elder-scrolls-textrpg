@@ -257,13 +257,15 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
     if hit:
         cond_mult = inventory.weapon_damage_mult(attacker) if _is_player(attacker) else 1.0
         roll = rng.roll(0.85, 1.15)
+        block_factor = (formulas.block_damage_factor(defender.skill("block"))
+                        if defender_blocking else 1.0)
         raw = formulas.attack_damage(wpn_dmg, wpn_skill, _strength(attacker),
-                                     roll, defender_blocking) * cond_mult
+                                     roll, block_factor) * cond_mult
         if sneaking:
             raw *= sneak_mult
         if offhand_dmg:    # 雙持副手補刀:照常吃技能/力量/耐久,但不吃偷襲倍率
             raw += formulas.attack_damage(offhand_dmg, wpn_skill, _strength(attacker),
-                                          roll, defender_blocking) * cond_mult
+                                          roll, block_factor) * cond_mult
         atk_element = None if _is_player(attacker) else attacker.attack.get("element")
         if not _is_player(attacker):
             raw *= magic.weaken_factor(attacker)        # 怪物受耗弱影響

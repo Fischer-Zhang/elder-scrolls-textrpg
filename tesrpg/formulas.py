@@ -170,17 +170,30 @@ def hit_chance(atk_skill: int, atk_agility: int, def_agility: int,
 
 
 def attack_damage(weapon_damage: float, weapon_skill: int, strength: int,
-                  roll: float, defender_blocking: bool = False) -> float:
-    """傷害 = 武器基礎 × 技能倍率 × 力量倍率 × 隨機;對方格擋大幅減傷。
+                  roll: float, block_factor: float = 1.0) -> float:
+    """傷害 = 武器基礎 × 技能倍率 × 力量倍率 × 隨機 × 格擋減傷倍率。
 
     roll 由呼叫端用 rng.roll(0.85, 1.15) 取得(保持本函式為純函式、可測)。
+    block_factor 由呼叫端用 block_damage_factor(防守方格擋技能) 算出(無格擋=1.0)。
     """
     skill_mult = 0.5 + weapon_skill / 100.0         # 0.5 .. 1.5
     str_mult = 0.75 + strength / 160.0              # 40→1.0、100→1.375
-    dmg = weapon_damage * skill_mult * str_mult * roll
-    if defender_blocking:
-        dmg *= 0.4
-    return dmg
+    return weapon_damage * skill_mult * str_mult * roll * block_factor
+
+
+# --- 格擋(隨格擋技能成長:消除「格擋等級空轉」)----------------------------
+BLOCK_DAMAGE_FACTOR_LOW = 0.9    # 格擋技能 0   → 傷害僅降到 90%(生手幾乎擋不住)
+BLOCK_DAMAGE_FACTOR_HIGH = 0.4   # 格擋技能 100 → 傷害降到 40%(原本寫死的值,現為高技能上限)
+
+
+def block_damage_factor(block_skill: int) -> float:
+    """格擋成功時的傷害倍率:隨格擋技能由 0.9(低)線性降到 0.4(高)。
+
+    過去格擋減傷是寫死 ×0.4 與技能無關 → 格擋等級空轉(技能健檢唯一未過項)。
+    現在練格擋會讓格擋真的更有用,與雜技閃避/護甲值隨等級成長一致。
+    """
+    t = max(0, min(100, block_skill)) / 100.0
+    return BLOCK_DAMAGE_FACTOR_LOW + (BLOCK_DAMAGE_FACTOR_HIGH - BLOCK_DAMAGE_FACTOR_LOW) * t
 
 
 def damage_after_armor(damage: float, armor_rating: int, armor_pen: float = 0.0) -> float:
