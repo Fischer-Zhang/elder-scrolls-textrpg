@@ -18,3 +18,7 @@ env/
 # 存檔(預設寫在 ~/.tesrpg/,不應進版控)
 *.save.json
 saves/
+
+# Claude Code 執行期產物(鎖檔/本地設定,不應進版控)
+.claude/scheduled_tasks.lock
+.claude/settings.local.json
