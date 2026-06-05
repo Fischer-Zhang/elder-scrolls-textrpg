@@ -212,6 +212,16 @@ def _complete(char: Character, gamedata: GameData, quest_id: str) -> dict:
     for item_id in reward.get("items", []):
         inventory.add_item(char, item_id, 1)
 
+    # 領主委託(source "ruler"):完成 → 該城功勳 +standing(城 = 其領主目錄含此 qid 者)
+    standing_loc = None
+    if q.get("source") == "ruler":
+        amount = reward.get("standing", 1)
+        for loc_id, ruler in gamedata.rulers.items():
+            if quest_id in ruler.get("quests", []):
+                char.city_standing[loc_id] = char.city_standing.get(loc_id, 0) + amount
+                standing_loc = loc_id
+                break
+
     promoted = None
     stipend = 0
     if q.get("faction") and q.get("rank") is not None and q["faction"] in char.factions:
@@ -226,4 +236,5 @@ def _complete(char: Character, gamedata: GameData, quest_id: str) -> dict:
     char.quests.pop(quest_id, None)
     char.completed_quests.append(quest_id)
     return {"type": "completed", "quest_id": quest_id, "name": q["name"],
-            "reward": reward, "promoted": promoted, "stipend": stipend}
+            "reward": reward, "promoted": promoted, "stipend": stipend,
+            "standing_loc": standing_loc}

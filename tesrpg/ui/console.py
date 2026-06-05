@@ -470,8 +470,9 @@ def npc_panel(npc: dict, disposition: int) -> None:
     console.print(_panel(body, title=f"💬 {npc['name']}", style="green"))
 
 
-def court_panel(ruler: dict, gamedata: GameData, reception: str) -> None:
-    """謁見領主:接待語氣 + 考據背景 + 種族/駐軍/時局(領主區 Phase 1)。"""
+def court_panel(ruler: dict, gamedata: GameData, reception: str,
+                standing: int | None = None, thane: bool = False) -> None:
+    """謁見領主:接待語氣 + 考據背景 + 種族/駐軍/時局,並顯示功勳/武士身分(領主區)。"""
     race = gamedata.races.get(ruler["race"], {}).get("name", ruler["race"])
     body = Text()
     body.append(reception + "\n\n", style="italic " + PARCH)
@@ -482,6 +483,12 @@ def court_panel(ruler: dict, gamedata: GameData, reception: str) -> None:
     body.append(f"{ruler['garrison']} 兵\n", style=INK)
     body.append("時局  ", style=GOLD)
     body.append("大空位 · 各城自治(紅寶石王座空懸)", style=FAINT)
+    if thane:
+        body.append("\n✦ ", style=GOLD)
+        body.append("你是本城武士,享領地禮遇", style="bold " + GOLD)
+    elif standing is not None:
+        body.append("\n城邦功勳  ", style=GOLD)
+        body.append(f"{standing}", style=INK)
     console.print(_panel(body, title=f"👑 {ruler['title']}·{ruler['name']}", style=GOLD))
 
 

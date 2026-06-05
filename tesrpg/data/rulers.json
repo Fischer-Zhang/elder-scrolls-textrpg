@@ -4,7 +4,10 @@
     "title": "伯爵",
     "race": "nord",
     "garrison": 210,
-    "blurb": "布魯瑪伯爵,精明而強硬的諾德女領主。自皇帝遇刺、紅寶石王座空懸,她便獨力扛起這座邊城,在風雪與政爭間守住北疆門戶。"
+    "blurb": "布魯瑪伯爵,精明而強硬的諾德女領主。自皇帝遇刺、紅寶石王座空懸,她便獨力扛起這座邊城,在風雪與政爭間守住北疆門戶。",
+    "quests": ["ruler_bruma1", "ruler_bruma2"],
+    "housecarl": "shieldmaiden",
+    "thane_gift": "elven_sword"
   },
   "kvatch": {
     "name": "歐梅利烏斯·金酒",

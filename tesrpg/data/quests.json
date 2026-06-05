@@ -855,5 +855,17 @@
         "reward": {"gold": 800, "items": ["glass_dagger", "gold_amulet"]}
       }
     ]
+  },
+  "ruler_bruma1": {
+    "name": "領主委託:雪原狼患", "faction": null, "rank": null, "source": "ruler",
+    "objective": {"type": "kill", "creature": "wolf", "count": 6},
+    "reward": {"gold": 120, "fame": 5, "standing": 1}, "turn_in": "auto",
+    "text": "卡薇恩伯爵蹙眉:「布魯瑪周遭狼群猖獗,擾得商旅不安。獵殺六頭,還北疆一條安寧。」"
+  },
+  "ruler_bruma2": {
+    "name": "領主委託:肅清切德納寇", "faction": null, "rank": null, "source": "ruler",
+    "objective": {"type": "clear_dungeon", "dungeon": "cedernoc_cave"},
+    "reward": {"gold": 250, "fame": 10, "standing": 2}, "turn_in": "auto",
+    "text": "「切德納寇洞窟成了匪巢,連我的稅吏都不敢過境。替我把那窩強盜連根拔起 —— 辦成了,布魯瑪會記住你的名字。」"
   }
 }

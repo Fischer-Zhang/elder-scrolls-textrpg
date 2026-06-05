@@ -187,9 +187,16 @@
 - **驗證**:30 測試模組全綠(新增 `test_court`:接待分級/謁見顯示城主/無領主安全)。
 - **藍圖(見 §6「城戰/領主區路線」,已立為正式分層)**:Phase 2 領主委託 + 武士冊封(Thaneship);Phase 3 政治/選邊(`politics.json`);Phase 4 攻城戰(複用 `combat` 群戰)。
 
+**領主區(宮廷)Phase 2:領主委託 + 武士冊封(Thaneship)**:領主從「能謁見」進到「能差遣、能效忠」。
+- **領主委託**:走既有任務引擎,`source:"ruler"`(不漏進告示板/公會);`rulers.json` 的 `quests:[...]` 列各領主委託線(依序開放,有進行中則先做完);`quests._complete` 對 ruler 委託**反查領主目錄**把 `reward.standing` 記進 `city_standing[該城]`(完成事件加 `standing_loc`,`_report_quests` 印「城邦功勳 +N」)。
+- **武士冊封(Thaneship)**:`systems/court.py` —— `city_standing` 達 `THANE_STANDING(3)` → 受封武士(記 `char.thaneships`)。`make_thane` **冪等**(重複受封不重發信物/侍從,防刷);授**信物**(`rulers.thane_gift`)+ **侍從 housecarl**(`rulers.housecarl`,複用 companions,受 `MAX_PARTY` 限,滿則婉拒)。
+- **武士特權**:`guard_confrontation` 開頭 —— 身為**該省**某城武士且賞金 `≤ THANE_BOUNTY_FORGIVE(100)` → 衛兵放行 + 清賞金(大罪 >100 仍追緝;審查評為有界特權、非漏洞:偷竊已耗體力+時間、商店有限)。
+- **新 Character 欄**`city_standing`/`thaneships`(dataclass 預設、進 to_dict、向後相容);`ui.court_panel` 加顯示功勳/武士身分。**MVP 內容**:布魯瑪 2 委託(殺6狼+1、清切德納寇+2 → 滿 3 受封;信物精靈劍、侍從盾女)。**加領主委託純改 rulers.json `quests` + quests.json(`source:ruler`+`reward.standing`);加侍從/信物純改 rulers.json**。其餘 20 城委託=內容 TODO(純 JSON)。
+- **驗證**:30 測試模組全綠(`test_court` 擴充:委託依序開放+完成累積功勳/武士冊封信物+侍從+冪等/賞金寬待/存檔向後相容)+ 端到端煙霧(經真實 `action_court` 選單:接委託→完成→受封→賞金寬待)+ 對抗審查(修掉自身 2 低severity:功勳無畫面回饋、make_thane 信物非冪等)。
+
 **內容量**:10 種族 / 13 星座 / 8 職業 / **22 技能(+偵查 scout)** / **19 武器(4 法杖)** / **34 護甲(7 材質整套)** / 25 法術(5 AoE) /
 **15 材料(全部可野外採集/獵取)** / **4 飾品** / **製作配方系統(4 皮甲配方)** / **38 生物(7 高階 elite + 2 吸血鬼 + 5 黑沼澤 + 8 黑兄目標 + 2 heartland;18 隻帶 biome 生態標籤)** / 3 傭兵 / **36 地點(有環圖+生態 biome,世界閉合成大環;各省補全城市 賽8/天9/晨8/黑7/邊4,共 17 城+4 鎮)** / **6 地城** / **41 任務(3 分支壓軸 + 解咒 + 6 黑兄合約 + 10 在地任務含 2 任務鏈)** / **4 公會** / **7 開局背景** / **59 NPC(每城 3 / 每鎮 2,角色多樣、greeting + rumor 指路;8 名掛在地委託)** / **25 事件(含 10 省份限定;4 野採採集點)** / **吸血鬼化系統** / **黑暗兄弟會系統** / **技能里程碑系統(6 條 MVP,達門檻自動解鎖)** / **21 城主(各城自治)**。
-程式:**21 個 `systems` 模組**(+vampirism +brotherhood +mastery +crafting)+ models/ui/synth 等,共約 37 個 `.py` + `sim_assassin.py`(平衡回歸);**24 個 `data/*.json`**(+mastery.json +recipes.json;黑兄/細化省分全靠改既有檔);**30 測試模組**(+test_mastery +test_practice_cost +test_shop +test_crafting +test_court)。
+程式:**22 個 `systems` 模組**(+vampirism +brotherhood +mastery +crafting +court)+ models/ui/synth 等,共約 38 個 `.py` + `sim_assassin.py`(平衡回歸);**24 個 `data/*.json`**(+mastery.json +recipes.json;黑兄/細化省分全靠改既有檔);**30 測試模組**(+test_mastery +test_practice_cost +test_shop +test_crafting +test_court)。
 
 ---
 
@@ -306,7 +313,7 @@ tesrpg/
 ## 6. 下一步候選(依槓桿排序)
 
 0. **城戰/領主區路線(已立藍圖,Oblivion+Skyrim 參考,逐 Phase 推進)** —— ✅ **Phase 1 已做**(見 §1「領主區 Phase 1」:第 4 城區 `領主區 👑` + 謁見領主,讓 21 城主活起來)。藍圖:
-   - **Phase 2 — 領主委託 + 武士冊封(Thaneship)**:領主發委託(source `ruler`,複用任務引擎、不漏進告示板)→ 完成累積 `city_standing`;達門檻(+選配獻金/置產)→ 受封武士。Perk(仿 `factions.perk`):該省賞金寬待、**侍從 housecarl**(複用 companions)、贈禮、進階服務。**新 Character 欄** `city_standing: dict[loc->int]`、`thaneships: list`(dataclass 預設、向後相容)。
+   - ✅ **Phase 2 已做**(見 §1「領主區 Phase 2」):領主委託(source `ruler`)→ `city_standing` → 達 `THANE_STANDING` 受封武士;特權=該省賞金寬待 + 侍從 + 信物。新 Character 欄 `city_standing`/`thaneships`。其餘 20 城委託=內容 TODO(純 JSON)。
    - **Phase 3 — 政治/選邊(攻城前置)**:新 `data/politics.json`(每城 `faction` 歸屬:帝國 vs 地方獨立/敵對 claimant、`at_war`、`garrison_current`=初始 garrison),與 world.json 地理**解耦**。領主區可查駐軍、宣誓效忠、外交;Character 加 `allegiance`。
    - **Phase 4 — 攻城戰(payoff)**:圍城/守城**複用 `combat` 群戰**(守軍波次依 garrison_current → 守將/領主 boss);佔領 → 翻轉 `politics.faction`/換領主、**收稅**(週期金幣,複用商店補貨的時間鉤子)、駐軍隨時間重建;公會/玩家選邊決定可參戰陣營。平衡用 `auto_resolve` 跑兵力差↔勝率曲線,守住「不可偷襲秒城」。
    - **鐵律**:政治可變狀態寫 `politics.json`/Character(預設值向後相容),地理永遠在 world.json;加領主對話/委託/陣營儘量純改 JSON;每 Phase 走完整 §4 節奏。
@@ -339,7 +346,8 @@ tesrpg/
 > **反 min-max 補洞二:煉金/附魔/修理接上 practice 成本**(§1:製作/維護系同型零成本刷技能,全堵)、
 > **Skyrim 式商店庫存**(§1:有限數量+定時補貨+補貨變化,堵煉金套利無限金幣)、
 > **煉金材料採集全覆蓋 + 製作系統**(§1:15 材料全可野外採/獵;第一個泛用配方加工 recipes.json,獸皮→皮甲)、
-> **領主區 Phase 1**(§1:第 4 城區 👑 謁見領主,讓 21 城主活起來;§6 #0 立攻城戰分層藍圖)。
+> **領主區 Phase 1**(§1:第 4 城區 👑 謁見領主,讓 21 城主活起來;§6 #0 立攻城戰分層藍圖)、
+> **領主區 Phase 2**(§1:領主委託 source `ruler` → 城邦功勳 → 武士冊封 Thaneship;特權=該省賞金寬待+侍從+信物;布魯瑪 2 委託為 MVP 範例)。
 >
 > 地圖後續可再加:黑沼澤**起手任務鉤子 / 開局背景**(亞龍人沼澤出身,純改 quests/origins JSON);再開一省(漢默法爾/高岩…)續閉環;贊密爾沉廟可加後門讓它變環上節點。
 > 公會後續可再加:更多分支壓軸 / 階級設施權限 / 公會委託告示。(✅ 暗殺者公會=黑暗兄弟會已做,見 §1)

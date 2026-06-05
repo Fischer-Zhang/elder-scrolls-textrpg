@@ -112,6 +112,10 @@ class Character:
     shop_stock: dict = field(default_factory=dict)        # loc_id -> {item_id: 剩餘數量}
     shop_restock_at: dict = field(default_factory=dict)   # loc_id -> 下次補貨的絕對小時
 
+    # 領主區(宮廷)Phase 2:領主委託功勳 + 武士冊封(Thaneship)。詳見 systems/court.py。
+    city_standing: dict = field(default_factory=dict)     # loc_id -> 城邦功勳(完成領主委託累積)
+    thaneships: list = field(default_factory=list)        # 已受封武士的 loc_id(享賞金寬待 + 侍從)
+
     is_player: bool = False
 
     # --- 查詢 -------------------------------------------------------------
@@ -180,6 +184,7 @@ class Character:
             "visited_locations": self.visited_locations,
             "power_last_day": self.power_last_day, "tower_key_charge": self.tower_key_charge,
             "shop_stock": self.shop_stock, "shop_restock_at": self.shop_restock_at,
+            "city_standing": self.city_standing, "thaneships": self.thaneships,
             "companions": self.companions,
         }
 

@@ -12,7 +12,7 @@ from tesrpg import creation, formulas
 from tesrpg.gamedata import GameData, get_gamedata
 from tesrpg.rng import RNG, make_seed
 from tesrpg.state import GameState
-from tesrpg.systems import (alchemy, brotherhood, combat, crafting, crime, dialogue, dungeon,
+from tesrpg.systems import (alchemy, brotherhood, combat, court, crafting, crime, dialogue, dungeon,
                             enchanting, events, factions, inventory, legacy, magic, powers,
                             progression, quests, stats, vampirism, world)
 from tesrpg.ui import console as ui
@@ -531,6 +531,9 @@ def _report_quests(state: GameState, gamedata: GameData) -> None:
             ui.message(f"  獎勵 {gamedata.item_name(iid)}", style="green")
         if r.get("fame"):
             ui.message(f"  聲望 +{r['fame']}", style="cyan")
+        if ev.get("standing_loc"):
+            loc_name = gamedata.location(ev["standing_loc"])["name"]
+            ui.message(f"  ◈ {loc_name}城邦功勳 +{r.get('standing', 1)}", style="gold1")
         if ev["promoted"]:
             fac, rank = ev["promoted"]
             ui.message(f"  ★ 你在{gamedata.factions[fac]['name']}晉升為「{rank}」!", style="bold magenta")
@@ -1245,13 +1248,48 @@ def _court_reception(char) -> str:
 
 
 def action_court(state: GameState, gamedata: GameData) -> None:
-    """領主區:謁見當地領主(Phase 1 純謁見;Phase 2+ 在此加委託/效忠/外交)。"""
+    """領主區:謁見領主 + 領主委託 + 受封武士(Phase 2;Phase 3+ 再加效忠/外交)。"""
     char = state.player
-    ruler = gamedata.ruler_at(char.location_id)
+    loc_id = char.location_id
+    ruler = gamedata.ruler_at(loc_id)
     if not ruler:
         ui.message("此地沒有領主可謁見。", style="grey70")
         return
-    ui.court_panel(ruler, gamedata, _court_reception(char))
+    ui.court_panel(ruler, gamedata, _court_reception(char),
+                   standing=court.standing(char, loc_id), thane=court.is_thane(char, loc_id))
+    opts = []
+    offered = court.offered_ruler_quest(char, gamedata, loc_id)
+    if offered:
+        opts.append(("quest", f"領取委託:{gamedata.quests[offered]['name']}"))
+    if court.can_become_thane(char, gamedata, loc_id):
+        opts.append(("thane", "✦ 受封武士"))
+    if not opts:
+        return                                  # 純謁見:領主暫無吩咐
+    choice = ui.menu("領主有何吩咐?", opts, allow_back=True)
+    if choice == "quest":
+        _accept_and_brief(state, gamedata, offered)
+    elif choice == "thane":
+        _become_thane(state, gamedata, loc_id, ruler)
+
+
+def _become_thane(state: GameState, gamedata: GameData, loc_id: str, ruler: dict) -> None:
+    char = state.player
+    granted = court.make_thane(char, gamedata, loc_id)   # 記入 thaneships + 授信物
+    city = gamedata.location(loc_id)["name"]
+    ui.message(f"{ruler['title']}起身,當眾冊封你為「{city}武士」—— 領地的榮譽與守護從此繫於你身。",
+               style="bold gold1")
+    if granted["gift"]:
+        ui.message(f"領主賜下信物:{gamedata.item_name(granted['gift'])}。", style="green")
+    hc = granted["housecarl"]
+    if hc and hc in gamedata.companions and hc not in char.companions:
+        if len(char.companions) < MAX_PARTY:
+            char.companions.append(hc)
+            ui.message(f"侍從 {gamedata.companions[hc]['name']} 從此追隨左右。", style="green")
+        else:
+            ui.message(f"領主欲遣侍從 {gamedata.companions[hc]['name']} 隨你,但你隊伍已滿,"
+                       f"婉拒了這份護衛。", style="yellow")
+    ui.message(f"自此{gamedata.location(loc_id)['province']}的衛兵,對你的小過睜隻眼閉隻眼。",
+               style="grey70")
 
 
 # ======================================================================
@@ -1676,6 +1714,13 @@ def action_murder(state: GameState, gamedata: GameData, nid: str) -> str | None:
 def guard_confrontation(state: GameState, gamedata: GameData) -> str | None:
     char = state.player
     province = crime.province_of(char, gamedata)
+    # 武士特權:身為本省某城武士,小額賞金衛兵放行(大罪仍追緝)
+    if court.is_thane_in_province(char, gamedata, province) \
+            and crime.bounty(char, province) <= court.THANE_BOUNTY_FORGIVE:
+        ui.message(f"「武士閣下!」衛兵認出你的身分,躬身讓道 —— {province}的小額賞金一筆勾銷。",
+                   style="green")
+        crime.clear_bounty(char, province)
+        return None
     ui.message(f"城門衛兵攔住了你:「你在{province}的賞金是 {crime.bounty(char, province)} 金 —— 束手就擒!」",
                style="red")
     while crime.bounty(char, province) > 0:
