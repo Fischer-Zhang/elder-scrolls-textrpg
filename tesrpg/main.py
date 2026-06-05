@@ -12,7 +12,7 @@ from tesrpg import creation, formulas
 from tesrpg.gamedata import GameData, get_gamedata
 from tesrpg.rng import RNG, make_seed
 from tesrpg.state import GameState
-from tesrpg.systems import (alchemy, brotherhood, combat, crime, dialogue, dungeon,
+from tesrpg.systems import (alchemy, brotherhood, combat, crafting, crime, dialogue, dungeon,
                             enchanting, events, factions, inventory, legacy, magic, powers,
                             progression, quests, stats, vampirism, world)
 from tesrpg.ui import console as ui
@@ -1440,6 +1440,32 @@ def action_repair(state: GameState, gamedata: GameData) -> None:
         ui.show_events(events, gamedata)
 
 
+def action_craft(state: GameState, gamedata: GameData) -> None:
+    """製革/加工:把獸皮等原料依配方做成裝備(需鐵匠/製革處)。"""
+    char = state.player
+    loc = world.current_location(char, gamedata)
+    station = "smith" if "armorer" in loc.get("services", []) else None
+    rids = crafting.recipes_for_station(gamedata, station)
+    if not rids:
+        ui.message("這裡沒有可用的工坊。", style="grey70")
+        return
+    opts = []
+    for rid in rids:
+        r = gamedata.recipes[rid]
+        inp = "、".join(f"{gamedata.item_name(i)}×{n}" for i, n in r["inputs"].items())
+        tag = "" if crafting.can_craft(char, gamedata, rid) else "(材料不足)"
+        opts.append((rid, f"{r['name']}:{inp} → {gamedata.item_name(r['output'])}{tag}"))
+    rid = ui.menu("製作什麼?", opts, allow_back=True)
+    if rid is None:
+        return
+    res = crafting.craft(char, gamedata, rid)
+    state.time.advance(res["hours"])
+    ui.message(res["message"], style="green" if res["ok"] else "red")
+    if res["tired"]:
+        ui.message("體力不濟,做工馬虎。", style="yellow")
+    ui.show_events(res["skill_events"], gamedata)
+
+
 _EFFECT_CN = {"heal": "回血", "restore_magicka": "回魔", "restore_fatigue": "回體",
               "damage_health": "毒傷", "paralyze": "麻痺"}
 
@@ -1695,6 +1721,8 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
             market.append(("shop", "商店"))
         if "armorer" in services or inventory.count_item(player, "repair_hammer") > 0:
             market.append(("repair", "修理裝備"))
+        if "armorer" in services:
+            market.append(("craft", "製革加工 🛠"))
         if "mages_guild" in services:
             guilds.append(("guild_mages", "法師公會"))   # 學習法術 + 入會/任務,進子選單
         if "fighters_guild" in services:
@@ -1795,6 +1823,8 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
             action_quest_log(state, gamedata)
         elif choice == "repair":
             action_repair(state, gamedata)
+        elif choice == "craft":
+            action_craft(state, gamedata)
         elif choice == "cast":
             action_cast_self(state, gamedata)
         elif choice == "power":

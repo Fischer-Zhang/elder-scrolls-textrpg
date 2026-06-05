@@ -7,6 +7,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import test_assassin
 import test_combat
+import test_crafting
 import test_creation
 import test_equipment
 import test_guild_depth
@@ -39,7 +40,7 @@ if __name__ == "__main__":
                test_magic, test_m5, test_m6, test_m7, test_m8, test_m9, test_m10, test_m12, test_m13,
                test_m14, test_m15, test_guild_depth, test_equipment, test_weapons, test_origins,
                test_vampirism, test_assassin, test_brotherhood, test_detailing, test_mastery,
-               test_practice_cost, test_shop]
+               test_practice_cost, test_shop, test_crafting]
     for m in modules:
         m.run()
         print(f"✓ {m.__name__}")

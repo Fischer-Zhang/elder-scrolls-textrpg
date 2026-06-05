@@ -1,0 +1,10 @@
+{
+  "tan_leather_bracers": {"name": "鞣製皮護腕", "station": "smith", "skill": "armorer",
+                          "inputs": {"wolf_pelt": 2}, "output": "leather_bracers", "output_qty": 1},
+  "tan_leather_boots":   {"name": "鞣製皮靴",   "station": "smith", "skill": "armorer",
+                          "inputs": {"wolf_pelt": 2}, "output": "leather_boots", "output_qty": 1},
+  "tan_leather_helmet":  {"name": "鞣製皮盔",   "station": "smith", "skill": "armorer",
+                          "inputs": {"wolf_pelt": 3}, "output": "leather_helmet", "output_qty": 1},
+  "tan_leather_cuirass": {"name": "鞣製皮甲",   "station": "smith", "skill": "armorer",
+                          "inputs": {"wolf_pelt": 5}, "output": "leather_cuirass", "output_qty": 1}
+}

@@ -174,9 +174,16 @@
 - **效果**:全圖單輪麻痺毒材料供給 imp_stool 27/canis_root 13 → **每補貨週期上限 13 瓶**(且需跨城採買、耗時)→ 無限瞬間套利消滅、降為有限的時間閘收入。**加商店物品純改 world.json `merchant_stock`(目錄)**;調補貨量/週期改 `world._restock_qty`/`RESTOCK_HOURS`。
 - **驗證**:28 測試模組全綠(新增 `test_shop`:有限/售罄/補貨時機/套利受供給+時間閘/存檔向後相容/購買煙霧扣庫存)+ 對抗審查(存檔相容、邊界不誤扣、決定論不破 test_seed、套利確認被堵)。
 
+**煉金材料採集全覆蓋 + 雜貨加工(製作系統)(使用者要求,純資料 + 一個小系統)**:使用者點出兩個內容缺口 ——「煉金材料只能買?」「狼皮等雜貨有用嗎?」。
+- **採集全覆蓋(Task1,純資料)**:原本 15 種煉金材料只有 7 種能在野外採/獵,其餘只能買。補上後**全部 15 種都有野外取得途徑**:`giant_rat` 加掉 `charred_skeever_hide`;`herb_patch`(全圖)+帝王蝶翼、`morrowind_forage`(晨風)+犬根、`blackmarsh_forage`(黑沼澤)+顛茄;新增 `cyrodiil_forage`(賽羅迪爾農田 → 小麥/大蒜/紅蘋果)。野採走 `events.json`(`trigger.contexts:["explore"]` + 可選 `provinces`),**加採集點純改 events.json**。
+- **製作系統(Task2)**:第一個泛用「配方加工」系統 —— `data/recipes.json`(`inputs`/`output`/`station`/`skill`)+ `gamedata.recipes` + `systems/crafting.py`(`recipes_for_station`/`can_craft`/`missing_inputs`/`craft`)。`craft` 消耗背包原料 → 產**真實物品**(非合成 id),並付該技能 practice 體力+時間(與其他製作系一致,不另闢零成本造物)。接點:`main.py action_craft`(在鐵匠處 `station="smith"`)+ 市集區「製革加工」入口(`armorer` 服務時)+ dispatch。**MVP 4 配方**:狼皮×2→皮護腕/皮靴、×3→皮盔、×5→皮甲(獵狼→自製皮甲的獵人玩法)。**加配方純改 recipes.json**。
+- **雜貨活化**:`bone_meal`(骨粉)從 `items.json` 雜貨改列 `ingredients.json`(成煉金材料,restore_fatigue 6;**move 非 dup**,因 gamedata 合併 ingredients 最後 merge)；`wolf_pelt` 經製革→皮甲系列。**零新存檔欄位**(配方走背包物品)。
+- **平衡**:狼皮不在任何商店(僅獵狼掉落=有限+耗時)→ 製作非無限金幣;皮甲配方多半「賣價低於原料生賣」,皮甲 +9 屬邊際且獵殺/工時閘住;`bone_meal` 為恢復系材料(煉不出毒藥)→ 不餵毒藥套利。
+- **驗證**:29 測試模組全綠(新增 `test_crafting`:配方合法性/加工消耗產出+practice 成本/材料不足零成本/station 閘/**15 材料全有野外途徑**/bone_meal 成材料/鐵匠處煙霧)+ 對抗審查(bone_meal 搬移無破壞、events province 過濾、craft 邊界、無新套利/存檔欄位)。
+
 **內容量**:10 種族 / 13 星座 / 8 職業 / **22 技能(+偵查 scout)** / **19 武器(4 法杖)** / **34 護甲(7 材質整套)** / 25 法術(5 AoE) /
-14 材料 / **4 飾品** / **38 生物(7 高階 elite + 2 吸血鬼 + 5 黑沼澤 + 8 黑兄目標 + 2 heartland;18 隻帶 biome 生態標籤)** / 3 傭兵 / **36 地點(有環圖+生態 biome,世界閉合成大環;各省補全城市 賽8/天9/晨8/黑7/邊4,共 17 城+4 鎮)** / **6 地城** / **41 任務(3 分支壓軸 + 解咒 + 6 黑兄合約 + 10 在地任務含 2 任務鏈)** / **4 公會** / **7 開局背景** / **59 NPC(每城 3 / 每鎮 2,角色多樣、greeting + rumor 指路;8 名掛在地委託)** / **24 事件(含 9 省份限定)** / **吸血鬼化系統** / **黑暗兄弟會系統** / **技能里程碑系統(6 條 MVP,達門檻自動解鎖)** / **21 城主(各城自治)**。
-程式:**20 個 `systems` 模組**(+vampirism +brotherhood +mastery)+ models/ui/synth 等,共約 36 個 `.py` + `sim_assassin.py`(平衡回歸);**23 個 `data/*.json`**(+mastery.json;黑兄/細化省分全靠改既有檔);**28 測試模組**(+test_mastery +test_practice_cost +test_shop)。
+**15 材料(全部可野外採集/獵取)** / **4 飾品** / **製作配方系統(4 皮甲配方)** / **38 生物(7 高階 elite + 2 吸血鬼 + 5 黑沼澤 + 8 黑兄目標 + 2 heartland;18 隻帶 biome 生態標籤)** / 3 傭兵 / **36 地點(有環圖+生態 biome,世界閉合成大環;各省補全城市 賽8/天9/晨8/黑7/邊4,共 17 城+4 鎮)** / **6 地城** / **41 任務(3 分支壓軸 + 解咒 + 6 黑兄合約 + 10 在地任務含 2 任務鏈)** / **4 公會** / **7 開局背景** / **59 NPC(每城 3 / 每鎮 2,角色多樣、greeting + rumor 指路;8 名掛在地委託)** / **25 事件(含 10 省份限定;4 野採採集點)** / **吸血鬼化系統** / **黑暗兄弟會系統** / **技能里程碑系統(6 條 MVP,達門檻自動解鎖)** / **21 城主(各城自治)**。
+程式:**21 個 `systems` 模組**(+vampirism +brotherhood +mastery +crafting)+ models/ui/synth 等,共約 37 個 `.py` + `sim_assassin.py`(平衡回歸);**24 個 `data/*.json`**(+mastery.json +recipes.json;黑兄/細化省分全靠改既有檔);**29 測試模組**(+test_mastery +test_practice_cost +test_shop +test_crafting)。
 
 ---
 

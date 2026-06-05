@@ -188,5 +188,16 @@
         "magnitude": 8
       }
     ]
+  },
+  "bone_meal": {
+    "name": "骨粉",
+    "value": 4,
+    "weight": 0.5,
+    "effects": [
+      {
+        "kind": "restore_fatigue",
+        "magnitude": 6
+      }
+    ]
   }
 }

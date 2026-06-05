@@ -118,8 +118,9 @@
     "options": [
       {"text": "細心採集", "effects": [{"type": "item", "item": "blue_mountain_flower", "qty": 1},
                    {"type": "item", "item": "lavender", "qty": 1},
+                   {"type": "item", "item": "monarch_wing", "qty": 1},
                    {"type": "skill_xp", "skill": "alchemy", "amount": 0.5},
-                   {"type": "message", "text": "你採下了幾株藥草。"}]},
+                   {"type": "message", "text": "你採下了幾株藥草,還撈到一隻歇腳的帝王蝶。"}]},
       {"text": "沒興趣", "effects": []}
     ]
   },
@@ -248,8 +249,9 @@
       {"text": "採集火山材料",
        "effects": [{"type": "item", "item": "ash_yam", "qty": 1},
                    {"type": "item", "item": "scrib_jelly", "qty": 1},
+                   {"type": "item", "item": "canis_root", "qty": 1},
                    {"type": "skill_xp", "skill": "alchemy", "amount": 0.5},
-                   {"type": "message", "text": "你採下了灰薯與彈蟲凍。"}]},
+                   {"type": "message", "text": "你採下了灰薯、彈蟲凍與一截犬根。"}]},
       {"text": "沒興趣", "effects": []}
     ]
   },
@@ -283,8 +285,22 @@
       {"text": "採集沼澤材料",
        "effects": [{"type": "item", "item": "deathbell", "qty": 1},
                    {"type": "item", "item": "imp_stool", "qty": 1},
+                   {"type": "item", "item": "nightshade", "qty": 1},
                    {"type": "skill_xp", "skill": "alchemy", "amount": 0.5},
-                   {"type": "message", "text": "你小心採下了毒茄參與傘菌。"}]},
+                   {"type": "message", "text": "你小心採下了毒茄參、傘菌與顛茄。"}]},
+      {"text": "沒興趣", "effects": []}
+    ]
+  },
+  "cyrodiil_forage": {
+    "weight": 3, "trigger": {"contexts": ["explore"], "provinces": ["賽羅迪爾"]},
+    "title": "帝國農田", "text": "帝都近郊的農田與果園間,麥穗、蒜株與紅蘋果正當時節。",
+    "options": [
+      {"text": "採集農作",
+       "effects": [{"type": "item", "item": "wheat", "qty": 1},
+                   {"type": "item", "item": "garlic", "qty": 1},
+                   {"type": "item", "item": "red_apple", "qty": 1},
+                   {"type": "skill_xp", "skill": "alchemy", "amount": 0.5},
+                   {"type": "message", "text": "你摘了些麥穗、大蒜與紅蘋果。"}]},
       {"text": "沒興趣", "effects": []}
     ]
   },

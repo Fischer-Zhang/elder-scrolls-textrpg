@@ -22,6 +22,10 @@
       {
         "item": "bone_meal",
         "chance": 0.15
+      },
+      {
+        "item": "charred_skeever_hide",
+        "chance": 0.5
       }
     ],
     "flavor": "一隻髒污的巨鼠,從排水溝竄出,露出黃牙。"
