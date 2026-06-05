@@ -229,6 +229,62 @@ def test_lockpick_loop_stops_when_exhausted():
     assert state.time.absolute_hours() - t0 <= 2        # 耗盡即停,不會無限刷
 
 
+# --- 製作/維護系(煉金/附魔/修理)也接上 practice 成本 ----------------
+def test_brew_costs_fatigue_and_time():
+    from tesrpg.systems import alchemy, inventory
+    gd, c = _char(alchemy=40)
+    inventory.add_item(c, "wheat", 1); inventory.add_item(c, "blue_mountain_flower", 1)  # 共通 heal
+    pdef = gd.skills["alchemy"]["practice"]
+    c.fatigue = c.max_fatigue; f0 = c.fatigue
+    r = alchemy.brew(c, gd, "wheat", "blue_mountain_flower", RNG(0))
+    assert r["ok"]
+    assert r["hours"] == pdef["hours"] and "tired" in r
+    assert c.fatigue == f0 - pdef["fatigue"]
+
+
+def test_brew_fail_still_costs_fatigue_and_time():
+    """沒煉成(無共通效果)也付出體力+時間(白忙也花了工夫),只是學得少。"""
+    from tesrpg.systems import alchemy, inventory
+    gd, c = _char(alchemy=40)
+    inventory.add_item(c, "glow_dust", 1); inventory.add_item(c, "deathbell", 1)  # 無共通效果
+    pdef = gd.skills["alchemy"]["practice"]
+    c.fatigue = c.max_fatigue; f0 = c.fatigue
+    r = alchemy.brew(c, gd, "glow_dust", "deathbell", RNG(0))
+    assert not r["ok"]
+    assert r["hours"] == pdef["hours"]
+    assert c.fatigue == f0 - pdef["fatigue"]
+
+
+def test_enchant_costs_fatigue_and_time():
+    from tesrpg.systems import enchanting, inventory
+    gd, c = _char(mysticism=40)
+    inventory.add_item(c, "silver_ring", 1)
+    inventory.add_item(c, "filled_common_soul_gem", 1)
+    pdef = gd.skills["mysticism"]["practice"]
+    c.fatigue = c.max_fatigue; f0 = c.fatigue
+    r = enchanting.enchant_jewelry(c, gd, "silver_ring", "skill", "destruction", "filled_common_soul_gem")
+    assert r["ok"]
+    assert r["hours"] == pdef["hours"] and "tired" in r
+    assert c.fatigue == f0 - pdef["fatigue"]
+
+
+def test_repair_hammer_costs_fatigue_and_time():
+    import tesrpg.main as M
+    from tesrpg.systems import inventory
+    gd, state = _smoke_state()
+    inventory.add_item(state.player, "repair_hammer", 1)
+    pdef = gd.skills["armorer"]["practice"]
+    t0 = state.time.absolute_hours(); f0 = state.player.fatigue
+    restore = _patch_ui(_seq_menu("hammer"), _bounded_yes())
+    try:
+        M.action_repair(state, gd)
+    finally:
+        restore()
+    assert inventory.count_item(state.player, "repair_hammer") == 0     # 鎚已消耗
+    assert state.time.absolute_hours() - t0 == pdef["hours"]            # 修理耗時
+    assert state.player.fatigue == f0 - pdef["fatigue"]                # 修理耗體
+
+
 def run():
     test_practice_cost_deducts_fatigue_and_matches_skills_json()
     test_practice_cost_tired_halves_xp_and_clamps()
@@ -242,6 +298,10 @@ def run():
     test_smoke_lockpick_advances_time()
     test_smoke_talk_persuade_advances_time()
     test_lockpick_loop_stops_when_exhausted()
+    test_brew_costs_fatigue_and_time()
+    test_brew_fail_still_costs_fatigue_and_time()
+    test_enchant_costs_fatigue_and_time()
+    test_repair_hammer_costs_fatigue_and_time()
 
 
 if __name__ == "__main__":

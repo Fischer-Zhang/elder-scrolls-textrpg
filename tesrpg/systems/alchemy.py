@@ -13,8 +13,7 @@ from tesrpg.models import Character
 from tesrpg.rng import RNG
 from tesrpg.systems import inventory, progression
 
-BREW_XP_OK = 1.0
-BREW_XP_FAIL = 0.3
+BREW_FAIL_FACTOR = 0.5   # 沒煉成(無共通效果)只學到一半的 practice 成效
 
 RESTORATIVE = {"heal", "restore_magicka", "restore_fatigue"}
 HARMFUL = {"paralyze", "damage_health"}      # 麻痺優先於毒傷
@@ -25,25 +24,30 @@ def ingredient_effects(gamedata: GameData, ing_id: str) -> list[dict]:
 
 
 def brew(char: Character, gamedata: GameData, ing_a: str, ing_b: str, rng: RNG) -> dict:
-    """調配 ing_a + ing_b。回傳 {"ok","message","item_id"?,"skill_events"}。"""
+    """調配 ing_a + ing_b。回傳 {"ok","message","item_id"?,"hours","tired","skill_events"}。
+
+    每次調配付出煉金 practice 的體力 + 時間成本(時間由呼叫端推進),與訓練師/正規練習對齊,
+    讓「在煉金台調藥」不再是零時間零體力的免費刷煉金捷徑。
+    """
     if ing_a == ing_b or inventory.count_item(char, ing_a) < 1 or inventory.count_item(char, ing_b) < 1:
-        return {"ok": False, "message": "材料不足或重複。", "skill_events": []}
+        return {"ok": False, "message": "材料不足或重複。", "hours": 0, "tired": False, "skill_events": []}
 
     eff_a = {e["kind"]: e["magnitude"] for e in ingredient_effects(gamedata, ing_a)}
     eff_b = {e["kind"]: e["magnitude"] for e in ingredient_effects(gamedata, ing_b)}
     shared = set(eff_a) & set(eff_b)
 
-    # 無論成敗都消耗材料(煉金的代價)
+    # 無論成敗都消耗材料(煉金的材料代價)+ 付出 practice 的體力/時間
     inventory.remove_item(char, ing_a, 1)
     inventory.remove_item(char, ing_b, 1)
+    xp, hours, tired = progression.practice_cost(char, gamedata, "alchemy")
 
     if not shared:
-        events = progression.use_skill(char, gamedata, "alchemy", BREW_XP_FAIL)
+        events = progression.use_skill(char, gamedata, "alchemy", xp * BREW_FAIL_FACTOR)
         return {"ok": False, "message": "兩種材料沒有共通效果,化作一灘廢液。",
-                "skill_events": events}
+                "hours": hours, "tired": tired, "skill_events": events}
 
     factor = 0.6 + char.skill("alchemy") / 100.0
-    events = progression.use_skill(char, gamedata, "alchemy", BREW_XP_OK)
+    events = progression.use_skill(char, gamedata, "alchemy", xp)
 
     # 有害共通效果 → 毒藥(麻痺優先,其次毒傷);否則 → 恢復藥水
     if "paralyze" in shared:
@@ -64,4 +68,4 @@ def brew(char: Character, gamedata: GameData, ing_a: str, ing_b: str, rng: RNG) 
     name = gamedata.item(item_id)["name"]
     verb = "煉出了一瓶毒藥" if result_kind == "poison" else "調出了一瓶藥水"
     return {"ok": True, "kind": result_kind, "message": f"你{verb}:{name}。",
-            "item_id": item_id, "skill_events": events}
+            "item_id": item_id, "hours": hours, "tired": tired, "skill_events": events}

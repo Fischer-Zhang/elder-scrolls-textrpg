@@ -15,7 +15,6 @@ from tesrpg.systems import inventory, progression
 ELEMENTS = ["fire", "frost", "shock"]
 FORTIFY_STATS = ["health", "magicka", "fatigue"]   # 護甲附魔可強化的最大資源
 RESIST_ELEMENTS = ["fire", "frost", "shock", "poison", "magic"]   # 飾品可抗的元素
-ENCHANT_XP = 1.0
 
 # 飾品附魔的 4 種型別(供 UI 列表):(kind, 顯示名)
 JEWELRY_KINDS = [("skill", "強化技能"), ("attr", "強化屬性"),
@@ -69,9 +68,9 @@ def enchant_jewelry(char: Character, gamedata: GameData, base_jewelry: str,
                     kind: str, param: str, gem_id: str) -> dict:
     """為飾品附上 強化技能/屬性/抗元素/強化資源。回傳同 enchant_weapon。"""
     if inventory.count_item(char, base_jewelry) < 1 or inventory.count_item(char, gem_id) < 1:
-        return {"ok": False, "message": "缺少飾品或靈魂石。", "skill_events": []}
+        return {"ok": False, "message": "缺少飾品或靈魂石。", "hours": 0, "tired": False, "skill_events": []}
     if kind not in ("skill", "attr", "resist", "res"):
-        return {"ok": False, "message": "未知的附魔型別。", "skill_events": []}
+        return {"ok": False, "message": "未知的附魔型別。", "hours": 0, "tired": False, "skill_events": []}
 
     soul = gamedata.item(gem_id).get("soul", 1)
     mag = jewelry_magnitude(kind, soul, char.skill("mysticism"))
@@ -80,18 +79,19 @@ def enchant_jewelry(char: Character, gamedata: GameData, base_jewelry: str,
     inventory.remove_item(char, gem_id, 1)
     item_id = synth.enchant_jewelry_id(base_jewelry, kind, param, mag)
     inventory.add_item(char, item_id, 1)
-    events = progression.use_skill(char, gamedata, "mysticism", ENCHANT_XP)
+    xp, hours, tired = progression.practice_cost(char, gamedata, "mysticism")
+    events = progression.use_skill(char, gamedata, "mysticism", xp)
     return {"ok": True, "message": f"靈魂石碎裂,{gamedata.item(item_id)['name']} 完成了!",
-            "item_id": item_id, "skill_events": events}
+            "item_id": item_id, "hours": hours, "tired": tired, "skill_events": events}
 
 
 def enchant_weapon(char: Character, gamedata: GameData, base_weapon: str,
                    element: str, gem_id: str) -> dict:
     """以靈魂石為武器附上元素傷害。回傳 {"ok","message","item_id"?,"skill_events"}。"""
     if inventory.count_item(char, base_weapon) < 1 or inventory.count_item(char, gem_id) < 1:
-        return {"ok": False, "message": "缺少武器或靈魂石。", "skill_events": []}
+        return {"ok": False, "message": "缺少武器或靈魂石。", "hours": 0, "tired": False, "skill_events": []}
     if element not in ELEMENTS:
-        return {"ok": False, "message": "未知的元素。", "skill_events": []}
+        return {"ok": False, "message": "未知的元素。", "hours": 0, "tired": False, "skill_events": []}
 
     soul = gamedata.item(gem_id).get("soul", 1)
     mag = enchant_magnitude(soul, char.skill("mysticism"))
@@ -100,18 +100,19 @@ def enchant_weapon(char: Character, gamedata: GameData, base_weapon: str,
     inventory.remove_item(char, gem_id, 1)
     item_id = synth.enchant_weapon_id(base_weapon, element, mag)
     inventory.add_item(char, item_id, 1)
-    events = progression.use_skill(char, gamedata, "mysticism", ENCHANT_XP)
+    xp, hours, tired = progression.practice_cost(char, gamedata, "mysticism")
+    events = progression.use_skill(char, gamedata, "mysticism", xp)
     return {"ok": True, "message": f"靈魂石碎裂,{gamedata.item(item_id)['name']} 完成了!",
-            "item_id": item_id, "skill_events": events}
+            "item_id": item_id, "hours": hours, "tired": tired, "skill_events": events}
 
 
 def enchant_armor(char: Character, gamedata: GameData, base_armor: str,
                   stat: str, gem_id: str) -> dict:
     """以靈魂石為護甲附上「穿戴時強化最大資源」。回傳同 enchant_weapon。"""
     if inventory.count_item(char, base_armor) < 1 or inventory.count_item(char, gem_id) < 1:
-        return {"ok": False, "message": "缺少護甲或靈魂石。", "skill_events": []}
+        return {"ok": False, "message": "缺少護甲或靈魂石。", "hours": 0, "tired": False, "skill_events": []}
     if stat not in FORTIFY_STATS:
-        return {"ok": False, "message": "未知的強化項。", "skill_events": []}
+        return {"ok": False, "message": "未知的強化項。", "hours": 0, "tired": False, "skill_events": []}
 
     soul = gamedata.item(gem_id).get("soul", 1)
     mag = enchant_magnitude(soul, char.skill("mysticism"))
@@ -120,6 +121,7 @@ def enchant_armor(char: Character, gamedata: GameData, base_armor: str,
     inventory.remove_item(char, gem_id, 1)
     item_id = synth.enchant_armor_id(base_armor, stat, mag)
     inventory.add_item(char, item_id, 1)
-    events = progression.use_skill(char, gamedata, "mysticism", ENCHANT_XP)
+    xp, hours, tired = progression.practice_cost(char, gamedata, "mysticism")
+    events = progression.use_skill(char, gamedata, "mysticism", xp)
     return {"ok": True, "message": f"靈魂石碎裂,{gamedata.item(item_id)['name']} 完成了!",
-            "item_id": item_id, "skill_events": events}
+            "item_id": item_id, "hours": hours, "tired": tired, "skill_events": events}

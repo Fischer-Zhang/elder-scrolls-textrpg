@@ -1303,7 +1303,10 @@ def action_alchemy(state: GameState, gamedata: GameData) -> None:
     if b is None:
         return
     res = alchemy.brew(char, gamedata, a, b, state.rng)
+    state.time.advance(res["hours"])
     ui.message(res["message"], style="green" if res["ok"] else "yellow")
+    if res["tired"]:
+        ui.message("體力不濟,煉製時心不在焉,成效減半。", style="yellow")
     ui.show_events(res["skill_events"], gamedata)
 
 
@@ -1381,7 +1384,10 @@ def action_enchant(state: GameState, gamedata: GameData) -> None:
             return
         res = enchanting.enchant_jewelry(char, gamedata, jid, jkind, param, gem)
 
+    state.time.advance(res["hours"])
     ui.message(res["message"], style="bold green" if res["ok"] else "red")
+    if res["tired"]:
+        ui.message("精神耗弱,難以將靈魂束入符文,成效減半。", style="yellow")
     ui.show_events(res["skill_events"], gamedata)
 
 
@@ -1414,8 +1420,13 @@ def action_repair(state: GameState, gamedata: GameData) -> None:
         cap = inventory.repairable_cap(char.skill("armorer"))
         inventory.repair_all(char, cap)
         inventory.remove_item(char, "repair_hammer", 1)
-        events = progression.use_skill(char, gamedata, "armorer", 0.8)
+        # 與訓練師/正規練習對齊:自行修理付出護甲修理 practice 的體力 + 時間,非零成本刷 armorer
+        xp, hours, tired = progression.practice_cost(char, gamedata, "armorer")
+        events = progression.use_skill(char, gamedata, "armorer", xp)
+        state.time.advance(hours)
         ui.message(f"你用修理鎚整備了裝備(上限 {int(cap)}%)。", style="green")
+        if tired:
+            ui.message("體力不濟,修整得馬虎。", style="yellow")
         ui.show_events(events, gamedata)
 
 
