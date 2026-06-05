@@ -41,7 +41,9 @@
       ],
       "links": {
         "imperial_road": 2,
-        "pale_pass": 3
+        "pale_pass": 3,
+        "imperial_city": 3,
+        "cheydinhal": 4
       }
     },
     "imperial_road": {
@@ -56,7 +58,8 @@
         "bruma": 2,
         "cedernoc_cave": 2,
         "kvatch": 4,
-        "niben_marsh": 4
+        "niben_marsh": 4,
+        "imperial_city": 2
       }
     },
     "cedernoc_cave": {
@@ -99,7 +102,9 @@
       "links": {
         "imperial_road": 4,
         "cedernoc_cave": 3,
-        "dragon_bridge": 7
+        "dragon_bridge": 7,
+        "skingrad": 3,
+        "anvil": 5
       }
     },
     "pale_pass": {
@@ -144,7 +149,8 @@
         "frostwind_ruin": 3,
         "kvatch": 7,
         "falkreath_wood": 2,
-        "lostknife_cave": 3
+        "lostknife_cave": 3,
+        "whiterun": 4
       }
     },
     "haafingar": {
@@ -206,7 +212,8 @@
         "dragon_bridge": 3,
         "sea_route": 4,
         "frostwind_ruin": 2,
-        "falkreath_wood": 3
+        "falkreath_wood": 3,
+        "markarth": 5
       }
     },
     "frostwind_ruin": {
@@ -234,7 +241,10 @@
       "links": {
         "dragon_bridge": 2,
         "haafingar": 3,
-        "lostknife_cave": 2
+        "lostknife_cave": 2,
+        "whiterun": 2,
+        "riften": 4,
+        "markarth": 5
       }
     },
     "lostknife_cave": {
@@ -318,7 +328,9 @@
         "sea_route": 4,
         "molag_mar": 3,
         "ashfall_barrow": 3,
-        "ashland_waste": 2
+        "ashland_waste": 2,
+        "balmora": 4,
+        "ald_ruhn": 3
       }
     },
     "molag_mar": {
@@ -349,7 +361,8 @@
         "dragon_lair": 4,
         "ashfall_barrow": 2,
         "thorn_fen": 5,
-        "ashland_waste": 2
+        "ashland_waste": 2,
+        "vivec": 3
       }
     },
     "ashfall_barrow": {
@@ -455,7 +468,8 @@
       "links": {
         "niben_marsh": 3,
         "murkmire": 3,
-        "xanmeer": 4
+        "xanmeer": 4,
+        "blackrose": 4
       }
     },
     "murkmire": {
@@ -482,7 +496,8 @@
       "services": [],
       "links": {
         "murkmire": 2,
-        "stormhold": 3
+        "stormhold": 3,
+        "helstrom": 2
       }
     },
     "stormhold": {
@@ -520,7 +535,8 @@
         "murkmire": 3,
         "hist_grove": 3,
         "xanmeer": 2,
-        "thorn_fen": 4
+        "thorn_fen": 4,
+        "helstrom": 3
       }
     },
     "xanmeer": {
@@ -534,7 +550,8 @@
       "dungeon": "xanmeer",
       "links": {
         "gideon": 4,
-        "stormhold": 2
+        "stormhold": 2,
+        "blackrose": 3
       }
     },
     "thorn_fen": {
@@ -548,6 +565,593 @@
       "links": {
         "stormhold": 4,
         "molag_mar": 5
+      }
+    },
+    "imperial_city": {
+      "biome": "heartland",
+      "name": "帝都",
+      "province": "賽羅迪爾",
+      "type": "city",
+      "danger": 0,
+      "desc": "矗立於尼本灣中央湖心島上的帝國心臟,白金塔直刺雲霄,環形城區由高聳石牆環抱。紅寶石王座所在的權力中樞,商旅、學者與衛兵在大理石街道間川流不息。",
+      "services": [
+        "inn",
+        "merchant",
+        "trainer",
+        "mages_guild",
+        "fighters_guild",
+        "thieves_guild",
+        "armorer",
+        "task_board"
+      ],
+      "merchant_stock": [
+        "minor_healing_potion",
+        "healing_potion",
+        "minor_magicka_potion",
+        "steel_sword",
+        "steel_mace",
+        "steel_cuirass",
+        "steel_helmet",
+        "iron_shield",
+        "long_bow",
+        "repair_hammer",
+        "ruby",
+        "wheat",
+        "blue_mountain_flower",
+        "silver_ring",
+        "gold_ring",
+        "gold_amulet",
+        "flame_staff",
+        "magicka_staff"
+      ],
+      "spell_stock": [
+        "flames",
+        "frostbite",
+        "sparks",
+        "fireball",
+        "minor_heal",
+        "heal",
+        "close_wounds",
+        "oakflesh",
+        "stoneflesh",
+        "fear",
+        "demoralize",
+        "conjure_familiar",
+        "soul_trap",
+        "restore_mind"
+      ],
+      "links": {
+        "bruma": 3,
+        "imperial_road": 2,
+        "skingrad": 3,
+        "cheydinhal": 3
+      }
+    },
+    "skingrad": {
+      "biome": "heartland",
+      "name": "史金格拉德",
+      "province": "賽羅迪爾",
+      "type": "city",
+      "danger": 0,
+      "desc": "賽羅迪爾西境的葡萄酒之鄉,丘陵間梯田遍植葡萄藤,赭紅屋瓦的石屋沿坡而建。城堡高踞峭壁之上,陳釀的酒香與午後的暖陽一同浮在街巷之間。",
+      "services": [
+        "inn",
+        "merchant",
+        "trainer",
+        "armorer",
+        "mages_guild",
+        "task_board"
+      ],
+      "merchant_stock": [
+        "minor_healing_potion",
+        "healing_potion",
+        "minor_magicka_potion",
+        "iron_sword",
+        "steel_dagger",
+        "leather_cuirass",
+        "leather_boots",
+        "iron_helmet",
+        "wooden_shield",
+        "hunting_bow",
+        "repair_hammer",
+        "red_apple",
+        "wheat",
+        "blue_mountain_flower",
+        "silver_ring",
+        "silver_amulet"
+      ],
+      "spell_stock": [
+        "flames",
+        "frostbite",
+        "minor_heal",
+        "heal",
+        "oakflesh",
+        "fear",
+        "demoralize",
+        "soul_trap",
+        "restore_mind"
+      ],
+      "links": {
+        "imperial_city": 3,
+        "kvatch": 3,
+        "anvil": 4
+      }
+    },
+    "cheydinhal": {
+      "biome": "heartland",
+      "name": "切迪納",
+      "province": "賽羅迪爾",
+      "type": "city",
+      "danger": 0,
+      "desc": "賽羅迪爾東境的邊城,緊鄰晨風省界,街巷與屋舍透著濃濃的丹莫風情。一條清淺的溪流穿城而過,木橋與石階交錯,城北的領主莊園靜立在松林與暗影之間。",
+      "services": [
+        "inn",
+        "merchant",
+        "armorer",
+        "dark_brotherhood",
+        "task_board"
+      ],
+      "merchant_stock": [
+        "minor_healing_potion",
+        "healing_potion",
+        "iron_dagger",
+        "iron_sword",
+        "steel_dagger",
+        "leather_cuirass",
+        "leather_bracers",
+        "iron_gauntlets",
+        "iron_boots",
+        "hunting_bow",
+        "repair_hammer",
+        "blue_mountain_flower",
+        "lavender",
+        "red_apple",
+        "silver_ring",
+        "silver_amulet"
+      ],
+      "links": {
+        "imperial_city": 3,
+        "bruma": 4
+      }
+    },
+    "anvil": {
+      "biome": "heartland",
+      "name": "安維爾",
+      "province": "賽羅迪爾",
+      "type": "city",
+      "danger": 0,
+      "desc": "賽羅迪爾西南端的海港大城,白牆紅瓦的房舍俯瞰著閃亮的阿比西亞灣。碼頭上桅杆林立,海鳥盤旋,鹹濕的海風裹挾著魚腥與遠洋的氣息掠過石砌的燈塔與長堤。",
+      "services": [
+        "inn",
+        "merchant",
+        "trainer",
+        "armorer",
+        "thieves_guild",
+        "task_board"
+      ],
+      "merchant_stock": [
+        "minor_healing_potion",
+        "healing_potion",
+        "minor_magicka_potion",
+        "iron_sword",
+        "steel_sword",
+        "steel_mace",
+        "leather_helmet",
+        "leather_cuirass",
+        "iron_shield",
+        "long_bow",
+        "repair_hammer",
+        "ruby",
+        "red_apple",
+        "garlic",
+        "gold_ring",
+        "gold_amulet"
+      ],
+      "links": {
+        "skingrad": 4,
+        "kvatch": 5
+      }
+    },
+    "whiterun": {
+      "biome": "snow",
+      "name": "白漫城",
+      "province": "天際",
+      "type": "city",
+      "danger": 0,
+      "desc": "天際中部沖積平原上的風之城,環山而建、城牆盤踞於孤丘之上,黃金神殿與龍臨堡的飛簷在風中俯瞰着金色的麥田與商旅雲集的市集。",
+      "services": [
+        "inn",
+        "merchant",
+        "trainer",
+        "mages_guild",
+        "fighters_guild",
+        "armorer",
+        "task_board"
+      ],
+      "merchant_stock": [
+        "healing_potion",
+        "minor_healing_potion",
+        "steel_sword",
+        "steel_mace",
+        "iron_war_axe",
+        "steel_cuirass",
+        "steel_helmet",
+        "iron_shield",
+        "long_bow",
+        "hunting_bow",
+        "repair_hammer",
+        "charred_skeever_hide",
+        "lavender",
+        "wheat",
+        "silver_ring"
+      ],
+      "spell_stock": [
+        "flames",
+        "minor_heal",
+        "heal",
+        "oakflesh",
+        "stoneflesh",
+        "fear",
+        "conjure_familiar",
+        "frostbite"
+      ],
+      "links": {
+        "windhelm": 3,
+        "markarth": 4,
+        "riften": 4,
+        "falkreath_wood": 2,
+        "dragon_bridge": 4
+      }
+    },
+    "windhelm": {
+      "biome": "snow",
+      "name": "風盔城",
+      "province": "天際",
+      "type": "city",
+      "danger": 0,
+      "desc": "天際東境最古老的石砌大城,雪鬃王宮的玄武岩牆抵禦着永冬的暴雪,鵝卵石街巷間迴盪着古諾德的戰歌與鐵匠鋪叮噹的錘音。",
+      "services": [
+        "inn",
+        "merchant",
+        "trainer",
+        "armorer",
+        "fighters_guild",
+        "task_board"
+      ],
+      "merchant_stock": [
+        "healing_potion",
+        "minor_magicka_potion",
+        "steel_sword",
+        "steel_mace",
+        "iron_war_axe",
+        "steel_cuirass",
+        "steel_gauntlets",
+        "steel_boots",
+        "iron_shield",
+        "long_bow",
+        "repair_hammer",
+        "charred_skeever_hide",
+        "frost_staff",
+        "bone_meal",
+        "silver_amulet"
+      ],
+      "links": {
+        "whiterun": 3,
+        "riften": 3
+      }
+    },
+    "riften": {
+      "biome": "snow",
+      "name": "裂谷城",
+      "province": "天際",
+      "type": "city",
+      "danger": 0,
+      "desc": "東南裂谷湖畔的木造水城,運河縱橫、棧道交錯於楓紅的秋林之間,蜜酒坊的甜香掩不住暗巷裏盜賊公會與黑市交易的鬼祟身影。",
+      "services": [
+        "inn",
+        "merchant",
+        "armorer",
+        "thieves_guild",
+        "task_board"
+      ],
+      "merchant_stock": [
+        "minor_healing_potion",
+        "healing_potion",
+        "steel_dagger",
+        "glass_dagger",
+        "steel_sword",
+        "leather_cuirass",
+        "leather_boots",
+        "long_bow",
+        "repair_hammer",
+        "lavender",
+        "charred_skeever_hide",
+        "ruby",
+        "silver_ring",
+        "gold_ring",
+        "gold_amulet"
+      ],
+      "links": {
+        "whiterun": 4,
+        "windhelm": 3,
+        "falkreath_wood": 4
+      }
+    },
+    "markarth": {
+      "biome": "snow",
+      "name": "馬卡斯城",
+      "province": "天際",
+      "type": "city",
+      "danger": 0,
+      "desc": "西境峽谷深處的矮人石城,整座城刻入山壁之中,矮人遺民的黃銅機關與瀑布的水聲交織,銀礦的財富與底層棄民的怨怒同樣深埋於岩層之下。",
+      "services": [
+        "inn",
+        "merchant",
+        "trainer",
+        "mages_guild",
+        "armorer",
+        "task_board"
+      ],
+      "merchant_stock": [
+        "healing_potion",
+        "minor_magicka_potion",
+        "dwarven_mace",
+        "steel_mace",
+        "iron_war_axe",
+        "dwarven_cuirass",
+        "dwarven_helmet",
+        "steel_shield",
+        "long_bow",
+        "repair_hammer",
+        "silver_ring",
+        "gold_ingot",
+        "ruby",
+        "charred_skeever_hide",
+        "frost_staff"
+      ],
+      "spell_stock": [
+        "frostbite",
+        "sparks",
+        "oakflesh",
+        "stoneflesh",
+        "ironflesh",
+        "soul_trap",
+        "conjure_familiar",
+        "fear"
+      ],
+      "links": {
+        "whiterun": 4,
+        "haafingar": 5,
+        "falkreath_wood": 5
+      }
+    },
+    "vivec": {
+      "biome": "ashland",
+      "name": "維威克",
+      "province": "晨風",
+      "type": "city",
+      "danger": 0,
+      "desc": "凡登費爾內海上的丹莫聖城,九座巨大的石造神廟區如階梯般浮立於水面,神王維威克的宮殿懸於城心半空。朝聖者、神殿守正軍與商船在運河與石橋間穿梭,空氣裡浮著焚香與火山灰的氣息。",
+      "services": [
+        "inn",
+        "merchant",
+        "trainer",
+        "mages_guild",
+        "armorer",
+        "task_board"
+      ],
+      "merchant_stock": [
+        "healing_potion",
+        "minor_magicka_potion",
+        "elven_sword",
+        "elven_cuirass",
+        "elven_helmet",
+        "glass_dagger",
+        "ebony_sword",
+        "repair_hammer",
+        "ash_yam",
+        "scrib_jelly",
+        "nightshade",
+        "deathbell",
+        "glow_dust",
+        "gold_amulet",
+        "gold_ring",
+        "frost_staff",
+        "storm_staff",
+        "magicka_staff",
+        "filled_common_soul_gem"
+      ],
+      "spell_stock": [
+        "minor_heal",
+        "heal",
+        "close_wounds",
+        "restore_mind",
+        "fear",
+        "demoralize",
+        "soul_trap",
+        "conjure_flame_atronach",
+        "renewal",
+        "mass_paralysis",
+        "rout"
+      ],
+      "links": {
+        "molag_mar": 3,
+        "balmora": 4
+      }
+    },
+    "balmora": {
+      "biome": "ashland",
+      "name": "巴爾莫拉",
+      "province": "晨風",
+      "type": "city",
+      "danger": 0,
+      "desc": "奧迪河谷中的丹莫大城,蘑菇塔與火山岩石屋分踞兩岸,以石橋相連。城南是哈拉魯家族的議事高台,城北市集喧鬧、奴隸與商旅雜沓,夜裡賊盜會所的暗影在運河邊低語。",
+      "services": [
+        "inn",
+        "merchant",
+        "trainer",
+        "armorer",
+        "thieves_guild",
+        "fighters_guild",
+        "task_board"
+      ],
+      "merchant_stock": [
+        "minor_healing_potion",
+        "healing_potion",
+        "minor_magicka_potion",
+        "elven_sword",
+        "dwarven_mace",
+        "elven_cuirass",
+        "dwarven_cuirass",
+        "steel_sword",
+        "repair_hammer",
+        "ash_yam",
+        "scrib_jelly",
+        "nightshade",
+        "deathbell",
+        "imp_stool",
+        "glow_dust",
+        "silver_ring",
+        "gold_ring",
+        "silver_amulet",
+        "frost_staff",
+        "storm_staff"
+      ],
+      "links": {
+        "vivec": 4,
+        "ald_ruhn": 3,
+        "blacklight": 4
+      }
+    },
+    "ald_ruhn": {
+      "biome": "ashland",
+      "name": "奧德盧恩",
+      "province": "晨風",
+      "type": "city",
+      "danger": 0,
+      "desc": "灰原中央的古老丹莫城邦,城心罩著一具上古巨蟹的化石殼,雷多然家族的議事廳便建在這蟹殼穹頂之下。城外火山灰暴終年呼嘯,石屋緊貼著背風坡而築,商隊在灰塵中艱難往來。",
+      "services": [
+        "inn",
+        "merchant",
+        "trainer",
+        "armorer",
+        "fighters_guild",
+        "task_board"
+      ],
+      "merchant_stock": [
+        "healing_potion",
+        "minor_magicka_potion",
+        "dwarven_mace",
+        "dwarven_cuirass",
+        "dwarven_helmet",
+        "dwarven_gauntlets",
+        "dwarven_boots",
+        "dwarven_shield",
+        "elven_sword",
+        "repair_hammer",
+        "ash_yam",
+        "scrib_jelly",
+        "nightshade",
+        "deathbell",
+        "imp_stool",
+        "gold_ring",
+        "gold_amulet",
+        "frost_staff",
+        "storm_staff"
+      ],
+      "links": {
+        "balmora": 3,
+        "blacklight": 3
+      }
+    },
+    "helstrom": {
+      "biome": "swamp",
+      "name": "赫爾斯壯",
+      "province": "黑沼澤",
+      "type": "city",
+      "danger": 0,
+      "desc": "黑沼澤腹地最深處的亞龍人聖城,泥築高台與希斯特氣根交纏,城心一株千年神樹蔭蔽全境。這裡是 An-Xileel 之心,沼澤之民世代不向外族低頭,連帝國的旗幟也從未真正插進過這片瘴霧。",
+      "services": [
+        "inn",
+        "merchant",
+        "trainer",
+        "mages_guild",
+        "armorer",
+        "task_board"
+      ],
+      "merchant_stock": [
+        "minor_healing_potion",
+        "healing_potion",
+        "minor_magicka_potion",
+        "leather_helmet",
+        "leather_cuirass",
+        "leather_bracers",
+        "leather_boots",
+        "glass_dagger",
+        "long_bow",
+        "repair_hammer",
+        "deathbell",
+        "imp_stool",
+        "scrib_jelly",
+        "canis_root",
+        "bone_meal",
+        "silver_amulet",
+        "magicka_staff"
+      ],
+      "spell_stock": [
+        "minor_heal",
+        "heal",
+        "close_wounds",
+        "poison_cloud",
+        "soul_trap",
+        "fear",
+        "conjure_familiar",
+        "restore_mind",
+        "renewal",
+        "frost_nova"
+      ],
+      "links": {
+        "hist_grove": 2,
+        "stormhold": 3,
+        "blackrose": 4
+      }
+    },
+    "blackrose": {
+      "biome": "swamp",
+      "name": "黑荊棘",
+      "province": "黑沼澤",
+      "type": "city",
+      "danger": 0,
+      "desc": "黑沼澤東境的堡壘監獄之城,黑石高牆嵌在沼澤與大海交界的泥灘上,荊棘藤蔓爬滿崗樓。城既是要塞也是牢獄,亞龍人在此看守邊界、囚禁俘虜,森冷的鐵柵後終日傳出鎖鏈與沼蟲的低響。",
+      "services": [
+        "inn",
+        "merchant",
+        "armorer",
+        "fighters_guild",
+        "task_board"
+      ],
+      "merchant_stock": [
+        "minor_healing_potion",
+        "healing_potion",
+        "leather_cuirass",
+        "leather_boots",
+        "iron_helmet",
+        "iron_shield",
+        "glass_dagger",
+        "long_bow",
+        "hunting_bow",
+        "repair_hammer",
+        "deathbell",
+        "imp_stool",
+        "scrib_jelly",
+        "canis_root",
+        "filled_lesser_soul_gem",
+        "silver_ring"
+      ],
+      "links": {
+        "helstrom": 4,
+        "gideon": 4,
+        "xanmeer": 3
       }
     }
   },

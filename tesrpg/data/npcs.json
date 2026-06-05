@@ -1,34 +1,282 @@
 {
-  "olfina":  {"name": "歐菲娜", "location": "bruma", "disposition": 45,
-              "greeting": "「雪下個不停……你不是本地人吧?」",
-              "rumor": "聽說帝國大道旁的埃雷德殘墟,夜裡會有古老的亡魂遊蕩。",
-              "quest": "favor_bruma", "quest_disposition": 60},
-  "jovan":   {"name": "喬凡", "location": "dragon_bridge", "disposition": 50,
-              "greeting": "「龍橋的木材是天際最好的,旅人。不過南邊佛克瑞斯林那夥迷刀盜匪,最近鬧得兇。」",
-              "rumor": "佛克瑞斯林雪深,迷了路的旅人說林子裡有冰魂出沒。",
-              "quest": "favor_lostknife", "quest_disposition": 55},
-  "seridia": {"name": "賽莉迪雅", "location": "haafingar", "disposition": 50,
-              "greeting": "「海芬古的高塔下,什麼樣的人都有。」",
-              "rumor": "佛克瑞斯林那邊的冰魂,連往來海港的商旅都遭了殃。",
-              "quest": "favor_haafingar", "quest_disposition": 55},
-  "marcus":  {"name": "馬庫斯", "location": "kvatch", "disposition": 50,
-              "greeting": "「願八聖庇佑你,陌生人。腹地最近很不安寧。」",
-              "rumor": "切德納寇洞窟的強盜,近來連腹地的米諾陶都驚動了。",
-              "quest": "chain_kvatch", "quest_disposition": 55},
-  "verand":  {"name": "維蘭德", "location": "blacklight", "disposition": 45,
-              "greeting": "「黑光城的灰燼會鑽進每一道門縫……灰蹦蟲也是。牠們快把城外的灰田啃光了。」",
-              "rumor": "灰燼荒原的蟲災,老人說是灰燼墓塚那邊招來的。",
-              "quest": "favor_blacklight", "quest_disposition": 55},
-  "dralasa": {"name": "卓菈莎", "location": "molag_mar", "disposition": 50,
-              "greeting": "「三相神庇佑朝聖者。火山的脾氣,可不庇佑誰。」",
-              "rumor": "朝聖路上要當心 —— 龍喉峰的火光,連魔族都繞道而行。",
-              "quest": "chain_molagmar", "quest_disposition": 55},
-  "lucius":  {"name": "盧修斯", "location": "gideon", "disposition": 45,
-              "greeting": "「總督要我盯著贊密爾沉廟的動靜——可沒人活著從那金字塔回來過。」",
-              "rumor": "幽沼濕地的鬼火會引人步入泥潭,別跟著那團光走。",
-              "quest": "favor_gideon", "quest_disposition": 55},
-  "silent_water": {"name": "靜水-觀霧", "location": "stormhold", "disposition": 40,
-              "greeting": "「希斯特看著你,外鄉人。沼裡的巨蜥近來太放肆,擾了樹的清夢。」",
-              "rumor": "希斯特聖林深處,樹語者說神樹的低語能撫平迷途者的傷與疲憊。",
-              "quest": "favor_stormhold", "quest_disposition": 55}
+  "olfina": {
+    "name": "歐菲娜",
+    "location": "bruma",
+    "disposition": 45,
+    "greeting": "「雪下個不停……你不是本地人吧?」",
+    "rumor": "聽說帝國大道旁的埃雷德殘墟,夜裡會有古老的亡魂遊蕩。",
+    "quest": "favor_bruma",
+    "quest_disposition": 60
+  },
+  "jovan": {
+    "name": "喬凡",
+    "location": "dragon_bridge",
+    "disposition": 50,
+    "greeting": "「龍橋的木材是天際最好的,旅人。不過南邊佛克瑞斯林那夥迷刀盜匪,最近鬧得兇。」",
+    "rumor": "佛克瑞斯林雪深,迷了路的旅人說林子裡有冰魂出沒。",
+    "quest": "favor_lostknife",
+    "quest_disposition": 55
+  },
+  "seridia": {
+    "name": "賽莉迪雅",
+    "location": "haafingar",
+    "disposition": 50,
+    "greeting": "「海芬古的高塔下,什麼樣的人都有。」",
+    "rumor": "佛克瑞斯林那邊的冰魂,連往來海港的商旅都遭了殃。",
+    "quest": "favor_haafingar",
+    "quest_disposition": 55
+  },
+  "marcus": {
+    "name": "馬庫斯",
+    "location": "kvatch",
+    "disposition": 50,
+    "greeting": "「願八聖庇佑你,陌生人。腹地最近很不安寧。」",
+    "rumor": "切德納寇洞窟的強盜,近來連腹地的米諾陶都驚動了。",
+    "quest": "chain_kvatch",
+    "quest_disposition": 55
+  },
+  "verand": {
+    "name": "維蘭德",
+    "location": "blacklight",
+    "disposition": 45,
+    "greeting": "「黑光城的灰燼會鑽進每一道門縫……灰蹦蟲也是。牠們快把城外的灰田啃光了。」",
+    "rumor": "灰燼荒原的蟲災,老人說是灰燼墓塚那邊招來的。",
+    "quest": "favor_blacklight",
+    "quest_disposition": 55
+  },
+  "dralasa": {
+    "name": "卓菈莎",
+    "location": "molag_mar",
+    "disposition": 50,
+    "greeting": "「三相神庇佑朝聖者。火山的脾氣,可不庇佑誰。」",
+    "rumor": "朝聖路上要當心 —— 龍喉峰的火光,連魔族都繞道而行。",
+    "quest": "chain_molagmar",
+    "quest_disposition": 55
+  },
+  "lucius": {
+    "name": "盧修斯",
+    "location": "gideon",
+    "disposition": 45,
+    "greeting": "「總督要我盯著贊密爾沉廟的動靜——可沒人活著從那金字塔回來過。」",
+    "rumor": "幽沼濕地的鬼火會引人步入泥潭,別跟著那團光走。",
+    "quest": "favor_gideon",
+    "quest_disposition": 55
+  },
+  "silent_water": {
+    "name": "靜水-觀霧",
+    "location": "stormhold",
+    "disposition": 40,
+    "greeting": "「希斯特看著你,外鄉人。沼裡的巨蜥近來太放肆,擾了樹的清夢。」",
+    "rumor": "希斯特聖林深處,樹語者說神樹的低語能撫平迷途者的傷與疲憊。",
+    "quest": "favor_stormhold",
+    "quest_disposition": 55
+  },
+  "tertius": {
+    "name": "泰提烏斯",
+    "location": "imperial_city",
+    "disposition": 45,
+    "greeting": "「歡迎來到帝都,旅人。白金塔下,連石頭都聽得見朝堂的私語。」",
+    "rumor": "聽說西邊史金格拉德的伯爵深居簡出,葡萄莊園夜裡總亮著燈,城裡人都不敢多問。",
+    "quest": null
+  },
+  "valeria": {
+    "name": "瓦蕾莉雅",
+    "location": "imperial_city",
+    "disposition": 45,
+    "greeting": "「議會撐著帝國,可帝國心裡都明白——王座一空,人心就散了。」",
+    "rumor": "走帝國大道往北便是布魯瑪雪城,往西過史金格拉德能到凱瓦奇,那城外的赤光,誰見了都心驚。",
+    "quest": null
+  },
+  "merandil": {
+    "name": "梅蘭迪爾",
+    "location": "skingrad",
+    "disposition": 45,
+    "greeting": "「嚐嚐我們的酒吧,旅人——史金格拉德的葡萄藤,連戰亂都灌不死。」",
+    "rumor": "伯爵白日從不露面,只在入夜後現身城堡。莊園的人都學會了不打聽主人的事。",
+    "quest": null
+  },
+  "carwen": {
+    "name": "卡溫",
+    "location": "skingrad",
+    "disposition": 45,
+    "greeting": "「西南那條路通往安維爾海港,往東過帝都才是腹地正路。」",
+    "rumor": "南去凱瓦奇的山道近來不太平,那城外湮滅之門的赤光,把整片丘陵都映紅了。",
+    "quest": null
+  },
+  "garrus": {
+    "name": "加魯斯",
+    "location": "cheydinhal",
+    "disposition": 45,
+    "greeting": "「切迪納半邊是丹莫的家,旅人。入夜後別走偏巷——這城裡有些人,最好別招惹。」",
+    "rumor": "城北莊園深夜常有黑衣人進出,老人說那是死亡的使者,付得起價錢的人才見得著。",
+    "quest": null
+  },
+  "ravani": {
+    "name": "拉瓦尼",
+    "location": "cheydinhal",
+    "disposition": 45,
+    "greeting": "「往北的路通布魯瑪雪城,往西便是帝都白金塔下。」",
+    "rumor": "西去帝都的大道兩旁松林深,常有強盜埋伏劫道,獨行要當心。",
+    "quest": null
+  },
+  "gaius": {
+    "name": "蓋烏斯",
+    "location": "anvil",
+    "disposition": 45,
+    "greeting": "「歡迎來到安維爾,旅人。阿比西亞灣的風能吹散一切煩憂——除了碼頭上那些手腳不乾淨的。」",
+    "rumor": "伯爵夫人的丈夫多年前一夜之間消失,至今生死未卜,碼頭的老水手都說那是椿怪事。",
+    "quest": null
+  },
+  "sabine": {
+    "name": "薩賓娜",
+    "location": "anvil",
+    "disposition": 45,
+    "greeting": "「順著海岸路往東北走,過史金格拉德的葡萄園就到腹地了。」",
+    "rumor": "東邊凱瓦奇遭了湮滅之門的劫難,逃難的人一波波湧進安維爾的碼頭,城裡都快住不下了。",
+    "quest": null
+  },
+  "whiterun_steward": {
+    "name": "普羅梵圖斯·阿文奇",
+    "location": "whiterun",
+    "disposition": 45,
+    "greeting": "歡迎來到白漫城,旅人。領主的庭院向所有奉公守法者敞開。",
+    "rumor": "戰友團的好漢就在城北的圖密爾蜜酒大廳招募新血,想揚名立萬的話往那兒走準沒錯。",
+    "quest": null
+  },
+  "whiterun_smith": {
+    "name": "阿德里安娜·阿文奇",
+    "location": "whiterun",
+    "disposition": 45,
+    "greeting": "天上鍛爐的火日夜不熄——要兵器還是要修甲,儘管開口。",
+    "rumor": "西邊馬卡斯城的鋼鐵比我們的還硬,可那條山路凶險,獨行的我可不敢走。",
+    "quest": null
+  },
+  "windhelm_galmar": {
+    "name": "加爾瑪·石拳",
+    "location": "windhelm",
+    "disposition": 45,
+    "greeting": "若你心向真正的諾德,風盔城便是你的家;否則,看好你的舌頭。",
+    "rumor": "南邊裂谷城的萊拉領主油滑得很,光說漂亮話,卻遲遲不肯向領主表態效忠。",
+    "quest": null
+  },
+  "windhelm_smith": {
+    "name": "奧倫吉爾",
+    "location": "windhelm",
+    "disposition": 45,
+    "greeting": "白霜鍛爐的鋼是天際最耐用的——要打仗,先把甲胄備齊了。",
+    "rumor": "白漫城的領主在帝國跟咱們之間搖擺不定,遲早得選邊站,那條西去的路只會越來越熱鬧。",
+    "quest": null
+  },
+  "riften_brynjolf": {
+    "name": "布林約夫",
+    "location": "riften",
+    "disposition": 45,
+    "greeting": "金幣的香味把你也引來啦?在裂谷城,眼睛放亮點、錢包看緊點。",
+    "rumor": "城西那片佛克瑞斯林是亡命之徒的好去處,從那兒繞道也能避開官道上的盤查。",
+    "quest": null
+  },
+  "riften_maven": {
+    "name": "瑪雯·黑荊棘",
+    "location": "riften",
+    "disposition": 45,
+    "greeting": "這城裏的每一桶蜜酒、每一筆交易,背後都有黑荊棘家的影子。",
+    "rumor": "風盔城的烏弗瑞克想拉攏南方各領叛帝,可我做生意只認金幣,不認他的大旗。",
+    "quest": null
+  },
+  "markarth_calcelmo": {
+    "name": "卡塞莫",
+    "location": "markarth",
+    "disposition": 45,
+    "greeting": "莫要碰那些矮人機關,陌生人——這座城的石頭比你想像的更古老、更危險。",
+    "rumor": "山下的銀礦原是棄誓者的祖地,他們躲在峽谷裏伺機而動,夜裏出城可得當心。",
+    "quest": null
+  },
+  "markarth_smith": {
+    "name": "葛茲拉·巴戈",
+    "location": "markarth",
+    "disposition": 45,
+    "greeting": "矮人黃銅鑄的甲,連惡狼的牙都咬不穿,要不要試試?",
+    "rumor": "往東去白漫城的山路雖長,卻是西境通往天際腹地最穩當的一條道。",
+    "quest": null
+  },
+  "vivec_canon_dralas": {
+    "name": "正典僧 德拉拉斯",
+    "location": "vivec",
+    "disposition": 45,
+    "greeting": "外邦人,在神王的城裡請收斂腳步。三相神看顧著這片內海的每一道波紋。",
+    "rumor": "莫拉格瑪的法蘿司祭長與我們同奉守正,你若往南去那座朝聖鎮,記得帶上敬香——守正軍盤查嚴得很。",
+    "quest": null
+  },
+  "vivec_dockmaster_avon": {
+    "name": "碼頭總管 阿馮·瑟羅",
+    "location": "vivec",
+    "disposition": 45,
+    "greeting": "運河泊位每日都滿,要交易就趁早。神廟區的香火比黑光城的灰燼還重。",
+    "rumor": "走巴爾莫拉的商隊賺得最多,那邊哈拉魯家把奧迪河谷攥得死死的,黑光城的貨也得先過他們的手。",
+    "quest": null
+  },
+  "balmora_smuggler_drarayne": {
+    "name": "私梟 德拉萊妮",
+    "location": "balmora",
+    "disposition": 45,
+    "greeting": "想在哈拉魯的城裡做點不見光的買賣?運河南岸找對人就行,別張揚。",
+    "rumor": "灰燼荒原往黑光城那條道近來不太平,灰蹦蟲鬧得凶;你若要去奧德盧恩,跟我們的灰塵商隊走最穩。",
+    "quest": null
+  },
+  "balmora_fighter_eydis": {
+    "name": "戰士公會 艾迪絲",
+    "location": "balmora",
+    "disposition": 45,
+    "greeting": "公會總缺幫手——河谷的盜匪比火山口的灰還多。要接活就看任務板。",
+    "rumor": "雷多然的奧德盧恩正在募兵守灰原邊防,那邊大議員賞錢實在,比哈拉魯的空頭支票強。",
+    "quest": null
+  },
+  "ald_ruhn_armiger_neminda": {
+    "name": "雷多然甲士 妮敏達",
+    "location": "ald_ruhn",
+    "disposition": 45,
+    "greeting": "蟹殼之下,雷多然以榮譽待客。守規矩,你在灰原便有立足之地。",
+    "rumor": "龍喉峰那條道沒人敢走全程,連我們的斥候到了灰暴邊緣就折返——聽說峰頂盤著的東西,連魔族都繞道。",
+    "quest": null
+  },
+  "ald_ruhn_caravaner_galtis": {
+    "name": "灰塵商隊頭 高提斯",
+    "location": "ald_ruhn",
+    "disposition": 45,
+    "greeting": "灰暴要起時別出城,商隊都在背風坡歇腳。要捎貨往巴爾莫拉,搭我的隊。",
+    "rumor": "黑光城的精靈裝甲在這兒不好弄,雷多然議長把好貨都留給城防了;真要矮人甲,還是我們奧德盧恩齊全。",
+    "quest": null
+  },
+  "helstrom_treeminder": {
+    "name": "苔語-垂葉",
+    "location": "helstrom",
+    "disposition": 45,
+    "greeting": "外族客,神樹容你踏入聖地,便管好你的舌與刀。",
+    "rumor": "希斯特聖林近在西邊,神樹的低語近年愈發焦躁;再往石落城去,那邊的祭司聽得懂樹的話。",
+    "quest": null
+  },
+  "helstrom_smith": {
+    "name": "硬鱗-鍛泥",
+    "location": "helstrom",
+    "disposition": 45,
+    "greeting": "皮甲沾了沼水才耐穿,我這的料子比城裡那些鐵罐子強。",
+    "rumor": "東邊黑荊棘堡近來收押了不少人,押解隊伍穿過沼澤時,黑水泥潭吞過好幾個迷路的看守。",
+    "quest": null
+  },
+  "blackrose_warden": {
+    "name": "短尾-鎖鳴",
+    "location": "blackrose",
+    "disposition": 45,
+    "greeting": "進城可以,別在牢牆邊探頭,堡主最恨閒人盯著鐵柵看。",
+    "rumor": "往西去赫爾斯壯要繞開沿途的泥潭;聽說那座聖城的議長正召集諸族,連石落城的祭司都動身了。",
+    "quest": null
+  },
+  "blackrose_trader": {
+    "name": "綠鰓-販沼",
+    "location": "blackrose",
+    "disposition": 45,
+    "greeting": "新鮮的死亡鐘與妖菌,獄卒們搶著買來煉藥,你也來一份?",
+    "rumor": "南邊贊密爾沉廟近來爬出不少巨蜥,堡裡派去吉迪恩報信的隊伍在沼路上吃了大虧。",
+    "quest": null
+  }
 }

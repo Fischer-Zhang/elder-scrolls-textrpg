@@ -170,6 +170,19 @@ def test_local_quest_chains_are_multistage_and_offered_by_npcs():
         assert qid in npc_quests, f"{qid} 沒有 NPC 提供"
 
 
+def test_each_core_province_has_multiple_cities():
+    """補全各省城市:四大實體省皆有 >=2 座 city,且標誌城市存在。"""
+    gd, _ = _char()
+    locs = gd.world["locations"]
+    from collections import Counter as _C
+    cities = _C(l["province"] for l in locs.values() if l["type"] == "city")
+    for prov in ("賽羅迪爾", "天際", "晨風", "黑沼澤"):
+        assert cities[prov] >= 2, f"{prov} 城市數 {cities[prov]} < 2"
+    iconic = ["imperial_city", "whiterun", "vivec", "helstrom"]
+    for cid in iconic:
+        assert cid in locs and locs[cid]["type"] == "city", f"標誌城市 {cid} 缺失"
+
+
 def test_npc_rumors_are_strings():
     gd, _ = _char()
     for nid, npc in gd.npcs.items():
@@ -223,9 +236,9 @@ def test_tianji_density_falkreath_and_lostknife():
     locs = gd.world["locations"]
     assert locs["falkreath_wood"]["province"] == "天際" and locs["falkreath_wood"]["type"] == "wilderness"
     assert locs["lostknife_cave"]["dungeon"] == "lostknife_cave" and "lostknife_cave" in gd.dungeons
-    # 天際現在 5 地點
+    # 天際補密度後 >=5 地點(細化省分加佛克瑞斯林/迷刀洞窟;補全城市後更多)
     skyrim = [l for l in locs.values() if l["province"] == "天際"]
-    assert len(skyrim) == 5, len(skyrim)
+    assert len(skyrim) >= 5, len(skyrim)
 
 
 # 小工具:events.eligible_events 需要一個有 .player/.time 的 state-like
