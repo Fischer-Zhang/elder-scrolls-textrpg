@@ -107,6 +107,11 @@ class Character:
     power_last_day: dict = field(default_factory=dict)    # power_id -> 上次使用的絕對日
     tower_key_charge: bool = False
 
+    # 商店庫存(Skyrim 式:每商人有限數量 + 定時補貨 + 補貨品項有變化)。詳見 systems/world.py。
+    # 舊存檔缺此二欄 → dataclass 預設空 dict;首次造訪該商店即依目錄初始化。
+    shop_stock: dict = field(default_factory=dict)        # loc_id -> {item_id: 剩餘數量}
+    shop_restock_at: dict = field(default_factory=dict)   # loc_id -> 下次補貨的絕對小時
+
     is_player: bool = False
 
     # --- 查詢 -------------------------------------------------------------
@@ -174,6 +179,7 @@ class Character:
             "persuaded_npcs": self.persuaded_npcs,
             "visited_locations": self.visited_locations,
             "power_last_day": self.power_last_day, "tower_key_charge": self.tower_key_charge,
+            "shop_stock": self.shop_stock, "shop_restock_at": self.shop_restock_at,
             "companions": self.companions,
         }
 

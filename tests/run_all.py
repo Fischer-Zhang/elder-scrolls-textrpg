@@ -26,6 +26,7 @@ import test_origins
 import test_practice_cost
 import test_progression
 import test_seed
+import test_shop
 import test_state
 import test_brotherhood
 import test_detailing
@@ -38,7 +39,7 @@ if __name__ == "__main__":
                test_magic, test_m5, test_m6, test_m7, test_m8, test_m9, test_m10, test_m12, test_m13,
                test_m14, test_m15, test_guild_depth, test_equipment, test_weapons, test_origins,
                test_vampirism, test_assassin, test_brotherhood, test_detailing, test_mastery,
-               test_practice_cost]
+               test_practice_cost, test_shop]
     for m in modules:
         m.run()
         print(f"✓ {m.__name__}")

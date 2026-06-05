@@ -918,8 +918,8 @@ def _item_actions(state: GameState, gamedata: GameData, item_id: str) -> None:
 # ======================================================================
 def action_shop(state: GameState, gamedata: GameData) -> None:
     char = state.player
-    loc = world.current_location(char, gamedata)
-    stock = loc.get("merchant_stock", [])
+    loc_id = char.location_id
+    world.ensure_stock(char, gamedata, loc_id, state.time, state.rng)   # 首訪/逾期 → 補貨
     while True:
         mode = ui.menu(f"商店(你有 {char.gold} 金幣)", [
             ("buy", "購買"), ("sell", "出售"), ("steal", "行竊(觸法)"),
@@ -927,8 +927,12 @@ def action_shop(state: GameState, gamedata: GameData) -> None:
         if mode is None:
             return
         if mode == "steal":
-            opts = [(iid, f"{gamedata.item_name(iid)}（價值 {gamedata.item(iid)['value']})")
-                    for iid in stock]
+            avail = world.in_stock_items(char, gamedata, loc_id)
+            if not avail:
+                ui.message("貨架上空空如也,沒什麼好下手的。", style="grey70")
+                continue
+            opts = [(iid, f"{gamedata.item_name(iid)} ×{world.stock_qty(char, loc_id, iid)}"
+                     f"（價值 {gamedata.item(iid)['value']})") for iid in avail]
             iid = ui.menu(f"行竊哪件?(得手率約 {int(crime.steal_chance(char)*100)}%)",
                           opts, allow_back=True)
             if iid is None:
@@ -936,6 +940,7 @@ def action_shop(state: GameState, gamedata: GameData) -> None:
             r = crime.steal_item(char, gamedata, iid, state.rng)
             state.time.advance(r["hours"])
             if r["ok"]:
+                world.take_stock(char, loc_id, iid)
                 ui.message(f"你神不知鬼不覺地摸走了{gamedata.item_name(iid)}。", style="green")
             else:
                 ui.message(f"「住手!小偷!」 —— 你被逮個正著,賞金 +{r['bounty_added']}。", style="red")
@@ -944,8 +949,12 @@ def action_shop(state: GameState, gamedata: GameData) -> None:
             ui.show_events(r["skill_events"], gamedata)
             continue
         if mode == "buy":
-            opts = [(iid, f"{gamedata.item_name(iid)} — {world.buy_price(char, gamedata, iid)} 金")
-                    for iid in stock]
+            avail = world.in_stock_items(char, gamedata, loc_id)
+            if not avail:
+                ui.message("貨架空空如也,等商人補貨再來吧。", style="grey70")
+                continue
+            opts = [(iid, f"{gamedata.item_name(iid)} ×{world.stock_qty(char, loc_id, iid)}"
+                     f" — {world.buy_price(char, gamedata, iid)} 金") for iid in avail]
             iid = ui.menu("買什麼?", opts, allow_back=True)
             if iid is None:
                 continue
@@ -957,6 +966,7 @@ def action_shop(state: GameState, gamedata: GameData) -> None:
             else:
                 char.gold -= price
                 inventory.add_item(char, iid, 1)
+                world.take_stock(char, loc_id, iid)
                 ui.message(f"買下了{gamedata.item_name(iid)}。", style="green")
         else:
             sellable = [s for s in char.inventory if gamedata.item(s["id"])["value"] > 0]

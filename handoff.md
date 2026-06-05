@@ -165,11 +165,18 @@
 - **確認同類漏洞 → 已修**:製作/維護三系與行竊/說服同型(零時間零體力刷技能,只是另外消耗材料)—— `alchemy.brew`(煉金)、`enchanting.enchant_weapon/armor/jewelry`(神秘)、`action_repair` 修理鎚分支(護甲修理)。全部接上各技能 practice 成本(`progression.practice_cost`,xp 改為 practice 率、tired→×0.5、brew 失敗 ×0.5),呼叫端推進時間 + tired 提示。**至此遊戲所有 learn-by-doing 技能用途皆付時間/資源閘**(戰鬥系靠 HP 風險+回合、魔法靠魔力、旅行/說服/行竊/撬鎖/製作靠 practice 體力+時間、商貿靠金幣+物品)。commit 見下。
 - **誤報已擋(對抗審查判 not_a_bug)**:wayshrine/黑沼澤希斯特/營火 等「免費治療事件」(時間閘、不練任何技能、被 action_rest 主導)、雲遊學者(其實付 40 金)、付費訓練師(金幣閘)、tired 半額(刻意) —— 皆既定經濟,**勿**去「修」。
 - **驗證**:27 模組全綠(`test_practice_cost` 擴至 15 條,加 brew 成功/失敗、enchant、repair 的體力+時間斷言)+ 對抗審查(逐路徑確認無 KeyError、smith 付費修理分支未被誤改、簽章不變)。
-- **⚠️ 尚未處理的相異漏洞(已查證為真,待使用者拍板)**:**煉金套利/無限金幣** —— 可買的廉價材料 `imp_stool`+`canis_root`(共 12 金)→ brew 3 回合麻痺毒(`synth` poison `value=max(15,turns×40)=120`)→ 賣 86 金,**淨賺 +74/次、零風險、商人無金幣池**(`world.sell_price` × `char.gold += price` 無上限)。加了 practice 時間/體力閘後從「瞬間無限」降為「時間閘收入」,但仍是淨正金幣迴圈(尤其麻痺/毒 DoT 毒藥)。修法是平衡抉擇(壓低 synth 毒藥 value / 自製品賣價打折 / 視為時間閘收入接受),**屬不同類(infinite_resource 非 skill_grind),留給使用者決定**。
+- **相異漏洞:煉金套利/無限金幣 → 已修(使用者拍板「Skyrim 式商店庫存」)**:原本商人無限供貨 → 可買廉價材料 `imp_stool`+`canis_root`(共 12 金)→ brew 3 回合麻痺毒(`synth` poison `value=max(15,turns×40)=120`)→ 賣 86 金,**淨賺 +74/次、瞬間無限**。修法=從**供給側**掐死:見下「Skyrim 式商店庫存」。
+
+**Skyrim 式商店庫存(使用者拍板:有限數量 + 定時補貨 + 補貨品項有變化)**:堵煉金套利的根因——商人不再是無限供貨機。
+- **核心**(`systems/world.py`):每商品有**有限數量**、`RESTOCK_HOURS=72` 遊戲小時**定時補貨**、補貨量隨價值分級隨機(`_restock_qty`:廉價 1–6、中價 0–3、高價 0–1 → 可能個別缺貨,故「不同次補貨品項有別」)。`ensure_stock`(進店時呼叫,首訪或逾期才補)/`stock_qty`/`take_stock`(買或偷成功才扣)/`in_stock_items`(qty>0 才上架)。
+- **存檔**:新增 `Character.shop_stock`(loc→{item:qty})、`shop_restock_at`(loc→絕對小時),dataclass 預設 {} → 向後相容(舊存檔首訪自動初始化);皆進 to_dict。**持久狀態**(與 active_effects 不入檔相反:庫存須跨存讀檔保留)。
+- **接點**(`main.py action_shop`):進店先 `ensure_stock`;買/偷改用 `in_stock_items`(顯示 ×數量)、成功後 `take_stock` 扣減、空貨架提示;**賣出維持不變**(賣掉的東西不加回庫存 → 不能賣回再買回)。
+- **效果**:全圖單輪麻痺毒材料供給 imp_stool 27/canis_root 13 → **每補貨週期上限 13 瓶**(且需跨城採買、耗時)→ 無限瞬間套利消滅、降為有限的時間閘收入。**加商店物品純改 world.json `merchant_stock`(目錄)**;調補貨量/週期改 `world._restock_qty`/`RESTOCK_HOURS`。
+- **驗證**:28 測試模組全綠(新增 `test_shop`:有限/售罄/補貨時機/套利受供給+時間閘/存檔向後相容/購買煙霧扣庫存)+ 對抗審查(存檔相容、邊界不誤扣、決定論不破 test_seed、套利確認被堵)。
 
 **內容量**:10 種族 / 13 星座 / 8 職業 / **22 技能(+偵查 scout)** / **19 武器(4 法杖)** / **34 護甲(7 材質整套)** / 25 法術(5 AoE) /
 14 材料 / **4 飾品** / **38 生物(7 高階 elite + 2 吸血鬼 + 5 黑沼澤 + 8 黑兄目標 + 2 heartland;18 隻帶 biome 生態標籤)** / 3 傭兵 / **36 地點(有環圖+生態 biome,世界閉合成大環;各省補全城市 賽8/天9/晨8/黑7/邊4,共 17 城+4 鎮)** / **6 地城** / **41 任務(3 分支壓軸 + 解咒 + 6 黑兄合約 + 10 在地任務含 2 任務鏈)** / **4 公會** / **7 開局背景** / **59 NPC(每城 3 / 每鎮 2,角色多樣、greeting + rumor 指路;8 名掛在地委託)** / **24 事件(含 9 省份限定)** / **吸血鬼化系統** / **黑暗兄弟會系統** / **技能里程碑系統(6 條 MVP,達門檻自動解鎖)** / **21 城主(各城自治)**。
-程式:**20 個 `systems` 模組**(+vampirism +brotherhood +mastery)+ models/ui/synth 等,共約 36 個 `.py` + `sim_assassin.py`(平衡回歸);**23 個 `data/*.json`**(+mastery.json;黑兄/細化省分全靠改既有檔);**27 測試模組**(+test_mastery +test_practice_cost)。
+程式:**20 個 `systems` 模組**(+vampirism +brotherhood +mastery)+ models/ui/synth 等,共約 36 個 `.py` + `sim_assassin.py`(平衡回歸);**23 個 `data/*.json`**(+mastery.json;黑兄/細化省分全靠改既有檔);**28 測試模組**(+test_mastery +test_practice_cost +test_shop)。
 
 ---
 

@@ -74,6 +74,56 @@ def sell_price(char: Character, gamedata: GameData, item_id: str) -> int:
     return max(1, round(base))
 
 
+# --- 商店庫存(Skyrim 式:每商人有限數量 + 定時補貨 + 補貨品項有變化)------
+# 商人不再是「無限供貨機」:每件商品有有限數量,定時補貨且每次補的量(乃至有無)會變動。
+# 這從「供給側」掐住了「買廉價材料 → 煉製 → 高價賣回」的無限金幣套利:一輪只買得到有限的量。
+RESTOCK_HOURS = 72        # 商人每約 3 天補一次貨
+
+
+def _restock_qty(value: int, rng: RNG) -> int:
+    """依物品價值分級給補貨量,帶隨機變化(可能為 0 → 不同次補貨的品項有別)。"""
+    if value <= 10:               # 廉價消耗品/煉金材料
+        return rng.randint(1, 6)
+    if value <= 80:               # 中價:藥水、基礎裝備、配件
+        return rng.randint(0, 3)
+    return rng.randint(0, 1)      # 高價裝備:時常缺貨
+
+
+def merchant_catalog(gamedata: GameData, loc_id: str) -> list[str]:
+    """該地商人「可能販售」的完整品項目錄(world.json 的 merchant_stock)。"""
+    return gamedata.location(loc_id).get("merchant_stock", [])
+
+
+def ensure_stock(char: Character, gamedata: GameData, loc_id: str, time, rng: RNG) -> None:
+    """首次造訪或已過補貨時點 → 依目錄重抽當前庫存(數量隨機、可能個別缺貨)。"""
+    if not merchant_catalog(gamedata, loc_id):
+        return
+    now = time.absolute_hours()
+    if loc_id in char.shop_restock_at and now < char.shop_restock_at[loc_id]:
+        return
+    char.shop_stock[loc_id] = {
+        iid: _restock_qty(gamedata.item(iid)["value"], rng)
+        for iid in merchant_catalog(gamedata, loc_id)
+    }
+    char.shop_restock_at[loc_id] = now + RESTOCK_HOURS
+
+
+def stock_qty(char: Character, loc_id: str, item_id: str) -> int:
+    return char.shop_stock.get(loc_id, {}).get(item_id, 0)
+
+
+def take_stock(char: Character, loc_id: str, item_id: str, n: int = 1) -> None:
+    """買走/偷走後扣減庫存(夾在 0)。"""
+    cur = char.shop_stock.get(loc_id)
+    if cur and item_id in cur:
+        cur[item_id] = max(0, cur[item_id] - n)
+
+
+def in_stock_items(char: Character, gamedata: GameData, loc_id: str) -> list[str]:
+    """目錄中目前仍有貨(數量>0)的品項,維持目錄原順序。"""
+    return [iid for iid in merchant_catalog(gamedata, loc_id) if stock_qty(char, loc_id, iid) > 0]
+
+
 # --- 訓練師 -------------------------------------------------------------
 def train_cost(skill_level: int) -> int:
     return max(20, skill_level * 8)
