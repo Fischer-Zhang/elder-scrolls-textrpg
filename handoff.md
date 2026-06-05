@@ -43,7 +43,7 @@
 
 **M16 後續(數輪 ultracode-off 直作,技能健檢 → 三系平衡 → 內容難度)**:
 - **運動 athletics 雙用途**:旅行加速(`athletics_travel_factor`)+ 降低戰鬥體力消耗(`fatigue_cost_factor`)——原為死技能。
-- **格擋體力成本接上**(`BLOCK_FATIGUE_COST` 原是死常數);**技能健檢**:21 技能現皆有實際機制效果。
+- **格擋體力成本接上**(`BLOCK_FATIGUE_COST` 原是死常數);**技能健檢**:22 技能(含 scout)皆有機制效果 —— ⚠️後續(本 session)健檢復查發現**格擋的「等級」原本空轉**(減傷寫死 ×0.4、全碼無 `skill("block")` 讀取),已修並接上縮放(見下「格擋接上技能縮放 + 技能里程碑」)。
 - **內容難度 B**:bestiary 加 7 隻高階 elite(`min_level` 6→16、抗性各異 → build 剋制);危險區群戰隨 `danger` 放大;
   **BOSS 級標 `"solo"` 一次只單獨出現**;新終局地城**龍喉巢穴**(elite 房間 + 上古巨龍 boss)+ 新地點**龍喉峰**(晨風,danger 5);
   地城首領支援 `"raw"`(已是 elite 不再被 `spawn_boss` ×1.6 疊加);灰燼墓塚首領升級為 `dremora_lord`。
@@ -144,9 +144,19 @@
 - **對抗審查覆核**:① 兩條 NPC rumor 地理錯置(切迪納指錯洞窟、赫爾斯壯指錯濕地)→ 已泛化修正;② **城市安全網**(9 座 danger-0 新城 + 既有凱瓦奇↔龍橋鎮 d0 邊 → 可零遭遇城躍跨省)經評估**判為設計權衡保留**:城市本是安全樞紐、危險在探索/地城而非通勤、安全城躍路線代價是時間(賽↔天 城躍 16h vs 白隘快線 7h,2.3×),速度/安全取捨仍在。
 - **驗證**:25 測試模組全綠(test_world 全不變式:雙向/連通/環/可穿越地城/**聚落必有城主**/商店 id/世界大環)+ 拓樸統計(36 點/59 邊/24 環)+ 無頭煙霧(13 城面板/城主/26 NPC 傳聞/世界地圖/城際旅行)+ 對抗審查 workflow。**加新城純改 world+rulers+npcs JSON**(務必:type=city/danger=0/加 biome/同省雙向 links/`rulers.json` 配城主,否則 test_world 紅)。
 
+**格擋接上技能縮放 + 技能里程碑 Skill Mastery P1(技能健檢→格擋修死→里程碑系統;評估→直作→對抗審查)**:技能健檢實證 22 技能逐一機制效果,抓到**格擋是唯一「等級空轉」者**(減傷寫死 ×0.4、全碼無 `skill("block")` 讀取)→ 先修:新增 `formulas.block_damage_factor` 讓格擋減傷隨技能 ×0.9(生手)→×0.4(精通)、`attack_damage` 改吃 `block_factor`(commit `9371ce9`)。再評估「里程碑加 perk」(理解+設計面板+對抗審查 workflow),使用者拍板四項:**容許溫和真權衡數值 / 門檻 50·75·100 / 接受 1 新欄位 / 零選擇自動解鎖**(不發 perk point、不二選一,守反 min-max)。
+- **核心**:`systems/mastery.py`(門檻純由 `base_skill()` 推導 → **零存檔種子**;`kind` 白名單 `_IMPLEMENTED_KINDS` 分派)+ `data/mastery.json`。效果走既有層(`active_effects` shield / 純函式現算 / 仿 `factions.perk_value` 的 `min(cap,…)`),**不碰** 成長漏斗/怪物數值/`sneak_mult` 夜母鏈/資源上限鏈。
+- **6 條 MVP(戰/法/盜 × 50/75/100)**:盾陣(block50 命中懲罰 0.15→0.25)、壁壘(heavy_armor75 物理×0.85減傷 + 攻擊耗體×1.20,真權衡)、聖光·溢盾(restoration75 治療溢出×0.6轉護盾、夾**總量** cap)、過載(destruction100 `_power`+0.2/魔耗×1.3,同源代價)、撬鎖名家(security75 撬鎖下限0.30)、辯舌·折服(speechcraft100 說服必成、每NPC一次,唯一新欄位 `persuaded_npcs`)。
+- **接點**:`formulas.hit_chance` 參數化 `block_penalty`;`magic.cast`(過載 `_power`/`effective_cost`、溢盾)、`combat`(壁壘物理減傷 + 攻擊耗體)、`dungeon.effective_pick_lock_chance`、`dialogue.persuade`、`progression._on_skill_increase` 解鎖播報、`ui` 角色卡里程碑面板 + `legacy` 結算「精通」行+計分。
+- **對抗審查覆核修掉自身引入 3 問題**:① 溢盾 cap 原只夾單次 → 可戰前連施疊到 2.06×血上限(改夾**總量** + `source:"overheal_ward"` 標記);② `run_battle` 原不在入場清 `active_effects` → 戰外造的盾洩漏進下一場(在 `_prep_phase` **前**加 `player.active_effects.clear()`);③ `kind` 打錯會「加分+播報卻零效果」沉默 foot-gun(白名單過濾)。
+- **驗證**:26 測試模組全綠(`test_mastery` 17 測試)+ `sim_assassin` 零位移 + 壁壘/過載**勝率 gate PASS**(過門檻勝率不降)+ 無頭煙霧 + 存檔向後相容。commit `8ccbf56`。
+- **後續(P2/P3,路線已拍板)**:P2 引入持久 `mastery_*_bonus` 加成層(吸血鬼模式)與更多真權衡戰鬥型(**逐條跑 sim + 非 boss 精英秒殺率覆核**);P3 純改 JSON 補三系密度(優先冷門技 marksman/light_armor,避免 sneak 過載)。
+
+**飾品實戰崩潰修正(對抗審查後順手抓到的既有 bug)**:飾品(amulet/ring,無 `armor_rating` 鍵)戴上後,`inventory.effective_armor_rating`(唯一呼叫端=`combat` 玩家受物理擊時)原以 `["armor_rating"]` 直取 → **戴戒指/項鍊後第一次被物理擊中即 `KeyError` 崩潰**。改 `.get` 略過飾品(計 0 護甲)、`worn_armor_rating` 一併防禦化;補回歸測試(還原 HEAD 版可重現)。commit `a10aaeb`。
+
 **內容量**:10 種族 / 13 星座 / 8 職業 / **22 技能(+偵查 scout)** / **19 武器(4 法杖)** / **34 護甲(7 材質整套)** / 25 法術(5 AoE) /
-14 材料 / **4 飾品** / **38 生物(7 高階 elite + 2 吸血鬼 + 5 黑沼澤 + 8 黑兄目標 + 2 heartland;18 隻帶 biome 生態標籤)** / 3 傭兵 / **36 地點(有環圖+生態 biome,世界閉合成大環;各省補全城市 賽8/天9/晨8/黑7/邊4,共 17 城+4 鎮)** / **6 地城** / **41 任務(3 分支壓軸 + 解咒 + 6 黑兄合約 + 10 在地任務含 2 任務鏈)** / **4 公會** / **7 開局背景** / **59 NPC(每城 3 / 每鎮 2,角色多樣、greeting + rumor 指路;8 名掛在地委託)** / **24 事件(含 9 省份限定)** / **吸血鬼化系統** / **黑暗兄弟會系統** / **21 城主(各城自治)**。
-程式:**19 個 `systems` 模組**(+vampirism +brotherhood)+ models/ui/synth 等,共約 35 個 `.py` + `sim_assassin.py`(平衡回歸);**22 個 `data/*.json`**(黑兄/細化省分全靠改既有檔,無新增 json);**25 測試模組**(+test_detailing)。
+14 材料 / **4 飾品** / **38 生物(7 高階 elite + 2 吸血鬼 + 5 黑沼澤 + 8 黑兄目標 + 2 heartland;18 隻帶 biome 生態標籤)** / 3 傭兵 / **36 地點(有環圖+生態 biome,世界閉合成大環;各省補全城市 賽8/天9/晨8/黑7/邊4,共 17 城+4 鎮)** / **6 地城** / **41 任務(3 分支壓軸 + 解咒 + 6 黑兄合約 + 10 在地任務含 2 任務鏈)** / **4 公會** / **7 開局背景** / **59 NPC(每城 3 / 每鎮 2,角色多樣、greeting + rumor 指路;8 名掛在地委託)** / **24 事件(含 9 省份限定)** / **吸血鬼化系統** / **黑暗兄弟會系統** / **技能里程碑系統(6 條 MVP,達門檻自動解鎖)** / **21 城主(各城自治)**。
+程式:**20 個 `systems` 模組**(+vampirism +brotherhood +mastery)+ models/ui/synth 等,共約 36 個 `.py` + `sim_assassin.py`(平衡回歸);**23 個 `data/*.json`**(+mastery.json;黑兄/細化省分全靠改既有檔);**26 測試模組**(+test_mastery)。
 
 ---
 
@@ -184,6 +194,7 @@ tesrpg/
 │   ├── powers       出生星座每日能力
 │   ├── vampirism    吸血鬼化狀態機(力量↔詛咒;game_loop 每圈 update)
 │   ├── brotherhood  黑暗兄弟會(血債招募/合約晉升/夜母祝福/洗白賞金)
+│   ├── mastery      技能里程碑(達門檻自動解鎖被動;base_skill 推導 + kind 白名單)
 │   ├── loot         resolve_loot(怪物掉落 + 寶箱共用)
 │   ├── legacy       一生傳奇總結 + 評分
 │   └── events       事件引擎(DESIGN 3.8)
@@ -230,6 +241,7 @@ tesrpg/
 - **吸血鬼化(里程碑)**:狀態機全在 `systems/vampirism.py`,**`vampirism.update(state, gd)` 必須在 game_loop 每圈頂端先呼叫**(驅動轉化/升階/初始化);階級加成走 `vampire_*` 獨立層(**成長/夾限只用 `base_skill()/base_attr()`**,同裝備鐵律);`apply_to_character` 末段會 `recompute_max_resources`(力量/意志加成→體力上限)。
   感染向量:吸血鬼敵人 `attack.infect`(機率)→ `combat.resolve_attack` 回 `infected` → `run_battle` 套 `vampirism.infect`;**疾病抗性削弱感染**(`resist_multiplier(...,"disease")`)。陽光只在 travel/explore 結算(`_maybe_sunburn`,**夾限保命**);`is_shunned`(階級≥2)在 game_loop 隱藏 NPC 商業服務,`action_feed` 解除。**加吸血鬼敵人純改 bestiary**(`infect` + 火焰負抗性);調平衡只動 vampirism.py 常數(`STAGE_*`/`SUN_*`/`FEED_*`)。轉化後**出生星座之力被 `vampiric_drain` 取代**(刻意:詛咒蓋過天賦)。
   **D 治療**:`cure_vampirism` 用 source `vampire_cure`(`available_quests` 只回對應 source → 不漏進告示板/公會);解咒儀式是顯式動作 `action_vampire_cure`(法師公會子選單,`is_vampire` 閘門),用 `vampirism.cure` 收尾並把任務移出 `completed_quests` 以**可重複**;`mages_guild` 服務**不受社交封鎖**(吸血鬼永遠找得到解咒的女巫)。加新解咒媒介純改 quests.json(注意採集物要買得到:大蒜@布魯瑪、毒茄參@晨風)。
+- **技能里程碑(Skill Mastery,P1)**:全在 `systems/mastery.py`,資料在 `data/mastery.json`。門檻**只認 `base_skill()`**(裝備/吸血鬼疊加不得觸發,否則污染成長/夾限)。**加同 kind 里程碑純改 JSON;加新 kind 必須**:①登錄 `mastery._IMPLEMENTED_KINDS`(否則該條完全 inert,不顯示/計分/播報)②加對應 getter ③一處呼叫端分支(**這步不是純 JSON**,別在 doc 誇大)。⚠️ 兩個審查踩過的雷:① 走 `active_effects` 的效果(如溢盾)務必**夾「總量」cap 並打 `source` 標記**(別只夾單次→可疊破),且 `run_battle` 已在**入場清 `player.active_effects`**(在 `_prep_phase` 前)杜絕戰外殘留洩漏;② 戰鬥數值型(壁壘/過載)改常數務必重跑 `sim_assassin.py` + auto_resolve 勝率 gate(**過門檻勝率不得下降**)。新欄位只有 `persuaded_npcs`(辯舌·折服;已進 to_dict、舊存檔預設 [])。
 
 ---
 
@@ -242,7 +254,8 @@ tesrpg/
 5. **對抗式審查(Workflow 工具)**:多維度 fan-out 審查 → 每個發現由獨立懷疑者**對抗式驗證** → 只回報「能真實重現」的 bug。
 6. **覆核 + 修正**:**逐一覆核審查結果**(會有誤報、也會有「會引入新 bug 的錯誤修法」—— 已擋下 2 次);套用確認的修正 + 補回歸測試;重跑全套。
 
-> 戰績:十二輪審查累計修掉 **~23 個真 bug**、擋下 **2 個錯誤修法**、自補 1 次審查覆蓋缺口、自抓數個測試基建坑。
+> 戰績:十三輪審查累計修掉 **~27 個真 bug**、擋下 **2 個錯誤修法**、自補 1 次審查覆蓋缺口、自抓數個測試基建坑。
+> Mastery 輪:對抗審查抓到**自身引入的 3 問題**(溢盾 cap 可疊破到 2.06×血上限 / `active_effects` 戰外洩漏進下一場 / `kind` 白名單沉默失效)+ 順手抓到**既有飾品實戰崩潰**(戴飾品被物理擊 `KeyError`,已補回歸測試)。
 > M14 輪:抓到會**寫入存檔的數值回歸** —— 丟棄/出售「穿戴中的 fortify 護甲」未重算,加成永久殘留(出售還倒賺金幣)。
 > M15 輪(升級改版):抓到 3 個 —— ①(major)`ensure_level_xp` 未在**載入路徑**觸發 → 可升級的舊存檔升級入口被隱藏;
 > ②(minor)`apply_level_up` 屬性點以「請求量」而非「實際套用量」計帳 → 觸頂吞點;③ 三處 UI 文案仍稱「只有主修計入升級」。均已修 + 補回歸測試(且反向驗證測試能抓到)。
@@ -281,7 +294,10 @@ tesrpg/
 > **城市補全**(§1:按 TES 正史補 13 標誌城市 + 21 城主 + 26 NPC,各省 1 城→多城;地點 23→36,城市設計 workflow + 整合 + 對抗審查)、
 > **NPC 增補**(四省平行補 25 名 NPC → 每城 3/每鎮 2、總 59 名,角色多樣 + rumor 指路;純資料 npcs.json)、
 > **城內分區 + 簡化選單**(城鎮服務拆成 市集區🛒/公會區⚜/廣場🏛 三個可進入子選單,頂層只剩「城區」三入口;群名簡化 製作/人物;野外/地城自動無城區)、
-> **偵查→開戰前備戰空間**(潛近成功+未被伏擊時,依偵查技能換得 1/2/3 個備戰動作:施增益/召喚(鎖 scout≥50)/喝藥/塗毒;順解召喚開場佔回合痛點)。
+> **偵查→開戰前備戰空間**(潛近成功+未被伏擊時,依偵查技能換得 1/2/3 個備戰動作:施增益/召喚(鎖 scout≥50)/喝藥/塗毒;順解召喚開場佔回合痛點)、
+> **格擋接上技能縮放**(技能健檢抓到格擋等級空轉 → `block_damage_factor` ×0.9→×0.4)、
+> **技能里程碑 Skill Mastery P1**(§1:6 條被動達門檻 50/75/100 自動解鎖,反 min-max;含對抗審查覆核修正;P2/P3 路線已拍板)、
+> **飾品實戰崩潰修正**(§1:戴飾品被物理擊 `KeyError`,既有 bug)。
 >
 > 地圖後續可再加:黑沼澤**起手任務鉤子 / 開局背景**(亞龍人沼澤出身,純改 quests/origins JSON);再開一省(漢默法爾/高岩…)續閉環;贊密爾沉廟可加後門讓它變環上節點。
 > 公會後續可再加:更多分支壓軸 / 階級設施權限 / 公會委託告示。(✅ 暗殺者公會=黑暗兄弟會已做,見 §1)
@@ -289,6 +305,7 @@ tesrpg/
 > 裝備後續可再加:獨特/具名裝備(套裝外的具名神器)、附魔護甲擴展到技能/抗性(目前護甲只 fortify 資源)、武器附魔可帶狀態(吸血/麻痺)、回復型附魔(per-turn regen,目前略過)。
 > 開局後續可再加:更多開局(暗殺者/海難倖存者/獸人部族…純改 JSON)、開局附帶**起手任務鉤子**(MVP 刻意未做)、`armor` 起手整套裝(目前開局只給單件飾品/法杖)、開局選單依職業/種族過濾推薦。
 > 吸血鬼後續可再加:夜視/魅惑等更多吸血鬼能力、狼人(同套狀態機另一支)、吸血鬼專屬裝備/巢穴、NPC 識破後衛兵敵對(目前只社交封鎖)、解咒任務的具名 NPC/對話包裝(目前梅莉桑德只在子選單文字中現身)。
+> 技能里程碑後續可再加(**P2/P3,路線已拍板**):P2 持久 `mastery_*_bonus` 加成層(吸血鬼模式)+ 更多真權衡戰鬥型(**逐條 sim 背書 + 非 boss 精英秒殺率覆核**);P3 純改 JSON 補三系密度(優先 marksman/light_armor 等冷門技,避免 sneak 過載);可另評估『達門檻二選一』能動性(引入最佳化空間=支柱級取捨,需使用者拍板)。
 
 > ⚠️ 開新功能務必沿用「§4 開發節奏」:實作 → 測試 → 平衡 → 煙霧 →(ultracode 開時)對抗式審查 → 覆核修正。
 
@@ -310,5 +327,5 @@ tesrpg/
     `6bd9d6a` 格擋體力 + 運動降耗 → `5ed464a` 運動旅行加速 → `da33db8` M16 潛行系戰鬥化 →
     `6472732` M15 升級改版 → `4678a72` M14 護甲附魔 → `67726c6` UI 改版 → `52cf9ca` 初始。
 - 日後更新:`git add -A && git commit -m "..." && git push`(commit 訊息結尾請加
-  `Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>`)。
+  `Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>`)。
 - 本 `handoff.md` **已納入版控**(每完成一輪請順手更新並 commit,讓下個 session 不踩空)。
