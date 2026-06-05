@@ -1570,34 +1570,45 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
             adventure.append(("explore", "探索狩獵 ⚔"))
         adventure.append(("travel", "旅行"))
         adventure.append(("map", "世界地圖"))
-        # --- 城鎮服務 ---
-        town: list = []
-        if player.is_vampire and loc["type"] in ("town", "city"):
-            town.append(("feed", "🩸 吸血進食(獵取活人,重置飢餓)"))
+        # --- 城區(分區域:市集區 / 公會區 / 廣場)---
         if shunned:
             ui.message("世人察覺了你的真面目,紛紛走避 —— 高階吸血鬼無法與人交易,先進食壓下飢渴吧。",
                        style="red")
+        market: list = []     # 市集區:商業
+        guilds: list = []     # 公會區:各公會分部 / 聖所
+        plaza: list = []      # 廣場:旅店 / 訓練 / 告示 / 攀談 / 進食
         if "merchant" in services and not shunned:
-            town.append(("shop", "商店"))
-        if "inn" in services and not shunned:
-            town.append(("inn", "旅店(10金)"))
-        if "trainer" in services and not shunned:
-            town.append(("trainer", "訓練師"))
+            market.append(("shop", "商店"))
+        if "armorer" in services or inventory.count_item(player, "repair_hammer") > 0:
+            market.append(("repair", "修理裝備"))
         if "mages_guild" in services:
-            town.append(("guild_mages", "法師公會"))   # 學習法術 + 入會/任務,進子選單
+            guilds.append(("guild_mages", "法師公會"))   # 學習法術 + 入會/任務,進子選單
         if "fighters_guild" in services:
-            town.append(("fg_hall", "戰士公會"))
+            guilds.append(("fg_hall", "戰士公會"))
         if "thieves_guild" in services:
-            town.append(("tg_hall", "盜賊公會"))
+            guilds.append(("tg_hall", "盜賊公會"))
         # 黑暗兄弟會聖所:唯有入會者才知其所在(血債招募後解鎖)
         if "dark_brotherhood" in services and brotherhood.is_member(player):
-            town.append(("db_hall", "黑暗兄弟會聖所 🗡"))
+            guilds.append(("db_hall", "黑暗兄弟會聖所 🗡"))
+        if player.is_vampire and loc["type"] in ("town", "city"):
+            plaza.append(("feed", "🩸 吸血進食(獵取活人,重置飢餓)"))
+        if "inn" in services and not shunned:
+            plaza.append(("inn", "旅店(10金)"))
+        if "trainer" in services and not shunned:
+            plaza.append(("trainer", "訓練師"))
         if "task_board" in services:
-            town.append(("board", "告示板"))
+            plaza.append(("board", "告示板"))
         if _living_npcs_at(state, gamedata) and not shunned:
-            town.append(("talk", "與人攀談"))
-        if "armorer" in services or inventory.count_item(player, "repair_hammer") > 0:
-            town.append(("repair", "修理裝備"))
+            plaza.append(("talk", "與人攀談"))
+        # 只列出有內容的城區;頂層只顯示區域入口(進入後才見區內服務)
+        districts = []
+        if market:
+            districts.append(("_market", "市集區 🛒", market))
+        if guilds:
+            districts.append(("_guilds", "公會區 ⚜", guilds))
+        if plaza:
+            districts.append(("_plaza", "廣場 🏛", plaza))
+        city_group = [(k, lbl) for k, lbl, _ in districts]
         # --- 施法與製作 ---
         craft: list = []
         if player.spells:
@@ -1619,9 +1630,15 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
         system = [("save", "存檔"), ("retire", "隱退江湖"), ("quit", "回主選單")]
 
         choice = ui.grouped_menu("要做什麼?", [
-            ("冒險", adventure), ("城鎮服務", town),
-            ("施法與製作", craft), ("角色與物品", character), ("系統", system),
+            ("冒險", adventure), ("城區", city_group),
+            ("製作", craft), ("人物", character), ("系統", system),
         ])
+        # 選了某個城區 → 進入該區的子選單挑實際服務(返回則回到城區)
+        _dist = next((d for d in districts if d[0] == choice), None)
+        if _dist:
+            choice = ui.menu(_dist[1], _dist[2], allow_back=True)
+            if choice is None:
+                continue
         died = None
         if choice == "map":
             ui.world_map(player, gamedata)
