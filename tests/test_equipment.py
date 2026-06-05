@@ -8,7 +8,7 @@ from tesrpg.gamedata import get_gamedata
 from tesrpg.rng import RNG
 from tesrpg.state import GameState, GameTime
 from tesrpg.synth import enchant_jewelry_id
-from tesrpg.systems import enchanting, inventory, magic, progression, stats
+from tesrpg.systems import combat, enchanting, inventory, magic, progression, stats
 
 
 def _char(race="imperial"):
@@ -80,6 +80,31 @@ def test_jewelry_fills_ring_then_amulet_slots():
     assert inventory.equip_jewelry(c, gd, "silver_ring") == "ring1"
     assert inventory.equip_jewelry(c, gd, "silver_ring") == "ring2"
     assert inventory.equip_jewelry(c, gd, "silver_amulet") == "amulet"
+
+
+def test_jewelry_equipped_does_not_break_armor_rating():
+    """回歸:飾品(amulet/ring 無 armor_rating 鍵)戴上後算護甲不得 KeyError。
+
+    effective_armor_rating 的唯一呼叫端是 combat(玩家受物理攻擊時),
+    曾因飾品缺鍵而戴戒指實戰即崩;此測試釘死該路徑。
+    """
+    gd, c = _char()
+    for jid in ("silver_ring", "silver_amulet"):
+        inventory.add_item(c, jid, 1)
+        inventory.equip_jewelry(c, gd, jid)
+    # 純飾品:護甲值 0(飾品無護甲值),但絕不可拋例外
+    assert inventory.effective_armor_rating(c, gd) == 0.0
+    assert inventory.worn_armor_rating(c, gd) == 0
+    # 飾品 + 真護甲並存 → 只計真護甲(飾品計 0、不干擾)
+    cuir = next(i for i, d in gd.armor.items() if d["slot"] == "cuirass")
+    inventory.add_item(c, cuir, 1)
+    inventory.equip_armor(c, gd, cuir)
+    assert inventory.effective_armor_rating(c, gd) > 0
+    # 戴飾品實戰:被物理攻擊計算護甲(combat → effective_armor_rating)不崩
+    c.health = c.max_health = 120
+    foe = combat.spawn_creature(gd, "giant_rat", RNG(1))
+    foe.attack["damage"] = 20
+    combat.auto_resolve(c, foe, gd, RNG(3))
 
 
 # --- A 附魔擴展(四型別)------------------------------------------------

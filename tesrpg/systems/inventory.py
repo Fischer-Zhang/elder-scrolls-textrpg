@@ -209,7 +209,7 @@ def coat_weapon(char: Character, gamedata: GameData, poison_id: str) -> bool:
 
 def worn_armor_rating(char: Character, gamedata: GameData) -> int:
     """穿戴護甲的名目護甲值(不含耐久折損,供 UI 顯示)。"""
-    return sum(gamedata.item(i)["armor_rating"] for i in char.equipped.values())
+    return sum(gamedata.item(i).get("armor_rating", 0) for i in char.equipped.values())
 
 
 def armor_fortify_totals(char: Character, gamedata: GameData) -> dict[str, int]:
@@ -240,8 +240,11 @@ def effective_armor_rating(char: Character, gamedata: GameData) -> float:
     """計入各部位耐久折損後的實際護甲值。"""
     total = 0.0
     for slot, iid in char.equipped.items():
+        rating = gamedata.item(iid).get("armor_rating")  # 飾品(amulet/ring)無此鍵
+        if not rating:
+            continue
         cond = char.armor_condition.get(slot, 100.0)
-        total += gamedata.item(iid)["armor_rating"] * _cond_mult(cond)
+        total += rating * _cond_mult(cond)
     return total
 
 
