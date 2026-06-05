@@ -689,5 +689,24 @@
     "loot_gold": [90, 180],
     "loot": [{"item": "glass_dagger", "chance": 0.5}, {"item": "filled_greater_soul_gem", "chance": 0.4}, {"item": "gold_amulet", "chance": 0.3}],
     "flavor": "你曾奉其號令的聖所代言人,夜母之意的轉述者 —— 如今刀鋒相向,他眼中只有冷冽的了然。"
+  },
+  "imperial_ghost": {
+    "biomes": ["heartland"], "name": "帝國亡魂", "strength": 35, "agility": 56, "speed": 52,
+    "max_health": 24, "armor_rating": 6,
+    "attack": {"name": "幽寒之觸", "damage": 8, "skill": 40},
+    "danger": 2, "min_level": 1, "weight": 4,
+    "resist": {"magic": 30, "poison": 100},
+    "loot_gold": [0, 5],
+    "loot": [{"item": "glow_dust", "chance": 0.35}, {"item": "bone_meal", "chance": 0.3}, {"item": "filled_petty_soul_gem", "chance": 0.1}],
+    "flavor": "賽羅迪爾古道旁的埃雷德陵墓裡,一縷帝國亡魂自殘碑後飄出,冰冷的手探向你的胸口。"
+  },
+  "minotaur": {
+    "biomes": ["heartland"], "name": "米諾陶", "strength": 64, "agility": 38, "speed": 42,
+    "max_health": 52, "armor_rating": 16,
+    "attack": {"name": "巨斧橫掃", "damage": 16, "skill": 48},
+    "danger": 3, "min_level": 3, "weight": 4,
+    "loot_gold": [8, 22],
+    "loot": [{"item": "healing_potion", "chance": 0.2}, {"item": "ruby", "chance": 0.1}],
+    "flavor": "帝國腹地的遠古巨獸 —— 一頭牛首人身的米諾陶自林間踏出,蹄聲震得落葉簌簌。"
   }
 }

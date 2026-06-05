@@ -443,7 +443,10 @@ def quest_log(char: Character, gamedata: GameData) -> None:
 
 def npc_panel(npc: dict, disposition: int) -> None:
     body = Text()
-    body.append(npc["greeting"] + "\n\n", style="italic " + PARCH)
+    body.append(npc["greeting"] + "\n", style="italic " + PARCH)
+    if npc.get("rumor"):       # 在地傳聞:指向同省的地城/野外/奇景(細化省分)
+        body.append("傳聞:" + npc["rumor"] + "\n", style="grey62")
+    body.append("\n")
     filled = disposition // 10
     body.append("好感 ", style=INK)
     body.append("♥" * filled, style="red")

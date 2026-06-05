@@ -794,6 +794,44 @@
     "turn_in": "auto",
     "text": "天際告示板懸賞:佛克瑞斯林的狼群襲擊商旅,獵殺 4 頭者有賞。"
   },
+  "chain_kvatch": {
+    "name": "腹地的不寧",
+    "faction": null, "rank": null, "source": "npc",
+    "stages": [
+      {"objective": {"type": "kill", "creature": "imperial_ghost", "count": 2},
+       "text": "凱瓦奇的馬庫斯說帝國大道旁的埃雷德陵墓鬧鬼:先驅散 2 縷帝國亡魂(腹地野外可尋)。"},
+      {"objective": {"type": "reach", "location": "cedernoc_cave"},
+       "text": "亡魂的低語指向切德納寇洞窟 —— 去那裡查個究竟。"},
+      {"objective": {"type": "kill", "creature": "minotaur", "count": 1},
+       "text": "洞窟附近驚現一頭腹地巨獸米諾陶 —— 了結牠,還腹地一個太平。"}
+    ],
+    "reward": {"gold": 150, "fame": 5, "items": ["healing_potion"]},
+    "turn_in": "auto",
+    "text": "「腹地最近很不安寧 —— 古道鬧鬼、林裡還有巨獸。」馬庫斯壓低了聲音。"
+  },
+  "chain_molagmar": {
+    "name": "灰原的低語",
+    "faction": null, "rank": null, "source": "npc",
+    "stages": [
+      {"objective": {"type": "kill", "creature": "ash_hopper", "count": 4},
+       "text": "莫拉格瑪的卓菈莎說灰燼荒原蟲災成患:先除掉 4 隻灰蹦蟲。"},
+      {"objective": {"type": "reach", "location": "ashfall_barrow"},
+       "text": "蟲群似乎從灰燼墓塚方向湧出 —— 去墓塚外圍偵察。"},
+      {"objective": {"type": "collect", "item": "ash_yam", "count": 2},
+       "text": "帶 2 份受污染的灰薯回去,讓卓菈莎查明蟲災之源。"}
+    ],
+    "reward": {"gold": 160, "fame": 4, "items": ["scrib_jelly"]},
+    "turn_in": "auto",
+    "text": "「三相神庇佑 —— 但護不住灰田。灰原的蟲災,背後恐怕不單純。」卓菈莎憂心忡忡。"
+  },
+  "favor_haafingar": {
+    "name": "委託:海港肅清",
+    "faction": null, "rank": null, "source": "npc",
+    "objective": {"type": "kill", "creature": "ice_wraith", "count": 2},
+    "reward": {"gold": 110, "fame": 3},
+    "turn_in": "auto",
+    "text": "海芬古的賽莉迪雅請你清掉佛克瑞斯林裡作祟的冰魂 2 縷(天際雪原野外可尋)。"
+  },
   "db6": {
     "name": "合約:聆聽者之試",
     "faction": "dark_brotherhood",

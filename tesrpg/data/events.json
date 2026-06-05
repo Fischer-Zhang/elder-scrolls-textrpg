@@ -299,5 +299,20 @@
                              "effects": [{"type": "skill_xp", "skill": "speechcraft", "amount": 0.4}]},
                  "failure": {"text": "「無可奉告。」長官板著臉走開了。", "effects": []}}}
     ]
+  },
+  "cyrodiil_ayleid_ruin": {
+    "weight": 3, "trigger": {"contexts": ["explore"], "provinces": ["賽羅迪爾"], "location_types": ["wilderness"]},
+    "title": "埃雷德殘墟", "text": "帝國大道旁的松林間,半埋著一截發著微光的埃雷德古代石柱,殘垣後似有寒氣浮動。",
+    "options": [
+      {"text": "上前探查(偵查)",
+       "check": {"skill": "scout", "difficulty": 30,
+                 "success": {"text": "你看出殘墟的門道,在碎石下摸到一枚古錢與發光塵。",
+                             "effects": [{"type": "item", "item": "glow_dust", "qty": 1},
+                                         {"type": "gold", "amount": 20},
+                                         {"type": "skill_xp", "skill": "scout", "amount": 0.5}]},
+                 "failure": {"text": "你驚動了棲身殘墟的帝國亡魂!",
+                             "effects": [{"type": "combat", "creature": "imperial_ghost"}]}}},
+      {"text": "繞道而行", "effects": [{"type": "message", "text": "你不願招惹古老的埃雷德亡靈,繞了過去。"}]}
+    ]
   }
 }

@@ -119,7 +119,7 @@ Faction       data/factions.json   公會
 - **時間系統**:TES 曆法(一年 12 月、每日 24 時)。行動推進時/日;**晝夜**影響遭遇與 NPC 作息;**休息**回復資源 + 推進時間(野外休息有風險遭遇)
 - **地點類型**:城市/城鎮(服務:旅店、商店、訓練師、公會分部)、地城(多房間 areas、陷阱、上鎖容器、Boss、固定+隨機戰利品)、野外(隨機遭遇表)
 - **遭遇**:依地區 `danger`、晝夜、玩家等級抽 `encounter_table`(戰鬥/事件/發現地點)
-  - ✅ **生態遭遇表已實作**(細化省分):每地點有 `biome`(heartland/snow/ashland/swamp),野外遭遇依 biome 加權分流(雪原噴霜系/火山噴灰系/沼澤噴蜥蜴鬼火),通用怪四海皆有墊底;事件 `trigger.provinces` 與告示板 `provinces` 讓風味/懸賞在地化。各省密度均化至 4–5 地點。
+  - ✅ **生態遭遇表已實作**(細化省分):每地點有 `biome`(heartland/snow/ashland/swamp),野外遭遇依 biome 加權分流(雪原噴霜系/火山噴灰系/沼澤噴蜥蜴鬼火/腹地帝國亡魂+米諾陶),通用怪四海皆有墊底;事件 `trigger.provinces` 與告示板 `provinces` 讓風味/懸賞在地化;NPC `rumor` 指路、在地多階段任務鏈。各省密度均化至 4–5 地點。重數值怪靠 `danger` 門檻擋在和緩起手區外(min_level+danger 雙閘,不數值縮放)。
 
 ### 3.6 經濟與物品 (Economy & Inventory)
 - **負重 (encumbrance)**:物品有重量,上限由 strength 決定;超重影響移動/戰鬥

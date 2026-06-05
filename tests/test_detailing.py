@@ -62,6 +62,43 @@ def test_every_location_has_biome():
         assert loc.get("biome") in valid, f"{lid} biome 非法:{loc.get('biome')}"
 
 
+def test_creature_biomes_are_valid():
+    gd, _ = _char()
+    valid = {"heartland", "snow", "ashland", "swamp"}
+    for cid, c in gd.bestiary.items():
+        for b in c.get("biomes", []):
+            assert b in valid, f"{cid} biomes 非法:{b}"
+
+
+def test_heartland_has_signature_ecology():
+    """賽羅迪爾不再只有通用怪:heartland biome 會明顯抽到 heartland 招牌怪。"""
+    gd, _ = _char()
+    heartland = {cid for cid, c in gd.bestiary.items() if "heartland" in c.get("biomes", [])}
+    assert heartland, "heartland 仍無專屬生態怪"
+    tally = Counter()
+    for i in range(800):
+        c = combat.random_encounter(gd, 5, RNG(4000 + i), max_danger=3, biome="heartland")
+        tally[c.template_id] += 1
+    assert sum(tally[k] for k in heartland) > 0, "heartland 招牌怪抽不到"
+    # imperial_ghost(d2/min1)應在帝國大道(d1→max2)從低等就抽得到
+    low = combat.random_encounter(gd, 2, RNG(1), max_danger=2, biome="heartland")  # smoke: 不崩
+    assert low.template_id in gd.bestiary
+
+
+def test_heartland_starter_road_stays_gentle():
+    """賽羅迪爾起手大道(imperial_road danger1 → max_danger2)須維持和緩:
+    重數值的 minotaur(d3)必須被危險度門檻擋在起手區外(避免重演雪原偏硬)。"""
+    gd, _ = _char()
+    seen = Counter()
+    for i in range(600):
+        c = combat.random_encounter(gd, 5, RNG(13000 + i), max_danger=2, biome="heartland")
+        seen[c.template_id] += 1
+    assert "minotaur" not in seen, "米諾陶(d3 重甲怪)不該出現在 danger-1 起手大道"
+    # 起手大道任何怪的 danger 都應 <=2(危險度門檻生效)
+    for tid in seen:
+        assert gd.bestiary[tid].get("danger", 1) <= 2, f"{tid} danger>2 卻出現在起手大道"
+
+
 # --- Tier2-b 告示板按省過濾 -------------------------------------------
 def test_board_province_filter():
     gd, c = _char()
@@ -119,6 +156,42 @@ def test_local_quests_point_at_detailed_content():
     assert gd.quests["job_xanmeer"]["objective"]["dungeon"] == "xanmeer"
     assert gd.quests["favor_lostknife"]["objective"]["dungeon"] == "lostknife_cave"
     assert gd.quests["favor_gideon"]["objective"]["location"] == "xanmeer"
+
+
+def test_local_quest_chains_are_multistage_and_offered_by_npcs():
+    gd, _ = _char()
+    chains = ["chain_kvatch", "chain_molagmar"]
+    for qid in chains:
+        assert len(gd.quests[qid].get("stages", [])) >= 3, f"{qid} 不是多階段任務鏈"
+        assert gd.quests[qid]["source"] == "npc"
+    # 任務鏈/單發委託都掛在對應 NPC 上
+    npc_quests = {npc.get("quest") for npc in gd.npcs.values()}
+    for qid in chains + ["favor_haafingar"]:
+        assert qid in npc_quests, f"{qid} 沒有 NPC 提供"
+
+
+def test_npc_rumors_are_strings():
+    gd, _ = _char()
+    for nid, npc in gd.npcs.items():
+        if "rumor" in npc:
+            assert isinstance(npc["rumor"], str) and npc["rumor"], f"{nid} rumor 非法"
+
+
+def test_local_quest_rewards_stay_in_range():
+    """反 min-max 機械守門:NPC/board 在地任務獎勵不可超出既有區間(金幣≤320=既有 job_barrow 清 d4 地城上限、聲望≤15、不給高階裝)。"""
+    gd, _ = _char()
+    BIS = {"glass_cuirass", "ebony_cuirass", "ebony_sword", "dwarven_cuirass", "ebony_shield",
+           "glass_helmet", "glass_gauntlets", "glass_boots", "glass_shield"}
+    for qid, q in gd.quests.items():
+        if q.get("source") not in ("npc", "board"):
+            continue
+        rewards = ([b.get("reward", {}) for b in q["branches"]] if "branches" in q
+                   else [q.get("reward", {})])
+        for r in rewards:
+            assert r.get("gold", 0) <= 320, f"{qid} 金幣獎勵過高:{r.get('gold')}"
+            assert r.get("fame", 0) <= 15, f"{qid} 聲望獎勵過高:{r.get('fame')}"
+            for iid in r.get("items", []):
+                assert iid not in BIS, f"{qid} 在地任務不應給高階裝 {iid}"
 
 
 # --- Tier1-c 省份風味事件 ---------------------------------------------
