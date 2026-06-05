@@ -124,6 +124,10 @@ class Character:
     garrison_current: dict = field(default_factory=dict)  # loc_id -> 現存駐軍(圍城方略消耗)
     siege_ops: dict = field(default_factory=dict)         # loc_id -> [已施行的圍城方略 id](每役每略一次)
 
+    # 招兵買馬(城戰的金幣/領袖路線)。親衛/將領=companions(具名);軍隊/士兵=抽象兵員。詳見 systems/warband.py。
+    soldiers: int = 0                                     # 麾下士兵數(營地招募;攻城當援軍 + 大軍壓境)
+    camp: str = ""                                        # 營地所在 loc_id(野外紮營 / 佔領已清空地城);""=未建
+
     is_player: bool = False
 
     # --- 查詢 -------------------------------------------------------------
@@ -195,6 +199,7 @@ class Character:
             "city_standing": self.city_standing, "thaneships": self.thaneships,
             "allegiance": self.allegiance, "city_faction": self.city_faction,
             "garrison_current": self.garrison_current, "siege_ops": self.siege_ops,
+            "soldiers": self.soldiers, "camp": self.camp,
             "companions": self.companions,
         }
 

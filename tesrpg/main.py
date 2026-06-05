@@ -14,7 +14,7 @@ from tesrpg.rng import RNG, make_seed
 from tesrpg.state import GameState
 from tesrpg.systems import (alchemy, brotherhood, combat, court, crafting, crime, dialogue, dungeon,
                             enchanting, events, factions, inventory, legacy, magic, politics, powers,
-                            progression, quests, stats, vampirism, world)
+                            progression, quests, stats, vampirism, warband, world)
 from tesrpg.ui import console as ui
 
 SAVE_PATH = Path.home() / ".tesrpg" / "save.json"
@@ -1178,7 +1178,8 @@ def _hire_mercenary(state: GameState, gamedata: GameData) -> None:
     if len(char.companions) >= MAX_PARTY:
         ui.message(f"隊伍已滿(最多 {MAX_PARTY} 名傭兵),先解散一名吧。", style="yellow")
         return
-    avail = [cid for cid in gamedata.companions if cid not in char.companions]
+    avail = [cid for cid in gamedata.companions
+             if cid not in char.companions and not gamedata.companions[cid].get("troop")]
     opts = [(cid, f"{gamedata.companions[cid]['name']} — {gamedata.companions[cid]['cost']} 金:"
              f"{gamedata.companions[cid]['blurb']}") for cid in avail]
     cid = ui.menu(f"雇用哪位?(你有 {char.gold} 金)", opts, allow_back=True)
@@ -1314,12 +1315,22 @@ def action_siege(state: GameState, gamedata: GameData, loc_id: str) -> str | Non
             risk = "(有風險)" if op["risk"] else ""
             opts.append((op["id"], f"{op['name']}〔{gamedata.skill_name(op['skill'])}〕"
                                    f"耗 {op['hours']}時/{cost}{risk} → 削守軍約 {est}{tag}"))
+        # 大軍壓境:以軍隊規模(非個人技能)削守軍 —— 招兵買馬的攻城路。每役一次。
+        if char.soldiers > 0 and "army" not in politics.ops_done(char, loc_id):
+            opts.append(("army", f"⚑ 大軍壓境〔軍隊 {char.soldiers}〕→ 削守軍約 {warband.army_soften(char)}"))
         opts.append(("assault", f"⚔ 發動強攻(現存守軍 {remaining})"))
         choice = ui.menu(f"圍攻「{city}」—— 守軍 {remaining}", opts, allow_back=True)
         if choice is None:
             return None
         if choice == "assault":
             return _siege_assault(state, gamedata, loc_id, city)
+        if choice == "army":
+            amount = warband.army_soften(char)
+            politics.deplete_garrison(char, gamedata, loc_id, amount)
+            char.siege_ops.setdefault(loc_id, []).append("army")
+            state.time.advance(2)
+            ui.message(f"你的大軍壓向城下,連日襲擾消磨 —— 守軍折損約 {amount}。", style="green")
+            continue
         op = politics.SIEGE_OP_BY_ID[choice]
         if not politics.can_afford_op(char, op):
             ui.message("資源不足,難以施行此略。", style="red")
@@ -1342,7 +1353,12 @@ def _siege_assault(state: GameState, gamedata: GameData, loc_id: str, city: str)
     ui.message(f"號角長鳴,你率眾撞開{city}的城門 ——", style="bold magenta")
     enemies = [combat.spawn_creature(gamedata, politics.SIEGE_SOLDIER, state.rng) for _ in range(n)]
     enemies.append(combat.spawn_boss(gamedata, politics.SIEGE_SOLDIER, state.rng, name=f"{city}守將"))
-    res = run_battle(state, gamedata, enemies)
+    # 親衛(將領)+ 麾下士兵一同上陣(士兵以軍團兵模板出場;超出上限者以大軍壓境體現)
+    fielded = warband.fielded_soldiers(char)
+    allies = char.companions + [warband.SOLDIER_TROOP] * fielded
+    if fielded:
+        ui.message(f"你的 {fielded} 名士兵隨你殺入城中。", style="grey70")
+    res = run_battle(state, gamedata, enemies, companions=allies)
     if res == "dead":
         return "dead"
     if res == "fled":
@@ -1353,6 +1369,41 @@ def _siege_assault(state: GameState, gamedata: GameData, loc_id: str, city: str)
     ui.message(f"城門洞開,守將伏誅 —— 「{city}」易幟,自此歸於{politics.cause_name(char.allegiance)}!",
                style="bold gold1")
     ui.message(f"你的威名響徹四方(聲望 +{politics.SIEGE_FAME})。", style="cyan")
+
+
+def action_warband(state: GameState, gamedata: GameData) -> None:
+    """整軍經武:建立/移動營地、招募士兵、檢視軍勢(招兵買馬階段一)。"""
+    char = state.player
+    while True:
+        loc_id = char.location_id
+        camp_name = gamedata.location(char.camp)["name"] if char.camp else "未建立"
+        officers = "、".join(gamedata.companions[c]["name"] for c in char.companions) or "無"
+        ui.message(f"【軍勢】親衛:{officers} | 士兵:{char.soldiers}/{warband.MAX_SOLDIERS} | "
+                   f"營地:{camp_name}", style="gold1")
+        opts = []
+        if warband.can_make_camp(char, gamedata, loc_id):
+            opts.append(("camp", "移營至此" if char.camp else "在此建立營地(野外/已肅清地城)"))
+        if warband.has_camp(char):
+            opts.append(("recruit", f"招募士兵({warband.SOLDIER_COST} 金/名)"))
+        if not opts:
+            if not warband.is_warlord(char, gamedata):
+                ui.message("唯有領主(武士 / 征服城)或公會掌門方能招兵買馬。", style="grey70")
+            else:
+                ui.message("此地無法紮營 —— 需在野外或已肅清的地城建立營地。", style="grey70")
+            return
+        choice = ui.menu("整軍經武 ⚑", opts, allow_back=True)
+        if choice is None:
+            return
+        if choice == "camp":
+            warband.make_camp(char, loc_id)
+            ui.message(f"你在{gamedata.location(loc_id)['name']}立起營地,旌旗招展。", style="green")
+        elif choice == "recruit":
+            n = ui.ask_int("招募幾名士兵?", default=1, lo=0, hi=warband.MAX_SOLDIERS)
+            got = warband.recruit_soldiers(char, n)
+            if got:
+                ui.message(f"{got} 名士兵入伍,你的軍隊更壯大了(共 {char.soldiers} 名)。", style="green")
+            else:
+                ui.message("金幣不足,或軍隊已達上限。", style="yellow")
     return None
 
 
@@ -1927,6 +1978,8 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
         # --- 角色與物品 ---
         character: list = [("quests", "任務日誌"), ("inventory", "背包"),
                            ("practice", "練習技能"), ("rest", "原地休息"), ("sheet", "角色卡")]
+        if warband.is_warlord(player, gamedata):     # 領主/首領 → 招兵買馬(整軍經武)
+            character.insert(0, ("warband", "整軍經武 ⚑"))
         if player.can_level_up():
             character.insert(0, ("levelup", "★ 升級"))
         # --- 系統 ---
@@ -2002,6 +2055,8 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
             action_inventory(state, gamedata)
         elif choice == "practice":
             action_practice(state, gamedata)
+        elif choice == "warband":
+            action_warband(state, gamedata)
         elif choice == "rest":
             died = action_rest(state, gamedata)
         elif choice == "sheet":

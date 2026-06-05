@@ -13,7 +13,7 @@
 - **GitHub**:`git@github.com:Fischer-Zhang/elder-scrolls-textrpg.git`(分支 `main`,SSH 已認證為 Fischer-Zhang)
 - **Python 3.12**;`rich` 由**系統套件**提供(`python3-rich`)—— ⚠️ **本機沒有 `pip`、沒有 `pytest`、sudo 需密碼**。
 - **執行遊戲**:`python3 -m tesrpg`
-- **跑測試**:`python3 tests/run_all.py`(不需 pytest;31 個測試模組,目前**全綠**)
+- **跑測試**:`python3 tests/run_all.py`(不需 pytest;32 個測試模組,目前**全綠**)
 - **編譯檢查**:`python3 -m py_compile tesrpg/**/*.py tesrpg/*.py tests/*.py`
 - 存檔在 `~/.tesrpg/save.json`(在 repo 外;測試/煙霧測試後記得 `rm -f ~/.tesrpg/save.json`)
 
@@ -206,9 +206,18 @@
 - **驗證**:31 測試模組全綠(`test_politics`:立場跨省混合/關係/選邊/僅敵可攻/方略技能門檻+once-each/扣資源/風險型失敗仍計次/強攻單調+夾限/conquer 清 ops/攻城煙霧 方略→強攻 勝-死-逃/存檔向後相容)+ 平衡 sim + 端到端煙霧(經 action_court:宣誓→7 技能方略軟化→強攻破城)+ 對抗審查(無真 bug、farm 已封堵;順手修 gold 夾 0、刪死碼 base_garrison)。
 - **後續(藍圖 §6 #0;此里程碑刻意未做)**:佔領後收稅(週期金幣,複用補貨時間鉤子)/ 駐軍隨時間重建 / 自走 AI 陣營戰爭 / 攻下後可安插自己為領主 / 公會與大義綁定 / 武士所在城翻給敵方時 Thane 特權暫停。**加城/改立場純改 rulers.json**。
 
+**招兵買馬 階段一(城戰的金幣/領袖路線,與技能圍城方略互補)(評估定案 → 分階段、先核心)**:讓「有錢有勢的統帥」也能攻城,不只靠個人技能。核心在 `systems/warband.py`。
+- **資格門檻 `is_warlord`**:你是**領主**(持武士銜 / 已征服城)或**首領**(任一公會掌門)才能招兵買馬。
+- **營地 `camp`**:資格達成後可**野外紮營**(移動)或**佔領已肅清地城**(`loc.type=="dungeon"` 且 `dungeon in cleared_dungeons`)當據點;`action_warband`(hub「人物」群「整軍經武 ⚑」)建營/移營/招募/檢視。
+- **兩級軍制**:**親衛/將領**=companions(新增 `ranger` 弓手親衛;旅店招);**軍隊/士兵**=抽象 `char.soldiers`(營地花 `SOLDIER_COST` 招、夾 `MAX_SOLDIERS`)。`footman`(`troop:true`)是士兵上場兵種,**`_hire_mercenary` 過濾 troop 故不可在旅店免費招**。
+- **攻城整合**:① **大軍壓境** op(`action_siege`,`soldiers>0` 才出、每役一次記 `siege_ops["army"]`、以 `army_soften`=士兵×3 削守軍 → **非技能的軟化路**);② **實戰援軍**:`_siege_assault` 以 `companions=char.companions+[footman]*fielded_soldiers`(夾 `FIELD_CAP`)讓親衛+士兵一同上陣。
+- **平衡(sim 背書)**:純戰士無軍隊只能取小城(G250/400=0%);帶 30 士兵+親衛 → 取中城 100%、帝都可成(~42%)。金幣(招募)+ 領袖門檻 gate,帝都仍須全套投入。
+- **新 Character 欄**`soldiers`/`camp`(預設、to_dict、向後相容)。**驗證**:32 測試模組全綠(`test_warband`:門檻/營地/招募夾限/上場+壓境/footman troop/存檔/攻城整合煙霧)+ 平衡 sim + 端到端煙霧(領主→紮營→招募→大軍壓境+援軍破城)+ 對抗審查(無真 bug、footman 無副作用、無新漏洞)。
+- **🚧 階段二(未做)**:軍餉(週期金幣沉/付不出逃兵)+ **永久傷亡**(officers+soldiers 攻城會永久折損;需 `run_battle` 回報盟友陣亡 → 名冊扣減的接線)+ 親衛複合來源(城/大義招募)。加兵種純改 `companions.json`。
+
 **內容量**:10 種族 / 13 星座 / 8 職業 / **22 技能(+偵查 scout)** / **19 武器(4 法杖)** / **34 護甲(7 材質整套)** / 25 法術(5 AoE) /
 **15 材料(全部可野外採集/獵取)** / **4 飾品** / **製作配方系統(4 皮甲配方)** / **38 生物(7 高階 elite + 2 吸血鬼 + 5 黑沼澤 + 8 黑兄目標 + 2 heartland;18 隻帶 biome 生態標籤)** / 3 傭兵 / **36 地點(有環圖+生態 biome,世界閉合成大環;各省補全城市 賽8/天9/晨8/黑7/邊4,共 17 城+4 鎮)** / **6 地城** / **41 任務(3 分支壓軸 + 解咒 + 6 黑兄合約 + 10 在地任務含 2 任務鏈)** / **4 公會** / **7 開局背景** / **59 NPC(每城 3 / 每鎮 2,角色多樣、greeting + rumor 指路;8 名掛在地委託)** / **25 事件(含 10 省份限定;4 野採採集點)** / **吸血鬼化系統** / **黑暗兄弟會系統** / **技能里程碑系統(6 條 MVP,達門檻自動解鎖)** / **21 城主(各城自治)**。
-程式:**23 個 `systems` 模組**(+vampirism +brotherhood +mastery +crafting +court +politics)+ models/ui/synth 等,共約 39 個 `.py` + `sim_assassin.py`(平衡回歸);**24 個 `data/*.json`**(+mastery.json +recipes.json;黑兄/細化省分/城戰立場全靠改既有檔);**31 測試模組**(+test_mastery +test_practice_cost +test_shop +test_crafting +test_court +test_politics)。
+程式:**24 個 `systems` 模組**(+vampirism +brotherhood +mastery +crafting +court +politics +warband)+ models/ui/synth 等,共約 40 個 `.py` + `sim_assassin.py`(平衡回歸);**24 個 `data/*.json`**(+mastery.json +recipes.json;黑兄/細化省分/城戰立場/招兵兵種全靠改既有檔);**32 測試模組**(+test_mastery +test_practice_cost +test_shop +test_crafting +test_court +test_politics +test_warband)。
 
 ---
 
@@ -329,6 +338,8 @@ tesrpg/
    - ✅ **Phase 3+4 已做(合併,混合戰鬥制)**(見 §1「城戰」):**城為單位、各城主自有立場**(rulers.json `stance`,使用者拍板);選邊(`allegiance`)→ 對敵城**圍城方略**(7 個技能門檻作戰選項,潛行/社交/工具/魔法系都有攻城用途,削守軍)+**輕量化強攻**(單場 `combat`)→ 破城翻轉 `city_faction`。平衡 sim 背書(小城可強攻、大城須廣技能佈局)。`systems/politics.py`。
    - **後續(此里程碑刻意未做)**:佔領後收稅(週期金幣)、駐軍隨時間重建、自走 AI 陣營戰爭、攻下可安插自己為領主、公會與大義綁定、武士所在城翻敵時 Thane 特權暫停。
    - **鐵律**:政治可變狀態寫 `politics.json`/Character(預設值向後相容),地理永遠在 world.json;加領主對話/委託/陣營儘量純改 JSON;每 Phase 走完整 §4 節奏。
+   - ✅ **招兵買馬 階段一已做**(見 §1「招兵買馬 階段一」):`systems/warband.py` —— 領主/首領門檻 + 營地(野外/佔領清空地城)+ 兩級軍制(親衛 companions / 士兵 soldiers)+ 招募 + 攻城整合(大軍壓境 op + 實戰援軍)。城戰的金幣/領袖路線成立(純戰士帶軍可取城)。
+     **🚧 階段二(未做)**:軍餉(週期金幣沉/付不出逃兵)+ **永久傷亡**(officers+soldiers 攻城會永久折損;需 `run_battle` 回報盟友陣亡 → 名冊扣減的接線)+ 親衛複合來源(城/大義招募)。
 1. **內容難度第二階段 / 實機微調**:elite 已上但只在 danger≥4 野外 + 龍喉巢穴/灰燼墓塚出現;可加更多終局區、把 elite 接進更多地城首領池、跑過後微調 elite 數值(魔人領主/巨龍仍偏硬,模擬是 no-heal 下限)。
 2. **新省份擴充**(高價值/低風險,純資料):地圖 UI 與群戰都已能撐;加 `world.json` 地點 + `dungeons.json` + `bestiary` 生物 + `rulers.json` 城主即可。
    ⭐ 世界已**閉合成大環**(見 §1「地圖擴展:黑沼澤」——黑沼澤已把賽羅迪爾↔晨風接成環)。再加新省請沿用該模式:**雙向連通、最好再閉一個環**(別接成走廊尾巴);新城/鎮**務必同步加 `rulers.json` 城主**(否則 `test_world` 紅);新地城首領是 elite 就加 `"raw": true`;**新地點記得加 `biome`、主題新怪加 `biomes`**(見 §1「細化省分」,讓生態遭遇分流);新省可加 `trigger.provinces` 風味事件 + `provinces` 在地懸賞。**可候選**:漢默法爾(西部沙漠環,接賽羅迪爾/天際)、高岩、瓦倫森林。
@@ -360,7 +371,8 @@ tesrpg/
 > **煉金材料採集全覆蓋 + 製作系統**(§1:15 材料全可野外採/獵;第一個泛用配方加工 recipes.json,獸皮→皮甲)、
 > **領主區 Phase 1**(§1:第 4 城區 👑 謁見領主,讓 21 城主活起來;§6 #0 立攻城戰分層藍圖)、
 > **領主區 Phase 2**(§1:領主委託 source `ruler` → 城邦功勳 → 武士冊封 Thaneship;特權=該省賞金寬待+侍從+信物;布魯瑪 2 委託為 MVP 範例)、
-> **城戰 Phase 3+4 合併(混合戰鬥制)**(§1:城為單位立場 + 宣誓效忠 + **圍城方略 7 技能作戰 + 輕量強攻** → 破城易幟;平衡 sim 背書;對抗審查確認 farm 已結構性根治)。
+> **城戰 Phase 3+4 合併(混合戰鬥制)**(§1:城為單位立場 + 宣誓效忠 + **圍城方略 7 技能作戰 + 輕量強攻** → 破城易幟;平衡 sim 背書;對抗審查確認 farm 已結構性根治)、
+> **招兵買馬 階段一**(§1:領主/首領門檻 + 營地 + 兩級軍制(親衛/士兵)+ 招募 + 攻城整合(大軍壓境 + 實戰援軍);城戰金幣/領袖路線;階段二=軍餉+傷亡)。
 >
 > 地圖後續可再加:黑沼澤**起手任務鉤子 / 開局背景**(亞龍人沼澤出身,純改 quests/origins JSON);再開一省(漢默法爾/高岩…)續閉環;贊密爾沉廟可加後門讓它變環上節點。
 > 公會後續可再加:更多分支壓軸 / 階級設施權限 / 公會委託告示。(✅ 暗殺者公會=黑暗兄弟會已做,見 §1)

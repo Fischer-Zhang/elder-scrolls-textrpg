@@ -16,5 +16,17 @@
     "strength": 40, "agility": 46, "speed": 50, "max_health": 50, "armor_rating": 8,
     "attack": {"name": "火焰飛彈", "damage": 15, "skill": 56, "element": "fire"},
     "blurb": "流浪的火系術士,輸出兇猛但體質脆弱,攻擊無視護甲。"
+  },
+  "ranger": {
+    "name": "遊獵射手", "cost": 230,
+    "strength": 44, "agility": 58, "speed": 52, "max_health": 64, "armor_rating": 14,
+    "attack": {"name": "獵弓", "damage": 16, "skill": 58},
+    "blurb": "百步穿楊的弓手親衛,從後排穩定收割,適合補齊隊伍火力。"
+  },
+  "footman": {
+    "name": "軍團士兵", "cost": 0, "troop": true,
+    "strength": 46, "agility": 40, "speed": 40, "max_health": 55, "armor_rating": 18,
+    "attack": {"name": "制式長劍", "damage": 11, "skill": 45},
+    "blurb": "你麾下的尋常士兵 —— 個別不強,但成群結隊便是攻城的肉牆與洪流。"
   }
 }
