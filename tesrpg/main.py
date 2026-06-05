@@ -281,8 +281,79 @@ def _choose_combat_action(state: GameState, gamedata: GameData, enemies: list, v
     return {"type": choice}
 
 
+def _prep_phase(state: GameState, gamedata: GameData, enemies, battle: dict, budget: int) -> None:
+    """開戰前備戰(偵查掙得):花預算施增益/召喚(鎖高 scout)/喝藥/塗毒。
+
+    增益走 active_effects(計時從第一回合 tick)、召喚 append battle["allies"](開場即在場、
+    免去首回合施法),皆不持久、戰後隨 run_battle 出口 clear,無存檔影響、不送永久強度。
+    同一法術每場備戰不可重施(避免零成本疊滿同一護盾)。"""
+    player = state.player
+    SELF_BUFF = ("heal", "shield", "restore_fatigue", "apply_status")
+    ui.rule("備戰")
+    ui.message(f"你搶得先機、從容布置 —— 可進行 {budget} 個準備。", style="bold green")
+    cast_done: set[str] = set()
+    while budget > 0:
+        buffs = [s for s in player.spells
+                 if gamedata.spells[s]["target"] == "self"
+                 and gamedata.spells[s]["effect"]["kind"] in SELF_BUFF
+                 and s not in cast_done and magic.can_cast(player, gamedata, s)]
+        summons = [s for s in player.spells
+                   if gamedata.spells[s]["effect"]["kind"] == "summon"
+                   and s not in cast_done and magic.can_cast(player, gamedata, s)] \
+            if player.skill("scout") >= formulas.PREP_SUMMON_MIN_SCOUT else []
+        potions = list(dict.fromkeys(
+            s["id"] for s in player.inventory if gamedata.item(s["id"]).get("kind") == "potion"))
+        poisons = list(dict.fromkeys(
+            s["id"] for s in player.inventory if gamedata.item(s["id"]).get("kind") == "poison"))
+        opts = []
+        if buffs:
+            opts.append(("buff", "施放增益法術"))
+        if summons:
+            opts.append(("summon", "召喚助戰"))
+        if potions:
+            opts.append(("potion", "喝藥水"))
+        if poisons and player.weapon != "fists":
+            opts.append(("coat", "武器塗毒"))
+        if not opts:
+            ui.message("沒有可進行的備戰了。", style="grey70")
+            break
+        ui.message(f"(剩餘備戰 {budget})", style="grey62")
+        choice = ui.menu("備戰", opts, allow_back=True)
+        if choice is None:
+            break
+        spent = False
+        if choice in ("buff", "summon"):
+            pool = buffs if choice == "buff" else summons
+            sid = ui.menu("施放哪道法術?",
+                          [(s, f"{gamedata.spells[s]['name']}（{magic.effective_cost(player, gamedata, s)} 魔力)")
+                           for s in pool], allow_back=True)
+            if sid is not None:
+                res = magic.cast(player, gamedata, sid, state.rng, battle=battle)
+                ui.message(res["message"], style="cyan")
+                ui.show_events(res.get("skill_events", []), gamedata)
+                cast_done.add(sid)
+                spent = True
+        elif choice == "potion":
+            pid = ui.menu("喝哪瓶?",
+                          [(p, f"{gamedata.item_name(p)} ×{inventory.count_item(player, p)}") for p in potions],
+                          allow_back=True)
+            if pid is not None:
+                ui.message(inventory.use_item(player, gamedata, pid) or "你飲下藥水。", style="green")
+                spent = True
+        elif choice == "coat":
+            pid = ui.menu("塗哪瓶毒?",
+                          [(p, f"{gamedata.item_name(p)} ×{inventory.count_item(player, p)}") for p in poisons],
+                          allow_back=True)
+            if pid is not None and inventory.coat_weapon(player, gamedata, pid):
+                ui.message(f"你把{gamedata.item_name(pid)}抹上了刃口。", style="green")
+                spent = True
+        if spent:
+            budget -= 1
+    stats.clamp_resources(player)
+
+
 def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
-               alerted: bool = False) -> str:
+               alerted: bool = False, prep_budget: int = 0) -> str:
     """團隊/多敵回合制戰鬥。階段制回合:玩家 → 同伴 → 敵人 → 結算。
 
     enemies:敵方 Creature 清單(也接受單一 Creature)。companions 未指定時用玩家隊伍。
@@ -297,6 +368,11 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
     trapped_kills: set[int] = set()
     opening = not alerted   # 開場偷襲:首個攻擊吃潛行加成;若敵人已警覺(撤退失敗)則無
     vanishes_done = 0  # 本場已成功隱遁次數(成功率遞減,防無限風箏)
+
+    # 偵查掙得的開戰前備戰空間:在第一個交戰回合「之前」進行(opening 因此保留;
+    # buff/召喚的計時從第一回合照 tick,故不延長時效、只省下開場那一動)。
+    if prep_budget > 0:
+        _prep_phase(state, gamedata, enemies, battle, prep_budget)
 
     def alive_e():
         return [e for e in enemies if combat.is_alive(e)]
@@ -587,7 +663,9 @@ def offer_battle(state: GameState, gamedata: GameData, enemies, ambush_chance: f
             ui.message("你屏息潛近,敵人渾然未覺 —— 搶得致命先機!", style="bold green")
         else:
             ui.message("你的接近被察覺了,沒能搶到偷襲的先機。", style="yellow")
-        return run_battle(state, gamedata, enemies, alerted=not got_drop)
+        # 偵查掙得的備戰空間:潛近成功且未被伏擊時,依偵查技能換得開戰前準備
+        pb = formulas.prep_budget(char.skill("scout")) if (got_drop and not surprise) else 0
+        return run_battle(state, gamedata, enemies, alerted=not got_drop, prep_budget=pb)
 
 
 def _maybe_sunburn(state: GameState, gamedata: GameData, hours: int) -> None:
@@ -1055,7 +1133,8 @@ def action_contract(state: GameState, gamedata: GameData, qid: str) -> str | Non
     else:
         ui.message("你的接近驚動了目標,沒能搶到偷襲先機。", style="yellow")
 
-    result = run_battle(state, gamedata, enemies, alerted=not got_drop)
+    pb = formulas.prep_budget(char.skill("scout")) if got_drop else 0   # 合約暗殺也享偵查備戰
+    result = run_battle(state, gamedata, enemies, alerted=not got_drop, prep_budget=pb)
     if result == "dead":
         return "dead"
     if result == "fled":
@@ -1489,7 +1568,8 @@ def action_murder(state: GameState, gamedata: GameData, nid: str) -> str | None:
     got_drop = combat.try_stealth_approach(char, [victim], state.rng, gamedata, night, False, False)
     if got_drop:
         ui.message(f"你自{name}背後欺近,寒光一閃 ——", style="magenta")
-    result = run_battle(state, gamedata, victim, alerted=not got_drop)
+    pb = formulas.prep_budget(char.skill("scout")) if got_drop else 0   # 潛殺成功也享偵查備戰
+    result = run_battle(state, gamedata, victim, alerted=not got_drop, prep_budget=pb)
     if result == "dead":
         return "dead"
     if result == "fled":

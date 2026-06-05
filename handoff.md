@@ -213,6 +213,7 @@ tesrpg/
   - **隱遁**:`try_vanish` 成功跳過敵人階段;**三道煞車缺一不可**——`player_vanish_cost` 體力、`vanishes_done` 每次嘗試遞增(非僅成功)、`MAX_VANISHES_PER_BATTLE` 硬上限。少了會變無限風箏無傷清精英(審查踩過 critical)。
   - **入場檢定/偵查**:`stealth_approach_chance` 吃 `inventory.dominant_weight_class`(重甲噪音)+ 夜間(`hour<6 or >=21`)+ `scouted` + `surprise`。`scout` 是第 22 技能;**新增技能務必同步 `progression.ensure_all_skills`**(舊存檔遷移)。
   - **平衡回歸**:改任何刺客常數後跑 `PYTHONPATH=. python3 sim_assassin.py` 對照(救失手/不秒精英/無風箏)。
+- **偵查備戰(scout→備戰空間)**:潛近成功(`got_drop`)且未被伏擊時,`formulas.prep_budget(scout)`(20/50/75→1/2/3)算出開戰前可做幾個準備;`run_battle(..., prep_budget=)` 在**第一個交戰回合之前**跑 `_prep_phase`(施增益/召喚/喝藥/塗毒)。**召喚在備戰預載進 `battle["allies"]`** → 開場即在場、不佔首回合(解召喚痛點)。鐵律守住:prep 在 while 迴圈前 → `opening` 偷襲先機保留;buff/summon_turns 從第一回合照 tick(不延長時效、只省一動);同法術每場備戰不可重施;`active_effects` 戰後由 run_battle 出口 clear(prep 在 run_battle 內 → 無撤退洩漏);召喚鎖 `PREP_SUMMON_MIN_SCOUT=50`。已接 offer_battle + 合約暗殺 + 潛殺平民三處 got_drop 路徑;**地城/Boss 直呼 run_battle(prep_budget 預設 0)刻意不給備戰**(無從偵查一頭撞見的敵人)。調整只動 `formulas.PREP_*` 常數。
 - **運動 athletics**:`world.travel` 依 `athletics_travel_factor` 縮短耗時並練運動;`combat.player_attack_cost/player_block_cost` 依 `fatigue_cost_factor` 折扣體力。`格擋` 實扣 `BLOCK_FATIGUE_COST`(別再當死常數)。
 - **敵人/難度(內容驅動,不做數值縮放)**:難度靠 `min_level` 解鎖更強物種 + 地點 `danger`,**不** scale 怪物數值(刻意,避免 Oblivion 詬病)。bestiary 加 `"solo": true` 的 BOSS 在 `random_encounter_group` 會收斂成單獨一隻;地城 `boss` 加 `"raw": true` 則以原始強度登場(`action_dungeon` 不再 `spawn_boss` ×1.6)。新敵人/地城純改 JSON。
 - **生態遭遇表 / biome(細化省分)**:每個 `world` 地點有 `biome`(heartland/snow/ashland/swamp);bestiary 怪可帶 `biomes`(子集)。`combat.random_encounter(_group)` 依當地 biome 用 `_biome_weight` 加權:在地怪 ×`BIOME_MATCH_WEIGHT`(3.0)、他鄉怪 ×`BIOME_MISMATCH_WEIGHT`(0.25)、**無 `biomes` 標籤=通用墊底池(四海皆有,確保池不空)**。`world.travel`/`main.action_explore` 已傳 biome。**新怪要分流就加 `biomes`、新地點要加 `biome`**;調生態強度只動那兩個常數。⚠️ 同一 biome 的「在地低階怪」danger 要與其他 biome 對齊(snow 曾因低階怪全 d3 而早期偏硬,已靠把 d2 的 frostbite_spider 併入 snow 緩解;雪原仍刻意略硬)。
@@ -279,7 +280,8 @@ tesrpg/
 > **再進一步細化**(§1:heartland 招牌生態怪 + 2 條在地任務鏈 + NPC rumor 指路/補齊委託;對抗審查修掉 minotaur 危險度)、
 > **城市補全**(§1:按 TES 正史補 13 標誌城市 + 21 城主 + 26 NPC,各省 1 城→多城;地點 23→36,城市設計 workflow + 整合 + 對抗審查)、
 > **NPC 增補**(四省平行補 25 名 NPC → 每城 3/每鎮 2、總 59 名,角色多樣 + rumor 指路;純資料 npcs.json)、
-> **城內分區 + 簡化選單**(城鎮服務拆成 市集區🛒/公會區⚜/廣場🏛 三個可進入子選單,頂層只剩「城區」三入口;群名簡化 製作/人物;野外/地城自動無城區)。
+> **城內分區 + 簡化選單**(城鎮服務拆成 市集區🛒/公會區⚜/廣場🏛 三個可進入子選單,頂層只剩「城區」三入口;群名簡化 製作/人物;野外/地城自動無城區)、
+> **偵查→開戰前備戰空間**(潛近成功+未被伏擊時,依偵查技能換得 1/2/3 個備戰動作:施增益/召喚(鎖 scout≥50)/喝藥/塗毒;順解召喚開場佔回合痛點)。
 >
 > 地圖後續可再加:黑沼澤**起手任務鉤子 / 開局背景**(亞龍人沼澤出身,純改 quests/origins JSON);再開一省(漢默法爾/高岩…)續閉環;贊密爾沉廟可加後門讓它變環上節點。
 > 公會後續可再加:更多分支壓軸 / 階級設施權限 / 公會委託告示。(✅ 暗殺者公會=黑暗兄弟會已做,見 §1)

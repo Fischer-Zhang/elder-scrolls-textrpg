@@ -289,6 +289,27 @@ def stealth_approach_chance(sneak: int, foe_agility: int, group_size: int,
     return max(0.05, min(0.97, chance))
 
 
+# --- 偵查掙得的開戰前備戰空間(scout → 準備動作數)--------------------------
+PREP_SCOUT_T1 = 20        # 偵查達此 → 備戰 1 個動作(對齊 _scout_report 第一道資訊牆)
+PREP_SCOUT_T2 = 50        # → 2 個動作(且解鎖「召喚」這類高價值準備)
+PREP_SCOUT_T3 = 75        # → 3 個動作(封頂)
+PREP_SUMMON_MIN_SCOUT = PREP_SCOUT_T2   # 備戰階段施放召喚的技能門檻(鎖高 scout)
+
+
+def prep_budget(scout_skill: int) -> int:
+    """搶得先機(潛近成功)時,偵查技能換得的開戰前備戰動作數(0/1/2/3)。
+
+    分級門檻沿用偵查揭露的 20/50/75,讓技能高低有質的差異;封頂 3 防無限前載。
+    只給「時序主動權」(先做幾個準備),不縮放數值、不送永久強度。"""
+    if scout_skill >= PREP_SCOUT_T3:
+        return 3
+    if scout_skill >= PREP_SCOUT_T2:
+        return 2
+    if scout_skill >= PREP_SCOUT_T1:
+        return 1
+    return 0
+
+
 # --- 抗性與元素 ---------------------------------------------------------
 MAGIC_ELEMENTS = ("fire", "frost", "shock")   # 受「magic」總抗性影響的學派元素
 

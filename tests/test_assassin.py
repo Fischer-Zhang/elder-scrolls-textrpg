@@ -1,5 +1,6 @@
 """刺客流派強化的單元測試:暗殺殘響/combo、雙持匕首、隱遁再襲、偵查技能。"""
 
+from tesrpg import formulas
 from tesrpg.creation import build_character
 from tesrpg.gamedata import get_gamedata
 from tesrpg.models import Creature
@@ -264,6 +265,52 @@ def test_combat_stealth_approach_uses_armor_class():
     stats.recompute_max_resources(c, gd)
     heavy = combat.stealth_approach_chance(c, [_dummy()], gd)
     assert heavy < light                                   # 穿上重甲後入場先機下降
+
+
+def test_prep_budget_tiers_and_summon_gate():
+    """偵查掙得的備戰預算分級(<20→0、20/50/75→1/2/3)+ 召喚門檻鎖高 scout。"""
+    assert formulas.prep_budget(0) == 0 and formulas.prep_budget(19) == 0
+    assert formulas.prep_budget(20) == 1 and formulas.prep_budget(49) == 1
+    assert formulas.prep_budget(50) == 2 and formulas.prep_budget(74) == 2
+    assert formulas.prep_budget(75) == 3 and formulas.prep_budget(100) == 3
+    assert formulas.PREP_SUMMON_MIN_SCOUT == 50   # 召喚這類高價值備戰鎖在 scout>=50
+
+
+def test_prep_phase_preloads_summon_and_buff():
+    """備戰階段:召喚預載進 battle['allies'](解開場佔回合)、增益上 active_effects;
+    低 scout 無召喚選項。需以腳本化 ui.menu 驅動。"""
+    import io
+    from rich.console import Console
+    from tesrpg.state import GameState, GameTime
+    import tesrpg.main as M
+    from tesrpg.ui import console as ui
+    gd = get_gamedata()
+    orig_console, orig_menu = ui.console, ui.menu
+    ui.console = Console(file=io.StringIO(), width=100)
+    try:
+        c = build_character(gd, name="法", sex="male", race="altmer", birthsign="mage", class_id="mage")
+        c.skills["scout"] = 80
+        c.spells = ["oakflesh", "conjure_familiar"]
+        c.max_magicka = 300; c.magicka = 300
+        st = GameState(player=c, time=GameTime(), rng=RNG(1))
+        battle = {"allies": []}
+        seq = iter([("summon",), ("conjure_familiar",), ("buff",), ("oakflesh",)])
+        def script(title, options, allow_back=False):
+            keys = [o[0] for o in options]
+            nxt = next(seq, None)
+            return None if nxt is None else (nxt[0] if nxt[0] in keys else None)
+        ui.menu = script
+        M._prep_phase(st, gd, [combat.spawn_creature(gd, "wolf", RNG(2))], battle, 3)
+        assert any(a.template_id == "summoned_familiar" for a in battle["allies"]), "召喚未預載進 allies"
+        assert any(e.get("kind") == "shield" for e in c.active_effects), "增益未上身"
+        # 低 scout(30):備戰頂層不得出現召喚選項
+        c.skills["scout"] = 30
+        cap = {}
+        ui.menu = lambda t, o, allow_back=False: cap.setdefault("keys", [x[0] for x in o]) and None
+        M._prep_phase(st, gd, [], {"allies": []}, 1)
+        assert "summon" not in cap["keys"], "低 scout 不該能召喚"
+    finally:
+        ui.console, ui.menu = orig_console, orig_menu
 
 
 def run():
