@@ -824,6 +824,14 @@
     "turn_in": "auto",
     "text": "「三相神庇佑 —— 但護不住灰田。灰原的蟲災,背後恐怕不單純。」卓菈莎憂心忡忡。"
   },
+  "hunt_dragon": {
+    "name": "屠龍:龍喉峰的上古巨龍",
+    "faction": null, "rank": null, "source": "npc",
+    "objective": {"type": "clear_dungeon", "dungeon": "dragon_lair"},
+    "reward": {"gold": 400, "fame": 25, "items": ["filled_greater_soul_gem"]},
+    "turn_in": "auto",
+    "text": "屠龍者約爾根將一張焦邊的舊圖拍在桌上:「龍喉峰,熔岩巢穴的頂端。那頭上古巨龍盤踞在黑檀寶藏上,連魔族都不敢近。替我了結牠 —— 把那場我打不完的狩獵,替我畫上句點。」"
+  },
   "favor_haafingar": {
     "name": "委託:海港肅清",
     "faction": null, "rank": null, "source": "npc",

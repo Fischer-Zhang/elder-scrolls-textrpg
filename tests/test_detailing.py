@@ -191,18 +191,43 @@ def test_npc_rumors_are_strings():
 
 
 def test_local_quest_rewards_stay_in_range():
-    """反 min-max 機械守門:NPC/board 在地任務獎勵不可超出既有區間(金幣≤320=既有 job_barrow 清 d4 地城上限、聲望≤15、不給高階裝)。"""
+    """反 min-max 機械守門:NPC/board 在地任務獎勵須與付出相稱。
+    例行委託(kill/collect/reach):金幣≤320(=job_barrow 清 d4 地城上限)、聲望≤15。
+    清整座地城(clear_dungeon)=最高付出 → 上限按目標 danger 放寬(floor-preserving:
+    max(320, danger*100) / max(15, danger*5);既有委託皆不變,僅 d5 apex 屠龍另計)。
+    **不給高階裝(BIS)的鐵則對所有在地任務一律保留**(地城本身才掉 BIS,任務不加碼)。"""
     gd, _ = _char()
     BIS = {"glass_cuirass", "ebony_cuirass", "ebony_sword", "dwarven_cuirass", "ebony_shield",
            "glass_helmet", "glass_gauntlets", "glass_boots", "glass_shield"}
+    locs = gd.world["locations"]
+
+    def _objs(qd):
+        out = []
+        if "objective" in qd:
+            out.append(qd["objective"])
+        for s in qd.get("stages", []):
+            out.append(s.get("objective", {}))
+        for b in qd.get("branches", []):
+            if "objective" in b:
+                out.append(b["objective"])
+            for s in b.get("stages", []):
+                out.append(s.get("objective", {}))
+        return out
+
     for qid, q in gd.quests.items():
         if q.get("source") not in ("npc", "board"):
             continue
+        dd = 0    # 以「清地城」目標的最高 danger 放寬上限(無則維持例行區間)
+        for o in _objs(q):
+            if o.get("type") == "clear_dungeon":
+                dd = max(dd, locs.get(o.get("dungeon"), {}).get("danger", 0))
+        gold_cap = max(320, dd * 100)
+        fame_cap = max(15, dd * 5)
         rewards = ([b.get("reward", {}) for b in q["branches"]] if "branches" in q
                    else [q.get("reward", {})])
         for r in rewards:
-            assert r.get("gold", 0) <= 320, f"{qid} 金幣獎勵過高:{r.get('gold')}"
-            assert r.get("fame", 0) <= 15, f"{qid} 聲望獎勵過高:{r.get('fame')}"
+            assert r.get("gold", 0) <= gold_cap, f"{qid} 金幣獎勵過高:{r.get('gold')} > {gold_cap}"
+            assert r.get("fame", 0) <= fame_cap, f"{qid} 聲望獎勵過高:{r.get('fame')} > {fame_cap}"
             for iid in r.get("items", []):
                 assert iid not in BIS, f"{qid} 在地任務不應給高階裝 {iid}"
 

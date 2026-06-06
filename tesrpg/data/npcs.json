@@ -415,6 +415,15 @@
     "rumor": "守正軍封了北去灰燼墓塚的岔道——說那墓塚裡爬出的亡者連這朝聖鎮的香火都壓不住,虔信者也莫要靠近。",
     "quest": null
   },
+  "molag_mar_dragonhunter_jorgen": {
+    "name": "屠龍者 約爾根",
+    "location": "molag_mar",
+    "disposition": 50,
+    "greeting": "「天際容不下我這把老骨頭,我便追著傳說來了晨風。龍喉峰上那頭上古巨龍——連魔族都繞道,卻是我此生最後一場狩獵。」",
+    "rumor": "龍喉峰的熔岩巢穴堆滿了黑檀寶藏,可至今沒人活著下山。我老了,單槍匹馬上不去——但若有人敢去,我願傾囊相授、重金酬謝。",
+    "quest": "hunt_dragon",
+    "quest_disposition": 50
+  },
   "vivec_ordinator_aurane": {
     "name": "守正軍衛兵 奧拉妮·伊倫",
     "location": "vivec",

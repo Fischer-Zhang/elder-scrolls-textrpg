@@ -304,6 +304,31 @@
       {"text": "沒興趣", "effects": []}
     ]
   },
+  "skyrim_forage": {
+    "weight": 3, "trigger": {"contexts": ["explore"], "provinces": ["天際"]},
+    "title": "凍原採集", "text": "雪線下的背風坡上,幾叢耐寒的山藍花與薰衣草頂著霜開了花。",
+    "options": [
+      {"text": "採集寒帶香草",
+       "effects": [{"type": "item", "item": "blue_mountain_flower", "qty": 1},
+                   {"type": "item", "item": "lavender", "qty": 1},
+                   {"type": "item", "item": "monarch_wing", "qty": 1},
+                   {"type": "skill_xp", "skill": "alchemy", "amount": 0.5},
+                   {"type": "message", "text": "你採下了山藍花、薰衣草與一對帝王蝶翼。"}]},
+      {"text": "沒興趣", "effects": []}
+    ]
+  },
+  "border_forage": {
+    "weight": 3, "trigger": {"contexts": ["explore"], "provinces": ["邊境"]},
+    "title": "邊陲野採", "text": "無人管轄的邊境荒地上,各方草藥在亂石與沼氣間混雜叢生。",
+    "options": [
+      {"text": "採集野草",
+       "effects": [{"type": "item", "item": "blue_mountain_flower", "qty": 1},
+                   {"type": "item", "item": "nightshade", "qty": 1},
+                   {"type": "skill_xp", "skill": "alchemy", "amount": 0.5},
+                   {"type": "message", "text": "你在亂石間採得山藍花,又在沼氣邊摘下一株顛茄。"}]},
+      {"text": "沒興趣", "effects": []}
+    ]
+  },
   "cyrodiil_patrol": {
     "weight": 3, "trigger": {"contexts": ["travel"], "provinces": ["賽羅迪爾"]},
     "title": "帝國巡邏隊", "text": "一隊帝國軍團士兵沿著帝國大道走來,長官打量了你一眼。",

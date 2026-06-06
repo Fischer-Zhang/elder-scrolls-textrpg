@@ -464,7 +464,10 @@
         "conjure_familiar",
         "restore_mind",
         "ignite",
-        "frost_nova"
+        "frost_nova",
+        "oakflesh",
+        "stoneflesh",
+        "demoralize"
       ],
       "links": {
         "niben_marsh": 3,
@@ -919,7 +922,8 @@
         "ironflesh",
         "soul_trap",
         "conjure_familiar",
-        "fear"
+        "fear",
+        "minor_heal"
       ],
       "links": {
         "whiterun": 4,
@@ -974,7 +978,9 @@
         "conjure_flame_atronach",
         "renewal",
         "mass_paralysis",
-        "rout"
+        "rout",
+        "flames",
+        "fireball"
       ],
       "links": {
         "molag_mar": 3,
@@ -1110,7 +1116,8 @@
         "conjure_familiar",
         "restore_mind",
         "renewal",
-        "frost_nova"
+        "frost_nova",
+        "oakflesh"
       ],
       "links": {
         "hist_grove": 2,
