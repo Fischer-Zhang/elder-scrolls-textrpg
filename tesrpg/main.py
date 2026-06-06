@@ -350,18 +350,25 @@ def _prep_phase(state: GameState, gamedata: GameData, enemies, battle: dict, bud
 
 
 def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
-               alerted: bool = False, prep_budget: int = 0) -> str:
+               alerted: bool = False, prep_budget: int = 0, casualties: list | None = None) -> str:
     """團隊/多敵回合制戰鬥。階段制回合:玩家 → 同伴 → 敵人 → 結算。
 
     enemies:敵方 Creature 清單(也接受單一 Creature)。companions 未指定時用玩家隊伍。
-    回傳 'victory' / 'fled' / 'dead'。
+    casualties:若給定一個 list,戰後把**陣亡盟友的來源 id** 填入(供攻城永久折損用;
+    一般戰鬥不傳 → 同伴照常滿血復生)。回傳 'victory' / 'fled' / 'dead'。
     """
     player = state.player
     if not isinstance(enemies, list):
         enemies = [enemies]
     party = player.companions if companions is None else companions
     party = [cid for cid in party if cid in gamedata.companions]   # 略過已不存在的同伴(存檔前向相容)
-    battle = {"allies": [combat.spawn_companion(gamedata, cid, state.rng) for cid in party]}
+    # roster:本場一開始上陣的盟友(cid → 戰鬥單位);召喚物不在此列。戰後查 is_alive 判陣亡。
+    roster = [(cid, combat.spawn_companion(gamedata, cid, state.rng)) for cid in party]
+    battle = {"allies": [cre for _, cre in roster]}
+
+    def tally_casualties():
+        if casualties is not None:
+            casualties.extend(cid for cid, cre in roster if not combat.is_alive(cre))
     trapped_kills: set[int] = set()
     opening = not alerted   # 開場偷襲:首個攻擊吃潛行加成;若敵人已警覺(撤退失敗)則無
     vanishes_done = 0  # 本場已成功隱遁次數(成功率遞減,防無限風箏)
@@ -395,6 +402,7 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
                 ui.message("你成功擺脫了敵人,脫離戰鬥!", style="yellow")
                 player.active_effects.clear()
                 state.time.advance(1)
+                tally_casualties()
                 return "fled"
             ui.message("逃跑失敗!", style="red")
         elif action["type"] == "attack":
@@ -415,6 +423,7 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
             if pres["escape"]:
                 player.active_effects.clear()
                 state.time.advance(1)
+                tally_casualties()
                 return "fled"
         elif action["type"] == "block":
             combat.player_block_cost(player)
@@ -491,6 +500,7 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
     player.active_effects.clear()
     state.time.advance(1)
     if not combat.is_alive(player):
+        tally_casualties()
         return "dead"
 
     # ---- 勝利結算:全部敵人的戰利品 / 擒魂 / 擊殺與任務 ----
@@ -511,6 +521,7 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
         quests.record_kill(player, e.template_id)
     ui.loot_report(total, gamedata)
     _report_quests(state, gamedata)
+    tally_casualties()
     return "victory"
 
 
@@ -1179,7 +1190,8 @@ def _hire_mercenary(state: GameState, gamedata: GameData) -> None:
         ui.message(f"隊伍已滿(最多 {MAX_PARTY} 名傭兵),先解散一名吧。", style="yellow")
         return
     avail = [cid for cid in gamedata.companions
-             if cid not in char.companions and not gamedata.companions[cid].get("troop")]
+             if cid not in char.companions and not gamedata.companions[cid].get("troop")
+             and not gamedata.companions[cid].get("warlord")]   # warlord 將領唯營地可招
     opts = [(cid, f"{gamedata.companions[cid]['name']} — {gamedata.companions[cid]['cost']} 金:"
              f"{gamedata.companions[cid]['blurb']}") for cid in avail]
     cid = ui.menu(f"雇用哪位?(你有 {char.gold} 金)", opts, allow_back=True)
@@ -1358,9 +1370,15 @@ def _siege_assault(state: GameState, gamedata: GameData, loc_id: str, city: str)
     allies = char.companions + [warband.SOLDIER_TROOP] * fielded
     if fielded:
         ui.message(f"你的 {fielded} 名士兵隨你殺入城中。", style="grey70")
-    res = run_battle(state, gamedata, enemies, companions=allies)
+    # 攻城的盟友永久折損:run_battle 回報陣亡者 → 名冊扣減(階段二「戰爭的代價」)
+    fallen: list = []
+    res = run_battle(state, gamedata, enemies, companions=allies, casualties=fallen)
     if res == "dead":
         return "dead"
+    loss = warband.apply_casualties(char, gamedata, fallen)
+    if loss["officers"] or loss["soldiers"]:
+        parts = list(loss["officers"]) + ([f"{loss['soldiers']} 名士兵"] if loss["soldiers"] else [])
+        ui.message(f"此役折損:{'、'.join(parts)} —— 戰死城下者,長眠不歸。", style="red")
     if res == "fled":
         ui.message("你且戰且退 —— 城未下,但圍城方略的戰果仍在,改日可再攻。", style="yellow")
         return None
@@ -1385,6 +1403,8 @@ def action_warband(state: GameState, gamedata: GameData) -> None:
             opts.append(("camp", "移營至此" if char.camp else "在此建立營地(野外/已肅清地城)"))
         if warband.has_camp(char):
             opts.append(("recruit", f"招募士兵({warband.SOLDIER_COST} 金/名)"))
+            if warband.recruitable_officers(char, gamedata):
+                opts.append(("officer", "招募親衛將領(領袖專屬)"))
         if not opts:
             if not warband.is_warlord(char, gamedata):
                 ui.message("唯有領主(武士 / 征服城)或公會掌門方能招兵買馬。", style="grey70")
@@ -1404,6 +1424,24 @@ def action_warband(state: GameState, gamedata: GameData) -> None:
                 ui.message(f"{got} 名士兵入伍,你的軍隊更壯大了(共 {char.soldiers} 名)。", style="green")
             else:
                 ui.message("金幣不足,或軍隊已達上限。", style="yellow")
+        elif choice == "officer":
+            if len(char.companions) >= MAX_PARTY:
+                ui.message(f"親衛已滿(最多 {MAX_PARTY} 名),先解散一名吧。", style="yellow")
+                continue
+            pool = warband.recruitable_officers(char, gamedata)
+            oopts = [(cid, f"{gamedata.companions[cid]['name']} — "
+                      f"{warband.officer_cost(gamedata, cid)} 金:{gamedata.companions[cid]['blurb']}")
+                     for cid in pool]
+            cid = ui.menu(f"招募哪位將領?(你有 {char.gold} 金)", oopts, allow_back=True)
+            if cid is None:
+                continue
+            cost = warband.officer_cost(gamedata, cid)
+            if char.gold < cost:
+                ui.message("金幣不足。", style="red")
+                continue
+            char.gold -= cost
+            char.companions.append(cid)
+            ui.message(f"{gamedata.companions[cid]['name']}受你延攬,從此為你執掌一軍。", style="bold green")
     return None
 
 
@@ -1900,6 +1938,15 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
                 name = vampirism.STAGE_NAMES[ev["stage"]]
                 ui.message(f"血之飢渴加深 —— 你進入「{name}」之境:力量更盛,卻更難見容於日光與世人。",
                            style="magenta")
+
+        # 軍餉結算(招兵買馬階段二):週期扣餉,付不出 → 逃兵
+        for ev in warband.tick_upkeep(state):
+            if ev["kind"] == "paid":
+                ui.message(f"你發放了軍餉 —— 餉銀 {ev['wage']} 金,{ev['soldiers']} 名士兵士氣高昂。",
+                           style="grey70")
+            elif ev["kind"] == "desert":
+                ui.message(f"軍餉短缺,{ev['deserters']} 名士兵憤而離營(餘 {ev['soldiers']} 名)。",
+                           style="red")
 
         ui.rule()
         ui.status_line(state)

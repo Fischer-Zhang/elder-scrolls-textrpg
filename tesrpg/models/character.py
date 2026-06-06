@@ -127,6 +127,7 @@ class Character:
     # 招兵買馬(城戰的金幣/領袖路線)。親衛/將領=companions(具名);軍隊/士兵=抽象兵員。詳見 systems/warband.py。
     soldiers: int = 0                                     # 麾下士兵數(營地招募;攻城當援軍 + 大軍壓境)
     camp: str = ""                                        # 營地所在 loc_id(野外紮營 / 佔領已清空地城);""=未建
+    wage_due_at: int = 0                                  # 下次發軍餉的絕對小時(階段二;0=無兵/未開始計餉)
 
     is_player: bool = False
 
@@ -200,6 +201,7 @@ class Character:
             "allegiance": self.allegiance, "city_faction": self.city_faction,
             "garrison_current": self.garrison_current, "siege_ops": self.siege_ops,
             "soldiers": self.soldiers, "camp": self.camp,
+            "wage_due_at": self.wage_due_at,
             "companions": self.companions,
         }
 

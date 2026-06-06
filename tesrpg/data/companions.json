@@ -28,5 +28,11 @@
     "strength": 46, "agility": 40, "speed": 40, "max_health": 55, "armor_rating": 18,
     "attack": {"name": "制式長劍", "damage": 11, "skill": 45},
     "blurb": "你麾下的尋常士兵 —— 個別不強,但成群結隊便是攻城的肉牆與洪流。"
+  },
+  "veteran": {
+    "name": "老兵隊長", "cost": 400, "warlord": true,
+    "strength": 62, "agility": 50, "speed": 44, "max_health": 96, "armor_rating": 28,
+    "attack": {"name": "戰錘", "damage": 18, "skill": 62},
+    "blurb": "身經百戰的隊長,唯有立足一方的領袖請得動 —— 帶兵嚴整,能在亂軍中穩住陣腳。"
   }
 }
