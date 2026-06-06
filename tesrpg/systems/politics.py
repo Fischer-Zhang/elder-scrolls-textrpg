@@ -54,9 +54,12 @@ def city_bloc_label(gamedata: GameData, loc_id: str) -> str | None:
 
 
 def faction_of(char: Character, gamedata: GameData, loc_id: str) -> str | None:
-    """該城現時歸屬(攻城翻轉後以 city_faction 為準,否則回種子立場)。無領主回 None。"""
+    """該城現時歸屬,三層優先序:① city_faction(玩家親手攻下,最高;稅基紅線只認此層)
+    ② world_faction(大事件易幟層;Phase C)③ base_stance(rulers.json 種子=Oblivion 當下)。無領主回 None。"""
     if loc_id in char.city_faction:
         return char.city_faction[loc_id]
+    if loc_id in char.world_faction:                  # 大事件易幟(被玩家征服的城自動蓋過 → 免疫)
+        return char.world_faction[loc_id]
     return base_stance(gamedata, loc_id)
 
 

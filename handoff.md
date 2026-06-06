@@ -251,8 +251,8 @@
 **陣營系統(規劃定案:正史拼湊 + 大事件驅動動態政局;計畫見 `~/.claude/plans/reactive-soaring-pretzel.md`)**:使用者拍板把「陣營」按 TES 文獻(3E433 湮滅期)拼成全譜並動態化 —— 開局=Oblivion 當下歸屬、後續由**幾個 authored 大事件**觸發城邦易幟;大義擴四極(帝國/獨立/**神話黎明**/**自立稱雄**)+ 中立。分四階 A→B→C-lite→D(MLS=A+B+C-lite)。**非隨機 AI 戰爭**,改 authored 時間軸(走 vampirism/brotherhood 式狀態機)。
 - ✅ **Phase A 已做(靜態旗號 bloc,純資料地基)**:`rulers.json` 21 城各加 `bloc`(英文 id)+ `bloc_label`(繁中正史旗號:長老會/風暴斗篷/雷多然家族/An-Xileel 議會…)= 各城 Oblivion 當下歸屬的陣營身分。`politics.city_bloc`/`city_bloc_label` 純查詢;`ui.location_panel`/`court_panel`/`world_map` 顯示「大義·旗號」+ 地圖各城大義標記(帝/獨/中,前瞻含湮/己)。**零機制/零存檔影響**(`relationship`/`faction_of`/`held_tax_cities` 全未動;旗號在 rulers.json 靜態)。驗證:32 模組全綠(`test_world` 加 `test_every_city_has_a_bloc`:每城 bloc 合法+與 stance 並存、非城無旗號)+ 渲染煙霧;agent 額度上限故本階以自審代對抗審查(純資料低風險;B 邏輯/C 引擎將補跑完整審查)。
 - ✅ **Phase B 已做(四大義 + 中立可攻 + 自立)**:`CAUSES`/`STANCE_LABEL` 加 `daedric`(神話黎明)/`own`(自立稱雄);`EXPANSIONIST_CAUSES={own,daedric}` → `relationship` 對 neutral 回 `enemy`(普世征服,帝國/獨立**逐位元不變**)。`pledgeable_causes`:帝國/獨立/自立隨時可宣誓,**神話黎明須 `kvatch_falls` 大事件後解鎖**;`_pledge_allegiance` 四選 + 各義說明。`legacy.own_realm_title` 自立依持城數開國稱號(割據梟雄/裂土霸主/問鼎雄主/再造一統的新王)。新 Character 欄 `world_faction`/`world_events_fired`(空預設、進 to_dict、向後相容;供 C 用)。**紅線守住**(held_tax_cities 仍只認 city_faction;自立只稅己城)。驗證:32 模組全綠(test_politics +8:四義/中立可攻/**兩大義關係回歸**/解鎖 gating/自立攻城收稅/自立 title/存檔/四選 pledge 煙霧);自審代對抗審查(agent 限額)。
-- **🚧 Phase C-lite(再下輪)**:`systems/worldstate.py` 大事件引擎(掛 game_loop,仿 vampirism.update)+ `data/world_events.json`(定版 5 事件:凱瓦奇陷落→皇統終結→亞龍人北侵→諾德動盪→玩家驅動凱瓦奇光復)+ Character `world_faction`/`world_events_fired`(零遷移)+ `faction_of` 三層(city_faction>world_faction>base_stance,**紅線 held_tax_cities 仍只認 city_faction**)。
-- **🚧 Phase D(後續)**:可入會組織(先 神話黎明 + 九神騎士團;大族入族/同伴/三聯…延後)。
+- ✅ **Phase C-lite 已做(大事件引擎,動態政局核心)**:`systems/worldstate.py`(`update` 掛 game_loop 每圈頂端、vampirism 之後,定點迴圈處理鏈式事件、`sorted(id)`+state.rng 決定性、once-fire)+ `data/world_events.json`(定版 5 事件:`kvatch_falls` d3→daedric+解鎖神話黎明 / `septim_line_ends` d30 requires→anvil+gideon 易幟獨立 / `argonian_accession` d45 / `nord_stirrings` d50 / **`kvatch_liberated` 玩家驅動**:held_includes kvatch→clear_flip+fame)。`gamedata.world_events` 載入。`politics.faction_of` 三層 `city_faction>world_faction>base_stance`(relationship/can_siege 隨易幟變;**held_tax_cities 仍只認 city_faction → 紅線安全**)。effect:faction_flip/clear_flip/fame。**鐵則**:易幟寫 world_faction(玩家持有城被 city_faction 蓋過=免疫);conquer 不 pop world_faction(失城浮回事件態,非種子)。開局=Oblivion 種子(world_faction 空)。驗證:33 模組全綠(新 `test_worldstate` 12 測:觸發/once-fire/三層/玩家免疫/**紅線易幟城不入稅基**/鏈式/解鎖/可攻/玩家光復/失城浮回/補結/決定性/存讀檔)+ 端到端煙霧(時間軸推進易幟、新聞廣播、**存檔中途續跑==不中斷**)。**對抗審查 4 維×3 視角:16 發現→0 真 bug**(全為正向驗證)。
+- **🚧 Phase D(後續)**:可入會組織(先 神話黎明 + 九神騎士團;大族入族/同伴/三聯…延後);更多大事件純加 world_events.json。
 - **鐵律**:大事件易幟一律寫 `world_faction`(非 city_faction)→ 不污染稅基;玩家已佔城(city_faction)免疫事件易幟;加事件/旗號/大義純改 JSON。
 
 **內容量**:10 種族 / 13 星座 / 8 職業 / **22 技能(+偵查 scout)** / **19 武器(4 法杖)** / **34 護甲(7 材質整套)** / 25 法術(5 AoE) /
@@ -355,7 +355,8 @@ tesrpg/
 5. **對抗式審查(Workflow 工具)**:多維度 fan-out 審查 → 每個發現由獨立懷疑者**對抗式驗證** → 只回報「能真實重現」的 bug。
 6. **覆核 + 修正**:**逐一覆核審查結果**(會有誤報、也會有「會引入新 bug 的錯誤修法」—— 已擋下 2 次);套用確認的修正 + 補回歸測試;重跑全套。
 
-> 戰績:十五輪審查累計修掉 **~29 個真 bug**、擋下 **2 個錯誤修法**、自補 1 次審查覆蓋缺口、自抓數個測試基建坑。
+> 戰績:十六輪審查累計修掉 **~29 個真 bug**、擋下 **2 個錯誤修法**、自補 1 次審查覆蓋缺口、自抓數個測試基建坑。
+> 陣營 Phase C-lite 輪:4 維×3 視角,16 發現→0 真 bug(全為正向驗證:紅線/三層/決定性/存檔/玩家免疫/失城浮回皆確認正確)。Phase A/B 因 agent 額度上限以自審代審查(純資料/加性低風險),C-lite 額度恢復後補跑完整對抗審查、零真 bug。
 > 城戰階段三輪:6 維 fan-out × 每發現 3 視角驗證,19 發現→1 確認(18 駁回多為正向確認/既定設計)。唯一確認=**既有** robustness 缺口(`legacy.compute` 取 `factions[fid]` 未防缺 id → 毀損存檔結算 KeyError),順手以 `.get` 修 + 回歸測試。評估階段的對抗審查更**預先攔下**設計級紅線(稅基誤用 `held_cities` 會白送 2190+/週)→ 落地即正確。
 > 城戰階段四輪(規劃走 plan-mode:Explore×2 調查 → Plan agent 設計 → 核定):5 維 fan-out × 3 視角,**2 發現→0 真 bug**(皆既定設計/正向確認)—— 一次過,印證「先規劃 + 守鐵律」能把缺陷擋在落地前。
 > 招兵買馬階段二輪:7 維 fan-out × 每發現 3 視角對抗驗證,13 發現→4 確認;逐一覆核後**判 3 個為誤報**(遣散洗寬限=無此入口且經濟自殺、apply 不重置週期=下一圈已收斂、存讀檔暴扣=遊戲時間凍結於存檔)、**只修 1 個真 bug**(apply_casualties 回報實際扣減而非陣亡計數)+ 補回歸防線。教訓:對抗驗證者可能以「直接改記憶體狀態」重現出非遊戲路徑的偽漏洞 → 覆核務必確認**重現走的是真實遊戲入口**。

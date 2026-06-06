@@ -1,0 +1,39 @@
+{
+  "kvatch_falls": {
+    "trigger": {"days_min": 3},
+    "effects": [
+      {"type": "faction_flip", "loc": "kvatch", "to": "daedric"}
+    ],
+    "news": "湮滅之門在凱瓦奇城外轟然裂開,赤色軍團湧入 —— 凱瓦奇陷落,化作米拉克·達貢信徒的灘頭。神話黎明的信徒自陰影中現身,有意者可投身其麾下。"
+  },
+  "septim_line_ends": {
+    "trigger": {"days_min": 30, "requires": ["kvatch_falls"]},
+    "effects": [
+      {"type": "faction_flip", "loc": "anvil", "to": "independent"},
+      {"type": "faction_flip", "loc": "gideon", "to": "independent"}
+    ],
+    "news": "馬丁·賽普汀燃起龍焰、擊退達貢,卻也燃盡了賽普汀的血脈 —— 紅寶石王座自此永空。失去中樞的帝國邊省紛紛自立門戶,亂世群雄並起。"
+  },
+  "argonian_accession": {
+    "trigger": {"days_min": 45, "requires": ["septim_line_ends"]},
+    "effects": [
+      {"type": "faction_flip", "loc": "molag_mar", "to": "independent"}
+    ],
+    "news": "趁帝國崩解,黑沼澤的 An-Xileel 揮師北上,希斯特之民湧入晨風南疆 —— 莫拉格瑪易幟,脫離舊秩序。"
+  },
+  "nord_stirrings": {
+    "trigger": {"days_min": 50},
+    "effects": [
+      {"type": "faction_flip", "loc": "whiterun", "to": "independent"}
+    ],
+    "news": "諾德復興之火燒遍雪原,風暴斗篷的大旗在白漫城頭升起 —— 天際的中立漸成往事。"
+  },
+  "kvatch_liberated": {
+    "trigger": {"requires": ["kvatch_falls"], "milestone": {"held_includes": ["kvatch"]}},
+    "effects": [
+      {"type": "clear_flip", "loc": "kvatch"},
+      {"type": "fame", "amount": 30}
+    ],
+    "news": "你親手關閉了凱瓦奇的湮滅之門、光復此城 —— 達貢的灘頭就此瓦解,你的威名傳遍賽羅迪爾。"
+  }
+}

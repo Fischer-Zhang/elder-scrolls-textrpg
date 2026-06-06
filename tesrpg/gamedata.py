@@ -40,6 +40,7 @@ class GameData:
         self.rulers: dict = _load("rulers.json")     # 各城統治者(湮滅期大空位、各城自治;城戰前置)
         self.mastery: list = _load("mastery.json")   # 技能里程碑(達門檻自動解鎖;見 systems/mastery.py)
         self.recipes: dict = _load("recipes.json")   # 製作配方(獸皮等原料 → 裝備;見 systems/crafting.py)
+        self.world_events: dict = _load("world_events.json")   # 陣營大事件時間軸(動態政局;見 systems/worldstate.py)
         self._misc: dict = _load("items.json")
 
         # 統一物品索引:武器/護甲/雜項/材料共用一份 {id: {**def, "kind": ...}}

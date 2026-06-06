@@ -14,7 +14,7 @@ from tesrpg.rng import RNG, make_seed
 from tesrpg.state import GameState
 from tesrpg.systems import (alchemy, brotherhood, combat, court, crafting, crime, dialogue, dungeon,
                             enchanting, events, factions, inventory, legacy, magic, politics, powers,
-                            progression, quests, stats, vampirism, warband, world)
+                            progression, quests, stats, vampirism, warband, world, worldstate)
 from tesrpg.ui import console as ui
 
 SAVE_PATH = Path.home() / ".tesrpg" / "save.json"
@@ -1997,6 +1997,11 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
                 name = vampirism.STAGE_NAMES[ev["stage"]]
                 ui.message(f"血之飢渴加深 —— 你進入「{name}」之境:力量更盛,卻更難見容於日光與世人。",
                            style="magenta")
+
+        # 陣營大事件(動態政局):authored 時間軸觸發城邦易幟,廣播天下大勢
+        for ev in worldstate.update(state, gamedata):
+            ui.rule("天下大勢")
+            ui.message(ev["news"], style="bold magenta")
 
         # 軍餉結算(招兵買馬階段二):週期扣餉,付不出 → 逃兵
         for ev in warband.tick_upkeep(state):
