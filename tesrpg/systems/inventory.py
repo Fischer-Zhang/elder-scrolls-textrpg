@@ -173,7 +173,8 @@ def active_set_bonus(char: Character, gamedata: GameData) -> dict | None:
         iid = char.equipped.get(slot)
         if not iid:
             return None
-        mat = gamedata.item(iid).get("material")
+        d = gamedata.item_or_none(iid)
+        mat = d.get("material") if d else None
         if not mat:
             return None
         mats.append(mat)
@@ -186,7 +187,7 @@ def equipment_bonuses(char: Character, gamedata: GameData) -> dict:
     """穿戴護甲/飾品的所有附魔 + 套裝加成,彙整成 {skills,attrs,resist,resources}。"""
     out = {"skills": {}, "attrs": {}, "resist": {}, "resources": {}}
     for iid in char.equipped.values():
-        _apply_enchant(out, gamedata.item(iid).get("enchant"))
+        _apply_enchant(out, (gamedata.item_or_none(iid) or {}).get("enchant"))
     _apply_enchant(out, active_set_bonus(char, gamedata))
     return out
 
@@ -208,8 +209,9 @@ def coat_weapon(char: Character, gamedata: GameData, poison_id: str) -> bool:
 
 
 def worn_armor_rating(char: Character, gamedata: GameData) -> int:
-    """穿戴護甲的名目護甲值(不含耐久折損,供 UI 顯示)。"""
-    return sum(gamedata.item(i).get("armor_rating", 0) for i in char.equipped.values())
+    """穿戴護甲的名目護甲值(不含耐久折損,供 UI 顯示)。毀損 id 視為 0(防毀損存檔)。"""
+    return sum((gamedata.item_or_none(i) or {}).get("armor_rating", 0)
+               for i in char.equipped.values())
 
 
 def armor_fortify_totals(char: Character, gamedata: GameData) -> dict[str, int]:
@@ -220,7 +222,7 @@ def armor_fortify_totals(char: Character, gamedata: GameData) -> dict[str, int]:
     """
     totals: dict[str, int] = {}
     for iid in char.equipped.values():
-        ench = gamedata.item(iid).get("enchant")
+        ench = (gamedata.item_or_none(iid) or {}).get("enchant")
         if ench and ench.get("kind") == "armor_fortify":
             totals[ench["stat"]] = totals.get(ench["stat"], 0) + int(ench["magnitude"])
     return totals
@@ -240,7 +242,7 @@ def effective_armor_rating(char: Character, gamedata: GameData) -> float:
     """計入各部位耐久折損後的實際護甲值。"""
     total = 0.0
     for slot, iid in char.equipped.items():
-        rating = gamedata.item(iid).get("armor_rating")  # 飾品(amulet/ring)無此鍵
+        rating = (gamedata.item_or_none(iid) or {}).get("armor_rating")  # 飾品/毀損 id 無此鍵
         if not rating:
             continue
         cond = char.armor_condition.get(slot, 100.0)

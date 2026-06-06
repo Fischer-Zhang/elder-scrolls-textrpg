@@ -42,6 +42,7 @@ import test_mythicdawn
 import test_knights
 import test_landmarks
 import test_polish
+import test_sheet
 
 if __name__ == "__main__":
     modules = [test_creation, test_progression, test_state, test_combat, test_world, test_seed,
@@ -50,7 +51,7 @@ if __name__ == "__main__":
                test_vampirism, test_assassin, test_brotherhood, test_detailing, test_mastery,
                test_practice_cost, test_shop, test_crafting, test_court, test_politics,
                test_warband, test_worldstate, test_mythicdawn, test_knights, test_landmarks,
-               test_polish]
+               test_polish, test_sheet]
     for m in modules:
         m.run()
         print(f"✓ {m.__name__}")

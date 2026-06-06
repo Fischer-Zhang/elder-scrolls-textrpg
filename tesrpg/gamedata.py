@@ -74,8 +74,16 @@ class GameData:
             return synth.synthesize(item_id, self)
         return self.items[item_id]
 
+    def item_or_none(self, item_id: str) -> dict | None:
+        """毀損/未知 id 回 None(不拋例外)→ 供顯示/彙整路徑防禦毀損存檔(見 §3)。"""
+        try:
+            return self.item(item_id)
+        except KeyError:
+            return None
+
     def item_name(self, item_id: str) -> str:
-        return self.item(item_id)["name"]   # 經 item() 以支援合成物品(藥水/毒藥/附魔)
+        d = self.item_or_none(item_id)   # 經 item() 以支援合成物品;毀損 id 回原字串不崩潰
+        return d["name"] if d else item_id
 
     def location(self, loc_id: str) -> dict:
         return self.world["locations"][loc_id]

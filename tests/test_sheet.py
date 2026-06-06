@@ -1,0 +1,181 @@
+"""角色卡升級(充實顯示 + 互動式檢視)的測試:
+所有 sheet_* 與 character_sheet 對多種角色狀態渲染無 traceback;互動 action 走訪全項;
+**唯讀鐵律**:檢視角色卡不改任何 char 狀態、不耗時(尤其不可呼叫會扣體力的 practice_cost)。"""
+
+import copy
+import io
+
+from rich.console import Console
+
+from tesrpg import main as M
+from tesrpg.ui import console as ui
+from tesrpg.creation import build_character
+from tesrpg.gamedata import get_gamedata
+from tesrpg.rng import RNG
+from tesrpg.state import GameState, GameTime
+from tesrpg.systems import factions
+
+
+def _silence():
+    ui.console = Console(file=io.StringIO(), width=100)
+
+
+def _char(**kw):
+    gd = get_gamedata()
+    c = build_character(gd, name="測", sex="male", race="dunmer",
+                        birthsign="lady", class_id="knight")
+    for k, v in kw.items():
+        setattr(c, k, v)
+    return gd, GameState(player=c, time=GameTime(), rng=RNG(3))
+
+
+# --- 各 sheet_* 渲染無 traceback(多種狀態)--------------------------------
+def _render_all(gd, st):
+    c = st.player
+    ui.character_sheet(c, gd)
+    ui.sheet_resistances(c, gd)
+    ui.sheet_effects(c, gd)
+    ui.sheet_factions(c, gd)
+    ui.sheet_masteries(c, gd)
+    ui.sheet_power(c, st, gd)
+    ui.sheet_bounty(c, gd)
+    ui.sheet_equipment(c, gd)
+    ui.sheet_vampirism(c, gd)
+    for sid in gd.skills:
+        ui.sheet_skill_detail(c, gd, sid)
+
+
+def test_renders_plain_character():
+    _silence()
+    gd, st = _char()
+    _render_all(gd, st)                       # 無公會/無效果/無通緝/非吸血鬼/空裝
+
+
+def test_renders_rich_character():
+    _silence()
+    gd, st = _char(fame=20, infamy=5)
+    c = st.player
+    factions.join(c, "fighters_guild"); c.factions["fighters_guild"] = 3
+    c.bounties = {"賽羅迪爾": 120, "天際": 40}
+    c.active_effects = [{"kind": "shield", "magnitude": 20, "turns": 3},
+                        {"kind": "dot", "element": "fire", "magnitude": 4, "turns": 2},
+                        {"kind": "regen", "magnitude": 10, "turns": 4}]
+    _render_all(gd, st)
+
+
+def test_renders_vampire_character():
+    _silence()
+    gd, st = _char()
+    c = st.player
+    c.is_vampire = True
+    c.vampire_stage = 2
+    c.vampire_attr_bonus = {"strength": 10, "speed": 10}
+    c.vampire_skill_bonus = {"sneak": 10}
+    c.vampire_resist = {"disease": 100, "frost": 20, "fire": -20}
+    _render_all(gd, st)
+
+
+# --- 唯讀鐵律:檢視不改狀態、不耗時 ----------------------------------------
+def test_views_are_read_only():
+    _silence()
+    gd, st = _char(fame=10)
+    c = st.player
+    factions.join(c, "mages_guild"); c.factions["mages_guild"] = 2
+    c.active_effects = [{"kind": "shield", "magnitude": 15, "turns": 2}]
+    before = copy.deepcopy(c.to_dict())
+    t0 = st.time.absolute_hours()
+    _render_all(gd, st)
+    assert c.to_dict() == before, "角色卡檢視不得改動任何 char 狀態(唯讀鐵律)"
+    assert st.time.absolute_hours() == t0, "角色卡檢視不得推進時間"
+
+
+def test_skill_detail_does_not_drain_fatigue():
+    # 技能詳情顯示 practice 成本,但不可呼叫會扣體力的 progression.practice_cost
+    _silence()
+    gd, st = _char()
+    c = st.player
+    c.fatigue = c.max_fatigue
+    f0 = c.fatigue
+    for sid in gd.skills:
+        ui.sheet_skill_detail(c, gd, sid)
+    assert c.fatigue == f0, "檢視技能詳情不得扣體力"
+
+
+# --- 互動 action 走訪全項(腳本化 menu)-----------------------------------
+def test_action_character_sheet_walks_all_views():
+    _silence()
+    gd, st = _char(fame=8)
+    c = st.player
+    factions.join(c, "thieves_guild")
+    c.active_effects = [{"kind": "stagger", "turns": 1}]
+    c.is_vampire = True; c.vampire_stage = 1
+    # 腳本:逐一選每個檢視鍵(技能詳情會再彈一次技能選單→選 blade),最後返回(None)
+    seq = iter(["resist", "effects", "factions", "mastery", "power", "bounty",
+                "equip", "vampire", "skill", "blade", "resheet", None])
+    saved = ui.menu
+    ui.menu = lambda *a, **k: next(seq, None)
+    try:
+        before = copy.deepcopy(c.to_dict())
+        ret = M.action_character_sheet(st, gd)
+        assert ret is None
+        assert c.to_dict() == before          # 全程唯讀
+    finally:
+        ui.menu = saved
+
+
+def test_corrupt_equipped_id_does_not_crash():
+    # 防毀損存檔:equipped/offhand/weapon 含未知 id 時,角色卡與裝備檢視不得崩潰(對抗審查修正)
+    _silence()
+    gd, st = _char()
+    c = st.player
+    c.equipped = {"helmet": "NONEXISTENT_ITEM", "cuirass": "ALSO_BOGUS"}
+    c.offhand = "BOGUS_OFFHAND"
+    c.weapon = "BOGUS_WEAPON"
+    ui.character_sheet(c, gd)        # overview 每次都讀 worn_armor_rating
+    ui.sheet_equipment(c, gd)        # 名稱 + 護甲 + 套裝 + 加成
+    from tesrpg.systems import inventory
+    assert inventory.worn_armor_rating(c, gd) == 0          # 未知 id 視為 0,不崩潰
+    assert inventory.effective_armor_rating(c, gd) == 0
+    assert inventory.equipment_bonuses(c, gd) == {"skills": {}, "attrs": {}, "resist": {}, "resources": {}}
+    assert gd.item_name("BOGUS_WEAPON") == "BOGUS_WEAPON"   # 顯示回退為原 id,不崩潰
+
+
+def test_set_bonus_shows_set_name():
+    # 套裝加成行需顯示真正的套裝名稱(名稱在父層 armor_sets[mat]['name'],非 bonus 子物件)
+    _silence()
+    gd, st = _char()
+    c = st.player
+    from tesrpg.systems import inventory
+    # 找一組同材質四件套
+    mat = next(iter(gd.armor_sets))
+    set_items = {}
+    for slot in inventory.SET_SLOTS:
+        iid = next((i for i, d in gd.items.items()
+                    if d.get("slot") == slot and d.get("material") == mat), None)
+        assert iid, f"找不到 {mat} {slot}"
+        set_items[slot] = iid
+    c.equipped = dict(set_items)
+    assert inventory.active_set_bonus(c, gd) is not None
+    expected = gd.armor_sets[mat]["name"]
+    # 渲染並擷取輸出,確認套裝名稱有出現(非空白)
+    buf = io.StringIO(); ui.console = Console(file=buf, width=100)
+    ui.sheet_equipment(c, gd)
+    assert expected in buf.getvalue(), f"套裝加成未顯示套裝名稱 {expected}"
+
+
+def test_creation_preview_still_renders():
+    # 另一呼叫端(創角預覽,無 state)仍能渲染 enriched character_sheet
+    _silence()
+    gd, st = _char()
+    ui.character_sheet(st.player, gd)
+
+
+def run():
+    for name, fn in sorted(globals().items()):
+        if name.startswith("test_") and callable(fn):
+            fn()
+
+
+if __name__ == "__main__":
+    run()
+    print("test_sheet OK")

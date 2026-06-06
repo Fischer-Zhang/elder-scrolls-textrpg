@@ -107,6 +107,50 @@ def status_line(state: GameState) -> None:
 
 
 # --- 角色卡 -------------------------------------------------------------
+_RESIST_CN = {"fire": "火焰", "frost": "冰霜", "shock": "雷電", "magic": "魔法",
+              "poison": "毒素", "disease": "疾病", "bleed": "撕裂"}
+_RES_ELEMS = ("fire", "frost", "shock", "magic", "poison", "disease")
+_SLOT_CN = {"helmet": "頭盔", "cuirass": "胸甲", "gauntlets": "護手", "boots": "靴",
+            "shield": "盾", "amulet": "項鍊", "ring1": "戒指一", "ring2": "戒指二"}
+
+
+def _resist_summary(char: Character, gamedata: GameData) -> str:
+    """非零抗性的精簡摘要(供 overview):火焰+30% 毒素+50% …;負值=弱點。"""
+    from tesrpg.systems import magic
+    r = magic.entity_resist(char, gamedata)
+    return "　".join(f"{_RESIST_CN.get(e, e)}{r[e]:+d}%" for e in _RES_ELEMS if r.get(e))
+
+
+def _effect_label(e: dict) -> str:
+    k = e.get("kind"); turns = e.get("turns", 0); mag = e.get("magnitude", 0)
+    elem = _RESIST_CN.get(e.get("element"), "")
+    names = {"shield": f"護盾 +{mag}", "regen": f"再生 +{mag}/回合",
+             "dot": f"{elem}侵蝕 {mag}/回合", "fear": "恐懼", "paralyze": "麻痺",
+             "weaken": "耗弱", "stagger": "踉蹌", "soul_trap": "擒魂"}
+    base = names.get(k, k or "效果")
+    return f"{base}（{turns} 回合)" if turns else base
+
+
+def _sheet_overview_extra(char: Character, gamedata: GameData) -> Text | None:
+    """overview 底部的精簡狀態塊(公會/血脈/進行中效果);全為 state-independent。"""
+    from tesrpg.systems import factions
+    extra = Text()
+    guilds = [f"{gamedata.factions[f]['name']}「{factions.rank_name(char, gamedata, f)}」"
+              for f in char.factions if f in gamedata.factions]
+    if guilds:
+        extra.append("公會  ", style=GOLD)
+        extra.append("　".join(guilds) + "\n", style=PARCH)
+    if getattr(char, "is_vampire", False):
+        from tesrpg.systems import vampirism
+        nm = vampirism.STAGE_NAMES[min(3, max(0, char.vampire_stage))]
+        extra.append("血脈  ", style="red")
+        extra.append(f"吸血鬼 階級{char.vampire_stage}「{nm}」\n", style=PARCH)
+    if char.active_effects:
+        extra.append("效果  ", style=GOLD)
+        extra.append("、".join(_effect_label(e) for e in char.active_effects), style=PARCH)
+    return extra if extra.plain.strip() else None
+
+
 def character_sheet(char: Character, gamedata: GameData) -> None:
     race = gamedata.races[char.race]["name"]
     sign = gamedata.birthsigns[char.birthsign]["name"]
@@ -131,6 +175,18 @@ def character_sheet(char: Character, gamedata: GameData) -> None:
                 Text(f"上限 {formulas.max_encumbrance(char.attr('strength'))}", style=INK))
     res.add_row(Text("金幣", style=GOLD), Text(str(char.gold), style=PARCH))
     res.add_row(Text("武器", style=GOLD), Text(weapon_line(char, gamedata), style=PARCH))
+    from tesrpg.systems import inventory as _inv
+    _worn = _inv.worn_armor_rating(char, gamedata)
+    if _worn:
+        res.add_row(Text("護甲", style=GOLD), Text(str(_worn), style=PARCH))
+    _rsum = _resist_summary(char, gamedata)
+    if _rsum:
+        res.add_row(Text("抗性", style=GOLD), Text(_rsum, style=PARCH))
+    res.add_row(Text("聲望", style=GOLD),
+                Text(f"{char.fame}" + (f"   惡名 {char.infamy}" if char.infamy else ""), style=PARCH))
+    _bounty = sum(char.bounties.values())
+    if _bounty:
+        res.add_row(Text("通緝", style="red"), Text(f"{_bounty} 金", style=PARCH))
 
     # 屬性
     attr_tbl = Table(title="屬性", title_style=f"bold {GOLD}", box=None, pad_edge=False)
@@ -148,8 +204,11 @@ def character_sheet(char: Character, gamedata: GameData) -> None:
                          (f"{fav_r}{right[1]}" if right[1] else ""),
                          (str(right[2]) if right[1] else ""))
 
-    console.print(_panel(Group(header, Rule(style=GOLD_DIM),
-                               Columns([res, attr_tbl], padding=(0, 6)))))
+    parts = [header, Rule(style=GOLD_DIM), Columns([res, attr_tbl], padding=(0, 6))]
+    extra = _sheet_overview_extra(char, gamedata)
+    if extra is not None:
+        parts += [Rule(style=GOLD_DIM), extra]
+    console.print(_panel(Group(*parts)))
     skill_table(char, gamedata)
 
 
@@ -190,6 +249,185 @@ def skill_table(char: Character, gamedata: GameData) -> None:
             if i < len(unlocked) - 1:
                 lines.append("\n")
         console.print(_panel(lines, title="技能里程碑"))
+
+
+# --- 角色卡:互動式檢視(各支唯讀渲染器;不改 char 狀態、不耗時)----------
+def sheet_resistances(char: Character, gamedata: GameData) -> None:
+    from tesrpg.systems import magic
+    r = magic.entity_resist(char, gamedata)
+    tbl = Table(box=box.SIMPLE_HEAD, border_style=GOLD_DIM, pad_edge=False)
+    tbl.add_column("元素", style=INK)
+    tbl.add_column("抗性", justify="right", style=PARCH)
+    tbl.add_column("", style=FAINT)
+    for e in _RES_ELEMS:
+        v = r.get(e, 0)
+        note = "弱點" if v < 0 else ("免疫" if v >= 100 else "")
+        tbl.add_row(_RESIST_CN[e], f"{v:+d}%", note)
+    console.print(_panel(tbl, title="元素抗性(種族+裝備+血脈)"))
+
+
+def sheet_effects(char: Character, gamedata: GameData) -> None:
+    body = Text()
+    if not char.active_effects:
+        body.append("目前沒有進行中的效果。", style=INK)
+    for e in char.active_effects:
+        body.append(f"• {_effect_label(e)}\n", style=PARCH)
+    console.print(_panel(body, title="進行中效果"))
+
+
+def sheet_factions(char: Character, gamedata: GameData) -> None:
+    from tesrpg.systems import factions
+    body = Text()
+    members = [f for f in char.factions if f in gamedata.factions]
+    if not members:
+        body.append("你尚未加入任何公會。", style=INK)
+    for fid in members:
+        body.append(f"{gamedata.factions[fid]['name']}", style=f"bold {GOLD}")
+        body.append(f"　「{factions.rank_name(char, gamedata, fid)}」\n", style=PARCH)
+        perk = factions.perk_desc(char, gamedata, fid)
+        if perk:
+            body.append(f"   {perk}\n", style=INK)
+    console.print(_panel(body, title="公會與階級"))
+
+
+def sheet_masteries(char: Character, gamedata: GameData) -> None:
+    body = Text()
+    unl = mastery.unlocked(char, gamedata)
+    if unl:
+        body.append("已解鎖\n", style=f"bold {GOLD}")
+        for e in unl:
+            body.append(f"  ✦ {e['name']}", style="bold magenta")
+            body.append(f"（{gamedata.skill_name(e['skill'])} {e['threshold']}） {e['desc']}\n", style=INK)
+    locked = [e for e in mastery._defs(gamedata) if e not in unl]
+    if locked:
+        body.append("\n未解鎖(門檻)\n", style=f"bold {GOLD}")
+        for e in sorted(locked, key=lambda x: (x["skill"], x["threshold"])):
+            cur = char.base_skill(e["skill"])
+            body.append(f"  ○ {e['name']}（{gamedata.skill_name(e['skill'])} {cur}/{e['threshold']}）"
+                        f" {e['desc']}\n", style=FAINT)
+    if not unl and not locked:
+        body.append("(無里程碑資料)", style=INK)
+    console.print(_panel(body, title="技能里程碑"))
+
+
+def sheet_power(char: Character, state: GameState, gamedata: GameData) -> None:
+    from tesrpg.systems import powers
+    body = Text()
+    pid = powers.power_id(char, gamedata)
+    if not pid:
+        body.append("你沒有可施展的星座之力。", style=INK)
+    else:
+        pdef = powers.power_def(pid)
+        body.append(f"{pdef['name']}\n", style=f"bold {GOLD}")
+        if pdef.get("desc"):
+            body.append(f"{pdef['desc']}\n", style=PARCH)
+        if pdef.get("contexts"):
+            body.append(f"可用場景:{'、'.join(pdef['contexts'])}\n", style=INK)
+        ready = powers.available(char, state, gamedata)
+        body.append("狀態:今日就緒" if ready else "狀態:今日已施展",
+                    style="green" if ready else "yellow")
+    console.print(_panel(body, title="星座之力"))
+
+
+def sheet_bounty(char: Character, gamedata: GameData) -> None:
+    body = Text()
+    body.append(f"聲望 {char.fame}    惡名 {char.infamy}\n", style=PARCH)
+    total = sum(char.bounties.values())
+    if total:
+        body.append(f"通緝總額 {total} 金\n", style="red")
+        for prov, amt in sorted(char.bounties.items()):
+            if amt:
+                body.append(f"  {prov}:{amt} 金\n", style=INK)
+    else:
+        body.append("目前無通緝在身。", style="green")
+    console.print(_panel(body, title="聲望與通緝"))
+
+
+def _tr_bonus(category: str, key: str, gamedata: GameData) -> str:
+    if category == "skills":
+        return gamedata.skill_name(key)
+    if category == "attrs":
+        return formulas.ATTRIBUTE_NAMES.get(key, key)
+    if category == "resist":
+        return _RESIST_CN.get(key, key)
+    return {"health": "生命", "magicka": "魔力", "fatigue": "體力"}.get(key, key)
+
+
+def sheet_equipment(char: Character, gamedata: GameData) -> None:
+    from tesrpg.systems import inventory
+    body = Text()
+    body.append("武器  ", style=GOLD)
+    body.append(weapon_line(char, gamedata) + "\n", style=PARCH)
+    if char.offhand:
+        body.append("副手  ", style=GOLD)
+        body.append(gamedata.item_name(char.offhand) + "\n", style=PARCH)
+    for slot in ("helmet", "cuirass", "gauntlets", "boots", "shield", "amulet", "ring1", "ring2"):
+        iid = char.equipped.get(slot)
+        if iid:
+            body.append(f"{_SLOT_CN[slot]}  ", style=GOLD)
+            body.append(gamedata.item_name(iid) + "\n", style=PARCH)
+    worn = inventory.worn_armor_rating(char, gamedata)
+    eff = inventory.effective_armor_rating(char, gamedata)
+    body.append(f"護甲值  名目 {worn} · 有效 {eff:.0f}\n", style=INK)
+    setb = inventory.active_set_bonus(char, gamedata)
+    if setb:
+        _cd = gamedata.item_or_none(char.equipped.get("cuirass", ""))   # 套裝名在父層,非 bonus 子物件
+        _mat = _cd.get("material") if _cd else None
+        _setname = gamedata.armor_sets.get(_mat, {}).get("name", "整套同材質")
+        body.append(f"套裝加成  {_setname}\n", style="bold green")
+    bon = inventory.equipment_bonuses(char, gamedata)
+    for label, cat in (("技能", "skills"), ("屬性", "attrs"), ("抗性", "resist"), ("資源", "resources")):
+        d = bon.get(cat) or {}
+        if d:
+            body.append(f"{label}加成  ", style=GOLD)
+            body.append("、".join(f"{_tr_bonus(cat, k, gamedata)}{v:+d}" for k, v in d.items()) + "\n",
+                        style=PARCH)
+    console.print(_panel(body, title="穿戴與套裝"))
+
+
+def sheet_vampirism(char: Character, gamedata: GameData) -> None:
+    from tesrpg.systems import vampirism
+    body = Text()
+    if not vampirism.is_vampire(char):
+        body.append("你不是吸血鬼。", style=INK)
+    else:
+        nm = vampirism.STAGE_NAMES[min(3, max(0, char.vampire_stage))]
+        body.append(f"吸血鬼 階級 {char.vampire_stage} 「{nm}」\n", style="bold red")
+        for cat, label, d in (("attrs", "屬性", char.vampire_attr_bonus),
+                              ("skills", "技能", char.vampire_skill_bonus),
+                              ("resist", "抗性", char.vampire_resist)):
+            if d:
+                body.append(f"{label}  ", style=GOLD)
+                body.append("、".join(f"{_tr_bonus(cat, k, gamedata)}{v:+d}" for k, v in d.items())
+                            + "\n", style=PARCH)
+        body.append("（階級越餓越高,進食歸 0;火焰轉弱點、免疫疾病)", style=FAINT)
+    console.print(_panel(body, title="吸血鬼狀態"))
+
+
+def sheet_skill_detail(char: Character, gamedata: GameData, skill_id: str) -> None:
+    sd = gamedata.skills[skill_id]
+    body = Text()
+    eff, base = char.skill(skill_id), char.base_skill(skill_id)
+    body.append(f"{sd['name']}（{formulas.SPEC_NAMES.get(sd['spec'], sd['spec'])}）", style=f"bold {GOLD}")
+    body.append(f"   等級 {eff}" + (f"(基礎 {base})" if eff != base else "") + "\n", style=PARCH)
+    if char.is_major_skill(skill_id):
+        body.append("✦ 主修技能(升點給 ×1.5 等級經驗)\n", style="bold magenta")
+    if sd.get("desc"):
+        body.append(sd["desc"] + "\n", style=INK)
+    need = formulas.skill_threshold(base)
+    cur = char.skill_xp.get(skill_id, 0.0)
+    pct = int(cur / need * 100) if need > 0 else 0
+    body.append(f"熟練進度  {pct}%（{cur:.1f}/{need:.1f} → {base + 1} 級)\n", style=INK)
+    nxt = sorted([e for e in mastery._defs(gamedata)
+                  if e["skill"] == skill_id and e["threshold"] > base], key=lambda x: x["threshold"])
+    if nxt:
+        e = nxt[0]
+        body.append(f"下一里程碑  {e['name']}（{e['threshold']} 級):{e['desc']}\n", style=FAINT)
+    p = sd.get("practice", {})       # 唯讀:直接讀靜態 practice 價碼(切勿呼叫 progression.practice_cost,它會扣體力)
+    if p:
+        body.append(f"練習成本  體力 {p.get('fatigue', '?')} · {p.get('hours', '?')} 小時 · "
+                    f"+{p.get('xp', 0):.2f} xp(體力不足時 xp 減半)", style=INK)
+    console.print(_panel(body, title="技能詳情"))
 
 
 # --- 事件訊息 -----------------------------------------------------------
@@ -275,7 +513,9 @@ def legacy_screen(s: dict) -> None:
 
 # --- 戰鬥 ---------------------------------------------------------------
 def weapon_line(char: Character, gamedata: GameData) -> str:
-    wp = gamedata.item(char.weapon)
+    wp = gamedata.item_or_none(char.weapon)
+    if wp is None:                       # 毀損/未知武器 id → 顯示原 id,不崩潰(防毀損存檔)
+        return f"{char.weapon}(未知武器)"
     cond = "" if char.weapon == "fists" else f" 耐久{int(char.weapon_condition)}%"
     poison = ""
     if char.weapon_poison:

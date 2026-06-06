@@ -2095,6 +2095,53 @@ def guard_confrontation(state: GameState, gamedata: GameData) -> str | None:
     return None
 
 
+def action_character_sheet(state: GameState, gamedata: GameData) -> None:
+    """互動式角色卡:渲染 overview,再提供唯讀檢視子選單(空/不適用項自動隱藏)。"""
+    char = state.player
+    ui.character_sheet(char, gamedata)
+    while True:
+        opts: list = [("resist", "元素抗性")]
+        if char.active_effects:
+            opts.append(("effects", "進行中效果"))
+        if any(f in gamedata.factions for f in char.factions):
+            opts.append(("factions", "公會與階級"))
+        opts.append(("mastery", "技能里程碑"))
+        if powers.power_id(char, gamedata):
+            opts.append(("power", "星座之力"))
+        opts.append(("bounty", "聲望與通緝"))
+        opts.append(("equip", "穿戴與套裝"))
+        if vampirism.is_vampire(char):
+            opts.append(("vampire", "吸血鬼狀態"))
+        opts += [("skill", "技能詳情"), ("resheet", "重看角色卡")]
+        choice = ui.menu("角色資訊(檢視)", opts, allow_back=True)
+        if choice is None:
+            return
+        if choice == "resist":
+            ui.sheet_resistances(char, gamedata)
+        elif choice == "effects":
+            ui.sheet_effects(char, gamedata)
+        elif choice == "factions":
+            ui.sheet_factions(char, gamedata)
+        elif choice == "mastery":
+            ui.sheet_masteries(char, gamedata)
+        elif choice == "power":
+            ui.sheet_power(char, state, gamedata)
+        elif choice == "bounty":
+            ui.sheet_bounty(char, gamedata)
+        elif choice == "equip":
+            ui.sheet_equipment(char, gamedata)
+        elif choice == "vampire":
+            ui.sheet_vampirism(char, gamedata)
+        elif choice == "skill":
+            sk = ui.menu("檢視哪個技能?",
+                         [(sid, f"{gamedata.skill_name(sid)} {char.skill(sid)}")
+                          for sid in gamedata.skills], allow_back=True)
+            if sk:
+                ui.sheet_skill_detail(char, gamedata, sk)
+        elif choice == "resheet":
+            ui.character_sheet(char, gamedata)
+
+
 # ======================================================================
 # 主迴圈
 # ======================================================================
@@ -2323,7 +2370,7 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
         elif choice == "rest":
             died = action_rest(state, gamedata)
         elif choice == "sheet":
-            ui.character_sheet(state.player, gamedata)
+            action_character_sheet(state, gamedata)
         elif choice == "levelup":
             action_level_up(state, gamedata)
         elif choice == "save":
