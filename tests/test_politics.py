@@ -177,6 +177,146 @@ def test_save_roundtrip_and_backward_compat():
     assert old.allegiance == "" and old.city_faction == {} and old.garrison_current == {} and old.siege_ops == {}
 
 
+# === 階段三:佔領後收稅 + 駐軍維護 + 輕量叛亂計時 ====================
+def _state(c):
+    return GameState(player=c, rng=RNG(1), game_mode="adventure")
+
+
+def test_all_cities_have_population():
+    gd, _ = _setup()
+    for loc, r in gd.rulers.items():
+        assert r.get("population", 0) > 0, loc           # 21 城皆有居民數
+        assert politics.city_tax(gd, loc) > 0
+
+
+def test_red_line_tax_only_conquered_not_allied():
+    """🔴 紅線:只對親手攻下的城收稅,不對未攻的同立場盟城(否則白送鉅額被動收入)。"""
+    gd, c = _setup(); politics.pledge(c, "imperial"); c.gold = 0
+    assert len(politics.held_cities(c, gd)) > 0           # 盟城一堆(同立場)
+    assert politics.held_tax_cities(c, gd) == []          # 但稅基為空(未攻任何城)
+    st = _state(c); st.time.advance(politics.TAX_HOURS * 2)
+    assert politics.tick_tax(st, gd) == [] and c.gold == 0   # 零白送
+    politics.conquer(c, gd, "windhelm", now=st.time.absolute_hours())
+    assert politics.held_tax_cities(c, gd) == ["windhelm"]
+    assert "bruma" in politics.held_cities(c, gd)         # 盟城仍在 held_cities
+    assert "bruma" not in politics.held_tax_cities(c, gd)  # 但不計稅
+
+
+def test_conquer_records_cycle_and_collects_net():
+    gd, c = _setup(); politics.pledge(c, "imperial"); c.gold = 0
+    st = _state(c); now = st.time.absolute_hours()
+    politics.conquer(c, gd, "windhelm", now=now)
+    assert c.tax_due_at["windhelm"] == now + politics.TAX_HOURS   # 起算 + 一週寬限
+    assert politics.tick_tax(st, gd) == []                        # 未到期 → 不收
+    g0 = politics.garrison_of(c, gd, "windhelm")
+    st.time.advance(politics.TAX_HOURS)
+    evs = politics.tick_tax(st, gd)
+    assert len(evs) == 1 and evs[0]["kind"] == "tax" and not evs[0]["unrest"]
+    g1 = g0 - politics.UNREST_DECAY                               # 先流失再收稅
+    assert politics.garrison_of(c, gd, "windhelm") == g1
+    tax = politics.city_tax(gd, "windhelm"); maint = round(g1 * politics.GARRISON_MAINT_PER)
+    assert evs[0]["tax"] == tax and evs[0]["maint"] == maint and evs[0]["net"] == tax - maint
+    assert c.gold == max(0, tax - maint)
+
+
+def test_unrest_suspends_tax_but_charges_maint():
+    gd, c = _setup(); politics.pledge(c, "imperial"); c.gold = 1000
+    st = _state(c); politics.conquer(c, gd, "windhelm", now=st.time.absolute_hours())
+    c.garrison_current["windhelm"] = politics.UNREST_WARN + politics.UNREST_DECAY  # 流失後恰 = WARN
+    st.time.advance(politics.TAX_HOURS)
+    e = politics.tick_tax(st, gd)[0]
+    assert e["unrest"] and e["tax"] == 0 and e["maint"] > 0       # 民心浮動 → 稅斷、仍付維護
+    assert e["net"] == -e["maint"] and c.gold == 1000 - e["maint"]
+
+
+def test_garrison_decays_and_city_revolts():
+    gd, c = _setup(); politics.pledge(c, "imperial")
+    st = _state(c); politics.conquer(c, gd, "windhelm", now=st.time.absolute_hours())
+    c.garrison_current["windhelm"] = politics.UNREST_DECAY        # 一期即潰散
+    st.time.advance(politics.TAX_HOURS)
+    evs = politics.tick_tax(st, gd)
+    assert any(e["kind"] == "revolt" for e in evs)
+    assert "windhelm" not in politics.held_tax_cities(c, gd)
+    assert politics.faction_of(c, gd, "windhelm") == "independent"  # 還原原立場
+    assert "windhelm" not in c.tax_due_at and "windhelm" not in c.garrison_current
+
+
+def test_tick_tax_catches_up_multiple_periods():
+    gd, c = _setup(); politics.pledge(c, "imperial"); c.gold = 0
+    st = _state(c); politics.conquer(c, gd, "windhelm", now=st.time.absolute_hours())
+    g0 = politics.garrison_of(c, gd, "windhelm")
+    st.time.advance(politics.TAX_HOURS * 3)
+    evs = politics.tick_tax(st, gd)
+    assert len([e for e in evs if e["kind"] == "tax"]) == 3       # 補結 3 期(未潰散)
+    assert politics.garrison_of(c, gd, "windhelm") == g0 - 3 * politics.UNREST_DECAY
+
+
+def test_reinforce_caps_and_costs():
+    gd, c = _setup(); politics.pledge(c, "imperial"); c.gold = 100000
+    st = _state(c); politics.conquer(c, gd, "windhelm", now=st.time.absolute_hours())
+    base = politics.base_garrison(gd, "windhelm")
+    c.garrison_current["windhelm"] = base - 20
+    assert politics.reinforce_garrison(c, gd, "windhelm", 5) == 5
+    assert politics.garrison_of(c, gd, "windhelm") == base - 15
+    assert c.gold == 100000 - 5 * politics.REINFORCE_COST_PER
+    assert politics.reinforce_garrison(c, gd, "windhelm", 999) == 15   # 夾原始守軍上限
+    assert politics.garrison_of(c, gd, "windhelm") == base
+    c.gold = politics.REINFORCE_COST_PER * 2; c.garrison_current["windhelm"] = base - 10
+    assert politics.reinforce_garrison(c, gd, "windhelm", 10) == 2     # 夾金幣
+
+
+def test_tax_due_at_save_roundtrip():
+    import json
+    gd, c = _setup(); c.tax_due_at = {"windhelm": 12345}
+    loaded = Character.from_dict(json.loads(json.dumps(c.to_dict())))
+    assert loaded.tax_due_at == {"windhelm": 12345}
+    d = c.to_dict(); del d["tax_due_at"]
+    assert Character.from_dict(d).tax_due_at == {}        # 舊存檔缺欄 → 預設 {}
+
+
+def test_legacy_counts_dominion():
+    from tesrpg.systems import legacy
+    gd, c = _setup(); politics.pledge(c, "imperial"); c.gold = 0
+    st = _state(c); politics.conquer(c, gd, "windhelm", now=st.time.absolute_hours())
+    c.thaneships = ["bruma"]; c.soldiers = 10
+    s = legacy.compute(st, gd)
+    assert s["dominion"] and "據有 1 城" in s["dominion"]
+    assert "受封 1 地武士" in s["dominion"] and "麾下 10 兵" in s["dominion"]
+    assert "擁護" in s["dominion"]
+    bare = legacy.compute(_state(_setup()[1]), gd)
+    assert bare["dominion"] is None                       # 無城戰/招兵 → 結算省略此行
+
+
+def test_legacy_survives_corrupt_faction_id():
+    """毀損/舊存檔:char.factions 含已不存在的公會 id → legacy.compute 須防禦化、不得 KeyError。
+    (對抗審查抓到的既有 robustness 缺口;此前只夾 rank、未防缺 id。)"""
+    from tesrpg.systems import legacy
+    gd, c = _setup()
+    c.factions = {"ghost_guild": 2, "another_dead_one": 99}   # 已移除/毀損的公會 id
+    s = legacy.compute(_state(c), gd)                          # 不該爆 KeyError
+    assert s["factions"] == []                                # 未知公會略過、不計分
+
+
+def test_court_reinforce_end_to_end():
+    import tesrpg.main as M
+    from tesrpg.ui import console as ui
+    gd, c = _setup(); politics.pledge(c, "imperial"); c.gold = 10000
+    c.location_id = "windhelm"
+    st = _state(c); politics.conquer(c, gd, "windhelm", now=st.time.absolute_hours())
+    base = politics.base_garrison(gd, "windhelm")
+    c.garrison_current["windhelm"] = base - 30
+    saved = (ui.menu, ui.ask_int, ui.message, ui.court_panel)
+    ui.menu = lambda *a, **k: "reinforce"
+    ui.ask_int = lambda *a, **k: 20
+    ui.message = lambda *a, **k: None
+    ui.court_panel = lambda *a, **k: None
+    try:
+        M.action_court(st, gd)
+    finally:
+        ui.menu, ui.ask_int, ui.message, ui.court_panel = saved
+    assert politics.garrison_of(c, gd, "windhelm") == base - 10   # -30 +20
+
+
 def run():
     test_stance_seed_is_city_unit_cross_province()
     test_relationship_and_pledge()
@@ -191,6 +331,17 @@ def run():
     test_siege_assault_death_no_conquer()
     test_siege_assault_flee_keeps_op_progress()
     test_save_roundtrip_and_backward_compat()
+    test_all_cities_have_population()
+    test_red_line_tax_only_conquered_not_allied()
+    test_conquer_records_cycle_and_collects_net()
+    test_unrest_suspends_tax_but_charges_maint()
+    test_garrison_decays_and_city_revolts()
+    test_tick_tax_catches_up_multiple_periods()
+    test_reinforce_caps_and_costs()
+    test_tax_due_at_save_roundtrip()
+    test_legacy_counts_dominion()
+    test_legacy_survives_corrupt_faction_id()
+    test_court_reinforce_end_to_end()
 
 
 if __name__ == "__main__":

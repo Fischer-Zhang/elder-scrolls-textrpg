@@ -157,17 +157,113 @@ def assault_force(remaining: int) -> int:
     return max(2, min(8, round(remaining / 55)))
 
 
-def conquer(char: Character, gamedata: GameData, loc_id: str) -> None:
-    """攻下:該城歸屬翻轉為你的大義,由你方重新駐軍,並清掉本役方略紀錄(下次可重新佈局)。"""
+def conquer(char: Character, gamedata: GameData, loc_id: str, now: int | None = None) -> None:
+    """攻下:該城歸屬翻轉為你的大義,由你方重新駐軍,清掉本役方略紀錄,並起算徵稅週期(若給 now)。"""
     char.city_faction[loc_id] = char.allegiance
     ruler = gamedata.ruler_at(loc_id) or {}
     char.garrison_current[loc_id] = ruler.get("garrison", 100)
     char.siege_ops.pop(loc_id, None)
+    if now is not None:                       # 起算佔領後徵稅(首期一週寬限);tick_tax 對缺漏亦會自癒
+        char.tax_due_at[loc_id] = now + TAX_HOURS
 
 
 def held_cities(char: Character, gamedata: GameData) -> list[str]:
-    """目前歸屬玩家大義的城(供結算/戰情圖);未選邊則空。"""
+    """目前歸屬玩家大義的城(含未攻的同立場盟城;供結算/戰情圖)。未選邊則空。
+    ⚠️ 收稅切勿用本函式 —— 會把「未攻的同立場盟城」算進稅基(白送鉅額被動收入)。收稅用 held_tax_cities。"""
     if not char.allegiance:
         return []
     return [lid for lid in gamedata.rulers
             if faction_of(char, gamedata, lid) == char.allegiance]
+
+
+# --- 城戰階段三:佔領後收稅(按居民數量)− 駐軍維護 + 輕量叛亂計時 -----------------
+# 經濟對偶:招兵軍餉是「出」,佔領收稅是「進」。每座**你親手攻下**的城每 TAX_HOURS 結算一次:
+#   居民稅(population×TAX_PER_POP)− 駐軍維護(garrison×GARRISON_MAINT_PER)→ 淨額入庫。
+# 輕量叛亂計時:占領駐軍每期流失 UNREST_DECAY;駐軍跌破 UNREST_WARN → 民心浮動(稅收中斷、仍付維護);
+#   潰散(≤GARRISON_REVOLT_AT)→ 城邦叛離脫離掌握。可出資加強駐軍回防(reinforce_garrison)。
+# ⚠️ 紅線:稅基只認 city_faction(攻下的城),**不可**用 held_cities()(含盟城 → 白送稅,實測達 2000+/週)。
+TAX_HOURS = 168               # 徵稅週期(每約一週;與軍餉同節律但各城獨立計時)
+TAX_PER_POP = 0.5             # 居民稅率:稅 = 居民數 × 此值
+GARRISON_MAINT_PER = 0.4      # 駐軍維護費率:支出 = 現存駐軍 × 此值(「守軍是支出維護費」)
+UNREST_DECAY = 10             # 每期占領駐軍流失(輕量叛亂計時)
+UNREST_WARN = 30              # 駐軍 ≤ 此 → 民心浮動(稅收中斷、將失守)
+GARRISON_REVOLT_AT = 0        # 駐軍 ≤ 此 → 城邦叛離(脫離掌握)
+REINFORCE_COST_PER = 4        # 加強駐軍:每補 1 兵的金幣
+
+
+def held_tax_cities(char: Character, gamedata: GameData) -> list[str]:
+    """你親手攻下且仍在手的城(city_faction 由 conquer 寫成你的大義)。
+    與 held_cities 不同:**不含未攻的同立場盟城** —— 收稅務必用本函式(紅線見上)。"""
+    if not char.allegiance:
+        return []
+    return [loc for loc, fac in char.city_faction.items() if fac == char.allegiance]
+
+
+def city_population(gamedata: GameData, loc_id: str) -> int:
+    return (gamedata.ruler_at(loc_id) or {}).get("population", 0)
+
+
+def city_tax(gamedata: GameData, loc_id: str) -> int:
+    return round(city_population(gamedata, loc_id) * TAX_PER_POP)
+
+
+def base_garrison(gamedata: GameData, loc_id: str) -> int:
+    return (gamedata.ruler_at(loc_id) or {}).get("garrison", 0)
+
+
+def garrison_upkeep(char: Character, gamedata: GameData, loc_id: str) -> int:
+    return round(garrison_of(char, gamedata, loc_id) * GARRISON_MAINT_PER)
+
+
+def reinforce_cost(n: int) -> int:
+    return n * REINFORCE_COST_PER
+
+
+def can_reinforce(char: Character, gamedata: GameData, loc_id: str) -> bool:
+    """你持有該城、駐軍未滿、且至少付得起 1 兵。"""
+    return (loc_id in held_tax_cities(char, gamedata)
+            and garrison_of(char, gamedata, loc_id) < base_garrison(gamedata, loc_id)
+            and char.gold >= REINFORCE_COST_PER)
+
+
+def reinforce_garrison(char: Character, gamedata: GameData, loc_id: str, n: int) -> int:
+    """出資加強駐軍(gold → garrison,夾「該城原始守軍」上限與金幣)。回傳實際補的兵數。"""
+    cur = garrison_of(char, gamedata, loc_id)
+    n = max(0, min(n, base_garrison(gamedata, loc_id) - cur, char.gold // REINFORCE_COST_PER))
+    char.gold -= n * REINFORCE_COST_PER
+    char.garrison_current[loc_id] = cur + n
+    return n
+
+
+def tick_tax(state, gamedata: GameData) -> list[dict]:
+    """於 game_loop 每圈頂端(緊接軍餉)結算各佔領城的徵稅/維護/叛亂。
+
+    每座攻下的城每 TAX_HOURS:① 占領駐軍流失 UNREST_DECAY;② 潰散(≤floor)→ 城叛離;
+    ③ 民心浮動(駐軍 ≤ UNREST_WARN)→ 稅收中斷但仍付維護(逼你回防);④ 否則收「居民稅 − 維護」淨額。
+    可一次補結多個跳過的週期。回傳事件 [{kind:"tax"/"revolt", ...}] 供呈現。
+    """
+    char = state.player
+    now = state.time.absolute_hours()
+    events: list[dict] = []
+    for loc in held_tax_cities(char, gamedata):
+        if loc not in char.tax_due_at:           # 防呆:攻下未記時點(舊存檔/conquer 未傳 now)→ 給一週寬限
+            char.tax_due_at[loc] = now + TAX_HOURS
+            continue
+        while (faction_of(char, gamedata, loc) == char.allegiance
+               and loc in char.tax_due_at and now >= char.tax_due_at[loc]):
+            g = max(0, garrison_of(char, gamedata, loc) - UNREST_DECAY)   # 占領駐軍流失
+            char.garrison_current[loc] = g
+            if g <= GARRISON_REVOLT_AT:                                   # 駐軍潰散 → 城叛離
+                char.city_faction.pop(loc, None)
+                char.garrison_current.pop(loc, None)
+                char.tax_due_at.pop(loc, None)
+                events.append({"kind": "revolt", "loc": loc})
+                break
+            maint = round(g * GARRISON_MAINT_PER)
+            unrest = g <= UNREST_WARN                                     # 民心浮動 → 稅收中斷
+            tax = 0 if unrest else city_tax(gamedata, loc)
+            char.gold = max(0, char.gold + tax - maint)                   # 淨額入庫(夾 ≥0)
+            char.tax_due_at[loc] += TAX_HOURS
+            events.append({"kind": "tax", "loc": loc, "tax": tax, "maint": maint,
+                           "net": tax - maint, "garrison": g, "unrest": unrest})
+    return events

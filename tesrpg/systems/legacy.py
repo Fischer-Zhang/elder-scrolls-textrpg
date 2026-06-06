@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from tesrpg import formulas
 from tesrpg.gamedata import GameData
-from tesrpg.systems import brotherhood, mastery, vampirism
+from tesrpg.systems import brotherhood, mastery, politics, vampirism
 
 DAYS_PER_YEAR = 360   # 12 月 × 30 天
 
@@ -49,9 +49,12 @@ def compute(state, gamedata: GameData, ending: str = "death") -> dict:
     faction_lines = []
     faction_points = 0
     for fid, rank in char.factions.items():
-        ranks = gamedata.factions[fid]["ranks"]
+        fdef = gamedata.factions.get(fid)          # 防禦化:毀損/已移除的公會 id → 跳過(別讓結算 KeyError)
+        if not fdef:
+            continue
+        ranks = fdef["ranks"]
         clamped = min(rank, len(ranks) - 1)        # 夾限,避免毀損存檔讓分數爆量
-        faction_lines.append((gamedata.factions[fid]["name"], ranks[clamped]))
+        faction_lines.append((fdef["name"], ranks[clamped]))
         faction_points += (clamped + 1) * 60
 
     tops = top_skills(char, gamedata)
@@ -59,6 +62,10 @@ def compute(state, gamedata: GameData, ending: str = "death") -> dict:
     total_kills = sum(char.kill_counts.values())
     total_locations = len(gamedata.world["locations"])
     masteries = [e["name"] for e in mastery.unlocked(char, gamedata)]
+
+    # 城戰 / 招兵的功業(此前在結算裡零承認):親手攻下的城、武士冊封、麾下軍隊
+    cities_held = len(politics.held_tax_cities(char, gamedata))
+    thanes = len(char.thaneships)
 
     score = (
         char.level * 120
@@ -72,6 +79,9 @@ def compute(state, gamedata: GameData, ending: str = "death") -> dict:
         + int(char.gold * 0.1)
         + years * 30
         + len(masteries) * 40        # 技能精通的印記:每解鎖一個里程碑
+        + cities_held * 200          # 征服功業:每座親手攻下且仍在手的城
+        + thanes * 80                # 武士冊封:每座受封的城
+        + char.soldiers * 3          # 麾下常備軍
     )
 
     return {
@@ -86,6 +96,7 @@ def compute(state, gamedata: GameData, ending: str = "death") -> dict:
         "masteries": masteries,                       # 解鎖的技能里程碑(身份印記)
         "condition": vampirism.legacy_label(char),   # 吸血鬼身分(否則 None)
         "dark_deeds": brotherhood.legacy_label(char, gamedata),   # 黑暗兄弟會/謀殺事蹟(否則 None)
+        "dominion": dominion_label(char, gamedata, cities_held, thanes),  # 領地/統帥功業(否則 None)
         "level": char.level,
         "years": years, "days": days,
         "top_skills": tops,
@@ -103,6 +114,22 @@ def compute(state, gamedata: GameData, ending: str = "death") -> dict:
         "title": title_for(score),
         "seed": state.rng.seed,
     }
+
+
+def dominion_label(char, gamedata: GameData, cities_held: int, thanes: int) -> str | None:
+    """城戰/招兵的功業總結(攻下的城 / 武士 / 大義 / 常備軍);無則 None(結算省略此行)。"""
+    if not (cities_held or thanes or char.soldiers or char.allegiance):
+        return None
+    parts = []
+    if char.allegiance:
+        parts.append(f"擁護{politics.cause_name(char.allegiance)}")
+    if cities_held:
+        parts.append(f"據有 {cities_held} 城")
+    if thanes:
+        parts.append(f"受封 {thanes} 地武士")
+    if char.soldiers:
+        parts.append(f"麾下 {char.soldiers} 兵")
+    return " · ".join(parts)
 
 
 def title_for(score: int) -> str:

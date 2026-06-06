@@ -121,8 +121,10 @@ class Character:
     # 動態戰況掛 Character(存檔)、首次存取時由種子懶初始化(同 shop_stock 模式)。
     allegiance: str = ""                                  # 玩家擁護的大義:""=未選 / imperial / independent
     city_faction: dict = field(default_factory=dict)      # loc_id -> 現時歸屬立場(攻城會翻轉)
-    garrison_current: dict = field(default_factory=dict)  # loc_id -> 現存駐軍(圍城方略消耗)
+    garrison_current: dict = field(default_factory=dict)  # loc_id -> 現存駐軍(圍城方略消耗;佔領後=你的駐軍,叛亂計時會緩降)
     siege_ops: dict = field(default_factory=dict)         # loc_id -> [已施行的圍城方略 id](每役每略一次)
+    # 城戰階段三:佔領後收稅(按居民數量)− 駐軍維護費 + 輕量叛亂計時(駐軍緩降,潰散則城叛)。詳見 systems/politics.py。
+    tax_due_at: dict = field(default_factory=dict)         # loc_id -> 下次徵稅的絕對小時(僅攻下的城;預設 {} 向後相容)
 
     # 招兵買馬(城戰的金幣/領袖路線)。親衛/將領=companions(具名);軍隊/士兵=抽象兵員。詳見 systems/warband.py。
     soldiers: int = 0                                     # 麾下士兵數(營地招募;攻城當援軍 + 大軍壓境)
@@ -200,6 +202,7 @@ class Character:
             "city_standing": self.city_standing, "thaneships": self.thaneships,
             "allegiance": self.allegiance, "city_faction": self.city_faction,
             "garrison_current": self.garrison_current, "siege_ops": self.siege_ops,
+            "tax_due_at": self.tax_due_at,
             "soldiers": self.soldiers, "camp": self.camp,
             "wage_due_at": self.wage_due_at,
             "companions": self.companions,

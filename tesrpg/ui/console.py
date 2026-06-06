@@ -230,6 +230,8 @@ def legacy_screen(s: dict) -> None:
         body.add_row("詛咒", str(s["condition"]))
     if s.get("dark_deeds"):
         body.add_row("血業", str(s["dark_deeds"]))
+    if s.get("dominion"):
+        body.add_row("功業", str(s["dominion"]))
     if s.get("masteries"):
         body.add_row("精通", "、".join(s["masteries"]))
     body.add_row("等級", str(s["level"]))
@@ -472,8 +474,9 @@ def npc_panel(npc: dict, disposition: int) -> None:
 
 def court_panel(ruler: dict, gamedata: GameData, reception: str,
                 standing: int | None = None, thane: bool = False,
-                politics: dict | None = None) -> None:
-    """謁見領主:接待語氣 + 考據背景 + 種族/駐軍/時局/政治立場,並顯示功勳/武士身分(領主區)。"""
+                politics: dict | None = None, territory: dict | None = None) -> None:
+    """謁見領主:接待語氣 + 考據背景 + 種族/駐軍/時局/政治立場,並顯示功勳/武士身分(領主區)。
+    territory 給定時(你親手攻下的城)額外顯示「你的領地」:居民稅/駐軍維護/民心/淨收。"""
     race = gamedata.races.get(ruler["race"], {}).get("name", ruler["race"])
     body = Text()
     body.append(reception + "\n\n", style="italic " + PARCH)
@@ -493,6 +496,18 @@ def court_panel(ruler: dict, gamedata: GameData, reception: str,
     elif standing is not None:
         body.append("\n城邦功勳  ", style=GOLD)
         body.append(f"{standing}", style=INK)
+    if territory:
+        body.append("\n\n【你的領地】\n", style="bold " + GOLD)
+        body.append("居民  ", style=GOLD)
+        body.append(f"{territory['population']} 口 → 週稅 {territory['tax']} 金\n", style=INK)
+        body.append("駐軍  ", style=GOLD)
+        body.append(f"{territory['garrison']}/{territory['base']}(維護 {territory['maint']} 金/週)\n", style=INK)
+        if territory["unrest"]:
+            body.append("民心  ", style=GOLD)
+            body.append("浮動 —— 稅收中斷,速加強駐軍回防!", style="bold red")
+        else:
+            body.append("淨收  ", style=GOLD)
+            body.append(f"{territory['net']:+d} 金/週", style="green" if territory["net"] >= 0 else "red")
     console.print(_panel(body, title=f"👑 {ruler['title']}·{ruler['name']}", style=GOLD))
 
 

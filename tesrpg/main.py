@@ -1272,15 +1272,26 @@ def action_court(state: GameState, gamedata: GameData) -> str | None:
     pol = {"stance": politics.stance_label(politics.faction_of(char, gamedata, loc_id)),
            "relation": politics.REL_LABEL.get(rel, rel),
            "garrison": politics.garrison_of(char, gamedata, loc_id)}
+    held = loc_id in politics.held_tax_cities(char, gamedata)   # 你親手攻下的城 → 顯示領地經營
+    territory = None
+    if held:
+        g = politics.garrison_of(char, gamedata, loc_id)
+        maint = politics.garrison_upkeep(char, gamedata, loc_id)
+        tax = politics.city_tax(gamedata, loc_id)
+        territory = {"population": politics.city_population(gamedata, loc_id), "tax": tax,
+                     "garrison": g, "base": politics.base_garrison(gamedata, loc_id),
+                     "maint": maint, "net": tax - maint, "unrest": g <= politics.UNREST_WARN}
     ui.court_panel(ruler, gamedata, _court_reception(char),
                    standing=court.standing(char, loc_id), thane=court.is_thane(char, loc_id),
-                   politics=pol)
+                   politics=pol, territory=territory)
     opts = []
     offered = court.offered_ruler_quest(char, gamedata, loc_id)
-    if rel != "enemy" and offered:              # 敵城不接你的委託
+    if rel != "enemy" and not held and offered:   # 敵城/自家領地不接領主委託
         opts.append(("quest", f"領取委託:{gamedata.quests[offered]['name']}"))
     if rel != "enemy" and court.can_become_thane(char, gamedata, loc_id):
         opts.append(("thane", "✦ 受封武士"))
+    if politics.can_reinforce(char, gamedata, loc_id):
+        opts.append(("reinforce", f"加強駐軍({politics.REINFORCE_COST_PER} 金/兵 → 鎮民心、防叛亂)"))
     if not char.allegiance:
         opts.append(("pledge", "宣誓效忠 —— 選擇你的大義"))
     if politics.can_siege(char, gamedata, loc_id):
@@ -1292,11 +1303,32 @@ def action_court(state: GameState, gamedata: GameData) -> str | None:
         _accept_and_brief(state, gamedata, offered)
     elif choice == "thane":
         _become_thane(state, gamedata, loc_id, ruler)
+    elif choice == "reinforce":
+        _reinforce_garrison(state, gamedata, loc_id)
     elif choice == "pledge":
         _pledge_allegiance(state, gamedata)
     elif choice == "siege":
         return action_siege(state, gamedata, loc_id)
     return None
+
+
+def _reinforce_garrison(state: GameState, gamedata: GameData, loc_id: str) -> None:
+    """出資加強佔領城的駐軍(鎮壓民心浮動、抵銷叛亂流失)。"""
+    char = state.player
+    cur = politics.garrison_of(char, gamedata, loc_id)
+    cap = politics.base_garrison(gamedata, loc_id)
+    affordable = char.gold // politics.REINFORCE_COST_PER
+    hi = min(cap - cur, affordable)
+    ui.message(f"現存駐軍 {cur}/{cap};你有 {char.gold} 金(每兵 {politics.REINFORCE_COST_PER} 金,"
+               f"最多可補 {hi} 兵)。", style="gold1")
+    n = ui.ask_int("加強多少駐軍?", default=min(hi, politics.UNREST_DECAY), lo=0, hi=hi)
+    got = politics.reinforce_garrison(char, gamedata, loc_id, n)
+    if got:
+        state.time.advance(2)
+        ui.message(f"你出資招募 {got} 名守兵入駐,城防為之一振(駐軍 "
+                   f"{politics.garrison_of(char, gamedata, loc_id)})。", style="green")
+    else:
+        ui.message("金幣不足,或駐軍已滿。", style="yellow")
 
 
 def _pledge_allegiance(state: GameState, gamedata: GameData) -> None:
@@ -1382,7 +1414,7 @@ def _siege_assault(state: GameState, gamedata: GameData, loc_id: str, city: str)
     if res == "fled":
         ui.message("你且戰且退 —— 城未下,但圍城方略的戰果仍在,改日可再攻。", style="yellow")
         return None
-    politics.conquer(char, gamedata, loc_id)
+    politics.conquer(char, gamedata, loc_id, now=state.time.absolute_hours())
     char.fame += politics.SIEGE_FAME
     ui.message(f"城門洞開,守將伏誅 —— 「{city}」易幟,自此歸於{politics.cause_name(char.allegiance)}!",
                style="bold gold1")
@@ -1947,6 +1979,19 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
             elif ev["kind"] == "desert":
                 ui.message(f"軍餉短缺,{ev['deserters']} 名士兵憤而離營(餘 {ev['soldiers']} 名)。",
                            style="red")
+
+        # 領地稅收結算(城戰階段三):居民稅 − 駐軍維護;民心浮動則稅斷、潰散則城叛
+        for ev in politics.tick_tax(state, gamedata):
+            cname = gamedata.location(ev["loc"])["name"]
+            if ev["kind"] == "revolt":
+                ui.message(f"⚠ 駐軍潰散,「{cname}」民變四起,城邦就此叛離你的掌握!", style="bold red")
+            elif ev["kind"] == "tax":
+                if ev["unrest"]:
+                    ui.message(f"「{cname}」民心浮動,稅收中斷 —— 仍須付駐軍維護 {ev['maint']} 金"
+                               f"(駐軍僅 {ev['garrison']},須回防!)。", style="red")
+                else:
+                    ui.message(f"領地稅收:「{cname}」入庫 {ev['tax']} 金(扣駐軍維護 {ev['maint']} → "
+                               f"淨 {ev['net']:+d})。", style="grey70")
 
         ui.rule()
         ui.status_line(state)
