@@ -62,6 +62,9 @@ def compute(state, gamedata: GameData, ending: str = "death") -> dict:
     total_kills = sum(char.kill_counts.values())
     total_locations = len(gamedata.world["locations"])
     masteries = [e["name"] for e in mastery.unlocked(char, gamedata)]
+    # 具名地標:只計仍合法的 loc_id(防毀損存檔殘留已移除地標)
+    landmarks_found = sum(1 for lid in char.discovered_landmarks if lid in gamedata.landmarks)
+    total_landmarks = len(gamedata.landmarks)
 
     # 城戰 / 招兵的功業(此前在結算裡零承認):親手攻下的城、武士冊封、麾下軍隊
     cities_held = len(politics.held_tax_cities(char, gamedata))
@@ -74,6 +77,7 @@ def compute(state, gamedata: GameData, ending: str = "death") -> dict:
         + faction_points
         + len(char.cleared_dungeons) * 90
         + len(char.visited_locations) * 20
+        + landmarks_found * 30        # 探索者:每尋得一處具名地標
         + total_kills * 4
         + char.fame * 6
         + int(char.gold * 0.1)
@@ -105,6 +109,8 @@ def compute(state, gamedata: GameData, ending: str = "death") -> dict:
         "dungeons_cleared": len(char.cleared_dungeons),
         "places_visited": len(char.visited_locations),
         "total_locations": total_locations,
+        "landmarks_found": landmarks_found,
+        "total_landmarks": total_landmarks,
         "total_kills": total_kills,
         "fame": char.fame, "infamy": char.infamy,
         "gold": char.gold,

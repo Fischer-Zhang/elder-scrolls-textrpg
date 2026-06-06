@@ -13,8 +13,9 @@ from tesrpg.gamedata import GameData, get_gamedata
 from tesrpg.rng import RNG, make_seed
 from tesrpg.state import GameState
 from tesrpg.systems import (alchemy, brotherhood, combat, court, crafting, crime, dialogue, dungeon,
-                            enchanting, events, factions, inventory, legacy, magic, politics, powers,
-                            progression, quests, stats, vampirism, warband, world, worldstate)
+                            enchanting, events, factions, inventory, landmarks, legacy, magic,
+                            politics, powers, progression, quests, stats, vampirism, warband,
+                            world, worldstate)
 from tesrpg.ui import console as ui
 
 SAVE_PATH = Path.home() / ".tesrpg" / "save.json"
@@ -2097,6 +2098,13 @@ def guard_confrontation(state: GameState, gamedata: GameData) -> str | None:
 # ======================================================================
 # 主迴圈
 # ======================================================================
+def _try_discover(state: GameState, gamedata: GameData, loc_id: str) -> None:
+    """若當前地有未發現的具名地標 → 觸發一次性發現並呈現(純加性,不致死)。"""
+    res = landmarks.discover(state, gamedata, loc_id)
+    if res:
+        ui.landmark_discovery(res)
+
+
 def game_loop(state: GameState, gamedata: GameData) -> None:
     while True:
         # 吸血鬼狀態先結算(潛伏轉化 / 階級升降),再呈現本回合
@@ -2136,6 +2144,9 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
                 else:
                     ui.message(f"領地稅收:「{cname}」入庫 {ev['tax']} 金(扣駐軍維護 {ev['maint']} → "
                                f"淨 {ev['net']:+d})。", style="grey70")
+
+        # 具名地標:首次身處某地 → 一次性「發現」(統一在此觸發 → 起始城/旅行抵達/任意當前地皆涵蓋)
+        _try_discover(state, gamedata, state.player.location_id)
 
         ui.rule()
         ui.status_line(state)

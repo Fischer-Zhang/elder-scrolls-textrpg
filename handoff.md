@@ -268,9 +268,17 @@
 - **🚧 Phase D ③+(後續)**:其餘可入會組織(丹莫大族入族/同伴戰友團/三聯神殿/影鱗/刀刃/黑蠕蟲)各自獨立一輪;更多大事件純加 world_events.json。
 - **鐵律**:大事件易幟一律寫 `world_faction`(非 city_faction)→ 不污染稅基;玩家已佔城(city_faction)免疫事件易幟;加事件/旗號/大義純改 JSON。**`conjure_boon`/`restoration_boon` 只在各自法術分支、只對會員**;改 perk 數值改 `factions.json` per_rank/cap(純 JSON);新事件解鎖組織加 `unlock_event` 欄(通用,零碼);新合約公會走 `_contract_hall`(`stealth` 旗標分暗殺/聖戰),黑兄聖所自有 launder/tenets 不走此處。**guild 晉升閘以 `advance_block_reason` 為單一真實來源**(別只擋訊息忘了擋 `available_quests`)。
 
+**區域細化:具名地標與發現系統(換出陣營線;§6「具名地標與發現」候選落地)**:前幾輪細化省分後,野外節點仍多是「純通勤」(9 個荒野節點、整個邊境、被 rumor 點名卻無內容的 `falkreath_wood`)。本輪給各區域的招牌/空蕩節點一個**首次抵達一次性「發現」**(意境文字 + 小獎勵),讓「區域」有識別度、值得探索,並為**刻意無 NPC 的邊境**填上內容。
+- **專用系統,不走隨機事件引擎**(那是機率抽選):新 `data/landmarks.json`(13 條,key=location_id,鏡像 rulers.json)+ `systems/landmarks.py`(`discover(state,gd,loc_id)→dict|None`:fire-once 守門 + 套金幣/物品/聲望獎勵 + 回 UI;`is_discovered`)。`gamedata.landmarks`/`landmark_at`。
+- **守門用新欄 `discovered_landmarks`(非 `visited_locations`)**:`creation` 建角已把起始城塞進 `visited_locations` → 複用它則起始城/舊存檔已訪節點永遠觸發不了。新欄預設 `[]` → **舊存檔向後相容且仍能發現**(有回歸測試)。dataclass 預設 + to_dict,**零存檔風險**。
+- **單一 game_loop 頂端 hook**(tick 區後、`location_panel` 前)`_try_discover(player.location_id)` → 統一涵蓋起始城/旅行抵達/任意當前地(含荒野;既有 "arrive" 事件僅城鎮);fire-once 保證不重播。
+- **獎勵=一次性、克制、隨 danger 分級**:金幣 + 選用物品(只用既有 id)+ 選用 fame;**無永久數值/技能加成**(守反 min-max,有契約鎖測試)。最高一件僅到既有中階(glass_dagger,壓在 d4 邊境節點)。
+- **接點**:`ui.landmark_discovery`(發現面板)、`location_panel`「❖ 已發現」、`world_map` ❖ 標記(避開 ✦=地城,legend 已註)、`legacy` 加「奇景 N/M」探索行 + score(`landmarks_found×30`,∩ 合法 key 防毀損)。13 地標各省主題鮮明(賽=艾雷德/邊境=遺棄前哨·沉船·王座/天=雪塚〔收掉 falkreath rumor〕/晨=矮人齒輪/黑=希斯特),**邊境 4 節點全有**。
+- **驗證**:36 測試模組全綠(新 `test_landmarks` 13 測:發現+獎勵精確/fire-once/多 hook 冪等/舊存檔相容+已訪節點仍可發現/loc 與 item id 合法/必填欄/**禁永久加成獎勵契約鎖**/legacy 計數防毀損/不致死不耗時)+ 無頭煙霧(真實 `_try_discover` hook + 三面板渲染 + 起始城奇景)+ **對抗審查 Workflow(5 維 × 每發現 3 視角,6 發現→3 確認,全 minor 全已修**:① 測試 `absolute_hours` 漏括號→比較 bound method 恆等的空斷言〔已改呼叫〕;② `is_discovered` 死碼〔已接進 UI〕;③ world_map ✦ 與地城圖示撞色〔已改 ❖+legend〕)。**加地標純改 `landmarks.json`(零碼)**。
+
 **內容量**:10 種族 / 13 星座 / 8 職業 / **22 技能(+偵查 scout)** / **19 武器(4 法杖)** / **34 護甲(7 材質整套)** / 25 法術(5 AoE) /
-**15 材料(全部可野外採集/獵取)** / **4 飾品** / **製作配方系統(4 皮甲配方)** / **51 生物(7 高階 elite + 2 吸血鬼 + 5 黑沼澤 + 8 黑兄目標 + 7 神話黎明目標 + 6 九神聖戰目標 + 2 heartland;18 隻帶 biome 生態標籤)** / 3 傭兵 / **36 地點(有環圖+生態 biome,世界閉合成大環;各省補全城市 賽8/天9/晨8/黑7/邊4,共 17 城+4 鎮)** / **6 地城** / **53 任務(3 分支壓軸 + 解咒 + 6 黑兄合約 + 6 神話黎明合約 + 6 九神聖戰合約 + 10 在地任務含 2 任務鏈)** / **6 公會(+神話黎明/九神騎士團,大事件解鎖)** / **7 開局背景** / **59 NPC(每城 3 / 每鎮 2,角色多樣、greeting + rumor 指路;8 名掛在地委託)** / **25 事件(含 10 省份限定;4 野採採集點)** / **吸血鬼化系統** / **黑暗兄弟會系統** / **技能里程碑系統(6 條 MVP,達門檻自動解鎖)** / **21 城主(各城自治)**。
-程式:**24 個 `systems` 模組**(+vampirism +brotherhood +mastery +crafting +court +politics +warband)+ models/ui/synth 等,共約 40 個 `.py` + `sim_assassin.py`(平衡回歸);**24 個 `data/*.json`**(+mastery.json +recipes.json;黑兄/細化省分/城戰立場/招兵兵種全靠改既有檔);**34 測試模組**(+test_mastery +test_practice_cost +test_shop +test_crafting +test_court +test_politics +test_warband +test_worldstate +test_mythicdawn)。
+**15 材料(全部可野外採集/獵取)** / **4 飾品** / **製作配方系統(4 皮甲配方)** / **51 生物(7 高階 elite + 2 吸血鬼 + 5 黑沼澤 + 8 黑兄目標 + 7 神話黎明目標 + 6 九神聖戰目標 + 2 heartland;18 隻帶 biome 生態標籤)** / 3 傭兵 / **36 地點(有環圖+生態 biome,世界閉合成大環;各省補全城市 賽8/天9/晨8/黑7/邊4,共 17 城+4 鎮)** / **6 地城** / **53 任務(3 分支壓軸 + 解咒 + 6 黑兄合約 + 6 神話黎明合約 + 6 九神聖戰合約 + 10 在地任務含 2 任務鏈)** / **6 公會(+神話黎明/九神騎士團,大事件解鎖)** / **7 開局背景** / **59 NPC(每城 3 / 每鎮 2,角色多樣、greeting + rumor 指路;8 名掛在地委託)** / **25 事件(含 10 省份限定;4 野採採集點)** / **吸血鬼化系統** / **黑暗兄弟會系統** / **技能里程碑系統(6 條 MVP,達門檻自動解鎖)** / **21 城主(各城自治)** / **13 具名地標(各省招牌/邊境發現,首次抵達一次性獎勵)**。
+程式:**25 個 `systems` 模組**(+vampirism +brotherhood +mastery +crafting +court +politics +warband +landmarks)+ models/ui/synth 等,共約 40 個 `.py` + `sim_assassin.py`(平衡回歸);**25 個 `data/*.json`**(+mastery.json +recipes.json +landmarks.json;黑兄/細化省分/城戰立場/招兵兵種全靠改既有檔);**36 測試模組**(+test_mastery +test_practice_cost +test_shop +test_crafting +test_court +test_politics +test_warband +test_worldstate +test_mythicdawn +test_knights +test_landmarks)。
 
 ---
 
@@ -404,7 +412,7 @@ tesrpg/
 2. **新省份擴充**(高價值/低風險,純資料):地圖 UI 與群戰都已能撐;加 `world.json` 地點 + `dungeons.json` + `bestiary` 生物 + `rulers.json` 城主即可。
    ⭐ 世界已**閉合成大環**(見 §1「地圖擴展:黑沼澤」——黑沼澤已把賽羅迪爾↔晨風接成環)。再加新省請沿用該模式:**雙向連通、最好再閉一個環**(別接成走廊尾巴);新城/鎮**務必同步加 `rulers.json` 城主**(否則 `test_world` 紅);新地城首領是 elite 就加 `"raw": true`;**新地點記得加 `biome`、主題新怪加 `biomes`**(見 §1「細化省分」,讓生態遭遇分流);新省可加 `trigger.provinces` 風味事件 + `provinces` 在地懸賞。**可候選**:漢默法爾(西部沙漠環,接賽羅迪爾/天際)、高岩、瓦倫森林。
    ✅ **細化省分已做**(見 §1):生態遭遇表(biome)、告示板按省過濾、天際/晨風補密度、四省 NPC/在地任務/風味事件;**再進一步**亦做了 heartland 招牌生態怪、2 條在地任務鏈、NPC rumor 指路/補齊委託。
-   後續評估過、可再做(依槓桿):**商店法術分散**(海芬古/黑光城法術重疊、鎮級無法術 → 各省守一學派強制跨省採購;中風險,需保底集 + 鎮級法術選單,見評估)、**具名地標與發現**(`once`+`location_ids` 事件 + 一次性奇景;觸發要改「首次抵達必觸發」而非隨機)、**地區氣候機械效果**(非染病版,低槓桿)。**邊境刻意不補 NPC**(全荒野、無城主模型)。
+   後續評估過、可再做(依槓桿):**商店法術分散**(海芬古/黑光城法術重疊、鎮級無法術 → 各省守一學派強制跨省採購;中風險,需保底集 + 鎮級法術選單,見評估)、~~具名地標與發現~~ ✅ **已做**(見 §1「區域細化:具名地標與發現系統」—— 專用 landmarks.json + game_loop hook,首次抵達一次性發現,邊境 4 節點全有)、**地區氣候機械效果**(非染病版,低槓桿)。**邊境刻意不補 NPC**(全荒野、無城主模型 → 已以地標填內容)。
 3. **成就系統**(重玩性,種子已開放):`legacy.compute` 已輸出種子;可加一張結算成就表(首殺 boss / 無傷清地城 / 純法師通關…),複用 `kill_counts`/`cleared_dungeons` 等既有計數。每日/分享種子的前置(種子輸入)已完成。
 4. **體力對法師仍是死資源**(體力消耗評估的 option B,未做):純施法者戰鬥中不耗也不受罰體力 → 三系資源不對稱。可做「施法耗少量體力」或「低體力降施法成功/威力」。
 5. **半成品/微調**:創角問答推職業;護甲附魔可再擴(目前只 fortify 生命/魔力/體力);更多事件/任務。

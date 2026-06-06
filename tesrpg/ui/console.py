@@ -213,6 +213,15 @@ def event_panel(event: dict) -> None:
                          title=f"✦ {event['title']}", style="magenta"))
 
 
+def landmark_discovery(res: dict) -> None:
+    """首次抵達某地的『發現』:意境文字 + 一次性獎勵(systems.landmarks.discover 回傳)。"""
+    body = Text()
+    body.append(res["text"] + "\n", style=PARCH)
+    for line in res.get("reward_lines", []):
+        body.append(f"  {line}\n", style="green")
+    console.print(_panel(body, title=f"✦ 發現:{res['name']}", style=GOLD))
+
+
 def legacy_screen(s: dict) -> None:
     """一生傳奇總結畫面(英雄級結算)。"""
     head = "⚰  傳 奇 落 幕" if s["ending"] == "death" else "🌅  功 成 身 退"
@@ -237,6 +246,8 @@ def legacy_screen(s: dict) -> None:
     body.add_row("等級", str(s["level"]))
     body.add_row("在世", f"{s['years']} 年 {s['days']} 天")
     body.add_row("足跡", f"踏遍 {s['places_visited']}/{s['total_locations']} 處地點")
+    if s.get("total_landmarks"):
+        body.add_row("奇景", f"尋得 {s.get('landmarks_found', 0)}/{s['total_landmarks']} 處具名地標")
     body.add_row("地城", f"肅清 {s['dungeons_cleared']} 座")
     body.add_row("任務", f"完成 {s['quests_completed']} 件")
     body.add_row("斬獲", f"擊殺 {s['total_kills']} 敵")
@@ -338,6 +349,13 @@ def location_panel(char: Character, gamedata: GameData) -> None:
     loc = gamedata.location(char.location_id)
     body = Text()
     body.append(loc["desc"] + "\n", style=PARCH)
+    from tesrpg.systems import landmarks    # 局部匯入避免循環
+    lm = gamedata.landmark_at(char.location_id)   # 已發現的具名地標 → 標記(未發現則此地看來尋常)
+    if lm and landmarks.is_discovered(char, char.location_id):
+        body.append("❖ 已發現  ", style=GOLD)
+        body.append(lm["name"] + "\n", style=PARCH)
+        if lm.get("revisit"):
+            body.append(lm["revisit"] + "\n", style=FAINT)
     ruler = gamedata.ruler_at(char.location_id)
     if ruler:
         body.append("👑 統治者  ", style=GOLD)
@@ -671,7 +689,7 @@ def world_map(char: Character, gamedata: GameData) -> None:
         if p not in order:
             order.append(p)
 
-    from tesrpg.systems import politics    # 局部匯入避免循環;標每城現時大義
+    from tesrpg.systems import landmarks, politics    # 局部匯入避免循環;標每城現時大義 + 已發現地標
     _FAC_MARK = {"imperial": "[red]帝[/]", "independent": "[cyan]獨[/]",
                  "neutral": "[grey62]中[/]", "daedric": "[magenta]湮[/]", "own": "[gold1]己[/]"}
     tree = Tree(f"[bold {GOLD}]Tamriel · 泰姆瑞爾[/]", guide_style=GOLD_DIM)
@@ -691,13 +709,15 @@ def world_map(char: Character, gamedata: GameData) -> None:
                 "[bold gold1]★己[/]" if lid in char.city_faction
                 else _FAC_MARK.get(politics.faction_of(char, gamedata, lid), ""))
             fac = f" {fac}" if fac else ""
+            lm = " [gold1]❖[/]" if (gamedata.landmark_at(lid)        # ❖=已發現地標(避開 ✦=地城圖示)
+                                    and landmarks.is_discovered(char, lid)) else ""
             node = pb.add(f"{star}{icon} [{style}]{loc['name']}[/]"
-                          f"[grey50]·{LOC_TYPE_NAME.get(loc['type'], '')}[/]{danger}{fac}{svc}")
+                          f"[grey50]·{LOC_TYPE_NAME.get(loc['type'], '')}[/]{danger}{fac}{lm}{svc}")
             exits = loc.get("links", {})
             if exits:
                 ex = "、".join(f"{locs[d]['name']}{h}時" for d, h in exits.items())
                 node.add(f"[grey42]→ {ex}[/]")
-    legend = (f"[{FAINT}]★=所在 ◆城 ◇鎮 ✦地城 ·荒野 ⚠危險度 ?未到訪"
+    legend = (f"[{FAINT}]★=所在 ◆城 ◇鎮 ✦地城 ·荒野 ❖已發現地標 ⚠危險度 ?未到訪"
               "  服務:宿商訓法戰盜鐵板[/]")
     console.print(_panel(Group(tree, Rule(style=GOLD_DIM), Text.from_markup(legend)),
                          title="🗺 世界地圖"))

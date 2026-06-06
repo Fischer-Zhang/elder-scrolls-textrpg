@@ -99,6 +99,7 @@ class Character:
 
     # M6:一生軌跡(供傳奇總結)
     visited_locations: list = field(default_factory=list)
+    discovered_landmarks: list = field(default_factory=list)   # 已觸發首次發現的地標 loc_id(一次性守門)
 
     # M12:隊伍(雇用的傭兵同伴 template id;戰鬥時為你而戰)
     companions: list = field(default_factory=list)
@@ -200,6 +201,7 @@ class Character:
             "bounties": self.bounties, "npc_disposition": self.npc_disposition,
             "persuaded_npcs": self.persuaded_npcs,
             "visited_locations": self.visited_locations,
+            "discovered_landmarks": self.discovered_landmarks,
             "power_last_day": self.power_last_day, "tower_key_charge": self.tower_key_charge,
             "shop_stock": self.shop_stock, "shop_restock_at": self.shop_restock_at,
             "city_standing": self.city_standing, "thaneships": self.thaneships,
