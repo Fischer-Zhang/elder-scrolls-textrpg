@@ -65,9 +65,18 @@ def make_thane(char: Character, gamedata: GameData, loc_id: str) -> dict:
 
 
 def is_thane_in_province(char: Character, gamedata: GameData, province: str) -> bool:
-    """玩家是否為該行省內某城的武士(賞金寬待用)。"""
+    """玩家是否在該行省享有有效武士特權(賞金寬待用)。
+
+    階段四:武士所在城若**翻給敵方**(已選邊、且該城歸屬 ≠ 你的大義)→ 該城特權**暫停**;
+    城再翻回我方即自動恢復(可逆、不動 thaneships)。`char.allegiance` guard 必要:
+    未選邊時 faction_of 回種子立場,沒它會誤判所有武士城為翻敵 → 破壞未選邊玩家的特權。
+    """
+    from tesrpg.systems import politics    # 區域匯入避免循環(politics 只依 gamedata/models)
     for loc_id in char.thaneships:
         loc = gamedata.world["locations"].get(loc_id)
-        if loc and loc.get("province") == province:
-            return True
+        if not (loc and loc.get("province") == province):
+            continue
+        if char.allegiance and politics.faction_of(char, gamedata, loc_id) != char.allegiance:
+            continue                          # 該城已翻敵 → 此城武士特權暫停
+        return True
     return False

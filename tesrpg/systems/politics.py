@@ -186,7 +186,8 @@ TAX_HOURS = 168               # 徵稅週期(每約一週;與軍餉同節律但�
 TAX_PER_POP = 0.5             # 居民稅率:稅 = 居民數 × 此值
 GARRISON_MAINT_PER = 0.4      # 駐軍維護費率:支出 = 現存駐軍 × 此值(「守軍是支出維護費」)
 UNREST_DECAY = 10             # 每期占領駐軍流失(輕量叛亂計時)
-UNREST_WARN = 30              # 駐軍 ≤ 此 → 民心浮動(稅收中斷、將失守)
+GARRISON_REGEN_PER = 6        # 階段四:安定領地每期自動回補駐軍(< UNREST_DECAY → 淨仍 −4/期,不破叛亂計時)
+UNREST_WARN = 30              # 駐軍 ≤ 此 → 民心浮動(稅收中斷、將失守、不自動重建)
 GARRISON_REVOLT_AT = 0        # 駐軍 ≤ 此 → 城邦叛離(脫離掌握)
 REINFORCE_COST_PER = 4        # 加強駐軍:每補 1 兵的金幣
 
@@ -235,6 +236,18 @@ def reinforce_garrison(char: Character, gamedata: GameData, loc_id: str, n: int)
     return n
 
 
+def territory_overview(char: Character, gamedata: GameData, loc_id: str, now: int) -> dict:
+    """單城領地經營快照(供 court 面板與領地總覽共用)。countdown=距下次徵稅的小時(無紀錄→None)。"""
+    g = garrison_of(char, gamedata, loc_id)
+    maint = garrison_upkeep(char, gamedata, loc_id)
+    tax = city_tax(gamedata, loc_id)
+    due = char.tax_due_at.get(loc_id)
+    return {"loc": loc_id, "population": city_population(gamedata, loc_id), "tax": tax,
+            "garrison": g, "base": base_garrison(gamedata, loc_id), "maint": maint,
+            "net": tax - maint, "unrest": g <= UNREST_WARN,
+            "countdown": None if due is None else max(0, due - now)}
+
+
 def tick_tax(state, gamedata: GameData) -> list[dict]:
     """於 game_loop 每圈頂端(緊接軍餉)結算各佔領城的徵稅/維護/叛亂。
 
@@ -259,9 +272,12 @@ def tick_tax(state, gamedata: GameData) -> list[dict]:
                 char.tax_due_at.pop(loc, None)
                 events.append({"kind": "revolt", "loc": loc})
                 break
-            maint = round(g * GARRISON_MAINT_PER)
+            maint = round(g * GARRISON_MAINT_PER)                         # 維護以「本期領餉駐軍」(回補前)計
             unrest = g <= UNREST_WARN                                     # 民心浮動 → 稅收中斷
             tax = 0 if unrest else city_tax(gamedata, loc)
+            if not unrest:                                                # 階段四:安定領地自動緩慢重建
+                g = min(base_garrison(gamedata, loc), g + GARRISON_REGEN_PER)  # 夾 base;淨 −4/期(decay 贏)
+                char.garrison_current[loc] = g
             char.gold = max(0, char.gold + tax - maint)                   # 淨額入庫(夾 ≥0)
             char.tax_due_at[loc] += TAX_HOURS
             events.append({"kind": "tax", "loc": loc, "tax": tax, "maint": maint,

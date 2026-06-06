@@ -212,9 +212,12 @@ def test_conquer_records_cycle_and_collects_net():
     st.time.advance(politics.TAX_HOURS)
     evs = politics.tick_tax(st, gd)
     assert len(evs) == 1 and evs[0]["kind"] == "tax" and not evs[0]["unrest"]
-    g1 = g0 - politics.UNREST_DECAY                               # 先流失再收稅
-    assert politics.garrison_of(c, gd, "windhelm") == g1
-    tax = politics.city_tax(gd, "windhelm"); maint = round(g1 * politics.GARRISON_MAINT_PER)
+    g_decay = g0 - politics.UNREST_DECAY                          # 先流失
+    g_after = min(politics.base_garrison(gd, "windhelm"),         # 安定 → 階段四自動回補
+                  g_decay + politics.GARRISON_REGEN_PER)
+    assert politics.garrison_of(c, gd, "windhelm") == g_after and evs[0]["garrison"] == g_after
+    tax = politics.city_tax(gd, "windhelm")
+    maint = round(g_decay * politics.GARRISON_MAINT_PER)          # 維護以「回補前」駐軍計
     assert evs[0]["tax"] == tax and evs[0]["maint"] == maint and evs[0]["net"] == tax - maint
     assert c.gold == max(0, tax - maint)
 
@@ -248,7 +251,81 @@ def test_tick_tax_catches_up_multiple_periods():
     st.time.advance(politics.TAX_HOURS * 3)
     evs = politics.tick_tax(st, gd)
     assert len([e for e in evs if e["kind"] == "tax"]) == 3       # 補結 3 期(未潰散)
-    assert politics.garrison_of(c, gd, "windhelm") == g0 - 3 * politics.UNREST_DECAY
+    # 安定城每期淨 −(流失−回補)= −4(階段四自動重建後)
+    assert politics.garrison_of(c, gd, "windhelm") == g0 - 3 * (politics.UNREST_DECAY - politics.GARRISON_REGEN_PER)
+
+
+# === 階段四:駐軍自動緩慢重建 ===
+def test_garrison_regen_on_stable_city():
+    gd, c = _setup(); politics.pledge(c, "imperial"); c.gold = 0
+    st = _state(c); politics.conquer(c, gd, "windhelm", now=st.time.absolute_hours())
+    c.garrison_current["windhelm"] = 200          # 遠高於 UNREST_WARN → 安定
+    st.time.advance(politics.TAX_HOURS)
+    e = politics.tick_tax(st, gd)[0]
+    assert not e["unrest"]
+    assert politics.garrison_of(c, gd, "windhelm") == 200 - politics.UNREST_DECAY + politics.GARRISON_REGEN_PER  # 淨 −4
+    assert politics.garrison_of(c, gd, "windhelm") <= politics.base_garrison(gd, "windhelm")        # 永不超 base
+
+
+def test_regen_blocked_under_unrest():
+    """關鍵不變式:民心浮動(駐軍 ≤ WARN)時不自動重建 → 叛亂計時零削弱。"""
+    gd, c = _setup(); politics.pledge(c, "imperial")
+    st = _state(c); politics.conquer(c, gd, "windhelm", now=st.time.absolute_hours())
+    c.garrison_current["windhelm"] = politics.UNREST_WARN + politics.UNREST_DECAY   # 流失後恰 = WARN
+    st.time.advance(politics.TAX_HOURS)
+    e = politics.tick_tax(st, gd)[0]
+    assert e["unrest"]
+    assert politics.garrison_of(c, gd, "windhelm") == politics.UNREST_WARN          # 停在 WARN,未 +regen
+
+
+def test_neglected_city_revolts_despite_regen():
+    """被忽視的城仍會一路衰減到造反 —— 自動重建不讓領地變不死。"""
+    gd, c = _setup(); politics.pledge(c, "imperial")
+    st = _state(c); politics.conquer(c, gd, "windhelm", now=st.time.absolute_hours())
+    c.garrison_current["windhelm"] = politics.UNREST_WARN + 5     # 一旦進浮動帶就不再重建
+    st.time.advance(politics.TAX_HOURS * 6)                       # 放任數週
+    evs = politics.tick_tax(st, gd)
+    assert any(e["kind"] == "revolt" for e in evs)
+    assert "windhelm" not in politics.held_tax_cities(c, gd)
+
+
+# === 階段四:領地全局總覽 ===
+def test_territory_overview_helper():
+    gd, c = _setup(); politics.pledge(c, "imperial")
+    st = _state(c); now = st.time.absolute_hours()
+    politics.conquer(c, gd, "windhelm", now=now)
+    ov = politics.territory_overview(c, gd, "windhelm", now)
+    assert ov["loc"] == "windhelm" and ov["countdown"] == politics.TAX_HOURS    # 距下次徵稅
+    assert ov["population"] == gd.rulers["windhelm"]["population"]
+    assert ov["base"] == gd.rulers["windhelm"]["garrison"] and not ov["unrest"]
+    assert ov["net"] == ov["tax"] - ov["maint"]
+    del c.tax_due_at["windhelm"]
+    assert politics.territory_overview(c, gd, "windhelm", now)["countdown"] is None   # 無紀錄 → None
+
+
+def test_action_territory_lists_only_conquered_and_reinforces():
+    """🔴 紅線 + 端到端:總覽只列攻下城(非盟城),且可遠程加強駐軍。"""
+    import tesrpg.main as M
+    from tesrpg.ui import console as ui
+    gd, c = _setup(); politics.pledge(c, "imperial"); c.gold = 10000
+    c.location_id = "bruma"                                   # 人在別處 → 證明遠程回防
+    st = _state(c); politics.conquer(c, gd, "windhelm", now=st.time.absolute_hours())
+    base = politics.base_garrison(gd, "windhelm")
+    c.garrison_current["windhelm"] = base - 30
+    captured = {}
+    saved = (ui.territory_panel, ui.menu, ui.ask_int, ui.message)
+    ui.territory_panel = lambda rows, gamedata, gold: captured.update(rows=rows)
+    mseq = iter(["windhelm", None])                          # 選 windhelm 加強 → 再返回
+    ui.menu = lambda *a, **k: next(mseq, None)
+    ui.ask_int = lambda *a, **k: 20
+    ui.message = lambda *a, **k: None
+    try:
+        M.action_territory(st, gd)
+    finally:
+        ui.territory_panel, ui.menu, ui.ask_int, ui.message = saved
+    locs = [r["loc"] for r in captured["rows"]]
+    assert locs == ["windhelm"]                              # 只列攻下城,盟城(bruma 等)不列
+    assert politics.garrison_of(c, gd, "windhelm") == base - 10   # 遠程加強 +20
 
 
 def test_reinforce_caps_and_costs():
@@ -337,6 +414,11 @@ def run():
     test_unrest_suspends_tax_but_charges_maint()
     test_garrison_decays_and_city_revolts()
     test_tick_tax_catches_up_multiple_periods()
+    test_garrison_regen_on_stable_city()
+    test_regen_blocked_under_unrest()
+    test_neglected_city_revolts_despite_regen()
+    test_territory_overview_helper()
+    test_action_territory_lists_only_conquered_and_reinforces()
     test_reinforce_caps_and_costs()
     test_tax_due_at_save_roundtrip()
     test_legacy_counts_dominion()

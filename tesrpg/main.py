@@ -1273,14 +1273,8 @@ def action_court(state: GameState, gamedata: GameData) -> str | None:
            "relation": politics.REL_LABEL.get(rel, rel),
            "garrison": politics.garrison_of(char, gamedata, loc_id)}
     held = loc_id in politics.held_tax_cities(char, gamedata)   # 你親手攻下的城 → 顯示領地經營
-    territory = None
-    if held:
-        g = politics.garrison_of(char, gamedata, loc_id)
-        maint = politics.garrison_upkeep(char, gamedata, loc_id)
-        tax = politics.city_tax(gamedata, loc_id)
-        territory = {"population": politics.city_population(gamedata, loc_id), "tax": tax,
-                     "garrison": g, "base": politics.base_garrison(gamedata, loc_id),
-                     "maint": maint, "net": tax - maint, "unrest": g <= politics.UNREST_WARN}
+    territory = (politics.territory_overview(char, gamedata, loc_id, state.time.absolute_hours())
+                 if held else None)
     ui.court_panel(ruler, gamedata, _court_reception(char),
                    standing=court.standing(char, loc_id), thane=court.is_thane(char, loc_id),
                    politics=pol, territory=territory)
@@ -1475,6 +1469,28 @@ def action_warband(state: GameState, gamedata: GameData) -> None:
             char.companions.append(cid)
             ui.message(f"{gamedata.companions[cid]['name']}受你延攬,從此為你執掌一軍。", style="bold green")
     return None
+
+
+def action_territory(state: GameState, gamedata: GameData) -> None:
+    """領地總覽(城戰階段四):一覽所有親手攻下的城,並可就地遠程加強任一城駐軍。"""
+    char = state.player
+    while True:
+        cities = politics.held_tax_cities(char, gamedata)   # 🔴 紅線:只認攻下的城,絕不可 held_cities
+        if not cities:
+            ui.message("你目前沒有親手攻下的領地。", style="grey70")
+            return
+        now = state.time.absolute_hours()
+        rows = [politics.territory_overview(char, gamedata, loc, now) for loc in cities]
+        ui.territory_panel(rows, gamedata, char.gold)
+        opts = [(loc, f"加強駐軍:{gamedata.location(loc)['name']}")
+                for loc in cities if politics.can_reinforce(char, gamedata, loc)]
+        if not opts:
+            ui.message("各城駐軍皆已滿,或金幣不足以增兵。", style="grey70")
+            return
+        choice = ui.menu("領地總覽 🏰 —— 加強哪座城的駐軍?", opts, allow_back=True)
+        if choice is None:
+            return
+        _reinforce_garrison(state, gamedata, choice)        # 複用逐城回防(含時間推進/訊息)
 
 
 def _become_thane(state: GameState, gamedata: GameData, loc_id: str, ruler: dict) -> None:
@@ -2070,6 +2086,8 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
         # --- 角色與物品 ---
         character: list = [("quests", "任務日誌"), ("inventory", "背包"),
                            ("practice", "練習技能"), ("rest", "原地休息"), ("sheet", "角色卡")]
+        if politics.held_tax_cities(player, gamedata):   # 有親手攻下的城 → 領地總覽(階段四)
+            character.insert(0, ("territory", "領地總覽 🏰"))
         if warband.is_warlord(player, gamedata):     # 領主/首領 → 招兵買馬(整軍經武)
             character.insert(0, ("warband", "整軍經武 ⚑"))
         if player.can_level_up():
@@ -2149,6 +2167,8 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
             action_practice(state, gamedata)
         elif choice == "warband":
             action_warband(state, gamedata)
+        elif choice == "territory":
+            action_territory(state, gamedata)
         elif choice == "rest":
             died = action_rest(state, gamedata)
         elif choice == "sheet":

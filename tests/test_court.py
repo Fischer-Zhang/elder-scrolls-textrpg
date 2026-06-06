@@ -134,6 +134,60 @@ def test_thane_bounty_leniency_in_province():
     assert crime.bounty(c, province) == 0               # 小額賞金一筆勾銷
 
 
+# --- 階段四:武士所在城翻敵 → 特權暫停(可逆)----------------------------
+def test_thane_privilege_suspended_when_city_flips():
+    from tesrpg.systems import politics
+    gd, c = _setup()
+    province = gd.world["locations"]["bruma"]["province"]
+    court.make_thane(c, gd, "bruma")
+    politics.pledge(c, "imperial")                          # 布魯瑪種子立場=imperial → 同盟
+    assert court.is_thane_in_province(c, gd, province)      # 同盟城 → 武士特權有效
+    c.city_faction["bruma"] = "independent"                 # 該城翻給敵方
+    assert not court.is_thane_in_province(c, gd, province)  # 特權暫停
+
+
+def test_thane_privilege_restored_when_city_reflips():
+    from tesrpg.systems import politics
+    gd, c = _setup()
+    province = gd.world["locations"]["bruma"]["province"]
+    court.make_thane(c, gd, "bruma"); politics.pledge(c, "imperial")
+    c.city_faction["bruma"] = "independent"
+    assert not court.is_thane_in_province(c, gd, province)
+    c.city_faction["bruma"] = "imperial"                    # 城再翻回我方
+    assert court.is_thane_in_province(c, gd, province)      # 特權自動恢復(可逆)
+    assert "bruma" in c.thaneships                          # thaneships 全程未變(非銷毀)
+
+
+def test_thane_privilege_intact_before_pledge():
+    gd, c = _setup()
+    province = gd.world["locations"]["bruma"]["province"]
+    court.make_thane(c, gd, "bruma")
+    assert c.allegiance == ""
+    assert court.is_thane_in_province(c, gd, province)      # 未選邊 → 特權照常(allegiance guard)
+
+
+def test_thane_suspended_blocks_guard_forgive():
+    import tesrpg.main as M
+    from tesrpg.ui import console as ui
+    from tesrpg.systems import politics
+    gd, c = _setup()
+    province = gd.world["locations"]["bruma"]["province"]
+    court.make_thane(c, gd, "bruma"); politics.pledge(c, "imperial")
+    c.city_faction["bruma"] = "independent"                 # 翻敵 → 特權暫停
+    crime.add_bounty(c, province, 50)
+    state = GameState(player=c, rng=RNG(1), game_mode="adventure")
+    msgs = []; saved = (ui.menu, ui.message)
+    ui.message = lambda m="", **k: msgs.append(m)
+    ui.menu = lambda *a, **k: "jail"                        # 入獄服刑了結(非特權勾銷)
+    try:
+        M.guard_confrontation(state, gd)
+    finally:
+        ui.menu, ui.message = saved
+    assert not any("武士閣下" in m for m in msgs)            # 未走武士寬待
+    assert any("束手就擒" in m for m in msgs)                # 走一般攔查
+    assert crime.bounty(c, province) == 0                   # 改由服刑了結
+
+
 # --- 存檔向後相容 --------------------------------------------------------
 def test_save_roundtrip_and_backward_compat():
     import json
@@ -155,6 +209,10 @@ def run():
     test_ruler_quests_open_in_order_and_grant_standing()
     test_thaneship_grants_gift_and_housecarl()
     test_thane_bounty_leniency_in_province()
+    test_thane_privilege_suspended_when_city_flips()
+    test_thane_privilege_restored_when_city_reflips()
+    test_thane_privilege_intact_before_pledge()
+    test_thane_suspended_blocks_guard_forgive()
     test_save_roundtrip_and_backward_compat()
 
 

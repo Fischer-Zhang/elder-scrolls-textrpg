@@ -511,6 +511,30 @@ def court_panel(ruler: dict, gamedata: GameData, reception: str,
     console.print(_panel(body, title=f"👑 {ruler['title']}·{ruler['name']}", style=GOLD))
 
 
+def territory_panel(rows: list[dict], gamedata: GameData, gold: int) -> None:
+    """領地總覽:一覽所有親手攻下的城(階段四)。rows = politics.territory_overview 結果清單。"""
+    tbl = Table(box=box.SIMPLE_HEAD, pad_edge=False, padding=(0, 1),
+                border_style=GOLD_DIM, expand=True)
+    for h in ("城邦", "居民", "週稅", "駐軍", "維護", "淨收", "民心", "下次徵稅"):
+        tbl.add_column(h, header_style=f"bold {GOLD}", style=PARCH)
+    for r in rows:
+        name = gamedata.location(r["loc"])["name"]
+        cd = r["countdown"]
+        cd_s = "—" if cd is None else f"{cd // 24}天{cd % 24}時"
+        if r["unrest"]:
+            heart, net_s = "[red]浮動[/]", "[red]稅斷[/]"
+            gar = f"[red]{r['garrison']}/{r['base']}[/]"
+        else:
+            heart = "[green]安定[/]"
+            net_s = f"[{'green' if r['net'] >= 0 else 'red'}]{r['net']:+d}[/]"
+            gar = f"{r['garrison']}/{r['base']}"
+        tbl.add_row(name, str(r["population"]), str(r["tax"]), gar,
+                    str(r["maint"]), net_s, heart, cd_s)
+    console.print(_panel(Group(tbl, Rule(style=GOLD_DIM),
+                               Text(f"金庫 {gold} 金", style=GOLD)),
+                         title="🏰 領地總覽", style=GOLD))
+
+
 def dungeon_room(name: str, idx: int, total: int, desc: str, is_boss: bool = False) -> None:
     tag = "✦ 首領 ✦" if is_boss else f"第 {idx}/{total} 室"
     console.print(_panel(Text(desc, style=PARCH),
