@@ -694,6 +694,80 @@
     "loot": [{"item": "glass_dagger", "chance": 0.5}, {"item": "filled_greater_soul_gem", "chance": 0.4}, {"item": "gold_amulet", "chance": 0.3}],
     "flavor": "你曾奉其號令的聖所代言人,夜母之意的轉述者 —— 如今刀鋒相向,他眼中只有冷冽的了然。"
   },
+  "faithful_of_nine": {
+    "name": "九神信徒", "strength": 40, "agility": 40, "speed": 38,
+    "max_health": 50, "armor_rating": 10,
+    "attack": {"name": "祈禱者之杖", "damage": 10, "skill": 42},
+    "danger": 3, "min_level": 99, "weight": 0,
+    "resist": {"magic": 15},
+    "loot_gold": [20, 60],
+    "loot": [{"item": "gold_ring", "chance": 0.3}, {"item": "healing_potion", "chance": 0.3}],
+    "flavor": "一名虔信九聖的信徒,口中念著阿卡托什的禱詞 —— 在神話黎明眼中,正是該被焚祭的舊神餘孽。"
+  },
+  "blade_agent": {
+    "name": "刀刃密探", "strength": 46, "agility": 60, "speed": 58,
+    "max_health": 62, "armor_rating": 14,
+    "attack": {"name": "刀刃突襲", "damage": 14, "skill": 54,
+               "on_hit": {"status": "dot", "element": "bleed", "magnitude": 3, "turns": 3, "chance": 0.35}},
+    "danger": 4, "min_level": 99, "weight": 0,
+    "loot_gold": [30, 70],
+    "loot": [{"item": "silver_ring", "chance": 0.3}, {"item": "healing_potion", "chance": 0.4}],
+    "flavor": "一名隸屬『刀刃』的帝國密探,奉命追查聖堂的下落 —— 身手矯健,出手見血。"
+  },
+  "xarxes_necromancer": {
+    "name": "黑蠕蟲死靈", "strength": 38, "agility": 48, "speed": 44,
+    "max_health": 70, "armor_rating": 6,
+    "attack": {"name": "枯萎觸擊", "damage": 18, "skill": 58, "element": "shock",
+               "on_hit": {"status": "dot", "element": "shock", "magnitude": 3, "turns": 3, "chance": 0.45}},
+    "danger": 4, "min_level": 99, "weight": 0,
+    "resist": {"magic": 25, "poison": 30},
+    "loot_gold": [40, 90],
+    "loot": [{"item": "filled_common_soul_gem", "chance": 0.4}, {"item": "magicka_staff", "chance": 0.15}],
+    "flavor": "黑蠕蟲教團的死靈法師,偷走了《魔典》殘卷 —— 指尖纏繞著竊取自亡者的奧術。"
+  },
+  "knight_paladin": {
+    "name": "九神聖騎士", "strength": 60, "agility": 42, "speed": 38,
+    "max_health": 130, "armor_rating": 30,
+    "attack": {"name": "聖光劈斬", "damage": 20, "skill": 58},
+    "danger": 5, "min_level": 99, "weight": 0,
+    "resist": {"magic": 20, "fire": 20},
+    "loot_gold": [60, 130],
+    "loot": [{"item": "gold_amulet", "chance": 0.25}, {"item": "healing_potion", "chance": 0.5}],
+    "flavor": "一名九神的聖騎士,重甲在身、聖光護體 —— 舊秩序最堅實的盾牌,擋在湮滅之門前。"
+  },
+  "high_priest_of_nine": {
+    "name": "九神大祭司", "strength": 42, "agility": 46, "speed": 44,
+    "max_health": 150, "armor_rating": 14,
+    "attack": {"name": "聖裁之火", "damage": 24, "skill": 64, "element": "fire",
+               "on_hit": {"status": "dot", "element": "fire", "magnitude": 4, "turns": 3, "chance": 0.45}},
+    "danger": 5, "min_level": 99, "weight": 0,
+    "resist": {"magic": 30, "fire": 25},
+    "loot_gold": [90, 180],
+    "loot": [{"item": "gold_amulet", "chance": 0.4}, {"item": "filled_greater_soul_gem", "chance": 0.3}, {"item": "healing_potion", "chance": 0.5}],
+    "flavor": "九神教會的大祭司,舊神信仰的中流砥柱 —— 他的聖火,曾照亮三省無數虔誠的心。"
+  },
+  "mythic_apostate": {
+    "name": "神話叛教者", "strength": 58, "agility": 60, "speed": 58,
+    "max_health": 140, "armor_rating": 18,
+    "attack": {"name": "赤袍淬刃", "damage": 26, "skill": 64,
+               "on_hit": {"status": "dot", "element": "poison", "magnitude": 5, "turns": 3, "chance": 0.5}},
+    "danger": 5, "min_level": 99, "weight": 0,
+    "resist": {"fire": 30},
+    "loot_gold": [70, 150],
+    "loot": [{"item": "glass_dagger", "chance": 0.4}, {"item": "filled_greater_soul_gem", "chance": 0.3}],
+    "flavor": "一名對達貢的恩典生了疑的信徒,深諳聖堂的祕辛 —— 他知道你為何而來,絕不會束手就擒。"
+  },
+  "dawn_mentor": {
+    "name": "黎明導師", "strength": 50, "agility": 54, "speed": 52,
+    "max_health": 165, "armor_rating": 16,
+    "attack": {"name": "湮滅之炎", "damage": 27, "skill": 66, "element": "fire",
+               "on_hit": {"status": "dot", "element": "fire", "magnitude": 5, "turns": 3, "chance": 0.5}},
+    "danger": 5, "min_level": 99, "weight": 0,
+    "resist": {"fire": 50, "magic": 20},
+    "loot_gold": [90, 180],
+    "loot": [{"item": "ebony_sword", "chance": 0.3}, {"item": "filled_greater_soul_gem", "chance": 0.4}, {"item": "gold_amulet", "chance": 0.3}],
+    "flavor": "傳授你達貢教義的導師,赤袍下藏著《魔典》的真意 —— 如今你的刀,指向了引你入道的人。"
+  },
   "imperial_ghost": {
     "biomes": ["heartland"], "name": "帝國亡魂", "strength": 35, "agility": 56, "speed": 52,
     "max_health": 24, "armor_rating": 6,

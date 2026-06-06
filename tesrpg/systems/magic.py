@@ -11,7 +11,7 @@ from tesrpg import formulas
 from tesrpg.gamedata import GameData
 from tesrpg.models import Character
 from tesrpg.rng import RNG
-from tesrpg.systems import mastery, progression, stats
+from tesrpg.systems import factions, mastery, progression, stats
 
 CAST_XP = 0.5
 SOUL_GEM_BY_DANGER = {
@@ -169,9 +169,15 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
         else:
             from tesrpg.systems import combat
             ally = combat.spawn_creature(gamedata, eff["creature"], rng)
-            ally.summon_turns = eff["turns"]
+            boon = factions.conjure_boon(char, gamedata)   # 神話黎明:達貢之佑強化召喚物
+            if boon > 0:
+                ally.max_health = max(1, round(ally.max_health * (1 + boon)))
+                ally.health = ally.max_health
+            bonus_turns = int(boon * 3)                     # 約每 +33% 增幅 → 多駐留 1 回合(最高 +1)
+            ally.summon_turns = eff["turns"] + bonus_turns
             battle.setdefault("allies", []).append(ally)
-            msg = f"你召喚出了{ally.name},它將為你而戰({eff['turns']} 回合)。"
+            blessed = "(達貢之佑加持)" if boon > 0 else ""
+            msg = f"你召喚出了{ally.name}{blessed},它將為你而戰({ally.summon_turns} 回合)。"
 
     stats.clamp_resources(char)
     skill_events = progression.use_skill(char, gamedata, sp["school"], CAST_XP)

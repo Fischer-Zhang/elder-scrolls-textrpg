@@ -856,6 +856,86 @@
       }
     ]
   },
+  "md1": {
+    "name": "獻祭:焚祭信徒",
+    "faction": "mythic_dawn",
+    "rank": 0,
+    "source": "guild",
+    "objective": {"type": "kill", "creature": "faithful_of_nine", "count": 1},
+    "reward": {"gold": 120},
+    "clean_bonus": 60,
+    "turn_in": "auto",
+    "text": "你的第一份試煉 —— 一名虔信九神的信徒。以他的性命為祭,證明你已棄絕舊神、皈依達貢。到聖堂選『執行合約』動手;若能不驚動旁人、一擊斃命,信徒之血更為純淨,額外有賞。"
+  },
+  "md2": {
+    "name": "獻祭:拔除耳目",
+    "faction": "mythic_dawn",
+    "rank": 1,
+    "source": "guild",
+    "objective": {"type": "kill", "creature": "blade_agent", "count": 1},
+    "reward": {"gold": 180},
+    "clean_bonus": 90,
+    "turn_in": "auto",
+    "text": "帝國的『刀刃』密探嗅到了聖堂的氣息。他身手矯健、見多識廣 —— 在他把情報送回紅寶石王座之前,讓他永遠閉嘴。"
+  },
+  "md3": {
+    "name": "獻祭:奪回殘頁",
+    "faction": "mythic_dawn",
+    "rank": 2,
+    "source": "guild",
+    "objective": {"type": "kill", "creature": "xarxes_necromancer", "count": 1},
+    "reward": {"gold": 250},
+    "clean_bonus": 120,
+    "turn_in": "auto",
+    "text": "黑蠕蟲教團的死靈法師偷走了一頁《魔典》殘卷。曼卡要那頁殘卷物歸原主 —— 連同竊賊的靈魂一起。"
+  },
+  "md4": {
+    "name": "獻祭:折斷聖盾",
+    "faction": "mythic_dawn",
+    "rank": 3,
+    "source": "guild",
+    "objective": {"type": "kill", "creature": "knight_paladin", "count": 1},
+    "reward": {"gold": 350},
+    "clean_bonus": 160,
+    "escort": ["city_guard"],
+    "turn_in": "auto",
+    "text": "一名九神的聖騎士擋在湮滅之門前,身邊還有衛兵護衛。重甲難破、聖光護身 —— 但達貢的烈焰,終將熔穿一切信仰。"
+  },
+  "md5": {
+    "name": "獻祭:滅神之火",
+    "faction": "mythic_dawn",
+    "rank": 4,
+    "source": "guild",
+    "objective": {"type": "kill", "creature": "high_priest_of_nine", "count": 1},
+    "reward": {"gold": 500},
+    "clean_bonus": 220,
+    "turn_in": "auto",
+    "text": "九神教會的大祭司,舊秩序的中流砥柱。斬斷他,便斬斷凡人對舊神最後的指望 —— 這一把火,將照亮黎明的到來。"
+  },
+  "md6": {
+    "name": "曼卡的試煉",
+    "faction": "mythic_dawn",
+    "rank": 5,
+    "source": "guild",
+    "turn_in": "auto",
+    "text": "曼卡·卡莫蘭親自過問你的名字。但通往『門徒』之位的最後試煉,逼你抉擇:是忠於達貢、清除動搖的叛教者,還是奪走《魔典》、自立為神話黎明的新主?",
+    "branches": [
+      {
+        "label": "忠誠之路 —— 清除叛教者",
+        "text": "一名信徒對達貢的恩典生了疑。在他逃出聖堂、洩漏天機之前,以湮滅之名將他焚盡 —— 證明你的忠誠。",
+        "objective": {"type": "kill", "creature": "mythic_apostate", "count": 1},
+        "clean_bonus": 300,
+        "reward": {"gold": 700, "fame": 15, "items": ["ebony_sword"]}
+      },
+      {
+        "label": "奪典之路 —— 自立為主",
+        "text": "你不甘屈居人下。趁夜潛入內殿,殺了傳授你教義的導師、奪走《魔典》—— 從此神話黎明只奉你為尊。",
+        "objective": {"type": "kill", "creature": "dawn_mentor", "count": 1},
+        "clean_bonus": 300,
+        "reward": {"gold": 800, "items": ["ebony_sword", "gold_amulet"]}
+      }
+    ]
+  },
   "ruler_bruma1": {
     "name": "領主委託:雪原狼患", "faction": null, "rank": null, "source": "ruler",
     "objective": {"type": "kill", "creature": "wolf", "count": 6},

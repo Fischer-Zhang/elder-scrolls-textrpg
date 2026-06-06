@@ -66,6 +66,10 @@ def join_block_reason(char: Character, gamedata: GameData, faction_id: str) -> s
     f = gamedata.factions[faction_id]
     if is_member(char, faction_id):
         return "你已是會員。"
+    # 大事件解鎖:某些組織(如神話黎明)須待 world_events_fired 含指定大事件後才現身/可入會
+    unlock_event = f.get("unlock_event")
+    if unlock_event and unlock_event not in getattr(char, "world_events_fired", []):
+        return "此處空無一人 —— 改變世道的大事件尚未到來,這個組織還隱於陰影之中。"
     rivals = joined_rivals(char, gamedata, faction_id)
     if rivals:
         names = "、".join(gamedata.factions[r]["name"] for r in rivals)
@@ -143,6 +147,11 @@ def spell_discount(char: Character, gamedata: GameData) -> float:
 def sell_bonus(char: Character, gamedata: GameData) -> float:
     """盜賊公會:出售(銷贓)價的加成比例(0..1)。"""
     return _best_perk(char, gamedata, "sell_bonus")
+
+
+def conjure_boon(char: Character, gamedata: GameData) -> float:
+    """神話黎明:達貢之佑 —— 召喚物生命/駐留的強化比例(0..cap)。"""
+    return _best_perk(char, gamedata, "conjure_boon")
 
 
 def perk_desc(char: Character, gamedata: GameData, faction_id: str) -> str | None:

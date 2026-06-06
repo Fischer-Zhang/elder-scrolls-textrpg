@@ -1085,12 +1085,17 @@ def action_vampire_cure(state: GameState, gamedata: GameData) -> None:
 # ======================================================================
 # 黑暗兄弟會聖所(合約晉升 + 夜母祝福 + 洗白賞金)
 # ======================================================================
-def _active_db_quest(state: GameState, gamedata: GameData) -> str | None:
-    """目前進行中的黑暗兄弟會合約 id(沒有則 None)。"""
+def _active_faction_quest(state: GameState, gamedata: GameData, faction_id: str) -> str | None:
+    """目前進行中、屬於某公會的任務 id(沒有則 None)。"""
     for qid in state.player.quests:
-        if gamedata.quests.get(qid, {}).get("faction") == brotherhood.FACTION:
+        if gamedata.quests.get(qid, {}).get("faction") == faction_id:
             return qid
     return None
+
+
+def _active_db_quest(state: GameState, gamedata: GameData) -> str | None:
+    """目前進行中的黑暗兄弟會合約 id(沒有則 None)。"""
+    return _active_faction_quest(state, gamedata, brotherhood.FACTION)
 
 
 def action_sanctuary(state: GameState, gamedata: GameData) -> str | None:
@@ -1180,8 +1185,68 @@ def action_contract(state: GameState, gamedata: GameData, qid: str) -> str | Non
         bonus = rq.get("clean_bonus", 0)
         if bonus:
             char.gold += bonus
-            ui.message(f"無人目擊、一擊致命 —— 兄弟會額外賞你 {bonus} 金。", style="bold green")
+            ui.message(f"無人目擊、一擊致命 —— 額外賞你 {bonus} 金。", style="bold green")
     return None
+
+
+# ======================================================================
+# 神話黎明聖堂(達貢邪教:入會 + 獻祭合約晉升;大事件解鎖)
+# ======================================================================
+_MYTHIC_DAWN_VERSES = [
+    "「諸界皆達貢之夢,凡塵不過待焚的薪柴。」",
+    "「九聖是牢籠,湮滅之門才是解脫之路。」",
+    "「於黎明破曉之時,曼卡將領我等步入天堂。」",
+]
+
+
+def action_mythic_dawn(state: GameState, gamedata: GameData) -> str | None:
+    """神話黎明聖堂:入會、領受/執行『獻祭』合約、聆聽《魔典》箴言。回傳 'dead'|None。"""
+    char = state.player
+    FAC = "mythic_dawn"
+    _report_quests(state, gamedata)   # 先結算可能已交付的合約
+    ui.guild_panel(char, gamedata, FAC)
+
+    if not factions.is_member(char, FAC):
+        reason = factions.join_block_reason(char, gamedata, FAC)
+        if reason is not None:
+            ui.message(reason, style="yellow")
+            return None
+        if ui.confirm("赤袍信徒自陰影中低語:「米拉克·達貢在等你。可願棄絕舊神、皈依神話黎明?」"):
+            factions.join(char, FAC)
+            ui.message(f"你誦下達貢的誓言,成為神話黎明的「{factions.rank_name(char, gamedata, FAC)}」。",
+                       style="bold green")
+        return None
+
+    while True:
+        opts: list = []
+        active = _active_faction_quest(state, gamedata, FAC)
+        if active:
+            obj, _, _ = quests.current_objective(char, gamedata, active)
+            tname = gamedata.bestiary[obj["creature"]]["name"]
+            opts.append(("execute", f"執行獻祭 —— 行刺{tname}"))
+        else:
+            avail = quests.available_quests(char, gamedata, "guild", FAC)
+            if avail:
+                opts.append(("accept", "領受新的獻祭"))
+            else:
+                ui.message(factions.advance_block_reason(char, gamedata, FAC)
+                           or "聖堂目前沒有交付給你的獻祭。", style="grey70")
+        opts.append(("verses", "聆聽《魔典》箴言"))
+        choice = ui.menu("神話黎明聖堂", opts, allow_back=True)
+        if choice is None:
+            return None
+        if choice == "accept":
+            avail = quests.available_quests(char, gamedata, "guild", FAC)
+            if avail:
+                _accept_and_brief(state, gamedata, avail[0])
+        elif choice == "execute":
+            died = action_contract(state, gamedata, active)
+            if died == "dead":
+                return "dead"
+        elif choice == "verses":
+            ui.message("赤袍信徒誦讀《魔典》:", style="bold red")
+            for line in _MYTHIC_DAWN_VERSES:
+                ui.message(f"  {line}", style="white")
 
 
 def _hire_mercenary(state: GameState, gamedata: GameData) -> None:
@@ -2063,6 +2128,10 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
         # 黑暗兄弟會聖所:唯有入會者才知其所在(血債招募後解鎖)
         if "dark_brotherhood" in services and brotherhood.is_member(player):
             guilds.append(("db_hall", "黑暗兄弟會聖所 🗡"))
+        # 神話黎明聖堂:唯有「凱瓦奇陷落」大事件後,信徒才自陰影中現身
+        if ("mythic_dawn" in services
+                and politics.DAEDRIC_UNLOCK_EVENT in getattr(player, "world_events_fired", [])):
+            guilds.append(("md_hall", "神話黎明 🔥"))
         if player.is_vampire and loc["type"] in ("town", "city"):
             plaza.append(("feed", "🩸 吸血進食(獵取活人,重置飢餓)"))
         if "inn" in services and not shunned:
@@ -2157,6 +2226,8 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
             action_guild_hall(state, gamedata, "thieves_guild")
         elif choice == "db_hall":
             died = action_sanctuary(state, gamedata)
+        elif choice == "md_hall":
+            died = action_mythic_dawn(state, gamedata)
         elif choice == "board":
             action_board(state, gamedata)
         elif choice == "talk":
