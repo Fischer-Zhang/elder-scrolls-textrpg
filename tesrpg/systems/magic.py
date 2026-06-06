@@ -84,7 +84,8 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
             msg += f" {target.name}{_status_verb(eff['status'])}!"
 
     elif kind == "heal":
-        amt = round(eff["magnitude"] * power)
+        # 九神騎士團:聖光眷顧 —— 治療回復量隨階級放大(只對會員;乘在溢盾計算之前)
+        amt = round(eff["magnitude"] * power * (1 + factions.restoration_boon(char, gamedata)))
         before = char.health
         char.health = min(char.max_health, char.health + amt)
         msg = f"{sp['name']}回復了 {int(char.health - before)} 點生命。"

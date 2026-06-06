@@ -91,7 +91,7 @@
     "gate_skills": ["sneak", "marksman", "blade", "acrobatics", "scout"],
     "join_skill": 0,
     "rank_skill_req": [0, 12, 22, 34, 46, 58],
-    "rivals": ["fighters_guild"],
+    "rivals": ["fighters_guild", "knights_nine"],
     "lawful": false,
     "perk": {"kind": "bounty_launder", "per_rank": 0.12, "cap": 0.7,
              "desc": "階級越高,兄弟會替你擺平官府、洗白賞金的花費越低"},
@@ -121,7 +121,7 @@
     "gate_skills": ["conjuration", "destruction", "blade", "sneak", "mysticism"],
     "join_skill": 10,
     "rank_skill_req": [0, 12, 24, 36, 48, 60, 72],
-    "rivals": ["fighters_guild"],
+    "rivals": ["fighters_guild", "knights_nine"],
     "lawful": false,
     "perk": {"kind": "conjure_boon", "per_rank": 0.10, "cap": 0.6,
              "desc": "達貢之佑 —— 階級越高,你召喚的魔人/匯生物生命越強韌、駐留越久"},
@@ -141,6 +141,36 @@
       "md4",
       "md5",
       "md6"
+    ]
+  },
+  "knights_nine": {
+    "name": "九神騎士團",
+    "hall": "anvil",
+    "unlock_event": "kvatch_falls",
+    "blurb": "奉九聖之名重組的聖騎士團,承繼無翼者佩利納爾的遺志與十字軍的聖徽。當湮滅之門裂於凱瓦奇、邪教自陰影中崛起,沉寂已久的聖團於安維爾的九聖小修道院再度集結 —— 以聖光與鋼鐵,守護這將傾的秩序。與神話黎明、黑暗兄弟會勢不兩立。",
+    "gate_skills": ["block", "heavy_armor", "restoration", "blade", "blunt"],
+    "join_skill": 10,
+    "rank_skill_req": [0, 12, 24, 36, 48, 60, 72],
+    "rivals": ["mythic_dawn", "dark_brotherhood"],
+    "lawful": true,
+    "perk": {"kind": "restoration_boon", "per_rank": 0.07, "cap": 0.35,
+             "desc": "聖光眷顧 —— 階級越高,治療法術回復的生命越多"},
+    "ranks": [
+      "見習騎士",
+      "侍從騎士",
+      "聖殿騎士",
+      "聖徽守衛",
+      "九聖聖騎士",
+      "聖團執旗官",
+      "九聖騎士團長"
+    ],
+    "rank_quests": [
+      "kn1",
+      "kn2",
+      "kn3",
+      "kn4",
+      "kn5",
+      "kn6"
     ]
   }
 }

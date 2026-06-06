@@ -936,6 +936,78 @@
       }
     ]
   },
+  "kn1": {
+    "name": "聖戰:肅清瀆神者",
+    "faction": "knights_nine",
+    "rank": 0,
+    "source": "guild",
+    "objective": {"type": "kill", "creature": "corrupt_priest", "count": 1},
+    "reward": {"gold": 120, "fame": 6},
+    "turn_in": "auto",
+    "text": "你的第一場聖戰 —— 一名背棄九聖、改奉魔神的墮落祭司。到九聖小修道院選『出征討伐』,以聖光與鋼鐵正面迎敵,洗淨他玷污的祭壇。"
+  },
+  "kn2": {
+    "name": "聖戰:斷絕死靈",
+    "faction": "knights_nine",
+    "rank": 1,
+    "source": "guild",
+    "objective": {"type": "kill", "creature": "necromancer_acolyte", "count": 1},
+    "reward": {"gold": 180, "fame": 8},
+    "turn_in": "auto",
+    "text": "黑蠕蟲教團的死靈門徒驅役亡者、玷污死者的安寧。讓死者重歸長眠 —— 這是騎士團對逝者的承諾。"
+  },
+  "kn3": {
+    "name": "聖戰:獵殺夜梟",
+    "faction": "knights_nine",
+    "rank": 2,
+    "source": "guild",
+    "objective": {"type": "kill", "creature": "vampire_patriarch", "count": 1},
+    "reward": {"gold": 250, "fame": 10},
+    "turn_in": "auto",
+    "text": "一名盤踞古堡、夜夜獵取活人之血的吸血鬼宗主。聖光不容黑暗 —— 將他連同他的罪孽一併焚盡。"
+  },
+  "kn4": {
+    "name": "聖戰:折斷背誓之劍",
+    "faction": "knights_nine",
+    "rank": 3,
+    "source": "guild",
+    "objective": {"type": "kill", "creature": "fallen_knight", "count": 1},
+    "reward": {"gold": 350, "fame": 12, "items": ["ebony_shield"]},
+    "turn_in": "auto",
+    "text": "一名背棄誓言、轉投魔神的騎士。他的重甲曾為守護而鑄,如今卻護著背叛 —— 由你正面討回那份蒙塵的榮譽。"
+  },
+  "kn5": {
+    "name": "聖戰:擋下湮滅",
+    "faction": "knights_nine",
+    "rank": 4,
+    "source": "guild",
+    "objective": {"type": "kill", "creature": "daedric_champion", "count": 1},
+    "reward": {"gold": 500, "fame": 15},
+    "turn_in": "auto",
+    "text": "由湮滅之門湧入的魔族鬥士,烈焰纏身、所向披靡。凡塵的秩序就繫在你的劍上 —— 擋下它,便擋下了深淵。"
+  },
+  "kn6": {
+    "name": "九聖的試煉",
+    "faction": "knights_nine",
+    "rank": 5,
+    "source": "guild",
+    "turn_in": "auto",
+    "text": "聖團長之位虛懸,九聖的旗幟等待新的手來扛起。最後的試煉逼你抉擇:是以鐵血親手裁決墮落的同袍,還是直搗邪教的核心、為這場危機畫上句點?",
+    "branches": [
+      {
+        "label": "鐵血裁決 —— 了結墮落的同袍",
+        "text": "一名昔日並肩的騎士背棄了五聖戒、墮入魔道。最沉重的正義,是親手送他解脫 —— 以證明你扛得起聖團長的重擔。",
+        "objective": {"type": "kill", "creature": "defiled_crusader", "count": 1},
+        "reward": {"gold": 800, "fame": 20, "items": ["ebony_sword"]}
+      },
+      {
+        "label": "聖戰之心 —— 直搗邪教核心",
+        "text": "與其在內部清算,不如斬斷禍根。潛入神話黎明的內殿、了結那位傳道的導師 —— 從源頭掐滅湮滅的火種。",
+        "objective": {"type": "kill", "creature": "dawn_mentor", "count": 1},
+        "reward": {"gold": 700, "fame": 25, "items": ["ebony_sword", "gold_amulet"]}
+      }
+    ]
+  },
   "ruler_bruma1": {
     "name": "領主委託:雪原狼患", "faction": null, "rank": null, "source": "ruler",
     "objective": {"type": "kill", "creature": "wolf", "count": 6},

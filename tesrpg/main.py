@@ -1151,37 +1151,47 @@ def action_sanctuary(state: GameState, gamedata: GameData) -> str | None:
                 ui.message(f"  {t}", style="white")
 
 
-def action_contract(state: GameState, gamedata: GameData, qid: str) -> str | None:
-    """執行一張合約:前往行刺目標(可先靠潛行搶得先機)。回傳 'dead'|None。"""
+def action_contract(state: GameState, gamedata: GameData, qid: str, *,
+                    stealth: bool = True) -> str | None:
+    """執行一張合約:暗殺(stealth=True:潛行先機 + 乾淨擊殺賞)或正面討伐
+    (stealth=False:聖戰開打,無潛行、無 clean_bonus、無偵查備戰)。回傳 'dead'|None。"""
     char = state.player
     rq = quests.resolved(char, gamedata, qid)
     obj, _, _ = quests.current_objective(char, gamedata, qid)
     target_id = obj["creature"]
     tname = gamedata.bestiary[target_id]["name"]
-    if not ui.confirm(f"潛入目標所在,取「{tname}」的性命嗎?"):
+    prompt = (f"潛入目標所在,取「{tname}」的性命嗎?" if stealth
+              else f"正面迎敵,討伐「{tname}」嗎?")
+    if not ui.confirm(prompt):
         return None
 
     enemies = [combat.spawn_creature(gamedata, target_id, state.rng)]
     for eid in rq.get("escort", []):
         enemies.append(combat.spawn_creature(gamedata, eid, state.rng))
 
-    night = state.time.hour < 6 or state.time.hour >= 21
-    got_drop = combat.try_stealth_approach(char, enemies, state.rng, gamedata, night, False, False)
-    if got_drop:
-        ui.message("你如影潛近,目標渾然未覺 —— 致命先機在握。", style="bold green")
+    got_drop = False
+    pb = 0
+    if stealth:
+        night = state.time.hour < 6 or state.time.hour >= 21
+        got_drop = combat.try_stealth_approach(char, enemies, state.rng, gamedata, night, False, False)
+        if got_drop:
+            ui.message("你如影潛近,目標渾然未覺 —— 致命先機在握。", style="bold green")
+        else:
+            ui.message("你的接近驚動了目標,沒能搶到偷襲先機。", style="yellow")
+        pb = formulas.prep_budget(char.skill("scout")) if got_drop else 0   # 合約暗殺也享偵查備戰
     else:
-        ui.message("你的接近驚動了目標,沒能搶到偷襲先機。", style="yellow")
+        ui.message("你舉起武器、堂堂正正迎敵 —— 以鋼鐵裁決。", style="bold cyan")
 
-    pb = formulas.prep_budget(char.skill("scout")) if got_drop else 0   # 合約暗殺也享偵查備戰
     result = run_battle(state, gamedata, enemies, alerted=not got_drop, prep_budget=pb)
     if result == "dead":
         return "dead"
     if result == "fled":
-        ui.message("你暫且退去 —— 合約仍懸而未決。", style="grey70")
+        ui.message("你暫且退去 —— 合約仍懸而未決。" if stealth
+                   else "你暫且退下 —— 討伐尚未完成。", style="grey70")
         return None
-    # 勝利:結算合約晉升,並對「無人目擊的乾淨擊殺」額外發賞
+    # 勝利:結算晉升;暗殺對「無人目擊的乾淨擊殺」額外發賞(正面討伐無此項)
     _report_quests(state, gamedata)
-    if got_drop:
+    if stealth and got_drop:
         bonus = rq.get("clean_bonus", 0)
         if bonus:
             char.gold += bonus
@@ -1190,63 +1200,100 @@ def action_contract(state: GameState, gamedata: GameData, qid: str) -> str | Non
 
 
 # ======================================================================
-# 神話黎明聖堂(達貢邪教:入會 + 獻祭合約晉升;大事件解鎖)
+# 合約制公會大廳(神話黎明 / 九神騎士團 共用骨架;
+# 黑暗兄弟會聖所另有 launder/tenets,維持自有 action_sanctuary 不走此處)
 # ======================================================================
 _MYTHIC_DAWN_VERSES = [
     "「諸界皆達貢之夢,凡塵不過待焚的薪柴。」",
     "「九聖是牢籠,湮滅之門才是解脫之路。」",
     "「於黎明破曉之時,曼卡將領我等步入天堂。」",
 ]
+_KNIGHTS_NINE_VERSES = [
+    "「以無翼者佩利納爾之名,吾劍只為守護而出鞘。」",
+    "「九聖同在 —— 阿卡托什的堅毅、瑪拉的慈悲、史丹達爾的公義。」",
+    "「縱使秩序將傾,聖徽之光永不熄滅。」",
+]
 
 
-def action_mythic_dawn(state: GameState, gamedata: GameData) -> str | None:
-    """神話黎明聖堂:入會、領受/執行『獻祭』合約、聆聽《魔典》箴言。回傳 'dead'|None。"""
+def _contract_hall(state: GameState, gamedata: GameData, faction_id: str, *,
+                   stealth: bool, join_prompt: str, join_success: str, title: str,
+                   accept_label: str, execute_label: str, no_quest_msg: str,
+                   verses_label: str, verses_intro: str, verses: list,
+                   verses_style: str = "bold red") -> str | None:
+    """合約制公會大廳通用骨架:入會(walk-in)→ 領受/執行委託 → 風味箴言。
+    `stealth` 決定執行走暗殺(action_contract 預設)或正面討伐。回傳 'dead'|None。
+    (黑暗兄弟會聖所另有洗白/五戒,維持自有 action_sanctuary。)"""
     char = state.player
-    FAC = "mythic_dawn"
-    _report_quests(state, gamedata)   # 先結算可能已交付的合約
-    ui.guild_panel(char, gamedata, FAC)
+    _report_quests(state, gamedata)   # 先結算可能已交付的委託
+    ui.guild_panel(char, gamedata, faction_id)
 
-    if not factions.is_member(char, FAC):
-        reason = factions.join_block_reason(char, gamedata, FAC)
+    if not factions.is_member(char, faction_id):
+        reason = factions.join_block_reason(char, gamedata, faction_id)
         if reason is not None:
             ui.message(reason, style="yellow")
             return None
-        if ui.confirm("赤袍信徒自陰影中低語:「米拉克·達貢在等你。可願棄絕舊神、皈依神話黎明?」"):
-            factions.join(char, FAC)
-            ui.message(f"你誦下達貢的誓言,成為神話黎明的「{factions.rank_name(char, gamedata, FAC)}」。",
+        if ui.confirm(join_prompt):
+            factions.join(char, faction_id)
+            ui.message(join_success.format(rank=factions.rank_name(char, gamedata, faction_id)),
                        style="bold green")
         return None
 
     while True:
         opts: list = []
-        active = _active_faction_quest(state, gamedata, FAC)
+        active = _active_faction_quest(state, gamedata, faction_id)
         if active:
             obj, _, _ = quests.current_objective(char, gamedata, active)
             tname = gamedata.bestiary[obj["creature"]]["name"]
-            opts.append(("execute", f"執行獻祭 —— 行刺{tname}"))
+            opts.append(("execute", execute_label.format(tname=tname)))
         else:
-            avail = quests.available_quests(char, gamedata, "guild", FAC)
+            avail = quests.available_quests(char, gamedata, "guild", faction_id)
             if avail:
-                opts.append(("accept", "領受新的獻祭"))
+                opts.append(("accept", accept_label))
             else:
-                ui.message(factions.advance_block_reason(char, gamedata, FAC)
-                           or "聖堂目前沒有交付給你的獻祭。", style="grey70")
-        opts.append(("verses", "聆聽《魔典》箴言"))
-        choice = ui.menu("神話黎明聖堂", opts, allow_back=True)
+                ui.message(factions.advance_block_reason(char, gamedata, faction_id)
+                           or no_quest_msg, style="grey70")
+        opts.append(("verses", verses_label))
+        choice = ui.menu(title, opts, allow_back=True)
         if choice is None:
             return None
         if choice == "accept":
-            avail = quests.available_quests(char, gamedata, "guild", FAC)
+            avail = quests.available_quests(char, gamedata, "guild", faction_id)
             if avail:
                 _accept_and_brief(state, gamedata, avail[0])
         elif choice == "execute":
-            died = action_contract(state, gamedata, active)
+            died = action_contract(state, gamedata, active, stealth=stealth)
             if died == "dead":
                 return "dead"
         elif choice == "verses":
-            ui.message("赤袍信徒誦讀《魔典》:", style="bold red")
-            for line in _MYTHIC_DAWN_VERSES:
+            ui.message(verses_intro, style=verses_style)
+            for line in verses:
                 ui.message(f"  {line}", style="white")
+
+
+def action_mythic_dawn(state: GameState, gamedata: GameData) -> str | None:
+    """神話黎明聖堂:入會、領受/執行『獻祭』合約、聆聽《魔典》箴言。回傳 'dead'|None。"""
+    return _contract_hall(
+        state, gamedata, "mythic_dawn", stealth=True,
+        join_prompt="赤袍信徒自陰影中低語:「米拉克·達貢在等你。可願棄絕舊神、皈依神話黎明?」",
+        join_success="你誦下達貢的誓言,成為神話黎明的「{rank}」。",
+        title="神話黎明聖堂", accept_label="領受新的獻祭",
+        execute_label="執行獻祭 —— 行刺{tname}",
+        no_quest_msg="聖堂目前沒有交付給你的獻祭。",
+        verses_label="聆聽《魔典》箴言", verses_intro="赤袍信徒誦讀《魔典》:",
+        verses=_MYTHIC_DAWN_VERSES, verses_style="bold red")
+
+
+def action_knights_hall(state: GameState, gamedata: GameData) -> str | None:
+    """九聖小修道院:入會、領受/出征聖戰委託、聆聽聖訓。回傳 'dead'|None。"""
+    return _contract_hall(
+        state, gamedata, "knights_nine", stealth=False,
+        join_prompt="騎士團長按劍而立:「湮滅之門已開,聖團需要新的劍。可願以聖光與鋼鐵,加入九神騎士團?」",
+        join_success="你跪在九聖祭壇前立誓,成為九神騎士團的「{rank}」。",
+        title="九聖小修道院", accept_label="領受新的聖戰",
+        execute_label="出征討伐 —— {tname}",
+        no_quest_msg="修道院目前沒有交付給你的聖戰。",
+        verses_label="聆聽聖訓", verses_intro="騎士團長誦念聖訓:",
+        verses=_KNIGHTS_NINE_VERSES, verses_style="bold cyan")
 
 
 def _hire_mercenary(state: GameState, gamedata: GameData) -> None:
@@ -2132,6 +2179,10 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
         if ("mythic_dawn" in services
                 and politics.DAEDRIC_UNLOCK_EVENT in getattr(player, "world_events_fired", [])):
             guilds.append(("md_hall", "神話黎明 🔥"))
+        # 九聖小修道院:同一場湮滅危機後,沉寂的聖團於安維爾重新集結
+        if ("knights_nine" in services
+                and politics.DAEDRIC_UNLOCK_EVENT in getattr(player, "world_events_fired", [])):
+            guilds.append(("kn_hall", "九神騎士團 ⚜"))
         if player.is_vampire and loc["type"] in ("town", "city"):
             plaza.append(("feed", "🩸 吸血進食(獵取活人,重置飢餓)"))
         if "inn" in services and not shunned:
@@ -2228,6 +2279,8 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
             died = action_sanctuary(state, gamedata)
         elif choice == "md_hall":
             died = action_mythic_dawn(state, gamedata)
+        elif choice == "kn_hall":
+            died = action_knights_hall(state, gamedata)
         elif choice == "board":
             action_board(state, gamedata)
         elif choice == "talk":

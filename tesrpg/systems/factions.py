@@ -154,6 +154,11 @@ def conjure_boon(char: Character, gamedata: GameData) -> float:
     return _best_perk(char, gamedata, "conjure_boon")
 
 
+def restoration_boon(char: Character, gamedata: GameData) -> float:
+    """九神騎士團:聖光眷顧 —— 治療法術回復量的強化比例(0..cap)。"""
+    return _best_perk(char, gamedata, "restoration_boon")
+
+
 def perk_desc(char: Character, gamedata: GameData, faction_id: str) -> str | None:
     """給 UI 顯示的福利說明(含目前強度)。"""
     perk = gamedata.factions[faction_id].get("perk")

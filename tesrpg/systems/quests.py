@@ -92,7 +92,9 @@ def available_quests(char: Character, gamedata: GameData, source: str,
                 continue
             if q.get("rank", 0) != char.factions[faction]:   # 只給當前階級的晉升任務
                 continue
-            if not factions.meets_rank_skill(char, gamedata, faction):  # 技能門檻未達 → 暫不開放
+            # 晉升閘以 advance_block_reason 為單一真實來源(技能門檻 + lawful 通緝者暫停 + 已達頂階):
+            # 不可只擋訊息而仍開放任務,否則通緝中的 lawful 會員仍能接任務晉升(審查抓到的既有破口)。
+            if factions.advance_block_reason(char, gamedata, faction) is not None:
                 continue
         # 告示板委託可帶 provinces 做「在地懸賞」:只在指定行省的告示板出現;
         # 無 provinces 者=全圖通用(向後相容,既有 board 委託照舊到處可接)。

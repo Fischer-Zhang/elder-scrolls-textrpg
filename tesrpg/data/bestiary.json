@@ -768,6 +768,69 @@
     "loot": [{"item": "ebony_sword", "chance": 0.3}, {"item": "filled_greater_soul_gem", "chance": 0.4}, {"item": "gold_amulet", "chance": 0.3}],
     "flavor": "傳授你達貢教義的導師,赤袍下藏著《魔典》的真意 —— 如今你的刀,指向了引你入道的人。"
   },
+  "corrupt_priest": {
+    "name": "墮落的祭司", "strength": 40, "agility": 42, "speed": 40,
+    "max_health": 52, "armor_rating": 8,
+    "attack": {"name": "瀆神之觸", "damage": 11, "skill": 44, "element": "shock",
+               "on_hit": {"status": "dot", "element": "shock", "magnitude": 3, "turns": 3, "chance": 0.35}},
+    "danger": 3, "min_level": 99, "weight": 0,
+    "resist": {"magic": 15},
+    "loot_gold": [20, 60],
+    "loot": [{"item": "gold_ring", "chance": 0.3}, {"item": "healing_potion", "chance": 0.3}],
+    "flavor": "一名背棄九聖、轉而崇拜魔神的祭司,聖袍之下藏著瀆神的咒文 —— 騎士團視其為必須拔除的毒瘤。"
+  },
+  "necromancer_acolyte": {
+    "name": "死靈門徒", "strength": 38, "agility": 48, "speed": 46,
+    "max_health": 68, "armor_rating": 6,
+    "attack": {"name": "腐朽之握", "damage": 17, "skill": 56, "element": "shock",
+               "on_hit": {"status": "dot", "element": "shock", "magnitude": 3, "turns": 3, "chance": 0.45}},
+    "danger": 4, "min_level": 99, "weight": 0,
+    "resist": {"magic": 25, "poison": 30},
+    "loot_gold": [40, 90],
+    "loot": [{"item": "filled_common_soul_gem", "chance": 0.4}, {"item": "gold_ring", "chance": 0.25}],
+    "flavor": "黑蠕蟲教團的死靈門徒,以亡者的低語驅役腐屍 —— 玷污死者的安寧,正是九聖最不容的褻瀆。"
+  },
+  "vampire_patriarch": {
+    "name": "吸血鬼宗主", "strength": 58, "agility": 56, "speed": 54,
+    "max_health": 145, "armor_rating": 16,
+    "attack": {"name": "汲血爪擊", "damage": 25, "skill": 62, "element": "frost",
+               "on_hit": {"status": "dot", "element": "frost", "magnitude": 4, "turns": 3, "chance": 0.5}},
+    "danger": 5, "min_level": 99, "weight": 0,
+    "resist": {"frost": 30, "poison": 50},
+    "loot_gold": [80, 160],
+    "loot": [{"item": "gold_amulet", "chance": 0.35}, {"item": "filled_greater_soul_gem", "chance": 0.3}],
+    "flavor": "盤踞古堡、操弄死亡的吸血鬼宗主,夜夜獵取活人的血。聖光之下,他終須償還那些被奪走的性命。"
+  },
+  "fallen_knight": {
+    "name": "墮落騎士", "strength": 60, "agility": 42, "speed": 38,
+    "max_health": 110, "armor_rating": 26,
+    "attack": {"name": "蒙塵重劍", "damage": 19, "skill": 56},
+    "danger": 4, "min_level": 99, "weight": 0,
+    "loot_gold": [50, 110],
+    "loot": [{"item": "ebony_shield", "chance": 0.25}, {"item": "healing_potion", "chance": 0.4}],
+    "flavor": "一名背棄誓言、轉投魔神的騎士,昔日的聖徽已蒙塵。重甲難破,但騎士團的正義終會找上他。"
+  },
+  "daedric_champion": {
+    "name": "魔族鬥士", "strength": 66, "agility": 50, "speed": 48,
+    "max_health": 160, "armor_rating": 24,
+    "attack": {"name": "湮滅烈斬", "damage": 26, "skill": 64, "element": "fire",
+               "on_hit": {"status": "dot", "element": "fire", "magnitude": 4, "turns": 3, "chance": 0.45}},
+    "danger": 5, "min_level": 99, "weight": 0,
+    "resist": {"fire": 40, "magic": 20},
+    "loot_gold": [90, 180],
+    "loot": [{"item": "ebony_sword", "chance": 0.25}, {"item": "filled_greater_soul_gem", "chance": 0.35}],
+    "flavor": "由湮滅之門湧入的魔族鬥士,烈焰纏身、力大招沉 —— 凡塵的秩序,正繫於能否擋下這等存在。"
+  },
+  "defiled_crusader": {
+    "name": "蒙塵的十字軍", "strength": 64, "agility": 50, "speed": 48,
+    "max_health": 150, "armor_rating": 28,
+    "attack": {"name": "背誓之刃", "damage": 25, "skill": 60},
+    "danger": 5, "min_level": 99, "weight": 0,
+    "resist": {"magic": 20},
+    "loot_gold": [90, 180],
+    "loot": [{"item": "ebony_shield", "chance": 0.4}, {"item": "gold_amulet", "chance": 0.3}, {"item": "filled_greater_soul_gem", "chance": 0.3}],
+    "flavor": "曾與你並肩的聖團騎士,如今背棄了五聖戒、墮入魔道 —— 由你親手了結,是聖團最沉重的試煉。"
+  },
   "imperial_ghost": {
     "biomes": ["heartland"], "name": "帝國亡魂", "strength": 35, "agility": 56, "speed": 52,
     "max_health": 24, "armor_rating": 6,
