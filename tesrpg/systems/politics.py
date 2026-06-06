@@ -37,6 +37,18 @@ def base_stance(gamedata: GameData, loc_id: str) -> str | None:
     return ruler.get("stance", "neutral") if ruler else None
 
 
+def city_bloc(gamedata: GameData, loc_id: str) -> str | None:
+    """該城的正史旗號 id(rulers.json `bloc`;= Oblivion 當下歸屬的陣營身分)。無領主回 None。"""
+    ruler = gamedata.ruler_at(loc_id)
+    return ruler.get("bloc") if ruler else None
+
+
+def city_bloc_label(gamedata: GameData, loc_id: str) -> str | None:
+    """該城旗號的繁中名(rulers.json `bloc_label`,如「雷多然家族」)。無則回 None。"""
+    ruler = gamedata.ruler_at(loc_id)
+    return ruler.get("bloc_label") if ruler else None
+
+
 def faction_of(char: Character, gamedata: GameData, loc_id: str) -> str | None:
     """該城現時歸屬(攻城翻轉後以 city_faction 為準,否則回種子立場)。無領主回 None。"""
     if loc_id in char.city_faction:

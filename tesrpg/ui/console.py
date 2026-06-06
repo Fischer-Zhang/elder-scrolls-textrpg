@@ -343,6 +343,11 @@ def location_panel(char: Character, gamedata: GameData) -> None:
         body.append("👑 統治者  ", style=GOLD)
         body.append(f"{ruler['title']}·{ruler['name']}", style=PARCH)
         body.append("（大空位·自治)\n", style=FAINT)
+        from tesrpg.systems import politics    # 局部匯入避免循環;旗號=大義·正史陣營
+        fac = politics.stance_label(politics.faction_of(char, gamedata, char.location_id))
+        bloc = ruler.get("bloc_label")
+        body.append("🏴 旗號  ", style=GOLD)
+        body.append(f"{fac}·{bloc}\n" if bloc else f"{fac}\n", style=PARCH)
     exits = loc.get("links", {})
     if exits:
         body.append("出口  ", style=GOLD)
@@ -485,6 +490,9 @@ def court_panel(ruler: dict, gamedata: GameData, reception: str,
     body.append(f"{race}\n", style=INK)
     body.append("駐軍  ", style=GOLD)
     body.append(f"{(politics or {}).get('garrison', ruler['garrison'])} 兵\n", style=INK)
+    if ruler.get("bloc_label"):
+        body.append("旗號  ", style=GOLD)
+        body.append(f"{ruler['bloc_label']}\n", style=INK)
     if politics:
         body.append("立場  ", style=GOLD)
         body.append(f"{politics['stance']} · 與你 {politics['relation']}\n", style=INK)
@@ -663,6 +671,9 @@ def world_map(char: Character, gamedata: GameData) -> None:
         if p not in order:
             order.append(p)
 
+    from tesrpg.systems import politics    # 局部匯入避免循環;標每城現時大義
+    _FAC_MARK = {"imperial": "[red]帝[/]", "independent": "[cyan]獨[/]",
+                 "neutral": "[grey62]中[/]", "daedric": "[magenta]湮[/]", "own": "[gold1]己[/]"}
     tree = Tree(f"[bold {GOLD}]Tamriel · 泰姆瑞爾[/]", guide_style=GOLD_DIM)
     for prov in order:
         pb = tree.add(f"[bold cyan]{prov}[/]")
@@ -676,8 +687,12 @@ def world_map(char: Character, gamedata: GameData) -> None:
             danger = f" [red]⚠{loc['danger']}[/]" if loc.get("danger") else ""
             svc = "·".join(_SERVICE_CN[s] for s in loc.get("services", []) if s in _SERVICE_CN)
             svc = f" [grey46]({svc})[/]" if svc else ""
+            fac = "" if not gamedata.ruler_at(lid) else (
+                "[bold gold1]★己[/]" if lid in char.city_faction
+                else _FAC_MARK.get(politics.faction_of(char, gamedata, lid), ""))
+            fac = f" {fac}" if fac else ""
             node = pb.add(f"{star}{icon} [{style}]{loc['name']}[/]"
-                          f"[grey50]·{LOC_TYPE_NAME.get(loc['type'], '')}[/]{danger}{svc}")
+                          f"[grey50]·{LOC_TYPE_NAME.get(loc['type'], '')}[/]{danger}{fac}{svc}")
             exits = loc.get("links", {})
             if exits:
                 ex = "、".join(f"{locs[d]['name']}{h}時" for d, h in exits.items())

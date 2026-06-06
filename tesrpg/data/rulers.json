@@ -5,6 +5,8 @@
     "race": "nord",
     "garrison": 210,
     "population": 340,
+    "bloc": "imperial_legion",
+    "bloc_label": "帝國軍團",
     "blurb": "布魯瑪伯爵,精明而強硬的諾德女領主。自皇帝遇刺、紅寶石王座空懸,她便獨力扛起這座邊城,在風雪與政爭間守住北疆門戶。",
     "quests": [
       "ruler_bruma1",
@@ -20,6 +22,8 @@
     "race": "imperial",
     "garrison": 110,
     "population": 190,
+    "bloc": "imperial_legion",
+    "bloc_label": "帝國軍團",
     "blurb": "凱瓦奇伯爵,虔誠而焦慮的帝國貴族。城外湮滅之門的赤光夜夜灼燒著他的眠夢——皇權既已崩解,沒有人會來馳援,他只能憑城中殘存的衛隊苦撐。",
     "stance": "imperial"
   },
@@ -29,6 +33,8 @@
     "race": "nord",
     "garrison": 260,
     "population": 500,
+    "bloc": "haafingar_jarl",
+    "bloc_label": "霜鬃戰王",
     "blurb": "海芬古領主,天際西陲最有權勢的諾德戰王。趁著帝國無主,他厲兵秣馬、廣納流亡的劍客,野心如爐火般在這座海港之城裡熊熊燃燒。",
     "stance": "imperial"
   },
@@ -38,6 +44,8 @@
     "race": "nord",
     "garrison": 80,
     "population": 150,
+    "bloc": "border_garrison",
+    "bloc_label": "鎮隘戍卒",
     "blurb": "龍橋鎮鎮長,出身行伍的老兵。守著通往海芬古的咽喉石橋,夾在四方野心之間,他只求亂世裡護得鄉里一方安寧。",
     "stance": "neutral"
   },
@@ -47,6 +55,8 @@
     "race": "dunmer",
     "garrison": 240,
     "population": 480,
+    "bloc": "house_redoran",
+    "bloc_label": "雷多然家族",
     "blurb": "黑光城雷多然家族議長,恪守榮譽與律法的丹莫貴族。帝國的羈縻一鬆,他便以家族甲士重整城防,誓要讓晨風之民在無主之世裡挺直脊梁。",
     "stance": "independent"
   },
@@ -56,6 +66,8 @@
     "race": "dunmer",
     "garrison": 100,
     "population": 170,
+    "bloc": "temple_ordinators",
+    "bloc_label": "神殿守正軍",
     "blurb": "莫拉格瑪的神殿司祭長,三相神的虔信守正者。她以教義與守正軍治理這座朝聖之城,視外邦野心與異端同為亂世裡必須肅清的污穢。",
     "stance": "neutral"
   },
@@ -65,6 +77,8 @@
     "race": "imperial",
     "garrison": 130,
     "population": 280,
+    "bloc": "imperial_governor",
+    "bloc_label": "帝國總督府",
     "blurb": "吉迪恩的帝國總督,被遺忘在沼澤邊陲的最後一位帝國命官。紅寶石王座既空,中樞再無詔令南下,他只能靠殘存的帝國軍團與亞龍人部族虛與委蛇,勉力維繫這座門戶大城不致陷落。",
     "stance": "imperial"
   },
@@ -74,6 +88,8 @@
     "race": "argonian",
     "garrison": 95,
     "population": 200,
+    "bloc": "hist_speakers",
+    "bloc_label": "希斯特樹語",
     "blurb": "石落城的希斯特樹語祭司,聆聽神樹低語的亞龍人靈導。帝國的羈縻一鬆,她便循希斯特之意領族人收回了這座昔日的行省首府,沼澤之民自此只向神樹俯首。",
     "stance": "independent"
   },
@@ -83,6 +99,8 @@
     "race": "altmer",
     "garrison": 400,
     "population": 1000,
+    "bloc": "elder_council",
+    "bloc_label": "長老會",
     "blurb": "帝都長老議會的高精靈攝政大臣,沉穩睿智的法師政客。皇帝遇刺、紅寶石王座空懸,他以議會之名勉力維繫帝國中樞,在湮滅之門大開、群雄環伺的亂世裡獨撐將傾的大廈。",
     "stance": "imperial"
   },
@@ -92,6 +110,8 @@
     "race": "breton",
     "garrison": 180,
     "population": 300,
+    "bloc": "skingrad_count",
+    "bloc_label": "哈希爾多伯爵領",
     "blurb": "史金格拉德伯爵,深居簡出的布萊頓貴族,城裡盛傳他從不見天日。皇權崩解、無人馳援之際,他憑著葡萄莊園的財富與森嚴城防自守西境,夜裡城堡長明的燈火令人不寒而慄。",
     "stance": "neutral"
   },
@@ -101,6 +121,8 @@
     "race": "dunmer",
     "garrison": 160,
     "population": 300,
+    "bloc": "dunmer_exiles",
+    "bloc_label": "東遷丹莫",
     "blurb": "切迪納伯爵,東遷賽羅迪爾的丹莫貴族,手腕強硬而城府極深。皇帝遇刺、中樞失序之後,他靠著與暗影裡某個組織的默契鞏固邊城,在帝國與晨風的夾縫間獨守這座東境門戶。",
     "stance": "independent"
   },
@@ -110,6 +132,8 @@
     "race": "imperial",
     "garrison": 170,
     "population": 360,
+    "bloc": "imperial_legion",
+    "bloc_label": "帝國軍團",
     "blurb": "安維爾伯爵夫人,在丈夫離奇失蹤多年後獨掌海港的帝國女貴族。皇權傾頹、無詔南下之際,她憑藉繁忙商港與忠誠衛隊撐起西南門戶,無人知曉城裡的竊賊行會其實聽命於她那下落不明的夫君。",
     "stance": "imperial"
   },
@@ -119,6 +143,8 @@
     "race": "nord",
     "garrison": 230,
     "population": 460,
+    "bloc": "whiterun_jarl",
+    "bloc_label": "白漫領主·戰友團",
     "blurb": "白漫城領主,審時度勢的諾德智者。紅寶石王座既空、皇權崩解,他在帝國餘威與風暴斗篷的招攬之間左右權衡,只願守住這座平原樞紐城,不被亂世的烽火與龍語的傳言所波及。",
     "stance": "neutral"
   },
@@ -128,6 +154,8 @@
     "race": "nord",
     "garrison": 250,
     "population": 440,
+    "bloc": "stormcloak",
+    "bloc_label": "風暴斗篷",
     "blurb": "風盔城領主,自封風暴斗篷的諾德戰王。趁紅寶石王座空懸、皇權無主,他高舉諾德復興的大旗、煽動各領叛離帝國,誓要讓真龍裔的古都重新號令整個天際的雪原與峽灣。",
     "stance": "independent"
   },
@@ -137,6 +165,8 @@
     "race": "nord",
     "garrison": 160,
     "population": 340,
+    "bloc": "riften_jarl",
+    "bloc_label": "裂谷領主",
     "blurb": "裂谷城領主,精於算計的諾德女主。皇權崩解、紅寶石王座空懸後,她與盜賊公會暗通款曲、把持私市,以鐵腕與賄賂同時收買着衛隊與黑幫,牢牢攥住這座東南邊城的命脈。",
     "stance": "independent"
   },
@@ -146,6 +176,8 @@
     "race": "nord",
     "garrison": 200,
     "population": 400,
+    "bloc": "silver_blood",
+    "bloc_label": "銀血氏族",
     "blurb": "馬卡斯城實質之主,把持銀礦的諾德氏族家督。帝國一退潮、紅寶石王座懸空,銀血氏族便以礦脈財富豢養私兵、架空名義領主,在這座矮人石城裏行買賣與律法皆出我口之實。",
     "stance": "independent"
   },
@@ -155,6 +187,8 @@
     "race": "dunmer",
     "garrison": 220,
     "population": 800,
+    "bloc": "tribunal_temple",
+    "bloc_label": "三聯神殿",
     "blurb": "維威克城神王廟的活化身司祭,三相神信仰最虔誠的守正者。她以神王之名統御這座凡登費爾聖城,帝國律法既已退潮,她只認神諭——在無主之世裡,維威克的旨意便是這座浮岩石城唯一的王法。",
     "stance": "independent"
   },
@@ -164,6 +198,8 @@
     "race": "dunmer",
     "garrison": 180,
     "population": 420,
+    "bloc": "house_hlaalu",
+    "bloc_label": "哈拉魯家族",
     "blurb": "巴爾莫拉的哈拉魯家族大議員,左手握政、右手通商的丹莫世家貴胄。紅寶石王座空懸後,他便趁勢架空帝國稅吏,以家族商隊與暗影手腕掌控這座近紅山的河谷大城,在亂世裡為哈拉魯謀盡每一分利。",
     "stance": "imperial"
   },
@@ -173,6 +209,8 @@
     "race": "dunmer",
     "garrison": 200,
     "population": 320,
+    "bloc": "house_redoran",
+    "bloc_label": "雷多然家族",
     "blurb": "奧德盧恩雷多然家族的軍務大議員,恪守榮譽古律的丹莫戰將。帝國羈縻一鬆,他便領甲士回駐這座蟹殼穹頂之下的古城,以鐵腕重整灰原邊防,誓在無主之世裡為雷多然守住晨風的西陲門戶。",
     "stance": "independent"
   },
@@ -182,6 +220,8 @@
     "race": "argonian",
     "garrison": 175,
     "population": 300,
+    "bloc": "an_xileel",
+    "bloc_label": "An-Xileel 議會",
     "blurb": "赫爾斯壯的 An-Xileel 議長,直承希斯特意志的亞龍人元老。紅寶石王座既空,帝國再無詔令越過瘴霧南下,他便號召沼澤諸族於神樹之下盟誓自治,要讓這片祖地永世不再插上外族的旗幟。",
     "stance": "independent"
   },
@@ -191,6 +231,8 @@
     "race": "argonian",
     "garrison": 200,
     "population": 140,
+    "bloc": "an_xileel",
+    "bloc_label": "An-Xileel 議會",
     "blurb": "黑荊棘堡的亞龍人堡主,鐵腕掌管東境牢城的冷酷獄卒長。帝國潰退、邊界無人看守,他便以高牆與荊棘自任沼澤門閂,凡犯境者皆鎖入黑石之下,只認 An-Xileel 之令,不認紅寶石空座。",
     "stance": "neutral"
   }

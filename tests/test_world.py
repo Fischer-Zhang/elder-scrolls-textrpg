@@ -138,6 +138,23 @@ def test_every_settlement_has_a_ruler():
         assert lid in gd.world["locations"], f"rulers.json 的 {lid} 不是有效地點"
 
 
+def test_every_city_has_a_bloc():
+    """陣營階段 A:每座有城主的城都有正史旗號 bloc + 繁中 bloc_label(= Oblivion 當下歸屬);
+    politics.city_bloc/city_bloc_label 可查;荒野/地城無旗號。"""
+    from tesrpg.systems import politics
+    gd, _ = _char()
+    for lid, loc in gd.world["locations"].items():
+        ruler = gd.ruler_at(lid)
+        if loc["type"] in ("city", "town"):
+            assert ruler.get("bloc"), f"{lid} 缺 bloc"
+            assert ruler.get("bloc_label"), f"{lid} 缺 bloc_label"
+            assert politics.city_bloc(gd, lid) == ruler["bloc"]
+            assert politics.city_bloc_label(gd, lid) == ruler["bloc_label"]
+            assert ruler["stance"] in ("imperial", "independent", "neutral")   # 旗號與既有立場並存
+        else:
+            assert politics.city_bloc(gd, lid) is None                          # 無城主→無旗號
+
+
 def test_black_marsh_closes_the_world_into_a_grand_loop():
     """黑沼澤 = 賽羅迪爾↔晨風 的南方平行路線,把原本的開放鏈閉合成世界大環。
 
