@@ -394,6 +394,91 @@ def test_court_reinforce_end_to_end():
     assert politics.garrison_of(c, gd, "windhelm") == base - 10   # -30 +20
 
 
+# === 陣營階段 B:四大義 + 中立可攻 + 自立 ===
+def test_four_causes_present():
+    assert set(politics.CAUSES) == {"imperial", "independent", "daedric", "own"}
+    assert politics.cause_name("daedric") == "神話黎明" and politics.cause_name("own") == "自立稱雄"
+
+
+def test_expansionist_causes_attack_neutral():
+    gd, c = _setup()
+    politics.pledge(c, "imperial")
+    assert politics.relationship(c, gd, "whiterun") == "neutral"   # 帝國對中立=觀望(回歸,不變)
+    assert not politics.can_siege(c, gd, "whiterun")
+    politics.pledge(c, "own")
+    assert politics.relationship(c, gd, "whiterun") == "enemy"     # 自立視中立為可吞
+    assert politics.can_siege(c, gd, "whiterun")
+    politics.pledge(c, "daedric")
+    assert politics.can_siege(c, gd, "whiterun")                   # 達貢亦然
+    assert politics.relationship(c, gd, "bruma") == "enemy"        # 自立/達貢對帝國城仍=敵
+
+
+def test_two_cause_relationship_unchanged():
+    """回歸:帝國/獨立對 盟/敵/中立 的判定逐位元不變(擴張只加在 own/daedric)。"""
+    gd, c = _setup()
+    politics.pledge(c, "independent")
+    assert politics.relationship(c, gd, "windhelm") == "ally"      # 同獨立
+    assert politics.relationship(c, gd, "bruma") == "enemy"        # 帝國城
+    assert politics.relationship(c, gd, "whiterun") == "neutral"   # 中立仍觀望
+    assert not politics.can_siege(c, gd, "whiterun")
+
+
+def test_pledgeable_causes_gating():
+    gd, c = _setup()
+    assert politics.pledgeable_causes(c) == ["imperial", "independent", "own"]   # 神話黎明預設鎖
+    c.world_events_fired.append("kvatch_falls")
+    assert "daedric" in politics.pledgeable_causes(c)              # 凱瓦奇陷落後解鎖
+
+
+def test_own_conquer_taxes_red_line():
+    gd, c = _setup(); politics.pledge(c, "own")
+    st = _state(c); politics.conquer(c, gd, "windhelm", now=st.time.absolute_hours())
+    assert c.city_faction["windhelm"] == "own" and politics.faction_of(c, gd, "windhelm") == "own"
+    assert "windhelm" in politics.held_tax_cities(c, gd)          # 自立的城可收稅(只認 city_faction)
+
+
+def test_legacy_own_realm_title():
+    from tesrpg.systems import legacy
+    gd, c = _setup(); politics.pledge(c, "own")
+    st = _state(c)
+    for loc in ("windhelm", "riften", "markarth"):
+        politics.conquer(c, gd, loc, now=st.time.absolute_hours())
+    s = legacy.compute(st, gd)
+    assert "裂土封疆的霸主" in s["dominion"]                       # 持 3 城 → 霸主階
+    assert legacy.own_realm_title(1) == "割據一方的梟雄"
+    assert legacy.own_realm_title(10) == "再造一統的新王"
+
+
+def test_world_fields_save_roundtrip():
+    import json
+    gd, c = _setup()
+    c.world_faction = {"kvatch": "daedric"}; c.world_events_fired = ["kvatch_falls"]
+    loaded = Character.from_dict(json.loads(json.dumps(c.to_dict())))
+    assert loaded.world_faction == {"kvatch": "daedric"} and loaded.world_events_fired == ["kvatch_falls"]
+    d = c.to_dict(); del d["world_faction"]; del d["world_events_fired"]
+    old = Character.from_dict(d)
+    assert old.world_faction == {} and old.world_events_fired == []   # 舊存檔缺欄 → 預設
+
+
+def test_pledge_menu_four_choice_smoke():
+    import tesrpg.main as M
+    from tesrpg.ui import console as ui
+    gd, c = _setup()
+    captured = {}
+    saved = (ui.menu, ui.message)
+    def fake_menu(title, opts, **k):
+        captured["opts"] = [o[0] for o in opts]
+        return "own"
+    ui.menu = fake_menu
+    ui.message = lambda *a, **k: None
+    try:
+        M._pledge_allegiance(GameState(player=c, rng=RNG(1), game_mode="adventure"), gd)
+    finally:
+        ui.menu, ui.message = saved
+    assert captured["opts"] == ["imperial", "independent", "own"]   # 四選(daedric 鎖)
+    assert c.allegiance == "own"
+
+
 def run():
     test_stance_seed_is_city_unit_cross_province()
     test_relationship_and_pledge()
@@ -424,6 +509,14 @@ def run():
     test_legacy_counts_dominion()
     test_legacy_survives_corrupt_faction_id()
     test_court_reinforce_end_to_end()
+    test_four_causes_present()
+    test_expansionist_causes_attack_neutral()
+    test_two_cause_relationship_unchanged()
+    test_pledgeable_causes_gating()
+    test_own_conquer_taxes_red_line()
+    test_legacy_own_realm_title()
+    test_world_fields_save_roundtrip()
+    test_pledge_menu_four_choice_smoke()
 
 
 if __name__ == "__main__":

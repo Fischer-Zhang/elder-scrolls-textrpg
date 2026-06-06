@@ -18,8 +18,12 @@ from __future__ import annotations
 from tesrpg.gamedata import GameData
 from tesrpg.models import Character
 
-CAUSES = {"imperial": "帝國復辟派", "independent": "獨立同盟"}   # 玩家可擁護的兩大義
-STANCE_LABEL = {"imperial": "帝國復辟派", "independent": "獨立同盟", "neutral": "中立觀望"}
+CAUSES = {"imperial": "帝國復辟派", "independent": "獨立同盟",
+          "daedric": "神話黎明", "own": "自立稱雄"}        # 四大義(daedric/own 為陣營階段 B 新增)
+STANCE_LABEL = {"imperial": "帝國復辟派", "independent": "獨立同盟", "neutral": "中立觀望",
+                "daedric": "神話黎明", "own": "自立稱雄"}
+# 擴張型大義:視「中立」為可吞(普世征服者);帝國/獨立則對中立維持觀望(不可攻)。
+EXPANSIONIST_CAUSES = {"own", "daedric"}
 SIEGE_SOLDIER = "city_guard"   # 守軍/守將兵種(複用既有衛兵)
 SIEGE_FAME = 30                # 攻下一城的聲望獎勵
 
@@ -73,7 +77,7 @@ def relationship(char: Character, gamedata: GameData, loc_id: str) -> str:
     if fac == char.allegiance:
         return "ally"
     if fac == "neutral":
-        return "neutral"
+        return "enemy" if char.allegiance in EXPANSIONIST_CAUSES else "neutral"   # 自立/達貢吞中立
     return "enemy"
 
 
@@ -82,6 +86,17 @@ REL_LABEL = {"ally": "盟友", "enemy": "敵對", "neutral": "中立", "unaligne
 
 def pledge(char: Character, cause: str) -> None:
     char.allegiance = cause
+
+
+# 可宣誓的大義:帝國/獨立/自立(自立稱雄隨時可舉旗);神話黎明須待「凱瓦奇陷落」大事件後才解鎖。
+DAEDRIC_UNLOCK_EVENT = "kvatch_falls"
+
+
+def pledgeable_causes(char: Character) -> list[str]:
+    out = ["imperial", "independent", "own"]
+    if DAEDRIC_UNLOCK_EVENT in getattr(char, "world_events_fired", []):
+        out.append("daedric")
+    return out
 
 
 def can_siege(char: Character, gamedata: GameData, loc_id: str) -> bool:

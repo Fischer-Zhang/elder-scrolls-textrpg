@@ -1328,13 +1328,24 @@ def _reinforce_garrison(state: GameState, gamedata: GameData, loc_id: str) -> No
 def _pledge_allegiance(state: GameState, gamedata: GameData) -> None:
     char = state.player
     ui.message("大空位之世,紅寶石王座空懸 —— 你決意擁護哪一方大義?", style="white")
-    cause = ui.menu("宣誓效忠", [(c, politics.cause_name(c)) for c in politics.CAUSES],
-                    allow_back=True)
+    _CAUSE_DESC = {
+        "imperial": "復辟賽普汀帝國,重整長老會與軍團的秩序。",
+        "independent": "支持各省自治,讓地方掙脫帝國的羈縻。",
+        "daedric": "事奉米拉克·達貢,以湮滅之火焚盡這腐朽之世。",
+        "own": "不奉帝國、不附獨立 —— 以己之名舉旗,問鼎這片無主之地。",
+    }
+    opts = [(c, f"{politics.cause_name(c)} —— {_CAUSE_DESC.get(c, '')}")
+            for c in politics.pledgeable_causes(char)]
+    cause = ui.menu("宣誓效忠", opts, allow_back=True)
     if cause is None:
         return
     politics.pledge(char, cause)
-    ui.message(f"你宣誓擁護「{politics.cause_name(cause)}」。從此同道之城以你為友,"
-               f"對立之城則成你刀鋒所向。", style="bold gold1")
+    if cause == "own":
+        ui.message("你舉起自己的旗幟 —— 自此天下皆敵、寸土皆需親取,問鼎之路由你的刀鋒開闢。",
+                   style="bold gold1")
+    else:
+        ui.message(f"你宣誓擁護「{politics.cause_name(cause)}」。從此同道之城以你為友,"
+                   f"對立之城則成你刀鋒所向。", style="bold gold1")
 
 
 def action_siege(state: GameState, gamedata: GameData, loc_id: str) -> str | None:

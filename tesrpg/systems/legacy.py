@@ -116,12 +116,26 @@ def compute(state, gamedata: GameData, ending: str = "death") -> dict:
     }
 
 
+_OWN_REALM_TITLES = [(10, "再造一統的新王"), (6, "問鼎天下的雄主"),
+                     (3, "裂土封疆的霸主"), (1, "割據一方的梟雄")]
+
+
+def own_realm_title(cities_held: int) -> str:
+    """自立稱雄者依持城數的開國稱號。"""
+    for thr, title in _OWN_REALM_TITLES:
+        if cities_held >= thr:
+            return title
+    return "舉旗自立者"
+
+
 def dominion_label(char, gamedata: GameData, cities_held: int, thanes: int) -> str | None:
     """城戰/招兵的功業總結(攻下的城 / 武士 / 大義 / 常備軍);無則 None(結算省略此行)。"""
     if not (cities_held or thanes or char.soldiers or char.allegiance):
         return None
     parts = []
-    if char.allegiance:
+    if char.allegiance == "own":
+        parts.append(own_realm_title(cities_held))        # 自立稱雄:依持城數的開國稱號
+    elif char.allegiance:
         parts.append(f"擁護{politics.cause_name(char.allegiance)}")
     if cities_held:
         parts.append(f"據有 {cities_held} 城")

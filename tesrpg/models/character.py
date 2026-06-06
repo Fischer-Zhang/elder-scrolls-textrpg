@@ -125,6 +125,9 @@ class Character:
     siege_ops: dict = field(default_factory=dict)         # loc_id -> [已施行的圍城方略 id](每役每略一次)
     # 城戰階段三:佔領後收稅(按居民數量)− 駐軍維護費 + 輕量叛亂計時(駐軍緩降,潰散則城叛)。詳見 systems/politics.py。
     tax_due_at: dict = field(default_factory=dict)         # loc_id -> 下次徵稅的絕對小時(僅攻下的城;預設 {} 向後相容)
+    # 陣營大事件(動態政局):事件驅動的城邦易幟層 + 已觸發大事件。詳見 systems/worldstate.py(階段 C)。
+    world_faction: dict = field(default_factory=dict)      # loc_id -> 大事件易幟的立場(覆蓋種子;玩家征服 city_faction 優先)
+    world_events_fired: list = field(default_factory=list) # 已觸發的大事件 id(once-fire + 解鎖判定,如神話黎明)
 
     # 招兵買馬(城戰的金幣/領袖路線)。親衛/將領=companions(具名);軍隊/士兵=抽象兵員。詳見 systems/warband.py。
     soldiers: int = 0                                     # 麾下士兵數(營地招募;攻城當援軍 + 大軍壓境)
@@ -203,6 +206,7 @@ class Character:
             "allegiance": self.allegiance, "city_faction": self.city_faction,
             "garrison_current": self.garrison_current, "siege_ops": self.siege_ops,
             "tax_due_at": self.tax_due_at,
+            "world_faction": self.world_faction, "world_events_fired": self.world_events_fired,
             "soldiers": self.soldiers, "camp": self.camp,
             "wage_due_at": self.wage_due_at,
             "companions": self.companions,
