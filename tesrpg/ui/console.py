@@ -437,6 +437,11 @@ _SCHOOL_CN = {"destruction": "毀滅", "restoration": "復原", "alteration": "�
               "conjuration": "召喚", "illusion": "幻術", "mysticism": "神秘"}
 
 
+def school_name(school: str) -> str:
+    """法術學派英文 id → 繁中名(未知則原樣回傳)。"""
+    return _SCHOOL_CN.get(school, school)
+
+
 def spell_effect_summary(gamedata: GameData, spell_id: str) -> str:
     """把法術 effect 結構渲染成一行可讀「作用」(資料驅動,直接讀 effect 結構顯示基礎效果;
     施法者加成如達貢之佑增幅召喚不計入此基礎摘要)。"""

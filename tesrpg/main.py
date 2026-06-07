@@ -1686,7 +1686,7 @@ def action_spell_vendor(state: GameState, gamedata: GameData) -> None:
         return max(1, round(world.spell_price(gamedata, s) * (1 - disc)))
     label = f"學習法術(你有 {char.gold} 金"
     label += f",會員 -{int(disc*100)}%)" if disc else ")"
-    opts = [(s, f"{gamedata.spells[s]['name']}（{gamedata.spells[s]['school']}) — {_sp(s)} 金"
+    opts = [(s, f"{gamedata.spells[s]['name']}（{ui.school_name(gamedata.spells[s]['school'])}) — {_sp(s)} 金"
              f" · {ui.spell_effect_summary(gamedata, s)}") for s in for_sale]
     sid = ui.menu(label, opts, allow_back=True)
     if sid is None:
