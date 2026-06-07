@@ -414,6 +414,9 @@ def sheet_skill_detail(char: Character, gamedata: GameData, skill_id: str) -> No
         body.append("✦ 主修技能(升點給 ×1.5 等級經驗)\n", style="bold magenta")
     if sd.get("desc"):
         body.append(sd["desc"] + "\n", style=INK)
+    if sd.get("mechanic"):
+        body.append("作用  ", style=GOLD)
+        body.append(sd["mechanic"] + "\n", style=PARCH)
     need = formulas.skill_threshold(base)
     cur = char.skill_xp.get(skill_id, 0.0)
     pct = int(cur / need * 100) if need > 0 else 0

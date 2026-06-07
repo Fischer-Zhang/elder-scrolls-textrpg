@@ -163,6 +163,18 @@ def test_set_bonus_shows_set_name():
     assert expected in buf.getvalue(), f"套裝加成未顯示套裝名稱 {expected}"
 
 
+def test_every_skill_has_mechanic_and_detail_shows_it():
+    # 每個技能都要有「作用」說明,且技能詳情會把它印出來(使用者:看不到技能詳細作用)
+    gd = get_gamedata()
+    for sid, sd in gd.skills.items():
+        assert sd.get("mechanic"), f"{sid} 缺 mechanic(技能詳細作用)說明"
+    gd2, st = _char()
+    buf = io.StringIO(); ui.console = Console(file=buf, width=100)
+    ui.sheet_skill_detail(st.player, gd2, "block")
+    out = buf.getvalue()
+    assert "作用" in out and gd2.skills["block"]["mechanic"][:6] in out
+
+
 def test_creation_preview_still_renders():
     # 另一呼叫端(創角預覽,無 state)仍能渲染 enriched character_sheet
     _silence()
