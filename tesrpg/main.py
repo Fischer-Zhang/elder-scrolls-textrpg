@@ -264,7 +264,8 @@ def _choose_combat_action(state: GameState, gamedata: GameData, enemies: list, v
         return {"type": "attack", "target": _choose_enemy_target(gamedata, enemies)}
     if choice == "cast":
         spell_opts = [(s, f"{gamedata.spells[s]['name']}"
-                       f"（{magic.effective_cost(player, gamedata, s)} 魔力 · {gamedata.spells[s]['school']})")
+                       f"（{magic.effective_cost(player, gamedata, s)} 魔力) · "
+                       f"{ui.spell_effect_summary(gamedata, s)}")
                       for s in castable]
         sid = ui.menu("施放哪道法術?", spell_opts, allow_back=True)
         if sid is None:
@@ -1649,8 +1650,8 @@ def action_cast_self(state: GameState, gamedata: GameData) -> None:
     if not usable:
         ui.message("你沒有可在戰鬥外施放的法術。", style="grey70")
         return
-    opts = [(s, f"{gamedata.spells[s]['name']}（{magic.effective_cost(char, gamedata, s)} 魔力)")
-            for s in usable]
+    opts = [(s, f"{gamedata.spells[s]['name']}（{magic.effective_cost(char, gamedata, s)} 魔力)"
+             f" · {ui.spell_effect_summary(gamedata, s)}") for s in usable]
     sid = ui.menu(f"施放哪道法術?(魔力 {int(char.magicka)}/{char.max_magicka})", opts, allow_back=True)
     if sid is None:
         return
@@ -1685,8 +1686,8 @@ def action_spell_vendor(state: GameState, gamedata: GameData) -> None:
         return max(1, round(world.spell_price(gamedata, s) * (1 - disc)))
     label = f"學習法術(你有 {char.gold} 金"
     label += f",會員 -{int(disc*100)}%)" if disc else ")"
-    opts = [(s, f"{gamedata.spells[s]['name']}（{gamedata.spells[s]['school']}) — {_sp(s)} 金")
-            for s in for_sale]
+    opts = [(s, f"{gamedata.spells[s]['name']}（{gamedata.spells[s]['school']}) — {_sp(s)} 金"
+             f" · {ui.spell_effect_summary(gamedata, s)}") for s in for_sale]
     sid = ui.menu(label, opts, allow_back=True)
     if sid is None:
         return
@@ -2110,6 +2111,8 @@ def action_character_sheet(state: GameState, gamedata: GameData) -> None:
             opts.append(("power", "星座之力"))
         opts.append(("bounty", "聲望與通緝"))
         opts.append(("equip", "穿戴與套裝"))
+        if char.spells:
+            opts.append(("spellbook", "法術書"))
         if vampirism.is_vampire(char):
             opts.append(("vampire", "吸血鬼狀態"))
         opts += [("skill", "技能詳情"), ("resheet", "重看角色卡")]
@@ -2130,6 +2133,8 @@ def action_character_sheet(state: GameState, gamedata: GameData) -> None:
             ui.sheet_bounty(char, gamedata)
         elif choice == "equip":
             ui.sheet_equipment(char, gamedata)
+        elif choice == "spellbook":
+            ui.sheet_spellbook(char, gamedata)
         elif choice == "vampire":
             ui.sheet_vampirism(char, gamedata)
         elif choice == "skill":

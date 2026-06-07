@@ -41,6 +41,7 @@ def _render_all(gd, st):
     ui.sheet_bounty(c, gd)
     ui.sheet_equipment(c, gd)
     ui.sheet_vampirism(c, gd)
+    ui.sheet_spellbook(c, gd)
     for sid in gd.skills:
         ui.sheet_skill_detail(c, gd, sid)
 
@@ -109,9 +110,10 @@ def test_action_character_sheet_walks_all_views():
     factions.join(c, "thieves_guild")
     c.active_effects = [{"kind": "stagger", "turns": 1}]
     c.is_vampire = True; c.vampire_stage = 1
+    c.spells = ["flames", "heal"]
     # 腳本:逐一選每個檢視鍵(技能詳情會再彈一次技能選單→選 blade),最後返回(None)
     seq = iter(["resist", "effects", "factions", "mastery", "power", "bounty",
-                "equip", "vampire", "skill", "blade", "resheet", None])
+                "equip", "spellbook", "vampire", "skill", "blade", "resheet", None])
     saved = ui.menu
     ui.menu = lambda *a, **k: next(seq, None)
     try:
@@ -161,6 +163,31 @@ def test_set_bonus_shows_set_name():
     buf = io.StringIO(); ui.console = Console(file=buf, width=100)
     ui.sheet_equipment(c, gd)
     assert expected in buf.getvalue(), f"套裝加成未顯示套裝名稱 {expected}"
+
+
+def test_every_spell_summarisable():
+    # 每道法術都要能渲染出「作用」摘要,且不落入泛用後備(=所有 effect kind 都已涵蓋)
+    gd = get_gamedata()
+    for sid in gd.spells:
+        summ = ui.spell_effect_summary(gd, sid)
+        assert summ and summ != "效果", f"{sid} 未被效果摘要涵蓋:{summ}"
+    # apply_status 須標明對象(對抗審查:enemy DoT vs self regen 不可同形)
+    assert "使目標" in ui.spell_effect_summary(gd, "poison_cloud")   # 敵方 DoT
+    assert "自身" in ui.spell_effect_summary(gd, "renewal")          # 自我再生
+
+
+def test_spellbook_renders_grouped_and_empty():
+    _silence()
+    gd, st = _char()
+    c = st.player
+    c.spells = ["flames", "heal", "oakflesh", "conjure_familiar", "fear", "soul_trap"]
+    buf = io.StringIO(); ui.console = Console(file=buf, width=100)
+    ui.sheet_spellbook(c, gd)
+    out = buf.getvalue()
+    assert "法術書" in out and "毀滅" in out and "火焰傷害" in out      # 分組 + 作用
+    # 無法術:不崩潰
+    c.spells = []
+    ui.sheet_spellbook(c, gd)
 
 
 def test_every_skill_has_mechanic_and_detail_shows_it():

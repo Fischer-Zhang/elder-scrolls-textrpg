@@ -433,6 +433,83 @@ def sheet_skill_detail(char: Character, gamedata: GameData, skill_id: str) -> No
     console.print(_panel(body, title="技能詳情"))
 
 
+_SCHOOL_CN = {"destruction": "毀滅", "restoration": "復原", "alteration": "變化",
+              "conjuration": "召喚", "illusion": "幻術", "mysticism": "神秘"}
+
+
+def spell_effect_summary(gamedata: GameData, spell_id: str) -> str:
+    """把法術 effect 結構渲染成一行可讀「作用」(資料驅動,直接讀 effect 結構顯示基礎效果;
+    施法者加成如達貢之佑增幅召喚不計入此基礎摘要)。"""
+    sp = gamedata.spells[spell_id]
+    e = sp["effect"]
+    k = e["kind"]
+    elem = _RESIST_CN.get(e.get("element"), "")
+    mag = e.get("magnitude", 0)
+    turns = e.get("turns", 0)
+
+    def _st(st: dict) -> str:
+        s = st.get("status")
+        el = _RESIST_CN.get(st.get("element"), "")
+        m = st.get("magnitude", 0)
+        t = st.get("turns", 0)
+        return {"dot": f"{el}持續傷害 {m}/回合×{t}", "regen": f"再生 +{m}/回合×{t}",
+                "paralyze": f"麻痺 {t} 回合", "fear": f"恐懼 {t} 回合"}.get(s, "狀態")
+
+    if k == "damage":
+        return f"{elem}傷害 {mag}"
+    if k == "damage_status":
+        return f"{elem}傷害 {mag} + {_st(e['status'])}"
+    if k == "damage_all":
+        return f"全體{elem}傷害 {mag}"
+    if k == "damage_status_all":
+        return f"全體{elem}傷害 {mag} + {_st(e['status'])}"
+    if k == "heal":
+        return f"治療 +{mag}"
+    if k == "shield":
+        return f"護盾 +{mag}（{turns} 回合)"
+    if k == "restore_fatigue":
+        return f"回復體力 +{mag}"
+    if k == "fear":
+        return f"使目標恐懼（{turns} 回合)"
+    if k == "weaken":
+        return f"削弱目標攻擊 {round(mag * 100)}%（{turns} 回合)"
+    if k == "soul_trap":
+        return f"擒魂:死亡時捕獲靈魂（{turns} 回合)"
+    if k == "summon":
+        cn = gamedata.bestiary.get(e.get("creature"), {}).get("name", e.get("creature", ""))
+        return f"召喚 {cn}（{turns} 回合)"
+    if k == "apply_status":
+        who = "使目標" if sp.get("target") == "enemy" else "自身"
+        return who + _st(e["status"])
+    if k == "status_all":
+        return f"全體{_st(e['status'])}"
+    return "效果"
+
+
+def sheet_spellbook(char: Character, gamedata: GameData) -> None:
+    """法術書:已習法術依學派分組,逐道顯示魔耗 + 作用(資料驅動的效果摘要)。"""
+    from tesrpg.systems import magic
+    known = [s for s in char.spells if s in gamedata.spells]
+    if not known:
+        console.print(_panel(Text("你還沒學會任何法術。", style=INK), title="法術書"))
+        return
+    by_school: dict[str, list[str]] = {}
+    for sid in known:
+        by_school.setdefault(gamedata.spells[sid]["school"], []).append(sid)
+    body = Text()
+    for school in ("destruction", "restoration", "alteration", "conjuration", "illusion", "mysticism"):
+        ids = by_school.get(school)
+        if not ids:
+            continue
+        body.append(f"{_SCHOOL_CN.get(school, school)}\n", style=f"bold {GOLD}")
+        for sid in ids:
+            sp = gamedata.spells[sid]
+            body.append(f"  {sp['name']}", style=PARCH)
+            body.append(f"（{magic.effective_cost(char, gamedata, sid)} 魔力)", style=INK)
+            body.append(f"  {spell_effect_summary(gamedata, sid)}\n", style=FAINT)
+    console.print(_panel(body, title="法術書"))
+
+
 # --- 事件訊息 -----------------------------------------------------------
 def show_events(events: list[dict], gamedata: GameData) -> None:
     for ev in events:
