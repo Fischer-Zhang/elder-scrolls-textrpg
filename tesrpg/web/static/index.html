@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b0a08">
+<title>流亡者</title>
+<style>
+  :root {
+    --bg0:#0b0a08; --bg1:#14110b; --raise:#1a150d;
+    --ink:#dcd6c8; --muted:#8c8576; --faint:#6b6557;
+    --gold:#e6c570; --gold-dim:#9d7e3a; --gold-soft:rgba(214,178,92,.32);
+    --line:#2c271d; --shadow:0 8px 28px rgba(0,0,0,.5);
+    --mono:"Sarasa Mono TC","Sarasa Mono SC","Noto Sans Mono CJK TC","Noto Sans Mono CJK SC",
+      "WenQuanYi Micro Hei Mono","Cascadia Mono","DejaVu Sans Mono","Courier New",monospace;
+    --serif:"Noto Serif TC","Source Han Serif TC","Songti TC","STSong","LiSong Pro","PMingLiU","新細明體",serif;
+    --sans:system-ui,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;
+  }
+  * { box-sizing:border-box; }
+  html { -webkit-text-size-adjust:100%; }
+  body { margin:0; color:var(--ink); font-family:var(--sans); line-height:1.5;
+    background:
+      radial-gradient(130% 85% at 50% -12%, #221b10 0%, #110d09 48%, #080705 100%) fixed,
+      var(--bg0);
+    min-height:100vh; }
+  #app { max-width:880px; margin:0 auto;
+    padding:calc(8px + env(safe-area-inset-top)) calc(12px + env(safe-area-inset-right))
+            calc(34px + env(safe-area-inset-bottom)) calc(12px + env(safe-area-inset-left)); }
+
+  /* 報頭 */
+  #masthead { position:sticky; top:0; z-index:6; padding:10px 2px 8px;
+    background:linear-gradient(var(--bg0) 64%, transparent);
+    text-align:center; }
+  .brand { font-family:var(--serif); font-weight:700; color:var(--gold);
+    font-size:clamp(21px,5.6vw,30px); letter-spacing:.22em; padding-left:.22em;
+    text-shadow:0 0 18px rgba(214,178,92,.28); }
+  .orn { color:var(--gold-dim); font-size:12px; letter-spacing:.32em; margin-top:2px; }
+  #status { display:flex; gap:7px; align-items:center; justify-content:center;
+    margin-top:6px; font-size:11.5px; color:var(--faint); }
+  #dot { width:8px; height:8px; border-radius:50%; background:#5b8f54;
+    box-shadow:0 0 7px #5b8f54; transition:background .2s, box-shadow .2s; }
+  #dot.off { background:#a8584f; box-shadow:0 0 7px #a8584f; }
+
+  /* 畫面:rich export_html 的忠實截圖,裝進金線畫框 */
+  #screen { position:relative; margin-top:6px; border-radius:11px;
+    border:1px solid var(--gold-soft); background:#0a0806;
+    box-shadow:var(--shadow), inset 0 0 0 1px rgba(0,0,0,.6); }
+  #screen::before { content:""; position:absolute; inset:5px; border-radius:7px;
+    border:1px solid rgba(255,255,255,.03); pointer-events:none; }
+  #screen.overflow::after { content:""; position:absolute; top:1px; right:1px; bottom:1px;
+    width:38px; border-radius:0 11px 11px 0; pointer-events:none;
+    background:linear-gradient(to right, transparent, #0a0806 88%); }
+  #art { margin:0; padding:15px 17px; overflow-x:auto; white-space:pre; color:var(--ink);
+    font-family:var(--mono); font-size:clamp(11px,2.75vw,15px); line-height:1.3;
+    -webkit-overflow-scrolling:touch; scrollbar-width:thin; scrollbar-color:var(--gold-dim) transparent; }
+  #art::-webkit-scrollbar { height:7px; }
+  #art::-webkit-scrollbar-thumb { background:var(--gold-dim); border-radius:4px; }
+  @keyframes settle { from { opacity:.45; } to { opacity:1; } }
+  #art.flash { animation:settle .2s ease; }
+
+  /* 互動區 */
+  #prompt { margin-top:16px; }
+  .ptitle { font-family:var(--serif); color:var(--gold); font-weight:700;
+    font-size:clamp(15px,4.2vw,19px); margin:2px 2px 12px; letter-spacing:.02em; }
+  .ghead { color:var(--gold-dim); font-weight:700; font-size:12.5px; letter-spacing:.12em;
+    margin:14px 2px 7px; text-transform:none;
+    display:flex; align-items:center; gap:10px; }
+  .ghead::after { content:""; flex:1; height:1px;
+    background:linear-gradient(to right, var(--gold-soft), transparent); }
+  .btns { display:flex; flex-wrap:wrap; gap:9px; }
+
+  button.opt { flex:1 1 230px; min-height:50px; padding:12px 15px; cursor:pointer;
+    text-align:left; font-size:15px; font-family:var(--sans); color:var(--ink);
+    background:linear-gradient(#191409,#130f08); border:1px solid var(--line);
+    border-radius:9px; transition:transform .1s ease, border-color .12s, background .12s, box-shadow .12s; }
+  button.opt:hover { border-color:var(--gold-soft); background:linear-gradient(#221a0d,#181208);
+    transform:translateY(-1px); box-shadow:0 4px 12px rgba(0,0,0,.4); }
+  button.opt:active { transform:translateY(0) scale(.992); background:#241c0e; }
+  button.opt:focus-visible { outline:2px solid var(--gold); outline-offset:2px; }
+  button.opt .num { display:inline-block; min-width:1.5em; margin-right:9px; color:var(--gold);
+    font-weight:700; font-variant-numeric:tabular-nums; }
+  button.back { flex-basis:100%; color:var(--muted); background:linear-gradient(#141009,#100c07); }
+  button.yes { border-color:var(--gold-soft); }
+  button.no  { color:var(--muted); }
+
+  .row { display:flex; gap:9px; flex-wrap:wrap; align-items:center; }
+  input.field { flex:1 1 170px; min-height:50px; padding:11px 14px; font-size:16px; color:var(--ink);
+    background:#0d0a06; border:1px solid var(--line); border-radius:9px; font-family:var(--sans); }
+  input.field:focus { outline:none; border-color:var(--gold-soft); box-shadow:0 0 0 3px rgba(214,178,92,.12); }
+  button.go { min-height:50px; padding:11px 26px; font-size:15px; cursor:pointer; font-weight:700;
+    color:#1a1206; background:linear-gradient(#e8cb78,#caa64e); border:none; border-radius:9px;
+    transition:transform .1s, filter .12s; }
+  button.go:hover { filter:brightness(1.08); transform:translateY(-1px); }
+  button.go:active { transform:translateY(0) scale(.99); }
+  .hint { color:var(--faint); font-size:12px; margin:9px 2px 0; }
+  .end { font-family:var(--serif); color:var(--gold); font-weight:700; font-size:17px;
+    padding:14px 2px; letter-spacing:.04em; }
+
+  #foot { text-align:center; color:var(--faint); font-size:11px; margin-top:22px; letter-spacing:.04em; }
+  .locked { opacity:.45; pointer-events:none; }
+  @media (hover:none) { button.opt:hover { transform:none; box-shadow:none; } }
+</style>
+</head>
+<body>
+<div id="app">
+  <header id="masthead">
+    <div class="brand">流 亡 者</div>
+    <div class="orn">⚔ ◈ ✦ ◈ ⚔</div>
+    <div id="status"><span id="dot" class="off"></span><span id="conn">連線中…</span></div>
+  </header>
+  <div id="screen"><pre id="art"></pre></div>
+  <div id="prompt"></div>
+  <footer id="foot">數字鍵 1–9 快速選擇 · 0 返回 · Enter 確認</footer>
+</div>
+<script>
+(function () {
+  const art = document.getElementById("art");
+  const screenEl = document.getElementById("screen");
+  const promptEl = document.getElementById("prompt");
+  const dot = document.getElementById("dot");
+  const conn = document.getElementById("conn");
+  let curPid = null;        // 目前 prompt 的 prompt_id
+  let locked = false;       // 送出後鎖定,待下一幀解鎖(防雙擊)
+  let flatButtons = [];     // 數字鍵快捷:1..9 對應的按鈕
+  let backButton = null;    // 0 對應返回
+
+  function submit(value) {
+    if (locked || curPid === null) return;
+    locked = true;
+    promptEl.classList.add("locked");
+    fetch("/input", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt_id: curPid, value: value }),
+    }).catch(function () {            // 送出失敗(網路抖動):解鎖讓使用者重試;重連也會還原畫面
+      locked = false;
+      promptEl.classList.remove("locked");
+    });
+  }
+
+  function mkButton(label, value, idx) {
+    const b = document.createElement("button");
+    b.className = "opt";
+    if (idx != null) {
+      const n = document.createElement("span");
+      n.className = "num"; n.textContent = idx;
+      b.appendChild(n);
+    }
+    b.appendChild(document.createTextNode(label));
+    b.addEventListener("click", function () { submit(value); });
+    return b;
+  }
+
+  function renderPrompt(spec) {
+    promptEl.innerHTML = "";
+    promptEl.classList.remove("locked");
+    flatButtons = []; backButton = null;
+    if (!spec) return;
+    const t = spec.type;
+
+    if (t === "end") {
+      const d = document.createElement("div");
+      d.className = "end"; d.textContent = "（遊戲結束 —— 重新整理頁面可再啟一局)";
+      promptEl.appendChild(d);
+      curPid = null;
+      return;
+    }
+    if (spec.title) {
+      const h = document.createElement("div");
+      h.className = "ptitle"; h.textContent = spec.title;
+      promptEl.appendChild(h);
+    }
+
+    if (t === "menu") {
+      const box = document.createElement("div"); box.className = "btns";
+      spec.options.forEach(function (o, i) {
+        const b = mkButton(o.label, o.key, i + 1);
+        flatButtons.push(b); box.appendChild(b);
+      });
+      promptEl.appendChild(box);
+      if (spec.allow_back) {
+        const b = mkButton("返回", null, 0);
+        b.classList.add("back"); backButton = b;
+        promptEl.appendChild(b);
+      }
+    } else if (t === "grouped") {
+      let i = 0;
+      spec.groups.forEach(function (g) {
+        if (g.header) {
+          const h = document.createElement("div");
+          h.className = "ghead"; h.textContent = g.header;
+          promptEl.appendChild(h);
+        }
+        const box = document.createElement("div"); box.className = "btns";
+        g.options.forEach(function (o) {
+          i += 1;
+          const b = mkButton(o.label, o.key, i);
+          flatButtons.push(b); box.appendChild(b);
+        });
+        promptEl.appendChild(box);
+      });
+    } else if (t === "confirm") {
+      if (spec.prompt) {
+        const h = document.createElement("div");
+        h.className = "ptitle"; h.textContent = spec.prompt;
+        promptEl.appendChild(h);
+      }
+      const box = document.createElement("div"); box.className = "btns";
+      const y = mkButton("是", true, 1), n = mkButton("否", false, 2);
+      y.classList.add("yes"); n.classList.add("no");
+      flatButtons.push(y, n); box.appendChild(y); box.appendChild(n);
+      promptEl.appendChild(box);
+    } else if (t === "int" || t === "text") {
+      if (spec.prompt) {
+        const h = document.createElement("div");
+        h.className = "ptitle"; h.textContent = spec.prompt;
+        promptEl.appendChild(h);
+      }
+      const row = document.createElement("div"); row.className = "row";
+      const inp = document.createElement("input");
+      inp.className = "field";
+      if (t === "int") {
+        inp.type = "number"; inp.inputMode = "numeric";
+        if (spec.lo != null) inp.min = spec.lo;
+        if (spec.hi != null) inp.max = spec.hi;
+        if (spec.default != null) inp.value = spec.default;
+      } else {
+        inp.type = "text";
+        if (spec.default != null) inp.value = spec.default;
+      }
+      const go = document.createElement("button");
+      go.className = "go"; go.textContent = "確定";
+      function send() {
+        if (t !== "int") { submit(inp.value); return; }
+        const raw = inp.value.trim();
+        let n;
+        if (raw === "") {                    // 空白 → 沿用預設(對齊終端 IntPrompt);無預設則不送
+          if (spec.default == null) { inp.focus(); return; }
+          n = Number(spec.default);
+        } else {
+          n = Number(raw);
+          if (!Number.isFinite(n)) { inp.focus(); return; }   // 非數字 → 不送(避免 Number('')===0 誤送)
+        }
+        submit(n);
+      }
+      go.addEventListener("click", send);
+      inp.addEventListener("keydown", function (e) { if (e.key === "Enter") send(); });
+      row.appendChild(inp); row.appendChild(go);
+      promptEl.appendChild(row);
+      if (t === "int" && spec.lo != null) {
+        const hint = document.createElement("div");
+        hint.className = "hint"; hint.textContent = "範圍 " + spec.lo + "–" + spec.hi;
+        promptEl.appendChild(hint);
+      }
+      setTimeout(function () { inp.focus(); inp.select(); }, 0);
+    }
+  }
+
+  function render(frame) {
+    // 同一 prompt 被重連重送時(SSE 斷線重連會重播 last_frame),保留使用者正在輸入的值
+    const prev = promptEl.querySelector("input.field");
+    const prevVal = prev ? prev.value : null;
+    const samePrompt = (curPid !== null && frame.prompt_id === curPid);
+    art.innerHTML = frame.screen_html || "";
+    art.classList.remove("flash"); void art.offsetWidth; art.classList.add("flash");  // 換幀微淡入
+    screenEl.classList.toggle("overflow", art.scrollWidth > art.clientWidth + 2);     // 橫向可捲提示
+    curPid = frame.prompt_id;
+    locked = false;
+    renderPrompt(frame.prompt);
+    if (samePrompt && prevVal != null) {
+      const inp = promptEl.querySelector("input.field");
+      if (inp) inp.value = prevVal;
+    }
+    if (!samePrompt) { art.scrollLeft = 0; window.scrollTo(0, 0); }
+  }
+
+  // 數字鍵快捷(輸入框聚焦時不攔截)。<10 項即時;>=10 項(種族10/星座13)緩衝多位數。
+  let digitBuf = "", digitTimer = null;
+  function clickIdx(idx) { const b = flatButtons[idx - 1]; if (b) b.click(); }
+  function resolveBuf() {
+    if (digitTimer) { clearTimeout(digitTimer); digitTimer = null; }
+    const idx = parseInt(digitBuf, 10); digitBuf = "";
+    if (idx >= 1) clickIdx(idx);
+  }
+  document.addEventListener("keydown", function (e) {
+    const tag = (document.activeElement && document.activeElement.tagName) || "";
+    if (tag === "INPUT" || tag === "TEXTAREA") return;
+    if (e.key >= "0" && e.key <= "9") {
+      e.preventDefault();
+      if (flatButtons.length < 10) {                 // 單位數選單:即時(0=返回)
+        if (e.key === "0") { if (backButton) backButton.click(); }
+        else clickIdx(parseInt(e.key, 10));
+        return;
+      }
+      digitBuf += e.key;                             // 多位數選單:緩衝
+      if (digitTimer) clearTimeout(digitTimer);
+      if (digitBuf.length >= String(flatButtons.length).length) resolveBuf();  // 位數已滿即解析
+      else digitTimer = setTimeout(resolveBuf, 450);
+    } else if (e.key === "Enter" && digitBuf) {
+      e.preventDefault(); resolveBuf();
+    } else if (e.key === "0" && backButton) {
+      e.preventDefault(); backButton.click();
+    }
+  });
+
+  function connect() {
+    const es = new EventSource("/events");
+    es.onopen = function () { dot.classList.remove("off"); conn.textContent = "已連線"; };
+    es.onerror = function () { dot.classList.add("off"); conn.textContent = "重新連線中…"; };
+    es.onmessage = function (ev) {
+      try { render(JSON.parse(ev.data)); } catch (_) {}
+    };
+  }
+  connect();
+})();
+</script>
+</body>
+</html>

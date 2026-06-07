@@ -12,8 +12,8 @@
 - **工作目錄**:`/home/fischer/SLG`
 - **GitHub**:`git@github.com:Fischer-Zhang/elder-scrolls-textrpg.git`(分支 `main`,SSH 已認證為 Fischer-Zhang)
 - **Python 3.12**;`rich` 由**系統套件**提供(`python3-rich`)—— ⚠️ **本機沒有 `pip`、沒有 `pytest`、sudo 需密碼**。
-- **執行遊戲**:`python3 -m tesrpg`
-- **跑測試**:`python3 tests/run_all.py`(不需 pytest;32 個測試模組,目前**全綠**)
+- **執行遊戲**:`python3 -m tesrpg`(終端)/ `python3 -m tesrpg.web`(本機 Web 版,瀏覽器開 `http://127.0.0.1:8080`)
+- **跑測試**:`python3 tests/run_all.py`(不需 pytest;39 個測試模組,目前**全綠**)
 - **編譯檢查**:`python3 -m py_compile tesrpg/**/*.py tesrpg/*.py tests/*.py`
 - 存檔在 `~/.tesrpg/save.json`(在 repo 外;測試/煙霧測試後記得 `rm -f ~/.tesrpg/save.json`)
 
@@ -291,9 +291,17 @@
 - **驗證**:38 測試模組全綠(新 `test_sheet`:三種角色狀態渲染無 traceback / 唯讀不變式 / 技能詳情不扣體力 / action 走訪全項 / **毀損 id 不崩潰** / 套裝名顯示 / 創角預覽仍渲染)+ 無頭煙霧 + `sim_assassin` 零位移。**加檢視類別純改 `ui.sheet_*` + `action_character_sheet` 分派**(唯讀鐵律:勿呼叫有副作用的函式如 practice_cost)。
 - **後續微調(同主題,使用者要求「技能/法術都要看得到作用」)**:① 每技能 `skills.json` 加 `mechanic` 欄(升等實際效果),技能詳情多印「作用」行。② **法術作用**:`ui.spell_effect_summary(gd, spell_id)` 資料驅動把 effect 結構渲成一行(涵蓋全 13 種 effect kind,無泛用後備;apply_status 標明對象 使目標/自身),接進新 `ui.sheet_spellbook`(角色卡「法術書」依學派分組)+ 法術舖/施法/戰鬥施法選單標籤。摘要為**基礎效果、施法者加成(如達貢之佑)不計入**。對抗審查(3 維×3 視角,9 minor→修 4:apply_status 標對象/`int→round`/刪死碼/弱化 docstring 過度宣稱);加 `test_sheet` 斷言(全法術可摘要、無後備、apply_status 對象分明)。**加法術純改 spells.json → 摘要自動涵蓋**。
 
+**Web UI(原生本機單人版;C-lite 忠實重用 rich 渲染 + 原生可點輸入)**:把終端遊戲搬上瀏覽器。**零改遊戲邏輯、`main.py` 零編輯、41 個渲染函式不動**。經兩輪評估(評估→「重新評估」8-agent 對抗審查)後使用者拍板 **C-lite**(顯示=rich 截圖、輸入=原生按鈕),情境=本機單人單 session。
+- **核心(新套件 `tesrpg/web/`,純 stdlib、零 pip)**:遊戲在背景 daemon thread 跑原本阻塞 REPL —— 戰鬥巢狀/遞迴 prompt(`run_battle` 逐回合、`_choose_combat_action` 遞迴、`_prep_phase` 預算迴圈)靠 thread 呼叫堆疊自然保住,**不重寫控制流**。`console.py` 的 **5 個輸入原語**(menu/grouped_menu/confirm/ask_int/ask_text)在 web 模式攔截 → 經 `inbound`/`outbound` 雙 `queue` round-trip。`WebBackend`(backend.py)+ stdlib `ThreadingHTTPServer`(server.py):`GET /`、SSE `GET /events`、`POST /input`。
+- **顯示**:每個輸入原語=「上一畫面」的自然沖刷點 → `console.export_html(code_format='{code}', clear=True)` 取裸 `<span>` 片段送瀏覽器(視覺 1:1 終端);輸入轉結構化 spec → 前端渲染成可點按鈕/輸入框 + 數字鍵 1–9/0。
+- **接點(唯一既有檔編輯=`console.py` +41 行)**:`use_web_backend()`/`_web_prompt()`/`_plain()` + 5 個輸入原語頂端 web guard;**`_web=None` 時完全惰性**(終端版逐位元照舊,38→39 測試全綠佐證)。launcher 在 `server.py:launch()`(遊戲 thread `try: main() finally: flush_final()`、未捕捉例外渲染進畫面而非凍結)。
+- **骨幹必修(對抗審查實證)**:`export_html` 加 `code_format` 防整份 `<!DOCTYPE>` 文件洩漏;SSE 斷線重連重送 `last_frame` + generation id 退殭屍 handler;`submit()` 鎖內原子化防雙擊幽靈作答;Content-Length 夾限。前端:多位數數字鍵(種族10/星座13 鍵盤可達)、重連保留正在輸入值、空整數框不誤送 0、送出失敗解鎖重試。
+- **視覺微調(純 `index.html` CSS/小互動)**:暗色金線「卷軸」主題 + 報頭飾紋、畫面金框 + 橫捲提示 + 換幀淡入、按鈕手感/focus、`env(safe-area)` RWD。**C-lite 已知取捨**:手機畫面等寬橫捲、地圖/背包/敵人不可點(輸入按鈕可點)。**升級路徑保留**(日後可把高頻面板逐一改原生 HTML view-model,協定零改)。
+- **驗證**:39 測試模組全綠(新 `test_web`:5 原語 round-trip / 雙擊擋 / 越界整數重詢 / flush_final / code_format)+ 無頭 queue 全鏈(create→hub→角色卡→休息→隱退→**傳奇結算**→quit→最終沖刷,無死鎖)+ live HTTP/SSE 煙霧(串流/POST 推進/重連重送/stale→409/惡意非物件 POST→乾淨 409)+ **對抗審查 Workflow(4 維,11 發現→4 確認皆 low、已修)**。**跑法**:`python3 -m tesrpg.web`。⚠️本機無 headless 瀏覽器,視覺成果未經眼睛驗證(契約與供給已驗)。
+
 **內容量**:10 種族 / 13 星座 / 8 職業 / **22 技能(+偵查 scout)** / **19 武器(4 法杖)** / **34 護甲(7 材質整套)** / 25 法術(5 AoE) /
 **15 材料(全部可野外採集/獵取)** / **4 飾品** / **製作配方系統(4 皮甲配方)** / **51 生物(7 高階 elite + 2 吸血鬼 + 5 黑沼澤 + 8 黑兄目標 + 7 神話黎明目標 + 6 九神聖戰目標 + 2 heartland;18 隻帶 biome 生態標籤)** / 3 傭兵 / **36 地點(有環圖+生態 biome,世界閉合成大環;各省補全城市 賽8/天9/晨8/黑7/邊4,共 17 城+4 鎮)** / **6 地城(每座 ≥1 任務指向,含龍喉峰屠龍)** / **54 任務(3 分支壓軸 + 解咒 + 6 黑兄合約 + 6 神話黎明合約 + 6 九神聖戰合約 + 11 在地任務含 2 任務鏈 + 屠龍)** / **6 公會(+神話黎明/九神騎士團,大事件解鎖)** / **7 開局背景** / **60 NPC(每城 3 / 每鎮 2,角色多樣、greeting + rumor 指路;9 名掛在地委託)** / **27 事件(含 10 省份限定;6 野採採集點=五省齊備)** / **吸血鬼化系統** / **黑暗兄弟會系統** / **技能里程碑系統(6 條 MVP,達門檻自動解鎖)** / **21 城主(各城自治)** / **13 具名地標(各省招牌/邊境發現,首次抵達一次性獎勵)**。
-程式:**25 個 `systems` 模組**(+vampirism +brotherhood +mastery +crafting +court +politics +warband +landmarks)+ models/ui/synth 等,共約 40 個 `.py` + `sim_assassin.py`(平衡回歸);**25 個 `data/*.json`**(+mastery.json +recipes.json +landmarks.json;黑兄/細化省分/城戰立場/招兵兵種全靠改既有檔);**38 測試模組**(+test_mastery +test_practice_cost +test_shop +test_crafting +test_court +test_politics +test_warband +test_worldstate +test_mythicdawn +test_knights +test_landmarks +test_polish +test_sheet)。
+程式:**25 個 `systems` 模組**(+vampirism +brotherhood +mastery +crafting +court +politics +warband +landmarks)+ models/ui/synth 等,共約 40 個 `.py` + `sim_assassin.py`(平衡回歸);**25 個 `data/*.json`**(+mastery.json +recipes.json +landmarks.json;黑兄/細化省分/城戰立場/招兵兵種全靠改既有檔);**38 測試模組**(+test_mastery +test_practice_cost +test_shop +test_crafting +test_court +test_politics +test_warband +test_worldstate +test_mythicdawn +test_knights +test_landmarks +test_polish +test_sheet +test_web)。**新增 `tesrpg/web/` 套件(本機 Web 版,純 stdlib、零 pip;`python3 -m tesrpg.web`)**。
 
 ---
 

@@ -24,6 +24,32 @@ from tesrpg.systems import mastery
 
 console = Console()
 
+# --- Web 後端接點(單人/本機;終端模式 _web=None 時完全惰性)----------------
+# launcher 呼叫 use_web_backend() 後:`console` 換成錄製用 Console,5 個輸入原語
+# 改走 _web_prompt()(沖出累積畫面 HTML + 輸入規格 → backend,阻塞等回覆)。
+# 渲染函式一律不動(照常 console.print → 錄進緩衝)。
+_web = None
+
+
+def use_web_backend(backend, recording_console) -> None:
+    global console, _web
+    console = recording_console
+    _web = backend
+
+
+def _plain(markup: str) -> str:
+    try:
+        return Text.from_markup(markup).plain
+    except Exception:
+        return markup
+
+
+def _web_prompt(spec: dict):
+    """沖出自上個 prompt 以來累積的畫面 HTML(裸 <span> 片段)+ 輸入規格,阻塞等回覆。"""
+    html = console.export_html(inline_styles=True, code_format="{code}", clear=True)
+    return _web.prompt(html, spec)
+
+
 # --- 視覺識別 -----------------------------------------------------------
 # 金=主結構/強調色(面板邊框、選項編號、標題);語意色維持(紅戰鬥/青魔法/綠潛行)。
 GOLD = "gold1"
@@ -974,6 +1000,10 @@ def grouped_menu(title: str, groups: list) -> str:
 
     groups: [(分類名, [(key, 顯示文字), ...]), ...];空分類自動略過。
     """
+    if _web is not None:
+        g = [{"header": header, "options": [{"key": k, "label": _plain(lbl)} for k, lbl in opts]}
+             for header, opts in groups if opts]
+        return _web_prompt({"type": "grouped", "title": title or "", "groups": g})
     if title:
         console.print(f"\n[bold {GOLD}]❖ {title}[/]")
     flat: list[str] = []
@@ -1053,6 +1083,10 @@ def menu(title: str, options: list[tuple[str, str]], allow_back: bool = False) -
 
     options: [(key, 顯示文字), ...]
     """
+    if _web is not None:
+        spec = {"type": "menu", "title": title or "", "allow_back": bool(allow_back),
+                "options": [{"key": k, "label": _plain(lbl)} for k, lbl in options]}
+        return _web_prompt(spec)
     if title:
         console.print(f"\n[bold {GOLD}]❖ {title}[/]")
     for i, (_key, label) in enumerate(options, 1):
@@ -1070,10 +1104,15 @@ def menu(title: str, options: list[tuple[str, str]], allow_back: bool = False) -
 
 
 def ask_text(prompt: str, default: str | None = None) -> str:
+    if _web is not None:
+        return _web_prompt({"type": "text", "prompt": prompt, "default": default})
     return Prompt.ask(f"  {prompt}", default=default)
 
 
 def ask_int(prompt: str, default: int, lo: int, hi: int) -> int:
+    if _web is not None:
+        return _web_prompt({"type": "int", "prompt": prompt,
+                            "default": default, "lo": lo, "hi": hi})
     while True:
         n = IntPrompt.ask(f"  {prompt}", default=default)
         if lo <= n <= hi:
@@ -1082,4 +1121,6 @@ def ask_int(prompt: str, default: int, lo: int, hi: int) -> int:
 
 
 def confirm(prompt: str) -> bool:
+    if _web is not None:
+        return _web_prompt({"type": "confirm", "prompt": prompt})
     return Prompt.ask(f"  {prompt} [y/n]", choices=["y", "n"], default="n") == "y"
