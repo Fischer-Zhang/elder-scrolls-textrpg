@@ -1332,29 +1332,30 @@ def _dismiss_mercenary(state: GameState, gamedata: GameData) -> None:
 
 def action_trainer(state: GameState, gamedata: GameData) -> None:
     char = state.player
-    spec = ui.menu("向訓練師學哪一類?", [
-        ("combat", "戰鬥"), ("magic", "魔法"), ("stealth", "潛行"),
-    ], allow_back=True)
-    if spec is None:
-        return
-    opts = []
-    for sid in gamedata.skills_by_spec(spec):
+    while True:                                       # 可連續訓練,返回才離開
+        spec = ui.menu("向訓練師學哪一類?", [
+            ("combat", "戰鬥"), ("magic", "魔法"), ("stealth", "潛行"),
+        ], allow_back=True)
+        if spec is None:
+            return
+        opts = []
+        for sid in gamedata.skills_by_spec(spec):
+            cost = world.train_cost(char.skill(sid))
+            opts.append((sid, f"{gamedata.skill_name(sid)} (Lv {char.skill(sid)}) — {cost} 金 +1"))
+        sid = ui.menu("訓練哪項技能?", opts, allow_back=True)
+        if sid is None:
+            continue
+        if char.skill(sid) >= formulas.SKILL_CAP:
+            ui.message("此技能已臻化境,無需再學。", style="grey70")
+            continue
         cost = world.train_cost(char.skill(sid))
-        opts.append((sid, f"{gamedata.skill_name(sid)} (Lv {char.skill(sid)}) — {cost} 金 +1"))
-    sid = ui.menu("訓練哪項技能?", opts, allow_back=True)
-    if sid is None:
-        return
-    if char.skill(sid) >= formulas.SKILL_CAP:
-        ui.message("此技能已臻化境,無需再學。", style="grey70")
-        return
-    cost = world.train_cost(char.skill(sid))
-    if char.gold < cost:
-        ui.message("金幣不足。", style="red")
-        return
-    char.gold -= cost
-    events = progression.use_skill(char, gamedata, sid, formulas.skill_threshold(char.skill(sid)))
-    ui.message(f"訓練師指點了你的{gamedata.skill_name(sid)}。", style="green")
-    ui.show_events(events, gamedata)
+        if char.gold < cost:
+            ui.message("金幣不足。", style="red")
+            continue
+        char.gold -= cost
+        events = progression.use_skill(char, gamedata, sid, formulas.skill_threshold(char.skill(sid)))
+        ui.message(f"訓練師指點了你的{gamedata.skill_name(sid)}。", style="green")
+        ui.show_events(events, gamedata)
 
 
 # ======================================================================
@@ -1382,42 +1383,44 @@ def action_court(state: GameState, gamedata: GameData) -> str | None:
     if not ruler:
         ui.message("此地沒有領主可謁見。", style="grey70")
         return None
-    rel = politics.relationship(char, gamedata, loc_id)
-    pol = {"stance": politics.stance_label(politics.faction_of(char, gamedata, loc_id)),
-           "relation": politics.REL_LABEL.get(rel, rel),
-           "garrison": politics.garrison_of(char, gamedata, loc_id)}
-    held = loc_id in politics.held_tax_cities(char, gamedata)   # 你親手攻下的城 → 顯示領地經營
-    territory = (politics.territory_overview(char, gamedata, loc_id, state.time.absolute_hours())
-                 if held else None)
-    ui.court_panel(ruler, gamedata, _court_reception(char),
-                   standing=court.standing(char, loc_id), thane=court.is_thane(char, loc_id),
-                   politics=pol, territory=territory)
-    opts = []
-    offered = court.offered_ruler_quest(char, gamedata, loc_id)
-    if rel != "enemy" and not held and offered:   # 敵城/自家領地不接領主委託
-        opts.append(("quest", f"領取委託:{gamedata.quests[offered]['name']}"))
-    if rel != "enemy" and court.can_become_thane(char, gamedata, loc_id):
-        opts.append(("thane", "✦ 受封武士"))
-    if politics.can_reinforce(char, gamedata, loc_id):
-        opts.append(("reinforce", f"加強駐軍({politics.REINFORCE_COST_PER} 金/兵 → 鎮民心、防叛亂)"))
-    if not char.allegiance:
-        opts.append(("pledge", "宣誓效忠 —— 選擇你的大義"))
-    if politics.can_siege(char, gamedata, loc_id):
-        opts.append(("siege", f"⚔ 發動攻城(守軍 {politics.garrison_of(char, gamedata, loc_id)})"))
-    if not opts:
-        return None                             # 純謁見:領主暫無吩咐
-    choice = ui.menu("領主有何吩咐?", opts, allow_back=True)
-    if choice == "quest":
-        _accept_and_brief(state, gamedata, offered)
-    elif choice == "thane":
-        _become_thane(state, gamedata, loc_id, ruler)
-    elif choice == "reinforce":
-        _reinforce_garrison(state, gamedata, loc_id)
-    elif choice == "pledge":
-        _pledge_allegiance(state, gamedata)
-    elif choice == "siege":
-        return action_siege(state, gamedata, loc_id)
-    return None
+    while True:                                       # 可連續處理朝堂事務,返回才離開(攻城仍為終局)
+        rel = politics.relationship(char, gamedata, loc_id)
+        pol = {"stance": politics.stance_label(politics.faction_of(char, gamedata, loc_id)),
+               "relation": politics.REL_LABEL.get(rel, rel),
+               "garrison": politics.garrison_of(char, gamedata, loc_id)}
+        held = loc_id in politics.held_tax_cities(char, gamedata)   # 你親手攻下的城 → 顯示領地經營
+        territory = (politics.territory_overview(char, gamedata, loc_id, state.time.absolute_hours())
+                     if held else None)
+        ui.court_panel(ruler, gamedata, _court_reception(char),
+                       standing=court.standing(char, loc_id), thane=court.is_thane(char, loc_id),
+                       politics=pol, territory=territory)
+        opts = []
+        offered = court.offered_ruler_quest(char, gamedata, loc_id)
+        if rel != "enemy" and not held and offered:   # 敵城/自家領地不接領主委託
+            opts.append(("quest", f"領取委託:{gamedata.quests[offered]['name']}"))
+        if rel != "enemy" and court.can_become_thane(char, gamedata, loc_id):
+            opts.append(("thane", "✦ 受封武士"))
+        if politics.can_reinforce(char, gamedata, loc_id):
+            opts.append(("reinforce", f"加強駐軍({politics.REINFORCE_COST_PER} 金/兵 → 鎮民心、防叛亂)"))
+        if not char.allegiance:
+            opts.append(("pledge", "宣誓效忠 —— 選擇你的大義"))
+        if politics.can_siege(char, gamedata, loc_id):
+            opts.append(("siege", f"⚔ 發動攻城(守軍 {politics.garrison_of(char, gamedata, loc_id)})"))
+        if not opts:
+            return None                             # 純謁見:領主暫無吩咐
+        choice = ui.menu("領主有何吩咐?", opts, allow_back=True)
+        if choice is None:
+            return None
+        if choice == "quest":
+            _accept_and_brief(state, gamedata, offered)
+        elif choice == "thane":
+            _become_thane(state, gamedata, loc_id, ruler)
+        elif choice == "reinforce":
+            _reinforce_garrison(state, gamedata, loc_id)
+        elif choice == "pledge":
+            _pledge_allegiance(state, gamedata)
+        elif choice == "siege":
+            return action_siege(state, gamedata, loc_id)
 
 
 def _reinforce_garrison(state: GameState, gamedata: GameData, loc_id: str) -> None:
@@ -1677,139 +1680,143 @@ def action_use_power(state: GameState, gamedata: GameData) -> None:
 def action_spell_vendor(state: GameState, gamedata: GameData) -> None:
     char = state.player
     loc = world.current_location(char, gamedata)
-    for_sale = [s for s in loc.get("spell_stock", []) if s not in char.spells]
-    if not for_sale:
-        ui.message("公會裡沒有你還沒學會的法術了。", style="grey70")
-        return
-    disc = factions.spell_discount(char, gamedata)   # 法師公會階級折扣
-    def _sp(s):
-        return max(1, round(world.spell_price(gamedata, s) * (1 - disc)))
-    label = f"學習法術(你有 {char.gold} 金"
-    label += f",會員 -{int(disc*100)}%)" if disc else ")"
-    opts = [(s, f"{gamedata.spells[s]['name']}（{ui.school_name(gamedata.spells[s]['school'])}) — {_sp(s)} 金"
-             f" · {ui.spell_effect_summary(gamedata, s)}") for s in for_sale]
-    sid = ui.menu(label, opts, allow_back=True)
-    if sid is None:
-        return
-    price = _sp(sid)
-    if char.gold < price:
-        ui.message("金幣不足。", style="red")
-        return
-    char.gold -= price
-    char.spells.append(sid)
-    ui.message(f"你習得了{gamedata.spells[sid]['name']}!", style="bold green")
+    while True:                                       # 可連續學多道法術,返回才離開
+        for_sale = [s for s in loc.get("spell_stock", []) if s not in char.spells]
+        if not for_sale:
+            ui.message("公會裡沒有你還沒學會的法術了。", style="grey70")
+            return
+        disc = factions.spell_discount(char, gamedata)   # 法師公會階級折扣
+
+        def _sp(s):
+            return max(1, round(world.spell_price(gamedata, s) * (1 - disc)))
+        label = f"學習法術(你有 {char.gold} 金"
+        label += f",會員 -{int(disc*100)}%)" if disc else ")"
+        opts = [(s, f"{gamedata.spells[s]['name']}（{ui.school_name(gamedata.spells[s]['school'])}) — {_sp(s)} 金"
+                 f" · {ui.spell_effect_summary(gamedata, s)}") for s in for_sale]
+        sid = ui.menu(label, opts, allow_back=True)
+        if sid is None:
+            return
+        price = _sp(sid)
+        if char.gold < price:
+            ui.message("金幣不足。", style="red")
+            continue
+        char.gold -= price
+        char.spells.append(sid)
+        ui.message(f"你習得了{gamedata.spells[sid]['name']}!", style="bold green")
 
 
 def action_alchemy(state: GameState, gamedata: GameData) -> None:
     char = state.player
-    ings = [s["id"] for s in char.inventory if gamedata.item(s["id"]).get("kind") == "ingredient"]
-    if len(ings) < 2:
-        ui.message("材料不足,至少需要兩種煉金材料。", style="grey70")
-        return
+    while True:                                       # 可連續煉製,返回才離開
+        ings = [s["id"] for s in char.inventory if gamedata.item(s["id"]).get("kind") == "ingredient"]
+        if len(ings) < 2:
+            ui.message("材料不足,至少需要兩種煉金材料。", style="grey70")
+            return
 
-    def _ing_opts(exclude=None):
-        out = []
-        for iid in ings:
-            if iid == exclude:
-                continue
-            effs = "、".join(_EFFECT_CN.get(e["kind"], e["kind"])
-                            for e in alchemy.ingredient_effects(gamedata, iid))
-            out.append((iid, f"{gamedata.item_name(iid)} ×{inventory.count_item(char, iid)}（{effs})"))
-        return out
+        def _ing_opts(exclude=None):
+            out = []
+            for iid in ings:
+                if iid == exclude:
+                    continue
+                effs = "、".join(_EFFECT_CN.get(e["kind"], e["kind"])
+                                for e in alchemy.ingredient_effects(gamedata, iid))
+                out.append((iid, f"{gamedata.item_name(iid)} ×{inventory.count_item(char, iid)}（{effs})"))
+            return out
 
-    a = ui.menu("選第一種材料", _ing_opts(), allow_back=True)
-    if a is None:
-        return
-    b = ui.menu("選第二種材料", _ing_opts(exclude=a), allow_back=True)
-    if b is None:
-        return
-    res = alchemy.brew(char, gamedata, a, b, state.rng)
-    state.time.advance(res["hours"])
-    ui.message(res["message"], style="green" if res["ok"] else "yellow")
-    if res["tired"]:
-        ui.message("體力不濟,煉製時心不在焉,成效減半。", style="yellow")
-    ui.show_events(res["skill_events"], gamedata)
+        a = ui.menu("選第一種材料", _ing_opts(), allow_back=True)
+        if a is None:
+            return
+        b = ui.menu("選第二種材料", _ing_opts(exclude=a), allow_back=True)
+        if b is None:
+            continue
+        res = alchemy.brew(char, gamedata, a, b, state.rng)
+        state.time.advance(res["hours"])
+        ui.message(res["message"], style="green" if res["ok"] else "yellow")
+        if res["tired"]:
+            ui.message("體力不濟,煉製時心不在焉,成效減半。", style="yellow")
+        ui.show_events(res["skill_events"], gamedata)
 
 
 def action_enchant(state: GameState, gamedata: GameData) -> None:
     char = state.player
-    gems = enchanting.filled_soul_gems(char, gamedata)
-    if not gems:
-        ui.message("你沒有充能的靈魂石(用『擒魂術』擊殺敵人可獲得)。", style="grey70")
-        return
-    weapons = enchanting.enchantable_weapons(char, gamedata)
-    armors = enchanting.enchantable_armor(char, gamedata)
-    jewels = enchanting.enchantable_jewelry(char, gamedata)
+    while True:                                       # 可連續附魔,任一選單返回即離開
+        gems = enchanting.filled_soul_gems(char, gamedata)
+        if not gems:
+            ui.message("你沒有充能的靈魂石(用『擒魂術』擊殺敵人可獲得)。", style="grey70")
+            return
+        weapons = enchanting.enchantable_weapons(char, gamedata)
+        armors = enchanting.enchantable_armor(char, gamedata)
+        jewels = enchanting.enchantable_jewelry(char, gamedata)
 
-    kinds = []
-    if weapons:
-        kinds.append(("weapon", "武器(附元素傷害)"))
-    if armors:
-        kinds.append(("armor", "護甲(強化生命/魔力/體力)"))
-    if jewels:
-        kinds.append(("jewelry", "飾品(強化技能/屬性/抗性/資源)"))
-    if not kinds:
-        ui.message("沒有可附魔的武器、護甲或飾品。", style="grey70")
-        return
-    kind = kinds[0][0] if len(kinds) == 1 else ui.menu("附魔什麼?", kinds, allow_back=True)
-    if kind is None:
-        return
+        kinds = []
+        if weapons:
+            kinds.append(("weapon", "武器(附元素傷害)"))
+        if armors:
+            kinds.append(("armor", "護甲(強化生命/魔力/體力)"))
+        if jewels:
+            kinds.append(("jewelry", "飾品(強化技能/屬性/抗性/資源)"))
+        if not kinds:
+            ui.message("沒有可附魔的武器、護甲或飾品。", style="grey70")
+            return
+        kind = kinds[0][0] if len(kinds) == 1 else ui.menu("附魔什麼?", kinds, allow_back=True)
+        if kind is None:
+            return
 
-    gem = ui.menu("使用哪顆靈魂石?",
-                  [(g, f"{gamedata.item_name(g)}(靈魂 {gamedata.item(g)['soul']})") for g in gems],
-                  allow_back=True)
-    if gem is None:
-        return
+        gem = ui.menu("使用哪顆靈魂石?",
+                      [(g, f"{gamedata.item_name(g)}(靈魂 {gamedata.item(g)['soul']})") for g in gems],
+                      allow_back=True)
+        if gem is None:
+            return
 
-    if kind == "weapon":
-        wid = ui.menu("為哪把武器附魔?",
-                      [(w, gamedata.item_name(w)) for w in weapons], allow_back=True)
-        if wid is None:
-            return
-        elem = ui.menu("附上哪種元素?", [("fire", "烈焰"), ("frost", "冰霜"), ("shock", "雷電")],
-                       allow_back=True)
-        if elem is None:
-            return
-        res = enchanting.enchant_weapon(char, gamedata, wid, elem, gem)
-    elif kind == "armor":
-        aid = ui.menu("為哪件護甲附魔?",
-                      [(a, gamedata.item_name(a)) for a in armors], allow_back=True)
-        if aid is None:
-            return
-        stat = ui.menu("穿戴時強化哪項?",
-                       [("health", "生命"), ("magicka", "魔力"), ("fatigue", "體力")],
-                       allow_back=True)
-        if stat is None:
-            return
-        res = enchanting.enchant_armor(char, gamedata, aid, stat, gem)
-    else:   # jewelry
-        jid = ui.menu("為哪件飾品附魔?",
-                      [(j, gamedata.item_name(j)) for j in jewels], allow_back=True)
-        if jid is None:
-            return
-        jkind = ui.menu("附魔型別?", enchanting.JEWELRY_KINDS, allow_back=True)
-        if jkind is None:
-            return
-        if jkind == "skill":
-            param_opts = [(sid, gamedata.skill_name(sid)) for sid in gamedata.skills]
-        elif jkind == "attr":
-            param_opts = [(a, formulas.ATTRIBUTE_NAMES[a]) for a in formulas.ATTRIBUTES]
-        elif jkind == "resist":
-            param_opts = [(e, n) for e, n in
-                          [("fire", "烈焰"), ("frost", "冰霜"), ("shock", "雷電"),
-                           ("poison", "毒素"), ("magic", "魔法")]]
-        else:  # res
-            param_opts = [("health", "生命"), ("magicka", "魔力"), ("fatigue", "體力")]
-        param = ui.menu("強化哪一項?", param_opts, allow_back=True)
-        if param is None:
-            return
-        res = enchanting.enchant_jewelry(char, gamedata, jid, jkind, param, gem)
+        if kind == "weapon":
+            wid = ui.menu("為哪把武器附魔?",
+                          [(w, gamedata.item_name(w)) for w in weapons], allow_back=True)
+            if wid is None:
+                return
+            elem = ui.menu("附上哪種元素?", [("fire", "烈焰"), ("frost", "冰霜"), ("shock", "雷電")],
+                           allow_back=True)
+            if elem is None:
+                return
+            res = enchanting.enchant_weapon(char, gamedata, wid, elem, gem)
+        elif kind == "armor":
+            aid = ui.menu("為哪件護甲附魔?",
+                          [(a, gamedata.item_name(a)) for a in armors], allow_back=True)
+            if aid is None:
+                return
+            stat = ui.menu("穿戴時強化哪項?",
+                           [("health", "生命"), ("magicka", "魔力"), ("fatigue", "體力")],
+                           allow_back=True)
+            if stat is None:
+                return
+            res = enchanting.enchant_armor(char, gamedata, aid, stat, gem)
+        else:   # jewelry
+            jid = ui.menu("為哪件飾品附魔?",
+                          [(j, gamedata.item_name(j)) for j in jewels], allow_back=True)
+            if jid is None:
+                return
+            jkind = ui.menu("附魔型別?", enchanting.JEWELRY_KINDS, allow_back=True)
+            if jkind is None:
+                return
+            if jkind == "skill":
+                param_opts = [(sid, gamedata.skill_name(sid)) for sid in gamedata.skills]
+            elif jkind == "attr":
+                param_opts = [(a, formulas.ATTRIBUTE_NAMES[a]) for a in formulas.ATTRIBUTES]
+            elif jkind == "resist":
+                param_opts = [(e, n) for e, n in
+                              [("fire", "烈焰"), ("frost", "冰霜"), ("shock", "雷電"),
+                               ("poison", "毒素"), ("magic", "魔法")]]
+            else:  # res
+                param_opts = [("health", "生命"), ("magicka", "魔力"), ("fatigue", "體力")]
+            param = ui.menu("強化哪一項?", param_opts, allow_back=True)
+            if param is None:
+                return
+            res = enchanting.enchant_jewelry(char, gamedata, jid, jkind, param, gem)
 
-    state.time.advance(res["hours"])
-    ui.message(res["message"], style="bold green" if res["ok"] else "red")
-    if res["tired"]:
-        ui.message("精神耗弱,難以將靈魂束入符文,成效減半。", style="yellow")
-    ui.show_events(res["skill_events"], gamedata)
+        state.time.advance(res["hours"])
+        ui.message(res["message"], style="bold green" if res["ok"] else "red")
+        if res["tired"]:
+            ui.message("精神耗弱,難以將靈魂束入符文,成效減半。", style="yellow")
+        ui.show_events(res["skill_events"], gamedata)
 
 
 def action_repair(state: GameState, gamedata: GameData) -> None:
@@ -1829,26 +1836,33 @@ def action_repair(state: GameState, gamedata: GameData) -> None:
     if not opts:
         ui.message("這裡沒有鐵匠,你也沒有修理鎚。", style="grey70")
         return
-    choice = ui.menu("如何修理?", opts, allow_back=True)
-    if choice == "smith":
-        if char.gold < smith_fee:
-            ui.message("金幣不足。", style="red")
+    while True:                                       # 可連續修理(鐵匠/自行),返回才離開
+        choice = ui.menu("如何修理?", opts, allow_back=True)
+        if choice is None:
             return
-        char.gold -= smith_fee
-        inventory.repair_all(char, 100.0)
-        ui.message("鐵匠叮叮噹噹一陣,你的裝備煥然一新。", style="green")
-    elif choice == "hammer":
-        cap = inventory.repairable_cap(char.skill("armorer"))
-        inventory.repair_all(char, cap)
-        inventory.remove_item(char, "repair_hammer", 1)
-        # 與訓練師/正規練習對齊:自行修理付出護甲修理 practice 的體力 + 時間,非零成本刷 armorer
-        xp, hours, tired = progression.practice_cost(char, gamedata, "armorer")
-        events = progression.use_skill(char, gamedata, "armorer", xp)
-        state.time.advance(hours)
-        ui.message(f"你用修理鎚整備了裝備(上限 {int(cap)}%)。", style="green")
-        if tired:
-            ui.message("體力不濟,修整得馬虎。", style="yellow")
-        ui.show_events(events, gamedata)
+        if choice == "smith":
+            if char.gold < smith_fee:
+                ui.message("金幣不足。", style="red")
+                continue
+            char.gold -= smith_fee
+            inventory.repair_all(char, 100.0)
+            ui.message("鐵匠叮叮噹噹一陣,你的裝備煥然一新。", style="green")
+        elif choice == "hammer":
+            cap = inventory.repairable_cap(char.skill("armorer"))
+            inventory.repair_all(char, cap)
+            inventory.remove_item(char, "repair_hammer", 1)
+            # 與訓練師/正規練習對齊:自行修理付出護甲修理 practice 的體力 + 時間,非零成本刷 armorer
+            xp, hours, tired = progression.practice_cost(char, gamedata, "armorer")
+            events = progression.use_skill(char, gamedata, "armorer", xp)
+            state.time.advance(hours)
+            ui.message(f"你用修理鎚整備了裝備(上限 {int(cap)}%)。", style="green")
+            if tired:
+                ui.message("體力不濟,修整得馬虎。", style="yellow")
+            ui.show_events(events, gamedata)
+            if inventory.count_item(char, "repair_hammer") == 0:   # 修理鎚用盡 → 移除該選項
+                opts = [o for o in opts if o[0] != "hammer"]
+                if not opts:
+                    return
 
 
 def action_craft(state: GameState, gamedata: GameData) -> None:
@@ -1860,21 +1874,22 @@ def action_craft(state: GameState, gamedata: GameData) -> None:
     if not rids:
         ui.message("這裡沒有可用的工坊。", style="grey70")
         return
-    opts = []
-    for rid in rids:
-        r = gamedata.recipes[rid]
-        inp = "、".join(f"{gamedata.item_name(i)}×{n}" for i, n in r["inputs"].items())
-        tag = "" if crafting.can_craft(char, gamedata, rid) else "(材料不足)"
-        opts.append((rid, f"{r['name']}:{inp} → {gamedata.item_name(r['output'])}{tag}"))
-    rid = ui.menu("製作什麼?", opts, allow_back=True)
-    if rid is None:
-        return
-    res = crafting.craft(char, gamedata, rid)
-    state.time.advance(res["hours"])
-    ui.message(res["message"], style="green" if res["ok"] else "red")
-    if res["tired"]:
-        ui.message("體力不濟,做工馬虎。", style="yellow")
-    ui.show_events(res["skill_events"], gamedata)
+    while True:                                       # 可連續製作,返回才離開
+        opts = []
+        for rid in rids:
+            r = gamedata.recipes[rid]
+            inp = "、".join(f"{gamedata.item_name(i)}×{n}" for i, n in r["inputs"].items())
+            tag = "" if crafting.can_craft(char, gamedata, rid) else "(材料不足)"
+            opts.append((rid, f"{r['name']}:{inp} → {gamedata.item_name(r['output'])}{tag}"))
+        rid = ui.menu("製作什麼?", opts, allow_back=True)
+        if rid is None:
+            return
+        res = crafting.craft(char, gamedata, rid)
+        state.time.advance(res["hours"])
+        ui.message(res["message"], style="green" if res["ok"] else "red")
+        if res["tired"]:
+            ui.message("體力不濟,做工馬虎。", style="yellow")
+        ui.show_events(res["skill_events"], gamedata)
 
 
 _EFFECT_CN = {"heal": "回血", "restore_magicka": "回魔", "restore_fatigue": "回體",
@@ -1909,51 +1924,54 @@ def action_coat_weapon(state: GameState, gamedata: GameData) -> None:
 def action_guild_hall(state: GameState, gamedata: GameData, faction_id: str) -> None:
     char = state.player
     f = gamedata.factions[faction_id]
-    ui.guild_panel(char, gamedata, faction_id)
-
-    opts = []
-    if not factions.is_member(char, faction_id):
-        reason = factions.join_block_reason(char, gamedata, faction_id)
-        if reason is not None:                       # 門檻/對立/通緝 → 說明原因
-            ui.message(reason, style="yellow")
-            return
-        opts.append(("join", "申請入會"))
-    else:
-        avail = quests.available_quests(char, gamedata, "guild", faction_id)
-        if avail:
-            opts.append(("accept", "接取晉升任務"))
+    while True:                                      # 留在公會可連續處理(入會→接任務),返回才離開
+        ui.guild_panel(char, gamedata, faction_id)
+        opts = []
+        if not factions.is_member(char, faction_id):
+            reason = factions.join_block_reason(char, gamedata, faction_id)
+            if reason is not None:                   # 門檻/對立/通緝 → 說明原因
+                ui.message(reason, style="yellow")
+                return
+            opts.append(("join", "申請入會"))
         else:
-            # 區分「手上還有公會任務沒交」與「技能/通緝/已達頂點擋住晉升」
-            has_active = any(gamedata.quests[q].get("faction") == faction_id for q in char.quests)
-            if has_active:
-                ui.message("先完成你手上的公會任務,再回來談晉升。", style="grey70")
+            avail = quests.available_quests(char, gamedata, "guild", faction_id)
+            if avail:
+                opts.append(("accept", "接取晉升任務"))
             else:
-                ui.message(factions.advance_block_reason(char, gamedata, faction_id)
-                           or "公會目前沒有你能接的委託。", style="grey70")
+                # 區分「手上還有公會任務沒交」與「技能/通緝/已達頂點擋住晉升」
+                has_active = any(gamedata.quests[q].get("faction") == faction_id for q in char.quests)
+                if has_active:
+                    ui.message("先完成你手上的公會任務,再回來談晉升。", style="grey70")
+                else:
+                    ui.message(factions.advance_block_reason(char, gamedata, faction_id)
+                               or "公會目前沒有你能接的委託。", style="grey70")
+                return
+        choice = ui.menu("公會事務", opts, allow_back=True)
+        if choice is None:
             return
-    choice = ui.menu("公會事務", opts, allow_back=True)
-    if choice == "join":
-        factions.join(char, faction_id)
-        ui.message(f"你加入了{f['name']},現為「{factions.rank_name(char, gamedata, faction_id)}」。",
-                   style="bold green")
-    elif choice == "accept":
-        avail = quests.available_quests(char, gamedata, "guild", faction_id)
-        _accept_and_brief(state, gamedata, avail[0])
+        if choice == "join":
+            factions.join(char, faction_id)
+            ui.message(f"你加入了{f['name']},現為「{factions.rank_name(char, gamedata, faction_id)}」。",
+                       style="bold green")
+        elif choice == "accept":
+            avail = quests.available_quests(char, gamedata, "guild", faction_id)
+            _accept_and_brief(state, gamedata, avail[0])
 
 
 def action_board(state: GameState, gamedata: GameData) -> None:
     char = state.player
     province = world.current_location(char, gamedata)["province"]
-    avail = quests.available_quests(char, gamedata, "board", province=province)
-    if not avail:
-        ui.message("告示板上沒有你還沒接的委託。", style="grey70")
-        return
-    opts = [(qid, f"{gamedata.quests[qid]['name']} — {quests.objective_text(char, gamedata, qid)}"
-             f"(賞 {gamedata.quests[qid]['reward'].get('gold', 0)} 金)") for qid in avail]
-    qid = ui.menu("告示板委託", opts, allow_back=True)
-    if qid is None:
-        return
-    _accept_and_brief(state, gamedata, qid)
+    while True:                                       # 留在告示板可連續接多個委託,返回才離開
+        avail = quests.available_quests(char, gamedata, "board", province=province)
+        if not avail:
+            ui.message("告示板上沒有你還沒接的委託。", style="grey70")
+            return
+        opts = [(qid, f"{gamedata.quests[qid]['name']} — {quests.objective_text(char, gamedata, qid)}"
+                 f"(賞 {gamedata.quests[qid]['reward'].get('gold', 0)} 金)") for qid in avail]
+        qid = ui.menu("告示板委託", opts, allow_back=True)
+        if qid is None:
+            return
+        _accept_and_brief(state, gamedata, qid)
 
 
 def _accept_and_brief(state: GameState, gamedata: GameData, qid: str) -> None:

@@ -45,9 +45,272 @@ def _plain(markup: str) -> str:
 
 
 def _web_prompt(spec: dict):
-    """沖出自上個 prompt 以來累積的畫面 HTML(裸 <span> 片段)+ 輸入規格,阻塞等回覆。"""
+    """沖出殘餘畫面 HTML(未轉換面板的裸 <span> 片段)+ 輸入規格,阻塞等回覆。"""
     html = console.export_html(inline_styles=True, code_format="{code}", clear=True)
     return _web.prompt(html, spec)
+
+
+def _emit_view(name: str, data) -> None:
+    """web 模式:把一個面板渲成原生 view block(先沖出未轉換面板的殘餘 HTML 以保序)。"""
+    html = console.export_html(inline_styles=True, code_format="{code}", clear=True)
+    _web.add_block(html, name, data)
+
+
+_fmt_console = None
+
+
+def _markup_html(markup: str) -> str:
+    """把一行 rich 標記渲成彩色 HTML span(供 log/flavor 行原生顯示;非等寬框線)。"""
+    global _fmt_console
+    if _fmt_console is None:
+        import io
+        import os
+        _fmt_console = Console(record=True, file=open(os.devnull, "w"), width=400,
+                               force_terminal=True, color_system="truecolor")
+    _fmt_console.print(Text.from_markup(markup))
+    return _fmt_console.export_html(inline_styles=True, code_format="{code}", clear=True).strip()
+
+
+def _emit_log(markup: str) -> None:
+    """web 模式:一行 log/flavor → log block(無框彩色文字行)。"""
+    pending = console.export_html(inline_styles=True, code_format="{code}", clear=True)
+    _web.add_log(pending, _markup_html(markup))
+
+
+# 通用原生面板列(供角色卡 sheet_* 子檢視)
+def _kv(k, v) -> dict:
+    return {"t": "kv", "k": str(k), "v": str(v)}
+
+
+def _hd(s) -> dict:
+    return {"t": "head", "s": str(s)}
+
+
+def _ln(s, c=None) -> dict:
+    return {"t": "line", "s": str(s), "c": c}
+
+
+def _emit_panel(title: str, rows: list) -> None:
+    _emit_view("panel", {"title": title, "rows": rows})
+
+
+# --- web view-models(原生 HTML 渲染用;與終端渲染函式同源資料,客戶端畫成元件)-----
+def _status_view(state: GameState) -> dict:
+    c = state.player
+    v = {"name": c.name, "level": c.level, "time": state.time.label(),
+         "hp": [int(c.health), int(c.max_health)],
+         "mp": [int(c.magicka), int(c.max_magicka)],
+         "fp": [int(c.fatigue), int(c.max_fatigue)],
+         "fame": c.fame, "bounty": sum(c.bounties.values()),
+         "can_level": c.can_level_up(), "vampire": None, "infected": False}
+    if getattr(c, "is_vampire", False):
+        from tesrpg.systems import vampirism
+        v["vampire"] = vampirism.STAGE_NAMES[min(3, max(0, c.vampire_stage))]
+    elif getattr(c, "vampire_infected_day", -1) >= 0:
+        v["infected"] = True
+    return v
+
+
+def _location_view(char: Character, gamedata: GameData) -> dict:
+    from tesrpg.systems import landmarks, politics
+    loc = gamedata.location(char.location_id)
+    v = {"name": loc["name"], "province": loc["province"],
+         "type": LOC_TYPE_NAME.get(loc["type"], loc["type"]), "danger": loc.get("danger", 0),
+         "desc": loc["desc"], "landmark": None, "ruler": None,
+         "faction": None, "bloc": None, "exits": []}
+    lm = gamedata.landmark_at(char.location_id)
+    if lm and landmarks.is_discovered(char, char.location_id):
+        v["landmark"] = {"name": lm["name"], "revisit": lm.get("revisit")}
+    ruler = gamedata.ruler_at(char.location_id)
+    if ruler:
+        v["ruler"] = {"title": ruler["title"], "name": ruler["name"]}
+        v["faction"] = politics.stance_label(politics.faction_of(char, gamedata, char.location_id))
+        v["bloc"] = ruler.get("bloc_label")
+    for d, h in loc.get("links", {}).items():
+        v["exits"].append({"name": gamedata.location(d)["name"], "hours": h})
+    return v
+
+
+def _sheet_view(char: Character, gamedata: GameData) -> dict:
+    from tesrpg.systems import factions
+    from tesrpg.systems import inventory as _inv
+    cls = "自訂" if char.class_id == "custom" else gamedata.classes[char.class_id]["name"]
+    return {
+        "name": char.name, "race": gamedata.races[char.race]["name"],
+        "sex": "男" if char.sex == "male" else "女",
+        "sign": gamedata.birthsigns[char.birthsign]["name"], "cls": cls,
+        "spec": formulas.SPEC_NAMES.get(char.specialization, char.specialization),
+        "level": char.level,
+        "level_xp": [int(char.level_xp), int(formulas.levelup_xp_threshold(char.level))],
+        "hp": [int(char.health), int(char.max_health)],
+        "mp": [int(char.magicka), int(char.max_magicka)],
+        "fp": [int(char.fatigue), int(char.max_fatigue)],
+        "encumbrance": formulas.max_encumbrance(char.attr("strength")),
+        "gold": char.gold, "weapon": _plain(weapon_line(char, gamedata)),
+        "armor": _inv.worn_armor_rating(char, gamedata),
+        "resist": _resist_summary(char, gamedata),
+        "fame": char.fame, "infamy": char.infamy, "bounty": sum(char.bounties.values()),
+        "attrs": [{"name": formulas.ATTRIBUTE_NAMES[k], "value": char.attr(k),
+                   "favored": k in char.favored_attributes} for k in formulas.ATTRIBUTES],
+        "skills": {s: [{"name": gamedata.skill_name(sid), "level": char.skill(sid),
+                        "major": char.is_major_skill(sid)} for sid in gamedata.skills_by_spec(s)]
+                   for s in ("combat", "magic", "stealth")},
+        "spec_names": {s: formulas.SPEC_NAMES[s] for s in ("combat", "magic", "stealth")},
+        "masteries": [{"name": e["name"], "skill": gamedata.skill_name(e["skill"]),
+                       "threshold": e["threshold"], "desc": e["desc"]}
+                      for e in mastery.unlocked(char, gamedata)],
+        "guilds": [f"{gamedata.factions[f]['name']}「{factions.rank_name(char, gamedata, f)}」"
+                   for f in char.factions if f in gamedata.factions],
+        "effects": [_effect_label(e) for e in char.active_effects],
+    }
+
+
+def _status_tags_list(entity) -> list:
+    out = []
+    for e in entity.active_effects:
+        if e.get("turns", 0) <= 0:
+            continue
+        out.append(f"{_STATUS_TAG.get(e['kind'], e['kind'])}{e['turns']}")
+    return out
+
+
+def _combatant(ent, idx=None, down=False) -> dict:
+    return {"name": ent.name, "idx": idx, "down": down,
+            "hp": [max(0, int(ent.health)), int(ent.max_health)],
+            "fp": [int(getattr(ent, "fatigue", 0)), int(getattr(ent, "max_fatigue", 0))],
+            "tags": [] if down else _status_tags_list(ent)}
+
+
+def _combat_view(player: Character, allies: list, enemies: list) -> dict:
+    foes, n = [], 0
+    for e in enemies:
+        if e.health > 0:
+            n += 1
+            foes.append(_combatant(e, idx=n))
+        else:
+            foes.append(_combatant(e, down=True))
+    return {"me": _combatant(player), "has_fp": True,
+            "allies": [_combatant(a) for a in allies if a.health > 0], "enemies": foes}
+
+
+def _legacy_view(s: dict) -> dict:
+    rows = []
+    for key in ("origin", "condition", "dark_deeds", "dominion"):
+        label = {"origin": "出身", "condition": "詛咒", "dark_deeds": "血業", "dominion": "功業"}[key]
+        if s.get(key):
+            rows.append([label, str(s[key])])
+    if s.get("masteries"):
+        rows.append(["精通", "、".join(s["masteries"])])
+    rows.append(["等級", str(s["level"])])
+    rows.append(["在世", f"{s['years']} 年 {s['days']} 天"])
+    rows.append(["足跡", f"踏遍 {s['places_visited']}/{s['total_locations']} 處地點"])
+    if s.get("total_landmarks"):
+        rows.append(["奇景", f"尋得 {s.get('landmarks_found', 0)}/{s['total_landmarks']} 處具名地標"])
+    rows.append(["地城", f"肅清 {s['dungeons_cleared']} 座"])
+    rows.append(["任務", f"完成 {s['quests_completed']} 件"])
+    rows.append(["斬獲", f"擊殺 {s['total_kills']} 敵"])
+    if s["factions"]:
+        rows.append(["公會", "、".join(f"{n}「{r}」" for n, r in s["factions"])])
+    rows.append(["聲望", f"{s['fame']}" + (f"  惡名 {s['infamy']}" if s["infamy"] else "")])
+    rows.append(["財富", f"{s['gold']} 金" + (f"  通緝 {s['bounty']}" if s["bounty"] else "")])
+    if s.get("seed") is not None:
+        rows.append(["種子", str(s["seed"])])
+    return {"head": "⚰ 傳 奇 落 幕" if s["ending"] == "death" else "🌅 功 成 身 退",
+            "name": s["name"], "sub": f"{s['race']} · {s['sex']} · {s['birthsign']} · {s['class']}",
+            "playstyle": s["playstyle"], "rows": rows,
+            "top_skills": "  ".join(f"{n} {lv}" for n, lv in s["top_skills"]),
+            "score": s["score"], "title": s["title"]}
+
+
+def _inventory_view(char: Character, gamedata: GameData) -> dict:
+    from tesrpg.systems import inventory as inv
+    order = {"weapon": 0, "armor": 1, "potion": 2, "misc": 3}
+    stacks = sorted(char.inventory, key=lambda s: order.get(gamedata.item(s["id"])["kind"], 9))
+    items = [{"label": _plain(item_label(gamedata, char, s["id"], s["qty"])),
+              "kind": gamedata.item(s["id"])["kind"]} for s in stacks]
+    w = inv.total_weight(char, gamedata)
+    mx = inv.max_weight(char)
+    return {"items": items, "weight": float(w), "max": mx, "over": w > mx, "gold": char.gold}
+
+
+def _guild_view(char: Character, gamedata: GameData, faction_id: str) -> dict:
+    from tesrpg.systems import factions
+    f = gamedata.factions[faction_id]
+    v = {"name": f["name"], "blurb": f["blurb"], "member": factions.is_member(char, faction_id)}
+    if v["member"]:
+        reason = factions.advance_block_reason(char, gamedata, faction_id)
+        v.update({"rank": factions.rank_name(char, gamedata, faction_id),
+                  "perk": factions.perk_desc(char, gamedata, faction_id) or None,
+                  "advance": reason or "已可接取下一階晉升任務", "advance_blocked": bool(reason)})
+    else:
+        reason = factions.join_block_reason(char, gamedata, faction_id)
+        v.update({"join_req": f"{factions.gate_skill_names(gamedata, faction_id)} 任一達 "
+                              f"{f.get('join_skill', 0)}(你目前 {factions.gate_level(char, gamedata, faction_id)})",
+                  "rivals": "、".join(gamedata.factions[r]["name"] for r in f["rivals"]) if f.get("rivals") else None,
+                  "join_status": reason or "你已符合入會資格,可申請加入。", "join_blocked": bool(reason)})
+    return v
+
+
+def _quests_view(char: Character, gamedata: GameData) -> dict:
+    from tesrpg.systems import quests
+    items = [{"name": gamedata.quests[qid]["name"],
+              "faction": (gamedata.factions[gamedata.quests[qid]["faction"]]["name"]
+                          if gamedata.quests[qid].get("faction") else None),
+              "objective": quests.objective_text(char, gamedata, qid)} for qid in char.quests]
+    return {"quests": items, "completed": len(char.completed_quests)}
+
+
+def _court_view(ruler, gamedata, reception, standing, thane, politics, territory) -> dict:
+    v = {"title": ruler["title"], "name": ruler["name"], "reception": reception, "blurb": ruler["blurb"],
+         "race": gamedata.races.get(ruler["race"], {}).get("name", ruler["race"]),
+         "garrison": (politics or {}).get("garrison", ruler["garrison"]), "bloc": ruler.get("bloc_label"),
+         "stance": (f"{politics['stance']} · 與你 {politics['relation']}" if politics else None),
+         "thane": thane, "standing": (standing if (not thane and standing is not None) else None),
+         "territory": None}
+    if territory:
+        v["territory"] = {"population": territory["population"], "tax": territory["tax"],
+                          "garrison": territory["garrison"], "base": territory["base"],
+                          "maint": territory["maint"], "unrest": territory["unrest"], "net": territory.get("net")}
+    return v
+
+
+def _territory_view(rows, gamedata, gold) -> dict:
+    out = []
+    for r in rows:
+        cd = r["countdown"]
+        out.append({"name": gamedata.location(r["loc"])["name"], "population": r["population"],
+                    "tax": r["tax"], "garrison": r["garrison"], "base": r["base"], "maint": r["maint"],
+                    "net": r["net"], "unrest": r["unrest"],
+                    "countdown": ("—" if cd is None else f"{cd // 24}天{cd % 24}時")})
+    return {"rows": out, "gold": gold}
+
+
+def _map_view(char: Character, gamedata: GameData) -> dict:
+    from tesrpg.systems import landmarks, politics
+    locs = gamedata.world["locations"]
+    by_prov: dict[str, list[str]] = {}
+    order: list[str] = []
+    for lid, loc in locs.items():
+        by_prov.setdefault(loc["province"], []).append(lid)
+        if loc["province"] not in order:
+            order.append(loc["province"])
+    _FAC = {"imperial": "帝", "independent": "獨", "neutral": "中", "daedric": "湮", "own": "己"}
+    provs = []
+    for prov in order:
+        nodes = []
+        for lid in by_prov[prov]:
+            loc = locs[lid]
+            fac = None
+            if gamedata.ruler_at(lid):
+                fac = "己" if lid in char.city_faction else _FAC.get(politics.faction_of(char, gamedata, lid))
+            nodes.append({"name": loc["name"], "type": LOC_TYPE_NAME.get(loc["type"], ""),
+                          "here": lid == char.location_id, "visited": lid in char.visited_locations,
+                          "danger": loc.get("danger", 0), "faction": fac,
+                          "landmark": bool(gamedata.landmark_at(lid) and landmarks.is_discovered(char, lid)),
+                          "services": [_SERVICE_CN[s] for s in loc.get("services", []) if s in _SERVICE_CN],
+                          "exits": [{"name": locs[d]["name"], "hours": h} for d, h in loc.get("links", {}).items()]})
+        provs.append({"name": prov, "nodes": nodes})
+    return {"provinces": provs}
 
 
 # --- 視覺識別 -----------------------------------------------------------
@@ -74,6 +337,8 @@ def _panel(body, title: str | None = None, style: str = GOLD,
 
 # --- 基本元件 -----------------------------------------------------------
 def banner() -> None:
+    if _web is not None:
+        return                   # 報頭已是標題;web 模式不重複畫 banner
     title = Text("流   亡   者", justify="center", style=f"bold {GOLD}")
     orn = Text("⚔  ◈  ✦  ◈  ⚔", justify="center", style=GOLD_DIM)
     sub = Text("上古卷軸風格 · 技能驅動沙盒文字 RPG", justify="center", style=PARCH)
@@ -93,6 +358,9 @@ def _bar(cur: float, mx: float, color: str, width: int = 16) -> Text:
 
 def status_line(state: GameState) -> None:
     """行動之間的精簡狀態列(金色頂欄分隔)。"""
+    if _web is not None:
+        _emit_view("status", _status_view(state))
+        return
     c = state.player
     t = Text()
     t.append("❖ ", style=GOLD)
@@ -178,6 +446,9 @@ def _sheet_overview_extra(char: Character, gamedata: GameData) -> Text | None:
 
 
 def character_sheet(char: Character, gamedata: GameData) -> None:
+    if _web is not None:
+        _emit_view("sheet", _sheet_view(char, gamedata))
+        return
     race = gamedata.races[char.race]["name"]
     sign = gamedata.birthsigns[char.birthsign]["name"]
     cls = ("自訂" if char.class_id == "custom"
@@ -281,6 +552,14 @@ def skill_table(char: Character, gamedata: GameData) -> None:
 def sheet_resistances(char: Character, gamedata: GameData) -> None:
     from tesrpg.systems import magic
     r = magic.entity_resist(char, gamedata)
+    if _web is not None:
+        rows = []
+        for e in _RES_ELEMS:
+            v = r.get(e, 0)
+            note = "弱點" if v < 0 else ("免疫" if v >= 100 else "")
+            rows.append(_kv(_RESIST_CN[e], f"{v:+d}%" + (f"　{note}" if note else "")))
+        _emit_panel("元素抗性(種族+裝備+血脈)", rows)
+        return
     tbl = Table(box=box.SIMPLE_HEAD, border_style=GOLD_DIM, pad_edge=False)
     tbl.add_column("元素", style=INK)
     tbl.add_column("抗性", justify="right", style=PARCH)
@@ -293,6 +572,11 @@ def sheet_resistances(char: Character, gamedata: GameData) -> None:
 
 
 def sheet_effects(char: Character, gamedata: GameData) -> None:
+    if _web is not None:
+        rows = ([_ln(f"• {_effect_label(e)}") for e in char.active_effects]
+                or [_ln("目前沒有進行中的效果。", "muted")])
+        _emit_panel("進行中效果", rows)
+        return
     body = Text()
     if not char.active_effects:
         body.append("目前沒有進行中的效果。", style=INK)
@@ -303,8 +587,17 @@ def sheet_effects(char: Character, gamedata: GameData) -> None:
 
 def sheet_factions(char: Character, gamedata: GameData) -> None:
     from tesrpg.systems import factions
-    body = Text()
     members = [f for f in char.factions if f in gamedata.factions]
+    if _web is not None:
+        rows = []
+        for fid in members:
+            rows.append(_hd(f"{gamedata.factions[fid]['name']}「{factions.rank_name(char, gamedata, fid)}」"))
+            perk = factions.perk_desc(char, gamedata, fid)
+            if perk:
+                rows.append(_ln(perk, "muted"))
+        _emit_panel("公會與階級", rows or [_ln("你尚未加入任何公會。", "muted")])
+        return
+    body = Text()
     if not members:
         body.append("你尚未加入任何公會。", style=INK)
     for fid in members:
@@ -317,8 +610,22 @@ def sheet_factions(char: Character, gamedata: GameData) -> None:
 
 
 def sheet_masteries(char: Character, gamedata: GameData) -> None:
-    body = Text()
     unl = mastery.unlocked(char, gamedata)
+    locked = [e for e in mastery._defs(gamedata) if e not in unl]
+    if _web is not None:
+        rows = []
+        if unl:
+            rows.append(_hd("已解鎖"))
+            for e in unl:
+                rows.append(_ln(f"✦ {e['name']}（{gamedata.skill_name(e['skill'])} {e['threshold']}） {e['desc']}", "magenta"))
+        if locked:
+            rows.append(_hd("未解鎖(門檻)"))
+            for e in sorted(locked, key=lambda x: (x["skill"], x["threshold"])):
+                cur = char.base_skill(e["skill"])
+                rows.append(_ln(f"○ {e['name']}（{gamedata.skill_name(e['skill'])} {cur}/{e['threshold']}） {e['desc']}", "faint"))
+        _emit_panel("技能里程碑", rows or [_ln("(無里程碑資料)", "muted")])
+        return
+    body = Text()
     if unl:
         body.append("已解鎖\n", style=f"bold {GOLD}")
         for e in unl:
@@ -338,8 +645,22 @@ def sheet_masteries(char: Character, gamedata: GameData) -> None:
 
 def sheet_power(char: Character, state: GameState, gamedata: GameData) -> None:
     from tesrpg.systems import powers
-    body = Text()
     pid = powers.power_id(char, gamedata)
+    if _web is not None:
+        if not pid:
+            _emit_panel("星座之力", [_ln("你沒有可施展的星座之力。", "muted")])
+            return
+        pdef = powers.power_def(pid)
+        rows = [_hd(pdef["name"])]
+        if pdef.get("desc"):
+            rows.append(_ln(pdef["desc"]))
+        if pdef.get("contexts"):
+            rows.append(_kv("可用場景", "、".join(pdef["contexts"])))
+        ready = powers.available(char, state, gamedata)
+        rows.append(_ln("狀態:今日就緒" if ready else "狀態:今日已施展", "green" if ready else "yellow"))
+        _emit_panel("星座之力", rows)
+        return
+    body = Text()
     if not pid:
         body.append("你沒有可施展的星座之力。", style=INK)
     else:
@@ -356,9 +677,20 @@ def sheet_power(char: Character, state: GameState, gamedata: GameData) -> None:
 
 
 def sheet_bounty(char: Character, gamedata: GameData) -> None:
+    total = sum(char.bounties.values())
+    if _web is not None:
+        rows = [_kv("聲望", char.fame), _kv("惡名", char.infamy)]
+        if total:
+            rows.append(_ln(f"通緝總額 {total} 金", "red"))
+            for prov, amt in sorted(char.bounties.items()):
+                if amt:
+                    rows.append(_kv(prov, f"{amt} 金"))
+        else:
+            rows.append(_ln("目前無通緝在身。", "green"))
+        _emit_panel("聲望與通緝", rows)
+        return
     body = Text()
     body.append(f"聲望 {char.fame}    惡名 {char.infamy}\n", style=PARCH)
-    total = sum(char.bounties.values())
     if total:
         body.append(f"通緝總額 {total} 金\n", style="red")
         for prov, amt in sorted(char.bounties.items()):
@@ -381,6 +713,28 @@ def _tr_bonus(category: str, key: str, gamedata: GameData) -> str:
 
 def sheet_equipment(char: Character, gamedata: GameData) -> None:
     from tesrpg.systems import inventory
+    if _web is not None:
+        rows = [_kv("武器", _plain(weapon_line(char, gamedata)))]
+        if char.offhand:
+            rows.append(_kv("副手", gamedata.item_name(char.offhand)))
+        for slot in ("helmet", "cuirass", "gauntlets", "boots", "shield", "amulet", "ring1", "ring2"):
+            iid = char.equipped.get(slot)
+            if iid:
+                rows.append(_kv(_SLOT_CN[slot], gamedata.item_name(iid)))
+        worn = inventory.worn_armor_rating(char, gamedata)
+        eff = inventory.effective_armor_rating(char, gamedata)
+        rows.append(_kv("護甲值", f"名目 {worn} · 有效 {eff:.0f}"))
+        if inventory.active_set_bonus(char, gamedata):
+            _cd = gamedata.item_or_none(char.equipped.get("cuirass", ""))
+            _mat = _cd.get("material") if _cd else None
+            rows.append(_ln("套裝加成　" + gamedata.armor_sets.get(_mat, {}).get("name", "整套同材質"), "green"))
+        bon = inventory.equipment_bonuses(char, gamedata)
+        for label, cat in (("技能", "skills"), ("屬性", "attrs"), ("抗性", "resist"), ("資源", "resources")):
+            d = bon.get(cat) or {}
+            if d:
+                rows.append(_kv(f"{label}加成", "、".join(f"{_tr_bonus(cat, k, gamedata)}{v:+d}" for k, v in d.items())))
+        _emit_panel("穿戴與套裝", rows)
+        return
     body = Text()
     body.append("武器  ", style=GOLD)
     body.append(weapon_line(char, gamedata) + "\n", style=PARCH)
@@ -413,6 +767,20 @@ def sheet_equipment(char: Character, gamedata: GameData) -> None:
 
 def sheet_vampirism(char: Character, gamedata: GameData) -> None:
     from tesrpg.systems import vampirism
+    if _web is not None:
+        if not vampirism.is_vampire(char):
+            _emit_panel("吸血鬼狀態", [_ln("你不是吸血鬼。", "muted")])
+            return
+        nm = vampirism.STAGE_NAMES[min(3, max(0, char.vampire_stage))]
+        rows = [_ln(f"吸血鬼 階級 {char.vampire_stage} 「{nm}」", "red")]
+        for cat, label, d in (("attrs", "屬性", char.vampire_attr_bonus),
+                              ("skills", "技能", char.vampire_skill_bonus),
+                              ("resist", "抗性", char.vampire_resist)):
+            if d:
+                rows.append(_kv(label, "、".join(f"{_tr_bonus(cat, k, gamedata)}{v:+d}" for k, v in d.items())))
+        rows.append(_ln("(階級越餓越高,進食歸 0;火焰轉弱點、免疫疾病)", "faint"))
+        _emit_panel("吸血鬼狀態", rows)
+        return
     body = Text()
     if not vampirism.is_vampire(char):
         body.append("你不是吸血鬼。", style=INK)
@@ -432,8 +800,32 @@ def sheet_vampirism(char: Character, gamedata: GameData) -> None:
 
 def sheet_skill_detail(char: Character, gamedata: GameData, skill_id: str) -> None:
     sd = gamedata.skills[skill_id]
-    body = Text()
     eff, base = char.skill(skill_id), char.base_skill(skill_id)
+    if _web is not None:
+        rows = [_hd(f"{sd['name']}（{formulas.SPEC_NAMES.get(sd['spec'], sd['spec'])}）　等級 {eff}"
+                    + (f"(基礎 {base})" if eff != base else ""))]
+        if char.is_major_skill(skill_id):
+            rows.append(_ln("✦ 主修技能(升點給 ×1.5 等級經驗)", "magenta"))
+        if sd.get("desc"):
+            rows.append(_ln(sd["desc"], "muted"))
+        if sd.get("mechanic"):
+            rows.append(_kv("作用", sd["mechanic"]))
+        need = formulas.skill_threshold(base)
+        cur = char.skill_xp.get(skill_id, 0.0)
+        pct = int(cur / need * 100) if need > 0 else 0
+        rows.append(_kv("熟練進度", f"{pct}%（{cur:.1f}/{need:.1f} → {base + 1} 級)"))
+        nxt = sorted([e for e in mastery._defs(gamedata)
+                      if e["skill"] == skill_id and e["threshold"] > base], key=lambda x: x["threshold"])
+        if nxt:
+            e = nxt[0]
+            rows.append(_ln(f"下一里程碑　{e['name']}（{e['threshold']} 級):{e['desc']}", "faint"))
+        p = sd.get("practice", {})
+        if p:
+            rows.append(_kv("練習成本", f"體力 {p.get('fatigue', '?')} · {p.get('hours', '?')} 小時 · "
+                                       f"+{p.get('xp', 0):.2f} xp(體力不足時 xp 減半)"))
+        _emit_panel("技能詳情", rows)
+        return
+    body = Text()
     body.append(f"{sd['name']}（{formulas.SPEC_NAMES.get(sd['spec'], sd['spec'])}）", style=f"bold {GOLD}")
     body.append(f"   等級 {eff}" + (f"(基礎 {base})" if eff != base else "") + "\n", style=PARCH)
     if char.is_major_skill(skill_id):
@@ -521,6 +913,25 @@ def sheet_spellbook(char: Character, gamedata: GameData) -> None:
     """法術書:已習法術依學派分組,逐道顯示魔耗 + 作用(資料驅動的效果摘要)。"""
     from tesrpg.systems import magic
     known = [s for s in char.spells if s in gamedata.spells]
+    if _web is not None:
+        if not known:
+            _emit_panel("法術書", [_ln("你還沒學會任何法術。", "muted")])
+            return
+        bs: dict[str, list[str]] = {}
+        for sid in known:
+            bs.setdefault(gamedata.spells[sid]["school"], []).append(sid)
+        rows = []
+        for school in ("destruction", "restoration", "alteration", "conjuration", "illusion", "mysticism"):
+            ids = bs.get(school)
+            if not ids:
+                continue
+            rows.append(_hd(_SCHOOL_CN.get(school, school)))
+            for sid in ids:
+                sp = gamedata.spells[sid]
+                rows.append(_kv(sp["name"], f"{magic.effective_cost(char, gamedata, sid)} 魔力 · "
+                                            f"{spell_effect_summary(gamedata, sid)}"))
+        _emit_panel("法術書", rows)
+        return
     if not known:
         console.print(_panel(Text("你還沒學會任何法術。", style=INK), title="法術書"))
         return
@@ -545,25 +956,40 @@ def sheet_spellbook(char: Character, gamedata: GameData) -> None:
 def show_events(events: list[dict], gamedata: GameData) -> None:
     for ev in events:
         if ev["type"] == "skill_up":
-            name = gamedata.skill_name(ev["skill"])
-            console.print(f"  [bold green]↑ {name} 提升到 {ev['level']}![/]")
+            m = f"[bold green]↑ {gamedata.skill_name(ev['skill'])} 提升到 {ev['level']}![/]"
         elif ev["type"] == "level_ready":
-            console.print("  [bold yellow]★ 你感到脫胎換骨 —— 可以升級了!（選單選「升級」）[/]")
+            m = "[bold yellow]★ 你感到脫胎換骨 —— 可以升級了!（選單選「升級」）[/]"
         elif ev["type"] == "mastery_unlocked":
-            console.print(f"  [bold magenta]✦ 技能里程碑「{ev['name']}」解鎖![/] [grey70]{ev['desc']}[/]")
+            m = f"[bold magenta]✦ 技能里程碑「{ev['name']}」解鎖![/] [grey70]{ev['desc']}[/]"
+        else:
+            continue
+        if _web is not None:
+            _emit_log(m)
+        else:
+            console.print("  " + m)
 
 
 def message(text: str, style: str = "white") -> None:
+    if _web is not None:
+        _emit_log(f"[{style}]{text}[/]")
+        return
     console.print(f"  [{style}]{text}[/]")
 
 
 def event_panel(event: dict) -> None:
+    if _web is not None:
+        _emit_view("event", {"title": event["title"], "text": event["text"]})
+        return
     console.print(_panel(Text(event["text"], style=PARCH),
                          title=f"✦ {event['title']}", style="magenta"))
 
 
 def landmark_discovery(res: dict) -> None:
     """首次抵達某地的『發現』:意境文字 + 一次性獎勵(systems.landmarks.discover 回傳)。"""
+    if _web is not None:
+        _emit_view("discovery", {"name": res["name"], "text": res["text"],
+                                 "rewards": res.get("reward_lines", [])})
+        return
     body = Text()
     body.append(res["text"] + "\n", style=PARCH)
     for line in res.get("reward_lines", []):
@@ -573,6 +999,9 @@ def landmark_discovery(res: dict) -> None:
 
 def legacy_screen(s: dict) -> None:
     """一生傳奇總結畫面(英雄級結算)。"""
+    if _web is not None:
+        _emit_view("legacy", _legacy_view(s))
+        return
     head = "⚰  傳 奇 落 幕" if s["ending"] == "death" else "🌅  功 成 身 退"
     title = Text(justify="center")
     title.append(f"{s['name']}\n", style=f"bold {GOLD}")
@@ -641,12 +1070,19 @@ def weapon_line(char: Character, gamedata: GameData) -> str:
 
 
 def combat_intro(creature, player: Character, gamedata: GameData) -> None:
+    if _web is not None:
+        _emit_view("encounter", {"name": creature.name,
+                                 "flavor": creature.flavor or f"你遇上了{creature.name}!"})
+        return
     console.print(_panel(
         Text(creature.flavor or f"你遇上了{creature.name}!", style=PARCH),
         title=f"⚔ 遭遇:{creature.name}", style="red", box_=box.HEAVY))
 
 
 def combat_status(player: Character, creature, gamedata: GameData) -> None:
+    if _web is not None:
+        _emit_view("combat", _combat_view(player, [], [creature]))
+        return
     grid = Table.grid(padding=(0, 2))
     grid.add_row(Text(player.name, style="bold"), _bar(player.health, player.max_health, "red"),
                  Text("體力", style="green"), _bar(player.fatigue, player.max_fatigue, "green", 10))
@@ -670,6 +1106,9 @@ def _status_tags(entity) -> str:
 
 def combat_status_group(player: Character, allies: list, enemies: list, gamedata: GameData) -> None:
     """團隊/多敵戰鬥狀態:我方(玩家+同伴)在上,敵方在下(編號供指定目標)。"""
+    if _web is not None:
+        _emit_view("combat", _combat_view(player, allies, enemies))
+        return
     side = Table.grid(padding=(0, 2))
     side.add_row(Text(player.name, style="bold"), _bar(player.health, player.max_health, "red"),
                  Text("體力", style="green"), _bar(player.fatigue, player.max_fatigue, "green", 10),
@@ -697,6 +1136,9 @@ LOC_TYPE_NAME = {"city": "大城", "town": "城鎮", "dungeon": "地城", "wilde
 
 
 def location_panel(char: Character, gamedata: GameData) -> None:
+    if _web is not None:
+        _emit_view("location", _location_view(char, gamedata))
+        return
     loc = gamedata.location(char.location_id)
     body = Text()
     body.append(loc["desc"] + "\n", style=PARCH)
@@ -753,6 +1195,9 @@ def item_label(gamedata: GameData, char: Character, item_id: str, qty: int = 1) 
 
 
 def inventory_panel(char: Character, gamedata: GameData) -> None:
+    if _web is not None:
+        _emit_view("inventory", _inventory_view(char, gamedata))
+        return
     from tesrpg.systems import inventory as inv
     if not char.inventory:
         console.print(_panel(f"[{INK}]背包空空如也。[/]", title="🎒 背包"))
@@ -773,17 +1218,30 @@ def inventory_panel(char: Character, gamedata: GameData) -> None:
     console.print(_panel(Group(tbl, Rule(style=GOLD_DIM), foot), title="🎒 背包"))
 
 
+def _emit_or_print(markup: str) -> None:
+    if _web is not None:
+        _emit_log(markup)
+    else:
+        console.print("  " + markup)
+
+
 def loot_report(result: dict, gamedata: GameData) -> None:
+    lines = []
     if result.get("gold"):
-        console.print(f"  [yellow]獲得 {result['gold']} 枚金幣。[/]")
+        lines.append(f"[yellow]獲得 {result['gold']} 枚金幣。[/]")
     for item_id, qty in result.get("items", []):
         q = f" ×{qty}" if qty > 1 else ""
-        console.print(f"  [green]拾得 {gamedata.item_name(item_id)}{q}。[/]")
-    if not result.get("gold") and not result.get("items"):
-        console.print("  [grey62]沒有任何收穫。[/]")
+        lines.append(f"[green]拾得 {gamedata.item_name(item_id)}{q}。[/]")
+    if not lines:
+        lines.append("[grey62]沒有任何收穫。[/]")
+    for m in lines:
+        _emit_or_print(m)
 
 
 def guild_panel(char: Character, gamedata: GameData, faction_id: str) -> None:
+    if _web is not None:
+        _emit_view("guild", _guild_view(char, gamedata, faction_id))
+        return
     from tesrpg.systems import factions
     f = gamedata.factions[faction_id]
     gate = factions.gate_level(char, gamedata, faction_id)
@@ -816,6 +1274,9 @@ def guild_panel(char: Character, gamedata: GameData, faction_id: str) -> None:
 
 
 def quest_log(char: Character, gamedata: GameData) -> None:
+    if _web is not None:
+        _emit_view("quests", _quests_view(char, gamedata))
+        return
     from tesrpg.systems import quests
     if not char.quests:
         console.print(_panel(f"[{INK}]目前沒有進行中的任務。[/]", title="📜 任務日誌"))
@@ -833,6 +1294,11 @@ def quest_log(char: Character, gamedata: GameData) -> None:
 
 
 def npc_panel(npc: dict, disposition: int) -> None:
+    if _web is not None:
+        _emit_view("npc", {"name": npc["name"], "greeting": npc["greeting"],
+                           "rumor": npc.get("rumor"), "disposition": disposition,
+                           "hearts": disposition // 10})
+        return
     body = Text()
     body.append(npc["greeting"] + "\n", style="italic " + PARCH)
     if npc.get("rumor"):       # 在地傳聞:指向同省的地城/野外/奇景(細化省分)
@@ -851,6 +1317,9 @@ def court_panel(ruler: dict, gamedata: GameData, reception: str,
                 politics: dict | None = None, territory: dict | None = None) -> None:
     """謁見領主:接待語氣 + 考據背景 + 種族/駐軍/時局/政治立場,並顯示功勳/武士身分(領主區)。
     territory 給定時(你親手攻下的城)額外顯示「你的領地」:居民稅/駐軍維護/民心/淨收。"""
+    if _web is not None:
+        _emit_view("court", _court_view(ruler, gamedata, reception, standing, thane, politics, territory))
+        return
     race = gamedata.races.get(ruler["race"], {}).get("name", ruler["race"])
     body = Text()
     body.append(reception + "\n\n", style="italic " + PARCH)
@@ -890,6 +1359,9 @@ def court_panel(ruler: dict, gamedata: GameData, reception: str,
 
 def territory_panel(rows: list[dict], gamedata: GameData, gold: int) -> None:
     """領地總覽:一覽所有親手攻下的城(階段四)。rows = politics.territory_overview 結果清單。"""
+    if _web is not None:
+        _emit_view("territory", _territory_view(rows, gamedata, gold))
+        return
     tbl = Table(box=box.SIMPLE_HEAD, pad_edge=False, padding=(0, 1),
                 border_style=GOLD_DIM, expand=True)
     for h in ("城邦", "居民", "週稅", "駐軍", "維護", "淨收", "民心", "下次徵稅"):
@@ -913,6 +1385,9 @@ def territory_panel(rows: list[dict], gamedata: GameData, gold: int) -> None:
 
 
 def dungeon_room(name: str, idx: int, total: int, desc: str, is_boss: bool = False) -> None:
+    if _web is not None:
+        _emit_view("room", {"name": name, "idx": idx, "total": total, "desc": desc, "boss": is_boss})
+        return
     tag = "✦ 首領 ✦" if is_boss else f"第 {idx}/{total} 室"
     console.print(_panel(Text(desc, style=PARCH),
                          title=f"🏚 {name} · {tag}",
@@ -926,24 +1401,25 @@ _ARCHETYPE_CN = {"dagger": "匕首", "sword": "劍", "blunt": "鈍器", "bow": "
 
 
 def combat_event(ev: dict, gamedata: GameData) -> None:
+    lines = []
     if ev.get("absorbed"):
-        console.print(f"  [bold cyan]{ev['defender']} 吸收了來襲的魔法,化為魔力![/]")
+        lines.append(f"[bold cyan]{ev['defender']} 吸收了來襲的魔法,化為魔力![/]")
     elif ev["hit"]:
         blk = "(被格擋)" if ev["blocked"] else ""
         if ev.get("sneak"):
-            console.print(f"  [bold magenta]🗡 偷襲![/] [white]{ev['attacker']}[/] 自暗處突襲 "
-                          f"[white]{ev['defender']}[/],致命一擊造成 "
-                          f"[bold red]{ev['damage']}[/] 傷害(×{ev['sneak']:.1f}){blk}")
+            lines.append(f"[bold magenta]🗡 偷襲![/] [white]{ev['attacker']}[/] 自暗處突襲 "
+                         f"[white]{ev['defender']}[/],致命一擊造成 "
+                         f"[bold red]{ev['damage']}[/] 傷害(×{ev['sneak']:.1f}){blk}")
         else:
-            console.print(f"  [white]{ev['attacker']}[/] 命中 [white]{ev['defender']}[/]"
-                          f",造成 [bold red]{ev['damage']}[/] 傷害{blk}")
+            lines.append(f"[white]{ev['attacker']}[/] 命中 [white]{ev['defender']}[/]"
+                         f",造成 [bold red]{ev['damage']}[/] 傷害{blk}")
     else:
         sneak_miss = "[magenta](偷襲落空!)[/] " if ev.get("sneak") else ""
-        console.print(f"  {sneak_miss}[grey62]{ev['attacker']} 的攻擊被 {ev['defender']} 閃過了。[/]")
+        lines.append(f"{sneak_miss}[grey62]{ev['attacker']} 的攻擊被 {ev['defender']} 閃過了。[/]")
     if ev.get("status_applied"):
-        console.print(f"  [magenta]{ev['defender']} 中了{_ELEM_CN.get(ev['status_applied'], '異常')}![/]")
+        lines.append(f"[magenta]{ev['defender']} 中了{_ELEM_CN.get(ev['status_applied'], '異常')}![/]")
     if ev.get("poison_applied"):
-        console.print(f"  [green]武器上的{ev['poison_applied']}滲入了{ev['defender']}的傷口![/]")
+        lines.append(f"[green]武器上的{ev['poison_applied']}滲入了{ev['defender']}的傷口![/]")
     if ev.get("aftermath"):
         am = ev["aftermath"]
         bits = []
@@ -952,23 +1428,23 @@ def combat_event(ev: dict, gamedata: GameData) -> None:
         if am.get("bleed"):
             bits.append(f"傷口撕裂(每回合 {am['bleed']} 傷)")
         if bits:
-            console.print(f"  [magenta]🩸 暗殺殘響 —— {ev['defender']}{'、'.join(bits)}![/]")
+            lines.append(f"[magenta]🩸 暗殺殘響 —— {ev['defender']}{'、'.join(bits)}![/]")
     if ev.get("self_restored"):
         stat, amt = ev["self_restored"]
-        console.print(f"  [cyan]法杖將生機回流,{_STAT_CN.get(stat, stat)} +{amt}。[/]")
+        lines.append(f"[cyan]法杖將生機回流,{_STAT_CN.get(stat, stat)} +{amt}。[/]")
+    for m in lines:
+        _emit_or_print(m)
     show_events(ev.get("skill_events", []), gamedata)
 
 
 def combat_tick(messages: list) -> None:
     for m in messages:
-        console.print(f"  [magenta]{m}[/]")
+        _emit_or_print(f"[magenta]{m}[/]")
 
 
 def ally_event(ev: dict) -> None:
-    if ev["hit"]:
-        console.print(f"  [magenta]{ev['name']}[/] 撲向敵人,造成 [bold red]{ev['damage']}[/] 傷害")
-    else:
-        console.print(f"  [grey62]{ev['name']} 的攻擊落空了。[/]")
+    _emit_or_print(f"[magenta]{ev['name']}[/] 撲向敵人,造成 [bold red]{ev['damage']}[/] 傷害"
+                   if ev["hit"] else f"[grey62]{ev['name']} 的攻擊落空了。[/]")
 
 
 def active_effects_line(player: Character, creature) -> None:
@@ -987,10 +1463,13 @@ def active_effects_line(player: Character, creature) -> None:
         elif e["kind"] == "soul_trap":
             tags.append(f"[magenta]{creature.name}·擒魂{e['turns']}[/]")
     if tags:
-        console.print("  狀態:" + "  ".join(tags))
+        _emit_or_print("狀態:" + "  ".join(tags))
 
 
 def rule(title: str = "") -> None:
+    if _web is not None:
+        _emit_view("divider", {"title": title})
+        return
     console.rule(title, style="grey37")
 
 
@@ -1035,6 +1514,9 @@ _MAP_ICON = {"city": "◆", "town": "◇", "dungeon": "✦", "wilderness": "·"}
 
 def world_map(char: Character, gamedata: GameData) -> None:
     """資料驅動的 Tamriel 地圖:依行省分組,標出當前位置、危險度、服務與出口。"""
+    if _web is not None:
+        _emit_view("map", _map_view(char, gamedata))
+        return
     locs = gamedata.world["locations"]
     by_prov: dict[str, list[str]] = {}
     order: list[str] = []

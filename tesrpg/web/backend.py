@@ -28,21 +28,38 @@ class WebBackend:
         self.seq = 0                # 幀序號(SSE 去重用,涵蓋 prompt 與 final 幀)
         self.generation = 0         # SSE 連線世代
         self.last_frame: dict | None = None
+        self.blocks: list = []      # 本幀累積的 block(view 原生 / html 退路),於 prompt 時沖出
 
-    # --- 遊戲 thread 端(由 console.py 的輸入原語呼叫)----------------------
-    def prompt(self, screen_html: str, spec: dict):
-        """送出一幀(畫面 + 輸入規格),阻塞等使用者送回並驗證後回傳。
+    # --- 遊戲 thread 端(由 console.py 呼叫)--------------------------------
+    def add_block(self, pending_html: str, name: str, data) -> None:
+        """轉為原生的渲染函式呼叫此法:先把累積的(未轉換面板)HTML 收成 html block
+        以保留交錯順序,再加 view block(客戶端依 name 渲成原生 HTML)。"""
+        if pending_html.strip():
+            self.blocks.append({"kind": "html", "html": pending_html})
+        self.blocks.append({"kind": "view", "name": name, "data": data})
 
-        回傳型別對齊終端版:menu→key|None、grouped→key、confirm→bool、
-        int→int、text→str。
+    def add_log(self, pending_html: str, log_html: str) -> None:
+        """log/flavor 行:rich 標記轉成的彩色 HTML span,客戶端以無框文字行渲染(非等寬截圖)。"""
+        if pending_html.strip():
+            self.blocks.append({"kind": "html", "html": pending_html})
+        self.blocks.append({"kind": "log", "html": log_html})
+
+    def prompt(self, trailing_html: str, spec: dict):
+        """送出一幀(blocks 串 + 輸入規格),阻塞等使用者送回並驗證後回傳。
+
+        blocks = view(原生)/html(退路) 依序;trailing_html=尚未轉換面板的殘餘。
+        回傳型別對齊終端版:menu→key|None、grouped→key、confirm→bool、int→int、text→str。
         """
-        while True:
+        if trailing_html.strip():
+            self.blocks.append({"kind": "html", "html": trailing_html})
+        blocks = self.blocks
+        self.blocks = []
+        while True:                          # 越界整數等:重送同一 blocks(新 seq/pid)
             with self._lock:
                 self.prompt_id += 1
                 self.seq += 1
                 pid = self.prompt_id
-                frame = {"seq": self.seq, "prompt_id": pid,
-                         "screen_html": screen_html, "prompt": spec}
+                frame = {"seq": self.seq, "prompt_id": pid, "blocks": blocks, "prompt": spec}
                 self.last_frame = frame
                 self.awaiting = True
             self.outbound.put(frame)
@@ -52,15 +69,16 @@ class WebBackend:
                 with self._lock:
                     self.awaiting = False
                 return norm
-            # 無效(例如越界整數):重新武裝 + 重送同一幀,讓客戶端再試
-            # (迴圈頂端會以同一 spec 重發,prompt_id 會再遞增)
 
-    def flush_final(self, screen_html: str) -> None:
-        """遊戲 thread 結束(quit/未捕捉例外)後沖出最後畫面 + end 哨兵。"""
+    def flush_final(self, trailing_html: str) -> None:
+        """遊戲 thread 結束(quit/未捕捉例外)後沖出殘餘 blocks + end 哨兵。"""
+        if trailing_html.strip():
+            self.blocks.append({"kind": "html", "html": trailing_html})
+        blocks = self.blocks
+        self.blocks = []
         with self._lock:
             self.seq += 1
-            frame = {"seq": self.seq, "prompt_id": -1,
-                     "screen_html": screen_html, "prompt": {"type": "end"}}
+            frame = {"seq": self.seq, "prompt_id": -1, "blocks": blocks, "prompt": {"type": "end"}}
             self.last_frame = frame
             self.awaiting = False
         self.outbound.put(frame)

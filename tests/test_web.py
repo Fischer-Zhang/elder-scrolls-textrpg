@@ -100,15 +100,41 @@ def test_seam_roundtrip():
         _restore()
 
 
-def test_screen_html_fidelity():
+def test_blocks_protocol():
     backend = WebBackend()
     ui.use_web_backend(backend, _rec())
     try:
-        ui.message("[gold1]測試訊息[/]")                 # 渲染進錄製 console
+        ui.message("[gold1]測試訊息[/]")                 # 已轉原生 → log block(彩色文字行)
         fr, _ = _drive(backend, lambda: ui.menu("X", [("k", "l")]), lambda s: "k")
-        html = fr["screen_html"]
-        assert "<!DOCTYPE" not in html and "<html" not in html   # code_format 生效
-        assert "<span" in html                                   # 保留樣式
+        logs = [b["html"] for b in fr["blocks"] if b["kind"] == "log"]
+        assert logs and "<span" in logs[0]                       # rich 標記→彩色 span
+        assert "<!DOCTYPE" not in logs[0] and "<html" not in logs[0]   # code_format 生效
+    finally:
+        _restore()
+
+
+def test_view_block():
+    """轉為原生的面板(status)→ 發出 view block(name+data),非 html 截圖。"""
+    from tesrpg.gamedata import get_gamedata
+    from tesrpg.creation import build_character
+    from tesrpg.state import GameState, GameTime
+    from tesrpg.rng import RNG
+    gd = get_gamedata()
+    c = build_character(gd, name="測", sex="male", race="dunmer", birthsign="lady", class_id="knight")
+    st = GameState(player=c, time=GameTime(), rng=RNG(3))
+    backend = WebBackend()
+    ui.use_web_backend(backend, _rec())
+    try:
+        box = {}
+        t = threading.Thread(target=lambda: box.__setitem__("v", ui.confirm("?")))
+        ui.status_line(st)          # 應發 view block,不印 html
+        t.start()
+        fr = backend.outbound.get(timeout=5)
+        views = [b for b in fr["blocks"] if b["kind"] == "view"]
+        assert any(b["name"] == "status" for b in views), fr["blocks"]
+        sv = next(b["data"] for b in views if b["name"] == "status")
+        assert sv["name"] == "測" and len(sv["hp"]) == 2 and "level" in sv
+        backend.submit(fr["prompt_id"], True); t.join(timeout=5)
     finally:
         _restore()
 
@@ -156,7 +182,8 @@ def test_flush_final_and_generation():
     assert g2 == g1 + 1
     backend.flush_final("<span>bye</span>")
     fr = backend.outbound.get(timeout=2)
-    assert fr["prompt"]["type"] == "end" and "bye" in fr["screen_html"]
+    assert fr["prompt"]["type"] == "end"
+    assert any(b["kind"] == "html" and "bye" in b["html"] for b in fr["blocks"])
     assert fr["seq"] > 0
 
 
@@ -166,7 +193,8 @@ def run():
     importlib.reload(ui)
     test_validate()
     test_seam_roundtrip()
-    test_screen_html_fidelity()
+    test_blocks_protocol()
+    test_view_block()
     test_double_submit_and_stale()
     test_int_revalidate()
     test_flush_final_and_generation()

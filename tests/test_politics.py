@@ -383,7 +383,8 @@ def test_court_reinforce_end_to_end():
     base = politics.base_garrison(gd, "windhelm")
     c.garrison_current["windhelm"] = base - 30
     saved = (ui.menu, ui.ask_int, ui.message, ui.court_panel)
-    ui.menu = lambda *a, **k: "reinforce"
+    _cseq = iter(["reinforce", None])         # 朝堂現可連續處理 → 加強一次後返回離開
+    ui.menu = lambda *a, **k: next(_cseq, None)
     ui.ask_int = lambda *a, **k: 20
     ui.message = lambda *a, **k: None
     ui.court_panel = lambda *a, **k: None
