@@ -303,5 +303,13 @@
     "value": 200,
     "weight": 6,
     "material": "glass"
-  }
+  },
+  "cloth_hood":     {"name": "學徒兜帽", "slot": "helmet",   "weight_class": "light", "armor_rating": 0, "value": 35, "weight": 1, "material": "cloth", "enchant": {"kind": "armor_fortify", "stat": "magicka", "magnitude": 10}},
+  "cloth_robe":     {"name": "學徒法袍", "slot": "cuirass",  "weight_class": "light", "armor_rating": 1, "value": 55, "weight": 2, "material": "cloth", "enchant": {"kind": "armor_fortify", "stat": "magicka", "magnitude": 15}},
+  "cloth_gloves":   {"name": "學徒手套", "slot": "gauntlets","weight_class": "light", "armor_rating": 0, "value": 30, "weight": 1, "material": "cloth", "enchant": {"kind": "fortify_skill", "skill": "alteration", "magnitude": 6}},
+  "cloth_slippers": {"name": "學徒便鞋", "slot": "boots",    "weight_class": "light", "armor_rating": 0, "value": 30, "weight": 1, "material": "cloth", "enchant": {"kind": "fortify_skill", "skill": "destruction", "magnitude": 6}},
+  "archmage_hood":     {"name": "大法師兜帽", "slot": "helmet",   "weight_class": "light", "armor_rating": 1, "value": 220, "weight": 1, "material": "archmage", "enchant": {"kind": "armor_fortify", "stat": "magicka", "magnitude": 15}},
+  "archmage_robe":     {"name": "大法師法袍", "slot": "cuirass",  "weight_class": "light", "armor_rating": 2, "value": 400, "weight": 2, "material": "archmage", "enchant": {"kind": "armor_fortify", "stat": "magicka", "magnitude": 25}},
+  "archmage_gloves":   {"name": "大法師手套", "slot": "gauntlets","weight_class": "light", "armor_rating": 1, "value": 200, "weight": 1, "material": "archmage", "enchant": {"kind": "fortify_skill", "skill": "alteration", "magnitude": 10}},
+  "archmage_slippers": {"name": "大法師便鞋", "slot": "boots",    "weight_class": "light", "armor_rating": 1, "value": 200, "weight": 1, "material": "archmage", "enchant": {"kind": "fortify_skill", "skill": "destruction", "magnitude": 10}}
 }

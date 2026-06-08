@@ -53,6 +53,8 @@ class Character:
     weapon_poison: dict | None = None        # 武器塗毒 {"status","charges","name"};None=未塗
     weapon_condition: float = 100.0          # 武器耐久 0–100(影響傷害)
     armor_condition: dict = field(default_factory=dict)  # {slot: 耐久 0–100}
+    weapon_temper: dict = field(default_factory=dict)    # {weapon_id: 淬鍊級}(永久強化 → +傷害;鍛造)
+    armor_temper: dict = field(default_factory=dict)     # {armor_id: 淬鍊級}(永久強化 → +護甲值;鍛造)
     location_id: str = "start"
 
     # 後續里程碑會用到,先留好欄位讓存檔格式穩定
@@ -181,6 +183,7 @@ class Character:
             "gold": self.gold, "weapon": self.weapon, "offhand": self.offhand,
             "weapon_poison": self.weapon_poison,
             "weapon_condition": self.weapon_condition, "armor_condition": self.armor_condition,
+            "weapon_temper": self.weapon_temper, "armor_temper": self.armor_temper,
             "location_id": self.location_id,
             "inventory": self.inventory, "equipped": self.equipped, "spells": self.spells,
             "equip_skill_bonus": self.equip_skill_bonus, "equip_attr_bonus": self.equip_attr_bonus,

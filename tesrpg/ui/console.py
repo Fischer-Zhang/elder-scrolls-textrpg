@@ -826,7 +826,7 @@ def sheet_equipment(char: Character, gamedata: GameData) -> None:
         for slot in ("helmet", "cuirass", "gauntlets", "boots", "shield", "amulet", "ring1", "ring2"):
             iid = char.equipped.get(slot)
             if iid:
-                rows.append(_kv(_SLOT_CN[slot], gamedata.item_name(iid)))
+                rows.append(_kv(_SLOT_CN[slot], gamedata.item_name(iid) + _temper_suffix(char, iid)))
         worn = inventory.worn_armor_rating(char, gamedata)
         eff = inventory.effective_armor_rating(char, gamedata)
         rows.append(_kv("護甲值", f"名目 {worn} · 有效 {eff:.0f}"))
@@ -851,7 +851,7 @@ def sheet_equipment(char: Character, gamedata: GameData) -> None:
         iid = char.equipped.get(slot)
         if iid:
             body.append(f"{_SLOT_CN[slot]}  ", style=GOLD)
-            body.append(gamedata.item_name(iid) + "\n", style=PARCH)
+            body.append(gamedata.item_name(iid) + _temper_suffix(char, iid) + "\n", style=PARCH)
     worn = inventory.worn_armor_rating(char, gamedata)
     eff = inventory.effective_armor_rating(char, gamedata)
     body.append(f"護甲值  名目 {worn} · 有效 {eff:.0f}\n", style=INK)
@@ -1157,6 +1157,13 @@ def legacy_screen(s: dict) -> None:
 
 
 # --- 戰鬥 ---------------------------------------------------------------
+def _temper_suffix(char: Character, item_id: str) -> str:
+    """已淬鍊裝備的「·淬+N」小標(武器行/角色卡穿戴行顯示;未淬鍊或舊存檔→空)。"""
+    lvl = max(getattr(char, "weapon_temper", {}).get(item_id, 0),
+              getattr(char, "armor_temper", {}).get(item_id, 0))
+    return f" ·淬+{lvl}" if lvl else ""
+
+
 def weapon_line(char: Character, gamedata: GameData) -> str:
     wp = gamedata.item_or_none(char.weapon)
     if wp is None:                       # 毀損/未知武器 id → 顯示原 id,不崩潰(防毀損存檔)
@@ -1171,7 +1178,7 @@ def weapon_line(char: Character, gamedata: GameData) -> str:
     dual = (f" [bold red]· 雙持 {gamedata.item(char.offhand)['name']}[/]"
             if inventory.is_dual_wielding(char, gamedata) else "")
     return (f"{wp['name']}（{gamedata.skill_name(wp['skill'])} {char.skill(wp['skill'])}"
-            f"{arch_tag}{cond})" + poison + dual)
+            f"{arch_tag}{cond})" + _temper_suffix(char, char.weapon) + poison + dual)
 
 
 def combat_intro(creature, player: Character, gamedata: GameData) -> None:

@@ -34,7 +34,7 @@ def test_recipes_resolve_to_real_items():
 def test_craft_consumes_inputs_produces_output_and_costs():
     gd, c = _char()
     inventory.add_item(c, "wolf_pelt", 5)
-    pdef = gd.skills["armorer"]["practice"]
+    pdef = gd.skills["smithing"]["practice"]
     c.fatigue = c.max_fatigue
     f0 = c.fatigue
     assert crafting.can_craft(c, gd, "tan_leather_cuirass")
@@ -43,7 +43,7 @@ def test_craft_consumes_inputs_produces_output_and_costs():
     assert inventory.count_item(c, "wolf_pelt") == 0           # 5 張皮全消耗
     assert inventory.count_item(c, "leather_cuirass") == 1     # 產出皮甲
     assert res["hours"] == pdef["hours"] and "tired" in res
-    assert c.fatigue == f0 - pdef["fatigue"]                   # 付護甲修理 practice 體力
+    assert c.fatigue == f0 - pdef["fatigue"]                   # 付鍛造 practice 體力
 
 
 def test_cant_craft_without_materials():

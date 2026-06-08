@@ -12,7 +12,7 @@ from tesrpg import formulas
 from tesrpg.gamedata import GameData
 from tesrpg.models import Character, Creature
 from tesrpg.rng import RNG
-from tesrpg.systems import inventory, loot, magic, mastery, progression, stats
+from tesrpg.systems import inventory, loot, magic, mastery, progression, smithing, stats
 
 
 # ======================================================================
@@ -161,7 +161,7 @@ def _weapon_profile(actor, gamedata: GameData):
     """回傳 (weapon_damage, weapon_skill_level, weapon_skill_id|None)。"""
     if _is_player(actor):
         wp = gamedata.item(actor.weapon)   # 用 item() 以支援附魔(合成)武器
-        return wp["damage"], actor.skill(wp["skill"]), wp["skill"]
+        return wp["damage"] + smithing.weapon_temper_bonus(actor), actor.skill(wp["skill"]), wp["skill"]
     return actor.attack["damage"], actor.attack["skill"], None
 
 
@@ -175,7 +175,7 @@ def _armor_rating(actor, gamedata: GameData) -> int:
     else:
         skill = actor.skill("heavy_armor" if wc == "heavy" else "light_armor")
         base = round(worn * (0.5 + skill / 100.0))
-    return base + magic.active_shield(actor)   # 變化系護盾疊加
+    return base + smithing.armor_temper_bonus(actor) + magic.active_shield(actor)   # 淬鍊 + 變化系護盾疊加
 
 
 def _player_armor_skill(actor, gamedata: GameData) -> str:

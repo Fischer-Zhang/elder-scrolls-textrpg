@@ -205,7 +205,7 @@ def test_scout_is_a_real_stealth_skill():
     gd = get_gamedata()
     assert "scout" in gd.skills and gd.skills["scout"]["spec"] == "stealth"
     assert "scout" in gd.skills_by_spec("stealth")
-    assert len(gd.skills) == 22                       # 21 → 22
+    assert len(gd.skills) == 23                       # 21 → 22(scout)→ 23(smithing 鍛造)
 
 
 def test_new_character_has_scout_trained_by_use():

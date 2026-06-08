@@ -607,7 +607,18 @@
         "gold_ring",
         "gold_amulet",
         "flame_staff",
-        "magicka_staff"
+        "magicka_staff",
+        "iron_ingot",
+        "steel_ingot",
+        "bolt_of_cloth",
+        "cloth_hood",
+        "cloth_robe",
+        "cloth_gloves",
+        "cloth_slippers",
+        "archmage_hood",
+        "archmage_robe",
+        "archmage_gloves",
+        "archmage_slippers"
       ],
       "spell_stock": [
         "flames",

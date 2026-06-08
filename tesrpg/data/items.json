@@ -5,6 +5,9 @@
   "ruby":        {"name": "紅寶石", "kind": "misc", "value": 50,  "weight": 0.1},
   "gold_ingot":  {"name": "金錠", "kind": "misc", "value": 100, "weight": 1},
   "wolf_pelt":   {"name": "狼皮", "kind": "misc", "value": 6,   "weight": 1},
+  "iron_ingot":  {"name": "鐵錠", "kind": "misc", "value": 20,  "weight": 2},
+  "steel_ingot": {"name": "鋼錠", "kind": "misc", "value": 50,  "weight": 2},
+  "bolt_of_cloth": {"name": "布匹", "kind": "misc", "value": 16, "weight": 1},
 
   "repair_hammer": {"name": "修理鎚", "kind": "misc", "value": 5, "weight": 2},
 

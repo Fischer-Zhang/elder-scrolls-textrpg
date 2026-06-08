@@ -14,7 +14,7 @@ from tesrpg.rng import RNG, make_seed
 from tesrpg.state import GameState
 from tesrpg.systems import (alchemy, brotherhood, combat, court, crafting, crime, dialogue, dungeon,
                             enchanting, events, factions, inventory, landmarks, legacy, magic,
-                            mastery, politics, powers, progression, quests, stats, vampirism,
+                            mastery, politics, powers, progression, quests, smithing, stats, vampirism,
                             warband, world, worldstate)
 from tesrpg.ui import console as ui
 
@@ -1944,7 +1944,12 @@ def action_craft(state: GameState, gamedata: GameData) -> None:
         for rid in rids:
             r = gamedata.recipes[rid]
             inp = "、".join(f"{gamedata.item_name(i)}×{n}" for i, n in r["inputs"].items())
-            tag = "" if crafting.can_craft(char, gamedata, rid) else "(材料不足)"
+            if not crafting.meets_skill_req(char, gamedata, rid):
+                tag = f"(需鍛造 {r.get('skill_req', 0)} 級)"
+            elif not crafting.can_craft(char, gamedata, rid):
+                tag = "(材料不足)"
+            else:
+                tag = ""
             opts.append((rid, f"{r['name']}:{inp} → {gamedata.item_name(r['output'])}{tag}"))
         rid = ui.menu("製作什麼?", opts, allow_back=True)
         if rid is None:
@@ -1954,6 +1959,44 @@ def action_craft(state: GameState, gamedata: GameData) -> None:
         ui.message(res["message"], style="green" if res["ok"] else "red")
         if res["tired"]:
             ui.message("體力不濟,做工馬虎。", style="yellow")
+        ui.show_events(res["skill_events"], gamedata)
+
+
+def action_temper(state: GameState, gamedata: GameData) -> None:
+    """淬鍊強化:在鐵匠處消耗對應材質的錠,把手持武器/穿戴護甲永久淬鍊一級(練鍛造)。"""
+    char = state.player
+    loc = world.current_location(char, gamedata)
+    if "armorer" not in loc.get("services", []):
+        ui.message("這裡沒有鐵匠的鐵砧。", style="grey70")
+        return
+    while True:                                       # 可連續淬鍊,返回才離開
+        cap = smithing.temper_cap(char.skill("smithing"))
+        ids = []
+        if char.weapon != "fists":
+            ids.append(char.weapon)
+        for slot in ("helmet", "cuirass", "gauntlets", "boots", "shield"):
+            iid = char.equipped.get(slot)
+            if iid:
+                ids.append(iid)
+        ids = [i for i in dict.fromkeys(ids) if smithing.is_temperable(gamedata, i)]
+        if not ids:
+            ui.message("沒有可淬鍊的裝備(手持武器或穿戴護甲須為鐵/鋼/皮/布等可鍛材質)。", style="grey70")
+            return
+        opts = []
+        for iid in ids:
+            lvl = smithing.current_temper(char, gamedata, iid)
+            ingot = smithing.required_ingot(gamedata, iid)
+            have = inventory.count_item(char, ingot)
+            ok, _ = smithing.can_temper(char, gamedata, iid)
+            opts.append((iid, f"{gamedata.item_name(iid)} +{lvl}/{cap}　需 {gamedata.item_name(ingot)}(有 {have}){'' if ok else ' ✗'}"))
+        iid = ui.menu(f"淬鍊強化哪件?(鍛造 {char.skill('smithing')} 級 → 上限 +{cap})", opts, allow_back=True)
+        if iid is None:
+            return
+        res = smithing.temper(char, gamedata, iid)
+        state.time.advance(res["hours"])
+        ui.message(res["message"], style="green" if res["ok"] else "red")
+        if res.get("tired"):
+            ui.message("體力不濟,鍛打得馬虎。", style="yellow")
         ui.show_events(res["skill_events"], gamedata)
 
 
@@ -2323,7 +2366,8 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
         if "armorer" in services or inventory.count_item(player, "repair_hammer") > 0:
             market.append(("repair", "修理裝備"))
         if "armorer" in services:
-            market.append(("craft", "製革加工 🛠"))
+            market.append(("craft", "鍛造工坊 🛠"))
+            market.append(("temper", "淬鍊強化 ⚒"))
         if "mages_guild" in services:
             guilds.append(("guild_mages", "法師公會"))   # 學習法術 + 入會/任務,進子選單
         if "fighters_guild" in services:
@@ -2452,6 +2496,8 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
             action_repair(state, gamedata)
         elif choice == "craft":
             action_craft(state, gamedata)
+        elif choice == "temper":
+            action_temper(state, gamedata)
         elif choice == "cast":
             action_cast_self(state, gamedata)
         elif choice == "power":

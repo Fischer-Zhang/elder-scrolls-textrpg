@@ -1,10 +1,26 @@
 {
-  "tan_leather_bracers": {"name": "鞣製皮護腕", "station": "smith", "skill": "armorer",
-                          "inputs": {"wolf_pelt": 2}, "output": "leather_bracers", "output_qty": 1},
-  "tan_leather_boots":   {"name": "鞣製皮靴",   "station": "smith", "skill": "armorer",
-                          "inputs": {"wolf_pelt": 2}, "output": "leather_boots", "output_qty": 1},
-  "tan_leather_helmet":  {"name": "鞣製皮盔",   "station": "smith", "skill": "armorer",
-                          "inputs": {"wolf_pelt": 3}, "output": "leather_helmet", "output_qty": 1},
-  "tan_leather_cuirass": {"name": "鞣製皮甲",   "station": "smith", "skill": "armorer",
-                          "inputs": {"wolf_pelt": 5}, "output": "leather_cuirass", "output_qty": 1}
+  "tan_leather_bracers": {"name": "鞣製皮護腕", "station": "smith", "skill": "smithing", "inputs": {"wolf_pelt": 2}, "output": "leather_bracers", "output_qty": 1},
+  "tan_leather_boots":   {"name": "鞣製皮靴",   "station": "smith", "skill": "smithing", "inputs": {"wolf_pelt": 2}, "output": "leather_boots", "output_qty": 1},
+  "tan_leather_helmet":  {"name": "鞣製皮盔",   "station": "smith", "skill": "smithing", "inputs": {"wolf_pelt": 3}, "output": "leather_helmet", "output_qty": 1},
+  "tan_leather_cuirass": {"name": "鞣製皮甲",   "station": "smith", "skill": "smithing", "inputs": {"wolf_pelt": 5}, "output": "leather_cuirass", "output_qty": 1},
+
+  "forge_iron_dagger":    {"name": "鍛造鐵匕首", "station": "smith", "skill": "smithing", "inputs": {"iron_ingot": 1}, "output": "iron_dagger", "output_qty": 1},
+  "forge_iron_sword":     {"name": "鍛造鐵劍",   "station": "smith", "skill": "smithing", "inputs": {"iron_ingot": 2}, "output": "iron_sword", "output_qty": 1},
+  "forge_iron_mace":      {"name": "鍛造鐵錘",   "station": "smith", "skill": "smithing", "inputs": {"iron_ingot": 2}, "output": "iron_mace", "output_qty": 1},
+  "forge_iron_war_axe":   {"name": "鍛造鐵戰斧", "station": "smith", "skill": "smithing", "inputs": {"iron_ingot": 2}, "output": "iron_war_axe", "output_qty": 1},
+  "forge_iron_helmet":    {"name": "鍛造鐵盔",   "station": "smith", "skill": "smithing", "inputs": {"iron_ingot": 1}, "output": "iron_helmet", "output_qty": 1},
+  "forge_iron_gauntlets": {"name": "鍛造鐵護手", "station": "smith", "skill": "smithing", "inputs": {"iron_ingot": 1}, "output": "iron_gauntlets", "output_qty": 1},
+  "forge_iron_boots":     {"name": "鍛造鐵靴",   "station": "smith", "skill": "smithing", "inputs": {"iron_ingot": 1}, "output": "iron_boots", "output_qty": 1},
+  "forge_iron_shield":    {"name": "鍛造鐵盾",   "station": "smith", "skill": "smithing", "inputs": {"iron_ingot": 3}, "output": "iron_shield", "output_qty": 1},
+  "forge_iron_cuirass":   {"name": "鍛造鐵胸甲", "station": "smith", "skill": "smithing", "inputs": {"iron_ingot": 4}, "output": "iron_cuirass", "output_qty": 1},
+
+  "forge_steel_sword":   {"name": "鍛造鋼劍",   "station": "smith", "skill": "smithing", "skill_req": 25, "inputs": {"steel_ingot": 2}, "output": "steel_sword", "output_qty": 1},
+  "forge_steel_mace":    {"name": "鍛造鋼錘",   "station": "smith", "skill": "smithing", "skill_req": 25, "inputs": {"steel_ingot": 3}, "output": "steel_mace", "output_qty": 1},
+  "forge_steel_helmet":  {"name": "鍛造鋼盔",   "station": "smith", "skill": "smithing", "skill_req": 25, "inputs": {"steel_ingot": 2}, "output": "steel_helmet", "output_qty": 1},
+  "forge_steel_cuirass": {"name": "鍛造鋼胸甲", "station": "smith", "skill": "smithing", "skill_req": 25, "inputs": {"steel_ingot": 3}, "output": "steel_cuirass", "output_qty": 1},
+
+  "tailor_cloth_hood":     {"name": "縫製學徒兜帽", "station": "smith", "skill": "smithing", "skill_req": 15, "inputs": {"bolt_of_cloth": 3}, "output": "cloth_hood", "output_qty": 1},
+  "tailor_cloth_robe":     {"name": "縫製學徒法袍", "station": "smith", "skill": "smithing", "skill_req": 15, "inputs": {"bolt_of_cloth": 4}, "output": "cloth_robe", "output_qty": 1},
+  "tailor_cloth_gloves":   {"name": "縫製學徒手套", "station": "smith", "skill": "smithing", "skill_req": 15, "inputs": {"bolt_of_cloth": 2}, "output": "cloth_gloves", "output_qty": 1},
+  "tailor_cloth_slippers": {"name": "縫製學徒便鞋", "station": "smith", "skill": "smithing", "skill_req": 15, "inputs": {"bolt_of_cloth": 2}, "output": "cloth_slippers", "output_qty": 1}
 }

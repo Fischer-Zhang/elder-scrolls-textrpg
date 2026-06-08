@@ -34,12 +34,23 @@ def can_craft(char: Character, gamedata: GameData, recipe_id: str) -> bool:
     return not missing_inputs(char, gamedata, recipe_id)
 
 
+def meets_skill_req(char: Character, gamedata: GameData, recipe_id: str) -> bool:
+    """配方技能門檻:該 `skill` 等級須達 `skill_req`(無 skill_req=0=無門檻;練 smithing 才解鎖高階配方)。"""
+    r = gamedata.recipes[recipe_id]
+    req = r.get("skill_req", 0)
+    sk = r.get("skill")
+    return req <= 0 or (bool(sk) and char.skill(sk) >= req)
+
+
 def craft(char: Character, gamedata: GameData, recipe_id: str) -> dict:
     """依配方加工。回傳 {ok, message, output?, hours, tired, skill_events}。
 
     材料不足 → ok False、零成本(不扣料/不耗時)。成功 → 扣料、產出、付技能 practice 成本。
     """
     r = gamedata.recipes[recipe_id]
+    if not meets_skill_req(char, gamedata, recipe_id):
+        return {"ok": False, "message": f"鍛造技能不足(需 {r.get('skill_req', 0)} 級)。",
+                "hours": 0, "tired": False, "skill_events": []}
     if not can_craft(char, gamedata, recipe_id):
         return {"ok": False, "message": "材料不足。", "hours": 0, "tired": False, "skill_events": []}
     for iid, need in r["inputs"].items():
