@@ -756,7 +756,8 @@
       "links": {
         "skingrad": 4,
         "kvatch": 5,
-        "dragontail_foothills": 4
+        "dragontail_foothills": 4,
+        "strid_vale": 3
       }
     },
     "whiterun": {
@@ -1193,7 +1194,8 @@
       "links": {
         "dragontail_foothills": 3,
         "sentinel": 3,
-        "alikr_desert": 3
+        "alikr_desert": 3,
+        "abecean_coast": 4
       }
     },
     "sentinel": {
@@ -1373,6 +1375,109 @@
       "links": {
         "evermore": 2,
         "markarth": 5
+      }
+    },
+    "falinesti": {
+      "biome": "jungle",
+      "name": "法林斯提",
+      "province": "瓦倫森林",
+      "type": "city",
+      "danger": 0,
+      "desc": "瓦倫森林的行走王都 —— 一株比山還高的巨型格拉特橡樹托起整座城,隨四季在密林間遷徙。波斯莫的卡莫蘭王族在樹冠的廳堂裡統御綠約之民,藤梯與吊橋在綠蔭間縱橫攀爬。",
+      "services": ["inn", "merchant", "trainer", "mages_guild", "armorer", "fighters_guild", "task_board"],
+      "merchant_stock": ["minor_healing_potion", "healing_potion", "minor_magicka_potion", "elven_sword", "glass_dagger", "elven_cuirass", "leather_helmet", "long_bow", "hunting_bow", "repair_hammer", "monarch_wing", "glow_dust", "nightshade", "silver_ring", "gold_ring", "gold_amulet", "flame_staff", "magicka_staff"],
+      "spell_stock": ["flames", "fireball", "ignite", "fire_storm", "minor_heal", "heal", "renewal", "oakflesh", "fear", "demoralize", "conjure_familiar", "soul_trap"],
+      "links": {
+        "strid_vale": 3,
+        "haven": 3,
+        "graht_forest": 2,
+        "spider_grove": 4
+      }
+    },
+    "haven": {
+      "biome": "jungle",
+      "name": "海文城",
+      "province": "瓦倫森林",
+      "type": "city",
+      "danger": 0,
+      "desc": "瓦倫森林南岸的繁忙海港,棕櫚與紅樹林環抱著熱鬧的碼頭。波斯莫商賈、卡傑特船客與帝國商隊在這裡互市,香料、異木與奇珍自此運往整個阿比西亞海。",
+      "services": ["inn", "merchant", "trainer", "mages_guild", "armorer", "thieves_guild", "task_board"],
+      "merchant_stock": ["minor_healing_potion", "healing_potion", "minor_magicka_potion", "elven_sword", "steel_sword", "elven_cuirass", "leather_cuirass", "iron_shield", "long_bow", "hunting_bow", "repair_hammer", "ruby", "red_apple", "scrib_jelly", "silver_ring", "gold_ring", "gold_amulet", "flame_staff"],
+      "spell_stock": ["flames", "fireball", "frostbite", "close_wounds", "heal", "stoneflesh", "ironflesh", "mass_paralysis", "rout", "conjure_flame_atronach", "restore_mind"],
+      "links": {
+        "falinesti": 3,
+        "silvenar": 3,
+        "graht_forest": 3,
+        "abecean_coast": 4
+      }
+    },
+    "silvenar": {
+      "biome": "jungle",
+      "name": "希凡納",
+      "province": "瓦倫森林",
+      "type": "town",
+      "danger": 0,
+      "desc": "綠約之民的精神聖地,一座與森林共生的活木小城。世代相承的『代言者』在此聆聽瓦倫森林的意志,為波斯莫諸部族居中調停,連卡莫蘭王族也敬其三分。",
+      "services": ["inn", "merchant", "armorer", "task_board"],
+      "merchant_stock": ["minor_healing_potion", "healing_potion", "leather_cuirass", "leather_boots", "long_bow", "hunting_bow", "repair_hammer", "monarch_wing", "lavender", "scrib_jelly", "silver_ring", "silver_amulet"],
+      "links": {
+        "haven": 3,
+        "graht_forest": 3
+      }
+    },
+    "graht_forest": {
+      "biome": "jungle",
+      "name": "格拉特巨木林",
+      "province": "瓦倫森林",
+      "type": "wilderness",
+      "danger": 2,
+      "desc": "瓦倫森林腹地的參天巨木林,格拉特橡樹的樹冠遮蔽了天光,終年濕熱蒸騰。藤蔓在林間絞纏垂落,樹靈與巨蛛潛伏在苔影深處,綠約獵人的足跡轉瞬便被密林吞沒。",
+      "services": [],
+      "links": {
+        "falinesti": 2,
+        "haven": 3,
+        "silvenar": 3,
+        "spider_grove": 4
+      }
+    },
+    "spider_grove": {
+      "biome": "jungle",
+      "name": "絞藤蛛巢",
+      "province": "瓦倫森林",
+      "type": "dungeon",
+      "danger": 4,
+      "desc": "巨木林最深處一片被藤蔓與蛛網絞死的腐朽聖林,陽光從不照入。林心盤踞著一株千年遠古樹靈,以絞殺藤與毒蛛守著被綠約遺忘的祕藏。",
+      "services": [],
+      "dungeon": "spider_grove",
+      "links": {
+        "graht_forest": 4,
+        "falinesti": 4
+      }
+    },
+    "strid_vale": {
+      "biome": "jungle",
+      "name": "斯特里德河谷",
+      "province": "邊境",
+      "type": "wilderness",
+      "danger": 2,
+      "desc": "斯特里德河劃開賽羅迪爾金海岸與瓦倫森林的界河谷,北岸的松林在此驟然轉為纏綿的熱帶藤蔓。古老的埃雷德遺跡半沒於河畔的綠蔭,是帝國轄境通往綠約密林的最後一道門檻。",
+      "services": [],
+      "links": {
+        "anvil": 3,
+        "falinesti": 3
+      }
+    },
+    "abecean_coast": {
+      "biome": "jungle",
+      "name": "阿比西亞海岸",
+      "province": "邊境",
+      "type": "wilderness",
+      "danger": 3,
+      "desc": "連接瓦倫森林與漢默法爾南岸的熱帶海岸線,紅樹林與礁岩交錯,潮間帶的濕熱叢林裡毒蟲遍布。沿海的舊棧道是波斯莫與紅衛人海商往來的隱秘水路。",
+      "services": [],
+      "links": {
+        "haven": 4,
+        "gilane": 4
       }
     }
   },

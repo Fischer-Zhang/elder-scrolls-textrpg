@@ -58,14 +58,14 @@ def test_biome_steers_encounters_without_emptying_pool():
 
 def test_every_location_has_biome():
     gd, _ = _char()
-    valid = {"heartland", "snow", "ashland", "swamp", "desert", "moor"}
+    valid = {"heartland", "snow", "ashland", "swamp", "desert", "moor", "jungle"}
     for lid, loc in gd.world["locations"].items():
         assert loc.get("biome") in valid, f"{lid} biome 非法:{loc.get('biome')}"
 
 
 def test_creature_biomes_are_valid():
     gd, _ = _char()
-    valid = {"heartland", "snow", "ashland", "swamp", "desert", "moor"}
+    valid = {"heartland", "snow", "ashland", "swamp", "desert", "moor", "jungle"}
     for cid, c in gd.bestiary.items():
         for b in c.get("biomes", []):
             assert b in valid, f"{cid} biomes 非法:{b}"
@@ -94,6 +94,31 @@ def test_moor_biome_steers_to_highrock_ecology():
         c = combat.random_encounter(gd, 20, RNG(7000 + i), max_danger=5, biome="moor")
         tally[c.template_id] += 1
     assert sum(tally[k] for k in moor) > sum(tally[k] for k in desert)   # 在地生態 > 他鄉生態
+    assert sum(tally.values()) == 600                                    # 池不空
+
+
+# --- 瓦倫森林 Valenwood(雨林 jungle;敵抗霜/抗毒、弱火 → 操練火系 build)-------
+def test_valenwood_signature_creatures_weak_to_fire():
+    """瓦倫森林生態軸=敵抗霜/抗毒、弱火(以烈焰焚林)→ 招牌怪須『真的』弱火
+    (resist_multiplier > 1.0;fire ∈ MAGIC_ELEMENTS 會疊 magic 鍵,故招牌怪刻意不帶 magic 鍵)。"""
+    gd, _ = _char()
+    jungle = [cid for cid, c in gd.bestiary.items() if "jungle" in c.get("biomes", [])]
+    assert len(jungle) >= 5, f"瓦倫森林招牌怪太少:{jungle}"
+    for cid in jungle:
+        m = formulas.resist_multiplier(gd.bestiary[cid].get("resist", {}), "fire")
+        assert m > 1.0, f"{cid} 並非真的弱火(火傷係數 {m} ≤ 1.0)"
+
+
+def test_jungle_biome_steers_to_valenwood_ecology():
+    """雨林 biome 明顯抽到瓦倫森林招牌怪、且後備池不空。"""
+    gd, _ = _char()
+    jungle = {cid for cid, c in gd.bestiary.items() if "jungle" in c.get("biomes", [])}
+    swamp = {cid for cid, c in gd.bestiary.items() if "swamp" in c.get("biomes", [])}
+    tally = Counter()
+    for i in range(600):
+        c = combat.random_encounter(gd, 20, RNG(9000 + i), max_danger=5, biome="jungle")
+        tally[c.template_id] += 1
+    assert sum(tally[k] for k in jungle) > sum(tally[k] for k in swamp)   # 在地生態 > 鄰省(沼澤)生態
     assert sum(tally.values()) == 600                                    # 池不空
 
 

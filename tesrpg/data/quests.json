@@ -1077,5 +1077,29 @@
     "reward": {"gold": 130, "fame": 4, "items": ["filled_lesser_soul_gem"]},
     "turn_in": "auto",
     "text": "威岩王室的斥候要你潛抵海妖岩巫窟、探明魔女祭主的虛實:「別驚動巫圈,帶回來的消息越多,賞金越厚。」"
+  },
+  "job_spider_grove": {
+    "name": "懸賞:絞藤蛛巢",
+    "faction": null, "rank": null, "source": "board", "provinces": ["瓦倫森林"],
+    "objective": {"type": "clear_dungeon", "dungeon": "spider_grove"},
+    "reward": {"gold": 400, "fame": 20},
+    "turn_in": "auto",
+    "text": "法林斯提告示板高額懸賞:巨木林深處的絞藤蛛巢已被遠古樹靈與毒蛛佔據、毒藤蔓延至林道,清剿聖林、終結林心那株千年樹靈。"
+  },
+  "job_graht": {
+    "name": "懸賞:絞藤橫行",
+    "faction": null, "rank": null, "source": "board", "provinces": ["瓦倫森林"],
+    "objective": {"type": "kill", "creature": "strangler_vine", "count": 4},
+    "reward": {"gold": 160, "fame": 8},
+    "turn_in": "auto",
+    "text": "希凡納告示板懸賞:格拉特巨木林的絞殺藤蔓蔓延至商道、纏死了往來的旅人,清除 4 株絞殺藤(巨木林野外可尋)。"
+  },
+  "favor_haven": {
+    "name": "委託:探查聖林",
+    "faction": null, "rank": null, "source": "npc",
+    "objective": {"type": "reach", "location": "spider_grove"},
+    "reward": {"gold": 130, "fame": 4, "items": ["filled_lesser_soul_gem"]},
+    "turn_in": "auto",
+    "text": "海文城的綠約獵長要你潛入絞藤蛛巢、查探遠古樹靈甦醒的徵兆:「林子病了,外鄉人 —— 活著回來告訴我你看見了什麼。」"
   }
 }

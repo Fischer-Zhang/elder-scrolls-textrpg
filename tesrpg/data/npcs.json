@@ -601,5 +601,62 @@
     "greeting": "「別用那種眼神看我,外鄉人 —— 不是所有懂咒法的布雷頓婦人都跟海妖岩那群同流合污。我只是想清靜地過日子。」",
     "rumor": "海妖岩巫圈早已墮入黑暗,那位魔女祭主以靈魂石豢養不死之軀;荒沼裡的巨石巫圈才是上古布雷頓人真正的聖地,如今卻成了石像鬼的棲所。",
     "quest": null
+  },
+  "falinesti_treespeaker": {
+    "name": "樹語祭司 艾蘭薇",
+    "location": "falinesti",
+    "disposition": 47,
+    "greeting": "「歡迎踏上行走的王城,外鄉人。請別折斷任何枝葉 —— 綠約之下,連枯枝都是聖物。」",
+    "rumor": "巨木林最深處的絞藤蛛巢病了:一株沉睡千年的遠古樹靈甦醒,毒藤正一寸寸絞死整片聖林,告示板已掛出清剿的重賞。",
+    "quest": null
+  },
+  "falinesti_archer": {
+    "name": "綠約獵手 芬羅斯",
+    "location": "falinesti",
+    "disposition": 46,
+    "greeting": "「波斯莫不吃草木、不伐生樹 —— 但對付林子裡那些毒物,我們自有辦法。你帶火了嗎,外鄉人?」",
+    "rumor": "樹靈、絞藤與巨蛛雖耐得住寒霜與毒液,卻最怕烈焰 —— 一把火,勝過十箭;進巨木林剿毒物前,先到法術舖備齊火咒。",
+    "quest": null
+  },
+  "falinesti_trader": {
+    "name": "巨木商販 米爾溫",
+    "location": "falinesti",
+    "disposition": 48,
+    "greeting": "「帝王蝶翼、發光的鬼火塵、林子裡的奇花異草 —— 煉藥人千里迢迢就為這些。要添點嗎?」",
+    "rumor": "格拉特巨木林的樹蔭下藏著上好的煉藥素材,膽大的採藥人都往那兒去;林心那株傳說中的艾爾登神木,更是綠約之民朝聖的聖樹。",
+    "quest": null
+  },
+  "haven_huntmaster": {
+    "name": "綠約獵長 塔露薇",
+    "location": "haven",
+    "disposition": 48,
+    "greeting": "「林子近來不對勁,毒藤蔓延、巨蛛離巢。我需要有人潛進聖林深處,探明那株老樹靈究竟醒到了什麼地步。」",
+    "rumor": "綠約獵人接連在絞藤蛛巢外失蹤;海文城願出重金,只求有人能活著探明遠古樹靈甦醒的徵兆。",
+    "quest": "favor_haven",
+    "quest_disposition": 52
+  },
+  "haven_merchant": {
+    "name": "海港商會主 卓里安",
+    "location": "haven",
+    "disposition": 46,
+    "greeting": "「歡迎來到海文 —— 阿比西亞海最熱鬧的港。波斯莫的異木、卡傑特的香料、帝國的銀幣,在這兒都能換成你要的東西。」",
+    "rumor": "海文城嘴上奉帝國為盟,實則只認銀幣的流向;倒是內陸希凡納的代言者,連卡莫蘭樹王都得敬他三分。",
+    "quest": null
+  },
+  "silvenar_attendant": {
+    "name": "代言者侍從 葉拉",
+    "location": "silvenar",
+    "disposition": 47,
+    "greeting": "「噓 —— 代言者正在聆聽森林的低語。外鄉人,你腳步太重了,連樹根都聽得見你的躁動。」",
+    "rumor": "代言者說,瓦倫森林正在生病,病根在巨木林深處那株甦醒的遠古樹靈;唯有平息它,綠約之民才能重歸安寧。",
+    "quest": null
+  },
+  "silvenar_herbalist": {
+    "name": "採藥婦 莉安娜",
+    "location": "silvenar",
+    "disposition": 48,
+    "greeting": "「綠約不許折活枝,但落葉、蝶翼與鬼火塵,森林是慷慨給予的。要煉藥的話,我這兒的料子最新鮮。」",
+    "rumor": "巨木林裡循著螢光便能找到帝王蝶聚集的花叢;林心那株艾爾登神木的樹蔭下,據說落著綠約之民世代供奉的遺珍。",
+    "quest": null
   }
 }

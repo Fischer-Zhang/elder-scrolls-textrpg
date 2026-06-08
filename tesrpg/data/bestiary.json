@@ -965,5 +965,64 @@
     "loot_gold": [70, 160],
     "loot": [{"item": "ebony_cuirass", "chance": 0.3}, {"item": "filled_greater_soul_gem", "chance": 0.5}, {"item": "gold_ingot", "chance": 0.5}],
     "flavor": "巫窟深處的寒氣驟然凝結 —— 一名披著千年羽袍的魔女祭主自骸骨王座升起,凜冬的詛咒在她蒼白的指間盤旋成霜。"
+  },
+  "strangler_vine": {
+    "biomes": ["jungle"],
+    "name": "絞殺藤蔓", "strength": 38, "agility": 36, "speed": 30,
+    "max_health": 30, "armor_rating": 6,
+    "attack": {"name": "纏絞毒鞭", "damage": 9, "skill": 40, "element": "poison",
+               "on_hit": {"status": "dot", "element": "poison", "magnitude": 2, "turns": 2, "chance": 0.35}},
+    "danger": 2, "min_level": 1, "weight": 5,
+    "resist": {"poison": 50, "fire": -40},
+    "loot_gold": [0, 4],
+    "loot": [{"item": "glow_dust", "chance": 0.3}, {"item": "nightshade", "chance": 0.25}],
+    "flavor": "林道旁的藤蔓驟然活了過來 —— 一條沁著毒液的絞殺藤如鞭甩出,纏向你的咽喉。"
+  },
+  "spriggan": {
+    "biomes": ["jungle"],
+    "name": "樹靈", "strength": 54, "agility": 50, "speed": 48,
+    "max_health": 64, "armor_rating": 14,
+    "attack": {"name": "荊棘毒刺", "damage": 15, "skill": 52, "element": "poison",
+               "on_hit": {"status": "dot", "element": "poison", "magnitude": 3, "turns": 2, "chance": 0.35}},
+    "danger": 3, "min_level": 3, "weight": 4,
+    "resist": {"frost": 50, "poison": 50, "fire": -50},
+    "loot_gold": [2, 12],
+    "loot": [{"item": "monarch_wing", "chance": 0.3}, {"item": "healing_potion", "chance": 0.2}],
+    "flavor": "苔綠的樹皮剝落,一具藤蔓與樹瘤交織的樹靈自巨木中走出,荊棘的指尖滴著綠約的毒。"
+  },
+  "jungle_imga": {
+    "biomes": ["jungle"],
+    "name": "食人巨猿", "strength": 58, "agility": 62, "speed": 60,
+    "max_health": 58, "armor_rating": 8,
+    "attack": {"name": "猛捶撕咬", "damage": 15, "skill": 54},
+    "danger": 3, "min_level": 4, "weight": 5,
+    "resist": {"fire": -30},
+    "loot_gold": [4, 14],
+    "loot": [{"item": "ruby", "chance": 0.2}, {"item": "glow_dust", "chance": 0.25}],
+    "flavor": "樹冠驟然劇烈搖晃,一頭披著儀式骨飾的巨猿伊姆迦嘶吼著盪下,身手快得難以捉摸。"
+  },
+  "giant_spider": {
+    "biomes": ["jungle"],
+    "name": "叢林巨蛛", "strength": 60, "agility": 58, "speed": 54,
+    "max_health": 90, "armor_rating": 12,
+    "attack": {"name": "劇毒撕咬", "damage": 18, "skill": 56, "element": "poison",
+               "on_hit": {"status": "dot", "element": "poison", "magnitude": 3, "turns": 2, "chance": 0.4}},
+    "danger": 4, "min_level": 6, "weight": 3,
+    "resist": {"poison": 100, "frost": 25, "fire": -50},
+    "loot_gold": [6, 18],
+    "loot": [{"item": "glow_dust", "chance": 0.4}, {"item": "filled_lesser_soul_gem", "chance": 0.25}],
+    "flavor": "蛛網震顫,一頭犬隻大小的叢林巨蛛自樹影間竄下,毒牙間垂著黏稠的綠絲。"
+  },
+  "spriggan_matriarch": {
+    "biomes": ["jungle"],
+    "name": "遠古樹靈", "strength": 66, "agility": 56, "speed": 50,
+    "max_health": 230, "armor_rating": 18,
+    "attack": {"name": "萬藤絞殺", "damage": 26, "skill": 64, "element": "poison",
+               "on_hit": {"status": "dot", "element": "poison", "magnitude": 5, "turns": 2, "chance": 0.4}},
+    "danger": 5, "min_level": 13, "weight": 1, "raw": true,
+    "resist": {"frost": 60, "poison": 100, "fire": -55},
+    "loot_gold": [70, 160],
+    "loot": [{"item": "glass_cuirass", "chance": 0.3}, {"item": "filled_greater_soul_gem", "chance": 0.5}, {"item": "gold_ingot", "chance": 0.5}],
+    "flavor": "腐林的中心,一株千年遠古樹靈轟然挺起 —— 盤根錯節的軀體高過三人,萬千毒藤自它身上奔湧而出,絞向闖入聖林的活物。"
   }
 }

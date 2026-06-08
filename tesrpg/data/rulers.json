@@ -301,5 +301,38 @@
     "bloc_label": "永恒邊伯領",
     "blurb": "永恒城的布雷頓邊伯領主,謹守東方門戶的務實女主。她的小城夾在布雷頓諸王與天際銀血氏族之間,既不願捲入匕落與威岩的明爭,也提防著河彎地拒誓者的滋擾,只求在亂世裡守住這道霧鎖的邊界。",
     "stance": "neutral"
+  },
+  "falinesti": {
+    "name": "卡莫蘭·暮葉",
+    "title": "樹王",
+    "race": "bosmer",
+    "garrison": 200,
+    "population": 380,
+    "bloc": "camoran_dynasty",
+    "bloc_label": "卡莫蘭王朝",
+    "blurb": "行走王都法林斯提的波斯莫樹王,卡莫蘭古老血脈的繼承者。紅寶石王座既空,他便領綠約之民退入巨木深處,隨季節遷徙的王城自此不再向帝國俯首,只聽從瓦倫森林與綠約戒律的低語。",
+    "stance": "independent"
+  },
+  "haven": {
+    "name": "費爾蘭·疾葉",
+    "title": "港主",
+    "race": "bosmer",
+    "garrison": 180,
+    "population": 350,
+    "bloc": "haven_port",
+    "bloc_label": "海文商港",
+    "blurb": "海文城的波斯莫港主,精於互市的綠約商閥。他不願與帝國的舊誼一刀兩斷,憑著阿比西亞海的商路與帝國、卡傑特三方通商,在卡莫蘭的孤高與外邦的銀幣之間,把這座南岸港城經營成瓦倫森林對外的門戶。",
+    "stance": "imperial"
+  },
+  "silvenar": {
+    "name": "希爾文·語木",
+    "title": "代言者",
+    "race": "bosmer",
+    "garrison": 120,
+    "population": 220,
+    "bloc": "green_pact_voice",
+    "bloc_label": "綠約之聲",
+    "blurb": "希凡納世代相承的『代言者』,聆聽瓦倫森林意志的精神領袖。他不掌兵戈,卻以綠約戒律與部族威望居中調停,連卡莫蘭王族也敬其三分;在群雄問鼎的亂世裡,他只願守住綠約之民與森林共生的古老盟誓。",
+    "stance": "neutral"
   }
 }

@@ -467,5 +467,60 @@
         ]
       }
     }
+  },
+  "spider_grove": {
+    "name": "絞藤蛛巢",
+    "rooms": [
+      {
+        "desc": "藤蔓絞死的林口陰翳濕冷,一具苔綠的樹靈自腐木中走出,荊棘的指尖滴著綠毒。",
+        "enemy": "spriggan",
+        "container": null
+      },
+      {
+        "desc": "蛛網層疊的林間空地,一只波斯莫獵人遺落的編枝木匣半埋在落葉與蛛絲之間。",
+        "enemy": null,
+        "container": {
+          "locked": 30,
+          "loot": [
+            "glow_dust",
+            "filled_lesser_soul_gem",
+            {"gold": [12, 30]}
+          ]
+        }
+      },
+      {
+        "desc": "腐葉沒膝的密林深處,一頭叢林巨蛛自樹冠竄下,牆角的絞殺藤也隨之甦醒纏來。",
+        "container": null,
+        "enemies": ["giant_spider", "strangler_vine"]
+      },
+      {
+        "desc": "通往聖林之心的藤拱前,一頭披著骨飾的食人巨猿盤踞守著,拱後嵌著一只綠玉鑲嵌的舊匣。",
+        "enemy": "jungle_imga",
+        "container": {
+          "locked": 35,
+          "loot": [
+            "glass_dagger",
+            "ruby",
+            {"gold": [25, 55]}
+          ]
+        }
+      }
+    ],
+    "boss": {
+      "desc": "腐林的中心 —— 一株千年遠古樹靈盤根於被綠約遺忘的祕藏之上,萬千毒藤自它身上奔湧,藤心深處還纏著歷代闖入者帶來的玻璃甲冑。",
+      "enemy": "spriggan_matriarch",
+      "raw": true,
+      "treasure": {
+        "locked": 45,
+        "loot": [
+          "glass_cuirass",
+          "glass_shield",
+          "filled_greater_soul_gem",
+          "healing_potion",
+          "ruby",
+          {"gold": [80, 170]}
+        ]
+      }
+    }
   }
 }

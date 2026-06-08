@@ -401,5 +401,27 @@
                  "success": {"text": "你貼著石南匍匐而過,任那石影在霧裡重新沉睡。", "effects": []},
                  "failure": {"text": "腳下碎石一響,石像鬼睜眼撲下!", "effects": [{"type": "combat", "creature": "gargoyle"}]}}}
     ]
+  },
+  "jungle_forage": {
+    "weight": 3,
+    "trigger": {"contexts": ["explore"], "provinces": ["瓦倫森林"]},
+    "title": "巨木林採集",
+    "text": "螢光在濕熱的林蔭間明滅 —— 一叢開滿異花的灌木邊,帝王蝶翩然聚集,腐木上還浮著一層發光的鬼火塵。",
+    "options": [
+      {"text": "採集蝶翼與鬼火塵", "effects": [{"type": "item", "item": "monarch_wing", "qty": 1}, {"type": "item", "item": "glow_dust", "qty": 1}, {"type": "skill_xp", "skill": "alchemy", "amount": 0.5}, {"type": "message", "text": "你採下了一對帝王蝶翼與一撮鬼火塵。"}]},
+      {"text": "沒興趣", "effects": []}
+    ]
+  },
+  "jungle_predator": {
+    "weight": 3,
+    "trigger": {"contexts": ["explore"], "provinces": ["瓦倫森林"], "location_types": ["wilderness"]},
+    "title": "林蔭中的綠影", "text": "苔綠的樹皮無聲剝落 —— 一具藤蔓交織的樹靈自巨木中走出,荊棘的指尖滴著綠約的毒。",
+    "options": [
+      {"text": "搶在牠纏上來前出手", "effects": [{"type": "combat", "creature": "spriggan"}]},
+      {"text": "屏息潛伏、繞開綠影(潛行)",
+       "check": {"skill": "sneak", "difficulty": 42,
+                 "success": {"text": "你貼著樹根匍匐而過,任那樹靈在綠蔭裡重新沉入巨木。", "effects": []},
+                 "failure": {"text": "踩斷的枯枝驚動了牠,樹靈的毒藤猛然纏來!", "effects": [{"type": "combat", "creature": "spriggan"}]}}}
+    ]
   }
 }
