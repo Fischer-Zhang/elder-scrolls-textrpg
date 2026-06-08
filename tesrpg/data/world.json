@@ -611,6 +611,10 @@
         "iron_ingot",
         "steel_ingot",
         "bolt_of_cloth",
+        "moonstone_ingot",
+        "dwarven_ingot",
+        "malachite_ingot",
+        "ebony_ingot",
         "cloth_hood",
         "cloth_robe",
         "cloth_gloves",
@@ -926,7 +930,13 @@
         "gold_ingot",
         "ruby",
         "charred_skeever_hide",
-        "frost_staff"
+        "frost_staff",
+        "iron_ingot",
+        "steel_ingot",
+        "moonstone_ingot",
+        "dwarven_ingot",
+        "malachite_ingot",
+        "ebony_ingot"
       ],
       "spell_stock": [
         "frostbite",

@@ -22,5 +22,33 @@
   "tailor_cloth_hood":     {"name": "縫製學徒兜帽", "station": "smith", "skill": "smithing", "skill_req": 15, "inputs": {"bolt_of_cloth": 3}, "output": "cloth_hood", "output_qty": 1},
   "tailor_cloth_robe":     {"name": "縫製學徒法袍", "station": "smith", "skill": "smithing", "skill_req": 15, "inputs": {"bolt_of_cloth": 4}, "output": "cloth_robe", "output_qty": 1},
   "tailor_cloth_gloves":   {"name": "縫製學徒手套", "station": "smith", "skill": "smithing", "skill_req": 15, "inputs": {"bolt_of_cloth": 2}, "output": "cloth_gloves", "output_qty": 1},
-  "tailor_cloth_slippers": {"name": "縫製學徒便鞋", "station": "smith", "skill": "smithing", "skill_req": 15, "inputs": {"bolt_of_cloth": 2}, "output": "cloth_slippers", "output_qty": 1}
+  "tailor_cloth_slippers": {"name": "縫製學徒便鞋", "station": "smith", "skill": "smithing", "skill_req": 15, "inputs": {"bolt_of_cloth": 2}, "output": "cloth_slippers", "output_qty": 1},
+
+  "forge_elven_sword":     {"name": "鍛造精靈劍",   "station": "smith", "skill": "smithing", "skill_req": 40, "inputs": {"moonstone_ingot": 3}, "output": "elven_sword", "output_qty": 1},
+  "forge_elven_bow":       {"name": "鍛造精靈弓",   "station": "smith", "skill": "smithing", "skill_req": 40, "inputs": {"moonstone_ingot": 3}, "output": "elven_bow", "output_qty": 1},
+  "forge_elven_helmet":    {"name": "鍛造精靈盔",   "station": "smith", "skill": "smithing", "skill_req": 40, "inputs": {"moonstone_ingot": 2}, "output": "elven_helmet", "output_qty": 1},
+  "forge_elven_cuirass":   {"name": "鍛造精靈胸甲", "station": "smith", "skill": "smithing", "skill_req": 40, "inputs": {"moonstone_ingot": 4}, "output": "elven_cuirass", "output_qty": 1},
+  "forge_elven_gauntlets": {"name": "鍛造精靈護手", "station": "smith", "skill": "smithing", "skill_req": 40, "inputs": {"moonstone_ingot": 2}, "output": "elven_gauntlets", "output_qty": 1},
+  "forge_elven_boots":     {"name": "鍛造精靈靴",   "station": "smith", "skill": "smithing", "skill_req": 40, "inputs": {"moonstone_ingot": 2}, "output": "elven_boots", "output_qty": 1},
+
+  "forge_dwarven_mace":      {"name": "鍛造矮人錘",   "station": "smith", "skill": "smithing", "skill_req": 55, "inputs": {"dwarven_ingot": 3}, "output": "dwarven_mace", "output_qty": 1},
+  "forge_dwarven_helmet":    {"name": "鍛造矮人盔",   "station": "smith", "skill": "smithing", "skill_req": 55, "inputs": {"dwarven_ingot": 2}, "output": "dwarven_helmet", "output_qty": 1},
+  "forge_dwarven_cuirass":   {"name": "鍛造矮人胸甲", "station": "smith", "skill": "smithing", "skill_req": 55, "inputs": {"dwarven_ingot": 4}, "output": "dwarven_cuirass", "output_qty": 1},
+  "forge_dwarven_gauntlets": {"name": "鍛造矮人護手", "station": "smith", "skill": "smithing", "skill_req": 55, "inputs": {"dwarven_ingot": 2}, "output": "dwarven_gauntlets", "output_qty": 1},
+  "forge_dwarven_boots":     {"name": "鍛造矮人靴",   "station": "smith", "skill": "smithing", "skill_req": 55, "inputs": {"dwarven_ingot": 2}, "output": "dwarven_boots", "output_qty": 1},
+  "forge_dwarven_shield":    {"name": "鍛造矮人盾",   "station": "smith", "skill": "smithing", "skill_req": 55, "inputs": {"dwarven_ingot": 3}, "output": "dwarven_shield", "output_qty": 1},
+
+  "forge_glass_dagger":    {"name": "鍛造玻璃匕首", "station": "smith", "skill": "smithing", "skill_req": 70, "inputs": {"malachite_ingot": 2}, "output": "glass_dagger", "output_qty": 1},
+  "forge_glass_helmet":    {"name": "鍛造玻璃盔",   "station": "smith", "skill": "smithing", "skill_req": 70, "inputs": {"malachite_ingot": 2}, "output": "glass_helmet", "output_qty": 1},
+  "forge_glass_cuirass":   {"name": "鍛造玻璃胸甲", "station": "smith", "skill": "smithing", "skill_req": 70, "inputs": {"malachite_ingot": 4}, "output": "glass_cuirass", "output_qty": 1},
+  "forge_glass_gauntlets": {"name": "鍛造玻璃護手", "station": "smith", "skill": "smithing", "skill_req": 70, "inputs": {"malachite_ingot": 1}, "output": "glass_gauntlets", "output_qty": 1},
+  "forge_glass_boots":     {"name": "鍛造玻璃靴",   "station": "smith", "skill": "smithing", "skill_req": 70, "inputs": {"malachite_ingot": 1}, "output": "glass_boots", "output_qty": 1},
+  "forge_glass_shield":    {"name": "鍛造玻璃盾",   "station": "smith", "skill": "smithing", "skill_req": 70, "inputs": {"malachite_ingot": 2}, "output": "glass_shield", "output_qty": 1},
+
+  "forge_ebony_sword":     {"name": "鍛造黑檀劍",   "station": "smith", "skill": "smithing", "skill_req": 85, "inputs": {"ebony_ingot": 4}, "output": "ebony_sword", "output_qty": 1},
+  "forge_ebony_helmet":    {"name": "鍛造黑檀盔",   "station": "smith", "skill": "smithing", "skill_req": 85, "inputs": {"ebony_ingot": 2}, "output": "ebony_helmet", "output_qty": 1},
+  "forge_ebony_cuirass":   {"name": "鍛造黑檀胸甲", "station": "smith", "skill": "smithing", "skill_req": 85, "inputs": {"ebony_ingot": 4}, "output": "ebony_cuirass", "output_qty": 1},
+  "forge_ebony_gauntlets": {"name": "鍛造黑檀護手", "station": "smith", "skill": "smithing", "skill_req": 85, "inputs": {"ebony_ingot": 2}, "output": "ebony_gauntlets", "output_qty": 1},
+  "forge_ebony_boots":     {"name": "鍛造黑檀靴",   "station": "smith", "skill": "smithing", "skill_req": 85, "inputs": {"ebony_ingot": 2}, "output": "ebony_boots", "output_qty": 1},
+  "forge_ebony_shield":    {"name": "鍛造黑檀盾",   "station": "smith", "skill": "smithing", "skill_req": 85, "inputs": {"ebony_ingot": 2}, "output": "ebony_shield", "output_qty": 1}
 }

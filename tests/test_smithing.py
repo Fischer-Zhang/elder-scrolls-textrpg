@@ -144,11 +144,10 @@ def test_temper_only_player_creature_unaffected():
 
 def test_is_temperable():
     gd = get_gamedata()
-    assert smithing.is_temperable(gd, "iron_sword")
-    assert smithing.is_temperable(gd, "cloth_robe")
-    assert not smithing.is_temperable(gd, "gold_ring")       # 飾品
-    assert not smithing.is_temperable(gd, "flame_staff")     # 法杖(無對應錠)
-    assert not smithing.is_temperable(gd, "glass_dagger")    # 玻璃 MVP 無錠
+    for w in ("iron_sword", "cloth_robe", "elven_sword", "dwarven_mace", "glass_dagger", "ebony_sword"):
+        assert smithing.is_temperable(gd, w), w               # iron/steel/皮/布/精靈/矮人/玻璃/黑檀皆可淬
+    assert not smithing.is_temperable(gd, "gold_ring")        # 飾品不可淬
+    assert not smithing.is_temperable(gd, "flame_staff")      # 法杖(flame 無對應錠)不可淬
 
 
 def test_temper_not_in_sell_price():
@@ -177,6 +176,32 @@ def test_save_roundtrip_and_old_save_compat():
     del d["armor_temper"]
     old = Character.from_dict(d)
     assert old.weapon_temper == {} and old.armor_temper == {}
+
+
+def test_high_tier_metal_smithing():
+    """更高階金屬鍛造:elven/dwarven/glass/ebony 配方按 skill_req 分級 + 對應錠 + 可淬鍊 + 可取得。"""
+    gd = get_gamedata()
+    reqs = {"elven": 40, "dwarven": 55, "glass": 70, "ebony": 85}
+    ingots = {"elven": "moonstone_ingot", "dwarven": "dwarven_ingot",
+              "glass": "malachite_ingot", "ebony": "ebony_ingot"}
+    for rid, r in gd.recipes.items():
+        tier = r["output"].split("_")[0]
+        if tier in reqs and rid.startswith("forge_"):
+            assert r.get("skill_req") == reqs[tier], rid       # 分級門檻
+    for mat, ingot in ingots.items():                          # 高階材質可淬鍊、對應錠正確
+        assert smithing._MATERIAL_INGOT.get(mat) == ingot
+    sold = set()                                               # 四種高階錠皆有取得途徑
+    for loc in gd.world["locations"].values():
+        sold |= set(loc.get("merchant_stock", []))
+    for ingot in ingots.values():
+        assert ingot in sold, f"{ingot} 無取得途徑"
+    # 端到端:給 ebony 技能 + 錠 → 鍛造 ebony_sword;技能不足則擋
+    c = build_character(gd, name="鍛", sex="male", race="nord", birthsign="warrior", class_id="warrior")
+    inventory.add_item(c, "ebony_ingot", 4)
+    assert not crafting.craft(c, gd, "forge_ebony_sword")["ok"]   # 鍛造 0 < 85 → 擋
+    c.skills["smithing"] = 85
+    assert crafting.craft(c, gd, "forge_ebony_sword")["ok"]
+    assert inventory.count_item(c, "ebony_sword") == 1
 
 
 def test_temper_cleared_when_item_leaves_inventory():

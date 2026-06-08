@@ -8,6 +8,10 @@
   "iron_ingot":  {"name": "鐵錠", "kind": "misc", "value": 20,  "weight": 2},
   "steel_ingot": {"name": "鋼錠", "kind": "misc", "value": 50,  "weight": 2},
   "bolt_of_cloth": {"name": "布匹", "kind": "misc", "value": 16, "weight": 1},
+  "moonstone_ingot": {"name": "月長石錠", "kind": "misc", "value": 95,  "weight": 1.5},
+  "dwarven_ingot":   {"name": "矮人金屬錠", "kind": "misc", "value": 110, "weight": 2},
+  "malachite_ingot": {"name": "熔煉綠玉錠", "kind": "misc", "value": 110, "weight": 1},
+  "ebony_ingot":     {"name": "黑檀錠", "kind": "misc", "value": 200, "weight": 2},
 
   "repair_hammer": {"name": "修理鎚", "kind": "misc", "value": 5, "weight": 2},
 

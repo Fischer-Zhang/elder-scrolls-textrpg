@@ -18,10 +18,12 @@ TEMPER_WEAPON_PER = 2     # 每淬鍊級 +2 武器傷害
 TEMPER_ARMOR_PER = 1      # 每淬鍊級 +1 護甲值
 TEMPER_MAX = 5            # 硬上限(亦受 smithing//20 夾)
 
-# 材質 → 所需錠(MVP:iron/steel/leather/cloth/archmage 可淬;elven/dwarven/glass/ebony 暫不可淬)
+# 材質 → 所需錠(可淬鍊材質皆須有對應錠;加新可淬材質純改此表 + items.json 補錠)
 _MATERIAL_INGOT = {
     "iron": "iron_ingot", "steel": "steel_ingot", "leather": "wolf_pelt",
     "cloth": "bolt_of_cloth", "archmage": "bolt_of_cloth",
+    "elven": "moonstone_ingot", "dwarven": "dwarven_ingot",
+    "glass": "malachite_ingot", "ebony": "ebony_ingot",
 }
 
 

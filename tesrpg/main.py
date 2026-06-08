@@ -1980,7 +1980,7 @@ def action_temper(state: GameState, gamedata: GameData) -> None:
                 ids.append(iid)
         ids = [i for i in dict.fromkeys(ids) if smithing.is_temperable(gamedata, i)]
         if not ids:
-            ui.message("沒有可淬鍊的裝備(手持武器或穿戴護甲須為鐵/鋼/皮/布等可鍛材質)。", style="grey70")
+            ui.message("沒有可淬鍊的裝備(手持武器或穿戴護甲須為可鍛材質:鐵/鋼/精靈/矮人/玻璃/黑檀/皮/布;飾品與法杖不可淬)。", style="grey70")
             return
         opts = []
         for iid in ids:
