@@ -1029,6 +1029,7 @@ def action_shop(state: GameState, gamedata: GameData) -> None:
                 continue
             opts = [(iid, f"{gamedata.item_name(iid)} ×{world.stock_qty(char, loc_id, iid)}"
                      f" — {world.buy_price(char, gamedata, iid)} 金") for iid in avail]
+            ui.shop_panel(char, gamedata, loc_id, avail)    # web:可點買貨面板(對齊選單 key=iid)
             iid = ui.menu("買什麼?", opts, allow_back=True)
             if iid is None:
                 continue
@@ -1049,6 +1050,7 @@ def action_shop(state: GameState, gamedata: GameData) -> None:
                 continue
             opts = [(s["id"], f"{ui.item_label(gamedata, char, s['id'], s['qty'])} — 售 "
                      f"{world.sell_price(char, gamedata, s['id'])} 金") for s in sellable]
+            ui.inventory_panel(char, gamedata)    # web:複用背包面板,可賣列(key=stack id)可點
             iid = ui.menu("賣什麼?", opts, allow_back=True)
             if iid is None:
                 continue
@@ -2031,6 +2033,7 @@ def action_board(state: GameState, gamedata: GameData) -> None:
             return
         opts = [(qid, f"{gamedata.quests[qid]['name']} — {quests.objective_text(char, gamedata, qid)}"
                  f"(賞 {gamedata.quests[qid]['reward'].get('gold', 0)} 金)") for qid in avail]
+        ui.board_panel(char, gamedata, avail)     # web:可點委託卡(對齊選單 key=qid)
         qid = ui.menu("告示板委託", opts, allow_back=True)
         if qid is None:
             return
@@ -2081,7 +2084,12 @@ def action_talk(state: GameState, gamedata: GameData) -> str | None:
         opts = []
         if offered:
             opts.append(("quest", f"接受委託:{gamedata.quests[offered]['name']}"))
-        opts += [("persuade", "說服(口才)"), ("bribe", f"賄賂({dialogue.BRIBE_COST} 金)")]
+        pc = int(dialogue.persuade_chance(char, gamedata, nid) * 100)
+        sp = gamedata.skills["speechcraft"]["practice"]   # 唯讀靜態價碼;勿呼叫 practice_cost(會扣體力)
+        opts.append(("persuade", "說服(口才)",
+                     [{"text": f"成功率 {pc}%", "tone": "gold"},
+                      {"text": f"耗 {sp['hours']}時·體力{sp['fatigue']}", "tone": "cyan"}]))
+        opts.append(("bribe", f"賄賂({dialogue.BRIBE_COST} 金)"))
         opts.append(("murder", "🔪 暗殺此人"))
         choice = ui.menu("對話", opts, allow_back=True)
         if choice is None:

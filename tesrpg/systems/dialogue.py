@@ -22,6 +22,14 @@ def _adjust(char: Character, npc_id: str, delta: int) -> None:
     char.npc_disposition[npc_id] = char.npc_disposition.get(npc_id, 0) + delta
 
 
+def persuade_chance(char: Character, gamedata: GameData, npc_id: str) -> float:
+    """說服成功率(唯讀,供 UI 預示;與 persuade 公式單一來源)。折服里程碑 → 1.0。"""
+    if mastery.can_guaranteed_persuade(char, gamedata, npc_id):
+        return 1.0
+    skill = char.skill("speechcraft")
+    return max(0.1, min(0.9, 0.35 + (skill + char.attr("personality") - 50) * 0.005))
+
+
 def persuade(char: Character, gamedata: GameData, npc_id: str, rng: RNG) -> dict:
     """以口才說服。成功提升好感,失敗略降。回傳 {ok, delta, hours, tired, skill_events}。
 

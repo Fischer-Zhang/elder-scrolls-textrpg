@@ -237,6 +237,36 @@
   /* 通用面板(sheet_* 子檢視) */
   .panel-body{margin-top:8px;} .p-head{color:var(--gold);font-weight:700;margin:11px 0 5px;font-size:14px;}
   .p-line{margin:4px 0;font-size:14px;color:var(--ink);}
+  /* 里程碑卡 */
+  .mst-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px;}
+  @media (max-width:560px){ .mst-grid{ grid-template-columns:1fr; } }
+  .mst{border:1px solid var(--line);border-radius:9px;padding:9px 11px;background:#100d08;min-width:0;}
+  .mst.on{border-color:#3f2f46;background:linear-gradient(#181020,#120d09);}
+  .mst-h{display:flex;flex-wrap:wrap;align-items:baseline;gap:7px;font-weight:700;}
+  .mst.on .mst-h{color:var(--mag);} .mst.off .mst-h{color:var(--ink);}
+  .mst-mk{color:var(--mag);} .mst-mk.off{color:var(--faint);}
+  .mst-sk{font-size:11.5px;font-weight:400;color:var(--gold-dim);}
+  .mst .m-track{margin:7px 0 5px;} .mst-d{font-size:12.5px;color:var(--muted);}
+  /* 抗性量表 */
+  .rz-grid{margin-top:9px;display:flex;flex-direction:column;gap:7px;}
+  .rz-row{display:flex;align-items:center;gap:10px;font-size:13.5px;min-width:0;}
+  .rz-lab{width:3em;flex:none;color:var(--muted);}
+  .rz-track{position:relative;flex:1;height:13px;border-radius:7px;background:#0d0b07;border:1px solid var(--line);overflow:hidden;min-width:0;}
+  .rz-mid{position:absolute;left:50%;top:0;bottom:0;width:1px;background:var(--gold-dim);opacity:.5;}
+  .rz-fill{position:absolute;top:0;bottom:0;}
+  .rz-fill.pos{left:50%;background:linear-gradient(90deg,#2b5a64,var(--cyan));border-radius:0 6px 6px 0;}
+  .rz-fill.neg{right:50%;background:linear-gradient(270deg,#7a2e29,var(--red));border-radius:6px 0 0 6px;}
+  .rz-val{flex:none;min-width:6.4em;text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;}
+  .rz-val.pos{color:var(--cyan);} .rz-val.neg{color:#e08b82;} .rz-val.zero{color:var(--faint);}
+  /* 法術書 */
+  .spl-grp{display:flex;flex-direction:column;gap:4px;margin-bottom:4px;}
+  .spl{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px;padding:5px 2px;border-bottom:1px dotted var(--line);min-width:0;}
+  .spl-n{font-weight:600;color:var(--ink);min-width:0;overflow-wrap:anywhere;}
+  .spl-c{flex:none;} .spl-e{color:var(--muted);font-size:12.5px;flex:1 1 100%;}
+  @media (min-width:561px){ .spl-e{flex:1 1 auto;} }
+  /* 告示板可點卡 / 商店不可購買列 */
+  .quest.tappable{padding:10px 8px;border-bottom:1px solid var(--line);}
+  .inv-row.unaffordable{opacity:.5;}
   /* 升級 CTA + 麵包屑 + 手機 2 欄 */
   .opt.cta{ border-color:var(--gold-soft); background:linear-gradient(#2a2010,#1c150b); color:var(--gold);
     font-weight:700; box-shadow:0 0 16px rgba(214,178,92,.16); }
@@ -506,12 +536,82 @@
     }).join("");
     return elFrom(`<div class="card"><div class="card-head">${esc(d.title)}</div><div class="panel-body">${body}</div></div>`);
   }
+  function renderMasteries(d) {
+    if (!d.unlocked.length && !d.locked.length)
+      return elFrom(`<div class="card"><div class="card-head">技能里程碑</div><div class="dim" style="margin-top:8px">尚無里程碑資料。</div></div>`);
+    let body = "";
+    if (d.unlocked.length) {
+      body += `<div class="sec-title">已解鎖</div><div class="mst-grid">` + d.unlocked.map(function (m) {
+        return `<div class="mst on"><div class="mst-h"><span class="mst-mk">✦</span> ${esc(m.name)}`
+          + `<span class="mst-sk">${esc(m.skill)}</span></div><div class="mst-d">${esc(m.desc)}</div></div>`;
+      }).join("") + `</div>`;
+    }
+    if (d.locked.length) {
+      body += `<div class="sec-title">未解鎖</div><div class="mst-grid">` + d.locked.map(function (m) {
+        return `<div class="mst off"><div class="mst-h"><span class="mst-mk off">○</span> ${esc(m.name)}`
+          + `<span class="mst-sk">${esc(m.skill)} ${m.cur}/${m.threshold}</span></div>`
+          + bar(m.cur, m.threshold, "mp")
+          + `<div class="mst-d">${esc(m.desc)} <span class="faint">距門檻還 ${m.remaining} 級</span></div></div>`;
+      }).join("") + `</div>`;
+    }
+    return elFrom(`<div class="card"><div class="card-head">技能里程碑</div><div class="panel-body">${body}</div></div>`);
+  }
+  function renderResist(d) {
+    const rows = d.rows.map(function (r) {
+      const v = r.value, w = Math.min(100, Math.abs(v));
+      const note = v <= -100 ? " 極弱" : (v < 0 ? " 弱點" : (v >= 100 ? " 免疫" : ""));
+      const fill = v === 0 ? "" : `<span class="rz-fill ${v < 0 ? "neg" : "pos"}" style="width:${w / 2}%"></span>`;
+      const vc = v < 0 ? "neg" : (v > 0 ? "pos" : "zero");
+      return `<div class="rz-row"><span class="rz-lab">${esc(r.name)}</span>`
+        + `<span class="rz-track"><span class="rz-mid"></span>${fill}</span>`
+        + `<span class="rz-val ${vc}">${v > 0 ? "+" : ""}${v}%${note}</span></div>`;
+    }).join("");
+    return elFrom(`<div class="card"><div class="card-head">元素抗性 <span class="dim">種族+裝備+血脈</span></div><div class="rz-grid">${rows}</div></div>`);
+  }
+  function renderSpellbook(d) {
+    if (!d.schools.length)
+      return elFrom(`<div class="card"><div class="card-head">📖 法術書</div><div class="dim" style="margin-top:8px">你還沒學會任何法術。</div></div>`);
+    const SCH = { destruction: "var(--red)", restoration: "var(--green)", alteration: "var(--cyan)",
+                  conjuration: "var(--mag)", illusion: "var(--gold)", mysticism: "var(--cyan)" };
+    const body = d.schools.map(function (s) {
+      const col = SCH[s.key] || "var(--gold-dim)";
+      const rows = s.spells.map(function (sp) {
+        return `<div class="spl"><span class="spl-n">${esc(sp.name)}</span>`
+          + `<span class="chip cyan spl-c">${sp.cost} 魔</span>`
+          + `<span class="spl-e">${esc(sp.effect)}</span></div>`;
+      }).join("");
+      return `<div class="sec-title" style="color:${col}">${esc(s.name)}</div><div class="spl-grp">${rows}</div>`;
+    }).join("");
+    return elFrom(`<div class="card"><div class="card-head">📖 法術書</div><div class="panel-body">${body}</div></div>`);
+  }
+  function renderBoard(d) {
+    if (!d.quests.length) return elFrom(`<div class="card"><div class="card-head">📋 告示板</div><div class="dim" style="margin-top:8px">告示板上沒有你還沒接的委託。</div></div>`);
+    const rows = d.quests.map(function (q) {
+      const fac = q.faction ? `<span class="q-fac">〔${esc(q.faction)}〕</span>` : "";
+      const chips = (q.rewards || []).map(function (c) { return `<span class="chip ${c.tone || ""}">${esc(c.text)}</span>`; }).join("");
+      return `<div class="quest" data-key="${esc(q.key)}"><div class="q-name">${fac}${esc(q.name)}</div>`
+        + `<div class="q-obj">${esc(q.objective)}</div>`
+        + (chips ? `<div class="opt-chips">${chips}</div>` : "") + `</div>`;
+    }).join("");
+    return elFrom(`<div class="card"><div class="card-head">📋 告示板</div><div class="inv">${rows}</div></div>`);
+  }
+  function renderShop(d) {
+    if (!d.items.length) return elFrom(`<div class="card"><div class="card-head">🛒 商店</div><div class="dim" style="margin-top:8px">貨架空空如也。</div></div>`);
+    const rows = d.items.map(function (it) {
+      return `<div class="inv-row${it.afford ? "" : " unaffordable"}" data-key="${esc(it.key)}">`
+        + `<span class="ik ${esc(it.kind)}"></span>${esc(it.label)}</div>`;
+    }).join("");
+    return elFrom(`<div class="card"><div class="card-head">🛒 商店</div><div class="inv">${rows}</div>`
+      + `<div class="inv-foot"><span></span><span class="gold">金幣 ${d.gold}</span></div></div>`);
+  }
   const VIEWS = {
     status: renderStatus, location: renderLocation, sheet: renderSheet, divider: renderDivider,
     combat: renderCombat, inventory: renderInventory, map: renderMap, guild: renderGuild,
     quests: renderQuests, npc: renderNpc, court: renderCourt, territory: renderTerritory,
     room: renderRoom, encounter: renderEncounter, event: renderEvent, discovery: renderDiscovery,
     legacy: renderLegacy, panel: renderPanel,
+    masteries: renderMasteries, resistances: renderResist, spellbook: renderSpellbook,
+    board: renderBoard, shop: renderShop,
   };
 
   function htmlBlock(html) {

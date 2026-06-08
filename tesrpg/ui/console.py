@@ -261,6 +261,24 @@ def _inventory_view(char: Character, gamedata: GameData) -> dict:
     return {"items": items, "weight": float(w), "max": mx, "over": w > mx, "gold": char.gold}
 
 
+def _shop_view(char: Character, gamedata: GameData, loc_id: str, qids: list) -> dict:
+    from tesrpg.systems import world
+    items = []
+    for iid in qids:
+        d = gamedata.item(iid)
+        price = world.buy_price(char, gamedata, iid)
+        items.append({"key": iid,
+                      "label": f"{d['name']} ×{world.stock_qty(char, loc_id, iid)} — {price} 金",
+                      "kind": d["kind"], "afford": char.gold >= price})
+    return {"items": items, "gold": char.gold}
+
+
+def shop_panel(char: Character, gamedata: GameData, loc_id: str, qids: list) -> None:
+    """web:商店買貨可點面板(列 key=item id,對齊買單 → wireActionableRows 接管);終端不發。"""
+    if _web is not None:
+        _emit_view("shop", _shop_view(char, gamedata, loc_id, qids))
+
+
 def _guild_view(char: Character, gamedata: GameData, faction_id: str) -> dict:
     from tesrpg.systems import factions
     f = gamedata.factions[faction_id]
@@ -286,6 +304,31 @@ def _quests_view(char: Character, gamedata: GameData) -> dict:
                           if gamedata.quests[qid].get("faction") else None),
               "objective": quests.objective_text(char, gamedata, qid)} for qid in char.quests]
     return {"quests": items, "completed": len(char.completed_quests)}
+
+
+def _board_view(char: Character, gamedata: GameData, qids: list) -> dict:
+    from tesrpg.systems import quests
+    cards = []
+    for qid in qids:
+        q = gamedata.quests[qid]
+        rw = q.get("reward", {})
+        chips = []
+        if rw.get("gold"):
+            chips.append({"text": f"{rw['gold']} 金", "tone": "gold"})
+        if rw.get("fame"):
+            chips.append({"text": f"聲望 +{rw['fame']}", "tone": "cyan"})
+        for iid in rw.get("items", []):
+            chips.append({"text": gamedata.item_name(iid), "tone": "green"})
+        cards.append({"key": qid, "name": q["name"],
+                      "faction": (gamedata.factions[q["faction"]]["name"] if q.get("faction") else None),
+                      "objective": quests.objective_text(char, gamedata, qid), "rewards": chips})
+    return {"quests": cards}
+
+
+def board_panel(char: Character, gamedata: GameData, qids: list) -> None:
+    """web:告示板可點委託卡(列 key=quest id,對齊委託選單 → wireActionableRows 接管);終端不發。"""
+    if _web is not None:
+        _emit_view("board", _board_view(char, gamedata, qids))
 
 
 def _court_view(ruler, gamedata, reception, standing, thane, politics, territory) -> dict:
@@ -586,12 +629,8 @@ def sheet_resistances(char: Character, gamedata: GameData) -> None:
     from tesrpg.systems import magic
     r = magic.entity_resist(char, gamedata)
     if _web is not None:
-        rows = []
-        for e in _RES_ELEMS:
-            v = r.get(e, 0)
-            note = "弱點" if v < 0 else ("免疫" if v >= 100 else "")
-            rows.append(_kv(_RESIST_CN[e], f"{v:+d}%" + (f"　{note}" if note else "")))
-        _emit_panel("元素抗性(種族+裝備+血脈)", rows)
+        _emit_view("resistances",
+                   {"rows": [{"name": _RESIST_CN[e], "value": int(r.get(e, 0))} for e in _RES_ELEMS]})
         return
     tbl = Table(box=box.SIMPLE_HEAD, border_style=GOLD_DIM, pad_edge=False)
     tbl.add_column("元素", style=INK)
@@ -646,17 +685,15 @@ def sheet_masteries(char: Character, gamedata: GameData) -> None:
     unl = mastery.unlocked(char, gamedata)
     locked = [e for e in mastery._defs(gamedata) if e not in unl]
     if _web is not None:
-        rows = []
-        if unl:
-            rows.append(_hd("已解鎖"))
-            for e in unl:
-                rows.append(_ln(f"✦ {e['name']}（{gamedata.skill_name(e['skill'])} {e['threshold']}） {e['desc']}", "magenta"))
-        if locked:
-            rows.append(_hd("未解鎖(門檻)"))
-            for e in sorted(locked, key=lambda x: (x["skill"], x["threshold"])):
-                cur = char.base_skill(e["skill"])
-                rows.append(_ln(f"○ {e['name']}（{gamedata.skill_name(e['skill'])} {cur}/{e['threshold']}） {e['desc']}", "faint"))
-        _emit_panel("技能里程碑", rows or [_ln("(無里程碑資料)", "muted")])
+        vm_unl = [{"name": e["name"], "skill": gamedata.skill_name(e["skill"]), "desc": e["desc"]}
+                  for e in unl]
+        vm_lock = []
+        for e in sorted(locked, key=lambda x: (x["skill"], x["threshold"])):
+            cur = char.base_skill(e["skill"])
+            vm_lock.append({"name": e["name"], "skill": gamedata.skill_name(e["skill"]),
+                            "desc": e["desc"], "cur": cur, "threshold": e["threshold"],
+                            "remaining": max(1, e["threshold"] - cur)})
+        _emit_view("masteries", {"unlocked": vm_unl, "locked": vm_lock})
         return
     body = Text()
     if unl:
@@ -947,23 +984,19 @@ def sheet_spellbook(char: Character, gamedata: GameData) -> None:
     from tesrpg.systems import magic
     known = [s for s in char.spells if s in gamedata.spells]
     if _web is not None:
-        if not known:
-            _emit_panel("法術書", [_ln("你還沒學會任何法術。", "muted")])
-            return
         bs: dict[str, list[str]] = {}
         for sid in known:
             bs.setdefault(gamedata.spells[sid]["school"], []).append(sid)
-        rows = []
+        schools = []
         for school in ("destruction", "restoration", "alteration", "conjuration", "illusion", "mysticism"):
             ids = bs.get(school)
             if not ids:
                 continue
-            rows.append(_hd(_SCHOOL_CN.get(school, school)))
-            for sid in ids:
-                sp = gamedata.spells[sid]
-                rows.append(_kv(sp["name"], f"{magic.effective_cost(char, gamedata, sid)} 魔力 · "
-                                            f"{spell_effect_summary(gamedata, sid)}"))
-        _emit_panel("法術書", rows)
+            schools.append({"key": school, "name": _SCHOOL_CN.get(school, school),
+                            "spells": [{"name": gamedata.spells[sid]["name"],
+                                        "cost": magic.effective_cost(char, gamedata, sid),
+                                        "effect": spell_effect_summary(gamedata, sid)} for sid in ids]})
+        _emit_view("spellbook", {"schools": schools})
         return
     if not known:
         console.print(_panel(Text("你還沒學會任何法術。", style=INK), title="法術書"))

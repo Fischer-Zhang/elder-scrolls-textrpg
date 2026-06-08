@@ -240,6 +240,75 @@ def test_combat_target_reemit_web():
         _restore()
 
 
+def test_sheet_subview_models():
+    """角色卡三子檢視改走專屬 view block(非 panel),形狀正確。"""
+    from tesrpg.gamedata import get_gamedata
+    from tesrpg.creation import build_character
+    gd = get_gamedata()
+    c = build_character(gd, name="測", sex="male", race="altmer", birthsign="mage", class_id="mage")
+    c.skills["block"] = 44       # 製造一個未解鎖里程碑(盾陣 50)
+    backend = WebBackend()
+    ui.use_web_backend(backend, _rec())
+    try:
+        ui.sheet_masteries(c, gd)
+        b = backend.blocks[-1]
+        assert b["kind"] == "view" and b["name"] == "masteries"
+        assert "unlocked" in b["data"] and "locked" in b["data"]
+        assert all(m["remaining"] >= 1 and "cur" in m and "threshold" in m for m in b["data"]["locked"])
+        ui.sheet_resistances(c, gd)
+        b = backend.blocks[-1]
+        assert b["name"] == "resistances" and len(b["data"]["rows"]) == 6
+        assert all(isinstance(r["value"], int) for r in b["data"]["rows"])
+        ui.sheet_spellbook(c, gd)
+        b = backend.blocks[-1]
+        assert b["name"] == "spellbook"
+        for s in b["data"]["schools"]:
+            assert s["spells"] and all(sp["cost"] >= 0 and sp["effect"] for sp in s["spells"])
+    finally:
+        _restore()
+
+
+def test_persuade_chance_readonly():
+    """persuade_chance 唯讀(不扣體力)、回傳 ∈[0,1]、與 persuade 公式一致。"""
+    from tesrpg.gamedata import get_gamedata
+    from tesrpg.creation import build_character
+    from tesrpg.systems import dialogue
+    gd = get_gamedata()
+    c = build_character(gd, name="測", sex="male", race="imperial", birthsign="lady", class_id="warrior")
+    nid = next(iter(gd.npcs))
+    fat = c.fatigue
+    ch = dialogue.persuade_chance(c, gd, nid)
+    assert 0.0 <= ch <= 1.0 and c.fatigue == fat        # 無副作用
+    exp = max(0.1, min(0.9, 0.35 + (c.skill("speechcraft") + c.attr("personality") - 50) * 0.005))
+    assert ch == 1.0 or abs(ch - exp) < 1e-9            # 公式單一來源
+
+
+def test_board_and_shop_view_shapes():
+    """告示板/商店可點面板的命脈:卡 key == 對齊選單的 id(quest-id / item-id);唯讀。"""
+    from tesrpg.gamedata import get_gamedata
+    from tesrpg.creation import build_character
+    from tesrpg.state import GameState, GameTime
+    from tesrpg.rng import RNG
+    from tesrpg.systems import world
+    gd = get_gamedata()
+    c = build_character(gd, name="測", sex="male", race="nord", birthsign="warrior", class_id="warrior")
+    # 告示板:view-model 卡 key == 委託 id(== action_board 的選單 key)
+    bq = [qid for qid, q in gd.quests.items() if q.get("source") == "board"][:3]
+    bv = ui._board_view(c, gd, bq)
+    assert [card["key"] for card in bv["quests"]] == bq
+    assert all("objective" in card and "rewards" in card for card in bv["quests"])
+    # 商店:ensure_stock 後 _shop_view 卡 key == 在庫 item id(== 買單 key),唯讀
+    loc = c.location_id
+    world.ensure_stock(c, gd, loc, GameTime(), RNG(5))
+    avail = world.in_stock_items(c, gd, loc)
+    if avail:                                            # 起始城應有商人;無則略過(防呆)
+        gold0 = c.gold
+        sv = ui._shop_view(c, gd, loc, avail)
+        assert [it["key"] for it in sv["items"]] == avail
+        assert all(isinstance(it["afford"], bool) and it["kind"] for it in sv["items"])
+        assert c.gold == gold0                           # 唯讀
+
+
 def test_double_submit_and_stale():
     backend = WebBackend()
     ui.use_web_backend(backend, _rec())
@@ -299,6 +368,9 @@ def run():
     test_view_model_shapes()
     test_combat_target_key_parity()
     test_combat_target_reemit_web()
+    test_sheet_subview_models()
+    test_persuade_chance_readonly()
+    test_board_and_shop_view_shapes()
     test_double_submit_and_stale()
     test_int_revalidate()
     test_flush_final_and_generation()
