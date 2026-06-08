@@ -32,16 +32,17 @@ def create_character(gamedata: GameData, rng: RNG):
     sex = ui.menu("性別", [("male", "男"), ("female", "女")])
 
     race = ui.menu("種族", [
-        (rid, f"{r['name']} — {r['ability']}")
+        (rid, f"{r['name']} — {r['ability']}", _race_chips(gamedata, r))
         for rid, r in gamedata.races.items()
     ])
 
     sign = ui.menu("出生星座", [
-        (sid, f"{s['name']} — {s['note']}")
+        (sid, f"{s['name']} — {s['note']}", _sign_chips(s))
         for sid, s in gamedata.birthsigns.items()
     ])
 
-    class_opts = [(cid, f"{c['name']} — {c['desc']}") for cid, c in gamedata.classes.items()]
+    class_opts = [(cid, f"{c['name']} — {c['desc']}", _class_chips(c))
+                  for cid, c in gamedata.classes.items()]
     class_opts.append(("custom", "自訂職業（選專精、偏好屬性、主修技能）"))
     class_id = ui.menu("職業", class_opts)
     custom = _create_custom_class(gamedata) if class_id == "custom" else None
@@ -101,6 +102,54 @@ def _pick_distinct(options: list[tuple[str, str]], count: int, label: str) -> li
         chosen.append(key)
         remaining = [o for o in remaining if o[0] != key]
     return chosen
+
+
+# --- 創角 build chips:把種族/星座/職業的數值加成做成選單上的視覺小標 -------------
+_RESIST_CN_MAIN = {"fire": "火焰", "frost": "冰霜", "shock": "雷電",
+                   "magic": "魔法", "poison": "毒素", "disease": "疾病"}
+
+
+def _attr_chips(attr_mods: dict) -> list[dict]:
+    out = []
+    for attr, v in attr_mods.items():
+        if not v:
+            continue
+        name = formulas.ATTRIBUTE_NAMES.get(attr, attr)
+        out.append({"text": f"{name}{'+' if v > 0 else '−'}{abs(v)}",
+                    "tone": "green" if v > 0 else "red"})
+    return out
+
+
+def _race_chips(gamedata: GameData, r: dict) -> list[dict]:
+    chips = _attr_chips(r.get("attr_mods", {}))
+    if r.get("magicka_bonus"):
+        chips.append({"text": f"魔力+{r['magicka_bonus']}", "tone": "gold"})
+    for sid, v in r.get("skill_bonuses", {}).items():
+        if v:
+            chips.append({"text": f"{gamedata.skill_name(sid)}+{v}", "tone": "cyan"})
+    for elem, v in r.get("resist", {}).items():
+        if v:
+            name = _RESIST_CN_MAIN.get(elem, elem)
+            chips.append({"text": f"抗{name}{v}%" if v > 0 else f"{name}弱{abs(v)}%",
+                          "tone": "gold" if v > 0 else "red"})
+    return chips
+
+
+def _sign_chips(s: dict) -> list[dict]:
+    chips = _attr_chips(s.get("attr_mods", {}))
+    if s.get("magicka_bonus"):
+        chips.append({"text": f"魔力+{s['magicka_bonus']}", "tone": "gold"})
+    if s.get("powers"):
+        chips.append({"text": f"異能×{len(s['powers'])}", "tone": "mag"})
+    return chips
+
+
+def _class_chips(c: dict) -> list[dict]:
+    chips = [{"text": f"專精·{formulas.SPEC_NAMES.get(c['spec'], c['spec'])}", "tone": "gold"}]
+    for a in c.get("favored_attributes", []):
+        chips.append({"text": f"★{formulas.ATTRIBUTE_NAMES.get(a, a)}", "tone": "gold"})
+    chips.append({"text": f"主修{len(c.get('major_skills', []))}", "tone": "cyan"})
+    return chips
 
 
 # ======================================================================

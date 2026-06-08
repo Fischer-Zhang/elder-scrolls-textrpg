@@ -8,7 +8,7 @@
 <style>
   :root {
     --bg0:#0b0a08; --bg1:#14110b; --raise:#1a150d;
-    --ink:#dcd6c8; --muted:#8c8576; --faint:#6b6557;
+    --ink:#dcd6c8; --muted:#8c8576; --faint:#847d6b;
     --gold:#e6c570; --gold-dim:#9d7e3a; --gold-soft:rgba(214,178,92,.32);
     --line:#2c271d; --shadow:0 8px 28px rgba(0,0,0,.5);
     --red:#cd6a5f; --cyan:#6fb7c7; --green:#7bb56e; --mag:#c08acb;
@@ -23,7 +23,8 @@
     min-height:100vh; }
   /* 手機防溢出:flex 子元素允許收縮、長字可斷,避免某元素撐出最小寬度卡死響應斷點 */
   #app, #screen, #prompt, #hud, .card, .vstatus, .meter, .m-track, .cline, .cbt,
-  .h-meta, .h-vitals, .loc-exits, .btns, .sheet-grid, .skills, .attrs { min-width:0; }
+  .h-meta, .h-vitals, .loc-exits, .btns, .sheet-grid, .skills, .attrs,
+  .attr, .sk, .cname, .kv { min-width:0; }
   .loc-desc, .card-head, .p-line, .kv, .logline span, .q-obj, .sheet-sub { overflow-wrap:anywhere; }
   #app { max-width:880px; margin:0 auto;
     padding:calc(8px + env(safe-area-inset-top)) calc(12px + env(safe-area-inset-right))
@@ -98,6 +99,8 @@
     color:var(--muted); background:#16120b; }
   .chip.red{color:#e08b82;border-color:#5a2f2a;} .chip.gold{color:var(--gold);border-color:var(--gold-soft);}
   .chip.cyan{color:var(--cyan);border-color:#2b4a52;} .chip.mag{color:var(--mag);border-color:#4a2f52;}
+  .chip.green{color:var(--green);border-color:#2f4a2b;}
+  .opt-chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px;} .opt .chip{font-size:10.5px;padding:1px 7px;}
 
   /* 地點 */
   .loc-desc { margin:9px 0 2px; color:var(--ink); }
@@ -118,7 +121,8 @@
   @media (max-width:560px){ .attrs{ grid-template-columns:1fr; } }
   .attr { display:flex; justify-content:space-between; font-size:13.5px; border-bottom:1px dotted var(--line);
     padding:3px 0; }
-  .attr .star{ color:var(--gold); } .attr .v{ color:var(--ink); font-weight:600; font-variant-numeric:tabular-nums; }
+  .attr .star{ color:var(--gold); } .attr .v{ color:var(--ink); font-weight:600; font-variant-numeric:tabular-nums; flex:none; white-space:nowrap; }
+  .attr > span:first-child{ min-width:0; overflow-wrap:anywhere; }
   .sec-title { margin:14px 0 8px; color:var(--gold-dim); font-weight:700; font-size:12.5px; letter-spacing:.1em;
     display:flex; align-items:center; gap:10px; }
   .sec-title::after{ content:""; flex:1; height:1px; background:linear-gradient(to right,var(--gold-soft),transparent); }
@@ -127,7 +131,7 @@
   .skcol h4 { margin:0 0 5px; font-size:13px; }
   .skcol.combat h4{color:var(--red);} .skcol.magic h4{color:var(--cyan);} .skcol.stealth h4{color:var(--green);}
   .sk { display:flex; justify-content:space-between; font-size:13px; padding:2px 0; color:var(--ink); }
-  .sk .nm .mj{ color:var(--gold); } .sk .lv{ color:var(--muted); font-variant-numeric:tabular-nums; }
+  .sk .nm{ min-width:0; overflow-wrap:anywhere; } .sk .nm .mj{ color:var(--gold); } .sk .lv{ color:var(--muted); font-variant-numeric:tabular-nums; flex:none; white-space:nowrap; }
   .mast { margin-top:5px; color:var(--mag); font-size:13px; } .mast .mn{ font-weight:700; } .mast .md{ color:var(--muted); }
   .efx { margin-top:8px; color:var(--cyan); font-size:13px; }
 
@@ -164,7 +168,7 @@
   .row { display:flex; gap:9px; flex-wrap:wrap; align-items:center; }
   input.field { flex:1 1 170px; min-height:50px; padding:11px 14px; font-size:16px; color:var(--ink);
     background:#0d0a06; border:1px solid var(--line); border-radius:9px; font-family:var(--sans); }
-  input.field:focus { outline:none; border-color:var(--gold-soft); box-shadow:0 0 0 3px rgba(214,178,92,.12); }
+  input.field:focus { outline:none; border-color:var(--gold-dim); box-shadow:0 0 0 3px rgba(214,178,92,.22); }
   button.go { min-height:50px; padding:11px 26px; font-size:15px; cursor:pointer; font-weight:700; color:#1a1206;
     background:linear-gradient(#e8cb78,#caa64e); border:none; border-radius:9px; transition:transform .1s, filter .12s; }
   button.go:hover { filter:brightness(1.08); transform:translateY(-1px); } button.go:active { transform:translateY(0) scale(.99); }
@@ -185,8 +189,9 @@
   .cname{font-weight:600;margin-bottom:5px;} .cidx{color:var(--gold);font-weight:700;}
   .cline{display:flex;align-items:center;gap:8px;font-size:12.5px;margin-top:3px;}
   .clab{color:var(--muted);width:1.4em;flex:none;}
-  .cval{flex:none;color:var(--ink);font-variant-numeric:tabular-nums;min-width:4.6em;text-align:right;}
+  .cval{flex:none;color:var(--ink);font-variant-numeric:tabular-nums;min-width:4.6em;text-align:right;white-space:nowrap;}
   .ct{font-size:11px;color:var(--mag);border:1px solid #3a2f42;border-radius:9px;padding:0 7px;}
+  .ct.buff{color:var(--green);border-color:#365a30;} .ct.debuff{color:var(--red);border-color:#5a302b;}
   /* 背包 */
   .inv{margin-top:8px;display:flex;flex-direction:column;}
   .inv-row{padding:6px 2px;border-bottom:1px dotted var(--line);font-size:14px;}
@@ -196,6 +201,7 @@
   .ik.weapon{background:var(--red);} .ik.armor{background:var(--cyan);} .ik.potion{background:var(--green);} .ik.jewelry{background:var(--gold);}
   /* 地圖 */
   .mprov{margin-top:12px;} .mprov-h{color:var(--cyan);font-weight:700;margin-bottom:6px;font-size:14px;}
+  .mprov-n{color:var(--faint);font-size:11px;font-weight:400;margin-left:8px;}
   .mnode{padding:5px 9px;border-left:2px solid var(--line);margin:3px 0 3px 4px;font-size:13px;}
   .mnode.here{border-color:var(--gold);background:rgba(214,178,92,.06);} .mnode.unseen{color:var(--faint);}
   .mn-name{color:var(--ink);} .mnode.unseen .mn-name{color:var(--faint);} .mn-type{color:var(--muted);font-size:12px;}
@@ -215,7 +221,8 @@
   .legacy{max-width:560px;margin:0 auto;text-align:center;border-color:var(--gold-soft);box-shadow:0 0 40px rgba(214,178,92,.07),var(--shadow);}
   .lg-head{font-family:var(--serif);color:var(--gold);font-size:18px;letter-spacing:.12em;}
   .lg-name{font-family:var(--serif);color:var(--gold);font-size:23px;font-weight:700;margin-top:8px;}
-  .lg-rows{margin:14px auto;max-width:360px;text-align:left;}
+  .lg-sec{max-width:360px;margin:0 auto;}
+  .lg-rows{margin:4px auto 14px;max-width:360px;text-align:left;}
   .lg-row{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px dotted var(--line);}
   .lg-k{color:var(--gold-dim);} .lg-v{color:var(--ink);}
   .lg-skills{color:var(--muted);font-size:13px;margin:10px 0;}
@@ -371,12 +378,17 @@
     function row(c, kind) {
       if (c.down) return `<div class="cbt down">${esc(c.name)}（已倒下)</div>`;
       const idx = c.idx != null ? `<span class="cidx">${c.idx}.</span> ` : "";
-      const tags = (c.tags || []).map(function (t) { return `<span class="ct">${esc(t)}</span>`; }).join(" ");
+      const tags = (c.tags || []).map(function (t) {
+        const cls = t.good === true ? "ct buff" : (t.good === false ? "ct debuff" : "ct");
+        return `<span class="${cls}">${esc(t.s)}</span>`;
+      }).join(" ");
       const hpcls = kind === "ally" ? "mp" : "hp";
+      let mp = "";
+      if (kind === "me" && c.mp && c.mp[1]) mp = `<div class="cline"><span class="clab">魔</span>${bar(c.mp[0], c.mp[1], "mp")}<span class="cval">${c.mp[0]}/${c.mp[1]}</span></div>`;
       let fp = "";
       if (kind === "me" && c.fp && c.fp[1]) fp = `<div class="cline"><span class="clab">體</span>${bar(c.fp[0], c.fp[1], "fp")}<span class="cval">${c.fp[0]}/${c.fp[1]}</span></div>`;
       return `<div class="cbt ${kind}"><div class="cname">${idx}${esc(c.name)} ${tags}</div>`
-        + `<div class="cline"><span class="clab">血</span>${bar(c.hp[0], c.hp[1], hpcls)}<span class="cval">${c.hp[0]}/${c.hp[1]}</span></div>${fp}</div>`;
+        + `<div class="cline"><span class="clab">血</span>${bar(c.hp[0], c.hp[1], hpcls)}<span class="cval">${c.hp[0]}/${c.hp[1]}</span></div>${mp}${fp}</div>`;
     }
     const mine = [row(d.me, "me")].concat((d.allies || []).map(function (a) { return row(a, "ally"); })).join("");
     const foes = (d.enemies || []).map(function (e) { return row(e, "foe"); }).join("");
@@ -399,7 +411,7 @@
         const exits = n.exits.length ? `<div class="mnex">→ ${n.exits.map(function (e) { return esc(e.name) + e.hours + "時"; }).join("、")}</div>` : "";
         return `<div class="mnode ${n.here ? "here" : (n.visited ? "" : "unseen")}">${mark}<span class="mn-name">${esc(n.name)}</span><span class="mn-type">·${esc(n.type)}</span> ${danger}${fac}${lm}${svc}${exits}</div>`;
       }).join("");
-      return `<div class="mprov"><div class="mprov-h">${esc(p.name)}</div>${nodes}</div>`;
+      return `<div class="mprov"><div class="mprov-h">${esc(p.name)}<span class="mprov-n">已訪 ${p.visited}/${p.total}</span></div>${nodes}</div>`;
     }).join("");
     return elFrom(`<div class="card"><div class="card-head">🗺 世界地圖</div>${provs}<div class="maplegend">★=所在 · ❖地標 · ⚠危險度 · ?未到訪 · 服務:宿商訓法戰盜鐵板</div></div>`);
   }
@@ -468,10 +480,13 @@
     return elFrom(`<div class="card"><div class="card-head">✦ 發現:${esc(d.name)}</div><div class="loc-desc">${esc(d.text)}</div>${rw}</div>`);
   }
   function renderLegacy(d) {
-    const rows = d.rows.map(function (r) { return `<div class="lg-row"><span class="lg-k">${esc(r[0])}</span><span class="lg-v">${esc(r[1])}</span></div>`; }).join("");
+    const sections = (d.sections || []).map(function (sec) {
+      const rows = sec.items.map(function (r) { return `<div class="lg-row"><span class="lg-k">${esc(r[0])}</span><span class="lg-v">${esc(r[1])}</span></div>`; }).join("");
+      return `<div class="lg-sec"><div class="sec-title">${esc(sec.header)}</div><div class="lg-rows">${rows}</div></div>`;
+    }).join("");
     return elFrom(`<div class="card legacy"><div class="lg-head">${esc(d.head)}</div><div class="lg-name">${esc(d.name)}</div>`
       + `<div class="sheet-sub" style="text-align:center">${esc(d.sub)} · <span style="color:var(--cyan)">${esc(d.playstyle)}</span></div>`
-      + `<div class="lg-rows">${rows}</div><div class="lg-skills">最高技能:${esc(d.top_skills)}</div>`
+      + `${sections}<div class="lg-skills">最高技能:${esc(d.top_skills)}</div>`
       + `<div class="lg-score">✦ 傳奇分數 ✦<div class="lg-num">${d.score}</div><div class="lg-title">「${esc(d.title)}」</div></div></div>`);
   }
   const TONE = { muted: "var(--muted)", faint: "var(--faint)", green: "var(--green)", red: "#e08b82",
@@ -523,12 +538,21 @@
       body: JSON.stringify({ prompt_id: curPid, value: value }),
     }).catch(function () { locked = false; promptEl.classList.remove("locked"); });
   }
-  function mkButton(label, value, idx) {
+  function mkButton(label, value, idx, chips) {
     const b = document.createElement("button");
     b.className = "opt";
     b._key = value;
     if (idx != null) { const n = document.createElement("span"); n.className = "num"; n.textContent = idx; b.appendChild(n); }
     b.appendChild(document.createTextNode(label));
+    if (chips && chips.length) {
+      const cc = document.createElement("div"); cc.className = "opt-chips";
+      chips.forEach(function (c) {
+        const s = document.createElement("span");
+        s.className = "chip" + (c.tone ? " " + c.tone : "");
+        s.textContent = c.text; cc.appendChild(s);
+      });
+      b.appendChild(cc);
+    }
     b.addEventListener("click", function () { submit(value); });
     return b;
   }
@@ -544,7 +568,7 @@
     if (spec.title) { const h = document.createElement("div"); h.className = "ptitle"; h.textContent = spec.title; promptEl.appendChild(h); }
     if (t === "menu") {
       const box = document.createElement("div"); box.className = "btns";
-      spec.options.forEach(function (o, i) { const b = mkButton(o.label, o.key, i + 1); flatButtons.push(b); box.appendChild(b); });
+      spec.options.forEach(function (o, i) { const b = mkButton(o.label, o.key, i + 1, o.chips); flatButtons.push(b); box.appendChild(b); });
       promptEl.appendChild(box);
       if (spec.allow_back) { const b = mkButton("返回", null, 0); b.classList.add("back"); backButton = b; promptEl.appendChild(b); }
     } else if (t === "grouped") {

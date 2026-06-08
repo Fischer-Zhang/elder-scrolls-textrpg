@@ -78,6 +78,16 @@ def test_seam_roundtrip():
         assert fr["prompt"]["type"] == "menu" and v == "k2"
         assert [o["key"] for o in fr["prompt"]["options"]] == ["k1", "k2"]
         assert fr["prompt"]["title"] == "選擇"
+        assert "chips" not in fr["prompt"]["options"][0]    # 無 chips 的選項不帶該鍵
+
+        # 創角 build chips:選項可帶第三元素(數值小標),round-trip 後出現在 spec
+        fr, v = _drive(backend,
+                       lambda: ui.menu("種族", [("altmer", "高精靈", [{"text": "智力+10", "tone": "green"}]),
+                                                ("nord", "諾德")], ),   # 混長度 tuple 共存
+                       lambda s: "altmer")
+        assert v == "altmer"
+        assert fr["prompt"]["options"][0]["chips"][0]["text"] == "智力+10"
+        assert "chips" not in fr["prompt"]["options"][1]    # 2-tuple 選項不帶 chips
 
         _, v = _drive(backend, lambda: ui.menu("X", [("k", "l")], allow_back=True), lambda s: None)
         assert v is None      # 返回
@@ -141,6 +151,46 @@ def test_hud_and_view_block():
         _restore()
 
 
+def test_view_model_shapes():
+    """本輪 UI 改版的 view-model 形狀回歸:戰鬥魔力/狀態標分色、傳奇分段、地圖省份進度。"""
+    from tesrpg.gamedata import get_gamedata
+    from tesrpg.creation import build_character
+    from tesrpg.state import GameState, GameTime
+    from tesrpg.rng import RNG
+    from tesrpg.systems import combat, legacy
+    gd = get_gamedata()
+    c = build_character(gd, name="測", sex="male", race="altmer", birthsign="mage", class_id="mage")
+    st = GameState(player=c, time=GameTime(), rng=RNG(7))
+
+    # --- 戰鬥:玩家有 mp 雙元素;狀態標為 {s,good} dict,增益綠/減益紅 ---
+    c.active_effects = [{"kind": "shield", "turns": 3, "magnitude": 20},
+                        {"kind": "dot", "turns": 2, "element": "fire", "magnitude": 5}]
+    foe = combat.spawn_creature(gd, "giant_rat", RNG(1))
+    cv = ui._combat_view(c, [], [foe])
+    assert len(cv["me"]["mp"]) == 2 and cv["me"]["mp"][1] == int(c.max_magicka)
+    assert len(cv["me"]["fp"]) == 2
+    tags = {t["s"][0]: t["good"] for t in cv["me"]["tags"]}   # 以首字(盾/蝕)為鍵
+    assert tags.get("盾") is True and tags.get("蝕") is False
+    assert all(isinstance(t, dict) and "s" in t and "good" in t for t in cv["me"]["tags"])
+    assert cv["enemies"][0]["mp"] == [0, 0]                   # 怪物無魔力 → JS 以 mp[1] 假值隱藏
+    c.active_effects = []
+
+    # --- 傳奇:rows → sections(每段 {header, items});不再有頂層 rows ---
+    lv = ui._legacy_view(legacy.compute(st, gd, ending="retirement"))
+    assert "rows" not in lv and isinstance(lv["sections"], list) and lv["sections"]
+    headers = [s["header"] for s in lv["sections"]]
+    assert "生涯" in headers and "功績" in headers and "名望" in headers
+    for sec in lv["sections"]:
+        assert sec["items"] and all(len(it) == 2 for it in sec["items"])
+
+    # --- 地圖:每省帶 visited/total(int),且 visited≤total ---
+    mv = ui._map_view(c, gd)
+    assert mv["provinces"]
+    for p in mv["provinces"]:
+        assert isinstance(p["visited"], int) and isinstance(p["total"], int)
+        assert 0 <= p["visited"] <= p["total"] == len(p["nodes"])
+
+
 def test_double_submit_and_stale():
     backend = WebBackend()
     ui.use_web_backend(backend, _rec())
@@ -197,6 +247,7 @@ def run():
     test_seam_roundtrip()
     test_blocks_protocol()
     test_hud_and_view_block()
+    test_view_model_shapes()
     test_double_submit_and_stale()
     test_int_revalidate()
     test_flush_final_and_generation()

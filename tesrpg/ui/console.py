@@ -188,13 +188,16 @@ def _status_tags_list(entity) -> list:
     for e in entity.active_effects:
         if e.get("turns", 0) <= 0:
             continue
-        out.append(f"{_STATUS_TAG.get(e['kind'], e['kind'])}{e['turns']}")
+        kind = e["kind"]
+        good = True if kind in _BUFF_KINDS else (False if kind in _STATUS_TAG else None)
+        out.append({"s": f"{_STATUS_TAG.get(kind, kind)}{e['turns']}", "good": good})
     return out
 
 
 def _combatant(ent, idx=None, down=False) -> dict:
     return {"name": ent.name, "idx": idx, "down": down,
             "hp": [max(0, int(ent.health)), int(ent.max_health)],
+            "mp": [max(0, int(getattr(ent, "magicka", 0))), int(getattr(ent, "max_magicka", 0))],
             "fp": [int(getattr(ent, "fatigue", 0)), int(getattr(ent, "max_fatigue", 0))],
             "tags": [] if down else _status_tags_list(ent)}
 
@@ -212,30 +215,36 @@ def _combat_view(player: Character, allies: list, enemies: list) -> dict:
 
 
 def _legacy_view(s: dict) -> dict:
-    rows = []
+    origins = []   # 身世:出身/詛咒/血業/功業/精通
     for key in ("origin", "condition", "dark_deeds", "dominion"):
         label = {"origin": "出身", "condition": "詛咒", "dark_deeds": "血業", "dominion": "功業"}[key]
         if s.get(key):
-            rows.append([label, str(s[key])])
+            origins.append([label, str(s[key])])
     if s.get("masteries"):
-        rows.append(["精通", "、".join(s["masteries"])])
-    rows.append(["等級", str(s["level"])])
-    rows.append(["在世", f"{s['years']} 年 {s['days']} 天"])
-    rows.append(["足跡", f"踏遍 {s['places_visited']}/{s['total_locations']} 處地點"])
+        origins.append(["精通", "、".join(s["masteries"])])
+
+    life = [["等級", str(s["level"])],
+            ["在世", f"{s['years']} 年 {s['days']} 天"],
+            ["足跡", f"踏遍 {s['places_visited']}/{s['total_locations']} 處地點"]]
     if s.get("total_landmarks"):
-        rows.append(["奇景", f"尋得 {s.get('landmarks_found', 0)}/{s['total_landmarks']} 處具名地標"])
-    rows.append(["地城", f"肅清 {s['dungeons_cleared']} 座"])
-    rows.append(["任務", f"完成 {s['quests_completed']} 件"])
-    rows.append(["斬獲", f"擊殺 {s['total_kills']} 敵"])
+        life.append(["奇景", f"尋得 {s.get('landmarks_found', 0)}/{s['total_landmarks']} 處具名地標"])
+
+    deeds = [["地城", f"肅清 {s['dungeons_cleared']} 座"],
+             ["任務", f"完成 {s['quests_completed']} 件"],
+             ["斬獲", f"擊殺 {s['total_kills']} 敵"]]
     if s["factions"]:
-        rows.append(["公會", "、".join(f"{n}「{r}」" for n, r in s["factions"])])
-    rows.append(["聲望", f"{s['fame']}" + (f"  惡名 {s['infamy']}" if s["infamy"] else "")])
-    rows.append(["財富", f"{s['gold']} 金" + (f"  通緝 {s['bounty']}" if s["bounty"] else "")])
+        deeds.append(["公會", "、".join(f"{n}「{r}」" for n, r in s["factions"])])
+
+    fame = [["聲望", f"{s['fame']}" + (f"  惡名 {s['infamy']}" if s["infamy"] else "")],
+            ["財富", f"{s['gold']} 金" + (f"  通緝 {s['bounty']}" if s["bounty"] else "")]]
     if s.get("seed") is not None:
-        rows.append(["種子", str(s["seed"])])
+        fame.append(["種子", str(s["seed"])])
+
+    sections = [{"header": h, "items": it} for h, it in
+                (("身世", origins), ("生涯", life), ("功績", deeds), ("名望", fame)) if it]
     return {"head": "⚰ 傳 奇 落 幕" if s["ending"] == "death" else "🌅 功 成 身 退",
             "name": s["name"], "sub": f"{s['race']} · {s['sex']} · {s['birthsign']} · {s['class']}",
-            "playstyle": s["playstyle"], "rows": rows,
+            "playstyle": s["playstyle"], "sections": sections,
             "top_skills": "  ".join(f"{n} {lv}" for n, lv in s["top_skills"]),
             "score": s["score"], "title": s["title"]}
 
@@ -316,8 +325,11 @@ def _map_view(char: Character, gamedata: GameData) -> dict:
     provs = []
     for prov in order:
         nodes = []
+        visited_n = 0
         for lid in by_prov[prov]:
             loc = locs[lid]
+            if lid in char.visited_locations:
+                visited_n += 1
             fac = None
             if gamedata.ruler_at(lid):
                 fac = "己" if lid in char.city_faction else _FAC.get(politics.faction_of(char, gamedata, lid))
@@ -327,7 +339,8 @@ def _map_view(char: Character, gamedata: GameData) -> dict:
                           "landmark": bool(gamedata.landmark_at(lid) and landmarks.is_discovered(char, lid)),
                           "services": [_SERVICE_CN[s] for s in loc.get("services", []) if s in _SERVICE_CN],
                           "exits": [{"name": locs[d]["name"], "hours": h} for d, h in loc.get("links", {}).items()]})
-        provs.append({"name": prov, "nodes": nodes})
+        provs.append({"name": prov, "nodes": nodes,
+                      "visited": visited_n, "total": len(by_prov[prov])})
     return {"provinces": provs}
 
 
@@ -1111,7 +1124,8 @@ def combat_status(player: Character, creature, gamedata: GameData) -> None:
 
 
 _STATUS_TAG = {"shield": "盾", "dot": "蝕", "fear": "懼", "paralyze": "痺",
-               "weaken": "弱", "soul_trap": "魂", "regen": "生"}
+               "weaken": "弱", "soul_trap": "魂", "regen": "生", "stagger": "踉"}
+_BUFF_KINDS = {"shield", "regen"}   # 增益(綠);其餘 _STATUS_TAG 條目=減益(紅);未知=中性
 
 
 def _status_tags(entity) -> str:
@@ -1583,18 +1597,28 @@ def world_map(char: Character, gamedata: GameData) -> None:
                          title="🗺 世界地圖"))
 
 
-def menu(title: str, options: list[tuple[str, str]], allow_back: bool = False) -> str | None:
+def menu(title: str, options: list[tuple], allow_back: bool = False) -> str | None:
     """顯示編號選單,回傳選中的 key;allow_back 時 0 回傳 None。
 
-    options: [(key, 顯示文字), ...]
+    options: [(key, 顯示文字), ...] 或 [(key, 顯示文字, chips), ...]
+      chips(選用)= [{"text": 文字, "tone": 色調}, ...] —— web 渲成選項下的數值小標;
+      終端版串成淡色行內後綴。
     """
     if _web is not None:
-        spec = {"type": "menu", "title": title or "", "allow_back": bool(allow_back),
-                "options": [{"key": k, "label": _plain(lbl)} for k, lbl in options]}
+        opts = []
+        for opt in options:
+            o = {"key": opt[0], "label": _plain(opt[1])}
+            if len(opt) > 2 and opt[2]:
+                o["chips"] = opt[2]
+            opts.append(o)
+        spec = {"type": "menu", "title": title or "", "allow_back": bool(allow_back), "options": opts}
         return _web_prompt(spec)
     if title:
         console.print(f"\n[bold {GOLD}]❖ {title}[/]")
-    for i, (_key, label) in enumerate(options, 1):
+    for i, opt in enumerate(options, 1):
+        label = opt[1]
+        if len(opt) > 2 and opt[2]:
+            label = f"{label}  [{FAINT}]{'  '.join(c['text'] for c in opt[2])}[/]"
         console.print(f"  [{GOLD}]{i:>2}[/][{FAINT}].[/] {label}")
     if allow_back:
         console.print(f"  [{GOLD}] 0[/][{FAINT}].[/] [{INK}]返回[/]")
