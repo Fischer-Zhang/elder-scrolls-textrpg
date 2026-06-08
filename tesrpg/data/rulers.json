@@ -268,5 +268,38 @@
     "bloc_label": "先鋒派",
     "blurb": "蓋蘭的先鋒派港務總管,精於互市的紅衛商閥。他主張與帝國通商共榮,在王冠派的孤傲與帝國的舊誼之間左右逢源,把這座南岸港鎮經營成漢默法爾向外開放的門戶。",
     "stance": "independent"
+  },
+  "daggerfall": {
+    "name": "高斯里德",
+    "title": "國王",
+    "race": "breton",
+    "garrison": 200,
+    "population": 350,
+    "bloc": "daggerfall_crown",
+    "bloc_label": "匕落王室",
+    "blurb": "匕落的布雷頓國王,精明而多疑的伊利亞克灣霸主。紅寶石王座既空,他便不再向帝國納貢,以古老的劍與盾、以宮廷裡盤根錯節的巫術與陰謀,在群王割據的高岩自立一方,誓守匕落王室的獨立尊嚴。",
+    "stance": "independent"
+  },
+  "wayrest": {
+    "name": "艾德溫·暮鐘",
+    "title": "國王",
+    "race": "breton",
+    "garrison": 220,
+    "population": 400,
+    "bloc": "wayrest_crown",
+    "bloc_label": "威岩王室",
+    "blurb": "威岩的布雷頓國王,八面玲瓏的商貿之主。皇權崩解後,他不願與帝國的舊誼一刀兩斷,憑著巴格拉斯河口的金幣與商船左右逢源,在獨立諸王與帝國餘威之間維持著威岩玫瑰宮的繁華與平衡。",
+    "stance": "imperial"
+  },
+  "evermore": {
+    "name": "卡蘿琳·灰苔",
+    "title": "邊伯領主",
+    "race": "breton",
+    "garrison": 120,
+    "population": 200,
+    "bloc": "evermore_march",
+    "bloc_label": "永恒邊伯領",
+    "blurb": "永恒城的布雷頓邊伯領主,謹守東方門戶的務實女主。她的小城夾在布雷頓諸王與天際銀血氏族之間,既不願捲入匕落與威岩的明爭,也提防著河彎地拒誓者的滋擾,只求在亂世裡守住這道霧鎖的邊界。",
+    "stance": "neutral"
   }
 }

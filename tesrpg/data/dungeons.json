@@ -412,5 +412,60 @@
         ]
       }
     }
+  },
+  "hag_rock": {
+    "name": "海妖岩巫窟",
+    "rooms": [
+      {
+        "desc": "黑岩窟口的霧氣濃稠刺骨,一尊蹲伏在門楣上的石像鬼鏗然睜眼、撲了下來。",
+        "enemy": "gargoyle",
+        "container": null
+      },
+      {
+        "desc": "佈滿苔蘚的祭壇間,一只刻著巫紋的橡木匣擱在風乾的草藥與骸骨之間。",
+        "enemy": null,
+        "container": {
+          "locked": 30,
+          "loot": [
+            "bone_meal",
+            "filled_lesser_soul_gem",
+            {"gold": [12, 30]}
+          ]
+        }
+      },
+      {
+        "desc": "穹頂破口灑下灰白天光的巫圈廳堂,一頭鴉妖自樑上俯衝,一名沼地女巫在圈心舉起霜咒。",
+        "container": null,
+        "enemies": ["harpy", "moor_witch"]
+      },
+      {
+        "desc": "通往內殿的古墓甬道,一具鏽甲鐵衛橫劍守在魔女祭壇前,壇後嵌著一只上鎖的鐵匣。",
+        "enemy": "barrow_sentinel",
+        "container": {
+          "locked": 35,
+          "loot": [
+            "glass_dagger",
+            "ruby",
+            {"gold": [25, 55]}
+          ]
+        }
+      }
+    ],
+    "boss": {
+      "desc": "巫窟最深的骸骨王座前 —— 海妖岩的魔女祭主自寒霧中升起,身後堆疊著歷代劫掠來的騎士甲冑與一籠籠被囚的靈魂。",
+      "enemy": "hag_matriarch",
+      "raw": true,
+      "treasure": {
+        "locked": 45,
+        "loot": [
+          "ebony_cuirass",
+          "ebony_shield",
+          "filled_greater_soul_gem",
+          "healing_potion",
+          "ruby",
+          {"gold": [80, 170]}
+        ]
+      }
+    }
   }
 }

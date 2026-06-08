@@ -931,7 +931,8 @@
         "whiterun": 4,
         "haafingar": 5,
         "falkreath_wood": 5,
-        "brena_valley": 5
+        "brena_valley": 5,
+        "karthwasten": 5
       }
     },
     "vivec": {
@@ -1240,7 +1241,8 @@
       "links": {
         "sentinel": 3,
         "alikr_desert": 3,
-        "volenfell": 4
+        "volenfell": 4,
+        "bangkorai_pass": 3
       }
     },
     "volenfell": {
@@ -1267,6 +1269,109 @@
       "services": [],
       "links": {
         "alikr_desert": 4,
+        "markarth": 5
+      }
+    },
+    "daggerfall": {
+      "biome": "moor",
+      "name": "匕落",
+      "province": "高岩",
+      "type": "city",
+      "danger": 0,
+      "desc": "高岩西陲伊利亞克灣畔的布雷頓古都,灰岩城堡與尖頂鐘樓自常年的霧靄中聳起。自皇權崩解,匕落王室便不再向帝國低頭,以古老的劍與盾自守這片巫術與騎士並存的潮濕王國。",
+      "services": ["inn", "merchant", "trainer", "mages_guild", "armorer", "fighters_guild", "task_board"],
+      "merchant_stock": ["minor_healing_potion", "healing_potion", "minor_magicka_potion", "steel_sword", "steel_mace", "steel_cuirass", "steel_helmet", "iron_shield", "long_bow", "repair_hammer", "ruby", "lavender", "nightshade", "silver_ring", "gold_ring", "gold_amulet", "storm_staff", "magicka_staff"],
+      "spell_stock": ["sparks", "lightning_bolt", "chain_lightning", "fear", "demoralize", "mass_paralysis", "rout", "conjure_familiar", "soul_trap", "minor_heal", "heal", "oakflesh"],
+      "links": {
+        "wayrest": 3,
+        "wrothgar_moor": 2,
+        "hag_rock": 4,
+        "bangkorai_pass": 3
+      }
+    },
+    "wayrest": {
+      "biome": "moor",
+      "name": "威岩",
+      "province": "高岩",
+      "type": "city",
+      "danger": 0,
+      "desc": "巴格拉斯河口的繁華港城,白石碼頭桅檣如林,是高岩最富庶的商貿王都。威岩王室與帝國舊誼深厚,在群雄割據的伊利亞克灣畔,以金幣與外交左右逢源,城裡的玫瑰園與陰謀同樣繁盛。",
+      "services": ["inn", "merchant", "trainer", "mages_guild", "armorer", "thieves_guild", "task_board"],
+      "merchant_stock": ["minor_healing_potion", "healing_potion", "minor_magicka_potion", "steel_sword", "steel_cuirass", "steel_helmet", "steel_shield", "long_bow", "hunting_bow", "repair_hammer", "ruby", "red_apple", "garlic", "silver_ring", "gold_ring", "gold_amulet", "frost_staff", "magicka_staff"],
+      "spell_stock": ["frostbite", "sparks", "lightning_bolt", "minor_heal", "heal", "close_wounds", "renewal", "stoneflesh", "ironflesh", "demoralize", "conjure_flame_atronach", "restore_mind"],
+      "links": {
+        "daggerfall": 3,
+        "evermore": 3,
+        "wrothgar_moor": 3
+      }
+    },
+    "evermore": {
+      "biome": "moor",
+      "name": "永恒城",
+      "province": "高岩",
+      "type": "town",
+      "danger": 0,
+      "desc": "高岩東陲與天際河彎地接壤的邊伯小城,灰牆爬滿苔蘚,城外便是拒誓者出沒的隘口。永恒城的領主在布雷頓諸王與銀血氏族的夾縫間守著這道東方門戶,城樓終年燃著驅霧的篝火。",
+      "services": ["inn", "merchant", "armorer", "task_board"],
+      "merchant_stock": ["minor_healing_potion", "healing_potion", "steel_sword", "iron_shield", "leather_cuirass", "leather_boots", "long_bow", "repair_hammer", "lavender", "blue_mountain_flower", "silver_ring", "silver_amulet"],
+      "links": {
+        "wayrest": 3,
+        "wrothgar_moor": 3,
+        "karthwasten": 2
+      }
+    },
+    "wrothgar_moor": {
+      "biome": "moor",
+      "name": "沃斯加荒沼",
+      "province": "高岩",
+      "type": "wilderness",
+      "danger": 2,
+      "desc": "高岩腹地連綿的霧鎖荒沼,石南與泥塘間矗立著上古布雷頓人的巨石巫圈。霧裡盤旋著鴉妖,風化的石像鬼蹲伏在斷垣上,夜裡常有沼地女巫的篝火幽幽明滅。",
+      "services": [],
+      "links": {
+        "daggerfall": 2,
+        "wayrest": 3,
+        "evermore": 3,
+        "hag_rock": 4
+      }
+    },
+    "hag_rock": {
+      "biome": "moor",
+      "name": "海妖岩巫窟",
+      "province": "高岩",
+      "type": "dungeon",
+      "danger": 4,
+      "desc": "荒沼深處一座孤峙的黑岩巫窟,傳說是布雷頓沼地女巫的祕密巫圈。岩窟深處,一位千年不死的魔女祭主守著歷代劫掠來的騎士甲冑與被囚的靈魂。",
+      "services": [],
+      "dungeon": "hag_rock",
+      "links": {
+        "wrothgar_moor": 4,
+        "daggerfall": 4
+      }
+    },
+    "bangkorai_pass": {
+      "biome": "moor",
+      "name": "巴薩拉隘",
+      "province": "邊境",
+      "type": "wilderness",
+      "danger": 3,
+      "desc": "分隔高岩霧沼與漢默法爾烈日疆土的險峻山隘,潮濕的石南坡在此驟然轉為焦乾的紅岩。這條古道是布雷頓與紅衛人世代往來的咽喉,隘口的霧裡藏著石像鬼與不安分的亡魂。",
+      "services": [],
+      "links": {
+        "daggerfall": 3,
+        "hegathe": 3
+      }
+    },
+    "karthwasten": {
+      "biome": "moor",
+      "name": "卡斯特廢村",
+      "province": "邊境",
+      "type": "wilderness",
+      "danger": 2,
+      "desc": "高岩與天際河彎地交界的荒涼礦村,半傾的木屋散落在霧鎖的山坡上。村子早被銀血氏族與拒誓者爭奪得十室九空,如今只剩風中的礦轆與沼地飄來的霧氣相伴。",
+      "services": [],
+      "links": {
+        "evermore": 2,
         "markarth": 5
       }
     }

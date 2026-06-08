@@ -379,5 +379,27 @@
                  "success": {"text": "你壓低身形,任那掠食獸自沙下掠過。", "effects": []},
                  "failure": {"text": "沙礫滑落驚動了牠,沙嘯獸破沙而出!", "effects": [{"type": "combat", "creature": "dune_ripper"}]}}}
     ]
+  },
+  "highrock_forage": {
+    "weight": 3,
+    "trigger": {"contexts": ["explore"], "provinces": ["高岩"]},
+    "title": "荒沼採藥",
+    "text": "霧鎖的石南坡上,死亡鐘與薰衣草在濕冷的泥炭間悄然綻放,正是煉藥的好材料。",
+    "options": [
+      {"text": "採集沼澤藥草", "effects": [{"type": "item", "item": "deathbell", "qty": 1}, {"type": "item", "item": "lavender", "qty": 1}, {"type": "skill_xp", "skill": "alchemy", "amount": 0.5}, {"type": "message", "text": "你採下了一束死亡鐘與薰衣草。"}]},
+      {"text": "沒興趣", "effects": []}
+    ]
+  },
+  "highrock_predator": {
+    "weight": 3,
+    "trigger": {"contexts": ["explore"], "provinces": ["高岩"], "location_types": ["wilderness"]},
+    "title": "霧中的石影", "text": "濃霧深處傳來石塊摩擦的悶響 —— 一尊石像鬼自斷垣後直起身,石翼鏗然張開。",
+    "options": [
+      {"text": "搶在牠撲下前出手", "effects": [{"type": "combat", "creature": "gargoyle"}]},
+      {"text": "屏息潛伏、繞開霧影(潛行)",
+       "check": {"skill": "sneak", "difficulty": 42,
+                 "success": {"text": "你貼著石南匍匐而過,任那石影在霧裡重新沉睡。", "effects": []},
+                 "failure": {"text": "腳下碎石一響,石像鬼睜眼撲下!", "effects": [{"type": "combat", "creature": "gargoyle"}]}}}
+    ]
   }
 }

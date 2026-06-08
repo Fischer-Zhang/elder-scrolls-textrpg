@@ -907,5 +907,63 @@
     "loot_gold": [70, 160],
     "loot": [{"item": "dwarven_cuirass", "chance": 0.3}, {"item": "filled_greater_soul_gem", "chance": 0.5}, {"item": "gold_ingot", "chance": 0.5}],
     "flavor": "沃倫菲爾廟心的蒸汽驟然轟鳴 —— 一尊三人高的矮人百夫長嘎然立起,黃銅巨錘掃過,千年的烈焰自胸甲縫隙噴湧而出。"
+  },
+  "moor_witch": {
+    "biomes": ["moor"],
+    "name": "沼地女巫", "strength": 30, "agility": 44, "speed": 46,
+    "max_health": 28, "armor_rating": 4,
+    "attack": {"name": "寒霜咒擊", "damage": 9, "skill": 42, "element": "frost",
+               "on_hit": {"status": "dot", "element": "frost", "magnitude": 2, "turns": 2, "chance": 0.3}},
+    "danger": 2, "min_level": 1, "weight": 5,
+    "resist": {"magic": 25, "shock": -55},
+    "loot_gold": [0, 5],
+    "loot": [{"item": "nightshade", "chance": 0.3}, {"item": "lavender", "chance": 0.25}],
+    "flavor": "霧中亮起一簇篝火,一名披著苔綠斗篷的沼地女巫自石南叢後直起身,指尖凝起森寒的霜咒。"
+  },
+  "gargoyle": {
+    "biomes": ["moor"],
+    "name": "石像鬼", "strength": 60, "agility": 40, "speed": 36,
+    "max_health": 72, "armor_rating": 22,
+    "attack": {"name": "石爪重擊", "damage": 16, "skill": 50},
+    "danger": 3, "min_level": 3, "weight": 4,
+    "resist": {"frost": 50, "magic": 20, "shock": -70},
+    "loot_gold": [2, 12],
+    "loot": [{"item": "ruby", "chance": 0.2}, {"item": "gold_ingot", "chance": 0.2}],
+    "flavor": "斷垣上一尊風化的石像驟然睜眼,石翼鏗然張開 —— 灰岩的軀殼撲下,爪上還凝著沼澤的寒霜。"
+  },
+  "harpy": {
+    "biomes": ["moor"],
+    "name": "鴉妖", "strength": 46, "agility": 64, "speed": 64,
+    "max_health": 50, "armor_rating": 6,
+    "attack": {"name": "俯衝撕抓", "damage": 14, "skill": 56},
+    "danger": 3, "min_level": 4, "weight": 5,
+    "resist": {"shock": -30},
+    "loot_gold": [2, 10],
+    "loot": [{"item": "monarch_wing", "chance": 0.3}, {"item": "glow_dust", "chance": 0.25}],
+    "flavor": "霧裡傳來一聲淒厲的尖嘯,一頭半人半鴉的妖物收攏黑羽,自高處挾風俯衝而下。"
+  },
+  "barrow_sentinel": {
+    "biomes": ["moor"],
+    "name": "古墓鐵衛", "strength": 64, "agility": 46, "speed": 42,
+    "max_health": 96, "armor_rating": 24,
+    "attack": {"name": "幽冥劍斬", "damage": 18, "skill": 56, "element": "frost",
+               "on_hit": {"status": "dot", "element": "frost", "magnitude": 3, "turns": 2, "chance": 0.35}},
+    "danger": 4, "min_level": 6, "weight": 3,
+    "resist": {"frost": 50, "magic": 30, "poison": 100, "shock": -75},
+    "loot_gold": [6, 18],
+    "loot": [{"item": "bone_meal", "chance": 0.4}, {"item": "filled_lesser_soul_gem", "chance": 0.25}],
+    "flavor": "巨石巫圈的古墓中,一具披著鏽蝕板甲的鐵衛拖劍而起,空洞的盔縫裡滲著幽藍的寒光。"
+  },
+  "hag_matriarch": {
+    "biomes": ["moor"],
+    "name": "海妖岩魔女", "strength": 60, "agility": 56, "speed": 50,
+    "max_health": 240, "armor_rating": 16,
+    "attack": {"name": "凜冬詛咒", "damage": 26, "skill": 64, "element": "frost",
+               "on_hit": {"status": "dot", "element": "frost", "magnitude": 5, "turns": 2, "chance": 0.4}},
+    "danger": 5, "min_level": 13, "weight": 1, "raw": true,
+    "resist": {"frost": 60, "magic": 40, "shock": -65},
+    "loot_gold": [70, 160],
+    "loot": [{"item": "ebony_cuirass", "chance": 0.3}, {"item": "filled_greater_soul_gem", "chance": 0.5}, {"item": "gold_ingot", "chance": 0.5}],
+    "flavor": "巫窟深處的寒氣驟然凝結 —— 一名披著千年羽袍的魔女祭主自骸骨王座升起,凜冬的詛咒在她蒼白的指間盤旋成霜。"
   }
 }

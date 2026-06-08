@@ -544,5 +544,62 @@
     "greeting": "「新鮮的紅蘋果、灰薯與沙地藥草,煉藥人搶著要。外鄉人,你的水囊看著空了,要不要添點?」",
     "rumor": "告示板上阿利克爾的沙蠍懸賞開了好價;那些毒尾蠍子的甲殼,煉藥行可是當寶。",
     "quest": null
+  },
+  "daggerfall_courtmage": {
+    "name": "宮廷法師 因瑟瑞絲",
+    "location": "daggerfall",
+    "disposition": 47,
+    "greeting": "「布雷頓人的血裡流著抗魔的天賦,外鄉人 —— 火與冰在我們身上都得打個折。可你若想對付荒沼的石魔與女巫,光靠這些可不夠。」",
+    "rumor": "石像鬼與沼地女巫皆畏雷:牠們的霜咒與石軀抵得住火與冰,卻擋不住一道雷霆 —— 匕落的法師舖正備著閃電咒,進荒沼前該去添一卷。",
+    "quest": null
+  },
+  "daggerfall_knight": {
+    "name": "鐵衛隊長 加里克",
+    "location": "daggerfall",
+    "disposition": 45,
+    "greeting": "「匕落的鐵衛不靠巫術,靠的是劍與膽。外鄉人,握緊你的傢伙 —— 霧裡的東西可不會跟你講騎士禮節。」",
+    "rumor": "荒沼深處的海妖岩巫窟近來不太平,連古墓裡的鏽甲鐵衛都被女巫的咒法喚醒了;告示板上掛著清剿巫圈的高額懸賞。",
+    "quest": null
+  },
+  "daggerfall_herbalist": {
+    "name": "藥草婦 茉德",
+    "location": "daggerfall",
+    "disposition": 48,
+    "greeting": "「死亡鐘與薰衣草,荒沼的霧氣養出來的好東西。煉藥的話,我這兒的料子比城裡任何人都新鮮。」",
+    "rumor": "沃斯加荒沼的石南叢裡藏著上好的藥草,膽大的採藥人都往那兒去;石南坡上還立著一圈上古布雷頓人的巨石,據說夜裡會發出微光。",
+    "quest": null
+  },
+  "wayrest_merchant": {
+    "name": "玫瑰商會主 塞德里克",
+    "location": "wayrest",
+    "disposition": 46,
+    "greeting": "「歡迎來到威岩 —— 伊利亞克灣最富庶的港城。在這兒,金幣能買到的東西,可比一柄劍能搶到的多得多。」",
+    "rumor": "威岩王室嘴上對帝國恭順,暗地裡卻什麼買賣都做;城東的永恒城倒是兩邊都不沾,守著通往天際的隘口過自己的小日子。",
+    "quest": null
+  },
+  "wayrest_scout": {
+    "name": "王室斥候 莉薇雅",
+    "location": "wayrest",
+    "disposition": 48,
+    "greeting": "「王室想知道荒沼那窩女巫究竟在謀劃什麼,可派出去的人沒一個回來的。你看著像是能潛進去又能活著出來的料子。」",
+    "rumor": "海妖岩巫窟的魔女祭主據說已活了上千年;王室願出重金,只求有人能潛進巫圈、探明她的虛實。",
+    "quest": "favor_wayrest",
+    "quest_disposition": 50
+  },
+  "evermore_warden": {
+    "name": "邊伯護衛 布蘭",
+    "location": "evermore",
+    "disposition": 45,
+    "greeting": "「永恒城雖小,卻是高岩的東門閂。外鄉人,往東過了卡斯特廢村就是天際的地界 —— 銀血氏族與拒誓者,沒一個好惹的。」",
+    "rumor": "東邊卡斯特廢村早被銀血氏族與拒誓者爭奪得十室九空;穿過那片霧坡,便是馬卡斯城的礦道了。",
+    "quest": null
+  },
+  "evermore_hedgewitch": {
+    "name": "隱居女巫 葛蕾妲",
+    "location": "evermore",
+    "disposition": 46,
+    "greeting": "「別用那種眼神看我,外鄉人 —— 不是所有懂咒法的布雷頓婦人都跟海妖岩那群同流合污。我只是想清靜地過日子。」",
+    "rumor": "海妖岩巫圈早已墮入黑暗,那位魔女祭主以靈魂石豢養不死之軀;荒沼裡的巨石巫圈才是上古布雷頓人真正的聖地,如今卻成了石像鬼的棲所。",
+    "quest": null
   }
 }

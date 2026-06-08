@@ -1053,5 +1053,29 @@
     "reward": {"gold": 130, "fame": 4, "items": ["filled_lesser_soul_gem"]},
     "turn_in": "auto",
     "text": "森塔王宮的劍術教頭要你潛抵沃倫菲爾遺城、查探機械守衛的虛實:「活著回來,賞金加倍。」"
+  },
+  "job_hag_rock": {
+    "name": "懸賞:海妖岩巫圈",
+    "faction": null, "rank": null, "source": "board", "provinces": ["高岩"],
+    "objective": {"type": "clear_dungeon", "dungeon": "hag_rock"},
+    "reward": {"gold": 400, "fame": 20},
+    "turn_in": "auto",
+    "text": "匕落告示板高額懸賞:荒沼深處的海妖岩巫窟盤踞著一窩沼地女巫,清剿巫圈、終結窟心那名千年不死的魔女祭主。"
+  },
+  "job_wrothgar": {
+    "name": "懸賞:荒沼巫患",
+    "faction": null, "rank": null, "source": "board", "provinces": ["高岩"],
+    "objective": {"type": "kill", "creature": "moor_witch", "count": 4},
+    "reward": {"gold": 160, "fame": 8},
+    "turn_in": "auto",
+    "text": "威岩告示板懸賞:沃斯加荒沼的沼地女巫夜夜燃火惑人,獵殺 4 名女巫(荒沼野外可尋)。"
+  },
+  "favor_wayrest": {
+    "name": "委託:刺探巫窟",
+    "faction": null, "rank": null, "source": "npc",
+    "objective": {"type": "reach", "location": "hag_rock"},
+    "reward": {"gold": 130, "fame": 4, "items": ["filled_lesser_soul_gem"]},
+    "turn_in": "auto",
+    "text": "威岩王室的斥候要你潛抵海妖岩巫窟、探明魔女祭主的虛實:「別驚動巫圈,帶回來的消息越多,賞金越厚。」"
   }
 }

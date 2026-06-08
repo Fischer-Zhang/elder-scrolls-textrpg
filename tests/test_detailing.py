@@ -3,6 +3,7 @@
 
 from collections import Counter
 
+from tesrpg import formulas
 from tesrpg.creation import build_character
 from tesrpg.gamedata import get_gamedata
 from tesrpg.rng import RNG
@@ -57,17 +58,43 @@ def test_biome_steers_encounters_without_emptying_pool():
 
 def test_every_location_has_biome():
     gd, _ = _char()
-    valid = {"heartland", "snow", "ashland", "swamp", "desert"}
+    valid = {"heartland", "snow", "ashland", "swamp", "desert", "moor"}
     for lid, loc in gd.world["locations"].items():
         assert loc.get("biome") in valid, f"{lid} biome 非法:{loc.get('biome')}"
 
 
 def test_creature_biomes_are_valid():
     gd, _ = _char()
-    valid = {"heartland", "snow", "ashland", "swamp", "desert"}
+    valid = {"heartland", "snow", "ashland", "swamp", "desert", "moor"}
     for cid, c in gd.bestiary.items():
         for b in c.get("biomes", []):
             assert b in valid, f"{cid} biomes 非法:{b}"
+
+
+# --- 高岩 High Rock(霧沼 moor;敵抗魔/抗霜、弱電 → 操練電系 build)-------
+def test_highrock_signature_creatures_weak_to_shock():
+    """高岩生態軸=敵抗魔/抗霜、弱電 → 操練全圖最冷門的電系 build。
+    鐵律:shock ∈ MAGIC_ELEMENTS,計電抗時會疊 magic 鍵(r = shock + magic),
+    故 shock 負值須夠負以蓋過 magic 正值,招牌怪才『真的』弱電(resist_multiplier > 1.0)。"""
+    gd, _ = _char()
+    moor = [cid for cid, c in gd.bestiary.items() if "moor" in c.get("biomes", [])]
+    assert len(moor) >= 5, f"高岩招牌怪太少:{moor}"
+    for cid in moor:
+        m = formulas.resist_multiplier(gd.bestiary[cid].get("resist", {}), "shock")
+        assert m > 1.0, f"{cid} 並非真的弱電(電傷係數 {m} ≤ 1.0;檢查 shock 是否夠負以蓋過 magic)"
+
+
+def test_moor_biome_steers_to_highrock_ecology():
+    """霧沼 biome 明顯抽到高岩招牌怪、且後備池不空(通用怪四海皆有)。"""
+    gd, _ = _char()
+    moor = {cid for cid, c in gd.bestiary.items() if "moor" in c.get("biomes", [])}
+    desert = {cid for cid, c in gd.bestiary.items() if "desert" in c.get("biomes", [])}
+    tally = Counter()
+    for i in range(600):
+        c = combat.random_encounter(gd, 20, RNG(7000 + i), max_danger=5, biome="moor")
+        tally[c.template_id] += 1
+    assert sum(tally[k] for k in moor) > sum(tally[k] for k in desert)   # 在地生態 > 他鄉生態
+    assert sum(tally.values()) == 600                                    # 池不空
 
 
 def test_heartland_has_signature_ecology():
