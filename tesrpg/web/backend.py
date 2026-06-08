@@ -44,11 +44,11 @@ class WebBackend:
             self.blocks.append({"kind": "html", "html": pending_html})
         self.blocks.append({"kind": "log", "html": log_html})
 
-    def prompt(self, trailing_html: str, spec: dict):
-        """送出一幀(blocks 串 + 輸入規格),阻塞等使用者送回並驗證後回傳。
+    def prompt(self, trailing_html: str, spec: dict, hud=None):
+        """送出一幀(blocks 串 + 輸入規格 + 常駐 HUD),阻塞等使用者送回並驗證後回傳。
 
-        blocks = view(原生)/html(退路) 依序;trailing_html=尚未轉換面板的殘餘。
-        回傳型別對齊終端版:menu→key|None、grouped→key、confirm→bool、int→int、text→str。
+        blocks = view(原生)/html(退路) 依序;trailing_html=尚未轉換面板的殘餘;
+        hud=跨畫面常駐的即時資源列。回傳型別對齊終端版。
         """
         if trailing_html.strip():
             self.blocks.append({"kind": "html", "html": trailing_html})
@@ -59,7 +59,8 @@ class WebBackend:
                 self.prompt_id += 1
                 self.seq += 1
                 pid = self.prompt_id
-                frame = {"seq": self.seq, "prompt_id": pid, "blocks": blocks, "prompt": spec}
+                frame = {"seq": self.seq, "prompt_id": pid, "blocks": blocks,
+                         "prompt": spec, "hud": hud}
                 self.last_frame = frame
                 self.awaiting = True
             self.outbound.put(frame)
@@ -70,7 +71,7 @@ class WebBackend:
                     self.awaiting = False
                 return norm
 
-    def flush_final(self, trailing_html: str) -> None:
+    def flush_final(self, trailing_html: str, hud=None) -> None:
         """遊戲 thread 結束(quit/未捕捉例外)後沖出殘餘 blocks + end 哨兵。"""
         if trailing_html.strip():
             self.blocks.append({"kind": "html", "html": trailing_html})
@@ -78,7 +79,8 @@ class WebBackend:
         self.blocks = []
         with self._lock:
             self.seq += 1
-            frame = {"seq": self.seq, "prompt_id": -1, "blocks": blocks, "prompt": {"type": "end"}}
+            frame = {"seq": self.seq, "prompt_id": -1, "blocks": blocks,
+                     "prompt": {"type": "end"}, "hud": hud}
             self.last_frame = frame
             self.awaiting = False
         self.outbound.put(frame)
@@ -111,6 +113,7 @@ def _validate(spec: dict, value):
         return (value in keys, value)
     if t == "grouped":
         keys = {o["key"] for g in spec.get("groups", []) for o in g.get("options", [])}
+        keys |= set(spec.get("extra_keys", []))      # 出口等可點內容列的合法 key
         return (value in keys, value)
     if t == "confirm":
         return (True, bool(value))

@@ -742,6 +742,11 @@ def action_travel(state: GameState, gamedata: GameData) -> str | None:
     dest = ui.menu("前往何處?", opts, allow_back=True)
     if dest is None:
         return None
+    return _travel_to(state, gamedata, dest)
+
+
+def _travel_to(state: GameState, gamedata: GameData, dest: str) -> str | None:
+    """前往指定地點(供旅行選單與 hub/地點卡的可點出口共用)。回傳 'dead' 或 None。"""
     res = world.travel(state.player, gamedata, dest, state.time, state.rng)
     foe = res["foe"]
     if dest not in state.player.visited_locations:   # 已抵達(location_id 已更新)→ 先記足跡,
@@ -2176,6 +2181,7 @@ def _try_discover(state: GameState, gamedata: GameData, loc_id: str) -> None:
 
 
 def game_loop(state: GameState, gamedata: GameData) -> None:
+    last_hub_loc = None
     while True:
         # 吸血鬼狀態先結算(潛伏轉化 / 階級升降),再呈現本回合
         for ev in vampirism.update(state, gamedata):
@@ -2220,7 +2226,9 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
 
         ui.rule()
         ui.status_line(state)
-        ui.location_panel(state.player, gamedata)
+        brief = state.player.location_id == last_hub_loc   # 同地點重複回合 → 麵包屑(不重畫整張地點卡)
+        ui.location_panel(state.player, gamedata, brief=brief)
+        last_hub_loc = state.player.location_id
         loc = world.current_location(state.player, gamedata)
         services = loc.get("services", [])
 
@@ -2311,11 +2319,12 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
             character.insert(0, ("levelup", "★ 升級"))
         # --- 系統 ---
         system = [("save", "存檔"), ("retire", "隱退江湖"), ("quit", "回主選單")]
+        goto_keys = ["go:" + dest for dest, _h in world.travel_options(player, gamedata)]   # 地點卡出口可點旅行
 
         choice = ui.grouped_menu("要做什麼?", [
             ("冒險", adventure), ("城區", city_group),
             ("製作", craft), ("人物", character), ("系統", system),
-        ])
+        ], extra_keys=goto_keys, cta_keys=["levelup"])
         # 選了某個城區 → 進入該區的子選單挑實際服務(返回則回到城區)
         _dist = next((d for d in districts if d[0] == choice), None)
         if _dist:
@@ -2323,7 +2332,9 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
             if choice is None:
                 continue
         died = None
-        if choice == "map":
+        if choice.startswith("go:"):                 # 地點卡出口直接旅行(web 可點 chip)
+            died = _travel_to(state, gamedata, choice[3:])
+        elif choice == "map":
             ui.world_map(player, gamedata)
         elif choice == "dungeon":
             died = action_dungeon(state, gamedata)

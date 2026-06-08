@@ -27,6 +27,7 @@ def _rec():
 def _restore():
     ui._web = None
     ui.console = Console()
+    ui._hud_state = None
 
 
 def _drive(backend, call, answer_for):
@@ -113,8 +114,8 @@ def test_blocks_protocol():
         _restore()
 
 
-def test_view_block():
-    """轉為原生的面板(status)→ 發出 view block(name+data),非 html 截圖。"""
+def test_hud_and_view_block():
+    """status_line 在 web 設常駐 HUD(frame.hud 帶即時資源,非 block);其餘面板發 view block。"""
     from tesrpg.gamedata import get_gamedata
     from tesrpg.creation import build_character
     from tesrpg.state import GameState, GameTime
@@ -127,13 +128,14 @@ def test_view_block():
     try:
         box = {}
         t = threading.Thread(target=lambda: box.__setitem__("v", ui.confirm("?")))
-        ui.status_line(st)          # 應發 view block,不印 html
+        ui.status_line(st)          # web:設 _hud_state(常駐 HUD),不發 block
+        ui.location_panel(c, gd)    # 應發 location view block
         t.start()
         fr = backend.outbound.get(timeout=5)
+        assert fr["hud"] and fr["hud"]["name"] == "測" and len(fr["hud"]["hp"]) == 2 and "gold" in fr["hud"]
         views = [b for b in fr["blocks"] if b["kind"] == "view"]
-        assert any(b["name"] == "status" for b in views), fr["blocks"]
-        sv = next(b["data"] for b in views if b["name"] == "status")
-        assert sv["name"] == "測" and len(sv["hp"]) == 2 and "level" in sv
+        assert any(b["name"] == "location" for b in views), fr["blocks"]
+        assert not any(b["name"] == "status" for b in views)   # status 不再是 block
         backend.submit(fr["prompt_id"], True); t.join(timeout=5)
     finally:
         _restore()
@@ -194,7 +196,7 @@ def run():
     test_validate()
     test_seam_roundtrip()
     test_blocks_protocol()
-    test_view_block()
+    test_hud_and_view_block()
     test_double_submit_and_stale()
     test_int_revalidate()
     test_flush_final_and_generation()

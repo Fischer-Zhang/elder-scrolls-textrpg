@@ -21,12 +21,15 @@
   body { margin:0; color:var(--ink); font-family:var(--sans); line-height:1.5;
     background:radial-gradient(130% 85% at 50% -12%, #221b10 0%, #110d09 48%, #080705 100%) fixed, var(--bg0);
     min-height:100vh; }
+  /* 手機防溢出:flex 子元素允許收縮、長字可斷,避免某元素撐出最小寬度卡死響應斷點 */
+  #app, #screen, #prompt, #hud, .card, .vstatus, .meter, .m-track, .cline, .cbt,
+  .h-meta, .h-vitals, .loc-exits, .btns, .sheet-grid, .skills, .attrs { min-width:0; }
+  .loc-desc, .card-head, .p-line, .kv, .logline span, .q-obj, .sheet-sub { overflow-wrap:anywhere; }
   #app { max-width:880px; margin:0 auto;
     padding:calc(8px + env(safe-area-inset-top)) calc(12px + env(safe-area-inset-right))
             calc(34px + env(safe-area-inset-bottom)) calc(12px + env(safe-area-inset-left)); }
 
-  #masthead { position:sticky; top:0; z-index:6; padding:10px 2px 8px;
-    background:linear-gradient(var(--bg0) 64%, transparent); text-align:center; }
+  #masthead { padding:10px 2px 8px; background:linear-gradient(var(--bg0) 64%, transparent); text-align:center; }
   .brand { font-family:var(--serif); font-weight:700; color:var(--gold);
     font-size:clamp(21px,5.6vw,30px); letter-spacing:.22em; padding-left:.22em;
     text-shadow:0 0 18px rgba(214,178,92,.28); }
@@ -36,6 +39,30 @@
   #dot { width:8px; height:8px; border-radius:50%; background:#5b8f54; box-shadow:0 0 7px #5b8f54;
     transition:background .2s, box-shadow .2s; }
   #dot.off { background:#a8584f; box-shadow:0 0 7px #a8584f; }
+  /* 常駐生命 HUD(sticky,跨所有子畫面) */
+  #hud { position:sticky; top:0; z-index:7; display:none; flex-wrap:wrap; align-items:center; gap:6px 12px;
+    padding:7px calc(10px + env(safe-area-inset-right)) 7px calc(10px + env(safe-area-inset-left));
+    background:linear-gradient(#100d08,#0c0a07); border-bottom:1px solid var(--gold-soft);
+    box-shadow:0 5px 14px rgba(0,0,0,.45); font-size:12.5px; transition:border-color .2s; }
+  #hud.off { border-bottom-color:#a8584f; }
+  #hud .h-meta { display:flex; flex-wrap:wrap; align-items:center; gap:5px 10px; min-width:0; }
+  #hud .h-vitals { display:flex; align-items:center; flex-wrap:wrap; gap:6px 12px; min-width:0; }
+  @media (max-width:560px) { #hud .h-vitals { flex-basis:100%; } }
+  #hud .h-name { font-weight:700; color:var(--ink); } #hud .h-lv { color:var(--gold); font-weight:700; }
+  #hud .h-time { color:var(--muted); }
+  #hud .hm { display:flex; align-items:center; gap:4px; }
+  #hud .hm .l { color:var(--muted); }
+  #hud .hm .t { display:inline-block; width:52px; height:8px; border-radius:5px; background:#0d0b07;
+    border:1px solid var(--line); overflow:hidden; vertical-align:middle; }
+  #hud .hm .f { display:block; height:100%; }
+  #hud .hm .f.hp { background:linear-gradient(90deg,#7a2e29,var(--red)); }
+  #hud .hm .f.mp { background:linear-gradient(90deg,#2b5a64,var(--cyan)); }
+  #hud .hm .f.fp { background:linear-gradient(90deg,#365a30,var(--green)); }
+  #hud .hm .v { color:var(--ink); font-variant-numeric:tabular-nums; }
+  #hud .h-gold { color:var(--gold); }
+  #hud .h-chip { font-size:11px; padding:1px 7px; border-radius:9px; border:1px solid var(--line); }
+  #hud .h-chip.red { color:#e08b82; border-color:#5a2f2a; }
+  #hud .h-chip.gold { color:var(--gold); border-color:var(--gold-soft); }
 
   /* 畫面:原生 block 串(view 元件 / html 退路)垂直堆疊 */
   #screen { display:flex; flex-direction:column; gap:12px; margin-top:6px; }
@@ -198,6 +225,22 @@
   /* 通用面板(sheet_* 子檢視) */
   .panel-body{margin-top:8px;} .p-head{color:var(--gold);font-weight:700;margin:11px 0 5px;font-size:14px;}
   .p-line{margin:4px 0;font-size:14px;color:var(--ink);}
+  /* 升級 CTA + 麵包屑 + 手機 2 欄 */
+  .opt.cta{ border-color:var(--gold-soft); background:linear-gradient(#2a2010,#1c150b); color:var(--gold);
+    font-weight:700; box-shadow:0 0 16px rgba(214,178,92,.16); }
+  .loc.brief{ padding:11px 15px; }
+  .loc-brief{ font-size:15px; color:var(--ink); display:flex; flex-wrap:wrap; align-items:center; gap:8px; }
+  @media (max-width:430px){
+    .btns{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+    .btns button.opt{ flex:none; width:auto; }
+    .btns button.back, .btns button.opt.cta{ grid-column:1 / -1; }
+  }
+  /* 可點內容列 */
+  .tappable{ cursor:pointer; border-radius:7px; transition:background .1s, border-color .1s; }
+  .tappable:hover{ background:rgba(214,178,92,.08); }
+  .tappable:focus-visible{ outline:2px solid var(--gold); outline-offset:1px; }
+  .inv-row.tappable{ padding:9px 8px; border-bottom:1px solid var(--line); }
+  .ex.tappable:hover{ border-color:var(--gold-soft); background:#1d1810; }
   /* log/flavor 行 */
   .logline{padding:1px 4px;color:var(--ink);font-size:14px;line-height:1.5;}
   .logline span{white-space:pre-wrap;}
@@ -211,6 +254,7 @@
     <div class="orn">⚔ ◈ ✦ ◈ ⚔</div>
     <div id="status"><span id="dot" class="off"></span><span id="conn">連線中…</span></div>
   </header>
+  <div id="hud"></div>
   <div id="screen"></div>
   <div id="prompt"></div>
   <footer id="foot">數字鍵 1–9 快速選擇 · 0 返回 · Enter 確認</footer>
@@ -255,6 +299,16 @@
   }
   function renderLocation(d) {
     const danger = d.danger ? `<span class="chip red">⚠ 危險度 ${d.danger}</span>` : "";
+    let exitsHtml = "";
+    if (d.exits && d.exits.length) {
+      exitsHtml = `<div class="loc-exits"><span class="lab">出口</span>`
+        + d.exits.map(function (e) { return `<span class="ex"${e.key ? ` data-key="${esc(e.key)}"` : ""}>${esc(e.name)}<span class="h">${e.hours}時</span></span>`; }).join("")
+        + `</div>`;
+    }
+    if (d.brief) {     // 同地點重複回合:麵包屑(名·類型·危險度 + 可點出口),不重畫整張卡
+      return elFrom(`<div class="card loc brief"><div class="loc-brief">📍 <b>${esc(d.name)}</b>`
+        + `<span class="dim"> · ${esc(d.type)}</span>${danger}</div>${exitsHtml}</div>`);
+    }
     let lines = "";
     if (d.landmark) lines += `<div class="loc-line"><span class="lab">❖ 已發現</span>${esc(d.landmark.name)}`
       + (d.landmark.revisit ? `<div class="faint" style="font-size:12.5px">${esc(d.landmark.revisit)}</div>` : "") + `</div>`;
@@ -264,16 +318,10 @@
       const flag = d.bloc ? `${esc(d.faction)}·${esc(d.bloc)}` : esc(d.faction || "");
       if (flag) lines += `<div class="loc-line"><span class="lab">🏴 旗號</span>${flag}</div>`;
     }
-    let exits = "";
-    if (d.exits && d.exits.length) {
-      exits = `<div class="loc-exits"><span class="lab">出口</span>`
-        + d.exits.map(function (e) { return `<span class="ex">${esc(e.name)}<span class="h">${e.hours}時</span></span>`; }).join("")
-        + `</div>`;
-    }
     return elFrom(
       `<div class="card loc"><div class="card-head">📍 ${esc(d.name)}`
       + `<span class="dim">· ${esc(d.province)}（${esc(d.type)}）</span>${danger}</div>`
-      + `<div class="loc-desc">${esc(d.desc)}</div>${lines}${exits}</div>`);
+      + `<div class="loc-desc">${esc(d.desc)}</div>${lines}${exitsHtml}</div>`);
   }
   function renderSheet(d) {
     const right = [];
@@ -336,7 +384,7 @@
   }
   function renderInventory(d) {
     if (!d.items.length) return elFrom(`<div class="card"><div class="card-head">🎒 背包</div><div class="dim" style="margin-top:8px">背包空空如也。</div></div>`);
-    const rows = d.items.map(function (it) { return `<div class="inv-row"><span class="ik ${esc(it.kind)}"></span>${esc(it.label)}</div>`; }).join("");
+    const rows = d.items.map(function (it) { return `<div class="inv-row" data-key="${esc(it.key)}"><span class="ik ${esc(it.kind)}"></span>${esc(it.label)}</div>`; }).join("");
     return elFrom(`<div class="card"><div class="card-head">🎒 背包</div><div class="inv">${rows}</div>`
       + `<div class="inv-foot"><span ${d.over ? 'style="color:#e08b82"' : ""}>負重 ${d.weight}/${d.max}${d.over ? " 超重!" : ""}</span><span class="gold">金幣 ${d.gold}</span></div></div>`);
   }
@@ -478,6 +526,7 @@
   function mkButton(label, value, idx) {
     const b = document.createElement("button");
     b.className = "opt";
+    b._key = value;
     if (idx != null) { const n = document.createElement("span"); n.className = "num"; n.textContent = idx; b.appendChild(n); }
     b.appendChild(document.createTextNode(label));
     b.addEventListener("click", function () { submit(value); });
@@ -499,11 +548,19 @@
       promptEl.appendChild(box);
       if (spec.allow_back) { const b = mkButton("返回", null, 0); b.classList.add("back"); backButton = b; promptEl.appendChild(b); }
     } else if (t === "grouped") {
+      const cta = {}; (spec.cta_keys || []).forEach(function (k) { cta[k] = true; });
+      const ctaBox = document.createElement("div"); ctaBox.className = "btns";   // CTA(如升級)置頂、金框、不佔數字鍵
+      spec.groups.forEach(function (g) {
+        g.options.forEach(function (o) { if (cta[o.key]) { const b = mkButton(o.label, o.key, null); b.classList.add("cta"); ctaBox.appendChild(b); } });
+      });
+      if (ctaBox.children.length) promptEl.appendChild(ctaBox);
       let i = 0;
       spec.groups.forEach(function (g) {
+        const vis = g.options.filter(function (o) { return !cta[o.key]; });
+        if (!vis.length) return;
         if (g.header) { const h = document.createElement("div"); h.className = "ghead"; h.textContent = g.header; promptEl.appendChild(h); }
         const box = document.createElement("div"); box.className = "btns";
-        g.options.forEach(function (o) { i += 1; const b = mkButton(o.label, o.key, i); flatButtons.push(b); box.appendChild(b); });
+        vis.forEach(function (o) { i += 1; const b = mkButton(o.label, o.key, i); flatButtons.push(b); box.appendChild(b); });
         promptEl.appendChild(box);
       });
     } else if (t === "confirm") {
@@ -535,13 +592,79 @@
     }
   }
 
+  const hudEl = document.getElementById("hud");
+  function hudMeter(cur, max, cls) {
+    const p = max > 0 ? Math.max(0, Math.min(100, cur / max * 100)) : 0;
+    return `<span class="t"><span class="f ${cls}" style="width:${p}%"></span></span><span class="v">${cur}/${max}</span>`;
+  }
+  function renderHud(d) {
+    if (!d) { hudEl.style.display = "none"; hudEl.innerHTML = ""; return; }
+    hudEl.style.display = "flex";
+    let chips = "";
+    if (d.vampire) chips += `<span class="h-chip red">🩸 ${esc(d.vampire)}</span>`;
+    if (d.bounty) chips += `<span class="h-chip red">通緝 ${d.bounty}</span>`;
+    if (d.can_level) chips += `<span class="h-chip gold">★ 可升級</span>`;
+    hudEl.innerHTML =
+      `<span class="h-meta"><span class="h-name">❖ ${esc(d.name)}</span><span class="h-lv">Lv.${d.level}</span>`
+      + `<span class="h-gold">金 ${d.gold}</span>${chips}`
+      + `<span class="h-time">◷ ${esc(d.time)}</span></span>`
+      + `<span class="h-vitals">`
+      + `<span class="hm"><span class="l">血</span>${hudMeter(d.hp[0], d.hp[1], "hp")}</span>`
+      + `<span class="hm"><span class="l">魔</span>${hudMeter(d.mp[0], d.mp[1], "mp")}</span>`
+      + `<span class="hm"><span class="l">體</span>${hudMeter(d.fp[0], d.fp[1], "fp")}</span>`
+      + `</span>`;
+  }
+
+  // 可點內容列:view 列若帶 data-key 且該 key 是當前 prompt 的合法選項(含 extra_keys)→ 列可點。
+  //  - 對應到某個選單按鈕的(optKey):移除重複按鈕,該列接管其數字鍵槽(如背包物品)。
+  //  - 屬 extra_keys 的(無對應按鈕):只可點/觸控,不佔數字鍵(如地點出口,hub 按鈕數字維持原樣)。
+  function wireActionableRows(spec) {
+    if (!spec || (spec.type !== "menu" && spec.type !== "grouped")) return;
+    const opts = spec.type === "menu" ? (spec.options || [])
+      : spec.groups.reduce(function (a, g) { return a.concat(g.options); }, []);
+    const optKey = {}; opts.forEach(function (o) { optKey[o.key] = true; });
+    const extra = {}; (spec.extra_keys || []).forEach(function (k) { extra[k] = true; });
+    const replace = [];           // 取代選單按鈕的列(可用數字鍵)
+    let any = false;
+    screenEl.querySelectorAll("[data-key]").forEach(function (el) {
+      const k = el.getAttribute("data-key");
+      if ((optKey[k] || extra[k]) && !el._wired) {
+        el._wired = true; el.classList.add("tappable"); el.setAttribute("tabindex", "0");
+        el.addEventListener("click", function () { submit(k); });
+        el.addEventListener("keydown", function (e) {
+          if (e.key === "Enter" || e.key === " ") { e.preventDefault(); submit(k); }
+        });
+        any = true;
+        if (optKey[k]) replace.push(k);
+      }
+    });
+    if (!any || !replace.length) return;
+    const covered = {}; replace.forEach(function (k) { covered[k] = true; });
+    const remaining = [];
+    flatButtons.forEach(function (b) {
+      if (b._key !== undefined && covered[b._key]) b.remove(); else remaining.push(b);
+    });
+    promptEl.querySelectorAll(".btns").forEach(function (box) {   // 清掉空掉的分組標題
+      if (!box.children.length) {
+        const h = box.previousElementSibling;
+        if (h && h.classList.contains("ghead")) h.remove();
+        box.remove();
+      }
+    });
+    flatButtons = replace.map(function (k) {     // 數字鍵:取代列在前,其餘按鈕在後
+      return { click: function () { if (!locked) submit(k); } };
+    }).concat(remaining);
+  }
+
   function render(frame) {
     const prev = promptEl.querySelector("input.field");
     const prevVal = prev ? prev.value : null;
     const samePrompt = (curPid !== null && frame.prompt_id === curPid);
+    renderHud(frame.hud);
     renderScreen(frame.blocks);
     curPid = frame.prompt_id; locked = false;
     renderPrompt(frame.prompt);
+    wireActionableRows(frame.prompt);
     if (samePrompt && prevVal != null) { const inp = promptEl.querySelector("input.field"); if (inp) inp.value = prevVal; }
     if (!samePrompt) window.scrollTo(0, 0);
   }
@@ -564,8 +687,8 @@
 
   function connect() {
     const es = new EventSource("/events");
-    es.onopen = function () { dot.classList.remove("off"); conn.textContent = "已連線"; };
-    es.onerror = function () { dot.classList.add("off"); conn.textContent = "重新連線中…"; };
+    es.onopen = function () { dot.classList.remove("off"); hudEl.classList.remove("off"); conn.textContent = "已連線"; };
+    es.onerror = function () { dot.classList.add("off"); hudEl.classList.add("off"); conn.textContent = "重新連線中…"; };
     es.onmessage = function (ev) { try { render(JSON.parse(ev.data)); } catch (_) {} };
   }
   connect();

@@ -29,6 +29,7 @@ console = Console()
 # 改走 _web_prompt()(沖出累積畫面 HTML + 輸入規格 → backend,阻塞等回覆)。
 # 渲染函式一律不動(照常 console.print → 錄進緩衝)。
 _web = None
+_hud_state = None       # web:常駐 HUD 的資料來源(同一 state 物件就地變動 → 即時值)
 
 
 def use_web_backend(backend, recording_console) -> None:
@@ -47,7 +48,24 @@ def _plain(markup: str) -> str:
 def _web_prompt(spec: dict):
     """沖出殘餘畫面 HTML(未轉換面板的裸 <span> 片段)+ 輸入規格,阻塞等回覆。"""
     html = console.export_html(inline_styles=True, code_format="{code}", clear=True)
-    return _web.prompt(html, spec)
+    return _web.prompt(html, spec, _hud_view())
+
+
+def _hud_view():
+    """常駐 HUD 的即時值(跨所有子畫面顯示 HP/MP/體力/金幣/時間)。無遊戲進行中→None。"""
+    if _hud_state is None:
+        return None
+    c = _hud_state.player
+    v = {"name": c.name, "level": c.level, "time": _hud_state.time.label(),
+         "hp": [int(c.health), int(c.max_health)],
+         "mp": [int(c.magicka), int(c.max_magicka)],
+         "fp": [int(c.fatigue), int(c.max_fatigue)],
+         "gold": c.gold, "bounty": sum(c.bounties.values()),
+         "can_level": c.can_level_up(), "vampire": None}
+    if getattr(c, "is_vampire", False):
+        from tesrpg.systems import vampirism
+        v["vampire"] = vampirism.STAGE_NAMES[min(3, max(0, c.vampire_stage))]
+    return v
 
 
 def _emit_view(name: str, data) -> None:
@@ -111,13 +129,13 @@ def _status_view(state: GameState) -> dict:
     return v
 
 
-def _location_view(char: Character, gamedata: GameData) -> dict:
+def _location_view(char: Character, gamedata: GameData, brief: bool = False) -> dict:
     from tesrpg.systems import landmarks, politics
     loc = gamedata.location(char.location_id)
     v = {"name": loc["name"], "province": loc["province"],
          "type": LOC_TYPE_NAME.get(loc["type"], loc["type"]), "danger": loc.get("danger", 0),
          "desc": loc["desc"], "landmark": None, "ruler": None,
-         "faction": None, "bloc": None, "exits": []}
+         "faction": None, "bloc": None, "exits": [], "brief": brief}
     lm = gamedata.landmark_at(char.location_id)
     if lm and landmarks.is_discovered(char, char.location_id):
         v["landmark"] = {"name": lm["name"], "revisit": lm.get("revisit")}
@@ -127,7 +145,7 @@ def _location_view(char: Character, gamedata: GameData) -> dict:
         v["faction"] = politics.stance_label(politics.faction_of(char, gamedata, char.location_id))
         v["bloc"] = ruler.get("bloc_label")
     for d, h in loc.get("links", {}).items():
-        v["exits"].append({"name": gamedata.location(d)["name"], "hours": h})
+        v["exits"].append({"name": gamedata.location(d)["name"], "hours": h, "key": "go:" + d})
     return v
 
 
@@ -226,7 +244,7 @@ def _inventory_view(char: Character, gamedata: GameData) -> dict:
     from tesrpg.systems import inventory as inv
     order = {"weapon": 0, "armor": 1, "potion": 2, "misc": 3}
     stacks = sorted(char.inventory, key=lambda s: order.get(gamedata.item(s["id"])["kind"], 9))
-    items = [{"label": _plain(item_label(gamedata, char, s["id"], s["qty"])),
+    items = [{"key": s["id"], "label": _plain(item_label(gamedata, char, s["id"], s["qty"])),
               "kind": gamedata.item(s["id"])["kind"]} for s in stacks]
     w = inv.total_weight(char, gamedata)
     mx = inv.max_weight(char)
@@ -359,7 +377,8 @@ def _bar(cur: float, mx: float, color: str, width: int = 16) -> Text:
 def status_line(state: GameState) -> None:
     """行動之間的精簡狀態列(金色頂欄分隔)。"""
     if _web is not None:
-        _emit_view("status", _status_view(state))
+        global _hud_state
+        _hud_state = state          # web:不發 status 卡,改由常駐 HUD(frame.hud)顯示
         return
     c = state.player
     t = Text()
@@ -1135,9 +1154,9 @@ def combat_status_group(player: Character, allies: list, enemies: list, gamedata
 LOC_TYPE_NAME = {"city": "大城", "town": "城鎮", "dungeon": "地城", "wilderness": "荒野"}
 
 
-def location_panel(char: Character, gamedata: GameData) -> None:
+def location_panel(char: Character, gamedata: GameData, brief: bool = False) -> None:
     if _web is not None:
-        _emit_view("location", _location_view(char, gamedata))
+        _emit_view("location", _location_view(char, gamedata, brief))
         return
     loc = gamedata.location(char.location_id)
     body = Text()
@@ -1474,15 +1493,19 @@ def rule(title: str = "") -> None:
 
 
 # --- 選單 / 輸入 --------------------------------------------------------
-def grouped_menu(title: str, groups: list) -> str:
+def grouped_menu(title: str, groups: list, extra_keys: list | None = None,
+                 cta_keys: list | None = None) -> str:
     """分組顯示的編號選單(連續編號、依分類加小標),回傳選中的 key。
 
     groups: [(分類名, [(key, 顯示文字), ...]), ...];空分類自動略過。
+    extra_keys:額外合法但不渲染成按鈕的 key(web:供可點內容列 submit,如地點出口 go:dest)。
     """
     if _web is not None:
         g = [{"header": header, "options": [{"key": k, "label": _plain(lbl)} for k, lbl in opts]}
              for header, opts in groups if opts]
-        return _web_prompt({"type": "grouped", "title": title or "", "groups": g})
+        return _web_prompt({"type": "grouped", "title": title or "", "groups": g,
+                            "extra_keys": list(extra_keys or []),
+                            "cta_keys": list(cta_keys or [])})
     if title:
         console.print(f"\n[bold {GOLD}]❖ {title}[/]")
     flat: list[str] = []
