@@ -20,7 +20,7 @@ from tesrpg import formulas
 from tesrpg.gamedata import GameData
 from tesrpg.models import Character
 from tesrpg.state import GameState
-from tesrpg.systems import mastery
+from tesrpg.systems import achievements, mastery
 
 console = Console()
 
@@ -241,8 +241,13 @@ def _legacy_view(s: dict) -> dict:
     if s.get("seed") is not None:
         fame.append(["種子", str(s["seed"])])
 
+    achv = []
+    if s.get("achievements"):
+        achv = ([["達成", f"{len(s['achievements'])}/{s.get('achievements_total', len(s['achievements']))}"]]
+                + [["✦", name] for name in s["achievements"]])
     sections = [{"header": h, "items": it} for h, it in
-                (("身世", origins), ("生涯", life), ("功績", deeds), ("名望", fame)) if it]
+                (("身世", origins), ("生涯", life), ("功績", deeds),
+                 ("名望", fame), ("成就", achv)) if it]
     return {"head": "⚰ 傳 奇 落 幕" if s["ending"] == "death" else "🌅 功 成 身 退",
             "name": s["name"], "sub": f"{s['race']} · {s['sex']} · {s['birthsign']} · {s['class']}",
             "playstyle": s["playstyle"], "sections": sections,
@@ -713,6 +718,30 @@ def sheet_masteries(char: Character, gamedata: GameData) -> None:
     console.print(_panel(body, title="技能里程碑"))
 
 
+def sheet_achievements(char: Character, gamedata: GameData) -> None:
+    """成就子檢視:已達成(✦)+ 未達成(○,desc 兼作如何取得的提示)。唯讀推導。"""
+    won, locked = achievements.earned_and_locked(char, gamedata)
+    if _web is not None:
+        _emit_view("achievements", {
+            "earned": [{"name": a["name"], "desc": a["desc"]} for a in won],
+            "locked": [{"name": a["name"], "desc": a["desc"]} for a in locked],
+        })
+        return
+    body = Text()
+    total = len(achievements._defs(gamedata))
+    body.append(f"已達成 {len(won)}/{total}\n", style=f"bold {GOLD}")
+    for a in won:
+        body.append(f"  ✦ {a['name']}", style="bold magenta")
+        body.append(f"  {a['desc']}\n", style=INK)
+    if locked:
+        body.append("\n未達成\n", style=f"bold {GOLD}")
+        for a in locked:
+            body.append(f"  ○ {a['name']}  {a['desc']}\n", style=FAINT)
+    if not won and not locked:
+        body.append("(無成就資料)", style=INK)
+    console.print(_panel(body, title="成就"))
+
+
 def sheet_power(char: Character, state: GameState, gamedata: GameData) -> None:
     from tesrpg.systems import powers
     pid = powers.power_id(char, gamedata)
@@ -1099,6 +1128,9 @@ def legacy_screen(s: dict) -> None:
         body.add_row("公會", "、".join(f"{n}「{r}」" for n, r in s["factions"]))
     body.add_row("聲望", f"{s['fame']}" + (f"  惡名 {s['infamy']}" if s["infamy"] else ""))
     body.add_row("財富", f"{s['gold']} 金" + (f"  通緝 {s['bounty']}" if s["bounty"] else ""))
+    if s.get("achievements"):
+        body.add_row("成就", f"{len(s['achievements'])}/{s.get('achievements_total', len(s['achievements']))}  "
+                            + "、".join(s["achievements"]))
     if s.get("seed") is not None:
         body.add_row("種子", str(s["seed"]))
 

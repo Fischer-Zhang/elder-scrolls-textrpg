@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from tesrpg import formulas
 from tesrpg.gamedata import GameData
-from tesrpg.systems import brotherhood, mastery, politics, vampirism
+from tesrpg.systems import achievements, brotherhood, mastery, politics, vampirism
 
 DAYS_PER_YEAR = 360   # 12 月 × 30 天
 
@@ -62,6 +62,7 @@ def compute(state, gamedata: GameData, ending: str = "death") -> dict:
     total_kills = sum(char.kill_counts.values())
     total_locations = len(gamedata.world["locations"])
     masteries = [e["name"] for e in mastery.unlocked(char, gamedata)]
+    earned_achievements = [a["name"] for a in achievements.earned(char, gamedata)]
     # 具名地標:只計仍合法的 loc_id(防毀損存檔殘留已移除地標)
     landmarks_found = sum(1 for lid in char.discovered_landmarks if lid in gamedata.landmarks)
     total_landmarks = len(gamedata.landmarks)
@@ -98,6 +99,8 @@ def compute(state, gamedata: GameData, ending: str = "death") -> dict:
         # 開局背景:舊存檔/已移除的 id → None(結算畫面省略此行)
         "origin": gamedata.origins.get(char.origin, {}).get("name"),
         "masteries": masteries,                       # 解鎖的技能里程碑(身份印記)
+        "achievements": earned_achievements,          # 達成的成就名單(僅表彰,不計入 score)
+        "achievements_total": len(achievements._defs(gamedata)),
         "condition": vampirism.legacy_label(char),   # 吸血鬼身分(否則 None)
         "dark_deeds": brotherhood.legacy_label(char, gamedata),   # 黑暗兄弟會/謀殺事蹟(否則 None)
         "dominion": dominion_label(char, gamedata, cities_held, thanes),  # 領地/統帥功業(否則 None)

@@ -42,6 +42,7 @@ class GameData:
         self.recipes: dict = _load("recipes.json")   # 製作配方(獸皮等原料 → 裝備;見 systems/crafting.py)
         self.world_events: dict = _load("world_events.json")   # 陣營大事件時間軸(動態政局;見 systems/worldstate.py)
         self.landmarks: dict = _load("landmarks.json")   # 具名地標(首次抵達一次性發現;見 systems/landmarks.py)
+        self.achievements: list = _load("achievements.json")   # 成就(達門檻自動表彰;唯讀推導,見 systems/achievements.py)
         self._misc: dict = _load("items.json")
 
         # 統一物品索引:武器/護甲/雜項/材料共用一份 {id: {**def, "kind": ...}}

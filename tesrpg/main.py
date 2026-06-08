@@ -2196,6 +2196,7 @@ def action_character_sheet(state: GameState, gamedata: GameData) -> None:
         if any(f in gamedata.factions for f in char.factions):
             opts.append(("factions", "公會與階級"))
         opts.append(("mastery", "技能里程碑"))
+        opts.append(("achievements", "成就"))
         if powers.power_id(char, gamedata):
             opts.append(("power", "星座之力"))
         opts.append(("bounty", "聲望與通緝"))
@@ -2216,6 +2217,8 @@ def action_character_sheet(state: GameState, gamedata: GameData) -> None:
             ui.sheet_factions(char, gamedata)
         elif choice == "mastery":
             ui.sheet_masteries(char, gamedata)
+        elif choice == "achievements":
+            ui.sheet_achievements(char, gamedata)
         elif choice == "power":
             ui.sheet_power(char, state, gamedata)
         elif choice == "bounty":

@@ -556,6 +556,23 @@
     }
     return elFrom(`<div class="card"><div class="card-head">技能里程碑</div><div class="panel-body">${body}</div></div>`);
   }
+  function renderAchievements(d) {
+    if (!d.earned.length && !d.locked.length)
+      return elFrom(`<div class="card"><div class="card-head">成就</div><div class="dim" style="margin-top:8px">尚無成就資料。</div></div>`);
+    const total = d.earned.length + d.locked.length;
+    let body = "";
+    if (d.earned.length) {
+      body += `<div class="sec-title">已達成 ${d.earned.length}/${total}</div><div class="mst-grid">` + d.earned.map(function (a) {
+        return `<div class="mst on"><div class="mst-h"><span class="mst-mk">✦</span> ${esc(a.name)}</div><div class="mst-d">${esc(a.desc)}</div></div>`;
+      }).join("") + `</div>`;
+    }
+    if (d.locked.length) {
+      body += `<div class="sec-title">未達成</div><div class="mst-grid">` + d.locked.map(function (a) {
+        return `<div class="mst off"><div class="mst-h"><span class="mst-mk off">○</span> ${esc(a.name)}</div><div class="mst-d">${esc(a.desc)}</div></div>`;
+      }).join("") + `</div>`;
+    }
+    return elFrom(`<div class="card"><div class="card-head">成就</div><div class="panel-body">${body}</div></div>`);
+  }
   function renderResist(d) {
     const rows = d.rows.map(function (r) {
       const v = r.value, w = Math.min(100, Math.abs(v));
@@ -611,7 +628,7 @@
     room: renderRoom, encounter: renderEncounter, event: renderEvent, discovery: renderDiscovery,
     legacy: renderLegacy, panel: renderPanel,
     masteries: renderMasteries, resistances: renderResist, spellbook: renderSpellbook,
-    board: renderBoard, shop: renderShop,
+    achievements: renderAchievements, board: renderBoard, shop: renderShop,
   };
 
   function htmlBlock(html) {
