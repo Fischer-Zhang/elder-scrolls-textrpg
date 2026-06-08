@@ -207,7 +207,8 @@ def _combat_view(player: Character, allies: list, enemies: list) -> dict:
     for e in enemies:
         if e.health > 0:
             n += 1
-            foes.append(_combatant(e, idx=n))
+            # key=0-based 存活索引,對齊 main._choose_enemy_target 的目標選單鍵 → 卡片可點選目標
+            foes.append({**_combatant(e, idx=n), "key": str(n - 1)})
         else:
             foes.append(_combatant(e, down=True))
     return {"me": _combatant(player), "has_fp": True,

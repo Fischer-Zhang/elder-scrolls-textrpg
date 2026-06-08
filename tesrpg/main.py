@@ -14,8 +14,8 @@ from tesrpg.rng import RNG, make_seed
 from tesrpg.state import GameState
 from tesrpg.systems import (alchemy, brotherhood, combat, court, crafting, crime, dialogue, dungeon,
                             enchanting, events, factions, inventory, landmarks, legacy, magic,
-                            politics, powers, progression, quests, stats, vampirism, warband,
-                            world, worldstate)
+                            mastery, politics, powers, progression, quests, stats, vampirism,
+                            warband, world, worldstate)
 from tesrpg.ui import console as ui
 
 SAVE_PATH = Path.home() / ".tesrpg" / "save.json"
@@ -280,16 +280,19 @@ def action_save(state: GameState) -> None:
 # ======================================================================
 # 戰鬥
 # ======================================================================
-def _choose_enemy_target(gamedata: GameData, enemies: list):
+def _choose_enemy_target(state: GameState, gamedata: GameData, enemies: list, allies: list):
     """從存活敵人中選一個目標(僅一個時自動選)。"""
     alive = [e for e in enemies if combat.is_alive(e)]
     if len(alive) == 1:
         return alive[0]
+    if ui._web is not None:        # web:重新顯示戰場(blocks 每幀清空),讓敵方卡片可點選目標
+        ui.combat_status_group(state.player, allies, enemies, gamedata)
     opts = [(str(i), f"{e.name}（{int(e.health)}/{e.max_health})") for i, e in enumerate(alive)]
     return alive[int(ui.menu("攻擊哪個目標?", opts))]
 
 
-def _choose_combat_action(state: GameState, gamedata: GameData, enemies: list, vanish_used: int = 0):
+def _choose_combat_action(state: GameState, gamedata: GameData, enemies: list, allies: list,
+                          vanish_used: int = 0):
     """回傳玩家本回合的行動 dict:{type, spell_id?, target?}。"""
     player = state.player
     opts = [("attack", f"攻擊（{gamedata.item(player.weapon)['name']})")]
@@ -310,7 +313,7 @@ def _choose_combat_action(state: GameState, gamedata: GameData, enemies: list, v
     choice = ui.menu("你的回合", opts)
 
     if choice == "attack":
-        return {"type": "attack", "target": _choose_enemy_target(gamedata, enemies)}
+        return {"type": "attack", "target": _choose_enemy_target(state, gamedata, enemies, allies)}
     if choice == "cast":
         spell_opts = [(s, f"{gamedata.spells[s]['name']}"
                        f"（{magic.effective_cost(player, gamedata, s)} 魔力) · "
@@ -318,13 +321,14 @@ def _choose_combat_action(state: GameState, gamedata: GameData, enemies: list, v
                       for s in castable]
         sid = ui.menu("施放哪道法術?", spell_opts, allow_back=True)
         if sid is None:
-            return _choose_combat_action(state, gamedata, enemies, vanish_used)
-        target = _choose_enemy_target(gamedata, enemies) if gamedata.spells[sid]["target"] == "enemy" else None
+            return _choose_combat_action(state, gamedata, enemies, allies, vanish_used)
+        target = (_choose_enemy_target(state, gamedata, enemies, allies)
+                  if gamedata.spells[sid]["target"] == "enemy" else None)
         return {"type": "cast", "spell_id": sid, "target": target}
     if choice == "power":
         eff = powers.power_def(powers.power_id(player, gamedata))["effect"]
         needs_target = any(k in eff for k in ("paralyze", "poison", "drain"))
-        target = _choose_enemy_target(gamedata, enemies) if needs_target else None
+        target = _choose_enemy_target(state, gamedata, enemies, allies) if needs_target else None
         return {"type": "power", "target": target}
     return {"type": choice}
 
@@ -442,7 +446,7 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
 
     while combat.is_alive(player) and alive_e():
         ui.combat_status_group(player, battle["allies"], enemies, gamedata)
-        action = _choose_combat_action(state, gamedata, enemies, vanishes_done)
+        action = _choose_combat_action(state, gamedata, enemies, battle["allies"], vanishes_done)
         blocking = action["type"] == "block"
         vanish_success = False        # 本回合是否成功隱遁(成功 → 重置偷襲 + 跳過敵人階段)
 
@@ -1395,7 +1399,12 @@ def action_trainer(state: GameState, gamedata: GameData) -> None:
         opts = []
         for sid in gamedata.skills_by_spec(spec):
             cost = world.train_cost(char.skill(sid))
-            opts.append((sid, f"{gamedata.skill_name(sid)} (Lv {char.skill(sid)}) — {cost} 金 +1"))
+            label = f"{gamedata.skill_name(sid)} (Lv {char.skill(sid)}) — {cost} 金 +1"
+            nxt = mastery.next_threshold(char, gamedata, sid)   # 顯示距下一個技能里程碑還幾級
+            if nxt:
+                opts.append((sid, label, [{"text": f"距 {nxt['name']} 還 {nxt['remaining']} 級", "tone": "mag"}]))
+            else:
+                opts.append((sid, label))
         sid = ui.menu("訓練哪項技能?", opts, allow_back=True)
         if sid is None:
             continue

@@ -173,6 +173,8 @@ def test_view_model_shapes():
     assert tags.get("盾") is True and tags.get("蝕") is False
     assert all(isinstance(t, dict) and "s" in t and "good" in t for t in cv["me"]["tags"])
     assert cv["enemies"][0]["mp"] == [0, 0]                   # 怪物無魔力 → JS 以 mp[1] 假值隱藏
+    assert cv["enemies"][0]["key"] == "0" and cv["enemies"][0]["idx"] == 1   # 卡顯 "1." 但 key=0(0-based 目標鍵)
+    assert "key" not in cv["me"]                              # 玩家卡無 key(不可被當目標點選)
     c.active_effects = []
 
     # --- 傳奇:rows → sections(每段 {header, items});不再有頂層 rows ---
@@ -189,6 +191,53 @@ def test_view_model_shapes():
     for p in mv["provinces"]:
         assert isinstance(p["visited"], int) and isinstance(p["total"], int)
         assert 0 <= p["visited"] <= p["total"] == len(p["nodes"])
+
+
+def test_combat_target_key_parity():
+    """戰鬥可點目標的命脈不變式:存活敵人卡的 key 為 0-based 且對齊 _choose_enemy_target
+    的 enumerate(alive) 鍵;陣亡卡無 key;卡顯示 idx=key+1。"""
+    from tesrpg.gamedata import get_gamedata
+    from tesrpg.creation import build_character
+    from tesrpg.rng import RNG
+    from tesrpg.systems import combat
+    gd = get_gamedata()
+    c = build_character(gd, name="測", sex="male", race="nord", birthsign="warrior", class_id="warrior")
+    live_a = combat.spawn_creature(gd, "giant_rat", RNG(1))
+    dead = combat.spawn_creature(gd, "giant_rat", RNG(2)); dead.health = 0
+    live_b = combat.spawn_creature(gd, "giant_rat", RNG(3))
+    cv = ui._combat_view(c, [], [live_a, dead, live_b])
+    keyed = [(e.get("key"), e["idx"]) for e in cv["enemies"] if e.get("key") is not None]
+    assert keyed == [("0", 1), ("1", 2)]                       # 跳過陣亡者、key 連號 0/1、idx=key+1
+    assert all(e.get("key") is None for e in cv["enemies"] if e["down"])   # 陣亡卡無 key
+    # 對齊 _choose_enemy_target 的鍵:alive 索引 == 卡 key
+    alive = [e for e in [live_a, dead, live_b] if combat.is_alive(e)]
+    assert [str(i) for i in range(len(alive))] == [k for k, _ in keyed]
+
+
+def test_combat_target_reemit_web():
+    """web 選敵目標的端到端:該 prompt 幀重發 combat view(敵人卡帶 key),選單鍵對齊卡 key,
+    選 "1" 回傳第二隻存活敵人。釘住「blocks 每幀清空 → 須重發才可點卡」的設計。"""
+    from tesrpg.gamedata import get_gamedata
+    from tesrpg.creation import build_character
+    from tesrpg.state import GameState, GameTime
+    from tesrpg.rng import RNG
+    from tesrpg.systems import combat
+    from tesrpg import main as M
+    gd = get_gamedata()
+    c = build_character(gd, name="測", sex="male", race="nord", birthsign="warrior", class_id="warrior")
+    st = GameState(player=c, time=GameTime(), rng=RNG(1))
+    foes = [combat.spawn_creature(gd, "giant_rat", RNG(1)), combat.spawn_creature(gd, "giant_rat", RNG(2))]
+    backend = WebBackend()
+    ui.use_web_backend(backend, _rec())
+    try:
+        fr, ret = _drive(backend, lambda: M._choose_enemy_target(st, gd, foes, []), lambda s: "1")
+        views = [b for b in fr["blocks"] if b["kind"] == "view" and b["name"] == "combat"]
+        assert views, fr["blocks"]                                   # 該幀重發了戰鬥畫面
+        assert [e.get("key") for e in views[0]["data"]["enemies"]] == ["0", "1"]
+        assert [o["key"] for o in fr["prompt"]["options"]] == ["0", "1"]   # 選單鍵對齊卡 key
+        assert ret is foes[1]
+    finally:
+        _restore()
 
 
 def test_double_submit_and_stale():
@@ -248,6 +297,8 @@ def run():
     test_blocks_protocol()
     test_hud_and_view_block()
     test_view_model_shapes()
+    test_combat_target_key_parity()
+    test_combat_target_reemit_web()
     test_double_submit_and_stale()
     test_int_revalidate()
     test_flush_final_and_generation()

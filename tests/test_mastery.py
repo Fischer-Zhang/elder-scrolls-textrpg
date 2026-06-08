@@ -262,6 +262,21 @@ def test_mastery_never_writes_base_skill():
     assert c.skills == snapshot
 
 
+def test_next_threshold_hint_uses_base_and_skips_done():
+    """訓練師里程碑提示:回傳下一個未達門檻、以 base_skill 計、全達/無里程碑→None。"""
+    gd, c = _char(block=44)
+    nxt = mastery.next_threshold(c, gd, "block")
+    assert nxt and nxt["threshold"] == 50 and nxt["remaining"] == 6 and nxt["name"]
+    # 走 base:裝備加成不改 remaining
+    c.equip_skill_bonus["block"] = 10
+    assert c.skill("block") >= 50 and mastery.next_threshold(c, gd, "block")["remaining"] == 6
+    # base 達最高門檻 → None(已解,不再提示)
+    c.skills["block"] = 50
+    assert mastery.next_threshold(c, gd, "block") is None
+    # 無里程碑的技能 → None
+    assert mastery.next_threshold(c, gd, "athletics") is None
+
+
 def run():
     test_threshold_uses_base_skill_only()
     test_creatures_have_no_mastery()
@@ -280,6 +295,7 @@ def run():
     test_shipped_kinds_all_implemented()
     test_unimplemented_kind_is_inert()
     test_mastery_never_writes_base_skill()
+    test_next_threshold_hint_uses_base_and_skips_done()
 
 
 if __name__ == "__main__":

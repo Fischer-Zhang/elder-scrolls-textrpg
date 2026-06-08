@@ -68,6 +68,22 @@ def newly_unlocked(char, gamedata: GameData, skill_id: str, new_level: int) -> l
             if e.get("skill") == skill_id and e.get("threshold") == new_level]
 
 
+def next_threshold(char, gamedata: GameData, skill_id: str) -> dict | None:
+    """該技能(以 base_skill 計)尚未跨越的下一個里程碑門檻;全已解或無里程碑 → None。
+
+    回傳 {name, threshold, remaining}(remaining = 還差幾級,>=1)。供 UI 提示用,**零副作用**。
+    用 _defs(過 _IMPLEMENTED_KINDS 白名單,不宣傳未實作條目);門檻只認 base_skill(鐵律)。
+    """
+    base = char.base_skill(skill_id) if hasattr(char, "base_skill") else 0
+    cands = sorted((e for e in _defs(gamedata)
+                    if e.get("skill") == skill_id and e["threshold"] > base),
+                   key=lambda e: e["threshold"])
+    if not cands:
+        return None
+    e = cands[0]
+    return {"name": e["name"], "threshold": e["threshold"], "remaining": e["threshold"] - base}
+
+
 # --- 各 kind 的使用點 getter(呼叫端各取一處)---------------------------
 def block_hit_penalty(char, gamedata: GameData) -> float:
     """格擋時施加給攻擊者的命中懲罰(預設 BLOCK_HIT_PENALTY;盾陣加深)。"""
