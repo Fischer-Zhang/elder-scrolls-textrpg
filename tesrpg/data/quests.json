@@ -1027,5 +1027,31 @@
     "objective": {"type": "clear_dungeon", "dungeon": "cedernoc_cave"},
     "reward": {"gold": 250, "fame": 10, "standing": 2}, "turn_in": "auto",
     "text": "「切德納寇洞窟成了匪巢,連我的稅吏都不敢過境。替我把那窩強盜連根拔起 —— 辦成了,布魯瑪會記住你的名字。」"
+  },
+  "job_volenfell": {
+    "name": "懸賞:沃倫菲爾之患",
+    "faction": null, "rank": null, "source": "board",
+    "provinces": ["漢默法爾"],
+    "objective": {"type": "clear_dungeon", "dungeon": "volenfell"},
+    "reward": {"gold": 400, "fame": 20},
+    "turn_in": "auto",
+    "text": "森塔告示板高額懸賞:深入沙下的沃倫菲爾矮人遺城,終結廟心那尊甦醒的百夫長。"
+  },
+  "job_alikr": {
+    "name": "懸賞:沙蠍橫行",
+    "faction": null, "rank": null, "source": "board",
+    "provinces": ["漢默法爾"],
+    "objective": {"type": "kill", "creature": "sand_scorpion", "count": 4},
+    "reward": {"gold": 160, "fame": 8},
+    "turn_in": "auto",
+    "text": "蓋蘭告示板懸賞:商道上沙蠍成災,獵殺 4 頭沙蠍(阿利克爾沙漠野外可尋)。"
+  },
+  "favor_sentinel": {
+    "name": "委託:偵察遺城",
+    "faction": null, "rank": null, "source": "npc",
+    "objective": {"type": "reach", "location": "volenfell"},
+    "reward": {"gold": 130, "fame": 4, "items": ["filled_lesser_soul_gem"]},
+    "turn_in": "auto",
+    "text": "森塔王宮的劍術教頭要你潛抵沃倫菲爾遺城、查探機械守衛的虛實:「活著回來,賞金加倍。」"
   }
 }

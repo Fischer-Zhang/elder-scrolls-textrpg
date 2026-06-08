@@ -235,5 +235,38 @@
     "bloc_label": "An-Xileel 議會",
     "blurb": "黑荊棘堡的亞龍人堡主,鐵腕掌管東境牢城的冷酷獄卒長。帝國潰退、邊界無人看守,他便以高牆與荊棘自任沼澤門閂,凡犯境者皆鎖入黑石之下,只認 An-Xileel 之令,不認紅寶石空座。",
     "stance": "neutral"
+  },
+  "sentinel": {
+    "name": "拉卡娜·萊里希斯",
+    "title": "女王",
+    "race": "redguard",
+    "garrison": 250,
+    "population": 600,
+    "bloc": "crowns",
+    "bloc_label": "王冠派",
+    "blurb": "森塔的紅衛女王,王冠派的鐵腕共主。紅寶石王座既空,她便高舉劍與駿馬的古旗,號召約凱後裔在烈日疆土上自立稱雄,誓不讓帝國的旗幟再越過龍尾山。",
+    "stance": "independent"
+  },
+  "hegathe": {
+    "name": "阿耶夏·泰索蘭",
+    "title": "聖城護法",
+    "race": "redguard",
+    "garrison": 180,
+    "population": 380,
+    "bloc": "crowns",
+    "bloc_label": "王冠派",
+    "blurb": "赫加西的王冠派護法,約凱戰魂傳統的守護者。她以古劍術與聖城高牆鎮守西陲,視帝國的羈縻與先鋒派的妥協同為對先祖榮光的背棄。",
+    "stance": "independent"
+  },
+  "gilane": {
+    "name": "拉吉夫·阿圖姆",
+    "title": "港務總管",
+    "race": "redguard",
+    "garrison": 110,
+    "population": 220,
+    "bloc": "forebears",
+    "bloc_label": "先鋒派",
+    "blurb": "蓋蘭的先鋒派港務總管,精於互市的紅衛商閥。他主張與帝國通商共榮,在王冠派的孤傲與帝國的舊誼之間左右逢源,把這座南岸港鎮經營成漢默法爾向外開放的門戶。",
+    "stance": "independent"
   }
 }

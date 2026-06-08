@@ -357,5 +357,60 @@
         ]
       }
     }
+  },
+  "volenfell": {
+    "name": "沃倫菲爾",
+    "rooms": [
+      {
+        "desc": "半埋於沙的黃銅大門後,通道嗡嗡作響。一具蒸汽蜘蛛自牆壁機關彈出。",
+        "enemy": "dwarven_spider",
+        "container": null
+      },
+      {
+        "desc": "佈滿齒輪的工坊長廊,一只積塵的矮人黃銅儲物罐嵌在牆龕裡。",
+        "enemy": null,
+        "container": {
+          "locked": 30,
+          "loot": [
+            "gold_ingot",
+            "filled_lesser_soul_gem",
+            {"gold": [15, 35]}
+          ]
+        }
+      },
+      {
+        "desc": "崩塌的鑄造廳,流沙自穹頂縫隙傾瀉。兩具蒸汽蜘蛛與一頭潛伏的沙蠍一齊驚動。",
+        "container": null,
+        "enemies": ["dwarven_spider", "sand_scorpion"]
+      },
+      {
+        "desc": "百夫長殿前的守衛室,一頭拉米亞盤踞在通往內殿的階前,守著殿後的寶箱。",
+        "enemy": "lamia",
+        "container": {
+          "locked": 35,
+          "loot": [
+            "glass_dagger",
+            "ruby",
+            {"gold": [30, 60]}
+          ]
+        }
+      }
+    ],
+    "boss": {
+      "desc": "沃倫菲爾廟心的蒸汽天井 —— 一尊上古矮人百夫長盤踞在被遺忘的黃銅寶藏之上,胸甲縫隙噴吐著千年不熄的烈焰。",
+      "enemy": "dwarven_centurion",
+      "raw": true,
+      "treasure": {
+        "locked": 45,
+        "loot": [
+          "dwarven_cuirass",
+          "dwarven_mace",
+          "filled_greater_soul_gem",
+          "healing_potion",
+          "ruby",
+          {"gold": [90, 180]}
+        ]
+      }
+    }
   }
 }

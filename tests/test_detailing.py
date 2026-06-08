@@ -57,14 +57,14 @@ def test_biome_steers_encounters_without_emptying_pool():
 
 def test_every_location_has_biome():
     gd, _ = _char()
-    valid = {"heartland", "snow", "ashland", "swamp"}
+    valid = {"heartland", "snow", "ashland", "swamp", "desert"}
     for lid, loc in gd.world["locations"].items():
         assert loc.get("biome") in valid, f"{lid} biome 非法:{loc.get('biome')}"
 
 
 def test_creature_biomes_are_valid():
     gd, _ = _char()
-    valid = {"heartland", "snow", "ashland", "swamp"}
+    valid = {"heartland", "snow", "ashland", "swamp", "desert"}
     for cid, c in gd.bestiary.items():
         for b in c.get("biomes", []):
             assert b in valid, f"{cid} biomes 非法:{b}"

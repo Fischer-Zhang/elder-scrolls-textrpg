@@ -487,5 +487,62 @@
     "greeting": "「鐵柵後頭的事,你最好別問。提著燈巡牢一輩子,我學會一件事——多看少說的人,才活得過這座堡。要住店,左邊那排泥屋。」",
     "rumor": "堡主近來向西邊赫爾斯壯的議長送了好幾批囚徒,聽說那座聖城的神樹要這些俘虜去贖罪;押解隊穿過沼澤時,折在泥潭裡的看守可不少。",
     "quest": null
+  },
+  "sentinel_swordmaster": {
+    "name": "劍術教頭 法拉斯",
+    "location": "sentinel",
+    "disposition": 48,
+    "greeting": "「劍與駿馬,是約凱後裔的全部。外鄉人,你握劍的手太僵了 —— 但沙下那些黃銅怪物,可不在乎你的姿勢。」",
+    "rumor": "東邊沙海裡的沃倫菲爾遺城,矮人機關近來頻頻甦醒;王宮想知道裡頭究竟藏著什麼,卻沒人敢去探。",
+    "quest": "favor_sentinel",
+    "quest_disposition": 55
+  },
+  "sentinel_quartermaster": {
+    "name": "軍需官 蘇拉妮",
+    "location": "sentinel",
+    "disposition": 45,
+    "greeting": "「女王的劍士不缺鋼鐵,缺的是能扛住烈日的料子。要補給就快,沙暴一起,城門可不等人。」",
+    "rumor": "告示板上沃倫菲爾的懸賞掛了好幾月 —— 聽說進去的隊伍,連回音都沒傳出來。",
+    "quest": null
+  },
+  "sentinel_priestess": {
+    "name": "戰魂祭司 娜茲拉",
+    "location": "sentinel",
+    "disposition": 46,
+    "greeting": "「劍之道場接引每一縷約凱戰魂。你身上有死氣,外鄉人 —— 是沙漠的拉米亞纏上你了麼?」",
+    "rumor": "阿利克爾深處的綠洲別輕信,蛇女拉米亞會以歌聲與倒影誘人入沙;聽說赫加西的法師懂得驅蛇的霜咒。",
+    "quest": null
+  },
+  "hegathe_warden": {
+    "name": "聖城護衛 祖貝爾",
+    "location": "hegathe",
+    "disposition": 45,
+    "greeting": "「玄武岩牆擋得住沙暴,擋不住人心的妥協。外鄉人,在赫加西,先學會敬重先祖的劍。」",
+    "rumor": "森塔與蓋蘭為了向不向帝國通商爭執不休;可沙漠裡的沙嘯獸不管你是王冠還是先鋒,撲上來照樣咬。",
+    "quest": null
+  },
+  "hegathe_mage": {
+    "name": "霜咒法師 因德拉",
+    "location": "hegathe",
+    "disposition": 47,
+    "greeting": "「沙漠的怪物畏火不畏熱 —— 唯有寒霜能教牠們真正恐懼。我這的霜咒,連百夫長的爐火都能澆熄。」",
+    "rumor": "沃倫菲爾的百夫長以爐火為命,烈焰加身刀槍不入;唯有冰霜能裂其黃銅之軀 —— 進城前,先到我這備齊霜咒。",
+    "quest": null
+  },
+  "gilane_harbormaster": {
+    "name": "港務副管 哈基姆",
+    "location": "gilane",
+    "disposition": 46,
+    "greeting": "「香料、駿馬、鋼鐵 —— 蓋蘭的碼頭什麼都賣。先鋒派懂得做生意,可不像森塔那群只會擦劍的。」",
+    "rumor": "龍尾山麓那條商道近來常見沙蠍,從金海岸來的商隊在沙坡上折了好幾車貨。",
+    "quest": null
+  },
+  "gilane_trader": {
+    "name": "香料商 雅絲敏",
+    "location": "gilane",
+    "disposition": 48,
+    "greeting": "「新鮮的紅蘋果、灰薯與沙地藥草,煉藥人搶著要。外鄉人,你的水囊看著空了,要不要添點?」",
+    "rumor": "告示板上阿利克爾的沙蠍懸賞開了好價;那些毒尾蠍子的甲殼,煉藥行可是當寶。",
+    "quest": null
   }
 }

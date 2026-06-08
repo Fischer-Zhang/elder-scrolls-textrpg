@@ -849,5 +849,63 @@
     "loot_gold": [8, 22],
     "loot": [{"item": "healing_potion", "chance": 0.2}, {"item": "ruby", "chance": 0.1}],
     "flavor": "帝國腹地的遠古巨獸 —— 一頭牛首人身的米諾陶自林間踏出,蹄聲震得落葉簌簌。"
+  },
+  "sand_scorpion": {
+    "biomes": ["desert"],
+    "name": "沙蠍", "strength": 40, "agility": 46, "speed": 48,
+    "max_health": 24, "armor_rating": 8,
+    "attack": {"name": "毒尾突刺", "damage": 8, "skill": 38, "element": "poison",
+               "on_hit": {"status": "dot", "element": "poison", "magnitude": 2, "turns": 2, "chance": 0.35}},
+    "danger": 2, "min_level": 1, "weight": 5,
+    "resist": {"fire": 50, "frost": -25},
+    "loot_gold": [0, 4],
+    "loot": [{"item": "bone_meal", "chance": 0.3}],
+    "flavor": "黃沙翻湧,一頭犬隻大小的沙蠍鉗螯橫張,毒尾在烈日下高高揚起。"
+  },
+  "dune_ripper": {
+    "biomes": ["desert"],
+    "name": "沙嘯獸", "strength": 56, "agility": 52, "speed": 56,
+    "max_health": 58, "armor_rating": 8,
+    "attack": {"name": "撕咬猛撲", "damage": 14, "skill": 50},
+    "danger": 3, "min_level": 3, "weight": 5,
+    "resist": {"fire": 50, "frost": -25},
+    "loot_gold": [4, 14],
+    "loot": [{"item": "wolf_pelt", "chance": 0.3}, {"item": "healing_potion", "chance": 0.2}],
+    "flavor": "沙丘下驟然炸開 —— 一頭流線形的掠食獸破沙而出,鱗皮燙手,獠牙滴著沙礫。"
+  },
+  "lamia": {
+    "biomes": ["desert"],
+    "name": "拉米亞", "strength": 54, "agility": 60, "speed": 50,
+    "max_health": 70, "armor_rating": 10,
+    "attack": {"name": "魅惑爪擊", "damage": 16, "skill": 56, "element": "shock",
+               "on_hit": {"status": "dot", "element": "shock", "magnitude": 3, "turns": 2, "chance": 0.4}},
+    "danger": 4, "min_level": 5, "weight": 4,
+    "resist": {"fire": 50, "frost": -25, "magic": 25},
+    "loot_gold": [8, 22],
+    "loot": [{"item": "filled_lesser_soul_gem", "chance": 0.2}, {"item": "glow_dust", "chance": 0.4}],
+    "flavor": "綠洲的倒影裡爬出一具蛇身女妖,鱗尾掃過沙地,歌聲蠱惑著迷途者的心智。"
+  },
+  "dwarven_spider": {
+    "biomes": ["desert"],
+    "name": "矮人蒸汽蜘蛛", "strength": 44, "agility": 58, "speed": 54,
+    "max_health": 48, "armor_rating": 18,
+    "attack": {"name": "電弧噴吐", "damage": 13, "skill": 52, "element": "shock"},
+    "danger": 3, "min_level": 4, "weight": 4,
+    "resist": {"fire": 75, "frost": -25, "shock": 50, "poison": 100},
+    "loot_gold": [0, 8],
+    "loot": [{"item": "gold_ingot", "chance": 0.3}, {"item": "filled_petty_soul_gem", "chance": 0.25}],
+    "flavor": "沙下的黃銅機關甦醒,一具八足蒸汽蜘蛛奔竄而出,關節迸射著上古的電弧。"
+  },
+  "dwarven_centurion": {
+    "biomes": ["desert"],
+    "name": "矮人百夫長", "strength": 84, "agility": 38, "speed": 38,
+    "max_health": 260, "armor_rating": 26,
+    "attack": {"name": "蒸汽巨錘", "damage": 30, "skill": 62, "element": "fire",
+               "on_hit": {"status": "dot", "element": "fire", "magnitude": 5, "turns": 2, "chance": 0.4}},
+    "danger": 5, "min_level": 13, "weight": 1, "raw": true,
+    "resist": {"fire": 100, "frost": -25, "shock": 50, "poison": 100, "magic": 25},
+    "loot_gold": [70, 160],
+    "loot": [{"item": "dwarven_cuirass", "chance": 0.3}, {"item": "filled_greater_soul_gem", "chance": 0.5}, {"item": "gold_ingot", "chance": 0.5}],
+    "flavor": "沃倫菲爾廟心的蒸汽驟然轟鳴 —— 一尊三人高的矮人百夫長嘎然立起,黃銅巨錘掃過,千年的烈焰自胸甲縫隙噴湧而出。"
   }
 }

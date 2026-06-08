@@ -355,5 +355,29 @@
                              "effects": [{"type": "combat", "creature": "imperial_ghost"}]}}},
       {"text": "繞道而行", "effects": [{"type": "message", "text": "你不願招惹古老的埃雷德亡靈,繞了過去。"}]}
     ]
+  },
+  "hammerfell_forage": {
+    "weight": 3, "trigger": {"contexts": ["explore"], "provinces": ["漢默法爾"]},
+    "title": "綠洲採集", "text": "沙丘背風處的一小片綠洲邊,沙地藥草與耐旱的根莖在棕櫚蔭下悄然生長。",
+    "options": [
+      {"text": "採集沙地藥草",
+       "effects": [{"type": "item", "item": "canis_root", "qty": 1},
+                   {"type": "item", "item": "ash_yam", "qty": 1},
+                   {"type": "skill_xp", "skill": "alchemy", "amount": 0.5},
+                   {"type": "message", "text": "你採下了犬根草與一顆灰薯。"}]},
+      {"text": "沒興趣", "effects": []}
+    ]
+  },
+  "hammerfell_predator": {
+    "weight": 3,
+    "trigger": {"contexts": ["explore"], "provinces": ["漢默法爾"], "location_types": ["wilderness"]},
+    "title": "沙下的震顫", "text": "腳下的黃沙忽然震動起來 —— 一頭沙嘯獸正循著熱息逼近。",
+    "options": [
+      {"text": "搶在牠破沙前出手", "effects": [{"type": "combat", "creature": "dune_ripper"}]},
+      {"text": "屏息潛伏、悄然繞行(潛行)",
+       "check": {"skill": "sneak", "difficulty": 40,
+                 "success": {"text": "你壓低身形,任那掠食獸自沙下掠過。", "effects": []},
+                 "failure": {"text": "沙礫滑落驚動了牠,沙嘯獸破沙而出!", "effects": [{"type": "combat", "creature": "dune_ripper"}]}}}
+    ]
   }
 }

@@ -105,7 +105,8 @@
         "cedernoc_cave": 3,
         "dragon_bridge": 7,
         "skingrad": 3,
-        "anvil": 5
+        "anvil": 5,
+        "dragontail_foothills": 5
       }
     },
     "pale_pass": {
@@ -754,7 +755,8 @@
       ],
       "links": {
         "skingrad": 4,
-        "kvatch": 5
+        "kvatch": 5,
+        "dragontail_foothills": 4
       }
     },
     "whiterun": {
@@ -928,7 +930,8 @@
       "links": {
         "whiterun": 4,
         "haafingar": 5,
-        "falkreath_wood": 5
+        "falkreath_wood": 5,
+        "brena_valley": 5
       }
     },
     "vivec": {
@@ -1161,6 +1164,110 @@
         "helstrom": 4,
         "gideon": 4,
         "xanmeer": 3
+      }
+    },
+    "dragontail_foothills": {
+      "biome": "heartland",
+      "name": "龍尾山麓",
+      "province": "邊境",
+      "type": "wilderness",
+      "danger": 2,
+      "desc": "賽羅迪爾金海岸西緣的乾旱丘陵,松林漸稀、紅土裸露,是帝國轄境通往漢默法爾烈日疆土的最後一道綠蔭。",
+      "services": [],
+      "links": {
+        "anvil": 4,
+        "kvatch": 5,
+        "gilane": 3
+      }
+    },
+    "gilane": {
+      "biome": "desert",
+      "name": "蓋蘭",
+      "province": "漢默法爾",
+      "type": "town",
+      "danger": 0,
+      "desc": "漢默法爾南岸的港鎮,白牆拱廊掩映於棕櫚與烈日之下。先鋒派的商賈在此與帝國互市,香料與駿馬的氣味浮在熱風裡。",
+      "services": ["inn", "merchant", "armorer", "fighters_guild", "task_board"],
+      "merchant_stock": ["minor_healing_potion", "healing_potion", "steel_sword", "steel_mace", "leather_cuirass", "leather_boots", "iron_shield", "long_bow", "repair_hammer", "red_apple", "garlic", "canis_root", "silver_ring", "gold_amulet"],
+      "links": {
+        "dragontail_foothills": 3,
+        "sentinel": 3,
+        "alikr_desert": 3
+      }
+    },
+    "sentinel": {
+      "biome": "desert",
+      "name": "森塔",
+      "province": "漢默法爾",
+      "type": "city",
+      "danger": 0,
+      "desc": "漢默法爾的王城與最大海港,白金穹頂俯瞰著伊利亞克灣。王冠派的劍術大師在此操演,自帝國退潮以來,森塔便高舉劍與駿馬的古旗,不向任何外邦低頭。",
+      "services": ["inn", "merchant", "trainer", "mages_guild", "armorer", "fighters_guild", "task_board"],
+      "merchant_stock": ["minor_healing_potion", "healing_potion", "minor_magicka_potion", "steel_sword", "steel_mace", "steel_cuirass", "steel_helmet", "iron_shield", "long_bow", "repair_hammer", "ruby", "red_apple", "garlic", "silver_ring", "gold_ring", "gold_amulet", "flame_staff", "magicka_staff"],
+      "spell_stock": ["flames", "fireball", "ignite", "fire_storm", "minor_heal", "heal", "close_wounds", "oakflesh", "stoneflesh", "fear", "demoralize", "conjure_familiar", "soul_trap"],
+      "links": {
+        "gilane": 3,
+        "alikr_desert": 2,
+        "hegathe": 3
+      }
+    },
+    "alikr_desert": {
+      "biome": "desert",
+      "name": "阿利克爾沙漠",
+      "province": "漢默法爾",
+      "type": "wilderness",
+      "danger": 3,
+      "desc": "漢默法爾腹地的浩瀚黃沙,沙丘在烈日下流動如海,夜裡卻寒徹骨。沙下盤踞著巨蠍與蛇女,迷途的商旅鮮少能走出這片無水之境。",
+      "services": [],
+      "links": {
+        "sentinel": 2,
+        "gilane": 3,
+        "volenfell": 3,
+        "hegathe": 3,
+        "brena_valley": 4
+      }
+    },
+    "hegathe": {
+      "biome": "desert",
+      "name": "赫加西",
+      "province": "漢默法爾",
+      "type": "city",
+      "danger": 0,
+      "desc": "漢默法爾西陲的古老聖城,玄武岩高牆抵禦著沙暴與烈日。王冠派的祭司在此守護古老的約凱戰魂傳統,城裡終年焚著驅熱的香木。",
+      "services": ["inn", "merchant", "trainer", "mages_guild", "armorer", "task_board"],
+      "merchant_stock": ["healing_potion", "minor_magicka_potion", "steel_sword", "glass_dagger", "steel_cuirass", "steel_helmet", "steel_shield", "long_bow", "repair_hammer", "ruby", "ash_yam", "bone_meal", "gold_ring", "silver_amulet", "frost_staff", "magicka_staff"],
+      "spell_stock": ["frostbite", "frost_nova", "sparks", "lightning_bolt", "chain_lightning", "poison_cloud", "minor_heal", "heal", "renewal", "ironflesh", "mass_paralysis", "rout", "conjure_flame_atronach", "restore_mind"],
+      "links": {
+        "sentinel": 3,
+        "alikr_desert": 3,
+        "volenfell": 4
+      }
+    },
+    "volenfell": {
+      "biome": "desert",
+      "name": "沃倫菲爾",
+      "province": "漢默法爾",
+      "type": "dungeon",
+      "danger": 4,
+      "desc": "半沒於黃沙的矮人遺城,黃銅機關仍在沙下嗡鳴。傳說城心深處,一尊上古矮人百夫長千年不眠地看守著被遺忘的寶藏。",
+      "services": [],
+      "dungeon": "volenfell",
+      "links": {
+        "alikr_desert": 3,
+        "hegathe": 4
+      }
+    },
+    "brena_valley": {
+      "biome": "snow",
+      "name": "布瑞納河谷",
+      "province": "邊境",
+      "type": "wilderness",
+      "danger": 3,
+      "desc": "分隔漢默法爾與天際河彎地的崎嶇河谷,沙磧漸轉為冷峻的高地岩原。這條商道避開了海路,卻要穿過拒誓者出沒的隘口。",
+      "services": [],
+      "links": {
+        "alikr_desert": 4,
+        "markarth": 5
       }
     }
   },
