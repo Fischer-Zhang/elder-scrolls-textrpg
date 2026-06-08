@@ -342,8 +342,13 @@
 - **顯示**:`gamedata.achievements` 載入;`legacy.compute` 回傳 `achievements:[名]`+`achievements_total`;`_legacy_view` 加「成就」section(達成 N/24+✦名;renderLegacy 自動渲,legacy 無 JS 改);`legacy_screen` 終端加成就行;**即時角色卡子檢視** `action_character_sheet` 加「成就」+ `sheet_achievements`(web `_emit_view("achievements",{earned,locked})` + 終端 rich;`index.html` `renderAchievements` 複用 `.mst-*` 卡)。
 - **驗證**:**40 模組全綠**(新增 `test_achievements` 14 測:各 type 判定/**初生 earned==[]**/skill_cap 只認 base/guildmaster/pure_spec 不創角即得/**id 合法**/**未知 type inert**/**評估器唯讀**(to_dict 不變)/**傳奇列出但不計分**(murders 達成而 score 不變)/earned∪locked 全且不交)+ `sim_assassin` 零位移 + headless 截圖(傳奇成就段 11/24 + 角色卡成就子檢視 ✦/○,桌面+480px)+ **對抗審查 0 真 bug**(12 發現全正向確認)。
 
+**更多開局背景(承「下一步」純資料 +6;開局 8→14)**:世界擴充後補上缺的「處境」。純改 `data/origins.json`(`creation.apply_origin` 只覆寫處境、不動屬性/技能;選單/快速開局/傳奇出身行**零程式改動**自動涵蓋)。Explore×2(apply_origin 接點 + test 不變式 + valid id 池)→ 直作 → 對抗審查 3 維 **0 findings**。
+- **6 新開局**(全 danger-0 起點、起手裝備起始階非 BIS、金幣克制 15–70):`fighters_recruit`(白漫城·授戰士公會·鋼劍皮甲,補戰士公會開局)、`guild_thief`(裂谷城·授盜賊公會·匕首,補盜賊開局)、`alikr_blade`(森塔·用上新漢默法爾省·鋼劍盾)、`shipwreck_survivor`(安維爾·15金硬開局無賞金)、`temple_healer`(史金格拉德·授**heal**——`minor_heal` 人人皆有故避開)、`orc_outcast`(馬卡斯城·戰斧鐵甲)。
+- **守則(已守)**:授會籍只挑無 unlock_event 且自洽的公會(mages/thieves/dark_brotherhood/**fighters_guild 單授**皆可;禁 knights_nine/mythic_dawn 需 `kvatch_falls`);`fighters_guild` 雖 lawful 但單授無起手賞金/無對立會籍 → 自洽。起點全 danger-0、所有 id 實查存在。
+- **驗證**:40 模組全綠(既有 `test_origins` 自動驗證**全 14 開局**無數值變動/id 合法/穿戴持有/起點安全/存檔往返;新增 `test_new_origins_situational_distinctives` 釘 6 新開局特徵 + 把 3 個帶會籍的納入 roundtrip)+ 逐一建角煙霧(無 traceback、health==max、會籍/裝備/法術/金幣符合)+ `sim_assassin` 零位移 + **對抗審查 3 維 0 findings**。**加開局純改 `origins.json`(在 apply_origin 支援的處境欄內;勿動屬性/技能、勿授 unlock-gated 公會、起點勿 danger≥4)。**
+
 **內容量**:10 種族 / 13 星座 / 8 職業 / **22 技能(+偵查 scout)** / **19 武器(4 法杖)** / **34 護甲(7 材質整套)** / 25 法術(5 AoE) /
-**15 材料(全部可野外採集/獵取)** / **4 飾品** / **製作配方系統(4 皮甲配方)** / **56 生物(7 高階 elite + 2 吸血鬼 + 5 黑沼澤 + 5 漢默法爾沙漠〔含矮人百夫長 boss〕 + 8 黑兄目標 + 7 神話黎明目標 + 6 九神聖戰目標 + 2 heartland;23 隻帶 biome 生態標籤)** / 3 傭兵 / **43 地點(有環圖+生態 biome〔heartland/snow/ashland/swamp/desert〕,世界閉成雙大環〔黑沼澤南環 + 漢默法爾西環〕;賽8/天9/晨8/黑7/漢5/邊6,共 19 城+5 鎮)** / **7 地城(每座 ≥1 任務指向,含龍喉峰屠龍 + 沃倫菲爾矮人遺城)** / **57 任務(3 分支壓軸 + 解咒 + 6 黑兄合約 + 6 神話黎明合約 + 6 九神聖戰合約 + 14 在地任務含 2 任務鏈 + 屠龍 + 漢默法爾 3)** / **6 公會(+神話黎明/九神騎士團,大事件解鎖)** / **7 開局背景** / **67 NPC(每城 3 / 每鎮 2,角色多樣、greeting + rumor 指路;10 名掛在地委託)** / **29 事件(含 12 省份限定;7 野採採集點=六省齊備)** / **吸血鬼化系統** / **黑暗兄弟會系統** / **技能里程碑系統(6 條 MVP,達門檻自動解鎖)** / **24 城主(各城自治)** / **15 具名地標(各省招牌/邊境發現,首次抵達一次性獎勵)**。
+**15 材料(全部可野外採集/獵取)** / **4 飾品** / **製作配方系統(4 皮甲配方)** / **56 生物(7 高階 elite + 2 吸血鬼 + 5 黑沼澤 + 5 漢默法爾沙漠〔含矮人百夫長 boss〕 + 8 黑兄目標 + 7 神話黎明目標 + 6 九神聖戰目標 + 2 heartland;23 隻帶 biome 生態標籤)** / 3 傭兵 / **43 地點(有環圖+生態 biome〔heartland/snow/ashland/swamp/desert〕,世界閉成雙大環〔黑沼澤南環 + 漢默法爾西環〕;賽8/天9/晨8/黑7/漢5/邊6,共 19 城+5 鎮)** / **7 地城(每座 ≥1 任務指向,含龍喉峰屠龍 + 沃倫菲爾矮人遺城)** / **57 任務(3 分支壓軸 + 解咒 + 6 黑兄合約 + 6 神話黎明合約 + 6 九神聖戰合約 + 14 在地任務含 2 任務鏈 + 屠龍 + 漢默法爾 3)** / **6 公會(+神話黎明/九神騎士團,大事件解鎖)** / **14 開局背景(含戰友團/盜賊公會/阿利克爾/海難/治療者/獸人放逐)** / **67 NPC(每城 3 / 每鎮 2,角色多樣、greeting + rumor 指路;10 名掛在地委託)** / **29 事件(含 12 省份限定;7 野採採集點=六省齊備)** / **吸血鬼化系統** / **黑暗兄弟會系統** / **技能里程碑系統(6 條 MVP,達門檻自動解鎖)** / **24 城主(各城自治)** / **15 具名地標(各省招牌/邊境發現,首次抵達一次性獎勵)**。
 程式:**26 個 `systems` 模組**(+vampirism +brotherhood +mastery +crafting +court +politics +warband +landmarks +achievements)+ models/ui/synth 等,共約 41 個 `.py` + `sim_assassin.py`(平衡回歸);**26 個 `data/*.json`**(+mastery.json +recipes.json +landmarks.json +achievements.json;黑兄/細化省分/城戰立場/招兵兵種/漢默法爾全靠改既有檔);**40 測試模組**(+test_mastery +test_practice_cost +test_shop +test_crafting +test_court +test_politics +test_warband +test_worldstate +test_mythicdawn +test_knights +test_landmarks +test_polish +test_sheet +test_web +test_achievements)。**新增 `tesrpg/web/` 套件(本機 Web 版,純 stdlib、零 pip;`python3 -m tesrpg.web`)**。 / **成就系統(24 條,唯讀推導、結算+即時角色卡)**。
 
 ---
@@ -515,7 +520,7 @@ tesrpg/
 > 公會後續可再加:更多分支壓軸 / 階級設施權限 / 公會委託告示。(✅ 暗殺者公會=黑暗兄弟會已做,見 §1)
 > 黑兄後續可再加:夜母「祕密之死」隨機合約(超出 6 階後的無限委託)/ 違反五戒的懲處(殺同袍→被追殺)/ 聖所升級與密探同伴 / 謀殺後即時衛兵圍捕(目前靠賞金+城門盤查)/ 具名導師(露西恩式)對話包裝。
 > 裝備後續可再加:獨特/具名裝備(套裝外的具名神器)、附魔護甲擴展到技能/抗性(目前護甲只 fortify 資源)、武器附魔可帶狀態(吸血/麻痺)、回復型附魔(per-turn regen,目前略過)。
-> 開局後續可再加:更多開局(暗殺者/海難倖存者/獸人部族…純改 JSON)、開局附帶**起手任務鉤子**(MVP 刻意未做)、`armor` 起手整套裝(目前開局只給單件飾品/法杖)、開局選單依職業/種族過濾推薦。
+> 開局後續可再加(✅ 已加 6 個:戰友團/盜賊公會/阿利克爾劍客/海難倖存者/神殿治療者/獸人放逐者,共 14 開局):開局附帶**起手任務鉤子**(MVP 刻意未做)、`armor` 起手整套裝(目前開局只給單件護甲/飾品/法杖)、開局選單依職業/種族過濾推薦。
 > 吸血鬼後續可再加:夜視/魅惑等更多吸血鬼能力、狼人(同套狀態機另一支)、吸血鬼專屬裝備/巢穴、NPC 識破後衛兵敵對(目前只社交封鎖)、解咒任務的具名 NPC/對話包裝(目前梅莉桑德只在子選單文字中現身)。
 > 技能里程碑後續可再加(**P2/P3,路線已拍板**):P2 持久 `mastery_*_bonus` 加成層(吸血鬼模式)+ 更多真權衡戰鬥型(**逐條 sim 背書 + 非 boss 精英秒殺率覆核**);P3 純改 JSON 補三系密度(優先 marksman/light_armor 等冷門技,避免 sneak 過載);可另評估『達門檻二選一』能動性(引入最佳化空間=支柱級取捨,需使用者拍板)。
 

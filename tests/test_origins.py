@@ -123,10 +123,35 @@ def test_every_origin_references_valid_content():
             assert inventory.count_item(c, item_id) >= 1, f"{oid} 穿了沒持有的 {item_id}"
 
 
+def test_new_origins_situational_distinctives():
+    """六個新開局各自的處境特徵(補戰士/盜賊公會、漢默法爾、海難/治療/獸人)。"""
+    gd = get_gamedata()
+    base = _build(gd, "newcomer")
+    # 戰友團:授戰士公會會籍(單授 lawful 自洽,無起手賞金)
+    c = _build(gd, "fighters_recruit")
+    assert c.factions.get("fighters_guild") == 0 and c.weapon == "steel_sword" and c.bounties == {}
+    # 盜賊公會:授盜賊會籍 + 匕首在手
+    c = _build(gd, "guild_thief")
+    assert c.factions.get("thieves_guild") == 0 and inventory.count_item(c, "iron_dagger") >= 1
+    # 阿利克爾劍客:起點在漢默法爾(用上新省)
+    c = _build(gd, "alikr_blade")
+    assert gd.world["locations"][c.location_id]["province"] == "漢默法爾"
+    # 海難倖存者:硬開局(低金、無賞金、無會籍)
+    c = _build(gd, "shipwreck_survivor")
+    assert c.gold == 15 and c.bounties == {} and c.factions == {}
+    # 神殿治療者:授非預設的「治療術」(minor_heal 人人皆有,heal 才是處境加成)
+    c = _build(gd, "temple_healer")
+    assert "heal" in c.spells and "heal" not in base.spells
+    # 獸人放逐者:穿鐵甲、提戰斧
+    c = _build(gd, "orc_outcast")
+    assert c.equipped.get("cuirass") == "iron_cuirass" and c.weapon == "iron_war_axe"
+
+
 def test_save_roundtrip_preserves_origin_state():
     """開局帶來的會籍/賞金/同伴/裝備/origin 欄位,存檔往返後完整保留。"""
     gd = get_gamedata()
-    for oid in ("mage_initiate", "fugitive", "sellsword", "fallen_noble"):
+    for oid in ("mage_initiate", "fugitive", "sellsword", "fallen_noble",
+                "fighters_recruit", "guild_thief", "alikr_blade"):
         c = _build(gd, oid)
         c2 = Character.from_dict(c.to_dict())
         assert c2.origin == c.origin
@@ -156,6 +181,7 @@ def run():
     test_mage_initiate_grants_membership_staff_spell()
     test_fallen_noble_wears_amulet_and_rich()
     test_pilgrim_relocates_to_morrowind()
+    test_new_origins_situational_distinctives()
     test_every_origin_references_valid_content()
     test_save_roundtrip_preserves_origin_state()
     test_old_save_without_origin_field_loads()

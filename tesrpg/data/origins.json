@@ -61,5 +61,58 @@
     "weapon": "steel_dagger",
     "faction": {"dark_brotherhood": 0},
     "items": [["minor_healing_potion", 2]]
+  },
+  "fighters_recruit": {
+    "name": "戰友團的新血",
+    "blurb": "你是天際省白漫城戰友團的新晉戰士,提著鋼劍、披著皮甲,以刃為生。最正統的戰士開局——身分已在,本事自己掙。",
+    "location": "whiterun",
+    "gold": 60,
+    "faction": {"fighters_guild": 0},
+    "weapon": "steel_sword",
+    "equip": ["leather_cuirass"],
+    "items": [["healing_potion", 1], ["minor_healing_potion", 1]]
+  },
+  "guild_thief": {
+    "name": "盜賊公會的扒手",
+    "blurb": "你早已是裂谷城盜賊公會的一員,靠一把匕首與三寸不爛之舌在陰影裡討生活。最契合潛行之道的開局。",
+    "location": "riften",
+    "gold": 60,
+    "faction": {"thieves_guild": 0},
+    "weapon": "iron_dagger",
+    "items": [["minor_healing_potion", 2]]
+  },
+  "alikr_blade": {
+    "name": "阿利克爾的劍客",
+    "blurb": "你在漢默法爾的烈日下習得劍術,劍與駿馬是約凱後裔的全部。命運把你拋到 Tamriel 的西陲——這裡的探索順序,將與眾不同。",
+    "location": "sentinel",
+    "gold": 70,
+    "weapon": "steel_sword",
+    "equip": ["leather_cuirass", "iron_shield"],
+    "items": [["minor_healing_potion", 2]]
+  },
+  "shipwreck_survivor": {
+    "name": "海難的倖存者",
+    "blurb": "一場風暴把你拋上安維爾的海灘,渾身濕透、一無所有——只剩腰間一把生鏽的匕首。從無到有的硬開局。",
+    "location": "anvil",
+    "gold": 15,
+    "weapon": "iron_dagger",
+    "items": [["minor_healing_potion", 1]]
+  },
+  "temple_healer": {
+    "name": "神殿的治療者",
+    "blurb": "你是三聯神殿的治療者,已習得「治療術」,以慈悲之手撫平創傷。手無寸鐵,卻能讓傷者重新站起。",
+    "location": "skingrad",
+    "gold": 50,
+    "spells": ["heal"],
+    "items": [["minor_magicka_potion", 2], ["healing_potion", 1]]
+  },
+  "orc_outcast": {
+    "name": "獸人的放逐者",
+    "blurb": "被堡壘部族放逐的獸人戰士,提著戰斧、披著鐵甲,在天際西境的岩原上獨自求生。蠻力與韌性是你僅有的依靠。",
+    "location": "markarth",
+    "gold": 40,
+    "weapon": "iron_war_axe",
+    "equip": ["iron_cuirass", "iron_helmet"],
+    "items": [["minor_healing_potion", 1]]
   }
 }
