@@ -2498,6 +2498,7 @@ def main() -> None:
     ui.banner()
 
     while True:   # 主選單迴圈:一趟冒險(死亡/隱退/離開)結束後回到這裡
+        ui.clear_hud()        # web:回到主選單時清掉前一局殘留的常駐 HUD(死亡重開/離開重啟皆然)
         opts = [("new", "新遊戲")]
         if SAVE_PATH.exists():
             opts.append(("load", "讀取存檔"))

@@ -68,6 +68,13 @@ def _hud_view():
     return v
 
 
+def clear_hud() -> None:
+    """一局結束、回到主選單時清掉常駐 HUD,使下一局/重開的主選單不殘留前一角色的
+    血條/金幣(web;主選單無進行中角色 → HUD 應隱藏)。終端模式無副作用。"""
+    global _hud_state
+    _hud_state = None
+
+
 def _emit_view(name: str, data) -> None:
     """web 模式:把一個面板渲成原生 view block(先沖出未轉換面板的殘餘 HTML 以保序)。"""
     html = console.export_html(inline_styles=True, code_format="{code}", clear=True)

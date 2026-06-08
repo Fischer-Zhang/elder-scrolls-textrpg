@@ -345,6 +345,86 @@ def test_int_revalidate():
         _restore()
 
 
+def _drive_one_game(backend):
+    """在 thread 跑一整局 main():新遊戲→快速角色→隱退→主選單→離開,自動作答。
+    回傳 {mainmenu:主選單出現次數, returned:main 是否乾淨返回, exc:例外}。"""
+    import queue as _q
+    from tesrpg import main as M
+    box = {"returned": False, "exc": None}
+
+    def worker():
+        try:
+            M.main()
+            box["returned"] = True
+        except BaseException as e:        # noqa: 把 worker 例外帶回主執行緒
+            box["exc"] = e
+
+    t = threading.Thread(target=worker, daemon=True)
+    t.start()
+    mm = 0
+    for _ in range(80):                   # 步數上限防卡死
+        try:
+            fr = backend.outbound.get(timeout=5)
+        except _q.Empty:
+            break
+        spec = fr["prompt"]; typ = spec.get("type"); title = spec.get("title", "")
+        if typ == "end":
+            break
+        if typ == "confirm":
+            ans = True                    # 快速開始 / 隱退確認 一律是
+        elif typ == "menu":
+            if title == "主選單":
+                mm += 1; ans = "quit" if mm >= 2 else "new"
+            elif title == "選擇遊戲模式":
+                ans = "adventure"
+            else:
+                ans = spec["options"][0]["key"]
+        elif typ == "grouped":
+            keys = [o["key"] for g in spec["groups"] for o in g["options"]]
+            ans = "retire" if "retire" in keys else keys[0]
+        elif typ == "int":
+            ans = spec["lo"]
+        elif typ == "text":
+            ans = ""
+        else:
+            ans = None
+        backend.submit(fr["prompt_id"], ans)
+        if box["returned"] and backend.outbound.empty():
+            break
+    t.join(timeout=5)
+    box["mainmenu"] = mm
+    return box
+
+
+def test_web_session_restartable_after_game_over():
+    """修『結束無法重開(重整也沒用)』的核心不變式:main() 一局結束後可在同一 backend
+    上**再跑一局**(= _run_game 迴圈所倚賴 —— main() 可重複進入,無模組殘留致死)。
+    驅動兩局『新遊戲→快速角色→隱退→主選單→離開』,證明第二局照常開到主選單。"""
+    import tempfile
+    from pathlib import Path
+    from tesrpg import main as M
+    backend = WebBackend()
+    ui.use_web_backend(backend, _rec())
+    saved_path = M.SAVE_PATH
+    M.SAVE_PATH = Path(tempfile.gettempdir()) / "tesrpg_test_nosave.json"
+    M.SAVE_PATH.unlink(missing_ok=True)
+    try:
+        for game in range(2):                          # 跑兩局:第二局仍能開到主選單 = 可重開
+            res = _drive_one_game(backend)
+            assert res["exc"] is None, (game, repr(res["exc"]))
+            assert res["returned"], (game, "main() 未乾淨返回 → _run_game 迴圈無法重啟")
+            assert res["mainmenu"] >= 2, (game, res)   # 開局主選單 + 隱退後主選單(內建可重開)
+            backend.flush_final("")                    # 模擬 _run_game 兩局之間的 end 哨兵
+            try:
+                backend.outbound.get(timeout=1)        # 抽掉 end 幀,免污染下一局驅動
+            except Exception:
+                pass
+    finally:
+        M.SAVE_PATH = saved_path
+        (Path(tempfile.gettempdir()) / "tesrpg_test_nosave.json").unlink(missing_ok=True)
+        _restore()
+
+
 def test_flush_final_and_generation():
     backend = WebBackend()
     g1 = backend.new_generation()
@@ -374,6 +454,7 @@ def run():
     test_double_submit_and_stale()
     test_int_revalidate()
     test_flush_final_and_generation()
+    test_web_session_restartable_after_game_over()
     _restore()
 
 

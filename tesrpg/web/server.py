@@ -118,18 +118,24 @@ def make_recording_console(width: int = WIDTH):
 
 
 def _run_game(backend: WebBackend):
-    """遊戲 thread:跑原本的 main(),結束時把殘餘畫面 + end 哨兵沖出。"""
+    """遊戲 thread:**迴圈**跑 main()。一局結束(離開遊戲 / 陣亡後於主選單選離開 / 未捕捉
+    例外)後,沖出殘餘畫面 + end 哨兵,隨即**重啟一局** main() → 下一輪主選單 prompt 立即
+    覆蓋 end 哨兵,使 web 版永遠可重開。
+
+    (修『結束無法重開:重整也沒用』—— 原本只跑 main() 一次,main() 一返回 thread 即死,
+    前端卻提示「重新整理頁面可再啟一局」,但重整只是重連到已死的 thread。改成迴圈後:
+    主選單『新遊戲』即可重開;離開遊戲也只是回到新一局的主選單;重整則重送最後的主選單幀。)"""
     from tesrpg.ui import console as ui
     import tesrpg.main as gmain
-    try:
-        gmain.main()
-    except SystemExit:
-        pass
-    except Exception:
-        ui.console.print_exception(show_locals=False)   # 例外渲染進畫面而非凍結
-    finally:
+    while True:
+        try:
+            gmain.main()
+        except SystemExit:
+            return                                       # 顯式終止(罕見)→ 真的結束 thread
+        except Exception:
+            ui.console.print_exception(show_locals=False)   # 例外渲染進畫面而非凍結
         html = ui.console.export_html(inline_styles=True, code_format="{code}", clear=True)
-        backend.flush_final(html)
+        backend.flush_final(html)                        # 沖殘餘 + end;迴圈隨即重啟 main()
 
 
 def launch(host: str = "127.0.0.1", port: int = 8080, open_browser: bool = True) -> None:

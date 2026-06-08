@@ -25,6 +25,12 @@ def test_warlord_gate():
     gd, c = _setup()                                      # 公會掌門 → 首領
     fid = next(iter(gd.factions)); c.factions[fid] = len(gd.factions[fid]["ranks"]) - 1
     assert warband.is_guildmaster(c, gd) and warband.is_warlord(c, gd)
+    for cause in ("own", "daedric"):                      # 擴張性大義(對所有城為敵、無 thane 路)→ 自當可組軍
+        gd, c = _setup(); c.allegiance = cause
+        assert warband.is_warlord(c, gd), cause
+    for cause in ("imperial", "independent"):             # 帝國/獨立有武士晉身之階 → 仍須先成領主
+        gd, c = _setup(); c.allegiance = cause
+        assert not warband.is_warlord(c, gd), cause
 
 
 def test_camp_eligibility():

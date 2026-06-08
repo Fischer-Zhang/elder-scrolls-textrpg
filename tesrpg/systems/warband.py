@@ -35,8 +35,16 @@ def is_guildmaster(char: Character, gamedata: GameData) -> bool:
 
 
 def is_warlord(char: Character, gamedata: GameData) -> bool:
-    """有資格招募軍隊:領主(持武士銜 / 已征服城)或首領(任一公會掌門)。"""
-    return bool(char.thaneships) or bool(char.city_faction) or is_guildmaster(char, gamedata)
+    """有資格招募軍隊:領主(持武士銜 / 已征服城)、首領(任一公會掌門),
+    或**已宣誓擴張性大義**(自立稱雄 own / 神話黎明 daedric,即 `politics.EXPANSIONIST_CAUSES`)。
+
+    擴張派以己之力問鼎天下 —— 招兵買馬正是其立身之本,理當可組軍;否則會陷入「要先征服一城
+    才能組軍、卻又要組軍才好攻城」的雞生蛋僵局(擴張派對所有城皆為敵、無武士晉身之階,連 thane
+    路都走不通)。**own 與 daedric 同屬此僵局,須一併解**。組軍仍受金幣/軍餉/傷亡牽制 →
+    純加性、不破平衡;稅基紅線(held_tax_cities 只認 city_faction)不受影響。"""
+    from tesrpg.systems import politics    # 區域 import 避免循環依賴
+    return (bool(char.thaneships) or bool(char.city_faction)
+            or char.allegiance in politics.EXPANSIONIST_CAUSES or is_guildmaster(char, gamedata))
 
 
 def has_camp(char: Character) -> bool:
