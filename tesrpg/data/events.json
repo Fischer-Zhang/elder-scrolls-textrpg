@@ -444,5 +444,15 @@
                  "success": {"text": "你貼著草浪匍匐而過,任那巨虎在草海裡重新沉入潛伏。", "effects": []},
                  "failure": {"text": "踩斷的枯草驚動了牠,森奇巨虎的毒爪猛然撲來!", "effects": [{"type": "combat", "creature": "senche_tiger"}]}}}
     ]
+  },
+  "discarded_lockpick": {
+    "weight": 2,
+    "trigger": {"contexts": ["explore", "travel"], "location_types": ["wilderness", "dungeon"]},
+    "title": "前人的遺留",
+    "text": "路旁一具早已風乾的旅人骸骨蜷在亂石間,腰側的破皮囊裡露出幾根還算堪用的開鎖器。",
+    "options": [
+      {"text": "收下開鎖器", "effects": [{"type": "item", "item": "lockpick", "qty": 2}, {"type": "message", "text": "你拾起了 2 根開鎖器。"}]},
+      {"text": "讓逝者安息,不取", "effects": []}
+    ]
   }
 }

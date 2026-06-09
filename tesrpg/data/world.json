@@ -522,6 +522,7 @@
         "task_board"
       ],
       "merchant_stock": [
+        "lockpick",
         "healing_potion",
         "minor_healing_potion",
         "glass_dagger",
@@ -1034,6 +1035,7 @@
         "task_board"
       ],
       "merchant_stock": [
+        "lockpick",
         "minor_healing_potion",
         "healing_potion",
         "minor_magicka_potion",
@@ -1324,7 +1326,7 @@
       "danger": 0,
       "desc": "巴格拉斯河口的繁華港城,白石碼頭桅檣如林,是高岩最富庶的商貿王都。威岩王室與帝國舊誼深厚,在群雄割據的伊利亞克灣畔,以金幣與外交左右逢源,城裡的玫瑰園與陰謀同樣繁盛。",
       "services": ["inn", "merchant", "trainer", "mages_guild", "armorer", "thieves_guild", "task_board"],
-      "merchant_stock": ["minor_healing_potion", "healing_potion", "minor_magicka_potion", "steel_sword", "steel_cuirass", "steel_helmet", "steel_shield", "long_bow", "hunting_bow", "repair_hammer", "ruby", "red_apple", "garlic", "silver_ring", "gold_ring", "gold_amulet", "frost_staff", "magicka_staff"],
+      "merchant_stock": ["lockpick", "minor_healing_potion", "healing_potion", "minor_magicka_potion", "steel_sword", "steel_cuirass", "steel_helmet", "steel_shield", "long_bow", "hunting_bow", "repair_hammer", "ruby", "red_apple", "garlic", "silver_ring", "gold_ring", "gold_amulet", "frost_staff", "magicka_staff"],
       "spell_stock": ["frostbite", "sparks", "lightning_bolt", "minor_heal", "heal", "close_wounds", "renewal", "stoneflesh", "ironflesh", "demoralize", "conjure_flame_atronach", "restore_mind"],
       "links": {
         "daggerfall": 3,
@@ -1427,7 +1429,7 @@
       "danger": 0,
       "desc": "瓦倫森林南岸的繁忙海港,棕櫚與紅樹林環抱著熱鬧的碼頭。波斯莫商賈、卡傑特船客與帝國商隊在這裡互市,香料、異木與奇珍自此運往整個阿比西亞海。",
       "services": ["inn", "merchant", "trainer", "mages_guild", "armorer", "thieves_guild", "task_board"],
-      "merchant_stock": ["minor_healing_potion", "healing_potion", "minor_magicka_potion", "elven_sword", "steel_sword", "elven_cuirass", "leather_cuirass", "iron_shield", "long_bow", "hunting_bow", "repair_hammer", "ruby", "red_apple", "scrib_jelly", "silver_ring", "gold_ring", "gold_amulet", "flame_staff"],
+      "merchant_stock": ["lockpick", "minor_healing_potion", "healing_potion", "minor_magicka_potion", "elven_sword", "steel_sword", "elven_cuirass", "leather_cuirass", "iron_shield", "long_bow", "hunting_bow", "repair_hammer", "ruby", "red_apple", "scrib_jelly", "silver_ring", "gold_ring", "gold_amulet", "flame_staff"],
       "spell_stock": ["flames", "fireball", "frostbite", "close_wounds", "heal", "stoneflesh", "ironflesh", "mass_paralysis", "rout", "conjure_flame_atronach", "restore_mind"],
       "links": {
         "falinesti": 3,
@@ -1531,7 +1533,7 @@
       "danger": 0,
       "desc": "佩萊泰恩南岸的萬帆巨港,潮濕的暖風裡浮著香料、月糖與斯庫瑪甜膩的焦香。卡傑特商閥、波斯莫船客與形跡可疑的走私客在燈影綽綽的碼頭間穿梭;這座不夜的歡場既是艾爾斯維爾對外的門戶,也是月糖與毒品流向泰姆瑞爾各地的源頭。",
       "services": ["inn", "merchant", "trainer", "mages_guild", "thieves_guild", "armorer", "task_board"],
-      "merchant_stock": ["minor_healing_potion", "healing_potion", "minor_magicka_potion", "elven_sword", "glass_dagger", "elven_cuirass", "leather_helmet", "long_bow", "hunting_bow", "repair_hammer", "moon_sugar", "skooma", "nightshade", "glow_dust", "silver_ring", "gold_ring", "gold_amulet", "flame_staff", "magicka_staff"],
+      "merchant_stock": ["lockpick", "minor_healing_potion", "healing_potion", "minor_magicka_potion", "elven_sword", "glass_dagger", "elven_cuirass", "leather_helmet", "long_bow", "hunting_bow", "repair_hammer", "moon_sugar", "skooma", "nightshade", "glow_dust", "silver_ring", "gold_ring", "gold_amulet", "flame_staff", "magicka_staff"],
       "spell_stock": ["flames", "fireball", "ignite", "frostbite", "minor_heal", "heal", "close_wounds", "fear", "demoralize", "conjure_familiar", "soul_trap", "restore_mind"],
       "links": {
         "rimmen": 3,

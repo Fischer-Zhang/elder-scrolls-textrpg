@@ -325,6 +325,22 @@ def test_loot_ids_valid():
     assert not bad, f"掉落表含不存在的物品 id:{bad}"
 
 
+def test_lockpick_is_thieves_guild_good():
+    """開鎖器=盜賊公會的營生:只在有 thieves_guild 的城販售;非會員買得到但較貴(敵對可買但較貴);
+    野外可隨機撿到(強盜掉落 + 探索事件)。"""
+    gd, c = _char()
+    locs = gd.world["locations"]
+    sellers = [lid for lid, l in locs.items() if "lockpick" in l.get("merchant_stock", [])]
+    assert sellers, "至少要有城賣開鎖器"
+    for lid in sellers:
+        assert "thieves_guild" in locs[lid].get("services", []), f"{lid} 賣開鎖器卻無盜賊公會"
+    nonmember = world.buy_price(c, gd, "lockpick")
+    c.factions["thieves_guild"] = 0                      # 入會
+    assert nonmember > world.buy_price(c, gd, "lockpick")  # 非會員較貴
+    assert any(e.get("item") == "lockpick" for e in gd.bestiary["bandit"]["loot"])  # 野外掉落
+    assert "discarded_lockpick" in gd.events                                        # 探索撿到
+
+
 def run():
     for name, fn in sorted(globals().items()):
         if name.startswith("test_") and callable(fn):

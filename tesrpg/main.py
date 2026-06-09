@@ -1098,44 +1098,65 @@ def action_shop(state: GameState, gamedata: GameData) -> None:
             ui.show_events(r["skill_events"], gamedata)
             continue
         if mode == "buy":
-            avail = world.in_stock_items(char, gamedata, loc_id)
-            if not avail:
-                ui.message("貨架空空如也,等商人補貨再來吧。", style="grey70")
-                continue
-            opts = [(iid, f"{gamedata.item_name(iid)} ×{world.stock_qty(char, loc_id, iid)}"
-                     f" — {world.buy_price(char, gamedata, iid)} 金") for iid in avail]
-            ui.shop_panel(char, gamedata, loc_id, avail)    # web:可點買貨面板(對齊選單 key=iid)
-            iid = ui.menu("買什麼?", opts, allow_back=True)
-            if iid is None:
-                continue
-            price = world.buy_price(char, gamedata, iid)
-            if char.gold < price:
-                ui.message("金幣不足。", style="red")
-            elif not inventory.can_carry(char, gamedata, iid):
-                ui.message("背負不下,太重了。", style="red")
-            else:
-                char.gold -= price
-                inventory.add_item(char, iid, 1)
-                world.take_stock(char, loc_id, iid)
-                ui.message(f"買下了{gamedata.item_name(iid)}。", style="green")
+            while True:                          # 停留在買貨清單 → 可連續買多樣不同商品
+                avail = world.in_stock_items(char, gamedata, loc_id)
+                if not avail:
+                    ui.message("貨架空空如也,等商人補貨再來吧。", style="grey70")
+                    break
+                opts = [(iid, f"{gamedata.item_name(iid)} ×{world.stock_qty(char, loc_id, iid)}"
+                         f" — {world.buy_price(char, gamedata, iid)} 金") for iid in avail]
+                ui.shop_panel(char, gamedata, loc_id, avail)    # web:可點買貨面板(對齊選單 key=iid)
+                iid = ui.menu(f"買什麼?(你有 {char.gold} 金)", opts, allow_back=True)
+                if iid is None:
+                    break
+                price = world.buy_price(char, gamedata, iid)
+                stock = world.stock_qty(char, loc_id, iid)
+                cap = min(stock, char.gold // price) if price > 0 else stock
+                if cap < 1:
+                    ui.message("金幣不足。", style="red")
+                elif not inventory.can_carry(char, gamedata, iid):
+                    ui.message("背負不下,太重了。", style="red")
+                else:
+                    qty = 1 if cap == 1 else ui.ask_int(f"買幾個?(上限 {cap})", 1, 1, cap)
+                    bought = 0
+                    for _ in range(qty):
+                        if (char.gold < price or world.stock_qty(char, loc_id, iid) <= 0
+                                or not inventory.can_carry(char, gamedata, iid)):
+                            break
+                        char.gold -= price
+                        inventory.add_item(char, iid, 1)
+                        world.take_stock(char, loc_id, iid)
+                        bought += 1
+                    if bought:
+                        ui.message(f"買下了{gamedata.item_name(iid)} ×{bought}。", style="green")
+                    else:
+                        ui.message("背負不下,太重了。", style="red")
         else:
-            sellable = [s for s in char.inventory if gamedata.item(s["id"])["value"] > 0]
-            if not sellable:
-                ui.message("沒有可賣的東西。", style="grey70")
-                continue
-            opts = [(s["id"], f"{ui.item_label(gamedata, char, s['id'], s['qty'])} — 售 "
-                     f"{world.sell_price(char, gamedata, s['id'])} 金") for s in sellable]
-            ui.inventory_panel(char, gamedata)    # web:複用背包面板,可賣列(key=stack id)可點
-            iid = ui.menu("賣什麼?", opts, allow_back=True)
-            if iid is None:
-                continue
-            price = world.sell_price(char, gamedata, iid)
-            inventory.remove_item(char, iid, 1)
-            # 賣掉最後一件會自動卸下;若是 fortify 護甲,須重算以移除其加成並夾限當前值
-            stats.recompute_max_resources(char, gamedata)
-            char.gold += price
-            progression.use_skill(char, gamedata, "mercantile", 0.3)
-            ui.message(f"賣出{gamedata.item_name(iid)},得 {price} 金。", style="green")
+            while True:                          # 停留在賣貨清單 → 可連續賣多樣不同商品
+                sellable = [s for s in char.inventory if gamedata.item(s["id"])["value"] > 0]
+                if not sellable:
+                    ui.message("沒有可賣的東西。", style="grey70")
+                    break
+                opts = [(s["id"], f"{ui.item_label(gamedata, char, s['id'], s['qty'])} — 售 "
+                         f"{world.sell_price(char, gamedata, s['id'])} 金") for s in sellable]
+                ui.inventory_panel(char, gamedata)    # web:複用背包面板,可賣列(key=stack id)可點
+                iid = ui.menu(f"賣什麼?(你有 {char.gold} 金)", opts, allow_back=True)
+                if iid is None:
+                    break
+                owned = inventory.count_item(char, iid)
+                qty = 1 if owned <= 1 else ui.ask_int(f"賣幾個?(共 {owned})", 1, 1, owned)
+                total = sold = 0
+                for _ in range(qty):
+                    if inventory.count_item(char, iid) <= 0:
+                        break
+                    total += world.sell_price(char, gamedata, iid)   # 隨交易技能微升,逐件結算
+                    inventory.remove_item(char, iid, 1)
+                    sold += 1
+                    progression.use_skill(char, gamedata, "mercantile", 0.3)
+                char.gold += total
+                # 賣掉最後一件會自動卸下;若是 fortify 護甲,須重算以移除其加成並夾限當前值
+                stats.recompute_max_resources(char, gamedata)
+                ui.message(f"賣出{gamedata.item_name(iid)} ×{sold},得 {total} 金。", style="green")
 
 
 MAX_PARTY = 2

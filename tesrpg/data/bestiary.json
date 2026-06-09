@@ -158,6 +158,10 @@
       {
         "item": "minor_healing_potion",
         "chance": 0.2
+      },
+      {
+        "item": "lockpick",
+        "chance": 0.35
       }
     ],
     "flavor": "一名衣衫襤褸的強盜攔路而立:「留下買路財,不然留下命!」"

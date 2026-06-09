@@ -68,9 +68,17 @@ def _disposition_factor(char: Character, gamedata: GameData | None = None) -> fl
     return max(0.0, min(1.0, base))
 
 
+LOCKPICK_OUTSIDER_MARKUP = 2.0   # 開鎖器是盜賊公會的營生:非會員(含敵對)買得到但被坑這麼多倍
+
+
 def buy_price(char: Character, gamedata: GameData, item_id: str) -> int:
+    from tesrpg.systems import factions
     value = gamedata.item(item_id)["value"]
-    return max(1, round(value * (2.2 - _disposition_factor(char, gamedata))))
+    price = value * (2.2 - _disposition_factor(char, gamedata))
+    # 開鎖器只在有盜賊公會的城販售;會員按常價,外人/敵對加價(仍買得到,但較貴)
+    if item_id == "lockpick" and not factions.is_member(char, "thieves_guild"):
+        price *= LOCKPICK_OUTSIDER_MARKUP
+    return max(1, round(price))
 
 
 def sell_price(char: Character, gamedata: GameData, item_id: str) -> int:
