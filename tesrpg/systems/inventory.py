@@ -186,6 +186,13 @@ def active_set_bonus(char: Character, gamedata: GameData) -> dict | None:
     return gamedata.armor_sets.get(mats[0], {}).get("bonus")
 
 
+def cast_fatigue_factor(char: Character, gamedata: GameData) -> float:
+    """穿滿整套法袍(cloth/archmage 同材質四件)→ 施法體力消耗折扣(<1.0);否則 1.0。
+    折扣鍵 `cast_fatigue_factor` 藏在套裝 bonus dict 內,_apply_enchant 不認故安全忽略;
+    此處 on-the-fly 讀取,不需新存檔欄位。"""
+    return float((active_set_bonus(char, gamedata) or {}).get("cast_fatigue_factor", 1.0))
+
+
 def equipment_bonuses(char: Character, gamedata: GameData) -> dict:
     """穿戴護甲/飾品的所有附魔 + 套裝加成,彙整成 {skills,attrs,resist,resources}。"""
     out = {"skills": {}, "attrs": {}, "resist": {}, "resources": {}}

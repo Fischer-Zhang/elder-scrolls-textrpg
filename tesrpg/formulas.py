@@ -156,8 +156,20 @@ ATHLETICS_FATIGUE_SCALE = 0.004  # 運動降低戰鬥體力消耗的係數
 
 
 def fatigue_cost_factor(athletics_skill: int) -> float:
-    """運動降低戰鬥(攻擊/格擋)體力消耗:運動 0→×1.0、100→×0.6(最多省 40%)。"""
+    """運動降低戰鬥(攻擊/格擋/施法)體力消耗:運動 0→×1.0、100→×0.6(最多省 40%)。"""
     return max(0.6, 1.0 - athletics_skill * ATHLETICS_FATIGUE_SCALE)
+
+
+# --- 施法體力(法師三系資源對稱:施法也耗體力、力竭則法效降)---------------
+CAST_FATIGUE_BASE = 3              # 固定底耗(低於近戰 6:便宜法術不該比揮劍更累)
+CAST_FATIGUE_PER_MAGICKA = 0.15   # 隨有效魔耗線性 → 大法術/過載更累
+CAST_FATIGUE_POWER_PENALTY = 0.25 # 力竭法效折減(鏡像近戰命中 −0.25:滿體×1.0、空體×0.75)
+
+
+def cast_fatigue_power_factor(fatigue_ratio: float) -> float:
+    """低體力削弱法效(damage/heal/shield/summon 一致):滿體×1.0、空體×0.75
+    (近戰低體力降命中、法術不擲命中,故改削威力 → 跨系統對稱)。"""
+    return 1.0 - (1.0 - max(0.0, min(1.0, fatigue_ratio))) * CAST_FATIGUE_POWER_PENALTY
 
 
 BLOCK_HIT_PENALTY = 0.15        # 對方格擋時攻擊命中率的基礎扣減(里程碑「盾陣」會加深)

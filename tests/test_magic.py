@@ -171,6 +171,109 @@ def test_synth_roundtrip_via_gamedata():
     assert gd.item(wid)["enchant"]["element"] == "frost" and gd.item(wid)["damage"] == gd.weapons["steel_sword"]["damage"]
 
 
+# --- 施法接上體力系統(法師三系資源對稱)+ 法袍省體 -----------------------
+def _caster(skill=50):
+    """滿體力法師,備齊測試用法術。"""
+    from tesrpg.systems import stats
+    gd, c = _mage()
+    c.skills["destruction"] = skill
+    for s in ("flames", "fireball", "fire_storm", "minor_heal", "restore_mind"):
+        if s not in c.spells:
+            c.spells.append(s)
+    stats.recompute_max_resources(c, gd, restore_full=True)
+    return gd, c
+
+
+def test_cast_costs_fatigue():
+    gd, c = _caster()
+    f0 = c.fatigue
+    cost = magic.spell_fatigue_cost(c, gd, "flames")
+    assert cost >= 1
+    magic.cast(c, gd, "flames", RNG(0), target=combat.spawn_creature(gd, "giant_rat", RNG(0)))
+    assert c.fatigue == f0 - cost          # 施法確實扣體力
+
+
+def test_spell_fatigue_scales_with_magicka():
+    gd, c = _caster()
+    assert magic.spell_fatigue_cost(c, gd, "fire_storm") > magic.spell_fatigue_cost(c, gd, "flames")
+
+
+def test_athletics_lowers_cast_fatigue():
+    gd, c = _caster()
+    c.skills["athletics"] = 0
+    hi = magic.spell_fatigue_cost(c, gd, "fireball")
+    c.skills["athletics"] = 100
+    lo = magic.spell_fatigue_cost(c, gd, "fireball")
+    assert lo < hi                          # 運動降施法體力消耗(與近戰共用)
+
+
+def test_low_fatigue_reduces_spell_power():
+    def dmg(fat):
+        gd, c = _caster()
+        c.fatigue = fat
+        t = combat.spawn_creature(gd, "giant_rat", RNG(5)); t.health = 999; t.max_health = 999
+        return magic.cast(c, gd, "fireball", RNG(7), target=t)["damage"]
+    assert dmg(999) > dmg(1)                # 力竭 → 法效降(滿體×1.0、空體×0.75)
+
+
+def test_zero_fatigue_still_casts_no_fizzle():
+    gd, c = _caster()
+    c.fatigue = 0
+    t = combat.spawn_creature(gd, "giant_rat", RNG(1)); t.health = 999
+    ev = magic.cast(c, gd, "flames", RNG(1), target=t)
+    assert ev["ok"] and ev["damage"] > 0 and c.fatigue == 0   # 0 體力仍施放、夾 0、不失敗
+
+
+def test_restore_fatigue_spell_net_positive():
+    gd, c = _caster()
+    c.fatigue = c.max_fatigue - 100
+    f0 = c.fatigue
+    magic.cast(c, gd, "restore_mind", RNG(0))
+    assert c.fatigue > f0                   # 回體力法術扣得少、回得多 → 淨正
+
+
+def test_out_of_combat_heal_costs_fatigue():
+    gd, c = _caster()
+    c.health = 1
+    f0 = c.fatigue
+    magic.cast(c, gd, "minor_heal", RNG(0))   # 戰外施法(battle=None)
+    assert c.health > 1 and c.fatigue < f0
+
+
+def test_low_fatigue_weakens_summon():
+    """對抗審查回歸:力竭應一併削弱召喚物 HP(與 heal/shield/damage 同步;滿體則不變)。"""
+    def summon_hp(fat):
+        gd, c = _caster()
+        if "conjure_familiar" not in c.spells:
+            c.spells.append("conjure_familiar")
+        c.fatigue = fat
+        battle = {"allies": []}
+        magic.cast(c, gd, "conjure_familiar", RNG(0), battle=battle, enemies=[])
+        return battle["allies"][-1].max_health
+    assert summon_hp(999) > summon_hp(1)   # 空體召喚物較弱(×0.75)
+
+
+def test_robe_set_lowers_cast_fatigue():
+    gd, c = _caster()
+    base = magic.spell_fatigue_cost(c, gd, "fireball")
+    # 3 件 archmage → 未成套,無折扣
+    for slot, iid in (("helmet", "archmage_hood"), ("cuirass", "archmage_robe"),
+                      ("gauntlets", "archmage_gloves")):
+        c.equipped[slot] = iid
+    assert inventory.cast_fatigue_factor(c, gd) == 1.0
+    assert magic.spell_fatigue_cost(c, gd, "fireball") == base
+    # 補滿第 4 件 → 套裝折扣生效
+    c.equipped["boots"] = "archmage_slippers"
+    assert inventory.cast_fatigue_factor(c, gd) == 0.65
+    assert magic.spell_fatigue_cost(c, gd, "fireball") < base
+    # cloth 折扣較弱(成本高於 archmage)
+    gd2, c2 = _caster()
+    for slot, iid in (("helmet", "cloth_hood"), ("cuirass", "cloth_robe"),
+                      ("gauntlets", "cloth_gloves"), ("boots", "cloth_slippers")):
+        c2.equipped[slot] = iid
+    assert magic.spell_fatigue_cost(c2, gd2, "fireball") > magic.spell_fatigue_cost(c, gd, "fireball")
+
+
 def run():
     for name, fn in sorted(globals().items()):
         if name.startswith("test_") and callable(fn):

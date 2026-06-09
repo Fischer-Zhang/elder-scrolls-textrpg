@@ -39,6 +39,18 @@ def _power(char: Character, gamedata: GameData, school: str) -> float:
     return 0.7 + char.skill(school) / 150.0 + mastery.spell_power_bonus(char, gamedata, school)
 
 
+def spell_fatigue_cost(char: Character, gamedata: GameData, spell_id: str) -> int:
+    """施法的體力消耗(法師三系資源對稱):固定底耗 + 隨有效魔耗成長,再由運動降低
+    (與近戰共用 fatigue_cost_factor),最後乘法袍套裝折扣。effective_cost 已含學派折扣與
+    『過載』倍率 → 過載自動更耗體力。最低 1。"""
+    from tesrpg.systems import inventory   # 區域匯入避免循環
+    ec = effective_cost(char, gamedata, spell_id)
+    raw = formulas.CAST_FATIGUE_BASE + formulas.CAST_FATIGUE_PER_MAGICKA * ec
+    raw *= formulas.fatigue_cost_factor(char.skill("athletics"))
+    raw *= inventory.cast_fatigue_factor(char, gamedata)   # 法袍(同材質整套)省體施法
+    return max(1, round(raw))
+
+
 def can_cast(char: Character, gamedata: GameData, spell_id: str) -> bool:
     return char.magicka >= effective_cost(char, gamedata, spell_id)
 
@@ -60,9 +72,13 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
         return _fail("魔力不足。")
 
     char.magicka -= cost
+    # 施法消耗體力(法師三系資源對稱;玩家專用——敵人/召喚走 combat.resolve_attack 不經此)。
+    # 先擷取「扣體力前」的體力比例 → 本次施法不自我削弱(鏡像近戰:出招前的體力決定本擊)。
+    fatigue_ratio = char.fatigue / char.max_fatigue if char.max_fatigue > 0 else 0.0
+    char.fatigue = max(0, char.fatigue - spell_fatigue_cost(char, gamedata, spell_id))
     eff = sp["effect"]
     kind = eff["kind"]
-    power = _power(char, gamedata, sp["school"])
+    power = _power(char, gamedata, sp["school"]) * formulas.cast_fatigue_power_factor(fatigue_ratio)
     msg = ""
     damage = 0
     killed = False
@@ -183,7 +199,10 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
             ally = combat.spawn_creature(gamedata, eff["creature"], rng)
             boon = factions.conjure_boon(char, gamedata)   # 神話黎明:達貢之佑強化召喚物
             smod = mastery.summon_mod(char, gamedata)      # 里程碑:雙重召喚 / 束縛兵刃
-            hp_mult = (1 + boon) * (1 + smod.get("hp_bonus", 0.0))
+            # 力竭削弱召喚物 HP(只取體力因子、不取整個 power → 滿體 ×1.0 不動既有平衡;
+            # 與 heal/shield/damage 同步符合「施法力竭法效降」對稱意圖)
+            fat_pen = formulas.cast_fatigue_power_factor(fatigue_ratio)
+            hp_mult = (1 + boon) * (1 + smod.get("hp_bonus", 0.0)) * fat_pen
             if hp_mult != 1.0:
                 ally.max_health = max(1, round(ally.max_health * hp_mult))
                 ally.health = ally.max_health
@@ -194,7 +213,7 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
             if smod.get("extra"):     # 雙重召喚:額外多召一隻較弱的盟友
                 for _ in range(int(smod["extra"])):
                     ally2 = combat.spawn_creature(gamedata, eff["creature"], rng)
-                    ally2.max_health = max(1, round(ally2.max_health * smod.get("hp_factor", 0.6) * (1 + boon)))
+                    ally2.max_health = max(1, round(ally2.max_health * smod.get("hp_factor", 0.6) * (1 + boon) * fat_pen))
                     ally2.health = ally2.max_health
                     ally2.summon_turns = ally.summon_turns
                     battle.setdefault("allies", []).append(ally2)
