@@ -175,7 +175,8 @@ def _armor_rating(actor, gamedata: GameData) -> int:
     else:
         skill = actor.skill("heavy_armor" if wc == "heavy" else "light_armor")
         base = round(worn * (0.5 + skill / 100.0))
-    return base + smithing.armor_temper_bonus(actor) + magic.active_shield(actor)   # 淬鍊 + 變化系護盾疊加
+    passive = mastery.passive_armor_bonus(actor, gamedata) if actor.magicka > 0 else 0   # 「石膚」:有魔力時被動護甲
+    return base + passive + smithing.armor_temper_bonus(actor) + magic.active_shield(actor)   # 淬鍊 + 變化系護盾疊加
 
 
 def _player_armor_skill(actor, gamedata: GameData) -> str:
@@ -206,6 +207,12 @@ def is_alive(actor) -> bool:
     return _get_hp(actor) > 0
 
 
+def _is_solo(creature, gamedata: GameData) -> bool:
+    """該防守單位是否為 BOSS 級(bestiary `solo`)→ 適用「偷襲開場一擊不可致死」夾限。"""
+    tid = getattr(creature, "template_id", None)
+    return bool(tid and gamedata.bestiary.get(tid, {}).get("solo"))
+
+
 def initiative_order(player: Character, creature: Creature) -> list:
     """速度高者先行;同速玩家優先。"""
     return sorted([player, creature], key=lambda a: (_speed(a), _is_player(a)), reverse=True)
@@ -231,13 +238,17 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
     archetype = wdef.get("archetype") if wdef else None
     speed = wdef.get("speed", formulas.WEAPON_SPEED_DEFAULT) if wdef else formulas.WEAPON_SPEED_DEFAULT
     fr = _fatigue_ratio(attacker)
-    evasion = formulas.dodge_evasion(defender.skill("acrobatics")) if _is_player(defender) else 0.0
+    evasion = (formulas.dodge_evasion(defender.skill("acrobatics"))
+               + mastery.evasion_bonus(defender, gamedata)) if _is_player(defender) else 0.0
     block_pen = mastery.block_hit_penalty(defender, gamedata) if defender_blocking else formulas.BLOCK_HIT_PENALTY
     chance = formulas.hit_chance(wpn_skill, _agility(attacker), _agility(defender),
                                  fr, defender_blocking, defender_evasion=evasion,
                                  block_penalty=block_pen)
+    wmod = mastery.weapon_mod(attacker, gamedata, wpn_skill_id) if _is_player(attacker) else {}
     if _is_player(attacker):    # 武器速度:快武器更易命中、慢武器較難
         chance = max(0.05, min(0.95, chance + formulas.weapon_speed_hit(speed)))
+    if wmod.get("hit"):         # 里程碑武器流派:命中加成(命中非傷害,不破偷襲紅線)
+        chance = max(0.05, min(0.95, chance + wmod["hit"]))
     if magic.is_staggered(attacker):   # 暗殺殘響:陣腳大亂的單位本回合更難命中
         chance = max(0.05, chance - formulas.STAGGER_HIT_PENALTY)
     if sneaking:
@@ -254,6 +265,7 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
     sneak_mult = (formulas.sneak_attack_multiplier(attacker.skill("sneak"))
                   * formulas.archetype_sneak_bonus(archetype)
                   * formulas.night_mother_sneak_bonus(attacker.factions.get("dark_brotherhood", -1))
+                  * (1 + mastery.sneak_mult_bonus(attacker, gamedata))   # 里程碑「影刃」:apex 偷襲倍率
                   ) if sneaking else None
 
     if hit:
@@ -263,8 +275,12 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
                         if defender_blocking else 1.0)
         raw = formulas.attack_damage(wpn_dmg, wpn_skill, _strength(attacker),
                                      roll, block_factor) * cond_mult
+        # 里程碑武器威力:以基礎傷害算出補傷,稍後「不吃偷襲倍率」加回(同副手補刀模式 →
+        # 對近戰是 ×(1+power),但不把偷襲一擊放大,守住「偷襲不可秒精英」紅線)
+        power_bonus = raw * wmod.get("power", 0.0)
         if sneaking:
             raw *= sneak_mult
+        raw += power_bonus
         if offhand_dmg:    # 雙持副手補刀:照常吃技能/力量/耐久,但不吃偷襲倍率
             raw += formulas.attack_damage(offhand_dmg, wpn_skill, _strength(attacker),
                                           roll, block_factor) * cond_mult
@@ -283,7 +299,7 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
                 mult = formulas.resist_multiplier(magic.entity_resist(defender, gamedata), atk_element)
                 dmg = magic._scaled_damage(raw, mult)
         else:
-            pen = formulas.archetype_armor_pen(archetype)   # 鈍器破甲
+            pen = min(0.85, formulas.archetype_armor_pen(archetype) + wmod.get("pen", 0))   # 鈍器破甲 + 里程碑穿甲
             dmg = formulas.damage_after_armor(raw, _armor_rating(defender, gamedata), pen)
             dmg *= mastery.incoming_physical_factor(defender, gamedata)   # 里程碑「壁壘」:物理再減傷
             # 武器附魔:額外元素傷害(無視護甲,受對方元素抗性)
@@ -293,8 +309,17 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
                     em = formulas.resist_multiplier(magic.entity_resist(defender, gamedata), ench["element"])
                     dmg += magic._scaled_damage(ench["magnitude"], em)
 
+        # solo BOSS 反一刀:偷襲開場單擊夾在生命上限的固定比例 → 絕不一刀秒 boss
+        # (apex 仍可隱遁循環無傷清,但須多刀;精英/小遭遇不受影響)。
+        if sneaking and not _is_player(defender) and _is_solo(defender, gamedata):
+            cap = (getattr(defender, "max_health", 0) or _get_hp(defender)) * formulas.SOLO_SNEAK_DAMAGE_CAP_RATIO
+            dmg = min(dmg, cap)
         dmg_done = int(round(dmg))
         _set_hp(defender, _get_hp(defender) - dmg_done)
+
+        # 里程碑「迅捷連斬」反作用:造成傷害的一部分回噬自身(代價,不致死 → 夾 ≥1)
+        if _is_player(attacker) and wmod.get("recoil") and dmg_done > 0:
+            attacker.health = max(1, attacker.health - int(round(dmg_done * wmod["recoil"])))
 
         # 法杖等「命中回復施術者資源」(D:on_hit_self)→ 由後面的 clamp_resources 夾限
         if _is_player(attacker) and wdef and wdef.get("on_hit_self"):
@@ -324,6 +349,33 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
             wp["charges"] -= 1
             if wp["charges"] <= 0:
                 attacker.weapon_poison = None
+
+        # 里程碑武器流派「命中附狀態」(震盪一擊=weaken / 卸力擒拿=stagger)+「盾擊踉蹌」
+        if _is_player(attacker) and is_alive(defender):
+            ohs = wmod.get("on_hit_status")
+            if ohs and rng.chance(ohs.get("chance", 1.0)):
+                if ohs["kind"] == "stagger":
+                    defender.active_effects.append({"kind": "stagger", "turns": ohs.get("turns", 1)})
+                elif ohs["kind"] == "weaken":
+                    defender.active_effects.append({"kind": "weaken", "magnitude": ohs.get("magnitude", 0.0),
+                                                    "turns": ohs.get("turns", 1)})
+        if defender_blocking and _is_player(defender) and is_alive(attacker):
+            rp = mastery.block_riposte_chance(defender, gamedata)
+            if rp and rng.chance(rp):
+                attacker.active_effects.append({"kind": "stagger", "turns": 1})
+        # 里程碑「懾心術」:玩家武器命中時施加懼意(illusion 流派的控場)
+        if _is_player(attacker) and is_alive(defender):
+            foh = mastery.fear_on_hit(attacker, gamedata)
+            if foh and rng.chance(foh.get("chance", 0.0)):
+                defender.active_effects.append({"kind": "fear", "turns": foh.get("turns", 2)})
+        # 里程碑「不屈祝禱」:玩家受擊跌破低血線 → 觸發再生(每段只在無效時補,避免無限疊)
+        if _is_player(defender) and is_alive(defender):
+            rg = mastery.regen_on_low(defender, gamedata)
+            if rg and defender.health < defender.max_health * rg.get("threshold", 0.25) \
+                    and not any(e.get("source") == "steadfast" and e.get("turns", 0) > 0
+                                for e in defender.active_effects):
+                defender.active_effects.append({"kind": "regen", "magnitude": rg.get("regen", 4),
+                                                "turns": rg.get("turns", 3), "source": "steadfast"})
 
         # 暗殺殘響:偷襲命中但沒秒殺 → 依武器流派留下踉蹌(命中減成)/撕裂傷(DoT),
         # 強度吃潛行+煉金。讓「失手的暗殺」不再是斷崖,而是 combo 的第一段。
@@ -390,6 +442,9 @@ def player_attack_cost(player: Character, gamedata: GameData | None = None) -> N
             * formulas.weapon_attack_fatigue_factor(speed))
     if gamedata is not None:                       # 里程碑「壁壘」同源代價:揮擊更耗體
         cost *= mastery.attack_fatigue_factor(player, gamedata)
+        cost *= (1 - mastery.fatigue_cost_bonus(player, gamedata))   # 「不竭之軀」:戰鬥省體
+        wsid = gamedata.item(player.weapon).get("skill")
+        cost += mastery.weapon_mod(player, gamedata, wsid).get("fatigue", 0)   # 「穿甲箭」draw_fatigue 代價
     player.fatigue = max(0, player.fatigue - cost)
 
 
@@ -414,13 +469,25 @@ def can_vanish(player: Character) -> bool:
     return player.skill("sneak") >= formulas.VANISH_MIN_SNEAK
 
 
-def vanish_chance(player: Character, n_alive: int, used: int) -> float:
-    return formulas.restealth_chance(player.skill("sneak"), player.skill("acrobatics"), n_alive, used)
+def vanish_chance(player: Character, n_alive: int, used: int, gamedata: GameData | None = None) -> float:
+    relentless = floor = 0.0
+    if gamedata is not None:                       # 里程碑「連環踏影」(免重複遞減)/「踏影」(保底下限)
+        relentless = mastery.has_vanish_relentless(player, gamedata)
+        floor = mastery.vanish_floor(player, gamedata)
+    return formulas.restealth_chance(player.skill("sneak"), player.skill("acrobatics"), n_alive, used,
+                                     relentless=bool(relentless), floor=floor)
 
 
-def try_vanish(player: Character, n_alive: int, used: int, rng: RNG) -> bool:
+def try_vanish(player: Character, n_alive: int, used: int, rng: RNG, gamedata: GameData | None = None) -> bool:
     """嘗試隱遁再襲:成功回傳 True(由 run_battle 跳過本回合敵人攻擊並重置偷襲)。"""
-    return rng.chance(vanish_chance(player, n_alive, used))
+    return rng.chance(vanish_chance(player, n_alive, used, gamedata))
+
+
+def vanish_cap(player: Character, gamedata: GameData | None = None) -> int:
+    """每場 vanish 次數上限;里程碑「連環踏影」解除(實質無限,仍受 >3 敵懲罰 + 體力壓制)。"""
+    if gamedata is not None and mastery.has_vanish_relentless(player, gamedata):
+        return 99
+    return formulas.MAX_VANISHES_PER_BATTLE
 
 
 def stealth_retreat_chance(player: Character, enemies: list) -> float:
@@ -437,8 +504,10 @@ def stealth_approach_chance(player: Character, enemies: list, gamedata: GameData
                             night: bool = False, scouted: bool = False, surprise: bool = False) -> float:
     foe_agi = max((e.agility for e in enemies), default=0)
     armor_class = inventory.dominant_weight_class(player, gamedata)
-    return formulas.stealth_approach_chance(player.skill("sneak"), foe_agi, len(enemies),
-                                            armor_class, night, scouted, surprise)
+    return formulas.stealth_approach_chance(
+        player.skill("sneak"), foe_agi, len(enemies), armor_class, night, scouted, surprise,
+        approach_bonus=mastery.approach_bonus(player, gamedata),       # 「無聲潛近」
+        armor_relief=mastery.armor_sneak_relief(player, gamedata))     # 「無聲披掛」
 
 
 def try_stealth_approach(player: Character, enemies: list, rng: RNG, gamedata: GameData,
@@ -449,17 +518,25 @@ def try_stealth_approach(player: Character, enemies: list, rng: RNG, gamedata: G
 
 def estimate_sneak_damage(player: Character, gamedata: GameData, creature: Creature) -> int:
     """偵查用:玩家對該敵人一記偷襲的『中位』傷害估算(roll=1.0,過甲後)。"""
-    wpn_dmg, wpn_skill, _ = _weapon_profile(player, gamedata)
+    wpn_dmg, wpn_skill, wpn_skill_id = _weapon_profile(player, gamedata)
     offhand_dmg = inventory.dual_wield_bonus_damage(player, gamedata)
     archetype = gamedata.item(player.weapon).get("archetype")
+    wm = mastery.weapon_mod(player, gamedata, wpn_skill_id)   # 與 resolve_attack 一致
     raw = formulas.attack_damage(wpn_dmg, wpn_skill, _strength(player), 1.0)
+    power_bonus = raw * wm.get("power", 0.0)                  # weapon_mod 威力:flat 補傷(不吃偷襲倍率)
     raw *= (formulas.sneak_attack_multiplier(player.skill("sneak"))
             * formulas.archetype_sneak_bonus(archetype)
-            * formulas.night_mother_sneak_bonus(player.factions.get("dark_brotherhood", -1)))
+            * formulas.night_mother_sneak_bonus(player.factions.get("dark_brotherhood", -1))
+            * (1 + mastery.sneak_mult_bonus(player, gamedata)))   # 里程碑「影刃」
+    raw += power_bonus
     if offhand_dmg:    # 副手補刀不吃偷襲倍率(與 resolve_attack 一致)
         raw += formulas.attack_damage(offhand_dmg, wpn_skill, _strength(player), 1.0)
-    pen = formulas.archetype_armor_pen(archetype)
-    return int(round(formulas.damage_after_armor(raw, creature.armor_rating, pen)))
+    pen = min(0.85, formulas.archetype_armor_pen(archetype) + wm.get("pen", 0))
+    est = formulas.damage_after_armor(raw, creature.armor_rating, pen)
+    if _is_solo(creature, gamedata):    # 與 resolve_attack 一致:solo boss 偷襲單擊夾限
+        est = min(est, (getattr(creature, "max_health", 0) or creature.health)
+                  * formulas.SOLO_SNEAK_DAMAGE_CAP_RATIO)
+    return int(round(est))
 
 
 def grant_loot(player: Character, creature: Creature, gamedata: GameData, rng: RNG) -> dict:

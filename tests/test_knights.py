@@ -185,7 +185,8 @@ def test_overheal_ward_cap_contains_boon():
     # 治療增幅與「聖光·溢盾」精通複利,但總護盾仍被 0.5×血上限夾住
     gd, st = _state(world_events_fired=[UNLOCK])
     c = st.player
-    c.skills.update(restoration=75)                       # 解鎖溢盾精通
+    c.skills.update(restoration=75)                       # 達門檻
+    mastery.choose(c, gd, "restoration_75", "overheal_ward")   # v2:二選一銘刻溢盾精通
     assert mastery.overheal_ward(c, gd) is not None
     c.max_health = 200
     c.magicka = 999999

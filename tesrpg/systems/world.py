@@ -39,9 +39,12 @@ def travel(char: Character, gamedata: GameData, dest_id: str, time, rng: RNG) ->
     回傳 {"foe":遭遇 Creature 或 None, "hours":實際耗時, "base_hours":名目耗時,
           "skill_events":運動升點事件}。遭遇尚未開打 —— 由上層決定接戰/逃避。
     """
+    from tesrpg.systems import mastery
     links = current_location(char, gamedata).get("links", {})
     base_hours = links[dest_id]
-    hours = max(1, round(base_hours * formulas.athletics_travel_factor(char.skill("athletics"))))
+    travel_factor = max(0.5, formulas.athletics_travel_factor(char.skill("athletics"))
+                        - mastery.travel_factor_bonus(char, gamedata))   # 「長途健步」加速,夾 floor 0.5
+    hours = max(1, round(base_hours * travel_factor))
     dest = gamedata.location(dest_id)
 
     foe = None
@@ -57,19 +60,23 @@ def travel(char: Character, gamedata: GameData, dest_id: str, time, rng: RNG) ->
 
 
 # --- 商店定價(受 交易 + 魅力 影響)-----------------------------------
-def _disposition_factor(char: Character) -> float:
-    return max(0.0, min(1.0, (char.skill("mercantile") + char.attr("personality") * 0.5) / 150.0))
+def _disposition_factor(char: Character, gamedata: GameData | None = None) -> float:
+    base = (char.skill("mercantile") + char.attr("personality") * 0.5) / 150.0
+    if gamedata is not None:                       # 里程碑「精算買賣/魅惑交易」議價加成
+        from tesrpg.systems import mastery
+        base += mastery.merchant_bonus(char, gamedata)
+    return max(0.0, min(1.0, base))
 
 
 def buy_price(char: Character, gamedata: GameData, item_id: str) -> int:
     value = gamedata.item(item_id)["value"]
-    return max(1, round(value * (2.2 - _disposition_factor(char))))
+    return max(1, round(value * (2.2 - _disposition_factor(char, gamedata))))
 
 
 def sell_price(char: Character, gamedata: GameData, item_id: str) -> int:
     from tesrpg.systems import factions
     value = gamedata.item(item_id)["value"]
-    base = value * (0.3 + _disposition_factor(char) * 0.5)
+    base = value * (0.3 + _disposition_factor(char, gamedata) * 0.5)
     base *= 1 + factions.sell_bonus(char, gamedata)   # 盜賊公會銷贓加成(階級越高越多)
     return max(1, round(base))
 
@@ -101,10 +108,13 @@ def ensure_stock(char: Character, gamedata: GameData, loc_id: str, time, rng: RN
     now = time.absolute_hours()
     if loc_id in char.shop_restock_at and now < char.shop_restock_at[loc_id]:
         return
-    char.shop_stock[loc_id] = {
-        iid: _restock_qty(gamedata.item(iid)["value"], rng)
-        for iid in merchant_catalog(gamedata, loc_id)
-    }
+    from tesrpg.systems import mastery
+    rmult = mastery.restock_mult(char, gamedata)                # 「行商人脈」補貨量倍率
+
+    def _qty(iid):
+        q = _restock_qty(gamedata.item(iid)["value"], rng)
+        return 0 if q == 0 else max(1, round(q * rmult))        # 保留「擲 0 = 缺貨」的稀缺性(反套利)
+    char.shop_stock[loc_id] = {iid: _qty(iid) for iid in merchant_catalog(gamedata, loc_id)}
     char.shop_restock_at[loc_id] = now + RESTOCK_HOURS
 
 

@@ -82,6 +82,17 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
         if kind == "damage_status" and not killed:
             target.active_effects.append(make_status_effect(eff["status"]))
             msg += f" {target.name}{_status_verb(eff['status'])}!"
+        # 里程碑「衝擊餘波」:該學派傷害法術命中時附加狀態(stagger/weaken/fear)
+        if not killed:
+            ohs = mastery.spell_on_hit(char, gamedata, sp["school"])
+            if ohs and rng.chance(ohs.get("chance", 1.0)):
+                if ohs["kind"] == "stagger":
+                    target.active_effects.append({"kind": "stagger", "turns": ohs.get("turns", 1)})
+                elif ohs["kind"] == "weaken":
+                    target.active_effects.append({"kind": "weaken", "magnitude": ohs.get("magnitude", 0.0),
+                                                  "turns": ohs.get("turns", 1)})
+                elif ohs["kind"] == "fear":
+                    target.active_effects.append({"kind": "fear", "turns": ohs.get("turns", 1)})
 
     elif kind == "heal":
         # 九神騎士團:聖光眷顧 —— 治療回復量隨階級放大(只對會員;乘在溢盾計算之前)
@@ -171,14 +182,25 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
             from tesrpg.systems import combat
             ally = combat.spawn_creature(gamedata, eff["creature"], rng)
             boon = factions.conjure_boon(char, gamedata)   # 神話黎明:達貢之佑強化召喚物
-            if boon > 0:
-                ally.max_health = max(1, round(ally.max_health * (1 + boon)))
+            smod = mastery.summon_mod(char, gamedata)      # 里程碑:雙重召喚 / 束縛兵刃
+            hp_mult = (1 + boon) * (1 + smod.get("hp_bonus", 0.0))
+            if hp_mult != 1.0:
+                ally.max_health = max(1, round(ally.max_health * hp_mult))
                 ally.health = ally.max_health
-            bonus_turns = int(boon * 3)                     # 約每 +33% 增幅 → 多駐留 1 回合(最高 +1)
+            bonus_turns = int(boon * 3) + int(smod.get("turn_bonus", 0))
             ally.summon_turns = eff["turns"] + bonus_turns
             battle.setdefault("allies", []).append(ally)
+            extra_msg = ""
+            if smod.get("extra"):     # 雙重召喚:額外多召一隻較弱的盟友
+                for _ in range(int(smod["extra"])):
+                    ally2 = combat.spawn_creature(gamedata, eff["creature"], rng)
+                    ally2.max_health = max(1, round(ally2.max_health * smod.get("hp_factor", 0.6) * (1 + boon)))
+                    ally2.health = ally2.max_health
+                    ally2.summon_turns = ally.summon_turns
+                    battle.setdefault("allies", []).append(ally2)
+                extra_msg = "(雙重召喚:多一隻較弱的盟友)"
             blessed = "(達貢之佑加持)" if boon > 0 else ""
-            msg = f"你召喚出了{ally.name}{blessed},它將為你而戰({ally.summon_turns} 回合)。"
+            msg = f"你召喚出了{ally.name}{blessed}{extra_msg},它將為你而戰({ally.summon_turns} 回合)。"
 
     stats.clamp_resources(char)
     skill_events = progression.use_skill(char, gamedata, sp["school"], CAST_XP)
@@ -234,6 +256,8 @@ def entity_resist(entity, gamedata) -> dict:
         for elem, val in entity.equip_resist.items():     # 裝備抗性與種族抗性相加
             merged[elem] = merged.get(elem, 0) + val
         for elem, val in entity.vampire_resist.items():   # 吸血鬼階級:耐霜/免疫疾病/火焰弱點
+            merged[elem] = merged.get(elem, 0) + val
+        for elem, val in getattr(entity, "mastery_resist", {}).items():   # 技能里程碑 resist_fortify
             merged[elem] = merged.get(elem, 0) + val
         return merged
     return getattr(entity, "resist", {}) or {}

@@ -122,14 +122,18 @@ def sneak_attack_multiplier(sneak_skill: int) -> float:
 
 
 NIGHT_MOTHER_SNEAK_PER_RANK = 0.03   # 黑暗兄弟會每階對偷襲倍率的加成(夜母祝福)
+# solo BOSS 反一刀:對 `solo` 目標,單次偷襲傷害夾在其生命上限的此比例 → 開場一擊絕不致死。
+# apex(玻璃雙持+聆聽者+淬鍊+影刃)仍可靠隱遁循環無傷清 boss,但須多刀(守 approved plan
+# 「solo boss 仍存活」;精英/小遭遇不受影響,apex 照常秒殺)。調此值或夜母/影刃常數務必重跑 sim_assassin.py。
+SOLO_SNEAK_DAMAGE_CAP_RATIO = 0.40
 
 
 def night_mother_sneak_bonus(db_rank: int) -> float:
     """夜母祝福:黑暗兄弟會階級越高,潛殺越致命(乘進偷襲倍率)。
 
-    刻意溫和(每階僅 +0.03,聆聽者滿階 ×1.18;新血階 0 不加成)—— 經模擬:即使滿階 +
-    頂級雙持玻璃匕首刺客,所有 BOSS(solo)單擊秒殺率仍 ≤1.5%,守住「偷襲不可秒精英」。
-    調整此常數後務必重跑 sim_assassin.py 與精英秒殺率覆核。非會員(rank<0)回 1.0。
+    每階 +0.03(聆聽者滿階 ×1.18;新血階 0 不加成)。**solo BOSS 的單擊不死由
+    SOLO_SNEAK_DAMAGE_CAP_RATIO 夾(combat.resolve_attack)強制保證**,非靠此倍率溫和;
+    精英(非 solo)可被 apex 一擊秒(刻意)。非會員(rank<0)回 1.0。
     """
     return 1.0 + max(0, db_rank) * NIGHT_MOTHER_SNEAK_PER_RANK
 
@@ -255,15 +259,21 @@ MAX_VANISHES_PER_BATTLE = 3   # 每場最多嘗試隱遁次數(硬上限:隱遁�
 RESTEALTH_BASE = 0.55
 RESTEALTH_SKILL_SCALE = 0.0035    # (sneak + acrobatics×0.5) × 此係數
 RESTEALTH_CROWD_PENALTY = 0.18    # 每多一個存活敵人,隱遁更難
-RESTEALTH_REUSE_PENALTY = 0.25    # 同場每用過一次,下次隱遁更難(防無限風箏)
+RESTEALTH_REUSE_PENALTY = 0.25    # 同場每用過一次,下次隱遁更難(防無限風箏;里程碑「連環踏影」可免)
+RESTEALTH_HORDE_PENALTY = 0.40    # >3 敵:每超出一個額外大減(刺客 apex 的群體規模反制骨幹)
 
 
-def restealth_chance(sneak: int, acrobatics: int, n_alive: int, used: int) -> float:
-    """隱遁成功率:吃潛行+雜技,敵人越多越難、同場重複用遞減。夾限 [0.05, 0.90]。"""
+def restealth_chance(sneak: int, acrobatics: int, n_alive: int, used: int,
+                     relentless: bool = False, floor: float = 0.0) -> float:
+    """隱遁成功率:吃潛行+雜技,敵人越多越難、同場重複用遞減、**>3 敵大減**。夾限 [max(0.05,floor), 0.90]。
+
+    relentless(里程碑「連環踏影」)→ 免除同場重複使用遞減(但 >3 敵懲罰仍壓制);
+    floor(里程碑「踏影/翻滾脫離」)→ 保底下限。"""
     chance = (RESTEALTH_BASE + (sneak + acrobatics * 0.5) * RESTEALTH_SKILL_SCALE
               - max(0, n_alive - 1) * RESTEALTH_CROWD_PENALTY
-              - max(0, used) * RESTEALTH_REUSE_PENALTY)
-    return max(0.05, min(0.90, chance))
+              - max(0, n_alive - 3) * RESTEALTH_HORDE_PENALTY            # >3 敵:大減(反制 apex 風箏)
+              - (0.0 if relentless else max(0, used) * RESTEALTH_REUSE_PENALTY))
+    return max(floor, max(0.05, min(0.90, chance)))
 
 
 # --- 戰前潛行撤退(偵查到不利 → 體面退場;吃潛行+速度,群越大越難)----------
@@ -283,22 +293,26 @@ STEALTH_APPROACH_BASE = 0.55
 STEALTH_APPROACH_SNEAK = 0.0045       # 每點潛行
 STEALTH_APPROACH_PERCEPT = 0.003      # 敵方最高敏捷(警覺)扣減
 STEALTH_APPROACH_CROWD = 0.08         # 每多一個敵人(更多眼睛)
+STEALTH_APPROACH_HORDE = 0.30         # >3 敵:每超出一個額外大減(群體規模反制 apex)
 STEALTH_APPROACH_NIGHT = 0.10         # 夜間(黑暗掩護)
 STEALTH_APPROACH_SCOUT = 0.25         # 先成功偵查 → 知道動線(B:偵查解博弈)
 STEALTH_APPROACH_SURPRISE = 0.45      # 被伏擊(C:受害者難以反偷襲加害者)
-# E:護甲噪音 —— 重甲鏗鏘難潛、輕甲幾乎無礙
+# E:護甲噪音 —— 重甲鏗鏘難潛、輕甲幾乎無礙(里程碑「無聲披掛」可抵消)
 STEALTH_APPROACH_ARMOR_PENALTY = {"heavy": 0.40, "light": 0.05}
 
 
 def stealth_approach_chance(sneak: int, foe_agility: int, group_size: int,
                             armor_class: str | None, night: bool = False,
-                            scouted: bool = False, surprise: bool = False) -> float:
-    """接戰時搶到開場偷襲的機率。吃潛行/敵警覺/敵數/護甲噪音/夜間/偵查/是否被伏擊。
-    夾限 [0.05, 0.97](高潛行可靠、但永不保證;重甲莽夫幾乎偷不到)。"""
+                            scouted: bool = False, surprise: bool = False,
+                            approach_bonus: float = 0.0, armor_relief: float = 0.0) -> float:
+    """接戰時搶到開場偷襲的機率。吃潛行/敵警覺/敵數/護甲噪音/夜間/偵查/是否被伏擊/**>3 敵大減**。
+    夾限 [0.05, 0.97](高潛行可靠、但永不保證;重甲莽夫幾乎偷不到;大群幾乎偷不到)。"""
+    armor_pen = STEALTH_APPROACH_ARMOR_PENALTY.get(armor_class, 0.0) * (1 - armor_relief)
     chance = (STEALTH_APPROACH_BASE + sneak * STEALTH_APPROACH_SNEAK
               - foe_agility * STEALTH_APPROACH_PERCEPT
               - max(0, group_size - 1) * STEALTH_APPROACH_CROWD
-              - STEALTH_APPROACH_ARMOR_PENALTY.get(armor_class, 0.0))
+              - max(0, group_size - 3) * STEALTH_APPROACH_HORDE         # >3 敵:大減
+              - armor_pen + approach_bonus)
     if night:
         chance += STEALTH_APPROACH_NIGHT
     if scouted:

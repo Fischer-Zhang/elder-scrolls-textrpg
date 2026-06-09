@@ -15,14 +15,19 @@ from tesrpg.rng import RNG
 gd = get_gamedata()
 
 
-def assassin(sneak=70, blade=50, alchemy=40, scout=40, weapon="steel_dagger", dual=False):
+def assassin(sneak=70, blade=50, alchemy=40, scout=40, weapon="steel_dagger", dual=False,
+             mastery_choices=None, **extra_skills):
     c = build_character(gd, name="刺", sex="male", race="khajiit",
                         birthsign="shadow", class_id="assassin")
-    c.skills.update(sneak=sneak, blade=blade, alchemy=alchemy, scout=scout)
+    c.skills.update(sneak=sneak, blade=blade, alchemy=alchemy, scout=scout, **extra_skills)
     c.weapon = weapon
     if dual:
         inventory.add_item(c, weapon, 2)
         inventory.equip_offhand(c, gd, weapon)
+    if mastery_choices:                        # {node_id: opt_id};須先把 base skill 設到門檻
+        from tesrpg.systems import mastery
+        for nid, oid in mastery_choices.items():
+            mastery.choose(c, gd, nid, oid)
     stats.recompute_max_resources(c, gd, restore_full=True)
     return c
 
@@ -89,3 +94,54 @@ if __name__ == "__main__":
                       ("2 bandit+wolf", ["bandit", "bandit", "wolf"]),
                       ("1 vampire_fledgling", ["vampire_fledgling"])]:
         print(f"  {name:20} 單持 {rate(mid, ids):6.1%}   雙持 {rate(mid_dual, ids):6.1%}")
+
+    # P2 里程碑:非潛行 weapon_mod 在偷襲倍率「之前」套 → 對精英秒殺率衝擊應極小
+    print("\n== P2 里程碑覆核:blade 迅捷連斬(power+0.12,以 flat 補傷加在偷襲倍率之後)==")
+    apex_blade = lambda: assassin(sneak=70, blade=100,
+                                  mastery_choices={"blade_100": "savage"})
+    for t in ["dremora", "frost_troll"]:
+        base = oneshot(lambda: assassin(blade=100), t)
+        mod = oneshot(apex_blade, t)
+        flag = " ⚠破1.5%" if mod > 0.015 else ""
+        print(f"  {t:18} 無里程碑 {base:5.1%} → 迅捷連斬 {mod:5.1%}{flag}")
+
+    # P4 刺客 apex:影刃(sneak_mult ×1.5)→ 對小遭遇可無傷清場(刻意);反制=「>3 敵潛匿大減 + 隱遁耗體」
+    import tesrpg.systems.combat as C
+
+    def apex_max(temper=5):
+        """最壞情形『可達成』apex:玻璃匕首雙持 + 黑兄聆聽者(夜母×1.18)+ 淬鍊 +5 + 影刃。
+        對 solo boss 的單擊秒殺率即『solo boss 仍存活』契約的真實檢驗(覆核審查抓到的 sim 覆蓋缺口)。"""
+        c = assassin(sneak=100, blade=100, alchemy=60, scout=100, weapon="glass_dagger", dual=True,
+                     smithing=100, acrobatics=100, mastery_choices={"sneak_100": "shadowblade"})
+        c.factions["dark_brotherhood"] = 6              # 聆聽者(夜母祝福滿階 ×1.18)
+        c.weapon_temper = {"glass_dagger": temper}      # smithing 100 的合法淬鍊上限
+        return c
+
+    print("\n== P4 apex 覆核(契約①):影刃 sneak100 雙持 → 小遭遇/精英秒殺(力量幻想成立)==")
+    base100 = lambda: assassin(sneak=100, dual=True)
+    apex = lambda: assassin(sneak=100, blade=100, alchemy=60, scout=75, dual=True,
+                            mastery_choices={"sneak_100": "shadowblade"})
+    for t in ["bandit", "skeleton", "dremora", "frost_troll"]:
+        print(f"  {t:16} 無里程碑 {oneshot(base100, t):5.1%} → 影刃 {oneshot(apex, t):5.1%}")
+
+    print("\n== solo BOSS 單擊秒殺率(最壞 apex:玻璃雙持 + 聆聽者 + 淬鍊5 + 影刃)==")
+    print("   紅線:approved plan『solo boss 仍存活』→ SOLO_SNEAK_DAMAGE_CAP_RATIO 夾限應使其全為 0%:")
+    for t in ["dremora_lord", "vampire_lord", "wamasu", "frost_giant", "ancient_dragon"]:
+        hp = gd.bestiary[t].get("max_health", "?")
+        rate_max = oneshot(apex_max, t)
+        flag = " ⚠破紅線(應為 0%)" if rate_max > 0.0 else " ✓存活"
+        print(f"  {t:16} (HP {hp})  最壞 apex 秒殺 {rate_max:5.1%}{flag}")
+
+    print("\n== P4 反制覆核(契約②):群體規模 → 潛近/隱遁機率陡降(>3 敵大減)==")
+    relent = lambda: assassin(sneak=100, acrobatics=100, dual=True,
+                              mastery_choices={"sneak_75": "relentless_shadow"})
+    for n in (1, 2, 3, 4, 5):
+        a = apex()
+        foes = [combat.spawn_creature(gd, "bandit", RNG(i)) for i in range(n)]
+        appr = C.stealth_approach_chance(a, foes, gd)
+        van = C.vanish_chance(relent(), n, 2, gd)   # 連環踏影(免遞減)在 n 敵、已用 2 次
+        print(f"  {n} 敵:潛近 {appr:5.1%}   連環踏影隱遁(used=2) {van:5.1%}")
+
+    print("\n== P4 反制覆核(契約②):4 敵群戰死亡率(apex 仍須承受真實風險)==")
+    print(f"  4 bandit       apex 死亡率 {rate(apex, ['bandit'] * 4):5.1%}")
+    print(f"  2 bandit+2wolf apex 死亡率 {rate(apex, ['bandit', 'bandit', 'wolf', 'wolf']):5.1%}")

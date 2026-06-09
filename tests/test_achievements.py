@@ -10,7 +10,7 @@ from tesrpg.creation import build_character
 from tesrpg.gamedata import get_gamedata
 from tesrpg.rng import RNG
 from tesrpg.state import GameState, GameTime
-from tesrpg.systems import achievements, legacy
+from tesrpg.systems import achievements, legacy, mastery
 
 
 def _char(**kw):
@@ -88,6 +88,10 @@ def test_guildmaster_any_and_specific():
 def test_mastery_count():
     gd, c = _char()
     c.skills.update({"block": 50, "heavy_armor": 75, "destruction": 100, "security": 75})
+    # v2:達門檻後須二選一銘刻,milestone_walker 計的是「已選」的里程碑數
+    for nid, oid in (("block_50", "shieldwall"), ("heavy_armor_75", "bulwark"),
+                     ("destruction_100", "overload"), ("security_75", "master_floor")):
+        mastery.choose(c, gd, nid, oid)
     assert "milestone_walker" in _ids(gd, c)
 
 

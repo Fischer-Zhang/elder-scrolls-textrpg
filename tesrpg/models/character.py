@@ -88,8 +88,15 @@ class Character:
     disposition: int = 50
 
     # 技能里程碑(辯舌·折服):已被「必定說服」折服過的 NPC(每人一次)。
-    # 其餘里程碑皆由 base_skill 即時推導、零存檔種子;唯此條需記錄一次性狀態。
     persuaded_npcs: list = field(default_factory=list)
+
+    # 技能里程碑 v2(達門檻二選一)。choices 為唯一權威來源(玩家選了什麼,永久,進存檔);
+    # 三個 *_bonus/resist 是「由 choices + JSON 決定性推導的快取層」(同 equip_* 模式,
+    # recompute-on-load,見 stats.recompute_mastery_bonuses),attr()/skill()/抗性疊加、成長/夾限只用 base_*。
+    mastery_choices: dict = field(default_factory=dict)       # node_id -> opt_id(權威)
+    mastery_skill_bonus: dict = field(default_factory=dict)   # skill_id -> +點數(推導快取)
+    mastery_attr_bonus: dict = field(default_factory=dict)    # attr_id  -> +點數(推導快取)
+    mastery_resist: dict = field(default_factory=dict)        # element  -> +百分比(推導快取)
 
     # M5:任務、犯罪、聲望追蹤
     quests: dict = field(default_factory=dict)            # quest_id -> {"progress":...}
@@ -142,11 +149,13 @@ class Character:
     # --- 查詢 -------------------------------------------------------------
     def attr(self, key: str) -> int:
         return (self.attributes.get(key, formulas.BASE_ATTRIBUTE)
-                + self.equip_attr_bonus.get(key, 0) + self.vampire_attr_bonus.get(key, 0))
+                + self.equip_attr_bonus.get(key, 0) + self.vampire_attr_bonus.get(key, 0)
+                + self.mastery_attr_bonus.get(key, 0))
 
     def skill(self, key: str) -> int:
         return (self.skills.get(key, 0)
-                + self.equip_skill_bonus.get(key, 0) + self.vampire_skill_bonus.get(key, 0))
+                + self.equip_skill_bonus.get(key, 0) + self.vampire_skill_bonus.get(key, 0)
+                + self.mastery_skill_bonus.get(key, 0))
 
     def base_attr(self, key: str) -> int:
         """不含裝備加成的原始屬性(供成長/夾限用)。"""
@@ -203,6 +212,10 @@ class Character:
             "kill_counts": self.kill_counts, "cleared_dungeons": self.cleared_dungeons,
             "bounties": self.bounties, "npc_disposition": self.npc_disposition,
             "persuaded_npcs": self.persuaded_npcs,
+            "mastery_choices": self.mastery_choices,
+            "mastery_skill_bonus": self.mastery_skill_bonus,
+            "mastery_attr_bonus": self.mastery_attr_bonus,
+            "mastery_resist": self.mastery_resist,
             "visited_locations": self.visited_locations,
             "discovered_landmarks": self.discovered_landmarks,
             "power_last_day": self.power_last_day, "tower_key_charge": self.tower_key_charge,

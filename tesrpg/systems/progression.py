@@ -36,6 +36,21 @@ def ensure_all_skills(char: Character, gamedata: GameData) -> None:
             char.skill_xp.setdefault(sid, 0.0)
 
 
+def ensure_mastery_choices(char: Character, gamedata: GameData) -> None:
+    """技能里程碑 v2 舊存檔遷移:確保四個欄位存在、清掉指向已不存在 node/opt 的陳舊選擇、
+    重算持久加成快取。**達門檻但未選的舊存檔 → 留 pending(不自動指派,守選擇權)**:
+    getter 對未選節點回中性值 → 不崩、不誤效,玩家下次回城再二選一。
+    """
+    for fld in ("mastery_choices", "mastery_skill_bonus", "mastery_attr_bonus", "mastery_resist"):
+        if getattr(char, fld, None) is None:
+            setattr(char, fld, {})
+    # 防呆:清掉指向已不存在 node/opt 的陳舊選擇(JSON 改版安全)
+    valid = {n["id"]: {o.get("opt_id") for o in n["options"]} for n in mastery._nodes(gamedata)}
+    char.mastery_choices = {nid: oid for nid, oid in char.mastery_choices.items()
+                            if oid in valid.get(nid, ())}
+    stats.recompute_mastery_bonuses(char, gamedata)
+
+
 def practice_cost(char: Character, gamedata: GameData, skill_id: str) -> tuple[float, int, bool]:
     """套用該技能 data/skills.json 的 practice 體力成本,算出本次 xp 與耗時。
 
@@ -90,9 +105,11 @@ def _on_skill_increase(char: Character, gamedata: GameData, skill_id: str, event
     char.level_xp += formulas.levelup_xp_for_skillup(
         new_level, char.is_major_skill(skill_id))
     events.append({"type": "skill_up", "skill": skill_id, "level": new_level})
-    # 技能里程碑:恰好跨過門檻這一級 → 解鎖播報(精確判定避免跨多級時漏/重報)
-    for e in mastery.newly_unlocked(char, gamedata, skill_id, new_level):
-        events.append({"type": "mastery_unlocked", "name": e["name"], "desc": e["desc"]})
+    # 技能里程碑 v2:恰好跨過門檻這一級 → 開啟「二選一」(不在此處授予;於 game_loop/升級畫面
+    # 安全點呈現選單)。精確判定避免跨多級時漏/重報;選擇本身為衍生 pending,事件漏看也不會遺失。
+    for n in mastery.nodes_at(char, gamedata, skill_id, new_level):
+        events.append({"type": "mastery_choice_ready", "skill": skill_id,
+                       "threshold": new_level, "node_id": n["id"]})
 
 
 def apply_level_up(char: Character, gamedata: GameData,

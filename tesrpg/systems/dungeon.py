@@ -44,11 +44,14 @@ def pick_lock(char: Character, gamedata: GameData, lock_level: int, rng: RNG) ->
                 "broke_pick": False, "hours": 0, "tired": False, "skill_events": []}
     tired = char.fatigue < LOCKPICK_FATIGUE
     char.fatigue = max(0, char.fatigue - LOCKPICK_FATIGUE)
-    inventory.remove_item(char, LOCKPICK_ITEM, 1)                # 每次嘗試耗一根(成功也耗 → xp 的金幣閘)
     success = rng.chance(chance)
+    from tesrpg.systems import mastery
+    keep = (not success) and rng.chance(mastery.pick_keep_chance(char, gamedata))   # 「巧手不折」失敗不折
+    if not keep:
+        inventory.remove_item(char, LOCKPICK_ITEM, 1)           # 每次嘗試耗一根(成功也耗 → xp 的金幣閘)
     skill_events = progression.use_skill(char, gamedata, "security", base_xp) if success else []
     return {"success": success, "chance": chance, "tower_key": False, "no_pick": False,
-            "broke_pick": not success, "hours": 0, "tired": tired, "skill_events": skill_events}
+            "broke_pick": not success and not keep, "hours": 0, "tired": tired, "skill_events": skill_events}
 
 
 def open_container(char: Character, gamedata: GameData, container: dict, rng: RNG) -> dict:

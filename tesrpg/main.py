@@ -226,6 +226,38 @@ def _maybe_db_recruit(state: GameState, gamedata: GameData) -> None:
                    style="grey70")
 
 
+def _prompt_mastery_choice(state: GameState, gamedata: GameData, node: dict) -> bool:
+    """呈現單一里程碑節點的二選一。回傳 True=已選/已授予,False=玩家選擇稍後再決定。
+
+    絕不在戰鬥中呼叫(run_battle 全域 patch ui.menu);只在升級畫面/回城安全點。
+    """
+    char = state.player
+    opts = mastery._choosable_options(node)
+    if not opts:
+        return True
+    if len(opts) == 1:                       # 退化節點:無真正選擇 → 直接授予,不打擾
+        mastery.choose(char, gamedata, node["id"], opts[0]["opt_id"])
+        ui.message(f"✦ 技能里程碑「{opts[0]['name']}」確立!", style="bold magenta")
+        return True
+    sk = gamedata.skill_name(node["skill"])
+    ui.rule(f"技能里程碑 · {sk} {node['threshold']}")
+    menu_opts = [(o["opt_id"], f"{o['name']}　{o['desc']}") for o in opts]
+    choice = ui.menu("你已臻宗師之境 —— 擇一銘刻你的道(此選擇永久):", menu_opts, allow_back=True)
+    if choice is None:                       # 稍後再選(留 pending,下次安全點再問)
+        return False
+    opt = mastery.choose(char, gamedata, node["id"], choice)
+    if opt:
+        ui.message(f"✦ 你選擇了「{opt['name']}」,此道已定。", style="bold magenta")
+    return True
+
+
+def _drain_mastery_choices(state: GameState, gamedata: GameData) -> None:
+    """在安全互動點消化所有待決的里程碑二選一;玩家選擇稍後 → 本回合不再追問。"""
+    for node in mastery.pending_choices(state.player, gamedata):
+        if not _prompt_mastery_choice(state, gamedata, node):
+            break
+
+
 def action_level_up(state: GameState, gamedata: GameData) -> None:
     char = state.player
     if not char.can_level_up():
@@ -270,6 +302,7 @@ def action_level_up(state: GameState, gamedata: GameData) -> None:
     ui.message(f"  {rname}上限 +{summary['resource_gain']},三圍已回滿。", style="green")
     if summary["can_level_again"]:
         ui.message("  你還能再升一級!", style="yellow")
+    _drain_mastery_choices(state, gamedata)   # 升級是「你成長了」的自然節拍 → 順勢二選一
 
 
 def action_save(state: GameState) -> None:
@@ -304,10 +337,11 @@ def _choose_combat_action(state: GameState, gamedata: GameData, enemies: list, a
         opts.append(("power", f"{plabel}({powers.power_def(powers.power_id(player, gamedata))['name']})"))
     if not inventory.is_dual_wielding(player, gamedata):   # 雙持占用雙手 → 不能格擋
         opts.append(("block", "格擋"))
-    if combat.can_vanish(player) and vanish_used < formulas.MAX_VANISHES_PER_BATTLE:
+    vcap = combat.vanish_cap(player, gamedata)
+    if combat.can_vanish(player) and vanish_used < vcap:
         n_alive = len([e for e in enemies if combat.is_alive(e)])
-        pct = int(combat.vanish_chance(player, n_alive, vanish_used) * 100)
-        left = formulas.MAX_VANISHES_PER_BATTLE - vanish_used
+        pct = int(combat.vanish_chance(player, n_alive, vanish_used, gamedata) * 100)
+        left = "∞" if vcap >= 99 else (vcap - vanish_used)
         opts.append(("vanish", f"隱遁再襲（成功率 {pct}%,剩 {left} 次)"))
     opts.append(("flee", "逃跑"))
     choice = ui.menu("你的回合", opts)
@@ -487,7 +521,7 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
             combat.player_vanish_cost(player)        # 隱遁耗大量體力(連續隱遁會耗竭)
             attempt_used = vanishes_done
             vanishes_done += 1                       # 每次「嘗試」即遞增 → 成功率遞減真正生效
-            if combat.try_vanish(player, len(alive_e()), attempt_used, state.rng):
+            if combat.try_vanish(player, len(alive_e()), attempt_used, state.rng, gamedata):
                 vanish_success = True
                 ui.show_events(progression.use_skill(player, gamedata, "sneak",
                                                      formulas.COMBAT_SNEAK_XP), gamedata)
@@ -679,7 +713,7 @@ def _scout_report(state: GameState, gamedata: GameData, enemies: list) -> None:
                 verdict = ("可一擊斃命" if est >= e.health
                            else "重傷但秒不掉" if est >= e.health * 0.5 else "搔癢而已")
                 parts.append(f"偷襲約 {est} 傷 → {verdict}")
-            if sk >= 75 and e.resist:
+            if sk >= mastery.recon_reveal_threshold(char, gamedata) and e.resist:   # 「洞察弱點」降門檻 75→50
                 weak = [magic._ELEMENT_CN.get(k, k) for k, v in e.resist.items() if v < 0]
                 tough = [magic._ELEMENT_CN.get(k, k) for k, v in e.resist.items() if v >= 50]
                 if weak:
@@ -715,7 +749,7 @@ def offer_battle(state: GameState, gamedata: GameData, enemies, ambush_chance: f
         if not scouted and not surprise:
             opts.append(("scout", "偵查敵情(看清敵情並提升偷襲先機)"))
         if dialogue.can_intimidate(gamedata, enemies):       # 全為弱人形敵(盜匪)→ 可口才喝退
-            ipct = int(dialogue.intimidate_chance(char, enemies, night) * 100)
+            ipct = int(dialogue.intimidate_chance(char, enemies, night, gamedata) * 100)
             opts.append(("intimidate", f"威嚇喝退(口才,成功率 {ipct}%)"))
         rpct = int(combat.stealth_retreat_chance(char, enemies) * 100)
         opts.append(("retreat", f"潛行撤退（成功率 {rpct}%)"))
@@ -746,7 +780,7 @@ def offer_battle(state: GameState, gamedata: GameData, enemies, ambush_chance: f
         else:
             ui.message("你的接近被察覺了,沒能搶到偷襲的先機。", style="yellow")
         # 偵查掙得的備戰空間:潛近成功且未被伏擊時,依偵查技能換得開戰前準備
-        pb = formulas.prep_budget(char.skill("scout")) if (got_drop and not surprise) else 0
+        pb = (formulas.prep_budget(char.skill("scout")) + mastery.prep_bonus(char, gamedata)) if (got_drop and not surprise) else 0
         return run_battle(state, gamedata, enemies, alerted=not got_drop, prep_budget=pb)
 
 
@@ -1269,7 +1303,7 @@ def action_contract(state: GameState, gamedata: GameData, qid: str, *,
             ui.message("你如影潛近,目標渾然未覺 —— 致命先機在握。", style="bold green")
         else:
             ui.message("你的接近驚動了目標,沒能搶到偷襲先機。", style="yellow")
-        pb = formulas.prep_budget(char.skill("scout")) if got_drop else 0   # 合約暗殺也享偵查備戰
+        pb = (formulas.prep_budget(char.skill("scout")) + mastery.prep_bonus(char, gamedata)) if got_drop else 0   # 合約暗殺也享偵查備戰
     else:
         ui.message("你舉起武器、堂堂正正迎敵 —— 以鋼鐵裁決。", style="bold cyan")
 
@@ -1925,7 +1959,8 @@ def action_repair(state: GameState, gamedata: GameData) -> None:
         fee_txt = "免費" if smith_fee == 0 else f"{smith_fee} 金"
         opts.append(("smith", f"請鐵匠修復全部裝備({fee_txt},修到全新)"))
     if has_hammer:
-        cap = int(inventory.repairable_cap(char.skill("armorer")))
+        cap = int(max(inventory.repairable_cap(char.skill("armorer")),
+                      mastery.repair_floor(char, gamedata)))   # 里程碑「行軍鐵匠」抬高野修下限
         opts.append(("hammer", f"用修理鎚自行修理(修到 {cap}%,鍛鍊護甲修理)"))
     if not opts:
         ui.message("這裡沒有鐵匠,你也沒有修理鎚。", style="grey70")
@@ -1942,7 +1977,8 @@ def action_repair(state: GameState, gamedata: GameData) -> None:
             inventory.repair_all(char, 100.0)
             ui.message("鐵匠叮叮噹噹一陣,你的裝備煥然一新。", style="green")
         elif choice == "hammer":
-            cap = inventory.repairable_cap(char.skill("armorer"))
+            cap = max(inventory.repairable_cap(char.skill("armorer")),
+                      mastery.repair_floor(char, gamedata))   # 里程碑「行軍鐵匠」
             inventory.repair_all(char, cap)
             inventory.remove_item(char, "repair_hammer", 1)
             # 與訓練師/正規練習對齊:自行修理付出護甲修理 practice 的體力 + 時間,非零成本刷 armorer
@@ -1999,7 +2035,7 @@ def action_temper(state: GameState, gamedata: GameData) -> None:
         ui.message("這裡沒有鐵匠的鐵砧。", style="grey70")
         return
     while True:                                       # 可連續淬鍊,返回才離開
-        cap = smithing.temper_cap(char.skill("smithing"))
+        cap = smithing.effective_temper_cap(char, gamedata)
         ids = []
         if char.weapon != "fists":
             ids.append(char.weapon)
@@ -2021,7 +2057,7 @@ def action_temper(state: GameState, gamedata: GameData) -> None:
         iid = ui.menu(f"淬鍊強化哪件?(鍛造 {char.skill('smithing')} 級 → 上限 +{cap})", opts, allow_back=True)
         if iid is None:
             return
-        res = smithing.temper(char, gamedata, iid)
+        res = smithing.temper(char, gamedata, iid, state.rng)
         state.time.advance(res["hours"])
         ui.message(res["message"], style="green" if res["ok"] else "red")
         if res.get("tired"):
@@ -2201,7 +2237,7 @@ def action_murder(state: GameState, gamedata: GameData, nid: str) -> str | None:
     got_drop = combat.try_stealth_approach(char, [victim], state.rng, gamedata, night, False, False)
     if got_drop:
         ui.message(f"你自{name}背後欺近,寒光一閃 ——", style="magenta")
-    pb = formulas.prep_budget(char.skill("scout")) if got_drop else 0   # 潛殺成功也享偵查備戰
+    pb = (formulas.prep_budget(char.skill("scout")) + mastery.prep_bonus(char, gamedata)) if got_drop else 0   # 潛殺成功也享偵查備戰
     result = run_battle(state, gamedata, victim, alerted=not got_drop, prep_budget=pb)
     if result == "dead":
         return "dead"
@@ -2382,6 +2418,9 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
 
         # 具名地標:首次身處某地 → 一次性「發現」(統一在此觸發 → 起始城/旅行抵達/任意當前地皆涵蓋)
         _try_discover(state, gamedata, state.player.location_id)
+
+        # 技能里程碑 v2:達門檻的待決二選一,在安全互動點(回城迴圈頂)呈現 —— 絕不在戰鬥中
+        _drain_mastery_choices(state, gamedata)
 
         ui.rule()
         ui.status_line(state)

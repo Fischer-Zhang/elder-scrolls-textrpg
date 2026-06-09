@@ -694,33 +694,47 @@ def sheet_factions(char: Character, gamedata: GameData) -> None:
 
 
 def sheet_masteries(char: Character, gamedata: GameData) -> None:
+    """技能里程碑(v2 二選一):已選(✦)/ 待選=達門檻未選(◆,回城或升級時二選一)/ 未達門檻(○)。
+
+    待選與未達各列出該節點的兩個選項,讓玩家預覽抉擇。已選節點的「另一條路」不再列出。
+    """
     unl = mastery.unlocked(char, gamedata)
-    locked = [e for e in mastery._defs(gamedata) if e not in unl]
+    chosen_nodes = set(getattr(char, "mastery_choices", {}).keys())
+    other = [e for e in mastery._defs(gamedata)
+             if e not in unl and e["node_id"] not in chosen_nodes]
+    pending = sorted([e for e in other if char.base_skill(e["skill"]) >= e["threshold"]],
+                     key=lambda x: (x["skill"], x["threshold"]))
+    future = sorted([e for e in other if char.base_skill(e["skill"]) < e["threshold"]],
+                    key=lambda x: (x["skill"], x["threshold"]))
     if _web is not None:
         vm_unl = [{"name": e["name"], "skill": gamedata.skill_name(e["skill"]), "desc": e["desc"]}
                   for e in unl]
         vm_lock = []
-        for e in sorted(locked, key=lambda x: (x["skill"], x["threshold"])):
+        for e in pending + future:
             cur = char.base_skill(e["skill"])
             vm_lock.append({"name": e["name"], "skill": gamedata.skill_name(e["skill"]),
                             "desc": e["desc"], "cur": cur, "threshold": e["threshold"],
-                            "remaining": max(1, e["threshold"] - cur)})
+                            "remaining": max(0, e["threshold"] - cur)})
         _emit_view("masteries", {"unlocked": vm_unl, "locked": vm_lock})
         return
     body = Text()
     if unl:
-        body.append("已解鎖\n", style=f"bold {GOLD}")
+        body.append("已銘刻\n", style=f"bold {GOLD}")
         for e in unl:
             body.append(f"  ✦ {e['name']}", style="bold magenta")
             body.append(f"（{gamedata.skill_name(e['skill'])} {e['threshold']}） {e['desc']}\n", style=INK)
-    locked = [e for e in mastery._defs(gamedata) if e not in unl]
-    if locked:
-        body.append("\n未解鎖(門檻)\n", style=f"bold {GOLD}")
-        for e in sorted(locked, key=lambda x: (x["skill"], x["threshold"])):
+    if pending:
+        body.append("\n待選(已達門檻 —— 回城或升級時二選一)\n", style=f"bold {GOLD}")
+        for e in pending:
+            body.append(f"  ◆ {e['name']}（{gamedata.skill_name(e['skill'])} {e['threshold']}） {e['desc']}\n",
+                        style=PARCH)
+    if future:
+        body.append("\n未達門檻\n", style=f"bold {GOLD}")
+        for e in future:
             cur = char.base_skill(e["skill"])
             body.append(f"  ○ {e['name']}（{gamedata.skill_name(e['skill'])} {cur}/{e['threshold']}）"
                         f" {e['desc']}\n", style=FAINT)
-    if not unl and not locked:
+    if not unl and not pending and not future:
         body.append("(無里程碑資料)", style=INK)
     console.print(_panel(body, title="技能里程碑"))
 
@@ -920,11 +934,9 @@ def sheet_skill_detail(char: Character, gamedata: GameData, skill_id: str) -> No
         cur = char.skill_xp.get(skill_id, 0.0)
         pct = int(cur / need * 100) if need > 0 else 0
         rows.append(_kv("熟練進度", f"{pct}%（{cur:.1f}/{need:.1f} → {base + 1} 級)"))
-        nxt = sorted([e for e in mastery._defs(gamedata)
-                      if e["skill"] == skill_id and e["threshold"] > base], key=lambda x: x["threshold"])
+        nxt = mastery.next_threshold(char, gamedata, skill_id)
         if nxt:
-            e = nxt[0]
-            rows.append(_ln(f"下一里程碑　{e['name']}（{e['threshold']} 級):{e['desc']}", "faint"))
+            rows.append(_ln(f"下一里程碑　{nxt['name']}（{nxt['threshold']} 級,還差 {nxt['remaining']}）", "faint"))
         p = sd.get("practice", {})
         if p:
             rows.append(_kv("練習成本", f"體力 {p.get('fatigue', '?')} · {p.get('hours', '?')} 小時 · "
@@ -945,11 +957,9 @@ def sheet_skill_detail(char: Character, gamedata: GameData, skill_id: str) -> No
     cur = char.skill_xp.get(skill_id, 0.0)
     pct = int(cur / need * 100) if need > 0 else 0
     body.append(f"熟練進度  {pct}%（{cur:.1f}/{need:.1f} → {base + 1} 級)\n", style=INK)
-    nxt = sorted([e for e in mastery._defs(gamedata)
-                  if e["skill"] == skill_id and e["threshold"] > base], key=lambda x: x["threshold"])
+    nxt = mastery.next_threshold(char, gamedata, skill_id)
     if nxt:
-        e = nxt[0]
-        body.append(f"下一里程碑  {e['name']}（{e['threshold']} 級):{e['desc']}\n", style=FAINT)
+        body.append(f"下一里程碑  {nxt['name']}（{nxt['threshold']} 級,還差 {nxt['remaining']}）\n", style=FAINT)
     p = sd.get("practice", {})       # 唯讀:直接讀靜態 practice 價碼(切勿呼叫 progression.practice_cost,它會扣體力)
     if p:
         body.append(f"練習成本  體力 {p.get('fatigue', '?')} · {p.get('hours', '?')} 小時 · "
@@ -1061,8 +1071,9 @@ def show_events(events: list[dict], gamedata: GameData) -> None:
             m = f"[bold green]↑ {gamedata.skill_name(ev['skill'])} 提升到 {ev['level']}![/]"
         elif ev["type"] == "level_ready":
             m = "[bold yellow]★ 你感到脫胎換骨 —— 可以升級了!（選單選「升級」）[/]"
-        elif ev["type"] == "mastery_unlocked":
-            m = f"[bold magenta]✦ 技能里程碑「{ev['name']}」解鎖![/] [grey70]{ev['desc']}[/]"
+        elif ev["type"] == "mastery_choice_ready":
+            m = (f"[bold magenta]✦ 你的{gamedata.skill_name(ev['skill'])}已臻新境({ev['threshold']})"
+                 f" —— 回到城鎮或升級時可擇一里程碑![/]")
         else:
             continue
         if _web is not None:

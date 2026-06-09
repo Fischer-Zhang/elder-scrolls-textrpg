@@ -119,6 +119,7 @@ class GameState:
         from tesrpg.systems import progression
         progression.ensure_level_xp(player)
         progression.ensure_all_skills(player, get_gamedata())   # 補上新增技能(scout 等)
+        progression.ensure_mastery_choices(player, get_gamedata())   # 里程碑 v2:補欄/清陳舊選擇/重算 fortify
         return cls(
             player=player,
             time=time,

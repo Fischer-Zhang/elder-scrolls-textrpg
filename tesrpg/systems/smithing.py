@@ -32,6 +32,13 @@ def temper_cap(smithing_skill: int) -> int:
     return min(TEMPER_MAX, max(0, int(smithing_skill) // 20))
 
 
+def effective_temper_cap(char: Character, gamedata: GameData) -> int:
+    """含里程碑「淬火宗師」的淬鍊上限(+cap_bonus,同步抬高 TEMPER_MAX 硬夾,否則滿級時 +1 inert)。"""
+    from tesrpg.systems import mastery
+    bonus = mastery.temper_cap_bonus(char, gamedata)
+    return min(TEMPER_MAX + bonus, max(0, int(char.skill(SKILL)) // 20) + bonus)
+
+
 def _material_of(gamedata: GameData, item_id: str) -> str | None:
     """物品材質:護甲讀 `material` 欄;武器無 material → 由 id 前綴推(iron_sword→iron)。"""
     d = gamedata.item_or_none(item_id)
@@ -62,7 +69,7 @@ def is_temperable(gamedata: GameData, item_id: str) -> bool:
 def can_temper(char: Character, gamedata: GameData, item_id: str) -> tuple[bool, str]:
     if not is_temperable(gamedata, item_id):
         return (False, "此物品無法淬鍊。")
-    cap = temper_cap(char.skill(SKILL))
+    cap = effective_temper_cap(char, gamedata)
     if current_temper(char, gamedata, item_id) >= cap:
         return (False, f"鍛造技能尚不足以再強化(目前上限 +{cap})。" if cap < TEMPER_MAX
                 else "已達淬鍊上限。")
@@ -72,20 +79,25 @@ def can_temper(char: Character, gamedata: GameData, item_id: str) -> tuple[bool,
     return (True, "")
 
 
-def temper(char: Character, gamedata: GameData, item_id: str) -> dict:
-    """淬鍊一級。回傳 {ok, message, level?, hours, tired, skill_events}。
-    條件不足 → ok False、零成本(不扣料/不耗時)。"""
+def temper(char: Character, gamedata: GameData, item_id: str, rng=None) -> dict:
+    """淬鍊一級。回傳 {ok, message, level?, hours, tired, skill_events, free?}。
+    條件不足 → ok False、零成本(不扣料/不耗時)。rng 提供時,里程碑「物盡其用」有機率不耗錠。"""
     ok, reason = can_temper(char, gamedata, item_id)
     if not ok:
         return {"ok": False, "message": reason, "hours": 0, "tired": False, "skill_events": []}
-    inventory.remove_item(char, required_ingot(gamedata, item_id), 1)
+    from tesrpg.systems import mastery
+    free = rng is not None and rng.chance(mastery.temper_free_chance(char, gamedata))
+    if not free:                                       # 「物盡其用」:有機率不消耗錠
+        inventory.remove_item(char, required_ingot(gamedata, item_id), 1)
     store = char.weapon_temper if _is_weapon(gamedata, item_id) else char.armor_temper
     store[item_id] = store.get(item_id, 0) + 1
     xp, hours, tired = progression.practice_cost(char, gamedata, SKILL)
     events = progression.use_skill(char, gamedata, SKILL, xp)
+    msg = f"你在鐵砧前反覆鍛打,將 {gamedata.item_name(item_id)} 淬鍊至 +{store[item_id]}。"
+    if free:
+        msg += "(物盡其用:這次未耗錠)"
     return {"ok": True, "level": store[item_id], "hours": hours, "tired": tired,
-            "skill_events": events,
-            "message": f"你在鐵砧前反覆鍛打,將 {gamedata.item_name(item_id)} 淬鍊至 +{store[item_id]}。"}
+            "skill_events": events, "free": free, "message": msg}
 
 
 # --- 讀取鉤(combat,僅玩家)------------------------------------------------

@@ -206,7 +206,9 @@ def coat_weapon(char: Character, gamedata: GameData, poison_id: str) -> bool:
     d = gamedata.item(poison_id)
     if d.get("kind") != "poison" or count_item(char, poison_id) <= 0 or char.weapon == "fists":
         return False
-    char.weapon_poison = {"status": d["poison"], "charges": poison_charges(char), "name": d["name"]}
+    from tesrpg.systems import mastery
+    charges = poison_charges(char) + mastery.poison_charge_bonus(char, gamedata)   # 「劇毒淬煉」+1 次
+    char.weapon_poison = {"status": d["poison"], "charges": charges, "name": d["name"]}
     remove_item(char, poison_id, 1)
     return True
 

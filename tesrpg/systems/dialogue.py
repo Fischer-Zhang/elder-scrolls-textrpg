@@ -110,18 +110,23 @@ def can_intimidate(gamedata: GameData, enemies) -> bool:
     return bool(enemies) and all(getattr(e, "template_id", None) in INTIMIDATABLE for e in enemies)
 
 
-def intimidate_chance(char: Character, enemies, night: bool) -> float:
-    """威嚇喝退成功率:吃口才,敵越多越難、夜間略難。夾 0.05–0.90(仿 events 既有威嚇檢定)。"""
+def intimidate_chance(char: Character, enemies, night: bool, gamedata=None) -> float:
+    """威嚇喝退成功率:吃口才,敵越多越難、夜間略難。夾 0.05–0.90(仿 events 既有威嚇檢定)。
+    里程碑「不怒自威」抬高下限。"""
     chance = 0.5 + (char.skill("speechcraft") - INTIMIDATE_DIFFICULTY) / 100.0 - (len(enemies) - 1) * 0.15
     if night:
         chance -= 0.10
-    return max(0.05, min(0.90, chance))
+    floor = 0.05
+    if gamedata is not None:
+        from tesrpg.systems import mastery
+        floor = max(floor, mastery.intimidate_floor(char, gamedata))
+    return max(floor, min(0.90, chance))
 
 
 def intimidate(char: Character, gamedata: GameData, enemies, night: bool, rng: RNG) -> dict:
     """威嚇喝退弱人形敵(避戰)。付 speechcraft practice(體力+時間)→ 練口才但非免費刷;
     成功 → 敵退去(呼叫端避戰、**不給任何戰利/擊殺/xp 來自敵人**),失敗 → 接戰(警覺)。"""
-    chance = intimidate_chance(char, enemies, night)
+    chance = intimidate_chance(char, enemies, night, gamedata)
     xp, hours, tired = progression.practice_cost(char, gamedata, "speechcraft")
     events = progression.use_skill(char, gamedata, "speechcraft", xp)
     return {"ok": rng.chance(chance), "chance": chance,

@@ -46,7 +46,8 @@ def brew(char: Character, gamedata: GameData, ing_a: str, ing_b: str, rng: RNG) 
         return {"ok": False, "message": "兩種材料沒有共通效果,化作一灘廢液。",
                 "hours": hours, "tired": tired, "skill_events": events}
 
-    factor = 0.6 + char.skill("alchemy") / 100.0
+    from tesrpg.systems import mastery
+    factor = (0.6 + char.skill("alchemy") / 100.0) * (1 + mastery.potion_potency(char, gamedata))  # 「濃縮萃取」
     events = progression.use_skill(char, gamedata, "alchemy", xp)
 
     # 有害共通效果 → 毒藥(麻痺優先,其次毒傷);否則 → 恢復藥水

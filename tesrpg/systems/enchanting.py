@@ -73,7 +73,8 @@ def enchant_jewelry(char: Character, gamedata: GameData, base_jewelry: str,
         return {"ok": False, "message": "未知的附魔型別。", "hours": 0, "tired": False, "skill_events": []}
 
     soul = gamedata.item(gem_id).get("soul", 1)
-    mag = jewelry_magnitude(kind, soul, char.skill("mysticism"))
+    from tesrpg.systems import mastery
+    mag = round(jewelry_magnitude(kind, soul, char.skill("mysticism")) * (1 + mastery.enchant_potency(char, gamedata)))
 
     inventory.remove_item(char, base_jewelry, 1)
     inventory.remove_item(char, gem_id, 1)
@@ -94,7 +95,8 @@ def enchant_weapon(char: Character, gamedata: GameData, base_weapon: str,
         return {"ok": False, "message": "未知的元素。", "hours": 0, "tired": False, "skill_events": []}
 
     soul = gamedata.item(gem_id).get("soul", 1)
-    mag = enchant_magnitude(soul, char.skill("mysticism"))
+    from tesrpg.systems import mastery
+    mag = round(enchant_magnitude(soul, char.skill("mysticism")) * (1 + mastery.enchant_potency(char, gamedata)))
 
     inventory.remove_item(char, base_weapon, 1)
     inventory.remove_item(char, gem_id, 1)
@@ -115,7 +117,8 @@ def enchant_armor(char: Character, gamedata: GameData, base_armor: str,
         return {"ok": False, "message": "未知的強化項。", "hours": 0, "tired": False, "skill_events": []}
 
     soul = gamedata.item(gem_id).get("soul", 1)
-    mag = enchant_magnitude(soul, char.skill("mysticism"))
+    from tesrpg.systems import mastery
+    mag = round(enchant_magnitude(soul, char.skill("mysticism")) * (1 + mastery.enchant_potency(char, gamedata)))
 
     inventory.remove_item(char, base_armor, 1)
     inventory.remove_item(char, gem_id, 1)

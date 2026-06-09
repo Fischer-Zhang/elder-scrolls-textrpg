@@ -35,12 +35,38 @@ def recompute_equipment(char: Character, gamedata) -> dict:
     return bonuses
 
 
+def recompute_mastery_bonuses(char: Character, gamedata) -> None:
+    """重算「技能里程碑持久 fortify 加成」並寫回 char(供 skill()/attr()/抗性直接讀)。
+
+    純函式 of (char.mastery_choices, mastery.json params):只看玩家『已選』、屬持久層的 option,
+    把 skill/attr/resist fortify 加總寫入三個 mastery_* dict。choices 一變或載入時重算
+    (同 equip_* 的 recompute-on-load 模式)。成長/夾限只用 base_* → 此層永不回饋門檻(鐵律)。
+    """
+    from tesrpg.systems import mastery   # 區域 import:避免 mastery→stats 循環
+    skill_b: dict[str, int] = {}
+    attr_b: dict[str, int] = {}
+    resist_b: dict[str, int] = {}
+    if hasattr(char, "base_skill"):
+        for opt in mastery.chosen_fortify_options(char, gamedata):
+            for k, v in opt.get("skill", {}).items():
+                skill_b[k] = skill_b.get(k, 0) + v
+            for k, v in opt.get("attr", {}).items():
+                attr_b[k] = attr_b.get(k, 0) + v
+            for k, v in opt.get("resist", {}).items():
+                resist_b[k] = resist_b.get(k, 0) + v
+    char.mastery_skill_bonus = skill_b
+    char.mastery_attr_bonus = attr_b
+    char.mastery_resist = resist_b
+
+
 def recompute_max_resources(char: Character, gamedata=None,
                             restore_full: bool = False) -> None:
     ensure_base_health(char)
     fort: dict[str, int] = {}
     if gamedata is not None:
         fort = recompute_equipment(char, gamedata)["resources"]   # 含護甲/飾品/套裝
+        # 里程碑持久 fortify 須在讀 char.attr() 推衍生資源「之前」生效(attr fortify 流進上限)
+        recompute_mastery_bonuses(char, gamedata)
 
     res = char.resource_levels   # 升級三選一累積的資源加成
     char.max_health = char.base_max_health + res.get("health", 0) + fort.get("health", 0)

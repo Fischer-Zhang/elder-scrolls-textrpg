@@ -1,15 +1,17 @@
-"""技能里程碑(Skill Mastery)單元測試。
+"""技能里程碑(Skill Mastery)v2 單元測試 —— 達門檻二選一。
 
-涵蓋:門檻判定(只認 base_skill)、6 條 MVP 各自效果、解鎖播報精確性、
-存檔向後相容、以及守住反 min-max 紅線(里程碑不寫進 base、不破既有夾限)。
+涵蓋:門檻判定(只認 base_skill)、二選一選擇/永久性/pending 衍生、6 條既有效果(選後生效)、
+解鎖播報精確性、存檔向後相容(舊存檔達門檻→pending、不自動指派)、白名單惰性、
+以及守住反 min-max 紅線(里程碑不寫進 base、不破既有夾限)。
 """
 
 from tesrpg import formulas
+from tesrpg import formulas as F
 from tesrpg.creation import build_character
 from tesrpg.gamedata import get_gamedata
 from tesrpg.models import Character
 from tesrpg.rng import RNG
-from tesrpg.systems import combat, dialogue, dungeon, magic, mastery, progression
+from tesrpg.systems import combat, dialogue, dungeon, inventory, magic, mastery, progression, stats, world
 
 
 def _char(**skills):
@@ -25,14 +27,16 @@ def _char(**skills):
 def test_threshold_uses_base_skill_only():
     """里程碑只認 base_skill:裝備/吸血鬼疊加值不得觸發(避免污染成長/夾限)。"""
     gd, c = _char(block=49)
-    assert not any(e["id"] == "block_shieldwall" for e in mastery.unlocked(c, gd))
-    # 裝備加成把有效技能推到 50,但 base 仍 49 → 不解鎖
+    assert not any(n["id"] == "block_50" for n in mastery.pending_choices(c, gd))
+    # 裝備加成把有效技能推到 50,但 base 仍 49 → 不達門檻
     c.equip_skill_bonus["block"] = 5
     assert c.skill("block") >= 50 and c.base_skill("block") == 49
-    assert not any(e["id"] == "block_shieldwall" for e in mastery.unlocked(c, gd))
-    # base 真的到 50 → 解鎖
+    assert not any(n["id"] == "block_50" for n in mastery.pending_choices(c, gd))
+    # base 真的到 50 → 進 pending;選了才解鎖
     c.skills["block"] = 50
-    assert any(e["id"] == "block_shieldwall" for e in mastery.unlocked(c, gd))
+    assert any(n["id"] == "block_50" for n in mastery.pending_choices(c, gd))
+    mastery.choose(c, gd, "block_50", "shieldwall")
+    assert any(e["opt_id"] == "shieldwall" for e in mastery.unlocked(c, gd))
 
 
 def test_creatures_have_no_mastery():
@@ -43,11 +47,42 @@ def test_creatures_have_no_mastery():
     assert mastery.block_hit_penalty(rat, gd) == formulas.BLOCK_HIT_PENALTY
 
 
+# --- 二選一機制(plumbing,以注入節點測試,獨立於出貨內容)-----------------
+def test_two_option_choice_plumbing():
+    """注入一個兩選項(皆已實作 kind)的節點:pending→未選中性→選後生效→永久不可覆寫。"""
+    gd, c = _char(blade=100)
+    node = {"id": "blade_test", "skill": "blade", "threshold": 50, "options": [
+        {"opt_id": "a", "name": "甲", "kind": "block_deflect", "penalty": 0.30, "desc": ""},
+        {"opt_id": "b", "name": "乙", "kind": "lock_floor", "floor": 0.40, "desc": ""}]}
+    gd.mastery.append(node)
+    try:
+        assert any(n["id"] == "blade_test" for n in mastery.pending_choices(c, gd))
+        assert mastery.block_hit_penalty(c, gd) == formulas.BLOCK_HIT_PENALTY   # 未選 → 中性
+        assert mastery.choose(c, gd, "blade_test", "a") is not None
+        assert mastery.block_hit_penalty(c, gd) == 0.30                          # 選 a → 生效
+        assert mastery.lock_floor(c, gd) == 0.0                                  # 未選 b → 中性
+        assert mastery.choose(c, gd, "blade_test", "b") is None                  # 永久不可覆寫
+        assert mastery.block_hit_penalty(c, gd) == 0.30
+        assert all(n["id"] != "blade_test" for n in mastery.pending_choices(c, gd))  # 已選 → 不再 pending
+    finally:
+        gd.mastery.remove(node)
+        c.mastery_choices.pop("blade_test", None)
+
+
+def test_choose_rejects_unreached_and_bad_opt():
+    gd, c = _char(block=40)
+    assert mastery.choose(c, gd, "block_50", "shieldwall") is None   # 未達門檻
+    c.skills["block"] = 50
+    assert mastery.choose(c, gd, "block_50", "nonexistent") is None  # 無此 opt
+    assert mastery.choose(c, gd, "no_such_node", "x") is None        # 無此節點
+
+
 # --- 盾陣(block 50)----------------------------------------------------
 def test_shieldwall_deepens_block_penalty():
     gd, c = _char(block=50)
+    assert mastery.block_hit_penalty(c, gd) == formulas.BLOCK_HIT_PENALTY   # 未選 → 中性
+    mastery.choose(c, gd, "block_50", "shieldwall")
     assert mastery.block_hit_penalty(c, gd) == 0.25
-    # 加深的懲罰確實讓來犯更難命中
     base = formulas.hit_chance(60, 40, 40, 1.0, defender_blocking=True, block_penalty=0.15)
     deep = formulas.hit_chance(60, 40, 40, 1.0, defender_blocking=True, block_penalty=0.25)
     assert deep < base
@@ -58,9 +93,9 @@ def test_shieldwall_deepens_block_penalty():
 # --- 壁壘(heavy_armor 75)---------------------------------------------
 def test_bulwark_reduces_physical_and_costs_fatigue():
     gd, c = _char(heavy_armor=75)
+    mastery.choose(c, gd, "heavy_armor_75", "bulwark")
     assert mastery.incoming_physical_factor(c, gd) == 0.85
     assert mastery.attack_fatigue_factor(c, gd) > 1.0
-    # 物理攻擊實扣血更少(同 seed,唯一變因是壁壘門檻)
     foe = combat.spawn_creature(gd, "giant_rat", RNG(1))
     foe.attack["damage"] = 80
     foe.attack["skill"] = 100
@@ -81,7 +116,6 @@ def test_bulwark_reduces_physical_and_costs_fatigue():
                 compared += 1
     assert compared >= 3, "壁壘應在多數命中下實際降低物理傷害"
 
-    # 攻擊耗體:有壁壘更耗
     def attack_cost(ha):
         c.skills["heavy_armor"] = ha
         c.fatigue = c.max_fatigue
@@ -94,6 +128,7 @@ def test_bulwark_reduces_physical_and_costs_fatigue():
 def test_bulwark_does_not_reduce_elemental():
     """壁壘只擋物理:元素攻擊(走元素抗性分支)不受 incoming_physical_factor 影響。"""
     gd, c = _char(heavy_armor=75)
+    mastery.choose(c, gd, "heavy_armor_75", "bulwark")
     c.equip_resist = {}
     foe = combat.spawn_creature(gd, "giant_rat", RNG(1))
     foe.attack = {"name": "火咬", "damage": 60, "skill": 100, "element": "fire"}
@@ -117,6 +152,7 @@ def test_bulwark_does_not_reduce_elemental():
 # --- 聖光·溢盾(restoration 75)---------------------------------------
 def test_overheal_ward_converts_overflow_and_caps():
     gd, c = _char(restoration=75)
+    mastery.choose(c, gd, "restoration_75", "overheal_ward")
     c.active_effects = []
     c.health = c.max_health             # 血滿 → 治療全溢出
     magic.cast(c, gd, "minor_heal", RNG(1))
@@ -129,6 +165,7 @@ def test_overheal_ward_converts_overflow_and_caps():
 def test_overheal_ward_aggregate_cap_across_casts():
     """審查破口回歸:反覆施放治療,溢盾『總量』不得疊破 cap_ratio×生命上限。"""
     gd, c = _char(restoration=75)
+    mastery.choose(c, gd, "restoration_75", "overheal_ward")
     c.active_effects = []
     c.health = c.max_health
     c.magicka = c.max_magicka = 999
@@ -136,7 +173,6 @@ def test_overheal_ward_aggregate_cap_across_casts():
     for _ in range(12):
         magic.cast(c, gd, "minor_heal", RNG(1))
     assert magic.active_shield(c) <= cap, "溢盾總量不得超過 cap"
-    # 一般 shield 法術額度不被溢盾佔用(source 區隔):另疊一個一般護盾應照常生效
     c.active_effects.append({"kind": "shield", "magnitude": 30, "turns": 3})
     assert magic.active_shield(c) <= cap + 30
 
@@ -144,6 +180,7 @@ def test_overheal_ward_aggregate_cap_across_casts():
 def test_no_overheal_ward_when_not_full():
     """未溢出(血沒滿且治療不滿)→ 不產生護盾。"""
     gd, c = _char(restoration=75)
+    mastery.choose(c, gd, "restoration_75", "overheal_ward")
     c.active_effects = []
     c.health = 1                        # 大幅缺血 → 治療被血上限吸收,無溢出
     magic.cast(c, gd, "minor_heal", RNG(1))
@@ -151,7 +188,7 @@ def test_no_overheal_ward_when_not_full():
 
 
 def test_overheal_ward_requires_threshold():
-    gd, c = _char(restoration=74)
+    gd, c = _char(restoration=74)       # 未達門檻 → 無法選 → getter 中性
     c.active_effects = []
     c.health = c.max_health
     magic.cast(c, gd, "minor_heal", RNG(1))
@@ -161,12 +198,12 @@ def test_overheal_ward_requires_threshold():
 # --- 過載(destruction 100)-------------------------------------------
 def test_overload_raises_cost_and_power_destruction_only():
     gd, c = _char(destruction=100, restoration=100)
+    assert mastery.spell_cost_factor(c, gd, "destruction") == 1.0   # 未選 → 中性
+    mastery.choose(c, gd, "destruction_100", "overload")
     assert mastery.spell_cost_factor(c, gd, "destruction") == 1.30
     assert mastery.spell_power_bonus(c, gd, "destruction") == 0.20
-    # 不影響其他學派
     assert mastery.spell_cost_factor(c, gd, "restoration") == 1.0
     assert mastery.spell_power_bonus(c, gd, "restoration") == 0.0
-    # destruction 100 的有效魔耗 > destruction 99(過載抬高)
     c.skills["destruction"] = 100
     cost_100 = magic.effective_cost(c, gd, "flames")
     c.skills["destruction"] = 99
@@ -177,15 +214,13 @@ def test_overload_raises_cost_and_power_destruction_only():
 # --- 撬鎖名家(security 75)-------------------------------------------
 def test_lock_floor_only_raises_never_lowers():
     gd, c = _char(security=75)
+    mastery.choose(c, gd, "security_75", "master_floor")
     assert mastery.lock_floor(c, gd) == 0.30
-    # 難鎖:原本被夾到 0.05,里程碑抬到 0.30
     hard = dungeon.effective_pick_lock_chance(c, gd, 100)
     assert abs(hard - 0.30) < 1e-9
-    # 簡單鎖:本就高於下限 → 不被壓低
     easy_base = dungeon.pick_lock_chance(c.skill("security"), 0)
     easy_eff = dungeon.effective_pick_lock_chance(c, gd, 0)
     assert easy_eff == max(easy_base, 0.30) == easy_base
-    # 未達門檻 → 無下限
     gd2, c2 = _char(security=74)
     assert dungeon.effective_pick_lock_chance(c2, gd2, 100) == dungeon.pick_lock_chance(74, 100)
 
@@ -193,67 +228,104 @@ def test_lock_floor_only_raises_never_lowers():
 # --- 辯舌·折服(speechcraft 100)------------------------------------
 def test_charm_guarantees_once_per_npc():
     gd, c = _char(speechcraft=100)
+    mastery.choose(c, gd, "speechcraft_100", "charm")
     nid = next(iter(gd.npcs))
     r1 = dialogue.persuade(c, gd, nid, RNG(1))
     assert r1["ok"] and r1.get("charmed") and nid in c.persuaded_npcs
-    # 第二次同一 NPC:不再保證(走一般機率,無 charmed 旗標)
     r2 = dialogue.persuade(c, gd, nid, RNG(1))
     assert not r2.get("charmed")
-    # 未達門檻者不享折服
     gd2, c2 = _char(speechcraft=99)
     assert not dialogue.persuade(c2, gd2, nid, RNG(1)).get("charmed")
 
 
-# --- 解鎖播報精確性 -----------------------------------------------------
-def test_unlock_event_fires_exactly_once_across_multilevel():
-    """一次灌注跨越門檻(含一次跨多級)時,解鎖事件恰好一次,不漏不重。"""
+# --- 解鎖(可選)播報精確性 ---------------------------------------------
+def test_choice_ready_event_fires_exactly_once_across_multilevel():
+    """一次灌注跨越門檻(含一次跨多級)時,『可選里程碑』事件恰好一次,不漏不重。"""
     gd, c = _char()
     c.skills["security"] = 70
     c.skill_xp["security"] = 0.0
     evs = progression.use_skill(c, gd, "security", 200.0)   # 大量 xp 一次跨過 75
-    unlocks = [e for e in evs if e["type"] == "mastery_unlocked"]
-    assert len(unlocks) == 1 and unlocks[0]["name"] == "撬鎖名家"
+    rdy = [e for e in evs if e["type"] == "mastery_choice_ready"]
+    assert len(rdy) == 1 and rdy[0]["node_id"] == "security_75"
     assert c.skills["security"] >= 75
-    # 已解鎖後再練不重報
     evs2 = progression.use_skill(c, gd, "security", 50.0)
-    assert not [e for e in evs2 if e["type"] == "mastery_unlocked"]
+    assert not [e for e in evs2 if e["type"] == "mastery_choice_ready"]
 
 
 # --- 存檔向後相容 -------------------------------------------------------
+def test_mastery_choices_roundtrip_and_backward_compat():
+    gd, c = _char(block=50)
+    mastery.choose(c, gd, "block_50", "shieldwall")
+    d = c.to_dict()
+    assert d["mastery_choices"]["block_50"] == "shieldwall"
+    assert Character.from_dict(d).mastery_choices == {"block_50": "shieldwall"}
+    d.pop("mastery_choices")            # 舊存檔缺此欄 → dataclass 預設空 dict
+    assert Character.from_dict(d).mastery_choices == {}
+
+
 def test_persuaded_npcs_roundtrip_and_backward_compat():
     gd, c = _char(speechcraft=100)
     c.persuaded_npcs = ["alpha", "beta"]
     d = c.to_dict()
-    assert d["persuaded_npcs"] == ["alpha", "beta"]
     assert Character.from_dict(d).persuaded_npcs == ["alpha", "beta"]
-    # 舊存檔缺此欄 → dataclass 預設空 list
     d.pop("persuaded_npcs")
     assert Character.from_dict(d).persuaded_npcs == []
 
 
+def test_pending_choice_derivation_backcompat():
+    """舊存檔達門檻但無選擇 → pending 列出、getter 中性,選後才生效(不自動指派)。"""
+    gd, c = _char(block=50, security=75)
+    d = c.to_dict()
+    d.pop("mastery_choices", None)
+    c2 = Character.from_dict(d)
+    progression.ensure_mastery_choices(c2, gd)
+    assert c2.mastery_choices == {}
+    node_ids = {n["id"] for n in mastery.pending_choices(c2, gd)}
+    assert "block_50" in node_ids and "security_75" in node_ids
+    assert mastery.block_hit_penalty(c2, gd) == formulas.BLOCK_HIT_PENALTY
+    assert mastery.lock_floor(c2, gd) == 0.0
+    mastery.choose(c2, gd, "security_75", "master_floor")
+    assert mastery.lock_floor(c2, gd) == 0.30
+
+
+def test_ensure_mastery_choices_prunes_stale():
+    """JSON 改版安全:指向已不存在 node/opt 的陳舊選擇被清掉,有效者保留。"""
+    gd, c = _char(block=50)
+    c.mastery_choices = {"block_50": "shieldwall", "gone_node": "x", "block_50_bad": "nope"}
+    progression.ensure_mastery_choices(c, gd)
+    assert c.mastery_choices == {"block_50": "shieldwall"}
+
+
 def test_shipped_kinds_all_implemented():
-    """fail-fast(以測試代替載入期例外):出貨的 mastery.json 每條 kind 都須已實作,
-    否則玩家會看到解鎖/加分卻零效果(審查抓到的沉默 foot-gun)。"""
+    """fail-fast:出貨 mastery.json 每個 option 的 kind 都須已實作,否則玩家看到可選卻零效果。"""
     gd = get_gamedata()
-    for e in gd.mastery:
-        assert e["kind"] in mastery._IMPLEMENTED_KINDS, f"未實作的 kind:{e['kind']}"
+    for node in mastery._nodes(gd):
+        for o in node["options"]:
+            assert o["kind"] in mastery._IMPLEMENTED_KINDS, f"未實作的 kind:{o['kind']}"
 
 
 def test_unimplemented_kind_is_inert():
-    """打錯/未實作的 kind:不顯示、不計分、不播報(完全 inert,而非半套)。"""
+    """打錯/未實作的 kind:不出 pending、不可選、不計分(完全 inert)。"""
     gd, c = _char(blade=100)
-    bogus = {"id": "x", "skill": "blade", "threshold": 50, "name": "幻影", "kind": "not_a_real_kind"}
+    bogus = {"id": "blade_x", "skill": "blade", "threshold": 50,
+             "options": [{"opt_id": "ghost", "name": "幻影", "kind": "not_a_real_kind"}]}
     gd.mastery.append(bogus)
     try:
-        assert all(e["id"] != "x" for e in mastery.unlocked(c, gd))
-        assert not mastery.newly_unlocked(c, gd, "blade", 50)
+        assert all(n["id"] != "blade_x" for n in mastery.pending_choices(c, gd))
+        assert not mastery.nodes_at(c, gd, "blade", 50)
+        c.mastery_choices["blade_x"] = "ghost"   # 即使硬塞,unlocked 仍過濾
+        assert all(e.get("node_id") != "blade_x" for e in mastery.unlocked(c, gd))
     finally:
         gd.mastery.remove(bogus)
+        c.mastery_choices.pop("blade_x", None)
 
 
 def test_mastery_never_writes_base_skill():
     """里程碑不得寫進 char.skills(否則破壞 learn-by-doing 與夾限)。"""
     gd, c = _char(heavy_armor=75, destruction=100, block=50)
+    mastery.choose(c, gd, "heavy_armor_75", "bulwark")
+    mastery.choose(c, gd, "destruction_100", "overload")
+    mastery.choose(c, gd, "block_50", "shieldwall")
     snapshot = dict(c.skills)
     mastery.unlocked(c, gd)
     mastery.incoming_physical_factor(c, gd)
@@ -267,19 +339,530 @@ def test_next_threshold_hint_uses_base_and_skips_done():
     gd, c = _char(block=44)
     nxt = mastery.next_threshold(c, gd, "block")
     assert nxt and nxt["threshold"] == 50 and nxt["remaining"] == 6 and nxt["name"]
-    # 走 base:裝備加成不改 remaining
     c.equip_skill_bonus["block"] = 10
     assert c.skill("block") >= 50 and mastery.next_threshold(c, gd, "block")["remaining"] == 6
-    # base 達最高門檻 → None(已解,不再提示)
     c.skills["block"] = 50
     assert mastery.next_threshold(c, gd, "block") is None
-    # 無里程碑的技能 → None
+    # 已達某技能最高門檻 → None(athletics 唯一門檻為 50)
+    c.skills["athletics"] = 50
     assert mastery.next_threshold(c, gd, "athletics") is None
+
+
+# --- P1:持久 fortify 加成層 -------------------------------------------
+def test_skill_fortify_stacks_effective_not_base():
+    gd, c = _char(blade=50)
+    base_marks = c.base_skill("marksman")
+    node = {"id": "blade_sf", "skill": "blade", "threshold": 50, "options": [
+        {"opt_id": "m", "name": "射", "kind": "skill_fortify", "skill": {"marksman": 8}, "desc": ""}]}
+    gd.mastery.append(node)
+    try:
+        assert mastery.choose(c, gd, "blade_sf", "m") is not None
+        assert c.mastery_skill_bonus.get("marksman") == 8
+        assert c.skill("marksman") == base_marks + 8
+        assert c.base_skill("marksman") == base_marks          # base 不動(鐵律)
+    finally:
+        gd.mastery.remove(node)
+        c.mastery_choices.pop("blade_sf", None)
+        stats.recompute_mastery_bonuses(c, gd)
+
+
+def test_attr_fortify_flows_into_max_resources():
+    gd, c = _char(blade=50)
+    stats.recompute_max_resources(c, gd)
+    base_fatigue = c.max_fatigue
+    node = {"id": "blade_af", "skill": "blade", "threshold": 50, "options": [
+        {"opt_id": "end", "name": "耐", "kind": "attr_fortify", "attr": {"endurance": 5}, "desc": ""}]}
+    gd.mastery.append(node)
+    try:
+        mastery.choose(c, gd, "blade_af", "end")            # choose 內呼叫 recompute_max_resources
+        assert c.mastery_attr_bonus.get("endurance") == 5
+        assert c.attr("endurance") == c.base_attr("endurance") + 5
+        assert c.max_fatigue > base_fatigue                 # 耐力 fortify 流進體力上限
+    finally:
+        gd.mastery.remove(node)
+        c.mastery_choices.pop("blade_af", None)
+        stats.recompute_max_resources(c, gd)
+
+
+def test_resist_fortify_merges_into_entity_resist():
+    gd, c = _char(blade=50)
+    base = magic.entity_resist(c, gd).get("fire", 0)
+    node = {"id": "blade_rf", "skill": "blade", "threshold": 50, "options": [
+        {"opt_id": "f", "name": "耐火", "kind": "resist_fortify", "resist": {"fire": 15}, "desc": ""}]}
+    gd.mastery.append(node)
+    try:
+        mastery.choose(c, gd, "blade_rf", "f")
+        assert c.mastery_resist.get("fire") == 15
+        assert magic.entity_resist(c, gd).get("fire", 0) == base + 15
+    finally:
+        gd.mastery.remove(node)
+        c.mastery_choices.pop("blade_rf", None)
+        stats.recompute_mastery_bonuses(c, gd)
+
+
+def test_fortify_does_not_bootstrap_threshold():
+    """里程碑 +skill 持久加成只進 skill(),不進 base_skill → 不得自我推過更高門檻。"""
+    gd, c = _char(block=50)
+    c.mastery_skill_bonus["block"] = 40                     # 模擬 recompute 後的快取
+    try:
+        assert c.skill("block") == 90 and c.base_skill("block") == 50
+        for node in mastery._nodes(gd):
+            if node["skill"] == "block" and node["threshold"] > 50:
+                assert not mastery._node_reached(c, node), "fortify 不得推過更高門檻"
+        assert all(n["threshold"] <= 50 for n in mastery.pending_choices(c, gd)
+                   if n["skill"] == "block")
+    finally:
+        c.mastery_skill_bonus.pop("block", None)
+
+
+def test_recompute_mastery_idempotent():
+    gd, c = _char(blade=50)
+    node = {"id": "blade_idem", "skill": "blade", "threshold": 50, "options": [
+        {"opt_id": "m", "name": "射", "kind": "skill_fortify", "skill": {"marksman": 8}, "desc": ""}]}
+    gd.mastery.append(node)
+    try:
+        mastery.choose(c, gd, "blade_idem", "m")
+        snap = dict(c.skills)
+        stats.recompute_mastery_bonuses(c, gd)
+        stats.recompute_mastery_bonuses(c, gd)
+        assert c.mastery_skill_bonus == {"marksman": 8}     # 不累積、不漂移
+        assert c.skills == snap                             # recompute 不寫 base
+    finally:
+        gd.mastery.remove(node)
+        c.mastery_choices.pop("blade_idem", None)
+        stats.recompute_mastery_bonuses(c, gd)
+
+
+# --- P2:戰鬥系內容 -----------------------------------------------------
+def test_weapon_mod_target_matches_weapon_skill():
+    gd, c = _char(blade=100)
+    mastery.choose(c, gd, "blade_100", "savage")
+    assert mastery.weapon_mod(c, gd, "blade").get("power") == 0.12
+    assert mastery.weapon_mod(c, gd, "blunt") == {}        # target 不符 → 不適用
+    assert mastery.weapon_mod(c, gd, None) == {}
+
+
+def test_weapon_mod_power_increases_damage_with_recoil():
+    def dealt(savage, seed):
+        gd, c = _char(blade=100, strength=80)
+        c.weapon = "steel_dagger"
+        if savage:
+            mastery.choose(c, gd, "blade_100", "savage")
+        foe = combat.spawn_creature(gd, "giant_rat", RNG(1))
+        foe.health = foe.max_health = 99999
+        c.health = c.max_health
+        ev = combat.resolve_attack(c, foe, gd, RNG(seed))
+        return (ev["damage"], c.max_health - c.health) if ev["hit"] and ev["damage"] > 0 else None
+    more = recoiled = 0
+    for s in range(120):
+        a = dealt(False, s)
+        b = dealt(True, s)
+        if a and b:
+            assert b[0] >= a[0]                  # 威力 +12% → 傷害不減
+            if b[0] > a[0]:
+                more += 1
+            if b[1] > 0:                          # 迅捷連斬反作用 → 自損
+                recoiled += 1
+    assert more >= 3 and recoiled >= 3
+
+
+def test_blade_precision_raises_hit_chance():
+    gd, c = _char(blade=100)
+    mastery.choose(c, gd, "blade_100", "precision")
+    assert mastery.weapon_mod(c, gd, "blade").get("hit") == 0.05
+
+
+def test_blunt_pen_increases_damage_vs_armor():
+    def dealt(sunder, seed):
+        gd, c = _char(blunt=100, strength=80)
+        c.weapon = "iron_mace"
+        if sunder:
+            mastery.choose(c, gd, "blunt_100", "sunder")
+        foe = combat.spawn_creature(gd, "dremora", RNG(1))   # 高護甲精英
+        foe.health = foe.max_health = 99999
+        ev = combat.resolve_attack(c, foe, gd, RNG(seed))
+        return ev["damage"] if ev["hit"] and ev["damage"] > 0 else None
+    more = 0
+    for s in range(120):
+        a = dealt(False, s)
+        b = dealt(True, s)
+        if a and b:
+            assert b >= a
+            if b > a:
+                more += 1
+    assert more >= 3, "破甲應對高護甲敵提高有效傷害"
+
+
+def test_blunt_concussion_weakens_enemy():
+    gd, c = _char(blunt=100)
+    c.weapon = "iron_mace"
+    mastery.choose(c, gd, "blunt_100", "concussion")
+    foe = combat.spawn_creature(gd, "giant_rat", RNG(1))
+    foe.health = foe.max_health = 99999
+    got = 0
+    for s in range(60):
+        foe.active_effects = []
+        ev = combat.resolve_attack(c, foe, gd, RNG(s))
+        if ev["hit"] and any(e["kind"] == "weaken" for e in foe.active_effects):
+            got += 1
+    assert got >= 1
+
+
+def test_hand_to_hand_power_and_disarm():
+    gd, c = _char(hand_to_hand=75)
+    c.weapon = "fists"
+    mastery.choose(c, gd, "hand_to_hand_75", "iron_fists")
+    assert mastery.weapon_mod(c, gd, "hand_to_hand").get("power") == 0.15
+    gd2, c2 = _char(hand_to_hand=75)
+    c2.weapon = "fists"
+    mastery.choose(c2, gd2, "hand_to_hand_75", "disarm")
+    assert mastery.weapon_mod(c2, gd2, "hand_to_hand")["on_hit_status"]["kind"] == "stagger"
+
+
+def test_block_riposte_staggers_attacker():
+    gd, c = _char(block=50)
+    mastery.choose(c, gd, "block_50", "shield_bash")
+    foe = combat.spawn_creature(gd, "bandit", RNG(1))
+    foe.attack["skill"] = 100
+    foe.attack["damage"] = 4
+    got = 0
+    for s in range(60):
+        foe.active_effects = []
+        c.health = c.max_health
+        combat.resolve_attack(foe, c, gd, RNG(s), defender_blocking=True)
+        if any(e["kind"] == "stagger" for e in foe.active_effects):
+            got += 1
+    assert got >= 1, "盾擊踉蹌應至少觸發一次"
+
+
+def test_heavy_armor_unyielding_resist():
+    gd, c = _char(heavy_armor=75)
+    base = magic.entity_resist(c, gd).get("magic", 0)
+    mastery.choose(c, gd, "heavy_armor_75", "unyielding")
+    assert c.mastery_resist.get("magic") == 10
+    assert magic.entity_resist(c, gd).get("magic", 0) == base + 10
+    assert mastery.incoming_physical_factor(c, gd) == 1.0   # 非壁壘 → 無物理減傷
+
+
+def test_smithing_temper_cap_and_free():
+    from tesrpg.systems import smithing
+    gd, c = _char(smithing=100)
+    base_cap = smithing.effective_temper_cap(c, gd)
+    mastery.choose(c, gd, "smithing_75", "master_temper")
+    assert smithing.effective_temper_cap(c, gd) == base_cap + 1
+    gd2, c2 = _char(smithing=100)
+    mastery.choose(c2, gd2, "smithing_75", "efficient")
+    assert mastery.temper_free_chance(c2, gd2) == 0.30
+
+
+def test_armorer_repair_floor_and_fortify():
+    gd, c = _char(armorer=50)
+    mastery.choose(c, gd, "armorer_50", "field_smith")
+    assert mastery.repair_floor(c, gd) == 90.0
+    gd2, c2 = _char(armorer=50)
+    base_ha = c2.base_skill("heavy_armor")
+    mastery.choose(c2, gd2, "armorer_50", "resilient_plate")
+    assert c2.skill("heavy_armor") == base_ha + 6 and c2.base_skill("heavy_armor") == base_ha
+
+
+def test_athletics_travel_and_fatigue():
+    gd, c = _char(athletics=50)
+    mastery.choose(c, gd, "athletics_50", "marathon")
+    assert mastery.travel_factor_bonus(c, gd) == 0.10
+    # 戰鬥省體:second_wind 使攻擊耗體更低
+    gd2, c2 = _char(athletics=50)
+    mastery.choose(c2, gd2, "athletics_50", "second_wind")
+    c2.weapon = "steel_dagger"
+    c2.fatigue = c2.max_fatigue
+    f0 = c2.fatigue
+    combat.player_attack_cost(c2, gd2)
+    cost_with = f0 - c2.fatigue
+    gd3, c3 = _char(athletics=50)
+    c3.weapon = "steel_dagger"
+    c3.fatigue = c3.max_fatigue
+    f0b = c3.fatigue
+    combat.player_attack_cost(c3, gd3)
+    cost_without = f0b - c3.fatigue
+    assert cost_with < cost_without
+
+
+# --- P3:魔法系內容 -----------------------------------------------------
+def test_spell_mod_power_cost_per_school():
+    gd, c = _char(destruction=100)
+    mastery.choose(c, gd, "destruction_100", "overload")
+    assert mastery.spell_power_bonus(c, gd, "destruction") == 0.20
+    assert mastery.spell_cost_factor(c, gd, "destruction") == 1.30
+    assert mastery.spell_power_bonus(c, gd, "restoration") == 0.0      # 不影響別學派
+    gd2, c2 = _char(alteration=75)
+    mastery.choose(c2, gd2, "alteration_75", "spell_reach")
+    assert mastery.spell_power_bonus(c2, gd2, "alteration") == 0.15
+    assert mastery.spell_cost_factor(c2, gd2, "alteration") == 1.0
+
+
+def test_destruction_impact_staggers_on_hit():
+    gd, c = _char(destruction=100)
+    mastery.choose(c, gd, "destruction_100", "impact")
+    assert mastery.spell_on_hit(c, gd, "destruction")["kind"] == "stagger"
+    assert mastery.spell_cost_factor(c, gd, "destruction") == 1.0      # 衝擊餘波無額外魔耗
+    c.spells = ["flames"]
+    c.magicka = c.max_magicka = 99999
+    got = 0
+    for s in range(60):
+        foe = combat.spawn_creature(gd, "dremora", RNG(1))
+        foe.health = foe.max_health = 99999
+        magic.cast(c, gd, "flames", RNG(s), target=foe)
+        c.magicka = 99999
+        if any(e["kind"] == "stagger" for e in foe.active_effects):
+            got += 1
+    assert got >= 1
+
+
+def test_conjuration_summon_mods():
+    gd, c = _char(conjuration=100)
+    mastery.choose(c, gd, "conjuration_100", "twin_summon")
+    assert mastery.summon_mod(c, gd).get("extra") == 1
+    summon_spell = next((sid for sid, sp in gd.spells.items()
+                         if sp.get("effect", {}).get("kind") == "summon"), None)
+    if summon_spell:
+        c.spells = [summon_spell]
+        c.magicka = c.max_magicka = 99999
+        battle = {}
+        magic.cast(c, gd, summon_spell, RNG(1), battle=battle)
+        assert len(battle.get("allies", [])) == 2          # 主 + 額外較弱盟友
+    gd2, c2 = _char(conjuration=100)
+    mastery.choose(c2, gd2, "conjuration_100", "bound_blade")
+    assert mastery.summon_mod(c2, gd2).get("hp_bonus") == 0.25
+
+
+def test_alteration_stoneflesh_passive_armor():
+    gd, c = _char(alteration=75)
+    mastery.choose(c, gd, "alteration_75", "stoneflesh")
+    assert mastery.passive_armor_bonus(c, gd) == 20
+    c.magicka = 10
+    a_with = combat._armor_rating(c, gd)
+    c.magicka = 0
+    a_without = combat._armor_rating(c, gd)
+    assert a_with == a_without + 20                        # 有魔力 +20,枯竭則無
+
+
+def test_alchemy_potion_potency_and_poison_charges():
+    gd, c = _char(alchemy=75)
+    mastery.choose(c, gd, "alchemy_75", "concentrated")
+    assert mastery.potion_potency(c, gd) == 0.20
+    gd2, c2 = _char(alchemy=75)
+    mastery.choose(c2, gd2, "alchemy_75", "potent_poison")
+    assert mastery.poison_charge_bonus(c2, gd2) == 1
+    # 塗毒實際多 1 次:給一瓶毒 + 非徒手武器
+    poison = next((iid for iid, d in gd.items.items()
+                   if isinstance(d, dict) and d.get("kind") == "poison"), None)
+    if poison:
+        c2.weapon = "steel_dagger"
+        inventory.add_item(c2, poison, 1)
+        base = inventory.poison_charges(c2)
+        inventory.coat_weapon(c2, gd2, poison)
+        assert c2.weapon_poison["charges"] == base + 1
+
+
+def test_mysticism_enchant_potency_and_absorb():
+    gd, c = _char(mysticism=100)
+    mastery.choose(c, gd, "mysticism_100", "soul_siphon")
+    assert mastery.enchant_potency(c, gd) == 0.20
+    gd2, c2 = _char(mysticism=100)
+    base = magic.entity_resist(c2, gd2).get("magic", 0)
+    mastery.choose(c2, gd2, "mysticism_100", "spell_absorb")
+    assert magic.entity_resist(c2, gd2).get("magic", 0) == base + 15
+
+
+def test_illusion_fear_on_hit_and_merchant():
+    gd, c = _char(illusion=75, mercantile=50)
+    sp0 = world.sell_price(c, gd, "steel_dagger")
+    mastery.choose(c, gd, "illusion_75", "charm_market")
+    assert world.sell_price(c, gd, "steel_dagger") >= sp0
+    gd2, c2 = _char(illusion=75)
+    mastery.choose(c2, gd2, "illusion_75", "cowardice")
+    c2.weapon = "steel_dagger"
+    got = 0
+    for s in range(80):
+        foe = combat.spawn_creature(gd2, "giant_rat", RNG(1))
+        foe.health = foe.max_health = 99999
+        ev = combat.resolve_attack(c2, foe, gd2, RNG(s))
+        if ev["hit"] and any(e["kind"] == "fear" for e in foe.active_effects):
+            got += 1
+    assert got >= 1
+
+
+def test_restoration_steadfast_regen_on_low():
+    gd, c = _char(restoration=75)
+    mastery.choose(c, gd, "restoration_75", "steadfast")
+    foe = combat.spawn_creature(gd, "bandit", RNG(1))
+    foe.attack["damage"] = 4
+    foe.attack["skill"] = 100
+    c.max_health = 100
+    triggered = False
+    for s in range(40):
+        c.active_effects = [e for e in c.active_effects if e.get("source") != "steadfast"]
+        c.health = 20                                      # < 25% → 應觸發
+        combat.resolve_attack(foe, c, gd, RNG(s))
+        if any(e.get("source") == "steadfast" and e["kind"] == "regen" for e in c.active_effects):
+            triggered = True
+            break
+    assert triggered
+
+
+# --- P4:潛行系內容 + 群體規模反制 -------------------------------------
+def test_horde_penalty_crushes_stealth_above_three():
+    """>3 敵:潛近/隱遁機率陡降(取代秒殺率上限的載重級反制)。"""
+    a3 = F.stealth_approach_chance(100, 30, 3, None)
+    a4 = F.stealth_approach_chance(100, 30, 4, None)
+    a5 = F.stealth_approach_chance(100, 30, 5, None)
+    assert a4 < a3 - 0.20 and a5 < a4               # 第 4 敵起大減
+    r3 = F.restealth_chance(100, 100, 3, 0)
+    r4 = F.restealth_chance(100, 100, 4, 0)
+    assert r4 < r3 - 0.20                            # 隱遁同樣大減
+
+
+def test_solo_boss_survives_apex_opener():
+    """solo boss 反一刀:即使最壞 apex(影刃+夜母+雙持+淬鍊),單次偷襲也不可秒 solo boss。"""
+    gd, c = _char(sneak=100, blade=100, smithing=100, acrobatics=100)
+    inventory.add_item(c, "glass_dagger", 2)
+    c.weapon = "glass_dagger"
+    inventory.equip_offhand(c, gd, "glass_dagger")
+    c.weapon_temper = {"glass_dagger": 5}
+    c.factions["dark_brotherhood"] = 6
+    mastery.choose(c, gd, "sneak_100", "shadowblade")
+    killed = 0
+    for s in range(400):
+        boss = combat.spawn_creature(gd, "vampire_lord", RNG(s))   # 較低血的 solo boss
+        ev = combat.resolve_attack(c, boss, gd, RNG(s * 3 + 1), sneak_attack=True)
+        if ev["defender_dead"]:
+            killed += 1
+    assert killed == 0, f"solo boss 不應被單擊秒殺,卻有 {killed}/400 次"
+    # 但對非 solo 精英照常可秒(影刃力量幻想不受夾限影響)
+    elite_kills = sum(combat.resolve_attack(
+        c, _seed_elite(gd, s), gd, RNG(s * 3 + 1), sneak_attack=True)["defender_dead"]
+        for s in range(200))
+    assert elite_kills > 0
+
+
+def _seed_elite(gd, s):
+    e = combat.spawn_creature(gd, "dremora", RNG(s))
+    return e
+
+
+def test_sneak_mult_bonus_raises_sneak_damage():
+    gd, c = _char(sneak=100, blade=100)
+    c.weapon = "steel_dagger"
+    foe = combat.spawn_creature(gd, "dremora", RNG(1))
+    foe.health = foe.max_health = 99999
+    base = combat.estimate_sneak_damage(c, gd, foe)
+    mastery.choose(c, gd, "sneak_100", "shadowblade")
+    assert mastery.sneak_mult_bonus(c, gd) == 0.50
+    assert combat.estimate_sneak_damage(c, gd, foe) > base   # 影刃放大偷襲傷害
+
+
+def test_vanish_relentless_removes_reuse_decay_but_not_horde():
+    gd, c = _char(sneak=100, acrobatics=100)
+    mastery.choose(c, gd, "sneak_75", "relentless_shadow")
+    assert mastery.has_vanish_relentless(c, gd)
+    # 免重複遞減:used=3 與 used=0 同機率
+    assert combat.vanish_chance(c, 2, 3, gd) == combat.vanish_chance(c, 2, 0, gd)
+    # 但 >3 敵仍被壓制(連環踏影擋不住大群)
+    assert combat.vanish_chance(c, 5, 0, gd) <= 0.10
+
+
+def test_vanish_floor_guarantees_minimum():
+    gd, c = _char(sneak=100, acrobatics=10)
+    mastery.choose(c, gd, "sneak_100", "shadowstep")
+    assert mastery.vanish_floor(c, gd) == 0.15
+    assert combat.vanish_chance(c, 5, 2, gd) >= 0.15        # 即便大群+重複,保底 15%
+
+
+def test_vanish_floor_takes_max_across_sources():
+    """審查回歸:同時選 tumble(acro 0.10)+ shadowstep(sneak 0.15)→ 取最高 0.15(非第一個)。"""
+    gd, c = _char(sneak=100, acrobatics=100)
+    mastery.choose(c, gd, "acrobatics_75", "tumble")        # vanish_floor 0.10(JSON 在前)
+    mastery.choose(c, gd, "sneak_100", "shadowstep")        # vanish_floor 0.15
+    assert mastery.vanish_floor(c, gd) == 0.15
+    assert combat.vanish_chance(c, 5, 2, gd) >= 0.15
+
+
+def test_merchant_bonus_sums_across_sources():
+    """審查回歸:illusion 魅惑 + mercantile 精算 兩來源相加(非只取第一個)。"""
+    gd, c = _char(illusion=75, mercantile=50)
+    mastery.choose(c, gd, "illusion_75", "charm_market")    # 0.12
+    mastery.choose(c, gd, "mercantile_50", "haggler")       # 0.12
+    assert abs(mastery.merchant_bonus(c, gd) - 0.24) < 1e-9
+
+
+def test_acrobatics_evasion_lowers_enemy_hit():
+    gd, c = _char(acrobatics=75)
+    mastery.choose(c, gd, "acrobatics_75", "evasion")
+    assert mastery.evasion_bonus(c, gd) == 0.05
+    foe = combat.spawn_creature(gd, "bandit", RNG(1))
+    foe.attack["skill"] = 60
+    hits_with = sum(combat.resolve_attack(foe, c, gd, RNG(s))["hit"] for s in range(200))
+    gd2, c2 = _char(acrobatics=75)
+    hits_without = sum(combat.resolve_attack(foe, c2, gd2, RNG(s))["hit"] for s in range(200))
+    assert hits_with <= hits_without
+
+
+def test_sneak_approach_and_armor_relief():
+    gd, c = _char(sneak=100)
+    foes = [combat.spawn_creature(gd, "bandit", RNG(1))]
+    base = combat.stealth_approach_chance(c, foes, gd)
+    mastery.choose(c, gd, "sneak_75", "silent_approach")
+    assert combat.stealth_approach_chance(c, foes, gd) > base   # 無聲潛近 +頻率
+    # 無聲披掛:抵消重甲噪音(穿重甲時潛近不再被罰)
+    gd2, c2 = _char(light_armor=75)
+    mastery.choose(c2, gd2, "light_armor_75", "featherweight")
+    assert mastery.armor_sneak_relief(c2, gd2) == 1.0
+
+
+def test_scout_prep_and_recon():
+    gd, c = _char(scout=75)
+    mastery.choose(c, gd, "scout_75", "vanguard")
+    assert mastery.prep_bonus(c, gd) == 1
+    gd2, c2 = _char(scout=75)
+    assert mastery.recon_reveal_threshold(c2, gd2) == 75
+    mastery.choose(c2, gd2, "scout_75", "weakness_read")
+    assert mastery.recon_reveal_threshold(c2, gd2) == 50
+
+
+def test_security_pick_no_break():
+    gd, c = _char(security=75)
+    mastery.choose(c, gd, "security_75", "pick_thrift")
+    assert mastery.pick_keep_chance(c, gd) == 0.50
+    inventory.add_item(c, dungeon.LOCKPICK_ITEM, 50)
+    c.fatigue = c.max_fatigue = 9999
+    kept_some = False
+    for s in range(60):
+        before = inventory.count_item(c, dungeon.LOCKPICK_ITEM)
+        r = dungeon.pick_lock(c, gd, 100, RNG(s))   # 高難鎖 → 多半失敗
+        after = inventory.count_item(c, dungeon.LOCKPICK_ITEM)
+        if not r["success"] and after == before:    # 失敗卻沒折斷 → 巧手不折生效
+            kept_some = True
+            break
+    assert kept_some
+
+
+def test_mercantile_and_intimidate():
+    gd, c = _char(mercantile=50)
+    mastery.choose(c, gd, "mercantile_50", "haggler")
+    assert mastery.merchant_bonus(c, gd) == 0.12
+    gd2, c2 = _char(mercantile=50)
+    mastery.choose(c2, gd2, "mercantile_50", "investor")
+    assert mastery.restock_mult(c2, gd2) == 1.5
+    gd3, c3 = _char(speechcraft=100)
+    mastery.choose(c3, gd3, "speechcraft_100", "intimidator")
+    foes = [combat.spawn_creature(gd3, "bandit", RNG(1)) for _ in range(3)]
+    assert dialogue.intimidate_chance(c3, foes, False, gd3) >= 0.40   # 下限抬到 40%
 
 
 def run():
     test_threshold_uses_base_skill_only()
     test_creatures_have_no_mastery()
+    test_two_option_choice_plumbing()
+    test_choose_rejects_unreached_and_bad_opt()
     test_shieldwall_deepens_block_penalty()
     test_bulwark_reduces_physical_and_costs_fatigue()
     test_bulwark_does_not_reduce_elemental()
@@ -290,12 +873,51 @@ def run():
     test_overload_raises_cost_and_power_destruction_only()
     test_lock_floor_only_raises_never_lowers()
     test_charm_guarantees_once_per_npc()
-    test_unlock_event_fires_exactly_once_across_multilevel()
+    test_choice_ready_event_fires_exactly_once_across_multilevel()
+    test_mastery_choices_roundtrip_and_backward_compat()
     test_persuaded_npcs_roundtrip_and_backward_compat()
+    test_pending_choice_derivation_backcompat()
+    test_ensure_mastery_choices_prunes_stale()
     test_shipped_kinds_all_implemented()
     test_unimplemented_kind_is_inert()
     test_mastery_never_writes_base_skill()
     test_next_threshold_hint_uses_base_and_skips_done()
+    test_skill_fortify_stacks_effective_not_base()
+    test_attr_fortify_flows_into_max_resources()
+    test_resist_fortify_merges_into_entity_resist()
+    test_fortify_does_not_bootstrap_threshold()
+    test_recompute_mastery_idempotent()
+    test_weapon_mod_target_matches_weapon_skill()
+    test_weapon_mod_power_increases_damage_with_recoil()
+    test_blade_precision_raises_hit_chance()
+    test_blunt_pen_increases_damage_vs_armor()
+    test_blunt_concussion_weakens_enemy()
+    test_hand_to_hand_power_and_disarm()
+    test_block_riposte_staggers_attacker()
+    test_heavy_armor_unyielding_resist()
+    test_smithing_temper_cap_and_free()
+    test_armorer_repair_floor_and_fortify()
+    test_athletics_travel_and_fatigue()
+    test_spell_mod_power_cost_per_school()
+    test_destruction_impact_staggers_on_hit()
+    test_conjuration_summon_mods()
+    test_alteration_stoneflesh_passive_armor()
+    test_alchemy_potion_potency_and_poison_charges()
+    test_mysticism_enchant_potency_and_absorb()
+    test_illusion_fear_on_hit_and_merchant()
+    test_restoration_steadfast_regen_on_low()
+    test_horde_penalty_crushes_stealth_above_three()
+    test_solo_boss_survives_apex_opener()
+    test_sneak_mult_bonus_raises_sneak_damage()
+    test_vanish_relentless_removes_reuse_decay_but_not_horde()
+    test_vanish_floor_guarantees_minimum()
+    test_vanish_floor_takes_max_across_sources()
+    test_merchant_bonus_sums_across_sources()
+    test_acrobatics_evasion_lowers_enemy_hit()
+    test_sneak_approach_and_armor_relief()
+    test_scout_prep_and_recon()
+    test_security_pick_no_break()
+    test_mercantile_and_intimidate()
 
 
 if __name__ == "__main__":

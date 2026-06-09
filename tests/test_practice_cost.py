@@ -12,7 +12,7 @@
 from tesrpg.creation import build_character
 from tesrpg.gamedata import get_gamedata
 from tesrpg.rng import RNG
-from tesrpg.systems import crime, dialogue, dungeon, inventory, progression
+from tesrpg.systems import crime, dialogue, dungeon, inventory, mastery, progression
 
 
 def _char(**skills):
@@ -151,6 +151,7 @@ def test_persuade_costs_fatigue_and_time():
 
 def test_charm_path_also_pays_cost():
     gd, c = _char(speechcraft=100)                   # 辯舌·折服:對該 NPC 必成一次
+    mastery.choose(c, gd, "speechcraft_100", "charm")   # v2:達門檻後須二選一銘刻
     nid = next(iter(gd.npcs))
     pdef = gd.skills["speechcraft"]["practice"]
     c.fatigue = c.max_fatigue
