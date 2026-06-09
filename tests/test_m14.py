@@ -38,7 +38,7 @@ def test_enchant_armor_produces_item():
     _give(char, "filled_common_soul_gem", 1)   # soul 3
     before_myst = char.skill("mysticism")
 
-    res = enchanting.enchant_armor(char, gd, "leather_cuirass", "magicka",
+    res = enchanting.enchant_armor(char, gd, "leather_cuirass", "res", "magicka",
                                    "filled_common_soul_gem")
     assert res["ok"], res
     assert inventory.count_item(char, "leather_cuirass") == 0, "基底護甲應被消耗"
@@ -49,7 +49,7 @@ def test_enchant_armor_produces_item():
     d = gd.item(enchanted)
     assert d["kind"] == "armor" and d["slot"] == "cuirass"
     assert d["enchant"] == {"kind": "armor_fortify", "stat": "magicka",
-                            "magnitude": int(enchanted.split("|")[3])}
+                            "magnitude": int(enchanted.split("|")[4])}
     assert inventory.count_item(char, enchanted) == 1
     # 神秘技能應有鍛鍊(可能升級也可能只累進度,至少不會下降)
     assert char.skill("mysticism") >= before_myst
@@ -59,7 +59,7 @@ def test_unknown_stat_rejected():
     char = _new_char()
     _give(char, "leather_cuirass", 1)
     _give(char, "filled_petty_soul_gem", 1)
-    res = enchanting.enchant_armor(char, gd, "leather_cuirass", "speed",
+    res = enchanting.enchant_armor(char, gd, "leather_cuirass", "bogus", "speed",
                                    "filled_petty_soul_gem")
     assert not res["ok"]
     # 失敗不該消耗材料
@@ -74,7 +74,7 @@ def test_equip_fortify_raises_and_unequip_restores():
                          ("health", lambda c: c.max_health)):
         char = _new_char()
         base = getter(char)
-        eid = synth.enchant_armor_id("leather_cuirass", stat, 25)
+        eid = synth.enchant_armor_id("leather_cuirass", "res", stat, 25)
         _give(char, eid, 1)
 
         assert inventory.equip_armor(char, gd, eid)
@@ -92,7 +92,7 @@ def test_equip_fortify_raises_and_unequip_restores():
 def test_no_double_count_on_reequip():
     char = _new_char()
     base = char.max_magicka
-    eid = synth.enchant_armor_id("leather_cuirass", "magicka", 20)
+    eid = synth.enchant_armor_id("leather_cuirass", "res", "magicka", 20)
     _give(char, eid, 1)
     inventory.equip_armor(char, gd, eid)
     stats.recompute_max_resources(char, gd)
@@ -103,7 +103,7 @@ def test_no_double_count_on_reequip():
 
 def test_unequip_clamps_current():
     char = _new_char()
-    eid = synth.enchant_armor_id("leather_cuirass", "magicka", 30)
+    eid = synth.enchant_armor_id("leather_cuirass", "res", "magicka", 30)
     _give(char, eid, 1)
     inventory.equip_armor(char, gd, eid)
     stats.recompute_max_resources(char, gd, restore_full=True)   # 灌到滿(base+30)
@@ -118,7 +118,7 @@ def test_save_load_roundtrip_with_fortify():
     char = _new_char()
     base_mag = char.max_magicka
     base_hp = char.base_max_health
-    eid = synth.enchant_armor_id("leather_cuirass", "magicka", 18)
+    eid = synth.enchant_armor_id("leather_cuirass", "res", "magicka", 18)
     _give(char, eid, 1)
     inventory.equip_armor(char, gd, eid)
     stats.recompute_max_resources(char, gd)
@@ -175,7 +175,7 @@ def _equipped_fortify_char(stat, mag):
     from tesrpg.state import GameState
     from tesrpg.rng import RNG
     char = _new_char()
-    eid = synth.enchant_armor_id("leather_cuirass", stat, mag)
+    eid = synth.enchant_armor_id("leather_cuirass", "res", stat, mag)
     _give(char, eid, 1)
     inventory.equip_armor(char, gd, eid)
     stats.recompute_max_resources(char, gd, restore_full=True)

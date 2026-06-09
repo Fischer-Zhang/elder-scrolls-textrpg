@@ -84,6 +84,9 @@ ARMOR_SKILL_IDS = ["heavy_armor", "light_armor"]
 ATTACK_FATIGUE_COST = 6      # 每次近戰攻擊消耗體力
 BLOCK_FATIGUE_COST = 4
 VANISH_FATIGUE_COST = 18     # 隱遁翻滾耗體力(高;連續隱遁會耗竭 → 後續攻擊命中下降)
+# 武器命中觸發附魔(weapon_status)
+WEAPON_VAMPIRIC_FRACTION = 0.30   # 吸血:回血 = 造成傷害 × 此比例(夾實傷、夾血上限;每擊觸發故不可大)
+WEAPON_PARALYZE_PROC = 0.10       # 武器麻痺觸發機率(1 回合、不重複套;solo BOSS 免疫 → 反鎖王作弊)
 COMBAT_HIT_XP = 0.5          # 成功命中 → 武器技能 xp
 COMBAT_ARMOR_XP = 0.4        # 被擊中 → 護甲技能 xp
 COMBAT_BLOCK_XP = 0.5        # 成功格擋 → 格擋技能 xp

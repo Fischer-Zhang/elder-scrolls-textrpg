@@ -1586,9 +1586,14 @@ def combat_event(ev: dict, gamedata: GameData) -> None:
         sneak_miss = "[magenta](偷襲落空!)[/] " if ev.get("sneak") else ""
         lines.append(f"{sneak_miss}[grey62]{ev['attacker']} 的攻擊被 {ev['defender']} 閃過了。[/]")
     if ev.get("status_applied"):
-        lines.append(f"[magenta]{ev['defender']} 中了{_ELEM_CN.get(ev['status_applied'], '異常')}![/]")
+        if ev["status_applied"] == "paralyze":
+            lines.append(f"[magenta]{ev['defender']} 被兵刃上的符文震懾,僵立當場(麻痺)![/]")
+        else:
+            lines.append(f"[magenta]{ev['defender']} 中了{_ELEM_CN.get(ev['status_applied'], '異常')}![/]")
     if ev.get("poison_applied"):
         lines.append(f"[green]武器上的{ev['poison_applied']}滲入了{ev['defender']}的傷口![/]")
+    if ev.get("lifesteal"):
+        lines.append(f"[red]🩸 兵刃汲血,{ev['attacker']} 回復了 {ev['lifesteal']} 點生命。[/]")
     if ev.get("aftermath"):
         am = ev["aftermath"]
         bits = []

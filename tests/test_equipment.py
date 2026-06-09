@@ -171,6 +171,77 @@ def test_enchant_jewelry_flow_and_synth_roundtrip():
     assert inventory.count_item(c, "filled_common_soul_gem") == 0   # 靈魂石消耗
 
 
+# --- 護甲附魔擴展:技能/抗性/資源 + 向後相容 -----------------------------
+def test_armor_skill_enchant_aggregates_into_skill():
+    from tesrpg.synth import enchant_armor_id
+    gd, c = _char()
+    aid = enchant_armor_id("iron_cuirass", "skill", "blade", 8)
+    base = c.base_skill("blade")
+    inventory.add_item(c, aid, 1)
+    inventory.equip_armor(c, gd, aid)
+    stats.recompute_max_resources(c, gd)
+    assert c.skill("blade") == base + 8 and c.base_skill("blade") == base   # 有效值升、base 不動
+    inventory.unequip(c, "cuirass")
+    stats.recompute_max_resources(c, gd)
+    assert c.skill("blade") == base                                         # 卸下回復
+
+
+def test_armor_resist_enchant_merges_with_race():
+    from tesrpg.synth import enchant_armor_id
+    gd, c = _char()
+    aid = enchant_armor_id("iron_helmet", "resist", "fire", 20)
+    inventory.add_item(c, aid, 1)
+    inventory.equip_armor(c, gd, aid)
+    stats.recompute_max_resources(c, gd)
+    assert magic.entity_resist(c, gd).get("fire", 0) >= 20
+
+
+def test_armor_resource_enchant_uses_armor_fortify_kind():
+    """新式 5 段 res 附魔仍走 armor_fortify 鍵 → armor_fortify_totals/max 資源路徑不變。"""
+    from tesrpg.synth import enchant_armor_id
+    gd, c = _char()
+    aid = enchant_armor_id("iron_gauntlets", "res", "health", 25)
+    assert gd.item(aid)["enchant"] == {"kind": "armor_fortify", "stat": "health", "magnitude": 25}
+    base = c.max_health
+    inventory.add_item(c, aid, 1)
+    inventory.equip_armor(c, gd, aid)
+    stats.recompute_max_resources(c, gd)
+    assert inventory.armor_fortify_totals(c, gd).get("health", 0) >= 25
+    assert c.max_health == base + 25
+
+
+def test_legacy_4field_encha_still_synthesizes():
+    """舊存檔的 4 段 encha|base|stat|mag 仍正確還原(向後相容鐵律)。"""
+    gd, _ = _char()
+    d = gd.item("encha|iron_cuirass|health|20")
+    assert d["enchant"] == {"kind": "armor_fortify", "stat": "health", "magnitude": 20}
+
+
+def test_enchant_armor_flow_consumes_gem():
+    gd, c = _char()
+    inventory.add_item(c, "iron_cuirass", 1)
+    inventory.add_item(c, "filled_common_soul_gem", 1)
+    c.skills["mysticism"] = 50
+    res = enchanting.enchant_armor(c, gd, "iron_cuirass", "skill", "destruction", "filled_common_soul_gem")
+    assert res["ok"] and gd.item(res["item_id"])["enchant"]["kind"] == "fortify_skill"
+    assert inventory.count_item(c, "filled_common_soul_gem") == 0
+
+
+def test_save_load_preserves_armor_skill_enchant():
+    from tesrpg.synth import enchant_armor_id
+    gd, c = _char()
+    aid = enchant_armor_id("iron_boots", "skill", "heavy_armor", 7)
+    inventory.add_item(c, aid, 1)
+    inventory.equip_armor(c, gd, aid)
+    stats.recompute_max_resources(c, gd)
+    state = GameState(player=c, time=GameTime(), rng=RNG(1))
+    with tempfile.TemporaryDirectory() as d:
+        path = Path(d) / "save.json"
+        state.save(path)
+        loaded = GameState.load(path)
+    assert loaded.player.skill("heavy_armor") == c.skill("heavy_armor")
+
+
 # --- 升級不汙染 base(回歸:fortify_attribute 經 char.attr 寫入 base 的雷)---
 def test_levelup_with_fortify_attr_does_not_inflate_base():
     gd, c = _char()

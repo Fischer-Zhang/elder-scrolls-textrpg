@@ -1924,9 +1924,9 @@ def action_enchant(state: GameState, gamedata: GameData) -> None:
 
         kinds = []
         if weapons:
-            kinds.append(("weapon", "武器(附元素傷害)"))
+            kinds.append(("weapon", "武器(元素傷害 / 命中觸發)"))
         if armors:
-            kinds.append(("armor", "護甲(強化生命/魔力/體力)"))
+            kinds.append(("armor", "護甲(強化資源 / 技能 / 抗性)"))
         if jewels:
             kinds.append(("jewelry", "飾品(強化技能/屬性/抗性/資源)"))
         if not kinds:
@@ -1947,22 +1947,40 @@ def action_enchant(state: GameState, gamedata: GameData) -> None:
                           [(w, gamedata.item_name(w)) for w in weapons], allow_back=True)
             if wid is None:
                 return
-            elem = ui.menu("附上哪種元素?", [("fire", "烈焰"), ("frost", "冰霜"), ("shock", "雷電")],
-                           allow_back=True)
-            if elem is None:
+            wtype = ui.menu("附魔效果?", [("element", "元素傷害"),
+                                          ("status", "命中觸發(吸血 / 麻痺 / 再生)")], allow_back=True)
+            if wtype is None:
                 return
-            res = enchanting.enchant_weapon(char, gamedata, wid, elem, gem)
+            if wtype == "element":
+                elem = ui.menu("附上哪種元素?", [("fire", "烈焰"), ("frost", "冰霜"), ("shock", "雷電")],
+                               allow_back=True)
+                if elem is None:
+                    return
+                res = enchanting.enchant_weapon(char, gamedata, wid, elem, gem)
+            else:
+                st = ui.menu("命中觸發什麼?", enchanting.WEAPON_STATUS_KINDS, allow_back=True)
+                if st is None:
+                    return
+                res = enchanting.enchant_weapon_status(char, gamedata, wid, st, gem)
         elif kind == "armor":
             aid = ui.menu("為哪件護甲附魔?",
                           [(a, gamedata.item_name(a)) for a in armors], allow_back=True)
             if aid is None:
                 return
-            stat = ui.menu("穿戴時強化哪項?",
-                           [("health", "生命"), ("magicka", "魔力"), ("fatigue", "體力")],
-                           allow_back=True)
-            if stat is None:
+            akind = ui.menu("附魔型別?", enchanting.ARMOR_KINDS, allow_back=True)
+            if akind is None:
                 return
-            res = enchanting.enchant_armor(char, gamedata, aid, stat, gem)
+            if akind == "skill":
+                aparam_opts = [(sid, gamedata.skill_name(sid)) for sid in gamedata.skills]
+            elif akind == "resist":
+                aparam_opts = [("fire", "烈焰"), ("frost", "冰霜"), ("shock", "雷電"),
+                               ("poison", "毒素"), ("magic", "魔法")]
+            else:  # res
+                aparam_opts = [("health", "生命"), ("magicka", "魔力"), ("fatigue", "體力")]
+            aparam = ui.menu("強化哪一項?", aparam_opts, allow_back=True)
+            if aparam is None:
+                return
+            res = enchanting.enchant_armor(char, gamedata, aid, akind, aparam, gem)
         else:   # jewelry
             jid = ui.menu("為哪件飾品附魔?",
                           [(j, gamedata.item_name(j)) for j in jewels], allow_back=True)

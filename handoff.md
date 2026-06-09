@@ -422,6 +422,12 @@
 - **鐵律/接點**:只動戰鬥消耗與 `_power`,**不碰 base_*/技能門檻/sneak/武器傷害**(刺客 `SOLO_SNEAK_DAMAGE_CAP` 不受影響,sim 零位移);調平衡只動 `formulas.CAST_FATIGUE_*` 常數或 armor_sets 的 `cast_fatigue_factor`。施法與 practice-cost 路徑互斥不雙扣;`restore_mind` 淨 +35。
 - **驗證**:44 測試模組全綠(`test_magic` +9 例:扣體力/隨魔耗成長/運動降耗/低體力降法效/0體力不失敗/召喚同步力竭/restore_mind 淨正/戰外耗體/法袍折扣〔3 件無折扣〕)+ `sim_assassin` 紅線零位移 + 起手法師續航微斷言(≥20 cast)+ 無頭煙霧(實戰施法扣體力 + 戰外施法扣體力 + 法袍更省)+ 對抗審查(5 維,1 minor=summon 漏接 power,已補)。
 
+**附魔系統擴展(護甲→技能/抗性 + 武器→命中觸發狀態;§1/裝備後續 直作 → 對抗審查 0 真 bug、1 nit)**:附魔原本只有 武器=元素傷害、護甲=fortify 資源、飾品=skill/attr/resist/res。本輪把附魔做成真 build 引擎,**大量複用既有機制、零存檔欄位**。
+- **護甲→技能/抗性**:`synth.encha` 由 4 段擴成 5 段 `encha|base|kind|param|mag`(kind res/skill/resist),`synthesize` **依段數分流**保舊式 4 段向後相容(舊存檔零位移);`res` 刻意保留 `armor_fortify` 鍵(`armor_fortify_totals`/資源路徑不變)、skill/resist 複用飾品同形 dict → `inventory._apply_enchant` 已認得,**零彙整改動**。`enchanting.enchant_armor(kind,param)` 泛化 + `armor_magnitude`(skill factor 1.5 / resist 4.0,**略低於飾品** 2.0/5.0 → 飾品仍是首選載體、軟化多件疊加);**刻意不開放護甲 attr**。鐵律:fortify 只進 `equip_skill_bonus`(`skill()` 讀、`base_skill()` 不讀)→ 絕不污染成長/里程碑門檻。
+- **武器→命中觸發狀態**:新 `synth.enchws|base|status|mag|turns`(`enchw` 元素式不動);`enchant_weapon_status`(vampiric/paralyze/regen)。combat `resolve_attack` 傷害結算後加**玩家專屬** `weapon_status` hook:**吸血**=造成傷害 30%(`formulas.WEAPON_VAMPIRIC_FRACTION`,夾實傷+血上限,每擊觸發故壓低)、**再生**=對自身上 regen self-HoT(`source:"ench_regen"` 去重不疊)、**麻痺**=10% proc/1 回合(`WEAPON_PARALYZE_PROC`),🔴 **solo BOSS 完全免疫附魔麻痺**(`_is_solo` gate,比照偷襲秒殺夾限的反鎖王紅線)、已麻痺中不重複套。event 加 `lifesteal` 供敘事。
+- **接點**:`main.action_enchant` 護甲加 kind 子選單、武器加 元素/狀態 子選單;`ui.combat_event` 加吸血/麻痺敘事。任何武器 archetype 皆可附(同元素附魔)。命中狀態玩家專屬(敵人走 `attacker.attack` 不碰)。
+- **驗證**:44 測試模組全綠(`test_equipment` +6:護甲技能/抗性/資源(仍走 armor_fortify_totals)/舊式 4 段相容/流程消耗魂石/存讀檔;`test_magic` +5:吸血回血夾實傷/再生去重+tick/麻痺對非 solo 生效/**麻痺對 solo boss 400 擊永不生效**/enchws round-trip;`test_m14` 改新簽名)+ `sim_assassin` 紅線零位移 + 無頭煙霧(護甲技能附魔升 skill、吸血劍實戰回血)+ 對抗審查 6 維(0 真 bug,1 nit=麻痺敘事誤標已修)。**加附魔型別純改 synth/enchanting/UI 三點;調平衡只動 `formulas.WEAPON_*` 或 `armor_magnitude` factor。**
+
 **內容量**:10 種族 / 13 星座 / 8 職業 / **23 技能(+偵查 scout、+鍛造 smithing)** / **19 武器(4 法杖)** / **42 護甲(7 材質整套 + 法師布甲學徒/大法師 2 階 8 件)** / 25 法術(5 AoE) /
 **15 煉金材料(全部可野外採集/獵取)+ 7 鍛造材料(鐵/鋼/月長石/矮人/綠玉/黑檀錠 + 布匹)** / **4 飾品** / **鍛造系統(鍛造技能 + 45 配方〔皮甲/鐵鋼+精靈/矮人/玻璃/黑檀金屬/法袍〕+ skill_req 分級 + 全階裝備淬鍊強化)** / **72 生物(7 高階 elite + 2 吸血鬼 + 5 黑沼澤 + 5 漢默法爾沙漠〔含矮人百夫長 boss〕 + 5 高岩霧沼〔含海妖岩魔女 boss〕 + 5 瓦倫雨林〔含遠古樹靈 boss〕 + 6 艾爾斯維爾草原弱毒〔含暗月暗虎 solo boss〕 + 8 黑兄目標 + 7 神話黎明目標 + 6 九神聖戰目標 + 2 heartland;39 隻帶 biome 生態標籤)** / 3 傭兵 / **64 地點(有環圖+生態 biome〔heartland/snow/ashland/swamp/desert/moor/jungle/savanna〕,世界閉成五大環〔黑沼澤南環 + 漢默法爾西環 + 高岩西北環 + 瓦倫森林西南環 + 艾爾斯維爾南環〕;賽8/天9/晨8/黑7/漢5/高5/瓦5/艾5/邊12,共 25 城+8 鎮)** / **10 地城(每座 ≥1 任務指向,含龍喉峰屠龍 + 沃倫菲爾矮人遺城 + 海妖岩巫窟 + 絞藤蛛巢 + 暗月窟)** / **69 任務(3 分支壓軸 + 解咒×2〔血咒/淨糖〕 + 6 黑兄合約 + 6 神話黎明合約 + 6 九神聖戰合約 + 14 在地任務含 2 任務鏈 + 屠龍 + 漢默法爾 3 + 高岩 3 + 瓦倫 3 + 艾爾斯維爾 3)** / **6 公會(+神話黎明/九神騎士團,大事件解鎖)** / **14 開局背景(含戰友團/盜賊公會/阿利克爾/海難/治療者/獸人放逐)** / **87 NPC(每城 3 / 每鎮 2,角色多樣、greeting + rumor 指路;13 名掛在地委託)** / **35 事件(含 18 省份限定;含艾爾斯維爾糖楓採集/草海掠食)** / **吸血鬼化系統** / **斯庫瑪成癮系統(亢奮↔戒斷天平)** / **黑暗兄弟會系統** / **技能里程碑系統(全 23 技能二選一)** / **33 城主(各城自治)** / **24 具名地標(各省招牌/邊境發現,首次抵達一次性獎勵)**。
 程式:**28 個 `systems` 模組**(+vampirism +brotherhood +mastery +crafting +court +politics +warband +landmarks +achievements +smithing〔淬鍊強化〕+skooma〔斯庫瑪成癮〕)+ models/ui/synth 等,共約 42 個 `.py` + `sim_assassin.py`(平衡回歸);**26 個 `data/*.json`**(+mastery.json +recipes.json +landmarks.json +achievements.json;黑兄/細化省分/城戰立場/招兵兵種/漢默法爾/高岩/瓦倫森林/法袍+鍛造材料全靠改既有檔);**41 測試模組**(+test_mastery +test_practice_cost +test_shop +test_crafting +test_court +test_politics +test_warband +test_worldstate +test_mythicdawn +test_knights +test_landmarks +test_polish +test_sheet +test_web +test_achievements +test_smithing +test_skooma)。**新增 `tesrpg/web/` 套件(本機 Web 版,純 stdlib、零 pip;`python3 -m tesrpg.web`)**。 / **成就系統(24 條,唯讀推導、結算+即時角色卡)**。
@@ -501,7 +507,7 @@ tesrpg/
 - **元素**:`fire/frost/shock` 受 `magic` 總抗性疊加;`poison`/`disease` 不受 `magic` 影響(見 `formulas.MAGIC_ELEMENTS`)。
 - **裝備加成(穿戴附魔/套裝)**:`skill()/attr()` 已疊加 `equip_*_bonus`,但**成長/夾限務必用 `base_skill()/base_attr()`**(progression 已改;否則飾品加成會被寫進 base 永久殘留)。
   任何改 `char.equipped`(穿/卸/戴/丟/賣)後都要 `stats.recompute_max_resources(char, gamedata)`(其開頭會跑 `recompute_equipment`)。飾品在 `ring1/ring2/amulet` 槽,卸下要用 `_equipped_slot_of` 找真實槽(別用 `d["slot"]`)。
-  附魔載體:護甲=`armor_fortify`(資源)、飾品=`enchj` 四型別;**武器/法杖附魔走 `gamedata.item(weapon).get("enchant")`**(靜態武器也可帶 `enchant`,法杖即如此)。新套裝/飾品/法杖純改 JSON(`armor_sets.json` / `items.json` / `weapons.json`)。
+  附魔載體:護甲=`encha`(res→`armor_fortify` 資源 / skill→`fortify_skill` / resist→`resist_element`;**res 務必保留 `armor_fortify` 鍵**否則漏出 `armor_fortify_totals`)、飾品=`enchj` 四型別;武器元素=`enchw`、武器命中狀態=`enchws`(吸血/麻痺/再生,`combat.resolve_attack` 傷害結算後的 `weapon_status` hook、**玩家專屬**)。**`synth` id 改格式務必保段數向後相容**(encha 4↔5 段、enchw 不動)。**武器麻痺 solo boss 免疫是硬性反鎖王紅線**(`_is_solo` gate,改 proc/turns/免疫務必重跑 sim + 400 擊 boss 免疫測)。調附魔平衡:`formulas.WEAPON_VAMPIRIC_FRACTION`/`WEAPON_PARALYZE_PROC`、`enchanting.armor_magnitude`/`jewelry_magnitude` factor。新套裝/飾品/法杖純改 JSON(`armor_sets.json` / `items.json` / `weapons.json`)。
 - **公會(深度化)**:入會/晉升規則全在 `systems/factions.py`(`join_block_reason`/`advance_block_reason`/perk),資料在 `factions.json`(`gate_skills`/`join_skill`/`rank_skill_req`/`rivals`/`lawful`/`perk`)——**加門檻/福利/對立純改 JSON**。
   晉升技能門檻由 `quests.available_quests`(guild)強制;perk 接在 `world.sell_price` + `action_repair`/`action_spell_vendor`。**分支任務**:頂層放 `branches`(各含自足的 `stages`+`reward`,**勿**再放頂層 objective/stages,否則 `_stages` 會誤取),`char.quests[qid]["branch"]` 存選擇、`_advance` 推進階段時務必**保留 branch**。
 - **AoE/狀態**:每個敵人各自 `make_status_effect(...)` 取**獨立 dict**(切勿共用同一個 → 會別名汙染計時)。
@@ -566,7 +572,7 @@ tesrpg/
 5. **半成品/微調**:創角問答推職業;護甲附魔可再擴(目前只 fortify 生命/魔力/體力);更多事件/任務。
 6. (天花板更高、工程量大)主線劇情、同伴持久 HP/羈絆、坐騎/房產。
 
-> ✅ 已完成(近期):**法師體力資源對稱化**(§1/§6#4:施法耗體力 + 低體力降法效 + 法袍套裝省體;純規則層零存檔、刺客紅線零位移;對抗審查補 summon 漏接)、**斯庫瑪/月糖成癮 + 艾爾斯維爾省(第八省)**(§1:savanna 弱毒生態軸 + 賽↔艾↔瓦南方大環 + 仿吸血鬼的「亢奮↔戒斷」成癮天平〔亢奮不碰力量/潛行以守刺客紅線〕 + 淨糖解癮;對抗審查修「免費解癮」漏洞)、**世界拓樸改造**(走廊→有環圖,§1)、**種子開放給玩家**(原 §6.4 前置)、
+> ✅ 已完成(近期):**附魔系統擴展**(§1:護甲→技能/抗性〔encha 5 段+向後相容、複用飾品 kind〕+ 武器→命中觸發 吸血/麻痺/再生〔enchws,solo boss 免疫麻痺反鎖王〕;零存檔欄位、刺客紅線零位移;對抗審查 0 真 bug)、**法師體力資源對稱化**(§1/§6#4:施法耗體力 + 低體力降法效 + 法袍套裝省體;純規則層零存檔、刺客紅線零位移;對抗審查補 summon 漏接)、**斯庫瑪/月糖成癮 + 艾爾斯維爾省(第八省)**(§1:savanna 弱毒生態軸 + 賽↔艾↔瓦南方大環 + 仿吸血鬼的「亢奮↔戒斷」成癮天平〔亢奮不碰力量/潛行以守刺客紅線〕 + 淨糖解癮;對抗審查修「免費解癮」漏洞)、**世界拓樸改造**(走廊→有環圖,§1)、**種子開放給玩家**(原 §6.4 前置)、
 > **公會深度化**(§1:門檻 + 福利/俸祿 + 對立 + 分支)、**裝備系統擴展**(§1:套組/套裝 + 飾品/附魔 + 武器流派 + 法杖)、
 > **開局背景「不一樣的人生」MVP**(§1:6 開局,資料驅動 `apply_origin`,零存檔風險)、
 > **吸血鬼化系統**(§1:A 狀態機 + B 戰鬥身分 + C 陽光/社交詛咒 + D 解咒任務 + E 夜之裔開局,**五層全做**)、
@@ -596,7 +602,7 @@ tesrpg/
 > 地圖後續可再加:黑沼澤**起手任務鉤子 / 開局背景**(亞龍人沼澤出身,純改 quests/origins JSON);再開一省續閉環(✅ 漢默法爾/高岩/瓦倫森林/艾爾斯維爾已做,西環/西北環/西南環/南環);高岩**開局背景**(布雷頓獵巫人/匕落出身)或瓦倫森林開局(波斯莫綠約獵手/海文海商,純改 origins JSON);贊密爾沉廟可加後門讓它變環上節點。
 > 公會後續可再加:更多分支壓軸 / 階級設施權限 / 公會委託告示。(✅ 暗殺者公會=黑暗兄弟會已做,見 §1)
 > 黑兄後續可再加:夜母「祕密之死」隨機合約(超出 6 階後的無限委託)/ 違反五戒的懲處(殺同袍→被追殺)/ 聖所升級與密探同伴 / 謀殺後即時衛兵圍捕(目前靠賞金+城門盤查)/ 具名導師(露西恩式)對話包裝。
-> 裝備後續可再加:獨特/具名裝備(套裝外的具名神器)、附魔護甲擴展到技能/抗性(目前護甲只 fortify 資源)、武器附魔可帶狀態(吸血/麻痺)、回復型附魔(per-turn regen,目前略過)。
+> 裝備後續可再加:獨特/具名裝備(套裝外的具名神器)、~~附魔護甲擴展到技能/抗性~~ ✅ **已做**、~~武器附魔可帶狀態(吸血/麻痺)~~ ✅ **已做**、~~回復型附魔(per-turn regen)~~ ✅ **已做**(見 §1「附魔系統擴展」:護甲 skill/resist + 武器 vampiric/paralyze/regen,solo boss 免疫麻痺)。可再加:武器附魔帶元素 DoT(目前元素是即時傷害)、附魔可疊雙效。
 > 開局後續可再加(✅ 已加 6 個:戰友團/盜賊公會/阿利克爾劍客/海難倖存者/神殿治療者/獸人放逐者,共 14 開局):開局附帶**起手任務鉤子**(MVP 刻意未做)、`armor` 起手整套裝(目前開局只給單件護甲/飾品/法杖)、開局選單依職業/種族過濾推薦。
 > 吸血鬼後續可再加:夜視/魅惑等更多吸血鬼能力、狼人(同套狀態機另一支)、吸血鬼專屬裝備/巢穴、NPC 識破後衛兵敵對(目前只社交封鎖)、解咒任務的具名 NPC/對話包裝(目前梅莉桑德只在子選單文字中現身)。
 > 技能里程碑後續可再加(**P2/P3,路線已拍板**):P2 持久 `mastery_*_bonus` 加成層(吸血鬼模式)+ 更多真權衡戰鬥型(**逐條 sim 背書 + 非 boss 精英秒殺率覆核**);P3 純改 JSON 補三系密度(優先 marksman/light_armor 等冷門技,避免 sneak 過載);可另評估『達門檻二選一』能動性(引入最佳化空間=支柱級取捨,需使用者拍板)。

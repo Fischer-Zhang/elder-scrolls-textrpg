@@ -261,6 +261,7 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
     poison_applied = None
     self_restored = None
     infected = False
+    lifesteal = 0          # 武器吸血附魔本擊回血量(供敘事)
     aftermath = None
     sneak_mult = (formulas.sneak_attack_multiplier(attacker.skill("sneak"))
                   * formulas.archetype_sneak_bonus(archetype)
@@ -350,6 +351,30 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
             if wp["charges"] <= 0:
                 attacker.weapon_poison = None
 
+        # 武器命中觸發附魔(weapon_status:吸血/麻痺/再生)—— 玩家專屬,與元素/毒/里程碑各自獨立、不重複套
+        if _is_player(attacker):
+            sench = gamedata.item(attacker.weapon).get("enchant")
+            if sench and sench.get("kind") == "weapon_status" and rng.chance(sench.get("chance", 1.0)):
+                st = sench["status"]
+                if st == "vampiric" and dmg_done > 0:
+                    heal = min(int(round(dmg_done * formulas.WEAPON_VAMPIRIC_FRACTION)), dmg_done)
+                    before = attacker.health
+                    attacker.health = min(attacker.max_health, attacker.health + heal)
+                    lifesteal = int(attacker.health - before)
+                elif st == "regen":   # self-HoT;以 source 去重(命中刷新不疊加)
+                    if not any(e.get("source") == "ench_regen" and e.get("turns", 0) > 0
+                               for e in attacker.active_effects):
+                        attacker.active_effects.append(
+                            {"kind": "regen", "magnitude": sench.get("magnitude", 0),
+                             "turns": sench.get("turns", 0), "source": "ench_regen"})
+                elif st == "paralyze" and is_alive(defender):
+                    # solo BOSS 完全免疫附魔麻痺(反鎖王作弊,比照偷襲秒殺夾限);已麻痺中不重複套
+                    if (not _is_solo(defender, gamedata)
+                            and not any(e["kind"] == "paralyze" and e["turns"] > 0
+                                        for e in defender.active_effects)):
+                        defender.active_effects.append({"kind": "paralyze", "turns": sench.get("turns", 1)})
+                        status_applied = status_applied or "paralyze"
+
         # 里程碑武器流派「命中附狀態」(震盪一擊=weaken / 卸力擒拿=stagger)+「盾擊踉蹌」
         if _is_player(attacker) and is_alive(defender):
             ohs = wmod.get("on_hit_status")
@@ -427,7 +452,7 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
         "hit": hit, "damage": dmg_done, "blocked": defender_blocking,
         "skill_events": skill_events, "defender_dead": not is_alive(defender),
         "absorbed": absorbed, "status_applied": status_applied, "poison_applied": poison_applied,
-        "sneak": sneak_mult, "self_restored": self_restored, "infected": infected,
+        "sneak": sneak_mult, "self_restored": self_restored, "infected": infected, "lifesteal": lifesteal,
         "aftermath": aftermath,
     }
 

@@ -274,6 +274,80 @@ def test_robe_set_lowers_cast_fatigue():
     assert magic.spell_fatigue_cost(c2, gd2, "fireball") > magic.spell_fatigue_cost(c, gd, "fireball")
 
 
+# --- 武器命中觸發附魔(吸血/麻痺/再生)+ 反鎖王 ---------------------------
+def _fighter():
+    gd, c = _mage()
+    c.skills["blade"] = 70
+    return gd, c
+
+
+def test_weapon_vampiric_heals_on_hit():
+    gd, c = _fighter()
+    c.weapon = synth.enchant_weapon_status_id("steel_sword", "vampiric", 5, 0)
+    c.health = 10
+    crab = combat.spawn_creature(gd, "mudcrab", RNG(0)); crab.health = 999; crab.max_health = 999
+    healed = False
+    for i in range(12):
+        ev = combat.resolve_attack(c, crab, gd, RNG(i))
+        if ev.get("lifesteal", 0) > 0:
+            healed = True
+            assert ev["lifesteal"] <= ev["damage"]          # 不超過實際造成傷害
+            break
+    assert healed and c.health > 10 and c.health <= c.max_health
+
+
+def test_weapon_regen_self_hot_and_no_stack():
+    gd, c = _fighter(); c.skills["blade"] = 100
+    c.weapon = synth.enchant_weapon_status_id("steel_sword", "regen", 6, 3)
+    crab = combat.spawn_creature(gd, "mudcrab", RNG(0)); crab.health = 999; crab.max_health = 999
+
+    def hit_once(seed):
+        for i in range(seed, seed + 40):
+            if combat.resolve_attack(c, crab, gd, RNG(i))["hit"]:
+                return True
+        return False
+
+    assert hit_once(0)
+    regens = [e for e in c.active_effects if e.get("source") == "ench_regen"]
+    assert len(regens) == 1 and regens[0]["kind"] == "regen"
+    assert hit_once(100)                                     # 再命中不疊加
+    assert len([e for e in c.active_effects if e.get("source") == "ench_regen"]) == 1
+    c.health = 10
+    magic.tick_effects(c, gd)                                # regen tick 回血
+    assert c.health > 10
+
+
+def test_weapon_paralyze_applies_to_non_solo():
+    gd, c = _fighter(); c.skills["blade"] = 90
+    c.weapon = synth.enchant_weapon_status_id("steel_sword", "paralyze", 0, 1)
+    applied = False
+    for i in range(300):
+        crab = combat.spawn_creature(gd, "mudcrab", RNG(i))
+        combat.resolve_attack(c, crab, gd, RNG(i))
+        if magic.is_paralyzed(crab):
+            applied = True
+            break
+    assert applied
+
+
+def test_weapon_paralyze_immune_on_solo_boss():
+    """反鎖王紅線:solo BOSS 完全免疫附魔麻痺(比照偷襲秒殺夾限的 solo gate)。"""
+    gd, c = _fighter(); c.skills["blade"] = 100
+    c.weapon = synth.enchant_weapon_status_id("steel_sword", "paralyze", 0, 1)
+    solo_tid = next(t for t, d in gd.bestiary.items() if d.get("solo"))
+    for i in range(400):
+        boss = combat.spawn_creature(gd, solo_tid, RNG(i))
+        combat.resolve_attack(c, boss, gd, RNG(i))
+        assert not magic.is_paralyzed(boss)                 # 永不被鎖
+
+
+def test_enchws_synth_roundtrip():
+    gd, _ = _mage()
+    for st in ("vampiric", "paralyze", "regen"):
+        d = gd.item(synth.enchant_weapon_status_id("steel_sword", st, 5, 3))
+        assert d["enchant"]["kind"] == "weapon_status" and d["enchant"]["status"] == st
+
+
 def run():
     for name, fn in sorted(globals().items()):
         if name.startswith("test_") and callable(fn):
