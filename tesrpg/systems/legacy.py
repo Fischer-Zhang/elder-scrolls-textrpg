@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from tesrpg import formulas
 from tesrpg.gamedata import GameData
-from tesrpg.systems import achievements, brotherhood, mastery, politics, vampirism
+from tesrpg.systems import achievements, brotherhood, mastery, politics, skooma, vampirism
 
 DAYS_PER_YEAR = 360   # 12 月 × 30 天
 
@@ -102,6 +102,7 @@ def compute(state, gamedata: GameData, ending: str = "death") -> dict:
         "achievements": earned_achievements,          # 達成的成就名單(僅表彰,不計入 score)
         "achievements_total": len(achievements._defs(gamedata)),
         "condition": vampirism.legacy_label(char),   # 吸血鬼身分(否則 None)
+        "addiction": skooma.legacy_label(char),       # 斯庫瑪/月糖成癮(否則 None)
         "dark_deeds": brotherhood.legacy_label(char, gamedata),   # 黑暗兄弟會/謀殺事蹟(否則 None)
         "dominion": dominion_label(char, gamedata, cities_held, thanes),  # 領地/統帥功業(否則 None)
         "level": char.level,

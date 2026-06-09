@@ -14,8 +14,8 @@ from tesrpg.rng import RNG, make_seed
 from tesrpg.state import GameState
 from tesrpg.systems import (alchemy, brotherhood, combat, court, crafting, crime, dialogue, dungeon,
                             enchanting, events, factions, inventory, landmarks, legacy, magic,
-                            mastery, politics, powers, progression, quests, smithing, stats, vampirism,
-                            warband, world, worldstate)
+                            mastery, politics, powers, progression, quests, skooma, smithing, stats,
+                            vampirism, warband, world, worldstate)
 from tesrpg.ui import console as ui
 
 SAVE_PATH = Path.home() / ".tesrpg" / "save.json"
@@ -1016,6 +1016,8 @@ def _item_actions(state: GameState, gamedata: GameData, item_id: str) -> None:
         acts.append(("unequip", "卸下"))
     if d["kind"] == "potion":
         acts.append(("use", "使用"))
+    if item_id in ("moon_sugar", "skooma"):
+        acts.append(("dose", "服用(亢奮 ↔ 成癮)"))
     acts.append(("drop", "丟棄一件"))
     act = ui.menu(d["name"], acts, allow_back=True)
     if act == "equip_w":
@@ -1043,6 +1045,16 @@ def _item_actions(state: GameState, gamedata: GameData, item_id: str) -> None:
     elif act == "use":
         msg = inventory.use_item(char, gamedata, item_id)
         ui.message(msg or "無法使用。", style="green")
+    elif act == "dose":
+        res = skooma.dose(state, gamedata, strong=(item_id == "skooma"))
+        inventory.remove_item(char, item_id, 1)
+        state.time.advance(1)
+        cn = {"fatigue": "體力", "health": "生命", "magicka": "魔力"}
+        bits = "、".join(f"{cn[k]} +{v}" for k, v in res["restored"].items() if v)
+        ui.message(f"你服下了{d['name']} —— 一陣暖流竄遍全身,反射與耐力陡然亢奮({res['hours']} 小時)"
+                   + (f";{bits}。" if bits else "。"), style="magenta")
+        if res["addiction"] >= skooma.WITHDRAWAL_THRESHOLD:
+            ui.message(f"……但你越來越離不開這抹甜了(成癮 {res['addiction']})。", style="red")
     elif act == "drop":
         inventory.remove_item(char, item_id, 1)
         # 丟棄最後一件會自動卸下;若是 fortify 護甲,須重算以移除其加成並夾限當前值
@@ -1204,6 +1216,40 @@ def action_vampire_cure(state: GameState, gamedata: GameData) -> None:
     if ui.confirm("接下『驅逐血咒』,踏上解咒之路嗎?"):
         quests.accept_quest(char, gamedata, CURE_QID)
         ui.message("已接取任務:驅逐血咒", style="bold yellow")
+        _report_quests(state, gamedata)
+
+
+SKOOMA_CURE_QID = skooma.CURE_QUEST_ID   # 唯一來源在 skooma.py(自然戒除時亦由其棄置殘留任務)
+
+
+def action_skooma_cure(state: GameState, gamedata: GameData) -> None:
+    """探詢/推進/完成『淨糖之儀』—— 解除斯庫瑪/月糖之癮(任何聚落療者,僅成癮者可見)。"""
+    char = state.player
+    if not skooma.is_addicted(char):
+        return
+    _report_quests(state, gamedata)   # 先結算可能已達標的採集/擊殺階段
+
+    if quests.is_done(char, SKOOMA_CURE_QID):
+        ui.message("療者取來你備齊的大蒜、毒茄參與那縷暗潮腐血,在雙月的微光下行起古老的淨糖之儀……",
+                   style="white")
+        if not ui.confirm("月糖之癮將在此夜被滌淨 —— 進行淨糖之儀嗎?"):
+            return
+        skooma.cure(char, gamedata)
+        char.completed_quests.remove(SKOOMA_CURE_QID)   # 解咒可重複(日後再沾染,可再求一次)
+        ui.rule("月糖之癮已解")
+        ui.message("一陣翻江倒海的冷顫後,渴求自血脈退散 —— 你的神智重歸澄澈,不再為那抹甜所縛。",
+                   style="bold green")
+        return
+
+    if quests.is_active(char, SKOOMA_CURE_QID):
+        ui.message(f"淨糖進度:{quests.objective_text(char, gamedata, SKOOMA_CURE_QID)}", style="white")
+        ui.message("備齊淨化媒介、取得暗潮腐血後,回到任一聚落療者處行儀式。", style="grey70")
+        return
+
+    ui.message(gamedata.quests[SKOOMA_CURE_QID]["text"], style="white")
+    if ui.confirm("接下『淨糖之儀』,踏上戒除之路嗎?"):
+        quests.accept_quest(char, gamedata, SKOOMA_CURE_QID)
+        ui.message("已接取任務:淨糖之儀", style="bold yellow")
         _report_quests(state, gamedata)
 
 
@@ -2331,6 +2377,8 @@ def action_character_sheet(state: GameState, gamedata: GameData) -> None:
             opts.append(("spellbook", "法術書"))
         if vampirism.is_vampire(char):
             opts.append(("vampire", "吸血鬼狀態"))
+        if skooma.has_touched_sugar(char):
+            opts.append(("skooma", "斯庫瑪/月糖狀態"))
         opts += [("skill", "技能詳情"), ("resheet", "重看角色卡")]
         choice = ui.menu("角色資訊(檢視)", opts, allow_back=True)
         if choice is None:
@@ -2355,6 +2403,8 @@ def action_character_sheet(state: GameState, gamedata: GameData) -> None:
             ui.sheet_spellbook(char, gamedata)
         elif choice == "vampire":
             ui.sheet_vampirism(char, gamedata)
+        elif choice == "skooma":
+            ui.sheet_skooma(char, state, gamedata)
         elif choice == "skill":
             sk = ui.menu("檢視哪個技能?",
                          [(sid, f"{gamedata.skill_name(sid)} {char.skill(sid)}")
@@ -2388,6 +2438,16 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
                 name = vampirism.STAGE_NAMES[ev["stage"]]
                 ui.message(f"血之飢渴加深 —— 你進入「{name}」之境:力量更盛,卻更難見容於日光與世人。",
                            style="magenta")
+
+        # 斯庫瑪成癮:亢奮退去 / 戒斷起或加深 / 脫離戒斷(掛在吸血鬼之後)
+        for ev in skooma.update(state, gamedata):
+            if ev["kind"] == "comedown":
+                ui.message("月糖的甜膩自血脈退去,世界重歸灰暗而遲鈍 —— 亢奮已盡。", style="magenta")
+            elif ev["kind"] == "withdrawal":
+                ui.message("戒斷的顫慄攫住你 —— 四肢虛軟、心神渙散,只剩對那抹甜的渴求在啃噬。",
+                           style="bold red")
+            elif ev["kind"] == "clean":
+                ui.message("你撐過了最深的渴求,身體漸漸清明 —— 月糖的枷鎖鬆開了。", style="green")
 
         # 陣營大事件(動態政局):authored 時間軸觸發城邦易幟,廣播天下大勢
         for ev in worldstate.update(state, gamedata):
@@ -2473,6 +2533,8 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
             guilds.append(("kn_hall", "九神騎士團 ⚜"))
         if player.is_vampire and loc["type"] in ("town", "city"):
             plaza.append(("feed", "🩸 吸血進食(獵取活人,重置飢餓)"))
+        if skooma.is_addicted(player) and loc["type"] in ("town", "city") and not shunned:
+            plaza.append(("skooma_cure", "🌙 尋訪療者,求解月糖之癮"))
         if "inn" in services and not shunned:
             plaza.append(("inn", "旅店(10金)"))
         if "trainer" in services and not shunned:
@@ -2547,6 +2609,8 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
             action_inn(state, gamedata)
         elif choice == "feed":
             action_feed(state, gamedata)
+        elif choice == "skooma_cure":
+            action_skooma_cure(state, gamedata)
         elif choice == "trainer":
             action_trainer(state, gamedata)
         elif choice == "court":

@@ -18,6 +18,8 @@
   "repair_hammer": {"name": "修理鎚", "kind": "misc", "value": 5, "weight": 2},
   "lockpick": {"name": "開鎖器", "kind": "misc", "value": 6, "weight": 0},
 
+  "skooma": {"name": "斯庫瑪", "kind": "drug", "value": 120, "weight": 0.5},
+
   "silver_ring":   {"name": "銀戒指", "kind": "jewelry", "slot": "ring",   "value": 40,  "weight": 0.2},
   "gold_ring":     {"name": "金戒指", "kind": "jewelry", "slot": "ring",   "value": 90,  "weight": 0.2},
   "silver_amulet": {"name": "銀護身符", "kind": "jewelry", "slot": "amulet", "value": 60,  "weight": 0.3},

@@ -224,8 +224,9 @@ def _combat_view(player: Character, allies: list, enemies: list) -> dict:
 
 def _legacy_view(s: dict) -> dict:
     origins = []   # 身世:出身/詛咒/血業/功業/精通
-    for key in ("origin", "condition", "dark_deeds", "dominion"):
-        label = {"origin": "出身", "condition": "詛咒", "dark_deeds": "血業", "dominion": "功業"}[key]
+    for key in ("origin", "condition", "addiction", "dark_deeds", "dominion"):
+        label = {"origin": "出身", "condition": "詛咒", "addiction": "癮疾",
+                 "dark_deeds": "血業", "dominion": "功業"}[key]
         if s.get(key):
             origins.append([label, str(s[key])])
     if s.get("masteries"):
@@ -461,6 +462,11 @@ def status_line(state: GameState) -> None:
         extra.append(f"[bold red]🩸 {vampirism.STAGE_NAMES[min(3, max(0, c.vampire_stage))]}吸血鬼[/]")
     elif getattr(c, "vampire_infected_day", -1) >= 0:
         extra.append("[red]🦠 吸血熱潛伏中[/]")
+    from tesrpg.systems import skooma
+    if skooma.is_high(c, state):
+        extra.append("[magenta]🌙 月糖之醉[/]")
+    elif skooma.is_addicted(c):
+        extra.append("[red]💀 斯庫瑪戒斷[/]")
     if c.fame:
         extra.append(f"[cyan]聲望 {c.fame}[/]")
     total_bounty = sum(c.bounties.values())
@@ -916,6 +922,45 @@ def sheet_vampirism(char: Character, gamedata: GameData) -> None:
                             + "\n", style=PARCH)
         body.append("（階級越餓越高,進食歸 0;火焰轉弱點、免疫疾病)", style=FAINT)
     console.print(_panel(body, title="吸血鬼狀態"))
+
+
+def sheet_skooma(char: Character, state: GameState, gamedata: GameData) -> None:
+    from tesrpg.systems import skooma
+    add = getattr(char, "skooma_addiction", 0)
+    high = skooma.is_high(char, state)
+    remain = max(0, getattr(char, "skooma_high_until", 0) - state.time.absolute_hours()) if high else 0
+    step = skooma.withdrawal_step(char, state)
+    if high:
+        phase = f"🌙 亢奮中(尚餘 {remain} 小時)"
+    elif step > 0:
+        phase = f"💀 戒斷中(階 {step}/{skooma.WITHDRAWAL_MAX_STEPS})"
+    elif add > 0:
+        phase = "清醒(殘癮未消;持續清醒會慢慢戒掉)"
+    else:
+        phase = "未沾染月糖"
+    layers = (("attrs", "屬性", char.skooma_attr_bonus),
+              ("skills", "技能", char.skooma_skill_bonus))
+    note = "(亢奮短而戒斷長;追藥越深、越久未用藥越痛。清醒夠久可自行戒除,或行淨糖之儀解癮)"
+    if _web is not None:
+        rows = [_ln(phase, "magenta" if high else ("red" if step else "muted")),
+                _kv("成癮度", f"{add} / 上限 {skooma.MAX_ADDICTION}(門檻 {skooma.WITHDRAWAL_THRESHOLD})")]
+        for cat, label, d in layers:
+            if d:
+                rows.append(_kv(label, "、".join(f"{_tr_bonus(cat, k, gamedata)}{v:+d}" for k, v in d.items())))
+        rows.append(_ln(note, "faint"))
+        _emit_panel("斯庫瑪/月糖狀態", rows)
+        return
+    body = Text()
+    body.append(phase + "\n", style="bold magenta" if high else ("bold red" if step else INK))
+    body.append("成癮度  ", style=GOLD)
+    body.append(f"{add} / 上限 {skooma.MAX_ADDICTION}(戒斷門檻 {skooma.WITHDRAWAL_THRESHOLD})\n", style=PARCH)
+    for cat, label, d in layers:
+        if d:
+            body.append(f"{label}  ", style=GOLD)
+            body.append("、".join(f"{_tr_bonus(cat, k, gamedata)}{v:+d}" for k, v in d.items())
+                        + "\n", style=PARCH)
+    body.append(note, style=FAINT)
+    console.print(_panel(body, title="斯庫瑪/月糖狀態"))
 
 
 def sheet_skill_detail(char: Character, gamedata: GameData, skill_id: str) -> None:

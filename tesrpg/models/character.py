@@ -75,6 +75,13 @@ class Character:
     vampire_attr_bonus: dict = field(default_factory=dict)   # attr_id -> +點數(階級加成)
     vampire_skill_bonus: dict = field(default_factory=dict)  # skill_id -> +點數
     vampire_resist: dict = field(default_factory=dict)       # element -> +百分比(含火焰弱點負值)
+    # 斯庫瑪/月糖成癮(力量↔詛咒;持久狀態,進存檔)。high 增益 / 戒斷懲罰走獨立 skooma_* 層,
+    # 與裝備/吸血鬼加成同模式:attr()/skill() 疊加、成長/夾限只用 base_*。詳見 systems/skooma.py。
+    skooma_addiction: int = 0           # 成癮計數(用藥 +1;清醒夠久衰減至 0)
+    skooma_high_until: int = 0          # 高潮結束的絕對小時(now < 此值 = 仍 high);0=未 high
+    skooma_last_dose_hour: int = -1     # 上次用藥的絕對小時(-1=從未;戒斷強度由「距今」推導)
+    skooma_attr_bonus: dict = field(default_factory=dict)    # attr_id -> +點數(high 增益 或 戒斷負值,二擇一)
+    skooma_skill_bonus: dict = field(default_factory=dict)   # skill_id -> +點數(僅戒斷負值;high 不碰技能 → 避刺客紅線)
     factions: dict = field(default_factory=dict)         # faction_id -> 階級索引(已入會)
     # 黑暗兄弟會(里程碑;血債招募 → 合約晉升 → 夜母祝福)。詳見 systems/brotherhood.py。
     # 階級存在 factions["dark_brotherhood"];此處只記入會「前」的狀態機欄位:
@@ -150,12 +157,12 @@ class Character:
     def attr(self, key: str) -> int:
         return (self.attributes.get(key, formulas.BASE_ATTRIBUTE)
                 + self.equip_attr_bonus.get(key, 0) + self.vampire_attr_bonus.get(key, 0)
-                + self.mastery_attr_bonus.get(key, 0))
+                + self.mastery_attr_bonus.get(key, 0) + self.skooma_attr_bonus.get(key, 0))
 
     def skill(self, key: str) -> int:
         return (self.skills.get(key, 0)
                 + self.equip_skill_bonus.get(key, 0) + self.vampire_skill_bonus.get(key, 0)
-                + self.mastery_skill_bonus.get(key, 0))
+                + self.mastery_skill_bonus.get(key, 0) + self.skooma_skill_bonus.get(key, 0))
 
     def base_attr(self, key: str) -> int:
         """不含裝備加成的原始屬性(供成長/夾限用)。"""
@@ -201,6 +208,9 @@ class Character:
             "vampire_fed_day": self.vampire_fed_day, "vampire_stage": self.vampire_stage,
             "vampire_attr_bonus": self.vampire_attr_bonus,
             "vampire_skill_bonus": self.vampire_skill_bonus, "vampire_resist": self.vampire_resist,
+            "skooma_addiction": self.skooma_addiction, "skooma_high_until": self.skooma_high_until,
+            "skooma_last_dose_hour": self.skooma_last_dose_hour,
+            "skooma_attr_bonus": self.skooma_attr_bonus, "skooma_skill_bonus": self.skooma_skill_bonus,
             "factions": self.factions,
             "murders": self.murders, "db_invited": self.db_invited,
             "murdered_npcs": self.murdered_npcs,

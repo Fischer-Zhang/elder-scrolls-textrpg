@@ -11,7 +11,7 @@
 ```bash
 python3 -m tesrpg                       # 終端機版
 python3 -m tesrpg.web                    # Web 版 → http://127.0.0.1:8080
-python3 tests/run_all.py                 # 43 測試模組,不需 pytest,須全綠
+python3 tests/run_all.py                 # 44 測試模組,不需 pytest,須全綠
 python3 -m py_compile tesrpg/**/*.py     # 編譯檢查
 PYTHONPATH=. python3 sim_assassin.py     # 平衡回歸模擬(改戰鬥常數後必跑)
 ```
@@ -49,8 +49,8 @@ PYTHONPATH=. python3 sim_assassin.py     # 平衡回歸模擬(改戰鬥常數後
 - **煉金毒藥 + 武器塗毒**;**潛行刺客系**:偷襲先機、暗殺殘響、雙持、隱遁再襲、戰前偵查;武器流派(潛襲/破甲/速度)
 
 ### 世界與探索
-- **七省 36 地點 / 17 城**(賽/天/晨/黑沼澤閉合大環 + 漢默法爾/高岩/瓦倫森林);旅行/晝夜/危險度
-- **生態遭遇**(biome 加權)、**省份風味事件**、**具名地標**首發現、各城**考據統治者**;終局 solo BOSS
+- **八省 64 地點 / 25 城**(賽/天/晨/黑沼澤閉合大環 + 漢默法爾/高岩/瓦倫森林/艾爾斯維爾;賽↔艾↔瓦南方大環);旅行/晝夜/危險度
+- **生態遭遇**(biome 加權,八生態含 savanna 弱毒)、**省份風味事件**、**具名地標**首發現、各城**考據統治者**;終局 solo BOSS
 
 ### 製作與裝備
 - **鍛造**(金屬四階 + 頂級魔族/龍鱗/龍祭司,稀有素材困難取得)、**裁縫**、**淬鍊強化**;**附魔**(武器/護甲/飾品)
@@ -58,7 +58,7 @@ PYTHONPATH=. python3 sim_assassin.py     # 平衡回歸模擬(改戰鬥常數後
 
 ### 公會、任務與政治
 - **六大公會**:戰士/法師/盜賊 + 黑暗兄弟會 + 神話黎明 + 九神騎士團(技能門檻/福利/對立/分支壓軸)
-- **多階段任務引擎**;犯罪賞金 + 衛兵 + 謀殺;**吸血鬼化**(力量↔詛咒天平)
+- **多階段任務引擎**;犯罪賞金 + 衛兵 + 謀殺;**吸血鬼化**(力量↔詛咒天平)、**斯庫瑪/月糖成癮**(亢奮↔戒斷天平,艾爾斯維爾)
 - **領主政治 / 城戰**:謁見 → 委託 → 武士冊封;圍城 + 破城 + 收稅 + 招兵買馬;**陣營動態大事件**
 
 ### 系統與打磨
@@ -66,6 +66,6 @@ PYTHONPATH=. python3 sim_assassin.py     # 平衡回歸模擬(改戰鬥常數後
 
 ## 重要檔案
 - 進入點/主迴圈:`tesrpg/main.py`;狀態/存檔:`tesrpg/state.py`;角色:`tesrpg/models/character.py`
-- 規則:`tesrpg/formulas.py` + `tesrpg/systems/*.py`(combat/magic/progression/mastery/smithing/vampirism/politics…)
+- 規則:`tesrpg/formulas.py` + `tesrpg/systems/*.py`(combat/magic/progression/mastery/smithing/vampirism/skooma/politics…)
 - UI:`tesrpg/ui/console.py`(rich)+ `tesrpg/web/`(Web)
 - 平衡工具:`sim_assassin.py`;設計/交接:`DESIGN.md`、`handoff.md`

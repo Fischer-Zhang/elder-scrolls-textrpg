@@ -21,6 +21,7 @@
   {"id": "thane", "name": "受封武士", "desc": "於 2 座城邦受封為武士。", "cond": {"type": "thanes", "count": 2}},
   {"id": "self_made_king", "name": "舉旗自立", "desc": "擇定「自立稱雄」的大義,問鼎天下。", "cond": {"type": "allegiance", "cause": "own"}},
   {"id": "child_of_night", "name": "夜之子嗣", "desc": "墮入吸血鬼一族。", "cond": {"type": "vampire"}},
+  {"id": "moon_addict", "name": "月糖之奴", "desc": "墮入斯庫瑪的甜膩深淵。", "cond": {"type": "skooma_addiction", "count": 5}},
   {"id": "bloodprice", "name": "血債累累", "desc": "謀害 10 名無辜者。", "cond": {"type": "murders", "count": 10}},
   {"id": "magnate", "name": "富甲一方", "desc": "積攢 50000 枚金幣。", "cond": {"type": "gold", "amount": 50000}}
 ]

@@ -1101,5 +1101,43 @@
     "reward": {"gold": 130, "fame": 4, "items": ["filled_lesser_soul_gem"]},
     "turn_in": "auto",
     "text": "海文城的綠約獵長要你潛入絞藤蛛巢、查探遠古樹靈甦醒的徵兆:「林子病了,外鄉人 —— 活著回來告訴我你看見了什麼。」"
+  },
+  "job_dark_moon": {
+    "name": "懸賞:暗月窟",
+    "faction": null, "rank": null, "source": "board", "provinces": ["艾爾斯維爾"],
+    "objective": {"type": "clear_dungeon", "dungeon": "dark_moon_grotto"},
+    "reward": {"gold": 400, "fame": 20},
+    "turn_in": "auto",
+    "text": "瑞門告示板高額懸賞:騰瑪林深處的暗月窟已被暗潮腐化、糖癮野獸成群下山,清剿祭壇、終結壇心那頭被月糖與暗潮共同腐化的暗虎。"
+  },
+  "job_tenmar": {
+    "name": "懸賞:糖癮橫行",
+    "faction": null, "rank": null, "source": "board", "provinces": ["艾爾斯維爾"],
+    "objective": {"type": "kill", "creature": "sugar_addled_senche", "count": 4},
+    "reward": {"gold": 160, "fame": 8},
+    "turn_in": "auto",
+    "text": "森查爾告示板懸賞:騰瑪林的糖癮野獸成群闖入商道、撲咬往來的駝隊,清除 4 頭糖癮野獸(騰瑪林野外可尋)。"
+  },
+  "favor_senchal": {
+    "name": "委託:探查暗月窟",
+    "faction": null, "rank": null, "source": "npc",
+    "objective": {"type": "reach", "location": "dark_moon_grotto"},
+    "reward": {"gold": 130, "fame": 4, "items": ["filled_lesser_soul_gem"]},
+    "turn_in": "auto",
+    "text": "森查爾的糖客要你潛入暗月窟、查探壇心暗虎甦醒的徵兆:「活著回來告訴我你看見了什麼,糖蜜祕藏的價,我們再談。」"
+  },
+  "quest_skooma_cure": {
+    "name": "淨糖之儀",
+    "source": "skooma_cure",
+    "text": "聚落的療者端詳著你渙散的眼神:「斯庫瑪之癮可解,但古法繁複。為我備齊淨化之物,並取一縷暗潮腐化之血 —— 再回到雙月之下,行最後的淨糖之儀。」",
+    "stages": [
+      {"objective": {"type": "collect", "item": "garlic", "count": 4},
+       "text": "採集 4 株大蒜(淨化聖物;瑞門與安維爾市集有售)。"},
+      {"objective": {"type": "collect", "item": "nightshade", "count": 3},
+       "text": "採集 3 株毒茄參(淨血媒介;森查爾與托瓦爾的商人有售)。"},
+      {"objective": {"type": "kill", "creature": "dro_mathra_shade", "count": 1},
+       "text": "獵殺一縷暗潮幽魂,取其腐化之血(暗月窟與騰瑪林野外可尋)。"}
+    ],
+    "reward": {"fame": 5}
   }
 }

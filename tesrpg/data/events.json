@@ -423,5 +423,26 @@
                  "success": {"text": "你貼著樹根匍匐而過,任那樹靈在綠蔭裡重新沉入巨木。", "effects": []},
                  "failure": {"text": "踩斷的枯枝驚動了牠,樹靈的毒藤猛然纏來!", "effects": [{"type": "combat", "creature": "spriggan"}]}}}
     ]
+  },
+  "savanna_sugar_harvest": {
+    "weight": 3,
+    "trigger": {"contexts": ["explore"], "provinces": ["艾爾斯維爾"]},
+    "title": "糖楓林採集", "text": "騰瑪林的糖楓在烈日下滲出黏稠的汁液,結成一串串天然的月糖晶;腐木上還浮著一層發光的鬼火塵。",
+    "options": [
+      {"text": "採集月糖晶與鬼火塵", "effects": [{"type": "item", "item": "moon_sugar", "qty": 1}, {"type": "item", "item": "glow_dust", "qty": 1}, {"type": "skill_xp", "skill": "alchemy", "amount": 0.5}, {"type": "message", "text": "你刮下了一捧月糖晶與一撮鬼火塵。"}]},
+      {"text": "不碰那甜膩的東西", "effects": []}
+    ]
+  },
+  "savanna_predator": {
+    "weight": 3,
+    "trigger": {"contexts": ["explore"], "provinces": ["艾爾斯維爾"], "location_types": ["wilderness"]},
+    "title": "草海中的金影", "text": "金黃的草浪無聲分開 —— 一頭如戰馬高大的森奇巨虎踏出,糖蜜浸透的利爪間滴著毒,雙眼鎖定了你。",
+    "options": [
+      {"text": "搶在牠撲上來前出手", "effects": [{"type": "combat", "creature": "senche_tiger"}]},
+      {"text": "屏息潛伏、繞開金影(潛行)",
+       "check": {"skill": "sneak", "difficulty": 44,
+                 "success": {"text": "你貼著草浪匍匐而過,任那巨虎在草海裡重新沉入潛伏。", "effects": []},
+                 "failure": {"text": "踩斷的枯草驚動了牠,森奇巨虎的毒爪猛然撲來!", "effects": [{"type": "combat", "creature": "senche_tiger"}]}}}
+    ]
   }
 }

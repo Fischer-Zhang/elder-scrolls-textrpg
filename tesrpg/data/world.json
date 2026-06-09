@@ -418,7 +418,8 @@
       "services": [],
       "links": {
         "imperial_road": 4,
-        "gideon": 3
+        "gideon": 3,
+        "topal_bay": 3
       }
     },
     "gideon": {
@@ -1432,7 +1433,8 @@
         "falinesti": 3,
         "silvenar": 3,
         "graht_forest": 3,
-        "abecean_coast": 4
+        "abecean_coast": 4,
+        "pellitine_marches": 4
       }
     },
     "silvenar": {
@@ -1502,6 +1504,110 @@
       "links": {
         "haven": 4,
         "gilane": 4
+      }
+    },
+    "rimmen": {
+      "biome": "savanna",
+      "name": "瑞門",
+      "province": "艾爾斯維爾",
+      "type": "city",
+      "danger": 0,
+      "desc": "安納奎那乾草原上的要塞商城,赭黃砂岩的尖塔在烈日下泛白。北境戰族的卡傑特在此操演,駝隊馱著月糖與香料穿越乾旱的草海;自帝國退潮以來,瑞門的鬥獸場與市集從不曾因紅寶石王座空懸而冷清。",
+      "services": ["inn", "merchant", "trainer", "fighters_guild", "armorer", "task_board"],
+      "merchant_stock": ["minor_healing_potion", "healing_potion", "minor_magicka_potion", "steel_sword", "steel_mace", "steel_dagger", "leather_cuirass", "leather_boots", "iron_shield", "long_bow", "hunting_bow", "repair_hammer", "moon_sugar", "red_apple", "garlic", "silver_ring", "gold_ring", "gold_amulet", "flame_staff"],
+      "spell_stock": ["flames", "fireball", "sparks", "minor_heal", "heal", "oakflesh", "stoneflesh", "fear", "demoralize", "soul_trap"],
+      "links": {
+        "topal_bay": 3,
+        "senchal": 3,
+        "tenmar_forest": 3,
+        "dark_moon_grotto": 4
+      }
+    },
+    "senchal": {
+      "biome": "savanna",
+      "name": "森查爾",
+      "province": "艾爾斯維爾",
+      "type": "city",
+      "danger": 0,
+      "desc": "佩萊泰恩南岸的萬帆巨港,潮濕的暖風裡浮著香料、月糖與斯庫瑪甜膩的焦香。卡傑特商閥、波斯莫船客與形跡可疑的走私客在燈影綽綽的碼頭間穿梭;這座不夜的歡場既是艾爾斯維爾對外的門戶,也是月糖與毒品流向泰姆瑞爾各地的源頭。",
+      "services": ["inn", "merchant", "trainer", "mages_guild", "thieves_guild", "armorer", "task_board"],
+      "merchant_stock": ["minor_healing_potion", "healing_potion", "minor_magicka_potion", "elven_sword", "glass_dagger", "elven_cuirass", "leather_helmet", "long_bow", "hunting_bow", "repair_hammer", "moon_sugar", "skooma", "nightshade", "glow_dust", "silver_ring", "gold_ring", "gold_amulet", "flame_staff", "magicka_staff"],
+      "spell_stock": ["flames", "fireball", "ignite", "frostbite", "minor_heal", "heal", "close_wounds", "fear", "demoralize", "conjure_familiar", "soul_trap", "restore_mind"],
+      "links": {
+        "rimmen": 3,
+        "pellitine_marches": 3,
+        "tenmar_forest": 3,
+        "torval": 4
+      }
+    },
+    "torval": {
+      "biome": "savanna",
+      "name": "托瓦爾",
+      "province": "艾爾斯維爾",
+      "type": "town",
+      "danger": 0,
+      "desc": "卡傑特諸族的精神聖城,白柱神殿環抱著瑪恩——讀月者尊主的座席。月糖在此不是商品而是聖物;祭司們依瑪瑟與瑟昆達雙月的盈虧、循『迦哈傑』月之經緯,為新生的虎人定下血脈。亂世之中,瑪恩不掌兵戈,卻以雙月的意志凝聚著散落草原的諸部。",
+      "services": ["inn", "merchant", "trainer", "task_board"],
+      "merchant_stock": ["minor_healing_potion", "healing_potion", "moon_sugar", "leather_cuirass", "leather_boots", "hunting_bow", "repair_hammer", "nightshade", "silver_ring", "silver_amulet"],
+      "spell_stock": ["minor_heal", "heal", "close_wounds", "renewal", "restore_mind"],
+      "links": {
+        "tenmar_forest": 3,
+        "senchal": 4
+      }
+    },
+    "tenmar_forest": {
+      "biome": "savanna",
+      "name": "騰瑪森林",
+      "province": "艾爾斯維爾",
+      "type": "wilderness",
+      "danger": 2,
+      "desc": "橫亙安納奎那與佩萊泰恩之間的騰瑪林,半乾的草海在此漸沒入濕熱的密林。糖楓的汁液結成天然的月糖晶,引得森奇巨虎與被糖癮浸透的野獸在樹影間游蕩;雙月升起時,林子深處還會傳來月糖祭壇方向的低鳴。",
+      "services": [],
+      "links": {
+        "rimmen": 3,
+        "senchal": 3,
+        "torval": 3,
+        "dark_moon_grotto": 4
+      }
+    },
+    "dark_moon_grotto": {
+      "biome": "savanna",
+      "name": "暗月窟",
+      "province": "艾爾斯維爾",
+      "type": "dungeon",
+      "danger": 4,
+      "desc": "騰瑪林深處一座被雙月遺棄的月糖祭壇遺址,終年籠在暗月的陰影裡。墮入『暗潮』的虎人幽魂在此低吟著虛無的音律,被月糖浸透千年的祭壇仍滲著黏稠的糖蜜——傳說壇心藏著一柄被暗潮腐化的古老黑檀刃。",
+      "services": [],
+      "dungeon": "dark_moon_grotto",
+      "links": {
+        "tenmar_forest": 4,
+        "rimmen": 4
+      }
+    },
+    "topal_bay": {
+      "biome": "savanna",
+      "name": "托帕爾灣畔",
+      "province": "邊境",
+      "type": "wilderness",
+      "danger": 2,
+      "desc": "尼本河南流注入托帕爾灣的濕熱草澤,賽羅迪爾的蘆葦沼地在此漸轉為艾爾斯維爾乾草原的金黃。古老的駝商路自李文城方向蜿蜒南下,是帝國轄境通往虎人草原的最後一道門檻。",
+      "services": [],
+      "links": {
+        "niben_marsh": 3,
+        "rimmen": 3
+      }
+    },
+    "pellitine_marches": {
+      "biome": "savanna",
+      "name": "佩萊泰恩邊草",
+      "province": "邊境",
+      "type": "wilderness",
+      "danger": 3,
+      "desc": "佩萊泰恩與瓦倫森林交界的濕熱邊草地,糖楓林在此與波斯莫的紅樹林交纏。卡傑特糖商與綠約船客在這條隱秘的邊草路上往來,空氣裡同時飄著月糖的甜與雨林的腐。",
+      "services": [],
+      "links": {
+        "senchal": 3,
+        "haven": 4
       }
     }
   },

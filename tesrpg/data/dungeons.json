@@ -526,5 +526,60 @@
         ]
       }
     }
+  },
+  "dark_moon_grotto": {
+    "name": "暗月窟",
+    "rooms": [
+      {
+        "desc": "祭壇遺址的入口浸在暗月的陰影裡,空氣黏稠甜膩。一頭被月糖浸透、雙眼泛著糖晶光澤的草原野獸正瘋狂舔舐著壇基的糖蜜。",
+        "enemy": "sugar_addled_senche",
+        "container": null
+      },
+      {
+        "desc": "坍塌的糖楓神龕間,一只走私客遺落的糖晶木匣半埋在凝固的月糖裡。",
+        "enemy": null,
+        "container": {
+          "locked": 30,
+          "loot": [
+            "moon_sugar",
+            "glow_dust",
+            {"gold": [12, 30]}
+          ]
+        }
+      },
+      {
+        "desc": "暗潮低吟迴盪的月糖祭殿,一頭貓身大小的阿爾菲克貓巫蜷在壇上,糖晶藤蔓也隨之甦醒纏來。",
+        "container": null,
+        "enemies": ["alfiq_sorcerer", "sugar_vine"]
+      },
+      {
+        "desc": "通往壇心的暗月拱門前,一縷墮入暗潮的虎人幽魂盤踞守著,拱後嵌著一只滲著糖蜜的舊匣。",
+        "enemy": "dro_mathra_shade",
+        "container": {
+          "locked": 35,
+          "loot": [
+            "skooma",
+            "ruby",
+            {"gold": [25, 55]}
+          ]
+        }
+      }
+    ],
+    "boss": {
+      "desc": "壇心的暗月之下 —— 一頭被千年月糖與暗潮共同腐化的巨大暗虎自糖蜜中升起,血肉早已半化為毒。它守著歷代走私客供奉的祕藏,藤心深處還纏著一柄被暗潮腐蝕的古老黑檀刃。",
+      "enemy": "dark_moon_senche",
+      "raw": true,
+      "treasure": {
+        "locked": 45,
+        "loot": [
+          "ebony_sword",
+          "skooma",
+          "filled_greater_soul_gem",
+          "healing_potion",
+          "ruby",
+          {"gold": [80, 170]}
+        ]
+      }
+    }
   }
 }

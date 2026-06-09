@@ -184,6 +184,31 @@ def test_black_marsh_closes_the_world_into_a_grand_loop():
     assert "blacklight" in seen, "拔掉北線後仍須能經黑沼澤抵達晨風 → 大環未閉合"
 
 
+def test_elsweyr_closes_the_southern_ring():
+    """艾爾斯維爾 = 賽羅迪爾南↔瓦倫森林 的第二條平行路線,把西南開放臂閉合成環。
+
+    判定:拔掉舊西南臂的咽喉節點(anvil↔strid_vale↔falinesti 走廊,以 strid_vale 代表),
+    從賽羅迪爾南緣(niben_marsh)仍能『經艾爾斯維爾』抵達瓦倫森林(haven)。
+    這證明艾爾斯維爾是獨立於舊臂的回環,而非又一條死路尾巴。"""
+    gd, _ = _char()
+    locs = gd.world["locations"]
+
+    elsweyr = {lid for lid, l in locs.items() if l["province"] == "艾爾斯維爾"}
+    assert {"rimmen", "senchal", "torval", "tenmar_forest", "dark_moon_grotto"} <= elsweyr
+
+    cut = {"strid_vale"}   # 拔掉賽↔瓦的原有走廊咽喉
+    seen = {"niben_marsh"}
+    frontier = ["niben_marsh"]
+    while frontier:
+        cur = frontier.pop()
+        for dest in locs[cur].get("links", {}):
+            if dest in cut or dest in seen:
+                continue
+            seen.add(dest)
+            frontier.append(dest)
+    assert "haven" in seen, "拔掉舊臂後仍須能經艾爾斯維爾抵達瓦倫森林 → 南環未閉合"
+
+
 def test_shop_stock_ids_are_valid():
     """每個商店的 merchant_stock / 法師公會 spell_stock 都引用得到真實物品/法術
     (防新增城鎮時打錯 id;此前無此防線)。"""

@@ -199,5 +199,20 @@
         "magnitude": 6
       }
     ]
+  },
+  "moon_sugar": {
+    "name": "月糖",
+    "value": 25,
+    "weight": 0.1,
+    "effects": [
+      {
+        "kind": "restore_fatigue",
+        "magnitude": 12
+      },
+      {
+        "kind": "restore_magicka",
+        "magnitude": 10
+      }
+    ]
   }
 }

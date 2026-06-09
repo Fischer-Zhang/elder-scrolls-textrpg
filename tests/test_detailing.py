@@ -58,14 +58,14 @@ def test_biome_steers_encounters_without_emptying_pool():
 
 def test_every_location_has_biome():
     gd, _ = _char()
-    valid = {"heartland", "snow", "ashland", "swamp", "desert", "moor", "jungle"}
+    valid = {"heartland", "snow", "ashland", "swamp", "desert", "moor", "jungle", "savanna"}
     for lid, loc in gd.world["locations"].items():
         assert loc.get("biome") in valid, f"{lid} biome 非法:{loc.get('biome')}"
 
 
 def test_creature_biomes_are_valid():
     gd, _ = _char()
-    valid = {"heartland", "snow", "ashland", "swamp", "desert", "moor", "jungle"}
+    valid = {"heartland", "snow", "ashland", "swamp", "desert", "moor", "jungle", "savanna"}
     for cid, c in gd.bestiary.items():
         for b in c.get("biomes", []):
             assert b in valid, f"{cid} biomes 非法:{b}"
@@ -120,6 +120,32 @@ def test_jungle_biome_steers_to_valenwood_ecology():
         tally[c.template_id] += 1
     assert sum(tally[k] for k in jungle) > sum(tally[k] for k in swamp)   # 在地生態 > 鄰省(沼澤)生態
     assert sum(tally.values()) == 600                                    # 池不空
+
+
+# --- 艾爾斯維爾 Elsweyr(草原 savanna;敵弱毒 → 操練塗毒/煉金刺客 build)-------
+def test_elsweyr_signature_creatures_weak_to_poison():
+    """艾爾斯維爾生態軸=敵弱毒(血肉被月糖/斯庫瑪浸得半化為毒)→ 招牌怪須『真的』弱毒
+    (resist_multiplier > 1.0;poison ∉ MAGIC_ELEMENTS,不疊 magic 鍵,負值即直接放大傷害)。
+    這獎勵全圖最被冷落的塗毒/毒霧刺客 build(M9 毒 + 黑暗兄弟會)。"""
+    gd, _ = _char()
+    savanna = [cid for cid, c in gd.bestiary.items() if "savanna" in c.get("biomes", [])]
+    assert len(savanna) >= 5, f"艾爾斯維爾招牌怪太少:{savanna}"
+    for cid in savanna:
+        m = formulas.resist_multiplier(gd.bestiary[cid].get("resist", {}), "poison")
+        assert m > 1.0, f"{cid} 並非真的弱毒(毒傷係數 {m} ≤ 1.0)"
+
+
+def test_savanna_biome_steers_to_elsweyr_ecology():
+    """草原 biome 明顯抽到艾爾斯維爾招牌怪、且後備池不空(通用怪四海皆有)。"""
+    gd, _ = _char()
+    savanna = {cid for cid, c in gd.bestiary.items() if "savanna" in c.get("biomes", [])}
+    jungle = {cid for cid, c in gd.bestiary.items() if "jungle" in c.get("biomes", [])}
+    tally = Counter()
+    for i in range(600):
+        c = combat.random_encounter(gd, 20, RNG(11000 + i), max_danger=5, biome="savanna")
+        tally[c.template_id] += 1
+    assert sum(tally[k] for k in savanna) > sum(tally[k] for k in jungle)   # 在地生態 > 鄰省(雨林)生態
+    assert sum(tally.values()) == 600                                      # 池不空
 
 
 def test_heartland_has_signature_ecology():

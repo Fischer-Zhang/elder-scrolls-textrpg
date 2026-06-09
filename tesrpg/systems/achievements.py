@@ -23,7 +23,7 @@ _IMPLEMENTED_TYPES = {
     "kill_boss", "kills_total", "dungeons", "quests", "level", "gold",
     "fame", "infamy", "guildmaster_any", "guildmaster", "mastery_count",
     "skill_cap", "landmarks", "provinces", "cities_held", "thanes",
-    "vampire", "murders", "pure_spec", "allegiance",
+    "vampire", "skooma_addiction", "murders", "pure_spec", "allegiance",
 }
 
 # pure_spec 判定:主專精「絕對總和」與「領先次高的差距」雙門檻。初生角色因起始職業
@@ -92,6 +92,8 @@ def _eval(char, gamedata: GameData, cond: dict) -> bool:
 
     if t == "vampire":
         return vampirism.is_vampire(char)
+    if t == "skooma_addiction":
+        return getattr(char, "skooma_addiction", 0) >= cond["count"]
     if t == "murders":
         return getattr(char, "murders", 0) >= cond["count"]
 
