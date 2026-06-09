@@ -90,6 +90,7 @@ def build_character(
     inventory.add_item(char, "minor_healing_potion", 2)
     inventory.add_item(char, "wheat", 2)
     inventory.add_item(char, "blue_mountain_flower", 2)
+    inventory.add_item(char, "lockpick", 12)        # 起始開鎖器(撬鎖耗之;城鎮可補)
 
     # --- 開局背景(不一樣的人生):在標準起始之上做資料驅動覆寫 ----------
     apply_origin(gamedata, char, origin_id)

@@ -240,6 +240,7 @@ def test_lockpick_chance_and_open():
     gd, c = _char()
     assert dungeon.pick_lock_chance(100, 10) > dungeon.pick_lock_chance(10, 100)
     c.skills["security"] = 100
+    inventory.add_item(c, "lockpick", 20)            # 撬鎖需開鎖器(成功不耗、失敗折斷)
     # 高技能撬低鎖,多試幾次必開
     opened = any(dungeon.pick_lock(c, gd, 5, RNG(i))["success"] for i in range(10))
     assert opened

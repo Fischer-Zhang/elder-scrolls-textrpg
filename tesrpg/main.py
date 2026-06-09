@@ -842,23 +842,29 @@ def _resolve_container(state: GameState, gamedata: GameData, container: dict, la
         return
     lock = container.get("locked", 0)
     if lock > 0:
+        picks = inventory.count_item(state.player, "lockpick")
+        if picks <= 0 and not state.player.tower_key_charge:
+            ui.message(f"這個{label}上了鎖,而你沒有開鎖器 —— 撬不開(城鎮可買開鎖器)。", style="grey70")
+            return
         ch = dungeon.effective_pick_lock_chance(state.player, gamedata, lock)
-        if not ui.confirm(f"發現一個上鎖的{label}(鎖難度 {lock},你的成功率約 {int(ch*100)}%),嘗試撬鎖?"):
+        if not ui.confirm(f"發現一個上鎖的{label}(鎖難度 {lock},成功率約 {int(ch*100)}%,開鎖器 ×{picks}),嘗試撬鎖?"):
             return
         while True:
             r = dungeon.pick_lock(state.player, gamedata, lock, state.rng)
-            state.time.advance(r["hours"])
+            state.time.advance(r["hours"])               # 不耗時(hours 恆 0)
             ui.show_events(r["skill_events"], gamedata)
-            if r["success"]:
-                ui.message("塔之鑰應驗,鎖無聲而開。" if r.get("tower_key") else "喀噠 —— 鎖開了!",
-                           style="green")
-                break
-            if r["tired"]:
-                # 體力耗盡 → 停止這個自動重試迴圈(讓體力成為「單場撬鎖次數」的真實上限,
-                # 而非以半額效率無限重試同一把鎖刷 security)。要再撬得先休息。
-                ui.message("你精疲力竭,手抖得使不上力 —— 得先歇口氣才撬得動這把鎖。", style="yellow")
+            if r.get("no_pick"):                         # 開鎖器用盡 → 收手(主成本閘)
+                ui.message("你的開鎖器用盡了,只得作罷(城鎮可補開鎖器)。", style="yellow")
                 return
-            if not ui.confirm("撬鎖失敗。再試一次?"):
+            if r["success"]:
+                ui.message("塔之鑰應驗,鎖無聲而開。" if r.get("tower_key")
+                           else "喀噠 —— 鎖開了!(用掉一根開鎖器)", style="green")
+                break
+            broke = "(折斷了一根開鎖器)" if r.get("broke_pick") else ""
+            if r["tired"]:
+                ui.message(f"撬鎖失敗{broke},你已精疲力竭 —— 得先歇口氣。", style="yellow")
+                return
+            if not ui.confirm(f"撬鎖失敗{broke}。再試一次?"):
                 return
     spoils = dungeon.open_container(state.player, gamedata, container, state.rng)
     ui.message(f"你打開了{label}:", style="green")

@@ -21,26 +21,34 @@ def effective_pick_lock_chance(char: Character, gamedata: GameData, lock_level: 
     return max(chance, mastery.lock_floor(char, gamedata))
 
 
-def pick_lock(char: Character, gamedata: GameData, lock_level: int, rng: RNG) -> dict:
-    """嘗試撬鎖一次。無論成敗都鍛鍊安全技能(learn-by-doing)。
+LOCKPICK_ITEM = "lockpick"
+LOCKPICK_FATIGUE = 2    # 每次撬鎖嘗試的少量體力;主閘改為「開鎖器」(失敗折斷),非時間
 
-    每次「真正擲骰」的嘗試會付出安全 practice 的體力 + 時間成本(時間由呼叫端推進),
-    讓撬鎖不再是零代價的無限重試/免費刷 security。
-    若角色蓄有「塔之鑰」(塔座能力)充能,則必定成功並消耗之 —— 此招牌仍**免成本、免耗時**。
-    回傳含 hours/tired,供呼叫端推進時間與提示。
+
+def pick_lock(char: Character, gamedata: GameData, lock_level: int, rng: RNG) -> dict:
+    """嘗試撬鎖一次。**需要開鎖器,每次嘗試耗一根**(成功=用掉、失敗=折斷),**不耗時**、僅扣少量體力。
+    成功才鍛鍊安全技能(learn-by-doing);失敗不給 xp。**每次嘗試都耗一根開鎖器 → security xp 有金幣閘**
+    (杜絕高技能者免費重撬同鎖刷 security;開鎖器=這道反 min-max 的成本閘,以金幣換取)。
+    「塔之鑰」(塔座能力)充能則必定成功、消耗之 —— 招牌仍免開鎖器/免體力/免耗時。
+    回傳含 hours(恆 0)/tired/no_pick(無開鎖器)/broke_pick(本次失敗折斷),供呼叫端提示。
     """
     chance = effective_pick_lock_chance(char, gamedata, lock_level)
+    base_xp = gamedata.skills["security"]["practice"]["xp"]
     if char.tower_key_charge:
         char.tower_key_charge = False
-        xp = gamedata.skills["security"]["practice"]["xp"]
-        skill_events = progression.use_skill(char, gamedata, "security", xp)
-        return {"success": True, "chance": 1.0, "tower_key": True,
-                "hours": 0, "tired": False, "skill_events": skill_events}
-    xp, hours, tired = progression.practice_cost(char, gamedata, "security")
+        skill_events = progression.use_skill(char, gamedata, "security", base_xp)
+        return {"success": True, "chance": 1.0, "tower_key": True, "no_pick": False,
+                "broke_pick": False, "hours": 0, "tired": False, "skill_events": skill_events}
+    if inventory.count_item(char, LOCKPICK_ITEM) <= 0:            # 沒有開鎖器 → 撬不了
+        return {"success": False, "chance": chance, "tower_key": False, "no_pick": True,
+                "broke_pick": False, "hours": 0, "tired": False, "skill_events": []}
+    tired = char.fatigue < LOCKPICK_FATIGUE
+    char.fatigue = max(0, char.fatigue - LOCKPICK_FATIGUE)
+    inventory.remove_item(char, LOCKPICK_ITEM, 1)                # 每次嘗試耗一根(成功也耗 → xp 的金幣閘)
     success = rng.chance(chance)
-    skill_events = progression.use_skill(char, gamedata, "security", xp)
-    return {"success": success, "chance": chance, "tower_key": False,
-            "hours": hours, "tired": tired, "skill_events": skill_events}
+    skill_events = progression.use_skill(char, gamedata, "security", base_xp) if success else []
+    return {"success": success, "chance": chance, "tower_key": False, "no_pick": False,
+            "broke_pick": not success, "hours": 0, "tired": tired, "skill_events": skill_events}
 
 
 def open_container(char: Character, gamedata: GameData, container: dict, rng: RNG) -> dict:

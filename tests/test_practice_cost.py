@@ -3,7 +3,7 @@
 守住「不准零風險刷技能」的反 min-max 紅線(原本三者都繞過了正規訓練代價):
 - progression.practice_cost 共用 data/skills.json 的 practice 價碼(與訓練師 action_practice 一致)。
 - 行竊「得手才給潛行 xp」(被抓不給 → 杜絕「故意被抓刷潛行」)。
-- 撬鎖每次擲骰付體力 + 時間;「塔之鑰」招牌仍免成本、免耗時。
+- 撬鎖**需開鎖器**(失敗折斷)、**不耗時**、僅扣少量體力,成功才給 security xp;「塔之鑰」招牌免開鎖器/免成本/免耗時。
 - 說服每次付體力 + 時間,連「辯舌·折服」必成路徑也照付(非免費必成)。
 
 每條都可反向驗證:還原修改前的程式碼會因缺 hours/tired 鍵或被抓仍給 xp 而紅。
@@ -12,7 +12,7 @@
 from tesrpg.creation import build_character
 from tesrpg.gamedata import get_gamedata
 from tesrpg.rng import RNG
-from tesrpg.systems import crime, dialogue, dungeon, progression
+from tesrpg.systems import crime, dialogue, dungeon, inventory, progression
 
 
 def _char(**skills):
@@ -77,16 +77,53 @@ def test_steal_costs_fatigue_and_returns_time():
     assert c.fatigue == f0 - pdef["fatigue"]
 
 
-# --- 撬鎖:擲骰付體力 + 時間;塔之鑰招牌免費 ------------------------
-def test_pick_lock_roll_costs_fatigue_and_time():
+# --- 撬鎖:需開鎖器(失敗折斷)、不耗時、少量體力;塔之鑰招牌免費 ----
+def test_pick_lock_needs_pick_no_time_low_fatigue():
     gd, c = _char(security=50)
-    pdef = gd.skills["security"]["practice"]
     c.fatigue = c.max_fatigue
     f0 = c.fatigue
-    r = dungeon.pick_lock(c, gd, 10, RNG(0))
-    assert not r["tower_key"]
-    assert r["hours"] == pdef["hours"] and r["hours"] > 0
-    assert c.fatigue == f0 - pdef["fatigue"]
+    [c.inventory.remove(s) for s in list(c.inventory) if s["id"] == "lockpick"]  # 清掉起始開鎖器
+    r = dungeon.pick_lock(c, gd, 10, RNG(0))                  # 無開鎖器 → 撬不了、零成本
+    assert r["no_pick"] and not r["success"] and r["hours"] == 0 and c.fatigue == f0
+    inventory.add_item(c, "lockpick", 3)
+    r = dungeon.pick_lock(c, gd, 10, RNG(0))                  # 有開鎖器 → 不耗時、僅扣少量體力
+    assert not r["tower_key"] and r["hours"] == 0
+    assert c.fatigue == f0 - dungeon.LOCKPICK_FATIGUE
+    assert inventory.count_item(c, "lockpick") == 2          # 每次嘗試耗一根(成功/失敗皆然)
+
+
+def test_every_attempt_consumes_pick_gates_xp():
+    """對抗審查確認的反 min-max 修正:**每次撬鎖嘗試(成功也算)都耗一根開鎖器** →
+    security xp 有金幣閘,杜絕高技能者免費重撬同鎖刷 security(原『成功不耗』讓 95% 成功者近乎免費刷)。"""
+    gd, c = _char(security=95)                                # 高技能 → 近乎必成功
+    c.fatigue = c.max_fatigue
+    [c.inventory.remove(s) for s in list(c.inventory) if s["id"] == "lockpick"]  # 清起始開鎖器
+    inventory.add_item(c, "lockpick", 5)
+    successes = 0
+    for i in range(5):
+        n0 = inventory.count_item(c, "lockpick")
+        r = dungeon.pick_lock(c, gd, 5, RNG(i))
+        assert inventory.count_item(c, "lockpick") == n0 - 1   # 即便成功也耗一根 → xp 非免費
+        successes += int(r["success"])
+    assert successes >= 1 and inventory.count_item(c, "lockpick") == 0   # 5 次耗盡 5 根
+    assert dungeon.pick_lock(c, gd, 5, RNG(9))["no_pick"]    # 用盡後撬不了
+
+
+def test_lockpick_broken_on_failure_no_xp():
+    """失敗折斷一根開鎖器、且不給 security xp(杜絕『故意撬不開刷 security』);成功才給 xp。"""
+    gd, c = _char(security=5)                                 # 低技能撬難鎖 → 近乎必失敗
+    c.fatigue = c.max_fatigue
+    inventory.add_item(c, "lockpick", 20)
+    for i in range(20):
+        n0 = inventory.count_item(c, "lockpick")
+        x0 = c.skill_xp.get("security", 0.0)
+        r = dungeon.pick_lock(c, gd, 99, RNG(i))
+        if not r["success"]:
+            assert r["broke_pick"] and inventory.count_item(c, "lockpick") == n0 - 1   # 折斷一根
+            assert c.skill_xp.get("security", 0.0) == x0                                # 失敗不給 xp
+            break
+    else:
+        raise AssertionError("低技能撬難鎖應至少失敗一次")
 
 
 def test_tower_key_unlock_is_free_and_keeps_signature():
@@ -184,17 +221,17 @@ def test_smoke_shop_steal_advances_time():
     assert state.time.absolute_hours() > t0, "行竊應推進時間"
 
 
-def test_smoke_lockpick_advances_time():
+def test_smoke_lockpick_no_time():
     import tesrpg.main as M
     gd, state = _smoke_state()
-    state.player.skills["security"] = 100          # 高技能 → 很快開,且為真實擲骰(非塔之鑰)
+    state.player.skills["security"] = 100          # 高技能 → 很快開(用起始開鎖器)
     t0 = state.time.absolute_hours()
     restore = _patch_ui(_seq_menu(), _bounded_yes())
     try:
         M._resolve_container(state, gd, {"locked": 5, "loot": [{"gold": [5, 5]}]}, "箱子")
     finally:
         restore()
-    assert state.time.absolute_hours() > t0, "撬鎖應推進時間"
+    assert state.time.absolute_hours() == t0, "撬鎖不應推進時間"
 
 
 def test_smoke_talk_persuade_advances_time():
@@ -209,24 +246,25 @@ def test_smoke_talk_persuade_advances_time():
     assert state.time.absolute_hours() > t0, "說服應推進時間"
 
 
-def test_lockpick_loop_stops_when_exhausted():
-    """體力耗盡時撬鎖自動重試迴圈會收手(體力=單場撬鎖次數的真實上限),
-
-    而非以半額效率無限重試同一把鎖刷 security。即便玩家一律選「再試」也擋不住。
-    對抗審查確認的唯一發現:_resolve_container 的 while True 是最低摩擦的刷取迴圈。
-    反向驗證:還原「tired 只警告不停止」會讓本迴圈一路重試到偶然成功(時間遠超體力預算)。
+def test_lockpick_loop_bounded_by_picks():
+    """撬鎖自動重試迴圈受**開鎖器數量**所限(失敗折斷),即便玩家一律選「再試」也不會無限刷:
+    用盡開鎖器即 no_pick 收手。終局必為「開鎖成功」或「開鎖器耗盡」二者之一。
+    反向驗證:還原「失敗不折斷開鎖器」會讓本迴圈一路免費重試到偶然成功。
     """
     import tesrpg.main as M
     gd, state = _smoke_state()
-    state.player.skills["security"] = 5                 # 低技能,難鎖近乎必失敗
-    state.player.fatigue = 8                            # 體力預算:撬 2 次即耗盡(cost 5)
-    t0 = state.time.absolute_hours()
+    state.player.skills["security"] = 5                 # 低技能,難鎖近乎必失敗 → 每次折斷
+    state.player.inventory = [s for s in state.player.inventory if s["id"] != "lockpick"]
+    inventory.add_item(state.player, "lockpick", 3)     # 精確 3 根
+    gold0 = state.player.gold
     restore = _patch_ui(_seq_menu(), _bounded_yes(50))  # 一律「再試」,不靠玩家放棄
     try:
-        M._resolve_container(state, gd, {"locked": 95, "loot": [{"gold": [5, 5]}]}, "箱子")
+        M._resolve_container(state, gd, {"locked": 99, "loot": [{"gold": [5, 5]}]}, "箱子")
     finally:
         restore()
-    assert state.time.absolute_hours() - t0 <= 2        # 耗盡即停,不會無限刷
+    opened = state.player.gold > gold0                              # 開了 → 拿到 loot
+    out_of_picks = inventory.count_item(state.player, "lockpick") == 0
+    assert opened or out_of_picks                                   # 二者之一即終止,非無限刷
 
 
 # --- 製作/維護系(煉金/附魔/修理)也接上 practice 成本 ----------------
@@ -290,14 +328,16 @@ def run():
     test_practice_cost_tired_halves_xp_and_clamps()
     test_steal_xp_only_on_success()
     test_steal_costs_fatigue_and_returns_time()
-    test_pick_lock_roll_costs_fatigue_and_time()
+    test_pick_lock_needs_pick_no_time_low_fatigue()
+    test_every_attempt_consumes_pick_gates_xp()
+    test_lockpick_broken_on_failure_no_xp()
     test_tower_key_unlock_is_free_and_keeps_signature()
     test_persuade_costs_fatigue_and_time()
     test_charm_path_also_pays_cost()
     test_smoke_shop_steal_advances_time()
-    test_smoke_lockpick_advances_time()
+    test_smoke_lockpick_no_time()
     test_smoke_talk_persuade_advances_time()
-    test_lockpick_loop_stops_when_exhausted()
+    test_lockpick_loop_bounded_by_picks()
     test_brew_costs_fatigue_and_time()
     test_brew_fail_still_costs_fatigue_and_time()
     test_enchant_costs_fatigue_and_time()
