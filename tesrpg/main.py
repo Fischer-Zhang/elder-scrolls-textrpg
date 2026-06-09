@@ -881,8 +881,14 @@ def action_dungeon(state: GameState, gamedata: GameData) -> str | None:
     for i, room in enumerate(rooms, 1):
         ui.dungeon_room(dg["name"], i, total, room["desc"])
         room_enemies = _room_enemies(gamedata, room, state.rng)
-        if room_enemies and run_battle(state, gamedata, room_enemies) == "dead":
-            return "dead"
+        if room_enemies:
+            res = run_battle(state, gamedata, room_enemies)
+            if res == "dead":
+                return "dead"
+            if res == "fled":                              # 逃離戰鬥 → 退出地城(未清剿、不續探、不開該室箱子)
+                ui.message("你逃離了戰鬥,倉皇退出了地城。", style="yellow")
+                state.time.advance(1)
+                return None
         _resolve_container(state, gamedata, room.get("container"), "箱子")
         if i < len(rooms) and not ui.confirm("繼續深入?"):
             ui.message("你循原路退出了地城。", style="grey70")
@@ -897,8 +903,13 @@ def action_dungeon(state: GameState, gamedata: GameData) -> str | None:
             foe.name = f"{dg['name']}首領"
         else:
             foe = combat.spawn_boss(gamedata, boss["enemy"], state.rng, name=f"{dg['name']}首領")
-        if run_battle(state, gamedata, foe) == "dead":
+        res = run_battle(state, gamedata, foe)
+        if res == "dead":
             return "dead"
+        if res == "fled":                                  # 從首領逃離 → 未肅清:不開寶藏、不計清剿、不結算任務
+            ui.message("你從首領面前倉皇逃離,未能肅清地城。", style="yellow")
+            state.time.advance(1)
+            return None
     _resolve_container(state, gamedata, boss.get("treasure"), "首領寶藏")
     ui.message(f"你肅清了{dg['name']}!", style="bold green")
     quests.record_dungeon_clear(state.player, loc["dungeon"])
