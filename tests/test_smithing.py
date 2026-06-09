@@ -233,6 +233,37 @@ def test_archmage_set_is_reachable():
         assert piece in sold, f"{piece} 無任何取得途徑(死內容)"
 
 
+def test_top_tier_craftable_and_reachable():
+    """頂級三材質:forge/tailor 配方 skill_req 90、_MATERIAL_INGOT 對應、稀有素材有掉落途徑、端到端可鍛。"""
+    gd = get_gamedata()
+    for mat, ingot in (("daedric", "ebony_ingot"), ("dragonscale", "dragon_scale"),
+                       ("dragonpriest", "bolt_of_cloth")):
+        assert smithing._MATERIAL_INGOT.get(mat) == ingot
+    for prefix in ("forge_daedric_", "forge_dragonscale_", "tailor_dragonpriest_"):
+        recs = [r for rid, r in gd.recipes.items() if rid.startswith(prefix)]
+        assert recs and all(r.get("skill_req") == 90 for r in recs), prefix
+    # 稀有素材(daedra_heart/dragon_scale)有取得途徑(boss treasure/loot 掃描)
+    drop = set()
+    for dg in gd.dungeons.values():
+        for room in dg.get("rooms", []):
+            drop |= {x for x in (room.get("container") or {}).get("loot", []) if isinstance(x, str)}
+        drop |= {x for x in dg.get("boss", {}).get("treasure", {}).get("loot", []) if isinstance(x, str)}
+    for cr in gd.bestiary.values():
+        drop |= {e["item"] for e in cr.get("loot", []) if isinstance(e, dict) and "item" in e}
+    for mat in ("daedra_heart", "dragon_scale"):
+        assert mat in drop, f"{mat} 無取得途徑(死內容)"
+    # 端到端:smithing 90 + 材料 → 鍛 daedric_sword(技能不足擋、足夠過、稀有素材消耗)
+    c = build_character(gd, name="鍛", sex="male", race="nord", birthsign="warrior", class_id="warrior")
+    inventory.add_item(c, "ebony_ingot", 2)
+    inventory.add_item(c, "daedra_heart", 1)
+    assert not crafting.craft(c, gd, "forge_daedric_sword")["ok"]   # 0 < 90 → 擋
+    c.skills["smithing"] = 90
+    assert crafting.craft(c, gd, "forge_daedric_sword")["ok"]
+    assert inventory.count_item(c, "daedric_sword") == 1
+    assert inventory.count_item(c, "daedra_heart") == 0             # 稀有素材消耗
+    assert smithing.is_temperable(gd, "daedric_sword")             # 頂裝可淬鍊
+
+
 def run():
     for name, fn in sorted(globals().items()):
         if name.startswith("test_") and callable(fn):

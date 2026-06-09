@@ -12,6 +12,8 @@
   "dwarven_ingot":   {"name": "矮人金屬錠", "kind": "misc", "value": 110, "weight": 2},
   "malachite_ingot": {"name": "熔煉綠玉錠", "kind": "misc", "value": 110, "weight": 1},
   "ebony_ingot":     {"name": "黑檀錠", "kind": "misc", "value": 200, "weight": 2},
+  "daedra_heart":    {"name": "魔性之心", "kind": "misc", "value": 500, "weight": 1},
+  "dragon_scale":    {"name": "龍鱗", "kind": "misc", "value": 400, "weight": 2},
 
   "repair_hammer": {"name": "修理鎚", "kind": "misc", "value": 5, "weight": 2},
   "lockpick": {"name": "開鎖器", "kind": "misc", "value": 6, "weight": 0},

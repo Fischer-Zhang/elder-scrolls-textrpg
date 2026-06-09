@@ -395,6 +395,10 @@
         "chance": 0.25
       },
       {
+        "item": "daedra_heart",
+        "chance": 0.2
+      },
+      {
         "item": "healing_potion",
         "chance": 0.4
       }
@@ -520,7 +524,7 @@
     "danger": 5, "min_level": 16, "weight": 1, "solo": true,
     "resist": {"fire": 80, "frost": 50, "magic": 40},
     "loot_gold": [150, 350],
-    "loot": [{"item": "ebony_sword", "chance": 0.4}, {"item": "dwarven_cuirass", "chance": 0.3}, {"item": "filled_greater_soul_gem", "chance": 0.5}, {"item": "healing_potion", "chance": 0.8}],
+    "loot": [{"item": "ebony_sword", "chance": 0.4}, {"item": "dragon_scale", "chance": 0.6}, {"item": "dwarven_cuirass", "chance": 0.3}, {"item": "filled_greater_soul_gem", "chance": 0.5}, {"item": "healing_potion", "chance": 0.8}],
     "flavor": "天色驟暗——一頭上古巨龍盤旋而下,烈焰吐息燒紅了半邊天。"
   },
   "vampire_fledgling": {

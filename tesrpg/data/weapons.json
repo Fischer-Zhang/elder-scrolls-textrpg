@@ -188,5 +188,15 @@
       "stat": "magicka",
       "magnitude": 8
     }
-  }
+  },
+
+  "daedric_dagger":  {"name": "魔族匕首", "skill": "blade",   "damage": 14, "value": 500, "weight": 5,  "archetype": "dagger", "speed": 1.4,  "material": "daedric"},
+  "daedric_sword":   {"name": "魔族長劍", "skill": "blade",   "damage": 22, "value": 900, "weight": 14, "archetype": "sword",  "speed": 1.0,  "material": "daedric"},
+  "daedric_mace":    {"name": "魔族戰錘", "skill": "blunt",   "damage": 23, "value": 850, "weight": 16, "archetype": "blunt",  "speed": 0.75, "material": "daedric"},
+  "daedric_war_axe": {"name": "魔族戰斧", "skill": "blunt",   "damage": 22, "value": 800, "weight": 14, "archetype": "blunt",  "speed": 0.85, "material": "daedric"},
+  "daedric_bow":     {"name": "魔族弓",   "skill": "marksman","damage": 19, "value": 800, "weight": 10, "archetype": "bow",    "speed": 0.9,  "material": "daedric"},
+
+  "daedric_staff": {"name": "魔族法杖", "skill": "destruction", "damage": 9, "value": 600, "weight": 7, "archetype": "staff", "speed": 1.0, "enchant": {"kind": "weapon_element", "element": "shock", "magnitude": 22}},
+
+  "mehrunes_razor": {"name": "魔銳茲之刃", "skill": "blade", "damage": 16, "value": 2000, "weight": 4, "archetype": "dagger", "speed": 1.5, "material": "daedric", "enchant": {"kind": "weapon_element", "element": "shock", "magnitude": 25}}
 }

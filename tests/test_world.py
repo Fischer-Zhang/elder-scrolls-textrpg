@@ -281,6 +281,25 @@ def test_athletics_speeds_travel_and_trains():
     assert c3.skill_xp.get("athletics", 0.0) > x0
 
 
+def test_loot_ids_valid():
+    """守門:地城房間/首領寶藏 + 怪物 loot 的所有 item id 皆須存在(加新掉落時防打錯)。"""
+    gd = get_gamedata()
+    bad = []
+    for did, dg in gd.dungeons.items():
+        loots = []
+        for room in dg.get("rooms", []):
+            loots += (room.get("container") or {}).get("loot", [])
+        loots += dg.get("boss", {}).get("treasure", {}).get("loot", [])
+        for x in loots:
+            if isinstance(x, str) and gd.item_or_none(x) is None:
+                bad.append(f"{did}:{x}")
+    for cid, cr in gd.bestiary.items():
+        for e in cr.get("loot", []):
+            if isinstance(e, dict) and "item" in e and gd.item_or_none(e["item"]) is None:
+                bad.append(f"{cid}:{e['item']}")
+    assert not bad, f"掉落表含不存在的物品 id:{bad}"
+
+
 def run():
     for name, fn in sorted(globals().items()):
         if name.startswith("test_") and callable(fn):

@@ -311,5 +311,22 @@
   "archmage_hood":     {"name": "大法師兜帽", "slot": "helmet",   "weight_class": "light", "armor_rating": 1, "value": 220, "weight": 1, "material": "archmage", "enchant": {"kind": "armor_fortify", "stat": "magicka", "magnitude": 15}},
   "archmage_robe":     {"name": "大法師法袍", "slot": "cuirass",  "weight_class": "light", "armor_rating": 2, "value": 400, "weight": 2, "material": "archmage", "enchant": {"kind": "armor_fortify", "stat": "magicka", "magnitude": 25}},
   "archmage_gloves":   {"name": "大法師手套", "slot": "gauntlets","weight_class": "light", "armor_rating": 1, "value": 200, "weight": 1, "material": "archmage", "enchant": {"kind": "fortify_skill", "skill": "alteration", "magnitude": 10}},
-  "archmage_slippers": {"name": "大法師便鞋", "slot": "boots",    "weight_class": "light", "armor_rating": 1, "value": 200, "weight": 1, "material": "archmage", "enchant": {"kind": "fortify_skill", "skill": "destruction", "magnitude": 10}}
+  "archmage_slippers": {"name": "大法師便鞋", "slot": "boots",    "weight_class": "light", "armor_rating": 1, "value": 200, "weight": 1, "material": "archmage", "enchant": {"kind": "fortify_skill", "skill": "destruction", "magnitude": 10}},
+
+  "daedric_helmet":    {"name": "魔族盔",   "slot": "helmet",   "weight_class": "heavy", "armor_rating": 17, "value": 600,  "weight": 7,  "material": "daedric"},
+  "daedric_cuirass":   {"name": "魔族胸甲", "slot": "cuirass",  "weight_class": "heavy", "armor_rating": 30, "value": 1200, "weight": 18, "material": "daedric"},
+  "daedric_gauntlets": {"name": "魔族護手", "slot": "gauntlets","weight_class": "heavy", "armor_rating": 12, "value": 500,  "weight": 9,  "material": "daedric"},
+  "daedric_boots":     {"name": "魔族靴",   "slot": "boots",    "weight_class": "heavy", "armor_rating": 13, "value": 500,  "weight": 9,  "material": "daedric"},
+  "daedric_shield":    {"name": "魔族盾",   "slot": "shield",   "weight_class": "heavy", "armor_rating": 15, "value": 500,  "weight": 16, "material": "daedric"},
+
+  "dragonscale_helmet":    {"name": "龍鱗盔",   "slot": "helmet",   "weight_class": "light", "armor_rating": 14, "value": 550,  "weight": 3, "material": "dragonscale"},
+  "dragonscale_cuirass":   {"name": "龍鱗甲",   "slot": "cuirass",  "weight_class": "light", "armor_rating": 24, "value": 1000, "weight": 9, "material": "dragonscale"},
+  "dragonscale_gauntlets": {"name": "龍鱗護手", "slot": "gauntlets","weight_class": "light", "armor_rating": 10, "value": 450,  "weight": 3, "material": "dragonscale"},
+  "dragonscale_boots":     {"name": "龍鱗靴",   "slot": "boots",    "weight_class": "light", "armor_rating": 11, "value": 450,  "weight": 3, "material": "dragonscale"},
+  "dragonscale_shield":    {"name": "龍鱗盾",   "slot": "shield",   "weight_class": "light", "armor_rating": 13, "value": 450,  "weight": 9, "material": "dragonscale"},
+
+  "dragonpriest_hood":     {"name": "龍祭司兜帽", "slot": "helmet",   "weight_class": "light", "armor_rating": 3, "value": 350, "weight": 1, "material": "dragonpriest", "enchant": {"kind": "armor_fortify", "stat": "magicka", "magnitude": 30}},
+  "dragonpriest_robe":     {"name": "龍祭司法袍", "slot": "cuirass",  "weight_class": "light", "armor_rating": 4, "value": 450, "weight": 2, "material": "dragonpriest", "enchant": {"kind": "armor_fortify", "stat": "magicka", "magnitude": 40}},
+  "dragonpriest_gloves":   {"name": "龍祭司手套", "slot": "gauntlets","weight_class": "light", "armor_rating": 3, "value": 300, "weight": 1, "material": "dragonpriest", "enchant": {"kind": "armor_fortify", "stat": "magicka", "magnitude": 25}},
+  "dragonpriest_slippers": {"name": "龍祭司便鞋", "slot": "boots",    "weight_class": "light", "armor_rating": 3, "value": 300, "weight": 1, "material": "dragonpriest", "enchant": {"kind": "armor_fortify", "stat": "magicka", "magnitude": 25}}
 }

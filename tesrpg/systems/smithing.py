@@ -24,6 +24,9 @@ _MATERIAL_INGOT = {
     "cloth": "bolt_of_cloth", "archmage": "bolt_of_cloth",
     "elven": "moonstone_ingot", "dwarven": "dwarven_ingot",
     "glass": "malachite_ingot", "ebony": "ebony_ingot",
+    # 頂級稀有材質:淬鍊用既有/可掉錠(魔族用黑檀錠、龍鱗用龍鱗、龍祭司布用布匹);
+    # 鍛造/裁縫另需稀有素材(魔性之心/龍鱗),見 recipes.json。
+    "daedric": "ebony_ingot", "dragonscale": "dragon_scale", "dragonpriest": "bolt_of_cloth",
 }
 
 

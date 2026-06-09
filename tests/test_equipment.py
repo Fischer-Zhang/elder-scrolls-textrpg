@@ -201,6 +201,27 @@ def test_save_load_preserves_equip_bonus():
     assert loaded.player.equip_skill_bonus.get("sneak") == 12
 
 
+def test_top_tier_set_bonuses():
+    """頂級三套裝:魔族 +60 生命(重)/ 龍鱗 +25 火抗(輕)/ 龍祭司 +110 魔力套 + 每件附魔(布)。"""
+    gd, c = _char()
+    base_h = c.max_health
+    _wear_set(c, gd, "daedric")
+    assert c.max_health == base_h + 60
+    assert inventory.dominant_weight_class(c, gd) == "heavy"
+    assert inventory.active_set_bonus(c, gd)["stat"] == "health"
+
+    gd, c = _char()
+    base_fire = magic.entity_resist(c, gd).get("fire", 0)
+    _wear_set(c, gd, "dragonscale")
+    assert magic.entity_resist(c, gd).get("fire", 0) == base_fire + 25
+    assert inventory.dominant_weight_class(c, gd) == "light"
+
+    gd, c = _char()
+    base_m = c.max_magicka
+    _wear_set(c, gd, "dragonpriest")           # 套裝 110 + 四件 magicka 附魔 120
+    assert c.max_magicka == base_m + 230
+
+
 def run():
     for name, fn in sorted(globals().items()):
         if name.startswith("test_") and callable(fn):

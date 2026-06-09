@@ -191,6 +191,7 @@
         "loot": [
           "ebony_sword",
           "ebony_shield",
+          "daedra_heart",
           "healing_potion",
           "ruby",
           {
@@ -241,6 +242,9 @@
         "locked": 55,
         "loot": [
           "ebony_sword",
+          "dragon_scale",
+          "mehrunes_razor",
+          "daedric_staff",
           "dwarven_cuirass",
           "filled_greater_soul_gem",
           "healing_potion",

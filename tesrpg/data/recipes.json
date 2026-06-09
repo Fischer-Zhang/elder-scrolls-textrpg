@@ -50,5 +50,28 @@
   "forge_ebony_cuirass":   {"name": "鍛造黑檀胸甲", "station": "smith", "skill": "smithing", "skill_req": 85, "inputs": {"ebony_ingot": 4}, "output": "ebony_cuirass", "output_qty": 1},
   "forge_ebony_gauntlets": {"name": "鍛造黑檀護手", "station": "smith", "skill": "smithing", "skill_req": 85, "inputs": {"ebony_ingot": 2}, "output": "ebony_gauntlets", "output_qty": 1},
   "forge_ebony_boots":     {"name": "鍛造黑檀靴",   "station": "smith", "skill": "smithing", "skill_req": 85, "inputs": {"ebony_ingot": 2}, "output": "ebony_boots", "output_qty": 1},
-  "forge_ebony_shield":    {"name": "鍛造黑檀盾",   "station": "smith", "skill": "smithing", "skill_req": 85, "inputs": {"ebony_ingot": 2}, "output": "ebony_shield", "output_qty": 1}
+  "forge_ebony_shield":    {"name": "鍛造黑檀盾",   "station": "smith", "skill": "smithing", "skill_req": 85, "inputs": {"ebony_ingot": 2}, "output": "ebony_shield", "output_qty": 1},
+
+  "forge_daedric_helmet":    {"name": "鍛造魔族盔",   "station": "smith", "skill": "smithing", "skill_req": 90, "inputs": {"ebony_ingot": 2, "daedra_heart": 1}, "output": "daedric_helmet", "output_qty": 1},
+  "forge_daedric_cuirass":   {"name": "鍛造魔族胸甲", "station": "smith", "skill": "smithing", "skill_req": 90, "inputs": {"ebony_ingot": 4, "daedra_heart": 1}, "output": "daedric_cuirass", "output_qty": 1},
+  "forge_daedric_gauntlets": {"name": "鍛造魔族護手", "station": "smith", "skill": "smithing", "skill_req": 90, "inputs": {"ebony_ingot": 1, "daedra_heart": 1}, "output": "daedric_gauntlets", "output_qty": 1},
+  "forge_daedric_boots":     {"name": "鍛造魔族靴",   "station": "smith", "skill": "smithing", "skill_req": 90, "inputs": {"ebony_ingot": 1, "daedra_heart": 1}, "output": "daedric_boots", "output_qty": 1},
+  "forge_daedric_shield":    {"name": "鍛造魔族盾",   "station": "smith", "skill": "smithing", "skill_req": 90, "inputs": {"ebony_ingot": 2, "daedra_heart": 1}, "output": "daedric_shield", "output_qty": 1},
+
+  "forge_daedric_dagger":  {"name": "鍛造魔族匕首", "station": "smith", "skill": "smithing", "skill_req": 90, "inputs": {"ebony_ingot": 1, "daedra_heart": 1}, "output": "daedric_dagger", "output_qty": 1},
+  "forge_daedric_sword":   {"name": "鍛造魔族長劍", "station": "smith", "skill": "smithing", "skill_req": 90, "inputs": {"ebony_ingot": 2, "daedra_heart": 1}, "output": "daedric_sword", "output_qty": 1},
+  "forge_daedric_mace":    {"name": "鍛造魔族戰錘", "station": "smith", "skill": "smithing", "skill_req": 90, "inputs": {"ebony_ingot": 2, "daedra_heart": 1}, "output": "daedric_mace", "output_qty": 1},
+  "forge_daedric_war_axe": {"name": "鍛造魔族戰斧", "station": "smith", "skill": "smithing", "skill_req": 90, "inputs": {"ebony_ingot": 2, "daedra_heart": 1}, "output": "daedric_war_axe", "output_qty": 1},
+  "forge_daedric_bow":     {"name": "鍛造魔族弓",   "station": "smith", "skill": "smithing", "skill_req": 90, "inputs": {"ebony_ingot": 2, "daedra_heart": 1}, "output": "daedric_bow", "output_qty": 1},
+
+  "forge_dragonscale_helmet":    {"name": "鍛造龍鱗盔",   "station": "smith", "skill": "smithing", "skill_req": 90, "inputs": {"dragon_scale": 1, "wolf_pelt": 3}, "output": "dragonscale_helmet", "output_qty": 1},
+  "forge_dragonscale_cuirass":   {"name": "鍛造龍鱗甲",   "station": "smith", "skill": "smithing", "skill_req": 90, "inputs": {"dragon_scale": 2, "wolf_pelt": 5}, "output": "dragonscale_cuirass", "output_qty": 1},
+  "forge_dragonscale_gauntlets": {"name": "鍛造龍鱗護手", "station": "smith", "skill": "smithing", "skill_req": 90, "inputs": {"dragon_scale": 1, "wolf_pelt": 2}, "output": "dragonscale_gauntlets", "output_qty": 1},
+  "forge_dragonscale_boots":     {"name": "鍛造龍鱗靴",   "station": "smith", "skill": "smithing", "skill_req": 90, "inputs": {"dragon_scale": 1, "wolf_pelt": 2}, "output": "dragonscale_boots", "output_qty": 1},
+  "forge_dragonscale_shield":    {"name": "鍛造龍鱗盾",   "station": "smith", "skill": "smithing", "skill_req": 90, "inputs": {"dragon_scale": 1, "wolf_pelt": 3}, "output": "dragonscale_shield", "output_qty": 1},
+
+  "tailor_dragonpriest_hood":     {"name": "縫製龍祭司兜帽", "station": "smith", "skill": "smithing", "skill_req": 90, "inputs": {"bolt_of_cloth": 4, "dragon_scale": 1}, "output": "dragonpriest_hood", "output_qty": 1},
+  "tailor_dragonpriest_robe":     {"name": "縫製龍祭司法袍", "station": "smith", "skill": "smithing", "skill_req": 90, "inputs": {"bolt_of_cloth": 5, "dragon_scale": 1}, "output": "dragonpriest_robe", "output_qty": 1},
+  "tailor_dragonpriest_gloves":   {"name": "縫製龍祭司手套", "station": "smith", "skill": "smithing", "skill_req": 90, "inputs": {"bolt_of_cloth": 3, "dragon_scale": 1}, "output": "dragonpriest_gloves", "output_qty": 1},
+  "tailor_dragonpriest_slippers": {"name": "縫製龍祭司便鞋", "station": "smith", "skill": "smithing", "skill_req": 90, "inputs": {"bolt_of_cloth": 3, "dragon_scale": 1}, "output": "dragonpriest_slippers", "output_qty": 1}
 }
