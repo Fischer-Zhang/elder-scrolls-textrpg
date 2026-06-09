@@ -714,6 +714,9 @@ def offer_battle(state: GameState, gamedata: GameData, enemies, ambush_chance: f
         opts = [("fight", f"接戰（偷襲先機 {apct}%)")]
         if not scouted and not surprise:
             opts.append(("scout", "偵查敵情(看清敵情並提升偷襲先機)"))
+        if dialogue.can_intimidate(gamedata, enemies):       # 全為弱人形敵(盜匪)→ 可口才喝退
+            ipct = int(dialogue.intimidate_chance(char, enemies, night) * 100)
+            opts.append(("intimidate", f"威嚇喝退(口才,成功率 {ipct}%)"))
         rpct = int(combat.stealth_retreat_chance(char, enemies) * 100)
         opts.append(("retreat", f"潛行撤退（成功率 {rpct}%)"))
         choice = ui.menu(f"要與{name}交戰嗎?", opts)
@@ -721,6 +724,15 @@ def offer_battle(state: GameState, gamedata: GameData, enemies, ambush_chance: f
             _scout_report(state, gamedata, enemies)
             scouted = True
             continue
+        if choice == "intimidate":
+            r = dialogue.intimidate(char, gamedata, enemies, night, state.rng)
+            state.time.advance(r["hours"])
+            ui.show_events(r["skill_events"], gamedata)
+            if r["ok"]:                                       # 喝退成功 → 避戰(無戰利/擊殺/xp 來自敵)
+                ui.message("你冷然報出幾個名號、目光如刀 —— 對方面面相覷,終於悻悻退去。", style="green")
+                return None
+            ui.message("對方非但不退,反被你激怒,拔刀撲上!", style="red")
+            return run_battle(state, gamedata, enemies, alerted=True)
         if choice == "retreat":
             if combat.try_stealth_retreat(char, enemies, state.rng):
                 ui.message("你悄無聲息地退入暗處,沒有驚動任何人。", style="grey70")
@@ -2148,6 +2160,7 @@ def action_talk(state: GameState, gamedata: GameData) -> str | None:
         sp = gamedata.skills["speechcraft"]["practice"]   # 唯讀靜態價碼;勿呼叫 practice_cost(會扣體力)
         opts.append(("persuade", "說服(口才)",
                      [{"text": f"成功率 {pc}%", "tone": "gold"},
+                      {"text": f"成功 +{dialogue.persuade_delta(char.skill('speechcraft'))} 好感", "tone": "green"},
                       {"text": f"耗 {sp['hours']}時·體力{sp['fatigue']}", "tone": "cyan"}]))
         opts.append(("bribe", f"賄賂({dialogue.BRIBE_COST} 金)"))
         opts.append(("murder", "🔪 暗殺此人"))
@@ -2218,13 +2231,30 @@ def guard_confrontation(state: GameState, gamedata: GameData) -> str | None:
         return None
     ui.message(f"城門衛兵攔住了你:「你在{province}的賞金是 {crime.bounty(char, province)} 金 —— 束手就擒!」",
                style="red")
+    talked = False
     while crime.bounty(char, province) > 0:
-        choice = ui.menu("如何應對?", [
-            ("pay", f"繳清罰金({crime.bounty(char, province)} 金)"),
+        b = crime.bounty(char, province)
+        opts = [
+            ("pay", f"繳清罰金({b} 金)"),
             ("jail", "乖乖入獄服刑"),
             ("resist", "拔劍反抗(與衛兵開戰)"),
-        ])
-        if choice == "pay":
+        ]
+        if not talked and b <= dialogue.TALK_DOWN_MAX:   # 小額賞金可試以口才說退(大罪說不過去)
+            tpct = int(dialogue.talk_down_chance(char, b) * 100)
+            opts.insert(0, ("talk", f"說服衛兵(口才,成功率 {tpct}%)"))
+        choice = ui.menu("如何應對?", opts)
+        if choice == "talk":
+            r = dialogue.talk_down_guard(char, gamedata, province, state.rng)
+            state.time.advance(r["hours"])
+            ui.show_events(r["skill_events"], gamedata)
+            if r["ok"]:
+                ui.message("你三言兩語,說得衛兵將信將疑、終於揮手放行 —— 賞金一筆勾銷。", style="green")
+            else:
+                ui.message("衛兵不為所動:「少廢話,束手就擒!」", style="yellow")
+                talked = True       # 該次說服消耗:下一輪不再提供 talk,逼玩家繳金/服刑/反抗
+            if r["tired"]:
+                ui.message("口乾舌燥,話都說不利索了。", style="yellow")
+        elif choice == "pay":
             r = crime.pay_fine(char, gamedata)
             if r["ok"]:
                 ui.message(f"你繳清了 {r['paid']} 金罰金,衛兵讓開了路。", style="green")
