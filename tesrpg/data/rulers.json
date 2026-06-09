@@ -102,7 +102,10 @@
     "bloc": "elder_council",
     "bloc_label": "長老會",
     "blurb": "帝都長老議會的高精靈攝政大臣,沉穩睿智的法師政客。皇帝遇刺、紅寶石王座空懸,他以議會之名勉力維繫帝國中樞,在湮滅之門大開、群雄環伺的亂世裡獨撐將傾的大廈。",
-    "stance": "imperial"
+    "stance": "imperial",
+    "quests": ["ruler_imperial_city1", "ruler_imperial_city2"],
+    "thane_gift": "ebony_sword",
+    "housecarl": "footman"
   },
   "skingrad": {
     "name": "雅努斯·哈希爾多",
@@ -146,7 +149,10 @@
     "bloc": "whiterun_jarl",
     "bloc_label": "白漫領主·戰友團",
     "blurb": "白漫城領主,審時度勢的諾德智者。紅寶石王座既空、皇權崩解,他在帝國餘威與風暴斗篷的招攬之間左右權衡,只願守住這座平原樞紐城,不被亂世的烽火與龍語的傳言所波及。",
-    "stance": "neutral"
+    "stance": "neutral",
+    "quests": ["ruler_whiterun1", "ruler_whiterun2"],
+    "thane_gift": "elven_sword",
+    "housecarl": "veteran"
   },
   "windhelm": {
     "name": "烏弗瑞克·風暴斗篷",
@@ -190,7 +196,10 @@
     "bloc": "tribunal_temple",
     "bloc_label": "三聯神殿",
     "blurb": "維威克城神王廟的活化身司祭,三相神信仰最虔誠的守正者。她以神王之名統御這座凡登費爾聖城,帝國律法既已退潮,她只認神諭——在無主之世裡,維威克的旨意便是這座浮岩石城唯一的王法。",
-    "stance": "independent"
+    "stance": "independent",
+    "quests": ["ruler_vivec1", "ruler_vivec2"],
+    "thane_gift": "glass_dagger",
+    "housecarl": "hedge_mage"
   },
   "balmora": {
     "name": "尼洛斯·哈拉魯",

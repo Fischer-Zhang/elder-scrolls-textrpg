@@ -109,4 +109,8 @@ def get_gamedata() -> GameData:
     global _INSTANCE
     if _INSTANCE is None:
         _INSTANCE = GameData()
+        # 程序化補齊領主委託(讓每座有領主的城/鎮都能受封武士);先設 _INSTANCE 再呼叫,
+        # 避免 court→quests 等模組於匯入期回呼 get_gamedata 造成遞迴。手寫委託會被保留。
+        from tesrpg.systems import court
+        court.generate_ruler_commissions(_INSTANCE)
     return _INSTANCE

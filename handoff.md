@@ -208,7 +208,7 @@
 - **領主委託**:走既有任務引擎,`source:"ruler"`(不漏進告示板/公會);`rulers.json` 的 `quests:[...]` 列各領主委託線(依序開放,有進行中則先做完);`quests._complete` 對 ruler 委託**反查領主目錄**把 `reward.standing` 記進 `city_standing[該城]`(完成事件加 `standing_loc`,`_report_quests` 印「城邦功勳 +N」)。
 - **武士冊封(Thaneship)**:`systems/court.py` —— `city_standing` 達 `THANE_STANDING(3)` → 受封武士(記 `char.thaneships`)。`make_thane` **冪等**(重複受封不重發信物/侍從,防刷);授**信物**(`rulers.thane_gift`)+ **侍從 housecarl**(`rulers.housecarl`,複用 companions,受 `MAX_PARTY` 限,滿則婉拒)。
 - **武士特權**:`guard_confrontation` 開頭 —— 身為**該省**某城武士且賞金 `≤ THANE_BOUNTY_FORGIVE(100)` → 衛兵放行 + 清賞金(大罪 >100 仍追緝;審查評為有界特權、非漏洞:偷竊已耗體力+時間、商店有限)。
-- **新 Character 欄**`city_standing`/`thaneships`(dataclass 預設、進 to_dict、向後相容);`ui.court_panel` 加顯示功勳/武士身分。**MVP 內容**:布魯瑪 2 委託(殺6狼+1、清切德納寇+2 → 滿 3 受封;信物精靈劍、侍從盾女)。**加領主委託純改 rulers.json `quests` + quests.json(`source:ruler`+`reward.standing`);加侍從/信物純改 rulers.json**。其餘 20 城委託=內容 TODO(純 JSON)。
+- **新 Character 欄**`city_standing`/`thaneships`(dataclass 預設、進 to_dict、向後相容);`ui.court_panel` 加顯示功勳/武士身分。**MVP 內容**:布魯瑪 2 委託(殺6狼+1、清切德納寇+2 → 滿 3 受封;信物精靈劍、侍從盾女)。**加領主委託純改 rulers.json `quests` + quests.json(`source:ruler`+`reward.standing`);加侍從/信物純改 rulers.json**。✅ 其餘城已由 `court.generate_ruler_commissions` 程序化補齊(見 §6 #0「全城武士化」),故 33 城主全可受封;重點城(帝都/白漫/維威克)另有手寫考據委託覆寫。
 - **驗證**:30 測試模組全綠(`test_court` 擴充:委託依序開放+完成累積功勳/武士冊封信物+侍從+冪等/賞金寬待/存檔向後相容)+ 端到端煙霧(經真實 `action_court` 選單:接委託→完成→受封→賞金寬待)+ 對抗審查(修掉自身 2 低severity:功勳無畫面回饋、make_thane 信物非冪等)。
 
 **城戰(Phase 3+4 合併:政治立場 + 選邊 + 攻城戰)(使用者拍板:城為單位、各城主自有立場;Phase 3 直接併進 Phase 4)**:領主區從「能差遣」升到「能征伐」—— 完整的城邦戰爭迴圈。核心在 `systems/politics.py`。
@@ -428,6 +428,11 @@
 - **接點**:`main.action_enchant` 護甲加 kind 子選單、武器加 元素/狀態 子選單;`ui.combat_event` 加吸血/麻痺敘事。任何武器 archetype 皆可附(同元素附魔)。命中狀態玩家專屬(敵人走 `attacker.attack` 不碰)。
 - **驗證**:44 測試模組全綠(`test_equipment` +6:護甲技能/抗性/資源(仍走 armor_fortify_totals)/舊式 4 段相容/流程消耗魂石/存讀檔;`test_magic` +5:吸血回血夾實傷/再生去重+tick/麻痺對非 solo 生效/**麻痺對 solo boss 400 擊永不生效**/enchws round-trip;`test_m14` 改新簽名)+ `sim_assassin` 紅線零位移 + 無頭煙霧(護甲技能附魔升 skill、吸血劍實戰回血)+ 對抗審查 6 維(0 真 bug,1 nit=麻痺敘事誤標已修)。**加附魔型別純改 synth/enchanting/UI 三點;調平衡只動 `formulas.WEAPON_*` 或 `armor_magnitude` factor。**
 
+**商店/經濟打磨 + 全城武士化(使用者實機回饋逐項修)**:
+- **開鎖器=盜賊公會的營生**:從原本散落各城一般商店,改為**只在有 `thieves_guild` 服務的城販售**(8 城/7 省;漢默法爾無公會→靠野外);`world.buy_price` 對非會員加價(`LOCKPICK_OUTSIDER_MARKUP=2.0`,敵對買得到但較貴);**野外可隨機撿到**(強盜掉落 0.35 + 探索事件 `discarded_lockpick`)。`test_world.test_lockpick_is_thieves_guild_good` 守門。
+- **商店批量 + 連購**:`action_shop` 買/賣加數量提示(複用 `ui.ask_int`,上限由 庫存·金幣·負重 / 持有量 夾;單件略過);買/賣改**內層迴圈停留在清單**,可連續買賣多樣不同商品,退一層才回模式選單。
+- **全城武士化**:見 §6 #0「全城武士化」—— `court.generate_ruler_commissions` 程序化讓 33 城全可受封 + 重點城(帝都/白漫/維威克)手寫考據委託。
+
 **內容量**:10 種族 / 13 星座 / 8 職業 / **23 技能(+偵查 scout、+鍛造 smithing)** / **19 武器(4 法杖)** / **42 護甲(7 材質整套 + 法師布甲學徒/大法師 2 階 8 件)** / 25 法術(5 AoE) /
 **15 煉金材料(全部可野外採集/獵取)+ 7 鍛造材料(鐵/鋼/月長石/矮人/綠玉/黑檀錠 + 布匹)** / **4 飾品** / **鍛造系統(鍛造技能 + 45 配方〔皮甲/鐵鋼+精靈/矮人/玻璃/黑檀金屬/法袍〕+ skill_req 分級 + 全階裝備淬鍊強化)** / **72 生物(7 高階 elite + 2 吸血鬼 + 5 黑沼澤 + 5 漢默法爾沙漠〔含矮人百夫長 boss〕 + 5 高岩霧沼〔含海妖岩魔女 boss〕 + 5 瓦倫雨林〔含遠古樹靈 boss〕 + 6 艾爾斯維爾草原弱毒〔含暗月暗虎 solo boss〕 + 8 黑兄目標 + 7 神話黎明目標 + 6 九神聖戰目標 + 2 heartland;39 隻帶 biome 生態標籤)** / 3 傭兵 / **64 地點(有環圖+生態 biome〔heartland/snow/ashland/swamp/desert/moor/jungle/savanna〕,世界閉成五大環〔黑沼澤南環 + 漢默法爾西環 + 高岩西北環 + 瓦倫森林西南環 + 艾爾斯維爾南環〕;賽8/天9/晨8/黑7/漢5/高5/瓦5/艾5/邊12,共 25 城+8 鎮)** / **10 地城(每座 ≥1 任務指向,含龍喉峰屠龍 + 沃倫菲爾矮人遺城 + 海妖岩巫窟 + 絞藤蛛巢 + 暗月窟)** / **69 任務(3 分支壓軸 + 解咒×2〔血咒/淨糖〕 + 6 黑兄合約 + 6 神話黎明合約 + 6 九神聖戰合約 + 14 在地任務含 2 任務鏈 + 屠龍 + 漢默法爾 3 + 高岩 3 + 瓦倫 3 + 艾爾斯維爾 3)** / **6 公會(+神話黎明/九神騎士團,大事件解鎖)** / **14 開局背景(含戰友團/盜賊公會/阿利克爾/海難/治療者/獸人放逐)** / **87 NPC(每城 3 / 每鎮 2,角色多樣、greeting + rumor 指路;13 名掛在地委託)** / **35 事件(含 18 省份限定;含艾爾斯維爾糖楓採集/草海掠食)** / **吸血鬼化系統** / **斯庫瑪成癮系統(亢奮↔戒斷天平)** / **黑暗兄弟會系統** / **技能里程碑系統(全 23 技能二選一)** / **33 城主(各城自治)** / **24 具名地標(各省招牌/邊境發現,首次抵達一次性獎勵)**。
 程式:**28 個 `systems` 模組**(+vampirism +brotherhood +mastery +crafting +court +politics +warband +landmarks +achievements +smithing〔淬鍊強化〕+skooma〔斯庫瑪成癮〕)+ models/ui/synth 等,共約 42 個 `.py` + `sim_assassin.py`(平衡回歸);**26 個 `data/*.json`**(+mastery.json +recipes.json +landmarks.json +achievements.json;黑兄/細化省分/城戰立場/招兵兵種/漢默法爾/高岩/瓦倫森林/法袍+鍛造材料全靠改既有檔);**41 測試模組**(+test_mastery +test_practice_cost +test_shop +test_crafting +test_court +test_politics +test_warband +test_worldstate +test_mythicdawn +test_knights +test_landmarks +test_polish +test_sheet +test_web +test_achievements +test_smithing +test_skooma)。**新增 `tesrpg/web/` 套件(本機 Web 版,純 stdlib、零 pip;`python3 -m tesrpg.web`)**。 / **成就系統(24 條,唯讀推導、結算+即時角色卡)**。
@@ -553,7 +558,8 @@ tesrpg/
 ## 6. 下一步候選(依槓桿排序)
 
 0. **城戰/領主區路線(已立藍圖,Oblivion+Skyrim 參考,逐 Phase 推進)** —— ✅ **Phase 1 已做**(見 §1「領主區 Phase 1」:第 4 城區 `領主區 👑` + 謁見領主,讓 21 城主活起來)。藍圖:
-   - ✅ **Phase 2 已做**(見 §1「領主區 Phase 2」):領主委託(source `ruler`)→ `city_standing` → 達 `THANE_STANDING` 受封武士;特權=該省賞金寬待 + 侍從 + 信物。新 Character 欄 `city_standing`/`thaneships`。其餘 20 城委託=內容 TODO(純 JSON)。
+   - ✅ **Phase 2 已做**(見 §1「領主區 Phase 2」):領主委託(source `ruler`)→ `city_standing` → 達 `THANE_STANDING` 受封武士;特權=該省賞金寬待 + 侍從 + 信物。新 Character 欄 `city_standing`/`thaneships`。
+   - ✅ **全城武士化已做**(使用者:每個城都要能成為武士):`court.generate_ruler_commissions(gamedata)` 於 `get_gamedata` 載入後就地為**每座無手寫委託的有領主城/鎮**程序化生成 2 委託(肅清在地生態怪 +1 / 清剿省內最低危險地城 +2 → 滿 3)+ 預設信物(`_PROVINCE_GIFT`)/侍從(`_HOUSECARLS`),登錄進 `gamedata.quests`;**決定性、冪等、存讀檔穩定**(qid `ruler_auto_<loc>_N` 每次載入重建相同)。手寫委託(`rulers.json` 已有 `quests`)保留並覆寫:**重點城已手寫考據委託**=布魯瑪 + 帝都/白漫/維威克(共 4 城)。**加重點城考據委託純改 rulers.json `quests`+`thane_gift`+`housecarl` + quests.json;調程序化內容改 `court._province_objectives`/`_PROVINCE_GIFT`/`_HOUSECARLS`**。33 城主全可受封(`test_court` 兩道新測守門)。
    - ✅ **Phase 3+4 已做(合併,混合戰鬥制)**(見 §1「城戰」):**城為單位、各城主自有立場**(rulers.json `stance`,使用者拍板);選邊(`allegiance`)→ 對敵城**圍城方略**(7 個技能門檻作戰選項,潛行/社交/工具/魔法系都有攻城用途,削守軍)+**輕量化強攻**(單場 `combat`)→ 破城翻轉 `city_faction`。平衡 sim 背書(小城可強攻、大城須廣技能佈局)。`systems/politics.py`。
    - **後續(此里程碑刻意未做)**:佔領後收稅(週期金幣)、駐軍隨時間重建、自走 AI 陣營戰爭、攻下可安插自己為領主、公會與大義綁定、武士所在城翻敵時 Thane 特權暫停。
    - **鐵律**:政治可變狀態寫 `politics.json`/Character(預設值向後相容),地理永遠在 world.json;加領主對話/委託/陣營儘量純改 JSON;每 Phase 走完整 §4 節奏。
@@ -569,7 +575,8 @@ tesrpg/
    後續評估過、可再做(依槓桿):**商店法術分散**(海芬古/黑光城法術重疊、鎮級無法術 → 各省守一學派強制跨省採購;中風險,需保底集 + 鎮級法術選單,見評估)、~~具名地標與發現~~ ✅ **已做**(見 §1「區域細化:具名地標與發現系統」—— 專用 landmarks.json + game_loop hook,首次抵達一次性發現,邊境 4 節點全有)、**地區氣候機械效果**(非染病版,低槓桿)。**邊境刻意不補 NPC**(全荒野、無城主模型 → 已以地標填內容)。
 3. **成就系統**(重玩性,種子已開放):`legacy.compute` 已輸出種子;可加一張結算成就表(首殺 boss / 無傷清地城 / 純法師通關…),複用 `kill_counts`/`cleared_dungeons` 等既有計數。每日/分享種子的前置(種子輸入)已完成。
 4. ✅ **體力對法師仍是死資源 —— 已做**(見 §1「法師體力資源對稱化」):施法耗體力(`magic.spell_fatigue_cost`)+ 低體力降法效(`formulas.cast_fatigue_power_factor` ×0.75)+ 法袍套裝省體(`cast_fatigue_factor` 0.80/0.65);純規則層、零存檔欄位、刺客紅線零位移。
-5. **半成品/微調**:創角問答推職業;護甲附魔可再擴(目前只 fortify 生命/魔力/體力);更多事件/任務。
+5. **半成品/微調**:創角問答推職業(DESIGN 標暫未做);更多事件/任務。(✅ 護甲附魔擴到技能/抗性、武器命中觸發 已做,見 §1「附魔系統擴展」。)
+   - **戰法師體驗**(本 session 評估、尚未動手):戰法師可玩但無「混流協同回報」(專精才有套裝/里程碑identity)。可選的橋樑(未實作,待使用者拍板):**法力回擊**(近戰命中回少量魔力,橋接雙資源池)/ **戰法師套裝**(強化魔法技能 + 施法省體,複用套裝加成系統)/ **spellblade 里程碑**(施法後強化下一擊)。
 6. (天花板更高、工程量大)主線劇情、同伴持久 HP/羈絆、坐騎/房產。
 
 > ✅ 已完成(近期):**附魔系統擴展**(§1:護甲→技能/抗性〔encha 5 段+向後相容、複用飾品 kind〕+ 武器→命中觸發 吸血/麻痺/再生〔enchws,solo boss 免疫麻痺反鎖王〕;零存檔欄位、刺客紅線零位移;對抗審查 0 真 bug)、**法師體力資源對稱化**(§1/§6#4:施法耗體力 + 低體力降法效 + 法袍套裝省體;純規則層零存檔、刺客紅線零位移;對抗審查補 summon 漏接)、**斯庫瑪/月糖成癮 + 艾爾斯維爾省(第八省)**(§1:savanna 弱毒生態軸 + 賽↔艾↔瓦南方大環 + 仿吸血鬼的「亢奮↔戒斷」成癮天平〔亢奮不碰力量/潛行以守刺客紅線〕 + 淨糖解癮;對抗審查修「免費解癮」漏洞)、**世界拓樸改造**(走廊→有環圖,§1)、**種子開放給玩家**(原 §6.4 前置)、

@@ -1139,5 +1139,41 @@
        "text": "獵殺一縷暗潮幽魂,取其腐化之血(暗月窟與騰瑪林野外可尋)。"}
     ],
     "reward": {"fame": 5}
+  },
+  "ruler_imperial_city1": {
+    "name": "領主委託:肅清埃雷德殘墟", "faction": null, "rank": null, "source": "ruler",
+    "objective": {"type": "kill", "creature": "imperial_ghost", "count": 6},
+    "reward": {"gold": 150, "fame": 6, "standing": 1}, "turn_in": "auto",
+    "text": "攝政奧卡托於白金塔召見你:「帝國大道沿線的埃雷德殘墟夜夜浮起帝國亡魂,驚擾商旅與信使。肅清 6 縷亡魂,還中樞一條安寧的驛道。」"
+  },
+  "ruler_imperial_city2": {
+    "name": "領主委託:米諾陶之患", "faction": null, "rank": null, "source": "ruler",
+    "objective": {"type": "kill", "creature": "minotaur", "count": 3},
+    "reward": {"gold": 300, "fame": 12, "standing": 2}, "turn_in": "auto",
+    "text": "「埃雷德古祠的米諾陶下山劫掠,連長老會的糧隊都不敢過嶺。」攝政的目光沉了下來:「斬除 3 頭米諾陶,長老會記你一功 —— 帝都不會虧待忠勇之士。」"
+  },
+  "ruler_whiterun1": {
+    "name": "領主委託:平原狼患", "faction": null, "rank": null, "source": "ruler",
+    "objective": {"type": "kill", "creature": "wolf", "count": 6},
+    "reward": {"gold": 120, "fame": 5, "standing": 1}, "turn_in": "auto",
+    "text": "領主巴爾古夫倚著龍臨堡的長案:「白漫平原的狼群肥了膽子,夜夜咬死農莊的牲口。獵殺 6 頭惡狼,讓我的子民睡個好覺。」"
+  },
+  "ruler_whiterun2": {
+    "name": "領主委託:迷刀洞窟", "faction": null, "rank": null, "source": "ruler",
+    "objective": {"type": "clear_dungeon", "dungeon": "lostknife_cave"},
+    "reward": {"gold": 250, "fame": 10, "standing": 2}, "turn_in": "auto",
+    "text": "「迷刀洞窟盤踞著一夥劫道的匪徒,商路為之斷絕。」巴爾古夫遞來一枚白漫印信:「蕩平那座賊窩 —— 戰友團會記得敢於提刀的人。」"
+  },
+  "ruler_vivec1": {
+    "name": "領主委託:灰蹦蟲滋擾", "faction": null, "rank": null, "source": "ruler",
+    "objective": {"type": "kill", "creature": "ash_hopper", "count": 6},
+    "reward": {"gold": 130, "fame": 6, "standing": 1}, "turn_in": "auto",
+    "text": "活化身司祭薇拉妮·薩魯自神王廟的浮階俯視你:「凡登費爾的灰蹦蟲漫上了朝聖之路,玷污三相神的香道。肅清 6 隻,以你的血汗洗淨聖途。」"
+  },
+  "ruler_vivec2": {
+    "name": "領主委託:灰燼墓塚", "faction": null, "rank": null, "source": "ruler",
+    "objective": {"type": "clear_dungeon", "dungeon": "ashfall_barrow"},
+    "reward": {"gold": 250, "fame": 10, "standing": 2}, "turn_in": "auto",
+    "text": "「灰燼墓塚的不死者自塵封中甦醒,褻瀆了先祖的安眠。」司祭的法杖泛起微光:「淨化那座墓塚,維威克將承認你是聖城配得敬重的守護者。」"
   }
 }

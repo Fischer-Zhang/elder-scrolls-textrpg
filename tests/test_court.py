@@ -202,8 +202,49 @@ def test_save_roundtrip_and_backward_compat():
     assert old.city_standing == {} and old.thaneships == []
 
 
+def test_every_ruler_settlement_is_thaneable():
+    """程序化為底:每座有領主的城/鎮都能受封武士 —— 委託齊備(功勳可達門檻)、信物/侍從合法。"""
+    gd, _ = _setup()
+    for loc_id, ruler in gd.rulers.items():
+        line = ruler.get("quests", [])
+        assert line and all(q in gd.quests for q in line), f"{loc_id} 無有效委託"
+        total = sum(gd.quests[q]["reward"].get("standing", 0) for q in line)
+        assert total >= court.THANE_STANDING, f"{loc_id} 委託功勳 {total} < {court.THANE_STANDING}"
+        assert gd.item_or_none(ruler.get("thane_gift")), f"{loc_id} 信物非法"
+        assert ruler.get("housecarl") in gd.companions, f"{loc_id} 侍從非法"
+        for q in line:                                   # 委託目標(怪/地城)皆須存在
+            o = gd.quests[q]["objective"]
+            if o.get("creature"):
+                assert o["creature"] in gd.bestiary, f"{q} 怪不存在"
+            if o.get("dungeon"):
+                assert o["dungeon"] in gd.dungeons, f"{q} 地城不存在"
+
+
+def test_procedural_commissions_earn_thaneship():
+    """在一座『程序化委託』的城走完委託線 → 功勳達標 → 可受封(冊封得信物+侍從)。"""
+    gd, c = _setup()
+    loc = "anvil"                                        # 賽羅迪爾,非手寫 → 程序化委託
+    line = court.ruler_quest_line(gd, loc)
+    assert line and all(q.startswith("ruler_auto_") for q in line)
+    for qid in line:
+        quests.accept_quest(c, gd, qid)
+        o = gd.quests[qid]["objective"]
+        if o["type"] == "kill":
+            for _ in range(o["count"]):
+                quests.record_kill(c, o["creature"])
+        elif o["type"] == "clear_dungeon":
+            quests.record_dungeon_clear(c, o["dungeon"])
+        quests.check_completion(c, gd)
+    assert court.standing(c, loc) >= court.THANE_STANDING
+    assert court.can_become_thane(c, gd, loc)
+    granted = court.make_thane(c, gd, loc)
+    assert court.is_thane(c, loc) and granted["gift"] and granted["housecarl"]
+
+
 def run():
     test_reception_tiers()
+    test_every_ruler_settlement_is_thaneable()
+    test_procedural_commissions_earn_thaneship()
     test_action_court_shows_ruler_panel()
     test_action_court_no_ruler_is_safe()
     test_ruler_quests_open_in_order_and_grant_standing()
