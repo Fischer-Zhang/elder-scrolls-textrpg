@@ -13,7 +13,7 @@
 - **GitHub**:`git@github.com:Fischer-Zhang/elder-scrolls-textrpg.git`(分支 `main`,SSH 已認證為 Fischer-Zhang)
 - **Python 3.12**;`rich` 由**系統套件**提供(`python3-rich`)—— ⚠️ **本機沒有 `pip`、沒有 `pytest`、sudo 需密碼**。
 - **執行遊戲**:`python3 -m tesrpg`(終端)/ `python3 -m tesrpg.web`(本機 Web 版,瀏覽器開 `http://127.0.0.1:8080`)
-- **跑測試**:`python3 tests/run_all.py`(不需 pytest;39 個測試模組,目前**全綠**)
+- **跑測試**:`python3 tests/run_all.py`(不需 pytest;43 個測試模組,目前**全綠**)
 - **編譯檢查**:`python3 -m py_compile tesrpg/**/*.py tesrpg/*.py tests/*.py`
 - 存檔在 `~/.tesrpg/save.json`(在 repo 外;測試/煙霧測試後記得 `rm -f ~/.tesrpg/save.json`)
 
