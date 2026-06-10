@@ -240,6 +240,87 @@
     "loot": [],
     "flavor": "熊熊燃燒的火焰元素,聽命於召喚者。"
   },
+  "summoned_frost_atronach": {
+    "name": "冰霜元素",
+    "danger": 3,
+    "min_level": 99,
+    "weight": 0,
+    "strength": 46,
+    "agility": 36,
+    "speed": 36,
+    "max_health": 36,
+    "armor_rating": 10,
+    "attack": {
+      "name": "凜霜重擊",
+      "damage": 15,
+      "skill": 50,
+      "element": "frost"
+    },
+    "resist": {
+      "frost": 75,
+      "fire": -25
+    },
+    "loot_gold": [
+      0,
+      0
+    ],
+    "loot": [],
+    "flavor": "一尊由寒冰凝成的元素巨人,踏步生霜,聽命於召喚者。"
+  },
+  "summoned_storm_atronach": {
+    "name": "雷暴元素",
+    "danger": 3,
+    "min_level": 99,
+    "weight": 0,
+    "strength": 48,
+    "agility": 42,
+    "speed": 40,
+    "max_health": 38,
+    "armor_rating": 12,
+    "attack": {
+      "name": "雷殛",
+      "damage": 16,
+      "skill": 52,
+      "element": "shock"
+    },
+    "resist": {
+      "shock": 100,
+      "fire": -25
+    },
+    "loot_gold": [
+      0,
+      0
+    ],
+    "loot": [],
+    "flavor": "盤旋的岩塊間迸射雷弧,一尊雷暴元素聽召而成形,為你而戰。"
+  },
+  "summoned_dremora": {
+    "name": "召喚魔人",
+    "danger": 4,
+    "min_level": 99,
+    "weight": 0,
+    "strength": 58,
+    "agility": 48,
+    "speed": 46,
+    "max_health": 52,
+    "armor_rating": 18,
+    "attack": {
+      "name": "黑檀巨劍",
+      "damage": 18,
+      "skill": 56,
+      "element": "fire"
+    },
+    "resist": {
+      "fire": 50,
+      "magic": 20
+    },
+    "loot_gold": [
+      0,
+      0
+    ],
+    "loot": [],
+    "flavor": "一名魔界戰士魔人應召跨界而來,渾身燃著湮滅位面的怒火,為你而戰。"
+  },
   "city_guard": {
     "name": "城衛兵",
     "danger": 4,

@@ -18,6 +18,10 @@ SOUL_GEM_BY_DANGER = {
     1: "filled_petty_soul_gem", 2: "filled_lesser_soul_gem",
     3: "filled_common_soul_gem", 4: "filled_greater_soul_gem",
 }
+# 秘術「驅散」可淨化的不良效果(只清控場/侵蝕,不動護盾/再生/結界/灌注等增益)
+_DISPELLABLE = ("fear", "paralyze", "dot", "weaken", "stagger")
+# 亡者復生:起出的屍體是「虛弱化的亡魂」→ 以原 HP 的此比例復生(避免滿血復生高 HP 精英遠超召喚物階)
+REANIMATE_HP_FACTOR = 0.6
 
 
 def _fail(message: str) -> dict:
@@ -87,10 +91,12 @@ def _ally_verb(kind: str) -> str:
 
 
 def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
-         target=None, battle: dict | None = None, enemies: list | None = None) -> dict:
+         target=None, battle: dict | None = None, enemies: list | None = None,
+         corpses: list | None = None) -> dict:
     """施放法術。回傳事件 dict:
        {"ok","message","damage","skill_events","killed": bool}
-    target 為單體攻擊的敵方 Creature;enemies 為 AoE(全體)法術的敵群清單;
+    target 為單體攻擊的敵方 Creature;enemies 為 AoE(全體)法術的「存活」敵群清單;
+    corpses 為「亡者復生」可用的完整敵群清單(含已死者,死靈系專用,戰外為 None);
     battle 為戰鬥情境字典(供召喚加入盟友);非戰鬥可為 None。
     """
     sp = gamedata.spells[spell_id]
@@ -211,11 +217,30 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
         char.active_effects.append({"kind": "shield", "magnitude": mag, "turns": eff["turns"]})
         msg = f"{sp['name']}在你身上凝成護盾(護甲 +{mag},{eff['turns']} 回合)。"
 
+    elif kind == "ward":   # 秘術「結界」:吸收來襲法術/元素傷害的可耗盡池(吸魔變體按吸收量回魔)
+        mag = round(eff["magnitude"] * power)
+        char.active_effects[:] = [e for e in char.active_effects if e.get("kind") != "ward"]  # 重施去重 → 不疊無敵
+        entry = {"kind": "ward", "magnitude": mag, "turns": eff["turns"]}
+        if eff.get("absorb"):
+            entry["absorb"] = eff["absorb"]
+        char.active_effects.append(entry)
+        extra = "・吸收部分法力" if eff.get("absorb") else ""
+        msg = f"{sp['name']} —— 一道結界護住了你(可吸收 {mag} 點法術傷害{extra},{eff['turns']} 回合)。"
+
     elif kind == "weapon_imbue":   # 戰法師「奧術灌注」:自我增益 → 近戰加元素傷害(比照附魔,戰鬥內讀取)
         mag = round(eff["magnitude"] * power)
         char.active_effects.append({"kind": "weapon_imbue", "element": eff["element"],
                                     "magnitude": mag, "turns": eff["turns"]})
         msg = f"{sp['name']} —— 你的兵刃纏上了{_ELEMENT_CN.get(eff['element'], '')}之力(每擊 +{mag},{eff['turns']} 回合)。"
+
+    elif kind == "bound_weapon":   # 召喚「束縛兵刃」:凝出法系近戰武器,取代裝備武器(無視物理護甲、可空手)
+        # 存「基礎傷害」不乘 power:傷害在 combat._weapon_profile→attack_damage 隨咒術技能/力量縮放一次
+        # (若此處再乘 power 會技能雙重縮放)。重施去重 → 不可疊成更強的刃。
+        mag = eff["magnitude"]
+        char.active_effects[:] = [e for e in char.active_effects if e.get("kind") != "bound_weapon"]
+        char.active_effects.append({"kind": "bound_weapon", "element": eff.get("element", "magic"),
+                                    "magnitude": mag, "turns": eff["turns"]})
+        msg = f"{sp['name']} —— 你手中凝出一柄束縛兵刃(基礎傷害 {mag},隨咒術精進,{eff['turns']} 回合)。"
 
     elif kind == "fear":
         if target is not None:
@@ -239,6 +264,12 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
             dest.active_effects.append(make_status_effect(eff["status"]))
             who = "你" if dest is char else dest.name
             msg = f"{sp['name']} —— {who}{_status_verb(eff['status'])}。"
+
+    elif kind == "dispel":   # 秘術「驅散」:淨化自身的不良控場/侵蝕效果(不動護盾/再生等增益)
+        removed = [e for e in char.active_effects if e.get("kind") in _DISPELLABLE]
+        char.active_effects[:] = [e for e in char.active_effects if e.get("kind") not in _DISPELLABLE]
+        msg = (f"{sp['name']} —— 你驅散了身上的 {len(removed)} 道不良效果。" if removed
+               else f"{sp['name']} —— 你身上沒有可驅散的不良效果。")
 
     elif kind in ("damage_all", "damage_status_all", "status_all"):
         living = [e for e in (enemies or []) if e.health > 0]
@@ -298,6 +329,34 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
             blessed = "(達貢之佑加持)" if boon > 0 else ""
             msg = f"你召喚出了{ally.name}{blessed}{extra_msg},它將為你而戰({ally.summon_turns} 回合)。"
 
+    elif kind == "reanimate":   # 召喚/死靈「亡者復生」:把一具非 solo 敵屍喚為限時盟友(復用召喚物生命週期)
+        if battle is None:
+            char.magicka += cost
+            char.fatigue = fatigue_before
+            return _fail("亡者復生需要在戰鬥中施放。")
+        from tesrpg.systems import combat
+        corpse = next((e for e in (corpses or [])
+                       if not combat.is_alive(e) and getattr(e, "template_id", None)
+                       and e.template_id in gamedata.bestiary
+                       and not gamedata.bestiary[e.template_id].get("solo")
+                       and not getattr(e, "_reanimated", False)), None)
+        if corpse is None:
+            char.magicka += cost
+            char.fatigue = fatigue_before
+            return _fail("周圍沒有可供復生的屍體。")
+        corpse._reanimated = True   # 同一具屍體不可反覆復生(封無限刷盟友)
+        ally = combat.spawn_creature(gamedata, corpse.template_id, rng)
+        boon = factions.conjure_boon(char, gamedata)
+        smod = mastery.summon_mod(char, gamedata)   # 刻意不讀 smod['extra']:復生綁定單屍(見 _reanimated),雙重召喚不適用
+        fat_pen = formulas.cast_fatigue_power_factor(fatigue_ratio)
+        # REANIMATE_HP_FACTOR 收斂高 HP 精英(虛弱化的亡魂);仍吃 boon/hp_bonus/力竭(與召喚對稱)
+        hp_mult = REANIMATE_HP_FACTOR * (1 + boon) * (1 + smod.get("hp_bonus", 0.0)) * fat_pen
+        ally.max_health = max(1, round(ally.max_health * hp_mult))
+        ally.health = ally.max_health
+        ally.summon_turns = eff["turns"] + int(boon * 3) + int(smod.get("turn_bonus", 0))
+        battle.setdefault("allies", []).append(ally)
+        msg = f"你以亡者復生喚起了{ally.name},它將為你而戰({ally.summon_turns} 回合)。"
+
     if triaged:           # 自我治療確實施放 → 消耗戰地搶救旗標(damage 等非治療術 triaged 必為 False)
         char.active_effects[:] = [e for e in char.active_effects if e.get("kind") != "triage_ready"]
     stats.clamp_resources(char)
@@ -310,6 +369,19 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
 # --- 主動效果 ----------------------------------------------------------
 def active_shield(char: Character) -> int:
     return sum(e["magnitude"] for e in char.active_effects if e["kind"] == "shield")
+
+
+def consume_ward(char, dmg: float) -> tuple[float, int]:
+    """秘術結界:吸收來襲法術/元素傷害。扣減 ward magnitude(耗盡即失效),回傳
+    (剩餘傷害, 吸魔回魔量)。cast 端已重施去重 → 至多一道,取第一道未耗盡者。
+    吸魔結界(absorb)按實際吸收量比例回魔;一般結界回魔 0。"""
+    for e in char.active_effects:
+        if e.get("kind") == "ward" and e.get("turns", 0) > 0 and e.get("magnitude", 0) > 0:
+            absorbed = min(dmg, e["magnitude"])
+            e["magnitude"] -= absorbed
+            refund = round(absorbed * e["absorb"]) if e.get("absorb") else 0
+            return dmg - absorbed, refund
+    return dmg, 0
 
 
 def is_feared(creature) -> bool:
@@ -437,6 +509,10 @@ def tick_effects(entity, gamedata=None) -> list[str]:
             # 每回合重推的常駐光環護盾(盾牆護同袍 / 戰旗自護)不報「消散」— 它其實是被持續刷新,非真消失
             if e["kind"] == "shield" and e.get("source") not in ("shield_wall_aura", "standard_self"):
                 msgs.append("護盾消散了。")
+            elif e["kind"] == "ward":
+                msgs.append("結界消散了。")
+            elif e["kind"] == "bound_weapon":
+                msgs.append("束縛兵刃消散了。")
             elif e["kind"] == "paralyze":
                 msgs.append(f"{name}從麻痺中恢復。")
     return msgs

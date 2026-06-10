@@ -38,7 +38,9 @@
         "minor_heal",
         "oakflesh",
         "fear",
-        "soul_trap"
+        "soul_trap",
+        "bound_sword",
+        "ward"
       ],
       "links": {
         "imperial_road": 2,
@@ -217,7 +219,13 @@
         "healing_circle",
         "ward_ally",
         "regen_aura",
-        "rally"
+        "rally",
+        "conjure_frost_atronach",
+        "conjure_dremora",
+        "ward",
+        "dispel",
+        "spell_absorb_ward",
+        "bound_sword"
       ],
       "links": {
         "dragon_bridge": 3,
@@ -478,7 +486,11 @@
         "frost_nova",
         "oakflesh",
         "stoneflesh",
-        "demoralize"
+        "demoralize",
+        "reanimate_corpse",
+        "ward",
+        "dispel",
+        "conjure_frost_atronach"
       ],
       "links": {
         "niben_marsh": 3,
@@ -658,7 +670,17 @@
         "healing_circle",
         "ward_ally",
         "regen_aura",
-        "rally"
+        "rally",
+        "bound_sword",
+        "conjure_frost_atronach",
+        "conjure_storm_atronach",
+        "conjure_dremora",
+        "reanimate_corpse",
+        "ward",
+        "greater_ward",
+        "spell_absorb_ward",
+        "dispel",
+        "mass_soul_trap"
       ],
       "links": {
         "bruma": 3,
@@ -1027,7 +1049,12 @@
         "mass_paralysis",
         "rout",
         "flames",
-        "fireball"
+        "fireball",
+        "conjure_storm_atronach",
+        "greater_ward",
+        "mass_soul_trap",
+        "dispel",
+        "reanimate_corpse"
       ],
       "links": {
         "molag_mar": 3,
@@ -1250,7 +1277,7 @@
       "desc": "漢默法爾的王城與最大海港,白金穹頂俯瞰著伊利亞克灣。王冠派的劍術大師在此操演,自帝國退潮以來,森塔便高舉劍與駿馬的古旗,不向任何外邦低頭。",
       "services": ["inn", "merchant", "trainer", "mages_guild", "armorer", "fighters_guild", "task_board"],
       "merchant_stock": ["minor_healing_potion", "healing_potion", "minor_magicka_potion", "steel_sword", "steel_mace", "steel_cuirass", "steel_helmet", "iron_shield", "long_bow", "repair_hammer", "ruby", "red_apple", "garlic", "silver_ring", "gold_ring", "gold_amulet", "flame_staff", "magicka_staff"],
-      "spell_stock": ["flames", "fireball", "ignite", "fire_storm", "minor_heal", "heal", "close_wounds", "oakflesh", "stoneflesh", "fear", "demoralize", "conjure_familiar", "soul_trap"],
+      "spell_stock": ["flames", "fireball", "ignite", "fire_storm", "minor_heal", "heal", "close_wounds", "oakflesh", "stoneflesh", "fear", "demoralize", "conjure_familiar", "soul_trap", "conjure_storm_atronach", "mass_soul_trap", "bound_sword", "greater_ward"],
       "links": {
         "gilane": 3,
         "alikr_desert": 2,
@@ -1326,7 +1353,7 @@
       "desc": "高岩西陲伊利亞克灣畔的布雷頓古都,灰岩城堡與尖頂鐘樓自常年的霧靄中聳起。自皇權崩解,匕落王室便不再向帝國低頭,以古老的劍與盾自守這片巫術與騎士並存的潮濕王國。",
       "services": ["inn", "merchant", "trainer", "mages_guild", "armorer", "fighters_guild", "task_board"],
       "merchant_stock": ["minor_healing_potion", "healing_potion", "minor_magicka_potion", "steel_sword", "steel_mace", "steel_cuirass", "steel_helmet", "iron_shield", "long_bow", "repair_hammer", "ruby", "lavender", "nightshade", "silver_ring", "gold_ring", "gold_amulet", "storm_staff", "magicka_staff"],
-      "spell_stock": ["sparks", "lightning_bolt", "chain_lightning", "fear", "demoralize", "mass_paralysis", "rout", "conjure_familiar", "soul_trap", "minor_heal", "heal", "oakflesh"],
+      "spell_stock": ["sparks", "lightning_bolt", "chain_lightning", "fear", "demoralize", "mass_paralysis", "rout", "conjure_familiar", "soul_trap", "minor_heal", "heal", "oakflesh", "conjure_frost_atronach", "ward", "conjure_dremora", "greater_ward"],
       "links": {
         "wayrest": 3,
         "wrothgar_moor": 2,
@@ -1429,7 +1456,7 @@
       "desc": "瓦倫森林的行走王都 —— 一株比山還高的巨型格拉特橡樹托起整座城,隨四季在密林間遷徙。波斯莫的卡莫蘭王族在樹冠的廳堂裡統御綠約之民,藤梯與吊橋在綠蔭間縱橫攀爬。",
       "services": ["inn", "merchant", "trainer", "mages_guild", "armorer", "fighters_guild", "task_board"],
       "merchant_stock": ["minor_healing_potion", "healing_potion", "minor_magicka_potion", "elven_sword", "glass_dagger", "elven_cuirass", "leather_helmet", "long_bow", "hunting_bow", "repair_hammer", "monarch_wing", "glow_dust", "nightshade", "silver_ring", "gold_ring", "gold_amulet", "flame_staff", "magicka_staff"],
-      "spell_stock": ["flames", "fireball", "ignite", "fire_storm", "minor_heal", "heal", "renewal", "oakflesh", "fear", "demoralize", "conjure_familiar", "soul_trap"],
+      "spell_stock": ["flames", "fireball", "ignite", "fire_storm", "minor_heal", "heal", "renewal", "oakflesh", "fear", "demoralize", "conjure_familiar", "soul_trap", "reanimate_corpse", "ward", "conjure_storm_atronach", "mass_soul_trap"],
       "links": {
         "strid_vale": 3,
         "haven": 3,
@@ -1533,7 +1560,7 @@
       "desc": "安納奎那乾草原上的要塞商城,赭黃砂岩的尖塔在烈日下泛白。北境戰族的卡傑特在此操演,駝隊馱著月糖與香料穿越乾旱的草海;自帝國退潮以來,瑞門的鬥獸場與市集從不曾因紅寶石王座空懸而冷清。",
       "services": ["inn", "merchant", "trainer", "fighters_guild", "armorer", "task_board"],
       "merchant_stock": ["minor_healing_potion", "healing_potion", "minor_magicka_potion", "steel_sword", "steel_mace", "steel_dagger", "leather_cuirass", "leather_boots", "iron_shield", "long_bow", "hunting_bow", "repair_hammer", "moon_sugar", "red_apple", "garlic", "silver_ring", "gold_ring", "gold_amulet", "flame_staff"],
-      "spell_stock": ["flames", "fireball", "sparks", "minor_heal", "heal", "oakflesh", "stoneflesh", "fear", "demoralize", "soul_trap"],
+      "spell_stock": ["flames", "fireball", "sparks", "minor_heal", "heal", "oakflesh", "stoneflesh", "fear", "demoralize", "soul_trap", "bound_sword", "dispel", "greater_ward", "conjure_frost_atronach"],
       "links": {
         "topal_bay": 3,
         "senchal": 3,

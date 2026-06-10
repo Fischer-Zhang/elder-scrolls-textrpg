@@ -348,6 +348,294 @@ def test_enchws_synth_roundtrip():
         assert d["enchant"]["kind"] == "weapon_status" and d["enchant"]["status"] == st
 
 
+# --- 法術學派補完:召喚(束縛兵刃/亡者復生/新召喚)+ 秘術(結界/驅散/群體擒魂)-------
+def test_bound_weapon_arms_unarmed_and_bypasses_armor():
+    """束縛兵刃:空手法師也能近戰,且走元素分支 → 無視物理護甲。"""
+    gd, c = _caster()
+    c.spells.append("bound_sword")
+    c.weapon = "fists"
+    c.skills["conjuration"] = 80
+    magic.cast(c, gd, "bound_sword", RNG(0), battle={"allies": []})
+    assert any(e["kind"] == "bound_weapon" for e in c.active_effects)
+    foe = combat.spawn_creature(gd, "mudcrab", RNG(0))
+    foe.health = foe.max_health = 9999
+    foe.armor_rating = 80                 # 重甲:純空手物理近乎歸零
+    dealt = 0
+    for i in range(30):
+        ev = combat.resolve_attack(c, foe, gd, RNG(i))
+        if ev["hit"]:
+            dealt = ev["damage"]
+            break
+    assert dealt >= 10                    # 束縛兵刃無視 80 護甲 → 顯著傷害
+
+
+def test_bound_weapon_ignores_weapon_imbue_no_double_dip():
+    """束縛兵刃走元素分支,不讀物理分支的 weapon_imbue 加成 → 零雙吃(加不加灌注傷害相同)。"""
+    def dmg(with_imbue):
+        gd, c = _caster()
+        c.spells += ["bound_sword", "flame_blade"]
+        c.skills["conjuration"] = 70
+        c.skills["alteration"] = 70
+        c.weapon = "fists"
+        magic.cast(c, gd, "bound_sword", RNG(0), battle={"allies": []})
+        if with_imbue:
+            magic.cast(c, gd, "flame_blade", RNG(0), battle={"allies": []})
+        foe = combat.spawn_creature(gd, "mudcrab", RNG(0))
+        foe.health = foe.max_health = 9999
+        for i in range(60):
+            ev = combat.resolve_attack(c, foe, gd, RNG(1000 + i))
+            if ev["hit"]:
+                return ev["damage"]
+        return None
+    assert dmg(False) == dmg(True)        # 灌注對束縛兵刃完全無效(否則雙吃)
+
+
+def test_bound_weapon_no_stack_on_recast():
+    gd, c = _caster()
+    c.spells.append("bound_sword")
+    magic.cast(c, gd, "bound_sword", RNG(0), battle={"allies": []})
+    magic.cast(c, gd, "bound_sword", RNG(0), battle={"allies": []})
+    assert len([e for e in c.active_effects if e["kind"] == "bound_weapon"]) == 1
+
+
+def test_bound_weapon_sneak_still_capped_on_solo_boss():
+    """🔴 紅線:束縛兵刃(法系近戰)偷襲 solo boss 仍受 SOLO_SNEAK_DAMAGE_CAP_RATIO 夾限。"""
+    from tesrpg import formulas
+    gd, c = _caster()
+    c.spells.append("bound_sword")
+    c.skills["conjuration"] = 100
+    c.skills["sneak"] = 100
+    magic.cast(c, gd, "bound_sword", RNG(0), battle={"allies": []})
+    solo_tid = next(t for t, d in gd.bestiary.items() if d.get("solo"))
+    for i in range(60):
+        boss = combat.spawn_creature(gd, solo_tid, RNG(i))
+        cap = boss.max_health * formulas.SOLO_SNEAK_DAMAGE_CAP_RATIO
+        ev = combat.resolve_attack(c, boss, gd, RNG(i), sneak_attack=True)
+        assert ev["damage"] <= cap + 1          # 偷襲開場單擊永不超夾限
+
+
+def test_ward_consumes_and_absorbs():
+    gd, c = _caster()
+    c.skills["mysticism"] = 60
+    c.spells.append("ward")
+    magic.cast(c, gd, "ward", RNG(0))
+    ward = next(e for e in c.active_effects if e["kind"] == "ward")
+    mag0 = ward["magnitude"]
+    assert mag0 >= 28                          # 40 * power(≥0.7)
+    remaining, refund = magic.consume_ward(c, 25)
+    assert remaining == 0 and refund == 0       # 25 傷全被吸收、一般結界不回魔
+    assert ward["magnitude"] == mag0 - 25
+
+
+def test_ward_blunts_elemental_hits_in_combat():
+    def total_taken(with_ward):
+        gd, c = _caster()
+        c.skills["mysticism"] = 80
+        c.spells.append("greater_ward")
+        c.health = c.max_health = 9999
+        if with_ward:
+            magic.cast(c, gd, "greater_ward", RNG(0))
+        troll = combat.spawn_creature(gd, "frost_troll", RNG(0))   # 霜屬性攻擊
+        before = c.health
+        for i in range(8):
+            combat.resolve_attack(troll, c, gd, RNG(2000 + i))
+        return before - c.health
+    assert total_taken(True) < total_taken(False)   # 結界明顯吸掉一部分元素傷
+
+
+def test_absorb_ward_refunds_magicka():
+    gd, c = _caster()
+    c.skills["mysticism"] = 80
+    c.spells.append("spell_absorb_ward")
+    c.health = c.max_health = 9999
+    magic.cast(c, gd, "spell_absorb_ward", RNG(0))
+    c.magicka = 0                               # 清空 → 回魔可見
+    troll = combat.spawn_creature(gd, "frost_troll", RNG(0))
+    gained = False
+    for i in range(24):
+        m0 = c.magicka
+        combat.resolve_attack(troll, c, gd, RNG(3000 + i))
+        if c.magicka > m0:
+            gained = True
+            break
+    assert gained                               # 吸魔結界:吸收法術傷 → 回魔
+
+
+def test_ward_no_stack_on_recast():
+    gd, c = _caster()
+    c.skills["mysticism"] = 50
+    c.spells += ["ward", "greater_ward"]
+    magic.cast(c, gd, "ward", RNG(0))
+    magic.cast(c, gd, "greater_ward", RNG(0))
+    wards = [e for e in c.active_effects if e["kind"] == "ward"]
+    assert len(wards) == 1                      # 重施去重 → 不疊無敵(取最新)
+
+
+def test_dispel_clears_only_self_debuffs():
+    gd, c = _caster()
+    c.spells.append("dispel")
+    c.active_effects += [
+        {"kind": "fear", "turns": 3},
+        {"kind": "dot", "element": "poison", "magnitude": 5, "turns": 3},
+        {"kind": "weaken", "magnitude": 0.4, "turns": 3},
+        {"kind": "shield", "magnitude": 30, "turns": 3},
+        {"kind": "ward", "magnitude": 40, "turns": 3},
+    ]
+    magic.cast(c, gd, "dispel", RNG(0))
+    kinds = {e["kind"] for e in c.active_effects}
+    assert not ({"fear", "dot", "weaken"} & kinds)   # 不良控場/侵蝕全清
+    assert "shield" in kinds and "ward" in kinds     # 增益保留(不誤清)
+
+
+def test_reanimate_raises_dead_nonsolo_enemy():
+    gd, c = _caster()
+    c.spells.append("reanimate_corpse")
+    foe = combat.spawn_creature(gd, "mudcrab", RNG(0))
+    foe.health = 0                              # 屍體
+    battle = {"allies": []}
+    ev = magic.cast(c, gd, "reanimate_corpse", RNG(0), battle=battle, enemies=[], corpses=[foe])
+    assert ev["ok"] and len(battle["allies"]) == 1
+    ally = battle["allies"][0]
+    assert ally.summon_turns and ally.summon_turns > 0   # 限時盟友
+    assert getattr(foe, "_reanimated", False)
+
+
+def test_reanimate_refuses_empty_solo_and_no_battle_with_refund():
+    gd, c = _caster()
+    c.spells.append("reanimate_corpse")
+    battle = {"allies": []}
+    # ① 無屍 → 失敗退費(魔 + 體)
+    m0, f0 = c.magicka, c.fatigue
+    ev = magic.cast(c, gd, "reanimate_corpse", RNG(0), battle=battle, enemies=[], corpses=[])
+    assert not ev["ok"] and c.magicka == m0 and c.fatigue == f0 and not battle["allies"]
+    # ② solo boss 屍體 → 拒絕(無 boss 軍團)+ 退費
+    solo_tid = next(t for t, d in gd.bestiary.items() if d.get("solo"))
+    boss = combat.spawn_creature(gd, solo_tid, RNG(0))
+    boss.health = 0
+    m1, f1 = c.magicka, c.fatigue
+    ev2 = magic.cast(c, gd, "reanimate_corpse", RNG(0), battle=battle, enemies=[], corpses=[boss])
+    assert not ev2["ok"] and c.magicka == m1 and c.fatigue == f1 and not battle["allies"]
+    # ③ 戰外(battle=None)→ 失敗退費
+    m2, f2 = c.magicka, c.fatigue
+    ev3 = magic.cast(c, gd, "reanimate_corpse", RNG(0), corpses=[])
+    assert not ev3["ok"] and c.magicka == m2 and c.fatigue == f2
+
+
+def test_reanimate_no_double_raise_same_corpse():
+    gd, c = _caster()
+    c.spells.append("reanimate_corpse")
+    c.magicka = 9999
+    foe = combat.spawn_creature(gd, "mudcrab", RNG(0))
+    foe.health = 0
+    battle = {"allies": []}
+    ev1 = magic.cast(c, gd, "reanimate_corpse", RNG(0), battle=battle, enemies=[], corpses=[foe])
+    ev2 = magic.cast(c, gd, "reanimate_corpse", RNG(0), battle=battle, enemies=[], corpses=[foe])
+    assert ev1["ok"] and not ev2["ok"]          # 同屍不可二次復生
+    assert len(battle["allies"]) == 1
+
+
+def test_new_summons_spawn_and_inherit_twin_summon_mastery():
+    from tesrpg.systems import mastery
+    gd, c = _caster()
+    c.spells += ["conjure_frost_atronach", "conjure_storm_atronach", "conjure_dremora"]
+    for sid in ("conjure_frost_atronach", "conjure_storm_atronach", "conjure_dremora"):
+        battle = {"allies": []}
+        ev = magic.cast(c, gd, sid, RNG(0), battle=battle, enemies=[])
+        assert ev["ok"] and len(battle["allies"]) == 1 and battle["allies"][0].name
+    # 雙重召喚里程碑 → 新召喚物自動多召一隻(per-school summon_mod 繼承)
+    c.skills["conjuration"] = 100
+    mastery.choose(c, gd, "conjuration_100", "twin_summon")
+    battle = {"allies": []}
+    magic.cast(c, gd, "conjure_storm_atronach", RNG(0), battle=battle, enemies=[])
+    assert len(battle["allies"]) == 2
+
+
+def test_mass_soul_trap_marks_all_living_enemies():
+    gd, c = _caster()
+    c.spells.append("mass_soul_trap")
+    foes = [combat.spawn_creature(gd, "mudcrab", RNG(i)) for i in range(3)]
+    ev = magic.cast(c, gd, "mass_soul_trap", RNG(0), enemies=foes)
+    assert ev["ok"] and all(magic.has_soul_trap(f) for f in foes)
+
+
+def test_bound_weapon_ignores_equipped_weapon_riders():
+    """對抗審查 major 修正:束縛兵刃完全取代裝備武器 → 不吃裝備武器的塗毒/命中附魔/耐久。"""
+    gd, c = _caster()
+    c.spells.append("bound_sword")
+    c.skills["conjuration"] = 80
+    c.weapon = synth.enchant_weapon_status_id("steel_sword", "vampiric", 5, 0)   # 吸血附魔
+    c.weapon_poison = {"name": "劇毒", "charges": 3,
+                       "status": {"status": "dot", "element": "poison", "magnitude": 6, "turns": 3}}
+    c.weapon_condition = 50.0
+    c.health = 10
+    magic.cast(c, gd, "bound_sword", RNG(0), battle={"allies": []})
+    foe = combat.spawn_creature(gd, "mudcrab", RNG(0))
+    foe.health = foe.max_health = 9999
+    for i in range(20):
+        if combat.resolve_attack(c, foe, gd, RNG(i))["hit"]:
+            break
+    assert c.weapon_poison["charges"] == 3                          # 塗毒未被消耗
+    assert not any(e.get("element") == "poison" for e in foe.active_effects)   # 敵未中裝備毒
+    assert c.health == 10                                           # 裝備吸血附魔未觸發
+    assert c.weapon_condition == 50.0                              # 裝備武器未磨損
+
+
+def test_bound_weapon_damage_independent_of_equipped_condition():
+    """束縛兵刃傷害不受裝備武器耐久縮放(虛擬兵刃與破損裝備脫鉤)。"""
+    def dmg(cond):
+        gd, c = _caster()
+        c.spells.append("bound_sword")
+        c.skills["conjuration"] = 80
+        c.weapon = "iron_sword"
+        c.weapon_condition = cond
+        magic.cast(c, gd, "bound_sword", RNG(0), battle={"allies": []})
+        foe = combat.spawn_creature(gd, "mudcrab", RNG(0))
+        foe.health = foe.max_health = 9999
+        for i in range(60):
+            ev = combat.resolve_attack(c, foe, gd, RNG(1000 + i))
+            if ev["hit"]:
+                return ev["damage"]
+        return None
+    assert dmg(0.0) == dmg(100.0)
+
+
+def test_bound_weapon_trains_conjuration_on_hit():
+    """learn-by-doing 一致性:束縛兵刃命中鍛鍊咒術。"""
+    from tesrpg.systems import progression
+    gd, c = _caster()
+    c.spells.append("bound_sword")
+    c.skills["conjuration"] = 40
+    c.weapon = "fists"
+    magic.cast(c, gd, "bound_sword", RNG(0), battle={"allies": []})   # 施法在 patch 前 → 不計入
+    foe = combat.spawn_creature(gd, "mudcrab", RNG(0))
+    foe.health = foe.max_health = 9999
+    calls = []
+    orig = progression.use_skill
+    progression.use_skill = lambda ch, g, sk, xp, *a, **k: (calls.append(sk), orig(ch, g, sk, xp, *a, **k))[1]
+    try:
+        for i in range(40):
+            if combat.resolve_attack(c, foe, gd, RNG(i))["hit"]:
+                break
+    finally:
+        progression.use_skill = orig
+    assert "conjuration" in calls
+
+
+def test_reanimate_hp_is_weakened():
+    """對抗審查收斂:亡者復生為虛弱亡魂(REANIMATE_HP_FACTOR)→ 不滿血復生高 HP 精英。"""
+    gd, c = _caster()
+    c.spells.append("reanimate_corpse")
+    from tesrpg.systems import stats
+    stats.recompute_max_resources(c, gd, restore_full=True)
+    foe = combat.spawn_creature(gd, "bear", RNG(0))
+    foe.health = 0
+    base = gd.bestiary["bear"]["max_health"]
+    battle = {"allies": []}
+    ev = magic.cast(c, gd, "reanimate_corpse", RNG(0), battle=battle, enemies=[], corpses=[foe])
+    assert ev["ok"]
+    assert battle["allies"][0].max_health < base    # 虛弱化(<原 HP),非滿血
+
+
 def run():
     for name, fn in sorted(globals().items()):
         if name.startswith("test_") and callable(fn):

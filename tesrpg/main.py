@@ -625,7 +625,8 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
                         ui.message("你射後欲走,卻被敵人緊咬不放。", style="grey70")
         elif action["type"] == "cast":
             res = magic.cast(player, gamedata, action["spell_id"], state.rng,
-                             target=action.get("target"), battle=battle, enemies=alive_e())
+                             target=action.get("target"), battle=battle, enemies=alive_e(),
+                             corpses=enemies)   # 亡者復生需見「完整」敵群(含已死屍體);存活清單仍走 enemies=alive_e()
             ui.message(res["message"], style="cyan")
             ui.show_events(res["skill_events"], gamedata)
         elif action["type"] == "power":

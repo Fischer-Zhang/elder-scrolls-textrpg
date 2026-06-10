@@ -301,5 +301,17 @@
   "ward_ally": {"name": "庇護術", "school": "alteration", "cost": 22, "target": "ally", "effect": {"kind": "shield", "magnitude": 40, "turns": 5}},
   "regen_aura": {"name": "生機共鳴", "school": "restoration", "cost": 34, "target": "allies", "effect": {"kind": "apply_status", "status": {"status": "regen", "magnitude": 8, "turns": 4}}},
 
-  "rally": {"name": "號令", "school": "illusion", "cost": 30, "target": "allies", "effect": {"kind": "empower", "magnitude": 0.25, "turns": 4}}
+  "rally": {"name": "號令", "school": "illusion", "cost": 30, "target": "allies", "effect": {"kind": "empower", "magnitude": 0.25, "turns": 4}},
+
+  "conjure_frost_atronach": {"name": "召喚冰霜元素", "school": "conjuration", "cost": 44, "target": "self", "effect": {"kind": "summon", "creature": "summoned_frost_atronach", "turns": 6}},
+  "conjure_storm_atronach": {"name": "召喚雷暴元素", "school": "conjuration", "cost": 50, "target": "self", "effect": {"kind": "summon", "creature": "summoned_storm_atronach", "turns": 6}},
+  "conjure_dremora": {"name": "召喚魔人", "school": "conjuration", "cost": 58, "target": "self", "effect": {"kind": "summon", "creature": "summoned_dremora", "turns": 5}},
+  "bound_sword": {"name": "束縛長劍", "school": "conjuration", "cost": 20, "target": "self", "effect": {"kind": "bound_weapon", "element": "magic", "magnitude": 14, "turns": 6}},
+  "reanimate_corpse": {"name": "亡者復生", "school": "conjuration", "cost": 40, "target": "self", "effect": {"kind": "reanimate", "turns": 5}},
+
+  "ward": {"name": "結界", "school": "mysticism", "cost": 16, "target": "self", "effect": {"kind": "ward", "magnitude": 40, "turns": 5}},
+  "greater_ward": {"name": "高等結界", "school": "mysticism", "cost": 34, "target": "self", "effect": {"kind": "ward", "magnitude": 90, "turns": 5}},
+  "spell_absorb_ward": {"name": "吸魔結界", "school": "mysticism", "cost": 46, "target": "self", "effect": {"kind": "ward", "magnitude": 70, "turns": 5, "absorb": 0.5}},
+  "dispel": {"name": "驅散", "school": "mysticism", "cost": 22, "target": "self", "effect": {"kind": "dispel"}},
+  "mass_soul_trap": {"name": "群體擒魂", "school": "mysticism", "cost": 44, "target": "all", "effect": {"kind": "status_all", "status": {"status": "soul_trap", "turns": 4}}}
 }

@@ -1134,7 +1134,8 @@ def spell_effect_summary(gamedata: GameData, spell_id: str) -> str:
         m = st.get("magnitude", 0)
         t = st.get("turns", 0)
         return {"dot": f"{el}持續傷害 {m}/回合×{t}", "regen": f"再生 +{m}/回合×{t}",
-                "paralyze": f"麻痺 {t} 回合", "fear": f"恐懼 {t} 回合"}.get(s, "狀態")
+                "paralyze": f"麻痺 {t} 回合", "fear": f"恐懼 {t} 回合",
+                "soul_trap": f"擒魂 {t} 回合"}.get(s, "狀態")
 
     if k == "damage":
         return f"{elem}傷害 {mag}"
@@ -1163,6 +1164,15 @@ def spell_effect_summary(gamedata: GameData, spell_id: str) -> str:
     if k == "summon":
         cn = gamedata.bestiary.get(e.get("creature"), {}).get("name", e.get("creature", ""))
         return f"召喚 {cn}（{turns} 回合)"
+    if k == "bound_weapon":   # 召喚束縛兵刃
+        return f"束縛兵刃:傷害 {mag},無視護甲（{turns} 回合)"
+    if k == "ward":           # 秘術結界
+        ab = "・吸魔" if e.get("absorb") else ""
+        return f"結界:吸收法術傷害 {mag}{ab}（{turns} 回合)"
+    if k == "dispel":         # 秘術驅散
+        return "驅散自身的恐懼/麻痺/侵蝕等不良效果"
+    if k == "reanimate":      # 召喚亡者復生
+        return f"復生一具敵屍為盟友（{turns} 回合)"
     if k == "apply_status":
         who = "使目標" if tgt == "enemy" else (ally_who or "自身")
         return who + _st(e["status"])

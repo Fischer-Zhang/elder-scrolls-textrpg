@@ -179,6 +179,10 @@ def _weapon_profile(actor, gamedata: GameData):
             from tesrpg.systems import lycanthropy
             wp = gamedata.item(lycanthropy.BEAST_CLAW)
             return wp["damage"] + lycanthropy.claw_bonus(actor), actor.skill(wp["skill"]), wp["skill"]
+        bw = next((e for e in actor.active_effects
+                   if e.get("kind") == "bound_weapon" and e.get("turns", 0) > 0), None)
+        if bw:   # 召喚「束縛兵刃」:取代裝備武器 → 固定傷害、用咒術技能、不吃淬鍊/附魔/塗毒/耐久(skill_id=None)
+            return bw["magnitude"], actor.skill("conjuration"), None
         wp = gamedata.item(actor.weapon)   # 用 item() 以支援附魔(合成)武器
         return wp["damage"] + smithing.weapon_temper_bonus(actor), actor.skill(wp["skill"]), wp["skill"]
     return actor.attack["damage"], actor.attack["skill"], None
@@ -285,14 +289,19 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
            "skill_events":[...], "defender_dead":bool, "sneak":倍率|None}
     """
     beast = _is_beast(attacker)     # 獸形:獸爪戰鬥,結構性略過裝備武器/附魔/淬鍊/副手/耐久
+    # 召喚「束縛兵刃」:凝出的法系武器「完全取代」裝備武器(比照獸形)→ 不吃裝備武器的塗毒/命中附魔/
+    # 耐久/副手/archetype/法杖命中回資源。存效果 dict(供下方 atk_element 取元素);無則 None。
+    bound = (next((e for e in attacker.active_effects
+                   if e.get("kind") == "bound_weapon" and e.get("turns", 0) > 0), None)
+             if _is_player(attacker) and not beast else None)
     # 🔴 紅線:獸形攻擊永不吃偷襲倍率(防禦縱深 —— 即便呼叫端誤傳 sneak_attack=True 亦然;
     # 變身破壞潛行 → solo boss 反一刀夾限不被觸碰)
     sneaking = sneak_attack and _is_player(attacker) and not beast
     wpn_dmg, wpn_skill, wpn_skill_id = _weapon_profile(attacker, gamedata)
-    # 雙持副手傷害另計:作為一記「普通補刀」疊上,不吃偷襲倍率(避免偷襲秒精英)。獸形無副手。
+    # 雙持副手傷害另計:作為一記「普通補刀」疊上,不吃偷襲倍率(避免偷襲秒精英)。獸形/束縛兵刃無副手。
     offhand_dmg = (inventory.dual_wield_bonus_damage(attacker, gamedata)
-                   if _is_player(attacker) and not beast else 0.0)
-    wdef = gamedata.item(attacker.weapon) if _is_player(attacker) and not beast else None
+                   if _is_player(attacker) and not beast and not bound else 0.0)
+    wdef = gamedata.item(attacker.weapon) if _is_player(attacker) and not beast and not bound else None
     archetype = wdef.get("archetype") if wdef else None
     speed = wdef.get("speed", formulas.WEAPON_SPEED_DEFAULT) if wdef else formulas.WEAPON_SPEED_DEFAULT
     fr = _fatigue_ratio(attacker)
@@ -331,7 +340,8 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
                   ) if sneaking else None
 
     if hit:
-        cond_mult = inventory.weapon_damage_mult(attacker) if _is_player(attacker) and not beast else 1.0
+        cond_mult = (inventory.weapon_damage_mult(attacker)
+                     if _is_player(attacker) and not beast and not bound else 1.0)   # 束縛兵刃不吃裝備武器耐久
         roll = rng.roll(0.85, 1.15)
         block_factor = (formulas.block_damage_factor(defender.skill("block"))
                         if defender_blocking else 1.0)
@@ -353,6 +363,8 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
             raw += formulas.attack_damage(offhand_dmg, wpn_skill, _strength(attacker),
                                           roll, block_factor) * cond_mult
         atk_element = None if _is_player(attacker) else attacker.attack.get("element")
+        if bound:   # 召喚「束縛兵刃」:法系近戰 → 走元素分支(無視護甲、吃元素抗性;元素分支不讀附魔/灌注 → 不雙吃)
+            atk_element = bound.get("element", "magic")
         if not _is_player(attacker):
             raw *= magic.weaken_factor(attacker)        # 怪物受耗弱影響
 
@@ -366,6 +378,10 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
             else:
                 mult = formulas.resist_multiplier(magic.entity_resist(defender, gamedata), atk_element)
                 dmg = magic._scaled_damage(raw, mult)
+                if _is_player(defender):   # 秘術「結界」:先吃法術/元素傷,吸魔結界按吸收量回魔(可耗盡池)
+                    dmg, refunded = magic.consume_ward(defender, dmg)
+                    if refunded:
+                        defender.magicka = min(defender.max_magicka, defender.magicka + refunded)
         else:
             # 刺客「致命烙印」破甲:🔴 只在 follow-up(非開場偷襲)生效 → 開場一擊永不受惠 → solo 反一刀夾限不被繞過
             dm_pen = 0.0
@@ -444,8 +460,9 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
                     infected = True
                     infect_kind = kind
 
-        # 玩家武器塗毒 → 命中即把毒效附到敵人身上,消耗一次塗層。獸形以獸爪戰鬥 → 不沾塗毒
-        if _is_player(attacker) and not beast and attacker.weapon_poison and attacker.weapon_poison["charges"] > 0:
+        # 玩家武器塗毒 → 命中即把毒效附到敵人身上,消耗一次塗層。獸形/束縛兵刃以非裝備武器戰鬥 → 不沾塗毒
+        if (_is_player(attacker) and not beast and not bound
+                and attacker.weapon_poison and attacker.weapon_poison["charges"] > 0):
             wp = attacker.weapon_poison
             defender.active_effects.append(magic.make_status_effect(wp["status"]))
             poison_applied = wp["name"]
@@ -454,8 +471,8 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
                 attacker.weapon_poison = None
 
         # 武器命中觸發附魔(weapon_status:吸血/麻痺/再生)—— 玩家專屬,與元素/毒/里程碑各自獨立、不重複套。
-        # 獸形以獸爪戰鬥 → 無附魔狀態
-        if _is_player(attacker) and not beast:
+        # 獸形/束縛兵刃以非裝備武器戰鬥 → 無裝備武器附魔
+        if _is_player(attacker) and not beast and not bound:
             sench = gamedata.item(attacker.weapon).get("enchant")
             if sench and sench.get("kind") == "weapon_status" and rng.chance(sench.get("chance", 1.0)):
                 st = sench["status"]
@@ -522,8 +539,8 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
             if staggered or bleed_mag:
                 aftermath = {"staggered": staggered, "bleed": bleed_mag}
 
-        # 耐久折損:玩家攻擊磨損武器、被擊中磨損護甲。獸形以獸爪戰鬥 → 不磨損裝備武器
-        if _is_player(attacker) and not beast:
+        # 耐久折損:玩家攻擊磨損武器、被擊中磨損護甲。獸形/束縛兵刃以非裝備武器戰鬥 → 不磨損裝備武器
+        if _is_player(attacker) and not beast and not bound:
             inventory.degrade_weapon(attacker)
         if _is_player(defender) and defender.equipped:
             inventory.degrade_random_armor(defender, rng)
@@ -531,6 +548,9 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
         # learn-by-doing:攻擊方是玩家 → 練武器;防守方是玩家 → 練護甲
         if _is_player(attacker) and wpn_skill_id:
             skill_events += progression.use_skill(attacker, gamedata, wpn_skill_id,
+                                                  formulas.COMBAT_HIT_XP)
+        elif bound:   # 束縛兵刃命中 → 練咒術(法系近戰也成長對應技能,補 learn-by-doing 一致性)
+            skill_events += progression.use_skill(attacker, gamedata, "conjuration",
                                                   formulas.COMBAT_HIT_XP)
         if sneaking:   # 偷襲命中 → 鍛鍊潛行(讓 sneak 也能在戰鬥中成長)
             skill_events += progression.use_skill(attacker, gamedata, "sneak",
