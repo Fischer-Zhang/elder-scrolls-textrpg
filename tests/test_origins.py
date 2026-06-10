@@ -127,9 +127,9 @@ def test_new_origins_situational_distinctives():
     """六個新開局各自的處境特徵(補戰士/盜賊公會、漢默法爾、海難/治療/獸人)。"""
     gd = get_gamedata()
     base = _build(gd, "newcomer")
-    # 戰友團:授戰士公會會籍(單授 lawful 自洽,無起手賞金)
+    # 戰友團新血:授戰友團會籍(無起手賞金;戰友團 lawful:false 自洽)
     c = _build(gd, "fighters_recruit")
-    assert c.factions.get("fighters_guild") == 0 and c.weapon == "steel_sword" and c.bounties == {}
+    assert c.factions.get("companions") == 0 and c.weapon == "steel_sword" and c.bounties == {}
     # 盜賊公會:授盜賊會籍 + 匕首在手
     c = _build(gd, "guild_thief")
     assert c.factions.get("thieves_guild") == 0 and inventory.count_item(c, "iron_dagger") >= 1

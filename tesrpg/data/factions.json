@@ -172,5 +172,34 @@
       "kn5",
       "kn6"
     ]
+  },
+  "companions": {
+    "name": "戰友團",
+    "hall": "whiterun",
+    "blurb": "天際古老的榮譽戰士團,以狩獵野獸妖孽、扶危濟困為業,聖殿設於白漫城的英靈神殿 Jorrvaskr。他們重然諾、輕王法,只認本事與同袍之義 —— 而最核心的圈內戰友,藏著一個與月為盟的古老祕密。",
+    "gate_skills": ["blade", "blunt", "hand_to_hand", "marksman", "heavy_armor"],
+    "join_skill": 10,
+    "rank_skill_req": [0, 14, 26, 38, 50, 62, 76],
+    "rivals": [],
+    "lawful": false,
+    "perk": {"kind": "merc_discount", "per_rank": 0.08, "cap": 0.5,
+             "desc": "盾袍之誼 —— 同袍之名遠播,招募傭兵盟友的酬金更省"},
+    "ranks": [
+      "新血",
+      "戰友",
+      "悍將",
+      "先鋒",
+      "內圈戰友",
+      "圈內長老",
+      "先驅"
+    ],
+    "rank_quests": [
+      "companions1",
+      "companions2",
+      "companions3",
+      "companions4",
+      "companions5",
+      "companions6"
+    ]
   }
 }

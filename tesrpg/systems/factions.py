@@ -159,6 +159,11 @@ def restoration_boon(char: Character, gamedata: GameData) -> float:
     return _best_perk(char, gamedata, "restoration_boon")
 
 
+def merc_discount(char: Character, gamedata: GameData) -> float:
+    """戰友團:盾袍之誼 —— 招募傭兵盟友的酬金折扣(0..cap)。"""
+    return _best_perk(char, gamedata, "merc_discount")
+
+
 def perk_desc(char: Character, gamedata: GameData, faction_id: str) -> str | None:
     """給 UI 顯示的福利說明(含目前強度)。"""
     perk = gamedata.factions[faction_id].get("perk")

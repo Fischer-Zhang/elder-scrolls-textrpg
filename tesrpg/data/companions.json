@@ -34,5 +34,17 @@
     "strength": 62, "agility": 50, "speed": 44, "max_health": 96, "armor_rating": 28,
     "attack": {"name": "戰錘", "damage": 18, "skill": 62},
     "blurb": "身經百戰的隊長,唯有立足一方的領袖請得動 —— 帶兵嚴整,能在亂軍中穩住陣腳。"
+  },
+  "farkas": {
+    "name": "法卡斯", "cost": 0, "circle": true,
+    "strength": 64, "agility": 46, "speed": 42, "max_health": 104, "armor_rating": 30,
+    "attack": {"name": "雙手巨劍", "damage": 18, "skill": 60},
+    "blurb": "戰友團圈內的巨漢,沉默寡言卻是最可靠的盾袍兄弟 —— 巨劍開山、重甲擋災,與你並肩便是一堵移動的城牆。"
+  },
+  "aela": {
+    "name": "艾拉·女獵手", "cost": 0, "circle": true,
+    "strength": 50, "agility": 60, "speed": 56, "max_health": 78, "armor_rating": 18,
+    "attack": {"name": "獵手長弓", "damage": 17, "skill": 62},
+    "blurb": "戰友團圈內的女獵手,獸血在她體內奔流 —— 箭無虛發、行如疾風,是追獵的化身與最忠誠的盾袍。"
   }
 }

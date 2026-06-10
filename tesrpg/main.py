@@ -1272,6 +1272,7 @@ def action_shop(state: GameState, gamedata: GameData) -> None:
 
 
 MAX_PARTY = 2
+COMPANIONS_CIRCLE_RANK = lycanthropy.RITUAL_RANK_INDEX   # 戰友團「內圈」門檻(獸血儀式 + 召集盾袍兄弟)
 
 
 def action_inn(state: GameState, gamedata: GameData) -> None:
@@ -1642,19 +1643,46 @@ def _hire_mercenary(state: GameState, gamedata: GameData) -> None:
         return
     avail = [cid for cid in gamedata.companions
              if cid not in char.companions and not gamedata.companions[cid].get("troop")
-             and not gamedata.companions[cid].get("warlord")]   # warlord 將領唯營地可招
-    opts = [(cid, f"{gamedata.companions[cid]['name']} — {gamedata.companions[cid]['cost']} 金:"
+             and not gamedata.companions[cid].get("warlord")    # warlord 將領唯營地可招
+             and not gamedata.companions[cid].get("circle")]    # circle 盾袍兄弟唯戰友團聖殿召集
+    disc = factions.merc_discount(char, gamedata)               # 戰友團「盾袍之誼」:招募折扣
+    def _merc_price(cid: str) -> int:
+        return int(round(gamedata.companions[cid]["cost"] * (1 - disc)))
+    opts = [(cid, f"{gamedata.companions[cid]['name']} — {_merc_price(cid)} 金:"
              f"{gamedata.companions[cid]['blurb']}") for cid in avail]
     cid = ui.menu(f"雇用哪位?(你有 {char.gold} 金)", opts, allow_back=True)
     if cid is None:
         return
-    cost = gamedata.companions[cid]["cost"]
+    cost = _merc_price(cid)
     if char.gold < cost:
         ui.message("金幣不足。", style="red")
         return
     char.gold -= cost
     char.companions.append(cid)
     ui.message(f"{gamedata.companions[cid]['name']}加入了你的隊伍,將在戰鬥中並肩作戰。", style="bold green")
+
+
+def _available_shield_siblings(char: Character, gamedata: GameData) -> list[str]:
+    """戰友團圈內可召集、尚未在隊伍中的盾袍兄弟(companions.json `circle:true`)。"""
+    return [cid for cid in gamedata.companions
+            if gamedata.companions[cid].get("circle") and cid not in char.companions]
+
+
+def _rally_shield_sibling(state: GameState, gamedata: GameData) -> None:
+    """內圈戰友召集一名盾袍兄弟並肩作戰(免費,受隊伍上限)。"""
+    char = state.player
+    if len(char.companions) >= MAX_PARTY:
+        ui.message(f"隊伍已滿(最多 {MAX_PARTY} 名),先解散一名再來召集盾袍兄弟。", style="yellow")
+        return
+    avail = _available_shield_siblings(char, gamedata)
+    opts = [(cid, f"{gamedata.companions[cid]['name']} —— {gamedata.companions[cid]['blurb']}")
+            for cid in avail]
+    cid = ui.menu("召集哪位盾袍兄弟並肩作戰?", opts, allow_back=True)
+    if cid is None:
+        return
+    char.companions.append(cid)
+    ui.message(f"{gamedata.companions[cid]['name']}握住你的前臂:「同袍同澤,與子偕行。」"
+               "—— 他加入了你的隊伍。", style="bold green")
 
 
 def _dismiss_mercenary(state: GameState, gamedata: GameData) -> None:
@@ -1664,8 +1692,14 @@ def _dismiss_mercenary(state: GameState, gamedata: GameData) -> None:
     if cid is None:
         return
     char.companions.remove(cid)
-    party.forget(char, cid)              # 清持久 HP/羈絆
-    ui.message(f"{gamedata.companions[cid]['name']}拿了酬勞,就此別過。", style="grey70")
+    if gamedata.companions.get(cid, {}).get("circle"):
+        # 圈內盾袍兄弟是永久同袍、可免費再召集 → 須保留持久 HP/負傷,
+        # 否則「解散→召集」會變成零成本回滿血/解負傷,繞過持久 HP 懲罰。
+        ui.message(f"{gamedata.companions[cid]['name']}回到 Jorrvaskr 待命 —— 你隨時能再召集他並肩作戰。",
+                   style="grey70")
+    else:
+        party.forget(char, cid)          # 雇傭兵:清持久 HP/羈絆(再雇用須付酬金=既有金幣閘)
+        ui.message(f"{gamedata.companions[cid]['name']}拿了酬勞,就此別過。", style="grey70")
 
 
 def _party_label(char: Character, gamedata: GameData, cid: str) -> str:
@@ -2357,8 +2391,13 @@ def action_guild_hall(state: GameState, gamedata: GameData, faction_id: str) -> 
     while True:                                      # 留在公會可連續處理(入會→接任務),返回才離開
         ui.guild_panel(char, gamedata, faction_id)
         opts = []
-        # 戰友團內圈的祕密:夠高階的戰友(非吸血鬼、未狼人化)會被獻上獸血儀式
-        ritual_ok = (faction_id == "fighters_guild" and lycanthropy.can_offer_ritual(char))
+        # 戰友團內圈的祕密:晉內圈戰友(非吸血鬼、未狼人化)會被獻上獸血儀式
+        ritual_ok = (faction_id == "companions" and lycanthropy.can_offer_ritual(char))
+        # 內圈戰友可召集尚未入隊的盾袍兄弟(免費,受隊伍上限)
+        circle_recruit_ok = (faction_id == "companions"
+                             and factions.rank_index(char, "companions") >= COMPANIONS_CIRCLE_RANK
+                             and bool(_available_shield_siblings(char, gamedata))
+                             and len(char.companions) < MAX_PARTY)
         if not factions.is_member(char, faction_id):
             reason = factions.join_block_reason(char, gamedata, faction_id)
             if reason is not None:                   # 門檻/對立/通緝 → 說明原因
@@ -2377,10 +2416,12 @@ def action_guild_hall(state: GameState, gamedata: GameData, faction_id: str) -> 
                 else:
                     ui.message(factions.advance_block_reason(char, gamedata, faction_id)
                                or "公會目前沒有你能接的委託。", style="grey70")
-                if not ritual_ok:                    # 無委託且無儀式可獻 → 離開
+                if not ritual_ok and not circle_recruit_ok:   # 無委託且無儀式/召集 → 離開
                     return
         if ritual_ok:
-            opts.append(("beast_ritual", "🐺 獸血儀式（戰友內圈的祕密)"))
+            opts.append(("beast_ritual", "🐺 獸血儀式（內圈戰友的祕密)"))
+        if circle_recruit_ok:
+            opts.append(("rally_sibling", "🛡 召集盾袍兄弟（免費 · 受隊伍上限)"))
         choice = ui.menu("公會事務", opts, allow_back=True)
         if choice is None:
             return
@@ -2393,6 +2434,8 @@ def action_guild_hall(state: GameState, gamedata: GameData, faction_id: str) -> 
             _accept_and_brief(state, gamedata, avail[0])
         elif choice == "beast_ritual":
             _beast_blood_ritual(state, gamedata)
+        elif choice == "rally_sibling":
+            _rally_shield_sibling(state, gamedata)
 
 
 def _beast_blood_ritual(state: GameState, gamedata: GameData) -> None:
@@ -2770,6 +2813,8 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
             guilds.append(("guild_mages", "法師公會"))   # 學習法術 + 入會/任務,進子選單
         if "fighters_guild" in services:
             guilds.append(("fg_hall", "戰士公會"))
+        if "companions" in services:
+            guilds.append(("cmp_hall", "戰友團 🐺"))
         if "thieves_guild" in services:
             guilds.append(("tg_hall", "盜賊公會"))
         # 黑暗兄弟會聖所:唯有入會者才知其所在(血債招募後解鎖)
@@ -2886,6 +2931,8 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
                 action_vampire_cure(state, gamedata)
         elif choice == "fg_hall":
             action_guild_hall(state, gamedata, "fighters_guild")
+        elif choice == "cmp_hall":
+            action_guild_hall(state, gamedata, "companions")
         elif choice == "tg_hall":
             action_guild_hall(state, gamedata, "thieves_guild")
         elif choice == "db_hall":

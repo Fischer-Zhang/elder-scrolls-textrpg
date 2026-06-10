@@ -380,7 +380,7 @@ def test_beast_blooded_origin():
     gd = get_gamedata()
     c = build_character(gd, name="B", sex="male", race="nord", birthsign="warrior", class_id="warrior")
     creation.apply_origin(gd, c, "beast_blooded")
-    assert c.is_werewolf and c.factions.get("fighters_guild") == 1
+    assert c.is_werewolf and c.factions.get("companions") == 1   # 獸血源出戰友團(已移籍)
     assert not c.is_vampire                                   # 互斥(開局守門)
 
 

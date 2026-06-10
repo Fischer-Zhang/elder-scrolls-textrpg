@@ -32,7 +32,7 @@ BEAST_DURATION_HOURS = 3     # tier 0 一次獸形的基礎持續(遊戲小時;�
 FEED_EXTEND_HOURS = 2        # 每次吞噬延長的時數
 MAX_FEEDS_PER_FORM = 5       # tier 0 每次獸形最多吞噬續時次數(封「無限獸形」farm)
 EXHAUST_FATIGUE = 30         # 變回人形的力竭代價(扣體力)
-RITUAL_RANK_INDEX = 2        # 戰友團達此階級索引(內圈),獸血儀式才會現身
+RITUAL_RANK_INDEX = 4        # 戰友團達此階級索引(內圈戰友),獸血儀式才會現身
 
 # --- 獸形加成(刻意只給屬性 + 一筆生命加成;不給技能 → 但保留 skill 層供未來/對稱)----
 # strength 放大近戰(獸形不走偷襲故不破紅線);endurance→體力上限;speed/agility→命中/閃避。
@@ -114,9 +114,9 @@ def can_transform(char: Character, state, gamedata: GameData) -> bool:
 
 
 def can_offer_ritual(char: Character) -> bool:
-    """戰友團內圈是否會向你獻上獸血儀式(已是夠高階的會員、非吸血鬼、尚未狼人化)。"""
+    """戰友團內圈是否會向你獻上獸血儀式(已晉內圈戰友、非吸血鬼、尚未狼人化)。"""
     from tesrpg.systems import vampirism
-    return (char.factions.get("fighters_guild", -1) >= RITUAL_RANK_INDEX
+    return (char.factions.get("companions", -1) >= RITUAL_RANK_INDEX
             and not vampirism.is_vampire(char) and not is_werewolf(char))
 
 

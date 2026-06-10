@@ -1137,5 +1137,38 @@
     "loot_gold": [40, 110],
     "loot": [{"item": "wolf_pelt", "chance": 0.8}, {"item": "healing_potion", "chance": 0.4}, {"item": "filled_common_soul_gem", "chance": 0.25}, {"item": "hircine_ring", "chance": 0.5}],
     "flavor": "一頭體型遠超尋常的銀背巨狼自暗處躍出 —— 牠是這片獵場的霸主,獸血之王。"
+  },
+  "silver_hand": {
+    "biomes": ["snow"],
+    "name": "銀手獵人",
+    "danger": 3,
+    "min_level": 4,
+    "weight": 2,
+    "strength": 52,
+    "agility": 44,
+    "speed": 44,
+    "max_health": 46,
+    "armor_rating": 20,
+    "attack": {"name": "銀刃斬", "damage": 13, "skill": 52},
+    "loot_gold": [10, 30],
+    "loot": [{"item": "silver_ring", "chance": 0.3}, {"item": "healing_potion", "chance": 0.25}, {"item": "lockpick", "chance": 0.3}],
+    "flavor": "一群佩銀刃的悍徒自雪林中現身 —— 銀手,專獵狼人的狂熱者,刀刃淬銀、見『獸』即殺,連戰友團也視為仇讎。"
+  },
+  "glenmoril_witch": {
+    "biomes": ["snow"],
+    "name": "格倫魔女",
+    "danger": 4,
+    "min_level": 6,
+    "weight": 1,
+    "strength": 40,
+    "agility": 48,
+    "speed": 48,
+    "max_health": 72,
+    "armor_rating": 10,
+    "attack": {"name": "詛咒之火", "damage": 18, "skill": 58, "element": "fire", "on_hit": {"status": "dot", "element": "fire", "magnitude": 4, "turns": 3, "chance": 0.4}},
+    "resist": {"magic": 25, "fire": 25},
+    "loot_gold": [20, 60],
+    "loot": [{"item": "nightshade", "chance": 0.6}, {"item": "garlic", "chance": 0.4}, {"item": "healing_potion", "chance": 0.3}],
+    "flavor": "蓬髮糾結、羽爪生鱗的格倫魔女蜷在火堆旁低吟 —— 唯有她們的巫血,能洗去戰友體內的獸性。"
   }
 }

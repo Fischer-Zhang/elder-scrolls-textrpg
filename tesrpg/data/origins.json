@@ -64,10 +64,10 @@
   },
   "fighters_recruit": {
     "name": "戰友團的新血",
-    "blurb": "你是天際省白漫城戰友團的新晉戰士,提著鋼劍、披著皮甲,以刃為生。最正統的戰士開局——身分已在,本事自己掙。",
+    "blurb": "你是天際省白漫城戰友團 Jorrvaskr 的新血,提著鋼劍、披著皮甲,以刃為生。最正統的戰士開局——身分已在,本事自己掙。",
     "location": "whiterun",
     "gold": 60,
-    "faction": {"fighters_guild": 0},
+    "faction": {"companions": 0},
     "weapon": "steel_sword",
     "equip": ["leather_cuirass"],
     "items": [["healing_potion", 1], ["minor_healing_potion", 1]]
@@ -120,7 +120,7 @@
     "blurb": "你早已與月為盟。戰友團內圈的獸血在你體內奔流 —— 戰鬥中可化身嗜血巨狼:利爪撕敵、刀槍難傷,卻得放下手中刀劍與法術。最狂野的開局,在人與獸之間遊走。",
     "location": "whiterun",
     "gold": 60,
-    "faction": {"fighters_guild": 1},
+    "faction": {"companions": 1},
     "weapon": "steel_sword",
     "equip": ["leather_cuirass"],
     "items": [["healing_potion", 1]],

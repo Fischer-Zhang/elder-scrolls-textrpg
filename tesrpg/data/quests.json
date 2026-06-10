@@ -1186,5 +1186,80 @@
       {"objective": {"type": "kill", "creature": "werewolf", "count": 1}, "text": "獵殺一頭狼人,取其受詛獸血(危險區野外可尋)。"}
     ],
     "reward": {"fame": 5}
+  },
+  "companions1": {
+    "name": "證明你的銳氣",
+    "faction": "companions",
+    "rank": 0,
+    "source": "guild",
+    "objective": {"type": "kill", "creature": "wolf", "count": 2},
+    "reward": {"gold": 80, "fame": 5},
+    "turn_in": "auto",
+    "text": "Jorrvaskr 的老戰友要你先見見血 —— 獵殺 2 頭擾亂麥田的野狼,讓我們看看你配不配做戰友。"
+  },
+  "companions2": {
+    "name": "肅清迷刀洞窟",
+    "faction": "companions",
+    "rank": 1,
+    "source": "guild",
+    "objective": {"type": "clear_dungeon", "dungeon": "lostknife_cave"},
+    "reward": {"gold": 200, "fame": 10, "items": ["steel_shield"]},
+    "turn_in": "auto",
+    "text": "一夥盜匪佔了迷刀洞窟、劫掠商旅。戰友團接下這樁委託 —— 把整窟肅清,還旅人一條平安路。"
+  },
+  "companions3": {
+    "name": "榮譽的狩獵",
+    "faction": "companions",
+    "rank": 2,
+    "source": "guild",
+    "objective": {"type": "kill", "creature": "bear", "count": 1},
+    "reward": {"gold": 300, "fame": 14, "items": ["steel_mace"]},
+    "turn_in": "auto",
+    "text": "一頭巨熊闖入獵場、傷了村民。對戰友而言,正面獵殺猛獸是一種榮譽 —— 隻身放倒牠,證明你的武勇。"
+  },
+  "companions4": {
+    "name": "內圈引渡",
+    "faction": "companions",
+    "rank": 3,
+    "source": "guild",
+    "stages": [
+      {"objective": {"type": "kill", "creature": "silver_hand", "count": 3}, "text": "銀手獵人潛入天際、屠戮戰友 —— 替陣亡的同袍討回 3 條命。"},
+      {"objective": {"type": "reach", "location": "whiterun"}, "text": "回到 Jorrvaskr。圈內的戰友有話要對你說 —— 也有一份禮要給你。"}
+    ],
+    "reward": {"gold": 380, "fame": 18, "items": ["filled_common_soul_gem"]},
+    "turn_in": "auto",
+    "text": "銀手的銀刃染了戰友的血。為陣亡者復仇後歸來 —— 你將被引入戰友團最核心的『圈內』,聽見那個與月為盟的古老祕密。"
+  },
+  "companions5": {
+    "name": "搗毀銀手巢穴",
+    "faction": "companions",
+    "rank": 4,
+    "source": "guild",
+    "objective": {"type": "clear_dungeon", "dungeon": "frostwind_ruin"},
+    "reward": {"gold": 500, "fame": 22, "items": ["ebony_shield"]},
+    "turn_in": "auto",
+    "text": "銀手殘黨退守冰風廢墟,與墓中亡者沆瀣一氣、誓要剿滅戰友團。趁其立足未穩,率圈內戰友直搗其巢、斬草除根。"
+  },
+  "companions6": {
+    "name": "先驅的試煉",
+    "faction": "companions",
+    "rank": 5,
+    "source": "guild",
+    "turn_in": "auto",
+    "text": "先驅之位虛懸,Jorrvaskr 的長桌等待新的領袖。但在扛起這份重擔前,你必須先回答血脈深處的詰問 —— 是擁抱希爾辛的獵賜、以獸血為榮,還是替整個圈子尋回失落的人性?",
+    "branches": [
+      {
+        "label": "嗣血 —— 以希爾辛之名狩獵",
+        "text": "獸血是恩賜而非詛咒。循狩獵之神希爾辛的古禮,獵殺一頭最強的獸血之王 —— 以牠的心血,坐實你『血月之主』的繼承。",
+        "objective": {"type": "kill", "creature": "werewolf_alpha", "count": 1},
+        "reward": {"gold": 720, "fame": 24, "items": ["ebony_sword"]}
+      },
+      {
+        "label": "淨血 —— 為圈子尋回人性",
+        "text": "幾百年來,圈內戰友受困於獸性。傳說格倫魔女的巫血能洗去詛咒 —— 獵殺一名格倫魔女、取其首級,為願意回頭的同袍留一條淨血之路。",
+        "objective": {"type": "kill", "creature": "glenmoril_witch", "count": 1},
+        "reward": {"gold": 680, "fame": 26, "items": ["ebony_sword", "gold_amulet"]}
+      }
+    ]
   }
 }
