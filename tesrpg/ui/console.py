@@ -1658,14 +1658,34 @@ def territory_panel(rows: list[dict], gamedata: GameData, gold: int) -> None:
                          title="🏰 領地總覽", style=GOLD))
 
 
-def dungeon_room(name: str, idx: int, total: int, desc: str, is_boss: bool = False) -> None:
+_DUNGEON_ICON = {"stairs": "↓", "boss": "✦", "entrance": "◊"}   # 其餘已探格 → ·;未探 ?;當前 @
+_DUNGEON_LEGEND = "@你  ✦首領  ↓樓梯  ◊入口  ·已探  ?未探"
+
+
+def dungeon_grid(grid: dict, z: int, cx: int, cy: int, explored: list) -> None:
+    """格子地城小地圖 + 當前層;迷霧:未探格顯示 ?,已探顯示型別圖示。雙端渲染。"""
+    from tesrpg.systems import dungeoncrawl
+    n, m = grid["n"], grid["m"]
+    adj = {(nx, ny): "go:" + k for k, _l, nx, ny in dungeoncrawl.neighbors(grid, cx, cy)}
+    rows = []
+    for yy in range(n):
+        row = []
+        for xx in range(n):
+            t = grid["layers"][z][yy][xx]["type"]
+            ex = bool(explored[z][yy][xx])
+            cur = (xx == cx and yy == cy)
+            icon = "@" if cur else ("?" if not ex else _DUNGEON_ICON.get(t, "·"))
+            row.append({"icon": icon, "explored": ex, "current": cur,
+                        "type": t, "move": adj.get((xx, yy))})
+        rows.append(row)
     if _web is not None:
-        _emit_view("room", {"name": name, "idx": idx, "total": total, "desc": desc, "boss": is_boss})
+        _emit_view("dungeon_grid", {"name": grid["name"], "n": n, "layer": z + 1, "layers": m,
+                                    "pos": [cx, cy], "rows": rows, "legend": _DUNGEON_LEGEND})
         return
-    tag = "✦ 首領 ✦" if is_boss else f"第 {idx}/{total} 室"
-    console.print(_panel(Text(desc, style=PARCH),
-                         title=f"🏚 {name} · {tag}",
-                         style="magenta" if is_boss else "blue"))
+    body = Text("\n".join("   " + "  ".join(c["icon"] for c in row) for row in rows), style=PARCH)
+    console.print(_panel(body, title=f"🗺 {grid['name']} · 第 {z + 1}/{m} 層 · 座標 ({cx},{cy})",
+                         style="magenta"))
+    console.print(Text("   " + _DUNGEON_LEGEND, style="grey50"))
 
 
 _ELEM_CN = {"fire": "火焰", "frost": "冰霜", "shock": "雷電", "poison": "毒素", "magic": "魔法"}

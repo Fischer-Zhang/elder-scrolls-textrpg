@@ -169,7 +169,7 @@ _FIRST = object()
 def _patch_ui(menu_fn, confirm_fn):
     """暫換 ui 的互動函式為腳本/啞實作,回傳 restore()(finally 還原,避免汙染其他模組)。"""
     from tesrpg.ui import console as ui
-    silent = ("message", "show_events", "loot_report", "npc_panel", "dungeon_room")
+    silent = ("message", "show_events", "loot_report", "npc_panel", "dungeon_grid")
     saved = {n: getattr(ui, n) for n in ("menu", "confirm", *silent)}
     ui.menu = menu_fn
     ui.confirm = confirm_fn

@@ -1,585 +1,159 @@
 {
   "cedernoc_cave": {
     "name": "切德納寇洞窟",
-    "rooms": [
-      {
-        "desc": "潮濕的洞口,水滴回響。一隻巨鼠從陰影中竄出。",
-        "enemy": "giant_rat",
-        "container": null
-      },
-      {
-        "desc": "狹窄的通道,牆角有個被遺棄的補給箱。",
-        "enemy": null,
-        "container": {
-          "locked": 12,
-          "loot": [
-            "minor_healing_potion",
-            {
-              "gold": [
-                5,
-                15
-              ]
-            }
-          ]
-        }
-      },
-      {
-        "desc": "蛛網密布的穴室,一頭野狼盤踞於此。",
-        "enemy": "wolf",
-        "container": null
-      },
-      {
-        "desc": "強盜的營地,餘火未熄。一名強盜與他的看門巨鼠一齊撲來。",
-        "container": {
-          "locked": 20,
-          "loot": [
-            "leather_cuirass",
-            {
-              "gold": [
-                10,
-                25
-              ]
-            }
-          ]
-        },
-        "enemies": [
-          "bandit",
-          "giant_rat"
-        ]
-      }
-    ],
+    "biome": "heartland",
+    "danger": 2,
+    "grid": 4,
+    "layers": 2,
+    "monsters": ["giant_rat", "wolf", "bandit"],
+    "loot": ["minor_healing_potion", "leather_cuirass", "bone_meal"],
+    "loot_locked": [12, 18],
     "boss": {
-      "desc": "洞窟最深處的首領巢穴 —— 強盜頭目堵住了去路。",
       "enemy": "bandit",
-      "treasure": {
-        "locked": 25,
-        "loot": [
-          "steel_sword",
-          "healing_potion",
-          {
-            "gold": [
-              30,
-              60
-            ]
-          }
-        ]
-      }
+      "desc": "洞窟最深處的首領巢穴 —— 強盜頭目堵住了去路。",
+      "treasure": { "loot": ["steel_sword", "healing_potion", "ruby", {"gold": [30, 60]}] }
     }
   },
   "frostwind_ruin": {
     "name": "冰風廢墟",
-    "rooms": [
-      {
-        "desc": "結霜的前廳,一具骷髏戰士自石棺中爬起。",
-        "enemy": "skeleton",
-        "container": null
-      },
-      {
-        "desc": "崩塌的長廊,冰柱垂懸。盡頭有一只古老的供品箱。",
-        "enemy": null,
-        "container": {
-          "locked": 20,
-          "loot": [
-            "bone_meal",
-            "ruby",
-            {
-              "gold": [
-                10,
-                30
-              ]
-            }
-          ]
-        }
-      },
-      {
-        "desc": "祭祀大廳,兩具骷髏戰士並肩而立,一齊舉劍。",
-        "container": null,
-        "enemies": [
-          "skeleton",
-          "skeleton"
-        ]
-      },
-      {
-        "desc": "雪水滲入的墓室,一頭闖入棲身的棕熊被驚醒。",
-        "enemy": "bear",
-        "container": {
-          "locked": 25,
-          "loot": [
-            "steel_helmet",
-            {
-              "gold": [
-                20,
-                40
-              ]
-            }
-          ]
-        }
-      }
-    ],
+    "biome": "snow",
+    "danger": 3,
+    "grid": 4,
+    "layers": 2,
+    "monsters": ["skeleton", "bear", "draugr"],
+    "loot": ["bone_meal", "ruby", "steel_helmet"],
+    "loot_locked": [18, 27],
     "boss": {
-      "desc": "廢墟核心的王座廳 —— 一具佩戴鋼甲的骷髏領主緩緩起身。",
       "enemy": "skeleton",
-      "treasure": {
-        "locked": 35,
-        "loot": [
-          "steel_cuirass",
-          "healing_potion",
-          "ruby",
-          {
-            "gold": [
-              50,
-              100
-            ]
-          }
-        ]
-      }
+      "desc": "廢墟核心的王座廳 —— 一具佩戴鋼甲的骷髏領主緩緩起身。",
+      "treasure": { "loot": ["steel_cuirass", "healing_potion", "ruby", {"gold": [50, 100]}] }
     }
   },
   "ashfall_barrow": {
     "name": "灰燼墓塚",
-    "rooms": [
-      {
-        "desc": "灰燼覆蓋的墓道,一隻霜咬蜘蛛垂網而下。",
-        "enemy": "frostbite_spider",
-        "container": null
-      },
-      {
-        "desc": "崩落的祭壇,壇上有個密封的骨灰甕。",
-        "enemy": null,
-        "container": {
-          "locked": 25,
-          "loot": [
-            "scrib_jelly",
-            "ruby",
-            {
-              "gold": [
-                15,
-                35
-              ]
-            }
-          ]
-        }
-      },
-      {
-        "desc": "古老的安息廳,一具屍鬼自石棺中起身。",
-        "enemy": "draugr",
-        "container": null
-      },
-      {
-        "desc": "湧出熔岩光的內室,一名魔人鎮守於此。",
-        "enemy": "dremora",
-        "container": {
-          "locked": 30,
-          "loot": [
-            "elven_cuirass",
-            {
-              "gold": [
-                30,
-                60
-              ]
-            }
-          ]
-        }
-      }
-    ],
+    "biome": "ashland",
+    "danger": 4,
+    "grid": 5,
+    "layers": 3,
+    "monsters": ["frostbite_spider", "draugr", "dremora"],
+    "loot": ["scrib_jelly", "ruby", "elven_cuirass"],
+    "loot_locked": [24, 36],
     "boss": {
-      "desc": "墓塚核心的湮滅祭壇 —— 一名強大的魔人領主擋在黑檀寶物前。",
       "enemy": "dremora_lord",
       "raw": true,
-      "treasure": {
-        "locked": 40,
-        "loot": [
-          "ebony_sword",
-          "ebony_shield",
-          "daedra_heart",
-          "healing_potion",
-          "ruby",
-          {
-            "gold": [
-              80,
-              160
-            ]
-          }
-        ]
-      }
+      "desc": "墓塚核心的湮滅祭壇 —— 一名強大的魔人領主擋在黑檀寶物前。",
+      "treasure": { "loot": ["ebony_sword", "ebony_shield", "daedra_heart", "healing_potion", "ruby", {"gold": [80, 160]}] }
     }
   },
   "dragon_lair": {
     "name": "龍喉巢穴",
-    "rooms": [
-      {
-        "desc": "焦黑的山腹甬道,熱氣蒸騰。一頭三眼霜巨魔守在洞口。",
-        "enemy": "frost_troll",
-        "container": null
-      },
-      {
-        "desc": "佈滿龍骸的長廊,半埋的寶箱在餘燼中泛光。",
-        "enemy": null,
-        "container": {
-          "locked": 40,
-          "loot": ["filled_greater_soul_gem", "ruby", {"gold": [40, 90]}]
-        }
-      },
-      {
-        "desc": "懸著冰霜霧氣的古墓室,一具巫妖自龍骨王座上浮起。",
-        "enemies": ["lich"],
-        "container": null
-      },
-      {
-        "desc": "通往巢穴的最後一道隘口,一尊霜巨人橫亙其間。",
-        "enemy": "frost_giant",
-        "container": {
-          "locked": 45,
-          "loot": ["dwarven_cuirass", "healing_potion", {"gold": [60, 120]}]
-        }
-      }
-    ],
+    "biome": "ashland",
+    "danger": 5,
+    "grid": 5,
+    "layers": 3,
+    "monsters": ["frost_troll", "lich", "frost_giant"],
+    "loot": ["filled_greater_soul_gem", "ruby", "dwarven_cuirass"],
+    "loot_locked": [40, 50],
     "boss": {
-      "desc": "巢穴頂端的熔岩天井 —— 一頭上古巨龍盤踞於成堆的黑檀寶藏之上,烈焰自齒間溢出。",
       "enemy": "ancient_dragon",
       "raw": true,
-      "treasure": {
-        "locked": 55,
-        "loot": [
-          "ebony_sword",
-          "dragon_scale",
-          "mehrunes_razor",
-          "daedric_staff",
-          "dwarven_cuirass",
-          "filled_greater_soul_gem",
-          "healing_potion",
-          "healing_potion",
-          "ruby",
-          {"gold": [300, 600]}
-        ]
-      }
+      "desc": "巢穴頂端的熔岩天井 —— 一頭上古巨龍盤踞於成堆的黑檀寶藏之上,烈焰自齒間溢出。",
+      "treasure": { "loot": ["ebony_sword", "dragon_scale", "mehrunes_razor", "daedric_staff", "dwarven_cuirass", "filled_greater_soul_gem", "healing_potion", "healing_potion", "ruby", {"gold": [300, 600]}] }
     }
   },
   "lostknife_cave": {
     "name": "迷刀洞窟",
-    "rooms": [
-      {
-        "desc": "洞口的碎石坡,兩頭看門的野狼自暗處撲出。",
-        "container": null,
-        "enemies": ["wolf", "wolf"]
-      },
-      {
-        "desc": "盜匪堆放贓物的側室,角落有個上鎖的木箱。",
-        "enemy": null,
-        "container": {
-          "locked": 15,
-          "loot": [
-            "leather_cuirass",
-            "minor_healing_potion",
-            {"gold": [8, 20]}
-          ]
-        }
-      },
-      {
-        "desc": "煙燻黑的主洞,一名盜匪與他豢養的惡狼一齊迎戰。",
-        "container": null,
-        "enemies": ["bandit", "wolf"]
-      },
-      {
-        "desc": "洞窟深處接著一座坍塌的古諾德墓室,一具骷髏戰士自石棺中爬起。",
-        "enemy": "skeleton",
-        "container": {
-          "locked": 20,
-          "loot": [
-            "iron_helmet",
-            "bone_meal",
-            {"gold": [12, 30]}
-          ]
-        }
-      }
-    ],
+    "biome": "snow",
+    "danger": 2,
+    "grid": 4,
+    "layers": 2,
+    "monsters": ["wolf", "bandit", "skeleton"],
+    "loot": ["leather_cuirass", "minor_healing_potion", "iron_helmet", "bone_meal"],
+    "loot_locked": [12, 18],
     "boss": {
-      "desc": "洞窟最深的盜匪營帳 —— 迷刀幫的頭目堵住了通往寶箱的去路。",
       "enemy": "bandit",
-      "treasure": {
-        "locked": 25,
-        "loot": [
-          "steel_sword",
-          "healing_potion",
-          "ruby",
-          {"gold": [35, 70]}
-        ]
-      }
+      "desc": "洞窟最深的盜匪營帳 —— 迷刀幫的頭目堵住了通往寶箱的去路。",
+      "treasure": { "loot": ["steel_sword", "healing_potion", "ruby", {"gold": [35, 70]}] }
     }
   },
   "xanmeer": {
     "name": "贊密爾沉廟",
-    "rooms": [
-      {
-        "desc": "沒入沼水的石階入口,水面浮著腐葉。一頭沼澤蜥蜴自暗處突咬而出。",
-        "enemy": "swamp_lizard",
-        "container": null
-      },
-      {
-        "desc": "佈滿藤蔓的祭祀甬道,牆龕裡擱著一只封蠟的陶甕。",
-        "enemy": null,
-        "container": {
-          "locked": 30,
-          "loot": [
-            "scrib_jelly",
-            "deathbell",
-            {"gold": [15, 35]}
-          ]
-        }
-      },
-      {
-        "desc": "幽暗的浸水廳堂,兩團鬼火自水面緩緩升起,電弧在指間躍動。",
-        "container": null,
-        "enemies": ["will_o_wisp", "swamp_lizard"]
-      },
-      {
-        "desc": "供奉希斯特根須的內殿,一頭泥沼巨魔盤踞於祭壇之前,守著殿後的寶箱。",
-        "enemy": "bog_troll",
-        "container": {
-          "locked": 35,
-          "loot": [
-            "glass_dagger",
-            "ruby",
-            {"gold": [30, 60]}
-          ]
-        }
-      }
-    ],
+    "biome": "swamp",
+    "danger": 4,
+    "grid": 5,
+    "layers": 3,
+    "monsters": ["swamp_lizard", "will_o_wisp", "bog_troll"],
+    "loot": ["scrib_jelly", "deathbell", "glass_dagger", "ruby"],
+    "loot_locked": [24, 36],
     "boss": {
-      "desc": "沉廟廟心的雷光天井 —— 一頭上古雷蜥瓦瑪蘇盤踞在被遺忘的寶藏之上,鱗甲迸射著刺目的電弧。",
       "enemy": "wamasu",
       "raw": true,
-      "treasure": {
-        "locked": 45,
-        "loot": [
-          "glass_cuirass",
-          "ebony_sword",
-          "filled_greater_soul_gem",
-          "healing_potion",
-          "ruby",
-          {"gold": [90, 180]}
-        ]
-      }
+      "desc": "沉廟廟心的雷光天井 —— 一頭上古雷蜥瓦瑪蘇盤踞在被遺忘的寶藏之上,鱗甲迸射著刺目的電弧。",
+      "treasure": { "loot": ["glass_cuirass", "ebony_sword", "filled_greater_soul_gem", "healing_potion", "ruby", {"gold": [90, 180]}] }
     }
   },
   "volenfell": {
     "name": "沃倫菲爾",
-    "rooms": [
-      {
-        "desc": "半埋於沙的黃銅大門後,通道嗡嗡作響。一具蒸汽蜘蛛自牆壁機關彈出。",
-        "enemy": "dwarven_spider",
-        "container": null
-      },
-      {
-        "desc": "佈滿齒輪的工坊長廊,一只積塵的矮人黃銅儲物罐嵌在牆龕裡。",
-        "enemy": null,
-        "container": {
-          "locked": 30,
-          "loot": [
-            "gold_ingot",
-            "filled_lesser_soul_gem",
-            {"gold": [15, 35]}
-          ]
-        }
-      },
-      {
-        "desc": "崩塌的鑄造廳,流沙自穹頂縫隙傾瀉。兩具蒸汽蜘蛛與一頭潛伏的沙蠍一齊驚動。",
-        "container": null,
-        "enemies": ["dwarven_spider", "sand_scorpion"]
-      },
-      {
-        "desc": "百夫長殿前的守衛室,一頭拉米亞盤踞在通往內殿的階前,守著殿後的寶箱。",
-        "enemy": "lamia",
-        "container": {
-          "locked": 35,
-          "loot": [
-            "glass_dagger",
-            "ruby",
-            {"gold": [30, 60]}
-          ]
-        }
-      }
-    ],
+    "biome": "desert",
+    "danger": 4,
+    "grid": 5,
+    "layers": 3,
+    "monsters": ["dwarven_spider", "sand_scorpion", "lamia"],
+    "loot": ["gold_ingot", "filled_lesser_soul_gem", "glass_dagger", "ruby"],
+    "loot_locked": [24, 36],
     "boss": {
-      "desc": "沃倫菲爾廟心的蒸汽天井 —— 一尊上古矮人百夫長盤踞在被遺忘的黃銅寶藏之上,胸甲縫隙噴吐著千年不熄的烈焰。",
       "enemy": "dwarven_centurion",
       "raw": true,
-      "treasure": {
-        "locked": 45,
-        "loot": [
-          "dwarven_cuirass",
-          "dwarven_mace",
-          "filled_greater_soul_gem",
-          "healing_potion",
-          "ruby",
-          {"gold": [90, 180]}
-        ]
-      }
+      "desc": "沃倫菲爾廟心的蒸汽天井 —— 一尊上古矮人百夫長盤踞在被遺忘的黃銅寶藏之上,胸甲縫隙噴吐著千年不熄的烈焰。",
+      "treasure": { "loot": ["dwarven_cuirass", "dwarven_mace", "filled_greater_soul_gem", "healing_potion", "ruby", {"gold": [90, 180]}] }
     }
   },
   "hag_rock": {
     "name": "海妖岩巫窟",
-    "rooms": [
-      {
-        "desc": "黑岩窟口的霧氣濃稠刺骨,一尊蹲伏在門楣上的石像鬼鏗然睜眼、撲了下來。",
-        "enemy": "gargoyle",
-        "container": null
-      },
-      {
-        "desc": "佈滿苔蘚的祭壇間,一只刻著巫紋的橡木匣擱在風乾的草藥與骸骨之間。",
-        "enemy": null,
-        "container": {
-          "locked": 30,
-          "loot": [
-            "bone_meal",
-            "filled_lesser_soul_gem",
-            {"gold": [12, 30]}
-          ]
-        }
-      },
-      {
-        "desc": "穹頂破口灑下灰白天光的巫圈廳堂,一頭鴉妖自樑上俯衝,一名沼地女巫在圈心舉起霜咒。",
-        "container": null,
-        "enemies": ["harpy", "moor_witch"]
-      },
-      {
-        "desc": "通往內殿的古墓甬道,一具鏽甲鐵衛橫劍守在魔女祭壇前,壇後嵌著一只上鎖的鐵匣。",
-        "enemy": "barrow_sentinel",
-        "container": {
-          "locked": 35,
-          "loot": [
-            "glass_dagger",
-            "ruby",
-            {"gold": [25, 55]}
-          ]
-        }
-      }
-    ],
+    "biome": "moor",
+    "danger": 4,
+    "grid": 5,
+    "layers": 3,
+    "monsters": ["gargoyle", "harpy", "moor_witch", "barrow_sentinel"],
+    "loot": ["bone_meal", "filled_lesser_soul_gem", "glass_dagger", "ruby"],
+    "loot_locked": [24, 36],
     "boss": {
-      "desc": "巫窟最深的骸骨王座前 —— 海妖岩的魔女祭主自寒霧中升起,身後堆疊著歷代劫掠來的騎士甲冑與一籠籠被囚的靈魂。",
       "enemy": "hag_matriarch",
       "raw": true,
-      "treasure": {
-        "locked": 45,
-        "loot": [
-          "ebony_cuirass",
-          "ebony_shield",
-          "filled_greater_soul_gem",
-          "healing_potion",
-          "ruby",
-          {"gold": [80, 170]}
-        ]
-      }
+      "desc": "巫窟最深的骸骨王座前 —— 海妖岩的魔女祭主自寒霧中升起,身後堆疊著歷代劫掠來的騎士甲冑與一籠籠被囚的靈魂。",
+      "treasure": { "loot": ["ebony_cuirass", "ebony_shield", "filled_greater_soul_gem", "healing_potion", "ruby", {"gold": [80, 170]}] }
     }
   },
   "spider_grove": {
     "name": "絞藤蛛巢",
-    "rooms": [
-      {
-        "desc": "藤蔓絞死的林口陰翳濕冷,一具苔綠的樹靈自腐木中走出,荊棘的指尖滴著綠毒。",
-        "enemy": "spriggan",
-        "container": null
-      },
-      {
-        "desc": "蛛網層疊的林間空地,一只波斯莫獵人遺落的編枝木匣半埋在落葉與蛛絲之間。",
-        "enemy": null,
-        "container": {
-          "locked": 30,
-          "loot": [
-            "glow_dust",
-            "filled_lesser_soul_gem",
-            {"gold": [12, 30]}
-          ]
-        }
-      },
-      {
-        "desc": "腐葉沒膝的密林深處,一頭叢林巨蛛自樹冠竄下,牆角的絞殺藤也隨之甦醒纏來。",
-        "container": null,
-        "enemies": ["giant_spider", "strangler_vine"]
-      },
-      {
-        "desc": "通往聖林之心的藤拱前,一頭披著骨飾的食人巨猿盤踞守著,拱後嵌著一只綠玉鑲嵌的舊匣。",
-        "enemy": "jungle_imga",
-        "container": {
-          "locked": 35,
-          "loot": [
-            "glass_dagger",
-            "ruby",
-            {"gold": [25, 55]}
-          ]
-        }
-      }
-    ],
+    "biome": "jungle",
+    "danger": 4,
+    "grid": 5,
+    "layers": 3,
+    "monsters": ["spriggan", "giant_spider", "strangler_vine", "jungle_imga"],
+    "loot": ["glow_dust", "filled_lesser_soul_gem", "glass_dagger", "ruby"],
+    "loot_locked": [24, 36],
     "boss": {
-      "desc": "腐林的中心 —— 一株千年遠古樹靈盤根於被綠約遺忘的祕藏之上,萬千毒藤自它身上奔湧,藤心深處還纏著歷代闖入者帶來的玻璃甲冑。",
       "enemy": "spriggan_matriarch",
       "raw": true,
-      "treasure": {
-        "locked": 45,
-        "loot": [
-          "glass_cuirass",
-          "glass_shield",
-          "filled_greater_soul_gem",
-          "healing_potion",
-          "ruby",
-          {"gold": [80, 170]}
-        ]
-      }
+      "desc": "腐林的中心 —— 一株千年遠古樹靈盤根於被綠約遺忘的祕藏之上,萬千毒藤自它身上奔湧,藤心深處還纏著歷代闖入者帶來的玻璃甲冑。",
+      "treasure": { "loot": ["glass_cuirass", "glass_shield", "filled_greater_soul_gem", "healing_potion", "ruby", {"gold": [80, 170]}] }
     }
   },
   "dark_moon_grotto": {
     "name": "暗月窟",
-    "rooms": [
-      {
-        "desc": "祭壇遺址的入口浸在暗月的陰影裡,空氣黏稠甜膩。一頭被月糖浸透、雙眼泛著糖晶光澤的草原野獸正瘋狂舔舐著壇基的糖蜜。",
-        "enemy": "sugar_addled_senche",
-        "container": null
-      },
-      {
-        "desc": "坍塌的糖楓神龕間,一只走私客遺落的糖晶木匣半埋在凝固的月糖裡。",
-        "enemy": null,
-        "container": {
-          "locked": 30,
-          "loot": [
-            "moon_sugar",
-            "glow_dust",
-            {"gold": [12, 30]}
-          ]
-        }
-      },
-      {
-        "desc": "暗潮低吟迴盪的月糖祭殿,一頭貓身大小的阿爾菲克貓巫蜷在壇上,糖晶藤蔓也隨之甦醒纏來。",
-        "container": null,
-        "enemies": ["alfiq_sorcerer", "sugar_vine"]
-      },
-      {
-        "desc": "通往壇心的暗月拱門前,一縷墮入暗潮的虎人幽魂盤踞守著,拱後嵌著一只滲著糖蜜的舊匣。",
-        "enemy": "dro_mathra_shade",
-        "container": {
-          "locked": 35,
-          "loot": [
-            "skooma",
-            "ruby",
-            {"gold": [25, 55]}
-          ]
-        }
-      }
-    ],
+    "biome": "savanna",
+    "danger": 4,
+    "grid": 5,
+    "layers": 3,
+    "monsters": ["sugar_addled_senche", "alfiq_sorcerer", "sugar_vine", "dro_mathra_shade"],
+    "loot": ["moon_sugar", "glow_dust", "skooma", "ruby"],
+    "loot_locked": [24, 36],
     "boss": {
-      "desc": "壇心的暗月之下 —— 一頭被千年月糖與暗潮共同腐化的巨大暗虎自糖蜜中升起,血肉早已半化為毒。它守著歷代走私客供奉的祕藏,藤心深處還纏著一柄被暗潮腐蝕的古老黑檀刃。",
       "enemy": "dark_moon_senche",
       "raw": true,
-      "treasure": {
-        "locked": 45,
-        "loot": [
-          "ebony_sword",
-          "skooma",
-          "filled_greater_soul_gem",
-          "healing_potion",
-          "ruby",
-          {"gold": [80, 170]}
-        ]
-      }
+      "desc": "壇心的暗月之下 —— 一頭被千年月糖與暗潮共同腐化的巨大暗虎自糖蜜中升起,血肉早已半化為毒。它守著歷代走私客供奉的祕藏,藤心深處還纏著一柄被暗潮腐蝕的古老黑檀刃。",
+      "treasure": { "loot": ["ebony_sword", "skooma", "filled_greater_soul_gem", "healing_potion", "ruby", {"gold": [80, 170]}] }
     }
   }
 }

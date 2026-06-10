@@ -213,6 +213,16 @@
   .lm{color:var(--gold);margin-left:5px;} .svc{color:var(--faint);font-size:11px;margin-left:7px;}
   .mnex{color:var(--faint);font-size:11.5px;margin-top:2px;}
   .maplegend{color:var(--faint);font-size:11px;margin-top:13px;border-top:1px solid var(--line);padding-top:9px;}
+  /* 地城格子 */
+  .dgrid{display:grid;gap:5px;margin:12px 0 4px;max-width:340px;}
+  .dgcell{aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:17px;
+    border:1px solid var(--line);border-radius:5px;background:#15120c;color:var(--faint);user-select:none;}
+  .dg-fog{color:#4a443a;background:#100e09;}
+  .dg-seen{color:var(--muted);background:#1c1810;}
+  .dg-cur{color:#101010;background:var(--gold);border-color:var(--gold);font-weight:700;}
+  .dg-stairs{color:var(--cyan);} .dg-boss{color:var(--red);border-color:var(--red);} .dg-entrance{color:var(--green);}
+  .dgcell[data-key]{cursor:pointer;border-color:var(--gold-dim);}
+  .dgcell[data-key]:hover{background:#2a2414;}
   /* 任務 */
   .quest{padding:8px 2px;border-bottom:1px dotted var(--line);} .q-name{font-weight:600;} .q-fac{color:var(--gold-dim);}
   .q-obj{color:var(--muted);font-size:13px;margin-top:2px;}
@@ -501,9 +511,17 @@
     }).join("");
     return elFrom(`<div class="card"><div class="card-head">🏰 領地總覽</div><div style="overflow-x:auto"><table class="tt"><thead><tr><th>城邦</th><th>居民</th><th>週稅</th><th>駐軍</th><th>維護</th><th>淨收</th><th>民心</th><th>下次徵稅</th></tr></thead><tbody>${rows}</tbody></table></div><div class="inv-foot"><span></span><span class="gold">金庫 ${d.gold} 金</span></div></div>`);
   }
-  function renderRoom(d) {
-    const tag = d.boss ? '<span class="chip mag">✦ 首領</span>' : `<span class="chip">第 ${d.idx}/${d.total} 室</span>`;
-    return elFrom(`<div class="card"><div class="card-head">🏚 ${esc(d.name)} ${tag}</div><div class="loc-desc">${esc(d.desc)}</div></div>`);
+  function renderDungeonGrid(d) {
+    const cells = d.rows.map(function (row) {
+      return row.map(function (c) {
+        const cls = c.current ? "dg-cur" : (c.explored ? "dg-seen dg-" + esc(c.type) : "dg-fog");
+        const dk = c.move ? ` data-key="${esc(c.move)}"` : "";   // 相鄰格可點移動(wireActionableRows)
+        return `<div class="dgcell ${cls}"${dk}>${esc(c.icon)}</div>`;
+      }).join("");
+    }).join("");
+    return elFrom(`<div class="card"><div class="card-head">🗺 ${esc(d.name)} · 第 ${d.layer}/${d.layers} 層</div>`
+      + `<div class="dgrid" style="grid-template-columns:repeat(${d.n},minmax(28px,1fr))">${cells}</div>`
+      + `<div class="maplegend">${esc(d.legend)}</div></div>`);
   }
   function renderEncounter(d) {
     return elFrom(`<div class="card"><div class="card-head" style="color:var(--red)">⚔ 遭遇:${esc(d.name)}</div><div class="loc-desc">${esc(d.flavor)}</div></div>`);
@@ -625,7 +643,7 @@
     status: renderStatus, location: renderLocation, sheet: renderSheet, divider: renderDivider,
     combat: renderCombat, inventory: renderInventory, map: renderMap, guild: renderGuild,
     quests: renderQuests, npc: renderNpc, court: renderCourt, territory: renderTerritory,
-    room: renderRoom, encounter: renderEncounter, event: renderEvent, discovery: renderDiscovery,
+    dungeon_grid: renderDungeonGrid, encounter: renderEncounter, event: renderEvent, discovery: renderDiscovery,
     legacy: renderLegacy, panel: renderPanel,
     masteries: renderMasteries, resistances: renderResist, spellbook: renderSpellbook,
     achievements: renderAchievements, board: renderBoard, shop: renderShop,

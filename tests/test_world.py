@@ -109,13 +109,11 @@ def test_dungeons_are_through_routes_not_dead_ends():
 
 
 def test_dungeon_enemies_and_loot_valid():
-    """所有地城房間/首領的敵人 id 都存在於 bestiary(防新增內容打錯字)。"""
+    """所有地城怪物池/首領的敵人 id 都存在於 bestiary(防新增內容打錯字)。"""
     gd, _ = _char()
     for did, dg in gd.dungeons.items():
-        for room in dg.get("rooms", []):
-            ids = room.get("enemies") or ([room["enemy"]] if room.get("enemy") else [])
-            for tid in ids:
-                assert tid in gd.bestiary, f"{did} 房間敵人 {tid} 不在 bestiary"
+        for tid in dg.get("monsters", []):                  # 格子地城:怪物池
+            assert tid in gd.bestiary, f"{did} 怪物池 {tid} 不在 bestiary"
         boss = dg.get("boss", {})
         if boss.get("enemy"):
             assert boss["enemy"] in gd.bestiary, f"{did} 首領 {boss['enemy']} 不在 bestiary"
@@ -311,9 +309,7 @@ def test_loot_ids_valid():
     gd = get_gamedata()
     bad = []
     for did, dg in gd.dungeons.items():
-        loots = []
-        for room in dg.get("rooms", []):
-            loots += (room.get("container") or {}).get("loot", [])
+        loots = list(dg.get("loot", []))                    # 格子地城:格內寶箱戰利品池
         loots += dg.get("boss", {}).get("treasure", {}).get("loot", [])
         for x in loots:
             if isinstance(x, str) and gd.item_or_none(x) is None:

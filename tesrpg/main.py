@@ -13,9 +13,9 @@ from tesrpg.gamedata import GameData, get_gamedata
 from tesrpg.rng import RNG, make_seed
 from tesrpg.state import GameState
 from tesrpg.systems import (alchemy, brotherhood, combat, court, crafting, crime, dialogue, dungeon,
-                            enchanting, events, factions, inventory, landmarks, legacy, lycanthropy,
-                            magic, mastery, party, politics, powers, progression, quests, skooma,
-                            smithing, stats, vampirism, warband, world, worldstate)
+                            dungeoncrawl, enchanting, events, factions, inventory, landmarks, legacy,
+                            lycanthropy, magic, mastery, party, politics, powers, progression, quests,
+                            skooma, smithing, stats, vampirism, warband, world, worldstate)
 from tesrpg.ui import console as ui
 
 SAVE_PATH = Path.home() / ".tesrpg" / "save.json"
@@ -1116,57 +1116,114 @@ def _resolve_container(state: GameState, gamedata: GameData, container: dict, la
     ui.loot_report(spoils, gamedata)
 
 
-def _room_enemies(gamedata: GameData, room: dict, rng: RNG) -> list:
-    """房間敵人:支援 'enemies'(清單)或 'enemy'(單一)。"""
-    ids = room.get("enemies") or ([room["enemy"]] if room.get("enemy") else [])
-    return [combat.spawn_creature(gamedata, tid, rng) for tid in ids]
+def _resolve_trap(state: GameState, gamedata: GameData, trap: dict) -> None:
+    """陷阱格:擲 敏捷/安全/幸運 規避;失敗受少量傷(可被治療,刻意非高致命;極低血才可能致死)。"""
+    char = state.player
+    dodge = min(0.9, 0.30 + (char.attr("agility") - 40) * 0.01 + char.skill("security") * 0.003
+                + formulas.luck_fortune(char.attr("luck")))
+    if state.rng.chance(dodge):
+        ui.message("你察覺地面的機關,及時閃避。", style="green")
+        return
+    lo, hi = trap.get("damage", [4, 8])
+    dmg = state.rng.randint(lo, hi)
+    char.health = max(0, char.health - dmg)
+    ui.message(f"機關觸發 —— 你閃避不及,受了 {dmg} 點傷害!", style="red")
 
 
 def action_dungeon(state: GameState, gamedata: GameData) -> str | None:
-    loc = world.current_location(state.player, gamedata)
-    dg = gamedata.dungeons[loc["dungeon"]]
-    rooms = dg["rooms"]
-    total = len(rooms) + 1
-    ui.message(f"你踏入了{dg['name']}的幽暗深處……", style="magenta")
+    """格子探索地城(程序化生成 + 自足子迴圈,鏡像 run_battle)。
 
-    for i, room in enumerate(rooms, 1):
-        ui.dungeon_room(dg["name"], i, total, room["desc"])
-        room_enemies = _room_enemies(gamedata, room, state.rng)
-        if room_enemies:
-            res = run_battle(state, gamedata, room_enemies)
-            if res == "dead":
-                return "dead"
-            if res == "fled":                              # 逃離戰鬥 → 退出地城(未清剿、不續探、不開該室箱子)
-                ui.message("你逃離了戰鬥,倉皇退出了地城。", style="yellow")
+    清空末層 boss = 肅清(record_dungeon_clear);離開/逃跑/死亡皆不計。
+    原子探索:格子進場現生、離場即棄(零新存檔欄)。boss 死亡 → 寶藏自動解鎖。
+    """
+    player = state.player
+    loc = world.current_location(player, gamedata)
+    spec = gamedata.dungeons[loc["dungeon"]]
+    # 首次肅清才給保證戰利品(boss 寶藏 + 一般格寶箱)→ 反「重訪刷寶」:已清地城再衝,
+    # 怪物/陷阱照常(戰鬥 XP/掉落是有風險的正常 grind),但寶箱與寶藏皆已被你搬空。
+    first_clear = loc["dungeon"] not in player.cleared_dungeons
+    grid = dungeoncrawl.generate(spec, gamedata, state.rng)
+    n, m = grid["n"], grid["m"]
+    explored = [[[False] * n for _ in range(n)] for _ in range(m)]
+    resolved = [[[False] * n for _ in range(n)] for _ in range(m)]
+    z = x = y = 0
+    ui.message(f"你踏入了{spec['name']}的幽暗深處……（{n}×{n} 格 · 共 {m} 層）", style="magenta")
+    if not first_clear:
+        ui.message("（你早已肅清此地 —— 寶箱與首領寶藏皆已被你搬空,只餘游蕩的新怪。）", style="grey70")
+
+    while True:
+        explored[z][y][x] = True
+        cell = dungeoncrawl.cell_at(grid, z, x, y)
+        if not resolved[z][y][x]:                          # 首次進入該格 → 結算內容
+            resolved[z][y][x] = True
+            t = cell["type"]
+            if t == dungeoncrawl.MONSTER:
+                foes = [combat.spawn_creature(gamedata, tid, state.rng) for tid in cell["enemies"]]
+                res = run_battle(state, gamedata, foes)
+                if res == "dead":
+                    return "dead"
+                if res == "fled":
+                    ui.message("你逃離了戰鬥,倉皇退出了地城。", style="yellow")
+                    state.time.advance(1)
+                    return None
+            elif t == dungeoncrawl.CONTAINER:
+                if first_clear:
+                    _resolve_container(state, gamedata, cell["container"], "箱子")
+                else:
+                    ui.message("一只空蕩蕩的箱子 —— 你上次來時已搬空了它。", style="grey70")
+            elif t == dungeoncrawl.TRAP:
+                _resolve_trap(state, gamedata, cell["trap"])
+                if not combat.is_alive(player):
+                    return "dead"
+            elif t == dungeoncrawl.BOSS:
+                boss = grid["boss"]
+                if boss.get("desc"):
+                    ui.message(boss["desc"], style="magenta")
+                if boss.get("raw"):   # 已是 elite 的首領以原始強度登場(避免 spawn_boss 再 ×1.6 疊加)
+                    foe = combat.spawn_creature(gamedata, boss["enemy"], state.rng)
+                    foe.name = f"{spec['name']}首領"
+                else:
+                    foe = combat.spawn_boss(gamedata, boss["enemy"], state.rng, name=f"{spec['name']}首領")
+                res = run_battle(state, gamedata, foe)
+                if res == "dead":
+                    return "dead"
+                if res == "fled":                          # 從首領逃離 → 未肅清:不開寶藏、不計清剿、不結算
+                    ui.message("你從首領面前倉皇逃離,未能肅清地城。", style="yellow")
+                    state.time.advance(1)
+                    return None
+                if first_clear:
+                    # 🔴 首次肅清 → 寶藏「自動解鎖」直接開啟(免開鎖器/免技能,一般格寶箱才走 pick_lock)
+                    spoils = dungeon.open_container(player, gamedata, boss.get("treasure") or {}, state.rng)
+                    ui.message("首領倒下,守護的寶藏應聲而開 ——", style="bold green")
+                    ui.loot_report(spoils, gamedata)
+                else:                                      # 重訪:首領照常重生再戰,但寶藏早已被你取走
+                    ui.message("首領再度倒下,但守護的寶藏早已被你取走 —— 空空如也。", style="grey70")
+                ui.message(f"你肅清了{spec['name']}!", style="bold green")
+                quests.record_dungeon_clear(player, loc["dungeon"])
+                _report_quests(state, gamedata)
                 state.time.advance(1)
                 return None
-        _resolve_container(state, gamedata, room.get("container"), "箱子")
-        if i < len(rooms) and not ui.confirm("繼續深入?"):
-            ui.message("你循原路退出了地城。", style="grey70")
-            state.time.advance(1)
-            return None
 
-    boss = dg["boss"]
-    ui.dungeon_room(dg["name"], total, total, boss["desc"], is_boss=True)
-    if boss.get("enemy"):
-        if boss.get("raw"):   # 已是 elite 的首領以原始強度登場(避免 spawn_boss 再 ×1.6 疊加)
-            foe = combat.spawn_creature(gamedata, boss["enemy"], state.rng)
-            foe.name = f"{dg['name']}首領"
-        else:
-            foe = combat.spawn_boss(gamedata, boss["enemy"], state.rng, name=f"{dg['name']}首領")
-        res = run_battle(state, gamedata, foe)
-        if res == "dead":
-            return "dead"
-        if res == "fled":                                  # 從首領逃離 → 未肅清:不開寶藏、不計清剿、不結算任務
-            ui.message("你從首領面前倉皇逃離,未能肅清地城。", style="yellow")
+        ui.dungeon_grid(grid, z, x, y, explored)           # 小地圖 + 當前格
+        opts = [("go:" + key, f"往{label}") for key, label, _nx, _ny in dungeoncrawl.neighbors(grid, x, y)]
+        if cell["type"] == dungeoncrawl.STAIRS:
+            opts.append(("descend", f"⬇ 下到第 {z + 2}/{m} 層"))
+        opts.append(("leave", "離開地城"))
+        choice = ui.menu("地城探索", opts)
+        if choice is None or choice == "leave":
+            ui.message("你循來路退出了地城。", style="grey70")
             state.time.advance(1)
             return None
-    _resolve_container(state, gamedata, boss.get("treasure"), "首領寶藏")
-    ui.message(f"你肅清了{dg['name']}!", style="bold green")
-    quests.record_dungeon_clear(state.player, loc["dungeon"])
-    _report_quests(state, gamedata)
-    state.time.advance(1)
-    return None
+        if choice == "descend":
+            z += 1
+            x = y = 0
+            ui.message(f"你拾級而下,來到第 {z + 1}/{m} 層。", style="magenta")
+        elif choice.startswith("go:"):
+            key = choice[3:]
+            for k, _l, nx, ny in dungeoncrawl.neighbors(grid, x, y):
+                if k == key:
+                    x, y = nx, ny
+                    break
 
 
 # ======================================================================

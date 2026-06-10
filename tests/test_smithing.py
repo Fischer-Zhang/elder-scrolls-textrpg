@@ -226,8 +226,7 @@ def test_archmage_set_is_reachable():
     for loc in gd.world["locations"].values():
         sold |= set(loc.get("merchant_stock", []))
     for did, dg in gd.dungeons.items():
-        for room in dg.get("rooms", []):
-            sold |= {x for x in (room.get("container") or {}).get("loot", []) if isinstance(x, str)}
+        sold |= {x for x in dg.get("loot", []) if isinstance(x, str)}          # 格內寶箱戰利品池
         sold |= {x for x in dg.get("boss", {}).get("treasure", {}).get("loot", []) if isinstance(x, str)}
     for piece in ("archmage_hood", "archmage_robe", "archmage_gloves", "archmage_slippers"):
         assert piece in sold, f"{piece} 無任何取得途徑(死內容)"
@@ -245,8 +244,7 @@ def test_top_tier_craftable_and_reachable():
     # 稀有素材(daedra_heart/dragon_scale)有取得途徑(boss treasure/loot 掃描)
     drop = set()
     for dg in gd.dungeons.values():
-        for room in dg.get("rooms", []):
-            drop |= {x for x in (room.get("container") or {}).get("loot", []) if isinstance(x, str)}
+        drop |= {x for x in dg.get("loot", []) if isinstance(x, str)}          # 格內寶箱戰利品池
         drop |= {x for x in dg.get("boss", {}).get("treasure", {}).get("loot", []) if isinstance(x, str)}
     for cr in gd.bestiary.values():
         drop |= {e["item"] for e in cr.get("loot", []) if isinstance(e, dict) and "item" in e}

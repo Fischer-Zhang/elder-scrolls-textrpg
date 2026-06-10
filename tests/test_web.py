@@ -151,6 +151,36 @@ def test_hud_and_view_block():
         _restore()
 
 
+def test_dungeon_grid_view_block():
+    """格子地城 dungeon_grid view:發 block,帶 n/layer/rows(含當前格 @ + 相鄰可點 move key)。"""
+    from tesrpg.gamedata import get_gamedata
+    from tesrpg.rng import RNG
+    from tesrpg.systems import dungeoncrawl as DC
+    gd = get_gamedata()
+    g = DC.generate(gd.dungeons["cedernoc_cave"], gd, RNG(3))
+    n, m = g["n"], g["m"]
+    explored = [[[False] * n for _ in range(n)] for _ in range(m)]
+    explored[0][0][0] = True
+    backend = WebBackend()
+    ui.use_web_backend(backend, _rec())
+    try:
+        t = threading.Thread(target=lambda: ui.confirm("?"))
+        ui.dungeon_grid(g, 0, 0, 0, explored)          # 發 dungeon_grid view block
+        t.start()
+        fr = backend.outbound.get(timeout=5)
+        views = [b for b in fr["blocks"] if b["kind"] == "view" and b["name"] == "dungeon_grid"]
+        assert views, fr["blocks"]
+        d = views[0]["data"]
+        assert d["n"] == n and d["layer"] == 1 and d["layers"] == m
+        assert len(d["rows"]) == n and len(d["rows"][0]) == n
+        assert d["rows"][0][0]["current"] and d["rows"][0][0]["icon"] == "@"        # (0,0)=當前
+        moves = [c.get("move") for row in d["rows"] for c in row if c.get("move")]
+        assert any(mv.startswith("go:") for mv in moves)                            # 相鄰格帶可點移動 key
+        backend.submit(fr["prompt_id"], True); t.join(timeout=5)
+    finally:
+        _restore()
+
+
 def test_view_model_shapes():
     """本輪 UI 改版的 view-model 形狀回歸:戰鬥魔力/狀態標分色、傳奇分段、地圖省份進度。"""
     from tesrpg.gamedata import get_gamedata

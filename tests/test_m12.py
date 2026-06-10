@@ -123,9 +123,9 @@ def test_all_spawn_refs_valid():
         if eff.get("kind") == "summon":
             assert eff["creature"] in gd.bestiary, (sid, eff["creature"])
     for did, dg in gd.dungeons.items():
-        for room in dg["rooms"]:
-            for tid in (room.get("enemies") or ([room["enemy"]] if room.get("enemy") else [])):
-                assert tid in gd.bestiary, (did, tid)
+        for tid in dg["monsters"]:                       # 格子地城:怪物池(取代舊 rooms)
+            assert tid in gd.bestiary, (did, tid)
+        assert dg["boss"]["enemy"] in gd.bestiary, (did, dg["boss"]["enemy"])
     for cid, comp in gd.companions.items():
         assert {"name", "cost", "strength", "max_health", "attack"} <= set(comp)
 
