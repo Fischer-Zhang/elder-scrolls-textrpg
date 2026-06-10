@@ -30,6 +30,31 @@ console = Console()
 # 渲染函式一律不動(照常 console.print → 錄進緩衝)。
 _web = None
 _hud_state = None       # web:常駐 HUD 的資料來源(同一 state 物件就地變動 → 即時值)
+_hud_gamedata = None    # web HUD 顯示隊伍同伴所需(同伴 HP 由 party 系統算,需 gamedata)
+_hud_allies = None      # web HUD:當前情境召喚物清單(地城預召喚;非戰鬥時 None)
+
+
+def _party_status(char, gamedata) -> list:
+    """當前隊伍同伴狀態(名稱 + HP + 負傷),供持久狀態條。無 gamedata → 空。"""
+    if gamedata is None:
+        return []
+    from tesrpg.systems import party
+    out = []
+    for cid in getattr(char, "companions", []) or []:
+        if cid not in gamedata.companions:
+            continue
+        out.append({"name": gamedata.companions[cid].get("name", cid),
+                    "hp": [party.current_hp(char, gamedata, cid), party.max_hp(char, gamedata, cid)],
+                    "downed": party.is_downed(char, gamedata, cid)})
+    return out
+
+
+def _allies_status(allies) -> list:
+    """當前召喚物狀態(名稱 + HP + 剩餘回合),供持久狀態條。"""
+    return [{"name": a.name, "hp": [max(0, int(a.health)), int(a.max_health)],
+             "turns": getattr(a, "summon_turns", None)}
+            for a in (allies or [])
+            if a.health > 0 and (getattr(a, "summon_turns", None) is None or a.summon_turns > 0)]
 
 
 def use_web_backend(backend, recording_console) -> None:
@@ -61,7 +86,8 @@ def _hud_view():
          "mp": [int(c.magicka), int(c.max_magicka)],
          "fp": [int(c.fatigue), int(c.max_fatigue)],
          "gold": c.gold, "bounty": sum(c.bounties.values()),
-         "can_level": c.can_level_up(), "vampire": None}
+         "can_level": c.can_level_up(), "vampire": None,
+         "party": _party_status(c, _hud_gamedata), "allies": _allies_status(_hud_allies)}
     if getattr(c, "is_vampire", False):
         from tesrpg.systems import vampirism
         v["vampire"] = vampirism.STAGE_NAMES[min(3, max(0, c.vampire_stage))]
@@ -71,8 +97,10 @@ def _hud_view():
 def clear_hud() -> None:
     """一局結束、回到主選單時清掉常駐 HUD,使下一局/重開的主選單不殘留前一角色的
     血條/金幣(web;主選單無進行中角色 → HUD 應隱藏)。終端模式無副作用。"""
-    global _hud_state
+    global _hud_state, _hud_gamedata, _hud_allies
     _hud_state = None
+    _hud_gamedata = None
+    _hud_allies = None
 
 
 def _emit_view(name: str, data) -> None:
@@ -444,11 +472,14 @@ def _bar(cur: float, mx: float, color: str, width: int = 16) -> Text:
     return t
 
 
-def status_line(state: GameState) -> None:
-    """行動之間的精簡狀態列(金色頂欄分隔)。"""
+def status_line(state: GameState, gamedata: GameData | None = None, allies: list | None = None) -> None:
+    """行動之間的精簡狀態列(金色頂欄分隔)。allies=當前情境召喚物(地城預召喚);
+    gamedata 提供 → 一併顯示隊伍同伴狀態(名稱+HP+負傷)。"""
     if _web is not None:
-        global _hud_state
+        global _hud_state, _hud_gamedata, _hud_allies
         _hud_state = state          # web:不發 status 卡,改由常駐 HUD(frame.hud)顯示
+        _hud_gamedata = gamedata
+        _hud_allies = allies
         return
     c = state.player
     t = Text()
@@ -496,6 +527,12 @@ def status_line(state: GameState) -> None:
         console.print(line)
     if extra:
         console.print(" " + "   ".join(extra))
+    for p in _party_status(c, gamedata):     # 隊伍同伴(名稱+HP+負傷)
+        tag = "[red](負傷)[/]" if p["downed"] else ""
+        console.print(f"  [cyan]└ {p['name']}[/] {p['hp'][0]}/{p['hp'][1]} {tag}")
+    for a in _allies_status(allies):         # 當前召喚物(名稱+HP+剩餘回合)
+        tt = f" · {a['turns']} 回合" if a["turns"] is not None else ""
+        console.print(f"  [magenta]└ {a['name']}(召喚)[/] {a['hp'][0]}/{a['hp'][1]}{tt}")
     if c.can_level_up():
         console.print(f"  [bold {GOLD}]★ 可以升級了![/]")
 
@@ -1668,12 +1705,14 @@ def territory_panel(rows: list[dict], gamedata: GameData, gold: int) -> None:
                          title="🏰 領地總覽", style=GOLD))
 
 
-_DUNGEON_ICON = {"stairs": "↓", "boss": "✦", "entrance": "◊"}   # 其餘已探格 → ·;未探 ?;當前 @
-_DUNGEON_LEGEND = "@你  ✦首領  ↓樓梯  ◊入口  ·已探  ?未探"
+_DUNGEON_ICON = {"stairs": "↓", "boss": "✦", "entrance": "◊"}   # 結構格:已探即恆顯
+_DUNGEON_CONTENT_ICON = {"monster": "!", "container": "$", "trap": "^"}  # 內容格:已探「未結算」才顯(偵查揭示用)
+_DUNGEON_LEGEND = "@你  ✦首領  ↓樓梯  ◊入口  !敵  $寶  ^阱  ·已探  ?未探"
 
 
-def dungeon_grid(grid: dict, z: int, cx: int, cy: int, explored: list) -> None:
-    """格子地城小地圖 + 當前層;迷霧:未探格顯示 ?,已探顯示型別圖示。雙端渲染。"""
+def dungeon_grid(grid: dict, z: int, cx: int, cy: int, explored: list, resolved: list | None = None) -> None:
+    """格子地城小地圖 + 當前層;迷霧:未探 ?,已探顯示型別圖示。雙端渲染。
+    resolved(可選):已結算(清空)的內容格顯示 ·,未結算的顯示內容圖示(怪/寶/陷阱)→ 偵查揭示有資訊量。"""
     from tesrpg.systems import dungeoncrawl
     n, m = grid["n"], grid["m"]
     adj = {(nx, ny): "go:" + k for k, _l, nx, ny in dungeoncrawl.neighbors(grid, cx, cy)}
@@ -1684,7 +1723,17 @@ def dungeon_grid(grid: dict, z: int, cx: int, cy: int, explored: list) -> None:
             t = grid["layers"][z][yy][xx]["type"]
             ex = bool(explored[z][yy][xx])
             cur = (xx == cx and yy == cy)
-            icon = "@" if cur else ("?" if not ex else _DUNGEON_ICON.get(t, "·"))
+            done = bool(resolved[z][yy][xx]) if resolved is not None else False
+            if cur:
+                icon = "@"
+            elif not ex:
+                icon = "?"
+            elif t in _DUNGEON_ICON:                       # 樓梯/首領/入口:結構格,恆顯
+                icon = _DUNGEON_ICON[t]
+            elif t in _DUNGEON_CONTENT_ICON and not done:  # 怪/寶/陷阱:未結算(偵查揭示或未踏入)→ 顯內容
+                icon = _DUNGEON_CONTENT_ICON[t]
+            else:
+                icon = "·"                                 # 已結算/空格 → 純已探
             row.append({"icon": icon, "explored": ex, "current": cur,
                         "type": t, "move": adj.get((xx, yy))})
         rows.append(row)

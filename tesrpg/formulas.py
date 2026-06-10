@@ -155,6 +155,7 @@ COMBAT_ARMOR_XP = 0.4        # 被擊中 → 護甲技能 xp
 COMBAT_BLOCK_XP = 0.5        # 成功格擋 → 格擋技能 xp
 COMBAT_SNEAK_XP = 0.6        # 開場偷襲命中 → 潛行技能 xp(讓 sneak 也能戰鬥中成長)
 COMBAT_DODGE_XP = 0.4        # 成功閃避(敵人攻擊落空)→ 雜技技能 xp
+DUNGEON_REVEAL_SCOUT_XP = 0.12  # 地城每探明一格(踏入/偵查揭示)→ 偵查技能 xp(被動探索成長,低於 COMBAT 系)
 
 SNEAK_ATTACK_SCALE = 0.03    # 偷襲傷害倍率係數
 SNEAK_ATTACK_HIT_FLOOR = 0.90  # 偷襲命中率下限(伏擊不察之敵,極少落空)

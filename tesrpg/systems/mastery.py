@@ -367,6 +367,13 @@ def recon_scout_floor(char, gamedata: GameData) -> int:
     return int(_param(char, gamedata, "recon_reveal_floor", "scout_floor", 0))
 
 
+def has_recon_perk(char, gamedata: GameData) -> bool:
+    """是否擁有任一偵查里程碑(洞察弱點 recon_resist_read / 獵手偵察 recon_reveal_floor)。
+    供地城探索:有偵查之力 → 可探明四方鄰格。"""
+    return bool(_chosen_option_by_kind(char, gamedata, "recon_resist_read")
+                or _chosen_option_by_kind(char, gamedata, "recon_reveal_floor"))
+
+
 # --- 八職功能性身份 getter(法師/戰法師/治療師/刺客)----------------------
 def _cascade_depth(char) -> int:
     """目前奧術連鎖層數(存 active_effects 的暫態,戰鬥邊界清空);非戰鬥/無效果 → 0。"""

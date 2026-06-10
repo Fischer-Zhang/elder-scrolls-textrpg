@@ -48,9 +48,11 @@ def test_generate_all_valid():
 
 
 # --- crawl 驅動 ----------------------------------------------------------
-def _run(gd, st, battle_result, navigate=True):
+def _run(gd, st, battle_result, navigate=True, cap=None):
     """以 patched ui 跑 action_dungeon;navigate=True 時自動往 樓梯→下層→boss 前進。
-    battle_result(foes)→ 'victory'|'fled'|'dead'(foes 為 list=一般格、單一 Creature=boss)。"""
+    battle_result(foes)→ 'victory'|'fled'|'dead'(foes 為 list=一般格、單一 Creature=boss)。
+    cap(可選 dict):驅動過程觀測 —— last_opts(最後選單鍵)/ rb_kwargs(run_battle 末次 kwargs)/ rb_calls。"""
+    cap = cap if cap is not None else {}
     stash = {}
     real_gen = DC.generate
     def gen(spec, g, rng):
@@ -68,6 +70,7 @@ def _run(gd, st, battle_result, navigate=True):
                     seen.add((nx, ny)); q.append((nx, ny, first or k))
         return None
     def menu(title, opts, allow_back=False):
+        cap["last_opts"] = [o[0] for o in opts]
         if not navigate:
             return "leave"
         g = stash["g"]; z, x, y = stash["z"], stash["x"], stash["y"]
@@ -81,19 +84,23 @@ def _run(gd, st, battle_result, navigate=True):
                     stash.update(x=nx, y=ny); break
             return "go:" + s
         return "leave"
+    def rb(state, g, foes, *a, **k):
+        cap["rb_kwargs"] = k
+        cap["rb_calls"] = cap.get("rb_calls", 0) + 1
+        return battle_result(foes)
     saved = (ui.menu, ui.message, ui.dungeon_grid, ui.loot_report, ui.confirm, ui.rule,
-             ui.show_events, M.run_battle, DC.generate)
+             ui.show_events, ui.status_line, M.run_battle, DC.generate)
     ui.menu = menu
-    ui.message = ui.dungeon_grid = ui.loot_report = ui.rule = lambda *a, **k: None
+    ui.message = ui.dungeon_grid = ui.loot_report = ui.rule = ui.status_line = lambda *a, **k: None
     ui.show_events = lambda *a, **k: None
     ui.confirm = lambda *a, **k: True
-    M.run_battle = lambda state, g, foes, *a, **k: battle_result(foes)
+    M.run_battle = rb
     DC.generate = gen
     try:
         return M.action_dungeon(st, gd)
     finally:
         (ui.menu, ui.message, ui.dungeon_grid, ui.loot_report, ui.confirm, ui.rule,
-         ui.show_events, M.run_battle, DC.generate) = saved
+         ui.show_events, ui.status_line, M.run_battle, DC.generate) = saved
 
 
 def test_clear_on_boss_victory_and_auto_loot_treasure():
@@ -149,6 +156,92 @@ def test_zero_new_save_fields():
     keys_before = set(c.to_dict().keys())
     _run(gd, st, lambda foes: "victory")
     assert set(c.to_dict().keys()) == keys_before                      # crawl 不新增任何存檔欄
+
+
+# --- 地城視為戰鬥情境:一般行動 / 預施預召喚 / 每格回合 / 偵查 -------------------
+def test_crawl_menu_has_general_actions():
+    gd, c, st = _char()
+    c.spells = ["minor_heal"]                                           # 確保有法術 → cast 選項
+    cap = {}
+    _run(gd, st, lambda foes: "victory", navigate=False, cap=cap)       # 立刻 leave;選單已建好
+    assert {"cast", "inventory", "sheet"} <= set(cap["last_opts"])      # 一般行動齊備
+
+
+def test_crawl_passes_carry_allies_and_preserve_buffs():
+    gd, c, st = _char()
+    cap = {}
+    _run(gd, st, lambda foes: "victory", cap=cap)                      # navigate → 觸發戰鬥
+    assert cap.get("rb_calls", 0) >= 1
+    assert isinstance(cap["rb_kwargs"].get("carry_allies"), list)       # 預召喚物帶入戰鬥
+    assert cap["rb_kwargs"].get("preserve_buffs") is True              # 預施增益帶入戰鬥
+
+
+def test_crawl_move_ticks_player_buff():
+    gd, c, st = _char()
+    c.active_effects.append({"kind": "shield", "magnitude": 30, "turns": 50})
+    _run(gd, st, lambda foes: "victory")                               # 一路移動到 boss
+    shields = [e for e in c.active_effects if e["kind"] == "shield"]
+    assert (not shields) or shields[0]["turns"] < 50                   # 每格 1 回合 → 護盾遞減
+
+
+def test_crawl_move_grants_scout_xp():
+    from tesrpg.systems import progression
+    gd, c, st = _char()
+    calls = []
+    orig = progression.use_skill
+    progression.use_skill = lambda ch, g, sk, xp, *a, **k: (calls.append(sk), orig(ch, g, sk, xp, *a, **k))[1]
+    try:
+        _run(gd, st, lambda foes: "victory")
+    finally:
+        progression.use_skill = orig
+    assert "scout" in calls                                            # 每探明新格 → 練偵查
+
+
+def test_dot_kills_player_in_crawl():
+    gd, c, st = _char()
+    c.health = c.max_health
+    c.active_effects.append({"kind": "dot", "element": "poison", "magnitude": 9999, "turns": 5})
+    ret = _run(gd, st, lambda foes: "victory")
+    assert ret == "dead"                                               # 移動 tick → DoT 致死出口
+
+
+def test_crawl_cast_can_presummon_into_battle():
+    """預召喚:地城施法情境(battle 傳入)→ 召喚法術可施,召喚物入 battle['allies']。"""
+    from tesrpg.systems import stats
+    gd, c, st = _char()
+    c.spells = ["conjure_familiar"]
+    c.skills["conjuration"] = 60
+    stats.recompute_max_resources(c, gd, restore_full=True)
+    battle = {"allies": []}
+    saved = (ui.menu, ui.message, ui.show_events)
+    ui.menu = lambda *a, **k: "conjure_familiar"
+    ui.message = ui.show_events = lambda *a, **k: None
+    try:
+        M.action_cast_self(st, gd, battle=battle)
+    finally:
+        (ui.menu, ui.message, ui.show_events) = saved
+    assert len(battle["allies"]) == 1 and battle["allies"][0].summon_turns is not None
+
+
+def test_run_battle_carry_allies_not_persisted():
+    """🔴 召喚物不污染持久同伴:carry_allies 不入 roster → record_after_battle 不回寫。"""
+    from tesrpg.systems import combat
+    gd = get_gamedata()
+    c = build_character(gd, name="召", sex="male", race="nord", birthsign="warrior", class_id="warrior")
+    st = GameState(player=c, time=GameTime(), rng=RNG(3))
+    summon = combat.spawn_creature(gd, "summoned_familiar", RNG(0)); summon.summon_turns = 6
+    foe = combat.spawn_creature(gd, "mudcrab", RNG(0)); foe.health = 0   # 即勝(略過戰鬥迴圈)
+    saved = (ui.combat_status_group, ui.combat_event, ui.message, ui.show_events,
+             ui.rule, ui.combat_tick, ui.loot_report)
+    ui.combat_status_group = ui.combat_event = ui.message = ui.show_events = \
+        ui.rule = ui.combat_tick = ui.loot_report = lambda *a, **k: None
+    try:
+        res = M.run_battle(st, gd, [foe], carry_allies=[summon], preserve_buffs=True)
+    finally:
+        (ui.combat_status_group, ui.combat_event, ui.message, ui.show_events,
+         ui.rule, ui.combat_tick, ui.loot_report) = saved
+    assert res == "victory"
+    assert c.companion_hp == {} and c.companions == []                 # 召喚物未寫入持久同伴
 
 
 def run():

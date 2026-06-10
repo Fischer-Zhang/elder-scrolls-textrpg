@@ -63,6 +63,10 @@
   #hud .h-gold { color:var(--gold); }
   #hud .h-chip { font-size:11px; padding:1px 7px; border-radius:9px; border:1px solid var(--line); }
   #hud .h-chip.red { color:#e08b82; border-color:#5a2f2a; }
+  #hud .h-team-wrap { display:flex; flex-wrap:wrap; gap:3px 12px; flex-basis:100%; font-size:11px; }
+  #hud .h-team { color:#7fb6c4; font-variant-numeric:tabular-nums; }
+  #hud .h-team.summon { color:#c89bd6; }
+  #hud .h-team.down { color:#a8584f; }
   #hud .h-chip.gold { color:var(--gold); border-color:var(--gold-soft); }
 
   /* 畫面:原生 block 串(view 元件 / html 退路)垂直堆疊 */
@@ -769,6 +773,11 @@
     if (d.vampire) chips += `<span class="h-chip red">🩸 ${esc(d.vampire)}</span>`;
     if (d.bounty) chips += `<span class="h-chip red">通緝 ${d.bounty}</span>`;
     if (d.can_level) chips += `<span class="h-chip gold">★ 可升級</span>`;
+    const team = (d.party || []).map(function (p) {
+      return `<span class="h-team${p.downed ? " down" : ""}">└ ${esc(p.name)} ${p.hp[0]}/${p.hp[1]}${p.downed ? " 負傷" : ""}</span>`;
+    }).concat((d.allies || []).map(function (a) {
+      return `<span class="h-team summon">└ ${esc(a.name)}(召) ${a.hp[0]}/${a.hp[1]}${a.turns != null ? " ·" + a.turns : ""}</span>`;
+    })).join("");
     hudEl.innerHTML =
       `<span class="h-meta"><span class="h-name">❖ ${esc(d.name)}</span><span class="h-lv">Lv.${d.level}</span>`
       + `<span class="h-gold">金 ${d.gold}</span>${chips}`
@@ -777,7 +786,8 @@
       + `<span class="hm"><span class="l">血</span>${hudMeter(d.hp[0], d.hp[1], "hp")}</span>`
       + `<span class="hm"><span class="l">魔</span>${hudMeter(d.mp[0], d.mp[1], "mp")}</span>`
       + `<span class="hm"><span class="l">體</span>${hudMeter(d.fp[0], d.fp[1], "fp")}</span>`
-      + `</span>`;
+      + `</span>`
+      + (team ? `<span class="h-team-wrap">${team}</span>` : "");
   }
 
   // 可點內容列:view 列若帶 data-key 且該 key 是當前 prompt 的合法選項(含 extra_keys)→ 列可點。

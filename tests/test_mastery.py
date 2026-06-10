@@ -828,6 +828,18 @@ def test_scout_prep_and_recon():
     assert mastery.recon_reveal_threshold(c2, gd2) == 50
 
 
+def test_has_recon_perk():
+    """偵查里程碑(scout 洞察弱點 / marksman 獵手偵察)→ 地城可探明四鄰。"""
+    gd, c = _char()
+    assert not mastery.has_recon_perk(c, gd)                 # 無偵查 perk
+    gd1, c1 = _char(scout=75)
+    mastery.choose(c1, gd1, "scout_75", "weakness_read")     # 洞察弱點(recon_resist_read)
+    assert mastery.has_recon_perk(c1, gd1)
+    gd2, c2 = _char(marksman=50)
+    mastery.choose(c2, gd2, "marksman_50", "tracker")        # 獵手偵察(recon_reveal_floor)
+    assert mastery.has_recon_perk(c2, gd2)
+
+
 def test_security_pick_no_break():
     gd, c = _char(security=75)
     mastery.choose(c, gd, "security_75", "pick_thrift")
@@ -916,6 +928,7 @@ def run():
     test_acrobatics_evasion_lowers_enemy_hit()
     test_sneak_approach_and_armor_relief()
     test_scout_prep_and_recon()
+    test_has_recon_perk()
     test_security_pick_no_break()
     test_mercantile_and_intimidate()
 

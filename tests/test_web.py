@@ -181,6 +181,65 @@ def test_dungeon_grid_view_block():
         _restore()
 
 
+def test_dungeon_grid_content_icons_and_resolved():
+    """偵查揭示有資訊量:已探「未結算」內容格顯示怪/寶/陷阱圖示;已結算則回 ·(stairs 恆顯)。"""
+    grid = {"name": "T", "n": 2, "m": 1, "layers": [[
+        [{"type": "monster"}, {"type": "container"}],
+        [{"type": "trap"}, {"type": "stairs"}]]]}
+    explored = [[[True, True], [True, True]]]
+    backend = WebBackend()
+    ui.use_web_backend(backend, _rec())
+    try:
+        t = threading.Thread(target=lambda: ui.confirm("?"))
+        ui.dungeon_grid(grid, 0, 0, 0, explored, resolved=None)   # 全未結算
+        t.start()
+        fr = backend.outbound.get(timeout=5)
+        rows = [b for b in fr["blocks"] if b["kind"] == "view" and b["name"] == "dungeon_grid"][0]["data"]["rows"]
+        # (0,0)=當前 @;(1,0)=container $;(0,1)=trap ^;(1,1)=stairs ↓
+        assert rows[0][1]["icon"] == "$" and rows[1][0]["icon"] == "^" and rows[1][1]["icon"] == "↓"
+        backend.submit(fr["prompt_id"], True); t.join(timeout=5)
+        # 已結算 → 內容格回 ·(stairs 結構格恆顯)
+        resolved = [[[True, True], [True, True]]]
+        t2 = threading.Thread(target=lambda: ui.confirm("?"))
+        ui.dungeon_grid(grid, 0, 0, 0, explored, resolved=resolved)
+        t2.start()
+        fr2 = backend.outbound.get(timeout=5)
+        rows2 = [b for b in fr2["blocks"] if b["kind"] == "view" and b["name"] == "dungeon_grid"][0]["data"]["rows"]
+        assert rows2[0][1]["icon"] == "·" and rows2[1][0]["icon"] == "·" and rows2[1][1]["icon"] == "↓"
+        backend.submit(fr2["prompt_id"], True); t2.join(timeout=5)
+    finally:
+        _restore()
+
+
+def test_hud_includes_party_and_allies():
+    """狀態條(web HUD):帶入 gamedata + allies → HUD 含隊伍同伴 + 召喚物。"""
+    from tesrpg.gamedata import get_gamedata
+    from tesrpg.creation import build_character
+    from tesrpg.state import GameState, GameTime
+    from tesrpg.rng import RNG
+    from tesrpg.systems import combat
+    gd = get_gamedata()
+    c = build_character(gd, name="測", sex="male", race="nord", birthsign="warrior", class_id="warrior")
+    c.companions = ["sellsword"]
+    st = GameState(player=c, time=GameTime(), rng=RNG(3))
+    summon = combat.spawn_creature(gd, "summoned_familiar", RNG(0)); summon.summon_turns = 5
+    backend = WebBackend()
+    ui.use_web_backend(backend, _rec())
+    try:
+        t = threading.Thread(target=lambda: ui.confirm("?"))
+        ui.status_line(st, gd, allies=[summon])     # 設常駐 HUD(含 party + allies)
+        ui.location_panel(c, gd)
+        t.start()
+        fr = backend.outbound.get(timeout=5)
+        hud = fr["hud"]
+        assert hud["party"] and hud["party"][0]["name"] and len(hud["party"][0]["hp"]) == 2
+        assert hud["allies"] and hud["allies"][0]["name"] == summon.name
+        assert hud["allies"][0]["turns"] == 5
+        backend.submit(fr["prompt_id"], True); t.join(timeout=5)
+    finally:
+        _restore()
+
+
 def test_view_model_shapes():
     """本輪 UI 改版的 view-model 形狀回歸:戰鬥魔力/狀態標分色、傳奇分段、地圖省份進度。"""
     from tesrpg.gamedata import get_gamedata
@@ -475,6 +534,9 @@ def run():
     test_seam_roundtrip()
     test_blocks_protocol()
     test_hud_and_view_block()
+    test_dungeon_grid_view_block()
+    test_dungeon_grid_content_icons_and_resolved()
+    test_hud_includes_party_and_allies()
     test_view_model_shapes()
     test_combat_target_key_parity()
     test_combat_target_reemit_web()

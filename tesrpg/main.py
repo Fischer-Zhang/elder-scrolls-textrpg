@@ -516,13 +516,20 @@ def _prep_phase(state: GameState, gamedata: GameData, enemies, battle: dict, bud
     stats.clamp_resources(player)
 
 
+# 會改變戰況盤(敵/盟 HP·狀態·數量)的玩家行動 → 行動後即時補繪;格擋/逃跑失敗等不變化者不補。
+_BOARD_CHANGING_ACTIONS = {"cast", "power", "howl", "attack", "aimed", "crippling", "skirmish", "deathmark"}
+
+
 def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
-               alerted: bool = False, prep_budget: int = 0, casualties: list | None = None) -> str:
+               alerted: bool = False, prep_budget: int = 0, casualties: list | None = None,
+               carry_allies: list | None = None, preserve_buffs: bool = False) -> str:
     """團隊/多敵回合制戰鬥。階段制回合:玩家 → 同伴 → 敵人 → 結算。
 
     enemies:敵方 Creature 清單(也接受單一 Creature)。companions 未指定時用玩家隊伍。
     casualties:若給定一個 list,戰後把**陣亡盟友的來源 id** 填入(供攻城永久折損用;
     一般戰鬥不傳 → 同伴照常滿血復生)。回傳 'victory' / 'fled' / 'dead'。
+    carry_allies:地城戰鬥情境帶入的「預召喚物」(不在 roster → 不回寫持久同伴),併入戰列。
+    preserve_buffs:為 True 時不清玩家 active_effects(地城預施增益帶進本場;仍剝 cascade/過期)。
     """
     player = state.player
     if not isinstance(enemies, list):
@@ -538,6 +545,8 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
                                            max_health_bonus=party.bond_hp_bonus(player, cid)))
               for cid in field_ids]
     battle = {"allies": [cre for _, cre in roster]}
+    if carry_allies:   # 地城預召喚物併入戰列(不在 roster → record_after_battle 不回寫持久同伴)
+        battle["allies"].extend(carry_allies)
 
     def tally_casualties():
         # 同伴持久 HP 回寫(0=倒下 benched,須治療);攻城另填 casualties 供 apply_casualties 永久折損。
@@ -559,7 +568,12 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
 
     # active_effects 是「戰鬥內」臨時效果 —— 進場先清,杜絕戰鬥外施法(如里程碑「聖光·溢盾」)
     # 殘留的護盾/效果洩漏進本場。必須在 _prep_phase「之前」清(備戰施放的增益在清除後才套用,照常保留)。
-    player.active_effects.clear()
+    # preserve_buffs(地城預施帶入):不全清,只剝 cascade(戰鬥內累積層)+ 已過期效果。
+    if preserve_buffs:
+        player.active_effects[:] = [e for e in player.active_effects
+                                    if e.get("kind") != "cascade" and e.get("turns", 1) > 0]
+    else:
+        player.active_effects.clear()
 
     # 偵查掙得的開戰前備戰空間:在第一個交戰回合「之前」進行(opening 因此保留;
     # buff/召喚的計時從第一回合照 tick,故不延長時效、只省下開場那一動)。
@@ -696,6 +710,11 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
         # 玩家階段可能殺死(被擒魂的)敵人 → 統一記錄(涵蓋單體/AoE/星座之力)
         for e in enemies:
             note_trap(e)
+
+        # 玩家行動後即時重繪戰況(施法/AoE/召喚的減益/扣血/新盟友立即反映,不再「丟失到下一動」);
+        # 僅在「會改變戰況盤」的行動後補繪(避免格擋/逃跑失敗等無變化動作重複渲染)、且戰鬥未結束。
+        if action["type"] in _BOARD_CHANGING_ACTIONS and combat.is_alive(player) and alive_e():
+            ui.combat_status_group(player, battle["allies"], enemies, gamedata)
 
         # ---- 同伴階段(各自攻擊一個隨機存活敵人)----
         for a in battle["allies"]:
@@ -1132,10 +1151,12 @@ def _resolve_trap(state: GameState, gamedata: GameData, trap: dict) -> None:
 
 
 def action_dungeon(state: GameState, gamedata: GameData) -> str | None:
-    """格子探索地城(程序化生成 + 自足子迴圈,鏡像 run_battle)。
+    """格子探索地城 —— **視為戰鬥情境**的自足子迴圈(維持盟友清單 + 回合制效果計時)。
 
     清空末層 boss = 肅清(record_dungeon_clear);離開/逃跑/死亡皆不計。
     原子探索:格子進場現生、離場即棄(零新存檔欄)。boss 死亡 → 寶藏自動解鎖。
+    可預施增益 / 預召喚召喚物(隨移動逐回合衰減,經 carry_allies/preserve_buffs 帶進觸發戰鬥);
+    偵查 perk → 探明四鄰;每探明一新格 → 少量偵查 xp。
     """
     player = state.player
     loc = world.current_location(player, gamedata)
@@ -1148,19 +1169,58 @@ def action_dungeon(state: GameState, gamedata: GameData) -> str | None:
     explored = [[[False] * n for _ in range(n)] for _ in range(m)]
     resolved = [[[False] * n for _ in range(n)] for _ in range(m)]
     z = x = y = 0
+    battle = {"allies": []}   # 戰鬥情境:預召喚物(transient,不入持久同伴;隨移動衰減)
     ui.message(f"你踏入了{spec['name']}的幽暗深處……（{n}×{n} 格 · 共 {m} 層）", style="magenta")
     if not first_clear:
         ui.message("（你早已肅清此地 —— 寶箱與首領寶藏皆已被你搬空,只餘游蕩的新怪。）", style="grey70")
 
+    def reveal_and_train(zz, xx, yy):
+        """標記 (xx,yy) 及(有偵查 perk 時)四鄰為已探;每「新探明」格授少量偵查 xp(已探不重複給)。"""
+        cells = [(xx, yy)]
+        if mastery.has_recon_perk(player, gamedata):
+            cells += [(nx, ny) for _k, _l, nx, ny in dungeoncrawl.neighbors(grid, xx, yy)]
+        newly = 0
+        for cx, cy in cells:
+            if not explored[zz][cy][cx]:
+                explored[zz][cy][cx] = True
+                newly += 1
+        if newly:
+            ui.show_events(progression.use_skill(player, gamedata, "scout",
+                                                 newly * formulas.DUNGEON_REVEAL_SCOUT_XP), gamedata)
+
+    def tick_turn() -> bool:
+        """行動 1 格 = 1 回合:玩家增益 + 召喚物 summon_turns/效果衰減。回 True = 玩家陣亡(DoT)。"""
+        for msg in magic.tick_effects(player, gamedata):
+            ui.message(msg, style="grey70")
+        for a in battle["allies"]:
+            for msg in magic.tick_effects(a, gamedata):   # 召喚物的 DoT/再生也報(與玩家 tick 對稱)
+                ui.message(msg, style="grey70")
+            if a.summon_turns is not None:
+                a.summon_turns -= 1
+        for a in [a for a in battle["allies"]
+                  if not combat.is_alive(a) or (a.summon_turns is not None and a.summon_turns <= 0)]:
+            ui.message(f"{a.name}的身影消散了。", style="grey70")
+        battle["allies"][:] = [a for a in battle["allies"]
+                               if combat.is_alive(a) and (a.summon_turns is None or a.summon_turns > 0)]
+        return not combat.is_alive(player)
+
+    def sync_allies():
+        """戰後重濾預召喚物為存活且未逾時者(run_battle 已就地更新其 HP/summon_turns)。"""
+        battle["allies"][:] = [a for a in battle["allies"]
+                               if combat.is_alive(a) and (a.summon_turns is None or a.summon_turns > 0)]
+
+    reveal_and_train(z, x, y)   # 進場格(不耗回合)
+
     while True:
-        explored[z][y][x] = True
         cell = dungeoncrawl.cell_at(grid, z, x, y)
         if not resolved[z][y][x]:                          # 首次進入該格 → 結算內容
             resolved[z][y][x] = True
             t = cell["type"]
             if t == dungeoncrawl.MONSTER:
                 foes = [combat.spawn_creature(gamedata, tid, state.rng) for tid in cell["enemies"]]
-                res = run_battle(state, gamedata, foes)
+                res = run_battle(state, gamedata, foes,
+                                 carry_allies=battle["allies"], preserve_buffs=True)
+                sync_allies()
                 if res == "dead":
                     return "dead"
                 if res == "fled":
@@ -1185,7 +1245,9 @@ def action_dungeon(state: GameState, gamedata: GameData) -> str | None:
                     foe.name = f"{spec['name']}首領"
                 else:
                     foe = combat.spawn_boss(gamedata, boss["enemy"], state.rng, name=f"{spec['name']}首領")
-                res = run_battle(state, gamedata, foe)
+                res = run_battle(state, gamedata, foe,
+                                 carry_allies=battle["allies"], preserve_buffs=True)
+                sync_allies()
                 if res == "dead":
                     return "dead"
                 if res == "fled":                          # 從首領逃離 → 未肅清:不開寶藏、不計清剿、不結算
@@ -1205,8 +1267,14 @@ def action_dungeon(state: GameState, gamedata: GameData) -> str | None:
                 state.time.advance(1)
                 return None
 
-        ui.dungeon_grid(grid, z, x, y, explored)           # 小地圖 + 當前格
+        ui.status_line(state, gamedata, allies=battle["allies"])   # 持久狀態條:英雄 + 夥伴 + 召喚物
+        ui.dungeon_grid(grid, z, x, y, explored, resolved)  # 小地圖 + 當前格(偵查揭示鄰格內容)
         opts = [("go:" + key, f"往{label}") for key, label, _nx, _ny in dungeoncrawl.neighbors(grid, x, y)]
+        if any(gamedata.spells[s]["target"] == "self" and gamedata.spells[s]["effect"]["kind"] != "reanimate"
+               for s in player.spells):    # 僅當有可在地城施放的 self 法術才列 cast(免空選單)
+            opts.append(("cast", "施法(預施/預召喚)"))
+        opts.append(("inventory", "背包"))
+        opts.append(("sheet", "角色卡"))
         if cell["type"] == dungeoncrawl.STAIRS:
             opts.append(("descend", f"⬇ 下到第 {z + 2}/{m} 層"))
         opts.append(("leave", "離開地城"))
@@ -1215,16 +1283,28 @@ def action_dungeon(state: GameState, gamedata: GameData) -> str | None:
             ui.message("你循來路退出了地城。", style="grey70")
             state.time.advance(1)
             return None
-        if choice == "descend":
+        if choice == "cast":                               # 自由行動(不耗回合)
+            action_cast_self(state, gamedata, battle=battle)
+        elif choice == "inventory":
+            action_inventory(state, gamedata)
+        elif choice == "sheet":
+            action_character_sheet(state, gamedata)
+        elif choice == "descend":
             z += 1
             x = y = 0
             ui.message(f"你拾級而下,來到第 {z + 1}/{m} 層。", style="magenta")
+            reveal_and_train(z, x, y)
+            if tick_turn():                                # 移動=1 回合(增益/召喚衰減 + DoT 結算)
+                return "dead"
         elif choice.startswith("go:"):
             key = choice[3:]
             for k, _l, nx, ny in dungeoncrawl.neighbors(grid, x, y):
                 if k == key:
                     x, y = nx, ny
                     break
+            reveal_and_train(z, x, y)
+            if tick_turn():
+                return "dead"
 
 
 # ======================================================================
@@ -2202,14 +2282,22 @@ def _become_thane(state: GameState, gamedata: GameData, loc_id: str, ruler: dict
 # ======================================================================
 # 魔法與製作:施法 / 法師公會 / 煉金 / 附魔 / 修理
 # ======================================================================
-def action_cast_self(state: GameState, gamedata: GameData) -> None:
-    """戰鬥外施法:治療、回體力等自我增益(練功也行)。"""
+def action_cast_self(state: GameState, gamedata: GameData, battle: dict | None = None) -> None:
+    """戰鬥外施法:治療、回體力等自我增益(練功也行)。
+
+    battle 非 None(地城戰鬥情境):放寬為「所有 self-target、非 reanimate」法術 —— 含召喚與
+    各式自我增益(預施/預召喚);召喚物加入 battle["allies"]。battle 為 None(城鎮):僅 heal/restore。"""
     char = state.player
-    usable = [s for s in char.spells
-              if gamedata.spells[s]["target"] == "self"
-              and gamedata.spells[s]["effect"]["kind"] in ("heal", "restore_fatigue")]
+    if battle is not None:   # 地城戰鬥情境:可預施增益 + 預召喚(reanimate 需屍體 → 地城無,排除)
+        usable = [s for s in char.spells
+                  if gamedata.spells[s]["target"] == "self"
+                  and gamedata.spells[s]["effect"]["kind"] != "reanimate"]
+    else:
+        usable = [s for s in char.spells
+                  if gamedata.spells[s]["target"] == "self"
+                  and gamedata.spells[s]["effect"]["kind"] in ("heal", "restore_fatigue")]
     if not usable:
-        ui.message("你沒有可在戰鬥外施放的法術。", style="grey70")
+        ui.message("你沒有可施放的法術。", style="grey70")
         return
     opts = [(s, f"{gamedata.spells[s]['name']}（{magic.effective_cost(char, gamedata, s)} 魔力)"
              f" · {ui.spell_effect_summary(gamedata, s)}") for s in usable]
@@ -2219,7 +2307,7 @@ def action_cast_self(state: GameState, gamedata: GameData) -> None:
     if not magic.can_cast(char, gamedata, sid):
         ui.message("魔力不足。", style="red")
         return
-    res = magic.cast(char, gamedata, sid, state.rng)
+    res = magic.cast(char, gamedata, sid, state.rng, battle=battle)
     ui.message(res["message"], style="cyan")
     ui.show_events(res["skill_events"], gamedata)
 
@@ -2930,7 +3018,7 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
         _drain_mastery_choices(state, gamedata)
 
         ui.rule()
-        ui.status_line(state)
+        ui.status_line(state, gamedata)
         brief = state.player.location_id == last_hub_loc   # 同地點重複回合 → 麵包屑(不重畫整張地點卡)
         ui.location_panel(state.player, gamedata, brief=brief)
         last_hub_loc = state.player.location_id
@@ -3057,6 +3145,7 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
             ui.world_map(player, gamedata)
         elif choice == "dungeon":
             died = action_dungeon(state, gamedata)
+            ui.status_line(state, gamedata)          # 出地城即重設 HUD(清掉召喚物列,免里程碑選擇彈窗殘留)
         elif choice == "explore":
             died = action_explore(state, gamedata)
         elif choice == "travel":
