@@ -131,6 +131,10 @@ class Character:
 
     # M12:隊伍(雇用的傭兵同伴 template id;戰鬥時為你而戰)
     companions: list = field(default_factory=list)
+    # 同伴系統深化:持久 HP(cid→當前 HP,每戰回寫;0=倒下 benched 須治療)+ 羈絆(cid→點,並肩獲勝累積)。
+    # dataclass 預設 {} → 舊存檔向後相容(未記錄者視為滿血/零羈絆)。詳見 systems/party.py。
+    companion_hp: dict = field(default_factory=dict)
+    companion_bond: dict = field(default_factory=dict)
 
     # M8:出生星座能力(每日一次)冷卻 + 塔之鑰開鎖充能
     power_last_day: dict = field(default_factory=dict)    # power_id -> 上次使用的絕對日
@@ -259,6 +263,7 @@ class Character:
             "soldiers": self.soldiers, "camp": self.camp,
             "wage_due_at": self.wage_due_at,
             "companions": self.companions,
+            "companion_hp": self.companion_hp, "companion_bond": self.companion_bond,
         }
 
     @classmethod

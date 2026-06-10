@@ -137,6 +137,8 @@ def apply_casualties(char: Character, gamedata: GameData, casualties: list[str])
             lost_soldiers += 1
         elif cid in char.companions:
             char.companions.remove(cid)
+            from tesrpg.systems import party
+            party.forget(char, cid)              # 永久陣亡 → 清持久 HP/羈絆,避免殘留
             lost_officers.append(gamedata.companions.get(cid, {}).get("name", cid))
     before = char.soldiers
     char.soldiers = max(0, before - lost_soldiers)

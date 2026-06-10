@@ -226,7 +226,7 @@ def test_run_battle_reports_dead_ally():
     enemy.max_health = 90; enemy.health = 90                    # 撐得過玩家首擊 → 敵人有機會出手
 
     real_spawn = combat.spawn_companion
-    def weak_spawn(g, cid, rng):
+    def weak_spawn(g, cid, rng, **kw):   # 接受同伴系統深化新增的 current_hp/max_health_bonus kwargs
         cre = real_spawn(g, cid, rng); cre.max_health = 1; cre.health = 1; cre.armor_rating = 0
         return cre
 

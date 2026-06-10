@@ -8,7 +8,8 @@ from __future__ import annotations
 
 from tesrpg import formulas
 from tesrpg.gamedata import GameData
-from tesrpg.systems import achievements, brotherhood, lycanthropy, mastery, politics, skooma, vampirism
+from tesrpg.systems import (achievements, brotherhood, lycanthropy, mastery, party, politics,
+                            skooma, vampirism)
 
 DAYS_PER_YEAR = 360   # 12 月 × 30 天
 
@@ -70,6 +71,7 @@ def compute(state, gamedata: GameData, ending: str = "death") -> dict:
     # 城戰 / 招兵的功業(此前在結算裡零承認):親手攻下的城、武士冊封、麾下軍隊
     cities_held = len(politics.held_tax_cities(char, gamedata))
     thanes = len(char.thaneships)
+    comrade_points = sum(party.bond_tier(char, cid) for cid in char.companions) * 20   # 並肩羈絆
 
     score = (
         char.level * 120
@@ -87,6 +89,7 @@ def compute(state, gamedata: GameData, ending: str = "death") -> dict:
         + cities_held * 200          # 征服功業:每座親手攻下且仍在手的城
         + thanes * 80                # 武士冊封:每座受封的城
         + char.soldiers * 3          # 麾下常備軍
+        + comrade_points             # 並肩同伴的羈絆
     )
 
     return {
@@ -106,6 +109,7 @@ def compute(state, gamedata: GameData, ending: str = "death") -> dict:
         "addiction": skooma.legacy_label(char),       # 斯庫瑪/月糖成癮(否則 None)
         "dark_deeds": brotherhood.legacy_label(char, gamedata),   # 黑暗兄弟會/謀殺事蹟(否則 None)
         "dominion": dominion_label(char, gamedata, cities_held, thanes),  # 領地/統帥功業(否則 None)
+        "comrade": party.legacy_label(char, gamedata),   # 最深羈絆的同伴(否則 None)
         "level": char.level,
         "years": years, "days": days,
         "top_skills": tops,

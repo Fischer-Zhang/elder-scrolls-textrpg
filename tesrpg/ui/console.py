@@ -224,9 +224,9 @@ def _combat_view(player: Character, allies: list, enemies: list) -> dict:
 
 def _legacy_view(s: dict) -> dict:
     origins = []   # 身世:出身/詛咒/血業/功業/精通
-    for key in ("origin", "condition", "lycanthropy", "addiction", "dark_deeds", "dominion"):
+    for key in ("origin", "condition", "lycanthropy", "addiction", "dark_deeds", "comrade", "dominion"):
         label = {"origin": "出身", "condition": "詛咒", "lycanthropy": "獸血", "addiction": "癮疾",
-                 "dark_deeds": "血業", "dominion": "功業"}[key]
+                 "dark_deeds": "血業", "comrade": "羈絆", "dominion": "功業"}[key]
         if s.get(key):
             origins.append([label, str(s[key])])
     if s.get("masteries"):
@@ -987,6 +987,37 @@ def sheet_lycanthropy(char: Character, state: GameState, gamedata: GameData) -> 
     console.print(_panel(body, title="狼人狀態"))
 
 
+def party_panel(char: Character, gamedata: GameData) -> None:
+    """隊伍面板:各同伴 HP/上限 + 羈絆級(倒下標『負傷待療』)。"""
+    from tesrpg.systems import party
+    items = []
+    for cid in char.companions:
+        nm = gamedata.companions.get(cid, {}).get("name", cid)   # 防毀損存檔的已移除同伴 id
+        cur, mx = party.current_hp(char, gamedata, cid), party.max_hp(char, gamedata, cid)
+        downed = party.is_downed(char, gamedata, cid)
+        hp_s = "負傷待療" if downed else f"{cur}/{mx}"
+        items.append((nm, hp_s, party.bond_name(char, cid), downed, cur, mx))
+    note = "(同伴 HP 跨戰持久;倒下→負傷退場,休息/旅店過夜可康復再上陣。並肩獲勝累積羈絆 → 更耐打)"
+    if _web is not None:
+        rows = []
+        for nm, hp_s, bond, downed, cur, mx in items:
+            rows.append(_kv(nm, f"{hp_s} · 羈絆「{bond}」"))
+        if not rows:
+            rows = [_ln("你目前沒有同伴。", "muted")]
+        rows.append(_ln(note, "faint"))
+        _emit_panel("隊伍", rows)
+        return
+    body = Text()
+    if not items:
+        body.append("你目前沒有同伴。", style=INK)
+    for nm, hp_s, bond, downed, cur, mx in items:
+        body.append(f"{nm}  ", style=GOLD)
+        body.append(hp_s, style=("red" if downed else PARCH))
+        body.append(f"  羈絆「{bond}」\n", style="cyan")
+    body.append(note, style=FAINT)
+    console.print(_panel(body, title="隊伍"))
+
+
 def sheet_skooma(char: Character, state: GameState, gamedata: GameData) -> None:
     from tesrpg.systems import skooma
     add = getattr(char, "skooma_addiction", 0)
@@ -1238,6 +1269,8 @@ def legacy_screen(s: dict) -> None:
         body.add_row("詛咒", str(s["condition"]))
     if s.get("lycanthropy"):
         body.add_row("獸血", str(s["lycanthropy"]))
+    if s.get("comrade"):
+        body.add_row("羈絆", str(s["comrade"]))
     if s.get("dark_deeds"):
         body.add_row("血業", str(s["dark_deeds"]))
     if s.get("dominion"):

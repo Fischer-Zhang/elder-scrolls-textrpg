@@ -67,13 +67,19 @@ def random_encounter_group(gamedata: GameData, player_level: int, rng: RNG,
     return [boss] if boss is not None else group
 
 
-def spawn_companion(gamedata: GameData, companion_id: str, rng: RNG) -> Creature:
-    """把雇用的同伴生成為我方戰鬥單位(每場戰鬥滿血登場)。"""
+def spawn_companion(gamedata: GameData, companion_id: str, rng: RNG,
+                    current_hp: int | None = None, max_health_bonus: int = 0) -> Creature:
+    """把雇用的同伴生成為我方戰鬥單位。
+
+    current_hp:持久 HP(同伴系統深化;None=滿血登場,向後相容);max_health_bonus:羈絆耐久加成。
+    """
     t = gamedata.companions[companion_id]
+    mx = t["max_health"] + max_health_bonus
+    hp = mx if current_hp is None else max(0, min(int(current_hp), mx))
     return Creature(
         template_id=companion_id, name=t["name"],
         strength=t["strength"], agility=t["agility"], speed=t["speed"],
-        max_health=t["max_health"], health=t["max_health"], armor_rating=t["armor_rating"],
+        max_health=mx, health=hp, armor_rating=t["armor_rating"],
         attack=dict(t["attack"]), loot_gold=[0, 0], loot_table=[],
         flavor=t.get("blurb", ""), danger=0, resist=dict(t.get("resist", {})),
         summon_turns=None,

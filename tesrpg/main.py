@@ -14,8 +14,8 @@ from tesrpg.rng import RNG, make_seed
 from tesrpg.state import GameState
 from tesrpg.systems import (alchemy, brotherhood, combat, court, crafting, crime, dialogue, dungeon,
                             enchanting, events, factions, inventory, landmarks, legacy, lycanthropy,
-                            magic, mastery, politics, powers, progression, quests, skooma, smithing,
-                            stats, vampirism, warband, world, worldstate)
+                            magic, mastery, party, politics, powers, progression, quests, skooma,
+                            smithing, stats, vampirism, warband, world, worldstate)
 from tesrpg.ui import console as ui
 
 SAVE_PATH = Path.home() / ".tesrpg" / "save.json"
@@ -196,6 +196,7 @@ def action_rest(state: GameState, gamedata: GameData) -> str | None:
     if not no_magicka_regen:
         char.magicka = min(char.max_magicka, char.magicka + char.max_magicka * hours / 12)
 
+    party.heal(char, gamedata, hours / 24)   # 同伴隨休息回復(負傷者康復後可再上陣)
     state.time.advance(hours)
     ui.message(f"你休息了 {hours} 小時,神清氣爽。")
     if no_magicka_regen:
@@ -462,14 +463,26 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
     player = state.player
     if not isinstance(enemies, list):
         enemies = [enemies]
-    party = player.companions if companions is None else companions
-    party = [cid for cid in party if cid in gamedata.companions]   # 略過已不存在的同伴(存檔前向相容)
+    src = player.companions if companions is None else companions
+    # 上陣名單:略過已不存在的同伴;**排除倒下/負傷者**(benched 至治療)—— 同伴系統深化
+    field_ids = [cid for cid in src if cid in gamedata.companions
+                 and not party.is_downed(player, gamedata, cid)]
     # roster:本場一開始上陣的盟友(cid → 戰鬥單位);召喚物不在此列。戰後查 is_alive 判陣亡。
-    roster = [(cid, combat.spawn_companion(gamedata, cid, state.rng)) for cid in party]
+    # 持久 HP:以 spawn_hp 帶入(夾上限);羈絆 → 該同伴 max_health 加成。
+    roster = [(cid, combat.spawn_companion(gamedata, cid, state.rng,
+                                           current_hp=party.spawn_hp(player, gamedata, cid),
+                                           max_health_bonus=party.bond_hp_bonus(player, cid)))
+              for cid in field_ids]
     battle = {"allies": [cre for _, cre in roster]}
 
     def tally_casualties():
-        if casualties is not None:
+        # 同伴持久 HP 回寫(0=倒下 benched,須治療);攻城另填 casualties 供 apply_casualties 永久折損。
+        downed = party.record_after_battle(player, gamedata, roster)
+        if casualties is None:
+            for nm in downed:
+                ui.message(f"{nm}重傷倒地,暫時退出戰列 —— 休養(旅店過夜 / 原地休息)後方能再上陣。",
+                           style="yellow")
+        else:
             casualties.extend(cid for cid, cre in roster if not combat.is_alive(cre))
     trapped_kills: set[int] = set()
     opening = not alerted   # 開場偷襲:首個攻擊吃潛行加成;若敵人已警覺(撤退失敗)則無
@@ -651,6 +664,8 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
         if dv["extended"]:
             ui.message(f"你俯身吞噬倒下的獵物 —— 狂暴得以延續(回復 {dv['healed']} 點生命)。",
                        style="bold red")
+    for nm, tier_name in party.award_victory(player, gamedata, roster):   # 並肩獲勝 → 羈絆累積
+        ui.message(f"並肩奮戰,你與{nm}的情誼更深了 —— 羈絆提升至「{tier_name}」。", style="bold cyan")
     tally_casualties()
     return "victory"
 
@@ -1207,11 +1222,11 @@ MAX_PARTY = 2
 def action_inn(state: GameState, gamedata: GameData) -> None:
     char = state.player
     while True:
-        party = "、".join(gamedata.companions[c]["name"] for c in char.companions) or "無"
+        roster_str = "、".join(_party_label(char, gamedata, c) for c in char.companions) or "無"
         opts = [("rest", "過夜(10 金,完全回復)"), ("hire", "雇用傭兵同伴")]
         if char.companions:
             opts.append(("dismiss", "解散傭兵"))
-        choice = ui.menu(f"旅店(目前隊伍:{party})", opts, allow_back=True)
+        choice = ui.menu(f"旅店(目前隊伍:{roster_str})", opts, allow_back=True)
         if choice is None:
             return
         if choice == "rest":
@@ -1221,8 +1236,9 @@ def action_inn(state: GameState, gamedata: GameData) -> None:
             else:
                 char.gold -= fee
                 char.health, char.magicka, char.fatigue = char.max_health, char.max_magicka, char.max_fatigue
+                party.heal_full(char, gamedata)   # 同伴一併滿血(負傷盡復,可再上陣)
                 state.time.advance(8)
-                ui.message("一夜好眠,氣力盡復。", style="green")
+                ui.message("一夜好眠,你與同伴皆氣力盡復。", style="green")
         elif choice == "hire":
             _hire_mercenary(state, gamedata)
         elif choice == "dismiss":
@@ -1588,12 +1604,37 @@ def _hire_mercenary(state: GameState, gamedata: GameData) -> None:
 
 def _dismiss_mercenary(state: GameState, gamedata: GameData) -> None:
     char = state.player
-    opts = [(cid, gamedata.companions[cid]["name"]) for cid in char.companions]
+    opts = [(cid, _party_label(char, gamedata, cid)) for cid in char.companions]
     cid = ui.menu("解散哪位傭兵?", opts, allow_back=True)
     if cid is None:
         return
     char.companions.remove(cid)
+    party.forget(char, cid)              # 清持久 HP/羈絆
     ui.message(f"{gamedata.companions[cid]['name']}拿了酬勞,就此別過。", style="grey70")
+
+
+def _party_label(char: Character, gamedata: GameData, cid: str) -> str:
+    """同伴列表標籤:名 + HP/上限 + 羈絆級(倒下標『負傷』)。"""
+    name = gamedata.companions.get(cid, {}).get("name", cid)   # 防毀損存檔的已移除同伴 id
+    cur, mx = party.current_hp(char, gamedata, cid), party.max_hp(char, gamedata, cid)
+    state = "負傷待療" if party.is_downed(char, gamedata, cid) else f"{cur}/{mx}"
+    return f"{name}（{state}·{party.bond_name(char, cid)})"
+
+
+def action_party(state: GameState, gamedata: GameData) -> None:
+    """隊伍管理:檢視同伴 HP/羈絆/負傷,可就地解散(任何地方,不限旅店)。"""
+    char = state.player
+    while True:
+        if not char.companions:
+            ui.message("你目前沒有同伴。(旅店可雇用傭兵;受封武士得侍從;營地可延攬將領)", style="grey70")
+            return
+        ui.party_panel(char, gamedata)
+        opts = [("dismiss", "解散一名同伴")]
+        choice = ui.menu("隊伍", opts, allow_back=True)
+        if choice is None:
+            return
+        if choice == "dismiss":
+            _dismiss_mercenary(state, gamedata)
 
 
 def action_trainer(state: GameState, gamedata: GameData) -> None:
@@ -2730,6 +2771,8 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
         # --- 角色與物品 ---
         character: list = [("quests", "任務日誌"), ("inventory", "背包"),
                            ("practice", "練習技能"), ("rest", "原地休息"), ("sheet", "角色卡")]
+        if player.companions:                            # 有同伴 → 隊伍管理(檢視 HP/羈絆/解散)
+            character.insert(0, ("party", "隊伍 ⚔"))
         if politics.held_tax_cities(player, gamedata):   # 有親手攻下的城 → 領地總覽(階段四)
             character.insert(0, ("territory", "領地總覽 🏰"))
         if warband.is_warlord(player, gamedata):     # 領主/首領 → 招兵買馬(整軍經武)
@@ -2824,6 +2867,8 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
             action_practice(state, gamedata)
         elif choice == "warband":
             action_warband(state, gamedata)
+        elif choice == "party":
+            action_party(state, gamedata)
         elif choice == "territory":
             action_territory(state, gamedata)
         elif choice == "rest":
