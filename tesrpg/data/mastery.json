@@ -234,5 +234,144 @@
       "desc": "獵殺標記:耗 15 體力標記一敵(標記 4 回 + 落印後冷卻,每目標約 6 回才可再標)→ 對其後續(非開場)近戰破甲 +35%。開場偷襲不受惠(守 boss 反一刀)。"},
      {"opt_id": "cutpurse", "name": "扒竊聖手", "kind": "skill_fortify", "skill": {"mercantile": 10},
       "desc": "暗影中的巧手:銷贓議價更在行(商貿技能 +10)。"}
+   ]},
+
+  {"id": "armorer_75", "skill": "armorer", "threshold": 75,
+   "options": [
+     {"opt_id": "combat_tinker", "name": "戰場鐵匠", "kind": "combat_repair", "weapon": 2.0, "armor": 2.0,
+      "desc": "臨陣不輟保養:每戰鬥回合自行修補武器與護甲耐久各 +2(久戰不崩裝)。"},
+     {"opt_id": "master_armorer", "name": "甲冑通修", "kind": "skill_fortify", "skill": {"heavy_armor": 8},
+      "desc": "深諳甲冑構造,穿戴重甲更得其法(重甲技能 +8)。"}
+   ]},
+
+  {"id": "athletics_75", "skill": "athletics", "threshold": 75,
+   "options": [
+     {"opt_id": "escape_artist", "name": "逃命好手", "kind": "flee_bonus", "bonus": 0.15,
+      "desc": "腳程與機變過人:脫離戰鬥的成功率 +15%。"},
+     {"opt_id": "enduring", "name": "不竭之軀", "kind": "attr_fortify", "attr": {"endurance": 5},
+      "desc": "長年磨練的底子(耐力 +5 → 生命/體力上限隨之提升)。"}
+   ]},
+
+  {"id": "blade_50", "skill": "blade", "threshold": 50,
+   "options": [
+     {"opt_id": "riposte_blade", "name": "還擊架式", "kind": "weapon_mod", "target": "blade",
+      "on_hit_status": {"kind": "stagger", "turns": 1, "chance": 0.25},
+      "desc": "劍勢連綿:刀劍命中時 25% 機率震開敵勢,使其踉蹌一回合。"},
+     {"opt_id": "keen_edge", "name": "鋒刃輕靈", "kind": "weapon_mod", "target": "blade", "hit": 0.05,
+      "desc": "劍走輕靈,出手更準(刀劍命中 +5%)。"}
+   ]},
+
+  {"id": "block_75", "skill": "block", "threshold": 75,
+   "options": [
+     {"opt_id": "bracing", "name": "撐架穩步", "kind": "passive_armor", "armor_bonus": 10,
+      "desc": "舉盾撐架,身形如樁:被動護甲 +10。"},
+     {"opt_id": "guardian", "name": "守護之姿", "kind": "resist_fortify", "resist": {"magic": 10},
+      "desc": "以盾承咒,法術難透(元素/法術抗性 +10%)。"}
+   ]},
+
+  {"id": "blunt_50", "skill": "blunt", "threshold": 50,
+   "options": [
+     {"opt_id": "crippling", "name": "碎骨重擊", "kind": "weapon_mod", "target": "blunt",
+      "on_hit_status": {"kind": "weaken", "magnitude": 0.10, "turns": 2, "chance": 0.25},
+      "desc": "碎其筋骨:鈍器命中時 25% 機率使敵 2 回合攻擊削弱 10%。"},
+     {"opt_id": "heavy_swing", "name": "沉勁揮擊", "kind": "weapon_mod", "target": "blunt", "power": 0.10, "recoil": 0.04,
+      "desc": "沉勁傾注:鈍器傷害 +10% —— 代價是回噬自身 4% 傷害(不致死)。"}
+   ]},
+
+  {"id": "hand_to_hand_50", "skill": "hand_to_hand", "threshold": 50,
+   "options": [
+     {"opt_id": "pressure_point", "name": "點穴卸力", "kind": "weapon_mod", "target": "hand_to_hand",
+      "on_hit_status": {"kind": "weaken", "magnitude": 0.12, "turns": 1, "chance": 0.30},
+      "desc": "點穴卸力:徒手命中時 30% 機率使敵下一擊削弱 12%。"},
+     {"opt_id": "grappler", "name": "擒拿根基", "kind": "skill_fortify", "skill": {"hand_to_hand": 8},
+      "desc": "馬步紮實,徒手根基更穩(徒手技能 +8)。"}
+   ]},
+
+  {"id": "heavy_armor_50", "skill": "heavy_armor", "threshold": 50,
+   "options": [
+     {"opt_id": "armor_reflect", "name": "重甲反震", "kind": "armor_reflect", "reflect": 0.12,
+      "desc": "厚甲卸力反震:被近戰物理擊中時,反彈該擊 12% 傷害給攻擊者。"},
+     {"opt_id": "disease_ward", "name": "百戰不染", "kind": "resist_fortify", "resist": {"disease": 25},
+      "desc": "厚甲護身,瘴癘難侵(疾病抗性 +25%)。"}
+   ]},
+
+  {"id": "smithing_50", "skill": "smithing", "threshold": 50,
+   "options": [
+     {"opt_id": "forge_repair", "name": "鍛場修整", "kind": "repair_floor", "floor": 85.0,
+      "desc": "鍛造之手:野外自修也能修到八成五(野修下限 85%;與護甲宗師取高者)。"},
+     {"opt_id": "apprentice_smith", "name": "鍛造學養", "kind": "skill_fortify", "skill": {"armorer": 8},
+      "desc": "鍛造通修理,護甲修復更有把握(護甲修理技能 +8)。"}
+   ]},
+
+  {"id": "alchemy_50", "skill": "alchemy", "threshold": 50,
+   "options": [
+     {"opt_id": "toxin_master", "name": "淬毒名家", "kind": "poison_charge_bonus", "charge_bonus": 2,
+      "desc": "塗毒更耐用:武器塗毒可用次數 +2。"},
+     {"opt_id": "field_brewer", "name": "案前苦工", "kind": "attr_fortify", "attr": {"intelligence": 4},
+      "desc": "案前苦工磨出靈思(智力 +4 → 魔力上限提升、煉金更精)。"}
+   ]},
+
+  {"id": "alteration_50", "skill": "alteration", "threshold": 50,
+   "options": [
+     {"opt_id": "efficient_shield", "name": "省魔護持", "kind": "spell_mod", "school": "alteration", "cost_factor": 0.85,
+      "desc": "變化術駕輕就熟:施法省魔 15%(護盾/開鎖更頻繁可用)。"},
+     {"opt_id": "arcane_mind", "name": "奧理通明", "kind": "attr_fortify", "attr": {"willpower": 4},
+      "desc": "鑽研法理,意志更堅(意志 +4 → 魔力回復/抗心智提升)。"}
+   ]},
+
+  {"id": "conjuration_75", "skill": "conjuration", "threshold": 75,
+   "options": [
+     {"opt_id": "warding_summon", "name": "護體召喚", "kind": "passive_armor", "armor_bonus": 15,
+      "desc": "召喚靈光環體:被動護甲 +15。"},
+     {"opt_id": "summoner_focus", "name": "召喚精研", "kind": "skill_fortify", "skill": {"conjuration": 8},
+      "desc": "召喚精研,束縛/喚物更強更省魔(召喚技能 +8)。"}
+   ]},
+
+  {"id": "illusion_100", "skill": "illusion", "threshold": 100,
+   "options": [
+     {"opt_id": "mind_mastery", "name": "操心駕輕", "kind": "spell_mod", "school": "illusion", "cost_factor": 0.85,
+      "desc": "心智操弄駕輕就熟:幻術施法省魔 15%(恐懼/挫志/群控更頻繁可用)。"},
+     {"opt_id": "silver_tongue", "name": "巧言惑心", "kind": "skill_fortify", "skill": {"speechcraft": 8},
+      "desc": "幻術師深諳惑心之道,言辭更具說服力(口才技能 +8)。"}
+   ]},
+
+  {"id": "acrobatics_50", "skill": "acrobatics", "threshold": 50,
+   "options": [
+     {"opt_id": "tumbler", "name": "翻滾卸勁", "kind": "evasion_bonus", "evasion_bonus": 0.04,
+      "desc": "翻滾卸勁,身形更難捉摸(閃避率 +4%)。"},
+     {"opt_id": "nimble", "name": "身法精進", "kind": "skill_fortify", "skill": {"acrobatics": 8},
+      "desc": "身法精進,翻躍卸力更俐落(雜技技能 +8)。"}
+   ]},
+
+  {"id": "light_armor_50", "skill": "light_armor", "threshold": 50,
+   "options": [
+     {"opt_id": "nimble_guard", "name": "柔革護持", "kind": "passive_armor", "armor_bonus": 12,
+      "desc": "柔革貼身、卸力得宜:被動護甲 +12。"},
+     {"opt_id": "supple_leather", "name": "柔革貼身", "kind": "skill_fortify", "skill": {"light_armor": 8},
+      "desc": "柔革貼身,輕甲防護更紮實(輕甲技能 +8)。"}
+   ]},
+
+  {"id": "security_50", "skill": "security", "threshold": 50,
+   "options": [
+     {"opt_id": "trapwise", "name": "機關通曉", "kind": "trap_floor", "floor": 0.30,
+      "desc": "機關通曉:再刁鑽的陷阱也有把握(解陷/避陷成功率保底 30%)。"},
+     {"opt_id": "nimble_fingers", "name": "巧指穩手", "kind": "skill_fortify", "skill": {"security": 8},
+      "desc": "巧指穩手,撬鎖解陷更穩(安全技能 +8)。"}
+   ]},
+
+  {"id": "scout_50", "skill": "scout", "threshold": 50,
+   "options": [
+     {"opt_id": "field_recon", "name": "野外偵知", "kind": "recon_reveal_floor", "scout_floor": 50,
+      "desc": "野外偵知:接戰前即可看清敵血量/護甲/弱點(視同偵查 50)。"},
+     {"opt_id": "forewarned", "name": "未雨綢繆", "kind": "skill_fortify", "skill": {"scout": 8},
+      "desc": "偵查精進,先機判讀更準(偵查技能 +8 → 更早揭弱點、更多備戰)。"}
+   ]},
+
+  {"id": "speechcraft_50", "skill": "speechcraft", "threshold": 50,
+   "options": [
+     {"opt_id": "merchant_friend", "name": "商道人脈", "kind": "merchant_bonus", "disposition_bonus": 0.08,
+      "desc": "巧言生意:買賣更划算(議價 +0.08,與交易/幻術相加)。"},
+     {"opt_id": "silver_voiced", "name": "辯才無礙", "kind": "skill_fortify", "skill": {"speechcraft": 8},
+      "desc": "辯才無礙,說服/威嚇更易(口才技能 +8)。"}
    ]}
 ]

@@ -357,6 +357,18 @@ def _triage_armed(char) -> bool:
                for e in getattr(char, "active_effects", []))
 
 
+def _apply_combat_repair(player, gamedata: GameData) -> None:
+    """里程碑「戰場鐵匠」(armorer):每戰鬥回合自修武器/護甲耐久(夾 100)。無此里程碑 → no-op。"""
+    cr = mastery.combat_repair(player, gamedata)
+    if not cr:
+        return
+    if cr.get("weapon"):
+        player.weapon_condition = min(100.0, player.weapon_condition + cr["weapon"])
+    if cr.get("armor"):
+        for slot in list(player.armor_condition):
+            player.armor_condition[slot] = min(100.0, player.armor_condition[slot] + cr["armor"])
+
+
 def _choose_combat_action(state: GameState, gamedata: GameData, enemies: list, allies: list,
                           vanish_used: int = 0):
     """回傳玩家本回合的行動 dict:{type, spell_id?, target?}。"""
@@ -597,7 +609,7 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
         # ---- 玩家階段 ----
         if action["type"] == "flee":
             foe = max(alive_e(), key=lambda e: e.speed)
-            if combat.try_flee(player, foe, state.rng):
+            if combat.try_flee(player, foe, state.rng, gamedata):
                 ui.message("你成功擺脫了敵人,脫離戰鬥!", style="yellow")
                 player.active_effects.clear()
                 state.time.advance(1)
@@ -742,6 +754,8 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
                 elif kind == "vampire" and vampirism.infect(player, state):
                     ui.message("獠牙刺入你的頸側 —— 傷口隱隱發燙。你染上了某種不祥的熱症……",
                                style="bold red")
+        for e in enemies:          # 敵人階段可能因「重甲反震」反殺被擒魂的敵 → 補記擒魂(免漏靈魂石)
+            note_trap(e)
 
         # ---- 回合結束:持續傷害/狀態計時 ----
         # 意志「施法續航」:戰鬥每回合被動回魔(base-40 中性;巨魔像座不自然回魔,沿用既有設定)
@@ -749,6 +763,7 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
         if mregen and player.birthsign != "atronach" and player.magicka < player.max_magicka:
             player.magicka = min(player.max_magicka, player.magicka + mregen)
         pre_trap = {id(e): magic.has_soul_trap(e) for e in enemies if combat.is_alive(e)}
+        _apply_combat_repair(player, gamedata)        # 里程碑「戰場鐵匠」:回合末自修裝備
         ui.combat_tick(magic.tick_effects(player, gamedata))
         for a in battle["allies"]:
             if combat.is_alive(a):
@@ -1135,6 +1150,7 @@ def _resolve_trap(state: GameState, gamedata: GameData, trap: dict) -> None:
     char = state.player
     dodge = min(0.9, 0.30 + (char.attr("agility") - 40) * 0.01 + char.skill("security") * 0.003
                 + formulas.luck_fortune(char.attr("luck")))
+    dodge = max(dodge, mastery.trap_floor(char, gamedata))   # 里程碑「機關通曉」:避陷保底
     if state.rng.chance(dodge):
         ui.message("你察覺地面的機關,及時閃避。", style="green")
         return
@@ -1184,6 +1200,7 @@ def action_dungeon(state: GameState, gamedata: GameData) -> str | None:
 
     def tick_turn() -> bool:
         """行動 1 格 = 1 回合:玩家增益 + 召喚物 summon_turns/效果衰減。回 True = 玩家陣亡(DoT)。"""
+        _apply_combat_repair(player, gamedata)        # 里程碑「戰場鐵匠」:地城每格亦自修
         for msg in magic.tick_effects(player, gamedata):
             ui.message(msg, style="grey70")
         for a in battle["allies"]:

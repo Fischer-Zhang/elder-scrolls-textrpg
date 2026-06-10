@@ -213,7 +213,9 @@ def _armor_rating(actor, gamedata: GameData) -> int:
     else:
         skill = actor.skill("heavy_armor" if wc == "heavy" else "light_armor")
         base = round(worn * (0.5 + skill / 100.0))
-    passive = mastery.passive_armor_bonus(actor, gamedata) if actor.magicka > 0 else 0   # 「石膚」:有魔力時被動護甲
+    # 被動護甲(石膚/靈體護壁=法系、撐架/柔革護持=物理 stance):里程碑 perk,無條件生效
+    # (廣度 pass 加入物理 stance 後不再綁魔力;原「有魔力才生效」對物理 stance 不合理)。
+    passive = mastery.passive_armor_bonus(actor, gamedata)
     return base + passive + smithing.armor_temper_bonus(actor) + magic.active_shield(actor)   # 淬鍊 + 變化系護盾疊加
 
 
@@ -428,6 +430,12 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
         if _is_player(attacker) and wmod.get("recoil") and dmg_done > 0:
             attacker.health = max(1, attacker.health - int(round(dmg_done * wmod["recoil"])))
 
+        # 里程碑「重甲反震」:玩家受物理擊中 → 反彈一部分傷害給攻擊者(只物理;攻擊者可被反殺)
+        if _is_player(defender) and not atk_element and dmg_done > 0:
+            refl = mastery.armor_reflect(defender, gamedata)
+            if refl:
+                _set_hp(attacker, _get_hp(attacker) - int(round(dmg_done * refl)))
+
         # 法杖等「命中回復施術者資源」(D:on_hit_self)→ 由後面的 clamp_resources 夾限
         if _is_player(attacker) and wdef and wdef.get("on_hit_self"):
             ohs = wdef["on_hit_self"]
@@ -610,9 +618,11 @@ def player_vanish_cost(player: Character) -> None:
     player.fatigue = max(0, player.fatigue - cost)
 
 
-def try_flee(player: Character, creature: Creature, rng: RNG) -> bool:
+def try_flee(player: Character, creature: Creature, rng: RNG, gamedata: GameData | None = None) -> bool:
     chance = formulas.flee_chance(_speed(player), _agility(player), _speed(creature))
     chance = min(0.95, chance + formulas.luck_fortune(player.attr("luck")))   # 幸運「時來運轉」
+    if gamedata is not None:                          # 里程碑「逃命好手」(運動):逃跑率加成
+        chance = min(0.95, chance + mastery.flee_bonus(player, gamedata))
     return rng.chance(chance)
 
 

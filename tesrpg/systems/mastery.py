@@ -54,6 +54,8 @@ _IMPLEMENTED_KINDS = {
     # 八職功能性身份:法師連鎖 / 戰法師共鳴·回魔 / 治療師急救 / 弓手獵手偵察 / 刺客烙印。
     # (warrior 盾牆 / knight 戰旗 為戰鬥動作,非里程碑 kind。)
     "cascade", "resonant_strike", "mana_on_hit", "triage_heal", "recon_reveal_floor", "deathmark",
+    # 廣度 pass:護甲修理戰中自修、運動逃跑加成、重甲反傷、安全解陷保底。
+    "combat_repair", "flee_bonus", "armor_reflect", "trap_floor",
 }
 
 
@@ -241,39 +243,36 @@ def attack_fatigue_factor(char, gamedata: GameData) -> float:
     return e["attack_fatigue_factor"] if e else 1.0
 
 
-def _chosen_spell_option(char, gamedata: GameData, school: str) -> dict | None:
-    """已選、影響該學派的法術系 option(spell_overload 舊制 / spell_mod 通用),school 須一致。"""
-    if not hasattr(char, "base_skill"):
-        return None
-    choices = getattr(char, "mastery_choices", {}) or {}
-    for node in _nodes(gamedata):
-        if not _node_reached(char, node):
-            continue
-        oid = choices.get(node["id"])
-        if oid is None:
-            continue
-        opt = next((o for o in node["options"] if o.get("opt_id") == oid), None)
-        if opt and opt.get("kind") in ("spell_overload", "spell_mod") and opt.get("school") == school:
-            return opt
-    return None
+def _chosen_spell_options(char, gamedata: GameData, school: str) -> list:
+    """已選、影響該學派的**所有**法術系 option(spell_overload / spell_mod);school 須一致。
+    可跨多節點(廣度 pass:alteration_50 efficient_shield + alteration_75 spell_reach),須聚合不遮蔽。"""
+    return [o for o in _chosen_options_by_kind(char, gamedata, "spell_mod")
+            if o.get("school") == school] + \
+           [o for o in _chosen_options_by_kind(char, gamedata, "spell_overload")
+            if o.get("school") == school]
 
 
 def spell_power_bonus(char, gamedata: GameData, school: str) -> float:
-    """過載/術法增幅:對應學派的 _power 額外加成。"""
-    e = _chosen_spell_option(char, gamedata, school)
-    return e.get("power_bonus", 0.0) if e else 0.0
+    """過載/術法增幅:對應學派的 _power 額外加成(多來源相加)。"""
+    return sum(o.get("power_bonus", 0.0) for o in _chosen_spell_options(char, gamedata, school))
 
 
 def spell_cost_factor(char, gamedata: GameData, school: str) -> float:
-    """同源代價:對應學派的魔力消耗倍率(>1.0 = 更耗魔)。"""
-    e = _chosen_spell_option(char, gamedata, school)
-    return e.get("cost_factor", 1.0) if e else 1.0
+    """同源代價:對應學派的魔力消耗倍率(多來源相乘;>1.0 = 更耗魔、<1.0 = 省魔)。"""
+    f = 1.0
+    for o in _chosen_spell_options(char, gamedata, school):
+        if "cost_factor" in o:
+            f *= o["cost_factor"]
+    return f
 
 
 def spell_on_hit(char, gamedata: GameData, school: str) -> dict | None:
-    """衝擊餘波:該學派傷害法術命中時附加的狀態 {kind, chance, magnitude?, turns?};無則 None。"""
-    e = _chosen_spell_option(char, gamedata, school)
-    return e.get("on_hit") if e else None
+    """衝擊餘波:該學派傷害法術命中時附加的狀態 {kind, chance, magnitude?, turns?};無則 None(取最後一個)。"""
+    last = None
+    for o in _chosen_spell_options(char, gamedata, school):
+        if o.get("on_hit"):
+            last = o["on_hit"]
+    return last
 
 
 def summon_mod(char, gamedata: GameData) -> dict:
@@ -283,8 +282,9 @@ def summon_mod(char, gamedata: GameData) -> dict:
 
 
 def passive_armor_bonus(char, gamedata: GameData) -> int:
-    """石膚:有魔力時的被動護甲加值(0 = 無)。"""
-    return int(_param(char, gamedata, "passive_armor", "armor_bonus", 0))
+    """被動護甲加值(0 = 無)。多來源(石膚/靈體護壁/撐架/護體召喚/柔革護持)相加,不遮蔽。"""
+    return int(sum(o.get("armor_bonus", 0)
+                   for o in _chosen_options_by_kind(char, gamedata, "passive_armor")))
 
 
 def potion_potency(char, gamedata: GameData) -> float:
@@ -293,8 +293,9 @@ def potion_potency(char, gamedata: GameData) -> float:
 
 
 def poison_charge_bonus(char, gamedata: GameData) -> int:
-    """劇毒淬煉:塗毒可附著的額外攻擊次數。"""
-    return int(_param(char, gamedata, "poison_charge_bonus", "charge_bonus", 0))
+    """劇毒淬煉/淬毒名家:塗毒可附著的額外攻擊次數(多來源 alchemy_50+75 相加)。"""
+    return int(sum(o.get("charge_bonus", 0)
+                   for o in _chosen_options_by_kind(char, gamedata, "poison_charge_bonus")))
 
 
 def enchant_potency(char, gamedata: GameData) -> float:
@@ -320,8 +321,9 @@ def merchant_bonus(char, gamedata: GameData) -> float:
 
 # --- P4 潛行系 getter ---------------------------------------------------
 def evasion_bonus(char, gamedata: GameData) -> float:
-    """身輕如燕:額外閃避(直接從敵命中率扣)。"""
-    return _param(char, gamedata, "evasion_bonus", "evasion_bonus", 0.0)
+    """身輕如燕/翻滾卸勁:額外閃避(直接從敵命中率扣;多來源 acrobatics_50+75 相加)。"""
+    return sum(o.get("evasion_bonus", 0.0)
+               for o in _chosen_options_by_kind(char, gamedata, "evasion_bonus"))
 
 
 def vanish_floor(char, gamedata: GameData) -> float:
@@ -363,8 +365,9 @@ def recon_reveal_threshold(char, gamedata: GameData) -> int:
 
 
 def recon_scout_floor(char, gamedata: GameData) -> int:
-    """獵手偵察(弓手):視同偵查技能的下限(無 scout 也能戰前看清敵情)。0 = 無此里程碑。"""
-    return int(_param(char, gamedata, "recon_reveal_floor", "scout_floor", 0))
+    """獵手偵察/野外偵知:視同偵查技能的下限(0 = 無)。多來源(marksman_50 + scout_50)取最高。"""
+    return int(max((o.get("scout_floor", 0) for o in _chosen_options_by_kind(char, gamedata, "recon_reveal_floor")),
+                   default=0))
 
 
 def has_recon_perk(char, gamedata: GameData) -> bool:
@@ -476,17 +479,18 @@ def weapon_mod(char, gamedata: GameData, wpn_skill_id: str | None) -> dict:
     """
     if not wpn_skill_id or not hasattr(char, "base_skill"):
         return {}
-    choices = getattr(char, "mastery_choices", {}) or {}
-    for node in _nodes(gamedata):
-        if not _node_reached(char, node):
+    # 合併同 target 的所有已選 weapon_mod option(廣度 pass:同武器技能可有兩節點,如 blade_50+blade_100)
+    # —— 數值參數相加、on_hit_status 取最後一個;否則前一節點會遮蔽後一節點(審查級正確性)。
+    merged: dict = {}
+    for opt in _chosen_options_by_kind(char, gamedata, "weapon_mod"):
+        if opt.get("target") != wpn_skill_id:
             continue
-        oid = choices.get(node["id"])
-        if oid is None:
-            continue
-        opt = next((o for o in node["options"] if o.get("opt_id") == oid), None)
-        if opt and opt.get("kind") == "weapon_mod" and opt.get("target") == wpn_skill_id:
-            return opt
-    return {}
+        for k in ("hit", "power", "pen", "fatigue", "recoil"):
+            if k in opt:
+                merged[k] = merged.get(k, 0) + opt[k]
+        if "on_hit_status" in opt:
+            merged["on_hit_status"] = opt["on_hit_status"]
+    return merged
 
 
 def block_riposte_chance(char, gamedata: GameData) -> float:
@@ -505,8 +509,31 @@ def temper_free_chance(char, gamedata: GameData) -> float:
 
 
 def repair_floor(char, gamedata: GameData) -> float:
-    """行軍鐵匠:不論 armorer 高低,修理可達的最低成數下限(0 = 無)。"""
-    return _param(char, gamedata, "repair_floor", "floor", 0.0)
+    """行軍鐵匠/鍛場修整:修理可達的最低成數下限(0 = 無)。多來源(armorer + smithing)取最高。"""
+    return max((o.get("floor", 0.0) for o in _chosen_options_by_kind(char, gamedata, "repair_floor")),
+               default=0.0)
+
+
+# --- 廣度 pass 新 getter(皆單源:只一個技能授予 → 無需聚合)--------------------
+def combat_repair(char, gamedata: GameData) -> dict:
+    """戰場鐵匠:每戰鬥回合自修武器/護甲耐久。回傳 {weapon, armor} 修復量;{} = 無。"""
+    e = _chosen_option_by_kind(char, gamedata, "combat_repair")
+    return {"weapon": e.get("weapon", 0.0), "armor": e.get("armor", 0.0)} if e else {}
+
+
+def flee_bonus(char, gamedata: GameData) -> float:
+    """逃命好手:逃跑成功率加成(0 = 無)。"""
+    return _param(char, gamedata, "flee_bonus", "bonus", 0.0)
+
+
+def armor_reflect(char, gamedata: GameData) -> float:
+    """重甲反震:被近戰物理擊中時,反彈此比例傷害給攻擊者(0 = 無)。"""
+    return _param(char, gamedata, "armor_reflect", "reflect", 0.0)
+
+
+def trap_floor(char, gamedata: GameData) -> float:
+    """機關通曉:解陷/避陷成功率下限(0 = 無)。"""
+    return _param(char, gamedata, "trap_floor", "floor", 0.0)
 
 
 def travel_factor_bonus(char, gamedata: GameData) -> float:

@@ -307,12 +307,12 @@ def test_shipped_kinds_all_implemented():
 def test_unimplemented_kind_is_inert():
     """打錯/未實作的 kind:不出 pending、不可選、不計分(完全 inert)。"""
     gd, c = _char(blade=100)
-    bogus = {"id": "blade_x", "skill": "blade", "threshold": 50,
+    bogus = {"id": "blade_x", "skill": "blade", "threshold": 33,   # 33:無任何真實節點的空門檻
              "options": [{"opt_id": "ghost", "name": "幻影", "kind": "not_a_real_kind"}]}
     gd.mastery.append(bogus)
     try:
         assert all(n["id"] != "blade_x" for n in mastery.pending_choices(c, gd))
-        assert not mastery.nodes_at(c, gd, "blade", 50)
+        assert not mastery.nodes_at(c, gd, "blade", 33)
         c.mastery_choices["blade_x"] = "ghost"   # 即使硬塞,unlocked 仍過濾
         assert all(e.get("node_id") != "blade_x" for e in mastery.unlocked(c, gd))
     finally:
@@ -336,15 +336,18 @@ def test_mastery_never_writes_base_skill():
 
 def test_next_threshold_hint_uses_base_and_skips_done():
     """訓練師里程碑提示:回傳下一個未達門檻、以 base_skill 計、全達/無里程碑→None。"""
-    gd, c = _char(block=44)
+    gd, c = _char(block=44)            # block 節點:50 / 75(廣度 pass)
     nxt = mastery.next_threshold(c, gd, "block")
     assert nxt and nxt["threshold"] == 50 and nxt["remaining"] == 6 and nxt["name"]
     c.equip_skill_bonus["block"] = 10
     assert c.skill("block") >= 50 and mastery.next_threshold(c, gd, "block")["remaining"] == 6
-    c.skills["block"] = 50
+    c.skills["block"] = 50             # 達 50 → 下一個未達門檻為 75
+    nxt = mastery.next_threshold(c, gd, "block")
+    assert nxt and nxt["threshold"] == 75 and nxt["remaining"] == 25
+    c.skills["block"] = 75             # 達最高門檻 → None
     assert mastery.next_threshold(c, gd, "block") is None
-    # 已達某技能最高門檻 → None(athletics 唯一門檻為 50)
-    c.skills["athletics"] = 50
+    # 已達某技能最高門檻 → None(athletics 門檻 50/75)
+    c.skills["athletics"] = 75
     assert mastery.next_threshold(c, gd, "athletics") is None
 
 
@@ -642,7 +645,8 @@ def test_alteration_stoneflesh_passive_armor():
     a_with = combat._armor_rating(c, gd)
     c.magicka = 0
     a_without = combat._armor_rating(c, gd)
-    assert a_with == a_without + 20                        # 有魔力 +20,枯竭則無
+    assert a_with == a_without                            # 被動護甲改無條件(對抗審查:物理 stance 不綁魔力)
+    assert a_without >= 20                                # 魔力 0 仍含 +20
 
 
 def test_alchemy_potion_potency_and_poison_charges():
@@ -870,6 +874,140 @@ def test_mercantile_and_intimidate():
     assert dialogue.intimidate_chance(c3, foes, False, gd3) >= 0.40   # 下限抬到 40%
 
 
+# --- 廣度 pass:17 薄技能各 +1 節點 + 4 新 kind + 2 getter 微修 -------------------
+def test_breadth_all_skills_have_two_plus_nodes():
+    """廣度:全 23 技能各 ≥2 節點(sneak 仍 3)。"""
+    from collections import Counter
+    gd = get_gamedata()
+    cnt = Counter(n["skill"] for n in mastery._nodes(gd))
+    assert len(cnt) == 23 and all(v >= 2 for v in cnt.values()) and cnt["sneak"] == 3
+
+
+def test_breadth_new_nodes_reachable_and_gated():
+    """抽樣新節點:達門檻才 pending、可選;base_skill gating。"""
+    gd, c = _char(blade=49)
+    assert not any(n["id"] == "blade_50" for n in mastery.pending_choices(c, gd))   # 49<50
+    c.skills["blade"] = 50
+    assert any(n["id"] == "blade_50" for n in mastery.pending_choices(c, gd))
+    assert mastery.choose(c, gd, "blade_50", "keen_edge") is not None
+    assert mastery.choose(c, gd, "blade_50", "riposte_blade") is None               # 二選一永久
+
+
+def test_combat_repair_getter_and_apply():
+    import tesrpg.main as M
+    gd, c = _char(armorer=75)
+    assert mastery.combat_repair(c, gd) == {}
+    mastery.choose(c, gd, "armorer_75", "combat_tinker")
+    assert mastery.combat_repair(c, gd) == {"weapon": 2.0, "armor": 2.0}
+    c.weapon_condition = 90.0
+    c.armor_condition = {"cuirass": 90.0}
+    M._apply_combat_repair(c, gd)
+    assert c.weapon_condition == 92.0 and c.armor_condition["cuirass"] == 92.0
+    c.weapon_condition = 99.5
+    M._apply_combat_repair(c, gd)
+    assert c.weapon_condition == 100.0                          # 夾 100
+
+
+def test_flee_bonus_getter_and_try_flee():
+    gd, c = _char(athletics=75)
+    assert mastery.flee_bonus(c, gd) == 0.0
+    mastery.choose(c, gd, "athletics_75", "escape_artist")
+    assert mastery.flee_bonus(c, gd) == 0.15
+    foe = combat.spawn_creature(gd, "mudcrab", RNG(0))
+    combat.try_flee(c, foe, RNG(0), gd)                          # 帶 gamedata 不崩
+
+
+def test_armor_reflect_damages_attacker():
+    gd, c = _char(heavy_armor=50)
+    mastery.choose(c, gd, "heavy_armor_50", "armor_reflect")
+    assert mastery.armor_reflect(c, gd) == 0.12
+    c.health = c.max_health = 9999
+    foe = combat.spawn_creature(gd, "bear", RNG(0)); foe.health = foe.max_health = 9999
+    reflected = False
+    for i in range(25):
+        before = foe.health
+        ev = combat.resolve_attack(foe, c, gd, RNG(i))          # 敵打玩家(物理)
+        if ev["hit"] and ev["damage"] > 0 and foe.health < before:
+            reflected = True
+            break
+        foe.health = 9999
+    assert reflected                                            # 反彈傷害確實扣敵血
+
+
+def test_trap_floor_floors_dodge():
+    gd, c = _char(security=50)
+    assert mastery.trap_floor(c, gd) == 0.0
+    mastery.choose(c, gd, "security_50", "trapwise")
+    assert mastery.trap_floor(c, gd) == 0.30
+
+
+def test_weapon_mod_merges_same_target():
+    """blade_50 + blade_100 同 target → 合併(不遮蔽);審查級正確性。"""
+    gd, c = _char(blade=100)
+    mastery.choose(c, gd, "blade_50", "keen_edge")              # hit 0.05
+    mastery.choose(c, gd, "blade_100", "precision")             # hit 0.05
+    wm = mastery.weapon_mod(c, gd, "blade")
+    assert abs(wm.get("hit", 0) - 0.10) < 1e-9
+
+
+def test_repair_floor_takes_max_across_sources():
+    gd, c = _char(armorer=50, smithing=50)
+    mastery.choose(c, gd, "armorer_50", "field_smith")          # 90
+    mastery.choose(c, gd, "smithing_50", "forge_repair")        # 85
+    assert mastery.repair_floor(c, gd) == 90.0                  # 取最高
+
+
+def test_same_source_masking_fixed_spell_poison_evasion_passive():
+    """對抗審查修正:廣度 pass 使多 getter 出現同源多節點 → 須聚合不遮蔽。"""
+    # spell_mod:alteration_50 efficient_shield(cost 0.85)+ alteration_75 spell_reach(power 0.15)同時生效
+    gd, c = _char(alteration=100)
+    mastery.choose(c, gd, "alteration_50", "efficient_shield")
+    mastery.choose(c, gd, "alteration_75", "spell_reach")
+    assert abs(mastery.spell_cost_factor(c, gd, "alteration") - 0.85) < 1e-9
+    assert abs(mastery.spell_power_bonus(c, gd, "alteration") - 0.15) < 1e-9
+    # poison_charge:alchemy_50(2)+ alchemy_75(1)= 3
+    gd2, c2 = _char(alchemy=100)
+    mastery.choose(c2, gd2, "alchemy_50", "toxin_master")
+    mastery.choose(c2, gd2, "alchemy_75", "potent_poison")
+    assert mastery.poison_charge_bonus(c2, gd2) == 3
+    # evasion:acrobatics_50(0.04)+ acrobatics_75(0.05)= 0.09
+    gd3, c3 = _char(acrobatics=100)
+    mastery.choose(c3, gd3, "acrobatics_50", "tumbler")
+    mastery.choose(c3, gd3, "acrobatics_75", "evasion")
+    assert abs(mastery.evasion_bonus(c3, gd3) - 0.09) < 1e-9
+    # passive_armor:block_75 bracing(10)+ light_armor_50 nimble_guard(12)= 22(相加不遮蔽)
+    gd4, c4 = _char(block=100, light_armor=100)
+    mastery.choose(c4, gd4, "block_75", "bracing")
+    mastery.choose(c4, gd4, "light_armor_50", "nimble_guard")
+    assert mastery.passive_armor_bonus(c4, gd4) == 22
+
+
+def test_passive_armor_unconditional_at_zero_magicka():
+    """對抗審查修正:物理 stance(撐架)被動護甲不再綁魔力 → 魔力 0 仍生效。"""
+    from tesrpg.systems import combat
+    gd, c = _char(block=75)
+    mastery.choose(c, gd, "block_75", "bracing")
+    c.magicka = 0
+    assert combat._armor_rating(c, gd) >= 10        # 魔力 0 仍含 +10 被動護甲
+
+
+def test_illusion_mind_mastery_reduces_cost():
+    """對抗審查修正:illusion_100 改 mind_mastery(走 live spell_cost_factor),非死碼 on_hit。"""
+    gd, c = _char(illusion=100)
+    mastery.choose(c, gd, "illusion_100", "mind_mastery")
+    assert abs(mastery.spell_cost_factor(c, gd, "illusion") - 0.85) < 1e-9
+
+
+def test_shipped_attr_fortify_node_flows_to_resources():
+    gd, c = _char(athletics=75)
+    base_end = c.attr("endurance")
+    base_fat = c.max_fatigue
+    mastery.choose(c, gd, "athletics_75", "enduring")           # attr endurance +5(choose 內已重算)
+    assert c.attr("endurance") == base_end + 5
+    assert c.base_attr("endurance") == base_end                # base 不動(鐵律)
+    assert c.max_fatigue > base_fat                            # 耐力 → 體力上限提升
+
+
 def run():
     test_threshold_uses_base_skill_only()
     test_creatures_have_no_mastery()
@@ -930,6 +1068,18 @@ def run():
     test_scout_prep_and_recon()
     test_has_recon_perk()
     test_security_pick_no_break()
+    test_breadth_all_skills_have_two_plus_nodes()
+    test_breadth_new_nodes_reachable_and_gated()
+    test_combat_repair_getter_and_apply()
+    test_flee_bonus_getter_and_try_flee()
+    test_armor_reflect_damages_attacker()
+    test_trap_floor_floors_dodge()
+    test_weapon_mod_merges_same_target()
+    test_repair_floor_takes_max_across_sources()
+    test_same_source_masking_fixed_spell_poison_evasion_passive()
+    test_passive_armor_unconditional_at_zero_magicka()
+    test_illusion_mind_mastery_reduces_cost()
+    test_shipped_attr_fortify_node_flows_to_resources()
     test_mercantile_and_intimidate()
 
 
