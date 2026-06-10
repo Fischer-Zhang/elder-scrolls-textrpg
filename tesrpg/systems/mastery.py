@@ -51,6 +51,9 @@ _IMPLEMENTED_KINDS = {
     "evasion_bonus", "vanish_floor", "sneak_mult_bonus", "vanish_relentless", "approach_bonus",
     "armor_sneak_relief", "prep_bonus", "recon_resist_read", "pick_no_break",
     "restock_bonus", "intimidate_floor",
+    # 八職功能性身份:法師連鎖 / 戰法師共鳴·回魔 / 治療師急救 / 弓手獵手偵察 / 刺客烙印。
+    # (warrior 盾牆 / knight 戰旗 為戰鬥動作,非里程碑 kind。)
+    "cascade", "resonant_strike", "mana_on_hit", "triage_heal", "recon_reveal_floor", "deathmark",
 }
 
 
@@ -349,13 +352,72 @@ def armor_sneak_relief(char, gamedata: GameData) -> float:
 
 
 def prep_bonus(char, gamedata: GameData) -> int:
-    """先機在握:偵查備戰動作 +n。"""
-    return int(_param(char, gamedata, "prep_bonus", "prep_bonus", 0))
+    """先機在握/諜報偵搜:戰前備戰動作 +n(多來源相加:scout 先機在握 + mercantile 諜報偵搜)。"""
+    return int(sum(o.get("prep_bonus", 0)
+                   for o in _chosen_options_by_kind(char, gamedata, "prep_bonus")))
 
 
 def recon_reveal_threshold(char, gamedata: GameData) -> int:
     """洞察弱點:抗性/弱點揭露的偵查門檻(選了 → 75 降為 50)。"""
     return 50 if _chosen_option_by_kind(char, gamedata, "recon_resist_read") else 75
+
+
+def recon_scout_floor(char, gamedata: GameData) -> int:
+    """獵手偵察(弓手):視同偵查技能的下限(無 scout 也能戰前看清敵情)。0 = 無此里程碑。"""
+    return int(_param(char, gamedata, "recon_reveal_floor", "scout_floor", 0))
+
+
+# --- 八職功能性身份 getter(法師/戰法師/治療師/刺客)----------------------
+def _cascade_depth(char) -> int:
+    """目前奧術連鎖層數(存 active_effects 的暫態,戰鬥邊界清空);非戰鬥/無效果 → 0。"""
+    return max((int(e.get("magnitude", 0)) for e in getattr(char, "active_effects", [])
+               if e.get("kind") == "cascade" and e.get("turns", 0) > 0), default=0)
+
+
+def cascade_power(char, gamedata: GameData) -> float:
+    """法師「奧術連鎖」:依目前連鎖層數對 _power 的額外加成(未選節點 → 0)。"""
+    opt = _chosen_option_by_kind(char, gamedata, "cascade")
+    return opt.get("power_per_depth", 0.0) * _cascade_depth(char) if opt else 0.0
+
+
+def cascade_fatigue_factor(char, gamedata: GameData) -> float:
+    """法師「奧術連鎖」:依層數的施法體力折扣(1.0 = 無;乘在法袍折扣之後,獨立乘法)。"""
+    opt = _chosen_option_by_kind(char, gamedata, "cascade")
+    if not opt:
+        return 1.0
+    return max(0.4, 1.0 - opt.get("fatigue_relief_per_depth", 0.0) * _cascade_depth(char))
+
+
+def bump_cascade(char, gamedata: GameData) -> None:
+    """成功施法後推進連鎖層數(cap max_depth、source 去重);未選節點 → no-op。"""
+    opt = _chosen_option_by_kind(char, gamedata, "cascade")
+    if not opt or not hasattr(char, "active_effects"):
+        return
+    depth = _cascade_depth(char)
+    char.active_effects[:] = [e for e in char.active_effects if e.get("kind") != "cascade"]
+    new_depth = min(depth + 1, int(opt.get("max_depth", 2)))
+    char.active_effects.append({"kind": "cascade", "magnitude": new_depth,
+                                "turns": int(opt.get("window", 1)) + 1})
+
+
+def resonant_strike(char, gamedata: GameData) -> dict | None:
+    """戰法師「共鳴一擊」:施毀滅傷害法術後強化下一近戰的 {transfer, dot_magnitude, dot_turns};無則 None。"""
+    return _chosen_option_by_kind(char, gamedata, "resonant_strike")
+
+
+def mana_on_hit(char, gamedata: GameData) -> int:
+    """戰法師「法力回擊」:玩家近戰命中回復的魔力點數(0 = 無此里程碑)。"""
+    return int(_param(char, gamedata, "mana_on_hit", "magnitude", 0))
+
+
+def triage(char, gamedata: GameData) -> dict | None:
+    """治療師「戰地搶救」:同伴瀕死時急救的成本折扣 {magicka_factor, fatigue_factor};無則 None。"""
+    return _chosen_option_by_kind(char, gamedata, "triage_heal")
+
+
+def deathmark(char, gamedata: GameData) -> dict | None:
+    """刺客「致命烙印」:標記敵 → 後續(非開場)近戰破甲的 {pen, fatigue_cost, sneak_gate, turns, cooldown};無則 None。"""
+    return _chosen_option_by_kind(char, gamedata, "deathmark")
 
 
 def pick_keep_chance(char, gamedata: GameData) -> float:

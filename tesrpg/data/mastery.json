@@ -194,5 +194,45 @@
       "desc": "口才大師:三寸不爛之舌,說服必定成功 —— 但每個人只會被你折服一次。"},
      {"opt_id": "intimidator", "name": "不怒自威", "kind": "intimidate_floor", "floor": 0.40,
       "desc": "不怒自威:威嚇喝退弱敵的成功率保底 40%(化解衝突而非廝殺)。"}
+   ]},
+  {"id": "mysticism_75", "skill": "mysticism", "threshold": 75, "options": [
+     {"opt_id": "arcane_cascade", "name": "奧術連鎖", "kind": "cascade",
+      "power_per_depth": 0.08, "fatigue_relief_per_depth": 0.12, "max_depth": 2, "window": 1,
+      "desc": "法師心流:連續施法漸入佳境 —— 每連一發,下一道法術威力 +8%、施法省體 12%(最多疊 2 層,停手即散)。"},
+     {"opt_id": "spectral_ward", "name": "靈體護壁", "kind": "passive_armor", "armor_bonus": 15,
+      "desc": "祕法宗師:只要尚有魔力,靈光便護體於外(被動護甲 +15)。"}
+   ]},
+  {"id": "destruction_75", "skill": "destruction", "threshold": 75, "options": [
+     {"opt_id": "resonant_strike", "name": "共鳴一擊", "kind": "resonant_strike",
+      "transfer": 0.5, "dot_magnitude": 4, "dot_turns": 3,
+      "desc": "法武共鳴(爆發流):施放毀滅傷害法術後,下一記近戰灌入其半數法力 —— 額外元素傷害並引燃同系持續傷害。"},
+     {"opt_id": "arcane_battery", "name": "法力回擊", "kind": "mana_on_hit", "magnitude": 4,
+      "desc": "法武共鳴(自持流):以刃淬魔 —— 近戰命中回復 4 點魔力,揮劍補魔、續法不竭(穿重甲亦可,本作施法不罰甲)。"}
+   ]},
+  {"id": "mercantile_75", "skill": "mercantile", "threshold": 75, "options": [
+     {"opt_id": "subterfuge_intel", "name": "諜報偵搜", "kind": "prep_bonus", "prep_bonus": 1,
+      "desc": "盜賊情報網:以人脈與口舌探明敵情 —— 搶得先機時,開戰前可多做 1 個準備動作(與偵查的先機在握相加)。"},
+     {"opt_id": "informant", "name": "線人耳目", "kind": "recon_resist_read",
+      "desc": "線人通報虛實:偵查揭露敵抗性/弱點的門檻由 75 降為 50。"}
+   ]},
+  {"id": "restoration_50", "skill": "restoration", "threshold": 50, "options": [
+     {"opt_id": "triage", "name": "戰地搶救", "kind": "triage_heal",
+      "magicka_factor": 0.15, "fatigue_factor": 0.25,
+      "desc": "戰地醫者本能:當同袍生命垂危(<30%),你下一道治療/援護術近乎免費施放(魔力 15%、體力 25%)。"},
+     {"opt_id": "cleanse", "name": "潔淨之軀", "kind": "resist_fortify", "resist": {"disease": 30},
+      "desc": "白袍的庇佑:長伴病榻而百毒不侵(疾病抗性 +30%)。"}
+   ]},
+  {"id": "marksman_50", "skill": "marksman", "threshold": 50, "options": [
+     {"opt_id": "tracker", "name": "獵手偵察", "kind": "recon_reveal_floor", "scout_floor": 50,
+      "desc": "獵人之眼:即便不通偵查,接戰前也能看清獵物的血量/護甲/弱點(視同偵查 50)。"},
+     {"opt_id": "eagle_eye", "name": "鷹眼", "kind": "skill_fortify", "skill": {"marksman": 8},
+      "desc": "凝神專注,箭術更精(射術技能 +8)。"}
+   ]},
+  {"id": "sneak_50", "skill": "sneak", "threshold": 50, "options": [
+     {"opt_id": "deathmark", "name": "致命烙印", "kind": "deathmark",
+      "pen": 0.35, "fatigue_cost": 15, "sneak_gate": 50, "turns": 4, "cooldown": 6,
+      "desc": "獵殺標記:耗 15 體力標記一敵(標記 4 回 + 落印後冷卻,每目標約 6 回才可再標)→ 對其後續(非開場)近戰破甲 +35%。開場偷襲不受惠(守 boss 反一刀)。"},
+     {"opt_id": "cutpurse", "name": "扒竊聖手", "kind": "skill_fortify", "skill": {"mercantile": 10},
+      "desc": "暗影中的巧手:銷贓議價更在行(商貿技能 +10)。"}
    ]}
 ]

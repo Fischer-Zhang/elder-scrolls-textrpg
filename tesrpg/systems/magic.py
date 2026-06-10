@@ -35,8 +35,9 @@ def effective_cost(char: Character, gamedata: GameData, spell_id: str) -> int:
 
 
 def _power(char: Character, gamedata: GameData, school: str) -> float:
-    """學派技能對效果強度的加成(0.7x ~ 1.37x);里程碑「過載」再疊加。"""
-    return 0.7 + char.skill(school) / 150.0 + mastery.spell_power_bonus(char, gamedata, school)
+    """學派技能對效果強度的加成(0.7x ~ 1.37x);里程碑「過載」+「奧術連鎖」再疊加。"""
+    return (0.7 + char.skill(school) / 150.0 + mastery.spell_power_bonus(char, gamedata, school)
+            + mastery.cascade_power(char, gamedata))   # 法師「奧術連鎖」:連續施法漸增威力
 
 
 def spell_fatigue_cost(char: Character, gamedata: GameData, spell_id: str) -> int:
@@ -48,6 +49,7 @@ def spell_fatigue_cost(char: Character, gamedata: GameData, spell_id: str) -> in
     raw = formulas.CAST_FATIGUE_BASE + formulas.CAST_FATIGUE_PER_MAGICKA * ec
     raw *= formulas.fatigue_cost_factor(char.skill("athletics"))
     raw *= inventory.cast_fatigue_factor(char, gamedata)   # 法袍(同材質整套)省體施法
+    raw *= mastery.cascade_fatigue_factor(char, gamedata)  # 法師「奧術連鎖」:連發省體(乘在法袍折扣之後,獨立)
     return max(1, round(raw))
 
 
@@ -93,6 +95,13 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
     """
     sp = gamedata.spells[spell_id]
     cost = effective_cost(char, gamedata, spell_id)
+    # 治療師「戰地搶救」:武裝中 + 施治療/援護術 → 本道近乎免費(覆寫成本,非注入額外行動)。
+    triage_heal = (sp["effect"]["kind"] == "heal" or sp["target"] in ("ally", "allies"))
+    triage_opt = mastery.triage(char, gamedata) if triage_heal else None
+    triaged = triage_opt is not None and any(e.get("kind") == "triage_ready" and e.get("turns", 0) > 0
+                                             for e in char.active_effects)
+    if triaged:           # 折扣成本(旗標延到「治療確實施放」才消耗 → 失敗退費時不白費 buff)
+        cost = max(0, round(cost * triage_opt.get("magicka_factor", 0.15)))
     if char.magicka < cost:
         return _fail("魔力不足。")
 
@@ -102,7 +111,10 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
     # fatigue_before 為退費快照:任何「失敗退魔」分支都連體力一併還原(退魔卻不退體 = 不對稱資源損失)。
     fatigue_before = char.fatigue
     fatigue_ratio = fatigue_before / char.max_fatigue if char.max_fatigue > 0 else 0.0
-    char.fatigue = max(0, fatigue_before - spell_fatigue_cost(char, gamedata, spell_id))
+    fat = spell_fatigue_cost(char, gamedata, spell_id)
+    if triaged:           # 戰地搶救:急救亦折體力
+        fat = max(1, round(fat * triage_opt.get("fatigue_factor", 0.25)))
+    char.fatigue = max(0, fatigue_before - fat)
     eff = sp["effect"]
     kind = eff["kind"]
     power = _power(char, gamedata, sp["school"]) * formulas.cast_fatigue_power_factor(fatigue_ratio)
@@ -123,6 +135,8 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
             char.fatigue = fatigue_before
             return _fail("沒有可施放的同伴。")
         names = _apply_to_allies(kind, eff, power, dests)
+        if triaged:       # 援護確實施放 → 此時才消耗戰地搶救旗標
+            char.active_effects[:] = [e for e in char.active_effects if e.get("kind") != "triage_ready"]
         stats.clamp_resources(char)
         skill_events = progression.use_skill(char, gamedata, sp["school"], CAST_XP)
         return {"ok": True, "message": f"{sp['name']} —— {'、'.join(names)}{_ally_verb(kind)}。",
@@ -155,6 +169,15 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
                                                   "turns": ohs.get("turns", 1)})
                 elif ohs["kind"] == "fear":
                     target.active_effects.append({"kind": "fear", "turns": ohs.get("turns", 1)})
+        # 戰法師「共鳴一擊」:毀滅傷害法術後武裝下一記近戰(灌半數法傷 + 引燃同系 DoT;combat 端讀取消耗)
+        rs = mastery.resonant_strike(char, gamedata)
+        if rs and sp["school"] == "destruction" and damage > 0:
+            char.active_effects[:] = [e for e in char.active_effects if e.get("kind") != "resonance"]
+            char.active_effects.append({"kind": "resonance", "element": element,
+                                        "magnitude": round(damage * rs.get("transfer", 0.5)),
+                                        "dot_magnitude": rs.get("dot_magnitude", 4),
+                                        "dot_turns": rs.get("dot_turns", 3), "turns": 2})
+            msg += " 法力在你的兵刃上共鳴,蓄勢待發。"
 
     elif kind == "heal":
         # 九神騎士團:聖光眷顧 —— 治療回復量隨階級放大(只對會員;乘在溢盾計算之前)
@@ -275,7 +298,10 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
             blessed = "(達貢之佑加持)" if boon > 0 else ""
             msg = f"你召喚出了{ally.name}{blessed}{extra_msg},它將為你而戰({ally.summon_turns} 回合)。"
 
+    if triaged:           # 自我治療確實施放 → 消耗戰地搶救旗標(damage 等非治療術 triaged 必為 False)
+        char.active_effects[:] = [e for e in char.active_effects if e.get("kind") != "triage_ready"]
     stats.clamp_resources(char)
+    mastery.bump_cascade(char, gamedata)   # 法師「奧術連鎖」:成功施法 → 推進連鎖層(未選節點 no-op)
     skill_events = progression.use_skill(char, gamedata, sp["school"], CAST_XP)
     return {"ok": True, "message": msg, "damage": damage, "killed": killed,
             "skill_events": skill_events}
@@ -408,7 +434,8 @@ def tick_effects(entity, gamedata=None) -> list[str]:
     for e in list(entity.active_effects):
         if e["turns"] <= 0:
             entity.active_effects.remove(e)
-            if e["kind"] == "shield":
+            # 每回合重推的常駐光環護盾(盾牆護同袍 / 戰旗自護)不報「消散」— 它其實是被持續刷新,非真消失
+            if e["kind"] == "shield" and e.get("source") not in ("shield_wall_aura", "standard_self"):
                 msgs.append("護盾消散了。")
             elif e["kind"] == "paralyze":
                 msgs.append(f"{name}從麻痺中恢復。")

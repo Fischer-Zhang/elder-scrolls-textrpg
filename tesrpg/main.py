@@ -339,6 +339,24 @@ def _choose_ally_target(state: GameState, gamedata: GameData, allies: list):
     return living[int(ui.menu("援護哪個同伴?", opts))]
 
 
+def _has_standard(char) -> bool:
+    """騎士是否已立戰旗(存 active_effects 的常駐 stance)。"""
+    return any(e.get("kind") == "battle_standard" and e.get("turns", 0) > 0
+               for e in getattr(char, "active_effects", []))
+
+
+def _on_deathmark_cd(enemy) -> bool:
+    """該敵是否在致命烙印冷卻中(防每回合重標)。"""
+    return any(e.get("kind") == "deathmark_cd" and e.get("turns", 0) > 0
+               for e in getattr(enemy, "active_effects", []))
+
+
+def _triage_armed(char) -> bool:
+    """治療師「戰地搶救」是否已武裝(下一道治療折扣;存 active_effects)。"""
+    return any(e.get("kind") == "triage_ready" and e.get("turns", 0) > 0
+               for e in getattr(char, "active_effects", []))
+
+
 def _choose_combat_action(state: GameState, gamedata: GameData, enemies: list, allies: list,
                           vanish_used: int = 0):
     """回傳玩家本回合的行動 dict:{type, spell_id?, target?}。"""
@@ -378,6 +396,24 @@ def _choose_combat_action(state: GameState, gamedata: GameData, enemies: list, a
         opts.append(("crippling", "牽制射（削弱目標攻勢)"))
         if combat.can_vanish(player) and vanish_used < vcap:
             opts.append(("skirmish", "散兵走位（射一箭後遁走)"))
+    # 戰士「盾牆」:持盾 + 格擋達門檻 → 立/撤防禦架勢(前向減傷 + 嘲諷 + 護同袍 · 耗體力)
+    if (player.equipped.get("shield") and player.base_skill("block") >= SHIELD_WALL_BLOCK_GATE
+            and not inventory.is_dual_wielding(player, gamedata)):
+        if combat.has_shield_wall(player):
+            opts.append(("wall", "撤下盾牆"))
+        elif player.fatigue > SHIELD_WALL_UPKEEP:   # 須有體力維持 → 體力耗盡後不可免費再立(盾牆是有限防禦資源,堵 fatigue-0 永久免費坦)
+            opts.append(("wall", "🛡 立盾牆（減傷·嘲諷·護同袍 · 每回合耗體)"))
+    # 騎士「戰旗」:幻術達門檻 → 立戰旗(全隊不需重施的增傷光環 + 自身護甲);已立則不重複
+    if (player.base_skill("illusion") >= STANDARD_ILLUSION_GATE and not _has_standard(player)
+            and player.magicka >= STANDARD_COST_MAGICKA):
+        opts.append(("standard", "🚩 立戰旗（鼓舞全隊增傷 · 耗魔體)"))
+    # 刺客「致命烙印」:選了里程碑 + 潛行達門檻 + 體力足 → 標記一敵(後續近戰破甲)
+    _dm = mastery.deathmark(player, gamedata)
+    if (_dm and player.base_skill("sneak") >= _dm.get("sneak_gate", 50)
+            and player.fatigue >= _dm.get("fatigue_cost", 15)
+            and any(combat.is_alive(e) and not combat._has_deathmark(e)
+                    and not _on_deathmark_cd(e) for e in enemies)):
+        opts.append(("deathmark", f"🔪 致命烙印（標記一敵 · 耗 {_dm.get('fatigue_cost', 15)} 體力)"))
     opts.append(("flee", "逃跑"))
     choice = ui.menu("你的回合", opts)
 
@@ -399,7 +435,7 @@ def _choose_combat_action(state: GameState, gamedata: GameData, enemies: list, a
         else:
             target = None
         return {"type": "cast", "spell_id": sid, "target": target}
-    if choice in ("aimed", "crippling", "skirmish"):   # 弓手散兵武技:皆先選敵方目標
+    if choice in ("aimed", "crippling", "skirmish", "deathmark"):   # 皆先選敵方目標(散兵武技 / 刺客烙印)
         return {"type": choice, "target": _choose_enemy_target(state, gamedata, enemies, allies)}
     if choice == "power":
         eff = powers.power_def(powers.power_id(player, gamedata))["effect"]
@@ -529,6 +565,8 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
     # buff/召喚的計時從第一回合照 tick,故不延長時效、只省下開場那一動)。
     if prep_budget > 0:
         _prep_phase(state, gamedata, enemies, battle, prep_budget)
+        # 奧術連鎖不由「備戰施法」預堆(備戰只省開場一動、不送額外威力)→ 清連鎖層,保留 prep 的增益/召喚
+        player.active_effects[:] = [e for e in player.active_effects if e.get("kind") != "cascade"]
 
     def alive_e():
         return [e for e in enemies if combat.is_alive(e)]
@@ -612,6 +650,30 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
         elif action["type"] == "block":
             combat.player_block_cost(player)
             ui.message("你舉盾戒備,準備擋下來襲。", style="grey70")
+        elif action["type"] == "wall":            # 戰士:立/撤盾牆架勢(常駐 stance)
+            if combat.has_shield_wall(player):
+                player.active_effects[:] = [e for e in player.active_effects if e.get("kind") != "shield_wall"]
+                ui.message("你卸下盾牆,恢復機動。", style="grey70")
+            else:
+                player.active_effects.append({"kind": "shield_wall",
+                                              "mitigation": SHIELD_WALL_MITIGATION, "turns": 99})
+                ui.message("你舉盾結陣 —— 化身移動堡壘,敵火力盡向你而來。", style="bold cyan")
+        elif action["type"] == "standard":        # 騎士:立戰旗(增傷光環 + 自身護甲,常駐)
+            player.magicka = max(0, player.magicka - STANDARD_COST_MAGICKA)
+            player.fatigue = max(0, player.fatigue - STANDARD_COST_FATIGUE)
+            player.active_effects.append({"kind": "battle_standard", "turns": 99})
+            ui.message("你將戰旗插上戰場 —— 旗影所及,同袍士氣大振、敵膽皆寒。", style="bold cyan")
+        elif action["type"] == "deathmark":       # 刺客:標記一敵(後續近戰破甲;開場偷襲不受惠)
+            tgt = action["target"]
+            dm = mastery.deathmark(player, gamedata)
+            if dm and combat.is_alive(tgt) and not combat._has_deathmark(tgt) and not _on_deathmark_cd(tgt):
+                player.fatigue = max(0, player.fatigue - dm.get("fatigue_cost", 15))
+                tgt.active_effects.append({"kind": "deathmark", "turns": dm.get("turns", 4)})
+                tgt.active_effects.append({"kind": "deathmark_cd", "turns": dm.get("cooldown", 3)})
+                ui.message(f"你以殺意鎖定{tgt.name},烙下無形的致命標記 —— 後續每擊直取要害。",
+                           style="bold magenta")
+            else:
+                ui.message("此刻無法標記該目標。", style="grey70")
         elif action["type"] == "vanish":
             combat.player_vanish_cost(player)        # 隱遁耗大量體力(連續隱遁會耗竭)
             attempt_used = vanishes_done
@@ -683,6 +745,30 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
         for e in enemies:                       # 持續傷害收掉的、原本被擒魂的敵人
             if not combat.is_alive(e) and pre_trap.get(id(e)):
                 trapped_kills.add(id(e))
+        # ---- 八職常駐 stance 的回合末維護(盾牆/戰旗/戰地搶救;暫態存 active_effects,戰鬥邊界清)----
+        living_allies = [a for a in battle["allies"] if combat.is_alive(a)]
+        if combat.has_shield_wall(player):       # 戰士「盾牆」:上繳體力(歸 0 落陣)+ 護同袍護甲光環
+            player.fatigue = max(0, player.fatigue - SHIELD_WALL_UPKEEP)
+            if player.fatigue <= 0:
+                player.active_effects[:] = [e for e in player.active_effects if e.get("kind") != "shield_wall"]
+                ui.message("你力竭難支,盾牆隨之鬆動落下。", style="yellow")
+            else:
+                for a in living_allies:
+                    a.active_effects[:] = [e for e in a.active_effects if e.get("source") != "shield_wall_aura"]
+                    a.active_effects.append({"kind": "shield", "magnitude": SHIELD_WALL_ALLY_ARMOR,
+                                             "turns": 1, "source": "shield_wall_aura"})
+        if _has_standard(player):                # 騎士「戰旗」:全隊增傷光環(不需重施)+ 自身護甲
+            emp = round(STANDARD_EMPOWER_BASE * magic._power(player, gamedata, "illusion"), 3)
+            for a in living_allies:
+                a.active_effects[:] = [e for e in a.active_effects if e.get("source") != "standard"]
+                a.active_effects.append({"kind": "empower", "magnitude": emp, "turns": 1, "source": "standard"})
+            player.active_effects[:] = [e for e in player.active_effects if e.get("source") != "standard_self"]
+            player.active_effects.append({"kind": "shield", "magnitude": STANDARD_SELF_ARMOR,
+                                          "turns": 1, "source": "standard_self"})
+        if mastery.triage(player, gamedata) and not _triage_armed(player):   # 治療師「戰地搶救」:同伴瀕死 → 武裝折扣急救
+            if any(a.health < a.max_health * TRIAGE_ALLY_HP_RATIO for a in living_allies):
+                player.active_effects.append({"kind": "triage_ready", "turns": 2})
+                ui.message("同袍命懸一線 —— 你的戰地醫者本能瞬間繃緊,下一道治療近乎免費。", style="bold green")
         # 召喚物計時、移除陣亡/到期的同伴
         for a in battle["allies"]:
             if a.summon_turns is not None:
@@ -811,7 +897,8 @@ def _group_name(enemies: list) -> str:
 def _scout_report(state: GameState, gamedata: GameData, enemies: list) -> None:
     """偵查敵情:依偵查技能逐級揭露情報(數量→血量/危險度→偷襲估傷→抗性弱點),並練偵查。"""
     char = state.player
-    sk = char.skill("scout")
+    # 弓手「獵手偵察」里程碑:無 scout 技能也視同偵查 50(獵人之眼);取兩者高者
+    sk = max(char.skill("scout"), mastery.recon_scout_floor(char, gamedata))
     ui.rule("偵查敵情")
     if sk < 20:
         ui.message(f"你壓低身形觀察,但看不真切 —— 約莫有 {len(enemies)} 個敵人。"
@@ -1273,6 +1360,18 @@ def action_shop(state: GameState, gamedata: GameData) -> None:
 
 MAX_PARTY = 2
 COMPANIONS_CIRCLE_RANK = lycanthropy.RITUAL_RANK_INDEX   # 戰友團「內圈」門檻(獸血儀式 + 召集盾袍兄弟)
+
+# 八職功能性身份:戰士盾牆 / 騎士戰旗 為戰鬥動作的常數(技能門檻用 base_skill;暫態存 active_effects)
+SHIELD_WALL_BLOCK_GATE = 50     # 持盾 + 格擋達此 base 技能 → 可立盾牆
+SHIELD_WALL_MITIGATION = 0.30   # 盾牆物理減傷
+SHIELD_WALL_ALLY_ARMOR = 8      # 盾牆給每位同伴的護甲光環
+SHIELD_WALL_UPKEEP = 6          # 盾牆每回合體力上繳(歸 0 自動落陣)
+STANDARD_ILLUSION_GATE = 50     # 幻術達此 base 技能 → 可立戰旗(騎士專屬軸)
+STANDARD_EMPOWER_BASE = 0.20    # 戰旗對同伴的基礎增傷(隨幻術 power 縮放)
+STANDARD_SELF_ARMOR = 6         # 戰旗給騎士自身的護甲(單挑也值得立)
+STANDARD_COST_MAGICKA = 15      # 立旗魔力代價
+STANDARD_COST_FATIGUE = 10      # 立旗體力代價
+TRIAGE_ALLY_HP_RATIO = 0.30     # 同伴生命低於此 → 觸發治療師「戰地搶救」武裝
 
 
 def action_inn(state: GameState, gamedata: GameData) -> None:

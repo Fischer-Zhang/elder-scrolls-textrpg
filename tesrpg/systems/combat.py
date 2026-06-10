@@ -91,8 +91,12 @@ def alive_list(combatants: list) -> list:
 
 
 def pick_player_side_target(player: Character, allies: list, rng: RNG):
-    """敵人選擇攻擊我方目標:偏好玩家(約 55%),其餘平分給存活同伴。"""
+    """敵人選擇攻擊我方目標:偏好玩家(約 55%),其餘平分給存活同伴。
+
+    戰士「盾牆」嘲諷:玩家立盾牆時,把所有敵火力吸到坦身上(只護同袍 HP,不轉嫁傷害)。"""
     living_allies = [a for a in allies if is_alive(a)]
+    if has_shield_wall(player):          # 盾牆嘲諷:強制鎖定坦
+        return player
     if not living_allies or rng.chance(0.55):
         return player
     return rng.choice(living_allies)
@@ -193,7 +197,8 @@ def effective_weapon_name(player, gamedata: GameData) -> str:
 
 def _armor_rating(actor, gamedata: GameData) -> int:
     if not _is_player(actor):
-        return actor.armor_rating
+        # 同伴也吃 active_shield(盾牆護同袍光環 / 盟友指向護盾術才真生效);敵人無護盾效果 → +0 不變(sim 零位移)
+        return actor.armor_rating + magic.active_shield(actor)
     if _is_beast(actor):     # 獸形:脫去穿戴護甲,只剩野獸厚皮的微薄防護(權衡:易受擊,靠巨量血量扛)
         from tesrpg.systems import lycanthropy
         return lycanthropy.BEAST_ARMOR
@@ -240,6 +245,25 @@ def _is_solo(creature, gamedata: GameData) -> bool:
     """該防守單位是否為 BOSS 級(bestiary `solo`)→ 適用「偷襲開場一擊不可致死」夾限。"""
     tid = getattr(creature, "template_id", None)
     return bool(tid and gamedata.bestiary.get(tid, {}).get("solo"))
+
+
+def _has_deathmark(creature) -> bool:
+    """敵身上是否有刺客「致命烙印」(存敵方 active_effects,戰鬥邊界清)。"""
+    return any(e.get("kind") == "deathmark" and e.get("turns", 0) > 0
+               for e in getattr(creature, "active_effects", []))
+
+
+def has_shield_wall(char) -> bool:
+    """玩家是否處於戰士「盾牆」架勢(存 active_effects 的常駐 stance)。"""
+    return any(e.get("kind") == "shield_wall" and e.get("turns", 0) > 0
+               for e in getattr(char, "active_effects", []))
+
+
+def _shield_wall_factor(defender) -> float:
+    """盾牆物理減傷倍率(<1.0 = 更耐打);非盾牆 → 1.0。"""
+    e = next((e for e in getattr(defender, "active_effects", [])
+              if e.get("kind") == "shield_wall" and e.get("turns", 0) > 0), None)
+    return (1.0 - e.get("mitigation", 0.0)) if e else 1.0
 
 
 def initiative_order(player: Character, creature: Creature) -> list:
@@ -343,10 +367,16 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
                 mult = formulas.resist_multiplier(magic.entity_resist(defender, gamedata), atk_element)
                 dmg = magic._scaled_damage(raw, mult)
         else:
+            # 刺客「致命烙印」破甲:🔴 只在 follow-up(非開場偷襲)生效 → 開場一擊永不受惠 → solo 反一刀夾限不被繞過
+            dm_pen = 0.0
+            if _is_player(attacker) and not sneaking and _has_deathmark(defender):
+                dm = mastery.deathmark(attacker, gamedata)
+                dm_pen = dm.get("pen", 0.0) if dm else 0.0
             pen = min(0.85, formulas.archetype_armor_pen(archetype) + wmod.get("pen", 0)
-                      + (formulas.AIMED_SHOT_PEN if aimed else 0.0))   # 鈍器破甲 + 里程碑穿甲 + 瞄準射破甲
+                      + (formulas.AIMED_SHOT_PEN if aimed else 0.0) + dm_pen)   # 鈍器破甲 + 里程碑穿甲 + 瞄準射 + 烙印
             dmg = formulas.damage_after_armor(raw, _armor_rating(defender, gamedata), pen)
             dmg *= mastery.incoming_physical_factor(defender, gamedata)   # 里程碑「壁壘」:物理再減傷
+            dmg *= _shield_wall_factor(defender)            # 戰士「盾牆」架勢:物理再減傷(僅物理,元素穿透)
             # 武器附魔:額外元素傷害(無視護甲,受對方元素抗性)。獸形以獸爪戰鬥 → 無附魔
             if _is_player(attacker) and not beast:
                 ench = gamedata.item(attacker.weapon).get("enchant")
@@ -359,6 +389,16 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
                     if ie.get("kind") == "weapon_imbue" and ie.get("turns", 0) > 0:
                         em = formulas.resist_multiplier(magic.entity_resist(defender, gamedata), ie["element"])
                         dmg += magic._scaled_damage(ie["magnitude"], em)
+                # 戰法師「共鳴一擊」:消耗 resonance → 加元素傷 + 引燃同系 DoT(同位置,夾限前;單次用後移除)
+                for ie in list(attacker.active_effects):
+                    if ie.get("kind") == "resonance" and ie.get("turns", 0) > 0:
+                        em = formulas.resist_multiplier(magic.entity_resist(defender, gamedata), ie["element"])
+                        dmg += magic._scaled_damage(ie["magnitude"], em)
+                        defender.active_effects.append({"kind": "dot", "element": ie["element"],
+                                                        "magnitude": ie.get("dot_magnitude", 4),
+                                                        "turns": ie.get("dot_turns", 3)})
+                        attacker.active_effects.remove(ie)
+                        break
 
         # solo BOSS 反一刀:偷襲開場單擊夾在生命上限的固定比例 → 絕不一刀秒 boss
         # (apex 仍可隱遁循環無傷清,但須多刀;精英/小遭遇不受影響)。
@@ -377,6 +417,12 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
             ohs = wdef["on_hit_self"]
             setattr(attacker, ohs["stat"], getattr(attacker, ohs["stat"]) + ohs["magnitude"])
             self_restored = (ohs["stat"], ohs["magnitude"])
+        # 戰法師「法力回擊」:近戰命中回魔(純資源、零傷害 → 零紅線;clamp_resources 夾上限)。
+        # 不沿用 self_restored(那是法杖專屬敘事「法杖將生機回流」)→ 無杖揮劍回魔時不誤報法杖;魔力條自會上升。
+        if _is_player(attacker) and not beast:
+            mox = mastery.mana_on_hit(attacker, gamedata)
+            if mox:
+                attacker.magicka = attacker.magicka + mox
 
         # 怪物攻擊的觸發狀態(中毒/凍傷等)→ 加到玩家身上
         if not _is_player(attacker) and _is_player(defender):
