@@ -82,7 +82,7 @@ def build_character(
     char.location_id = gamedata.world["start_location"]
     char.visited_locations = [char.location_id]
     char.weapon = _starting_weapon(gamedata, skills)
-    char.spells = _starting_spells(majors)
+    char.spells = _starting_spells(majors, class_id)
 
     # --- 起始背包 --------------------------------------------------------
     if char.weapon != "fists":
@@ -191,13 +191,20 @@ _SPELL_FOR_SCHOOL = {
 }
 
 
-def _starting_spells(majors: list[str]) -> list[str]:
+# 中庸職業的招牌法術(功能性區分):戰法師奧術灌注 / 治療師援護 / 騎士號令
+_CLASS_SIGNATURE_SPELL = {"battlemage": "flame_blade", "healer": "heal_other", "knight": "rally"}
+
+
+def _starting_spells(majors: list[str], class_id: str = "") -> list[str]:
     spells = []
     for school, spell in _SPELL_FOR_SCHOOL.items():
         if school in majors:
             spells.append(spell)
     if "minor_heal" not in spells:
         spells.append("minor_heal")
+    sig = _CLASS_SIGNATURE_SPELL.get(class_id)   # 中庸起手簽名法術
+    if sig and sig not in spells:
+        spells.append(sig)
     return spells
 
 

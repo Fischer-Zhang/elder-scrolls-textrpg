@@ -59,6 +59,31 @@ def known_spells(char: Character) -> list[str]:
     return list(char.spells)
 
 
+# 中庸·盟友指向(治療師援護 / 騎士號令):heal/shield/apply_status/empower 套用到同伴 Creature。
+def _apply_to_allies(kind: str, eff: dict, power: float, dests: list) -> list[str]:
+    names = []
+    for d in dests:
+        if kind == "heal":
+            d.health = min(d.max_health, d.health + round(eff["magnitude"] * power))
+        elif kind == "shield":
+            d.active_effects.append({"kind": "shield", "magnitude": round(eff["magnitude"] * power),
+                                     "turns": eff["turns"]})
+        elif kind == "apply_status":
+            d.active_effects.append(make_status_effect(eff["status"]))
+        elif kind == "empower":
+            # 號令增傷比照 heal/shield 吃施法 power(學派技能 + 力竭)→ 投資越深、鼓舞越強;
+            # 維持分數型(不取整,否則 0.25 會被 round 成 0)。combat 端以 max 聚合,封堆疊暴衝。
+            d.active_effects.append({"kind": "empower", "magnitude": round(eff["magnitude"] * power, 3),
+                                     "turns": eff["turns"]})
+        names.append(d.name)
+    return names
+
+
+def _ally_verb(kind: str) -> str:
+    return {"heal": "回復了生命", "shield": "得到護盾庇護", "apply_status": "受到法術加持",
+            "empower": "受號令鼓舞、戰意大振"}.get(kind, "受到法術影響")
+
+
 def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
          target=None, battle: dict | None = None, enemies: list | None = None) -> dict:
     """施放法術。回傳事件 dict:
@@ -74,8 +99,10 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
     char.magicka -= cost
     # 施法消耗體力(法師三系資源對稱;玩家專用——敵人/召喚走 combat.resolve_attack 不經此)。
     # 先擷取「扣體力前」的體力比例 → 本次施法不自我削弱(鏡像近戰:出招前的體力決定本擊)。
-    fatigue_ratio = char.fatigue / char.max_fatigue if char.max_fatigue > 0 else 0.0
-    char.fatigue = max(0, char.fatigue - spell_fatigue_cost(char, gamedata, spell_id))
+    # fatigue_before 為退費快照:任何「失敗退魔」分支都連體力一併還原(退魔卻不退體 = 不對稱資源損失)。
+    fatigue_before = char.fatigue
+    fatigue_ratio = fatigue_before / char.max_fatigue if char.max_fatigue > 0 else 0.0
+    char.fatigue = max(0, fatigue_before - spell_fatigue_cost(char, gamedata, spell_id))
     eff = sp["effect"]
     kind = eff["kind"]
     power = _power(char, gamedata, sp["school"]) * formulas.cast_fatigue_power_factor(fatigue_ratio)
@@ -83,9 +110,28 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
     damage = 0
     killed = False
 
+    # 中庸·盟友指向(治療師援護 / 騎士號令):heal/shield/apply_status/empower 對同伴施放(僅戰鬥)。
+    if sp["target"] in ("ally", "allies"):
+        if battle is None:
+            char.magicka += cost
+            char.fatigue = fatigue_before
+            return _fail("這道法術需在戰鬥中對同伴施放。")
+        dests = ([target] if sp["target"] == "ally" and target is not None and target.health > 0
+                 else [a for a in battle.get("allies", []) if a.health > 0] if sp["target"] == "allies" else [])
+        if not dests:
+            char.magicka += cost
+            char.fatigue = fatigue_before
+            return _fail("沒有可施放的同伴。")
+        names = _apply_to_allies(kind, eff, power, dests)
+        stats.clamp_resources(char)
+        skill_events = progression.use_skill(char, gamedata, sp["school"], CAST_XP)
+        return {"ok": True, "message": f"{sp['name']} —— {'、'.join(names)}{_ally_verb(kind)}。",
+                "damage": 0, "killed": False, "skill_events": skill_events}
+
     if kind in ("damage", "damage_status"):
         if target is None:
-            char.magicka += cost  # 無目標,退還
+            char.magicka += cost  # 無目標,退還(魔力 + 體力)
+            char.fatigue = fatigue_before
             return _fail("沒有施法目標。")
         element = eff.get("element", "magic")
         mult = formulas.resist_multiplier(entity_resist(target, gamedata), element)
@@ -142,6 +188,12 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
         char.active_effects.append({"kind": "shield", "magnitude": mag, "turns": eff["turns"]})
         msg = f"{sp['name']}在你身上凝成護盾(護甲 +{mag},{eff['turns']} 回合)。"
 
+    elif kind == "weapon_imbue":   # 戰法師「奧術灌注」:自我增益 → 近戰加元素傷害(比照附魔,戰鬥內讀取)
+        mag = round(eff["magnitude"] * power)
+        char.active_effects.append({"kind": "weapon_imbue", "element": eff["element"],
+                                    "magnitude": mag, "turns": eff["turns"]})
+        msg = f"{sp['name']} —— 你的兵刃纏上了{_ELEMENT_CN.get(eff['element'], '')}之力(每擊 +{mag},{eff['turns']} 回合)。"
+
     elif kind == "fear":
         if target is not None:
             target.active_effects.append({"kind": "fear", "turns": eff["turns"]})
@@ -169,6 +221,7 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
         living = [e for e in (enemies or []) if e.health > 0]
         if not living:
             char.magicka += cost
+            char.fatigue = fatigue_before
             return _fail("沒有可及的敵人。")
         element = eff.get("element", "magic")
         parts = []
@@ -193,6 +246,7 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
             msg = f"{sp['name']}需要在戰鬥中施放。"
         elif eff["creature"] not in gamedata.bestiary:   # 防資料錯字在戰鬥中崩潰
             char.magicka += cost
+            char.fatigue = fatigue_before
             return _fail(f"召喚失敗:未知的生物「{eff['creature']}」。")
         else:
             from tesrpg.systems import combat

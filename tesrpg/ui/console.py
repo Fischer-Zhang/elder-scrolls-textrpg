@@ -1124,6 +1124,9 @@ def spell_effect_summary(gamedata: GameData, spell_id: str) -> str:
     elem = _RESIST_CN.get(e.get("element"), "")
     mag = e.get("magnitude", 0)
     turns = e.get("turns", 0)
+    tgt = sp.get("target")
+    ally_p = "群體" if tgt == "allies" else ""              # 群體前綴
+    ally_who = "同伴" if tgt in ("ally", "allies") else ""   # 對同伴
 
     def _st(st: dict) -> str:
         s = st.get("status")
@@ -1142,9 +1145,13 @@ def spell_effect_summary(gamedata: GameData, spell_id: str) -> str:
     if k == "damage_status_all":
         return f"全體{elem}傷害 {mag} + {_st(e['status'])}"
     if k == "heal":
-        return f"治療 +{mag}"
+        return f"{ally_p}治療{ally_who} +{mag}"
     if k == "shield":
-        return f"護盾 +{mag}（{turns} 回合)"
+        return f"{ally_who}護盾 +{mag}（{turns} 回合)"
+    if k == "weapon_imbue":   # 戰法師奧術灌注
+        return f"兵刃附{elem} +{mag}/擊（{turns} 回合)"
+    if k == "empower":        # 騎士號令
+        return f"{ally_p}鼓舞{ally_who}攻擊 +{round(mag * 100)}%（{turns} 回合)"
     if k == "restore_fatigue":
         return f"回復體力 +{mag}"
     if k == "fear":
@@ -1157,7 +1164,7 @@ def spell_effect_summary(gamedata: GameData, spell_id: str) -> str:
         cn = gamedata.bestiary.get(e.get("creature"), {}).get("name", e.get("creature", ""))
         return f"召喚 {cn}（{turns} 回合)"
     if k == "apply_status":
-        who = "使目標" if sp.get("target") == "enemy" else "自身"
+        who = "使目標" if tgt == "enemy" else (ally_who or "自身")
         return who + _st(e["status"])
     if k == "status_all":
         return f"全體{_st(e['status'])}"

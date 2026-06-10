@@ -83,6 +83,15 @@ LUCK_FORTUNE_PER = 0.0017         # 命運加性(撬鎖/逃跑/事件):每點幸
 LUCK_FORTUNE_CAP = 0.20
 
 
+# --- 中庸職業功能性區分:弓手散兵武技(瞄準射/牽制射)常數 ---------------
+# (戰法師 imbue / 治療師援護 / 騎士 empower 的數值走 spells.json 資料;此處僅弓手武技=程式)
+AIMED_SHOT_HIT = 0.15          # 瞄準射:命中加成
+AIMED_SHOT_PEN = 0.25          # 瞄準射:額外破甲
+AIMED_SHOT_POWER = 0.40       # 瞄準射:強擊補傷(不吃偷襲倍率、受 solo 夾限,守紅線)
+CRIPPLING_WEAKEN = 0.40       # 牽制射:目標攻擊削弱比例
+CRIPPLING_TURNS = 3
+
+
 def magicka_regen_combat(willpower: int) -> int:
     """戰鬥每回合玩家被動回魔(意志=施法續航):≤40 → 0;隨意志增,夾 CAP。
     僅影響「能放幾發」非單發威力 → 與偷襲紅線解耦。"""

@@ -209,7 +209,15 @@
         "chain_lightning",
         "frost_nova",
         "mass_paralysis",
-        "rout"
+        "rout",
+        "flame_blade",
+        "frost_blade",
+        "storm_blade",
+        "heal_other",
+        "healing_circle",
+        "ward_ally",
+        "regen_aura",
+        "rally"
       ],
       "links": {
         "dragon_bridge": 3,
@@ -642,7 +650,15 @@
         "demoralize",
         "conjure_familiar",
         "soul_trap",
-        "restore_mind"
+        "restore_mind",
+        "flame_blade",
+        "frost_blade",
+        "storm_blade",
+        "heal_other",
+        "healing_circle",
+        "ward_ally",
+        "regen_aura",
+        "rally"
       ],
       "links": {
         "bruma": 3,

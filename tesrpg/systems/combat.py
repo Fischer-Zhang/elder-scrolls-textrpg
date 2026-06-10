@@ -251,7 +251,8 @@ def initiative_order(player: Character, creature: Creature) -> list:
 # 結算單次攻擊
 # ======================================================================
 def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
-                   defender_blocking: bool = False, sneak_attack: bool = False) -> dict:
+                   defender_blocking: bool = False, sneak_attack: bool = False,
+                   aimed: bool = False) -> dict:
     """attacker 攻擊 defender,套用傷害、發放玩家技能 xp。回傳事件 dict。
 
     sneak_attack:玩家開場偷襲(不察之敵)→ 傷害依潛行加倍、命中下限拉高、鍛鍊潛行。
@@ -282,6 +283,8 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
         chance = max(0.05, min(0.95, chance + formulas.weapon_speed_hit(speed)))
     if wmod.get("hit"):         # 里程碑武器流派:命中加成(命中非傷害,不破偷襲紅線)
         chance = max(0.05, min(0.95, chance + wmod["hit"]))
+    if aimed:                   # 弓手「瞄準射」:蓄力強擊命中加成
+        chance = max(0.05, min(0.95, chance + formulas.AIMED_SHOT_HIT))
     if magic.is_staggered(attacker):   # 暗殺殘響:陣腳大亂的單位本回合更難命中
         chance = max(0.05, chance - formulas.STAGGER_HIT_PENALTY)
     if sneaking:
@@ -310,9 +313,15 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
                         if defender_blocking else 1.0)
         raw = formulas.attack_damage(wpn_dmg, wpn_skill, _strength(attacker),
                                      roll, block_factor) * cond_mult
-        # 里程碑武器威力:以基礎傷害算出補傷,稍後「不吃偷襲倍率」加回(同副手補刀模式 →
-        # 對近戰是 ×(1+power),但不把偷襲一擊放大,守住「偷襲不可秒精英」紅線)
-        power_bonus = raw * wmod.get("power", 0.0)
+        # 騎士「號令」:帶 empower 增益的攻擊者(同伴)傷害提升 —— **只對同伴施放 → 永不碰玩家偷襲紅線**
+        # 以 max 聚合(取最強的一道,非加總)→ 反覆施放號令不疊乘成暴衝;單道仍隨施法 power 成長。
+        if not _is_player(attacker):
+            emp = max((e.get("magnitude", 0) for e in getattr(attacker, "active_effects", [])
+                       if e.get("kind") == "empower" and e.get("turns", 0) > 0), default=0)
+            if emp:
+                raw *= (1 + emp)
+        # 里程碑武器威力 + 弓手「瞄準射」:補傷「不吃偷襲倍率」(同副手補刀模式,守紅線;仍受 solo 夾限)
+        power_bonus = raw * (wmod.get("power", 0.0) + (formulas.AIMED_SHOT_POWER if aimed else 0.0))
         if sneaking:
             raw *= sneak_mult
         raw += power_bonus
@@ -334,7 +343,8 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
                 mult = formulas.resist_multiplier(magic.entity_resist(defender, gamedata), atk_element)
                 dmg = magic._scaled_damage(raw, mult)
         else:
-            pen = min(0.85, formulas.archetype_armor_pen(archetype) + wmod.get("pen", 0))   # 鈍器破甲 + 里程碑穿甲
+            pen = min(0.85, formulas.archetype_armor_pen(archetype) + wmod.get("pen", 0)
+                      + (formulas.AIMED_SHOT_PEN if aimed else 0.0))   # 鈍器破甲 + 里程碑穿甲 + 瞄準射破甲
             dmg = formulas.damage_after_armor(raw, _armor_rating(defender, gamedata), pen)
             dmg *= mastery.incoming_physical_factor(defender, gamedata)   # 里程碑「壁壘」:物理再減傷
             # 武器附魔:額外元素傷害(無視護甲,受對方元素抗性)。獸形以獸爪戰鬥 → 無附魔
@@ -343,6 +353,12 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
                 if ench and ench.get("kind") == "weapon_element":
                     em = formulas.resist_multiplier(magic.entity_resist(defender, gamedata), ench["element"])
                     dmg += magic._scaled_damage(ench["magnitude"], em)
+                # 戰法師「奧術灌注」:active weapon_imbue 自我增益 → 近戰加元素傷害
+                # (加在 dmg、於 solo 偷襲夾限之前 → 偷襲不放大、solo boss 受夾,守紅線)
+                for ie in attacker.active_effects:
+                    if ie.get("kind") == "weapon_imbue" and ie.get("turns", 0) > 0:
+                        em = formulas.resist_multiplier(magic.entity_resist(defender, gamedata), ie["element"])
+                        dmg += magic._scaled_damage(ie["magnitude"], em)
 
         # solo BOSS 反一刀:偷襲開場單擊夾在生命上限的固定比例 → 絕不一刀秒 boss
         # (apex 仍可隱遁循環無傷清,但須多刀;精英/小遭遇不受影響)。

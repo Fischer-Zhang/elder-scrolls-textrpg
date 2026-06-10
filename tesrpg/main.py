@@ -326,6 +326,19 @@ def _choose_enemy_target(state: GameState, gamedata: GameData, enemies: list, al
     return alive[int(ui.menu("攻擊哪個目標?", opts))]
 
 
+def _choose_ally_target(state: GameState, gamedata: GameData, allies: list):
+    """從存活同伴中選一個施放(無同伴回 None;僅一個時自動選)。供治療師援護法術。"""
+    living = [a for a in allies if combat.is_alive(a)]
+    if not living:
+        return None
+    if len(living) == 1:
+        return living[0]
+    if ui._web is not None:
+        ui.combat_status_group(state.player, allies, [], gamedata)
+    opts = [(str(i), f"{a.name}（{int(a.health)}/{a.max_health})") for i, a in enumerate(living)]
+    return living[int(ui.menu("援護哪個同伴?", opts))]
+
+
 def _choose_combat_action(state: GameState, gamedata: GameData, enemies: list, allies: list,
                           vanish_used: int = 0):
     """回傳玩家本回合的行動 dict:{type, spell_id?, target?}。"""
@@ -358,6 +371,13 @@ def _choose_combat_action(state: GameState, gamedata: GameData, enemies: list, a
         pct = int(combat.vanish_chance(player, n_alive, vanish_used, gamedata) * 100)
         left = "∞" if vcap >= 99 else (vcap - vanish_used)
         opts.append(("vanish", f"隱遁再襲（成功率 {pct}%,剩 {left} 次)"))
+    # 弓手「散兵」武技:裝備弓時開放(瞄準射 / 牽制射 / 散兵走位)
+    if (gamedata.item(player.weapon).get("archetype") == "bow"
+            and not getattr(player, "beast_form", False)):
+        opts.append(("aimed", "瞄準射（蓄力強擊 · 額外耗體)"))
+        opts.append(("crippling", "牽制射（削弱目標攻勢)"))
+        if combat.can_vanish(player) and vanish_used < vcap:
+            opts.append(("skirmish", "散兵走位（射一箭後遁走)"))
     opts.append(("flee", "逃跑"))
     choice = ui.menu("你的回合", opts)
 
@@ -371,9 +391,16 @@ def _choose_combat_action(state: GameState, gamedata: GameData, enemies: list, a
         sid = ui.menu("施放哪道法術?", spell_opts, allow_back=True)
         if sid is None:
             return _choose_combat_action(state, gamedata, enemies, allies, vanish_used)
-        target = (_choose_enemy_target(state, gamedata, enemies, allies)
-                  if gamedata.spells[sid]["target"] == "enemy" else None)
+        tk = gamedata.spells[sid]["target"]
+        if tk == "enemy":
+            target = _choose_enemy_target(state, gamedata, enemies, allies)
+        elif tk == "ally":                       # 治療師援護:選一個同伴施放
+            target = _choose_ally_target(state, gamedata, allies)
+        else:
+            target = None
         return {"type": "cast", "spell_id": sid, "target": target}
+    if choice in ("aimed", "crippling", "skirmish"):   # 弓手散兵武技:皆先選敵方目標
+        return {"type": choice, "target": _choose_enemy_target(state, gamedata, enemies, allies)}
     if choice == "power":
         eff = powers.power_def(powers.power_id(player, gamedata))["effect"]
         needs_target = any(k in eff for k in ("paralyze", "poison", "drain"))
@@ -535,6 +562,29 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
                 sneak = opening and not getattr(player, "beast_form", False)
                 ui.combat_event(combat.resolve_attack(player, tgt, gamedata, state.rng,
                                                       sneak_attack=sneak), gamedata)
+        elif action["type"] in ("aimed", "crippling", "skirmish"):   # 弓手散兵武技
+            tgt = action["target"]
+            if combat.is_alive(tgt):
+                combat.player_attack_cost(player, gamedata)
+                if action["type"] == "aimed":
+                    combat.player_attack_cost(player, gamedata)       # 瞄準蓄力:額外耗體
+                sneak = opening and not getattr(player, "beast_form", False)
+                ui.combat_event(combat.resolve_attack(player, tgt, gamedata, state.rng,
+                                                      sneak_attack=sneak,
+                                                      aimed=(action["type"] == "aimed")), gamedata)
+                if action["type"] == "crippling" and combat.is_alive(tgt):
+                    tgt.active_effects.append({"kind": "weaken", "magnitude": formulas.CRIPPLING_WEAKEN,
+                                               "turns": formulas.CRIPPLING_TURNS})
+                    ui.message(f"{tgt.name}被牽制射壓制,攻勢一時削弱。", style="cyan")
+                if action["type"] == "skirmish":   # 射後遁走:複用既有 vanish 三道煞車(防無限風箏)
+                    combat.player_vanish_cost(player)
+                    attempt = vanishes_done
+                    vanishes_done += 1
+                    if combat.try_vanish(player, len(alive_e()), attempt, state.rng, gamedata):
+                        vanish_success = True
+                        ui.message("你射出一箭,旋即翻身遁走 —— 重獲偷襲先機。", style="bold magenta")
+                    else:
+                        ui.message("你射後欲走,卻被敵人緊咬不放。", style="grey70")
         elif action["type"] == "cast":
             res = magic.cast(player, gamedata, action["spell_id"], state.rng,
                              target=action.get("target"), battle=battle, enemies=alive_e())
