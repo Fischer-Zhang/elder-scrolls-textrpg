@@ -420,6 +420,8 @@ def _choose_combat_action(state: GameState, gamedata: GameData, enemies: list, a
     if choice == "attack":
         return {"type": "attack", "target": _choose_enemy_target(state, gamedata, enemies, allies)}
     if choice == "cast":
+        if ui._web is not None:    # web:blocks 每幀清空 → 選法術時重顯戰場,免「敵狀態丟失」
+            ui.combat_status_group(player, allies, enemies, gamedata)
         spell_opts = [(s, f"{gamedata.spells[s]['name']}"
                        f"（{magic.effective_cost(player, gamedata, s)} 魔力) · "
                        f"{ui.spell_effect_summary(gamedata, s)}")
@@ -514,10 +516,6 @@ def _prep_phase(state: GameState, gamedata: GameData, enemies, battle: dict, bud
         if spent:
             budget -= 1
     stats.clamp_resources(player)
-
-
-# 會改變戰況盤(敵/盟 HP·狀態·數量)的玩家行動 → 行動後即時補繪;格擋/逃跑失敗等不變化者不補。
-_BOARD_CHANGING_ACTIONS = {"cast", "power", "howl", "attack", "aimed", "crippling", "skirmish", "deathmark"}
 
 
 def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
@@ -710,11 +708,6 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
         # 玩家階段可能殺死(被擒魂的)敵人 → 統一記錄(涵蓋單體/AoE/星座之力)
         for e in enemies:
             note_trap(e)
-
-        # 玩家行動後即時重繪戰況(施法/AoE/召喚的減益/扣血/新盟友立即反映,不再「丟失到下一動」);
-        # 僅在「會改變戰況盤」的行動後補繪(避免格擋/逃跑失敗等無變化動作重複渲染)、且戰鬥未結束。
-        if action["type"] in _BOARD_CHANGING_ACTIONS and combat.is_alive(player) and alive_e():
-            ui.combat_status_group(player, battle["allies"], enemies, gamedata)
 
         # ---- 同伴階段(各自攻擊一個隨機存活敵人)----
         for a in battle["allies"]:

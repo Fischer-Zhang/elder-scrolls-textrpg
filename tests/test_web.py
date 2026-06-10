@@ -30,6 +30,30 @@ def _restore():
     ui._hud_state = None
 
 
+def _drive_multi(backend, call, answers):
+    """在 thread 跑會多次 prompt 的呼叫;逐 prompt 作答(answers=作答函式列),回傳 (frames, 結果)。"""
+    box = {}
+
+    def worker():
+        try:
+            box["v"] = call()
+        except BaseException as e:
+            box["exc"] = e
+
+    t = threading.Thread(target=worker)
+    t.start()
+    frames = []
+    for ans_fn in answers:
+        fr = backend.outbound.get(timeout=5)
+        frames.append(fr)
+        assert backend.submit(fr["prompt_id"], ans_fn(fr["prompt"])), "submit 被拒"
+    t.join(timeout=5)
+    if "exc" in box:
+        raise box["exc"]
+    assert not t.is_alive(), "呼叫未返回(疑似死鎖)"
+    return frames, box.get("v")
+
+
 def _drive(backend, call, answer_for):
     """在 thread 跑阻塞的 ui.* 呼叫,讀出 frame、作答、回傳 (frame, 呼叫結果)。"""
     import queue as _q
@@ -329,6 +353,34 @@ def test_combat_target_reemit_web():
         _restore()
 
 
+def test_web_cast_submenu_shows_combat_board_once():
+    """web 選法術子選單須重顯戰場(修「施法時敵狀態丟失」),且恰一張(不重複)。"""
+    from tesrpg.gamedata import get_gamedata
+    from tesrpg.creation import build_character
+    from tesrpg.state import GameState, GameTime
+    from tesrpg.rng import RNG
+    from tesrpg.systems import combat
+    from tesrpg import main as M
+    gd = get_gamedata()
+    c = build_character(gd, name="測", sex="female", race="altmer", birthsign="mage", class_id="mage")
+    if "minor_heal" not in c.spells:
+        c.spells.append("minor_heal")
+    st = GameState(player=c, time=GameTime(), rng=RNG(1))
+    foes = [combat.spawn_creature(gd, "giant_rat", RNG(1))]
+    backend = WebBackend()
+    ui.use_web_backend(backend, _rec())
+    try:
+        # 行動選單 → 選 cast;法術選單 → 選 minor_heal(self,無需選目標 → 直接返回)
+        frames, ret = _drive_multi(backend, lambda: M._choose_combat_action(st, gd, foes, []),
+                                   [lambda p: "cast", lambda p: "minor_heal"])
+        spell_frame = frames[1]
+        combat_blocks = [b for b in spell_frame["blocks"] if b["kind"] == "view" and b["name"] == "combat"]
+        assert len(combat_blocks) == 1, spell_frame["blocks"]   # 選法術畫面仍見戰場,且恰一張
+        assert ret["type"] == "cast" and ret["spell_id"] == "minor_heal"
+    finally:
+        _restore()
+
+
 def test_sheet_subview_models():
     """角色卡三子檢視改走專屬 view block(非 panel),形狀正確。"""
     from tesrpg.gamedata import get_gamedata
@@ -540,6 +592,7 @@ def run():
     test_view_model_shapes()
     test_combat_target_key_parity()
     test_combat_target_reemit_web()
+    test_web_cast_submenu_shows_combat_board_once()
     test_sheet_subview_models()
     test_persuade_chance_readonly()
     test_board_and_shop_view_shapes()
