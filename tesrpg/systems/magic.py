@@ -250,6 +250,15 @@ def is_incapacitated(creature) -> bool:
     return is_feared(creature) or is_paralyzed(creature)
 
 
+def resisted_mind(entity, status: str, rng) -> bool:
+    """玩家以意志「精神韌性」抵抗心智控場(恐懼/麻痺)。非玩家或非心智狀態 → False(不抗)。
+    base-40 中性:意志 40 抗性 0(行為等同改前)。"""
+    from tesrpg.models import Character
+    if not isinstance(entity, Character) or status not in ("fear", "paralyze"):
+        return False
+    return rng.chance(formulas.mind_resist_chance(entity.attr("willpower")))
+
+
 def weaken_factor(creature) -> float:
     """回傳攻擊傷害應乘上的係數(多個耗弱取最強)。"""
     factor = 1.0

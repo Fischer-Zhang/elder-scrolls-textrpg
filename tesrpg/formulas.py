@@ -31,6 +31,18 @@ ATTRIBUTE_NAMES = {
     "personality": "魅力", "luck": "幸運",
 }
 
+# 每屬性的機制作用(供升級分配/角色卡顯示,讓玩家知道每點的意義)
+ATTRIBUTE_FUNCTION = {
+    "strength": "近戰傷害·負重·體力",
+    "intelligence": "魔力上限",
+    "willpower": "施法續航(回魔)·抗恐懼麻痺·體力",
+    "agility": "命中/閃避·體力",
+    "speed": "先攻·逃跑·旅行加速",
+    "endurance": "生命上限·體力",
+    "personality": "說服/好感/喝退",
+    "luck": "戰利豐厚·撬鎖/逃跑/事件運氣",
+}
+
 SPEC_NAMES = {"combat": "戰鬥", "magic": "魔法", "stealth": "潛行"}
 
 
@@ -53,6 +65,48 @@ def max_fatigue(strength: int, willpower: int, agility: int, endurance: int) -> 
 def max_encumbrance(strength: int) -> int:
     """負重上限(物品重量總和不可超過)。"""
     return strength * 5
+
+
+# --- 意志 willpower:施法續航 + 精神韌性 / 幸運 luck:天命 -----------------
+# 補屬性功能缺口:讓「治理魔法卻無施法價值」的意志、「近乎死屬性」的幸運名實相符。
+# 鐵律:所有係數在屬性 = BASE_ATTRIBUTE(40)時回中性值(=改前行為)→ base-40 角色與
+# sim_assassin 零位移;唯有投資到 40 以上才生效。刻意不碰玩家近戰傷害 → 與偷襲紅線解耦。
+MAGICKA_REGEN_COMBAT_PER = 15     # 每 N 點意志(>40)→ 戰鬥每回合 +1 回魔
+MAGICKA_REGEN_COMBAT_CAP = 5
+MAGICKA_REGEN_REST_PER = 0.0167   # 休息回魔倍率:每點意志(>40)
+MAGICKA_REGEN_REST_CAP = 2.5
+MIND_RESIST_PER = 0.0083          # 抗恐懼/麻痺機率:每點意志(>40)
+MIND_RESIST_CAP = 0.75
+LUCK_LOOT_PER = 0.005             # 戰利掉落/金幣倍率:每點幸運(>40)
+LUCK_LOOT_CAP = 1.5
+LUCK_FORTUNE_PER = 0.0017         # 命運加性(撬鎖/逃跑/事件):每點幸運(>40)
+LUCK_FORTUNE_CAP = 0.20
+
+
+def magicka_regen_combat(willpower: int) -> int:
+    """戰鬥每回合玩家被動回魔(意志=施法續航):≤40 → 0;隨意志增,夾 CAP。
+    僅影響「能放幾發」非單發威力 → 與偷襲紅線解耦。"""
+    return max(0, min(MAGICKA_REGEN_COMBAT_CAP, (willpower - BASE_ATTRIBUTE) // MAGICKA_REGEN_COMBAT_PER))
+
+
+def magicka_regen_rest_factor(willpower: int) -> float:
+    """休息回魔速率倍率(意志):40 → 1.0(中性),投資越多回藍越快。"""
+    return min(MAGICKA_REGEN_REST_CAP, 1.0 + max(0, willpower - BASE_ATTRIBUTE) * MAGICKA_REGEN_REST_PER)
+
+
+def mind_resist_chance(willpower: int) -> float:
+    """抵抗恐懼/麻痺的機率(意志=精神韌性):40 → 0(中性),投資越多越能抗控。"""
+    return max(0.0, min(MIND_RESIST_CAP, (willpower - BASE_ATTRIBUTE) * MIND_RESIST_PER))
+
+
+def luck_loot_factor(luck: int) -> float:
+    """戰利掉落機率/金幣倍率(幸運=天命):40 → 1.0(中性),投資越多戰利越豐。"""
+    return max(1.0, min(LUCK_LOOT_CAP, 1.0 + max(0, luck - BASE_ATTRIBUTE) * LUCK_LOOT_PER))
+
+
+def luck_fortune(luck: int) -> float:
+    """命運加性微調(撬鎖/逃跑/事件擲骰):40 → 0(中性),投資越多時來運轉。"""
+    return max(0.0, min(LUCK_FORTUNE_CAP, max(0, luck - BASE_ATTRIBUTE) * LUCK_FORTUNE_PER))
 
 
 # --- 技能成長 (learn-by-doing) -----------------------------------------

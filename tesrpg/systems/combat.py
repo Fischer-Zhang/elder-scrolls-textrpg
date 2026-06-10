@@ -365,7 +365,7 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
         # 怪物攻擊的觸發狀態(中毒/凍傷等)→ 加到玩家身上
         if not _is_player(attacker) and _is_player(defender):
             oh = attacker.attack.get("on_hit")
-            if oh and rng.chance(oh.get("chance", 1.0)):
+            if oh and rng.chance(oh.get("chance", 1.0)) and not magic.resisted_mind(defender, oh["status"], rng):
                 defender.active_effects.append({"kind": oh["status"], "element": oh.get("element"),
                                                 "magnitude": oh["magnitude"], "turns": oh["turns"]})
                 status_applied = oh.get("element")
@@ -529,7 +529,9 @@ def player_vanish_cost(player: Character) -> None:
 
 
 def try_flee(player: Character, creature: Creature, rng: RNG) -> bool:
-    return rng.chance(formulas.flee_chance(_speed(player), _agility(player), _speed(creature)))
+    chance = formulas.flee_chance(_speed(player), _agility(player), _speed(creature))
+    chance = min(0.95, chance + formulas.luck_fortune(player.attr("luck")))   # 幸運「時來運轉」
+    return rng.chance(chance)
 
 
 def can_vanish(player: Character) -> bool:
@@ -612,8 +614,8 @@ def estimate_sneak_damage(player: Character, gamedata: GameData, creature: Creat
 
 
 def grant_loot(player: Character, creature: Creature, gamedata: GameData, rng: RNG) -> dict:
-    """結算怪物戰利品,金幣與物品入袋。回傳 {"gold", "items":[(id,qty)]}。"""
-    result = loot.creature_loot(creature, rng)
+    """結算怪物戰利品,金幣與物品入袋(幸運「戰利豐厚」加權)。回傳 {"gold", "items":[(id,qty)]}。"""
+    result = loot.creature_loot(creature, rng, formulas.luck_loot_factor(player.attr("luck")))
     player.gold += result["gold"]
     for item_id, qty in result["items"]:
         inventory.add_item(player, item_id, qty)

@@ -193,8 +193,9 @@ def action_rest(state: GameState, gamedata: GameData) -> str | None:
 
     char.fatigue = min(char.max_fatigue, char.fatigue + char.max_fatigue * hours / 8)
     char.health = min(char.max_health, char.health + char.max_health * hours / 24)
-    if not no_magicka_regen:
-        char.magicka = min(char.max_magicka, char.magicka + char.max_magicka * hours / 12)
+    if not no_magicka_regen:   # 意志「施法續航」:回魔速率隨意志(base-40 中性 ×1.0)
+        rate = hours / 12 * formulas.magicka_regen_rest_factor(char.attr("willpower"))
+        char.magicka = min(char.max_magicka, char.magicka + char.max_magicka * rate)
 
     party.heal(char, gamedata, hours / 24)   # 同伴隨休息回復(負傷者康復後可再上陣)
     state.time.advance(hours)
@@ -287,7 +288,7 @@ def action_level_up(state: GameState, gamedata: GameData) -> None:
     while remaining > 0:
         if all(_cur(a) >= formulas.ATTRIBUTE_CAP for a in formulas.ATTRIBUTES):
             break   # 八屬性全滿(極高等),無處可加
-        opts = [(a, f"{formulas.ATTRIBUTE_NAMES[a]} {_cur(a)}"
+        opts = [(a, f"{formulas.ATTRIBUTE_NAMES[a]} {_cur(a)} — {formulas.ATTRIBUTE_FUNCTION[a]}"
                  + ("（已滿）" if _cur(a) >= formulas.ATTRIBUTE_CAP else ""))
                 for a in formulas.ATTRIBUTES]
         a = ui.menu(f"剩 {remaining} 點 →", opts)
@@ -617,6 +618,10 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
                                style="bold red")
 
         # ---- 回合結束:持續傷害/狀態計時 ----
+        # 意志「施法續航」:戰鬥每回合被動回魔(base-40 中性;巨魔像座不自然回魔,沿用既有設定)
+        mregen = formulas.magicka_regen_combat(player.attr("willpower"))
+        if mregen and player.birthsign != "atronach" and player.magicka < player.max_magicka:
+            player.magicka = min(player.max_magicka, player.magicka + mregen)
         pre_trap = {id(e): magic.has_soul_trap(e) for e in enemies if combat.is_alive(e)}
         ui.combat_tick(magic.tick_effects(player, gamedata))
         for a in battle["allies"]:

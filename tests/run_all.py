@@ -51,6 +51,7 @@ import test_speechcraft
 import test_skooma
 import test_lycanthropy
 import test_party
+import test_attributes
 
 if __name__ == "__main__":
     modules = [test_creation, test_progression, test_state, test_combat, test_world, test_seed,
@@ -60,7 +61,7 @@ if __name__ == "__main__":
                test_practice_cost, test_shop, test_crafting, test_court, test_politics,
                test_warband, test_worldstate, test_mythicdawn, test_knights, test_landmarks,
                test_polish, test_sheet, test_web, test_achievements, test_smithing, test_dungeon,
-               test_speechcraft, test_skooma, test_lycanthropy, test_party]
+               test_speechcraft, test_skooma, test_lycanthropy, test_party, test_attributes]
     for m in modules:
         m.run()
         print(f"✓ {m.__name__}")

@@ -16,8 +16,11 @@ def pick_lock_chance(security_skill: int, lock_level: int) -> float:
 
 
 def effective_pick_lock_chance(char: Character, gamedata: GameData, lock_level: int) -> float:
-    """含里程碑「撬鎖名家」下限的實際撬鎖成功率(顯示與擲骰共用,確保一致)。"""
-    chance = pick_lock_chance(char.skill("security"), lock_level)
+    """含里程碑「撬鎖名家」下限的實際撬鎖成功率(顯示與擲骰共用,確保一致)。
+    幸運「時來運轉」微升成功率(base-40 中性 +0)。"""
+    from tesrpg import formulas
+    chance = min(0.95, pick_lock_chance(char.skill("security"), lock_level)
+                 + formulas.luck_fortune(char.attr("luck")))
     return max(chance, mastery.lock_floor(char, gamedata))
 
 
@@ -55,8 +58,10 @@ def pick_lock(char: Character, gamedata: GameData, lock_level: int, rng: RNG) ->
 
 
 def open_container(char: Character, gamedata: GameData, container: dict, rng: RNG) -> dict:
-    """開啟(已解鎖的)容器,內容入袋。回傳 {"gold", "items":[(id,qty)]}。"""
-    result = loot.resolve_loot(container.get("loot", []), rng)
+    """開啟(已解鎖的)容器,內容入袋(幸運「戰利豐厚」加權)。回傳 {"gold", "items":[(id,qty)]}。"""
+    from tesrpg import formulas
+    result = loot.resolve_loot(container.get("loot", []), rng,
+                               formulas.luck_loot_factor(char.attr("luck")))
     char.gold += result["gold"]
     for item_id, qty in result["items"]:
         inventory.add_item(char, item_id, qty)

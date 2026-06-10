@@ -84,8 +84,9 @@ def pick_event(state, gamedata: GameData, context: str, rng: RNG) -> str | None:
 
 # --- 技能判定 -----------------------------------------------------------
 def check_chance(char: Character, check: dict) -> float:
+    from tesrpg import formulas
     base = 0.5 + (char.skill(check["skill"]) - check["difficulty"]) / 100.0
-    base += (char.attr("luck") - 40) * 0.002
+    base += formulas.luck_fortune(char.attr("luck"))   # 幸運「時來運轉」(與撬鎖/逃跑統一口徑)
     return max(0.1, min(0.95, base))
 
 

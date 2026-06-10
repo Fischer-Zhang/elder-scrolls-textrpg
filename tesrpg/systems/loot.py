@@ -12,7 +12,8 @@ from __future__ import annotations
 from tesrpg.rng import RNG
 
 
-def resolve_loot(entries: list, rng: RNG) -> dict:
+def resolve_loot(entries: list, rng: RNG, luck_factor: float = 1.0) -> dict:
+    """luck_factor:幸運「戰利豐厚」倍率(掉落機率 × 金幣;1.0=中性,玩家高幸運 >1.0)。"""
     items: list[tuple[str, int]] = []
     gold = 0
     for e in entries or []:
@@ -20,16 +21,17 @@ def resolve_loot(entries: list, rng: RNG) -> dict:
             items.append((e, 1))
         elif "gold" in e:
             lo, hi = e["gold"]
-            gold += rng.randint(lo, hi) if hi >= lo else 0
+            g = rng.randint(lo, hi) if hi >= lo else 0
+            gold += int(round(g * luck_factor))
         elif "item" in e:
-            if rng.chance(e.get("chance", 1.0)):
+            if rng.chance(min(1.0, e.get("chance", 1.0) * luck_factor)):
                 items.append((e["item"], e.get("qty", 1)))
     return {"items": items, "gold": gold}
 
 
-def creature_loot(creature, rng: RNG) -> dict:
-    """怪物掉落 = loot_gold 範圍 + loot 機率表。"""
+def creature_loot(creature, rng: RNG, luck_factor: float = 1.0) -> dict:
+    """怪物掉落 = loot_gold 範圍 + loot 機率表(luck_factor=玩家幸運倍率)。"""
     lo, hi = creature.loot_gold
     entries: list = [{"gold": [lo, hi]}]
     entries += getattr(creature, "loot_table", None) or []
-    return resolve_loot(entries, rng)
+    return resolve_loot(entries, rng, luck_factor)
