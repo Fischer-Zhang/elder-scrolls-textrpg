@@ -328,9 +328,11 @@ def _choose_combat_action(state: GameState, gamedata: GameData, enemies: list, a
                           vanish_used: int = 0):
     """回傳玩家本回合的行動 dict:{type, spell_id?, target?}。"""
     player = state.player
-    if getattr(player, "beast_form", False):     # 獸形:只能爪擊 / 變回人形 / 逃跑(無施法/格擋/隱遁)
-        opts = [("attack", f"獸爪猛擊（{combat.effective_weapon_name(player, gamedata)})"),
-                ("revert", "變回人形"), ("flee", "逃跑")]
+    if getattr(player, "beast_form", False):     # 獸形:爪擊 /(達階)恫嚇之嚎 / 變回人形 / 逃跑
+        opts = [("attack", f"獸爪猛擊（{combat.effective_weapon_name(player, gamedata)})")]
+        if lycanthropy.can_howl(player, state) and player.fatigue >= lycanthropy.HOWL_FATIGUE:
+            opts.append(("howl", f"恫嚇之嚎（懼敵 · 耗 {lycanthropy.HOWL_FATIGUE} 體力)"))
+        opts += [("revert", "變回人形"), ("flee", "逃跑")]
         choice = ui.menu("你的回合(獸形)", opts)
         if choice == "attack":
             return {"type": "attack", "target": _choose_enemy_target(state, gamedata, enemies, allies)}
@@ -536,6 +538,13 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
         elif action["type"] == "revert":          # 狼人:主動變回人形(力竭代價)
             lycanthropy.revert(player, state, gamedata)
             ui.message("你壓下狂暴,重歸人形 —— 筋疲力盡。", style="magenta")
+        elif action["type"] == "howl":            # 狼人(達階):恫嚇之嚎 → 使敵恐懼
+            res = lycanthropy.howl(player, state, gamedata, alive_e())
+            if res["affected"]:
+                ui.message(f"你仰天發出撕裂夜空的狼嚎 —— {res['affected']} 名敵人膽寒退縮!",
+                           style="bold magenta")
+            else:
+                ui.message("你發出震懾的狼嚎,但眼前的強敵毫不退縮。", style="grey70")
         elif action["type"] == "block":
             combat.player_block_cost(player)
             ui.message("你舉盾戒備,準備擋下來襲。", style="grey70")

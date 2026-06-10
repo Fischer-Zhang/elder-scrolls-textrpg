@@ -61,6 +61,10 @@ def available(char: Character, state, gamedata: GameData, context: str | None = 
         return False
     if context is not None and context not in POWERS[pid]["contexts"]:
         return False
+    if pid == "beast_form":   # 獵者之戒:狼人可隨意變身(繞過每日冷卻)
+        from tesrpg.systems import lycanthropy
+        if lycanthropy.has_hircine_ring(char, gamedata):
+            return True
     return char.power_last_day.get(pid) != _today(state)
 
 

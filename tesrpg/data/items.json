@@ -22,6 +22,7 @@
 
   "silver_ring":   {"name": "銀戒指", "kind": "jewelry", "slot": "ring",   "value": 40,  "weight": 0.2},
   "gold_ring":     {"name": "金戒指", "kind": "jewelry", "slot": "ring",   "value": 90,  "weight": 0.2},
+  "hircine_ring":  {"name": "獵者之戒", "kind": "jewelry", "slot": "ring",   "value": 250, "weight": 0.2, "hircine": true},
   "silver_amulet": {"name": "銀護身符", "kind": "jewelry", "slot": "amulet", "value": 60,  "weight": 0.3},
   "gold_amulet":   {"name": "金護身符", "kind": "jewelry", "slot": "amulet", "value": 130, "weight": 0.3},
 

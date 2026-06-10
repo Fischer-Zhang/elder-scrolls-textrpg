@@ -933,20 +933,36 @@ def sheet_vampirism(char: Character, gamedata: GameData) -> None:
 def sheet_lycanthropy(char: Character, state: GameState, gamedata: GameData) -> None:
     from tesrpg.systems import lycanthropy
     beast = lycanthropy.is_beast(char, state)
+    is_ww = lycanthropy.is_werewolf(char)
+    has_ring = is_ww and lycanthropy.has_hircine_ring(char, gamedata)
     if beast:
         remain = max(0, getattr(char, "beast_form_until", 0) - state.time.absolute_hours())
         phase = f"🐺 獸形中(尚餘約 {remain} 小時;吞噬獵物可續)"
-    elif lycanthropy.is_werewolf(char):
-        phase = "人形(可於戰鬥中獸化變身,每日一次)"
+    elif is_ww:
+        phase = "人形(可於戰鬥中獸化變身," + ("獵者之戒:可隨意變身)" if has_ring else "每日一次)")
     elif lycanthropy.is_infected(char):
         phase = "🌑 狼人熱潛伏中(數日後將轉化)"
     else:
         phase = "未染狼人之血"
+    # 獸血進程(餵食成長):階名 + 距下一階
+    tier_lines: list[str] = []
+    if is_ww:
+        prog = lycanthropy.tier_progress(char)
+        tline = f"獸血階 {prog['tier']}「{prog['name']}」(累計吞噬 {prog['feeds']})"
+        if "remaining" in prog:
+            tline += f" · 距「{prog['next_name']}」還 {prog['remaining']} 次吞噬"
+        tier_lines.append(tline)
+        if prog["tier"] >= lycanthropy.HOWL_TIER:
+            tier_lines.append("已習「恫嚇之嚎」(獸形中可嚎叫懼敵)")
+        if has_ring:
+            tier_lines.append("✦ 佩戴獵者之戒 —— 不受每日變身次數所限")
     layers = (("attrs", "屬性", getattr(char, "werewolf_attr_bonus", {})),
               ("resist", "抗性", getattr(char, "werewolf_resist", {})))
-    note = "(獸形:利爪撕敵、巨量生命、刀槍難傷,但脫去裝備、無法施法/用物/持械;與潛行互斥。入城會被驅避;尋獵巫女巫可解咒)"
+    note = "(獸形:利爪撕敵、巨量生命、刀槍難傷,但脫去裝備、無法施法/用物/持械;與潛行互斥。越常以獸形吞噬獵物,獸血越濃。入城會被驅避;尋獵巫女巫可解咒)"
     if _web is not None:
         rows = [_ln(phase, "red" if beast else "muted")]
+        for t in tier_lines:
+            rows.append(_ln(t, "magenta"))
         if beast and getattr(char, "werewolf_health_bonus", 0):
             rows.append(_kv("獸形生命", f"+{char.werewolf_health_bonus}"))
         for cat, label, d in layers:
@@ -957,6 +973,8 @@ def sheet_lycanthropy(char: Character, state: GameState, gamedata: GameData) -> 
         return
     body = Text()
     body.append(phase + "\n", style="bold red" if beast else INK)
+    for t in tier_lines:
+        body.append(t + "\n", style="magenta")
     if beast and getattr(char, "werewolf_health_bonus", 0):
         body.append("獸形生命  ", style=GOLD)
         body.append(f"+{char.werewolf_health_bonus}\n", style=PARCH)

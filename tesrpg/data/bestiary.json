@@ -1135,7 +1135,7 @@
     "attack": {"name": "裂顎撕咬", "damage": 26, "skill": 62, "infect": 0.4, "infect_kind": "lycanthropy"},
     "resist": {"poison": 50, "frost": 25},
     "loot_gold": [40, 110],
-    "loot": [{"item": "wolf_pelt", "chance": 0.8}, {"item": "healing_potion", "chance": 0.4}, {"item": "filled_common_soul_gem", "chance": 0.25}],
+    "loot": [{"item": "wolf_pelt", "chance": 0.8}, {"item": "healing_potion", "chance": 0.4}, {"item": "filled_common_soul_gem", "chance": 0.25}, {"item": "hircine_ring", "chance": 0.5}],
     "flavor": "一頭體型遠超尋常的銀背巨狼自暗處躍出 —— 牠是這片獵場的霸主,獸血之王。"
   }
 }

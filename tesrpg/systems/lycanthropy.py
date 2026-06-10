@@ -28,20 +28,44 @@ from tesrpg.systems import stats
 
 # --- 時程 ---------------------------------------------------------------
 INCUBATION_DAYS = 3          # 狼人熱潛伏幾日後轉化
-BEAST_DURATION_HOURS = 3     # 一次獸形的基礎持續(遊戲小時;戰鬥不推進時間 → 一場戰鬥內必不過期)
+BEAST_DURATION_HOURS = 3     # tier 0 一次獸形的基礎持續(遊戲小時;戰鬥不推進時間 → 一場戰鬥內必不過期)
 FEED_EXTEND_HOURS = 2        # 每次吞噬延長的時數
-MAX_FEEDS_PER_FORM = 5       # 每次獸形最多吞噬續時次數(封「無限獸形」farm)
+MAX_FEEDS_PER_FORM = 5       # tier 0 每次獸形最多吞噬續時次數(封「無限獸形」farm)
 EXHAUST_FATIGUE = 30         # 變回人形的力竭代價(扣體力)
 RITUAL_RANK_INDEX = 2        # 戰友團達此階級索引(內圈),獸血儀式才會現身
 
 # --- 獸形加成(刻意只給屬性 + 一筆生命加成;不給技能 → 但保留 skill 層供未來/對稱)----
 # strength 放大近戰(獸形不走偷襲故不破紅線);endurance→體力上限;speed/agility→命中/閃避。
-BEAST_ATTR = {"strength": 25, "endurance": 40, "speed": 15, "agility": 10}
-BEAST_HEALTH = 80            # 獸形額外生命上限(脫甲 → 靠巨量血量扛;走 char.werewolf_health_bonus)
+BEAST_ATTR = {"strength": 25, "endurance": 40, "speed": 15, "agility": 10}   # = tier 0
+BEAST_HEALTH = 80            # tier 0 獸形額外生命上限(脫甲 → 靠巨量血量扛;走 char.werewolf_health_bonus)
 BEAST_ARMOR = 4              # 獸形自然護甲(脫去穿戴護甲;野獸厚皮的微薄防護)
 BEAST_CLAW = "beast_claws"   # 獸爪自然武器 id(weapons.json;無附魔/淬鍊 → 結構性抑制裝備)
 
 DISEASE_IMMUNE = {"disease": 100}   # 狼人化即疾病(恆有 → 與吸血鬼互斥)
+
+# --- 餵食進程「獸血隨狩獵成長」(由 werewolf_total_feeds 累計推導,零新存檔欄,同 mastery 門檻模式)----
+# 越常以獸形吞噬獵物,獸血越濃 → 屬性/生命/獸爪/持續/吞噬上限隨階提升。tier 0 = 上面的 base 常數。
+FEED_TIERS = [10, 25, 50, 100]   # 累計吞噬達各門檻 → 升一階(階 0..4)
+TIER_NAMES = ["獸血初醒", "壯碩巨狼", "嗜血狂獸", "野性之王", "血月之主"]
+_TIER_ATTR = [
+    BEAST_ATTR,
+    {"strength": 30, "endurance": 48, "speed": 16, "agility": 11},
+    {"strength": 34, "endurance": 55, "speed": 18, "agility": 12},
+    {"strength": 38, "endurance": 62, "speed": 19, "agility": 13},
+    {"strength": 42, "endurance": 70, "speed": 20, "agility": 14},
+]
+_TIER_HEALTH = [BEAST_HEALTH, 100, 120, 140, 160]
+_TIER_CLAW = [0, 1, 2, 3, 4]        # 獸爪額外傷害(加在 beast_claws base 之上;僅獸形)
+_TIER_DURATION = [BEAST_DURATION_HOURS, 3, 4, 4, 5]    # 獸形持續(小時)
+_TIER_MAXFEEDS = [MAX_FEEDS_PER_FORM, 5, 6, 7, 8]      # 每場吞噬續時上限
+
+# 恫嚇之嚎(達 HOWL_TIER 解鎖的獸形專屬戰技):嚎叫使敵恐懼。耗體力(無新存檔欄),
+# 🔴 solo boss 免疫(比照武器麻痺/偷襲夾限的反鎖王紅線,杜絕嚎叫永控 boss)。
+HOWL_TIER = 2
+HOWL_FATIGUE = 25
+HOWL_FEAR_TURNS = 2
+
+HIRCINE_RING = "hircine_ring"   # 獵者之戒(具名神器):穿戴時可隨意變身(繞過每日冷卻)
 
 
 def _today(state) -> int:
@@ -97,6 +121,74 @@ def can_offer_ritual(char: Character) -> bool:
 
 
 # ======================================================================
+# 餵食進程(由 werewolf_total_feeds 累計推導;零新存檔欄)
+# ======================================================================
+def tier(char: Character) -> int:
+    """獸血階(0..len(FEED_TIERS)):累計吞噬越多越高。"""
+    fed = getattr(char, "werewolf_total_feeds", 0)
+    return sum(1 for thr in FEED_TIERS if fed >= thr)
+
+
+def beast_attr(char: Character) -> dict:
+    return _TIER_ATTR[tier(char)]
+
+
+def beast_health(char: Character) -> int:
+    return _TIER_HEALTH[tier(char)]
+
+
+def claw_bonus(char: Character) -> int:
+    """獸爪隨階的額外傷害(加在 beast_claws base 之上;combat._weapon_profile 讀)。"""
+    return _TIER_CLAW[tier(char)]
+
+
+def beast_duration(char: Character) -> int:
+    return _TIER_DURATION[tier(char)]
+
+
+def max_feeds(char: Character) -> int:
+    return _TIER_MAXFEEDS[tier(char)]
+
+
+def can_howl(char: Character, state) -> bool:
+    """獸形中且獸血階達 HOWL_TIER → 可施恫嚇之嚎。"""
+    return is_beast(char, state) and tier(char) >= HOWL_TIER
+
+
+def has_hircine_ring(char: Character, gamedata: GameData) -> bool:
+    """是否穿戴獵者之戒(具名神器,`hircine` 旗標)→ 可隨意變身(繞過每日冷卻)。"""
+    return any((gamedata.item_or_none(i) or {}).get("hircine")
+               for i in getattr(char, "equipped", {}).values())
+
+
+def tier_progress(char: Character) -> dict:
+    """供 UI:目前階名/累計吞噬/距下一階(已滿階則無 next_*)。"""
+    fed = getattr(char, "werewolf_total_feeds", 0)
+    t = tier(char)
+    out = {"tier": t, "name": TIER_NAMES[t], "feeds": fed}
+    if t < len(FEED_TIERS):
+        out.update({"next_name": TIER_NAMES[t + 1], "next_threshold": FEED_TIERS[t],
+                    "remaining": FEED_TIERS[t] - fed})
+    return out
+
+
+def howl(char: Character, state, gamedata: GameData, enemies) -> dict:
+    """恫嚇之嚎:對所有存活、非 solo 的敵人施加恐懼(耗體力)。回傳 {ok, affected}。
+    🔴 solo boss 免疫(反鎖王紅線:杜絕嚎叫永控 boss,比照武器麻痺/偷襲夾限)。"""
+    from tesrpg.systems import combat, magic
+    if char.fatigue < HOWL_FATIGUE:
+        return {"ok": False, "affected": 0}
+    char.fatigue = max(0, char.fatigue - HOWL_FATIGUE)
+    n = 0
+    for e in enemies:
+        if (combat.is_alive(e) and not combat._is_solo(e, gamedata)
+                and not magic.is_feared(e)):
+            e.active_effects.append({"kind": "fear", "turns": HOWL_FEAR_TURNS})
+            n += 1
+    return {"ok": True, "affected": n}
+
+
+# ======================================================================
 # 加成層(獨立層,與裝備/吸血鬼加成同模式)
 # ======================================================================
 def apply_to_character(char: Character, state, gamedata: GameData) -> None:
@@ -107,10 +199,10 @@ def apply_to_character(char: Character, state, gamedata: GameData) -> None:
     - 非狼人 / state=None 的 cure 路徑:全清空。
     """
     if is_beast(char, state):
-        char.werewolf_attr_bonus = dict(BEAST_ATTR)
+        char.werewolf_attr_bonus = dict(beast_attr(char))     # 隨獸血階成長
         char.werewolf_skill_bonus = {}
         char.werewolf_resist = dict(DISEASE_IMMUNE)
-        char.werewolf_health_bonus = BEAST_HEALTH
+        char.werewolf_health_bonus = beast_health(char)
         char.beast_form = True
     elif is_werewolf(char):
         char.werewolf_attr_bonus = {}
@@ -201,7 +293,7 @@ def transform(char: Character, state, gamedata: GameData) -> dict:
 
     回傳 {"messages": [...]}(供 powers.use 串接)。
     """
-    char.beast_form_until = _now(state) + BEAST_DURATION_HOURS
+    char.beast_form_until = _now(state) + beast_duration(char)   # 隨獸血階延長
     char.beast_feeds = 0
     before_max = char.max_health
     apply_to_character(char, state, gamedata)     # 套獸形層 + recompute(生命/體力上限上升)
@@ -217,13 +309,15 @@ def devour(char: Character, state, gamedata: GameData) -> dict:
 
     回傳 {"extended": bool, "healed": int}。
     """
-    if not is_beast(char, state) or char.beast_feeds >= MAX_FEEDS_PER_FORM:
+    if not is_beast(char, state) or char.beast_feeds >= max_feeds(char):   # 上限隨獸血階提升
         return {"extended": False, "healed": 0}
     char.beast_feeds += 1
     char.werewolf_total_feeds = getattr(char, "werewolf_total_feeds", 0) + 1
+    # 吞噬即時滋長獸血:跨階則屬性/生命上限/獸爪同步升級(beast 分支重算),回血亦隨階提升
+    apply_to_character(char, state, gamedata)
     char.beast_form_until = max(char.beast_form_until, _now(state)) + FEED_EXTEND_HOURS
     before = char.health
-    char.health = min(char.max_health, char.health + BEAST_HEALTH // 2)
+    char.health = min(char.max_health, char.health + beast_health(char) // 2)
     return {"extended": True, "healed": int(char.health - before)}
 
 

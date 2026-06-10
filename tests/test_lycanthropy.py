@@ -78,10 +78,11 @@ def test_beast_attack_never_sneaks_even_if_flagged():
 
 
 def test_beast_single_hit_far_below_solo_boss_hp():
-    """最壞情況:高 hand_to_hand + 獸形力量,單記非偷襲獸爪仍遠不及 solo boss 血量。"""
+    """最壞情況:apex(滿階獸血)+ 高 hand_to_hand + 獸形力量,單記非偷襲獸爪仍遠不及 solo boss 血量。"""
     gd, c, st = _state()
     c.skills["hand_to_hand"] = 100
     _make_werewolf(gd, c, st)
+    c.werewolf_total_feeds = lycanthropy.FEED_TIERS[-1]   # 滿階「血月之主」= 最強獸形
     lycanthropy.transform(c, st, gd)
     for tid in ("ancient_dragon", "wamasu", "dremora_lord"):
         boss = combat.spawn_creature(gd, tid, st.rng)
@@ -292,6 +293,87 @@ def test_legacy_and_achievement():
     assert "moonlit_hunter" in {a["id"] for a in achievements.earned(c, gd)}
 
 
+# --- 餵食進程(獸血隨狩獵成長)+ 恫嚇之嚎 + 獵者之戒 -------------------
+def test_feed_tier_progression():
+    gd, c, st = _state()
+    _make_werewolf(gd, c, st)
+    assert lycanthropy.tier(c) == 0
+    c.werewolf_total_feeds = lycanthropy.FEED_TIERS[0]      # 達第一門檻 → 階 1
+    assert lycanthropy.tier(c) == 1
+    c.werewolf_total_feeds = lycanthropy.FEED_TIERS[-1]     # 滿階
+    assert lycanthropy.tier(c) == len(lycanthropy.FEED_TIERS)
+    assert lycanthropy.beast_attr(c)["strength"] > lycanthropy.BEAST_ATTR["strength"]
+    assert lycanthropy.beast_health(c) > lycanthropy.BEAST_HEALTH
+    assert lycanthropy.max_feeds(c) >= lycanthropy.MAX_FEEDS_PER_FORM
+    assert lycanthropy.beast_duration(c) >= lycanthropy.BEAST_DURATION_HOURS
+    prog = lycanthropy.tier_progress(c)
+    assert "remaining" not in prog                          # 滿階無下一階
+
+
+def test_claw_damage_scales_with_tier():
+    gd, c, st = _state()
+    _make_werewolf(gd, c, st)
+    lycanthropy.transform(c, st, gd)
+    d0, _, sid = combat._weapon_profile(c, gd)
+    assert sid == "hand_to_hand"
+    lycanthropy.revert(c, st, gd)
+    c.werewolf_total_feeds = lycanthropy.FEED_TIERS[-1]     # 滿階
+    lycanthropy.transform(c, st, gd)
+    d_apex, _, _ = combat._weapon_profile(c, gd)
+    assert d_apex > d0                                      # 獸爪隨獸血階成長
+
+
+def test_howl_fears_non_solo_costs_fatigue_solo_immune():
+    from tesrpg.systems import magic
+    gd, c, st = _state()
+    c.attributes["endurance"] = 90
+    _make_werewolf(gd, c, st)
+    c.werewolf_total_feeds = lycanthropy.FEED_TIERS[1]      # 階 2 → 解鎖恫嚇之嚎
+    lycanthropy.transform(c, st, gd)
+    assert lycanthropy.can_howl(c, st)
+    mob = combat.spawn_creature(gd, "bandit", st.rng)
+    boss = combat.spawn_creature(gd, "ancient_dragon", st.rng)
+    fat0 = c.fatigue
+    res = lycanthropy.howl(c, st, gd, [mob, boss])
+    assert res["affected"] == 1                             # 只懼非 solo;solo boss 免疫(紅線)
+    assert magic.is_feared(mob) and not magic.is_feared(boss)
+    assert c.fatigue == fat0 - lycanthropy.HOWL_FATIGUE     # 耗體力
+    c.fatigue = lycanthropy.HOWL_FATIGUE - 1
+    assert lycanthropy.howl(c, st, gd, [mob])["ok"] is False  # 體力不足無法嚎叫
+
+
+def test_devour_tier_up_recomputes_and_heal_scales():
+    """對抗審查回歸:吞噬使 total_feeds 跨階 → 即時重算屬性/生命上限(非停留在變身時的階);
+    且回血隨獸血階提升(非固定 BEAST_HEALTH//2)。"""
+    gd, c, st = _state()
+    c.attributes["endurance"] = 80
+    _make_werewolf(gd, c, st)
+    c.werewolf_total_feeds = lycanthropy.FEED_TIERS[0] - 1   # 階 0,差 1 次吞噬即升階
+    lycanthropy.transform(c, st, gd)
+    assert lycanthropy.tier(c) == 0
+    c.health = 1
+    res = lycanthropy.devour(c, st, gd)                      # → total_feeds 達門檻,升階 1
+    assert lycanthropy.tier(c) == 1
+    # 屬性/生命層即時對齊新階(非停留階 0)
+    assert c.werewolf_attr_bonus["strength"] == lycanthropy.beast_attr(c)["strength"]
+    assert c.werewolf_health_bonus == lycanthropy.beast_health(c)
+    assert res["healed"] == lycanthropy.beast_health(c) // 2   # 回血隨階(階 1 > 階 0)
+    assert res["healed"] > lycanthropy.BEAST_HEALTH // 2
+
+
+def test_hircine_ring_bypasses_transform_cooldown():
+    from tesrpg.systems import inventory, powers
+    gd, c, st = _state()
+    _make_werewolf(gd, c, st)
+    powers.use(c, st, gd)                                   # 用掉今日變身(設 power_last_day)
+    lycanthropy.revert(c, st, gd)
+    assert not powers.usable_in(c, st, gd, "combat")        # 每日冷卻中
+    inventory.add_item(c, "hircine_ring", 1)
+    inventory.equip_jewelry(c, gd, "hircine_ring")
+    assert lycanthropy.has_hircine_ring(c, gd)
+    assert powers.usable_in(c, st, gd, "combat")            # 獵者之戒繞過冷卻 → 可隨意變身
+
+
 # --- 開局背景:獸血之裔 -------------------------------------------------
 def test_beast_blooded_origin():
     from tesrpg import creation
@@ -320,6 +402,11 @@ def run():
     test_save_roundtrip_and_old_save_migration()
     test_save_in_beast_form_then_expire_reverts_on_load()
     test_legacy_and_achievement()
+    test_feed_tier_progression()
+    test_claw_damage_scales_with_tier()
+    test_howl_fears_non_solo_costs_fatigue_solo_immune()
+    test_devour_tier_up_recomputes_and_heal_scales()
+    test_hircine_ring_bypasses_transform_cooldown()
     test_beast_blooded_origin()
 
 

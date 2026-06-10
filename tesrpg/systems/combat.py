@@ -168,7 +168,7 @@ def _weapon_profile(actor, gamedata: GameData):
         if _is_beast(actor):     # 獸形:以獸爪戰鬥,略過裝備武器/淬鍊/附魔(資料驅動讀 beast_claws)
             from tesrpg.systems import lycanthropy
             wp = gamedata.item(lycanthropy.BEAST_CLAW)
-            return wp["damage"], actor.skill(wp["skill"]), wp["skill"]
+            return wp["damage"] + lycanthropy.claw_bonus(actor), actor.skill(wp["skill"]), wp["skill"]
         wp = gamedata.item(actor.weapon)   # 用 item() 以支援附魔(合成)武器
         return wp["damage"] + smithing.weapon_temper_bonus(actor), actor.skill(wp["skill"]), wp["skill"]
     return actor.attack["damage"], actor.attack["skill"], None
