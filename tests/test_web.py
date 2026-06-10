@@ -353,8 +353,9 @@ def test_combat_target_reemit_web():
         _restore()
 
 
-def test_web_cast_submenu_shows_combat_board_once():
-    """web 選法術子選單須重顯戰場(修「施法時敵狀態丟失」),且恰一張(不重複)。"""
+def test_web_combat_menus_each_show_one_board():
+    """戰鬥每個 prompt(動作選單 / 法術子選單 / 子選單『返回』後的動作選單)都恰顯一張戰場 ——
+    釘住「動作選單丟失敵情」(返回遞迴未重發)與「重複戰場卡」兩個回報 bug。"""
     from tesrpg.gamedata import get_gamedata
     from tesrpg.creation import build_character
     from tesrpg.state import GameState, GameTime
@@ -366,17 +367,17 @@ def test_web_cast_submenu_shows_combat_board_once():
     if "minor_heal" not in c.spells:
         c.spells.append("minor_heal")
     st = GameState(player=c, time=GameTime(), rng=RNG(1))
-    foes = [combat.spawn_creature(gd, "giant_rat", RNG(1))]
+    foes = [combat.spawn_creature(gd, "giant_rat", RNG(1))]   # 單敵 → attack 自動選目標、不另起 prompt
     backend = WebBackend()
     ui.use_web_backend(backend, _rec())
     try:
-        # 行動選單 → 選 cast;法術選單 → 選 minor_heal(self,無需選目標 → 直接返回)
+        # 動作選單 → cast;法術選單 → None(返回)→ 遞迴動作選單 → attack(單敵自動選目標 → 返回 action)
         frames, ret = _drive_multi(backend, lambda: M._choose_combat_action(st, gd, foes, []),
-                                   [lambda p: "cast", lambda p: "minor_heal"])
-        spell_frame = frames[1]
-        combat_blocks = [b for b in spell_frame["blocks"] if b["kind"] == "view" and b["name"] == "combat"]
-        assert len(combat_blocks) == 1, spell_frame["blocks"]   # 選法術畫面仍見戰場,且恰一張
-        assert ret["type"] == "cast" and ret["spell_id"] == "minor_heal"
+                                   [lambda p: "cast", lambda p: None, lambda p: "attack"])
+        for i, fr in enumerate(frames):
+            n = len([b for b in fr["blocks"] if b["kind"] == "view" and b["name"] == "combat"])
+            assert n == 1, f"frame {i} 戰場卡數={n}(應恰 1):{fr['blocks']}"
+        assert ret["type"] == "attack"
     finally:
         _restore()
 
@@ -592,7 +593,7 @@ def run():
     test_view_model_shapes()
     test_combat_target_key_parity()
     test_combat_target_reemit_web()
-    test_web_cast_submenu_shows_combat_board_once()
+    test_web_combat_menus_each_show_one_board()
     test_sheet_subview_models()
     test_persuade_chance_readonly()
     test_board_and_shop_view_shapes()

@@ -361,6 +361,8 @@ def _choose_combat_action(state: GameState, gamedata: GameData, enemies: list, a
                           vanish_used: int = 0):
     """回傳玩家本回合的行動 dict:{type, spell_id?, target?}。"""
     player = state.player
+    # 每次進入(含子選單「返回」遞迴)都重顯戰場 → 動作選單恆見敵情(web 每幀清空重繪)。
+    ui.combat_status_group(player, allies, enemies, gamedata)
     if getattr(player, "beast_form", False):     # 獸形:爪擊 /(達階)恫嚇之嚎 / 變回人形 / 逃跑
         opts = [("attack", f"獸爪猛擊（{combat.effective_weapon_name(player, gamedata)})")]
         if lycanthropy.can_howl(player, state) and player.fatigue >= lycanthropy.HOWL_FATIGUE:
@@ -588,7 +590,6 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
             trapped_kills.add(id(e))
 
     while combat.is_alive(player) and alive_e():
-        ui.combat_status_group(player, battle["allies"], enemies, gamedata)
         action = _choose_combat_action(state, gamedata, enemies, battle["allies"], vanishes_done)
         blocking = action["type"] == "block"
         vanish_success = False        # 本回合是否成功隱遁(成功 → 重置偷襲 + 跳過敵人階段)
