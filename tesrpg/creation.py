@@ -164,6 +164,9 @@ def apply_origin(gamedata: GameData, char: Character, origin_id: str | None) -> 
     # 進入主迴圈第一回合初始化(build_character 此時沒有 state/時間)。
     if odef.get("vampire"):
         char.is_vampire = True
+    # 開局即狼人(獸血之裔):只標記身分(與吸血鬼互斥);疾病免疫層由 lycanthropy.update 首回合初始化。
+    if odef.get("werewolf") and not char.is_vampire:
+        char.is_werewolf = True
 
 
 # 各武器技能 → 預設起始武器

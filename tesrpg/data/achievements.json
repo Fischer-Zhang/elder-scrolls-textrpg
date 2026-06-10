@@ -23,5 +23,7 @@
   {"id": "child_of_night", "name": "夜之子嗣", "desc": "墮入吸血鬼一族。", "cond": {"type": "vampire"}},
   {"id": "moon_addict", "name": "月糖之奴", "desc": "墮入斯庫瑪的甜膩深淵。", "cond": {"type": "skooma_addiction", "count": 5}},
   {"id": "bloodprice", "name": "血債累累", "desc": "謀害 10 名無辜者。", "cond": {"type": "murders", "count": 10}},
+  {"id": "beast_blood", "name": "獸血詛咒", "desc": "成為狼人一族。", "cond": {"type": "lycanthropy"}},
+  {"id": "moonlit_hunter", "name": "月下獵手", "desc": "獸形中吞噬 25 名獵物。", "cond": {"type": "werewolf_feeds", "count": 25}},
   {"id": "magnate", "name": "富甲一方", "desc": "積攢 50000 枚金幣。", "cond": {"type": "gold", "amount": 50000}}
 ]

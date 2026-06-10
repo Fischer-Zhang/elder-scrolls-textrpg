@@ -30,12 +30,18 @@ POWERS = {
     # 吸血鬼專屬(轉化後取代出生星座之力):每日一次的汲血擁抱
     "vampiric_drain":   {"name": "汲血擁抱", "contexts": ["combat"],
                          "effect": {"drain": 40}, "desc": "撕咬汲取敵人 40 點生命為己用。"},
+    # 狼人專屬(取代出生星座之力):每日一次的獸化變身
+    "beast_form":       {"name": "獸化變身", "contexts": ["combat"],
+                         "effect": {"transform": True},
+                         "desc": "化為嗜血巨狼:利爪撕敵、刀槍難傷,但無法施法、用物或持械。"},
 }
 
 
 def power_id(char: Character, gamedata: GameData) -> str | None:
     if getattr(char, "is_vampire", False):   # 吸血鬼:詛咒之力取代出生星座之力
         return "vampiric_drain"
+    if getattr(char, "is_werewolf", False):  # 狼人:獸化變身取代出生星座之力(獸形中此槽關閉,不可重變身)
+        return None if getattr(char, "beast_form", False) else "beast_form"
     powers = gamedata.birthsigns[char.birthsign].get("powers", [])
     pid = powers[0] if powers else None
     return pid if pid in POWERS else None
@@ -98,6 +104,10 @@ def use(char: Character, state, gamedata: GameData, target=None) -> dict:
     if eff.get("unlock_charge"):
         char.tower_key_charge = True
         messages.append(f"{pdef['name']}已蓄勢 —— 下一道鎖將應手而開。")
+    if eff.get("transform"):     # 狼人獸化變身:化為獸形(每日一次,冷卻由下方 power_last_day 記)
+        from tesrpg.systems import lycanthropy
+        res = lycanthropy.transform(char, state, gamedata)
+        messages.extend(res.get("messages", []))
 
     char.power_last_day[pid] = _today(state)
     return {"messages": messages, "escape": escape}

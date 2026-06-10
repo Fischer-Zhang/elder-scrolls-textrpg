@@ -82,6 +82,18 @@ class Character:
     skooma_last_dose_hour: int = -1     # 上次用藥的絕對小時(-1=從未;戒斷強度由「距今」推導)
     skooma_attr_bonus: dict = field(default_factory=dict)    # attr_id -> +點數(high 增益 或 戒斷負值,二擇一)
     skooma_skill_bonus: dict = field(default_factory=dict)   # skill_id -> +點數(僅戒斷負值;high 不碰技能 → 避刺客紅線)
+    # 狼人化 / 獸形(Lycanthropy;主動限時變身,吸血鬼的對位)。獸形加成走獨立 werewolf_* 層,
+    # 與裝備/吸血鬼加成同模式:attr()/skill()/抗性 疊加、成長/夾限只用 base_*。詳見 systems/lycanthropy.py。
+    is_werewolf: bool = False            # 染狼人化(持久身分)
+    werewolf_infected_day: int = -1      # 染狼人熱的絕對日(-1=未感染);潛伏滿 INCUBATION 轉化
+    beast_form: bool = False             # 獸形「現行」快取布林(combat 讀此,不穿 state;由 lycanthropy 維護)
+    beast_form_until: int = 0            # 獸形結束的絕對小時(now < 此值 = 仍獸形)
+    beast_feeds: int = 0                 # 本次獸形已吞噬次數(續時上限)
+    werewolf_total_feeds: int = 0        # 累計吞噬次數(成就用)
+    werewolf_attr_bonus: dict = field(default_factory=dict)   # attr_id -> +點數(獸形)
+    werewolf_skill_bonus: dict = field(default_factory=dict)  # skill_id -> +點數(獸形;MVP 空)
+    werewolf_resist: dict = field(default_factory=dict)       # element -> +百分比(疾病免疫)
+    werewolf_health_bonus: int = 0       # 獸形額外生命上限(走 stats.recompute_max_resources)
     factions: dict = field(default_factory=dict)         # faction_id -> 階級索引(已入會)
     # 黑暗兄弟會(里程碑;血債招募 → 合約晉升 → 夜母祝福)。詳見 systems/brotherhood.py。
     # 階級存在 factions["dark_brotherhood"];此處只記入會「前」的狀態機欄位:
@@ -157,12 +169,14 @@ class Character:
     def attr(self, key: str) -> int:
         return (self.attributes.get(key, formulas.BASE_ATTRIBUTE)
                 + self.equip_attr_bonus.get(key, 0) + self.vampire_attr_bonus.get(key, 0)
-                + self.mastery_attr_bonus.get(key, 0) + self.skooma_attr_bonus.get(key, 0))
+                + self.mastery_attr_bonus.get(key, 0) + self.skooma_attr_bonus.get(key, 0)
+                + self.werewolf_attr_bonus.get(key, 0))
 
     def skill(self, key: str) -> int:
         return (self.skills.get(key, 0)
                 + self.equip_skill_bonus.get(key, 0) + self.vampire_skill_bonus.get(key, 0)
-                + self.mastery_skill_bonus.get(key, 0) + self.skooma_skill_bonus.get(key, 0))
+                + self.mastery_skill_bonus.get(key, 0) + self.skooma_skill_bonus.get(key, 0)
+                + self.werewolf_skill_bonus.get(key, 0))
 
     def base_attr(self, key: str) -> int:
         """不含裝備加成的原始屬性(供成長/夾限用)。"""
@@ -211,6 +225,13 @@ class Character:
             "skooma_addiction": self.skooma_addiction, "skooma_high_until": self.skooma_high_until,
             "skooma_last_dose_hour": self.skooma_last_dose_hour,
             "skooma_attr_bonus": self.skooma_attr_bonus, "skooma_skill_bonus": self.skooma_skill_bonus,
+            "is_werewolf": self.is_werewolf, "werewolf_infected_day": self.werewolf_infected_day,
+            "beast_form": self.beast_form, "beast_form_until": self.beast_form_until,
+            "beast_feeds": self.beast_feeds, "werewolf_total_feeds": self.werewolf_total_feeds,
+            "werewolf_attr_bonus": self.werewolf_attr_bonus,
+            "werewolf_skill_bonus": self.werewolf_skill_bonus,
+            "werewolf_resist": self.werewolf_resist,
+            "werewolf_health_bonus": self.werewolf_health_bonus,
             "factions": self.factions,
             "murders": self.murders, "db_invited": self.db_invited,
             "murdered_npcs": self.murdered_npcs,

@@ -13,9 +13,9 @@ from tesrpg.gamedata import GameData, get_gamedata
 from tesrpg.rng import RNG, make_seed
 from tesrpg.state import GameState
 from tesrpg.systems import (alchemy, brotherhood, combat, court, crafting, crime, dialogue, dungeon,
-                            enchanting, events, factions, inventory, landmarks, legacy, magic,
-                            mastery, politics, powers, progression, quests, skooma, smithing, stats,
-                            vampirism, warband, world, worldstate)
+                            enchanting, events, factions, inventory, landmarks, legacy, lycanthropy,
+                            magic, mastery, politics, powers, progression, quests, skooma, smithing,
+                            stats, vampirism, warband, world, worldstate)
 from tesrpg.ui import console as ui
 
 SAVE_PATH = Path.home() / ".tesrpg" / "save.json"
@@ -328,13 +328,24 @@ def _choose_combat_action(state: GameState, gamedata: GameData, enemies: list, a
                           vanish_used: int = 0):
     """回傳玩家本回合的行動 dict:{type, spell_id?, target?}。"""
     player = state.player
+    if getattr(player, "beast_form", False):     # 獸形:只能爪擊 / 變回人形 / 逃跑(無施法/格擋/隱遁)
+        opts = [("attack", f"獸爪猛擊（{combat.effective_weapon_name(player, gamedata)})"),
+                ("revert", "變回人形"), ("flee", "逃跑")]
+        choice = ui.menu("你的回合(獸形)", opts)
+        if choice == "attack":
+            return {"type": "attack", "target": _choose_enemy_target(state, gamedata, enemies, allies)}
+        return {"type": choice}
     opts = [("attack", f"攻擊（{gamedata.item(player.weapon)['name']})")]
     castable = [s for s in player.spells if magic.can_cast(player, gamedata, s)]
     if castable:
         opts.append(("cast", "施法"))
     if powers.usable_in(player, state, gamedata, "combat"):
-        plabel = "吸血之力" if player.is_vampire else "星座之力"
-        opts.append(("power", f"{plabel}({powers.power_def(powers.power_id(player, gamedata))['name']})"))
+        pid = powers.power_id(player, gamedata)
+        if pid == "beast_form":
+            opts.append(("power", "🐺 獸化變身（化身嗜血巨狼)"))
+        else:
+            plabel = "吸血之力" if player.is_vampire else "星座之力"
+            opts.append(("power", f"{plabel}({powers.power_def(pid)['name']})"))
     if not inventory.is_dual_wielding(player, gamedata):   # 雙持占用雙手 → 不能格擋
         opts.append(("block", "格擋"))
     vcap = combat.vanish_cap(player, gamedata)
@@ -462,6 +473,11 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
     opening = not alerted   # 開場偷襲:首個攻擊吃潛行加成;若敵人已警覺(撤退失敗)則無
     vanishes_done = 0  # 本場已成功隱遁次數(成功率遞減,防無限風箏)
 
+    # 獸形快取對齊:旅行/休息可能在「同一動作內」推進時間過了獸形時效又觸發戰鬥,
+    # 而 combat 讀快取布林、game_loop 的 update 只在每圈頂端刷新 → 進戰前對齊,杜絕以過期獸形作戰。
+    if lycanthropy.sync_beast_form(player, state, gamedata):
+        ui.message("獸形的狂暴恰在此刻退去 —— 你以人形之軀迎敵。", style="magenta")
+
     # active_effects 是「戰鬥內」臨時效果 —— 進場先清,杜絕戰鬥外施法(如里程碑「聖光·溢盾」)
     # 殘留的護盾/效果洩漏進本場。必須在 _prep_phase「之前」清(備戰施放的增益在清除後才套用,照常保留)。
     player.active_effects.clear()
@@ -498,8 +514,11 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
             tgt = action["target"]
             if combat.is_alive(tgt):
                 combat.player_attack_cost(player, gamedata)
+                # 🔴 紅線:獸形攻擊永不吃偷襲倍率(變身破壞潛行)→ solo boss 夾限不被觸碰。
+                # 即使帶著殘留獸形入場 + 潛近成功(opening=True),此 guard 也使首爪不偷襲。
+                sneak = opening and not getattr(player, "beast_form", False)
                 ui.combat_event(combat.resolve_attack(player, tgt, gamedata, state.rng,
-                                                      sneak_attack=opening), gamedata)
+                                                      sneak_attack=sneak), gamedata)
         elif action["type"] == "cast":
             res = magic.cast(player, gamedata, action["spell_id"], state.rng,
                              target=action.get("target"), battle=battle, enemies=alive_e())
@@ -514,6 +533,9 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
                 state.time.advance(1)
                 tally_casualties()
                 return "fled"
+        elif action["type"] == "revert":          # 狼人:主動變回人形(力竭代價)
+            lycanthropy.revert(player, state, gamedata)
+            ui.message("你壓下狂暴,重歸人形 —— 筋疲力盡。", style="magenta")
         elif action["type"] == "block":
             combat.player_block_cost(player)
             ui.message("你舉盾戒備,準備擋下來襲。", style="grey70")
@@ -563,9 +585,14 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
             blk = blocking if tgt is player else False
             ev = combat.resolve_attack(e, tgt, gamedata, state.rng, defender_blocking=blk)
             ui.combat_event(ev, gamedata)
-            if ev.get("infected") and vampirism.infect(player, state):
-                ui.message("獠牙刺入你的頸側 —— 傷口隱隱發燙。你染上了某種不祥的熱症……",
-                           style="bold red")
+            if ev.get("infected"):    # 疾病傳染:依種類分派到吸血鬼 / 狼人狀態機
+                kind = ev.get("infect_kind", "vampire")
+                if kind == "lycanthropy" and lycanthropy.infect(player, state):
+                    ui.message("利爪撕開你的皮肉 —— 傷口深處傳來灼燒的悸動。你染上了某種野性的熱症……",
+                               style="bold red")
+                elif kind == "vampire" and vampirism.infect(player, state):
+                    ui.message("獠牙刺入你的頸側 —— 傷口隱隱發燙。你染上了某種不祥的熱症……",
+                               style="bold red")
 
         # ---- 回合結束:持續傷害/狀態計時 ----
         pre_trap = {id(e): magic.has_soul_trap(e) for e in enemies if combat.is_alive(e)}
@@ -610,6 +637,11 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
         quests.record_kill(player, e.template_id)
     ui.loot_report(total, gamedata)
     _report_quests(state, gamedata)
+    if getattr(player, "beast_form", False):    # 獸形勝利:吞噬獵物續時 + 回血(每場有上限,封無限獸形)
+        dv = lycanthropy.devour(player, state, gamedata)
+        if dv["extended"]:
+            ui.message(f"你俯身吞噬倒下的獵物 —— 狂暴得以延續(回復 {dv['healed']} 點生命)。",
+                       style="bold red")
     tally_casualties()
     return "victory"
 
@@ -735,6 +767,7 @@ def offer_battle(state: GameState, gamedata: GameData, enemies, ambush_chance: f
     if not isinstance(enemies, list):
         enemies = [enemies]
     char = state.player
+    lycanthropy.sync_beast_form(char, state, gamedata)   # 偵查估傷前對齊獸形快取(時間可能已推進過時效)
     name = _group_name(enemies)
     night = state.time.hour < 6 or state.time.hour >= 21
     ui.combat_intro(enemies[0], state.player, gamedata)
@@ -1271,6 +1304,40 @@ def action_skooma_cure(state: GameState, gamedata: GameData) -> None:
     if ui.confirm("接下『淨糖之儀』,踏上戒除之路嗎?"):
         quests.accept_quest(char, gamedata, SKOOMA_CURE_QID)
         ui.message("已接取任務:淨糖之儀", style="bold yellow")
+        _report_quests(state, gamedata)
+
+
+WEREWOLF_CURE_QID = "cure_lycanthropy"
+
+
+def action_werewolf_cure(state: GameState, gamedata: GameData) -> None:
+    """探詢/推進/完成『滌淨獸血』—— 解除狼人化(任何聚落的獵巫女巫,僅狼人可見)。"""
+    char = state.player
+    if not lycanthropy.is_werewolf(char):
+        return
+    _report_quests(state, gamedata)   # 先結算可能已達標的採集/擊殺階段
+
+    if quests.is_done(char, WEREWOLF_CURE_QID):
+        ui.message("獵巫女巫取來你備齊的格倫摩女巫之首與那縷受詛獸血,在篝火與符文間誦起淨化的古調……",
+                   style="white")
+        if not ui.confirm("獸血之咒將在此夜被滌淨 —— 進行解咒儀式嗎?"):
+            return
+        lycanthropy.cure(char, gamedata)
+        char.completed_quests.remove(WEREWOLF_CURE_QID)   # 解咒可重複(日後再染,可再求一次)
+        ui.rule("獸血之咒已解")
+        ui.message("一陣翻江倒海的灼痛後,奔流的狼血漸漸冷卻 —— 你重歸純粹的凡人之軀,不再受月之牽引。",
+                   style="bold green")
+        return
+
+    if quests.is_active(char, WEREWOLF_CURE_QID):
+        ui.message(f"滌淨進度:{quests.objective_text(char, gamedata, WEREWOLF_CURE_QID)}", style="white")
+        ui.message("備齊淨化媒介、取得受詛獸血後,回到任一聚落的獵巫女巫處行儀式。", style="grey70")
+        return
+
+    ui.message(gamedata.quests[WEREWOLF_CURE_QID]["text"], style="white")
+    if ui.confirm("接下『滌淨獸血』,踏上解咒之路嗎?"):
+        quests.accept_quest(char, gamedata, WEREWOLF_CURE_QID)
+        ui.message("已接取任務:滌淨獸血", style="bold yellow")
         _report_quests(state, gamedata)
 
 
@@ -2185,6 +2252,8 @@ def action_guild_hall(state: GameState, gamedata: GameData, faction_id: str) -> 
     while True:                                      # 留在公會可連續處理(入會→接任務),返回才離開
         ui.guild_panel(char, gamedata, faction_id)
         opts = []
+        # 戰友團內圈的祕密:夠高階的戰友(非吸血鬼、未狼人化)會被獻上獸血儀式
+        ritual_ok = (faction_id == "fighters_guild" and lycanthropy.can_offer_ritual(char))
         if not factions.is_member(char, faction_id):
             reason = factions.join_block_reason(char, gamedata, faction_id)
             if reason is not None:                   # 門檻/對立/通緝 → 說明原因
@@ -2203,7 +2272,10 @@ def action_guild_hall(state: GameState, gamedata: GameData, faction_id: str) -> 
                 else:
                     ui.message(factions.advance_block_reason(char, gamedata, faction_id)
                                or "公會目前沒有你能接的委託。", style="grey70")
-                return
+                if not ritual_ok:                    # 無委託且無儀式可獻 → 離開
+                    return
+        if ritual_ok:
+            opts.append(("beast_ritual", "🐺 獸血儀式（戰友內圈的祕密)"))
         choice = ui.menu("公會事務", opts, allow_back=True)
         if choice is None:
             return
@@ -2214,6 +2286,23 @@ def action_guild_hall(state: GameState, gamedata: GameData, faction_id: str) -> 
         elif choice == "accept":
             avail = quests.available_quests(char, gamedata, "guild", faction_id)
             _accept_and_brief(state, gamedata, avail[0])
+        elif choice == "beast_ritual":
+            _beast_blood_ritual(state, gamedata)
+
+
+def _beast_blood_ritual(state: GameState, gamedata: GameData) -> None:
+    """戰友團獸血儀式:飲下戰友的獸血,成為狼人(內圈祕密)。"""
+    char = state.player
+    ui.message("圈內的戰友引你至地底密室,一只盛著漆黑獸血的石碗在火光中泛著腥光:"
+               "「飲下它,你便與我等同族 —— 月之裔,獸之兄弟。」", style="white")
+    if not ui.confirm("飲下獸血,接受狼人之軀嗎?(可日後尋獵巫女巫解咒)"):
+        return
+    if lycanthropy.contract(char, state, gamedata):
+        ui.rule("獸血之契")
+        ui.message("熾熱的獸血灼過喉嚨、沉入骨髓 —— 你聽見了血脈深處野獸的低吼。"
+                   "戰鬥中,你已能化身嗜血巨狼。", style="bold red")
+    else:
+        ui.message("某種力量排斥著這份契約 —— 你無法接受獸血。", style="yellow")
 
 
 def action_board(state: GameState, gamedata: GameData) -> None:
@@ -2416,6 +2505,8 @@ def action_character_sheet(state: GameState, gamedata: GameData) -> None:
             opts.append(("spellbook", "法術書"))
         if vampirism.is_vampire(char):
             opts.append(("vampire", "吸血鬼狀態"))
+        if lycanthropy.is_werewolf(char):
+            opts.append(("werewolf", "狼人狀態"))
         if skooma.has_touched_sugar(char):
             opts.append(("skooma", "斯庫瑪/月糖狀態"))
         opts += [("skill", "技能詳情"), ("resheet", "重看角色卡")]
@@ -2442,6 +2533,8 @@ def action_character_sheet(state: GameState, gamedata: GameData) -> None:
             ui.sheet_spellbook(char, gamedata)
         elif choice == "vampire":
             ui.sheet_vampirism(char, gamedata)
+        elif choice == "werewolf":
+            ui.sheet_lycanthropy(char, state, gamedata)
         elif choice == "skooma":
             ui.sheet_skooma(char, state, gamedata)
         elif choice == "skill":
@@ -2488,6 +2581,16 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
             elif ev["kind"] == "clean":
                 ui.message("你撐過了最深的渴求,身體漸漸清明 —— 月糖的枷鎖鬆開了。", style="green")
 
+        # 狼人化:潛伏轉化 / 獸形過期變回(掛在斯庫瑪之後)
+        for ev in lycanthropy.update(state, gamedata):
+            if ev["kind"] == "turn":
+                ui.rule("獸血甦醒")
+                ui.message("月升之夜,你的骨骼錯裂、皮肉迸張 —— 狼人之血自此在你體內奔流。"
+                           "從今往後,你能化身嗜血巨狼,直到詛咒解除。", style="bold red")
+            elif ev["kind"] == "revert":
+                ui.message("獸形的狂暴退去,你重歸人形 —— 筋疲力盡,四肢仍因方才的撕咬而顫抖。",
+                           style="magenta")
+
         # 陣營大事件(動態政局):authored 時間軸觸發城邦易幟,廣播天下大勢
         for ev in worldstate.update(state, gamedata):
             ui.rule("天下大勢")
@@ -2530,7 +2633,9 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
         services = loc.get("services", [])
 
         player = state.player
-        shunned = vampirism.is_shunned(player, state)   # 高階吸血鬼被世人拒於門外
+        # 世人拒於門外:高階吸血鬼,或在城鎮中仍處獸形的狼人(獸形入城經計時 carryover)
+        beast_in_town = lycanthropy.is_beast(player, state) and loc["type"] in ("town", "city")
+        shunned = vampirism.is_shunned(player, state) or beast_in_town
         # --- 冒險 ---
         adventure: list = []
         if loc["type"] == "dungeon":
@@ -2540,7 +2645,10 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
         adventure.append(("travel", "旅行"))
         adventure.append(("map", "世界地圖"))
         # --- 城區(分區域:市集區 / 公會區 / 廣場)---
-        if shunned:
+        if beast_in_town:
+            ui.message("一頭嗜血巨狼闖入城中,人們驚恐奔逃、店門緊閉 —— 獸形之軀無從與人交易,"
+                       "待變回人形再來吧。", style="red")
+        elif shunned:
             ui.message("世人察覺了你的真面目,紛紛走避 —— 高階吸血鬼無法與人交易,先進食壓下飢渴吧。",
                        style="red")
         market: list = []     # 市集區:商業
@@ -2574,6 +2682,8 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
             plaza.append(("feed", "🩸 吸血進食(獵取活人,重置飢餓)"))
         if skooma.is_addicted(player) and loc["type"] in ("town", "city") and not shunned:
             plaza.append(("skooma_cure", "🌙 尋訪療者,求解月糖之癮"))
+        if lycanthropy.is_werewolf(player) and loc["type"] in ("town", "city") and not shunned:
+            plaza.append(("werewolf_cure", "🐺 尋訪獵巫女巫,求解獸血之咒"))
         if "inn" in services and not shunned:
             plaza.append(("inn", "旅店(10金)"))
         if "trainer" in services and not shunned:
@@ -2650,6 +2760,8 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
             action_feed(state, gamedata)
         elif choice == "skooma_cure":
             action_skooma_cure(state, gamedata)
+        elif choice == "werewolf_cure":
+            action_werewolf_cure(state, gamedata)
         elif choice == "trainer":
             action_trainer(state, gamedata)
         elif choice == "court":

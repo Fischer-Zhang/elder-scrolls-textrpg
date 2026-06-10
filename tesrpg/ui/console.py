@@ -224,8 +224,8 @@ def _combat_view(player: Character, allies: list, enemies: list) -> dict:
 
 def _legacy_view(s: dict) -> dict:
     origins = []   # 身世:出身/詛咒/血業/功業/精通
-    for key in ("origin", "condition", "addiction", "dark_deeds", "dominion"):
-        label = {"origin": "出身", "condition": "詛咒", "addiction": "癮疾",
+    for key in ("origin", "condition", "lycanthropy", "addiction", "dark_deeds", "dominion"):
+        label = {"origin": "出身", "condition": "詛咒", "lycanthropy": "獸血", "addiction": "癮疾",
                  "dark_deeds": "血業", "dominion": "功業"}[key]
         if s.get(key):
             origins.append([label, str(s[key])])
@@ -462,6 +462,12 @@ def status_line(state: GameState) -> None:
         extra.append(f"[bold red]🩸 {vampirism.STAGE_NAMES[min(3, max(0, c.vampire_stage))]}吸血鬼[/]")
     elif getattr(c, "vampire_infected_day", -1) >= 0:
         extra.append("[red]🦠 吸血熱潛伏中[/]")
+    if getattr(c, "beast_form", False):
+        extra.append("[bold red]🐺 獸形[/]")
+    elif getattr(c, "is_werewolf", False):
+        extra.append("[red]🐺 狼人[/]")
+    elif getattr(c, "werewolf_infected_day", -1) >= 0:
+        extra.append("[red]🌑 狼人熱潛伏中[/]")
     from tesrpg.systems import skooma
     if skooma.is_high(c, state):
         extra.append("[magenta]🌙 月糖之醉[/]")
@@ -924,6 +930,45 @@ def sheet_vampirism(char: Character, gamedata: GameData) -> None:
     console.print(_panel(body, title="吸血鬼狀態"))
 
 
+def sheet_lycanthropy(char: Character, state: GameState, gamedata: GameData) -> None:
+    from tesrpg.systems import lycanthropy
+    beast = lycanthropy.is_beast(char, state)
+    if beast:
+        remain = max(0, getattr(char, "beast_form_until", 0) - state.time.absolute_hours())
+        phase = f"🐺 獸形中(尚餘約 {remain} 小時;吞噬獵物可續)"
+    elif lycanthropy.is_werewolf(char):
+        phase = "人形(可於戰鬥中獸化變身,每日一次)"
+    elif lycanthropy.is_infected(char):
+        phase = "🌑 狼人熱潛伏中(數日後將轉化)"
+    else:
+        phase = "未染狼人之血"
+    layers = (("attrs", "屬性", getattr(char, "werewolf_attr_bonus", {})),
+              ("resist", "抗性", getattr(char, "werewolf_resist", {})))
+    note = "(獸形:利爪撕敵、巨量生命、刀槍難傷,但脫去裝備、無法施法/用物/持械;與潛行互斥。入城會被驅避;尋獵巫女巫可解咒)"
+    if _web is not None:
+        rows = [_ln(phase, "red" if beast else "muted")]
+        if beast and getattr(char, "werewolf_health_bonus", 0):
+            rows.append(_kv("獸形生命", f"+{char.werewolf_health_bonus}"))
+        for cat, label, d in layers:
+            if d:
+                rows.append(_kv(label, "、".join(f"{_tr_bonus(cat, k, gamedata)}{v:+d}" for k, v in d.items())))
+        rows.append(_ln(note, "faint"))
+        _emit_panel("狼人狀態", rows)
+        return
+    body = Text()
+    body.append(phase + "\n", style="bold red" if beast else INK)
+    if beast and getattr(char, "werewolf_health_bonus", 0):
+        body.append("獸形生命  ", style=GOLD)
+        body.append(f"+{char.werewolf_health_bonus}\n", style=PARCH)
+    for cat, label, d in layers:
+        if d:
+            body.append(f"{label}  ", style=GOLD)
+            body.append("、".join(f"{_tr_bonus(cat, k, gamedata)}{v:+d}" for k, v in d.items())
+                        + "\n", style=PARCH)
+    body.append(note, style=FAINT)
+    console.print(_panel(body, title="狼人狀態"))
+
+
 def sheet_skooma(char: Character, state: GameState, gamedata: GameData) -> None:
     from tesrpg.systems import skooma
     add = getattr(char, "skooma_addiction", 0)
@@ -1173,6 +1218,8 @@ def legacy_screen(s: dict) -> None:
         body.add_row("出身", str(s["origin"]))
     if s.get("condition"):
         body.add_row("詛咒", str(s["condition"]))
+    if s.get("lycanthropy"):
+        body.add_row("獸血", str(s["lycanthropy"]))
     if s.get("dark_deeds"):
         body.add_row("血業", str(s["dark_deeds"]))
     if s.get("dominion"):

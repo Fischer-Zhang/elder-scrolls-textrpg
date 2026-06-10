@@ -69,7 +69,9 @@ def recompute_max_resources(char: Character, gamedata=None,
         recompute_mastery_bonuses(char, gamedata)
 
     res = char.resource_levels   # 升級三選一累積的資源加成
-    char.max_health = char.base_max_health + res.get("health", 0) + fort.get("health", 0)
+    # 獸形額外生命(狼人變身的巨量血量;脫甲 → 靠血量扛;getattr 預設 0 → 非狼人/舊存檔零影響)
+    char.max_health = (char.base_max_health + res.get("health", 0) + fort.get("health", 0)
+                       + getattr(char, "werewolf_health_bonus", 0))
     char.max_magicka = (formulas.max_magicka(char.attr("intelligence"), char.magicka_bonus)
                         + res.get("magicka", 0) + fort.get("magicka", 0))
     char.max_fatigue = (formulas.max_fatigue(

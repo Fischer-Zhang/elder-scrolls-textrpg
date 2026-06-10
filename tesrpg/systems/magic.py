@@ -278,6 +278,8 @@ def entity_resist(entity, gamedata) -> dict:
             merged[elem] = merged.get(elem, 0) + val
         for elem, val in getattr(entity, "mastery_resist", {}).items():   # 技能里程碑 resist_fortify
             merged[elem] = merged.get(elem, 0) + val
+        for elem, val in getattr(entity, "werewolf_resist", {}).items():   # 狼人:疾病免疫(與吸血鬼互斥)
+            merged[elem] = merged.get(elem, 0) + val
         return merged
     return getattr(entity, "resist", {}) or {}
 

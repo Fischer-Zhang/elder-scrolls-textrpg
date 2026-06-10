@@ -1175,5 +1175,16 @@
     "objective": {"type": "clear_dungeon", "dungeon": "ashfall_barrow"},
     "reward": {"gold": 250, "fame": 10, "standing": 2}, "turn_in": "auto",
     "text": "「灰燼墓塚的不死者自塵封中甦醒,褻瀆了先祖的安眠。」司祭的法杖泛起微光:「淨化那座墓塚,維威克將承認你是聖城配得敬重的守護者。」"
+  },
+  "cure_lycanthropy": {
+    "name": "滌淨獸血",
+    "source": "werewolf_cure",
+    "text": "聚落邊緣的獵巫女巫端詳著你泛紅的雙眼:「獸血之咒可解,但古法繁複。為我備齊淨化之物,並取一縷受詛獸血 —— 再回到篝火之畔,行最後的滌淨之儀。」",
+    "stages": [
+      {"objective": {"type": "collect", "item": "garlic", "count": 4}, "text": "採集 4 株大蒜(淨化聖物;布魯瑪市集有售)。"},
+      {"objective": {"type": "collect", "item": "nightshade", "count": 3}, "text": "採集 3 株毒茄參(淨血媒介;晨風省的商人有售)。"},
+      {"objective": {"type": "kill", "creature": "werewolf", "count": 1}, "text": "獵殺一頭狼人,取其受詛獸血(危險區野外可尋)。"}
+    ],
+    "reward": {"fame": 5}
   }
 }

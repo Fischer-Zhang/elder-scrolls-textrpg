@@ -114,5 +114,16 @@
     "weapon": "iron_war_axe",
     "equip": ["iron_cuirass", "iron_helmet"],
     "items": [["minor_healing_potion", 1]]
+  },
+  "beast_blooded": {
+    "name": "獸血之裔(狼人)",
+    "blurb": "你早已與月為盟。戰友團內圈的獸血在你體內奔流 —— 戰鬥中可化身嗜血巨狼:利爪撕敵、刀槍難傷,卻得放下手中刀劍與法術。最狂野的開局,在人與獸之間遊走。",
+    "location": "whiterun",
+    "gold": 60,
+    "faction": {"fighters_guild": 1},
+    "weapon": "steel_sword",
+    "equip": ["leather_cuirass"],
+    "items": [["healing_potion", 1]],
+    "werewolf": true
   }
 }

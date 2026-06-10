@@ -59,8 +59,9 @@ def is_infected(char: Character) -> bool:
 
 
 def susceptible(char: Character) -> bool:
-    """還能被感染(非吸血鬼、也尚未潛伏)。"""
-    return (not is_vampire(char)) and not is_infected(char)
+    """還能被感染(非吸血鬼、也尚未潛伏、且非狼人 → 狼人疾病免疫,與吸血鬼互斥)。"""
+    return ((not is_vampire(char)) and not is_infected(char)
+            and not getattr(char, "is_werewolf", False))
 
 
 def stage(char: Character, state) -> int:

@@ -263,7 +263,7 @@ def effective_armor_rating(char: Character, gamedata: GameData) -> float:
 
 
 def degrade_weapon(char: Character, amount: float = 1.0) -> None:
-    if char.weapon != "fists":
+    if char.weapon not in ("fists", "beast_claws"):   # 自然武器(徒手/獸爪)不磨損
         char.weapon_condition = max(0.0, char.weapon_condition - amount)
 
 

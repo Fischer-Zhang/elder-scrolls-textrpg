@@ -14,7 +14,7 @@
 from __future__ import annotations
 
 from tesrpg.gamedata import GameData
-from tesrpg.systems import factions, mastery, politics, vampirism, warband
+from tesrpg.systems import factions, lycanthropy, mastery, politics, vampirism, warband
 # 注意:legacy 在 pure_spec 分支內就地 import(legacy 會頂層 import 本模組 → 避免循環)。
 
 # 已實作分派的 cond.type 白名單(單一真實來源)。不在此集合者視為「未實作」→
@@ -23,7 +23,8 @@ _IMPLEMENTED_TYPES = {
     "kill_boss", "kills_total", "dungeons", "quests", "level", "gold",
     "fame", "infamy", "guildmaster_any", "guildmaster", "mastery_count",
     "skill_cap", "landmarks", "provinces", "cities_held", "thanes",
-    "vampire", "skooma_addiction", "murders", "pure_spec", "allegiance",
+    "vampire", "lycanthropy", "werewolf_feeds", "skooma_addiction", "murders",
+    "pure_spec", "allegiance",
 }
 
 # pure_spec 判定:主專精「絕對總和」與「領先次高的差距」雙門檻。初生角色因起始職業
@@ -92,6 +93,10 @@ def _eval(char, gamedata: GameData, cond: dict) -> bool:
 
     if t == "vampire":
         return vampirism.is_vampire(char)
+    if t == "lycanthropy":
+        return lycanthropy.is_werewolf(char)
+    if t == "werewolf_feeds":
+        return getattr(char, "werewolf_total_feeds", 0) >= cond["count"]
     if t == "skooma_addiction":
         return getattr(char, "skooma_addiction", 0) >= cond["count"]
     if t == "murders":

@@ -1104,5 +1104,38 @@
     "loot_gold": [70, 160],
     "loot": [{"item": "ebony_sword", "chance": 0.3}, {"item": "skooma", "chance": 0.5}, {"item": "filled_greater_soul_gem", "chance": 0.5}, {"item": "gold_ingot", "chance": 0.5}],
     "flavor": "壇心的暗月之下,一頭被千年月糖與暗潮共同腐化的巨大暗虎轟然升起 —— 血肉半化為毒,每一次低吼都讓糖蜜般的腐毒在空氣裡凝結。"
+  },
+  "werewolf": {
+    "name": "狼人",
+    "danger": 3,
+    "min_level": 4,
+    "weight": 2,
+    "strength": 55,
+    "agility": 52,
+    "speed": 56,
+    "max_health": 62,
+    "armor_rating": 10,
+    "attack": {"name": "獸牙利爪", "damage": 14, "skill": 52, "infect": 0.25, "infect_kind": "lycanthropy"},
+    "resist": {"poison": 25},
+    "loot_gold": [6, 20],
+    "loot": [{"item": "wolf_pelt", "chance": 0.6}, {"item": "minor_healing_potion", "chance": 0.2}],
+    "flavor": "月光下,一頭半人半狼的猛獸踏出林影,猩紅的眼睛鎖定了你 —— 喉間滾出低沉的咆哮。"
+  },
+  "werewolf_alpha": {
+    "name": "狼人首領",
+    "danger": 4,
+    "min_level": 10,
+    "weight": 1,
+    "solo": true,
+    "strength": 78,
+    "agility": 58,
+    "speed": 60,
+    "max_health": 190,
+    "armor_rating": 16,
+    "attack": {"name": "裂顎撕咬", "damage": 26, "skill": 62, "infect": 0.4, "infect_kind": "lycanthropy"},
+    "resist": {"poison": 50, "frost": 25},
+    "loot_gold": [40, 110],
+    "loot": [{"item": "wolf_pelt", "chance": 0.8}, {"item": "healing_potion", "chance": 0.4}, {"item": "filled_common_soul_gem", "chance": 0.25}],
+    "flavor": "一頭體型遠超尋常的銀背巨狼自暗處躍出 —— 牠是這片獵場的霸主,獸血之王。"
   }
 }

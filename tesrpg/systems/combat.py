@@ -157,17 +157,40 @@ def _speed(actor) -> int:
     return actor.attr("speed") if _is_player(actor) else actor.speed
 
 
+def _is_beast(actor) -> bool:
+    """玩家是否處於狼人獸形(讀快取布林,不需 state)。"""
+    return _is_player(actor) and getattr(actor, "beast_form", False)
+
+
 def _weapon_profile(actor, gamedata: GameData):
     """回傳 (weapon_damage, weapon_skill_level, weapon_skill_id|None)。"""
     if _is_player(actor):
+        if _is_beast(actor):     # 獸形:以獸爪戰鬥,略過裝備武器/淬鍊/附魔(資料驅動讀 beast_claws)
+            from tesrpg.systems import lycanthropy
+            wp = gamedata.item(lycanthropy.BEAST_CLAW)
+            return wp["damage"], actor.skill(wp["skill"]), wp["skill"]
         wp = gamedata.item(actor.weapon)   # 用 item() 以支援附魔(合成)武器
         return wp["damage"] + smithing.weapon_temper_bonus(actor), actor.skill(wp["skill"]), wp["skill"]
     return actor.attack["damage"], actor.attack["skill"], None
 
 
+def eff_weapon_id(player) -> str:
+    """玩家當前實際使用的武器 id(獸形 → beast_claws;否則裝備武器)。"""
+    from tesrpg.systems import lycanthropy
+    return lycanthropy.BEAST_CLAW if getattr(player, "beast_form", False) else player.weapon
+
+
+def effective_weapon_name(player, gamedata: GameData) -> str:
+    """玩家當前實際使用的武器名(獸形 → 獸爪;否則裝備武器)。供戰鬥/選單標籤。"""
+    return gamedata.item(eff_weapon_id(player))["name"]
+
+
 def _armor_rating(actor, gamedata: GameData) -> int:
     if not _is_player(actor):
         return actor.armor_rating
+    if _is_beast(actor):     # 獸形:脫去穿戴護甲,只剩野獸厚皮的微薄防護(權衡:易受擊,靠巨量血量扛)
+        from tesrpg.systems import lycanthropy
+        return lycanthropy.BEAST_ARMOR
     worn = inventory.effective_armor_rating(actor, gamedata)   # 已計入耐久折損
     wc = inventory.dominant_weight_class(actor, gamedata)
     if worn == 0 or wc is None:
@@ -230,11 +253,15 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
     事件:{"attacker","defender","hit":bool,"damage":int,"blocked":bool,
            "skill_events":[...], "defender_dead":bool, "sneak":倍率|None}
     """
-    sneaking = sneak_attack and _is_player(attacker)
+    beast = _is_beast(attacker)     # 獸形:獸爪戰鬥,結構性略過裝備武器/附魔/淬鍊/副手/耐久
+    # 🔴 紅線:獸形攻擊永不吃偷襲倍率(防禦縱深 —— 即便呼叫端誤傳 sneak_attack=True 亦然;
+    # 變身破壞潛行 → solo boss 反一刀夾限不被觸碰)
+    sneaking = sneak_attack and _is_player(attacker) and not beast
     wpn_dmg, wpn_skill, wpn_skill_id = _weapon_profile(attacker, gamedata)
-    # 雙持副手傷害另計:作為一記「普通補刀」疊上,不吃偷襲倍率(避免偷襲秒精英)
-    offhand_dmg = inventory.dual_wield_bonus_damage(attacker, gamedata) if _is_player(attacker) else 0.0
-    wdef = gamedata.item(attacker.weapon) if _is_player(attacker) else None
+    # 雙持副手傷害另計:作為一記「普通補刀」疊上,不吃偷襲倍率(避免偷襲秒精英)。獸形無副手。
+    offhand_dmg = (inventory.dual_wield_bonus_damage(attacker, gamedata)
+                   if _is_player(attacker) and not beast else 0.0)
+    wdef = gamedata.item(attacker.weapon) if _is_player(attacker) and not beast else None
     archetype = wdef.get("archetype") if wdef else None
     speed = wdef.get("speed", formulas.WEAPON_SPEED_DEFAULT) if wdef else formulas.WEAPON_SPEED_DEFAULT
     fr = _fatigue_ratio(attacker)
@@ -261,6 +288,7 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
     poison_applied = None
     self_restored = None
     infected = False
+    infect_kind = None     # 傳染的詛咒種類("vampire"/"lycanthropy"),供 run_battle 分派
     lifesteal = 0          # 武器吸血附魔本擊回血量(供敘事)
     aftermath = None
     sneak_mult = (formulas.sneak_attack_multiplier(attacker.skill("sneak"))
@@ -270,7 +298,7 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
                   ) if sneaking else None
 
     if hit:
-        cond_mult = inventory.weapon_damage_mult(attacker) if _is_player(attacker) else 1.0
+        cond_mult = inventory.weapon_damage_mult(attacker) if _is_player(attacker) and not beast else 1.0
         roll = rng.roll(0.85, 1.15)
         block_factor = (formulas.block_damage_factor(defender.skill("block"))
                         if defender_blocking else 1.0)
@@ -303,8 +331,8 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
             pen = min(0.85, formulas.archetype_armor_pen(archetype) + wmod.get("pen", 0))   # 鈍器破甲 + 里程碑穿甲
             dmg = formulas.damage_after_armor(raw, _armor_rating(defender, gamedata), pen)
             dmg *= mastery.incoming_physical_factor(defender, gamedata)   # 里程碑「壁壘」:物理再減傷
-            # 武器附魔:額外元素傷害(無視護甲,受對方元素抗性)
-            if _is_player(attacker):
+            # 武器附魔:額外元素傷害(無視護甲,受對方元素抗性)。獸形以獸爪戰鬥 → 無附魔
+            if _is_player(attacker) and not beast:
                 ench = gamedata.item(attacker.weapon).get("enchant")
                 if ench and ench.get("kind") == "weapon_element":
                     em = formulas.resist_multiplier(magic.entity_resist(defender, gamedata), ench["element"])
@@ -335,15 +363,21 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
                 defender.active_effects.append({"kind": oh["status"], "element": oh.get("element"),
                                                 "magnitude": oh["magnitude"], "turns": oh["turns"]})
                 status_applied = oh.get("element")
-            # 吸血鬼咬擊傳染「吸血熱」:命中機率 × 疾病抗性削弱(只標記,轉化由 vampirism 驅動)
+            # 疾病傳染(吸血鬼吸血熱 / 狼人狼人熱):命中機率 × 疾病抗性削弱(只標記,轉化由各系驅動)。
+            # `infect_kind` 缺省 "vampire"(舊吸血鬼敵向後相容);跨詛咒互斥靠疾病免疫使 dmult=0 自然擋掉,
+            # 此處再以 `already` 防同詛咒重複感染。
             inf = attacker.attack.get("infect")
-            if inf and not defender.is_vampire:
+            if inf:
+                kind = attacker.attack.get("infect_kind", "vampire")
+                already = (defender.is_vampire if kind == "vampire"
+                           else getattr(defender, "is_werewolf", False))
                 dmult = formulas.resist_multiplier(magic.entity_resist(defender, gamedata), "disease")
-                if dmult > 0 and rng.chance(inf * dmult):
+                if not already and dmult > 0 and rng.chance(inf * dmult):
                     infected = True
+                    infect_kind = kind
 
-        # 玩家武器塗毒 → 命中即把毒效附到敵人身上,消耗一次塗層
-        if _is_player(attacker) and attacker.weapon_poison and attacker.weapon_poison["charges"] > 0:
+        # 玩家武器塗毒 → 命中即把毒效附到敵人身上,消耗一次塗層。獸形以獸爪戰鬥 → 不沾塗毒
+        if _is_player(attacker) and not beast and attacker.weapon_poison and attacker.weapon_poison["charges"] > 0:
             wp = attacker.weapon_poison
             defender.active_effects.append(magic.make_status_effect(wp["status"]))
             poison_applied = wp["name"]
@@ -351,8 +385,9 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
             if wp["charges"] <= 0:
                 attacker.weapon_poison = None
 
-        # 武器命中觸發附魔(weapon_status:吸血/麻痺/再生)—— 玩家專屬,與元素/毒/里程碑各自獨立、不重複套
-        if _is_player(attacker):
+        # 武器命中觸發附魔(weapon_status:吸血/麻痺/再生)—— 玩家專屬,與元素/毒/里程碑各自獨立、不重複套。
+        # 獸形以獸爪戰鬥 → 無附魔狀態
+        if _is_player(attacker) and not beast:
             sench = gamedata.item(attacker.weapon).get("enchant")
             if sench and sench.get("kind") == "weapon_status" and rng.chance(sench.get("chance", 1.0)):
                 st = sench["status"]
@@ -419,8 +454,8 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
             if staggered or bleed_mag:
                 aftermath = {"staggered": staggered, "bleed": bleed_mag}
 
-        # 耐久折損:玩家攻擊磨損武器、被擊中磨損護甲
-        if _is_player(attacker):
+        # 耐久折損:玩家攻擊磨損武器、被擊中磨損護甲。獸形以獸爪戰鬥 → 不磨損裝備武器
+        if _is_player(attacker) and not beast:
             inventory.degrade_weapon(attacker)
         if _is_player(defender) and defender.equipped:
             inventory.degrade_random_armor(defender, rng)
@@ -452,7 +487,8 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
         "hit": hit, "damage": dmg_done, "blocked": defender_blocking,
         "skill_events": skill_events, "defender_dead": not is_alive(defender),
         "absorbed": absorbed, "status_applied": status_applied, "poison_applied": poison_applied,
-        "sneak": sneak_mult, "self_restored": self_restored, "infected": infected, "lifesteal": lifesteal,
+        "sneak": sneak_mult, "self_restored": self_restored, "infected": infected,
+        "infect_kind": infect_kind, "lifesteal": lifesteal,
         "aftermath": aftermath,
     }
 
@@ -461,14 +497,15 @@ def player_attack_cost(player: Character, gamedata: GameData | None = None) -> N
     """玩家攻擊一擊消耗體力(運動越高越省;慢重武器更耗、輕快武器更省)。"""
     speed = formulas.WEAPON_SPEED_DEFAULT
     if gamedata is not None:
-        speed = gamedata.item(player.weapon).get("speed", formulas.WEAPON_SPEED_DEFAULT)
+        wid = "beast_claws" if getattr(player, "beast_form", False) else player.weapon
+        speed = gamedata.item(wid).get("speed", formulas.WEAPON_SPEED_DEFAULT)
     cost = (formulas.ATTACK_FATIGUE_COST
             * formulas.fatigue_cost_factor(player.skill("athletics"))
             * formulas.weapon_attack_fatigue_factor(speed))
     if gamedata is not None:                       # 里程碑「壁壘」同源代價:揮擊更耗體
         cost *= mastery.attack_fatigue_factor(player, gamedata)
         cost *= (1 - mastery.fatigue_cost_bonus(player, gamedata))   # 「不竭之軀」:戰鬥省體
-        wsid = gamedata.item(player.weapon).get("skill")
+        wsid = gamedata.item(wid).get("skill")     # 獸形用獸爪技能(hand_to_hand),非裝備武器
         cost += mastery.weapon_mod(player, gamedata, wsid).get("fatigue", 0)   # 「穿甲箭」draw_fatigue 代價
     player.fatigue = max(0, player.fatigue - cost)
 
@@ -542,17 +579,21 @@ def try_stealth_approach(player: Character, enemies: list, rng: RNG, gamedata: G
 
 
 def estimate_sneak_damage(player: Character, gamedata: GameData, creature: Creature) -> int:
-    """偵查用:玩家對該敵人一記偷襲的『中位』傷害估算(roll=1.0,過甲後)。"""
+    """偵查用:玩家對該敵人一記偷襲的『中位』傷害估算(roll=1.0,過甲後)。
+
+    與 resolve_attack 一致:獸形不吃偷襲倍率、無副手、用獸爪流派(咆哮現身 → 偷襲無效)。"""
+    beast = _is_beast(player)
     wpn_dmg, wpn_skill, wpn_skill_id = _weapon_profile(player, gamedata)
-    offhand_dmg = inventory.dual_wield_bonus_damage(player, gamedata)
-    archetype = gamedata.item(player.weapon).get("archetype")
+    offhand_dmg = 0.0 if beast else inventory.dual_wield_bonus_damage(player, gamedata)
+    archetype = gamedata.item(eff_weapon_id(player)).get("archetype")
     wm = mastery.weapon_mod(player, gamedata, wpn_skill_id)   # 與 resolve_attack 一致
     raw = formulas.attack_damage(wpn_dmg, wpn_skill, _strength(player), 1.0)
     power_bonus = raw * wm.get("power", 0.0)                  # weapon_mod 威力:flat 補傷(不吃偷襲倍率)
-    raw *= (formulas.sneak_attack_multiplier(player.skill("sneak"))
-            * formulas.archetype_sneak_bonus(archetype)
-            * formulas.night_mother_sneak_bonus(player.factions.get("dark_brotherhood", -1))
-            * (1 + mastery.sneak_mult_bonus(player, gamedata)))   # 里程碑「影刃」
+    if not beast:    # 🔴 獸形與潛行互斥 → 不套偷襲倍率(與 resolve_attack 的 not beast 守門一致)
+        raw *= (formulas.sneak_attack_multiplier(player.skill("sneak"))
+                * formulas.archetype_sneak_bonus(archetype)
+                * formulas.night_mother_sneak_bonus(player.factions.get("dark_brotherhood", -1))
+                * (1 + mastery.sneak_mult_bonus(player, gamedata)))   # 里程碑「影刃」
     raw += power_bonus
     if offhand_dmg:    # 副手補刀不吃偷襲倍率(與 resolve_attack 一致)
         raw += formulas.attack_damage(offhand_dmg, wpn_skill, _strength(player), 1.0)
