@@ -195,9 +195,49 @@ def test_restealth_chance_drops_with_crowd_and_reuse():
 
 def test_can_vanish_needs_sneak_threshold():
     gd, c = _assassin(sneak=5)
-    assert not combat.can_vanish(c)            # 非潛行流派沒有隱遁
+    assert not combat.can_vanish(c)            # 非潛行流派沒有隱遁(無 gd fallback)
     c.skills["sneak"] = 40
     assert combat.can_vanish(c)
+
+
+def test_vanish_is_sneak25_milestone():
+    """隱遁=潛行 25 里程碑「隱遁之術」:base_skill≥25 解鎖(門檻認 base、附魔不可跨門檻)。"""
+    from tesrpg.systems import mastery
+    gd, c = _assassin(sneak=24)
+    assert not mastery.has_vanish(c, gd) and not combat.can_vanish(c, gd)   # 24<25
+    c.skills["sneak"] = 25
+    assert mastery.has_vanish(c, gd) and combat.can_vanish(c, gd)           # 達 25 自動解鎖
+    # 門檻只認 base_skill:+sneak 裝備加成把 skill() 推過 25 但 base 仍 24 → 不解鎖
+    gd2, c2 = _assassin(sneak=24)
+    c2.equip_skill_bonus = {"sneak": 10}                                    # skill()=34 但 base=24
+    assert c2.skill("sneak") >= 25 and not combat.can_vanish(c2, gd2)
+
+
+def test_vanish_decays_vs_lone_foe_even_relentless():
+    """連環踏影對單一強敵(1 對 1)仍逐次遞減 → 反 solo boss 無限風箏;敵群(>1)仍免遞減。"""
+    f = formulas.restealth_chance
+    solo = [f(100, 100, 1, u, relentless=True) for u in (0, 1, 2, 3)]
+    assert solo[0] > solo[1] > solo[2] > solo[3]                            # 一對一逐次遞減
+    group = [f(100, 100, 2, u, relentless=True) for u in (0, 1, 2, 3)]
+    assert group[0] == group[1] == group[2] == group[3]                    # 敵群中仍免遞減(連環踏影本意)
+    # >3 敵群戰反制(crowd+horde penalty)仍強力壓制,即便連環踏影(紅線:平衡靠群體規模)
+    assert f(100, 100, 4, 2, relentless=True) <= 0.20
+    assert f(100, 100, 5, 2, relentless=True) <= 0.10
+
+
+def test_single_option_milestone_announced_as_auto_grant():
+    """隱遁之術=系統唯一單一 perk 節點 → 跨門檻事件標 single(措辭『習得』,不誤導去做不存在的二選一)。"""
+    from tesrpg.systems import progression
+    gd, c = _assassin(sneak=25)
+    evs = []
+    progression._on_skill_increase(c, gd, "sneak", evs)
+    mc = [e for e in evs if e["type"] == "mastery_choice_ready"]
+    assert any(e.get("single") and e.get("name") == "隱遁之術" for e in mc)   # 自動授予旗標 + 名稱
+    c.skills["sneak"] = 50                              # 對照:二選一節點 → single=False
+    evs2 = []
+    progression._on_skill_increase(c, gd, "sneak", evs2)
+    sneak50 = [e for e in evs2 if e.get("node_id") == "sneak_50"]
+    assert sneak50 and sneak50[0].get("single") is False
 
 
 # --- 偵查技能(第 22 個技能)+ 潛行撤退 ---------------------------------

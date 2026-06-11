@@ -333,7 +333,7 @@ def flee_chance(player_speed: int, player_agility: int, foe_speed: int) -> float
 
 
 # --- 隱遁再襲(戰鬥中重新潛入陰影:成功則跳過本回合挨打 + 重置偷襲)---------
-VANISH_MIN_SNEAK = 20         # 低於此潛行不提供「隱遁」選項(非潛行流派不適用)
+VANISH_MIN_SNEAK = 25         # 隱遁解鎖門檻(=潛行 25 里程碑「隱遁之術」;此常數為無 gamedata 時的 fallback,須與該節點門檻一致)
 MAX_VANISHES_PER_BATTLE = 3   # 每場最多嘗試隱遁次數(硬上限:隱遁是有限脫離手段,非無限風箏)
 RESTEALTH_BASE = 0.55
 RESTEALTH_SKILL_SCALE = 0.0035    # (sneak + acrobatics×0.5) × 此係數
@@ -346,12 +346,14 @@ def restealth_chance(sneak: int, acrobatics: int, n_alive: int, used: int,
                      relentless: bool = False, floor: float = 0.0) -> float:
     """隱遁成功率:吃潛行+雜技,敵人越多越難、同場重複用遞減、**>3 敵大減**。夾限 [max(0.05,floor), 0.90]。
 
-    relentless(里程碑「連環踏影」)→ 免除同場重複使用遞減(但 >3 敵懲罰仍壓制);
+    relentless(里程碑「連環踏影」)→ 免除同場重複使用遞減 —— **但僅在面對敵群(>1)時**;
+    對『單一強敵(1 對 1)』仍逐次遞減(敵會死咬盯防 → 防 apex 對 solo boss 無限風箏抹平風險)。
     floor(里程碑「踏影/翻滾脫離」)→ 保底下限。"""
+    waive_reuse = relentless and n_alive > 1    # 連環踏影只在敵群中免遞減;一對一仍被盯防、再三遁形漸難
     chance = (RESTEALTH_BASE + (sneak + acrobatics * 0.5) * RESTEALTH_SKILL_SCALE
               - max(0, n_alive - 1) * RESTEALTH_CROWD_PENALTY
-              - max(0, n_alive - 3) * RESTEALTH_HORDE_PENALTY            # >3 敵:大減(反制 apex 風箏)
-              - (0.0 if relentless else max(0, used) * RESTEALTH_REUSE_PENALTY))
+              - max(0, n_alive - 3) * RESTEALTH_HORDE_PENALTY            # >3 敵:大減(反制 apex 群戰風箏)
+              - (0.0 if waive_reuse else max(0, used) * RESTEALTH_REUSE_PENALTY))
     return max(floor, max(0.05, min(0.90, chance)))
 
 

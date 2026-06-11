@@ -758,12 +758,14 @@ def sheet_masteries(char: Character, gamedata: GameData) -> None:
     if _web is not None:
         vm_unl = [{"name": e["name"], "skill": gamedata.skill_name(e["skill"]), "desc": e["desc"]}
                   for e in unl]
+        single_nodes = {n["id"] for n in mastery._nodes(gamedata) if len(mastery._choosable_options(n)) == 1}
         vm_lock = []
         for e in pending + future:
             cur = char.base_skill(e["skill"])
             vm_lock.append({"name": e["name"], "skill": gamedata.skill_name(e["skill"]),
                             "desc": e["desc"], "cur": cur, "threshold": e["threshold"],
-                            "remaining": max(0, e["threshold"] - cur)})
+                            "remaining": max(0, e["threshold"] - cur),
+                            "auto": e["node_id"] in single_nodes})   # 單一 perk 自動授予(非二選一)
         _emit_view("masteries", {"unlocked": vm_unl, "locked": vm_lock})
         return
     body = Text()
@@ -773,9 +775,11 @@ def sheet_masteries(char: Character, gamedata: GameData) -> None:
             body.append(f"  ✦ {e['name']}", style="bold magenta")
             body.append(f"（{gamedata.skill_name(e['skill'])} {e['threshold']}） {e['desc']}\n", style=INK)
     if pending:
-        body.append("\n待選(已達門檻 —— 回城或升級時二選一)\n", style=f"bold {GOLD}")
+        single_nodes = {n["id"] for n in mastery._nodes(gamedata) if len(mastery._choosable_options(n)) == 1}
+        body.append("\n待選(已達門檻 —— 回城或升級時生效;二選一者擇一,單一者自動授予)\n", style=f"bold {GOLD}")
         for e in pending:
-            body.append(f"  ◆ {e['name']}（{gamedata.skill_name(e['skill'])} {e['threshold']}） {e['desc']}\n",
+            auto = "(自動授予)" if e["node_id"] in single_nodes else ""
+            body.append(f"  ◆ {e['name']}{auto}（{gamedata.skill_name(e['skill'])} {e['threshold']}） {e['desc']}\n",
                         style=PARCH)
     if future:
         body.append("\n未達門檻\n", style=f"bold {GOLD}")
@@ -1287,8 +1291,12 @@ def show_events(events: list[dict], gamedata: GameData) -> None:
         elif ev["type"] == "level_ready":
             m = "[bold yellow]★ 你感到脫胎換骨 —— 可以升級了!（選單選「升級」）[/]"
         elif ev["type"] == "mastery_choice_ready":
-            m = (f"[bold magenta]✦ 你的{gamedata.skill_name(ev['skill'])}已臻新境({ev['threshold']})"
-                 f" —— 回到城鎮或升級時可擇一里程碑![/]")
+            if ev.get("single"):     # 退化節點(單一 perk 自動授予)→ 措辭為「習得」,不誤導去做不存在的二選一
+                m = (f"[bold magenta]✦ 你的{gamedata.skill_name(ev['skill'])}已臻新境({ev['threshold']})"
+                     f" —— 回城或升級時將習得里程碑「{ev.get('name', '')}」![/]")
+            else:
+                m = (f"[bold magenta]✦ 你的{gamedata.skill_name(ev['skill'])}已臻新境({ev['threshold']})"
+                     f" —— 回到城鎮或升級時可擇一里程碑![/]")
         else:
             continue
         if _web is not None:

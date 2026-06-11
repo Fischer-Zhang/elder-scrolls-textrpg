@@ -626,9 +626,13 @@ def try_flee(player: Character, creature: Creature, rng: RNG, gamedata: GameData
     return rng.chance(chance)
 
 
-def can_vanish(player: Character) -> bool:
-    """潛行達門檻才能在戰鬥中嘗試隱遁(非潛行流派不適用)。"""
-    return player.skill("sneak") >= formulas.VANISH_MIN_SNEAK
+def can_vanish(player: Character, gamedata: GameData | None = None) -> bool:
+    """是否解鎖戰中隱遁:走潛行 25 里程碑「隱遁之術」(`mastery.has_vanish`,門檻認 base_skill)。
+    無 gamedata 時退回 base_skill ≥ VANISH_MIN_SNEAK(與該里程碑門檻一致;非潛行流派不適用)。"""
+    if gamedata is not None:
+        return mastery.has_vanish(player, gamedata)
+    base = player.base_skill("sneak") if hasattr(player, "base_skill") else player.skill("sneak")
+    return base >= formulas.VANISH_MIN_SNEAK
 
 
 def vanish_chance(player: Character, n_alive: int, used: int, gamedata: GameData | None = None) -> float:

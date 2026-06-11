@@ -108,8 +108,11 @@ def _on_skill_increase(char: Character, gamedata: GameData, skill_id: str, event
     # 技能里程碑 v2:恰好跨過門檻這一級 → 開啟「二選一」(不在此處授予;於 game_loop/升級畫面
     # 安全點呈現選單)。精確判定避免跨多級時漏/重報;選擇本身為衍生 pending,事件漏看也不會遺失。
     for n in mastery.nodes_at(char, gamedata, skill_id, new_level):
+        opts = mastery._choosable_options(n)
+        single = len(opts) == 1                         # 退化節點(如潛行 25 隱遁之術)= 自動授予,非二選一
         events.append({"type": "mastery_choice_ready", "skill": skill_id,
-                       "threshold": new_level, "node_id": n["id"]})
+                       "threshold": new_level, "node_id": n["id"],
+                       "single": single, "name": opts[0]["name"] if single else None})
 
 
 def apply_level_up(char: Character, gamedata: GameData,

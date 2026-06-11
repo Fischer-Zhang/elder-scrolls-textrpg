@@ -398,7 +398,7 @@ def _choose_combat_action(state: GameState, gamedata: GameData, enemies: list, a
     if not inventory.is_dual_wielding(player, gamedata):   # 雙持占用雙手 → 不能格擋
         opts.append(("block", "格擋"))
     vcap = combat.vanish_cap(player, gamedata)
-    if combat.can_vanish(player) and vanish_used < vcap:
+    if combat.can_vanish(player, gamedata) and vanish_used < vcap:
         n_alive = len([e for e in enemies if combat.is_alive(e)])
         pct = int(combat.vanish_chance(player, n_alive, vanish_used, gamedata) * 100)
         left = "∞" if vcap >= 99 else (vcap - vanish_used)
@@ -408,7 +408,7 @@ def _choose_combat_action(state: GameState, gamedata: GameData, enemies: list, a
             and not getattr(player, "beast_form", False)):
         opts.append(("aimed", "瞄準射（蓄力強擊 · 額外耗體)"))
         opts.append(("crippling", "牽制射（削弱目標攻勢)"))
-        if combat.can_vanish(player) and vanish_used < vcap:
+        if combat.can_vanish(player, gamedata) and vanish_used < vcap:
             opts.append(("skirmish", "散兵走位（射一箭後遁走)"))
     # 戰士「盾牆」:持盾 + 格擋達門檻 → 立/撤防禦架勢(前向減傷 + 嘲諷 + 護同袍 · 耗體力)
     if (player.equipped.get("shield") and player.base_skill("block") >= SHIELD_WALL_BLOCK_GATE

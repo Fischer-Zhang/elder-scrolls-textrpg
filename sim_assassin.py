@@ -35,7 +35,7 @@ def assassin(sneak=70, blade=50, alchemy=40, scout=40, weapon="steel_dagger", du
 def _round(c, foes, rng, opening, used):
     """打一個回合:低血(<45%)且能隱遁就嘗試隱遁,否則攻最低血敵人。回傳新的 opening。"""
     alive = [e for e in foes if combat.is_alive(e)]
-    if c.health < c.max_health * 0.45 and combat.can_vanish(c) \
+    if c.health < c.max_health * 0.45 and combat.can_vanish(c, gd) \
             and combat.try_vanish(c, len(alive), used[0], rng):
         used[0] += 1
         return True                          # 隱遁成功:敵人撲空、重置偷襲

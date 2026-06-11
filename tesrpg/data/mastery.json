@@ -228,6 +228,10 @@
      {"opt_id": "eagle_eye", "name": "鷹眼", "kind": "skill_fortify", "skill": {"marksman": 8},
       "desc": "凝神專注,箭術更精(射術技能 +8)。"}
    ]},
+  {"id": "sneak_25", "skill": "sneak", "threshold": 25, "options": [
+     {"opt_id": "vanish_art", "name": "隱遁之術", "kind": "vanish_unlock",
+      "desc": "潛行有成,習得戰中遁形之法 —— 可花一回合重歸陰影:避過本回合敵襲、並重得偷襲先機。敵眾(>3)或被單一強敵死咬時,再三遁形漸難。"}
+   ]},
   {"id": "sneak_50", "skill": "sneak", "threshold": 50, "options": [
      {"opt_id": "deathmark", "name": "致命烙印", "kind": "deathmark",
       "pen": 0.35, "fatigue_cost": 15, "sneak_gate": 50, "turns": 4, "cooldown": 6,

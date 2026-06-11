@@ -48,6 +48,7 @@ _IMPLEMENTED_KINDS = {
     "enchant_potency", "fear_on_hit", "regen_on_low", "merchant_bonus",
     # P4 潛行系:閃避、隱遁下限、偷襲倍率(刺客 apex,受 >3 敵反制)、連環隱遁(無重複遞減)、
     # 潛近頻率、輕甲潛行減噪、偵查備戰、弱點揭露門檻、開鎖器不折、補貨量、威嚇下限。
+    "vanish_unlock",   # 潛行 25:解鎖戰中隱遁(單一 perk 自動授予;gate 走 has_vanish=門檻已達)
     "evasion_bonus", "vanish_floor", "sneak_mult_bonus", "vanish_relentless", "approach_bonus",
     "armor_sneak_relief", "prep_bonus", "recon_resist_read", "pick_no_break",
     "restock_bonus", "intimidate_floor",
@@ -336,6 +337,20 @@ def sneak_mult_bonus(char, gamedata: GameData) -> float:
     """影刃·暗殺宗師:偷襲倍率額外 ×(1+mult_bonus)。刺客 apex 的核心 —— 對 ≤3 敵可無傷清場;
     反制不靠秒殺率上限,而靠『>3 敵潛匿大減 + 隱遁耗體』(見 formulas)。調此值務必重跑 sim_assassin.py。"""
     return _param(char, gamedata, "sneak_mult_bonus", "mult_bonus", 0.0)
+
+
+def has_vanish(char, gamedata: GameData) -> bool:
+    """隱遁之術(潛行 25 里程碑):是否解鎖戰中隱遁。
+
+    單一 perk『自動授予』節點 → gate **以門檻已達(base_skill)判定**,不依賴『已選』:
+    達 25 即可用(零遷移、舊存檔與剛跨門檻未到安全點者皆即時生效),正式銘刻/播報則由安全點
+    `_present_mastery_node` 退化授予補上(同步進 mastery_choices,供結算/面板計入)。
+    門檻只認 base_skill(鐵律)→ 順帶修掉舊 `can_vanish` 用 `skill()` 致附魔可跨門檻的名實不符。"""
+    if not hasattr(char, "base_skill"):
+        return False
+    return any(char.base_skill(node["skill"]) >= node["threshold"]
+               for node in _nodes(gamedata)
+               if any(o.get("kind") == "vanish_unlock" for o in node.get("options", [])))
 
 
 def has_vanish_relentless(char, gamedata: GameData) -> bool:

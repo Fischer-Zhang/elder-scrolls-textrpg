@@ -876,11 +876,11 @@ def test_mercantile_and_intimidate():
 
 # --- 廣度 pass:17 薄技能各 +1 節點 + 4 新 kind + 2 getter 微修 -------------------
 def test_breadth_all_skills_have_two_plus_nodes():
-    """廣度:全 23 技能各 ≥2 節點(sneak 仍 3)。"""
+    """廣度:全 23 技能各 ≥2 節點(sneak 為 4:25 隱遁之術 + 50/75/100)。"""
     from collections import Counter
     gd = get_gamedata()
     cnt = Counter(n["skill"] for n in mastery._nodes(gd))
-    assert len(cnt) == 23 and all(v >= 2 for v in cnt.values()) and cnt["sneak"] == 3
+    assert len(cnt) == 23 and all(v >= 2 for v in cnt.values()) and cnt["sneak"] == 4
 
 
 def test_breadth_new_nodes_reachable_and_gated():
