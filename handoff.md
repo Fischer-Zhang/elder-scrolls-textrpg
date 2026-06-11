@@ -13,13 +13,47 @@
 - **GitHub**:`git@github.com:Fischer-Zhang/elder-scrolls-textrpg.git`(分支 `main`,SSH 已認證為 Fischer-Zhang)
 - **Python 3.12**;`rich` 由**系統套件**提供(`python3-rich`)—— ⚠️ **本機沒有 `pip`、沒有 `pytest`、sudo 需密碼**。
 - **執行遊戲**:`python3 -m tesrpg`(終端)/ `python3 -m tesrpg.web`(本機 Web 版,瀏覽器開 `http://127.0.0.1:8080`)
-- **跑測試**:`python3 tests/run_all.py`(不需 pytest;48 個測試模組,目前**全綠**)
+- **跑測試**:`python3 tests/run_all.py`(不需 pytest;**全綠**;模組數見結尾「全部通過 (N 個測試模組)」,別在文件硬寫數字)/ 一鍵 `bash check.sh`(編譯 → 測試 → 條件式 sim)
 - **編譯檢查**:`python3 -m py_compile tesrpg/**/*.py tesrpg/*.py tests/*.py`
 - 存檔在 `~/.tesrpg/save.json`(在 repo 外;測試/煙霧測試後記得 `rm -f ~/.tesrpg/save.json`)
 
 ---
 
 ## 1. 現況:M1–M16 + 多輪戰鬥/內容強化,全部完成、已上 GitHub
+
+> ⚠ **數量為快照,別盲信**:本節的技能/地點/節點/同伴數等為**最後更新時的快照**;有疑義以程式 / JSON / `run_all.py` 輸出為準,並順手更新。技能數 = `len(gamedata.skills)`(`data/skills.json`);測試模組數見 `run_all.py` 結尾 `全部通過 (N 個測試模組)`。
+
+### 系統現況總覽(依系統分類)
+
+#### 角色與成長
+- 10 種族 × 13 星座 × 8 職業/自訂;八屬性 + **23 技能** learn-by-doing;混合 Skyrim 式升級(等級 XP 池 → 三選一資源 + 屬性點)
+- **技能里程碑 v2 + 完整階梯**:全 23 技能各 **25/50/75/100 四節點(92 節點)**;**25=單一 perk 自動授予**(入門技,複用退化節點)、**50/75/100=達門檻二選一**永久銘刻 + 持久 fortify 加成層(skill/attr/resist)+ 功能槓桿(武器/法術控場、戰場自修、重甲反震、逃命、解陷保底、頂點 capstone…);反 min-max、守刺客紅線(同源多節點 getter 必聚合不遮蔽;repair_floor 類 floor 須高於門檻 base cap)
+- **八職功能性身份網格**:全 8 職各一招牌戰術 loop(功能性非數值)—— 戰士盾牆(減傷·嘲諷)/法師奧術連鎖/盜賊諜報偵搜/騎士戰旗/戰法師共鳴一擊+法力回擊(毀滅 50/75 兩節點,可兼得)/刺客致命烙印/治療師戰地搶救/弓手獵手偵察(6 mastery 二選一節點 + 2 戰鬥動作;以技能/裝備 gate、零新存檔欄、守刺客紅線)
+- **開局背景**(14 種,只給處境不給數值)+ **種子重玩性**;冒險/傳奇兩種死亡模式 + 一生傳奇總結評分
+
+#### 戰鬥與魔法
+- 回合制**多敵 + 團隊戰鬥**(召喚物/傭兵同伴);**同伴角色化**(9 具名同伴:持久 HP/羈絆 + 具名招募任務 + 羈絆階解鎖的專屬支線 + 就地對話 + 完成支線的忠誠弧頂點〔戰術盟友光環/被動非戰鬥槓桿;盟友限定守刺客紅線〕;復用 `companion_bond` 當忠誠軸,零新存檔欄);**六大學派 + AoE**(召喚/秘術補完至各 7 法術,與毀滅/復原/變換同列;**召喚**=元素元身/魔人 + 束縛兵刃〔法系近戰〕+ 亡者復生〔屍起為盟〕、**秘術**=法術結界〔吸法術傷·吸魔變體〕+ 驅散 + 群體擒魂);元素抗性/弱點、狀態效果、出生星座每日之力
+- **三系資源對稱**:施法也耗體力、力竭降法效(`cast_fatigue_*`),**法袍套裝**省體施法(法師的對應裝甲)
+- **煉金毒藥 + 武器塗毒**;**潛行刺客系**:偷襲先機、暗殺殘響、雙持、**隱遁再襲(潛行 25 里程碑「隱遁之術」;連環踏影對單體仍遞減、反 solo boss 風箏)**、戰前偵查;武器流派(潛襲/破甲/速度)
+
+#### 世界與探索
+- **八省 64 地點 / 25 城**(賽/天/晨/黑沼澤閉合大環 + 漢默法爾/高岩/瓦倫森林/艾爾斯維爾;賽↔艾↔瓦南方大環);旅行/晝夜/危險度
+- **生態遭遇**(biome 加權,八生態含 savanna 弱毒)、**省份風味事件**、**具名地標**首發現、各城**考據統治者**;終局 solo BOSS
+- **格子地城探索**(`systems/dungeoncrawl.py`):10 地城程序化生成 n×n 格 × m 層,N/S/E/W 移動 + 樓梯下層 + 迷霧小地圖 + 格內怪/寶/陷阱;清末層 boss = 肅清,首領死亡自動解鎖寶藏(原子探索、零新存檔欄)。**視為戰鬥情境**:可一般行動(施法/背包/角色卡)、**預施增益/預召喚召喚物**(行動 1 格 = 1 回合逐回合衰減,經 carry_allies/preserve_buffs 帶進觸發戰鬥)、**偵查 perk 探明四鄰**(每探明新格得少量偵查 xp);持久狀態條一併顯示夥伴/召喚物
+
+#### 製作與裝備
+- **鍛造**(金屬四階 + 頂級魔族/龍鱗/龍祭司,稀有素材困難取得)、**裁縫**、**淬鍊強化**;**附魔**(武器:元素傷害 + 命中觸發吸血/麻痺/再生;護甲:技能/抗性/資源;飾品:技能/屬性/抗性/資源)
+- **套裝加成**(同材質四件)、武器流派、飾品槽、法杖、法袍;**具名神器**;裝備耐久 + 修理
+
+#### 公會、任務與政治
+- **七大公會**:戰士/法師/盜賊 + 黑暗兄弟會 + 神話黎明 + 九神騎士團 + **戰友團**(白漫·狼人血脈歸宿,獸血儀式繫於其內圈)(技能門檻/福利/對立/分支壓軸)
+- **多階段任務引擎**;犯罪賞金 + 衛兵 + 謀殺;**吸血鬼化**(力量↔詛咒天平)、**狼人化**(戰友團內圈獸血,獸形變身)、**斯庫瑪/月糖成癮**(亢奮↔戒斷天平,艾爾斯維爾)
+- **領主政治 / 城戰**:謁見 → 委託 → 武士冊封;圍城 + 破城 + 收稅 + 招兵買馬;**陣營動態大事件**
+
+#### 系統與打磨
+- **事件引擎**、**成就系統**、**反 min-max 經濟**(practice 成本)、**Web 版**(原生渲染、可點互動)
+
+### 里程碑歷程
 
 | 里程碑 | 內容 |
 |---|---|
@@ -588,51 +622,117 @@ tesrpg/
 
 ---
 
-## 3. 關鍵慣例(務必遵守)
+## 3. 關鍵慣例 — 鐵律規則簿(務必遵守)
+
+> **鐵律規則簿**:以下每條 `R##` 為穩定編號(**append-only、永不重用**;退役改標 `~~R##(已廢)~~`,不重新編號,讓 commit/舊文裡的引用永久有效)。`CLAUDE.md` 只放跨領域紅線 + 本簿的 `R##` 索引(以要旨指向這裡);**規則本體一律以本節為準**,索引只是指標。標籤義務:`[re-sim]` 改動須重跑 `sim_assassin.py`、`[recompute]` 須 `stats.recompute_max_resources`、`[migrate]` 須 `ensure_*` 遷移、`[save-compat]` 須維持存檔向後相容。
+
+**總則(R01–R03)**
+
+### R01 · 語言慣例
 
 - **語言**:程式碼/變數/資料 key 用**英文**(沿用 TES 原文如 `destruction`/`altmer`);玩家看到的文字用**繁體中文**。
+### R02 · 資料驅動
+
 - **資料驅動**:新增地點/生物/物品/法術/任務/事件 → **改 JSON 即可,不動邏輯**。
+
+### R03 · 存檔規則 [save-compat]
+
 - **存檔規則**:
   - `Character.to_dict/from_dict` 必須涵蓋每個欄位;`from_dict` 用 `cls(**d)`,靠 dataclass 預設值做**向後相容**(舊存檔缺欄位 → 用預設)。
   - **`active_effects` 不寫入存檔**(戰鬥內臨時效果);合成物品只存 id(synth 重建)。
   - 對毀損/舊存檔**防禦性夾限**(例:`quests._stage_index` 用 `max(0, min(...))`、公會階級夾限、`companions` 過濾未知 id)。
+**戰鬥 · 資源 · 升級(R04–R06)**
+
+### R04 · 戰鬥通用 resolve_attack
+
 - **戰鬥**:`combat.resolve_attack` 通用於玩家/同伴/敵人**任意組合**;`clamp_resources` **只對玩家側**呼叫(怪物 hp 由 `_set_hp` 夾限)。
+
+### R05 · 衍生上限 / 護甲 fortify [recompute]
+
 - **衍生上限/護甲 fortify**:`max_health` 是**有效**上限(`base_max_health` 真基底 + 升級 `resource_levels` + 穿戴護甲 `armor_fortify`);
   `stats.recompute_max_resources(char, gamedata, …)` **務必帶 gamedata**(否則 fortify 視為 0,會吃掉加成)。
   **任何改動 `char.equipped` 的路徑(穿/卸/丟棄/出售)之後都要 recompute**;`inventory.remove_item` 會自動卸下但**不**重算(M14 踩過這個雷)。
+### R06 · 升級系統(M15) [migrate]
+
 - **升級系統(M15)**:`level_xp` 是升級進度(**所有技能升點都餵**,主修 ×1.5);`level_progress`/`level_skillups` 是停用的舊欄位,只為舊存檔 `cls(**d)` 保留。
   `apply_level_up(char, gd, attribute_points: dict, resource_choice)`。**載入存檔走 `GameState.from_dict` 會自動 `ensure_level_xp` 遷移**(舊 `level_progress`→`level_xp`),別繞過它直接建 Character 否則舊存檔升級入口會被隱藏(審查踩過)。
   `max_health` **不再隨耐力逐級長**(改由升級「生命」三選一);改升級公式只動 `formulas.py` 的 `LEVELUP_*` 常數即可平衡。
+**潛行 · 刺客 · 魔法(R07–R10)**
+
+### R07 · 潛行系戰鬥(偷襲 / 隱遁 / 雙持) [re-sim]
+
 - **潛行系戰鬥(M16 + 刺客大改)**:`sneak` 開場偷襲只在 `run_battle` 第一個行動為攻擊且 `opening` 為真時觸發(僅玩家);`acrobatics` 閃避從 `hit_chance` 扣 `dodge_evasion`。**`opening` 現在不再無條件保證**:① 入場由 `offer_battle` 的 `try_stealth_approach` 檢定決定(失敗 → `run_battle(alerted=True)`→opening 起手即 False);② 旅途伏擊 `surprise=True` 幾乎拿不到;③ 隱遁成功會把 `opening` 重新點亮(`opening = vanish_success`,別改回無條件關閉)。
   - **暗殺殘響**:全在 `resolve_attack` 偷襲分支末端(`sneaking and is_alive(defender)`),掛 `stagger`/`bleed(element=bleed)` 到 defender;踉蹌命中減成在 `hit_chance` 後對「被踉蹌的 attacker」扣 `STAGGER_HIT_PENALTY`。調平衡只改 `formulas` 的 `_ARCHETYPE_SNEAK_AFTERMATH`/`SNEAK_BLEED_*`/`STAGGER_HIT_PENALTY`。
   - **雙持**:`offhand` 只存 id;**副手傷害必須在 `sneak_mult 之後`才加(不吃偷襲倍率)**——`resolve_attack` 與 `estimate_sneak_damage` 兩處要一致,否則精英被秒(審查踩過)。同型雙持需 2 把;`remove_item` 跨門檻會清 `offhand`。雙持時 `_choose_combat_action` 不給格擋。
   - **隱遁**:`try_vanish` 成功跳過敵人階段;**三道煞車缺一不可**——`player_vanish_cost` 體力、`vanishes_done` 每次嘗試遞增(非僅成功)、`MAX_VANISHES_PER_BATTLE` 硬上限。少了會變無限風箏無傷清精英(審查踩過 critical)。
   - **入場檢定/偵查**:`stealth_approach_chance` 吃 `inventory.dominant_weight_class`(重甲噪音)+ 夜間(`hour<6 or >=21`)+ `scouted` + `surprise`。`scout` 是第 22 技能;**新增技能務必同步 `progression.ensure_all_skills`**(舊存檔遷移)。
   - **平衡回歸**:改任何刺客常數後跑 `PYTHONPATH=. python3 sim_assassin.py` 對照(救失手/不秒精英/無風箏)。
+### R08 · 偵查備戰(scout → prep)
+
 - **偵查備戰(scout→備戰空間)**:潛近成功(`got_drop`)且未被伏擊時,`formulas.prep_budget(scout)`(20/50/75→1/2/3)算出開戰前可做幾個準備;`run_battle(..., prep_budget=)` 在**第一個交戰回合之前**跑 `_prep_phase`(施增益/召喚/喝藥/塗毒)。**召喚在備戰預載進 `battle["allies"]`** → 開場即在場、不佔首回合(解召喚痛點)。鐵律守住:prep 在 while 迴圈前 → `opening` 偷襲先機保留;buff/summon_turns 從第一回合照 tick(不延長時效、只省一動);同法術每場備戰不可重施;`active_effects` 戰後由 run_battle 出口 clear(prep 在 run_battle 內 → 無撤退洩漏);召喚鎖 `PREP_SUMMON_MIN_SCOUT=50`。已接 offer_battle + 合約暗殺 + 潛殺平民三處 got_drop 路徑;**地城/Boss 直呼 run_battle(prep_budget 預設 0)刻意不給備戰**(無從偵查一頭撞見的敵人)。調整只動 `formulas.PREP_*` 常數。
+### R09 · 運動 athletics 雙用途
+
 - **運動 athletics**:`world.travel` 依 `athletics_travel_factor` 縮短耗時並練運動;`combat.player_attack_cost/player_block_cost` 依 `fatigue_cost_factor` 折扣體力。`格擋` 實扣 `BLOCK_FATIGUE_COST`(別再當死常數)。
+### R10 · 施法體力(三系對稱) [re-sim]
+
 - **施法體力(三系對稱)**:`magic.cast` **玩家專用**(敵人/召喚走 `combat.resolve_attack` 不經此);扣魔力後**先擷取體力比例再扣 `spell_fatigue_cost`**(本擊不自我削弱),`_power` 乘 `formulas.cast_fatigue_power_factor`(力竭 ×0.75;**summon HP 也要乘**,審查踩過漏接)。0 體力不 fizzle、夾 0。`spell_fatigue_cost` = 底耗+魔耗線性,由 `fatigue_cost_factor(運動)` 與**法袍套裝** `inventory.cast_fatigue_factor` 折扣;**只折體力不折魔力**(`effective_cost` 不動)。調平衡只動 `formulas.CAST_FATIGUE_*` 或 `armor_sets.json` 的 `cast_fatigue_factor`。**改任何施法/體力數值務必重跑 `sim_assassin.py`**(雖玩家施法不碰 sneak/武傷,仍守紅線)。
+**世界 · 難度 · 生態(R11–R14)**
+
+### R11 · 敵人 / 難度(不做數值縮放)
+
 - **敵人/難度(內容驅動,不做數值縮放)**:難度靠 `min_level` 解鎖更強物種 + 地點 `danger`,**不** scale 怪物數值(刻意,避免 Oblivion 詬病)。bestiary 加 `"solo": true` 的 BOSS 在 `random_encounter_group` 會收斂成單獨一隻;地城 `boss` 加 `"raw": true` 則以原始強度登場(`action_dungeon` 不再 `spawn_boss` ×1.6)。新敵人/地城純改 JSON。
+### R12 · 生態遭遇表 / biome
+
 - **生態遭遇表 / biome(細化省分)**:每個 `world` 地點有 `biome`(heartland/snow/ashland/swamp);bestiary 怪可帶 `biomes`(子集)。`combat.random_encounter(_group)` 依當地 biome 用 `_biome_weight` 加權:在地怪 ×`BIOME_MATCH_WEIGHT`(3.0)、他鄉怪 ×`BIOME_MISMATCH_WEIGHT`(0.25)、**無 `biomes` 標籤=通用墊底池(四海皆有,確保池不空)**。`world.travel`/`main.action_explore` 已傳 biome。**新怪要分流就加 `biomes`、新地點要加 `biome`**;調生態強度只動那兩個常數。⚠️ 同一 biome 的「在地低階怪」danger 要與其他 biome 對齊(snow 曾因低階怪全 d3 而早期偏硬,已靠把 d2 的 frostbite_spider 併入 snow 緩解;雪原仍刻意略硬)。
+### R13 · 省份維度
+
 - **省份維度(細化省分)**:`events.json` 事件可加 `trigger.provinces` 做在地風味/在地遭遇(combat 效果指定該省怪);`quests.json` 的 board 委託可加 `provinces` 做在地懸賞(`quests.available_quests(...,province=)` 過濾、`main.action_board` 傳當地省;無 `provinces`=全圖通用)。NPC 委託走 `npcs.json` 的 `quest` + `dialogue.offered_quest`(`source:"npc"`,不進告示板/公會)。**加省份風味純改 JSON**。
+### R14 · 元素抗性
+
 - **元素**:`fire/frost/shock` 受 `magic` 總抗性疊加;`poison`/`disease` 不受 `magic` 影響(見 `formulas.MAGIC_ELEMENTS`)。
+**裝備 · 公會 · 戰場(R15–R17)**
+
+### R15 · 裝備加成 / 附魔載體 / synth [recompute] [re-sim]
+
 - **裝備加成(穿戴附魔/套裝)**:`skill()/attr()` 已疊加 `equip_*_bonus`,但**成長/夾限務必用 `base_skill()/base_attr()`**(progression 已改;否則飾品加成會被寫進 base 永久殘留)。
   任何改 `char.equipped`(穿/卸/戴/丟/賣)後都要 `stats.recompute_max_resources(char, gamedata)`(其開頭會跑 `recompute_equipment`)。飾品在 `ring1/ring2/amulet` 槽,卸下要用 `_equipped_slot_of` 找真實槽(別用 `d["slot"]`)。
   附魔載體:護甲=`encha`(res→`armor_fortify` 資源 / skill→`fortify_skill` / resist→`resist_element`;**res 務必保留 `armor_fortify` 鍵**否則漏出 `armor_fortify_totals`)、飾品=`enchj` 四型別;武器元素=`enchw`、武器命中狀態=`enchws`(吸血/麻痺/再生,`combat.resolve_attack` 傷害結算後的 `weapon_status` hook、**玩家專屬**)。**`synth` id 改格式務必保段數向後相容**(encha 4↔5 段、enchw 不動)。**武器麻痺 solo boss 免疫是硬性反鎖王紅線**(`_is_solo` gate,改 proc/turns/免疫務必重跑 sim + 400 擊 boss 免疫測)。調附魔平衡:`formulas.WEAPON_VAMPIRIC_FRACTION`/`WEAPON_PARALYZE_PROC`、`enchanting.armor_magnitude`/`jewelry_magnitude` factor。新套裝/飾品/法杖純改 JSON(`armor_sets.json` / `items.json` / `weapons.json`)。
+### R16 · 公會(深度化)
+
 - **公會(深度化)**:入會/晉升規則全在 `systems/factions.py`(`join_block_reason`/`advance_block_reason`/perk),資料在 `factions.json`(`gate_skills`/`join_skill`/`rank_skill_req`/`rivals`/`lawful`/`perk`)——**加門檻/福利/對立純改 JSON**。
   晉升技能門檻由 `quests.available_quests`(guild)強制;perk 接在 `world.sell_price` + `action_repair`/`action_spell_vendor`。**分支任務**:頂層放 `branches`(各含自足的 `stages`+`reward`,**勿**再放頂層 objective/stages,否則 `_stages` 會誤取),`char.quests[qid]["branch"]` 存選擇、`_advance` 推進階段時務必**保留 branch**。
+### R17 · AoE / 狀態(獨立 dict)
+
 - **AoE/狀態**:每個敵人各自 `make_status_effect(...)` 取**獨立 dict**(切勿共用同一個 → 會別名汙染計時)。
+**開局 · 狀態機 · 里程碑(R18–R21)**
+
+### R18 · 開局背景 origins
+
 - **開局背景(不一樣的人生)**:全在 `creation.apply_origin`(在標準 `build_character` 末段、`base_max_health`/`recompute` **之前**呼叫,故穿上的裝備 fortify 能被收尾 recompute 吃到),資料在 `origins.json`——**加開局純改 JSON**。
   守則:**只覆寫處境(地點/金幣/物品/裝備/法術/會籍/賞金/同伴),不動屬性/技能**(否則破壞 learn-by-doing,有回歸測試擋);授會籍請挑無 rivals/非 lawful 的公會(或自行確保與賞金/對立自洽);**別讓開局起在地城/danger≥4 節點**(Lv1 即死,傳奇模式尤甚)。`origin` 欄位只供結算顯示,舊存檔缺它→預設 `""`。`vampire:true` 開局只標記身分,階級/進食日由 `vampirism.update` 首回合初始化。
+### R19 · 吸血鬼化 [migrate] [recompute]
+
 - **吸血鬼化(里程碑)**:狀態機全在 `systems/vampirism.py`,**`vampirism.update(state, gd)` 必須在 game_loop 每圈頂端先呼叫**(驅動轉化/升階/初始化);階級加成走 `vampire_*` 獨立層(**成長/夾限只用 `base_skill()/base_attr()`**,同裝備鐵律);`apply_to_character` 末段會 `recompute_max_resources`(力量/意志加成→體力上限)。
   感染向量:吸血鬼敵人 `attack.infect`(機率)→ `combat.resolve_attack` 回 `infected` → `run_battle` 套 `vampirism.infect`;**疾病抗性削弱感染**(`resist_multiplier(...,"disease")`)。陽光只在 travel/explore 結算(`_maybe_sunburn`,**夾限保命**);`is_shunned`(階級≥2)在 game_loop 隱藏 NPC 商業服務,`action_feed` 解除。**加吸血鬼敵人純改 bestiary**(`infect` + 火焰負抗性);調平衡只動 vampirism.py 常數(`STAGE_*`/`SUN_*`/`FEED_*`)。轉化後**出生星座之力被 `vampiric_drain` 取代**(刻意:詛咒蓋過天賦)。
   **D 治療**:`cure_vampirism` 用 source `vampire_cure`(`available_quests` 只回對應 source → 不漏進告示板/公會);解咒儀式是顯式動作 `action_vampire_cure`(法師公會子選單,`is_vampire` 閘門),用 `vampirism.cure` 收尾並把任務移出 `completed_quests` 以**可重複**;`mages_guild` 服務**不受社交封鎖**(吸血鬼永遠找得到解咒的女巫)。加新解咒媒介純改 quests.json(注意採集物要買得到:大蒜@布魯瑪、毒茄參@晨風)。
+### R20 · 斯庫瑪 / 月糖成癮 [re-sim] [migrate]
+
 - **斯庫瑪/月糖成癮(里程碑)**:狀態機全在 `systems/skooma.py`,**`skooma.update(state, gd)` 掛 game_loop 每圈頂端、在 vampirism 之後**(驅動亢奮退去/戒斷/清醒衰減)。亢奮/戒斷走 `skooma_*` 獨立層(**成長/夾限只用 `base_*`**,同裝備鐵律);`apply_to_character` 末段 `recompute_max_resources`。🔴 **紅線**:亢奮**只給速度/敏捷/意志 + 資源回復、絕不碰 strength/sneak/武傷**(`attack_damage` 吃 strength → 碰了會放大偷襲、破 `SOLO_SNEAK_DAMAGE_CAP`;改 `SKOOMA_HIGH_ATTR` 務必重跑 `sim_assassin.py` + 確認亢奮前後 `estimate_sneak_damage` 不變,有 `test_skooma` 守門)。戒斷強度**由成癮深度推導、非距上次用藥**(避免與 ride-it-out 衰減 ratchet 互相打架而振盪)。狀態走 Character 5 欄(持久、進存檔),**絕不寄生 `active_effects`**(後者不入檔、入戰即清 → 亢奮會蒸發)。`skooma.ensure_skooma_fields` 接 `state.from_dict`(載入重算層)。**解癮**:`quest_skooma_cure`(source `skooma_cure`,只經 `action_skooma_cure` 廣場動作賺取/施行,不掛任何 NPC.quest);⚠️ **自然戒除(清醒衰減)時 `skooma.update` 會 `_discard_cure_quest` 棄置殘留任務**(否則完成採集卻不行儀式 → 衰減戒掉 → 日後再成癮免費解癮,審查抓到的漏洞)。調平衡只動 skooma.py 常數(`*_HIGH_*`/`TOLERANCE_FACTOR`/`WITHDRAWAL_*`/`CLEAN_DECAY_DAYS`)。**月糖同時是煉金材料**(ingredients.json,煉金照讀其 effects)、斯庫瑪 `kind:"drug"`(items.json,走 dose 路徑不走 use_item potion 分支)。
+### R21 · 技能里程碑 Mastery [re-sim] [migrate]
+
 - **技能里程碑(Skill Mastery,P1)**:全在 `systems/mastery.py`,資料在 `data/mastery.json`。門檻**只認 `base_skill()`**(裝備/吸血鬼疊加不得觸發,否則污染成長/夾限)。**加同 kind 里程碑純改 JSON;加新 kind 必須**:①登錄 `mastery._IMPLEMENTED_KINDS`(否則該條完全 inert,不顯示/計分/播報)②加對應 getter ③一處呼叫端分支(**這步不是純 JSON**,別在 doc 誇大)。⚠️ 兩個審查踩過的雷:① 走 `active_effects` 的效果(如溢盾)務必**夾「總量」cap 並打 `source` 標記**(別只夾單次→可疊破),且 `run_battle` 已在**入場清 `player.active_effects`**(在 `_prep_phase` 前)杜絕戰外殘留洩漏;② 戰鬥數值型(壁壘/過載)改常數務必重跑 `sim_assassin.py` + auto_resolve 勝率 gate(**過門檻勝率不得下降**)。新欄位只有 `persuaded_npcs`(辯舌·折服;已進 to_dict、舊存檔預設 [])。
+
+**流程慣例(R22)**
+
+### R22 · 提交慣例 — 驗證綠 → 自動 commit & push 到 main
+
+- **提交慣例**:每個里程碑走完五階段(評估 → 決定方向 → 實作 → 驗證 → 文件)後,**驗證全綠即自動 `git commit` & `git push origin main`,不需使用者明說**(刻意覆寫 Claude Code「只在使用者明說才提交」的預設;本專案 git 歷史一律直推 `main`、SSH 已認證)。紅燈(任一驗證未過)則**不**提交、先修。commit 訊息用繁中描述本里程碑、末加 `Co-Authored-By:` 行;一次一里程碑 = 一個 commit。
 
 ---
 
 ## 4. 開發節奏(ultracode 開著 → 每個功能都這樣做)
+
+> 完整五階段流程(評估 → 決定方向 → 實作 → 驗證 → 文件 + 提交)見 `CLAUDE.md`「開發流程」;以下是「驗證」段的細節。**驗證綠後依 R22 自動 `commit` & `push origin main`。**
 
 1. **實作**(資料 + systems + main/ui)。
 2. **單元測試**:新增 `tests/test_*.py`(用 `assert`,可直接 `python3` 跑;登錄進 `tests/run_all.py`)。
@@ -657,7 +757,7 @@ tesrpg/
 ## 5. 設計定案(DESIGN.md §7)
 
 死亡規則=**兩種模式**(冒險可讀檔 / 傳奇 roguelike 永久死亡);職業=8 預設+自訂;起始省=賽羅迪爾·布魯瑪;
-**純沙盒**(無主線);時間以「小時」推進(12 月×30 天);技能=Oblivion 的 21 套 **+ 自訂第 22 技能 `scout`(偵查)**(刺客大改時經使用者拍板突破原設計);一生評分公式在 `systems/legacy.py`。
+**純沙盒**(無主線);時間以「小時」推進(12 月×30 天);技能=Oblivion 的 21 套 **+ 自訂 `scout`(偵查)/`smithing`(鍛造)**(經使用者拍板突破原設計;**現為 23**,以 `len(gamedata.skills)` 為準);一生評分公式在 `systems/legacy.py`。
 
 ---
 

@@ -1,74 +1,96 @@
-# CLAUDE.md — 流亡者 (tesrpg) 程式庫導覽
+# CLAUDE.md — 流亡者 (tesrpg) 開發憲法
 
 上古卷軸風格的**技能驅動沙盒文字 RPG**(終端機,Python + `rich`;另有瀏覽器 Web 版)。
-單一英雄、learn-by-doing(做什麼練什麼)、跨七省探索鑽地城。
+單一英雄、learn-by-doing(做什麼練什麼)、跨八省探索鑽地城。
 
-> 玩家面向的「怎麼玩」見 [README.md](README.md);完整設計見 [DESIGN.md](DESIGN.md);
-> **接手開發的詳細現況/開發節奏地圖見 [handoff.md](handoff.md)(先讀它)。**
+> **本檔是給 Claude 的開發憲法**:每次改動都適用的節奏 + 跨領域紅線 + 提交檢查表 + 子系統鐵律「索引」。
+> 子系統鐵律**本體**在 [handoff.md](handoff.md) §3(以 `R##` 標號);完整現況清單見 handoff §1;設計理念見 [DESIGN.md](DESIGN.md);玩家「怎麼玩」見 [README.md](README.md)。
 
 ## 怎麼跑 / 測試
 
 ```bash
-python3 -m tesrpg                       # 終端機版
-python3 -m tesrpg.web                    # Web 版 → http://127.0.0.1:8080
-python3 tests/run_all.py                 # 52 測試模組,不需 pytest,須全綠
-python3 -m py_compile tesrpg/**/*.py     # 編譯檢查
-PYTHONPATH=. python3 sim_assassin.py     # 平衡回歸模擬(改戰鬥常數後必跑)
+python3 -m tesrpg                        # 終端機版
+python3 -m tesrpg.web                     # Web 版 → http://127.0.0.1:8080
+python3 tests/run_all.py                  # 全綠;模組數見結尾「全部通過 (N 個測試模組)」(別在文件硬寫數字)
+bash check.sh                             # ★ 一鍵驗證:編譯 → 全測試 → 條件式 sim(= /check;見下「自動化」)
+shopt -s globstar; python3 -m py_compile tesrpg/**/*.py tesrpg/*.py tests/*.py   # 純編譯檢查(完整形;少了 tesrpg/*.py 會漏掉 main/state/formulas 等頂層模組)
+PYTHONPATH=. python3 sim_assassin.py      # 平衡回歸模擬(改戰鬥常數後必跑)
 ```
-- Python 3.12;`rich` 由系統套件提供(`python3-rich`)。⚠️ 本機**沒有 pip/pytest**、sudo 需密碼。
-- 存檔在 `~/.tesrpg/save.json`(repo 外;煙霧測試後記得清)。
+- Python 3.12;`rich` 由系統套件提供(`python3-rich`)。⚠️ 本機**沒有 pip/pytest**、sudo 需密碼、無 `jq`(寫 hook 要用 `python3` 解析 stdin)。
+- 存檔在 `~/.tesrpg/save.json`(repo 外;煙霧測試/實跑後記得清)。
 
-## 架構 / 慣例
+## 開發流程(每個里程碑走完五階段;⚠ 一次只推一個里程碑)
+
+1. **評估**:理解範圍 / 找根因 / 盤點選項(範圍不明就走 plan-mode:Explore→Plan 子代理)。
+2. **決定方向**:給選項、讓使用者拍板(功能性 > 數值;不替使用者預設方向)。
+3. **實作**(data + systems + main/ui;內容優先純改 JSON)。
+4. **驗證**(全綠才算數;一鍵 a–c = `bash check.sh` / `/check`):
+   - a. 單元測試 `tests/run_all.py`(新測登錄 run_all,須全綠)
+   - b. 平衡模擬:改戰鬥常數跑 `sim_assassin.py`,勝率/回合數不退化
+   - c. 無頭煙霧:`Console(file=StringIO())` + 自動選單抓 traceback
+   - d. 對抗審查(Workflow):多維 fan-out → 獨立懷疑者**對抗式驗證**,只留能真實重現的
+   - e. 覆核+修正:逐一覆核(有誤報、也有「會引入新 bug 的錯誤修法」)→ 補回歸測試 → 重跑全套
+5. **修改文件 + 提交推送**:同步 `handoff.md`(§1 現況 / §3 鐵律 R##)與必要的 `CLAUDE.md` → **驗證綠即自動 `git commit` & `git push origin main`(本專案慣例,見 handoff §3 R22;不需明說。紅燈則不提交、先修)**。
+
+## 鐵律總則(跨領域紅線,全文)
+
+- **成長/夾限只用 `base_skill()/base_attr()`**;裝備/吸血鬼/斯庫瑪/里程碑加成走獨立疊加層,**絕不寫回 base**。
+- **任何改動 `char.equipped`(穿/卸/丟/賣)後必 `stats.recompute_max_resources(char, gamedata)`**(務必帶 gamedata,否則 fortify 視為 0)。
+- **改任何戰鬥/施法/刺客/附魔常數 → 必跑 `sim_assassin.py`**,守 `SOLO_SNEAK_DAMAGE_CAP_RATIO`(偷襲不秒 solo boss)、群體規模反制、麻痺 solo boss 免疫等紅線。
+- **同源多節點 getter 必聚合**(相加/取最/取後),不得 first-wins 遮蔽。
+- **存檔向後相容**:新技能 → `progression.ensure_all_skills`;新里程碑欄 → `ensure_mastery_choices`;新欄位 → dataclass 預設值(`from_dict` 走 `cls(**d)`)。
+- **內容優先純改 `data/*.json`**(地點/怪/物品/法術/任務/事件/開局/里程碑),不動邏輯。
+- **數量別盲信**:文件中的技能/地點/測試數是快照;有疑義以 `run_all.py` 輸出、`len(gamedata.skills)`、JSON 為準並順手更新。
+
+## 子系統鐵律索引(本體見 handoff §3 `R##`;標籤:`re-sim`=重跑 sim、`recompute`、`migrate`=ensure_*、`save`=存檔相容)
+
+| R## | 一行要旨 | 標籤 |
+|---|---|---|
+| R01 | 碼/變數/key 英文,玩家文字繁中 | |
+| R02 | 新增內容只改 JSON、不動邏輯 | |
+| R03 | `to_dict/from_dict` 全欄 + `cls(**d)` 預設 + 防禦夾限;`active_effects` 不入檔 | save |
+| R04 | `resolve_attack` 通用任意組合;`clamp_resources` 只玩家側 | |
+| R05 | `max_health` 是有效上限;改 equipped 後必 recompute(帶 gamedata) | recompute |
+| R06 | `level_xp` 餵升級;`from_dict` 自動 `ensure_level_xp` 別繞過 | migrate |
+| R07 | 偷襲 `opening` 條件;副手傷害在 `sneak_mult` 之後;隱遁三道煞車缺一不可 | re-sim |
+| R08 | 偵查備戰 `prep_budget`;召喚預載 `battle["allies"]`;prep 在 while 前保 opening | |
+| R09 | 運動=旅行加速 + 降戰鬥體力;格擋實扣 `BLOCK_FATIGUE_COST` | |
+| R10 | `magic.cast` 玩家專用;扣魔再擷體力;力竭 ×0.75 連 summon HP 也乘 | re-sim |
+| R11 | 難度靠 `min_level` + `danger`,**不**縮放怪數值;`solo`/`raw` 旗標 | |
+| R12 | 地點帶 `biome`、怪帶 `biomes`;無標籤=通用墊底池 | |
+| R13 | `events/quests` 可加 `provinces` 做在地化 | |
+| R14 | `fire/frost/shock` 吃 `magic` 抗性;`poison/disease` 不吃 | |
+| R15 | 附魔載體 `encha/enchj/enchw/enchws`;`synth` 段數相容;麻痺 solo boss 免疫紅線 | recompute, re-sim |
+| R16 | 公會規則在 `factions.py`/資料 `factions.json`;分支任務推進務必保留 `branch` | |
+| R17 | AoE 每敵各取**獨立** `make_status_effect` dict(勿共用) | |
+| R18 | `apply_origin` **只改處境不動屬性/技能**;別起在地城/`danger≥4` | |
+| R19 | `vampirism.update` 每圈頂端;`vampire_*` 獨立層;疾病抗性削感染 | migrate, recompute |
+| R20 | `skooma.update` 在 vampirism 後;亢奮**絕不碰 strength/sneak/武傷** | re-sim, migrate |
+| R21 | 門檻只認 `base_skill()`;新 kind 三步登錄(`_IMPLEMENTED_KINDS`+getter+呼叫端);溢盾夾總量 cap | re-sim, migrate |
+
+## 自動提交閘門 / 換 session 前檢查表
+
+**提交是自動的**:驗證全綠 → `git commit` & `git push origin main`(本專案慣例,**不需使用者明說**;紅燈則不提交、先修)。推送前先過這道閘(一鍵 `/check` = `bash check.sh`):
+- [ ] `python3 tests/run_all.py` 全綠(讀結尾印的模組數,勿信文件數字)
+- [ ] 觸戰鬥/施法/刺客/附魔常數 → `PYTHONPATH=. python3 sim_assassin.py`(或 `./check.sh --sim`)
+- [ ] 編譯檢查通過(`check.sh` 已含完整 `py_compile`)
+- [ ] 若跑過煙霧/實跑 → `rm -f ~/.tesrpg/save.json`(`check.sh --smoke` 會自動清)
+- [ ] 改了規則/數量/現況 → 同步 `handoff.md`(§3 鐵律 R## / §1 現況)
+- [ ] commit 訊息末加 `Co-Authored-By:` 行 → `git push origin main`
+
+**換 session 前**(= `/sync`):全綠 + sim 穩 + 煙霧通 + 審查確認 bug 修完 + 回歸測試補完 + **handoff.md 已更新本輪里程碑**(且本輪工作已 commit & push)。
+
+## 自動化(`.claude/` 已配置)
+
+- `check.sh` — 單指令驗證鏈(完整 `py_compile` → `run_all.py` 硬閘門 → 偵測到改 `formulas.py`/`combat.py` 或 `--sim` 才跑 sim 並標出 `⚠` 行 → `--smoke` 才跑煙霧並 trap 清存檔)。
+- `/check` slash-command = `bash check.sh`;`/sync` = 跑 `check.sh --smoke` + 印換 session 檢查表 + 提示更新 handoff.md。
+- `.claude/settings.json` 已預許可唯讀測試/sim/git 指令(減少權限詢問)。`git commit`/`push` **不**預許可(刻意保留可見),但依本專案慣例驗證綠後仍自動執行(見上「自動提交閘門」/ handoff §3 R22)。
+
+## 架構 / 重要檔案
 
 - **資料驅動**:規則引擎在 `tesrpg/systems/*.py` + `tesrpg/formulas.py`;內容全在 `tesrpg/data/*.json`
-  (races/birthsigns/classes/skills/spells/weapons/armor/armor_sets/recipes/bestiary/world/dungeons/
-  quests/factions/events/origins/rulers/mastery/landmarks…)。**加一省/一把劍/一隻怪/一個里程碑多半只改 JSON。**
-- **語言慣例**:程式碼、變數、資料 key 用**英文**(沿用 TES 原文術語);玩家看到的文字用**繁體中文**。
-- **存檔向後相容**:`Character.to_dict/from_dict`(`cls(**d)` + dataclass 預設);新增技能走
-  `progression.ensure_all_skills`、新增里程碑欄走 `ensure_mastery_choices`。
+  (races/birthsigns/classes/skills/spells/weapons/armor/recipes/bestiary/world/dungeons/quests/factions/events/origins/rulers/mastery/landmarks…)。
 - **核心循環**:行動制(在地點選行動 → 推進時/日 → 觸發事件/遭遇);戰鬥是回合制子迴圈。
-- **成長/夾限只用 `base_skill()/base_attr()`**;`skill()/attr()` 疊加裝備/吸血鬼/里程碑加成層。
-- **開發節奏**(每個功能):實作 → 單元測試(`tests/test_*.py`,登錄 `run_all.py`)→ 平衡模擬 →
-  無頭煙霧(`Console(file=StringIO())` + 自動選單)→ 對抗審查 workflow → 覆核修正。
-- **平衡紅線**:`sim_assassin.py` 守「偷襲不可秒 solo boss」(`SOLO_SNEAK_DAMAGE_CAP_RATIO`)、
-  群體規模反制(>3 敵潛匿大減)等;改戰鬥常數務必重跑。
-
----
-
-## 現況快照(M0–M16 + 二十餘輪強化,全部完成、已上 GitHub)
-
-依系統分類(里程碑歷程詳見 DESIGN.md / handoff.md):
-
-### 角色與成長
-- 10 種族 × 13 星座 × 8 職業/自訂;八屬性 + **23 技能** learn-by-doing;混合 Skyrim 式升級(等級 XP 池 → 三選一資源 + 屬性點)
-- **技能里程碑 v2 + 完整階梯**:全 23 技能各 **25/50/75/100 四節點(92 節點)**;**25=單一 perk 自動授予**(入門技,複用退化節點)、**50/75/100=達門檻二選一**永久銘刻 + 持久 fortify 加成層(skill/attr/resist)+ 功能槓桿(武器/法術控場、戰場自修、重甲反震、逃命、解陷保底、頂點 capstone…);反 min-max、守刺客紅線(同源多節點 getter 必聚合不遮蔽;repair_floor 類 floor 須高於門檻 base cap)
-- **八職功能性身份網格**:全 8 職各一招牌戰術 loop(功能性非數值)—— 戰士盾牆(減傷·嘲諷)/法師奧術連鎖/盜賊諜報偵搜/騎士戰旗/戰法師共鳴一擊+法力回擊(毀滅 50/75 兩節點,可兼得)/刺客致命烙印/治療師戰地搶救/弓手獵手偵察(6 mastery 二選一節點 + 2 戰鬥動作;以技能/裝備 gate、零新存檔欄、守刺客紅線)
-- **開局背景**(14 種,只給處境不給數值)+ **種子重玩性**;冒險/傳奇兩種死亡模式 + 一生傳奇總結評分
-
-### 戰鬥與魔法
-- 回合制**多敵 + 團隊戰鬥**(召喚物/傭兵同伴);**同伴角色化**(9 具名同伴:持久 HP/羈絆 + 具名招募任務 + 羈絆階解鎖的專屬支線 + 就地對話 + 完成支線的忠誠弧頂點〔戰術盟友光環/被動非戰鬥槓桿;盟友限定守刺客紅線〕;復用 `companion_bond` 當忠誠軸,零新存檔欄);**六大學派 + AoE**(召喚/秘術補完至各 7 法術,與毀滅/復原/變換同列;**召喚**=元素元身/魔人 + 束縛兵刃〔法系近戰〕+ 亡者復生〔屍起為盟〕、**秘術**=法術結界〔吸法術傷·吸魔變體〕+ 驅散 + 群體擒魂);元素抗性/弱點、狀態效果、出生星座每日之力
-- **三系資源對稱**:施法也耗體力、力竭降法效(`cast_fatigue_*`),**法袍套裝**省體施法(法師的對應裝甲)
-- **煉金毒藥 + 武器塗毒**;**潛行刺客系**:偷襲先機、暗殺殘響、雙持、**隱遁再襲(潛行 25 里程碑「隱遁之術」;連環踏影對單體仍遞減、反 solo boss 風箏)**、戰前偵查;武器流派(潛襲/破甲/速度)
-
-### 世界與探索
-- **八省 64 地點 / 25 城**(賽/天/晨/黑沼澤閉合大環 + 漢默法爾/高岩/瓦倫森林/艾爾斯維爾;賽↔艾↔瓦南方大環);旅行/晝夜/危險度
-- **生態遭遇**(biome 加權,八生態含 savanna 弱毒)、**省份風味事件**、**具名地標**首發現、各城**考據統治者**;終局 solo BOSS
-- **格子地城探索**(`systems/dungeoncrawl.py`):10 地城程序化生成 n×n 格 × m 層,N/S/E/W 移動 + 樓梯下層 + 迷霧小地圖 + 格內怪/寶/陷阱;清末層 boss = 肅清,首領死亡自動解鎖寶藏(原子探索、零新存檔欄)。**視為戰鬥情境**:可一般行動(施法/背包/角色卡)、**預施增益/預召喚召喚物**(行動 1 格 = 1 回合逐回合衰減,經 carry_allies/preserve_buffs 帶進觸發戰鬥)、**偵查 perk 探明四鄰**(每探明新格得少量偵查 xp);持久狀態條一併顯示夥伴/召喚物
-
-### 製作與裝備
-- **鍛造**(金屬四階 + 頂級魔族/龍鱗/龍祭司,稀有素材困難取得)、**裁縫**、**淬鍊強化**;**附魔**(武器:元素傷害 + 命中觸發吸血/麻痺/再生;護甲:技能/抗性/資源;飾品:技能/屬性/抗性/資源)
-- **套裝加成**(同材質四件)、武器流派、飾品槽、法杖、法袍;**具名神器**;裝備耐久 + 修理
-
-### 公會、任務與政治
-- **七大公會**:戰士/法師/盜賊 + 黑暗兄弟會 + 神話黎明 + 九神騎士團 + **戰友團**(白漫·狼人血脈歸宿,獸血儀式繫於其內圈)(技能門檻/福利/對立/分支壓軸)
-- **多階段任務引擎**;犯罪賞金 + 衛兵 + 謀殺;**吸血鬼化**(力量↔詛咒天平)、**狼人化**(戰友團內圈獸血,獸形變身)、**斯庫瑪/月糖成癮**(亢奮↔戒斷天平,艾爾斯維爾)
-- **領主政治 / 城戰**:謁見 → 委託 → 武士冊封;圍城 + 破城 + 收稅 + 招兵買馬;**陣營動態大事件**
-
-### 系統與打磨
-- **事件引擎**、**成就系統**、**反 min-max 經濟**(practice 成本)、**Web 版**(原生渲染、可點互動)
-
-## 重要檔案
-- 進入點/主迴圈:`tesrpg/main.py`;狀態/存檔:`tesrpg/state.py`;角色:`tesrpg/models/character.py`
-- 規則:`tesrpg/formulas.py` + `tesrpg/systems/*.py`(combat/magic/progression/mastery/smithing/vampirism/skooma/politics…)
-- UI:`tesrpg/ui/console.py`(rich)+ `tesrpg/web/`(Web)
-- 平衡工具:`sim_assassin.py`;設計/交接:`DESIGN.md`、`handoff.md`
+- 進入點/主迴圈:`tesrpg/main.py`;狀態/存檔:`tesrpg/state.py`;角色:`tesrpg/models/character.py`。
+- 規則:`tesrpg/formulas.py` + `tesrpg/systems/*.py`(combat/magic/progression/mastery/smithing/vampirism/skooma/politics…)。
+- UI:`tesrpg/ui/console.py`(rich)+ `tesrpg/web/`(Web)。平衡工具:`sim_assassin.py`;設計/交接:`DESIGN.md`、`handoff.md`。

@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 tests/run_all.py)",
+      "Bash(PYTHONPATH=. python3 tests/run_all.py)",
+      "Bash(PYTHONPATH=. python3 sim_assassin.py)",
+      "Bash(python3 -m py_compile:*)",
+      "Bash(bash check.sh:*)",
+      "Bash(./check.sh:*)",
+      "Bash(git status)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)"
+    ]
+  }
+}
