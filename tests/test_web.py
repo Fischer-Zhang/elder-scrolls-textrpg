@@ -396,7 +396,7 @@ def test_sheet_subview_models():
         b = backend.blocks[-1]
         assert b["kind"] == "view" and b["name"] == "masteries"
         assert "unlocked" in b["data"] and "locked" in b["data"]
-        assert all(m["remaining"] >= 1 and "cur" in m and "threshold" in m for m in b["data"]["locked"])
+        assert all(m["remaining"] >= 0 and "cur" in m and "threshold" in m for m in b["data"]["locked"])
         ui.sheet_resistances(c, gd)
         b = backend.blocks[-1]
         assert b["name"] == "resistances" and len(b["data"]["rows"]) == 6

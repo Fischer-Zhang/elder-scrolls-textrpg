@@ -883,12 +883,31 @@ def test_mercantile_and_intimidate():
 
 
 # --- 廣度 pass:17 薄技能各 +1 節點 + 4 新 kind + 2 getter 微修 -------------------
-def test_breadth_all_skills_have_two_plus_nodes():
-    """廣度:全 23 技能各 ≥2 節點(sneak 為 4;補頂點 pass 後 14 技能升至 3)。"""
+def test_breadth_all_skills_have_full_ladder():
+    """補齊階梯:全 23 技能各 4 節點(25/50/75/100);共 92 節點。"""
     from collections import Counter
     gd = get_gamedata()
-    cnt = Counter(n["skill"] for n in mastery._nodes(gd))
-    assert len(cnt) == 23 and all(v >= 2 for v in cnt.values()) and cnt["sneak"] == 4
+    nodes = mastery._nodes(gd)
+    cnt = Counter(n["skill"] for n in nodes)
+    assert len(cnt) == 23 and all(v == 4 for v in cnt.values())
+    assert len(nodes) == 92
+    # 每技能門檻恰為 {25,50,75,100}
+    thr = {}
+    for n in nodes:
+        thr.setdefault(n["skill"], set()).add(n["threshold"])
+    assert all(t == {25, 50, 75, 100} for t in thr.values())
+
+
+def test_batch3_all_25_are_single_auto_grant_no_dead():
+    """22 個新 25 節點皆單一 perk(自動授予退化節點),無死 perk。"""
+    gd = get_gamedata()
+    t25 = [n for n in mastery._nodes(gd) if n["threshold"] == 25]
+    assert len(t25) == 23                                    # sneak + 22
+    assert all(len(mastery._choosable_options(n)) == 1 for n in t25)   # 全單一 → 自動授予
+    defids = {o["opt_id"] for o in mastery._defs(gd)}
+    for n in t25:
+        for o in n["options"]:
+            assert o["opt_id"] in defids, f"死 perk {n['id']} {o['opt_id']}"
 
 
 # --- 補頂點 pass(Batch 1):14 個 100 級 capstone ---------------------------
@@ -898,12 +917,11 @@ _CAP14 = ["armorer", "athletics", "block", "hand_to_hand", "heavy_armor", "smith
 
 
 def test_batch1_capstones_present_and_no_dead_kind():
-    """原封頂 75 的 14 技能各補 100 級節點(現 3 節點);所有 100 選項 kind 皆已實作(無死 perk)。"""
-    from collections import Counter
+    """原封頂 75 的 14 技能各補 100 級 capstone 節點;所有 100 選項 kind 皆已實作(無死 perk)。"""
     gd = get_gamedata()
-    cnt = Counter(n["skill"] for n in mastery._nodes(gd))
+    ids = {n["id"] for n in mastery._nodes(gd)}
     for s in _CAP14:
-        assert cnt[s] == 3, f"{s} 應有 50/75/100 三節點,實 {cnt[s]}"
+        assert f"{s}_100" in ids, f"{s} 缺 100 級 capstone"
     defids = {o["opt_id"] for o in mastery._defs(gd)}      # 僅白名單 kind 入 _defs
     for n in mastery._nodes(gd):
         if n["threshold"] == 100:
@@ -1163,7 +1181,13 @@ def run():
     test_scout_prep_and_recon()
     test_has_recon_perk()
     test_security_pick_no_break()
-    test_breadth_all_skills_have_two_plus_nodes()
+    test_breadth_all_skills_have_full_ladder()
+    test_batch1_capstones_present_and_no_dead_kind()
+    test_batch1_same_source_aggregation_no_shadow()
+    test_batch1_evasion_bonus_capped()
+    test_batch1_capstones_gated_by_base_skill()
+    test_batch2_gapfills_present_and_aggregate()
+    test_batch3_all_25_are_single_auto_grant_no_dead()
     test_breadth_new_nodes_reachable_and_gated()
     test_combat_repair_getter_and_apply()
     test_flee_bonus_getter_and_try_flee()

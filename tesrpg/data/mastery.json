@@ -531,5 +531,94 @@
       "desc": "秘法漸熟:秘術(結界/驅散/擒魂)施法省魔 15%(更頻繁可用)。"},
      {"opt_id": "attuned_will", "name": "心法相契", "kind": "attr_fortify", "attr": {"willpower": 4},
       "desc": "秘法磨礪心志(意志 +4 → 魔力回復/抗心智提升)。"}
+   ]},
+
+  {"id": "armorer_25", "skill": "armorer", "threshold": 25, "options": [
+     {"opt_id": "field_repair_basics", "name": "野修入門", "kind": "repair_floor", "floor": 75.0,
+      "desc": "略通保養之道:即便在荒野自修,也能修到七成五(野修下限 75%;早早便能在外維持武具,與其他修理下限取高者)。"}
+   ]},
+  {"id": "athletics_25", "skill": "athletics", "threshold": 25, "options": [
+     {"opt_id": "light_step", "name": "健步輕身", "kind": "evasion_bonus", "evasion_bonus": 0.02,
+      "desc": "步法漸輕,挪移更俐落,敵人命中你的機率 −2%(多源相加,夾總上限)。"}
+   ]},
+  {"id": "blade_25", "skill": "blade", "threshold": 25, "options": [
+     {"opt_id": "blade_basics", "name": "持劍入門", "kind": "weapon_mod", "target": "blade", "hit": 0.02,
+      "desc": "握劍漸穩,出手更準(刀劍命中 +2%,與其他刀劍流派相加)。"}
+   ]},
+  {"id": "block_25", "skill": "block", "threshold": 25, "options": [
+     {"opt_id": "shield_basics", "name": "持盾入門", "kind": "passive_armor", "armor_bonus": 5,
+      "desc": "略通舉盾撐架之法(被動護甲 +5,與其他護甲來源相加)。"}
+   ]},
+  {"id": "blunt_25", "skill": "blunt", "threshold": 25, "options": [
+     {"opt_id": "blunt_basics", "name": "持錘入門", "kind": "weapon_mod", "target": "blunt", "pen": 0.03,
+      "desc": "揮錘漸沉,略能破甲(鈍器額外無視 3% 護甲,與其他鈍器流派相加)。"}
+   ]},
+  {"id": "hand_to_hand_25", "skill": "hand_to_hand", "threshold": 25, "options": [
+     {"opt_id": "fist_basics", "name": "拳腳入門", "kind": "weapon_mod", "target": "hand_to_hand", "power": 0.05,
+      "desc": "略通拳腳發勁,徒手傷害 +5%(與其他徒手流派相加)。"}
+   ]},
+  {"id": "heavy_armor_25", "skill": "heavy_armor", "threshold": 25, "options": [
+     {"opt_id": "heavy_basics", "name": "重甲入門", "kind": "passive_armor", "armor_bonus": 6,
+      "desc": "略通負甲行止,厚甲護身更實(被動護甲 +6)。"}
+   ]},
+  {"id": "smithing_25", "skill": "smithing", "threshold": 25, "options": [
+     {"opt_id": "thrifty_basics", "name": "用料入門", "kind": "temper_cost_free", "free_chance": 0.10,
+      "desc": "略懂節省材料:淬鍊時 10% 機率不消耗錠材(多源取最高)。"}
+   ]},
+  {"id": "alchemy_25", "skill": "alchemy", "threshold": 25, "options": [
+     {"opt_id": "poison_basics", "name": "塗毒入門", "kind": "poison_charge_bonus", "charge_bonus": 1,
+      "desc": "略通塗毒之法:武器塗毒可多用 1 次(多源相加)。"}
+   ]},
+  {"id": "alteration_25", "skill": "alteration", "threshold": 25, "options": [
+     {"opt_id": "alt_basics", "name": "變化入門", "kind": "spell_mod", "school": "alteration", "cost_factor": 0.92,
+      "desc": "粗通變化法理:變化術施法省魔 8%(與其他省魔相乘)。"}
+   ]},
+  {"id": "conjuration_25", "skill": "conjuration", "threshold": 25, "options": [
+     {"opt_id": "conj_basics", "name": "召喚入門", "kind": "spell_mod", "school": "conjuration", "cost_factor": 0.92,
+      "desc": "粗通召喚法理:召喚術施法省魔 8%(與其他省魔相乘)。"}
+   ]},
+  {"id": "destruction_25", "skill": "destruction", "threshold": 25, "options": [
+     {"opt_id": "dest_basics", "name": "毀滅入門", "kind": "spell_mod", "school": "destruction", "cost_factor": 0.92,
+      "desc": "粗通毀滅法理:毀滅術施法省魔 8%(與其他省魔相乘)。"}
+   ]},
+  {"id": "illusion_25", "skill": "illusion", "threshold": 25, "options": [
+     {"opt_id": "illu_basics", "name": "幻術入門", "kind": "spell_mod", "school": "illusion", "cost_factor": 0.92,
+      "desc": "粗通幻術法理:幻術施法省魔 8%(與其他省魔相乘)。"}
+   ]},
+  {"id": "mysticism_25", "skill": "mysticism", "threshold": 25, "options": [
+     {"opt_id": "myst_basics", "name": "秘法入門", "kind": "spell_mod", "school": "mysticism", "cost_factor": 0.92,
+      "desc": "粗通秘法法理:秘術施法省魔 8%(與其他省魔相乘)。"}
+   ]},
+  {"id": "restoration_25", "skill": "restoration", "threshold": 25, "options": [
+     {"opt_id": "resto_basics", "name": "復原入門", "kind": "spell_mod", "school": "restoration", "cost_factor": 0.92,
+      "desc": "粗通復原法理:治療/援護術施法省魔 8%(與其他省魔相乘)。"}
+   ]},
+  {"id": "acrobatics_25", "skill": "acrobatics", "threshold": 25, "options": [
+     {"opt_id": "tumble_basics", "name": "翻滾入門", "kind": "evasion_bonus", "evasion_bonus": 0.02,
+      "desc": "略通翻滾卸勁,身形更難捉摸,敵人命中你的機率 −2%(多源相加,夾總上限)。"}
+   ]},
+  {"id": "light_armor_25", "skill": "light_armor", "threshold": 25, "options": [
+     {"opt_id": "light_basics", "name": "輕甲入門", "kind": "passive_armor", "armor_bonus": 4,
+      "desc": "略通輕甲穿著,柔革貼身卸力(被動護甲 +4)。"}
+   ]},
+  {"id": "marksman_25", "skill": "marksman", "threshold": 25, "options": [
+     {"opt_id": "bow_basics", "name": "弓術入門", "kind": "weapon_mod", "target": "marksman", "hit": 0.02,
+      "desc": "持弓漸穩,瞄準更準(弓弩命中 +2%,與其他射術流派相加)。"}
+   ]},
+  {"id": "mercantile_25", "skill": "mercantile", "threshold": 25, "options": [
+     {"opt_id": "haggle_basics", "name": "議價入門", "kind": "merchant_bonus", "disposition_bonus": 0.03,
+      "desc": "略通討價還價,買賣稍占便宜(議價 +0.03,與各議價來源相加)。"}
+   ]},
+  {"id": "scout_25", "skill": "scout", "threshold": 25, "options": [
+     {"opt_id": "recon_basics", "name": "偵查入門", "kind": "recon_reveal_floor", "scout_floor": 25,
+      "desc": "略通察敵之法:接戰前可粗看獵物血量/護甲(視同偵查 25;多源取最高)。"}
+   ]},
+  {"id": "security_25", "skill": "security", "threshold": 25, "options": [
+     {"opt_id": "lockpick_basics", "name": "撬鎖入門", "kind": "lock_floor", "floor": 0.10,
+      "desc": "略通撬鎖之法:再生的鎖也有一成把握(撬鎖成功率下限 10%;多源取最高)。"}
+   ]},
+  {"id": "speechcraft_25", "skill": "speechcraft", "threshold": 25, "options": [
+     {"opt_id": "speech_basics", "name": "口才入門", "kind": "merchant_bonus", "disposition_bonus": 0.03,
+      "desc": "略通言談之道,買賣稍占便宜(議價 +0.03,與各議價來源相加)。"}
    ]}
 ]
