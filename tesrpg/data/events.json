@@ -454,5 +454,496 @@
       {"text": "收下開鎖器", "effects": [{"type": "item", "item": "lockpick", "qty": 2}, {"type": "message", "text": "你拾起了 2 根開鎖器。"}]},
       {"text": "讓逝者安息,不取", "effects": []}
     ]
+  },
+  "hammerfell_sword_singer": {
+    "weight": 3,
+    "trigger": {
+      "contexts": ["travel", "explore"],
+      "provinces": ["漢默法爾"]
+    },
+    "title": "沙丘上的劍歌者",
+    "text": "黃沙的脊線上,一名赤膊的紅衛人盤膝而坐,赤足陷在滾燙的沙裡。他不持鋼鐵,卻在掌心凝起一道泛著幽光的靈刃 —— 那是劍歌者以心魂鑄成的謝海。他睜眼望向你:「外鄉人,劍道無捷徑。你想看看真正的刃,還是只想趕路?」",
+    "options": [
+      {
+        "text": "請他指點刀法(刀劍)",
+        "check": {
+          "skill": "blade",
+          "difficulty": 35,
+          "success": {
+            "text": "你依他的口訣調勻呼吸、沉肩墜肘,一式劈下竟與沙風同調。劍歌者頷首:「約凱的血,終究認得約凱的劍。」",
+            "effects": [
+              {
+                "type": "skill_xp",
+                "skill": "blade",
+                "amount": 0.8
+              },
+              {
+                "type": "message",
+                "text": "你領會了一絲靈刃古術的皮毛。"
+              }
+            ]
+          },
+          "failure": {
+            "text": "你揮劍如劈柴,靈刃在你眼前驟然潰散。劍歌者搖頭:「心未靜,刃便鈍。回去再悟。」",
+            "effects": [
+              {
+                "type": "skill_xp",
+                "skill": "blade",
+                "amount": 0.2
+              }
+            ]
+          }
+        }
+      },
+      {
+        "text": "奉上敬意(贈 25 金)",
+        "requirements": {
+          "gold_min": 25
+        },
+        "effects": [
+          {
+            "type": "gold",
+            "amount": -25
+          },
+          {
+            "type": "fame",
+            "amount": 2
+          },
+          {
+            "type": "message",
+            "text": "劍歌者收下金幣,以靈刃在沙上為你劃下一道祝福的劍痕。「願塔瓦的風,送你穿過沙海。」"
+          }
+        ]
+      },
+      {
+        "text": "不打擾,繼續趕路",
+        "effects": [
+          {
+            "type": "message",
+            "text": "你向他抱拳致意,留他獨自與黃沙、與心中的劍對坐。"
+          }
+        ]
+      }
+    ]
+  },
+  "hammerfell_crowns_forebears_feud": {
+    "weight": 2,
+    "trigger": {
+      "contexts": ["travel"],
+      "provinces": ["漢默法爾"]
+    },
+    "title": "綠洲畔的口角",
+    "text": "綠洲水井旁,一名王冠派的森塔巡騎與一名先鋒派的蓋蘭商隊頭領吵得不可開交 —— 一個罵對方向帝國卑躬屈膝,一個譏對方抱著沉沒的約庫達古制不放。水井邊的人群屏息圍觀,手都按上了彎刀。",
+    "options": [
+      {
+        "text": "出言調停(口才)",
+        "check": {
+          "skill": "speechcraft",
+          "difficulty": 40,
+          "success": {
+            "text": "你提醒兩人:沙海不分王冠先鋒,塔瓦的活水養活的是所有約凱後裔。兩人悻悻收刀,圍觀者向你投來讚許的目光。",
+            "effects": [
+              {
+                "type": "skill_xp",
+                "skill": "speechcraft",
+                "amount": 0.6
+              },
+              {
+                "type": "fame",
+                "amount": 3
+              }
+            ]
+          },
+          "failure": {
+            "text": "你話沒說完,兩派人馬已嫌你多管閒事,一齊把你推搡開,差點挨上一拳。",
+            "effects": [
+              {
+                "type": "message",
+                "text": "你灰頭土臉地退到一旁,任他們繼續爭執。"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "text": "袖手旁觀,看個熱鬧",
+        "effects": [
+          {
+            "type": "message",
+            "text": "你倚在棕櫚樹下,看兩派人罵到口乾舌燥,最終各自摔袖而去,終究沒見血。"
+          }
+        ]
+      }
+    ]
+  },
+  "high_rock_witch_coven": {
+    "weight": 3,
+    "trigger": {
+      "contexts": ["travel"],
+      "provinces": ["高岩"]
+    },
+    "title": "迷霧中的篝火",
+    "text": "荒原的霧靄裡浮起一圈青藍火光,幾名披斗篷的格倫莫利女巫圍著大鍋低吟。她們抬眼望向你,鍋中翻騰著不知名的東西——是要繞道,還是探個究竟?",
+    "options": [
+      {
+        "text": "悄悄潛近,偷聽她們的盤算",
+        "check": {
+          "skill": "sneak",
+          "difficulty": 30,
+          "success": {
+            "text": "你伏在石楠叢後,聽她們議定下一處下蠱的村莊——這情報在坎洛恩公爵那兒值幾枚金幣。你悄然退去,順手摸走一袋遺落的草藥。",
+            "effects": [
+              {
+                "type": "item",
+                "item": "nightshade",
+                "qty": 2
+              },
+              {
+                "type": "gold",
+                "amount": 40
+              }
+            ]
+          },
+          "failure": {
+            "text": "一根枯枝在你腳下脆響。女巫們驟然轉身,尖嘯著朝你撲來!",
+            "effects": [
+              {
+                "type": "combat",
+                "creature": "moor_witch"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "text": "亮出武器,驅散這巫團",
+        "effects": [
+          {
+            "type": "combat",
+            "creature": "moor_witch"
+          }
+        ]
+      },
+      {
+        "text": "繞開霧中的火光,趕路要緊",
+        "effects": [
+          {
+            "type": "message",
+            "text": "你壓低兜帽,從荒原邊緣繞行。身後的青藍火光漸漸沒入霧裡,女巫的低吟猶在風中縈繞。"
+          }
+        ]
+      }
+    ]
+  },
+  "high_rock_feuding_heralds": {
+    "weight": 2,
+    "trigger": {
+      "contexts": ["explore"],
+      "provinces": ["高岩"]
+    },
+    "title": "世仇的傳令官",
+    "text": "兩名分屬匕落與坎洛恩的傳令官在岔路上狹路相逢,為了一面褪色的狼徽戰旗爭得面紅耳赤,眼看就要拔劍。一名認出你像是個外鄉劍客,高聲喚你來評理。",
+    "options": [
+      {
+        "text": "以言辭斡旋,勸兩家息怒",
+        "check": {
+          "skill": "speechcraft",
+          "difficulty": 35,
+          "success": {
+            "text": "你引古老的盟誓與灣岸的舊例,將百年世仇說成兩家共禦山中獸人的同氣。傳令官們悻悻收劍,各塞給你一筆酬謝。",
+            "effects": [
+              {
+                "type": "gold",
+                "amount": 80
+              },
+              {
+                "type": "fame",
+                "amount": 3
+              }
+            ]
+          },
+          "failure": {
+            "text": "你一句話戳中了狼徽世家的舊恨,兩名傳令官反倒同仇敵愾,罵你多管閒事,揚長而去——只留你獨自在風裡。",
+            "effects": [
+              {
+                "type": "message",
+                "text": "高岩諸王的世仇深似海,豈是一個外鄉人三言兩語能解。"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "text": "假稱是坎洛恩公爵的人,替狼徽撐腰",
+        "effects": [
+          {
+            "type": "fame",
+            "amount": 2
+          },
+          {
+            "type": "infamy",
+            "amount": 1
+          },
+          {
+            "type": "message",
+            "text": "匕落的傳令官冷哼一聲拂袖而去;坎洛恩那名卻拱手稱謝,記下了你這張臉。"
+          }
+        ]
+      },
+      {
+        "text": "對這群王的爭吵置之不理",
+        "effects": [
+          {
+            "type": "message",
+            "text": "你聳聳肩,任他們去吵。割據諸王的恩怨，與一個流亡者何干。"
+          }
+        ]
+      }
+    ]
+  },
+  "valenwood_green_pact_feast": {
+    "weight": 3,
+    "trigger": {
+      "contexts": ["travel"],
+      "provinces": ["瓦倫森林"]
+    },
+    "title": "綠約食敵儀",
+    "text": "一隊波斯莫獵手攔住去路,圍著火塘分食方才獵殺的強盜 —— 綠約戒律不許他們傷草木為食,凡所殺之敵皆須食盡。獵長將一塊血淋淋的肉舉向你:『循伊弗雷的法,與我們共食此敵,還是你嫌綠約之民的桌不潔?』",
+    "options": [
+      {
+        "text": "依綠約共食,以示敬意",
+        "check": {
+          "skill": "speechcraft",
+          "difficulty": 35,
+          "success": {
+            "text": "你按下噁心,如儀嚥下。獵手們齊聲低吟伊弗雷之名,認你為林中同行之人,贈你獵物毛皮為記。",
+            "effects": [
+              {
+                "type": "fame",
+                "amount": 4
+              },
+              {
+                "type": "item",
+                "item": "wolf_pelt",
+                "qty": 2
+              }
+            ]
+          },
+          "failure": {
+            "text": "你乾嘔出聲,觸怒了火塘邊的獵族。他們罵你是壞了戒律的外邦人,啐了一口便沒入林影。",
+            "effects": [
+              {
+                "type": "infamy",
+                "amount": 2
+              }
+            ]
+          }
+        }
+      },
+      {
+        "text": "婉拒,但奉上酬金致歉",
+        "requirements": {
+          "gold_min": 40
+        },
+        "effects": [
+          {
+            "type": "gold",
+            "amount": -40
+          },
+          {
+            "type": "message",
+            "text": "獵長收下銀幣,未再相逼:『外邦人不識綠約,銀幣也算一份敬。』獵族讓開了路。"
+          }
+        ]
+      },
+      {
+        "text": "斥其茹毛飲血,拔劍相向",
+        "effects": [
+          {
+            "type": "infamy",
+            "amount": 3
+          },
+          {
+            "type": "combat",
+            "creature": "jungle_imga"
+          }
+        ]
+      }
+    ]
+  },
+  "valenwood_walking_city": {
+    "weight": 2,
+    "trigger": {
+      "contexts": ["explore"],
+      "provinces": ["瓦倫森林"]
+    },
+    "title": "行走王城的足音",
+    "text": "腳下的大地驟然震顫,千年葛拉特巨橡正拔根遷徙 —— 隨季節而行的法林斯提王城正從林海深處踏過。樹根掀開的腐土間,露出一截被覆埋已久、鑲著月長石的綠約古匣。",
+    "options": [
+      {
+        "text": "趁巨根抬起的瞬間竄入取匣",
+        "check": {
+          "skill": "acrobatics",
+          "difficulty": 40,
+          "success": {
+            "text": "你踩著翻湧的樹根騰挪而過,在巨橡再度落地前奪出古匣,內藏綠約獵族的陳年儲備。",
+            "effects": [
+              {
+                "type": "item",
+                "item": "moonstone_ingot",
+                "qty": 1
+              },
+              {
+                "type": "gold",
+                "amount": 90
+              }
+            ]
+          },
+          "failure": {
+            "text": "你誤判了巨根的節奏,被掀飛的腐土與藤蔓狠狠拍落,狼狽滾出震塌的窪地。",
+            "effects": [
+              {
+                "type": "message",
+                "text": "你撞在虬結的樹瘤上,悶哼著爬起,空手而歸。"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "text": "退開,目送王城踏入林海",
+        "effects": [
+          {
+            "type": "message",
+            "text": "你伏低身子，看那株承載整座王城的巨橡緩緩遠去，足音如雷漸隱於翠幕。能親見行走的法林斯提，已是綠約之地少有的奇遇。"
+          },
+          {
+            "type": "fame",
+            "amount": 1
+          }
+        ]
+      }
+    ]
+  },
+  "elsweyr_two_moons_dance": {
+    "weight": 3,
+    "trigger": {
+      "contexts": ["travel"],
+      "provinces": ["艾爾斯維爾"]
+    },
+    "title": "兩月之舞",
+    "text": "瑪瑟與瑟昆達同懸天心,糖田鎮的卡傑特舞者在月光下擺尾起舞,糖蜜的甜香混著斯庫瑪的青煙在涼亭間流轉。一名銀鈴繞腕的舞姬向你伸出爪,邀你共赴雙月之舞。",
+    "options": [
+      {
+        "text": "依雙月的節律共舞(雜技)",
+        "check": {
+          "skill": "acrobatics",
+          "difficulty": 35,
+          "success": {
+            "text": "你踩準了瑪瑟與瑟昆達交錯的拍子,舞姬笑著為你戴上糖晶串成的環。圍觀的虎人為這名異鄉客喝采。",
+            "effects": [
+              {
+                "type": "fame",
+                "amount": 3
+              },
+              {
+                "type": "skill_xp",
+                "skill": "acrobatics",
+                "amount": 0.6
+              }
+            ]
+          },
+          "failure": {
+            "text": "你踩亂了雙月的拍子,絆翻了涼亭的糖盤。舞者們掩嘴而笑,你只得訕訕退場。",
+            "effects": [
+              {
+                "type": "message",
+                "text": "兩月之舞講究與雙月共息,異鄉人的腳步終究太僵。"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "text": "掏銀幣換一管月糖菸(花 30 金)",
+        "requirements": {
+          "gold_min": 30
+        },
+        "effects": [
+          {
+            "type": "gold",
+            "amount": -30
+          },
+          {
+            "type": "item",
+            "item": "moon_sugar",
+            "qty": 1
+          },
+          {
+            "type": "message",
+            "text": "舞姬遞來一小袋月糖,甜香裡你也染上了幾分佩萊泰恩的慵懶。"
+          }
+        ]
+      },
+      {
+        "text": "婉謝,趕你的路",
+        "effects": [
+          {
+            "type": "message",
+            "text": "你向舞者頷首致意,迎著雙月繼續前行。身後的糖香與鈴聲漸漸淡去。"
+          }
+        ]
+      }
+    ]
+  },
+  "elsweyr_dro_mathra_whisper": {
+    "weight": 2,
+    "trigger": {
+      "contexts": ["explore"],
+      "provinces": ["艾爾斯維爾"]
+    },
+    "title": "瑟拉斯·瑪斯拉的低語",
+    "text": "草原的乾風忽然轉冷,雙月被烏雲遮去半輪。蔗田陰影裡,一道被詛咒的瑟拉斯·瑪斯拉殘影緩緩凝形,空洞的眼窩低語著要奪走你的月之經緯。",
+    "options": [
+      {
+        "text": "斬碎這道被詛咒的暗影",
+        "effects": [
+          {
+            "type": "combat",
+            "creature": "dro_mathra_shade"
+          }
+        ]
+      },
+      {
+        "text": "默誦迦哈傑月之經緯驅散它(秘法)",
+        "check": {
+          "skill": "mysticism",
+          "difficulty": 45,
+          "success": {
+            "text": "你默誦起讀月者的真言,雙月的光暈重新刺破烏雲。暗影發出一聲嘶鳴,化作糖灰散入風中。",
+            "effects": [
+              {
+                "type": "skill_xp",
+                "skill": "mysticism",
+                "amount": 0.8
+              },
+              {
+                "type": "fame",
+                "amount": 2
+              }
+            ]
+          },
+          "failure": {
+            "text": "你誦錯了經緯的次第,暗影趁隙撲上,冰冷的爪掠過你的胸膛才悻悻退去。",
+            "effects": [
+              {
+                "type": "damage",
+                "amount": 8
+              }
+            ]
+          }
+        }
+      }
+    ]
   }
 }

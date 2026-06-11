@@ -376,5 +376,61 @@
     "bloc_label": "托瓦爾瑪恩",
     "blurb": "托瓦爾世代相承的『瑪恩』,依瑪瑟與瑟昆達雙月為新生虎人定下血脈的讀月者尊主。他不掌兵戈,卻以雙月的意志與月糖聖典的威望凝聚散落草原的諸部,連安納奎那的戰族酋長也敬其三分;亂世之中,他只願守住迦哈傑月之經緯不被暗潮與走私之毒玷污。",
     "stance": "neutral"
+  },
+  "tava_oasis": {
+    "name": "賈邁勒·拉哈娜",
+    "title": "綠洲之主",
+    "race": "redguard",
+    "garrison": 120,
+    "population": 240,
+    "bloc": "forebears",
+    "bloc_label": "先鋒派",
+    "blurb": "塔瓦綠洲的先鋒派之主,劍歌庭出身的女劍師。紅寶石王座既空,她不慕森塔的孤傲、也不附帝國的舊誼,只認準沙海間這道養活百族商隊的活水。她以靈刃古術鎮守綠洲,讓王冠派的劍與先鋒派的駝鈴在塔瓦的庇蔭下並肩而行。",
+    "stance": "independent",
+    "housecarl": "sellsword",
+    "thane_gift": "glass_dagger",
+    "quests": ["ruler_tava_oasis1", "ruler_tava_oasis2"]
+  },
+  "camlorn": {
+    "name": "費德里克·狼徽",
+    "title": "公爵",
+    "race": "breton",
+    "garrison": 140,
+    "population": 240,
+    "bloc": "camlorn_duchy",
+    "bloc_label": "坎洛恩公國",
+    "blurb": "坎洛恩的布雷頓公爵,狼徽世家的剛硬家主。紅寶石王座既空,他既不向匕落的高斯里德低頭——兩家的世仇可上溯數百年——也無意與威岩的商賈攀親,只憑羅斯加山口的獸人傭兵與古老的籬笆巫術,在霧鎖的西陲守住坎洛恩的自立旗號,提防著山中下來的劫掠與荒原上的女巫結社。",
+    "stance": "independent",
+    "housecarl": "shieldmaiden",
+    "thane_gift": "elven_sword",
+    "quests": ["ruler_camlorn1", "ruler_camlorn2"]
+  },
+  "vinedusk_reach": {
+    "name": "夙·荊牙",
+    "title": "獵長",
+    "race": "bosmer",
+    "garrison": 110,
+    "population": 190,
+    "bloc": "wild_hunt_clans",
+    "bloc_label": "狂獵諸族",
+    "blurb": "藤暮樹城的波斯莫獵長,綠約最虔之徒。她不識帝國律令,只認伊弗雷的森林與狂獵的古老誓約;帝統斷絕的消息傳到林間時,連卡莫蘭的王城遷徙她亦冷眼旁觀,只率葛拉特冠頂的獵族循獸跡而居,以血與儀式守住綠約之民最後的野性。",
+    "stance": "independent",
+    "housecarl": "shieldmaiden",
+    "thane_gift": "elven_bow",
+    "quests": ["ruler_vinedusk1", "ruler_vinedusk2"]
+  },
+  "alabaster_cane": {
+    "name": "達吉爾·甜爪",
+    "title": "糖田督主",
+    "race": "khajiit",
+    "garrison": 95,
+    "population": 220,
+    "bloc": "pellitine_growers",
+    "bloc_label": "佩萊泰恩糖閥",
+    "blurb": "白堊糖鎮的糖田督主,佩萊泰恩南境蔗田世家的當代主人。大空位的亂世他樂得作壁上觀——既笑瑞門戰族的彎刀太硬、又嫌森查爾港閥的算盤太貪,只願守著糖蜜的甜香與兩月之舞的慵懶。他放任月糖在涼亭間流轉,卻謹守一條祖訓:絕不讓糖晶煉成的斯庫瑪之毒,壞了這片享樂河灣的閒適。",
+    "stance": "neutral",
+    "housecarl": "ranger",
+    "thane_gift": "glass_dagger",
+    "quests": ["ruler_alabaster1", "ruler_alabaster2"]
   }
 }

@@ -1407,5 +1407,145 @@
     "reward": {"gold": 240, "fame": 14, "bond": {"rashid": 15}},
     "turn_in": "auto",
     "text": "拉希德握緊刀柄:「我家族的傳家之刃,連同我的清白,一同失落在沃倫費爾的矮人遺城。陪我取回它 —— 讓劍歌者之名再次無愧。」"
+  },
+  "ruler_tava_oasis1": {
+    "name": "領主委託:護住活水",
+    "faction": null,
+    "rank": null,
+    "source": "ruler",
+    "objective": {
+      "type": "kill",
+      "creature": "dwarven_spider",
+      "count": 6
+    },
+    "reward": {
+      "gold": 150,
+      "fame": 6,
+      "standing": 1
+    },
+    "turn_in": "auto",
+    "text": "綠洲之主賈邁勒按劍而立:「沃倫菲爾的黃銅蛛群順著地下水脈爬到了塔瓦,夜夜在棕櫚林裡咔嗒作響,商隊的駱駝都不敢飲水。獵殺六隻矮人機關蛛 —— 還我綠洲一夜安寧,塔瓦會記住你的劍。」"
+  },
+  "ruler_tava_oasis2": {
+    "name": "領主委託:清剿沃倫菲爾",
+    "faction": null,
+    "rank": null,
+    "source": "ruler",
+    "objective": {
+      "type": "clear_dungeon",
+      "dungeon": "volenfell"
+    },
+    "reward": {
+      "gold": 250,
+      "fame": 10,
+      "standing": 2
+    },
+    "turn_in": "auto",
+    "text": "綠洲之主賈邁勒解下腰間彎刀:「沃倫菲爾的黃銅心臟仍在跳動,矮人造的不眠機關正順著地脈逼近塔瓦的活水。深入那座遺城,把城底的百夫長徹底擺平 —— 守住活水,便是守住約凱遺民的命脈。」"
+  },
+  "ruler_camlorn1": {
+    "name": "領主委託:荒原女巫之患",
+    "faction": null,
+    "rank": null,
+    "source": "ruler",
+    "objective": {
+      "type": "kill",
+      "creature": "moor_witch",
+      "count": 6
+    },
+    "reward": {
+      "gold": 150,
+      "fame": 6,
+      "standing": 1
+    },
+    "turn_in": "auto",
+    "text": "費德里克公爵負手立於狼徽戰旗下:「格倫莫利巫團的女巫又從荒原潛入,在城下的村莊裡下蠱、偷孩子。替坎洛恩斬除六名女巫,狼徽世家不會忘了你的劍。」"
+  },
+  "ruler_camlorn2": {
+    "name": "領主委託:清剿海妖岩巫窟",
+    "faction": null,
+    "rank": null,
+    "source": "ruler",
+    "objective": {
+      "type": "clear_dungeon",
+      "dungeon": "hag_rock"
+    },
+    "reward": {
+      "gold": 250,
+      "fame": 10,
+      "standing": 2
+    },
+    "turn_in": "auto",
+    "text": "費德里克公爵的指節按在狼徽戰旗的旗桿上:「海妖岩深處,貝爾達瑪的老巫聚成了氣候,連我的稅吏都不敢踏進那片荒原。蕩平巫窟、斬斷她們的蠱術之源 —— 坎洛恩的城牆要的不是符紙,是膽識。」"
+  },
+  "ruler_vinedusk1": {
+    "name": "領主委託:逐絞葛拉特",
+    "faction": null,
+    "rank": null,
+    "source": "ruler",
+    "objective": {
+      "type": "kill",
+      "creature": "strangler_vine",
+      "count": 6
+    },
+    "reward": {
+      "gold": 140,
+      "fame": 5,
+      "standing": 1
+    },
+    "turn_in": "auto",
+    "text": "獵長夙·荊牙以骨刀指向巨橡根隙:「絞藤已盤上聖橡的根脈,綠約不許我們斷它的莖,卻准我們獵它的命。斬六株絞葛拉特,讓伊弗雷的低語重歸清明。」"
+  },
+  "ruler_vinedusk2": {
+    "name": "領主委託:清剿絞藤蛛巢",
+    "faction": null,
+    "rank": null,
+    "source": "ruler",
+    "objective": {
+      "type": "clear_dungeon",
+      "dungeon": "spider_grove"
+    },
+    "reward": {
+      "gold": 250,
+      "fame": 10,
+      "standing": 2
+    },
+    "turn_in": "auto",
+    "text": "獵長夙·荊牙以指腹擦過弓弦:「絞藤蛛巢裡的巨蛛違了綠約,織網纏死林中走獸,連狂獵的足跡都被它截斷。循藤而入,把那窩孽蛛清個乾淨 —— 讓葛拉特巨樹下的獵道重新暢通。」"
+  },
+  "ruler_alabaster1": {
+    "name": "領主委託:糖蔗藤患",
+    "faction": null,
+    "rank": null,
+    "source": "ruler",
+    "objective": {
+      "type": "kill",
+      "creature": "sugar_vine",
+      "count": 7
+    },
+    "reward": {
+      "gold": 130,
+      "fame": 5,
+      "standing": 1
+    },
+    "turn_in": "auto",
+    "text": "糖田督主達吉爾·甜爪懶洋洋地靠在涼亭軟墊上,呷了口糖蜜:「貪甜的糖蔗藤纏死了我半畝白堊蔗田,絞得舞者們沒處下腳。清掉七叢,別讓這點麻煩壞了兩月之舞的興致,好嗎?」"
+  },
+  "ruler_alabaster2": {
+    "name": "領主委託:清剿暗月窟",
+    "faction": null,
+    "rank": null,
+    "source": "ruler",
+    "objective": {
+      "type": "clear_dungeon",
+      "dungeon": "dark_moon_grotto"
+    },
+    "reward": {
+      "gold": 250,
+      "fame": 10,
+      "standing": 2
+    },
+    "turn_in": "auto",
+    "text": "糖田督主達吉爾·甜爪甩了甩尾尖:「暗月窟裡的污影越聚越濃,夜裡連森奇虎都繞著糖田走,採糖的工人不敢出門。下窟去,把那些瑟拉斯·瑪斯拉的殘魂驅散 —— 月糖的甜,容不下暗月的陰。」"
   }
 }

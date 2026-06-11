@@ -1265,7 +1265,8 @@
         "dragontail_foothills": 3,
         "sentinel": 3,
         "alikr_desert": 3,
-        "abecean_coast": 4
+        "abecean_coast": 4,
+        "tava_oasis": 3
       }
     },
     "sentinel": {
@@ -1297,7 +1298,8 @@
         "gilane": 3,
         "volenfell": 3,
         "hegathe": 3,
-        "brena_valley": 4
+        "brena_valley": 4,
+        "tava_oasis": 2
       }
     },
     "hegathe": {
@@ -1328,7 +1330,8 @@
       "dungeon": "volenfell",
       "links": {
         "alikr_desert": 3,
-        "hegathe": 4
+        "hegathe": 4,
+        "tava_oasis": 3
       }
     },
     "brena_valley": {
@@ -1358,7 +1361,8 @@
         "wayrest": 3,
         "wrothgar_moor": 2,
         "hag_rock": 4,
-        "bangkorai_pass": 3
+        "bangkorai_pass": 3,
+        "camlorn": 3
       }
     },
     "wayrest": {
@@ -1389,7 +1393,8 @@
       "links": {
         "wayrest": 3,
         "wrothgar_moor": 3,
-        "karthwasten": 2
+        "karthwasten": 2,
+        "camlorn": 4
       }
     },
     "wrothgar_moor": {
@@ -1404,7 +1409,8 @@
         "daggerfall": 2,
         "wayrest": 3,
         "evermore": 3,
-        "hag_rock": 4
+        "hag_rock": 4,
+        "camlorn": 2
       }
     },
     "hag_rock": {
@@ -1461,7 +1467,8 @@
         "strid_vale": 3,
         "haven": 3,
         "graht_forest": 2,
-        "spider_grove": 4
+        "spider_grove": 4,
+        "vinedusk_reach": 2
       }
     },
     "haven": {
@@ -1493,7 +1500,8 @@
       "merchant_stock": ["minor_healing_potion", "healing_potion", "leather_cuirass", "leather_boots", "long_bow", "hunting_bow", "repair_hammer", "monarch_wing", "lavender", "scrib_jelly", "silver_ring", "silver_amulet"],
       "links": {
         "haven": 3,
-        "graht_forest": 3
+        "graht_forest": 3,
+        "vinedusk_reach": 3
       }
     },
     "graht_forest": {
@@ -1508,7 +1516,8 @@
         "falinesti": 2,
         "haven": 3,
         "silvenar": 3,
-        "spider_grove": 4
+        "spider_grove": 4,
+        "vinedusk_reach": 2
       }
     },
     "spider_grove": {
@@ -1582,7 +1591,8 @@
         "rimmen": 3,
         "pellitine_marches": 3,
         "tenmar_forest": 3,
-        "torval": 4
+        "torval": 4,
+        "alabaster_cane": 3
       }
     },
     "torval": {
@@ -1597,7 +1607,8 @@
       "spell_stock": ["minor_heal", "heal", "close_wounds", "renewal", "restore_mind"],
       "links": {
         "tenmar_forest": 3,
-        "senchal": 4
+        "senchal": 4,
+        "alabaster_cane": 4
       }
     },
     "tenmar_forest": {
@@ -1612,7 +1623,8 @@
         "rimmen": 3,
         "senchal": 3,
         "torval": 3,
-        "dark_moon_grotto": 4
+        "dark_moon_grotto": 4,
+        "alabaster_cane": 3
       }
     },
     "dark_moon_grotto": {
@@ -1653,6 +1665,66 @@
       "links": {
         "senchal": 3,
         "haven": 4
+      }
+    },
+    "tava_oasis": {
+      "biome": "desert",
+      "name": "塔瓦綠洲",
+      "province": "漢默法爾",
+      "type": "town",
+      "danger": 0,
+      "desc": "阿利克爾黃沙深處的一泓活水,棕櫚與沙棗環抱著鎏金的水鏡 —— 相傳是空之女神塔瓦引領約凱遺民橫越沙海時所賜的恩典。綠洲畔的劍歌庭裡,赤膊的劍歌者赤足踏沙,默誦著靈刃謝海的古調;商隊的駝鈴與磨劍的霍霍聲,在烈日下交織成這座先鋒商鎮的心跳。",
+      "services": ["inn", "merchant", "trainer", "armorer", "fighters_guild", "task_board"],
+      "merchant_stock": ["healing_potion", "minor_healing_potion", "glass_dagger", "elven_sword", "long_bow", "leather_cuirass", "repair_hammer", "moonstone_ingot", "silver_amulet"],
+      "links": {
+        "alikr_desert": 2,
+        "gilane": 3,
+        "volenfell": 3
+      }
+    },
+    "camlorn": {
+      "biome": "moor",
+      "name": "坎洛恩",
+      "province": "高岩",
+      "type": "town",
+      "danger": 0,
+      "desc": "夾在匕落王畿與羅斯加山脈之間的布雷頓古城,灰岩城牆爬滿苔蘚,鐘樓常年沒入伊利亞克灣捲上的霧氣。城下市集裡布雷頓繡帷與獸人鐵砧的火光並陳,半精靈血統的籬笆巫者在後巷低聲兜售符紙,而與匕落的百年世仇,仍寫在每一面褪色的狼徽戰旗上。",
+      "services": ["inn", "merchant", "armorer", "fighters_guild", "task_board"],
+      "merchant_stock": ["minor_healing_potion", "healing_potion", "repair_hammer", "iron_ingot", "steel_ingot", "bolt_of_cloth", "wolf_pelt", "steel_sword", "long_bow", "leather_cuirass", "iron_shield"],
+      "links": {
+        "daggerfall": 3,
+        "wrothgar_moor": 2,
+        "evermore": 4
+      }
+    },
+    "vinedusk_reach": {
+      "biome": "jungle",
+      "name": "藤暮樹城",
+      "province": "瓦倫森林",
+      "type": "town",
+      "danger": 0,
+      "desc": "盤踞在一株千年葛拉特巨橡冠頂的綠約聚落,屋舍盡是骨、皮、藤與活木所結,絕不鋸斷一枝一葉 —— 綠約戒律在此最為森嚴。獵手循伊弗雷的低語逐獵而居,以儀式食盡所獵之敵,黃昏時整座樹冠染成血藤之色,故名『藤暮』。",
+      "services": ["inn", "merchant", "armorer", "trainer", "fighters_guild", "task_board"],
+      "merchant_stock": ["minor_healing_potion", "healing_potion", "hunting_bow", "long_bow", "elven_bow", "leather_cuirass", "leather_boots", "leather_bracers", "wolf_pelt", "canis_root", "imp_stool", "repair_hammer"],
+      "links": {
+        "falinesti": 2,
+        "graht_forest": 2,
+        "silvenar": 3
+      }
+    },
+    "alabaster_cane": {
+      "biome": "savanna",
+      "name": "白堊糖鎮",
+      "province": "艾爾斯維爾",
+      "type": "town",
+      "danger": 0,
+      "desc": "佩萊泰恩南境慵懶河灣上的糖田鎮,連綿的月糖蔗田在雙月下泛著白堊般的微光。鎮民在糖蜜的甜香裡跳著兩月之舞、躺在涼亭裡吞雲吐霧,既不向瑞門的戰族酋長執戈,也不認森查爾港閥的銀幣戒律——這裡只供奉糖、舞與閒適本身。",
+      "services": ["inn", "merchant", "trainer", "task_board"],
+      "merchant_stock": ["moon_sugar", "scrib_jelly", "red_apple", "wheat", "garlic", "minor_healing_potion", "minor_magicka_potion", "bolt_of_cloth", "silver_ring", "silver_amulet"],
+      "links": {
+        "senchal": 3,
+        "tenmar_forest": 3,
+        "torval": 4
       }
     }
   },
