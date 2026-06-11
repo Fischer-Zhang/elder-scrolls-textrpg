@@ -362,8 +362,11 @@ def has_vanish_relentless(char, gamedata: GameData) -> bool:
 
 
 def approach_bonus(char, gamedata: GameData) -> float:
-    """無聲潛近:提高接戰時搶到開場偷襲的機率(頻率,非倍率)。"""
-    return _param(char, gamedata, "approach_bonus", "approach_bonus", 0.0)
+    """無聲潛近/料敵機先:提高接戰時搶到開場偷襲的機率(頻率,非倍率)。
+    多來源相加(sneak 潛近 + scout 情報);`stealth_approach_chance` 公式自帶 [0.05,0.97] 夾限
+    + >3 敵壓制 → 無需另夾,且永不破偷襲倍率/solo clamp。"""
+    return sum(o.get("approach_bonus", 0.0)
+               for o in _chosen_options_by_kind(char, gamedata, "approach_bonus"))
 
 
 def armor_sneak_relief(char, gamedata: GameData) -> float:
@@ -383,7 +386,7 @@ def recon_reveal_threshold(char, gamedata: GameData) -> int:
 
 
 def recon_scout_floor(char, gamedata: GameData) -> int:
-    """獵手偵察/野外偵知:視同偵查技能的下限(0 = 無)。多來源(marksman_50 + scout_50)取最高。"""
+    """獵手偵察/斥候之眼:視同偵查技能的下限(0 = 無)。多來源(marksman_50 獵手偵察 + scout_25 斥候之眼)取最高。"""
     return int(max((o.get("scout_floor", 0) for o in _chosen_options_by_kind(char, gamedata, "recon_reveal_floor")),
                    default=0))
 

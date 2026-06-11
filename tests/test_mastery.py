@@ -831,21 +831,29 @@ def test_sneak_approach_and_armor_relief():
 
 
 def test_scout_prep_and_recon():
+    """偵查里程碑改「情報→戰力」(原 recon-reveal 對 scout 角色冗餘的死 perk 已重設):
+    備戰 prep / 料敵機先 approach / 臨陣預判 evasion;弱點揭露門檻改由 mercantile 線人耳目提供。"""
+    gd, c = _char(scout=100)
+    mastery.choose(c, gd, "scout_75", "vanguard"); mastery.choose(c, gd, "scout_100", "battle_master")
+    assert mastery.prep_bonus(c, gd) == 2                            # 兩階備戰相加
+    gd, c = _char(scout=100)
+    mastery.choose(c, gd, "scout_50", "intel_strike"); mastery.choose(c, gd, "scout_100", "first_blood")
+    assert abs(mastery.approach_bonus(c, gd) - (0.10 + 0.12)) < 1e-9   # 料敵機先+先聲奪人 approach 多源相加
     gd, c = _char(scout=75)
-    mastery.choose(c, gd, "scout_75", "vanguard")
-    assert mastery.prep_bonus(c, gd) == 1
-    gd2, c2 = _char(scout=75)
-    assert mastery.recon_reveal_threshold(c2, gd2) == 75
-    mastery.choose(c2, gd2, "scout_75", "weakness_read")
-    assert mastery.recon_reveal_threshold(c2, gd2) == 50
+    mastery.choose(c, gd, "scout_75", "preempt")
+    assert mastery.evasion_bonus(c, gd) == 0.04                      # 臨陣預判閃避
+    gd, c = _char(mercantile=75)                                     # 弱點揭露門檻改掛交易·線人耳目
+    assert mastery.recon_reveal_threshold(c, gd) == 75
+    mastery.choose(c, gd, "mercantile_75", "informant")
+    assert mastery.recon_reveal_threshold(c, gd) == 50
 
 
 def test_has_recon_perk():
-    """偵查里程碑(scout 洞察弱點 / marksman 獵手偵察)→ 地城可探明四鄰。"""
+    """地城探明四鄰:任一 recon 里程碑解鎖(scout 斥候之眼 / marksman 獵手偵察 / mercantile 線人耳目)。"""
     gd, c = _char()
     assert not mastery.has_recon_perk(c, gd)                 # 無偵查 perk
-    gd1, c1 = _char(scout=75)
-    mastery.choose(c1, gd1, "scout_75", "weakness_read")     # 洞察弱點(recon_resist_read)
+    gd1, c1 = _char(scout=25)
+    mastery.choose(c1, gd1, "scout_25", "recon_basics")      # 斥候之眼(recon_reveal_floor)→ 解鎖
     assert mastery.has_recon_perk(c1, gd1)
     gd2, c2 = _char(marksman=50)
     mastery.choose(c2, gd2, "marksman_50", "tracker")        # 獵手偵察(recon_reveal_floor)

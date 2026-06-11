@@ -160,8 +160,8 @@
    "options": [
      {"opt_id": "vanguard", "name": "先機在握", "kind": "prep_bonus", "prep_bonus": 1,
       "desc": "偵查宗師:搶得先機時,開戰前可多做 1 個準備動作。"},
-     {"opt_id": "weakness_read", "name": "洞察弱點", "kind": "recon_resist_read",
-      "desc": "你能更早看穿敵人虛實:偵查揭露抗性/弱點的門檻由 75 降為 50。"}
+     {"opt_id": "preempt", "name": "臨陣預判", "kind": "evasion_bonus", "evasion_bonus": 0.04,
+      "desc": "洞悉敵之動向與出手時機,臨陣預判閃避更俐落(敵人命中你的機率 −4%,夾總上限)。"}
    ]},
 
   {"id": "sneak_75", "skill": "sneak", "threshold": 75,
@@ -365,8 +365,8 @@
 
   {"id": "scout_50", "skill": "scout", "threshold": 50,
    "options": [
-     {"opt_id": "field_recon", "name": "野外偵知", "kind": "recon_reveal_floor", "scout_floor": 50,
-      "desc": "野外偵知:接戰前即可看清敵血量/護甲/弱點(視同偵查 50)。"},
+     {"opt_id": "intel_strike", "name": "料敵機先", "kind": "approach_bonus", "approach_bonus": 0.10,
+      "desc": "情報轉戰力:摸清敵之站位與警覺 → 接戰時更常搶得開場偷襲先機(+10%,與無聲潛近相加)。"},
      {"opt_id": "forewarned", "name": "未雨綢繆", "kind": "skill_fortify", "skill": {"scout": 8},
       "desc": "偵查精進,先機判讀更準(偵查技能 +8 → 更早揭弱點、更多備戰)。"}
    ]},
@@ -466,8 +466,8 @@
   {"id": "scout_100", "skill": "scout", "threshold": 100, "options": [
      {"opt_id": "battle_master", "name": "決勝先機", "kind": "prep_bonus", "prep_bonus": 1,
       "desc": "偵查登峰:洞悉戰機,搶得先機時開戰前可再多做 1 個準備動作(多源相加)。"},
-     {"opt_id": "deep_recon", "name": "鷹隼之目", "kind": "recon_reveal_floor", "scout_floor": 75,
-      "desc": "斥候之眼登峰:接戰前即可看穿敵血量/護甲/弱點(視同偵查 75;多源取最高)。"}
+     {"opt_id": "first_blood", "name": "先聲奪人", "kind": "approach_bonus", "approach_bonus": 0.12,
+      "desc": "斥候之術登峰:對戰場了然於胸,接戰幾乎必搶得開場偷襲先機(+12%,與其他潛近來源相加)。"}
    ]},
 
   {"id": "security_100", "skill": "security", "threshold": 100, "options": [
@@ -610,8 +610,8 @@
       "desc": "略通討價還價,買賣稍占便宜(議價 +0.03,與各議價來源相加)。"}
    ]},
   {"id": "scout_25", "skill": "scout", "threshold": 25, "options": [
-     {"opt_id": "recon_basics", "name": "偵查入門", "kind": "recon_reveal_floor", "scout_floor": 25,
-      "desc": "略通察敵之法:接戰前可粗看獵物血量/護甲(視同偵查 25;多源取最高)。"}
+     {"opt_id": "recon_basics", "name": "斥候之眼", "kind": "recon_reveal_floor", "scout_floor": 25,
+      "desc": "習得敵情判讀:**解鎖地城探明四鄰**(踏入即偵知鄰格);接戰前的敵情報告隨偵查技能愈練愈清。"}
    ]},
   {"id": "security_25", "skill": "security", "threshold": 25, "options": [
      {"opt_id": "lockpick_basics", "name": "撬鎖入門", "kind": "lock_floor", "floor": 0.10,
