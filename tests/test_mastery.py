@@ -954,6 +954,30 @@ def test_batch1_capstones_gated_by_base_skill():
     assert mastery.choose(c, gd, "block_100", "iron_bastion") is not None
 
 
+# --- 補洞 pass(Batch 2):8 個 50/75 gap-fill ------------------------------
+def test_batch2_gapfills_present_and_aggregate():
+    """blade/blunt/marksman/speechcraft 補 75;四魔法學派補 50 → 全 23 技能 ≥3 節點(sneak 4)。"""
+    from collections import Counter
+    gd = get_gamedata()
+    cnt = Counter(n["skill"] for n in mastery._nodes(gd))
+    assert all(v >= 3 for v in cnt.values()) and cnt["sneak"] == 4
+    defids = {o["opt_id"] for o in mastery._defs(gd)}
+    for nid in ("blade_75", "blunt_75", "marksman_75", "speechcraft_75",
+                "conjuration_50", "destruction_50", "illusion_50", "mysticism_50"):
+        n = next(x for x in mastery._nodes(gd) if x["id"] == nid)
+        for o in n["options"]:
+            assert o["opt_id"] in defids, f"死 perk {nid} {o['opt_id']}"
+    # spell_mod cost 聚合不遮蔽(destruction 50 省魔 × 100 過載加耗)
+    gd, c = _char(destruction=100)
+    mastery.choose(c, gd, "destruction_50", "efficient_destruction")
+    mastery.choose(c, gd, "destruction_100", "overload")
+    assert abs(mastery.spell_cost_factor(c, gd, "destruction") - 0.85 * 1.30) < 1e-9
+    # weapon_mod blade 50/75/100 合併(不遮蔽)
+    gd, c = _char(blade=100)
+    mastery.choose(c, gd, "blade_75", "blade_flow"); mastery.choose(c, gd, "blade_100", "savage")
+    assert abs(mastery.weapon_mod(c, gd, "blade").get("power", 0) - (0.08 + 0.12)) < 1e-9
+
+
 def test_breadth_new_nodes_reachable_and_gated():
     """抽樣新節點:達門檻才 pending、可選;base_skill gating。"""
     gd, c = _char(blade=49)
