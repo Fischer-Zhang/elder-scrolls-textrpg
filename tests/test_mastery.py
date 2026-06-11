@@ -240,15 +240,20 @@ def test_charm_guarantees_once_per_npc():
 
 # --- 解鎖(可選)播報精確性 ---------------------------------------------
 def test_choice_ready_event_fires_exactly_once_across_multilevel():
-    """一次灌注跨越門檻(含一次跨多級)時,『可選里程碑』事件恰好一次,不漏不重。"""
+    """一次灌注跨越門檻(含一次跨多級)時,每個被跨過的門檻恰好一次,不漏不重;區間內不跨則無事件。"""
     gd, c = _char()
     c.skills["security"] = 70
     c.skill_xp["security"] = 0.0
-    evs = progression.use_skill(c, gd, "security", 200.0)   # 大量 xp 一次跨過 75
-    rdy = [e for e in evs if e["type"] == "mastery_choice_ready"]
-    assert len(rdy) == 1 and rdy[0]["node_id"] == "security_75"
+    evs = progression.use_skill(c, gd, "security", 200.0)   # 大量 xp 一次跨過 75(可能連帶跨 100)
+    node_ids = [e["node_id"] for e in evs if e["type"] == "mastery_choice_ready"]
+    assert node_ids.count("security_75") == 1              # 跨 75 恰一次
+    assert len(node_ids) == len(set(node_ids))            # 不重複(跨多門檻各一次)
     assert c.skills["security"] >= 75
-    evs2 = progression.use_skill(c, gd, "security", 50.0)
+    # 重設到門檻間(80,遠離 100)小幅加 xp → 不跨任何門檻 → 無事件
+    c.skills["security"] = 80
+    c.skill_xp["security"] = 0.0
+    evs2 = progression.use_skill(c, gd, "security", 5.0)
+    assert c.skills["security"] < 100
     assert not [e for e in evs2 if e["type"] == "mastery_choice_ready"]
 
 
@@ -344,10 +349,13 @@ def test_next_threshold_hint_uses_base_and_skips_done():
     c.skills["block"] = 50             # 達 50 → 下一個未達門檻為 75
     nxt = mastery.next_threshold(c, gd, "block")
     assert nxt and nxt["threshold"] == 75 and nxt["remaining"] == 25
-    c.skills["block"] = 75             # 達最高門檻 → None
+    c.skills["block"] = 75             # 達 75 → 下一個未達門檻為 100(補頂點 pass)
+    nxt = mastery.next_threshold(c, gd, "block")
+    assert nxt and nxt["threshold"] == 100 and nxt["remaining"] == 25
+    c.skills["block"] = 100            # 達最高門檻 → None
     assert mastery.next_threshold(c, gd, "block") is None
-    # 已達某技能最高門檻 → None(athletics 門檻 50/75)
-    c.skills["athletics"] = 75
+    # 已達某技能最高門檻 → None(athletics 門檻 50/75/100)
+    c.skills["athletics"] = 100
     assert mastery.next_threshold(c, gd, "athletics") is None
 
 
@@ -876,11 +884,74 @@ def test_mercantile_and_intimidate():
 
 # --- 廣度 pass:17 薄技能各 +1 節點 + 4 新 kind + 2 getter 微修 -------------------
 def test_breadth_all_skills_have_two_plus_nodes():
-    """廣度:全 23 技能各 ≥2 節點(sneak 為 4:25 隱遁之術 + 50/75/100)。"""
+    """廣度:全 23 技能各 ≥2 節點(sneak 為 4;補頂點 pass 後 14 技能升至 3)。"""
     from collections import Counter
     gd = get_gamedata()
     cnt = Counter(n["skill"] for n in mastery._nodes(gd))
     assert len(cnt) == 23 and all(v >= 2 for v in cnt.values()) and cnt["sneak"] == 4
+
+
+# --- 補頂點 pass(Batch 1):14 個 100 級 capstone ---------------------------
+_CAP14 = ["armorer", "athletics", "block", "hand_to_hand", "heavy_armor", "smithing",
+          "alchemy", "alteration", "restoration", "acrobatics", "light_armor",
+          "mercantile", "scout", "security"]
+
+
+def test_batch1_capstones_present_and_no_dead_kind():
+    """原封頂 75 的 14 技能各補 100 級節點(現 3 節點);所有 100 選項 kind 皆已實作(無死 perk)。"""
+    from collections import Counter
+    gd = get_gamedata()
+    cnt = Counter(n["skill"] for n in mastery._nodes(gd))
+    for s in _CAP14:
+        assert cnt[s] == 3, f"{s} 應有 50/75/100 三節點,實 {cnt[s]}"
+    defids = {o["opt_id"] for o in mastery._defs(gd)}      # 僅白名單 kind 入 _defs
+    for n in mastery._nodes(gd):
+        if n["threshold"] == 100:
+            for o in n["options"]:
+                assert o["opt_id"] in defids, f"死 perk:{n['id']} {o['opt_id']}({o['kind']})"
+
+
+def test_batch1_same_source_aggregation_no_shadow():
+    """同源多節點不遮蔽:temper/lock 取最高、evasion/passive_armor/poison 相加、weapon_mod 合併、spell power 相加。"""
+    gd, c = _char(smithing=100, security=100, acrobatics=100, hand_to_hand=100,
+                  alchemy=100, restoration=100, heavy_armor=100, light_armor=100)
+    mastery.choose(c, gd, "smithing_75", "efficient"); mastery.choose(c, gd, "smithing_100", "legendary_smith")
+    assert mastery.temper_free_chance(c, gd) == 0.50                     # max(0.30,0.50)
+    mastery.choose(c, gd, "security_75", "master_floor"); mastery.choose(c, gd, "security_100", "master_thief")
+    assert mastery.lock_floor(c, gd) == 0.50                            # max(0.30,0.50)
+    mastery.choose(c, gd, "acrobatics_50", "tumbler"); mastery.choose(c, gd, "acrobatics_75", "evasion")
+    mastery.choose(c, gd, "acrobatics_100", "lightstep")
+    assert abs(mastery.evasion_bonus(c, gd) - (0.04 + 0.05 + 0.05)) < 1e-9   # 相加不遮蔽
+    mastery.choose(c, gd, "hand_to_hand_75", "iron_fists"); mastery.choose(c, gd, "hand_to_hand_100", "transcend_fist")
+    assert abs(mastery.weapon_mod(c, gd, "hand_to_hand").get("power", 0) - (0.15 + 0.10)) < 1e-9  # weapon_mod 合併
+    mastery.choose(c, gd, "alchemy_50", "toxin_master"); mastery.choose(c, gd, "alchemy_100", "venom_lord")
+    assert mastery.poison_charge_bonus(c, gd) == 2 + 1                  # 相加
+    mastery.choose(c, gd, "heavy_armor_100", "ironhide"); mastery.choose(c, gd, "light_armor_50", "nimble_guard")
+    mastery.choose(c, gd, "light_armor_100", "second_skin")
+    assert mastery.passive_armor_bonus(c, gd) == 18 + 12 + 14          # 跨技能相加
+    mastery.choose(c, gd, "restoration_100", "divine_grace")
+    assert mastery.spell_power_bonus(c, gd, "restoration") == 0.20     # 治療登峰流入 _power
+
+
+def test_batch1_evasion_bonus_capped():
+    """雜技/運動/輕甲三源閃避相加夾 EVASION_BONUS_CAP(對抗審查:0.24 會 trivialize 群戰)。"""
+    gd, c = _char(acrobatics=100, athletics=100, light_armor=100)
+    for nid, oid in [("acrobatics_50", "tumbler"), ("acrobatics_75", "evasion"),
+                     ("acrobatics_100", "lightstep"), ("athletics_100", "windstep"),
+                     ("light_armor_100", "wind_dancer")]:
+        mastery.choose(c, gd, nid, oid)
+    raw = 0.04 + 0.05 + 0.05 + 0.05 + 0.05                  # 0.24 未夾
+    assert raw > mastery.EVASION_BONUS_CAP
+    assert mastery.evasion_bonus(c, gd) == mastery.EVASION_BONUS_CAP   # 夾 0.15
+
+
+def test_batch1_capstones_gated_by_base_skill():
+    """100 節點達 base 100 才 pending/可選。"""
+    gd, c = _char(block=99)
+    assert not any(n["id"] == "block_100" for n in mastery.pending_choices(c, gd))
+    c.skills["block"] = 100
+    assert any(n["id"] == "block_100" for n in mastery.pending_choices(c, gd))
+    assert mastery.choose(c, gd, "block_100", "iron_bastion") is not None
 
 
 def test_breadth_new_nodes_reachable_and_gated():

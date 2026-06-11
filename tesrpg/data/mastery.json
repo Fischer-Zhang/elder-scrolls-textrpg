@@ -377,5 +377,103 @@
       "desc": "巧言生意:買賣更划算(議價 +0.08,與交易/幻術相加)。"},
      {"opt_id": "silver_voiced", "name": "辯才無礙", "kind": "skill_fortify", "skill": {"speechcraft": 8},
       "desc": "辯才無礙,說服/威嚇更易(口才技能 +8)。"}
+   ]},
+
+  {"id": "armorer_100", "skill": "armorer", "threshold": 100, "options": [
+     {"opt_id": "masterwork_fit", "name": "精工護持", "kind": "passive_armor", "armor_bonus": 14,
+      "desc": "護甲登峰:武具經你保養入微、貼合如鑄,防護更上層樓(被動護甲 +14)。"},
+     {"opt_id": "master_fitter", "name": "甲冑精工", "kind": "skill_fortify", "skill": {"heavy_armor": 10, "light_armor": 10},
+      "desc": "甲冑了然於胸,穿戴防護更紮實(重甲/輕甲技能各 +10)。"}
+   ]},
+
+  {"id": "athletics_100", "skill": "athletics", "threshold": 100, "options": [
+     {"opt_id": "windstep", "name": "疾風身法", "kind": "evasion_bonus", "evasion_bonus": 0.05,
+      "desc": "運動登峰:步法飄忽如風,敵人命中你的機率再 −5%(多源相加)。"},
+     {"opt_id": "tireless", "name": "不竭極致", "kind": "attr_fortify", "attr": {"speed": 6},
+      "desc": "腳程與爆發過人(速度 +6 → 出手順序/逃脫/命中提升)。"}
+   ]},
+
+  {"id": "block_100", "skill": "block", "threshold": 100, "options": [
+     {"opt_id": "iron_bastion", "name": "銅牆鐵壁", "kind": "passive_armor", "armor_bonus": 12,
+      "desc": "格擋登峰:架盾撐架如鑄鐵堡壘(被動護甲 +12,與撐架穩步相加)。"},
+     {"opt_id": "ward_bearer", "name": "禦咒之盾", "kind": "resist_fortify", "resist": {"magic": 12},
+      "desc": "以盾承咒爐火純青:元素/法術抗性 +12%。"}
+   ]},
+
+  {"id": "hand_to_hand_100", "skill": "hand_to_hand", "threshold": 100, "options": [
+     {"opt_id": "transcend_fist", "name": "化勁通玄", "kind": "weapon_mod", "target": "hand_to_hand", "power": 0.10,
+      "desc": "徒手登峰:拳掌吞吐勁力,徒手傷害 +10%(與鐵拳相加;補徒手無法淬鍊附魔的劣勢)。"},
+     {"opt_id": "iron_body", "name": "鐵布衫", "kind": "attr_fortify", "attr": {"strength": 5},
+      "desc": "千錘百鍊的體魄(力量 +5 → 近戰傷害/負重提升)。"}
+   ]},
+
+  {"id": "heavy_armor_100", "skill": "heavy_armor", "threshold": 100, "options": [
+     {"opt_id": "ironhide", "name": "銅皮鐵骨", "kind": "passive_armor", "armor_bonus": 18,
+      "desc": "重甲登峰:厚甲與血肉融為一體,化身行走的堡壘(被動護甲 +18)。"},
+     {"opt_id": "spellbreaker", "name": "卸咒重甲", "kind": "resist_fortify", "resist": {"magic": 12},
+      "desc": "厚重甲冑卸去法術衝擊純熟(元素/法術抗性 +12%)。"}
+   ]},
+
+  {"id": "smithing_100", "skill": "smithing", "threshold": 100, "options": [
+     {"opt_id": "legendary_smith", "name": "傳奇工匠", "kind": "temper_cost_free", "free_chance": 0.50,
+      "desc": "鍛造登峰:對材料的拿捏出神入化 —— 淬鍊時 50% 機率不消耗錠材(多源取最高)。"},
+     {"opt_id": "forgemaster", "name": "鍛造學究", "kind": "skill_fortify", "skill": {"armorer": 10},
+      "desc": "鍛造通修理,武具保養更得法(護甲修理技能 +10)。"}
+   ]},
+
+  {"id": "alchemy_100", "skill": "alchemy", "threshold": 100, "options": [
+     {"opt_id": "venom_lord", "name": "百毒宗師", "kind": "poison_charge_bonus", "charge_bonus": 1,
+      "desc": "煉金登峰:塗毒附著更持久(武器塗毒可多用 1 次,多源相加)。"},
+     {"opt_id": "sage_mind", "name": "通玄之智", "kind": "attr_fortify", "attr": {"intelligence": 5},
+      "desc": "窮究藥理的靈思(智力 +5 → 魔力上限/煉金更精)。"}
+   ]},
+
+  {"id": "alteration_100", "skill": "alteration", "threshold": 100, "options": [
+     {"opt_id": "pure_form", "name": "術法精純", "kind": "spell_mod", "school": "alteration", "power_bonus": 0.15,
+      "desc": "變化登峰:護盾/變形術法效力 +15%(與術法增幅相加)。"},
+     {"opt_id": "iron_will", "name": "磐石意志", "kind": "attr_fortify", "attr": {"willpower": 5},
+      "desc": "法理通明,意志如磐(意志 +5 → 魔力回復/抗心智提升)。"}
+   ]},
+
+  {"id": "restoration_100", "skill": "restoration", "threshold": 100, "options": [
+     {"opt_id": "divine_grace", "name": "聖療登峰", "kind": "spell_mod", "school": "restoration", "power_bonus": 0.20,
+      "desc": "復原登峰:治療/援護術回復量 +20%(聖光更盛)。"},
+     {"opt_id": "blessed_vigor", "name": "聖體不衰", "kind": "attr_fortify", "attr": {"willpower": 5},
+      "desc": "白袍庇佑深植其身(意志 +5 → 魔力回復提升)。"}
+   ]},
+
+  {"id": "acrobatics_100", "skill": "acrobatics", "threshold": 100, "options": [
+     {"opt_id": "lightstep", "name": "凌波微步", "kind": "evasion_bonus", "evasion_bonus": 0.05,
+      "desc": "雜技登峰:身形如煙難以捉摸,敵人命中你的機率再 −5%(多源相加)。"},
+     {"opt_id": "deft_roll", "name": "卸勁脫身", "kind": "vanish_floor", "floor": 0.10,
+      "desc": "翻滾卸勁脫離纏鬥:戰鬥中隱遁成功率保底 10%(多源取最高)。"}
+   ]},
+
+  {"id": "light_armor_100", "skill": "light_armor", "threshold": 100, "options": [
+     {"opt_id": "wind_dancer", "name": "御風躲閃", "kind": "evasion_bonus", "evasion_bonus": 0.05,
+      "desc": "輕甲登峰:身輕如葉、隨勢躲閃,敵人命中你的機率再 −5%(多源相加)。"},
+     {"opt_id": "second_skin", "name": "柔革如膚", "kind": "passive_armor", "armor_bonus": 14,
+      "desc": "輕甲貼身卸力臻於化境(被動護甲 +14,與柔革護持相加)。"}
+   ]},
+
+  {"id": "mercantile_100", "skill": "mercantile", "threshold": 100, "options": [
+     {"opt_id": "master_trader", "name": "頂級議價", "kind": "merchant_bonus", "disposition_bonus": 0.10,
+      "desc": "交易登峰:左右逢源,買賣價格再優(議價 +0.10,與各議價來源相加)。"},
+     {"opt_id": "charisma", "name": "八面玲瓏", "kind": "attr_fortify", "attr": {"personality": 5},
+      "desc": "長袖善舞、八面玲瓏(魅力 +5 → 議價/說服更易)。"}
+   ]},
+
+  {"id": "scout_100", "skill": "scout", "threshold": 100, "options": [
+     {"opt_id": "battle_master", "name": "決勝先機", "kind": "prep_bonus", "prep_bonus": 1,
+      "desc": "偵查登峰:洞悉戰機,搶得先機時開戰前可再多做 1 個準備動作(多源相加)。"},
+     {"opt_id": "deep_recon", "name": "鷹隼之目", "kind": "recon_reveal_floor", "scout_floor": 75,
+      "desc": "斥候之眼登峰:接戰前即可看穿敵血量/護甲/弱點(視同偵查 75;多源取最高)。"}
+   ]},
+
+  {"id": "security_100", "skill": "security", "threshold": 100, "options": [
+     {"opt_id": "master_thief", "name": "神偷之手", "kind": "lock_floor", "floor": 0.50,
+      "desc": "安全登峰:再固若金湯的鎖你都有半數把握(撬鎖成功率下限 50%;多源取最高)。"},
+     {"opt_id": "deft_hands", "name": "鬼手通玄", "kind": "skill_fortify", "skill": {"security": 10},
+      "desc": "鬼手通玄,撬鎖解陷盡在掌握(安全技能 +10)。"}
    ]}
 ]

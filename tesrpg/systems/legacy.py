@@ -86,7 +86,7 @@ def compute(state, gamedata: GameData, ending: str = "death") -> dict:
         + char.fame * 6
         + int(char.gold * 0.1)
         + years * 30
-        + len(masteries) * 40        # 技能精通的印記:每解鎖一個里程碑
+        + len(masteries) * 20        # 技能精通的印記:每解鎖一個里程碑(節點數近翻倍後減半,維持權重)
         + cities_held * 200          # 征服功業:每座親手攻下且仍在手的城
         + thanes * 80                # 武士冊封:每座受封的城
         + char.soldiers * 3          # 麾下常備軍

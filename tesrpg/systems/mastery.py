@@ -321,10 +321,13 @@ def merchant_bonus(char, gamedata: GameData) -> float:
 
 
 # --- P4 潛行系 getter ---------------------------------------------------
+EVASION_BONUS_CAP = 0.15   # 多技能閃避來源(雜技/運動/輕甲)相加的硬上限 —— 守『群戰須具真實風險』(sim 背書)
+
+
 def evasion_bonus(char, gamedata: GameData) -> float:
-    """身輕如燕/翻滾卸勁:額外閃避(直接從敵命中率扣;多來源 acrobatics_50+75 相加)。"""
-    return sum(o.get("evasion_bonus", 0.0)
-               for o in _chosen_options_by_kind(char, gamedata, "evasion_bonus"))
+    """身輕如燕/翻滾卸勁/疾風:額外閃避(直接從敵命中率扣;多來源 acrobatics/athletics/light_armor 相加,夾 EVASION_BONUS_CAP)。"""
+    return min(EVASION_BONUS_CAP, sum(o.get("evasion_bonus", 0.0)
+               for o in _chosen_options_by_kind(char, gamedata, "evasion_bonus")))
 
 
 def vanish_floor(char, gamedata: GameData) -> float:
@@ -461,9 +464,9 @@ def intimidate_floor(char, gamedata: GameData) -> float:
 
 
 def lock_floor(char, gamedata: GameData) -> float:
-    """撬鎖名家:撬鎖成功率下限(0.0 = 無里程碑)。"""
-    e = _chosen_option_by_kind(char, gamedata, "lock_floor")
-    return e["floor"] if e else 0.0
+    """撬鎖名家/神偷之手:撬鎖成功率下限(0.0 = 無里程碑)。多來源(security_75 + security_100)取最高。"""
+    return max((o.get("floor", 0.0)
+               for o in _chosen_options_by_kind(char, gamedata, "lock_floor")), default=0.0)
 
 
 def overheal_ward(char, gamedata: GameData) -> dict | None:
@@ -519,8 +522,9 @@ def temper_cap_bonus(char, gamedata: GameData) -> int:
 
 
 def temper_free_chance(char, gamedata: GameData) -> float:
-    """物盡其用:淬鍊有機率不消耗錠(0 = 無)。"""
-    return _param(char, gamedata, "temper_cost_free", "free_chance", 0.0)
+    """物盡其用/傳奇工匠:淬鍊有機率不消耗錠(0 = 無)。多來源(smithing_75 + smithing_100)取最高。"""
+    return max((o.get("free_chance", 0.0)
+               for o in _chosen_options_by_kind(char, gamedata, "temper_cost_free")), default=0.0)
 
 
 def repair_floor(char, gamedata: GameData) -> float:
