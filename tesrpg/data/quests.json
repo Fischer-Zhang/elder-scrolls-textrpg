@@ -1261,5 +1261,151 @@
         "reward": {"gold": 680, "fame": 26, "items": ["ebony_sword", "gold_amulet"]}
       }
     ]
+  },
+
+  "recruit_drelas": {
+    "name": "灰燼裡的丹莫", "faction": null, "rank": null, "source": "npc",
+    "stages": [
+      {"objective": {"type": "kill", "creature": "ash_hopper", "count": 3},
+       "text": "灰燼荒原的蹦蟲毀了德雷拉斯的營地 —— 替他清掉這群禍害(獵殺灰蹦蟲 ×3)。"},
+      {"objective": {"type": "reach", "location": "ald_ruhn"},
+       "text": "回到奧德倫,把消息帶給德雷拉斯。"}
+    ],
+    "reward": {"gold": 140, "fame": 8, "companion": "drelas"},
+    "turn_in": "auto",
+    "text": "「替我清出條路,德雷拉斯便以秘法相報、隨你同行。」"
+  },
+  "recruit_jarakal": {
+    "name": "收手的快手", "faction": null, "rank": null, "source": "npc",
+    "stages": [
+      {"objective": {"type": "kill", "creature": "sugar_addled_senche", "count": 2},
+       "text": "舊日斯庫瑪買賣招來的糖癮野獸還纏著賈拉卡爾 —— 替他了結(獵殺糖癮野獸 ×2)。"},
+      {"objective": {"type": "reach", "location": "senchal"},
+       "text": "回到森查爾,賈拉卡爾在港邊等你。"}
+    ],
+    "reward": {"gold": 150, "fame": 9, "companion": "ja_rakal"},
+    "turn_in": "auto",
+    "text": "「替賈拉卡爾清了港邊的麻煩,這雙快手就聽你的。」"
+  },
+  "recruit_rashid": {
+    "name": "劍歌者的清白", "faction": null, "rank": null, "source": "npc",
+    "stages": [
+      {"objective": {"type": "kill", "creature": "dune_ripper", "count": 2},
+       "text": "阿利克爾的沙嘯獸正擾著商隊 —— 與拉希德並肩斬之,還他一線清白(獵殺沙嘯獸 ×2)。"},
+      {"objective": {"type": "reach", "location": "sentinel"},
+       "text": "回到森提奈,拉希德的彎刀將為你而歌。"}
+    ],
+    "reward": {"gold": 160, "fame": 10, "companion": "rashid"},
+    "turn_in": "auto",
+    "text": "「與我並肩斬了沙嘯獸,這柄彎刀便為你而歌。」"
+  },
+
+  "arc_sellsword": {
+    "name": "斯特倫的舊帳", "faction": null, "rank": null, "source": "companion",
+    "stages": [
+      {"objective": {"type": "kill", "creature": "bandit", "count": 3},
+       "text": "斯特倫昔日的同夥淪為劫道強盜,壞了他的名聲 —— 替他了斷這段舊帳(獵殺強盜 ×3)。"},
+      {"objective": {"type": "reach", "location": "bruma"},
+       "text": "與斯特倫一同回到布魯瑪,把這頁翻過去。"}
+    ],
+    "reward": {"gold": 120, "fame": 8, "bond": {"sellsword": 15}},
+    "turn_in": "auto",
+    "text": "斯特倫罕見地放下了玩世的口吻:「有筆舊帳,我想趁還信得過的人在身邊時了了。」"
+  },
+  "arc_shieldmaiden": {
+    "name": "葛蕾塔的姊妹", "faction": null, "rank": null, "source": "companion",
+    "stages": [
+      {"objective": {"type": "kill", "creature": "frost_troll", "count": 1},
+       "text": "奪走葛蕾塔姊妹性命的霜巨魔仍盤踞雪原 —— 替她討回這條命(獵殺霜巨魔 ×1)。"},
+      {"objective": {"type": "reach", "location": "windhelm"},
+       "text": "陪葛蕾塔回到風盔城,為她的姊妹立一塊安息之碑。"}
+    ],
+    "reward": {"gold": 160, "fame": 10, "bond": {"shieldmaiden": 15}},
+    "turn_in": "auto",
+    "text": "葛蕾塔擦拭著盾面,良久才開口:「這面盾,本是我姊妹的。她沒能等到我替她報仇。」"
+  },
+  "arc_hedge_mage": {
+    "name": "薇拉妮的禁書", "faction": null, "rank": null, "source": "companion",
+    "stages": [
+      {"objective": {"type": "kill", "creature": "dremora", "count": 2},
+       "text": "守著薇拉妮失竊禁書的魔人仍在灰燼荒原徘徊 —— 奪回屬於她的東西(獵殺魔人 ×2)。"},
+      {"objective": {"type": "reach", "location": "vivec"},
+       "text": "與薇拉妮回到維威克,讓那捲生機之術重見天日。"}
+    ],
+    "reward": {"gold": 180, "fame": 11, "bond": {"hedge_mage": 15}},
+    "turn_in": "auto",
+    "text": "薇拉妮指尖的火苗一明一滅:「我的生機之術源自一捲禁書 —— 它被魔人奪走了。沒有它,我終究只是個放火的。」"
+  },
+  "arc_ranger": {
+    "name": "基蘭的獵場", "faction": null, "rank": null, "source": "companion",
+    "stages": [
+      {"objective": {"type": "kill", "creature": "bear", "count": 2},
+       "text": "盜獵者驚動了基蘭兒時的獵場、放任惡熊橫行 —— 替他重整這片林子(獵殺棕熊 ×2)。"},
+      {"objective": {"type": "reach", "location": "falkreath_wood"},
+       "text": "陪基蘭走一趟佛克瑞斯林 —— 那是他學會放第一箭的地方。"}
+    ],
+    "reward": {"gold": 120, "fame": 8, "bond": {"ranger": 15}},
+    "turn_in": "auto",
+    "text": "基蘭望向南方的林線:「我學會放箭的那片林子,如今被盜獵者糟蹋了。我想……再回去看一眼。」"
+  },
+  "arc_farkas": {
+    "name": "法卡斯的清醒", "faction": null, "rank": null, "source": "companion",
+    "stages": [
+      {"objective": {"type": "kill", "creature": "silver_hand", "count": 3},
+       "text": "銀手獵人又在天際屠戮戰友 —— 陪法卡斯讓他們付出代價(獵殺銀手獵人 ×3)。"},
+      {"objective": {"type": "reach", "location": "whiterun"},
+       "text": "與法卡斯回到 Jorrvaskr,在爐火旁敬陣亡的同袍一杯蜜酒。"}
+    ],
+    "reward": {"gold": 200, "fame": 12, "bond": {"farkas": 15}},
+    "turn_in": "auto",
+    "text": "法卡斯難得吐露心事:「維爾卡斯說我笨,可我清醒得很 —— 銀手殺了我們的人。我要他們知道,圈內的盾袍不是好惹的。」"
+  },
+  "arc_aela": {
+    "name": "艾拉的狩獵", "faction": null, "rank": null, "source": "companion",
+    "stages": [
+      {"objective": {"type": "kill", "creature": "ice_wraith", "count": 2},
+       "text": "冰魂盤踞了艾拉鍾愛的古老獵徑 —— 陪她以箭清道(獵殺冰魂 ×2)。"},
+      {"objective": {"type": "reach", "location": "whiterun"},
+       "text": "與艾拉回到白漫,在月下將這趟狩獵獻給希爾辛。"}
+    ],
+    "reward": {"gold": 200, "fame": 12, "bond": {"aela": 15}},
+    "turn_in": "auto",
+    "text": "艾拉搭著弓:「有條古老的獵徑,是我與獸血初次共鳴的地方。冰魂占了它 —— 陪我把它討回來。」"
+  },
+  "arc_drelas": {
+    "name": "德雷拉斯的手稿", "faction": null, "rank": null, "source": "companion",
+    "stages": [
+      {"objective": {"type": "clear_dungeon", "dungeon": "ashfall_barrow"},
+       "text": "證明德雷拉斯清白的秘法手稿,埋在灰燼墓塚深處 —— 肅清墓塚、取回它。"},
+      {"objective": {"type": "reach", "location": "ald_ruhn"},
+       "text": "與德雷拉斯回到奧德倫,讓手稿洗去他多年的冤名。"}
+    ],
+    "reward": {"gold": 220, "fame": 13, "bond": {"drelas": 15}},
+    "turn_in": "auto",
+    "text": "德雷拉斯的聲音低了下來:「我被逐,是因一捲被指為禁術的手稿。它其實證明我的清白 —— 它就埋在灰燼墓塚裡。」"
+  },
+  "arc_jarakal": {
+    "name": "賈拉卡爾的舊債", "faction": null, "rank": null, "source": "companion",
+    "stages": [
+      {"objective": {"type": "clear_dungeon", "dungeon": "dark_moon_grotto"},
+       "text": "昔日斯庫瑪頭目仍盤踞暗月洞窟 —— 陪賈拉卡爾了斷這段走私舊債(肅清暗月洞窟)。"},
+      {"objective": {"type": "reach", "location": "senchal"},
+       "text": "與賈拉卡爾回到森查爾,把過去徹底留在身後。"}
+    ],
+    "reward": {"gold": 200, "fame": 12, "bond": {"ja_rakal": 15}},
+    "turn_in": "auto",
+    "text": "賈拉卡爾甩了甩尾:「賈拉卡爾收手了,可舊頭目不肯放人。陪我去暗月洞窟 —— 把這筆糖債一次付清。」"
+  },
+  "arc_rashid": {
+    "name": "拉希德的家名", "faction": null, "rank": null, "source": "companion",
+    "stages": [
+      {"objective": {"type": "clear_dungeon", "dungeon": "volenfell"},
+       "text": "拉希德家族的傳家彎刀失落於沃倫費爾矮人遺城 —— 肅清遺城、取回它。"},
+      {"objective": {"type": "reach", "location": "hegathe"},
+       "text": "與拉希德回到赫加西,持傳家之刃還他家族清白。"}
+    ],
+    "reward": {"gold": 240, "fame": 14, "bond": {"rashid": 15}},
+    "turn_in": "auto",
+    "text": "拉希德握緊刀柄:「我家族的傳家之刃,連同我的清白,一同失落在沃倫費爾的矮人遺城。陪我取回它 —— 讓劍歌者之名再次無愧。」"
   }
 }

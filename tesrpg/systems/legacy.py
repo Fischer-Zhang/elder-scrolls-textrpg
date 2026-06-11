@@ -72,6 +72,7 @@ def compute(state, gamedata: GameData, ending: str = "death") -> dict:
     cities_held = len(politics.held_tax_cities(char, gamedata))
     thanes = len(char.thaneships)
     comrade_points = sum(party.bond_tier(char, cid) for cid in char.companions) * 20   # 並肩羈絆
+    loyalty_arc_count = len(party.loyalty_arcs(char, gamedata))   # 完成的同伴專屬支線(忠誠弧)
 
     score = (
         char.level * 120
@@ -90,6 +91,7 @@ def compute(state, gamedata: GameData, ending: str = "death") -> dict:
         + thanes * 80                # 武士冊封:每座受封的城
         + char.soldiers * 3          # 麾下常備軍
         + comrade_points             # 並肩同伴的羈絆
+        + loyalty_arc_count * 40     # 同伴忠誠弧:每完成一條同伴專屬支線(身份印記,比照里程碑)
     )
 
     return {
@@ -110,6 +112,7 @@ def compute(state, gamedata: GameData, ending: str = "death") -> dict:
         "dark_deeds": brotherhood.legacy_label(char, gamedata),   # 黑暗兄弟會/謀殺事蹟(否則 None)
         "dominion": dominion_label(char, gamedata, cities_held, thanes),  # 領地/統帥功業(否則 None)
         "comrade": party.legacy_label(char, gamedata),   # 最深羈絆的同伴(否則 None)
+        "loyalty": party.loyalty_label(char, gamedata),   # 完成專屬支線的忠誠同伴名單(否則 None)
         "level": char.level,
         "years": years, "days": days,
         "top_skills": tops,

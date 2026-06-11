@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from tesrpg.gamedata import GameData
 from tesrpg.models import Character
-from tesrpg.systems import factions, inventory
+from tesrpg.systems import factions, inventory, party
 
 STIPEND_PER_RANK = 40   # 晉升俸祿:每升一階,公會額外發 40×新階級 金
 
@@ -213,6 +213,20 @@ def _complete(char: Character, gamedata: GameData, quest_id: str) -> dict:
     char.fame += reward.get("fame", 0)
     for item_id in reward.get("items", []):
         inventory.add_item(char, item_id, 1)
+
+    # 同伴角色化:招募任務末段授予具名同伴(資料驅動,鏡像 items)。有空位即入夥;
+    # 滿員則僅「解鎖」(由 recruit_quest ∈ completed_quests 推導,稍後可在隊伍選單免費召集)→ 零新存檔欄。
+    cid = reward.get("companion")
+    if cid and cid in gamedata.companions and cid not in char.companions \
+            and len(char.companions) < party.MAX_PARTY:
+        char.companions.append(cid)
+    # 專屬支線完成 → 該同伴羈絆躍升(忠誠弧的「交心」回報;夾 BOND_MAX)。
+    # 🔴 僅對「在隊」或「具名(解散仍保留羈絆)」同伴生效 —— 否則泛用傭兵可「接支線→解散(forget 清羈絆)
+    # →隊外完成→寫回 orphan 羈絆→再雇=免費 tier-2 + 加成 HP」(對抗審查確認的破口)。
+    for bcid, n in reward.get("bond", {}).items():
+        if bcid in gamedata.companions and (bcid in char.companions
+                                            or party.keeps_state_on_dismiss(gamedata, bcid)):
+            char.companion_bond[bcid] = min(party.BOND_MAX, char.companion_bond.get(bcid, 0) + n)
 
     # 領主委託(source "ruler"):完成 → 該城功勳 +standing(城 = 其領主目錄含此 qid 者)
     standing_loc = None

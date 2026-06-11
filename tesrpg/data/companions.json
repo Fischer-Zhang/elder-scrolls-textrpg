@@ -1,27 +1,63 @@
 {
   "sellsword": {
-    "name": "傭兵劍士", "cost": 200,
+    "name": "斯特倫", "cost": 200,
     "strength": 58, "agility": 45, "speed": 45, "max_health": 78, "armor_rating": 22,
     "attack": {"name": "傭兵之劍", "damage": 14, "skill": 52},
-    "blurb": "久經沙場的劍客,收錢辦事、可靠耐打。"
+    "blurb": "久經沙場的諾德劍客斯特倫,收錢辦事、可靠耐打 —— 嘴上說只認金幣,並肩久了卻比誰都護著你。",
+    "dialogue": [
+      "「先說好,我收的是酬金,不是交情。劍給你,命你自己顧好。」",
+      "「……話雖如此,你打起來比我見過的多數雇主都拼。這趟,值。」",
+      "「金幣我照拿,可你早不只是雇主了。背後交給我 —— 斯特倫的劍替你擋。」",
+      "「生死之交不必多言。你往哪闖,我這條老命就跟到哪。」"
+    ],
+    "personal_quest": "arc_sellsword", "personal_quest_gate": 1,
+    "capstone": {"kind": "ally_empower", "magnitude": 0.15, "label": "並肩之勇",
+                 "desc": "戰場上鼓舞同袍 —— 全隊同伴傷害提升(只作用盟友)。"}
   },
   "shieldmaiden": {
-    "name": "盾女", "cost": 240,
+    "name": "葛蕾塔", "cost": 240,
     "strength": 50, "agility": 38, "speed": 38, "max_health": 100, "armor_rating": 28,
     "attack": {"name": "盾擊", "damage": 11, "skill": 48},
-    "blurb": "以重盾聞名的女戰士,血厚甲硬,替你扛下傷害。"
+    "blurb": "以重盾聞名的女戰士葛蕾塔,血厚甲硬,替你扛下傷害 —— 沉默如山,卻把同袍護在身後。",
+    "dialogue": [
+      "「站我身後。盾是我的,傷我替你擋。」",
+      "「你沒退過一步 —— 我看在眼裡。值得我把盾舉得更穩。」",
+      "「摯友的背,葛蕾塔用整面盾來守。誰想傷你,先過我這關。」",
+      "「我這條命早押在你這面旗下了。倒下的會是敵人,不是你。」"
+    ],
+    "personal_quest": "arc_shieldmaiden", "personal_quest_gate": 2,
+    "capstone": {"kind": "ally_shield", "magnitude": 10, "label": "鐵壁同陣",
+                 "desc": "結陣護同袍 —— 全隊同伴護甲提升(只作用盟友)。"}
   },
   "hedge_mage": {
-    "name": "野法師", "cost": 260,
+    "name": "薇拉妮", "cost": 260,
     "strength": 40, "agility": 46, "speed": 50, "max_health": 50, "armor_rating": 8,
     "attack": {"name": "火焰飛彈", "damage": 15, "skill": 56, "element": "fire"},
-    "blurb": "流浪的火系術士,輸出兇猛但體質脆弱,攻擊無視護甲。"
+    "blurb": "流浪的火系術士薇拉妮,輸出兇猛但體質脆弱,攻擊無視護甲 —— 也藏著一手不外傳的生機之術。",
+    "dialogue": [
+      "「火焰歸我管,別站太近。錢付清了,法術自然到位。」",
+      "「你護著我的後排 —— 那我也分點心力,替同袍續一口生機。」",
+      "「摯友啊,我這身火能焚敵,也能護你周全。受傷了喊一聲。」",
+      "「為你,我願燒盡自己最後一縷法力。生死同行,不負此緣。」"
+    ],
+    "personal_quest": "arc_hedge_mage", "personal_quest_gate": 2,
+    "capstone": {"kind": "ally_regen", "magnitude": 6, "label": "生機共鳴",
+                 "desc": "以生機之術滋養戰列 —— 全隊同伴每回合回復生命(只作用盟友)。"}
   },
   "ranger": {
-    "name": "遊獵射手", "cost": 230,
+    "name": "基蘭", "cost": 230,
     "strength": 44, "agility": 58, "speed": 52, "max_health": 64, "armor_rating": 14,
     "attack": {"name": "獵弓", "damage": 16, "skill": 58},
-    "blurb": "百步穿楊的弓手親衛,從後排穩定收割,適合補齊隊伍火力。"
+    "blurb": "百步穿楊的弓手基蘭,從後排穩定收割 —— 走遍泰姆瑞爾的荒徑,沒有他找不到的近路。",
+    "dialogue": [
+      "「我認得路、也認得獵物。指個方向,箭自會送到。」",
+      "「跟著你走的路比獨行有意思多了。荒野的捷徑,我都記著。」",
+      "「摯友,讓我帶路 —— 翻山過林,我替你省下大把腳程。」",
+      "「天涯海角你儘管去,基蘭的箭與腳,都隨你到底。」"
+    ],
+    "personal_quest": "arc_ranger", "personal_quest_gate": 1,
+    "capstone": {"kind": "travel", "magnitude": 0.08, "label": "識途",
+                 "desc": "熟知荒徑近路 —— 在隊時旅行耗時縮短(非戰鬥)。"}
   },
   "footman": {
     "name": "軍團士兵", "cost": 0, "troop": true,
@@ -39,12 +75,75 @@
     "name": "法卡斯", "cost": 0, "circle": true,
     "strength": 64, "agility": 46, "speed": 42, "max_health": 104, "armor_rating": 30,
     "attack": {"name": "雙手巨劍", "damage": 18, "skill": 60},
-    "blurb": "戰友團圈內的巨漢,沉默寡言卻是最可靠的盾袍兄弟 —— 巨劍開山、重甲擋災,與你並肩便是一堵移動的城牆。"
+    "blurb": "戰友團圈內的巨漢,沉默寡言卻是最可靠的盾袍兄弟 —— 巨劍開山、重甲擋災,與你並肩便是一堵移動的城牆。",
+    "dialogue": [
+      "「跟緊我。我擋前頭,你放手去打。」",
+      "「維爾卡斯老笑我笨 —— 可笨人記得誰是真盾袍。你算一個。」",
+      "「摯友,獸血在我體內燒,但我清醒得很:該護的人,我絕不讓他倒。」",
+      "「生死之交,值得我把命押上。你倒下之前,先過我這身鐵。」"
+    ],
+    "personal_quest": "arc_farkas", "personal_quest_gate": 2,
+    "capstone": {"kind": "ally_shield", "magnitude": 10, "label": "盾袍守護",
+                 "desc": "化身移動城牆 —— 全隊同伴護甲提升(只作用盟友)。"}
   },
   "aela": {
     "name": "艾拉·女獵手", "cost": 0, "circle": true,
     "strength": 50, "agility": 60, "speed": 56, "max_health": 78, "armor_rating": 18,
     "attack": {"name": "獵手長弓", "damage": 17, "skill": 62},
-    "blurb": "戰友團圈內的女獵手,獸血在她體內奔流 —— 箭無虛發、行如疾風,是追獵的化身與最忠誠的盾袍。"
+    "blurb": "戰友團圈內的女獵手,獸血在她體內奔流 —— 箭無虛發、行如疾風,是追獵的化身與最忠誠的盾袍。",
+    "dialogue": [
+      "「跟上,別拖慢狩獵。我的箭只認獵物。」",
+      "「你追獵的姿態不賴 —— 希爾辛會喜歡你這樣的同伴。」",
+      "「摯友,我以鷹眼為你標出弱點 —— 該落的箭,一支都不會偏。」",
+      "「與你並肩追獵到月落,是我獸血裡最暢快的事。死生不負。」"
+    ],
+    "personal_quest": "arc_aela", "personal_quest_gate": 2,
+    "capstone": {"kind": "ally_empower", "magnitude": 0.15, "label": "鷹眼",
+                 "desc": "為同袍標出敵之弱點 —— 全隊同伴傷害提升(只作用盟友)。"}
+  },
+  "drelas": {
+    "name": "德雷拉斯", "cost": 0, "recruit_quest": "recruit_drelas",
+    "strength": 38, "agility": 48, "speed": 50, "max_health": 54, "armor_rating": 8,
+    "attack": {"name": "冰焰術", "damage": 16, "skill": 58, "element": "frost"},
+    "blurb": "晨風的丹莫秘法者德雷拉斯,自我放逐於灰燼荒原 —— 法術精深卻體質孱弱,尋找失落的秘法手稿以證清白。",
+    "dialogue": [
+      "「外鄉人,你替我了結了灰燼裡的麻煩。我以秘法相報 —— 暫且同行。」",
+      "「我的法術護得了你,正如你護了我的名譽。這份默契,難得。」",
+      "「摯友,我以秘法為盾為你抵傷 —— 灰燼裡學來的庇護之術,獻給信得過的人。」",
+      "「我這條自我放逐的命,如今有了去處 —— 隨你,至死方休。」"
+    ],
+    "personal_quest": "arc_drelas", "personal_quest_gate": 2,
+    "capstone": {"kind": "ally_regen", "magnitude": 6, "label": "秘法庇護",
+                 "desc": "秘法滋養戰列 —— 全隊同伴每回合回復生命(只作用盟友)。"}
+  },
+  "ja_rakal": {
+    "name": "賈拉卡爾", "cost": 0, "recruit_quest": "recruit_jarakal",
+    "strength": 46, "agility": 60, "speed": 58, "max_health": 62, "armor_rating": 12,
+    "attack": {"name": "雙短刀", "damage": 16, "skill": 60},
+    "blurb": "艾爾斯維爾的虎人浪客賈拉卡爾,昔日斯庫瑪走私的快手 —— 身手矯捷、長於議價,洗心革面後願隨可信之人闖蕩。",
+    "dialogue": [
+      "「賈拉卡爾的爪子很快,眼睛更尖。你出得起,這雙手就是你的。」",
+      "「跟著你,比走私安穩,也痛快。這位朋友的人脈,你用得上。」",
+      "「摯友啊,市集的門道賈拉卡爾門兒清 —— 跟著我,銀子省下不少。」",
+      "「月糖的舊債早清了,如今賈拉卡爾只認你這位生死之交。」"
+    ],
+    "personal_quest": "arc_jarakal", "personal_quest_gate": 1,
+    "capstone": {"kind": "barter", "magnitude": 0.08, "label": "巧手",
+                 "desc": "通曉市集門道 —— 在隊時買賣更划算(非戰鬥)。"}
+  },
+  "rashid": {
+    "name": "拉希德", "cost": 0, "recruit_quest": "recruit_rashid",
+    "strength": 60, "agility": 50, "speed": 46, "max_health": 98, "armor_rating": 28,
+    "attack": {"name": "彎刀", "damage": 18, "skill": 62},
+    "blurb": "漢默法爾的紅衛劍歌者拉希德,蒙冤被逐的劍術大師 —— 一柄彎刀承載家族榮辱,願為還清白者效死。",
+    "dialogue": [
+      "「劍歌者拉希德,謝你還我一線清白。這柄彎刀,暫聽你號令。」",
+      "「並肩而戰見人品 —— 你當得起一位劍歌者的信任。」",
+      "「摯友,劍歌起時我的戰意連你也共振 —— 全隊的鋒芒因之更利。」",
+      "「家族的榮辱已了,如今拉希德的劍只為你而歌,至死不渝。」"
+    ],
+    "personal_quest": "arc_rashid", "personal_quest_gate": 2,
+    "capstone": {"kind": "ally_empower", "magnitude": 0.15, "label": "戰意",
+                 "desc": "劍歌激揚戰意 —— 全隊同伴傷害提升(只作用盟友)。"}
   }
 }

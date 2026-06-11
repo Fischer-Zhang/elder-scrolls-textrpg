@@ -24,6 +24,11 @@ BOND_HP_PER_TIER = 12                   # 每級羈絆 → 該同伴 +max_health
 
 INJURED = 0                             # HP ≤ 此值 = 倒下/負傷(benched,須治療)
 
+MAX_PARTY = 2                           # 同時在隊同伴上限(召集/雇用時夾;此處為單一真實來源)
+
+# 忠誠弧頂點 · 被動型(非戰鬥)加成的加總上限(防多同伴疊加虛高;戰術型走盟友光環不在此)
+PASSIVE_CAP = {"barter": 0.15, "travel": 0.15}
+
 
 def bond_points(char: Character, cid: str) -> int:
     return char.companion_bond.get(cid, 0)
@@ -119,7 +124,61 @@ def forget(char: Character, cid: str) -> None:
     char.companion_bond.pop(cid, None)
 
 
-# --- 一生傳奇:最深羈絆的同伴 ---------------------------------------------
+# --- 同伴角色化:招募 / 專屬支線 / 忠誠弧頂點(全由既有 completed_quests/bond 推導,零新存檔欄)----
+def keeps_state_on_dismiss(gamedata: GameData, cid: str) -> bool:
+    """具名同伴(circle 盾袍兄弟 + 招募任務取得者)解散時保留持久 HP/羈絆、可免費再召集 ——
+    比照 circle 鐵律(否則『解散→再召集』成免費回血/解負傷洞)。泛用傭兵照舊 forget。"""
+    c = gamedata.companions.get(cid, {})
+    return bool(c.get("circle") or c.get("recruit_quest"))
+
+
+def recruited_named(char: Character, gamedata: GameData) -> list[str]:
+    """已透過招募任務解鎖、目前不在隊的具名同伴(可在隊伍選單免費再召集)。
+    circle 盾袍兄弟另由戰友團聖殿召集 → 不在此列(行為不變)。"""
+    out = []
+    for cid, c in gamedata.companions.items():
+        rq = c.get("recruit_quest")
+        if rq and rq in char.completed_quests and cid not in char.companions:
+            out.append(cid)
+    return out
+
+
+def personal_quest_id(gamedata: GameData, cid: str) -> str | None:
+    return gamedata.companions.get(cid, {}).get("personal_quest")
+
+
+def arc_done(char: Character, gamedata: GameData, cid: str) -> bool:
+    """同伴專屬支線已完成 → 忠誠弧達成(頂點解鎖)。由 completed_quests 推導,永久。"""
+    qid = personal_quest_id(gamedata, cid)
+    return bool(qid) and qid in char.completed_quests
+
+
+def arc_offerable(char: Character, gamedata: GameData, cid: str) -> bool:
+    """專屬支線可在『與同伴交談』提供:有定義、羈絆達門檻、尚未接取/完成。"""
+    qid = personal_quest_id(gamedata, cid)
+    if not qid or qid in char.quests or qid in char.completed_quests:
+        return False
+    gate = gamedata.companions.get(cid, {}).get("personal_quest_gate", 1)
+    return bond_tier(char, cid) >= gate
+
+
+def active_capstone(char: Character, gamedata: GameData, cid: str) -> dict | None:
+    """該同伴已完成專屬支線 → 其忠誠頂點 dict;否則 None。"""
+    if not arc_done(char, gamedata, cid):
+        return None
+    return gamedata.companions.get(cid, {}).get("capstone")
+
+
+def passive_capstone_factor(char: Character, gamedata: GameData, kind: str) -> float:
+    """在隊且弧完成的同伴中,具該被動 kind 頂點的加總強度(夾 PASSIVE_CAP)。
+    被動型頂點(barter/travel)純非戰鬥 → 不碰偷襲/solo boss 紅線。"""
+    total = sum(cap.get("magnitude", 0.0)
+                for cid in char.companions
+                if (cap := active_capstone(char, gamedata, cid)) and cap.get("kind") == kind)
+    return min(total, PASSIVE_CAP.get(kind, 0.5))
+
+
+# --- 一生傳奇:最深羈絆的同伴 + 完成的忠誠弧 ------------------------------
 def legacy_label(char: Character, gamedata: GameData) -> str | None:
     best = None
     for cid in char.companions:        # 只認在隊者(forget 已清離隊者 → 不殘留羈絆殘影)
@@ -129,3 +188,14 @@ def legacy_label(char: Character, gamedata: GameData) -> str | None:
     if not best or best[1] == 0:
         return None
     return f"{bond_name(char, best[0])}·{gamedata.companions.get(best[0], {}).get('name', best[0])}"
+
+
+def loyalty_arcs(char: Character, gamedata: GameData) -> list[str]:
+    """在隊同伴中已完成專屬支線者的 cid。"""
+    return [cid for cid in char.companions if arc_done(char, gamedata, cid)]
+
+
+def loyalty_label(char: Character, gamedata: GameData) -> str | None:
+    names = [gamedata.companions.get(cid, {}).get("name", cid)
+             for cid in loyalty_arcs(char, gamedata)]
+    return "、".join(names) if names else None

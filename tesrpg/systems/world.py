@@ -39,11 +39,12 @@ def travel(char: Character, gamedata: GameData, dest_id: str, time, rng: RNG) ->
     回傳 {"foe":遭遇 Creature 或 None, "hours":實際耗時, "base_hours":名目耗時,
           "skill_events":運動升點事件}。遭遇尚未開打 —— 由上層決定接戰/逃避。
     """
-    from tesrpg.systems import mastery
+    from tesrpg.systems import mastery, party
     links = current_location(char, gamedata).get("links", {})
     base_hours = links[dest_id]
     travel_factor = max(0.5, formulas.athletics_travel_factor(char.skill("athletics"))
-                        - mastery.travel_factor_bonus(char, gamedata))   # 「長途健步」加速,夾 floor 0.5
+                        - mastery.travel_factor_bonus(char, gamedata)
+                        - party.passive_capstone_factor(char, gamedata, "travel"))   # 「長途健步」+ 同伴「識途」忠誠頂點,夾 floor 0.5
     hours = max(1, round(base_hours * travel_factor))
     dest = gamedata.location(dest_id)
 
@@ -62,9 +63,10 @@ def travel(char: Character, gamedata: GameData, dest_id: str, time, rng: RNG) ->
 # --- 商店定價(受 交易 + 魅力 影響)-----------------------------------
 def _disposition_factor(char: Character, gamedata: GameData | None = None) -> float:
     base = (char.skill("mercantile") + char.attr("personality") * 0.5) / 150.0
-    if gamedata is not None:                       # 里程碑「精算買賣/魅惑交易」議價加成
-        from tesrpg.systems import mastery
+    if gamedata is not None:                       # 里程碑「精算買賣/魅惑交易」議價加成 + 同伴忠誠頂點
+        from tesrpg.systems import mastery, party
         base += mastery.merchant_bonus(char, gamedata)
+        base += party.passive_capstone_factor(char, gamedata, "barter")   # 同伴「人脈/巧手」忠誠頂點:議價
     return max(0.0, min(1.0, base))
 
 

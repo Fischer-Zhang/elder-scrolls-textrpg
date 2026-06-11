@@ -252,9 +252,9 @@ def _combat_view(player: Character, allies: list, enemies: list) -> dict:
 
 def _legacy_view(s: dict) -> dict:
     origins = []   # 身世:出身/詛咒/血業/功業/精通
-    for key in ("origin", "condition", "lycanthropy", "addiction", "dark_deeds", "comrade", "dominion"):
+    for key in ("origin", "condition", "lycanthropy", "addiction", "dark_deeds", "comrade", "loyalty", "dominion"):
         label = {"origin": "出身", "condition": "詛咒", "lycanthropy": "獸血", "addiction": "癮疾",
-                 "dark_deeds": "血業", "comrade": "羈絆", "dominion": "功業"}[key]
+                 "dark_deeds": "血業", "comrade": "羈絆", "loyalty": "忠誠", "dominion": "功業"}[key]
         if s.get(key):
             origins.append([label, str(s[key])])
     if s.get("masteries"):
@@ -1025,7 +1025,7 @@ def sheet_lycanthropy(char: Character, state: GameState, gamedata: GameData) -> 
 
 
 def party_panel(char: Character, gamedata: GameData) -> None:
-    """隊伍面板:各同伴 HP/上限 + 羈絆級(倒下標『負傷待療』)。"""
+    """隊伍面板:各同伴 HP/上限 + 羈絆級(倒下標『負傷待療』)+ 忠誠弧/頂點狀態。"""
     from tesrpg.systems import party
     items = []
     for cid in char.companions:
@@ -1033,12 +1033,19 @@ def party_panel(char: Character, gamedata: GameData) -> None:
         cur, mx = party.current_hp(char, gamedata, cid), party.max_hp(char, gamedata, cid)
         downed = party.is_downed(char, gamedata, cid)
         hp_s = "負傷待療" if downed else f"{cur}/{mx}"
-        items.append((nm, hp_s, party.bond_name(char, cid), downed, cur, mx))
-    note = "(同伴 HP 跨戰持久;倒下→負傷退場,休息/旅店過夜可康復再上陣。並肩獲勝累積羈絆 → 更耐打)"
+        if party.arc_done(char, gamedata, cid):          # 忠誠弧已成 → 標頂點名
+            cap = gamedata.companions.get(cid, {}).get("capstone", {})
+            arc = f"★ {cap.get('label', '忠誠')}"
+        elif party.arc_offerable(char, gamedata, cid):   # 羈絆達門檻 → 暗示可傾聽心事
+            arc = "（有心事可傾聽）"
+        else:
+            arc = ""
+        items.append((nm, hp_s, party.bond_name(char, cid), downed, arc))
+    note = "(同伴 HP 跨戰持久;倒下→負傷退場,休息/旅店過夜可康復再上陣。並肩獲勝累積羈絆 → 更耐打;達羈絆門檻可『與同伴交談』傾聽其專屬支線)"
     if _web is not None:
         rows = []
-        for nm, hp_s, bond, downed, cur, mx in items:
-            rows.append(_kv(nm, f"{hp_s} · 羈絆「{bond}」"))
+        for nm, hp_s, bond, downed, arc in items:
+            rows.append(_kv(nm, f"{hp_s} · 羈絆「{bond}」{('· ' + arc) if arc else ''}"))
         if not rows:
             rows = [_ln("你目前沒有同伴。", "muted")]
         rows.append(_ln(note, "faint"))
@@ -1047,12 +1054,27 @@ def party_panel(char: Character, gamedata: GameData) -> None:
     body = Text()
     if not items:
         body.append("你目前沒有同伴。", style=INK)
-    for nm, hp_s, bond, downed, cur, mx in items:
+    for nm, hp_s, bond, downed, arc in items:
         body.append(f"{nm}  ", style=GOLD)
         body.append(hp_s, style=("red" if downed else PARCH))
-        body.append(f"  羈絆「{bond}」\n", style="cyan")
+        body.append(f"  羈絆「{bond}」", style="cyan")
+        if arc:
+            body.append(f"  {arc}", style="gold1")
+        body.append("\n")
     body.append(note, style=FAINT)
     console.print(_panel(body, title="隊伍"))
+
+
+def companion_talk(name: str, line: str, bond: str) -> None:
+    """同伴對話:名 + 依羈絆階的台詞(就地交談,非分支對話樹)。"""
+    if _web is not None:
+        _emit_panel(f"💬 {name}", [_ln(f"「{line}」"), _ln(f"羈絆「{bond}」", "faint")])
+        return
+    body = Text()
+    body.append(f"{name}：", style=GOLD)
+    body.append(f"「{line}」\n", style="italic " + PARCH)
+    body.append(f"（羈絆「{bond}」)", style=FAINT)
+    console.print(_panel(body, title="交談", style="green"))
 
 
 def sheet_skooma(char: Character, state: GameState, gamedata: GameData) -> None:
@@ -1325,6 +1347,8 @@ def legacy_screen(s: dict) -> None:
         body.add_row("獸血", str(s["lycanthropy"]))
     if s.get("comrade"):
         body.add_row("羈絆", str(s["comrade"]))
+    if s.get("loyalty"):
+        body.add_row("忠誠", str(s["loyalty"]))
     if s.get("dark_deeds"):
         body.add_row("血業", str(s["dark_deeds"]))
     if s.get("dominion"):

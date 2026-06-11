@@ -532,6 +532,30 @@ def _prep_phase(state: GameState, gamedata: GameData, enemies, battle: dict, bud
     stats.clamp_resources(player)
 
 
+_CAPSTONE_AURA_KIND = {"ally_empower": "empower", "ally_shield": "shield", "ally_regen": "regen"}
+
+
+def _apply_companion_capstone_auras(char: Character, gamedata: GameData, roster: list, allies: list) -> None:
+    """忠誠弧頂點(戰術型):弧完成 + 存活的同伴 → 對盟友側套盟友限定光環(empower/shield/regen)。
+    複用戰旗/盾牆同模式(turns:1、source 去重、逐回合刷新),**只作用盟友** ——
+    empower 在 combat 端另有 `not _is_player` 守門 → 永不碰玩家偷襲倍率/solo boss 夾限(sim 零位移)。"""
+    living = [a for a in allies if combat.is_alive(a)]
+    if not living:
+        return
+    for cid, cre in roster:
+        if not combat.is_alive(cre):
+            continue                                  # 倒下的頂點持有者不發光環
+        cap = party.active_capstone(char, gamedata, cid)
+        eff_kind = _CAPSTONE_AURA_KIND.get(cap.get("kind")) if cap else None
+        if not eff_kind:
+            continue                                  # 無頂點 / 被動型(barter/travel 不在戰鬥套用)
+        src = f"capstone:{cid}"
+        mag = cap.get("magnitude", 0)
+        for a in living:
+            a.active_effects[:] = [e for e in a.active_effects if e.get("source") != src]
+            a.active_effects.append({"kind": eff_kind, "magnitude": mag, "turns": 1, "source": src})
+
+
 def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
                alerted: bool = False, prep_budget: int = 0, casualties: list | None = None,
                carry_allies: list | None = None, preserve_buffs: bool = False) -> str:
@@ -600,6 +624,9 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
     def note_trap(e):
         if not combat.is_alive(e) and magic.has_soul_trap(e):
             trapped_kills.add(id(e))
+
+    # 忠誠弧頂點(戰術型):開場即套盟友限定光環,使第一回合的同伴也受惠(後續逐回合於回合末刷新)
+    _apply_companion_capstone_auras(player, gamedata, roster, battle["allies"])
 
     while combat.is_alive(player) and alive_e():
         action = _choose_combat_action(state, gamedata, enemies, battle["allies"], vanishes_done)
@@ -798,6 +825,7 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
             if any(a.health < a.max_health * TRIAGE_ALLY_HP_RATIO for a in living_allies):
                 player.active_effects.append({"kind": "triage_ready", "turns": 2})
                 ui.message("同袍命懸一線 —— 你的戰地醫者本能瞬間繃緊,下一道治療近乎免費。", style="bold green")
+        _apply_companion_capstone_auras(player, gamedata, roster, battle["allies"])   # 忠誠弧頂點:逐回合刷新盟友光環
         # 召喚物計時、移除陣亡/到期的同伴
         for a in battle["allies"]:
             if a.summon_turns is not None:
@@ -857,6 +885,18 @@ def _report_quests(state: GameState, gamedata: GameData) -> None:
             ui.message(f"  獎勵 {gamedata.item_name(iid)}", style="green")
         if r.get("fame"):
             ui.message(f"  聲望 +{r['fame']}", style="cyan")
+        if r.get("companion"):                         # 同伴角色化:招募任務授予具名同伴(入夥 / 滿員待召集)
+            cid = r["companion"]; cnm = gamedata.companions.get(cid, {}).get("name", cid)
+            if cid in state.player.companions:
+                ui.message(f"  ◈ {cnm}加入了你的隊伍!", style="bold green")
+            else:
+                ui.message(f"  ◈ {cnm}願追隨你 —— 隊伍已滿,可在「隊伍」選單召集歸隊。", style="green")
+        for bcid, n in (r.get("bond") or {}).items():  # 專屬支線完成 → 羈絆躍升(與 _complete 的套用條件一致)
+            if bcid in gamedata.companions and (bcid in state.player.companions
+                                                or party.keeps_state_on_dismiss(gamedata, bcid)):
+                bnm = gamedata.companions[bcid].get("name", bcid)
+                ui.message(f"  ◈ 你與{bnm}並肩交心,羈絆躍升至「{party.bond_name(state.player, bcid)}」",
+                           style="bold cyan")
         if ev.get("standing_loc"):
             loc_name = gamedata.location(ev["standing_loc"])["name"]
             ui.message(f"  ◈ {loc_name}城邦功勳 +{r.get('standing', 1)}", style="gold1")
@@ -1507,7 +1547,7 @@ def action_shop(state: GameState, gamedata: GameData) -> None:
                 ui.message(f"賣出{gamedata.item_name(iid)} ×{sold},得 {total} 金。", style="green")
 
 
-MAX_PARTY = 2
+MAX_PARTY = party.MAX_PARTY              # 同時在隊上限(單一真實來源在 party.py)
 COMPANIONS_CIRCLE_RANK = lycanthropy.RITUAL_RANK_INDEX   # 戰友團「內圈」門檻(獸血儀式 + 召集盾袍兄弟)
 
 # 八職功能性身份:戰士盾牆 / 騎士戰旗 為戰鬥動作的常數(技能門檻用 base_skill;暫態存 active_effects)
@@ -1892,7 +1932,8 @@ def _hire_mercenary(state: GameState, gamedata: GameData) -> None:
     avail = [cid for cid in gamedata.companions
              if cid not in char.companions and not gamedata.companions[cid].get("troop")
              and not gamedata.companions[cid].get("warlord")    # warlord 將領唯營地可招
-             and not gamedata.companions[cid].get("circle")]    # circle 盾袍兄弟唯戰友團聖殿召集
+             and not gamedata.companions[cid].get("circle")     # circle 盾袍兄弟唯戰友團聖殿召集
+             and not gamedata.companions[cid].get("recruit_quest")]  # 具名招募同伴唯任務取得(非花錢即得)
     disc = factions.merc_discount(char, gamedata)               # 戰友團「盾袍之誼」:招募折扣
     def _merc_price(cid: str) -> int:
         return int(round(gamedata.companions[cid]["cost"] * (1 - disc)))
@@ -1940,14 +1981,15 @@ def _dismiss_mercenary(state: GameState, gamedata: GameData) -> None:
     if cid is None:
         return
     char.companions.remove(cid)
-    if gamedata.companions.get(cid, {}).get("circle"):
-        # 圈內盾袍兄弟是永久同袍、可免費再召集 → 須保留持久 HP/負傷,
-        # 否則「解散→召集」會變成零成本回滿血/解負傷,繞過持久 HP 懲罰。
-        ui.message(f"{gamedata.companions[cid]['name']}回到 Jorrvaskr 待命 —— 你隨時能再召集他並肩作戰。",
+    nm = gamedata.companions.get(cid, {}).get("name", cid)
+    if party.keeps_state_on_dismiss(gamedata, cid):
+        # 具名同伴(圈內盾袍兄弟 + 招募取得者)是永久同袍、可免費再召集 → 須保留持久 HP/負傷/羈絆,
+        # 否則「解散→召集」會變成零成本回滿血/解負傷,繞過持久 HP 懲罰(circle 鐵律延伸)。
+        ui.message(f"{nm}暫別你的隊伍待命 —— 你隨時能再召集{'他' if gamedata.companions.get(cid,{}).get('circle') else '其'}並肩作戰。",
                    style="grey70")
     else:
         party.forget(char, cid)          # 雇傭兵:清持久 HP/羈絆(再雇用須付酬金=既有金幣閘)
-        ui.message(f"{gamedata.companions[cid]['name']}拿了酬勞,就此別過。", style="grey70")
+        ui.message(f"{nm}拿了酬勞,就此別過。", style="grey70")
 
 
 def _party_label(char: Character, gamedata: GameData, cid: str) -> str:
@@ -1958,19 +2000,73 @@ def _party_label(char: Character, gamedata: GameData, cid: str) -> str:
     return f"{name}（{state}·{party.bond_name(char, cid)})"
 
 
+def _summon_named_companion(state: GameState, gamedata: GameData) -> None:
+    """召集一名已透過招募任務取得、目前待命中的具名同伴歸隊(免費,受隊伍上限)。"""
+    char = state.player
+    if len(char.companions) >= MAX_PARTY:
+        ui.message(f"隊伍已滿(最多 {MAX_PARTY} 名),先解散一名再召集。", style="yellow")
+        return
+    avail = party.recruited_named(char, gamedata)
+    opts = [(cid, f"{gamedata.companions[cid]['name']} —— {gamedata.companions[cid]['blurb']}")
+            for cid in avail]
+    cid = ui.menu("召集哪位同伴歸隊?", opts, allow_back=True)
+    if cid is None:
+        return
+    char.companions.append(cid)
+    ui.message(f"{gamedata.companions[cid]['name']}應召歸隊,與你並肩同行。", style="bold green")
+
+
+def _talk_companion(state: GameState, gamedata: GameData) -> None:
+    """與一名在隊同伴交談:依羈絆階呈現對話;達羈絆門檻 → 可傾聽其心事(接取專屬支線)。"""
+    char = state.player
+    cid = ui.menu("與哪位同伴交談?",
+                  [(c, gamedata.companions.get(c, {}).get("name", c)) for c in char.companions],
+                  allow_back=True)
+    if cid is None:
+        return
+    c = gamedata.companions.get(cid, {})
+    nm = c.get("name", cid)
+    tier = party.bond_tier(char, cid)
+    lines = c.get("dialogue", [])
+    line = lines[min(tier, len(lines) - 1)] if lines else c.get("blurb", "")
+    ui.companion_talk(nm, line, party.bond_name(char, cid))
+    if party.arc_done(char, gamedata, cid):
+        cap = c.get("capstone", {})
+        if cap.get("label"):
+            ui.message(f"（忠誠弧已成 · {cap['label']}:{cap.get('desc', '')}）", style="cyan")
+        return
+    if party.arc_offerable(char, gamedata, cid):
+        qid = party.personal_quest_id(gamedata, cid)
+        pick = ui.menu(f"{nm}的神情似有未了的心事 —— 願意傾聽嗎?",
+                       [("listen", "傾聽他的心事")], allow_back=True)
+        if pick == "listen" and qid:
+            _accept_and_brief(state, gamedata, qid)
+
+
 def action_party(state: GameState, gamedata: GameData) -> None:
-    """隊伍管理:檢視同伴 HP/羈絆/負傷,可就地解散(任何地方,不限旅店)。"""
+    """隊伍管理:檢視同伴 HP/羈絆/負傷、與同伴交談(專屬支線)、召集待命具名同伴、就地解散(不限旅店)。"""
     char = state.player
     while True:
-        if not char.companions:
+        summonable = party.recruited_named(char, gamedata)
+        if not char.companions and not summonable:
             ui.message("你目前沒有同伴。(旅店可雇用傭兵;受封武士得侍從;營地可延攬將領)", style="grey70")
             return
         ui.party_panel(char, gamedata)
-        opts = [("dismiss", "解散一名同伴")]
+        opts = []
+        if char.companions:
+            opts.append(("talk", "與同伴交談"))
+        if summonable and len(char.companions) < MAX_PARTY:
+            opts.append(("summon", f"召集同伴歸隊({len(summonable)} 人待命)"))
+        if char.companions:
+            opts.append(("dismiss", "解散一名同伴"))
         choice = ui.menu("隊伍", opts, allow_back=True)
         if choice is None:
             return
-        if choice == "dismiss":
+        if choice == "talk":
+            _talk_companion(state, gamedata)
+        elif choice == "summon":
+            _summon_named_companion(state, gamedata)
+        elif choice == "dismiss":
             _dismiss_mercenary(state, gamedata)
 
 

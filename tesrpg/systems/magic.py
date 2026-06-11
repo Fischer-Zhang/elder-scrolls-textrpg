@@ -506,8 +506,11 @@ def tick_effects(entity, gamedata=None) -> list[str]:
     for e in list(entity.active_effects):
         if e["turns"] <= 0:
             entity.active_effects.remove(e)
-            # 每回合重推的常駐光環護盾(盾牆護同袍 / 戰旗自護)不報「消散」— 它其實是被持續刷新,非真消失
-            if e["kind"] == "shield" and e.get("source") not in ("shield_wall_aura", "standard_self"):
+            # 每回合重推的常駐光環護盾(盾牆護同袍 / 戰旗自護 / 同伴忠誠頂點 capstone:*)不報「消散」
+            # —— 它其實是被持續刷新,非真消失。
+            _src = e.get("source")
+            if (e["kind"] == "shield" and _src not in ("shield_wall_aura", "standard_self")
+                    and not (isinstance(_src, str) and _src.startswith("capstone:"))):
                 msgs.append("護盾消散了。")
             elif e["kind"] == "ward":
                 msgs.append("結界消散了。")
