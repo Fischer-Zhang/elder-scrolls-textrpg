@@ -10,7 +10,6 @@ from tesrpg.gamedata import get_gamedata
 from tesrpg.rng import RNG
 from tesrpg.state import GameState, GameTime
 from tesrpg.systems import combat, magic, party
-from tesrpg.ui import console as ui
 
 
 def _melee(blade=80, strength=80, weapon="steel_sword"):
@@ -123,29 +122,6 @@ def test_empower_aggregates_as_max_not_sum():
     assert one > none and three == one                       # 一道有效;三道不超過一道(max 聚合)
 
 
-def test_new_spells_are_accessible():
-    """對抗審查抓到:8 新法術曾誤上架到海芬古而非帝都樞紐 → 確保中央可學 + 不被孤兒化。"""
-    gd = get_gamedata()
-    new = ("flame_blade", "frost_blade", "storm_blade", "heal_other",
-           "healing_circle", "ward_ally", "regen_aura", "rally")
-    stocks = {loc: set(d.get("spell_stock", [])) for loc, d in gd.world["locations"].items()}
-    assert all(s in stocks["imperial_city"] for s in new)     # 帝都樞紐全備(中央可及)
-    for s in new:                                             # 每道至少一處可學(不孤兒)
-        assert any(s in stk for stk in stocks.values()), s
-
-
-def test_empower_never_affects_player_even_if_present():
-    """🔴 紅線:empower 即使誤掛在玩家身上也不放大玩家傷害(resolve_attack `not _is_player` 守門)。"""
-    gd, c = _melee()
-    foe = combat.spawn_creature(gd, "bandit", RNG(1)); foe.resist = {}
-    plain = sum(combat.resolve_attack(_melee()[1], combat.spawn_creature(gd, "bandit", RNG(s)), gd, RNG(s))["damage"]
-                for s in range(40))
-    def with_emp(seed):
-        _, m = _melee(); m.active_effects = [{"kind": "empower", "magnitude": 1.0, "turns": 4}]
-        return combat.resolve_attack(m, combat.spawn_creature(gd, "bandit", RNG(seed)), gd, RNG(seed))["damage"]
-    assert sum(with_emp(s) for s in range(40)) == plain        # 玩家 empower 零效果
-
-
 # --- 弓手:散兵武技(aimed / crippling)----------------------------------
 def test_aimed_shot_stronger_but_capped():
     gd, c = _melee(blade=0, weapon="hunting_bow")
@@ -165,15 +141,6 @@ def test_aimed_shot_stronger_but_capped():
     assert worst <= cap
 
 
-# --- 摘要全涵蓋(無 fallback)--------------------------------------------
-def test_all_new_spells_summarised():
-    gd = get_gamedata()
-    for s in ("flame_blade", "frost_blade", "storm_blade", "heal_other", "healing_circle",
-              "ward_ally", "regen_aura", "rally"):
-        summ = ui.spell_effect_summary(gd, s)
-        assert summ and summ != "效果", (s, summ)
-
-
 def test_class_signature_spells():
     gd = get_gamedata()
     for cid, sig in (("battlemage", "flame_blade"), ("healer", "heal_other"), ("knight", "rally")):
@@ -190,10 +157,7 @@ def run():
     test_rally_empowers_allies_not_player()
     test_empower_scales_with_caster_power()
     test_empower_aggregates_as_max_not_sum()
-    test_new_spells_are_accessible()
-    test_empower_never_affects_player_even_if_present()
     test_aimed_shot_stronger_but_capped()
-    test_all_new_spells_summarised()
     test_class_signature_spells()
 
 

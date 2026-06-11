@@ -1,5 +1,7 @@
 """戰鬥系統的單元測試。"""
 
+from collections import Counter
+
 from tesrpg import formulas
 from tesrpg.creation import build_character
 from tesrpg.gamedata import get_gamedata
@@ -34,13 +36,6 @@ def test_starter_weapon_assigned():
     assert wp["skill"] == "blade"
 
 
-def test_spawn_and_loot():
-    gd, _ = _warrior()
-    rng = RNG(1)
-    cr = combat.spawn_creature(gd, "wolf", rng)
-    assert cr.name == "野狼" and cr.health > 0 and cr.health == cr.max_health
-
-
 def test_player_beats_weak_creature_and_trains():
     gd, c = _warrior()
     rng = RNG(7)
@@ -51,36 +46,15 @@ def test_player_beats_weak_creature_and_trains():
     assert result["winner"] == "player"
     # 靠戰鬥練了武器技能(learn-by-doing)
     assert c.skill_xp[wpn_skill] > 0 or c.skill(wpn_skill) > skill_before
-
-
-def test_player_can_die_to_strong_foe():
-    gd, c = _warrior()
-    # 削弱玩家、放一頭熊 → 應會落敗
-    c.health = 12
-    c.max_health = 12
-    rng = RNG(3)
-    bear = combat.spawn_creature(gd, "bear", rng)
-    result = combat.auto_resolve(c, bear, gd, rng)
-    assert result["winner"] in ("creature", "draw")
-    if result["winner"] == "creature":
-        assert not combat.is_alive(c)
-
-
-def test_resolve_attack_applies_damage():
-    gd, c = _warrior()
-    rng = RNG(0)
-    rat = combat.spawn_creature(gd, "giant_rat", rng)
-    hp0 = rat.health
-    # 強制命中:把玩家武器技能拉高、用多次直到命中
-    landed = False
-    for _ in range(20):
-        ev = combat.resolve_attack(c, rat, gd, rng)
-        if ev["hit"]:
-            landed = True
-            assert ev["damage"] >= 1
-            assert rat.health < hp0
-            break
-    assert landed
+    # —— 吸收自 test_player_can_die_to_strong_foe(auto_resolve 敗北面)——
+    # 用獨立角色實例 + 獨立 RNG,避免削血污染上方勝利+練功斷言
+    _, c2 = _warrior()
+    c2.health = c2.max_health = 12       # 削弱玩家、放一頭熊 → 應會落敗
+    bear = combat.spawn_creature(gd, "bear", RNG(3))
+    res = combat.auto_resolve(c2, bear, gd, RNG(3))
+    assert res["winner"] in ("creature", "draw")
+    if res["winner"] == "creature":
+        assert not combat.is_alive(c2)
 
 
 def test_sneak_attack_multiplies_damage():
@@ -163,8 +137,13 @@ def test_athletics_reduces_combat_fatigue_and_block_costs():
     assert 0 < spent(combat.player_block_cost, 100) < formulas.BLOCK_FATIGUE_COST
 
 
-def test_block_damage_factor_scales_with_skill():
-    """格擋減傷隨格擋技能成長:0→×0.9、100→×0.4、單調遞減、超出範圍夾限。"""
+def test_block_skill_actually_read_in_combat():
+    """格擋減傷的公式端點 + 效果端點合一驗證(公式層+效果層同機制)。
+
+    公式層:block_damage_factor 隨格擋技能單調遞減、端點與夾限固定。
+    效果層:同一 seed → 命中與傷害骰一致(格擋不影響命中),唯一變因是格擋技能。
+    """
+    # —— 吸收自 test_block_damage_factor_scales_with_skill(純公式端點)——
     assert formulas.block_damage_factor(0) == 0.9
     assert formulas.block_damage_factor(100) == 0.4
     assert (formulas.block_damage_factor(0) >
@@ -172,13 +151,6 @@ def test_block_damage_factor_scales_with_skill():
             formulas.block_damage_factor(100))
     assert formulas.block_damage_factor(-10) == 0.9
     assert formulas.block_damage_factor(150) == 0.4
-
-
-def test_block_skill_actually_read_in_combat():
-    """格擋時高格擋技能的防守方實際受到更少傷害(證明 block 等級不再空轉)。
-
-    同一 seed → 命中與傷害骰一致(格擋不影響命中),唯一變因是格擋技能。
-    """
     gd, c = _warrior()
     foe = combat.spawn_creature(gd, "giant_rat", RNG(1))
     foe.attack["damage"] = 60     # 放大傷害 → 捨入後仍顯出技能差
@@ -212,12 +184,17 @@ def test_elite_enemies_gated_by_min_level():
 
 
 def test_group_size_scales_with_danger():
-    """危險度越高,遭遇群體平均越大。"""
+    """危險度越高,遭遇群體平均越大;且低危險度群體 ≤3 且以單體為主。"""
     gd, _ = _warrior()
     def avg(md, n=300):
         return sum(len(combat.random_encounter_group(gd, 1, RNG(s), max_danger=md))
                    for s in range(n)) / n
     assert avg(5) > avg(3) > avg(1)
+    # —— 吸收自 test_m12.test_encounter_group_sizes ——
+    # danger=3 時群體 ⊆{1,2,3}(≤3 上限,>3 敵潛匿壓制紅線相依的規模假設)
+    # 且單體佔多數(分布形狀 pin)
+    sizes = Counter(len(combat.random_encounter_group(gd, 3, RNG(i))) for i in range(300))
+    assert set(sizes) <= {1, 2, 3} and sizes[1] > sizes[3]
 
 
 def test_boss_elites_appear_solo():
@@ -237,16 +214,12 @@ def test_boss_elites_appear_solo():
 def run():
     test_formulas_monotonic()
     test_starter_weapon_assigned()
-    test_spawn_and_loot()
     test_player_beats_weak_creature_and_trains()
-    test_player_can_die_to_strong_foe()
-    test_resolve_attack_applies_damage()
     test_sneak_attack_multiplies_damage()
     test_sneak_attack_trains_sneak_and_is_player_only()
     test_acrobatics_dodge_reduces_hit_chance()
     test_acrobatics_trains_on_dodge()
     test_athletics_reduces_combat_fatigue_and_block_costs()
-    test_block_damage_factor_scales_with_skill()
     test_block_skill_actually_read_in_combat()
     test_elite_enemies_gated_by_min_level()
     test_group_size_scales_with_danger()

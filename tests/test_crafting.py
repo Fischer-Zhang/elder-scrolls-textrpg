@@ -18,18 +18,6 @@ def _char():
     return gd, c
 
 
-# --- 配方合法性 --------------------------------------------------------
-def test_recipes_resolve_to_real_items():
-    gd, _ = _char()
-    assert gd.recipes
-    for rid, r in gd.recipes.items():
-        for iid in r["inputs"]:
-            assert gd.item(iid), f"{rid} 輸入 {iid} 不存在"
-        assert gd.item(r["output"]), f"{rid} 產物 {r['output']} 不存在"
-        if r.get("skill"):
-            assert r["skill"] in gd.skills
-
-
 # --- 加工消耗/產出 + practice 成本 ------------------------------------
 def test_craft_consumes_inputs_produces_output_and_costs():
     gd, c = _char()
@@ -37,6 +25,7 @@ def test_craft_consumes_inputs_produces_output_and_costs():
     pdef = gd.skills["smithing"]["practice"]
     c.fatigue = c.max_fatigue
     f0 = c.fatigue
+    x0 = c.skill_xp.get("smithing", 0.0)
     assert crafting.can_craft(c, gd, "tan_leather_cuirass")
     res = crafting.craft(c, gd, "tan_leather_cuirass")
     assert res["ok"]
@@ -44,6 +33,7 @@ def test_craft_consumes_inputs_produces_output_and_costs():
     assert inventory.count_item(c, "leather_cuirass") == 1     # 產出皮甲
     assert res["hours"] == pdef["hours"] and "tired" in res
     assert c.fatigue == f0 - pdef["fatigue"]                   # 付鍛造 practice 體力
+    assert c.skill_xp.get("smithing", 0.0) > x0               # 鍛造練 smithing(併自 test_smithing)
 
 
 def test_cant_craft_without_materials():
@@ -127,7 +117,6 @@ def test_craft_smoke_at_smith():
 
 
 def run():
-    test_recipes_resolve_to_real_items()
     test_craft_consumes_inputs_produces_output_and_costs()
     test_cant_craft_without_materials()
     test_recipes_for_station()

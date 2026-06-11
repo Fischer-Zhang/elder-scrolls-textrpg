@@ -37,8 +37,11 @@ def _sneak_until_nonlethal_hit(gd, c, target):
     raise AssertionError("偷襲始終沒有命中(命中下限應 >=0.9)")
 
 
-# --- 暗殺殘響 -----------------------------------------------------------
+# --- 暗殺殘響(武器 × 殘響矩陣)-----------------------------------------
 def test_dagger_sneak_aftermath_staggers_and_bleeds():
+    """武器 × 暗殺殘響矩陣:匕首=踉蹌+撕裂、弓=只踉蹌、劍=無殘響、致命一擊不留殘響;
+    並驗撕裂幅度公式隨潛行/煉金成長、撕裂 dot 無視一般抗性確實掉血。"""
+    # (1) 匕首段:踉蹌 + 撕裂(原斷言全保留)
     gd, c = _assassin(weapon="iron_dagger")
     target = _dummy()
     ev = _sneak_until_nonlethal_hit(gd, c, target)
@@ -46,9 +49,12 @@ def test_dagger_sneak_aftermath_staggers_and_bleeds():
     assert ev["aftermath"]["bleed"] > 0
     assert magic.is_staggered(target)
     assert any(e["kind"] == "dot" and e.get("element") == "bleed" for e in target.active_effects)
+    # (6) 撕裂 dot 延伸:匕首殘響掛上 bleed 的 target → tick 後確實掉血(無視一般抗性)
+    before = target.health
+    magic.tick_effects(target, gd)
+    assert target.health < before
 
-
-def test_bow_sneak_only_staggers():
+    # (2) 弓段:只踉蹌、無撕裂(各自重建 dummy/char 避免狀態污染)
     gd, c = _assassin(weapon="hunting_bow")
     target = _dummy()
     ev = _sneak_until_nonlethal_hit(gd, c, target)
@@ -56,36 +62,23 @@ def test_bow_sneak_only_staggers():
     assert magic.is_staggered(target)
     assert not any(e.get("element") == "bleed" for e in target.active_effects)
 
-
-def test_sword_sneak_no_aftermath():
+    # (3) 劍段:無殘響
     gd, c = _assassin(weapon="iron_sword")
     target = _dummy()
     ev = _sneak_until_nonlethal_hit(gd, c, target)
     assert ev["aftermath"] is None
     assert not magic.is_staggered(target)
 
-
-def test_lethal_sneak_applies_no_aftermath():
+    # (4) 致命一擊段:被秒則不留殘響(獨立 setup)
     gd, c = _assassin(sneak=100, blade=100, weapon="glass_dagger")
     target = _dummy(hp=5)               # 一定被秒
     ev = combat.resolve_attack(c, target, gd, RNG(1), sneak_attack=True)
     assert ev["defender_dead"] and ev["aftermath"] is None
 
-
-def test_bleed_magnitude_scales_with_sneak_and_alchemy():
-    from tesrpg import formulas
+    # (5) 撕裂幅度公式(純公式,無 setup):隨潛行/煉金成長,下限=base
     lo = formulas.sneak_bleed_magnitude(0, 0)
     hi = formulas.sneak_bleed_magnitude(100, 80)
     assert hi > lo == formulas.SNEAK_BLEED_BASE
-
-
-def test_bleed_ticks_unresisted():
-    gd, c = _assassin(weapon="iron_dagger")
-    target = _dummy(hp=9999)
-    _sneak_until_nonlethal_hit(gd, c, target)
-    before = target.health
-    magic.tick_effects(target, gd)
-    assert target.health < before       # 撕裂傷無視一般抗性,確實掉血
 
 
 def test_staggered_enemy_hits_less_often():
@@ -120,35 +113,19 @@ def test_equip_offhand_dagger_rules():
     # 存檔往返保留副手
     assert Character.from_dict(c.to_dict()).offhand == "iron_dagger"
 
+    # (A) 雙持需匕首主手:主手是劍 → 雙持不成立、無加成傷(獨立 char 避免污染上方 offhand 狀態)
+    gd2, c2 = _assassin(weapon="iron_sword")
+    inventory.add_item(c2, "steel_dagger", 1)
+    inventory.equip_offhand(c2, gd2, "steel_dagger")
+    assert not inventory.is_dual_wielding(c2, gd2)
+    assert inventory.dual_wield_bonus_damage(c2, gd2) == 0.0
 
-def test_dual_wield_needs_dagger_mainhand():
-    from tesrpg.systems import inventory
-    gd, c = _assassin(weapon="iron_sword")          # 主手是劍
-    inventory.add_item(c, "steel_dagger", 1)
-    inventory.equip_offhand(c, gd, "steel_dagger")
-    assert not inventory.is_dual_wielding(c, gd)     # 主手非匕首 → 雙持不成立
-    assert inventory.dual_wield_bonus_damage(c, gd) == 0.0
-
-
-def test_dual_wield_adds_damage():
-    from tesrpg import formulas
-    from tesrpg.systems import inventory
-    gd, c = _assassin(weapon="steel_dagger", sneak=0)   # 關掉偷襲倍率,純比基礎傷
-    target = _dummy(hp=999999, armor=0)
-
-    def avg_hit(n=400):
-        tot = 0
-        for i in range(n):
-            target.health = target.max_health
-            ev = combat.resolve_attack(c, target, gd, RNG(i), sneak_attack=False)
-            tot += ev["damage"]
-        return tot / n
-
-    single = avg_hit()
-    inventory.add_item(c, "steel_dagger", 2)
-    assert inventory.equip_offhand(c, gd, "steel_dagger")
-    assert inventory.dual_wield_bonus_damage(c, gd) == gd.item("steel_dagger")["damage"] * formulas.OFFHAND_DAMAGE_FACTOR
-    assert avg_hit() > single * 1.3                  # 雙持顯著增傷
+    # (B) 雙持加成傷公式 = 副手匕首傷 × OFFHAND_DAMAGE_FACTOR
+    #     (avg_hit() 800 次統計半段已捨棄;副手不吃偷襲倍率的紅線由 test_offhand_not_amplified_by_sneak_attack 守)
+    gd3, c3 = _assassin(weapon="steel_dagger")
+    inventory.add_item(c3, "steel_dagger", 2)
+    assert inventory.equip_offhand(c3, gd3, "steel_dagger")
+    assert inventory.dual_wield_bonus_damage(c3, gd3) == gd3.item("steel_dagger")["damage"] * formulas.OFFHAND_DAMAGE_FACTOR
 
 
 def test_drop_breaks_pair_ends_dualwield():
@@ -193,13 +170,6 @@ def test_restealth_chance_drops_with_crowd_and_reuse():
     assert formulas.restealth_chance(100, 100, 1, 0) > formulas.restealth_chance(20, 0, 1, 0)
 
 
-def test_can_vanish_needs_sneak_threshold():
-    gd, c = _assassin(sneak=5)
-    assert not combat.can_vanish(c)            # 非潛行流派沒有隱遁(無 gd fallback)
-    c.skills["sneak"] = 40
-    assert combat.can_vanish(c)
-
-
 def test_vanish_is_sneak25_milestone():
     """隱遁=潛行 25 里程碑「隱遁之術」:base_skill≥25 解鎖(門檻認 base、附魔不可跨門檻)。"""
     from tesrpg.systems import mastery
@@ -211,6 +181,12 @@ def test_vanish_is_sneak25_milestone():
     gd2, c2 = _assassin(sneak=24)
     c2.equip_skill_bonus = {"sneak": 10}                                    # skill()=34 但 base=24
     assert c2.skill("sneak") >= 25 and not combat.can_vanish(c2, gd2)
+    # 無 gd fallback 路徑(combat.py:634,gamedata is None → 退回 base_skill>=VANISH_MIN_SNEAK):
+    # combat.can_vanish(c) 無 gd 呼叫端的唯一保險,不可流失
+    gd3, c3 = _assassin(sneak=5)
+    assert not combat.can_vanish(c3)            # 不帶 gd、非潛行流派 → 不解鎖
+    c3.skills["sneak"] = 40
+    assert combat.can_vanish(c3)                # 不帶 gd、達門檻 → 解鎖
 
 
 def test_vanish_decays_vs_lone_foe_even_relentless():
@@ -241,17 +217,14 @@ def test_single_option_milestone_announced_as_auto_grant():
 
 
 # --- 偵查技能(第 22 個技能)+ 潛行撤退 ---------------------------------
-def test_scout_is_a_real_stealth_skill():
-    gd = get_gamedata()
-    assert "scout" in gd.skills and gd.skills["scout"]["spec"] == "stealth"
-    assert "scout" in gd.skills_by_spec("stealth")
-    assert len(gd.skills) == 23                       # 21 → 22(scout)→ 23(smithing 鍛造)
-
-
 def test_new_character_has_scout_trained_by_use():
     from tesrpg.models import Character
     from tesrpg.systems import progression
     gd, c = _assassin()
+    # scout 是真正的潛行系技能(spec=stealth、入 skills_by_spec)
+    # (len(gd.skills)==23 已被 test_smithing.test_smithing_is_a_skill 等強覆蓋,跨模組去重)
+    assert "scout" in gd.skills and gd.skills["scout"]["spec"] == "stealth"
+    assert "scout" in gd.skills_by_spec("stealth")
     assert "scout" in c.skills                          # 新角色含偵查
     # 舊存檔(缺 scout)仍可載入並靠 use_skill 成長
     d = c.to_dict(); d["skills"].pop("scout", None); d["skill_xp"].pop("scout", None)
@@ -296,15 +269,14 @@ def test_stealth_approach_chance_factors():
     assert F.stealth_approach_chance(10, 40, 1, "heavy") < 0.20
     assert F.stealth_approach_chance(100, 40, 1, "light", night=True) > 0.85
 
-
-def test_combat_stealth_approach_uses_armor_class():
+    # combat 包裝層:讀玩家實際穿著的甲種 → 穿上重甲後入場先機下降
     from tesrpg.systems import inventory, stats
     gd, c = _assassin(sneak=80)
     light = combat.stealth_approach_chance(c, [_dummy()], gd)
     inventory.add_item(c, "iron_cuirass", 1); inventory.equip_armor(c, gd, "iron_cuirass")
     stats.recompute_max_resources(c, gd)
     heavy = combat.stealth_approach_chance(c, [_dummy()], gd)
-    assert heavy < light                                   # 穿上重甲後入場先機下降
+    assert heavy < light
 
 
 def test_prep_budget_tiers_and_summon_gate():

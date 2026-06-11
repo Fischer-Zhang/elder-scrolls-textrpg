@@ -42,25 +42,19 @@ def test_blood_debt_and_should_recruit():
     assert brotherhood.should_recruit(c, gd)
     brotherhood.decline_recruit(c)                       # 婉拒 → 不再每次觸發
     assert not brotherhood.should_recruit(c, gd)
-
-
-def test_rival_member_not_recruited():
-    gd, st = _state()
-    c = st.player
-    c.murders = 5
-    factions.join(c, "fighters_guild")                  # 戰士公會員(對立)
-    assert brotherhood.in_rival_faction(c, gd)
-    assert not brotherhood.should_recruit(c, gd)
-
-
-def test_recruit_joins_at_rank_zero():
-    gd, st = _state(murders=1)
-    c = st.player
+    # 婉拒後仍可自行入會:recruit 重設 db_invited 並正式入會(rank 0「新血」)
     brotherhood.recruit(c)
     assert brotherhood.is_member(c)
     assert brotherhood.rank(c) == 0
     assert c.db_invited is True
     assert brotherhood.rank_name(c, gd) == gd.factions[FACTION]["ranks"][0]
+    # 對立公會員(戰士公會)不會被招募:用新鮮 char(兄弟會與戰士公會互為 rivals)
+    _, st_b = _state()
+    b = st_b.player
+    b.murders = 5
+    factions.join(b, "fighters_guild")                  # 戰士公會員(對立)
+    assert brotherhood.in_rival_faction(b, gd) is True
+    assert not brotherhood.should_recruit(b, gd)
 
 
 # --- 夜母祝福(潛殺加成)----------------------------------------------
@@ -119,16 +113,6 @@ def test_contract_ladder_promotes_on_kill():
     assert "db1" in c.completed_quests
     # 升階後開放下一張(技能門檻 rank_skill_req[1]=12,sneak 80 已過)
     assert quests.available_quests(c, gd, "guild", FACTION) == ["db2"]
-
-
-def test_rank_skill_gate_blocks_advancement():
-    gd, st = _state()
-    c = st.player
-    c.skills.update(sneak=5, marksman=5, blade=5, acrobatics=5, scout=5)
-    factions.join(c, FACTION)
-    c.factions[FACTION] = 1                            # 殺手:晉升需門檻 12
-    assert quests.available_quests(c, gd, "guild", FACTION) == []
-    assert factions.advance_block_reason(c, gd, FACTION) is not None
 
 
 # --- 分支壓軸(五戒 vs 淨化背叛)-------------------------------------

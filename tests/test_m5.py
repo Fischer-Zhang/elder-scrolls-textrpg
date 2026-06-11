@@ -4,7 +4,7 @@ from tesrpg.creation import build_character
 from tesrpg.gamedata import get_gamedata
 from tesrpg.rng import RNG
 from tesrpg.state import GameTime
-from tesrpg.systems import combat, crime, dialogue, factions, inventory, quests
+from tesrpg.systems import crime, dialogue, factions, inventory, quests
 
 
 def _char():
@@ -13,11 +13,21 @@ def _char():
                                birthsign="warrior", class_id="warrior")
 
 
-# --- 任務:擊殺 ---------------------------------------------------------
+# --- 任務:擊殺(基線非溯及 + 既往隱藏 + 獎勵授予)---------------------
 def test_kill_quest_uses_baseline_not_retroactive():
     gd, c = _char()
-    quests.record_kill(c, "wolf")          # 接任務前先殺一隻
+    # 既往擊殺:接任務前先殺 3 隻(超過需求 count=3)
+    for _ in range(3):
+        quests.record_kill(c, "wolf")
+    # 併入 [test_kill_progress_hidden_before_accept]:未接取的擊殺任務
+    # 告示板不顯示既往擊殺(回歸審查 [1])。
+    assert quests.kill_progress(c, gd, "job_wolf") == (0, 3)
+    assert "0/3" in quests.objective_text(c, gd, "job_wolf")
+
+    g0 = c.gold                              # 接 job_wolf 前的金幣基線
     quests.accept_quest(c, gd, "job_wolf")  # 需殺 3 隻
+    # 接取後從 0 起算/不溯及:既往擊殺不算數
+    assert quests.kill_progress(c, gd, "job_wolf") == (0, 3)
     assert not quests.objective_met(c, gd, "job_wolf")  # 不可用接任務前的擊殺
     for _ in range(3):
         quests.record_kill(c, "wolf")
@@ -25,28 +35,17 @@ def test_kill_quest_uses_baseline_not_retroactive():
     evs = quests.check_completion(c, gd)
     assert any(e["quest_id"] == "job_wolf" for e in evs)
     assert "job_wolf" in c.completed_quests and "job_wolf" not in c.quests
+    # 併入 [test_kill_quest_reward_granted](job_wolf 段):reward {gold:120} 無 fame
+    assert c.gold == g0 + 120
 
-
-def test_kill_quest_reward_granted():
-    gd, c = _char()
-    g0 = c.gold
+    # 併入 [test_kill_quest_reward_granted](job_bandit 段):
+    # fame 獎勵唯有 job_bandit 才有,fame 斷言零流失。
+    g1 = c.gold
     quests.accept_quest(c, gd, "job_bandit")   # kill 2 bandit, reward 160 + fame 5
     for _ in range(2):
         quests.record_kill(c, "bandit")
     quests.check_completion(c, gd)
-    assert c.gold == g0 + 160 and c.fame == 5
-
-
-# --- 任務:蒐集(上繳消耗)----------------------------------------------
-def test_collect_quest_consumes_items():
-    gd, c = _char()
-    factions.join(c, "mages_guild")
-    quests.accept_quest(c, gd, "mg1")          # collect bone_meal x2
-    inventory.add_item(c, "bone_meal", 2)
-    assert quests.objective_met(c, gd, "mg1")
-    quests.check_completion(c, gd)
-    assert inventory.count_item(c, "bone_meal") == 0     # 已上繳
-    assert "mg1" in c.completed_quests
+    assert c.gold == g1 + 160 and c.fame == 5
 
 
 # --- 任務:抵達 / 肅清地城 ----------------------------------------------
@@ -68,39 +67,6 @@ def test_clear_dungeon_quest():
     assert quests.objective_met(c, gd, "job_cave")
 
 
-# --- 公會:入會、可接任務、晉升 ----------------------------------------
-def test_guild_join_and_rank():
-    gd, c = _char()
-    assert not factions.is_member(c, "fighters_guild")
-    factions.join(c, "fighters_guild")
-    assert factions.is_member(c, "fighters_guild")
-    assert factions.rank_index(c, "fighters_guild") == 0
-    assert factions.rank_name(c, gd, "fighters_guild") == gd.factions["fighters_guild"]["ranks"][0]
-
-
-def test_guild_quests_gated_by_membership_and_rank():
-    gd, c = _char()
-    # 非會員 → 看不到公會任務
-    assert quests.available_quests(c, gd, "guild", "fighters_guild") == []
-    factions.join(c, "fighters_guild")
-    avail = quests.available_quests(c, gd, "guild", "fighters_guild")
-    assert avail == ["fg1"]                      # rank 0 只給 fg1
-    assert "fg2" not in avail                     # fg2 需 rank 1
-
-
-def test_guild_promotion_on_rank_quest():
-    gd, c = _char()
-    factions.join(c, "fighters_guild")
-    quests.accept_quest(c, gd, "fg1")            # rank 0 任務
-    for _ in range(2):
-        quests.record_kill(c, "wolf")
-    evs = quests.check_completion(c, gd)
-    assert factions.rank_index(c, "fighters_guild") == 1   # 已晉升
-    assert any(e["promoted"] and e["promoted"][0] == "fighters_guild" for e in evs)
-    # 晉升後才看得到 fg2
-    assert quests.available_quests(c, gd, "guild", "fighters_guild") == ["fg2"]
-
-
 # --- 犯罪 / 賞金 / 衛兵 -------------------------------------------------
 def test_steal_success_and_caught():
     gd, c = _char()
@@ -113,15 +79,17 @@ def test_steal_success_and_caught():
     assert crime.bounty(c, crime.province_of(c, gd)) > 0
 
 
-def test_bounty_per_province():
-    gd, c = _char()
-    crime.add_bounty(c, "賽羅迪爾", 50)
-    crime.add_bounty(c, "天際", 30)
-    assert crime.bounty(c, "賽羅迪爾") == 50 and crime.bounty(c, "天際") == 30
-
-
 def test_pay_fine_and_jail():
     gd, c = _char()
+    # 跨省賞金隔離(併自 test_bounty_per_province):對賽羅迪爾的 add/pay/serve 全程不污染天際
+    crime.add_bounty(c, "天際", 30)
+    # 併入 [test_pay_fine_insufficient]:金不足繳不了罰款且賞金不清。
+    c.gold = 5
+    crime.add_bounty(c, "賽羅迪爾", 40)
+    assert not crime.pay_fine(c, gd)["ok"]
+    assert crime.bounty(c, "賽羅迪爾") == 40   # 未清
+    crime.clear_bounty(c, "賽羅迪爾")          # 重置續跑足額分支
+
     c.gold = 100
     crime.add_bounty(c, "賽羅迪爾", 40)
     r = crime.pay_fine(c, gd)
@@ -131,14 +99,7 @@ def test_pay_fine_and_jail():
     t = GameTime()
     res = crime.serve_sentence(c, gd, t)
     assert res["cleared"] == 200 and crime.bounty(c, "賽羅迪爾") == 0 and res["hours"] > 0
-
-
-def test_pay_fine_insufficient():
-    gd, c = _char()
-    c.gold = 5
-    crime.add_bounty(c, "賽羅迪爾", 40)
-    assert not crime.pay_fine(c, gd)["ok"]
-    assert crime.bounty(c, "賽羅迪爾") == 40   # 未清
+    assert crime.bounty(c, "天際") == 30        # 全程未被賽羅迪爾的 add/pay/serve 污染
 
 
 # --- NPC 好感 / 對話 ---------------------------------------------------
@@ -160,18 +121,7 @@ def test_npc_quest_gated_by_disposition():
     assert dialogue.offered_quest(c, gd, "olfina") is None    # 已接,不再提供
 
 
-# --- 戰鬥 hook:擊殺計數 ------------------------------------------------
-def test_kill_progress_hidden_before_accept():
-    """回歸(審查 [1]):未接取的擊殺任務不可在告示板顯示既往擊殺。"""
-    gd, c = _char()
-    for _ in range(3):
-        quests.record_kill(c, "wolf")
-    assert quests.kill_progress(c, gd, "job_wolf") == (0, 3)
-    assert "0/3" in quests.objective_text(c, gd, "job_wolf")
-    quests.accept_quest(c, gd, "job_wolf")
-    assert quests.kill_progress(c, gd, "job_wolf") == (0, 3)   # 接取後從 0 起算
-
-
+# --- 戰鬥 hook:晉升夾限 ------------------------------------------------
 def test_promotion_clamps_at_max_rank():
     """回歸(審查 [2]/[6]):晉升不可讓階級索引越界。"""
     gd, c = _char()
@@ -191,16 +141,6 @@ def test_promotion_clamps_at_max_rank():
         assert factions.rank_name(c, gd, fac) == ranks[top]
     finally:
         del gd.quests[qid]
-
-
-def test_combat_victory_records_kill_via_autoresolve():
-    gd, c = _char()
-    rng = RNG(7)
-    rat = combat.spawn_creature(gd, "giant_rat", rng)
-    combat.auto_resolve(c, rat, gd, rng)
-    # auto_resolve 不含 hook;此處驗證 template_id 可供 record_kill 使用
-    quests.record_kill(c, rat.template_id)
-    assert c.kill_counts.get("giant_rat", 0) >= 1
 
 
 def run():

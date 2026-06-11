@@ -37,6 +37,8 @@ def test_save_load_roundtrip():
     assert (loaded.time.year, loaded.time.month, loaded.time.day, loaded.time.hour) == (433, 3, 5, 14)
     # 亂數序列可續接重現
     assert loaded.rng.randint(1, 100) == state.rng.randint(1, 100)
+    # 種子欄保留(供 legacy 總結/角色卡顯示與分享)
+    assert loaded.rng.seed == 12345
 
 
 def run():

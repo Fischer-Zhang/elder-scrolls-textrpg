@@ -46,16 +46,24 @@ def test_practice_cost_tired_halves_xp_and_clamps():
     assert c.fatigue == 0                          # 夾在 0,不為負
 
 
-# --- 行竊:得手才學藝(杜絕故意被抓刷潛行)---------------------------
+# --- 行竊:得手才學藝(杜絕故意被抓刷潛行)+ 成本在擲骰前無條件付清 ----
 def test_steal_xp_only_on_success():
+    """得手才給潛行 xp(被抓不給);併入原 test_steal_costs_fatigue_and_returns_time:
+    成本(practice_cost)在擲骰前無條件呼叫,被抓/得手兩支皆回 hours/tired 且都已扣 fatigue。"""
     gd, c = _char(sneak=10, security=10)           # 得手率約 33% → 兩種結果都會出現
+    pdef = gd.skills["sneak"]["practice"]
     saw_caught = saw_success = False
     for i in range(30):
         c.fatigue = c.max_fatigue                  # 排除 tired 干擾,專測「被抓不給 xp」
+        f0 = c.fatigue
         before = c.skill_xp.get("sneak", 0.0)
         lvl_before = c.skills["sneak"]
         r = crime.steal_item(c, gd, "iron_sword", RNG(i))
         after = c.skill_xp.get("sneak", 0.0)
+        # 成本在擲骰前無條件付清:caught/success 兩支皆回 hours/tired 且都已扣 fatigue
+        assert r["hours"] == pdef["hours"]
+        assert "tired" in r
+        assert c.fatigue == f0 - pdef["fatigue"]
         if r["caught"]:
             saw_caught = True
             assert r["skill_events"] == []
@@ -64,17 +72,6 @@ def test_steal_xp_only_on_success():
             saw_success = True
             assert after > before or c.skills["sneak"] > lvl_before     # 得手才長技能
     assert saw_caught and saw_success
-
-
-def test_steal_costs_fatigue_and_returns_time():
-    gd, c = _char(sneak=100, security=100)          # 幾乎必得手
-    pdef = gd.skills["sneak"]["practice"]
-    c.fatigue = c.max_fatigue
-    f0 = c.fatigue
-    r = crime.steal_item(c, gd, "iron_sword", RNG(0))
-    assert r["ok"]
-    assert r["hours"] == pdef["hours"] and "tired" in r
-    assert c.fatigue == f0 - pdef["fatigue"]
 
 
 # --- 撬鎖:需開鎖器(失敗折斷)、不耗時、少量體力;塔之鑰招牌免費 ----
@@ -137,18 +134,7 @@ def test_tower_key_unlock_is_free_and_keeps_signature():
     assert c.fatigue == f0                            # 招牌:免體力
 
 
-# --- 說服:每次付費;折服必成路徑也付費 -----------------------------
-def test_persuade_costs_fatigue_and_time():
-    gd, c = _char(speechcraft=40)
-    nid = next(iter(gd.npcs))
-    pdef = gd.skills["speechcraft"]["practice"]
-    c.fatigue = c.max_fatigue
-    f0 = c.fatigue
-    r = dialogue.persuade(c, gd, nid, RNG(0))
-    assert r["hours"] == pdef["hours"] and r["hours"] > 0
-    assert c.fatigue == f0 - pdef["fatigue"]
-
-
+# --- 說服:折服必成路徑也付費(每次付體力+時間;非免費必成)----------
 def test_charm_path_also_pays_cost():
     gd, c = _char(speechcraft=100)                   # 辯舌·折服:對該 NPC 必成一次
     mastery.choose(c, gd, "speechcraft_100", "charm")   # v2:達門檻後須二選一銘刻
@@ -269,16 +255,34 @@ def test_lockpick_loop_bounded_by_picks():
 
 
 # --- 製作/維護系(煉金/附魔/修理)也接上 practice 成本 ----------------
-def test_brew_costs_fatigue_and_time():
-    from tesrpg.systems import alchemy, inventory
-    gd, c = _char(alchemy=40)
-    inventory.add_item(c, "wheat", 1); inventory.add_item(c, "blue_mountain_flower", 1)  # 共通 heal
-    pdef = gd.skills["alchemy"]["practice"]
-    c.fatigue = c.max_fatigue; f0 = c.fatigue
-    r = alchemy.brew(c, gd, "wheat", "blue_mountain_flower", RNG(0))
-    assert r["ok"]
-    assert r["hours"] == pdef["hours"] and "tired" in r
-    assert c.fatigue == f0 - pdef["fatigue"]
+def test_crafting_entries_pay_practice():
+    """製作入口皆付 practice(資料驅動,併入原 test_enchant_costs_fatigue_and_time):
+    煉金 brew 與附魔 enchant_jewelry 回傳同形 {ok,hours,tired,...},成功皆付體力+時間。
+    每 case 各自 _char(以對應 skill 起手)+各自 import/add_item,語意與斷言零流失。"""
+    def _brew_case():
+        from tesrpg.systems import alchemy, inventory
+        gd, c = _char(alchemy=40)
+        inventory.add_item(c, "wheat", 1); inventory.add_item(c, "blue_mountain_flower", 1)  # 共通 heal
+        c.fatigue = c.max_fatigue
+        return c, alchemy.brew(c, gd, "wheat", "blue_mountain_flower", RNG(0))
+
+    def _enchant_case():
+        from tesrpg.systems import enchanting, inventory
+        gd, c = _char(mysticism=40)
+        inventory.add_item(c, "silver_ring", 1)
+        inventory.add_item(c, "filled_common_soul_gem", 1)
+        c.fatigue = c.max_fatigue
+        return c, enchanting.enchant_jewelry(c, gd, "silver_ring", "skill", "destruction", "filled_common_soul_gem")
+
+    cases = [("alchemy", _brew_case), ("mysticism", _enchant_case)]
+    gd = get_gamedata()
+    for skill_id, make in cases:
+        pdef = gd.skills[skill_id]["practice"]
+        c, r = make()
+        f0 = c.max_fatigue
+        assert r["ok"], skill_id
+        assert r["hours"] == pdef["hours"] and "tired" in r, skill_id
+        assert c.fatigue == f0 - pdef["fatigue"], skill_id
 
 
 def test_brew_fail_still_costs_fatigue_and_time():
@@ -291,19 +295,6 @@ def test_brew_fail_still_costs_fatigue_and_time():
     r = alchemy.brew(c, gd, "glow_dust", "deathbell", RNG(0))
     assert not r["ok"]
     assert r["hours"] == pdef["hours"]
-    assert c.fatigue == f0 - pdef["fatigue"]
-
-
-def test_enchant_costs_fatigue_and_time():
-    from tesrpg.systems import enchanting, inventory
-    gd, c = _char(mysticism=40)
-    inventory.add_item(c, "silver_ring", 1)
-    inventory.add_item(c, "filled_common_soul_gem", 1)
-    pdef = gd.skills["mysticism"]["practice"]
-    c.fatigue = c.max_fatigue; f0 = c.fatigue
-    r = enchanting.enchant_jewelry(c, gd, "silver_ring", "skill", "destruction", "filled_common_soul_gem")
-    assert r["ok"]
-    assert r["hours"] == pdef["hours"] and "tired" in r
     assert c.fatigue == f0 - pdef["fatigue"]
 
 
@@ -328,20 +319,17 @@ def run():
     test_practice_cost_deducts_fatigue_and_matches_skills_json()
     test_practice_cost_tired_halves_xp_and_clamps()
     test_steal_xp_only_on_success()
-    test_steal_costs_fatigue_and_returns_time()
     test_pick_lock_needs_pick_no_time_low_fatigue()
     test_every_attempt_consumes_pick_gates_xp()
     test_lockpick_broken_on_failure_no_xp()
     test_tower_key_unlock_is_free_and_keeps_signature()
-    test_persuade_costs_fatigue_and_time()
     test_charm_path_also_pays_cost()
     test_smoke_shop_steal_advances_time()
     test_smoke_lockpick_no_time()
     test_smoke_talk_persuade_advances_time()
     test_lockpick_loop_bounded_by_picks()
-    test_brew_costs_fatigue_and_time()
+    test_crafting_entries_pay_practice()
     test_brew_fail_still_costs_fatigue_and_time()
-    test_enchant_costs_fatigue_and_time()
     test_repair_hammer_costs_fatigue_and_time()
 
 

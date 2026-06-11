@@ -158,8 +158,13 @@ def test_evaluator_is_read_only():
     c.factions["mages_guild"] = 5
     snapshot = copy.deepcopy(c.to_dict())
     achievements.earned(c, gd)
-    achievements.earned_and_locked(c, gd)
+    won, locked = achievements.earned_and_locked(c, gd)
     assert c.to_dict() == snapshot
+    # 併入 earned/locked 全集無交集分割斷言(唯讀,順序無關);本測 setup 達成多項成就,
+    # won 非空 → 首次在 won/locked 兩側皆有元素時驗證分割。
+    all_ids = {a["id"] for a in achievements._defs(gd)}
+    assert {a["id"] for a in won} | {a["id"] for a in locked} == all_ids
+    assert not ({a["id"] for a in won} & {a["id"] for a in locked})
 
 
 def test_legacy_integration_lists_without_scoring():
@@ -176,14 +181,6 @@ def test_legacy_integration_lists_without_scoring():
     assert all(isinstance(n, str) for n in out["achievements"])
 
 
-def test_earned_and_locked_partition():
-    gd, c = _char(level=20)
-    won, locked = achievements.earned_and_locked(c, gd)
-    all_ids = {a["id"] for a in achievements._defs(gd)}
-    assert {a["id"] for a in won} | {a["id"] for a in locked} == all_ids
-    assert not ({a["id"] for a in won} & {a["id"] for a in locked})
-
-
 def run():
     test_kills_total_and_kill_boss()
     test_progress_counters()
@@ -198,7 +195,6 @@ def run():
     test_unimplemented_type_is_inert()
     test_evaluator_is_read_only()
     test_legacy_integration_lists_without_scoring()
-    test_earned_and_locked_partition()
 
 
 if __name__ == "__main__":

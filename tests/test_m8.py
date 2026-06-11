@@ -51,6 +51,10 @@ def test_dot_ticks_and_respects_resist():
     gd, c = _mage()
     wolf = combat.spawn_creature(gd, "wolf", RNG(2))
     magic.cast(c, gd, "poison_cloud", RNG(2), target=wolf)
+    # 併入 normalization:資料用 {'status':'dot'},放進 active_effects 須正規化成 {'kind':'dot'}。
+    # 須在 tick 前驗(tick_effects 會 turns-1 並移除歸零者,放 tick 後語意失真)。
+    assert all("kind" in e for e in wolf.active_effects)
+    assert any(e["kind"] == "dot" for e in wolf.active_effects)
     hp0 = wolf.health
     msgs = magic.tick_effects(wolf, gd)
     assert wolf.health < hp0 and msgs
@@ -80,15 +84,6 @@ def test_creature_on_hit_status():
     applied = any(combat.resolve_attack(spider, p, gd, RNG(i)).get("status_applied") for i in range(25))
     assert applied
     assert any(e["kind"] == "dot" for e in p.active_effects)
-
-
-def test_status_effect_normalization():
-    """資料用 {'status':'dot'};放進 active_effects 須正規化成 {'kind':'dot'}。"""
-    gd, c = _mage()
-    foe = combat.spawn_creature(gd, "wolf", RNG(0))
-    magic.cast(c, gd, "poison_cloud", RNG(0), target=foe)
-    assert all("kind" in e for e in foe.active_effects)
-    assert any(e["kind"] == "dot" for e in foe.active_effects)
 
 
 # --- 巨魔像吸收 ---------------------------------------------------------

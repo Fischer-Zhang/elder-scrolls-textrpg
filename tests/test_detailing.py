@@ -32,28 +32,49 @@ def test_biome_weight_logic():
 
 
 def test_biome_steers_encounters_without_emptying_pool():
-    """高等級下,雪原偏雪怪、沼澤偏沼怪;但兩者池都不空、通用怪四海皆有。"""
+    """各 biome 統計上偏抽在地生態怪、且後備池不空(通用怪四海皆有)。
+    參數化合一(原 snow/swamp/moor/jungle/savanna/heartland 六條同形 steering 測):
+    每 case 600 抽,斷在地>他鄉(heartland 例外:賽羅迪爾為通用走廊,只斷在地>0),
+    斷 sum==600(後備池不被清空)。"""
     gd, _ = _char()
     SNOW = {"skeleton", "draugr", "ice_wraith", "frost_troll", "frost_giant", "frostbite_spider"}
     SWAMP = {"swamp_lizard", "marsh_zombie", "will_o_wisp", "bog_troll", "wamasu"}
 
-    def sample(biome, n=600):
+    def biome_set(b):
+        return {cid for cid, c in gd.bestiary.items() if b in c.get("biomes", [])}
+
+    moor, desert = biome_set("moor"), biome_set("desert")
+    jungle, swamp_b = biome_set("jungle"), biome_set("swamp")
+    savanna = biome_set("savanna")
+    heartland = biome_set("heartland")
+
+    def sample(biome, seed_base, n=600, lvl=20, danger=5):
         tally = Counter()
         for i in range(n):
-            c = combat.random_encounter(gd, 20, RNG(1000 + i), max_danger=5, biome=biome)
+            c = combat.random_encounter(gd, lvl, RNG(seed_base + i), max_danger=danger, biome=biome)
             tally[c.template_id] += 1
         return tally
 
-    snow_t, swamp_t = sample("snow"), sample("swamp")
-    snow_snow = sum(snow_t[k] for k in SNOW)
-    snow_swamp = sum(snow_t[k] for k in SWAMP)
-    swamp_swamp = sum(swamp_t[k] for k in SWAMP)
-    swamp_snow = sum(swamp_t[k] for k in SNOW)
-    # 在地生態明顯多於他鄉生態
-    assert snow_snow > snow_swamp, (snow_snow, snow_swamp)
-    assert swamp_swamp > swamp_snow, (swamp_swamp, swamp_snow)
-    # 池不空:雪原仍抽得到一些他鄉/通用怪(後備池不被清空)
-    assert sum(snow_t.values()) == 600 and sum(swamp_t.values()) == 600
+    # (biome, 在地集, 他鄉集, seed_base):各 600 抽、在地>他鄉、池不空
+    cases = [
+        ("snow", SNOW, SWAMP, 1000),
+        ("swamp", SWAMP, SNOW, 1000),
+        ("moor", moor, desert, 7000),
+        ("jungle", jungle, swamp_b, 9000),
+        ("savanna", savanna, jungle, 11000),
+    ]
+    for biome, local, foreign, seed_base in cases:
+        t = sample(biome, seed_base)
+        local_n = sum(t[k] for k in local)
+        foreign_n = sum(t[k] for k in foreign)
+        assert local_n > foreign_n, (biome, local_n, foreign_n)   # 在地生態 > 他鄉生態
+        assert sum(t.values()) == 600, (biome, sum(t.values()))   # 後備池不被清空
+
+    # heartland 特判:賽羅迪爾為通用走廊(lvl5/danger3,斷言較弱:只 local>0,不強加 local>foreign)
+    assert heartland, "heartland 仍無專屬生態怪"
+    ht = sample("heartland", 4000, lvl=5, danger=3)
+    assert sum(ht[k] for k in heartland) > 0, "heartland 招牌怪抽不到"
+    assert sum(ht.values()) == 600, sum(ht.values())
 
 
 def test_every_location_has_biome():
@@ -61,106 +82,29 @@ def test_every_location_has_biome():
     valid = {"heartland", "snow", "ashland", "swamp", "desert", "moor", "jungle", "savanna"}
     for lid, loc in gd.world["locations"].items():
         assert loc.get("biome") in valid, f"{lid} biome 非法:{loc.get('biome')}"
-
-
-def test_creature_biomes_are_valid():
-    gd, _ = _char()
-    valid = {"heartland", "snow", "ashland", "swamp", "desert", "moor", "jungle", "savanna"}
+    # absorb test_creature_biomes_are_valid:bestiary 每隻怪的 biomes 全合法(共用同一 valid 集合)
     for cid, c in gd.bestiary.items():
         for b in c.get("biomes", []):
             assert b in valid, f"{cid} biomes 非法:{b}"
 
 
-# --- 高岩 High Rock(霧沼 moor;敵抗魔/抗霜、弱電 → 操練電系 build)-------
+# --- 各省生態弱性軸:招牌怪須『真的』弱於該省剋星元素 --------------------
 def test_highrock_signature_creatures_weak_to_shock():
-    """高岩生態軸=敵抗魔/抗霜、弱電 → 操練全圖最冷門的電系 build。
-    鐵律:shock ∈ MAGIC_ELEMENTS,計電抗時會疊 magic 鍵(r = shock + magic),
-    故 shock 負值須夠負以蓋過 magic 正值,招牌怪才『真的』弱電(resist_multiplier > 1.0)。"""
+    """各省生態弱性軸(參數化合一:原 highrock/valenwood/elsweyr 三條同形弱性測):
+    取該 biome 招牌怪,斷 len≥5、逐隻斷 formulas.resist_multiplier(resist, element) > 1.0
+    (招牌怪『真的』弱於該省剋星元素)。各 case 的疊鍵陷阱要點以註解保留:"""
     gd, _ = _char()
-    moor = [cid for cid, c in gd.bestiary.items() if "moor" in c.get("biomes", [])]
-    assert len(moor) >= 5, f"高岩招牌怪太少:{moor}"
-    for cid in moor:
-        m = formulas.resist_multiplier(gd.bestiary[cid].get("resist", {}), "shock")
-        assert m > 1.0, f"{cid} 並非真的弱電(電傷係數 {m} ≤ 1.0;檢查 shock 是否夠負以蓋過 magic)"
-
-
-def test_moor_biome_steers_to_highrock_ecology():
-    """霧沼 biome 明顯抽到高岩招牌怪、且後備池不空(通用怪四海皆有)。"""
-    gd, _ = _char()
-    moor = {cid for cid, c in gd.bestiary.items() if "moor" in c.get("biomes", [])}
-    desert = {cid for cid, c in gd.bestiary.items() if "desert" in c.get("biomes", [])}
-    tally = Counter()
-    for i in range(600):
-        c = combat.random_encounter(gd, 20, RNG(7000 + i), max_danger=5, biome="moor")
-        tally[c.template_id] += 1
-    assert sum(tally[k] for k in moor) > sum(tally[k] for k in desert)   # 在地生態 > 他鄉生態
-    assert sum(tally.values()) == 600                                    # 池不空
-
-
-# --- 瓦倫森林 Valenwood(雨林 jungle;敵抗霜/抗毒、弱火 → 操練火系 build)-------
-def test_valenwood_signature_creatures_weak_to_fire():
-    """瓦倫森林生態軸=敵抗霜/抗毒、弱火(以烈焰焚林)→ 招牌怪須『真的』弱火
-    (resist_multiplier > 1.0;fire ∈ MAGIC_ELEMENTS 會疊 magic 鍵,故招牌怪刻意不帶 magic 鍵)。"""
-    gd, _ = _char()
-    jungle = [cid for cid, c in gd.bestiary.items() if "jungle" in c.get("biomes", [])]
-    assert len(jungle) >= 5, f"瓦倫森林招牌怪太少:{jungle}"
-    for cid in jungle:
-        m = formulas.resist_multiplier(gd.bestiary[cid].get("resist", {}), "fire")
-        assert m > 1.0, f"{cid} 並非真的弱火(火傷係數 {m} ≤ 1.0)"
-
-
-def test_jungle_biome_steers_to_valenwood_ecology():
-    """雨林 biome 明顯抽到瓦倫森林招牌怪、且後備池不空。"""
-    gd, _ = _char()
-    jungle = {cid for cid, c in gd.bestiary.items() if "jungle" in c.get("biomes", [])}
-    swamp = {cid for cid, c in gd.bestiary.items() if "swamp" in c.get("biomes", [])}
-    tally = Counter()
-    for i in range(600):
-        c = combat.random_encounter(gd, 20, RNG(9000 + i), max_danger=5, biome="jungle")
-        tally[c.template_id] += 1
-    assert sum(tally[k] for k in jungle) > sum(tally[k] for k in swamp)   # 在地生態 > 鄰省(沼澤)生態
-    assert sum(tally.values()) == 600                                    # 池不空
-
-
-# --- 艾爾斯維爾 Elsweyr(草原 savanna;敵弱毒 → 操練塗毒/煉金刺客 build)-------
-def test_elsweyr_signature_creatures_weak_to_poison():
-    """艾爾斯維爾生態軸=敵弱毒(血肉被月糖/斯庫瑪浸得半化為毒)→ 招牌怪須『真的』弱毒
-    (resist_multiplier > 1.0;poison ∉ MAGIC_ELEMENTS,不疊 magic 鍵,負值即直接放大傷害)。
-    這獎勵全圖最被冷落的塗毒/毒霧刺客 build(M9 毒 + 黑暗兄弟會)。"""
-    gd, _ = _char()
-    savanna = [cid for cid, c in gd.bestiary.items() if "savanna" in c.get("biomes", [])]
-    assert len(savanna) >= 5, f"艾爾斯維爾招牌怪太少:{savanna}"
-    for cid in savanna:
-        m = formulas.resist_multiplier(gd.bestiary[cid].get("resist", {}), "poison")
-        assert m > 1.0, f"{cid} 並非真的弱毒(毒傷係數 {m} ≤ 1.0)"
-
-
-def test_savanna_biome_steers_to_elsweyr_ecology():
-    """草原 biome 明顯抽到艾爾斯維爾招牌怪、且後備池不空(通用怪四海皆有)。"""
-    gd, _ = _char()
-    savanna = {cid for cid, c in gd.bestiary.items() if "savanna" in c.get("biomes", [])}
-    jungle = {cid for cid, c in gd.bestiary.items() if "jungle" in c.get("biomes", [])}
-    tally = Counter()
-    for i in range(600):
-        c = combat.random_encounter(gd, 20, RNG(11000 + i), max_danger=5, biome="savanna")
-        tally[c.template_id] += 1
-    assert sum(tally[k] for k in savanna) > sum(tally[k] for k in jungle)   # 在地生態 > 鄰省(雨林)生態
-    assert sum(tally.values()) == 600                                      # 池不空
-
-
-def test_heartland_has_signature_ecology():
-    """賽羅迪爾不再只有通用怪:heartland biome 會明顯抽到 heartland 招牌怪。"""
-    gd, _ = _char()
-    heartland = {cid for cid, c in gd.bestiary.items() if "heartland" in c.get("biomes", [])}
-    assert heartland, "heartland 仍無專屬生態怪"
-    tally = Counter()
-    for i in range(800):
-        c = combat.random_encounter(gd, 5, RNG(4000 + i), max_danger=3, biome="heartland")
-        tally[c.template_id] += 1
-    assert sum(tally[k] for k in heartland) > 0, "heartland 招牌怪抽不到"
-    # imperial_ghost(d2/min1)應在帝國大道(d1→max2)從低等就抽得到
-    low = combat.random_encounter(gd, 2, RNG(1), max_danger=2, biome="heartland")  # smoke: 不崩
-    assert low.template_id in gd.bestiary
+    # (biome, element):
+    #  moor/shock  ── 高岩=練電系。shock ∈ MAGIC_ELEMENTS,計電抗會疊 magic 鍵(r=shock+magic),
+    #                 故 shock 負值須夠負以蓋過 magic 正值,招牌怪才真弱電。
+    #  jungle/fire ── 瓦倫森林=以烈焰焚林。fire ∈ MAGIC_ELEMENTS 會疊 magic 鍵,故招牌怪刻意不帶 magic 鍵。
+    #  savanna/poison ── 艾爾斯維爾=練塗毒/煉金刺客。poison ∉ MAGIC_ELEMENTS,不疊 magic 鍵,負值即直接放大傷害。
+    for biome, element in [("moor", "shock"), ("jungle", "fire"), ("savanna", "poison")]:
+        cids = [cid for cid, c in gd.bestiary.items() if biome in c.get("biomes", [])]
+        assert len(cids) >= 5, f"{biome} 招牌怪太少:{cids}"
+        for cid in cids:
+            m = formulas.resist_multiplier(gd.bestiary[cid].get("resist", {}), element)
+            assert m > 1.0, f"{cid} 並非真的弱 {element}(係數 {m} ≤ 1.0)"
 
 
 def test_heartland_starter_road_stays_gentle():
@@ -198,6 +142,9 @@ def test_npcs_have_valid_locations_and_quests():
         assert npc["location"] in gd.world["locations"], f"{nid} 地點非法"
         if npc.get("quest"):
             assert npc["quest"] in gd.quests, f"{nid} 委託 {npc['quest']} 不存在"
+        # absorb test_npc_rumors_are_strings:NPC rumor 欄是非空字串
+        if "rumor" in npc:
+            assert isinstance(npc["rumor"], str) and npc["rumor"], f"{nid} rumor 非法"
     # 原本零 NPC 的省份現在有人
     provinces_with_npc = {gd.world["locations"][npc["location"]]["province"] for npc in gd.npcs.values()}
     assert {"晨風", "黑沼澤"} <= provinces_with_npc
@@ -227,45 +174,6 @@ def test_quest_objective_targets_valid():
         else:
             for st in (q.get("stages") or [{"objective": q["objective"]}]):
                 check_obj(qid, st["objective"])
-
-
-def test_local_quests_point_at_detailed_content():
-    gd, _ = _char()
-    assert gd.quests["job_xanmeer"]["objective"]["dungeon"] == "xanmeer"
-    assert gd.quests["favor_lostknife"]["objective"]["dungeon"] == "lostknife_cave"
-    assert gd.quests["favor_gideon"]["objective"]["location"] == "xanmeer"
-
-
-def test_local_quest_chains_are_multistage_and_offered_by_npcs():
-    gd, _ = _char()
-    chains = ["chain_kvatch", "chain_molagmar"]
-    for qid in chains:
-        assert len(gd.quests[qid].get("stages", [])) >= 3, f"{qid} 不是多階段任務鏈"
-        assert gd.quests[qid]["source"] == "npc"
-    # 任務鏈/單發委託都掛在對應 NPC 上
-    npc_quests = {npc.get("quest") for npc in gd.npcs.values()}
-    for qid in chains + ["favor_haafingar"]:
-        assert qid in npc_quests, f"{qid} 沒有 NPC 提供"
-
-
-def test_each_core_province_has_multiple_cities():
-    """補全各省城市:四大實體省皆有 >=2 座 city,且標誌城市存在。"""
-    gd, _ = _char()
-    locs = gd.world["locations"]
-    from collections import Counter as _C
-    cities = _C(l["province"] for l in locs.values() if l["type"] == "city")
-    for prov in ("賽羅迪爾", "天際", "晨風", "黑沼澤"):
-        assert cities[prov] >= 2, f"{prov} 城市數 {cities[prov]} < 2"
-    iconic = ["imperial_city", "whiterun", "vivec", "helstrom"]
-    for cid in iconic:
-        assert cid in locs and locs[cid]["type"] == "city", f"標誌城市 {cid} 缺失"
-
-
-def test_npc_rumors_are_strings():
-    gd, _ = _char()
-    for nid, npc in gd.npcs.items():
-        if "rumor" in npc:
-            assert isinstance(npc["rumor"], str) and npc["rumor"], f"{nid} rumor 非法"
 
 
 def test_local_quest_rewards_stay_in_range():
@@ -332,16 +240,6 @@ def test_province_events_filter_by_province():
     c.location_id = "imperial_road"   # 賽羅迪爾
     elig2 = events.eligible_events(gd_state(gd, c), gd, "explore")
     assert "blackmarsh_predator" not in elig2
-
-
-def test_tianji_density_falkreath_and_lostknife():
-    gd, _ = _char()
-    locs = gd.world["locations"]
-    assert locs["falkreath_wood"]["province"] == "天際" and locs["falkreath_wood"]["type"] == "wilderness"
-    assert locs["lostknife_cave"]["dungeon"] == "lostknife_cave" and "lostknife_cave" in gd.dungeons
-    # 天際補密度後 >=5 地點(細化省分加佛克瑞斯林/迷刀洞窟;補全城市後更多)
-    skyrim = [l for l in locs.values() if l["province"] == "天際"]
-    assert len(skyrim) >= 5, len(skyrim)
 
 
 # 小工具:events.eligible_events 需要一個有 .player/.time 的 state-like

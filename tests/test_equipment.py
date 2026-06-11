@@ -109,6 +109,9 @@ def test_jewelry_equipped_does_not_break_armor_rating():
 
 # --- A 附魔擴展(四型別)------------------------------------------------
 def test_fortify_skill_jewelry():
+    """四型別飾品附魔(skill/attr/resist/res)同走 enchant_jewelry_id 統一合成 id。
+    每 kind 用 fresh _char() 避免槽位碰撞,各折入其獨有斷言。"""
+    # --- skill:有效值升、base 不動、卸下還原 ---
     gd, c = _char()
     rid = enchant_jewelry_id("silver_ring", "skill", "blade", 8)
     inventory.add_item(c, rid, 1)
@@ -122,8 +125,7 @@ def test_fortify_skill_jewelry():
     stats.recompute_max_resources(c, gd)
     assert c.skill("blade") == base
 
-
-def test_fortify_attribute_jewelry_flows_into_derived():
+    # --- attr:屬性 +10 且衍生資源(max_magicka)流入 ---
     gd, c = _char()
     aid = enchant_jewelry_id("silver_amulet", "attr", "intelligence", 10)
     inventory.add_item(c, aid, 1)
@@ -134,8 +136,7 @@ def test_fortify_attribute_jewelry_flows_into_derived():
     assert c.attr("intelligence") == base_int + 10
     assert c.max_magicka > base_mag             # 智力 → max_magicka
 
-
-def test_resist_jewelry_merges_with_race():
+    # --- resist:equip_resist 紀錄 + 與種族抗性相加 ---
     gd, c = _char()
     rid = enchant_jewelry_id("gold_ring", "resist", "fire", 20)
     inventory.add_item(c, rid, 1)
@@ -144,8 +145,7 @@ def test_resist_jewelry_merges_with_race():
     assert c.equip_resist.get("fire") == 20
     assert magic.entity_resist(c, gd).get("fire", 0) >= 20   # 與種族抗性相加
 
-
-def test_fortify_resource_jewelry():
+    # --- res:最大資源 +25 ---
     gd, c = _char()
     aid = enchant_jewelry_id("gold_amulet", "res", "health", 25)
     inventory.add_item(c, aid, 1)
@@ -157,10 +157,13 @@ def test_fortify_resource_jewelry():
 
 # --- A 附魔流程 + 合成還原 ----------------------------------------------
 def test_enchant_jewelry_flow_and_synth_roundtrip():
+    """飾品與護甲是 enchanting.py 兩條獨立函式(armor 不收 attr kind);兩條 flow 各驗。"""
     gd, c = _char()
     inventory.add_item(c, "silver_ring", 1)
-    inventory.add_item(c, "filled_common_soul_gem", 1)   # soul 3
+    inventory.add_item(c, "iron_cuirass", 1)
+    inventory.add_item(c, "filled_common_soul_gem", 2)   # soul 3,兩條 flow 各耗一顆
     c.skills["mysticism"] = 50
+    # --- 飾品 flow:synth id 還原 + 附魔 kind/skill + 靈魂石消耗 ---
     res = enchanting.enchant_jewelry(c, gd, "silver_ring", "skill", "destruction", "filled_common_soul_gem")
     assert res["ok"]
     iid = res["item_id"]
@@ -168,46 +171,36 @@ def test_enchant_jewelry_flow_and_synth_roundtrip():
     d = gd.item(iid)
     assert d["enchant"]["kind"] == "fortify_skill"
     assert d["enchant"]["skill"] == "destruction"
-    assert inventory.count_item(c, "filled_common_soul_gem") == 0   # 靈魂石消耗
+    # --- 護甲 flow:armor 路徑不能只靠 jewelry 覆蓋(armor 不收 attr kind)---
+    res_a = enchanting.enchant_armor(c, gd, "iron_cuirass", "skill", "destruction", "filled_common_soul_gem")
+    assert res_a["ok"]
+    assert gd.item(res_a["item_id"])["enchant"]["kind"] == "fortify_skill"
+    assert inventory.count_item(c, "filled_common_soul_gem") == 0   # 兩顆靈魂石全消耗
 
 
-# --- 護甲附魔擴展:技能/抗性/資源 + 向後相容 -----------------------------
+# --- 護甲附魔擴展:技能/抗性 + 向後相容 ----------------------------------
 def test_armor_skill_enchant_aggregates_into_skill():
+    """護甲 skill 附魔聚合進有效技能(cuirass 槽)+ resist 附魔與種族抗性相加(helmet 槽);
+    不同槽位不碰撞,可同時穿。"""
     from tesrpg.synth import enchant_armor_id
     gd, c = _char()
+    # --- skill 分支:有效值升、base 不動、卸下還原 ---
     aid = enchant_armor_id("iron_cuirass", "skill", "blade", 8)
     base = c.base_skill("blade")
     inventory.add_item(c, aid, 1)
     inventory.equip_armor(c, gd, aid)
     stats.recompute_max_resources(c, gd)
     assert c.skill("blade") == base + 8 and c.base_skill("blade") == base   # 有效值升、base 不動
+    # --- resist 分支(不同槽位 helmet,可並存):與種族抗性相加 ---
+    hid = enchant_armor_id("iron_helmet", "resist", "fire", 20)
+    inventory.add_item(c, hid, 1)
+    inventory.equip_armor(c, gd, hid)
+    stats.recompute_max_resources(c, gd)
+    assert magic.entity_resist(c, gd).get("fire", 0) >= 20
+    # --- skill 卸下回復 ---
     inventory.unequip(c, "cuirass")
     stats.recompute_max_resources(c, gd)
     assert c.skill("blade") == base                                         # 卸下回復
-
-
-def test_armor_resist_enchant_merges_with_race():
-    from tesrpg.synth import enchant_armor_id
-    gd, c = _char()
-    aid = enchant_armor_id("iron_helmet", "resist", "fire", 20)
-    inventory.add_item(c, aid, 1)
-    inventory.equip_armor(c, gd, aid)
-    stats.recompute_max_resources(c, gd)
-    assert magic.entity_resist(c, gd).get("fire", 0) >= 20
-
-
-def test_armor_resource_enchant_uses_armor_fortify_kind():
-    """新式 5 段 res 附魔仍走 armor_fortify 鍵 → armor_fortify_totals/max 資源路徑不變。"""
-    from tesrpg.synth import enchant_armor_id
-    gd, c = _char()
-    aid = enchant_armor_id("iron_gauntlets", "res", "health", 25)
-    assert gd.item(aid)["enchant"] == {"kind": "armor_fortify", "stat": "health", "magnitude": 25}
-    base = c.max_health
-    inventory.add_item(c, aid, 1)
-    inventory.equip_armor(c, gd, aid)
-    stats.recompute_max_resources(c, gd)
-    assert inventory.armor_fortify_totals(c, gd).get("health", 0) >= 25
-    assert c.max_health == base + 25
 
 
 def test_legacy_4field_encha_still_synthesizes():
@@ -215,31 +208,6 @@ def test_legacy_4field_encha_still_synthesizes():
     gd, _ = _char()
     d = gd.item("encha|iron_cuirass|health|20")
     assert d["enchant"] == {"kind": "armor_fortify", "stat": "health", "magnitude": 20}
-
-
-def test_enchant_armor_flow_consumes_gem():
-    gd, c = _char()
-    inventory.add_item(c, "iron_cuirass", 1)
-    inventory.add_item(c, "filled_common_soul_gem", 1)
-    c.skills["mysticism"] = 50
-    res = enchanting.enchant_armor(c, gd, "iron_cuirass", "skill", "destruction", "filled_common_soul_gem")
-    assert res["ok"] and gd.item(res["item_id"])["enchant"]["kind"] == "fortify_skill"
-    assert inventory.count_item(c, "filled_common_soul_gem") == 0
-
-
-def test_save_load_preserves_armor_skill_enchant():
-    from tesrpg.synth import enchant_armor_id
-    gd, c = _char()
-    aid = enchant_armor_id("iron_boots", "skill", "heavy_armor", 7)
-    inventory.add_item(c, aid, 1)
-    inventory.equip_armor(c, gd, aid)
-    stats.recompute_max_resources(c, gd)
-    state = GameState(player=c, time=GameTime(), rng=RNG(1))
-    with tempfile.TemporaryDirectory() as d:
-        path = Path(d) / "save.json"
-        state.save(path)
-        loaded = GameState.load(path)
-    assert loaded.player.skill("heavy_armor") == c.skill("heavy_armor")
 
 
 # --- 升級不汙染 base(回歸:fortify_attribute 經 char.attr 寫入 base 的雷)---
@@ -256,12 +224,18 @@ def test_levelup_with_fortify_attr_does_not_inflate_base():
     assert c.attr("strength") == base_str + 2 + 10       # 有效值仍含飾品加成
 
 
-# --- 存讀檔保留裝備加成 -------------------------------------------------
+# --- 存讀檔保留裝備加成(飾品 + 護甲附魔同存同還原)---------------------
 def test_save_load_preserves_equip_bonus():
+    """整 GameState save→load 後,附魔護甲(boots heavy_armor)與附魔飾品(ring sneak)
+    加成皆還原;槽位/技能皆不碰撞。"""
+    from tesrpg.synth import enchant_armor_id
     gd, c = _char()
     rid = enchant_jewelry_id("silver_ring", "skill", "sneak", 12)
     inventory.add_item(c, rid, 1)
     inventory.equip_jewelry(c, gd, rid)
+    bid = enchant_armor_id("iron_boots", "skill", "heavy_armor", 7)
+    inventory.add_item(c, bid, 1)
+    inventory.equip_armor(c, gd, bid)
     stats.recompute_max_resources(c, gd)
     state = GameState(player=c, time=GameTime(), rng=RNG(1))
     with tempfile.TemporaryDirectory() as d:
@@ -269,6 +243,7 @@ def test_save_load_preserves_equip_bonus():
         state.save(path)
         loaded = GameState.load(path)
     assert loaded.player.skill("sneak") == c.skill("sneak")
+    assert loaded.player.skill("heavy_armor") == c.skill("heavy_armor")
     assert loaded.player.equip_skill_bonus.get("sneak") == 12
 
 
@@ -291,6 +266,18 @@ def test_top_tier_set_bonuses():
     base_m = c.max_magicka
     _wear_set(c, gd, "dragonpriest")           # 套裝 110 + 四件 magicka 附魔 120
     assert c.max_magicka == base_m + 230
+
+    # 布甲玻璃大砲(併自 test_smithing.test_cloth_set_glass_cannon):四件同材質給魔力套裝、
+    # 但近乎零護甲 —— worn_armor_rating<=1 是布甲套裝獨有性質,他處無覆蓋
+    gd, c = _char()
+    base_cloth_m = c.max_magicka
+    for slot, iid in [("helmet", "cloth_hood"), ("cuirass", "cloth_robe"),
+                      ("gauntlets", "cloth_gloves"), ("boots", "cloth_slippers")]:
+        c.equipped[slot] = iid
+    assert inventory.active_set_bonus(c, gd)["stat"] == "magicka"
+    stats.recompute_max_resources(c, gd)
+    assert c.max_magicka == base_cloth_m + 25 + 40           # 件件魔力(10+15)+ 套裝 40
+    assert inventory.worn_armor_rating(c, gd) <= 1           # 玻璃大砲:近乎零護甲
 
 
 def run():

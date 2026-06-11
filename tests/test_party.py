@@ -52,14 +52,11 @@ def test_bond_grows_on_victory_and_boosts_hp():
     bonus = party.bond_hp_bonus(c, cid)
     cre = combat.spawn_companion(gd, cid, st.rng, max_health_bonus=bonus)
     assert cre.max_health == base_mx + bonus                                     # 加成流進生成
-
-
-def test_downed_companion_not_awarded_bond():
-    gd, c, st = _setup()
-    cid = "sellsword"
-    cre = combat.spawn_companion(gd, cid, st.rng); cre.health = 0
+    # 併入 test_downed_companion_not_awarded_bond:陣亡同伴走負分支(party.py:98)→ 不累積羈絆
+    cre = combat.spawn_companion(gd, cid, st.rng); cre.health = 0                # 陣亡
+    before = party.bond_points(c, cid)                                          # into 已非零基線
     party.award_victory(c, gd, [(cid, cre)])
-    assert party.bond_points(c, cid) == 0                                        # 陣亡不得羈絆
+    assert party.bond_points(c, cid) == before                                  # 陣亡不得羈絆
 
 
 def test_heal_full_and_forget():
@@ -77,14 +74,6 @@ def test_siege_casualty_forgets_persistent_state():
     warband.apply_casualties(c, gd, ["veteran"])
     assert "veteran" not in c.companions
     assert "veteran" not in c.companion_hp and "veteran" not in c.companion_bond  # 永久陣亡 → forget
-
-
-def test_legacy_label():
-    gd, c, st = _setup()
-    assert party.legacy_label(c, gd) is None                                     # 零羈絆
-    c.companion_bond["sellsword"] = party.BOND_TIERS[0]
-    lbl = party.legacy_label(c, gd)
-    assert lbl and gd.companions["sellsword"]["name"] in lbl
 
 
 def test_save_roundtrip_and_old_save_defaults():
@@ -108,6 +97,10 @@ def test_defensive_clamps_and_no_stale_legacy():
     assert c.companion_hp[cid] == 0                            # heal 也夾回 ≥0
     c.companion_bond["shieldmaiden"] = party.BOND_TIERS[0]     # 離隊殘留羈絆(不在 companions)
     assert party.legacy_label(c, gd) is None                   # 只認在隊者 → 不受殘影影響
+    # 併入 test_legacy_label 正面路徑(須排在上面零羈絆基線斷言之後,以免污染):在隊者有羈絆 → 標籤帶其名
+    c.companion_bond["sellsword"] = party.BOND_TIERS[0]
+    lbl = party.legacy_label(c, gd)
+    assert lbl and gd.companions["sellsword"]["name"] in lbl
 
 
 def test_display_safe_on_unknown_companion_id():
@@ -121,17 +114,24 @@ def test_display_safe_on_unknown_companion_id():
     assert "ghost_removed_id" in lbl
 
 
+def test_companion_schema_complete():
+    """併入 test_m12.test_all_spawn_refs_valid 的唯一獨有段:同伴模板 schema 完整
+    (法術召喚段/地城段已被 test_spell_schema / test_dungeon 更強覆蓋,丟棄)。"""
+    gd = get_gamedata()
+    for comp in gd.companions.values():
+        assert {"name", "cost", "strength", "max_health", "attack"} <= set(comp)
+
+
 def run():
     test_persistent_hp_spawn_and_record()
     test_downed_benched_then_heal_restores_fieldable()
     test_bond_grows_on_victory_and_boosts_hp()
-    test_downed_companion_not_awarded_bond()
     test_heal_full_and_forget()
     test_siege_casualty_forgets_persistent_state()
-    test_legacy_label()
     test_save_roundtrip_and_old_save_defaults()
     test_defensive_clamps_and_no_stale_legacy()
     test_display_safe_on_unknown_companion_id()
+    test_companion_schema_complete()
 
 
 if __name__ == "__main__":

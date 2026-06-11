@@ -59,19 +59,14 @@ def test_action_court_shows_ruler_panel():
         restore()
     assert captured.get("ruler") == gd.ruler_at(c.location_id)
     assert captured.get("standing") == 0 and captured.get("thane") is False
-
-
-def test_action_court_no_ruler_is_safe():
-    import tesrpg.main as M
-    gd, c = _setup()
+    # 併入 no_ruler:換到無領主地點 → 不應崩、不顯宮廷面板(用全新 captured2,避免沿用已填 ruler 的 captured)
+    captured2, restore2 = _patch_court_ui()
     c.location_id = next(lid for lid in gd.world["locations"] if not gd.ruler_at(lid))
-    state = GameState(player=c, rng=RNG(1), game_mode="adventure")
-    captured, restore = _patch_court_ui()
     try:
         M.action_court(state, gd)                       # 不應崩
     finally:
-        restore()
-    assert "ruler" not in captured                      # 無領主 → 不顯示宮廷面板
+        restore2()
+    assert "ruler" not in captured2                     # 無領主 → 不顯示宮廷面板
 
 
 # --- Phase 2:領主委託 + 城邦功勳 ----------------------------------------
@@ -144,15 +139,7 @@ def test_thane_privilege_suspended_when_city_flips():
     assert court.is_thane_in_province(c, gd, province)      # 同盟城 → 武士特權有效
     c.city_faction["bruma"] = "independent"                 # 該城翻給敵方
     assert not court.is_thane_in_province(c, gd, province)  # 特權暫停
-
-
-def test_thane_privilege_restored_when_city_reflips():
-    from tesrpg.systems import politics
-    gd, c = _setup()
-    province = gd.world["locations"]["bruma"]["province"]
-    court.make_thane(c, gd, "bruma"); politics.pledge(c, "imperial")
-    c.city_faction["bruma"] = "independent"
-    assert not court.is_thane_in_province(c, gd, province)
+    # 併入 reflips:城再翻回我方 → 特權自動恢復(可逆)、thaneships 全程未變(非銷毀)
     c.city_faction["bruma"] = "imperial"                    # 城再翻回我方
     assert court.is_thane_in_province(c, gd, province)      # 特權自動恢復(可逆)
     assert "bruma" in c.thaneships                          # thaneships 全程未變(非銷毀)
@@ -246,12 +233,10 @@ def run():
     test_every_ruler_settlement_is_thaneable()
     test_procedural_commissions_earn_thaneship()
     test_action_court_shows_ruler_panel()
-    test_action_court_no_ruler_is_safe()
     test_ruler_quests_open_in_order_and_grant_standing()
     test_thaneship_grants_gift_and_housecarl()
     test_thane_bounty_leniency_in_province()
     test_thane_privilege_suspended_when_city_flips()
-    test_thane_privilege_restored_when_city_reflips()
     test_thane_privilege_intact_before_pledge()
     test_thane_suspended_blocks_guard_forgive()
     test_save_roundtrip_and_backward_compat()

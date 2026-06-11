@@ -3,15 +3,12 @@
 獸血儀式由戰士公會「移籍」到戰友團內圈(rank≥4)、盾袍之誼 merc_discount perk、
 內圈召集免費盾袍兄弟(allies-only)、銀手/格倫魔女為野生可遇敵、存檔向後相容、legacy 收錄。"""
 
-import json
-
 from tesrpg import main
 from tesrpg.creation import build_character
 from tesrpg.gamedata import get_gamedata
-from tesrpg.models import Character
 from tesrpg.rng import RNG
 from tesrpg.state import GameState, GameTime
-from tesrpg.systems import factions, lycanthropy, quests
+from tesrpg.systems import factions, legacy, lycanthropy, quests
 
 FACTION = "companions"
 
@@ -30,20 +27,23 @@ def _state(**kw):
 def test_no_unlock_event_join_by_skill():
     gd, st = _state()
     c = st.player
+    # 負面分支(原 test_low_skill_blocks_join):技能未達門檻 → 不得入會
+    c.skills.update(blade=5, blunt=5, hand_to_hand=5, marksman=5, heavy_armor=5)
+    assert not factions.can_join(c, gd, FACTION)
+    assert factions.join_block_reason(c, gd, FACTION) is not None
+    # 還原達門檻
+    c.skills.update(blade=80, blunt=80, hand_to_hand=80, marksman=80, heavy_armor=80)
     assert "unlock_event" not in gd.factions[FACTION]
     assert factions.can_join(c, gd, FACTION)              # 技能達門檻即可走入入會
     factions.join(c, FACTION)
     assert factions.is_member(c, FACTION)
     assert factions.rank_index(c, FACTION) == 0
     assert factions.rank_name(c, gd, FACTION) == gd.factions[FACTION]["ranks"][0]
-
-
-def test_low_skill_blocks_join():
-    gd, st = _state()
-    c = st.player
-    c.skills.update(blade=5, blunt=5, hand_to_hand=5, marksman=5, heavy_armor=5)
-    assert not factions.can_join(c, gd, FACTION)
-    assert factions.join_block_reason(c, gd, FACTION) is not None
+    # 兼修分支(原 test_no_rivals_warriors_may_cross_join):rivals 空 → 可兼戰士公會
+    assert gd.factions[FACTION]["rivals"] == []
+    factions.join(c, "fighters_guild")                    # 已是 companions 會員不影響
+    assert factions.can_join(c, gd, "fighters_guild") or factions.is_member(c, "fighters_guild")
+    assert factions.can_join(c, gd, FACTION) or factions.is_member(c, FACTION)
 
 
 def test_not_lawful_wanted_may_still_join():
@@ -57,17 +57,6 @@ def test_not_lawful_wanted_may_still_join():
     c.factions[FACTION] = 1
     # 通緝中仍可晉升(非 lawful → advance 不被賞金擋)
     assert factions.advance_block_reason(c, gd, FACTION) is None
-
-
-def test_no_rivals_warriors_may_cross_join():
-    # rivals 為空 → 戰士系玩家可兼修戰士公會 + 戰友團
-    gd, st = _state()
-    c = st.player
-    assert gd.factions[FACTION]["rivals"] == []
-    factions.join(c, "fighters_guild")
-    assert factions.can_join(c, gd, FACTION)
-    factions.join(c, FACTION)
-    assert factions.can_join(c, gd, "fighters_guild") or factions.is_member(c, "fighters_guild")
 
 
 # --- 技能門檻階梯 + 晉升 ---------------------------------------------
@@ -84,16 +73,6 @@ def test_rank_ladder_promotes_on_completion():
     assert any(e["type"] == "completed" and e.get("promoted") for e in evs)
     assert factions.rank_index(c, FACTION) == 1
     assert quests.available_quests(c, gd, "guild", FACTION) == ["companions2"]
-
-
-def test_rank_skill_gate_blocks_advancement():
-    gd, st = _state()
-    c = st.player
-    c.skills.update(blade=10, blunt=10, hand_to_hand=10, marksman=10, heavy_armor=10)
-    factions.join(c, FACTION)
-    c.factions[FACTION] = 2                                # 晉升需 rank_skill_req[2]=26
-    assert quests.available_quests(c, gd, "guild", FACTION) == []
-    assert "26" in (factions.advance_block_reason(c, gd, FACTION) or "")
 
 
 def test_induction_quest_is_multistage_kill_then_reach():
@@ -130,21 +109,6 @@ def test_finale_branches_resolve_to_different_targets():
     assert factions.rank_index(c, FACTION) == 6            # 先驅
 
 
-def test_quest_targets_and_dungeons_exist():
-    gd, _ = _state()
-    for qid in gd.factions[FACTION]["rank_quests"]:
-        q = gd.quests[qid]
-        steps = q.get("branches") or q.get("stages") or [q]
-        for s in steps:
-            obj = s["objective"]
-            if obj["type"] == "kill":
-                assert obj["creature"] in gd.bestiary, f"{qid} {obj['creature']}"
-            elif obj["type"] == "clear_dungeon":
-                assert obj["dungeon"] in gd.dungeons, f"{qid} {obj['dungeon']}"
-            elif obj["type"] == "reach":
-                assert gd.location(obj["location"]) is not None, f"{qid} {obj['location']}"
-
-
 # --- 銀手 / 格倫魔女 = 野生可遇敵(戰士公會 kill 目標須 weight>0,非合約直生) ---
 def test_quest_enemies_are_wild_spawnable():
     gd, _ = _state()
@@ -168,12 +132,8 @@ def test_ritual_rehomed_to_companions_circle():
     c.factions[FACTION] = 4
     assert lycanthropy.can_offer_ritual(c)
     assert main.COMPANIONS_CIRCLE_RANK == lycanthropy.RITUAL_RANK_INDEX == 4
-
-
-def test_ritual_excludes_vampire_and_existing_werewolf():
-    gd, st = _state()
-    c = st.player
-    factions.join(c, FACTION); c.factions[FACTION] = 5
+    # 負分支(原 test_ritual_excludes_vampire_and_existing_werewolf):
+    c.factions[FACTION] = 5                                # rank≥4 仍內圈
     c.is_werewolf = True
     assert not lycanthropy.can_offer_ritual(c)             # 已是狼人 → 不重複
     c.is_werewolf = False
@@ -195,55 +155,29 @@ def test_merc_discount_scales_with_rank():
 
 
 # --- 內圈召集盾袍兄弟(免費 · allies-only)---------------------------
-def test_shield_siblings_are_circle_only_allies():
-    gd, _ = _state()
-    for cid in ("farkas", "aela"):
-        assert gd.companions[cid].get("circle") is True
-        assert gd.companions[cid]["cost"] == 0
-
-
 def test_circle_recruit_helper_lists_and_adds():
     gd, st = _state()
     c = st.player
+    # circle flag 資料 pin(原 test_shield_siblings_are_circle_only_allies):
+    for cid in ("farkas", "aela"):
+        assert gd.companions[cid].get("circle") is True
+        assert gd.companions[cid]["cost"] == 0
     avail = main._available_shield_siblings(c, gd)
     assert set(avail) == {"farkas", "aela"}
     c.companions.append("farkas")
     assert main._available_shield_siblings(c, gd) == ["aela"]   # 已入隊者不重列
-
-
-def test_shield_siblings_excluded_from_inn_pool():
-    # 旅店傭兵池(_hire_mercenary 的 avail 過濾)不含 circle 盾袍兄弟
-    gd, st = _state()
-    c = st.player
-    inn_pool = [cid for cid in gd.companions
-                if cid not in c.companions
+    # circle 兄弟排除於付費旅店傭兵池(併自 test_shield_siblings_excluded_from_inn_pool):
+    # allies-only 設計 + 免費 farm 破口邊界 —— 不可花錢雇,但一般傭兵仍在池
+    inn_pool = [cid for cid in gd.companions if cid not in c.companions
                 and not gd.companions[cid].get("troop")
                 and not gd.companions[cid].get("warlord")
                 and not gd.companions[cid].get("circle")]
     assert "farkas" not in inn_pool and "aela" not in inn_pool
-    assert "sellsword" in inn_pool                          # 一般傭兵仍在池中
-
-
-# --- 存檔 / legacy --------------------------------------------------
-def test_membership_survives_save_roundtrip():
-    gd, st = _state()
-    c = st.player
-    factions.join(c, FACTION)
-    c.factions[FACTION] = 4
-    loaded = Character.from_dict(json.loads(json.dumps(c.to_dict())))
-    assert factions.is_member(loaded, FACTION)
-    assert factions.rank_index(loaded, FACTION) == 4
-
-
-def test_legacy_includes_companions():
-    from tesrpg.systems import legacy
-    gd, st = _state()
-    c = st.player
-    factions.join(c, FACTION)
-    c.factions[FACTION] = 2
-    result = legacy.compute(st, gd)
-    names = [name for name, _ in result["factions"]]
-    assert "戰友團" in names
+    assert "sellsword" in inn_pool
+    # 公會列名進 legacy(併自 test_legacy_includes_companions):有效成員公會顯示名出現在 factions
+    factions.join(c, FACTION); c.factions[FACTION] = 2
+    res = legacy.compute(st, gd)
+    assert "戰友團" in [name for name, _ in res["factions"]]
 
 
 def test_shield_siblings_excluded_from_warband_officer_pool():
@@ -268,9 +202,17 @@ def _dismiss_via_ui(gd, st, cid):
 
 def test_circle_sibling_dismiss_retains_persistent_hp():
     # 對抗審查確認的 farm 漏洞:免費盾袍兄弟「解散→再召集」不得零成本回滿血/解負傷。
+    # 同時驗對位面:雇傭兵照舊 forget(原 test_paid_mercenary_dismiss_still_forgets)。
+    # 併入(原 test_companion_arcs.test_named_dismiss_keeps_state_merc_forgets):
+    #   keeps_state_on_dismiss 三類 predicate + recruit_quest 具名同伴解散保留持久態真實流。
     from tesrpg.systems import party
     gd, st = _state()
     c = st.player
+    # predicate 三類:circle / recruit_quest 保留;泛用傭兵 forget
+    assert party.keeps_state_on_dismiss(gd, "farkas")        # circle
+    assert party.keeps_state_on_dismiss(gd, "drelas")        # recruit_quest
+    assert not party.keeps_state_on_dismiss(gd, "sellsword")  # 泛用傭兵
+    # circle 分支(farkas):dismiss 保留持久 HP / 仍負傷
     c.companions.append("farkas")
     c.companion_hp["farkas"] = 0                      # 負傷倒下
     assert party.is_downed(c, gd, "farkas")
@@ -279,13 +221,15 @@ def test_circle_sibling_dismiss_retains_persistent_hp():
     assert c.companion_hp.get("farkas") == 0          # 持久 HP 保留(circle 不 forget)
     c.companions.append("farkas")                     # 模擬再召集
     assert party.is_downed(c, gd, "farkas")           # 仍負傷 → 沒被免費治療
-
-
-def test_paid_mercenary_dismiss_still_forgets():
-    # 對位:雇傭兵照舊 forget(再雇須付酬金=既有金幣閘,不受本次修正影響)
-    from tesrpg.systems import party
-    gd, st = _state()
-    c = st.player
+    # recruit_quest 分支(drelas):具名招募同伴解散同樣保留持久 HP/羈絆(真實流經 _dismiss_mercenary)
+    c.companions.append("drelas")
+    c.companion_bond["drelas"] = 22
+    c.companion_hp["drelas"] = 0                      # 負傷倒下
+    _dismiss_via_ui(gd, st, "drelas")
+    assert "drelas" not in c.companions
+    assert c.companion_bond.get("drelas") == 22       # 羈絆保留(不可免費回血洞)
+    assert c.companion_hp.get("drelas") == 0          # 持久 HP 保留(recruit_quest 不 forget)
+    # paid 分支(sellsword):雇傭兵照舊 forget(再雇須付酬金=既有金幣閘)
     c.companions.append("sellsword")
     c.companion_hp["sellsword"] = 5
     _dismiss_via_ui(gd, st, "sellsword")

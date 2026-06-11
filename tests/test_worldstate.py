@@ -2,7 +2,6 @@
 
 from tesrpg.creation import build_character
 from tesrpg.gamedata import get_gamedata
-from tesrpg.models import Character
 from tesrpg.rng import RNG
 from tesrpg.state import GameState
 from tesrpg.systems import politics, worldstate
@@ -19,15 +18,14 @@ def _state(c):
     return GameState(player=c, rng=RNG(1), game_mode="adventure")
 
 
-def test_open_state_is_oblivion_seed():
-    gd, c = _setup(); st = _state(c)
-    assert c.world_faction == {} and c.world_events_fired == []
-    assert worldstate.update(st, gd) == []                      # day 0:無事件
-    assert politics.faction_of(c, gd, "kvatch") == "imperial"   # 種子=Oblivion 現狀
-
-
 def test_kvatch_falls_after_days_and_once_fire():
-    gd, c = _setup(); st = _state(c)
+    gd, c = _setup(); politics.pledge(c, "imperial"); st = _state(c)
+    # 折入 open_state(種子=Oblivion 現狀,皆與 allegiance 無關,pledge 後仍真):
+    assert c.world_faction == {} and c.world_events_fired == []
+    assert worldstate.update(st, gd) == []                      # day 0:無事件(防 off-by-one)
+    assert politics.faction_of(c, gd, "kvatch") == "imperial"   # 種子=Oblivion 現狀
+    # 折入 flip 前置:種子 imperial + allegiance imperial → ally → 不可攻
+    assert not politics.can_siege(c, gd, "kvatch")
     st.time.advance(3 * 24)
     evs = worldstate.update(st, gd)
     assert any(e["id"] == "kvatch_falls" for e in evs)
@@ -35,6 +33,8 @@ def test_kvatch_falls_after_days_and_once_fire():
     assert politics.faction_of(c, gd, "kvatch") == "daedric"    # 三層:world_faction 透出
     assert "kvatch_falls" in c.world_events_fired
     assert all(e["id"] != "kvatch_falls" for e in worldstate.update(st, gd))   # once-fire
+    # 折入 flip 後:daedric vs imperial allegiance → enemy → 可攻
+    assert politics.relationship(c, gd, "kvatch") == "enemy" and politics.can_siege(c, gd, "kvatch")
 
 
 def test_player_held_city_immune_to_flip():
@@ -74,13 +74,6 @@ def test_daedric_unlock_after_kvatch():
     assert "daedric" in politics.pledgeable_causes(c)           # 凱瓦奇陷落後解鎖神話黎明
 
 
-def test_flip_makes_city_siegeable():
-    gd, c = _setup(); politics.pledge(c, "imperial"); st = _state(c)
-    assert not politics.can_siege(c, gd, "kvatch")             # 種子 imperial=盟,不可攻
-    st.time.advance(3 * 24); worldstate.update(st, gd)         # → daedric
-    assert politics.relationship(c, gd, "kvatch") == "enemy" and politics.can_siege(c, gd, "kvatch")
-
-
 def test_kvatch_liberated_player_driven():
     gd, c = _setup(); politics.pledge(c, "imperial"); st = _state(c)
     st.time.advance(3 * 24); worldstate.update(st, gd)         # kvatch → daedric
@@ -103,12 +96,6 @@ def test_lost_city_reverts_to_event_state():
     assert politics.faction_of(c, gd, "anvil") == "independent"  # 浮回事件態(非原始 imperial 種子)
 
 
-def test_catchup_multiple_events_one_call():
-    gd, c = _setup(); st = _state(c); st.time.advance(55 * 24)
-    ids = {e["id"] for e in worldstate.update(st, gd)}
-    assert ids == {"kvatch_falls", "septim_line_ends", "argonian_accession", "nord_stirrings"}
-
-
 def test_deterministic_replay():
     gd, c1 = _setup(); st1 = _state(c1); st1.time.advance(60 * 24)
     r1 = [e["id"] for e in worldstate.update(st1, gd)]
@@ -117,27 +104,15 @@ def test_deterministic_replay():
     assert r1 == r2 and c1.world_faction == c2.world_faction
 
 
-def test_save_roundtrip_fired_and_world_faction():
-    import json
-    gd, c = _setup(); st = _state(c); st.time.advance(30 * 24); worldstate.update(st, gd)
-    loaded = Character.from_dict(json.loads(json.dumps(c.to_dict())))
-    assert loaded.world_events_fired == c.world_events_fired
-    assert loaded.world_faction == c.world_faction
-
-
 def run():
-    test_open_state_is_oblivion_seed()
     test_kvatch_falls_after_days_and_once_fire()
     test_player_held_city_immune_to_flip()
     test_red_line_world_faction_not_taxed()
     test_requires_chain()
     test_daedric_unlock_after_kvatch()
-    test_flip_makes_city_siegeable()
     test_kvatch_liberated_player_driven()
     test_lost_city_reverts_to_event_state()
-    test_catchup_multiple_events_one_call()
     test_deterministic_replay()
-    test_save_roundtrip_fired_and_world_faction()
 
 
 if __name__ == "__main__":

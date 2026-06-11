@@ -27,14 +27,11 @@ def test_join_requires_gate_skill():
     assert not factions.can_join(c, gd, "mages_guild")           # 技能 0 < 門檻
     assert "達" in factions.join_block_reason(c, gd, "mages_guild")
     c.skills["destruction"] = 10                                 # 把關技能達門檻
-    assert factions.can_join(c, gd, "mages_guild")
+    assert factions.can_join(c, gd, "mages_guild")               # 7 gate_skill 只 1 達標即過(best-of)
     assert factions.join_block_reason(c, gd, "mages_guild") is None
-
-
-def test_join_gate_uses_best_of_gate_skills():
-    gd, c = _char()
-    _zero_skills(c)
-    c.skills["security"] = 12                                    # 盜賊把關技能之一
+    # best-of 多 gate_skill:盜賊有 5 把關技能,只要一技達標即可入會
+    # (destruction 不屬 thieves gate_skills、其餘 thieves gate_skill 仍為 0,故僅 security 驅動)
+    c.skills["security"] = 12
     assert factions.can_join(c, gd, "thieves_guild")
 
 
@@ -128,6 +125,8 @@ def test_promotion_pays_stipend():
     assert done["stipend"] == quests.STIPEND_PER_RANK * 1       # 升到 rank1
     # 金幣 = 任務獎勵 + 俸祿
     assert c.gold == g0 + done["reward"].get("gold", 0) + done["stipend"]
+    # 併入 [test_m5.test_guild_promotion_on_rank_quest]:晉升後才解鎖 fg2。
+    assert quests.available_quests(c, gd, "guild", "fighters_guild") == ["fg2"]
 
 
 # --- L4 敘事分支 --------------------------------------------------------

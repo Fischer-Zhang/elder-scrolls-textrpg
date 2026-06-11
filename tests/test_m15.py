@@ -36,15 +36,13 @@ def test_no_minmax_attribute_points_capped():
     progression.apply_level_up(c, gd, {"strength": 10}, "health")
     total1 = sum(c.attr(a) for a in formulas.ATTRIBUTES)
     assert total1 - total0 == formulas.LEVELUP_ATTRIBUTE_POINTS
-
-
-def test_no_minmax_spread_also_capped():
-    c = _ready_warrior()
-    total0 = sum(c.attr(a) for a in formulas.ATTRIBUTES)
-    # 分散塞 3+3+3=9 點 → 仍只套用 4 點上限
-    progression.apply_level_up(c, gd, {"strength": 3, "agility": 3, "luck": 3}, "fatigue")
-    total1 = sum(c.attr(a) for a in formulas.ATTRIBUTES)
-    assert total1 - total0 == formulas.LEVELUP_ATTRIBUTE_POINTS
+    # (併入)分散塞 3+3+3=9 點 → 同一 clamp 第二種輸入形態,仍只套用 4 點上限。
+    # 須用獨立角色:升級後 level_xp 餘額不足、且 level+1 抬高下一門檻,無法再升第二級。
+    c2 = _ready_warrior()
+    total0b = sum(c2.attr(a) for a in formulas.ATTRIBUTES)
+    progression.apply_level_up(c2, gd, {"strength": 3, "agility": 3, "luck": 3}, "fatigue")
+    total1b = sum(c2.attr(a) for a in formulas.ATTRIBUTES)
+    assert total1b - total0b == formulas.LEVELUP_ATTRIBUTE_POINTS
 
 
 # ② 耐力時機陷阱已死:max_health 與耐力完全解耦 -------------------------
@@ -59,33 +57,17 @@ def test_health_decoupled_from_endurance():
     assert c.max_health == hp0, "生命上限不應隨耐力改變(時機陷阱已消除)"
     assert c.base_max_health == base0, "base_max_health 不隨耐力變動"
     assert c.max_fatigue == fat0 + 20, "耐力仍計入體力上限"
-
-
-def test_levelup_endurance_does_not_inflate_base_health():
-    c = _ready_warrior()
-    base0 = c.base_max_health
-    # 升級時把點全投耐力 + 選「魔力」資源 → 生命基底與生命上限都不該因耐力而漲
-    hp0 = c.max_health
-    progression.apply_level_up(c, gd, {"endurance": 4}, "magicka")
-    assert c.base_max_health == base0
-    assert c.max_health == hp0, "未選生命 + 只加耐力 → 生命上限不變"
+    # (併入)同一解耦不變量的 apply_level_up 入口:升級時把點全投耐力 + 選「魔力」資源
+    # → 生命基底與生命上限都不該因耐力而漲。須用獨立的已可升級角色。
+    c2 = _ready_warrior()
+    base0b = c2.base_max_health
+    hp0b = c2.max_health
+    progression.apply_level_up(c2, gd, {"endurance": 4}, "magicka")
+    assert c2.base_max_health == base0b
+    assert c2.max_health == hp0b, "未選生命 + 只加耐力 → 生命上限不變"
 
 
 # ③ + 存檔:遷移與向後相容 ----------------------------------------------
-def test_legacy_save_level_progress_migrates():
-    c = build_character(gd, name="T", sex="male", race="imperial",
-                        birthsign="warrior", class_id="warrior")
-    d = c.to_dict()
-    # 模擬「改版前」存檔:有 level_progress 進度、無 level_xp/resource_levels
-    d["level_progress"] = 7
-    del d["level_xp"]
-    del d["resource_levels"]
-    old = Character.from_dict(d)
-    assert old.level_xp == 0.0 and old.level_progress == 7   # 載入:預設 + 舊欄位
-    progression.ensure_level_xp(old)
-    assert old.level_xp == 7.0 and old.level_progress == 0   # 遷移:進度不浪費、不重複
-
-
 def test_legacy_save_without_new_fields_loads_and_recomputes():
     c = build_character(gd, name="T", sex="female", race="breton",
                         birthsign="mage", class_id="mage", rng=None)
@@ -113,6 +95,10 @@ def test_load_migrates_so_levelup_visible_immediately():
     assert loaded.player.level_xp == 15.0
     assert loaded.player.level_progress == 0
     assert loaded.player.can_level_up(), "載入後升級入口應立即可見,而非等到下次 use_skill"
+    # (併入)ensure_level_xp 的冪等性:搬完歸零後再呼一次仍不變(不重複搬;
+    # guard `if level_xp<=0 and level_progress>0` 已不成立 → no-op)。
+    progression.ensure_level_xp(loaded.player)
+    assert loaded.player.level_xp == 15.0 and loaded.player.level_progress == 0
 
 
 def test_apply_level_up_capped_attribute_does_not_waste_points():

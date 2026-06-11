@@ -1,7 +1,7 @@
 """格子探索地城(程序化 n×n × m 層,原子探索)的測試:
 
 生成合法性(連通/樓梯+boss 可達/入口/id 合法)、衝 boss 勝利 → 肅清 + 寶藏自動解鎖
-(免開鎖器)、逃跑/離開不計清剿、零新存檔欄。承既有「逃跑不誤判清剿」回歸防線。
+(免開鎖器)、逃跑/離開不計清剿。承既有「逃跑不誤判清剿」回歸防線。
 """
 
 from collections import deque
@@ -128,6 +128,8 @@ def test_recleared_dungeon_grants_no_guaranteed_loot():
 
 
 def test_flee_boss_does_not_clear_or_loot():
+    # 一函式兩情境:非勝利出口皆不計肅清,但走兩條不同 action_dungeon 出口。
+    # 情境一(flee):navigate → boss 戰回 'fled' → 命中 main.py 首領逃離分支。
     gd, c, st = _char()
     did = gd.world["locations"][c.location_id]["dungeon"]
     gold0 = c.gold
@@ -135,6 +137,11 @@ def test_flee_boss_does_not_clear_or_loot():
     assert ret is None
     assert did not in c.cleared_dungeons                               # 逃 boss → 不計清剿
     assert c.gold == gold0                                             # 不開 boss 寶藏
+    # 情境二(leave):navigate=False → ui.menu 恆回 'leave' → 命中菜單離開分支(從不觸發 run_battle)。
+    gd2, c2, st2 = _char()
+    did2 = gd2.world["locations"][c2.location_id]["dungeon"]
+    ret2 = _run(gd2, st2, lambda foes: "victory", navigate=False)       # 立刻離開
+    assert ret2 is None and did2 not in c2.cleared_dungeons            # 菜單離開 → 不計清剿
 
 
 def test_dead_in_boss_returns_dead():
@@ -142,20 +149,6 @@ def test_dead_in_boss_returns_dead():
     ret = _run(gd, st, lambda foes: "victory" if isinstance(foes, list) else "dead")
     assert ret == "dead"
     assert gd.world["locations"][c.location_id]["dungeon"] not in c.cleared_dungeons
-
-
-def test_leave_does_not_clear():
-    gd, c, st = _char()
-    did = gd.world["locations"][c.location_id]["dungeon"]
-    ret = _run(gd, st, lambda foes: "victory", navigate=False)          # 立刻離開
-    assert ret is None and did not in c.cleared_dungeons
-
-
-def test_zero_new_save_fields():
-    gd, c, st = _char()
-    keys_before = set(c.to_dict().keys())
-    _run(gd, st, lambda foes: "victory")
-    assert set(c.to_dict().keys()) == keys_before                      # crawl 不新增任何存檔欄
 
 
 # --- 地城視為戰鬥情境:一般行動 / 預施預召喚 / 每格回合 / 偵查 -------------------

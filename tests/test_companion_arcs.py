@@ -69,26 +69,6 @@ def test_recruit_grant_respects_max_party_then_summonable():
     assert "ja_rakal" not in party.recruited_named(c, gd)  # 在隊 → 不再列為待召集
 
 
-def test_named_dismiss_keeps_state_merc_forgets():
-    gd, c, st = _setup()
-    # 具名招募同伴(recruit_quest)+ circle 盾袍兄弟 → 解散保留持久 HP/羈絆
-    assert party.keeps_state_on_dismiss(gd, "drelas")      # recruit_quest
-    assert party.keeps_state_on_dismiss(gd, "farkas")      # circle
-    assert not party.keeps_state_on_dismiss(gd, "sellsword")  # 泛用傭兵
-    # 具名:鏡像 _dismiss 的保留分支 → bond 仍在
-    c.companions[:] = ["drelas"]; c.companion_bond["drelas"] = 22
-    c.companions.remove("drelas")
-    if not party.keeps_state_on_dismiss(gd, "drelas"):
-        party.forget(c, "drelas")
-    assert c.companion_bond.get("drelas") == 22           # 保留(不可免費回血洞)
-    # 傭兵:forget 清狀態
-    c.companions[:] = ["sellsword"]; c.companion_bond["sellsword"] = 22
-    c.companions.remove("sellsword")
-    if not party.keeps_state_on_dismiss(gd, "sellsword"):
-        party.forget(c, "sellsword")
-    assert "sellsword" not in c.companion_bond            # 清除
-
-
 # --- 專屬支線:羈絆門檻 + 來源隔離 ---------------------------------------
 def test_personal_quest_bond_gated():
     gd, c, st = _setup(cids=["sellsword"])
@@ -97,6 +77,13 @@ def test_personal_quest_bond_gated():
     c.companion_bond["sellsword"] = party.BOND_TIERS[0]   # 升至 tier 1
     assert party.bond_tier(c, "sellsword") >= 1
     assert party.arc_offerable(c, gd, "sellsword")        # 達門檻 → 可傾聽
+    # 已接取 / 已完成 → 不再提供(兩個 early-return 分支;sellsword 仍在 tier1)
+    quests.accept_quest(c, gd, "arc_sellsword")
+    assert not party.arc_offerable(c, gd, "sellsword")    # 已接取 → 不再提供
+    c.quests.pop("arc_sellsword", None)
+    c.completed_quests.append("arc_sellsword")
+    assert not party.arc_offerable(c, gd, "sellsword")    # 已完成 → 不再提供
+    c.completed_quests.remove("arc_sellsword")            # 還原,免污染後段 farkas 場景
     # gate=2 的同伴在 tier 1 仍不可提供
     c.companions.append("farkas"); c.companion_bond["farkas"] = party.BOND_TIERS[0]
     assert not party.arc_offerable(c, gd, "farkas")       # 需 tier 2
@@ -117,19 +104,9 @@ def test_personal_and_recruit_quests_hidden_from_board_and_guild():
         assert qid not in board
 
 
-def test_arc_offerable_false_once_accepted_or_done():
-    gd, c, st = _setup(cids=["sellsword"])
-    c.companion_bond["sellsword"] = party.BOND_TIERS[0]
-    quests.accept_quest(c, gd, "arc_sellsword")
-    assert not party.arc_offerable(c, gd, "sellsword")    # 已接取 → 不再提供
-    c.quests.pop("arc_sellsword", None)
-    c.completed_quests.append("arc_sellsword")
-    assert not party.arc_offerable(c, gd, "sellsword")    # 已完成 → 不再提供
-
-
 # --- 弧完成:羈絆躍升 + 頂點解鎖 -----------------------------------------
 def test_personal_quest_completion_jumps_bond_and_unlocks_capstone():
-    gd, c, st = _setup(cids=["sellsword"])
+    gd, c, st = _setup(cids=["sellsword", "rashid"])
     c.companion_bond["sellsword"] = party.BOND_TIERS[0]   # 5
     assert party.active_capstone(c, gd, "sellsword") is None
     _drive_quest(c, gd, "arc_sellsword")
@@ -137,10 +114,7 @@ def test_personal_quest_completion_jumps_bond_and_unlocks_capstone():
     assert party.arc_done(c, gd, "sellsword")             # 由 completed_quests 推導
     cap = party.active_capstone(c, gd, "sellsword")
     assert cap and cap["kind"] == "ally_empower"          # 頂點解鎖
-
-
-def test_bond_reward_clamped_to_max():
-    gd, c, st = _setup(cids=["rashid"])
+    # reward.bond +15 夾 BOND_MAX(起始 BOND_MAX-3 → 不溢位)
     c.companion_bond["rashid"] = party.BOND_MAX - 3
     _drive_quest(c, gd, "arc_rashid")                     # reward.bond +15
     assert c.companion_bond["rashid"] == party.BOND_MAX   # 夾 BOND_MAX
@@ -148,7 +122,7 @@ def test_bond_reward_clamped_to_max():
 
 # --- 忠誠頂點:戰術型盟友限定、被動型在隊才生效 -------------------------
 def test_tactical_capstone_is_ally_only():
-    gd, c, st = _setup(cids=["sellsword"])
+    gd, c, st = _setup(cids=["sellsword", "ranger"])
     c.completed_quests.append("arc_sellsword")            # 弧完成 → 頂點啟用
     ally = combat.spawn_companion(gd, "sellsword", st.rng)
     main._apply_companion_capstone_auras(c, gd, [("sellsword", ally)], [ally])
@@ -158,11 +132,7 @@ def test_tactical_capstone_is_ally_only():
     # 重複套用 → source 去重,不疊加
     main._apply_companion_capstone_auras(c, gd, [("sellsword", ally)], [ally])
     assert sum(1 for e in ally.active_effects if e.get("source") == "capstone:sellsword") == 1
-
-
-def test_downed_capstone_holder_emits_no_aura():
-    gd, c, st = _setup(cids=["sellsword", "ranger"])
-    c.completed_quests.append("arc_sellsword")
+    # 倒下的頂點持有者不發光環(source 第 546-547 行 skip 分支;用新 spawn 單位避免殘留污染)
     holder = combat.spawn_companion(gd, "sellsword", st.rng); holder.health = 0   # 倒下
     other = combat.spawn_companion(gd, "ranger", st.rng)
     main._apply_companion_capstone_auras(c, gd, [("sellsword", holder), ("ranger", other)], [other])
@@ -173,18 +143,13 @@ def test_passive_capstone_only_when_in_party():
     gd, c, st = _setup(cids=["ja_rakal"])
     c.completed_quests.append("arc_jarakal")              # 巧手(barter)弧完成
     assert party.passive_capstone_factor(c, gd, "barter") > 0
+    assert party.passive_capstone_factor(c, gd, "barter") <= party.PASSIVE_CAP["barter"]  # 夾 PASSIVE_CAP
     item = "wolf_pelt"
     sell_with = world.sell_price(c, gd, item)
     c.companions[:] = []                                  # 離隊
     assert party.passive_capstone_factor(c, gd, "barter") == 0   # 離隊即失
     sell_without = world.sell_price(c, gd, item)
     assert sell_with >= sell_without                      # 在隊議價更好(夾限後至少不更差)
-
-
-def test_passive_capstone_cap():
-    gd, c, st = _setup(cids=["ja_rakal"])
-    c.completed_quests.append("arc_jarakal")
-    assert party.passive_capstone_factor(c, gd, "barter") <= party.PASSIVE_CAP["barter"]
 
 
 def test_all_capstone_kinds_are_red_line_safe():

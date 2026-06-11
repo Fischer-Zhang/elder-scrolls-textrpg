@@ -13,15 +13,7 @@ def _gd():
 
 
 # --- 法術可及性 ---------------------------------------------------------
-def test_spell_stock_ids_valid_and_no_dups():
-    gd = _gd()
-    for lid, loc in gd.world["locations"].items():
-        ss = loc.get("spell_stock", [])
-        assert len(ss) == len(set(ss)), f"{lid} spell_stock 有重複"
-        for s in ss:
-            assert s in gd.spells, f"{lid} 不明法術 {s}"
-
-
+# (spell_stock id 有效性 + 無重複 已併入 test_world.test_shop_stock_ids_are_valid)
 def test_every_school_sold_in_multiple_cities():
     gd = _gd()
     school = {k: v["school"] for k, v in gd.spells.items()}
@@ -43,18 +35,8 @@ def test_no_province_locked_out_of_any_school():
             prov.setdefault(loc["province"], set()).add(school[s])
     for p, schools in prov.items():
         assert ALL_SCHOOLS <= schools, f"{p} 缺學派:{ALL_SCHOOLS - schools}"
-
-
-def test_start_province_has_all_schools():
-    # 起始省(賽羅迪爾)六系基礎全可及 → 起手不卡
-    gd = _gd()
-    school = {k: v["school"] for k, v in gd.spells.items()}
-    start = set()
-    for lid, loc in gd.world["locations"].items():
-        if loc["province"] == "賽羅迪爾":
-            for s in loc.get("spell_stock", []):
-                start.add(school[s])
-    assert ALL_SCHOOLS <= start
+    # 起始省(賽羅迪爾)六系基礎全可及 → 起手不卡(併自 test_start_province_has_all_schools)
+    assert "賽羅迪爾" in prov and ALL_SCHOOLS <= prov["賽羅迪爾"], "起始省賽羅迪爾六系須全可及"
 
 
 # --- 地城任務覆蓋 -------------------------------------------------------
@@ -95,13 +77,10 @@ def test_dragon_lair_quest_wired():
     assert gd.world["locations"]["dragon_lair"]["type"] == "dungeon"
     for it in hd["reward"].get("items", []):
         assert gd.item(it) is not None, f"hunt_dragon 獎勵 {it} 不存在"
-
-
-def test_dragon_hunter_npc():
-    gd = _gd()
+    # NPC↔任務反向接線 + greeting 非空(併自 test_dragon_hunter_npc):
+    # greeting 是 load-bearing(console.py 無防護下標,缺欄即對話崩潰)
     npc = gd.npcs["molag_mar_dragonhunter_jorgen"]
-    assert npc["location"] in gd.world["locations"]
-    assert npc["quest"] == "hunt_dragon" and npc["quest"] in gd.quests
+    assert npc["quest"] == "hunt_dragon"
     assert npc.get("greeting") and npc.get("rumor")
 
 

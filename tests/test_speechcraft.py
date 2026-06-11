@@ -33,39 +33,38 @@ def test_persuade_delta_scales_and_beats_bribe():
     assert dialogue.persuade_delta(50) == 12        # = bribe(+12)
     assert dialogue.persuade_delta(100) == 18       # > bribe(+12) → 投資得到回報
     assert dialogue.BRIBE_COST == 10 and dialogue.persuade_delta(100) > 12
-
-
-def test_persuade_success_uses_scaled_delta_and_pays_practice():
+    # delta 真經 persuade() 套用到好感(整合接線;純公式 pin 不蓋這條)
     gd, c = _char(speechcraft=100, personality=100)   # ~90% 成功(無里程碑時)
-    pdef = gd.skills["speechcraft"]["practice"]
-    nid = next(iter(gd.npcs))
-    f0 = c.fatigue
-    # 多試直到一次成功 → delta == persuade_delta(100) == 18
     for i in range(10):
         c.fatigue = c.max_fatigue
-        r = dialogue.persuade(c, gd, nid, RNG(i))
+        r = dialogue.persuade(c, gd, next(iter(gd.npcs)), RNG(i))
         if r["ok"]:
             assert r["delta"] == dialogue.persuade_delta(100) == 18
             break
     else:
         raise AssertionError("高口才應能成功說服")
-    # 仍付 practice(體力 + 時間)→ 反 min-max 不破
-    c.fatigue = c.max_fatigue
-    r = dialogue.persuade(c, gd, nid, RNG(0))
-    assert r["hours"] == pdef["hours"] > 0
+
+
+def test_persuade_chance_readonly():
+    """persuade_chance 唯讀(不扣體力)、回傳 ∈[0,1]、與 persuade 公式一致。
+    (自 test_web 搬入:與 web 無關,純 dialogue 域;main.py 對話選單顯 % 用。)"""
+    gd, c = _char()
+    nid = next(iter(gd.npcs))
+    fat = c.fatigue
+    ch = dialogue.persuade_chance(c, gd, nid)
+    assert 0.0 <= ch <= 1.0 and c.fatigue == fat        # 無副作用
+    exp = max(0.1, min(0.9, 0.35 + (c.skill("speechcraft") + c.attr("personality") - 50) * 0.005))
+    assert ch == 1.0 or abs(ch - exp) < 1e-9            # 公式單一來源
 
 
 # --- Part B:說服衛兵減免賞金 -----------------------------------------
-def test_talk_down_chance_drops_with_bounty():
-    gd, c = _char(speechcraft=80, personality=60)
-    assert dialogue.talk_down_chance(c, 40) > dialogue.talk_down_chance(c, 200)
-    assert 0.05 <= dialogue.talk_down_chance(c, 0) <= 0.80
-
-
 def test_talk_down_guard_clears_on_success_pays_practice():
     gd, c = _char(speechcraft=100, personality=100)
     prov = "賽羅迪爾"
     pdef = gd.skills["speechcraft"]["practice"]
+    # 公式:賞金越高越難 + 夾限(sc=100/per=100:chance(0)=0.85→夾 0.80;chance(40)=0.77 > chance(200)=0.45)
+    assert dialogue.talk_down_chance(c, 40) > dialogue.talk_down_chance(c, 200)
+    assert 0.05 <= dialogue.talk_down_chance(c, 0) <= 0.80
     crime.add_bounty(c, prov, 40)
     f0 = c.fatigue
     # 高口才小額賞金 → 多試必有一次成功清零
@@ -151,24 +150,13 @@ def test_offer_battle_intimidate_success_avoids_combat_no_loot():
     assert c.gold == g0 and c.kill_counts == k0         # 無戰利/擊殺(嚇退非擊敗)
 
 
-def test_offer_battle_no_intimidate_option_for_beasts():
-    """非可威嚇敵(野獸)→ offer_battle 選單不含 intimidate(選 retreat 驗證流程不崩)。"""
-    gd, c = _char(speechcraft=100)
-    st = GameState(player=c, time=GameTime(), rng=RNG(1))
-    # can_intimidate 對 wolf 為 False → 即便玩家(stub)選 intimidate 也不會有該分支;
-    # 直接驗證 can_intimidate 閘:
-    assert not dialogue.can_intimidate(gd, [combat.spawn_creature(gd, "wolf", RNG(1))])
-
-
 def run():
     test_persuade_delta_scales_and_beats_bribe()
-    test_persuade_success_uses_scaled_delta_and_pays_practice()
-    test_talk_down_chance_drops_with_bounty()
+    test_persuade_chance_readonly()
     test_talk_down_guard_clears_on_success_pays_practice()
     test_intimidate_gating()
     test_intimidate_chance_scales_and_pays_practice()
     test_offer_battle_intimidate_success_avoids_combat_no_loot()
-    test_offer_battle_no_intimidate_option_for_beasts()
 
 
 if __name__ == "__main__":

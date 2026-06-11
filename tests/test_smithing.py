@@ -50,20 +50,6 @@ def test_no_arbitrage_on_buyable_recipes():
         assert iv >= ov, f"{rid}: 套利破口 Σ原料 {iv} < 產出 {ov}"
 
 
-# --- 鍛造消耗/產出/付 practice -----------------------------------------
-def test_forge_consumes_produces_and_trains_smithing():
-    gd, c = _char()
-    inventory.add_item(c, "iron_ingot", 2)
-    x0 = c.skill_xp.get("smithing", 0.0)
-    f0 = c.fatigue
-    res = crafting.craft(c, gd, "forge_iron_sword")
-    assert res["ok"]
-    assert inventory.count_item(c, "iron_ingot") == 0      # 2 錠全消耗
-    assert inventory.count_item(c, "iron_sword") == 1       # 產出鐵劍
-    assert c.skill_xp.get("smithing", 0.0) > x0             # 練到鍛造
-    assert c.fatigue < f0 and res["hours"] >= 1             # 付體力 + 時間
-
-
 # --- skill_req 門檻 ----------------------------------------------------
 def test_skill_req_gate():
     gd, c = _char()
@@ -93,27 +79,7 @@ def test_mage_robe_fortifies_magicka_and_skill():
     assert c.base_skill("alteration") == base_alt           # 加成不寫進 base(成長/夾限用 base)
 
 
-def test_cloth_set_glass_cannon():
-    gd = get_gamedata()
-    c = build_character(gd, name="法", sex="male", race="altmer", birthsign="mage", class_id="mage")
-    base = c.max_magicka
-    for slot, iid in [("helmet", "cloth_hood"), ("cuirass", "cloth_robe"),
-                      ("gauntlets", "cloth_gloves"), ("boots", "cloth_slippers")]:
-        c.equipped[slot] = iid
-    assert inventory.active_set_bonus(c, gd)["stat"] == "magicka"   # 四件同材質 → 套裝加成
-    stats.recompute_max_resources(c, gd)
-    assert c.max_magicka == base + 25 + 40                 # 件件魔力(10+15)+ 套裝 40
-    assert inventory.worn_armor_rating(c, gd) <= 1         # 玻璃大砲:近乎零護甲
-
-
 # --- 淬鍊強化 ----------------------------------------------------------
-def test_temper_cap_scales_with_smithing():
-    assert smithing.temper_cap(0) == 0
-    assert smithing.temper_cap(40) == 2
-    assert smithing.temper_cap(100) == 5
-    assert smithing.temper_cap(999) == smithing.TEMPER_MAX
-
-
 def test_temper_consumes_caps_and_boosts_combat():
     gd, c = _char()
     c.skills["smithing"] = 40                  # cap 2

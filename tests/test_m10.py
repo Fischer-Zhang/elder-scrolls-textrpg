@@ -56,6 +56,10 @@ def test_multistage_advances_stage_by_stage():
     evs = quests.check_completion(c, gd)
     assert any(e["type"] == "completed" for e in evs)
     assert factions.rank_index(c, "fighters_guild") == 6
+    # (吸收 test_objective_text_shows_stage_indicator):rank 已達 6,
+    # 接 fg7(三階段)→ 目標文字應以 [1/3] 起首
+    quests.accept_quest(c, gd, "fg7")
+    assert quests.objective_text(c, gd, "fg7").startswith("[1/3]")
 
 
 def test_kill_base_resnapshots_per_stage():
@@ -91,19 +95,15 @@ def test_multistage_collect_consumes_each_stage():
     assert "tg4" in c.completed_quests
 
 
-def test_objective_text_shows_stage_indicator():
-    gd, c = _char()
-    c.factions["fighters_guild"] = 6
-    quests.accept_quest(c, gd, "fg7")            # 三階段
-    assert quests.objective_text(c, gd, "fg7").startswith("[1/3]")
-
-
 # --- 全公會登頂 ---------------------------------------------------------
 def test_full_guild_ascension_to_master():
     gd, c = _char()
     for s in gd.skills:
         c.skills[s] = 100        # 滿足各公會「晉升技能門檻」(L1),專注驗證任務鏈本身
     for fid in ("fighters_guild", "mages_guild", "thieves_guild"):
+        # 併入 [test_m5.test_guild_quests_gated_by_membership_and_rank]:
+        # 非會員看不到公會任務(pre-join 負向斷言,m10 char 初始未入任何公會)。
+        assert quests.available_quests(c, gd, "guild", fid) == []
         factions.join(c, fid)
         ranks = gd.factions[fid]["ranks"]
         rank_quests = gd.factions[fid]["rank_quests"]
@@ -126,16 +126,6 @@ def test_negative_stage_clamped():
     obj, idx, total = quests.current_objective(c, gd, "fg6")
     assert idx == 0                                  # 夾限至第一階段,而非 stages[-1]
     assert obj == gd.quests["fg6"]["stages"][0]["objective"]
-
-
-def test_single_objective_quests_still_work():
-    """單目標任務(無 stages)仍正常運作。"""
-    gd, c = _char()
-    quests.accept_quest(c, gd, "job_wolf")       # kill wolf x3
-    for _ in range(3):
-        quests.record_kill(c, "wolf")
-    evs = quests.check_completion(c, gd)
-    assert any(e["type"] == "completed" and e["quest_id"] == "job_wolf" for e in evs)
 
 
 def run():

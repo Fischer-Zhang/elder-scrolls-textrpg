@@ -2,7 +2,7 @@
 
 承法術學派補完里程碑新增:確保每道法術 schema 合法(必備鍵 + 合法 enum)、
 召喚/復生引用的生物存在、且**每道法術都有取得途徑**(商店 spell_stock 或起手/職業/開局授予),
-否則即死內容。並守「召喚/秘術已補到與成熟學派同級(各 ≥6)」。
+否則即死內容。
 """
 
 from tesrpg import creation
@@ -72,17 +72,10 @@ def test_every_spell_is_reachable():
         reachable |= set(od.get("spells", []))
     dead = [sid for sid in gd.spells if sid not in reachable]
     assert not dead, f"死內容法術(無任何取得途徑):{dead}"
-
-
-def test_conjuration_and_mysticism_reached_parity():
-    """補完後召喚/秘術各 ≥6 法術(與成熟學派同級,反 stub)。"""
-    gd = get_gamedata()
-    by_school = {}
-    for sp in gd.spells.values():
-        by_school.setdefault(sp["school"], 0)
-        by_school[sp["school"]] += 1
-    assert by_school.get("conjuration", 0) >= 6, f"召喚僅 {by_school.get('conjuration', 0)} 法術"
-    assert by_school.get("mysticism", 0) >= 6, f"秘術僅 {by_school.get('mysticism', 0)} 法術"
+    # 帝都樞紐全備 pin(對抗審查:8 新法術曾誤上架到海芬古而非帝都中央 → 確保中央可學)
+    new = ("flame_blade", "frost_blade", "storm_blade", "heal_other",
+           "healing_circle", "ward_ally", "regen_aura", "rally")
+    assert all(s in gd.world["locations"]["imperial_city"].get("spell_stock", []) for s in new)
 
 
 def run():

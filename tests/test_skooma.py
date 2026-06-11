@@ -32,8 +32,12 @@ def _addict(c, st, gd, n=4):
 def test_dose_grants_timed_high_effective_not_base():
     gd, c, st = _state()
     base_spd = c.base_attr("speed"); base_str = c.base_attr("strength")
+    c.fatigue = 1                                           # 先耗盡體力(absorb)
+    base_fat = c.max_fatigue
     r = skooma.dose(st, gd, strong=True)
     assert r["ok"] and skooma.is_high(c, st)
+    assert c.max_fatigue > base_fat                         # 意志/敏捷增益 → 體力上限上升(absorb)
+    assert r["restored"].get("fatigue", 0) > 0             # 一次性回復體力(absorb)
     assert c.attr("speed") == base_spd + 8                  # 亢奮增益進有效值
     assert c.base_attr("speed") == base_spd                 # base 不動(鐵律)
     # 亢奮過期 → 清空(此例未成癮 → 不轉戒斷)
@@ -41,15 +45,6 @@ def test_dose_grants_timed_high_effective_not_base():
     evs = skooma.update(st, gd)
     assert not skooma.is_high(c, st) and c.skooma_attr_bonus == {}
     assert any(e["kind"] == "comedown" for e in evs)
-
-
-def test_high_restore_and_derived_resources():
-    gd, c, st = _state()
-    c.fatigue = 1                                           # 先耗盡體力
-    base_fat = c.max_fatigue
-    r = skooma.dose(st, gd, strong=True)
-    assert c.max_fatigue > base_fat                         # 意志/敏捷增益 → 體力上限上升
-    assert r["restored"].get("fatigue", 0) > 0              # 一次性回復體力
 
 
 # --- 成癮 → 戒斷 ---------------------------------------------------------
@@ -94,21 +89,12 @@ def test_ride_it_out_decay_to_clean():
     assert c.skooma_addiction == 0 and c.skooma_attr_bonus == {}
 
 
-def test_cure_clears_state():
-    gd, c, st = _state()
-    base_str = c.base_attr("strength")
-    _addict(c, st, gd, n=5)
-    assert skooma.is_addicted(c) and c.attr("strength") < base_str
-    skooma.cure(c, gd)
-    assert not skooma.is_addicted(c) and c.skooma_addiction == 0
-    assert c.skooma_attr_bonus == {} and c.skooma_skill_bonus == {}
-    assert c.attr("strength") == base_str                   # 戒斷層清除
-
-
 def test_cure_quest_flow_and_repeatable():
     from tesrpg.systems import quests, inventory
     gd, c, st = _state()
+    base_str = c.base_attr("strength")                      # absorb
     _addict(c, st, gd, n=5)
+    assert skooma.is_addicted(c) and c.attr("strength") < base_str   # absorb: 戒斷層削屬性
     qid = "quest_skooma_cure"
     quests.accept_quest(c, gd, qid)
     assert quests.is_active(c, qid)
@@ -118,6 +104,9 @@ def test_cure_quest_flow_and_repeatable():
     assert quests.is_done(c, qid)
     assert inventory.count_item(c, "garlic") == 0           # 採集物上繳消耗
     skooma.cure(c, gd)                                      # = action_skooma_cure 的核心
+    assert c.skooma_addiction == 0                          # 併自 test_cure:成癮計數歸零
+    assert c.skooma_attr_bonus == {} and c.skooma_skill_bonus == {}  # absorb: 雙層清空
+    assert c.attr("strength") == base_str                   # absorb: 戒斷層復原
     c.completed_quests.remove(qid)
     assert not skooma.is_addicted(c) and not quests.is_done(c, qid)   # 可重複求解
 
@@ -188,12 +177,10 @@ def test_legacy_label():
 
 def run():
     test_dose_grants_timed_high_effective_not_base()
-    test_high_restore_and_derived_resources()
     test_addiction_triggers_withdrawal()
     test_deeper_addiction_deeper_withdrawal()
     test_redose_relieves_withdrawal_but_deepens_addiction()
     test_ride_it_out_decay_to_clean()
-    test_cure_clears_state()
     test_cure_quest_flow_and_repeatable()
     test_no_free_cure_after_riding_out_a_completed_quest()
     test_high_never_touches_strength_or_sneak()

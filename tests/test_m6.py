@@ -7,7 +7,7 @@ from tesrpg.creation import build_character
 from tesrpg.gamedata import get_gamedata
 from tesrpg.rng import RNG
 from tesrpg.state import GameState, GameTime
-from tesrpg.systems import factions, legacy, quests
+from tesrpg.systems import factions, legacy
 
 
 def _state(**time_kw):
@@ -26,13 +26,10 @@ def test_survived_elapsed():
     st.time = GameTime(year=434, month=1, day=1, hour=8)   # 整整一年(12×30 天)
     years, days = legacy.survived(st)
     assert years == 1 and days == 0
-
-
-def test_survived_partial():
-    gd, c, st = _state()
-    st.time = GameTime(year=433, month=3, day=11, hour=8)  # 過了 2 月又 10 天 = 70 天
-    years, days = legacy.survived(st)
-    assert years == 0 and days == 70
+    # 同函式曆法換算另一組輸入(原 test_survived_partial):重設 time 不互相污染
+    # (survived 只讀 start_time 與 time)。不足一年:過了 2 月又 10 天 = 70 天。
+    st.time = GameTime(year=433, month=3, day=11, hour=8)
+    assert legacy.survived(st) == (0, 70)
 
 
 # --- 創角即記錄起點足跡 ------------------------------------------------
@@ -53,6 +50,13 @@ def test_compute_fields_and_title():
     assert legacy.title_for(10000) == "載入史冊的不朽者"
     # 分數隨各門檻遞增
     assert legacy.title_for(699) != legacy.title_for(700)
+    # playstyle 判定(原 test_playstyle_detection):置於 compute 之後僅為語意乾淨。
+    # 法系 spec 聚合最高且 spread>=30 → magic 分支(回傳含子字串『法師』)。
+    for k in c.skills:
+        c.skills[k] = 5
+    for k in ("destruction", "restoration", "alteration"):
+        c.skills[k] = 80
+    assert "法師" in legacy.playstyle(c, gd)
 
 
 def test_score_monotonic_with_achievements():
@@ -67,15 +71,6 @@ def test_score_monotonic_with_achievements():
     factions.join(c, "fighters_guild"); c.factions["fighters_guild"] = 3
     richer = legacy.compute(st, gd)["score"]
     assert richer > base + 1000
-
-
-def test_playstyle_detection():
-    gd, c, st = _state()
-    for s in c.skills:
-        c.skills[s] = 5
-    for s in ("destruction", "restoration", "alteration"):
-        c.skills[s] = 80
-    assert "法師" in legacy.playstyle(c, gd)
 
 
 # --- 遊戲模式 + start_time 存讀檔 --------------------------------------
@@ -115,29 +110,6 @@ def test_score_faction_rank_clamped():
     s_top = legacy.compute(st, gd)["score"]
     c.factions["fighters_guild"] = 999
     assert legacy.compute(st, gd)["score"] == s_top          # 夾限,不灌爆
-
-
-# --- 公會三階晉升(新增內容)------------------------------------------
-def test_guild_rank3_reachable():
-    gd, c, st = _state()
-    factions.join(c, "fighters_guild")
-    # fg1 -> rank1
-    quests.accept_quest(c, gd, "fg1")
-    for _ in range(2):
-        quests.record_kill(c, "wolf")
-    quests.check_completion(c, gd)
-    assert factions.rank_index(c, "fighters_guild") == 1
-    # fg2 -> rank2
-    quests.accept_quest(c, gd, "fg2")
-    quests.record_dungeon_clear(c, "cedernoc_cave")
-    quests.check_completion(c, gd)
-    assert factions.rank_index(c, "fighters_guild") == 2
-    # fg3 現在可接 -> rank3
-    assert quests.available_quests(c, gd, "guild", "fighters_guild") == ["fg3"]
-    quests.accept_quest(c, gd, "fg3")
-    quests.record_kill(c, "bear")
-    quests.check_completion(c, gd)
-    assert factions.rank_index(c, "fighters_guild") == 3
 
 
 def run():

@@ -70,6 +70,7 @@ def test_disease_resist_blocks_infection():
 def test_stage_bonus_is_effective_not_base():
     gd, c, st = _state(origin="nightborn")
     vampirism.update(st, gd)                       # 先初始化進食日
+    fatigue0 = c.max_fatigue                        # 加成前的體力上限(折入自 derived_resources)
     st.time.advance(vampirism.STAGE_DAYS * 3 * 24)
     vampirism.update(st, gd)
     assert vampirism.stage(c, st) == 3
@@ -78,15 +79,7 @@ def test_stage_bonus_is_effective_not_base():
     # 火焰由抗性轉弱點(負抗性 → 傷害放大),且免疫疾病
     resist = magic.entity_resist(c, gd)
     assert resist.get("fire", 0) < 0 and resist.get("disease", 0) >= 100
-
-
-def test_bonus_flows_into_derived_resources():
-    gd, c, st = _state(origin="nightborn")
-    vampirism.update(st, gd)
-    fatigue0 = c.max_fatigue
-    st.time.advance(vampirism.STAGE_DAYS * 3 * 24)
-    vampirism.update(st, gd)
-    assert c.max_fatigue > fatigue0           # 力量/意志加成 → 體力上限上升
+    assert c.max_fatigue > fatigue0                 # 力量/意志加成 → 體力上限上升
 
 
 def test_vampire_power_overrides_and_drains():
@@ -120,17 +113,12 @@ def test_sun_burns_by_day_not_night_or_dungeon():
     st.time.hour = 12
     assert vampirism.expose_to_sun(st, gd, 4) == 0
 
-
-def test_sun_never_kills_in_menu():
-    gd, c, st = _state(origin="nightborn")
-    vampirism.update(st, gd)
-    st.time.advance(vampirism.STAGE_DAYS * 3 * 24)
-    vampirism.update(st, gd)
+    # 低血 + 大量日照仍夾限至 health>=1,不在選單層曬死(紅線:死亡只應來自戰鬥;折入自 sun_never_kills_in_menu)
     c.location_id = "imperial_road"
     st.time.hour = 12
     c.health = 3
-    vampirism.expose_to_sun(st, gd, 12)           # 大量日照
-    assert c.health >= 1                          # 夾限保命,死亡只應來自戰鬥
+    vampirism.expose_to_sun(st, gd, 12)           # 12 小時日照 dmg 遠大於 2 → 觸發夾限路徑
+    assert c.health >= 1
 
 
 def test_shunned_at_high_stage():
@@ -143,11 +131,6 @@ def test_shunned_at_high_stage():
 
 
 # --- E:開局 + 存檔 + 結算 + 向後相容 -----------------------------------
-def test_nightborn_origin_is_vampire():
-    gd, c, _ = _state(origin="nightborn")
-    assert c.is_vampire and c.origin == "nightborn"
-
-
 def test_save_roundtrip_preserves_vampire_state():
     gd, c, st = _state(origin="nightborn")
     vampirism.update(st, gd)
@@ -169,21 +152,6 @@ def test_old_save_without_vampire_fields_loads():
     assert c2.is_vampire is False and c2.vampire_infected_day == -1
 
 
-def test_cure_clears_vampire_state():
-    gd, c, st = _state(origin="nightborn")
-    vampirism.update(st, gd)
-    st.time.advance(vampirism.STAGE_DAYS * 3 * 24)
-    vampirism.update(st, gd)
-    assert c.is_vampire and c.attr("strength") > c.base_attr("strength")
-    assert powers.power_id(c, gd) == "vampiric_drain"
-    vampirism.cure(c, gd)
-    assert not c.is_vampire
-    assert c.attr("strength") == c.base_attr("strength")       # 階級加成清除
-    assert c.vampire_resist == {} and c.vampire_attr_bonus == {}
-    assert powers.power_id(c, gd) != "vampiric_drain"          # 星座之力回歸
-    assert vampirism.susceptible(c)                             # 日後仍可再被感染
-
-
 def test_cure_quest_flow_and_repeatable():
     from tesrpg.systems import quests, inventory
     gd, c, st = _state(origin="nightborn")
@@ -196,10 +164,19 @@ def test_cure_quest_flow_and_repeatable():
     quests.record_kill(c, "vampire_lord"); quests.check_completion(c, gd)   # 階段3
     assert quests.is_done(c, qid)
     assert inventory.count_item(c, "garlic") == 0                # 採集物上繳消耗
+    # 推進到階級 3 以驗證解咒清除階級加成(quest 完成判定看 completed_quests,不受時間影響)
+    st.time.advance(vampirism.STAGE_DAYS * 3 * 24)
+    vampirism.update(st, gd)
+    assert c.is_vampire and c.attr("strength") > c.base_attr("strength")
+    assert powers.power_id(c, gd) == "vampiric_drain"
     # 儀式解咒(=action_vampire_cure 的核心)
     vampirism.cure(c, gd)
     c.completed_quests.remove(qid)
     assert not c.is_vampire and not quests.is_done(c, qid)       # 可重複求咒
+    assert c.attr("strength") == c.base_attr("strength")       # 階級加成清除(折入自 cure_clears_vampire_state)
+    assert c.vampire_resist == {} and c.vampire_attr_bonus == {}
+    assert powers.power_id(c, gd) != "vampiric_drain"          # 星座之力回歸
+    assert vampirism.susceptible(c)                             # 日後仍可再被感染
 
 
 def test_legacy_label():
@@ -217,15 +194,11 @@ def run():
     test_stage_rises_with_hunger_and_feeding_resets()
     test_disease_resist_blocks_infection()
     test_stage_bonus_is_effective_not_base()
-    test_bonus_flows_into_derived_resources()
     test_vampire_power_overrides_and_drains()
     test_sun_burns_by_day_not_night_or_dungeon()
-    test_sun_never_kills_in_menu()
     test_shunned_at_high_stage()
-    test_nightborn_origin_is_vampire()
     test_save_roundtrip_preserves_vampire_state()
     test_old_save_without_vampire_fields_loads()
-    test_cure_clears_vampire_state()
     test_cure_quest_flow_and_repeatable()
     test_legacy_label()
 

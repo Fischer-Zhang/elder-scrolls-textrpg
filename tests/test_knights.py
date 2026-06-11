@@ -1,12 +1,10 @@
 """九神騎士團(Knights of the Nine,第 6 公會 / 陣營 Phase D ②)的測試:
-大事件解鎖入會、雙向對立(神話黎明 + 黑暗兄弟會)、lawful 賞金門檻、聖戰合約階梯、
-分支壓軸、聖光眷顧 perk(治療增幅 + 與溢盾精通的複利受 cap 夾住)、存檔向後相容。"""
-
-import json
+雙向對立資料、lawful 賞金門檻『真擋任務』回歸 pin、聖戰合約階梯、分支壓軸、
+聖光眷顧 perk(restoration_boon 縮放/夾 cap + 治療增幅 + 與溢盾精通的複利受 cap 夾住)。
+(解鎖/rank-gate/bestiary/存檔/legacy 等三會同型模板已 C 砍或 D 併出檔,見內文標注。)"""
 
 from tesrpg.creation import build_character
 from tesrpg.gamedata import get_gamedata
-from tesrpg.models import Character
 from tesrpg.rng import RNG
 from tesrpg.state import GameState, GameTime
 from tesrpg.systems import factions, magic, mastery, quests
@@ -26,31 +24,15 @@ def _state(**kw):
 
 
 # --- 大事件解鎖 -------------------------------------------------------
-def test_locked_until_kvatch_falls():
-    gd, st = _state()
-    c = st.player
-    assert c.world_events_fired == []
-    assert not factions.can_join(c, gd, FACTION)        # 危機未至,聖團尚未重組
-    assert factions.join_block_reason(c, gd, FACTION) is not None
-    c.world_events_fired.append(UNLOCK)
-    assert factions.can_join(c, gd, FACTION)             # 聖團於安維爾重新集結
-
-
-def test_unlock_gate_is_generic():
-    gd, _ = _state()
-    assert gd.factions[FACTION]["unlock_event"] == UNLOCK
+# test_locked_until_kvatch_falls / test_unlock_gate_is_generic 已 D 併入
+#   test_mythicdawn.test_locked_until_kvatch_falls(參數化迭代 ['mythic_dawn','knights_nine']:
+#   驗 can_join 事件前 False/事件後 True + unlock_event=='kvatch_falls' 資料 pin)。
 
 
 # --- 對立 / lawful -----------------------------------------------------
-def test_rival_members_cannot_join():
-    for rival in ("mythic_dawn", "dark_brotherhood"):
-        gd, st = _state(world_events_fired=[UNLOCK])
-        c = st.player
-        factions.join(c, rival)
-        assert not factions.can_join(c, gd, FACTION), rival
-        assert "勢不兩立" in factions.join_block_reason(c, gd, FACTION)
-
-
+# test_rival_members_cannot_join 已 C 砍(can_join 對 rival 擋路機制 canonical 於
+#   test_guild_depth.test_rival_guilds_mutually_exclusive;rivals 雙向資料由
+#   test_rivals_bidirectional 守)。
 def test_rivals_bidirectional():
     gd, _ = _state()
     assert set(gd.factions[FACTION]["rivals"]) == {"mythic_dawn", "dark_brotherhood"}
@@ -58,17 +40,18 @@ def test_rivals_bidirectional():
     assert FACTION in gd.factions["dark_brotherhood"]["rivals"]
 
 
-def test_fighters_guild_member_may_join():
-    # 聖騎士可兼戰士公會(刻意不對立 → 不逼走既有 FG 玩家)
-    gd, st = _state(world_events_fired=[UNLOCK])
-    c = st.player
-    factions.join(c, "fighters_guild")
-    assert factions.can_join(c, gd, FACTION)
+# test_fighters_guild_member_may_join 已 C 砍(純資料同一性:rivals 不含 fighters_guild
+#   的設計決定;機制零新路徑,雙向不變式由 test_rivals_bidirectional 守)。
 
 
 def test_lawful_bounty_blocks_join_and_advance():
     gd, st = _state(world_events_fired=[UNLOCK])
     c = st.player
+    # 大事件解鎖閘資料 pin + 事件前鎖死(併自 test_locked_until_kvatch_falls;
+    # mythicdawn 端只測 mythic_dawn、未參數化涵蓋 knights_nine)
+    assert gd.factions[FACTION]["unlock_event"] == UNLOCK
+    _, locked = _state()                                  # kvatch_falls 未發生
+    assert not factions.can_join(locked.player, gd, FACTION)
     c.bounties["賽羅迪爾"] = 100                          # 通緝在身
     reason = factions.join_block_reason(c, gd, FACTION)
     assert reason is not None and "賞金" in reason         # lawful:true 拒收通緝者
@@ -102,14 +85,8 @@ def test_contract_ladder_promotes_on_kill():
     assert quests.available_quests(c, gd, "guild", FACTION) == ["kn2"]
 
 
-def test_rank_skill_gate_blocks_advancement():
-    gd, st = _state(world_events_fired=[UNLOCK])
-    c = st.player
-    c.skills.update(block=5, heavy_armor=5, restoration=5, blade=5, blunt=5)
-    factions.join(c, FACTION)
-    c.factions[FACTION] = 1                               # 晉升需門檻 12
-    assert quests.available_quests(c, gd, "guild", FACTION) == []
-    assert factions.advance_block_reason(c, gd, FACTION) is not None
+# test_rank_skill_gate_blocks_advancement 已 C 砍(第三份逐字複本;canonical 於
+#   test_guild_depth.test_advancement_blocked_by_skill_then_unblocked)。
 
 
 def test_finale_branches_resolve_to_different_targets():
@@ -128,15 +105,9 @@ def test_finale_branches_resolve_to_different_targets():
     assert factions.rank_index(c, FACTION) == 6          # 九聖騎士團長
 
 
-def test_contract_targets_exist_in_bestiary():
-    gd, _ = _state()
-    for qid in gd.factions[FACTION]["rank_quests"]:
-        q = gd.quests[qid]
-        branch_objs = ([b["objective"] for b in q["branches"]] if "branches" in q
-                       else [q["objective"]])
-        for obj in branch_objs:
-            assert obj["type"] == "kill"
-            assert obj["creature"] in gd.bestiary, f"{qid} 目標 {obj['creature']} 不在 bestiary"
+# test_contract_targets_exist_in_bestiary 已 D 併入 test_detailing.test_quest_objective_targets_valid
+#   (該測迭代全 gd.quests〔含 branches/stages〕驗 kill→bestiary,是嚴格超集;
+#   kn 附帶的『rank_quests 全為 kill 型』設計斷言折進 detailing 尾端的全域 rank_quests 型別迴圈)。
 
 
 def test_no_clean_bonus_on_crusade_quests():
@@ -147,12 +118,19 @@ def test_no_clean_bonus_on_crusade_quests():
         assert "clean_bonus" not in q
         for b in q.get("branches", []):
             assert "clean_bonus" not in b
+        # 聖戰合約全為 kill 型(併自 test_contract_targets_exist_in_bestiary;
+        # 目標存在性由 test_detailing 覆蓋,此處 pin「kn 合約皆 kill」設計意圖)
+        objs = ([b["objective"] for b in q["branches"]] if "branches" in q else [q["objective"]])
+        for obj in objs:
+            assert obj["type"] == "kill"
 
 
 # --- 聖光眷顧 perk(治療增幅)----------------------------------------
-def test_restoration_boon_scales_with_rank():
+def test_heal_boon_amplifies_heal():
     gd, st = _state(world_events_fired=[UNLOCK])
     c = st.player
+    # 併入 test_restoration_boon_scales_with_rank:restoration_boon 泛型縮放/夾 cap 資料 pin
+    #   (factions._best_perk 薄包裝;非會員=0 / rank0=0 / rank5=0.35觸cap / rank6=0.35夾住)
     assert factions.restoration_boon(c, gd) == 0.0       # 非會員
     factions.join(c, FACTION)
     assert factions.restoration_boon(c, gd) == 0.0       # rank 0
@@ -160,11 +138,8 @@ def test_restoration_boon_scales_with_rank():
     assert abs(factions.restoration_boon(c, gd) - 0.35) < 1e-9   # rank5 觸 cap
     c.factions[FACTION] = 6
     assert abs(factions.restoration_boon(c, gd) - 0.35) < 1e-9   # cap 夾住
-
-
-def test_heal_boon_amplifies_heal():
-    gd, st = _state(world_events_fired=[UNLOCK])
-    c = st.player
+    # ── 行為整合(原 test_heal_boon_amplifies_heal):治療量隨 boon 放大 ─────────
+    c.factions.clear()                                   # 還原非會員,重跑行為對照
     c.skills.update(restoration=80)
     c.max_health = 100000
     c.magicka = 99999
@@ -201,25 +176,12 @@ def test_overheal_ward_cap_contains_boon():
 
 
 # --- 存檔向後相容(零新欄位)----------------------------------------
-def test_membership_survives_save_roundtrip():
-    gd, st = _state(world_events_fired=[UNLOCK])
-    c = st.player
-    factions.join(c, FACTION)
-    c.factions[FACTION] = 3
-    loaded = Character.from_dict(json.loads(json.dumps(c.to_dict())))
-    assert factions.is_member(loaded, FACTION)
-    assert factions.rank_index(loaded, FACTION) == 3
-
-
-def test_legacy_includes_knights_nine():
-    from tesrpg.systems import legacy
-    gd, st = _state(world_events_fired=[UNLOCK])
-    c = st.player
-    factions.join(c, FACTION)
-    c.factions[FACTION] = 2
-    result = legacy.compute(st, gd)
-    names = [name for name, _ in result["factions"]]
-    assert "九神騎士團" in names
+# test_membership_survives_save_roundtrip 已 C 砍(公會會籍=Character.factions 老欄位,
+#   零新存檔欄;同型往返 canonical 於 test_brotherhood.test_save_load_roundtrip_and_backward_compat
+#   + test_state.test_save_load_roundtrip)。
+# test_legacy_includes_knights_nine 已 C 砍(legacy.compute 自動迭代 char.factions → faction
+#   name 入榜屬泛型資料同一性、覆蓋價值近零,不另 pin;防禦/空路徑由
+#   test_politics.test_legacy_survives_corrupt_faction_id 守)。
 
 
 def run():

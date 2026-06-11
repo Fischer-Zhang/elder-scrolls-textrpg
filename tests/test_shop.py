@@ -45,40 +45,23 @@ def test_buy_depletes_and_sells_out():
     assert world.stock_qty(c, loc, item) == 0
 
 
-def test_no_restock_before_timer():
-    gd, c, loc = _setup()
-    t = GameTime()
-    world.ensure_stock(c, gd, loc, t, RNG(1))
-    item = world.in_stock_items(c, gd, loc)[0]
-    world.take_stock(c, loc, item, 999)                    # 清空該品項
-    t.advance(world.RESTOCK_HOURS - 1)                     # 還沒到補貨時點
-    world.ensure_stock(c, gd, loc, t, RNG(2))
-    assert world.stock_qty(c, loc, item) == 0              # 未補貨
-
-
 def test_restock_after_timer():
+    """雙向時間閘:補貨時點前(R-1 小時)不補貨,到時點後重新有貨並重設下次時點。"""
     gd, c, loc = _setup()
     t = GameTime()
     world.ensure_stock(c, gd, loc, t, RNG(1))
     for it in list(c.shop_stock[loc]):
         world.take_stock(c, loc, it, 999)                  # 全部清空
     assert not world.in_stock_items(c, gd, loc)
-    t.advance(world.RESTOCK_HOURS)                          # 到補貨時點
+    # 閘前:推進到補貨時點前一小時,進店不補貨(全清後仍全空,比只查單一品項更強)
+    t.advance(world.RESTOCK_HOURS - 1)
+    world.ensure_stock(c, gd, loc, t, RNG(2))              # 走早退分支不觸 rng,種子無關
+    assert not world.in_stock_items(c, gd, loc)            # 未到時點 → 仍空
+    # 閘後:再 +1(累進共 RESTOCK_HOURS),到補貨時點重新有貨並重設下次時點
+    t.advance(1)
     world.ensure_stock(c, gd, loc, t, RNG(7))
     assert world.in_stock_items(c, gd, loc)                # 重新有貨
     assert c.shop_restock_at[loc] == t.absolute_hours() + world.RESTOCK_HOURS
-
-
-def test_arbitrage_supply_is_capped():
-    """套利受供給+時間閘:單輪可取得的廉價材料有限,清空後到補貨前買不到更多。"""
-    gd, c, loc = _setup()
-    t = GameTime()
-    world.ensure_stock(c, gd, loc, t, RNG(1))
-    assert all(q <= 6 for q in c.shop_stock[loc].values())   # 單輪供給有上限,非無限
-    for it in list(c.shop_stock[loc]):
-        world.take_stock(c, loc, it, 999)
-    world.ensure_stock(c, gd, loc, t, RNG(1))                # 同一時刻再進店
-    assert not world.in_stock_items(c, gd, loc)              # 仍空 → 得等補貨
 
 
 def test_save_roundtrip_and_backward_compat():
@@ -121,9 +104,7 @@ def test_shop_buy_smoke_depletes_stock():
 def run():
     test_stock_initializes_finite()
     test_buy_depletes_and_sells_out()
-    test_no_restock_before_timer()
     test_restock_after_timer()
-    test_arbitrage_supply_is_capped()
     test_save_roundtrip_and_backward_compat()
     test_shop_buy_smoke_depletes_stock()
 

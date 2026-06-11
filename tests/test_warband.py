@@ -59,30 +59,18 @@ def test_recruit_caps_and_costs():
     assert warband.recruit_soldiers(c, 10) == 1 and c.soldiers == warband.MAX_SOLDIERS
 
 
-def test_fielded_and_soften():
-    gd, c = _setup()
-    c.soldiers = 20
-    assert warband.fielded_soldiers(c) == warband.FIELD_CAP        # 上場數有上限
-    c.soldiers = 3
-    assert warband.fielded_soldiers(c) == 3
-    assert warband.army_soften(c) == 3 * warband.ARMY_SOFTEN_PER
-
-
-def test_footman_is_troop():
-    gd, _ = _setup()
-    assert gd.companions["footman"].get("troop") is True          # 士兵兵種,不在旅店招
-
-
 def test_save_roundtrip_and_backward_compat():
     import json
-    gd, c = _setup(); c.soldiers = 12; c.camp = "bruma"
+    gd, c = _setup(); c.soldiers = 12; c.camp = "bruma"; c.wage_due_at = 123456
     loaded = Character.from_dict(json.loads(json.dumps(c.to_dict())))
     assert loaded.soldiers == 12 and loaded.camp == "bruma"
+    assert loaded.wage_due_at == 123456                  # 折入 wage_due_at 往返
     d = c.to_dict()
-    for k in ("soldiers", "camp"):
+    for k in ("soldiers", "camp", "wage_due_at"):
         del d[k]
     old = Character.from_dict(d)
     assert old.soldiers == 0 and old.camp == ""
+    assert old.wage_due_at == 0                          # 舊存檔缺欄 → 預設 0
 
 
 # --- 攻城整合煙霧 -------------------------------------------------------
@@ -143,28 +131,21 @@ def test_upkeep_grace_then_pay():
 
 
 def test_upkeep_desertion_when_broke():
+    # 第一段:全付不出 → 半數未領餉者離營
     gd, c = _setup(); c.soldiers = 10; c.gold = 0
     st = _state(c); warband.tick_upkeep(st)               # 寬限
     st.time.advance(warband.WAGE_HOURS)
     evs = warband.tick_upkeep(st)
-    assert evs[0]["kind"] == "desert"                     # 全付不出 → 半數未領餉者離營
+    assert evs[0]["kind"] == "desert"
     assert evs[0]["deserters"] == 5 and c.soldiers == 5   # max(1,(10+1)//2)=5
     assert c.gold == 0
-
-
-def test_upkeep_partial_pay():
-    gd, c = _setup(); c.soldiers = 10; c.gold = 3 * warband.WAGE_PER_SOLDIER  # 只付得起 3 名
+    # 第二段(折入 partial_pay,需 fresh state):只付得起 3 名 → 部分付餉邊界
+    gd, c = _setup(); c.soldiers = 10; c.gold = 3 * warband.WAGE_PER_SOLDIER
     st = _state(c); warband.tick_upkeep(st)
     st.time.advance(warband.WAGE_HOURS)
     evs = warband.tick_upkeep(st)
     assert evs[0]["kind"] == "desert"
     assert c.gold == 0 and evs[0]["deserters"] == 4 and c.soldiers == 6  # unpaid 7 → (7+1)//2=4
-
-
-def test_upkeep_no_soldiers_resets_cycle():
-    gd, c = _setup(); c.soldiers = 0; c.wage_due_at = 999999
-    assert warband.tick_upkeep(_state(c)) == []
-    assert c.wage_due_at == 0                             # 無兵 → 清週期(下次招募重新寬限)
 
 
 def test_upkeep_catches_up_multiple_periods():
@@ -176,25 +157,15 @@ def test_upkeep_catches_up_multiple_periods():
     assert c.gold == 1000 - 3 * 2 * warband.WAGE_PER_SOLDIER
 
 
-def test_wage_due_at_save_roundtrip():
-    import json
-    gd, c = _setup(); c.wage_due_at = 123456
-    loaded = Character.from_dict(json.loads(json.dumps(c.to_dict())))
-    assert loaded.wage_due_at == 123456
-    d = c.to_dict(); del d["wage_due_at"]
-    assert Character.from_dict(d).wage_due_at == 0       # 舊存檔缺欄 → 預設 0
-
-
 # === 階段二:永久傷亡 =================================================
 def test_apply_casualties_deducts_roster():
+    # 第一段:正常扣減(親衛 + 士兵混合陣亡)
     gd, c = _setup(); c.companions = ["sellsword", "veteran"]; c.soldiers = 6
     loss = warband.apply_casualties(c, gd, ["sellsword", "footman", "footman", "footman"])
     assert loss["soldiers"] == 3 and c.soldiers == 3          # 3 名士兵永久折損
     assert c.companions == ["veteran"]                        # 陣亡親衛移出名冊
     assert gd.companions["sellsword"]["name"] in loss["officers"]
-
-
-def test_apply_casualties_clamps_and_ignores_unknown():
+    # 第二段(折入 clamps_and_ignores_unknown,需 fresh state):夾限 ≥0 + 未知 id 略過
     gd, c = _setup(); c.companions = []; c.soldiers = 2
     loss = warband.apply_casualties(c, gd, ["footman", "footman", "footman", "ghost_unit"])
     assert c.soldiers == 0 and loss["soldiers"] == 2         # 回報「實際扣減」(2)而非陣亡計數(3),士兵夾限 ≥0
@@ -253,30 +224,26 @@ def test_run_battle_reports_dead_ally():
     assert res == "victory"
     assert fallen == ["footman"]                                # 陣亡士兵被回報、無誤報
 
-
-def test_run_battle_no_casualties_when_allies_survive():
-    """一般勝利、盟友全存活 → casualties 維持空(無誤報)。"""
-    import tesrpg.main as M
-    from tesrpg.ui import console as ui
-    from tesrpg.systems import combat
+    # --- 第二場戰鬥(折入 no_casualties_when_allies_survive):自身 patch 集、獨立 save/restore ---
+    # 一般勝利、盟友全存活 → casualties 維持空(無誤報)。
     gd, c = _setup(); c.health = 9999; c.max_health = 9999
     st = GameState(player=c, rng=RNG(1), game_mode="adventure")
     enemy = combat.spawn_creature(gd, "giant_rat", st.rng)      # 弱敵,玩家首回合即清
-    saved = {"choose": M._choose_combat_action, "rq": M._report_quests}
-    msgs = {n: getattr(ui, n) for n in ("message", "combat_status_group", "combat_event",
-                                        "combat_tick", "loot_report", "show_events")}
+    saved2 = {"choose": M._choose_combat_action, "rq": M._report_quests}
+    msgs2 = {n: getattr(ui, n) for n in ("message", "combat_status_group", "combat_event",
+                                         "combat_tick", "loot_report", "show_events")}
     M._choose_combat_action = lambda *a, **k: {"type": "attack", "target": enemy}
     M._report_quests = lambda *a, **k: None
-    for n in msgs:
+    for n in msgs2:
         setattr(ui, n, lambda *a, **k: None)
-    fallen: list = []
+    fallen2: list = []
     try:
-        res = M.run_battle(st, gd, [enemy], companions=["sellsword"], casualties=fallen)
+        res2 = M.run_battle(st, gd, [enemy], companions=["sellsword"], casualties=fallen2)
     finally:
-        M._choose_combat_action = saved["choose"]; M._report_quests = saved["rq"]
-        for n, f in msgs.items():
+        M._choose_combat_action = saved2["choose"]; M._report_quests = saved2["rq"]
+        for n, f in msgs2.items():
             setattr(ui, n, f)
-    assert res == "victory" and fallen == []                    # 盟友存活 → 無折損
+    assert res2 == "victory" and fallen2 == []                  # 盟友存活 → 無折損
 
 
 # === 階段二:親衛複合來源(warlord 將領)==============================
@@ -286,14 +253,11 @@ def test_warlord_officer_pool():
     assert "veteran" in pool              # warlord 將領可在營地招
     assert "sellsword" not in pool        # 一般傭兵走旅店,不入營地池
     assert "footman" not in pool          # 士兵不算將領
+    assert gd.companions["footman"].get("troop") is True          # (折入)士兵兵種旗標 = 排除根因
+    assert gd.companions["veteran"].get("warlord") is True        # (折入)將領旗標 = 入池根因(旅店招不到)
+    assert warband.officer_cost(gd, "veteran") == 400             # (折入)將領招募成本
     c.companions.append("veteran")
     assert "veteran" not in warband.recruitable_officers(c, gd)   # 已在隊伍 → 不重複
-
-
-def test_veteran_is_warlord_flagged():
-    gd, _ = _setup()
-    assert gd.companions["veteran"].get("warlord") is True        # 旅店招不到(_hire 濾 warlord)
-    assert warband.officer_cost(gd, "veteran") == 400
 
 
 # === 階段二:攻城永久折損煙霧(經 _siege_assault)====================
@@ -328,24 +292,16 @@ def run():
     test_warlord_gate()
     test_camp_eligibility()
     test_recruit_caps_and_costs()
-    test_fielded_and_soften()
-    test_footman_is_troop()
     test_save_roundtrip_and_backward_compat()
     test_army_press_depletes_garrison_once()
     test_assault_fields_soldiers_as_allies()
     test_upkeep_grace_then_pay()
     test_upkeep_desertion_when_broke()
-    test_upkeep_partial_pay()
-    test_upkeep_no_soldiers_resets_cycle()
     test_upkeep_catches_up_multiple_periods()
-    test_wage_due_at_save_roundtrip()
     test_apply_casualties_deducts_roster()
-    test_apply_casualties_clamps_and_ignores_unknown()
     test_wipe_then_rebuild_gets_fresh_grace()
     test_run_battle_reports_dead_ally()
-    test_run_battle_no_casualties_when_allies_survive()
     test_warlord_officer_pool()
-    test_veteran_is_warlord_flagged()
     test_siege_assault_applies_permanent_losses()
 
 

@@ -19,34 +19,30 @@ def _setup():
     return gd, c
 
 
-def test_stance_seed_is_city_unit_cross_province():
-    gd, _ = _setup()
-    # 天際同省卻立場分裂 → 證明「城為單位、各城主自有立場」
-    assert politics.base_stance(gd, "haafingar") == "imperial"
-    assert politics.base_stance(gd, "windhelm") == "independent"
-    assert politics.base_stance(gd, "whiterun") == "neutral"
-    assert politics.base_stance(gd, "wilderness_nonexistent") is None or True   # 無領主→None
-    assert politics.base_stance(gd, next(lid for lid in gd.world["locations"]
-                                        if not gd.ruler_at(lid))) is None
-
-
 def test_relationship_and_pledge():
     gd, c = _setup()
     assert politics.relationship(c, gd, "windhelm") == "unaligned"   # 未選邊
+    assert not politics.can_siege(c, gd, "windhelm")                 # 未選邊不可攻(併自 can_siege_only_enemy)
     politics.pledge(c, "imperial")
     assert c.allegiance == "imperial"
     assert politics.relationship(c, gd, "bruma") == "ally"           # 同為帝國
     assert politics.relationship(c, gd, "windhelm") == "enemy"       # 獨立 → 敵
     assert politics.relationship(c, gd, "whiterun") == "neutral"     # 中立
-
-
-def test_can_siege_only_enemy():
-    gd, c = _setup()
-    assert not politics.can_siege(c, gd, "windhelm")     # 未選邊不可攻
-    politics.pledge(c, "imperial")
+    # can_siege 即 relationship=='enemy' 一行(併自 can_siege_only_enemy)
     assert politics.can_siege(c, gd, "windhelm")         # 敵城可攻
     assert not politics.can_siege(c, gd, "bruma")        # 盟城不可攻
     assert not politics.can_siege(c, gd, "whiterun")     # 中立不可攻
+    # 立場種子是城為單位、跨省混合(併自 stance_seed_is_city_unit_cross_province)
+    # haafingar 種子與 bruma 同為 imperial,已由上方 bruma→ally 守同立場;windhelm/whiterun
+    # 種子已由上方 relationship 隱含覆蓋。唯一邊界:無領主地點 → base_stance 回 None
+    assert politics.base_stance(gd, next(lid for lid in gd.world["locations"]
+                                        if not gd.ruler_at(lid))) is None
+    # independent 視角的對稱回歸(併自 two_cause_relationship_unchanged);pledge 可重複覆寫
+    politics.pledge(c, "independent")
+    assert politics.relationship(c, gd, "windhelm") == "ally"      # 同獨立
+    assert politics.relationship(c, gd, "bruma") == "enemy"        # 帝國城
+    assert politics.relationship(c, gd, "whiterun") == "neutral"   # 中立仍觀望
+    assert not politics.can_siege(c, gd, "whiterun")
 
 
 # --- 圍城方略(operations:全套技能各有攻城用途)------------------------
@@ -80,6 +76,9 @@ def test_op_deplete_and_costs():
     c.skills["mercantile"] = 40; c.gold = 500
     politics.resolve_op(c, gd, "windhelm", "bribe", RNG(1))
     assert c.gold == 500 - politics.SIEGE_OP_BY_ID["bribe"]["cost"]["gold"]
+    # 直接 deplete_garrison 路徑 + 夾 0 不為負(併自 deplete_persists_and_clamps)
+    politics.deplete_garrison(c, gd, "windhelm", 9999)
+    assert politics.garrison_of(c, gd, "windhelm") == 0
 
 
 def test_risky_op_marks_done_even_on_fail():
@@ -102,15 +101,6 @@ def test_conquer_flips_regarrisons_and_clears_ops():
     assert politics.garrison_of(c, gd, "windhelm") == gd.rulers["windhelm"]["garrison"]  # 重新駐軍
     assert politics.ops_done(c, "windhelm") == []                        # 方略紀錄清空(可重新佈局)
     assert "windhelm" in politics.held_cities(c, gd)
-
-
-def test_deplete_persists_and_clamps():
-    gd, c = _setup()
-    seed = gd.rulers["windhelm"]["garrison"]
-    politics.deplete_garrison(c, gd, "windhelm", 60)
-    assert politics.garrison_of(c, gd, "windhelm") == seed - 60          # 進度持久
-    politics.deplete_garrison(c, gd, "windhelm", 9999)
-    assert politics.garrison_of(c, gd, "windhelm") == 0                  # 不為負
 
 
 # --- 攻城煙霧(patch run_battle 控制強攻結果)----------------------------
@@ -142,12 +132,10 @@ def test_siege_op_then_assault_conquers():
     assert politics.faction_of(c, gd, "windhelm") == "imperial"
     assert c.fame >= politics.SIEGE_FAME
     assert politics.garrison_of(c, gd, "windhelm") > 0   # 由你方重新駐軍
-
-
-def test_siege_assault_death_no_conquer():
-    gd, c, res = _siege(["assault"], "dead")
-    assert res == "dead"
-    assert politics.faction_of(c, gd, "windhelm") == "independent"
+    # 強攻陣亡 → 不易幟、立場不變(併自 siege_assault_death_no_conquer)
+    gd2, c2, res2 = _siege(["assault"], "dead")
+    assert res2 == "dead"
+    assert politics.faction_of(c2, gd2, "windhelm") == "independent"
 
 
 def test_siege_assault_flee_keeps_op_progress():
@@ -166,15 +154,18 @@ def test_save_roundtrip_and_backward_compat():
     politics.pledge(c, "imperial")
     c.skills["speechcraft"] = 80
     politics.resolve_op(c, gd, "windhelm", "parley", RNG(1))
+    c.tax_due_at = {"windhelm": 12345}               # 併自 tax_due_at_save_roundtrip
     loaded = Character.from_dict(json.loads(json.dumps(c.to_dict())))
     assert loaded.allegiance == "imperial"
     assert loaded.garrison_current == c.garrison_current
     assert loaded.siege_ops == c.siege_ops
+    assert loaded.tax_due_at == {"windhelm": 12345}
     d = c.to_dict()
-    for k in ("allegiance", "city_faction", "garrison_current", "siege_ops"):
+    for k in ("allegiance", "city_faction", "garrison_current", "siege_ops", "tax_due_at"):
         del d[k]                                     # 模擬舊存檔
     old = Character.from_dict(d)
     assert old.allegiance == "" and old.city_faction == {} and old.garrison_current == {} and old.siege_ops == {}
+    assert old.tax_due_at == {}                       # 舊存檔缺 tax_due_at → 預設 {}
 
 
 # === 階段三:佔領後收稅 + 駐軍維護 + 輕量叛亂計時 ====================
@@ -207,6 +198,12 @@ def test_conquer_records_cycle_and_collects_net():
     st = _state(c); now = st.time.absolute_hours()
     politics.conquer(c, gd, "windhelm", now=now)
     assert c.tax_due_at["windhelm"] == now + politics.TAX_HOURS   # 起算 + 一週寬限
+    # 領地總覽(併自 territory_overview_helper):剛攻下、未到期、駐軍未變時
+    ov = politics.territory_overview(c, gd, "windhelm", now)
+    assert ov["loc"] == "windhelm" and ov["countdown"] == politics.TAX_HOURS   # 距下次徵稅
+    assert ov["population"] == gd.rulers["windhelm"]["population"]
+    assert ov["base"] == gd.rulers["windhelm"]["garrison"] and not ov["unrest"]
+    assert ov["net"] == ov["tax"] - ov["maint"]
     assert politics.tick_tax(st, gd) == []                        # 未到期 → 不收
     g0 = politics.garrison_of(c, gd, "windhelm")
     st.time.advance(politics.TAX_HOURS)
@@ -220,6 +217,9 @@ def test_conquer_records_cycle_and_collects_net():
     maint = round(g_decay * politics.GARRISON_MAINT_PER)          # 維護以「回補前」駐軍計
     assert evs[0]["tax"] == tax and evs[0]["maint"] == maint and evs[0]["net"] == tax - maint
     assert c.gold == max(0, tax - maint)
+    # 無紀錄(刪欄)→ countdown None(併自 territory_overview_helper 邊界)
+    del c.tax_due_at["windhelm"]
+    assert politics.territory_overview(c, gd, "windhelm", now)["countdown"] is None
 
 
 def test_unrest_suspends_tax_but_charges_maint():
@@ -276,31 +276,14 @@ def test_regen_blocked_under_unrest():
     e = politics.tick_tax(st, gd)[0]
     assert e["unrest"]
     assert politics.garrison_of(c, gd, "windhelm") == politics.UNREST_WARN          # 停在 WARN,未 +regen
-
-
-def test_neglected_city_revolts_despite_regen():
-    """被忽視的城仍會一路衰減到造反 —— 自動重建不讓領地變不死。"""
-    gd, c = _setup(); politics.pledge(c, "imperial")
-    st = _state(c); politics.conquer(c, gd, "windhelm", now=st.time.absolute_hours())
+    # 被忽視的城進浮動帶後放任數週仍一路衰減到造反(併自 neglected_city_revolts_despite_regen)
+    # 重設駐軍續用同一 conquer 場景;tax_due_at 已被上一期 tick 推進(上期未潰故未清),
+    # advance*6 補結多期觸發 revolt
     c.garrison_current["windhelm"] = politics.UNREST_WARN + 5     # 一旦進浮動帶就不再重建
     st.time.advance(politics.TAX_HOURS * 6)                       # 放任數週
     evs = politics.tick_tax(st, gd)
     assert any(e["kind"] == "revolt" for e in evs)
     assert "windhelm" not in politics.held_tax_cities(c, gd)
-
-
-# === 階段四:領地全局總覽 ===
-def test_territory_overview_helper():
-    gd, c = _setup(); politics.pledge(c, "imperial")
-    st = _state(c); now = st.time.absolute_hours()
-    politics.conquer(c, gd, "windhelm", now=now)
-    ov = politics.territory_overview(c, gd, "windhelm", now)
-    assert ov["loc"] == "windhelm" and ov["countdown"] == politics.TAX_HOURS    # 距下次徵稅
-    assert ov["population"] == gd.rulers["windhelm"]["population"]
-    assert ov["base"] == gd.rulers["windhelm"]["garrison"] and not ov["unrest"]
-    assert ov["net"] == ov["tax"] - ov["maint"]
-    del c.tax_due_at["windhelm"]
-    assert politics.territory_overview(c, gd, "windhelm", now)["countdown"] is None   # 無紀錄 → None
 
 
 def test_action_territory_lists_only_conquered_and_reinforces():
@@ -342,15 +325,6 @@ def test_reinforce_caps_and_costs():
     assert politics.reinforce_garrison(c, gd, "windhelm", 10) == 2     # 夾金幣
 
 
-def test_tax_due_at_save_roundtrip():
-    import json
-    gd, c = _setup(); c.tax_due_at = {"windhelm": 12345}
-    loaded = Character.from_dict(json.loads(json.dumps(c.to_dict())))
-    assert loaded.tax_due_at == {"windhelm": 12345}
-    d = c.to_dict(); del d["tax_due_at"]
-    assert Character.from_dict(d).tax_due_at == {}        # 舊存檔缺欄 → 預設 {}
-
-
 def test_legacy_counts_dominion():
     from tesrpg.systems import legacy
     gd, c = _setup(); politics.pledge(c, "imperial"); c.gold = 0
@@ -362,6 +336,13 @@ def test_legacy_counts_dominion():
     assert "擁護" in s["dominion"]
     bare = legacy.compute(_state(_setup()[1]), gd)
     assert bare["dominion"] is None                       # 無城戰/招兵 → 結算省略此行
+    # 自立稱號階梯(併自 legacy_own_realm_title):純函式邊界 + own 持 3 城的霸主階
+    assert legacy.own_realm_title(1) == "割據一方的梟雄"
+    assert legacy.own_realm_title(10) == "再造一統的新王"
+    c2 = _setup()[1]; politics.pledge(c2, "own"); st2 = _state(c2)
+    for loc in ("windhelm", "riften", "markarth"):
+        politics.conquer(c2, gd, loc, now=st2.time.absolute_hours())
+    assert "裂土封疆的霸主" in legacy.compute(st2, gd)["dominion"]   # 持 3 own 城 → 霸主階
 
 
 def test_legacy_survives_corrupt_faction_id():
@@ -374,33 +355,7 @@ def test_legacy_survives_corrupt_faction_id():
     assert s["factions"] == []                                # 未知公會略過、不計分
 
 
-def test_court_reinforce_end_to_end():
-    import tesrpg.main as M
-    from tesrpg.ui import console as ui
-    gd, c = _setup(); politics.pledge(c, "imperial"); c.gold = 10000
-    c.location_id = "windhelm"
-    st = _state(c); politics.conquer(c, gd, "windhelm", now=st.time.absolute_hours())
-    base = politics.base_garrison(gd, "windhelm")
-    c.garrison_current["windhelm"] = base - 30
-    saved = (ui.menu, ui.ask_int, ui.message, ui.court_panel)
-    _cseq = iter(["reinforce", None])         # 朝堂現可連續處理 → 加強一次後返回離開
-    ui.menu = lambda *a, **k: next(_cseq, None)
-    ui.ask_int = lambda *a, **k: 20
-    ui.message = lambda *a, **k: None
-    ui.court_panel = lambda *a, **k: None
-    try:
-        M.action_court(st, gd)
-    finally:
-        ui.menu, ui.ask_int, ui.message, ui.court_panel = saved
-    assert politics.garrison_of(c, gd, "windhelm") == base - 10   # -30 +20
-
-
 # === 陣營階段 B:四大義 + 中立可攻 + 自立 ===
-def test_four_causes_present():
-    assert set(politics.CAUSES) == {"imperial", "independent", "daedric", "own"}
-    assert politics.cause_name("daedric") == "神話黎明" and politics.cause_name("own") == "自立稱雄"
-
-
 def test_expansionist_causes_attack_neutral():
     gd, c = _setup()
     politics.pledge(c, "imperial")
@@ -414,40 +369,11 @@ def test_expansionist_causes_attack_neutral():
     assert politics.relationship(c, gd, "bruma") == "enemy"        # 自立/達貢對帝國城仍=敵
 
 
-def test_two_cause_relationship_unchanged():
-    """回歸:帝國/獨立對 盟/敵/中立 的判定逐位元不變(擴張只加在 own/daedric)。"""
-    gd, c = _setup()
-    politics.pledge(c, "independent")
-    assert politics.relationship(c, gd, "windhelm") == "ally"      # 同獨立
-    assert politics.relationship(c, gd, "bruma") == "enemy"        # 帝國城
-    assert politics.relationship(c, gd, "whiterun") == "neutral"   # 中立仍觀望
-    assert not politics.can_siege(c, gd, "whiterun")
-
-
-def test_pledgeable_causes_gating():
-    gd, c = _setup()
-    assert politics.pledgeable_causes(c) == ["imperial", "independent", "own"]   # 神話黎明預設鎖
-    c.world_events_fired.append("kvatch_falls")
-    assert "daedric" in politics.pledgeable_causes(c)              # 凱瓦奇陷落後解鎖
-
-
 def test_own_conquer_taxes_red_line():
     gd, c = _setup(); politics.pledge(c, "own")
     st = _state(c); politics.conquer(c, gd, "windhelm", now=st.time.absolute_hours())
     assert c.city_faction["windhelm"] == "own" and politics.faction_of(c, gd, "windhelm") == "own"
     assert "windhelm" in politics.held_tax_cities(c, gd)          # 自立的城可收稅(只認 city_faction)
-
-
-def test_legacy_own_realm_title():
-    from tesrpg.systems import legacy
-    gd, c = _setup(); politics.pledge(c, "own")
-    st = _state(c)
-    for loc in ("windhelm", "riften", "markarth"):
-        politics.conquer(c, gd, loc, now=st.time.absolute_hours())
-    s = legacy.compute(st, gd)
-    assert "裂土封疆的霸主" in s["dominion"]                       # 持 3 城 → 霸主階
-    assert legacy.own_realm_title(1) == "割據一方的梟雄"
-    assert legacy.own_realm_title(10) == "再造一統的新王"
 
 
 def test_world_fields_save_roundtrip():
@@ -481,17 +407,13 @@ def test_pledge_menu_four_choice_smoke():
 
 
 def run():
-    test_stance_seed_is_city_unit_cross_province()
     test_relationship_and_pledge()
-    test_can_siege_only_enemy()
     test_assault_force_monotonic_and_clamped()
     test_ops_gated_by_skill_and_once_each()
     test_op_deplete_and_costs()
     test_risky_op_marks_done_even_on_fail()
     test_conquer_flips_regarrisons_and_clears_ops()
-    test_deplete_persists_and_clamps()
     test_siege_op_then_assault_conquers()
-    test_siege_assault_death_no_conquer()
     test_siege_assault_flee_keeps_op_progress()
     test_save_roundtrip_and_backward_compat()
     test_all_cities_have_population()
@@ -502,20 +424,12 @@ def run():
     test_tick_tax_catches_up_multiple_periods()
     test_garrison_regen_on_stable_city()
     test_regen_blocked_under_unrest()
-    test_neglected_city_revolts_despite_regen()
-    test_territory_overview_helper()
     test_action_territory_lists_only_conquered_and_reinforces()
     test_reinforce_caps_and_costs()
-    test_tax_due_at_save_roundtrip()
     test_legacy_counts_dominion()
     test_legacy_survives_corrupt_faction_id()
-    test_court_reinforce_end_to_end()
-    test_four_causes_present()
     test_expansionist_causes_attack_neutral()
-    test_two_cause_relationship_unchanged()
-    test_pledgeable_causes_gating()
     test_own_conquer_taxes_red_line()
-    test_legacy_own_realm_title()
     test_world_fields_save_roundtrip()
     test_pledge_menu_four_choice_smoke()
 

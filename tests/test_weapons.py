@@ -21,13 +21,12 @@ def test_all_weapons_have_archetype_and_speed():
         assert "archetype" in w and "speed" in w, wid
 
 
-# --- B 速度:命中與體力 -------------------------------------------------
-def test_weapon_speed_affects_hit_and_fatigue():
+# --- B 速度:命中與體力(公式層 + 效果層雙覆蓋) --------------------------
+def test_fast_weapon_costs_less_fatigue():
+    # 公式層:命中修正(快正慢負)+ 體力係數(慢>快)
     assert formulas.weapon_speed_hit(1.4) > 0 > formulas.weapon_speed_hit(0.75)
     assert formulas.weapon_attack_fatigue_factor(0.75) > formulas.weapon_attack_fatigue_factor(1.4)
-
-
-def test_fast_weapon_costs_less_fatigue():
+    # 效果層:player_attack_cost 慢重武器更耗體力
     gd, p = _setup()
     p.skills["athletics"] = 0
     p.weapon = "iron_dagger"; p.fatigue = p.max_fatigue

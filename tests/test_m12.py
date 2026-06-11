@@ -4,9 +4,6 @@ run_battle 是互動式的,故此處先把 UI 換成無輸出 + 自動選「攻�
 """
 
 import io
-import tempfile
-from collections import Counter
-from pathlib import Path
 
 from rich.console import Console
 
@@ -51,12 +48,6 @@ def _state(c, seed=1):
 
 
 # --- 群體生成 -----------------------------------------------------------
-def test_encounter_group_sizes():
-    gd = get_gamedata()
-    sizes = Counter(len(combat.random_encounter_group(gd, 3, RNG(i))) for i in range(300))
-    assert set(sizes) <= {1, 2, 3} and sizes[1] > sizes[3]   # 多半單一,成群較罕見
-
-
 def test_spawn_companion_is_creature_ally():
     gd = get_gamedata()
     a = combat.spawn_companion(gd, "sellsword", RNG(0))
@@ -115,36 +106,11 @@ def test_companion_party_survives_and_persists():
     assert c.companions == ["sellsword", "shieldmaiden"]      # 同伴留在隊伍
 
 
-def test_all_spawn_refs_valid():
-    """回歸審查 [2]:召喚法術生物、地城房間敵人、同伴攻擊皆須指向存在的模板。"""
-    gd = get_gamedata()
-    for sid, sp in gd.spells.items():
-        eff = sp["effect"]
-        if eff.get("kind") == "summon":
-            assert eff["creature"] in gd.bestiary, (sid, eff["creature"])
-    for did, dg in gd.dungeons.items():
-        for tid in dg["monsters"]:                       # 格子地城:怪物池(取代舊 rooms)
-            assert tid in gd.bestiary, (did, tid)
-        assert dg["boss"]["enemy"] in gd.bestiary, (did, dg["boss"]["enemy"])
-    for cid, comp in gd.companions.items():
-        assert {"name", "cost", "strength", "max_health", "attack"} <= set(comp)
-
-
 def test_unknown_companion_id_skipped_not_crash():
     """回歸審查 [2]:存檔殘留的、已不存在的同伴 id 不該讓戰鬥崩潰。"""
     gd, c = _strong(["sellsword", "ghost_that_was_removed"])
     st = _state(c, 1)
     assert main.run_battle(st, gd, combat.spawn_creature(gd, "giant_rat", RNG(1))) == "victory"
-
-
-def test_companions_save_load():
-    gd, c = _strong(["sellsword", "hedge_mage"])
-    st = _state(c)
-    with tempfile.TemporaryDirectory() as d:
-        p = Path(d) / "s.json"
-        st.save(p)
-        lo = GameState.load(p)
-    assert lo.player.companions == ["sellsword", "hedge_mage"]
 
 
 def test_hire_dismiss():

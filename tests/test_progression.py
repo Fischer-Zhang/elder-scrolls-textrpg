@@ -23,10 +23,6 @@ def test_skill_increases_with_xp():
     assert any(e["type"] == "skill_up" for e in events)
 
 
-def test_threshold_grows_with_level():
-    assert formulas.skill_threshold(0) < formulas.skill_threshold(50) < formulas.skill_threshold(99)
-
-
 def test_skill_capped_at_100():
     gd, c = _fresh_warrior()
     c.skills["blade"] = 99
@@ -94,14 +90,14 @@ def test_apply_level_up_allocates_attributes_and_resource():
     assert c.level_xp == xp0 - thresh           # 保留溢出
     assert c.health == c.max_health and c.fatigue == c.max_fatigue   # 升級回滿
 
-
-def test_resource_choice_magicka_and_fatigue():
-    gd, c = _fresh_warrior()
-    _level_to_ready(gd, c)
-    mp0 = c.max_magicka
-    progression.apply_level_up(c, gd, {"intelligence": 4}, "magicka")
+    # magicka 資源分支(原 test_resource_choice_magicka_and_fatigue,折入此處):
+    # 同一個 level-up 已選 health,無法再選 magicka,故另起新鮮角色驗魔力公式。
+    gd2, c2 = _fresh_warrior()
+    _level_to_ready(gd2, c2)
+    mp0 = c2.max_magicka
+    progression.apply_level_up(c2, gd2, {"intelligence": 4}, "magicka")
     # 魔力上限 = 智力×2 + magicka_bonus + resource_levels[magicka]
-    assert c.max_magicka == mp0 + 4 * 2 + formulas.LEVELUP_RESOURCE_GAIN["magicka"]
+    assert c2.max_magicka == mp0 + 4 * 2 + formulas.LEVELUP_RESOURCE_GAIN["magicka"]
 
 
 def run():

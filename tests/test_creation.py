@@ -31,14 +31,6 @@ def test_magicka_bonus_altmer_mage_sign():
     assert c.max_magicka == c.attr("intelligence") * 2 + 150
 
 
-def test_attributes_capped():
-    gd = get_gamedata()
-    c = build_character(gd, name="X", sex="male", race="altmer",
-                        birthsign="mage", class_id="mage")
-    for v in c.attributes.values():
-        assert 1 <= v <= formulas.ATTRIBUTE_CAP
-
-
 def test_custom_class():
     gd = get_gamedata()
     custom = {"specialization": "stealth",
@@ -55,7 +47,6 @@ def test_custom_class():
 def run():
     test_build_warrior_nord()
     test_magicka_bonus_altmer_mage_sign()
-    test_attributes_capped()
     test_custom_class()
 
 

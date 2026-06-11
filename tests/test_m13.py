@@ -69,18 +69,15 @@ def test_aoe_refunds_with_no_targets():
 
 
 # --- AoE 狀態 -----------------------------------------------------------
-def test_status_all_paralyzes_every_enemy():
+def test_status_all_applies_paralyze_and_fear():
     gd, c = _mage()
     enemies = [combat.spawn_creature(gd, "wolf", RNG(i)) for i in range(3)]
     magic.cast(c, gd, "mass_paralysis", RNG(0), enemies=enemies)
     assert all(magic.is_paralyzed(e) for e in enemies)
-
-
-def test_rout_fears_all():
-    gd, c = _mage()
-    enemies = [combat.spawn_creature(gd, "bandit", RNG(i)) for i in range(2)]
-    magic.cast(c, gd, "rout", RNG(0), enemies=enemies)
-    assert all(magic.is_feared(e) for e in enemies)
+    # status_all 另一狀態出口:rout 對全體施加 fear(同引擎 kind,不同 status payload)
+    enemies2 = [combat.spawn_creature(gd, "bandit", RNG(i)) for i in range(2)]
+    magic.cast(c, gd, "rout", RNG(0), enemies=enemies2)
+    assert all(magic.is_feared(e) for e in enemies2)
 
 
 def test_damage_status_all():

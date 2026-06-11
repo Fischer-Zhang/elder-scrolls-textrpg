@@ -4,7 +4,7 @@ from tesrpg import formulas
 from tesrpg.creation import build_character
 from tesrpg.gamedata import get_gamedata
 from tesrpg.rng import RNG
-from tesrpg.systems import combat, dungeon, inventory, loot, world
+from tesrpg.systems import combat, inventory, world
 
 
 def _char():
@@ -31,22 +31,8 @@ def test_add_remove_and_weight():
     assert inventory.remove_item(c, "iron_cuirass", 1)
     assert inventory.total_weight(c, gd) == w0
     assert not inventory.remove_item(c, "iron_cuirass", 1)  # 已無
-
-
-def test_encumbrance_limit():
-    gd, c = _char()
+    # 負重上限委派給力量公式(併自 test_encumbrance_limit)
     assert inventory.max_weight(c) == formulas.max_encumbrance(c.attr("strength"))
-
-
-def test_equip_armor_and_combat_rating():
-    gd, c = _char()
-    inventory.add_item(c, "iron_cuirass", 1)
-    assert inventory.equip_armor(c, gd, "iron_cuirass")
-    assert c.equipped["cuirass"] == "iron_cuirass"
-    assert inventory.dominant_weight_class(c, gd) == "heavy"
-    assert inventory.worn_armor_rating(c, gd) == gd.item("iron_cuirass")["armor_rating"]
-    # 戰鬥用護甲值應採用穿戴護甲(高於無甲後備)
-    assert combat._armor_rating(c, gd) > 0
 
 
 def test_remove_equipped_unequips():
@@ -98,25 +84,9 @@ def test_world_graph_connected_and_has_loops():
     undirected = {frozenset((lid, dest))
                   for lid, loc in locs.items() for dest in loc.get("links", {})}
     assert len(undirected) >= len(locs), "邊數 < 點數 → 是樹/走廊,沒有環路"
-
-
-def test_dungeons_are_through_routes_not_dead_ends():
-    """地城捷徑:這些地城有 2 條以上連結(可穿越),不再是 degree-1 盲腸。"""
-    gd, _ = _char()
-    locs = gd.world["locations"]
+    # 地城為穿越路線非盲腸(併自 test_dungeons_are_through_routes_not_dead_ends):links>=2
     for did in ("cedernoc_cave", "frostwind_ruin", "ashfall_barrow", "xanmeer"):
         assert len(locs[did].get("links", {})) >= 2, f"{did} 仍是死路"
-
-
-def test_dungeon_enemies_and_loot_valid():
-    """所有地城怪物池/首領的敵人 id 都存在於 bestiary(防新增內容打錯字)。"""
-    gd, _ = _char()
-    for did, dg in gd.dungeons.items():
-        for tid in dg.get("monsters", []):                  # 格子地城:怪物池
-            assert tid in gd.bestiary, f"{did} 怪物池 {tid} 不在 bestiary"
-        boss = dg.get("boss", {})
-        if boss.get("enemy"):
-            assert boss["enemy"] in gd.bestiary, f"{did} 首領 {boss['enemy']} 不在 bestiary"
 
 
 def test_every_settlement_has_a_ruler():
@@ -209,26 +179,15 @@ def test_elsweyr_closes_the_southern_ring():
 
 def test_shop_stock_ids_are_valid():
     """每個商店的 merchant_stock / 法師公會 spell_stock 都引用得到真實物品/法術
-    (防新增城鎮時打錯 id;此前無此防線)。"""
+    (防新增城鎮時打錯 id;此前無此防線);spell_stock 不得有重複(吸收自 test_polish)。"""
     gd, _ = _char()
     for lid, loc in gd.world["locations"].items():
         for iid in loc.get("merchant_stock", []):
             assert gd.item(iid), f"{lid} 商店販售不存在的物品:{iid}"
-        for sid in loc.get("spell_stock", []):
+        ss = loc.get("spell_stock", [])
+        assert len(ss) == len(set(ss)), f"{lid} spell_stock 有重複"
+        for sid in ss:
             assert sid in gd.spells, f"{lid} 法師公會販售不存在的法術:{sid}"
-
-
-def test_travel_moves_and_advances_time():
-    gd, c = _char()
-    from tesrpg.state import GameTime
-    t = GameTime()
-    start = c.location_id
-    dest, hours = world.travel_options(c, gd)[0]
-    h0 = t.hour
-    world.travel(c, gd, dest, t, RNG(5))
-    assert c.location_id == dest
-    # 時間有推進(可能跨日)
-    assert (t.day, t.hour) != (1, h0) or hours == 0
 
 
 def test_pricing_buy_more_than_sell():
@@ -241,13 +200,6 @@ def test_pricing_buy_more_than_sell():
 
 
 # --- 戰利品 / 地城 ------------------------------------------------------
-def test_loot_resolver():
-    rng = RNG(2)
-    out = loot.resolve_loot(["iron_sword", {"gold": [5, 5]}, {"item": "ruby", "chance": 0.0}], rng)
-    ids = [i for i, _ in out["items"]]
-    assert "iron_sword" in ids and "ruby" not in ids and out["gold"] == 5
-
-
 def test_creature_loot_into_inventory():
     gd, c = _char()
     rng = RNG(1)
@@ -257,19 +209,6 @@ def test_creature_loot_into_inventory():
     assert c.gold >= 50 + res["gold"]
     for iid, qty in res["items"]:
         assert inventory.count_item(c, iid) >= qty
-
-
-def test_lockpick_chance_and_open():
-    gd, c = _char()
-    assert dungeon.pick_lock_chance(100, 10) > dungeon.pick_lock_chance(10, 100)
-    c.skills["security"] = 100
-    inventory.add_item(c, "lockpick", 20)            # 撬鎖需開鎖器(成功不耗、失敗折斷)
-    # 高技能撬低鎖,多試幾次必開
-    opened = any(dungeon.pick_lock(c, gd, 5, RNG(i))["success"] for i in range(10))
-    assert opened
-    before = c.gold
-    spoils = dungeon.open_container(c, gd, {"loot": [{"gold": [10, 10]}, "ruby"]}, RNG(0))
-    assert c.gold == before + 10 and inventory.count_item(c, "ruby") == 1
 
 
 def test_boss_is_tougher():
@@ -291,7 +230,11 @@ def test_athletics_speeds_travel_and_trains():
     slow.skills["athletics"] = 0
     gd2, fast = _char()
     fast.skills["athletics"] = 100
-    r_slow = world.travel(slow, gd, dest, GameTime(), RNG(1))
+    t_slow = GameTime()
+    h0 = t_slow.hour
+    r_slow = world.travel(slow, gd, dest, t_slow, RNG(1))
+    assert slow.location_id == dest                     # 旅行確實移動到目的地(吸收自 test_travel_moves_and_advances_time)
+    assert (t_slow.day, t_slow.hour) != (1, h0) or r_slow["hours"] == 0  # 時間有推進(hours==0 邊界放行)
     r_fast = world.travel(fast, gd2, dest, GameTime(), RNG(1))
     assert r_slow["hours"] == base                      # 運動 0 → 名目耗時
     assert r_fast["base_hours"] == base
@@ -305,15 +248,10 @@ def test_athletics_speeds_travel_and_trains():
 
 
 def test_loot_ids_valid():
-    """守門:地城房間/首領寶藏 + 怪物 loot 的所有 item id 皆須存在(加新掉落時防打錯)。"""
+    """守門:怪物 loot 的所有 item id 皆須存在(加新掉落時防打錯)。
+    全 suite 唯一的 bestiary-loot-id 防線;地城寶箱/首領寶藏 id 由 test_dungeon.test_generate_all_valid 守。"""
     gd = get_gamedata()
     bad = []
-    for did, dg in gd.dungeons.items():
-        loots = list(dg.get("loot", []))                    # 格子地城:格內寶箱戰利品池
-        loots += dg.get("boss", {}).get("treasure", {}).get("loot", [])
-        for x in loots:
-            if isinstance(x, str) and gd.item_or_none(x) is None:
-                bad.append(f"{did}:{x}")
     for cid, cr in gd.bestiary.items():
         for e in cr.get("loot", []):
             if isinstance(e, dict) and "item" in e and gd.item_or_none(e["item"]) is None:

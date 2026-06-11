@@ -46,34 +46,49 @@ def _render_all(gd, st):
         ui.sheet_skill_detail(c, gd, sid)
 
 
-def test_renders_plain_character():
-    _silence()
-    gd, st = _char()
-    _render_all(gd, st)                       # 無公會/無效果/無通緝/非吸血鬼/空裝
-
-
 def test_renders_rich_character():
-    _silence()
-    gd, st = _char(fame=20, infamy=5)
-    c = st.player
-    factions.join(c, "fighters_guild"); c.factions["fighters_guild"] = 3
-    c.bounties = {"賽羅迪爾": 120, "天際": 40}
-    c.active_effects = [{"kind": "shield", "magnitude": 20, "turns": 3},
-                        {"kind": "dot", "element": "fire", "magnitude": 4, "turns": 2},
-                        {"kind": "regen", "magnitude": 10, "turns": 4}]
-    _render_all(gd, st)
+    # 參數化多狀態煙霧:對每個 state 全 sheet_* 無 traceback(plain/rich/vampire 三分支零流失)
+    def _plain():
+        # 無公會/無效果/無通緝/非吸血鬼/空裝(跑 null 分支)
+        return _char()
 
+    def _rich():
+        gd, st = _char(fame=20, infamy=5)
+        c = st.player
+        factions.join(c, "fighters_guild"); c.factions["fighters_guild"] = 3
+        c.bounties = {"賽羅迪爾": 120, "天際": 40}
+        c.active_effects = [{"kind": "shield", "magnitude": 20, "turns": 3},
+                            {"kind": "dot", "element": "fire", "magnitude": 4, "turns": 2},
+                            {"kind": "regen", "magnitude": 10, "turns": 4}]
+        return gd, st
 
-def test_renders_vampire_character():
+    def _vampire():
+        gd, st = _char()
+        c = st.player
+        c.is_vampire = True
+        c.vampire_stage = 2
+        c.vampire_attr_bonus = {"strength": 10, "speed": 10}
+        c.vampire_skill_bonus = {"sneak": 10}
+        c.vampire_resist = {"disease": 100, "frost": 20, "fire": -20}
+        return gd, st
+
+    for build in (_plain, _rich, _vampire):
+        _silence()
+        gd, st = build()
+        _render_all(gd, st)                   # 三狀態各自全 sheet_* 無 traceback
+
+    # spellbook 分組/作用 + 空書 edge:smoke 不擷取輸出,須額外擷取斷言(原 test_spellbook_*)
     _silence()
     gd, st = _char()
     c = st.player
-    c.is_vampire = True
-    c.vampire_stage = 2
-    c.vampire_attr_bonus = {"strength": 10, "speed": 10}
-    c.vampire_skill_bonus = {"sneak": 10}
-    c.vampire_resist = {"disease": 100, "frost": 20, "fire": -20}
-    _render_all(gd, st)
+    c.spells = ["flames", "heal", "oakflesh", "conjure_familiar", "fear", "soul_trap"]
+    buf = io.StringIO(); ui.console = Console(file=buf, width=100)
+    ui.sheet_spellbook(c, gd)
+    out = buf.getvalue()
+    assert "法術書" in out and "毀滅" in out and "火焰傷害" in out      # 分組 + 作用
+    # 無法術:不崩潰(console.py:1266-1268 空書分支)
+    c.spells = []
+    ui.sheet_spellbook(c, gd)
 
 
 # --- 唯讀鐵律:檢視不改狀態、不耗時 ----------------------------------------
@@ -88,18 +103,6 @@ def test_views_are_read_only():
     _render_all(gd, st)
     assert c.to_dict() == before, "角色卡檢視不得改動任何 char 狀態(唯讀鐵律)"
     assert st.time.absolute_hours() == t0, "角色卡檢視不得推進時間"
-
-
-def test_skill_detail_does_not_drain_fatigue():
-    # 技能詳情顯示 practice 成本,但不可呼叫會扣體力的 progression.practice_cost
-    _silence()
-    gd, st = _char()
-    c = st.player
-    c.fatigue = c.max_fatigue
-    f0 = c.fatigue
-    for sid in gd.skills:
-        ui.sheet_skill_detail(c, gd, sid)
-    assert c.fatigue == f0, "檢視技能詳情不得扣體力"
 
 
 # --- 互動 action 走訪全項(腳本化 menu)-----------------------------------
@@ -176,20 +179,6 @@ def test_every_spell_summarisable():
     assert "自身" in ui.spell_effect_summary(gd, "renewal")          # 自我再生
 
 
-def test_spellbook_renders_grouped_and_empty():
-    _silence()
-    gd, st = _char()
-    c = st.player
-    c.spells = ["flames", "heal", "oakflesh", "conjure_familiar", "fear", "soul_trap"]
-    buf = io.StringIO(); ui.console = Console(file=buf, width=100)
-    ui.sheet_spellbook(c, gd)
-    out = buf.getvalue()
-    assert "法術書" in out and "毀滅" in out and "火焰傷害" in out      # 分組 + 作用
-    # 無法術:不崩潰
-    c.spells = []
-    ui.sheet_spellbook(c, gd)
-
-
 def test_every_skill_has_mechanic_and_detail_shows_it():
     # 每個技能都要有「作用」說明,且技能詳情會把它印出來(使用者:看不到技能詳細作用)
     gd = get_gamedata()
@@ -200,13 +189,6 @@ def test_every_skill_has_mechanic_and_detail_shows_it():
     ui.sheet_skill_detail(st.player, gd2, "block")
     out = buf.getvalue()
     assert "作用" in out and gd2.skills["block"]["mechanic"][:6] in out
-
-
-def test_creation_preview_still_renders():
-    # 另一呼叫端(創角預覽,無 state)仍能渲染 enriched character_sheet
-    _silence()
-    gd, st = _char()
-    ui.character_sheet(st.player, gd)
 
 
 def run():

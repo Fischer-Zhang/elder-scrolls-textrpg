@@ -4,12 +4,9 @@ battlemage 共鳴一擊+法力回擊(50/75 兩節點可兼得;夾限內·DoT·�
 knight 戰旗(empower 僅同伴·不碰玩家)/ healer 戰地搶救(折扣施治·消耗)/ assassin 致命烙印(開場免疫·follow-up 破甲)。
 🔴 紅線:任何機制皆不可使偷襲秒 solo boss(combat 夾限);sim_assassin 另證逐行零位移。"""
 
-import json
-
 from tesrpg import formulas
 from tesrpg.creation import build_character
 from tesrpg.gamedata import get_gamedata
-from tesrpg.models import Character
 from tesrpg.rng import RNG
 from tesrpg.systems import combat, magic, mastery
 
@@ -44,27 +41,18 @@ def test_cascade_getters_scale_and_cap_and_neutral():
     c.active_effects[:] = [{"kind": "cascade", "magnitude": 2, "turns": 3}]
     assert abs(mastery.cascade_power(c, gd) - 0.16) < 1e-9
     assert abs(mastery.cascade_fatigue_factor(c, gd) - 0.76) < 1e-9
-
-
-def test_cascade_bump_increments_and_caps():
-    c = _char("mage", mysticism=80, destruction=80)
-    c.spells = list(c.spells) + ["flames"]
-    mastery.choose(c, gd, "mysticism_75", "arcane_cascade")
-    c.magicka = c.max_magicka = 99999            # choose 觸發重算 → 此處補滿
-    assert mastery._cascade_depth(c) == 0
-    magic.cast(c, gd, "flames", RNG(1), target=_dummy())   # 施法 → bump
-    assert mastery._cascade_depth(c) == 1
+    # 併入 bump 遞增+cap 面(獨立 setup:另建帶 flames 的 char,走真正 magic.cast 驅動 _cascade_depth,
+    # 不重用上段以避開魔力/體力四捨五入稀釋 getter 數值斷言)
+    c2 = _char("mage", mysticism=80, destruction=80)
+    c2.spells = list(c2.spells) + ["flames"]
+    mastery.choose(c2, gd, "mysticism_75", "arcane_cascade")
+    c2.magicka = c2.max_magicka = 99999          # choose 觸發重算 → 此處補滿
+    assert mastery._cascade_depth(c2) == 0
+    magic.cast(c2, gd, "flames", RNG(1), target=_dummy())   # 施法 → bump
+    assert mastery._cascade_depth(c2) == 1
     for _ in range(4):
-        magic.cast(c, gd, "flames", RNG(1), target=_dummy())
-    assert mastery._cascade_depth(c) == 2        # cap depth 2
-
-
-def test_cascade_composes_after_robe_factor():
-    # 連鎖折扣須乘在法袍 cast_fatigue_factor 之後(獨立乘法,非雙折/非折進魔耗)
-    c = _char("mage", mysticism=80)
-    mastery.choose(c, gd, "mysticism_75", "arcane_cascade")
-    c.active_effects.append({"kind": "cascade", "magnitude": 2, "turns": 3})
-    assert abs(mastery.cascade_fatigue_factor(c, gd) - 0.76) < 1e-9   # 1 - 0.12*2
+        magic.cast(c2, gd, "flames", RNG(1), target=_dummy())
+    assert mastery._cascade_depth(c2) == 2        # cap depth 2
 
 
 # --- battlemage: 共鳴一擊 + 法力回擊 -----------------------------------
@@ -137,12 +125,8 @@ def test_battlemage_can_hold_both_resonance_perks():
 
 
 # --- thief: 諜報偵搜(prep 多來源相加)-------------------------------
-def test_subterfuge_prep_bonus_sums_with_scout():
-    c = _char("thief", mercantile=80, scout=80)
-    mastery.choose(c, gd, "mercantile_75", "subterfuge_intel")
-    assert mastery.prep_bonus(c, gd) == 1
-    mastery.choose(c, gd, "scout_75", "vanguard")
-    assert mastery.prep_bonus(c, gd) == 2                         # 多來源相加(修正前只取 1)
+# test_subterfuge_prep_bonus_sums_with_scout 已併入 test_mastery.test_scout_prep_and_recon
+# (跨模組 D 併:該 into 已驗 prep_bonus 多源相加;此處 subterfuge_intel 來源 pin 由 into agent 落地)
 
 
 # --- archer: 獵手偵察 ------------------------------------------------
@@ -252,12 +236,7 @@ def test_deathmark_followup_penetrates_armor():
     assert mark > nomark                                          # follow-up 破甲增傷
 
 
-# --- 存檔:里程碑選擇往返(暫態 active_effects 不入檔)----------------
-def test_mastery_choices_survive_roundtrip():
-    c = _char("battlemage", destruction=80)
-    mastery.choose(c, gd, "destruction_50", "resonant_strike")
-    loaded = Character.from_dict(json.loads(json.dumps(c.to_dict())))
-    assert mastery.resonant_strike(loaded, gd) is not None
+# --- 存檔:里程碑選擇往返已由 test_mastery.test_mastery_choices_roundtrip_and_backward_compat 覆蓋(含向後相容)----
 
 
 # --- 對抗審查回歸防線 ------------------------------------------------

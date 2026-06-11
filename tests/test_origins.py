@@ -48,46 +48,68 @@ def test_origin_is_situational_not_power():
         assert c.skills == base.skills, f"{oid} 改動了技能"
 
 
-def test_fugitive_hard_start():
+def test_origin_field_mechanics_apply():
+    """資料驅動:逐一驗證每種開局欄位機制各套用一次(原 fugitive/sellsword/
+    mage_initiate/fallen_noble/new_origins 六個 per-origin JSON 對照測試的合併)。
+
+    每種欄位機制取一個代表開局驗一次,涵蓋高/低/零金邊界、各機制的繞門檻/
+    疊加/穿戴/入背包路徑;另保留 temple_healer 的「heal 不在 newcomer base」
+    差異斷言(否則 temple_healer 掉 heal 不會被抓)。
+    """
     gd = get_gamedata()
-    c = _build(gd, "fugitive")
-    assert c.location_id == "imperial_road"
-    assert c.visited_locations == ["imperial_road"]
-    assert c.gold == 0
-    assert c.bounties.get("賽羅迪爾") == 40
+    base = _build(gd, "newcomer")  # 差異對照基準(spell 疊加用)
 
+    cs = {oid: _build(gd, oid) for oid in (
+        "fugitive", "sellsword", "mage_initiate", "fallen_noble",
+        "fighters_recruit", "guild_thief", "alikr_blade", "pilgrim",
+        "shipwreck_survivor", "temple_healer", "orc_outcast")}
 
-def test_sellsword_grants_companion_and_weapon():
-    gd = get_gamedata()
-    c = _build(gd, "sellsword")
-    assert c.location_id == "haafingar"
-    assert "sellsword" in c.companions
-    assert c.weapon == "steel_sword"
-    assert inventory.count_item(c, "steel_sword") >= 1
+    # location + visited(硬開局換省起點)
+    assert cs["fugitive"].location_id == "imperial_road"
+    assert cs["fugitive"].visited_locations == ["imperial_road"]
+    assert cs["sellsword"].location_id == "haafingar"      # 併自 test_sellsword_grants_companion_and_weapon
 
+    # gold 三邊界:高(fallen_noble=250)/低(shipwreck_survivor=15)/零(fugitive=0)
+    assert cs["fallen_noble"].gold == 250
+    assert cs["shipwreck_survivor"].gold == 15
+    assert cs["fugitive"].gold == 0
 
-def test_mage_initiate_grants_membership_staff_spell():
-    gd = get_gamedata()
-    c = _build(gd, "mage_initiate")
-    # 直接給會籍 → 繞過 join_skill 門檻
-    assert c.factions.get("mages_guild") == 0
-    assert c.weapon == "flame_staff"
-    assert "flames" in c.spells
-    # 法杖傷害靠法師技能成長,起始可施法(資源已重算)
-    assert c.max_magicka > 0
+    # bounty(起手賞金套用)
+    assert cs["fugitive"].bounties.get("賽羅迪爾") == 40
 
+    # companion(同伴授予)
+    assert "sellsword" in cs["sellsword"].companions
 
-def test_fallen_noble_wears_amulet_and_rich():
-    gd = get_gamedata()
-    c = _build(gd, "fallen_noble")
-    assert c.gold == 250
-    assert c.equipped.get("amulet") == "gold_amulet"
+    # weapon + 入背包(配武器且武器真的進背包)
+    assert cs["sellsword"].weapon == "steel_sword"
+    assert inventory.count_item(cs["sellsword"], "steel_sword") >= 1
+    assert cs["mage_initiate"].weapon == "flame_staff"     # 併自 test_mage_initiate(法杖配發)
+    assert cs["fighters_recruit"].weapon == "steel_sword"
+    assert cs["guild_thief"].weapon == "iron_dagger"
+    assert inventory.count_item(cs["guild_thief"], "iron_dagger") >= 1
+    assert cs["orc_outcast"].weapon == "iron_war_axe"
 
+    # faction 直授繞 join_skill 門檻(三公會代表)
+    assert cs["mage_initiate"].factions.get("mages_guild") == 0
+    assert cs["fighters_recruit"].factions.get("companions") == 0
+    assert cs["guild_thief"].factions.get("thieves_guild") == 0
 
-def test_pilgrim_relocates_to_morrowind():
-    gd = get_gamedata()
-    c = _build(gd, "pilgrim")
-    assert gd.world["locations"][c.location_id]["province"] == "晨風"
+    # spell 疊加 + 可施法資源重算;temple_healer 的 heal 差異須保留
+    assert "flames" in cs["mage_initiate"].spells
+    assert cs["mage_initiate"].max_magicka > 0
+    assert "heal" in cs["temple_healer"].spells and "heal" not in base.spells
+
+    # equip 穿戴(飾品 / 護甲各一)
+    assert cs["fallen_noble"].equipped.get("amulet") == "gold_amulet"
+    assert cs["orc_outcast"].equipped.get("cuirass") == "iron_cuirass"
+
+    # 跨省 province(用上新省)
+    assert gd.world["locations"][cs["alikr_blade"].location_id]["province"] == "漢默法爾"
+    assert gd.world["locations"][cs["pilgrim"].location_id]["province"] == "晨風"   # 併自 test_pilgrim_relocates_to_morrowind
+
+    # 無起手賞金自洽(硬開局/正派開局不夾帶賞金/會籍)
+    assert cs["fighters_recruit"].bounties == {}
+    assert cs["shipwreck_survivor"].factions == {} and cs["shipwreck_survivor"].bounties == {}
 
 
 def test_every_origin_references_valid_content():
@@ -123,30 +145,6 @@ def test_every_origin_references_valid_content():
             assert inventory.count_item(c, item_id) >= 1, f"{oid} 穿了沒持有的 {item_id}"
 
 
-def test_new_origins_situational_distinctives():
-    """六個新開局各自的處境特徵(補戰士/盜賊公會、漢默法爾、海難/治療/獸人)。"""
-    gd = get_gamedata()
-    base = _build(gd, "newcomer")
-    # 戰友團新血:授戰友團會籍(無起手賞金;戰友團 lawful:false 自洽)
-    c = _build(gd, "fighters_recruit")
-    assert c.factions.get("companions") == 0 and c.weapon == "steel_sword" and c.bounties == {}
-    # 盜賊公會:授盜賊會籍 + 匕首在手
-    c = _build(gd, "guild_thief")
-    assert c.factions.get("thieves_guild") == 0 and inventory.count_item(c, "iron_dagger") >= 1
-    # 阿利克爾劍客:起點在漢默法爾(用上新省)
-    c = _build(gd, "alikr_blade")
-    assert gd.world["locations"][c.location_id]["province"] == "漢默法爾"
-    # 海難倖存者:硬開局(低金、無賞金、無會籍)
-    c = _build(gd, "shipwreck_survivor")
-    assert c.gold == 15 and c.bounties == {} and c.factions == {}
-    # 神殿治療者:授非預設的「治療術」(minor_heal 人人皆有,heal 才是處境加成)
-    c = _build(gd, "temple_healer")
-    assert "heal" in c.spells and "heal" not in base.spells
-    # 獸人放逐者:穿鐵甲、提戰斧
-    c = _build(gd, "orc_outcast")
-    assert c.equipped.get("cuirass") == "iron_cuirass" and c.weapon == "iron_war_axe"
-
-
 def test_save_roundtrip_preserves_origin_state():
     """開局帶來的會籍/賞金/同伴/裝備/origin 欄位,存檔往返後完整保留。"""
     gd = get_gamedata()
@@ -176,12 +174,7 @@ def run():
     test_default_origin_matches_standard_start()
     test_unknown_origin_is_noop()
     test_origin_is_situational_not_power()
-    test_fugitive_hard_start()
-    test_sellsword_grants_companion_and_weapon()
-    test_mage_initiate_grants_membership_staff_spell()
-    test_fallen_noble_wears_amulet_and_rich()
-    test_pilgrim_relocates_to_morrowind()
-    test_new_origins_situational_distinctives()
+    test_origin_field_mechanics_apply()
     test_every_origin_references_valid_content()
     test_save_roundtrip_preserves_origin_state()
     test_old_save_without_origin_field_loads()

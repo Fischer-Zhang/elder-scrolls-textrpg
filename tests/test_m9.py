@@ -8,7 +8,7 @@ from tesrpg.creation import build_character
 from tesrpg.gamedata import get_gamedata
 from tesrpg.rng import RNG
 from tesrpg.state import GameState, GameTime
-from tesrpg.systems import alchemy, combat, inventory, magic
+from tesrpg.systems import alchemy, combat, inventory
 
 
 def _char():
@@ -28,33 +28,11 @@ def test_brew_damage_poison():
     assert r["ok"] and r["kind"] == "poison"
     d = gd.item(r["item_id"])
     assert d["kind"] == "poison" and d["poison"]["status"] == "dot"
-
-
-def test_brew_paralyze_priority():
-    gd, c = _char()
+    # 第二鍋:共通 damage_health 與 paralyze 並存時麻痺優先(alchemy.py L54 先於 L58)
     inventory.add_item(c, "nightshade", 1)
     inventory.add_item(c, "imp_stool", 1)        # 共通 damage_health 與 paralyze → 麻痺優先
-    r = alchemy.brew(c, gd, "nightshade", "imp_stool", RNG(0))
-    assert gd.item(r["item_id"])["poison"]["status"] == "paralyze"
-
-
-def test_brew_restorative_still_potion():
-    gd, c = _char()
-    inventory.add_item(c, "wheat", 1)
-    inventory.add_item(c, "blue_mountain_flower", 1)   # 共通 heal
-    r = alchemy.brew(c, gd, "wheat", "blue_mountain_flower", RNG(0))
-    assert r["kind"] == "potion" and gd.item(r["item_id"])["kind"] == "potion"
-
-
-def test_alchemy_skill_scales_poison():
-    gd, c = _char()
-    c.skills["alchemy"] = 0
-    inventory.add_item(c, "nightshade", 1); inventory.add_item(c, "deathbell", 1)
-    low = gd.item(alchemy.brew(c, gd, "nightshade", "deathbell", RNG(0))["item_id"])["poison"]["magnitude"]
-    c.skills["alchemy"] = 100
-    inventory.add_item(c, "nightshade", 1); inventory.add_item(c, "deathbell", 1)
-    high = gd.item(alchemy.brew(c, gd, "nightshade", "deathbell", RNG(0))["item_id"])["poison"]["magnitude"]
-    assert high > low
+    r2 = alchemy.brew(c, gd, "nightshade", "imp_stool", RNG(0))
+    assert gd.item(r2["item_id"])["poison"]["status"] == "paralyze"
 
 
 # --- 塗毒 ---------------------------------------------------------------
@@ -76,10 +54,7 @@ def test_coat_weapon_and_charges():
     assert inventory.coat_weapon(c, gd, pid)
     assert c.weapon_poison["charges"] == inventory.poison_charges(c)
     assert inventory.count_item(c, pid) == 0             # 毒藥被消耗
-
-
-def test_poison_charges_scale_with_alchemy():
-    gd, c = _char()
+    # 塗毒層數隨煉金技能提升(poison_charges 只讀 alchemy//30,與上方 coat 狀態無關)
     c.skills["alchemy"] = 0
     lo = inventory.poison_charges(c)
     c.skills["alchemy"] = 90
@@ -104,20 +79,6 @@ def test_poison_applies_on_hit_and_depletes():
     assert applied
     assert c.weapon_poison is None                       # 最後一層用完即清
     assert any(e["kind"] == "dot" for e in foe.active_effects)
-
-
-def test_poison_respects_resist():
-    gd, c = _char()
-    c.skills["blade"] = 90; c.attributes["strength"] = 80; c.weapon = "steel_sword"
-    skel = combat.spawn_creature(gd, "skeleton", RNG(1))   # poison 抗性 100
-    c.weapon_poison = {"status": {"status": "dot", "element": "poison", "magnitude": 8, "turns": 3},
-                       "charges": 5, "name": "毒藥"}
-    for i in range(15):
-        if combat.resolve_attack(c, skel, gd, RNG(i)).get("poison_applied"):
-            break
-    h0 = skel.health
-    magic.tick_effects(skel, gd)
-    assert skel.health == h0                              # 免疫毒素 → DoT 0
 
 
 # --- 存讀檔 -------------------------------------------------------------

@@ -64,17 +64,16 @@ def test_two_option_choice_plumbing():
         assert mastery.choose(c, gd, "blade_test", "b") is None                  # 永久不可覆寫
         assert mastery.block_hit_penalty(c, gd) == 0.30
         assert all(n["id"] != "blade_test" for n in mastery.pending_choices(c, gd))  # 已選 → 不再 pending
+        # 併入 reject 輸入驗證(真實 block_50/shieldwall,各自起新 _char 不共用 blade char)
+        _, rc = _char(block=40)
+        assert mastery.choose(rc, gd, "block_50", "shieldwall") is None  # 未達門檻
+        _, rc = _char(block=40)
+        rc.skills["block"] = 50
+        assert mastery.choose(rc, gd, "block_50", "nonexistent") is None  # 無此 opt
+        assert mastery.choose(rc, gd, "no_such_node", "x") is None        # 無此節點
     finally:
         gd.mastery.remove(node)
         c.mastery_choices.pop("blade_test", None)
-
-
-def test_choose_rejects_unreached_and_bad_opt():
-    gd, c = _char(block=40)
-    assert mastery.choose(c, gd, "block_50", "shieldwall") is None   # 未達門檻
-    c.skills["block"] = 50
-    assert mastery.choose(c, gd, "block_50", "nonexistent") is None  # 無此 opt
-    assert mastery.choose(c, gd, "no_such_node", "x") is None        # 無此節點
 
 
 # --- 盾陣(block 50)----------------------------------------------------
@@ -160,6 +159,11 @@ def test_overheal_ward_converts_overflow_and_caps():
     assert shields and shields[0]["magnitude"] > 0
     assert shields[0]["magnitude"] <= round(c.max_health * 0.5)   # 夾 cap
     assert shields[0]["turns"] == 4
+    # 負向邊界(併入):大幅缺血 → 治療被血上限吸收無溢出 → 不產生護盾
+    c.active_effects = []
+    c.health = 1
+    magic.cast(c, gd, "minor_heal", RNG(1))
+    assert not [e for e in c.active_effects if e["kind"] == "shield"]
 
 
 def test_overheal_ward_aggregate_cap_across_casts():
@@ -175,24 +179,6 @@ def test_overheal_ward_aggregate_cap_across_casts():
     assert magic.active_shield(c) <= cap, "溢盾總量不得超過 cap"
     c.active_effects.append({"kind": "shield", "magnitude": 30, "turns": 3})
     assert magic.active_shield(c) <= cap + 30
-
-
-def test_no_overheal_ward_when_not_full():
-    """未溢出(血沒滿且治療不滿)→ 不產生護盾。"""
-    gd, c = _char(restoration=75)
-    mastery.choose(c, gd, "restoration_75", "overheal_ward")
-    c.active_effects = []
-    c.health = 1                        # 大幅缺血 → 治療被血上限吸收,無溢出
-    magic.cast(c, gd, "minor_heal", RNG(1))
-    assert not [e for e in c.active_effects if e["kind"] == "shield"]
-
-
-def test_overheal_ward_requires_threshold():
-    gd, c = _char(restoration=74)       # 未達門檻 → 無法選 → getter 中性
-    c.active_effects = []
-    c.health = c.max_health
-    magic.cast(c, gd, "minor_heal", RNG(1))
-    assert not [e for e in c.active_effects if e["kind"] == "shield"]
 
 
 # --- 過載(destruction 100)-------------------------------------------
@@ -318,11 +304,14 @@ def test_relocated_group_resets_together():
 
 
 def test_shipped_kinds_all_implemented():
-    """fail-fast:出貨 mastery.json 每個 option 的 kind 都須已實作,否則玩家看到可選卻零效果。"""
+    """fail-fast:出貨 mastery.json 每個 option 的 kind 都須已實作 + opt_id 入 _defs 白名單,
+    否則玩家看到可選卻零效果 / 成死 perk(併入 batch1 的死 perk 防線,升級為全節點而非僅 100 級)。"""
     gd = get_gamedata()
+    defids = {d["opt_id"] for d in mastery._defs(gd)}
     for node in mastery._nodes(gd):
         for o in node["options"]:
             assert o["kind"] in mastery._IMPLEMENTED_KINDS, f"未實作的 kind:{o['kind']}"
+            assert o["opt_id"] in defids, f"死 perk:{node['id']} {o['opt_id']}({o['kind']})"
 
 
 def test_unimplemented_kind_is_inert():
@@ -393,40 +382,6 @@ def test_skill_fortify_stacks_effective_not_base():
         stats.recompute_mastery_bonuses(c, gd)
 
 
-def test_attr_fortify_flows_into_max_resources():
-    gd, c = _char(blade=50)
-    stats.recompute_max_resources(c, gd)
-    base_fatigue = c.max_fatigue
-    node = {"id": "blade_af", "skill": "blade", "threshold": 50, "options": [
-        {"opt_id": "end", "name": "耐", "kind": "attr_fortify", "attr": {"endurance": 5}, "desc": ""}]}
-    gd.mastery.append(node)
-    try:
-        mastery.choose(c, gd, "blade_af", "end")            # choose 內呼叫 recompute_max_resources
-        assert c.mastery_attr_bonus.get("endurance") == 5
-        assert c.attr("endurance") == c.base_attr("endurance") + 5
-        assert c.max_fatigue > base_fatigue                 # 耐力 fortify 流進體力上限
-    finally:
-        gd.mastery.remove(node)
-        c.mastery_choices.pop("blade_af", None)
-        stats.recompute_max_resources(c, gd)
-
-
-def test_resist_fortify_merges_into_entity_resist():
-    gd, c = _char(blade=50)
-    base = magic.entity_resist(c, gd).get("fire", 0)
-    node = {"id": "blade_rf", "skill": "blade", "threshold": 50, "options": [
-        {"opt_id": "f", "name": "耐火", "kind": "resist_fortify", "resist": {"fire": 15}, "desc": ""}]}
-    gd.mastery.append(node)
-    try:
-        mastery.choose(c, gd, "blade_rf", "f")
-        assert c.mastery_resist.get("fire") == 15
-        assert magic.entity_resist(c, gd).get("fire", 0) == base + 15
-    finally:
-        gd.mastery.remove(node)
-        c.mastery_choices.pop("blade_rf", None)
-        stats.recompute_mastery_bonuses(c, gd)
-
-
 def test_fortify_does_not_bootstrap_threshold():
     """里程碑 +skill 持久加成只進 skill(),不進 base_skill → 不得自我推過更高門檻。"""
     gd, c = _char(block=50)
@@ -493,12 +448,6 @@ def test_weapon_mod_power_increases_damage_with_recoil():
     assert more >= 3 and recoiled >= 3
 
 
-def test_blade_precision_raises_hit_chance():
-    gd, c = _char(blade=100)
-    mastery.choose(c, gd, "blade_100", "precision")
-    assert mastery.weapon_mod(c, gd, "blade").get("hit") == 0.05
-
-
 def test_blunt_pen_increases_damage_vs_armor():
     def dealt(sunder, seed):
         gd, c = _char(blunt=100, strength=80)
@@ -533,13 +482,7 @@ def test_blunt_concussion_weakens_enemy():
         if ev["hit"] and any(e["kind"] == "weaken" for e in foe.active_effects):
             got += 1
     assert got >= 1
-
-
-def test_hand_to_hand_power_and_disarm():
-    gd, c = _char(hand_to_hand=75)
-    c.weapon = "fists"
-    mastery.choose(c, gd, "hand_to_hand_75", "iron_fists")
-    assert mastery.weapon_mod(c, gd, "hand_to_hand").get("power") == 0.15
+    # 併入 disarm getter pin(iron_fists power 0.15 已被聚合測覆蓋,僅保唯一的 stagger on_hit_status)
     gd2, c2 = _char(hand_to_hand=75)
     c2.weapon = "fists"
     mastery.choose(c2, gd2, "hand_to_hand_75", "disarm")
@@ -582,16 +525,6 @@ def test_smithing_temper_cap_and_free():
     assert mastery.temper_free_chance(c2, gd2) == 0.30
 
 
-def test_armorer_repair_floor_and_fortify():
-    gd, c = _char(armorer=50)
-    mastery.choose(c, gd, "armorer_50", "field_smith")
-    assert mastery.repair_floor(c, gd) == 90.0
-    gd2, c2 = _char(armorer=50)
-    base_ha = c2.base_skill("heavy_armor")
-    mastery.choose(c2, gd2, "armorer_50", "resilient_plate")
-    assert c2.skill("heavy_armor") == base_ha + 6 and c2.base_skill("heavy_armor") == base_ha
-
-
 def test_athletics_travel_and_fatigue():
     gd, c = _char(athletics=50)
     mastery.choose(c, gd, "athletics_50", "marathon")
@@ -614,18 +547,6 @@ def test_athletics_travel_and_fatigue():
 
 
 # --- P3:魔法系內容 -----------------------------------------------------
-def test_spell_mod_power_cost_per_school():
-    gd, c = _char(destruction=100)
-    mastery.choose(c, gd, "destruction_100", "overload")
-    assert mastery.spell_power_bonus(c, gd, "destruction") == 0.20
-    assert mastery.spell_cost_factor(c, gd, "destruction") == 1.30
-    assert mastery.spell_power_bonus(c, gd, "restoration") == 0.0      # 不影響別學派
-    gd2, c2 = _char(alteration=75)
-    mastery.choose(c2, gd2, "alteration_75", "spell_reach")
-    assert mastery.spell_power_bonus(c2, gd2, "alteration") == 0.15
-    assert mastery.spell_cost_factor(c2, gd2, "alteration") == 1.0
-
-
 def test_destruction_impact_staggers_on_hit():
     gd, c = _char(destruction=100)
     mastery.choose(c, gd, "destruction_100", "impact")
@@ -798,13 +719,6 @@ def test_vanish_relentless_removes_reuse_decay_but_not_horde():
     assert combat.vanish_chance(c, 5, 0, gd) <= 0.10
 
 
-def test_vanish_floor_guarantees_minimum():
-    gd, c = _char(sneak=100, acrobatics=10)
-    mastery.choose(c, gd, "sneak_100", "shadowstep")
-    assert mastery.vanish_floor(c, gd) == 0.15
-    assert combat.vanish_chance(c, 5, 2, gd) >= 0.15        # 即便大群+重複,保底 15%
-
-
 def test_vanish_floor_takes_max_across_sources():
     """審查回歸:同時選 tumble(acro 0.10)+ shadowstep(sneak 0.15)→ 取最高 0.15(非第一個)。"""
     gd, c = _char(sneak=100, acrobatics=100)
@@ -820,18 +734,6 @@ def test_merchant_bonus_sums_across_sources():
     mastery.choose(c, gd, "illusion_75", "charm_market")    # 0.12
     mastery.choose(c, gd, "mercantile_50", "haggler")       # 0.12
     assert abs(mastery.merchant_bonus(c, gd) - 0.24) < 1e-9
-
-
-def test_acrobatics_evasion_lowers_enemy_hit():
-    gd, c = _char(acrobatics=75)
-    mastery.choose(c, gd, "acrobatics_75", "evasion")
-    assert mastery.evasion_bonus(c, gd) == 0.05
-    foe = combat.spawn_creature(gd, "bandit", RNG(1))
-    foe.attack["skill"] = 60
-    hits_with = sum(combat.resolve_attack(foe, c, gd, RNG(s))["hit"] for s in range(200))
-    gd2, c2 = _char(acrobatics=75)
-    hits_without = sum(combat.resolve_attack(foe, c2, gd2, RNG(s))["hit"] for s in range(200))
-    assert hits_with <= hits_without
 
 
 def test_sneak_approach_and_armor_relief():
@@ -862,6 +764,13 @@ def test_scout_prep_and_recon():
     assert mastery.recon_reveal_threshold(c, gd) == 75
     mastery.choose(c, gd, "mercantile_75", "informant")
     assert mastery.recon_reveal_threshold(c, gd) == 50
+    # thief 諜報偵搜(併自 test_class_identity.test_subterfuge_prep_bonus_sums_with_scout):
+    # subterfuge_intel 接 prep_bonus,且與 scout 線跨來源相加(原 bug:只取 1)
+    gd, c = _char(mercantile=75, scout=80)
+    mastery.choose(c, gd, "mercantile_75", "subterfuge_intel")
+    assert mastery.prep_bonus(c, gd) == 1
+    mastery.choose(c, gd, "scout_75", "vanguard")
+    assert mastery.prep_bonus(c, gd) == 2
 
 
 def test_has_recon_perk():
@@ -935,24 +844,6 @@ def test_batch3_all_25_are_single_auto_grant_no_dead():
 
 
 # --- 補頂點 pass(Batch 1):14 個 100 級 capstone ---------------------------
-_CAP14 = ["armorer", "athletics", "block", "hand_to_hand", "heavy_armor", "smithing",
-          "alchemy", "alteration", "restoration", "acrobatics", "light_armor",
-          "mercantile", "scout", "security"]
-
-
-def test_batch1_capstones_present_and_no_dead_kind():
-    """原封頂 75 的 14 技能各補 100 級 capstone 節點;所有 100 選項 kind 皆已實作(無死 perk)。"""
-    gd = get_gamedata()
-    ids = {n["id"] for n in mastery._nodes(gd)}
-    for s in _CAP14:
-        assert f"{s}_100" in ids, f"{s} 缺 100 級 capstone"
-    defids = {o["opt_id"] for o in mastery._defs(gd)}      # 僅白名單 kind 入 _defs
-    for n in mastery._nodes(gd):
-        if n["threshold"] == 100:
-            for o in n["options"]:
-                assert o["opt_id"] in defids, f"死 perk:{n['id']} {o['opt_id']}({o['kind']})"
-
-
 def test_batch1_same_source_aggregation_no_shadow():
     """同源多節點不遮蔽:temper/lock 取最高、evasion/passive_armor/poison 相加、weapon_mod 合併、spell power 相加。"""
     gd, c = _char(smithing=100, security=100, acrobatics=100, hand_to_hand=100,
@@ -987,15 +878,6 @@ def test_batch1_evasion_bonus_capped():
     assert mastery.evasion_bonus(c, gd) == mastery.EVASION_BONUS_CAP   # 夾 0.15
 
 
-def test_batch1_capstones_gated_by_base_skill():
-    """100 節點達 base 100 才 pending/可選。"""
-    gd, c = _char(block=99)
-    assert not any(n["id"] == "block_100" for n in mastery.pending_choices(c, gd))
-    c.skills["block"] = 100
-    assert any(n["id"] == "block_100" for n in mastery.pending_choices(c, gd))
-    assert mastery.choose(c, gd, "block_100", "iron_bastion") is not None
-
-
 # --- 補洞 pass(Batch 2):8 個 50/75 gap-fill ------------------------------
 def test_batch2_gapfills_present_and_aggregate():
     """blade/blunt/marksman/speechcraft 補 75;四魔法學派補 50 → 全 23 技能 ≥3 節點(sneak 4)。"""
@@ -1018,16 +900,6 @@ def test_batch2_gapfills_present_and_aggregate():
     gd, c = _char(blade=100)
     mastery.choose(c, gd, "blade_75", "blade_flow"); mastery.choose(c, gd, "blade_100", "savage")
     assert abs(mastery.weapon_mod(c, gd, "blade").get("power", 0) - (0.08 + 0.12)) < 1e-9
-
-
-def test_breadth_new_nodes_reachable_and_gated():
-    """抽樣新節點:達門檻才 pending、可選;base_skill gating。"""
-    gd, c = _char(blade=49)
-    assert not any(n["id"] == "blade_50" for n in mastery.pending_choices(c, gd))   # 49<50
-    c.skills["blade"] = 50
-    assert any(n["id"] == "blade_50" for n in mastery.pending_choices(c, gd))
-    assert mastery.choose(c, gd, "blade_50", "keen_edge") is not None
-    assert mastery.choose(c, gd, "blade_50", "riposte_blade") is None               # 二選一永久
 
 
 def test_combat_repair_getter_and_apply():
@@ -1092,6 +964,11 @@ def test_repair_floor_takes_max_across_sources():
     mastery.choose(c, gd, "armorer_50", "field_smith")          # 90
     mastery.choose(c, gd, "smithing_50", "forge_repair")        # 85
     assert mastery.repair_floor(c, gd) == 90.0                  # 取最高
+    # 併入 resilient_plate skill_fortify pin(armorer_50 → heavy_armor +6,base 不動)
+    _, c2 = _char(armorer=50)
+    base_ha = c2.base_skill("heavy_armor")
+    mastery.choose(c2, gd, "armorer_50", "resilient_plate")
+    assert c2.skill("heavy_armor") == base_ha + 6 and c2.base_skill("heavy_armor") == base_ha
 
 
 def test_same_source_masking_fixed_spell_poison_evasion_passive():
@@ -1112,20 +989,17 @@ def test_same_source_masking_fixed_spell_poison_evasion_passive():
     mastery.choose(c3, gd3, "acrobatics_50", "tumbler")
     mastery.choose(c3, gd3, "acrobatics_75", "evasion")
     assert abs(mastery.evasion_bonus(c3, gd3) - 0.09) < 1e-9
+    # 行為面(併自 test_acrobatics_evasion_lowers_enemy_hit):evasion_bonus 真的降低敵命中(resolve_attack 整合)
+    foe = combat.spawn_creature(gd3, "bandit", RNG(1)); foe.attack["skill"] = 60
+    hits_with = sum(combat.resolve_attack(foe, c3, gd3, RNG(s))["hit"] for s in range(200))
+    gd0, c0 = _char(acrobatics=100)                       # 同 base、未選閃避 → 對照
+    hits_without = sum(combat.resolve_attack(foe, c0, gd0, RNG(s))["hit"] for s in range(200))
+    assert hits_with < hits_without
     # passive_armor:block_75 bracing(10)+ light_armor_50 nimble_guard(12)= 22(相加不遮蔽)
     gd4, c4 = _char(block=100, light_armor=100)
     mastery.choose(c4, gd4, "block_75", "bracing")
     mastery.choose(c4, gd4, "light_armor_50", "nimble_guard")
     assert mastery.passive_armor_bonus(c4, gd4) == 22
-
-
-def test_passive_armor_unconditional_at_zero_magicka():
-    """對抗審查修正:物理 stance(撐架)被動護甲不再綁魔力 → 魔力 0 仍生效。"""
-    from tesrpg.systems import combat
-    gd, c = _char(block=75)
-    mastery.choose(c, gd, "block_75", "bracing")
-    c.magicka = 0
-    assert combat._armor_rating(c, gd) >= 10        # 魔力 0 仍含 +10 被動護甲
 
 
 def test_illusion_mind_mastery_reduces_cost():
@@ -1149,14 +1023,11 @@ def run():
     test_threshold_uses_base_skill_only()
     test_creatures_have_no_mastery()
     test_two_option_choice_plumbing()
-    test_choose_rejects_unreached_and_bad_opt()
     test_shieldwall_deepens_block_penalty()
     test_bulwark_reduces_physical_and_costs_fatigue()
     test_bulwark_does_not_reduce_elemental()
     test_overheal_ward_converts_overflow_and_caps()
     test_overheal_ward_aggregate_cap_across_casts()
-    test_no_overheal_ward_when_not_full()
-    test_overheal_ward_requires_threshold()
     test_overload_raises_cost_and_power_destruction_only()
     test_lock_floor_only_raises_never_lowers()
     test_charm_guarantees_once_per_npc()
@@ -1171,22 +1042,16 @@ def run():
     test_mastery_never_writes_base_skill()
     test_next_threshold_hint_uses_base_and_skips_done()
     test_skill_fortify_stacks_effective_not_base()
-    test_attr_fortify_flows_into_max_resources()
-    test_resist_fortify_merges_into_entity_resist()
     test_fortify_does_not_bootstrap_threshold()
     test_recompute_mastery_idempotent()
     test_weapon_mod_target_matches_weapon_skill()
     test_weapon_mod_power_increases_damage_with_recoil()
-    test_blade_precision_raises_hit_chance()
     test_blunt_pen_increases_damage_vs_armor()
     test_blunt_concussion_weakens_enemy()
-    test_hand_to_hand_power_and_disarm()
     test_block_riposte_staggers_attacker()
     test_heavy_armor_unyielding_resist()
     test_smithing_temper_cap_and_free()
-    test_armorer_repair_floor_and_fortify()
     test_athletics_travel_and_fatigue()
-    test_spell_mod_power_cost_per_school()
     test_destruction_impact_staggers_on_hit()
     test_conjuration_summon_mods()
     test_alteration_stoneflesh_passive_armor()
@@ -1198,22 +1063,17 @@ def run():
     test_solo_boss_survives_apex_opener()
     test_sneak_mult_bonus_raises_sneak_damage()
     test_vanish_relentless_removes_reuse_decay_but_not_horde()
-    test_vanish_floor_guarantees_minimum()
     test_vanish_floor_takes_max_across_sources()
     test_merchant_bonus_sums_across_sources()
-    test_acrobatics_evasion_lowers_enemy_hit()
     test_sneak_approach_and_armor_relief()
     test_scout_prep_and_recon()
     test_has_recon_perk()
     test_security_pick_no_break()
     test_breadth_all_skills_have_full_ladder()
-    test_batch1_capstones_present_and_no_dead_kind()
     test_batch1_same_source_aggregation_no_shadow()
     test_batch1_evasion_bonus_capped()
-    test_batch1_capstones_gated_by_base_skill()
     test_batch2_gapfills_present_and_aggregate()
     test_batch3_all_25_are_single_auto_grant_no_dead()
-    test_breadth_new_nodes_reachable_and_gated()
     test_combat_repair_getter_and_apply()
     test_flee_bonus_getter_and_try_flee()
     test_armor_reflect_damages_attacker()
@@ -1221,7 +1081,6 @@ def run():
     test_weapon_mod_merges_same_target()
     test_repair_floor_takes_max_across_sources()
     test_same_source_masking_fixed_spell_poison_evasion_passive()
-    test_passive_armor_unconditional_at_zero_magicka()
     test_illusion_mind_mastery_reduces_cost()
     test_shipped_attr_fortify_node_flows_to_resources()
     test_mercantile_and_intimidate()

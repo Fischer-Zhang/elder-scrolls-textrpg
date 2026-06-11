@@ -30,6 +30,11 @@ def test_infect_incubate_transform():
     assert lycanthropy.susceptible(c)
     assert lycanthropy.infect(c, st)
     assert lycanthropy.is_infected(c) and not lycanthropy.is_werewolf(c)
+    # 資料契約:狼人敵帶 infect_kind=lycanthropy;舊吸血鬼敵無此鍵 → combat 預設 vampire(向後相容)
+    ww = gd.bestiary["werewolf"]["attack"]
+    assert ww.get("infect_kind") == "lycanthropy"
+    vf = gd.bestiary["vampire_fledgling"]["attack"]
+    assert "infect_kind" not in vf
     # 推進潛伏期 → update 驅動轉化
     st.time.advance(lycanthropy.INCUBATION_DAYS * 24 + 1)
     evs = lycanthropy.update(st, gd)
@@ -96,12 +101,15 @@ def test_beast_single_hit_far_below_solo_boss_hp():
 
 def test_estimate_sneak_damage_beast_form_no_sneak_inflation():
     """對抗審查回歸:獸形的 scout 偷襲估傷不吃偷襲倍率、用獸爪流派(與 resolve_attack 一致),
-    故遠低於同角色人形持匕首的偷襲估傷(不被灌水)。"""
+    故遠低於同角色人形持匕首的偷襲估傷(不被灌水);且狼人身分本身(人形未變身)不放大估傷。"""
     gd, c, st = _state()
     c.weapon = "iron_dagger"; c.skills["sneak"] = 80; c.skills["hand_to_hand"] = 60
     foe = combat.spawn_creature(gd, "bandit", st.rng)
+    mortal_est = combat.estimate_sneak_damage(c, gd, foe)   # 凡人(變狼人前)
     _make_werewolf(gd, c, st)
+    assert not c.beast_form
     human_est = combat.estimate_sneak_damage(c, gd, foe)    # 人形匕首:吃偷襲倍率(高)
+    assert human_est == mortal_est, (human_est, mortal_est)  # 狼人身分(人形)不放大估傷
     lycanthropy.transform(c, st, gd)
     beast_est = combat.estimate_sneak_damage(c, gd, foe)    # 獸形:不吃偷襲、用獸爪
     assert beast_est < human_est, (beast_est, human_est)
@@ -122,42 +130,25 @@ def test_sync_beast_form_reverts_expired_cache():
     assert combat.effective_weapon_name(c, gd) != "獸爪"
 
 
-def test_human_form_werewolf_sneak_estimate_unchanged():
-    """人形狼人(未變身)的 scout 偷襲估傷 == 凡人基準(狼人身分不放大估傷)。"""
-    gd, c, st = _state()
-    c.weapon = "iron_dagger"; c.skills["sneak"] = 60
-    target = combat.spawn_creature(gd, "bandit", st.rng)
-    before = combat.estimate_sneak_damage(c, gd, target)
-    _make_werewolf(gd, c, st)   # 化為狼人(人形)
-    assert not c.beast_form
-    after = combat.estimate_sneak_damage(c, gd, target)
-    assert after == before, (before, after)
-
-
 # --- 裝備抑制(獸形脫去武器/附魔/淬鍊/護甲)----------------------------
 def test_beast_form_suppresses_equipment():
+    """獸形 _weapon_profile 完全略過裝備武器(回獸爪)→ 淬鍊/附魔/護甲全被略過;
+    且裝備武器的元素/命中狀態附魔皆不觸發(獸爪戰鬥煙霧)。"""
     gd, c, st = _state()
-    c.weapon = "iron_sword"
-    c.weapon_temper = {"iron_sword": 5}            # 淬鍊滿級
+    # 裝備一把附魔(比淬鍊更強)的武器:獸形仍完全略過 → 更硬的抑制證明
+    from tesrpg.synth import enchant_weapon_id
+    wid = enchant_weapon_id("iron_sword", "fire", 25)
+    c.weapon = wid
+    c.weapon_temper = {wid: 5}                     # 淬鍊滿級
     _make_werewolf(gd, c, st)
     lycanthropy.transform(c, st, gd)
     dmg, skl, sid = combat._weapon_profile(c, gd)
     claw = gd.item("beast_claws")
-    assert dmg == claw["damage"] and sid == "hand_to_hand"   # 用獸爪、不含淬鍊
+    assert dmg == claw["damage"] and sid == "hand_to_hand"   # 用獸爪、不含淬鍊/附魔
     assert combat.effective_weapon_name(c, gd) == "獸爪"
     # 護甲:脫去穿戴護甲,只剩野獸自然護甲
     assert combat._armor_rating(c, gd) == lycanthropy.BEAST_ARMOR
-
-
-def test_beast_form_weapon_enchant_does_not_fire():
-    """獸形以獸爪戰鬥 → 裝備武器的元素/命中狀態附魔皆不觸發。"""
-    gd, c, st = _state()
-    # 合成一把帶元素附魔的武器(enchw)
-    from tesrpg.synth import enchant_weapon_id
-    wid = enchant_weapon_id("iron_sword", "fire", 25)
-    c.weapon = wid
-    _make_werewolf(gd, c, st)
-    lycanthropy.transform(c, st, gd)
+    # 獸爪戰鬥煙霧:附魔武器被略過 → 無 traceback + 合理傷害(獸爪 base 16 而非帶火附魔長劍)
     boss = combat.spawn_creature(gd, "bandit", st.rng)
     hp0 = boss.max_health
     total = 0
@@ -165,7 +156,6 @@ def test_beast_form_weapon_enchant_does_not_fire():
         combat._set_hp(boss, hp0)
         ev = combat.resolve_attack(c, boss, gd, RNG(_), sneak_attack=False)
         total += ev["damage"]
-    # 獸爪 base 16 < 帶 25 火附魔的長劍 → 若附魔有觸發傷害會明顯偏高;此處只驗無 traceback + 合理
     assert total > 0
 
 
@@ -181,15 +171,6 @@ def test_mutual_exclusion_both_directions():
     _make_werewolf(gd, c, st)
     assert not vampirism.susceptible(c)
     assert not vampirism.infect(c, st)
-
-
-def test_combat_infect_kind_dispatch_and_backcompat():
-    gd, c, st = _state()
-    # 狼人敵帶 infect_kind=lycanthropy;舊吸血鬼敵無此鍵 → 預設 vampire
-    ww = gd.bestiary["werewolf"]["attack"]
-    assert ww.get("infect_kind") == "lycanthropy"
-    vf = gd.bestiary["vampire_fledgling"]["attack"]
-    assert "infect_kind" not in vf      # 向後相容:缺鍵 → combat 預設 vampire
 
 
 # --- devour 續時封頂(封無限獸形 farm)----------------------------------
@@ -298,6 +279,11 @@ def test_feed_tier_progression():
     gd, c, st = _state()
     _make_werewolf(gd, c, st)
     assert lycanthropy.tier(c) == 0
+    # 階 0 獸爪傷害基準(獸爪流派)
+    lycanthropy.transform(c, st, gd)
+    d0, _, sid = combat._weapon_profile(c, gd)
+    assert sid == "hand_to_hand"
+    lycanthropy.revert(c, st, gd)
     c.werewolf_total_feeds = lycanthropy.FEED_TIERS[0]      # 達第一門檻 → 階 1
     assert lycanthropy.tier(c) == 1
     c.werewolf_total_feeds = lycanthropy.FEED_TIERS[-1]     # 滿階
@@ -308,19 +294,11 @@ def test_feed_tier_progression():
     assert lycanthropy.beast_duration(c) >= lycanthropy.BEAST_DURATION_HOURS
     prog = lycanthropy.tier_progress(c)
     assert "remaining" not in prog                          # 滿階無下一階
-
-
-def test_claw_damage_scales_with_tier():
-    gd, c, st = _state()
-    _make_werewolf(gd, c, st)
-    lycanthropy.transform(c, st, gd)
-    d0, _, sid = combat._weapon_profile(c, gd)
-    assert sid == "hand_to_hand"
-    lycanthropy.revert(c, st, gd)
-    c.werewolf_total_feeds = lycanthropy.FEED_TIERS[-1]     # 滿階
+    # 滿階獸爪傷害 > 階 0(獸爪隨獸血階成長)
     lycanthropy.transform(c, st, gd)
     d_apex, _, _ = combat._weapon_profile(c, gd)
-    assert d_apex > d0                                      # 獸爪隨獸血階成長
+    assert d_apex > d0
+    lycanthropy.revert(c, st, gd)
 
 
 def test_howl_fears_non_solo_costs_fatigue_solo_immune():
@@ -391,11 +369,8 @@ def run():
     test_beast_single_hit_far_below_solo_boss_hp()
     test_estimate_sneak_damage_beast_form_no_sneak_inflation()
     test_sync_beast_form_reverts_expired_cache()
-    test_human_form_werewolf_sneak_estimate_unchanged()
     test_beast_form_suppresses_equipment()
-    test_beast_form_weapon_enchant_does_not_fire()
     test_mutual_exclusion_both_directions()
-    test_combat_infect_kind_dispatch_and_backcompat()
     test_devour_caps_per_form()
     test_transform_via_power_once_per_day()
     test_cure_quest_flow_repeatable_and_gated()
@@ -403,7 +378,6 @@ def run():
     test_save_in_beast_form_then_expire_reverts_on_load()
     test_legacy_and_achievement()
     test_feed_tier_progression()
-    test_claw_damage_scales_with_tier()
     test_howl_fears_non_solo_costs_fatigue_solo_immune()
     test_devour_tier_up_recomputes_and_heal_scales()
     test_hircine_ring_bypasses_transform_cooldown()

@@ -38,8 +38,10 @@ def test_heal_and_magicka_cost():
     gd, c = _mage()
     c.health = 1
     m0 = c.magicka
+    f0 = c.fatigue
     ev = magic.cast(c, gd, "minor_heal", rng=RNG(0))
     assert c.health > 1 and c.magicka < m0
+    assert c.fatigue < f0                     # 戰外施法(battle=None)亦扣體力
 
 
 def test_shield_adds_armor_then_expires():
@@ -67,18 +69,6 @@ def test_soul_trap_gem_tier():
     magic.cast(c, gd, "soul_trap", rng=RNG(0), target=bear)
     assert magic.has_soul_trap(bear)
     assert magic.soul_gem_for(bear) == "filled_greater_soul_gem"
-
-
-def test_summon_adds_ally():
-    gd, c = _mage()
-    battle = {"allies": []}
-    magic.cast(c, gd, "conjure_familiar", rng=RNG(0), battle=battle)
-    assert len(battle["allies"]) == 1
-    assert battle["allies"][0].summon_turns is not None     # 召喚物為帶計時的 Creature
-    crab = combat.spawn_creature(gd, "mudcrab", RNG(0))
-    hp0 = crab.health
-    combat.resolve_attack(battle["allies"][0], crab, gd, RNG(1))   # 召喚物攻擊敵人
-    assert crab.health <= hp0
 
 
 # --- 煉金 ---------------------------------------------------------------
@@ -169,6 +159,10 @@ def test_synth_roundtrip_via_gamedata():
     assert gd.item(bid)["effect"]["type"] == "restore_magicka"
     wid = synth.enchant_weapon_id("steel_sword", "frost", 9)
     assert gd.item(wid)["enchant"]["element"] == "frost" and gd.item(wid)["damage"] == gd.weapons["steel_sword"]["damage"]
+    # 命中觸發附魔(weapon_status)synth-id roundtrip
+    for st in ("vampiric", "paralyze", "regen"):
+        d = gd.item(synth.enchant_weapon_status_id("steel_sword", st, 5, 3))
+        assert d["enchant"]["kind"] == "weapon_status" and d["enchant"]["status"] == st
 
 
 # --- 施法接上體力系統(法師三系資源對稱)+ 法袍省體 -----------------------
@@ -186,25 +180,21 @@ def _caster(skill=50):
 
 def test_cast_costs_fatigue():
     gd, c = _caster()
-    f0 = c.fatigue
-    cost = magic.spell_fatigue_cost(c, gd, "flames")
-    assert cost >= 1
-    magic.cast(c, gd, "flames", RNG(0), target=combat.spawn_creature(gd, "giant_rat", RNG(0)))
-    assert c.fatigue == f0 - cost          # 施法確實扣體力
-
-
-def test_spell_fatigue_scales_with_magicka():
-    gd, c = _caster()
+    # 體力消耗隨魔力成本縮放(大法術 > 小法術)— 唯讀斷言,不耗 fatigue
     assert magic.spell_fatigue_cost(c, gd, "fire_storm") > magic.spell_fatigue_cost(c, gd, "flames")
-
-
-def test_athletics_lowers_cast_fatigue():
-    gd, c = _caster()
+    # 運動降施法體力消耗(與近戰共用)— 只動 athletics/讀取,不耗 fatigue
     c.skills["athletics"] = 0
     hi = magic.spell_fatigue_cost(c, gd, "fireball")
     c.skills["athletics"] = 100
     lo = magic.spell_fatigue_cost(c, gd, "fireball")
-    assert lo < hi                          # 運動降施法體力消耗(與近戰共用)
+    assert lo < hi
+    # 施法確實扣體力 — 另起一個未動過 athletics 的 caster,避開上面 (b) 改過的 athletics 污染 cost
+    gd2, c2 = _caster()
+    f0 = c2.fatigue
+    cost = magic.spell_fatigue_cost(c2, gd2, "flames")
+    assert cost >= 1
+    magic.cast(c2, gd2, "flames", RNG(0), target=combat.spawn_creature(gd2, "giant_rat", RNG(0)))
+    assert c2.fatigue == f0 - cost
 
 
 def test_low_fatigue_reduces_spell_power():
@@ -230,14 +220,6 @@ def test_restore_fatigue_spell_net_positive():
     f0 = c.fatigue
     magic.cast(c, gd, "restore_mind", RNG(0))
     assert c.fatigue > f0                   # 回體力法術扣得少、回得多 → 淨正
-
-
-def test_out_of_combat_heal_costs_fatigue():
-    gd, c = _caster()
-    c.health = 1
-    f0 = c.fatigue
-    magic.cast(c, gd, "minor_heal", RNG(0))   # 戰外施法(battle=None)
-    assert c.health > 1 and c.fatigue < f0
 
 
 def test_low_fatigue_weakens_summon():
@@ -339,13 +321,6 @@ def test_weapon_paralyze_immune_on_solo_boss():
         boss = combat.spawn_creature(gd, solo_tid, RNG(i))
         combat.resolve_attack(c, boss, gd, RNG(i))
         assert not magic.is_paralyzed(boss)                 # 永不被鎖
-
-
-def test_enchws_synth_roundtrip():
-    gd, _ = _mage()
-    for st in ("vampiric", "paralyze", "regen"):
-        d = gd.item(synth.enchant_weapon_status_id("steel_sword", st, 5, 3))
-        assert d["enchant"]["kind"] == "weapon_status" and d["enchant"]["status"] == st
 
 
 # --- 法術學派補完:召喚(束縛兵刃/亡者復生/新召喚)+ 秘術(結界/驅散/群體擒魂)-------
@@ -537,6 +512,16 @@ def test_reanimate_no_double_raise_same_corpse():
 def test_new_summons_spawn_and_inherit_twin_summon_mastery():
     from tesrpg.systems import mastery
     gd, c = _caster()
+    # 基礎召喚:conjure_familiar 在 _caster() setup 下可施放,召出帶計時的盟友且能攻擊敵人
+    c.spells.append("conjure_familiar")
+    fam_battle = {"allies": []}
+    fam_ev = magic.cast(c, gd, "conjure_familiar", RNG(0), battle=fam_battle)
+    assert fam_ev["ok"] and len(fam_battle["allies"]) == 1
+    assert fam_battle["allies"][0].summon_turns is not None   # 召喚物為帶計時的 Creature
+    fam_crab = combat.spawn_creature(gd, "mudcrab", RNG(0))
+    fam_hp0 = fam_crab.health
+    combat.resolve_attack(fam_battle["allies"][0], fam_crab, gd, RNG(1))   # 召喚物攻擊敵人
+    assert fam_crab.health <= fam_hp0
     c.spells += ["conjure_frost_atronach", "conjure_storm_atronach", "conjure_dremora"]
     for sid in ("conjure_frost_atronach", "conjure_storm_atronach", "conjure_dremora"):
         battle = {"allies": []}

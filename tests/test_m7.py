@@ -23,10 +23,8 @@ def test_context_gating():
     # arrive 事件需城鎮;在荒野不該觸發
     assert "town_crier" not in events.eligible_events(st, gd, "travel")
     assert "town_crier" not in events.eligible_events(st, gd, "arrive")
-
-
-def test_location_type_gating():
-    gd, c, st = _state("bruma")            # city
+    # location_type 維度(原 test_location_type_gating):同 _trigger_ok,僅換地點重讀 location_id
+    st.player.location_id = "bruma"        # city
     assert "town_crier" in events.eligible_events(st, gd, "arrive")
     # 城市休息不該出現「營地襲擊」(限 wilderness/dungeon)
     assert "camp_ambush" not in events.eligible_events(st, gd, "rest")
@@ -61,9 +59,8 @@ def test_option_requirements():
     c.skills["security"] = 40
     assert events.option_available(c, gd, skillreq)
 
-
-def test_quest_available_requirement():
-    gd, c, st = _state()
+    # quest_available 需求(原 test_quest_available_requirement):第四型,同走 meets。
+    # c.quests 突變置於尾端,不污染前三型斷言。
     opt = {"requirements": {"quest_available": "job_bandit"}}
     assert events.option_available(c, gd, opt)
     c.quests["job_bandit"] = {}
@@ -93,22 +90,18 @@ def test_apply_effects_basic():
     ], RNG(0))
     assert c.gold == 70 and inventory.count_item(c, "ruby") == 1 and c.fame == 5
     assert c.skill_xp.get("speechcraft", 0) > 0
-    assert res["combat"] == []
+    assert res["combat"] == []                             # 無 combat 效果 → 空(負向契約)
 
-
-def test_heal_full_and_damage():
-    gd, c, st = _state()
+    # heal full / damage(原 test_heal_full_and_damage):置於 gold/item/fame/skill_xp 斷言之後
     c.health = 1
     events.apply_effects(st, gd, [{"type": "heal", "amount": "full"}], RNG(0))
     assert c.health == c.max_health
     events.apply_effects(st, gd, [{"type": "damage", "amount": 9999}], RNG(0))
     assert c.health == 0                                   # 致死由 main 判定
 
-
-def test_combat_effect_deferred():
-    gd, c, st = _state()
-    res = events.apply_effects(st, gd, [{"type": "combat", "creature": "wolf"}], RNG(0))
-    assert res["combat"] == ["wolf"]                       # 交給 main 跑 run_battle
+    # combat 效果延遲(原 test_combat_effect_deferred):正向契約,回傳給 main 跑 run_battle
+    res2 = events.apply_effects(st, gd, [{"type": "combat", "creature": "wolf"}], RNG(0))
+    assert res2["combat"] == ["wolf"]
 
 
 def test_start_quest_and_bounty():
@@ -122,6 +115,12 @@ def test_start_quest_and_bounty():
     from tesrpg.systems import crime
     assert crime.bounty(c, "賽羅迪爾") == 50
 
+    # learn_spell 冪等(原 test_learn_spell_no_dup):同為冪等效果驗證,顯式重置避免起始法術干擾
+    c.spells = []
+    events.apply_effects(st, gd, [{"type": "learn_spell", "spell": "flames"}], RNG(0))
+    events.apply_effects(st, gd, [{"type": "learn_spell", "spell": "flames"}], RNG(0))
+    assert c.spells.count("flames") == 1
+
 
 def test_effect_feedback_messages():
     """回歸(審查):失去物品 / 惡名 也要有 UI 訊息(與獲得/聲望對稱)。"""
@@ -134,14 +133,6 @@ def test_effect_feedback_messages():
     joined = " ".join(res["messages"])
     assert "失去" in joined and "紅寶石" in joined
     assert "惡名" in joined
-
-
-def test_learn_spell_no_dup():
-    gd, c, st = _state()
-    c.spells = []
-    events.apply_effects(st, gd, [{"type": "learn_spell", "spell": "flames"}], RNG(0))
-    events.apply_effects(st, gd, [{"type": "learn_spell", "spell": "flames"}], RNG(0))
-    assert c.spells.count("flames") == 1
 
 
 def run():

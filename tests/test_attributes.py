@@ -18,22 +18,22 @@ def _char(willpower=40, luck=40):
     return gd, c
 
 
-# --- base-40 中性 + 夾限 -------------------------------------------------
+# --- base-40 中性 + 縮放 + 夾限 -----------------------------------------
 def test_factors_neutral_at_base():
     b = formulas.BASE_ATTRIBUTE
+    # 中性端(base-40)
     assert formulas.magicka_regen_combat(b) == 0
     assert formulas.magicka_regen_rest_factor(b) == 1.0
     assert formulas.mind_resist_chance(b) == 0.0
     assert formulas.luck_loot_factor(b) == 1.0
     assert formulas.luck_fortune(b) == 0.0
-
-
-def test_factors_scale_and_clamp():
+    # 縮放端(>base)+ 上界夾限
     assert formulas.magicka_regen_combat(100) > 0
     assert formulas.magicka_regen_rest_factor(100) > 1.0
     assert 0 < formulas.mind_resist_chance(100) <= formulas.MIND_RESIST_CAP
     assert 1.0 < formulas.luck_loot_factor(100) <= formulas.LUCK_LOOT_CAP
     assert 0 < formulas.luck_fortune(100) <= formulas.LUCK_FORTUNE_CAP
+    # 夾限端(超大值 == 各 CAP)
     assert formulas.magicka_regen_combat(999) == formulas.MAGICKA_REGEN_COMBAT_CAP
     assert formulas.luck_loot_factor(999) == formulas.LUCK_LOOT_CAP
     assert formulas.mind_resist_chance(999) == formulas.MIND_RESIST_CAP
@@ -45,6 +45,9 @@ def test_luck_loot_factor_in_resolve():
     r = loot.resolve_loot([{"gold": [10, 10]}, {"item": "gold_ring", "chance": 0.5}], RNG(1), luck_factor=2.0)
     assert r["gold"] == 20                              # 10 × 2.0
     assert ("gold_ring", 1) in r["items"]              # 0.5 × 2.0 → 1.0 → 必掉
+    # 零機率排除側(併自 test_world.test_loot_resolver):即使倍率放大,chance 0.0 仍濾掉
+    assert ("ruby", 1) not in loot.resolve_loot(
+        [{"item": "ruby", "chance": 0.0}], RNG(1), luck_factor=2.0)["items"]
     # 中性 1.0:不放大(怪物中性掉落不變)
     assert loot.resolve_loot([{"gold": [10, 10]}], RNG(1), luck_factor=1.0)["gold"] == 10
 
@@ -101,7 +104,6 @@ def test_combat_fear_resisted_by_willpower():
 
 def run():
     test_factors_neutral_at_base()
-    test_factors_scale_and_clamp()
     test_luck_loot_factor_in_resolve()
     test_grant_loot_uses_player_luck()
     test_luck_fortune_lockpick_and_flee()

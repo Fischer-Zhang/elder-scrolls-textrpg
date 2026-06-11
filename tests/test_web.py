@@ -201,21 +201,15 @@ def test_dungeon_grid_view_block():
         moves = [c.get("move") for row in d["rows"] for c in row if c.get("move")]
         assert any(mv.startswith("go:") for mv in moves)                            # 相鄰格帶可點移動 key
         backend.submit(fr["prompt_id"], True); t.join(timeout=5)
-    finally:
-        _restore()
 
-
-def test_dungeon_grid_content_icons_and_resolved():
-    """偵查揭示有資訊量:已探「未結算」內容格顯示怪/寶/陷阱圖示;已結算則回 ·(stairs 恆顯)。"""
-    grid = {"name": "T", "n": 2, "m": 1, "layers": [[
-        [{"type": "monster"}, {"type": "container"}],
-        [{"type": "trap"}, {"type": "stairs"}]]]}
-    explored = [[[True, True], [True, True]]]
-    backend = WebBackend()
-    ui.use_web_backend(backend, _rec())
-    try:
+        # --- 併入 content_icons_and_resolved:偵查揭示有資訊量 ---
+        # 已探「未結算」內容格顯示怪/寶/陷阱圖示;已結算則回 ·(stairs 恆顯)。
+        grid = {"name": "T", "n": 2, "m": 1, "layers": [[
+            [{"type": "monster"}, {"type": "container"}],
+            [{"type": "trap"}, {"type": "stairs"}]]]}
+        explored2 = [[[True, True], [True, True]]]
         t = threading.Thread(target=lambda: ui.confirm("?"))
-        ui.dungeon_grid(grid, 0, 0, 0, explored, resolved=None)   # 全未結算
+        ui.dungeon_grid(grid, 0, 0, 0, explored2, resolved=None)   # 全未結算
         t.start()
         fr = backend.outbound.get(timeout=5)
         rows = [b for b in fr["blocks"] if b["kind"] == "view" and b["name"] == "dungeon_grid"][0]["data"]["rows"]
@@ -225,7 +219,7 @@ def test_dungeon_grid_content_icons_and_resolved():
         # 已結算 → 內容格回 ·(stairs 結構格恆顯)
         resolved = [[[True, True], [True, True]]]
         t2 = threading.Thread(target=lambda: ui.confirm("?"))
-        ui.dungeon_grid(grid, 0, 0, 0, explored, resolved=resolved)
+        ui.dungeon_grid(grid, 0, 0, 0, explored2, resolved=resolved)
         t2.start()
         fr2 = backend.outbound.get(timeout=5)
         rows2 = [b for b in fr2["blocks"] if b["kind"] == "view" and b["name"] == "dungeon_grid"][0]["data"]["rows"]
@@ -410,21 +404,6 @@ def test_sheet_subview_models():
         _restore()
 
 
-def test_persuade_chance_readonly():
-    """persuade_chance 唯讀(不扣體力)、回傳 ∈[0,1]、與 persuade 公式一致。"""
-    from tesrpg.gamedata import get_gamedata
-    from tesrpg.creation import build_character
-    from tesrpg.systems import dialogue
-    gd = get_gamedata()
-    c = build_character(gd, name="測", sex="male", race="imperial", birthsign="lady", class_id="warrior")
-    nid = next(iter(gd.npcs))
-    fat = c.fatigue
-    ch = dialogue.persuade_chance(c, gd, nid)
-    assert 0.0 <= ch <= 1.0 and c.fatigue == fat        # 無副作用
-    exp = max(0.1, min(0.9, 0.35 + (c.skill("speechcraft") + c.attr("personality") - 50) * 0.005))
-    assert ch == 1.0 or abs(ch - exp) < 1e-9            # 公式單一來源
-
-
 def test_board_and_shop_view_shapes():
     """告示板/商店可點面板的命脈:卡 key == 對齊選單的 id(quest-id / item-id);唯讀。"""
     from tesrpg.gamedata import get_gamedata
@@ -588,14 +567,12 @@ def run():
     test_blocks_protocol()
     test_hud_and_view_block()
     test_dungeon_grid_view_block()
-    test_dungeon_grid_content_icons_and_resolved()
     test_hud_includes_party_and_allies()
     test_view_model_shapes()
     test_combat_target_key_parity()
     test_combat_target_reemit_web()
     test_web_combat_menus_each_show_one_board()
     test_sheet_subview_models()
-    test_persuade_chance_readonly()
     test_board_and_shop_view_shapes()
     test_double_submit_and_stale()
     test_int_revalidate()
