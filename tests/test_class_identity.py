@@ -1,6 +1,6 @@
 """八職功能性身份網格 —— 各職一招牌戰術 loop 的測試:
 warrior 盾牆(減傷+嘲諷,物理only)/ mage 奧術連鎖(連發增幅·省體·cap)/ thief 諜報偵搜(prep 多來源相加)/
-battlemage 共鳴一擊+法力回擊(夾限內·DoT·單次·回魔)/ archer 獵手偵察(recon floor)/
+battlemage 共鳴一擊+法力回擊(50/75 兩節點可兼得;夾限內·DoT·單次·回魔)/ archer 獵手偵察(recon floor)/
 knight 戰旗(empower 僅同伴·不碰玩家)/ healer 戰地搶救(折扣施治·消耗)/ assassin 致命烙印(開場免疫·follow-up 破甲)。
 🔴 紅線:任何機制皆不可使偷襲秒 solo boss(combat 夾限);sim_assassin 另證逐行零位移。"""
 
@@ -74,7 +74,7 @@ def test_resonant_strike_adds_element_dot_single_use():
     spell = next(s for s, v in gd.spells.items()
                  if v.get("effect", {}).get("kind") in ("damage", "damage_status") and v["school"] == "destruction")
     c.spells = list(c.spells) + [spell]
-    mastery.choose(c, gd, "destruction_75", "resonant_strike")
+    mastery.choose(c, gd, "destruction_50", "resonant_strike")
     c.magicka = c.max_magicka = 99999            # choose 觸發重算 → 補滿
     foe = _dummy()
     base = combat.resolve_attack(c, foe, gd, RNG(5))["damage"]
@@ -106,6 +106,34 @@ def test_mana_on_hit_restores_magicka_and_neutral():
     c.magicka = 10
     combat.resolve_attack(c, _dummy(), gd, RNG(1))
     assert c.magicka > 10                                         # 命中回魔
+
+
+def test_resonant_rider_applies_resist_once():
+    # 修 double-dip:rider 存抗性未折算基底、打擊端折算一次 → 弱火目標淨灌注 ≈ 半數實際法傷
+    # (修前存折算後值再×mult → 弱點 2.0 時灌到整份法傷)
+    c = _char("battlemage", destruction=80, blade=60); c.weapon = "steel_sword"
+    c.spells = list(c.spells) + ["fireball"]
+    mastery.choose(c, gd, "destruction_50", "resonant_strike")
+    c.magicka = c.max_magicka = 99999
+    foe = _dummy(); foe.resist = {"fire": -100}                   # 弱火 → mult 夾頂 2.0
+    base = combat.resolve_attack(c, foe, gd, RNG(5))["damage"]
+    spell_dmg = magic.cast(c, gd, "fireball", RNG(1), target=foe)["damage"]
+    rider = combat.resolve_attack(c, foe, gd, RNG(5))["damage"] - base
+    assert abs(rider - spell_dmg * 0.5) <= 3                      # 修前 ≈ spell_dmg(兩倍灌注)
+
+
+def test_battlemage_can_hold_both_resonance_perks():
+    # 共鳴一擊移 50、省魔催動移 75:爆發流+自持流不再互斥,戰法師 50/75 可雙取
+    c = _char("battlemage", destruction=80, blade=60); c.weapon = "steel_sword"
+    assert mastery.choose(c, gd, "destruction_50", "resonant_strike") is not None
+    assert mastery.choose(c, gd, "destruction_75", "arcane_battery") is not None
+    assert mastery.resonant_strike(c, gd) is not None
+    assert mastery.mana_on_hit(c, gd) == 4
+    # 純法師側互換後仍成對:50 凝神聚法 ⇄ 75 省魔催動(各節點皆一法一武)
+    m = _char("mage", destruction=80)
+    assert mastery.choose(m, gd, "destruction_50", "focused_mind") is not None
+    assert mastery.choose(m, gd, "destruction_75", "efficient_destruction") is not None
+    assert abs(mastery.spell_cost_factor(m, gd, "destruction") - 0.85) < 1e-9
 
 
 # --- thief: 諜報偵搜(prep 多來源相加)-------------------------------
@@ -227,7 +255,7 @@ def test_deathmark_followup_penetrates_armor():
 # --- 存檔:里程碑選擇往返(暫態 active_effects 不入檔)----------------
 def test_mastery_choices_survive_roundtrip():
     c = _char("battlemage", destruction=80)
-    mastery.choose(c, gd, "destruction_75", "resonant_strike")
+    mastery.choose(c, gd, "destruction_50", "resonant_strike")
     loaded = Character.from_dict(json.loads(json.dumps(c.to_dict())))
     assert mastery.resonant_strike(loaded, gd) is not None
 

@@ -203,9 +203,8 @@
       "desc": "祕法宗師:只要尚有魔力,靈光便護體於外(被動護甲 +15)。"}
    ]},
   {"id": "destruction_75", "skill": "destruction", "threshold": 75, "options": [
-     {"opt_id": "resonant_strike", "name": "共鳴一擊", "kind": "resonant_strike",
-      "transfer": 0.5, "dot_magnitude": 4, "dot_turns": 3,
-      "desc": "法武共鳴(爆發流):施放毀滅傷害法術後,下一記近戰灌入其半數法力 —— 額外元素傷害並引燃同系持續傷害。"},
+     {"opt_id": "efficient_destruction", "name": "省魔催動", "kind": "spell_mod", "school": "destruction", "cost_factor": 0.85,
+      "desc": "毀滅嫻熟:毀滅術施法省魔 15%(可抵過載的加耗)。"},
      {"opt_id": "arcane_battery", "name": "法力回擊", "kind": "mana_on_hit", "magnitude": 4,
       "desc": "法武共鳴(自持流):以刃淬魔 —— 近戰命中回復 4 點魔力,揮劍補魔、續法不竭(穿重甲亦可,本作施法不罰甲)。"}
    ]},
@@ -513,8 +512,9 @@
    ]},
 
   {"id": "destruction_50", "skill": "destruction", "threshold": 50, "options": [
-     {"opt_id": "efficient_destruction", "name": "省魔催動", "kind": "spell_mod", "school": "destruction", "cost_factor": 0.85,
-      "desc": "毀滅漸熟:毀滅術施法省魔 15%(可抵過載的加耗)。"},
+     {"opt_id": "resonant_strike", "name": "共鳴一擊", "kind": "resonant_strike",
+      "transfer": 0.5, "dot_magnitude": 4, "dot_turns": 3,
+      "desc": "法武共鳴(爆發流):施放毀滅傷害法術後,下一記近戰灌入其半數法力 —— 額外元素傷害並引燃同系持續傷害。"},
      {"opt_id": "focused_mind", "name": "凝神聚法", "kind": "attr_fortify", "attr": {"intelligence": 4},
       "desc": "凝神聚法,魔力更充沛(智力 +4 → 魔力上限提升)。"}
    ]},

@@ -179,8 +179,10 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
         rs = mastery.resonant_strike(char, gamedata)
         if rs and sp["school"] == "destruction" and damage > 0:
             char.active_effects[:] = [e for e in char.active_effects if e.get("kind") != "resonance"]
+            # magnitude 存「抗性未折算」基底(damage/mult):combat 消耗端會按打擊目標抗性再折算一次,
+            # 同目標淨值恰為半數實際法傷 —— 存折算後值會雙重套抗(弱點目標最高灌到 2 倍)
             char.active_effects.append({"kind": "resonance", "element": element,
-                                        "magnitude": round(damage * rs.get("transfer", 0.5)),
+                                        "magnitude": round(damage / mult * rs.get("transfer", 0.5)),
                                         "dot_magnitude": rs.get("dot_magnitude", 4),
                                         "dot_turns": rs.get("dot_turns", 3), "turns": 2})
             msg += " 法力在你的兵刃上共鳴,蓄勢待發。"

@@ -301,6 +301,22 @@ def test_ensure_mastery_choices_prunes_stale():
     assert c.mastery_choices == {"block_50": "shieldwall"}
 
 
+def test_relocated_group_resets_together():
+    """毀滅 50/75 互換遷移:搬家組任一選擇陳舊 → 整組退 pending
+    (舊檔 50=凝神+75=共鳴 只清共鳴會把它永久鎖死);全有效則整組保留、不過度清除。"""
+    gd, c = _char(destruction=75)
+    c.mastery_choices = {"destruction_50": "focused_mind", "destruction_75": "resonant_strike"}
+    progression.ensure_mastery_choices(c, gd)
+    assert c.mastery_choices == {}
+    pend = {n["id"] for n in mastery.pending_choices(c, gd)}
+    assert {"destruction_50", "destruction_75"} <= pend
+    gd, c = _char(destruction=75)
+    c.mastery_choices = {"destruction_50": "focused_mind", "destruction_75": "arcane_battery"}
+    progression.ensure_mastery_choices(c, gd)
+    assert c.mastery_choices == {"destruction_50": "focused_mind",
+                                 "destruction_75": "arcane_battery"}
+
+
 def test_shipped_kinds_all_implemented():
     """fail-fast:出貨 mastery.json 每個 option 的 kind 都須已實作,否則玩家看到可選卻零效果。"""
     gd = get_gamedata()
@@ -993,9 +1009,9 @@ def test_batch2_gapfills_present_and_aggregate():
         n = next(x for x in mastery._nodes(gd) if x["id"] == nid)
         for o in n["options"]:
             assert o["opt_id"] in defids, f"死 perk {nid} {o['opt_id']}"
-    # spell_mod cost 聚合不遮蔽(destruction 50 省魔 × 100 過載加耗)
+    # spell_mod cost 聚合不遮蔽(destruction 75 省魔 × 100 過載加耗;省魔催動與共鳴一擊 50/75 互換後)
     gd, c = _char(destruction=100)
-    mastery.choose(c, gd, "destruction_50", "efficient_destruction")
+    mastery.choose(c, gd, "destruction_75", "efficient_destruction")
     mastery.choose(c, gd, "destruction_100", "overload")
     assert abs(mastery.spell_cost_factor(c, gd, "destruction") - 0.85 * 1.30) < 1e-9
     # weapon_mod blade 50/75/100 合併(不遮蔽)
@@ -1149,6 +1165,7 @@ def run():
     test_persuaded_npcs_roundtrip_and_backward_compat()
     test_pending_choice_derivation_backcompat()
     test_ensure_mastery_choices_prunes_stale()
+    test_relocated_group_resets_together()
     test_shipped_kinds_all_implemented()
     test_unimplemented_kind_is_inert()
     test_mastery_never_writes_base_skill()

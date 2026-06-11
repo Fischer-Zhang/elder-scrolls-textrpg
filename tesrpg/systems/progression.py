@@ -36,6 +36,13 @@ def ensure_all_skills(char: Character, gamedata: GameData) -> None:
             char.skill_xp.setdefault(sid, 0.0)
 
 
+# 同技能節點間「搬家」過 perk 的節點組(如毀滅 50/75 互換:省魔催動⇄共鳴一擊):
+# 任一成員的選擇陳舊 → 整組退回 pending。只清陳舊的那個會把舊佈局下的搭配鎖死在新佈局
+# (舊檔 50=凝神聚法 + 75=共鳴一擊 → 共鳴被清、50 已被凝神永久鎖 → 共鳴對該角色永不可得),
+# 整組重選讓玩家以新佈局重組(可重建雙 gish loop 或純法師線),守選擇權。
+RELOCATED_NODE_GROUPS = (("destruction_50", "destruction_75"),)
+
+
 def ensure_mastery_choices(char: Character, gamedata: GameData) -> None:
     """技能里程碑 v2 舊存檔遷移:確保四個欄位存在、清掉指向已不存在 node/opt 的陳舊選擇、
     重算持久加成快取。**達門檻但未選的舊存檔 → 留 pending(不自動指派,守選擇權)**:
@@ -46,6 +53,11 @@ def ensure_mastery_choices(char: Character, gamedata: GameData) -> None:
             setattr(char, fld, {})
     # 防呆:清掉指向已不存在 node/opt 的陳舊選擇(JSON 改版安全)
     valid = {n["id"]: {o.get("opt_id") for o in n["options"]} for n in mastery._nodes(gamedata)}
+    for group in RELOCATED_NODE_GROUPS:        # perk 搬家組:任一陳舊 → 整組退 pending
+        if any(nid in char.mastery_choices and char.mastery_choices[nid] not in valid.get(nid, ())
+               for nid in group):
+            for nid in group:
+                char.mastery_choices.pop(nid, None)
     char.mastery_choices = {nid: oid for nid, oid in char.mastery_choices.items()
                             if oid in valid.get(nid, ())}
     stats.recompute_mastery_bonuses(char, gamedata)
