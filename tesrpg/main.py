@@ -2148,6 +2148,29 @@ def _court_reception(char) -> str:
     return "領主端坐王座,以例行的禮節接見你。"
 
 
+def _governing_ruler(state: GameState, gamedata: GameData, loc_id: str, base_ruler: dict):
+    """佔領城的朝堂顯示(A3 自任領主/冊封總管):你即事實領主,或由冊封的總管代你坐鎮 ——
+    取代被推翻的舊領主顯示(修補「領主沒變」)。回傳 (ruler_dict, reception)。"""
+    char = state.player
+    city = gamedata.location(loc_id)["name"]
+    banner = politics.current_banner_label(char, gamedata, loc_id) or base_ruler.get("bloc_label")
+    garrison = politics.garrison_of(char, gamedata, loc_id)
+    sid = politics.steward_of(char, loc_id)
+    if sid and sid in char.companions:                 # 冊封的總管代你坐鎮
+        comp = gamedata.companions.get(sid, {})
+        ruler = {"title": "總管", "name": comp.get("name", sid),
+                 "race": comp.get("race", base_ruler["race"]),
+                 "blurb": f"奉你之命坐鎮「{city}」,代你安民理政、彈壓不臣。",
+                 "garrison": garrison, "bloc_label": banner}
+        reception = "總管起身行禮:「主上,城中諸事安好,謹候吩咐。」"
+    else:                                              # 你親自坐鎮(征服者即領主)
+        ruler = {"title": "征服者", "name": char.name, "race": char.race,
+                 "blurb": f"你以刀鋒奪下「{city}」,自此這城奉你的旗號、聽你號令。",
+                 "garrison": garrison, "bloc_label": banner}
+        reception = "你端坐於昔日領主的主位,廳中文武皆肅立候命。"
+    return ruler, reception
+
+
 def action_court(state: GameState, gamedata: GameData) -> str | None:
     """領主區:謁見 + 領主委託 + 受封武士 + 選邊/攻城(Phase 2+3+4)。回傳 'dead'(攻城陣亡)或 None。"""
     char = state.player
@@ -2161,10 +2184,14 @@ def action_court(state: GameState, gamedata: GameData) -> str | None:
         pol = {"stance": politics.stance_label(politics.faction_of(char, gamedata, loc_id)),
                "relation": politics.REL_LABEL.get(rel, rel),
                "garrison": politics.garrison_of(char, gamedata, loc_id)}
-        held = loc_id in politics.held_tax_cities(char, gamedata)   # 你親手攻下的城 → 顯示領地經營
+        held = loc_id in politics.held_tax_cities(char, gamedata)   # 你親手攻下的城 → 你即領主 + 領地經營
         territory = (politics.territory_overview(char, gamedata, loc_id, state.time.absolute_hours())
                      if held else None)
-        ui.court_panel(ruler, gamedata, _court_reception(char),
+        if held:                                       # A3:朝堂顯示你/總管為領主(取代被推翻的舊領主)
+            disp_ruler, reception = _governing_ruler(state, gamedata, loc_id, ruler)
+        else:
+            disp_ruler, reception = ruler, _court_reception(char)
+        ui.court_panel(disp_ruler, gamedata, reception,
                        standing=court.standing(char, loc_id), thane=court.is_thane(char, loc_id),
                        politics=pol, territory=territory)
         opts = []
@@ -2173,6 +2200,12 @@ def action_court(state: GameState, gamedata: GameData) -> str | None:
             opts.append(("quest", f"領取委託:{gamedata.quests[offered]['name']}"))
         if rel != "enemy" and court.can_become_thane(char, gamedata, loc_id):
             opts.append(("thane", "✦ 受封武士"))
+        if held:                                       # A3 佔領治理:冊封/召回總管(緩叛亂、令城自給)
+            sid = politics.steward_of(char, loc_id)
+            if sid and sid in char.companions:
+                opts.append(("recall_steward", f"召回總管({gamedata.companions.get(sid, {}).get('name', sid)})"))
+            elif any(c not in set(char.stewards.values()) for c in char.companions):
+                opts.append(("appoint_steward", "✦ 冊封總管 —— 派一名親衛坐鎮安民(緩叛亂、令城自給)"))
         if politics.can_reinforce(char, gamedata, loc_id):
             opts.append(("reinforce", f"加強駐軍({politics.REINFORCE_COST_PER} 金/兵 → 鎮民心、防叛亂)"))
         if not char.allegiance:
@@ -2181,19 +2214,45 @@ def action_court(state: GameState, gamedata: GameData) -> str | None:
             opts.append(("siege", f"⚔ 發動攻城(守軍 {politics.garrison_of(char, gamedata, loc_id)})"))
         if not opts:
             return None                             # 純謁見:領主暫無吩咐
-        choice = ui.menu("領主有何吩咐?", opts, allow_back=True)
+        prompt = "你坐鎮朝堂,有何決斷?" if held else "領主有何吩咐?"
+        choice = ui.menu(prompt, opts, allow_back=True)
         if choice is None:
             return None
         if choice == "quest":
             _accept_and_brief(state, gamedata, offered)
         elif choice == "thane":
             _become_thane(state, gamedata, loc_id, ruler)
+        elif choice == "appoint_steward":
+            _appoint_steward(state, gamedata, loc_id)
+        elif choice == "recall_steward":
+            sid = politics.steward_of(char, loc_id)
+            politics.recall_steward(char, loc_id)
+            ui.message(f"你召回了總管{gamedata.companions.get(sid, {}).get('name', '')} —— "
+                       f"該城重歸你親自坐鎮(叛亂流失回升)。", style="yellow")
         elif choice == "reinforce":
             _reinforce_garrison(state, gamedata, loc_id)
         elif choice == "pledge":
             _pledge_allegiance(state, gamedata)
         elif choice == "siege":
             return action_siege(state, gamedata, loc_id)
+
+
+def _appoint_steward(state: GameState, gamedata: GameData, loc_id: str) -> None:
+    """冊封一名親衛為該佔領城的總管(每名親衛只能坐鎮一城 → 須把親衛分派到各領地)。"""
+    char = state.player
+    busy = set(char.stewards.values())                 # 已派任他城的親衛不重複任用
+    opts = [(cid, gamedata.companions.get(cid, {}).get("name", cid))
+            for cid in char.companions if cid not in busy]
+    if not opts:
+        ui.message("你麾下沒有可委任的親衛(其餘皆已派任他城)。", style="grey70")
+        return
+    cid = ui.menu("冊封誰為總管坐鎮此城?", opts, allow_back=True)
+    if cid is None:
+        return
+    politics.appoint_steward(char, loc_id, cid)
+    name = gamedata.companions.get(cid, {}).get("name", cid)
+    ui.message(f"你冊封 {name} 為「{gamedata.location(loc_id)['name']}」總管 —— "
+               f"由其坐鎮安民,叛亂流失大減,城可自給。", style="green")
 
 
 def _reinforce_garrison(state: GameState, gamedata: GameData, loc_id: str) -> None:
@@ -2283,32 +2342,45 @@ def action_siege(state: GameState, gamedata: GameData, loc_id: str) -> str | Non
 
 
 def _siege_assault(state: GameState, gamedata: GameData, loc_id: str, city: str) -> str | None:
+    """波次總攻(β):守軍折算成數波,每波一場群戰、波間不恢復(消耗戰)、傷亡永久、可鳴金收兵。
+    每破一波永久削 WAVE_GARRISON 守軍 → 中途退兵亦保留戰果。回傳 'dead'(陣亡)或 None。"""
     char = state.player
     remaining = politics.garrison_of(char, gamedata, loc_id)
-    n = politics.assault_force(remaining)
-    if not ui.confirm(f"向「{city}」發動最後強攻?守軍 {remaining}(約 {n} 名守兵 + 守將)—— "
-                      f"一戰定生死,敗陣便是死路。"):
+    waves = politics.assault_waves(remaining)
+    if not ui.confirm(f"向「{city}」發動總攻?守軍 {remaining} → 須連破 {waves} 波("
+                      f"波間不得休整、傷亡永久,倒下即死)。決意一戰?"):
         return None
     ui.message(f"號角長鳴,你率眾撞開{city}的城門 ——", style="bold magenta")
-    enemies = [combat.spawn_creature(gamedata, politics.SIEGE_SOLDIER, state.rng) for _ in range(n)]
-    enemies.append(combat.spawn_boss(gamedata, politics.SIEGE_SOLDIER, state.rng, name=f"{city}守將"))
-    # 親衛(將領)+ 麾下士兵一同上陣(士兵以軍團兵模板出場;超出上限者以大軍壓境體現)
-    fielded = warband.fielded_soldiers(char)
-    allies = char.companions + [warband.SOLDIER_TROOP] * fielded
-    if fielded:
-        ui.message(f"你的 {fielded} 名士兵隨你殺入城中。", style="grey70")
-    # 攻城的盟友永久折損:run_battle 回報陣亡者 → 名冊扣減(階段二「戰爭的代價」)
-    fallen: list = []
-    res = run_battle(state, gamedata, enemies, companions=allies, casualties=fallen)
-    if res == "dead":
-        return "dead"
-    loss = warband.apply_casualties(char, gamedata, fallen)
-    if loss["officers"] or loss["soldiers"]:
-        parts = list(loss["officers"]) + ([f"{loss['soldiers']} 名士兵"] if loss["soldiers"] else [])
-        ui.message(f"此役折損:{'、'.join(parts)} —— 戰死城下者,長眠不歸。", style="red")
-    if res == "fled":
-        ui.message("你且戰且退 —— 城未下,但圍城方略的戰果仍在,改日可再攻。", style="yellow")
-        return None
+    for wave in range(1, waves + 1):
+        last = wave == waves
+        enemies = [combat.spawn_creature(gamedata, politics.SIEGE_SOLDIER, state.rng)
+                   for _ in range(politics.WAVE_GUARDS)]
+        if last:                                       # 末波:守將親自壓陣
+            enemies.append(combat.spawn_boss(gamedata, politics.SIEGE_SOLDIER, state.rng, name=f"{city}守將"))
+        # 親衛 + 麾下士兵每波重新上陣(以當前名冊計;陣亡者已折損 → 兵力遞減=消耗戰)
+        fielded = warband.fielded_soldiers(char)
+        allies = char.companions + [warband.SOLDIER_TROOP] * fielded
+        cur = politics.garrison_of(char, gamedata, loc_id)
+        ui.message(f"⚔ 第 {wave}/{waves} 波 —— "
+                   + ("守將親自壓陣,這是最後一搏!" if last else f"守軍湧上城頭(殘存 {cur})。"),
+                   style="bold magenta" if last else "yellow")
+        # 攻城的盟友永久折損:run_battle 回報陣亡者 → 名冊扣減(階段二「戰爭的代價」)
+        fallen: list = []
+        res = run_battle(state, gamedata, enemies, companions=allies, casualties=fallen)
+        if res == "dead":
+            return "dead"
+        loss = warband.apply_casualties(char, gamedata, fallen)
+        if loss["officers"] or loss["soldiers"]:
+            parts = list(loss["officers"]) + ([f"{loss['soldiers']} 名士兵"] if loss["soldiers"] else [])
+            ui.message(f"此波折損:{'、'.join(parts)} —— 戰死城下者,長眠不歸。", style="red")
+        politics.deplete_garrison(char, gamedata, loc_id, politics.WAVE_GARRISON)   # 破一波 → 守軍永久折損
+        if res == "fled":
+            ui.message("你且戰且退 —— 城未下,但已破的城防仍在,改日可再攻。", style="yellow")
+            return None
+        if not last and not ui.confirm(
+                f"第 {wave} 波已破(尚餘 {waves - wave} 波)。傷勢、體力、魔力皆不予恢復 —— 繼續總攻?"):
+            ui.message("你暫且鳴金收兵 —— 已破的城防仍在,養精蓄銳後可再戰。", style="yellow")
+            return None
     politics.conquer(char, gamedata, loc_id, now=state.time.absolute_hours())
     char.fame += politics.SIEGE_FAME
     ui.message(f"城門洞開,守將伏誅 —— 「{city}」易幟,自此歸於{politics.cause_name(char.allegiance)}!",

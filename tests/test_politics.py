@@ -46,9 +46,11 @@ def test_relationship_and_pledge():
 
 
 # --- 圍城方略(operations:全套技能各有攻城用途)------------------------
-def test_assault_force_monotonic_and_clamped():
-    assert politics.assault_force(60) < politics.assault_force(400)   # 守軍越多 → 強攻越硬
-    assert politics.assault_force(0) == 2 and politics.assault_force(9999) == 8   # 夾限
+def test_assault_waves_scale_with_garrison():
+    assert politics.assault_waves(40) == 1                            # 殘存少 → 一波(守將決戰)
+    assert politics.assault_waves(250) > politics.assault_waves(50)   # 守軍越多 → 波數越多(削弱兌現在波數)
+    assert politics.assault_waves(0) == 1                             # 至少一波
+    assert politics.assault_waves(politics.WAVE_GARRISON) == 1        # 邊界:恰一波當量
 
 
 def test_ops_gated_by_skill_and_once_each():
@@ -146,6 +148,56 @@ def test_siege_assault_flee_keeps_op_progress():
     assert politics.faction_of(c, gd, "windhelm") == "independent"   # 未攻下
     assert politics.garrison_of(c, gd, "windhelm") < seed           # 守軍已被方略削減、且持久
     assert "parley" in politics.ops_done(c, "windhelm")             # 方略已用、不重置(杜絕重刷)
+
+
+def test_siege_assault_runs_multiple_waves():
+    """β:守軍多 → 連打多波(run_battle 次數=波數);全勝才破城。"""
+    import tesrpg.main as M
+    from tesrpg.ui import console as ui
+    gd, c = _setup()
+    c.allegiance = "imperial"; c.location_id = "windhelm"
+    state = GameState(player=c, rng=RNG(1), game_mode="adventure")
+    waves = politics.assault_waves(politics.garrison_of(c, gd, "windhelm"))
+    assert waves >= 3                                   # windhelm 守軍夠多 → 多波
+    calls = {"n": 0}
+
+    def battle(*a, **k):
+        calls["n"] += 1
+        return "victory"
+    saved = (M.run_battle, ui.menu, ui.confirm, ui.message)
+    M.run_battle = battle
+    ui.menu = lambda *a, **k: None
+    ui.confirm = lambda *a, **k: True                   # 確認總攻 + 每波續戰
+    ui.message = lambda *a, **k: None
+    try:
+        res = M._siege_assault(state, gd, "windhelm", "風盔城")
+    finally:
+        M.run_battle, ui.menu, ui.confirm, ui.message = saved
+    assert calls["n"] == waves                          # 每波一場群戰
+    assert res is None and politics.faction_of(c, gd, "windhelm") == "imperial"   # 全勝破城
+
+
+def test_siege_assault_retreat_keeps_wave_depletion():
+    """β:中途鳴金收兵 → 已破波次的守軍折損持久(改日波數更少),城未下。"""
+    import tesrpg.main as M
+    from tesrpg.ui import console as ui
+    gd, c = _setup()
+    c.allegiance = "imperial"; c.location_id = "windhelm"
+    state = GameState(player=c, rng=RNG(1), game_mode="adventure")
+    seed = politics.garrison_of(c, gd, "windhelm")
+    confirms = iter([True, False])                      # 確認總攻 → 第一波後鳴金收兵
+    saved = (M.run_battle, ui.menu, ui.confirm, ui.message)
+    M.run_battle = lambda *a, **k: "victory"
+    ui.menu = lambda *a, **k: None
+    ui.confirm = lambda *a, **k: next(confirms, False)
+    ui.message = lambda *a, **k: None
+    try:
+        res = M._siege_assault(state, gd, "windhelm", "風盔城")
+    finally:
+        M.run_battle, ui.menu, ui.confirm, ui.message = saved
+    assert res is None
+    assert politics.faction_of(c, gd, "windhelm") == "independent"          # 未攻下
+    assert politics.garrison_of(c, gd, "windhelm") == seed - politics.WAVE_GARRISON   # 破一波 → 永久折損
 
 
 def test_save_roundtrip_and_backward_compat():
@@ -265,6 +317,56 @@ def test_garrison_regen_on_stable_city():
     assert not e["unrest"]
     assert politics.garrison_of(c, gd, "windhelm") == 200 - politics.UNREST_DECAY + politics.GARRISON_REGEN_PER  # 淨 −4
     assert politics.garrison_of(c, gd, "windhelm") <= politics.base_garrison(gd, "windhelm")        # 永不超 base
+
+
+def test_steward_relieves_unrest_and_stabilizes():
+    """A3 冊封總管:減叛亂流失,令安定城自給(decay 4 < regen 6 → 淨 +2,守軍回升至 base)。"""
+    gd, c = _setup(); politics.pledge(c, "imperial")
+    st = _state(c); politics.conquer(c, gd, "windhelm", now=st.time.absolute_hours())
+    c.companions = ["sellsword"]
+    assert politics.effective_unrest_decay(c, "windhelm") == politics.UNREST_DECAY     # 未冊封 → 全額流失
+    politics.appoint_steward(c, "windhelm", "sellsword")
+    assert politics.has_steward(c, "windhelm")
+    assert politics.effective_unrest_decay(c, "windhelm") == politics.UNREST_DECAY - politics.STEWARD_UNREST_RELIEF
+    c.garrison_current["windhelm"] = 200          # 安定城
+    st.time.advance(politics.TAX_HOURS)
+    politics.tick_tax(st, gd)
+    # 有總管:淨 = −(decay−relief)+regen = −4+6 = +2(回升);無總管同場景為 −4
+    assert politics.garrison_of(c, gd, "windhelm") == 200 - politics.effective_unrest_decay(c, "windhelm") + politics.GARRISON_REGEN_PER
+
+
+def test_steward_dead_companion_no_relief():
+    """陣亡/不在列的親衛不殘留治理加成(has_steward 須驗仍在 companions)。"""
+    gd, c = _setup(); politics.pledge(c, "imperial")
+    c.companions = ["sellsword"]; politics.appoint_steward(c, "windhelm", "sellsword")
+    c.companions = []                              # 親衛陣亡/離隊
+    assert not politics.has_steward(c, "windhelm")
+    assert politics.effective_unrest_decay(c, "windhelm") == politics.UNREST_DECAY
+
+
+def test_current_banner_label_flips_on_conquest():
+    """B1:征服後旗號 token 反映新歸屬(修補『立場翻、對話內容沒翻』)。"""
+    gd, c = _setup(); politics.pledge(c, "independent")
+    before = politics.current_banner_label(c, gd, "bruma")
+    assert before == politics.city_bloc_label(gd, "bruma")          # 未攻 → 靜態原旗號
+    politics.conquer(c, gd, "bruma", now=0)
+    assert politics.current_banner_label(c, gd, "bruma") == politics.cause_name("independent")   # 攻下 → 你的大義
+    assert before != politics.current_banner_label(c, gd, "bruma")
+
+
+def test_court_shows_conqueror_as_ruler():
+    """4a:佔領城朝堂顯示你(或冊封的總管)為領主、旗號為你的大義 —— 取代被推翻的舊領主。"""
+    import tesrpg.main as M
+    gd, c = _setup(); politics.pledge(c, "independent"); c.name = "征服者王"
+    base = gd.ruler_at("bruma")
+    politics.conquer(c, gd, "bruma", now=0)
+    ruler, reception = M._governing_ruler(_state(c), gd, "bruma", base)
+    assert ruler["name"] == "征服者王" and ruler["name"] != base["name"]            # 你即領主(非舊領主)
+    assert ruler["bloc_label"] == politics.cause_name("independent")               # 旗號=你的大義
+    c.companions = ["sellsword"]; politics.appoint_steward(c, "bruma", "sellsword")
+    ruler2, _r = M._governing_ruler(_state(c), gd, "bruma", base)
+    assert ruler2["title"] == "總管"                                               # 改由總管坐鎮顯示
+    assert ruler2["name"] == gd.companions.get("sellsword", {}).get("name", "sellsword")
 
 
 def test_regen_blocked_under_unrest():
@@ -408,14 +510,20 @@ def test_pledge_menu_four_choice_smoke():
 
 def run():
     test_relationship_and_pledge()
-    test_assault_force_monotonic_and_clamped()
+    test_assault_waves_scale_with_garrison()
     test_ops_gated_by_skill_and_once_each()
     test_op_deplete_and_costs()
     test_risky_op_marks_done_even_on_fail()
     test_conquer_flips_regarrisons_and_clears_ops()
     test_siege_op_then_assault_conquers()
     test_siege_assault_flee_keeps_op_progress()
+    test_siege_assault_runs_multiple_waves()
+    test_siege_assault_retreat_keeps_wave_depletion()
     test_save_roundtrip_and_backward_compat()
+    test_steward_relieves_unrest_and_stabilizes()
+    test_steward_dead_companion_no_relief()
+    test_current_banner_label_flips_on_conquest()
+    test_court_shows_conqueror_as_ruler()
     test_all_cities_have_population()
     test_red_line_tax_only_conquered_not_allied()
     test_conquer_records_cycle_and_collects_net()

@@ -217,7 +217,7 @@ def _interp(text: str, char: Character, gamedata: GameData, npc_id: str, ctx: di
         "{greeting}": npc.get("greeting", ""),
         "{rumor}": npc.get("rumor", ""),
         "{npc_name}": npc.get("name", ""),
-        "{bloc_label}": politics.city_bloc_label(gamedata, npc["location"]) or "本地當權者",
+        "{bloc_label}": politics.current_banner_label(char, gamedata, npc["location"]) or "本地當權者",
         "{cause}": politics.cause_name(char.allegiance) if char.allegiance else "你那面旗",
     }
     for k, v in repl.items():

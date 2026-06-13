@@ -268,6 +268,7 @@ def test_siege_assault_applies_permanent_losses():
     c.allegiance = "imperial"; c.location_id = "windhelm"
     c.companions = ["sellsword"]; c.soldiers = 6; c.camp = "bruma"
     state = GameState(player=c, rng=RNG(1), game_mode="adventure")
+    c.garrison_current["windhelm"] = politics.WAVE_GARRISON - 10     # 守軍折至一波 → 單場決戰(波次永久折損測試)
 
     def battle(*a, **k):
         cas = k.get("casualties")

@@ -253,12 +253,18 @@
 - **攻城=混合制(使用者拍板:不同戰鬥方式、盡量運用各種技能)**——兩階段:
   - **① 圍城方略(`SIEGE_OPS`,7 核心)**:技能門檻開放的作戰選項,讓**潛行/社交/工具/魔法系**也有攻城用途:偵查(scout)/夜襲(sneak)/撬側門(security)/勸降(speechcraft)/賄賂(mercantile)/法術轟城(destruction)/召喚襲擾(conjuration)。各耗時間+資源(金/魔/體)、**每役每略限一次**(`char.siege_ops` 持久),成功則 `deplete_garrison` 削守軍;風險型(夜襲/撬門)依技能擲成功。
   - **② 輕量化強攻**:單場 `run_battle`(守軍數 `assault_force(剩餘守軍)` + 守將 boss);勝 → `conquer` 翻轉 `city_faction` + 重新駐軍 + 清 siege_ops + 聲望。守軍削得越少 → 強攻越輕鬆 → 方略與強攻成 build 取捨。
-- **平衡(sim 背書)**:`assault_force` 隨剩餘守軍單調升 —— **小城(g≤120)可強攻硬下;大城(g200-400)須靠方略削弱**(帝都 400 須廣技能佈局才打得下,純戰士只能靠 recon/bribe 微軟化 → 真·全技能里程碑)。調平衡改 `politics.SIEGE_OPS`/`assault_force`。
+- **平衡(sim 背書)**:`assault_force` 隨剩餘守軍單調升 —— **小城(g≤120)可強攻硬下;大城(g200-400)須靠方略削弱**(帝都 400 須廣技能佈局才打得下,純戰士只能靠 recon/bribe 微軟化 → 真·全技能里程碑)。調平衡改 `politics.SIEGE_OPS`/`assault_waves`(⚠ 強攻後改**波次決戰**並移除 `assault_force`,見下『城戰精修:波次強攻 + 佔領治理 + 旗號』)。
 - **新 Character 欄**`allegiance`/`city_faction`/`garrison_current`(dataclass 預設、進 to_dict、向後相容;動態戰況懶初始化自 rulers 種子)。接點:`action_court` 加宣誓效忠/發動攻城、`court_panel` 顯示立場·關係·現存駐軍、hub 捕捉攻城 `died`。
 - **新 Character 欄**`allegiance`/`city_faction`/`garrison_current`/`siege_ops`(皆 dataclass 預設、進 to_dict、向後相容、懶初始化)。
 - **防 farm**:圍城方略 once-each(不可重複)、強攻單場(無波次可分段刷)、方略耗資源為淨流出、強攻 fled 不發戰利 → 杜絕重刷(初版波次模型曾被審查抓到「清波→逃→重刷」MAJOR,改混合制後結構性根治)。
 - **驗證**:31 測試模組全綠(`test_politics`:立場跨省混合/關係/選邊/僅敵可攻/方略技能門檻+once-each/扣資源/風險型失敗仍計次/強攻單調+夾限/conquer 清 ops/攻城煙霧 方略→強攻 勝-死-逃/存檔向後相容)+ 平衡 sim + 端到端煙霧(經 action_court:宣誓→7 技能方略軟化→強攻破城)+ 對抗審查(無真 bug、farm 已封堵;順手修 gold 夾 0、刪死碼 base_garrison)。
 - **後續(藍圖 §6 #0;此里程碑刻意未做)**:佔領後收稅(週期金幣,複用補貨時間鉤子)/ 駐軍隨時間重建 / 自走 AI 陣營戰爭 / 攻下後可安插自己為領主 / 公會與大義綁定 / 武士所在城翻給敵方時 Thane 特權暫停。**加城/改立場純改 rulers.json**。
+
+**城戰精修:波次強攻(β)+ 佔領治理(A3 自任領主/冊封總管)+ 旗號 token(B1)(使用者拍板 4 點回報 → 評估解法 → β/A3+B1)**:玩家點出四個名實不符 ——「30 兵打贏上百兵城不真實」「守軍削了沒區別」「打下城只能加駐軍」「領主沒變、立場翻了但對話內容沒翻」。根因:強攻被夾在 2–8 敵(`assault_force` clamp),守軍數與戰鬥脫鉤;且 court/對話 token 讀靜態 rulers.json、無一條讀 `city_faction`。
+- **β 波次強攻(`_siege_assault` 重寫)**:守軍折算成 `politics.assault_waves(remaining)=ceil(殘存/WAVE_GARRISON=50)` 波(至少 1),**每波一場 `run_battle`**(`WAVE_GUARDS=4` 守兵,**末波加守將 boss**),**波間不恢復**傷勢/體力/魔力(消耗戰)、傷亡每波 `apply_casualties` 永久折損、可鳴金收兵。**每破一波 `deplete_garrison(WAVE_GARRISON)` 永久削守軍** → 中途退兵保留戰果、改日波數更少;削弱(方略/大軍壓境)直接砍波數 → 上百守軍非少數人可硬吞(治 #1#2)。**移除 `assault_force`**。防 farm:每波永久削守軍 → farm 受守軍總量上限封頂(g/50 波即破城)、且永久傷亡為代價,非無限。
+- **A3 佔領治理**:攻下的城你即**事實領主** —— `action_court` 對 held 城以 `_governing_ruler` 合成顯示**你(征服者)**或**冊封的總管**為領主、reception 改佔領語氣(取代被推翻的舊領主,治 #4a「領主沒變」)。新增**冊封/召回總管**選單 + `_appoint_steward`:`politics.appoint_steward/recall_steward/steward_of/has_steward`,一名親衛只能坐鎮一城(分派各領地)。總管效果:`effective_unrest_decay = UNREST_DECAY − STEWARD_UNREST_RELIEF(6)` 接進 `tick_tax` → 有總管 decay 4 < regen 6 → **淨 +2 守軍自給**(無總管淨 −4 緩衰);`has_steward` 驗親衛仍在 `companions`(陣亡不殘留加成)。新 Character 欄 `stewards`(dict、預設 {}、進 to_dict、`cls(**d)` 向後相容)。治 #3「只能加駐軍」。
+- **B1 征服感知旗號**:`politics.current_banner_label(char,gd,loc)` —— `loc∈city_faction/world_faction → cause_name(該大義)`,否則靜態 `bloc_label`;`dialogue._interp` 的 `{bloc_label}` 改走它 → 獨立派打下布魯瑪後友善問候由「**帝國軍團**記得肯出力的人」變「**獨立同盟**記得…」(治 #4b「立場翻了內容沒翻」)。
+- **驗證**:54 測試模組全綠(`test_politics` 改 `assault_force`→`assault_waves` 測試 + 新增波次多波/中途退兵保留折損/總管減叛亂自給/陣亡親衛無加成/旗號征服翻轉/朝堂顯示你或總管為領主;`test_warband` 永久折損測試把守軍折至一波)+ `sim_worldwar` 全綠(改 politics 常數;AI 戰爭收斂/中立緩衝/反攻/選邊不雪球達標)+ 無頭煙霧(征服後朝堂渲染你/總管皆無 traceback)。**調平衡改 `politics.WAVE_GARRISON/WAVE_GUARDS/STEWARD_UNREST_RELIEF`;加治理選項改 `action_court`。**
 
 **招兵買馬 階段一(城戰的金幣/領袖路線,與技能圍城方略互補)(評估定案 → 分階段、先核心)**:讓「有錢有勢的統帥」也能攻城,不只靠個人技能。核心在 `systems/warband.py`。
 - **資格門檻 `is_warlord`**:你是**領主**(持武士銜 / 已征服城)或**首領**(任一公會掌門)才能招兵買馬。

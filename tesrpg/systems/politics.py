@@ -6,11 +6,13 @@
 **攻城=混合制**(讓全套技能都有用武之地,不只戰鬥系):
   1. 圍城方略(SIEGE_OPS):一批**技能門檻**的作戰選項(偵查/夜襲/撬側門/勸降/賄賂/轟城/召喚襲擾…),
      各自耗時間/資源、**每役每略限一次**,成功則**削減守軍**(deplete_garrison)。涵蓋潛行/社交/工具/魔法系。
-  2. 強攻(輕量化單場決戰):一場 `combat` 群戰,守軍數 = `assault_force(剩餘守軍)` + 守將 boss;
-     勝 → 破城易幟。守軍越少(方略削得越多)強攻越輕鬆 → 方略與強攻形成 build 取捨。
+  2. 總攻(波次決戰):守軍折算成 `assault_waves(剩餘守軍)` 波,**每波一場 `combat` 群戰**(末波加守將 boss);
+     波間**不恢復**傷勢/體力/魔力(消耗戰)、傷亡永久、可鳴金收兵(已破波次的折損持久)。守軍越多波數越多 →
+     上百守軍無法靠少數人硬吞,圍城方略/大軍壓境削得越多波數越少 → 削弱真正兌現在波數上。
 
-動態戰況掛 Character(存檔):city_faction(歸屬)、garrison_current(守軍,被方略削)、siege_ops(已用方略);
-首次存取由 rulers 種子懶初始化。加城/改立場純改 rulers.json;加圍城方略改 SIEGE_OPS;調平衡改本檔常數。
+佔領後治理(A3):攻下的城你即為**事實領主**(court 顯示你而非舊領主);可**冊封總管**(`stewards`,一名親衛坐鎮)
+→ 減叛亂流失令城自給。動態戰況掛 Character(存檔):city_faction(歸屬)、garrison_current(守軍)、siege_ops(已用方略)、
+stewards(總管);首次存取由 rulers 種子懶初始化。加城/改立場純改 rulers.json;加圍城方略改 SIEGE_OPS;調平衡改本檔常數。
 """
 
 from __future__ import annotations
@@ -51,6 +53,16 @@ def city_bloc_label(gamedata: GameData, loc_id: str) -> str | None:
     """該城旗號的繁中名(rulers.json `bloc_label`,如「雷多然家族」)。無則回 None。"""
     ruler = gamedata.ruler_at(loc_id)
     return ruler.get("bloc_label") if ruler else None
+
+
+def current_banner_label(char: Character, gamedata: GameData, loc_id: str) -> str | None:
+    """該城『現時旗號』的繁中名(供對話 {bloc_label} 等內容 token 反映征服後歸屬):
+    玩家攻下(city_faction)/大事件易幟(world_faction)→ 該大義名;否則回 rulers.json 靜態 bloc_label。
+    根因修補:`{bloc_label}` 原讀靜態 bloc_label → 征服後仍喊舊陣營旗號(立場已翻、內容沒翻)。"""
+    fac = char.city_faction.get(loc_id) or char.world_faction.get(loc_id)
+    if fac:
+        return cause_name(fac)
+    return city_bloc_label(gamedata, loc_id)
 
 
 def faction_of(char: Character, gamedata: GameData, loc_id: str) -> str | None:
@@ -182,9 +194,15 @@ def resolve_op(char: Character, gamedata: GameData, loc_id: str, op_id: str, rng
     return {"ok": True, "deplete": amount}
 
 
-def assault_force(remaining: int) -> int:
-    """輕量化強攻的守軍數(隨剩餘守軍單調遞增;守將另計)。守軍削得越少 → 強攻越硬。"""
-    return max(2, min(8, round(remaining / 55)))
+WAVE_GARRISON = 50    # 每波總攻所折算的守軍當量(波數 = ceil(殘存守軍 / 此))
+WAVE_GUARDS = 4       # 每波正面接戰的守兵數(末波另加守將);其餘戰力以波數體現
+
+
+def assault_waves(remaining: int) -> int:
+    """總攻波數:殘存守軍每 WAVE_GARRISON 折一波(至少 1 波=守將決戰)。
+    守軍越多波數越多(上百守軍非少數人可硬吞);圍城方略/大軍壓境削守軍 → 直接砍波數,
+    削弱的戰果在此兌現。每破一波永久削 WAVE_GARRISON 守軍 → 鳴金收兵亦保留戰果。"""
+    return max(1, -(-max(0, int(remaining)) // WAVE_GARRISON))    # ceil 不依賴 math
 
 
 def conquer(char: Character, gamedata: GameData, loc_id: str, now: int | None = None) -> None:
@@ -220,6 +238,32 @@ GARRISON_REGEN_PER = 6        # 階段四:安定領地每期自動回補駐軍(<
 UNREST_WARN = 30              # 駐軍 ≤ 此 → 民心浮動(稅收中斷、將失守、不自動重建)
 GARRISON_REVOLT_AT = 0        # 駐軍 ≤ 此 → 城邦叛離(脫離掌握)
 REINFORCE_COST_PER = 4        # 加強駐軍:每補 1 兵的金幣
+STEWARD_UNREST_RELIEF = 6     # 冊封總管:每期叛亂流失減免(總管坐鎮安民 → decay 10→4 < regen 6,城自給)
+
+
+# --- 佔領治理(A3):自任領主 / 冊封總管 ----------------------------------
+def steward_of(char: Character, loc_id: str) -> str | None:
+    """你在該城冊封的總管 companion_id;未冊封回 None。"""
+    return getattr(char, "stewards", {}).get(loc_id)
+
+
+def has_steward(char: Character, loc_id: str) -> bool:
+    """該城有在任總管(且該親衛仍在世/在列 —— 陣亡親衛不殘留治理加成)。"""
+    sid = steward_of(char, loc_id)
+    return bool(sid) and sid in char.companions
+
+
+def appoint_steward(char: Character, loc_id: str, companion_id: str) -> None:
+    char.stewards[loc_id] = companion_id
+
+
+def recall_steward(char: Character, loc_id: str) -> None:
+    char.stewards.pop(loc_id, None)
+
+
+def effective_unrest_decay(char: Character, loc_id: str) -> int:
+    """該城每期占領駐軍流失:有總管坐鎮 → 減免 STEWARD_UNREST_RELIEF(令安定城自給)。"""
+    return max(0, UNREST_DECAY - (STEWARD_UNREST_RELIEF if has_steward(char, loc_id) else 0))
 
 
 def held_tax_cities(char: Character, gamedata: GameData) -> list[str]:
@@ -294,7 +338,7 @@ def tick_tax(state, gamedata: GameData) -> list[dict]:
             continue
         while (faction_of(char, gamedata, loc) == char.allegiance
                and loc in char.tax_due_at and now >= char.tax_due_at[loc]):
-            g = max(0, garrison_of(char, gamedata, loc) - UNREST_DECAY)   # 占領駐軍流失
+            g = max(0, garrison_of(char, gamedata, loc) - effective_unrest_decay(char, loc))   # 占領駐軍流失(總管減緩)
             char.garrison_current[loc] = g
             if g <= GARRISON_REVOLT_AT:                                   # 駐軍潰散 → 城叛離
                 char.city_faction.pop(loc, None)
