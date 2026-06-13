@@ -2849,6 +2849,35 @@ def _living_npcs_at(state: GameState, gamedata: GameData) -> list[str]:
             if n not in state.player.murdered_npcs]
 
 
+def _resolve_dialogue_topic(state: GameState, gamedata: GameData, nid: str,
+                            topic: dict, ctx: dict, depth: int = 0) -> None:
+    """解析並呈現一個對話話題(套 effects/外交立場、套話、淺子話題;深度封頂 2)。"""
+    res = dialogue.resolve_topic(state, gamedata, nid, topic, ctx, state.rng)
+    if res.get("hours"):
+        state.time.advance(res["hours"])
+    if res.get("text"):
+        ui.message(res["text"], style="italic white")
+    for m in res.get("messages", []):
+        ui.message(m, style="grey70")
+    if res.get("tired"):
+        ui.message("舌乾口燥,話都說不利索了。", style="yellow")
+    ui.show_events(res.get("skill_events", []), gamedata)
+    subs = res.get("subtopics", []) if depth == 0 else []
+    if subs:
+        char = state.player
+        subopts = []
+        for sid in subs:
+            sd = dialogue._topic_def(gamedata, nid, sid)
+            if sd and dialogue.meets_dialogue(char, state, gamedata,
+                                              dialogue._resolve_req(sd.get("requires"), ctx), ctx):
+                subopts.append((sid, sd.get("label", sid), dialogue._topic_chips(sd)))
+        if subopts:
+            pick = ui.menu("追問", subopts, allow_back=True)
+            if pick:
+                sd = dialogue._topic_def(gamedata, nid, pick)
+                _resolve_dialogue_topic(state, gamedata, nid, {"id": pick, **sd}, ctx, depth=1)
+
+
 def action_talk(state: GameState, gamedata: GameData) -> str | None:
     char = state.player
     npc_ids = _living_npcs_at(state, gamedata)
@@ -2858,13 +2887,24 @@ def action_talk(state: GameState, gamedata: GameData) -> str | None:
     nid = ui.menu("與誰攀談?", [(n, gamedata.npcs[n]["name"]) for n in npc_ids], allow_back=True)
     if nid is None:
         return None
+    npc = gamedata.npcs[nid]
+    ctx = dialogue.talk_ctx(state, gamedata, nid)
+    att = dialogue.attitude(char, state, gamedata, nid, ctx)
+    # 看破吸血鬼 → 驚呼報官,對話即止(賞金嚇阻)
+    if att == "vampire_seen":
+        ui.npc_panel(npc, dialogue.disposition(char, gamedata, nid),
+                     greeting=dialogue.greeting_for(char, state, gamedata, nid, ctx, att))
+        rep = dialogue.report_vampire(char, gamedata)
+        ui.message(rep["message"], style="red")
+        return None
     while True:
-        npc = gamedata.npcs[nid]
         disp = dialogue.disposition(char, gamedata, nid)
-        ui.npc_panel(npc, disp)
-        offered = dialogue.offered_quest(char, gamedata, nid)
+        ui.npc_panel(npc, disp, greeting=dialogue.greeting_for(char, state, gamedata, nid, ctx, att))
         opts = []
-        if offered:
+        for t in dialogue.topics_for(char, state, gamedata, nid, ctx, att):
+            opts.append((f"topic:{t['id']}", t["label"], dialogue._topic_chips(t)))
+        offered = dialogue.offered_quest(char, gamedata, nid)
+        if offered and att != "hostile":                 # 敵陣營不託付委託
             opts.append(("quest", f"接受委託:{gamedata.quests[offered]['name']}"))
         pc = int(dialogue.persuade_chance(char, gamedata, nid) * 100)
         sp = gamedata.skills["speechcraft"]["practice"]   # 唯讀靜態價碼;勿呼叫 practice_cost(會扣體力)
@@ -2877,7 +2917,13 @@ def action_talk(state: GameState, gamedata: GameData) -> str | None:
         choice = ui.menu("對話", opts, allow_back=True)
         if choice is None:
             return None
-        if choice == "quest":
+        if choice.startswith("topic:"):
+            tid = choice.split(":", 1)[1]
+            td = dialogue._topic_def(gamedata, nid, tid)
+            if td:
+                _resolve_dialogue_topic(state, gamedata, nid, {"id": tid, **td}, ctx)
+            att = dialogue.attitude(char, state, gamedata, nid, ctx)
+        elif choice == "quest":
             _accept_and_brief(state, gamedata, offered)
             return None
         elif choice == "persuade":
@@ -2888,9 +2934,11 @@ def action_talk(state: GameState, gamedata: GameData) -> str | None:
             if r["tired"]:
                 ui.message("舌乾口燥,話都說不利索了。", style="yellow")
             ui.show_events(r["skill_events"], gamedata)
+            att = dialogue.attitude(char, state, gamedata, nid, ctx)   # 回暖可能改變態度
         elif choice == "bribe":
             r = dialogue.bribe(char, gamedata, nid)
             ui.message(r["message"], style="green" if r["ok"] else "red")
+            att = dialogue.attitude(char, state, gamedata, nid, ctx)
         elif choice == "murder":
             return action_murder(state, gamedata, nid)
 

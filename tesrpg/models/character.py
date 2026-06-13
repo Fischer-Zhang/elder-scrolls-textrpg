@@ -153,6 +153,11 @@ class Character:
     # 城為單位:各城立場種子在 rulers.json `stance`;玩家選 allegiance(大義)後對立城可攻。
     # 動態戰況掛 Character(存檔)、首次存取時由種子懶初始化(同 shop_stock 模式)。
     allegiance: str = ""                                  # 玩家擁護的大義:""=未選 / imperial / independent
+    # 外交立場軸(條件式對話樹):cause(imperial/independent/own/daedric)-> 立場分 [-100,100]。
+    # 對話選擇累積(討好一方得罪對立方,互斥真權衡);高價值話題受其門檻。dataclass 預設 {} 向後相容。
+    faction_standing: dict = field(default_factory=dict)
+    # 對話「一次性」話題去重:npc_id -> [已觸發的 once 話題 id](表態/結交等持久 effect 不可重刷)。
+    dialogue_done: dict = field(default_factory=dict)
     city_faction: dict = field(default_factory=dict)      # loc_id -> 現時歸屬立場(攻城會翻轉)
     garrison_current: dict = field(default_factory=dict)  # loc_id -> 現存駐軍(圍城方略消耗;佔領後=你的駐軍,叛亂計時會緩降)
     siege_ops: dict = field(default_factory=dict)         # loc_id -> [已施行的圍城方略 id](每役每略一次)
@@ -256,7 +261,9 @@ class Character:
             "power_last_day": self.power_last_day, "tower_key_charge": self.tower_key_charge,
             "shop_stock": self.shop_stock, "shop_restock_at": self.shop_restock_at,
             "city_standing": self.city_standing, "thaneships": self.thaneships,
-            "allegiance": self.allegiance, "city_faction": self.city_faction,
+            "allegiance": self.allegiance, "faction_standing": self.faction_standing,
+            "dialogue_done": self.dialogue_done,
+            "city_faction": self.city_faction,
             "garrison_current": self.garrison_current, "siege_ops": self.siege_ops,
             "tax_due_at": self.tax_due_at,
             "world_faction": self.world_faction, "world_events_fired": self.world_events_fired,

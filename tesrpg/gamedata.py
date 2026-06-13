@@ -35,6 +35,7 @@ class GameData:
         self.quests: dict = _load("quests.json")
         self.npcs: dict = _load("npcs.json")
         self.events: dict = _load("events.json")
+        self.dialogue: dict = _load("dialogue.json")   # 條件式對話樹(問候/話題/模板;見 systems/dialogue.py)
         self.companions: dict = _load("companions.json")
         self.origins: dict = _load("origins.json")   # 開局背景(不一樣的人生)
         self.rulers: dict = _load("rulers.json")     # 各城統治者(湮滅期大空位、各城自治;城戰前置)

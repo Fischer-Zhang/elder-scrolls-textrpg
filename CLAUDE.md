@@ -67,6 +67,7 @@ PYTHONPATH=. python3 sim_assassin.py      # 平衡回歸模擬(改戰鬥常數�
 | R19 | `vampirism.update` 每圈頂端;`vampire_*` 獨立層;疾病抗性削感染 | migrate, recompute |
 | R20 | `skooma.update` 在 vampirism 後;亢奮**絕不碰 strength/sneak/武傷** | re-sim, migrate |
 | R21 | 門檻只認 `base_skill()`;新 kind 三步登錄(`_IMPLEMENTED_KINDS`+getter+呼叫端);溢盾夾總量 cap | re-sim, migrate |
+| R23 | 對話條件複用 `events.meets`(無 state 鍵就地加、需 state 走 `meets_dialogue`);hostile=拒談 `topics_for` 回 `[]`;帶持久 effect 話題必標 `once`(`dialogue_done` 去重防零成本刷分);`faction_standing` 互斥+表態一次性 | save |
 
 ## 自動提交閘門 / 換 session 前檢查表
 

@@ -1646,14 +1646,15 @@ def quest_log(char: Character, gamedata: GameData) -> None:
         console.print(f"  [{FAINT}]已完成 {len(char.completed_quests)} 件委託。[/]")
 
 
-def npc_panel(npc: dict, disposition: int) -> None:
+def npc_panel(npc: dict, disposition: int, greeting: str | None = None) -> None:
+    line = greeting or npc["greeting"]      # 條件式對話:依 attitude 的動態問候(預設用 NPC 既有 greeting)
     if _web is not None:
-        _emit_view("npc", {"name": npc["name"], "greeting": npc["greeting"],
+        _emit_view("npc", {"name": npc["name"], "greeting": line,
                            "rumor": npc.get("rumor"), "disposition": disposition,
                            "hearts": disposition // 10})
         return
     body = Text()
-    body.append(npc["greeting"] + "\n", style="italic " + PARCH)
+    body.append(line + "\n", style="italic " + PARCH)
     if npc.get("rumor"):       # 在地傳聞:指向同省的地城/野外/奇景(細化省分)
         body.append("傳聞:" + npc["rumor"] + "\n", style="grey62")
     body.append("\n")

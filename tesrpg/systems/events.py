@@ -38,6 +38,25 @@ def meets(char: Character, gamedata: GameData, req: dict | None) -> bool:
     qa = req.get("quest_available")
     if qa and (qa in char.quests or qa in char.completed_quests):
         return False
+    # --- 對話樹共用的無 state 條件(events.json 現況不用 → 對既有事件零影響)---
+    if "allegiance" in req and char.allegiance != req["allegiance"]:
+        return False
+    if char.fame < req.get("min_fame", 0):
+        return False
+    if char.infamy < req.get("min_infamy", 0):
+        return False
+    if "is_member" in req and req["is_member"] not in char.factions:
+        return False
+    for fid, r in req.get("member_rank_min", {}).items():
+        if char.factions.get(fid, -1) < r:
+            return False
+    for cause, v in req.get("faction_standing_min", {}).items():
+        if getattr(char, "faction_standing", {}).get(cause, 0) < v:
+            return False
+    if req.get("is_vampire") and not char.is_vampire:
+        return False
+    if req.get("is_werewolf") and not char.is_werewolf:
+        return False
     return True
 
 

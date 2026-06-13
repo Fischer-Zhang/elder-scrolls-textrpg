@@ -1,0 +1,174 @@
+{
+  "greetings": {
+    "friendly": [
+      "「自己人 —— 坐,有話直說。{bloc_label}記得肯出力的人。」"
+    ],
+    "neutral": [
+      "{greeting}"
+    ],
+    "cold": [
+      "「……有事快說,我忙著呢。」"
+    ],
+    "hostile": [
+      "「{cause}的人也敢進城?說完你的事,就趁早滾。」"
+    ],
+    "vampire_seen": [
+      "「你那雙眼睛……那股屍臭 —— 來人啊!這裡有吸血鬼!」"
+    ]
+  },
+
+  "attitude_topics": {
+    "friendly": ["local_politics", "pledge_support", "buy_intel", "pump_for_info"],
+    "neutral": ["local_politics", "pump_for_info"],
+    "cold": ["pump_for_info"],
+    "hostile": []
+  },
+
+  "roles": {},
+
+  "topics": {
+    "local_politics": {
+      "label": "打聽本地時局",
+      "requires": {"min_disposition": 40},
+      "say_by_rel": {
+        "ally": "「{bloc_label}當家,正是用人之際。你我同道,這天下早該換個活法。」",
+        "enemy": "「{bloc_label}的事,輪不到你這外鄉人置喙。」",
+        "neutral": "「{bloc_label}如今當家,日子嘛……勉強過得去。」",
+        "unaligned": "「{bloc_label}當家。你還沒選邊吧?這年頭,旗子可不能舉錯。」"
+      },
+      "text": "「{bloc_label}當家,這你也知道。」"
+    },
+    "pledge_support": {
+      "label": "表態支持本地當權",
+      "once": true,
+      "requires": {"partisan": true, "min_disposition": 50},
+      "effects": [{"type": "faction_standing", "faction": "@npc", "amount": 8, "rival_penalty": 5}],
+      "text": "「你肯這麼說,{bloc_label}記下了。風向轉時,別忘了今天這份心意。」"
+    },
+    "buy_intel": {
+      "label": "(外交)探聽內線消息",
+      "requires": {"partisan": true, "faction_standing_min": {"@npc": 30}},
+      "text": "「衝著你這份交情……{bloc_label}最近在城外悄悄囤兵,夜裡那條山道別走。聽過就忘。」"
+    },
+    "pump_for_info": {
+      "label": "旁敲側擊套話(口才)",
+      "requires": {"skill_min": {"speechcraft": 25}},
+      "action": "pump"
+    }
+  },
+
+  "npcs": {
+    "riften_brynjolf": {
+      "extra": ["guild_insider"],
+      "secret": "「壁爐廳地底的『鼠道』……懂的人自然懂。空殼酒桶後頭那道門,可不是給良民開的。」",
+      "deep": {
+        "guild_insider": {
+          "label": "(同行)裂谷的門路",
+          "requires": {"is_member": "thieves_guild"},
+          "text": "「自家人嘛。瑪雯的生意通著半個天際 —— 蜂蜜酒桶裡裝的可不只是酒。識相的別問太多,有活我自會找你。」"
+        }
+      }
+    },
+    "riften_maven": {
+      "extra": ["maven_deal"],
+      "secret": "「黑荊棘這個姓,在天際比領主的印信還好使。衛兵的薪餉,有一半是我發的。」",
+      "deep": {
+        "maven_deal": {
+          "label": "黑荊棘家的生意",
+          "requires": {"min_disposition": 45},
+          "say_by_rel": {
+            "ally": "「你站對了邊。等這亂世塵埃落定,裂谷的酒、裂谷的金,都會記得幫過忙的人。」",
+            "enemy": "「你替錯了主子。在我的城裡,這可不是聰明事。」",
+            "neutral": "「生意人不論立場,只論誰付得起。你呢?」",
+            "unaligned": "「還在觀望?可惜了。觀望的人,分不到桌上的肉。」"
+          }
+        }
+      }
+    },
+    "windhelm_galmar": {
+      "extra": ["stormcloak_cause"],
+      "secret": "「烏弗瑞克在等一個信號 —— 等帝國的爪子先伸進天際。到那天,號角一響,風暴斗篷傾巢而出。」",
+      "deep": {
+        "stormcloak_cause": {
+          "label": "風暴斗篷的大義",
+          "once": true,
+          "requires": {"min_disposition": 35},
+          "say_by_rel": {
+            "ally": "「諾德人的天際,該由諾德人作主!你我同心 —— 來,喝下這碗,算入了夥。」",
+            "enemy": "「帝國的走狗。我念在你還活著,給你一次轉身離開的機會。」",
+            "neutral": "「天際的命運,容不得騎牆。遲早,你得選。」",
+            "unaligned": "「自由不是等來的。你心裡那團火,還沒燒起來嗎?」"
+          },
+          "effects": [{"type": "faction_standing", "faction": "independent", "amount": 6, "rival_penalty": 4}]
+        }
+      }
+    },
+    "markarth_calcelmo": {
+      "extra": ["dwemer_lore"],
+      "secret": "「矮人並未滅絕 —— 他們是在某個瞬間,『離開』了。我快解開那道方程式了……再給我幾年。」",
+      "deep": {
+        "dwemer_lore": {
+          "label": "矮人遺秘",
+          "requires": {"is_member": "mages_guild"},
+          "text": "「同道中人才聽得懂:那不是金屬,是凝固的『聲音』。法師公會那群庸才只想著賣火球術 —— 真正的奧秘在地底的齒輪裡。」"
+        }
+      }
+    },
+    "vivec_canon_dralas": {
+      "extra": ["tribunal_faith"],
+      "secret": "「維威克大人……近來不再回應禱告。神殿高層噤若寒蟬,可信徒遲早會發現,神,沉默了。」",
+      "deep": {
+        "tribunal_faith": {
+          "label": "三聯神殿的教誨",
+          "requires": {"min_disposition": 40},
+          "text": "「異鄉人,維威克、阿瑪萊西亞、索沙·希爾 —— 三位活神庇佑晨風。心存敬畏,聖城便不拒你。」"
+        }
+      }
+    },
+    "verand": {
+      "extra": ["redoran_honor"],
+      "secret": "「雷多然家族表面守禮,暗地裡與索瑟海姆的走私客往來 —— 玻璃與黑檀,不問來路。」",
+      "deep": {
+        "redoran_honor": {
+          "label": "雷多然的榮譽",
+          "requires": {"min_disposition": 40},
+          "say_by_rel": {
+            "ally": "「榮譽與盟約,雷多然認得。你既同道,黑光城的門為你而開。」",
+            "enemy": "「外人插手大議會的事 —— 這在雷多然,是要以劍解決的。」",
+            "neutral": "「大議會自有規矩。守禮,你便是客;失禮,便是敵。」",
+            "unaligned": "「亂世裡,雷多然只認立場分明的人。」"
+          }
+        }
+      }
+    },
+    "gaius": {
+      "extra": ["imperial_loyalty"],
+      "secret": "「皇帝雖崩,軍團未散。安維爾港的補給,一船船往北運 —— 帝國復辟,只是時間問題。」",
+      "deep": {
+        "imperial_loyalty": {
+          "label": "帝國軍團的忠誠",
+          "once": true,
+          "requires": {"min_disposition": 35},
+          "say_by_rel": {
+            "ally": "「為了帝國!弟兄,有你這樣的人,紅寶石王座重立有望。」",
+            "enemy": "「叛黨。我穿這身甲,就是為了對付你這種人。」",
+            "neutral": "「秩序,是帝國給泰姆瑞爾最後的禮物。別讓它斷在我們手裡。」",
+            "unaligned": "「中立?在崩塌的帝國邊上,中立只是還沒輪到你選。」"
+          },
+          "effects": [{"type": "faction_standing", "faction": "imperial", "amount": 6, "rival_penalty": 4}]
+        }
+      }
+    },
+    "seridia": {
+      "extra": ["solitude_court"],
+      "secret": "「霜鬃戰王效忠帝國 —— 但海芬古的糧倉,撐不過一個圍城的冬天。這話,別往外傳。」",
+      "deep": {
+        "solitude_court": {
+          "label": "海芬古的宮廷",
+          "requires": {"min_disposition": 40},
+          "text": "「霜鬃一族世代效忠紅寶石王座。風暴斗篷罵我們是帝國的走狗 —— 可秩序崩了,受苦的是百姓,不是領主。」"
+        }
+      }
+    }
+  }
+}
