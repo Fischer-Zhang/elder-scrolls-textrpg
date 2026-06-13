@@ -315,6 +315,64 @@ def test_repair_hammer_costs_fatigue_and_time():
     assert state.player.fatigue == f0 - pdef["fatigue"]                # 修理耗體
 
 
+# --- 一次練多小時:批次 practice -------------------------------------
+def _patch_practice_ui(skill_id, hours):
+    """暫換 ui.menu(分類→技能)+ ui.ask_int(時數)+ 靜音輸出;回傳 restore()。"""
+    from tesrpg.ui import console as ui
+    saved = {n: getattr(ui, n) for n in ("menu", "ask_int", "message", "show_events")}
+    seq = iter([gd_spec_of(skill_id), skill_id])
+    ui.menu = lambda *a, **k: next(seq, None)
+    ui.ask_int = lambda *a, **k: hours
+    ui.message = lambda *a, **k: None
+    ui.show_events = lambda *a, **k: None
+
+    def restore():
+        for n, fn in saved.items():
+            setattr(ui, n, fn)
+    return restore
+
+
+def gd_spec_of(skill_id):
+    return get_gamedata().skills[skill_id]["spec"]
+
+
+def test_practice_batches_multiple_hours():
+    """一次練多小時:action_practice 連跑 N 輪 practice → 時間/體力/xp 按輪數累積。"""
+    import tesrpg.main as M
+    gd, state = _smoke_state()
+    c = state.player
+    c.skills["blade"] = 40                          # 門檻 4.2 > 5×0.6=3.0 → 本批不升級,xp 純累積
+    c.fatigue = c.max_fatigue
+    pdef = gd.skills["blade"]["practice"]
+    hours, t0, f0, x0 = 5, state.time.absolute_hours(), c.fatigue, c.skill_xp.get("blade", 0.0)
+    restore = _patch_practice_ui("blade", hours)
+    try:
+        M.action_practice(state, gd)
+    finally:
+        restore()
+    assert state.time.absolute_hours() - t0 == hours * pdef["hours"]   # N 輪各推進時間
+    assert c.fatigue == f0 - hours * pdef["fatigue"]                   # N 輪各扣體力
+    assert c.skills["blade"] == 40                                      # 未跨門檻
+    assert abs(c.skill_xp.get("blade", 0.0) - (x0 + hours * pdef["xp"])) < 1e-9   # 全額 xp 累積
+
+
+def test_practice_stops_at_skill_cap():
+    """練到滿級就停:base_skill 已達上限 → action_practice 零成本收手(不空耗時間/體力)。"""
+    import tesrpg.main as M
+    from tesrpg import formulas
+    gd, state = _smoke_state()
+    c = state.player
+    c.skills["blade"] = formulas.SKILL_CAP
+    c.fatigue = c.max_fatigue
+    t0, f0 = state.time.absolute_hours(), c.fatigue
+    restore = _patch_practice_ui("blade", 5)
+    try:
+        M.action_practice(state, gd)
+    finally:
+        restore()
+    assert state.time.absolute_hours() == t0 and c.fatigue == f0       # 滿級不耗時間/體力
+
+
 def run():
     test_practice_cost_deducts_fatigue_and_matches_skills_json()
     test_practice_cost_tired_halves_xp_and_clamps()
@@ -331,6 +389,8 @@ def run():
     test_crafting_entries_pay_practice()
     test_brew_fail_still_costs_fatigue_and_time()
     test_repair_hammer_costs_fatigue_and_time()
+    test_practice_batches_multiple_hours()
+    test_practice_stops_at_skill_cap()
 
 
 if __name__ == "__main__":

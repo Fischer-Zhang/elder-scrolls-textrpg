@@ -171,15 +171,34 @@ def action_practice(state: GameState, gamedata: GameData) -> None:
         return
 
     pdef = gamedata.skills[sid]["practice"]
-    xp, hours, tired = progression.practice_cost(char, gamedata, sid)
-    events = progression.use_skill(char, gamedata, sid, xp)
-    state.time.advance(hours)
+    if char.base_skill(sid) >= formulas.SKILL_CAP:
+        ui.message(f"{gamedata.skill_name(sid)} 已達上限,無法再從練習中精進。", style="grey70")
+        return
 
-    ui.message(f"你{pdef['label']}……（{hours} 小時)")
-    if tired:
-        ui.message("體力不濟,訓練成效減半。先休息會更有效率。", style="yellow")
+    # 一次可練多小時:每小時 = 一輪 practice;體力足以全效的小時數當預設,之後成效遞減
+    fat_cost = pdef["fatigue"]
+    fresh = max(1, char.fatigue // fat_cost) if fat_cost > 0 else 24
+    hours = ui.ask_int(
+        f"練習幾小時?(每小時耗 {fat_cost} 體力;體力足以全效約 {min(fresh, 24)} 小時,之後成效減半)",
+        default=min(fresh, 24), lo=1, hi=24)
+
+    total_hours, tired_hours, events = 0, 0, []
+    for _ in range(hours):
+        if char.base_skill(sid) >= formulas.SKILL_CAP:       # 練到滿級就停,不空耗時間/體力
+            break
+        xp, hrs, tired = progression.practice_cost(char, gamedata, sid)
+        events += progression.use_skill(char, gamedata, sid, xp)
+        state.time.advance(hrs)
+        total_hours += hrs
+        tired_hours += 1 if tired else 0
+
+    ui.message(f"你{pdef['label']}……(共 {total_hours} 小時)")
+    if tired_hours:
+        ui.message(f"其中 {tired_hours} 小時體力不濟、成效減半 —— 先休息會更有效率。", style="yellow")
     ui.show_events(events, gamedata)
-    if not events:
+    if char.base_skill(sid) >= formulas.SKILL_CAP:
+        ui.message(f"{gamedata.skill_name(sid)} 已練至上限。", style="green")
+    elif not events:
         need = formulas.skill_threshold(char.skill(sid))
         prog = char.skill_xp.get(sid, 0.0)
         ui.message(f"{gamedata.skill_name(sid)} 熟練度 {prog:.1f}/{need:.1f} → 下一點",
