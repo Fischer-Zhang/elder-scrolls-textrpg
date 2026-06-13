@@ -131,6 +131,8 @@ class Character:
 
     # M12:隊伍(雇用的傭兵同伴 template id;戰鬥時為你而戰)
     companions: list = field(default_factory=list)
+    # 受封武士時隊伍已滿、暫無法隨行的侍從(領主已賜,於「隊伍」選單有空位時免費召集;不丟棄)。
+    pending_companions: list = field(default_factory=list)
     # 同伴系統深化:持久 HP(cid→當前 HP,每戰回寫;0=倒下 benched 須治療)+ 羈絆(cid→點,並肩獲勝累積)。
     # dataclass 預設 {} → 舊存檔向後相容(未記錄者視為滿血/零羈絆)。詳見 systems/party.py。
     companion_hp: dict = field(default_factory=dict)
@@ -274,7 +276,7 @@ class Character:
             "war_tick_at": self.war_tick_at, "city_threat": self.city_threat,
             "soldiers": self.soldiers, "camp": self.camp,
             "wage_due_at": self.wage_due_at,
-            "companions": self.companions,
+            "companions": self.companions, "pending_companions": self.pending_companions,
             "companion_hp": self.companion_hp, "companion_bond": self.companion_bond,
         }
 

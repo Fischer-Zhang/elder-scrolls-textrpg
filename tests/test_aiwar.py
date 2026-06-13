@@ -135,6 +135,28 @@ def test_daedric_active_no_snowball():
     assert sh.get("neutral", 0) >= aiwar.NEUTRAL_FLOOR
 
 
+def test_daedric_resurges_not_permanently_wiped():
+    """湮滅復現:kvatch_falls 後 daedric 大義打不死 —— 即使被打到 0 城也會再開湮滅之門(回應「大義太容易被消滅」)。
+    跨多 seed 跑長線:終局 daedric 必 >0 城(修復前 7/12 局永久滅亡)。"""
+    gd = get_gamedata()
+    wiped = 0
+    for seed in range(8):
+        gd, st = _state(seed=seed)
+        st.player.world_events_fired.append("kvatch_falls")
+        st.player.world_faction["kvatch"] = "daedric"
+        _run(st, gd, 120)
+        if _shares(st, gd).get("daedric", 0) == 0:
+            wiped += 1
+    assert wiped == 0, f"daedric 大義不該被永久消滅(仍有 {wiped} 局終局 0 城)"
+
+
+def test_daedric_locked_no_resurge_before_kvatch():
+    """kvatch_falls 未觸發前,湮滅復現不啟動(daedric 不無端冒出)。"""
+    gd, st = _state(seed=1)
+    _run(st, gd, 60)
+    assert _shares(st, gd).get("daedric", 0) == 0
+
+
 def test_city_threat_pruned_after_loss():
     """城失守後 city_threat 殘留必被清除(防存檔膨脹;審查 minor)。"""
     gd, st = _state(seed=1, alleg="imperial")

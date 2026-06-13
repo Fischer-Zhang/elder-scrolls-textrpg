@@ -50,6 +50,21 @@ def test_full_set_grants_bonus():
     assert inventory.active_set_bonus(c, gd)["skill"] == "sneak"
 
 
+def test_set_progress_partial_and_full():
+    """#5b:set_progress 回報 X/4 進度 + 該材質 bonus(部分湊齊也回 bonus 供 UI 預覽「穿滿享」)。"""
+    gd, c = _char()
+    bymat = {d["slot"]: iid for iid, d in gd.armor.items() if d.get("material") == "iron"}
+    for slot in inventory.SET_SLOTS[:2]:                     # 穿 2/4
+        inventory.add_item(c, bymat[slot], 1); inventory.equip_armor(c, gd, bymat[slot])
+    mat, cnt, bonus = inventory.set_progress(c, gd)
+    assert mat == "iron" and cnt == 2 and bonus is not None
+    assert inventory.active_set_bonus(c, gd) is None         # 未滿四件 → 未啟用
+    for slot in inventory.SET_SLOTS[2:]:                     # 補滿 4/4
+        inventory.add_item(c, bymat[slot], 1); inventory.equip_armor(c, gd, bymat[slot])
+    mat, cnt, bonus = inventory.set_progress(c, gd)
+    assert cnt == 4 and inventory.active_set_bonus(c, gd) is not None
+
+
 def test_mixed_materials_no_set_bonus():
     gd, c = _char()
     # 穿三件皮革 + 一件鐵 → 非整套

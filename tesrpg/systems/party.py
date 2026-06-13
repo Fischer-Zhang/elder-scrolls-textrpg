@@ -143,6 +143,15 @@ def recruited_named(char: Character, gamedata: GameData) -> list[str]:
     return out
 
 
+def summonable(char: Character, gamedata: GameData) -> list[str]:
+    """可免費召集歸隊者:招募任務具名同伴 + 領主待命侍從(pending_companions);去重、排除在隊。"""
+    out = list(recruited_named(char, gamedata))
+    for cid in getattr(char, "pending_companions", []):
+        if cid not in char.companions and cid not in out:
+            out.append(cid)
+    return out
+
+
 def personal_quest_id(gamedata: GameData, cid: str) -> str | None:
     return gamedata.companions.get(cid, {}).get("personal_quest")
 

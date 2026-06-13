@@ -169,6 +169,23 @@ def _apply_enchant(out: dict, ench: dict | None) -> None:
         out["resist"][ench["element"]] = out["resist"].get(ench["element"], 0) + mag
 
 
+def set_progress(char: Character, gamedata: GameData) -> tuple:
+    """套裝進度:四件套裝槽中最多的同材質 →(material, 件數 0..4, 該材質套裝 bonus 供預覽)。
+    無任何套裝槽有材質 → (None, 0, None)。供 UI 顯示「X/4 進度 + 穿滿效果」。"""
+    from collections import Counter
+    mats: Counter = Counter()
+    for slot in SET_SLOTS:
+        iid = char.equipped.get(slot)
+        d = gamedata.item_or_none(iid) if iid else None
+        m = d.get("material") if d else None
+        if m:
+            mats[m] += 1
+    if not mats:
+        return (None, 0, None)
+    mat, cnt = mats.most_common(1)[0]
+    return (mat, cnt, gamedata.armor_sets.get(mat, {}).get("bonus"))
+
+
 def active_set_bonus(char: Character, gamedata: GameData) -> dict | None:
     """穿戴 helmet/cuirass/gauntlets/boots 四件同材質 → 回傳該套裝 bonus(否則 None)。"""
     mats = []

@@ -884,6 +884,24 @@ def _tr_bonus(category: str, key: str, gamedata: GameData) -> str:
     return {"health": "生命", "magicka": "魔力", "fatigue": "體力"}.get(key, key)
 
 
+def _describe_set_bonus(b: dict | None, gamedata: GameData) -> str:
+    """把套裝 bonus dict 譯成人話(供角色卡顯示實際效果,如「魔力上限 +40、施法省力 20%」)。"""
+    if not b:
+        return ""
+    k = b.get("kind"); mag = int(b.get("magnitude", 0)); parts = []
+    if k in ("fortify_resource", "armor_fortify"):
+        parts.append(f"{_tr_bonus('resources', b['stat'], gamedata)}上限 +{mag}")
+    elif k == "fortify_skill":
+        parts.append(f"{_tr_bonus('skills', b['skill'], gamedata)} +{mag}")
+    elif k == "fortify_attribute":
+        parts.append(f"{_tr_bonus('attrs', b['attr'], gamedata)} +{mag}")
+    elif k == "resist_element":
+        parts.append(f"{_tr_bonus('resist', b['element'], gamedata)}抗性 +{mag}%")
+    if "cast_fatigue_factor" in b:
+        parts.append(f"施法省力 {int(round((1 - b['cast_fatigue_factor']) * 100))}%")
+    return "、".join(parts)
+
+
 def sheet_equipment(char: Character, gamedata: GameData) -> None:
     from tesrpg.systems import inventory
     if _web is not None:
@@ -897,10 +915,13 @@ def sheet_equipment(char: Character, gamedata: GameData) -> None:
         worn = inventory.worn_armor_rating(char, gamedata)
         eff = inventory.effective_armor_rating(char, gamedata)
         rows.append(_kv("護甲值", f"名目 {worn} · 有效 {eff:.0f}"))
-        if inventory.active_set_bonus(char, gamedata):
-            _cd = gamedata.item_or_none(char.equipped.get("cuirass", ""))
-            _mat = _cd.get("material") if _cd else None
-            rows.append(_ln("套裝加成　" + gamedata.armor_sets.get(_mat, {}).get("name", "整套同材質"), "green"))
+        _smat, _scnt, _sb = inventory.set_progress(char, gamedata)
+        if _scnt == 4 and _sb:                          # 穿滿四件同材質 → 套裝啟用
+            _sn = gamedata.armor_sets.get(_smat, {}).get("name", "整套同材質")
+            rows.append(_ln(f"套裝加成　{_sn}（{_describe_set_bonus(_sb, gamedata)}）", "green"))
+        elif _scnt >= 2 and _sb:                         # 部分湊齊 → 進度提示(讓玩家知道快湊滿)
+            _sn = gamedata.armor_sets.get(_smat, {}).get("name", "套裝")
+            rows.append(_ln(f"套裝進度　{_sn} {_scnt}/4(穿滿享:{_describe_set_bonus(_sb, gamedata)})", "faint"))
         bon = inventory.equipment_bonuses(char, gamedata)
         for label, cat in (("技能", "skills"), ("屬性", "attrs"), ("抗性", "resist"), ("資源", "resources")):
             d = bon.get(cat) or {}
@@ -922,12 +943,13 @@ def sheet_equipment(char: Character, gamedata: GameData) -> None:
     worn = inventory.worn_armor_rating(char, gamedata)
     eff = inventory.effective_armor_rating(char, gamedata)
     body.append(f"護甲值  名目 {worn} · 有效 {eff:.0f}\n", style=INK)
-    setb = inventory.active_set_bonus(char, gamedata)
-    if setb:
-        _cd = gamedata.item_or_none(char.equipped.get("cuirass", ""))   # 套裝名在父層,非 bonus 子物件
-        _mat = _cd.get("material") if _cd else None
-        _setname = gamedata.armor_sets.get(_mat, {}).get("name", "整套同材質")
-        body.append(f"套裝加成  {_setname}\n", style="bold green")
+    _smat, _scnt, _sb = inventory.set_progress(char, gamedata)
+    if _scnt == 4 and _sb:                              # 穿滿四件同材質 → 套裝啟用(顯示實際效果)
+        _setname = gamedata.armor_sets.get(_smat, {}).get("name", "整套同材質")
+        body.append(f"套裝加成  {_setname}（{_describe_set_bonus(_sb, gamedata)}）\n", style="bold green")
+    elif _scnt >= 2 and _sb:                            # 部分湊齊 → 進度提示
+        _setname = gamedata.armor_sets.get(_smat, {}).get("name", "套裝")
+        body.append(f"套裝進度  {_setname} {_scnt}/4(穿滿享:{_describe_set_bonus(_sb, gamedata)})\n", style="grey62")
     bon = inventory.equipment_bonuses(char, gamedata)
     for label, cat in (("技能", "skills"), ("屬性", "attrs"), ("抗性", "resist"), ("資源", "resources")):
         d = bon.get(cat) or {}

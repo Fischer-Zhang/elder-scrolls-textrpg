@@ -122,6 +122,50 @@ def test_companion_schema_complete():
         assert {"name", "cost", "strength", "max_health", "attack"} <= set(comp)
 
 
+def test_full_party_thane_housecarl_goes_pending_not_dropped():
+    """#1:受封武士時隊伍已滿 → 侍從進待命池(可日後召集),不再被白白丟棄。"""
+    import io
+    from rich.console import Console
+    import tesrpg.main as M
+    from tesrpg.systems import party, court
+    from tesrpg.ui import console as ui
+    saved = ui.console
+    ui.console = Console(file=io.StringIO(), width=100)
+    try:
+        loc, ruler = "bruma", get_gamedata().ruler_at("bruma")
+        hc = ruler.get("housecarl")
+        assert hc
+        fillers = tuple(m for m in ("sellsword", "veteran", "footman", "ranger")
+                        if m != hc)[:party.MAX_PARTY]       # 用「非該侍從」的傭兵填滿隊伍
+        gd, c, st = _setup(cids=fillers)
+        assert hc not in c.companions and len(c.companions) >= party.MAX_PARTY
+        c.city_standing[loc] = court.THANE_STANDING            # 達受封門檻
+        M._become_thane(st, gd, loc, ruler)
+        assert hc in c.pending_companions                      # 滿員 → 待命,不丟棄
+        assert hc in party.summonable(c, gd)                   # 隊伍選單可召集
+        c.companions.remove("sellsword")                       # 騰位後召集 → 入隊且移出待命池
+        orig_menu = ui.menu
+        ui.menu = lambda *a, **k: hc
+        try:
+            M._summon_named_companion(st, gd)
+        finally:
+            ui.menu = orig_menu
+        assert hc in c.companions and hc not in c.pending_companions
+    finally:
+        ui.console = saved
+
+
+def test_pending_companions_save_roundtrip():
+    from tesrpg.models import Character
+    import json
+    gd, c, st = _setup()
+    c.pending_companions = ["veteran"]
+    loaded = Character.from_dict(json.loads(json.dumps(c.to_dict())))
+    assert loaded.pending_companions == ["veteran"]
+    d = c.to_dict(); del d["pending_companions"]              # 舊存檔
+    assert Character.from_dict(d).pending_companions == []
+
+
 def run():
     test_persistent_hp_spawn_and_record()
     test_downed_benched_then_heal_restores_fieldable()
@@ -132,6 +176,8 @@ def run():
     test_defensive_clamps_and_no_stale_legacy()
     test_display_safe_on_unknown_companion_id()
     test_companion_schema_complete()
+    test_full_party_thane_housecarl_goes_pending_not_dropped()
+    test_pending_companions_save_roundtrip()
 
 
 if __name__ == "__main__":

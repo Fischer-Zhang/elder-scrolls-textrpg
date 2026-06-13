@@ -201,10 +201,9 @@ def _dismiss_via_ui(gd, st, cid):
 
 
 def test_circle_sibling_dismiss_retains_persistent_hp():
-    # 對抗審查確認的 farm 漏洞:免費盾袍兄弟「解散→再召集」不得零成本回滿血/解負傷。
-    # 同時驗對位面:雇傭兵照舊 forget(原 test_paid_mercenary_dismiss_still_forgets)。
-    # 併入(原 test_companion_arcs.test_named_dismiss_keeps_state_merc_forgets):
-    #   keeps_state_on_dismiss 三類 predicate + recruit_quest 具名同伴解散保留持久態真實流。
+    # 對抗審查確認的 farm 漏洞:任何同伴「解散→再得」不得零成本回滿血/解負傷(負傷者離隊仍負傷)。
+    # #2 改:雇傭兵離隊亦保留持久 HP/羈絆(交情有記憶);差別僅在再取得方式 —— 具名免費召集、雇傭兵付酬金。
+    # keeps_state_on_dismiss 仍區分「免費召集(circle/recruit_quest)」vs「付費再雇(泛用傭兵)」。
     from tesrpg.systems import party
     gd, st = _state()
     c = st.player
@@ -229,12 +228,15 @@ def test_circle_sibling_dismiss_retains_persistent_hp():
     assert "drelas" not in c.companions
     assert c.companion_bond.get("drelas") == 22       # 羈絆保留(不可免費回血洞)
     assert c.companion_hp.get("drelas") == 0          # 持久 HP 保留(recruit_quest 不 forget)
-    # paid 分支(sellsword):雇傭兵照舊 forget(再雇須付酬金=既有金幣閘)
+    # paid 分支(sellsword,#2 改:雇傭兵離隊亦保留持久 HP/羈絆 —— 交情有記憶,且負傷者再雇仍負傷
+    # → 防「解散→再得免費回血」;再雇用仍須付酬金=既有金幣閘)
     c.companions.append("sellsword")
     c.companion_hp["sellsword"] = 5
+    c.companion_bond["sellsword"] = 18
     _dismiss_via_ui(gd, st, "sellsword")
     assert "sellsword" not in c.companions
-    assert "sellsword" not in c.companion_hp          # 持久 HP 已清(forget)
+    assert c.companion_hp.get("sellsword") == 5       # 持久 HP 保留(不再 forget → 負傷者再雇仍負傷)
+    assert c.companion_bond.get("sellsword") == 18    # 羈絆保留(玩家要求:再雇仍記得並肩交情)
 
 
 def run():

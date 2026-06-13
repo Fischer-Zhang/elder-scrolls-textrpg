@@ -36,6 +36,9 @@ RAID_ATTRITION = 18          # 反攻:每週削玩家城守軍(配 tick_tax 的 
 ALLEGIANCE_BOOST = 1.4       # 你支持的大義進攻勝率乘數(選邊有感)
 ALLEGIANCE_DEFEND = 0.65     # 你支持的大義城被攻時的勝率乘數(更難失守 → 助其擴張)
 WAR_SWAY = 0.3               # faction_standing 對戰爭天平的影響幅度([-100,100] → ±此)
+# daedric(神話黎明大義)韌性:湮滅之門不斷湧出 → 站穩 foothold + 打不死(kvatch_falls 後;原本 1 城即潰)
+DAEDRIC_FLOOR = 3            # kvatch_falls 後 daedric 控城 < 此 → 觸發湮滅復現(站穩 + 不被永久剷除)
+DAEDRIC_RESURGE_CHANCE = 0.5 # 低於 floor 時,每週開一道湮滅之門(吞一城歸 daedric)的機率
 
 AGGRESSOR_ORDER = ["daedric", "imperial", "independent"]   # 固定處理序(決定性)
 
@@ -174,6 +177,31 @@ def _flip_news(gd: GameData, loc: str, to: str, frm: str | None) -> str:
             f"{politics.stance_label(frm)}旗號崩落 —— {cname}就此易主。")
 
 
+def _daedric_resurgence(state, gd: GameData, cmap: dict) -> dict | None:
+    """湮滅復現:kvatch_falls 後,daedric 控城低於 DAEDRIC_FLOOR → 開一道湮滅之門吞一城歸 daedric。
+    讓神話黎明大義站穩 foothold 且**無法被永久剷除**(回應「大義太容易被消滅」)。決定性、不碰玩家城。"""
+    char = state.player
+    if politics.DAEDRIC_UNLOCK_EVENT not in getattr(char, "world_events_fired", []):
+        return None
+    held = sum(1 for f in cmap.values() if f == "daedric")
+    if held >= DAEDRIC_FLOOR or not state.rng.chance(DAEDRIC_RESURGE_CHANCE):
+        return None
+    elig = [l for l in sorted(cmap) if cmap[l] != "daedric" and l not in char.city_faction]
+    if not elig:
+        return None
+    adj = _adjacent_cities(gd)
+    # 偏好鄰近既有 daedric 的城(黑暗蔓延)、次取守軍最弱者;全程 sorted 決定性
+    dst = min(elig, key=lambda l: (-sum(1 for c in adj[l] if cmap.get(c) == "daedric"),
+                                   politics.garrison_of(char, gd, l), l))
+    frm = cmap[dst]
+    char.world_faction[dst] = "daedric"
+    char.garrison_current[dst] = round(politics.base_garrison(gd, dst) * OCCUPY_RATIO)
+    cmap[dst] = "daedric"
+    cn = gd.location(dst)["name"]
+    return {"kind": "flip", "loc": dst, "to": "daedric", "frm": frm,
+            "news": f"湮滅之門在{cn}轟然洞開,赤色軍團自熔火彼端湧出 —— {cn}淪入魔族之手。"}
+
+
 def _raider_of(char, gd: GameData, ploc: str, cmap: dict) -> str | None:
     """圍攻某玩家城的敵對陣營(相鄰、黨派、非玩家大義);取字典序在前者。無則 None。"""
     adj = _adjacent_cities(gd).get(ploc)          # 防呆:非 ruler 城(理論上 conquer 只給敵城)→ 無威脅
@@ -216,6 +244,10 @@ def _resolve_week(state, gd: GameData) -> list[dict]:
                 politics.deplete_garrison(char, gd, dst, REPEL_LOSS)   # 額滿 → 只削不翻
         else:
             politics.deplete_garrison(char, gd, dst, REPEL_LOSS)
+    # ②b 湮滅復現:讓 daedric 大義站穩且打不死(kvatch_falls 後、低於 floor 時)
+    resurge = _daedric_resurgence(state, gd, cmap)
+    if resurge:
+        events.append(resurge)
     # ③ 反攻玩家城:削守軍 + 預警(真正失守由本圈稍後的 tick_tax revolt 收斂)
     for stale in [c for c in sorted(char.city_threat) if c not in char.city_faction]:
         char.city_threat.pop(stale, None)         # 清掉已失守/已易主城的殘留威脅(防存檔膨脹)

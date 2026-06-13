@@ -1326,6 +1326,8 @@ def action_dungeon(state: GameState, gamedata: GameData) -> str | None:
             opts.append(("cast", "施法(預施/預召喚)"))
         opts.append(("inventory", "背包"))
         opts.append(("sheet", "角色卡"))
+        if player.can_level_up():                          # 地城內也能升級(達門檻即可,免回城)
+            opts.append(("levelup", "★ 升級"))
         if cell["type"] == dungeoncrawl.STAIRS:
             opts.append(("descend", f"⬇ 下到第 {z + 2}/{m} 層"))
         opts.append(("leave", "離開地城"))
@@ -1336,6 +1338,8 @@ def action_dungeon(state: GameState, gamedata: GameData) -> str | None:
             return None
         if choice == "cast":                               # 自由行動(不耗回合)
             action_cast_self(state, gamedata, battle=battle)
+        elif choice == "levelup":                          # 自由行動(不耗回合):安全點主動升級
+            action_level_up(state, gamedata)
         elif choice == "inventory":
             action_inventory(state, gamedata)
         elif choice == "sheet":
@@ -1406,6 +1410,8 @@ def _item_actions(state: GameState, gamedata: GameData, item_id: str) -> None:
         acts.append(("use", "使用"))
     if item_id in ("moon_sugar", "skooma"):
         acts.append(("dose", "服用(亢奮 ↔ 成癮)"))
+    if item_id == "repair_hammer":                       # 修理鎚:隨地可用(野外旅途亦可整備裝備)
+        acts.append(("repair_field", "用此修理裝備"))
     acts.append(("drop", "丟棄一件"))
     act = ui.menu(d["name"], acts, allow_back=True)
     if act == "equip_w":
@@ -1433,6 +1439,8 @@ def _item_actions(state: GameState, gamedata: GameData, item_id: str) -> None:
     elif act == "use":
         msg = inventory.use_item(char, gamedata, item_id)
         ui.message(msg or "無法使用。", style="green")
+    elif act == "repair_field":
+        _repair_with_hammer(state, gamedata)
     elif act == "dose":
         res = skooma.dose(state, gamedata, strong=(item_id == "skooma"))
         inventory.remove_item(char, item_id, 1)
@@ -1982,14 +1990,13 @@ def _dismiss_mercenary(state: GameState, gamedata: GameData) -> None:
         return
     char.companions.remove(cid)
     nm = gamedata.companions.get(cid, {}).get("name", cid)
+    # 一律保留持久 HP/負傷/羈絆(離隊不忘交情):具名同伴可免費再召集;雇傭兵再雇用須付酬金。
+    # 不清狀態 → 防「解散→再得」零成本回滿血/解負傷(負傷者仍負傷),且羈絆有記憶(玩家要求)。
     if party.keeps_state_on_dismiss(gamedata, cid):
-        # 具名同伴(圈內盾袍兄弟 + 招募取得者)是永久同袍、可免費再召集 → 須保留持久 HP/負傷/羈絆,
-        # 否則「解散→召集」會變成零成本回滿血/解負傷,繞過持久 HP 懲罰(circle 鐵律延伸)。
         ui.message(f"{nm}暫別你的隊伍待命 —— 你隨時能再召集{'他' if gamedata.companions.get(cid,{}).get('circle') else '其'}並肩作戰。",
                    style="grey70")
     else:
-        party.forget(char, cid)          # 雇傭兵:清持久 HP/羈絆(再雇用須付酬金=既有金幣閘)
-        ui.message(f"{nm}拿了酬勞,就此別過。", style="grey70")
+        ui.message(f"{nm}拿了酬勞暫別 —— 日後可再花酬金雇回,你們並肩的交情仍在。", style="grey70")
 
 
 def _party_label(char: Character, gamedata: GameData, cid: str) -> str:
@@ -2001,18 +2008,20 @@ def _party_label(char: Character, gamedata: GameData, cid: str) -> str:
 
 
 def _summon_named_companion(state: GameState, gamedata: GameData) -> None:
-    """召集一名已透過招募任務取得、目前待命中的具名同伴歸隊(免費,受隊伍上限)。"""
+    """召集一名待命同伴歸隊:招募任務具名同伴 + 領主待命侍從(pending)。免費,受隊伍上限。"""
     char = state.player
     if len(char.companions) >= MAX_PARTY:
         ui.message(f"隊伍已滿(最多 {MAX_PARTY} 名),先解散一名再召集。", style="yellow")
         return
-    avail = party.recruited_named(char, gamedata)
+    avail = party.summonable(char, gamedata)
     opts = [(cid, f"{gamedata.companions[cid]['name']} —— {gamedata.companions[cid]['blurb']}")
             for cid in avail]
     cid = ui.menu("召集哪位同伴歸隊?", opts, allow_back=True)
     if cid is None:
         return
     char.companions.append(cid)
+    if cid in char.pending_companions:            # 領主待命侍從 → 召集後移出待命池
+        char.pending_companions.remove(cid)
     ui.message(f"{gamedata.companions[cid]['name']}應召歸隊,與你並肩同行。", style="bold green")
 
 
@@ -2047,7 +2056,7 @@ def action_party(state: GameState, gamedata: GameData) -> None:
     """隊伍管理:檢視同伴 HP/羈絆/負傷、與同伴交談(專屬支線)、召集待命具名同伴、就地解散(不限旅店)。"""
     char = state.player
     while True:
-        summonable = party.recruited_named(char, gamedata)
+        summonable = party.summonable(char, gamedata)
         if not char.companions and not summonable:
             ui.message("你目前沒有同伴。(旅店可雇用傭兵;受封武士得侍從;營地可延攬將領)", style="grey70")
             return
@@ -2379,9 +2388,11 @@ def _become_thane(state: GameState, gamedata: GameData, loc_id: str, ruler: dict
         if len(char.companions) < MAX_PARTY:
             char.companions.append(hc)
             ui.message(f"侍從 {gamedata.companions[hc]['name']} 從此追隨左右。", style="green")
-        else:
-            ui.message(f"領主欲遣侍從 {gamedata.companions[hc]['name']} 隨你,但你隊伍已滿,"
-                       f"婉拒了這份護衛。", style="yellow")
+        else:                                          # 隊伍已滿 → 侍從於領地待命,可日後召集(不丟棄)
+            if hc not in char.pending_companions:
+                char.pending_companions.append(hc)
+            ui.message(f"領主賜下侍從 {gamedata.companions[hc]['name']},但你隊伍已滿 —— "
+                       f"他在領地待命,隊伍有空位時可於「隊伍」選單召集他歸隊。", style="green")
     ui.message(f"自此{gamedata.location(loc_id)['province']}的衛兵,對你的小過睜隻眼閉隻眼。",
                style="grey70")
 
@@ -2590,6 +2601,27 @@ def action_enchant(state: GameState, gamedata: GameData) -> None:
         ui.show_events(res["skill_events"], gamedata)
 
 
+def _repair_with_hammer(state: GameState, gamedata: GameData) -> bool:
+    """用修理鎚自行修理(城內/野外皆可):修到 cap%、耗 1 鎚 + armorer practice(體力+時間)。回傳是否修了。"""
+    char = state.player
+    if inventory.count_item(char, "repair_hammer") <= 0:
+        ui.message("你沒有修理鎚。", style="grey70")
+        return False
+    cap = max(inventory.repairable_cap(char.skill("armorer")),
+              mastery.repair_floor(char, gamedata))   # 里程碑「行軍鐵匠」抬高野修下限
+    inventory.repair_all(char, cap)
+    inventory.remove_item(char, "repair_hammer", 1)
+    # 與訓練師/正規練習對齊:自行修理付出護甲修理 practice 的體力 + 時間,非零成本刷 armorer
+    xp, hours, tired = progression.practice_cost(char, gamedata, "armorer")
+    events = progression.use_skill(char, gamedata, "armorer", xp)
+    state.time.advance(hours)
+    ui.message(f"你用修理鎚整備了裝備(上限 {int(cap)}%)。", style="green")
+    if tired:
+        ui.message("體力不濟,修整得馬虎。", style="yellow")
+    ui.show_events(events, gamedata)
+    return True
+
+
 def action_repair(state: GameState, gamedata: GameData) -> None:
     char = state.player
     loc = world.current_location(char, gamedata)
@@ -2620,18 +2652,7 @@ def action_repair(state: GameState, gamedata: GameData) -> None:
             inventory.repair_all(char, 100.0)
             ui.message("鐵匠叮叮噹噹一陣,你的裝備煥然一新。", style="green")
         elif choice == "hammer":
-            cap = max(inventory.repairable_cap(char.skill("armorer")),
-                      mastery.repair_floor(char, gamedata))   # 里程碑「行軍鐵匠」
-            inventory.repair_all(char, cap)
-            inventory.remove_item(char, "repair_hammer", 1)
-            # 與訓練師/正規練習對齊:自行修理付出護甲修理 practice 的體力 + 時間,非零成本刷 armorer
-            xp, hours, tired = progression.practice_cost(char, gamedata, "armorer")
-            events = progression.use_skill(char, gamedata, "armorer", xp)
-            state.time.advance(hours)
-            ui.message(f"你用修理鎚整備了裝備(上限 {int(cap)}%)。", style="green")
-            if tired:
-                ui.message("體力不濟,修整得馬虎。", style="yellow")
-            ui.show_events(events, gamedata)
+            _repair_with_hammer(state, gamedata)
             if inventory.count_item(char, "repair_hammer") == 0:   # 修理鎚用盡 → 移除該選項
                 opts = [o for o in opts if o[0] != "hammer"]
                 if not opts:
