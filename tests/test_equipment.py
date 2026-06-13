@@ -279,8 +279,8 @@ def test_top_tier_set_bonuses():
 
     gd, c = _char()
     base_m = c.max_magicka
-    _wear_set(c, gd, "dragonpriest")           # 套裝 110 + 四件 magicka 附魔 120
-    assert c.max_magicka == base_m + 230
+    _wear_set(c, gd, "dragonpriest")           # 套裝 110 + 三件 magicka 附魔 90(兜帽改 +20 毀滅,不再加魔力)
+    assert c.max_magicka == base_m + 200
 
     # 布甲玻璃大砲(併自 test_smithing.test_cloth_set_glass_cannon):四件同材質給魔力套裝、
     # 但近乎零護甲 —— worn_armor_rating<=1 是布甲套裝獨有性質,他處無覆蓋
@@ -291,7 +291,7 @@ def test_top_tier_set_bonuses():
         c.equipped[slot] = iid
     assert inventory.active_set_bonus(c, gd)["stat"] == "magicka"
     stats.recompute_max_resources(c, gd)
-    assert c.max_magicka == base_cloth_m + 25 + 40           # 件件魔力(10+15)+ 套裝 40
+    assert c.max_magicka == base_cloth_m + 25 + 40           # 法袍+便鞋魔力(15+10)+ 套裝 40(兜帽互換後改 +6 毀滅)
     assert inventory.worn_armor_rating(c, gd) <= 1           # 玻璃大砲:近乎零護甲
 
 

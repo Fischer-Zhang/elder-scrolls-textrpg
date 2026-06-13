@@ -458,11 +458,14 @@
       "gold": 500,
       "fame": 20,
       "items": [
-        "filled_greater_soul_gem"
+        "archmage_hood",
+        "archmage_robe",
+        "archmage_gloves",
+        "archmage_slippers"
       ]
     },
     "turn_in": "auto",
-    "text": "大法師交付你一項晉升研究。"
+    "text": "大法師交付你一項晉升研究 —— 功成之日,你將披上大法師的法袍。"
   },
   "mg5": {
     "name": "首席法師",

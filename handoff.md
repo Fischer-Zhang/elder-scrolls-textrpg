@@ -197,11 +197,13 @@
 - **驗證**:43 測試模組全綠(`test_mastery` ~55 測試:二選一/永久性/pending 衍生/持久層/no-bootstrap/白名單惰性/各 kind getter+實戰/向後相容/>3 反制/**solo boss 反一刀**/多來源聚合)+ `sim_assassin` 擴充(契約① 小遭遇+精英秒殺成立、契約② >3 反制 + solo boss 全存活、非潛行不破)+ 無頭煙霧(apex 選擇→sheet 渲染→實戰勝利→存讀檔)+ 對抗審查 workflow(4 確認全修)。**鐵律**:調 `sneak_mult_bonus`/`SOLO_SNEAK_DAMAGE_CAP_RATIO`/horde 常數務必重跑 sim;新 kind 走白名單+getter+呼叫端、多來源用 `_chosen_options_by_kind` 聚合;新節點(既有 kind)純改 JSON。
 
 **頂級裝備擴展:魔族/龍鱗/龍祭司 三套頂裝 + 全武器頂層 + 具名神器(稀有素材鍛造,困難取得;評估→使用者拍板→直作)**:在現有頂層(重=ebony/輕=glass/布=archmage)之上加一階。評估發現裝甲套裝/鍛造全資料驅動 → **幾乎純 JSON**(唯一程式碼 = `smithing._MATERIAL_INGOT` +3 行讓新材質可淬鍊)。
-- **三套頂裝**(`armor.json` 15 件 + `armor_sets.json` 3 條,機制全自動套用):**魔族 Daedric**(重,cuirass AR30,套裝 +60 生命)、**龍鱗 Dragonscale**(輕,cuirass AR24,套裝 +25 火抗)、**龍祭司 Dragonpriest**(布,每件 magicka 附魔 + 套裝 +110 魔力,全套 +230 魔力)。
+- **三套頂裝**(`armor.json` 15 件 + `armor_sets.json` 3 條,機制全自動套用):**魔族 Daedric**(重,cuirass AR30,套裝 +60 生命)、**龍鱗 Dragonscale**(輕,cuirass AR24,套裝 +25 火抗)、**龍祭司 Dragonpriest**(布,兜帽 +20 毀滅、其餘三件 magicka 附魔 + 套裝 +110 魔力 → 全套 +200 魔力 + 兜帽 +20 毀滅)。
 - **全武器頂層 Daedric**(`weapons.json`,補現有頂層覆蓋稀疏):匕首/劍/錘/斧/弓 5 把(`material:"daedric"` → 可淬鍊)+ `daedric_staff`(毀滅,drop-only)+ **具名神器 `mehrunes_razor` 魔銳茲之刃**(匕首 dmg16 + 電擊附魔 25,ancient_dragon 保證掉)。
 - **稀有素材鍛造(TES 正史,困難取得閉環)**:`items.json` 加 `daedra_heart`(魔性之心,value 500)/`dragon_scale`(龍鱗,value 400),**drop-only**(dremora_lord/ancient_dragon `treasure` 保證 + dremora/dragon `loot` 機率)。`recipes.json` 19 配方 skill_req 90、inputs=基礎錠+稀有素材(Σ值≥產出 過 arbitrage;龍鱗走皮料 wolf_pelt 豁免)。`_MATERIAL_INGOT` +3(daedric→ebony_ingot、dragonscale→dragon_scale、dragonpriest→bolt_of_cloth)→ 全可淬鍊。
 - **平衡**:新頂武器傷害上升,但既有 `SOLO_SNEAK_DAMAGE_CAP_RATIO=0.40` 仍護 solo boss(含 mehrunes_razor 附魔,夾在 dmg 末端)→ sim 覆核 **solo boss 全 0% 秒殺、精英仍 95%**(力量幻想不變)。頂套生存力刻意強(endgame BIS),套裝單一效果有界。
 - **驗證**:43 測試模組全綠(新增 `test_top_tier_set_bonuses`/`test_top_tier_craftable_and_reachable`/**`test_loot_ids_valid`** 補既有掉落 id 守門缺口)+ `sim_assassin`(新武器 + apex 不破 clamp)+ 無頭煙霧(鍛全套→穿戴→套裝加成→淬鍊→裁縫→渲染)。**加新頂裝純改 6 JSON**(`armor`/`armor_sets`/`weapons`/`items`/`recipes`/`dungeons`+`bestiary`);新材質可淬鍊才碰 `_MATERIAL_INGOT`;稀有素材 value 須高到 Σ≥產出。
+
+**法師裝備微調(使用者拍板,純 JSON)**:① **大法師套裝加第二取得途徑** —— `mg4`《奧術研究》(rank 3→晉升大法師)獎勵改為四件大法師套裝(原帝都商店途徑保留);② **學徒套裝**兜帽↔便鞋附魔互換(兜帽→+6 毀滅、便鞋→+10 魔力上限;套裝魔力總額不變);③ **大法師套裝**兜帽↔便鞋附魔互換(兜帽→+10 毀滅、便鞋→+15 魔力上限;全套 +10 毀滅總額不變、只換承載件);④ **龍祭司兜帽** +30 魔力 → **+20 毀滅**(故全套魔力 230→200、改提供毀滅技能加乘)。`test_top_tier_set_bonuses` 龍祭司預期值同步 230→200。
 
 **飾品實戰崩潰修正(對抗審查後順手抓到的既有 bug)**:飾品(amulet/ring,無 `armor_rating` 鍵)戴上後,`inventory.effective_armor_rating`(唯一呼叫端=`combat` 玩家受物理擊時)原以 `["armor_rating"]` 直取 → **戴戒指/項鍊後第一次被物理擊中即 `KeyError` 崩潰**。改 `.get` 略過飾品(計 0 護甲)、`worn_armor_rating` 一併防禦化;補回歸測試(還原 HEAD 版可重現)。commit `a10aaeb`。
 
