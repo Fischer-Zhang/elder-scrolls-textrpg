@@ -2660,15 +2660,36 @@ def action_repair(state: GameState, gamedata: GameData) -> None:
 
 
 def action_craft(state: GameState, gamedata: GameData) -> None:
-    """製革/加工:把獸皮等原料依配方做成裝備(需鐵匠/製革處)。"""
+    """製革/加工:把獸皮等原料依配方做成裝備(需鐵匠/製革處)。
+    兩層選單:第一層選材質系列,點進去後才列該系列要做的裝備。"""
     char = state.player
     loc = world.current_location(char, gamedata)
     station = "smith" if "armorer" in loc.get("services", []) else None
-    rids = crafting.recipes_for_station(gamedata, station)
-    if not rids:
+    groups = crafting.recipes_by_material(gamedata, station)
+    if not groups:
         ui.message("這裡沒有可用的工坊。", style="grey70")
         return
-    while True:                                       # 可連續製作,返回才離開
+    while True:                                       # 第一層:選材質系列
+        mat_opts = []
+        for mat, rids in groups:
+            name = crafting.MATERIAL_SERIES_NAME.get(mat, mat)
+            craftable = sum(1 for rid in rids
+                            if crafting.meets_skill_req(char, gamedata, rid)
+                            and crafting.can_craft(char, gamedata, rid))
+            tag = f"(可做 {craftable}/{len(rids)})" if craftable else f"(共 {len(rids)} 件)"
+            mat_opts.append((mat, f"{name} {tag}"))
+        mat = ui.menu("鍛造哪個材質系列?", mat_opts, allow_back=True)
+        if mat is None:
+            return
+        rids = next(r for m, r in groups if m == mat)
+        _craft_series(state, gamedata, mat, rids)
+
+
+def _craft_series(state: GameState, gamedata: GameData, mat: str, rids: list) -> None:
+    """鍛造選單第二層:在選定材質系列下挑要做的裝備(可連續製作,返回才回上層)。"""
+    char = state.player
+    name = crafting.MATERIAL_SERIES_NAME.get(mat, mat)
+    while True:
         opts = []
         for rid in rids:
             r = gamedata.recipes[rid]
@@ -2680,7 +2701,7 @@ def action_craft(state: GameState, gamedata: GameData) -> None:
             else:
                 tag = ""
             opts.append((rid, f"{r['name']}:{inp} → {gamedata.item_name(r['output'])}{tag}"))
-        rid = ui.menu("製作什麼?", opts, allow_back=True)
+        rid = ui.menu(f"鍛造{name}系列 — 做什麼?", opts, allow_back=True)
         if rid is None:
             return
         res = crafting.craft(char, gamedata, rid)

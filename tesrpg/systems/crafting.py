@@ -22,6 +22,35 @@ def recipes_for_station(gamedata: GameData, station: str | None) -> list[str]:
     return out
 
 
+# 材質系列 → 顯示名(鍛造選單第一層分組用;新材質補此表,缺名則退回 key)
+MATERIAL_SERIES_NAME = {
+    "leather": "皮革", "iron": "鐵", "steel": "鋼", "cloth": "布(學徒)",
+    "elven": "精靈", "dwarven": "矮人", "glass": "玻璃", "ebony": "黑檀",
+    "daedric": "魔族", "dragonscale": "龍鱗", "dragonpriest": "龍祭司布",
+}
+
+
+def recipe_material(gamedata: GameData, recipe_id: str) -> str:
+    """配方的材質系列 key:護甲讀產出物 `material` 欄,武器由 id 前綴推(iron_sword→iron)。"""
+    out = gamedata.recipes[recipe_id]["output"]
+    d = gamedata.item_or_none(out) or {}
+    return d.get("material") or out.split("_")[0]
+
+
+def recipes_by_material(gamedata: GameData, station: str | None) -> list[tuple[str, list[str]]]:
+    """該工坊配方依材質系列分組:回傳有序 [(material_key, [recipe_id,...]), ...]。
+    系列順序依 recipes.json 出現序(= skill_req 由低到高的進程序)。"""
+    groups: dict[str, list[str]] = {}
+    order: list[str] = []
+    for rid in recipes_for_station(gamedata, station):
+        mat = recipe_material(gamedata, rid)
+        if mat not in groups:
+            groups[mat] = []
+            order.append(mat)
+        groups[mat].append(rid)
+    return [(mat, groups[mat]) for mat in order]
+
+
 def missing_inputs(char: Character, gamedata: GameData, recipe_id: str) -> dict:
     """回傳 {item_id: 還缺幾個};空 dict = 材料齊備。"""
     r = gamedata.recipes[recipe_id]

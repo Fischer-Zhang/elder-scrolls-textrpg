@@ -104,7 +104,7 @@ def test_craft_smoke_at_smith():
     inventory.add_item(c, "wolf_pelt", 2)
     state = GameState(player=c, rng=RNG(1), game_mode="adventure")
     saved = (ui.menu, ui.message, ui.show_events)
-    seq = iter(["tan_leather_bracers"])
+    seq = iter(["leather", "tan_leather_bracers"])    # 兩層:先選材質系列,再選裝備
     ui.menu = lambda *a, **k: next(seq, None)
     ui.message = lambda *a, **k: None
     ui.show_events = lambda *a, **k: None
