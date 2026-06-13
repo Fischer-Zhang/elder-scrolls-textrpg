@@ -12,7 +12,7 @@ from tesrpg import creation, formulas
 from tesrpg.gamedata import GameData, get_gamedata
 from tesrpg.rng import RNG, make_seed
 from tesrpg.state import GameState
-from tesrpg.systems import (alchemy, brotherhood, combat, court, crafting, crime, dialogue, dungeon,
+from tesrpg.systems import (aiwar, alchemy, brotherhood, combat, court, crafting, crime, dialogue, dungeon,
                             dungeoncrawl, enchanting, events, factions, inventory, landmarks, legacy,
                             lycanthropy, magic, mastery, party, politics, powers, progression, quests,
                             skooma, smithing, stats, vampirism, warband, world, worldstate)
@@ -3143,6 +3143,16 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
         for ev in worldstate.update(state, gamedata):
             ui.rule("天下大勢")
             ui.message(ev["news"], style="bold magenta")
+
+        # AI 陣營自走戰爭(階段五):NPC 互吞中立/互翻彼此城 + 反攻你的領地(在 tick_tax 前 → 本圈即結算失守)
+        for ev in aiwar.update(state, gamedata):
+            if ev["kind"] == "flip":
+                ui.rule("天下大勢")
+                ui.message(ev["news"], style="bold magenta")
+            elif ev["kind"] == "raid":
+                cname = gamedata.location(ev["loc"])["name"]
+                ui.message(f"⚠ {politics.cause_name(ev['by'])}兵臨你的「{cname}」,守軍僅 {ev['garrison']} —— 速回防,"
+                           f"否則城邦將失守!", style="bold red")
 
         # 軍餉結算(招兵買馬階段二):週期扣餉,付不出 → 逃兵
         for ev in warband.tick_upkeep(state):

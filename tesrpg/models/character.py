@@ -166,6 +166,10 @@ class Character:
     # 陣營大事件(動態政局):事件驅動的城邦易幟層 + 已觸發大事件。詳見 systems/worldstate.py(階段 C)。
     world_faction: dict = field(default_factory=dict)      # loc_id -> 大事件易幟的立場(覆蓋種子;玩家征服 city_faction 優先)
     world_events_fired: list = field(default_factory=list) # 已觸發的大事件 id(once-fire + 解鎖判定,如神話黎明)
+    # AI 陣營自走戰爭(worldstate 階段五)。garrison_current 同時承載「非玩家城」現存守軍(aiwar 寫,
+    # 在 tick_tax 前跑;tick_tax 只迭代玩家城故不衝突)。詳見 systems/aiwar.py。
+    war_tick_at: int = 0                                   # 下次 AI 戰爭結算的絕對小時(0=未開戰,首圈給一週寬限)
+    city_threat: dict = field(default_factory=dict)        # 玩家城 loc -> 正圍攻它的敵對陣營(預警/UI;無則不在表)
 
     # 招兵買馬(城戰的金幣/領袖路線)。親衛/將領=companions(具名);軍隊/士兵=抽象兵員。詳見 systems/warband.py。
     soldiers: int = 0                                     # 麾下士兵數(營地招募;攻城當援軍 + 大軍壓境)
@@ -267,6 +271,7 @@ class Character:
             "garrison_current": self.garrison_current, "siege_ops": self.siege_ops,
             "tax_due_at": self.tax_due_at,
             "world_faction": self.world_faction, "world_events_fired": self.world_events_fired,
+            "war_tick_at": self.war_tick_at, "city_threat": self.city_threat,
             "soldiers": self.soldiers, "camp": self.camp,
             "wage_due_at": self.wage_due_at,
             "companions": self.companions,

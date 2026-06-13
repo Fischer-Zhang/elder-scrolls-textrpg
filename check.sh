@@ -56,6 +56,25 @@ if [ "$RUN_SIM" = 1 ]; then
   fi
 fi
 
+# 3b) AI 戰爭收斂模擬:--sim,或 git diff 動到 aiwar.py / worldstate.py / politics.py 就自動跑
+RUN_WAR_SIM=$RUN_SIM
+if [ "$RUN_WAR_SIM" = 0 ] && { git diff --name-only HEAD; git ls-files --others --exclude-standard; } 2>/dev/null \
+     | grep -qE 'tesrpg/systems/(aiwar|worldstate|politics)\.py'; then
+  RUN_WAR_SIM=1
+  echo "ℹ 偵測到 aiwar/worldstate/politics 變更 → 自動跑 AI 戰爭收斂模擬"
+fi
+if [ "$RUN_WAR_SIM" = 1 ]; then
+  step "sim_worldwar.py(AI 戰爭收斂 — 防雪球/反攻 feels-bad/選邊有感)"
+  WAR_OUT="$(PYTHONPATH=. python3 sim_worldwar.py)" || fail "sim_worldwar 執行失敗"
+  echo "$WAR_OUT"
+  if echo "$WAR_OUT" | grep -q '⚠'; then
+    echo; echo "🔴 AI 戰爭 sim 出現 ⚠ 旗標,務必人眼覆核平衡(print-only、不自動擋):"
+    echo "$WAR_OUT" | grep '⚠'
+  else
+    echo "✓ AI 戰爭 sim 無 ⚠ 旗標"
+  fi
+fi
+
 # 4) 無頭煙霧(可選;build_character → GameState → save/load 往返,唯一寫存檔的步驟)
 if [ "$RUN_SMOKE" = 1 ]; then
   step "無頭煙霧(save/load 往返)"
