@@ -64,8 +64,10 @@ def is_downed(char: Character, gamedata: GameData, cid: str) -> bool:
 
 
 def fieldable(char: Character, gamedata: GameData) -> list[str]:
-    """可上陣的同伴(排除倒下/負傷者)。"""
-    return [cid for cid in char.companions if not is_downed(char, gamedata, cid)]
+    """可上陣的同伴(排除倒下/負傷者、與冊封坐鎮的總管 —— 坐鎮者已離隊治理、不隨行出戰)。"""
+    stationed = set(getattr(char, "stewards", {}).values())
+    return [cid for cid in char.companions if cid in gamedata.companions
+            and cid not in stationed and not is_downed(char, gamedata, cid)]
 
 
 def spawn_hp(char: Character, gamedata: GameData, cid: str) -> int:

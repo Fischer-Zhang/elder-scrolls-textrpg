@@ -654,10 +654,13 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
     player = state.player
     if not isinstance(enemies, list):
         enemies = [enemies]
-    src = player.companions if companions is None else companions
-    # 上陣名單:略過已不存在的同伴;**排除倒下/負傷者**(benched 至治療)—— 同伴系統深化
-    field_ids = [cid for cid in src if cid in gamedata.companions
-                 and not party.is_downed(player, gamedata, cid)]
+    # 上陣名單:略過已不存在的同伴;排除冊封坐鎮的總管(已離隊治理);**排除倒下/負傷者**(benched 至治療)。
+    if companions is None:
+        field_ids = party.fieldable(player, gamedata)
+    else:                                                       # 顯式名冊(城戰等)→ 同樣排除坐鎮總管與倒下者
+        stationed = set(getattr(player, "stewards", {}).values())
+        field_ids = [cid for cid in companions if cid in gamedata.companions and cid not in stationed
+                     and not party.is_downed(player, gamedata, cid)]
     # roster:本場一開始上陣的盟友(cid → 戰鬥單位);召喚物不在此列。戰後查 is_alive 判陣亡。
     # 持久 HP:以 spawn_hp 帶入(夾上限);羈絆 → 該同伴 max_health 加成。
     roster = [(cid, combat.spawn_companion(gamedata, cid, state.rng,
@@ -2231,6 +2234,8 @@ def _dismiss_mercenary(state: GameState, gamedata: GameData) -> None:
     if cid is None:
         return
     char.companions.remove(cid)
+    for _loc in [l for l, s in char.stewards.items() if s == cid]:
+        char.stewards.pop(_loc, None)        # 解散坐鎮中的總管 → 同步清掉指派,免殘留死 cid 占住總管位
     nm = gamedata.companions.get(cid, {}).get("name", cid)
     # 一律保留持久 HP/負傷/羈絆(離隊不忘交情):具名同伴可免費再召集;雇傭兵再雇用須付酬金。
     # 不清狀態 → 防「解散→再得」零成本回滿血/解負傷(負傷者仍負傷),且羈絆有記憶(玩家要求)。
@@ -2242,8 +2247,11 @@ def _dismiss_mercenary(state: GameState, gamedata: GameData) -> None:
 
 
 def _party_label(char: Character, gamedata: GameData, cid: str) -> str:
-    """同伴列表標籤:名 + HP/上限 + 羈絆級(倒下標『負傷』)。"""
+    """同伴列表標籤:名 + HP/上限 + 羈絆級(倒下標『負傷』;冊封坐鎮者標『坐鎮〔城〕』=已離隊治理)。"""
     name = gamedata.companions.get(cid, {}).get("name", cid)   # 防毀損存檔的已移除同伴 id
+    loc = next((l for l, s in getattr(char, "stewards", {}).items() if s == cid), None)
+    if loc:                                                    # 冊封坐鎮 → 離隊不隨行出戰
+        return f"{name}（坐鎮 {gamedata.location(loc)['name']}·{party.bond_name(char, cid)})"
     cur, mx = party.current_hp(char, gamedata, cid), party.max_hp(char, gamedata, cid)
     state = "負傷待療" if party.is_downed(char, gamedata, cid) else f"{cur}/{mx}"
     return f"{name}（{state}·{party.bond_name(char, cid)})"
@@ -2617,7 +2625,9 @@ def action_warband(state: GameState, gamedata: GameData) -> None:
     while True:
         loc_id = char.location_id
         camp_name = gamedata.location(char.camp)["name"] if char.camp else "未建立"
-        officers = "、".join(gamedata.companions[c]["name"] for c in char.companions) or "無"
+        _stationed = set(char.stewards.values())   # 坐鎮總管已離隊治理,不計入軍勢親衛
+        officers = "、".join(gamedata.companions[c]["name"]
+                            for c in char.companions if c not in _stationed) or "無"
         ui.message(f"【軍勢】親衛:{officers} | 士兵:{char.soldiers}/{warband.MAX_SOLDIERS} | "
                    f"營地:{camp_name}", style="gold1")
         opts = []

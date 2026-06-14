@@ -166,8 +166,40 @@ def test_pending_companions_save_roundtrip():
     assert Character.from_dict(d).pending_companions == []
 
 
+def test_steward_leaves_active_party():
+    """冊封坐鎮的總管離隊:不在出戰名單(fieldable),但仍在 companions(治理加成/可召回)。"""
+    from tesrpg.systems import politics
+    gd, c, _ = _setup(("sellsword",))
+    assert "sellsword" in party.fieldable(c, gd)
+    politics.appoint_steward(c, "bruma", "sellsword")
+    assert "sellsword" not in party.fieldable(c, gd)             # 已離隊,不隨行出戰
+    assert "sellsword" in c.companions and politics.has_steward(c, "bruma")  # 仍在列、治理加成仍在
+    politics.recall_steward(c, "bruma")
+    assert "sellsword" in party.fieldable(c, gd)                 # 召回 → 回隊
+
+
+def test_dismiss_clears_steward_assignment():
+    """解散坐鎮中的總管 → 同步清掉 stewards 指派,不殘留死 cid 占住總管位。"""
+    import tesrpg.main as m
+    from tesrpg.systems import politics
+    from tesrpg.ui import console as ui
+    gd, c, st = _setup(("sellsword",))
+    politics.appoint_steward(c, "bruma", "sellsword")
+    om, og = ui.menu, ui.message
+    ui.menu = lambda *a, **k: "sellsword"; ui.message = lambda *a, **k: None
+    try:
+        m._dismiss_mercenary(st, gd)
+    finally:
+        ui.menu, ui.message = om, og
+    assert "sellsword" not in c.companions            # 已解散
+    assert "sellsword" not in c.stewards.values()     # 指派一併清除,無殘留
+    assert not politics.has_steward(c, "bruma")
+
+
 def run():
     test_persistent_hp_spawn_and_record()
+    test_steward_leaves_active_party()
+    test_dismiss_clears_steward_assignment()
     test_downed_benched_then_heal_restores_fieldable()
     test_bond_grows_on_victory_and_boosts_hp()
     test_heal_full_and_forget()

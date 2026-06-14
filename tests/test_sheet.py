@@ -191,6 +191,19 @@ def test_every_skill_has_mechanic_and_detail_shows_it():
     assert "作用" in out and gd2.skills["block"]["mechanic"][:6] in out
 
 
+def test_enchant_and_artifact_effects_visible():
+    """神器/附魔效果在 UI 可見:_enchant_desc 描述各 enchant 種類;武器附魔在 weapon_line、飾品神器在 item_label。"""
+    from tesrpg.systems import inventory
+    gd, st = _char(); c = st.player
+    assert ui._enchant_desc(gd, "mehrunes_razor") == "雷電傷+25"    # 武器元素附魔
+    assert ui._enchant_desc(gd, "hircine_ring") == "可隨意獸化"      # 旗標型神器效果可見
+    assert ui._enchant_desc(gd, "archmage_robe") == "魔力上限+25"    # 護甲附魔
+    assert ui._enchant_desc(gd, "steel_sword") == ""               # 無附魔 → 不顯示
+    inventory.add_item(c, "mehrunes_razor", 1); inventory.equip_weapon(c, gd, "mehrunes_razor")
+    assert "雷電傷+25" in ui.weapon_line(c, gd)                      # 武器附魔在武器行可見
+    assert "可隨意獸化" in ui.item_label(gd, c, "hircine_ring")      # 神器效果在背包可見
+
+
 def run():
     for name, fn in sorted(globals().items()):
         if name.startswith("test_") and callable(fn):

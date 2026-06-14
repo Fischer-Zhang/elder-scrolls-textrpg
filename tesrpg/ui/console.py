@@ -665,6 +665,49 @@ def _effect_label(e: dict) -> str:
     return f"{base}（{turns} 回合)" if turns else base
 
 
+_WSTATUS_CN = {"vampiric": "吸血", "paralyze": "麻痺", "fear": "恐懼", "regen": "再生", "weaken": "耗弱"}
+
+
+def _enchant_desc(gamedata: GameData, item_id: str) -> str:
+    """物品的內建附魔/具名神器效果簡述(供武器行/穿戴面板/背包顯示);無→空字串。
+    神器(獵者之戒 hircine 旗、魔銳茲之刃 weapon_element 等)效果一律可見。
+    玩家自製附魔(synth)的名稱已內嵌效果 → 略過,免重複顯示。任意 enchant dict 皆防崩(缺鍵落回空/原 key)。"""
+    from tesrpg import synth
+    if synth.is_synth(item_id):
+        return ""
+    d = gamedata.item_or_none(item_id) or {}
+    parts = []
+    e = d.get("enchant")
+    if e:
+        k = e.get("kind"); mag = int(e.get("magnitude", 0))
+        elem = _RESIST_CN.get(e.get("element"), e.get("element", ""))
+        if k == "weapon_element":
+            parts.append(f"{elem}傷+{mag}")
+        elif k == "weapon_status":
+            parts.append(f"命中觸{_WSTATUS_CN.get(e.get('status'), e.get('status', ''))}")
+        elif k == "fortify_skill":
+            sid = e.get("skill", "")
+            parts.append(f"{(gamedata.skills.get(sid) or {}).get('name', sid)}+{mag}")
+        elif k == "fortify_attribute":
+            attr = e.get("attr", "")
+            parts.append(f"{formulas.ATTRIBUTE_NAMES.get(attr, attr)}+{mag}")
+        elif k in ("armor_fortify", "fortify_resource"):
+            parts.append(f"{_STAT_CN.get(e.get('stat'), e.get('stat', ''))}上限+{mag}")
+        elif k == "resist_element":
+            parts.append(f"抗{elem}+{mag}%")
+        else:
+            parts.append("已附魔")
+    if d.get("hircine"):
+        parts.append("可隨意獸化")
+    return "、".join(parts)
+
+
+def _ench_suffix(gamedata: GameData, item_id: str) -> str:
+    """穿戴/物品列的附魔效果小標(『·<效果>』;無→空)。"""
+    d = _enchant_desc(gamedata, item_id)
+    return f" ·{d}" if d else ""
+
+
 def _sheet_overview_extra(char: Character, gamedata: GameData) -> Text | None:
     """overview 底部的精簡狀態塊(公會/血脈/進行中效果);全為 state-independent。"""
     from tesrpg.systems import factions
@@ -1019,7 +1062,8 @@ def sheet_equipment(char: Character, gamedata: GameData) -> None:
         for slot in ("helmet", "cuirass", "gauntlets", "boots", "shield", "amulet", "ring1", "ring2"):
             iid = char.equipped.get(slot)
             if iid:
-                rows.append(_kv(_SLOT_CN[slot], gamedata.item_name(iid) + _temper_suffix(char, iid)))
+                rows.append(_kv(_SLOT_CN[slot], gamedata.item_name(iid)
+                                + _temper_suffix(char, iid) + _ench_suffix(gamedata, iid)))
         worn, eff = _armor_display(char, gamedata)        # 含永久淬鍊 → 淬甲後護甲值上升
         rows.append(_kv("護甲值", f"名目 {worn} · 有效 {eff:.0f}"))
         _smat, _scnt, _sb = inventory.set_progress(char, gamedata)
@@ -1046,7 +1090,8 @@ def sheet_equipment(char: Character, gamedata: GameData) -> None:
         iid = char.equipped.get(slot)
         if iid:
             body.append(f"{_SLOT_CN[slot]}  ", style=GOLD)
-            body.append(gamedata.item_name(iid) + _temper_suffix(char, iid) + "\n", style=PARCH)
+            body.append(gamedata.item_name(iid) + _temper_suffix(char, iid)
+                        + _ench_suffix(gamedata, iid) + "\n", style=PARCH)
     worn, eff = _armor_display(char, gamedata)            # 含永久淬鍊 → 淬甲後護甲值上升
     body.append(f"護甲值  名目 {worn} · 有效 {eff:.0f}\n", style=INK)
     _smat, _scnt, _sb = inventory.set_progress(char, gamedata)
@@ -1556,7 +1601,8 @@ def weapon_line(char: Character, gamedata: GameData) -> str:
     dmg = wp.get("damage", 0) + smithing.weapon_temper_bonus(char)     # 含永久淬鍊加傷 → 淬鍊效果可見
     dmg_tag = f"傷害 {dmg} · " if char.weapon != "fists" else ""
     return (f"{wp['name']}（{dmg_tag}{gamedata.skill_name(wp['skill'])} {char.skill(wp['skill'])}"
-            f"{arch_tag}{cond})" + _temper_suffix(char, char.weapon) + poison + dual)
+            f"{arch_tag}{cond})" + _temper_suffix(char, char.weapon)
+            + _ench_suffix(gamedata, char.weapon) + poison + dual)
 
 
 def combat_intro(creature, player: Character, gamedata: GameData) -> None:
@@ -1678,9 +1724,9 @@ def item_label(gamedata: GameData, char: Character, item_id: str, qty: int = 1) 
         extra = f" 護甲{d['armor_rating']}/{d['slot']}"
     elif d["kind"] == "jewelry":
         extra = " 飾品"
-        ench = d.get("enchant")
-        if ench:
-            extra += "·已附魔"
+    ed = _enchant_desc(gamedata, item_id)        # 內建附魔/神器效果(取代籠統「已附魔」,神器效果可見)
+    if ed:
+        extra += f"·{ed}"
     qtystr = f" ×{qty}" if qty > 1 else ""
     return f"{d['name']}{qtystr}（{d['weight']:g}斤{extra}){tag}"
 
