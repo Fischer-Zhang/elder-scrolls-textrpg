@@ -25,6 +25,10 @@
   "forge_steel_mace":    {"name": "鍛造鋼錘",   "station": "smith", "skill": "smithing", "skill_req": 25, "inputs": {"steel_ingot": 3}, "output": "steel_mace", "output_qty": 1},
   "forge_steel_helmet":  {"name": "鍛造鋼盔",   "station": "smith", "skill": "smithing", "skill_req": 25, "inputs": {"steel_ingot": 2}, "output": "steel_helmet", "output_qty": 1},
   "forge_steel_cuirass": {"name": "鍛造鋼胸甲", "station": "smith", "skill": "smithing", "skill_req": 25, "inputs": {"steel_ingot": 3}, "output": "steel_cuirass", "output_qty": 1},
+  "forge_steel_gauntlets": {"name": "鍛造鋼護手", "station": "smith", "skill": "smithing", "skill_req": 25, "inputs": {"steel_ingot": 2}, "output": "steel_gauntlets", "output_qty": 1},
+  "forge_steel_boots":   {"name": "鍛造鋼靴",   "station": "smith", "skill": "smithing", "skill_req": 25, "inputs": {"steel_ingot": 2}, "output": "steel_boots", "output_qty": 1},
+  "forge_steel_shield":  {"name": "鍛造鋼盾",   "station": "smith", "skill": "smithing", "skill_req": 25, "inputs": {"steel_ingot": 3}, "output": "steel_shield", "output_qty": 1},
+  "forge_steel_dagger":  {"name": "鍛造鋼匕首", "station": "smith", "skill": "smithing", "skill_req": 25, "inputs": {"steel_ingot": 1}, "output": "steel_dagger", "output_qty": 1},
 
   "tailor_cloth_hood":     {"name": "縫製學徒兜帽", "station": "smith", "skill": "smithing", "skill_req": 15, "inputs": {"bolt_of_cloth": 3}, "output": "cloth_hood", "output_qty": 1},
   "tailor_cloth_robe":     {"name": "縫製學徒法袍", "station": "smith", "skill": "smithing", "skill_req": 15, "inputs": {"bolt_of_cloth": 4}, "output": "cloth_robe", "output_qty": 1},

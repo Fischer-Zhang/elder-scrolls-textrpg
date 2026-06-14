@@ -28,7 +28,7 @@ def test_stock_initializes_finite():
     world.ensure_stock(c, gd, loc, t, RNG(1))
     assert loc in c.shop_stock and loc in c.shop_restock_at
     qtys = c.shop_stock[loc]
-    assert qtys and all(0 <= q <= 6 for q in qtys.values())     # 有限且在補貨上限內
+    assert qtys and all(0 <= q <= 8 for q in qtys.values())     # 有限且在補貨上限內(材料帶可達 8)
     assert c.shop_restock_at[loc] == t.absolute_hours() + world.RESTOCK_HOURS
 
 
@@ -121,8 +121,29 @@ def test_crafting_materials_restock_generously():
     assert min(world._restock_qty(200, RNG(s)) for s in range(30)) == 0
 
 
+def test_material_distribution_tiered_by_city():
+    """一般材料幾乎每座城都有、高級材料只在大城(各省首府);新城自動涵蓋(規則注入 merchant_catalog)。"""
+    gd, _, _ = _setup()
+    cities = [lid for lid, l in gd.world["locations"].items() if l.get("type") == "city"]
+    assert len(cities) >= 20
+    for lid in cities:
+        cat = world.merchant_catalog(gd, lid)
+        for m in world._COMMON_MATERIALS:                  # 一般材料:每座城都買得到
+            assert m in cat, f"{lid} 缺一般材料 {m}"
+        highs = [m for m in world._HIGH_MATERIALS if m in cat]
+        if lid in world.MAJOR_CITIES:                      # 大城:高級材料齊全
+            assert highs == list(world._HIGH_MATERIALS), f"大城 {lid} 高級材料不齊"
+        else:                                              # 非大城:無高級材料(目前無城明列高材)
+            assert not highs, f"非大城 {lid} 不該賣高級材料 {highs}"
+    # 大城涵蓋每一省(各省至少一座高材採買點)
+    provs = {gd.world["locations"][lid]["province"] for lid in world.MAJOR_CITIES}
+    all_provs = {l["province"] for l in gd.world["locations"].values() if l.get("type") == "city"}
+    assert provs == all_provs, f"有省份無高材大城:{all_provs - provs}"
+
+
 def run():
     test_stock_initializes_finite()
+    test_material_distribution_tiered_by_city()
     test_buy_depletes_and_sells_out()
     test_restock_after_timer()
     test_save_roundtrip_and_backward_compat()

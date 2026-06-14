@@ -297,6 +297,20 @@ def test_meltdown_no_arbitrage_on_cheap_singletons():
             f"{iid} 回爐套錠:材料買價高於成品買價"
 
 
+def test_steel_set_fully_craftable():
+    """鋼套裝(含護手/靴/盾)+ 鋼匕首皆可鍛造(補回缺漏配方);鐵套裝對照仍完整。"""
+    gd = get_gamedata()
+    craftable = {r["output"] for r in gd.recipes.values()}
+    for iid in ("steel_helmet", "steel_cuirass", "steel_gauntlets", "steel_boots",
+                "steel_shield", "steel_sword", "steel_mace", "steel_dagger"):
+        assert iid in craftable, f"{iid} 應可鍛造"
+    # 全 5 件鋼護甲套裝都可鍛
+    steel_armor = [iid for iid, d in gd.items.items()
+                   if d.get("kind") == "armor" and smithing._material_of(gd, iid) == "steel"]
+    assert all(iid in craftable for iid in steel_armor), \
+        f"鋼套裝仍有缺:{[i for i in steel_armor if i not in craftable]}"
+
+
 def run():
     for name, fn in sorted(globals().items()):
         if name.startswith("test_") and callable(fn):

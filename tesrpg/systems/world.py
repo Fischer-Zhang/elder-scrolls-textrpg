@@ -102,6 +102,14 @@ RESTOCK_HOURS = 72        # 商人每約 3 天補一次貨
 # loot-only 稀材:即使誤入配方輸入,也不享足量補貨(維持「只能打怪取得」紅線於程式,不靠資料慣例)
 _LOOT_ONLY_MATERIALS = {"daedra_heart", "dragon_scale"}
 
+# 鍛造材料的城鎮供給分級(使用者拍板:一般材料幾乎每座城都有、高級材料只在大城)。
+# 規則注入於 merchant_catalog → 每座 type=city 自動供應一般材料;大城另供高級材料(新城自動涵蓋)。
+_COMMON_MATERIALS = ("iron_ingot", "steel_ingot", "bolt_of_cloth", "wolf_pelt")    # 一般材料:每城
+_HIGH_MATERIALS = ("moonstone_ingot", "dwarven_ingot", "malachite_ingot", "ebony_ingot")  # 高級材料:大城
+# 大城 = 各省首府(高級材料採買點;每省一座 → 區域內買得到頂材,不必跨圖)。調整供給點純改此集合。
+MAJOR_CITIES = frozenset({"imperial_city", "markarth", "blacklight", "gideon",
+                          "sentinel", "daggerfall", "falinesti", "rimmen"})
+
 
 def _crafting_material_ids(gamedata: GameData) -> set:
     """可量產的鍛造/製作配方輸入材料 id(消耗性輸入 → 補貨給足量);排除 loot-only 稀材。"""
@@ -123,8 +131,14 @@ def _restock_qty(value: int, rng: RNG, material: bool = False) -> int:
 
 
 def merchant_catalog(gamedata: GameData, loc_id: str) -> list[str]:
-    """該地商人「可能販售」的完整品項目錄(world.json 的 merchant_stock)。"""
-    return gamedata.location(loc_id).get("merchant_stock", [])
+    """該地商人「可能販售」的完整品項目錄:world.json 的 merchant_stock + 鍛造材料分級供給。
+    每座 type=city 自動供應一般材料(_COMMON_MATERIALS);大城(MAJOR_CITIES)另供高級材料。"""
+    loc = gamedata.location(loc_id)
+    catalog = list(loc.get("merchant_stock", []))
+    if loc.get("type") == "city":
+        extra = list(_COMMON_MATERIALS) + (list(_HIGH_MATERIALS) if loc_id in MAJOR_CITIES else [])
+        catalog += [iid for iid in extra if iid not in catalog]   # 去重:既有明列者不重複
+    return catalog
 
 
 def ensure_stock(char: Character, gamedata: GameData, loc_id: str, time, rng: RNG) -> None:
