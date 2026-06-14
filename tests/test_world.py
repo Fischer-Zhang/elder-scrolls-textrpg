@@ -310,6 +310,79 @@ def test_links_are_spatially_local():
     assert not bad, f"連線跨越過大距離,座標可能放錯:{bad}"
 
 
+# --- 拓樸再檢查(M2:全境補完後)----------------------------------------
+# 刻意的盲腸:湮滅之門/終局地城(degree 1 是設計)
+_DEAD_END_OK = {"dragon_lair", "kvatch_gate", "bravil_gate", "the_deadlands", "dawn_sanctum"}
+# 既有的兩條直連跨省邊(歷史保留,不經邊境;改名會破存檔)
+_LEGACY_CROSS = {frozenset(("kvatch", "dragon_bridge")), frozenset(("leyawiin", "gideon"))}
+
+
+def test_no_dead_ends_except_final_dungeons():
+    """除了刻意的終局/湮滅之門盲腸,每個地點 degree>=2(內容地城須是穿越路線)。"""
+    gd, _ = _char()
+    locs = gd.world["locations"]
+    bad = [lid for lid, loc in locs.items()
+           if len(loc.get("links", {})) < 2 and lid not in _DEAD_END_OK]
+    assert not bad, f"非預期的死路(degree<2):{bad}"
+
+
+def test_cross_province_edges_go_through_border():
+    """跨省旅行只能經邊境(邊境節點是省際接縫);除既有兩條歷史直連外,
+    任一跨省邊至少一端須在『邊境』。新增省際連線務必走邊境戍堡/野外。"""
+    gd, _ = _char()
+    locs = gd.world["locations"]
+    bad = []
+    for lid, loc in locs.items():
+        for dest in loc.get("links", {}):
+            pa, pb = loc["province"], locs[dest]["province"]
+            if pa != pb and pa != "邊境" and pb != "邊境":
+                if frozenset((lid, dest)) not in _LEGACY_CROSS:
+                    bad.append(f"{lid}({pa})->{dest}({pb})")
+    assert not bad, f"跨省直連未經邊境:{bad}"
+
+
+def test_each_province_internally_connected():
+    """每個真實行省的省內子圖(只走省內邊)須連通 —— 省內城鎮不靠繞境外才到得了。"""
+    gd, _ = _char()
+    locs = gd.world["locations"]
+    by_prov = {}
+    for lid, loc in locs.items():
+        by_prov.setdefault(loc["province"], []).append(lid)
+    for prov, ids in by_prov.items():
+        if prov == "邊境":          # 邊境是接縫,不互連
+            continue
+        member = set(ids)
+        seen = {ids[0]}
+        frontier = [ids[0]]
+        while frontier:
+            cur = frontier.pop()
+            for dest in locs[cur].get("links", {}):
+                if dest in member and dest not in seen:
+                    seen.add(dest)
+                    frontier.append(dest)
+        assert seen == member, f"{prov} 省內子圖不連通:{member - seen}"
+
+
+def test_danger_distribution_sane():
+    """危險度健全:城/鎮=0(安全)、荒野 1–5、地城 >=1;每個非邊境省至少有低危(<=2)入口。"""
+    gd, _ = _char()
+    locs = gd.world["locations"]
+    by_prov = {}
+    for lid, loc in locs.items():
+        t, dg = loc["type"], loc.get("danger", 0)
+        if t in ("city", "town"):
+            assert dg == 0, f"{lid}({t}) 危險度應為 0,實為 {dg}"
+        elif t == "wilderness":
+            assert 1 <= dg <= 5, f"{lid} 荒野危險度越界:{dg}"
+        elif t == "dungeon":
+            assert dg >= 1, f"{lid} 地城危險度應 >=1:{dg}"
+        by_prov.setdefault(loc["province"], []).append(dg)
+    for prov, dgs in by_prov.items():
+        if prov == "邊境":
+            continue
+        assert min(dgs) <= 2, f"{prov} 缺低危(<=2)入口,新手會被牆擋"
+
+
 def run():
     for name, fn in sorted(globals().items()):
         if name.startswith("test_") and callable(fn):

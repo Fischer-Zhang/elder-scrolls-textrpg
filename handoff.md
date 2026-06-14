@@ -38,7 +38,7 @@
 - **煉金毒藥 + 武器塗毒**;**潛行刺客系**:偷襲先機、暗殺殘響、雙持、**隱遁再襲(潛行 25 里程碑「隱遁之術」;連環踏影對單體仍遞減、反 solo boss 風箏)**、戰前偵查;武器流派(潛襲/破甲/速度)
 
 #### 世界與探索
-- **八省 64 地點 / 25 城**(賽/天/晨/黑沼澤閉合大環 + 漢默法爾/高岩/瓦倫森林/艾爾斯維爾;賽↔艾↔瓦南方大環);旅行/晝夜/危險度
+- **八省 ~127 地點 / 48 城 + 16 鎮**(每省 5–9 城;賽/天/晨/黑沼澤閉合大環 + 漢默法爾/高岩/瓦倫森林/艾爾斯維爾;賽↔艾↔瓦南方大環;邊境戍堡為省際接縫)+ **每地帶 `pos[col,row]` 相對座標**(頂層 `world["map"]` 40×24);旅行/晝夜/危險度(數字為快照,以 JSON/測試為準)
 - **生態遭遇**(biome 加權,八生態含 savanna 弱毒)、**省份風味事件**、**具名地標**首發現、各城**考據統治者**;終局 solo BOSS
 - **格子地城探索**(`systems/dungeoncrawl.py`):15 地城程序化生成 n×n 格 × m 層,N/S/E/W 移動 + 樓梯下層 + 迷霧小地圖 + 格內怪/寶/陷阱;清末層 boss = 肅清,首領死亡自動解鎖寶藏(原子探索、零新存檔欄)。**視為戰鬥情境**:可一般行動(施法/背包/角色卡)、**預施增益/預召喚召喚物**(行動 1 格 = 1 回合逐回合衰減,經 carry_allies/preserve_buffs 帶進觸發戰鬥)、**偵查 perk 探明四鄰**(每探明新格得少量偵查 xp);持久狀態條一併顯示夥伴/召喚物
 
@@ -823,6 +823,13 @@ tesrpg/
 - **`tesrpg/ui/console.py` = Web 的渲染/輸入接層**:渲染函式照舊 `console.print(rich)` → 錄進錄製 Console → `export_html` 成 HTML block(尚未原生化的面板退路),或頂端 `if _web: _emit_view(name, _xxx_view()); return` 發原生 view block。**rich 渲染是 web 的 HTML 後端,不可刪**。
 - **5 個輸入原語(`menu/grouped_menu/ask_text/ask_int/confirm`)無 `_web` backend 時直接 `raise RuntimeError`**(終端 stdin 分支已移除)。🔴 **不可重新引入終端 stdin / `IntPrompt`/`Prompt` 互動**。測試照舊 monkeypatch `ui.menu`/`ui.confirm`/`ui.message` 自動作答(整個換掉函式,不觸 backend);需端到端則用 `WebBackend` + `make_recording_console()` 自動驅動 `main()`。
 - 加新面板:`console.py` 寫 `_xxx_view()` + 函式頂端 guard + `index.html` 加 `renderXxx` 並登錄 `VIEWS`(見 §「Web UI」)。
+
+### R28 · 世界相對座標 + 拓樸再檢查(全境補完後)
+
+- **每個地點必帶 `pos:[col,row]`**(`world["map"]={cols:40,rows:24}`);座標按正典地理排(各省 bounding box,邊境落接縫),`pos` 不入存檔、由內容靜態提供。`test_world` 守:pos 全員存在/界內/唯一 + link 空間局部性(對角線 55%)。
+- **拓樸鐵律(`test_world` 守)**:① 除湮滅之門/終局地城白名單(`dragon_lair/kvatch_gate/bravil_gate/the_deadlands/dawn_sanctum`)外,每點 degree≥2(內容地城是穿越路線);② **跨省連線只經邊境**(邊境節點是省際接縫),僅 `kvatch↔dragon_bridge`、`leyawiin↔gideon` 兩條歷史直連豁免;③ 每真實省的省內子圖連通;④ 城/鎮 danger=0、荒野 1–5、地城≥1、每省有低危(≤2)入口。
+- **加新城/鎮**:world.json `type:city/town`+`danger:0` + rulers.json 一筆(`race∈races`、`garrison>0`、`bloc/bloc_label`、`stance∈{imperial,independent,neutral}`);新 bloc 只是字串(politics 動態讀,免登錄)。**加新地城**:dungeons.json 一筆 + quests.json 一條 `clear_dungeon`/`reach` 委託(`test_polish` 守);board 委託金幣≤`max(320,danger*100)`、聲望≤`max(15,danger*5)`(`test_detailing` 守)。新城改變 AI 戰爭盤面 → **大量加城後跑 `sim_worldwar`**(守 R24)。
+- **內容生成工具**:`tools/build_expansion.py`(以 template 產 `tools/expansion.json`,所有 id 取自既有資料)+ `tools/expand_world.py`(併入四檔、補雙向 link、指派 pos、保留格式;一次性,再跑會因 id 撞既有而中止)。
 
 ---
 

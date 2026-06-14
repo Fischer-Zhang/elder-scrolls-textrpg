@@ -72,6 +72,7 @@ PYTHONPATH=. python3 sim_assassin.py      # 平衡回歸模擬(改戰鬥常數�
 | R25 | 房產 `house_stash` 不計負重(存穿戴擋免漏 recompute);精神飽滿 `well_rested` 快取只乘 xp 不寫 base;坐騎鞍袋走 `max_weight(char,gd)` 非資源不 recompute;衝鋒不走 `sneak_mult`、受獨立 `MOUNTED_CHARGE_DAMAGE_CAP_RATIO` 夾;戰技僅 `mounted` 旗(野外)+ 第一回合;spear archetype 落安全預設 → 改 combat/formulas 必跑 `sim_assassin` | re-sim, recompute, save |
 | R26 | 湮滅危機主線=`source:"main"` + `requires_event`/`requires_faction` gate(`available_quests`)+ `expel_faction` 叛離(`accept_quest`);雙結局都打達貢(滿血 `the_deadlands` vs 削弱 `dawn_sanctum`),用 `kills` milestone 互斥、都 `eradicate_faction` 神話黎明(`<fac>_eradicated` 旗標擋再入會);達貢之力=永久獨立層 `dagon_boon.py`(照吸血鬼);**獨立戰爭=危機後第二幕**(`aiwar`+分裂事件 gate 在 `oblivion_crisis_ended`)→ 改 aiwar 必跑 `sim_worldwar`、加永久屬性層/solo boss 必跑 `sim_assassin` | re-sim, recompute, save |
 | R27 | **Web-only**:唯一進入點 `python3 -m tesrpg.web`(終端 `__main__.py` 已刪);`console.py` 是 web 渲染/輸入接層(rich→HTML 退路**不可刪**+ `_xxx_view` 原生 view);5 輸入原語無 backend 即 `raise`,**不可重引入終端 stdin/`IntPrompt`**;測試 patch `ui.*` 或用 `WebBackend` 驅動 | |
+| R28 | 每地點必帶 `pos[col,row]`(`world["map"]`40×24,按正典地理 box;不入檔);跨省連線只經邊境(僅 2 條歷史直連豁免)、無非預期死路、省內子圖連通、危險度分級(`test_world` 守);加城→rulers 一筆+跑 `sim_worldwar`,加地城→dungeons+`clear_dungeon` 委託(`test_polish`/`test_detailing` 守);內容生成見 `tools/expand_world.py` | re-sim, save |
 
 ## 自動提交閘門 / 換 session 前檢查表
 
