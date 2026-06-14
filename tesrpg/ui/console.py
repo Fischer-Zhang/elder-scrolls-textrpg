@@ -511,6 +511,10 @@ def _map_view(char: Character, gamedata: GameData) -> dict:
         if loc["province"] not in order:
             order.append(loc["province"])
     _FAC = {"imperial": "帝", "independent": "獨", "neutral": "中", "daedric": "湮", "own": "己"}
+    # 地圖 marker 點擊只顯示「特色設施」(公會/陣營),通用的宿/商/訓/鐵/板不列(出口靠連線辨認)
+    _SVC_SHOW = {"mages_guild": "法師公會", "fighters_guild": "戰士公會", "thieves_guild": "盜賊公會",
+                 "dark_brotherhood": "黑暗兄弟會", "companions": "戰友團",
+                 "knights_nine": "聖騎士團", "mythic_dawn": "神話黎明"}
     gm = gamedata.world.get("map", {"cols": 40, "rows": 24})
     grid_nodes = []          # 扁平節點清單(供 web 相對位置地圖:總覽 + 行省放大,皆用 pos)
     provs = []
@@ -535,11 +539,22 @@ def _map_view(char: Character, gamedata: GameData) -> dict:
             grid_nodes.append({"id": lid, "name": loc["name"], "pos": loc.get("pos", [0, 0]),
                                "type": loc["type"], "type_cn": LOC_TYPE_NAME.get(loc["type"], ""),
                                "here": here, "visited": visited, "danger": loc.get("danger", 0),
-                               "province": prov, "faction": fac, "landmark": lm})
+                               "province": prov, "faction": fac, "landmark": lm,
+                               "svc": [_SVC_SHOW[s] for s in loc.get("services", []) if s in _SVC_SHOW]})
         provs.append({"name": prov, "nodes": nodes,
                       "visited": visited_n, "total": len(by_prov[prov])})
+    seen_e: set = set()      # 無向去重的連線(供地圖畫路徑 + 標時長)
+    edges = []
+    for lid, loc in locs.items():
+        for dest, h in loc.get("links", {}).items():
+            key = frozenset((lid, dest))
+            if key in seen_e or dest not in locs:
+                continue
+            seen_e.add(key)
+            edges.append({"a": lid, "b": dest, "h": h})
     return {"provinces": provs,
-            "grid": {"cols": gm["cols"], "rows": gm["rows"], "nodes": grid_nodes}}
+            "grid": {"cols": gm["cols"], "rows": gm["rows"],
+                     "nodes": grid_nodes, "edges": edges}}
 
 
 # --- 視覺識別 -----------------------------------------------------------

@@ -303,11 +303,18 @@ def test_view_model_shapes():
     cols, rows = g["cols"], g["rows"]
     assert cols == gd.world["map"]["cols"] and rows == gd.world["map"]["rows"]
     assert len(g["nodes"]) == len(gd.world["locations"])
+    ids = set()
     for n in g["nodes"]:
         assert n["id"] in gd.world["locations"]
         cx, cy = n["pos"]
         assert 0 <= cx < cols and 0 <= cy < rows, f"{n['id']} pos 越界"
-        assert "type" in n and "here" in n and "visited" in n
+        assert "type" in n and "here" in n and "visited" in n and isinstance(n["svc"], list)
+        ids.add(n["id"])
+    # edges:無向去重、指向合法節點、帶時數(供地圖畫連線 + 放大標時長)
+    assert g["edges"]
+    for e in g["edges"]:
+        assert e["a"] in ids and e["b"] in ids, f"edge 指向不存在節點:{e}"
+        assert isinstance(e["h"], int) and e["h"] >= 1
 
 
 def test_combat_target_key_parity():

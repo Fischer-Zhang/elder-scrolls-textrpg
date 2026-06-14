@@ -221,14 +221,19 @@
   .mzbar{display:flex;flex-wrap:wrap;gap:5px;margin:8px 0 4px;}
   .mzb{font-size:11.5px;padding:2px 9px;background:var(--raise);border:1px solid var(--line);border-radius:11px;color:var(--ink);cursor:pointer;}
   .mzb.active{border-color:var(--gold);color:var(--gold);}
-  .mapstage{position:relative;width:100%;max-width:580px;margin:6px auto 2px;background:rgba(255,255,255,.018);border:1px solid var(--line);border-radius:8px;overflow:hidden;}
-  .mmark{position:absolute;transform:translate(-50%,-50%);font-size:13px;line-height:1;color:var(--muted);white-space:nowrap;}
-  .mmark.vis{color:var(--ink);} .mmark.unseen{color:var(--faint);opacity:.45;}
-  .mmark.here{color:var(--gold);font-weight:700;z-index:4;text-shadow:0 0 6px var(--gold-soft);}
-  .mmark.d1{color:#c9aa6a;} .mmark.d2{color:#d79f47;} .mmark.d4{color:#cf5b5b;}
-  .mmark.unseen.d1,.mmark.unseen.d2,.mmark.unseen.d4{color:var(--faint);}
-  .mlabel{font-size:9.5px;margin-left:2px;}
-  .mapdetail{margin-top:10px;}
+  .mapstage{position:relative;width:100%;max-width:600px;margin:6px auto 2px;background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:8px;overflow:hidden;}
+  .mapedges{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1;}
+  .mapedges line{stroke:var(--gold-dim);stroke-width:1;vector-effect:non-scaling-stroke;opacity:.5;}
+  .mmark{position:absolute;transform:translate(-50%,-50%);font-size:14px;line-height:1;color:#b8b09c;white-space:nowrap;cursor:pointer;z-index:3;}
+  .mmark.vis{color:var(--ink);} .mmark.unseen{color:#9a927f;opacity:.85;}
+  .mmark.here{color:var(--gold);font-weight:700;z-index:5;text-shadow:0 0 7px var(--gold-soft);}
+  .mmark.d1{color:#e0c074;} .mmark.d2{color:#ecac4a;} .mmark.d4{color:#ee6f62;}
+  .mmark.sel{text-shadow:0 0 8px var(--gold-soft);} .mmark.sel::after{content:"";}
+  .mlabel{font-size:10px;margin-left:2px;}
+  .mhour{position:absolute;transform:translate(-50%,-50%);font-size:9px;color:var(--gold-dim);z-index:2;background:rgba(11,10,8,.7);padding:0 2px;border-radius:3px;pointer-events:none;}
+  .mapinfo{min-height:20px;margin:8px 2px 0;font-size:13px;color:var(--ink);}
+  .mapinfo .mi-type{color:var(--muted);font-size:12px;} .mapinfo .mi-svc{color:var(--gold);margin-left:6px;}
+  .mapinfo .mi-hint{color:var(--faint);font-size:12px;}
   /* 地城格子 */
   .dgrid{display:grid;gap:5px;margin:12px 0 4px;max-width:340px;}
   .dgcell{aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:17px;
@@ -465,32 +470,12 @@
       + `<div class="inv-foot"><span ${d.over ? 'style="color:#e08b82"' : ""}>負重 ${d.weight}/${d.max}${d.over ? " 超重!" : ""}</span><span class="gold">金幣 ${d.gold}</span></div></div>`);
   }
   function renderMap(d) {
-    // 各行省明細列表(維持原樣,置於地圖下方)
-    const provs = d.provinces.map(function (p) {
-      const nodes = p.nodes.map(function (n) {
-        const mark = n.here ? '<span class="here">★</span> ' : (n.visited ? "" : '<span class="unseen">?</span> ');
-        const danger = n.danger ? `<span class="chip red">⚠${n.danger}</span>` : "";
-        const fac = n.faction ? `<span class="fac">${esc(n.faction)}</span>` : "";
-        const lm = n.landmark ? '<span class="lm">❖</span>' : "";
-        const svc = n.services.length ? `<span class="svc">${esc(n.services.join("·"))}</span>` : "";
-        const exits = n.exits.length ? `<div class="mnex">→ ${n.exits.map(function (e) { return esc(e.name) + e.hours + "時"; }).join("、")}</div>` : "";
-        return `<div class="mnode ${n.here ? "here" : (n.visited ? "" : "unseen")}">${mark}<span class="mn-name">${esc(n.name)}</span><span class="mn-type">·${esc(n.type)}</span> ${danger}${fac}${lm}${svc}${exits}</div>`;
-      }).join("");
-      return `<div class="mprov"><div class="mprov-h">${esc(p.name)}<span class="mprov-n">已訪 ${p.visited}/${p.total}</span></div>${nodes}</div>`;
-    }).join("");
-
-    // 相對位置地圖:依 pos 座標繪製總覽圖,可點行省放大
-    const g = d.grid || { cols: 40, rows: 24, nodes: [] };
+    // 相對位置地圖:依 pos 座標繪製總覽圖(連線=相鄰路徑),可點行省放大(放大才標時長),點 marker 看設施
+    const g = d.grid || { cols: 40, rows: 24, nodes: [], edges: [] };
     const ICON = { city: "◆", town: "◇", dungeon: "✦", wilderness: "·" };
-    function markerHTML(n, cmin, rmin, cspan, rspan, label) {
-      const left = (n.pos[0] - cmin) / cspan * 100;
-      const top = (n.pos[1] - rmin) / rspan * 100;
-      const dg = n.danger >= 4 ? " d4" : (n.danger >= 2 ? " d2" : (n.danger >= 1 ? " d1" : ""));
-      const cls = n.here ? "here" : (n.visited ? "vis" : "unseen");
-      const glyph = n.here ? "★" : (ICON[n.type] || "·");
-      const lbl = label ? `<span class="mlabel">${esc(n.name)}</span>` : "";
-      const t = `${esc(n.name)}·${esc(n.type_cn)}${n.danger ? " ⚠" + n.danger : ""}`;
-      return `<div class="mmark ${cls}${dg}" style="left:${left}%;top:${top}%" title="${t}">${glyph}${lbl}</div>`;
+    const byId = {}; g.nodes.forEach(function (n) { byId[n.id] = n; });
+    function P(n, cmin, rmin, cspan, rspan) {
+      return [(n.pos[0] - cmin) / cspan * 100, (n.pos[1] - rmin) / rspan * 100];
     }
     function drawStage(stage, prov) {
       let nodes = g.nodes, label = false, cmin = 0, rmin = 0, cspan = g.cols - 1, rspan = g.rows - 1;
@@ -502,22 +487,58 @@
         cmin = a - pc; rmin = c - pr; cspan = (b - a) + 2 * pc || 1; rspan = (e - c) + 2 * pr || 1;
         label = true;
       }
-      stage.innerHTML = nodes.map(function (n) { return markerHTML(n, cmin, rmin, cspan, rspan, label); }).join("");
+      const vis = {}; nodes.forEach(function (n) { vis[n.id] = true; });
+      const edges = (g.edges || []).filter(function (e) { return vis[e.a] && vis[e.b]; });
+      const lines = edges.map(function (e) {
+        const p1 = P(byId[e.a], cmin, rmin, cspan, rspan), p2 = P(byId[e.b], cmin, rmin, cspan, rspan);
+        return `<line x1="${p1[0]}" y1="${p1[1]}" x2="${p2[0]}" y2="${p2[1]}"/>`;
+      }).join("");
+      const svg = `<svg class="mapedges" viewBox="0 0 100 100" preserveAspectRatio="none">${lines}</svg>`;
+      const hours = label ? edges.map(function (e) {
+        const p1 = P(byId[e.a], cmin, rmin, cspan, rspan), p2 = P(byId[e.b], cmin, rmin, cspan, rspan);
+        return `<div class="mhour" style="left:${(p1[0] + p2[0]) / 2}%;top:${(p1[1] + p2[1]) / 2}%">${e.h}</div>`;
+      }).join("") : "";
+      const marks = nodes.map(function (n) {
+        const p = P(n, cmin, rmin, cspan, rspan);
+        const dg = n.danger >= 4 ? " d4" : (n.danger >= 2 ? " d2" : (n.danger >= 1 ? " d1" : ""));
+        const cls = n.here ? "here" : (n.visited ? "vis" : "unseen");
+        const glyph = n.here ? "★" : (ICON[n.type] || "·");
+        const lbl = label ? `<span class="mlabel">${esc(n.name)}</span>` : "";
+        const t = `${esc(n.name)}·${esc(n.type_cn)}${n.danger ? " ⚠" + n.danger : ""}`;
+        return `<div class="mmark ${cls}${dg}" data-id="${esc(n.id)}" style="left:${p[0]}%;top:${p[1]}%" title="${t}">${glyph}${lbl}</div>`;
+      }).join("");
+      stage.innerHTML = svg + hours + marks;
+    }
+    function showInfo(info, n) {
+      if (!n) { info.innerHTML = '<span class="mi-hint">點地圖上的地點看設施;點上方行省可放大(顯示路徑時長)。</span>'; return; }
+      const here = n.here ? "★ " : "";
+      const dg = n.danger ? ` <span class="chip red">⚠${n.danger}</span>` : "";
+      const svc = (n.svc && n.svc.length) ? `<span class="mi-svc">${esc(n.svc.join("、"))}</span>` : '<span class="mi-hint">(無特殊設施)</span>';
+      info.innerHTML = `${here}<b>${esc(n.name)}</b><span class="mi-type">·${esc(n.type_cn)}</span>${dg} ${svc}`;
     }
     const btns = `<button class="mzb active" data-prov="">總覽</button>` +
       d.provinces.map(function (p) { return `<button class="mzb" data-prov="${esc(p.name)}">${esc(p.name)}</button>`; }).join("");
     const el = elFrom(`<div class="card"><div class="card-head">🗺 世界地圖</div>` +
       `<div class="mzbar">${btns}</div>` +
       `<div class="mapstage" style="aspect-ratio:${g.cols}/${g.rows}"></div>` +
-      `<div class="maplegend">★所在 ◆城 ◇鎮 ✦地城 ·荒野 · 黃→紅=危險度 · 灰=未到訪 · 點行省可放大</div>` +
-      `<div class="mapdetail">${provs}</div></div>`);
-    const stage = el.querySelector(".mapstage");
+      `<div class="mapinfo"></div>` +
+      `<div class="maplegend">★所在 ◆城 ◇鎮 ✦地城 ·荒野 · 黃→紅=危險度 · 連線=相鄰路徑 · 點行省放大標時長</div></div>`);
+    const stage = el.querySelector(".mapstage"), info = el.querySelector(".mapinfo");
     drawStage(stage, "");
+    showInfo(info, null);
+    stage.addEventListener("click", function (ev) {
+      const m = ev.target.closest(".mmark");
+      if (!m) return;
+      stage.querySelectorAll(".mmark.sel").forEach(function (x) { x.classList.remove("sel"); });
+      m.classList.add("sel");
+      showInfo(info, byId[m.dataset.id]);
+    });
     el.querySelectorAll(".mzb").forEach(function (btn) {
       btn.addEventListener("click", function () {
         el.querySelectorAll(".mzb").forEach(function (x) { x.classList.remove("active"); });
         btn.classList.add("active");
         drawStage(stage, btn.dataset.prov);
+        showInfo(info, null);
       });
     });
     return el;
