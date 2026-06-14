@@ -82,11 +82,7 @@ def _choose_origin(gamedata: GameData) -> str:
     while True:
         cat = ui.menu("開局背景(不一樣的人生)—— 先選一類",
                       [(lbl, f"{lbl}（{len(oids)} 種)") for lbl, oids in cats])
-        oids = dict(cats)[cat]
-        ui.origins_panel(gamedata, oids=oids)
-        pick = ui.menu(f"{cat} —— 選擇開局", [
-            (oid, f"{gamedata.origins[oid]['name']} — {gamedata.origins[oid]['blurb']}") for oid in oids
-        ], allow_back=True)
+        pick = ui.origin_picker(gamedata, dict(cats)[cat])   # 一覽即選單:點開局卡(web)/輸入編號(終端)
         if pick is not None:
             return pick
 

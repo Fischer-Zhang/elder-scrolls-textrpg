@@ -436,23 +436,38 @@ def _origins_view(gamedata: GameData, oids: list | None = None) -> dict:
     return {"origins": [_origin_card(gamedata, oid, gamedata.origins[oid]) for oid in ids]}
 
 
-def origins_panel(gamedata: GameData, oids: list | None = None) -> None:
-    """創角開局選擇前的資訊面板:逐開局列出起始地/金幣/裝備·身分/起手任務(終端表 + Web 卡)。
-    oids 給定時只列該批(兩層選單:選定類別後只顯示該類)。"""
+def origins_panel(gamedata: GameData, oids: list | None = None, numbered: bool = False) -> None:
+    """創角開局選擇的資訊面板:逐開局列出起始地/金幣/裝備·身分/起手任務(終端表 + Web 可點卡)。
+    oids 給定時只列該批(類別篩選);numbered=True 終端在最前加編號(面板即選單,輸入編號選)。"""
     if _web is not None:
         _emit_view("origins", _origins_view(gamedata, oids))
         return
     tbl = Table(box=None, pad_edge=False, padding=(0, 1))
+    if numbered:
+        tbl.add_column("#", justify="right", style=GOLD)
     tbl.add_column("開局", style=f"bold {PARCH}", no_wrap=True)
     tbl.add_column("起始地", style=INK, no_wrap=True)
     tbl.add_column("金幣", justify="right", style=GOLD_DIM)
     tbl.add_column("裝備 · 身分", style=INK)
     tbl.add_column("起手任務", style="cyan")
-    for c in _origins_view(gamedata, oids)["origins"]:
+    for i, c in enumerate(_origins_view(gamedata, oids)["origins"], 1):
         ident = "、".join(c["gear"] + c["tags"]) or "標準起始"
         gold = str(c["gold"]) if c["gold"] is not None else "標準"
-        tbl.add_row(c["name"], c["location"], gold, ident, c["quest"])
+        row = ([str(i)] if numbered else []) + [c["name"], c["location"], gold, ident, c["quest"]]
+        tbl.add_row(*row)
     console.print(_panel(tbl, title="🧭 開局背景一覽(各自帶起手任務)"))
+
+
+def origin_picker(gamedata: GameData, oids: list) -> str | None:
+    """以「一覽」本身作選擇器:web 直接點開局卡(extra_keys),終端輸入編號;0/返回 回 None。"""
+    if _web is not None:
+        _emit_view("origins", _origins_view(gamedata, oids))     # 可點卡(data-key=開局 id)
+        choice = grouped_menu("點選上方開局卡以選擇(或返回)",
+                              [("", [("__back__", "↩ 返回類別")])], extra_keys=oids)
+        return None if choice == "__back__" else choice
+    origins_panel(gamedata, oids, numbered=True)
+    n = ask_int("選擇開局(輸入編號,0=返回)", default=1, lo=0, hi=len(oids))
+    return None if n == 0 else oids[n - 1]
 
 
 def _court_view(ruler, gamedata, reception, standing, thane, politics, territory) -> dict:
