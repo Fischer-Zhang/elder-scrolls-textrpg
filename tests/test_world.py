@@ -275,6 +275,41 @@ def test_lockpick_is_thieves_guild_good():
     assert "discarded_lockpick" in gd.events                                        # 探索撿到
 
 
+# --- 相對位置座標(M2:地圖前置)----------------------------------------
+def test_every_location_has_coords():
+    """每個地點都有合法 pos[col,row]:在 world.map 界內、且全唯一(相對位置地圖前置)。"""
+    gd, _ = _char()
+    m = gd.world.get("map", {})
+    cols, rows = m.get("cols"), m.get("rows")
+    assert cols and rows, "world.map 缺 cols/rows"
+    seen = {}
+    for lid, loc in gd.world["locations"].items():
+        pos = loc.get("pos")
+        assert isinstance(pos, list) and len(pos) == 2, f"{lid} 缺合法 pos"
+        c, r = pos
+        assert isinstance(c, int) and isinstance(r, int), f"{lid} pos 非整數:{pos}"
+        assert 0 <= c < cols and 0 <= r < rows, f"{lid} pos 越界 {pos}"
+        assert (c, r) not in seen, f"{lid} 與 {seen.get((c, r))} 同格 {pos}"
+        seen[(c, r)] = lid
+
+
+def test_links_are_spatially_local():
+    """每條 link 兩端在格上不應隔太遠(catch 座標放錯);門檻寬鬆(對角線 55%),只抓離譜跨圖連線。"""
+    import math
+    gd, _ = _char()
+    locs = gd.world["locations"]
+    m = gd.world["map"]
+    diag = math.hypot(m["cols"], m["rows"])
+    bad = []
+    for lid, loc in locs.items():
+        c0, r0 = loc["pos"]
+        for dest in loc.get("links", {}):
+            c1, r1 = locs[dest]["pos"]
+            if math.hypot(c1 - c0, r1 - r0) > diag * 0.55:
+                bad.append(f"{lid}->{dest}")
+    assert not bad, f"連線跨越過大距離,座標可能放錯:{bad}"
+
+
 def run():
     for name, fn in sorted(globals().items()):
         if name.startswith("test_") and callable(fn):
