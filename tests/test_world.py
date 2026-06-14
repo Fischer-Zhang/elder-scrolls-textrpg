@@ -313,8 +313,8 @@ def test_links_are_spatially_local():
 # --- 拓樸再檢查(M2:全境補完後)----------------------------------------
 # 刻意的盲腸:湮滅之門/終局地城(degree 1 是設計)
 _DEAD_END_OK = {"dragon_lair", "kvatch_gate", "bravil_gate", "the_deadlands", "dawn_sanctum"}
-# 既有的兩條直連跨省邊(歷史保留,不經邊境;改名會破存檔)
-_LEGACY_CROSS = {frozenset(("kvatch", "dragon_bridge")), frozenset(("leyawiin", "gideon"))}
+# 跨省連線一律經邊境(地理重建後已無歷史直連豁免)
+_LEGACY_CROSS = set()
 
 
 def test_no_dead_ends_except_final_dungeons():
