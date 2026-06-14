@@ -1,7 +1,8 @@
 # Handoff — 流亡者 (tesrpg)
 
-上古卷軸風格的**技能驅動沙盒文字 RPG**(終端機,Python + `rich`)。單一英雄:做什麼練什麼、
+上古卷軸風格的**技能驅動沙盒文字 RPG**(**瀏覽器 Web 版**;Python 後端,`rich` 把畫面渲成 HTML)。單一英雄:做什麼練什麼、
 跨四省(賽羅迪爾/天際/晨風/黑沼澤,世界已閉合成大環)探索鑽地城、戰士/法師/盜賊三系玩法,直到陣亡或隱退結算一生傳奇。
+> ⚠ **已 Web-only**:終端機版(`python3 -m tesrpg`)已移除;`tesrpg/ui/console.py` 為 Web 的渲染/輸入接層(`_*_view` view-model + rich→HTML 退路 + `_web_prompt`),5 個輸入原語無 web backend 時直接 raise(測試照舊 patch `ui.*`)。
 
 > 給接手的 session:這份文件是「立刻能接著做」的地圖。先讀「現況」「怎麼跑」「開發節奏」三節即可上手。
 
@@ -12,7 +13,7 @@
 - **工作目錄**:`/home/fischer/SLG`
 - **GitHub**:`git@github.com:Fischer-Zhang/elder-scrolls-textrpg.git`(分支 `main`,SSH 已認證為 Fischer-Zhang)
 - **Python 3.12**;`rich` 由**系統套件**提供(`python3-rich`)—— ⚠️ **本機沒有 `pip`、沒有 `pytest`、sudo 需密碼**。
-- **執行遊戲**:`python3 -m tesrpg`(終端)/ `python3 -m tesrpg.web`(本機 Web 版,瀏覽器開 `http://127.0.0.1:8080`)
+- **執行遊戲**:`python3 -m tesrpg.web`(本機 Web 版,瀏覽器開 `http://127.0.0.1:8080`;**唯一進入點 —— 已 Web-only,終端版已移除**)
 - **跑測試**:`python3 tests/run_all.py`(不需 pytest;**全綠**;模組數見結尾「全部通過 (N 個測試模組)」,別在文件硬寫數字)/ 一鍵 `bash check.sh`(編譯 → 測試 → 條件式 sim)
 - **編譯檢查**:`python3 -m py_compile tesrpg/**/*.py tesrpg/*.py tests/*.py`
 - 存檔在 `~/.tesrpg/save.json`(在 repo 外;測試/煙霧測試後記得 `rm -f ~/.tesrpg/save.json`)
@@ -659,7 +660,7 @@ tesrpg/
 │   ├── loot         resolve_loot(怪物掉落 + 寶箱共用)
 │   ├── legacy       一生傳奇總結 + 評分
 │   └── events       事件引擎(DESIGN 3.8)
-└── ui/console.py    所有 rich 渲染 + menu / grouped_menu / 輸入
+└── ui/console.py    Web 渲染/輸入接層:`_*_view` view-model + rich→HTML 退路 + menu/grouped_menu/輸入(走 `_web_prompt`)
 ```
 
 ---
@@ -816,6 +817,13 @@ tesrpg/
 - 🔴 **獨立戰爭=湮滅危機後第二幕(時間軸因果)**:`aiwar.update` 與分裂世界事件(`septim_line_ends`/`argonian_accession`/`nord_stirrings`)**全 gate 在 `oblivion_crisis_ended`**(危機未平 → 內戰按兵不動、`war_tick_at` 隨危機結束才起算)。`sim_worldwar`/`test_aiwar` 的 `_mk`/`_state` 已補 `oblivion_crisis_ended` 前提;`test_worldstate` 分裂鏈測試改 gate 在危機。**改 aiwar 必跑 `sim_worldwar`**(R24 不退化)。
 - 新內容純 JSON:5 座 danger5-6 地城(`the_deadlands` 4 層最深)、達貢 2 變體、4 神器(`crusaders_aegis`/`dawnfang`/`mysterium_xarxes`/`sigil_stone_fragment`)、5 世界事件、**賽羅迪爾補正史九城**(+Bravil/Chorrol/Leyawiin + 3 領主)。回歸見 `test_oblivion.py`。
 
+### R27 · Web-only(終端版已移除)
+
+- **唯一進入點 `python3 -m tesrpg.web`**;`tesrpg/__main__.py`(終端 `python3 -m tesrpg`)已刪。遊戲在背景 thread 跑原本阻塞的 `main()`(`server._run_game`),`ui.use_web_backend()` 注入 `WebBackend` + 錄製用 Console。
+- **`tesrpg/ui/console.py` = Web 的渲染/輸入接層**:渲染函式照舊 `console.print(rich)` → 錄進錄製 Console → `export_html` 成 HTML block(尚未原生化的面板退路),或頂端 `if _web: _emit_view(name, _xxx_view()); return` 發原生 view block。**rich 渲染是 web 的 HTML 後端,不可刪**。
+- **5 個輸入原語(`menu/grouped_menu/ask_text/ask_int/confirm`)無 `_web` backend 時直接 `raise RuntimeError`**(終端 stdin 分支已移除)。🔴 **不可重新引入終端 stdin / `IntPrompt`/`Prompt` 互動**。測試照舊 monkeypatch `ui.menu`/`ui.confirm`/`ui.message` 自動作答(整個換掉函式,不觸 backend);需端到端則用 `WebBackend` + `make_recording_console()` 自動驅動 `main()`。
+- 加新面板:`console.py` 寫 `_xxx_view()` + 函式頂端 guard + `index.html` 加 `renderXxx` 並登錄 `VIEWS`(見 §「Web UI」)。
+
 ---
 
 ## 4. 開發節奏(ultracode 開著 → 每個功能都這樣做)
@@ -825,7 +833,7 @@ tesrpg/
 1. **實作**(資料 + systems + main/ui)。
 2. **單元測試**:新增 `tests/test_*.py`(用 `assert`,可直接 `python3` 跑;登錄進 `tests/run_all.py`)。
 3. **平衡模擬**:Bash 一行式跑 `combat.auto_resolve` / 手寫迴圈,印勝率/回合數。
-4. **無頭煙霧測試**:把 `ui.console` 換成 `Console(file=StringIO())`、`ui.menu` 換成自動選擇,實跑 `run_battle`/action,抓 traceback。
+4. **無頭煙霧測試**:用 `WebBackend` + `make_recording_console()` 自動作答驅動 `main()`(或直接 patch `ui.menu`/`Console(file=StringIO())`),實跑建角/`run_battle`/action,抓 traceback。
 5. **對抗式審查(Workflow 工具)**:多維度 fan-out 審查 → 每個發現由獨立懷疑者**對抗式驗證** → 只回報「能真實重現」的 bug。
 6. **覆核 + 修正**:**逐一覆核審查結果**(會有誤報、也會有「會引入新 bug 的錯誤修法」—— 已擋下 2 次);套用確認的修正 + 補回歸測試;重跑全套。
 

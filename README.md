@@ -6,12 +6,13 @@
 
 ## 安裝與執行
 
-需求:**Python 3.11+** 與 [`rich`](https://github.com/Textualize/rich)。
+需求:**Python 3.11+** 與 [`rich`](https://github.com/Textualize/rich)(後端用來把畫面渲成 HTML)。
 Debian/Ubuntu:`sudo apt install python3-rich`,或 `pip install rich`。
 
+本遊戲為**瀏覽器 Web 版**(純 stdlib 本機伺服器,零額外相依):
+
 ```bash
-python3 -m tesrpg          # 終端機版
-python3 -m tesrpg.web      # Web 版(瀏覽器開 http://127.0.0.1:8080)
+python3 -m tesrpg.web      # 啟動後用瀏覽器開 http://127.0.0.1:8080
 ```
 
 存檔在 `~/.tesrpg/save.json`。

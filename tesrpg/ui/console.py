@@ -1,6 +1,8 @@
-"""rich 終端渲染與輸入。
+"""Web 版的渲染與輸入接層(本專案已 Web-only,終端版已移除)。
 
-把所有 print / prompt 收斂在這層,規則邏輯不直接碰 IO。
+把所有畫面輸出 / 輸入收斂在這層,規則邏輯不直接碰 IO。
+渲染走 rich → 錄製用 Console → 匯出 HTML(供 web 前端顯示尚未原生化的面板),
+或直接 `_emit_view()` 發原生 view block;輸入一律走 `_web_prompt()`。
 """
 
 from __future__ import annotations
@@ -10,7 +12,6 @@ from rich.align import Align
 from rich.columns import Columns
 from rich.console import Console, Group
 from rich.panel import Panel
-from rich.prompt import IntPrompt, Prompt
 from rich.rule import Rule
 from rich.table import Table
 from rich.text import Text
@@ -2066,34 +2067,13 @@ def grouped_menu(title: str, groups: list, extra_keys: list | None = None,
     groups: [(分類名, [(key, 顯示文字), ...]), ...];空分類自動略過。
     extra_keys:額外合法但不渲染成按鈕的 key(web:供可點內容列 submit,如地點出口 go:dest)。
     """
-    if _web is not None:
-        g = [{"header": header, "options": [{"key": k, "label": _plain(lbl)} for k, lbl in opts]}
-             for header, opts in groups if opts]
-        return _web_prompt({"type": "grouped", "title": title or "", "groups": g,
-                            "extra_keys": list(extra_keys or []),
-                            "cta_keys": list(cta_keys or [])})
-    if title:
-        console.print(f"\n[bold {GOLD}]❖ {title}[/]")
-    flat: list[str] = []
-    blocks = []
-    for header, opts in groups:
-        if not opts:
-            continue
-        blk = Text()
-        blk.append(f"{header}\n", style=f"bold {GOLD_DIM}")
-        for key, label in opts:
-            flat.append(key)
-            blk.append(f"{len(flat):>2}", style=GOLD)
-            blk.append(" ", style=FAINT)
-            blk.append(f"{label}\n", style=PARCH)
-        blocks.append(blk)
-    # 分組區塊並排成多欄,避免長選單塞滿整個畫面
-    console.print(Columns(blocks, padding=(0, 4), equal=False, column_first=True))
-    while True:
-        n = IntPrompt.ask("  請選擇", default=1)
-        if 1 <= n <= len(flat):
-            return flat[n - 1]
-        console.print("[red]  無效的選項[/]")
+    if _web is None:
+        raise RuntimeError("ui.grouped_menu 需要 web backend(終端版已移除;測試請 patch ui.grouped_menu)")
+    g = [{"header": header, "options": [{"key": k, "label": _plain(lbl)} for k, lbl in opts]}
+         for header, opts in groups if opts]
+    return _web_prompt({"type": "grouped", "title": title or "", "groups": g,
+                        "extra_keys": list(extra_keys or []),
+                        "cta_keys": list(cta_keys or [])})
 
 
 _SERVICE_CN = {"inn": "宿", "merchant": "商", "trainer": "訓", "mages_guild": "法",
@@ -2154,54 +2134,34 @@ def menu(title: str, options: list[tuple], allow_back: bool = False) -> str | No
 
     options: [(key, 顯示文字), ...] 或 [(key, 顯示文字, chips), ...]
       chips(選用)= [{"text": 文字, "tone": 色調}, ...] —— web 渲成選項下的數值小標;
-      終端版串成淡色行內後綴。
+      （web 渲成選項下的數值小標。）
     """
-    if _web is not None:
-        opts = []
-        for opt in options:
-            o = {"key": opt[0], "label": _plain(opt[1])}
-            if len(opt) > 2 and opt[2]:
-                o["chips"] = opt[2]
-            opts.append(o)
-        spec = {"type": "menu", "title": title or "", "allow_back": bool(allow_back), "options": opts}
-        return _web_prompt(spec)
-    if title:
-        console.print(f"\n[bold {GOLD}]❖ {title}[/]")
-    for i, opt in enumerate(options, 1):
-        label = opt[1]
+    if _web is None:
+        raise RuntimeError("ui.menu 需要 web backend(終端版已移除;測試請 patch ui.menu)")
+    opts = []
+    for opt in options:
+        o = {"key": opt[0], "label": _plain(opt[1])}
         if len(opt) > 2 and opt[2]:
-            label = f"{label}  [{FAINT}]{'  '.join(c['text'] for c in opt[2])}[/]"
-        console.print(f"  [{GOLD}]{i:>2}[/][{FAINT}].[/] {label}")
-    if allow_back:
-        console.print(f"  [{GOLD}] 0[/][{FAINT}].[/] [{INK}]返回[/]")
-    lo = 0 if allow_back else 1
-    while True:
-        n = IntPrompt.ask("  請選擇", default=lo)
-        if allow_back and n == 0:
-            return None
-        if 1 <= n <= len(options):
-            return options[n - 1][0]
-        console.print("[red]  無效的選項[/]")
+            o["chips"] = opt[2]
+        opts.append(o)
+    spec = {"type": "menu", "title": title or "", "allow_back": bool(allow_back), "options": opts}
+    return _web_prompt(spec)
 
 
 def ask_text(prompt: str, default: str | None = None) -> str:
-    if _web is not None:
-        return _web_prompt({"type": "text", "prompt": prompt, "default": default})
-    return Prompt.ask(f"  {prompt}", default=default)
+    if _web is None:
+        raise RuntimeError("ui.ask_text 需要 web backend(終端版已移除;測試請 patch ui.ask_text)")
+    return _web_prompt({"type": "text", "prompt": prompt, "default": default})
 
 
 def ask_int(prompt: str, default: int, lo: int, hi: int) -> int:
-    if _web is not None:
-        return _web_prompt({"type": "int", "prompt": prompt,
-                            "default": default, "lo": lo, "hi": hi})
-    while True:
-        n = IntPrompt.ask(f"  {prompt}", default=default)
-        if lo <= n <= hi:
-            return n
-        console.print(f"[red]  請輸入 {lo}–{hi} 之間[/]")
+    if _web is None:
+        raise RuntimeError("ui.ask_int 需要 web backend(終端版已移除;測試請 patch ui.ask_int)")
+    return _web_prompt({"type": "int", "prompt": prompt,
+                        "default": default, "lo": lo, "hi": hi})
 
 
 def confirm(prompt: str) -> bool:
-    if _web is not None:
-        return _web_prompt({"type": "confirm", "prompt": prompt})
-    return Prompt.ask(f"  {prompt} [y/n]", choices=["y", "n"], default="n") == "y"
+    if _web is None:
+        raise RuntimeError("ui.confirm 需要 web backend(終端版已移除;測試請 patch ui.confirm)")
+    return _web_prompt({"type": "confirm", "prompt": prompt})

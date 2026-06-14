@@ -1,7 +1,8 @@
 # CLAUDE.md — 流亡者 (tesrpg) 開發憲法
 
-上古卷軸風格的**技能驅動沙盒文字 RPG**(終端機,Python + `rich`;另有瀏覽器 Web 版)。
+上古卷軸風格的**技能驅動沙盒文字 RPG**(**瀏覽器 Web 版**;Python 後端,`rich` 把畫面渲成 HTML)。
 單一英雄、learn-by-doing(做什麼練什麼)、跨八省探索鑽地城。
+> ⚠ **本專案已 Web-only**:終端機版(`python3 -m tesrpg`)已移除;`tesrpg/ui/console.py` 現為 Web 的渲染/輸入接層(rich→HTML view-model + `_web_prompt`),5 個輸入原語在無 web backend 時直接 raise。
 
 > **本檔是給 Claude 的開發憲法**:每次改動都適用的節奏 + 跨領域紅線 + 提交檢查表 + 子系統鐵律「索引」。
 > 子系統鐵律**本體**在 [handoff.md](handoff.md) §3(以 `R##` 標號);完整現況清單見 handoff §1;設計理念見 [DESIGN.md](DESIGN.md);玩家「怎麼玩」見 [README.md](README.md);**全增益效果目錄(含實際數值/疊加規則)見 [BUFFS.md](BUFFS.md)**(改增益常數順手更新)。
@@ -9,8 +10,7 @@
 ## 怎麼跑 / 測試
 
 ```bash
-python3 -m tesrpg                        # 終端機版
-python3 -m tesrpg.web                     # Web 版 → http://127.0.0.1:8080
+python3 -m tesrpg.web                     # Web 版(唯一進入點)→ http://127.0.0.1:8080
 python3 tests/run_all.py                  # 全綠;模組數見結尾「全部通過 (N 個測試模組)」(別在文件硬寫數字)
 bash check.sh                             # ★ 一鍵驗證:編譯 → 全測試 → 條件式 sim(= /check;見下「自動化」)
 shopt -s globstar; python3 -m py_compile tesrpg/**/*.py tesrpg/*.py tests/*.py   # 純編譯檢查(完整形;少了 tesrpg/*.py 會漏掉 main/state/formulas 等頂層模組)
@@ -27,7 +27,7 @@ PYTHONPATH=. python3 sim_assassin.py      # 平衡回歸模擬(改戰鬥常數�
 4. **驗證**(全綠才算數;一鍵 a–c = `bash check.sh` / `/check`):
    - a. 單元測試 `tests/run_all.py`(新測登錄 run_all,須全綠)
    - b. 平衡模擬:改戰鬥常數跑 `sim_assassin.py`,勝率/回合數不退化
-   - c. 無頭煙霧:`Console(file=StringIO())` + 自動選單抓 traceback
+   - c. 無頭煙霧:WebBackend 自動作答驅動 `main()`(或 patch `ui.menu`/`Console(file=StringIO())`)抓 traceback
    - d. 對抗審查(Workflow):多維 fan-out → 獨立懷疑者**對抗式驗證**,只留能真實重現的
    - e. 覆核+修正:逐一覆核(有誤報、也有「會引入新 bug 的錯誤修法」)→ 補回歸測試 → 重跑全套
 5. **修改文件 + 提交推送**:同步 `handoff.md`(§1 現況 / §3 鐵律 R##)與必要的 `CLAUDE.md` → **驗證綠即自動 `git commit` & `git push origin main`(本專案慣例,見 handoff §3 R22;不需明說。紅燈則不提交、先修)**。
@@ -71,6 +71,7 @@ PYTHONPATH=. python3 sim_assassin.py      # 平衡回歸模擬(改戰鬥常數�
 | R24 | AI 戰爭 `aiwar.update` 在 worldstate 後/tick_tax 前;決定性 `rng`+`sorted`(迭代序不餵 rng);玩家城只削 garrison 不寫 world_faction(三層免疫);改常數必跑 `sim_worldwar`(防雪球**含玩家選邊**、霸權煞車在外交後套) | re-sim, save |
 | R25 | 房產 `house_stash` 不計負重(存穿戴擋免漏 recompute);精神飽滿 `well_rested` 快取只乘 xp 不寫 base;坐騎鞍袋走 `max_weight(char,gd)` 非資源不 recompute;衝鋒不走 `sneak_mult`、受獨立 `MOUNTED_CHARGE_DAMAGE_CAP_RATIO` 夾;戰技僅 `mounted` 旗(野外)+ 第一回合;spear archetype 落安全預設 → 改 combat/formulas 必跑 `sim_assassin` | re-sim, recompute, save |
 | R26 | 湮滅危機主線=`source:"main"` + `requires_event`/`requires_faction` gate(`available_quests`)+ `expel_faction` 叛離(`accept_quest`);雙結局都打達貢(滿血 `the_deadlands` vs 削弱 `dawn_sanctum`),用 `kills` milestone 互斥、都 `eradicate_faction` 神話黎明(`<fac>_eradicated` 旗標擋再入會);達貢之力=永久獨立層 `dagon_boon.py`(照吸血鬼);**獨立戰爭=危機後第二幕**(`aiwar`+分裂事件 gate 在 `oblivion_crisis_ended`)→ 改 aiwar 必跑 `sim_worldwar`、加永久屬性層/solo boss 必跑 `sim_assassin` | re-sim, recompute, save |
+| R27 | **Web-only**:唯一進入點 `python3 -m tesrpg.web`(終端 `__main__.py` 已刪);`console.py` 是 web 渲染/輸入接層(rich→HTML 退路**不可刪**+ `_xxx_view` 原生 view);5 輸入原語無 backend 即 `raise`,**不可重引入終端 stdin/`IntPrompt`**;測試 patch `ui.*` 或用 `WebBackend` 驅動 | |
 
 ## 自動提交閘門 / 換 session 前檢查表
 
@@ -97,4 +98,4 @@ PYTHONPATH=. python3 sim_assassin.py      # 平衡回歸模擬(改戰鬥常數�
 - **核心循環**:行動制(在地點選行動 → 推進時/日 → 觸發事件/遭遇);戰鬥是回合制子迴圈。
 - 進入點/主迴圈:`tesrpg/main.py`;狀態/存檔:`tesrpg/state.py`;角色:`tesrpg/models/character.py`。
 - 規則:`tesrpg/formulas.py` + `tesrpg/systems/*.py`(combat/magic/progression/mastery/smithing/vampirism/skooma/politics…)。
-- UI:`tesrpg/ui/console.py`(rich)+ `tesrpg/web/`(Web)。平衡工具:`sim_assassin.py`;設計/交接:`DESIGN.md`、`handoff.md`。
+- UI:**Web-only** —— `tesrpg/web/`(stdlib HTTP+SSE 後端 + `static/index.html` 前端)+ `tesrpg/ui/console.py`(渲染/輸入接層:`_*_view` view-model + rich→HTML 退路 + `_web_prompt`)。平衡工具:`sim_assassin.py`;設計/交接:`DESIGN.md`、`handoff.md`。
