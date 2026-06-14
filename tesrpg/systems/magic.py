@@ -92,7 +92,7 @@ def _ally_verb(kind: str) -> str:
 
 def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
          target=None, battle: dict | None = None, enemies: list | None = None,
-         corpses: list | None = None) -> dict:
+         corpses: list | None = None, mounted: bool = False) -> dict:
     """施放法術。回傳事件 dict:
        {"ok","message","damage","skill_events","killed": bool}
     target 為單體攻擊的敵方 Creature;enemies 為 AoE(全體)法術的「存活」敵群清單;
@@ -124,6 +124,10 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
     eff = sp["effect"]
     kind = eff["kind"]
     power = _power(char, gamedata, sp["school"]) * formulas.cast_fatigue_power_factor(fatigue_ratio)
+    # 法駒:騎乘作戰時法術增益(只在野外騎乘戰生效;mounted=False 處處中性,sim/地城不受影響)。
+    if mounted:
+        from tesrpg.systems import mounts
+        power *= 1.0 + mounts.spell_bonus_dmg(char, gamedata, mounted)
     msg = ""
     damage = 0
     killed = False

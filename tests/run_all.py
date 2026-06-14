@@ -59,6 +59,8 @@ import test_class_identity
 import test_companion_arcs
 import test_dialogue_tree
 import test_aiwar
+import test_housing
+import test_mounts
 
 if __name__ == "__main__":
     modules = [test_creation, test_progression, test_state, test_combat, test_world, test_seed,
@@ -70,7 +72,7 @@ if __name__ == "__main__":
                test_polish, test_sheet, test_web, test_achievements, test_smithing, test_dungeon,
                test_speechcraft, test_skooma, test_lycanthropy, test_party, test_attributes,
                test_hybrids, test_companions, test_class_identity, test_companion_arcs,
-               test_dialogue_tree, test_aiwar]
+               test_dialogue_tree, test_aiwar, test_housing, test_mounts]
     for m in modules:
         m.run()
         print(f"✓ {m.__name__}")

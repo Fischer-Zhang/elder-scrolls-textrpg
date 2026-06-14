@@ -280,12 +280,21 @@ def initiative_order(player: Character, creature: Creature) -> list:
 # ======================================================================
 # 結算單次攻擊
 # ======================================================================
+def _ride_evasion(char) -> float:
+    """騎射(獵馬戰技)賦予的臨時閃避(active_effect;與雜技/里程碑閃避聚合相加,不遮蔽)。"""
+    return sum(e.get("evasion", 0.0) for e in getattr(char, "active_effects", [])
+               if e.get("kind") == "ride_evasion" and e.get("turns", 0) > 0)
+
+
 def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
                    defender_blocking: bool = False, sneak_attack: bool = False,
-                   aimed: bool = False) -> dict:
+                   aimed: bool = False, mounted_charge: bool = False,
+                   charge_spec: dict | None = None) -> dict:
     """attacker 攻擊 defender,套用傷害、發放玩家技能 xp。回傳事件 dict。
 
     sneak_attack:玩家開場偷襲(不察之敵)→ 傷害依潛行加倍、命中下限拉高、鍛鍊潛行。
+    mounted_charge:坐騎「衝鋒」戰技(開場、僅野外遭遇)→ 長槍×高倍率 / 其他近戰追加坐騎踐踏;
+    **絕不走 sneak_mult**(charge_spec 來自 mounts.charge_spec),對 solo boss 受獨立夾限。
 
     事件:{"attacker","defender","hit":bool,"damage":int,"blocked":bool,
            "skill_events":[...], "defender_dead":bool, "sneak":倍率|None}
@@ -308,7 +317,8 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
     speed = wdef.get("speed", formulas.WEAPON_SPEED_DEFAULT) if wdef else formulas.WEAPON_SPEED_DEFAULT
     fr = _fatigue_ratio(attacker)
     evasion = (formulas.dodge_evasion(defender.skill("acrobatics"))
-               + mastery.evasion_bonus(defender, gamedata)) if _is_player(defender) else 0.0
+               + mastery.evasion_bonus(defender, gamedata)
+               + _ride_evasion(defender)) if _is_player(defender) else 0.0   # 騎射閃避:聚合相加,不遮蔽
     block_pen = mastery.block_hit_penalty(defender, gamedata) if defender_blocking else formulas.BLOCK_HIT_PENALTY
     chance = formulas.hit_chance(wpn_skill, _agility(attacker), _agility(defender),
                                  fr, defender_blocking, defender_evasion=evasion,
@@ -358,6 +368,12 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
                 raw *= (1 + emp)
         # 里程碑武器威力 + 弓手「瞄準射」:補傷「不吃偷襲倍率」(同副手補刀模式,守紅線;仍受 solo 夾限)
         power_bonus = raw * (wmod.get("power", 0.0) + (formulas.AIMED_SHOT_POWER if aimed else 0.0))
+        # 坐騎「衝鋒」:長槍藉馬勢洞穿(武器傷×高倍率)/ 其他近戰追加坐騎踐踏(flat)。不吃偷襲倍率(charge≠sneak)。
+        if mounted_charge and not beast and not bound and charge_spec:
+            if archetype == "spear":
+                power_bonus += raw * (charge_spec.get("mult_spear", 1.0) - 1.0)
+            else:
+                power_bonus += charge_spec.get("mount_dmg", 0)
         if sneaking:
             raw *= sneak_mult
         raw += power_bonus
@@ -422,6 +438,11 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
         # (apex 仍可隱遁循環無傷清,但須多刀;精英/小遭遇不受影響)。
         if sneaking and not _is_player(defender) and _is_solo(defender, gamedata):
             cap = (getattr(defender, "max_health", 0) or _get_hp(defender)) * formulas.SOLO_SNEAK_DAMAGE_CAP_RATIO
+            dmg = min(dmg, cap)
+        # 坐騎衝鋒反一刀:衝鋒(尤其長槍×高倍率)對 solo boss 的單擊夾在生命上限比例 → 開場一擊不秒王。
+        # 獨立於偷襲夾(衝鋒不走 sneak_mult);僅針對 solo,精英/小遭遇不受影響。
+        if mounted_charge and not _is_player(defender) and _is_solo(defender, gamedata):
+            cap = (getattr(defender, "max_health", 0) or _get_hp(defender)) * formulas.MOUNTED_CHARGE_DAMAGE_CAP_RATIO
             dmg = min(dmg, cap)
         dmg_done = int(round(dmg))
         _set_hp(defender, _get_hp(defender) - dmg_done)

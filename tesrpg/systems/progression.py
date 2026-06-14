@@ -91,6 +91,10 @@ def use_skill(char: Character, gamedata: GameData, skill_id: str, xp: float) -> 
     char.skills.setdefault(skill_id, formulas.SKILL_BASE)
     char.skill_xp.setdefault(skill_id, 0.0)
 
+    # 房產「精神飽滿」:在家最佳休息後一段時間技能成長加速(讀快取布林;舊存檔/未睡 → 中性)。
+    if getattr(char, "well_rested", False):
+        xp *= formulas.WELL_RESTED_XP_MULT
+
     ensure_level_xp(char)
     could_level_before = char.can_level_up()
     char.skill_xp[skill_id] = char.skill_xp.get(skill_id, 0.0) + xp

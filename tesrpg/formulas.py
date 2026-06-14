@@ -194,6 +194,11 @@ NIGHT_MOTHER_SNEAK_PER_RANK = 0.03   # 黑暗兄弟會每階對偷襲倍率的�
 # 「solo boss 仍存活」;精英/小遭遇不受影響,apex 照常秒殺)。調此值或夜母/影刃常數務必重跑 sim_assassin.py。
 SOLO_SNEAK_DAMAGE_CAP_RATIO = 0.40
 
+# 坐騎「戰備衝鋒」對 solo BOSS 的反一刀:衝鋒(尤其長槍×高倍率)對 `solo` 目標的單次傷害
+# 夾在其生命上限此比例 → 開場衝鋒絕不秒王。鏡像偷襲夾,但**獨立**(衝鋒不走 sneak_mult)。
+# 衝鋒只在野外旅途/探索遭遇、且僅開場第一回合可用。調此值或衝鋒倍率務必重跑 sim_assassin.py。
+MOUNTED_CHARGE_DAMAGE_CAP_RATIO = 0.45
+
 
 def night_mother_sneak_bonus(db_rank: int) -> float:
     """夜母祝福:黑暗兄弟會階級越高,潛殺越致命(乘進偷襲倍率)。
@@ -217,6 +222,11 @@ ATHLETICS_TRAVEL_XP = 0.5        # 每次旅行 → 運動 xp(讓運動靠移動
 def athletics_travel_factor(athletics_skill: int) -> float:
     """運動帶來的旅行耗時倍率(越高越快):運動 0→×1.0、100→×0.6(最多省 40%)。"""
     return max(0.5, 1.0 - athletics_skill * ATHLETICS_TRAVEL_SCALE)
+
+
+# --- 房產:最佳休息「精神飽滿」增益(learn-by-doing 加速;不寫 base、不碰戰鬥)----------
+WELL_RESTED_HOURS = 24            # 在家最佳休息後,精神飽滿持續的遊戲小時
+WELL_RESTED_XP_MULT = 1.25        # 精神飽滿期間技能 xp 倍率(progression.use_skill 讀 char.well_rested)
 
 
 ATHLETICS_FATIGUE_SCALE = 0.004  # 運動降低戰鬥體力消耗的係數

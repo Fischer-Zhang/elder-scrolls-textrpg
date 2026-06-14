@@ -298,7 +298,7 @@ def _inventory_view(char: Character, gamedata: GameData) -> dict:
     items = [{"key": s["id"], "label": _plain(item_label(gamedata, char, s["id"], s["qty"])),
               "kind": gamedata.item(s["id"])["kind"]} for s in stacks]
     w = inv.total_weight(char, gamedata)
-    mx = inv.max_weight(char)
+    mx = inv.max_weight(char, gamedata)
     return {"items": items, "weight": float(w), "max": mx, "over": w > mx, "gold": char.gold}
 
 
@@ -1584,7 +1584,7 @@ def inventory_panel(char: Character, gamedata: GameData) -> None:
     for s in stacks:
         tbl.add_row(item_label(gamedata, char, s["id"], s["qty"]))
     w = inv.total_weight(char, gamedata)
-    mx = inv.max_weight(char)
+    mx = inv.max_weight(char, gamedata)
     over = " [red]超重![/]" if w > mx else ""
     foot = Text()
     foot.append(f"負重 {w:g}/{mx}", style=GOLD if w <= mx else "red")

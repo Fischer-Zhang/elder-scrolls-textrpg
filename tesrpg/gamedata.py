@@ -39,6 +39,12 @@ class GameData:
         self.companions: dict = _load("companions.json")
         self.origins: dict = _load("origins.json")   # 開局背景(不一樣的人生)
         self.rulers: dict = _load("rulers.json")     # 各城統治者(湮滅期大空位、各城自治;城戰前置)
+        self.houses: dict = {k: v for k, v in _load("houses.json").items()
+                             if not k.startswith("_")}   # 可購置房產(key=location_id;見 systems/housing.py)
+        _mounts_data: dict = _load("mounts.json")    # 坐騎(分三類)+ 馬廄城 + 長槍販售(見 systems/mounts.py)
+        self.mounts: dict = _mounts_data["mounts"]
+        self.stable_cities: set = set(_mounts_data.get("stable_cities", []))
+        self.stable_spears: list = _mounts_data.get("spear_stock", [])
         self.mastery: list = _load("mastery.json")   # 技能里程碑(達門檻自動解鎖;見 systems/mastery.py)
         self.recipes: dict = _load("recipes.json")   # 製作配方(獸皮等原料 → 裝備;見 systems/crafting.py)
         self.world_events: dict = _load("world_events.json")   # 陣營大事件時間軸(動態政局;見 systems/worldstate.py)
@@ -100,6 +106,18 @@ class GameData:
     def landmark_at(self, loc_id: str) -> dict | None:
         """該地點的具名地標(無則 None;首次抵達觸發一次性發現)。"""
         return self.landmarks.get(loc_id)
+
+    def house_at(self, loc_id: str) -> dict | None:
+        """該地點可購置的房產(無則 None;見 systems/housing.py)。"""
+        return self.houses.get(loc_id)
+
+    def mount(self, mount_id: str) -> dict | None:
+        """坐騎定義(無/未知 id 回 None;見 systems/mounts.py)。"""
+        return self.mounts.get(mount_id)
+
+    def has_stable(self, loc_id: str) -> bool:
+        """該城是否有馬廄(售坐騎與長槍)。"""
+        return loc_id in self.stable_cities
 
 
 # 單一共享實例(資料是唯讀的,全程式共用一份即可)

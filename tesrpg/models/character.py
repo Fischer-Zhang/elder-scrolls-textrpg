@@ -179,6 +179,14 @@ class Character:
     camp: str = ""                                        # 營地所在 loc_id(野外紮營 / 佔領已清空地城);""=未建
     wage_due_at: int = 0                                  # 下次發軍餉的絕對小時(階段二;0=無兵/未開始計餉)
 
+    # 房產 & 坐騎(家園與後勤;見 systems/housing.py、systems/mounts.py)。皆走 dataclass 預設向後相容。
+    houses_owned: list = field(default_factory=list)      # 已購置房產的 loc_id(權威)
+    house_stash: dict = field(default_factory=dict)       # loc_id -> [{"id","qty"}](家中倉庫;不計隨身負重)
+    well_rested_until: int = 0                            # 「精神飽滿」到期絕對小時(0=無;最佳休息設;同 skooma_high_until 模式)
+    well_rested: bool = False                             # 精神飽滿現行快取(loop 頂端依 until 刷新;use_skill 讀;同 beast_form 模式)
+    mounts_owned: list = field(default_factory=list)      # 已擁有的坐騎 id
+    active_mount: str = ""                                # 現乘坐騎 id(""=步行;戰技/被動以此 + 是否騎乘語境為閘)
+
     is_player: bool = False
 
     # --- 查詢 -------------------------------------------------------------
@@ -277,6 +285,9 @@ class Character:
             "war_tick_at": self.war_tick_at, "city_threat": self.city_threat,
             "soldiers": self.soldiers, "camp": self.camp,
             "wage_due_at": self.wage_due_at,
+            "houses_owned": self.houses_owned, "house_stash": self.house_stash,
+            "well_rested_until": self.well_rested_until, "well_rested": self.well_rested,
+            "mounts_owned": self.mounts_owned, "active_mount": self.active_mount,
             "companions": self.companions, "pending_companions": self.pending_companions,
             "companion_hp": self.companion_hp, "companion_bond": self.companion_bond,
         }

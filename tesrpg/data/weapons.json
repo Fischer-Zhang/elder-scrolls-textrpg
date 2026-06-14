@@ -190,11 +190,18 @@
     }
   },
 
+  "iron_spear":    {"name": "鐵長槍",   "skill": "blade", "damage": 11, "value": 35,  "weight": 11, "archetype": "spear", "speed": 0.9},
+  "steel_spear":   {"name": "鋼長槍",   "skill": "blade", "damage": 14, "value": 95,  "weight": 13, "archetype": "spear", "speed": 0.9},
+  "elven_spear":   {"name": "精靈長槍", "skill": "blade", "damage": 17, "value": 280, "weight": 13, "archetype": "spear", "speed": 0.9},
+  "glass_spear":   {"name": "玻璃長槍", "skill": "blade", "damage": 19, "value": 210, "weight": 9,  "archetype": "spear", "speed": 0.95},
+  "ebony_spear":   {"name": "黑檀長槍", "skill": "blade", "damage": 21, "value": 760, "weight": 15, "archetype": "spear", "speed": 0.9},
+
   "daedric_dagger":  {"name": "魔族匕首", "skill": "blade",   "damage": 14, "value": 500, "weight": 5,  "archetype": "dagger", "speed": 1.4,  "material": "daedric"},
   "daedric_sword":   {"name": "魔族長劍", "skill": "blade",   "damage": 22, "value": 900, "weight": 14, "archetype": "sword",  "speed": 1.0,  "material": "daedric"},
   "daedric_mace":    {"name": "魔族戰錘", "skill": "blunt",   "damage": 23, "value": 850, "weight": 16, "archetype": "blunt",  "speed": 0.75, "material": "daedric"},
   "daedric_war_axe": {"name": "魔族戰斧", "skill": "blunt",   "damage": 22, "value": 800, "weight": 14, "archetype": "blunt",  "speed": 0.85, "material": "daedric"},
   "daedric_bow":     {"name": "魔族弓",   "skill": "marksman","damage": 19, "value": 800, "weight": 10, "archetype": "bow",    "speed": 0.9,  "material": "daedric"},
+  "daedric_spear":   {"name": "魔族長槍", "skill": "blade",   "damage": 24, "value": 880, "weight": 16, "archetype": "spear",  "speed": 0.9,  "material": "daedric"},
 
   "daedric_staff": {"name": "魔族法杖", "skill": "destruction", "damage": 9, "value": 600, "weight": 7, "archetype": "staff", "speed": 1.0, "enchant": {"kind": "weapon_element", "element": "shock", "magnitude": 22}},
 

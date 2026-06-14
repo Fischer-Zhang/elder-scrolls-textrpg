@@ -14,6 +14,13 @@
   "forge_iron_shield":    {"name": "鍛造鐵盾",   "station": "smith", "skill": "smithing", "inputs": {"iron_ingot": 3}, "output": "iron_shield", "output_qty": 1},
   "forge_iron_cuirass":   {"name": "鍛造鐵胸甲", "station": "smith", "skill": "smithing", "inputs": {"iron_ingot": 4}, "output": "iron_cuirass", "output_qty": 1},
 
+  "forge_iron_spear":    {"name": "鍛造鐵長槍",   "station": "smith", "skill": "smithing", "inputs": {"iron_ingot": 2}, "output": "iron_spear", "output_qty": 1},
+  "forge_steel_spear":   {"name": "鍛造鋼長槍",   "station": "smith", "skill": "smithing", "skill_req": 25, "inputs": {"steel_ingot": 2}, "output": "steel_spear", "output_qty": 1},
+  "forge_elven_spear":   {"name": "鍛造精靈長槍", "station": "smith", "skill": "smithing", "skill_req": 40, "inputs": {"moonstone_ingot": 3}, "output": "elven_spear", "output_qty": 1},
+  "forge_glass_spear":   {"name": "鍛造玻璃長槍", "station": "smith", "skill": "smithing", "skill_req": 70, "inputs": {"malachite_ingot": 2}, "output": "glass_spear", "output_qty": 1},
+  "forge_ebony_spear":   {"name": "鍛造黑檀長槍", "station": "smith", "skill": "smithing", "skill_req": 85, "inputs": {"ebony_ingot": 4}, "output": "ebony_spear", "output_qty": 1},
+  "forge_daedric_spear": {"name": "鍛造魔族長槍", "station": "smith", "skill": "smithing", "skill_req": 90, "inputs": {"ebony_ingot": 2, "daedra_heart": 1}, "output": "daedric_spear", "output_qty": 1},
+
   "forge_steel_sword":   {"name": "鍛造鋼劍",   "station": "smith", "skill": "smithing", "skill_req": 25, "inputs": {"steel_ingot": 2}, "output": "steel_sword", "output_qty": 1},
   "forge_steel_mace":    {"name": "鍛造鋼錘",   "station": "smith", "skill": "smithing", "skill_req": 25, "inputs": {"steel_ingot": 3}, "output": "steel_mace", "output_qty": 1},
   "forge_steel_helmet":  {"name": "鍛造鋼盔",   "station": "smith", "skill": "smithing", "skill_req": 25, "inputs": {"steel_ingot": 2}, "output": "steel_helmet", "output_qty": 1},

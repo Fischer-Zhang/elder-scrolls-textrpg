@@ -13,8 +13,8 @@ from tesrpg.gamedata import GameData, get_gamedata
 from tesrpg.rng import RNG, make_seed
 from tesrpg.state import GameState
 from tesrpg.systems import (aiwar, alchemy, brotherhood, combat, court, crafting, crime, dialogue, dungeon,
-                            dungeoncrawl, enchanting, events, factions, inventory, landmarks, legacy,
-                            lycanthropy, magic, mastery, party, politics, powers, progression, quests,
+                            dungeoncrawl, enchanting, events, factions, housing, inventory, landmarks, legacy,
+                            lycanthropy, magic, mastery, mounts, party, politics, powers, progression, quests,
                             skooma, smithing, stats, vampirism, warband, world, worldstate)
 from tesrpg.ui import console as ui
 
@@ -389,8 +389,11 @@ def _apply_combat_repair(player, gamedata: GameData) -> None:
 
 
 def _choose_combat_action(state: GameState, gamedata: GameData, enemies: list, allies: list,
-                          vanish_used: int = 0):
-    """回傳玩家本回合的行動 dict:{type, spell_id?, target?}。"""
+                          vanish_used: int = 0, mounted: bool = False, first_round: bool = False):
+    """回傳玩家本回合的行動 dict:{type, spell_id?, target?}。
+
+    mounted/first_round:野外騎乘遭遇的第一回合 → 開放坐騎戰技(戰馬衝鋒 / 獵馬騎射)。
+    """
     player = state.player
     # 每次進入(含子選單「返回」遞迴)都重顯戰場 → 動作選單恆見敵情(web 每幀清空重繪)。
     ui.combat_status_group(player, allies, enemies, gamedata)
@@ -429,6 +432,11 @@ def _choose_combat_action(state: GameState, gamedata: GameData, enemies: list, a
         opts.append(("crippling", "牽制射（削弱目標攻勢)"))
         if combat.can_vanish(player, gamedata) and vanish_used < vcap:
             opts.append(("skirmish", "散兵走位（射一箭後遁走)"))
+    # 坐騎戰技(僅野外騎乘遭遇的第一回合;戰馬+近戰=衝鋒、獵馬+弓=騎射)
+    if mounted and first_round and mounts.can_charge(player, gamedata, True):
+        opts.append(("charge", "🐎 衝鋒（坐騎開場突擊 · 長槍藉馬勢洞穿)"))
+    if mounted and first_round and mounts.can_skirmish_ride(player, gamedata, True):
+        opts.append(("skirmish_ride", "🏹 騎射（馬背放箭 · 大幅提升閃避)"))
     # 戰士「盾牆」:持盾 + 格擋達門檻 → 立/撤防禦架勢(前向減傷 + 嘲諷 + 護同袍 · 耗體力)
     if (player.equipped.get("shield") and player.base_skill("block") >= SHIELD_WALL_BLOCK_GATE
             and not inventory.is_dual_wielding(player, gamedata)):
@@ -461,7 +469,7 @@ def _choose_combat_action(state: GameState, gamedata: GameData, enemies: list, a
                       for s in castable]
         sid = ui.menu("施放哪道法術?", spell_opts, allow_back=True)
         if sid is None:
-            return _choose_combat_action(state, gamedata, enemies, allies, vanish_used)
+            return _choose_combat_action(state, gamedata, enemies, allies, vanish_used, mounted, first_round)
         tk = gamedata.spells[sid]["target"]
         if tk == "enemy":
             target = _choose_enemy_target(state, gamedata, enemies, allies)
@@ -470,7 +478,7 @@ def _choose_combat_action(state: GameState, gamedata: GameData, enemies: list, a
         else:
             target = None
         return {"type": "cast", "spell_id": sid, "target": target}
-    if choice in ("aimed", "crippling", "skirmish", "deathmark"):   # 皆先選敵方目標(散兵武技 / 刺客烙印)
+    if choice in ("aimed", "crippling", "skirmish", "deathmark", "charge", "skirmish_ride"):   # 皆先選敵方目標(散兵武技 / 刺客烙印 / 坐騎戰技)
         return {"type": choice, "target": _choose_enemy_target(state, gamedata, enemies, allies)}
     if choice == "power":
         eff = powers.power_def(powers.power_id(player, gamedata))["effect"]
@@ -577,7 +585,8 @@ def _apply_companion_capstone_auras(char: Character, gamedata: GameData, roster:
 
 def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
                alerted: bool = False, prep_budget: int = 0, casualties: list | None = None,
-               carry_allies: list | None = None, preserve_buffs: bool = False) -> str:
+               carry_allies: list | None = None, preserve_buffs: bool = False,
+               mounted: bool = False) -> str:
     """團隊/多敵回合制戰鬥。階段制回合:玩家 → 同伴 → 敵人 → 結算。
 
     enemies:敵方 Creature 清單(也接受單一 Creature)。companions 未指定時用玩家隊伍。
@@ -647,8 +656,11 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
     # 忠誠弧頂點(戰術型):開場即套盟友限定光環,使第一回合的同伴也受惠(後續逐回合於回合末刷新)
     _apply_companion_capstone_auras(player, gamedata, roster, battle["allies"])
 
+    round_no = 0
     while combat.is_alive(player) and alive_e():
-        action = _choose_combat_action(state, gamedata, enemies, battle["allies"], vanishes_done)
+        round_no += 1
+        action = _choose_combat_action(state, gamedata, enemies, battle["allies"], vanishes_done,
+                                       mounted=mounted, first_round=(round_no == 1))
         blocking = action["type"] == "block"
         vanish_success = False        # 本回合是否成功隱遁(成功 → 重置偷襲 + 跳過敵人階段)
 
@@ -694,10 +706,30 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
                         ui.message("你射出一箭,旋即翻身遁走 —— 重獲偷襲先機。", style="bold magenta")
                     else:
                         ui.message("你射後欲走,卻被敵人緊咬不放。", style="grey70")
+        elif action["type"] == "charge":   # 坐騎「衝鋒」(開場;近戰/長槍;不走偷襲倍率,受 solo 夾限)
+            tgt = action["target"]
+            if combat.is_alive(tgt):
+                combat.player_attack_cost(player, gamedata)
+                ui.message("你策馬挺進,藉馬勢猛然衝鋒!", style="bold yellow")
+                ui.combat_event(combat.resolve_attack(player, tgt, gamedata, state.rng,
+                                                      mounted_charge=True,
+                                                      charge_spec=mounts.charge_spec(player, gamedata)), gamedata)
+        elif action["type"] == "skirmish_ride":   # 獵馬「騎射」(弓;給閃避增益 + 一記弓擊)
+            tgt = action["target"]
+            if combat.is_alive(tgt):
+                spec = mounts.ride_evasion_spec(player, gamedata) or {}
+                player.active_effects.append({"kind": "ride_evasion",
+                                              "evasion": spec.get("amount", 0.0),
+                                              "turns": spec.get("turns", 1)})
+                ui.message("你策馬繞射 —— 馬背的機動讓你大幅更難被擊中。", style="bold cyan")
+                combat.player_attack_cost(player, gamedata)
+                sneak = opening and not getattr(player, "beast_form", False)
+                ui.combat_event(combat.resolve_attack(player, tgt, gamedata, state.rng,
+                                                      sneak_attack=sneak), gamedata)
         elif action["type"] == "cast":
             res = magic.cast(player, gamedata, action["spell_id"], state.rng,
                              target=action.get("target"), battle=battle, enemies=alive_e(),
-                             corpses=enemies)   # 亡者復生需見「完整」敵群(含已死屍體);存活清單仍走 enemies=alive_e()
+                             corpses=enemies, mounted=mounted)   # 亡者復生需見「完整」敵群(含已死屍體);存活清單仍走 enemies=alive_e()
             ui.message(res["message"], style="cyan")
             ui.show_events(res["skill_events"], gamedata)
         elif action["type"] == "power":
@@ -1011,7 +1043,7 @@ def _scout_report(state: GameState, gamedata: GameData, enemies: list) -> None:
 
 
 def offer_battle(state: GameState, gamedata: GameData, enemies, ambush_chance: float = 0.25,
-                 surprise: bool = False) -> str | None:
+                 surprise: bool = False, mounted: bool = False) -> str | None:
     """呈現遭遇 → 接戰 / 偵查 / 潛行撤退。回傳結果或 None(撤退成功,未交戰)。
 
     接戰時擲「入場潛行檢定」決定有無開場偷襲(吃潛行/敵警覺/敵數/護甲/夜間/偵查)。
@@ -1053,13 +1085,13 @@ def offer_battle(state: GameState, gamedata: GameData, enemies, ambush_chance: f
                 ui.message("你冷然報出幾個名號、目光如刀 —— 對方面面相覷,終於悻悻退去。", style="green")
                 return None
             ui.message("對方非但不退,反被你激怒,拔刀撲上!", style="red")
-            return run_battle(state, gamedata, enemies, alerted=True)
+            return run_battle(state, gamedata, enemies, alerted=True, mounted=mounted)
         if choice == "retreat":
             if combat.try_stealth_retreat(char, enemies, state.rng):
                 ui.message("你悄無聲息地退入暗處,沒有驚動任何人。", style="grey70")
                 return None
             ui.message("撤退失敗 —— 敵人發現了你,且已有戒備!", style="red")
-            return run_battle(state, gamedata, enemies, alerted=True)
+            return run_battle(state, gamedata, enemies, alerted=True, mounted=mounted)
         # 接戰 → 入場潛行檢定:成功取得開場偷襲先機,失敗則敵人警覺(無偷襲)
         got_drop = combat.try_stealth_approach(char, enemies, state.rng, gamedata, night, scouted, surprise)
         if got_drop:
@@ -1068,7 +1100,7 @@ def offer_battle(state: GameState, gamedata: GameData, enemies, ambush_chance: f
             ui.message("你的接近被察覺了,沒能搶到偷襲的先機。", style="yellow")
         # 偵查掙得的備戰空間:潛近成功且未被伏擊時,依偵查技能換得開戰前準備
         pb = (formulas.prep_budget(char.skill("scout")) + mastery.prep_bonus(char, gamedata)) if (got_drop and not surprise) else 0
-        return run_battle(state, gamedata, enemies, alerted=not got_drop, prep_budget=pb)
+        return run_battle(state, gamedata, enemies, alerted=not got_drop, prep_budget=pb, mounted=mounted)
 
 
 def _maybe_sunburn(state: GameState, gamedata: GameData, hours: int) -> None:
@@ -1094,7 +1126,7 @@ def action_explore(state: GameState, gamedata: GameData) -> str | None:
     danger = world.current_location(player, gamedata).get("danger", 1)
     enemies = combat.random_encounter_group(gamedata, player.level, state.rng, max_danger=danger + 1,
                                             biome=world.current_location(player, gamedata).get("biome"))
-    return offer_battle(state, gamedata, enemies)
+    return offer_battle(state, gamedata, enemies, mounted=True)   # 野外探索=騎乘語境(坐騎戰技生效)
 
 
 def end_run(state: GameState, gamedata: GameData, ending: str) -> None:
@@ -1145,7 +1177,7 @@ def _travel_to(state: GameState, gamedata: GameData, dest: str) -> str | None:
     ui.show_events(res["skill_events"], gamedata)
     if foe is not None:
         ui.message("途中遭遇了埋伏!", style="yellow")
-        result = offer_battle(state, gamedata, foe, ambush_chance=0.4, surprise=True)
+        result = offer_battle(state, gamedata, foe, ambush_chance=0.4, surprise=True, mounted=True)   # 旅途=騎乘語境
         if result == "dead":
             return "dead"
     ui.message(f"你抵達了{gamedata.location(dest)['name']}。", style="cyan")
@@ -1614,6 +1646,141 @@ def action_inn(state: GameState, gamedata: GameData) -> None:
             _hire_mercenary(state, gamedata)
         elif choice == "dismiss":
             _dismiss_mercenary(state, gamedata)
+
+
+# ======================================================================
+# 馬廄(坐騎 + 騎兵長槍)
+# ======================================================================
+def action_stable(state: GameState, gamedata: GameData) -> None:
+    """馬廄:購置坐騎(戰馬/獵馬/法駒)、切換現乘、選購長槍(騎兵武器)。"""
+    char = state.player
+    while True:
+        cur = gamedata.mount(char.active_mount)
+        opts: list = []
+        for mid, m in gamedata.mounts.items():        # 購買尚未擁有的坐騎
+            if not mounts.owns(char, mid):
+                opts.append((f"buy:{mid}", f"購買{m['name']}({m['price']} 金) · {m['desc']}"))
+        if char.mounts_owned:
+            opts.append(("switch", "切換現乘坐騎"))
+        opts.append(("spear", "選購長槍(騎兵武器)"))
+        choice = ui.menu(f"馬廄(現乘:{cur['name'] if cur else '步行'})", opts, allow_back=True)
+        if choice is None:
+            return
+        if choice.startswith("buy:"):
+            mid = choice[4:]
+            m = gamedata.mount(mid)
+            if char.gold < m["price"]:
+                ui.message("金幣不足,買不起這匹坐騎。", style="red")
+                continue
+            char.gold -= m["price"]
+            mounts.buy(char, gamedata, mid)
+            ui.message(f"你購得{m['name']},翻身上馬 —— 從此趕路更快、馱載更多。", style="bold green")
+        elif choice == "switch":
+            sopts = [("__walk__", "步行(下馬)")] + [(mid, gamedata.mount(mid)["name"])
+                                                    for mid in char.mounts_owned]
+            pick = ui.menu("現乘哪匹坐騎?", sopts, allow_back=True)
+            if pick is None:
+                continue
+            char.active_mount = "" if pick == "__walk__" else pick
+            ui.message("你選擇步行。" if pick == "__walk__"
+                       else f"你改乘{gamedata.mount(pick)['name']}。", style="cyan")
+        elif choice == "spear":
+            _buy_stable_spears(state, gamedata)
+
+
+def _buy_stable_spears(state: GameState, gamedata: GameData) -> None:
+    """馬廄選購長槍(騎兵武器;可衝鋒高倍率)。價格走一般商店定價。"""
+    char = state.player
+    while True:
+        opts = []
+        for sid in gamedata.stable_spears:
+            d = gamedata.item(sid)
+            opts.append((sid, f"{d['name']}(傷 {d['damage']} · {world.buy_price(char, gamedata, sid)} 金)"))
+        pick = ui.menu("選購長槍(騎兵武器)", opts, allow_back=True)
+        if pick is None:
+            return
+        price = world.buy_price(char, gamedata, pick)
+        if char.gold < price:
+            ui.message("金幣不足。", style="red")
+            continue
+        if not inventory.can_carry(char, gamedata, pick):
+            ui.message("負重不足,背不動了。", style="red")
+            continue
+        char.gold -= price
+        inventory.add_item(char, pick, 1)
+        ui.message(f"你購得{gamedata.item_name(pick)}。", style="green")
+
+
+# ======================================================================
+# 房產(收納倉庫 + 最佳休息 + 精神飽滿)
+# ======================================================================
+def action_house(state: GameState, gamedata: GameData) -> None:
+    """房產:未擁有 → 置產;已擁有 → 在家安睡(全回 + 精神飽滿)+ 收納倉庫存取。"""
+    char = state.player
+    loc_id = char.location_id
+    if not housing.owns(char, loc_id):
+        h = gamedata.house_at(loc_id)
+        if not h:
+            ui.message("此地沒有可置辦的房產。", style="grey70")
+            return
+        ui.message(h["desc"], style="grey70")
+        if char.gold < h["price"]:
+            ui.message(f"「{h['name']}」售價 {h['price']} 金,你的金幣不足。", style="red")
+            return
+        if not ui.confirm(f"以 {h['price']} 金購置「{h['name']}」嗎?"):
+            return
+        char.gold -= h["price"]
+        housing.buy(char, gamedata, loc_id)
+        ui.message(f"你購置了「{h['name']}」—— 從此在此地有了一個家。", style="bold green")
+        return
+    h = gamedata.house_at(loc_id) or {}
+    while True:
+        opts = [("rest", "在家安睡(免費全回 + 精神飽滿)"),
+                ("deposit", "存入倉庫(卸下負重)"), ("withdraw", "從倉庫取出")]
+        choice = ui.menu(h.get("name", "你的房產"), opts, allow_back=True)
+        if choice is None:
+            return
+        if choice == "rest":
+            char.health, char.magicka, char.fatigue = char.max_health, char.max_magicka, char.max_fatigue
+            party.heal_full(char, gamedata)
+            housing.set_well_rested(char, state.time.absolute_hours())
+            state.time.advance(8)
+            ui.message("你在自家床榻上安睡一夜 —— 氣力盡復,精神飽滿(此後一段時間技能成長加速)。",
+                       style="bold green")
+        elif choice == "deposit":
+            _stash_transfer(state, gamedata, loc_id, deposit=True)
+        elif choice == "withdraw":
+            _stash_transfer(state, gamedata, loc_id, deposit=False)
+
+
+def _stash_transfer(state: GameState, gamedata: GameData, loc_id: str, deposit: bool) -> None:
+    """房產倉庫存取一件(deposit=True 背包→倉庫;False 倉庫→背包)。"""
+    char = state.player
+    while True:
+        if deposit:   # 可存:背包中「非穿戴/手持」的堆疊
+            rows = [(s["id"], s["qty"]) for s in char.inventory
+                    if not housing.is_equipped(char, s["id"])]
+            title = "存入哪件?(穿戴/手持中的裝備須先卸下)"
+        else:
+            rows = [(s["id"], s["qty"]) for s in char.house_stash.get(loc_id, [])]
+            title = "取出哪件?"
+        if not rows:
+            ui.message("沒有可" + ("存入" if deposit else "取出") + "的物品。", style="grey70")
+            return
+        opts = [(iid, f"{gamedata.item_name(iid)} ×{qty}") for iid, qty in rows]
+        pick = ui.menu(title, opts, allow_back=True)
+        if pick is None:
+            return
+        avail = dict(rows)[pick]
+        n = 1 if avail == 1 else ui.ask_int(f"幾個?(上限 {avail})", default=avail, lo=1, hi=avail)
+        if deposit:
+            ok = housing.deposit(char, gamedata, loc_id, pick, n)
+            ui.message(f"存入 {gamedata.item_name(pick)} ×{n}。" if ok else "無法存入此物。",
+                       style="green" if ok else "red")
+        else:
+            ok = housing.withdraw(char, gamedata, loc_id, pick, n)
+            ui.message(f"取出 {gamedata.item_name(pick)} ×{n}。" if ok else "負重不足,取不出這麼多。",
+                       style="green" if ok else "red")
 
 
 def action_feed(state: GameState, gamedata: GameData) -> None:
@@ -3272,6 +3439,9 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
                 ui.message("獸形的狂暴退去,你重歸人形 —— 筋疲力盡,四肢仍因方才的撕咬而顫抖。",
                            style="magenta")
 
+        # 房產「精神飽滿」:依到期刷新現行快取(progression.use_skill 讀;過期則本圈起 xp 回中性)
+        housing.refresh_well_rested(state.player, state.time.absolute_hours())
+
         # 陣營大事件(動態政局):authored 時間軸觸發城邦易幟,廣播天下大勢
         for ev in worldstate.update(state, gamedata):
             ui.rule("天下大勢")
@@ -3352,6 +3522,8 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
         if "armorer" in services:
             market.append(("craft", "鍛造工坊 🛠"))
             market.append(("temper", "淬鍊強化 ⚒"))
+        if gamedata.has_stable(player.location_id) and not shunned:
+            market.append(("stable", "馬廄 🐎(坐騎 · 長槍)"))
         if "mages_guild" in services:
             guilds.append(("guild_mages", "法師公會"))   # 學習法術 + 入會/任務,進子選單
         if "fighters_guild" in services:
@@ -3377,6 +3549,9 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
             plaza.append(("skooma_cure", "🌙 尋訪療者,求解月糖之癮"))
         if lycanthropy.is_werewolf(player) and loc["type"] in ("town", "city") and not shunned:
             plaza.append(("werewolf_cure", "🐺 尋訪獵巫女巫,求解獸血之咒"))
+        if (gamedata.house_at(player.location_id) or housing.owns(player, player.location_id)) and not shunned:
+            owned = housing.owns(player, player.location_id)
+            plaza.append(("house", "🏠 我的房產" if owned else "🏠 房產仲介(置產)"))
         if "inn" in services and not shunned:
             plaza.append(("inn", "旅店(10金)"))
         if "trainer" in services and not shunned:
@@ -3452,6 +3627,10 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
             action_shop(state, gamedata)
         elif choice == "inn":
             action_inn(state, gamedata)
+        elif choice == "stable":
+            action_stable(state, gamedata)
+        elif choice == "house":
+            action_house(state, gamedata)
         elif choice == "feed":
             action_feed(state, gamedata)
         elif choice == "skooma_cure":
