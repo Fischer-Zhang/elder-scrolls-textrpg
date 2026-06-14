@@ -228,6 +228,75 @@ def test_top_tier_craftable_and_reachable():
     assert smithing.is_temperable(gd, "daedric_sword")             # 頂裝可淬鍊
 
 
+# --- 回爐熔解(成品 → 部分材料,有損耗 + 同時練鍛造)----------------------
+def test_meltdown_recycles_with_loss_and_trains():
+    gd, c = _char()
+    c.weapon = "fists"                                       # 確保待回爐物非手持
+    ing, qty = smithing.meltdown_yield(gd, "steel_sword")
+    rec = next(r for r in gd.recipes.values() if r["output"] == "steel_sword")
+    assert ing == "steel_ingot"
+    assert qty == int(rec["inputs"]["steel_ingot"] * smithing.RECYCLE_RATIO)
+    assert qty < rec["inputs"]["steel_ingot"]               # 確有損耗(2 → 1)
+    inventory.add_item(c, "steel_sword", 1)
+    before = inventory.count_item(c, "steel_ingot")
+    xp0, lvl0 = c.skill_xp["smithing"], c.base_skill("smithing")
+    res = smithing.meltdown(c, gd, "steel_sword")
+    assert res["ok"]
+    assert inventory.count_item(c, "steel_sword") == 0               # 成品銷毀
+    assert inventory.count_item(c, "steel_ingot") == before + qty    # 煉回材料
+    assert c.skill_xp["smithing"] > xp0 or c.base_skill("smithing") > lvl0  # 同時練鍛造
+
+
+def test_meltdown_no_recipe_uses_material_fallback():
+    gd, c = _char()
+    assert smithing.meltable(gd, "steel_gauntlets")                  # 無配方但 material=steel
+    assert smithing.meltdown_yield(gd, "steel_gauntlets") == ("steel_ingot", 1)
+
+
+def test_meltdown_excludes_non_metal_rare_and_equipped():
+    gd, c = _char()
+    assert not smithing.meltable(gd, "flame_staff")     # 法杖:無對應錠
+    assert not smithing.meltable(gd, "fists")           # 徒手 value 0
+    if gd.item_or_none("gold_amulet"):
+        assert not smithing.meltable(gd, "gold_amulet")  # 飾品不可回爐
+    # 龍鱗裝:required_ingot=dragon_scale(稀材)→ 不可回爐,維持稀缺
+    for iid, d in gd.items.items():
+        if d.get("kind") in ("weapon", "armor") and smithing._material_of(gd, iid) == "dragonscale":
+            assert not smithing.meltable(gd, iid), iid
+    # 附魔成品/具名神器不可回爐(不可逆毀)+ 弓/法杖(非純金屬重鑄)
+    assert not smithing.meltable(gd, "mehrunes_razor")  # 具名神器(帶 enchant)
+    assert not smithing.meltable(gd, "daedric_staff")   # 法杖(enchant + staff)
+    assert not smithing.meltable(gd, "elven_bow")       # 弓(archetype 排除)
+    assert not smithing.meltable(gd, "archmage_robe")   # 附魔法袍
+    # 所有附魔成品一律不可回爐
+    for iid, d in gd.items.items():
+        if d.get("kind") in ("weapon", "armor") and d.get("enchant"):
+            assert not smithing.meltable(gd, iid), f"{iid} 附魔成品不該可回爐"
+    # 手持武器不可回爐(防裝備脫鉤)
+    assert not smithing.meltdown(c, gd, c.weapon)["ok"]
+    # 雙持副手亦不可回爐(防裝備脫鉤)
+    inventory.add_item(c, "glass_dagger", 1)
+    c.offhand = "glass_dagger"
+    assert not smithing.meltdown(c, gd, "glass_dagger")["ok"]
+
+
+def test_meltdown_no_arbitrage_on_cheap_singletons():
+    """反套利:廉於一錠或單錠成品(買來回爐可套錠者)回爐無所得 → 不可回爐。"""
+    gd, c = _char()
+    for iid in ("iron_dagger", "iron_gauntlets", "steel_dagger"):
+        assert not smithing.meltable(gd, iid), f"{iid} 不該可回爐(會套錠)"
+        assert smithing.meltdown_yield(gd, iid)[1] == 0
+    # 全商店在售且可回爐者:回爐材料價值不得 ≥ 買價(杜絕買廉品回爐套錠)
+    for_sale = {it for l in gd.world["locations"].values() for it in l.get("merchant_stock", [])}
+    for iid in for_sale:
+        if not smithing.meltable(gd, iid):
+            continue
+        ingot, qty = smithing.meltdown_yield(gd, iid)
+        from tesrpg.systems import world
+        assert world.buy_price(c, gd, ingot) * qty <= world.buy_price(c, gd, iid), \
+            f"{iid} 回爐套錠:材料買價高於成品買價"
+
+
 def run():
     for name, fn in sorted(globals().items()):
         if name.startswith("test_") and callable(fn):

@@ -3064,6 +3064,38 @@ def action_temper(state: GameState, gamedata: GameData) -> None:
         ui.show_events(res["skill_events"], gamedata)
 
 
+def action_meltdown(state: GameState, gamedata: GameData) -> None:
+    """回爐熔解:把背包裡不需要的武器/護甲熔回部分材料(有損耗),同時練鍛造(需鐵匠鐵砧)。"""
+    char = state.player
+    loc = world.current_location(char, gamedata)
+    if "armorer" not in loc.get("services", []):
+        ui.message("這裡沒有鐵匠的鐵砧。", style="grey70")
+        return
+    while True:                                       # 可連續回爐,返回才離開
+        worn = set(char.equipped.values()) | {char.weapon, getattr(char, "offhand", "")}
+        opts = []
+        for s in char.inventory:
+            iid = s["id"]
+            if iid in worn or not smithing.meltable(gamedata, iid):
+                continue
+            ingot, qty = smithing.meltdown_yield(gamedata, iid)
+            opts.append((iid, f"{gamedata.item_name(iid)}(持有 {s['qty']}) → 每件 {gamedata.item_name(ingot)} ×{qty}"))
+        if not opts:
+            ui.message("背包裡沒有可回爐的武器/護甲(穿戴/手持中請先卸下;法杖·弓·飾品·附魔神器·龍鱗裝、"
+                       "及熔之無得的廉價單品不可回爐)。", style="grey70")
+            return
+        iid = ui.menu(f"回爐哪件?(熔解有損耗,煉回部分材料並練鍛造 {char.skill('smithing')} 級)",
+                      opts, allow_back=True)
+        if iid is None:
+            return
+        res = smithing.meltdown(char, gamedata, iid)
+        state.time.advance(res["hours"])
+        ui.message(res["message"], style="green" if res["ok"] else "red")
+        if res.get("tired"):
+            ui.message("體力不濟,熔煉得馬虎。", style="yellow")
+        ui.show_events(res["skill_events"], gamedata)
+
+
 _EFFECT_CN = {"heal": "回血", "restore_magicka": "回魔", "restore_fatigue": "回體",
               "damage_health": "毒傷", "paralyze": "麻痺"}
 
@@ -3578,6 +3610,7 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
         if "armorer" in services:
             market.append(("craft", "鍛造工坊 🛠"))
             market.append(("temper", "淬鍊強化 ⚒"))
+            market.append(("meltdown", "回爐熔解 ♻(成品→材料)"))
         if gamedata.has_stable(player.location_id) and not shunned:
             market.append(("stable", "馬廄 🐎(坐騎 · 長槍)"))
         if "mages_guild" in services:
@@ -3732,6 +3765,8 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
             action_craft(state, gamedata)
         elif choice == "temper":
             action_temper(state, gamedata)
+        elif choice == "meltdown":
+            action_meltdown(state, gamedata)
         elif choice == "cast":
             action_cast_self(state, gamedata)
         elif choice == "power":

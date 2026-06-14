@@ -99,8 +99,22 @@ def sell_price(char: Character, gamedata: GameData, item_id: str) -> int:
 RESTOCK_HOURS = 72        # 商人每約 3 天補一次貨
 
 
-def _restock_qty(value: int, rng: RNG) -> int:
-    """依物品價值分級給補貨量,帶隨機變化(可能為 0 → 不同次補貨的品項有別)。"""
+# loot-only 稀材:即使誤入配方輸入,也不享足量補貨(維持「只能打怪取得」紅線於程式,不靠資料慣例)
+_LOOT_ONLY_MATERIALS = {"daedra_heart", "dragon_scale"}
+
+
+def _crafting_material_ids(gamedata: GameData) -> set:
+    """可量產的鍛造/製作配方輸入材料 id(消耗性輸入 → 補貨給足量);排除 loot-only 稀材。"""
+    return {iid for r in gamedata.recipes.values()
+            for iid in r.get("inputs", {})} - _LOOT_ONLY_MATERIALS
+
+
+def _restock_qty(value: int, rng: RNG, material: bool = False) -> int:
+    """依物品價值分級給補貨量,帶隨機變化(可能為 0 → 不同次補貨的品項有別)。
+    鍛造材料(material=True)例外:即使高價也給足量、且不缺貨(消耗性輸入,湊得齊一件裝備);
+    成品仍照價值稀缺 → 反「買廉材 → 煉製 → 高價賣回」套利的防線不動。"""
+    if material:                  # 鍛造材料:錠/獸皮/布匹等,獨立於價值給充足補貨
+        return rng.randint(3, 8)
     if value <= 10:               # 廉價消耗品/煉金材料
         return rng.randint(1, 6)
     if value <= 80:               # 中價:藥水、基礎裝備、配件
@@ -122,9 +136,10 @@ def ensure_stock(char: Character, gamedata: GameData, loc_id: str, time, rng: RN
         return
     from tesrpg.systems import mastery
     rmult = mastery.restock_mult(char, gamedata)                # 「行商人脈」補貨量倍率
+    mats = _crafting_material_ids(gamedata)                     # 鍛造材料 → 足量補貨
 
     def _qty(iid):
-        q = _restock_qty(gamedata.item(iid)["value"], rng)
+        q = _restock_qty(gamedata.item(iid)["value"], rng, material=iid in mats)
         return 0 if q == 0 else max(1, round(q * rmult))        # 保留「擲 0 = 缺貨」的稀缺性(反套利)
     char.shop_stock[loc_id] = {iid: _qty(iid) for iid in merchant_catalog(gamedata, loc_id)}
     char.shop_restock_at[loc_id] = now + RESTOCK_HOURS

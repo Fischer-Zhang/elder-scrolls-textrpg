@@ -103,6 +103,69 @@ def temper(char: Character, gamedata: GameData, item_id: str, rng=None) -> dict:
             "skill_events": events, "free": free, "message": msg}
 
 
+# --- 回爐熔解(成品 → 部分材料,有損耗;同時練鍛造)------------------------
+RECYCLE_RATIO = 0.5          # 回爐回收比例(其餘為熔解損耗);調平衡只動此常數
+# 回爐不回收的稀有 loot-only 素材(維持稀缺:龍鱗只能打龍取得;魔性之心本就不由 required_ingot 產出)
+_NON_RECYCLE_INGOTS = {"dragon_scale"}
+
+
+def meltdown_yield(gamedata: GameData, item_id: str) -> tuple[str, int]:
+    """回爐產出 (ingot_id, qty)。確保「有損耗」且熔不出比成品更值錢的材料(杜絕買廉品回爐套錠):
+    有鍛造配方 → 反查該錠用量 ×損耗(無條件捨去;單錠成品 → 0);
+    無配方 → 成品價值 ≥ 一塊錠才回收 1,否則 0(本就廉於一錠者,熔之無所得)。"""
+    ingot = required_ingot(gamedata, item_id)
+    if ingot is None:
+        return (ingot, 0)
+    base = 0
+    for r in gamedata.recipes.values():                      # 反查產出此物且用到該錠的配方(防多配方同 output)
+        if r.get("output") == item_id and ingot in r.get("inputs", {}):
+            base = r["inputs"][ingot]
+            break
+    if base:
+        qty = int(base * RECYCLE_RATIO)
+    else:
+        item_val = gamedata.item(item_id).get("value", 0)
+        ingot_val = gamedata.item(ingot).get("value", 1) or 1
+        qty = 1 if item_val >= ingot_val else 0
+    return ingot, qty
+
+
+# 回爐排除的武器流派:弓/弩/法杖非「純金屬可重鑄」之物(與淬鍊一致觀感、對齊 UI 文案)
+_NON_MELT_ARCHETYPES = {"bow", "crossbow", "staff"}
+
+
+def meltable(gamedata: GameData, item_id: str) -> bool:
+    """可回爐:武器/護甲、材質有對應錠(非稀材)、value>0、且回爐確有所得(qty>0)。
+    排除:附魔成品/具名神器(d['enchant'],不可逆毀——如魔族剃刀、附魔法杖/法袍)、弓·弩·法杖
+    (_NON_MELT_ARCHETYPES)、飾品(非 weapon/armor)、龍鱗裝(稀材)、廉於一錠的單品(熔之無得)。"""
+    d = gamedata.item_or_none(item_id)
+    if not d or d.get("kind") not in ("weapon", "armor") or d.get("value", 0) <= 0:
+        return False
+    if d.get("enchant") or d.get("archetype") in _NON_MELT_ARCHETYPES:
+        return False
+    ingot, qty = meltdown_yield(gamedata, item_id)
+    return ingot is not None and ingot not in _NON_RECYCLE_INGOTS and qty > 0
+
+
+def meltdown(char: Character, gamedata: GameData, item_id: str) -> dict:
+    """回爐一件成品 → 部分材料(有損耗),並付 smithing practice 成本(同時練鍛造)。
+    回傳 {ok, message, ingot?, qty?, hours, tired, skill_events}。穿戴中/手持者須先卸下(防裝備脫鉤)。"""
+    if not meltable(gamedata, item_id):
+        return {"ok": False, "message": "此物品無法回爐。", "hours": 0, "tired": False, "skill_events": []}
+    if item_id in (char.weapon, getattr(char, "offhand", "")) or item_id in char.equipped.values():
+        return {"ok": False, "message": "請先卸下這件裝備再回爐。", "hours": 0, "tired": False, "skill_events": []}
+    if inventory.count_item(char, item_id) <= 0:
+        return {"ok": False, "message": "你沒有這件物品。", "hours": 0, "tired": False, "skill_events": []}
+    ingot, qty = meltdown_yield(gamedata, item_id)
+    inventory.remove_item(char, item_id, 1)
+    inventory.add_item(char, ingot, qty)
+    xp, hours, tired = progression.practice_cost(char, gamedata, SKILL)
+    events = progression.use_skill(char, gamedata, SKILL, xp)
+    return {"ok": True, "ingot": ingot, "qty": qty, "hours": hours, "tired": tired,
+            "skill_events": events,
+            "message": f"你將 {gamedata.item_name(item_id)} 回爐熔解,煉回 {gamedata.item_name(ingot)} ×{qty}。"}
+
+
 # --- 讀取鉤(combat,僅玩家)------------------------------------------------
 def weapon_temper_bonus(char: Character) -> int:
     """玩家當前手持武器的淬鍊加傷(0 = 未淬鍊;徒手/未知 id 自動為 0)。"""

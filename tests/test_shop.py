@@ -101,12 +101,33 @@ def test_shop_buy_smoke_depletes_stock():
     assert world.stock_qty(c, loc, item) == q0 - 1
 
 
+def test_crafting_materials_restock_generously():
+    """鍛造材料(配方輸入)補貨足量、從不缺貨(解『材料商店刷新數量太少』);
+    成品/高價裝備仍照價值稀缺 → 反套利防線不動。"""
+    gd, c, _ = _setup()
+    loc = "imperial_city"                                  # 售全套錠材
+    assert world.merchant_catalog(gd, loc)
+    mats = world._crafting_material_ids(gd)
+    assert {"ebony_ingot", "iron_ingot", "moonstone_ingot"} <= mats
+    # loot-only 稀材即使是配方輸入,也不享足量補貨(紅線於程式,不靠商店不上架的資料慣例)
+    assert "daedra_heart" not in mats and "dragon_scale" not in mats
+    for seed in range(1, 9):                               # 多種子:材料每次都足量、不缺貨
+        c.shop_restock_at = {}                             # 強制重抽
+        world.ensure_stock(c, gd, loc, GameTime(), RNG(seed))
+        assert world.stock_qty(c, loc, "ebony_ingot") >= 3   # 高價材料不再 0–1
+        assert world.stock_qty(c, loc, "iron_ingot") >= 3
+    # _restock_qty:material 分支恆 ≥3;高價成品仍會缺貨(套利防線)
+    assert all(world._restock_qty(200, RNG(s), material=True) >= 3 for s in range(30))
+    assert min(world._restock_qty(200, RNG(s)) for s in range(30)) == 0
+
+
 def run():
     test_stock_initializes_finite()
     test_buy_depletes_and_sells_out()
     test_restock_after_timer()
     test_save_roundtrip_and_backward_compat()
     test_shop_buy_smoke_depletes_stock()
+    test_crafting_materials_restock_generously()
 
 
 if __name__ == "__main__":
