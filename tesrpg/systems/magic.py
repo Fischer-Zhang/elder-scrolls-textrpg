@@ -439,6 +439,10 @@ def entity_resist(entity, gamedata) -> dict:
     if isinstance(entity, Character):
         race = gamedata.races[entity.race].get("resist", {}) if gamedata else {}
         merged = dict(race)
+        # 出生星座抗性/弱點(學徒座魔法弱點、領主座火弱點;星座不可變 → 即時讀,免存檔欄/向後相容)
+        for elem, val in (gamedata.birthsigns.get(entity.birthsign, {}).get("resist", {})
+                          if gamedata else {}).items():
+            merged[elem] = merged.get(elem, 0) + val
         for elem, val in entity.equip_resist.items():     # 裝備抗性與種族抗性相加
             merged[elem] = merged.get(elem, 0) + val
         for elem, val in entity.vampire_resist.items():   # 吸血鬼階級:耐霜/免疫疾病/火焰弱點

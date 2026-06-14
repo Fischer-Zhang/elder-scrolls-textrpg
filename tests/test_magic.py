@@ -621,6 +621,29 @@ def test_reanimate_hp_is_weakened():
     assert battle["allies"][0].max_health < base    # 虛弱化(<原 HP),非滿血
 
 
+def test_birthsign_resist_weakness():
+    """出生星座弱點機制:學徒座 +魔力但受魔法/元素傷害↑(法師<學徒 修復);法師座無弱點;領主座對火脆弱。"""
+    from tesrpg import formulas
+    gd = get_gamedata()
+
+    def mk(sign):
+        return build_character(gd, name="x", sex="male", race="nord", birthsign=sign, class_id="mage")
+
+    def mult(c, e):
+        return formulas.resist_multiplier(magic.entity_resist(c, gd), e)
+
+    mage, app, lord, warrior = mk("mage"), mk("apprentice"), mk("lord"), mk("warrior")
+    # 學徒對魔法及三元素「皆比法師更易受傷」(delta 與種族基線無關:學徒在 magic 上多 -50)
+    for e in ("magic", "fire", "frost", "shock"):
+        assert mult(app, e) > mult(mage, e), f"學徒 {e} 未比法師脆弱"
+    # 法師座本身無弱點(與無星座加成的戰士同抗性)
+    assert mult(mage, "magic") == mult(warrior, "magic")
+    # 領主座對火比無弱點者脆弱(flavor 終於有機制)
+    assert mult(lord, "fire") > mult(warrior, "fire")
+    # 風險換報酬:學徒魔力上限明顯高於法師(否則「法師<學徒」又回來了)
+    assert app.max_magicka > mage.max_magicka
+
+
 def run():
     for name, fn in sorted(globals().items()):
         if name.startswith("test_") and callable(fn):

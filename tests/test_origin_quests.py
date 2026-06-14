@@ -143,6 +143,15 @@ def test_quests_view_grouped_and_sheet_origin():
     assert sv["origin"] == "騎士見習" and sv["intro_quest"]["name"] == "騎士試煉"
 
 
+def test_origin_categories_cover_all():
+    """兩層開局選單:分類涵蓋全部開局、無重複(漏歸類會掉出選單)。"""
+    import tesrpg.main as M
+    gd = get_gamedata()
+    listed = [o for _, oids in M.ORIGIN_CATEGORIES for o in oids]
+    assert len(listed) == len(set(listed)), "開局分類有重複"
+    assert set(listed) == set(gd.origins), f"分類未涵蓋全部開局:{set(gd.origins) ^ set(listed)}"
+
+
 def test_save_roundtrip_preserves_active_origin_quest():
     gd = get_gamedata()
     c = _build(gd, "fugitive")
@@ -160,6 +169,7 @@ def run():
     test_representative_chains_complete_and_reward()
     test_reward_band_modest()
     test_quests_view_grouped_and_sheet_origin()
+    test_origin_categories_cover_all()
     test_save_roundtrip_preserves_active_origin_quest()
 
 

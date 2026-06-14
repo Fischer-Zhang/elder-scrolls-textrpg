@@ -431,14 +431,16 @@ def _origin_card(gamedata: GameData, oid: str, od: dict) -> dict:
             "gold": od.get("gold"), "gear": gear, "tags": tags, "quest": q.get("name", "")}
 
 
-def _origins_view(gamedata: GameData) -> dict:
-    return {"origins": [_origin_card(gamedata, oid, od) for oid, od in gamedata.origins.items()]}
+def _origins_view(gamedata: GameData, oids: list | None = None) -> dict:
+    ids = oids if oids is not None else list(gamedata.origins)
+    return {"origins": [_origin_card(gamedata, oid, gamedata.origins[oid]) for oid in ids]}
 
 
-def origins_panel(gamedata: GameData) -> None:
-    """創角開局選擇前的資訊面板:逐開局列出起始地/金幣/裝備·身分/起手任務(終端表 + Web 卡)。"""
+def origins_panel(gamedata: GameData, oids: list | None = None) -> None:
+    """創角開局選擇前的資訊面板:逐開局列出起始地/金幣/裝備·身分/起手任務(終端表 + Web 卡)。
+    oids 給定時只列該批(兩層選單:選定類別後只顯示該類)。"""
     if _web is not None:
-        _emit_view("origins", _origins_view(gamedata))
+        _emit_view("origins", _origins_view(gamedata, oids))
         return
     tbl = Table(box=None, pad_edge=False, padding=(0, 1))
     tbl.add_column("開局", style=f"bold {PARCH}", no_wrap=True)
@@ -446,7 +448,7 @@ def origins_panel(gamedata: GameData) -> None:
     tbl.add_column("金幣", justify="right", style=GOLD_DIM)
     tbl.add_column("裝備 · 身分", style=INK)
     tbl.add_column("起手任務", style="cyan")
-    for c in _origins_view(gamedata)["origins"]:
+    for c in _origins_view(gamedata, oids)["origins"]:
         ident = "、".join(c["gear"] + c["tags"]) or "標準起始"
         gold = str(c["gold"]) if c["gold"] is not None else "標準"
         tbl.add_row(c["name"], c["location"], gold, ident, c["quest"])

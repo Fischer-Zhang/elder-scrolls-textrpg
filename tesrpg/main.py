@@ -47,10 +47,7 @@ def create_character(gamedata: GameData, rng: RNG):
     class_id = ui.menu("職業", class_opts)
     custom = _create_custom_class(gamedata) if class_id == "custom" else None
 
-    ui.origins_panel(gamedata)   # 開局選擇前先列出各開局起始處境 + 起手任務(資訊面板)
-    origin_id = ui.menu("開局背景(不一樣的人生)", [
-        (oid, f"{o['name']} — {o['blurb']}") for oid, o in gamedata.origins.items()
-    ])
+    origin_id = _choose_origin(gamedata)
 
     default_name = creation.random_name(gamedata, race, sex, rng)
     name = ui.ask_text("姓名", default=default_name)
@@ -61,6 +58,37 @@ def create_character(gamedata: GameData, rng: RNG):
     )
     ui.message(f"歡迎來到 Tamriel,{char.name}。", style="bold green")
     return char
+
+
+# 開局分類(兩層選單:24 種太長 → 先選一類、再選開局)。新增開局未列入者自動歸「浪人 · 處境」。
+ORIGIN_CATEGORIES = [
+    ("⚔ 戰士 · 近戰", ["sellsword", "fighters_recruit", "alikr_blade", "orc_outcast",
+                       "legion_veteran", "caravan_guard", "knight_aspirant"]),
+    ("✦ 法師 · 法術", ["mage_initiate", "temple_healer", "reach_witch"]),
+    ("🗡 潛行 · 弓手", ["dark_initiate", "guild_thief", "tomb_seeker", "dockside_stowaway", "wood_hunter"]),
+    ("🩸 特殊血脈", ["nightborn", "beast_blooded"]),
+    ("🧭 浪人 · 處境", ["newcomer", "fugitive", "pilgrim", "fallen_noble",
+                       "shipwreck_survivor", "ashlander", "wandering_bard"]),
+]
+
+
+def _choose_origin(gamedata: GameData) -> str:
+    """兩層開局選單:先選類別 → 看該類資訊面板 → 選開局(可返回)。"""
+    listed = {oid for _, oids in ORIGIN_CATEGORIES for oid in oids}
+    extra = [oid for oid in gamedata.origins if oid not in listed]   # 安全網:漏歸類者進浪人
+    cats = [(lbl, [o for o in oids if o in gamedata.origins] + (extra if i == len(ORIGIN_CATEGORIES) - 1 else []))
+            for i, (lbl, oids) in enumerate(ORIGIN_CATEGORIES)]
+    cats = [(lbl, oids) for lbl, oids in cats if oids]
+    while True:
+        cat = ui.menu("開局背景(不一樣的人生)—— 先選一類",
+                      [(lbl, f"{lbl}（{len(oids)} 種)") for lbl, oids in cats])
+        oids = dict(cats)[cat]
+        ui.origins_panel(gamedata, oids=oids)
+        pick = ui.menu(f"{cat} —— 選擇開局", [
+            (oid, f"{gamedata.origins[oid]['name']} — {gamedata.origins[oid]['blurb']}") for oid in oids
+        ], allow_back=True)
+        if pick is not None:
+            return pick
 
 
 def _intro_quest_briefing(state: GameState, gamedata: GameData) -> None:
