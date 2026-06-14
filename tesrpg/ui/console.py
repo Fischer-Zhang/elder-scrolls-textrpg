@@ -215,6 +215,9 @@ def _sheet_view(char: Character, gamedata: GameData) -> dict:
         "guilds": [f"{gamedata.factions[f]['name']}「{factions.rank_name(char, gamedata, f)}」"
                    for f in char.factions if f in gamedata.factions],
         "effects": [_effect_label(e) for e in char.active_effects],
+        "origin": gamedata.origins.get(char.origin, {}).get("name", ""),
+        "origin_blurb": gamedata.origins.get(char.origin, {}).get("blurb", ""),
+        "intro_quest": _active_origin_quest(char, gamedata),
     }
 
 
@@ -338,13 +341,47 @@ def _guild_view(char: Character, gamedata: GameData, faction_id: str) -> dict:
     return v
 
 
-def _quests_view(char: Character, gamedata: GameData) -> dict:
+_QUEST_GROUPS = [("origin", "🧭 起手任務"), ("guild", "⚜ 公會"), ("other", "📜 委託")]
+
+
+def _quest_group(q: dict) -> str:
+    if q.get("source") == "origin":
+        return "origin"
+    return "guild" if q.get("faction") else "other"
+
+
+def _quest_entry(char: Character, gamedata: GameData, qid: str) -> dict:
+    """單一任務的呈現資料:當前目標 + 各階段進度(done/cur/todo)。"""
     from tesrpg.systems import quests
-    items = [{"name": gamedata.quests[qid]["name"],
-              "faction": (gamedata.factions[gamedata.quests[qid]["faction"]]["name"]
-                          if gamedata.quests[qid].get("faction") else None),
-              "objective": quests.objective_text(char, gamedata, qid)} for qid in char.quests]
-    return {"quests": items, "completed": len(char.completed_quests)}
+    q = gamedata.quests[qid]
+    obj, idx, total = quests.current_objective(char, gamedata, qid)
+    rq = quests.resolved(char, gamedata, qid)
+    stage_defs = rq.get("stages") or [{"text": rq.get("text", "")}]
+    stages = [{"text": s.get("text", ""),
+               "state": ("done" if i < idx else "cur" if i == idx else "todo")}
+              for i, s in enumerate(stage_defs)]
+    return {"name": q["name"],
+            "faction": (gamedata.factions[q["faction"]]["name"] if q.get("faction") else None),
+            "objective": quests.objective_text(char, gamedata, qid),
+            "stage": [idx + 1, total], "stages": stages}
+
+
+def _quests_view(char: Character, gamedata: GameData) -> dict:
+    buckets: dict = {k: [] for k, _ in _QUEST_GROUPS}
+    for qid in char.quests:
+        buckets[_quest_group(gamedata.quests[qid])].append(_quest_entry(char, gamedata, qid))
+    groups = [{"title": title, "quests": buckets[k]} for k, title in _QUEST_GROUPS if buckets[k]]
+    return {"groups": groups, "completed": len(char.completed_quests)}
+
+
+def _active_origin_quest(char: Character, gamedata: GameData) -> dict | None:
+    """進行中的起手任務(出身任務)摘要;無則 None。"""
+    from tesrpg.systems import quests
+    for qid in char.quests:
+        if gamedata.quests.get(qid, {}).get("source") == "origin":
+            return {"name": gamedata.quests[qid]["name"],
+                    "objective": quests.objective_text(char, gamedata, qid)}
+    return None
 
 
 def _board_view(char: Character, gamedata: GameData, qids: list) -> dict:
@@ -370,6 +407,50 @@ def board_panel(char: Character, gamedata: GameData, qids: list) -> None:
     """web:告示板可點委託卡(列 key=quest id,對齊委託選單 → wireActionableRows 接管);終端不發。"""
     if _web is not None:
         _emit_view("board", _board_view(char, gamedata, qids))
+
+
+def _origin_card(gamedata: GameData, oid: str, od: dict) -> dict:
+    """單一開局的「起始處境」摘要(供創角資訊面板;終端+Web 共用)。"""
+    loc_id = od.get("location") or gamedata.world.get("start_location", "bruma")
+    gear = ([gamedata.item_name(od["weapon"])] if od.get("weapon") else []) \
+        + [gamedata.item_name(e) for e in od.get("equip", [])]
+    tags = [gamedata.factions[f]["name"] for f in od.get("faction", {}) if f in gamedata.factions]
+    if od.get("vampire"):
+        tags.append("吸血鬼")
+    if od.get("werewolf"):
+        tags.append("狼人")
+    if od.get("bounty"):
+        tags.append("通緝在身")
+    if od.get("companions"):
+        tags.append("帶同伴")
+    if od.get("spells"):
+        tags.append("會法術")
+    q = gamedata.quests.get(od.get("quest", ""), {})
+    return {"id": oid, "name": od["name"], "blurb": od["blurb"],
+            "location": gamedata.location(loc_id)["name"],
+            "gold": od.get("gold"), "gear": gear, "tags": tags, "quest": q.get("name", "")}
+
+
+def _origins_view(gamedata: GameData) -> dict:
+    return {"origins": [_origin_card(gamedata, oid, od) for oid, od in gamedata.origins.items()]}
+
+
+def origins_panel(gamedata: GameData) -> None:
+    """創角開局選擇前的資訊面板:逐開局列出起始地/金幣/裝備·身分/起手任務(終端表 + Web 卡)。"""
+    if _web is not None:
+        _emit_view("origins", _origins_view(gamedata))
+        return
+    tbl = Table(box=None, pad_edge=False, padding=(0, 1))
+    tbl.add_column("開局", style=f"bold {PARCH}", no_wrap=True)
+    tbl.add_column("起始地", style=INK, no_wrap=True)
+    tbl.add_column("金幣", justify="right", style=GOLD_DIM)
+    tbl.add_column("裝備 · 身分", style=INK)
+    tbl.add_column("起手任務", style="cyan")
+    for c in _origins_view(gamedata)["origins"]:
+        ident = "、".join(c["gear"] + c["tags"]) or "標準起始"
+        gold = str(c["gold"]) if c["gold"] is not None else "標準"
+        tbl.add_row(c["name"], c["location"], gold, ident, c["quest"])
+    console.print(_panel(tbl, title="🧭 開局背景一覽(各自帶起手任務)"))
 
 
 def _court_view(ruler, gamedata, reception, standing, thane, politics, territory) -> dict:
@@ -608,6 +689,12 @@ def character_sheet(char: Character, gamedata: GameData) -> None:
     res.add_row(Text("負重", style=GOLD),
                 Text(f"上限 {formulas.max_encumbrance(char.attr('strength'))}", style=INK))
     res.add_row(Text("金幣", style=GOLD), Text(str(char.gold), style=PARCH))
+    _od = gamedata.origins.get(char.origin)
+    if _od:
+        res.add_row(Text("出身", style=GOLD), Text(_od["name"], style=PARCH))
+    _iq = _active_origin_quest(char, gamedata)
+    if _iq:
+        res.add_row(Text("起手", style="cyan"), Text(f"{_iq['name']} — {_iq['objective']}", style=INK))
     res.add_row(Text("武器", style=GOLD), Text(weapon_line(char, gamedata), style=PARCH))
     from tesrpg.systems import inventory as _inv
     _worn = _inv.worn_armor_rating(char, gamedata)
@@ -1652,18 +1739,25 @@ def quest_log(char: Character, gamedata: GameData) -> None:
     if _web is not None:
         _emit_view("quests", _quests_view(char, gamedata))
         return
-    from tesrpg.systems import quests
+    from rich.console import Group
     if not char.quests:
         console.print(_panel(f"[{INK}]目前沒有進行中的任務。[/]", title="📜 任務日誌"))
     else:
-        tbl = Table(box=None, pad_edge=False, padding=(0, 2))
-        tbl.add_column("任務", style=f"bold {PARCH}")
-        tbl.add_column("目標", style=INK)
-        for qid in char.quests:
-            q = gamedata.quests[qid]
-            fac = f"[{GOLD_DIM}]〔{gamedata.factions[q['faction']]['name']}〕[/]" if q.get("faction") else ""
-            tbl.add_row(f"{fac}{q['name']}", quests.objective_text(char, gamedata, qid))
-        console.print(_panel(tbl, title="📜 任務日誌"))
+        v = _quests_view(char, gamedata)
+        parts = []
+        for g in v["groups"]:
+            t = Text()
+            t.append(g["title"] + "\n", style=f"bold {GOLD}")
+            for q in g["quests"]:
+                head = f"〔{q['faction']}〕{q['name']}" if q.get("faction") else q["name"]
+                t.append(f"  {head}  ", style=f"bold {PARCH}")
+                t.append(f"({q['stage'][0]}/{q['stage'][1]})\n", style=INK)
+                for s in q["stages"]:
+                    mark, st = (("✔", FAINT) if s["state"] == "done"
+                                else ("▶", "cyan") if s["state"] == "cur" else ("·", INK))
+                    t.append(f"      {mark} {s['text']}\n", style=st)
+            parts.append(t)
+        console.print(_panel(Group(*parts), title="📜 任務日誌"))
     if char.completed_quests:
         console.print(f"  [{FAINT}]已完成 {len(char.completed_quests)} 件委託。[/]")
 

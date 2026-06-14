@@ -1550,5 +1550,238 @@
     },
     "turn_in": "auto",
     "text": "糖田督主達吉爾·甜爪甩了甩尾尖:「暗月窟裡的污影越聚越濃,夜裡連森奇虎都繞著糖田走,採糖的工人不敢出門。下窟去,把那些瑟拉斯·瑪斯拉的殘魂驅散 —— 月糖的甜,容不下暗月的陰。」"
+  },
+
+  "origin_newcomer": {
+    "name": "立足北疆", "source": "origin", "turn_in": "auto",
+    "text": "初到布魯瑪,身無餘財。先在這片雪城邊緣站穩腳跟,再看看賽羅迪爾的天地有多大。",
+    "stages": [
+      {"objective": {"type": "kill", "creature": "wolf", "count": 2}, "text": "布魯瑪城外的山道有野狼出沒 —— 獵殺 2 頭,證明你能自保。"},
+      {"objective": {"type": "reach", "location": "cheydinhal"}, "text": "聽說切迪納有活可幹,動身前往。"},
+      {"objective": {"type": "reach", "location": "imperial_city"}, "text": "最後到帝都,親眼看看這片天地的中心。"}
+    ],
+    "reward": {"gold": 60, "fame": 3, "items": ["minor_healing_potion"]}
+  },
+  "origin_fugitive": {
+    "name": "亡命天涯", "source": "origin", "turn_in": "auto",
+    "text": "枷鎖已斷,賞金在身。先殺出荒野的圍堵,再找個能藏身的去處 —— 這是最硬的開局。",
+    "stages": [
+      {"objective": {"type": "kill", "creature": "imperial_ghost", "count": 2}, "text": "古道陵墓的帝國亡魂擋路 —— 殺出一條生路。"},
+      {"objective": {"type": "reach", "location": "kvatch"}, "text": "避開大道上的追兵,潛入凱瓦奇的人群裡藏身。"}
+    ],
+    "reward": {"gold": 50, "fame": 2}
+  },
+  "origin_sellsword": {
+    "name": "第一筆生意", "source": "origin", "turn_in": "auto",
+    "text": "提著鋼劍、帶著弟兄,生意就是戰鬥。海芬古的雇主有單子等著你。",
+    "stages": [
+      {"objective": {"type": "kill", "creature": "wolf", "count": 2}, "text": "海芬古城外的狼群擾民,接下這單。"},
+      {"objective": {"type": "kill", "creature": "frostbite_spider", "count": 2}, "text": "雪原深處的霜咬蛛也在懸賞名單上。"},
+      {"objective": {"type": "reach", "location": "dragon_bridge"}, "text": "到龍橋鎮向雇主覆命領賞。"}
+    ],
+    "reward": {"gold": 80, "fame": 4}
+  },
+  "origin_mage_initiate": {
+    "name": "學徒的差事", "source": "origin", "turn_in": "auto",
+    "text": "天賦未顯,身分已在。公會交給新學徒的,總是些跑腿採集的差事 —— 但凡事總有起點。",
+    "stages": [
+      {"objective": {"type": "kill", "creature": "frostbite_spider", "count": 2}, "text": "公會要你先在野外驗證法術 —— 燒掉 2 隻霜咬蛛。"},
+      {"objective": {"type": "collect", "item": "bone_meal", "count": 2}, "text": "為煉金室採集 2 份骨粉(亡者與鼠類身上可得)。"},
+      {"objective": {"type": "reach", "location": "dragon_bridge"}, "text": "把材料送到龍橋鎮的聯絡人手上。"}
+    ],
+    "reward": {"gold": 60, "fame": 3, "items": ["minor_magicka_potion"]}
+  },
+  "origin_pilgrim": {
+    "name": "灰原的試煉", "source": "origin", "turn_in": "auto",
+    "text": "你遠渡重洋而來,腳下是陌生的火山灰土。先適應這片灰原,再向三神完成朝聖。",
+    "stages": [
+      {"objective": {"type": "kill", "creature": "ash_hopper", "count": 2}, "text": "灰燼荒地的灰蹦蟲圍擾朝聖路 —— 驅散牠們。"},
+      {"objective": {"type": "reach", "location": "vivec"}, "text": "前往聖城維威克,在三神面前完成朝聖。"}
+    ],
+    "reward": {"gold": 50, "fame": 3}
+  },
+  "origin_fallen_noble": {
+    "name": "重振門楣", "source": "origin", "turn_in": "auto",
+    "text": "家道中落,金幣買不來真本事。帶著最後的家當與祖傳金鍊,親手把門楣重新撐起。",
+    "stages": [
+      {"objective": {"type": "kill", "creature": "wolf", "count": 2}, "text": "落魄歸鄉,先在布魯瑪城外的狼患上證明自己未曾廢弛。"},
+      {"objective": {"type": "reach", "location": "imperial_city"}, "text": "帶著家徽前往帝都,重新打點人脈。"}
+    ],
+    "reward": {"gold": 60, "fame": 4}
+  },
+  "origin_nightborn": {
+    "name": "夜行覓食", "source": "origin", "turn_in": "auto",
+    "text": "血渴日夜催逼,陽光與世人的目光都是枷鎖。趁夜覓食,在強大與融入之間遊走。",
+    "stages": [
+      {"objective": {"type": "kill", "creature": "wolf", "count": 2}, "text": "血渴催著你 —— 在夜色下撕開 2 頭野狼。"},
+      {"objective": {"type": "kill", "creature": "imperial_ghost", "count": 2}, "text": "古道的亡魂與你同屬黑夜,卻擋了你的路。"},
+      {"objective": {"type": "reach", "location": "imperial_city"}, "text": "混入帝都的人群,沒人會多看一個夜行者一眼。"}
+    ],
+    "reward": {"gold": 50, "fame": 2}
+  },
+  "origin_dark_initiate": {
+    "name": "見血", "source": "origin", "turn_in": "auto",
+    "text": "夜母選中了你。揣著聖所的暗號,先磨利手段,等著你的是一張張合約。",
+    "stages": [
+      {"objective": {"type": "kill", "creature": "frostbite_spider", "count": 2}, "text": "聖所要你先磨利手段 —— 無聲解決 2 隻霜咬蛛。"},
+      {"objective": {"type": "kill", "creature": "wolf", "count": 2}, "text": "再取 2 頭野狼的性命,習慣死亡的重量。"},
+      {"objective": {"type": "reach", "location": "dragon_bridge"}, "text": "到龍橋鎮的死信箱取下一份合約。"}
+    ],
+    "reward": {"gold": 60, "fame": 2}
+  },
+  "origin_fighters_recruit": {
+    "name": "新血的銳氣", "source": "origin", "turn_in": "auto",
+    "text": "身分已在 Jorrvaskr,本事得自己掙。先在平原證明你的銳氣,再向委託人覆命。",
+    "stages": [
+      {"objective": {"type": "kill", "creature": "wolf", "count": 2}, "text": "戰友團要你先在平原證明銳氣 —— 獵殺 2 頭野狼。"},
+      {"objective": {"type": "kill", "creature": "frostbite_spider", "count": 2}, "text": "再清掉洞口的 2 隻霜咬蛛。"},
+      {"objective": {"type": "reach", "location": "dragon_bridge"}, "text": "向龍橋鎮的委託人覆命。"}
+    ],
+    "reward": {"gold": 70, "fame": 4}
+  },
+  "origin_guild_thief": {
+    "name": "投名狀", "source": "origin", "turn_in": "auto",
+    "text": "靠匕首與舌頭在陰影裡討生活。公會老大要你先踩點周邊,立下投名狀。",
+    "stages": [
+      {"objective": {"type": "kill", "creature": "wolf", "count": 2}, "text": "公會老大要你先在裂谷城外歷練手腳。"},
+      {"objective": {"type": "reach", "location": "windhelm"}, "text": "潛入風盔城踩點,記下油水所在。"}
+    ],
+    "reward": {"gold": 60, "fame": 2}
+  },
+  "origin_alikr_blade": {
+    "name": "烈日立威", "source": "origin", "turn_in": "auto",
+    "text": "劍與駿馬是約凱後裔的全部。在這片西陲的烈日下,先讓你的名聲傳開。",
+    "stages": [
+      {"objective": {"type": "kill", "creature": "sand_scorpion", "count": 2}, "text": "森塔城外的沙蠍橫行 —— 以劍立威。"},
+      {"objective": {"type": "reach", "location": "gilane"}, "text": "策馬前往蓋蘭,約凱劍客的名聲先傳一程。"}
+    ],
+    "reward": {"gold": 70, "fame": 4}
+  },
+  "origin_shipwreck_survivor": {
+    "name": "從無到有", "source": "origin", "turn_in": "auto",
+    "text": "風暴奪走了你的一切,只剩腰間一把鏽匕。從這片海灘,一點一點掙回生計。",
+    "stages": [
+      {"objective": {"type": "kill", "creature": "mudcrab", "count": 2}, "text": "渾身濕透的你先在海灘打 2 隻泥蟹果腹。"},
+      {"objective": {"type": "kill", "creature": "wolf", "count": 2}, "text": "再清掉岸邊林子裡的 2 頭野狼。"},
+      {"objective": {"type": "reach", "location": "skingrad"}, "text": "攢夠盤纏,動身前往史金格拉德謀生。"}
+    ],
+    "reward": {"gold": 40, "fame": 2}
+  },
+  "origin_temple_healer": {
+    "name": "行醫鄉間", "source": "origin", "turn_in": "auto",
+    "text": "以慈悲之手撫平創傷。但鄉間的傷者,往往得先除掉傷人的禍患才能醫治。",
+    "stages": [
+      {"objective": {"type": "kill", "creature": "wolf", "count": 2}, "text": "鄉道上的狼患傷了村民 —— 你得先除害,再醫人。"},
+      {"objective": {"type": "reach", "location": "kvatch"}, "text": "前往凱瓦奇的小修道院協助義診。"},
+      {"objective": {"type": "reach", "location": "anvil"}, "text": "再到安維爾的濟貧所伸出援手。"}
+    ],
+    "reward": {"gold": 50, "fame": 5}
+  },
+  "origin_orc_outcast": {
+    "name": "獨自求生", "source": "origin", "turn_in": "auto",
+    "text": "被部族放逐,蠻力與韌性是你僅有的依靠。在西境的岩原上,先活下來。",
+    "stages": [
+      {"objective": {"type": "kill", "creature": "frostbite_spider", "count": 2}, "text": "西境岩洞的霜咬蛛是你第一頓硬仗。"},
+      {"objective": {"type": "kill", "creature": "wolf", "count": 2}, "text": "再以戰斧劈開 2 頭野狼。"},
+      {"objective": {"type": "reach", "location": "whiterun"}, "text": "前往白漫城 —— 放逐者也能尋得新的歸處。"}
+    ],
+    "reward": {"gold": 60, "fame": 3}
+  },
+  "origin_beast_blooded": {
+    "name": "月下的野性", "source": "origin", "turn_in": "auto",
+    "text": "獸血在你體內奔流。在月下證明自己能駕馭這份野性,再去聆聽更古老的獸血低語。",
+    "stages": [
+      {"objective": {"type": "kill", "creature": "wolf", "count": 2}, "text": "獸血躁動 —— 在月下撕碎 2 頭同類野狼。"},
+      {"objective": {"type": "kill", "creature": "frostbite_spider", "count": 2}, "text": "再獵殺 2 隻霜咬蛛,馴服體內的狂暴。"},
+      {"objective": {"type": "reach", "location": "markarth"}, "text": "前往西境,聆聽更古老的獸血低語。"}
+    ],
+    "reward": {"gold": 70, "fame": 3}
+  },
+  "origin_legion_veteran": {
+    "name": "老兵的差事", "source": "origin", "turn_in": "auto",
+    "text": "你為帝國征戰半生,如今卸甲定居帝都。鋼劍與紀律仍在 —— 只是,該為自己而戰了。",
+    "stages": [
+      {"objective": {"type": "kill", "creature": "imperial_ghost", "count": 2}, "text": "帝都近郊的亡魂擾民 —— 老兵重披戰甲,清剿之。"},
+      {"objective": {"type": "reach", "location": "skingrad"}, "text": "押運一批軍需,護送到史金格拉德。"}
+    ],
+    "reward": {"gold": 70, "fame": 4}
+  },
+  "origin_wood_hunter": {
+    "name": "雨林狩獵", "source": "origin", "turn_in": "auto",
+    "text": "以弓與綠盟的古律為生。在這片林冠之下,獵物與獵人的界線從來模糊。",
+    "stages": [
+      {"objective": {"type": "kill", "creature": "strangler_vine", "count": 2}, "text": "瓦倫雨林的絞殺藤纏擾村寨 —— 一箭一箭清除。"},
+      {"objective": {"type": "kill", "creature": "wolf", "count": 2}, "text": "再獵 2 頭林狼,證明你的箭術。"},
+      {"objective": {"type": "reach", "location": "silvenar"}, "text": "把獵物毛皮送到希凡納的集市。"}
+    ],
+    "reward": {"gold": 70, "fame": 4}
+  },
+  "origin_caravan_guard": {
+    "name": "護道清匪", "source": "origin", "turn_in": "auto",
+    "text": "刀口舔血換取酬銀。月糖與香料的氣味裡危機四伏,商隊要安然抵達,就靠你這把刀。",
+    "stages": [
+      {"objective": {"type": "kill", "creature": "sugar_vine", "count": 2}, "text": "瑞門郊野的糖藤絆擾商隊 —— 先清出一條路。"},
+      {"objective": {"type": "kill", "creature": "wolf", "count": 2}, "text": "再驅散尾隨商隊的 2 頭野狼。"},
+      {"objective": {"type": "reach", "location": "senchal"}, "text": "護送商隊安抵森查爾。"}
+    ],
+    "reward": {"gold": 80, "fame": 4}
+  },
+  "origin_tomb_seeker": {
+    "name": "尋墓探寶", "source": "origin", "turn_in": "auto",
+    "text": "靠探訪殘墟與古墓維生,撬鎖與膽識是吃飯的本錢。寶藏與詛咒,往往同處一室。",
+    "stages": [
+      {"objective": {"type": "kill", "creature": "imperial_ghost", "count": 2}, "text": "古墓外的帝國亡魂守著入口 —— 清開牠們。"},
+      {"objective": {"type": "reach", "location": "kvatch"}, "text": "向凱瓦奇的古物販子打聽下一處遺址。"}
+    ],
+    "reward": {"gold": 60, "fame": 3}
+  },
+  "origin_ashlander": {
+    "name": "灰原試煉", "source": "origin", "turn_in": "auto",
+    "text": "你執長槍、循古俗,是灰燼荒原的部族子弟。外鄉人的城市既陌生,又充滿機會。",
+    "stages": [
+      {"objective": {"type": "kill", "creature": "ash_hopper", "count": 2}, "text": "灰民的成年禮 —— 以長槍獵殺 2 隻灰蹦蟲。"},
+      {"objective": {"type": "reach", "location": "balmora"}, "text": "帶著獵物的甲殼前往巴爾莫拉,向部族長老覆命。"}
+    ],
+    "reward": {"gold": 50, "fame": 3}
+  },
+  "origin_reach_witch": {
+    "name": "巫術與草藥", "source": "origin", "turn_in": "auto",
+    "text": "你以幻術與草藥操弄人心,被諾德人視為異類。只信山岩與古神的你,得先備齊術法所需。",
+    "stages": [
+      {"objective": {"type": "kill", "creature": "frostbite_spider", "count": 2}, "text": "驅散巢穴口的 2 隻霜咬蛛,守住你的居所。"},
+      {"objective": {"type": "collect", "item": "bone_meal", "count": 2}, "text": "西境的巫術需要骨粉 —— 從亡者與鼠類身上取 2 份。"},
+      {"objective": {"type": "reach", "location": "whiterun"}, "text": "帶著新調的藥劑前往白漫城兜售。"}
+    ],
+    "reward": {"gold": 60, "fame": 3, "items": ["minor_magicka_potion"]}
+  },
+  "origin_knight_aspirant": {
+    "name": "騎士試煉", "source": "origin", "turn_in": "auto",
+    "text": "你出身高岩的騎士世家,矢志追隨九神的騎士道。劍與盾之外,榮譽是你最重的甲冑。",
+    "stages": [
+      {"objective": {"type": "kill", "creature": "moor_witch", "count": 2}, "text": "高岩霧沼的沼澤女巫作祟 —— 以騎士之名討伐。"},
+      {"objective": {"type": "kill", "creature": "wolf", "count": 2}, "text": "再護衛鄉里,驅散 2 頭野狼。"},
+      {"objective": {"type": "reach", "location": "wayrest"}, "text": "前往威岩,在城主前宣示你的騎士誓約。"}
+    ],
+    "reward": {"gold": 70, "fame": 5}
+  },
+  "origin_dockside_stowaway": {
+    "name": "掙船資", "source": "origin", "turn_in": "auto",
+    "text": "偷渡上岸的無名客,身無分文流落港城。一把匕首、一身機警,從碼頭的零工掙起。",
+    "stages": [
+      {"objective": {"type": "kill", "creature": "sand_scorpion", "count": 2}, "text": "碼頭區的沙蠍橫行 —— 賞金雖薄,聊勝於無。"},
+      {"objective": {"type": "kill", "creature": "mudcrab", "count": 2}, "text": "再清掉港灣的 2 隻泥蟹。"},
+      {"objective": {"type": "reach", "location": "gilane"}, "text": "攢夠船資,搭上前往蓋蘭的商船。"}
+    ],
+    "reward": {"gold": 50, "fame": 2}
+  },
+  "origin_wandering_bard": {
+    "name": "採風巡演", "source": "origin", "turn_in": "auto",
+    "text": "以歌謠與舌燦蓮花換取食宿。每座城都是舞台,每段奇遇都是新詞的素材。",
+    "stages": [
+      {"objective": {"type": "reach", "location": "kvatch"}, "text": "巡演的第一站 —— 前往凱瓦奇的酒館獻藝。"},
+      {"objective": {"type": "kill", "creature": "wolf", "count": 2}, "text": "途中遇上攔路的狼群,吟遊詩人也得會幾手自保。"},
+      {"objective": {"type": "reach", "location": "anvil"}, "text": "最後到海港城安維爾,把見聞譜成新曲。"}
+    ],
+    "reward": {"gold": 50, "fame": 5}
   }
 }

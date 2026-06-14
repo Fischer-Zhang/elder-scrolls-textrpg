@@ -63,7 +63,7 @@ PYTHONPATH=. python3 sim_assassin.py      # 平衡回歸模擬(改戰鬥常數�
 | R15 | 附魔載體 `encha/enchj/enchw/enchws`;`synth` 段數相容;麻痺 solo boss 免疫紅線 | recompute, re-sim |
 | R16 | 公會規則在 `factions.py`/資料 `factions.json`;分支任務推進務必保留 `branch` | |
 | R17 | AoE 每敵各取**獨立** `make_status_effect` dict(勿共用) | |
-| R18 | `apply_origin` **只改處境不動屬性/技能**;別起在地城/`danger≥4` | |
+| R18 | `apply_origin` **只改處境不動屬性/技能**;別起在地城/`danger≥4`;開局 `quest` 欄自動接起手任務(`is_player` 閘);起手任務 `reach` 不指自身起始地、`collect` 不取起始包物、禁 `clear_dungeon` | |
 | R19 | `vampirism.update` 每圈頂端;`vampire_*` 獨立層;疾病抗性削感染 | migrate, recompute |
 | R20 | `skooma.update` 在 vampirism 後;亢奮**絕不碰 strength/sneak/武傷** | re-sim, migrate |
 | R21 | 門檻只認 `base_skill()`;新 kind 三步登錄(`_IMPLEMENTED_KINDS`+getter+呼叫端);溢盾夾總量 cap | re-sim, migrate |

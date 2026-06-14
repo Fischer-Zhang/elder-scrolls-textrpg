@@ -47,6 +47,7 @@ def create_character(gamedata: GameData, rng: RNG):
     class_id = ui.menu("職業", class_opts)
     custom = _create_custom_class(gamedata) if class_id == "custom" else None
 
+    ui.origins_panel(gamedata)   # 開局選擇前先列出各開局起始處境 + 起手任務(資訊面板)
     origin_id = ui.menu("開局背景(不一樣的人生)", [
         (oid, f"{o['name']} — {o['blurb']}") for oid, o in gamedata.origins.items()
     ])
@@ -60,6 +61,18 @@ def create_character(gamedata: GameData, rng: RNG):
     )
     ui.message(f"歡迎來到 Tamriel,{char.name}。", style="bold green")
     return char
+
+
+def _intro_quest_briefing(state: GameState, gamedata: GameData) -> None:
+    """創角後、入主迴圈前:若有起手任務,提示其敘事動機與第一個目標(單次)。"""
+    char = state.player
+    for qid in char.quests:
+        q = gamedata.quests.get(qid, {})
+        if q.get("source") == "origin":
+            ui.rule("你的去向")
+            ui.message(q.get("text", ""), style="bold cyan")
+            ui.message("起手任務:" + quests.objective_text(char, gamedata, qid), style="white")
+            break
 
 
 def _quick_character(gamedata: GameData, rng: RNG):
@@ -3747,6 +3760,7 @@ def main() -> None:
             state = GameState(player=char, rng=RNG(seed), game_mode=mode)
             ui.character_sheet(char, gamedata)
             ui.message(f"世界種子:{seed}（記下它,即可重玩同一個世界與命運)", style="grey70")
+            _intro_quest_briefing(state, gamedata)   # 起手任務首入提示(我為何在這)
 
         game_loop(state, gamedata)
 

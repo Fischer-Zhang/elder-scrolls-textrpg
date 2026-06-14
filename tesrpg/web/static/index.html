@@ -399,6 +399,8 @@
     }).join("");
 
     let extra = "";
+    if (d.origin) extra += `<div class="efx" style="color:var(--gold-dim)">出身　${esc(d.origin)}${d.origin_blurb ? ` <span class="faint">— ${esc(d.origin_blurb)}</span>` : ""}</div>`;
+    if (d.intro_quest) extra += `<div class="efx" style="color:#7fd0d8">🧭 起手　${esc(d.intro_quest.name)}:${esc(d.intro_quest.objective)}</div>`;
     if (d.guilds && d.guilds.length) extra += `<div class="efx" style="color:var(--gold-dim)">公會　${d.guilds.map(esc).join("、")}</div>`;
     if (d.effects && d.effects.length) extra += `<div class="efx">效果　${d.effects.map(esc).join("、")}</div>`;
     let mast = "";
@@ -479,9 +481,21 @@
     return elFrom(`<div class="card"><div class="card-head">🏛 ${esc(d.name)}</div><div class="loc-desc">${esc(d.blurb)}</div>${body}</div>`);
   }
   function renderQuests(d) {
+    const groups = d.groups || [];
     let body;
-    if (!d.quests.length) body = `<div class="dim" style="margin-top:8px">目前沒有進行中的任務。</div>`;
-    else body = d.quests.map(function (q) { return `<div class="quest"><div class="q-name">${q.faction ? `<span class="q-fac">〔${esc(q.faction)}〕</span>` : ""}${esc(q.name)}</div><div class="q-obj">${esc(q.objective)}</div></div>`; }).join("");
+    if (!groups.length) body = `<div class="dim" style="margin-top:8px">目前沒有進行中的任務。</div>`;
+    else body = groups.map(function (g) {
+      const qs = g.quests.map(function (q) {
+        const fac = q.faction ? `<span class="q-fac">〔${esc(q.faction)}〕</span>` : "";
+        const stages = (q.stages || []).map(function (s) {
+          if (s.state === "done") return `<div class="q-obj faint">✔ ${esc(s.text)}</div>`;
+          if (s.state === "cur") return `<div class="q-obj" style="color:#7fd0d8">▶ ${esc(s.text)}</div>`;
+          return `<div class="q-obj dim">· ${esc(s.text)}</div>`;
+        }).join("");
+        return `<div class="quest"><div class="q-name">${fac}${esc(q.name)} <span class="faint">(${q.stage[0]}/${q.stage[1]})</span></div>${stages}</div>`;
+      }).join("");
+      return `<div class="sec-title">${esc(g.title)}</div>${qs}`;
+    }).join("");
     return elFrom(`<div class="card"><div class="card-head">📜 任務日誌</div>${body}${d.completed ? `<div class="faint" style="margin-top:10px">已完成 ${d.completed} 件委託。</div>` : ""}</div>`);
   }
   function renderNpc(d) {
@@ -643,12 +657,25 @@
     return elFrom(`<div class="card"><div class="card-head">🛒 商店</div><div class="inv">${rows}</div>`
       + `<div class="inv-foot"><span></span><span class="gold">金幣 ${d.gold}</span></div></div>`);
   }
+  function renderOrigins(d) {
+    const cards = (d.origins || []).map(function (o) {
+      const chips = [`<span class="chip">📍 ${esc(o.location)}</span>`];
+      if (o.gold != null) chips.push(`<span class="chip gold">${o.gold} 金</span>`);
+      (o.gear || []).forEach(function (g) { chips.push(`<span class="chip green">${esc(g)}</span>`); });
+      (o.tags || []).forEach(function (t) { chips.push(`<span class="chip cyan">${esc(t)}</span>`); });
+      const q = o.quest ? `<div class="q-obj" style="color:#7fd0d8">🧭 起手:${esc(o.quest)}</div>` : "";
+      return `<div class="quest"><div class="q-name">${esc(o.name)}</div>`
+        + `<div class="loc-desc" style="font-style:italic">${esc(o.blurb)}</div>`
+        + `<div class="opt-chips">${chips.join("")}</div>${q}</div>`;
+    }).join("");
+    return elFrom(`<div class="card"><div class="card-head">🧭 開局背景一覽(各自帶起手任務)</div><div class="inv">${cards}</div></div>`);
+  }
   const VIEWS = {
     status: renderStatus, location: renderLocation, sheet: renderSheet, divider: renderDivider,
     combat: renderCombat, inventory: renderInventory, map: renderMap, guild: renderGuild,
     quests: renderQuests, npc: renderNpc, court: renderCourt, territory: renderTerritory,
     dungeon_grid: renderDungeonGrid, encounter: renderEncounter, event: renderEvent, discovery: renderDiscovery,
-    legacy: renderLegacy, panel: renderPanel,
+    legacy: renderLegacy, panel: renderPanel, origins: renderOrigins,
     masteries: renderMasteries, resistances: renderResist, spellbook: renderSpellbook,
     achievements: renderAchievements, board: renderBoard, shop: renderShop,
   };

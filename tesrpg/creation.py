@@ -9,7 +9,7 @@ from tesrpg import formulas
 from tesrpg.gamedata import GameData
 from tesrpg.models import Character
 from tesrpg.rng import RNG
-from tesrpg.systems import inventory, stats
+from tesrpg.systems import inventory, quests, stats
 
 STARTING_GOLD = 50
 
@@ -167,6 +167,13 @@ def apply_origin(gamedata: GameData, char: Character, origin_id: str | None) -> 
     # 開局即狼人(獸血之裔):只標記身分(與吸血鬼互斥);疾病免疫層由 lycanthropy.update 首回合初始化。
     if odef.get("werewolf") and not char.is_vampire:
         char.is_werewolf = True
+
+    # 起手任務線(敘事動機:我為何在這):資料驅動單一 quest id;只發給玩家、冪等防呆。
+    # 置於末端 → 所有處境(地點/賞金/物品)就緒後才快照 _kill_base(新角 kill_counts 空,base 0)。
+    qid = odef.get("quest")
+    if (char.is_player and qid and qid in gamedata.quests
+            and qid not in char.quests and qid not in char.completed_quests):
+        quests.accept_quest(char, gamedata, qid)
 
 
 # 各武器技能 → 預設起始武器

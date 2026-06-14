@@ -135,6 +135,8 @@ def test_every_origin_references_valid_content():
             assert cid in gd.companions, f"{oid} 同伴 {cid} 不存在"
         for prov in odef.get("bounty", {}):
             assert prov in provinces, f"{oid} 賞金省份 {prov} 不存在"
+        if "quest" in odef:
+            assert odef["quest"] in gd.quests, f"{oid} 起手任務 {odef['quest']} 不存在"
 
         # 實際建出來必須是合法、滿血的角色
         c = _build(gd, oid)
