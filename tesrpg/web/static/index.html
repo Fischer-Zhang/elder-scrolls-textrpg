@@ -231,7 +231,7 @@
   .mmark.here{color:var(--gold);font-weight:700;z-index:5;text-shadow:0 0 7px var(--gold-soft);}
   .mmark.d1{color:#e0c074;} .mmark.d2{color:#ecac4a;} .mmark.d4{color:#ee6f62;}
   .mmark.sel{text-shadow:0 0 8px var(--gold-soft);}
-  .mlabel{font-size:10px;margin-left:2px;display:none;}
+  .mlabel{position:absolute;top:100%;left:50%;transform:translateX(-50%);margin-top:1px;font-size:9px;line-height:1;white-space:nowrap;color:var(--ink);text-shadow:0 0 3px #000,0 0 2px #000,0 0 2px #000;display:none;pointer-events:none;}
   .mhour{position:absolute;transform:translate(-50%,-50%);font-size:9px;color:var(--gold-dim);z-index:2;background:rgba(11,10,8,.7);padding:0 2px;border-radius:3px;pointer-events:none;display:none;}
   .mapstage.prov .mlabel,.mapstage.zoomed .mlabel{display:inline;}
   .mapstage.prov .mhour,.mapstage.zoomed .mhour{display:inline-block;}
@@ -508,7 +508,9 @@
         const cls = n.here ? "here" : (n.visited ? "vis" : "unseen");
         const glyph = n.here ? "★" : (ICON[n.type] || "·");
         const t = `${esc(n.name)}·${esc(n.type_cn)}${n.danger ? " ⚠" + n.danger : ""}`;
-        return `<div class="mmark ${cls}${dg}" data-id="${esc(n.id)}" style="left:${p[0]}%;top:${p[1]}%" title="${t}">${glyph}<span class="mlabel">${esc(n.name)}</span></div>`;
+        // 只標城/鎮地名(關鍵導航點;荒野/地城名靠 hover/點選),避免密集區字疊字
+        const lbl = (n.type === "city" || n.type === "town") ? `<span class="mlabel">${esc(n.name)}</span>` : "";
+        return `<div class="mmark ${cls}${dg}" data-id="${esc(n.id)}" style="left:${p[0]}%;top:${p[1]}%" title="${t}">${glyph}${lbl}</div>`;
       }).join("");
       zoom.innerHTML = svg + hours + marks;
     }
