@@ -297,6 +297,24 @@ def test_meltdown_no_arbitrage_on_cheap_singletons():
             f"{iid} 回爐套錠:材料買價高於成品買價"
 
 
+def test_temper_visible_in_display():
+    """淬鍊效果要在 UI 看得到:武器行傷害數字 + 護甲值 隨淬鍊上升(對齊戰鬥加成)。"""
+    from tesrpg.ui import console as ui
+    gd, c = _char()
+    c.skills["smithing"] = 100                       # 解淬鍊上限
+    inventory.add_item(c, "steel_sword", 1); inventory.equip_weapon(c, gd, "steel_sword")
+    inventory.add_item(c, "steel_cuirass", 1); inventory.equip_armor(c, gd, "steel_cuirass")
+    inventory.add_item(c, "steel_ingot", 10)
+    base_dmg = gd.item("steel_sword")["damage"]
+    arm0 = ui._armor_display(c, gd)[0]
+    smithing.temper(c, gd, "steel_sword"); smithing.temper(c, gd, "steel_cuirass")
+    assert smithing.weapon_temper_bonus(c) > 0 and smithing.armor_temper_bonus(c) > 0
+    # 武器行顯示含淬鍊的有效傷害(= 戰鬥基礎傷害)
+    assert f"傷害 {base_dmg + smithing.weapon_temper_bonus(c)}" in ui.weapon_line(c, gd)
+    # 護甲顯示值上升正好等於淬鍊加成
+    assert ui._armor_display(c, gd)[0] == arm0 + smithing.armor_temper_bonus(c)
+
+
 def test_steel_set_fully_craftable():
     """鋼套裝(含護手/靴/盾)+ 鋼匕首皆可鍛造(補回缺漏配方);鐵套裝對照仍完整。"""
     gd = get_gamedata()
