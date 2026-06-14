@@ -830,6 +830,7 @@ tesrpg/
 - **拓樸鐵律(`test_world` 守)**:① 除湮滅之門/終局地城白名單(`dragon_lair/kvatch_gate/bravil_gate/the_deadlands/dawn_sanctum`)外,每點 degree≥2(內容地城是穿越路線);② **跨省連線只經邊境**(邊境節點是省際接縫),僅 `kvatch↔dragon_bridge`、`leyawiin↔gideon` 兩條歷史直連豁免;③ 每真實省的省內子圖連通;④ 城/鎮 danger=0、荒野 1–5、地城≥1、每省有低危(≤2)入口。
 - **加新城/鎮**:world.json `type:city/town`+`danger:0` + rulers.json 一筆(`race∈races`、`garrison>0`、`bloc/bloc_label`、`stance∈{imperial,independent,neutral}`);新 bloc 只是字串(politics 動態讀,免登錄)。**加新地城**:dungeons.json 一筆 + quests.json 一條 `clear_dungeon`/`reach` 委託(`test_polish` 守);board 委託金幣≤`max(320,danger*100)`、聲望≤`max(15,danger*5)`(`test_detailing` 守)。新城改變 AI 戰爭盤面 → **大量加城後跑 `sim_worldwar`**(守 R24)。
 - **內容生成工具**:`tools/build_expansion.py`(以 template 產 `tools/expansion.json`,所有 id 取自既有資料)+ `tools/expand_world.py`(併入四檔、補雙向 link、指派 pos、保留格式;一次性,再跑會因 id 撞既有而中止)。
+- **相對位置地圖(Web)**:`_map_view` 除 `provinces`(明細)外發 `grid:{cols,rows,nodes:[{id,name,pos,type,here,visited,danger,province,...}]}`(同一輪計算);`index.html` `renderMap` 依 pos 絕對定位 marker 畫**總覽圖**(north 朝上、★所在、危險度上色),頂端行省鈕**純前端放大**該省 bbox(`drawStage(stage,prov)`,無 game-loop 來回),下方保留各省明細列表。`test_web` 守 grid 形狀(cols/rows + 每點 id/pos 界內 + 節點數=地點數)。
 
 ---
 

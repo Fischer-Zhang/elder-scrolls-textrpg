@@ -511,26 +511,35 @@ def _map_view(char: Character, gamedata: GameData) -> dict:
         if loc["province"] not in order:
             order.append(loc["province"])
     _FAC = {"imperial": "帝", "independent": "獨", "neutral": "中", "daedric": "湮", "own": "己"}
+    gm = gamedata.world.get("map", {"cols": 40, "rows": 24})
+    grid_nodes = []          # 扁平節點清單(供 web 相對位置地圖:總覽 + 行省放大,皆用 pos)
     provs = []
     for prov in order:
         nodes = []
         visited_n = 0
         for lid in by_prov[prov]:
             loc = locs[lid]
-            if lid in char.visited_locations:
+            here = lid == char.location_id
+            visited = lid in char.visited_locations
+            if visited:
                 visited_n += 1
             fac = None
             if gamedata.ruler_at(lid):
                 fac = "己" if lid in char.city_faction else _FAC.get(politics.faction_of(char, gamedata, lid))
+            lm = bool(gamedata.landmark_at(lid) and landmarks.is_discovered(char, lid))
             nodes.append({"name": loc["name"], "type": LOC_TYPE_NAME.get(loc["type"], ""),
-                          "here": lid == char.location_id, "visited": lid in char.visited_locations,
-                          "danger": loc.get("danger", 0), "faction": fac,
-                          "landmark": bool(gamedata.landmark_at(lid) and landmarks.is_discovered(char, lid)),
+                          "here": here, "visited": visited,
+                          "danger": loc.get("danger", 0), "faction": fac, "landmark": lm,
                           "services": [_SERVICE_CN[s] for s in loc.get("services", []) if s in _SERVICE_CN],
                           "exits": [{"name": locs[d]["name"], "hours": h} for d, h in loc.get("links", {}).items()]})
+            grid_nodes.append({"id": lid, "name": loc["name"], "pos": loc.get("pos", [0, 0]),
+                               "type": loc["type"], "type_cn": LOC_TYPE_NAME.get(loc["type"], ""),
+                               "here": here, "visited": visited, "danger": loc.get("danger", 0),
+                               "province": prov, "faction": fac, "landmark": lm})
         provs.append({"name": prov, "nodes": nodes,
                       "visited": visited_n, "total": len(by_prov[prov])})
-    return {"provinces": provs}
+    return {"provinces": provs,
+            "grid": {"cols": gm["cols"], "rows": gm["rows"], "nodes": grid_nodes}}
 
 
 # --- 視覺識別 -----------------------------------------------------------

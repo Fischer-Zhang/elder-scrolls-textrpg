@@ -298,6 +298,16 @@ def test_view_model_shapes():
     for p in mv["provinces"]:
         assert isinstance(p["visited"], int) and isinstance(p["total"], int)
         assert 0 <= p["visited"] <= p["total"] == len(p["nodes"])
+    # --- 相對位置地圖 grid:cols/rows + 每地點帶 id/pos(界內);節點數 == 地點數 ---
+    g = mv["grid"]
+    cols, rows = g["cols"], g["rows"]
+    assert cols == gd.world["map"]["cols"] and rows == gd.world["map"]["rows"]
+    assert len(g["nodes"]) == len(gd.world["locations"])
+    for n in g["nodes"]:
+        assert n["id"] in gd.world["locations"]
+        cx, cy = n["pos"]
+        assert 0 <= cx < cols and 0 <= cy < rows, f"{n['id']} pos 越界"
+        assert "type" in n and "here" in n and "visited" in n
 
 
 def test_combat_target_key_parity():

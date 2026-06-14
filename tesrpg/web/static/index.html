@@ -217,6 +217,18 @@
   .lm{color:var(--gold);margin-left:5px;} .svc{color:var(--faint);font-size:11px;margin-left:7px;}
   .mnex{color:var(--faint);font-size:11.5px;margin-top:2px;}
   .maplegend{color:var(--faint);font-size:11px;margin-top:13px;border-top:1px solid var(--line);padding-top:9px;}
+  /* 相對位置地圖(總覽 + 行省放大) */
+  .mzbar{display:flex;flex-wrap:wrap;gap:5px;margin:8px 0 4px;}
+  .mzb{font-size:11.5px;padding:2px 9px;background:var(--raise);border:1px solid var(--line);border-radius:11px;color:var(--ink);cursor:pointer;}
+  .mzb.active{border-color:var(--gold);color:var(--gold);}
+  .mapstage{position:relative;width:100%;max-width:580px;margin:6px auto 2px;background:rgba(255,255,255,.018);border:1px solid var(--line);border-radius:8px;overflow:hidden;}
+  .mmark{position:absolute;transform:translate(-50%,-50%);font-size:13px;line-height:1;color:var(--muted);white-space:nowrap;}
+  .mmark.vis{color:var(--ink);} .mmark.unseen{color:var(--faint);opacity:.45;}
+  .mmark.here{color:var(--gold);font-weight:700;z-index:4;text-shadow:0 0 6px var(--gold-soft);}
+  .mmark.d1{color:#c9aa6a;} .mmark.d2{color:#d79f47;} .mmark.d4{color:#cf5b5b;}
+  .mmark.unseen.d1,.mmark.unseen.d2,.mmark.unseen.d4{color:var(--faint);}
+  .mlabel{font-size:9.5px;margin-left:2px;}
+  .mapdetail{margin-top:10px;}
   /* 地城格子 */
   .dgrid{display:grid;gap:5px;margin:12px 0 4px;max-width:340px;}
   .dgcell{aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:17px;
@@ -453,6 +465,7 @@
       + `<div class="inv-foot"><span ${d.over ? 'style="color:#e08b82"' : ""}>負重 ${d.weight}/${d.max}${d.over ? " 超重!" : ""}</span><span class="gold">金幣 ${d.gold}</span></div></div>`);
   }
   function renderMap(d) {
+    // 各行省明細列表(維持原樣,置於地圖下方)
     const provs = d.provinces.map(function (p) {
       const nodes = p.nodes.map(function (n) {
         const mark = n.here ? '<span class="here">★</span> ' : (n.visited ? "" : '<span class="unseen">?</span> ');
@@ -465,7 +478,49 @@
       }).join("");
       return `<div class="mprov"><div class="mprov-h">${esc(p.name)}<span class="mprov-n">已訪 ${p.visited}/${p.total}</span></div>${nodes}</div>`;
     }).join("");
-    return elFrom(`<div class="card"><div class="card-head">🗺 世界地圖</div>${provs}<div class="maplegend">★=所在 · ❖地標 · ⚠危險度 · ?未到訪 · 服務:宿商訓法戰盜鐵板</div></div>`);
+
+    // 相對位置地圖:依 pos 座標繪製總覽圖,可點行省放大
+    const g = d.grid || { cols: 40, rows: 24, nodes: [] };
+    const ICON = { city: "◆", town: "◇", dungeon: "✦", wilderness: "·" };
+    function markerHTML(n, cmin, rmin, cspan, rspan, label) {
+      const left = (n.pos[0] - cmin) / cspan * 100;
+      const top = (n.pos[1] - rmin) / rspan * 100;
+      const dg = n.danger >= 4 ? " d4" : (n.danger >= 2 ? " d2" : (n.danger >= 1 ? " d1" : ""));
+      const cls = n.here ? "here" : (n.visited ? "vis" : "unseen");
+      const glyph = n.here ? "★" : (ICON[n.type] || "·");
+      const lbl = label ? `<span class="mlabel">${esc(n.name)}</span>` : "";
+      const t = `${esc(n.name)}·${esc(n.type_cn)}${n.danger ? " ⚠" + n.danger : ""}`;
+      return `<div class="mmark ${cls}${dg}" style="left:${left}%;top:${top}%" title="${t}">${glyph}${lbl}</div>`;
+    }
+    function drawStage(stage, prov) {
+      let nodes = g.nodes, label = false, cmin = 0, rmin = 0, cspan = g.cols - 1, rspan = g.rows - 1;
+      if (prov) {
+        nodes = g.nodes.filter(function (n) { return n.province === prov; });
+        let a = 1e9, b = -1e9, c = 1e9, e = -1e9;
+        nodes.forEach(function (n) { a = Math.min(a, n.pos[0]); b = Math.max(b, n.pos[0]); c = Math.min(c, n.pos[1]); e = Math.max(e, n.pos[1]); });
+        const pc = Math.max(1, (b - a) * 0.14), pr = Math.max(1, (e - c) * 0.14);
+        cmin = a - pc; rmin = c - pr; cspan = (b - a) + 2 * pc || 1; rspan = (e - c) + 2 * pr || 1;
+        label = true;
+      }
+      stage.innerHTML = nodes.map(function (n) { return markerHTML(n, cmin, rmin, cspan, rspan, label); }).join("");
+    }
+    const btns = `<button class="mzb active" data-prov="">總覽</button>` +
+      d.provinces.map(function (p) { return `<button class="mzb" data-prov="${esc(p.name)}">${esc(p.name)}</button>`; }).join("");
+    const el = elFrom(`<div class="card"><div class="card-head">🗺 世界地圖</div>` +
+      `<div class="mzbar">${btns}</div>` +
+      `<div class="mapstage" style="aspect-ratio:${g.cols}/${g.rows}"></div>` +
+      `<div class="maplegend">★所在 ◆城 ◇鎮 ✦地城 ·荒野 · 黃→紅=危險度 · 灰=未到訪 · 點行省可放大</div>` +
+      `<div class="mapdetail">${provs}</div></div>`);
+    const stage = el.querySelector(".mapstage");
+    drawStage(stage, "");
+    el.querySelectorAll(".mzb").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        el.querySelectorAll(".mzb").forEach(function (x) { x.classList.remove("active"); });
+        btn.classList.add("active");
+        drawStage(stage, btn.dataset.prov);
+      });
+    });
+    return el;
   }
   function renderGuild(d) {
     let body = "";
