@@ -1,0 +1,289 @@
+# BUFFS.md — 流亡者 (tesrpg) 增益效果總盤點
+
+> **這是一份「參考目錄」**(catalog,非設計憲法):把全遊戲所有增益/減益依來源層整理、附實際數值,方便查閱與平衡盤點。
+> 真實來源(single source of truth)仍是程式碼(`tesrpg/systems/*.py`、`tesrpg/formulas.py`)與資料(`tesrpg/data/*.json`);
+> 數值有疑義以程式常數/JSON 為準。鐵律本體見 [handoff.md](handoff.md) §3(R05/R07/R11/R14/R15/R20/R21/R25/R26)、設計理念見 [DESIGN.md](DESIGN.md)。
+> 末次盤點:2026-06-14(湮滅危機里程碑後;達貢之力層已納入)。改增益常數後請順手更新本檔。
+
+---
+
+> 全部增益依「來源層」分六大類。標記:🔴=碰戰鬥/偷襲紅線、★=同類唯一/設計重點、▼=減益(懲罰)。
+> 疊加術語:**獨立層**=寫入專屬 `*_bonus` 欄、聚合於 `attr()/skill()/entity_resist()` 直接相加、絕不寫回 base;**聚合相加**=同 dict 累加;**取最強**=max/min(防暴衝);**一次性**=即時非持續。
+
+---
+
+## ① 永久身分層(獨立疊加層,聚合於 attr()/skill()/entity_resist();絕不寫回 base)
+
+四層彼此**獨立相加**(達貢非詛咒可與吸血/狼人並存;吸血與狼人因疾病免疫互斥)。
+
+### 吸血鬼(階級隨「未進食天數」動態 0→3;進食歸 T0,每 2 日 +1 階,夾 MAX_STAGE=3)
+| 子層 | kind | 數值(T1/T2/T3) | 備註 |
+|---|---|---|---|
+| `vampire_attr_bonus` | 屬性 | str/speed/willpower 各 +5/+10/+15(stg×5) | T0 不給屬性;str→武傷+max_fatigue |
+| `vampire_skill_bonus` | 技能 | sneak/illusion 各 +5/+10/+15 | ★唯一餵 sneak 技能的身分層;加潛行命中/門檻**非**偷襲倍率 |
+| `vampire_resist` | 抗性 | disease +100(各階恆有含T0)、frost +10/+20/+30、**fire −10/−20/−30(弱點▼)** | fire/frost 吃 magic 管線(R14);disease 100=免疫(故與狼人互斥) |
+| 陽光灼傷▼ | 懲罰 | SUN_DMG=1.5×日照時×階(stg≥1,地城遮蔽) | 戶外懲罰非戰鬥增益 |
+
+### 狼人(獸血階 tier 0→4,門檻累計吞噬 FEED_TIERS=[10,25,50,100];限獸形中)
+| 子層 | kind | 數值(T0→T4) | 備註 |
+|---|---|---|---|
+| `werewolf_attr_bonus` | 屬性 | str 25→42 / endurance 40→70 / speed 15→20 / agility 10→14 | 🔴str 巨幅放近戰,但**獸形 sneak_attack=False**(結構免疫刺客紅線) |
+| `werewolf_health_bonus` | 資源上限 | +80/100/120/140/160(直接加 max_health) | 脫甲後靠血量扛傷;吞噬回血 beast_health//2 |
+| BEAST_ARMOR | 減傷 | ★固定 4(不隨 tier 成長) | 刻意微薄;靠血量非護甲 |
+| `werewolf_resist` | 抗性 | disease +100(人形也保留) | 人形 afflicted 唯一加成;免疫=不被吸血感染 |
+| **結構性權衡** | — | 獸形**脫去整套裝備/附魔/淬鍊/法術/格擋** | 用獸力換掉 equip_* 全部層;revert 力竭 −30 體力 |
+
+> tier≥2 解鎖恫嚇之嚎(HOWL_FATIGUE=25,FEAR 2 回合,solo boss 免疫);獸爪額外傷 _TIER_CLAW=[0,1,2,3,4]。
+
+### 斯庫瑪 / 月糖(限時亢奮;★刻意不碰 strength/sneak/武傷以避刺客紅線)
+| 子層 | kind | 數值 | scope |
+|---|---|---|---|
+| 斯庫瑪亢奮 `skooma_attr_bonus` | 屬性 | speed/agility/willpower 各 +8 | 8h×0.85^成癮,夾 MIN 1h |
+| 月糖亢奮(弱) | 屬性 | speed/agility 各 +5(無 willpower) | 4h×0.85^成癮,夾 1h |
+| 斯庫瑪回復 | 續航(一次性) | fatigue +80、health +30 | 月糖僅 fatigue +40 |
+| 戒斷負屬性▼ | 屬性[負] | str/willpower/agility/endurance 各 −3×step(step1–6,最深 −18) | ★唯一**減** str 的層(懲罰方向,不破紅線) |
+| 戒斷負技能▼ | 技能[負] | alchemy −3×step(−3→−18) | 亢奮時清空;只削煉金 |
+
+> 每次用藥 addiction +1(夾 10);成癮≥3 清醒起戒斷;清醒滿 2 日 addiction −1。亢奮 attr 與戒斷 attr 共欄互斥。
+
+### 達貢之力(★四層中唯一純永久、無動態/無懲罰;md7 結局 grant)
+| 子層 | kind | 數值 | 備註 |
+|---|---|---|---|
+| `dagon_attr_bonus` | 屬性 | str +18、willpower +12、endurance +12(合計 +42) | 🔴str +18 放近戰基礎傷(非偷襲倍率);校準介於吸血 T3 與狼人 T4 |
+| `dagon_skill_bonus` | 技能 | destruction +10、conjuration +8 | 助毀滅/咒術;不碰 sneak |
+| `dagon_resist` | 抗性 | fire +60 | ★可抵銷吸血 T3 火弱點(−30→淨 +30,全層相加非取最) |
+| `dagon_magic_bonus` | 資源上限 | magicka +25(直接加 max_magicka) | 獨立於 intelligence 衍生 |
+
+---
+
+## ② 裝備層(附魔/套裝/淬鍊/神器)
+
+### 附魔(soul=魂等級、mysticism=祕法技能;mag×(1+enchant_potency),potency 來自里程碑「靈魂虹吸」預設0)
+| 附魔 | kind | factor / 公式(例:soul4·myst50→myst100) | 載體 | 疊加 |
+|---|---|---|---|---|
+| fortify_skill | 技能 | 飾品×2.0→8→12;護甲×1.5→6→9 | enchj/encha | 聚合相加→skills;餵 char.skill() 不回門檻(R21) |
+| fortify_attribute | 屬性 | ★僅飾品×1.2→5→7 | enchj | 聚合相加;護甲刻意排除 attr |
+| fortify_resource | 資源上限 | 飾品×3.0→12→18;護甲版 armor_fortify→13→19 | enchj/encha | 護甲版額外經 armor_fortify_totals 餵 recompute;進有效上限(R05) |
+| resist_element | 抗性 | 飾品×5.0→20%→30%(下限2);護甲×4.0→16%→24% | enchj/encha | 聚合相加;100%=免疫,負值=弱點放大(最高2×) |
+| weapon_element | 傷害 | ×3.0→13→19;fire/frost/shock | enchw | 🔴**無視物理護甲**、吃元素抗;加在偷襲夾限**之前** |
+| weapon vampiric | 續航回復 | ★傷害×0.30 回血(雙持 0.48);命中必觸發 | enchws | 主+副(×0.6)累計一次回血;夾本擊 dmg 內 |
+| weapon paralyze | 控場 | proc 10%、turns=1(mag固定0) | enchws | 🔴**solo boss 免疫**(R15);主/副各擲 |
+| weapon regen | 續航回復 | ×1.5→7、turns=3 HoT(副手×0.6) | enchws | source 去重(主手優先,命中刷新不疊) |
+
+> 餵 char.skill()/char.attr() 而非 base → 絕不回饋成長門檻;改 equipped 後必 recompute_max_resources(帶 gamedata)。
+
+### 護甲套裝(穿滿同材質 4 件 helmet/cuirass/gauntlets/boots,盾不計;★一次性整套,聚合進對應 dict)
+| 套裝 | kind | 數值 |
+|---|---|---|
+| 皮革 leather | 技能 | sneak +15 |
+| 玻璃 glass | 技能 | acrobatics +15 |
+| 矮人 dwarven | 屬性 | ★唯一給屬性的套裝:endurance +10 |
+| 鐵 iron / 鋼 steel | 資源上限 | health +15 / +25 |
+| 精靈 elven | 資源上限 | magicka +30 |
+| 魔族 daedric | 資源上限 | ★最高生命套:health +60 |
+| 龍祭司 dragonpriest | 資源上限 | ★最高魔力套:magicka +110 |
+| 黑檀 ebony | 抗性 | magic +15%(通用,同削 fire/frost/shock) |
+| 龍鱗 dragonscale | 抗性 | fire +25% |
+| 學徒布袍 cloth | 資源上限+施法折扣 | magicka +40;★cast_fatigue_factor=0.80 |
+| 大法師 archmage | 資源上限+施法折扣 | magicka +70;cast_fatigue_factor=0.65 |
+
+### 淬鍊(★獨立永久層,綁 item_id,不隨耐久折損;僅玩家;改 combat/formulas 必跑 sim R25)
+| 淬鍊 | kind | 數值 | 上限 |
+|---|---|---|---|
+| 武器淬鍊 | 傷害 | +2 傷/級,滿 +10 | min(5, smithing//20) + 里程碑「淬火宗師」+1 |
+| 護甲淬鍊 | 減傷(護甲值) | +1 護甲/級/件,穿戴件加總 | 同上;卸下不計 |
+
+### 神器(固定資料附魔,單件不觸發套裝)
+| 神器 | kind | 數值 |
+|---|---|---|
+| 十字軍護心 crusaders_aegis | 抗性+護甲 | resist fire +50%、armor 32(heavy cuirass);配 magic 抗逼近免疫 |
+| 黎明之牙 dawnfang | 傷害 | weapon_element fire +28(★全遊戲最高之一,無視護甲);本體 dmg24 sword |
+| 魔銳茲之刃 mehrunes_razor | 傷害 | weapon_element shock +25;dmg16 dagger speed1.5(偷襲流主力,可雙持) |
+| 魔典·哲思之卷 mysterium_xarxes | 技能 | conjuration +15(amulet) |
+
+---
+
+## ③ 里程碑 perk(已選 chosen_fortify_options;絕不寫回 base,只認 base_skill 判門檻 R21)
+
+### 永久 fortify 層(stats.recompute_mastery_bonuses,在 recompute_max_resources 內先跑;聚合相加)
+| 層 | kind | 代表數值 |
+|---|---|---|
+| skill_fortify | 技能 | +6~+10(*_75多+8、*_100 +10) |
+| attr_fortify | 屬性 | +4~+6(*_100如 iron_body str+5、tireless speed+6) |
+| resist_fortify | 抗性 | magic +10~+15、disease +25~+30 |
+| passive_armor | 減傷 | 多源相加 4~20(石膚20最高、銅皮鐵骨18、靈體護壁15) |
+
+### 偷襲/刺客鏈(🔴詳見第④紅線小節)
+| perk | kind | 數值 | 疊加 |
+|---|---|---|---|
+| 影刃·暗殺宗師 | 偷襲倍率 | mult_bonus 0.50→×1.5 | 🔴乘進 sneak_mult 鏈 |
+| 致命烙印 deathmark | 破甲+耗體 | pen +0.35、fatigue15、turns4、cd6 | 🔴僅 follow-up(`not sneaking` 閘);最終 pen 夾0.85 |
+| approach_bonus | 偷襲機率 | 各 0.10/0.10/0.12(相加最高0.22) | 只動搶開場頻率,夾[0.05,0.97] |
+| 武器流派 weapon_mod | 傷害/命中/破甲 | power(偷襲前套)blade0.12+0.08、徒手0.15+0.10+0.05;hit/pen/recoil/fatigue/on_hit | 🔴power 偷襲倍率**之前**算但不吃倍率;同 target 相加、on_hit 取最後 |
+| armor_sneak_relief | 潛行 | relief 1.0(全免護甲噪音懲罰) | 單源;不放大倍率 |
+
+### 法師/施法(🔴改施法常數 R10/R14 須跑 sim)
+| perk | kind | 數值 |
+|---|---|---|
+| 過載/各省魔 spell_mod+overload | 傷害/續航 | power+:destruction0.20/alteration0.15/restoration0.20(相加);cost:0.92/0.85/過載1.30(相乘);impact stagger0.35 |
+| 奧術連鎖 cascade | 傷害/續航 | power+8%/層、省體×(1−0.12/層,夾≥0.4)、max_depth2(最高+16%/省24%);停手即散 |
+| 共鳴一擊 resonance | 傷害 | 🔴transfer0.5(下一近戰灌半數法力作元素傷)+dot4×3;加在 solo 夾限之前 |
+| 法力回擊 mana_on_hit | 資源回復 | 近戰命中 +4 魔力 |
+| 雙重/束縛召喚 summon_mod | 召喚 | twin:extra1隻×0.6血;bound_blade:hp+0.25/turn+1 |
+| 戰地搶救 triage | 資源折扣 | 同伴<30%時下道治療 魔×0.15/體×0.25 |
+| 靈魂虹吸 enchant_potency | 增幅 | 🔴附魔強度×1.2(製作乘子,R15) |
+| 濃縮萃取 potion_potency | 增幅 | 藥水/毒效×1.2 |
+
+### 防禦/續航/控場
+| perk | kind | 數值 |
+|---|---|---|
+| 壁壘 bulwark | 減傷+代價 | 受物理×0.85、攻擊耗體×1.20(真權衡;僅物理,元素穿透) |
+| 不屈祝禱 steadfast | 續航回復 | 血<25%→regen4×3(共12) |
+| 溢盾 overheal_ward | 減傷 | 溢治60%轉盾、cap=生命×0.5、turns4(R21夾cap) |
+| 重甲反震 armor_reflect | 反傷 | 受近戰物理反彈12% |
+| 身輕如燕 evasion_bonus | 命中(扣敵命中) | 多源相加 0.02~0.05,★硬夾 EVASION_BONUS_CAP=0.15 |
+| 盾陣/盾擊踉蹌 | 減傷/控場 | block_hit_penalty0.25;riposte stagger0.35 |
+| 懾心術 fear_on_hit | 控場 | 命中20%→FEAR2回合 |
+| 不竭之軀 fatigue_cost_bonus | 續航 | 攻擊耗體×0.90 |
+
+### 經濟/探索/社交(非戰鬥;多源取最高或相加)
+塗毒次數 poison_charge_bonus(相加最高+5)、議價 merchant_bonus(相加0.03~0.12)、補貨×1.5、撬鎖下限 0.50(取最高)、巧手不折0.50、機關下限0.30、威嚇下限0.40、必定說服(每NPC一次)、淬火宗師+1、淬鍊省料0.50、野修下限90、戰場鐵匠(每回合自修武/甲各+2)、逃命+0.15、旅速−0.10、偵查門檻75→50/scout_floor50。
+
+---
+
+## ④ 戰鬥內臨時 / 法術(active_effects;★不入存檔 R03)
+
+### 自我增益
+| 效果 | kind | 數值 | 疊加 |
+|---|---|---|---|
+| 再生 HoT(renewal/regen_aura/ench_regen/steadfast) | 續航回復 | renewal +10×4、aura +8×4(全同伴)、steadfast 4×3 | 各一條可同掛;ench_regen/steadfast 各 source 去重;tick 為 flat 不乘 power |
+| 變化護盾(oak/stone/iron-flesh、ward_ally) | 減傷 | round(mag×power):30/55/75、ward_ally40;turns5 | ★聚合相加進 armor_rating;**只擋物理** |
+| 溢盾 overheal_ward | 減傷 | 溢治60%轉盾,夾生命×0.5,turns4 | source去重夾cap |
+| 秘術結界 ward/greater/absorb | 抗性吸收池 | 40/90/70(absorb0.5回魔);turns5 可耗盡池 | 重施去重;**只吃法術/元素傷** |
+| 奧術灌注(flame/frost/storm_blade) | 傷害 | round(8×power)元素傷/命中;turns5 | 🔴多元素並掛逐一加;加在 solo 夾限**之前**;獸形/束縛不吃 |
+| 共鳴一擊 resonance | 傷害 | 半數實際法傷+引燃dot;turns2 | 🔴重施去重;偷襲不放大、solo受夾 |
+| 束縛兵刃 bound_weapon | 武器替換 | 基礎傷14(magic),不乘power;turns6 | 重施去重;取代裝備(不吃淬鍊/附魔/塗毒/副手) |
+| 召喚/復生 summon/allies | 召喚 | HP×0.85~1.15×(1+boon)×(1+hp_bonus)×力竭;reanimate額外×0.6 | 加入 battle["allies"](R08);受力竭削HP |
+| 凝神 restore_fatigue | 資源(瞬時) | +40體力,不乘power |
+| 奧術連鎖 cascade / 戰地搶救 triage / 法力回擊 | 見③ | — | 戰鬥邊界清空 |
+
+### 永久/隨階級(公會福利,取最強 _best_perk)
+| 福利 | kind | 數值 |
+|---|---|---|
+| 達貢之佑 conjure_boon | 召喚增益 | HP×(1+per_rank0.1×階,cap0.6)+駐留 |
+| 聖光眷顧 restoration_boon | 續航回復 | 治療×(1+0.07×階,cap0.35),乘在溢盾前 |
+
+### 全域施法調變
+| 效果 | kind | 數值 |
+|---|---|---|
+| 力竭法效折減 cast_fatigue_power_factor | 傷害/續航/減傷 | 1.0−(1−fatigue_ratio)×0.25:滿體×1.0、空體×0.75;乘進 _power(damage/heal/shield/ward/imbue/empower/summon HP 一致削) |
+
+---
+
+## ⑤ 其餘永久層:星座 / 種族 / 陣營經濟 / 坐騎 / 精神飽滿
+
+### 出生星座(建檔加屬性,夾[1,CAP];★power 每日一次走 power_last_day)
+| 星座 | 加成 |
+|---|---|
+| 戰士 | str+5 耐+5 ‖ 法師 int+5 magicka+50 ‖ 竊賊 敏+5 速+5 幸+5 ‖ 淑女 魅+10 耐+5 ‖ 駿馬 速+10 |
+| 領主 | 耐+5、**火抗−25▼**、每日 heal 60 ‖ 學徒 int+5 magicka+100、**magic抗−50▼** ‖ 巨魔像 magicka+150、被動 spell_absorption(魔力不自然回復▼) |
+| 儀式 | 魅+5、每日 heal80+清dot ‖ 戀人 敏+10、每日麻痺3回(solo免疫) ‖ 陰影 每日必定脫戰 ‖ 塔 幸+5、每日下次撬鎖必成 ‖ 蛇 每日對敵毒8×4+汲25HP |
+
+### 種族(屬性/技能/抗性各自相加;★argonian 毒抗100=免疫)
+高精靈(int/will+10、magicka+100、毀滅+10…、疾抗75)、木精靈(敏/速+10、弓+10、疾/毒抗75)、暗精靈(速+10、毀滅+10、火抗75)、諾德(力/耐+10、鈍+10、霜抗50)、帝國(魅+10、辯/商+10)、布萊頓(int/will+10、復原+10、magicka+50、magic抗50)、紅衛(力/耐+10、刃+10、疾/毒抗75)、獸人(力/耐+10、鈍/重甲+10、magic抗25)、亞龍(速+10、安全+10、★毒抗100/疾抗75)、虎人(敏+10、徒手+10)。
+
+### 陣營經濟 perk(取最強同類,非會員=0,隨階級成長)
+戰士團修理折扣(0.15/階,cap1.0)、法師團法術折扣(0.08,cap0.45)、盜賊團銷贓(0.07,cap0.4)、黑暗兄弟會洗白賞金(0.12,cap0.7)、戰友團傭兵折扣(0.08,cap0.5)。
+
+### 坐騎(乘騎中被動;★衝鋒不走 sneak_mult)
+| 效果 | 數值 |
+|---|---|
+| 旅速 | 戰馬+0.10/獵馬+0.18/法駒+0.12 ‖ 鞍袋負重 戰馬+80/獵馬+30/法駒+40(非資源不recompute R25) |
+| 獵馬規避遭遇 0.35、開場騎射閃避0.15×3(獵馬+弓) | 法駒法術傷+20%(騎乘作戰) |
+| 戰馬衝鋒踐踏 | mult_spear2.2、mount_dmg14;★不走sneak_mult,solo受MOUNTED_CHARGE_CAP0.45夾;改必跑sim(R25) |
+
+### 精神飽滿 well_rested
+技能 xp×1.25,持續24遊戲時;★只乘xp不寫base(R25),再休息=刷新不疊。
+
+---
+
+## ⑥ 藥水 / 消耗品(一次性,夾各自 max)
+
+| 物品 | kind | 數值 |
+|---|---|---|
+| 治療藥水(固定) | 續航回復 | minor 25 / 普 50 |
+| 魔力藥水(固定) | 續航回復 | minor 25 |
+| 自製藥水 brew(煉金) | 續航回復 | round((eff_a+eff_b)/2×factor);factor=(0.6+煉金/100)×(1+potion_potency);kind∈heal/restore_magicka/★restore_fatigue(僅煉金可得) |
+| 塗毒/毒藥(▼對敵) | 傷害/控場 | dot per_turn×3 或麻痺 turns=clamp(1+煉金//50,1..3);charges=poison_charges+里程碑+1 |
+
+---
+
+## 🔴 餵進偷襲倍率 / 碰戰鬥紅線的增益(專節)
+
+### sneak_mult 鏈(combat.py:352-357,**相乘**)
+`base = sneak_attack_multiplier(sneak) × archetype_sneak_bonus × night_mother × (1+影刃0.50) × armor_sneak_mult_factor`
+
+| 來源 | 數值 | 性質 |
+|---|---|---|
+| 武器流派 archetype_sneak_bonus | 匕首×1.6、弓×1.3、其餘×1.0 | 乘進鏈 |
+| 夜母祝福 night_mother | ×(1+0.03×db_rank),聆聽者×1.18 | 乘進鏈 |
+| 影刃·暗殺宗師 mult_bonus | ×1.5 | 乘進鏈核心(消費於 combat.py:355/738) |
+
+### 三道煞車(缺一不可,守 R07/R15)
+1. **>3 敵潛匿大減** — 群體規模反制;
+2. **隱遁耗體** — vanish 須花一回合且受強敵死咬遞減;
+3. **SOLO_SNEAK_DAMAGE_CAP_RATIO=0.40** — solo boss 開場單擊夾生命上限 40%(防偷襲秒王)。
+
+### 「加在 dmg、於 solo 夾限之前」的元素/破甲(偷襲**不放大**、solo 受夾)
+weapon_element 附魔、奧術灌注 weapon_imbue、共鳴一擊 resonance、武器流派 power(偷襲倍率**之前**算但不吃倍率)、deathmark 破甲(僅 follow-up,`not sneaking` 閘 → 開場永不受惠,最終 pen 夾0.85)。
+
+### 結構性免疫紅線
+- **獸形 sneak_attack=False**(main.run_battle 守門)→ 狼人 +str 巨幅近戰不碰偷襲倍率;
+- **斯庫瑪/月糖/達貢之力**刻意不碰 strength/sneak/武傷倍率(R20)——但 str 仍經 attack_damage 放近戰**基礎傷**(與吸血同性質,非偷襲倍率);
+- **麻痺**(武器附魔/法術/塗毒):solo boss 完全免疫(R15,防反鎖王);
+- approach_bonus/prep_bonus 只動「搶開場頻率」,不放大倍率。
+
+> 改任一上述常數 → **必跑 `PYTHONPATH=. python3 sim_assassin.py`**(守偷襲不秒 solo boss、群體反制、麻痺免疫紅線)。
+
+---
+
+## ▼ 減益小節(debuff;增益的鏡像)
+
+### 對敵 debuff(戰鬥內臨時)
+| debuff | kind | 數值 | 聚合 |
+|---|---|---|---|
+| 挫志 weaken(demoralize/衝擊餘波) | 削敵傷害 | demoralize ×0.6(4回);只乘怪 | 取最強(min,夾≥0.1),可dispel |
+| 陣腳大亂 stagger | 降敵命中 | −0.30 命中(impact 35%觸發) | binary,覆寫turns,可dispel |
+| 持續傷 dot(ignite/poison_cloud/frost_nova/bleed) | 持續傷 | ignite 8+6×3、poison_cloud 6×4、frost_nova 16+4×2、bleed×3 | 各一條獨立;AoE每敵獨立dict(R17) |
+| 麻痺 paralyze(mass/附魔) | 失能 | 群麻2回、附魔1回;is_incapacitated | 🔴solo免疫(R15);AoE獨立dict |
+| 恐懼 fear(fear/rout/懾心) | 失能 | 2回不敢進攻 | 玩家可意志抵抗;可dispel |
+| 擒魂 soul_trap(單/群) | 標記 | 4回;擊殺給對應充能靈魂石 | 不在 _DISPELLABLE |
+
+### 對玩家自身懲罰(身分/星座代價)
+吸血鬼火弱點(−10/階)、陽光灼傷、學徒座 magic−50、領主座 火−25、巨魔像魔力不回、斯庫瑪戒斷(屬性 −18/煉金 −18)、壁壘攻擊耗體×1.20、過載 cost×1.30、武器流派 recoil 自損、penetrator 額外耗體。
+
+---
+
+## 🎓 畢業角色「疊滿」概覽(可同時掛多少永久層)
+
+一個達貢化身(非吸血/狼人,純永久路線)畢業時的**永久增益層帳**:
+
+| 層 | 屬性 | 技能 | 抗性 | 資源上限 |
+|---|---|---|---|---|
+| **達貢之力** | str+18 will+12 end+12 | dest+10 conj+8 | fire+60 | magicka+25 |
+| **里程碑 fortify** | +4~+6/屬性(如 str+5) | +6~+10/技能 | magic+10~15、disease+25~30 | (經 attr 衍生) |
+| **里程碑 passive_armor** | — | — | — | 護甲值 +4~20(多源相加) |
+| **裝備附魔(飾品3槽+護甲)** | attr+5~7 | skill+8~12 | element+20~30%/件 | health/magicka+12~19 |
+| **護甲套裝(1套)** | (dwarven end+10) | (leather/glass+15) | (ebony/dragonscale) | health+60/magicka+110 |
+| **淬鍊** | — | — | — | 武+10傷、甲+5/件護甲值 |
+| **種族(如布萊頓)** | int/will+10 | restoration+10 | magic+50 | magicka+50 |
+| **星座(如法師座)** | int+5 | — | — | magicka+50 |
+| **陣營/坐騎/精神飽滿** | — | — | — | 旅速/負重/xp×1.25/經濟折扣 |
+
+**全部獨立相加**(各層寫專屬 `*_bonus`,聚合於 attr()/skill()/entity_resist()/recompute_max_resources,**絕不寫回 base**)。
+
+**若改走吸血/狼人路線**(與達貢可並存,彼此互斥於吸血↔狼人):
+- 吸血 T3 再疊 str/speed/will+15、sneak/illusion+15、frost+30(但 fire−30 弱點,可被達貢 fire+60 抵成淨+30);
+- 狼人變身則**整套裝備層被換成獸力**(str+42/血+160/獸甲4)——是換層不是加層。
+
+**偷襲倍率上限**仍由三道煞車鎖死:無論疊多少元素/破甲/基礎傷,solo boss 開場單擊**永遠夾在生命上限 40%**,>3 敵潛匿大減,麻痺對 solo 免疫——畢業也打不破。
