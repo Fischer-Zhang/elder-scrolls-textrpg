@@ -165,9 +165,79 @@ BORDER_LINKS = {
   "pellitine_marches": ["vinedusk_reach","torval","corinthe"],
 }
 DEAD_END_OK = {"kvatch_gate", "bravil_gate", "the_deadlands", "dawn_sanctum"}
+PROV_BIOME = {"天際": "snow", "晨風": "ashland", "高岩": "moor", "漢默法爾": "desert",
+              "賽羅迪爾": "heartland", "瓦倫森林": "jungle", "艾爾斯維爾": "savanna", "黑沼澤": "swamp"}
+# 正典分區野區(地點補全):(id, 省, 名, danger, (城A,城B), desc)。
+# 位置=兩城中點(略偏移),並把 A↔B 直連改走此野區(過場)。城A、城B 必為該省 GEO 既有直連。
+NEW_REGIONS = [
+ # 賽羅迪爾
+ ("gold_coast", "賽羅迪爾", "黃金海岸", 2, ("anvil", "kvatch"), "安維爾與凱瓦奇之間的金色海岸,陽光、沙灘與海盜的傳說。"),
+ ("colovian_highlands", "賽羅迪爾", "科洛溫高地", 2, ("chorrol", "skingrad"), "科洛溫西境起伏的高地牧野,風吹草低見牛羊。"),
+ ("nibenay_basin", "賽羅迪爾", "尼本盆地", 1, ("imperial_city", "bravil"), "尼本河中游肥沃的盆地,稻田與商船往來不絕。"),
+ ("blackwood", "賽羅迪爾", "黑木邊地", 3, ("bravil", "leyawiin"), "賽羅迪爾東南潮濕的黑木林,通往黑沼澤的瘴氣邊地。"),
+ ("jerall_mountains", "賽羅迪爾", "傑拉山脈", 3, ("bruma", "cheydinhal"), "賽羅迪爾北境的傑拉雪山,隔開天際的險峻屏障。"),
+ # 天際
+ ("hjaalmarch_marsh", "天際", "霜境沼澤", 2, ("solitude", "morthal"), "獨孤城與墨索爾之間的霧沼,泥炭與鬼火明滅。"),
+ ("whiterun_tundra", "天際", "白漫凍原", 1, ("whiterun", "falkreath_wood"), "白漫城外遼闊的凍原草甸,巨人與猛獁漫步。"),
+ ("rift_autumn", "天際", "裂谷秋林", 2, ("whiterun", "riften"), "裂谷領金黃的秋色林地,蜜酒與漁獲之鄉。"),
+ ("velothi_foothills", "天際", "維洛希山麓", 3, ("windhelm", "winterhold"), "東陲通往冬堡的維洛希山麓,寒風刺骨。"),
+ ("karth_river", "天際", "卡斯河谷", 2, ("markarth", "dragon_bridge"), "卡斯河切穿河灣地的深谷,拒誓者出沒。"),
+ # 晨風
+ ("bitter_coast", "晨風", "苦岸", 2, ("balmora", "vivec"), "瓦登費爾西南的沼澤苦岸,走私者的天堂。"),
+ ("west_gash", "晨風", "西峽", 2, ("gnisis", "ald_ruhn"), "瓦登費爾西部的灌木荒原與紅岩。"),
+ ("ascadian_isles", "晨風", "阿斯卡迪安島", 1, ("vivec", "molag_mar"), "維威克南方肥沃的阿斯卡迪安島,菇農與莊園。"),
+ ("azuras_coast", "晨風", "亞祖拉海岸", 3, ("molag_mar", "sadrith_mora"), "瓦登費爾東岸的礁岩海濱,遠古祭壇林立。"),
+ ("grazelands", "晨風", "草場", 3, ("ald_ruhn", "molag_mar"), "瓦登費爾東北的草場,阿胥蘭部族的牧地。"),
+ # 黑沼澤
+ ("shadowfen", "黑沼澤", "影沼", 2, ("gideon", "stormhold"), "黑沼澤北境的影沼,亞龍人最古老的聚居地。"),
+ ("thornmarsh", "黑沼澤", "荊棘澤", 3, ("blackrose", "thorn"), "黑沼澤東南密布荊棘的澤地,毒蟲遍野。"),
+ ("deep_hist", "黑沼澤", "深希斯特", 3, ("helstrom", "archon"), "腹地希斯特古樹的深處,迷霧終年不散。"),
+ ("onkobra_river", "黑沼澤", "翁科布拉河", 2, ("blackrose", "murkmire"), "翁科布拉河蜿蜒的下游濕地,鱷與雷蜥潛伏。"),
+ ("stormhold_fen", "黑沼澤", "石落澤", 2, ("stormhold", "helstrom"), "石落城周邊低窪的沼澤,腐木與磷火。"),
+ # 高岩
+ ("stormhaven", "高岩", "風暴港原野", 1, ("wayrest", "hag_rock"), "威岩周邊富庶的風暴港原野,麥田與石橋。"),
+ ("rivenspire", "高岩", "裂石郡", 3, ("northpoint", "hag_rock"), "高岩北境裂石郡的險峻峭壁,吸血鬼的傳說之地。"),
+ ("bangkorai_foothills", "高岩", "巴薩拉丘陵", 2, ("wayrest", "evermore"), "通往巴薩拉隘的南方丘陵,荊豆遍野。"),
+ ("daenia_forest", "高岩", "戴尼亞林", 2, ("camlorn", "wendir"), "高岩西部戴尼亞的茂密森林。"),
+ ("wrothgarian_mountains", "高岩", "沃斯加山脈", 3, ("orsinium", "jehanna"), "高岩東境險峻的沃斯加山脈,獸人的故土。"),
+ # 漢默法爾
+ ("bangkorai_valley", "漢默法爾", "巴薩拉谷", 2, ("sentinel", "dragontail_peaks"), "漢默法爾東北通往巴薩拉的河谷。"),
+ ("hews_bane", "漢默法爾", "休氏灣", 2, ("hegathe", "gilane"), "漢默法爾西南的休氏灣半島,盜賊行會的暗巢。"),
+ ("craglorn", "漢默法爾", "克雷格倫", 4, ("tava_oasis", "ansei_tomb"), "阿利克爾東部的克雷格倫荒地,星隕與巨人為患。"),
+ ("abecean_shore", "漢默法爾", "阿比西亞岸", 2, ("gilane", "taneth"), "漢默法爾南方溫暖的阿比西亞海岸。"),
+ ("dragontail_range", "漢默法爾", "龍尾山域", 3, ("rihad", "dragontail_peaks"), "龍尾山脈的東段,通往賽羅迪爾的崎嶇山道。"),
+ # 瓦倫森林
+ ("grahtwood", "瓦倫森林", "格拉特林地", 2, ("falinesti", "elden_root"), "艾爾登根周邊的格拉特巨木林地,綠約之心。"),
+ ("malabal_tor", "瓦倫森林", "馬拉巴爾陶", 3, ("falinesti", "silvenar"), "瓦倫中部馬拉巴爾陶的狂野叢林。"),
+ ("greenshade_coast", "瓦倫森林", "綠影海岸", 2, ("woodhearth", "greenshade"), "綠影西岸的紅樹林海岸。"),
+ ("reapers_march", "瓦倫森林", "收割者三月", 3, ("silvenar", "vinedusk_reach"), "瓦倫與艾爾斯維爾交界的收割者三月。"),
+ ("tarlain_heights", "瓦倫森林", "塔爾蘭高地", 2, ("elden_root", "haven"), "格拉特林東南的塔爾蘭高地。"),
+ # 艾爾斯維爾
+ ("anequina_plains", "艾爾斯維爾", "安納奎那旱原", 2, ("dune", "riverhold"), "艾爾斯維爾北方安納奎那的乾旱草原。"),
+ ("pellitine_jungle", "艾爾斯維爾", "佩萊泰恩雨林", 3, ("torval", "tenmar_forest"), "南艾爾斯維爾佩萊泰恩濕熱的雨林。"),
+ ("quinrawl_peninsula", "艾爾斯維爾", "昆拉沃半島", 3, ("senchal", "alabaster_cane"), "森查爾所在的昆拉沃半島,海盜與月糖。"),
+ ("tenmar_valley", "艾爾斯維爾", "騰瑪谷", 2, ("corinthe", "tenmar_forest"), "騰瑪森林邊緣靜謐的河谷。"),
+ ("rimmen_desert", "艾爾斯維爾", "瑞門荒漠", 2, ("rimmen", "corinthe"), "瑞門城外的東部荒漠,殘存阿卡維爾遺風。"),
+]
 
 d = json.load(open(PATH, encoding="utf-8"))
 L = d["locations"]
+
+# --- 注入正典分區野區:中點(略偏移)定位,A↔B 改走此野區 ----------------
+for rid, prov, name, dgr, (a, b), desc in NEW_REGIONS:
+    ga, gb = GEO[prov][a], GEO[prov][b]
+    mx, my = (ga[0] + gb[0]) / 2, (ga[1] + gb[1]) / 2
+    dx, dy = gb[0] - ga[0], gb[1] - ga[1]
+    pl = math.hypot(dx, dy) or 1.0
+    fx = min(0.97, max(0.03, mx - dy / pl * 0.10))
+    fy = min(0.97, max(0.03, my + dx / pl * 0.10))
+    if b in ga[2]:
+        ga[2].remove(b)
+    if a in gb[2]:
+        gb[2].remove(a)
+    GEO[prov][rid] = (fx, fy, [a, b])
+    L[rid] = {"biome": PROV_BIOME[prov], "name": name, "province": prov,
+              "type": "wilderness", "danger": dgr, "desc": desc, "services": []}
 
 # --- 座標:fx,fy → box 格座標,全域唯一 ---------------------------------
 pos = {}
