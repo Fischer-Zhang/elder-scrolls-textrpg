@@ -137,6 +137,8 @@ def test_every_origin_references_valid_content():
             assert prov in provinces, f"{oid} 賞金省份 {prov} 不存在"
         if "quest" in odef:
             assert odef["quest"] in gd.quests, f"{oid} 起手任務 {odef['quest']} 不存在"
+        for cid in odef.get("classes", []):       # 推薦職業清單(選用)須是合法職業 id
+            assert cid in gd.classes, f"{oid} 推薦職業 {cid} 不存在"
 
         # 實際建出來必須是合法、滿血的角色
         c = _build(gd, oid)
@@ -145,6 +147,70 @@ def test_every_origin_references_valid_content():
         # 穿上的護甲/飾品都還在背包(equip 的前置)
         for slot, item_id in c.equipped.items():
             assert inventory.count_item(c, item_id) >= 1, f"{oid} 穿了沒持有的 {item_id}"
+
+
+def test_origin_class_recommendations():
+    """出身的推薦職業(classes 欄)是純 UI 推薦清單:身分明確的開局指向對的職業,
+    處境型開局留空(適配任何職業)。釘住關鍵主題對應,避免日後改資料時悄悄錯位。"""
+    gd = get_gamedata()
+    expect = {
+        "mage_initiate": "mage", "fighters_recruit": "warrior", "dark_initiate": "assassin",
+        "guild_thief": "thief", "wood_hunter": "archer", "temple_healer": "healer",
+        "knight_aspirant": "knight",
+    }
+    for oid, cid in expect.items():
+        assert cid in gd.origins[oid].get("classes", []), f"{oid} 應推薦 {cid}"
+    # 處境型(blank-slate)開局不綁職業
+    for oid in ("newcomer", "fugitive", "pilgrim"):
+        assert not gd.origins[oid].get("classes"), f"{oid} 不應綁定推薦職業"
+
+
+def test_caster_origin_weapon_not_force_equipped():
+    """純施法者(無武器系主修:法師/治療師)選近戰出身 → 近戰武器只進背包、不換手(保留依技能
+    配發的起始武器);施法武器(法杖)仍裝上;有武器主修的職業(戰士/戰法師)照常換上出身武器升級。"""
+    gd = get_gamedata()
+
+    # 純施法者 + 戰友團(steel_sword):不換手 → 維持依技能配發的起始武器,鋼劍只在背包
+    for caster in ("mage", "healer"):
+        c = _build(gd, "fighters_recruit", class_id=caster)
+        assert c.weapon != "steel_sword", f"{caster} 不該被近戰出身武器換手"
+        assert inventory.count_item(c, "steel_sword") >= 1, f"{caster} 出身武器仍應在背包"
+
+    # 純施法者 + 法師公會(flame_staff):施法武器 → 仍裝上手
+    assert _build(gd, "mage_initiate", class_id="mage").weapon == "flame_staff"
+
+    # 有武器主修的職業沿用「出身武器取代起始武器」:戰士 + 戰法師(blade/blunt 主修)都換上鋼劍升級
+    for martial in ("warrior", "battlemage"):
+        assert _build(gd, "fighters_recruit", class_id=martial).weapon == "steel_sword", \
+            f"{martial} 應換上出身武器升級"
+
+
+def test_quick_character_picks_fitting_class():
+    """快速開始:出身有推薦職業時,隨機抽到的職業必落在推薦內(免得身分與本事打架)。"""
+    from tesrpg import main
+    from tesrpg.rng import RNG
+    from tesrpg.ui import console as ui
+    gd = get_gamedata()
+    orig_msg = ui.message
+    ui.message = lambda *a, **k: None   # 靜音建角訊息
+    try:
+        rng = RNG(777)
+        for _ in range(120):
+            c = main._quick_character(gd, rng)
+            rec = gd.origins[c.origin].get("classes")
+            if rec:
+                assert c.class_id in rec, f"{c.origin} 抽到不契合的職業 {c.class_id}"
+    finally:
+        ui.message = orig_msg
+
+
+def test_origin_card_surfaces_recommended_classes():
+    """創角開局卡(終端+Web 共用的 _origin_card)要把推薦職業映成中文名帶出來,讓玩家選出身當下即見。"""
+    from tesrpg.ui import console as ui
+    gd = get_gamedata()
+    card = ui._origin_card(gd, "mage_initiate", gd.origins["mage_initiate"])
+    assert card["classes"] == [gd.classes["mage"]["name"]]
+    assert ui._origin_card(gd, "newcomer", gd.origins["newcomer"])["classes"] == []
 
 
 def test_save_roundtrip_preserves_origin_state():
@@ -178,6 +244,10 @@ def run():
     test_origin_is_situational_not_power()
     test_origin_field_mechanics_apply()
     test_every_origin_references_valid_content()
+    test_origin_class_recommendations()
+    test_caster_origin_weapon_not_force_equipped()
+    test_quick_character_picks_fitting_class()
+    test_origin_card_surfaces_recommended_classes()
     test_save_roundtrip_preserves_origin_state()
     test_old_save_without_origin_field_loads()
 

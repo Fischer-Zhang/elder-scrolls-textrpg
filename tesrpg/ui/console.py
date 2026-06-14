@@ -426,9 +426,11 @@ def _origin_card(gamedata: GameData, oid: str, od: dict) -> dict:
     if od.get("spells"):
         tags.append("會法術")
     q = gamedata.quests.get(od.get("quest", ""), {})
+    rec = [gamedata.classes[c]["name"] for c in od.get("classes", []) if c in gamedata.classes]
     return {"id": oid, "name": od["name"], "blurb": od["blurb"],
             "location": gamedata.location(loc_id)["name"],
-            "gold": od.get("gold"), "gear": gear, "tags": tags, "quest": q.get("name", "")}
+            "gold": od.get("gold"), "gear": gear, "tags": tags, "quest": q.get("name", ""),
+            "classes": rec}
 
 
 def _origins_view(gamedata: GameData, oids: list | None = None) -> dict:
@@ -449,11 +451,13 @@ def origins_panel(gamedata: GameData, oids: list | None = None, numbered: bool =
     tbl.add_column("起始地", style=INK, no_wrap=True)
     tbl.add_column("金幣", justify="right", style=GOLD_DIM)
     tbl.add_column("裝備 · 身分", style=INK)
+    tbl.add_column("推薦職業", style=GOLD)
     tbl.add_column("起手任務", style="cyan")
     for i, c in enumerate(_origins_view(gamedata, oids)["origins"], 1):
         ident = "、".join(c["gear"] + c["tags"]) or "標準起始"
         gold = str(c["gold"]) if c["gold"] is not None else "標準"
-        row = ([str(i)] if numbered else []) + [c["name"], c["location"], gold, ident, c["quest"]]
+        rec = "、".join(c["classes"]) or "任意"
+        row = ([str(i)] if numbered else []) + [c["name"], c["location"], gold, ident, rec, c["quest"]]
         tbl.add_row(*row)
     console.print(_panel(tbl, title="🧭 開局背景一覽(各自帶起手任務)"))
 

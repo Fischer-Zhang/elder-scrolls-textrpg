@@ -41,13 +41,11 @@ def create_character(gamedata: GameData, rng: RNG):
         for sid, s in gamedata.birthsigns.items()
     ])
 
-    class_opts = [(cid, f"{c['name']} — {c['desc']}", _class_chips(c))
-                  for cid, c in gamedata.classes.items()]
-    class_opts.append(("custom", "自訂職業（選專精、偏好屬性、主修技能）"))
-    class_id = ui.menu("職業", class_opts)
-    custom = _create_custom_class(gamedata) if class_id == "custom" else None
-
+    # 先選出身(我是誰),再依出身推薦職業(我會什麼)——讓敘事身分領導機制選擇。
     origin_id = _choose_origin(gamedata)
+
+    class_id = _choose_class(gamedata, origin_id)
+    custom = _create_custom_class(gamedata) if class_id == "custom" else None
 
     default_name = creation.random_name(gamedata, race, sex, rng)
     name = ui.ask_text("姓名", default=default_name)
@@ -87,6 +85,26 @@ def _choose_origin(gamedata: GameData) -> str:
             return pick
 
 
+def _choose_class(gamedata: GameData, origin_id: str) -> str:
+    """選職業:把契合所選出身的職業標★推薦並排到最前(不過濾、不強制——自由組合保留)。
+
+    出身的 `classes` 欄(origins.json,選用)是純 UI 推薦清單:只排序/標記,不碰屬性/技能(守 R18)。
+    出身沒列推薦(處境型開局,適配任何職業)時 → 不排序、不標★、標題回「職業」。
+    """
+    odef = gamedata.origins.get(origin_id, {})
+    rec = set(odef.get("classes", []))
+    ordered = sorted(gamedata.classes.items(), key=lambda kv: kv[0] not in rec)  # 推薦在前(穩定)
+    class_opts = []
+    for cid, c in ordered:
+        chips = _class_chips(c)
+        if cid in rec:
+            chips = [{"text": "★推薦", "tone": "gold"}] + chips
+        class_opts.append((cid, f"{c['name']} — {c['desc']}", chips))
+    class_opts.append(("custom", "自訂職業（選專精、偏好屬性、主修技能）"))
+    title = f"職業(★ = 契合你的出身「{odef.get('name', '')}」)" if rec else "職業"
+    return ui.menu(title, class_opts)
+
+
 def _intro_quest_briefing(state: GameState, gamedata: GameData) -> None:
     """創角後、入主迴圈前:若有起手任務,提示其敘事動機與第一個目標(單次)。"""
     char = state.player
@@ -103,8 +121,9 @@ def _quick_character(gamedata: GameData, rng: RNG):
     sex = rng.choice(["male", "female"])
     race = rng.choice(list(gamedata.races.keys()))
     sign = rng.choice(list(gamedata.birthsigns.keys()))
-    class_id = rng.choice(list(gamedata.classes.keys()))
     origin_id = rng.choice(list(gamedata.origins.keys()))
+    rec = gamedata.origins[origin_id].get("classes")   # 出身有推薦職業 → 隨機也抽契合的,免得身分與本事打架
+    class_id = rng.choice(rec) if rec else rng.choice(list(gamedata.classes.keys()))
     name = creation.random_name(gamedata, race, sex, rng)
     char = creation.build_character(
         gamedata, name=name, sex=sex, race=race, birthsign=sign, class_id=class_id,

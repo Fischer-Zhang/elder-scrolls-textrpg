@@ -21,7 +21,8 @@
     "weapon": "steel_sword",
     "items": [["minor_healing_potion", 2]],
     "companions": ["sellsword"],
-    "quest": "origin_sellsword"
+    "quest": "origin_sellsword",
+    "classes": ["warrior"]
   },
   "mage_initiate": {
     "name": "法師公會的學徒",
@@ -32,7 +33,8 @@
     "weapon": "flame_staff",
     "spells": ["flames"],
     "items": [["minor_magicka_potion", 2]],
-    "quest": "origin_mage_initiate"
+    "quest": "origin_mage_initiate",
+    "classes": ["mage"]
   },
   "pilgrim": {
     "name": "晨風的朝聖者",
@@ -49,7 +51,8 @@
     "gold": 250,
     "equip": ["gold_amulet"],
     "items": [["healing_potion", 1]],
-    "quest": "origin_fallen_noble"
+    "quest": "origin_fallen_noble",
+    "classes": ["knight"]
   },
   "nightborn": {
     "name": "夜之裔(吸血鬼)",
@@ -68,7 +71,8 @@
     "weapon": "steel_dagger",
     "faction": {"dark_brotherhood": 0},
     "items": [["minor_healing_potion", 2]],
-    "quest": "origin_dark_initiate"
+    "quest": "origin_dark_initiate",
+    "classes": ["assassin"]
   },
   "fighters_recruit": {
     "name": "戰友團的新血",
@@ -79,7 +83,8 @@
     "weapon": "steel_sword",
     "equip": ["leather_cuirass"],
     "items": [["healing_potion", 1], ["minor_healing_potion", 1]],
-    "quest": "origin_fighters_recruit"
+    "quest": "origin_fighters_recruit",
+    "classes": ["warrior"]
   },
   "guild_thief": {
     "name": "盜賊公會的扒手",
@@ -89,7 +94,8 @@
     "faction": {"thieves_guild": 0},
     "weapon": "iron_dagger",
     "items": [["minor_healing_potion", 2]],
-    "quest": "origin_guild_thief"
+    "quest": "origin_guild_thief",
+    "classes": ["thief"]
   },
   "alikr_blade": {
     "name": "阿利克爾的劍客",
@@ -99,7 +105,8 @@
     "weapon": "steel_sword",
     "equip": ["leather_cuirass", "iron_shield"],
     "items": [["minor_healing_potion", 2]],
-    "quest": "origin_alikr_blade"
+    "quest": "origin_alikr_blade",
+    "classes": ["warrior", "knight"]
   },
   "shipwreck_survivor": {
     "name": "海難的倖存者",
@@ -117,7 +124,8 @@
     "gold": 50,
     "spells": ["heal"],
     "items": [["minor_magicka_potion", 2], ["healing_potion", 1]],
-    "quest": "origin_temple_healer"
+    "quest": "origin_temple_healer",
+    "classes": ["healer"]
   },
   "orc_outcast": {
     "name": "獸人的放逐者",
@@ -127,7 +135,8 @@
     "weapon": "iron_war_axe",
     "equip": ["iron_cuirass", "iron_helmet"],
     "items": [["minor_healing_potion", 1]],
-    "quest": "origin_orc_outcast"
+    "quest": "origin_orc_outcast",
+    "classes": ["warrior"]
   },
   "beast_blooded": {
     "name": "獸血之裔(狼人)",
@@ -139,7 +148,8 @@
     "equip": ["leather_cuirass"],
     "items": [["healing_potion", 1]],
     "werewolf": true,
-    "quest": "origin_beast_blooded"
+    "quest": "origin_beast_blooded",
+    "classes": ["warrior"]
   },
   "legion_veteran": {
     "name": "帝國軍團退伍兵",
@@ -149,7 +159,8 @@
     "weapon": "steel_sword",
     "equip": ["leather_cuirass", "iron_helmet"],
     "items": [["healing_potion", 1]],
-    "quest": "origin_legion_veteran"
+    "quest": "origin_legion_veteran",
+    "classes": ["warrior", "knight"]
   },
   "wood_hunter": {
     "name": "綠林獵手",
@@ -158,7 +169,8 @@
     "gold": 60,
     "weapon": "hunting_bow",
     "items": [["minor_healing_potion", 2]],
-    "quest": "origin_wood_hunter"
+    "quest": "origin_wood_hunter",
+    "classes": ["archer"]
   },
   "caravan_guard": {
     "name": "商隊護衛",
@@ -168,7 +180,8 @@
     "weapon": "steel_sword",
     "equip": ["leather_cuirass"],
     "items": [["minor_healing_potion", 2]],
-    "quest": "origin_caravan_guard"
+    "quest": "origin_caravan_guard",
+    "classes": ["warrior"]
   },
   "tomb_seeker": {
     "name": "尋墓探寶者",
@@ -177,7 +190,8 @@
     "gold": 50,
     "weapon": "iron_sword",
     "items": [["minor_healing_potion", 2], ["lockpick", 4]],
-    "quest": "origin_tomb_seeker"
+    "quest": "origin_tomb_seeker",
+    "classes": ["thief", "assassin"]
   },
   "ashlander": {
     "name": "灰民部族子弟",
@@ -186,7 +200,8 @@
     "gold": 40,
     "weapon": "iron_spear",
     "items": [["minor_healing_potion", 1], ["ash_yam", 1]],
-    "quest": "origin_ashlander"
+    "quest": "origin_ashlander",
+    "classes": ["warrior"]
   },
   "reach_witch": {
     "name": "拒誓者女巫",
@@ -195,7 +210,8 @@
     "gold": 50,
     "spells": ["fear"],
     "items": [["minor_magicka_potion", 2]],
-    "quest": "origin_reach_witch"
+    "quest": "origin_reach_witch",
+    "classes": ["mage", "healer"]
   },
   "knight_aspirant": {
     "name": "騎士見習",
@@ -205,7 +221,8 @@
     "weapon": "steel_sword",
     "equip": ["leather_cuirass", "iron_shield"],
     "items": [["healing_potion", 1]],
-    "quest": "origin_knight_aspirant"
+    "quest": "origin_knight_aspirant",
+    "classes": ["knight"]
   },
   "dockside_stowaway": {
     "name": "碼頭偷渡者",
@@ -214,7 +231,8 @@
     "gold": 15,
     "weapon": "iron_dagger",
     "items": [["minor_healing_potion", 1]],
-    "quest": "origin_dockside_stowaway"
+    "quest": "origin_dockside_stowaway",
+    "classes": ["thief", "assassin"]
   },
   "wandering_bard": {
     "name": "流浪吟遊詩人",
@@ -223,6 +241,7 @@
     "gold": 60,
     "weapon": "iron_dagger",
     "items": [["minor_healing_potion", 1], ["healing_potion", 1]],
-    "quest": "origin_wandering_bard"
+    "quest": "origin_wandering_bard",
+    "classes": ["thief"]
   }
 }

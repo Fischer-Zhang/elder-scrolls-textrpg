@@ -663,6 +663,7 @@
       if (o.gold != null) chips.push(`<span class="chip gold">${o.gold} 金</span>`);
       (o.gear || []).forEach(function (g) { chips.push(`<span class="chip green">${esc(g)}</span>`); });
       (o.tags || []).forEach(function (t) { chips.push(`<span class="chip cyan">${esc(t)}</span>`); });
+      (o.classes || []).forEach(function (c) { chips.push(`<span class="chip gold">★ ${esc(c)}</span>`); });
       const q = o.quest ? `<div class="q-obj" style="color:#7fd0d8">🧭 起手:${esc(o.quest)}</div>` : "";
       return `<div class="quest" data-key="${esc(o.id)}"><div class="q-name">${esc(o.name)}</div>`
         + `<div class="loc-desc" style="font-style:italic">${esc(o.blurb)}</div>`

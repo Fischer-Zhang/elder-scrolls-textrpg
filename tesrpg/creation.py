@@ -127,11 +127,15 @@ def apply_origin(gamedata: GameData, char: Character, origin_id: str | None) -> 
         item_id, qty = entry[0], (entry[1] if len(entry) > 1 else 1)
         inventory.add_item(char, item_id, qty)
 
-    # 武器:加進背包並裝備(取代依技能配發的起始武器,含法杖)
+    # 武器:加進背包;一般職業裝備上(取代依技能配發的起始武器)。
+    # 例外——「純施法者」(無任何武器系主修,如法師/治療師)選到非施法武器時只追加不換手:保留依
+    # 技能配發的起始武器,免得被塞一把用不上的近戰武器(身分與本事打架)。法杖等施法武器、以及戰法師
+    # 等有武器主修(吃得下近戰升級)的混合職仍照常換手裝上。
     weapon_id = odef.get("weapon")
     if weapon_id:
         inventory.add_item(char, weapon_id, 1)
-        inventory.equip_weapon(char, gamedata, weapon_id)
+        if _equips_origin_weapon(char, gamedata, weapon_id):
+            inventory.equip_weapon(char, gamedata, weapon_id)
 
     # 護甲/飾品:加進背包並穿戴(recompute 由 build_character 收尾統一處理)
     for item_id in odef.get("equip", []):
@@ -174,6 +178,23 @@ def apply_origin(gamedata: GameData, char: Character, origin_id: str | None) -> 
     if (char.is_player and qid and qid in gamedata.quests
             and qid not in char.quests and qid not in char.completed_quests):
         quests.accept_quest(char, gamedata, qid)
+
+
+def _is_caster_weapon(gamedata: GameData, weapon_id: str) -> bool:
+    """施法武器(法杖,或武器技能屬魔法學派)→ 對施法職業有意義,允許開局裝備上手。"""
+    w = gamedata.item(weapon_id)
+    if w.get("archetype") == "staff":
+        return True
+    skill = w.get("skill")
+    return bool(skill and gamedata.skills.get(skill, {}).get("spec") == "magic")
+
+
+def _equips_origin_weapon(char: Character, gamedata: GameData, weapon_id: str) -> bool:
+    """開局是否把出身武器裝上手:施法武器(法杖)永遠裝;否則只有「純施法者」(無任何武器系主修)
+    才不換手(保留依技能配發的起始武器)——戰士/盜賊/弓手乃至戰法師等有武器主修的職業照常升級。"""
+    if _is_caster_weapon(gamedata, weapon_id):
+        return True
+    return any(sid in char.major_skills for sid in formulas.WEAPON_SKILL_IDS)
 
 
 # 各武器技能 → 預設起始武器
