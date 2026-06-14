@@ -87,6 +87,17 @@ def available_quests(char: Character, gamedata: GameData, source: str,
     for qid, q in gamedata.quests.items():
         if q.get("source") != source or is_active(char, qid) or is_done(char, qid):
             continue
+        # 世界事件 gate(向後相容:無此欄=不限):任務在指定大事件觸發後才開放(如主線需 kvatch_falls)。
+        if q.get("requires_event") and q["requires_event"] not in char.world_events_fired:
+            continue
+        # 陣營身分 gate:需為某陣營會員(達指定階)才開放(如教徒頂點 md7 需 mythic_dawn 滿階)。
+        rf = q.get("requires_faction")
+        if rf and char.factions.get(rf, -1) < q.get("requires_faction_rank", 0):
+            continue
+        # 前置任務 gate:需先完成某任務才開放(任務鏈)。
+        rq = q.get("requires_quest")
+        if rq and rq not in char.completed_quests:
+            continue
         if source == "guild":
             if q.get("faction") != faction or faction not in char.factions:
                 continue
@@ -115,6 +126,11 @@ def accept_quest(char: Character, gamedata: GameData, quest_id: str, branch: int
     char.quests[quest_id] = {"stage": 0, "branch": branch}   # 先記分支,_resolved 才取得到
     obj = _stages(_resolved(char, gamedata, quest_id))[0]["objective"]
     char.quests[quest_id]["base"] = _kill_base(char, obj)
+    # 叛離:接取帶 expel_faction 的任務即背棄該陣營(如接反達貢主線 → 逐出神話黎明,
+    # conjure_boon perk 隨 rank=-1 消失)。對非會員無害(已是 -1)。
+    expel = gamedata.quests[quest_id].get("expel_faction")
+    if expel and char.factions.get(expel, -1) >= 0:
+        char.factions[expel] = -1
 
 
 # --- 目標判定 -----------------------------------------------------------
@@ -210,9 +226,23 @@ def _complete(char: Character, gamedata: GameData, quest_id: str) -> dict:
     q = _resolved(char, gamedata, quest_id)
     reward = q.get("reward", {})
     char.gold += reward.get("gold", 0)
-    char.fame += reward.get("fame", 0)
+    char.fame = max(0, char.fame + reward.get("fame", 0))   # fame 可負(惡名昭彰的教徒結局),夾 ≥0
+    char.infamy += reward.get("infamy", 0)                  # 惡名(教徒結局竊神之力 → 惡名遠播)
     for item_id in reward.get("items", []):
         inventory.add_item(char, item_id, 1)
+
+    # 達貢之力:湮滅危機教徒結局的永久增益(竊得達貢殘力)。資料驅動 reward.grant_boon。
+    if reward.get("grant_boon") == "dagon":
+        from tesrpg.systems import dagon_boon
+        dagon_boon.grant(char, gamedata)
+    # 陣營滅亡(神話黎明被達貢獻祭殆盡):除籍 → 公會任務自動關閉、perk 消失。
+    eradicate = reward.get("eradicate_faction")
+    if eradicate:
+        char.factions.pop(eradicate, None)
+    # 世界旗標(劇情記憶 / NPC 反應 / 解鎖判定;once-fire 去重)。
+    for flag in reward.get("world_flags", []):
+        if flag not in char.world_events_fired:
+            char.world_events_fired.append(flag)
 
     # 同伴角色化:招募任務末段授予具名同伴(資料驅動,鏡像 items)。有空位即入夥;
     # 滿員則僅「解鎖」(由 recruit_quest ∈ completed_quests 推導,稍後可在隊伍選單免費召集)→ 零新存檔欄。

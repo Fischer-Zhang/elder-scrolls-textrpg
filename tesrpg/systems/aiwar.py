@@ -277,6 +277,11 @@ def update(state, gd: GameData) -> list[dict]:
     """game_loop 每圈頂端結算 AI 戰爭;回傳 [{kind:flip/raid, ...}] 供 ui 廣播。"""
     char = state.player
     now = state.time.absolute_hours()
+    # 獨立戰爭是湮滅危機平息後的第二幕(梅魯尼斯·達貢被擊退、賽普汀血脈斷絕 → 帝國崩解、群雄並起)。
+    # 危機未了 → 內戰按兵不動,並讓開戰時鐘隨危機結束才起算(避免危機平息瞬間補結大量積週)。
+    if "oblivion_crisis_ended" not in getattr(char, "world_events_fired", []):
+        char.war_tick_at = now + WAR_HOURS
+        return []
     if char.war_tick_at == 0:                      # 首次:給一週寬限再開戰
         char.war_tick_at = now + WAR_HOURS
         return []

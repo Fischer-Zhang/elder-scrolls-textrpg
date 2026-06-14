@@ -23,6 +23,7 @@ def _mk(seed, alleg=""):
     c = build_character(GD, name="史", sex="male", race="imperial",
                         birthsign="warrior", class_id="warrior")
     c.allegiance = alleg
+    c.world_events_fired.append("oblivion_crisis_ended")   # 獨立戰爭=湮滅危機後第二幕 → 開戰前提(sim 模擬危機已平)
     return GameState(player=c, rng=RNG(seed), game_mode="adventure")
 
 

@@ -126,7 +126,8 @@ if __name__ == "__main__":
 
     print("\n== solo BOSS 單擊秒殺率(最壞 apex:玻璃雙持 + 聆聽者 + 淬鍊5 + 影刃)==")
     print("   紅線:approved plan『solo boss 仍存活』→ SOLO_SNEAK_DAMAGE_CAP_RATIO 夾限應使其全為 0%:")
-    for t in ["dremora_lord", "vampire_lord", "wamasu", "frost_giant", "ancient_dragon"]:
+    for t in ["dremora_lord", "vampire_lord", "wamasu", "frost_giant", "ancient_dragon",
+              "mehrunes_dagon", "mehrunes_dagon_diminished"]:
         hp = gd.bestiary[t].get("max_health", "?")
         rate_max = oneshot(apex_max, t)
         flag = " ⚠破紅線(應為 0%)" if rate_max > 0.0 else " ✓存活"

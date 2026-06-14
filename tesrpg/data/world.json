@@ -46,7 +46,8 @@
         "imperial_road": 2,
         "pale_pass": 3,
         "imperial_city": 3,
-        "cheydinhal": 4
+        "cheydinhal": 4,
+        "chorrol": 4
       }
     },
     "imperial_road": {
@@ -109,7 +110,9 @@
         "dragon_bridge": 7,
         "skingrad": 3,
         "anvil": 5,
-        "dragontail_foothills": 5
+        "dragontail_foothills": 5,
+        "kvatch_gate": 1,
+        "dawn_sanctum": 2
       }
     },
     "pale_pass": {
@@ -435,7 +438,8 @@
       "links": {
         "imperial_road": 4,
         "gideon": 3,
-        "topal_bay": 3
+        "topal_bay": 3,
+        "bravil": 2
       }
     },
     "gideon": {
@@ -496,7 +500,8 @@
         "niben_marsh": 3,
         "murkmire": 3,
         "xanmeer": 4,
-        "blackrose": 4
+        "blackrose": 4,
+        "leyawiin": 5
       }
     },
     "murkmire": {
@@ -686,7 +691,9 @@
         "bruma": 3,
         "imperial_road": 2,
         "skingrad": 3,
-        "cheydinhal": 3
+        "cheydinhal": 3,
+        "bravil": 4,
+        "chorrol": 5
       }
     },
     "skingrad": {
@@ -773,7 +780,8 @@
       ],
       "links": {
         "imperial_city": 3,
-        "bruma": 4
+        "bruma": 4,
+        "dagon_shrine": 2
       }
     },
     "anvil": {
@@ -1726,7 +1734,15 @@
         "tenmar_forest": 3,
         "torval": 4
       }
-    }
+    },
+    "bravil": {"biome": "heartland", "name": "布拉維爾", "province": "賽羅迪爾", "type": "city", "danger": 0, "desc": "尼本河下游的破敗水城,木屋傾頹、巷弄泥濘,卻是賽羅迪爾最古老的城邑之一。", "services": ["inn", "merchant", "armorer", "task_board"], "merchant_stock": ["minor_healing_potion", "healing_potion", "iron_dagger", "leather_cuirass", "hunting_bow", "repair_hammer"], "links": {"imperial_city": 4, "niben_marsh": 2, "leyawiin": 3, "bravil_gate": 1}},
+    "chorrol": {"biome": "heartland", "name": "切若爾", "province": "賽羅迪爾", "type": "city", "danger": 0, "desc": "西陲科洛文高地的古城,以橡木與石牆築成,九神禮拜堂的鐘聲遠播林間。", "services": ["inn", "merchant", "armorer", "fighters_guild", "task_board"], "merchant_stock": ["minor_healing_potion", "healing_potion", "steel_dagger", "steel_sword", "iron_cuirass", "steel_shield", "repair_hammer"], "links": {"imperial_city": 5, "bruma": 4}},
+    "leyawiin": {"biome": "heartland", "name": "雷雅維因", "province": "賽羅迪爾", "type": "city", "danger": 0, "desc": "賽羅迪爾最南端的邊城,黑沼澤的濕氣與亞龍人商旅在此交匯,城牆浸在托帕灣的水霧裡。", "services": ["inn", "merchant", "armorer", "task_board"], "merchant_stock": ["minor_healing_potion", "healing_potion", "iron_sword", "leather_cuirass", "iron_boots", "repair_hammer"], "links": {"bravil": 3, "gideon": 5}},
+    "kvatch_gate": {"biome": "ashland", "name": "凱瓦奇湮滅之門", "province": "賽羅迪爾", "type": "dungeon", "danger": 5, "desc": "凱瓦奇城下烈焰翻騰的湮滅裂隙,封印石維繫著通往達貢位面的門戶。", "services": [], "dungeon": "kvatch_gate", "links": {"kvatch": 1}},
+    "bravil_gate": {"biome": "ashland", "name": "布拉維爾湮滅之門", "province": "賽羅迪爾", "type": "dungeon", "danger": 6, "desc": "尼本河畔黑檀色的湮滅之門,魔人領主跨界鎮守著第二枚封印石。", "services": [], "dungeon": "bravil_gate", "links": {"bravil": 1}},
+    "dagon_shrine": {"biome": "ashland", "name": "達貢的祭壇", "province": "賽羅迪爾", "type": "dungeon", "danger": 6, "desc": "切迪納近郊隱藏的神話黎明祭壇,《魔典》的禁忌之力在此敞開通往死亡之地的裂隙。", "services": [], "dungeon": "dagon_shrine", "links": {"cheydinhal": 2, "the_deadlands": 1}},
+    "the_deadlands": {"biome": "ashland", "name": "死亡之地", "province": "賽羅迪爾", "type": "dungeon", "danger": 6, "desc": "梅魯尼斯·達貢的位面 —— 烈焰與黑檀構成的荒原,凡塵的命運在此一戰決定。", "services": [], "dungeon": "the_deadlands", "links": {"dagon_shrine": 1}},
+    "dawn_sanctum": {"biome": "ashland", "name": "神話黎明聖殿", "province": "賽羅迪爾", "type": "dungeon", "danger": 6, "desc": "神話黎明最深的內殿,曼卡·卡莫蘭的獻祭儀式在此舉行 —— 通往達貢現世的最後一步。", "services": [], "dungeon": "dawn_sanctum", "links": {"kvatch": 2}}
   },
   "start_location": "bruma"
 }

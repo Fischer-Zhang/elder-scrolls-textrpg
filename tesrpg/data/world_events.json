@@ -4,25 +4,25 @@
     "effects": [
       {"type": "faction_flip", "loc": "kvatch", "to": "daedric"}
     ],
-    "news": "湮滅之門在凱瓦奇城外轟然裂開,赤色軍團湧入 —— 凱瓦奇陷落,化作米拉克·達貢信徒的灘頭。神話黎明的信徒自陰影中現身,有意者可投身其麾下。"
+    "news": "湮滅之門在凱瓦奇城外轟然裂開,赤色軍團湧入 —— 凱瓦奇陷落,化作梅魯尼斯·達貢信徒的灘頭。神話黎明的信徒自陰影中現身,有意者可投身其麾下。"
   },
   "septim_line_ends": {
-    "trigger": {"days_min": 30, "requires": ["kvatch_falls"]},
+    "trigger": {"requires": ["oblivion_crisis_ended"]},
     "effects": [
       {"type": "faction_flip", "loc": "anvil", "to": "independent"},
       {"type": "faction_flip", "loc": "gideon", "to": "independent"}
     ],
-    "news": "馬丁·賽普汀燃起龍焰、擊退達貢,卻也燃盡了賽普汀的血脈 —— 紅寶石王座自此永空。失去中樞的帝國邊省紛紛自立門戶,亂世群雄並起。"
+    "news": "湮滅危機平息,但賽普汀的血脈也在這場浩劫中走到了盡頭 —— 紅寶石王座自此永空。失去中樞的帝國邊省紛紛自立門戶,獨立的烽火就此點燃,亂世群雄並起。"
   },
   "argonian_accession": {
-    "trigger": {"days_min": 45, "requires": ["septim_line_ends"]},
+    "trigger": {"requires": ["septim_line_ends"]},
     "effects": [
       {"type": "faction_flip", "loc": "molag_mar", "to": "independent"}
     ],
     "news": "趁帝國崩解,黑沼澤的 An-Xileel 揮師北上,希斯特之民湧入晨風南疆 —— 莫拉格瑪易幟,脫離舊秩序。"
   },
   "nord_stirrings": {
-    "trigger": {"days_min": 50},
+    "trigger": {"requires": ["septim_line_ends"]},
     "effects": [
       {"type": "faction_flip", "loc": "whiterun", "to": "independent"}
     ],
@@ -35,5 +35,10 @@
       {"type": "fame", "amount": 30}
     ],
     "news": "你親手關閉了凱瓦奇的湮滅之門、光復此城 —— 達貢的灘頭就此瓦解,你的威名傳遍賽羅迪爾。"
-  }
+  },
+  "kvatch_gate_sealed": {"trigger": {"requires": ["kvatch_falls"], "milestone": {"cleared": ["kvatch_gate"]}}, "effects": [{"type": "clear_flip", "loc": "kvatch"}, {"type": "fame", "amount": 25}], "news": "凱瓦奇城下的湮滅之門轟然閉合 —— 你拔下封印石,赤色軍團的灘頭就此瓦解,凱瓦奇重歸塵世。"},
+  "bravil_gate_closed": {"trigger": {"requires": ["kvatch_falls"], "milestone": {"cleared": ["bravil_gate"]}}, "effects": [{"type": "fame", "amount": 25}], "news": "布拉維爾的湮滅之門被封,尼本河畔的魔族大潮退去 —— 第二道封印石落入你手,人們開始傳頌一個逆勢而行的名字。"},
+  "deadlands_breach": {"trigger": {"requires": ["kvatch_falls"], "milestone": {"cleared": ["dagon_shrine"]}}, "effects": [{"type": "faction_flip", "loc": "bravil", "to": "daedric"}, {"type": "faction_flip", "loc": "leyawiin", "to": "daedric"}], "news": "你踏入達貢的祭壇,卻也撕開了通往死亡之地的大裂隙 —— 湮滅的烈焰自賽羅迪爾南境噴湧,布拉維爾與雷雅維因一夜淪陷。危機迎來最黑暗的頂點。"},
+  "dagon_banished": {"trigger": {"requires": ["kvatch_falls"], "milestone": {"kills": {"mehrunes_dagon": 1}}}, "effects": [{"type": "clear_flip", "loc": "bravil"}, {"type": "clear_flip", "loc": "leyawiin"}, {"type": "clear_flip", "loc": "kvatch"}, {"type": "fame", "amount": 80}], "news": "你在死亡之地擊碎了梅魯尼斯·達貢的化身,將湮滅之君逐回他自己的位面 —— 所有裂隙閉合,賽羅迪爾光復。你的名字將與這場危機一同載入史冊。"},
+  "dawn_undone": {"trigger": {"requires": ["kvatch_falls"], "milestone": {"kills": {"mehrunes_dagon_diminished": 1}}}, "effects": [{"type": "clear_flip", "loc": "bravil"}, {"type": "clear_flip", "loc": "leyawiin"}, {"type": "clear_flip", "loc": "kvatch"}, {"type": "fame", "amount": 15}], "news": "神話黎明在一夜之間化為灰燼 —— 達貢獻祭了自己的全部信徒,卻被逆轉的法陣反噬。傳言一名獨活的叛徒竊走了湮滅之君的一縷殘力,從此隱沒於世。"}
 }

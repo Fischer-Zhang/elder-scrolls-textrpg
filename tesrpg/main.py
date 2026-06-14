@@ -1401,6 +1401,13 @@ def action_dungeon(state: GameState, gamedata: GameData) -> str | None:
                 boss = grid["boss"]
                 if boss.get("desc"):
                     ui.message(boss["desc"], style="magenta")
+                # 教徒終局「逆轉法陣的反噬」:玩家入場即被抽乾(雙方削弱 —— 削弱版達貢由 bestiary 變體承載)。
+                # 血量夾 ≥1(不致死);魔力/體力砍至三分。重訪照樣反噬(死亡之地位面本就不穩)。
+                if loc.get("dungeon") == "dawn_sanctum":
+                    player.health = max(1, player.health // 3)
+                    player.magicka //= 3
+                    player.fatigue //= 3
+                    ui.message("逆轉召喚法陣的反噬撕裂你的血肉與心神 —— 你氣力僅存三分,但半成的達貢化身同樣虛弱。", style="yellow")
                 if boss.get("raw"):   # 已是 elite 的首領以原始強度登場(避免 spawn_boss 再 ×1.6 疊加)
                     foe = combat.spawn_creature(gamedata, boss["enemy"], state.rng)
                     foe.name = f"{spec['name']}首領"
@@ -2155,7 +2162,7 @@ def action_mythic_dawn(state: GameState, gamedata: GameData) -> str | None:
     """神話黎明聖堂:入會、領受/執行『獻祭』合約、聆聽《魔典》箴言。回傳 'dead'|None。"""
     return _contract_hall(
         state, gamedata, "mythic_dawn", stealth=True,
-        join_prompt="赤袍信徒自陰影中低語:「米拉克·達貢在等你。可願棄絕舊神、皈依神話黎明?」",
+        join_prompt="赤袍信徒自陰影中低語:「梅魯尼斯·達貢在等你。可願棄絕舊神、皈依神話黎明?」",
         join_success="你誦下達貢的誓言,成為神話黎明的「{rank}」。",
         title="神話黎明聖堂", accept_label="領受新的獻祭",
         execute_label="執行獻祭 —— 行刺{tname}",
@@ -2511,7 +2518,7 @@ def _pledge_allegiance(state: GameState, gamedata: GameData) -> None:
     _CAUSE_DESC = {
         "imperial": "復辟賽普汀帝國,重整長老會與軍團的秩序。",
         "independent": "支持各省自治,讓地方掙脫帝國的羈縻。",
-        "daedric": "事奉米拉克·達貢,以湮滅之火焚盡這腐朽之世。",
+        "daedric": "事奉梅魯尼斯·達貢,以湮滅之火焚盡這腐朽之世。",
         "own": "不奉帝國、不附獨立 —— 以己之名舉旗,問鼎這片無主之地。",
     }
     opts = [(c, f"{politics.cause_name(c)} —— {_CAUSE_DESC.get(c, '')}")
@@ -3207,11 +3214,14 @@ def action_board(state: GameState, gamedata: GameData) -> None:
     char = state.player
     province = world.current_location(char, gamedata)["province"]
     while True:                                       # 留在告示板可連續接多個委託,返回才離開
-        avail = quests.available_quests(char, gamedata, "board", province=province)
+        # 主線(湮滅危機)在 kvatch_falls 後現於各地告示板;md7 教徒頂點受 requires_faction 閘只對教徒露出。
+        main = quests.available_quests(char, gamedata, "main")
+        avail = main + quests.available_quests(char, gamedata, "board", province=province)
         if not avail:
             ui.message("告示板上沒有你還沒接的委託。", style="grey70")
             return
-        opts = [(qid, f"{gamedata.quests[qid]['name']} — {quests.objective_text(char, gamedata, qid)}"
+        opts = [(qid, f"{'【主線】' if gamedata.quests[qid].get('source') == 'main' else ''}"
+                 f"{gamedata.quests[qid]['name']} — {quests.objective_text(char, gamedata, qid)}"
                  f"(賞 {gamedata.quests[qid]['reward'].get('gold', 0)} 金)") for qid in avail]
         ui.board_panel(char, gamedata, avail)     # web:可點委託卡(對齊選單 key=qid)
         qid = ui.menu("告示板委託", opts, allow_back=True)

@@ -70,6 +70,9 @@ def join_block_reason(char: Character, gamedata: GameData, faction_id: str) -> s
     unlock_event = f.get("unlock_event")
     if unlock_event and unlock_event not in getattr(char, "world_events_fired", []):
         return "此處空無一人 —— 改變世道的大事件尚未到來,這個組織還隱於陰影之中。"
+    # 大義覆滅:湮滅危機任一結局後神話黎明徹底滅亡(`<faction>_eradicated` 世界旗標)→ 不可再入會。
+    if f"{faction_id}_eradicated" in getattr(char, "world_events_fired", []):
+        return "這個組織已在湮滅危機中徹底覆滅 —— 再無人接納你。"
     rivals = joined_rivals(char, gamedata, faction_id)
     if rivals:
         names = "、".join(gamedata.factions[r]["name"] for r in rivals)

@@ -40,6 +40,7 @@ def test_kvatch_falls_after_days_and_once_fire():
 def test_player_held_city_immune_to_flip():
     # 用 anvil + septim_line_ends(避開 kvatch 的 falls↔liberated 同圈互消);玩家持有的城,事件易幟被 city_faction 蓋過
     gd, c = _setup(); politics.pledge(c, "imperial"); st = _state(c)
+    c.world_events_fired.append("oblivion_crisis_ended")        # 分裂事件=湮滅危機後第二幕
     politics.conquer(c, gd, "anvil", now=st.time.absolute_hours())
     st.time.advance(30 * 24); worldstate.update(st, gd)         # septim_line_ends → anvil 易幟 independent
     assert c.world_faction["anvil"] == "independent"           # 底層仍寫入(失城後浮回)
@@ -49,7 +50,8 @@ def test_player_held_city_immune_to_flip():
 
 def test_red_line_world_faction_not_taxed():
     gd, c = _setup(); st = _state(c)
-    st.time.advance(60 * 24); worldstate.update(st, gd)         # 跑過時間事件(anvil/gideon→independent)
+    c.world_events_fired.append("oblivion_crisis_ended")        # 危機平息 → 分裂事件可觸發
+    st.time.advance(60 * 24); worldstate.update(st, gd)         # septim_line_ends(anvil/gideon→independent)
     assert politics.faction_of(c, gd, "anvil") == "independent"
     politics.pledge(c, "independent")
     assert "anvil" not in politics.held_tax_cities(c, gd)       # 🔴 易幟城不入稅基(只認 city_faction)
@@ -57,14 +59,15 @@ def test_red_line_world_faction_not_taxed():
 
 
 def test_requires_chain():
+    # 新時間軸:湮滅危機平息(oblivion_crisis_ended)→ 賽普汀血脈斷絕 → 邊省獨立(鏈式同圈觸發)
     gd, c = _setup(); st = _state(c)
-    st.time.advance(30 * 24)
+    c.world_events_fired.append("oblivion_crisis_ended")
     ids = [e["id"] for e in worldstate.update(st, gd)]
-    assert "kvatch_falls" in ids and "septim_line_ends" in ids  # 鏈式同圈觸發(定點迴圈)
+    assert "septim_line_ends" in ids and "argonian_accession" in ids  # 鏈式同圈觸發(危機後)
     assert c.world_faction.get("anvil") == "independent"
-    # 缺前置 → 不觸發
+    # 缺前置(危機未平)→ 分裂不觸發
     gd2, c2 = _setup()
-    assert not worldstate._trigger_ok(c2, gd2, {"days_min": 30, "requires": ["kvatch_falls"]}, 40, RNG(1))
+    assert not worldstate._trigger_ok(c2, gd2, {"requires": ["oblivion_crisis_ended"]}, 40, RNG(1))
 
 
 def test_daedric_unlock_after_kvatch():
@@ -89,6 +92,7 @@ def test_kvatch_liberated_player_driven():
 def test_lost_city_reverts_to_event_state():
     """conquer 不 pop world_faction:玩家失城(叛亂)後,底層事件易幟浮回(回到事件政治現實,非原始種子)。"""
     gd, c = _setup(); politics.pledge(c, "imperial"); st = _state(c)
+    c.world_events_fired.append("oblivion_crisis_ended")       # 分裂事件=危機後
     politics.conquer(c, gd, "anvil", now=st.time.absolute_hours())
     st.time.advance(30 * 24); worldstate.update(st, gd)        # world_faction[anvil]=independent(被 city_faction 蓋)
     assert politics.faction_of(c, gd, "anvil") == "imperial"   # 持有時=你的大義
@@ -97,9 +101,9 @@ def test_lost_city_reverts_to_event_state():
 
 
 def test_deterministic_replay():
-    gd, c1 = _setup(); st1 = _state(c1); st1.time.advance(60 * 24)
+    gd, c1 = _setup(); c1.world_events_fired.append("oblivion_crisis_ended"); st1 = _state(c1); st1.time.advance(60 * 24)
     r1 = [e["id"] for e in worldstate.update(st1, gd)]
-    _, c2 = _setup(); st2 = _state(c2); st2.time.advance(60 * 24)
+    _, c2 = _setup(); c2.world_events_fired.append("oblivion_crisis_ended"); st2 = _state(c2); st2.time.advance(60 * 24)
     r2 = [e["id"] for e in worldstate.update(st2, gd)]
     assert r1 == r2 and c1.world_faction == c2.world_faction
 

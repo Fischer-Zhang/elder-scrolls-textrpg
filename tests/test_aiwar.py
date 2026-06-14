@@ -19,6 +19,7 @@ def _state(seed=1, alleg=""):
     c = build_character(gd, name="戰", sex="male", race="imperial",
                         birthsign="warrior", class_id="warrior")
     c.allegiance = alleg
+    c.world_events_fired.append("oblivion_crisis_ended")   # 獨立戰爭是湮滅危機後的第二幕 → 開戰前提
     return gd, GameState(player=c, rng=RNG(seed), game_mode="adventure")
 
 
@@ -195,6 +196,20 @@ def test_save_roundtrip_and_backward_compat():
     del d["war_tick_at"]; del d["city_threat"]          # 舊存檔
     old = Character.from_dict(d)
     assert old.war_tick_at == 0 and old.city_threat == {}
+
+
+def test_war_dormant_until_crisis_ends():
+    """獨立戰爭=湮滅危機後第二幕:危機未平(無 oblivion_crisis_ended)→ 內戰按兵不動,零結算。"""
+    gd, st = _state()
+    st.player.world_events_fired.remove("oblivion_crisis_ended")   # _state 預設已加 → 移除模擬危機未平
+    for _ in range(8):
+        st.time.advance(aiwar.WAR_HOURS)
+        assert aiwar.update(st, gd) == []                          # 危機未平 → 零翻城
+    # 危機平息 → 戰爭起算(一週寬限後開始結算)
+    st.player.world_events_fired.append("oblivion_crisis_ended")
+    st.time.advance(aiwar.WAR_HOURS); aiwar.update(st, gd)         # 起算寬限
+    st.time.advance(aiwar.WAR_HOURS)
+    aiwar.update(st, gd)                                           # 已平 → 正常結算(不崩)
 
 
 def run():

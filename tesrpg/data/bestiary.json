@@ -1251,5 +1251,7 @@
     "loot_gold": [20, 60],
     "loot": [{"item": "nightshade", "chance": 0.6}, {"item": "garlic", "chance": 0.4}, {"item": "healing_potion", "chance": 0.3}],
     "flavor": "蓬髮糾結、羽爪生鱗的格倫魔女蜷在火堆旁低吟 —— 唯有她們的巫血,能洗去戰友體內的獸性。"
-  }
+  },
+  "mehrunes_dagon": {"name": "梅魯尼斯·達貢", "strength": 98, "agility": 50, "speed": 50, "max_health": 720, "armor_rating": 26, "attack": {"name": "湮滅四臂連斬", "damage": 44, "skill": 72, "element": "fire", "on_hit": {"status": "dot", "element": "fire", "magnitude": 8, "turns": 3, "chance": 0.6}}, "danger": 6, "min_level": 18, "weight": 1, "solo": true, "resist": {"fire": 85, "frost": 40, "shock": 40, "magic": 50, "poison": 100}, "loot_gold": [400, 800], "loot": [{"item": "daedra_heart", "chance": 1.0}, {"item": "mehrunes_razor", "chance": 0.5}, {"item": "daedric_sword", "chance": 0.4}, {"item": "filled_greater_soul_gem", "chance": 0.6}], "flavor": "天色化為赤紅 —— 梅魯尼斯·達貢踏碎自己的祭壇而來,四臂各執一柄燃燒的黑檀刃,湮滅之君的怒火足以將位面燒成灰燼。"},
+  "mehrunes_dagon_diminished": {"name": "削弱的達貢", "strength": 80, "agility": 46, "speed": 46, "max_health": 380, "armor_rating": 20, "attack": {"name": "殘焰揮斬", "damage": 30, "skill": 64, "element": "fire", "on_hit": {"status": "dot", "element": "fire", "magnitude": 5, "turns": 3, "chance": 0.5}}, "danger": 6, "min_level": 16, "weight": 1, "solo": true, "resist": {"fire": 60, "frost": 25, "shock": 25, "magic": 30, "poison": 100}, "loot_gold": [300, 600], "loot": [{"item": "daedra_heart", "chance": 1.0}, {"item": "daedric_sword", "chance": 0.4}, {"item": "filled_greater_soul_gem", "chance": 0.5}], "flavor": "逆轉的法陣抽走了他大半神力 —— 達貢的化身搖晃著,四臂的烈焰黯淡如將熄的炭火,但仍足以致命。"}
 }

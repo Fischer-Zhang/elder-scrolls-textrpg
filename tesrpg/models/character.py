@@ -94,6 +94,13 @@ class Character:
     werewolf_skill_bonus: dict = field(default_factory=dict)  # skill_id -> +點數(獸形;MVP 空)
     werewolf_resist: dict = field(default_factory=dict)       # element -> +百分比(疾病免疫)
     werewolf_health_bonus: int = 0       # 獸形額外生命上限(走 stats.recompute_max_resources)
+    # 達貢之力(湮滅危機教徒結局的慘勝獎賞;竊得達貢殘力的永久增益)。走獨立 dagon_* 層,
+    # 與裝備/吸血鬼/狼人加成同模式:attr()/skill()/抗性/魔力 疊加、成長/夾限只用 base_*。詳見 systems/dagon_boon.py。
+    dagon_boon: bool = False              # 是否已竊得達貢之力(持久身分;一次性永久)
+    dagon_attr_bonus: dict = field(default_factory=dict)    # attr_id -> +點數
+    dagon_skill_bonus: dict = field(default_factory=dict)   # skill_id -> +點數(毀滅/咒術)
+    dagon_resist: dict = field(default_factory=dict)        # element -> +百分比(烈焰之主 → 火抗)
+    dagon_magic_bonus: int = 0           # 額外魔力上限(走 stats.recompute_max_resources)
     factions: dict = field(default_factory=dict)         # faction_id -> 階級索引(已入會)
     # 黑暗兄弟會(里程碑;血債招募 → 合約晉升 → 夜母祝福)。詳見 systems/brotherhood.py。
     # 階級存在 factions["dark_brotherhood"];此處只記入會「前」的狀態機欄位:
@@ -194,13 +201,13 @@ class Character:
         return (self.attributes.get(key, formulas.BASE_ATTRIBUTE)
                 + self.equip_attr_bonus.get(key, 0) + self.vampire_attr_bonus.get(key, 0)
                 + self.mastery_attr_bonus.get(key, 0) + self.skooma_attr_bonus.get(key, 0)
-                + self.werewolf_attr_bonus.get(key, 0))
+                + self.werewolf_attr_bonus.get(key, 0) + self.dagon_attr_bonus.get(key, 0))
 
     def skill(self, key: str) -> int:
         return (self.skills.get(key, 0)
                 + self.equip_skill_bonus.get(key, 0) + self.vampire_skill_bonus.get(key, 0)
                 + self.mastery_skill_bonus.get(key, 0) + self.skooma_skill_bonus.get(key, 0)
-                + self.werewolf_skill_bonus.get(key, 0))
+                + self.werewolf_skill_bonus.get(key, 0) + self.dagon_skill_bonus.get(key, 0))
 
     def base_attr(self, key: str) -> int:
         """不含裝備加成的原始屬性(供成長/夾限用)。"""
@@ -256,6 +263,9 @@ class Character:
             "werewolf_skill_bonus": self.werewolf_skill_bonus,
             "werewolf_resist": self.werewolf_resist,
             "werewolf_health_bonus": self.werewolf_health_bonus,
+            "dagon_boon": self.dagon_boon, "dagon_attr_bonus": self.dagon_attr_bonus,
+            "dagon_skill_bonus": self.dagon_skill_bonus, "dagon_resist": self.dagon_resist,
+            "dagon_magic_bonus": self.dagon_magic_bonus,
             "factions": self.factions,
             "murders": self.murders, "db_invited": self.db_invited,
             "murdered_npcs": self.murdered_npcs,

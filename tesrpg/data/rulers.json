@@ -432,5 +432,8 @@
     "housecarl": "ranger",
     "thane_gift": "glass_dagger",
     "quests": ["ruler_alabaster1", "ruler_alabaster2"]
-  }
+  },
+  "bravil": {"name": "雷古勒斯·泰倫提烏斯", "title": "伯爵", "race": "imperial", "garrison": 150, "population": 280, "bloc": "imperial_legion", "bloc_label": "帝國軍團", "blurb": "布拉維爾伯爵,出身古老卻沒落的帝國世家。守著這座泥濘水城,在貧困與盜匪間勉力維繫舊秩序的顏面。", "quests": [], "housecarl": "shieldmaiden", "thane_gift": "elven_sword", "stance": "imperial"},
+  "chorrol": {"name": "阿莉安娜·瓦爾加", "title": "伯爵夫人", "race": "imperial", "garrison": 200, "population": 330, "bloc": "imperial_legion", "bloc_label": "帝國軍團", "blurb": "切若爾伯爵夫人,虔誠而剛正的科洛文貴族。九神信仰是她治城的根基,對湮滅邪教深惡痛絕。", "quests": [], "housecarl": "shieldmaiden", "thane_gift": "elven_sword", "stance": "imperial"},
+  "leyawiin": {"name": "馬里烏斯·卡羅", "title": "伯爵", "race": "imperial", "garrison": 180, "population": 300, "bloc": "imperial_legion", "bloc_label": "帝國軍團", "blurb": "雷雅維因伯爵,精於邊境貿易與權衡的帝國領主。南陲多事,他在亞龍人、虎人與帝國之間左右逢源。", "quests": [], "housecarl": "shieldmaiden", "thane_gift": "elven_sword", "stance": "imperial"}
 }

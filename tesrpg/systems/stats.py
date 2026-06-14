@@ -73,7 +73,8 @@ def recompute_max_resources(char: Character, gamedata=None,
     char.max_health = (char.base_max_health + res.get("health", 0) + fort.get("health", 0)
                        + getattr(char, "werewolf_health_bonus", 0))
     char.max_magicka = (formulas.max_magicka(char.attr("intelligence"), char.magicka_bonus)
-                        + res.get("magicka", 0) + fort.get("magicka", 0))
+                        + res.get("magicka", 0) + fort.get("magicka", 0)
+                        + getattr(char, "dagon_magic_bonus", 0))   # 達貢之力:永久魔力上限
     char.max_fatigue = (formulas.max_fatigue(
         char.attr("strength"), char.attr("willpower"),
         char.attr("agility"), char.attr("endurance"),
