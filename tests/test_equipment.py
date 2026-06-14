@@ -282,6 +282,19 @@ def test_top_tier_set_bonuses():
     _wear_set(c, gd, "dragonpriest")           # 套裝 110 + 三件 magicka 附魔 90(兜帽改 +20 毀滅,不再加魔力)
     assert c.max_magicka == base_m + 200
 
+
+def test_armor_worn_weight_sums_armor_excludes_jewelry():
+    """潛行噪音/偷襲倍率所吃的『穿戴總重』:計帶 weight_class 的甲(含盾),飾品/武器不計。"""
+    gd, c = _char()
+    assert inventory.armor_worn_weight(c, gd) == 0          # 無甲
+    _wear_set(c, gd, "glass")
+    assert inventory.armor_worn_weight(c, gd) == 13         # 玻璃四件 3+6+2+2
+    c.equipped["ring1"] = "silver_ring"                     # 飾品(無 weight_class)
+    assert inventory.armor_worn_weight(c, gd) == 13         # 仍 13:戒指不計噪音
+    gd2, c2 = _char()
+    _wear_set(c2, gd2, "daedric")
+    assert inventory.armor_worn_weight(c2, gd2) == 43       # 魔族四件 7+18+9+9(踩重甲倍率折扣)
+
     # 布甲玻璃大砲(併自 test_smithing.test_cloth_set_glass_cannon):四件同材質給魔力套裝、
     # 但近乎零護甲 —— worn_armor_rating<=1 是布甲套裝獨有性質,他處無覆蓋
     gd, c = _char()

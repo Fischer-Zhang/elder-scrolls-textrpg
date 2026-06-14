@@ -210,6 +210,21 @@ def night_mother_sneak_bonus(db_rank: int) -> float:
     return 1.0 + max(0, db_rank) * NIGHT_MOTHER_SNEAK_PER_RANK
 
 
+# 偷襲倍率的「穿戴重量折扣」:鏗鏘重甲就算偷到、爆發也打折(輕甲對重甲的潛行優勢之二)。
+# 門檻 18(方案 B):總重 ≤18 完全不打折 → 法袍/皮甲/玻璃/龍鱗等輕甲全段保護(W≤18),
+# 只有重甲(W>18)才隨重量遞減,夾在 [0.45,1.0]。改此值踩偷襲倍率紅線 → 必跑 sim_assassin.py。
+# ⚠ 與命中端各自獨立:armor_relief(無聲披掛)只抵命中端噪音,**不抵此倍率折扣**(見 R07/R25)。
+SNEAK_MULT_WEIGHT_FLOOR = 18      # 總重 ≤ 此值偷襲倍率不打折
+SNEAK_MULT_WEIGHT_PER = 0.012     # 每超出一點重量 → 倍率 ×(1−此值)
+SNEAK_MULT_WEIGHT_MIN = 0.45      # 倍率折扣下限(再重也保留 45% 偷襲爆發)
+
+
+def armor_sneak_mult_factor(armor_weight: float) -> float:
+    """穿戴護甲總重 → 偷襲傷害倍率折扣係數(W≤18=×1.0;重甲遞減,夾 [0.45,1.0])。"""
+    return min(1.0, max(SNEAK_MULT_WEIGHT_MIN,
+                        1.0 - (armor_weight - SNEAK_MULT_WEIGHT_FLOOR) * SNEAK_MULT_WEIGHT_PER))
+
+
 def dodge_evasion(acrobatics_skill: int) -> float:
     """雜技帶來的閃避量(直接從敵人命中率扣除):acrobatics 40→0.10、100→0.25。"""
     return acrobatics_skill * DODGE_EVASION_SCALE
@@ -388,17 +403,26 @@ STEALTH_APPROACH_HORDE = 0.30         # >3 敵:每超出一個額外大減(群�
 STEALTH_APPROACH_NIGHT = 0.10         # 夜間(黑暗掩護)
 STEALTH_APPROACH_SCOUT = 0.25         # 先成功偵查 → 知道動線(B:偵查解博弈)
 STEALTH_APPROACH_SURPRISE = 0.45      # 被伏擊(C:受害者難以反偷襲加害者)
-# E:護甲噪音 —— 重甲鏗鏘難潛、輕甲幾乎無礙(里程碑「無聲披掛」可抵消)
-STEALTH_APPROACH_ARMOR_PENALTY = {"heavy": 0.40, "light": 0.05}
+# E:護甲噪音 —— 改依「實際穿戴總重」連續計(鏗鏘重甲難潛、輕量法袍幾乎無礙;里程碑「無聲披掛」relief 可抵消)。
+# 取代舊的二元 weight_class 扁平懲罰:同為輕甲,法袍(W5)幾乎無罰、龍鱗(W18)中等;重甲隨重量遞增到封頂。
+STEALTH_WEIGHT_FLOOR = 4           # 穿戴總重 ≤ 此值幾乎無噪音(近裸/輕法袍)
+STEALTH_WEIGHT_PENALTY_PER = 0.017  # 每超出 floor 一點重量 → 入場潛行機率 −此值
+STEALTH_WEIGHT_PENALTY_CAP = 0.75   # 命中端重量懲罰上限(再重也封頂)
+
+
+def stealth_weight_penalty(armor_weight: float) -> float:
+    """穿戴護甲總重 → 入場潛行的命中懲罰(連續;封頂 0.75)。供 stealth_approach_chance 用。"""
+    return min(STEALTH_WEIGHT_PENALTY_CAP,
+               max(0.0, (armor_weight - STEALTH_WEIGHT_FLOOR) * STEALTH_WEIGHT_PENALTY_PER))
 
 
 def stealth_approach_chance(sneak: int, foe_agility: int, group_size: int,
-                            armor_class: str | None, night: bool = False,
+                            armor_weight: float, night: bool = False,
                             scouted: bool = False, surprise: bool = False,
                             approach_bonus: float = 0.0, armor_relief: float = 0.0) -> float:
-    """接戰時搶到開場偷襲的機率。吃潛行/敵警覺/敵數/護甲噪音/夜間/偵查/是否被伏擊/**>3 敵大減**。
+    """接戰時搶到開場偷襲的機率。吃潛行/敵警覺/敵數/**護甲總重噪音**/夜間/偵查/是否被伏擊/**>3 敵大減**。
     夾限 [0.05, 0.97](高潛行可靠、但永不保證;重甲莽夫幾乎偷不到;大群幾乎偷不到)。"""
-    armor_pen = STEALTH_APPROACH_ARMOR_PENALTY.get(armor_class, 0.0) * (1 - armor_relief)
+    armor_pen = stealth_weight_penalty(armor_weight) * (1 - armor_relief)
     chance = (STEALTH_APPROACH_BASE + sneak * STEALTH_APPROACH_SNEAK
               - foe_agility * STEALTH_APPROACH_PERCEPT
               - max(0, group_size - 1) * STEALTH_APPROACH_CROWD

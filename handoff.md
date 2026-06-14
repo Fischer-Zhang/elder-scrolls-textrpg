@@ -706,8 +706,10 @@ tesrpg/
 - **潛行系戰鬥(M16 + 刺客大改)**:`sneak` 開場偷襲只在 `run_battle` 第一個行動為攻擊且 `opening` 為真時觸發(僅玩家);`acrobatics` 閃避從 `hit_chance` 扣 `dodge_evasion`。**`opening` 現在不再無條件保證**:① 入場由 `offer_battle` 的 `try_stealth_approach` 檢定決定(失敗 → `run_battle(alerted=True)`→opening 起手即 False);② 旅途伏擊 `surprise=True` 幾乎拿不到;③ 隱遁成功會把 `opening` 重新點亮(`opening = vanish_success`,別改回無條件關閉)。
   - **暗殺殘響**:全在 `resolve_attack` 偷襲分支末端(`sneaking and is_alive(defender)`),掛 `stagger`/`bleed(element=bleed)` 到 defender;踉蹌命中減成在 `hit_chance` 後對「被踉蹌的 attacker」扣 `STAGGER_HIT_PENALTY`。調平衡只改 `formulas` 的 `_ARCHETYPE_SNEAK_AFTERMATH`/`SNEAK_BLEED_*`/`STAGGER_HIT_PENALTY`。
   - **雙持**:`offhand` 只存 id;**副手傷害必須在 `sneak_mult 之後`才加(不吃偷襲倍率)**——`resolve_attack` 與 `estimate_sneak_damage` 兩處要一致,否則精英被秒(審查踩過)。同型雙持需 2 把;`remove_item` 跨門檻會清 `offhand`。雙持時 `_choose_combat_action` 不給格擋。
+    - **副手附魔生效(以 `OFFHAND_DAMAGE_FACTOR`=0.6 權重疊主手)**:`resolve_attack` 讀 `offhand_ench`,元素/吸血/再生按 ×0.6 疊上、麻痺各自獨立擲一次(binary 不打折,solo boss 仍免疫)。雙持雙吸血 = 0.30+0.30×0.6=**0.48**(回血夾在本擊傷害內)。元素疊在 dmg、**夾限前**(偷襲不放大、solo 受夾)。UI `weapon_line` 顯示「雙持 X(每擊 +N 傷)」讓 ×0.6 補刀可見。
   - **隱遁**:`try_vanish` 成功跳過敵人階段;**三道煞車缺一不可**——`player_vanish_cost` 體力、`vanishes_done` 每次嘗試遞增(非僅成功)、`MAX_VANISHES_PER_BATTLE` 硬上限。少了會變無限風箏無傷清精英(審查踩過 critical)。
-  - **入場檢定/偵查**:`stealth_approach_chance` 吃 `inventory.dominant_weight_class`(重甲噪音)+ 夜間(`hour<6 or >=21`)+ `scouted` + `surprise`。`scout` 是第 22 技能;**新增技能務必同步 `progression.ensure_all_skills`**(舊存檔遷移)。
+  - **入場檢定/偵查**:`stealth_approach_chance` 吃 **`inventory.armor_worn_weight`(連續重量噪音,經 `formulas.stealth_weight_penalty`;取代舊二元 `dominant_weight_class`)** + 夜間(`hour<6 or >=21`)+ `scouted` + `surprise`。`scout` 是第 22 技能;**新增技能務必同步 `progression.ensure_all_skills`**(舊存檔遷移)。
+  - **輕甲對重甲的潛行優勢(依實際穿戴總重,雙端)**:① **命中端** `stealth_weight_penalty(W)=clamp((W-4)×0.017,0,0.75)`(法袍 W5 幾乎無罰、龍鱗 W18 中等、重甲遞增到封頂);② **倍率端** `formulas.armor_sneak_mult_factor(W)=clamp(1-(W-18)×0.012,0.45,1.0)`——**門檻 18 以下不打折**(法袍/皮甲/玻璃/龍鱗等輕甲全段 ×1.0),只有重甲(W>18)偷到也爆發打折。在 `resolve_attack` 的 `sneak_mult` 連乘加一項、`estimate_sneak_damage` 同步。`armor_worn_weight` 只計帶 `weight_class` 的甲/盾(飾品/武器不計)。🔴 **`armor_relief`(無聲披掛)只抵命中端噪音、不抵倍率折扣**——兩條路徑互不相抵;倍率端安全只能靠低總重(輕甲)。改 `armor_sneak_mult_factor`/`SNEAK_MULT_WEIGHT_*` 踩偷襲倍率紅線 → **必跑 sim_assassin**。
   - **平衡回歸**:改任何刺客常數後跑 `PYTHONPATH=. python3 sim_assassin.py` 對照(救失手/不秒精英/無風箏)。
 ### R08 · 偵查備戰(scout → prep)
 

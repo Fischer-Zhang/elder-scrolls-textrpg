@@ -1596,8 +1596,11 @@ def weapon_line(char: Character, gamedata: GameData) -> str:
     arch = _ARCHETYPE_CN.get(wp.get("archetype"), "")
     arch_tag = f"·{arch}" if arch and char.weapon != "fists" else ""
     from tesrpg.systems import inventory, smithing
-    dual = (f" [bold red]· 雙持 {gamedata.item(char.offhand)['name']}[/]"
-            if inventory.is_dual_wielding(char, gamedata) else "")
+    if inventory.is_dual_wielding(char, gamedata):
+        oh_bonus = int(round(inventory.dual_wield_bonus_damage(char, gamedata)))   # 副手 ×0.6 補刀 → 顯示有效加傷
+        dual = f" [bold red]· 雙持 {gamedata.item(char.offhand)['name']}(每擊 +{oh_bonus} 傷)[/]"
+    else:
+        dual = ""
     dmg = wp.get("damage", 0) + smithing.weapon_temper_bonus(char)     # 含永久淬鍊加傷 → 淬鍊效果可見
     dmg_tag = f"傷害 {dmg} · " if char.weapon != "fists" else ""
     return (f"{wp['name']}（{dmg_tag}{gamedata.skill_name(wp['skill'])} {char.skill(wp['skill'])}"

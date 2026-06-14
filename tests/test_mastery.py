@@ -661,9 +661,9 @@ def test_restoration_steadfast_regen_on_low():
 # --- P4:潛行系內容 + 群體規模反制 -------------------------------------
 def test_horde_penalty_crushes_stealth_above_three():
     """>3 敵:潛近/隱遁機率陡降(取代秒殺率上限的載重級反制)。"""
-    a3 = F.stealth_approach_chance(100, 30, 3, None)
-    a4 = F.stealth_approach_chance(100, 30, 4, None)
-    a5 = F.stealth_approach_chance(100, 30, 5, None)
+    a3 = F.stealth_approach_chance(100, 30, 3, 0)   # 第 4 引數現為穿戴總重(0=無甲)
+    a4 = F.stealth_approach_chance(100, 30, 4, 0)
+    a5 = F.stealth_approach_chance(100, 30, 5, 0)
     assert a4 < a3 - 0.20 and a5 < a4               # 第 4 敵起大減
     r3 = F.restealth_chance(100, 100, 3, 0)
     r4 = F.restealth_chance(100, 100, 4, 0)

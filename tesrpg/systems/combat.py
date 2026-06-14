@@ -312,6 +312,10 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
     # 雙持副手傷害另計:作為一記「普通補刀」疊上,不吃偷襲倍率(避免偷襲秒精英)。獸形/束縛兵刃無副手。
     offhand_dmg = (inventory.dual_wield_bonus_damage(attacker, gamedata)
                    if _is_player(attacker) and not beast and not bound else 0.0)
+    # 副手匕首的附魔(元素/吸血/麻痺/再生)也活,但以 OFFHAND_DAMAGE_FACTOR(0.6)權重生效並與主手疊加
+    # (與副手補刀傷害同一個折扣;非雙持為 None)。
+    offhand_ench = (gamedata.item(attacker.offhand).get("enchant")
+                    if offhand_dmg and getattr(attacker, "offhand", "") else None)
     wdef = gamedata.item(attacker.weapon) if _is_player(attacker) and not beast and not bound else None
     archetype = wdef.get("archetype") if wdef else None
     speed = wdef.get("speed", formulas.WEAPON_SPEED_DEFAULT) if wdef else formulas.WEAPON_SPEED_DEFAULT
@@ -349,6 +353,7 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
                   * formulas.archetype_sneak_bonus(archetype)
                   * formulas.night_mother_sneak_bonus(attacker.factions.get("dark_brotherhood", -1))
                   * (1 + mastery.sneak_mult_bonus(attacker, gamedata))   # 里程碑「影刃」:apex 偷襲倍率
+                  * formulas.armor_sneak_mult_factor(inventory.armor_worn_weight(attacker, gamedata))  # 重甲鏗鏘→爆發打折(輕甲 W≤18 不罰)
                   ) if sneaking else None
 
     if hit:
@@ -417,6 +422,10 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
                 if ench and ench.get("kind") == "weapon_element":
                     em = formulas.resist_multiplier(magic.entity_resist(defender, gamedata), ench["element"])
                     dmg += magic._scaled_damage(ench["magnitude"], em)
+                # 雙持副手的元素附魔:同樣無視護甲、吃元素抗性,但以 ×0.6 權重疊上(夾限前 → 偷襲不放大、solo 受夾)
+                if offhand_ench and offhand_ench.get("kind") == "weapon_element":
+                    em = formulas.resist_multiplier(magic.entity_resist(defender, gamedata), offhand_ench["element"])
+                    dmg += magic._scaled_damage(offhand_ench["magnitude"] * formulas.OFFHAND_DAMAGE_FACTOR, em)
                 # 戰法師「奧術灌注」:active weapon_imbue 自我增益 → 近戰加元素傷害
                 # (加在 dmg、於 solo 偷襲夾限之前 → 偷襲不放大、solo boss 受夾,守紅線)
                 for ie in attacker.active_effects:
@@ -502,27 +511,35 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
         # 武器命中觸發附魔(weapon_status:吸血/麻痺/再生)—— 玩家專屬,與元素/毒/里程碑各自獨立、不重複套。
         # 獸形/束縛兵刃以非裝備武器戰鬥 → 無裝備武器附魔
         if _is_player(attacker) and not beast and not bound:
-            sench = gamedata.item(attacker.weapon).get("enchant")
-            if sench and sench.get("kind") == "weapon_status" and rng.chance(sench.get("chance", 1.0)):
-                st = sench["status"]
+            # 主手 + 副手(雙持)的命中觸發附魔:副手以 OFFHAND_DAMAGE_FACTOR 權重疊加。
+            # 吸血累計成總比例後一次回血;再生以 source 去重(主手優先);麻痺各自獨立擲一次(binary 不打折,solo 仍免疫)。
+            heal_frac = 0.0
+            for hench, w in ((gamedata.item(attacker.weapon).get("enchant"), 1.0),
+                             (offhand_ench, formulas.OFFHAND_DAMAGE_FACTOR)):
+                if not (hench and hench.get("kind") == "weapon_status"
+                        and rng.chance(hench.get("chance", 1.0))):
+                    continue
+                st = hench["status"]
                 if st == "vampiric" and dmg_done > 0:
-                    heal = min(int(round(dmg_done * formulas.WEAPON_VAMPIRIC_FRACTION)), dmg_done)
-                    before = attacker.health
-                    attacker.health = min(attacker.max_health, attacker.health + heal)
-                    lifesteal = int(attacker.health - before)
-                elif st == "regen":   # self-HoT;以 source 去重(命中刷新不疊加)
+                    heal_frac += formulas.WEAPON_VAMPIRIC_FRACTION * w
+                elif st == "regen":   # self-HoT;以 source 去重(命中刷新不疊加;副手以 ×w 折幅)
                     if not any(e.get("source") == "ench_regen" and e.get("turns", 0) > 0
                                for e in attacker.active_effects):
                         attacker.active_effects.append(
-                            {"kind": "regen", "magnitude": sench.get("magnitude", 0),
-                             "turns": sench.get("turns", 0), "source": "ench_regen"})
+                            {"kind": "regen", "magnitude": int(round(hench.get("magnitude", 0) * w)),
+                             "turns": hench.get("turns", 0), "source": "ench_regen"})
                 elif st == "paralyze" and is_alive(defender):
                     # solo BOSS 完全免疫附魔麻痺(反鎖王作弊,比照偷襲秒殺夾限);已麻痺中不重複套
                     if (not _is_solo(defender, gamedata)
                             and not any(e["kind"] == "paralyze" and e["turns"] > 0
                                         for e in defender.active_effects)):
-                        defender.active_effects.append({"kind": "paralyze", "turns": sench.get("turns", 1)})
+                        defender.active_effects.append({"kind": "paralyze", "turns": hench.get("turns", 1)})
                         status_applied = status_applied or "paralyze"
+            if heal_frac > 0:   # 雙持雙吸血 → 0.30 + 0.30×0.6 = 0.48(回血夾在本擊傷害內,不超過造成傷害)
+                heal = min(int(round(dmg_done * heal_frac)), dmg_done)
+                before = attacker.health
+                attacker.health = min(attacker.max_health, attacker.health + heal)
+                lifesteal = int(attacker.health - before)
 
         # 里程碑武器流派「命中附狀態」(震盪一擊=weaken / 卸力擒拿=stagger)+「盾擊踉蹌」
         if _is_player(attacker) and is_alive(defender):
@@ -690,9 +707,9 @@ def try_stealth_retreat(player: Character, enemies: list, rng: RNG) -> bool:
 def stealth_approach_chance(player: Character, enemies: list, gamedata: GameData,
                             night: bool = False, scouted: bool = False, surprise: bool = False) -> float:
     foe_agi = max((e.agility for e in enemies), default=0)
-    armor_class = inventory.dominant_weight_class(player, gamedata)
+    armor_weight = inventory.armor_worn_weight(player, gamedata)
     return formulas.stealth_approach_chance(
-        player.skill("sneak"), foe_agi, len(enemies), armor_class, night, scouted, surprise,
+        player.skill("sneak"), foe_agi, len(enemies), armor_weight, night, scouted, surprise,
         approach_bonus=mastery.approach_bonus(player, gamedata),       # 「無聲潛近」
         armor_relief=mastery.armor_sneak_relief(player, gamedata))     # 「無聲披掛」
 
@@ -718,7 +735,8 @@ def estimate_sneak_damage(player: Character, gamedata: GameData, creature: Creat
         raw *= (formulas.sneak_attack_multiplier(player.skill("sneak"))
                 * formulas.archetype_sneak_bonus(archetype)
                 * formulas.night_mother_sneak_bonus(player.factions.get("dark_brotherhood", -1))
-                * (1 + mastery.sneak_mult_bonus(player, gamedata)))   # 里程碑「影刃」
+                * (1 + mastery.sneak_mult_bonus(player, gamedata))   # 里程碑「影刃」
+                * formulas.armor_sneak_mult_factor(inventory.armor_worn_weight(player, gamedata)))  # 與 resolve_attack 一致:重量倍率折扣
     raw += power_bonus
     if offhand_dmg:    # 副手補刀不吃偷襲倍率(與 resolve_attack 一致)
         raw += formulas.attack_damage(offhand_dmg, wpn_skill, _strength(player), 1.0)

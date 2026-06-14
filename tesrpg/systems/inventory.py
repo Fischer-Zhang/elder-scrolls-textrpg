@@ -322,6 +322,17 @@ def dominant_weight_class(char: Character, gamedata: GameData) -> str | None:
     return "heavy" if counts["heavy"] >= counts["light"] else "light"
 
 
+def armor_worn_weight(char: Character, gamedata: GameData) -> float:
+    """穿戴護甲(含盾)的總重 —— 餵潛行噪音/偷襲倍率的重量懲罰。
+    只計帶 weight_class 的真正甲/盾;飾品(護身符/戒指)與武器不計(無噪音)。"""
+    total = 0.0
+    for i in char.equipped.values():
+        d = gamedata.item(i)
+        if d.get("weight_class"):
+            total += d.get("weight", 0)
+    return total
+
+
 # --- 使用 ---------------------------------------------------------------
 def use_item(char: Character, gamedata: GameData, item_id: str) -> str | None:
     """使用消耗品(目前:藥水)。回傳給玩家的訊息,不可用回傳 None。"""

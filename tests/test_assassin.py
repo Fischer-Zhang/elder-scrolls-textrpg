@@ -257,17 +257,18 @@ def test_stealth_retreat_chance_drops_with_group():
 # --- 入場潛行檢定(B+C+E)----------------------------------------------
 def test_stealth_approach_chance_factors():
     from tesrpg import formulas as F
-    base = F.stealth_approach_chance(70, 40, 1, "light")
-    assert F.stealth_approach_chance(100, 40, 1, "light") > base           # 潛行越高越易
-    assert F.stealth_approach_chance(70, 40, 3, "light") < base            # 敵多更難
-    assert F.stealth_approach_chance(70, 40, 1, "heavy") < base            # E:重甲噪音懲罰
-    assert F.stealth_approach_chance(70, 40, 1, "light", night=True) > base   # 夜間掩護
-    assert F.stealth_approach_chance(70, 40, 1, "light", scouted=True) > base  # B:偵查加成
-    assert F.stealth_approach_chance(70, 40, 1, "light", surprise=True) < base  # C:被伏擊難先機
-    assert 0.05 <= F.stealth_approach_chance(0, 99, 9, "heavy", surprise=True) <= 0.97
+    LIGHT, HEAVY = 7, 28   # 改吃「穿戴總重」:7≈輕甲(舊扁平 light 罰)、28≈重甲(舊扁平 heavy 罰)
+    base = F.stealth_approach_chance(70, 40, 1, LIGHT)
+    assert F.stealth_approach_chance(100, 40, 1, LIGHT) > base           # 潛行越高越易
+    assert F.stealth_approach_chance(70, 40, 3, LIGHT) < base            # 敵多更難
+    assert F.stealth_approach_chance(70, 40, 1, HEAVY) < base            # E:重甲噪音懲罰(重量越大越難)
+    assert F.stealth_approach_chance(70, 40, 1, LIGHT, night=True) > base   # 夜間掩護
+    assert F.stealth_approach_chance(70, 40, 1, LIGHT, scouted=True) > base  # B:偵查加成
+    assert F.stealth_approach_chance(70, 40, 1, LIGHT, surprise=True) < base  # C:被伏擊難先機
+    assert 0.05 <= F.stealth_approach_chance(0, 99, 9, HEAVY, surprise=True) <= 0.97
     # 重甲莽夫幾乎偷不到、輕甲高潛行很可靠
-    assert F.stealth_approach_chance(10, 40, 1, "heavy") < 0.20
-    assert F.stealth_approach_chance(100, 40, 1, "light", night=True) > 0.85
+    assert F.stealth_approach_chance(10, 40, 1, HEAVY) < 0.20
+    assert F.stealth_approach_chance(100, 40, 1, LIGHT, night=True) > 0.85
 
     # combat 包裝層:讀玩家實際穿著的甲種 → 穿上重甲後入場先機下降
     from tesrpg.systems import inventory, stats
@@ -277,6 +278,57 @@ def test_stealth_approach_chance_factors():
     stats.recompute_max_resources(c, gd)
     heavy = combat.stealth_approach_chance(c, [_dummy()], gd)
     assert heavy < light
+
+
+def test_stealth_weight_penalty_continuous_and_cap():
+    """命中端改吃穿戴總重:floor 以下無罰、越重越罰、封頂 0.75(取代舊二元 class)。"""
+    from tesrpg import formulas as F
+    assert F.stealth_weight_penalty(0) == 0.0 and F.stealth_weight_penalty(4) == 0.0   # floor 以下無噪音
+    # 法袍(~5)< 皮甲(~11)< 龍鱗(~18)< 鐵(~27):連續遞增
+    assert (F.stealth_weight_penalty(5) < F.stealth_weight_penalty(11)
+            < F.stealth_weight_penalty(18) < F.stealth_weight_penalty(27))
+    assert F.stealth_weight_penalty(1000) == 0.75            # 封頂
+
+
+def test_armor_sneak_mult_factor_threshold18():
+    """倍率端(方案B):W≤18 不打折(輕甲/龍鱗全保護)、重甲遞減、下限 0.45。"""
+    from tesrpg import formulas as F
+    assert F.armor_sneak_mult_factor(5) == 1.0 and F.armor_sneak_mult_factor(13) == 1.0
+    assert F.armor_sneak_mult_factor(18) == 1.0              # 門檻:龍鱗 W18 仍不打折
+    assert abs(F.armor_sneak_mult_factor(43) - (1 - (43 - 18) * 0.012)) < 1e-9   # 魔族重甲 →×0.70
+    assert F.armor_sneak_mult_factor(20) > F.armor_sneak_mult_factor(30)         # 重甲越重越打折
+    assert F.armor_sneak_mult_factor(1000) == 0.45          # 下限
+
+
+def test_offhand_enchant_applies_at_factor():
+    """副手附魔生效(以 ×0.6 權重疊主手):雙吸血 = 0.30+0.30×0.6 = 0.48;副手元素無視護甲加傷。"""
+    from tesrpg import synth
+    from tesrpg.systems import inventory
+    # (1) 雙吸血 → 回血比例 0.48
+    gd, c = _assassin(sneak=0, weapon="daedric_dagger")
+    vid = synth.enchant_weapon_status_id("daedric_dagger", "vampiric", 0, 0)
+    vid2 = synth.enchant_weapon_status_id("glass_dagger", "vampiric", 0, 0)
+    c.weapon, c.offhand = vid, vid2
+    assert inventory.is_dual_wielding(c, gd)
+    c.max_health, c.health = 9999, 1
+    ev = combat.resolve_attack(c, _dummy(hp=9999, armor=0), gd, RNG(3))
+    assert ev["hit"] and ev["damage"] > 0
+    assert ev["lifesteal"] == min(round(ev["damage"] * 0.48), ev["damage"])
+    # (2) 對照:只主手吸血(副手乾淨)→ 0.30
+    gd2, c2 = _assassin(sneak=0, weapon="daedric_dagger")
+    c2.weapon, c2.offhand = vid, "glass_dagger"
+    c2.max_health, c2.health = 9999, 1
+    ev2 = combat.resolve_attack(c2, _dummy(hp=9999, armor=0), gd2, RNG(3))
+    assert ev2["lifesteal"] == min(round(ev2["damage"] * 0.30), ev2["damage"])
+    # (3) 副手元素附魔:高護甲下凸顯「無視護甲」加傷(同 seed、副手 base 傷相同 → 差額純為 shock 元素)
+    eid = synth.enchant_weapon_id("glass_dagger", "shock", 50)
+    gd3, c3 = _assassin(sneak=0, weapon="daedric_dagger")
+    c3.weapon, c3.offhand = "daedric_dagger", eid
+    ev_e = combat.resolve_attack(c3, _dummy(hp=99999, armor=9999), gd3, RNG(7))
+    gd4, c4 = _assassin(sneak=0, weapon="daedric_dagger")
+    c4.weapon, c4.offhand = "daedric_dagger", "glass_dagger"
+    ev_c = combat.resolve_attack(c4, _dummy(hp=99999, armor=9999), gd4, RNG(7))
+    assert ev_e["damage"] > ev_c["damage"]
 
 
 def test_prep_budget_tiers_and_summon_gate():
