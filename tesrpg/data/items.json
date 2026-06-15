@@ -31,5 +31,6 @@
   "filled_common_soul_gem":  {"name": "普魂石(已充能)", "kind": "soul_gem", "soul": 3, "value": 80, "weight": 0.5},
   "filled_greater_soul_gem": {"name": "上魂石(已充能)", "kind": "soul_gem", "soul": 4, "value": 160, "weight": 0.5},
   "sigil_stone_fragment": {"name": "封印石碎片", "kind": "misc", "value": 0, "weight": 0.1},
-  "mysterium_xarxes": {"name": "魔典·哲思之卷", "kind": "jewelry", "slot": "amulet", "value": 2500, "weight": 0.5, "enchant": {"kind": "fortify_skill", "skill": "conjuration", "magnitude": 15}}
+  "mysterium_xarxes": {"name": "魔典·哲思之卷", "kind": "jewelry", "slot": "amulet", "value": 2500, "weight": 0.5, "enchant": {"kind": "fortify_skill", "skill": "conjuration", "magnitude": 15}},
+  "skeleton_key": {"name": "骷髏鑰匙", "kind": "jewelry", "slot": "amulet", "value": 2000, "weight": 0.3, "skeleton_key": true, "enchant": {"kind": "fortify_skill", "skill": "security", "magnitude": 20}}
 }

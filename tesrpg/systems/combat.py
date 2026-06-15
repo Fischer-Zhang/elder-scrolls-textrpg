@@ -419,6 +419,10 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
             # 武器附魔:額外元素傷害(無視護甲,受對方元素抗性)。獸形以獸爪戰鬥 → 無附魔
             if _is_player(attacker) and not beast:
                 ench = gamedata.item(attacker.weapon).get("enchant")
+                # 嗜血怒擊 berserk:依攻方已損生命比例提傷(滿血=×1 → 開場偷襲不放大);
+                # 乘在物理 dmg、於 solo 偷襲/衝鋒夾限之前 → solo boss 仍受夾、守紅線。
+                if ench and ench.get("kind") == "berserk":
+                    dmg *= formulas.berserk_factor(attacker, ench.get("magnitude", 0))
                 if ench and ench.get("kind") == "weapon_element":
                     em = formulas.resist_multiplier(magic.entity_resist(defender, gamedata), ench["element"])
                     dmg += magic._scaled_damage(ench["magnitude"], em)
@@ -521,7 +525,8 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
                     continue
                 st = hench["status"]
                 if st == "vampiric" and dmg_done > 0:
-                    heal_frac += formulas.WEAPON_VAMPIRIC_FRACTION * w
+                    # 吸血比例:武器 enchant.magnitude(%)優先,缺省回 WEAPON_VAMPIRIC_FRACTION(向後相容 30%)
+                    heal_frac += formulas.vampiric_fraction(hench) * w
                 elif st == "regen":   # self-HoT;以 source 去重(命中刷新不疊加;副手以 ×w 折幅)
                     if not any(e.get("source") == "ench_regen" and e.get("turns", 0) > 0
                                for e in attacker.active_effects):

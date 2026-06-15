@@ -211,8 +211,29 @@ def test_boss_elites_appear_solo():
     assert saw, "高等危險區應曾遇到 solo BOSS"
 
 
+def test_berserk_factor():
+    """嗜血怒擊(維蘇拉德):滿血 ×1.0(開場偷襲不放大)、依已損生命線性提傷、封頂 magnitude%。"""
+    gd, c = _warrior()
+    c.max_health = 100
+    c.health = 100
+    assert formulas.berserk_factor(c, 30) == 1.0                  # 滿血不放大 → solo 偷襲安全
+    c.health = 50
+    assert abs(formulas.berserk_factor(c, 30) - 1.15) < 1e-9      # 半血 +15%
+    c.health = 1
+    assert formulas.berserk_factor(c, 30) <= 1.30 + 1e-9          # 瀕死封頂 +30%
+
+
+def test_vampiric_fraction():
+    """吸血比例:武器 enchant.magnitude(%)優先(悲傷之刃 50),缺省回 30%(向後相容)。"""
+    assert formulas.vampiric_fraction({"magnitude": 50}) == 0.5
+    assert formulas.vampiric_fraction({"status": "vampiric"}) == formulas.WEAPON_VAMPIRIC_FRACTION
+    assert formulas.vampiric_fraction(None) == formulas.WEAPON_VAMPIRIC_FRACTION
+
+
 def run():
     test_formulas_monotonic()
+    test_berserk_factor()
+    test_vampiric_fraction()
     test_starter_weapon_assigned()
     test_player_beats_weak_creature_and_trains()
     test_sneak_attack_multiplies_damage()

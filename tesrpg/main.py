@@ -1292,7 +1292,7 @@ def _resolve_container(state: GameState, gamedata: GameData, container: dict, la
     lock = container.get("locked", 0)
     if lock > 0:
         picks = inventory.count_item(state.player, "lockpick")
-        if picks <= 0 and not state.player.tower_key_charge:
+        if picks <= 0 and not state.player.tower_key_charge and not dungeon.has_skeleton_key(state.player, gamedata):
             ui.message(f"這個{label}上了鎖,而你沒有開鎖器 —— 撬不開(城鎮可買開鎖器)。", style="grey70")
             return
         ch = dungeon.effective_pick_lock_chance(state.player, gamedata, lock)
@@ -1306,7 +1306,8 @@ def _resolve_container(state: GameState, gamedata: GameData, container: dict, la
                 ui.message("你的開鎖器用盡了,只得作罷(城鎮可補開鎖器)。", style="yellow")
                 return
             if r["success"]:
-                ui.message("塔之鑰應驗,鎖無聲而開。" if r.get("tower_key")
+                ui.message("骷髏鑰匙輕輕一轉,任何鎖都形同虛設。" if r.get("skeleton_key")
+                           else "塔之鑰應驗,鎖無聲而開。" if r.get("tower_key")
                            else "喀噠 —— 鎖開了!(用掉一根開鎖器)", style="green")
                 break
             broke = "(折斷了一根開鎖器)" if r.get("broke_pick") else ""

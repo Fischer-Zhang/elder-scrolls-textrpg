@@ -237,6 +237,21 @@ def test_run_battle_carry_allies_not_persisted():
     assert c.companion_hp == {} and c.companions == []                 # 召喚物未寫入持久同伴
 
 
+def test_skeleton_key_perfect_lockpick():
+    """骷髏鑰匙(盜賊掌門神器):撬鎖必成、不耗開鎖器、刻意不給 security xp(防免費刷技能)。"""
+    from tesrpg.systems import dungeon
+    gd, c, st = _char()
+    c.skills["security"] = 0
+    assert not dungeon.has_skeleton_key(c, gd)
+    c.equipped["amulet"] = "skeleton_key"
+    assert dungeon.has_skeleton_key(c, gd)
+    assert dungeon.effective_pick_lock_chance(c, gd, 80) == 1.0          # 高難度鎖亦 100%
+    sec0 = c.base_skill("security")
+    r = dungeon.pick_lock(c, gd, 80, st.rng)                            # 無開鎖器仍成功
+    assert r["success"] and r.get("skeleton_key") and not r["no_pick"]
+    assert c.base_skill("security") == sec0                             # 不給 xp(非親手習得)
+
+
 def run():
     for name, fn in sorted(globals().items()):
         if name.startswith("test_") and callable(fn):

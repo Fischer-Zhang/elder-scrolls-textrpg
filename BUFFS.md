@@ -66,9 +66,10 @@
 | fortify_resource | 資源上限 | 飾品×3.0→12→18;護甲版 armor_fortify→13→19 | enchj/encha | 護甲版額外經 armor_fortify_totals 餵 recompute;進有效上限(R05) |
 | resist_element | 抗性 | 飾品×5.0→20%→30%(下限2);護甲×4.0→16%→24% | enchj/encha | 聚合相加;100%=免疫,負值=弱點放大(最高2×) |
 | weapon_element | 傷害 | ×3.0→13→19;fire/frost/shock | enchw | 🔴**無視物理護甲**、吃元素抗;加在偷襲夾限**之前** |
-| weapon vampiric | 續航回復 | ★傷害×0.30 回血(雙持 0.48);命中必觸發 | enchws | 主+副(×0.6)累計一次回血;夾本擊 dmg 內 |
+| weapon vampiric | 續航回復 | ★傷害×0.30 回血(雙持 0.48);**enchant.magnitude(%)可覆寫**(悲傷之刃 50);命中必觸發 | enchws | 主+副(×0.6)累計一次回血;夾本擊 dmg 內 |
 | weapon paralyze | 控場 | proc 10%、turns=1(mag固定0) | enchws | 🔴**solo boss 免疫**(R15);主/副各擲 |
 | weapon regen | 續航回復 | ×1.5→7、turns=3 HoT(副手×0.6) | enchws | source 去重(主手優先,命中刷新不疊) |
+| weapon berserk | 傷害 | ★依攻方**已損生命**比例提傷,封頂 magnitude%(維蘇拉德 30);**滿血=×1**(開場偷襲不放大) | enchw(berserk) | 乘物理 dmg、在 solo 偷襲/衝鋒夾限**之前** → solo 受夾 |
 
 > 餵 char.skill()/char.attr() 而非 base → 絕不回饋成長門檻;改 equipped 後必 recompute_max_resources(帶 gamedata)。
 
@@ -100,6 +101,13 @@
 | 黎明之牙 dawnfang | 傷害 | weapon_element fire +28(★全遊戲最高之一,無視護甲);本體 dmg24 sword |
 | 魔銳茲之刃 mehrunes_razor | 傷害 | weapon_element shock +25;dmg16 dagger speed1.5(偷襲流主力,可雙持) |
 | 魔典·哲思之卷 mysterium_xarxes | 技能 | conjuration +15(amulet) |
+| 焚天劍 skyburner | 傷害 | weapon_element fire +26;dmg23 sword(龍喉巢穴專屬,單一來源不可刷) |
+| 百戰勳刃 valor_blade | 傷害+續航 | regen 3×3 HoT;dmg22 sword(★戰士公會掌門) |
+| 馬格努斯之杖 staff_of_magnus | 傷害 | weapon_element shock +26;dmg11 staff(★法師公會掌門) |
+| 骷髏鑰匙 skeleton_key | 技能+效用 | security +20 + 撬鎖必成/不耗開鎖器(amulet;★盜賊公會掌門) |
+| 悲傷之刃 blade_of_woe | 續航 | vampiric 吸血 50%;dmg16 dagger(★黑暗兄弟會掌門) |
+| 十字軍聖盾 crusaders_ward | 抗性 | resist magic +30%;armor 16(heavy shield;★九神騎士團掌門) |
+| 維蘇拉德 wuuthrad | 傷害 | berserk 最高 +30%(依已損生命);dmg23 war_axe(★戰友團掌門) |
 
 ---
 

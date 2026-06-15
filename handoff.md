@@ -742,10 +742,12 @@ tesrpg/
 - **裝備加成(穿戴附魔/套裝)**:`skill()/attr()` 已疊加 `equip_*_bonus`,但**成長/夾限務必用 `base_skill()/base_attr()`**(progression 已改;否則飾品加成會被寫進 base 永久殘留)。
   任何改 `char.equipped`(穿/卸/戴/丟/賣)後都要 `stats.recompute_max_resources(char, gamedata)`(其開頭會跑 `recompute_equipment`)。飾品在 `ring1/ring2/amulet` 槽,卸下要用 `_equipped_slot_of` 找真實槽(別用 `d["slot"]`)。
   附魔載體:護甲=`encha`(res→`armor_fortify` 資源 / skill→`fortify_skill` / resist→`resist_element`;**res 務必保留 `armor_fortify` 鍵**否則漏出 `armor_fortify_totals`)、飾品=`enchj` 四型別;武器元素=`enchw`、武器命中狀態=`enchws`(吸血/麻痺/再生,`combat.resolve_attack` 傷害結算後的 `weapon_status` hook、**玩家專屬**)。**`synth` id 改格式務必保段數向後相容**(encha 4↔5 段、enchw 不動)。**武器麻痺 solo boss 免疫是硬性反鎖王紅線**(`_is_solo` gate,改 proc/turns/免疫務必重跑 sim + 400 擊 boss 免疫測)。調附魔平衡:`formulas.WEAPON_VAMPIRIC_FRACTION`/`WEAPON_PARALYZE_PROC`、`enchanting.armor_magnitude`/`jewelry_magnitude` factor。新套裝/飾品/法杖純改 JSON(`armor_sets.json` / `items.json` / `weapons.json`)。
+- 🔴 **可調吸血 + berserk(公會神器引入)**:吸血比例可由武器 `enchant.magnitude`(%)覆寫(`formulas.vampiric_fraction`,缺省 `WEAPON_VAMPIRIC_FRACTION` 30%;悲傷之刃 50)。新武器附魔 kind `berserk`(`formulas.berserk_factor`:依攻方**已損生命**比例提傷、封頂 magnitude%;**滿血=×1 → 開場偷襲不放大**、乘在物理 dmg 於 solo 偷襲/衝鋒夾限**之前** → solo 仍受夾;維蘇拉德 magnitude30)。**改 berserk/vampiric 必跑 `sim_assassin`**(已驗 solo boss 0% 秒殺、群戰反制不退化)。
 ### R16 · 公會(深度化)
 
 - **公會(深度化)**:入會/晉升規則全在 `systems/factions.py`(`join_block_reason`/`advance_block_reason`/perk),資料在 `factions.json`(`gate_skills`/`join_skill`/`rank_skill_req`/`rivals`/`lawful`/`perk`)——**加門檻/福利/對立純改 JSON**。
   晉升技能門檻由 `quests.available_quests`(guild)強制;perk 接在 `world.sell_price` + `action_repair`/`action_spell_vendor`。**分支任務**:頂層放 `branches`(各含自足的 `stages`+`reward`,**勿**再放頂層 objective/stages,否則 `_stages` 會誤取),`char.quests[qid]["branch"]` 存選擇、`_advance` 推進階段時務必**保留 branch**。
+- 🔴 **掌門專屬神器(6 持久公會,使用者拍板)**:登頂(完成壓軸晉升任務)必得該會招牌神器 —— 戰士 `valor_blade`(百戰勳刃·regen)/法師 `staff_of_magnus`(馬格努斯之杖·shock26)/盜賊 `skeleton_key`(骷髏鑰匙·完美開鎖)/黑兄 `blade_of_woe`(悲傷之刃·吸血50)/九神 `crusaders_ward`(十字軍聖盾·抗魔30)/戰友團 `wuuthrad`(維蘇拉德·berserk)。神話黎明**排除**(末世密教,獎勵走 md7 達貢之力)。**授予=純改該壓軸 quest 的兩條 branch `reward.items`(必兩 branch 都加,否則某路線拿不到)+ 物品 JSON**;`test_guildmaster_artifacts` 守。骷髏鑰匙=`skeleton_key:true` 旗標(`dungeon.has_skeleton_key` 掃 equipped)→ 撬鎖必成、不耗開鎖器、**刻意不給 security xp**(防免費刷)。
 ### R17 · AoE / 狀態(獨立 dict)
 
 - **AoE/狀態**:每個敵人各自 `make_status_effect(...)` 取**獨立 dict**(切勿共用同一個 → 會別名汙染計時)。
