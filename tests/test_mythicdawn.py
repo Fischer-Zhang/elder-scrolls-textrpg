@@ -129,6 +129,30 @@ def test_summon_boon_strengthens_ally():
     assert ally1.summon_turns == 6 + int(0.6 * 3)        # +1 回合
 
 
+def test_recruitment_uses_lightweight_acolyte():
+    """阿留斯湖招募遭遇改用輕量『赤袍信徒』(非終局 mythic_apostate);apostate 仍守 dawn_sanctum、未被削。"""
+    import tesrpg.main as M
+    from tesrpg.ui import console as ui
+    gd, st = _state(world_events_fired=[UNLOCK])
+    st.player.location_id = "lake_arrius_caverns"
+    cap = {}
+    saved = (M.offer_battle, M.maybe_event, ui.message, st.rng.chance)
+    M.offer_battle = lambda state, gd_, enemies, **kw: cap.update(names=[e.name for e in enemies], kw=kw)
+    M.maybe_event = lambda *a, **k: None
+    ui.message = lambda *a, **k: None
+    st.rng.chance = lambda p: True                       # 強制 50% 招募遭遇觸發
+    try:
+        M.action_explore(st, gd)
+    finally:
+        M.offer_battle, M.maybe_event, ui.message, st.rng.chance = saved
+    assert cap.get("names") == ["赤袍信徒", "赤袍信徒"], cap   # 輕量招募者 ×2,非終局精英
+    assert cap["kw"].get("recruit") == "mythic_dawn"
+    # apostate 未被動、仍守終局聖殿 → dawn_sanctum 難度不受影響
+    assert gd.bestiary["mythic_apostate"]["max_health"] == 140
+    assert "mythic_apostate" in gd.dungeons["dawn_sanctum"]["monsters"]
+    assert gd.bestiary["mythic_dawn_acolyte"]["max_health"] < gd.bestiary["mythic_apostate"]["max_health"]
+
+
 def run():
     for name, fn in sorted(globals().items()):
         if name.startswith("test_") and callable(fn):

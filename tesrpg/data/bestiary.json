@@ -846,6 +846,17 @@
     "loot": [{"item": "glass_dagger", "chance": 0.4}, {"item": "filled_greater_soul_gem", "chance": 0.3}],
     "flavor": "一名對達貢的恩典生了疑的信徒,深諳聖堂的祕辛 —— 他知道你為何而來,絕不會束手就擒。"
   },
+  "mythic_dawn_acolyte": {
+    "name": "赤袍信徒", "strength": 38, "agility": 46, "speed": 46,
+    "max_health": 50, "armor_rating": 8,
+    "attack": {"name": "赤袍短刃", "damage": 13, "skill": 46,
+               "on_hit": {"status": "dot", "element": "poison", "magnitude": 3, "turns": 2, "chance": 0.3}},
+    "danger": 3, "min_level": 99, "weight": 0,
+    "resist": {"fire": 15},
+    "loot_gold": [20, 50],
+    "loot": [{"item": "lockpick", "chance": 0.3}, {"item": "minor_healing_potion", "chance": 0.25}],
+    "flavor": "湖畔現身的赤袍招募者,眼神狂熱而堅定 —— 達貢的福音在他口中,刀刃藏在袖底。"
+  },
   "dawn_mentor": {
     "name": "黎明導師", "strength": 50, "agility": 54, "speed": 52,
     "max_health": 165, "armor_rating": 16,

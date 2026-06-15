@@ -1204,7 +1204,7 @@ def action_explore(state: GameState, gamedata: GameData) -> str | None:
             and not factions.is_member(player, "mythic_dawn")
             and factions.join_block_reason(player, gamedata, "mythic_dawn") is None
             and state.rng.chance(0.5)):
-        cultists = [combat.spawn_creature(gamedata, "mythic_apostate", state.rng) for _ in range(2)]
+        cultists = [combat.spawn_creature(gamedata, "mythic_dawn_acolyte", state.rng) for _ in range(2)]
         ui.message("湖畔陰影裡走出幾名赤袍人 —— 神話黎明的信徒,正不動聲色地打量著你。", style="red")
         return offer_battle(state, gamedata, cultists, recruit="mythic_dawn", mounted=True)
     danger = world.current_location(player, gamedata).get("danger", 1)
