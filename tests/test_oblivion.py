@@ -122,6 +122,29 @@ def test_content_integrity():
     assert len(cyr) == 9 and {"bravil", "chorrol", "leyawiin"} <= set(cyr)
 
 
+def test_oblivion_gate_visibility():
+    """湮滅之門逐門開合:開局全隱、kvatch_falls 開第一道、清掉就閉、下一道開;
+    死亡之地要破祭壇才現;神殿要入會;危機落幕全消;隱藏地點會把玩家拋回最近的城。"""
+    from tesrpg.systems import world
+    gd, c = _gd_char()
+    gates = ["kvatch_gate", "bravil_gate", "dagon_shrine", "the_deadlands", "dawn_sanctum"]
+    assert all(not world.is_visible(c, gd, g) for g in gates)                  # 開局全隱
+    c.world_events_fired.append("kvatch_falls")
+    assert world.is_visible(c, gd, "kvatch_gate") and not world.is_visible(c, gd, "bravil_gate")
+    c.cleared_dungeons.append("kvatch_gate")
+    assert not world.is_visible(c, gd, "kvatch_gate") and world.is_visible(c, gd, "bravil_gate")
+    c.cleared_dungeons += ["bravil_gate", "dagon_shrine"]
+    assert world.is_visible(c, gd, "the_deadlands")                            # 破祭壇→死亡之地裂開
+    assert not world.is_visible(c, gd, "dawn_sanctum")                         # 神殿仍須入會
+    c.factions["mythic_dawn"] = 0
+    assert world.is_visible(c, gd, "dawn_sanctum")
+    c.world_events_fired.append("oblivion_crisis_ended")
+    assert all(not world.is_visible(c, gd, g) for g in gates)                  # 危機落幕全消
+    c.location_id = "the_deadlands"                                            # 站在崩合的地城裡
+    dest = world.relocate_target(c, gd)
+    assert gd.world["locations"][dest]["type"] in ("city", "town") and world.is_visible(c, gd, dest)
+
+
 def run():
     for name, fn in sorted(globals().items()):
         if name.startswith("test_") and callable(fn):

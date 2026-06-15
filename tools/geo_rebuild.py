@@ -250,6 +250,23 @@ if "helgen" not in L:
                                       "leather_cuirass", "iron_shield", "hunting_bow", "repair_hammer", "ruby"]}
 GEO["天際"]["helgen"] = (0.36, 0.94, ["falkreath_wood", "whiterun"])
 
+# --- 阿留斯湖洞窟(神話黎明招募點;切迪納東北)+ 湮滅之門逐門可見性 ----------
+GEO["賽羅迪爾"]["lake_arrius_caverns"] = (0.90, 0.12, ["cheydinhal", "jerall_mountains"])
+if "lake_arrius_caverns" not in L:
+    L["lake_arrius_caverns"] = {"biome": "heartland", "name": "阿留斯湖洞窟", "province": "賽羅迪爾",
+        "type": "wilderness", "danger": 3,
+        "desc": "切迪納東北、傑拉山麓間的湖畔洞窟 —— 人跡罕至,近來卻有赤袍人影在湖畔出沒。", "services": []}
+# 5 個湮滅地城的出現/消失條件(world.is_visible 解讀;不在開局出現、終局消失)
+VISIBLE = {
+    "kvatch_gate": {"after_event": "kvatch_falls", "until_cleared": "kvatch_gate"},
+    "bravil_gate": {"after_cleared": "kvatch_gate", "until_cleared": "bravil_gate"},
+    "dagon_shrine": {"after_cleared": "bravil_gate", "until_event": "oblivion_crisis_ended"},
+    "the_deadlands": {"after_cleared": "dagon_shrine", "until_event": "oblivion_crisis_ended"},
+    "dawn_sanctum": {"after_faction": ["mythic_dawn", 0], "until_event": "oblivion_crisis_ended"},
+}
+for _did, _vis in VISIBLE.items():
+    L[_did]["visible"] = _vis
+
 # --- 座標:fx,fy → box 格座標,全域唯一 ---------------------------------
 pos = {}
 used = set()
@@ -331,7 +348,7 @@ assert not cross, f"跨省直連:{cross}"
 
 # --- 重發 world.json(locations 單行,保留其餘欄位)---------------------
 FIELD = ["biome", "name", "province", "pos", "type", "danger", "desc",
-         "services", "merchant_stock", "spell_stock", "dungeon", "links"]
+         "services", "merchant_stock", "spell_stock", "dungeon", "visible", "links"]
 def emit(lid):
     e = dict(L[lid]); e["pos"] = pos[lid]; e["links"] = links[lid]
     o = {k: e[k] for k in FIELD if k in e} | {k: v for k, v in e.items() if k not in FIELD}

@@ -18,10 +18,50 @@ def current_location(char: Character, gamedata: GameData) -> dict:
     return gamedata.location(char.location_id)
 
 
+def is_visible(char: Character, gamedata: GameData, loc_id: str) -> bool:
+    """地點是否對玩家可見/可達。無 `visible` 欄=恆可見;有則對 world_events_fired /
+    cleared_dungeons / factions 做 AND 判定(湮滅之門逐門開合、神殿入會後解鎖)。"""
+    vis = gamedata.world["locations"].get(loc_id, {}).get("visible")
+    if not vis:
+        return True
+    fired = getattr(char, "world_events_fired", [])
+    cleared = getattr(char, "cleared_dungeons", [])
+    if vis.get("after_event") and vis["after_event"] not in fired:
+        return False
+    if vis.get("after_cleared") and vis["after_cleared"] not in cleared:
+        return False
+    if "after_faction" in vis:
+        fac, rank = vis["after_faction"]
+        if char.factions.get(fac, -1) < rank:
+            return False
+    if vis.get("until_event") and vis["until_event"] in fired:
+        return False
+    if vis.get("until_cleared") and vis["until_cleared"] in cleared:
+        return False
+    return True
+
+
+def relocate_target(char: Character, gamedata: GameData) -> str:
+    """所在地變不可見時的去處:沿 links BFS 找最近的可見城/鎮;無則回起始地。"""
+    locs = gamedata.world["locations"]
+    seen = {char.location_id}
+    frontier = [char.location_id]
+    while frontier:
+        cur = frontier.pop(0)
+        for d in locs[cur].get("links", {}):
+            if d in seen:
+                continue
+            seen.add(d)
+            if locs[d]["type"] in ("city", "town") and is_visible(char, gamedata, d):
+                return d
+            frontier.append(d)
+    return gamedata.world["start_location"]
+
+
 def travel_options(char: Character, gamedata: GameData) -> list[tuple[str, int]]:
-    """回傳 [(目的地 id, 旅行時數), ...]。"""
+    """回傳 [(目的地 id, 旅行時數), ...];隱藏地點(湮滅之門未開/已閉、神殿未解鎖)不列。"""
     loc = current_location(char, gamedata)
-    return list(loc.get("links", {}).items())
+    return [(d, h) for d, h in loc.get("links", {}).items() if is_visible(char, gamedata, d)]
 
 
 def encounter_chance(dest_danger: int, hour: int) -> float:

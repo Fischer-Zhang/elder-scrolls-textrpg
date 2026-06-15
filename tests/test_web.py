@@ -298,11 +298,14 @@ def test_view_model_shapes():
     for p in mv["provinces"]:
         assert isinstance(p["visited"], int) and isinstance(p["total"], int)
         assert 0 <= p["visited"] <= p["total"] == len(p["nodes"])
-    # --- 相對位置地圖 grid:cols/rows + 每地點帶 id/pos(界內);節點數 == 地點數 ---
+    # --- 相對位置地圖 grid:cols/rows + 每地點帶 id/pos(界內);節點數 == 可見地點數 ---
+    from tesrpg.systems import world as _world
     g = mv["grid"]
     cols, rows = g["cols"], g["rows"]
     assert cols == gd.world["map"]["cols"] and rows == gd.world["map"]["rows"]
-    assert len(g["nodes"]) == len(gd.world["locations"])
+    visible_n = sum(1 for lid in gd.world["locations"] if _world.is_visible(c, gd, lid))
+    assert len(g["nodes"]) == visible_n          # 隱藏的湮滅之門不上圖(開局未開)
+    assert len(g["nodes"]) < len(gd.world["locations"])   # 開局確實有隱藏地點(湮滅之門/神殿)
     ids = set()
     for n in g["nodes"]:
         assert n["id"] in gd.world["locations"]

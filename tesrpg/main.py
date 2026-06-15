@@ -3555,6 +3555,12 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
             ui.rule("天下大勢")
             ui.message(ev["news"], style="bold magenta")
 
+        # 湮滅之門逐門開合:所在地若已不可見(如殺達貢、危機落幕後死亡之地崩合),拋回最近的城
+        if not world.is_visible(state.player, gamedata, state.player.location_id):
+            _dest = world.relocate_target(state.player, gamedata)
+            state.player.location_id = _dest
+            ui.message(f"身後的裂隙轟然崩合 —— 你被拋回{gamedata.location(_dest)['name']}。", style="yellow")
+
         # AI 陣營自走戰爭(階段五):NPC 互吞中立/互翻彼此城 + 反攻你的領地(在 tick_tax 前 → 本圈即結算失守)
         for ev in aiwar.update(state, gamedata):
             if ev["kind"] == "flip":

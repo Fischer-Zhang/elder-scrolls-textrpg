@@ -166,7 +166,7 @@ def _status_view(state: GameState) -> dict:
 
 
 def _location_view(char: Character, gamedata: GameData, brief: bool = False) -> dict:
-    from tesrpg.systems import landmarks, politics
+    from tesrpg.systems import landmarks, politics, world
     loc = gamedata.location(char.location_id)
     v = {"name": loc["name"], "province": loc["province"],
          "type": LOC_TYPE_NAME.get(loc["type"], loc["type"]), "danger": loc.get("danger", 0),
@@ -181,6 +181,8 @@ def _location_view(char: Character, gamedata: GameData, brief: bool = False) -> 
         v["faction"] = politics.stance_label(politics.faction_of(char, gamedata, char.location_id))
         v["bloc"] = ruler.get("bloc_label")
     for d, h in loc.get("links", {}).items():
+        if not world.is_visible(char, gamedata, d):   # 隱藏地點(湮滅之門未開/已閉)不列為出口
+            continue
         v["exits"].append({"name": gamedata.location(d)["name"], "hours": h, "key": "go:" + d})
     return v
 
@@ -502,8 +504,9 @@ def _territory_view(rows, gamedata, gold) -> dict:
 
 
 def _map_view(char: Character, gamedata: GameData) -> dict:
-    from tesrpg.systems import landmarks, politics
+    from tesrpg.systems import landmarks, politics, world
     locs = gamedata.world["locations"]
+    vis = {lid for lid in locs if world.is_visible(char, gamedata, lid)}   # 隱藏地點不上圖
     by_prov: dict[str, list[str]] = {}
     order: list[str] = []
     for lid, loc in locs.items():
@@ -521,7 +524,8 @@ def _map_view(char: Character, gamedata: GameData) -> dict:
     for prov in order:
         nodes = []
         visited_n = 0
-        for lid in by_prov[prov]:
+        prov_ids = [lid for lid in by_prov[prov] if lid in vis]
+        for lid in prov_ids:
             loc = locs[lid]
             here = lid == char.location_id
             visited = lid in char.visited_locations
@@ -535,20 +539,22 @@ def _map_view(char: Character, gamedata: GameData) -> dict:
                           "here": here, "visited": visited,
                           "danger": loc.get("danger", 0), "faction": fac, "landmark": lm,
                           "services": [_SERVICE_CN[s] for s in loc.get("services", []) if s in _SERVICE_CN],
-                          "exits": [{"name": locs[d]["name"], "hours": h} for d, h in loc.get("links", {}).items()]})
+                          "exits": [{"name": locs[d]["name"], "hours": h} for d, h in loc.get("links", {}).items() if d in vis]})
             grid_nodes.append({"id": lid, "name": loc["name"], "pos": loc.get("pos", [0, 0]),
                                "type": loc["type"], "type_cn": LOC_TYPE_NAME.get(loc["type"], ""),
                                "here": here, "visited": visited, "danger": loc.get("danger", 0),
                                "province": prov, "faction": fac, "landmark": lm,
                                "svc": [_SVC_SHOW[s] for s in loc.get("services", []) if s in _SVC_SHOW]})
         provs.append({"name": prov, "nodes": nodes,
-                      "visited": visited_n, "total": len(by_prov[prov])})
+                      "visited": visited_n, "total": len(prov_ids)})
     seen_e: set = set()      # 無向去重的連線(供地圖畫路徑 + 標時長)
     edges = []
     for lid, loc in locs.items():
+        if lid not in vis:
+            continue
         for dest, h in loc.get("links", {}).items():
             key = frozenset((lid, dest))
-            if key in seen_e or dest not in locs:
+            if key in seen_e or dest not in vis:
                 continue
             seen_e.add(key)
             edges.append({"a": lid, "b": dest, "h": h})
