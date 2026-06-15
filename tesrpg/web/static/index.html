@@ -232,6 +232,7 @@
   .mmark.here{color:var(--gold);font-weight:700;z-index:5;text-shadow:0 0 7px var(--gold-soft);}
   .mmark.d1{color:#e0c074;} .mmark.d2{color:#ecac4a;} .mmark.d4{color:#ee6f62;}
   .mmark.border{color:#5fc6d8;}   /* 邊境=省界通道,專屬青色 */
+  .mmark.wild{font-size:20px;}    /* 荒野原本 · 太小,放大成清楚的圓點 */
   .mmark.sel{text-shadow:0 0 8px var(--gold-soft);}
   .mlabel{position:absolute;top:100%;left:50%;transform:translateX(-50%);margin-top:1px;font-size:9px;line-height:1;white-space:nowrap;color:var(--ink);text-shadow:0 0 3px #000,0 0 2px #000,0 0 2px #000;display:none;pointer-events:none;}
   .mhour{position:absolute;transform:translate(-50%,-50%);font-size:9px;color:var(--gold);z-index:2;pointer-events:none;display:none;text-shadow:0 0 3px #000,0 0 2px #000,0 0 2px #000;}
@@ -479,7 +480,7 @@
   function renderMap(d) {
     // 相對位置地圖:依 pos 座標繪製(連線=相鄰路徑);滑鼠滾輪縮放 + 拖曳平移;放大/行省檢視顯示地名與路徑時長;點 marker 看設施
     const g = d.grid || { cols: 40, rows: 24, nodes: [], edges: [] };
-    const ICON = { city: "◆", town: "◇", dungeon: "✦", wilderness: "·" };
+    const ICON = { city: "◆", town: "◇", dungeon: "✦", wilderness: "•" };
     const byId = {}; g.nodes.forEach(function (n) { byId[n.id] = n; });
     // 每個邊境節點通往的「對面省」集合(供行省檢視標 →目的省)
     const borderTo = {};
@@ -523,8 +524,8 @@
         const p = P(n, cmin, rmin, cspan, rspan);
         const border = n.province === "邊境";
         const dg = n.danger >= 4 ? " d4" : (n.danger >= 2 ? " d2" : (n.danger >= 1 ? " d1" : ""));
-        const cls = (n.here ? "here" : (n.visited ? "vis" : "unseen")) + (border ? " border" : "");
-        const glyph = n.here ? "★" : (border ? "◈" : (ICON[n.type] || "·"));   // 邊境=通道專屬圖示
+        const cls = (n.here ? "here" : (n.visited ? "vis" : "unseen")) + (border ? " border" : (n.type === "wilderness" ? " wild" : ""));
+        const glyph = n.here ? "★" : (border ? "◈" : (ICON[n.type] || "•"));   // 邊境=通道專屬圖示
         // 標籤:城/鎮=地名;邊境=地名(行省檢視再加「→目的省」);其餘不標(避免疊字)
         let lbl = "";
         if (border) {
@@ -552,7 +553,7 @@
       `<div class="mzbar">${btns}</div>` +
       `<div class="mapstage" style="aspect-ratio:${g.cols}/${g.rows}"><div class="mapzoom"></div></div>` +
       `<div class="mapinfo"></div>` +
-      `<div class="maplegend">★所在 ◆城 ◇鎮 ✦地城 ·荒野 <span style="color:#5fc6d8">◈通道</span> · <span style="color:#5fc6d8">青線=跨省路徑</span> · 黃→紅=危險度 · 滾輪縮放、拖曳平移</div></div>`);
+      `<div class="maplegend">★所在 ◆城 ◇鎮 ✦地城 •荒野 <span style="color:#5fc6d8">◈通道</span> · <span style="color:#5fc6d8">青線=跨省路徑</span> · 黃→紅=危險度 · 滾輪縮放、拖曳平移</div></div>`);
     const stage = el.querySelector(".mapstage"), zoom = el.querySelector(".mapzoom"), info = el.querySelector(".mapinfo");
     let scale = 1, tx = 0, ty = 0, drag = null, moved = false;
     function clampPan() {
