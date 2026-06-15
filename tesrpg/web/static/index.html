@@ -485,7 +485,13 @@
     function draw(zoom, prov) {
       let nodes = g.nodes, cmin = 0, rmin = 0, cspan = g.cols - 1, rspan = g.rows - 1;
       if (prov) {
-        nodes = g.nodes.filter(function (n) { return n.province === prov; });
+        const inProv = {}; g.nodes.forEach(function (n) { if (n.province === prov) inProv[n.id] = true; });
+        const show = Object.assign({}, inProv);
+        (g.edges || []).forEach(function (e2) {       // 鄰接邊境:邊接該省的邊境節點也納入(出省口)
+          if (byId[e2.a].province === "邊境" && inProv[e2.b]) show[e2.a] = true;
+          if (byId[e2.b].province === "邊境" && inProv[e2.a]) show[e2.b] = true;
+        });
+        nodes = g.nodes.filter(function (n) { return show[n.id]; });
         let a = 1e9, b = -1e9, c = 1e9, e = -1e9;
         nodes.forEach(function (n) { a = Math.min(a, n.pos[0]); b = Math.max(b, n.pos[0]); c = Math.min(c, n.pos[1]); e = Math.max(e, n.pos[1]); });
         const pc = Math.max(1, (b - a) * 0.14), pr = Math.max(1, (e - c) * 0.14);
@@ -522,7 +528,8 @@
       info.innerHTML = `${here}<b>${esc(n.name)}</b><span class="mi-type">·${esc(n.type_cn)}</span>${dg} ${svc}`;
     }
     const btns = `<button class="mzb active" data-prov="">總覽</button>` +
-      d.provinces.map(function (p) { return `<button class="mzb" data-prov="${esc(p.name)}">${esc(p.name)}</button>`; }).join("");
+      d.provinces.filter(function (p) { return p.name !== "邊境"; })   // 邊境不再獨立成檢視,改由各鄰省帶出
+        .map(function (p) { return `<button class="mzb" data-prov="${esc(p.name)}">${esc(p.name)}</button>`; }).join("");
     const el = elFrom(`<div class="card"><div class="card-head">🗺 世界地圖</div>` +
       `<div class="mzbar">${btns}</div>` +
       `<div class="mapstage" style="aspect-ratio:${g.cols}/${g.rows}"><div class="mapzoom"></div></div>` +
