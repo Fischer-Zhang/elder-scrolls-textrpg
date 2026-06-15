@@ -122,6 +122,28 @@ def test_content_integrity():
     assert len(cyr) == 9 and {"bravil", "chorrol", "leyawiin"} <= set(cyr)
 
 
+def test_ending_artifact_split():
+    """結局神器分流(使用者拍板,各結局獨佔):
+    正道 = crusaders_aegis + dawnfang(黎明之牙);教徒 = mysterium_xarxes + mehrunes_razor(+達貢之力)。
+    dawnfang 僅正道側(reward + 寶藏 + 滿血達貢 bestiary)、mehrunes_razor 僅教徒側(reward + 寶藏)。"""
+    gd, _ = _gd_char()
+    assert "dawnfang" in gd.weapons and "mehrunes_razor" in gd.weapons   # 兩件神器皆有定義
+    # 正道結局:dawnfang 在(reward / 寶藏 / 滿血達貢 bestiary),mehrunes_razor 不在
+    good_items = gd.quests["main_oblivion"]["reward"]["items"]
+    good_loot = gd.dungeons["the_deadlands"]["boss"]["treasure"]["loot"]
+    dagon_loot = [d["item"] for d in gd.bestiary["mehrunes_dagon"]["loot"]]
+    assert "dawnfang" in good_items and "dawnfang" in good_loot and "dawnfang" in dagon_loot
+    assert "mehrunes_razor" not in good_items and "mehrunes_razor" not in good_loot
+    assert "mehrunes_razor" not in dagon_loot
+    # 教徒結局:mehrunes_razor 在(reward / 寶藏),dawnfang 不在;沿 mysterium 慣例不入 bestiary
+    cult_items = gd.quests["md7"]["reward"]["items"]
+    cult_loot = gd.dungeons["dawn_sanctum"]["boss"]["treasure"]["loot"]
+    dim_loot = [d["item"] for d in gd.bestiary["mehrunes_dagon_diminished"]["loot"]]
+    assert "mehrunes_razor" in cult_items and "mehrunes_razor" in cult_loot
+    assert "dawnfang" not in cult_items and "dawnfang" not in cult_loot
+    assert "mehrunes_razor" not in dim_loot
+
+
 def test_oblivion_gate_visibility():
     """湮滅之門逐門開合:開局全隱、kvatch_falls 開第一道、清掉就閉、下一道開;
     死亡之地要破祭壇才現;神殿要入會;危機落幕全消;隱藏地點會把玩家拋回最近的城。"""

@@ -2129,11 +2129,14 @@ _KNIGHTS_NINE_VERSES = [
 
 
 def _contract_hall(state: GameState, gamedata: GameData, faction_id: str, *,
-                   stealth: bool, join_prompt: str, join_success: str, title: str,
+                   stealth: bool, title: str,
                    accept_label: str, execute_label: str, no_quest_msg: str,
                    verses_label: str, verses_intro: str, verses: list,
-                   verses_style: str = "bold red") -> str | None:
-    """合約制公會大廳通用骨架:入會(walk-in)→ 領受/執行委託 → 風味箴言。
+                   verses_style: str = "bold red",
+                   join_prompt: str | None = None, join_success: str | None = None) -> str | None:
+    """合約制公會大廳通用骨架:(可選)走入式入會 → 領受/執行委託 → 風味箴言。
+    有傳 `join_prompt` 才提供走入入會(九神騎士團於安維爾正面招募);神話黎明改回史實後
+    招募只在阿留斯湖遭遇(見 action_explore),故不傳 join_prompt → 對非會員不開門。
     `stealth` 決定執行走暗殺(action_contract 預設)或正面討伐。回傳 'dead'|None。
     (黑暗兄弟會聖所另有洗白/五戒,維持自有 action_sanctuary。)"""
     char = state.player
@@ -2145,7 +2148,9 @@ def _contract_hall(state: GameState, gamedata: GameData, faction_id: str, *,
         if reason is not None:
             ui.message(reason, style="yellow")
             return None
-        if ui.confirm(join_prompt):
+        # 走入式入會僅限有傳 join_prompt 的公會(九神騎士團);神話黎明不傳 → 此處對非會員不開門
+        # (其神殿服務本就 after_faction-gated,非會員無從抵達;此守門僅為自我文件化+防未來誤接服務)。
+        if join_prompt is not None and ui.confirm(join_prompt):
             factions.join(char, faction_id)
             ui.message(join_success.format(rank=factions.rank_name(char, gamedata, faction_id)),
                        style="bold green")
@@ -2184,11 +2189,10 @@ def _contract_hall(state: GameState, gamedata: GameData, faction_id: str, *,
 
 
 def action_mythic_dawn(state: GameState, gamedata: GameData) -> str | None:
-    """神話黎明聖堂:入會、領受/執行『獻祭』合約、聆聽《魔典》箴言。回傳 'dead'|None。"""
+    """神話黎明聖堂(神殿內,僅會員可達):領受/執行『獻祭』合約、聆聽《魔典》箴言。回傳 'dead'|None。
+    不設走入式入會 —— 招募改回史實,只在阿留斯湖洞窟遭遇教徒、口才說服(見 action_explore)。"""
     return _contract_hall(
         state, gamedata, "mythic_dawn", stealth=True,
-        join_prompt="赤袍信徒自陰影中低語:「梅魯尼斯·達貢在等你。可願棄絕舊神、皈依神話黎明?」",
-        join_success="你誦下達貢的誓言,成為神話黎明的「{rank}」。",
         title="神話黎明聖堂", accept_label="領受新的獻祭",
         execute_label="執行獻祭 —— 行刺{tname}",
         no_quest_msg="聖堂目前沒有交付給你的獻祭。",
