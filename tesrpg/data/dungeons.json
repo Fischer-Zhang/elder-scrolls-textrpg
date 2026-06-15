@@ -58,7 +58,7 @@
       "enemy": "ancient_dragon",
       "raw": true,
       "desc": "巢穴頂端的熔岩天井 —— 一頭上古巨龍盤踞於成堆的黑檀寶藏之上,烈焰自齒間溢出。",
-      "treasure": { "loot": ["ebony_sword", "dragon_scale", "mehrunes_razor", "daedric_staff", "dwarven_cuirass", "filled_greater_soul_gem", "healing_potion", "healing_potion", "ruby", {"gold": [300, 600]}] }
+      "treasure": { "loot": ["ebony_sword", "dragon_scale", "skyburner", "daedric_staff", "dwarven_cuirass", "filled_greater_soul_gem", "healing_potion", "healing_potion", "ruby", {"gold": [300, 600]}] }
     }
   },
   "lostknife_cave": {

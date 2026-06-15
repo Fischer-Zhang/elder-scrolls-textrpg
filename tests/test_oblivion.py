@@ -144,6 +144,31 @@ def test_ending_artifact_split():
     assert "mehrunes_razor" not in dim_loot
 
 
+def _item_sources(gd, item):
+    """item 出現在『地城寶藏/地城地板 loot / 任務 reward.items / bestiary loot』的來源清單(粗掃)。"""
+    hits = []
+    for did, d in gd.dungeons.items():
+        loot = d.get("boss", {}).get("treasure", {}).get("loot", []) + d.get("loot", [])
+        if item in [x for x in loot if isinstance(x, str)]:
+            hits.append(f"dungeon:{did}")
+    for qid, q in gd.quests.items():
+        if item in q.get("reward", {}).get("items", []):
+            hits.append(f"quest:{qid}")
+    for bid, b in gd.bestiary.items():
+        if item in [e.get("item") for e in b.get("loot", [])]:
+            hits.append(f"bestiary:{bid}")
+    return hits
+
+
+def test_dragon_lair_unique_trophy():
+    """龍喉巢穴專屬神器 焚天劍(skyburner):單一來源(僅首領寶藏,不入 bestiary → 不可刷),
+    全遊戲唯一不重複;mehrunes_razor 已移出龍巢、只歸教徒結局(md7 reward + dawn_sanctum 寶藏)。"""
+    gd, _ = _gd_char()
+    assert "skyburner" in gd.weapons
+    assert _item_sources(gd, "skyburner") == ["dungeon:dragon_lair"]          # 恰一處:龍巢首領寶藏
+    assert set(_item_sources(gd, "mehrunes_razor")) == {"dungeon:dawn_sanctum", "quest:md7"}
+
+
 def test_oblivion_gate_visibility():
     """湮滅之門逐門開合:開局全隱、kvatch_falls 開第一道、清掉就閉、下一道開;
     死亡之地要破祭壇才現;神殿要入會;危機落幕全消;隱藏地點會把玩家拋回最近的城。"""
