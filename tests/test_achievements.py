@@ -134,7 +134,7 @@ def test_shipped_ids_are_legal():
         if t == "guildmaster":
             assert a["cond"]["faction"] in gd.factions, a["cond"]["faction"]
         if t == "allegiance":
-            assert a["cond"]["cause"] in {"imperial", "independent", "daedric", "own"}
+            assert a["cond"]["cause"] in {"imperial", "independent", "own"}
         if t == "pure_spec":
             assert a["cond"]["spec"] in {"combat", "magic", "stealth"}
     ids = [a["id"] for a in gd.achievements]

@@ -1,6 +1,6 @@
 """AI 陣營自走戰爭(worldstate 階段五)回歸測試:
 - war_tick_at 週期閘;非玩家城易主只寫 world_faction(不入稅基);反攻玩家城走削 garrison→tick_tax revolt;
-- 持有期免疫 + reinforce 可守;決定性重播;雪球收斂;daedric 解鎖閘;選邊有感;存檔向後相容。
+- 持有期免疫 + reinforce 可守;決定性重播;雪球收斂;侵略方僅帝國/獨立;選邊有感;存檔向後相容。
 不破既有 test_worldstate / test_politics 契約(aiwar 只寫 world_faction/garrison_current/city_threat)。
 """
 import collections
@@ -125,39 +125,6 @@ def test_picked_side_no_snowball():
     assert sh.get("imperial", 0) > 0
 
 
-def test_daedric_active_no_snowball():
-    """daedric 參戰(kvatch_falls 後)同樣收斂:中立緩衝存活、不雪球。"""
-    gd, st = _state(seed=2)
-    st.player.world_events_fired.append("kvatch_falls")
-    st.player.world_faction["kvatch"] = "daedric"
-    _run(st, gd, 120)
-    sh = _shares(st, gd)
-    assert max(sh.values()) / sum(sh.values()) < 0.78
-    assert sh.get("neutral", 0) >= aiwar.NEUTRAL_FLOOR
-
-
-def test_daedric_resurges_not_permanently_wiped():
-    """湮滅復現:kvatch_falls 後 daedric 大義打不死 —— 即使被打到 0 城也會再開湮滅之門(回應「大義太容易被消滅」)。
-    跨多 seed 跑長線:終局 daedric 必 >0 城(修復前 7/12 局永久滅亡)。"""
-    gd = get_gamedata()
-    wiped = 0
-    for seed in range(8):
-        gd, st = _state(seed=seed)
-        st.player.world_events_fired.append("kvatch_falls")
-        st.player.world_faction["kvatch"] = "daedric"
-        _run(st, gd, 120)
-        if _shares(st, gd).get("daedric", 0) == 0:
-            wiped += 1
-    assert wiped == 0, f"daedric 大義不該被永久消滅(仍有 {wiped} 局終局 0 城)"
-
-
-def test_daedric_locked_no_resurge_before_kvatch():
-    """kvatch_falls 未觸發前,湮滅復現不啟動(daedric 不無端冒出)。"""
-    gd, st = _state(seed=1)
-    _run(st, gd, 60)
-    assert _shares(st, gd).get("daedric", 0) == 0
-
-
 def test_city_threat_pruned_after_loss():
     """城失守後 city_threat 殘留必被清除(防存檔膨脹;審查 minor)。"""
     gd, st = _state(seed=1, alleg="imperial")
@@ -167,14 +134,13 @@ def test_city_threat_pruned_after_loss():
     assert "whiterun" not in st.player.city_threat, "失守城的 city_threat 殘留未清"
 
 
-def test_daedric_locked_until_kvatch_falls():
+def test_aggressors_only_imperial_independent():
+    """神話黎明非世界大戰陣營:侵略方永遠只有 imperial/independent(即使 kvatch_falls 後)。"""
     gd, st = _state()
+    st.player.world_events_fired.append("kvatch_falls")
     cmap = aiwar._controller_map(st.player, gd)
     assert "daedric" not in aiwar._aggressors(st.player, cmap)
-    st.player.world_events_fired.append("kvatch_falls")
-    st.player.world_faction["kvatch"] = "daedric"      # 給 daedric 一座城
-    cmap = aiwar._controller_map(st.player, gd)
-    assert "daedric" in aiwar._aggressors(st.player, cmap)
+    assert set(aiwar._aggressors(st.player, cmap)) <= {"imperial", "independent"}
 
 
 def test_allegiance_sways_war():

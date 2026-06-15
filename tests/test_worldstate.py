@@ -20,21 +20,17 @@ def _state(c):
 
 def test_kvatch_falls_after_days_and_once_fire():
     gd, c = _setup(); politics.pledge(c, "imperial"); st = _state(c)
-    # 折入 open_state(種子=Oblivion 現狀,皆與 allegiance 無關,pledge 後仍真):
     assert c.world_faction == {} and c.world_events_fired == []
     assert worldstate.update(st, gd) == []                      # day 0:無事件(防 off-by-one)
     assert politics.faction_of(c, gd, "kvatch") == "imperial"   # 種子=Oblivion 現狀
-    # 折入 flip 前置:種子 imperial + allegiance imperial → ally → 不可攻
-    assert not politics.can_siege(c, gd, "kvatch")
     st.time.advance(3 * 24)
     evs = worldstate.update(st, gd)
-    assert any(e["id"] == "kvatch_falls" for e in evs)
-    assert c.world_faction["kvatch"] == "daedric"
-    assert politics.faction_of(c, gd, "kvatch") == "daedric"    # 三層:world_faction 透出
+    assert any(e["id"] == "kvatch_falls" for e in evs)          # 危機觸發(解鎖地城/招募/主線)
     assert "kvatch_falls" in c.world_events_fired
+    # 神話黎明非世界大戰陣營 → 城池不易幟 daedric;危機由湮滅之門地城/主線弧呈現
+    assert c.world_faction == {}
+    assert politics.faction_of(c, gd, "kvatch") == "imperial"   # 凱瓦奇立場不變
     assert all(e["id"] != "kvatch_falls" for e in worldstate.update(st, gd))   # once-fire
-    # 折入 flip 後:daedric vs imperial allegiance → enemy → 可攻
-    assert politics.relationship(c, gd, "kvatch") == "enemy" and politics.can_siege(c, gd, "kvatch")
 
 
 def test_player_held_city_immune_to_flip():
@@ -71,21 +67,23 @@ def test_requires_chain():
 
 
 def test_daedric_unlock_after_kvatch():
+    """神話黎明非政治大義:即使凱瓦奇陷落,daedric 也永不出現在可宣誓大義中(走密教公會,非宣誓)。"""
     gd, c = _setup(); st = _state(c)
     assert "daedric" not in politics.pledgeable_causes(c)
-    st.time.advance(3 * 24); worldstate.update(st, gd)
-    assert "daedric" in politics.pledgeable_causes(c)           # 凱瓦奇陷落後解鎖神話黎明
+    st.time.advance(3 * 24); worldstate.update(st, gd)          # kvatch_falls 觸發
+    assert "kvatch_falls" in c.world_events_fired
+    assert "daedric" not in politics.pledgeable_causes(c)
+    assert set(politics.pledgeable_causes(c)) == {"imperial", "independent", "own"}
 
 
 def test_kvatch_liberated_player_driven():
     gd, c = _setup(); politics.pledge(c, "imperial"); st = _state(c)
-    st.time.advance(3 * 24); worldstate.update(st, gd)         # kvatch → daedric
-    assert c.world_faction["kvatch"] == "daedric"
-    politics.conquer(c, gd, "kvatch", now=st.time.absolute_hours())   # 玩家光復
+    st.time.advance(3 * 24); worldstate.update(st, gd)         # kvatch_falls 觸發
+    assert "kvatch_falls" in c.world_events_fired
+    politics.conquer(c, gd, "kvatch", now=st.time.absolute_hours())   # 玩家進駐凱瓦奇
     fame0 = c.fame
     evs = worldstate.update(st, gd)
-    assert any(e["id"] == "kvatch_liberated" for e in evs)
-    assert "kvatch" not in c.world_faction                     # clear_flip 撤除 daedric 底層
+    assert any(e["id"] == "kvatch_liberated" for e in evs)     # 持有凱瓦奇 → 光復事件 + 聲望
     assert c.fame == fame0 + 30
 
 

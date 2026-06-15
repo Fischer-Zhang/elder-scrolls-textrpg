@@ -32,11 +32,8 @@ def _shares(state):
     return collections.Counter(f for f in cmap.values() if f)
 
 
-def _run(seed, alleg="", weeks=WEEKS, hold=None, reinforce=False, daedric=False):
+def _run(seed, alleg="", weeks=WEEKS, hold=None, reinforce=False):
     st = _mk(seed, alleg)
-    if daedric:                                   # 模擬 kvatch_falls 已觸發 → daedric 參戰
-        st.player.world_events_fired.append("kvatch_falls")
-        st.player.world_faction["kvatch"] = "daedric"
     if hold:
         for loc in hold:
             st.player.city_faction[loc] = alleg
@@ -70,7 +67,7 @@ def main():
     print("=" * 72)
     start = _shares(_mk(0))
     print(f"開局分布: {dict(start)}  (共 {sum(start.values())} 城)")
-    print(f"{'seed':>4} {'imp':>4} {'ind':>4} {'dae':>4} {'neu':>4} {'最大占比':>8} {'活陣營':>6} {'總翻城':>6} {'單週峰':>6}")
+    print(f"{'seed':>4} {'imp':>4} {'ind':>4} {'neu':>4} {'最大占比':>8} {'活陣營':>6} {'總翻城':>6} {'單週峰':>6}")
     agg = collections.Counter()
     max_share_all = 0.0
     for s in SEEDS:
@@ -88,7 +85,7 @@ def main():
         if flips == 0: flag += " ⚠世界凍結"
         if peak > aiwar.MAX_FLIPS_PER_WEEK: flag += " ⚠單週多翻"
         if flag: warns.append(f"seed{s}:{flag}")
-        print(f"{s:>4} {sh.get('imperial',0):>4} {sh.get('independent',0):>4} {sh.get('daedric',0):>4} "
+        print(f"{s:>4} {sh.get('imperial',0):>4} {sh.get('independent',0):>4} "
               f"{sh.get('neutral',0):>4} {mx:>7.0%} {len([f for f in sh if sh[f]>0]):>6} {flips:>6} {peak:>6}{flag}")
 
     print("-" * 72)
@@ -127,18 +124,6 @@ def main():
     print(f"選邊有感:支持帝國→帝國均 {a:.1f} 城 vs 支持獨立→帝國均 {b:.1f} 城(差 {a-b:+.1f},應 ≥2)")
     print(f"選邊不雪球:各 seed×陣營 最大占比上限 = {side_max:.0%}(紅線 <{SNOW:.0%})")
     if a - b < 2: warns.append("⚠ 選邊無感")
-
-    # daedric 參戰(kvatch_falls 後)同樣不可雪球 / 中立緩衝存活
-    dae_max = 0.0
-    for s in SEEDS[:4]:
-        sh = _shares(_run(s, daedric=True, weeks=120)[0])
-        tot = sum(sh.values()) or 1
-        dae_max = max(dae_max, max(sh.values()) / tot)
-        if sh.get("neutral", 0) < aiwar.NEUTRAL_FLOOR:
-            warns.append(f"⚠ daedric 局中立吞光(seed{s})")
-        if max(sh.values()) / tot > SNOW:
-            warns.append(f"⚠ daedric 局雪球(seed{s} → {max(sh.values())/tot:.0%})")
-    print(f"daedric 參戰:最大占比上限 = {dae_max:.0%}(紅線 <{SNOW:.0%},中立緩衝須存活)")
 
     print("=" * 72)
     if warns:

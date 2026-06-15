@@ -466,9 +466,7 @@ def test_expansionist_causes_attack_neutral():
     politics.pledge(c, "own")
     assert politics.relationship(c, gd, "whiterun") == "enemy"     # 自立視中立為可吞
     assert politics.can_siege(c, gd, "whiterun")
-    politics.pledge(c, "daedric")
-    assert politics.can_siege(c, gd, "whiterun")                   # 達貢亦然
-    assert politics.relationship(c, gd, "bruma") == "enemy"        # 自立/達貢對帝國城仍=敵
+    assert politics.relationship(c, gd, "bruma") == "enemy"        # 自立對帝國城亦=敵
 
 
 def test_own_conquer_taxes_red_line():
@@ -481,9 +479,9 @@ def test_own_conquer_taxes_red_line():
 def test_world_fields_save_roundtrip():
     import json
     gd, c = _setup()
-    c.world_faction = {"kvatch": "daedric"}; c.world_events_fired = ["kvatch_falls"]
+    c.world_faction = {"kvatch": "independent"}; c.world_events_fired = ["kvatch_falls"]
     loaded = Character.from_dict(json.loads(json.dumps(c.to_dict())))
-    assert loaded.world_faction == {"kvatch": "daedric"} and loaded.world_events_fired == ["kvatch_falls"]
+    assert loaded.world_faction == {"kvatch": "independent"} and loaded.world_events_fired == ["kvatch_falls"]
     d = c.to_dict(); del d["world_faction"]; del d["world_events_fired"]
     old = Character.from_dict(d)
     assert old.world_faction == {} and old.world_events_fired == []   # 舊存檔缺欄 → 預設
@@ -504,8 +502,19 @@ def test_pledge_menu_four_choice_smoke():
         M._pledge_allegiance(GameState(player=c, rng=RNG(1), game_mode="adventure"), gd)
     finally:
         ui.menu, ui.message = saved
-    assert captured["opts"] == ["imperial", "independent", "own"]   # 四選(daedric 鎖)
+    assert captured["opts"] == ["imperial", "independent", "own"]   # 三大義(daedric 已非政治大義)
     assert c.allegiance == "own"
+
+
+def test_daedric_not_a_pledgeable_cause():
+    """神話黎明=末世密教,已自政治大義體系移除:不在 CAUSES/EXPANSIONIST、永不可宣誓(危機前後皆然)。"""
+    gd, c = _setup()
+    assert "daedric" not in politics.CAUSES
+    assert "daedric" not in politics.EXPANSIONIST_CAUSES
+    assert "daedric" not in politics.pledgeable_causes(c)
+    c.world_events_fired.append("kvatch_falls")
+    assert "daedric" not in politics.pledgeable_causes(c)
+    assert set(politics.pledgeable_causes(c)) == {"imperial", "independent", "own"}
 
 
 def run():
@@ -540,6 +549,7 @@ def run():
     test_own_conquer_taxes_red_line()
     test_world_fields_save_roundtrip()
     test_pledge_menu_four_choice_smoke()
+    test_daedric_not_a_pledgeable_cause()
 
 
 if __name__ == "__main__":

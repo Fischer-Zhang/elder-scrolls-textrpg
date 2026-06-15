@@ -2547,7 +2547,6 @@ def _pledge_allegiance(state: GameState, gamedata: GameData) -> None:
     _CAUSE_DESC = {
         "imperial": "復辟賽普汀帝國,重整長老會與軍團的秩序。",
         "independent": "支持各省自治,讓地方掙脫帝國的羈縻。",
-        "daedric": "事奉梅魯尼斯·達貢,以湮滅之火焚盡這腐朽之世。",
         "own": "不奉帝國、不附獨立 —— 以己之名舉旗,問鼎這片無主之地。",
     }
     opts = [(c, f"{politics.cause_name(c)} —— {_CAUSE_DESC.get(c, '')}")
