@@ -459,5 +459,6 @@
   "pale_garrison": {"name": "瓦倫修斯", "title": "戍將", "race": "imperial", "garrison": 120, "population": 200, "bloc": "border_garrison", "bloc_label": "鎮隘戍卒", "blurb": "扼守賽羅迪爾與天際山道的帝國戍堡。", "stance": "neutral"},
   "bangkorai_hold": {"name": "達羅·gro-沙茲", "title": "戍將", "race": "redguard", "garrison": 120, "population": 210, "bloc": "border_garrison", "bloc_label": "鎮隘戍卒", "blurb": "高岩與漢默法爾交界的山口要塞。", "stance": "neutral"},
   "strident_crossing": {"name": "芮娜", "title": "關長", "race": "imperial", "garrison": 100, "population": 190, "bloc": "border_garrison", "bloc_label": "鎮隘戍卒", "blurb": "賽羅迪爾通往瓦倫森林與艾爾斯維爾的河津貿易站。", "stance": "neutral"},
-  "cliffhaven_watch": {"name": "敏多", "title": "哨官", "race": "bosmer", "garrison": 90, "population": 180, "bloc": "border_garrison", "bloc_label": "鎮隘戍卒", "blurb": "阿貝森海岸的瞭望哨堡,連接瓦倫與漢默法爾的航路。", "stance": "neutral"}
+  "cliffhaven_watch": {"name": "敏多", "title": "哨官", "race": "bosmer", "garrison": 90, "population": 180, "bloc": "border_garrison", "bloc_label": "鎮隘戍卒", "blurb": "阿貝森海岸的瞭望哨堡,連接瓦倫與漢默法爾的航路。", "stance": "neutral"},
+  "helgen": {"name": "督軍 哈鄔丁", "title": "督軍", "race": "nord", "garrison": 90, "population": 150, "bloc": "imperial_legion", "bloc_label": "帝國軍團", "blurb": "海爾根的帝國督軍,扼守白隘北口、天際的南方門戶。", "stance": "imperial"}
 }

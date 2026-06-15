@@ -53,7 +53,7 @@ GEO = {
   "frostwind_ruin": (0.42,0.92,["falkreath_wood"]),
   "lostknife_cave": (0.88,0.88,["riften"]),
   "saarthal": (0.72,0.18,["winterhold"]),
-  "forsworn_redoubt": (0.05,0.62,["markarth"]),
+  "forsworn_redoubt": (0.05,0.62,["markarth","karth_river"]),
   "eastmarch_springs": (0.7,0.45,["windhelm"]),
   "the_pale_tundra": (0.52,0.18,["dawnstar"]),
  },
@@ -144,25 +144,27 @@ GEO = {
  },
 }
 # 邊境節點 = 真實 Tamriel 省界接縫:每個連到兩省的門戶城 + 同隘的戍堡/地城
+# 各 seam 經正典審查:每個邊境節點只接它真正鄰接的兩省門戶城(+同隘戍堡/地城)
 BORDER_LINKS = {
-  "pale_pass": ["bruma","falkreath_wood","pale_garrison","pale_pass_cave"],
-  "pale_garrison": ["pale_pass","dragon_bridge","brena_valley","pale_pass_cave"],
+  # 賽↔天 = 白隘(布魯瑪—白隘—海爾根—佛克瑞斯);戍堡守 Cyrodiil 側,海爾根是天際門戶
+  "pale_pass": ["bruma","pale_garrison","helgen","pale_pass_cave"],
+  "pale_garrison": ["pale_pass","pale_pass_cave","bruma"],
   "pale_pass_cave": ["pale_pass","pale_garrison"],
-  "sea_route": ["windhelm","blacklight"],
-  "niben_marsh": ["leyawiin","bravil","gideon","topal_bay"],
-  "thorn_fen": ["molag_mar","stormhold"],
-  "dragontail_foothills": ["anvil","kvatch","dragontail_peaks"],
-  "brena_valley": ["markarth","dragontail_peaks","pale_garrison"],
-  "bangkorai_pass": ["evermore","sentinel","bangkorai_hold","bangkorai_crypt"],
+  "sea_route": ["windhelm","blacklight"],            # 天↔晨 = 鄧梅斯隘/海路(風盔—黑光)
+  "niben_marsh": ["leyawiin","gideon","topal_bay"],  # 賽↔黑 = 黑木(雷雅維因—吉迪恩)
+  "thorn_fen": ["molag_mar","stormhold"],            # 晨↔黑(莫拉格瑪—石落)
+  "dragontail_foothills": ["anvil","kvatch","dragontail_peaks"],  # 賽↔漢(西岸—龍尾)
+  "brena_valley": ["markarth","dragontail_peaks"],   # 天Reach↔漢(馬卡斯—龍尾)
+  "bangkorai_pass": ["evermore","sentinel","bangkorai_hold","bangkorai_crypt"],  # 高↔漢
   "bangkorai_hold": ["bangkorai_pass","evermore","sentinel","bangkorai_crypt"],
   "bangkorai_crypt": ["bangkorai_pass","bangkorai_hold"],
-  "karthwasten": ["jehanna","markarth"],
-  "strid_vale": ["anvil","arenthia","strident_crossing"],
-  "strident_crossing": ["strid_vale","leyawiin","topal_bay"],
-  "abecean_coast": ["hegathe","woodhearth","cliffhaven_watch"],
+  "karthwasten": ["jehanna","markarth"],             # 高↔天 Reach(耶漢納—馬卡斯)
+  "strid_vale": ["anvil","strident_crossing"],       # 賽↔瓦 = 斯特里德河(安維爾側)
+  "strident_crossing": ["strid_vale","arenthia"],    # 渡口(瓦倫·阿倫西亞側)
+  "abecean_coast": ["hegathe","woodhearth","cliffhaven_watch"],  # 漢↔瓦 阿比西亞海路
   "cliffhaven_watch": ["abecean_coast","woodhearth","gilane"],
-  "topal_bay": ["niben_marsh","leyawiin","rimmen","riverhold","strident_crossing"],
-  "pellitine_marches": ["vinedusk_reach","torval","corinthe"],
+  "topal_bay": ["niben_marsh","leyawiin","rimmen","riverhold"],  # 賽↔艾 托帕爾灣
+  "pellitine_marches": ["vinedusk_reach","torval","corinthe"],   # 瓦↔艾 收割者三月
 }
 DEAD_END_OK = {"kvatch_gate", "bravil_gate", "the_deadlands", "dawn_sanctum"}
 PROV_BIOME = {"天際": "snow", "晨風": "ashland", "高岩": "moor", "漢默法爾": "desert",
@@ -239,6 +241,15 @@ for rid, prov, name, dgr, (a, b), desc in NEW_REGIONS:
     L[rid] = {"biome": PROV_BIOME[prov], "name": name, "province": prov,
               "type": "wilderness", "danger": dgr, "desc": desc, "services": []}
 
+# --- 新增海爾根(天際南緣、白隘北口的佛克瑞斯小鎮 —— 賽→天門戶)----------
+if "helgen" not in L:
+    L["helgen"] = {"biome": "snow", "name": "海爾根", "province": "天際", "type": "town",
+                   "danger": 0, "desc": "佛克瑞斯領南端、白隘北口的小鎮 —— 從賽羅迪爾進入天際的門戶。",
+                   "services": ["inn", "merchant", "task_board"],
+                   "merchant_stock": ["minor_healing_potion", "healing_potion", "iron_sword",
+                                      "leather_cuirass", "iron_shield", "hunting_bow", "repair_hammer", "ruby"]}
+GEO["天際"]["helgen"] = (0.36, 0.94, ["falkreath_wood", "whiterun"])
+
 # --- 座標:fx,fy → box 格座標,全域唯一 ---------------------------------
 pos = {}
 used = set()
@@ -284,11 +295,12 @@ for lid in border:
     for n in BORDER_LINKS.get(lid, []):
         links[lid][n] = hrs(lid, n); links[n][lid] = hrs(lid, n)
 
-# --- 自動補:degree<2 的非盲腸 → 連到最近的合格節點 ---------------------
+# --- 自動補:degree<2 的非盲腸 → 連到「最近的同省」節點(杜絕跨 seam 亂湊)---
+autofix_added = []
 def nearest(lid):
+    pv = L[lid]["province"]
     cand = [(dist(lid, o), o) for o in pos
-            if o != lid and o not in links[lid]
-            and (L[o]["province"] == L[lid]["province"] or L[o]["province"] == "邊境" or L[lid]["province"] == "邊境")]
+            if o != lid and o not in links[lid] and L[o]["province"] == pv]
     return min(cand)[1] if cand else None
 for lid in L:
     if lid in DEAD_END_OK:
@@ -298,6 +310,7 @@ for lid in L:
         if not n:
             break
         links[lid][n] = hrs(lid, n); links[n][lid] = hrs(lid, n)
+        autofix_added.append(f"{lid}->{n}")
 
 # --- 檢查:連通 + 無跨省直連 -------------------------------------------
 start = d["start_location"]; seen = {start}; fr = [start]
@@ -330,8 +343,23 @@ text = ('{\n  "locations": {\n' + body + "\n  },\n"
 d2 = json.loads(text)
 assert len(d2["locations"]) == len(L)
 open(PATH, "w", encoding="utf-8").write(text)
+
+# --- 海爾根城主(town 需 ruler)寫進 rulers.json ------------------------
+RP = "tesrpg/data/rulers.json"
+rt = open(RP, encoding="utf-8").read()
+if '"helgen"' not in rt:
+    ruler = {"name": "督軍 哈鄔丁", "title": "督軍", "race": "nord", "garrison": 90, "population": 150,
+             "bloc": "imperial_legion", "bloc_label": "帝國軍團",
+             "blurb": "海爾根的帝國督軍,扼守白隘北口、天際的南方門戶。", "stance": "imperial"}
+    before, c, after = rt.rpartition("\n}")
+    rt = before + ',\n  "helgen": ' + json.dumps(ruler, ensure_ascii=False, separators=(", ", ": ")) + "\n}" + after
+    json.loads(rt)
+    open(RP, "w", encoding="utf-8").write(rt)
+    print("✓ 已新增 rulers.json: helgen")
+
 # 報告
 deg1 = [lid for lid in L if len(links[lid]) < 2]
 print(f"✓ 地理重建:{len(L)} 地點;連通✓ 無跨省直連✓;degree<2(應只剩盲腸)= {deg1}")
+print(f"auto-fix 補的同省連線({len(autofix_added)}):", autofix_added)
 import collections
 print("各省連線數:", dict(collections.Counter(L[a]["province"] for a in L for _ in links[a])))

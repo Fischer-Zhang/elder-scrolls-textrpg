@@ -38,7 +38,7 @@
 - **煉金毒藥 + 武器塗毒**;**潛行刺客系**:偷襲先機、暗殺殘響、雙持、**隱遁再襲(潛行 25 里程碑「隱遁之術」;連環踏影對單體仍遞減、反 solo boss 風箏)**、戰前偵查;武器流派(潛襲/破甲/速度)
 
 #### 世界與探索
-- **八省 ~167 地點 / 48 城 + 16 鎮 + 70 野區 + 33 地城**(每省 5–9 城 + 多個正典分區野區〔黃金海岸/苦岸/裂石郡/收割者三月…〕做城際過場;邊境戍堡為省際接縫)+ **`pos[col,row]` 與 `links` 皆依正典 TES 地理**(頂層 `world["map"]` 40×24);旅行/晝夜/危險度(數字為快照,以 JSON/測試為準)
+- **八省 ~168 地點 / 48 城 + 17 鎮 + 70 野區 + 33 地城**(含海爾根 Helgen=白隘北口、賽→天門戶)(每省 5–9 城 + 多個正典分區野區〔黃金海岸/苦岸/裂石郡/收割者三月…〕做城際過場;邊境戍堡為省際接縫)+ **`pos[col,row]` 與 `links` 皆依正典 TES 地理**(頂層 `world["map"]` 40×24);旅行/晝夜/危險度(數字為快照,以 JSON/測試為準)
 - **生態遭遇**(biome 加權,八生態含 savanna 弱毒)、**省份風味事件**、**具名地標**首發現、各城**考據統治者**;終局 solo BOSS
 - **格子地城探索**(`systems/dungeoncrawl.py`):15 地城程序化生成 n×n 格 × m 層,N/S/E/W 移動 + 樓梯下層 + 迷霧小地圖 + 格內怪/寶/陷阱;清末層 boss = 肅清,首領死亡自動解鎖寶藏(原子探索、零新存檔欄)。**視為戰鬥情境**:可一般行動(施法/背包/角色卡)、**預施增益/預召喚召喚物**(行動 1 格 = 1 回合逐回合衰減,經 carry_allies/preserve_buffs 帶進觸發戰鬥)、**偵查 perk 探明四鄰**(每探明新格得少量偵查 xp);持久狀態條一併顯示夥伴/召喚物
 
@@ -829,7 +829,8 @@ tesrpg/
 - **每個地點必帶 `pos:[col,row]`**(`world["map"]={cols:40,rows:24}`);座標與 `links` **皆依正典上古卷軸地理**(查 UESP/ESO):各省城市相對位置落在地理 bounding box、省內連線=lore 道路鄰接、跨省只經邊境(真實省界)、旅行時數由格距離推導。`pos` 不入存檔。`test_world` 守:pos 全員存在/界內/唯一 + link 空間局部性(對角線 55%)。
 - **拓樸鐵律(`test_world` 守)**:① 除湮滅之門/終局地城白名單(`dragon_lair/kvatch_gate/bravil_gate/the_deadlands/dawn_sanctum`)外,每點 degree≥2;② **跨省連線只經邊境**(邊境節點=省際接縫,**已無歷史直連豁免**;`kvatch↔dragon_bridge`、`leyawiin↔gideon` 已改走 pale_pass/niben_marsh);③ 每真實省的省內子圖連通;④ 城/鎮 danger=0、荒野 1–5、地城≥1、每省有低危(≤2)入口。重排座標/連線後跑 `sim_worldwar`(改動 city 鄰接影響 AI 戰爭)。
 - **加新城/鎮**:world.json `type:city/town`+`danger:0` + rulers.json 一筆(`race∈races`、`garrison>0`、`bloc/bloc_label`、`stance∈{imperial,independent,neutral}`);新 bloc 只是字串(politics 動態讀,免登錄)。**加新地城**:dungeons.json 一筆 + quests.json 一條 `clear_dungeon`/`reach` 委託(`test_polish` 守);board 委託金幣≤`max(320,danger*100)`、聲望≤`max(15,danger*5)`(`test_detailing` 守)。新城改變 AI 戰爭盤面 → **大量加城後跑 `sim_worldwar`**(守 R24)。
-- **內容生成工具**:`tools/build_expansion.py`+`expand_world.py`(產/併入新地點四檔);`tools/geo_rebuild.py`(**依 UESP lore 重建全圖 pos+links**:省內 GEO 鄰接表 + BORDER_LINKS 省際接縫 + 距離推導時數,重發 world.json 為單行條目)。改地理改 `geo_rebuild.py` 的 GEO/BORDER_LINKS 再跑。
+- **內容生成工具**:`tools/build_expansion.py`+`expand_world.py`(產/併入新地點四檔);`tools/geo_rebuild.py`(**依 UESP lore 重建全圖 pos+links**:省內 GEO 鄰接表 + BORDER_LINKS 省際接縫〔每 seam 只接真正鄰接的兩省門戶城〕+ NEW_REGIONS 分區野區 + 海爾根 town〔賽→天白隘門戶,連 rulers.json〕 + 距離推導時數;auto-fix **只連同省最近**〔杜絕跨 seam 亂湊〕,重發 world.json 單行條目)。改地理改 GEO/BORDER_LINKS 再跑。
+- **邊境地圖呈現(Web)**:`renderMap` **不再有「邊境」獨立按鈕**;行省檢視 = 該省節點 + **邊接該省的邊境節點**(出省口;`draw()` 用 `g.edges` 判 `province==="邊境"` 且邊接本省)。邊境節點仍在總覽圖。
 - **相對位置地圖(Web)**:`_map_view` 發 `grid:{cols,rows,nodes:[{id,name,pos,type,here,visited,danger,province,svc,...}],edges:[{a,b,h}]}`(`svc`=特色設施〔公會/陣營〕、通用宿商訓鐵板不列;`edges`=無向去重連線+時數)。`index.html` `renderMap` 依 pos 絕對定位 marker 畫**總覽圖**(north 朝上、★所在、危險度上色、SVG 連線=相鄰路徑),頂端行省鈕**純前端放大**該省 bbox(`drawStage`,放大才標連線時長),**點 marker → `.mapinfo` 顯示該地特色設施**;出口靠連線辨認。**滑鼠滾輪縮放(zoom-to-cursor)+ 拖曳平移**(`.mapzoom` transform;pointer capture 無 window listener 洩漏);放大(scale≥2.2)或行省檢視才顯示地名+路徑時長(CSS `.zoomed/.prov` 控制)。已移除冗長明細列表。`test_web` 守 grid 形狀 + edges 合法。
 
 ---
