@@ -1102,7 +1102,7 @@ def _scout_report(state: GameState, gamedata: GameData, enemies: list) -> None:
 
 
 def offer_battle(state: GameState, gamedata: GameData, enemies, ambush_chance: float = 0.25,
-                 surprise: bool = False, mounted: bool = False) -> str | None:
+                 surprise: bool = False, mounted: bool = False, recruit: str | None = None) -> str | None:
     """呈現遭遇 → 接戰 / 偵查 / 潛行撤退。回傳結果或 None(撤退成功,未交戰)。
 
     接戰時擲「入場潛行檢定」決定有無開場偷襲(吃潛行/敵警覺/敵數/護甲/夜間/偵查)。
@@ -1129,6 +1129,8 @@ def offer_battle(state: GameState, gamedata: GameData, enemies, ambush_chance: f
         if dialogue.can_intimidate(gamedata, enemies):       # 全為弱人形敵(盜匪)→ 可口才喝退
             ipct = int(dialogue.intimidate_chance(char, enemies, night, gamedata) * 100)
             opts.append(("intimidate", f"威嚇喝退(口才,成功率 {ipct}%)"))
+        if recruit and not factions.is_member(char, recruit):   # 教徒招募:口才說服可入會(否則開打)
+            opts.append(("recruit", f"說服加入(口才,成功率 {int(dialogue.recruit_chance(char) * 100)}%)"))
         rpct = int(combat.stealth_retreat_chance(char, enemies) * 100)
         opts.append(("retreat", f"潛行撤退（成功率 {rpct}%)"))
         choice = ui.menu(f"要與{name}交戰嗎?", opts)
@@ -1144,6 +1146,20 @@ def offer_battle(state: GameState, gamedata: GameData, enemies, ambush_chance: f
                 ui.message("你冷然報出幾個名號、目光如刀 —— 對方面面相覷,終於悻悻退去。", style="green")
                 return None
             ui.message("對方非但不退,反被你激怒,拔刀撲上!", style="red")
+            return run_battle(state, gamedata, enemies, alerted=True, mounted=mounted)
+        if choice == "recruit":
+            r = dialogue.recruit_persuade(char, gamedata, state.rng)
+            state.time.advance(r["hours"])
+            ui.show_events(r["skill_events"], gamedata)
+            if r["ok"]:
+                if ui.confirm("赤袍信徒低語:「達貢在等你。」 —— 加入神話黎明?"):
+                    factions.join(char, recruit)
+                    ui.message(f"你誦下達貢的誓言,成為神話黎明的「{factions.rank_name(char, gamedata, recruit)}」"
+                               " —— 信徒引你望向湖深處,神話黎明聖殿就此向你顯現。", style="bold green")
+                    return None
+                ui.message("你婉拒了皈依 —— 信徒臉色一沉,赤刃出鞘!", style="red")
+                return run_battle(state, gamedata, enemies, alerted=True, mounted=mounted)
+            ui.message("你的言辭未能取信 —— 信徒拔刀撲上!", style="red")
             return run_battle(state, gamedata, enemies, alerted=True, mounted=mounted)
         if choice == "retreat":
             if combat.try_stealth_retreat(char, enemies, state.rng):
@@ -1182,6 +1198,15 @@ def action_explore(state: GameState, gamedata: GameData) -> str | None:
         return "dead"
     if ev == "fired":
         return None
+    # 神話黎明招募:阿留斯湖洞窟(凱瓦奇陷落後信徒現身),非會員且可入會 → 有機率遇上教徒,口才可入會
+    if (player.location_id == "lake_arrius_caverns"
+            and politics.DAEDRIC_UNLOCK_EVENT in getattr(player, "world_events_fired", [])
+            and not factions.is_member(player, "mythic_dawn")
+            and factions.join_block_reason(player, gamedata, "mythic_dawn") is None
+            and state.rng.chance(0.5)):
+        cultists = [combat.spawn_creature(gamedata, "mythic_apostate", state.rng) for _ in range(2)]
+        ui.message("湖畔陰影裡走出幾名赤袍人 —— 神話黎明的信徒,正不動聲色地打量著你。", style="red")
+        return offer_battle(state, gamedata, cultists, recruit="mythic_dawn", mounted=True)
     danger = world.current_location(player, gamedata).get("danger", 1)
     enemies = combat.random_encounter_group(gamedata, player.level, state.rng, max_danger=danger + 1,
                                             biome=world.current_location(player, gamedata).get("biome"))

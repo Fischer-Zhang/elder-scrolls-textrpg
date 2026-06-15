@@ -145,6 +145,33 @@ def test_oblivion_gate_visibility():
     assert gd.world["locations"][dest]["type"] in ("city", "town") and world.is_visible(c, gd, dest)
 
 
+def test_mythic_dawn_encounter_recruit():
+    """阿留斯湖遭遇式入會:口才說服成功→選擇加入→入會 + 神殿(dawn_sanctum)解鎖;服務已移離凱瓦奇。"""
+    import tesrpg.main as M
+    from tesrpg.systems import combat, factions, world, dialogue
+    from tesrpg.state import GameState
+    gd, c = _gd_char()
+    assert "mythic_dawn" not in gd.world["locations"]["kvatch"]["services"]     # 服務已從凱瓦奇移除
+    assert "mythic_dawn" in gd.world["locations"]["dawn_sanctum"]["services"]   # 移到神殿
+    c.world_events_fired.append("kvatch_falls")
+    c.location_id = "lake_arrius_caverns"
+    assert not factions.is_member(c, "mythic_dawn") and not world.is_visible(c, gd, "dawn_sanctum")
+    state = GameState(player=c, rng=RNG(1), game_mode="adventure")
+    cultists = [combat.spawn_creature(gd, "mythic_apostate", state.rng)]
+    saved = (M.ui.menu, M.ui.confirm, M.ui.message, M.ui.show_events, M.ui.combat_intro, dialogue.recruit_persuade)
+    try:
+        M.ui.menu = lambda *a, **k: "recruit"
+        M.ui.confirm = lambda *a, **k: True
+        M.ui.message = M.ui.show_events = M.ui.combat_intro = lambda *a, **k: None
+        dialogue.recruit_persuade = lambda *a, **k: {"ok": True, "chance": 1.0, "hours": 1, "tired": 0, "skill_events": []}
+        res = M.offer_battle(state, gd, cultists, recruit="mythic_dawn", mounted=True)
+    finally:
+        M.ui.menu, M.ui.confirm, M.ui.message, M.ui.show_events, M.ui.combat_intro, dialogue.recruit_persuade = saved
+    assert res is None                                      # 說服成功加入 → 未交戰
+    assert factions.is_member(c, "mythic_dawn")             # 已入會
+    assert world.is_visible(c, gd, "dawn_sanctum")          # 神殿解鎖
+
+
 def run():
     for name, fn in sorted(globals().items()):
         if name.startswith("test_") and callable(fn):

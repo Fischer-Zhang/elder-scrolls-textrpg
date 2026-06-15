@@ -266,6 +266,12 @@ VISIBLE = {
 }
 for _did, _vis in VISIBLE.items():
     L[_did]["visible"] = _vis
+# 神話黎明公會服務:kvatch 移除(改由阿留斯湖遭遇招募)、dawn_sanctum 神殿加上(入會後解鎖)
+if "mythic_dawn" in L["kvatch"]["services"]:
+    L["kvatch"]["services"].remove("mythic_dawn")
+L["dawn_sanctum"].setdefault("services", [])
+if "mythic_dawn" not in L["dawn_sanctum"]["services"]:
+    L["dawn_sanctum"]["services"].append("mythic_dawn")
 
 # --- 座標:fx,fy → box 格座標,全域唯一 ---------------------------------
 pos = {}

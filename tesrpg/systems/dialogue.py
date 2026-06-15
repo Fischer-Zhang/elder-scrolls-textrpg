@@ -21,6 +21,20 @@ def persuade_delta(skill: int) -> int:
     return round(6 + skill * 0.12)
 
 
+def recruit_chance(char: Character) -> float:
+    """遭遇式入會的說服成功率(吃口才+魅力);夾 0.10–0.85。供 UI 預示與 recruit_persuade 同源。"""
+    return max(0.10, min(0.85, 0.20 + (char.skill("speechcraft") + char.attr("personality") - 50) * 0.005))
+
+
+def recruit_persuade(char: Character, gamedata: GameData, rng: RNG) -> dict:
+    """以口才說服遇上的教徒引你入會。付 speechcraft practice(體力+時間)→ 非免費刷。
+    回傳 {ok, chance, hours, tired, skill_events}。"""
+    chance = recruit_chance(char)
+    xp, hours, tired = progression.practice_cost(char, gamedata, "speechcraft")
+    events = progression.use_skill(char, gamedata, "speechcraft", xp)
+    return {"ok": rng.chance(chance), "chance": chance, "hours": hours, "tired": tired, "skill_events": events}
+
+
 def disposition(char: Character, gamedata: GameData, npc_id: str) -> int:
     base = gamedata.npcs[npc_id]["disposition"]
     return max(0, min(100, base + char.npc_disposition.get(npc_id, 0)))
