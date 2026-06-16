@@ -76,6 +76,7 @@ PYTHONPATH=. python3 sim_assassin.py      # 平衡回歸模擬(改戰鬥常數�
 | R29 | 城鎮服務專精化:訓練師可教技 = `trainers.json`「skills」覆寫→公會推導系(`world._GUILD_SPEC`)→全技後備,再 ∪ 招牌「master」技;宗師破 `TRAINER_CAP=75`(`≤SKILL_CAP`)、`TRAINER_CAP` 唯一數值旋鈕、不動戰鬥**免 sim**;法師公會法術**每省守一學派 + 保底集 9 道**(純改 `world.json spell_stock`,`imperial_city` 通才,無孤兒);零存檔欄位(`test_world` 守) | |
 | R30 | 煉金限時增益藥水:`brew` 出強化屬性/技能/抗元素**限時**藥(`synth brewb`);效果 kind **參數內嵌**(`fattr_*`/`fskill_*`/`resist_*`)→ 共有偵測天然要求同參數;走獨立 `potion_*` 層(`potion_buffs` 權威 + 快取,聚合 attr/skill/entity_resist、**絕不寫 base**),`potion_buff.update` 掛 game_loop(skooma 後)、`ensure_potion_fields` 接載入剔過期;疊加**同(kind,param)取最強+取較晚到期非相加**;`use_item` 加 `state`;可釀池**排除 strength+武器技能 → 免 sim**(放開則必跑 `sim_assassin`) | recompute, save |
 | R31 | 毒劑深化:五毒型(DoT/麻痺基礎 + **衰毒 weaken**·**遲緩 slow**〔唯一新 combat kind:降 `_speed`+命中〕·**懼毒 fear**);**修塗毒命中路徑 solo 控制免疫缺口**(paralyze/fear 守 `_is_solo`+去重、charge 接觸即耗);brew 優先序 麻痺>懼>遲>衰>DoT,特殊毒型需 `mastery.poison_unlocks` 解鎖否則退回 DoT(特殊材料皆兼具 damage_health);里程碑 `poison_unlock` kind(R21 三步,**保留 opt_id** toxin_master/potent_poison/venom_lord 改功能解鎖);塗層次數依毒型(控制半量);無新存檔欄 → **改 combat/formulas/alchemy 必跑 `sim_assassin`** | re-sim, save |
+| R32 | 煉金效果逐步揭露:材料效果預設 `???`,三源揭露(嚐一口 `taste` 決定性消耗 / 煉製成功 `brew` 回 `learn` 鍵由呼叫端 `reveal` / 技能被動 `passive_reveal` 揭露前 `1+base_skill//25` 個);**純資訊層、brew 數學不變**;通用於任何 kind(自動涵蓋 R30/R31);`known_effects`(ing→[kind])存檔欄 + `ensure_known_effects` 防呆/清陳舊;UI 走 `ui.menu/message`(R27 安全);無戰鬥改動 → 免 sim | save |
 
 ## 自動提交閘門 / 換 session 前檢查表
 

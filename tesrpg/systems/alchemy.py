@@ -32,6 +32,91 @@ def ingredient_effects(gamedata: GameData, ing_id: str) -> list[dict]:
     return gamedata.ingredients[ing_id]["effects"]
 
 
+# --- 效果逐步揭露(R32:試驗發現系統)----------------------------------------
+# 材料效果預設隱藏為「???」,經 (a) 嚐一口 (b) 煉製成功用到該效果 (c) 煉金技能被動 逐步揭露。
+# 純資訊層 —— 完全不影響 brew 的數學/路由(玩家仍可拿未知材料下鍋)。通用於任何 kind。
+TASTE_FATIGUE = 2   # 嚐一口的微體力代價(由呼叫端扣;便宜,絕不勸退早期玩家)
+_TASTE_HINT = {"heal": "暖意", "restore_magicka": "靈光", "restore_fatigue": "提神的甘",
+               "damage_health": "灼痛", "paralyze": "麻木", "fear": "莫名的悸慄",
+               "slow": "遲滯的沉重", "damage_strength": "酸軟無力"}
+
+
+def known_kinds(char: Character, ing_id: str) -> list[str]:
+    return list(char.known_effects.get(ing_id, []))
+
+
+def is_known(char: Character, ing_id: str, kind: str) -> bool:
+    return kind in char.known_effects.get(ing_id, [])
+
+
+def undiscovered_kinds(char: Character, gamedata: GameData, ing_id: str) -> list[str]:
+    """該材料尚未揭露的效果 kind,維持 JSON 順序(決定性,非 rng)。"""
+    known = set(char.known_effects.get(ing_id, []))
+    return [e["kind"] for e in ingredient_effects(gamedata, ing_id) if e["kind"] not in known]
+
+
+def reveal(char: Character, gamedata: GameData, ing_id: str, kind: str) -> bool:
+    """揭露單一效果。回傳 True 表本次首次揭露(供 UI 報喜)。只揭露該材料實際擁有的 kind。"""
+    if kind not in {e["kind"] for e in ingredient_effects(gamedata, ing_id)}:
+        return False
+    lst = char.known_effects.setdefault(ing_id, [])
+    if kind in lst:
+        return False
+    lst.append(kind)
+    return True
+
+
+def auto_reveal_count(char: Character) -> int:
+    """首次接觸某材料時,憑煉金學識自動辨識的效果數(0–24→1,25→2,50→3,75+→5)。讀 base_skill。"""
+    return 1 + char.base_skill("alchemy") // 25
+
+
+def passive_reveal(char: Character, gamedata: GameData, ing_id: str) -> list[str]:
+    """依煉金技能,把該材料前 N 個效果視為已知;回傳本次新揭露的 kinds(idempotent,可空)。"""
+    want = auto_reveal_count(char)
+    newly: list[str] = []
+    while len(char.known_effects.get(ing_id, [])) < want:
+        und = undiscovered_kinds(char, gamedata, ing_id)
+        if not und:
+            break
+        if reveal(char, gamedata, ing_id, und[0]):
+            newly.append(und[0])
+    return newly
+
+
+def taste(char: Character, gamedata: GameData, ing_id: str) -> dict:
+    """嚐一口材料 → 揭露下一個未知效果(依 JSON 序,決定性);**確有可揭露才**消耗 1 份材料。
+    回傳 {"ok","message","revealed":kind|None}(ok=False → 未消耗,呼叫端應略過體力/時間成本)。"""
+    name = gamedata.item_name(ing_id)
+    if inventory.count_item(char, ing_id) < 1:
+        return {"ok": False, "message": "你沒有這種材料。", "revealed": None}
+    und = undiscovered_kinds(char, gamedata, ing_id)
+    if not und:                                          # 已嚐遍 → 不消耗、不收成本(避免無謂浪費材料)
+        return {"ok": False, "message": f"你已嚐遍{name}的滋味,沒有新發現。", "revealed": None}
+    inventory.remove_item(char, ing_id, 1)               # 嚐 = 吃掉一份(材料代價)
+    kind = und[0]
+    reveal(char, gamedata, ing_id, kind)
+    return {"ok": True, "revealed": kind,
+            "message": f"你嚐了一口{name},舌尖泛起一陣{_TASTE_HINT.get(kind, '異樣')}……"}
+
+
+def ensure_known_effects(char: Character, gamedata: GameData) -> None:
+    """存檔遷移(接 state.from_dict):壞值→{}、清陳舊 ing_id、剔除該材料沒有的 kind。"""
+    raw = getattr(char, "known_effects", None)
+    if not isinstance(raw, dict):
+        char.known_effects = {}
+        return
+    clean: dict[str, list[str]] = {}
+    for iid, kinds in raw.items():
+        if iid not in gamedata.ingredients or not isinstance(kinds, list):
+            continue
+        valid = {e["kind"] for e in ingredient_effects(gamedata, iid)}
+        kept = [k for k in kinds if k in valid]
+        if kept:
+            clean[iid] = kept
+    char.known_effects = clean
+
+
 def brew(char: Character, gamedata: GameData, ing_a: str, ing_b: str, rng: RNG) -> dict:
     """調配 ing_a + ing_b。回傳 {"ok","message","item_id"?,"hours","tired","skill_events"}。
 
@@ -39,7 +124,8 @@ def brew(char: Character, gamedata: GameData, ing_a: str, ing_b: str, rng: RNG) 
     讓「在煉金台調藥」不再是零時間零體力的免費刷煉金捷徑。
     """
     if ing_a == ing_b or inventory.count_item(char, ing_a) < 1 or inventory.count_item(char, ing_b) < 1:
-        return {"ok": False, "message": "材料不足或重複。", "hours": 0, "tired": False, "skill_events": []}
+        return {"ok": False, "message": "材料不足或重複。", "hours": 0, "tired": False,
+                "skill_events": [], "learn": {}}
 
     eff_a = {e["kind"]: e["magnitude"] for e in ingredient_effects(gamedata, ing_a)}
     eff_b = {e["kind"]: e["magnitude"] for e in ingredient_effects(gamedata, ing_b)}
@@ -53,7 +139,7 @@ def brew(char: Character, gamedata: GameData, ing_a: str, ing_b: str, rng: RNG) 
     if not shared:
         events = progression.use_skill(char, gamedata, "alchemy", xp * BREW_FAIL_FACTOR)
         return {"ok": False, "message": "兩種材料沒有共通效果,化作一灘廢液。",
-                "hours": hours, "tired": tired, "skill_events": events}
+                "hours": hours, "tired": tired, "skill_events": events, "learn": {}}
 
     from tesrpg.systems import mastery
     factor = (0.6 + char.skill("alchemy") / 100.0) * (1 + mastery.potion_potency(char, gamedata))  # 「濃縮萃取」
@@ -103,12 +189,14 @@ def brew(char: Character, gamedata: GameData, ing_a: str, ing_b: str, rng: RNG) 
         else:
             # 防呆:共有效果不屬有害/增益/回復(現有資料不會發生;留給未來新 kind 不致 max() 空集崩潰)
             return {"ok": False, "message": "兩種材料的效果無法調合,化作一灘廢液。",
-                    "hours": hours, "tired": tired, "skill_events": events}
+                    "hours": hours, "tired": tired, "skill_events": events, "learn": {}}
 
     inventory.add_item(char, item_id, 1)
     name = gamedata.item(item_id)["name"]
     verb = ("煉出了一瓶毒藥" if result_kind == "poison"
             else "調出了一瓶增益藥劑" if result_kind == "buff"
             else "調出了一瓶藥水")
+    # 成功 → 兩材料皆「學會」這次用到的共有效果(R32:純資料,由呼叫端套用 reveal)。
+    learn = {ing_a: sorted(shared), ing_b: sorted(shared)}
     return {"ok": True, "kind": result_kind, "message": f"你{verb}:{name}。",
-            "item_id": item_id, "hours": hours, "tired": tired, "skill_events": events}
+            "item_id": item_id, "hours": hours, "tired": tired, "skill_events": events, "learn": learn}

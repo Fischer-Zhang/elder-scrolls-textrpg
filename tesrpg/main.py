@@ -2849,25 +2849,68 @@ def action_spell_vendor(state: GameState, gamedata: GameData) -> None:
 
 def action_alchemy(state: GameState, gamedata: GameData) -> None:
     char = state.player
-    while True:                                       # 可連續煉製,返回才離開
+    while True:                                       # 可連續煉製/嚐試,返回才離開
         ings = [s["id"] for s in char.inventory if gamedata.item(s["id"]).get("kind") == "ingredient"]
-        if len(ings) < 2:
-            ui.message("材料不足,至少需要兩種煉金材料。", style="grey70")
+        if not ings:
+            ui.message("你沒有任何煉金材料。", style="grey70")
             return
+
+        # R32:憑煉金學識被動辨識(開選單即觸發,idempotent)→ 報新揭露
+        newly = [(iid, k) for iid in ings for k in alchemy.passive_reveal(char, gamedata, iid)]
+        if newly:
+            ui.message("憑著煉金學識,你一眼看出了:" +
+                       "、".join(f"{gamedata.item_name(i)}的{_EFFECT_CN.get(k, k)}" for i, k in newly),
+                       style="cyan")
+
+        def _effect_label(iid):
+            parts = []
+            for e in alchemy.ingredient_effects(gamedata, iid):
+                if alchemy.is_known(char, iid, e["kind"]):
+                    parts.append(f"{_EFFECT_CN.get(e['kind'], e['kind'])}{e['magnitude']}")
+                else:
+                    parts.append("???")           # R32:未揭露的效果隱藏
+            return "、".join(parts)
 
         def _ing_opts(exclude=None):
-            out = []
-            for iid in ings:
-                if iid == exclude:
-                    continue
-                effs = "、".join(_EFFECT_CN.get(e["kind"], e["kind"])
-                                for e in alchemy.ingredient_effects(gamedata, iid))
-                out.append((iid, f"{gamedata.item_name(iid)} ×{inventory.count_item(char, iid)}（{effs})"))
-            return out
+            return [(iid, f"{gamedata.item_name(iid)} ×{inventory.count_item(char, iid)}（{_effect_label(iid)})")
+                    for iid in ings if iid != exclude]
 
+        has_taste = any(alchemy.undiscovered_kinds(char, gamedata, iid) for iid in ings)
+        if len(ings) < 2 and not has_taste:
+            ui.message("材料不足調配,也沒有可再試出的效果(調配需兩種不同材料)。", style="grey70")
+            return
+
+        mode = "brew"
+        if has_taste:                                  # 有未知效果 → 提供「嚐一口」分支
+            mode = ui.menu("煉金台", [("brew", "調配藥水/毒藥"),
+                                      ("taste", "嚐一口材料(試出效果)")], allow_back=True)
+            if mode is None:
+                return
+
+        if mode == "taste":
+            # 只列「仍有未知效果」的材料(全已知者不該被當嚐試目標 → 避免白白吃掉)
+            taste_opts = [o for o in _ing_opts() if alchemy.undiscovered_kinds(char, gamedata, o[0])]
+            tid = ui.menu("嚐哪種材料?", taste_opts, allow_back=True)
+            if tid is None:
+                continue
+            r = alchemy.taste(char, gamedata, tid)
+            if r["ok"]:                                   # 確有揭露才付體力/時間(no-op 不消耗、不收成本)
+                char.fatigue = max(0, char.fatigue - alchemy.TASTE_FATIGUE)
+                state.time.advance(1)
+            ui.message(r["message"], style="green" if r["revealed"] else "grey70")
+            if r["revealed"]:
+                ui.message(f"你記住了:{gamedata.item_name(tid)} → {_EFFECT_CN.get(r['revealed'], r['revealed'])}。",
+                           style="bold cyan")
+            continue
+
+        if len(ings) < 2:
+            ui.message("調配至少需要兩種不同材料。", style="grey70")
+            continue                                   # has_taste 必為真(否則上方已 return)→ 回模式選單
         a = ui.menu("選第一種材料", _ing_opts(), allow_back=True)
         if a is None:
-            return
+            if has_taste:
+                continue                               # 回模式選單
+            return                                     # 無模式選單 → 直接離開
         b = ui.menu("選第二種材料", _ing_opts(exclude=a), allow_back=True)
         if b is None:
             continue
@@ -2876,6 +2919,14 @@ def action_alchemy(state: GameState, gamedata: GameData) -> None:
         ui.message(res["message"], style="green" if res["ok"] else "yellow")
         if res["tired"]:
             ui.message("體力不濟,煉製時心不在焉,成效減半。", style="yellow")
+        # R32:套用本次煉製揭露的共有效果 → 報新學會
+        learned = []
+        for iid, kinds in res.get("learn", {}).items():
+            for k in kinds:
+                if alchemy.reveal(char, gamedata, iid, k):
+                    learned.append(f"{gamedata.item_name(iid)}→{_EFFECT_CN.get(k, k)}")
+        if learned:
+            ui.message("這鍋讓你看清了材料的本性:" + "、".join(learned), style="bold cyan")
         ui.show_events(res["skill_events"], gamedata)
 
 
@@ -3170,7 +3221,9 @@ _EFFECT_CN = {"heal": "回血", "restore_magicka": "回魔", "restore_fatigue": 
               "damage_health": "毒傷", "paralyze": "麻痺",
               # 限時增益(R30):強化屬性/技能/抗元素(參數內嵌的 kind)
               "fattr_willpower": "強意志", "fattr_agility": "強敏捷",
-              "fskill_alchemy": "精煉金", "resist_magic": "抗魔法"}
+              "fskill_alchemy": "精煉金", "resist_magic": "抗魔法",
+              # 毒劑深化(R31):特殊有害效果
+              "damage_strength": "弱攻", "slow": "遲緩", "fear": "懼意"}
 
 
 def action_coat_weapon(state: GameState, gamedata: GameData) -> None:

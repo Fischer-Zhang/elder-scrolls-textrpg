@@ -35,7 +35,7 @@
 #### 戰鬥與魔法
 - 回合制**多敵 + 團隊戰鬥**(召喚物/傭兵同伴);**同伴角色化**(9 具名同伴:持久 HP/羈絆 + 具名招募任務 + 羈絆階解鎖的專屬支線 + 就地對話 + 完成支線的忠誠弧頂點〔戰術盟友光環/被動非戰鬥槓桿;盟友限定守刺客紅線〕;復用 `companion_bond` 當忠誠軸,零新存檔欄);**六大學派 + AoE**(召喚/秘術補完至各 7 法術,與毀滅/復原/變換同列;**召喚**=元素元身/魔人 + 束縛兵刃〔法系近戰〕+ 亡者復生〔屍起為盟〕、**秘術**=法術結界〔吸法術傷·吸魔變體〕+ 驅散 + 群體擒魂);元素抗性/弱點、狀態效果、出生星座每日之力
 - **三系資源對稱**:施法也耗體力、力竭降法效(`cast_fatigue_*`),**法袍套裝**省體施法(法師的對應裝甲)
-- **煉金毒藥 + 武器塗毒**;**毒劑深化(Phase 2 / R31)**:五毒型(DoT/麻痺 + 衰毒/遲緩/懼毒,特殊型需里程碑解鎖;solo BOSS 對控制型免疫);**煉金限時增益藥水(深化 Phase 1 / R30)**:強化屬性/技能 + 抗元素**限時**藥劑(走獨立 `potion_*` 層、絕不寫 base;可釀池避 strength/武器技能守刺客紅線);**潛行刺客系**:偷襲先機、暗殺殘響、雙持、**隱遁再襲(潛行 25 里程碑「隱遁之術」;連環踏影對單體仍遞減、反 solo boss 風箏)**、戰前偵查;武器流派(潛襲/破甲/速度)
+- **煉金毒藥 + 武器塗毒**;**毒劑深化(Phase 2 / R31)**:五毒型(DoT/麻痺 + 衰毒/遲緩/懼毒,特殊型需里程碑解鎖;solo BOSS 對控制型免疫);**煉金限時增益藥水(深化 Phase 1 / R30)**:強化屬性/技能 + 抗元素**限時**藥劑(走獨立 `potion_*` 層、絕不寫 base;可釀池避 strength/武器技能守刺客紅線);**效果逐步揭露(Phase 3 / R32)**:材料效果預設 `???`,經嚐試/煉製/技能揭露(純資訊層,不碰 brew 數學);**潛行刺客系**:偷襲先機、暗殺殘響、雙持、**隱遁再襲(潛行 25 里程碑「隱遁之術」;連環踏影對單體仍遞減、反 solo boss 風箏)**、戰前偵查;武器流派(潛襲/破甲/速度)
 
 #### 世界與探索
 - **八省 ~168 地點 / 48 城 + 17 鎮 + 70 野區 + 33 地城**(含海爾根 Helgen=白隘北口、賽→天門戶)(每省 5–9 城 + 多個正典分區野區〔黃金海岸/苦岸/裂石郡/收割者三月…〕做城際過場;邊境戍堡為省際接縫)+ **`pos[col,row]` 與 `links` 皆依正典 TES 地理**(頂層 `world["map"]` 40×24);旅行/晝夜/危險度(數字為快照,以 JSON/測試為準)
@@ -872,6 +872,14 @@ tesrpg/
 - **塗層次數依毒型**(`coat_weapon`):控制型(paralyze/fear)= `base//2+1`、遲緩 = `base-1`、DoT/衰減 = `base`(防控場過載)。
 - **存檔**:**無新 Character 欄**(新毒全在既有 `weapon_poison["status"]` + 戰鬥 `active_effects`);`mastery_choices` 結構不動。資料:`ingredients.json` 給 deathbell(hub:damage_strength/slow/fear)+ imp_stool(damage_strength)補有害 kind,新增 `spider_egg`(slow)/`vampire_dust`(fear),野外來源走 bestiary loot(蜘蛛/吸血鬼;`test_crafting` 守)。
 - **必跑 `sim_assassin`**(改 combat/formulas/alchemy):solo boss 全 0% 一擊秒殺 ✓、群戰死亡率不崩(27%/12%)✓;塗毒控制免疫對 solo 強化紅線。守門:`tests/test_poison_depth.py`(路由解鎖/fall-back、synth round-trip、各型塗層、**solo 控制免疫回歸**、非 solo 命中、slow 降速、weaken 生效、dispel)+ `test_mastery` 改測 `poison_unlocks` union。
+
+---
+
+### R32 · 煉金效果逐步揭露(煉金深化 Phase 3)[save]
+
+- **還原 DESIGN.md §3.4 試驗發現**:材料效果預設隱藏為「???」,經三源揭露 →(a)**嚐一口** `alchemy.taste`(消耗 1 份 + 微體力 `TASTE_FATIGUE`,依 JSON 序揭露下一個未知,**決定性非 rng**);(b)**煉製成功** `brew` 多回 `learn` 鍵(本次用到的共有效果),**由呼叫端 `reveal` 套用**(brew 保持純函式、數學一字不改);(c)**技能被動** `passive_reveal`(開選單即觸發,揭露前 `auto_reveal_count = 1+base_skill//25` 個,idempotent)。
+- **純資訊層、零數值變動**:brew 路由/magnitude/毒效全不受 `known_effects` 影響(玩家仍可拿未知材料下鍋);只改 `action_alchemy` 顯示(已知 → CN+量值、未知 → `???`)+ 加「嚐一口」選單分支。通用於任何效果 kind → **自動涵蓋 R30/R31 新效果**(只需 `_EFFECT_CN` 補 CN 名)。全走 `ui.menu`/`ui.message`(R27 安全,無新 view-model、無終端 stdin)。
+- **存檔(R03)**:Character +1 欄 `known_effects`(`ing_id → [kind]`,JSON list;default_factory、進 to_dict、`cls(**d)`);`alchemy.ensure_known_effects` 接 `state.from_dict`(壞值→{}、清陳舊 ing_id、剔除該材料沒有的 kind)。舊存檔起始空 → 由技能被動緩衝老手(高煉金一眼讀完)。**無戰鬥改動 → 免 sim**。守門:`tests/test_alchemy_discovery.py`(三揭露源、brew 數學不變、reveal 只認真 kind、通用新 kind、存檔 round-trip + 舊存檔遷移 + 防呆)。
 
 ---
 

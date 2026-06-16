@@ -3,7 +3,7 @@
 > **這是一份「參考目錄」**(catalog,非設計憲法):把全遊戲所有增益/減益依來源層整理、附實際數值,方便查閱與平衡盤點。
 > 真實來源(single source of truth)仍是程式碼(`tesrpg/systems/*.py`、`tesrpg/formulas.py`)與資料(`tesrpg/data/*.json`);
 > 數值有疑義以程式常數/JSON 為準。鐵律本體見 [handoff.md](handoff.md) §3(R05/R07/R11/R14/R15/R20/R21/R25/R26)、設計理念見 [DESIGN.md](DESIGN.md)。
-> 末次盤點:2026-06-16(煉金深化 Phase 1 限時增益藥水 `potion_*` 層〔§⑥/R30〕+ Phase 2 毒劑深化五毒型〔§⑥/R31〕)。改增益常數後請順手更新本檔。
+> 末次盤點:2026-06-16(煉金深化 Phase 1 限時增益藥水 `potion_*` 層〔§⑥/R30〕+ Phase 2 毒劑深化五毒型〔§⑥/R31〕+ Phase 3 效果揭露〔R32,純資訊層、零數值影響〕)。改增益常數後請順手更新本檔。
 
 ---
 
