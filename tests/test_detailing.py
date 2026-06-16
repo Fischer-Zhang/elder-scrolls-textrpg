@@ -254,6 +254,39 @@ def gd_state(gd, c):
     return _S(c, GameTime())
 
 
+def test_every_city_meets_npc_standard():
+    """每座非邊境城/鎮達居民標準(城≥3 / 鎮≥2)—— 杜絕『有店無人』空城(回報修補後守門)。"""
+    from collections import Counter
+    gd, _ = _char()
+    na = Counter(n["location"] for n in gd.npcs.values() if n.get("location"))
+    thin = []
+    for lid, l in gd.world["locations"].items():
+        if l.get("type") not in ("city", "town") or l.get("province") == "邊境":
+            continue
+        want = 2 if l["type"] == "town" else 3
+        if na[lid] < want:
+            thin.append(f'{l["name"]}({na[lid]}/{want})')
+    assert not thin, f"NPC 不足的城:{thin}"
+
+
+def test_morrowind_ecology_and_npc_quest_targets():
+    """晨風生態怪池 ≥4(委託可輪替不再全打灰蹦蟲);所有 npc-source 任務目標合法。"""
+    from tesrpg.systems import court
+    gd, _ = _char()
+    assert len(court._province_objectives(gd)["晨風"][0]) >= 4
+    reg = set(gd.items) | set(gd.weapons) | set(gd.armor)
+    for qid, q in gd.quests.items():
+        if q.get("source") != "npc" or "objective" not in q:
+            continue
+        o = q["objective"]
+        if o["type"] == "kill":
+            assert o["creature"] in gd.bestiary, f"{qid} 目標怪 {o.get('creature')} 不存在"
+        elif o["type"] == "clear_dungeon":
+            assert o["dungeon"] in gd.dungeons, f"{qid} 目標地城 {o.get('dungeon')} 不存在"
+        elif o["type"] == "collect":
+            assert o["item"] in reg, f"{qid} 目標物品 {o.get('item')} 不存在"
+
+
 def run():
     for name, fn in sorted(globals().items()):
         if name.startswith("test_") and callable(fn):

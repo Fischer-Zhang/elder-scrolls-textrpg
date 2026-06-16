@@ -818,5 +818,573 @@
     "disposition": 40,
     "greeting": "「噓——別擋著糖路。從佩萊泰恩的蔗田到森查爾的暗碼頭,這條林道養活了半個南境的走私客,也埋了不少貪心的骨頭。」",
     "rumor": "「暗月之窟近來不太平。聽聞瑟拉斯·瑪斯拉的污影越聚越多,連夜裡的森奇虎都繞著走。糖田督主達吉爾正懸賞蕩窟之人,膽子大的,倒是發財的好機會。」"
+  },
+  "solitude_a": {
+    "name": "薇格妮爾",
+    "location": "solitude",
+    "disposition": 48,
+    "greeting": "「歡迎來到獨孤城,旅人 —— 帝國在天際最後的旗幟,就插在這座懸崖城上。」",
+    "rumor": "海芬古一帶的崖路最近不太平,有冒險者說在岩縫裡撞見了凍咬蜘蛛。"
+  },
+  "solitude_b": {
+    "name": "托爾格",
+    "location": "solitude",
+    "disposition": 44,
+    "greeting": "「打鐵的火爐整天不熄,客人。獨孤城的兵器供著整個天際的駐軍。」",
+    "rumor": "往龍橋鎮的商隊都說,夜裡林子深處傳來的不是狼嚎,是屍鬼爬出古墓的聲響。"
+  },
+  "solitude_c": {
+    "name": "希芙特",
+    "location": "solitude",
+    "disposition": 50,
+    "greeting": "「我在這碼頭撒了三十年的網,鹹風吹白了我的鬍子。要鮮魚嗎,北地人?」",
+    "rumor": "聽說龍橋鎮南邊的雪林裡,有銀手幫的獵人四處遊蕩,專找變狼之人的麻煩。",
+    "quest": "favor_solitude",
+    "quest_disposition": 58
+  },
+  "dawnstar_a": {
+    "name": "布尤恩",
+    "location": "dawnstar",
+    "disposition": 46,
+    "greeting": "「晨星城的礦坑養活了我們,可這港口的雪,連夢都凍得發冷。」",
+    "rumor": "通往冬堡的海岸結著厚冰,過路人說那一帶常有冰魂在風雪裡飄蕩。"
+  },
+  "dawnstar_b": {
+    "name": "芙蕾雅",
+    "location": "dawnstar",
+    "disposition": 50,
+    "greeting": "「我守著史東山神殿的香火,旅人。北風裡的禱告,神祇聽得最清楚。」",
+    "rumor": "墨索爾那邊的沼澤鬧得人心惶惶,據說腐爛的屍鬼從濕地的墓塚裡爬了出來。"
+  },
+  "dawnstar_c": {
+    "name": "哈爾格",
+    "location": "dawnstar",
+    "disposition": 43,
+    "greeting": "「我在晨星城當衛兵,凍掉半根手指也得站崗。白漫城那路,你最好結伴走。」",
+    "rumor": "往白漫城的雪原上,旅人屢屢被骷髏伏擊,說是某座古墓的封印鬆了。"
+  },
+  "morthal_a": {
+    "name": "霍羅德",
+    "location": "morthal",
+    "disposition": 45,
+    "greeting": "「墨索爾的霧氣裡藏著太多東西,外鄉人。別在天黑後走進沼澤。」",
+    "rumor": "沼澤深處的墓窟近來不安寧,獵人說屍鬼夜夜從泥水裡爬出來遊蕩。"
+  },
+  "morthal_b": {
+    "name": "索爾迪絲",
+    "location": "morthal",
+    "disposition": 47,
+    "greeting": "「我研讀沼澤裡的古老符文,旅人。這片濕地比領主們想像的更古老。」",
+    "rumor": "往龍橋鎮的林道上,有人撞見凍咬蜘蛛結網攔路,毒液能放倒一匹馬。"
+  },
+  "morthal_c": {
+    "name": "貝爾娜",
+    "location": "morthal",
+    "disposition": 50,
+    "greeting": "「我在霧裡撐船捕鰻過活。墨索爾的人不多,可每個都信得過。」",
+    "rumor": "聽往晨星城的腳夫說,海岸的冰風裡有冰魂出沒,碰上了連喊救命都來不及。"
+  },
+  "winterhold_a": {
+    "name": "斯坎尤爾",
+    "location": "winterhold",
+    "disposition": 44,
+    "greeting": "「冬堡曾是天際的驕傲,如今大崩塌只剩下這幾棟殘屋與學院的高塔。」",
+    "rumor": "城外不遠的薩爾薩斯古墓被學院的人挖開了,如今屍鬼在地底深處躁動不安。",
+    "quest": "favor_winterhold",
+    "quest_disposition": 62
+  },
+  "winterhold_b": {
+    "name": "伊絲嘉",
+    "location": "winterhold",
+    "disposition": 48,
+    "greeting": "「我守著學院橋下的客棧,旅人。在冬堡,一爐暖火比黃金還珍貴。」",
+    "rumor": "通往薩爾薩斯那邊的雪地裡,常有冰魂尾隨落單的旅人,寒氣刺骨。"
+  },
+  "winterhold_c": {
+    "name": "羅吉爾",
+    "location": "winterhold",
+    "disposition": 42,
+    "greeting": "「我在冬堡當衛兵,守著這座快被大海吞掉的城。往晨星城的路最近也不安生。」",
+    "rumor": "沿著海岸往晨星城去,凍咬蜘蛛在裂冰的洞窟裡築巢,獵人都繞道而行。"
+  },
+  "helgen_a": {
+    "name": "葛瑪爾",
+    "location": "helgen",
+    "disposition": 46,
+    "greeting": "「海爾根只是白漫城邊上的一座小邊鎮,旅人。城牆雖小,風雪可不留情。」",
+    "rumor": "鎮南的冰風廢墟封了多年,如今裡頭傳出響動,衛兵說怕是屍鬼又活了過來。"
+  },
+  "helgen_b": {
+    "name": "蕾達",
+    "location": "helgen",
+    "disposition": 50,
+    "greeting": "「我在這小鎮擺攤賣皮貨,客人。往白漫城去的隊伍,常在我這兒添置行頭。」",
+    "rumor": "往冰風廢墟的山徑上,凍咬蜘蛛結了滿洞的網,連老獵戶都不敢深入。"
+  },
+  "sadrith_mora_a": {
+    "name": "尼洛斯·薩魯",
+    "location": "sadrith_mora",
+    "disposition": 42,
+    "greeting": "「外人。泰爾凡尼的菌塔不歡迎不請自來的腳步 —— 但你既然來了,別碰我的孢子田就行。」",
+    "rumor": "東邊沼地裡奈克斯獵犬成群,連泰爾凡尼的學徒都不敢單身出菌塔採料。"
+  },
+  "sadrith_mora_b": {
+    "name": "德蕾莎·瑟洛",
+    "location": "sadrith_mora",
+    "disposition": 48,
+    "greeting": "「鹽風與孢子,薩瑞斯·莫拉的氣味就是這樣。要藥草還是要附魔卷軸?丹莫的手藝童叟無欺。」",
+    "rumor": "聽說幽魂之門那道屏障近來不穩,守門的兄弟會說裡頭的東西躁動得很。",
+    "quest": "favor_sadrith_mora",
+    "quest_disposition": 60
+  },
+  "sadrith_mora_c": {
+    "name": "亞瓦尼·因迪爾",
+    "location": "sadrith_mora",
+    "disposition": 40,
+    "greeting": "「三相神在上,我替朝聖者誦經,也替死者闔眼。你眼裡有風塵,旅人 —— 也有殺氣。」",
+    "rumor": "科戈魯恩的廢墟下,據說第六家族的舊靈未散,夜裡會引來崖游怪盤旋哀鳴。"
+  },
+  "gnisis_a": {
+    "name": "達羅·薩德拉斯",
+    "location": "gnisis",
+    "disposition": 45,
+    "greeting": "「歡迎來到格尼希斯,旅人。我替軍團與帝國守這座礦鎮 —— 雖然這片灰土從不真正屬於誰。」",
+    "rumor": "西通巴爾莫拉的路上凱苟提橫行,商隊得結伴才敢過那段灰原。",
+    "quest": "favor_gnisis",
+    "quest_disposition": 62
+  },
+  "gnisis_b": {
+    "name": "法蕾雅·泰爾蘿",
+    "location": "gnisis",
+    "disposition": 47,
+    "greeting": "「礦坑的鬼火礦石換來這些貨,旅人。北去黑光城的路灰大,記得蒙好口鼻。」",
+    "rumor": "往黑光城的灰田一帶,阿利特蜥成日游竄,啃食路邊的旅人毫不手軟。"
+  },
+  "gnisis_c": {
+    "name": "瑟林·拉文尼",
+    "location": "gnisis",
+    "disposition": 43,
+    "greeting": "「我守著禮拜堂的祭壇,也守著鎮民的安寧。風從紅山吹來時,連聖徒的雕像都會落淚。」",
+    "rumor": "鎮外天空崖游怪愈聚愈多,老人說那是灰燼墓塚將要躁動的凶兆。"
+  },
+  "taneth_a": {
+    "name": "納齊爾",
+    "location": "taneth",
+    "disposition": 48,
+    "greeting": "「歡迎來到塔尼斯,旅人——這座綠洲之城靠的不是運氣,是劍與商隊。」",
+    "rumor": "往北去劍聖之墓的商道上,沙蠍越來越大膽,連白晝都敢襲擊駝隊。",
+    "quest": "favor_taneth",
+    "quest_disposition": 60
+  },
+  "taneth_b": {
+    "name": "莎菲爾",
+    "location": "taneth",
+    "disposition": 44,
+    "greeting": "「香料、絲綢、彎刀——塔尼斯市集應有盡有,只要你的金幣夠分量。」",
+    "rumor": "去里哈德的路要當心,聽說峽谷裡有沙丘裂獸潛伏,專咬落單的腳程。"
+  },
+  "taneth_c": {
+    "name": "凱馬圖",
+    "location": "taneth",
+    "disposition": 50,
+    "greeting": "「守城這些年,我見慣了沙暴與刀光。你看著倒不像找麻煩的人。」",
+    "rumor": "劍聖之墓裡長眠著古代劍聖,可那地方近來不太安寧,鎮上沒人敢踏進去。"
+  },
+  "lainlyn_a": {
+    "name": "拉雅",
+    "location": "lainlyn",
+    "disposition": 47,
+    "greeting": "「蘭林是通往四方的門戶,北接森塔,西連赫加西——你要往哪兒去?」",
+    "rumor": "往沃倫菲爾的礦道荒廢已久,有人說裡頭的矮人蜘蛛還在地底織著金屬的網。",
+    "quest": "clear_rourken_halls",
+    "quest_disposition": 62
+  },
+  "lainlyn_b": {
+    "name": "亞姆蘭",
+    "location": "lainlyn",
+    "disposition": 45,
+    "greeting": "「鐵砧不會說謊,旅人。蘭林的彎刀,削得斷沙礫也削得斷骨。」",
+    "rumor": "羅肯廳堂是矮人留下的古城,聽說至今還有矮人蜘蛛在深處遊走,巡守著主人的遺物。"
+  },
+  "lainlyn_c": {
+    "name": "伊曼",
+    "location": "lainlyn",
+    "disposition": 49,
+    "greeting": "「我替商隊看顧駝群,從赫加西一路到森塔的路我都走過。」",
+    "rumor": "去森塔的沙路兩旁,夜裡常聽見拉米亞的歌聲——別循著聲音走,那是要命的誘餌。"
+  },
+  "rihad_a": {
+    "name": "薩迪亞",
+    "location": "rihad",
+    "disposition": 46,
+    "greeting": "「里哈德是漢默法爾最南的港,海風帶來鹽味,也帶來四海的消息。」",
+    "rumor": "往塔尼斯的內陸道上沙蠍成患,連巡邏的衛兵都得結伴而行。"
+  },
+  "rihad_b": {
+    "name": "葉斯拉",
+    "location": "rihad",
+    "disposition": 48,
+    "greeting": "「我在里哈德外灘下網討生活,海給的不嫌少,也不嫌多。」",
+    "rumor": "通往塔尼斯的乾谷裡有沙丘裂獸出沒,牠們會把自己埋進沙裡守株待兔。"
+  },
+  "rihad_c": {
+    "name": "阿達菈",
+    "location": "rihad",
+    "disposition": 50,
+    "greeting": "「願諸聖守護你的腳步,旅人。里哈德雖小,人心向來是熱的。」",
+    "rumor": "祭壇前常有人為去塔尼斯的親人祈福——那條路上的沙蠍,近來奪了不少性命。"
+  },
+  "elden_root_a": {
+    "name": "費南達爾",
+    "location": "elden_root",
+    "disposition": 48,
+    "greeting": "「歡迎仰望艾爾登根的巨木,旅人——我們的城就長在這棵活著的神木裡。」",
+    "rumor": "往文迪西的根路上人說,法林斯提根穴深處盤踞著樹靈,連狩獵團都不敢入。",
+    "quest": "favor_elden_root",
+    "quest_disposition": 60
+  },
+  "elden_root_b": {
+    "name": "綠語者·伊蘭薇",
+    "location": "elden_root",
+    "disposition": 44,
+    "greeting": "「綠約禁我食樹中之肉,旅人。我只取倒木與落果,如先祖所訓。」",
+    "rumor": "希凡納那邊的樵夫近來不敢進林,說絞殺藤蔓爬上了通往大城的小徑。"
+  },
+  "elden_root_c": {
+    "name": "塔林迪爾",
+    "location": "elden_root",
+    "disposition": 50,
+    "greeting": "「我替城衛巡守樹冠步道,陌生人。樹下太黑,連我也不愛往根裡去。」",
+    "rumor": "去文迪西的人都繞著走——那座地城裡盤著的東西,沒人說得清。"
+  },
+  "arenthia_a": {
+    "name": "卡薇兒",
+    "location": "arenthia",
+    "disposition": 47,
+    "greeting": "「阿倫西亞是邊城,客官——往北一步就出了瓦倫森林。我這攤的弓與毛皮,過了斯特里德渡口可就買不到囉。」",
+    "rumor": "斯特里德渡口的商隊抱怨,林邊的食人巨猿成群,搶得他們不敢單獨上路。",
+    "quest": "favor_arenthia",
+    "quest_disposition": 58
+  },
+  "arenthia_b": {
+    "name": "戍邊者·戈倫",
+    "location": "arenthia",
+    "disposition": 50,
+    "greeting": "「我守著通往希凡納的這道林關,旅人。邊境的夜裡,什麼都可能從樹影裡鑽出來。」",
+    "rumor": "往希凡納的舊道上,樵夫說樹靈在林間遊蕩,惹不得。"
+  },
+  "arenthia_c": {
+    "name": "獵長·斐瑞絲",
+    "location": "arenthia",
+    "disposition": 45,
+    "greeting": "「綠約之下,我們與獸同行也同獵,外鄉人。但有些東西,連波斯莫也不願與牠共林。」",
+    "rumor": "斯特里德渡口那頭傳來消息,叢林巨蛛把網結到了官道邊。"
+  },
+  "woodhearth_a": {
+    "name": "漁夫·歐德倫",
+    "location": "woodhearth",
+    "disposition": 49,
+    "greeting": "「木心港的海風帶著鹹味與樹脂香,旅人。我打撈一輩子,只怕林子比海更難測。」",
+    "rumor": "通往法林斯提的人說,絞藤蛛巢裡的叢林巨蛛多得結成了一片網。",
+    "quest": "favor_woodhearth",
+    "quest_disposition": 62
+  },
+  "woodhearth_b": {
+    "name": "船匠·梅瑞絲",
+    "location": "woodhearth",
+    "disposition": 46,
+    "greeting": "「我用倒下的格拉特巨木造船,客官——綠約不許伐活樹,海卻不在乎這些。」",
+    "rumor": "崖港哨堡的哨兵近來警戒,說林緣的絞殺藤蔓爬得越來越近。"
+  },
+  "woodhearth_c": {
+    "name": "崖港信使·泰倫",
+    "location": "woodhearth",
+    "disposition": 50,
+    "greeting": "「我在木心港與崖港哨堡之間跑信,旅人。這段路漂亮,可也不太平。」",
+    "rumor": "往法林斯提的根路上,有人撞見樹靈守著林心,嚇得連夜折返。"
+  },
+  "dune_a": {
+    "name": "守關隊長 達羅·夏哈",
+    "location": "dune",
+    "disposition": 46,
+    "greeting": "「歡迎踏進杜恩,沙之子。我們守著通往安納奎那綠洲的最後一道門 —— 你的彎刀,是來護沙的,還是來惹塵的?」",
+    "rumor": "往北通科林斯的商道近來不太平,糖晶藤盤死了整段路肩,纏得駱駝隊寸步難行;往西的梅里谷遺址更不必說,那廢墟入夜便有暗潮幽魂遊蕩。",
+    "quest": "favor_dune",
+    "quest_disposition": 58
+  },
+  "dune_b": {
+    "name": "綠洲香料販 琪莎芭",
+    "location": "dune",
+    "disposition": 44,
+    "greeting": "「這位香料給你聞聞 —— 對對對,杜恩的肉桂與糖晶,全艾爾斯維爾最香。買一點吧,駝隊一走又得等上半月囉。」",
+    "rumor": "梅里谷遺址那邊出了怪事,商隊說廢墟深處有阿爾菲克貓巫在唸咒招魂,連路過的糖晶藤都被養得比人還高。"
+  },
+  "dune_c": {
+    "name": "讀月女祭 莎拉·黛兒",
+    "location": "dune",
+    "disposition": 48,
+    "greeting": "「雙月照見你的來路,旅人。杜恩是糖晶與信仰交織的城,你帶著風塵,卻也帶著一絲月糖的甜腥 —— 坐下,讓這一位替你讀月吧。」",
+    "rumor": "讀月者說,梅里谷遺址的暗潮幽魂越聚越多,是雙月失序之兆;唯有有膽之人入廢墟肅清,迦哈傑的月光才能重照那片瓦礫。"
+  },
+  "riverhold_a": {
+    "name": "河市稅吏 哈馬爾·卓",
+    "location": "riverhold",
+    "disposition": 45,
+    "greeting": "「河關,通往希羅帝爾的北門戶 —— 過了這條河,就出了艾爾斯維爾的草海。報上你的貨,沙之子,本吏的算盤可從不打盹。」",
+    "rumor": "往南去科林斯的渡口生意全垮了,船家說河灣淺灘竄出糖癮野獸,泡瘋了的畜生見人就撲,沒人敢撐篙渡河。"
+  },
+  "riverhold_b": {
+    "name": "漁獵手 拉吉·薩維",
+    "location": "riverhold",
+    "disposition": 46,
+    "greeting": "「河關的魚肥,可這些日子河岸比鬥獸場還凶險。這位若要下水捕魚,先看清楚水草 —— 有些『水草』,會回頭咬人。」",
+    "rumor": "上游往瑞門的方向,夜裡能聽見森奇巨虎的吼聲,牠們順著河獵食;漁人們寧可空網而歸,也不敢在天黑後留在岸邊。"
+  },
+  "riverhold_c": {
+    "name": "邊境學徒 兜·瑞達",
+    "location": "riverhold",
+    "disposition": 47,
+    "greeting": "「這一位在抄錄河關的渡河文書 —— 你知道嗎?從這裡往北一步,語言、月相、連塵土的味道都會變。邊境是世上最有學問的地方,外鄉人。」",
+    "rumor": "聽往來商隊講,糖晶藤的孢子順著河風飄進城郊,一夜便能把田埂纏死;河關的農人想找人去把河谷裡的藤蔓燒乾淨。"
+  },
+  "corinthe_a": {
+    "name": "城衛總管 賈札·鐵爪",
+    "location": "corinthe",
+    "disposition": 46,
+    "greeting": "「科林斯,五路交會之城 —— 托瓦爾的月糖、杜恩的香料、河關的北貨,全打這兒過。守好這座城,就是守好半個艾爾斯維爾,沙之子。」",
+    "rumor": "城東不遠的暗月窟最近不對勁,被月糖浸瘋的野獸成群下山,守關的弓手已經射不退牠們了;告示板上清剿的賞金天天往上加。",
+    "quest": "favor_corinthe",
+    "quest_disposition": 62
+  },
+  "corinthe_b": {
+    "name": "月糖行商 妮莎·阿達",
+    "location": "corinthe",
+    "disposition": 44,
+    "greeting": "「五條商道在科林斯打結,沙之子 —— 往托瓦爾、往杜恩、往河關……每一條都流著金子,也流著麻煩。要做生意,先聽這一位說說哪條路還能走。」",
+    "rumor": "托瓦爾方向的駝隊說,有阿爾菲克貓巫攔路施法,連護衛的彎刀都被凍在半空;行會懸賞重金,要把這群作祟的小貓巫師收拾乾淨。"
+  },
+  "corinthe_c": {
+    "name": "糖晶匠 多·薩林",
+    "location": "corinthe",
+    "disposition": 47,
+    "greeting": "「瞧瞧這結晶的紋路 —— 科林斯的糖晶切工,連森查爾的糖客都得讓三分。外鄉人,你手上的繭不像握刀的,倒像握過鑿子?坐,陪這一位聊兩句。」",
+    "rumor": "採糖晶的工人不敢再往暗月窟去了,他們說壇心深處那頭暗潮幽魂越養越凶,進去採料的同伴一個個沒了影子。"
+  },
+  "bravil_a": {
+    "name": "馬庫斯·瓦倫提努斯",
+    "location": "bravil",
+    "disposition": 44,
+    "greeting": "「歡迎來到布拉維爾,旅人。河水又漲了,屋子又歪了 —— 不過幸運女神的雕像還站得直,湊合著過吧。」",
+    "rumor": "西邊往史金格拉德的葡萄園路上不太平,夜行人說見過飄在田埂上的帝國亡魂。"
+  },
+  "bravil_b": {
+    "name": "希爾薇雅·美樂",
+    "location": "bravil",
+    "disposition": 47,
+    "greeting": "「魚剛從拉爾薩河撈上來的,還在跳呢。布拉維爾窮歸窮,鮮魚可不缺,先生。」",
+    "rumor": "下游的維爾凡林是座淹了半截的古艾爾夫廢墟,聽說裡頭的亡者夜裡會發冷光。",
+    "quest": "favor_bravil",
+    "quest_disposition": 60
+  },
+  "bravil_c": {
+    "name": "提圖斯·門迪斯",
+    "location": "bravil",
+    "disposition": 40,
+    "greeting": "「站住,報上來歷。布拉維爾的街頭混混夠多了,我可沒空替外鄉人收屍。」",
+    "rumor": "通往史金格拉德的官道近來常有商隊失蹤,有人怪到從荒原下來的米諾陶頭上。"
+  },
+  "chorrol_a": {
+    "name": "瓦勒里婭·特列利烏斯",
+    "location": "chorrol",
+    "disposition": 48,
+    "greeting": "「願八聖庇佑你的旅途。切若爾倚著大綠林,城牆厚實,人心也還算厚道,旅人。」",
+    "rumor": "城外的切德納寇洞窟近來不寧,獵人說洞口附近常聞到米諾陶的腥臊氣。",
+    "quest": "favor_chorrol",
+    "quest_disposition": 62
+  },
+  "chorrol_b": {
+    "name": "加維烏斯·歐瑞利",
+    "location": "chorrol",
+    "disposition": 45,
+    "greeting": "「鐵砧才剛燒熱。切若爾的鋼料運自帝都,要打把趁手的傢伙,你算是來對地方了。」",
+    "rumor": "北邊奧圖斯堡是座荒廢的舊軍堡,聽說堡內的亡靈把守著帝國軍團遺下的甲冑。"
+  },
+  "chorrol_c": {
+    "name": "迪歐克勒斯·法布里修斯",
+    "location": "chorrol",
+    "disposition": 46,
+    "greeting": "「我在書院抄錄古卷。從這兒往北是雪原裡的布魯瑪,往東則是繁華的帝都 —— 你打算往哪兒去?」",
+    "rumor": "往帝都的大道兩旁多有古墓,旅人說廢墟間徘徊著不肯安息的帝國亡魂。"
+  },
+  "leyawiin_a": {
+    "name": "費迪婭·梅塔利亞",
+    "location": "leyawiin",
+    "disposition": 43,
+    "greeting": "「歡迎來到雷雅維因,賽羅迪爾的南大門。城跨拉爾薩與下黑檀河之上,潮濕是潮濕,風光倒不賴。」",
+    "rumor": "城南濕地深處的維爾凡林廢墟淹在水下,夜裡那些帝國亡魂的冷光能照亮整片沼澤。"
+  },
+  "leyawiin_b": {
+    "name": "奧古斯都·凱西利",
+    "location": "leyawiin",
+    "disposition": 41,
+    "greeting": "「城門守衛奧古斯都在此。雷雅維因地處邊陲,進城的、出城的我都得盯著,旅人請自重。」",
+    "rumor": "城外荒丘間有米諾陶結群遊蕩,牠們認準了商道,衛兵單槍匹馬可不敢去招惹。"
+  },
+  "leyawiin_c": {
+    "name": "莉薇雅·薩盧斯特",
+    "location": "leyawiin",
+    "disposition": 49,
+    "greeting": "「划船嗎?我熟這片水路。雷雅維因的漁獵人靠河吃飯,只是近來連白日都不太敢往沼澤深處去了。」",
+    "rumor": "順流而下的維爾凡林沉在水底,撈魚的都說那古墟裡的亡者見不得活人。"
+  },
+  "orsinium_a": {
+    "name": "邊衛隊長 戈德溫",
+    "location": "orsinium",
+    "disposition": 46,
+    "greeting": "「奧西尼姆夾在獸人與布雷頓之間,城牆比哪兒都厚 —— 外鄉人,在這座圍城裡,劍要握得緊,話要說得少。」",
+    "rumor": "西去三日就是北角港,東邊則通往永恒城的隘口;近來沃斯加荒沼的石像鬼下山得勤,城門外的告示板掛滿了懸賞。",
+    "quest": "favor_orsinium",
+    "quest_disposition": 58
+  },
+  "orsinium_b": {
+    "name": "鐵砧鋪主 莫黛特",
+    "location": "orsinium",
+    "disposition": 44,
+    "greeting": "「布雷頓人的手藝,獸人的鐵砧 —— 在奧西尼姆,誰打的劍不重要,鐵燒得夠不夠紅才要緊。要兵刃還是要修補,直說。」",
+    "rumor": "聽往來北角的商隊說,荒原上的鴉妖近來成群,專撲落單的旅人;有膽量的話,牠們的羽翎在城裡能換不少金幣。"
+  },
+  "orsinium_c": {
+    "name": "雲遊修士 賽巴斯欽",
+    "location": "orsinium",
+    "disposition": 47,
+    "greeting": "「願八聖庇佑你,旅人。我自永恒城一路講道而來,在這圍城裡,信仰是唯一不必鑄成鐵的盾。」",
+    "rumor": "古老的戴尼瑞塔深處,還盤踞著上古精靈的餘孽與石像鬼;膽敢入塔的人,沒幾個能囫圇地走出來。"
+  },
+  "northpoint_a": {
+    "name": "港務官 莉賽特",
+    "location": "northpoint",
+    "disposition": 45,
+    "greeting": "「歡迎來到北角 —— 高岩北岸最忙的港口。從這兒往南是威岩的富庶,往西是坎洛恩的麥酒,往東則是奧西尼姆的鐵城。」",
+    "rumor": "往坎洛恩的路上近來不太平,荒原的石像鬼擾了商隊;南邊威岩王室也在懸賞,要人去探海妖岩巫窟那群女巫的底細。"
+  },
+  "northpoint_b": {
+    "name": "魚市販婦 蔻蕾特",
+    "location": "northpoint",
+    "disposition": 46,
+    "greeting": "「鮮魚!剛從北岸撈上來的!外鄉人,北角的海風鹹,人心卻熱 —— 買條魚,我多送你一句本地的閒話。」",
+    "rumor": "聽下錨的水手講,西邊靠坎洛恩的崖壁上築了鴉妖的窩,牠們連晾在船上的鹹魚都敢來搶。",
+    "quest": "hunt_northpoint",
+    "quest_disposition": 60
+  },
+  "northpoint_c": {
+    "name": "藏書學者 阿爾諾",
+    "location": "northpoint",
+    "disposition": 48,
+    "greeting": "「我在北角的書庫裡耗了半生,研究的盡是高岩那些埋進土裡的古墓與塔樓。外鄉人,你若見過古塔深處的東西,務必說與我聽。」",
+    "rumor": "我的卷冊記載,溫迪爾古墟的地穴裡仍有古墓鐵衛巡守不息;那些鏽甲亡靈,守的是早被遺忘的布雷頓寶藏。"
+  },
+  "jehanna_a": {
+    "name": "城門衛兵 馬瑟林",
+    "location": "jehanna",
+    "disposition": 45,
+    "greeting": "「耶漢納是高岩最孤僻的城,荒沼與山脈把我們圍得密不透風 —— 外鄉人,進城可以,但別在霧裡走夜路。」",
+    "rumor": "城外的沃斯加荒沼裡,沼地女巫的咒法夜夜作祟;告示板上掛著清剿的賞格,卻沒幾個人敢應。"
+  },
+  "jehanna_b": {
+    "name": "獵戶 葛溫多琳",
+    "location": "jehanna",
+    "disposition": 47,
+    "greeting": "「我在沃斯加的霧林裡討生活,旅人。耶漢納的人少,獵物倒多 —— 只是有些東西,獵起來會反過來獵你。」",
+    "rumor": "山脈崖壁上的鴉妖近來鬧得兇,連我下的陷阱都被牠們扯爛;牠們的巢就築在進不去的高岩上。",
+    "quest": "clear_jehanna",
+    "quest_disposition": 62
+  },
+  "jehanna_c": {
+    "name": "祭壇女祭司 伊索德",
+    "location": "jehanna",
+    "disposition": 46,
+    "greeting": "「願瑪菈的慈光照你前路。耶漢納雖偏僻,八聖的祭壇從不冷清 —— 在這霧鎖的城裡,人們比哪兒都更需要慰藉。」",
+    "rumor": "上古精靈的戴尼瑞塔就矗在這片地界,塔身被石像鬼盤踞;老一輩說,塔越古老,守它的咒就越是凶險。"
+  },
+  "archon_a": {
+    "name": "厚甲-巡牆",
+    "location": "archon",
+    "disposition": 44,
+    "greeting": "「阿爾孔的城牆浸在沼氣裡,外鄉人。守好你的腳步,別讓泥沼把你吞了。」",
+    "rumor": "西去石落城的沼路上,沼澤巨蜥近來成群,連商隊都繞道而行。",
+    "quest": "favor_archon",
+    "quest_disposition": 60
+  },
+  "archon_b": {
+    "name": "綠鱗-販藤",
+    "location": "archon",
+    "disposition": 48,
+    "greeting": "「希斯特的恩賜,在阿爾孔市集樣樣買得到 —— 樹脂、苔酒、根水的鱗甲。」",
+    "rumor": "南鄰索恩的旅人說,凡納·蘇爾沉廟的古階下飄著鬼火,引人入沼。"
+  },
+  "archon_c": {
+    "name": "黃瞳-誦根",
+    "location": "archon",
+    "disposition": 50,
+    "greeting": "「願根水洗淨你的鱗,旅者。阿爾孔的希斯特已沉睡千年,夢仍未醒。」",
+    "rumor": "東邊黑荊棘的沼地深處,沼屍從淤泥裡爬起,農人不敢出城。"
+  },
+  "thorn_a": {
+    "name": "斷尾-守橋",
+    "location": "thorn",
+    "disposition": 43,
+    "greeting": "「索恩坐落在大河的彎處,北通阿爾孔。提防水裡的東西,牠們不挑食。」",
+    "rumor": "北鄰阿爾孔一帶的沼澤巨蜥,連衛兵的長矛都壓不住了。",
+    "quest": "favor_thorn",
+    "quest_disposition": 62
+  },
+  "thorn_b": {
+    "name": "苔背-結網",
+    "location": "thorn",
+    "disposition": 47,
+    "greeting": "「索恩的漁獲養活半座城,可這幾日,網子撈上來的全是麻煩。」",
+    "rumor": "根水沼窟的洞口飄出鬼火,漁人說那是吞魂的引路鬼火。"
+  },
+  "thorn_c": {
+    "name": "灰鰓-沉夢",
+    "location": "thorn",
+    "disposition": 51,
+    "greeting": "「希斯特之樹根扎進索恩的城基,旅人。聽見樹的低語,便算是回了家。」",
+    "rumor": "城外淤地裡近來沼屍橫行,聽說都是從贊密爾沉廟的水道湧出的。"
+  },
+  "hegathe_swordsinger": {
+    "name": "塔茲拉",
+    "location": "hegathe",
+    "disposition": 47,
+    "greeting": "「赫加西的劍歌在沙風裡傳了千年,旅人。彎刀出鞘前,先學會聽風。」",
+    "rumor": "往蘭林的商道上沙蠍橫行,連結隊的駝商都得繞著綠洲走。"
+  },
+  "wayrest_steward": {
+    "name": "亞蘭妮",
+    "location": "wayrest",
+    "disposition": 48,
+    "greeting": "「威岩是高岩最體面的港城,旅人 —— 宮廷的禮數,連海風都得讓三分。」",
+    "rumor": "北邊戴尼瑞塔的古塔近來不寧,獵巫人說石像鬼夜裡會從塔頂俯衝而下。"
+  },
+  "haven_treesinger": {
+    "name": "艾蘭希爾",
+    "location": "haven",
+    "disposition": 46,
+    "greeting": "「綠約之下,海文城與巨木同生,外鄉人。取所需,還所欠 —— 這是波斯莫的規矩。」",
+    "rumor": "城外絞藤蛛巢裡的叢林巨蛛愈發猖獗,樵夫們已不敢往那片林子去。"
+  },
+  "rimmen_caravaner": {
+    "name": "佐巴爾",
+    "location": "rimmen",
+    "disposition": 47,
+    "greeting": "「瑞門的市集什麼都賣,朋友 —— 月糖、香料、舊王朝的祕密,只看你出得起什麼價。」",
+    "rumor": "暗月窟那頭有月華瘋癲的森查虎出沒,夜裡的吼聲連商隊的駝獸都嚇得發抖。"
+  },
+  "torval_priest": {
+    "name": "莎拉碧",
+    "location": "torval",
+    "disposition": 49,
+    "greeting": "「托瓦爾雖小,月亮在這裡看得最清,旅人。兩月當空時,記得對著它們許願。」",
+    "rumor": "往月華搖籃的小徑上,聽說有先祖之靈在月光下遊蕩,虎人都繞道而行。"
   }
 }

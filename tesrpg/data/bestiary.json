@@ -416,6 +416,35 @@
     ],
     "flavor": "火山灰中彈跳而出的硬殼灰蹦蟲。"
   },
+  "cliff_racer": {
+    "biomes": ["ashland"], "name": "崖行鳥", "danger": 2, "min_level": 2, "weight": 2,
+    "strength": 42, "agility": 56, "speed": 62, "max_health": 30, "armor_rating": 8,
+    "attack": {"name": "俯衝啄擊", "damage": 9, "skill": 44},
+    "loot_gold": [0, 6], "loot": [{"item": "monarch_wing", "chance": 0.35}, {"item": "scrib_jelly", "chance": 0.2}],
+    "flavor": "晨風天空揮之不去的禍害 —— 尖嘯著俯衝啄人的帶翼飛蜥,旅人聞之色變。"
+  },
+  "alit": {
+    "biomes": ["ashland"], "name": "阿利特", "danger": 2, "min_level": 3, "weight": 2,
+    "strength": 48, "agility": 46, "speed": 48, "max_health": 40, "armor_rating": 10,
+    "attack": {"name": "撲咬", "damage": 11, "skill": 46},
+    "loot_gold": [0, 8], "loot": [{"item": "ash_yam", "chance": 0.3}, {"item": "scrib_jelly", "chance": 0.25}],
+    "flavor": "灰原上無腦而貪食的兩足掠蜥,見血即撲,成群時尤其棘手。"
+  },
+  "nix_hound": {
+    "biomes": ["ashland"], "name": "尼克斯獵犬", "danger": 3, "min_level": 4, "weight": 2,
+    "strength": 52, "agility": 56, "speed": 56, "max_health": 46, "armor_rating": 12,
+    "attack": {"name": "麻痺撕咬", "damage": 13, "skill": 50,
+               "on_hit": {"status": "dot", "element": "poison", "magnitude": 3, "turns": 2, "chance": 0.4}},
+    "loot_gold": [0, 10], "loot": [{"item": "canis_root", "chance": 0.3}, {"item": "scrib_jelly", "chance": 0.25}],
+    "flavor": "灰野裡成群獵食的甲殼獸,口涎帶麻,撕咬間令獵物漸失知覺。"
+  },
+  "kagouti": {
+    "biomes": ["ashland"], "name": "卡古地", "danger": 3, "min_level": 4, "weight": 1,
+    "strength": 60, "agility": 44, "speed": 52, "max_health": 56, "armor_rating": 13,
+    "attack": {"name": "獠牙暴衝", "damage": 15, "skill": 50},
+    "loot_gold": [0, 12], "loot": [{"item": "ash_yam", "chance": 0.4}, {"item": "scrib_jelly", "chance": 0.3}],
+    "flavor": "晨風荒原上脾氣暴烈的巨牙獸,受驚便低頭暴衝,連蓋亞甲也撞得凹陷。"
+  },
   "draugr": {
     "biomes": ["snow"],
     "name": "屍鬼",
