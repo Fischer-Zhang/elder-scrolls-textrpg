@@ -556,8 +556,8 @@ def resolve_soul_capture(player, creature, gamedata) -> str | None:
     from tesrpg.systems import inventory
     tier = soul_tier_for(creature)
     sentient = gamedata.bestiary.get(getattr(creature, "template_id", ""), {}).get("sentient")
-    spell_trapped = any(e.get("kind") == "soul_trap" and e.get("src") != "weapon"
-                        for e in getattr(creature, "active_effects", []))
+    spell_trapped = any(e.get("kind") == "soul_trap" and e.get("turns", 0) > 0 and e.get("src") != "weapon"
+                        for e in getattr(creature, "active_effects", []))   # turns>0 比照 has_soul_trap:過期法咒不算
     if sentient:
         if spell_trapped and inventory.count_item(player, "empty_black_soul_gem") > 0:
             inventory.remove_item(player, "empty_black_soul_gem", 1)

@@ -367,6 +367,20 @@ def test_weapon_absorb_restores_caster_resource():
     assert c.magicka > 0                                   # 命中回魔
 
 
+def test_chill_rider_weaken_dedup():
+    """凍緩 rider 去重(對抗審查):多次命中/雙持只掛一份 weaken,不疊兩份。"""
+    gd, c = _char()
+    c.skills["mysticism"] = 50
+    c.skills["blade"] = 95
+    iid, _, _ = _ws_weapon(gd, "chill")
+    c.weapon = iid
+    foe = combat.spawn_creature(gd, "bandit", RNG(1)); foe.max_health = foe.health = 9999
+    for s in range(4):
+        combat.resolve_attack(c, foe, gd, RNG(s))
+    weakens = [e for e in foe.active_effects if e.get("kind") == "weaken" and e.get("turns", 0) > 0]
+    assert len(weakens) == 1, f"凍緩疊了 {len(weakens)} 份 weaken(應去重為 1)"
+
+
 def test_enchant_charges_save_roundtrip():
     """enchant_charges 入檔且向後相容:舊檔無欄載入為空 dict。"""
     from tesrpg.models.character import Character

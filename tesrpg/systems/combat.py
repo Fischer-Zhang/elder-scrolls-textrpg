@@ -547,13 +547,17 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
                     else:
                         defender.active_effects.append({"kind": "dot", "element": element, "magnitude": mag,
                                                         "turns": turns, "source": "ench_dot"})
-                    if st == "chill":                         # 凍緩 rider:減敵輸出
-                        defender.active_effects.append({"kind": "weaken",
-                                                        "magnitude": formulas.WEAPON_CHILL_WEAKEN, "turns": 2})
-                    elif st == "jolt":                        # 感電 rider:燒魔 + 機率踉蹌
+                    if st == "chill":                         # 凍緩 rider:減敵輸出(去重:雙持不疊兩份)
+                        if not any(e.get("kind") == "weaken" and e.get("source") == "ench_chill"
+                                   and e.get("turns", 0) > 0 for e in defender.active_effects):
+                            defender.active_effects.append({"kind": "weaken", "source": "ench_chill",
+                                                            "magnitude": formulas.WEAPON_CHILL_WEAKEN, "turns": 2})
+                    elif st == "jolt":                        # 感電 rider:燒魔 + 機率踉蹌(stagger 去重)
                         if getattr(defender, "magicka", 0) > 0:
                             defender.magicka = max(0, defender.magicka - formulas.WEAPON_JOLT_MAGICKA)
-                        if rng.chance(formulas.WEAPON_JOLT_STAGGER):
+                        if (rng.chance(formulas.WEAPON_JOLT_STAGGER)
+                                and not any(e.get("kind") == "stagger" and e.get("turns", 0) > 0
+                                            for e in defender.active_effects)):
                             defender.active_effects.append({"kind": "stagger", "turns": 1})
                 elif st in ("absorb_health", "absorb_magicka", "absorb_fatigue"):
                     # 命中吸取:回攻擊者資源;吸取生命另扣目標(solo boss 受夾,杜絕無限回血泵)

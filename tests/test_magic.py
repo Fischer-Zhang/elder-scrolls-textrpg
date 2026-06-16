@@ -697,6 +697,18 @@ def test_soul_capture_escapes_without_empty_gem():
                    [s["id"] for s in c.inventory])
 
 
+def test_expired_spell_trap_does_not_enable_black_capture():
+    """對抗審查:過期法術擒魂(turns=0)不算 spell-trapped → 武器擒魂的人形怪不應被當黑魂捕獲。"""
+    gd, c = _mage()
+    inventory.add_item(c, "empty_black_soul_gem", 1)
+    foe = combat.spawn_creature(gd, "bandit", RNG(1))                    # sentient
+    foe.active_effects = [{"kind": "soul_trap", "turns": 0},                 # 過期法咒
+                          {"kind": "soul_trap", "turns": 3, "src": "weapon"}]  # 活的武器擒魂
+    magic.resolve_soul_capture(c, foe, gd)
+    assert inventory.count_item(c, "filled_black_soul_gem") == 0         # 不被黑魂捕獲
+    assert inventory.count_item(c, "empty_black_soul_gem") == 1          # 黑魂石未消耗
+
+
 def test_mage_cities_stock_empty_soul_gems():
     """法師城供空魂石(填充燃料);大城另供空大/黑魂石。"""
     gd, _ = _mage()
