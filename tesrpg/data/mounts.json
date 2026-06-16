@@ -30,6 +30,6 @@
       "desc": "通靈的法駒,與騎者的法力共鳴。無衝鋒戰技,但騎乘作戰時法術威力大增,補足法系近身的缺口。"
     }
   },
-  "stable_cities": ["bruma", "imperial_city", "whiterun", "blacklight", "gideon", "sentinel", "daggerfall", "haven", "rimmen"],
+  "stable_cities": ["bruma", "imperial_city", "whiterun", "blacklight", "gideon", "sentinel", "daggerfall", "haven", "rimmen", "solitude", "elden_root", "corinthe", "orsinium", "taneth"],
   "spear_stock": ["iron_spear", "steel_spear", "elven_spear", "glass_spear", "ebony_spear", "daedric_spear"]
 }

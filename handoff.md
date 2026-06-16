@@ -908,6 +908,7 @@ tesrpg/
 > **城市補全**(§1:按 TES 正史補 13 標誌城市 + 21 城主 + 26 NPC,各省 1 城→多城;地點 23→36,城市設計 workflow + 整合 + 對抗審查)、
 > **NPC 增補**(四省平行補 25 名 NPC → 每城 3/每鎮 2、總 59 名,角色多樣 + rumor 指路;純資料 npcs.json)、
 > **空城補滿 + 晨風生態**(承委託多樣化審計:24 座非邊境城原 0 NPC〔「城市補全」那波只加 world/rulers 未加 npcs〕→ 8 省並行 workflow 補 71 NPC〔城3/鎮2 全覆蓋,rumor 指路在地地城/鄰城/生態怪〕+ 18 條 npc-source 在地指路任務 + 5 城補至標準;另補 4 隻晨風 ashland 正典生態怪〔崖行鳥/阿利特/尼克斯獵犬/卡古地,生態池 1→5〕→ 晨風委託可輪替、野遇多樣。整合後對抗審查:0 空城、0 跨省張冠李戴、目標全合法;`test_detailing` 加覆蓋率+晨風池守門;NPC 102→178)、
+> **新城功能補平**(承空城審計:新城有 inn/merchant/task_board 卻缺公會/訓練師/馬廄/房產、商店薄 → 補平功能。**lore 精選補公會**:20 座 guildless type=city 各 +1 契合公會〔fighters+8/mages+6/thieves+6;thieves 9→15、fighters 15→23、mages 19→25;companions 維持白漫獨有、towns 不補〕——加公會=純 `services` 標籤,會籍/任務全域共用零新內容。**+trainer** 補 7 缺城〔各省大城皆可練技〕。**stable/house** 各 +5 新樞紐〔獨孤城/艾爾登根/科林斯/奧西尼姆/塔尼斯〕。**商店補厚**:薄城補省份/公會在地貨〔法師城加魂石/法杖、盜賊城加 lockpick/ruby、戰士城加武具〕。純資料 world/mounts/houses;line-based 改 world.json 保格式;`test_world` 加 `test_city_services_and_shop_integrity` 守〔每 city 有公會+trainer、商品 id 全合法、stable/house 城存在、無重複 service〕;0 無公會城/0 無效 id)、
 > **城內分區 + 簡化選單**(城鎮服務拆成 市集區🛒/公會區⚜/廣場🏛 三個可進入子選單,頂層只剩「城區」三入口;群名簡化 製作/人物;野外/地城自動無城區)、
 > **偵查→開戰前備戰空間**(潛近成功+未被伏擊時,依偵查技能換得 1/2/3 個備戰動作:施增益/召喚(鎖 scout≥50)/喝藥/塗毒;順解召喚開場佔回合痛點)、
 > **格擋接上技能縮放**(技能健檢抓到格擋等級空轉 → `block_damage_factor` ×0.9→×0.4)、

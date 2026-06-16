@@ -383,6 +383,39 @@ def test_danger_distribution_sane():
         assert min(dgs) <= 2, f"{prov} 缺低危(<=2)入口,新手會被牆擋"
 
 
+def test_city_services_and_shop_integrity():
+    """新城功能補平守門:每座非邊境 type=city 皆有公會分部 + 訓練師;merchant_stock id 全合法;
+    無重複 service;stable/house 城皆存在於世界。"""
+    gd, _ = _char()
+    GUILDS = {"mages_guild", "fighters_guild", "thieves_guild", "companions",
+              "dark_brotherhood", "knights_nine", "mythic_dawn"}
+    w = gd.world["locations"]
+    noguild, notrainer, dup, badstock = [], [], [], []
+    for lid, l in w.items():
+        if l.get("type") != "city" or l.get("province") == "邊境":
+            continue
+        svc = l.get("services", [])
+        if not set(svc) & GUILDS:
+            noguild.append(l["name"])
+        if "trainer" not in svc:
+            notrainer.append(l["name"])
+        if len(svc) != len(set(svc)):
+            dup.append(l["name"])
+        for it in l.get("merchant_stock", []):
+            try:
+                gd.item(it)
+            except Exception:
+                badstock.append(f"{lid}:{it}")
+    assert not noguild, f"無公會的城:{noguild}"
+    assert not notrainer, f"無訓練師的城:{notrainer}"
+    assert not dup, f"重複 service:{dup}"
+    assert not badstock, f"無效商品 id:{badstock}"
+    for c in gd.stable_cities:
+        assert c in w, f"stable 城不存在:{c}"
+    for c in gd.houses:
+        assert c in w, f"房產城不存在:{c}"
+
+
 def run():
     for name, fn in sorted(globals().items()):
         if name.startswith("test_") and callable(fn):
