@@ -35,7 +35,7 @@
 #### 戰鬥與魔法
 - 回合制**多敵 + 團隊戰鬥**(召喚物/傭兵同伴);**同伴角色化**(9 具名同伴:持久 HP/羈絆 + 具名招募任務 + 羈絆階解鎖的專屬支線 + 就地對話 + 完成支線的忠誠弧頂點〔戰術盟友光環/被動非戰鬥槓桿;盟友限定守刺客紅線〕;復用 `companion_bond` 當忠誠軸,零新存檔欄);**六大學派 + AoE**(召喚/秘術補完至各 7 法術,與毀滅/復原/變換同列;**召喚**=元素元身/魔人 + 束縛兵刃〔法系近戰〕+ 亡者復生〔屍起為盟〕、**秘術**=法術結界〔吸法術傷·吸魔變體〕+ 驅散 + 群體擒魂);元素抗性/弱點、狀態效果、出生星座每日之力
 - **三系資源對稱**:施法也耗體力、力竭降法效(`cast_fatigue_*`),**法袍套裝**省體施法(法師的對應裝甲)
-- **煉金毒藥 + 武器塗毒**;**潛行刺客系**:偷襲先機、暗殺殘響、雙持、**隱遁再襲(潛行 25 里程碑「隱遁之術」;連環踏影對單體仍遞減、反 solo boss 風箏)**、戰前偵查;武器流派(潛襲/破甲/速度)
+- **煉金毒藥 + 武器塗毒**;**煉金限時增益藥水(深化 Phase 1 / R30)**:強化屬性/技能 + 抗元素**限時**藥劑(走獨立 `potion_*` 層、絕不寫 base;可釀池避 strength/武器技能守刺客紅線);**潛行刺客系**:偷襲先機、暗殺殘響、雙持、**隱遁再襲(潛行 25 里程碑「隱遁之術」;連環踏影對單體仍遞減、反 solo boss 風箏)**、戰前偵查;武器流派(潛襲/破甲/速度)
 
 #### 世界與探索
 - **八省 ~168 地點 / 48 城 + 17 鎮 + 70 野區 + 33 地城**(含海爾根 Helgen=白隘北口、賽→天門戶)(每省 5–9 城 + 多個正典分區野區〔黃金海岸/苦岸/裂石郡/收割者三月…〕做城際過場;邊境戍堡為省際接縫)+ **`pos[col,row]` 與 `links` 皆依正典 TES 地理**(頂層 `world["map"]` 40×24);旅行/晝夜/危險度(數字為快照,以 JSON/測試為準)
@@ -849,6 +849,17 @@ tesrpg/
 - **宗師指點 `master:{skill,cap}`**:招牌城對其招牌技可破一般 `formulas.TRAINER_CAP=75`(`cap≤SKILL_CAP=100`);76–100 一律靠 learn-by-doing 或宗師,杜絕「就近一站買滿」。`world.trainer_cap(gd,loc,sid)` 取值;宗師技必經 union 上架。**`TRAINER_CAP` 是唯一數值旋鈕**(設 100=純選單過濾零數值變動);不動 combat/cast/economy → **不需 `sim_assassin`**。
 - **法師公會法術學派分散**(純改 `world.json` `spell_stock`,`action_spell_vendor` 零改):每省指派**守護學派**(天際=destruction/晨風=conjuration/黑沼澤+高岩=restoration/漢默法爾=alteration/瓦倫森林=illusion/艾爾斯維爾=mysticism;**賽羅迪爾=通才例外**,`imperial_city` 售全 43 法術)。每座 mages_guild 城 stock = **保底集 9 道** ∪ 本省守護學派完整線;進階/AoE/別派鎖在主守省 → 跨省採購。**保底集**=`flames/frostbite/sparks/minor_heal/oakflesh/ward/soul_trap/conjure_familiar/fear`(每派入門一道,保純法師任何省可起步)。
 - **守門**(`test_world`):`test_trainer_specialization`(每有 trainer 城 ≥1 可教系且非空、非邊境 city 皆可公會推導、trainers.json id 合法、宗師 cap 越界檢查 + 必上架)、`test_spell_school_dispersal`(6 學派各可買、保底集每道在每座法師城、無空 spell_stock 法師城、spell id 合法、**無孤兒 spell_stock**〔無 mages_guild 不可達〕)。加招牌城/守護學派純改 `trainers.json`/`world.json` 並維持上述不變式。
+
+---
+
+### R30 · 限時增益藥水(煉金深化 Phase 1)[save] [recompute]
+
+- **藥水跳脫「只即時回復」**:煉金 `brew` 新增「強化屬性 / 強化技能 / 抗元素」**限時**藥水(`synth` id `brewb|<kind>|<量>|<時>`)。kind **參數內嵌**(`fattr_<屬性>`/`fskill_<技能>`/`resist_<元素>`)→ 以 kind 比對的「共有效果」偵測天然要求**同參數**才算共有(力量藥材 ≠ 敏捷藥材,故 lavender+garlic 仍無共有 → 失敗)。`brew` 路由優先序:paralyze > damage_health > **buff** > 即時回復;magnitude/時長皆乘既有 `factor=(0.6+煉金/100)×(1+potion_potency)`,時長 `round(2×factor)` 小時。
+- **走獨立 `potion_*` 層,絕不寫 base**(同 skooma/吸血鬼/里程碑模式):`Character.potion_buffs`(權威,`[{kind,param,magnitude,expires_at}]`)+ 推導快取 `potion_attr_bonus/potion_skill_bonus/potion_resist`,聚合於 `attr()/skill()/entity_resist()`;成長/夾限只用 `base_*`。引擎在 `systems/potion_buff.py`:`apply_buff`(飲用)/`recompute`(剔過期+重建快取+`recompute_max_resources`,R05)/`update`(每圈掛 game_loop **在 skooma.update 之後**,到期報「藥力散去」)/`ensure_potion_fields`(接 `state.from_dict`,載入即剔除過期)。
+- **疊加 = 同 (kind,param) 取最強量值 + 取較晚到期,非相加**(杜絕灌多瓶疊強度);不同 param 各自獨立疊。`use_item` 新增 `state` 參數(限時增益需絕對小時算到期;即時藥水仍可無 state);兩呼叫端(備戰 `_prep_phase` / 背包 `use`)已帶 state。
+- **sim 安全(刻意)**:可釀池**排除 `strength` 與所有武器技能**(blade/blunt/marksman/hand_to_hand)→ 結構上不灌水偷襲傷害鏈,**不需 `sim_assassin`**(同 skooma 刻意不碰 strength 的設計)。日後若放開力量/武器技能藥水 → 必過 `sim_assassin` 閘。
+- **存檔**:Character +4 欄(dataclass 預設向後相容、進 to_dict;`active_effects` 仍不入檔);`from_dict` 走 `cls(**d)` + `ensure_potion_fields` 補欄/剔過期。守門:`tests/test_potion_buff.py`(路由/優先序、effective-not-base、到期、entity_resist、刷新非疊加、param-specific 不誤判、存檔 round-trip、舊存檔遷移、壞值防呆)。
+- **未做(留後續增量)**:戰鬥內 regen/shield 消耗品藥水(與既有變化系護盾/再生法術重疊、且涉戰外 active_effects 時序),刻意延後;3 材料/催化經濟(里程碑排除項)。
 
 ---
 

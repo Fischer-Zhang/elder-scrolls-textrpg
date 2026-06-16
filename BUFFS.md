@@ -3,7 +3,7 @@
 > **這是一份「參考目錄」**(catalog,非設計憲法):把全遊戲所有增益/減益依來源層整理、附實際數值,方便查閱與平衡盤點。
 > 真實來源(single source of truth)仍是程式碼(`tesrpg/systems/*.py`、`tesrpg/formulas.py`)與資料(`tesrpg/data/*.json`);
 > 數值有疑義以程式常數/JSON 為準。鐵律本體見 [handoff.md](handoff.md) §3(R05/R07/R11/R14/R15/R20/R21/R25/R26)、設計理念見 [DESIGN.md](DESIGN.md)。
-> 末次盤點:2026-06-14(湮滅危機里程碑後;達貢之力層已納入)。改增益常數後請順手更新本檔。
+> 末次盤點:2026-06-16(煉金深化 Phase 1:限時增益藥水 `potion_*` 層已納入,見 §⑥/R30)。改增益常數後請順手更新本檔。
 
 ---
 
@@ -220,13 +220,14 @@
 
 ---
 
-## ⑥ 藥水 / 消耗品(一次性,夾各自 max)
+## ⑥ 藥水 / 消耗品(一次性,夾各自 max;★限時增益例外,見表末)
 
 | 物品 | kind | 數值 |
 |---|---|---|
 | 治療藥水(固定) | 續航回復 | minor 25 / 普 50 |
 | 魔力藥水(固定) | 續航回復 | minor 25 |
 | 自製藥水 brew(煉金) | 續航回復 | round((eff_a+eff_b)/2×factor);factor=(0.6+煉金/100)×(1+potion_potency);kind∈heal/restore_magicka/★restore_fatigue(僅煉金可得) |
+| ★限時增益藥水 brewb(煉金·R30) | **限時**強化(獨立層,非一次性) | 量=round((eff_a+eff_b)/2×factor),時長=round(2×factor) 小時;走獨立 `potion_attr_bonus/potion_skill_bonus/potion_resist` 層(聚合於 attr()/skill()/entity_resist(),**絕不寫 base**);kind:強化屬性 `fattr_*`/強化技能 `fskill_*`/抗元素 `resist_*`;**疊加=同(kind,param)取最強+取較晚到期,非相加**;**可釀池排除 strength+武器技能**(結構避刺客紅線,免 sim);每圈 `potion_buff.update` 清過期 |
 | 塗毒/毒藥(▼對敵) | 傷害/控場 | dot per_turn×3 或麻痺 turns=clamp(1+煉金//50,1..3);charges=poison_charges+里程碑+1 |
 
 ---

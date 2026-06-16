@@ -334,12 +334,26 @@ def armor_worn_weight(char: Character, gamedata: GameData) -> float:
 
 
 # --- 使用 ---------------------------------------------------------------
-def use_item(char: Character, gamedata: GameData, item_id: str) -> str | None:
-    """使用消耗品(目前:藥水)。回傳給玩家的訊息,不可用回傳 None。"""
+def use_item(char: Character, gamedata: GameData, item_id: str, state=None) -> str | None:
+    """使用消耗品(藥水)。回傳給玩家的訊息,不可用回傳 None。
+
+    即時回復(heal/魔/體)不需 state;限時增益(R30:強化屬性/技能/抗元素)需 state
+    取絕對小時推算到期 —— 呼叫端(備戰/背包)務必帶 state。
+    """
     d = gamedata.item(item_id)
     if d.get("kind") != "potion" or count_item(char, item_id) <= 0:
         return None
     eff = d["effect"]
+    if eff["type"] in ("fortify_attribute", "fortify_skill", "resist_element"):
+        if state is None:
+            return None            # 無時間語境無法計到期;不消耗、視為不可用
+        from tesrpg.systems import potion_buff
+        param = eff.get("attr") or eff.get("skill") or eff.get("element")
+        hours = eff.get("duration_hours", 1)
+        label = potion_buff.apply_buff(char, state, gamedata, eff["type"], param,
+                                       eff["magnitude"], hours)
+        remove_item(char, item_id, 1)
+        return f"飲下{d['name']},{label}(持續 {hours} 小時)。"
     if eff["type"] == "heal":
         before = char.health
         char.health = min(char.max_health, char.health + eff["magnitude"])

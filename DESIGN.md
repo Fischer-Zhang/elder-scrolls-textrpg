@@ -111,7 +111,7 @@ Faction       data/factions.json   公會
 ### 3.4 魔法、煉金與附魔 (Magic / Alchemy / Enchant)
 - **八大學派**:Destruction、Restoration、Alteration、Illusion、Conjuration、Mysticism、(+ Alchemy、Enchant 作為技能)
 - 施法成功率/費用隨學派技能改善;法術效果走統一 `effects` 結構(傷害/治療/變形/召喚/隱身/開鎖…)
-- **煉金 (Alchemy)**:採集材料(ingredient)→ 組合 → 依技能與材料共有效果產出藥水;**效果靠試驗/技能逐步揭露**(吃材料試出第一個效果)
+- **煉金 (Alchemy)**:採集材料(ingredient)→ 組合 → 依技能與材料共有效果產出藥水;**效果靠試驗/技能逐步揭露**(吃材料試出第一個效果)。產出涵蓋即時回復(回血/魔/體)、**限時增益(強化屬性/技能 + 抗元素;深化 Phase 1 / R30,走獨立 `potion_*` 層)**、與有害毒劑(塗武器,見 M9)
 - **附魔 (Enchant)**:用充能靈魂石把效果附到裝備;武器/防具走 condition(耐久)系統,需 Armorer 技能修理
 
 ### 3.5 世界與探索 (World & Exploration)

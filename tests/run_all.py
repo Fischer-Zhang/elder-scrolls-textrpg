@@ -64,6 +64,7 @@ import test_mounts
 import test_origin_quests
 import test_oblivion
 import test_webdriver
+import test_potion_buff
 
 if __name__ == "__main__":
     modules = [test_creation, test_progression, test_state, test_combat, test_world, test_seed,
@@ -76,7 +77,7 @@ if __name__ == "__main__":
                test_speechcraft, test_skooma, test_lycanthropy, test_party, test_attributes,
                test_hybrids, test_companions, test_class_identity, test_companion_arcs,
                test_dialogue_tree, test_aiwar, test_housing, test_mounts, test_origin_quests,
-               test_oblivion, test_webdriver]
+               test_oblivion, test_webdriver, test_potion_buff]
     for m in modules:
         m.run()
         print(f"✓ {m.__name__}")

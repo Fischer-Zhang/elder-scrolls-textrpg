@@ -83,6 +83,13 @@ class Character:
     skooma_last_dose_hour: int = -1     # 上次用藥的絕對小時(-1=從未;戒斷強度由「距今」推導)
     skooma_attr_bonus: dict = field(default_factory=dict)    # attr_id -> +點數(high 增益 或 戒斷負值,二擇一)
     skooma_skill_bonus: dict = field(default_factory=dict)   # skill_id -> +點數(僅戒斷負值;high 不碰技能 → 避刺客紅線)
+    # 限時增益藥水(R30;煉金產出的強化屬性/技能/抗元素藥水,絕對小時到期)。權威來源 = potion_buffs;
+    # 三個 *_bonus/resist 是「由 potion_buffs 決定性推導的快取層」(同 skooma/mastery 模式:attr()/skill()/
+    # 抗性疊加、成長/夾限只用 base_*、絕不寫 base)。每圈 potion_buff.update 清過期,詳見 systems/potion_buff.py。
+    potion_buffs: list = field(default_factory=list)          # [{kind,param,magnitude,expires_at}](權威)
+    potion_attr_bonus: dict = field(default_factory=dict)     # attr_id -> +點數(推導快取)
+    potion_skill_bonus: dict = field(default_factory=dict)    # skill_id -> +點數(推導快取)
+    potion_resist: dict = field(default_factory=dict)         # element -> +百分比(推導快取)
     # 狼人化 / 獸形(Lycanthropy;主動限時變身,吸血鬼的對位)。獸形加成走獨立 werewolf_* 層,
     # 與裝備/吸血鬼加成同模式:attr()/skill()/抗性 疊加、成長/夾限只用 base_*。詳見 systems/lycanthropy.py。
     is_werewolf: bool = False            # 染狼人化(持久身分)
@@ -202,13 +209,15 @@ class Character:
         return (self.attributes.get(key, formulas.BASE_ATTRIBUTE)
                 + self.equip_attr_bonus.get(key, 0) + self.vampire_attr_bonus.get(key, 0)
                 + self.mastery_attr_bonus.get(key, 0) + self.skooma_attr_bonus.get(key, 0)
-                + self.werewolf_attr_bonus.get(key, 0) + self.dagon_attr_bonus.get(key, 0))
+                + self.werewolf_attr_bonus.get(key, 0) + self.dagon_attr_bonus.get(key, 0)
+                + self.potion_attr_bonus.get(key, 0))
 
     def skill(self, key: str) -> int:
         return (self.skills.get(key, 0)
                 + self.equip_skill_bonus.get(key, 0) + self.vampire_skill_bonus.get(key, 0)
                 + self.mastery_skill_bonus.get(key, 0) + self.skooma_skill_bonus.get(key, 0)
-                + self.werewolf_skill_bonus.get(key, 0) + self.dagon_skill_bonus.get(key, 0))
+                + self.werewolf_skill_bonus.get(key, 0) + self.dagon_skill_bonus.get(key, 0)
+                + self.potion_skill_bonus.get(key, 0))
 
     def base_attr(self, key: str) -> int:
         """不含裝備加成的原始屬性(供成長/夾限用)。"""
@@ -257,6 +266,8 @@ class Character:
             "skooma_addiction": self.skooma_addiction, "skooma_high_until": self.skooma_high_until,
             "skooma_last_dose_hour": self.skooma_last_dose_hour,
             "skooma_attr_bonus": self.skooma_attr_bonus, "skooma_skill_bonus": self.skooma_skill_bonus,
+            "potion_buffs": self.potion_buffs, "potion_attr_bonus": self.potion_attr_bonus,
+            "potion_skill_bonus": self.potion_skill_bonus, "potion_resist": self.potion_resist,
             "is_werewolf": self.is_werewolf, "werewolf_infected_day": self.werewolf_infected_day,
             "beast_form": self.beast_form, "beast_form_until": self.beast_form_until,
             "beast_feeds": self.beast_feeds, "werewolf_total_feeds": self.werewolf_total_feeds,

@@ -17,6 +17,13 @@ BREW_FAIL_FACTOR = 0.5   # 沒煉成(無共通效果)只學到一半的 practice
 
 RESTORATIVE = {"heal", "restore_magicka", "restore_fatigue"}
 HARMFUL = {"paralyze", "damage_health"}      # 麻痺優先於毒傷
+POTION_BUFF_BASE_HOURS = 2   # 限時增益藥水基礎時長(× factor 隨煉金/濃縮縮放),見 R30
+
+
+def _is_buff_kind(k: str) -> bool:
+    """限時增益效果 kind(R30;參數內嵌:fattr_<屬性>/fskill_<技能>/resist_<元素>)。
+    以 kind 比對的「共有效果」偵測天然要求同參數才算共有(力量藥材 ≠ 敏捷藥材)。"""
+    return k.startswith(("fattr_", "fskill_", "resist_"))
 
 
 def ingredient_effects(gamedata: GameData, ing_id: str) -> list[dict]:
@@ -60,13 +67,29 @@ def brew(char: Character, gamedata: GameData, ing_a: str, ing_b: str, rng: RNG) 
         item_id = synth.poison_id("dot", per_turn, 3)
         result_kind = "poison"
     else:
-        kind = max(shared & RESTORATIVE, key=lambda k: eff_a[k] + eff_b[k])
-        magnitude = max(1, round((eff_a[kind] + eff_b[kind]) / 2.0 * factor))
-        item_id = synth.brew_id(kind, magnitude)
-        result_kind = "potion"
+        # 有益共通效果:限時增益(強化屬性/技能/抗元素)優先於即時回復藥水
+        buff_kinds = [k for k in shared if _is_buff_kind(k)]
+        restore_kinds = shared & RESTORATIVE
+        if buff_kinds:
+            kind = max(buff_kinds, key=lambda k: eff_a[k] + eff_b[k])
+            magnitude = max(1, round((eff_a[kind] + eff_b[kind]) / 2.0 * factor))
+            dur = max(1, round(POTION_BUFF_BASE_HOURS * factor))   # 藥效時長(編入 id),非釀造耗時(hours)
+            item_id = synth.brew_buff_id(kind, magnitude, dur)
+            result_kind = "buff"
+        elif restore_kinds:
+            kind = max(restore_kinds, key=lambda k: eff_a[k] + eff_b[k])
+            magnitude = max(1, round((eff_a[kind] + eff_b[kind]) / 2.0 * factor))
+            item_id = synth.brew_id(kind, magnitude)
+            result_kind = "potion"
+        else:
+            # 防呆:共有效果不屬有害/增益/回復(現有資料不會發生;留給未來新 kind 不致 max() 空集崩潰)
+            return {"ok": False, "message": "兩種材料的效果無法調合,化作一灘廢液。",
+                    "hours": hours, "tired": tired, "skill_events": events}
 
     inventory.add_item(char, item_id, 1)
     name = gamedata.item(item_id)["name"]
-    verb = "煉出了一瓶毒藥" if result_kind == "poison" else "調出了一瓶藥水"
+    verb = ("煉出了一瓶毒藥" if result_kind == "poison"
+            else "調出了一瓶增益藥劑" if result_kind == "buff"
+            else "調出了一瓶藥水")
     return {"ok": True, "kind": result_kind, "message": f"你{verb}:{name}。",
             "item_id": item_id, "hours": hours, "tired": tired, "skill_events": events}

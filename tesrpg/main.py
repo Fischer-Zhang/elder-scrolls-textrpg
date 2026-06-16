@@ -14,8 +14,8 @@ from tesrpg.rng import RNG, make_seed
 from tesrpg.state import GameState
 from tesrpg.systems import (aiwar, alchemy, brotherhood, combat, court, crafting, crime, dialogue, dungeon,
                             dungeoncrawl, enchanting, events, factions, housing, inventory, landmarks, legacy,
-                            lycanthropy, magic, mastery, mounts, party, politics, powers, progression, quests,
-                            skooma, smithing, stats, vampirism, warband, world, worldstate)
+                            lycanthropy, magic, mastery, mounts, party, politics, potion_buff, powers,
+                            progression, quests, skooma, smithing, stats, vampirism, warband, world, worldstate)
 from tesrpg.ui import console as ui
 
 SAVE_PATH = Path.home() / ".tesrpg" / "save.json"
@@ -601,7 +601,7 @@ def _prep_phase(state: GameState, gamedata: GameData, enemies, battle: dict, bud
                           [(p, f"{gamedata.item_name(p)} ×{inventory.count_item(player, p)}") for p in potions],
                           allow_back=True)
             if pid is not None:
-                ui.message(inventory.use_item(player, gamedata, pid) or "你飲下藥水。", style="green")
+                ui.message(inventory.use_item(player, gamedata, pid, state) or "你飲下藥水。", style="green")
                 spent = True
         elif choice == "coat":
             pid = ui.menu("塗哪瓶毒?",
@@ -1579,7 +1579,7 @@ def _item_actions(state: GameState, gamedata: GameData, item_id: str) -> None:
         stats.recompute_max_resources(char, gamedata)   # 移除護甲/飾品加成
         ui.message(f"你卸下了{d['name']}。", style="grey70")
     elif act == "use":
-        msg = inventory.use_item(char, gamedata, item_id)
+        msg = inventory.use_item(char, gamedata, item_id, state)
         ui.message(msg or "無法使用。", style="green")
     elif act == "repair_field":
         _repair_with_hammer(state, gamedata)
@@ -3167,7 +3167,10 @@ def action_meltdown(state: GameState, gamedata: GameData) -> None:
 
 
 _EFFECT_CN = {"heal": "回血", "restore_magicka": "回魔", "restore_fatigue": "回體",
-              "damage_health": "毒傷", "paralyze": "麻痺"}
+              "damage_health": "毒傷", "paralyze": "麻痺",
+              # 限時增益(R30):強化屬性/技能/抗元素(參數內嵌的 kind)
+              "fattr_willpower": "強意志", "fattr_agility": "強敏捷",
+              "fskill_alchemy": "精煉金", "resist_magic": "抗魔法"}
 
 
 def action_coat_weapon(state: GameState, gamedata: GameData) -> None:
@@ -3625,6 +3628,11 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
                            style="bold red")
             elif ev["kind"] == "clean":
                 ui.message("你撐過了最深的渴求,身體漸漸清明 —— 月糖的枷鎖鬆開了。", style="green")
+
+        # 限時增益藥水(R30):藥力到期 → 重算 + 報「藥力散去」(掛在斯庫瑪之後)
+        for ev in potion_buff.update(state, gamedata):
+            if ev["kind"] == "expire":
+                ui.message("藥力散去 —— 你體內方才的增益逐漸消退。", style="grey70")
 
         # 狼人化:潛伏轉化 / 獸形過期變回(掛在斯庫瑪之後)
         for ev in lycanthropy.update(state, gamedata):

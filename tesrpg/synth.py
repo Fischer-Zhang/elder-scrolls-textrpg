@@ -4,7 +4,9 @@
 所以存檔只存 id 即可,讀檔時照樣還原 —— 不需要額外的註冊表。
 
 id 格式(以 '|' 分段):
-  brew|<effect_kind>|<magnitude>                         → 自製藥水
+  brew|<effect_kind>|<magnitude>                         → 自製藥水(即時回血/回魔/回體)
+  brewb|<kind>|<magnitude>|<hours>                        → 限時增益藥水(R30);kind 參數內嵌:
+        fattr_<屬性> 強化屬性 | fskill_<技能> 強化技能 | resist_<元素> 抗元素(magnitude=量/百分比;hours=持續小時)
   psn|<status_kind>|<a>|<b>                              → 塗抹用毒藥(dot:每回合a傷×b回合;paralyze:a回合)
   enchw|<base_weapon_id>|<element>|<magnitude>           → 附魔武器(元素傷害)
   enchws|<base_weapon_id>|<status>|<magnitude>|<turns>   → 附魔武器(命中觸發:vampiric/paralyze/regen)
@@ -34,6 +36,11 @@ def is_synth(item_id: str) -> bool:
 
 def brew_id(effect_kind: str, magnitude: int) -> str:
     return f"brew{SEP}{effect_kind}{SEP}{magnitude}"
+
+
+def brew_buff_id(kind: str, magnitude: int, hours: int) -> str:
+    """限時增益藥水 id。kind 為參數內嵌字串(fattr_<屬性>/fskill_<技能>/resist_<元素>)。"""
+    return f"brewb{SEP}{kind}{SEP}{magnitude}{SEP}{hours}"
 
 
 def poison_id(status_kind: str, a: int, b: int = 0) -> str:
@@ -122,6 +129,25 @@ def synthesize(item_id: str, gamedata) -> dict:
         name = f"自製{_EFFECT_NAME.get(kind, kind)}藥水（{mag}）"
         return {"name": name, "kind": "potion", "effect": {"type": kind, "magnitude": mag},
                 "value": max(5, mag), "weight": 0.5}
+
+    if tag == "brewb":
+        _, kind, mag, hours = parts
+        mag, hours = int(mag), int(hours)
+        if kind.startswith("resist_"):
+            elem = kind[len("resist_"):]
+            effect = {"type": "resist_element", "element": elem, "magnitude": mag, "duration_hours": hours}
+            name = f"自製抗{_RESIST_NAME.get(elem, elem)}藥水（+{mag}% · {hours} 時)"
+        elif kind.startswith("fattr_"):
+            attr = kind[len("fattr_"):]
+            effect = {"type": "fortify_attribute", "attr": attr, "magnitude": mag, "duration_hours": hours}
+            name = f"自製強化{_ATTR_NAME.get(attr, attr)}藥水（+{mag} · {hours} 時)"
+        else:  # fskill_<技能>
+            sk = kind[len("fskill_"):]
+            skname = gamedata.skills[sk]["name"] if gamedata and sk in gamedata.skills else sk
+            effect = {"type": "fortify_skill", "skill": sk, "magnitude": mag, "duration_hours": hours}
+            name = f"自製強化{skname}藥水（+{mag} · {hours} 時)"
+        return {"name": name, "kind": "potion", "effect": effect,
+                "value": max(10, mag * hours), "weight": 0.5}
 
     if tag == "psn":
         _, kind, a, b = parts

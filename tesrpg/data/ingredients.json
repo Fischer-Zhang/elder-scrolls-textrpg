@@ -37,6 +37,10 @@
       {
         "kind": "restore_magicka",
         "magnitude": 8
+      },
+      {
+        "kind": "fattr_willpower",
+        "magnitude": 4
       }
     ]
   },
@@ -48,6 +52,10 @@
       {
         "kind": "restore_fatigue",
         "magnitude": 10
+      },
+      {
+        "kind": "fattr_agility",
+        "magnitude": 4
       }
     ]
   },
@@ -63,6 +71,10 @@
       {
         "kind": "restore_magicka",
         "magnitude": 6
+      },
+      {
+        "kind": "resist_magic",
+        "magnitude": 8
       }
     ]
   },
@@ -89,6 +101,10 @@
       {
         "kind": "restore_fatigue",
         "magnitude": 9
+      },
+      {
+        "kind": "fattr_agility",
+        "magnitude": 3
       }
     ]
   },
@@ -100,6 +116,10 @@
       {
         "kind": "restore_magicka",
         "magnitude": 14
+      },
+      {
+        "kind": "fattr_willpower",
+        "magnitude": 4
       }
     ]
   },
@@ -115,6 +135,10 @@
       {
         "kind": "heal",
         "magnitude": 7
+      },
+      {
+        "kind": "fskill_alchemy",
+        "magnitude": 5
       }
     ]
   },
@@ -129,6 +153,10 @@
       },
       {
         "kind": "heal",
+        "magnitude": 8
+      },
+      {
+        "kind": "resist_magic",
         "magnitude": 8
       }
     ]
@@ -197,6 +225,10 @@
       {
         "kind": "restore_fatigue",
         "magnitude": 6
+      },
+      {
+        "kind": "fskill_alchemy",
+        "magnitude": 5
       }
     ]
   },
