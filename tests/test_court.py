@@ -228,8 +228,37 @@ def test_procedural_commissions_earn_thaneship():
     assert court.is_thane(c, loc) and granted["gift"] and granted["housecarl"]
 
 
+def test_province_commissions_are_varied():
+    """反『一批解決整省』:同省自動委託城輪替不同生態怪/地城/型別,且仍各達 THANE_STANDING。
+    (原本同省每城=同生態怪+同地城 → 打一批怪、清一地城即解全省;此測守多樣化。)"""
+    gd, _ = _setup()
+    locs = gd.world["locations"]
+    forage = court._province_forage(gd)
+    auto = [r for lid, r in sorted(gd.rulers.items())
+            if locs.get(lid, {}).get("province") == "天際"
+            and r.get("quests", [""])[0].startswith("ruler_auto")]
+    assert len(auto) >= 6                                   # 天際城多 → 樣本足
+    q1_targets, q2_dungeons, q1_types = set(), set(), set()
+    for r in auto:
+        q1, q2 = gd.quests[r["quests"][0]], gd.quests[r["quests"][1]]
+        o1, o2 = q1["objective"], q2["objective"]
+        q1_types.add(o1["type"])
+        q1_targets.add(o1.get("creature") or o1.get("item"))
+        q2_dungeons.add(o2["dungeon"])
+        if o1["type"] == "kill":
+            assert o1["creature"] in gd.bestiary
+        elif o1["type"] == "collect":
+            assert o1["item"] in forage["天際"]             # 採集料確實該省可野採(可完成)
+        assert o2["dungeon"] in gd.dungeons
+        assert q1["reward"]["standing"] + q2["reward"]["standing"] == court.THANE_STANDING  # 仍可封武士
+    assert len(q1_targets) >= 3, f"q1 標的太單一:{q1_targets}"        # 原本全=霜咬蜘蛛
+    assert len(q2_dungeons) >= 2, f"q2 地城太單一:{q2_dungeons}"      # 原本全=同一地城
+    assert {"kill", "collect"} <= q1_types                  # 型別多樣:獵殺/懸賞 + 採集
+
+
 def run():
     test_reception_tiers()
+    test_province_commissions_are_varied()
     test_every_ruler_settlement_is_thaneable()
     test_procedural_commissions_earn_thaneship()
     test_action_court_shows_ruler_panel()

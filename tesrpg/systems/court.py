@@ -28,7 +28,8 @@ _HOUSECARLS = ["shieldmaiden", "footman", "veteran", "sellsword", "ranger", "hed
 
 
 def _province_objectives(gamedata: GameData) -> dict:
-    """每省取一份委託素材:最低危險度的非 solo 在地生態怪 + 最低危險度的省內地城。"""
+    """每省的委託素材池(供同省各城輪替):在地非 solo 生態怪清單(依危險度排序)+ 省內地城清單
+    (依危險度排序,各為 (dungeon_key, name))。回傳 {province: (creatures[], dungeons[])}。"""
     w = gamedata.world["locations"]
     out = {}
     for p in {l["province"] for l in w.values() if l["province"] != "邊境"}:
@@ -37,50 +38,101 @@ def _province_objectives(gamedata: GameData) -> dict:
                  if set(c.get("biomes", [])) & biomes and not c.get("solo")
                  and c.get("min_level", 1) <= 8 and c.get("danger", 1) <= 4]
         cands.sort(key=lambda x: (x[1], x[2], x[0]))
-        creature = cands[0][0] if cands else "wolf"
+        creatures = [c[0] for c in cands] or ["wolf"]
         dungeons = sorted(((lid, l.get("danger", 9)) for lid, l in w.items()
                            if l["province"] == p and l["type"] == "dungeon"),
                           key=lambda x: (x[1], x[0]))
-        dkey = w[dungeons[0][0]]["dungeon"] if dungeons else None
-        dname = w[dungeons[0][0]]["name"] if dungeons else None
-        out[p] = (creature, dkey, dname)
+        dlist = [(w[lid]["dungeon"], w[lid]["name"]) for lid, _ in dungeons]
+        out[p] = (creatures, dlist)
+    return out
+
+
+def _province_forage(gamedata: GameData) -> dict:
+    """每省可野採的煉金材料(掃 events.json 採集事件:explore context + provinces + 給 item 的選項)。
+    無採集事件的省(如艾爾斯維爾)回空 → 該省委託改走獵殺/懸賞。決定性(sorted)。"""
+    out: dict = {}
+    for ev in gamedata.events.values():
+        tr = ev.get("trigger", {})
+        if "explore" not in tr.get("contexts", []):
+            continue
+        items = sorted({eff["item"] for opt in ev.get("options", [])
+                        for eff in opt.get("effects", []) if eff.get("type") == "item"})
+        if not items:
+            continue
+        for p in tr.get("provinces", []):
+            for it in items:
+                if it not in out.setdefault(p, []):
+                    out[p].append(it)
+    for p in out:
+        out[p].sort()
     return out
 
 
 def generate_ruler_commissions(gamedata: GameData) -> None:
     """於 gamedata 載入後就地補齊:每座有領主、卻無手寫委託的城/鎮,程序化生成 2 個領主委託
-    (肅清在地怪 +1、清剿省內地城 +2 → 滿 THANE_STANDING)並登錄進 gamedata.quests;
-    再補預設信物/侍從。手寫委託(已有 `quests`)保留不動,可逐城考據覆寫。"""
+    (q1 +1 / q2 +2 → 滿 THANE_STANDING)並登錄進 gamedata.quests;再補預設信物/侍從。
+    手寫委託(已有 `quests`)保留不動,可逐城考據覆寫。
+    🔴 反「一批解決整省」:同省各城以**省內序位**輪替不同生態怪 / 地城,且 q1 型別輪替
+    (肅清獵殺 / 懸賞較兇怪 / 採辦藥材)→ 打一批怪、清一地城只解到對應的那幾城。
+    決定性、冪等(sorted 迭代 + 穩定 qid,每次載入重建相同)。"""
     objs = _province_objectives(gamedata)
+    forage = _province_forage(gamedata)
+    prov_ord: dict = {}
     for idx, (loc_id, ruler) in enumerate(sorted(gamedata.rulers.items())):
         if ruler.get("quests"):
             continue                                  # 手寫委託(布魯瑪/重點城)→ 不覆蓋
         loc = gamedata.world["locations"].get(loc_id)
         if not loc:
             continue
-        creature, dkey, dname = objs.get(loc["province"], ("wolf", None, None))
+        p = loc["province"]
+        creatures, dlist = objs.get(p, (["wolf"], []))
+        nc = len(creatures)
+        i = prov_ord.get(p, 0)                         # 省內序位(輪替基準)
+        prov_ord[p] = i + 1
+        cr = creatures[i % nc]                          # 輪替在地怪(肅清)
+        tough = creatures[(nc - 1 - (i // 3)) % nc]     # 偏兇猛端、依型別內序位輪替(懸賞/再肅用)
+        mats = forage.get(p, [])
         cname, title, rname = loc["name"], ruler.get("title", ""), ruler.get("name", "")
-        crname = gamedata.bestiary.get(creature, {}).get("name", creature)
         q1, q2 = f"ruler_auto_{loc_id}_1", f"ruler_auto_{loc_id}_2"
-        gamedata.quests[q1] = {
-            "name": "領主委託:肅清城郊", "faction": None, "rank": None, "source": "ruler",
-            "objective": {"type": "kill", "creature": creature, "count": 6},
-            "reward": {"gold": 120, "fame": 5, "standing": 1}, "turn_in": "auto",
-            "text": f"{cname}的{title}{rname}委你肅清城郊作亂的{crname}(獵殺 6 隻),以安民心。"}
-        if dkey:
+        kind = i % 3
+        if kind == 1:                                  # 懸賞:獵殺較兇猛的在地怪(數少賞高)
+            tname = gamedata.bestiary.get(tough, {}).get("name", tough)
+            gamedata.quests[q1] = {
+                "name": "領主委託:懸賞獵殺", "faction": None, "rank": None, "source": "ruler",
+                "objective": {"type": "kill", "creature": tough, "count": 3},
+                "reward": {"gold": 180, "fame": 6, "standing": 1}, "turn_in": "auto",
+                "text": f"{cname}的{title}{rname}張出懸賞:為禍鄉里的{tname}已奪數命 —— 取其 3 條性命,城邦自有重謝。"}
+        elif kind == 2 and mats:                       # 採集:野採在地藥材(無採集事件的省退回獵殺)
+            mat = mats[(i // 3) % len(mats)]
+            mname = gamedata.item_name(mat)
+            gamedata.quests[q1] = {
+                "name": "領主委託:採辦藥材", "faction": None, "rank": None, "source": "ruler",
+                "objective": {"type": "collect", "item": mat, "count": 5},
+                "reward": {"gold": 110, "fame": 4, "standing": 1}, "turn_in": "auto",
+                "text": f"{title}{rname}的醫者短缺藥材,委你自{cname}城郊野地採辦{mname} 5 份,以備民疾。"}
+        else:                                          # 肅清:獵殺在地生態怪
+            crname = gamedata.bestiary.get(cr, {}).get("name", cr)
+            gamedata.quests[q1] = {
+                "name": "領主委託:肅清城郊", "faction": None, "rank": None, "source": "ruler",
+                "objective": {"type": "kill", "creature": cr, "count": 6},
+                "reward": {"gold": 120, "fame": 5, "standing": 1}, "turn_in": "auto",
+                "text": f"{cname}的{title}{rname}委你肅清城郊作亂的{crname}(獵殺 6 隻),以安民心。"}
+        if dlist:                                      # q2:輪替清剿不同省內地城
+            dkey, dname = dlist[i % len(dlist)]
             gamedata.quests[q2] = {
                 "name": f"領主委託:清剿{dname}", "faction": None, "rank": None, "source": "ruler",
                 "objective": {"type": "clear_dungeon", "dungeon": dkey},
                 "reward": {"gold": 250, "fame": 10, "standing": 2}, "turn_in": "auto",
                 "text": f"{title}{rname}委你清剿為禍一方的{dname},蕩平其中盤踞之敵,證明你配得上{cname}的信賴。"}
-        else:
+        else:                                          # 無地城省 → 再肅(較兇的在地怪)
+            tname = gamedata.bestiary.get(tough, {}).get("name", tough)
             gamedata.quests[q2] = {
                 "name": "領主委託:再肅邊患", "faction": None, "rank": None, "source": "ruler",
-                "objective": {"type": "kill", "creature": creature, "count": 10},
+                "objective": {"type": "kill", "creature": tough, "count": 10},
                 "reward": {"gold": 250, "fame": 10, "standing": 2}, "turn_in": "auto",
-                "text": f"{title}{rname}再委你重創城郊的{crname}巢穴(獵殺 10 隻),徹底安定一方。"}
+                "text": f"{title}{rname}再委你重創城郊的{tname}巢穴(獵殺 10 隻),徹底安定一方。"}
         ruler["quests"] = [q1, q2]
-        ruler.setdefault("thane_gift", _PROVINCE_GIFT.get(loc["province"], "elven_sword"))
+        ruler.setdefault("thane_gift", _PROVINCE_GIFT.get(p, "elven_sword"))
         ruler.setdefault("housecarl", _HOUSECARLS[idx % len(_HOUSECARLS)])
 
 
