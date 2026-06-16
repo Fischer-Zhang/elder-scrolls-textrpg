@@ -208,7 +208,7 @@ def _armor_rating(actor, gamedata: GameData) -> int:
     if _is_beast(actor):     # 獸形:脫去穿戴護甲,只剩野獸厚皮的微薄防護(權衡:易受擊,靠巨量血量扛)
         from tesrpg.systems import lycanthropy
         return lycanthropy.BEAST_ARMOR
-    worn = inventory.effective_armor_rating(actor, gamedata)   # 已計入耐久折損
+    worn = inventory.worn_armor_rating(actor, gamedata)
     wc = inventory.dominant_weight_class(actor, gamedata)
     if worn == 0 or wc is None:
         base = formulas.player_armor_rating(actor.skill("heavy_armor"), actor.skill("light_armor"))
@@ -377,13 +377,11 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
                   ) if sneaking else None
 
     if hit:
-        cond_mult = (inventory.weapon_damage_mult(attacker)
-                     if _is_player(attacker) and not beast and not bound else 1.0)   # 束縛兵刃不吃裝備武器耐久
         roll = rng.roll(0.85, 1.15)
         block_factor = (formulas.block_damage_factor(defender.skill("block"))
                         if defender_blocking else 1.0)
         raw = formulas.attack_damage(wpn_dmg, wpn_skill, _strength(attacker),
-                                     roll, block_factor) * cond_mult
+                                     roll, block_factor)
         # 騎士「號令」:帶 empower 增益的攻擊者(同伴)傷害提升 —— **只對同伴施放 → 永不碰玩家偷襲紅線**
         # 以 max 聚合(取最強的一道,非加總)→ 反覆施放號令不疊乘成暴衝;單道仍隨施法 power 成長。
         if not _is_player(attacker):
@@ -402,9 +400,9 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
         if sneaking:
             raw *= sneak_mult
         raw += power_bonus
-        if offhand_dmg:    # 雙持副手補刀:照常吃技能/力量/耐久,但不吃偷襲倍率
+        if offhand_dmg:    # 雙持副手補刀:照常吃技能/力量,但不吃偷襲倍率
             raw += formulas.attack_damage(offhand_dmg, wpn_skill, _strength(attacker),
-                                          roll, block_factor) * cond_mult
+                                          roll, block_factor)
         atk_element = None if _is_player(attacker) else attacker.attack.get("element")
         if bound:   # 召喚「束縛兵刃」:法系近戰 → 走元素分支(無視護甲、吃元素抗性;元素分支不讀附魔/灌注 → 不雙吃)
             atk_element = bound.get("element", "magic")
@@ -669,12 +667,6 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
                                                 "turns": formulas.SNEAK_BLEED_TURNS})
             if staggered or bleed_mag:
                 aftermath = {"staggered": staggered, "bleed": bleed_mag}
-
-        # 耐久折損:玩家攻擊磨損武器、被擊中磨損護甲。獸形/束縛兵刃以非裝備武器戰鬥 → 不磨損裝備武器
-        if _is_player(attacker) and not beast and not bound:
-            inventory.degrade_weapon(attacker)
-        if _is_player(defender) and defender.equipped:
-            inventory.degrade_random_armor(defender, rng)
 
         # learn-by-doing:攻擊方是玩家 → 練武器;防守方是玩家 → 練護甲
         if _is_player(attacker) and wpn_skill_id:

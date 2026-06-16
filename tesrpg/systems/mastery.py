@@ -39,9 +39,9 @@ _IMPLEMENTED_KINDS = {
     "spell_overload", "lock_floor", "guaranteed_persuade",
     *_FORTIFY_KINDS,                       # P1:持久 fortify 層
     # P2 戰鬥系:武器流派調變(命中/威力/破甲/反作用/耗體/命中附狀態,target=武器技能)、
-    # 盾擊踉蹌、淬鍊上限/省料、野修下限、旅速、戰鬥省體。
+    # 盾擊踉蹌、淬鍊上限/省料、旅速、戰鬥省體。
     "weapon_mod", "block_riposte", "temper_cap_bonus", "temper_cost_free",
-    "repair_floor", "travel_factor_bonus", "fatigue_cost_bonus",
+    "travel_factor_bonus", "fatigue_cost_bonus",
     # P3 魔法系:法術調變(學派 power/cost/命中附狀態,吸收 spell_overload)、召喚調變、
     # 被動護甲、煉金/附魔增幅、塗毒次數、命中懼意、低血再生、商貿議價。
     "spell_mod", "summon_mod", "passive_armor", "potion_potency", "poison_charge_bonus",
@@ -57,8 +57,8 @@ _IMPLEMENTED_KINDS = {
     # 八職功能性身份:法師連鎖 / 戰法師共鳴·回魔 / 治療師急救 / 弓手獵手偵察 / 刺客烙印。
     # (warrior 盾牆 / knight 戰旗 為戰鬥動作,非里程碑 kind。)
     "cascade", "resonant_strike", "mana_on_hit", "triage_heal", "recon_reveal_floor", "deathmark",
-    # 廣度 pass:護甲修理戰中自修、運動逃跑加成、重甲反傷、安全解陷保底。
-    "combat_repair", "flee_bonus", "armor_reflect", "trap_floor",
+    # 廣度 pass:運動逃跑加成、重甲反傷、安全解陷保底。
+    "flee_bonus", "armor_reflect", "trap_floor",
 }
 
 
@@ -546,19 +546,7 @@ def temper_free_chance(char, gamedata: GameData) -> float:
                for o in _chosen_options_by_kind(char, gamedata, "temper_cost_free")), default=0.0)
 
 
-def repair_floor(char, gamedata: GameData) -> float:
-    """行軍鐵匠/鍛場修整:修理可達的最低成數下限(0 = 無)。多來源(armorer + smithing)取最高。"""
-    return max((o.get("floor", 0.0) for o in _chosen_options_by_kind(char, gamedata, "repair_floor")),
-               default=0.0)
-
-
 # --- 廣度 pass 新 getter(皆單源:只一個技能授予 → 無需聚合)--------------------
-def combat_repair(char, gamedata: GameData) -> dict:
-    """戰場鐵匠:每戰鬥回合自修武器/護甲耐久。回傳 {weapon, armor} 修復量;{} = 無。"""
-    e = _chosen_option_by_kind(char, gamedata, "combat_repair")
-    return {"weapon": e.get("weapon", 0.0), "armor": e.get("armor", 0.0)} if e else {}
-
-
 def flee_bonus(char, gamedata: GameData) -> float:
     """逃命好手:逃跑成功率加成(0 = 無)。"""
     return _param(char, gamedata, "flee_bonus", "bonus", 0.0)

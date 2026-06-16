@@ -117,12 +117,16 @@ LOCKPICK_OUTSIDER_MARKUP = 2.0   # 開鎖器是盜賊公會的營生:非會員(�
 
 def buy_price(char: Character, gamedata: GameData, item_id: str) -> int:
     from tesrpg.systems import factions
-    value = gamedata.item(item_id)["value"]
-    price = value * (2.2 - _disposition_factor(char, gamedata))
+    item = gamedata.item(item_id)
+    price = item["value"] * (2.2 - _disposition_factor(char, gamedata))
     # 開鎖器只在有盜賊公會的城販售;會員按常價,外人/敵對加價(仍買得到,但較貴)
     if item_id == "lockpick" and not factions.is_member(char, "thieves_guild"):
         price *= LOCKPICK_OUTSIDER_MARKUP
-    return max(1, round(price))
+    # 戰士公會「軍械庫之誼」:買武器/護甲(含盾/弓/法杖)享階級折扣
+    if "damage" in item or "armor_rating" in item:
+        price *= 1 - factions.armory_discount(char, gamedata)
+    # 反套利鐵則:同物買價恆 > 賣價(極端議價 + 滿階軍械庫折扣下,折扣不得倒掛成金幣泵)
+    return max(1, round(price), sell_price(char, gamedata, item_id) + 1)
 
 
 def sell_price(char: Character, gamedata: GameData, item_id: str) -> int:
@@ -294,8 +298,3 @@ def trainer_cap(gamedata: GameData, loc_id: str, skill_id: str) -> int:
 # --- 法師公會 -----------------------------------------------------------
 def spell_price(gamedata: GameData, spell_id: str) -> int:
     return max(25, gamedata.spells[spell_id]["cost"] * 12)
-
-
-# --- 鐵匠修理 -----------------------------------------------------------
-def repair_fee() -> int:
-    return 15

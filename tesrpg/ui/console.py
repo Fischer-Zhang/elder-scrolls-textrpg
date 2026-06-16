@@ -203,7 +203,7 @@ def _sheet_view(char: Character, gamedata: GameData) -> dict:
         "fp": [int(char.fatigue), int(char.max_fatigue)],
         "encumbrance": formulas.max_encumbrance(char.attr("strength")),
         "gold": char.gold, "weapon": _plain(weapon_line(char, gamedata)),
-        "armor": _armor_display(char, gamedata)[0],
+        "armor": _armor_display(char, gamedata),
 
         "resist": _resist_summary(char, gamedata),
         "fame": char.fame, "infamy": char.infamy, "bounty": sum(char.bounties.values()),
@@ -792,7 +792,7 @@ def character_sheet(char: Character, gamedata: GameData) -> None:
     if _iq:
         res.add_row(Text("起手", style="cyan"), Text(f"{_iq['name']} — {_iq['objective']}", style=INK))
     res.add_row(Text("武器", style=GOLD), Text(weapon_line(char, gamedata), style=PARCH))
-    _worn = _armor_display(char, gamedata)[0]      # 含永久淬鍊 → 淬甲後此值上升
+    _worn = _armor_display(char, gamedata)      # 含永久淬鍊 → 淬甲後此值上升
     if _worn:
         res.add_row(Text("護甲", style=GOLD), Text(str(_worn), style=PARCH))
     _rsum = _resist_summary(char, gamedata)
@@ -1095,8 +1095,7 @@ def sheet_equipment(char: Character, gamedata: GameData) -> None:
             if iid:
                 rows.append(_kv(_SLOT_CN[slot], gamedata.item_name(iid)
                                 + _temper_suffix(char, iid) + _ench_suffix(gamedata, iid)))
-        worn, eff = _armor_display(char, gamedata)        # 含永久淬鍊 → 淬甲後護甲值上升
-        rows.append(_kv("護甲值", f"名目 {worn} · 有效 {eff:.0f}"))
+        rows.append(_kv("護甲值", f"{_armor_display(char, gamedata)}"))  # 含永久淬鍊 → 淬甲後護甲值上升
         _smat, _scnt, _sb = inventory.set_progress(char, gamedata)
         if _scnt == 4 and _sb:                          # 穿滿四件同材質 → 套裝啟用
             _sn = gamedata.armor_sets.get(_smat, {}).get("name", "整套同材質")
@@ -1123,8 +1122,7 @@ def sheet_equipment(char: Character, gamedata: GameData) -> None:
             body.append(f"{_SLOT_CN[slot]}  ", style=GOLD)
             body.append(gamedata.item_name(iid) + _temper_suffix(char, iid)
                         + _ench_suffix(gamedata, iid) + "\n", style=PARCH)
-    worn, eff = _armor_display(char, gamedata)            # 含永久淬鍊 → 淬甲後護甲值上升
-    body.append(f"護甲值  名目 {worn} · 有效 {eff:.0f}\n", style=INK)
+    body.append(f"護甲值  {_armor_display(char, gamedata)}\n", style=INK)  # 含永久淬鍊 → 淬甲後護甲值上升
     _smat, _scnt, _sb = inventory.set_progress(char, gamedata)
     if _scnt == 4 and _sb:                              # 穿滿四件同材質 → 套裝啟用(顯示實際效果)
         _setname = gamedata.armor_sets.get(_smat, {}).get("name", "整套同材質")
@@ -1608,19 +1606,17 @@ def _temper_suffix(char: Character, item_id: str) -> str:
     return f" ·淬+{lvl}" if lvl else ""
 
 
-def _armor_display(char: Character, gamedata: GameData):
-    """UI 顯示用護甲值(含永久淬鍊 flat 加成):回傳 (名目, 有效)。
-    淬鍊不隨耐久折損 → 名目與有效都加;戰鬥側 base 另在 combat._armor_rating 計入,顯示與戰鬥互不重複。"""
+def _armor_display(char: Character, gamedata: GameData) -> int:
+    """UI 顯示用護甲值(含永久淬鍊 flat 加成)。
+    淬鍊不隨耐久折損;戰鬥側 base 另在 combat._armor_rating 計入,顯示與戰鬥互不重複。"""
     from tesrpg.systems import inventory as _inv, smithing
-    tb = smithing.armor_temper_bonus(char)
-    return _inv.worn_armor_rating(char, gamedata) + tb, _inv.effective_armor_rating(char, gamedata) + tb
+    return _inv.worn_armor_rating(char, gamedata) + smithing.armor_temper_bonus(char)
 
 
 def weapon_line(char: Character, gamedata: GameData) -> str:
     wp = gamedata.item_or_none(char.weapon)
     if wp is None:                       # 毀損/未知武器 id → 顯示原 id,不崩潰(防毀損存檔)
         return f"{char.weapon}(未知武器)"
-    cond = "" if char.weapon == "fists" else f" 耐久{int(char.weapon_condition)}%"
     poison = ""
     if char.weapon_poison:
         poison = f" [green]· 塗毒:{char.weapon_poison['name']}×{char.weapon_poison['charges']}[/]"
@@ -1635,7 +1631,7 @@ def weapon_line(char: Character, gamedata: GameData) -> str:
     dmg = wp.get("damage", 0) + smithing.weapon_temper_bonus(char)     # 含永久淬鍊加傷 → 淬鍊效果可見
     dmg_tag = f"傷害 {dmg} · " if char.weapon != "fists" else ""
     return (f"{wp['name']}（{dmg_tag}{gamedata.skill_name(wp['skill'])} {char.skill(wp['skill'])}"
-            f"{arch_tag}{cond})" + _temper_suffix(char, char.weapon)
+            f"{arch_tag})" + _temper_suffix(char, char.weapon)
             + _ench_suffix(gamedata, char.weapon) + poison + dual)
 
 

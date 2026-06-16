@@ -1,13 +1,4 @@
 [
-  {"id": "armorer_50", "skill": "armorer", "threshold": 50,
-   "options": [
-     {"opt_id": "field_smith", "name": "行軍鐵匠", "kind": "repair_floor", "floor": 90.0,
-      "desc": "護甲宗師:即使在荒野自行修理,也能修到九成(野修下限 90%)。"},
-     {"opt_id": "resilient_plate", "name": "堅韌打理", "kind": "skill_fortify",
-      "skill": {"heavy_armor": 6, "light_armor": 6},
-      "desc": "你深諳護甲構造,穿戴時防護更紮實(重甲/輕甲技能各 +6)。"}
-   ]},
-
   {"id": "athletics_50", "skill": "athletics", "threshold": 50,
    "options": [
      {"opt_id": "marathon", "name": "長途健步", "kind": "travel_factor_bonus", "bonus": 0.10,
@@ -239,14 +230,6 @@
       "desc": "暗影中的巧手:銷贓議價更在行(商貿技能 +10)。"}
    ]},
 
-  {"id": "armorer_75", "skill": "armorer", "threshold": 75,
-   "options": [
-     {"opt_id": "combat_tinker", "name": "戰場鐵匠", "kind": "combat_repair", "weapon": 2.0, "armor": 2.0,
-      "desc": "臨陣不輟保養:每戰鬥回合自行修補武器與護甲耐久各 +2(久戰不崩裝)。"},
-     {"opt_id": "master_armorer", "name": "甲冑通修", "kind": "skill_fortify", "skill": {"heavy_armor": 8},
-      "desc": "深諳甲冑構造,穿戴重甲更得其法(重甲技能 +8)。"}
-   ]},
-
   {"id": "athletics_75", "skill": "athletics", "threshold": 75,
    "options": [
      {"opt_id": "escape_artist", "name": "逃命好手", "kind": "flee_bonus", "bonus": 0.15,
@@ -300,10 +283,10 @@
 
   {"id": "smithing_50", "skill": "smithing", "threshold": 50,
    "options": [
-     {"opt_id": "forge_repair", "name": "鍛場修整", "kind": "repair_floor", "floor": 85.0,
-      "desc": "鍛造之手:野外自修也能修到八成五(野修下限 85%;與護甲宗師取高者)。"},
-     {"opt_id": "apprentice_smith", "name": "鍛造學養", "kind": "skill_fortify", "skill": {"armorer": 8},
-      "desc": "鍛造通修理,護甲修復更有把握(護甲修理技能 +8)。"}
+     {"opt_id": "thrifty_forge", "name": "淬火精算", "kind": "temper_cost_free", "free_chance": 0.20,
+      "desc": "用料精算:淬鍊時有兩成機率不耗錠(與其他省料里程碑取最高)。"},
+     {"opt_id": "smith_arm", "name": "鍛場錘感", "kind": "skill_fortify", "skill": {"blunt": 6},
+      "desc": "終日掄錘,臂力與鈍器手感俱進(鈍器技能 +6)。"}
    ]},
 
   {"id": "alchemy_50", "skill": "alchemy", "threshold": 50,
@@ -378,13 +361,6 @@
       "desc": "辯才無礙,說服/威嚇更易(口才技能 +8)。"}
    ]},
 
-  {"id": "armorer_100", "skill": "armorer", "threshold": 100, "options": [
-     {"opt_id": "masterwork_fit", "name": "精工護持", "kind": "passive_armor", "armor_bonus": 14,
-      "desc": "護甲登峰:武具經你保養入微、貼合如鑄,防護更上層樓(被動護甲 +14)。"},
-     {"opt_id": "master_fitter", "name": "甲冑精工", "kind": "skill_fortify", "skill": {"heavy_armor": 10, "light_armor": 10},
-      "desc": "甲冑了然於胸,穿戴防護更紮實(重甲/輕甲技能各 +10)。"}
-   ]},
-
   {"id": "athletics_100", "skill": "athletics", "threshold": 100, "options": [
      {"opt_id": "windstep", "name": "疾風身法", "kind": "evasion_bonus", "evasion_bonus": 0.05,
       "desc": "運動登峰:步法飄忽如風,敵人命中你的機率再 −5%(多源相加)。"},
@@ -416,8 +392,8 @@
   {"id": "smithing_100", "skill": "smithing", "threshold": 100, "options": [
      {"opt_id": "legendary_smith", "name": "傳奇工匠", "kind": "temper_cost_free", "free_chance": 0.50,
       "desc": "鍛造登峰:對材料的拿捏出神入化 —— 淬鍊時 50% 機率不消耗錠材(多源取最高)。"},
-     {"opt_id": "forgemaster", "name": "鍛造學究", "kind": "skill_fortify", "skill": {"armorer": 10},
-      "desc": "鍛造通修理,武具保養更得法(護甲修理技能 +10)。"}
+     {"opt_id": "forgemaster", "name": "鍛造學究", "kind": "skill_fortify", "skill": {"heavy_armor": 10},
+      "desc": "千錘百鍊間通曉甲冑構造,穿戴重甲更得其法(重甲技能 +10)。"}
    ]},
 
   {"id": "alchemy_100", "skill": "alchemy", "threshold": 100, "options": [
@@ -533,10 +509,6 @@
       "desc": "秘法磨礪心志(意志 +4 → 魔力回復/抗心智提升)。"}
    ]},
 
-  {"id": "armorer_25", "skill": "armorer", "threshold": 25, "options": [
-     {"opt_id": "field_repair_basics", "name": "野修入門", "kind": "repair_floor", "floor": 75.0,
-      "desc": "略通保養之道:即便在荒野自修,也能修到七成五(野修下限 75%;早早便能在外維持武具,與其他修理下限取高者)。"}
-   ]},
   {"id": "athletics_25", "skill": "athletics", "threshold": 25, "options": [
      {"opt_id": "light_step", "name": "健步輕身", "kind": "evasion_bonus", "evasion_bonus": 0.02,
       "desc": "步法漸輕,挪移更俐落,敵人命中你的機率 −2%(多源相加,夾總上限)。"}

@@ -271,53 +271,6 @@ def armor_fortify_totals(char: Character, gamedata: GameData) -> dict[str, int]:
     return totals
 
 
-# --- 耐久 (condition) ---------------------------------------------------
-def _cond_mult(condition: float) -> float:
-    """耐久 → 效能倍率(100→1.0、0→0.5)。"""
-    return 0.5 + 0.5 * max(0.0, min(100.0, condition)) / 100.0
-
-
-def weapon_damage_mult(char: Character) -> float:
-    return _cond_mult(char.weapon_condition)
-
-
-def effective_armor_rating(char: Character, gamedata: GameData) -> float:
-    """計入各部位耐久折損後的實際護甲值。"""
-    total = 0.0
-    for slot, iid in char.equipped.items():
-        rating = (gamedata.item_or_none(iid) or {}).get("armor_rating")  # 飾品/毀損 id 無此鍵
-        if not rating:
-            continue
-        cond = char.armor_condition.get(slot, 100.0)
-        total += rating * _cond_mult(cond)
-    return total
-
-
-def degrade_weapon(char: Character, amount: float = 1.0) -> None:
-    if char.weapon not in ("fists", "beast_claws"):   # 自然武器(徒手/獸爪)不磨損
-        char.weapon_condition = max(0.0, char.weapon_condition - amount)
-
-
-def degrade_random_armor(char: Character, rng, amount: float = 1.5) -> None:
-    if not char.equipped:
-        return
-    slot = rng.choice(list(char.equipped.keys()))
-    cur = char.armor_condition.get(slot, 100.0)
-    char.armor_condition[slot] = max(0.0, cur - amount)
-
-
-def repairable_cap(armorer_skill: int) -> float:
-    """Armorer 技能決定能修到幾成(技能 100 才能修到 100%)。"""
-    return min(100.0, 50.0 + armorer_skill * 0.5)
-
-
-def repair_all(char: Character, cap: float = 100.0) -> None:
-    if char.weapon != "fists":
-        char.weapon_condition = max(char.weapon_condition, cap)
-    for slot in char.equipped:
-        char.armor_condition[slot] = max(char.armor_condition.get(slot, 100.0), cap)
-
-
 def dominant_weight_class(char: Character, gamedata: GameData) -> str | None:
     """穿戴中以重甲還是輕甲為主?無護甲回傳 None。"""
     counts = {"heavy": 0, "light": 0}

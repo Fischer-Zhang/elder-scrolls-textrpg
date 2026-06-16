@@ -101,11 +101,19 @@ def test_thief_sells_for_more():
     assert world.sell_price(c, gd, "ruby") > base               # 銷贓加成生效
 
 
-def test_repair_and_spell_discounts():
+def test_armory_and_spell_discounts():
     gd, c = _char()
     factions.join(c, "fighters_guild")
-    c.factions["fighters_guild"] = 7                            # 會長 → 修理免費(cap 1.0)
-    assert factions.repair_discount(c, gd) == 1.0
+    c.factions["fighters_guild"] = 7                            # 會長 → 軍械庫折扣達上限(cap 0.35)
+    assert factions.armory_discount(c, gd) == 0.35
+    # 軍械庫折扣只套在武器/護甲:同角色入會 vs 退會,鋼劍變便宜、藥水不受影響(處置不變)
+    sword_member = world.buy_price(c, gd, "steel_sword")
+    potion_member = world.buy_price(c, gd, "minor_healing_potion")
+    saved = c.factions.pop("fighters_guild")
+    assert factions.armory_discount(c, gd) == 0.0
+    assert world.buy_price(c, gd, "steel_sword") > sword_member        # 武器享折扣
+    assert world.buy_price(c, gd, "minor_healing_potion") == potion_member   # 藥水不享折扣
+    c.factions["fighters_guild"] = saved
     factions.join(c, "mages_guild")
     c.factions["mages_guild"] = 5
     assert 0 < factions.spell_discount(c, gd) <= 0.45

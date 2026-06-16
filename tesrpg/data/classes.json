@@ -1,6 +1,6 @@
 {
   "warrior":    {"name": "戰士", "spec": "combat",  "favored_attributes": ["strength", "endurance"],
-                 "major_skills": ["blade", "blunt", "block", "heavy_armor", "armorer", "hand_to_hand", "athletics"],
+                 "major_skills": ["blade", "blunt", "block", "heavy_armor", "smithing", "hand_to_hand", "athletics"],
                  "desc": "正面硬撼的近戰武者,鋼鐵與蠻力。"},
   "mage":       {"name": "法師", "spec": "magic",   "favored_attributes": ["intelligence", "willpower"],
                  "major_skills": ["destruction", "restoration", "alteration", "conjuration", "illusion", "mysticism", "alchemy"],
@@ -21,6 +21,6 @@
                  "major_skills": ["restoration", "alteration", "illusion", "destruction", "alchemy", "mysticism", "speechcraft"],
                  "desc": "守護生命、驅退病亡的白袍施法者。"},
   "archer":     {"name": "弓手", "spec": "combat",  "favored_attributes": ["agility", "strength"],
-                 "major_skills": ["marksman", "blade", "light_armor", "sneak", "armorer", "block", "hand_to_hand"],
+                 "major_skills": ["marksman", "blade", "light_armor", "sneak", "athletics", "block", "hand_to_hand"],
                  "desc": "百步穿楊的遠程獵手。"}
 }

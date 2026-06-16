@@ -133,26 +133,6 @@ def test_enchant_weapon_adds_element_and_combat_bonus():
     assert hit
 
 
-# --- 耐久 / 修理 --------------------------------------------------------
-def test_weapon_degrades_and_affects_damage():
-    gd, c = _mage()
-    c.weapon = "iron_sword"
-    assert inventory.weapon_damage_mult(c) == 1.0
-    c.weapon_condition = 0
-    assert inventory.weapon_damage_mult(c) == 0.5
-
-
-def test_armor_condition_and_repair():
-    gd, c = _mage()
-    inventory.add_item(c, "iron_cuirass", 1)
-    inventory.equip_armor(c, gd, "iron_cuirass")
-    c.armor_condition["cuirass"] = 0
-    low = inventory.effective_armor_rating(c, gd)
-    inventory.repair_all(c, 100.0)
-    high = inventory.effective_armor_rating(c, gd)
-    assert high > low
-
-
 def test_synth_roundtrip_via_gamedata():
     gd, _ = _mage()
     bid = synth.brew_id("restore_magicka", 30)
@@ -544,14 +524,13 @@ def test_mass_soul_trap_marks_all_living_enemies():
 
 
 def test_bound_weapon_ignores_equipped_weapon_riders():
-    """對抗審查 major 修正:束縛兵刃完全取代裝備武器 → 不吃裝備武器的塗毒/命中附魔/耐久。"""
+    """對抗審查 major 修正:束縛兵刃完全取代裝備武器 → 不吃裝備武器的塗毒/命中附魔。"""
     gd, c = _caster()
     c.spells.append("bound_sword")
     c.skills["conjuration"] = 80
     c.weapon = synth.enchant_weapon_status_id("steel_sword", "vampiric", 5, 0)   # 吸血附魔
     c.weapon_poison = {"name": "劇毒", "charges": 3,
                        "status": {"status": "dot", "element": "poison", "magnitude": 6, "turns": 3}}
-    c.weapon_condition = 50.0
     c.health = 10
     magic.cast(c, gd, "bound_sword", RNG(0), battle={"allies": []})
     foe = combat.spawn_creature(gd, "mudcrab", RNG(0))
@@ -562,26 +541,6 @@ def test_bound_weapon_ignores_equipped_weapon_riders():
     assert c.weapon_poison["charges"] == 3                          # 塗毒未被消耗
     assert not any(e.get("element") == "poison" for e in foe.active_effects)   # 敵未中裝備毒
     assert c.health == 10                                           # 裝備吸血附魔未觸發
-    assert c.weapon_condition == 50.0                              # 裝備武器未磨損
-
-
-def test_bound_weapon_damage_independent_of_equipped_condition():
-    """束縛兵刃傷害不受裝備武器耐久縮放(虛擬兵刃與破損裝備脫鉤)。"""
-    def dmg(cond):
-        gd, c = _caster()
-        c.spells.append("bound_sword")
-        c.skills["conjuration"] = 80
-        c.weapon = "iron_sword"
-        c.weapon_condition = cond
-        magic.cast(c, gd, "bound_sword", RNG(0), battle={"allies": []})
-        foe = combat.spawn_creature(gd, "mudcrab", RNG(0))
-        foe.health = foe.max_health = 9999
-        for i in range(60):
-            ev = combat.resolve_attack(c, foe, gd, RNG(1000 + i))
-            if ev["hit"]:
-                return ev["damage"]
-        return None
-    assert dmg(0.0) == dmg(100.0)
 
 
 def test_bound_weapon_trains_conjuration_on_hit():

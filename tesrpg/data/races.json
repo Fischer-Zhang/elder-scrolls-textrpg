@@ -26,7 +26,7 @@
   "nord": {
     "name": "諾德人", "kind": "men",
     "attr_mods": {"strength": 10, "endurance": 10, "intelligence": -10, "willpower": -5, "personality": -5},
-    "skill_bonuses": {"blade": 5, "blunt": 10, "heavy_armor": 5, "block": 5, "armorer": 5, "restoration": 5},
+    "skill_bonuses": {"blade": 5, "blunt": 10, "heavy_armor": 5, "block": 5, "smithing": 5, "restoration": 5},
     "magicka_bonus": 0,
     "ability": "天際的戰士民族,天生抗寒,戰意如火。",
     "resist": {"frost": 50}
@@ -58,7 +58,7 @@
   "orsimer": {
     "name": "獸人", "kind": "mer",
     "attr_mods": {"strength": 10, "endurance": 10, "willpower": 5, "intelligence": -10, "personality": -10},
-    "skill_bonuses": {"blunt": 10, "heavy_armor": 10, "block": 5, "armorer": 5, "hand_to_hand": 5},
+    "skill_bonuses": {"blunt": 10, "heavy_armor": 10, "block": 5, "smithing": 5, "hand_to_hand": 5},
     "magicka_bonus": 0,
     "ability": "鐵壁般的戰士,可進入狂怒爆發。",
     "resist": {"magic": 25}

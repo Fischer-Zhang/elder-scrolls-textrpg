@@ -41,9 +41,39 @@ def test_save_load_roundtrip():
     assert loaded.rng.seed == 12345
 
 
+def test_legacy_save_drops_removed_durability_and_armorer():
+    """向後相容:移除耐久/修理 + Armorer 技能後,含舊欄位的存檔仍能乾淨載入。"""
+    import json
+    gd = get_gamedata()
+    c = build_character(gd, name="OldHero", sex="male", race="nord",
+                        birthsign="warrior", class_id="warrior")
+    state = GameState(player=c, time=GameTime(year=433, month=1, day=1, hour=8), rng=RNG(7))
+    with tempfile.TemporaryDirectory() as d:
+        path = Path(d) / "save.json"
+        state.save(path)
+        raw = json.loads(path.read_text(encoding="utf-8"))
+        p = raw["player"]
+        # 注入舊存檔遺留:耐久欄 + 已移除的 armorer 技能 + 指向已刪/已改節點的里程碑選擇 + major_skills 含 armorer
+        p["weapon_condition"] = 73.0
+        p["armor_condition"] = {"cuirass": 40.0}
+        p["skills"]["armorer"] = 88
+        p["skill_xp"]["armorer"] = 12.5
+        p["mastery_choices"] = {"armorer_50": "field_smith", "smithing_50": "forge_repair"}
+        p["major_skills"] = list(p.get("major_skills", [])) + ["armorer"]
+        path.write_text(json.dumps(raw), encoding="utf-8")
+        loaded = GameState.load(path)               # 不得拋例外
+    pl = loaded.player
+    assert not hasattr(pl, "weapon_condition") and not hasattr(pl, "armor_condition")
+    assert "armorer" not in pl.skills and "armorer" not in pl.skill_xp
+    assert "armorer" not in pl.major_skills         # 主修殘留也剝
+    assert "armorer_50" not in pl.mastery_choices   # 指向已刪節點 → 清掉
+    assert "smithing_50" not in pl.mastery_choices  # 舊 opt 不存在 → 清掉(回 pending)
+
+
 def run():
     test_time_rollover()
     test_save_load_roundtrip()
+    test_legacy_save_drops_removed_durability_and_armorer()
 
 
 if __name__ == "__main__":

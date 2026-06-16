@@ -8,8 +8,8 @@
     "rank_skill_req": [0, 14, 26, 38, 50, 62, 76],
     "rivals": ["thieves_guild", "dark_brotherhood", "mythic_dawn"],
     "lawful": true,
-    "perk": {"kind": "repair_discount", "per_rank": 0.15, "cap": 1.0,
-             "desc": "階級越高,鐵匠修理越便宜(會長免費)"},
+    "perk": {"kind": "armory_discount", "per_rank": 0.05, "cap": 0.35,
+             "desc": "軍械庫之誼 —— 階級越高,在鐵匠/商店買武器、護甲越便宜(會長省三成五)"},
     "ranks": [
       "協會員",
       "學徒守衛",

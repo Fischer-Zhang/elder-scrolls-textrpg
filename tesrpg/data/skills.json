@@ -1,5 +1,4 @@
 {
-  "armorer":      {"name": "護甲修理", "spec": "combat",  "attr": "endurance",    "desc": "修理武器與防具,使其維持效能。",     "mechanic": "等級越高,自行用修理鎚修復裝備耐久的效率與成效越好。", "practice": {"label": "敲打修整一套舊甲冑", "xp": 0.55, "fatigue": 7,  "hours": 1}},
   "athletics":    {"name": "運動",     "spec": "combat",  "attr": "speed",        "desc": "奔跑與游泳的耐力與速度。",           "mechanic": "等級越高:旅行耗時越短,且戰鬥中攻擊/格擋的體力消耗越低。", "practice": {"label": "繞著城牆長跑", "xp": 0.60, "fatigue": 10, "hours": 1}},
   "blade":        {"name": "刀劍",     "spec": "combat",  "attr": "strength",     "desc": "短劍、長劍、戰刃等利刃武器。",       "mechanic": "等級越高,持利刃武器(匕首/劍/戰刃)的命中率與傷害越高。", "practice": {"label": "對著木樁練習劈砍", "xp": 0.60, "fatigue": 8,  "hours": 1}},
   "block":        {"name": "格擋",     "spec": "combat",  "attr": "endurance",    "desc": "用盾牌或武器格開來襲攻擊。",         "mechanic": "等級越高,舉盾/格擋擋下的傷害越多(減傷由 ×0.9 趨近 ×0.4);精通解鎖盾陣。", "practice": {"label": "頂著盾承受訓練木劍", "xp": 0.55, "fatigue": 8, "hours": 1}},

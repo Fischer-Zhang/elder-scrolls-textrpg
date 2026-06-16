@@ -432,18 +432,6 @@ def _triage_armed(char) -> bool:
                for e in getattr(char, "active_effects", []))
 
 
-def _apply_combat_repair(player, gamedata: GameData) -> None:
-    """里程碑「戰場鐵匠」(armorer):每戰鬥回合自修武器/護甲耐久(夾 100)。無此里程碑 → no-op。"""
-    cr = mastery.combat_repair(player, gamedata)
-    if not cr:
-        return
-    if cr.get("weapon"):
-        player.weapon_condition = min(100.0, player.weapon_condition + cr["weapon"])
-    if cr.get("armor"):
-        for slot in list(player.armor_condition):
-            player.armor_condition[slot] = min(100.0, player.armor_condition[slot] + cr["armor"])
-
-
 def _choose_combat_action(state: GameState, gamedata: GameData, enemies: list, allies: list,
                           vanish_used: int = 0, mounted: bool = False, first_round: bool = False):
     """回傳玩家本回合的行動 dict:{type, spell_id?, target?}。
@@ -900,7 +888,6 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
         if mregen and player.birthsign != "atronach" and player.magicka < player.max_magicka:
             player.magicka = min(player.max_magicka, player.magicka + mregen)
         pre_trap = {id(e): magic.has_soul_trap(e) for e in enemies if combat.is_alive(e)}
-        _apply_combat_repair(player, gamedata)        # 里程碑「戰場鐵匠」:回合末自修裝備
         ui.combat_tick(magic.tick_effects(player, gamedata))
         for a in battle["allies"]:
             if combat.is_alive(a):
@@ -1375,7 +1362,6 @@ def action_dungeon(state: GameState, gamedata: GameData) -> str | None:
 
     def tick_turn() -> bool:
         """行動 1 格 = 1 回合:玩家增益 + 召喚物 summon_turns/效果衰減。回 True = 玩家陣亡(DoT)。"""
-        _apply_combat_repair(player, gamedata)        # 里程碑「戰場鐵匠」:地城每格亦自修
         for msg in magic.tick_effects(player, gamedata):
             ui.message(msg, style="grey70")
         for a in battle["allies"]:
@@ -1552,8 +1538,6 @@ def _item_actions(state: GameState, gamedata: GameData, item_id: str) -> None:
         acts.append(("use", "使用"))
     if item_id in ("moon_sugar", "skooma"):
         acts.append(("dose", "服用(亢奮 ↔ 成癮)"))
-    if item_id == "repair_hammer":                       # 修理鎚:隨地可用(野外旅途亦可整備裝備)
-        acts.append(("repair_field", "用此修理裝備"))
     acts.append(("drop", "丟棄一件"))
     act = ui.menu(d["name"], acts, allow_back=True)
     if act == "equip_w":
@@ -1581,8 +1565,6 @@ def _item_actions(state: GameState, gamedata: GameData, item_id: str) -> None:
     elif act == "use":
         msg = inventory.use_item(char, gamedata, item_id, state)
         ui.message(msg or "無法使用。", style="green")
-    elif act == "repair_field":
-        _repair_with_hammer(state, gamedata)
     elif act == "dose":
         res = skooma.dose(state, gamedata, strong=(item_id == "skooma"))
         inventory.remove_item(char, item_id, 1)
@@ -3036,64 +3018,6 @@ def action_enchant(state: GameState, gamedata: GameData) -> None:
         ui.show_events(res["skill_events"], gamedata)
 
 
-def _repair_with_hammer(state: GameState, gamedata: GameData) -> bool:
-    """用修理鎚自行修理(城內/野外皆可):修到 cap%、耗 1 鎚 + armorer practice(體力+時間)。回傳是否修了。"""
-    char = state.player
-    if inventory.count_item(char, "repair_hammer") <= 0:
-        ui.message("你沒有修理鎚。", style="grey70")
-        return False
-    cap = max(inventory.repairable_cap(char.skill("armorer")),
-              mastery.repair_floor(char, gamedata))   # 里程碑「行軍鐵匠」抬高野修下限
-    inventory.repair_all(char, cap)
-    inventory.remove_item(char, "repair_hammer", 1)
-    # 與訓練師/正規練習對齊:自行修理付出護甲修理 practice 的體力 + 時間,非零成本刷 armorer
-    xp, hours, tired = progression.practice_cost(char, gamedata, "armorer")
-    events = progression.use_skill(char, gamedata, "armorer", xp)
-    state.time.advance(hours)
-    ui.message(f"你用修理鎚整備了裝備(上限 {int(cap)}%)。", style="green")
-    if tired:
-        ui.message("體力不濟,修整得馬虎。", style="yellow")
-    ui.show_events(events, gamedata)
-    return True
-
-
-def action_repair(state: GameState, gamedata: GameData) -> None:
-    char = state.player
-    loc = world.current_location(char, gamedata)
-    at_smith = "armorer" in loc.get("services", [])
-    has_hammer = inventory.count_item(char, "repair_hammer") > 0
-    repair_disc = factions.repair_discount(char, gamedata)            # 戰士公會階級折扣
-    smith_fee = max(0, round(world.repair_fee() * (1 - repair_disc)))
-    opts = []
-    if at_smith:
-        fee_txt = "免費" if smith_fee == 0 else f"{smith_fee} 金"
-        opts.append(("smith", f"請鐵匠修復全部裝備({fee_txt},修到全新)"))
-    if has_hammer:
-        cap = int(max(inventory.repairable_cap(char.skill("armorer")),
-                      mastery.repair_floor(char, gamedata)))   # 里程碑「行軍鐵匠」抬高野修下限
-        opts.append(("hammer", f"用修理鎚自行修理(修到 {cap}%,鍛鍊護甲修理)"))
-    if not opts:
-        ui.message("這裡沒有鐵匠,你也沒有修理鎚。", style="grey70")
-        return
-    while True:                                       # 可連續修理(鐵匠/自行),返回才離開
-        choice = ui.menu("如何修理?", opts, allow_back=True)
-        if choice is None:
-            return
-        if choice == "smith":
-            if char.gold < smith_fee:
-                ui.message("金幣不足。", style="red")
-                continue
-            char.gold -= smith_fee
-            inventory.repair_all(char, 100.0)
-            ui.message("鐵匠叮叮噹噹一陣,你的裝備煥然一新。", style="green")
-        elif choice == "hammer":
-            _repair_with_hammer(state, gamedata)
-            if inventory.count_item(char, "repair_hammer") == 0:   # 修理鎚用盡 → 移除該選項
-                opts = [o for o in opts if o[0] != "hammer"]
-                if not opts:
-                    return
-
-
 def action_craft(state: GameState, gamedata: GameData) -> None:
     """製革/加工:把獸皮等原料依配方做成裝備(需鐵匠/製革處)。
     兩層選單:第一層選材質系列,點進去後才列該系列要做的裝備。"""
@@ -3781,8 +3705,6 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
         plaza: list = []      # 廣場:旅店 / 訓練 / 告示 / 攀談 / 進食
         if "merchant" in services and not shunned:
             market.append(("shop", "商店"))
-        if "armorer" in services or inventory.count_item(player, "repair_hammer") > 0:
-            market.append(("repair", "修理裝備"))
         if "armorer" in services:
             market.append(("craft", "鍛造工坊 🛠"))
             market.append(("temper", "淬鍊強化 ⚒"))
@@ -3937,8 +3859,6 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
             died = action_talk(state, gamedata)
         elif choice == "quests":
             action_quest_log(state, gamedata)
-        elif choice == "repair":
-            action_repair(state, gamedata)
         elif choice == "craft":
             action_craft(state, gamedata)
         elif choice == "temper":

@@ -21,7 +21,7 @@ def _char():
 # --- 鍛造是一項技能 ----------------------------------------------------
 def test_smithing_is_a_skill():
     gd = get_gamedata()
-    assert "smithing" in gd.skills and len(gd.skills) == 23
+    assert "smithing" in gd.skills and len(gd.skills) == 22
     assert gd.skills["smithing"]["practice"]["xp"] > 0
     for rid, r in gd.recipes.items():                      # 所有配方(含皮甲)皆練 smithing,非 armorer
         assert r.get("skill") == "smithing", rid
@@ -54,6 +54,7 @@ def test_no_arbitrage_on_buyable_recipes():
 def test_skill_req_gate():
     gd, c = _char()
     inventory.add_item(c, "steel_ingot", 3)
+    c.skills["smithing"] = 0                                          # 戰士/諾德現有 smithing 起手值 → 壓回 0 測門檻
     assert gd.recipes["forge_steel_sword"]["skill_req"] == 25
     assert not crafting.meets_skill_req(c, gd, "forge_steel_sword")   # 鍛造 0 → 擋
     r = crafting.craft(c, gd, "forge_steel_sword")
@@ -306,13 +307,13 @@ def test_temper_visible_in_display():
     inventory.add_item(c, "steel_cuirass", 1); inventory.equip_armor(c, gd, "steel_cuirass")
     inventory.add_item(c, "steel_ingot", 10)
     base_dmg = gd.item("steel_sword")["damage"]
-    arm0 = ui._armor_display(c, gd)[0]
+    arm0 = ui._armor_display(c, gd)
     smithing.temper(c, gd, "steel_sword"); smithing.temper(c, gd, "steel_cuirass")
     assert smithing.weapon_temper_bonus(c) > 0 and smithing.armor_temper_bonus(c) > 0
     # 武器行顯示含淬鍊的有效傷害(= 戰鬥基礎傷害)
     assert f"傷害 {base_dmg + smithing.weapon_temper_bonus(c)}" in ui.weapon_line(c, gd)
     # 護甲顯示值上升正好等於淬鍊加成
-    assert ui._armor_display(c, gd)[0] == arm0 + smithing.armor_temper_bonus(c)
+    assert ui._armor_display(c, gd) == arm0 + smithing.armor_temper_bonus(c)
 
 
 def test_steel_set_fully_craftable():

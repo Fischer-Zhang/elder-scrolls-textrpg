@@ -137,9 +137,9 @@ def _best_perk(char: Character, gamedata: GameData, kind: str) -> float:
     return best
 
 
-def repair_discount(char: Character, gamedata: GameData) -> float:
-    """戰士公會:鐵匠修理費折扣(0..1,1=免費)。"""
-    return _best_perk(char, gamedata, "repair_discount")
+def armory_discount(char: Character, gamedata: GameData) -> float:
+    """戰士公會:軍械庫之誼 —— 在鐵匠/商店買武器、護甲的折扣(0..1)。"""
+    return _best_perk(char, gamedata, "armory_discount")
 
 
 def spell_discount(char: Character, gamedata: GameData) -> float:

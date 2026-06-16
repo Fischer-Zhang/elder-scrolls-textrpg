@@ -140,7 +140,6 @@ def test_corrupt_equipped_id_does_not_crash():
     ui.sheet_equipment(c, gd)        # 名稱 + 護甲 + 套裝 + 加成
     from tesrpg.systems import inventory
     assert inventory.worn_armor_rating(c, gd) == 0          # 未知 id 視為 0,不崩潰
-    assert inventory.effective_armor_rating(c, gd) == 0
     assert inventory.equipment_bonuses(c, gd) == {"skills": {}, "attrs": {}, "resist": {}, "resources": {}}
     assert gd.item_name("BOGUS_WEAPON") == "BOGUS_WEAPON"   # 顯示回退為原 id,不崩潰
 

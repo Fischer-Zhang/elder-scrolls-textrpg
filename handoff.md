@@ -45,7 +45,7 @@
 
 #### 製作與裝備
 - **鍛造**(金屬四階 + 頂級魔族/龍鱗/龍祭司,稀有素材困難取得)、**裁縫**、**淬鍊強化**、**回爐熔解**(成品→部分材料,有損耗+練鍛造);**附魔**(武器:元素即時傷害 + **元素 DoT〔焚燒/凍緩/感電〕** + **命中吸取〔生命/魔力/體力〕** + 命中觸發吸血/再生 + **充能型麻痺·命中擒魂**;護甲:技能/抗性/資源;飾品:技能/屬性/抗性/資源)+ **靈魂石經濟**(空魂石→擒魂填充、大靈魂石 soul5、黑魂石囚人形魂、武器充能以魂石回充;見 R15/附魔深化)
-- **套裝加成**(同材質四件)、武器流派、飾品槽、法杖、法袍;**具名神器**;裝備耐久 + 修理
+- **套裝加成**(同材質四件)、武器流派、飾品槽、法杖、法袍;**具名神器**(裝備耐久/修理已移除,見 R33)
 
 #### 公會、任務與政治
 - **七大公會**:戰士/法師/盜賊 + 黑暗兄弟會 + 神話黎明 + 九神騎士團 + **戰友團**(白漫·狼人血脈歸宿,獸血儀式繫於其內圈)(技能門檻/福利/對立/分支壓軸)
@@ -95,7 +95,7 @@
 **公會深度化(評估後直作:修正「公會太扁平」,四層全做)**:原本公會=純稱號(入會零門檻、晉升只靠單一任務、階級無回報、三會互不相干)。
 - **L1 入會/晉升技能門檻**(落實 DESIGN §3.7「技能門檻 + 任務」):`factions.json` 加 `gate_skills`(取最高)+ `join_skill` + `rank_skill_req[rank]`;
   `factions.join_block_reason / advance_block_reason` 回傳繁中原因;`quests.available_quests` 對 guild 加技能門檻過濾 → 技能不夠就接不到晉升任務。給職業認同(法師難當戰士會長)。
-- **L2 階級福利**(`factions.json` 的 `perk`,隨階級成長夾限 cap):戰士=修理折扣(`repair_discount`,會長免費)、法師=法術折扣(`spell_discount`)、盜賊=銷贓加成(`sell_bonus`,接進 `world.sell_price`);
+- **L2 階級福利**(`factions.json` 的 `perk`,隨階級成長夾限 cap):戰士=軍械庫折扣(`armory_discount`,買武器/護甲打折,接進 `world.buy_price`)、法師=法術折扣(`spell_discount`)、盜賊=銷贓加成(`sell_bonus`,接進 `world.sell_price`);
   接進 `action_repair / action_spell_vendor / action_shop`。晉升另發**俸祿**(`quests.STIPEND_PER_RANK × 新階級`)。
 - **L3 對立排他**(`rivals` + `lawful`):戰士⇄盜賊勢不兩立(不可雙修);戰士公會(`lawful`)拒收/不升有未繳賞金者。`can_join` 走 `join_block_reason`。
 - **L4 晉升任務敘事分支**(任務引擎支援 `branches`):任務頂層放 `branches:[{label,text,stages,reward}]`(**不放** 頂層 objective/stages);
@@ -647,7 +647,7 @@ tesrpg/
 │   │                is_feared/is_paralyzed/is_incapacitated、soul_gem_for、_fail
 │   ├── alchemy      brew → 共通效果分流成「藥水」或「毒藥」
 │   ├── enchanting   靈魂石 → 武器元素附魔
-│   ├── inventory    堆疊/負重/裝備/耐久/coat_weapon(塗毒)/use_item
+│   ├── inventory    堆疊/負重/裝備/coat_weapon(塗毒)/use_item
 │   ├── world        旅行/遭遇機率/商店定價/訓練師/法術價
 │   ├── dungeon      pick_lock(安全技能+塔之鑰)/open_container
 │   ├── crime        賞金(按行省)/行竊/衛兵
@@ -880,6 +880,14 @@ tesrpg/
 - **還原 DESIGN.md §3.4 試驗發現**:材料效果預設隱藏為「???」,經三源揭露 →(a)**嚐一口** `alchemy.taste`(消耗 1 份 + 微體力 `TASTE_FATIGUE`,依 JSON 序揭露下一個未知,**決定性非 rng**);(b)**煉製成功** `brew` 多回 `learn` 鍵(本次用到的共有效果),**由呼叫端 `reveal` 套用**(brew 保持純函式、數學一字不改);(c)**技能被動** `passive_reveal`(開選單即觸發,揭露前 `auto_reveal_count = 1+base_skill//25` 個,idempotent)。
 - **純資訊層、零數值變動**:brew 路由/magnitude/毒效全不受 `known_effects` 影響(玩家仍可拿未知材料下鍋);只改 `action_alchemy` 顯示(已知 → CN+量值、未知 → `???`)+ 加「嚐一口」選單分支。通用於任何效果 kind → **自動涵蓋 R30/R31 新效果**(只需 `_EFFECT_CN` 補 CN 名)。全走 `ui.menu`/`ui.message`(R27 安全,無新 view-model、無終端 stdin)。
 - **存檔(R03)**:Character +1 欄 `known_effects`(`ing_id → [kind]`,JSON list;default_factory、進 to_dict、`cls(**d)`);`alchemy.ensure_known_effects` 接 `state.from_dict`(壞值→{}、清陳舊 ing_id、剔除該材料沒有的 kind)。舊存檔起始空 → 由技能被動緩衝老手(高煉金一眼讀完)。**無戰鬥改動 → 免 sim**。守門:`tests/test_alchemy_discovery.py`(三揭露源、brew 數學不變、reveal 只認真 kind、通用新 kind、存檔 round-trip + 舊存檔遷移 + 防呆)。
+
+### R33 · 裝備耐久/修理系統移除(Skyrim 式)+ 受影響重設計 [re-sim] [save]
+
+- **整套移除**:耐久(`weapon_condition`/`armor_condition`)、戰鬥折損、`inventory._cond_mult`/武傷縮放、三條修理路徑(鐵匠付費 / `repair_hammer` 野修 / 里程碑「戰場鐵匠」`_apply_combat_repair`)、`repair_hammer` 道具 + 64 處商店補貨、`world.repair_fee`、UI 耐久顯示、mastery `repair_floor`/`combat_repair` getter + `_IMPLEMENTED_KINDS` 兩 kind。**理由**:純雜務稅(鐵匠 15 金佔錢包 0.3–3.3%、`0.5×` 軟地板永不真壞、無材料/失敗/稀缺、會長免費)→ 零有意義決策,如 Skyrim 砍掉 Oblivion 耐久。
+- **⚠ 「armorer」服務 ≠ 技能**:技能 `armorer`(護甲修理)整條刪(`skills.json` + 4 里程碑節點;連帶 4 個非修理 perk〔重/輕甲 +6/+8/+10、被動護甲 +14〕使用者拍板一併放棄);但**服務 `armorer`(鐵匠站)保留**——它閘 `craft`/`temper`/`meltdown`,故 `world.json` 服務列表 / `console._SERVICE_CN` / `tools/build_expansion.py` **一律不動**。`effective_armor_rating` 併入既有 `worn_armor_rating`(無耐久)、`_armor_display` 改回單值。
+- **連帶重設計**:① `smithing_50` 兩選項(原 forge_repair + apprentice_smith→armorer,雙雙失效→空節點)改 `thrifty_forge`(temper_cost_free 0.20,接 25/50/75/100 = 10/20/30/50% 階梯)+`smith_arm`(blunt+6);`smithing_100 forgemaster` 由 armorer+10 改 heavy_armor+10。② 戰士公會招牌福利 `repair_discount`→`armory_discount`(`factions.armory_discount` 走 `_best_perk`;`world.buy_price` 對帶 `damage`/`armor_rating` 的物品套折扣 `per_rank 0.05 cap 0.35`;**`buy_price` 設反套利地板 `max(…, sell_price+1)`**——滿議價 `disp 1.0` + 會長 0.35 折扣下買價會倒掛低於賣價成金幣泵〔對抗審查抓到的真 bug〕,地板保證同物買價恆 > 賣價;`test_world` 加會長滿議價回歸)。③ `classes.json` warrior 主修 armorer→smithing、archer→athletics;`races.json` nord/orsimer +5 armorer→+5 smithing(獸人鍛造 lore)。
+- **存檔向後相容(R03)**:`Character.from_dict` 載入前 `pop` 掉 `weapon_condition`/`armor_condition`(`cls(**d)` 不容多餘 kwargs)+ 剝 `skills`/`skill_xp` 殘留 `armorer` 鍵(免他處迭代撞 `gamedata.skills` KeyError);`ensure_mastery_choices` 既有過濾**自動剔除**指向已刪 `armorer_*` 節點與舊 `smithing_50` opt 的陳舊選擇;`major_skills` 殘留 armorer 僅成員測試→無害。`test_state` 加遷移回歸。
+- **必跑 `sim_assassin`**(動 combat:移除 cond_mult 與折損)→ solo boss 紅線/勝率/回合不退化(耐久未入 sim,實測影響≈0)。全技能仍守 4 階梯(`test_mastery` 廣度 23→22 技能、92→88 節點;`test_smithing` len 23→22)。**取代**前期里程碑(M4/R15/R29 等)對「裝備耐久 + 修理」的描述。
 
 ---
 

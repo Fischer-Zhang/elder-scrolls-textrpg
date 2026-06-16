@@ -298,23 +298,6 @@ def test_brew_fail_still_costs_fatigue_and_time():
     assert c.fatigue == f0 - pdef["fatigue"]
 
 
-def test_repair_hammer_costs_fatigue_and_time():
-    import tesrpg.main as M
-    from tesrpg.systems import inventory
-    gd, state = _smoke_state()
-    inventory.add_item(state.player, "repair_hammer", 1)
-    pdef = gd.skills["armorer"]["practice"]
-    t0 = state.time.absolute_hours(); f0 = state.player.fatigue
-    restore = _patch_ui(_seq_menu("hammer"), _bounded_yes())
-    try:
-        M.action_repair(state, gd)
-    finally:
-        restore()
-    assert inventory.count_item(state.player, "repair_hammer") == 0     # 鎚已消耗
-    assert state.time.absolute_hours() - t0 == pdef["hours"]            # 修理耗時
-    assert state.player.fatigue == f0 - pdef["fatigue"]                # 修理耗體
-
-
 # --- 一次練多小時:批次 practice -------------------------------------
 def _patch_practice_ui(skill_id, hours):
     """暫換 ui.menu(分類→技能)+ ui.ask_int(時數)+ 靜音輸出;回傳 restore()。"""
@@ -388,7 +371,6 @@ def run():
     test_lockpick_loop_bounded_by_picks()
     test_crafting_entries_pay_practice()
     test_brew_fail_still_costs_fatigue_and_time()
-    test_repair_hammer_costs_fatigue_and_time()
     test_practice_batches_multiple_hours()
     test_practice_stops_at_skill_cap()
 

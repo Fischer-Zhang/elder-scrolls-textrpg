@@ -821,13 +821,13 @@ def test_mercantile_and_intimidate():
 
 # --- 廣度 pass:17 薄技能各 +1 節點 + 4 新 kind + 2 getter 微修 -------------------
 def test_breadth_all_skills_have_full_ladder():
-    """補齊階梯:全 23 技能各 4 節點(25/50/75/100);共 92 節點。"""
+    """補齊階梯:全 22 技能各 4 節點(25/50/75/100);共 88 節點(護甲修理移除後)。"""
     from collections import Counter
     gd = get_gamedata()
     nodes = mastery._nodes(gd)
     cnt = Counter(n["skill"] for n in nodes)
-    assert len(cnt) == 23 and all(v == 4 for v in cnt.values())
-    assert len(nodes) == 92
+    assert len(cnt) == 22 and all(v == 4 for v in cnt.values())
+    assert len(nodes) == 88
     # 每技能門檻恰為 {25,50,75,100}
     thr = {}
     for n in nodes:
@@ -836,10 +836,10 @@ def test_breadth_all_skills_have_full_ladder():
 
 
 def test_batch3_all_25_are_single_auto_grant_no_dead():
-    """22 個新 25 節點皆單一 perk(自動授予退化節點),無死 perk。"""
+    """21 個新 25 節點皆單一 perk(自動授予退化節點),無死 perk。"""
     gd = get_gamedata()
     t25 = [n for n in mastery._nodes(gd) if n["threshold"] == 25]
-    assert len(t25) == 23                                    # sneak + 22
+    assert len(t25) == 22                                    # sneak + 21
     assert all(len(mastery._choosable_options(n)) == 1 for n in t25)   # 全單一 → 自動授予
     defids = {o["opt_id"] for o in mastery._defs(gd)}
     for n in t25:
@@ -906,21 +906,6 @@ def test_batch2_gapfills_present_and_aggregate():
     assert abs(mastery.weapon_mod(c, gd, "blade").get("power", 0) - (0.08 + 0.12)) < 1e-9
 
 
-def test_combat_repair_getter_and_apply():
-    import tesrpg.main as M
-    gd, c = _char(armorer=75)
-    assert mastery.combat_repair(c, gd) == {}
-    mastery.choose(c, gd, "armorer_75", "combat_tinker")
-    assert mastery.combat_repair(c, gd) == {"weapon": 2.0, "armor": 2.0}
-    c.weapon_condition = 90.0
-    c.armor_condition = {"cuirass": 90.0}
-    M._apply_combat_repair(c, gd)
-    assert c.weapon_condition == 92.0 and c.armor_condition["cuirass"] == 92.0
-    c.weapon_condition = 99.5
-    M._apply_combat_repair(c, gd)
-    assert c.weapon_condition == 100.0                          # 夾 100
-
-
 def test_flee_bonus_getter_and_try_flee():
     gd, c = _char(athletics=75)
     assert mastery.flee_bonus(c, gd) == 0.0
@@ -963,16 +948,15 @@ def test_weapon_mod_merges_same_target():
     assert abs(wm.get("hit", 0) - 0.10) < 1e-9
 
 
-def test_repair_floor_takes_max_across_sources():
-    gd, c = _char(armorer=50, smithing=50)
-    mastery.choose(c, gd, "armorer_50", "field_smith")          # 90
-    mastery.choose(c, gd, "smithing_50", "forge_repair")        # 85
-    assert mastery.repair_floor(c, gd) == 90.0                  # 取最高
-    # 併入 resilient_plate skill_fortify pin(armorer_50 → heavy_armor +6,base 不動)
-    _, c2 = _char(armorer=50)
-    base_ha = c2.base_skill("heavy_armor")
-    mastery.choose(c2, gd, "armorer_50", "resilient_plate")
-    assert c2.skill("heavy_armor") == base_ha + 6 and c2.base_skill("heavy_armor") == base_ha
+def test_smithing_50_options_replaced():
+    """移除護甲修理後,smithing_50 兩選項已換新(避免空節點):淬火精算(省料)+ 鍛場錘感(鈍器 +6,base 不動)。"""
+    gd, c = _char(smithing=50)
+    mastery.choose(c, gd, "smithing_50", "thrifty_forge")
+    assert mastery.temper_free_chance(c, gd) >= 0.20
+    _, c2 = _char(smithing=50)
+    base_blunt = c2.base_skill("blunt")
+    mastery.choose(c2, gd, "smithing_50", "smith_arm")
+    assert c2.skill("blunt") == base_blunt + 6 and c2.base_skill("blunt") == base_blunt
 
 
 def test_same_source_masking_fixed_spell_poison_evasion_passive():
@@ -1079,12 +1063,11 @@ def run():
     test_batch1_evasion_bonus_capped()
     test_batch2_gapfills_present_and_aggregate()
     test_batch3_all_25_are_single_auto_grant_no_dead()
-    test_combat_repair_getter_and_apply()
     test_flee_bonus_getter_and_try_flee()
     test_armor_reflect_damages_attacker()
     test_trap_floor_floors_dodge()
     test_weapon_mod_merges_same_target()
-    test_repair_floor_takes_max_across_sources()
+    test_smithing_50_options_replaced()
     test_same_source_masking_fixed_spell_poison_evasion_passive()
     test_illusion_mind_mastery_reduces_cost()
     test_shipped_attr_fortify_node_flows_to_resources()

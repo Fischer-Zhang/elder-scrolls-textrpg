@@ -52,8 +52,6 @@ class Character:
     offhand: str = ""               # 副手武器 id(僅雙持匕首用;"" = 無)
     weapon_poison: dict | None = None        # 武器塗毒 {"status","charges","name"};None=未塗
     enchant_charges: dict = field(default_factory=dict)  # 充能型附魔 {item_id: 剩餘充能};命中擒魂/麻痺用,靈魂石回充(見 systems/enchanting)
-    weapon_condition: float = 100.0          # 武器耐久 0–100(影響傷害)
-    armor_condition: dict = field(default_factory=dict)  # {slot: 耐久 0–100}
     weapon_temper: dict = field(default_factory=dict)    # {weapon_id: 淬鍊級}(永久強化 → +傷害;鍛造)
     armor_temper: dict = field(default_factory=dict)     # {armor_id: 淬鍊級}(永久強化 → +護甲值;鍛造)
     location_id: str = "start"
@@ -256,7 +254,6 @@ class Character:
             "health": self.health, "magicka": self.magicka, "fatigue": self.fatigue,
             "gold": self.gold, "weapon": self.weapon, "offhand": self.offhand,
             "weapon_poison": self.weapon_poison, "enchant_charges": self.enchant_charges,
-            "weapon_condition": self.weapon_condition, "armor_condition": self.armor_condition,
             "weapon_temper": self.weapon_temper, "armor_temper": self.armor_temper,
             "location_id": self.location_id,
             "inventory": self.inventory, "equipped": self.equipped, "spells": self.spells,
@@ -320,4 +317,14 @@ class Character:
 
     @classmethod
     def from_dict(cls, d: dict) -> "Character":
+        # 向後相容:耐久/修理系統已移除 → 剝除舊存檔的對應欄位(cls(**d) 不容許多餘 kwargs)
+        d.pop("weapon_condition", None)
+        d.pop("armor_condition", None)
+        # armorer 技能已移除 → 剝掉殘留鍵,免得他處迭代 char.skills 時撞 gamedata.skills KeyError
+        for key in ("skills", "skill_xp"):
+            val = d.get(key)
+            if isinstance(val, dict):
+                val.pop("armorer", None)
+        if isinstance(d.get("major_skills"), list):   # 舊戰士/弓手主修含 armorer → 一併剝(免死資料回寫存檔)
+            d["major_skills"] = [s for s in d["major_skills"] if s != "armorer"]
         return cls(**d)

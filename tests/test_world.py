@@ -197,6 +197,12 @@ def test_pricing_buy_more_than_sell():
     c.skills["mercantile"] = 100
     c.attributes["personality"] = 100
     assert world.buy_price(c, gd, "iron_sword") < gd.item("iron_sword")["value"] * 2.2
+    # 反套利:即便滿議價(disp 1.0)+ 戰士公會會長(軍械庫折扣 0.35),武器/護甲買價仍恆 > 賣價(防金幣泵)
+    from tesrpg.systems import factions
+    factions.join(c, "fighters_guild")
+    c.factions["fighters_guild"] = 7
+    for iid in ("steel_sword", "ebony_cuirass", "crusaders_aegis"):
+        assert world.buy_price(c, gd, iid) > world.sell_price(c, gd, iid), iid
 
 
 # --- 戰利品 / 地城 ------------------------------------------------------
