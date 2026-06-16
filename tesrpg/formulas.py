@@ -162,6 +162,7 @@ WEAPON_ABSORB_FACTOR = 1.5        # 命中吸取(生命/魔力/體力)每擊回�
 WEAPON_ABSORB_SOLO_FACTOR = 0.5   # 吸取生命對 solo BOSS 受夾(杜絕無限回血泵;比照偷襲夾限精神)
 CHARGE_PER_SOUL = 5              # 充能電池容量 = round(soul × 此 × (0.6+祕術/100));soul_trap/paralyze 用,魂石等級=電池大小
 WEAPON_SOULTRAP_TURNS = 3        # 命中擒魂掛在目標的 soul_trap 效果回合
+DOT_STACK_CAP = 3                # 同元素 DoT 在玩家身上的疊加上限(防多次被擊疊毒暴斃;攻擊側不限,法術/塗毒照疊)
 
 
 def berserk_factor(attacker, magnitude) -> float:

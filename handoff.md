@@ -754,6 +754,7 @@ tesrpg/
 ### R17 · AoE / 狀態(獨立 dict)
 
 - **AoE/狀態**:每個敵人各自 `make_status_effect(...)` 取**獨立 dict**(切勿共用同一個 → 會別名汙染計時)。
+- **多擊 debuff 聚合語意**(評估後定案):控場類**安全**——`weaken` 取最強(`weaken_factor` min)、`paralyze/fear/stagger/soul_trap` binary(`any turns>0`),多次施加只刷新/取最長、**不複利**。**DoT 是唯一相加疊加**(`tick_effects` 每條獨立結算);**攻擊側刻意保留疊加**(法術重施/塗毒/偷襲流血皆疊,武器附魔 DoT 例外:`source=ench_dot`+element 去重刷新)。**玩家受擊側**(怪 `on_hit` dot)經 `combat._apply_dot_capped` **按元素封頂 `formulas.DOT_STACK_CAP`**(防多次被擊疊毒暴斃,達上限替換最弱;`test_magic` 守)。改 dot 結算/上限必跑 `sim_assassin`。
 **開局 · 狀態機 · 里程碑(R18–R21)**
 
 ### R18 · 開局背景 origins

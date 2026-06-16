@@ -247,6 +247,22 @@ def is_alive(actor) -> bool:
     return _get_hp(actor) > 0
 
 
+def _apply_dot_capped(target, eff) -> None:
+    """對目標施加狀態效果;**dot 按元素設疊加上限**(防多次被擊時同元素 DoT 無限疊加→暴斃)。
+    達 `formulas.DOT_STACK_CAP` 層時:新效果較強(magnitude×turns)→ 替換最弱同元素 dot,否則丟棄。
+    非 dot(麻痺/恐懼等 binary 控場)照常 append。僅用於玩家受擊側;攻擊側 DoT 不經此(法術/塗毒照疊)。"""
+    if eff.get("kind") == "dot":
+        same = [e for e in target.active_effects
+                if e.get("kind") == "dot" and e.get("element") == eff.get("element") and e.get("turns", 0) > 0]
+        if len(same) >= formulas.DOT_STACK_CAP:
+            weakest = min(same, key=lambda e: e.get("magnitude", 0) * e.get("turns", 0))
+            if eff.get("magnitude", 0) * eff.get("turns", 0) > weakest.get("magnitude", 0) * weakest.get("turns", 0):
+                target.active_effects.remove(weakest)
+            else:
+                return
+    target.active_effects.append(eff)
+
+
 def _is_solo(creature, gamedata: GameData) -> bool:
     """該防守單位是否為 BOSS 級(bestiary `solo`)→ 適用「偷襲開場一擊不可致死」夾限。"""
     tid = getattr(creature, "template_id", None)
@@ -486,8 +502,8 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
         if not _is_player(attacker) and _is_player(defender):
             oh = attacker.attack.get("on_hit")
             if oh and rng.chance(oh.get("chance", 1.0)) and not magic.resisted_mind(defender, oh["status"], rng):
-                defender.active_effects.append({"kind": oh["status"], "element": oh.get("element"),
-                                                "magnitude": oh["magnitude"], "turns": oh["turns"]})
+                _apply_dot_capped(defender, {"kind": oh["status"], "element": oh.get("element"),
+                                             "magnitude": oh["magnitude"], "turns": oh["turns"]})
                 status_applied = oh.get("element")
             # 疾病傳染(吸血鬼吸血熱 / 狼人狼人熱):命中機率 × 疾病抗性削弱(只標記,轉化由各系驅動)。
             # `infect_kind` 缺省 "vampire"(舊吸血鬼敵向後相容);跨詛咒互斥靠疾病免疫使 dmult=0 自然擋掉,

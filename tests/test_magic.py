@@ -697,6 +697,25 @@ def test_soul_capture_escapes_without_empty_gem():
                    [s["id"] for s in c.inventory])
 
 
+def test_player_incoming_dot_stack_capped_offense_unchanged():
+    """多次擊打疊毒防暴斃:怪物 on_hit DoT 在玩家身上按元素封頂 DOT_STACK_CAP;玩家攻擊側 DoT 不限(仍疊)。"""
+    from tesrpg import formulas
+    gd, p = _mage()
+    p.max_health = p.health = 99999
+    foe = combat.spawn_creature(gd, "frostbite_spider", RNG(1))   # poison on_hit、50% proc
+    foe.attack["skill"] = 500                                     # 保證命中
+    for s in range(20):
+        combat.resolve_attack(foe, p, gd, RNG(s * 7 + 3))
+    pdots = [e for e in p.active_effects if e["kind"] == "dot" and e["element"] == "poison"]
+    assert 0 < len(pdots) <= formulas.DOT_STACK_CAP, f"玩家毒疊了 {len(pdots)} 層(應 1..{formulas.DOT_STACK_CAP})"
+    # 攻擊側不變:玩家對敵施 DoT 仍可疊加
+    e = combat.spawn_creature(gd, "bandit", RNG(1))
+    for _ in range(4):
+        e.active_effects.append(magic.make_status_effect(
+            {"status": "dot", "element": "fire", "magnitude": 6, "turns": 3}))
+    assert len([x for x in e.active_effects if x["kind"] == "dot"]) == 4
+
+
 def test_expired_spell_trap_does_not_enable_black_capture():
     """對抗審查:過期法術擒魂(turns=0)不算 spell-trapped → 武器擒魂的人形怪不應被當黑魂捕獲。"""
     gd, c = _mage()
