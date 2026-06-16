@@ -67,10 +67,15 @@
 | resist_element | 抗性 | 飾品×5.0→20%→30%(下限2);護甲×4.0→16%→24% | enchj/encha | 聚合相加;100%=免疫,負值=弱點放大(最高2×) |
 | weapon_element | 傷害 | ×3.0→13→19;fire/frost/shock | enchw | 🔴**無視物理護甲**、吃元素抗;加在偷襲夾限**之前** |
 | weapon vampiric | 續航回復 | ★傷害×0.30 回血(雙持 0.48);**enchant.magnitude(%)可覆寫**(悲傷之刃 50);命中必觸發 | enchws | 主+副(×0.6)累計一次回血;夾本擊 dmg 內 |
-| weapon paralyze | 控場 | proc 10%、turns=1(mag固定0) | enchws | 🔴**solo boss 免疫**(R15);主/副各擲 |
+| weapon paralyze | 控場(★充能) | proc 10%、turns=1;**mag=充能容量**=round(soul×5×(0.6+myst/100))→ soul4·myst50≈22 | enchws | 🔴**solo boss 免疫**(R15);觸發扣一格、歸零不觸發;舊式 mag=0=legacy 無限 |
 | weapon regen | 續航回復 | ×1.5→7、turns=3 HoT(副手×0.6) | enchws | source 去重(主手優先,命中刷新不疊) |
+| weapon DoT(burn/chill/jolt) | 持續傷+異常 | 每回合×1.2→5→8(fire/frost/shock);turns=3、吃元素抗;rider:chill→weaken15%·2t、jolt→扣魔8+stagger20% | enchws | 掛 dot 經 tick_effects;命中刷新取 max(免疊爆);與 enchw 即時並存 |
+| weapon absorb(health/magicka/fatigue) | 吸取續航 | 命中回攻擊者×1.5→7→10;absorb_health 另扣目標(**solo boss ×0.5 夾**) | enchws | 玩家專屬;夾資源上限;health 杜絕無限回血泵 |
+| weapon soul_trap | 集魂(★充能) | 命中掛 soul_trap(turns3);**mag=充能容量**(同 paralyze 公式) | enchws | 已擒不重複;歸零不觸發;src=weapon(人形/黑魂專屬法術)；發魂走填充循環 |
 | weapon berserk | 傷害 | ★依攻方**已損生命**比例提傷,封頂 magnitude%(維蘇拉德 30);**滿血=×1**(開場偷襲不放大) | enchw(berserk) | 乘物理 dmg、在 solo 偷襲/衝鋒夾限**之前** → solo 受夾 |
 
+> **充能型(soul_trap/paralyze)**:魂石等級=電池容量(編碼進 id mag 欄);現存充能在 `char.enchant_charges{item_id:int}`(存檔欄),`action_recharge_enchant` 以魂石回充(+soul×5,夾容量)。其餘武器效果無充能(魂石已決定威力)。
+> **靈魂石階**:微1/次2/普3/上4/**大5**(danger5);**黑魂石**(soul5)囚人形/有靈魂(需空黑魂石+法術擒魂,+infamy)。擒魂填手上**空魂石**(夠裝最小階),無則逸散。
 > 餵 char.skill()/char.attr() 而非 base → 絕不回饋成長門檻;改 equipped 後必 recompute_max_resources(帶 gamedata)。
 
 ### 護甲套裝(穿滿同材質 4 件 helmet/cuirass/gauntlets/boots,盾不計;★一次性整套,聚合進對應 dict)
