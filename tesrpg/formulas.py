@@ -9,6 +9,8 @@ from __future__ import annotations
 BASE_ATTRIBUTE = 40          # 所有屬性的起始基準(再加種族/星座修正)
 ATTRIBUTE_CAP = 100
 SKILL_CAP = 100
+TRAINER_CAP = 75             # 一般訓練師付費指點的上限;招牌城「宗師」對其招牌技可破此線(見 systems/world.trainer_cap)
+                            # 76–SKILL_CAP 一律靠 learn-by-doing 或宗師,杜絕「就近一站買滿」(城鎮服務專精化,handoff R29)
 SKILL_BASE = 5               # 角色創建時每個技能的底值
 SKILL_MAJOR_BONUS = 20       # 主修技能額外起始值(→ 25)
 SKILL_SPEC_BONUS = 5         # 與職業專精同類的技能額外起始值

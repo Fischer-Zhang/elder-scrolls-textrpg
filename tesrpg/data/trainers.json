@@ -1,0 +1,17 @@
+{
+  "_doc": "城鎮服務專精化:訓練師專精 / 宗師指點。全 OPTIONAL,key=location_id。無條目=由該城公會服務推導可教系(見 systems/world._GUILD_SPEC)。skills=系 id 或技能 id 覆寫(招牌城手工點綴);master={skill,cap}=該城宗師之技,可破一般 formulas.TRAINER_CAP。見 systems/world.trainer_* / handoff R29。",
+
+  "markarth":      {"master": {"skill": "smithing",    "cap": 100}},
+  "winterhold":    {"master": {"skill": "destruction", "cap": 100}},
+  "riften":        {"master": {"skill": "security",    "cap": 100}},
+  "whiterun":      {"master": {"skill": "heavy_armor", "cap": 100}},
+  "sentinel":      {"master": {"skill": "blade",       "cap": 100}},
+  "cheydinhal":    {"master": {"skill": "sneak",       "cap": 100}},
+  "anvil":         {"master": {"skill": "restoration", "cap": 100}},
+  "falinesti":     {"master": {"skill": "marksman",    "cap": 100}},
+  "vivec":         {"master": {"skill": "alchemy",     "cap": 100}},
+  "imperial_city": {"master": {"skill": "mysticism",   "cap": 100}},
+  "daggerfall":    {"master": {"skill": "alteration",  "cap": 100}},
+
+  "solitude":      {"skills": ["combat", "speechcraft"]}
+}

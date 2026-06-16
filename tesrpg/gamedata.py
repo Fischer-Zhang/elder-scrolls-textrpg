@@ -45,6 +45,8 @@ class GameData:
         self.mounts: dict = _mounts_data["mounts"]
         self.stable_cities: set = set(_mounts_data.get("stable_cities", []))
         self.stable_spears: list = _mounts_data.get("spear_stock", [])
+        self.trainers: dict = {k: v for k, v in _load("trainers.json").items()
+                               if not k.startswith("_")}   # 訓練師專精/宗師(key=location_id;全 OPTIONAL,見 systems/world.trainer_*)
         self.mastery: list = _load("mastery.json")   # 技能里程碑(達門檻自動解鎖;見 systems/mastery.py)
         self.recipes: dict = _load("recipes.json")   # 製作配方(獸皮等原料 → 裝備;見 systems/crafting.py)
         self.world_events: dict = _load("world_events.json")   # 陣營大事件時間軸(動態政局;見 systems/worldstate.py)
@@ -118,6 +120,10 @@ class GameData:
     def has_stable(self, loc_id: str) -> bool:
         """該城是否有馬廄(售坐騎與長槍)。"""
         return loc_id in self.stable_cities
+
+    def trainer_data(self, loc_id: str) -> dict | None:
+        """該城訓練師專精/宗師覆寫(無則 None;見 systems/world.trainer_*)。"""
+        return self.trainers.get(loc_id)
 
 
 # 單一共享實例(資料是唯讀的,全程式共用一份即可)

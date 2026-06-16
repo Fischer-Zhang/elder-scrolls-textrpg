@@ -2366,28 +2366,47 @@ def action_party(state: GameState, gamedata: GameData) -> None:
             _dismiss_mercenary(state, gamedata)
 
 
+_TRAINER_SPEC_LABEL = {"combat": "戰鬥", "magic": "魔法", "stealth": "潛行"}
+
+
 def action_trainer(state: GameState, gamedata: GameData) -> None:
     char = state.player
+    loc_id = char.location_id
     while True:                                       # 可連續訓練,返回才離開
-        spec = ui.menu("向訓練師學哪一類?", [
-            ("combat", "戰鬥"), ("magic", "魔法"), ("stealth", "潛行"),
-        ], allow_back=True)
-        if spec is None:
+        specs = world.trainer_specs(gamedata, loc_id)   # 此城訓練師有得教的系(已依公會/lore 專精)
+        if not specs:                                   # 防禦:有 trainer 服務必能推導,理論上不為空
+            ui.message("此地的訓練師沒什麼能指點你的。", style="grey70")
             return
+        if len(specs) == 1:
+            spec = specs[0]                             # 單系城直接列技能,免空選單
+        else:
+            spec = ui.menu("向訓練師學哪一類?",
+                           [(sp, _TRAINER_SPEC_LABEL[sp]) for sp in specs], allow_back=True)
+            if spec is None:
+                return
         opts = []
-        for sid in gamedata.skills_by_spec(spec):
+        for sid in world.trainer_skills(gamedata, loc_id, spec):
             cost = world.train_cost(char.skill(sid))
+            cap = world.trainer_cap(gamedata, loc_id, sid)
             label = f"{gamedata.skill_name(sid)} (Lv {char.skill(sid)}) — {cost} 金 +1"
+            tags = []
+            if cap > formulas.TRAINER_CAP:              # 招牌城宗師之技(可破一般上限)
+                tags.append({"text": "宗師", "tone": "gold"})
             nxt = mastery.next_threshold(char, gamedata, sid)   # 顯示距下一個技能里程碑還幾級
             if nxt:
-                opts.append((sid, label, [{"text": f"距 {nxt['name']} 還 {nxt['remaining']} 級", "tone": "mag"}]))
-            else:
-                opts.append((sid, label))
+                tags.append({"text": f"距 {nxt['name']} 還 {nxt['remaining']} 級", "tone": "mag"})
+            opts.append((sid, label, tags) if tags else (sid, label))
         sid = ui.menu("訓練哪項技能?", opts, allow_back=True)
         if sid is None:
+            if len(specs) == 1:
+                return                                  # 單系:技能選單即頂層,返回=離開
             continue
-        if char.skill(sid) >= formulas.SKILL_CAP:
-            ui.message("此技能已臻化境,無需再學。", style="grey70")
+        cap = world.trainer_cap(gamedata, loc_id, sid)
+        if char.skill(sid) >= cap:
+            if cap < formulas.SKILL_CAP:
+                ui.message("此城訓練師已傾囊相授;更高深處,須另尋宗師或親身歷練。", style="grey70")
+            else:
+                ui.message("此技能已臻化境,無需再學。", style="grey70")
             continue
         cost = world.train_cost(char.skill(sid))
         if char.gold < cost:

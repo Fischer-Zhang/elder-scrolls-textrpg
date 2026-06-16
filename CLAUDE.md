@@ -73,6 +73,7 @@ PYTHONPATH=. python3 sim_assassin.py      # 平衡回歸模擬(改戰鬥常數�
 | R26 | 湮滅危機主線=`source:"main"` + `requires_event`/`requires_faction` gate(`available_quests`)+ `expel_faction` 叛離(`accept_quest`);雙結局都打達貢(滿血 `the_deadlands` vs 削弱 `dawn_sanctum`),用 `kills` milestone 互斥、都 `eradicate_faction` 神話黎明(`<fac>_eradicated` 旗標擋再入會);達貢之力=永久獨立層 `dagon_boon.py`(照吸血鬼);**獨立戰爭=危機後第二幕**(`aiwar`+分裂事件 gate 在 `oblivion_crisis_ended`)→ 改 aiwar 必跑 `sim_worldwar`、加永久屬性層/solo boss 必跑 `sim_assassin` | re-sim, recompute, save |
 | R27 | **Web-only**:唯一進入點 `python3 -m tesrpg.web`(終端 `__main__.py` 已刪);`console.py` 是 web 渲染/輸入接層(rich→HTML 退路**不可刪**+ `_xxx_view` 原生 view);5 輸入原語無 backend 即 `raise`,**不可重引入終端 stdin/`IntPrompt`**;測試 patch `ui.*` 或用 `WebBackend` 驅動 | |
 | R28 | `pos` 座標與 `links` 連線**皆依正典 TES 地理**(UESP;`world["map"]`40×24,省內 lore 鄰接、跨省**只**經邊境、時數由格距離推導,不入檔);無非預期死路、省內子圖連通、危險度分級(`test_world` 守);加城→rulers+跑 `sim_worldwar`,加地城→dungeons+`clear_dungeon` 委託(`test_polish`/`test_detailing` 守);重建工具 `tools/geo_rebuild.py`(GEO/BORDER_LINKS) | re-sim, save |
+| R29 | 城鎮服務專精化:訓練師可教技 = `trainers.json`「skills」覆寫→公會推導系(`world._GUILD_SPEC`)→全技後備,再 ∪ 招牌「master」技;宗師破 `TRAINER_CAP=75`(`≤SKILL_CAP`)、`TRAINER_CAP` 唯一數值旋鈕、不動戰鬥**免 sim**;法師公會法術**每省守一學派 + 保底集 9 道**(純改 `world.json spell_stock`,`imperial_city` 通才,無孤兒);零存檔欄位(`test_world` 守) | |
 
 ## 自動提交閘門 / 換 session 前檢查表
 

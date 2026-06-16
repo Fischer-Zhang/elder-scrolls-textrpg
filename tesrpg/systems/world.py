@@ -220,6 +220,69 @@ def train_cost(skill_level: int) -> int:
     return max(20, skill_level * 8)
 
 
+# --- 城鎮服務專精化:訓練師依公會/lore 只教部分技能(handoff R29)----------
+# 每座城的訓練師不再教全部 23 技;可教範圍 =
+#   ① data/trainers.json 的 "skills" 覆寫(系 id 或顯式技能 id;招牌城手工點綴)
+#   ② 否則由該城既有公會服務推導系(下表)
+#   ③ 皆無 → 全系全技(現行行為;無公會的鎮/特例安全後備)
+#   再 ∪ 招牌「master」技(該城宗師之技,必可在此習得)。
+# 純讀靜態世界資料即時推導,零存檔欄位、不動 combat/economy 常數。
+_GUILD_SPEC = {
+    "mages_guild": "magic",
+    "fighters_guild": "combat",
+    "companions": "combat",
+    "knights_nine": "combat",
+    "thieves_guild": "stealth",
+    "dark_brotherhood": "stealth",
+    "mythic_dawn": "stealth",
+}
+_SPECS = ("combat", "magic", "stealth")   # 固定呈現序
+
+
+def _trainable_skill_set(gamedata: GameData, loc_id: str) -> set:
+    """該城訓練師可指點的技能 id 集合(見上規則)。"""
+    loc = gamedata.location(loc_id)
+    td = gamedata.trainer_data(loc_id)
+    override = td.get("skills") if td else None
+    skills: set = set()
+    if override:
+        for entry in override:
+            if entry in _SPECS:                    # 系 id → 展開該系全技
+                skills.update(gamedata.skills_by_spec(entry))
+            elif entry in gamedata.skills:         # 顯式技能 id
+                skills.add(entry)
+    else:
+        specs = {_GUILD_SPEC[s] for s in loc.get("services", []) if s in _GUILD_SPEC}
+        if specs:
+            for sp in specs:
+                skills.update(gamedata.skills_by_spec(sp))
+        else:                                      # 無公會可推導 → 全技(現行行為)
+            skills.update(gamedata.all_skill_ids())
+    if td and td.get("master"):                    # 宗師之技必可在此習得
+        skills.add(td["master"]["skill"])
+    return skills
+
+
+def trainer_specs(gamedata: GameData, loc_id: str) -> list[str]:
+    """該城訓練師有得教的「系」清單(固定 combat/magic/stealth 序;供選單)。"""
+    s = _trainable_skill_set(gamedata, loc_id)
+    return [sp for sp in _SPECS if any(sid in s for sid in gamedata.skills_by_spec(sp))]
+
+
+def trainer_skills(gamedata: GameData, loc_id: str, spec: str) -> list[str]:
+    """該城在某系下實際可教的技能 id(保持 skills_by_spec 既有序)。"""
+    s = _trainable_skill_set(gamedata, loc_id)
+    return [sid for sid in gamedata.skills_by_spec(spec) if sid in s]
+
+
+def trainer_cap(gamedata: GameData, loc_id: str, skill_id: str) -> int:
+    """此城訓練師對該技的指點上限:一般 formulas.TRAINER_CAP;招牌城宗師之技取其 cap。"""
+    td = gamedata.trainer_data(loc_id)
+    if td and td.get("master") and td["master"]["skill"] == skill_id:
+        return td["master"].get("cap", formulas.SKILL_CAP)
+    return formulas.TRAINER_CAP
+
+
 # --- 法師公會 -----------------------------------------------------------
 def spell_price(gamedata: GameData, spell_id: str) -> int:
     return max(25, gamedata.spells[spell_id]["cost"] * 12)

@@ -416,6 +416,66 @@ def test_city_services_and_shop_integrity():
         assert c in w, f"房產城不存在:{c}"
 
 
+def test_trainer_specialization():
+    """城鎮服務專精化(R29)· 訓練師專精 + 宗師指點:
+    每座有 trainer 的城至少能教一系且各可教系非空(無空選單);非邊境 city 皆能由公會推導 ≥1 系
+    (差異化全城,非靠全技後備);trainers.json 覆寫/宗師 id 全合法,宗師 cap 介於一般上限與絕對上限之間且必上架。"""
+    gd, _ = _char()
+    GUILDS = {"mages_guild", "fighters_guild", "thieves_guild", "companions",
+              "dark_brotherhood", "knights_nine", "mythic_dawn"}
+    w = gd.world["locations"]
+    for lid, l in w.items():
+        if "trainer" not in l.get("services", []):
+            continue
+        specs = world.trainer_specs(gd, lid)
+        assert specs, f"{lid} 訓練師無可教系"
+        for sp in specs:
+            assert world.trainer_skills(gd, lid, sp), f"{lid}/{sp} 可教系卻空清單"
+        if l.get("type") == "city" and l.get("province") != "邊境":
+            assert {s for s in l.get("services", []) if s in GUILDS}, f"{lid} 無公會可推導訓練專精"
+    for lid, td in gd.trainers.items():
+        assert lid in w, f"trainers.json 城不存在:{lid}"
+        for entry in td.get("skills", []):
+            assert entry in ("combat", "magic", "stealth") or entry in gd.skills, \
+                f"非法訓練覆寫:{lid}:{entry}"
+        m = td.get("master")
+        if m:
+            assert m["skill"] in gd.skills, f"非法宗師技:{lid}:{m['skill']}"
+            cap = m.get("cap", formulas.SKILL_CAP)
+            assert formulas.TRAINER_CAP < cap <= formulas.SKILL_CAP, f"宗師 cap 越界:{lid}:{cap}"
+            assert m["skill"] in world.trainer_skills(gd, lid, gd.skills[m["skill"]]["spec"]), \
+                f"宗師技未上架:{lid}"
+            assert world.trainer_cap(gd, lid, m["skill"]) == cap, f"宗師 cap 未生效:{lid}"
+
+
+def test_spell_school_dispersal():
+    """城鎮服務專精化(R29)· 法師公會法術學派分散:
+    6 學派各至少一城可買;保底集 9 道於每座 mages_guild 城都在;無空 spell_stock 法師城;
+    spell id 全合法;無孤兒 spell_stock(無 mages_guild 卻有 spell_stock → 選單不可達)。"""
+    gd, _ = _char()
+    BASELINE = {"flames", "frostbite", "sparks", "minor_heal", "oakflesh",
+                "ward", "soul_trap", "conjure_familiar", "fear"}
+    w = gd.world["locations"]
+    all_schools = {s["school"] for s in gd.spells.values()}
+    mage = {lid: l for lid, l in w.items() if "mages_guild" in l.get("services", [])}
+    buyable, empty, missing_base = set(), [], []
+    for lid, l in mage.items():
+        ss = l.get("spell_stock", [])
+        if not ss:
+            empty.append(lid)
+        if not BASELINE <= set(ss):
+            missing_base.append(lid)
+        for s in ss:
+            assert s in gd.spells, f"非法法術 id:{lid}:{s}"
+            buyable.add(gd.spells[s]["school"])
+    assert not empty, f"空 spell_stock 法師城:{empty}"
+    assert not missing_base, f"缺保底集的法師城:{missing_base}"
+    assert buyable == all_schools, f"有學派無處可買:{all_schools - buyable}"
+    orphan = [lid for lid, l in w.items()
+              if l.get("spell_stock") and "mages_guild" not in l.get("services", [])]
+    assert not orphan, f"孤兒 spell_stock(無 mages_guild):{orphan}"
+
+
 def run():
     for name, fn in sorted(globals().items()):
         if name.startswith("test_") and callable(fn):
