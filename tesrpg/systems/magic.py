@@ -17,7 +17,12 @@ CAST_XP = 0.5
 SOUL_GEM_BY_DANGER = {
     1: "filled_petty_soul_gem", 2: "filled_lesser_soul_gem",
     3: "filled_common_soul_gem", 4: "filled_greater_soul_gem",
+    5: "filled_grand_soul_gem",                       # danger5 頂級魂(附魔深化 Phase 2)
 }
+# 空魂石填充循環:擒魂→填手上空魂石(白魂)。人形/有靈魂需黑魂石+法術擒魂(見 resolve_soul_capture)。
+_EMPTY_BY_TIER = {1: "empty_petty_soul_gem", 2: "empty_lesser_soul_gem", 3: "empty_common_soul_gem",
+                  4: "empty_greater_soul_gem", 5: "empty_grand_soul_gem"}
+BLACK_SOUL_INFAMY = 2                                 # 囚禁有靈之魂=黑暗之舉,小幅惡名
 # 秘術「驅散」可淨化的不良效果(只清控場/侵蝕,不動護盾/再生/結界/灌注等增益)
 _DISPELLABLE = ("fear", "paralyze", "dot", "weaken", "stagger")
 # 亡者復生:起出的屍體是「虛弱化的亡魂」→ 以原 HP 的此比例復生(避免滿血復生高 HP 精英遠超召喚物階)
@@ -533,6 +538,37 @@ def tick_effects(entity, gamedata=None) -> list[str]:
     return msgs
 
 
+def soul_tier_for(creature) -> int:
+    """擒魂可得的魂階(= 危險度,夾 1–5)。"""
+    return min(5, max(1, getattr(creature, "danger", 1)))
+
+
 def soul_gem_for(creature) -> str | None:
-    """擒魂成功時,依危險度給予對應的充能靈魂石。"""
-    return SOUL_GEM_BY_DANGER.get(min(4, max(1, getattr(creature, "danger", 1))))
+    """擒魂成功時依危險度對應的充能靈魂石 id(舊式直給;新填充循環見 resolve_soul_capture)。"""
+    return SOUL_GEM_BY_DANGER.get(soul_tier_for(creature))
+
+
+def resolve_soul_capture(player, creature, gamedata) -> str | None:
+    """擊殺擒魂結算(附魔深化 Phase 2):依手上**空魂石**填充。回傳玩家訊息(None=不顯示)。
+    - 一般怪:填入「夠裝該階的最小空魂石」→ filled_<階>;無合適空魂石 → 魂逸散。
+    - 人形/有靈(bestiary `sentient`):凡魂石盛不住 → 需手持**空黑魂石**且為**法術擒魂**(非武器)
+      才囚成 filled_black(soul5),並 +infamy;否則逸散 → 縛魂術對人形/黑魂專屬。"""
+    from tesrpg.systems import inventory
+    tier = soul_tier_for(creature)
+    sentient = gamedata.bestiary.get(getattr(creature, "template_id", ""), {}).get("sentient")
+    spell_trapped = any(e.get("kind") == "soul_trap" and e.get("src") != "weapon"
+                        for e in getattr(creature, "active_effects", []))
+    if sentient:
+        if spell_trapped and inventory.count_item(player, "empty_black_soul_gem") > 0:
+            inventory.remove_item(player, "empty_black_soul_gem", 1)
+            inventory.add_item(player, "filled_black_soul_gem", 1)
+            player.infamy = getattr(player, "infamy", 0) + BLACK_SOUL_INFAMY
+            return f"黑色擒魂 —— {creature.name}的靈魂被囚入黑魂石(惡名 +{BLACK_SOUL_INFAMY})。"
+        return f"{creature.name}是有靈之輩,凡魂石盛不住其魂 —— 靈魂逸散(需空黑魂石 + 擒魂咒)。"
+    for t in range(tier, 6):                          # 夠裝該階的最小空魂石
+        if inventory.count_item(player, _EMPTY_BY_TIER[t]) > 0:
+            inventory.remove_item(player, _EMPTY_BY_TIER[t], 1)
+            filled = SOUL_GEM_BY_DANGER[tier]
+            inventory.add_item(player, filled, 1)
+            return f"擒魂成功 —— {gamedata.item_name(filled)} 充能。"
+    return f"{creature.name}的靈魂無處可盛 —— 逸散了(備妥空魂石再來)。"

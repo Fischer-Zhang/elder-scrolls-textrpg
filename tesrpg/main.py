@@ -959,11 +959,10 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
         r = combat.grant_loot(player, e, gamedata, state.rng)
         total["gold"] += r["gold"]
         total["items"] += r["items"]
-        if id(e) in trapped_kills:
-            gem = magic.soul_gem_for(e)
-            if gem:
-                inventory.add_item(player, gem, 1)
-                ui.message(f"擒魂成功 —— 獲得{gamedata.item_name(gem)}。", style="magenta")
+        if id(e) in trapped_kills:                     # 擒魂結算:填手上空魂石(人形→空黑魂石+法術)
+            msg = magic.resolve_soul_capture(player, e, gamedata)
+            if msg:
+                ui.message(msg, style="magenta")
         quests.record_kill(player, e.template_id)
     ui.loot_report(total, gamedata)
     _report_quests(state, gamedata)

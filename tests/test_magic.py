@@ -644,6 +644,68 @@ def test_birthsign_resist_weakness():
     assert app.max_magicka > mage.max_magicka
 
 
+def _trapped(gd, tid, src="spell"):
+    """生一隻已死、帶 soul_trap 效果的怪(src=weapon 標記武器擒魂)。"""
+    c = combat.spawn_creature(gd, tid, RNG(1))
+    eff = {"kind": "soul_trap", "turns": 3}
+    if src == "weapon":
+        eff["src"] = "weapon"
+    c.active_effects = [eff]
+    return c
+
+
+def test_soul_capture_fills_smallest_sufficient_empty_gem():
+    """擒魂填充:一般怪填『夠裝該階的最小空魂石』,填成的是『靈魂階』而非空石階。"""
+    gd, c = _mage()
+    inventory.add_item(c, "empty_petty_soul_gem", 1)      # cap1,裝不下 danger2
+    inventory.add_item(c, "empty_common_soul_gem", 1)     # cap3,最小夠裝
+    magic.resolve_soul_capture(c, _trapped(gd, "wolf"), gd)   # wolf danger 2
+    assert inventory.count_item(c, "filled_lesser_soul_gem") == 1   # 靈魂階=2
+    assert inventory.count_item(c, "empty_common_soul_gem") == 0    # 用掉 common
+    assert inventory.count_item(c, "empty_petty_soul_gem") == 1     # petty 裝不下、留著
+
+
+def test_soul_capture_grand_tier_from_danger5():
+    """danger5 頂級魂可填空大魂石(soul5);解除舊有 min(4) 夾。"""
+    gd, c = _mage()
+    inventory.add_item(c, "empty_grand_soul_gem", 1)
+    magic.resolve_soul_capture(c, _trapped(gd, "dremora_lord"), gd)   # danger 5,非 sentient
+    assert inventory.count_item(c, "filled_grand_soul_gem") == 1
+
+
+def test_black_soul_requires_black_gem_and_spell():
+    """人形/有靈魂:白魂石裝不下;唯『空黑魂石 + 法術擒魂』才囚成黑魂石並 +infamy;武器擒魂逸散。"""
+    gd, c = _mage()
+    # 武器擒魂 → 逸散(法術專屬)
+    inventory.add_item(c, "empty_black_soul_gem", 1)
+    magic.resolve_soul_capture(c, _trapped(gd, "bandit", src="weapon"), gd)
+    assert inventory.count_item(c, "filled_black_soul_gem") == 0
+    assert inventory.count_item(c, "empty_black_soul_gem") == 1
+    # 法術擒魂 + 空黑魂石 → 成黑魂石 + 惡名
+    inf0 = c.infamy
+    magic.resolve_soul_capture(c, _trapped(gd, "bandit", src="spell"), gd)
+    assert inventory.count_item(c, "filled_black_soul_gem") == 1
+    assert c.infamy == inf0 + magic.BLACK_SOUL_INFAMY
+
+
+def test_soul_capture_escapes_without_empty_gem():
+    """無合適空魂石 → 魂逸散(命中擒魂因此非無限,受空魂石庫存所限)。"""
+    gd, c = _mage()
+    msg = magic.resolve_soul_capture(c, _trapped(gd, "wolf"), gd)
+    assert "逸散" in msg
+    assert not any(k.startswith("filled_") for k in
+                   [s["id"] for s in c.inventory])
+
+
+def test_mage_cities_stock_empty_soul_gems():
+    """法師城供空魂石(填充燃料);大城另供空大/黑魂石。"""
+    gd, _ = _mage()
+    from tesrpg.systems import world
+    assert "empty_petty_soul_gem" in world.merchant_catalog(gd, "bruma")        # mages_guild
+    assert "empty_black_soul_gem" in world.merchant_catalog(gd, "imperial_city")  # major
+    assert "empty_petty_soul_gem" not in world.merchant_catalog(gd, "anvil")    # 無 mages_guild(盜賊城)
+
+
 def run():
     for name, fn in sorted(globals().items()):
         if name.startswith("test_") and callable(fn):

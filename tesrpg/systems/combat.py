@@ -572,7 +572,8 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
                     charges = getattr(attacker, "enchant_charges", {})
                     if not magic.has_soul_trap(defender) and (cap <= 0 or charges.get(wid, cap) > 0):
                         defender.active_effects.append(
-                            {"kind": "soul_trap", "turns": hench.get("turns", formulas.WEAPON_SOULTRAP_TURNS)})
+                            {"kind": "soul_trap", "turns": hench.get("turns", formulas.WEAPON_SOULTRAP_TURNS),
+                             "src": "weapon"})   # 武器擒魂:人形/黑魂專屬於法術 → 標記來源
                         if cap > 0:
                             charges[wid] = max(0, charges.get(wid, cap) - 1)
                 elif st == "paralyze" and is_alive(defender):

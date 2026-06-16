@@ -123,7 +123,7 @@
       "poison": 100
     }
   },
-  "bandit": {
+  "bandit": {"sentient": true, 
     "name": "強盜",
     "danger": 3,
     "min_level": 2,
@@ -321,7 +321,7 @@
     "loot": [],
     "flavor": "一名魔界戰士魔人應召跨界而來,渾身燃著湮滅位面的怒火,為你而戰。"
   },
-  "city_guard": {
+  "city_guard": {"sentient": true, 
     "name": "城衛兵",
     "danger": 4,
     "min_level": 99,
@@ -641,7 +641,7 @@
     "loot": [{"item": "ebony_sword", "chance": 0.4}, {"item": "dragon_scale", "chance": 0.6}, {"item": "dwarven_cuirass", "chance": 0.3}, {"item": "filled_greater_soul_gem", "chance": 0.5}, {"item": "healing_potion", "chance": 0.8}],
     "flavor": "天色驟暗——一頭上古巨龍盤旋而下,烈焰吐息燒紅了半邊天。"
   },
-  "vampire_fledgling": {
+  "vampire_fledgling": {"sentient": true, 
     "name": "吸血鬼新血",
     "danger": 3,
     "min_level": 3,
@@ -657,7 +657,7 @@
     "loot": [{"item": "silver_ring", "chance": 0.15}, {"item": "minor_healing_potion", "chance": 0.2}, {"item": "filled_lesser_soul_gem", "chance": 0.1}],
     "flavor": "一個面色慘白的身影自暗處欺近,獠牙在月光下泛著寒光:「你的血,聞起來真甜。」"
   },
-  "vampire_lord": {
+  "vampire_lord": {"sentient": true, 
     "name": "吸血鬼貴族",
     "danger": 4,
     "min_level": 10,
@@ -733,7 +733,7 @@
     "loot": [{"item": "filled_greater_soul_gem", "chance": 0.5}, {"item": "ebony_sword", "chance": 0.2}, {"item": "glow_dust", "chance": 0.5}],
     "flavor": "廟心的積水驟然沸騰——一頭上古雷蜥瓦瑪蘇破水而出,鱗甲間迸射的雷弧照亮了整座沉廟。"
   },
-  "townsperson": {
+  "townsperson": {"sentient": true, 
     "name": "城鎮居民", "strength": 35, "agility": 35, "speed": 35,
     "max_health": 28, "armor_rating": 4,
     "attack": {"name": "驚慌揮拳", "damage": 5, "skill": 25},
@@ -742,7 +742,7 @@
     "loot": [{"item": "minor_healing_potion", "chance": 0.1}],
     "flavor": "一名手無寸鐵的尋常居民,驚恐地想護住自己的性命。"
   },
-  "greedy_merchant": {
+  "greedy_merchant": {"sentient": true, 
     "name": "貪婪的商人", "strength": 42, "agility": 38, "speed": 36,
     "max_health": 44, "armor_rating": 8,
     "attack": {"name": "藏身短刀", "damage": 9, "skill": 40},
@@ -751,7 +751,7 @@
     "loot": [{"item": "gold_ring", "chance": 0.4}, {"item": "healing_potion", "chance": 0.3}],
     "flavor": "一名腦滿腸肥的奸商,袖中藏著防身的短刀,眼裡只有金幣。"
   },
-  "rogue_thief": {
+  "rogue_thief": {"sentient": true, 
     "name": "變節的盜賊", "strength": 44, "agility": 58, "speed": 56,
     "max_health": 58, "armor_rating": 12,
     "attack": {"name": "毒刃突刺", "damage": 13, "skill": 50,
@@ -761,7 +761,7 @@
     "loot": [{"item": "glass_dagger", "chance": 0.25}, {"item": "silver_ring", "chance": 0.3}],
     "flavor": "一名出賣了同夥的盜賊,身手敏捷、刀尖淬毒,深知自己被盯上了。"
   },
-  "reclusive_mage": {
+  "reclusive_mage": {"sentient": true, 
     "name": "隱居的法師", "strength": 38, "agility": 46, "speed": 44,
     "max_health": 66, "armor_rating": 6,
     "attack": {"name": "烈焰箭", "damage": 17, "skill": 56, "element": "fire",
@@ -772,7 +772,7 @@
     "loot": [{"item": "filled_common_soul_gem", "chance": 0.4}, {"item": "magicka_staff", "chance": 0.15}],
     "flavor": "一名離群索居的法師,指尖凝著奧術的火光 —— 他似乎早料到死亡會找上門。"
   },
-  "disgraced_knight": {
+  "disgraced_knight": {"sentient": true, 
     "name": "落魄的騎士", "strength": 58, "agility": 42, "speed": 38,
     "max_health": 120, "armor_rating": 28,
     "attack": {"name": "重劍劈斬", "damage": 19, "skill": 56},
@@ -781,7 +781,7 @@
     "loot": [{"item": "steel_cuirass", "chance": 0.3}, {"item": "healing_potion", "chance": 0.4}],
     "flavor": "一名失了名譽的騎士,雖已落魄,一身重甲與劍術仍不容小覷。"
   },
-  "arena_champion": {
+  "arena_champion": {"sentient": true, 
     "name": "競技場冠軍", "strength": 70, "agility": 52, "speed": 50,
     "max_health": 165, "armor_rating": 22,
     "attack": {"name": "鬥技連擊", "damage": 25, "skill": 62},
@@ -790,7 +790,7 @@
     "loot": [{"item": "ebony_sword", "chance": 0.25}, {"item": "healing_potion", "chance": 0.5}],
     "flavor": "萬眾矚目的競技場冠軍,身經百戰、力大招沉 —— 取他性命絕非易事。"
   },
-  "brotherhood_traitor": {
+  "brotherhood_traitor": {"sentient": true, 
     "name": "叛變的會員", "strength": 60, "agility": 60, "speed": 58,
     "max_health": 140, "armor_rating": 18,
     "attack": {"name": "背刺淬毒", "damage": 26, "skill": 64,
@@ -801,7 +801,7 @@
     "loot": [{"item": "glass_dagger", "chance": 0.4}, {"item": "filled_greater_soul_gem", "chance": 0.3}],
     "flavor": "一名背棄了五戒的兄弟會叛徒,深諳暗殺之道 —— 他知道你為何而來,也絕不會束手就擒。"
   },
-  "dark_speaker": {
+  "dark_speaker": {"sentient": true, 
     "name": "聖所代言人", "strength": 64, "agility": 58, "speed": 56,
     "max_health": 170, "armor_rating": 20,
     "attack": {"name": "夜影之刃", "damage": 27, "skill": 66, "element": "frost",
@@ -812,7 +812,7 @@
     "loot": [{"item": "glass_dagger", "chance": 0.5}, {"item": "filled_greater_soul_gem", "chance": 0.4}, {"item": "gold_amulet", "chance": 0.3}],
     "flavor": "你曾奉其號令的聖所代言人,夜母之意的轉述者 —— 如今刀鋒相向,他眼中只有冷冽的了然。"
   },
-  "faithful_of_nine": {
+  "faithful_of_nine": {"sentient": true, 
     "name": "九神信徒", "strength": 40, "agility": 40, "speed": 38,
     "max_health": 50, "armor_rating": 10,
     "attack": {"name": "祈禱者之杖", "damage": 10, "skill": 42},
@@ -822,7 +822,7 @@
     "loot": [{"item": "gold_ring", "chance": 0.3}, {"item": "healing_potion", "chance": 0.3}],
     "flavor": "一名虔信九聖的信徒,口中念著阿卡托什的禱詞 —— 在神話黎明眼中,正是該被焚祭的舊神餘孽。"
   },
-  "blade_agent": {
+  "blade_agent": {"sentient": true, 
     "name": "刀刃密探", "strength": 46, "agility": 60, "speed": 58,
     "max_health": 62, "armor_rating": 14,
     "attack": {"name": "刀刃突襲", "damage": 14, "skill": 54,
@@ -832,7 +832,7 @@
     "loot": [{"item": "silver_ring", "chance": 0.3}, {"item": "healing_potion", "chance": 0.4}],
     "flavor": "一名隸屬『刀刃』的帝國密探,奉命追查聖堂的下落 —— 身手矯健,出手見血。"
   },
-  "xarxes_necromancer": {
+  "xarxes_necromancer": {"sentient": true, 
     "name": "黑蠕蟲死靈", "strength": 38, "agility": 48, "speed": 44,
     "max_health": 70, "armor_rating": 6,
     "attack": {"name": "枯萎觸擊", "damage": 18, "skill": 58, "element": "shock",
@@ -843,7 +843,7 @@
     "loot": [{"item": "filled_common_soul_gem", "chance": 0.4}, {"item": "magicka_staff", "chance": 0.15}],
     "flavor": "黑蠕蟲教團的死靈法師,偷走了《魔典》殘卷 —— 指尖纏繞著竊取自亡者的奧術。"
   },
-  "knight_paladin": {
+  "knight_paladin": {"sentient": true, 
     "name": "九神聖騎士", "strength": 60, "agility": 42, "speed": 38,
     "max_health": 130, "armor_rating": 30,
     "attack": {"name": "聖光劈斬", "damage": 20, "skill": 58},
@@ -853,7 +853,7 @@
     "loot": [{"item": "gold_amulet", "chance": 0.25}, {"item": "healing_potion", "chance": 0.5}],
     "flavor": "一名九神的聖騎士,重甲在身、聖光護體 —— 舊秩序最堅實的盾牌,擋在湮滅之門前。"
   },
-  "high_priest_of_nine": {
+  "high_priest_of_nine": {"sentient": true, 
     "name": "九神大祭司", "strength": 42, "agility": 46, "speed": 44,
     "max_health": 150, "armor_rating": 14,
     "attack": {"name": "聖裁之火", "damage": 24, "skill": 64, "element": "fire",
@@ -864,7 +864,7 @@
     "loot": [{"item": "gold_amulet", "chance": 0.4}, {"item": "filled_greater_soul_gem", "chance": 0.3}, {"item": "healing_potion", "chance": 0.5}],
     "flavor": "九神教會的大祭司,舊神信仰的中流砥柱 —— 他的聖火,曾照亮三省無數虔誠的心。"
   },
-  "mythic_apostate": {
+  "mythic_apostate": {"sentient": true, 
     "name": "神話叛教者", "strength": 58, "agility": 60, "speed": 58,
     "max_health": 140, "armor_rating": 18,
     "attack": {"name": "赤袍淬刃", "damage": 26, "skill": 64,
@@ -875,7 +875,7 @@
     "loot": [{"item": "glass_dagger", "chance": 0.4}, {"item": "filled_greater_soul_gem", "chance": 0.3}],
     "flavor": "一名對達貢的恩典生了疑的信徒,深諳聖堂的祕辛 —— 他知道你為何而來,絕不會束手就擒。"
   },
-  "mythic_dawn_acolyte": {
+  "mythic_dawn_acolyte": {"sentient": true, 
     "name": "赤袍信徒", "strength": 38, "agility": 46, "speed": 46,
     "max_health": 50, "armor_rating": 8,
     "attack": {"name": "赤袍短刃", "damage": 13, "skill": 46,
@@ -886,7 +886,7 @@
     "loot": [{"item": "lockpick", "chance": 0.3}, {"item": "minor_healing_potion", "chance": 0.25}],
     "flavor": "湖畔現身的赤袍招募者,眼神狂熱而堅定 —— 達貢的福音在他口中,刀刃藏在袖底。"
   },
-  "dawn_mentor": {
+  "dawn_mentor": {"sentient": true, 
     "name": "黎明導師", "strength": 50, "agility": 54, "speed": 52,
     "max_health": 165, "armor_rating": 16,
     "attack": {"name": "湮滅之炎", "damage": 27, "skill": 66, "element": "fire",
@@ -897,7 +897,7 @@
     "loot": [{"item": "ebony_sword", "chance": 0.3}, {"item": "filled_greater_soul_gem", "chance": 0.4}, {"item": "gold_amulet", "chance": 0.3}],
     "flavor": "傳授你達貢教義的導師,赤袍下藏著《魔典》的真意 —— 如今你的刀,指向了引你入道的人。"
   },
-  "corrupt_priest": {
+  "corrupt_priest": {"sentient": true, 
     "name": "墮落的祭司", "strength": 40, "agility": 42, "speed": 40,
     "max_health": 52, "armor_rating": 8,
     "attack": {"name": "瀆神之觸", "damage": 11, "skill": 44, "element": "shock",
@@ -908,7 +908,7 @@
     "loot": [{"item": "gold_ring", "chance": 0.3}, {"item": "healing_potion", "chance": 0.3}],
     "flavor": "一名背棄九聖、轉而崇拜魔神的祭司,聖袍之下藏著瀆神的咒文 —— 騎士團視其為必須拔除的毒瘤。"
   },
-  "necromancer_acolyte": {
+  "necromancer_acolyte": {"sentient": true, 
     "name": "死靈門徒", "strength": 38, "agility": 48, "speed": 46,
     "max_health": 68, "armor_rating": 6,
     "attack": {"name": "腐朽之握", "damage": 17, "skill": 56, "element": "shock",
@@ -919,7 +919,7 @@
     "loot": [{"item": "filled_common_soul_gem", "chance": 0.4}, {"item": "gold_ring", "chance": 0.25}],
     "flavor": "黑蠕蟲教團的死靈門徒,以亡者的低語驅役腐屍 —— 玷污死者的安寧,正是九聖最不容的褻瀆。"
   },
-  "vampire_patriarch": {
+  "vampire_patriarch": {"sentient": true, 
     "name": "吸血鬼宗主", "strength": 58, "agility": 56, "speed": 54,
     "max_health": 145, "armor_rating": 16,
     "attack": {"name": "汲血爪擊", "damage": 25, "skill": 62, "element": "frost",
@@ -930,7 +930,7 @@
     "loot": [{"item": "gold_amulet", "chance": 0.35}, {"item": "filled_greater_soul_gem", "chance": 0.3}],
     "flavor": "盤踞古堡、操弄死亡的吸血鬼宗主,夜夜獵取活人的血。聖光之下,他終須償還那些被奪走的性命。"
   },
-  "fallen_knight": {
+  "fallen_knight": {"sentient": true, 
     "name": "墮落騎士", "strength": 60, "agility": 42, "speed": 38,
     "max_health": 110, "armor_rating": 26,
     "attack": {"name": "蒙塵重劍", "damage": 19, "skill": 56},
@@ -950,7 +950,7 @@
     "loot": [{"item": "ebony_sword", "chance": 0.25}, {"item": "filled_greater_soul_gem", "chance": 0.35}],
     "flavor": "由湮滅之門湧入的魔族鬥士,烈焰纏身、力大招沉 —— 凡塵的秩序,正繫於能否擋下這等存在。"
   },
-  "defiled_crusader": {
+  "defiled_crusader": {"sentient": true, 
     "name": "蒙塵的十字軍", "strength": 64, "agility": 50, "speed": 48,
     "max_health": 150, "armor_rating": 28,
     "attack": {"name": "背誓之刃", "damage": 25, "skill": 60},
@@ -1037,7 +1037,7 @@
     "loot": [{"item": "dwarven_cuirass", "chance": 0.3}, {"item": "filled_greater_soul_gem", "chance": 0.5}, {"item": "gold_ingot", "chance": 0.5}],
     "flavor": "沃倫菲爾廟心的蒸汽驟然轟鳴 —— 一尊三人高的矮人百夫長嘎然立起,黃銅巨錘掃過,千年的烈焰自胸甲縫隙噴湧而出。"
   },
-  "moor_witch": {
+  "moor_witch": {"sentient": true, 
     "biomes": ["moor"],
     "name": "沼地女巫", "strength": 30, "agility": 44, "speed": 46,
     "max_health": 28, "armor_rating": 4,
@@ -1083,7 +1083,7 @@
     "loot": [{"item": "bone_meal", "chance": 0.4}, {"item": "filled_lesser_soul_gem", "chance": 0.25}],
     "flavor": "巨石巫圈的古墓中,一具披著鏽蝕板甲的鐵衛拖劍而起,空洞的盔縫裡滲著幽藍的寒光。"
   },
-  "hag_matriarch": {
+  "hag_matriarch": {"sentient": true, 
     "biomes": ["moor"],
     "name": "海妖岩魔女", "strength": 60, "agility": 56, "speed": 50,
     "max_health": 240, "armor_rating": 16,
@@ -1119,7 +1119,7 @@
     "loot": [{"item": "monarch_wing", "chance": 0.3}, {"item": "healing_potion", "chance": 0.2}],
     "flavor": "苔綠的樹皮剝落,一具藤蔓與樹瘤交織的樹靈自巨木中走出,荊棘的指尖滴著綠約的毒。"
   },
-  "jungle_imga": {
+  "jungle_imga": {"sentient": true, 
     "biomes": ["jungle"],
     "name": "食人巨猿", "strength": 58, "agility": 62, "speed": 60,
     "max_health": 58, "armor_rating": 8,
@@ -1166,7 +1166,7 @@
     "loot": [{"item": "moon_sugar", "chance": 0.25}, {"item": "glow_dust", "chance": 0.25}],
     "flavor": "壇邊的藤蔓沁著黏稠的糖蜜驟然活了過來,一條結著糖晶的毒藤如鞭甩向你的咽喉。"
   },
-  "alfiq_sorcerer": {
+  "alfiq_sorcerer": {"sentient": true, 
     "biomes": ["savanna"],
     "name": "阿爾菲克貓巫", "strength": 30, "agility": 64, "speed": 60,
     "max_health": 48, "armor_rating": 6,
@@ -1226,7 +1226,7 @@
     "loot": [{"item": "ebony_sword", "chance": 0.3}, {"item": "skooma", "chance": 0.5}, {"item": "filled_greater_soul_gem", "chance": 0.5}, {"item": "gold_ingot", "chance": 0.5}],
     "flavor": "壇心的暗月之下,一頭被千年月糖與暗潮共同腐化的巨大暗虎轟然升起 —— 血肉半化為毒,每一次低吼都讓糖蜜般的腐毒在空氣裡凝結。"
   },
-  "werewolf": {
+  "werewolf": {"sentient": true, 
     "name": "狼人",
     "danger": 3,
     "min_level": 4,
@@ -1242,7 +1242,7 @@
     "loot": [{"item": "wolf_pelt", "chance": 0.6}, {"item": "minor_healing_potion", "chance": 0.2}],
     "flavor": "月光下,一頭半人半狼的猛獸踏出林影,猩紅的眼睛鎖定了你 —— 喉間滾出低沉的咆哮。"
   },
-  "werewolf_alpha": {
+  "werewolf_alpha": {"sentient": true, 
     "name": "狼人首領",
     "danger": 4,
     "min_level": 10,
@@ -1259,7 +1259,7 @@
     "loot": [{"item": "wolf_pelt", "chance": 0.8}, {"item": "healing_potion", "chance": 0.4}, {"item": "filled_common_soul_gem", "chance": 0.25}, {"item": "hircine_ring", "chance": 0.5}],
     "flavor": "一頭體型遠超尋常的銀背巨狼自暗處躍出 —— 牠是這片獵場的霸主,獸血之王。"
   },
-  "silver_hand": {
+  "silver_hand": {"sentient": true, 
     "biomes": ["snow"],
     "name": "銀手獵人",
     "danger": 3,
@@ -1275,7 +1275,7 @@
     "loot": [{"item": "silver_ring", "chance": 0.3}, {"item": "healing_potion", "chance": 0.25}, {"item": "lockpick", "chance": 0.3}],
     "flavor": "一群佩銀刃的悍徒自雪林中現身 —— 銀手,專獵狼人的狂熱者,刀刃淬銀、見『獸』即殺,連戰友團也視為仇讎。"
   },
-  "glenmoril_witch": {
+  "glenmoril_witch": {"sentient": true, 
     "biomes": ["snow"],
     "name": "格倫魔女",
     "danger": 4,

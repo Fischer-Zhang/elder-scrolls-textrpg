@@ -170,14 +170,22 @@ def _restock_qty(value: int, rng: RNG, material: bool = False) -> int:
     return rng.randint(0, 1)      # 高價裝備:時常缺貨
 
 
+_EMPTY_GEM_STOCK = ("empty_petty_soul_gem", "empty_lesser_soul_gem",
+                    "empty_common_soul_gem", "empty_greater_soul_gem")   # 法師城售白魂空石
+_EMPTY_GEM_STOCK_MAJOR = ("empty_grand_soul_gem", "empty_black_soul_gem")  # 大城另售空大/黑魂石
+
+
 def merchant_catalog(gamedata: GameData, loc_id: str) -> list[str]:
-    """該地商人「可能販售」的完整品項目錄:world.json 的 merchant_stock + 鍛造材料分級供給。
-    每座 type=city 自動供應一般材料(_COMMON_MATERIALS);大城(MAJOR_CITIES)另供高級材料。"""
+    """該地商人「可能販售」的完整品項目錄:world.json 的 merchant_stock + 鍛造材料分級供給 + 法師城空魂石。
+    每座 type=city 自動供應一般材料(_COMMON_MATERIALS);大城(MAJOR_CITIES)另供高級材料;法師城供空魂石(填充燃料)。"""
     loc = gamedata.location(loc_id)
     catalog = list(loc.get("merchant_stock", []))
     if loc.get("type") == "city":
         extra = list(_COMMON_MATERIALS) + (list(_HIGH_MATERIALS) if loc_id in MAJOR_CITIES else [])
         catalog += [iid for iid in extra if iid not in catalog]   # 去重:既有明列者不重複
+    if "mages_guild" in loc.get("services", []):                  # 填充循環燃料:法師城供空魂石
+        gems = list(_EMPTY_GEM_STOCK) + (list(_EMPTY_GEM_STOCK_MAJOR) if loc_id in MAJOR_CITIES else [])
+        catalog += [iid for iid in gems if iid not in catalog]
     return catalog
 
 
