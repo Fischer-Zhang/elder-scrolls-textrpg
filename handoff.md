@@ -35,7 +35,7 @@
 #### 戰鬥與魔法
 - 回合制**多敵 + 團隊戰鬥**(召喚物/傭兵同伴);**同伴角色化**(9 具名同伴:持久 HP/羈絆 + 具名招募任務 + 羈絆階解鎖的專屬支線 + 就地對話 + 完成支線的忠誠弧頂點〔戰術盟友光環/被動非戰鬥槓桿;盟友限定守刺客紅線〕;復用 `companion_bond` 當忠誠軸,零新存檔欄);**六大學派 + AoE**(召喚/秘術補完至各 7 法術,與毀滅/復原/變換同列;**召喚**=元素元身/魔人 + 束縛兵刃〔法系近戰〕+ 亡者復生〔屍起為盟〕、**秘術**=法術結界〔吸法術傷·吸魔變體〕+ 驅散 + 群體擒魂);元素抗性/弱點、狀態效果、出生星座每日之力
 - **三系資源對稱**:施法也耗體力、力竭降法效(`cast_fatigue_*`),**法袍套裝**省體施法(法師的對應裝甲)
-- **煉金毒藥 + 武器塗毒**;**煉金限時增益藥水(深化 Phase 1 / R30)**:強化屬性/技能 + 抗元素**限時**藥劑(走獨立 `potion_*` 層、絕不寫 base;可釀池避 strength/武器技能守刺客紅線);**潛行刺客系**:偷襲先機、暗殺殘響、雙持、**隱遁再襲(潛行 25 里程碑「隱遁之術」;連環踏影對單體仍遞減、反 solo boss 風箏)**、戰前偵查;武器流派(潛襲/破甲/速度)
+- **煉金毒藥 + 武器塗毒**;**毒劑深化(Phase 2 / R31)**:五毒型(DoT/麻痺 + 衰毒/遲緩/懼毒,特殊型需里程碑解鎖;solo BOSS 對控制型免疫);**煉金限時增益藥水(深化 Phase 1 / R30)**:強化屬性/技能 + 抗元素**限時**藥劑(走獨立 `potion_*` 層、絕不寫 base;可釀池避 strength/武器技能守刺客紅線);**潛行刺客系**:偷襲先機、暗殺殘響、雙持、**隱遁再襲(潛行 25 里程碑「隱遁之術」;連環踏影對單體仍遞減、反 solo boss 風箏)**、戰前偵查;武器流派(潛襲/破甲/速度)
 
 #### 世界與探索
 - **八省 ~168 地點 / 48 城 + 17 鎮 + 70 野區 + 33 地城**(含海爾根 Helgen=白隘北口、賽→天門戶)(每省 5–9 城 + 多個正典分區野區〔黃金海岸/苦岸/裂石郡/收割者三月…〕做城際過場;邊境戍堡為省際接縫)+ **`pos[col,row]` 與 `links` 皆依正典 TES 地理**(頂層 `world["map"]` 40×24);旅行/晝夜/危險度(數字為快照,以 JSON/測試為準)
@@ -860,6 +860,18 @@ tesrpg/
 - **sim 安全(刻意)**:可釀池**排除 `strength` 與所有武器技能**(blade/blunt/marksman/hand_to_hand)→ 結構上不灌水偷襲傷害鏈,**不需 `sim_assassin`**(同 skooma 刻意不碰 strength 的設計)。日後若放開力量/武器技能藥水 → 必過 `sim_assassin` 閘。
 - **存檔**:Character +4 欄(dataclass 預設向後相容、進 to_dict;`active_effects` 仍不入檔);`from_dict` 走 `cls(**d)` + `ensure_potion_fields` 補欄/剔過期。守門:`tests/test_potion_buff.py`(路由/優先序、effective-not-base、到期、entity_resist、刷新非疊加、param-specific 不誤判、存檔 round-trip、舊存檔遷移、壞值防呆)。
 - **未做(留後續增量)**:戰鬥內 regen/shield 消耗品藥水(與既有變化系護盾/再生法術重疊、且涉戰外 active_effects 時序),刻意延後;3 材料/催化經濟(里程碑排除項)。
+
+---
+
+### R31 · 毒劑深化(煉金深化 Phase 2)[re-sim] [save]
+
+- **毒劑從 DoT + 麻痺擴為五型**:新增**衰毒 weaken**(降敵輸出,重用既有 `weaken` 機制)、**遲緩毒 slow**(降先攻 `_speed` + 命中 `SLOW_HIT_PENALTY`,**唯一新增 combat kind**)、**懼毒 fear**(重用 `is_incapacitated`)。敵為 flat-stat(無 attr/skill/magicka)→「降力量」實作為 weaken%;**不做 frenzy、不做資源吸取毒**(對怪零效=死內容)。
+- **修隱性紅線缺口(原 R15 漏)**:塗毒命中路徑 [combat.py](tesrpg/systems/combat.py) 原**無條件**附加 status → 一瓶麻痺毒即可癱 solo boss。改為派發器:控制型(paralyze/fear)守 `_is_solo` 免疫 + 同效去重(比照附魔麻痺 gate);**charge 接觸即耗**(即使 solo 免疫 → 杜絕無限重試泵)。`magic.is_slowed/slow_factor`(取最強非相加,夾 0..0.6)、`slow` 入 `_DISPELLABLE` + tick 退場訊息。
+- **brew 路由優先序**:麻痺 > 懼意 > 遲緩 > 衰減 > 持續傷害。特殊毒型(weaken/slow/fear)**需里程碑解鎖**(`mastery.poison_unlocks`),否則因特殊材料皆兼具 `damage_health` → **自然退回基礎 DoT**(材料永不淪為死內容)。weaken/slow % 由材料量值輕度隨煉金縮放(夾 10..35);毒效回合 +`poison_duration_bonus`。
+- **里程碑改功能性(R21 三步:`poison_unlock` 入 `_IMPLEMENTED_KINDS` + getter `poison_unlocks`/`poison_duration_bonus` + 呼叫端 brew)**:`alchemy_50 toxin_master`→衰毒、`alchemy_75 potent_poison`→遲緩+毒效延長、`alchemy_100 venom_lord`→懼毒(**opt_id 全保留** → 舊存檔 `mastery_choices` 照常解析;原 +塗毒次數效果改為功能解鎖,屬刻意 rebalance)。`alchemy_25 poison_basics` 仍給基礎塗層 +1。
+- **塗層次數依毒型**(`coat_weapon`):控制型(paralyze/fear)= `base//2+1`、遲緩 = `base-1`、DoT/衰減 = `base`(防控場過載)。
+- **存檔**:**無新 Character 欄**(新毒全在既有 `weapon_poison["status"]` + 戰鬥 `active_effects`);`mastery_choices` 結構不動。資料:`ingredients.json` 給 deathbell(hub:damage_strength/slow/fear)+ imp_stool(damage_strength)補有害 kind,新增 `spider_egg`(slow)/`vampire_dust`(fear),野外來源走 bestiary loot(蜘蛛/吸血鬼;`test_crafting` 守)。
+- **必跑 `sim_assassin`**(改 combat/formulas/alchemy):solo boss 全 0% 一擊秒殺 ✓、群戰死亡率不崩(27%/12%)✓;塗毒控制免疫對 solo 強化紅線。守門:`tests/test_poison_depth.py`(路由解鎖/fall-back、synth round-trip、各型塗層、**solo 控制免疫回歸**、非 solo 命中、slow 降速、weaken 生效、dispel)+ `test_mastery` 改測 `poison_unlocks` union。
 
 ---
 

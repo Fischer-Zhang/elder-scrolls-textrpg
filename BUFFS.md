@@ -3,7 +3,7 @@
 > **這是一份「參考目錄」**(catalog,非設計憲法):把全遊戲所有增益/減益依來源層整理、附實際數值,方便查閱與平衡盤點。
 > 真實來源(single source of truth)仍是程式碼(`tesrpg/systems/*.py`、`tesrpg/formulas.py`)與資料(`tesrpg/data/*.json`);
 > 數值有疑義以程式常數/JSON 為準。鐵律本體見 [handoff.md](handoff.md) §3(R05/R07/R11/R14/R15/R20/R21/R25/R26)、設計理念見 [DESIGN.md](DESIGN.md)。
-> 末次盤點:2026-06-16(煉金深化 Phase 1:限時增益藥水 `potion_*` 層已納入,見 §⑥/R30)。改增益常數後請順手更新本檔。
+> 末次盤點:2026-06-16(煉金深化 Phase 1 限時增益藥水 `potion_*` 層〔§⑥/R30〕+ Phase 2 毒劑深化五毒型〔§⑥/R31〕)。改增益常數後請順手更新本檔。
 
 ---
 
@@ -228,7 +228,7 @@
 | 魔力藥水(固定) | 續航回復 | minor 25 |
 | 自製藥水 brew(煉金) | 續航回復 | round((eff_a+eff_b)/2×factor);factor=(0.6+煉金/100)×(1+potion_potency);kind∈heal/restore_magicka/★restore_fatigue(僅煉金可得) |
 | ★限時增益藥水 brewb(煉金·R30) | **限時**強化(獨立層,非一次性) | 量=round((eff_a+eff_b)/2×factor),時長=round(2×factor) 小時;走獨立 `potion_attr_bonus/potion_skill_bonus/potion_resist` 層(聚合於 attr()/skill()/entity_resist(),**絕不寫 base**);kind:強化屬性 `fattr_*`/強化技能 `fskill_*`/抗元素 `resist_*`;**疊加=同(kind,param)取最強+取較晚到期,非相加**;**可釀池排除 strength+武器技能**(結構避刺客紅線,免 sim);每圈 `potion_buff.update` 清過期 |
-| 塗毒/毒藥(▼對敵) | 傷害/控場 | dot per_turn×3 或麻痺 turns=clamp(1+煉金//50,1..3);charges=poison_charges+里程碑+1 |
+| 塗毒/毒藥(▼對敵) | 傷害/控場 | **五型**(R31):dot per_turn×(3+延長) / 麻痺 clamp(1+煉金//50,1..3) / **衰毒 weaken**(敵攻勢−10..35%) / **遲緩 slow**(先攻+命中−10..35%) / **懼毒 fear**(短暫失能 1..2 回);特殊毒型需里程碑解鎖(`poison_unlock`),否則退回 DoT;塗層 charges=poison_charges+里程碑,控制型(麻痺/懼)半量、遲緩−1;**麻痺/懼毒對 solo BOSS 免疫** |
 
 ---
 
@@ -254,7 +254,7 @@ weapon_element 附魔、奧術灌注 weapon_imbue、共鳴一擊 resonance、武
 ### 結構性免疫紅線
 - **獸形 sneak_attack=False**(main.run_battle 守門)→ 狼人 +str 巨幅近戰不碰偷襲倍率;
 - **斯庫瑪/月糖/達貢之力**刻意不碰 strength/sneak/武傷倍率(R20)——但 str 仍經 attack_damage 放近戰**基礎傷**(與吸血同性質,非偷襲倍率);
-- **麻痺**(武器附魔/法術/塗毒):solo boss 完全免疫(R15,防反鎖王);
+- **麻痺 + 懼毒**(武器附魔/法術/塗毒):solo boss 完全免疫(R15/R31,防反鎖王;R31 補上塗毒命中路徑原缺的 solo gate);
 - approach_bonus/prep_bonus 只動「搶開場頻率」,不放大倍率。
 
 > 改任一上述常數 → **必跑 `PYTHONPATH=. python3 sim_assassin.py`**(守偷襲不秒 solo boss、群體反制、麻痺免疫紅線)。

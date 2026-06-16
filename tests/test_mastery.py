@@ -594,22 +594,26 @@ def test_alteration_stoneflesh_passive_armor():
     assert a_without >= 20                                # 魔力 0 仍含 +20
 
 
-def test_alchemy_potion_potency_and_poison_charges():
-    gd, c = _char(alchemy=75)
+def test_alchemy_potion_potency_and_poison_unlocks():
+    """R31:濃縮萃取仍給 potion_potency;原塗毒次數選項改為功能性毒型解鎖(weaken/slow/fear)。"""
+    gd, c = _char(alchemy=100)
     mastery.choose(c, gd, "alchemy_75", "concentrated")
     assert mastery.potion_potency(c, gd) == 0.20
-    gd2, c2 = _char(alchemy=75)
-    mastery.choose(c2, gd2, "alchemy_75", "potent_poison")
-    assert mastery.poison_charge_bonus(c2, gd2) == 1
-    # 塗毒實際多 1 次:給一瓶毒 + 非徒手武器
-    poison = next((iid for iid, d in gd.items.items()
-                   if isinstance(d, dict) and d.get("kind") == "poison"), None)
-    if poison:
-        c2.weapon = "steel_dagger"
-        inventory.add_item(c2, poison, 1)
-        base = inventory.poison_charges(c2)
-        inventory.coat_weapon(c2, gd2, poison)
-        assert c2.weapon_poison["charges"] == base + 1
+    # 未選功能性選項 → 無特殊毒型解鎖(基礎 DoT/麻痺永遠可釀)
+    gd2, c2 = _char(alchemy=100)
+    assert mastery.poison_unlocks(c2, gd2) == set()
+    mastery.choose(c2, gd2, "alchemy_50", "toxin_master")     # → 衰毒
+    mastery.choose(c2, gd2, "alchemy_75", "potent_poison")    # → 遲緩毒 + 毒效延長
+    mastery.choose(c2, gd2, "alchemy_100", "venom_lord")      # → 懼毒
+    assert mastery.poison_unlocks(c2, gd2) == {"weaken", "slow", "fear"}
+    assert mastery.poison_duration_bonus(c2, gd2) == 1
+    # 解鎖後實際釀得出對應毒型:衰毒(deathbell+imp_stool 共有 damage_strength)
+    c2.weapon = "steel_dagger"
+    inventory.add_item(c2, "deathbell", 1); inventory.add_item(c2, "imp_stool", 1)
+    from tesrpg.systems import alchemy as _alc
+    from tesrpg.rng import RNG as _RNG
+    r = _alc.brew(c2, gd2, "deathbell", "imp_stool", _RNG(0))
+    assert gd2.item(r["item_id"])["poison"]["status"] == "weaken"
 
 
 def test_mysticism_enchant_potency_and_absorb():
@@ -858,7 +862,7 @@ def test_batch1_same_source_aggregation_no_shadow():
     mastery.choose(c, gd, "hand_to_hand_75", "iron_fists"); mastery.choose(c, gd, "hand_to_hand_100", "transcend_fist")
     assert abs(mastery.weapon_mod(c, gd, "hand_to_hand").get("power", 0) - (0.15 + 0.10)) < 1e-9  # weapon_mod 合併
     mastery.choose(c, gd, "alchemy_50", "toxin_master"); mastery.choose(c, gd, "alchemy_100", "venom_lord")
-    assert mastery.poison_charge_bonus(c, gd) == 2 + 1                  # 相加
+    assert mastery.poison_unlocks(c, gd) == {"weaken", "fear"}          # 多節點 union 不遮蔽(R31)
     mastery.choose(c, gd, "heavy_armor_100", "ironhide"); mastery.choose(c, gd, "light_armor_50", "nimble_guard")
     mastery.choose(c, gd, "light_armor_100", "second_skin")
     assert mastery.passive_armor_bonus(c, gd) == 18 + 12 + 14          # 跨技能相加
@@ -979,11 +983,12 @@ def test_same_source_masking_fixed_spell_poison_evasion_passive():
     mastery.choose(c, gd, "alteration_75", "spell_reach")
     assert abs(mastery.spell_cost_factor(c, gd, "alteration") - 0.85) < 1e-9
     assert abs(mastery.spell_power_bonus(c, gd, "alteration") - 0.15) < 1e-9
-    # poison_charge:alchemy_50(2)+ alchemy_75(1)= 3
+    # poison_unlock:alchemy_50(weaken)+ alchemy_75(slow,+1延長)→ union 不遮蔽(R31)
     gd2, c2 = _char(alchemy=100)
     mastery.choose(c2, gd2, "alchemy_50", "toxin_master")
     mastery.choose(c2, gd2, "alchemy_75", "potent_poison")
-    assert mastery.poison_charge_bonus(c2, gd2) == 3
+    assert mastery.poison_unlocks(c2, gd2) == {"weaken", "slow"}
+    assert mastery.poison_duration_bonus(c2, gd2) == 1
     # evasion:acrobatics_50(0.04)+ acrobatics_75(0.05)= 0.09
     gd3, c3 = _char(acrobatics=100)
     mastery.choose(c3, gd3, "acrobatics_50", "tumbler")
@@ -1055,7 +1060,7 @@ def run():
     test_destruction_impact_staggers_on_hit()
     test_conjuration_summon_mods()
     test_alteration_stoneflesh_passive_armor()
-    test_alchemy_potion_potency_and_poison_charges()
+    test_alchemy_potion_potency_and_poison_unlocks()
     test_mysticism_enchant_potency_and_absorb()
     test_illusion_fear_on_hit_and_merchant()
     test_restoration_steadfast_regen_on_low()

@@ -16,7 +16,9 @@ from tesrpg.systems import inventory, progression
 BREW_FAIL_FACTOR = 0.5   # 沒煉成(無共通效果)只學到一半的 practice 成效
 
 RESTORATIVE = {"heal", "restore_magicka", "restore_fatigue"}
-HARMFUL = {"paralyze", "damage_health"}      # 麻痺優先於毒傷
+# 有害效果(文件用;實際路由見 brew 的字串分支)。優先序:麻痺>懼意>遲緩>衰減>持續傷害。
+# 特殊毒型(fear/slow/damage_strength)需里程碑解鎖(R31),否則退回 damage_health DoT。
+HARMFUL = {"paralyze", "fear", "slow", "damage_strength", "damage_health"}
 POTION_BUFF_BASE_HOURS = 2   # 限時增益藥水基礎時長(× factor 隨煉金/濃縮縮放),見 R30
 
 
@@ -56,15 +58,32 @@ def brew(char: Character, gamedata: GameData, ing_a: str, ing_b: str, rng: RNG) 
     from tesrpg.systems import mastery
     factor = (0.6 + char.skill("alchemy") / 100.0) * (1 + mastery.potion_potency(char, gamedata))  # 「濃縮萃取」
     events = progression.use_skill(char, gamedata, "alchemy", xp)
+    sk = char.skill("alchemy")
+    unlocked = mastery.poison_unlocks(char, gamedata)        # 里程碑解鎖的特殊毒型(weaken/slow/fear)
+    dur_bonus = mastery.poison_duration_bonus(char, gamedata)  # 「劇毒淬煉」毒效延長回合
 
-    # 有害共通效果 → 毒藥(麻痺優先,其次毒傷);否則 → 恢復藥水
+    def _pct(k):   # 衰毒/遲緩毒百分比:材料量值輕度隨煉金縮放,夾 10..35
+        return max(10, min(35, round((eff_a[k] + eff_b[k]) / 2.0 * (0.5 + sk / 200.0))))
+
+    # 有害共通效果 → 毒藥。優先序:麻痺 > 懼意 > 遲緩 > 衰減 > 持續傷害(特殊毒型需里程碑解鎖,
+    # 否則因特殊材料皆兼具 damage_health → 自然退回基礎 DoT,材料永不淪為死內容)。
     if "paralyze" in shared:
-        turns = max(1, min(3, 1 + char.skill("alchemy") // 50))
+        turns = max(1, min(3, 1 + sk // 50))
         item_id = synth.poison_id("paralyze", turns)
+        result_kind = "poison"
+    elif "fear" in shared and "fear" in unlocked:
+        turns = max(1, min(2, 1 + sk // 60))
+        item_id = synth.poison_id("fear", turns)
+        result_kind = "poison"
+    elif "slow" in shared and "slow" in unlocked:
+        item_id = synth.poison_id("slow", _pct("slow"), 2 + dur_bonus)
+        result_kind = "poison"
+    elif "damage_strength" in shared and "weaken" in unlocked:
+        item_id = synth.poison_id("weaken", _pct("damage_strength"), 2 + dur_bonus)
         result_kind = "poison"
     elif "damage_health" in shared:
         per_turn = max(1, round((eff_a["damage_health"] + eff_b["damage_health"]) / 2.0 * factor))
-        item_id = synth.poison_id("dot", per_turn, 3)
+        item_id = synth.poison_id("dot", per_turn, 3 + dur_bonus)
         result_kind = "poison"
     else:
         # 有益共通效果:限時增益(強化屬性/技能/抗元素)優先於即時回復藥水

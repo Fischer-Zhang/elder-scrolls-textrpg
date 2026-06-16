@@ -68,8 +68,8 @@
 
   {"id": "alchemy_75", "skill": "alchemy", "threshold": 75,
    "options": [
-     {"opt_id": "potent_poison", "name": "劇毒淬煉", "kind": "poison_charge_bonus", "charge_bonus": 1,
-      "desc": "塗毒大師:每次塗毒可多附著 1 次攻擊。"},
+     {"opt_id": "potent_poison", "name": "劇毒淬煉", "kind": "poison_unlock", "families": ["slow"], "duration_bonus": 1,
+      "desc": "毒性綿長:習得萃取『遲緩毒』(降敵先攻/命中),且你一切毒效延長 1 回合。"},
      {"opt_id": "concentrated", "name": "濃縮萃取", "kind": "potion_potency", "potency_bonus": 0.20,
       "desc": "煉金宗師:你調製的藥水與毒藥效力 +20%。"}
    ]},
@@ -308,8 +308,8 @@
 
   {"id": "alchemy_50", "skill": "alchemy", "threshold": 50,
    "options": [
-     {"opt_id": "toxin_master", "name": "淬毒名家", "kind": "poison_charge_bonus", "charge_bonus": 2,
-      "desc": "塗毒更耐用:武器塗毒可用次數 +2。"},
+     {"opt_id": "toxin_master", "name": "淬毒名家", "kind": "poison_unlock", "families": ["weaken"],
+      "desc": "淬毒名家:習得萃取『衰毒』—— 命中削弱敵之攻勢(數回合內敵傷害下降)。"},
      {"opt_id": "field_brewer", "name": "案前苦工", "kind": "attr_fortify", "attr": {"intelligence": 4},
       "desc": "案前苦工磨出靈思(智力 +4 → 魔力上限提升、煉金更精)。"}
    ]},
@@ -421,8 +421,8 @@
    ]},
 
   {"id": "alchemy_100", "skill": "alchemy", "threshold": 100, "options": [
-     {"opt_id": "venom_lord", "name": "百毒宗師", "kind": "poison_charge_bonus", "charge_bonus": 1,
-      "desc": "煉金登峰:塗毒附著更持久(武器塗毒可多用 1 次,多源相加)。"},
+     {"opt_id": "venom_lord", "name": "百毒宗師", "kind": "poison_unlock", "families": ["fear"],
+      "desc": "百毒宗師:習得萃取『懼毒』—— 命中令敵陷入驚懼、短暫失能(solo BOSS 免疫)。"},
      {"opt_id": "sage_mind", "name": "通玄之智", "kind": "attr_fortify", "attr": {"intelligence": 5},
       "desc": "窮究藥理的靈思(智力 +5 → 魔力上限/煉金更精)。"}
    ]},

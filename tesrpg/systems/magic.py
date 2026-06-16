@@ -24,7 +24,7 @@ _EMPTY_BY_TIER = {1: "empty_petty_soul_gem", 2: "empty_lesser_soul_gem", 3: "emp
                   4: "empty_greater_soul_gem", 5: "empty_grand_soul_gem"}
 BLACK_SOUL_INFAMY = 2                                 # 囚禁有靈之魂=黑暗之舉,小幅惡名
 # 秘術「驅散」可淨化的不良效果(只清控場/侵蝕,不動護盾/再生/結界/灌注等增益)
-_DISPELLABLE = ("fear", "paralyze", "dot", "weaken", "stagger")
+_DISPELLABLE = ("fear", "paralyze", "dot", "weaken", "stagger", "slow")
 # 亡者復生:起出的屍體是「虛弱化的亡魂」→ 以原 HP 的此比例復生(避免滿血復生高 HP 精英遠超召喚物階)
 REANIMATE_HP_FACTOR = 0.6
 
@@ -408,6 +408,18 @@ def is_staggered(creature) -> bool:
     return any(e["kind"] == "stagger" and e["turns"] > 0 for e in creature.active_effects)
 
 
+def is_slowed(creature) -> bool:
+    """中毒遲緩(R31 遲緩毒):降先攻 + 命中(非失能,仍會行動)。"""
+    return any(e["kind"] == "slow" and e["turns"] > 0 for e in creature.active_effects)
+
+
+def slow_factor(creature) -> float:
+    """遲緩減速比例(多個遲緩取最強,非相加;夾 0..0.6 防鎖死)。"""
+    mag = max((e["magnitude"] for e in creature.active_effects
+               if e["kind"] == "slow" and e["turns"] > 0), default=0.0)
+    return max(0.0, min(0.6, mag))
+
+
 def is_incapacitated(creature) -> bool:
     """恐懼或麻痺 → 本回合無法行動。"""
     return is_feared(creature) or is_paralyzed(creature)
@@ -537,6 +549,14 @@ def tick_effects(entity, gamedata=None) -> list[str]:
                 msgs.append("束縛兵刃消散了。")
             elif e["kind"] == "paralyze":
                 msgs.append(f"{name}從麻痺中恢復。")
+            elif e["kind"] == "fear":
+                msgs.append(f"{name}自驚懼中回神。")
+            elif e["kind"] == "slow":
+                msgs.append(f"{name}體內的遲緩毒素消退。")
+            elif e["kind"] == "weaken":
+                msgs.append(f"{name}的攻勢恢復了氣力。")
+            elif e["kind"] == "stagger":
+                msgs.append(f"{name}重整了陣腳。")
     return msgs
 
 

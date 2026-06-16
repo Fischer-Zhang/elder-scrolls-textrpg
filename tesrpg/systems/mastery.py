@@ -46,6 +46,8 @@ _IMPLEMENTED_KINDS = {
     # 被動護甲、煉金/附魔增幅、塗毒次數、命中懼意、低血再生、商貿議價。
     "spell_mod", "summon_mod", "passive_armor", "potion_potency", "poison_charge_bonus",
     "enchant_potency", "fear_on_hit", "regen_on_low", "merchant_bonus",
+    "poison_unlock",   # 煉金深化(R31):解鎖特殊毒型家族(weaken/slow/fear)+ 毒效延長
+
     # P4 潛行系:閃避、隱遁下限、偷襲倍率(刺客 apex,受 >3 敵反制)、連環隱遁(無重複遞減)、
     # 潛近頻率、輕甲潛行減噪、偵查備戰、弱點揭露門檻、開鎖器不折、補貨量、威嚇下限。
     "vanish_unlock",   # 潛行 25:解鎖戰中隱遁(單一 perk 自動授予;gate 走 has_vanish=門檻已達)
@@ -294,9 +296,23 @@ def potion_potency(char, gamedata: GameData) -> float:
 
 
 def poison_charge_bonus(char, gamedata: GameData) -> int:
-    """劇毒淬煉/淬毒名家:塗毒可附著的額外攻擊次數(多來源 alchemy_50+75 相加)。"""
+    """塗毒入門等:塗毒可附著的額外攻擊次數(多來源相加)。"""
     return int(sum(o.get("charge_bonus", 0)
                    for o in _chosen_options_by_kind(char, gamedata, "poison_charge_bonus")))
+
+
+def poison_unlocks(char, gamedata: GameData) -> set:
+    """煉金里程碑解鎖的特殊毒型家族(weaken/slow/fear)。DoT + 麻痺為基礎,永遠可釀,不需解鎖。"""
+    fams: set = set()
+    for o in _chosen_options_by_kind(char, gamedata, "poison_unlock"):
+        fams.update(o.get("families", []))
+    return fams
+
+
+def poison_duration_bonus(char, gamedata: GameData) -> int:
+    """毒效延長回合數(「劇毒淬煉」等,多來源相加)。"""
+    return int(sum(o.get("duration_bonus", 0)
+                   for o in _chosen_options_by_kind(char, gamedata, "poison_unlock")))
 
 
 def enchant_potency(char, gamedata: GameData) -> float:

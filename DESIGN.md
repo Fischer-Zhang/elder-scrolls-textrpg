@@ -224,7 +224,7 @@ SLG/
 ## 8. 之後可擴充(非當前範圍)
 - ✅ ~~事件引擎(3.8)~~ **已於 M7 實作**:`data/events.json`(15 事件)+ `systems/events.py`,在旅行/休息/探索/抵達依情境權重抽事件,選項含技能判定與需求閘門,效果複用既有系統(金幣/物品/技能/聲望/賞金/任務/戰鬥)。
 - ✅ **戰鬥戰術縱深(M8)**:元素抗性/弱點(`systems/formulas.resist_multiplier`,種族+怪物 resist)、狀態效果(DoT/麻痺/再生,`magic.tick_effects`)、出生星座每日能力(`systems/powers.py`)。讓元素、種族、星座在戰鬥中真正有差別。
-- ✅ **煉金毒藥與武器塗毒(M9)**:有害材料共通效果 → 毒藥(`alchemy.brew` 分流、`synth` 的 `psn|` 物品),`inventory.coat_weapon` 把毒塗上武器,命中即施加 DoT/麻痺狀態(吃毒素抗性)。潛行/煉金流派的戰術回報。
+- ✅ **煉金毒藥與武器塗毒(M9)**:有害材料共通效果 → 毒藥(`alchemy.brew` 分流、`synth` 的 `psn|` 物品),`inventory.coat_weapon` 把毒塗上武器,命中即施加 DoT/麻痺狀態(吃毒素抗性)。潛行/煉金流派的戰術回報。**深化 Phase 2(R31)**:擴為五毒型(+衰毒/遲緩/懼毒,特殊型由里程碑解鎖),修正塗毒對 solo BOSS 的控制免疫缺口。
 - ✅ **多階段任務 + 公會精英任務線(M10)**:`quests.py` 支援 `stages`(逐階段目標),三大公會補齊晉升任務線一路登頂(會長/首席法師/大師竊賊),壓軸任務為多階段劇情線。
 - ✅ **介面打磨(M11)**:資料驅動的 Tamriel 世界地圖(`ui.world_map`,行省樹狀總覽 + 路線耗時)、hub 主選單分組(`ui.grouped_menu`,五大分類連續編號)。
 - ✅ **多敵 + 團隊戰鬥(M12)**:`run_battle` 重寫為階段制群戰(玩家+同伴 vs 多敵),`resolve_attack` 通用於所有戰鬥單位;召喚物為真實我方單位、旅店可雇用傭兵同伴(`companions.json`,`Character.companions`)。群戰危險、隊伍是解法。

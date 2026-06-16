@@ -191,6 +191,7 @@ DODGE_EVASION_SCALE = 0.0025   # 雜技閃避係數(acrobatics 100 → 敵人命
 
 # --- 暗殺殘響(偷襲命中但沒秒殺 → alpha strike 仍留下實質後果)------------
 STAGGER_HIT_PENALTY = 0.30   # 陣腳大亂的單位攻擊命中減成(命中-0.30,給刺客喘息窗)
+SLOW_HIT_PENALTY = 0.15      # 遲緩毒(R31):中毒遲緩單位命中減成(較踉蹌輕,因另降先攻)
 SNEAK_BLEED_BASE = 2         # 撕裂傷每回合基礎傷害
 SNEAK_BLEED_PER_SNEAK = 25   # 每 25 點潛行 → 撕裂傷 +1
 SNEAK_BLEED_PER_ALCHEMY = 40  # 每 40 點煉金 → 撕裂傷 +1(刺客主修,learn-by-doing)

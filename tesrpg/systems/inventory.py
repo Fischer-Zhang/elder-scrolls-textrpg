@@ -237,7 +237,15 @@ def coat_weapon(char: Character, gamedata: GameData, poison_id: str) -> bool:
     if d.get("kind") != "poison" or count_item(char, poison_id) <= 0 or char.weapon == "fists":
         return False
     from tesrpg.systems import mastery
-    charges = poison_charges(char) + mastery.poison_charge_bonus(char, gamedata)   # 「劇毒淬煉」+1 次
+    base = poison_charges(char) + mastery.poison_charge_bonus(char, gamedata)   # 「淬毒名家/塗毒入門」+次數
+    # 依毒型強度調節塗層次數(R31):控制型(麻痺/懼意)塗層少、遲緩居中、DoT/衰減全額,防控場過載
+    fam = d["poison"].get("status")
+    if fam in ("paralyze", "fear"):
+        charges = max(1, base // 2 + 1)
+    elif fam == "slow":
+        charges = max(1, base - 1)
+    else:                                  # dot / weaken
+        charges = base
     char.weapon_poison = {"status": d["poison"], "charges": charges, "name": d["name"]}
     remove_item(char, poison_id, 1)
     return True

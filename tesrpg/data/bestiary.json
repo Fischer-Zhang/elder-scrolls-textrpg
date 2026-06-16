@@ -654,7 +654,7 @@
     "attack": {"name": "嗜血撕咬", "damage": 12, "skill": 50, "infect": 0.3},
     "resist": {"frost": 50, "poison": 50, "fire": -25},
     "loot_gold": [8, 24],
-    "loot": [{"item": "silver_ring", "chance": 0.15}, {"item": "minor_healing_potion", "chance": 0.2}, {"item": "filled_lesser_soul_gem", "chance": 0.1}],
+    "loot": [{"item": "silver_ring", "chance": 0.15}, {"item": "minor_healing_potion", "chance": 0.2}, {"item": "filled_lesser_soul_gem", "chance": 0.1}, {"item": "vampire_dust", "chance": 0.45}],
     "flavor": "一個面色慘白的身影自暗處欺近,獠牙在月光下泛著寒光:「你的血,聞起來真甜。」"
   },
   "vampire_lord": {"sentient": true, 
@@ -927,7 +927,7 @@
     "danger": 5, "min_level": 99, "weight": 0,
     "resist": {"frost": 30, "poison": 50},
     "loot_gold": [80, 160],
-    "loot": [{"item": "gold_amulet", "chance": 0.35}, {"item": "filled_greater_soul_gem", "chance": 0.3}],
+    "loot": [{"item": "gold_amulet", "chance": 0.35}, {"item": "filled_greater_soul_gem", "chance": 0.3}, {"item": "vampire_dust", "chance": 0.5}],
     "flavor": "盤踞古堡、操弄死亡的吸血鬼宗主,夜夜獵取活人的血。聖光之下,他終須償還那些被奪走的性命。"
   },
   "fallen_knight": {"sentient": true, 
@@ -1139,7 +1139,7 @@
     "danger": 4, "min_level": 6, "weight": 3,
     "resist": {"poison": 100, "frost": 25, "fire": -50},
     "loot_gold": [6, 18],
-    "loot": [{"item": "glow_dust", "chance": 0.4}, {"item": "filled_lesser_soul_gem", "chance": 0.25}],
+    "loot": [{"item": "glow_dust", "chance": 0.4}, {"item": "filled_lesser_soul_gem", "chance": 0.25}, {"item": "spider_egg", "chance": 0.4}],
     "flavor": "蛛網震顫,一頭犬隻大小的叢林巨蛛自樹影間竄下,毒牙間垂著黏稠的綠絲。"
   },
   "spriggan_matriarch": {

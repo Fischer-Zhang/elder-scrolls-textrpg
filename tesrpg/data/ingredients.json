@@ -184,6 +184,18 @@
       {
         "kind": "damage_health",
         "magnitude": 9
+      },
+      {
+        "kind": "damage_strength",
+        "magnitude": 20
+      },
+      {
+        "kind": "slow",
+        "magnitude": 25
+      },
+      {
+        "kind": "fear",
+        "magnitude": 1
       }
     ]
   },
@@ -199,6 +211,10 @@
       {
         "kind": "paralyze",
         "magnitude": 1
+      },
+      {
+        "kind": "damage_strength",
+        "magnitude": 20
       }
     ]
   },
@@ -244,6 +260,36 @@
       {
         "kind": "restore_magicka",
         "magnitude": 10
+      }
+    ]
+  },
+  "spider_egg": {
+    "name": "霜蛛卵",
+    "value": 5,
+    "weight": 0.2,
+    "effects": [
+      {
+        "kind": "damage_health",
+        "magnitude": 6
+      },
+      {
+        "kind": "slow",
+        "magnitude": 25
+      }
+    ]
+  },
+  "vampire_dust": {
+    "name": "吸血鬼塵",
+    "value": 7,
+    "weight": 0.1,
+    "effects": [
+      {
+        "kind": "damage_health",
+        "magnitude": 6
+      },
+      {
+        "kind": "fear",
+        "magnitude": 1
       }
     ]
   }

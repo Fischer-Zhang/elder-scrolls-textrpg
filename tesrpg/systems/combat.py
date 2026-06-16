@@ -164,7 +164,9 @@ def _strength(actor) -> int:
 
 
 def _speed(actor) -> int:
-    return actor.attr("speed") if _is_player(actor) else actor.speed
+    base = actor.attr("speed") if _is_player(actor) else actor.speed
+    sf = magic.slow_factor(actor)        # 遲緩毒(R31):降先攻(僅影響行動順序,不碰傷害)
+    return max(1, int(round(base * (1.0 - sf)))) if sf else base
 
 
 def _is_beast(actor) -> bool:
@@ -352,6 +354,8 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
         chance = max(0.05, min(0.95, chance + formulas.AIMED_SHOT_HIT))
     if magic.is_staggered(attacker):   # 暗殺殘響:陣腳大亂的單位本回合更難命中
         chance = max(0.05, chance - formulas.STAGGER_HIT_PENALTY)
+    if magic.is_slowed(attacker):      # 遲緩毒(R31):遲鈍 → 命中下降(疊踉蹌則更低,各自夾 0.05)
+        chance = max(0.05, chance - formulas.SLOW_HIT_PENALTY)
     if sneaking:
         chance = max(chance, formulas.SNEAK_ATTACK_HIT_FLOOR)
     skill_events: list[dict] = []
@@ -522,9 +526,17 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
         if (_is_player(attacker) and not beast and not bound
                 and attacker.weapon_poison and attacker.weapon_poison["charges"] > 0):
             wp = attacker.weapon_poison
-            defender.active_effects.append(magic.make_status_effect(wp["status"]))
-            poison_applied = wp["name"]
-            wp["charges"] -= 1
+            pk = wp["status"].get("status")
+            apply_it = True
+            if pk in ("paralyze", "fear"):
+                # 控制型毒(麻痺/懼意):solo BOSS 完全免疫(反鎖王紅線,比照附魔麻痺);已有同效不重複
+                apply_it = (not _is_solo(defender, gamedata)
+                            and not any(e["kind"] == pk and e["turns"] > 0
+                                        for e in defender.active_effects))
+            if apply_it:
+                defender.active_effects.append(magic.make_status_effect(wp["status"]))
+                poison_applied = wp["name"]
+            wp["charges"] -= 1                       # 毒在接觸即耗(即使 solo 免疫 → 杜絕無限重試泵)
             if wp["charges"] <= 0:
                 attacker.weapon_poison = None
 

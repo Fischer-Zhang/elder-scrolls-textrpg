@@ -156,6 +156,18 @@ def synthesize(item_id: str, gamedata) -> dict:
             status = {"status": "dot", "element": "poison", "magnitude": a, "turns": b}
             name = f"毒藥(每回合 {a} 傷 × {b} 回合)"
             value = max(10, a * b * 3)
+        elif kind == "weaken":                              # a=攻勢削減百分比、b=回合(R31)
+            status = {"status": "weaken", "magnitude": a / 100.0, "turns": b}
+            name = f"衰毒(敵攻勢 −{a}% × {b} 回合)"
+            value = max(20, a * b)
+        elif kind == "slow":                                # a=遲緩百分比、b=回合
+            status = {"status": "slow", "magnitude": a / 100.0, "turns": b}
+            name = f"遲緩毒(先攻/命中 −{a}% × {b} 回合)"
+            value = max(20, a * b)
+        elif kind == "fear":                                # a=回合(b 未用)
+            status = {"status": "fear", "turns": a}
+            name = f"懼毒({a} 回合)"
+            value = max(25, a * 35)
         else:  # paralyze
             status = {"status": "paralyze", "turns": a}
             name = f"麻痺毒({a} 回合)"
