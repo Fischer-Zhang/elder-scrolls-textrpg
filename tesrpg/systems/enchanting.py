@@ -7,7 +7,7 @@
 
 from __future__ import annotations
 
-from tesrpg import synth
+from tesrpg import formulas, synth
 from tesrpg.gamedata import GameData
 from tesrpg.models import Character
 from tesrpg.systems import inventory, progression
@@ -21,12 +21,38 @@ JEWELRY_KINDS = [("skill", "強化技能"), ("attr", "強化屬性"),
                  ("resist", "抗元素"), ("res", "強化最大資源")]
 # 護甲附魔型別(刻意不含 attr:屬性 fortify 最強、會疊乘衍生資源,留給飾品 3 槽)
 ARMOR_KINDS = [("res", "強化最大資源"), ("skill", "強化技能"), ("resist", "抗元素")]
-# 武器命中觸發附魔型別
-WEAPON_STATUS_KINDS = [("vampiric", "吸血"), ("paralyze", "麻痺"), ("regen", "再生")]
+# 武器命中觸發附魔型別(供 UI 分家族;見 main.action_enchant)
+WEAPON_DOT_KINDS = [("burn", "焚燒(火 · 持續傷)"), ("chill", "凍緩(霜 · 持續傷+減敵)"),
+                    ("jolt", "感電(電 · 持續傷+燒魔)")]
+WEAPON_ABSORB_KINDS = [("absorb_health", "吸取生命"), ("absorb_magicka", "吸取魔力"),
+                       ("absorb_fatigue", "吸取體力")]
+WEAPON_TRIGGER_KINDS = [("vampiric", "吸血"), ("regen", "再生"),
+                        ("paralyze", "麻痺(充能)"), ("soul_trap", "命中擒魂(充能)")]
+WEAPON_STATUS_KINDS = [("vampiric", "吸血"), ("paralyze", "麻痺"), ("regen", "再生")]   # 保留:舊參照
+
+_DOT_STATUSES = ("burn", "chill", "jolt")
+_ABSORB_STATUSES = ("absorb_health", "absorb_magicka", "absorb_fatigue")
+_CHARGE_STATUSES = ("soul_trap", "paralyze")            # 容量型:魂石→充能電池(mag=容量)
+_WEAPON_STATUSES = ("vampiric", "regen") + _CHARGE_STATUSES + _DOT_STATUSES + _ABSORB_STATUSES
 
 
 def filled_soul_gems(char: Character, gamedata: GameData) -> list[str]:
     return [s["id"] for s in char.inventory if gamedata.item(s["id"]).get("kind") == "soul_gem"]
+
+
+def chargeable_weapons(char: Character, gamedata: GameData) -> list[str]:
+    """背包中「充能型」附魔武器(命中擒魂 / 麻痺,容量 > 0)的去重 id 清單(供靈魂石回充)。"""
+    out, seen = [], set()
+    for s in char.inventory:
+        iid = s["id"]
+        if iid in seen:
+            continue
+        seen.add(iid)
+        ench = (gamedata.item_or_none(iid) or {}).get("enchant")
+        if (ench and ench.get("kind") == "weapon_status"
+                and ench.get("status") in _CHARGE_STATUSES and int(ench.get("magnitude", 0)) > 0):
+            out.append(iid)
+    return out
 
 
 def enchantable_weapons(char: Character, gamedata: GameData) -> list[str]:
@@ -145,29 +171,44 @@ def enchant_armor(char: Character, gamedata: GameData, base_armor: str,
             "item_id": item_id, "hours": hours, "tired": tired, "skill_events": events}
 
 
+def weapon_status_magnitude(status: str, soul: int, mysticism_skill: int, pot: float = 1.0) -> tuple[int, int]:
+    """各命中觸發附魔的 (magnitude, turns)。
+    容量型(soul_trap/paralyze)magnitude = 充能電池容量(魂石→電池);DoT/吸取/吸血/再生 = 效果強度。"""
+    base = soul * (0.6 + mysticism_skill / 100.0) * pot
+    if status == "paralyze":
+        return max(1, round(base * formulas.CHARGE_PER_SOUL)), 1          # 容量;1 回合麻痺、solo 免疫紅線不動
+    if status == "soul_trap":
+        return max(1, round(base * formulas.CHARGE_PER_SOUL)), formulas.WEAPON_SOULTRAP_TURNS  # 容量
+    if status in _DOT_STATUSES:
+        return max(1, round(base * formulas.WEAPON_DOT_FACTOR)), formulas.WEAPON_DOT_TURNS
+    if status in _ABSORB_STATUSES:
+        return max(1, round(base * formulas.WEAPON_ABSORB_FACTOR)), 0
+    if status == "regen":
+        return max(1, round(base * 1.5)), 3
+    return max(1, round(base * 1.5)), 0                                   # vampiric:每擊回血
+
+
 def enchant_weapon_status(char: Character, gamedata: GameData, base_weapon: str,
                           status: str, gem_id: str) -> dict:
-    """以靈魂石為武器附上「命中觸發狀態」:吸血(vampiric)/麻痺(paralyze)/再生(regen)。
-    回傳同 enchant_weapon。麻痺數值固定(只看 proc/turns 常數),吸血/再生隨魂石+祕術。"""
+    """以靈魂石為武器附上「命中觸發」效果:元素 DoT(burn/chill/jolt)/吸取(absorb_*)/
+    吸血(vampiric)/再生(regen)/麻痺(paralyze)/命中擒魂(soul_trap)。回傳同 enchant_weapon。
+    充能型(soul_trap/paralyze)以魂石定電池容量(mag),並初始化 char.enchant_charges。"""
     if inventory.count_item(char, base_weapon) < 1 or inventory.count_item(char, gem_id) < 1:
         return {"ok": False, "message": "缺少武器或靈魂石。", "hours": 0, "tired": False, "skill_events": []}
-    if status not in ("vampiric", "paralyze", "regen"):
-        return {"ok": False, "message": "未知的觸發狀態。", "hours": 0, "tired": False, "skill_events": []}
+    if status not in _WEAPON_STATUSES:
+        return {"ok": False, "message": "未知的觸發效果。", "hours": 0, "tired": False, "skill_events": []}
 
     soul = gamedata.item(gem_id).get("soul", 1)
     from tesrpg.systems import mastery
     pot = 1 + mastery.enchant_potency(char, gamedata)
-    if status == "paralyze":
-        mag, turns = 0, 1                                  # 1 回合(反鎖王);proc 固定常數
-    elif status == "regen":
-        mag, turns = max(1, round(soul * 1.5 * (0.6 + char.skill("mysticism") / 100.0) * pot)), 3
-    else:  # vampiric:每擊回血,turns 不用
-        mag, turns = max(1, round(soul * 1.5 * (0.6 + char.skill("mysticism") / 100.0) * pot)), 0
+    mag, turns = weapon_status_magnitude(status, soul, char.skill("mysticism"), pot)
 
     inventory.remove_item(char, base_weapon, 1)
     inventory.remove_item(char, gem_id, 1)
     item_id = synth.enchant_weapon_status_id(base_weapon, status, mag, turns)
     inventory.add_item(char, item_id, 1)
+    if status in _CHARGE_STATUSES:                         # 充能型:電池初始化為容量
+        char.enchant_charges[item_id] = mag
     xp, hours, tired = progression.practice_cost(char, gamedata, "mysticism")
     events = progression.use_skill(char, gamedata, "mysticism", xp)
     return {"ok": True, "message": f"靈魂石碎裂,{gamedata.item(item_id)['name']} 完成了!",

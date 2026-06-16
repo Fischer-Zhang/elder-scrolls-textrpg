@@ -518,8 +518,8 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
             # 主手 + 副手(雙持)的命中觸發附魔:副手以 OFFHAND_DAMAGE_FACTOR 權重疊加。
             # 吸血累計成總比例後一次回血;再生以 source 去重(主手優先);麻痺各自獨立擲一次(binary 不打折,solo 仍免疫)。
             heal_frac = 0.0
-            for hench, w in ((gamedata.item(attacker.weapon).get("enchant"), 1.0),
-                             (offhand_ench, formulas.OFFHAND_DAMAGE_FACTOR)):
+            for hench, w, wid in ((gamedata.item(attacker.weapon).get("enchant"), 1.0, attacker.weapon),
+                                  (offhand_ench, formulas.OFFHAND_DAMAGE_FACTOR, attacker.offhand)):
                 if not (hench and hench.get("kind") == "weapon_status"
                         and rng.chance(hench.get("chance", 1.0))):
                     continue
@@ -533,13 +533,60 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
                         attacker.active_effects.append(
                             {"kind": "regen", "magnitude": int(round(hench.get("magnitude", 0) * w)),
                              "turns": hench.get("turns", 0), "source": "ench_regen"})
+                elif st in ("burn", "chill", "jolt") and is_alive(defender):
+                    # 元素 DoT:逐回合吃抗性(magic.tick_effects);命中刷新取 max(免疊爆)
+                    element = hench.get("element", "fire")
+                    mag = max(1, int(round(hench.get("magnitude", 0) * w)))
+                    turns = hench.get("turns", formulas.WEAPON_DOT_TURNS)
+                    existing = next((e for e in defender.active_effects
+                                     if e.get("kind") == "dot" and e.get("source") == "ench_dot"
+                                     and e.get("element") == element), None)
+                    if existing:
+                        existing["turns"] = max(existing.get("turns", 0), turns)
+                        existing["magnitude"] = max(existing.get("magnitude", 0), mag)
+                    else:
+                        defender.active_effects.append({"kind": "dot", "element": element, "magnitude": mag,
+                                                        "turns": turns, "source": "ench_dot"})
+                    if st == "chill":                         # 凍緩 rider:減敵輸出
+                        defender.active_effects.append({"kind": "weaken",
+                                                        "magnitude": formulas.WEAPON_CHILL_WEAKEN, "turns": 2})
+                    elif st == "jolt":                        # 感電 rider:燒魔 + 機率踉蹌
+                        if getattr(defender, "magicka", 0) > 0:
+                            defender.magicka = max(0, defender.magicka - formulas.WEAPON_JOLT_MAGICKA)
+                        if rng.chance(formulas.WEAPON_JOLT_STAGGER):
+                            defender.active_effects.append({"kind": "stagger", "turns": 1})
+                elif st in ("absorb_health", "absorb_magicka", "absorb_fatigue"):
+                    # 命中吸取:回攻擊者資源;吸取生命另扣目標(solo boss 受夾,杜絕無限回血泵)
+                    stat = st.split("_", 1)[1]
+                    amt = max(1, int(round(hench.get("magnitude", 0) * w)))
+                    if stat == "health":
+                        if _is_solo(defender, gamedata):
+                            amt = max(1, int(round(amt * formulas.WEAPON_ABSORB_SOLO_FACTOR)))
+                        if is_alive(defender):
+                            _set_hp(defender, _get_hp(defender) - amt)
+                    cur = getattr(attacker, stat, 0)
+                    setattr(attacker, stat, min(getattr(attacker, "max_" + stat, cur), cur + amt))
+                elif st == "soul_trap" and is_alive(defender):
+                    # 命中擒魂(充能型):已擒中不重複扣;cap=0 為 legacy 無限。發魂在勝利結算(Phase 2)
+                    cap = int(hench.get("magnitude", 0))
+                    charges = getattr(attacker, "enchant_charges", {})
+                    if not magic.has_soul_trap(defender) and (cap <= 0 or charges.get(wid, cap) > 0):
+                        defender.active_effects.append(
+                            {"kind": "soul_trap", "turns": hench.get("turns", formulas.WEAPON_SOULTRAP_TURNS)})
+                        if cap > 0:
+                            charges[wid] = max(0, charges.get(wid, cap) - 1)
                 elif st == "paralyze" and is_alive(defender):
-                    # solo BOSS 完全免疫附魔麻痺(反鎖王作弊,比照偷襲秒殺夾限);已麻痺中不重複套
+                    # solo BOSS 完全免疫附魔麻痺(反鎖王紅線);已麻痺不重複;充能型扣一格(cap=0 legacy 無限)
                     if (not _is_solo(defender, gamedata)
                             and not any(e["kind"] == "paralyze" and e["turns"] > 0
                                         for e in defender.active_effects)):
-                        defender.active_effects.append({"kind": "paralyze", "turns": hench.get("turns", 1)})
-                        status_applied = status_applied or "paralyze"
+                        cap = int(hench.get("magnitude", 0))
+                        charges = getattr(attacker, "enchant_charges", {})
+                        if cap <= 0 or charges.get(wid, cap) > 0:
+                            defender.active_effects.append({"kind": "paralyze", "turns": hench.get("turns", 1)})
+                            if cap > 0:
+                                charges[wid] = max(0, charges.get(wid, cap) - 1)
+                            status_applied = status_applied or "paralyze"
             if heal_frac > 0:   # 雙持雙吸血 → 0.30 + 0.30×0.6 = 0.48(回血夾在本擊傷害內,不超過造成傷害)
                 heal = min(int(round(dmg_done * heal_frac)), dmg_done)
                 before = attacker.health

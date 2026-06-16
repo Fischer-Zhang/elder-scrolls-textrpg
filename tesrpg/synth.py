@@ -83,20 +83,31 @@ def _armor_enchant(kind: str, param: str, mag: int, gamedata) -> tuple[dict, str
 
 
 _WEAPON_STATUS_NAME = {"vampiric": "吸血", "paralyze": "麻痺", "regen": "再生"}
+_DOT_ELEMENT = {"burn": "fire", "chill": "frost", "jolt": "shock"}
+_DOT_NAME = {"burn": "焚燒", "chill": "凍緩", "jolt": "感電"}
+_ABSORB_NAME = {"absorb_health": "吸取生命", "absorb_magicka": "吸取魔力", "absorb_fatigue": "吸取體力"}
 
 
 def _weapon_status_enchant(status: str, mag: int, turns: int) -> tuple[dict, str]:
     """武器命中觸發附魔效果 dict 與標籤。chance 為固定平衡常數(不入 id):
-    vampiric/regen 必觸發、paralyze 低機率;solo boss 對麻痺免疫(在 combat 裁決)。"""
+    DoT/吸取/吸血/再生/擒魂 必觸發、paralyze 低機率;充能型(soul_trap/paralyze)mag=電池容量。
+    solo boss 對麻痺免疫(在 combat 裁決)。"""
     chance = formulas.WEAPON_PARALYZE_PROC if status == "paralyze" else 1.0
     ench = {"kind": "weapon_status", "status": status,
             "magnitude": mag, "turns": turns, "chance": chance}
-    if status == "vampiric":
+    if status in _DOT_ELEMENT:                          # 元素 DoT(rider 在 combat 結算)
+        ench["element"] = _DOT_ELEMENT[status]
+        label = f"{_DOT_NAME[status]}(每回合 {mag} × {turns} 回合)"
+    elif status in _ABSORB_NAME:                        # 命中吸取
+        label = f"{_ABSORB_NAME[status]}(命中 +{mag})"
+    elif status == "soul_trap":                         # 命中擒魂(充能型)
+        label = f"命中擒魂(充能 {mag})" if mag > 0 else "命中擒魂"
+    elif status == "vampiric":
         label = f"吸血(造成傷害 {int(formulas.WEAPON_VAMPIRIC_FRACTION * 100)}% 回血)"
     elif status == "regen":
         label = f"再生(命中 +{mag}×{turns} 回合)"
-    else:  # paralyze
-        label = "麻痺(命中機率觸發)"
+    else:  # paralyze(充能型;舊式 mag=0 為 legacy 無限)
+        label = f"麻痺(命中觸發 · 充能 {mag})" if mag > 0 else "麻痺(命中機率觸發)"
     return ench, label
 
 
@@ -153,10 +164,12 @@ def synthesize(item_id: str, gamedata) -> dict:
         mag, turns = int(mag), int(turns)
         base_def = gamedata.weapons[base]
         ench, label = _weapon_status_enchant(status, mag, turns)
+        # 充能型(soul_trap/paralyze)mag=電池容量 → 固定加值不隨容量灌水;其餘按 mag/turns 計
+        val = base_def["value"] + (120 + turns * 10 if status in ("soul_trap", "paralyze")
+                                   else mag * 25 + turns * 10 + 40)
         return {**base_def, "kind": "weapon",
                 "name": f"{base_def['name']}（{label})",
-                "enchant": ench,
-                "value": base_def["value"] + mag * 25 + turns * 10 + 40}
+                "enchant": ench, "value": val}
 
     if tag == "enchj":
         _, base, kind, param, mag = parts

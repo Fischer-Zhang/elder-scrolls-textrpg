@@ -308,6 +308,76 @@ def test_armor_worn_weight_sums_armor_excludes_jewelry():
     assert inventory.worn_armor_rating(c, gd) <= 1           # 玻璃大砲:近乎零護甲
 
 
+def _ws_weapon(gd, status, soul=4, mys=50):
+    """以指定狀態/魂石階合成一把命中觸發附魔武器,回傳 (item_id, magnitude, turns)。"""
+    from tesrpg.synth import enchant_weapon_status_id
+    mag, turns = enchanting.weapon_status_magnitude(status, soul, mys)
+    return enchant_weapon_status_id("steel_sword", status, mag, turns), mag, turns
+
+
+def test_weapon_dot_absorb_soultrap_synth_roundtrip():
+    """新 enchws status:DoT 帶 element、吸取/擒魂/麻痺正確還原;充能型 mag=容量;舊 5 段相容。"""
+    gd, _ = _char()
+    iid, mag, _ = _ws_weapon(gd, "burn")
+    assert gd.item(iid)["enchant"] == {"kind": "weapon_status", "status": "burn",
+                                       "magnitude": mag, "turns": enchanting.formulas.WEAPON_DOT_TURNS,
+                                       "chance": 1.0, "element": "fire"}
+    assert gd.item(_ws_weapon(gd, "absorb_magicka")[0])["enchant"]["status"] == "absorb_magicka"
+    for st in ("soul_trap", "paralyze"):                  # 容量型:mag = soul×係數 > 0
+        iid, mag, _ = _ws_weapon(gd, st)
+        assert mag > 0 and gd.item(iid)["enchant"]["magnitude"] == mag
+    # 舊式 paralyze|0|1(legacy 無限)仍合法
+    assert gd.item("enchws|steel_sword|paralyze|0|1")["enchant"]["status"] == "paralyze"
+
+
+def test_weapon_soultrap_charge_deplete_and_recharge_gate():
+    """命中擒魂:enchant 初始化電池=容量;命中扣一格、已擒不重複;歸零不再觸發。"""
+    gd, c = _char()
+    c.skills["mysticism"] = 50
+    inventory.add_item(c, "steel_sword", 1)
+    inventory.add_item(c, "filled_greater_soul_gem", 1)    # soul 4
+    res = enchanting.enchant_weapon_status(c, gd, "steel_sword", "soul_trap", "filled_greater_soul_gem")
+    wid = res["item_id"]
+    cap = gd.item(wid)["enchant"]["magnitude"]
+    assert c.enchant_charges[wid] == cap                  # 電池初始化為容量
+    c.weapon = wid
+    foe = combat.spawn_creature(gd, "bandit", RNG(1)); foe.max_health = foe.health = 9999
+    for s in range(8):
+        combat.resolve_attack(c, foe, gd, RNG(s))
+    assert magic.has_soul_trap(foe)                        # 已擒中
+    assert c.enchant_charges[wid] == cap - 1               # 只扣一格(已擒不重複浪費)
+    # 歸零後不再觸發
+    c.enchant_charges[wid] = 0
+    foe2 = combat.spawn_creature(gd, "bandit", RNG(2)); foe2.max_health = foe2.health = 9999
+    for s in range(8):
+        combat.resolve_attack(c, foe2, gd, RNG(s))
+    assert not magic.has_soul_trap(foe2)                   # 無充能 → 不擒魂
+
+
+def test_weapon_absorb_restores_caster_resource():
+    """命中吸取魔力:回攻擊者魔力(夾上限)。"""
+    gd, c = _char()
+    c.skills["mysticism"] = 50
+    iid, mag, _ = _ws_weapon(gd, "absorb_magicka")
+    c.weapon = iid
+    c.magicka = 0
+    foe = combat.spawn_creature(gd, "bandit", RNG(1)); foe.max_health = foe.health = 9999
+    for s in range(6):
+        combat.resolve_attack(c, foe, gd, RNG(s))
+    assert c.magicka > 0                                   # 命中回魔
+
+
+def test_enchant_charges_save_roundtrip():
+    """enchant_charges 入檔且向後相容:舊檔無欄載入為空 dict。"""
+    from tesrpg.models.character import Character
+    gd, c = _char()
+    c.enchant_charges = {"enchws|steel_sword|soul_trap|22|3": 7}
+    d = c.to_dict()
+    assert Character.from_dict(d).enchant_charges == c.enchant_charges
+    d.pop("enchant_charges")
+    assert Character.from_dict(d).enchant_charges == {}
+
+
 def run():
     for name, fn in sorted(globals().items()):
         if name.startswith("test_") and callable(fn):

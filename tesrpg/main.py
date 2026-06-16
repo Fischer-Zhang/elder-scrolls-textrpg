@@ -2893,7 +2893,7 @@ def action_enchant(state: GameState, gamedata: GameData) -> None:
 
         kinds = []
         if weapons:
-            kinds.append(("weapon", "武器(元素傷害 / 命中觸發)"))
+            kinds.append(("weapon", "武器(元素 / DoT / 吸取 / 命中觸發)"))
         if armors:
             kinds.append(("armor", "護甲(強化資源 / 技能 / 抗性)"))
         if jewels:
@@ -2916,18 +2916,24 @@ def action_enchant(state: GameState, gamedata: GameData) -> None:
                           [(w, gamedata.item_name(w)) for w in weapons], allow_back=True)
             if wid is None:
                 return
-            wtype = ui.menu("附魔效果?", [("element", "元素傷害"),
-                                          ("status", "命中觸發(吸血 / 麻痺 / 再生)")], allow_back=True)
-            if wtype is None:
+            fam = ui.menu("附魔效果?", [
+                ("element", "元素傷害(即時)"),
+                ("dot", "元素持續(DoT + 異常)"),
+                ("absorb", "命中吸取(生命 / 魔力 / 體力)"),
+                ("trigger", "命中觸發(吸血 / 再生 / 麻痺 · 擒魂 · 充能)"),
+            ], allow_back=True)
+            if fam is None:
                 return
-            if wtype == "element":
+            if fam == "element":
                 elem = ui.menu("附上哪種元素?", [("fire", "烈焰"), ("frost", "冰霜"), ("shock", "雷電")],
                                allow_back=True)
                 if elem is None:
                     return
                 res = enchanting.enchant_weapon(char, gamedata, wid, elem, gem)
             else:
-                st = ui.menu("命中觸發什麼?", enchanting.WEAPON_STATUS_KINDS, allow_back=True)
+                st = ui.menu("選擇效果?",
+                             {"dot": enchanting.WEAPON_DOT_KINDS, "absorb": enchanting.WEAPON_ABSORB_KINDS,
+                              "trigger": enchanting.WEAPON_TRIGGER_KINDS}[fam], allow_back=True)
                 if st is None:
                     return
                 res = enchanting.enchant_weapon_status(char, gamedata, wid, st, gem)
@@ -3185,6 +3191,42 @@ def action_coat_weapon(state: GameState, gamedata: GameData) -> None:
     if inventory.coat_weapon(char, gamedata, pid):
         ui.message(f"你把{gamedata.item_name(pid)}抹上了{gamedata.item(char.weapon)['name']}的刃口。",
                    style="green")
+
+
+def action_recharge_enchant(state: GameState, gamedata: GameData) -> None:
+    """以靈魂石為「充能型」附魔武器(命中擒魂 / 麻痺)回充使用次數。"""
+    char = state.player
+    chargeable = enchanting.chargeable_weapons(char, gamedata)
+    if not chargeable:
+        ui.message("沒有可充能的附魔武器(命中擒魂 / 麻痺)。", style="grey70")
+        return
+    gems = enchanting.filled_soul_gems(char, gamedata)
+    if not gems:
+        ui.message("你沒有充能的靈魂石可灌注(用『擒魂術』擊殺取得)。", style="grey70")
+        return
+
+    def _cap(iid):
+        return int(gamedata.item(iid)["enchant"]["magnitude"])
+    wid = ui.menu("為哪把附魔武器充能?",
+                  [(iid, f"{gamedata.item_name(iid)}(充能 {char.enchant_charges.get(iid, _cap(iid))}/{_cap(iid)})")
+                   for iid in chargeable], allow_back=True)
+    if wid is None:
+        return
+    cap = _cap(wid)
+    if char.enchant_charges.get(wid, cap) >= cap:
+        ui.message("此武器充能已滿。", style="grey70")
+        return
+    gem = ui.menu("用哪顆靈魂石灌注?",
+                  [(g, f"{gamedata.item_name(g)}(靈魂 {gamedata.item(g)['soul']} → +"
+                       f"{gamedata.item(g)['soul'] * formulas.CHARGE_PER_SOUL} 充能)") for g in gems],
+                  allow_back=True)
+    if gem is None:
+        return
+    gain = gamedata.item(gem)["soul"] * formulas.CHARGE_PER_SOUL
+    inventory.remove_item(char, gem, 1)
+    char.enchant_charges[wid] = min(cap, char.enchant_charges.get(wid, cap) + gain)
+    ui.message(f"靈魂石碎裂,{gamedata.item_name(wid)} 重獲鋒芒(充能 {char.enchant_charges[wid]}/{cap})。",
+               style="bold green")
 
 
 # ======================================================================
@@ -3749,6 +3791,8 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
             craft.append(("coat", "塗毒"))
         if enchanting.filled_soul_gems(player, gamedata):
             craft.append(("enchant", "附魔"))
+            if enchanting.chargeable_weapons(player, gamedata):
+                craft.append(("recharge", "附魔充能"))
         # --- 角色與物品 ---
         character: list = [("quests", "任務日誌"), ("inventory", "背包"),
                            ("practice", "練習技能"), ("rest", "原地休息"), ("sheet", "角色卡")]
@@ -3851,6 +3895,8 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
             action_coat_weapon(state, gamedata)
         elif choice == "enchant":
             action_enchant(state, gamedata)
+        elif choice == "recharge":
+            action_recharge_enchant(state, gamedata)
         elif choice == "inventory":
             action_inventory(state, gamedata)
         elif choice == "practice":

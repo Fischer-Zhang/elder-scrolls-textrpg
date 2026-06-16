@@ -51,6 +51,7 @@ class Character:
     weapon: str = "fists"           # 目前裝備的武器 id(對應 data/weapons.json)
     offhand: str = ""               # 副手武器 id(僅雙持匕首用;"" = 無)
     weapon_poison: dict | None = None        # 武器塗毒 {"status","charges","name"};None=未塗
+    enchant_charges: dict = field(default_factory=dict)  # 充能型附魔 {item_id: 剩餘充能};命中擒魂/麻痺用,靈魂石回充(見 systems/enchanting)
     weapon_condition: float = 100.0          # 武器耐久 0–100(影響傷害)
     armor_condition: dict = field(default_factory=dict)  # {slot: 耐久 0–100}
     weapon_temper: dict = field(default_factory=dict)    # {weapon_id: 淬鍊級}(永久強化 → +傷害;鍛造)
@@ -242,7 +243,7 @@ class Character:
             "max_fatigue": self.max_fatigue,
             "health": self.health, "magicka": self.magicka, "fatigue": self.fatigue,
             "gold": self.gold, "weapon": self.weapon, "offhand": self.offhand,
-            "weapon_poison": self.weapon_poison,
+            "weapon_poison": self.weapon_poison, "enchant_charges": self.enchant_charges,
             "weapon_condition": self.weapon_condition, "armor_condition": self.armor_condition,
             "weapon_temper": self.weapon_temper, "armor_temper": self.armor_temper,
             "location_id": self.location_id,
