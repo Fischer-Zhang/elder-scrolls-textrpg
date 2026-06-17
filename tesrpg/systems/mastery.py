@@ -58,7 +58,7 @@ _IMPLEMENTED_KINDS = {
     # (warrior 盾牆 / knight 戰旗 為戰鬥動作,非里程碑 kind。)
     "cascade", "resonant_strike", "mana_on_hit", "triage_heal", "recon_reveal_floor", "deathmark",
     # 廣度 pass:運動逃跑加成、重甲反傷、安全解陷保底。
-    "flee_bonus", "armor_reflect", "trap_floor",
+    "flee_bonus", "armor_reflect", "armor_stagger", "combat_regen", "trap_floor",
 }
 
 
@@ -291,8 +291,19 @@ def passive_armor_bonus(char, gamedata: GameData) -> int:
 
 
 def potion_potency(char, gamedata: GameData) -> float:
-    """濃縮萃取:藥水/毒藥強度額外 ×(1+potency_bonus)。"""
-    return _param(char, gamedata, "potion_potency", "potency_bonus", 0.0)
+    """濃縮萃取/萬靈藥:藥水/毒藥強度額外 ×(1+potency_bonus);多節點相加(alchemy 75+100)。"""
+    return sum(o.get("potency_bonus", 0.0)
+               for o in _chosen_options_by_kind(char, gamedata, "potion_potency"))
+
+
+def armor_stagger(char, gamedata: GameData) -> float:
+    """重壓:被近戰物理擊中時,震開攻擊者(使其踉蹌)的機率(0 = 無)。"""
+    return _param(char, gamedata, "armor_stagger", "chance", 0.0)
+
+
+def combat_regen(char, gamedata: GameData) -> int:
+    """生生不息:戰鬥中每回合自癒的生命(0 = 無)。"""
+    return int(_param(char, gamedata, "combat_regen", "heal", 0))
 
 
 def poison_charge_bonus(char, gamedata: GameData) -> int:

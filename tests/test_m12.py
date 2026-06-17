@@ -97,6 +97,21 @@ def test_player_dies_to_overwhelming_group():
     assert main.run_battle(st, gd, enemies) == "dead"
 
 
+def test_combat_regen_does_not_revive_dead_player():
+    """回歸(對抗審查):生生不息(restoration_100 everflow)不得回血復活本回合被擊殺的玩家
+    (run_battle 回合末自癒須 is_alive 守,對齊 auto_resolve;否則每回合 0→8 復活 = 無限不死)。"""
+    from tesrpg.systems import mastery
+    gd = get_gamedata()
+    c = build_character(gd, name="V", sex="m", race="breton", birthsign="mage", class_id="mage")
+    c.skills["restoration"] = 100
+    mastery.choose(c, gd, "restoration_100", "everflow")
+    c.max_health = 10; c.health = 10
+    c.weapon = "iron_dagger"
+    st = _state(c, 7)
+    enemies = [combat.spawn_creature(gd, "bandit", RNG(i)) for i in range(3)]
+    assert main.run_battle(st, gd, enemies) == "dead"
+
+
 # --- 團隊 ---------------------------------------------------------------
 def test_companion_party_survives_and_persists():
     gd, c = _strong(["sellsword", "shieldmaiden"])

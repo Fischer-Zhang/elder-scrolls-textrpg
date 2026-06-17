@@ -888,6 +888,9 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
         mregen = formulas.magicka_regen_combat(player.attr("willpower"))
         if mregen and player.birthsign != "atronach" and player.magicka < player.max_magicka:
             player.magicka = min(player.max_magicka, player.magicka + mregen)
+        hregen = mastery.combat_regen(player, gamedata)   # 里程碑「生生不息」:戰鬥中每回合自癒
+        if hregen and combat.is_alive(player) and player.health < player.max_health:   # is_alive:不得回血復活本回合被擊殺的玩家(對齊 auto_resolve)
+            player.health = min(player.max_health, player.health + hregen)
         pre_trap = {id(e): magic.has_soul_trap(e) for e in enemies if combat.is_alive(e)}
         ui.combat_tick(magic.tick_effects(player, gamedata))
         for a in battle["allies"]:

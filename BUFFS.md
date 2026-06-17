@@ -124,7 +124,7 @@
 | skill_fortify | 技能 | +6~+10(*_75多+8、*_100 +10) |
 | attr_fortify | 屬性 | +4~+6(*_100如 iron_body str+5、tireless speed+6) |
 | resist_fortify | 抗性 | magic +10~+15、disease +25~+30 |
-| passive_armor | 減傷 | 多源相加 4~20(石膚20最高、銅皮鐵骨18、靈體護壁15) |
+| passive_armor | 減傷 | 多源相加 4~20(石膚20、銅皮鐵骨18、靈光護壁15、魔皮14、鐵布衫12…;總減傷夾 85% 硬頂+遞減,不趨近免疫) |
 
 ### 偷襲/刺客鏈(🔴詳見第④紅線小節)
 | perk | kind | 數值 | 疊加 |
@@ -145,7 +145,7 @@
 | 雙重/束縛召喚 summon_mod | 召喚 | twin:extra1隻×0.6血;bound_blade:hp+0.25/turn+1 |
 | 戰地搶救 triage | 資源折扣 | 同伴<30%時下道治療 魔×0.15/體×0.25 |
 | 靈魂虹吸 enchant_potency | 增幅 | 🔴附魔強度×1.2(製作乘子,R15) |
-| 濃縮萃取 potion_potency | 增幅 | 藥水/毒效×1.2 |
+| 濃縮/萬靈藥 potion_potency | 增幅 | 藥水/毒效 ×1.20~1.35(濃縮0.20+萬靈藥0.15 相加;只放大 DoT/buff/回復,不碰控制毒) |
 
 ### 防禦/續航/控場
 | perk | kind | 數值 |
@@ -154,6 +154,8 @@
 | 不屈祝禱 steadfast | 續航回復 | 血<25%→regen4×3(共12) |
 | 溢盾 overheal_ward | 減傷 | 溢治60%轉盾、cap=生命×0.5、turns4(R21夾cap) |
 | 重甲反震 armor_reflect | 反傷 | 受近戰物理反彈12% |
+| 重壓 armor_stagger | 防守控場 | 受近戰物理擊中 22% 震開攻擊者(stagger turns:2 → 撐過回合末 tick,對敵下次出手生效) |
+| 生生不息 combat_regen | 續航 | 戰鬥中每回合末自癒 8(is_alive 守 → 不復活本回合被擊殺者) |
 | 身輕如燕 evasion_bonus | 命中(扣敵命中) | 多源相加 0.02~0.05,★硬夾 EVASION_BONUS_CAP=0.15 |
 | 盾陣/盾擊踉蹌 | 減傷/控場 | block_hit_penalty0.25;riposte stagger0.35 |
 | 懾意/懾心術/懾魂 fear_on_hit | 控場 | illusion 50/75/100:命中懼意,chance 相加夾30%、turns 取最(最長3);出手觸發(每回合一次);**solo BOSS 免疫** |

@@ -101,8 +101,8 @@
    "options": [
      {"opt_id": "soul_siphon", "name": "靈魂虹吸", "kind": "enchant_potency", "potency_bonus": 0.20,
       "desc": "神秘大師:你的附魔強度 +20%(靈魂石的力量榨取得更徹底)。"},
-     {"opt_id": "spell_absorb", "name": "法術汲取", "kind": "resist_fortify", "resist": {"magic": 15},
-      "desc": "你能汲取襲來的法術之力:元素/法術抗性 +15%。"}
+     {"opt_id": "spectral_aegis", "name": "靈光護壁", "kind": "passive_armor", "armor_bonus": 15,
+      "desc": "祕法登峰:靈光恆繞護體於外(被動護甲 +15,與靈體護壁相加)。"}
    ]},
 
   {"id": "destruction_100", "skill": "destruction", "threshold": 100,
@@ -379,15 +379,15 @@
   {"id": "hand_to_hand_100", "skill": "hand_to_hand", "threshold": 100, "options": [
      {"opt_id": "transcend_fist", "name": "化勁通玄", "kind": "weapon_mod", "target": "hand_to_hand", "power": 0.10,
       "desc": "徒手登峰:拳掌吞吐勁力,徒手傷害 +10%(與鐵拳相加;補徒手無法淬鍊附魔的劣勢)。"},
-     {"opt_id": "iron_body", "name": "鐵布衫", "kind": "attr_fortify", "attr": {"strength": 5},
-      "desc": "千錘百鍊的體魄(力量 +5 → 近戰傷害/負重提升)。"}
+     {"opt_id": "iron_shirt", "name": "鐵布衫", "kind": "passive_armor", "armor_bonus": 12,
+      "desc": "徒手登峰:千錘百鍊以氣血護體如甲(被動護甲 +12;名實相符的體防頂點)。"}
    ]},
 
   {"id": "heavy_armor_100", "skill": "heavy_armor", "threshold": 100, "options": [
      {"opt_id": "ironhide", "name": "銅皮鐵骨", "kind": "passive_armor", "armor_bonus": 18,
       "desc": "重甲登峰:厚甲與血肉融為一體,化身行走的堡壘(被動護甲 +18)。"},
-     {"opt_id": "spellbreaker", "name": "卸咒重甲", "kind": "resist_fortify", "resist": {"magic": 12},
-      "desc": "厚重甲冑卸去法術衝擊純熟(元素/法術抗性 +12%)。"}
+     {"opt_id": "crushing_bulk", "name": "重壓", "kind": "armor_stagger", "chance": 0.22,
+      "desc": "重甲登峰:厚甲之軀撞開來犯者 —— 被近戰物理擊中時 22% 機率震開攻擊者使其踉蹌(以重制敵)。"}
    ]},
 
   {"id": "smithing_100", "skill": "smithing", "threshold": 100, "options": [
@@ -400,22 +400,22 @@
   {"id": "alchemy_100", "skill": "alchemy", "threshold": 100, "options": [
      {"opt_id": "venom_lord", "name": "百毒宗師", "kind": "poison_unlock", "families": ["fear"],
       "desc": "百毒宗師:習得萃取『懼毒』—— 命中令敵陷入驚懼、短暫失能(solo BOSS 免疫)。"},
-     {"opt_id": "sage_mind", "name": "通玄之智", "kind": "attr_fortify", "attr": {"intelligence": 5},
-      "desc": "窮究藥理的靈思(智力 +5 → 魔力上限/煉金更精)。"}
+     {"opt_id": "panacea", "name": "萬靈藥", "kind": "potion_potency", "potency_bonus": 0.15,
+      "desc": "煉金登峰:你調製的藥水與毒藥效力再 +15%(與濃縮萃取相加)。"}
    ]},
 
   {"id": "alteration_100", "skill": "alteration", "threshold": 100, "options": [
      {"opt_id": "pure_form", "name": "術法精純", "kind": "spell_mod", "school": "alteration", "power_bonus": 0.15,
       "desc": "變化登峰:護盾/變形術法效力 +15%(與術法增幅相加)。"},
-     {"opt_id": "iron_will", "name": "磐石意志", "kind": "attr_fortify", "attr": {"willpower": 5},
-      "desc": "法理通明,意志如磐(意志 +5 → 魔力回復/抗心智提升)。"}
+     {"opt_id": "mage_flesh", "name": "魔皮", "kind": "passive_armor", "armor_bonus": 14,
+      "desc": "變化登峰:肌膚常駐石化魔甲(被動護甲 +14,與石膚相加)。"}
    ]},
 
   {"id": "restoration_100", "skill": "restoration", "threshold": 100, "options": [
      {"opt_id": "divine_grace", "name": "聖療登峰", "kind": "spell_mod", "school": "restoration", "power_bonus": 0.20,
       "desc": "復原登峰:治療/援護術回復量 +20%(聖光更盛)。"},
-     {"opt_id": "blessed_vigor", "name": "聖體不衰", "kind": "attr_fortify", "attr": {"willpower": 5},
-      "desc": "白袍庇佑深植其身(意志 +5 → 魔力回復提升)。"}
+     {"opt_id": "everflow", "name": "生生不息", "kind": "combat_regen", "heal": 8,
+      "desc": "復原登峰:聖光長駐,戰鬥中每回合自癒 8 點生命(久戰不衰的持續流)。"}
    ]},
 
   {"id": "acrobatics_100", "skill": "acrobatics", "threshold": 100, "options": [

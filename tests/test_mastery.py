@@ -621,9 +621,8 @@ def test_mysticism_enchant_potency_and_absorb():
     mastery.choose(c, gd, "mysticism_100", "soul_siphon")
     assert mastery.enchant_potency(c, gd) == 0.20
     gd2, c2 = _char(mysticism=100)
-    base = magic.entity_resist(c2, gd2).get("magic", 0)
-    mastery.choose(c2, gd2, "mysticism_100", "spell_absorb")
-    assert magic.entity_resist(c2, gd2).get("magic", 0) == base + 15
+    mastery.choose(c2, gd2, "mysticism_100", "spectral_aegis")
+    assert mastery.passive_armor_bonus(c2, gd2) == 15     # 靈光護壁(原 spell_absorb 抗性 → 改被動護甲 apex)
 
 
 def test_illusion_fear_on_hit_and_merchant():
@@ -958,6 +957,33 @@ def test_magic_school_no_brainer_fix():
     assert feared == 0, "solo boss 不得被 fear"
 
 
+def test_capstone_apex_fix():
+    """🅒 頂點 apex 化:6 capstone 弱 stat 邊 → 二 apex(passive_armor×3 相加 / potion_potency 聚合 / combat_regen / 重壓 stagger)。"""
+    from tesrpg.rng import RNG
+    gd, c = _char(hand_to_hand=100, alteration=100, mysticism=100, alchemy=100, restoration=100, heavy_armor=100)
+    mastery.choose(c, gd, "hand_to_hand_100", "iron_shirt")
+    mastery.choose(c, gd, "alteration_100", "mage_flesh")
+    mastery.choose(c, gd, "mysticism_100", "spectral_aegis")
+    assert mastery.passive_armor_bonus(c, gd) == 12 + 14 + 15          # 跨技能 passive_armor 相加不遮蔽
+    mastery.choose(c, gd, "alchemy_75", "concentrated"); mastery.choose(c, gd, "alchemy_100", "panacea")
+    assert abs(mastery.potion_potency(c, gd) - 0.35) < 1e-9            # 0.20+0.15 聚合(原單源)
+    mastery.choose(c, gd, "restoration_100", "everflow")
+    assert mastery.combat_regen(c, gd) == 8
+    # 重壓:被近戰物理擊中 → 震開攻擊者;turns:2 須撐過回合末 tick,才在敵「下次出手」生效(非死時序)
+    from tesrpg.systems import magic
+    mastery.choose(c, gd, "heavy_armor_100", "crushing_bulk")
+    c.weapon = "steel_sword"; c.health = c.max_health = 500
+    landed = 0
+    for i in range(120):
+        foe = combat.spawn_creature(gd, "bandit", RNG(i)); foe.health = foe.max_health = 99999
+        combat.resolve_attack(foe, c, gd, RNG(i))          # 敵攻玩家 → 可能震開敵
+        if magic.is_staggered(foe):
+            magic.tick_effects(foe, gd)                     # 回合末 tick(turns 2→1)
+            if magic.is_staggered(foe):                     # 仍踉蹌 → 對敵下次攻擊生效
+                landed += 1
+    assert landed > 0, "重壓 stagger 須 turns:2 撐過回合末 tick,否則對敵下次出手永不生效(死 perk)"
+
+
 # --- 補洞 pass(Batch 2):8 個 50/75 gap-fill ------------------------------
 def test_batch2_gapfills_present_and_aggregate():
     """blade/blunt/marksman/speechcraft 補 75;四魔法學派補 50 → 全 23 技能 ≥3 節點(sneak 4)。"""
@@ -1140,6 +1166,7 @@ def run():
     test_cold_skill_identity_perks()
     test_cold_skill_combat_paths()
     test_magic_school_no_brainer_fix()
+    test_capstone_apex_fix()
     test_batch2_gapfills_present_and_aggregate()
     test_batch3_all_25_are_single_auto_grant_no_dead()
     test_flee_bonus_getter_and_try_flee()

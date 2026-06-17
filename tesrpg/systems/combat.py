@@ -489,11 +489,15 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
         if _is_player(attacker) and wmod.get("recoil") and dmg_done > 0:
             attacker.health = max(1, attacker.health - int(round(dmg_done * wmod["recoil"])))
 
-        # 里程碑「重甲反震」:玩家受物理擊中 → 反彈一部分傷害給攻擊者(只物理;攻擊者可被反殺)
+        # 里程碑「重甲反震/重壓」:玩家受物理擊中 → 反彈傷害 + 機率震開攻擊者(只物理;攻擊者可被反殺)
         if _is_player(defender) and not atk_element and dmg_done > 0:
             refl = mastery.armor_reflect(defender, gamedata)
             if refl:
                 _set_hp(attacker, _get_hp(attacker) - int(round(dmg_done * refl)))
+            st = mastery.armor_stagger(defender, gamedata)
+            if st and is_alive(attacker) and rng.chance(st):
+                # turns:2 → 撐過本回合末 tick,於攻擊者「下一次出手」時仍踉蹌生效(防守側反制的正確時序)
+                attacker.active_effects.append({"kind": "stagger", "turns": 2})
 
         # 法杖等「命中回復施術者資源」(D:on_hit_self)→ 由後面的 clamp_resources 夾限
         if _is_player(attacker) and wdef and wdef.get("on_hit_self"):
@@ -646,7 +650,8 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
         if defender_blocking and _is_player(defender) and is_alive(attacker):
             rp = mastery.block_riposte(defender, gamedata)
             if rp.get("stagger_chance") and rng.chance(rp["stagger_chance"]):
-                attacker.active_effects.append({"kind": "stagger", "turns": 1})
+                # turns:2 → 防守側(敵階段)施加的踉蹌須撐過回合末 tick,才在敵下次出手時生效(修既有 shield_bash 死時序)
+                attacker.active_effects.append({"kind": "stagger", "turns": 2})
                 if rp.get("weaken"):          # 盾擊破勢:反擊同時削弱敵下擊
                     attacker.active_effects.append({"kind": "weaken", "magnitude": rp["weaken"],
                                                     "turns": rp.get("weaken_turns", 2)})
@@ -880,6 +885,9 @@ def auto_resolve(player: Character, creature: Creature, gamedata: GameData,
             else:
                 resolve_attack(creature, player, gamedata, rng)
         # 回合結束結算持續傷害/再生/狀態(與 run_battle 一致,讓毒/法術 DoT 生效)
+        hregen = mastery.combat_regen(player, gamedata)   # 里程碑「生生不息」:每回合自癒
+        if hregen and is_alive(player) and player.health < player.max_health:
+            player.health = min(player.max_health, player.health + hregen)
         magic.tick_effects(player, gamedata)
         magic.tick_effects(creature, gamedata)
     winner = "player" if is_alive(player) and not is_alive(creature) else (
