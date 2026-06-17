@@ -54,6 +54,8 @@ _IMPLEMENTED_KINDS = {
     "evasion_bonus", "vanish_floor", "sneak_mult_bonus", "vanish_relentless", "approach_bonus",
     "armor_sneak_relief", "prep_bonus", "recon_resist_read", "pick_no_break",
     "restock_bonus", "intimidate_floor",
+    # speechcraft 功能化(混合):衛兵說退槓桿、戰陣號令(鼓舞盟友)。
+    "talk_down_lever", "rally",
     # 八職功能性身份:法師連鎖 / 戰法師共鳴·回魔 / 治療師急救 / 弓手獵手偵察 / 刺客烙印。
     # (warrior 盾牆 / knight 戰旗 為戰鬥動作,非里程碑 kind。)
     "cascade", "resonant_strike", "mana_on_hit", "triage_heal", "recon_reveal_floor", "deathmark",
@@ -513,8 +515,24 @@ def restock_mult(char, gamedata: GameData) -> float:
 
 
 def intimidate_floor(char, gamedata: GameData) -> float:
-    """不怒自威:威嚇喝退成功率下限(0 = 無)。"""
-    return _param(char, gamedata, "intimidate_floor", "floor", 0.0)
+    """威風喝退/威名懾敵:威嚇喝退成功率下限(0 = 無)。多來源(speechcraft 50+75)取最高
+    (對齊 lock_floor/vanish_floor 成長線;R35:floor 軸 MAX 聚合,後一階不被前一階遮蔽)。"""
+    return max((o.get("floor", 0.0)
+               for o in _chosen_options_by_kind(char, gamedata, "intimidate_floor")), default=0.0)
+
+
+def talk_down_mod(char, gamedata: GameData) -> dict:
+    """巧言脫罪(speechcraft_75):衛兵說退 —— 賞金上限加成(相加)+ 成功率下限(取最)。空 = 無。"""
+    opts = _chosen_options_by_kind(char, gamedata, "talk_down_lever")
+    if not opts:
+        return {}
+    return {"cap_bonus": sum(o.get("cap_bonus", 0) for o in opts),
+            "floor": max((o.get("floor", 0.0) for o in opts), default=0.0)}
+
+
+def has_rally(char, gamedata: GameData) -> bool:
+    """戰陣號令(speechcraft_100):布林解鎖 → 開戰可立號令(鼓舞 living_allies 增傷光環;自身無益)。"""
+    return _chosen_option_by_kind(char, gamedata, "rally") is not None
 
 
 def lock_floor(char, gamedata: GameData) -> float:

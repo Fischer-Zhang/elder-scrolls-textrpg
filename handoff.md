@@ -28,7 +28,7 @@
 
 #### 角色與成長
 - 10 種族 × 13 星座 × 8 職業/自訂;八屬性 + **22 技能** learn-by-doing;混合 Skyrim 式升級(等級 XP 池 → 三選一資源 + 屬性點)
-- **技能里程碑 v2 + 完整階梯**:全 22 技能各 **25/50/75/100 四節點(88 節點)**;**25=單一 perk 自動授予**(入門技,複用退化節點)、**50/75/100=達門檻二選一**永久銘刻 + 持久 fortify 加成層(skill/attr/resist)+ 功能槓桿(武器/法術控場、弓手牽制、盾擊宗師、閃身/閃避雙路線、重甲反震、逃命、解陷保底、盜賊行竊/地城賊眼預知、鍛造淬鍊威力、頂點 capstone…);反 min-max、守刺客紅線(同源多節點 getter 必聚合不遮蔽;下限/floor 類 perk 的 floor 須高於門檻 base cap)
+- **技能里程碑 v2 + 完整階梯**:全 22 技能各 **25/50/75/100 四節點(88 節點)**;**25=單一 perk 自動授予**(入門技,複用退化節點)、**50/75/100=達門檻二選一**永久銘刻 + 持久 fortify 加成層(skill/attr/resist)+ 功能槓桿(武器/法術控場、弓手牽制、盾擊宗師、閃身/閃避雙路線、重甲反震、逃命、解陷保底、盜賊行竊/地城賊眼預知、鍛造淬鍊威力、口才威嚇避戰/化解犯罪/戰陣號令、頂點 capstone…);反 min-max、守刺客紅線(同源多節點 getter 必聚合不遮蔽;下限/floor 類 perk 的 floor 須高於門檻 base cap)
 - **八職功能性身份網格**:全 8 職各一招牌戰術 loop(功能性非數值)—— 戰士盾牆(減傷·嘲諷)/法師奧術連鎖/盜賊諜報偵搜/騎士戰旗/戰法師共鳴一擊+法力回擊(毀滅 50/75 兩節點,可兼得)/刺客致命烙印/治療師戰地搶救/弓手獵手偵察(6 mastery 二選一節點 + 2 戰鬥動作;以技能/裝備 gate、零新存檔欄、守刺客紅線)
 - **開局背景**(14 種,只給處境不給數值)+ **種子重玩性**;冒險/傳奇兩種死亡模式 + 一生傳奇總結評分
 
@@ -929,7 +929,16 @@ tesrpg/
 - **🔴 sim(`sim_assassin` apex_temper 變體,cap6+power0.25 → 武器淬鍊 +15)**:① solo boss 全 0%(`SOLO_SNEAK_DAMAGE_CAP_RATIO 0.40` 夾 flat 加傷)② 精英 oneshot Δ+0.0%(已天花板)③ **4 敵死亡率隔離**:淬鍊6 無power 0.4% → +temper_power 0.2%(**邊際 −0.2pp,不壓垮**)。
 - **⚠ 對抗審查裁決**:**駁回 2 誤報**(findings 1/2「temper_cost_free MAX 遮蔽 / 75 缺 temper_power」)—— 省料鏈 25/50/75/100 是**時序成長線**(同 `lock_floor` 階梯:0.20 在 smithing 50-74 為真實值,非 R35 式即時永久遮蔽);75 **刻意** = cap(鋒銳)vs 省料(工匠),鋒銳軸合法為 cap+power 非純三層 sum(審查建議會破 per-node 工匠-vs-鋒銳 + 升 sim 風險)。**補 1 真缺口**(finding 3:4 敵群戰隔離測試)。**Finding 4(雙持副手淬鍊不套倍率)= 既有行為**(`weapon_temper_bonus` 一向只讀主手 `char.weapon`、UI 不開副手淬鍊 → 正常遊玩不觸發,非本輪引入)。
 - **📌 觀察(pre-existing,非本輪;供日後參考)**:tempered glass_dagger apex 本就把 4-bandit 死亡率壓到 ~0.4%(既有 tempering + 裝備);舊 sim 的 26.2% 紅線量的是**無淬鍊** apex,非真實最壞。R37 的 temper_power 只加 −0.2pp。
-- **驗證**:`/check --sim` 全綠(62 模組)、`sim_assassin`(新 R37 區段)/`sim_worldwar` 綠、煙霧通過。改 opt_id 走 `ensure_mastery_choices`;`test_mastery.test_temper_power_aggregates_and_applies` + `test_smithing_50_options_replaced` 更新 + `weapon/armor_temper_bonus` 測試加 gd 參。**下輪:無待辦(M1–M16 + R34–R37 技能里程碑深化告一段落)。**
+- **驗證**:`/check --sim` 全綠(62 模組)、`sim_assassin`(新 R37 區段)/`sim_worldwar` 綠、煙霧通過。改 opt_id 走 `ensure_mastery_choices`;`test_mastery.test_temper_power_aggregates_and_applies` + `test_smithing_50_options_replaced` 更新 + `weapon/armor_temper_bonus` 測試加 gd 參。
+
+### R38 · speechcraft 里程碑功能化身份(混合:社交問題解決者 + 戰場號令)[save]
+
+- **問題**:speechcraft 是**最冷線** —— 25/50/75 全 `merchant_bonus`(議價)+ `skill_fortify`,影子 mercantile、零身份;只有 100 有真功能。使用者拍板**混合(社交 + 戰場號令)**。**2 新 kind**(`talk_down_lever`/`rally`),複用 `intimidate_floor`/`skill_fortify`/`guaranteed_persuade`/`merchant_bonus`;**社交免 sim、零新存檔欄**(rally 用 active_effects 戰鬥邊界清)。
+- **設計(去 mercantile 影子)**:25 `speech_basics`(留極小 merchant 入門)。50 `war_cry`(`intimidate_floor 0.30`,威嚇喝退保底·stick)| `silver_voiced`(`skill_fortify` speechcraft+8,廣抬全社交 odds·broad)。75 `silver_pardon`(**`talk_down_lever`**:衛兵說退賞金上限 120→200 + floor 0.20)| `iron_presence`(`intimidate_floor 0.45`,與 50 取最成長線)。100 `charm`(`guaranteed_persuade`,留·社交 capstone)| `rally`(**`rally`** 戰陣號令·帶隊 capstone)。
+- **`rally`·戰陣號令**:仿騎士戰旗(main.py `_has_rally`/gate/action/回合末維護三處),**複用 empower 管線零改 combat.py**。speechcraft-gate(vs illusion≥50)、**純耗體 12 不耗魔**、固定 empower **0.15**(不吃 power,嚴格 < 戰旗 0.20 上界)、**自身不施**(`not _is_player` 守 → 單挑零益,desc 明示「鼓舞他人,單挑無益」)。empower **MAX 聚合**(combat.py:392-398)→ 戰旗+號令同開不疊加。
+- **`intimidate_floor` getter `_param`→MAX 聚合**(對齊 lock_floor:50+75 成長線取最);`talk_down_chance` 加 `gamedata=None` 參(floor 套用;2-arg 舊呼叫 back-compat);`INTIMIDATABLE` {bandit}→{bandit,rogue_thief,city_guard}(皆人形·非 solo;實務主要對盜匪生效〔其餘為劇情敵〕);衛兵說退 cap = `TALK_DOWN_MAX + cap_bonus`。
+- **⚠ 對抗審查裁決**:**駁回 2 誤報** ——(major)「intimidate_floor MAX 遮蔽」=**lock_floor 式時序成長線**(war_cry 0.30 在 speechcraft 50-74 為真實值,非 R35 跨技能二元隱形;SUM 修法會把 floor 推到 0.75 過強、違 floor-kind MAX 慣例);(major)「rally 對單挑玩家死 perk」=**by-design**(使用者選混合;rally 服務帶同伴/召喚 build、charm 服務 solo/社交 → 健康 build 取捨,desc 已明示)。**修 1 真誤註**(INTIMIDATABLE 註釋誇大→更正:rogue_thief/city_guard 為劇情敵)。其餘(talk_down 75 gate / cap+80)= by-design + **一次性說退閘**(失敗即 `talked=True` 逼繳金/服刑,無重試 → 無刷賞金 loop)中和。
+- **驗證**:`/check` 全綠(62 模組)+ 煙霧;`sim_assassin` byte-identical(rally 只 buff 盟友,solo 刺客 sim 不覆蓋 → 對標騎士戰旗 0.20 既有上界手動論證)。`test_speechcraft` 加 talk_down cap/floor + intimidate 擴白名單 + rally 解鎖/低於戰旗;`test_mastery` intimidate 段改 war_cry/iron_presence MAX。**R34–R38 技能里程碑深化告一段落**(冷線盡數功能化)。
 
 ---
 

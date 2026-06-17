@@ -13,7 +13,7 @@ from tesrpg.systems import events, mastery, politics, progression
 BRIBE_COST = 10
 TALK_DOWN_MAX = 120          # 可「說服衛兵」的最高賞金(大罪說不過去;對齊武士 ~100 量級)
 INTIMIDATE_DIFFICULTY = 40   # 威嚇喝退基準難度(對齊 events.json 既有威嚇 DC40)
-INTIMIDATABLE = {"bandit"}   # 可威嚇喝退的弱人形敵(盜匪;不死/魔人/野獸/boss/具名目標皆不可)
+INTIMIDATABLE = {"bandit", "rogue_thief", "city_guard"}   # 可威嚇喝退的人形敵:bandit(隨遇常見)+ rogue_thief/city_guard(劇情敵,罕見)。皆人形·非 solo boss·非具名要角;不死/魔人/野獸/boss 不可。實務上主要對盜匪生效(其餘為劇情情境)
 
 
 def persuade_delta(skill: int) -> int:
@@ -98,10 +98,15 @@ def offered_quest(char: Character, gamedata: GameData, npc_id: str) -> str | Non
 
 
 # --- 拓展用途①:說服衛兵減免賞金(犯罪/社交;對位武士特權,走技能)----------
-def talk_down_chance(char: Character, bounty: int) -> float:
-    """以口才說退衛兵的成功率:吃口才+魅力,賞金越高越難。夾 0.05–0.80。"""
-    return max(0.05, min(0.80,
+def talk_down_chance(char: Character, bounty: int, gamedata: GameData = None) -> float:
+    """以口才說退衛兵的成功率:吃口才+魅力,賞金越高越難。夾 0.05–0.80。
+    里程碑「巧言脫罪」(talk_down_lever)抬高下限。"""
+    base = max(0.05, min(0.80,
                0.10 + (char.skill("speechcraft") + char.attr("personality") - 50) * 0.005 - bounty * 0.002))
+    if gamedata is not None:
+        from tesrpg.systems import mastery
+        base = max(base, mastery.talk_down_mod(char, gamedata).get("floor", 0.0))
+    return base
 
 
 def talk_down_guard(char: Character, gamedata: GameData, province: str, rng: RNG) -> dict:
@@ -109,7 +114,7 @@ def talk_down_guard(char: Character, gamedata: GameData, province: str, rng: RNG
     付 speechcraft practice(體力+時間)→ 非免費刷;成功 → 清該省賞金,失敗 → 賞金不動。"""
     from tesrpg.systems import crime
     b = crime.bounty(char, province)
-    chance = talk_down_chance(char, b)
+    chance = talk_down_chance(char, b, gamedata)
     xp, hours, tired = progression.practice_cost(char, gamedata, "speechcraft")
     events = progression.use_skill(char, gamedata, "speechcraft", xp)
     ok = rng.chance(chance)

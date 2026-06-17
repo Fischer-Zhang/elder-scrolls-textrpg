@@ -183,8 +183,8 @@
    "options": [
      {"opt_id": "charm", "name": "辯舌·折服", "kind": "guaranteed_persuade",
       "desc": "口才大師:三寸不爛之舌,說服必定成功 —— 但每個人只會被你折服一次。"},
-     {"opt_id": "intimidator", "name": "不怒自威", "kind": "intimidate_floor", "floor": 0.40,
-      "desc": "不怒自威:威嚇喝退弱敵的成功率保底 40%(化解衝突而非廝殺)。"}
+     {"opt_id": "rally", "name": "戰陣號令", "kind": "rally",
+      "desc": "口才登峰:開戰可振臂號令,旗鼓相和 —— 全隊同袍士氣大振、增傷一波接一波(耗體;鼓舞他人,單挑無益)。"}
    ]},
   {"id": "mysticism_75", "skill": "mysticism", "threshold": 75, "options": [
      {"opt_id": "arcane_cascade", "name": "奧術連鎖", "kind": "cascade",
@@ -357,10 +357,10 @@
 
   {"id": "speechcraft_50", "skill": "speechcraft", "threshold": 50,
    "options": [
-     {"opt_id": "merchant_friend", "name": "商道人脈", "kind": "merchant_bonus", "disposition_bonus": 0.08,
-      "desc": "巧言生意:買賣更划算(議價 +0.08,與交易/幻術相加)。"},
+     {"opt_id": "war_cry", "name": "威風喝退", "kind": "intimidate_floor", "floor": 0.30,
+      "desc": "威風凜凜:喝退弱敵(盜匪/盜賊/城衛)的成功率保底 30% —— 不戰而屈人之兵(solo BOSS 不為所動)。"},
      {"opt_id": "silver_voiced", "name": "辯才無礙", "kind": "skill_fortify", "skill": {"speechcraft": 8},
-      "desc": "辯才無礙,說服/威嚇更易(口才技能 +8)。"}
+      "desc": "辯才無礙:口才技能 +8 —— 說服/化解/威嚇/套話,一切言談檢定更易成。"}
    ]},
 
   {"id": "athletics_100", "skill": "athletics", "threshold": 100, "options": [
@@ -476,10 +476,10 @@
    ]},
 
   {"id": "speechcraft_75", "skill": "speechcraft", "threshold": 75, "options": [
-     {"opt_id": "silver_deal", "name": "巧言善賈", "kind": "merchant_bonus", "disposition_bonus": 0.06,
-      "desc": "口才漸長:買賣更划算(議價 +0.06,與各議價來源相加)。"},
-     {"opt_id": "orator", "name": "辯士之資", "kind": "skill_fortify", "skill": {"mercantile": 8},
-      "desc": "辯才助長交易之道(交易技能 +8)。"}
+     {"opt_id": "silver_pardon", "name": "巧言脫罪", "kind": "talk_down_lever", "cap_bonus": 80, "floor": 0.20,
+      "desc": "三言兩語化干戈:說退攔路衛兵的賞金上限提至 200 金、且成功率保底 20% —— 大事化小。"},
+     {"opt_id": "iron_presence", "name": "威名懾敵", "kind": "intimidate_floor", "floor": 0.45,
+      "desc": "威名遠播:喝退弱敵的成功率保底 45%(與威風喝退取最)—— 你的名號本身就是武器。"}
    ]},
 
   {"id": "conjuration_50", "skill": "conjuration", "threshold": 50, "options": [
@@ -593,6 +593,6 @@
    ]},
   {"id": "speechcraft_25", "skill": "speechcraft", "threshold": 25, "options": [
      {"opt_id": "speech_basics", "name": "口才入門", "kind": "merchant_bonus", "disposition_bonus": 0.03,
-      "desc": "略通言談之道,買賣稍占便宜(議價 +0.03,與各議價來源相加)。"}
+      "desc": "略通言談之道,人情練達、買賣亦稍占便宜(議價 +0.03,與各議價來源相加)。"}
    ]}
 ]

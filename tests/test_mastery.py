@@ -868,10 +868,14 @@ def test_mercantile_and_intimidate():
     gd2, c2 = _char(mercantile=50)
     mastery.choose(c2, gd2, "mercantile_50", "investor")
     assert mastery.restock_mult(c2, gd2) == 1.5
+    # R38:威嚇下限移至 speechcraft 50(war_cry 0.30)+ 75(iron_presence 0.45),MAX 聚合成長線
     gd3, c3 = _char(speechcraft=100)
-    mastery.choose(c3, gd3, "speechcraft_100", "intimidator")
     foes = [combat.spawn_creature(gd3, "bandit", RNG(1)) for _ in range(3)]
-    assert dialogue.intimidate_chance(c3, foes, False, gd3) >= 0.40   # 下限抬到 40%
+    mastery.choose(c3, gd3, "speechcraft_50", "war_cry")
+    assert dialogue.intimidate_chance(c3, foes, False, gd3) >= 0.30   # war_cry 下限 0.30
+    mastery.choose(c3, gd3, "speechcraft_75", "iron_presence")
+    assert mastery.intimidate_floor(c3, gd3) == 0.45                  # 50+75 取最(MAX 聚合)
+    assert dialogue.intimidate_chance(c3, foes, False, gd3) >= 0.45
 
 
 # --- 廣度 pass:17 薄技能各 +1 節點 + 4 新 kind + 2 getter 微修 -------------------

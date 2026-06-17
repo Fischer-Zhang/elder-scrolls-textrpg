@@ -420,6 +420,12 @@ def _has_standard(char) -> bool:
                for e in getattr(char, "active_effects", []))
 
 
+def _has_rally(char) -> bool:
+    """口才是否已立戰陣號令(存 active_effects 的常駐 stance;鼓舞盟友增傷)。"""
+    return any(e.get("kind") == "rally_banner" and e.get("turns", 0) > 0
+               for e in getattr(char, "active_effects", []))
+
+
 def _on_deathmark_cd(enemy) -> bool:
     """該敵是否在致命烙印冷卻中(防每回合重標)。"""
     return any(e.get("kind") == "deathmark_cd" and e.get("turns", 0) > 0
@@ -492,6 +498,10 @@ def _choose_combat_action(state: GameState, gamedata: GameData, enemies: list, a
     if (player.base_skill("illusion") >= STANDARD_ILLUSION_GATE and not _has_standard(player)
             and player.magicka >= STANDARD_COST_MAGICKA):
         opts.append(("standard", "🚩 立戰旗（鼓舞全隊增傷 · 耗魔體)"))
+    # 口才「戰陣號令」:選了里程碑 + 體力足 → 立號令(全隊增傷光環;純耗體不耗魔);已立則不重複
+    if (mastery.has_rally(player, gamedata) and not _has_rally(player)
+            and player.fatigue >= RALLY_FATIGUE):
+        opts.append(("rally", "📣 號令（鼓舞全隊增傷 · 耗體)"))
     # 刺客「致命烙印」:選了里程碑 + 潛行達門檻 + 體力足 → 標記一敵(後續近戰破甲)
     _dm = mastery.deathmark(player, gamedata)
     if (_dm and player.base_skill("sneak") >= _dm.get("sneak_gate", 50)
@@ -815,6 +825,10 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
             player.fatigue = max(0, player.fatigue - STANDARD_COST_FATIGUE)
             player.active_effects.append({"kind": "battle_standard", "turns": 99})
             ui.message("你將戰旗插上戰場 —— 旗影所及,同袍士氣大振、敵膽皆寒。", style="bold cyan")
+        elif action["type"] == "rally":           # 口才:立戰陣號令(增傷光環,常駐;純耗體,鼓舞他人)
+            player.fatigue = max(0, player.fatigue - RALLY_FATIGUE)
+            player.active_effects.append({"kind": "rally_banner", "turns": 99})
+            ui.message("你振臂高呼、鼓舞士氣 —— 號令所及,同袍鬥志昂揚、攻勢如潮。", style="bold cyan")
         elif action["type"] == "deathmark":       # 刺客:標記一敵(後續近戰破甲;開場偷襲不受惠)
             tgt = action["target"]
             dm = mastery.deathmark(player, gamedata)
@@ -922,6 +936,10 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
             player.active_effects[:] = [e for e in player.active_effects if e.get("source") != "standard_self"]
             player.active_effects.append({"kind": "shield", "magnitude": STANDARD_SELF_ARMOR,
                                           "turns": 1, "source": "standard_self"})
+        if _has_rally(player):                    # 口才「戰陣號令」:全隊增傷光環(固定 0.15,不吃 power;自身無益)
+            for a in living_allies:               # empower MAX 聚合(combat) → 與戰旗同開不疊加,取較強者
+                a.active_effects[:] = [e for e in a.active_effects if e.get("source") != "rally"]
+                a.active_effects.append({"kind": "empower", "magnitude": RALLY_EMPOWER, "turns": 1, "source": "rally"})
         if mastery.triage(player, gamedata) and not _triage_armed(player):   # 治療師「戰地搶救」:同伴瀕死 → 武裝折扣急救
             if any(a.health < a.max_health * TRIAGE_ALLY_HP_RATIO for a in living_allies):
                 player.active_effects.append({"kind": "triage_ready", "turns": 2})
@@ -1712,6 +1730,8 @@ STANDARD_EMPOWER_BASE = 0.20    # 戰旗對同伴的基礎增傷(隨幻術 power
 STANDARD_SELF_ARMOR = 6         # 戰旗給騎士自身的護甲(單挑也值得立)
 STANDARD_COST_MAGICKA = 15      # 立旗魔力代價
 STANDARD_COST_FATIGUE = 10      # 立旗體力代價
+RALLY_EMPOWER = 0.15            # 口才「戰陣號令」對同伴的增傷(固定,不吃 power;嚴格 < 戰旗 0.20 上界)
+RALLY_FATIGUE = 12             # 立號令體力代價(純耗體不耗魔;口才宗師以聲喝振士氣)
 TRIAGE_ALLY_HP_RATIO = 0.30     # 同伴生命低於此 → 觸發治療師「戰地搶救」武裝
 
 
@@ -3494,8 +3514,9 @@ def guard_confrontation(state: GameState, gamedata: GameData) -> str | None:
             ("jail", "乖乖入獄服刑"),
             ("resist", "拔劍反抗(與衛兵開戰)"),
         ]
-        if not talked and b <= dialogue.TALK_DOWN_MAX:   # 小額賞金可試以口才說退(大罪說不過去)
-            tpct = int(dialogue.talk_down_chance(char, b) * 100)
+        talk_cap = dialogue.TALK_DOWN_MAX + mastery.talk_down_mod(char, gamedata).get("cap_bonus", 0)   # 里程碑「巧言脫罪」抬高可說退賞金上限
+        if not talked and b <= talk_cap:                 # 小額賞金可試以口才說退(大罪說不過去;巧言脫罪可化解更大的事)
+            tpct = int(dialogue.talk_down_chance(char, b, gamedata) * 100)
             opts.insert(0, ("talk", f"說服衛兵(口才,成功率 {tpct}%)"))
         choice = ui.menu("如何應對?", opts)
         if choice == "talk":

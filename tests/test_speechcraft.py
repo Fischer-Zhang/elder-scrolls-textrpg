@@ -12,7 +12,7 @@ from tesrpg.creation import build_character
 from tesrpg.gamedata import get_gamedata
 from tesrpg.rng import RNG
 from tesrpg.state import GameState, GameTime
-from tesrpg.systems import combat, crime, dialogue, progression
+from tesrpg.systems import combat, crime, dialogue, mastery, progression
 from tesrpg.ui import console as ui
 import tesrpg.main as M
 
@@ -96,6 +96,9 @@ def test_intimidate_gating():
     wolf = combat.spawn_creature(gd, "wolf", RNG(1))
     assert dialogue.can_intimidate(gd, [bandit])             # 弱人形盜匪 → 可
     assert dialogue.can_intimidate(gd, [bandit, bandit])
+    # R38:白名單擴至變節盜賊/城衛(皆 sentient·非 solo)
+    for tid in ("rogue_thief", "city_guard"):
+        assert dialogue.can_intimidate(gd, [combat.spawn_creature(gd, tid, RNG(1))]), tid
     assert not dialogue.can_intimidate(gd, [bandit, wolf])   # 混入野獸 → 不可
     assert not dialogue.can_intimidate(gd, [wolf])           # 野獸不可
     assert not dialogue.can_intimidate(gd, [])               # 空不可
@@ -150,6 +153,27 @@ def test_offer_battle_intimidate_success_avoids_combat_no_loot():
     assert c.gold == g0 and c.kill_counts == k0         # 無戰利/擊殺(嚇退非擊敗)
 
 
+def test_talk_down_lever_raises_cap_and_floor():
+    """R38 巧言脫罪(speechcraft_75 talk_down_lever):賞金上限加成 +80 + 成功率下限 0.20。"""
+    gd, c = _char(speechcraft=75)
+    assert mastery.talk_down_mod(c, gd) == {}                          # 未選 → 空
+    mastery.choose(c, gd, "speechcraft_75", "silver_pardon")
+    assert mastery.talk_down_mod(c, gd) == {"cap_bonus": 80, "floor": 0.20}
+    assert dialogue.talk_down_chance(c, 999, gd) >= 0.20              # 大賞金仍保底 0.20(帶 gamedata)
+    assert dialogue.talk_down_chance(c, 999) < 0.20                   # 不帶 gamedata → 無 floor(back-compat)
+
+
+def test_rally_unlock_and_below_standard():
+    """R38 戰陣號令(speechcraft_100 rally):布林解鎖 + empower 嚴格 < 騎士戰旗上界(區隔)。"""
+    gd, c = _char(speechcraft=100)
+    assert not mastery.has_rally(c, gd)
+    mastery.choose(c, gd, "speechcraft_100", "rally")
+    assert mastery.has_rally(c, gd)
+    assert "rally" in mastery._IMPLEMENTED_KINDS and "talk_down_lever" in mastery._IMPLEMENTED_KINDS
+    assert 0 < M.RALLY_EMPOWER < M.STANDARD_EMPOWER_BASE              # 號令 0.15 < 戰旗 0.20 上界
+    assert M.RALLY_FATIGUE > 0                                        # 純耗體代價
+
+
 def run():
     test_persuade_delta_scales_and_beats_bribe()
     test_persuade_chance_readonly()
@@ -157,6 +181,8 @@ def run():
     test_intimidate_gating()
     test_intimidate_chance_scales_and_pays_practice()
     test_offer_battle_intimidate_success_avoids_combat_no_loot()
+    test_talk_down_lever_raises_cap_and_floor()
+    test_rally_unlock_and_below_standard()
 
 
 if __name__ == "__main__":
