@@ -28,7 +28,7 @@
 
 #### 角色與成長
 - 10 種族 × 13 星座 × 8 職業/自訂;八屬性 + **22 技能** learn-by-doing;混合 Skyrim 式升級(等級 XP 池 → 三選一資源 + 屬性點)
-- **技能里程碑 v2 + 完整階梯**:全 22 技能各 **25/50/75/100 四節點(88 節點)**;**25=單一 perk 自動授予**(入門技,複用退化節點)、**50/75/100=達門檻二選一**永久銘刻 + 持久 fortify 加成層(skill/attr/resist)+ 功能槓桿(武器/法術控場、弓手牽制、盾擊宗師、閃身/閃避雙路線、重甲反震、逃命、解陷保底、盜賊行竊/地城賊眼預知、頂點 capstone…);反 min-max、守刺客紅線(同源多節點 getter 必聚合不遮蔽;下限/floor 類 perk 的 floor 須高於門檻 base cap)
+- **技能里程碑 v2 + 完整階梯**:全 22 技能各 **25/50/75/100 四節點(88 節點)**;**25=單一 perk 自動授予**(入門技,複用退化節點)、**50/75/100=達門檻二選一**永久銘刻 + 持久 fortify 加成層(skill/attr/resist)+ 功能槓桿(武器/法術控場、弓手牽制、盾擊宗師、閃身/閃避雙路線、重甲反震、逃命、解陷保底、盜賊行竊/地城賊眼預知、鍛造淬鍊威力、頂點 capstone…);反 min-max、守刺客紅線(同源多節點 getter 必聚合不遮蔽;下限/floor 類 perk 的 floor 須高於門檻 base cap)
 - **八職功能性身份網格**:全 8 職各一招牌戰術 loop(功能性非數值)—— 戰士盾牆(減傷·嘲諷)/法師奧術連鎖/盜賊諜報偵搜/騎士戰旗/戰法師共鳴一擊+法力回擊(毀滅 50/75 兩節點,可兼得)/刺客致命烙印/治療師戰地搶救/弓手獵手偵察(6 mastery 二選一節點 + 2 戰鬥動作;以技能/裝備 gate、零新存檔欄、守刺客紅線)
 - **開局背景**(14 種,只給處境不給數值)+ **種子重玩性**;冒險/傳奇兩種死亡模式 + 一生傳奇總結評分
 
@@ -918,7 +918,18 @@ tesrpg/
 - **Part 3 perks(混合;改 2 死填充,保留 floor/pick_no_break)**:`security_50` `nimble_fingers`(skill_fortify)→ `light_fingers`(**新 kind `theft_skill`**:`steal_bonus 0.15`+`bounty_factor 0.5`,聚合 dict getter;`crime.steal_chance` 加 gamedata + 套加成夾 0.95、`steal_item` 失風 fine ×factor);`security_100` `deft_hands` → `thiefs_eye`(**新 kind `dungeon_casing`** 布林:進地城每層揭全層 TRAP/CONTAINER 格 `explored=True` → `action_dungeon.case_layer`,UI 靠 `console.py` 既有 `^/$` 分支零工)。
 - **🔴 R35 教訓內建**:`dungeon_casing` 刻意**布林**(非 floor)→ 不落 `lock_floor` MAX 軸,永不被 `master_floor/master_thief` 二元遮蔽;與 scout `has_recon_perk`(四鄰任意 type)**互補不重複**(security 揭全層機關寶箱、不揭怪、不發 scout xp,守 security≠scout 界線)。
 - **⚠ 對抗審查 2 設計裁決(by-design,使用者已知拍板,勿日後「修」)**:① `light_fingers` 練的是 **sneak 不是 security**(掛 security 樹的跨技能盜賊 synergy)—— 使用者選混合身份前已被明確告知此「練功錯位」仍拍板;theft **不**入 security xp(使用者修正時刻意排除偷竊)。② `light_fingers`(選用偷竊向)vs `trapwise`(地城避陷向)是 build 取向二選一,非有害 no-brainer(盜賊 build 真偏好前者)。
-- **驗證**:`/check` 全綠(62 模組)、`sim_assassin`/`sim_worldwar` 綠(security 不碰戰鬥,sim byte-identical)、煙霧通過。新 kind 三步登錄(`_IMPLEMENTED_KINDS`+`theft_bonus`/`has_dungeon_casing`+呼叫端);改 opt_id 走 `ensure_mastery_choices` 退 pending(`test_mastery.test_security_theft_and_casing` 含遷移)。**下輪:smithing 功能化身份待評估。**
+- **驗證**:`/check` 全綠(62 模組)、`sim_assassin`/`sim_worldwar` 綠(security 不碰戰鬥,sim byte-identical)、煙霧通過。新 kind 三步登錄(`_IMPLEMENTED_KINDS`+`theft_bonus`/`has_dungeon_casing`+呼叫端);改 opt_id 走 `ensure_mastery_choices` 退 pending(`test_mastery.test_security_theft_and_casing` 含遷移)。
+
+### R37 · smithing 里程碑功能化身份(混合:工匠·省料 vs 鋒銳·淬鍊威力)[re-sim] [save]
+
+- **問題**:smithing = 4× `temper_cost_free`(省料)+ 1× `temper_cap_bonus` + 2 死填充(`smith_arm`/`forgemaster` skill_fortify)→ 零身份。使用者拍板**混合(工匠 vs 鋒銳)**。**只 1 新 kind `temper_power`、零新存檔欄、不碰 `main.py`。**
+- **棄案(查證後放棄,記錄供日後勿重提)**:① **野地鐵匠 field_smithing** —— 全 48 城+10 鎮共 58 處皆有 armorer,城鎮密度太高 → 「免跑城」邊際效益極小(使用者親自指出)。② **回收宗師 crafting_yield** —— `meltdown_yield` 的 `int(base*0.5)` floor 在常見 2 錠配方吃掉 factor、調高則開「craft↔melt 刷 XP」套利。→ 工匠側改用**既有 `temper_cost_free`(省料)**。
+- **設計(改 50/100 死填充側,25/75 不動)**:50 = `thrifty_forge`(省料 0.20,工匠)vs **`temper_edge`**(`temper_power` 0.10,鋒銳);100 = `legendary_smith`(省料 0.50,工匠)vs **`temper_mastery`**(`temper_power` 0.15,鋒銳)。75 不動(`efficient` 省料 vs `master_temper` cap+1 = 既有健康工匠-vs-鋒銳)。
+- **`temper_power` 機制**:新 getter(50+100 **sum** 聚合)→ 套進 `smithing.weapon_temper_bonus`/`armor_temper_bonus`(**簽名加 gamedata**)= `int(flat×(1+power))`;4 callsite 傳 gamedata(`combat.py:189/221`、`console.py:1613/1631`;UI↔combat 一處到位)。
+- **🔴 sim(`sim_assassin` apex_temper 變體,cap6+power0.25 → 武器淬鍊 +15)**:① solo boss 全 0%(`SOLO_SNEAK_DAMAGE_CAP_RATIO 0.40` 夾 flat 加傷)② 精英 oneshot Δ+0.0%(已天花板)③ **4 敵死亡率隔離**:淬鍊6 無power 0.4% → +temper_power 0.2%(**邊際 −0.2pp,不壓垮**)。
+- **⚠ 對抗審查裁決**:**駁回 2 誤報**(findings 1/2「temper_cost_free MAX 遮蔽 / 75 缺 temper_power」)—— 省料鏈 25/50/75/100 是**時序成長線**(同 `lock_floor` 階梯:0.20 在 smithing 50-74 為真實值,非 R35 式即時永久遮蔽);75 **刻意** = cap(鋒銳)vs 省料(工匠),鋒銳軸合法為 cap+power 非純三層 sum(審查建議會破 per-node 工匠-vs-鋒銳 + 升 sim 風險)。**補 1 真缺口**(finding 3:4 敵群戰隔離測試)。**Finding 4(雙持副手淬鍊不套倍率)= 既有行為**(`weapon_temper_bonus` 一向只讀主手 `char.weapon`、UI 不開副手淬鍊 → 正常遊玩不觸發,非本輪引入)。
+- **📌 觀察(pre-existing,非本輪;供日後參考)**:tempered glass_dagger apex 本就把 4-bandit 死亡率壓到 ~0.4%(既有 tempering + 裝備);舊 sim 的 26.2% 紅線量的是**無淬鍊** apex,非真實最壞。R37 的 temper_power 只加 −0.2pp。
+- **驗證**:`/check --sim` 全綠(62 模組)、`sim_assassin`(新 R37 區段)/`sim_worldwar` 綠、煙霧通過。改 opt_id 走 `ensure_mastery_choices`;`test_mastery.test_temper_power_aggregates_and_applies` + `test_smithing_50_options_replaced` 更新 + `weapon/armor_temper_bonus` 測試加 gd 參。**下輪:無待辦(M1–M16 + R34–R37 技能里程碑深化告一段落)。**
 
 ---
 

@@ -1145,14 +1145,38 @@ def test_weapon_mod_merges_same_target():
 
 
 def test_smithing_50_options_replaced():
-    """移除護甲修理後,smithing_50 兩選項已換新(避免空節點):淬火精算(省料)+ 鍛場錘感(鈍器 +6,base 不動)。"""
+    """R37 功能化:smithing_50 = 工匠(thrifty_forge 省料 0.20)vs 鋒銳(temper_edge temper_power 0.10);
+    死填充 smith_arm(鈍器 fortify)已移除。"""
     gd, c = _char(smithing=50)
     mastery.choose(c, gd, "smithing_50", "thrifty_forge")
-    assert mastery.temper_free_chance(c, gd) >= 0.20
+    assert mastery.temper_free_chance(c, gd) >= 0.20 and mastery.temper_power(c, gd) == 0.0
     _, c2 = _char(smithing=50)
-    base_blunt = c2.base_skill("blunt")
-    mastery.choose(c2, gd, "smithing_50", "smith_arm")
-    assert c2.skill("blunt") == base_blunt + 6 and c2.base_skill("blunt") == base_blunt
+    mastery.choose(c2, gd, "smithing_50", "temper_edge")
+    assert mastery.temper_power(c2, gd) == 0.10 and mastery.temper_free_chance(c2, gd) == 0.0   # 二選一:選鋒銳則無省料
+
+
+def test_temper_power_aggregates_and_applies():
+    """R37 鋒銳:temper_power 多節點相加(50 0.10 + 100 0.15 = 0.25)+ 套進 weapon/armor_temper_bonus ×(1+power)。"""
+    from tesrpg.systems import smithing
+    assert "temper_power" in mastery._IMPLEMENTED_KINDS
+    gd, c = _char(smithing=100)
+    inventory.add_item(c, "steel_sword", 1); inventory.equip_weapon(c, gd, "steel_sword")
+    inventory.add_item(c, "steel_ingot", 20)
+    for _ in range(5):                                          # 淬至上限(cap 5 @ smithing 100)→ flat = 5×2 = 10
+        smithing.temper(c, gd, "steel_sword")
+    flat0 = smithing.weapon_temper_bonus(c, gd)
+    assert mastery.temper_power(c, gd) == 0.0 and flat0 == 10    # 未選鋒銳 → factor 0
+    mastery.choose(c, gd, "smithing_50", "temper_edge"); mastery.choose(c, gd, "smithing_100", "temper_mastery")
+    assert abs(mastery.temper_power(c, gd) - 0.25) < 1e-9        # 50+100 相加
+    assert smithing.weapon_temper_bonus(c, gd) == int(10 * 1.25)   # ×1.25 = 12(+2 鋒銳;floor)
+    # 護甲側同套倍率
+    inventory.add_item(c, "steel_cuirass", 1); inventory.equip_armor(c, gd, "steel_cuirass")
+    inventory.add_item(c, "steel_ingot", 20)
+    for _ in range(5):
+        smithing.temper(c, gd, "steel_cuirass")
+    worn = set(c.equipped.values())
+    aflat = sum(lvl for iid, lvl in c.armor_temper.items() if iid in worn) * smithing.TEMPER_ARMOR_PER
+    assert smithing.armor_temper_bonus(c, gd) == int(aflat * 1.25)
 
 
 def test_same_source_masking_fixed_spell_poison_evasion_passive():
@@ -1269,6 +1293,7 @@ def run():
     test_trap_floor_floors_dodge()
     test_weapon_mod_merges_same_target()
     test_smithing_50_options_replaced()
+    test_temper_power_aggregates_and_applies()
     test_same_source_masking_fixed_spell_poison_evasion_passive()
     test_illusion_mind_mastery_reduces_cost()
     test_shipped_attr_fortify_node_flows_to_resources()

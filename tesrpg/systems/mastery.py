@@ -40,7 +40,7 @@ _IMPLEMENTED_KINDS = {
     *_FORTIFY_KINDS,                       # P1:持久 fortify 層
     # P2 戰鬥系:武器流派調變(命中/威力/破甲/反作用/耗體/命中附狀態,target=武器技能)、
     # 盾擊踉蹌、淬鍊上限/省料、旅速、戰鬥省體。
-    "weapon_mod", "block_riposte", "on_evade", "temper_cap_bonus", "temper_cost_free",
+    "weapon_mod", "block_riposte", "on_evade", "temper_cap_bonus", "temper_cost_free", "temper_power",
     "travel_factor_bonus", "fatigue_cost_bonus",
     # P3 魔法系:法術調變(學派 power/cost/命中附狀態,吸收 spell_overload)、召喚調變、
     # 被動護甲、煉金/附魔增幅、塗毒次數、命中懼意、低血再生、商貿議價。
@@ -605,6 +605,13 @@ def temper_free_chance(char, gamedata: GameData) -> float:
     """物盡其用/傳奇工匠:淬鍊有機率不消耗錠(0 = 無)。多來源(smithing_75 + smithing_100)取最高。"""
     return max((o.get("free_chance", 0.0)
                for o in _chosen_options_by_kind(char, gamedata, "temper_cost_free")), default=0.0)
+
+
+def temper_power(char, gamedata: GameData) -> float:
+    """淬鋒/淬鍊大師(smithing_50+100,鋒銳側):淬鍊加成額外 ×(1+power)。
+    多節點相加(0.10+0.15)→ float-factor 軸,與 free(max-float)/cap(int)各自獨立,不二元遮蔽(R35)。"""
+    return sum(o.get("power", 0.0)
+               for o in _chosen_options_by_kind(char, gamedata, "temper_power"))
 
 
 # --- 廣度 pass 新 getter(皆單源:只一個技能授予 → 無需聚合)--------------------

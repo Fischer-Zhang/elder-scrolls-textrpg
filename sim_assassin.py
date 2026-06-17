@@ -133,6 +133,31 @@ if __name__ == "__main__":
         flag = " ⚠破紅線(應為 0%)" if rate_max > 0.0 else " ✓存活"
         print(f"  {t:16} (HP {hp})  最壞 apex 秒殺 {rate_max:5.1%}{flag}")
 
+    print("\n== R37 鋒銳覆核:temper_power apex(全鋒銳 50/75/100 → cap6+power0.25 → 武器淬鍊 +15 vs apex_max +10)==")
+    def apex_temper():
+        """R37 最壞鋒銳:apex_max + smithing 全鋒銳側(temper_edge 0.10 + master_temper cap6 + temper_mastery 0.15)。
+        武器淬鍊 flat = 6×2×1.25 = 15(較 apex_max temper5 的 +10 更高)→ 驗 temper_power 不破 solo cap/精英 oneshot。"""
+        c = apex_max(temper=6)
+        c.mastery_choices.update({"smithing_50": "temper_edge", "smithing_75": "master_temper",
+                                  "smithing_100": "temper_mastery"})
+        return c
+    for t in ["dremora_lord", "ancient_dragon", "mehrunes_dagon"]:   # ① solo boss 仍須 0%(cap 保護 flat 加傷)
+        srate = oneshot(apex_temper, t)
+        flag = " ⚠破紅線(應為 0%)" if srate > 0.0 else " ✓存活"
+        print(f"  solo {t:16} temper_power apex 秒殺 {srate:5.1%}{flag}")
+    for t in ["dremora", "frost_troll"]:                             # ② 精英 oneshot 增幅 < 2%(temper flat 偷襲放大唯一風險點)
+        base = oneshot(apex_max, t)
+        mod = oneshot(apex_temper, t)
+        flag = " ⚠破2%" if (mod - base) > 0.02 else ""
+        print(f"  精英 {t:18} apex_max {base:5.1%} → temper_power {mod:5.1%}(Δ{mod - base:+.1%}){flag}")
+    # ③ 群戰死亡率(對抗審查補):隔離 temper_power 邊際效應 —— 同淬鍊6 build,有/無 power。
+    #    註:tempered glass_dagger apex 本就把 4-bandit 死亡率壓到 ~0.4%(既有 tempering+裝備,**非本輪引入**;
+    #    舊 26.2% 紅線量的是「無淬鍊」apex,非真實最壞)。此處只驗 temper_power 的邊際不再壓垮。
+    dr_notemper = rate(lambda: apex_max(temper=6), ['bandit'] * 4)   # 淬鍊6,factor 0
+    dr_power = rate(apex_temper, ['bandit'] * 4)                     # 淬鍊6 + temper_power 0.25
+    flag = " ⚠temper_power 邊際壓垮(>10pp)" if (dr_notemper - dr_power) > 0.10 else ""
+    print(f"  4 bandit 死亡率(淬鍊6)  無power {dr_notemper:.1%} → +temper_power {dr_power:.1%}(Δ{dr_power - dr_notemper:+.1%}){flag}")
+
     print("\n== P4 反制覆核(契約②):群體規模 → 潛近/隱遁機率陡降(>3 敵大減)==")
     relent = lambda: assassin(sneak=100, acrobatics=100, dual=True,
                               mastery_choices={"sneak_75": "relentless_shadow"})

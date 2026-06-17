@@ -1610,7 +1610,7 @@ def _armor_display(char: Character, gamedata: GameData) -> int:
     """UI 顯示用護甲值(含永久淬鍊 flat 加成)。
     淬鍊不隨耐久折損;戰鬥側 base 另在 combat._armor_rating 計入,顯示與戰鬥互不重複。"""
     from tesrpg.systems import inventory as _inv, smithing
-    return _inv.worn_armor_rating(char, gamedata) + smithing.armor_temper_bonus(char)
+    return _inv.worn_armor_rating(char, gamedata) + smithing.armor_temper_bonus(char, gamedata)
 
 
 def weapon_line(char: Character, gamedata: GameData) -> str:
@@ -1628,7 +1628,7 @@ def weapon_line(char: Character, gamedata: GameData) -> str:
         dual = f" [bold red]· 雙持 {gamedata.item(char.offhand)['name']}(每擊 +{oh_bonus} 傷)[/]"
     else:
         dual = ""
-    dmg = wp.get("damage", 0) + smithing.weapon_temper_bonus(char)     # 含永久淬鍊加傷 → 淬鍊效果可見
+    dmg = wp.get("damage", 0) + smithing.weapon_temper_bonus(char, gamedata)     # 含永久淬鍊加傷(+鋒銳倍率)→ 淬鍊效果可見
     dmg_tag = f"傷害 {dmg} · " if char.weapon != "fists" else ""
     return (f"{wp['name']}（{dmg_tag}{gamedata.skill_name(wp['skill'])} {char.skill(wp['skill'])}"
             f"{arch_tag})" + _temper_suffix(char, char.weapon)

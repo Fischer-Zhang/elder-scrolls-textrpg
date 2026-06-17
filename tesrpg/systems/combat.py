@@ -186,7 +186,7 @@ def _weapon_profile(actor, gamedata: GameData):
         if bw:   # 召喚「束縛兵刃」:取代裝備武器 → 固定傷害、用咒術技能、不吃淬鍊/附魔/塗毒/耐久(skill_id=None)
             return bw["magnitude"], actor.skill("conjuration"), None
         wp = gamedata.item(actor.weapon)   # 用 item() 以支援附魔(合成)武器
-        return wp["damage"] + smithing.weapon_temper_bonus(actor), actor.skill(wp["skill"]), wp["skill"]
+        return wp["damage"] + smithing.weapon_temper_bonus(actor, gamedata), actor.skill(wp["skill"]), wp["skill"]
     return actor.attack["damage"], actor.attack["skill"], None
 
 
@@ -218,7 +218,7 @@ def _armor_rating(actor, gamedata: GameData) -> int:
     # 被動護甲(石膚/靈體護壁=法系、撐架/柔革護持=物理 stance):里程碑 perk,無條件生效
     # (廣度 pass 加入物理 stance 後不再綁魔力;原「有魔力才生效」對物理 stance 不合理)。
     passive = mastery.passive_armor_bonus(actor, gamedata)
-    return base + passive + smithing.armor_temper_bonus(actor) + magic.active_shield(actor)   # 淬鍊 + 變化系護盾疊加
+    return base + passive + smithing.armor_temper_bonus(actor, gamedata) + magic.active_shield(actor)   # 淬鍊 + 變化系護盾疊加
 
 
 def _player_armor_skill(actor, gamedata: GameData) -> str:

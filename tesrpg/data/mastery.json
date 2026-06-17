@@ -286,8 +286,8 @@
    "options": [
      {"opt_id": "thrifty_forge", "name": "淬火精算", "kind": "temper_cost_free", "free_chance": 0.20,
       "desc": "用料精算:淬鍊時有兩成機率不耗錠(與其他省料里程碑取最高)。"},
-     {"opt_id": "smith_arm", "name": "鍛場錘感", "kind": "skill_fortify", "skill": {"blunt": 6},
-      "desc": "終日掄錘,臂力與鈍器手感俱進(鈍器技能 +6)。"}
+     {"opt_id": "temper_edge", "name": "淬鋒", "kind": "temper_power", "power": 0.10,
+      "desc": "淬火更深:每級淬鍊的武器加傷與護甲加值再 ×1.10(與淬鍊大師相加)。"}
    ]},
 
   {"id": "alchemy_50", "skill": "alchemy", "threshold": 50,
@@ -394,8 +394,8 @@
   {"id": "smithing_100", "skill": "smithing", "threshold": 100, "options": [
      {"opt_id": "legendary_smith", "name": "傳奇工匠", "kind": "temper_cost_free", "free_chance": 0.50,
       "desc": "鍛造登峰:對材料的拿捏出神入化 —— 淬鍊時 50% 機率不消耗錠材(多源取最高)。"},
-     {"opt_id": "forgemaster", "name": "鍛造學究", "kind": "skill_fortify", "skill": {"heavy_armor": 10},
-      "desc": "千錘百鍊間通曉甲冑構造,穿戴重甲更得其法(重甲技能 +10)。"}
+     {"opt_id": "temper_mastery", "name": "淬鍊大師", "kind": "temper_power", "power": 0.15,
+      "desc": "鍛技通玄:淬鍊加成再 ×1.15(與淬鋒相加,50+100 合計 ×1.25)。"}
    ]},
 
   {"id": "alchemy_100", "skill": "alchemy", "threshold": 100, "options": [

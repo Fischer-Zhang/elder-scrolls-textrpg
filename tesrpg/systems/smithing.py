@@ -167,13 +167,18 @@ def meltdown(char: Character, gamedata: GameData, item_id: str) -> dict:
 
 
 # --- 讀取鉤(combat,僅玩家)------------------------------------------------
-def weapon_temper_bonus(char: Character) -> int:
-    """玩家當前手持武器的淬鍊加傷(0 = 未淬鍊;徒手/未知 id 自動為 0)。"""
-    return getattr(char, "weapon_temper", {}).get(char.weapon, 0) * TEMPER_WEAPON_PER
+def weapon_temper_bonus(char: Character, gamedata: GameData) -> int:
+    """玩家當前手持武器的淬鍊加傷(0 = 未淬鍊;徒手/未知 id 自動為 0)。
+    含鋒銳里程碑 temper_power 倍率 ×(1+power)(smithing 50/100;未選 → 0)。"""
+    from tesrpg.systems import mastery
+    flat = getattr(char, "weapon_temper", {}).get(char.weapon, 0) * TEMPER_WEAPON_PER
+    return int(flat * (1 + mastery.temper_power(char, gamedata)))
 
 
-def armor_temper_bonus(char: Character) -> int:
-    """玩家穿戴中各護甲件的淬鍊加護甲值總和。"""
+def armor_temper_bonus(char: Character, gamedata: GameData) -> int:
+    """玩家穿戴中各護甲件的淬鍊加護甲值總和(含鋒銳里程碑 temper_power 倍率)。"""
+    from tesrpg.systems import mastery
     worn = set(char.equipped.values())
-    return sum(lvl for iid, lvl in getattr(char, "armor_temper", {}).items()
+    flat = sum(lvl for iid, lvl in getattr(char, "armor_temper", {}).items()
                if iid in worn) * TEMPER_ARMOR_PER
+    return int(flat * (1 + mastery.temper_power(char, gamedata)))

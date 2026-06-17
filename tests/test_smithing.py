@@ -309,11 +309,11 @@ def test_temper_visible_in_display():
     base_dmg = gd.item("steel_sword")["damage"]
     arm0 = ui._armor_display(c, gd)
     smithing.temper(c, gd, "steel_sword"); smithing.temper(c, gd, "steel_cuirass")
-    assert smithing.weapon_temper_bonus(c) > 0 and smithing.armor_temper_bonus(c) > 0
+    assert smithing.weapon_temper_bonus(c, gd) > 0 and smithing.armor_temper_bonus(c, gd) > 0
     # 武器行顯示含淬鍊的有效傷害(= 戰鬥基礎傷害)
-    assert f"傷害 {base_dmg + smithing.weapon_temper_bonus(c)}" in ui.weapon_line(c, gd)
+    assert f"傷害 {base_dmg + smithing.weapon_temper_bonus(c, gd)}" in ui.weapon_line(c, gd)
     # 護甲顯示值上升正好等於淬鍊加成
-    assert ui._armor_display(c, gd) == arm0 + smithing.armor_temper_bonus(c)
+    assert ui._armor_display(c, gd) == arm0 + smithing.armor_temper_bonus(c, gd)
 
 
 def test_steel_set_fully_craftable():
