@@ -35,7 +35,7 @@ from tesrpg.gamedata import GameData
 _FORTIFY_KINDS = {"skill_fortify", "attr_fortify", "resist_fortify"}
 
 _IMPLEMENTED_KINDS = {
-    "block_deflect", "bulwark", "overheal_ward",
+    "block_deflect", "block_reflect", "bulwark", "overheal_ward",
     "spell_overload", "lock_floor", "guaranteed_persuade",
     *_FORTIFY_KINDS,                       # P1:持久 fortify 層
     # P2 戰鬥系:武器流派調變(命中/威力/破甲/反作用/耗體/命中附狀態,target=武器技能)、
@@ -233,9 +233,15 @@ def next_threshold(char, gamedata: GameData, skill_id: str) -> dict | None:
 
 # --- 各 kind 的使用點 getter(呼叫端各取一處;只認『已選』的 option)----------
 def block_hit_penalty(char, gamedata: GameData) -> float:
-    """格擋時施加給攻擊者的命中懲罰(預設 BLOCK_HIT_PENALTY;盾陣加深)。"""
+    """格擋時施加給攻擊者的命中懲罰(預設 BLOCK_HIT_PENALTY;block_deflect 加深)。"""
     e = _chosen_option_by_kind(char, gamedata, "block_deflect")
     return e["penalty"] if e else formulas.BLOCK_HIT_PENALTY
+
+
+def block_reflect(char, gamedata: GameData) -> dict:
+    """盾反(block_50 戰技):受物理近戰擊中時反彈 reflect 比例傷害,每次扣 fatigue 體力(體力不足則不反)。空 = 無。"""
+    e = _chosen_option_by_kind(char, gamedata, "block_reflect")
+    return {"reflect": e.get("reflect", 0.0), "fatigue": e.get("fatigue", 0)} if e else {}
 
 
 def incoming_physical_factor(char, gamedata: GameData) -> float:

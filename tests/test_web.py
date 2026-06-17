@@ -402,7 +402,7 @@ def test_sheet_subview_models():
     from tesrpg.creation import build_character
     gd = get_gamedata()
     c = build_character(gd, name="測", sex="male", race="altmer", birthsign="mage", class_id="mage")
-    c.skills["block"] = 44       # 製造一個未解鎖里程碑(盾陣 50)
+    c.skills["block"] = 44       # 製造一個未解鎖里程碑(block 50,差一級)
     backend = WebBackend()
     ui.use_web_backend(backend, _rec())
     try:

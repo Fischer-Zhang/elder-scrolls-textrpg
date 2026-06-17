@@ -294,7 +294,8 @@ def cast_fatigue_power_factor(fatigue_ratio: float) -> float:
     return 1.0 - (1.0 - max(0.0, min(1.0, fatigue_ratio))) * CAST_FATIGUE_POWER_PENALTY
 
 
-BLOCK_HIT_PENALTY = 0.15        # 對方格擋時攻擊命中率的基礎扣減(里程碑「盾陣」會加深)
+BLOCK_HIT_PENALTY = 0.15        # 對方格擋時攻擊命中率的基礎扣減
+EMPOWER_STACK_RATIO = 0.7       # 盟友增傷(empower)多源遞減疊加比率:最強×1 + 次強×0.7 + 第三×0.49…(上限 1/(1−r)≈3.33×最強;防暴衝又獎勵指揮官疊旗)
 
 
 def hit_chance(atk_skill: int, atk_agility: int, def_agility: int,

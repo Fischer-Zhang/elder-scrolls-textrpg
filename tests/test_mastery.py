@@ -76,17 +76,47 @@ def test_two_option_choice_plumbing():
         c.mastery_choices.pop("blade_test", None)
 
 
-# --- 盾陣(block 50)----------------------------------------------------
-def test_shieldwall_deepens_block_penalty():
+# --- 盾反(block 50;R39)----------------------------------------------------
+def test_block_reflect_returns_damage_and_costs_fatigue():
+    """R39 盾反:受物理近戰擊中 → 反彈 20% + 每次扣 6 體;力竭(< 6 體)則不反、不扣。"""
     gd, c = _char(block=50)
-    assert mastery.block_hit_penalty(c, gd) == formulas.BLOCK_HIT_PENALTY   # 未選 → 中性
+    assert mastery.block_reflect(c, gd) == {}                              # 未選 → 空
+    assert mastery.block_hit_penalty(c, gd) == formulas.BLOCK_HIT_PENALTY  # 盾陣已移除 → 格擋基礎懲罰仍預設
     mastery.choose(c, gd, "block_50", "shieldwall")
-    assert mastery.block_hit_penalty(c, gd) == 0.25
-    base = formulas.hit_chance(60, 40, 40, 1.0, defender_blocking=True, block_penalty=0.15)
-    deep = formulas.hit_chance(60, 40, 40, 1.0, defender_blocking=True, block_penalty=0.25)
-    assert deep < base
-    gd2, c2 = _char(block=49)
-    assert mastery.block_hit_penalty(c2, gd2) == formulas.BLOCK_HIT_PENALTY
+    assert mastery.block_reflect(c, gd) == {"reflect": 0.20, "fatigue": 6}
+    c.health = c.max_health = 9999; c.weapon = "fists"                     # 排除被秒;徒手(不附元素)
+    foe = combat.spawn_creature(gd, "bandit", RNG(1)); foe.attack["skill"] = 90; foe.attack["damage"] = 20
+    hp0 = foe.health
+    for s in range(80):                                                    # 擲到一次命中(物理)以驗反彈
+        foe.health = hp0; c.fatigue = 100
+        r = combat.resolve_attack(foe, c, gd, RNG(s))
+        if r["hit"] and r["damage"] > 0:
+            assert foe.health < hp0 and c.fatigue == 94                    # 攻擊者被反彈 + 扣 6 體
+            break
+    else:
+        raise AssertionError("應至少一次命中以驗盾反")
+    for s in range(80):                                                    # 力竭(3 < 6)→ 不反、不扣負
+        foe.health = hp0; c.fatigue = 3
+        r = combat.resolve_attack(foe, c, gd, RNG(s))
+        if r["hit"] and r["damage"] > 0:
+            assert foe.health == hp0 and c.fatigue == 3                    # 力竭施展不出
+            break
+
+
+def test_empower_diminishing_stack_curve():
+    """R39 empower 遞減疊加(戰旗+號令同時生效):降序 最強×1 + 次強×0.7…;單道不變(byte-identical)。"""
+    foe = combat.spawn_creature(gd0 := get_gamedata(), "bandit", RNG(2))   # 任一非玩家攻擊者
+    target = combat.spawn_creature(gd0, "bandit", RNG(3)); target.max_health = target.health = 99999
+    def dmg(effs):
+        foe.active_effects[:] = [{"kind": "empower", "magnitude": m, "turns": 1} for m in effs]
+        return sum(combat.resolve_attack(foe, target, gd0, RNG(s))["damage"] for s in range(60))
+    base = dmg([])
+    one = dmg([0.20])                                  # 單道:×1.20
+    two = dmg([0.20, 0.15])                            # 雙道遞減:×(1 + 0.20 + 0.15×0.7)=×1.305
+    assert one > base and two > one                    # 疊加有感、但…
+    # 比例驗證:雙道增幅 / 單道增幅 ≈ (0.20+0.105)/0.20 = 1.525(遞減,非線性 1.75)
+    assert (two - base) < (one - base) * 1.75          # 遞減:小於純相加(SUM)
+    assert (two - base) > (one - base) * 1.0           # 但確有疊加(大於 MAX 的不疊)
 
 
 # --- 壁壘(heavy_armor 75)---------------------------------------------
@@ -1236,7 +1266,8 @@ def run():
     test_threshold_uses_base_skill_only()
     test_creatures_have_no_mastery()
     test_two_option_choice_plumbing()
-    test_shieldwall_deepens_block_penalty()
+    test_block_reflect_returns_damage_and_costs_fatigue()
+    test_empower_diminishing_stack_curve()
     test_bulwark_reduces_physical_and_costs_fatigue()
     test_bulwark_does_not_reduce_elemental()
     test_overheal_ward_converts_overflow_and_caps()

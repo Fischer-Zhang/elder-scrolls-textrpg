@@ -108,18 +108,21 @@ def test_empower_scales_with_caster_power():
     assert emp_mag(150) > emp_mag(0) > 0                      # 高階騎士的號令更強(且恆 >0,不被取整成 0)
 
 
-def test_empower_aggregates_as_max_not_sum():
-    """🔴 平衡:反覆號令不疊乘暴衝 —— combat 以 max 聚合,三道 0.25 等同一道。"""
+def test_empower_aggregates_diminishing_not_sum():
+    """🔴 平衡(R39):empower 多源**遞減疊加**(降序 1/0.7/0.49…)—— 戰旗+號令可同時生效,
+    但三道 0.25 遞減 < 純相加(SUM),防暴衝;單道仍等同舊行為。"""
     gd = get_gamedata()
     def ally_dmg(n_emp, seed):
         a = combat.spawn_companion(gd, "sellsword", RNG(99))
         a.active_effects = [{"kind": "empower", "magnitude": 0.25, "turns": 4} for _ in range(n_emp)]
         foe = combat.spawn_creature(gd, "bandit", RNG(seed)); foe.resist = {}
         return combat.resolve_attack(a, foe, gd, RNG(seed))["damage"]
+    none = sum(ally_dmg(0, s) for s in range(40))
     one = sum(ally_dmg(1, s) for s in range(40))
     three = sum(ally_dmg(3, s) for s in range(40))
-    none = sum(ally_dmg(0, s) for s in range(40))
-    assert one > none and three == one                       # 一道有效;三道不超過一道(max 聚合)
+    assert one > none                                        # 單道有效(×1.25)
+    assert three > one                                       # 多源遞減疊加 → 有感(非舊 MAX 的「等同一道」)
+    assert (three - none) < (one - none) * 3                 # 但 < SUM(0.7 遞減曲線,防暴衝)
 
 
 # --- 弓手:散兵武技(aimed / crippling)----------------------------------
@@ -156,7 +159,7 @@ def run():
     test_ally_aoe_heal_and_regen_aura()
     test_rally_empowers_allies_not_player()
     test_empower_scales_with_caster_power()
-    test_empower_aggregates_as_max_not_sum()
+    test_empower_aggregates_diminishing_not_sum()
     test_aimed_shot_stronger_but_capped()
     test_class_signature_spells()
 

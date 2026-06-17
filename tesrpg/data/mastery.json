@@ -17,8 +17,8 @@
 
   {"id": "block_50", "skill": "block", "threshold": 50,
    "options": [
-     {"opt_id": "shieldwall", "name": "盾陣", "kind": "block_deflect", "penalty": 0.25,
-      "desc": "格擋宗師:舉盾時更難被擊中(來犯命中懲罰由 15% 加深至 25%)。"},
+     {"opt_id": "shieldwall", "name": "盾反", "kind": "block_reflect", "reflect": 0.20, "fatigue": 6,
+      "desc": "盾反戰技:被近戰物理擊中時,以盾卸力反震 —— 反彈該擊 20% 傷害給攻擊者(每次耗 6 體力,力竭則施展不出;可與重甲反震疊加,重甲+盾共 32%)。"},
      {"opt_id": "shield_bash", "name": "盾擊踉蹌", "kind": "block_riposte", "stagger_chance": 0.35,
       "desc": "以盾反擊:成功格擋時 35% 機率震開來犯者,使其下一擊踉蹌。"}
    ]},

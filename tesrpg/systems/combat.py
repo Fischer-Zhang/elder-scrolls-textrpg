@@ -389,11 +389,13 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
                         if defender_blocking else 1.0)
         raw = formulas.attack_damage(wpn_dmg, wpn_skill, _strength(attacker),
                                      roll, block_factor)
-        # 騎士「號令」:帶 empower 增益的攻擊者(同伴)傷害提升 —— **只對同伴施放 → 永不碰玩家偷襲紅線**
-        # 以 max 聚合(取最強的一道,非加總)→ 反覆施放號令不疊乘成暴衝;單道仍隨施法 power 成長。
+        # 號令/戰旗等 empower 增益的攻擊者(同伴)傷害提升 —— **只對同伴施放 → 永不碰玩家偷襲紅線**
+        # 多源**遞減疊加曲線**(降序:最強×1 + 次強×0.7 + 第三×0.49…):戰旗+號令可同時生效又不暴衝
+        # (上限 ≈3.33×最強;單道時等同舊行為 = 不變 → solo/單光環 byte-identical)。
         if not _is_player(attacker):
-            emp = max((e.get("magnitude", 0) for e in getattr(attacker, "active_effects", [])
-                       if e.get("kind") == "empower" and e.get("turns", 0) > 0), default=0)
+            mags = sorted((e.get("magnitude", 0) for e in getattr(attacker, "active_effects", [])
+                           if e.get("kind") == "empower" and e.get("turns", 0) > 0), reverse=True)
+            emp = sum(m * (formulas.EMPOWER_STACK_RATIO ** i) for i, m in enumerate(mags))
             if emp:
                 raw *= (1 + emp)
         # 里程碑武器威力 + 弓手「瞄準射」:補傷「不吃偷襲倍率」(同副手補刀模式,守紅線;仍受 solo 夾限)
@@ -489,11 +491,15 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
         if _is_player(attacker) and wmod.get("recoil") and dmg_done > 0:
             attacker.health = max(1, attacker.health - int(round(dmg_done * wmod["recoil"])))
 
-        # 里程碑「重甲反震/重壓」:玩家受物理擊中 → 反彈傷害 + 機率震開攻擊者(只物理;攻擊者可被反殺)
+        # 里程碑「重甲反震/重壓 + 格擋盾反」:玩家受物理擊中 → 反彈傷害 + 機率震開攻擊者(只物理;攻擊者可被反殺)
         if _is_player(defender) and not atk_element and dmg_done > 0:
-            refl = mastery.armor_reflect(defender, gamedata)
+            refl = mastery.armor_reflect(defender, gamedata)            # 重甲反震(被動,無耗體)
             if refl:
                 _set_hp(attacker, _get_hp(attacker) - int(round(dmg_done * refl)))
+            br = mastery.block_reflect(defender, gamedata)              # 「盾反」戰技:**與重甲反震疊加**(使用者拍板可疊;重甲+盾=32%)+ 耗體(力竭=自帶煞車)
+            if br and defender.fatigue >= br["fatigue"]:
+                defender.fatigue = max(0, defender.fatigue - br["fatigue"])
+                _set_hp(attacker, _get_hp(attacker) - int(round(dmg_done * br["reflect"])))
             st = mastery.armor_stagger(defender, gamedata)
             if st and is_alive(attacker) and rng.chance(st):
                 # turns:2 → 撐過本回合末 tick,於攻擊者「下一次出手」時仍踉蹌生效(防守側反制的正確時序)

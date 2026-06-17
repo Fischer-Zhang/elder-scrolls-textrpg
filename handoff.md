@@ -28,7 +28,7 @@
 
 #### 角色與成長
 - 10 種族 × 13 星座 × 8 職業/自訂;八屬性 + **22 技能** learn-by-doing;混合 Skyrim 式升級(等級 XP 池 → 三選一資源 + 屬性點)
-- **技能里程碑 v2 + 完整階梯**:全 22 技能各 **25/50/75/100 四節點(88 節點)**;**25=單一 perk 自動授予**(入門技,複用退化節點)、**50/75/100=達門檻二選一**永久銘刻 + 持久 fortify 加成層(skill/attr/resist)+ 功能槓桿(武器/法術控場、弓手牽制、盾擊宗師、閃身/閃避雙路線、重甲反震、逃命、解陷保底、盜賊行竊/地城賊眼預知、鍛造淬鍊威力、口才威嚇避戰/化解犯罪/戰陣號令、頂點 capstone…);反 min-max、守刺客紅線(同源多節點 getter 必聚合不遮蔽;下限/floor 類 perk 的 floor 須高於門檻 base cap)
+- **技能里程碑 v2 + 完整階梯**:全 22 技能各 **25/50/75/100 四節點(88 節點)**;**25=單一 perk 自動授予**(入門技,複用退化節點)、**50/75/100=達門檻二選一**永久銘刻 + 持久 fortify 加成層(skill/attr/resist)+ 功能槓桿(武器/法術控場、弓手牽制、盾擊宗師、閃身/閃避雙路線、重甲反震/盾反、逃命、解陷保底、盜賊行竊/地城賊眼預知、鍛造淬鍊威力、口才威嚇避戰/化解犯罪/戰陣號令、頂點 capstone…);反 min-max、守刺客紅線(同源多節點 getter 必聚合不遮蔽;下限/floor 類 perk 的 floor 須高於門檻 base cap)
 - **八職功能性身份網格**:全 8 職各一招牌戰術 loop(功能性非數值)—— 戰士盾牆(減傷·嘲諷)/法師奧術連鎖/盜賊諜報偵搜/騎士戰旗/戰法師共鳴一擊+法力回擊(毀滅 50/75 兩節點,可兼得)/刺客致命烙印/治療師戰地搶救/弓手獵手偵察(6 mastery 二選一節點 + 2 戰鬥動作;以技能/裝備 gate、零新存檔欄、守刺客紅線)
 - **開局背景**(14 種,只給處境不給數值)+ **種子重玩性**;冒險/傳奇兩種死亡模式 + 一生傳奇總結評分
 
@@ -939,6 +939,13 @@ tesrpg/
 - **`intimidate_floor` getter `_param`→MAX 聚合**(對齊 lock_floor:50+75 成長線取最);`talk_down_chance` 加 `gamedata=None` 參(floor 套用;2-arg 舊呼叫 back-compat);`INTIMIDATABLE` {bandit}→{bandit,rogue_thief,city_guard}(皆人形·非 solo;實務主要對盜匪生效〔其餘為劇情敵〕);衛兵說退 cap = `TALK_DOWN_MAX + cap_bonus`。
 - **⚠ 對抗審查裁決**:**駁回 2 誤報** ——(major)「intimidate_floor MAX 遮蔽」=**lock_floor 式時序成長線**(war_cry 0.30 在 speechcraft 50-74 為真實值,非 R35 跨技能二元隱形;SUM 修法會把 floor 推到 0.75 過強、違 floor-kind MAX 慣例);(major)「rally 對單挑玩家死 perk」=**by-design**(使用者選混合;rally 服務帶同伴/召喚 build、charm 服務 solo/社交 → 健康 build 取捨,desc 已明示)。**修 1 真誤註**(INTIMIDATABLE 註釋誇大→更正:rogue_thief/city_guard 為劇情敵)。其餘(talk_down 75 gate / cap+80)= by-design + **一次性說退閘**(失敗即 `talked=True` 逼繳金/服刑,無重試 → 無刷賞金 loop)中和。
 - **驗證**:`/check` 全綠(62 模組)+ 煙霧;`sim_assassin` byte-identical(rally 只 buff 盟友,solo 刺客 sim 不覆蓋 → 對標騎士戰旗 0.20 既有上界手動論證)。`test_speechcraft` 加 talk_down cap/floor + intimidate 擴白名單 + rally 解鎖/低於戰旗;`test_mastery` intimidate 段改 war_cry/iron_presence MAX。**R34–R38 技能里程碑深化告一段落**(冷線盡數功能化)。
+
+### R39 · 使用者點名兩改:block 盾反 + empower 遞減疊加曲線 [re-sim]
+
+- **#2 block 盾反**(使用者:盾陣改可用戰技):`block_50` 死填充「盾陣」(`block_deflect` 更難被擊中,純防禦)→「盾反」(**新 kind `block_reflect`** reflect 0.20, fatigue 6)。combat 反震區(玩家受物理近戰擊中 `not atk_element`)新增:有 `block_reflect` 且 `fatigue≥6` → 攻擊者受 dmg×0.20 + 玩家扣 6 體(力竭施展不出=自帶煞車)。**與重甲 `armor_reflect`(0.12)疊加 → 重甲+盾共 32%(使用者拍板可疊**;自限:反彈隨「受到的傷害」縮放〔高甲坦受傷少→反彈少〕+ 體力閘 6/次)。opt_id 保留 `shieldwall`(內部 id 不變,玩家見「盾反」;~10 測試 fixture 沿用)。block_50 二選一變「盾反 vs 盾擊踉蹌」;`block_deflect` kind/getter 保留(無 option 用 → block_hit_penalty 回預設)。
+- **#3 empower 遞減疊加曲線**(使用者:號令可與戰旗同時生效;且自提曲線):`combat.py` 攻擊傷害內,非玩家攻擊者的 empower 多源由 **MAX → 降序加權和** `Σ mag_i × EMPOWER_STACK_RATIO^i`(`formulas.EMPOWER_STACK_RATIO=0.7`:最強×1 + 次強×0.7 + 第三×0.49…,上限 ≈3.33×最強)。戰旗 0.20 + 號令 0.15 → **0.305**(同時生效、不暴衝);**單道 = ×1 byte-identical**(舊行為)。套用所有 empower 來源(戰旗/口才號令里程碑/號令法術/同伴頂點光環)。**順帶修 R38 finding**:號令對已有戰旗的騎士不再 redundant(補 0.105)。MAX_PARTY=2 → 實際同時來源 ~2-3,最壞 ~0.5。
+- **⚠ 對抗審查 + 使用者裁決(流程教訓)**:① 審查「block 20%+armor 12%=32% 無遞減」(major)—— 我**一度自行改成 MAX 封 20%**,使用者糾正「**要疊加,這種取捨必須問過我**」→ **還原為疊加 32%**(見記憶 `ask-before-balance-tradeoffs`:平衡/power 取捨必先問使用者,純 correctness bug 才直接修)。② 審查「盾反打到遠程箭」(major)→ **誤報**:bestiary attack 結構 `{name,damage,skill}` **無 ranged 旗標**,物理敵攻皆近戰等價(元素攻已被 `not atk_element` 排除)→ 「近戰」desc 準確。③ empower ratio 0.7 偏甜(審查建議 0.65)→ 使用者拍板 0.7,**監看**:若實戰盟友 DPS 超 solo >25% 再降。
+- **驗證**:`/check --sim` 全綠(62 模組)、`sim_assassin`/`sim_worldwar` byte-identical(刺客無盾無盟友 → 兩改皆不覆蓋,防守側/盟友側不碰偷襲 cap)。`test_mastery` 加 `test_block_reflect_returns_damage_and_costs_fatigue` + `test_empower_diminishing_stack_curve`;`test_hybrids` 舊「empower MAX」測試改驗遞減曲線。
 
 ---
 
