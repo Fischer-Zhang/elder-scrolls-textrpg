@@ -4,7 +4,7 @@
 > 與 [BUFFS.md](BUFFS.md) **互補** —— BUFFS.md 按「**來源層橫切**」(全遊戲增益依層羅列),本檔按「**build 縱切**」(一條構築走完所有層、含分支取捨)。
 > Single source of truth 仍是程式碼(`tesrpg/formulas.py`、`tesrpg/systems/*.py`)與資料(`tesrpg/data/*.json`);**數值有疑義以常數 / JSON / `run_all.py` 為準並順手更新本檔**。
 > 紅線本體見 [handoff.md](handoff.md) §3(R07/R11/R15/R20/R21/R25)、增益總目錄見 [BUFFS.md](BUFFS.md)、設計理念見 [DESIGN.md](DESIGN.md)。
-> 末次盤點:2026-06-17(首版:潛行刺客 / 潛行弓手兩條縱切;R40 後 marksman 樹)。
+> 末次盤點:2026-06-17(潛行刺客 / 潛行弓手 / 純法師三條縱切;R40 後 marksman 樹;法師段落經多代理對抗審查核對 magic/formulas/mastery 常數)。
 
 ---
 
@@ -143,7 +143,116 @@
 
 ---
 
-## ③ 刺客 vs 弓手 對照(同為潛行流)
+## ③ 純法師(施法 · 六系)
+
+> 與潛行流**完全不同的天花板邏輯**:法師傷害**不走偷襲倍率鏈**(不觸 `SOLO_SNEAK_DAMAGE_CAP_RATIO`),而是受 **magicka 池容量**(智力決定)、**控制法術對 solo boss 全免疫**、與**力竭法效折減**三道天花板所限。「畢業」靠把六系技能買到上限 + 疊魔力池 + 法袍省體續航。`狼人不相容`(獸形脫整套裝備、無法施法,與法師核心衝突)。
+
+### 根:吃哪些數值
+法師五圍:**magicka 池=智力**(`formulas.max_magicka(int, magicka_bonus) = int×2 + magicka_bonus`,`formulas.py:58-60`;遊戲生效上限再加升級 res + 裝備 fortify + 達貢層,`stats.py:75-77`);**回魔/抗控/施法續航=意志**(三條:戰鬥每回合回魔、休息回魔倍率、抗恐懼/麻痺,`formulas.py:76-81,97-110`);**法術威力 / 魔耗=各「學派技能」**(destruction/alteration/restoration/conjuration/illusion/mysticism 六系各自獨立)。
+**五圍序:intelligence(魔力池)≈ 學派技能 > willpower(回魔/抗控)> endurance/speed**。
+
+施法**威力鏈**(`magic._power`,`magic.py:46-49`,**相加**入括號再整體相乘):
+```
+power = (0.7 + 學派技能/150 + Σspell_power_bonus(同學派,SUM) + cascade_power) × cast_fatigue_power_factor [× 騎乘加成]
+```
+- 學派技能 100 → +0.667;範圍約 ×0.7~×1.37。`heal` 另乘 `(1+restoration_boon)` 公會層;`shield/ward/summon HP/imbue` 皆乘同 power。
+- 里程碑加成是 **`spell_power_bonus`**(`mastery.py:268-270`,同學派多節點 **SUM 相加、不取最**),**加進**括號內(非相乘);跨學派不互通(getter 以 school 過濾)。
+
+施法**成本鏈**(`magic.effective_cost`,`magic.py:37-43`,技能折扣 ×**相乘**里程碑倍率):
+```
+effective_cost = base × (1 − min(0.4, 學派技能/250)) × Π spell_cost_factor(同學派)
+```
+- 技能折扣最多省 40%;`spell_cost_factor`(`mastery.py:273-279`)同學派多 cost_factor **連乘**(`f *= o["cost_factor"]`)。⚠ **法袍不參與魔耗鏈**——法袍只折「施法體力」(`spell_fatigue_cost` 的 `cast_fatigue_factor`,`magic.py:60`)、只抬魔力上限,**不**乘魔耗。
+
+### A · 通用加成(任何法師都疊)
+| 層 | 內容 | 備註 |
+|---|---|---|
+| **核心數值** | 智力↑→魔力池(×2);意志↑→回魔三條(`magicka_regen_combat`/`rest_factor`/`mind_resist`);學派技能↑→威力 +、魔耗 −(訓練師買到 75、宗師城招牌技破 75→100) | 種族/星座加 int/will 直接吃滿 |
+| **身分:達貢之力** | ★純永久無懲罰:magicka+25(`dagon_magic_bonus` 獨立疊加層)、str+18、fire+60 | 法師首選永久層,與吸血並存 |
+| **身分:吸血鬼 T3** | str/speed/will+15(★will+15 吃滿回魔三條)、frost+30 | fire−30 弱點可被達貢 fire+60 抵成淨 +30 |
+| ~~狼人~~ | ✗ **不相容**:獸形脫整套裝備 + 無法施法 | 法師絕不取 |
+| **裝備:法袍套裝**(四件同材質,盾不計) | 學徒布袍 magicka+40·施法省體 ×0.80 / 大法師 magicka+70·★施法省體 ×0.65 / 龍祭司 ★magicka+110(全遊戲最高·但**無施法折扣**) | `armor_sets.json:9-10,13`;法袍互斥、佔胸頭手腳四槽 |
+| **裝備:法袍件附魔** | 胸/靴 `armor_fortify magicka`(學徒 +15/+10、大法師 +25/+15、龍祭司 +40/+25);兜帽/手套 `fortify_skill destruction/alteration`(學徒 +6、大法師 +10、龍祭司毀滅兜帽 +20) | `armor.json:307-331`;改 equipped 後必 recompute(R05) |
+| **裝備:自附魔飾品(3 槽)** | `fortify_resource magicka`(soul5·myst100 ≈ 22)、`fortify_attribute int/will`(★僅飾品可附 ≈ 9)、`fortify_skill 學派`(≈ 15)、`resist 元素`(≈ 38%) | `enchanting.py:89-94`;餵 skill()/attr() 不回門檻(R21) |
+| **裝備:神器(法杖)** | 魔典·哲思之卷(amulet)conj+15;馬格努斯之杖(法師公會掌門)、法力法杖(命中回魔 +8,`on_hit_self`)、元素法杖 | ⚠ 法杖 `weapon_element` 是**近戰命中元素傷**,非 spell power;本遊戲**無裝備直接加 spell power 的物品**(只能經 fortify_skill 抬學派技能間接放大) |
+| **裝備:十字軍神器** | 護心(fire+50%·胸甲槽→排斥法袍套裝)、聖盾(magic+30%·盾槽不計套裝→可與法袍並存) | `armor.json:332-333` |
+| **星座(建檔一次性·互斥)** | ★巨魔像 magicka+150+法術吸收(▼代價見下)/ 學徒 magicka+100(▼magic 抗−50)/ 法師 int+5·magicka+50(★無痛)/ 領主·儀式(每日自療 power) | `birthsigns.json` |
+| **種族(建檔寫 base)** | ★阿爾特默 int/will+10·magicka+100·六系 skill_bonuses(dest+10·alt/conj/illu/myst/鍊+5,最強通才;▼str/end−10)/ 布萊頓 int/will+10·magicka+50·★magic 抗+50/ 丹莫 dest+10·★fire+75 | `races.json` `skill_bonuses` |
+| **法師公會 / 精神飽滿** | 法師公會 `spell_discount`(折**買法書價** cap 0.45,非魔耗)+ 每省守一學派·保底 9 道法書(廣度);精神飽滿各學派練功 xp×1.25 | `factions.py:145`;經濟/廣度層,非數值 buff |
+| **消耗品:回復** | `restore_magicka`(商店 minor +25 / 自釀,夾 max_magicka)、`restore_fatigue`(回體續航);可釀池 ×`potion_potency`(煉金 75/100 ≤+0.35)放大 | `items.json`/`alchemy.py:184-188` |
+| **消耗品:限時增益** | ⚠ 智力/魔法學派強化藥**無材料可釀**(`ingredients.json` 無 `fattr_intelligence`/`fskill_<學派>`);法師可釀僅 `fattr_willpower`(回魔/抗控)、`resist_magic`、`fattr_agility`;走獨立 `potion_*` 層(R30,同 kind 取最強+取較晚到期非相加) | `alchemy.py:176-183`;可釀範圍純由材料資料決定、無 code 白名單 |
+| **消耗品:自我增益法術** | 變化護盾 oak/stone/ironflesh(armor_rating 30/55/75×power,擋物理)、秘術結界 ward/greater/spell_absorb(吸法術·可耗盡)、奧術灌注 flame/frost/storm_blade(近戰元素傷)、束縛兵刃、再生 HoT、凝神回體 | `magic.py:221-254`;active_effects ★不入存檔(R03) |
+
+### B · 分支加成(六系里程碑二選一互斥;25 系列為單選自動授予=通用基底)
+> 每系 25 門檻 = 單選 `*_basics`(全 `cost_factor 0.92`,省魔 8%,通用基底);50/75/100 為**二選一互斥**,同系常須在「省魔(cost 0.85)vs 增幅(power_bonus)vs 被動護甲」間取捨。
+
+**destruction 樹(純輸出)**
+| 階 | A | B |
+|---|---|---|
+| 50 | 凝神聚法(int+4·抬魔池) | 共鳴一擊(戰法師:傷害咒後下一近戰灌半法傷+DoT,`magic.py:188-197`) |
+| 75 | 省魔催動(毀滅 cost ×0.85) | 法力回擊(近戰命中回魔 +4) |
+| 100 | ★過載(power +0.20·**▼cost ×1.30**·連帶更耗體) | 衝擊餘波(命中 35% 踉蹌·**solo 免疫**) |
+
+**alteration 樹(護盾/戰法師之刃)**
+| 階 | A | B |
+|---|---|---|
+| 50 | 變化術法效力(power +0.10) | 省魔護持(cost ×0.85) |
+| 75 | 術法增幅(power +0.15) | 石膚(被動護甲 +20) |
+| 100 | 術法精純(power +0.15·與 75 相加) | 魔皮(被動護甲 +14·與石膚相加) |
+
+**restoration 樹(治療輔助)**
+| 階 | A | B |
+|---|---|---|
+| 50 | 戰地搶救(同伴 <30% 治療近乎免費) | 潔淨之軀(疾病抗 +30) |
+| 75 | 聖光·溢盾(超治轉臨時護盾·夾自家 ≤max_health×0.5) | 不屈祝禱(<25% 觸 regen 4×3) |
+| 100 | 聖療登峰(治療 power +0.20) | 生生不息(每回合自癒 8·is_alive 守不復活死人) |
+
+**conjuration 樹(召喚流)**
+| 階 | A | B |
+|---|---|---|
+| 50 | 省魔召喚(cost ×0.85) | 護體召喚初窺(被動護甲 +8) |
+| 75 | 護體召喚(被動護甲 +15) | 召喚精研(召喚技能 +8→召喚物更強+省魔) |
+| 100 | 雙重召喚(多召 1 隻·HP×0.6) | 束縛兵刃(召喚物 HP+25%·多駐 1 回合) |
+
+**illusion 樹(控場·懾心)**
+| 階 | A | B |
+|---|---|---|
+| 50 | 省魔幻術(cost ×0.85) | 懾意初窺(命中 10% 施懼·**solo 免疫**) |
+| 75 | 魅惑交易(議價 +0.12) | 懾心術(命中 20% 施懼) |
+| 100 | 操心駕輕(cost ×0.85) | 懾魂奪魄(命中 15%·三源 chance SUM 夾 0.30) |
+
+**mysticism 樹(結界·法師心流·附魔)**
+| 階 | A | B |
+|---|---|---|
+| 50 | 省魔秘法(cost ×0.85) | 結界凝練(結界吸收 power +0.10) |
+| 75 | ★奧術連鎖(連發 +8% power·−12% 體/層·疊 2 層) | 靈體護壁(被動護甲 +15) |
+| 100 | 靈魂虹吸(★附魔強度 ×1.20·放大全自附魔) | 靈光護壁(被動護甲 +15·與 75 相加) |
+
+**副軸流派(選一條當骨幹)**
+- **純輸出毀滅**:阿爾特默/丹莫 + dest 全取(凝神聚法→省魔催動→過載 power+0.20)+ 元素弱點種族/星座 + 力竭管控(滿體才打滿威力)。
+- **召喚流**:conj 精研+雙重召喚/束縛兵刃 + 達貢之佑(神話黎明會員 summon HP×(1+0.1×階 cap 0.6))+ 護體召喚自護;前排靠召喚物,法師遠抽。
+- **戰法師武器灌注**:alteration 灌注 flame/frost/storm_blade + 共鳴一擊(dest_50)+ 法力回擊回魔;近戰每擊吃元素傷(★加在 solo 夾**之前**、偷襲不放大)。
+- **治療輔助**:resto 戰地搶救+溢盾/生生不息 + 聖光眷顧(九神騎士團 heal×(1+0.07×階 cap 0.35))+ 結界硬扛;隊友/召喚物續航。
+- **控場幻術·秘術結界**:illusion 懾心/懾魂(命中施懼)+ 秘術 ward/spell_absorb 吸法術 + 奧術連鎖連發增幅;⚠ 懼/麻痺對 solo boss **全免疫**,控場只對群兵有效。
+
+### C · 完全體疊滿 + 天花板
+**阿爾特默 · 巨魔像座 · 大法師法袍套(magicka+70·施法 ×0.65)· 達貢之力 · 六系里程碑各取一支**:
+```
+魔力池 ≈ int×2 + 250(altmer+100 + 巨魔像+150) + 法袍/附魔 fortify + 達貢+25
+施法威力(滿體)≈ 0.7 + 100/150 + Σpower_bonus(同學派) + cascade(≤+0.16)  ← 各學派各自吃自系增幅
+施法成本 ≈ base ×(1−0.4)× Π cost_factor(如 dest_basics 0.92 × efficient 0.85 = 0.782)
+施法體力 ≈ … × 0.65(法袍)× cascade_fatigue(≤−24%)   ← 法袍只折體力、不折魔耗
+```
+🔴 **三道天花板(與刺客/弓手紅線「不同源」)**：
+1. **控制法術對 solo boss 全路徑免疫**(`magic.py:258,307`,`_is_solo` 守 fear/rout/mass_paralysis;impact stagger 同免疫)→ 對單體 BOSS **只能靠傷害 + weaken 削弱 + 護盾/結界硬扛**,不能反鎖王(同 R31/R34 紅線,但路徑在法術側)。
+2. **magicka 池硬限**:傷害**不走偷襲倍率**(不觸 `SOLO_SNEAK_DAMAGE_CAP_RATIO` 40% 夾),但每道法術扣魔→池見底即啞火;★巨魔像 `atronach` **▼代價:魔力不自然回復**(休息與戰鬥兩條回魔路徑皆 gate 掉,`main.py:267,906`)→ 只能靠法術吸收 / 喝藥補魔;想保回魔則改學徒(▼magic 抗−50)或法師/布萊頓座。
+3. **力竭法效折減**(`cast_fatigue_power_factor`,`formulas.py:288-294`):滿體 ×1.0、空體 ×0.75,統一削 damage/heal/shield/ward/imbue/summon HP → 法師需先回體才打滿威力。
+
+→ **法師上限不靠「乘子爆發」而靠「池深 + 續航 + 廣譜威力」**;與潛行流共享「打 solo boss 畢業也鎖死」的結論,但鎖的是**控制免疫 + 魔力池**,而非偷襲 40% 夾。
+
+---
+
+## ④ 刺客 vs 弓手 對照(同為潛行流)
 
 | | 潛行刺客(匕首) | 潛行弓手(弓) |
 |---|---|---|
@@ -160,8 +269,7 @@
 
 ## 附 · 其他原型骨架(待補)
 
-本檔目前只縱切了兩條潛行物理流。其餘原型骨架(指針,待後續補):
-- **純法師**(毀滅/咒術/變化):身分層走達貢(dest+10/conj+8/magicka+25)+ 法袍施法折扣 + spell_mod 樹;紅線=法術對 solo boss 麻痺/懼免疫(R10/R14)。
+本檔目前縱切了三條(潛行刺客 / 潛行弓手 / 純法師)。其餘原型骨架(指針,待後續補):
 - **戰士/坦**(重甲+格擋):passive_armor 多源(夾 85%)+ 重甲反震/重壓 + 壁壘;不走潛行(重甲 W>18 偷襲打折)。
 - **戰法師**(武器灌注+共鳴一擊)、**騎士**(戰旗 empower)、**召喚流**等 —— 見 BUFFS.md §③④ 對應 perk。
 > 補新原型時:**先看根(吃哪些數值)→ 通用層 → 分支二選一 → 完全體+紅線**,與上方兩條同格式。
