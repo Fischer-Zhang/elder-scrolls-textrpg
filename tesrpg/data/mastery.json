@@ -332,8 +332,8 @@
 
   {"id": "light_armor_50", "skill": "light_armor", "threshold": 50,
    "options": [
-     {"opt_id": "nimble_guard", "name": "柔革護持", "kind": "passive_armor", "armor_bonus": 12,
-      "desc": "柔革貼身、卸力得宜:被動護甲 +12。"},
+     {"opt_id": "lithe_evasion", "name": "柔革閃身", "kind": "evasion_bonus", "evasion_bonus": 0.05,
+      "desc": "柔革貼身、卸力游走:身形更難捉摸,敵人命中你的機率 −5%(與雜技/運動相加,夾總上限)。"},
      {"opt_id": "riposte_step", "name": "迴身反打", "kind": "on_evade", "counter_chance": 0.35, "counter_frac": 0.5,
       "desc": "輕裝游擊:閃過敵攻時 35% 機率順勢回敬一擊(造成你武器基礎傷害的五成)—— 以閃化打。"}
    ]},
@@ -350,8 +350,8 @@
    "options": [
      {"opt_id": "intel_strike", "name": "料敵機先", "kind": "approach_bonus", "approach_bonus": 0.10,
       "desc": "情報轉戰力:摸清敵之站位與警覺 → 接戰時更常搶得開場偷襲先機(+10%,與無聲潛近相加)。"},
-     {"opt_id": "forewarned", "name": "未雨綢繆", "kind": "skill_fortify", "skill": {"scout": 8},
-      "desc": "偵查精進,先機判讀更準(偵查技能 +8 → 更早揭弱點、更多備戰)。"}
+     {"opt_id": "threat_read", "name": "料敵判讀", "kind": "recon_resist_read",
+      "desc": "戰場判讀入微:接戰前更早看穿敵之抗性與弱點(揭露門檻 75→50);斥候洞悉虛實的眼力。"}
    ]},
 
   {"id": "speechcraft_50", "skill": "speechcraft", "threshold": 50,
@@ -421,15 +421,15 @@
   {"id": "acrobatics_100", "skill": "acrobatics", "threshold": 100, "options": [
      {"opt_id": "aerial_ambush", "name": "凌空奇襲", "kind": "on_evade", "restamina": 10,
       "desc": "雜技登峰:身形如煙、卸勁不竭 —— 每次閃過敵攻即回復 10 點體力,翻飛纏鬥久戰愈穩(與順勢借力相加夾上限)。"},
-     {"opt_id": "deft_roll", "name": "卸勁脫身", "kind": "vanish_floor", "floor": 0.10,
-      "desc": "翻滾卸勁脫離纏鬥:戰鬥中隱遁成功率保底 10%(多源取最高)。"}
+     {"opt_id": "wind_step", "name": "凌風身法", "kind": "evasion_bonus", "evasion_bonus": 0.06,
+      "desc": "雜技登峰(閃避流):翻飛縱躍、身形如風,敵人難以鎖定你的軌跡 —— 命中你的機率再 −6%(與輕甲/運動相加夾上限);與凌空奇襲的回體流互為身法兩極。"}
    ]},
 
   {"id": "light_armor_100", "skill": "light_armor", "threshold": 100, "options": [
      {"opt_id": "storm_dance", "name": "風暴之舞", "kind": "on_evade", "counter_chance": 0.6, "counter_frac": 0.6, "counter_stagger": true,
       "desc": "游擊登峰:閃過敵攻時 60% 機率回敬一記(武器基礎傷害六成)並震開來犯者 —— 以閃化打臻於化境(與迴身反打取最)。"},
-     {"opt_id": "second_skin", "name": "柔革如膚", "kind": "passive_armor", "armor_bonus": 14,
-      "desc": "輕甲貼身卸力臻於化境(被動護甲 +14,與柔革護持相加)。"}
+     {"opt_id": "phantom_step", "name": "身如鬼魅", "kind": "evasion_bonus", "evasion_bonus": 0.06,
+      "desc": "游擊登峰(閃避流):步法飄忽如鬼魅,敵人幾乎抓不住你的身影 —— 命中你的機率再 −6%(多源相加夾上限);輕裝弓手/法者的不敗身法。"}
    ]},
 
   {"id": "mercantile_100", "skill": "mercantile", "threshold": 100, "options": [

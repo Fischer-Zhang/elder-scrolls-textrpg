@@ -752,8 +752,9 @@ def test_sneak_approach_and_armor_relief():
 
 
 def test_scout_prep_and_recon():
-    """偵查里程碑改「情報→戰力」(原 recon-reveal 對 scout 角色冗餘的死 perk 已重設):
-    備戰 prep / 料敵機先 approach / 臨陣預判 evasion;弱點揭露門檻改由 mercantile 線人耳目提供。"""
+    """偵查里程碑「情報→戰力」:備戰 prep / 料敵機先 approach / 臨陣預判 evasion;
+    R35 去冗餘:scout_50 去 skill_fortify 死填充 → 料敵判讀(recon_resist_read,弱點揭露門檻 75→50,
+    與交易·線人耳目同源)→ scout 取得「戰場判讀」身份,二選一變 approach(搶先機)vs 判讀(看弱點)。"""
     gd, c = _char(scout=100)
     mastery.choose(c, gd, "scout_75", "vanguard"); mastery.choose(c, gd, "scout_100", "battle_master")
     assert mastery.prep_bonus(c, gd) == 2                            # 兩階備戰相加
@@ -763,7 +764,11 @@ def test_scout_prep_and_recon():
     gd, c = _char(scout=75)
     mastery.choose(c, gd, "scout_75", "preempt")
     assert mastery.evasion_bonus(c, gd) == 0.04                      # 臨陣預判閃避
-    gd, c = _char(mercantile=75)                                     # 弱點揭露門檻改掛交易·線人耳目
+    gd, c = _char(scout=50)                                          # R35:scout_50 料敵判讀亦降弱點門檻 75→50
+    assert mastery.recon_reveal_threshold(c, gd) == 75
+    mastery.choose(c, gd, "scout_50", "threat_read")
+    assert mastery.recon_reveal_threshold(c, gd) == 50
+    gd, c = _char(mercantile=75)                                     # 弱點揭露門檻亦可掛交易·線人耳目
     assert mastery.recon_reveal_threshold(c, gd) == 75
     mastery.choose(c, gd, "mercantile_75", "informant")
     assert mastery.recon_reveal_threshold(c, gd) == 50
@@ -850,7 +855,7 @@ def test_batch3_all_25_are_single_auto_grant_no_dead():
 def test_batch1_same_source_aggregation_no_shadow():
     """同源多節點不遮蔽:temper/lock 取最高、evasion/passive_armor/poison 相加、weapon_mod 合併、spell power 相加。"""
     gd, c = _char(smithing=100, security=100, acrobatics=100, hand_to_hand=100,
-                  alchemy=100, restoration=100, heavy_armor=100, light_armor=100)
+                  alchemy=100, restoration=100, heavy_armor=100, block=100)
     mastery.choose(c, gd, "smithing_75", "efficient"); mastery.choose(c, gd, "smithing_100", "legendary_smith")
     assert mastery.temper_free_chance(c, gd) == 0.50                     # max(0.30,0.50)
     mastery.choose(c, gd, "security_75", "master_floor"); mastery.choose(c, gd, "security_100", "master_thief")
@@ -861,9 +866,9 @@ def test_batch1_same_source_aggregation_no_shadow():
     assert abs(mastery.weapon_mod(c, gd, "hand_to_hand").get("power", 0) - (0.15 + 0.10)) < 1e-9  # weapon_mod 合併
     mastery.choose(c, gd, "alchemy_50", "toxin_master"); mastery.choose(c, gd, "alchemy_100", "venom_lord")
     assert mastery.poison_unlocks(c, gd) == {"weaken", "fear"}          # 多節點 union 不遮蔽(R31)
-    mastery.choose(c, gd, "heavy_armor_100", "ironhide"); mastery.choose(c, gd, "light_armor_50", "nimble_guard")
-    mastery.choose(c, gd, "light_armor_100", "second_skin")
-    assert mastery.passive_armor_bonus(c, gd) == 18 + 12 + 14          # 跨技能相加
+    mastery.choose(c, gd, "heavy_armor_100", "ironhide"); mastery.choose(c, gd, "block_75", "bracing")
+    mastery.choose(c, gd, "block_100", "iron_bastion")
+    assert mastery.passive_armor_bonus(c, gd) == 18 + 10 + 12          # 跨技能相加(heavy+block 三節點;R35 後輕甲弱邊已改閃避)
     mastery.choose(c, gd, "restoration_100", "divine_grace")
     assert mastery.spell_power_bonus(c, gd, "restoration") == 0.20     # 治療登峰流入 _power
 
@@ -901,6 +906,44 @@ def test_cold_skill_identity_perks():
     assert oe["restamina"] == 10                           # aerial_ambush 10(尚未疊 fluid_motion)
     mastery.choose(c, gd, "light_armor_75", "fluid_motion")   # +8 → 18 夾 ON_EVADE_RESTAMINA_CAP
     assert mastery.on_evade(c, gd)["restamina"] == mastery.ON_EVADE_RESTAMINA_CAP
+
+
+def test_dedup_nobrainer_wave():
+    """R35 去冗餘/修 no-brainer 波次:純複用既有 kind、零新存檔欄。
+    (1) acrobatics_100 修 R34 自製 no-brainer:deft_roll(vanish_floor 與 75 tumble 完全重複的死選項)
+        → whirl_riposte(on_evade 反擊)→ 100 變「回體流 aerial_ambush vs 反擊流 whirl_riposte」真二選一。
+    (2) light_armor 棄 passive_armor 填充 → 閃避流(evasion)vs 反擊流(on_evade)雙路線。
+    (3) scout_50 去 skill_fortify 填充 → threat_read(見 test_scout_prep_and_recon)。"""
+    # (1) acrobatics_100 兩選項現為功能互異的 evasion(閃避流)vs on_evade(回體流);**對抗審查教訓**:
+    #     原 whirl_riposte 用 on_evade-counter(MAX 聚合)→ 被 light_armor_100 storm_dance(0.6)完全遮蔽成
+    #     「隱形陷阱」(同 deft_roll 被 75 tumble 遮蔽的老 no-brainer)→ 改 evasion_bonus(SUM 夾上限,永不被二元遮蔽)。
+    gd, c = _char(acrobatics=100)
+    mastery.choose(c, gd, "acrobatics_100", "wind_step")
+    assert mastery.evasion_bonus(c, gd) == 0.06                           # 閃避流(雜技 capstone evasion)
+    assert mastery.on_evade(c, gd) == {}                                  # 不再走 on_evade-counter → 無遮蔽風險
+    gd, c = _char(acrobatics=100)
+    mastery.choose(c, gd, "acrobatics_100", "aerial_ambush")
+    assert mastery.on_evade(c, gd)["restamina"] == 10 and mastery.on_evade(c, gd)["counter_chance"] == 0.0  # 回體流(互異選擇)
+    # **修真 bug 回歸**:wind_step + light_armor storm_dance → evasion 與 counter 各自獨立貢獻,非二元遮蔽
+    gd, c = _char(acrobatics=100, light_armor=100)
+    mastery.choose(c, gd, "acrobatics_100", "wind_step"); mastery.choose(c, gd, "light_armor_100", "storm_dance")
+    assert mastery.evasion_bonus(c, gd) == 0.06                           # wind_step 閃避照常生效(storm_dance 不遮蔽)
+    assert mastery.on_evade(c, gd)["counter_chance"] == 0.6               # storm_dance 反擊照常(各管各)
+    # deft_roll 死選項已移除:acrobatics_100 不再有 vanish_floor(與 75 tumble 重複的 no-brainer 敗筆已消)
+    gd, c = _char(acrobatics=100); mastery.choose(c, gd, "acrobatics_100", "aerial_ambush")
+    assert mastery.vanish_floor(c, gd) == 0.0
+    gd, c = _char(acrobatics=100); mastery.choose(c, gd, "acrobatics_75", "tumble")
+    assert mastery.vanish_floor(c, gd) == 0.10                            # 雜技 vanish_floor 僅留 75 tumble(唯一來源,不重複)
+    # (2) light_armor 弱邊改 evasion:50 lithe_evasion +0.05、100 phantom_step +0.06(同源相加,不再是 flat armor 填充)
+    gd, c = _char(light_armor=100)
+    mastery.choose(c, gd, "light_armor_50", "lithe_evasion"); mastery.choose(c, gd, "light_armor_100", "phantom_step")
+    assert abs(mastery.evasion_bonus(c, gd) - (0.05 + 0.06)) < 1e-9
+    assert mastery.passive_armor_bonus(c, gd) == 0                        # 輕甲 50/100 弱邊不再貢獻 passive_armor
+    # 反擊流路線仍在(50 riposte_step + 100 storm_dance);與閃避流為二選一
+    gd, c = _char(light_armor=100)
+    mastery.choose(c, gd, "light_armor_50", "riposte_step"); mastery.choose(c, gd, "light_armor_100", "storm_dance")
+    assert mastery.on_evade(c, gd)["counter_chance"] == 0.6
+    assert mastery.evasion_bonus(c, gd) == 0.0                            # 走反擊流則無 evasion(真二選一,非兼得)
 
 
 def test_cold_skill_combat_paths():
@@ -1086,10 +1129,10 @@ def test_same_source_masking_fixed_spell_poison_evasion_passive():
     gd0, c0 = _char(acrobatics=100)                       # 同 base、未選閃避 → 對照
     hits_without = sum(combat.resolve_attack(foe, c0, gd0, RNG(s))["hit"] for s in range(200))
     assert hits_with < hits_without
-    # passive_armor:block_75 bracing(10)+ light_armor_50 nimble_guard(12)= 22(相加不遮蔽)
-    gd4, c4 = _char(block=100, light_armor=100)
+    # passive_armor:block_75 bracing(10)+ block_100 iron_bastion(12)= 22(相加不遮蔽)
+    gd4, c4 = _char(block=100)
     mastery.choose(c4, gd4, "block_75", "bracing")
-    mastery.choose(c4, gd4, "light_armor_50", "nimble_guard")
+    mastery.choose(c4, gd4, "block_100", "iron_bastion")
     assert mastery.passive_armor_bonus(c4, gd4) == 22
 
 

@@ -901,6 +901,15 @@ tesrpg/
 - **🅒 頂點 apex 化(R34 續續)**:R34+🅑 後僅剩 heavy_armor_100(兩邊純數值)+ 5 個「功能 vs 平庸 stat」戰鬥 capstone → 弱 stat 邊**升二 apex**(使用者拍板 6 個)。**hand_to_hand/alteration/mysticism_100** 的 attr/resist → `passive_armor`(鐵布衫+12/魔皮+14/靈光護壁+15,攻 apex vs 防 apex;審查實測 **85% 減傷硬頂+遞減** → 不趨近物理免疫);**alchemy_100** → `potion_potency` getter **單源→聚合**(濃縮+萬靈藥=0.35;只放大 DoT/buff,不碰控制毒);**restoration_100** → **新 kind `combat_regen`**(每回合自癒 8);**heavy_armor_100** → **新 kind `armor_stagger`**(被近戰擊中 22% 震開攻擊者;∵**玩家不會被控**〔`is_incapacitated` 只閘 ally/enemy〕→ 控制免疫=死 perk,故改防守反制)。
 - **🔴 對抗審查 2 真 bug 皆修**:① **防守側 stagger 死時序** —— 敵階段施加的 `turns:1` 踉蹌在回合末 tick 即清、敵下次出手前已消失 → **永不生效**(測試只驗「dict 附上」漏掉)。修 `turns:2`(撐過 tick),**順手修既有 `shield_bash` 同款死時序**;測試改驗 tick 後仍 staggered。② **`combat_regen` 復活死人** —— `run_battle` 回合末自癒缺 `is_alive` 守(`auto_resolve` 有)→ 0 HP 玩家回血到 8 = 每回合免費不死。補 `is_alive` 守 + `test_m12` run_battle 回歸。passive_armor 疊加(石膚20+魔皮14=34 等)經 85% 硬頂未破、potion 0.35 只 DoT、regen 8/回合皆審查判 NOT-A-BREAK。改 opt_id 走 `ensure_mastery_choices` 退 pending。
 
+### R35 · 技能里程碑深化:去冗餘/修 no-brainer 波次 [re-sim] [save]
+
+- **問題**(承 R34 對抗審查冷度排名):4 個二選一節點的**弱邊是「死填充/自我重複」**→ 假二選一。**純改 `data/mastery.json`(4 選項換邊、零新 kind、零新存檔欄 → 仍 88/22),全複用既有 kind。**
+- **修 R34 自製 no-brainer(acrobatics_100)**:弱邊 `deft_roll`(`vanish_floor 0.10`)與 `acrobatics_75 tumble` 同值 → `vanish_floor` **MAX 聚合**下永遠被遮蔽成隱形 → 死選項。改 `wind_step`(`evasion_bonus 0.06`,閃避流)→ 100 變「回體流 `aerial_ambush`(restamina)vs 閃避流 `wind_step`」真二選一(雜技 `vanish_floor` 僅留 75 tumble 單源)。**反擊(counter)自此為輕甲獨有身份**,雜技 = 純閃避/機動/續航。
+- **light_armor 去 `passive_armor` 填充 → 閃避流/反擊流雙路線**:`light_armor_50/100` 弱邊 `nimble_guard`/`second_skin`(`passive_armor +12/+14`,cross-cutting「萬用護甲填充」)→ `lithe_evasion`/`phantom_step`(`evasion_bonus +0.05/+0.06`)。輕甲 50/100 **不再給 flat armor**(只剩 25 anchor +4)→ **輕甲=閃避非吸收**(TES 定位);閃避流(evasion)vs 反擊流(`riposte_step`/`storm_dance` on_evade)二選一。
+- **scout 去 `skill_fortify` 填充 → 戰場判讀身份**:`scout_50` 弱邊 `forewarned`(`skill_fortify scout+8`,cross-cutting「fortify 死填充製 no-brainer」)→ `threat_read`(`recon_resist_read`,弱點揭露門檻 75→50,**與 mercantile 線人耳目同 getter**)。scout_50 = 搶先機(approach)vs 看穿弱點(判讀);連帶 `has_recon_perk`(地城探四鄰;scout_25 已給 → 冗餘無害)。
+- **🔴 對抗審查 1 真 bug 修(自我糾錯)**:初版把 `deft_roll` 改成 `whirl_riposte`(`on_evade-counter 0.30`)—— **同一隱形遮蔽反模式換軸重演**:`on_evade` counter **MAX 聚合** → 被 `light_armor_100 storm_dance`(0.60)完全遮蔽,而**雜技+輕甲正是最常見的閃避 build**(陷阱命中主受眾)。審查建議的「改 SUM 聚合」**駁回**(會破 R34 counter-MAX 防群戰過度疊加紅線)→ 採正解「換 SUM-safe 的 `evasion_bonus`」(夾上限、永不被二元遮蔽)。教訓:**MAX 聚合軸(counter/vanish_floor)上做二選一弱邊極易製造隱形 no-brainer;弱邊優先用 SUM-capped 軸(evasion/restamina)。**
+- **守線**:新增 evasion 來源夾 `EVASION_BONUS_CAP 0.15`(sim 背書群戰須具風險)、on_evade counter 取 MAX/restamina SUM 夾 12 不變;`sim_assassin` 綠(solo boss 0% 秒殺、4 敵 apex 死亡率 26.2%)、`sim_worldwar` 綠。改 opt_id → `ensure_mastery_choices` 自動退 pending(零存檔欄)。`test_mastery` 加 `test_dedup_nobrainer_wave`(含 wind_step+storm_dance 不遮蔽回歸)+ 更新 `test_scout_prep_and_recon`(threat_read 降門檻)、passive_armor 聚合測試改用 block 載體。
+
 ---
 
 ## 4. 開發節奏(ultracode 開著 → 每個功能都這樣做)
