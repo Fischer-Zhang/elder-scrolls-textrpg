@@ -30,9 +30,12 @@ def clear_bounty(char: Character, province: str) -> None:
 
 
 # --- 行竊 ---------------------------------------------------------------
-def steal_chance(char: Character) -> float:
-    """得手機率:潛行 + 安全為主。"""
-    return max(0.05, min(0.95, 0.25 + char.skill("sneak") * 0.005 + char.skill("security") * 0.003))
+def steal_chance(char: Character, gamedata: GameData) -> float:
+    """得手機率:潛行 + 安全為主 + 里程碑「順手牽羊」加成(theft_skill)。夾 [0.05, 0.95]。"""
+    from tesrpg.systems import mastery
+    base = (0.25 + char.skill("sneak") * 0.005 + char.skill("security") * 0.003
+            + mastery.theft_bonus(char, gamedata).get("steal_bonus", 0.0))
+    return max(0.05, min(0.95, base))
 
 
 def steal_item(char: Character, gamedata: GameData, item_id: str, rng: RNG) -> dict:
@@ -42,16 +45,17 @@ def steal_item(char: Character, gamedata: GameData, item_id: str, rng: RNG) -> d
     讓行竊不再繞過正規訓練的代價;且**得手才學到手藝**(被抓不給潛行 xp →
     杜絕「故意被抓刷潛行」)。
     """
-    from tesrpg.systems import inventory
+    from tesrpg.systems import inventory, mastery
     province = province_of(char, gamedata)
     value = gamedata.item(item_id)["value"]
     xp, hours, tired = progression.practice_cost(char, gamedata, "sneak")
-    if rng.chance(steal_chance(char)):
+    if rng.chance(steal_chance(char, gamedata)):
         inventory.add_item(char, item_id, 1)
         events = progression.use_skill(char, gamedata, "sneak", xp)
         return {"ok": True, "caught": False, "bounty_added": 0,
                 "hours": hours, "tired": tired, "skill_events": events}
-    fine = max(20, value * 2)
+    bf = mastery.theft_bonus(char, gamedata).get("bounty_factor", 1.0)   # 「順手牽羊」失風賞金減免
+    fine = int(round(max(20, value * 2) * bf))
     add_bounty(char, province, fine)
     return {"ok": False, "caught": True, "bounty_added": fine,
             "hours": hours, "tired": tired, "skill_events": []}

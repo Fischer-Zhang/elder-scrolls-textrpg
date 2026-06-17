@@ -114,17 +114,67 @@ def test_clear_on_boss_victory_and_auto_loot_treasure():
     assert c.gold > gold0                                               # boss 寶藏自動入袋(免開鎖器)
 
 
-def test_recleared_dungeon_grants_no_guaranteed_loot():
-    """反刷寶:已肅清地城重訪 → boss 重生可再戰,但寶藏/寶箱皆已搬空(不再給保證戰利品)。"""
+def test_recleared_dungeon_boss_treasure_not_regiven():
+    """反刷寶(R36 後):已肅清地城重訪 → **首領寶藏不再給**(boss 重生可再戰但寶藏已取走)。
+    一般寶箱則隨機刷新可重撈(見 test_recleared_dungeon_general_chests_respawn);此處清空開鎖器隔離一般寶箱,只驗首領寶藏。"""
     gd, c, st = _char()
     did = gd.world["locations"][c.location_id]["dungeon"]
+    c.inventory = [it for it in c.inventory if it["id"] != "lockpick"]   # 無開鎖器 → 一般寶箱撬不開 → 隔離出首領寶藏
     c.cleared_dungeons = [did]                                           # 預設已肅清 → 重訪
     gold0, inv0 = c.gold, [dict(it) for it in c.inventory]
     ret = _run(gd, st, lambda foes: "victory")                          # 一路清到 boss 並擊殺
     assert ret is None
     assert did in c.cleared_dungeons                                    # record 仍冪等
-    assert c.gold == gold0                                              # boss 寶藏不再入袋
-    assert c.inventory == inv0                                          # 寶箱/寶藏皆零保證掉落
+    assert c.gold == gold0                                              # 首領寶藏不再入袋
+    assert c.inventory == inv0                                          # 無開鎖器 → 重訪零掉落
+
+
+def test_recleared_dungeon_general_chests_respawn():
+    """R36:已肅清地城重訪,一般寶箱隨機刷新 → CONTAINER 格仍呼 _resolve_container(非昔日空箱)。
+    spy 計數 _resolve_container;多種子求至少一次 beeline 路徑踏上寶箱格(15% 密度,極可能)。"""
+    gd = get_gamedata()
+    saw_resolve = False
+    for seed in range(8):
+        c = build_character(gd, name="探", sex="male", race="nord", birthsign="warrior", class_id="warrior")
+        loc = next(l for l, n in gd.world["locations"].items() if n.get("dungeon") == "cedernoc_cave")
+        c.location_id = loc
+        c.cleared_dungeons = [gd.world["locations"][loc]["dungeon"]]      # 重訪
+        st = GameState(player=c, time=GameTime(), rng=RNG(seed))
+        calls = {"n": 0}
+        real = M._resolve_container
+        M._resolve_container = lambda *a, **k: calls.__setitem__("n", calls["n"] + 1)   # spy(不開箱→零掉落干擾)
+        try:
+            _run(gd, st, lambda foes: "victory")
+        finally:
+            M._resolve_container = real
+        if calls["n"] > 0:
+            saw_resolve = True
+            break
+    assert saw_resolve, "重訪地城應至少一次踏上 CONTAINER 格並呼叫 _resolve_container(一般寶箱已刷新,非空箱)"
+
+
+def test_trap_xp_guarded_on_death():
+    """R36 對抗審查修:陷阱觸發給 security xp,但致死則不給(鏡像 combat_regen 死人不成長守)。"""
+    from tesrpg.systems import combat
+
+    def _trigger(health, dmg):
+        gd, c, st = _char()
+        c.health = health
+        c.skills["security"] = 80                            # 高技能 → 小 xp 不會升級攪局
+        x0 = c.skill_xp.get("security", 0.0)
+        sv = ui.message, ui.show_events
+        ui.message = ui.show_events = lambda *a, **k: None
+        st.rng.chance = lambda p: False                      # 避陷檢定必失敗 → 必觸發
+        try:
+            M._resolve_trap(st, gd, {"damage": [dmg, dmg]})
+        finally:
+            ui.message, ui.show_events = sv
+        return c, x0
+
+    c1, x1 = _trigger(999, 5)
+    assert combat.is_alive(c1) and c1.skill_xp.get("security", 0.0) > x1      # 存活觸發 → 給少量 xp
+    c2, x2 = _trigger(1, 99)
+    assert not combat.is_alive(c2) and c2.skill_xp.get("security", 0.0) == x2  # 致死 → 不給 xp(死人不成長)
 
 
 def test_flee_boss_does_not_clear_or_loot():

@@ -342,8 +342,9 @@
    "options": [
      {"opt_id": "trapwise", "name": "機關通曉", "kind": "trap_floor", "floor": 0.30,
       "desc": "機關通曉:再刁鑽的陷阱也有把握(解陷/避陷成功率保底 30%)。"},
-     {"opt_id": "nimble_fingers", "name": "巧指穩手", "kind": "skill_fortify", "skill": {"security": 8},
-      "desc": "巧指穩手,撬鎖解陷更穩(安全技能 +8)。"}
+     {"opt_id": "light_fingers", "name": "順手牽羊", "kind": "theft_skill",
+      "steal_bonus": 0.15, "bounty_factor": 0.5,
+      "desc": "市集神偷:行竊得手率 +15%,且即便失風,被索的賞金也減半(膽大心細的扒手)。"}
    ]},
 
   {"id": "scout_50", "skill": "scout", "threshold": 50,
@@ -449,8 +450,8 @@
   {"id": "security_100", "skill": "security", "threshold": 100, "options": [
      {"opt_id": "master_thief", "name": "神偷之手", "kind": "lock_floor", "floor": 0.50,
       "desc": "安全登峰:再固若金湯的鎖你都有半數把握(撬鎖成功率下限 50%;多源取最高)。"},
-     {"opt_id": "deft_hands", "name": "鬼手通玄", "kind": "skill_fortify", "skill": {"security": 10},
-      "desc": "鬼手通玄,撬鎖解陷盡在掌握(安全技能 +10)。"}
+     {"opt_id": "thiefs_eye", "name": "賊眼·窺探", "kind": "dungeon_casing",
+      "desc": "賊眼如炬:每踏入地城新一層,即洞悉該層所有陷阱與上鎖寶箱的位置(預知佈防;不含怪/樓梯/首領)。"}
    ]},
 
   {"id": "blade_75", "skill": "blade", "threshold": 75, "options": [

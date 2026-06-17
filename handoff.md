@@ -28,7 +28,7 @@
 
 #### 角色與成長
 - 10 種族 × 13 星座 × 8 職業/自訂;八屬性 + **22 技能** learn-by-doing;混合 Skyrim 式升級(等級 XP 池 → 三選一資源 + 屬性點)
-- **技能里程碑 v2 + 完整階梯**:全 22 技能各 **25/50/75/100 四節點(88 節點)**;**25=單一 perk 自動授予**(入門技,複用退化節點)、**50/75/100=達門檻二選一**永久銘刻 + 持久 fortify 加成層(skill/attr/resist)+ 功能槓桿(武器/法術控場、弓手牽制、盾擊宗師、閃身反打、重甲反震、逃命、解陷保底、頂點 capstone…);反 min-max、守刺客紅線(同源多節點 getter 必聚合不遮蔽;下限/floor 類 perk 的 floor 須高於門檻 base cap)
+- **技能里程碑 v2 + 完整階梯**:全 22 技能各 **25/50/75/100 四節點(88 節點)**;**25=單一 perk 自動授予**(入門技,複用退化節點)、**50/75/100=達門檻二選一**永久銘刻 + 持久 fortify 加成層(skill/attr/resist)+ 功能槓桿(武器/法術控場、弓手牽制、盾擊宗師、閃身/閃避雙路線、重甲反震、逃命、解陷保底、盜賊行竊/地城賊眼預知、頂點 capstone…);反 min-max、守刺客紅線(同源多節點 getter 必聚合不遮蔽;下限/floor 類 perk 的 floor 須高於門檻 base cap)
 - **八職功能性身份網格**:全 8 職各一招牌戰術 loop(功能性非數值)—— 戰士盾牆(減傷·嘲諷)/法師奧術連鎖/盜賊諜報偵搜/騎士戰旗/戰法師共鳴一擊+法力回擊(毀滅 50/75 兩節點,可兼得)/刺客致命烙印/治療師戰地搶救/弓手獵手偵察(6 mastery 二選一節點 + 2 戰鬥動作;以技能/裝備 gate、零新存檔欄、守刺客紅線)
 - **開局背景**(14 種,只給處境不給數值)+ **種子重玩性**;冒險/傳奇兩種死亡模式 + 一生傳奇總結評分
 
@@ -909,6 +909,16 @@ tesrpg/
 - **scout 去 `skill_fortify` 填充 → 戰場判讀身份**:`scout_50` 弱邊 `forewarned`(`skill_fortify scout+8`,cross-cutting「fortify 死填充製 no-brainer」)→ `threat_read`(`recon_resist_read`,弱點揭露門檻 75→50,**與 mercantile 線人耳目同 getter**)。scout_50 = 搶先機(approach)vs 看穿弱點(判讀);連帶 `has_recon_perk`(地城探四鄰;scout_25 已給 → 冗餘無害)。
 - **🔴 對抗審查 1 真 bug 修(自我糾錯)**:初版把 `deft_roll` 改成 `whirl_riposte`(`on_evade-counter 0.30`)—— **同一隱形遮蔽反模式換軸重演**:`on_evade` counter **MAX 聚合** → 被 `light_armor_100 storm_dance`(0.60)完全遮蔽,而**雜技+輕甲正是最常見的閃避 build**(陷阱命中主受眾)。審查建議的「改 SUM 聚合」**駁回**(會破 R34 counter-MAX 防群戰過度疊加紅線)→ 採正解「換 SUM-safe 的 `evasion_bonus`」(夾上限、永不被二元遮蔽)。教訓:**MAX 聚合軸(counter/vanish_floor)上做二選一弱邊極易製造隱形 no-brainer;弱邊優先用 SUM-capped 軸(evasion/restamina)。**
 - **守線**:新增 evasion 來源夾 `EVASION_BONUS_CAP 0.15`(sim 背書群戰須具風險)、on_evade counter 取 MAX/restamina SUM 夾 12 不變;`sim_assassin` 綠(solo boss 0% 秒殺、4 敵 apex 死亡率 26.2%)、`sim_worldwar` 綠。改 opt_id → `ensure_mastery_choices` 自動退 pending(零存檔欄)。`test_mastery` 加 `test_dedup_nobrainer_wave`(含 wind_step+storm_dance 不遮蔽回歸)+ 更新 `test_scout_prep_and_recon`(threat_read 降門檻)、passive_armor 聚合測試改用 block 載體。
+
+### R36 · security 里程碑功能化 + 核心 loop 修復(混合身份:地城入侵 + 盜賊)[save]
+
+- **問題**(評估「練 security 的途徑」揪出):security 不只 perk 冷,**核心 loop 偏冷** —— 撬鎖只在首次肅清地城有機會(已清寶箱搬空)、失敗不給 xp、避陷不給 xp、行竊練的是 sneak → 「練得到嗎/值得練嗎」本身就成問題。使用者拍板**本輪 security only(smithing 下輪)+ 三項放寬**(原皆刻意反 min-max,使用者決定放開)。**免 sim_assassin**(不碰戰鬥傷害/偷襲倍率)、**零新存檔欄**。
+- **Part 1 練功 loop**:`SECURITY_FAIL_XP_FRAC=0.3`(`formulas`)。撬鎖**失敗也給少量 xp**(`dungeon.pick_lock`,原 0;失敗 xp 小 + lockpick 金幣閘留存 → 故意失敗刷功不划算)。解陷阱**避陷給 full / 觸發給 0.3×**(`main._resolve_trap`,原完全不給)。**🔴 對抗審查修真 bug**:觸發分支扣血可致死 → 補 `if combat.is_alive` 守才給 xp(鏡像 R34 `combat_regen` 死人不成長;`test_dungeon.test_trap_xp_guarded_on_death`)。
+- **Part 2 地城一般寶箱隨機刷新**:`action_dungeon` CONTAINER 格去 `first_clear` 空箱閘 → 恆呼 `_resolve_container`(`generate()` 每次重生 → 寶箱/鎖隨機刷新、可重撐撈 = 可再生 security 練功 + 戰利品);**首領寶藏 BOSS 格維持 `first_clear` 首通限定**(不動)。**🟡 經濟放寬**(逆轉原反「重訪刷寶」設計):自然閘 = 每撬耗開鎖器(金幣)+ 推進時間 + 重入要打游蕩怪;不碰戰鬥傷害故免 sim;若日後嫌甜可調降重訪寶箱掉落級別。更新「已肅清」提示文案。`test_dungeon` 更新 `test_recleared_dungeon_boss_treasure_not_regiven`(隔離首領寶藏)+ 加 `test_recleared_dungeon_general_chests_respawn`(spy `_resolve_container`)。
+- **Part 3 perks(混合;改 2 死填充,保留 floor/pick_no_break)**:`security_50` `nimble_fingers`(skill_fortify)→ `light_fingers`(**新 kind `theft_skill`**:`steal_bonus 0.15`+`bounty_factor 0.5`,聚合 dict getter;`crime.steal_chance` 加 gamedata + 套加成夾 0.95、`steal_item` 失風 fine ×factor);`security_100` `deft_hands` → `thiefs_eye`(**新 kind `dungeon_casing`** 布林:進地城每層揭全層 TRAP/CONTAINER 格 `explored=True` → `action_dungeon.case_layer`,UI 靠 `console.py` 既有 `^/$` 分支零工)。
+- **🔴 R35 教訓內建**:`dungeon_casing` 刻意**布林**(非 floor)→ 不落 `lock_floor` MAX 軸,永不被 `master_floor/master_thief` 二元遮蔽;與 scout `has_recon_perk`(四鄰任意 type)**互補不重複**(security 揭全層機關寶箱、不揭怪、不發 scout xp,守 security≠scout 界線)。
+- **⚠ 對抗審查 2 設計裁決(by-design,使用者已知拍板,勿日後「修」)**:① `light_fingers` 練的是 **sneak 不是 security**(掛 security 樹的跨技能盜賊 synergy)—— 使用者選混合身份前已被明確告知此「練功錯位」仍拍板;theft **不**入 security xp(使用者修正時刻意排除偷竊)。② `light_fingers`(選用偷竊向)vs `trapwise`(地城避陷向)是 build 取向二選一,非有害 no-brainer(盜賊 build 真偏好前者)。
+- **驗證**:`/check` 全綠(62 模組)、`sim_assassin`/`sim_worldwar` 綠(security 不碰戰鬥,sim byte-identical)、煙霧通過。新 kind 三步登錄(`_IMPLEMENTED_KINDS`+`theft_bonus`/`has_dungeon_casing`+呼叫端);改 opt_id 走 `ensure_mastery_choices` 退 pending(`test_mastery.test_security_theft_and_casing` 含遷移)。**下輪:smithing 功能化身份待評估。**
 
 ---
 

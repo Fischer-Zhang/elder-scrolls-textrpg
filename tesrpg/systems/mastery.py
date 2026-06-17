@@ -59,6 +59,8 @@ _IMPLEMENTED_KINDS = {
     "cascade", "resonant_strike", "mana_on_hit", "triage_heal", "recon_reveal_floor", "deathmark",
     # 廣度 pass:運動逃跑加成、重甲反傷、安全解陷保底。
     "flee_bonus", "armor_reflect", "armor_stagger", "combat_regen", "trap_floor",
+    # security 功能化(混合身份):盜賊行竊加成、地城賊眼窺探(布林解鎖)。
+    "theft_skill", "dungeon_casing",
 }
 
 
@@ -519,6 +521,23 @@ def lock_floor(char, gamedata: GameData) -> float:
     """撬鎖名家/神偷之手:撬鎖成功率下限(0.0 = 無里程碑)。多來源(security_75 + security_100)取最高。"""
     return max((o.get("floor", 0.0)
                for o in _chosen_options_by_kind(char, gamedata, "lock_floor")), default=0.0)
+
+
+def theft_bonus(char, gamedata: GameData) -> dict:
+    """順手牽羊(security_50):行竊得手率加成 + 失風賞金倍率。空 = 無。
+    聚合 shape(steal_bonus 相加、bounty_factor 取最低)→ 防未來多源 first-wins 遮蔽(鐵則)。"""
+    opts = _chosen_options_by_kind(char, gamedata, "theft_skill")
+    if not opts:
+        return {}
+    return {"steal_bonus": sum(o.get("steal_bonus", 0.0) for o in opts),
+            "bounty_factor": min((o.get("bounty_factor", 1.0) for o in opts), default=1.0)}
+
+
+def has_dungeon_casing(char, gamedata: GameData) -> bool:
+    """賊眼·窺探(security_100):進地城每層即揭該層所有陷阱+上鎖寶箱(不含怪/樓梯)。
+    布林解鎖型 → 刻意不落 lock_floor 的 MAX 聚合軸,永不被同軸更強來源二元遮蔽(R35 安全);
+    與 scout has_recon_perk(揭四鄰任意 type)互補不重複。"""
+    return _chosen_option_by_kind(char, gamedata, "dungeon_casing") is not None
 
 
 def overheal_ward(char, gamedata: GameData) -> dict | None:

@@ -1312,18 +1312,23 @@ def _resolve_container(state: GameState, gamedata: GameData, container: dict, la
 
 
 def _resolve_trap(state: GameState, gamedata: GameData, trap: dict) -> None:
-    """陷阱格:擲 敏捷/安全/幸運 規避;失敗受少量傷(可被治療,刻意非高致命;極低血才可能致死)。"""
+    """陷阱格:擲 敏捷/安全/幸運 規避;失敗受少量傷(可被治療,刻意非高致命;極低血才可能致死)。
+    避陷/觸發皆鍛鍊 security(learn-by-doing:避陷=用技能 full xp,觸發=從失誤學 少量 xp)。"""
     char = state.player
+    base_xp = gamedata.skills["security"]["practice"]["xp"]
     dodge = min(0.9, 0.30 + (char.attr("agility") - 40) * 0.01 + char.skill("security") * 0.003
                 + formulas.luck_fortune(char.attr("luck")))
     dodge = max(dodge, mastery.trap_floor(char, gamedata))   # 里程碑「機關通曉」:避陷保底
     if state.rng.chance(dodge):
         ui.message("你察覺地面的機關,及時閃避。", style="green")
+        ui.show_events(progression.use_skill(char, gamedata, "security", base_xp), gamedata)
         return
     lo, hi = trap.get("damage", [4, 8])
     dmg = state.rng.randint(lo, hi)
     char.health = max(0, char.health - dmg)
     ui.message(f"機關觸發 —— 你閃避不及,受了 {dmg} 點傷害!", style="red")
+    if combat.is_alive(char):   # 對抗審查:陷阱致死則不給 xp(鏡像 R34 combat_regen「復活死人」守:死人不成長)
+        ui.show_events(progression.use_skill(char, gamedata, "security", base_xp * formulas.SECURITY_FAIL_XP_FRAC), gamedata)
 
 
 def action_dungeon(state: GameState, gamedata: GameData) -> str | None:
@@ -1348,7 +1353,7 @@ def action_dungeon(state: GameState, gamedata: GameData) -> str | None:
     battle = {"allies": []}   # 戰鬥情境:預召喚物(transient,不入持久同伴;隨移動衰減)
     ui.message(f"你踏入了{spec['name']}的幽暗深處……（{n}×{n} 格 · 共 {m} 層）", style="magenta")
     if not first_clear:
-        ui.message("（你早已肅清此地 —— 寶箱與首領寶藏皆已被你搬空,只餘游蕩的新怪。）", style="grey70")
+        ui.message("（你早已肅清此地 —— 首領寶藏已被你取走;一般寶箱與機關則隨歲月重新佈設,游蕩的新怪亦不少。）", style="grey70")
 
     def reveal_and_train(zz, xx, yy):
         """標記 (xx,yy) 及(有偵查 perk 時)四鄰為已探;每「新探明」格授少量偵查 xp(已探不重複給)。"""
@@ -1363,6 +1368,16 @@ def action_dungeon(state: GameState, gamedata: GameData) -> str | None:
         if newly:
             ui.show_events(progression.use_skill(player, gamedata, "scout",
                                                  newly * formulas.DUNGEON_REVEAL_SCOUT_XP), gamedata)
+
+    def case_layer(zz):
+        """賊眼·窺探(security_100):進該層即揭所有陷阱/上鎖寶箱格(不含怪/樓梯/首領);
+        零回合、不結算、不發 scout xp(守 security≠scout 界線)。UI 自動顯 ^/$(已探未結算)。"""
+        if not mastery.has_dungeon_casing(player, gamedata):
+            return
+        for cy in range(n):
+            for cx in range(n):
+                if grid["layers"][zz][cy][cx]["type"] in (dungeoncrawl.TRAP, dungeoncrawl.CONTAINER):
+                    explored[zz][cy][cx] = True
 
     def tick_turn() -> bool:
         """行動 1 格 = 1 回合:玩家增益 + 召喚物 summon_turns/效果衰減。回 True = 玩家陣亡(DoT)。"""
@@ -1386,6 +1401,7 @@ def action_dungeon(state: GameState, gamedata: GameData) -> str | None:
                                if combat.is_alive(a) and (a.summon_turns is None or a.summon_turns > 0)]
 
     reveal_and_train(z, x, y)   # 進場格(不耗回合)
+    case_layer(z)               # 賊眼·窺探:進場層即揭該層陷阱/寶箱
 
     while True:
         cell = dungeoncrawl.cell_at(grid, z, x, y)
@@ -1404,10 +1420,9 @@ def action_dungeon(state: GameState, gamedata: GameData) -> str | None:
                     state.time.advance(1)
                     return None
             elif t == dungeoncrawl.CONTAINER:
-                if first_clear:
-                    _resolve_container(state, gamedata, cell["container"], "箱子")
-                else:
-                    ui.message("一只空蕩蕩的箱子 —— 你上次來時已搬空了它。", style="grey70")
+                # 一般寶箱隨機刷新:generate() 每次重入生新寶箱/鎖 → 可重撬(可再生 security 練功 + 戰利品;
+                # 首領寶藏仍 first_clear 限定,見下)。自然閘:每撬耗開鎖器(金幣)+ 推進時間 + 游蕩怪風險。
+                _resolve_container(state, gamedata, cell["container"], "箱子")
             elif t == dungeoncrawl.TRAP:
                 _resolve_trap(state, gamedata, cell["trap"])
                 if not combat.is_alive(player):
@@ -1481,6 +1496,7 @@ def action_dungeon(state: GameState, gamedata: GameData) -> str | None:
             x = y = 0
             ui.message(f"你拾級而下,來到第 {z + 1}/{m} 層。", style="magenta")
             reveal_and_train(z, x, y)
+            case_layer(z)                                  # 賊眼·窺探:新層即揭陷阱/寶箱
             if tick_turn():                                # 移動=1 回合(增益/召喚衰減 + DoT 結算)
                 return "dead"
         elif choice.startswith("go:"):
@@ -1606,7 +1622,7 @@ def action_shop(state: GameState, gamedata: GameData) -> None:
                 continue
             opts = [(iid, f"{gamedata.item_name(iid)} ×{world.stock_qty(char, loc_id, iid)}"
                      f"（價值 {gamedata.item(iid)['value']})") for iid in avail]
-            iid = ui.menu(f"行竊哪件?(得手率約 {int(crime.steal_chance(char)*100)}%)",
+            iid = ui.menu(f"行竊哪件?(得手率約 {int(crime.steal_chance(char, gamedata)*100)}%)",
                           opts, allow_back=True)
             if iid is None:
                 continue

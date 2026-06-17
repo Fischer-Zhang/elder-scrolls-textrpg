@@ -11,7 +11,7 @@ from tesrpg.creation import build_character
 from tesrpg.gamedata import get_gamedata
 from tesrpg.models import Character
 from tesrpg.rng import RNG
-from tesrpg.systems import combat, dialogue, dungeon, inventory, magic, mastery, progression, stats, world
+from tesrpg.systems import combat, crime, dialogue, dungeon, inventory, magic, mastery, progression, stats, world
 
 
 def _char(**skills):
@@ -810,6 +810,57 @@ def test_security_pick_no_break():
     assert kept_some
 
 
+def test_security_theft_and_casing():
+    """R36 security 功能化(混合身份):順手牽羊(theft_skill)+ 賊眼·窺探(dungeon_casing 布林)。"""
+    # 白名單
+    assert "theft_skill" in mastery._IMPLEMENTED_KINDS
+    assert "dungeon_casing" in mastery._IMPLEMENTED_KINDS
+    # theft_bonus 聚合:未選 → {};選 light_fingers → 得手率+0.15、賞金 ×0.5
+    gd, c = _char(security=50)
+    assert mastery.theft_bonus(c, gd) == {}
+    mastery.choose(c, gd, "security_50", "light_fingers")
+    assert mastery.theft_bonus(c, gd) == {"steal_bonus": 0.15, "bounty_factor": 0.5}
+    # steal_chance 套加成且夾 0.95
+    gd, c = _char(security=50, sneak=10)
+    base = crime.steal_chance(c, gd)
+    mastery.choose(c, gd, "security_50", "light_fingers")
+    assert abs(crime.steal_chance(c, gd) - min(0.95, base + 0.15)) < 1e-9
+    gd, c = _char(security=100, sneak=100)
+    mastery.choose(c, gd, "security_50", "light_fingers")
+    assert crime.steal_chance(c, gd) <= 0.95                          # 高技能+perk 仍不破 cap
+    # 失風賞金減半:強制必被抓(patch steal_chance→0),比較有/無 perk 的 bounty_added
+    real_sc = crime.steal_chance
+    crime.steal_chance = lambda ch, gd_: 0.0
+    try:
+        gd, c0 = _char()
+        r0 = crime.steal_item(c0, gd, "iron_sword", RNG(0))
+        gd, c1 = _char(security=50)
+        mastery.choose(c1, gd, "security_50", "light_fingers")
+        r1 = crime.steal_item(c1, gd, "iron_sword", RNG(0))
+    finally:
+        crime.steal_chance = real_sc
+    assert r0["caught"] and r1["caught"]
+    assert r1["bounty_added"] == int(round(r0["bounty_added"] * 0.5))   # 賞金減半
+    # dungeon_casing 布林解鎖 + 與 scout recon 互補不互斥(R35 防隱形重複)
+    gd, c = _char(security=100)
+    mastery.choose(c, gd, "security_100", "thiefs_eye")
+    assert mastery.has_dungeon_casing(c, gd) is True
+    gd, c = _char(security=100)
+    mastery.choose(c, gd, "security_100", "master_thief")
+    assert mastery.has_dungeon_casing(c, gd) is False and mastery.lock_floor(c, gd) == 0.50
+    gd, c = _char(security=100, scout=100)
+    mastery.choose(c, gd, "security_100", "thiefs_eye")
+    mastery.choose(c, gd, "scout_25", "recon_basics")
+    assert mastery.has_dungeon_casing(c, gd) and mastery.has_recon_perk(c, gd)   # 並存:全層機關 vs 四鄰任意,互補
+    # 遷移:舊存檔死填充 nimble_fingers/deft_hands → ensure 後清除退 pending
+    gd, c = _char(security=100)
+    c.mastery_choices = {"security_50": "nimble_fingers", "security_100": "deft_hands"}
+    progression.ensure_mastery_choices(c, gd)
+    assert "security_50" not in c.mastery_choices and "security_100" not in c.mastery_choices
+    pend = {n["id"] for n in mastery.pending_choices(c, gd)}
+    assert "security_50" in pend and "security_100" in pend
+
+
 def test_mercantile_and_intimidate():
     gd, c = _char(mercantile=50)
     mastery.choose(c, gd, "mercantile_50", "haggler")
@@ -1203,6 +1254,7 @@ def run():
     test_scout_prep_and_recon()
     test_has_recon_perk()
     test_security_pick_no_break()
+    test_security_theft_and_casing()
     test_breadth_all_skills_have_full_ladder()
     test_batch1_same_source_aggregation_no_shadow()
     test_batch1_evasion_bonus_capped()

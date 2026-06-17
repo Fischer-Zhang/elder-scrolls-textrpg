@@ -38,8 +38,9 @@ LOCKPICK_FATIGUE = 2    # 每次撬鎖嘗試的少量體力;主閘改為「開�
 
 def pick_lock(char: Character, gamedata: GameData, lock_level: int, rng: RNG) -> dict:
     """嘗試撬鎖一次。**需要開鎖器,每次嘗試耗一根**(成功=用掉、失敗=折斷),**不耗時**、僅扣少量體力。
-    成功才鍛鍊安全技能(learn-by-doing);失敗不給 xp。**每次嘗試都耗一根開鎖器 → security xp 有金幣閘**
-    (杜絕高技能者免費重撬同鎖刷 security;開鎖器=這道反 min-max 的成本閘,以金幣換取)。
+    成功鍛鍊安全技能(learn-by-doing);**失敗也給少量 xp**(SECURITY_FAIL_XP_FRAC,從失誤中學)。
+    **每次嘗試都耗一根開鎖器 → security xp 有金幣閘**(失敗 xp 小 + 開鎖器成本 → 故意失敗刷功不划算;
+    開鎖器=這道反 min-max 的成本閘,以金幣換取)。
     「塔之鑰」(塔座能力)充能則必定成功、消耗之 —— 招牌仍免開鎖器/免體力/免耗時。
     回傳含 hours(恆 0)/tired/no_pick(無開鎖器)/broke_pick(本次失敗折斷),供呼叫端提示。
     """
@@ -60,10 +61,12 @@ def pick_lock(char: Character, gamedata: GameData, lock_level: int, rng: RNG) ->
     char.fatigue = max(0, char.fatigue - LOCKPICK_FATIGUE)
     success = rng.chance(chance)
     from tesrpg.systems import mastery
+    from tesrpg import formulas
     keep = (not success) and rng.chance(mastery.pick_keep_chance(char, gamedata))   # 「巧手不折」失敗不折
     if not keep:
         inventory.remove_item(char, LOCKPICK_ITEM, 1)           # 每次嘗試耗一根(成功也耗 → xp 的金幣閘)
-    skill_events = progression.use_skill(char, gamedata, "security", base_xp) if success else []
+    xp = base_xp if success else base_xp * formulas.SECURITY_FAIL_XP_FRAC   # 失敗也學(少量;learn-by-doing)
+    skill_events = progression.use_skill(char, gamedata, "security", xp)
     return {"success": success, "chance": chance, "tower_key": False, "no_pick": False,
             "broke_pick": not success and not keep, "hours": 0, "tired": tired, "skill_events": skill_events}
 

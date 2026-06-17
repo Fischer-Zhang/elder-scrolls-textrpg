@@ -3,12 +3,13 @@
 守住「不准零風險刷技能」的反 min-max 紅線(原本三者都繞過了正規訓練代價):
 - progression.practice_cost 共用 data/skills.json 的 practice 價碼(與訓練師 action_practice 一致)。
 - 行竊「得手才給潛行 xp」(被抓不給 → 杜絕「故意被抓刷潛行」)。
-- 撬鎖**需開鎖器**(失敗折斷)、**不耗時**、僅扣少量體力,成功才給 security xp;「塔之鑰」招牌免開鎖器/免成本/免耗時。
+- 撬鎖**需開鎖器**(失敗折斷)、**不耗時**、僅扣少量體力;成功給全額 security xp、**失敗給少量 xp**(R36);「塔之鑰」招牌免開鎖器/免成本/免耗時。
 - 說服每次付體力 + 時間,連「辯舌·折服」必成路徑也照付(非免費必成)。
 
 每條都可反向驗證:還原修改前的程式碼會因缺 hours/tired 鍵或被抓仍給 xp 而紅。
 """
 
+from tesrpg import formulas
 from tesrpg.creation import build_character
 from tesrpg.gamedata import get_gamedata
 from tesrpg.rng import RNG
@@ -106,18 +107,22 @@ def test_every_attempt_consumes_pick_gates_xp():
     assert dungeon.pick_lock(c, gd, 5, RNG(9))["no_pick"]    # 用盡後撬不了
 
 
-def test_lockpick_broken_on_failure_no_xp():
-    """失敗折斷一根開鎖器、且不給 security xp(杜絕『故意撬不開刷 security』);成功才給 xp。"""
+def test_lockpick_broken_on_failure_small_xp():
+    """R36:失敗折斷一根開鎖器、且給**少量** security xp(base × SECURITY_FAIL_XP_FRAC,從失誤學);
+    小到不划算刷功 + lockpick 金幣閘仍在,守住反 min-max。成功給全額。"""
     gd, c = _char(security=5)                                 # 低技能撬難鎖 → 近乎必失敗
     c.fatigue = c.max_fatigue
     inventory.add_item(c, "lockpick", 20)
+    base_xp = gd.skills["security"]["practice"]["xp"]
     for i in range(20):
         n0 = inventory.count_item(c, "lockpick")
         x0 = c.skill_xp.get("security", 0.0)
         r = dungeon.pick_lock(c, gd, 99, RNG(i))
         if not r["success"]:
             assert r["broke_pick"] and inventory.count_item(c, "lockpick") == n0 - 1   # 折斷一根
-            assert c.skill_xp.get("security", 0.0) == x0                                # 失敗不給 xp
+            gained = c.skill_xp.get("security", 0.0) - x0                               # security 5 不會因小 xp 升級
+            assert abs(gained - base_xp * formulas.SECURITY_FAIL_XP_FRAC) < 1e-9        # 失敗給少量 xp(非 0、非全額)
+            assert 0 < gained < base_xp
             break
     else:
         raise AssertionError("低技能撬難鎖應至少失敗一次")
@@ -362,7 +367,7 @@ def run():
     test_steal_xp_only_on_success()
     test_pick_lock_needs_pick_no_time_low_fatigue()
     test_every_attempt_consumes_pick_gates_xp()
-    test_lockpick_broken_on_failure_no_xp()
+    test_lockpick_broken_on_failure_small_xp()
     test_tower_key_unlock_is_free_and_keeps_signature()
     test_charm_path_also_pays_cost()
     test_smoke_shop_steal_advances_time()
