@@ -56,9 +56,9 @@ _IMPLEMENTED_KINDS = {
     "restock_bonus", "intimidate_floor",
     # speechcraft 功能化(混合):衛兵說退槓桿、戰陣號令(鼓舞盟友)。
     "talk_down_lever", "rally",
-    # 八職功能性身份:法師連鎖 / 戰法師共鳴·回魔 / 治療師急救 / 弓手獵手偵察 / 刺客烙印。
-    # (warrior 盾牆 / knight 戰旗 為戰鬥動作,非里程碑 kind。)
-    "cascade", "resonant_strike", "mana_on_hit", "triage_heal", "recon_reveal_floor", "deathmark",
+    # 八職功能性身份:法師連鎖 / 戰法師共鳴·回魔 / 治療師急救 / 弓手散兵戰技(瞄準/牽制/走位)/ 刺客烙印。
+    # (warrior 盾牆 / knight 戰旗 為戰鬥動作,非里程碑 kind;弓手散兵戰技 bow_technique 同屬戰鬥動作但走里程碑解鎖。)
+    "cascade", "resonant_strike", "mana_on_hit", "triage_heal", "recon_reveal_floor", "bow_technique", "deathmark",
     # 廣度 pass:運動逃跑加成、重甲反傷、安全解陷保底。
     "flee_bonus", "armor_reflect", "armor_stagger", "combat_regen", "trap_floor",
     # security 功能化(混合身份):盜賊行竊加成、地城賊眼窺探(布林解鎖)。
@@ -508,6 +508,15 @@ def triage(char, gamedata: GameData) -> dict | None:
 def deathmark(char, gamedata: GameData) -> dict | None:
     """刺客「致命烙印」:標記敵 → 後續(非開場)近戰破甲的 {pen, fatigue_cost, sneak_gate, turns, cooldown};無則 None。"""
     return _chosen_option_by_kind(char, gamedata, "deathmark")
+
+
+def has_bow_technique(char, gamedata: GameData, technique: str) -> bool:
+    """弓手散兵戰技(marksman 里程碑解鎖):是否選了對應的 `technique`(aimed/crippling/skirmish)。
+
+    取代舊「裝備弓即免費全給」——三式各為一個里程碑二選一,選了才開放對應戰技動作
+    (main.py 仍另閘 archetype==bow + 非獸形;skirmish 另受 vanish 次數上限,但不再要 sneak 解鎖)。"""
+    return any(o.get("technique") == technique
+               for o in _chosen_options_by_kind(char, gamedata, "bow_technique"))
 
 
 def pick_keep_chance(char, gamedata: GameData) -> float:

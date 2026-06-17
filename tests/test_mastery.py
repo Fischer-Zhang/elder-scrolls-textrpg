@@ -812,14 +812,14 @@ def test_scout_prep_and_recon():
 
 
 def test_has_recon_perk():
-    """地城探明四鄰:任一 recon 里程碑解鎖(scout 斥候之眼 / marksman 獵手偵察 / mercantile 線人耳目)。"""
+    """地城探明四鄰:任一 recon 里程碑解鎖(scout 斥候之眼 / mercantile 線人耳目;marksman 獵手偵察 R40 已移除)。"""
     gd, c = _char()
     assert not mastery.has_recon_perk(c, gd)                 # 無偵查 perk
     gd1, c1 = _char(scout=25)
     mastery.choose(c1, gd1, "scout_25", "recon_basics")      # 斥候之眼(recon_reveal_floor)→ 解鎖
     assert mastery.has_recon_perk(c1, gd1)
-    gd2, c2 = _char(marksman=50)
-    mastery.choose(c2, gd2, "marksman_50", "tracker")        # 獵手偵察(recon_reveal_floor)
+    gd2, c2 = _char(mercantile=75)
+    mastery.choose(c2, gd2, "mercantile_75", "informant")    # 線人耳目(recon_resist_read)→ 另一 recon kind
     assert mastery.has_recon_perk(c2, gd2)
 
 
@@ -970,13 +970,13 @@ def test_batch1_evasion_bonus_capped():
 
 
 def test_cold_skill_identity_perks():
-    """冷技能身份化(檔A):弓手牽制(slow)/盾擊宗師(block_riposte 聚合)/輕甲游擊·雜技(on_evade 聚合)。"""
+    """冷技能身份化(檔A):弓手散兵戰技(里程碑解鎖)/盾擊宗師(block_riposte 聚合)/輕甲游擊·雜技(on_evade 聚合)。"""
     gd, c = _char(marksman=100, block=100, light_armor=100, acrobatics=100)
-    # 弓手牽制箭:weapon_mod(marksman) 帶 on_hit_status slow;貫流射 +8% 傷害相加
-    mastery.choose(c, gd, "marksman_50", "harrying_shot")
-    assert mastery.weapon_mod(c, gd, "marksman").get("on_hit_status", {}).get("kind") == "slow"
-    mastery.choose(c, gd, "marksman_75", "piercing_volley")
-    assert abs(mastery.weapon_mod(c, gd, "marksman").get("power", 0) - 0.08) < 1e-9
+    # 弓手散兵戰技(R40:由「裝弓即免費」改為 marksman 里程碑解鎖):牽制射(50)+ 瞄準射(75)
+    mastery.choose(c, gd, "marksman_50", "crippling_shot")
+    assert mastery.has_bow_technique(c, gd, "crippling")
+    mastery.choose(c, gd, "marksman_75", "aimed_shot")
+    assert mastery.has_bow_technique(c, gd, "aimed")
     # 盾擊宗師:block_riposte 多節點聚合(踉蹌取最 + 削弱 + 反傷)
     for nid, oid in [("block_50", "shield_bash"), ("block_75", "shield_break"), ("block_100", "perfect_block")]:
         mastery.choose(c, gd, nid, oid)
@@ -1035,12 +1035,14 @@ def test_cold_skill_combat_paths():
     """檔A 戰鬥路徑回歸(對抗審查抓到的真 bug):牽制箭 slow 帶 magnitude 不崩 initiative;on_evade 反制每回合至多一次。"""
     from tesrpg.rng import RNG
     from tesrpg.systems import combat
-    # (1) 牽制箭:slow 必帶 magnitude → 全程 auto_resolve 不得 KeyError(每回合 initiative_order→_speed→slow_factor 讀 magnitude)
-    gd, c = _char(marksman=100, blade=100); c.weapon = "long_bow"
-    mastery.choose(c, gd, "marksman_50", "harrying_shot")
+    # (1) slow 狀態必帶 magnitude → initiative_order→_speed→slow_factor 不崩(原 harrying_shot 回歸;
+    #     R40 弓手牽制改 weaken·marksman slow 線移除後,改通用 slow 注入守 magnitude 讀取路徑)
+    gd, c = _char(blade=100); c.weapon = "steel_sword"
     c.health = c.max_health = 500; c.fatigue = c.max_fatigue = 200
     foe = combat.spawn_creature(gd, "frost_troll", RNG(1)); foe.health = foe.max_health = 400
-    combat.auto_resolve(c, foe, gd, RNG(2), max_rounds=60)     # 不得拋例外(回歸 magnitude crash)
+    foe.active_effects.append({"kind": "slow", "magnitude": 0.20, "turns": 99})
+    c.active_effects.append({"kind": "slow", "magnitude": 0.20, "turns": 99})
+    combat.auto_resolve(c, foe, gd, RNG(2), max_rounds=60)     # 不得拋例外(slow magnitude 讀取)
     # (2) on_evade 反制每回合至多一次:同一回合內(flag 未重置)連續多次敵攻落空只反制一次 → 不隨敵數線性放大
     gd, p = _char(light_armor=100, acrobatics=100, blade=100); p.weapon = "steel_sword"
     p.health = p.max_health = 600; p.fatigue = 50

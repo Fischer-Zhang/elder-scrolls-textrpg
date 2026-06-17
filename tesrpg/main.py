@@ -475,12 +475,15 @@ def _choose_combat_action(state: GameState, gamedata: GameData, enemies: list, a
         pct = int(combat.vanish_chance(player, n_alive, vanish_used, gamedata) * 100)
         left = "∞" if vcap >= 99 else (vcap - vanish_used)
         opts.append(("vanish", f"隱遁再襲（成功率 {pct}%,剩 {left} 次)"))
-    # 弓手「散兵」武技:裝備弓時開放(瞄準射 / 牽制射 / 散兵走位)
+    # 弓手「散兵」武技:持弓 + 選了對應 marksman 里程碑才開放(瞄準射 75 / 牽制射 50 / 散兵走位 50)
+    # —— 不再「裝備弓即免費全給」;散兵走位選了即可用(解鎖自帶,不再要 sneak 隱遁),仍受每場 vanish 次數上限。
     if (gamedata.item(player.weapon).get("archetype") == "bow"
             and not getattr(player, "beast_form", False)):
-        opts.append(("aimed", "瞄準射（蓄力強擊 · 額外耗體)"))
-        opts.append(("crippling", "牽制射（削弱目標攻勢)"))
-        if combat.can_vanish(player, gamedata) and vanish_used < vcap:
+        if mastery.has_bow_technique(player, gamedata, "aimed"):
+            opts.append(("aimed", "瞄準射（蓄力強擊 · 額外耗體)"))
+        if mastery.has_bow_technique(player, gamedata, "crippling"):
+            opts.append(("crippling", "牽制射（削弱目標攻勢)"))
+        if mastery.has_bow_technique(player, gamedata, "skirmish") and vanish_used < vcap:
             opts.append(("skirmish", "散兵走位（射一箭後遁走)"))
     # 坐騎戰技(僅野外騎乘遭遇的第一回合;戰馬+近戰=衝鋒、獵馬+弓=騎射)
     if mounted and first_round and mounts.can_charge(player, gamedata, True):

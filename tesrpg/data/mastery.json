@@ -213,11 +213,10 @@
       "desc": "白袍的庇佑:長伴病榻而百毒不侵(疾病抗性 +30%)。"}
    ]},
   {"id": "marksman_50", "skill": "marksman", "threshold": 50, "options": [
-     {"opt_id": "tracker", "name": "獵手偵察", "kind": "recon_reveal_floor", "scout_floor": 50,
-      "desc": "獵人之眼:即便不通偵查,接戰前也能看清獵物的血量/護甲/弱點(視同偵查 50)。"},
-     {"opt_id": "harrying_shot", "name": "牽制箭", "kind": "weapon_mod", "target": "marksman",
-      "on_hit_status": {"kind": "slow", "magnitude": 0.20, "turns": 2, "chance": 0.30},
-      "desc": "牽制射擊:弓弩命中時 30% 機率使敵遲緩 2 回合(降其先攻與命中)—— 風箏拉距的射手控場。"}
+     {"opt_id": "skirmish_shot", "name": "散兵走位", "kind": "bow_technique", "technique": "skirmish",
+      "desc": "散兵游擊:戰中可射一箭旋即遁走 —— 重歸陰影、重得偷襲先機(成功率隨潛行/雜技漸高,敵眾或久戰漸難)。"},
+     {"opt_id": "crippling_shot", "name": "牽制射", "kind": "bow_technique", "technique": "crippling",
+      "desc": "牽制射擊:射一箭壓制目標,削弱其攻勢數回合(weaken)—— 風箏拉距的射手控場。"}
    ]},
   {"id": "sneak_25", "skill": "sneak", "threshold": 25, "options": [
      {"opt_id": "vanish_art", "name": "隱遁之術", "kind": "vanish_unlock",
@@ -471,8 +470,8 @@
   {"id": "marksman_75", "skill": "marksman", "threshold": 75, "options": [
      {"opt_id": "swift_shot", "name": "疾矢", "kind": "weapon_mod", "target": "marksman", "hit": 0.04,
       "desc": "箭術漸精:弓弩命中 +4%(與其他射術流派相加)。"},
-     {"opt_id": "piercing_volley", "name": "貫流射", "kind": "weapon_mod", "target": "marksman", "power": 0.08,
-      "desc": "勁射貫流:弓弩傷害 +8%(與其他射術流派相加)—— 射手的傷害成長線。"}
+     {"opt_id": "aimed_shot", "name": "瞄準射", "kind": "bow_technique", "technique": "aimed",
+      "desc": "蓄力瞄準:額外耗體換一記強擊 —— 命中、破甲與傷害皆大幅提升(不吃偷襲倍率、受 solo 夾限)。"}
    ]},
 
   {"id": "speechcraft_75", "skill": "speechcraft", "threshold": 75, "options": [

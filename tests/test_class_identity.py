@@ -129,12 +129,20 @@ def test_battlemage_can_hold_both_resonance_perks():
 # (跨模組 D 併:該 into 已驗 prep_bonus 多源相加;此處 subterfuge_intel 來源 pin 由 into agent 落地)
 
 
-# --- archer: 獵手偵察 ------------------------------------------------
-def test_tracker_recon_floor():
-    c = _char("archer", marksman=60)
-    assert mastery.recon_scout_floor(c, gd) == 0
-    mastery.choose(c, gd, "marksman_50", "tracker")
-    assert mastery.recon_scout_floor(c, gd) == 50
+# --- archer: 散兵戰技(里程碑解鎖,取代「裝備弓即免費全給」)----------
+def test_bow_technique_unlock():
+    c = _char("archer", marksman=80)
+    # 未選任何 marksman 里程碑 → 三式皆未解鎖(不再「持弓即免費」)
+    assert not mastery.has_bow_technique(c, gd, "skirmish")
+    assert not mastery.has_bow_technique(c, gd, "crippling")
+    assert not mastery.has_bow_technique(c, gd, "aimed")
+    # marksman_50 二選一:散兵走位 vs 牽制射(互斥)
+    mastery.choose(c, gd, "marksman_50", "crippling_shot")
+    assert mastery.has_bow_technique(c, gd, "crippling")
+    assert not mastery.has_bow_technique(c, gd, "skirmish")   # 互斥:選了牽制就拿不到走位
+    # marksman_75 二選一:瞄準射(對 疾矢)
+    mastery.choose(c, gd, "marksman_75", "aimed_shot")
+    assert mastery.has_bow_technique(c, gd, "aimed")
 
 
 # --- warrior: 盾牆 ---------------------------------------------------
