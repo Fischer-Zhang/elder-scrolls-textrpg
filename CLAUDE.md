@@ -5,7 +5,7 @@
 > ⚠ **本專案已 Web-only**:終端機版(`python3 -m tesrpg`)已移除;`tesrpg/ui/console.py` 現為 Web 的渲染/輸入接層(rich→HTML view-model + `_web_prompt`),5 個輸入原語在無 web backend 時直接 raise。
 
 > **本檔是給 Claude 的開發憲法**:每次改動都適用的節奏 + 跨領域紅線 + 提交檢查表 + 子系統鐵律「索引」。
-> 子系統鐵律**本體**在 [handoff.md](handoff.md) §3(以 `R##` 標號);完整現況清單見 handoff §1;設計理念見 [DESIGN.md](DESIGN.md);玩家「怎麼玩」見 [README.md](README.md);**全增益效果目錄(含實際數值/疊加規則)見 [BUFFS.md](BUFFS.md)**(改增益常數順手更新)。
+> 子系統鐵律**本體**在 [handoff.md](handoff.md) §3(以 `R##` 標號);完整現況清單見 handoff §1;設計理念見 [DESIGN.md](DESIGN.md);玩家「怎麼玩」見 [README.md](README.md);**全增益效果目錄(含實際數值/疊加規則,按來源層橫切)見 [BUFFS.md](BUFFS.md)**(改增益常數順手更新);**角色構築縱切盤點(按 build 走完所有層+分支取捨)見 [build.md](build.md)**。
 
 ## 怎麼跑 / 測試
 
