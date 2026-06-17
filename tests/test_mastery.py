@@ -857,8 +857,7 @@ def test_batch1_same_source_aggregation_no_shadow():
     mastery.choose(c, gd, "security_75", "master_floor"); mastery.choose(c, gd, "security_100", "master_thief")
     assert mastery.lock_floor(c, gd) == 0.50                            # max(0.30,0.50)
     mastery.choose(c, gd, "acrobatics_50", "tumbler"); mastery.choose(c, gd, "acrobatics_75", "evasion")
-    mastery.choose(c, gd, "acrobatics_100", "lightstep")
-    assert abs(mastery.evasion_bonus(c, gd) - (0.04 + 0.05 + 0.05)) < 1e-9   # 相加不遮蔽
+    assert abs(mastery.evasion_bonus(c, gd) - (0.04 + 0.05)) < 1e-9   # 同源相加不遮蔽(acrobatics 50+75)
     mastery.choose(c, gd, "hand_to_hand_75", "iron_fists"); mastery.choose(c, gd, "hand_to_hand_100", "transcend_fist")
     assert abs(mastery.weapon_mod(c, gd, "hand_to_hand").get("power", 0) - (0.15 + 0.10)) < 1e-9  # weapon_mod 合併
     mastery.choose(c, gd, "alchemy_50", "toxin_master"); mastery.choose(c, gd, "alchemy_100", "venom_lord")
@@ -872,14 +871,64 @@ def test_batch1_same_source_aggregation_no_shadow():
 
 def test_batch1_evasion_bonus_capped():
     """雜技/運動/輕甲三源閃避相加夾 EVASION_BONUS_CAP(對抗審查:0.24 會 trivialize 群戰)。"""
-    gd, c = _char(acrobatics=100, athletics=100, light_armor=100)
+    gd, c = _char(acrobatics=100, athletics=100, scout=100)
     for nid, oid in [("acrobatics_50", "tumbler"), ("acrobatics_75", "evasion"),
-                     ("acrobatics_100", "lightstep"), ("athletics_100", "windstep"),
-                     ("light_armor_100", "wind_dancer")]:
+                     ("athletics_100", "windstep"), ("scout_75", "preempt")]:
         mastery.choose(c, gd, nid, oid)
-    raw = 0.04 + 0.05 + 0.05 + 0.05 + 0.05                  # 0.24 未夾
+    raw = 0.04 + 0.05 + 0.05 + 0.04                         # 0.18 未夾
     assert raw > mastery.EVASION_BONUS_CAP
     assert mastery.evasion_bonus(c, gd) == mastery.EVASION_BONUS_CAP   # 夾 0.15
+
+
+def test_cold_skill_identity_perks():
+    """冷技能身份化(檔A):弓手牽制(slow)/盾擊宗師(block_riposte 聚合)/輕甲游擊·雜技(on_evade 聚合)。"""
+    gd, c = _char(marksman=100, block=100, light_armor=100, acrobatics=100)
+    # 弓手牽制箭:weapon_mod(marksman) 帶 on_hit_status slow;貫流射 +8% 傷害相加
+    mastery.choose(c, gd, "marksman_50", "harrying_shot")
+    assert mastery.weapon_mod(c, gd, "marksman").get("on_hit_status", {}).get("kind") == "slow"
+    mastery.choose(c, gd, "marksman_75", "piercing_volley")
+    assert abs(mastery.weapon_mod(c, gd, "marksman").get("power", 0) - 0.08) < 1e-9
+    # 盾擊宗師:block_riposte 多節點聚合(踉蹌取最 + 削弱 + 反傷)
+    for nid, oid in [("block_50", "shield_bash"), ("block_75", "shield_break"), ("block_100", "perfect_block")]:
+        mastery.choose(c, gd, nid, oid)
+    rp = mastery.block_riposte(c, gd)
+    assert rp["stagger_chance"] == 0.40 and rp["weaken"] == 0.15 and rp["counter"] == 0.5
+    # 輕甲游擊 + 雜技:on_evade 聚合(反擊取最、踉蹌任一、回體相加夾上限)
+    for nid, oid in [("light_armor_50", "riposte_step"), ("light_armor_100", "storm_dance"),
+                     ("acrobatics_100", "aerial_ambush")]:
+        mastery.choose(c, gd, nid, oid)
+    oe = mastery.on_evade(c, gd)
+    assert oe["counter_chance"] == 0.6 and oe["counter_frac"] == 0.6 and oe["counter_stagger"] is True
+    assert oe["restamina"] == 10                           # aerial_ambush 10(尚未疊 fluid_motion)
+    mastery.choose(c, gd, "light_armor_75", "fluid_motion")   # +8 → 18 夾 ON_EVADE_RESTAMINA_CAP
+    assert mastery.on_evade(c, gd)["restamina"] == mastery.ON_EVADE_RESTAMINA_CAP
+
+
+def test_cold_skill_combat_paths():
+    """檔A 戰鬥路徑回歸(對抗審查抓到的真 bug):牽制箭 slow 帶 magnitude 不崩 initiative;on_evade 反制每回合至多一次。"""
+    from tesrpg.rng import RNG
+    from tesrpg.systems import combat
+    # (1) 牽制箭:slow 必帶 magnitude → 全程 auto_resolve 不得 KeyError(每回合 initiative_order→_speed→slow_factor 讀 magnitude)
+    gd, c = _char(marksman=100, blade=100); c.weapon = "long_bow"
+    mastery.choose(c, gd, "marksman_50", "harrying_shot")
+    c.health = c.max_health = 500; c.fatigue = c.max_fatigue = 200
+    foe = combat.spawn_creature(gd, "frost_troll", RNG(1)); foe.health = foe.max_health = 400
+    combat.auto_resolve(c, foe, gd, RNG(2), max_rounds=60)     # 不得拋例外(回歸 magnitude crash)
+    # (2) on_evade 反制每回合至多一次:同一回合內(flag 未重置)連續多次敵攻落空只反制一次 → 不隨敵數線性放大
+    gd, p = _char(light_armor=100, acrobatics=100, blade=100); p.weapon = "steel_sword"
+    p.health = p.max_health = 600; p.fatigue = 50
+    mastery.choose(p, gd, "light_armor_100", "storm_dance")    # counter 0.6/0.6
+    e = combat.spawn_creature(gd, "bandit", RNG(3)); e.health = e.max_health = 99999
+    p._evade_counter_used = False
+    counters = 0
+    for i in range(40):                                        # 模擬「同一回合」40 次敵攻(不重置 flag)
+        if not combat.is_alive(p):
+            break
+        hp0 = e.health
+        combat.resolve_attack(e, p, gd, RNG(8000 + i))
+        if e.health < hp0:
+            counters += 1
+    assert counters <= 1, f"同回合 on_evade 反制應 ≤1,實得 {counters}"
 
 
 # --- 補洞 pass(Batch 2):8 個 50/75 gap-fill ------------------------------
@@ -1061,6 +1110,8 @@ def run():
     test_breadth_all_skills_have_full_ladder()
     test_batch1_same_source_aggregation_no_shadow()
     test_batch1_evasion_bonus_capped()
+    test_cold_skill_identity_perks()
+    test_cold_skill_combat_paths()
     test_batch2_gapfills_present_and_aggregate()
     test_batch3_all_25_are_single_auto_grant_no_dead()
     test_flee_bonus_getter_and_try_flee()

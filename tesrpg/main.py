@@ -706,6 +706,7 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
     round_no = 0
     while combat.is_alive(player) and alive_e():
         round_no += 1
+        player._evade_counter_used = False        # 每回合重置 on_evade 反制額度(守群戰風險;鏡像 EVASION_BONUS_CAP)
         action = _choose_combat_action(state, gamedata, enemies, battle["allies"], vanishes_done,
                                        mounted=mounted, first_round=(round_no == 1))
         blocking = action["type"] == "block"

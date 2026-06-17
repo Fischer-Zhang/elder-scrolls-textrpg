@@ -127,8 +127,8 @@
    "options": [
      {"opt_id": "featherweight", "name": "無聲披掛", "kind": "armor_sneak_relief", "relief": 1.0,
       "desc": "輕甲宗師:身手不受甲冑所累,潛近時護甲噪音懲罰全免。"},
-     {"opt_id": "evasive", "name": "順勢卸力", "kind": "skill_fortify", "skill": {"light_armor": 8},
-      "desc": "你深諳卸力之道,輕甲防護更紮實(輕甲技能 +8)。"}
+     {"opt_id": "fluid_motion", "name": "順勢借力", "kind": "on_evade", "restamina": 8,
+      "desc": "卸力借勢:每次閃過敵攻即回復 8 點體力 —— 游擊纏鬥久戰不竭。"}
    ]},
 
   {"id": "marksman_100", "skill": "marksman", "threshold": 100,
@@ -215,8 +215,9 @@
   {"id": "marksman_50", "skill": "marksman", "threshold": 50, "options": [
      {"opt_id": "tracker", "name": "獵手偵察", "kind": "recon_reveal_floor", "scout_floor": 50,
       "desc": "獵人之眼:即便不通偵查,接戰前也能看清獵物的血量/護甲/弱點(視同偵查 50)。"},
-     {"opt_id": "eagle_eye", "name": "鷹眼", "kind": "skill_fortify", "skill": {"marksman": 8},
-      "desc": "凝神專注,箭術更精(射術技能 +8)。"}
+     {"opt_id": "harrying_shot", "name": "牽制箭", "kind": "weapon_mod", "target": "marksman",
+      "on_hit_status": {"kind": "slow", "magnitude": 0.20, "turns": 2, "chance": 0.30},
+      "desc": "牽制射擊:弓弩命中時 30% 機率使敵遲緩 2 回合(降其先攻與命中)—— 風箏拉距的射手控場。"}
    ]},
   {"id": "sneak_25", "skill": "sneak", "threshold": 25, "options": [
      {"opt_id": "vanish_art", "name": "隱遁之術", "kind": "vanish_unlock",
@@ -251,8 +252,8 @@
    "options": [
      {"opt_id": "bracing", "name": "撐架穩步", "kind": "passive_armor", "armor_bonus": 10,
       "desc": "舉盾撐架,身形如樁:被動護甲 +10。"},
-     {"opt_id": "guardian", "name": "守護之姿", "kind": "resist_fortify", "resist": {"magic": 10},
-      "desc": "以盾承咒,法術難透(元素/法術抗性 +10%)。"}
+     {"opt_id": "shield_break", "name": "盾擊破勢", "kind": "block_riposte", "stagger_chance": 0.35, "weaken": 0.15, "weaken_turns": 2,
+      "desc": "盾擊破勢:格擋反擊時不僅震開來犯者,更挫其攻勢 —— 其後 2 回合攻擊削弱 15%(與盾擊踉蹌相加)。"}
    ]},
 
   {"id": "blunt_50", "skill": "blunt", "threshold": 50,
@@ -325,16 +326,16 @@
    "options": [
      {"opt_id": "tumbler", "name": "翻滾卸勁", "kind": "evasion_bonus", "evasion_bonus": 0.04,
       "desc": "翻滾卸勁,身形更難捉摸(閃避率 +4%)。"},
-     {"opt_id": "nimble", "name": "身法精進", "kind": "skill_fortify", "skill": {"acrobatics": 8},
-      "desc": "身法精進,翻躍卸力更俐落(雜技技能 +8)。"}
+     {"opt_id": "tumbling_charge", "name": "翻滾突進", "kind": "approach_bonus", "approach_bonus": 0.10,
+      "desc": "翻滾切入有利位:接戰時更常搶到開場偷襲先機(+10%,與潛近/情報來源相加)。"}
    ]},
 
   {"id": "light_armor_50", "skill": "light_armor", "threshold": 50,
    "options": [
      {"opt_id": "nimble_guard", "name": "柔革護持", "kind": "passive_armor", "armor_bonus": 12,
       "desc": "柔革貼身、卸力得宜:被動護甲 +12。"},
-     {"opt_id": "supple_leather", "name": "柔革貼身", "kind": "skill_fortify", "skill": {"light_armor": 8},
-      "desc": "柔革貼身,輕甲防護更紮實(輕甲技能 +8)。"}
+     {"opt_id": "riposte_step", "name": "迴身反打", "kind": "on_evade", "counter_chance": 0.35, "counter_frac": 0.5,
+      "desc": "輕裝游擊:閃過敵攻時 35% 機率順勢回敬一擊(造成你武器基礎傷害的五成)—— 以閃化打。"}
    ]},
 
   {"id": "security_50", "skill": "security", "threshold": 50,
@@ -371,8 +372,8 @@
   {"id": "block_100", "skill": "block", "threshold": 100, "options": [
      {"opt_id": "iron_bastion", "name": "銅牆鐵壁", "kind": "passive_armor", "armor_bonus": 12,
       "desc": "格擋登峰:架盾撐架如鑄鐵堡壘(被動護甲 +12,與撐架穩步相加)。"},
-     {"opt_id": "ward_bearer", "name": "禦咒之盾", "kind": "resist_fortify", "resist": {"magic": 12},
-      "desc": "以盾承咒爐火純青:元素/法術抗性 +12%。"}
+     {"opt_id": "perfect_block", "name": "盾威·完美格擋", "kind": "block_riposte", "stagger_chance": 0.40, "counter": 0.5,
+      "desc": "格擋登峰:格擋反擊時以盾痛擊來犯者 —— 40% 機率震開,並回敬一記盾擊(造成你武器基礎傷害的五成;與盾擊踉蹌/破勢相加)。"}
    ]},
 
   {"id": "hand_to_hand_100", "skill": "hand_to_hand", "threshold": 100, "options": [
@@ -418,15 +419,15 @@
    ]},
 
   {"id": "acrobatics_100", "skill": "acrobatics", "threshold": 100, "options": [
-     {"opt_id": "lightstep", "name": "凌波微步", "kind": "evasion_bonus", "evasion_bonus": 0.05,
-      "desc": "雜技登峰:身形如煙難以捉摸,敵人命中你的機率再 −5%(多源相加)。"},
+     {"opt_id": "aerial_ambush", "name": "凌空奇襲", "kind": "on_evade", "restamina": 10,
+      "desc": "雜技登峰:身形如煙、卸勁不竭 —— 每次閃過敵攻即回復 10 點體力,翻飛纏鬥久戰愈穩(與順勢借力相加夾上限)。"},
      {"opt_id": "deft_roll", "name": "卸勁脫身", "kind": "vanish_floor", "floor": 0.10,
       "desc": "翻滾卸勁脫離纏鬥:戰鬥中隱遁成功率保底 10%(多源取最高)。"}
    ]},
 
   {"id": "light_armor_100", "skill": "light_armor", "threshold": 100, "options": [
-     {"opt_id": "wind_dancer", "name": "御風躲閃", "kind": "evasion_bonus", "evasion_bonus": 0.05,
-      "desc": "輕甲登峰:身輕如葉、隨勢躲閃,敵人命中你的機率再 −5%(多源相加)。"},
+     {"opt_id": "storm_dance", "name": "風暴之舞", "kind": "on_evade", "counter_chance": 0.6, "counter_frac": 0.6, "counter_stagger": true,
+      "desc": "游擊登峰:閃過敵攻時 60% 機率回敬一記(武器基礎傷害六成)並震開來犯者 —— 以閃化打臻於化境(與迴身反打取最)。"},
      {"opt_id": "second_skin", "name": "柔革如膚", "kind": "passive_armor", "armor_bonus": 14,
       "desc": "輕甲貼身卸力臻於化境(被動護甲 +14,與柔革護持相加)。"}
    ]},
@@ -469,8 +470,8 @@
   {"id": "marksman_75", "skill": "marksman", "threshold": 75, "options": [
      {"opt_id": "swift_shot", "name": "疾矢", "kind": "weapon_mod", "target": "marksman", "hit": 0.04,
       "desc": "箭術漸精:弓弩命中 +4%(與其他射術流派相加)。"},
-     {"opt_id": "keen_sight", "name": "鷹視之眼", "kind": "attr_fortify", "attr": {"agility": 4},
-      "desc": "凝目專注,身手更穩(敏捷 +4 → 命中/閃避提升)。"}
+     {"opt_id": "piercing_volley", "name": "貫流射", "kind": "weapon_mod", "target": "marksman", "power": 0.08,
+      "desc": "勁射貫流:弓弩傷害 +8%(與其他射術流派相加)—— 射手的傷害成長線。"}
    ]},
 
   {"id": "speechcraft_75", "skill": "speechcraft", "threshold": 75, "options": [

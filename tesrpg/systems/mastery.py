@@ -40,7 +40,7 @@ _IMPLEMENTED_KINDS = {
     *_FORTIFY_KINDS,                       # P1:持久 fortify 層
     # P2 戰鬥系:武器流派調變(命中/威力/破甲/反作用/耗體/命中附狀態,target=武器技能)、
     # 盾擊踉蹌、淬鍊上限/省料、旅速、戰鬥省體。
-    "weapon_mod", "block_riposte", "temper_cap_bonus", "temper_cost_free",
+    "weapon_mod", "block_riposte", "on_evade", "temper_cap_bonus", "temper_cost_free",
     "travel_factor_bonus", "fatigue_cost_bonus",
     # P3 魔法系:法術調變(學派 power/cost/命中附狀態,吸收 spell_overload)、召喚調變、
     # 被動護甲、煉金/附魔增幅、塗毒次數、命中懼意、低血再生、商貿議價。
@@ -338,12 +338,27 @@ def merchant_bonus(char, gamedata: GameData) -> float:
 
 # --- P4 潛行系 getter ---------------------------------------------------
 EVASION_BONUS_CAP = 0.15   # 多技能閃避來源(雜技/運動/輕甲)相加的硬上限 —— 守『群戰須具真實風險』(sim 背書)
+ON_EVADE_RESTAMINA_CAP = 12   # 閃避回體(輕甲/雜技 on_evade)多源相加上限
 
 
 def evasion_bonus(char, gamedata: GameData) -> float:
     """身輕如燕/翻滾卸勁/疾風:額外閃避(直接從敵命中率扣;多來源 acrobatics/athletics/light_armor 相加,夾 EVASION_BONUS_CAP)。"""
     return min(EVASION_BONUS_CAP, sum(o.get("evasion_bonus", 0.0)
                for o in _chosen_options_by_kind(char, gamedata, "evasion_bonus")))
+
+
+def on_evade(char, gamedata: GameData) -> dict:
+    """迴身反打/風暴之舞/凌空奇襲:成功閃避敵近戰時的反制。多節點聚合(反擊機率/比例取最、
+    踉蹌任一、回體相加夾 ON_EVADE_RESTAMINA_CAP),空 = 無。"""
+    opts = _chosen_options_by_kind(char, gamedata, "on_evade")
+    if not opts:
+        return {}
+    return {
+        "counter_chance": max((o.get("counter_chance", 0.0) for o in opts), default=0.0),
+        "counter_frac": max((o.get("counter_frac", 0.0) for o in opts), default=0.0),
+        "counter_stagger": any(o.get("counter_stagger") for o in opts),
+        "restamina": min(ON_EVADE_RESTAMINA_CAP, sum(o.get("restamina", 0) for o in opts)),
+    }
 
 
 def vanish_floor(char, gamedata: GameData) -> float:
@@ -530,9 +545,18 @@ def weapon_mod(char, gamedata: GameData, wpn_skill_id: str | None) -> dict:
     return merged
 
 
-def block_riposte_chance(char, gamedata: GameData) -> float:
-    """盾擊踉蹌:成功格擋來犯時,使攻擊者踉蹌的機率(0 = 無)。"""
-    return _param(char, gamedata, "block_riposte", "stagger_chance", 0.0)
+def block_riposte(char, gamedata: GameData) -> dict:
+    """盾擊踉蹌/破勢/完美格擋:格擋來犯時的反制。多節點聚合(機率/削弱/反傷各取最),空 = 無。
+    shield_bash(50)=踉蹌、盾擊破勢(75)+削弱敵下擊、盾威·完美格擋(100)+盾擊反傷。"""
+    opts = _chosen_options_by_kind(char, gamedata, "block_riposte")
+    if not opts:
+        return {}
+    return {
+        "stagger_chance": max((o.get("stagger_chance", 0.0) for o in opts), default=0.0),
+        "weaken": max((o.get("weaken", 0.0) for o in opts), default=0.0),
+        "weaken_turns": max((o.get("weaken_turns", 1) for o in opts), default=1),
+        "counter": max((o.get("counter", 0.0) for o in opts), default=0.0),
+    }
 
 
 def temper_cap_bonus(char, gamedata: GameData) -> int:

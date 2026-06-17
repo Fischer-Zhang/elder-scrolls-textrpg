@@ -28,7 +28,7 @@
 
 #### 角色與成長
 - 10 種族 × 13 星座 × 8 職業/自訂;八屬性 + **22 技能** learn-by-doing;混合 Skyrim 式升級(等級 XP 池 → 三選一資源 + 屬性點)
-- **技能里程碑 v2 + 完整階梯**:全 22 技能各 **25/50/75/100 四節點(88 節點)**;**25=單一 perk 自動授予**(入門技,複用退化節點)、**50/75/100=達門檻二選一**永久銘刻 + 持久 fortify 加成層(skill/attr/resist)+ 功能槓桿(武器/法術控場、戰場自修、重甲反震、逃命、解陷保底、頂點 capstone…);反 min-max、守刺客紅線(同源多節點 getter 必聚合不遮蔽;repair_floor 類 floor 須高於門檻 base cap)
+- **技能里程碑 v2 + 完整階梯**:全 22 技能各 **25/50/75/100 四節點(88 節點)**;**25=單一 perk 自動授予**(入門技,複用退化節點)、**50/75/100=達門檻二選一**永久銘刻 + 持久 fortify 加成層(skill/attr/resist)+ 功能槓桿(武器/法術控場、弓手牽制、盾擊宗師、閃身反打、重甲反震、逃命、解陷保底、頂點 capstone…);反 min-max、守刺客紅線(同源多節點 getter 必聚合不遮蔽;下限/floor 類 perk 的 floor 須高於門檻 base cap)
 - **八職功能性身份網格**:全 8 職各一招牌戰術 loop(功能性非數值)—— 戰士盾牆(減傷·嘲諷)/法師奧術連鎖/盜賊諜報偵搜/騎士戰旗/戰法師共鳴一擊+法力回擊(毀滅 50/75 兩節點,可兼得)/刺客致命烙印/治療師戰地搶救/弓手獵手偵察(6 mastery 二選一節點 + 2 戰鬥動作;以技能/裝備 gate、零新存檔欄、守刺客紅線)
 - **開局背景**(14 種,只給處境不給數值)+ **種子重玩性**;冒險/傳奇兩種死亡模式 + 一生傳奇總結評分
 
@@ -888,6 +888,15 @@ tesrpg/
 - **連帶重設計**:① `smithing_50` 兩選項(原 forge_repair + apprentice_smith→armorer,雙雙失效→空節點)改 `thrifty_forge`(temper_cost_free 0.20,接 25/50/75/100 = 10/20/30/50% 階梯)+`smith_arm`(blunt+6);`smithing_100 forgemaster` 由 armorer+10 改 heavy_armor+10。② 戰士公會招牌福利 `repair_discount`→`armory_discount`(`factions.armory_discount` 走 `_best_perk`;`world.buy_price` 對帶 `damage`/`armor_rating` 的物品套折扣 `per_rank 0.05 cap 0.35`;**`buy_price` 設反套利地板 `max(…, sell_price+1)`**——滿議價 `disp 1.0` + 會長 0.35 折扣下買價會倒掛低於賣價成金幣泵〔對抗審查抓到的真 bug〕,地板保證同物買價恆 > 賣價;`test_world` 加會長滿議價回歸)。③ `classes.json` warrior 主修 armorer→smithing、archer→athletics;`races.json` nord/orsimer +5 armorer→+5 smithing(獸人鍛造 lore)。
 - **存檔向後相容(R03)**:`Character.from_dict` 載入前 `pop` 掉 `weapon_condition`/`armor_condition`(`cls(**d)` 不容多餘 kwargs)+ 剝 `skills`/`skill_xp` 殘留 `armorer` 鍵(免他處迭代撞 `gamedata.skills` KeyError);`ensure_mastery_choices` 既有過濾**自動剔除**指向已刪 `armorer_*` 節點與舊 `smithing_50` opt 的陳舊選擇;`major_skills` 殘留 armorer 僅成員測試→無害。`test_state` 加遷移回歸。
 - **必跑 `sim_assassin`**(動 combat:移除 cond_mult 與折損)→ solo boss 紅線/勝率/回合不退化(耐久未入 sim,實測影響≈0)。全技能仍守 4 階梯(`test_mastery` 廣度 23→22 技能、92→88 節點;`test_smithing` len 23→22)。**取代**前期里程碑(M4/R15/R29 等)對「裝備耐久 + 修理」的描述。
+
+### R34 · 技能里程碑深化:冷技能身份化(檔A)[re-sim] [save]
+
+- **問題**:盤點 88 節點 → 7 個「冷技能」無招牌身份(練到 100 只堆數值)、~半數 capstone 平庸。本輪(使用者選**檔A**)給 4 個冷戰技功能 loop,**改 9 個節點選項**(替換一邊,節點/選項數不變 → 仍 88/22)。
+- **marksman 控場**(複用 `weapon_mod`,零新 kind):`harrying_shot`(50,命中施 `slow` → 風箏拉距)+ `piercing_volley`(75,`power` 傷害成長線)。⚠ **on_hit_status 的 slow 必帶 `magnitude`**,否則 `magic.slow_factor` 硬下標 `e["magnitude"]` → 每回合 `initiative_order→_speed` KeyError 崩戰鬥(對抗審查抓到的 critical;已補 magnitude 0.20 + `slow_factor` 改 `.get`)。
+- **block 盾擊宗師**(豐化既有 `block_riposte`:getter `block_riposte_chance`(float)→ `block_riposte`(dict),聚合 `stagger_chance/weaken/counter` 取最):`shield_break`(75,反擊+削弱)+ `perfect_block`(100,反擊+盾擊反傷)。
+- **light_armor 游擊 + acrobatics**(**新 kind `on_evade`**,R21 三步:`_IMPLEMENTED_KINDS`+`mastery.on_evade` 聚合+`combat` 閃避分支掛鉤):閃過敵攻即反制 —— `riposte_step`/`storm_dance`(反擊,counter_chance/frac 取最、stagger 任一)+ `fluid_motion`/`aerial_ambush`(回體,sum 夾 `ON_EVADE_RESTAMINA_CAP`)+ acrobatics `tumbling_charge`(50,`approach_bonus`)。
+- **🔴 on_evade 反制每回合至多一次**(`player._evade_counter_used`,`run_battle`/`auto_resolve` 回合頂重置):反制傷害/回體**不隨敵數線性放大**,鏡像 `EVASION_BONUS_CAP` 守『群戰須具真實風險』(對抗審查抓到:未夾時 bandit×8 存活 0%→82%;加夾後回 ≈ 基線)。block 反擊需主動格擋(自限),未夾。
+- 改選項 opt_id → 舊存檔該節點由 `ensure_mastery_choices` 自動退回 pending(**零存檔欄**)。**動 combat → 跑 `sim_assassin`**(刺客 build 不選這些 perk → 紅線 byte-identical);`test_mastery` 加 `test_cold_skill_identity_perks`(getter 聚合)+ `test_cold_skill_combat_paths`(**slow 不崩 initiative** + on_evade 每回合上限)。對抗審查 6 確認(crash×3維 + 群戰放大 + 回體 + 措辭)皆修、1 誤報駁回。
 
 ---
 

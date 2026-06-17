@@ -304,6 +304,13 @@ def _ride_evasion(char) -> float:
                if e.get("kind") == "ride_evasion" and e.get("turns", 0) > 0)
 
 
+def _player_counter_damage(player, gamedata: GameData, rng: RNG) -> float:
+    """玩家反擊基礎傷害(輕甲「迴身反打」/盾牌「完美格擋」):以當前武器一記普通攻擊估算,
+    不吃偷襲倍率/流派加成 → 純基礎反擊,不觸碰 solo 紅線。"""
+    wpn_dmg, wpn_skill, _ = _weapon_profile(player, gamedata)
+    return formulas.attack_damage(wpn_dmg, wpn_skill, _strength(player), rng.roll(0.85, 1.15), 1.0)
+
+
 def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
                    defender_blocking: bool = False, sneak_attack: bool = False,
                    aimed: bool = False, mounted_charge: bool = False,
@@ -633,10 +640,19 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
                 elif ohs["kind"] == "weaken":
                     defender.active_effects.append({"kind": "weaken", "magnitude": ohs.get("magnitude", 0.0),
                                                     "turns": ohs.get("turns", 1)})
+                elif ohs["kind"] == "slow":   # 弓手「牽制箭」:命中遲緩(降敵先攻/命中 → 風箏拉距控場)
+                    defender.active_effects.append({"kind": "slow", "magnitude": ohs.get("magnitude", 0.0),
+                                                    "turns": ohs.get("turns", 2)})
         if defender_blocking and _is_player(defender) and is_alive(attacker):
-            rp = mastery.block_riposte_chance(defender, gamedata)
-            if rp and rng.chance(rp):
+            rp = mastery.block_riposte(defender, gamedata)
+            if rp.get("stagger_chance") and rng.chance(rp["stagger_chance"]):
                 attacker.active_effects.append({"kind": "stagger", "turns": 1})
+                if rp.get("weaken"):          # 盾擊破勢:反擊同時削弱敵下擊
+                    attacker.active_effects.append({"kind": "weaken", "magnitude": rp["weaken"],
+                                                    "turns": rp.get("weaken_turns", 2)})
+                if rp.get("counter"):         # 盾威·完美格擋:盾擊反傷(基礎武器傷的一部分)
+                    _set_hp(attacker, _get_hp(attacker)
+                            - int(round(_player_counter_damage(defender, gamedata, rng) * rp["counter"])))
         # 里程碑「懾心術」:玩家武器命中時施加懼意(illusion 流派的控場)
         if _is_player(attacker) and is_alive(defender):
             foh = mastery.fear_on_hit(attacker, gamedata)
@@ -692,6 +708,18 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
     elif _is_player(defender):             # 敵人攻擊落空 + 防守方是玩家 → 成功閃避 → 鍛鍊雜技
         skill_events += progression.use_skill(defender, gamedata, "acrobatics",
                                               formulas.COMBAT_DODGE_XP)
+        # 輕甲「迴身反打/風暴之舞」+ 雜技「凌空奇襲」:閃過敵攻即反制(只對敵;**每回合至多一次** →
+        # 反制傷害/回體不隨敵數線性放大,鏡像 EVASION_BONUS_CAP 守『群戰須具真實風險』。回合額度由 run_battle/auto_resolve 重置)
+        oe = mastery.on_evade(defender, gamedata)
+        if oe and not _is_player(attacker) and not getattr(defender, "_evade_counter_used", False):
+            defender._evade_counter_used = True
+            if oe.get("restamina"):
+                defender.fatigue = min(defender.max_fatigue, defender.fatigue + oe["restamina"])
+            if oe.get("counter_frac") and is_alive(attacker) and rng.chance(oe.get("counter_chance", 0.0)):
+                _set_hp(attacker, _get_hp(attacker)
+                        - int(round(_player_counter_damage(defender, gamedata, rng) * oe["counter_frac"])))
+                if oe.get("counter_stagger"):
+                    attacker.active_effects.append({"kind": "stagger", "turns": 1})
 
     return {
         "attacker": _name(attacker), "defender": _name(defender),
@@ -842,6 +870,7 @@ def auto_resolve(player: Character, creature: Creature, gamedata: GameData,
     rounds = 0
     while is_alive(player) and is_alive(creature) and rounds < max_rounds:
         rounds += 1
+        player._evade_counter_used = False        # 每回合重置 on_evade 反制額度
         for actor in initiative_order(player, creature):
             if not (is_alive(player) and is_alive(creature)):
                 break

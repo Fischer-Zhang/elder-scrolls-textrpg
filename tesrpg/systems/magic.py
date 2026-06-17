@@ -415,7 +415,7 @@ def is_slowed(creature) -> bool:
 
 def slow_factor(creature) -> float:
     """遲緩減速比例(多個遲緩取最強,非相加;夾 0..0.6 防鎖死)。"""
-    mag = max((e["magnitude"] for e in creature.active_effects
+    mag = max((e.get("magnitude", 0.0) for e in creature.active_effects
                if e["kind"] == "slow" and e["turns"] > 0), default=0.0)
     return max(0.0, min(0.6, mag))
 
