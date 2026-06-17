@@ -255,8 +255,11 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
 
     elif kind == "fear":
         if target is not None:
-            target.active_effects.append({"kind": "fear", "turns": eff["turns"]})
-            msg = f"{target.name}陷入了恐懼,{eff['turns']} 回合內不敢進攻!"
+            if _is_solo(target, gamedata):     # solo BOSS 對控制免疫(R31;與武器/塗毒/里程碑路徑一致)
+                msg = f"{target.name}意志如淵,恐懼無從附身。"
+            else:
+                target.active_effects.append({"kind": "fear", "turns": eff["turns"]})
+                msg = f"{target.name}陷入了恐懼,{eff['turns']} 回合內不敢進攻!"
 
     elif kind == "weaken":
         if target is not None:
@@ -300,7 +303,9 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
                 damage += loss
                 parts.append(f"{e.name} {loss}{_resist_tag(mult)}")
             if kind in ("status_all", "damage_status_all") and e.health > 0:
-                e.active_effects.append(make_status_effect(eff["status"]))
+                # solo BOSS 對控制型(fear/paralyze)免疫(R31);其餘狀態(dot/soul_trap…)照常
+                if not (eff["status"].get("status") in ("fear", "paralyze") and _is_solo(e, gamedata)):
+                    e.active_effects.append(make_status_effect(eff["status"]))
         if kind == "status_all":
             msg = f"{sp['name']} —— 全體敵人{_status_verb(eff['status'])}!"
         else:
@@ -393,6 +398,12 @@ def consume_ward(char, dmg: float) -> tuple[float, int]:
             refund = round(absorbed * e["absorb"]) if e.get("absorb") else 0
             return dmg - absorbed, refund
     return dmg, 0
+
+
+def _is_solo(creature, gamedata: GameData) -> bool:
+    """BOSS 級(bestiary `solo`)→ 對控制型(fear/paralyze)免疫(R31;與 combat._is_solo 一致)。"""
+    tid = getattr(creature, "template_id", None)
+    return bool(tid and gamedata.bestiary.get(tid, {}).get("solo"))
 
 
 def is_feared(creature) -> bool:

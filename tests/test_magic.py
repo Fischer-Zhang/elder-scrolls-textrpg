@@ -303,6 +303,21 @@ def test_weapon_paralyze_immune_on_solo_boss():
         assert not magic.is_paralyzed(boss)                 # 永不被鎖
 
 
+def test_spell_control_immune_on_solo_boss():
+    """反鎖王紅線(對抗審查補 R31 法術路徑缺口):solo BOSS 亦免疫法術控場(fear / rout / mass_paralysis)。"""
+    gd, c = _caster()
+    c.skills["illusion"] = 100
+    for sp in ("fear", "rout", "mass_paralysis"):
+        if sp not in c.spells:
+            c.spells.append(sp)
+    solo_tid = next(t for t, d in gd.bestiary.items() if d.get("solo"))
+    for sp in ("fear", "rout", "mass_paralysis"):
+        boss = combat.spawn_creature(gd, solo_tid, RNG(1)); boss.health = boss.max_health = 99999
+        c.magicka = c.max_magicka = 999
+        magic.cast(c, gd, sp, RNG(1), target=boss, battle={"allies": []}, enemies=[boss])
+        assert not magic.is_feared(boss) and not magic.is_paralyzed(boss), sp
+
+
 # --- 法術學派補完:召喚(束縛兵刃/亡者復生/新召喚)+ 秘術(結界/驅散/群體擒魂)-------
 def test_bound_weapon_arms_unarmed_and_bypasses_armor():
     """束縛兵刃:空手法師也能近戰,且走元素分支 → 無視物理護甲。"""

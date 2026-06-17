@@ -138,7 +138,7 @@
 ### 法師/施法(🔴改施法常數 R10/R14 須跑 sim)
 | perk | kind | 數值 |
 |---|---|---|
-| 過載/各省魔 spell_mod+overload | 傷害/續航 | power+:destruction0.20/alteration0.15/restoration0.20(相加);cost:0.92/0.85/過載1.30(相乘);impact stagger0.35 |
+| 過載/各省魔/凝練 spell_mod+overload | 傷害/續航/護盾 | power+:destruction0.20/alteration0.15+0.10/restoration0.20/mysticism0.10(相加,吃 _power → 傷害·護盾·結界);cost:0.92/0.85/過載1.30(相乘);impact stagger0.35 |
 | 奧術連鎖 cascade | 傷害/續航 | power+8%/層、省體×(1−0.12/層,夾≥0.4)、max_depth2(最高+16%/省24%);停手即散 |
 | 共鳴一擊 resonance | 傷害 | 🔴transfer0.5(下一近戰灌半數法力作元素傷)+dot4×3;加在 solo 夾限之前 |
 | 法力回擊 mana_on_hit | 資源回復 | 近戰命中 +4 魔力 |
@@ -156,7 +156,7 @@
 | 重甲反震 armor_reflect | 反傷 | 受近戰物理反彈12% |
 | 身輕如燕 evasion_bonus | 命中(扣敵命中) | 多源相加 0.02~0.05,★硬夾 EVASION_BONUS_CAP=0.15 |
 | 盾陣/盾擊踉蹌 | 減傷/控場 | block_hit_penalty0.25;riposte stagger0.35 |
-| 懾心術 fear_on_hit | 控場 | 命中20%→FEAR2回合 |
+| 懾意/懾心術/懾魂 fear_on_hit | 控場 | illusion 50/75/100:命中懼意,chance 相加夾30%、turns 取最(最長3);出手觸發(每回合一次);**solo BOSS 免疫** |
 | 不竭之軀 fatigue_cost_bonus | 續航 | 攻擊耗體×0.90 |
 
 ### 經濟/探索/社交(非戰鬥;多源取最高或相加)
@@ -270,7 +270,7 @@ weapon_element 附魔、奧術灌注 weapon_imbue、共鳴一擊 resonance、武
 | 陣腳大亂 stagger | 降敵命中 | −0.30 命中(impact 35%觸發) | binary,覆寫turns,可dispel |
 | 持續傷 dot(ignite/poison_cloud/frost_nova/bleed) | 持續傷 | ignite 8+6×3、poison_cloud 6×4、frost_nova 16+4×2、bleed×3 | 各一條獨立;AoE每敵獨立dict(R17) |
 | 麻痺 paralyze(mass/附魔) | 失能 | 群麻2回、附魔1回;is_incapacitated | 🔴solo免疫(R15);AoE獨立dict |
-| 恐懼 fear(fear/rout/懾心) | 失能 | 2回不敢進攻 | 玩家可意志抵抗;可dispel |
+| 恐懼 fear(fear/rout/懾心) | 失能 | 2回不敢進攻 | 玩家可意志抵抗;可dispel;**solo BOSS 全路徑免疫(R31:法術/塗毒/里程碑)** |
 | 擒魂 soul_trap(單/群) | 標記 | 4回;擊殺給對應充能靈魂石 | 不在 _DISPELLABLE |
 
 ### 對玩家自身懲罰(身分/星座代價)

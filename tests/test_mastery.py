@@ -931,6 +931,33 @@ def test_cold_skill_combat_paths():
     assert counters <= 1, f"同回合 on_evade 反制應 ≤1,實得 {counters}"
 
 
+def test_magic_school_no_brainer_fix():
+    """🅑 砍法系『省魔恆勝』無腦選:alt/myst_50 改威力(吃 _power)、conj_50 改被動護甲、illusion 50/100 改懾意(fear 聚合夾 + solo 免疫)。"""
+    from tesrpg.rng import RNG
+    gd, c = _char(alteration=50, mysticism=50, conjuration=100, illusion=100)
+    mastery.choose(c, gd, "alteration_50", "shield_focus")
+    assert abs(mastery.spell_power_bonus(c, gd, "alteration") - 0.10) < 1e-9   # 護盾增幅(原意志+4 → 真功能)
+    mastery.choose(c, gd, "mysticism_50", "ward_focus")
+    assert abs(mastery.spell_power_bonus(c, gd, "mysticism") - 0.10) < 1e-9    # 結界增幅
+    mastery.choose(c, gd, "conjuration_50", "warding_focus")
+    mastery.choose(c, gd, "conjuration_75", "warding_summon")
+    assert mastery.passive_armor_bonus(c, gd) == 8 + 15                        # 護體召喚 50+75 相加不遮蔽
+    for nid, oid in [("illusion_50", "dread_touch"), ("illusion_75", "cowardice"), ("illusion_100", "soul_dread")]:
+        mastery.choose(c, gd, nid, oid)
+    foh = mastery.fear_on_hit(c, gd)
+    assert foh["chance"] == mastery.FEAR_ON_HIT_CHANCE_CAP and foh["turns"] == 3   # chance 0.45→夾0.30;turns 取最=3(soul_dread)
+    # solo BOSS 對 fear 免疫(R31 一致;補既有 cowardice 缺口)
+    c.weapon = "steel_dagger"
+    boss = combat.spawn_creature(gd, "mehrunes_dagon", RNG(1)); boss.health = boss.max_health = 99999
+    feared = 0
+    for s in range(40):
+        boss.active_effects = []
+        combat.resolve_attack(c, boss, gd, RNG(s))
+        if any(e["kind"] == "fear" for e in boss.active_effects):
+            feared += 1
+    assert feared == 0, "solo boss 不得被 fear"
+
+
 # --- 補洞 pass(Batch 2):8 個 50/75 gap-fill ------------------------------
 def test_batch2_gapfills_present_and_aggregate():
     """blade/blunt/marksman/speechcraft 補 75;四魔法學派補 50 → 全 23 技能 ≥3 節點(sneak 4)。"""
@@ -1112,6 +1139,7 @@ def run():
     test_batch1_evasion_bonus_capped()
     test_cold_skill_identity_perks()
     test_cold_skill_combat_paths()
+    test_magic_school_no_brainer_fix()
     test_batch2_gapfills_present_and_aggregate()
     test_batch3_all_25_are_single_auto_grant_no_dead()
     test_flee_bonus_getter_and_try_flee()

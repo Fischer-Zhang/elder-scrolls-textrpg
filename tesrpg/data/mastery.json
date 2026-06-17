@@ -302,8 +302,8 @@
    "options": [
      {"opt_id": "efficient_shield", "name": "省魔護持", "kind": "spell_mod", "school": "alteration", "cost_factor": 0.85,
       "desc": "變化術駕輕就熟:施法省魔 15%(護盾/開鎖更頻繁可用)。"},
-     {"opt_id": "arcane_mind", "name": "奧理通明", "kind": "attr_fortify", "attr": {"willpower": 4},
-      "desc": "鑽研法理,意志更堅(意志 +4 → 魔力回復/抗心智提升)。"}
+     {"opt_id": "shield_focus", "name": "術法凝練", "kind": "spell_mod", "school": "alteration", "power_bonus": 0.10,
+      "desc": "變化系術法效力 +10%(吃 _power → 護盾更厚、附魔之刃〔火/霜/電刃〕元素傷更高;與術法增幅/精純相加)。"}
    ]},
 
   {"id": "conjuration_75", "skill": "conjuration", "threshold": 75,
@@ -318,8 +318,8 @@
    "options": [
      {"opt_id": "mind_mastery", "name": "操心駕輕", "kind": "spell_mod", "school": "illusion", "cost_factor": 0.85,
       "desc": "心智操弄駕輕就熟:幻術施法省魔 15%(恐懼/挫志/群控更頻繁可用)。"},
-     {"opt_id": "silver_tongue", "name": "巧言惑心", "kind": "skill_fortify", "skill": {"speechcraft": 8},
-      "desc": "幻術師深諳惑心之道,言辭更具說服力(口才技能 +8)。"}
+     {"opt_id": "soul_dread", "name": "懾魂奪魄", "kind": "fear_on_hit", "chance": 0.15, "turns": 3,
+      "desc": "幻術登峰:武器命中施加懼意,且懼意持續更長(3 回合,turns 取最)—— 命中率與懾意/懾心術相加夾 30%;solo BOSS 免疫。"}
    ]},
 
   {"id": "acrobatics_50", "skill": "acrobatics", "threshold": 50,
@@ -484,8 +484,8 @@
   {"id": "conjuration_50", "skill": "conjuration", "threshold": 50, "options": [
      {"opt_id": "efficient_summon", "name": "省魔召喚", "kind": "spell_mod", "school": "conjuration", "cost_factor": 0.85,
       "desc": "召喚漸熟:召喚/束縛/亡者復生施法省魔 15%(更頻繁可用)。"},
-     {"opt_id": "summon_study", "name": "召喚初窺", "kind": "skill_fortify", "skill": {"conjuration": 6},
-      "desc": "鑽研召喚法理(召喚技能 +6)。"}
+     {"opt_id": "warding_focus", "name": "護體召喚初窺", "kind": "passive_armor", "armor_bonus": 8,
+      "desc": "召喚靈光初凝環體護持(被動護甲 +8;與護體召喚〔75〕相加)。"}
    ]},
 
   {"id": "destruction_50", "skill": "destruction", "threshold": 50, "options": [
@@ -499,15 +499,15 @@
   {"id": "illusion_50", "skill": "illusion", "threshold": 50, "options": [
      {"opt_id": "efficient_illusion", "name": "省魔幻術", "kind": "spell_mod", "school": "illusion", "cost_factor": 0.85,
       "desc": "幻術漸熟:幻術施法省魔 15%(恐懼/挫志/群控更頻繁可用)。"},
-     {"opt_id": "glib_tongue", "name": "巧舌如簧", "kind": "skill_fortify", "skill": {"speechcraft": 6},
-      "desc": "惑心之術助長言辭(口才技能 +6)。"}
+     {"opt_id": "dread_touch", "name": "懾意初窺", "kind": "fear_on_hit", "chance": 0.10, "turns": 1,
+      "desc": "惑心入微:武器命中時 10% 機率使敵短暫驚懼(1 回合不敢進攻;solo BOSS 免疫;與懾心術/懾魂相加夾總上限)。"}
    ]},
 
   {"id": "mysticism_50", "skill": "mysticism", "threshold": 50, "options": [
      {"opt_id": "efficient_mysticism", "name": "省魔秘法", "kind": "spell_mod", "school": "mysticism", "cost_factor": 0.85,
       "desc": "秘法漸熟:秘術(結界/驅散/擒魂)施法省魔 15%(更頻繁可用)。"},
-     {"opt_id": "attuned_will", "name": "心法相契", "kind": "attr_fortify", "attr": {"willpower": 4},
-      "desc": "秘法磨礪心志(意志 +4 → 魔力回復/抗心智提升)。"}
+     {"opt_id": "ward_focus", "name": "結界凝練", "kind": "spell_mod", "school": "mysticism", "power_bonus": 0.10,
+      "desc": "秘術凝練:結界吸收量 +10%(吃 _power → 結界更厚實;秘術系唯一增幅來源)。"}
    ]},
 
   {"id": "athletics_25", "skill": "athletics", "threshold": 25, "options": [

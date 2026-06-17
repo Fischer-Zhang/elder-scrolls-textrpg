@@ -653,8 +653,8 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
                 if rp.get("counter"):         # 盾威·完美格擋:盾擊反傷(基礎武器傷的一部分)
                     _set_hp(attacker, _get_hp(attacker)
                             - int(round(_player_counter_damage(defender, gamedata, rng) * rp["counter"])))
-        # 里程碑「懾心術」:玩家武器命中時施加懼意(illusion 流派的控場)
-        if _is_player(attacker) and is_alive(defender):
+        # 里程碑「懾心術/懾意/懾魂」:玩家武器命中施加懼意(illusion 控場);solo boss 對控制免疫(R31 一致,補既有缺口)
+        if _is_player(attacker) and is_alive(defender) and not _is_solo(defender, gamedata):
             foh = mastery.fear_on_hit(attacker, gamedata)
             if foh and rng.chance(foh.get("chance", 0.0)):
                 defender.active_effects.append({"kind": "fear", "turns": foh.get("turns", 2)})

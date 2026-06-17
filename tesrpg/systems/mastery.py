@@ -320,9 +320,15 @@ def enchant_potency(char, gamedata: GameData) -> float:
     return _param(char, gamedata, "enchant_potency", "potency_bonus", 0.0)
 
 
-def fear_on_hit(char, gamedata: GameData) -> dict | None:
-    """懾心術:武器命中時施加懼意的 {chance, turns};無則 None。"""
-    return _chosen_option_by_kind(char, gamedata, "fear_on_hit")
+def fear_on_hit(char, gamedata: GameData) -> dict:
+    """懾心術/懾意/懾魂:武器命中時施加懼意。多節點聚合(illusion 50/75/100:chance 相加夾 FEAR_ON_HIT_CHANCE_CAP、turns 取最),空 = {}。"""
+    opts = _chosen_options_by_kind(char, gamedata, "fear_on_hit")
+    if not opts:
+        return {}
+    return {
+        "chance": min(FEAR_ON_HIT_CHANCE_CAP, sum(o.get("chance", 0.0) for o in opts)),
+        "turns": max((o.get("turns", 1) for o in opts), default=1),
+    }
 
 
 def regen_on_low(char, gamedata: GameData) -> dict | None:
@@ -339,6 +345,7 @@ def merchant_bonus(char, gamedata: GameData) -> float:
 # --- P4 潛行系 getter ---------------------------------------------------
 EVASION_BONUS_CAP = 0.15   # 多技能閃避來源(雜技/運動/輕甲)相加的硬上限 —— 守『群戰須具真實風險』(sim 背書)
 ON_EVADE_RESTAMINA_CAP = 12   # 閃避回體(輕甲/雜技 on_evade)多源相加上限
+FEAR_ON_HIT_CHANCE_CAP = 0.30   # 懾心術 fear_on_hit(illusion 50/75/100)多源 chance 相加上限
 
 
 def evasion_bonus(char, gamedata: GameData) -> float:
