@@ -1839,5 +1839,17 @@
       {"objective": {"type": "reach", "location": "azura_defiled_shrine"}, "text": "前往東岸礁島上被玷污的星辰祭壇,與靈術師的低語會合。"},
       {"objective": {"type": "clear_dungeon", "dungeon": "azura_defiled_shrine"}, "text": "在祭壇核心了結馬林的囚魂、奪下星辰 —— 以黑魂重鑄,這枚永不枯竭的黑星自此屬你,代價是晨昏女神的震怒。"}
     ], "reward": {"gold": 800, "infamy": 25, "items": ["black_star_amulet"]}}
+  ]},
+  "molag_bal_vault": {"name": "恐怖之屋", "faction": null, "rank": null, "source": "daedric", "shrine": "molag_bal", "requires_level": 16, "text": "莫拉格瑪城心的黑石神殿在你叩拜時滲出血色低語 —— 奴役之主莫拉格巴爾誘你前往城郊的玷污密室,那裡的祭壇囚著一名不肯屈服的祭品。是以他的鎚折服祭品、換取神器,還是解開枷鎖、反噬他的血裔執鞭者?抉擇在你。", "branches": [
+    {"label": "臣服之路 —— 以莫拉格巴爾之鎚折服祭品(得神器:莫拉格巴爾之鎚)", "text": "奴役之主許你以他的鎚痛擊那名祭品,直到對方的意志徹底崩潰 —— 完成這場折磨,黑石之鎚將為你所有,但你的雙手也將沾滿惡名。", "stages": [
+      {"objective": {"type": "collect", "item": "filled_common_soul_gem", "count": 1}, "text": "密室的鎖鏈祭壇渴求一縷亡魂:備妥一枚已充能的普魂石獻上,血色之門才會為你敞開。"},
+      {"objective": {"type": "reach", "location": "molag_vault"}, "text": "步入莫拉格瑪城郊、熔岩裂隙下的玷污血色密室。"},
+      {"objective": {"type": "clear_dungeon", "dungeon": "molag_vault"}, "text": "清剿密室的血裔守衛,在鎖鏈祭壇前以黑石之鎚折服那名祭品 —— 將他的靈魂獻予奴役之主。"}
+    ], "reward": {"gold": 800, "infamy": 30, "items": ["mace_of_molag_bal"], "world_flags": ["molag_bal_served"]}},
+    {"label": "反抗之路 —— 解開祭品的枷鎖、反噬執鞭者(賜永久誓福:不屈之心)", "text": "你不願做奴役之主的鞭子 —— 解開祭品的枷鎖,將莫拉格巴爾的血裔執鞭者連同他的鎖鏈一併斬碎。震怒的奴役之主將詛咒你,但不屈的意志會成為你永恆的護甲。", "stages": [
+      {"objective": {"type": "collect", "item": "filled_common_soul_gem", "count": 1}, "text": "密室的鎖鏈祭壇渴求一縷亡魂:備妥一枚已充能的普魂石,作為混入密室的投名狀。"},
+      {"objective": {"type": "reach", "location": "molag_vault"}, "text": "步入莫拉格瑪城郊、熔岩裂隙下的玷污血色密室。"},
+      {"objective": {"type": "clear_dungeon", "dungeon": "molag_vault"}, "text": "解開祭品的枷鎖,在鎖鏈祭壇前擊潰莫拉格巴爾的血裔領主 —— 以不屈之志反噬奴役之主。"}
+    ], "reward": {"gold": 600, "fame": 30, "grant_boon": "molag_defiance", "world_flags": ["molag_bal_defied"]}}
   ]}
 }

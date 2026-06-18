@@ -721,6 +721,28 @@
     "loot": [{"item": "filled_grand_soul_gem", "chance": 0.6}, {"item": "ruby", "chance": 0.3}],
     "flavor": "靈術師馬林·瓦倫把自己的靈魂藏進阿祖拉之星 —— 如今那縷不肯消散的魂火,自玷污的星核中向你伸出枯指。"
   },
+  "molag_bloodlord": {
+    "name": "莫拉格巴爾的血裔領主", "strength": 72, "agility": 50, "speed": 48,
+    "max_health": 225, "armor_rating": 18,
+    "attack": {"name": "枷鎖橫掃", "damage": 36, "skill": 68,
+               "on_hit": {"status": "stagger", "turns": 1, "chance": 0.3}},
+    "attacks": [
+      {"name": "枷鎖橫掃", "damage": 36, "skill": 68, "weight": 2,
+       "on_hit": {"status": "stagger", "turns": 1, "chance": 0.3}},
+      {"name": "雷光鞭笞", "damage": 38, "skill": 68, "element": "shock", "weight": 2,
+       "on_hit": {"status": "dot", "element": "shock", "magnitude": 6, "turns": 3, "chance": 0.5}},
+      {"name": "生命汲取", "damage": 30, "skill": 68, "weight": 2},
+      {"name": "支配凝視", "damage": 18, "skill": 68, "weight": 1,
+       "on_hit": {"status": "fear", "turns": 1, "chance": 0.3}},
+      {"name": "奴役雷暴", "damage": 56, "skill": 70, "element": "shock", "weight": 1,
+       "cooldown": 3, "when": {"hp_below": 0.5}}
+    ],
+    "danger": 5, "min_level": 16, "weight": 1, "solo": true,
+    "resist": {"frost": 40, "poison": 60, "shock": 50, "magic": 25, "fire": -20},
+    "loot_gold": [200, 400],
+    "loot": [{"item": "filled_grand_soul_gem", "chance": 0.6}, {"item": "vampire_dust", "chance": 0.5}],
+    "flavor": "奴役之主自他血裔的軀殼中俯視眾生 —— 鎖鏈、雷光與亡魂的哀嚎,皆是他支配萬物的工具。"
+  },
   "dremora_lord": {
     "biomes": ["ashland"],
     "name": "魔人領主", "strength": 74, "agility": 50, "speed": 48,

@@ -40,7 +40,7 @@
 #### 世界與探索
 - **八省 ~168 地點 / 48 城 + 17 鎮 + 70 野區 + 33 地城**(含海爾根 Helgen=白隘北口、賽→天門戶)(每省 5–9 城 + 多個正典分區野區〔黃金海岸/苦岸/裂石郡/收割者三月…〕做城際過場;邊境戍堡為省際接縫)+ **`pos[col,row]` 與 `links` 皆依正典 TES 地理**(頂層 `world["map"]` 40×24);旅行/晝夜/危險度(數字為快照,以 JSON/測試為準)
 - **生態遭遇**(biome 加權,八生態含 savanna 弱毒)、**省份風味事件**、**具名地標**首發現、各城**考據統治者**;終局 solo BOSS
-- **後期內容:戴德拉親王神殿線(R45;一次一位親王、任務做深)**:野外祭壇「供奉祈願」接親王試煉 → 深線結局得**永久誓福**(通用 `boons` 層 data-driven,可同時持有多位親王 → 封頂角色的後期收集軸)或**神器**;首位 = 阿祖拉「黑星」(淨化得晨昏之佑誓福 vs 墮化得黑星護符,複用任務分支)+ 新 d5 solo boss/地城。誓福守刺客紅線(無 sneak/武傷)→ sim byte-identical
+- **後期內容:戴德拉親王神殿線(R45;一次一位親王、任務做深)**:野外/城鎮祭壇「供奉祈願」接親王試煉 → 深線結局得**永久誓福**(通用 `boons` 層 data-driven,可同時持有多位親王 → 封頂角色的後期收集軸)或**神器**(分支道德抉擇)。已做:**阿祖拉「黑星」**(晨風海岸·淨化得晨昏之佑誓福 vs 墮化得黑星護符)、**莫拉格巴爾「恐怖之屋」**(復用莫拉格瑪·臣服得莫拉格巴爾之鎚〔吸生命鈍器〕vs 反抗得不屈之心誓福);各配新 d5 solo boss/地城。誓福守刺客紅線(無 sneak/武傷)→ sim byte-identical;**加下一位親王=純 JSON**(引擎已就緒)
 - **城鎮服務專精化(R29)**:訓練師依公會/lore 只教部分技能(戰士城練戰鬥/法師城練魔法/盜賊城練潛行)+ 11 招牌城**宗師指點**破一般訓練上限(馬卡斯鍛造/冬堡毀滅/裂谷開鎖…);法師公會**法術學派分省守護**(各省主賣一派深線 + 保底集 9 道,別派進階須跨省採購;`imperial_city` 通才例外)。給戰士/盜賊/法師各一張「該去哪精進/採購」的地圖;功能性差異、零存檔欄位
 - **格子地城探索**(`systems/dungeoncrawl.py`):15 地城程序化生成 n×n 格 × m 層,N/S/E/W 移動 + 樓梯下層 + 迷霧小地圖 + 格內怪/寶/陷阱;清末層 boss = 肅清,首領死亡自動解鎖寶藏(原子探索、零新存檔欄)。**視為戰鬥情境**:可一般行動(施法/背包/角色卡)、**預施增益/預召喚召喚物**(行動 1 格 = 1 回合逐回合衰減,經 carry_allies/preserve_buffs 帶進觸發戰鬥)、**偵查 perk 探明四鄰**(每探明新格得少量偵查 xp);持久狀態條一併顯示夥伴/召喚物
 
@@ -1019,7 +1019,8 @@ tesrpg/
 - **首位親王阿祖拉(取材 Skyrim「黑星」)**:復用 `azuras_coast`(加 `shrine`)+ 新 **degree-2 through-route** 地城 `azura_defiled_shrine`(d5·grid5/layers3·links `azuras_coast`+`sadrith_mora` 成海岸環,守 R28 無死路)+ 新 boss `malyn_varen`(d5·`solo`·dungeon `raw`·185HP·frost·R43 曲目含 `paralyze` on_hit chance0.25/turns1 → 走 R44 solo 機率減免)+ 深線 `azura_star`(`source:"daedric"`·`requires_level:15`·`branches`:**淨化路線**→`grant_boon:"azura"`〔晨昏之佑 willpower+8/intelligence+6/mysticism+10/magic+20/magicka+20,**守紅線無 sneak/武傷**〕`world_flags:["azura_star_cleansed"]` vs **墮化路線**→神器 `black_star_amulet`〔fortify mysticism 20〕+infamy)。
 - **🔴 紅線守**:誓福**絕不碰 sneak/武器技能**、strength 類 ≤ 達貢 → `sim_assassin` **byte-identical**(git stash diff 證:刺客無誓福投入·sim fixtures `boons=[]` → boon_* 全空·boss 非偷襲路徑);boss `solo`+`raw`、硬控 chance≤0.30/turns1 走 helper(R44)。daedric source 免 npc/board 獎勵 cap(`test_detailing`)。
 - **驗證**:`run_all` **67** 綠(新 `test_daedric`:誓福疊加不寫 base/冪等不疊/多誓福相加〔注入暫時測試誓福〕/存檔 round-trip+舊檔遷移/未知 id 略過/reward 派發/可接門檻+神殿分流/內容完整〔boss solo·控場節制·地城有 clear_dungeon 任務〕);煙霧(action_shrine UI 接取+完成授福+GameState 存載保留+遷移補欄);BESTIARY.md 重生(101 怪)。
-- **後續**:每里程碑純 JSON 加一位親王(海爾辛〔復用 hircine_ring〕/莫拉格巴爾〔molag_mar·鎚〕/波耶西亞〔Ebony Mail〕/梅瑞迪雅…);需新機制者(阿祖拉之星不碎魂石/瑪奇路之書一次性技能書/Wabbajack 隨機法杖)留後。
+- **後續**:每里程碑純 JSON 加一位親王(海爾辛〔復用 hircine_ring〕/波耶西亞〔Ebony Mail〕/梅瑞迪雅〔復用 ansei_tomb·破曉者〕…);需新機制者(阿祖拉之星不碎魂石/瑪奇路之書一次性技能書/Wabbajack 隨機法杖)留後。
+- **✅ 第二位親王已做:莫拉格巴爾(奴役之主·取材 Skyrim「恐怖之屋」)**(純 JSON·引擎零改·翻轉道德軸:事奉惡神→神器、反抗→誓福)——復用 `molag_mar`(加 `shrine:"molag_bal"`)+ 新 degree-2 地城 `molag_vault`(d5·三角環 molag_mar+ascadian_isles)+ 新 boss `molag_bloodlord`(d5·solo·raw·225HP·吸血鬼-魔人·shock/支配·fear on_hit 0.30/1 走 R44)。分支:**臣服**→神器 `mace_of_molag_bal`(鈍器·鎚·命中吸生命=既有 `weapon_status absorb_health` 路徑,**solo 受 `WEAPON_ABSORB_SOLO_FACTOR` 夾**·零新 combat 碼)+惡名;**反抗**→誓福 `molag_defiance`「不屈之心」(willpower+10/endurance+6/restoration+8/shock+15,守紅線)+聲望。`run_all` 67(test_daedric 擴充);`sim_assassin` **byte-identical**(stash diff 證);煙霧含鎚 absorb_health solo 夾驗證。
 
 ---
 

@@ -5,5 +5,12 @@
     "skill": {"mysticism": 10},
     "resist": {"magic": 20},
     "magicka": 20
+  },
+  "molag_defiance": {
+    "name": "不屈之心",
+    "attr": {"willpower": 10, "endurance": 6},
+    "skill": {"restoration": 8},
+    "resist": {"shock": 15},
+    "magicka": 0
   }
 }

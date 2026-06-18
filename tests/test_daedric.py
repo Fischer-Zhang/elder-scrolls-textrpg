@@ -170,6 +170,65 @@ def test_azura_content_integrity():
     assert "azura_defiled_shrine" in cleared
 
 
+# --- 第二位親王:莫拉格巴爾(serve→神器 vs defy→誓福,翻轉道德軸)----------
+def test_molag_serve_branch_grants_mace_not_boon():
+    """臣服之路 → 得神器 莫拉格巴爾之鎚、惡名上升、不得誓福。"""
+    gd, c = _gd_char(level=16)
+    quests.accept_quest(c, gd, "molag_bal_vault", branch=0)
+    inventory.add_item(c, "filled_common_soul_gem", 1)
+    c.location_id = "molag_vault"
+    quests.record_dungeon_clear(c, "molag_vault")
+    quests.check_completion(c, gd)
+    assert "molag_bal_vault" in c.completed_quests
+    assert inventory.count_item(c, "mace_of_molag_bal") == 1
+    assert not boons.has_boon(c, "molag_defiance") and c.infamy >= 30
+    assert "molag_bal_served" in c.world_events_fired
+
+
+def test_molag_defy_branch_grants_boon_not_mace():
+    """反抗之路 → 得永久誓福 不屈之心(willpower+10/endurance+6)、不得神器、聲望上升。"""
+    gd, c = _gd_char(level=16)
+    w0, e0 = c.attr("willpower"), c.attr("endurance")
+    quests.accept_quest(c, gd, "molag_bal_vault", branch=1)
+    inventory.add_item(c, "filled_common_soul_gem", 1)
+    c.location_id = "molag_vault"
+    quests.record_dungeon_clear(c, "molag_vault")
+    quests.check_completion(c, gd)
+    assert "molag_bal_vault" in c.completed_quests
+    assert boons.has_boon(c, "molag_defiance")
+    assert c.attr("willpower") == w0 + 10 and c.attr("endurance") == e0 + 6
+    assert c.base_attr("willpower") == w0          # 🔴 不寫 base
+    assert inventory.count_item(c, "mace_of_molag_bal") == 0
+    assert "molag_bal_defied" in c.world_events_fired
+
+
+def test_molag_quest_availability_gating():
+    gd, c = _gd_char(level=15)
+    assert "molag_bal_vault" not in quests.available_quests(c, gd, "daedric")   # 等級不足
+    c.level = 16
+    av = quests.available_quests(c, gd, "daedric")
+    assert "molag_bal_vault" in av and "azura_star" in av                       # 兩座神殿任務並存
+    assert gd.quests["molag_bal_vault"]["shrine"] == "molag_bal"                # 神殿分流
+
+
+def test_molag_content_integrity():
+    gd, _ = _gd_char()
+    assert "molag_defiance" in gd.boons and "mace_of_molag_bal" in gd.items
+    assert gd.world["locations"]["molag_mar"].get("shrine") == "molag_bal"
+    boss = gd.dungeons["molag_vault"]["boss"]["enemy"]
+    assert boss == "molag_bloodlord" and gd.bestiary[boss].get("solo") is True
+    for atk in gd.bestiary[boss].get("attacks", []):
+        oh = atk.get("on_hit") or {}
+        if oh.get("status") in ("fear", "paralyze"):
+            assert oh.get("chance", 1.0) <= 0.30 and oh.get("turns", 1) <= 1, atk
+    # 神器走既有 absorb_health 路徑(weapon_status),非新 combat kind
+    ench = gd.items["mace_of_molag_bal"]["enchant"]
+    assert ench["kind"] == "weapon_status" and ench["status"] == "absorb_health"
+    # 誓福守紅線:無 sneak/武器技能
+    assert not ({"sneak", "blade", "blunt", "marksman", "hand_to_hand"}
+                & set(gd.boons["molag_defiance"].get("skill", {})))
+
+
 def run():
     for name, fn in sorted(globals().items()):
         if name.startswith("test_") and callable(fn):
