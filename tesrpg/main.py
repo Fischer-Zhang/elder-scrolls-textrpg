@@ -467,7 +467,8 @@ def _choose_combat_action(state: GameState, gamedata: GameData, enemies: list, a
         else:
             plabel = "吸血之力" if player.is_vampire else "星座之力"
             opts.append(("power", f"{plabel}({powers.power_def(pid)['name']})"))
-    if not inventory.is_dual_wielding(player, gamedata):   # 雙持占用雙手 → 不能格擋
+    if (not inventory.is_dual_wielding(player, gamedata)
+            and not inventory.is_two_handed(gamedata, player.weapon)):   # 雙持/雙手武器占雙手 → 不能格擋
         opts.append(("block", "格擋"))
     vcap = combat.vanish_cap(player, gamedata)
     if combat.can_vanish(player, gamedata) and vanish_used < vcap:
@@ -492,7 +493,8 @@ def _choose_combat_action(state: GameState, gamedata: GameData, enemies: list, a
         opts.append(("skirmish_ride", "🏹 騎射（馬背放箭 · 大幅提升閃避)"))
     # 戰士「盾牆」:持盾 + 格擋達門檻 → 立/撤防禦架勢(前向減傷 + 嘲諷 + 護同袍 · 耗體力)
     if (player.equipped.get("shield") and player.base_skill("block") >= SHIELD_WALL_BLOCK_GATE
-            and not inventory.is_dual_wielding(player, gamedata)):
+            and not inventory.is_dual_wielding(player, gamedata)
+            and not inventory.is_two_handed(gamedata, player.weapon)):   # 雙手武器無盾 → 自然無盾牆(舊存檔保險)
         if combat.has_shield_wall(player):
             opts.append(("wall", "撤下盾牆"))
         elif player.fatigue > SHIELD_WALL_UPKEEP:   # 須有體力維持 → 體力耗盡後不可免費再立(盾牆是有限防禦資源,堵 fatigue-0 永久免費坦)

@@ -1622,6 +1622,8 @@ def weapon_line(char: Character, gamedata: GameData) -> str:
         poison = f" [green]· 塗毒:{char.weapon_poison['name']}×{char.weapon_poison['charges']}[/]"
     arch = _ARCHETYPE_CN.get(wp.get("archetype"), "")
     arch_tag = f"·{arch}" if arch and char.weapon != "fists" else ""
+    if wp.get("two_handed"):
+        arch_tag += "·雙手"          # 戰錘/戰斧:雙手握法(占雙手,無盾/副手/格擋)
     from tesrpg.systems import inventory, smithing
     if inventory.is_dual_wielding(char, gamedata):
         oh_bonus = int(round(inventory.dual_wield_bonus_damage(char, gamedata)))   # 副手 ×0.6 補刀 → 顯示有效加傷

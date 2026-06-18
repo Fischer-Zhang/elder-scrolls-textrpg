@@ -71,7 +71,7 @@ def can_charge(char: Character, gamedata: GameData, mounted: bool) -> bool:
     if not m or m.get("category") != "warhorse" or "charge" not in m:
         return False
     wpn = gamedata.item_or_none(char.weapon) or {}
-    return wpn.get("archetype") in MELEE_ARCHETYPES
+    return wpn.get("archetype") in MELEE_ARCHETYPES and not wpn.get("two_handed")   # 雙手重武器太笨重 → 不能馬背衝鋒
 
 
 def charge_spec(char: Character, gamedata: GameData) -> dict | None:

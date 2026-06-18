@@ -83,18 +83,28 @@ def is_overencumbered(char: Character, gamedata: GameData) -> bool:
 
 
 # --- 裝備 ---------------------------------------------------------------
+def is_two_handed(gamedata: GameData, item_id: str) -> bool:
+    """武器是否雙手持(戰錘/戰斧/維蘇拉德):占雙手 → 不可帶盾/副手、不可格擋。"""
+    return bool((gamedata.item_or_none(item_id) or {}).get("two_handed"))
+
+
 def equip_weapon(char: Character, gamedata: GameData, item_id: str) -> bool:
     if gamedata.item(item_id).get("kind") != "weapon":
         return False
     if count_item(char, item_id) <= 0:
         return False
     char.weapon = item_id
+    if is_two_handed(gamedata, item_id):    # 雙手握持 → 自動卸下盾與副手(沿用 remove_item 自動卸裝風格)
+        char.offhand = ""
+        char.equipped.pop("shield", None)
     return True
 
 
 def is_dual_wielding(char: Character, gamedata: GameData) -> bool:
     """雙持成立:主手與副手都是匕首,且確實持有足夠的實體匕首(同型需 2 把)。"""
     if not getattr(char, "offhand", ""):
+        return False
+    if is_two_handed(gamedata, char.weapon):   # 雙手武器占雙手 → 不雙持(防守式)
         return False
     if gamedata.item(char.weapon).get("archetype") != "dagger":
         return False
@@ -114,6 +124,8 @@ def dual_wield_bonus_damage(char: Character, gamedata: GameData) -> float:
 
 def equip_offhand(char: Character, gamedata: GameData, item_id: str) -> bool:
     """以副手裝備一把匕首(僅匕首可雙持)。同型與主手需持有 2 把。"""
+    if is_two_handed(gamedata, char.weapon):   # 主手雙手武器占雙手 → 無副手槽
+        return False
     d = gamedata.item(item_id)
     if d.get("kind") != "weapon" or d.get("archetype") != "dagger":
         return False
@@ -132,8 +144,18 @@ def equip_armor(char: Character, gamedata: GameData, item_id: str) -> bool:
     d = gamedata.item(item_id)
     if d.get("kind") != "armor" or count_item(char, item_id) <= 0:
         return False
+    if d["slot"] == "shield" and is_two_handed(gamedata, char.weapon):   # 雙手武器在手 → 不能裝盾
+        return False
     char.equipped[d["slot"]] = item_id
     return True
+
+
+def ensure_grip(char: Character, gamedata: GameData) -> None:
+    """握法正規化(載入路徑;idempotent):雙手武器在手 → 清掉殘留的盾與副手
+    (處理舊存檔『雙手武器 + 盾』並存的情形)。無新存檔欄位。"""
+    if is_two_handed(gamedata, getattr(char, "weapon", "")):
+        char.offhand = ""
+        char.equipped.pop("shield", None)
 
 
 def equip_jewelry(char: Character, gamedata: GameData, item_id: str) -> str | None:
