@@ -3,7 +3,7 @@
 import tesrpg.formulas as formulas
 from tesrpg.creation import build_character
 from tesrpg.gamedata import get_gamedata
-from tesrpg.systems import inventory
+from tesrpg.systems import inventory, stats
 
 
 def _char():
@@ -67,8 +67,30 @@ def test_wuuthrad_is_two_handed_axe():
     assert w["enchant"]["kind"] == "berserk"
 
 
+def test_two_handed_none_safe_and_recompute_clears_ghost():
+    """對抗審查 GRIP-1/2:is_two_handed None-safe(舊存檔 weapon:null 載入不崩);
+    2H 自動卸盾後**必 recompute**沖掉盾的 fortify/resist 幽靈值(R05;main.py equip_w 分支已補)。"""
+    gd, c = _char()
+    assert inventory.is_two_handed(gd, None) is False         # None-safe
+    c.weapon = None
+    inventory.ensure_grip(c, gd)                              # 不得拋例外(載入路徑)
+    # 幽靈值回歸:帶魔抗附魔的盾(crusaders_ward magic+30)→ 裝 2H 自動卸盾
+    gd, c = _char()
+    for i in ("crusaders_ward", "steel_warhammer"):
+        inventory.add_item(c, i, 1)
+    inventory.equip_armor(c, gd, "crusaders_ward")
+    stats.recompute_max_resources(c, gd)
+    assert c.equip_resist.get("magic") == 30
+    inventory.equip_weapon(c, gd, "steel_warhammer")          # 2H → 自動卸盾(equipped 變動)
+    assert c.equipped.get("shield") is None
+    assert c.equip_resist.get("magic") == 30                  # 🔴 未 recompute → 幽靈值仍在
+    stats.recompute_max_resources(c, gd)                      # R05:卸盾後必 recompute
+    assert not c.equip_resist.get("magic")                   # 幽靈值已沖掉
+
+
 def run():
     test_two_handed_auto_doffs_shield_and_offhand()
+    test_two_handed_none_safe_and_recompute_clears_ghost()
     test_two_handed_bars_offhand_and_shield()
     test_ensure_grip_normalizes_stale_save()
     test_two_handed_damage_premium()

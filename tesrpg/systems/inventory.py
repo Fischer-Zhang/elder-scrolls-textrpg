@@ -83,9 +83,9 @@ def is_overencumbered(char: Character, gamedata: GameData) -> bool:
 
 
 # --- 裝備 ---------------------------------------------------------------
-def is_two_handed(gamedata: GameData, item_id: str) -> bool:
-    """武器是否雙手持(戰錘/戰斧/維蘇拉德):占雙手 → 不可帶盾/副手、不可格擋。"""
-    return bool((gamedata.item_or_none(item_id) or {}).get("two_handed"))
+def is_two_handed(gamedata: GameData, item_id) -> bool:
+    """武器是否雙手持(戰錘/戰斧/維蘇拉德):占雙手 → 不可帶盾/副手、不可格擋。item_id 可為 None/空。"""
+    return bool(item_id and (gamedata.item_or_none(item_id) or {}).get("two_handed"))
 
 
 def is_great_shield(gamedata: GameData, item_id) -> bool:

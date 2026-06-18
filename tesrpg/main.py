@@ -1586,7 +1586,11 @@ def _item_actions(state: GameState, gamedata: GameData, item_id: str) -> None:
     act = ui.menu(d["name"], acts, allow_back=True)
     if act == "equip_w":
         inventory.equip_weapon(char, gamedata, item_id)
-        ui.message(f"你握起了{d['name']}。", style="green")
+        stats.recompute_max_resources(char, gamedata)   # R05:雙手武器自動卸盾 → 沖掉盾的 fortify/resist 幽靈值
+        if inventory.is_two_handed(gamedata, item_id):
+            ui.message(f"你雙手握起了{d['name']},卸下了盾與副手。", style="green")
+        else:
+            ui.message(f"你握起了{d['name']}。", style="green")
     elif act == "equip_off":
         inventory.equip_offhand(char, gamedata, item_id)
         ui.message(f"你以副手握起了另一把{d['name']},擺出雙持架式 —— 傷害大增,但無法再格擋。",
