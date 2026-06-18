@@ -895,6 +895,12 @@
     "max_health": 140, "armor_rating": 18,
     "attack": {"name": "背刺淬毒", "damage": 26, "skill": 64,
                "on_hit": {"status": "dot", "element": "poison", "magnitude": 5, "turns": 3, "chance": 0.5}},
+    "attacks": [
+      {"name": "背刺淬毒", "damage": 26, "skill": 64, "weight": 2,
+       "on_hit": {"status": "dot", "element": "poison", "magnitude": 5, "turns": 3, "chance": 0.5}},
+      {"name": "影襲突刺", "damage": 24, "skill": 64, "weight": 2},
+      {"name": "致命背刺", "damage": 38, "skill": 66, "weight": 1, "cooldown": 3, "when": {"hp_below": 0.5}}
+    ],
     "danger": 5, "min_level": 99, "weight": 0,
     "resist": {"poison": 50},
     "loot_gold": [70, 150],
@@ -906,6 +912,13 @@
     "max_health": 170, "armor_rating": 20,
     "attack": {"name": "夜影之刃", "damage": 27, "skill": 66, "element": "frost",
                "on_hit": {"status": "dot", "element": "frost", "magnitude": 4, "turns": 3, "chance": 0.5}},
+    "attacks": [
+      {"name": "夜影之刃", "damage": 27, "skill": 66, "element": "frost", "weight": 2,
+       "on_hit": {"status": "dot", "element": "frost", "magnitude": 4, "turns": 3, "chance": 0.5}},
+      {"name": "暗影襲擊", "damage": 25, "skill": 66, "weight": 2},
+      {"name": "懾意低語", "damage": 15, "skill": 66, "weight": 1,
+       "on_hit": {"status": "fear", "turns": 1, "chance": 0.25}}
+    ],
     "danger": 5, "min_level": 99, "weight": 0,
     "resist": {"poison": 50, "magic": 20},
     "loot_gold": [90, 180],
@@ -964,6 +977,13 @@
     "max_health": 150, "armor_rating": 14,
     "attack": {"name": "聖裁之火", "damage": 24, "skill": 64, "element": "fire",
                "on_hit": {"status": "dot", "element": "fire", "magnitude": 4, "turns": 3, "chance": 0.45}},
+    "attacks": [
+      {"name": "聖裁之火", "damage": 24, "skill": 64, "element": "fire", "weight": 2,
+       "on_hit": {"status": "dot", "element": "fire", "magnitude": 4, "turns": 3, "chance": 0.45}},
+      {"name": "聖杖痛擊", "damage": 22, "skill": 64, "weight": 2},
+      {"name": "聖光懾敵", "damage": 14, "skill": 64, "weight": 1,
+       "on_hit": {"status": "fear", "turns": 1, "chance": 0.25}}
+    ],
     "danger": 5, "min_level": 99, "weight": 0,
     "resist": {"magic": 30, "fire": 25},
     "loot_gold": [90, 180],
@@ -975,6 +995,13 @@
     "max_health": 140, "armor_rating": 18,
     "attack": {"name": "赤袍淬刃", "damage": 26, "skill": 64,
                "on_hit": {"status": "dot", "element": "poison", "magnitude": 5, "turns": 3, "chance": 0.5}},
+    "attacks": [
+      {"name": "赤袍淬刃", "damage": 26, "skill": 64, "weight": 2,
+       "on_hit": {"status": "dot", "element": "poison", "magnitude": 5, "turns": 3, "chance": 0.5}},
+      {"name": "黑檀斬擊", "damage": 24, "skill": 64, "weight": 2},
+      {"name": "赤袍威壓", "damage": 15, "skill": 64, "weight": 1,
+       "on_hit": {"status": "fear", "turns": 1, "chance": 0.25}}
+    ],
     "danger": 5, "min_level": 99, "weight": 0,
     "resist": {"fire": 30},
     "loot_gold": [70, 150],
@@ -997,6 +1024,13 @@
     "max_health": 165, "armor_rating": 16,
     "attack": {"name": "湮滅之炎", "damage": 27, "skill": 66, "element": "fire",
                "on_hit": {"status": "dot", "element": "fire", "magnitude": 5, "turns": 3, "chance": 0.5}},
+    "attacks": [
+      {"name": "湮滅之炎", "damage": 27, "skill": 66, "element": "fire", "weight": 2,
+       "on_hit": {"status": "dot", "element": "fire", "magnitude": 5, "turns": 3, "chance": 0.5}},
+      {"name": "黑檀斬擊", "damage": 25, "skill": 66, "weight": 2},
+      {"name": "湮滅威壓", "damage": 15, "skill": 66, "weight": 1,
+       "on_hit": {"status": "fear", "turns": 1, "chance": 0.25}}
+    ],
     "danger": 5, "min_level": 99, "weight": 0,
     "resist": {"fire": 50, "magic": 20},
     "loot_gold": [90, 180],
@@ -1030,6 +1064,13 @@
     "max_health": 145, "armor_rating": 16,
     "attack": {"name": "汲血爪擊", "damage": 25, "skill": 62, "element": "frost",
                "on_hit": {"status": "dot", "element": "frost", "magnitude": 4, "turns": 3, "chance": 0.5}},
+    "attacks": [
+      {"name": "汲血爪擊", "damage": 25, "skill": 62, "element": "frost", "weight": 2,
+       "on_hit": {"status": "dot", "element": "frost", "magnitude": 4, "turns": 3, "chance": 0.5}},
+      {"name": "撕裂利爪", "damage": 23, "skill": 62, "weight": 2},
+      {"name": "魅惑凝視", "damage": 14, "skill": 62, "weight": 1,
+       "on_hit": {"status": "fear", "turns": 1, "chance": 0.25}}
+    ],
     "danger": 5, "min_level": 99, "weight": 0,
     "resist": {"frost": 30, "poison": 50},
     "loot_gold": [80, 160],
@@ -1050,6 +1091,12 @@
     "max_health": 160, "armor_rating": 24,
     "attack": {"name": "湮滅烈斬", "damage": 26, "skill": 64, "element": "fire",
                "on_hit": {"status": "dot", "element": "fire", "magnitude": 4, "turns": 3, "chance": 0.45}},
+    "attacks": [
+      {"name": "湮滅烈斬", "damage": 26, "skill": 64, "element": "fire", "weight": 2,
+       "on_hit": {"status": "dot", "element": "fire", "magnitude": 4, "turns": 3, "chance": 0.45}},
+      {"name": "黑檀巨刃橫掃", "damage": 24, "skill": 64, "weight": 2},
+      {"name": "烈焰爆斬", "damage": 38, "skill": 66, "element": "fire", "weight": 1, "cooldown": 3}
+    ],
     "danger": 5, "min_level": 99, "weight": 0,
     "resist": {"fire": 40, "magic": 20},
     "loot_gold": [90, 180],
@@ -1060,6 +1107,12 @@
     "name": "蒙塵的十字軍", "strength": 64, "agility": 50, "speed": 48,
     "max_health": 150, "armor_rating": 28,
     "attack": {"name": "背誓之刃", "damage": 25, "skill": 60},
+    "attacks": [
+      {"name": "背誓之刃", "damage": 25, "skill": 60, "weight": 3},
+      {"name": "沉淪盾擊", "damage": 18, "skill": 60, "weight": 2,
+       "on_hit": {"status": "stagger", "turns": 1, "chance": 0.3}},
+      {"name": "沉淪重劈", "damage": 36, "skill": 62, "weight": 1, "cooldown": 3}
+    ],
     "danger": 5, "min_level": 99, "weight": 0,
     "resist": {"magic": 20},
     "loot_gold": [90, 180],
@@ -1137,6 +1190,14 @@
     "max_health": 260, "armor_rating": 26,
     "attack": {"name": "蒸汽巨錘", "damage": 30, "skill": 62, "element": "fire",
                "on_hit": {"status": "dot", "element": "fire", "magnitude": 5, "turns": 2, "chance": 0.4}},
+    "attacks": [
+      {"name": "蒸汽巨錘", "damage": 30, "skill": 62, "element": "fire", "weight": 2,
+       "on_hit": {"status": "dot", "element": "fire", "magnitude": 5, "turns": 2, "chance": 0.4}},
+      {"name": "重錘橫掃", "damage": 28, "skill": 62, "weight": 2},
+      {"name": "震地踏擊", "damage": 22, "skill": 62, "weight": 2,
+       "on_hit": {"status": "stagger", "turns": 1, "chance": 0.3}},
+      {"name": "蒸汽超載", "damage": 44, "skill": 64, "element": "fire", "weight": 1, "cooldown": 3, "when": {"hp_below": 0.5}}
+    ],
     "danger": 5, "min_level": 13, "weight": 1, "raw": true,
     "resist": {"fire": 100, "frost": -25, "shock": 50, "poison": 100, "magic": 25},
     "loot_gold": [70, 160],
@@ -1195,6 +1256,15 @@
     "max_health": 240, "armor_rating": 16,
     "attack": {"name": "凜冬詛咒", "damage": 26, "skill": 64, "element": "frost",
                "on_hit": {"status": "dot", "element": "frost", "magnitude": 5, "turns": 2, "chance": 0.4}},
+    "attacks": [
+      {"name": "凜冬詛咒", "damage": 26, "skill": 64, "element": "frost", "weight": 2,
+       "on_hit": {"status": "dot", "element": "frost", "magnitude": 5, "turns": 2, "chance": 0.4}},
+      {"name": "利爪撕抓", "damage": 24, "skill": 64, "weight": 2},
+      {"name": "衰朽詛咒", "damage": 18, "skill": 64, "weight": 2,
+       "on_hit": {"status": "weaken", "magnitude": 0.25, "turns": 2, "chance": 0.3}},
+      {"name": "懾魂尖嘯", "damage": 14, "skill": 64, "weight": 1,
+       "on_hit": {"status": "fear", "turns": 1, "chance": 0.25}}
+    ],
     "danger": 5, "min_level": 13, "weight": 1, "raw": true,
     "resist": {"frost": 60, "magic": 40, "shock": -65},
     "loot_gold": [70, 160],
@@ -1254,6 +1324,15 @@
     "max_health": 230, "armor_rating": 18,
     "attack": {"name": "萬藤絞殺", "damage": 26, "skill": 64, "element": "poison",
                "on_hit": {"status": "dot", "element": "poison", "magnitude": 5, "turns": 2, "chance": 0.4}},
+    "attacks": [
+      {"name": "萬藤絞殺", "damage": 26, "skill": 64, "element": "poison", "weight": 2,
+       "on_hit": {"status": "dot", "element": "poison", "magnitude": 5, "turns": 2, "chance": 0.4}},
+      {"name": "藤鞭抽擊", "damage": 24, "skill": 64, "weight": 2,
+       "on_hit": {"status": "stagger", "turns": 1, "chance": 0.25}},
+      {"name": "蔓藤纏縛", "damage": 16, "skill": 64, "weight": 2,
+       "on_hit": {"status": "slow", "magnitude": 0.3, "turns": 2, "chance": 0.3}},
+      {"name": "萬藤爆發", "damage": 38, "skill": 66, "element": "poison", "weight": 1, "cooldown": 3}
+    ],
     "danger": 5, "min_level": 13, "weight": 1, "raw": true,
     "resist": {"frost": 60, "poison": 100, "fire": -55},
     "loot_gold": [70, 160],
@@ -1326,6 +1405,14 @@
     "max_health": 232, "armor_rating": 18,
     "attack": {"name": "腐毒巨口", "damage": 26, "skill": 64, "element": "poison",
                "on_hit": {"status": "dot", "element": "poison", "magnitude": 5, "turns": 2, "chance": 0.4}},
+    "attacks": [
+      {"name": "腐毒巨口", "damage": 26, "skill": 64, "element": "poison", "weight": 2,
+       "on_hit": {"status": "dot", "element": "poison", "magnitude": 5, "turns": 2, "chance": 0.4}},
+      {"name": "撲擊利爪", "damage": 24, "skill": 64, "weight": 2},
+      {"name": "巨尾橫掃", "damage": 22, "skill": 64, "weight": 2,
+       "on_hit": {"status": "stagger", "turns": 1, "chance": 0.3}},
+      {"name": "狂猛撲咬", "damage": 38, "skill": 66, "weight": 1, "cooldown": 3, "when": {"hp_below": 0.5}}
+    ],
     "danger": 5, "min_level": 13, "weight": 1, "solo": true, "raw": true,
     "resist": {"poison": -50, "frost": 60, "shock": 30},
     "loot_gold": [70, 160],
