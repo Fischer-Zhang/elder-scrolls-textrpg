@@ -99,6 +99,11 @@
       "damage": 9,
       "skill": 40
     },
+    "attacks": [
+      {"name": "鏽劍劈砍", "damage": 9, "skill": 40, "weight": 3},
+      {"name": "骨爪抓擊", "damage": 8, "skill": 40, "weight": 2},
+      {"name": "鏽斧橫掃", "damage": 11, "skill": 41, "weight": 1, "cooldown": 3}
+    ],
     "loot_gold": [
       2,
       8
@@ -138,6 +143,11 @@
       "damage": 11,
       "skill": 45
     },
+    "attacks": [
+      {"name": "鐵斧揮擊", "damage": 11, "skill": 45, "weight": 3},
+      {"name": "短刀突刺", "damage": 10, "skill": 45, "weight": 2},
+      {"name": "蠻力重劈", "damage": 13, "skill": 46, "weight": 1, "cooldown": 3}
+    ],
     "loot_gold": [
       5,
       20
@@ -239,6 +249,11 @@
       "damage": 14,
       "skill": 50
     },
+    "attacks": [
+      {"name": "烈焰拳", "damage": 14, "skill": 50, "weight": 2},
+      {"name": "熔岩重擊", "damage": 13, "skill": 50, "weight": 2},
+      {"name": "烈焰爆發", "damage": 22, "skill": 52, "element": "fire", "weight": 1, "cooldown": 3}
+    ],
     "loot_gold": [
       0,
       0
@@ -262,6 +277,11 @@
       "skill": 50,
       "element": "frost"
     },
+    "attacks": [
+      {"name": "凜霜重擊", "damage": 15, "skill": 50, "element": "frost", "weight": 2},
+      {"name": "冰拳重擊", "damage": 13, "skill": 50, "weight": 2},
+      {"name": "寒冰爆發", "damage": 22, "skill": 52, "element": "frost", "weight": 1, "cooldown": 3}
+    ],
     "resist": {
       "frost": 75,
       "fire": -25
@@ -289,6 +309,11 @@
       "skill": 52,
       "element": "shock"
     },
+    "attacks": [
+      {"name": "雷殛", "damage": 16, "skill": 52, "element": "shock", "weight": 2},
+      {"name": "岩拳轟擊", "damage": 14, "skill": 52, "weight": 2},
+      {"name": "雷暴釋放", "damage": 24, "skill": 54, "element": "shock", "weight": 1, "cooldown": 3}
+    ],
     "resist": {
       "shock": 100,
       "fire": -25
@@ -452,6 +477,11 @@
     "strength": 52, "agility": 56, "speed": 56, "max_health": 46, "armor_rating": 12,
     "attack": {"name": "麻痺撕咬", "damage": 13, "skill": 50,
                "on_hit": {"status": "dot", "element": "poison", "magnitude": 3, "turns": 2, "chance": 0.4}},
+    "attacks": [
+      {"name": "麻痺撕咬", "damage": 13, "skill": 50, "weight": 2, "on_hit": {"status": "dot", "element": "poison", "magnitude": 3, "turns": 2, "chance": 0.4}},
+      {"name": "突咬", "damage": 12, "skill": 50, "weight": 2},
+      {"name": "毒液猛撲", "damage": 19, "skill": 52, "weight": 1, "cooldown": 3}
+    ],
     "loot_gold": [0, 10], "loot": [{"item": "canis_root", "chance": 0.3}, {"item": "scrib_jelly", "chance": 0.25}],
     "flavor": "灰野裡成群獵食的甲殼獸,口涎帶麻,撕咬間令獵物漸失知覺。"
   },
@@ -459,6 +489,11 @@
     "biomes": ["ashland"], "name": "卡古地", "danger": 3, "min_level": 4, "weight": 1,
     "strength": 60, "agility": 44, "speed": 52, "max_health": 56, "armor_rating": 13,
     "attack": {"name": "獠牙暴衝", "damage": 15, "skill": 50},
+    "attacks": [
+      {"name": "獠牙暴衝", "damage": 15, "skill": 50, "weight": 2},
+      {"name": "甩頭撞擊", "damage": 13, "skill": 50, "weight": 2, "on_hit": {"status": "stagger", "turns": 1, "chance": 0.25}},
+      {"name": "狂野衝鋒", "damage": 22, "skill": 52, "weight": 1, "cooldown": 3}
+    ],
     "loot_gold": [0, 12], "loot": [{"item": "ash_yam", "chance": 0.4}, {"item": "scrib_jelly", "chance": 0.3}],
     "flavor": "晨風荒原上脾氣暴烈的巨牙獸,受驚便低頭暴衝,連蓋亞甲也撞得凹陷。"
   },
@@ -478,6 +513,11 @@
       "damage": 12,
       "skill": 45
     },
+    "attacks": [
+      {"name": "古劍橫斬", "damage": 12, "skill": 45, "weight": 2},
+      {"name": "盾牌猛擊", "damage": 10, "skill": 45, "weight": 2, "on_hit": {"status": "stagger", "turns": 1, "chance": 0.25}},
+      {"name": "亡者重劈", "damage": 18, "skill": 47, "weight": 1, "cooldown": 3}
+    ],
     "loot_gold": [
       5,
       15
@@ -726,6 +766,11 @@
     "max_health": 48,
     "armor_rating": 14,
     "attack": {"name": "嗜血撕咬", "damage": 12, "skill": 50, "infect": 0.3},
+    "attacks": [
+      {"name": "嗜血撕咬", "damage": 12, "skill": 50, "weight": 3, "infect": 0.3},
+      {"name": "利爪撕抓", "damage": 11, "skill": 50, "weight": 2},
+      {"name": "嗜血猛咬", "damage": 14, "skill": 52, "weight": 1, "cooldown": 3}
+    ],
     "resist": {"frost": 50, "poison": 50, "fire": -25},
     "loot_gold": [8, 24],
     "loot": [{"item": "silver_ring", "chance": 0.15}, {"item": "minor_healing_potion", "chance": 0.2}, {"item": "filled_lesser_soul_gem", "chance": 0.1}, {"item": "vampire_dust", "chance": 0.45}],
@@ -853,6 +898,11 @@
     "name": "貪婪的商人", "strength": 42, "agility": 38, "speed": 36,
     "max_health": 44, "armor_rating": 8,
     "attack": {"name": "藏身短刀", "damage": 9, "skill": 40},
+    "attacks": [
+      {"name": "藏身短刀", "damage": 9, "skill": 40, "weight": 2},
+      {"name": "飛刀", "damage": 8, "skill": 40, "weight": 2},
+      {"name": "卸力突刺", "damage": 7, "skill": 40, "weight": 2, "on_hit": {"status": "stagger", "turns": 1, "chance": 0.25}}
+    ],
     "danger": 3, "min_level": 99, "weight": 0,
     "loot_gold": [30, 70],
     "loot": [{"item": "gold_ring", "chance": 0.4}, {"item": "healing_potion", "chance": 0.3}],
@@ -961,6 +1011,11 @@
     "name": "九神信徒", "strength": 40, "agility": 40, "speed": 38,
     "max_health": 50, "armor_rating": 10,
     "attack": {"name": "祈禱者之杖", "damage": 10, "skill": 42},
+    "attacks": [
+      {"name": "祈禱者之杖", "damage": 10, "skill": 42, "weight": 2},
+      {"name": "聖光打擊", "damage": 11, "skill": 42, "weight": 2},
+      {"name": "虛弱禱詞", "damage": 8, "skill": 42, "weight": 2, "on_hit": {"status": "weaken", "magnitude": 0.2, "turns": 2, "chance": 0.3}}
+    ],
     "danger": 3, "min_level": 99, "weight": 0,
     "resist": {"magic": 15},
     "loot_gold": [20, 60],
@@ -1058,6 +1113,11 @@
     "max_health": 50, "armor_rating": 8,
     "attack": {"name": "赤袍短刃", "damage": 13, "skill": 46,
                "on_hit": {"status": "dot", "element": "poison", "magnitude": 3, "turns": 2, "chance": 0.3}},
+    "attacks": [
+      {"name": "赤袍短刃", "damage": 13, "skill": 46, "weight": 2, "on_hit": {"status": "dot", "element": "poison", "magnitude": 3, "turns": 2, "chance": 0.3}},
+      {"name": "黑檀匕首", "damage": 12, "skill": 46, "weight": 2},
+      {"name": "赤袍威壓", "damage": 9, "skill": 46, "weight": 1, "on_hit": {"status": "fear", "turns": 1, "chance": 0.25}}
+    ],
     "danger": 3, "min_level": 99, "weight": 0,
     "resist": {"fire": 15},
     "loot_gold": [20, 50],
@@ -1087,6 +1147,11 @@
     "max_health": 52, "armor_rating": 8,
     "attack": {"name": "瀆神之觸", "damage": 11, "skill": 44, "element": "shock",
                "on_hit": {"status": "dot", "element": "shock", "magnitude": 3, "turns": 3, "chance": 0.35}},
+    "attacks": [
+      {"name": "瀆神之觸", "damage": 11, "skill": 44, "element": "shock", "weight": 2, "on_hit": {"status": "dot", "element": "shock", "magnitude": 3, "turns": 3, "chance": 0.35}},
+      {"name": "枯骨法杖", "damage": 10, "skill": 44, "weight": 2},
+      {"name": "瀆神低語", "damage": 8, "skill": 44, "weight": 1, "on_hit": {"status": "fear", "turns": 1, "chance": 0.25}}
+    ],
     "danger": 3, "min_level": 99, "weight": 0,
     "resist": {"magic": 15},
     "loot_gold": [20, 60],
@@ -1191,6 +1256,11 @@
     "biomes": ["heartland"], "name": "米諾陶", "strength": 64, "agility": 38, "speed": 42,
     "max_health": 52, "armor_rating": 16,
     "attack": {"name": "巨斧橫掃", "damage": 16, "skill": 48},
+    "attacks": [
+      {"name": "巨斧橫掃", "damage": 16, "skill": 48, "weight": 2},
+      {"name": "牛角頂撞", "damage": 13, "skill": 48, "weight": 2, "on_hit": {"status": "stagger", "turns": 1, "chance": 0.25}},
+      {"name": "狂怒劈砍", "damage": 23, "skill": 50, "weight": 1, "cooldown": 3}
+    ],
     "danger": 3, "min_level": 3, "weight": 4,
     "loot_gold": [8, 22],
     "loot": [{"item": "healing_potion", "chance": 0.2}, {"item": "ruby", "chance": 0.1}],
@@ -1213,6 +1283,11 @@
     "name": "沙嘯獸", "strength": 56, "agility": 52, "speed": 56,
     "max_health": 58, "armor_rating": 8,
     "attack": {"name": "撕咬猛撲", "damage": 14, "skill": 50},
+    "attacks": [
+      {"name": "撕咬猛撲", "damage": 14, "skill": 50, "weight": 2},
+      {"name": "沙刃尾擊", "damage": 13, "skill": 50, "weight": 2},
+      {"name": "沙暴突襲", "damage": 21, "skill": 52, "weight": 1, "cooldown": 3}
+    ],
     "danger": 3, "min_level": 3, "weight": 5,
     "resist": {"fire": 50, "frost": -25},
     "loot_gold": [4, 14],
@@ -1243,6 +1318,11 @@
     "name": "矮人蒸汽蜘蛛", "strength": 44, "agility": 58, "speed": 54,
     "max_health": 48, "armor_rating": 18,
     "attack": {"name": "電弧噴吐", "damage": 13, "skill": 52, "element": "shock"},
+    "attacks": [
+      {"name": "電弧噴吐", "damage": 13, "skill": 52, "element": "shock", "weight": 2},
+      {"name": "利足穿刺", "damage": 12, "skill": 52, "weight": 2},
+      {"name": "過載放電", "damage": 19, "skill": 54, "element": "shock", "weight": 1, "cooldown": 3}
+    ],
     "danger": 3, "min_level": 4, "weight": 4,
     "resist": {"fire": 75, "frost": -25, "shock": 50, "poison": 100},
     "loot_gold": [0, 8],
@@ -1286,6 +1366,11 @@
     "name": "石像鬼", "strength": 60, "agility": 40, "speed": 36,
     "max_health": 72, "armor_rating": 22,
     "attack": {"name": "石爪重擊", "damage": 16, "skill": 50},
+    "attacks": [
+      {"name": "石爪重擊", "damage": 16, "skill": 50, "weight": 2},
+      {"name": "雙翼拍擊", "damage": 14, "skill": 50, "weight": 2, "on_hit": {"status": "stagger", "turns": 1, "chance": 0.25}},
+      {"name": "碎石重砸", "damage": 23, "skill": 52, "weight": 1, "cooldown": 3}
+    ],
     "danger": 3, "min_level": 3, "weight": 4,
     "resist": {"frost": 50, "magic": 20, "shock": -70},
     "loot_gold": [2, 12],
@@ -1297,6 +1382,11 @@
     "name": "鴉妖", "strength": 46, "agility": 64, "speed": 64,
     "max_health": 50, "armor_rating": 6,
     "attack": {"name": "俯衝撕抓", "damage": 14, "skill": 56},
+    "attacks": [
+      {"name": "俯衝撕抓", "damage": 14, "skill": 56, "weight": 2},
+      {"name": "鋒喙啄擊", "damage": 13, "skill": 56, "weight": 2},
+      {"name": "尖嘯俯衝", "damage": 21, "skill": 58, "weight": 1, "cooldown": 3}
+    ],
     "danger": 3, "min_level": 4, "weight": 5,
     "resist": {"shock": -30},
     "loot_gold": [2, 10],
@@ -1361,6 +1451,11 @@
     "max_health": 64, "armor_rating": 14,
     "attack": {"name": "荊棘毒刺", "damage": 15, "skill": 52, "element": "poison",
                "on_hit": {"status": "dot", "element": "poison", "magnitude": 3, "turns": 2, "chance": 0.35}},
+    "attacks": [
+      {"name": "荊棘毒刺", "damage": 15, "skill": 52, "element": "poison", "weight": 2, "on_hit": {"status": "dot", "element": "poison", "magnitude": 3, "turns": 2, "chance": 0.35}},
+      {"name": "藤鞭抽擊", "damage": 14, "skill": 52, "weight": 2},
+      {"name": "荊棘爆發", "damage": 22, "skill": 54, "weight": 1, "cooldown": 3}
+    ],
     "danger": 3, "min_level": 3, "weight": 4,
     "resist": {"frost": 50, "poison": 50, "fire": -50},
     "loot_gold": [2, 12],
@@ -1372,6 +1467,11 @@
     "name": "食人巨猿", "strength": 58, "agility": 62, "speed": 60,
     "max_health": 58, "armor_rating": 8,
     "attack": {"name": "猛捶撕咬", "damage": 15, "skill": 54},
+    "attacks": [
+      {"name": "猛捶撕咬", "damage": 15, "skill": 54, "weight": 2},
+      {"name": "投擲碎石", "damage": 13, "skill": 54, "weight": 2},
+      {"name": "狂暴猛捶", "damage": 22, "skill": 56, "weight": 1, "cooldown": 3, "when": {"hp_below": 0.5}}
+    ],
     "danger": 3, "min_level": 4, "weight": 5,
     "resist": {"fire": -30},
     "loot_gold": [4, 14],
@@ -1436,6 +1536,11 @@
     "max_health": 48, "armor_rating": 6,
     "attack": {"name": "糖癮咒擊", "damage": 14, "skill": 56, "element": "poison",
                "on_hit": {"status": "dot", "element": "poison", "magnitude": 3, "turns": 2, "chance": 0.35}},
+    "attacks": [
+      {"name": "糖癮咒擊", "damage": 14, "skill": 56, "element": "poison", "weight": 2, "on_hit": {"status": "dot", "element": "poison", "magnitude": 3, "turns": 2, "chance": 0.35}},
+      {"name": "貓爪抓擊", "damage": 12, "skill": 56, "weight": 2},
+      {"name": "懾心咒", "damage": 9, "skill": 56, "weight": 1, "on_hit": {"status": "fear", "turns": 1, "chance": 0.25}}
+    ],
     "danger": 3, "min_level": 3, "weight": 4,
     "resist": {"poison": -40, "shock": 25},
     "loot_gold": [3, 14],
@@ -1448,6 +1553,11 @@
     "max_health": 58, "armor_rating": 8,
     "attack": {"name": "瘋狂撕咬", "damage": 15, "skill": 54, "element": "poison",
                "on_hit": {"status": "dot", "element": "poison", "magnitude": 3, "turns": 2, "chance": 0.35}},
+    "attacks": [
+      {"name": "瘋狂撕咬", "damage": 15, "skill": 54, "element": "poison", "weight": 2, "on_hit": {"status": "dot", "element": "poison", "magnitude": 3, "turns": 2, "chance": 0.35}},
+      {"name": "狂亂爪擊", "damage": 14, "skill": 54, "weight": 2},
+      {"name": "糖癮暴衝", "damage": 22, "skill": 56, "weight": 1, "cooldown": 3, "when": {"hp_below": 0.5}}
+    ],
     "danger": 3, "min_level": 4, "weight": 5,
     "resist": {"poison": -40},
     "loot_gold": [4, 14],
@@ -1522,6 +1632,11 @@
     "max_health": 62,
     "armor_rating": 10,
     "attack": {"name": "獸牙利爪", "damage": 14, "skill": 52, "infect": 0.25, "infect_kind": "lycanthropy"},
+    "attacks": [
+      {"name": "獸牙利爪", "damage": 14, "skill": 52, "weight": 2, "infect": 0.25, "infect_kind": "lycanthropy"},
+      {"name": "狂亂撕咬", "damage": 13, "skill": 52, "weight": 2},
+      {"name": "月下猛撲", "damage": 21, "skill": 54, "weight": 1, "cooldown": 3, "when": {"hp_below": 0.5}}
+    ],
     "resist": {"poison": 25},
     "loot_gold": [6, 20],
     "loot": [{"item": "wolf_pelt", "chance": 0.6}, {"item": "minor_healing_potion", "chance": 0.2}],
@@ -1563,6 +1678,11 @@
     "max_health": 46,
     "armor_rating": 20,
     "attack": {"name": "銀刃斬", "damage": 13, "skill": 52},
+    "attacks": [
+      {"name": "銀刃斬", "damage": 13, "skill": 52, "weight": 2},
+      {"name": "銀箭射擊", "damage": 12, "skill": 52, "weight": 2},
+      {"name": "獵殺連擊", "damage": 19, "skill": 54, "weight": 1, "cooldown": 3}
+    ],
     "loot_gold": [10, 30],
     "loot": [{"item": "silver_ring", "chance": 0.3}, {"item": "healing_potion", "chance": 0.25}, {"item": "lockpick", "chance": 0.3}],
     "flavor": "一群佩銀刃的悍徒自雪林中現身 —— 銀手,專獵狼人的狂熱者,刀刃淬銀、見『獸』即殺,連戰友團也視為仇讎。"

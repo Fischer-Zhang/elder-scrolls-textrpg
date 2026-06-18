@@ -42,10 +42,11 @@ def _foe(attack, attacks=None, hp=40, danger=3):
 # ----------------------------------------------------------------------
 def test_choose_attack_fallback_when_no_repertoire():
     gd = _gd()
-    for tid in ["giant_rat", "bandit", "wolf", "skeleton", "vampire_fledgling"]:
+    # 仍維持單招的低危 trash(d1-d2;R43 之後 d3-d6 boss-tier 已陸續配曲目)→ 後備路徑回單招本體
+    for tid in ["giant_rat", "wolf", "mudcrab", "frostbite_spider"]:
         cr = combat.spawn_creature(gd, tid, RNG(1))
-        # 無 attacks 曲目 → choose_attack 回單招本體(物件同一)→ 守 sim byte-identical 假設
-        assert not cr.attacks, f"{tid} 不應有曲目(本輪未改)"
+        # 無 attacks 曲目 → choose_attack 回單招本體(物件同一)
+        assert not cr.attacks, f"{tid} 不應有曲目"
         assert combat.choose_attack(cr, RNG(3)) is cr.attack
 
 
