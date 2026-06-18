@@ -1,0 +1,181 @@
+"""戴德拉誓福引擎 + 神殿任務(R45)回歸測試:
+- 通用誓福獨立疊加層(grant/聚合/多誓福相加/不污染 base/存檔 round-trip/舊檔遷移);
+- reward.grant_boon 派發(新 boons 登錄表 vs 達貢 legacy 各走各的);
+- 神殿任務可接門檻(requires_level/requires_fame)+ 神殿(shrine)分流;
+- 首位親王阿祖拉深線雙結局(淨化→永久誓福 / 墮化→神器)+ 內容資料完整(boss solo/控場節制/地城有任務)。
+"""
+from tesrpg.creation import build_character
+from tesrpg.gamedata import get_gamedata
+from tesrpg.models import Character
+from tesrpg.systems import boons, inventory, magic, quests
+
+
+def _gd_char(level: int = 1):
+    gd = get_gamedata()
+    c = build_character(gd, name="試", sex="male", race="imperial",
+                        birthsign="warrior", class_id="warrior")
+    c.level = level
+    return gd, c
+
+
+# --- 通用誓福永久層 ----------------------------------------------------
+def test_boon_layer_stacks_without_base_write():
+    gd, c = _gd_char()
+    w0, i0, mg0 = c.attr("willpower"), c.attr("intelligence"), c.max_magicka
+    myst0 = c.skill("mysticism")
+    magres0 = magic.entity_resist(c, gd).get("magic", 0)
+    boons.grant(c, gd, "azura")
+    assert c.attr("willpower") == w0 + 8 and c.attr("intelligence") == i0 + 6
+    assert c.skill("mysticism") == myst0 + 10
+    # max_magicka 升幅 = 智力 +6 的公式貢獻 + 誓福固定 +20(故 ≥ +20)
+    assert c.boon_magic_bonus == 20 and c.max_magicka >= mg0 + 20
+    assert magic.entity_resist(c, gd).get("magic", 0) == magres0 + 20
+    # 🔴 鐵律:絕不寫回 base
+    assert c.base_attr("willpower") == w0 and c.base_skill("mysticism") == myst0
+    assert boons.has_boon(c, "azura")
+
+
+def test_boon_grant_is_idempotent_no_double():
+    gd, c = _gd_char()
+    w0 = c.attr("willpower")
+    boons.grant(c, gd, "azura")
+    boons.grant(c, gd, "azura")          # 重複授予不疊加
+    assert c.boons.count("azura") == 1
+    assert c.attr("willpower") == w0 + 8
+
+
+def test_multiple_boons_sum():
+    """收集軸:同時持有多位親王的誓福 → 各自相加(注入暫時測試誓福驗證聚合)。"""
+    gd, c = _gd_char()
+    w0, mg0 = c.attr("willpower"), c.max_magicka
+    gd.boons["_test_boon"] = {"name": "測試", "attr": {"willpower": 3},
+                              "skill": {}, "resist": {}, "magicka": 5}
+    try:
+        boons.grant(c, gd, "azura")
+        boons.grant(c, gd, "_test_boon")
+        assert c.attr("willpower") == w0 + 8 + 3              # 屬性相加
+        assert c.boon_magic_bonus == 20 + 5                  # 固定魔力上限相加
+        assert c.max_magicka >= mg0 + 25                     # (另含智力 +6 的公式貢獻)
+    finally:
+        gd.boons.pop("_test_boon", None)
+
+
+def test_boon_save_roundtrip_and_migration():
+    gd, c = _gd_char()
+    boons.grant(c, gd, "azura")
+    w = c.attr("willpower")
+    c2 = Character.from_dict(c.to_dict())
+    boons.ensure_boon_fields(c2, gd)
+    assert boons.has_boon(c2, "azura") and c2.attr("willpower") == w
+    # 舊存檔(無 boon_* 欄)→ 遷移補欄為空、零加成
+    d = c.to_dict()
+    for k in [k for k in list(d) if k.startswith("boon")]:
+        del d[k]
+    c3 = Character.from_dict(d)
+    boons.ensure_boon_fields(c3, gd)
+    assert c3.boons == [] and c3.boon_attr_bonus == {} and c3.boon_magic_bonus == 0
+
+
+def test_unknown_boon_id_skipped():
+    """陳舊/毀損存檔殘留未知 boon id → 靜默略過,不崩。"""
+    gd, c = _gd_char()
+    c.boons = ["azura", "_no_such_boon"]
+    boons.apply_to_character(c, gd)                 # 不應拋例外
+    assert c.boon_attr_bonus.get("willpower") == 8   # 已知者照算
+
+
+# --- reward.grant_boon 派發 -------------------------------------------
+def test_reward_dispatch_grants_registry_boon():
+    """完成 azura_star(淨化結局)→ reward.grant_boon=azura 經通用 boons 登錄表授予。"""
+    gd, c = _gd_char(level=15)
+    w0 = c.attr("willpower")
+    quests.accept_quest(c, gd, "azura_star", branch=0)
+    inventory.add_item(c, "nightshade", 2)
+    c.location_id = "azura_defiled_shrine"
+    quests.record_dungeon_clear(c, "azura_defiled_shrine")
+    quests.check_completion(c, gd)
+    assert "azura_star" in c.completed_quests
+    assert boons.has_boon(c, "azura") and c.attr("willpower") == w0 + 8
+    assert "azura_star_cleansed" in c.world_events_fired
+
+
+def test_corrupt_branch_grants_artifact_not_boon():
+    """墮化結局 → 得神器黑星護符、不得誓福、惡名上升。"""
+    gd, c = _gd_char(level=15)
+    quests.accept_quest(c, gd, "azura_star", branch=1)
+    inventory.add_item(c, "empty_black_soul_gem", 1)
+    c.location_id = "azura_defiled_shrine"
+    quests.record_dungeon_clear(c, "azura_defiled_shrine")
+    quests.check_completion(c, gd)
+    assert "azura_star" in c.completed_quests
+    assert inventory.count_item(c, "black_star_amulet") == 1
+    assert not boons.has_boon(c, "azura") and c.infamy >= 25
+
+
+# --- 神殿任務可接門檻 / 分流 ------------------------------------------
+def test_daedric_quest_availability_gating():
+    gd, c = _gd_char(level=10)
+    assert "azura_star" not in quests.available_quests(c, gd, "daedric")   # 等級不足不現
+    c.level = 15
+    av = quests.available_quests(c, gd, "daedric")
+    assert "azura_star" in av
+    # 神殿分流:任務帶 shrine="azura"(action_shrine 以此篩到對應祭壇)
+    assert gd.quests["azura_star"]["shrine"] == "azura"
+    # 接取後不再列出(避免重複接);完成後亦然
+    quests.accept_quest(c, gd, "azura_star", branch=0)
+    assert "azura_star" not in quests.available_quests(c, gd, "daedric")
+
+
+def test_requires_fame_gate_backcompat():
+    """requires_fame 門檻向後相容(無此欄=不限);其他既有任務不受新門檻影響。"""
+    gd, c = _gd_char(level=15)
+    # azura_star 無 requires_fame → fame 0 仍可見
+    assert "azura_star" in quests.available_quests(c, gd, "daedric")
+
+
+# --- 內容資料完整 ------------------------------------------------------
+def test_azura_content_integrity():
+    gd, _ = _gd_char()
+    # boon 登錄 + 神器存在
+    assert "azura" in gd.boons
+    assert "black_star_amulet" in gd.items
+    # 神殿地點帶 shrine 標記 + 新地城存在且為 boss 龍頭
+    assert gd.world["locations"]["azuras_coast"].get("shrine") == "azura"
+    assert "azura_defiled_shrine" in gd.dungeons
+    assert "azura_defiled_shrine" in gd.world["locations"]
+    boss = gd.dungeons["azura_defiled_shrine"]["boss"]["enemy"]
+    assert boss == "malyn_varen" and gd.bestiary[boss].get("solo") is True
+    # boss 控場節制:硬控 chance ≤ 0.30、turns ≤ 1(R43/R44 內容紀律)
+    for atk in gd.bestiary[boss].get("attacks", []):
+        oh = atk.get("on_hit") or {}
+        if oh.get("status") in ("paralyze", "fear", "stagger"):
+            assert oh.get("chance", 1.0) <= 0.30, atk
+            if oh.get("status") in ("paralyze", "fear"):
+                assert oh.get("turns", 1) <= 1, atk
+    # 地城怪皆存在
+    for m in gd.dungeons["azura_defiled_shrine"]["monsters"]:
+        assert m in gd.bestiary, m
+    # 每地城有對應 clear_dungeon 任務(test_polish/test_detailing 同精神)
+    cleared = set()
+    for q in gd.quests.values():
+        objs = ([q["objective"]] if "objective" in q else [])
+        for s in q.get("stages", []):
+            objs.append(s.get("objective", {}))
+        for b in q.get("branches", []):
+            for s in b.get("stages", []):
+                objs.append(s.get("objective", {}))
+        for o in objs:
+            if o.get("type") == "clear_dungeon":
+                cleared.add(o["dungeon"])
+    assert "azura_defiled_shrine" in cleared
+
+
+def run():
+    for name, fn in sorted(globals().items()):
+        if name.startswith("test_") and callable(fn):
+            fn()
+
+
+if __name__ == "__main__":
+    run()
+    print("test_daedric OK")

@@ -701,6 +701,26 @@
     "loot": [{"item": "filled_greater_soul_gem", "chance": 0.5}, {"item": "elven_sword", "chance": 0.2}],
     "flavor": "枯骨法師巫妖浮空而至,空氣在它周身凝成霜霧。"
   },
+  "malyn_varen": {
+    "name": "馬林·瓦倫的囚魂", "strength": 58, "agility": 48, "speed": 46,
+    "max_health": 185, "armor_rating": 14,
+    "attack": {"name": "黑魂寒爆", "damage": 32, "skill": 66, "element": "frost",
+               "on_hit": {"status": "dot", "element": "frost", "magnitude": 6, "turns": 3, "chance": 0.5}},
+    "attacks": [
+      {"name": "黑魂寒爆", "damage": 32, "skill": 66, "element": "frost", "weight": 2,
+       "on_hit": {"status": "dot", "element": "frost", "magnitude": 6, "turns": 3, "chance": 0.5}},
+      {"name": "枯萎之握", "damage": 34, "skill": 66, "weight": 2},
+      {"name": "魂縛凝視", "damage": 16, "skill": 66, "weight": 1,
+       "on_hit": {"status": "paralyze", "turns": 1, "chance": 0.25}},
+      {"name": "星辰湮滅", "damage": 50, "skill": 68, "element": "frost", "weight": 1,
+       "cooldown": 3, "when": {"hp_below": 0.5}}
+    ],
+    "danger": 5, "min_level": 15, "weight": 1, "solo": true,
+    "resist": {"frost": 65, "poison": 100, "magic": 35},
+    "loot_gold": [150, 350],
+    "loot": [{"item": "filled_grand_soul_gem", "chance": 0.6}, {"item": "ruby", "chance": 0.3}],
+    "flavor": "靈術師馬林·瓦倫把自己的靈魂藏進阿祖拉之星 —— 如今那縷不肯消散的魂火,自玷污的星核中向你伸出枯指。"
+  },
   "dremora_lord": {
     "biomes": ["ashland"],
     "name": "魔人領主", "strength": 74, "agility": 50, "speed": 48,

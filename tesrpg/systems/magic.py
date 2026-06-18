@@ -523,6 +523,8 @@ def entity_resist(entity, gamedata) -> dict:
             merged[elem] = merged.get(elem, 0) + val
         for elem, val in getattr(entity, "dagon_resist", {}).items():   # 達貢之力:烈焰之主 → 火抗
             merged[elem] = merged.get(elem, 0) + val
+        for elem, val in getattr(entity, "boon_resist", {}).items():   # 戴德拉誓福(R45;如晨昏之佑魔抗)
+            merged[elem] = merged.get(elem, 0) + val
         for elem, val in getattr(entity, "potion_resist", {}).items():   # 限時抗元素藥水(R30)
             merged[elem] = merged.get(elem, 0) + val
         return merged

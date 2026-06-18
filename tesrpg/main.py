@@ -3362,6 +3362,30 @@ def action_board(state: GameState, gamedata: GameData) -> None:
         _accept_and_brief(state, gamedata, qid)
 
 
+def action_shrine(state: GameState, gamedata: GameData) -> None:
+    """戴德拉神殿:供奉祈願 → 接取該親王的試煉任務(R45)。
+
+    任務 source="daedric"、帶 `shrine` 欄對應本地點的 `shrine`;requires_level/requires_fame
+    門檻不達則親王沉默(任務不現)。複用既有 _accept_and_brief(含分支選路/簡報)。
+    """
+    char = state.player
+    loc = world.current_location(char, gamedata)
+    prince = loc.get("shrine")
+    if not prince:
+        return
+    avail = [qid for qid in quests.available_quests(char, gamedata, "daedric")
+             if gamedata.quests[qid].get("shrine") == prince]
+    if not avail:
+        ui.message("你在祭壇前俯首祈願,神殿一片寂靜 —— 此刻無人應你之聲。", style="grey70")
+        return
+    opts = [(qid, f"{gamedata.quests[qid]['name']} — {quests.objective_text(char, gamedata, qid)}")
+            for qid in avail]
+    qid = ui.menu("祭壇前的低語", opts, allow_back=True)
+    if qid is None:
+        return
+    _accept_and_brief(state, gamedata, qid)
+
+
 def _accept_and_brief(state: GameState, gamedata: GameData, qid: str) -> None:
     q = gamedata.quests[qid]
     branch = 0
@@ -3755,6 +3779,9 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
             adventure.append(("dungeon", "深入地城 ⚔"))
         if loc.get("danger", 0) > 0 and loc["type"] != "dungeon":
             adventure.append(("explore", "探索狩獵 ⚔"))
+        # 戴德拉神殿:在此地祭壇供奉祈願,接取該親王的試煉任務(R45;達門檻才現任務)。
+        if loc.get("shrine"):
+            adventure.append(("shrine", "🕯 供奉祈願"))
         adventure.append(("travel", "旅行"))
         adventure.append(("map", "世界地圖"))
         # --- 城區(分區域:市集區 / 公會區 / 廣場)---
@@ -3874,6 +3901,8 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
             ui.status_line(state, gamedata)          # 出地城即重設 HUD(清掉召喚物列,免里程碑選擇彈窗殘留)
         elif choice == "explore":
             died = action_explore(state, gamedata)
+        elif choice == "shrine":
+            action_shrine(state, gamedata)
         elif choice == "travel":
             died = action_travel(state, gamedata)
         elif choice == "shop":

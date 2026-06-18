@@ -1,0 +1,9 @@
+{
+  "azura": {
+    "name": "晨昏之佑",
+    "attr": {"willpower": 8, "intelligence": 6},
+    "skill": {"mysticism": 10},
+    "resist": {"magic": 20},
+    "magicka": 20
+  }
+}

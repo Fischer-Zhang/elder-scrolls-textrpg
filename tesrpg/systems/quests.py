@@ -90,6 +90,11 @@ def available_quests(char: Character, gamedata: GameData, source: str,
         # 世界事件 gate(向後相容:無此欄=不限):任務在指定大事件觸發後才開放(如主線需 kvatch_falls)。
         if q.get("requires_event") and q["requires_event"] not in char.world_events_fired:
             continue
+        # 等級/聲望 gate(向後相容:無此欄=不限;同 requires_event 模式)。讓戴德拉神殿任務後期化(R45)。
+        if q.get("requires_level") and char.level < q["requires_level"]:
+            continue
+        if q.get("requires_fame") and char.fame < q["requires_fame"]:
+            continue
         # 陣營身分 gate:需為某陣營會員(達指定階)才開放(如教徒頂點 md7 需 mythic_dawn 滿階)。
         rf = q.get("requires_faction")
         if rf and char.factions.get(rf, -1) < q.get("requires_faction_rank", 0):
@@ -231,10 +236,15 @@ def _complete(char: Character, gamedata: GameData, quest_id: str) -> dict:
     for item_id in reward.get("items", []):
         inventory.add_item(char, item_id, 1)
 
-    # 達貢之力:湮滅危機教徒結局的永久增益(竊得達貢殘力)。資料驅動 reward.grant_boon。
-    if reward.get("grant_boon") == "dagon":
+    # 永久誓福:資料驅動 reward.grant_boon。達貢誓福(主線慘勝)走其獨立 dagon_* 層(敘事專屬,維持不動);
+    # 其餘戴德拉親王誓福(R45)走通用 boons 層 + boons.json 登錄表。
+    gb = reward.get("grant_boon")
+    if gb == "dagon":
         from tesrpg.systems import dagon_boon
         dagon_boon.grant(char, gamedata)
+    elif gb and gb in getattr(gamedata, "boons", {}):
+        from tesrpg.systems import boons
+        boons.grant(char, gamedata, gb)
     # 陣營滅亡(神話黎明被達貢獻祭殆盡):除籍 → 公會任務自動關閉、perk 消失。
     eradicate = reward.get("eradicate_faction")
     if eradicate:

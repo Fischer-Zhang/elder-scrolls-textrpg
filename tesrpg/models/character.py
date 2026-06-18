@@ -110,6 +110,15 @@ class Character:
     dagon_skill_bonus: dict = field(default_factory=dict)   # skill_id -> +點數(毀滅/咒術)
     dagon_resist: dict = field(default_factory=dict)        # element -> +百分比(烈焰之主 → 火抗)
     dagon_magic_bonus: int = 0           # 額外魔力上限(走 stats.recompute_max_resources)
+    # 戴德拉誓福(R45;戴德拉親王神殿任務的永久回報,可同時持有多位親王的誓福 → 後期收集軸)。
+    # 達貢誓福(主線慘勝)刻意維持獨立 dagon_* 層不動;此層為通用資料驅動誓福(boons.json 登錄表)。
+    # 與裝備/吸血鬼/狼人/達貢層同模式:attr()/skill()/抗性/魔力 疊加、成長/夾限只用 base_*、絕不寫 base。
+    # boons 為唯一權威(持有的 boon id);四個 *_bonus/resist 是「由 boons + JSON 決定性推導的快取層」。詳見 systems/boons.py。
+    boons: list = field(default_factory=list)                # 持有的誓福 id(權威)
+    boon_attr_bonus: dict = field(default_factory=dict)      # attr_id -> +點數(推導快取)
+    boon_skill_bonus: dict = field(default_factory=dict)     # skill_id -> +點數(推導快取)
+    boon_resist: dict = field(default_factory=dict)          # element -> +百分比(推導快取)
+    boon_magic_bonus: int = 0            # 額外魔力上限(走 stats.recompute_max_resources)
     factions: dict = field(default_factory=dict)         # faction_id -> 階級索引(已入會)
     # 黑暗兄弟會(里程碑;血債招募 → 合約晉升 → 夜母祝福)。詳見 systems/brotherhood.py。
     # 階級存在 factions["dark_brotherhood"];此處只記入會「前」的狀態機欄位:
@@ -211,6 +220,7 @@ class Character:
                 + self.equip_attr_bonus.get(key, 0) + self.vampire_attr_bonus.get(key, 0)
                 + self.mastery_attr_bonus.get(key, 0) + self.skooma_attr_bonus.get(key, 0)
                 + self.werewolf_attr_bonus.get(key, 0) + self.dagon_attr_bonus.get(key, 0)
+                + self.boon_attr_bonus.get(key, 0)
                 + self.potion_attr_bonus.get(key, 0))
 
     def skill(self, key: str) -> int:
@@ -218,6 +228,7 @@ class Character:
                 + self.equip_skill_bonus.get(key, 0) + self.vampire_skill_bonus.get(key, 0)
                 + self.mastery_skill_bonus.get(key, 0) + self.skooma_skill_bonus.get(key, 0)
                 + self.werewolf_skill_bonus.get(key, 0) + self.dagon_skill_bonus.get(key, 0)
+                + self.boon_skill_bonus.get(key, 0)
                 + self.potion_skill_bonus.get(key, 0))
 
     def base_attr(self, key: str) -> int:
@@ -279,6 +290,9 @@ class Character:
             "dagon_boon": self.dagon_boon, "dagon_attr_bonus": self.dagon_attr_bonus,
             "dagon_skill_bonus": self.dagon_skill_bonus, "dagon_resist": self.dagon_resist,
             "dagon_magic_bonus": self.dagon_magic_bonus,
+            "boons": self.boons, "boon_attr_bonus": self.boon_attr_bonus,
+            "boon_skill_bonus": self.boon_skill_bonus, "boon_resist": self.boon_resist,
+            "boon_magic_bonus": self.boon_magic_bonus,
             "factions": self.factions,
             "murders": self.murders, "db_invited": self.db_invited,
             "murdered_npcs": self.murdered_npcs,

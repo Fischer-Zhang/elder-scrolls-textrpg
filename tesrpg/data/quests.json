@@ -1827,5 +1827,17 @@
   "hunt_northpoint": {"name": "委託:崖壁上的鴉妖", "faction": null, "rank": null, "source": "npc", "objective": {"type": "kill", "creature": "harpy", "count": 4}, "reward": {"gold": 160, "fame": 6}, "turn_in": "auto", "text": "「往坎洛恩那段崖路上的鴉妖,連港裡的鹹魚都敢搶,水手都不敢走夜船了。剪了牠們的翅膀,我這份賞錢就是你的。」"},
   "clear_jehanna": {"name": "委託:肅清戴尼瑞塔", "faction": null, "rank": null, "source": "npc", "objective": {"type": "clear_dungeon", "dungeon": "direnni_tower"}, "reward": {"gold": 260, "fame": 11, "items": ["steel_sword"]}, "turn_in": "auto", "text": "「戴尼瑞塔被石像鬼占了,連我都不敢往塔深處下陷阱。你若有那膽識,把整座塔肅清,耶漢納上下都會感念你。」"},
   "favor_archon": {"name": "委託:沼路除蜥", "faction": null, "rank": null, "source": "npc", "objective": {"type": "kill", "creature": "swamp_lizard", "count": 4}, "reward": {"gold": 140, "fame": 5}, "turn_in": "auto", "text": "阿爾孔的守牆衛兵厚甲-巡牆拍了拍長矛:「西去石落城的沼路被巨蜥占了 —— 替我宰掉 4 頭沼澤巨蜥(沼澤野外可尋),阿爾孔湊得出謝禮。」"},
-  "favor_thorn": {"name": "委託:肅清根水沼窟", "faction": null, "rank": null, "source": "npc", "objective": {"type": "clear_dungeon", "dungeon": "rootwater_grotto"}, "reward": {"gold": 240, "fame": 9, "items": ["healing_potion"]}, "turn_in": "auto", "text": "索恩的守橋衛兵斷尾-守橋眉頭緊鎖:「根水沼窟裡的鬼火越聚越多,連漁人都不敢近河。把那窟徹底清乾淨,城裡的金幣與謝意都歸你。」"}
+  "favor_thorn": {"name": "委託:肅清根水沼窟", "faction": null, "rank": null, "source": "npc", "objective": {"type": "clear_dungeon", "dungeon": "rootwater_grotto"}, "reward": {"gold": 240, "fame": 9, "items": ["healing_potion"]}, "turn_in": "auto", "text": "索恩的守橋衛兵斷尾-守橋眉頭緊鎖:「根水沼窟裡的鬼火越聚越多,連漁人都不敢近河。把那窟徹底清乾淨,城裡的金幣與謝意都歸你。」"},
+  "azura_star": {"name": "晨昏之星", "faction": null, "rank": null, "source": "daedric", "shrine": "azura", "requires_level": 15, "text": "你在亞祖拉海岸的星辰石像前俯首,潮聲裡浮起晨昏女神的低語 —— 她的聖器『阿祖拉之星』被靈術師馬林·瓦倫以黑魂玷污,囚於東岸礁島的祭壇深處。奪回那枚星辰 —— 但如何處置它,將由你決定。", "branches": [
+    {"label": "淨化之路 —— 為阿祖拉奪回並淨化星辰(賜永久誓福:晨昏之佑)", "text": "為晨昏女神奪回聖器、淨化其中的囚魂,將純淨的星辰奉還女神 —— 她將以一縷晨昏之力回報於你。", "stages": [
+      {"objective": {"type": "collect", "item": "nightshade", "count": 2}, "text": "在亞祖拉海岸的祭壇前獻上兩朵黃昏綻放的龍葵,叩問晨昏女神的指引。"},
+      {"objective": {"type": "reach", "location": "azura_defiled_shrine"}, "text": "循女神的星光指引,前往東岸礁島上被玷污的星辰祭壇。"},
+      {"objective": {"type": "clear_dungeon", "dungeon": "azura_defiled_shrine"}, "text": "深入祭壇核心,擊潰馬林·瓦倫的囚魂,將阿祖拉之星自黑魂中淨化、奉還女神。"}
+    ], "reward": {"gold": 600, "fame": 30, "grant_boon": "azura", "world_flags": ["azura_star_cleansed"]}},
+    {"label": "墮化之路 —— 以黑魂重鑄星辰據為己有(得神器:黑星護符)", "text": "靈術師低語著另一條路 —— 不必歸還聖器。以黑魂重鑄這枚星辰,永不枯竭的黑星將為你所有,但這將激怒晨昏女神。", "stages": [
+      {"objective": {"type": "collect", "item": "empty_black_soul_gem", "count": 1}, "text": "備妥一枚空黑魂石,作為重鑄黑星的容器。"},
+      {"objective": {"type": "reach", "location": "azura_defiled_shrine"}, "text": "前往東岸礁島上被玷污的星辰祭壇,與靈術師的低語會合。"},
+      {"objective": {"type": "clear_dungeon", "dungeon": "azura_defiled_shrine"}, "text": "在祭壇核心了結馬林的囚魂、奪下星辰 —— 以黑魂重鑄,這枚永不枯竭的黑星自此屬你,代價是晨昏女神的震怒。"}
+    ], "reward": {"gold": 800, "infamy": 25, "items": ["black_star_amulet"]}}
+  ]}
 }

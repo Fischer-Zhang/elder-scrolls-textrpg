@@ -40,6 +40,7 @@
 #### 世界與探索
 - **八省 ~168 地點 / 48 城 + 17 鎮 + 70 野區 + 33 地城**(含海爾根 Helgen=白隘北口、賽→天門戶)(每省 5–9 城 + 多個正典分區野區〔黃金海岸/苦岸/裂石郡/收割者三月…〕做城際過場;邊境戍堡為省際接縫)+ **`pos[col,row]` 與 `links` 皆依正典 TES 地理**(頂層 `world["map"]` 40×24);旅行/晝夜/危險度(數字為快照,以 JSON/測試為準)
 - **生態遭遇**(biome 加權,八生態含 savanna 弱毒)、**省份風味事件**、**具名地標**首發現、各城**考據統治者**;終局 solo BOSS
+- **後期內容:戴德拉親王神殿線(R45;一次一位親王、任務做深)**:野外祭壇「供奉祈願」接親王試煉 → 深線結局得**永久誓福**(通用 `boons` 層 data-driven,可同時持有多位親王 → 封頂角色的後期收集軸)或**神器**;首位 = 阿祖拉「黑星」(淨化得晨昏之佑誓福 vs 墮化得黑星護符,複用任務分支)+ 新 d5 solo boss/地城。誓福守刺客紅線(無 sneak/武傷)→ sim byte-identical
 - **城鎮服務專精化(R29)**:訓練師依公會/lore 只教部分技能(戰士城練戰鬥/法師城練魔法/盜賊城練潛行)+ 11 招牌城**宗師指點**破一般訓練上限(馬卡斯鍛造/冬堡毀滅/裂谷開鎖…);法師公會**法術學派分省守護**(各省主賣一派深線 + 保底集 9 道,別派進階須跨省採購;`imperial_city` 通才例外)。給戰士/盜賊/法師各一張「該去哪精進/採購」的地圖;功能性差異、零存檔欄位
 - **格子地城探索**(`systems/dungeoncrawl.py`):15 地城程序化生成 n×n 格 × m 層,N/S/E/W 移動 + 樓梯下層 + 迷霧小地圖 + 格內怪/寶/陷阱;清末層 boss = 肅清,首領死亡自動解鎖寶藏(原子探索、零新存檔欄)。**視為戰鬥情境**:可一般行動(施法/背包/角色卡)、**預施增益/預召喚召喚物**(行動 1 格 = 1 回合逐回合衰減,經 carry_allies/preserve_buffs 帶進觸發戰鬥)、**偵查 perk 探明四鄰**(每探明新格得少量偵查 xp);持久狀態條一併顯示夥伴/召喚物
 
@@ -1007,6 +1008,18 @@ tesrpg/
 - **~18 施加點全路由 helper**:`combat.py`(塗毒控場 / 附魔麻痺 / chill→weaken·jolt→stagger rider / on_hit_status / **鈍器內建 stagger〔收斂點:移除原 mace-only `not _is_solo`,boss 比照其餘 stagger 照吃軟控〕** / 盾反 block_riposte / fear_on_hit / 重甲反震 armor_stagger / 閃避反制 on_evade / 偷襲殘響 / R43 怪→玩家 on_hit〔`resisted_mind`+去重移入 helper〕)、`magic.py`(cast fear·weaken / AoE status_all·damage_status_all / **潛在缺口 damage_status·spell_on_hit·apply_status 對敵 → 自動受 solo 管,閉合**)、`powers.paralyze_touch`(**戀人座破口閉合**:對 solo 改機率減免)、`lycanthropy.howl`(嚎叫對 solo 改機率減免)、`main.py` 牽制射 weaken。**不走 helper**:dot(`_apply_dot_capped`)/soul_trap/deathmark/反傷扣血(R42)/empower·shield·ward(非控場)。
 - **🔴 改既有紅線**:R31/R15 的「solo 完全免疫 fear/paralyze」→ 機率減免。**更新 5 個舊免疫測試為機率模型**(`test_magic` 武器麻痺·法術控場、`test_poison_depth` 塗毒、`test_mastery` 懾心、`test_lycanthropy` 嚎叫:皆改「`0 < count < N` 既會中也會抗」)+ 新 `test_solo_control`(helper 直測:機率率≈1−0.65、非 solo 100%、玩家 willpower、去重/同源去重、軟控對 solo 照施、戀人座破口閉合整合)。`test_combat` 鈍器 stagger 改「solo 也生效」。
 - **驗證**:`run_all` 66 綠;`sim_assassin` **byte-identical**(刺客無 fear/paralyze/stagger 投入、偷襲傷害夾 `SOLO_SNEAK_DAMAGE_CAP_RATIO` 與控場無關 → solo 秒殺仍全 0%;diff HEAD worktree 證);`check.sh --sim --smoke` 全綠。**⚠ 平衡備註**:機率減免後長時程控場(戀人座 paralyze 3 回合)35% 命中時仍鎖 3 回合 → 若過強,加「solo 控場時程上限 ≤1」或調 `SOLO_CONTROL_RESIST_CHANCE`(數值微調,留待回饋)。
+
+### R45 · 後期內容:戴德拉誓福引擎 + 神殿任務(首位親王 阿祖拉)[recompute] [save]
+
+評估(三路探勘)揪出「打完達貢即無後期」:無超級首領層、無封頂角色收集目標、無新成長軸、無達貢後敘事;16 戴德拉親王**只有達貢有完整線**。使用者**兩道拍板**:① 方向=戴德拉親王神殿任務+神器/誓福線;② 節奏=**一次加一位親王、任務做深、reward = 神器或永久 Buff**。本輪 = **共用底座(建一次)+ 首位親王阿祖拉深線**;之後每里程碑純 JSON 再加一位。
+
+- **通用誓福層(approach A:平行附加層,刻意不動 `dagon_boon.py`)**:達貢誓福是主線慘勝、敘事獨立 → 保留不動(**零存檔遷移風險**);新建通用資料驅動誓福給戴德拉親王用。Character 加 `boons`(持有 id 權威 list)+ `boon_attr_bonus/boon_skill_bonus/boon_resist/boon_magic_bonus`(由 boons∩登錄表決定性推導的快取)。模式比照 dagon/vampire/werewolf/skooma:`attr()/skill()/magic.entity_resist()/stats.max_magicka` 各加**一項** boon_* 聚合、**成長/夾限只用 base_***、絕不寫 base。新 `systems/boons.py`(`has_boon/grant/apply_to_character〔冪等·末尾必 recompute_max_resources·未知 id 靜默跳過〕/ensure_boon_fields`)+ `data/boons.json` 登錄表(gamedata.boons)+ `state.py` 載入鉤。**每個 dagon_* 聚合點皆有 boon_* 對位**(attr/skill/to_dict/entity_resist/max_magicka 五處,parity 已審)。
+- **grant_boon 派發**:`quests._complete` 由硬寫 `=="dagon"` 改派發 ——`"dagon"`→legacy `dagon_boon.grant`(敘事獨立);其餘 id ∈ `gamedata.boons`→`boons.grant`。
+- **神殿任務機制(最小在地化、複用接取管線)**:地點帶 `"shrine":"<prince>"`(新可選 key,既有皆無→零遷移);`main.py action_shrine`(野外祭壇「供奉祈願」→ `available_quests("daedric")` 篩 `q["shrine"]==loc["shrine"]` → 複用 `_accept_and_brief` 含分支選路/簡報,**零新接取碼**);`available_quests` 加 `requires_level`/`requires_fame` **向後相容門檻**(缺=不限,同 `requires_event` 模式)讓親王任務後期化。
+- **首位親王阿祖拉(取材 Skyrim「黑星」)**:復用 `azuras_coast`(加 `shrine`)+ 新 **degree-2 through-route** 地城 `azura_defiled_shrine`(d5·grid5/layers3·links `azuras_coast`+`sadrith_mora` 成海岸環,守 R28 無死路)+ 新 boss `malyn_varen`(d5·`solo`·dungeon `raw`·185HP·frost·R43 曲目含 `paralyze` on_hit chance0.25/turns1 → 走 R44 solo 機率減免)+ 深線 `azura_star`(`source:"daedric"`·`requires_level:15`·`branches`:**淨化路線**→`grant_boon:"azura"`〔晨昏之佑 willpower+8/intelligence+6/mysticism+10/magic+20/magicka+20,**守紅線無 sneak/武傷**〕`world_flags:["azura_star_cleansed"]` vs **墮化路線**→神器 `black_star_amulet`〔fortify mysticism 20〕+infamy)。
+- **🔴 紅線守**:誓福**絕不碰 sneak/武器技能**、strength 類 ≤ 達貢 → `sim_assassin` **byte-identical**(git stash diff 證:刺客無誓福投入·sim fixtures `boons=[]` → boon_* 全空·boss 非偷襲路徑);boss `solo`+`raw`、硬控 chance≤0.30/turns1 走 helper(R44)。daedric source 免 npc/board 獎勵 cap(`test_detailing`)。
+- **驗證**:`run_all` **67** 綠(新 `test_daedric`:誓福疊加不寫 base/冪等不疊/多誓福相加〔注入暫時測試誓福〕/存檔 round-trip+舊檔遷移/未知 id 略過/reward 派發/可接門檻+神殿分流/內容完整〔boss solo·控場節制·地城有 clear_dungeon 任務〕);煙霧(action_shrine UI 接取+完成授福+GameState 存載保留+遷移補欄);BESTIARY.md 重生(101 怪)。
+- **後續**:每里程碑純 JSON 加一位親王(海爾辛〔復用 hircine_ring〕/莫拉格巴爾〔molag_mar·鎚〕/波耶西亞〔Ebony Mail〕/梅瑞迪雅…);需新機制者(阿祖拉之星不碎魂石/瑪奇路之書一次性技能書/Wabbajack 隨機法杖)留後。
 
 ---
 
