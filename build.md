@@ -4,7 +4,7 @@
 > 與 [BUFFS.md](BUFFS.md) **互補** —— BUFFS.md 按「**來源層橫切**」(全遊戲增益依層羅列),本檔按「**build 縱切**」(一條構築走完所有層、含分支取捨)。
 > Single source of truth 仍是程式碼(`tesrpg/formulas.py`、`tesrpg/systems/*.py`)與資料(`tesrpg/data/*.json`);**數值有疑義以常數 / JSON / `run_all.py` 為準並順手更新本檔**。
 > 紅線本體見 [handoff.md](handoff.md) §3(R07/R11/R15/R20/R21/R25)、增益總目錄見 [BUFFS.md](BUFFS.md)、設計理念見 [DESIGN.md](DESIGN.md)。
-> 末次盤點:2026-06-17(潛行刺客 / 潛行弓手 / 純法師三條縱切;R40 後 marksman 樹;法師段落經多代理對抗審查核對 magic/formulas/mastery 常數)。
+> 末次盤點:2026-06-17(潛行刺客 / 潛行弓手 / 純法師三條縱切;R40 後 marksman 樹)。三段均經多代理對抗審查核對:法師核對 magic/formulas/mastery;刺客/弓手重判修正 soul_trap 非 solo 免疫、berserk 僅維蘇拉德 war_axe、塗毒單層共用、亞龍敏+5/速+10、悲傷之刃/陰影座正名、附魔/淬鍊上限(grand soul ~24~29、apex temper +15)等。
 
 ---
 
@@ -49,18 +49,18 @@
 ### A · 通用加成(任何刺客都疊 · 全獨立相加)
 | 層 | 內容 | 備註 |
 |---|---|---|
-| **身分:吸血鬼 T3** | ★**sneak+15**(唯一餵 sneak 的身分層)、str/speed/will+15、frost+30 | fire−30 弱點可被達貢 fire+60 抵成淨+30 |
+| **身分:吸血鬼 T3** | ★**sneak+15**·**illusion+15**(唯一餵 sneak 的身分層)、str/speed/will+15、frost+30 | fire−30 弱點可被達貢 fire+60 抵成淨+30 |
 | **身分:達貢之力** | str+18(放匕首基礎傷)、magicka+25、fire+60 | ★純永久無懲罰,與吸血並存 |
-| **身分:斯庫瑪/月糖** | speed/agility+8 | ★**不碰 sneak/str/武傷**(R20)→ 只命中/閃避/先攻 |
+| **身分:斯庫瑪/月糖** | 斯庫瑪 speed/agility/**willpower**+8;月糖 speed/agility+5 | ★**不碰 sneak/str/武傷**(R20)→ 只命中/閃避/先攻 |
 | ~~狼人~~ | ✗ 獸形脫整套裝備 + `sneak_attack=False` | 刺客不適用 |
-| **裝備:雙匕首附魔** | 元素傷 +13~19(無視物理甲、夾前)/ DoT / vampiric 回血(雙持 0.48)/ berserk | paralyze·soul_trap **solo 免疫** |
-| **裝備:fortify 飾品(3 槽)** | blade ×2→**+12**、agility +5~7、resource +12~19 | 餵 skill()/attr() 不回門檻(R21) |
+| **裝備:雙匕首附魔** | 元素傷 +17~24(grand soul·myst50→100,無視物理甲、夾前;靈魂虹吸後 ~29)/ DoT / vampiric 回血(雙持 0.48)/ paralyze·soul_trap | **paralyze** solo 免疫;**soul_trap 對 solo 照常**(僅去重+充能) |
+| **裝備:fortify 飾品(3 槽)** | `fortify_skill` blade ≈12(myst75)~15(myst100·grand soul,靈魂虹吸後 ~18)、agility +5~7、resource +12~19 | 餵 skill()/attr() 不回門檻(R21) |
 | **裝備:★輕甲套裝** | 皮革→**sneak+15** / 玻璃→**acrobatics+15** | 且 W≤18 偷襲折扣 ×1.0 不打折 |
-| **裝備:淬鍊** | 主匕 +10 傷 | ⚠ 雙持**副手淬鍊不套偷襲倍率**(R37 Finding,既有行為) |
-| **裝備:神器** | 血腥之刃(vampiric 50%)、魔銳茲之刃(shock+25)、骷髏鑰匙(security+20·撬鎖必成) | 血腥之刃=黑兄掌門 |
-| **種族/星座** | 紅衛(刃+10·力耐+10)、亞龍/虎人(敏+10)、暗精靈(速+10);竊賊座 / **影座**(每日必脫戰)/ 蛇座(每日對敵毒) | |
-| **★塗毒(R31 五型)** | ★★★ 偷襲+毒一起爆;雙匕各塗,charges=poison_charges+里程碑 | 麻痺/懼 solo 免疫,主打群兵 |
-| **限時藥水** | fortify **agility**、resist 元素 | ⚠ **不能釀 fortify blade**(可釀池排武器技能) |
+| **裝備:淬鍊** | 主匕 +10 傷(基礎上限;smithing 鋒銳 apex `temper_power` → +15) | ⚠ 雙持**副手淬鍊不套偷襲倍率**(R37 Finding,既有行為) |
+| **裝備:神器** | 悲傷之刃(vampiric 50%)、魔銳茲之刃(shock+25)、骷髏鑰匙(security+20·撬鎖必成) | 悲傷之刃 `blade_of_woe`=黑兄掌門 |
+| **種族/星座** | 紅衛(刃+10·力耐+10)、虎人(敏+10·潛行/徒手+)、亞龍(速+10·敏+5·★毒免疫)、暗精靈(速+10·火抗75);竊賊座 / **陰影座**(每日必脫戰)/ 蛇座(每日對敵毒) | |
+| **★塗毒(R31 五型)** | ★★★ 偷襲+毒一起爆;武器塗**單一毒層**(主副手共用一份·命中即耗一格,非各塗),charges=poison_charges+里程碑 | 麻痺/懼 solo 免疫,主打群兵 |
+| **限時藥水** | fortify **agility**、resist_magic(★無火/霜/雷抗藥) | ⚠ blade 等武器技能藥**無材料可釀**;可釀池僅 `fattr_agility`/`fattr_willpower`/`resist_magic`/`fskill_alchemy` |
 | **公會/通用** | ★黑暗兄弟會(夜母 ×1.18·洗白賞金);blade_25 +2%命中、sneak_25 隱遁、scout 備戰 prep、精神飽滿 xp×1.25 | |
 
 ### B · 分支加成(二選一互斥)
@@ -89,7 +89,7 @@
 ```
 開場偷襲乘子 ≈ ×4.0(sneak100) × 1.6(匕首) × 1.18(聆聽者) × 1.5(影刃) × 1.0(輕甲) ≈ ×11.3
 ```
-再疊夾前加法層(元素+19 / blade power +12~20% / 塗毒 DoT / 副手 ×0.6)。🔴 但 solo boss 開場單擊**永遠夾 40%** → 打王靠隱遁循環多刀(見上 0c)。
+再疊夾前加法層(元素 ~24~29〔grand soul + 滿祕術靈魂虹吸〕 / blade power +12~20% / 塗毒 DoT / 副手 ×0.6)。🔴 但 solo boss 開場單擊**永遠夾 40%** → 打王靠隱遁循環多刀(見上 0c)。
 
 ---
 
@@ -105,17 +105,17 @@
 | 層 | 內容 | 備註 |
 |---|---|---|
 | **身分:達貢之力** | str+18(放弓基礎傷)、fire+60、magicka+25 | ★弓手首選永久層、無懲罰 |
-| **身分:吸血鬼 T3** | sneak+15、str/speed+15、frost+30 | 火−30 可被達貢抵 |
-| **身分:斯庫瑪/月糖** | speed/agility+8 | ★不碰 sneak/str/武傷 → 只命中/閃避/先攻 |
+| **身分:吸血鬼 T3** | sneak+15(+illusion+15)、str/speed/will+15、frost+30 | 火−30 可被達貢抵 |
+| **身分:斯庫瑪/月糖** | 斯庫瑪 speed/agility/willpower+8;月糖 speed/agility+5 | ★不碰 sneak/str/武傷 → 只命中/閃避/先攻 |
 | ~~狼人~~ | ✗ 脫裝備、無偷襲 | 弓手不適用 |
-| **裝備:弓附魔** | 元素傷火/霜/雷 +13~19(無視物理甲、夾前)/ DoT / vampiric / berserk(維蘇拉德) | paralyze·soul_trap solo 免疫 |
-| **裝備:fortify 飾品** | marksman ×2→**+12**、agility +5~7、resource +12~19 | |
+| **裝備:弓附魔** | 元素傷火/霜/雷 +17~24(grand soul·myst50→100,無視物理甲、夾前;靈魂虹吸後 ~29)/ DoT / vampiric | **paralyze** solo 免疫;**soul_trap 對 solo 照常**(僅去重+充能);弓無 berserk(維蘇拉德為 war_axe) |
+| **裝備:fortify 飾品** | `fortify_skill` marksman ≈12~15、agility +5~7、resource +12~19 | 餵 skill()/attr() 不回門檻(R21) |
 | **裝備:★輕甲套裝** | 皮革→**sneak+15** / 玻璃→**acrobatics+15** | 不破潛行 |
-| **裝備:淬鍊** | 弓 +10 傷 | |
-| ⚠ **神器** | **全遊戲無專屬弓神器** | 靠自附魔元素弓 + fortify marksman 飾品補 |
-| **種族/星座** | ★**木精靈**(弓+10·敏/速+10·疾毒抗75);紅衛/暗精靈;竊賊座 / 駿馬座 / **影座** / 蛇座 | |
+| **裝備:淬鍊** | 弓 +10 傷(基礎上限;smithing apex `temper_power` → +15) | |
+| ⚠ **神器** | **全遊戲無專屬弓神器**(神器皆 sword/dagger/axe/staff/shield/amulet) | 靠自附魔元素弓 + fortify marksman 飾品補 |
+| **種族/星座** | ★**木精靈**(弓+10·敏/速+10·疾毒抗75);紅衛/暗精靈;竊賊座 / 駿馬座 / **陰影座** / 蛇座 | |
 | **★塗毒(R31)** | ★★ 箭上毒命中即觸發,配遠程+偷襲極強;麻痺/懼 solo 免疫 | |
-| **限時藥水** | fortify **agility**、resist | ⚠ **不能釀 fortify marksman**(武器技能) |
+| **限時藥水** | fortify **agility**、resist_magic(無元素抗藥) | ⚠ marksman 無材料可釀;可釀池僅 `fattr_agility`/`fattr_willpower`/`resist_magic`/`fskill_alchemy` |
 | **坐騎/通用** | ★**獵馬**(騎射閃避0.15×3·規避遭遇0.35);marksman_25 +2%命中、sneak_25 隱遁、scout 備戰 prep、精神飽滿 | |
 
 ### B · 分支加成(二選一互斥)
@@ -126,7 +126,7 @@
 | 50 | **散兵走位**(射後遁走·風箏) | **牽制射**(weaken 0.40/3t·控場) |
 | 75 | 疾矢(+4% 命中·被動穩) | **瞄準射**(蓄力:命中+15/破甲+25/補傷+40%,額外耗體) |
 | 100 | 穩準狠(+7% 命中) | 穿甲箭(破甲+15%,+4 耗體) |
-> 50 兩邊**都是主動戰技、無被動**(R40 取捨);75/100 才是「被動命中 vs 主動/破甲」。
+> 50 兩邊**都是主動戰技、無被動**(R40 取捨);75 = 被動命中(疾矢)vs **主動戰技**(瞄準射 `bow_technique`);100 = 被動命中(穩準狠)vs **被動破甲**(穿甲箭=恆常 `weapon_mod`,非主動)。三式主動戰技僅 skirmish/crippling/aimed。
 
 **副軸流派(選一條當骨幹)**
 - **潛行刺客弓(爆發)**:sneak 致命烙印+影刃 + 夜母 + 吸血 sneak+15 + 瞄準射(75)+ 穿甲箭(100)→ 精英開場秒殺。
@@ -257,9 +257,9 @@ effective_cost = base × (1 − min(0.4, 學派技能/250)) × Π spell_cost_fac
 | | 潛行刺客(匕首) | 潛行弓手(弓) |
 |---|---|---|
 | 偷襲 archetype | ★**×1.6**(全遊戲最高) | ×1.3 |
-| 增傷手段 | 雙持副手 ×0.6 + 塗雙毒 | 單發 + 塗單毒 + 瞄準射蓄力 |
+| 增傷手段 | 雙持副手 ×0.6 + 塗毒(主副手共享單層) | 單發 + 塗毒 + 瞄準射蓄力 |
 | 距離/風險 | 近戰、要潛近貼身、不能格擋、最脆 | 遠程、安全、可風箏 |
-| 公會/神器 | ★黑暗兄弟會(夜母)+ blade_of_woe / mehrunes_razor | 無專屬公會、**無弓神器** |
+| 公會/神器 | ★黑暗兄弟會掌門武器(悲傷之刃 `blade_of_woe` / 魔銳茲之刃) | 黑兄亦可入(gate 含 marksman·夜母 ×1.18 對弓生效)、**無弓專屬神器** |
 | 開場偷襲乘子(疊滿) | ≈ ×11.3 | ≈ ×9.2 |
 | 紅線 | **同源**:solo boss 40% 夾 / >3 敵反制 / 麻痺免疫 | 同左 |
 
