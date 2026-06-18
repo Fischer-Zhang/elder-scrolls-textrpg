@@ -960,6 +960,19 @@ tesrpg/
 
 ---
 
+### R41 · 雙手武器握法系統 + 鈍器 mace/axe 分流(三段提交)[re-sim] [save]
+
+使用者點名加「握法」維度,讓近戰武器選擇成為真 build 取捨,與既有「劍盾/雙持匕首」並列四握法。**三個獨立可驗證提交**:
+
+- **① 鈍器 archetype 分流**:`blunt` archetype 拆成 `mace`(控制流)/`axe`(破甲流),**`skill` 全維持 `"blunt"`**(含 2H 戰錘/戰斧——使用者確認也算鈍器;mastery 鈍器樹不動,pen perks 利好斧、weaken perks 利好錘)。`formulas._ARCHETYPE_ARMOR_PEN` 0.30 由 `blunt`→`axe`;新 `_ARCHETYPE_BUILTIN_STATUS={mace:stagger 0.20/1t}` + `archetype_builtin_status` getter,`combat` 命中後套(守 `_is_player`+`is_alive`+`not _is_solo` 控制免疫,R31 一致)。`mounts.MELEE_ARCHETYPES` blunt→mace,axe;`console._ARCHETYPE_CN` 補釘錘/短斧。weapons.json 全保留 id(零存檔破壞):四釘錘→mace、daedric_mace 名魔族戰錘→魔族釘錘;1H 戰斧→**短斧**+axe、補鋼/矮人短斧;**wuuthrad arch war_axe→axe**(退役孤兒 archetype,即獲 0.30 破甲)。
+- **② 雙手武器(極攻)**:新 `"two_handed": true` 旗。weapons.json 新增戰錘 warhammer(mace·5 階)+ 戰斧 battleaxe(axe·5 階),傷比同階 1H +45~55%、速更慢;wuuthrad 轉 2H(dmg23→32)。`inventory.is_two_handed`;`equip_weapon` 裝 2H **自動卸盾+副手**、`equip_offhand`/`equip_armor(shield)`/`is_dual_wielding` 主手 2H 一律擋;**新 `ensure_grip`**(state.from_dict 載入呼叫,idempotent,清舊存檔 2H+盾並存,零新存檔欄)。`main.py` 2H 抑制格擋/盾牆;`mounts.can_charge` 排除 2H。
+- **③ 雙手重盾(極防)**:重盾 = **雙手握法**(占雙手·無武器·盾擊作戰·仍可格擋/盾牆〔它是盾〕)。armor.json 新增重盾 5 階(`great_shield`+`two_handed`+`bash_damage`+`mitigation`,AR 高於 1H 盾)+ crusaders_ward 轉重盾(AR16→24·加 mit/bash,保 id/魔抗)。`combat._weapon_profile` 加重盾分支 → 盾擊(bash_damage·block 技·`skill_id="block"`),**比照束縛兵刃完全取代武器**(`great` 旗 → `archetype=None`·無破甲/控制/附魔/塗毒,守同 beast/bound guard);新 `_great_shield_mitigation_factor` 套 `_shield_wall_factor` 後(乘性·僅物理·`not _is_beast`);`eff_weapon_id`/`effective_weapon_name` 加 gamedata 參數回盾。`inventory.is_great_shield`(**None-safe**)+ equip 清副手 + `ensure_grip` 同步;`mounts` 重盾排除衝鋒;`console.weapon_line` 顯示盾擊行。
+- **🔴 紅線**:三提交每個跑 `sim_assassin` 全 **byte-identical**(刺客匕首 archetype≠mace/axe、不持 2H/重盾 → 新 archetype pen/mace stagger/2H/bash/mitigation 全 no-op);solo boss 偷襲夾 40%、85% 護甲夾、麻痺免疫全守(wuuthrad 加傷+berserk+axe 破甲偷襲仍夾)。
+- **內容/取得**:recipes 各階 forge(skill_req 守既有分級 25/55/85/90、值守無套利);world 諾德/矮人城上架 steel/dwarven 2H+重盾;dungeons daedric 2H+重盾入死亡之地。
+- **驗證**:`run_all` **64 模組**(新 `test_two_handed`/`test_great_shield`;`test_weapons`/`test_combat` 加 axe 破甲·mace 擊暈·solo 免疫)。三提交皆 sim 綠。
+
+---
+
 ## 4. 開發節奏(ultracode 開著 → 每個功能都這樣做)
 
 > 完整五階段流程(評估 → 決定方向 → 實作 → 驗證 → 文件 + 提交)見 `CLAUDE.md`「開發流程」;以下是「驗證」段的細節。**驗證綠後依 R22 自動 `commit` & `push origin main`。**

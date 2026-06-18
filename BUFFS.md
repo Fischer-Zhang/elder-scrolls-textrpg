@@ -156,6 +156,7 @@
 | 溢盾 overheal_ward | 減傷 | 溢治60%轉盾、cap=生命×0.5、turns4(R21夾cap) |
 | 重甲反震 armor_reflect | 反傷 | 受近戰物理反彈12% |
 | 重壓 armor_stagger | 防守控場 | 受近戰物理擊中 22% 震開攻擊者(stagger turns:2 → 撐過回合末 tick,對敵下次出手生效) |
+| 雙手重盾被動減傷 great_shield mitigation(R41) | 減傷 | 裝雙手重盾(`great_shield`)→ 受物理 ×(1−mitigation)(iron→daedric 5~8%·crusaders_ward 10%);套 `_shield_wall_factor` **後**乘性疊加、僅物理、獸形不套;重盾占雙手·普攻走盾擊(`bash_damage`·練 block) |
 | 生生不息 combat_regen | 續航 | 戰鬥中每回合末自癒 8(is_alive 守 → 不復活本回合被擊殺者) |
 | 身輕如燕 evasion_bonus | 命中(扣敵命中) | 多源相加 0.02~0.05,★硬夾 EVASION_BONUS_CAP=0.15 |
 | 盾陣/盾擊踉蹌 | 減傷/控場 | block_hit_penalty0.25;riposte stagger0.35 |
@@ -270,7 +271,7 @@ weapon_element 附魔、奧術灌注 weapon_imbue、共鳴一擊 resonance、武
 | debuff | kind | 數值 | 聚合 |
 |---|---|---|---|
 | 挫志 weaken(demoralize/衝擊餘波) | 削敵傷害 | demoralize ×0.6(4回);只乘怪 | 取最強(min,夾≥0.1),可dispel |
-| 陣腳大亂 stagger | 降敵命中 | −0.30 命中(impact 35%觸發) | binary,覆寫turns,可dispel |
+| 陣腳大亂 stagger | 降敵命中 | −0.30 命中(impact 35%觸發;**釘錘/戰錘 archetype 命中 20% 內建**·R41·`_ARCHETYPE_BUILTIN_STATUS`·solo boss 免疫) | binary,覆寫turns,可dispel |
 | 持續傷 dot(ignite/poison_cloud/frost_nova/bleed) | 持續傷 | ignite 8+6×3、poison_cloud 6×4、frost_nova 16+4×2、bleed×3 | 各一條獨立;AoE每敵獨立dict(R17) |
 | 麻痺 paralyze(mass/附魔) | 失能 | 群麻2回、附魔1回;is_incapacitated | 🔴solo免疫(R15);AoE獨立dict |
 | 恐懼 fear(fear/rout/懾心) | 失能 | 2回不敢進攻 | 玩家可意志抵抗;可dispel;**solo BOSS 全路徑免疫(R31:法術/塗毒/里程碑)** |

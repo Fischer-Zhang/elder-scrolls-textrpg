@@ -4,7 +4,7 @@
 > 與 [BUFFS.md](BUFFS.md) **互補** —— BUFFS.md 按「**來源層橫切**」(全遊戲增益依層羅列),本檔按「**build 縱切**」(一條構築走完所有層、含分支取捨)。
 > Single source of truth 仍是程式碼(`tesrpg/formulas.py`、`tesrpg/systems/*.py`)與資料(`tesrpg/data/*.json`);**數值有疑義以常數 / JSON / `run_all.py` 為準並順手更新本檔**。
 > 紅線本體見 [handoff.md](handoff.md) §3(R07/R11/R15/R20/R21/R25)、增益總目錄見 [BUFFS.md](BUFFS.md)、設計理念見 [DESIGN.md](DESIGN.md)。
-> 末次盤點:2026-06-18(潛行刺客 / 潛行弓手 / 純法師 / 純戰士〔刀劍·鈍器·盾反〕四條縱切;R40 後 marksman 樹)。四段均經多代理對抗審查核對(gather→verify→draft→critic):戰士批判修正 wuuthrad/盾非互斥(本作無雙手機制)、護甲淬鍊 int(Σ)一次取整 ≈+30、attack skill_mult 不夾上限(fortify→×1.65)、可釀池僅 resist_magic、種族技能補全、吸血四重代價;刺客/弓手重判修 soul_trap 非 solo 免疫、berserk 僅維蘇拉德 war_axe、塗毒單層共用等;法師核對 magic/formulas/mastery。
+> 末次盤點:2026-06-18(潛行刺客 / 潛行弓手 / 純法師 / 純戰士四條縱切;**R41 雙手握法系統後**)。四段經多代理對抗審查核對(gather→verify→draft→critic)。**⚠ R41 變更**:鈍器 archetype 分流(釘錘 mace=控制 stagger / 斧 axe=破甲 0.30)、新增雙手武器(戰錘/戰斧·極攻)與雙手重盾(盾擊+被動減傷·極防)兩種握法、維蘇拉德轉 2H 戰斧(現吃破甲)、十字軍聖盾轉重盾——**舊版「本作無雙手機制」之審查結論已由 R41 取代**(現有 `two_handed`/`great_shield` 旗 + 三閘)。其餘核對:護甲淬鍊 int(Σ) ≈+30、skill_mult 不夾上限、可釀池僅 resist_magic、soul_trap 非 solo 免疫。
 
 ---
 
@@ -108,7 +108,7 @@
 | **身分:吸血鬼 T3** | sneak+15(+illusion+15)、str/speed/will+15、frost+30 | 火−30 可被達貢抵 |
 | **身分:斯庫瑪/月糖** | 斯庫瑪 speed/agility/willpower+8;月糖 speed/agility+5 | ★不碰 sneak/str/武傷 → 只命中/閃避/先攻 |
 | ~~狼人~~ | ✗ 脫裝備、無偷襲 | 弓手不適用 |
-| **裝備:弓附魔** | 元素傷火/霜/雷 +17~24(grand soul·myst50→100,無視物理甲、夾前;靈魂虹吸後 ~29)/ DoT / vampiric | **paralyze** solo 免疫;**soul_trap 對 solo 照常**(僅去重+充能);弓無 berserk(維蘇拉德為 war_axe) |
+| **裝備:弓附魔** | 元素傷火/霜/雷 +17~24(grand soul·myst50→100,無視物理甲、夾前;靈魂虹吸後 ~29)/ DoT / vampiric | **paralyze** solo 免疫;**soul_trap 對 solo 照常**(僅去重+充能);弓無 berserk(維蘇拉德 R41 為 2H 戰斧·archetype axe) |
 | **裝備:fortify 飾品** | `fortify_skill` marksman ≈12~15、agility +5~7、resource +12~19 | 餵 skill()/attr() 不回門檻(R21) |
 | **裝備:★輕甲套裝** | 皮革→**sneak+15** / 玻璃→**acrobatics+15** | 不破潛行 |
 | **裝備:淬鍊** | 弓 +10 傷(基礎上限;smithing apex `temper_power` → +15) | |
@@ -309,16 +309,17 @@ effective_cost = base × (1 − min(0.4, 學派技能/250)) × Π spell_cost_fac
 > 刀劍 archetype **無破甲**(`archetype_armor_pen('sword')=0.0`)。speed 因武器而異:sword 多 1.0(命中中性)、dawnfang 1.1(+0.01 命中)、daedric_spear 0.9(−0.01·spear 走 blade 技能但 archetype=spear)。傷害線最高 +0.20(blade_flow 0.08 + savage 0.12·同 target 多節點 weapon_mod **相加**)。
 > **sword 神器**:valor_blade 百戰勳刃(dmg22·regen 3/3 自 HoT·★戰士公會掌門武器)、dawnfang 黎明之牙(dmg24·fire+28·湮滅主線·全遊戲最高元素之一)、skyburner 焚天劍(dmg23·fire+26·龍喉巢穴)、daedric_sword 魔族長劍(dmg22·純物理)。spear 亦走 blade 技能:魔族長槍 dmg24(與黎明之牙並列最高近戰本體傷·純物理)。
 
-**② 鈍器(blunt 樹 · archetype blunt · ★唯一內建破甲)**
+**② 鈍器(blunt 樹 · 釘錘 mace=控制 / 斧 axe=破甲;1H 或 2H 握法 · R41)**
 | 階 | A(破甲/控) | B |
 |---|---|---|
 | 25 | 持錘入門(破甲 pen+0.03·單選自動授予) | — |
 | 50 | 碎骨重擊(命中 25% 機率 weaken 敵 10%/2 回) | 沉勁揮擊(傷+10%·▼self recoil 4%) |
 | 75 | 碎骨之力(破甲 pen+0.08) | 巨力臂(strength+4·放近戰傷/負重/體力) |
 | 100 | 破甲重錘(破甲 pen+0.15) | 震盪一擊(命中 30% 機率 weaken 敵 15%/1 回) |
-> ★**archetype_armor_pen blunt=0.30**(無視 30% 護甲·`formulas.py:356`,刀劍無)→ 對高甲精英/重甲怪傷害穩定;破甲可疊到 **0.30+0.03+0.08+0.15=0.56**(最終夾 `min(0.85)`)。speed 0.75 → 命中 −0.025、最耗體(一擊耗體 ×1.25)。
-> **鈍器武器**:daedric_mace 魔族戰錘(dmg23)、daedric_war_axe 魔族戰斧(dmg22·archetype blunt 吃 30% 破甲)、dwarven_mace 矮人釘錘(dmg18)。
-> ⚠ **★破甲重錘特例·維蘇拉德 wuuthrad**(dmg23·skill **blunt** 但 archetype **war_axe**·enchant **berserk** mag30):berserk 依攻方**已損生命比例**提傷,封頂 +30%(滿血=×1.0、瀕死 ×1.30·乘物理傷於 solo 夾之前·**berserk 全遊戲僅此一把**);★但 archetype=war_axe → `archetype_armor_pen('war_axe')=0.0`,**練 blunt 卻不吃 0.30 內建破甲**(berserk vs 破甲二擇一)。戰友團掌門武器。
+> ★**archetype 分流(R41)**:`axe`(短斧/戰斧)= 破甲流 `archetype_armor_pen=0.30`(`formulas.py:356`)→ 對高甲穩定,milestone 破甲可疊 0.30+0.03+0.08+0.15=**0.56**(夾 0.85);`mace`(釘錘/戰錘)= 控制流 **內建命中 20% 擊暈 stagger**(`_ARCHETYPE_BUILTIN_STATUS`·`not _is_solo` 免疫)、無破甲。**skill 皆 `blunt`**(一條鈍器線涵蓋全部錘斧;tree 破甲 perks 利好斧、weaken perks 利好錘)。
+> **1H 鈍器**:釘錘 iron 11/steel 15/dwarven 18/daedric 23(控制·spd 0.75);短斧 iron 12/steel 13/dwarven 16/daedric 22(破甲·略快 spd 0.75~0.85)。
+> **2H 鈍器(極攻握法·`two_handed` → 放棄盾/副手/格擋)**:戰錘 warhammer(mace·控制)iron 16…daedric 34;戰斧 battleaxe(axe·破甲)iron 15…daedric 32;傷比同階 1H **+45~55%**、速更慢(0.55~0.65)、最耗體。
+> ⚠ **維蘇拉德 wuuthrad**(R41 轉 **2H 戰斧**·dmg32·archetype **axe**·enchant **berserk** mag30):berserk 依攻方已損生命比例提傷封頂 +30%(滿血 ×1.0·瀕死 ×1.30·乘物理於 solo 夾前·全遊戲僅此一把);現 archetype=axe → **破甲 0.30 + berserk 兼得**(舊 war_axe 不吃破甲已修)。**但轉 2H 後不可帶盾**(放棄盾反)→ 純 2H 極攻 berserk 流。戰友團掌門武器。
 
 **③ 盾反(block 樹 · 反制/坦度)**
 | 階 | A(反制) | B(堆護甲) |
@@ -329,8 +330,9 @@ effective_cost = base × (1 − min(0.4, 學派技能/250)) × Π spell_cost_fac
 | 100 | 盾威·完美格擋(stagger 0.40 + counter 0.5·回敬武器基礎傷 ×0.5) | 銅牆鐵壁(passive_armor +12) |
 > ★**盾反 block_reflect + 重甲反震 armor_reflect 疊加 = 32%**(R39 使用者拍板可疊):受物理近戰擊中且 `dmg_done>0` 時,`combat.py:495-502` 先套重甲反震 0.12(被動·無耗體)再套盾反 0.20(扣 6 體力·力竭=自帶煞車),**兩段各自結算相加**;反彈隨「實際受傷」縮放、僅物理(元素穿透),攻擊者可被反殺。
 > **盾擊踉蹌 block_riposte**(`mastery.py:618-629`,跨 50/75/100 stagger/weaken/counter 各 **MAX 聚合**·不相加;turns:2 修死時序)與盾反 reflect **同 block_50 二選一**:選盾反就拿不到 shield_bash 的 stagger,但 75/100 仍可補 block_riposte。
-> **盾牆/crusaders_ward 可搭**:盾不計四件套(`SET_SLOTS`)→ 可掛 crusaders_ward 十字軍聖盾(magic 抗+30%)不破重甲套;配黑檀套 magic 抗逼近免疫。
-> ⚠ **本作無雙手武器機制**(`inventory.py` equip_weapon 設 `char.weapon`、equip_armor 設 `equipped["shield"]`,各自獨立、零衝突檢查;`grep two_handed` 零命中)→ wuuthrad **可與盾同時裝備**,berserk 鈍器流**可同時**吃盾反/盾牆/格擋減傷,**並非互斥**。真正互斥的只是同階里程碑二選一(如 block_50 盾反 vs 盾擊踉蹌)。
+> **盾牆可搭**:盾不計四件套(`SET_SLOTS`)→ 1H 盾/十字軍聖盾/重盾皆不破重甲套;配黑檀套 magic 抗逼近免疫。
+> ★**雙手重盾(R41 極防握法·`great_shield`)**:占雙手·無武器·普攻走**盾擊**(`bash_damage`·練 block·純物理·無破甲/附魔/塗毒)、護甲高於 1H 盾(AR 12~26)+ **被動物理減傷 `mitigation` 5~8%**(`combat._great_shield_mitigation_factor` 套盾牆後·乘性·僅物理·獸形不套)。**仍可格擋/盾牆**(它是盾),只是無副手、手持武器戰中休眠。十字軍聖盾 `crusaders_ward` 轉重盾(AR16→24·+mit/bash·保魔抗+30%)。減傷疊盾牆/壁壘 → 極致反震坦,但 85% 護甲夾不破。
+> ⚠ **握法互斥(R41)**:雙手武器/雙手重盾各占雙手 → 與盾反(`block_reflect` 需 1H 盾)互斥。盾反流走 **1H 武器 + 1H 盾**(reflect 0.20 + 重甲反震 0.12 = 32%);雙手重盾走 **盾擊 + 被動減傷**(無 reflect);二者不可兼得。真正同階互斥仍是里程碑二選一(block_50 盾反 vs 盾擊踉蹌)。
 
 ### C · 完全體疊滿 + 天花板
 **獸人(str/end+10·heavy_armor+10·blunt+10)· 戰士座(str/end+5)· 魔族重甲套(health+60)+ 魔族盾 · 達貢之力(str+18)· blade/blunt/heavy_armor/block 四系里程碑各取一支**:
