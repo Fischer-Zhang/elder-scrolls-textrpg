@@ -17,7 +17,7 @@ from tesrpg.gamedata import GameData
 from tesrpg.models import Character
 
 # 可發動衝鋒的近戰武器流派(弓/法杖排除 —— 法杖走法駒法術增益)。
-MELEE_ARCHETYPES = {"sword", "dagger", "blunt", "hand_to_hand", "spear"}
+MELEE_ARCHETYPES = {"sword", "dagger", "mace", "axe", "hand_to_hand", "spear"}
 
 
 def _active(char: Character, gamedata: GameData) -> dict | None:

@@ -38,14 +38,23 @@ def test_fast_weapon_costs_less_fatigue():
     assert slow > fast                      # 慢重武器更耗體力
 
 
-# --- B 鈍器破甲 ---------------------------------------------------------
-def test_blunt_penetrates_armor():
+# --- B 鈍器分流:斧破甲 / 釘錘控制 -------------------------------------
+def test_axe_penetrates_armor():
     raw, armor = 30.0, 50
     sword = formulas.damage_after_armor(raw, armor, formulas.archetype_armor_pen("sword"))
-    blunt = formulas.damage_after_armor(raw, armor, formulas.archetype_armor_pen("blunt"))
-    assert blunt > sword                    # 破甲 → 對有甲目標打更多
-    assert formulas.archetype_armor_pen("blunt") == 0.30
+    axe = formulas.damage_after_armor(raw, armor, formulas.archetype_armor_pen("axe"))
+    assert axe > sword                      # 斧破甲 → 對有甲目標打更多
+    assert formulas.archetype_armor_pen("axe") == 0.30
+    assert formulas.archetype_armor_pen("mace") == 0.0   # 釘錘走控制,不破甲
+    assert formulas.archetype_armor_pen("blunt") == 0.0  # 舊 blunt archetype 已分流退役
     assert formulas.archetype_armor_pen("sword") == 0.0
+
+
+def test_mace_builtin_stagger_axe_none():
+    bs = formulas.archetype_builtin_status("mace")
+    assert bs and bs["kind"] == "stagger" and bs["chance"] > 0
+    assert formulas.archetype_builtin_status("axe") is None       # 斧走破甲,無內建控制
+    assert formulas.archetype_builtin_status("sword") is None
 
 
 # --- B 匕首/弓 潛襲加成 -------------------------------------------------

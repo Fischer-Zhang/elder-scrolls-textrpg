@@ -353,8 +353,10 @@ def damage_after_armor(damage: float, armor_rating: int, armor_pen: float = 0.0)
 
 # --- 武器流派(B:讓武器選擇是 build 而非純傷害數字)--------------------
 WEAPON_SPEED_DEFAULT = 1.0
-_ARCHETYPE_ARMOR_PEN = {"blunt": 0.30}          # 鈍器破甲:無視 30% 護甲
+_ARCHETYPE_ARMOR_PEN = {"axe": 0.30}            # 斧破甲:無視 30% 護甲(鈍器分流:斧=破甲流,釘錘=控制流)
 _ARCHETYPE_SNEAK_BONUS = {"dagger": 1.6, "bow": 1.3}   # 潛襲倍率額外加成(刺客/獵手)
+# 武器原型「內建命中附狀態」:釘錘/戰錘=控制流(命中機率擊暈,與斧的破甲對位);斧/其餘無。
+_ARCHETYPE_BUILTIN_STATUS = {"mace": {"kind": "stagger", "chance": 0.20, "turns": 1}}
 
 
 OFFHAND_DAMAGE_FACTOR = 0.6   # 雙持時副手匕首傷害折入每一擊的比例(大幅增傷,代價=不能格擋)
@@ -372,6 +374,11 @@ def weapon_attack_fatigue_factor(speed: float) -> float:
 
 def archetype_armor_pen(archetype: str | None) -> float:
     return _ARCHETYPE_ARMOR_PEN.get(archetype, 0.0)
+
+
+def archetype_builtin_status(archetype: str | None) -> dict | None:
+    """武器原型內建命中附狀態(釘錘/戰錘=擊暈 stagger,控制流);無 → None。"""
+    return _ARCHETYPE_BUILTIN_STATUS.get(archetype)
 
 
 def archetype_sneak_bonus(archetype: str | None) -> float:

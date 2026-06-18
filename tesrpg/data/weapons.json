@@ -32,17 +32,35 @@
     "damage": 11,
     "value": 30,
     "weight": 12,
-    "archetype": "blunt",
+    "archetype": "mace",
     "speed": 0.75
   },
   "iron_war_axe": {
-    "name": "鐵戰斧",
+    "name": "鐵短斧",
     "skill": "blunt",
     "damage": 12,
     "value": 35,
     "weight": 13,
-    "archetype": "blunt",
+    "archetype": "axe",
     "speed": 0.75
+  },
+  "steel_war_axe": {
+    "name": "鋼短斧",
+    "skill": "blunt",
+    "damage": 13,
+    "value": 110,
+    "weight": 14,
+    "archetype": "axe",
+    "speed": 0.78
+  },
+  "dwarven_war_axe": {
+    "name": "矮人短斧",
+    "skill": "blunt",
+    "damage": 16,
+    "value": 310,
+    "weight": 15,
+    "archetype": "axe",
+    "speed": 0.80
   },
   "hunting_bow": {
     "name": "獵弓",
@@ -77,7 +95,7 @@
     "damage": 15,
     "value": 110,
     "weight": 14,
-    "archetype": "blunt",
+    "archetype": "mace",
     "speed": 0.75
   },
   "long_bow": {
@@ -122,7 +140,7 @@
     "damage": 18,
     "value": 310,
     "weight": 15,
-    "archetype": "blunt",
+    "archetype": "mace",
     "speed": 0.75
   },
   "elven_bow": {
@@ -198,8 +216,8 @@
 
   "daedric_dagger":  {"name": "魔族匕首", "skill": "blade",   "damage": 14, "value": 500, "weight": 5,  "archetype": "dagger", "speed": 1.4,  "material": "daedric"},
   "daedric_sword":   {"name": "魔族長劍", "skill": "blade",   "damage": 22, "value": 900, "weight": 14, "archetype": "sword",  "speed": 1.0,  "material": "daedric"},
-  "daedric_mace":    {"name": "魔族戰錘", "skill": "blunt",   "damage": 23, "value": 850, "weight": 16, "archetype": "blunt",  "speed": 0.75, "material": "daedric"},
-  "daedric_war_axe": {"name": "魔族戰斧", "skill": "blunt",   "damage": 22, "value": 800, "weight": 14, "archetype": "blunt",  "speed": 0.85, "material": "daedric"},
+  "daedric_mace":    {"name": "魔族釘錘", "skill": "blunt",   "damage": 23, "value": 850, "weight": 16, "archetype": "mace",   "speed": 0.75, "material": "daedric"},
+  "daedric_war_axe": {"name": "魔族短斧", "skill": "blunt",   "damage": 22, "value": 800, "weight": 14, "archetype": "axe",    "speed": 0.85, "material": "daedric"},
   "daedric_bow":     {"name": "魔族弓",   "skill": "marksman","damage": 19, "value": 800, "weight": 10, "archetype": "bow",    "speed": 0.9,  "material": "daedric"},
   "daedric_spear":   {"name": "魔族長槍", "skill": "blade",   "damage": 24, "value": 880, "weight": 16, "archetype": "spear",  "speed": 0.9,  "material": "daedric"},
 
@@ -213,5 +231,5 @@
   "valor_blade":     {"name": "百戰勳刃",   "skill": "blade", "damage": 22, "value": 1900, "weight": 14, "archetype": "sword",   "speed": 1.0, "enchant": {"kind": "weapon_status", "status": "regen",    "magnitude": 3, "turns": 3}},
   "staff_of_magnus": {"name": "馬格努斯之杖", "skill": "destruction", "damage": 11, "value": 2000, "weight": 7, "archetype": "staff", "speed": 1.0, "enchant": {"kind": "weapon_element", "element": "shock", "magnitude": 26}},
   "blade_of_woe":    {"name": "悲傷之刃",   "skill": "blade", "damage": 16, "value": 2000, "weight": 4,  "archetype": "dagger",  "speed": 1.5, "enchant": {"kind": "weapon_status", "status": "vampiric", "magnitude": 50}},
-  "wuuthrad":        {"name": "維蘇拉德",   "skill": "blunt", "damage": 23, "value": 2000, "weight": 18, "archetype": "war_axe", "speed": 0.9, "enchant": {"kind": "berserk", "magnitude": 30}}
+  "wuuthrad":        {"name": "維蘇拉德",   "skill": "blunt", "damage": 23, "value": 2000, "weight": 18, "archetype": "axe", "speed": 0.9, "enchant": {"kind": "berserk", "magnitude": 30}}
 }

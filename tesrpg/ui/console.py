@@ -2004,7 +2004,8 @@ def dungeon_grid(grid: dict, z: int, cx: int, cy: int, explored: list, resolved:
 _ELEM_CN = {"fire": "火焰", "frost": "冰霜", "shock": "雷電", "poison": "毒素", "magic": "魔法"}
 _STAT_CN = {"health": "生命", "magicka": "魔力", "fatigue": "體力"}
 _ARCHETYPE_CN = {"dagger": "匕首", "sword": "劍", "blunt": "鈍器", "bow": "弓",
-                 "staff": "法杖", "hand_to_hand": "徒手"}
+                 "staff": "法杖", "hand_to_hand": "徒手",
+                 "mace": "釘錘", "axe": "短斧", "war_axe": "短斧"}
 
 
 def combat_event(ev: dict, gamedata: GameData) -> None:

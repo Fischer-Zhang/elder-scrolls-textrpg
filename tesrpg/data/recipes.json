@@ -7,7 +7,9 @@
   "forge_iron_dagger":    {"name": "鍛造鐵匕首", "station": "smith", "skill": "smithing", "inputs": {"iron_ingot": 1}, "output": "iron_dagger", "output_qty": 1},
   "forge_iron_sword":     {"name": "鍛造鐵劍",   "station": "smith", "skill": "smithing", "inputs": {"iron_ingot": 2}, "output": "iron_sword", "output_qty": 1},
   "forge_iron_mace":      {"name": "鍛造鐵錘",   "station": "smith", "skill": "smithing", "inputs": {"iron_ingot": 2}, "output": "iron_mace", "output_qty": 1},
-  "forge_iron_war_axe":   {"name": "鍛造鐵戰斧", "station": "smith", "skill": "smithing", "inputs": {"iron_ingot": 2}, "output": "iron_war_axe", "output_qty": 1},
+  "forge_iron_war_axe":   {"name": "鍛造鐵短斧", "station": "smith", "skill": "smithing", "inputs": {"iron_ingot": 2}, "output": "iron_war_axe", "output_qty": 1},
+  "forge_steel_war_axe":   {"name": "鍛造鋼短斧", "station": "smith", "skill": "smithing", "skill_req": 25, "inputs": {"steel_ingot": 3}, "output": "steel_war_axe", "output_qty": 1},
+  "forge_dwarven_war_axe": {"name": "鍛造矮人短斧", "station": "smith", "skill": "smithing", "skill_req": 55, "inputs": {"dwarven_ingot": 3}, "output": "dwarven_war_axe", "output_qty": 1},
   "forge_iron_helmet":    {"name": "鍛造鐵盔",   "station": "smith", "skill": "smithing", "inputs": {"iron_ingot": 1}, "output": "iron_helmet", "output_qty": 1},
   "forge_iron_gauntlets": {"name": "鍛造鐵護手", "station": "smith", "skill": "smithing", "inputs": {"iron_ingot": 1}, "output": "iron_gauntlets", "output_qty": 1},
   "forge_iron_boots":     {"name": "鍛造鐵靴",   "station": "smith", "skill": "smithing", "inputs": {"iron_ingot": 1}, "output": "iron_boots", "output_qty": 1},
@@ -71,8 +73,8 @@
 
   "forge_daedric_dagger":  {"name": "鍛造魔族匕首", "station": "smith", "skill": "smithing", "skill_req": 90, "inputs": {"ebony_ingot": 1, "daedra_heart": 1}, "output": "daedric_dagger", "output_qty": 1},
   "forge_daedric_sword":   {"name": "鍛造魔族長劍", "station": "smith", "skill": "smithing", "skill_req": 90, "inputs": {"ebony_ingot": 2, "daedra_heart": 1}, "output": "daedric_sword", "output_qty": 1},
-  "forge_daedric_mace":    {"name": "鍛造魔族戰錘", "station": "smith", "skill": "smithing", "skill_req": 90, "inputs": {"ebony_ingot": 2, "daedra_heart": 1}, "output": "daedric_mace", "output_qty": 1},
-  "forge_daedric_war_axe": {"name": "鍛造魔族戰斧", "station": "smith", "skill": "smithing", "skill_req": 90, "inputs": {"ebony_ingot": 2, "daedra_heart": 1}, "output": "daedric_war_axe", "output_qty": 1},
+  "forge_daedric_mace":    {"name": "鍛造魔族釘錘", "station": "smith", "skill": "smithing", "skill_req": 90, "inputs": {"ebony_ingot": 2, "daedra_heart": 1}, "output": "daedric_mace", "output_qty": 1},
+  "forge_daedric_war_axe": {"name": "鍛造魔族短斧", "station": "smith", "skill": "smithing", "skill_req": 90, "inputs": {"ebony_ingot": 2, "daedra_heart": 1}, "output": "daedric_war_axe", "output_qty": 1},
   "forge_daedric_bow":     {"name": "鍛造魔族弓",   "station": "smith", "skill": "smithing", "skill_req": 90, "inputs": {"ebony_ingot": 2, "daedra_heart": 1}, "output": "daedric_bow", "output_qty": 1},
 
   "forge_dragonscale_helmet":    {"name": "鍛造龍鱗盔",   "station": "smith", "skill": "smithing", "skill_req": 90, "inputs": {"dragon_scale": 1, "wolf_pelt": 3}, "output": "dragonscale_helmet", "output_qty": 1},

@@ -653,6 +653,11 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
                 elif ohs["kind"] == "slow":   # 弓手「牽制箭」:命中遲緩(降敵先攻/命中 → 風箏拉距控場)
                     defender.active_effects.append({"kind": "slow", "magnitude": ohs.get("magnitude", 0.0),
                                                     "turns": ohs.get("turns", 2)})
+        # 武器原型內建命中附狀態(釘錘/戰錘=控制流擊暈;斧走破甲不在此):solo boss 對控制免疫(R31 一致)
+        if _is_player(attacker) and is_alive(defender) and not _is_solo(defender, gamedata):
+            bs = formulas.archetype_builtin_status(archetype)
+            if bs and bs["kind"] == "stagger" and rng.chance(bs.get("chance", 0.0)):
+                defender.active_effects.append({"kind": "stagger", "turns": bs.get("turns", 1)})
         if defender_blocking and _is_player(defender) and is_alive(attacker):
             rp = mastery.block_riposte(defender, gamedata)
             if rp.get("stagger_chance") and rng.chance(rp["stagger_chance"]):
