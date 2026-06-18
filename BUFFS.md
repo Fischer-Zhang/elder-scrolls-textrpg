@@ -154,7 +154,7 @@
 | 壁壘 bulwark | 減傷+代價 | 受物理×0.85、攻擊耗體×1.20(真權衡;僅物理,元素穿透) |
 | 不屈祝禱 steadfast | 續航回復 | 血<25%→regen4×3(共12) |
 | 溢盾 overheal_ward | 減傷 | 溢治60%轉盾、cap=生命×0.5、turns4(R21夾cap) |
-| 重甲反震 armor_reflect | 反傷 | 受近戰物理反彈12% |
+| 反傷流(R42:armor_reflect / block_reflect / **thorns 荊棘附魔**) | 反傷 | 受物理近戰擊中 → 反彈**「攻方完整物理輸出(連格擋前)= raw/block_factor」**(★R42 解耦護甲/盾牆/重盾/格擋,龜也反得動)× 比例:重甲反震 0.06(被動)+ 盾反 0.10(耗體 10·力竭不計)+ 荊棘附魔(盔/胸/手/靴/盾·1%/靈魂階·max 25%)→ max **0.41 of raw**。物理限定(元素穿透不反=反傷流剋星)、player-only(無環)、**不夾**(物理敵 raw 上限小 → 永不一擊反殺) |
 | 重壓 armor_stagger | 防守控場 | 受近戰物理擊中 22% 震開攻擊者(stagger turns:2 → 撐過回合末 tick,對敵下次出手生效) |
 | 雙手重盾被動減傷 great_shield mitigation(R41) | 減傷 | 裝雙手重盾(`great_shield`)→ 受物理 ×(1−mitigation)(iron→daedric 5~8%·crusaders_ward 10%);套 `_shield_wall_factor` **後**乘性疊加、僅物理、獸形不套;重盾占雙手·普攻走盾擊(`bash_damage`·練 block) |
 | 生生不息 combat_regen | 續航 | 戰鬥中每回合末自癒 8(is_alive 守 → 不復活本回合被擊殺者) |

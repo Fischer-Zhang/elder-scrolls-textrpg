@@ -973,6 +973,18 @@ tesrpg/
 
 ---
 
+### R42 · 反傷流功能化:反傷吃 raw(解耦護甲)+ 荊棘附魔身份 [re-sim]
+
+使用者點名把反傷從「tank 附帶 chip」變成可投入 build。經完整對話評估(反傷四道煞車 / 護甲對反傷是反協同 / 單手盾 vs 重盾最高減傷 84~88% / 元素另走抗性 / 中立敏感度表)後拍板「B 案 + 不夾 + 荊棘 5 槽」:
+
+- **反傷改吃「攻方完整物理輸出(連格擋前)」= `raw / block_factor`**(`combat.py` 反傷區):**解耦護甲/盾牆/壁壘/重盾/格擋** → 龜也能反出有意義傷。舊制吃 `dmg_done`(耦合·護甲越高反越少);R42 解耦。物理限定(`not atk_element`)+ player-only(直接 `_set_hp` 非遞迴 → **無 A→B→A 環**)。
+- **三源相加、單次結算**:重甲反震 `armor_reflect`(0.12→**0.06**)+ 盾反 `block_reflect`(0.20/6體→**0.10/10體**,力竭則不計)+ **荊棘 `thorns_reflect`**。max = 0.06+0.10+0.25 = **0.41 of raw**。ratio 由使用者拍板。
+- **新 `thorns`(荊棘)護甲附魔**:`enchanting.ARMOR_KINDS` 加 `thorns`;**盔/胸/手/靴/盾**各可附一條(= 全 `ARMOR_SLOTS`);magnitude = **靈魂石階 ×1%**(1~5,**不吃 mysticism/enchant_potency**——使用者「1階=1%」);`synth._armor_enchant` 解碼 `{kind:thorns,magnitude}`;`inventory.thorns_reflect` 聚合 5 槽 `/100`;`_apply_enchant` 不認 thorns kind → 不污染 stat 聚合;main.py 附魔 UI thorns 無 param。
+- **🔴 不夾(使用者拍板)**:無每擊/每回合夾。**紅線靠三件事自然守**:① 物理限定 → **元素 solo boss(湮滅系全元素)反傷流完全不反 = 天然剋星**(掃 bestiary:86 敵 45 元素);② 盾反體力閘 10/反;③ **物理敵 raw 上限小**——最強物理 raw 41(werewolf_alpha,roll1.15)× 0.41 = 17 < 任何物理 boss HP(≥120)→ **永不一擊反殺**(實證)。反傷=反應式非偷襲 → 不碰 `SOLO_SNEAK_DAMAGE_CAP_RATIO`。
+- **驗證**:`run_all` 64 綠(`test_combat` 加 R42:荊棘聚合 5 槽 + 解耦〔高甲龜反傷仍 raw 級 ≥12 而非 dmg_done 級〕+ 元素不反 + 不一擊反殺;`test_mastery` 改 ratio 0.06/0.10·體 10)。`sim_assassin` **byte-identical**(反傷只防守側、刺客無 reflect 投入 → ratio=0 no-op)。**⚠ 前瞻**:反傷無夾,若日後新增「高物理 raw」敵(raw>~300)反傷會飆 → 那時再評估加夾。
+
+---
+
 ## 4. 開發節奏(ultracode 開著 → 每個功能都這樣做)
 
 > 完整五階段流程(評估 → 決定方向 → 實作 → 驗證 → 文件 + 提交)見 `CLAUDE.md`「開發流程」;以下是「驗證」段的細節。**驗證綠後依 R22 自動 `commit` & `push origin main`。**

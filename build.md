@@ -325,14 +325,15 @@ effective_cost = base × (1 − min(0.4, 學派技能/250)) × Π spell_cost_fac
 | 階 | A(反制) | B(堆護甲) |
 |---|---|---|
 | 25 | — | 持盾入門(passive_armor +5·單選自動授予) |
-| 50 | ★**盾反**(`block_reflect` reflect 0.20·耗體 6·R39) | 盾擊踉蹌(`block_riposte` shield_bash stagger 0.35) |
+| 50 | ★**盾反**(`block_reflect` reflect 0.10·耗體 10·R42) | 盾擊踉蹌(`block_riposte` shield_bash stagger 0.35) |
 | 75 | 盾擊破勢(stagger 0.35 + weaken 0.15/2 回) | 撐架穩步(passive_armor +10) |
 | 100 | 盾威·完美格擋(stagger 0.40 + counter 0.5·回敬武器基礎傷 ×0.5) | 銅牆鐵壁(passive_armor +12) |
-> ★**盾反 block_reflect + 重甲反震 armor_reflect 疊加 = 32%**(R39 使用者拍板可疊):受物理近戰擊中且 `dmg_done>0` 時,`combat.py:495-502` 先套重甲反震 0.12(被動·無耗體)再套盾反 0.20(扣 6 體力·力竭=自帶煞車),**兩段各自結算相加**;反彈隨「實際受傷」縮放、僅物理(元素穿透),攻擊者可被反殺。
+> ★**反傷流(R42:吃 raw、解耦護甲)**:受物理近戰擊中 → 反彈**「攻方完整物理輸出(連格擋前)= `raw/block_factor`」** × 比例(`combat.py` 反傷區)。**舊制吃 `dmg_done`(護甲越高反越少·反協同);R42 解耦** → 龜也反得動。三源相加:重甲反震 **0.06**(被動) + 盾反 **0.10**(耗體 10·力竭不計) + **荊棘附魔 `thorns`**(盔/胸/手/靴/盾各一條·反傷%=靈魂石階 ×1%·max 5 件 25%) → **max 0.41 of raw**。物理限定(元素穿透不反)、player-only(直接扣血非遞迴·無 A→B→A 環)、**不夾**。
+> 🔴 **反傷流剋星=元素敵**:反傷物理限定 → **元素 solo boss(湮滅系 dremora_lord/古龍/達貢 全元素)反傷流完全不反**(掃 bestiary:86 敵 45 元素)→ 反傷是**「對物理敵」build**,終局元素 boss 得靠武器/盾擊另解。物理敵 raw 上限小(最強 41×0.41=17)→ 永不一擊反殺,故不夾。
 > **盾擊踉蹌 block_riposte**(`mastery.py:618-629`,跨 50/75/100 stagger/weaken/counter 各 **MAX 聚合**·不相加;turns:2 修死時序)與盾反 reflect **同 block_50 二選一**:選盾反就拿不到 shield_bash 的 stagger,但 75/100 仍可補 block_riposte。
 > **盾牆可搭**:盾不計四件套(`SET_SLOTS`)→ 1H 盾/十字軍聖盾/重盾皆不破重甲套;配黑檀套 magic 抗逼近免疫。
 > ★**雙手重盾(R41 極防握法·`great_shield`)**:占雙手·無武器·普攻走**盾擊**(`bash_damage`·練 block·純物理·無破甲/附魔/塗毒)、護甲高於 1H 盾(AR 12~26)+ **被動物理減傷 `mitigation` 5~8%**(`combat._great_shield_mitigation_factor` 套盾牆後·乘性·僅物理·獸形不套)。**仍可格擋/盾牆**(它是盾),只是無副手、手持武器戰中休眠。十字軍聖盾 `crusaders_ward` 轉重盾(AR16→24·+mit/bash·保魔抗+30%)。減傷疊盾牆/壁壘 → 極致反震坦,但 85% 護甲夾不破。
-> ⚠ **握法互斥(R41)**:雙手武器/雙手重盾各占雙手 → 與盾反(`block_reflect` 需 1H 盾)互斥。盾反流走 **1H 武器 + 1H 盾**(reflect 0.20 + 重甲反震 0.12 = 32%);雙手重盾走 **盾擊 + 被動減傷**(無 reflect);二者不可兼得。真正同階互斥仍是里程碑二選一(block_50 盾反 vs 盾擊踉蹌)。
+> ⚠ **握法互斥(R41)**:雙手武器/雙手重盾各占雙手 → 與盾反(`block_reflect` 需 1H 盾)互斥。盾反流走 **1H 武器 + 1H 盾**(reflect 0.06+0.10+荊棘);雙手重盾走 **盾擊 + 被動減傷**(無盾反,但荊棘可附其護甲/重盾);二者不可兼得。真正同階互斥仍是里程碑二選一(block_50 盾反 vs 盾擊踉蹌)。
 
 ### C · 完全體疊滿 + 天花板
 **獸人(str/end+10·heavy_armor+10·blunt+10)· 戰士座(str/end+5)· 魔族重甲套(health+60)+ 魔族盾 · 達貢之力(str+18)· blade/blunt/heavy_armor/block 四系里程碑各取一支**:
@@ -341,7 +342,7 @@ effective_cost = base × (1 − min(0.4, 學派技能/250)) × Π spell_cost_fac
               × str_mult(0.75 + 118/160 ≈ 1.49) ≈ ×2.46
 護甲值疊滿 = (四件套 + 盾的 armor_rating 總和〔含魔族盾 15〕)×(0.5+heavy/100)  ← 盾值也吃重甲乘子
               + passive_armor 多源 + 護甲淬鍊 int(Σlvl×1.25)≈+30  ← 乘子之後平加 → damage_after_armor 遞減
-反震疊加 = 重甲 12% + 盾反 20% = 32%(受體力閘)
+反傷(R42·吃 raw 解耦)= 重甲 0.06 + 盾反 0.10 + 荊棘 5 槽 0.25 = max 0.41 × 攻方完整物理輸出(物理限定·不夾)
 ```
 > ⚠ **非對稱夾限**:進攻 `skill_mult = 0.5 + 武器技能/100` **不夾上限**(`formulas.py:324`,fortify_skill 可推過 1.5);但防守 `block_damage_factor` 對 block 技能**夾 100**(`formulas.py:340`)→ 自己擋的減傷不因 fortify_skill 超 100 而更強。
 🔴 **紅線（與刺客/弓手「不同源」）**：
