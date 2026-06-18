@@ -292,6 +292,77 @@ def test_hircine_content_integrity():
                 & set(gd.boons["hircine_blessing"].get("skill", {})))
 
 
+# --- 第四位親王:波耶西亞(prove→神器烏木甲 vs refuse→誓福)--------------
+def _complete_boethiah(gd, c, branch):
+    quests.accept_quest(c, gd, "boethiah_calling", branch=branch)
+    c.kill_counts["bandit"] = c.kill_counts.get("bandit", 0) + 3   # 血債(kill 階段)
+    c.location_id = "boethiah_proving"
+    quests.record_dungeon_clear(c, "boethiah_proving")
+    quests.check_completion(c, gd)
+
+
+def test_boethiah_prove_branch_grants_mail_not_boon():
+    """試煉之路 → 得神器 烏木甲(荊棘反傷)、惡名上升、不得誓福。"""
+    gd, c = _gd_char(level=17)
+    _complete_boethiah(gd, c, 0)
+    assert "boethiah_calling" in c.completed_quests
+    assert inventory.count_item(c, "ebony_mail") == 1
+    assert not boons.has_boon(c, "boethiah_resolve") and c.infamy >= 30
+    assert "boethiah_champion_won" in c.world_events_fired
+
+
+def test_ebony_mail_thorns_reflect_active_when_worn():
+    """烏木甲穿戴 → inventory.thorns_reflect 反映 8% 反傷(R42 反傷流)。"""
+    gd, c = _gd_char(level=17)
+    r0 = inventory.thorns_reflect(c, gd)
+    _complete_boethiah(gd, c, 0)
+    inventory.equip_armor(c, gd, "ebony_mail")
+    r1 = inventory.thorns_reflect(c, gd)
+    assert abs((r1 - r0) - 0.08) < 1e-9, (r0, r1)   # +8% 反傷
+
+
+def test_boethiah_refuse_branch_grants_boon_not_mail():
+    """拒血之路 → 永久誓福 弒逆之志(endurance+10/heavy_armor+10)、不得神器。"""
+    gd, c = _gd_char(level=17)
+    e0, ha0 = c.attr("endurance"), c.skill("heavy_armor")
+    _complete_boethiah(gd, c, 1)
+    assert boons.has_boon(c, "boethiah_resolve")
+    assert c.attr("endurance") == e0 + 10 and c.skill("heavy_armor") == ha0 + 10
+    assert c.base_attr("endurance") == e0          # 🔴 不寫 base
+    assert inventory.count_item(c, "ebony_mail") == 0
+    assert "boethiah_defied" in c.world_events_fired
+
+
+def test_boethiah_availability_and_four_shrines_coexist():
+    gd, c = _gd_char(level=16)
+    assert "boethiah_calling" not in quests.available_quests(c, gd, "daedric")   # 等級不足(需 17)
+    c.level = 17
+    av = quests.available_quests(c, gd, "daedric")
+    assert {"azura_star", "molag_bal_vault", "hircine_hunt", "boethiah_calling"} <= set(av)
+    assert gd.quests["boethiah_calling"]["shrine"] == "boethiah"
+
+
+def test_boethiah_content_integrity():
+    gd, _ = _gd_char()
+    assert "boethiah_resolve" in gd.boons and "ebony_mail" in gd.items
+    assert gd.world["locations"]["falkreath_wood"].get("shrine") == "boethiah"
+    boss = gd.dungeons["boethiah_proving"]["boss"]["enemy"]
+    assert boss == "boethiah_champion" and gd.bestiary[boss].get("solo") is True
+    for atk in gd.bestiary[boss].get("attacks", []):
+        oh = atk.get("on_hit") or {}
+        if oh.get("status") in ("fear", "paralyze"):
+            assert oh.get("chance", 1.0) <= 0.30 and oh.get("turns", 1) <= 1, atk
+    # 烏木甲:重甲·荊棘反傷·無 material(守 test_every_material_has_full_set)·僅任務 reward
+    em = gd.items["ebony_mail"]
+    assert em["weight_class"] == "heavy" and em["enchant"]["kind"] == "thorns" and "material" not in em
+    for dd in gd.dungeons.values():
+        tl = [x for x in dd.get("boss", {}).get("treasure", {}).get("loot", []) if isinstance(x, str)]
+        assert "ebony_mail" not in tl + dd.get("loot", [])
+    # 誓福守紅線:無 sneak/武器技能(endurance/agility/heavy_armor 安全)
+    assert not ({"sneak", "blade", "blunt", "marksman", "hand_to_hand"}
+                & set(gd.boons["boethiah_resolve"].get("skill", {})))
+
+
 def run():
     for name, fn in sorted(globals().items()):
         if name.startswith("test_") and callable(fn):

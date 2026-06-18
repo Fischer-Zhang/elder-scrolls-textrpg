@@ -19,5 +19,12 @@
     "skill": {"light_armor": 8},
     "resist": {"frost": 15},
     "magicka": 0
+  },
+  "boethiah_resolve": {
+    "name": "弒逆之志",
+    "attr": {"endurance": 10, "agility": 6},
+    "skill": {"heavy_armor": 10},
+    "resist": {"poison": 15},
+    "magicka": 0
   }
 }

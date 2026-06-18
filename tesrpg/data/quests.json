@@ -1863,5 +1863,17 @@
       {"objective": {"type": "reach", "location": "moonlit_grove"}, "text": "循血月的指引,深入格拉特禁林深處的月噬林地。"},
       {"objective": {"type": "clear_dungeon", "dungeon": "moonlit_grove"}, "text": "在血月祭場擊倒受詛的血月巨獸,親手剝下牠那張刀槍難傷的血皮。"}
     ], "reward": {"gold": 500, "fame": 25, "items": ["saviors_hide"], "world_flags": ["hircine_hide_claimed"]}}
+  ]},
+  "boethiah_calling": {"name": "陰謀者的試煉", "faction": null, "rank": null, "source": "daedric", "shrine": "boethiah", "requires_level": 17, "text": "佛克瑞斯林深處的黑檀祭壇在你獻祭時泛起血光 —— 陰謀女神波耶西亞的低語盤旋耳際。她以背叛與殺戮揀選勇者:刀鋒山脊上,信徒正自相殘殺以取悅她。踏入這場血腥試煉成為她的黑檀勇者,還是斬碎她的傀儡、以己志反抗陰謀女神的擺布?", "branches": [
+    {"label": "試煉之路 —— 踏過屍骨成為波耶西亞的勇者(得神器:烏木甲)", "text": "接受陰謀女神的試煉 —— 在刀鋒山脊的血色競技場中殺出一條路,擊敗現任勇者,成為波耶西亞新的黑檀勇者。她將賜你那件以背叛者之血淬鍊、能反噬攻擊者的烏木重甲。", "stages": [
+      {"objective": {"type": "kill", "creature": "bandit", "count": 3}, "text": "以血證刃:在荒野中斬殺 3 名匪徒,向陰謀女神獻上你的第一筆血債。"},
+      {"objective": {"type": "reach", "location": "boethiah_proving"}, "text": "登上佛克瑞斯林上方的刀鋒山脊,步入波耶西亞的血色競技場。"},
+      {"objective": {"type": "clear_dungeon", "dungeon": "boethiah_proving"}, "text": "踏過競技場的所有屍骨,擊敗波耶西亞的現任勇者 —— 成為她新的黑檀勇者,接過烏木甲。"}
+    ], "reward": {"gold": 700, "infamy": 30, "items": ["ebony_mail"], "world_flags": ["boethiah_champion_won"]}},
+    {"label": "拒血之路 —— 斬碎傀儡、以己志反抗陰謀女神(賜永久誓福:弒逆之志)", "text": "你不願做陰謀女神的傀儡 —— 殺出競技場、了結她的勇者與信徒,卻將戰利品棄於祭壇,以不受擺布的意志反抗波耶西亞。她或許不悅,但那份弒逆的鋼鐵之志將永遠屬於你。", "stages": [
+      {"objective": {"type": "kill", "creature": "bandit", "count": 3}, "text": "以血證刃:在荒野中斬殺 3 名匪徒,循血跡逼近刀鋒山脊。"},
+      {"objective": {"type": "reach", "location": "boethiah_proving"}, "text": "登上佛克瑞斯林上方的刀鋒山脊,步入波耶西亞的血色競技場。"},
+      {"objective": {"type": "clear_dungeon", "dungeon": "boethiah_proving"}, "text": "斬碎競技場中所有傀儡與現任勇者,將戰利品棄於黑檀祭壇 —— 以己志反抗陰謀女神的擺布。"}
+    ], "reward": {"gold": 600, "fame": 25, "grant_boon": "boethiah_resolve", "world_flags": ["boethiah_defied"]}}
   ]}
 }

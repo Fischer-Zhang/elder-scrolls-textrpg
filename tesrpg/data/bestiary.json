@@ -765,6 +765,29 @@
     "loot": [{"item": "wolf_pelt", "chance": 0.8}, {"item": "filled_greater_soul_gem", "chance": 0.4}],
     "flavor": "血月當空,海爾辛的獵物自林影中暴起 —— 一頭被詛咒撐裂了軀體的巨獸,獠牙與爪間還滴著上一個獵人的血。"
   },
+  "boethiah_champion": {
+    "name": "波耶西亞的黑檀勇者", "strength": 76, "agility": 52, "speed": 46,
+    "max_health": 235, "armor_rating": 24,
+    "attack": {"name": "黑檀重斬", "damage": 40, "skill": 70,
+               "on_hit": {"status": "stagger", "turns": 1, "chance": 0.3}},
+    "attacks": [
+      {"name": "黑檀重斬", "damage": 40, "skill": 70, "weight": 3,
+       "on_hit": {"status": "stagger", "turns": 1, "chance": 0.3}},
+      {"name": "盾牆撞擊", "damage": 28, "skill": 70, "weight": 2,
+       "on_hit": {"status": "stagger", "turns": 1, "chance": 0.35}},
+      {"name": "背刺奸計", "damage": 36, "skill": 70, "weight": 2,
+       "on_hit": {"status": "weaken", "magnitude": 0.25, "turns": 2, "chance": 0.4}},
+      {"name": "弒主威壓", "damage": 16, "skill": 70, "weight": 1,
+       "on_hit": {"status": "fear", "turns": 1, "chance": 0.25}},
+      {"name": "處決連擊", "damage": 58, "skill": 72, "weight": 1,
+       "cooldown": 3, "when": {"hp_below": 0.5}}
+    ],
+    "danger": 5, "min_level": 16, "weight": 1, "solo": true,
+    "resist": {"magic": 25, "poison": 30, "frost": 20},
+    "loot_gold": [220, 420],
+    "loot": [{"item": "ebony_sword", "chance": 0.4}, {"item": "filled_greater_soul_gem", "chance": 0.4}],
+    "flavor": "黑檀重鎧自陰影中跨步而出 —— 波耶西亞的現任勇者,踏著前任挑戰者的屍骨,等著被你取代,或取代你。"
+  },
   "dremora_lord": {
     "biomes": ["ashland"],
     "name": "魔人領主", "strength": 74, "agility": 50, "speed": 48,
