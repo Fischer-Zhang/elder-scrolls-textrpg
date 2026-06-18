@@ -4,7 +4,7 @@
 > 與 [BUFFS.md](BUFFS.md) **互補** —— BUFFS.md 按「**來源層橫切**」(全遊戲增益依層羅列),本檔按「**build 縱切**」(一條構築走完所有層、含分支取捨)。
 > Single source of truth 仍是程式碼(`tesrpg/formulas.py`、`tesrpg/systems/*.py`)與資料(`tesrpg/data/*.json`);**數值有疑義以常數 / JSON / `run_all.py` 為準並順手更新本檔**。
 > 紅線本體見 [handoff.md](handoff.md) §3(R07/R11/R15/R20/R21/R25)、增益總目錄見 [BUFFS.md](BUFFS.md)、設計理念見 [DESIGN.md](DESIGN.md)。
-> 末次盤點:2026-06-17(潛行刺客 / 潛行弓手 / 純法師三條縱切;R40 後 marksman 樹)。三段均經多代理對抗審查核對:法師核對 magic/formulas/mastery;刺客/弓手重判修正 soul_trap 非 solo 免疫、berserk 僅維蘇拉德 war_axe、塗毒單層共用、亞龍敏+5/速+10、悲傷之刃/陰影座正名、附魔/淬鍊上限(grand soul ~24~29、apex temper +15)等。
+> 末次盤點:2026-06-18(潛行刺客 / 潛行弓手 / 純法師 / 純戰士〔刀劍·鈍器·盾反〕四條縱切;R40 後 marksman 樹)。四段均經多代理對抗審查核對(gather→verify→draft→critic):戰士批判修正 wuuthrad/盾非互斥(本作無雙手機制)、護甲淬鍊 int(Σ)一次取整 ≈+30、attack skill_mult 不夾上限(fortify→×1.65)、可釀池僅 resist_magic、種族技能補全、吸血四重代價;刺客/弓手重判修 soul_trap 非 solo 免疫、berserk 僅維蘇拉德 war_axe、塗毒單層共用等;法師核對 magic/formulas/mastery。
 
 ---
 
@@ -252,7 +252,108 @@ effective_cost = base × (1 − min(0.4, 學派技能/250)) × Π spell_cost_fac
 
 ---
 
-## ④ 刺客 vs 弓手 對照(同為潛行流)
+## ④ 純戰士(重甲近戰 · 刀劍/鈍器/盾反)
+
+> 與潛行流**天花板邏輯完全不同**:戰士近戰**不走偷襲倍率鏈**(`sneak_mult` 只在 `sneaking` 分支套用,`combat.py`),故對 solo boss **不觸 `SOLO_SNEAK_DAMAGE_CAP_RATIO=0.40` 開場一擊夾**。代價=沒有「一刀爆發」軟天花板可繞,輸出受 **85% 護甲遞減** + **體力經濟**兩道機制所限;靠**持續輸出 + 坦度**而非偷襲秒殺。`狼人換層不相容`(獸形脫整套重甲/盾/附魔/淬鍊/格擋,以野獸血量換掉所有裝備坦度)。
+
+### 根:吃哪些數值
+戰士五圍核心:**strength**(`str_mult = 0.75 + strength/160`,放近戰基礎傷;另抬負重、體力上限)、**endurance**(血量基底 `endurance×2` + 體力上限)。技能:**blade 或 blunt**(`skill_mult = 0.5 + 武器技能/100`,0→×0.5、100→×1.5,並抬命中門檻)、**block**(格擋減傷 `block_damage_factor` 0→×0.9、100→×0.4 + 命中懲罰)、**heavy_armor**(放大穿戴護甲值 `worn × (0.5 + heavy_armor/100)`)。
+完整傷害鏈(`formulas.attack_damage:317-326`):
+```
+傷害 = 武器基礎傷 × (0.5 + 武器技能/100) × (0.75 + strength/160) × roll(0.85~1.15) × 格擋減傷
+```
+- strength 100 → ×1.375、+18(達貢)→ ×1.49;武器技能 100 → ×1.5(base;fortify_skill 可推過,見 §C 非對稱夾限)。
+- 命中(`hit_chance:301-314`):`0.50 + (武器技能−25)×0.006 + (agility−敵agi)×0.004 − 體力罰 − 格擋罰`,再 + 武速修正(快武器 +、鈍器 speed 0.75 → −0.025)。
+- **體力上限** = str+willpower+agility+endurance(`formulas.py:63-64`);戰士 str/end 雙高 → 體力池天然厚,撐連續攻擊/格擋/盾牆。
+
+**五圍序:strength ≈ 武器技能 > endurance > heavy_armor ≈ block > agility/willpower**。
+
+> 🔴 **天花板與潛行流不同**:① 戰士非潛行 → 攻擊 `sneaking=False`,**不乘偷襲倍率、不觸 40% 開場夾**(`combat.py:479` 該夾只在 `sneaking and _is_solo` 觸發);也不走衝鋒夾。對 solo boss **無單擊軟上限**。② 實際天花板純由 **護甲遞減(最多擋 85%,`damage_after_armor:344-351`,至少 1 傷)** 與 **體力經濟(盾牆 6/回合、格擋 4/次、盾反 6/次、壁壘攻擊耗體 ×1.2)** 構成——力竭即攻防雙弱。
+
+### A · 通用加成(任何戰士都疊 · 全獨立相加)
+| 層 | 內容 | 備註 |
+|---|---|---|
+| **核心數值** | strength↑→近戰基礎傷(`str_mult`)+ 負重 + 體力;endurance↑→血量 + 體力;武器技能↑→傷害 + 命中;heavy_armor↑→放大護甲值;block↑→格擋減傷(0.9→0.4)。皆走 base 成長,里程碑/裝備另疊獨立層 | `attr()/skill()` 八層全 SUM(`character.py:209-221`),無 MAX 遮蔽 |
+| **身分:達貢之力** | ★str+18(放近戰基礎傷)·will+12·end+12·fire+60·magicka+25·destruction+10·conjuration+8(後三項法系殘力,純戰士不取用) | ★純永久無懲罰、無 upkeep,**戰士最划算的永久層**(`dagon_boon.py:16-19`);與吸血並存 |
+| **身分:吸血鬼(階級3「夜主」MAX_STAGE)** | str/speed/will**+15**(★str+15 放近戰傷·每階 +5)·frost+30·disease 免疫·sneak/illusion+15(對戰士無益) | ⚠ **三重代價**:fire−30 弱點(`vampirism.py:90-91`)·日照灼傷 1.5/小時/階(階3=4.5/h)·階級≥2 被商家拒往(需進食);轉化後出生星座每日之力被 `vampiric_drain` 取代(領主座自療失效) |
+| ~~狼人~~ | ✗ **換層非加層**:獸形 str 25→42·血+80→160·獸甲固定 4,但**脫去整套重甲/盾/附魔/淬鍊/格擋/塗毒**(`lycanthropy.py:201-206`,`combat.py:208-210`) | 對「重甲盾反 bruiser」結構衝突;與吸血互斥(disease 免疫) |
+| **身分:斯庫瑪/月糖** | 斯庫瑪 speed/agility/willpower+8;月糖 speed/agility+5 | ⚠ **絕不碰 strength/sneak/武傷**(R20)→ 對戰士近戰**傷害零增益**,只命中/閃避/先攻 |
+| **裝備:重甲套裝**(四件同材質 helmet/cuirass/gauntlets/boots,**盾不計**) | 鐵 health+15 / 鋼 health+25 / ★魔族 health+60(最高生命套)/ 矮人 endurance+10(唯一給屬性)/ 黑檀 magic 抗+15% / 龍鱗 fire 抗+25% | `armor_sets.json`;盾在 `ARMOR_SLOTS` 非 `SET_SLOTS`(`inventory.py:19`)→ 可掛神器盾不破套 |
+| **裝備:護甲本體** | 穿戴件 `worn × (0.5 + heavy_armor/100)`;最高材質單件:魔族胸甲 30·盔 17·護手 12·靴 13·魔族盾 15;十字軍護心 32(火抗+50%)。重甲滿級 → worn 乘子 ×1.5 | `armor.json`;`combat.py:204-221 _armor_rating` |
+| **裝備:武器淬鍊** | 主手武器 +2 傷/級;基礎上限 `min(5, smithing//20)` → +10;含鋒銳里程碑 `temper_power` ×(1+0.25)、淬火宗師 cap+1 → apex **+15 傷** | ⚠ 雙持**副手淬鍊不套倍率**(既有行為);加進 weapon_damage 吃進全攻擊鏈 |
+| **裝備:護甲淬鍊** | 穿戴各甲件淬鍊**等級總和** ×(1+temper_power),**一次取整**:`int(Σlvl × (1+power))`;apex(cap6·power0.25·4 件)= int(24×1.25)=**+30 護甲值**(非逐件取整相加) | `smithing.py:178-184`;卸下不計 |
+| **裝備:★fortify str/技能 附魔(僅飾品,3 槽 amulet+ring1+ring2)** | ★**fortify_attribute strength 唯一靠飾品**(soul5·myst100 ≈ +9/件);`fortify_skill` blade/blunt/block/heavy_armor ≈ +15/件;`fortify_resource health` ≈ +22/件;`resist 元素` ≈ +38%/件 | **護甲刻意排除 attr**(`enchanting.py:22-23` ARMOR_KINDS·僅飾品 jewelry_magnitude 89-94 才有 attr);餵 skill()/attr() 不回門檻(R21);★**無藥可釀**(見下) |
+| **裝備:護甲件附魔** | 護甲版 factor 較低:`fortify_skill` +11/件、`resist` +30%/件、`fortify_resource` health +24/件;武器可附 `weapon_element` fire/frost/shock ≈ +24(無視物理甲、吃元素抗、加在傷害) | 改 equipped 後必 recompute(R05) |
+| **種族(建檔寫 base)** | 諾德 str/end+10·blade+5·**blunt+10**·heavy_armor+5·block+5·frost 抗 50 / 獸人 str/end+10·will+5·blunt+10·**heavy_armor+10(全種族最高)**·block+5·magic 抗 25(★重甲鈍器向最佳) / 紅衛 str/end+10·agi+5·**blade+10**·blunt+5·heavy_armor+5·疾/毒抗 75(刀劍向最佳);帝國人 blade/blunt/heavy_armor+5·per+10(均衡) | `races.json`;技能起始與屬性皆併 base,非獨立層;block 起始諾德=獸人=+5(非獸人獨高) |
+| **星座(建檔寫 base)** | ★**戰士座** str+5·end+5(無代價,純戰士最佳)/ 領主座 end+5+每日自療 60(▼火抗−25)/ 淑女座 per+10·end+5 | `birthsigns.json` |
+| **陣營** | ⚠ **皆非直接戰力**:戰士公會 `armory_discount`(買武/甲 cap 0.35)·戰友團 `merc_discount`(雇傭兵 cap 0.5)·九神騎士團 `restoration_boon`(治療縮放)→ 經濟/治療層,**對輸出/減傷零加成** | `factions.json:11,156,185`;戰力來自種族/星座/里程碑/裝備層 |
+| **里程碑:被動護甲**(多源 SUM,無 MAX 遮蔽) | heavy_armor_25 重甲入門+6 · heavy_armor_100 銅皮鐵骨+18 · block_25 持盾入門+5 · block_75 撐架穩步+10 · block_100 銅牆鐵壁+12;另跨樹石膚/靈體護壁等 | `mastery.py:297-300` SUM 相加進 armor_rating;**總減傷仍夾 85% 硬頂、不趨近免疫** |
+| **里程碑:重甲減傷/反控** | heavy_armor_75 **壁壘**(物理 ×0.85·▼代價攻擊耗體 ×1.2)vs 巍然不動(magic 抗+10);heavy_armor_50 **重甲反震**(反彈 12%·無耗體)vs 百戰不染(disease+25);heavy_armor_100 銅皮鐵骨(+18)vs **重壓**(被擊 22% 震開·stagger turns 2) | `mastery.json:46/278/387/389`;壁壘僅物理、元素穿透 |
+| **戰鬥動作:盾牆架勢**(非里程碑) | 立陣:物理受傷 **×0.70**(`SHIELD_WALL_MITIGATION=0.30`,僅物理、元素穿透)+ **嘲諷**(鎖敵火力到坦);門檻=持盾 + base block≥50;每回合上繳 6 體力(歸 0 落陣) | `main.py:1727-1730`;`combat.py:286-290,445,98`;與壁壘/盾反獨立疊乘 |
+| **里程碑:屬性 fortify** | enduring(athletics_75 end+5)·mighty_arm(blunt_75 str+4·屬鈍器分支取捨)·swift_blade(blade_75 agi+4·屬刀劍取捨) | 走 mastery_attr 層 SUM,絕不寫回 base |
+| **里程碑:續航 apex** | 生生不息(restoration_100 每回合自癒 8·is_alive 守不復活)·不屈祝禱(restoration_75 血<25% regen 4×3)·不竭之軀(athletics_50 攻擊耗體 ×0.90) | 跨職可取的續航層 |
+| **消耗品** | restore_health(即時回血)·restore_fatigue(★回體力=直接餵盾牆/格擋/盾反的體力經濟,可釀材料最多)·`potion_potency`(煉金 75/100 ≤+0.35)放大藥效 | `alchemy.py:184-188`;**體力是戰士主要防禦資源天花板** |
+| **同伴增傷光環(★對 solo 戰士零自益)** | rally 戰陣號令(+0.15)·騎士戰旗 empower(0.20×illusion power);多源遞減疊加 `Σ mag×0.7^i`(`EMPOWER_STACK_RATIO=0.7`) | ⚠ `combat.py:395 not _is_player` 守門 → **只增益同伴**,純 solo bruiser by-design 無自益;僅戰旗 STANDARD_SELF_ARMOR+6 對自身有效(需 illusion≥50) |
+| ⚠ **限時藥水** | ★戰士幾乎無傷害增益:可釀 buff 池僅 `fattr_agility`/`fattr_willpower`/`resist_magic`/`fskill_alchemy` | ⚠ **無 fattr_strength/endurance、無 fskill_blade/blunt/block/heavy_armor 材料**(R30 排除 str+武器技能,本輪另確認 end 同無)→ 戰士最核心屬性皆釀不出;唯 `resist_magic`(整體魔法抗·涵蓋火/霜/電三系)限時可釀,無單一元素/毒/疾抗 |
+| **精神飽滿 well_rested** | 技能 xp ×1.25(24 遊戲時內) | ⚠ 只乘 xp、不碰 base、不影響戰鬥數值 → 純練功加速、非戰力 |
+
+### B · 分支加成(三條分開 · 同階二選一互斥)
+
+**① 刀劍(blade 樹 · archetype sword/spear · 純命中+傷害線,無內建破甲)**
+| 階 | A(傷/控) | B |
+|---|---|---|
+| 25 | 持劍入門(命中+2%·單選自動授予) | — |
+| 50 | 還擊架式(命中 25% 機率 stagger 敵 1 回) | 鋒刃輕靈(命中+5%) |
+| 75 | 劍勢如虹(傷+8%) | 輕劍捷影(agility+4·持久層) |
+| 100 | 鋒芒畢露(命中+5%) | 迅捷連斬(傷+12%·▼自損 recoil 5%·不致死) |
+> 刀劍 archetype **無破甲**(`archetype_armor_pen('sword')=0.0`)。speed 因武器而異:sword 多 1.0(命中中性)、dawnfang 1.1(+0.01 命中)、daedric_spear 0.9(−0.01·spear 走 blade 技能但 archetype=spear)。傷害線最高 +0.20(blade_flow 0.08 + savage 0.12·同 target 多節點 weapon_mod **相加**)。
+> **sword 神器**:valor_blade 百戰勳刃(dmg22·regen 3/3 自 HoT·★戰士公會掌門武器)、dawnfang 黎明之牙(dmg24·fire+28·湮滅主線·全遊戲最高元素之一)、skyburner 焚天劍(dmg23·fire+26·龍喉巢穴)、daedric_sword 魔族長劍(dmg22·純物理)。spear 亦走 blade 技能:魔族長槍 dmg24(與黎明之牙並列最高近戰本體傷·純物理)。
+
+**② 鈍器(blunt 樹 · archetype blunt · ★唯一內建破甲)**
+| 階 | A(破甲/控) | B |
+|---|---|---|
+| 25 | 持錘入門(破甲 pen+0.03·單選自動授予) | — |
+| 50 | 碎骨重擊(命中 25% 機率 weaken 敵 10%/2 回) | 沉勁揮擊(傷+10%·▼self recoil 4%) |
+| 75 | 碎骨之力(破甲 pen+0.08) | 巨力臂(strength+4·放近戰傷/負重/體力) |
+| 100 | 破甲重錘(破甲 pen+0.15) | 震盪一擊(命中 30% 機率 weaken 敵 15%/1 回) |
+> ★**archetype_armor_pen blunt=0.30**(無視 30% 護甲·`formulas.py:356`,刀劍無)→ 對高甲精英/重甲怪傷害穩定;破甲可疊到 **0.30+0.03+0.08+0.15=0.56**(最終夾 `min(0.85)`)。speed 0.75 → 命中 −0.025、最耗體(一擊耗體 ×1.25)。
+> **鈍器武器**:daedric_mace 魔族戰錘(dmg23)、daedric_war_axe 魔族戰斧(dmg22·archetype blunt 吃 30% 破甲)、dwarven_mace 矮人釘錘(dmg18)。
+> ⚠ **★破甲重錘特例·維蘇拉德 wuuthrad**(dmg23·skill **blunt** 但 archetype **war_axe**·enchant **berserk** mag30):berserk 依攻方**已損生命比例**提傷,封頂 +30%(滿血=×1.0、瀕死 ×1.30·乘物理傷於 solo 夾之前·**berserk 全遊戲僅此一把**);★但 archetype=war_axe → `archetype_armor_pen('war_axe')=0.0`,**練 blunt 卻不吃 0.30 內建破甲**(berserk vs 破甲二擇一)。戰友團掌門武器。
+
+**③ 盾反(block 樹 · 反制/坦度)**
+| 階 | A(反制) | B(堆護甲) |
+|---|---|---|
+| 25 | — | 持盾入門(passive_armor +5·單選自動授予) |
+| 50 | ★**盾反**(`block_reflect` reflect 0.20·耗體 6·R39) | 盾擊踉蹌(`block_riposte` shield_bash stagger 0.35) |
+| 75 | 盾擊破勢(stagger 0.35 + weaken 0.15/2 回) | 撐架穩步(passive_armor +10) |
+| 100 | 盾威·完美格擋(stagger 0.40 + counter 0.5·回敬武器基礎傷 ×0.5) | 銅牆鐵壁(passive_armor +12) |
+> ★**盾反 block_reflect + 重甲反震 armor_reflect 疊加 = 32%**(R39 使用者拍板可疊):受物理近戰擊中且 `dmg_done>0` 時,`combat.py:495-502` 先套重甲反震 0.12(被動·無耗體)再套盾反 0.20(扣 6 體力·力竭=自帶煞車),**兩段各自結算相加**;反彈隨「實際受傷」縮放、僅物理(元素穿透),攻擊者可被反殺。
+> **盾擊踉蹌 block_riposte**(`mastery.py:618-629`,跨 50/75/100 stagger/weaken/counter 各 **MAX 聚合**·不相加;turns:2 修死時序)與盾反 reflect **同 block_50 二選一**:選盾反就拿不到 shield_bash 的 stagger,但 75/100 仍可補 block_riposte。
+> **盾牆/crusaders_ward 可搭**:盾不計四件套(`SET_SLOTS`)→ 可掛 crusaders_ward 十字軍聖盾(magic 抗+30%)不破重甲套;配黑檀套 magic 抗逼近免疫。
+> ⚠ **本作無雙手武器機制**(`inventory.py` equip_weapon 設 `char.weapon`、equip_armor 設 `equipped["shield"]`,各自獨立、零衝突檢查;`grep two_handed` 零命中)→ wuuthrad **可與盾同時裝備**,berserk 鈍器流**可同時**吃盾反/盾牆/格擋減傷,**並非互斥**。真正互斥的只是同階里程碑二選一(如 block_50 盾反 vs 盾擊踉蹌)。
+
+### C · 完全體疊滿 + 天花板
+**獸人(str/end+10·heavy_armor+10·blunt+10)· 戰士座(str/end+5)· 魔族重甲套(health+60)+ 魔族盾 · 達貢之力(str+18)· blade/blunt/heavy_armor/block 四系里程碑各取一支**:
+```
+近戰基礎傷乘子(技能 base 100 + 飾品 fortify_skill ~+15 → 有效 115,attack skill_mult 不夾上限 → ≈1.65)
+              × str_mult(0.75 + 118/160 ≈ 1.49) ≈ ×2.46
+護甲值疊滿 = (四件套 + 盾的 armor_rating 總和〔含魔族盾 15〕)×(0.5+heavy/100)  ← 盾值也吃重甲乘子
+              + passive_armor 多源 + 護甲淬鍊 int(Σlvl×1.25)≈+30  ← 乘子之後平加 → damage_after_armor 遞減
+反震疊加 = 重甲 12% + 盾反 20% = 32%(受體力閘)
+```
+> ⚠ **非對稱夾限**:進攻 `skill_mult = 0.5 + 武器技能/100` **不夾上限**(`formulas.py:324`,fortify_skill 可推過 1.5);但防守 `block_damage_factor` 對 block 技能**夾 100**(`formulas.py:340`)→ 自己擋的減傷不因 fortify_skill 超 100 而更強。
+🔴 **紅線（與刺客/弓手「不同源」）**：
+1. **85% 護甲硬夾**(`damage_after_armor:350` `reduction = min(0.85, eff/(eff+100))`)→ passive_armor/淬鍊/套裝堆滿亦至少造成 1 傷,**永不趨近免疫**;反過來戰士自己再硬也擋不滿 85%。
+2. **體力經濟**=戰士主要天花板:盾牆 6/回合上繳、格擋 4/次、盾反 6/次、壁壘攻擊耗體 ×1.2 → 力竭即攻防雙弱(restore_fatigue 藥/運動省體是續航命脈)。
+3. **不靠偷襲爆發、靠持續輸出 + 坦度**:戰士攻擊 `sneaking=False` → **不觸 40% 開場夾**,對 solo boss **無單擊軟上限**(可正面長線磨),但也沒有「一刀繞夾」的爆發捷徑——天花板是 DPS × 護甲遞減 × 體力續航。
+4. **狼人換層取捨**:獸形 str 42/血+160 看似誘人,但脫掉整套重甲/盾/附魔/淬鍊/格擋/盾牆 → 對重甲盾反 bruiser 是**放棄全部裝備坦度換野獸血量**,結構衝突;且 tier≥2 恫嚇之嚎對 solo boss 免疫。
+5. **吸血代價(四重)**:階級3 fire−30(需達貢 fire+60 抵成淨 +30)+ 日照灼傷 1.5/h/階 + 階級≥2 被商家拒往(需進食)+ 出生星座每日之力被 `vampiric_drain` 取代(領主座自療失效)→ 對前排長線磨的 bruiser 是持續負擔。
+
+→ **戰士上限不靠「乘子爆發」而靠「持續 DPS + 護甲遞減扛 + 體力續航」**;與潛行流共享「打 solo boss 也得長線磨」的結論,但鎖的是**護甲 85% 夾 + 體力經濟**,而非偷襲 40% 夾。
+
+---
+
+## ⑤ 刺客 vs 弓手 對照(同為潛行流)
 
 | | 潛行刺客(匕首) | 潛行弓手(弓) |
 |---|---|---|
@@ -269,7 +370,6 @@ effective_cost = base × (1 − min(0.4, 學派技能/250)) × Π spell_cost_fac
 
 ## 附 · 其他原型骨架(待補)
 
-本檔目前縱切了三條(潛行刺客 / 潛行弓手 / 純法師)。其餘原型骨架(指針,待後續補):
-- **戰士/坦**(重甲+格擋):passive_armor 多源(夾 85%)+ 重甲反震/重壓 + 壁壘;不走潛行(重甲 W>18 偷襲打折)。
-- **戰法師**(武器灌注+共鳴一擊)、**騎士**(戰旗 empower)、**召喚流**等 —— 見 BUFFS.md §③④ 對應 perk。
-> 補新原型時:**先看根(吃哪些數值)→ 通用層 → 分支二選一 → 完全體+紅線**,與上方兩條同格式。
+本檔目前縱切了四條(潛行刺客 / 潛行弓手 / 純法師 / 純戰士)。其餘原型骨架(指針,待後續補):
+- **戰法師**(武器灌注+共鳴一擊)、**騎士**(戰旗 empower)、**召喚流**等 —— 見 BUFFS.md §③④ 對應 perk + build.md ③ 法師副軸流派。
+> 補新原型時:**先看根(吃哪些數值)→ 通用層 → 分支二選一 → 完全體+紅線**,與上方四條同格式。
