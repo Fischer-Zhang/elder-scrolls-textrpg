@@ -230,8 +230,9 @@ def test_vampiric_fraction():
     assert formulas.vampiric_fraction(None) == formulas.WEAPON_VAMPIRIC_FRACTION
 
 
-def test_mace_builtin_stagger_and_solo_immune():
-    """釘錘控制流:命中機率擊暈一般敵;solo boss 對控制免疫(R31 一致);斧無內建擊暈(只破甲)。"""
+def test_mace_builtin_stagger_solo_consistent():
+    """釘錘控制流:命中機率擊暈一般敵;**R44 收斂**:stagger 軟控對 solo boss 也生效(與里程碑/盾反/感電
+    stagger 一致,移除原 mace-only 免疫;軟控不受 fear/paralyze 機率減免);斧無內建擊暈(只破甲)。"""
     gd, c = _warrior()
     c.skills["blunt"] = 100
     c.fatigue = c.max_fatigue = 400
@@ -246,12 +247,16 @@ def test_mace_builtin_stagger_and_solo_immune():
             staggered = True
             break
     assert staggered
-    # solo boss:釘錘擊暈永不生效(控制免疫紅線)
+    # solo boss:R44 收斂 → 釘錘擊暈(軟控)現對 solo 也生效(與其餘 stagger 路徑一致)
+    boss_staggered = False
     for s in range(120):
         boss = combat.spawn_creature(gd, "ancient_dragon", RNG(s))
         boss.agility = 1
         combat.resolve_attack(c, boss, gd, RNG(s))
-        assert not any(e.get("kind") == "stagger" for e in boss.active_effects)
+        if any(e.get("kind") == "stagger" for e in boss.active_effects):
+            boss_staggered = True
+            break
+    assert boss_staggered
     # 斧:走破甲,無內建擊暈
     c.weapon = "steel_war_axe"
     for s in range(80):
@@ -302,7 +307,7 @@ def run():
     test_formulas_monotonic()
     test_berserk_factor()
     test_vampiric_fraction()
-    test_mace_builtin_stagger_and_solo_immune()
+    test_mace_builtin_stagger_solo_consistent()
     test_reflect_r42_raw_decoupled_thorns_redlines()
     test_starter_weapon_assigned()
     test_player_beats_weak_creature_and_trains()

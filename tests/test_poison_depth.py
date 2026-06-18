@@ -93,7 +93,7 @@ def test_coat_charges_per_family():
 
 
 # --- solo BOSS 控制免疫(修 R15 缺口的回歸) ----------------------------
-def _coat_and_hit(gd, c, pid, target, tries=12):
+def _coat_and_hit(gd, c, pid, target, tries=12, seed=0):
     inventory.add_item(c, pid, 1); inventory.coat_weapon(c, gd, pid)
     consumed = False
     for i in range(tries):
@@ -101,22 +101,26 @@ def _coat_and_hit(gd, c, pid, target, tries=12):
             consumed = True
             break
         before = c.weapon_poison["charges"]
-        combat.resolve_attack(c, target, gd, RNG(i))
+        combat.resolve_attack(c, target, gd, RNG(seed * tries + i))
         if c.weapon_poison is None or c.weapon_poison["charges"] < before:
             consumed = True
     return consumed
 
 
-def test_solo_boss_immune_to_coated_control():
-    """塗毒麻痺/懼意對 solo BOSS 完全免疫(反鎖王紅線);毒仍接觸即耗。"""
+def test_solo_boss_coated_control_reduced():
+    """R44 機率減免:塗毒麻痺/懼意對 solo BOSS 由「完全免疫」改機率抵抗(會中也會抗);毒仍接觸即耗。"""
     gd, c = _char(alchemy_skill=100)
+    c.skills["blade"] = 100                    # 確保命中(否則 12 retry 內未落毒)
     for pid, kind in ((synth.poison_id("paralyze", 2), "paralyze"),
                       (synth.poison_id("fear", 2), "fear")):
-        boss = combat.spawn_creature(gd, "dremora_lord", RNG(1))
-        c.weapon = "steel_sword"
-        consumed = _coat_and_hit(gd, c, pid, boss)
-        assert not any(e["kind"] == kind for e in boss.active_effects), kind
-        assert consumed                       # 接觸即耗(杜絕無限重試泵)
+        landed = 0
+        for s in range(150):
+            boss = combat.spawn_creature(gd, "dremora_lord", RNG(s))
+            c.weapon = "steel_sword"; c.weapon_poison = None
+            assert _coat_and_hit(gd, c, pid, boss, seed=s + 1), kind    # 接觸即耗(杜絕無限重試泵)
+            if any(e["kind"] == kind for e in boss.active_effects):
+                landed += 1
+        assert 0 < landed < 150, (kind, landed)    # 機率減免:既非永免疫亦非每次
 
 
 def test_coated_control_lands_on_nonsolo():
@@ -170,7 +174,7 @@ def run():
     test_existing_poison_routes_unchanged()
     test_synth_roundtrip_new_poisons()
     test_coat_charges_per_family()
-    test_solo_boss_immune_to_coated_control()
+    test_solo_boss_coated_control_reduced()
     test_coated_control_lands_on_nonsolo()
     test_slow_reduces_speed_and_hit()
     test_weaken_poison_applies_in_combat()

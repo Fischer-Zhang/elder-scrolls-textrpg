@@ -998,6 +998,17 @@ tesrpg/
 
 ---
 
+### R44 · BOSS 控場「機率減免」+ 控場施加集中化(收斂 stagger 不一致)[re-sim] [save]
+
+評估(10-agent 對抗驗證工作流)揪出三事:① **stagger 不一致**(只有鈍器內建擊暈對 solo 免疫,里程碑/盾反/感電/反震/偷襲殘響 stagger 皆不免疫);② **真破口**:戀人座 `paralyze_touch` 對任意 solo BOSS append paralyze 3 回合零 `_is_solo` 守(每日一次、零資源 → 硬鎖王);③ **潛在缺口**:`magic.cast` 的 damage_status/spell_on_hit/apply_status 單體路徑無 solo 守(現無 fear/paralyze 料,日後加即破)。**使用者拍板:fear/paralyze 對 solo 由「完全免疫」改機率減免 + 把所有控場集中成一個 helper**。
+
+- **新 `magic.apply_control(target, kind, gamedata, rng, *, magnitude=0.0, turns=1, source=None) -> str`**(`'applied'/'resisted'/'blocked'`)= **唯一控場決策點**:硬控(fear/paralyze)去重(已上身→blocked,防延長鎖定)+ 玩家 `resisted_mind`(willpower,不變)/ solo BOSS `rng.chance(formulas.SOLO_CONTROL_RESIST_CHANCE=0.65)`(**機率抵抗,取代 100% 免疫**);軟控(stagger/slow/weaken)一律 append(無 solo 免疫);`source` 帶來源標 → 同源去重(元素 rider 雙持不疊)。
+- **~18 施加點全路由 helper**:`combat.py`(塗毒控場 / 附魔麻痺 / chill→weaken·jolt→stagger rider / on_hit_status / **鈍器內建 stagger〔收斂點:移除原 mace-only `not _is_solo`,boss 比照其餘 stagger 照吃軟控〕** / 盾反 block_riposte / fear_on_hit / 重甲反震 armor_stagger / 閃避反制 on_evade / 偷襲殘響 / R43 怪→玩家 on_hit〔`resisted_mind`+去重移入 helper〕)、`magic.py`(cast fear·weaken / AoE status_all·damage_status_all / **潛在缺口 damage_status·spell_on_hit·apply_status 對敵 → 自動受 solo 管,閉合**)、`powers.paralyze_touch`(**戀人座破口閉合**:對 solo 改機率減免)、`lycanthropy.howl`(嚎叫對 solo 改機率減免)、`main.py` 牽制射 weaken。**不走 helper**:dot(`_apply_dot_capped`)/soul_trap/deathmark/反傷扣血(R42)/empower·shield·ward(非控場)。
+- **🔴 改既有紅線**:R31/R15 的「solo 完全免疫 fear/paralyze」→ 機率減免。**更新 5 個舊免疫測試為機率模型**(`test_magic` 武器麻痺·法術控場、`test_poison_depth` 塗毒、`test_mastery` 懾心、`test_lycanthropy` 嚎叫:皆改「`0 < count < N` 既會中也會抗」)+ 新 `test_solo_control`(helper 直測:機率率≈1−0.65、非 solo 100%、玩家 willpower、去重/同源去重、軟控對 solo 照施、戀人座破口閉合整合)。`test_combat` 鈍器 stagger 改「solo 也生效」。
+- **驗證**:`run_all` 66 綠;`sim_assassin` **byte-identical**(刺客無 fear/paralyze/stagger 投入、偷襲傷害夾 `SOLO_SNEAK_DAMAGE_CAP_RATIO` 與控場無關 → solo 秒殺仍全 0%;diff HEAD worktree 證);`check.sh --sim --smoke` 全綠。**⚠ 平衡備註**:機率減免後長時程控場(戀人座 paralyze 3 回合)35% 命中時仍鎖 3 回合 → 若過強,加「solo 控場時程上限 ≤1」或調 `SOLO_CONTROL_RESIST_CHANCE`(數值微調,留待回饋)。
+
+---
+
 ## 4. 開發節奏(ultracode 開著 → 每個功能都這樣做)
 
 > 完整五階段流程(評估 → 決定方向 → 實作 → 驗證 → 文件 + 提交)見 `CLAUDE.md`「開發流程」;以下是「驗證」段的細節。**驗證綠後依 R22 自動 `commit` & `push origin main`。**

@@ -292,19 +292,22 @@ def test_weapon_paralyze_applies_to_non_solo():
     assert applied
 
 
-def test_weapon_paralyze_immune_on_solo_boss():
-    """反鎖王紅線:solo BOSS 完全免疫附魔麻痺(比照偷襲秒殺夾限的 solo gate)。"""
+def test_weapon_paralyze_reduced_on_solo_boss():
+    """R44 機率減免:solo BOSS 對附魔麻痺由「完全免疫」改機率抵抗——會被鎖,但非每次(SOLO_CONTROL_RESIST_CHANCE)。"""
     gd, c = _fighter(); c.skills["blade"] = 100
     c.weapon = synth.enchant_weapon_status_id("steel_sword", "paralyze", 0, 1)
     solo_tid = next(t for t, d in gd.bestiary.items() if d.get("solo"))
+    locked = 0
     for i in range(400):
         boss = combat.spawn_creature(gd, solo_tid, RNG(i))
         combat.resolve_attack(c, boss, gd, RNG(i))
-        assert not magic.is_paralyzed(boss)                 # 永不被鎖
+        if magic.is_paralyzed(boss):
+            locked += 1
+    assert 0 < locked < 400, locked        # 既非永鎖(舊免疫)亦非每次(機率減免生效)
 
 
-def test_spell_control_immune_on_solo_boss():
-    """反鎖王紅線(對抗審查補 R31 法術路徑缺口):solo BOSS 亦免疫法術控場(fear / rout / mass_paralysis)。"""
+def test_spell_control_reduced_on_solo_boss():
+    """R44 機率減免:solo BOSS 對法術控場(fear / rout / mass_paralysis)由免疫改機率抵抗(會中也會抗)。"""
     gd, c = _caster()
     c.skills["illusion"] = 100
     for sp in ("fear", "rout", "mass_paralysis"):
@@ -312,10 +315,14 @@ def test_spell_control_immune_on_solo_boss():
             c.spells.append(sp)
     solo_tid = next(t for t, d in gd.bestiary.items() if d.get("solo"))
     for sp in ("fear", "rout", "mass_paralysis"):
-        boss = combat.spawn_creature(gd, solo_tid, RNG(1)); boss.health = boss.max_health = 99999
-        c.magicka = c.max_magicka = 999
-        magic.cast(c, gd, sp, RNG(1), target=boss, battle={"allies": []}, enemies=[boss])
-        assert not magic.is_feared(boss) and not magic.is_paralyzed(boss), sp
+        controlled = 0
+        for i in range(200):
+            boss = combat.spawn_creature(gd, solo_tid, RNG(i)); boss.health = boss.max_health = 99999
+            c.magicka = c.max_magicka = 999
+            magic.cast(c, gd, sp, RNG(i), target=boss, battle={"allies": []}, enemies=[boss])
+            if magic.is_feared(boss) or magic.is_paralyzed(boss):
+                controlled += 1
+        assert 0 < controlled < 200, (sp, controlled)   # 機率減免:既會中也會抗
 
 
 # --- 法術學派補完:召喚(束縛兵刃/亡者復生/新召喚)+ 秘術(結界/驅散/群體擒魂)-------

@@ -173,17 +173,16 @@ def tier_progress(char: Character) -> dict:
 
 
 def howl(char: Character, state, gamedata: GameData, enemies) -> dict:
-    """恫嚇之嚎:對所有存活、非 solo 的敵人施加恐懼(耗體力)。回傳 {ok, affected}。
-    🔴 solo boss 免疫(反鎖王紅線:杜絕嚎叫永控 boss,比照武器麻痺/偷襲夾限)。"""
+    """恫嚇之嚎:對所有存活敵人施加恐懼(耗體力)。回傳 {ok, affected}。
+    🔴 solo boss 由「完全免疫」改機率減免(R44:嚎叫對 boss 偶爾有感,經集中 helper 統一管控)。"""
     from tesrpg.systems import combat, magic
     if char.fatigue < HOWL_FATIGUE:
         return {"ok": False, "affected": 0}
     char.fatigue = max(0, char.fatigue - HOWL_FATIGUE)
     n = 0
     for e in enemies:
-        if (combat.is_alive(e) and not combat._is_solo(e, gamedata)
-                and not magic.is_feared(e)):
-            e.active_effects.append({"kind": "fear", "turns": HOWL_FEAR_TURNS})
+        if combat.is_alive(e) and magic.apply_control(e, "fear", gamedata, state.rng,
+                                                      turns=HOWL_FEAR_TURNS) == "applied":
             n += 1
     return {"ok": True, "affected": n}
 

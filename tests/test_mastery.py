@@ -1075,16 +1075,16 @@ def test_magic_school_no_brainer_fix():
         mastery.choose(c, gd, nid, oid)
     foh = mastery.fear_on_hit(c, gd)
     assert foh["chance"] == mastery.FEAR_ON_HIT_CHANCE_CAP and foh["turns"] == 3   # chance 0.45→夾0.30;turns 取最=3(soul_dread)
-    # solo BOSS 對 fear 免疫(R31 一致;補既有 cowardice 缺口)
+    # R44 機率減免:solo BOSS 對 fear_on_hit 由「完全免疫」改機率抵抗(會中也會抗)
     c.weapon = "steel_dagger"
     boss = combat.spawn_creature(gd, "mehrunes_dagon", RNG(1)); boss.health = boss.max_health = 99999
     feared = 0
-    for s in range(40):
+    for s in range(300):
         boss.active_effects = []
         combat.resolve_attack(c, boss, gd, RNG(s))
         if any(e["kind"] == "fear" for e in boss.active_effects):
             feared += 1
-    assert feared == 0, "solo boss 不得被 fear"
+    assert 0 < feared < 300, ("機率減免:既會中也會抗", feared)
 
 
 def test_capstone_apex_fix():

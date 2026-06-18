@@ -591,7 +591,7 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
             st = mastery.armor_stagger(defender, gamedata)
             if st and is_alive(attacker) and rng.chance(st):
                 # turns:2 → 撐過本回合末 tick,於攻擊者「下一次出手」時仍踉蹌生效(防守側反制的正確時序)
-                attacker.active_effects.append({"kind": "stagger", "turns": 2})
+                magic.apply_control(attacker, "stagger", gamedata, rng, turns=2)   # R44:集中 helper
 
         # 法杖等「命中回復施術者資源」(D:on_hit_self)→ 由後面的 clamp_resources 夾限
         if _is_player(attacker) and wdef and wdef.get("on_hit_self"):
@@ -610,15 +610,16 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
         #          ② fear/paralyze 命中後再吃 resisted_mind(willpower)第二道;軟控命中即中。
         if not _is_player(attacker) and _is_player(defender):
             oh = atk.get("on_hit")
-            if oh and rng.chance(oh.get("chance", 1.0)) and not magic.resisted_mind(defender, oh["status"], rng):
+            if oh and rng.chance(oh.get("chance", 1.0)):
                 st = oh["status"]
                 if st == "dot":
                     _apply_dot_capped(defender, {"kind": "dot", "element": oh.get("element"),
                                                  "magnitude": oh["magnitude"], "turns": oh["turns"]})
                     status_applied = oh.get("element")
-                # 控場(stagger/slow/weaken/fear/paralyze):去重防連鎖鎖死(鏡像塗毒控制路徑)
-                elif not any(e.get("kind") == st and e.get("turns", 0) > 0 for e in defender.active_effects):
-                    defender.active_effects.append(magic.make_status_effect(oh))
+                # 控場 → 集中 helper(R44:玩家 willpower 抗硬控 + 去重,移入 apply_control)
+                elif magic.apply_control(defender, st, gamedata, rng,
+                                         magnitude=oh.get("magnitude", 0.0), turns=oh["turns"]) == "applied":
+                    status_applied = st
                     status_applied = st
             # 疾病傳染(吸血鬼吸血熱 / 狼人狼人熱):命中機率 × 疾病抗性削弱(只標記,轉化由各系驅動)。
             # `infect_kind` 缺省 "vampire"(舊吸血鬼敵向後相容);跨詛咒互斥靠疾病免疫使 dmult=0 自然擋掉,
@@ -638,16 +639,15 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
                 and attacker.weapon_poison and attacker.weapon_poison["charges"] > 0):
             wp = attacker.weapon_poison
             pk = wp["status"].get("status")
-            apply_it = True
-            if pk in ("paralyze", "fear"):
-                # 控制型毒(麻痺/懼意):solo BOSS 完全免疫(反鎖王紅線,比照附魔麻痺);已有同效不重複
-                apply_it = (not _is_solo(defender, gamedata)
-                            and not any(e["kind"] == pk and e["turns"] > 0
-                                        for e in defender.active_effects))
-            if apply_it:
+            if pk in magic._CONTROL_KINDS:   # 控場毒走集中 helper(R44:fear/paralyze 受 solo 機率減免 + 去重)
+                if magic.apply_control(defender, pk, gamedata, rng,
+                                       magnitude=wp["status"].get("magnitude", 0.0),
+                                       turns=wp["status"]["turns"]) == "applied":
+                    poison_applied = wp["name"]
+            else:                            # dot 等非控場毒照舊
                 defender.active_effects.append(magic.make_status_effect(wp["status"]))
                 poison_applied = wp["name"]
-            wp["charges"] -= 1                       # 毒在接觸即耗(即使 solo 免疫 → 杜絕無限重試泵)
+            wp["charges"] -= 1                       # 毒在接觸即耗(即使抵抗 → 杜絕無限重試泵)
             if wp["charges"] <= 0:
                 attacker.weapon_poison = None
 
@@ -686,18 +686,14 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
                     else:
                         defender.active_effects.append({"kind": "dot", "element": element, "magnitude": mag,
                                                         "turns": turns, "source": "ench_dot"})
-                    if st == "chill":                         # 凍緩 rider:減敵輸出(去重:雙持不疊兩份)
-                        if not any(e.get("kind") == "weaken" and e.get("source") == "ench_chill"
-                                   and e.get("turns", 0) > 0 for e in defender.active_effects):
-                            defender.active_effects.append({"kind": "weaken", "source": "ench_chill",
-                                                            "magnitude": formulas.WEAPON_CHILL_WEAKEN, "turns": 2})
-                    elif st == "jolt":                        # 感電 rider:燒魔 + 機率踉蹌(stagger 去重)
+                    if st == "chill":                         # 凍緩 rider:減敵輸出 → 集中 helper(同源去重:雙持不疊)
+                        magic.apply_control(defender, "weaken", gamedata, rng,
+                                            magnitude=formulas.WEAPON_CHILL_WEAKEN, turns=2, source="ench_chill")
+                    elif st == "jolt":                        # 感電 rider:燒魔 + 機率踉蹌 → 集中 helper
                         if getattr(defender, "magicka", 0) > 0:
                             defender.magicka = max(0, defender.magicka - formulas.WEAPON_JOLT_MAGICKA)
-                        if (rng.chance(formulas.WEAPON_JOLT_STAGGER)
-                                and not any(e.get("kind") == "stagger" and e.get("turns", 0) > 0
-                                            for e in defender.active_effects)):
-                            defender.active_effects.append({"kind": "stagger", "turns": 1})
+                        if rng.chance(formulas.WEAPON_JOLT_STAGGER):
+                            magic.apply_control(defender, "stagger", gamedata, rng, turns=1)
                 elif st in ("absorb_health", "absorb_magicka", "absorb_fatigue"):
                     # 命中吸取:回攻擊者資源;吸取生命另扣目標(solo boss 受夾,杜絕無限回血泵)
                     stat = st.split("_", 1)[1]
@@ -720,14 +716,12 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
                         if cap > 0:
                             charges[wid] = max(0, charges.get(wid, cap) - 1)
                 elif st == "paralyze" and is_alive(defender):
-                    # solo BOSS 完全免疫附魔麻痺(反鎖王紅線);已麻痺不重複;充能型扣一格(cap=0 legacy 無限)
-                    if (not _is_solo(defender, gamedata)
-                            and not any(e["kind"] == "paralyze" and e["turns"] > 0
-                                        for e in defender.active_effects)):
-                        cap = int(hench.get("magnitude", 0))
-                        charges = getattr(attacker, "enchant_charges", {})
-                        if cap <= 0 or charges.get(wid, cap) > 0:
-                            defender.active_effects.append({"kind": "paralyze", "turns": hench.get("turns", 1)})
+                    # 附魔麻痺 → 集中 helper(R44:solo BOSS 機率減免 + 去重);充能型先確認有格再施,抵抗則不扣格
+                    cap = int(hench.get("magnitude", 0))
+                    charges = getattr(attacker, "enchant_charges", {})
+                    if cap <= 0 or charges.get(wid, cap) > 0:
+                        if magic.apply_control(defender, "paralyze", gamedata, rng,
+                                               turns=hench.get("turns", 1)) == "applied":
                             if cap > 0:
                                 charges[wid] = max(0, charges.get(wid, cap) - 1)
                             status_applied = status_applied or "paralyze"
@@ -740,36 +734,32 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
         # 里程碑武器流派「命中附狀態」(震盪一擊=weaken / 卸力擒拿=stagger)+「盾擊踉蹌」
         if _is_player(attacker) and is_alive(defender):
             ohs = wmod.get("on_hit_status")
-            if ohs and rng.chance(ohs.get("chance", 1.0)):
-                if ohs["kind"] == "stagger":
-                    defender.active_effects.append({"kind": "stagger", "turns": ohs.get("turns", 1)})
-                elif ohs["kind"] == "weaken":
-                    defender.active_effects.append({"kind": "weaken", "magnitude": ohs.get("magnitude", 0.0),
-                                                    "turns": ohs.get("turns", 1)})
-                elif ohs["kind"] == "slow":   # 弓手「牽制箭」:命中遲緩(降敵先攻/命中 → 風箏拉距控場)
-                    defender.active_effects.append({"kind": "slow", "magnitude": ohs.get("magnitude", 0.0),
-                                                    "turns": ohs.get("turns", 2)})
-        # 武器原型內建命中附狀態(釘錘/戰錘=控制流擊暈;斧走破甲不在此):solo boss 對控制免疫(R31 一致)
-        if _is_player(attacker) and is_alive(defender) and not _is_solo(defender, gamedata):
+            if ohs and rng.chance(ohs.get("chance", 1.0)):   # 卸力擒拿 stagger / 震盪一擊 weaken / 牽制箭 slow → 集中 helper
+                magic.apply_control(defender, ohs["kind"], gamedata, rng,
+                                    magnitude=ohs.get("magnitude", 0.0),
+                                    turns=ohs.get("turns", 2 if ohs["kind"] == "slow" else 1))
+        # 武器原型內建命中附狀態(釘錘/戰錘=控制流擊暈;斧走破甲不在此)→ 集中 helper
+        # (R44 收斂:stagger 軟控不免 solo → 與里程碑/盾反/感電 stagger 一致,移除原 mace-only 的 _is_solo 免疫)
+        if _is_player(attacker) and is_alive(defender):
             bs = formulas.archetype_builtin_status(archetype)
             if bs and bs["kind"] == "stagger" and rng.chance(bs.get("chance", 0.0)):
-                defender.active_effects.append({"kind": "stagger", "turns": bs.get("turns", 1)})
+                magic.apply_control(defender, "stagger", gamedata, rng, turns=bs.get("turns", 1))
         if defender_blocking and _is_player(defender) and is_alive(attacker):
             rp = mastery.block_riposte(defender, gamedata)
             if rp.get("stagger_chance") and rng.chance(rp["stagger_chance"]):
                 # turns:2 → 防守側(敵階段)施加的踉蹌須撐過回合末 tick,才在敵下次出手時生效(修既有 shield_bash 死時序)
-                attacker.active_effects.append({"kind": "stagger", "turns": 2})
+                magic.apply_control(attacker, "stagger", gamedata, rng, turns=2)
                 if rp.get("weaken"):          # 盾擊破勢:反擊同時削弱敵下擊
-                    attacker.active_effects.append({"kind": "weaken", "magnitude": rp["weaken"],
-                                                    "turns": rp.get("weaken_turns", 2)})
+                    magic.apply_control(attacker, "weaken", gamedata, rng,
+                                        magnitude=rp["weaken"], turns=rp.get("weaken_turns", 2))
                 if rp.get("counter"):         # 盾威·完美格擋:盾擊反傷(基礎武器傷的一部分)
                     _set_hp(attacker, _get_hp(attacker)
                             - int(round(_player_counter_damage(defender, gamedata, rng) * rp["counter"])))
-        # 里程碑「懾心術/懾意/懾魂」:玩家武器命中施加懼意(illusion 控場);solo boss 對控制免疫(R31 一致,補既有缺口)
-        if _is_player(attacker) and is_alive(defender) and not _is_solo(defender, gamedata):
+        # 里程碑「懾心術/懾意/懾魂」:玩家武器命中施加懼意(illusion 控場)→ 集中 helper(R44:solo 機率減免)
+        if _is_player(attacker) and is_alive(defender):
             foh = mastery.fear_on_hit(attacker, gamedata)
             if foh and rng.chance(foh.get("chance", 0.0)):
-                defender.active_effects.append({"kind": "fear", "turns": foh.get("turns", 2)})
+                magic.apply_control(defender, "fear", gamedata, rng, turns=foh.get("turns", 2))
         # 里程碑「不屈祝禱」:玩家受擊跌破低血線 → 觸發再生(每段只在無效時補,避免無限疊)
         if _is_player(defender) and is_alive(defender):
             rg = mastery.regen_on_low(defender, gamedata)
@@ -786,7 +776,7 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
             staggered = bool(am.get("stagger"))
             bleed_mag = 0
             if staggered:
-                defender.active_effects.append({"kind": "stagger", "turns": 1})
+                magic.apply_control(defender, "stagger", gamedata, rng, turns=1)   # R44:集中 helper
             if am.get("bleed"):
                 bleed_mag = formulas.sneak_bleed_magnitude(
                     attacker.skill("sneak"), attacker.skill("alchemy"))
@@ -831,7 +821,7 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
                 _set_hp(attacker, _get_hp(attacker)
                         - int(round(_player_counter_damage(defender, gamedata, rng) * oe["counter_frac"])))
                 if oe.get("counter_stagger"):
-                    attacker.active_effects.append({"kind": "stagger", "turns": 1})
+                    magic.apply_control(attacker, "stagger", gamedata, rng, turns=1)   # R44:集中 helper
 
     return {
         "attacker": _name(attacker), "defender": _name(defender),

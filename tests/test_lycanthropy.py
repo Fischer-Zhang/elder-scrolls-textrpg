@@ -313,9 +313,18 @@ def test_howl_fears_non_solo_costs_fatigue_solo_immune():
     boss = combat.spawn_creature(gd, "ancient_dragon", st.rng)
     fat0 = c.fatigue
     res = lycanthropy.howl(c, st, gd, [mob, boss])
-    assert res["affected"] == 1                             # 只懼非 solo;solo boss 免疫(紅線)
-    assert magic.is_feared(mob) and not magic.is_feared(boss)
+    assert magic.is_feared(mob)                             # 非 solo:必懼
     assert c.fatigue == fat0 - lycanthropy.HOWL_FATIGUE     # 耗體力
+    # R44 機率減免:嚎叫對 solo boss 由「完全免疫」改機率抵抗(會中也會抗)
+    boss_feared = 0
+    for s in range(200):
+        b = combat.spawn_creature(gd, "ancient_dragon", RNG(s))
+        c.fatigue = c.max_fatigue
+        st.rng = RNG(s * 5 + 1)
+        lycanthropy.howl(c, st, gd, [b])
+        if magic.is_feared(b):
+            boss_feared += 1
+    assert 0 < boss_feared < 200, boss_feared
     c.fatigue = lycanthropy.HOWL_FATIGUE - 1
     assert lycanthropy.howl(c, st, gd, [mob])["ok"] is False  # 體力不足無法嚎叫
 

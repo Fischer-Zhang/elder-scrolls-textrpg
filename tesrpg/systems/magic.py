@@ -171,19 +171,20 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
         killed = target.health <= 0
         msg = f"{sp['name']}命中{target.name},造成 {dmg} 點魔法傷害{_resist_tag(mult)}!"
         if kind == "damage_status" and not killed:
-            target.active_effects.append(make_status_effect(eff["status"]))
-            msg += f" {target.name}{_status_verb(eff['status'])}!"
-        # 里程碑「衝擊餘波」:該學派傷害法術命中時附加狀態(stagger/weaken/fear)
+            st = eff["status"]
+            if st.get("status") in _CONTROL_KINDS:   # 控場走集中 helper(R44:閉合潛在缺口,fear/paralyze 受 solo 管)
+                if apply_control(target, st["status"], gamedata, rng,
+                                 magnitude=st.get("magnitude", 0.0), turns=st["turns"]) == "applied":
+                    msg += f" {target.name}{_status_verb(st)}!"
+            else:
+                target.active_effects.append(make_status_effect(st))   # dot 等非控場照舊
+                msg += f" {target.name}{_status_verb(st)}!"
+        # 里程碑「衝擊餘波」:該學派傷害法術命中時附加狀態(stagger/weaken/fear)→ 集中 helper(R44)
         if not killed:
             ohs = mastery.spell_on_hit(char, gamedata, sp["school"])
             if ohs and rng.chance(ohs.get("chance", 1.0)):
-                if ohs["kind"] == "stagger":
-                    target.active_effects.append({"kind": "stagger", "turns": ohs.get("turns", 1)})
-                elif ohs["kind"] == "weaken":
-                    target.active_effects.append({"kind": "weaken", "magnitude": ohs.get("magnitude", 0.0),
-                                                  "turns": ohs.get("turns", 1)})
-                elif ohs["kind"] == "fear":
-                    target.active_effects.append({"kind": "fear", "turns": ohs.get("turns", 1)})
+                apply_control(target, ohs["kind"], gamedata, rng,
+                              magnitude=ohs.get("magnitude", 0.0), turns=ohs.get("turns", 1))
         # 戰法師「共鳴一擊」:毀滅傷害法術後武裝下一記近戰(灌半數法傷 + 引燃同系 DoT;combat 端讀取消耗)
         rs = mastery.resonant_strike(char, gamedata)
         if rs and sp["school"] == "destruction" and damage > 0:
@@ -255,16 +256,14 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
 
     elif kind == "fear":
         if target is not None:
-            if _is_solo(target, gamedata):     # solo BOSS 對控制免疫(R31;與武器/塗毒/里程碑路徑一致)
-                msg = f"{target.name}意志如淵,恐懼無從附身。"
-            else:
-                target.active_effects.append({"kind": "fear", "turns": eff["turns"]})
-                msg = f"{target.name}陷入了恐懼,{eff['turns']} 回合內不敢進攻!"
+            # R44:集中 helper —— solo BOSS 對 fear 由「完全免疫」改機率減免(SOLO_CONTROL_RESIST_CHANCE)
+            res = apply_control(target, "fear", gamedata, rng, turns=eff["turns"])
+            msg = (f"{target.name}陷入了恐懼,{eff['turns']} 回合內不敢進攻!" if res == "applied"
+                   else f"{target.name}意志如淵,恐懼無從附身。")
 
     elif kind == "weaken":
         if target is not None:
-            target.active_effects.append({"kind": "weaken", "magnitude": eff["magnitude"],
-                                          "turns": eff["turns"]})
+            apply_control(target, "weaken", gamedata, rng, magnitude=eff["magnitude"], turns=eff["turns"])
             msg = f"{target.name}的攻勢被削弱了({eff['turns']} 回合)。"
 
     elif kind == "soul_trap":
@@ -275,9 +274,14 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
     elif kind == "apply_status":
         dest = char if sp["target"] == "self" else target
         if dest is not None:
-            dest.active_effects.append(make_status_effect(eff["status"]))
+            st = eff["status"]
+            if dest is not char and st.get("status") in _CONTROL_KINDS:   # 對敵控場走 helper(R44:閉合潛在缺口)
+                apply_control(dest, st["status"], gamedata, rng,
+                              magnitude=st.get("magnitude", 0.0), turns=st["turns"])
+            else:                                                          # 自身/盟友增益、dot 照舊
+                dest.active_effects.append(make_status_effect(st))
             who = "你" if dest is char else dest.name
-            msg = f"{sp['name']} —— {who}{_status_verb(eff['status'])}。"
+            msg = f"{sp['name']} —— {who}{_status_verb(st)}。"
 
     elif kind == "dispel":   # 秘術「驅散」:淨化自身的不良控場/侵蝕效果(不動護盾/再生等增益)
         removed = [e for e in char.active_effects if e.get("kind") in _DISPELLABLE]
@@ -303,9 +307,12 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
                 damage += loss
                 parts.append(f"{e.name} {loss}{_resist_tag(mult)}")
             if kind in ("status_all", "damage_status_all") and e.health > 0:
-                # solo BOSS 對控制型(fear/paralyze)免疫(R31);其餘狀態(dot/soul_trap…)照常
-                if not (eff["status"].get("status") in ("fear", "paralyze") and _is_solo(e, gamedata)):
-                    e.active_effects.append(make_status_effect(eff["status"]))
+                st = eff["status"]
+                if st.get("status") in _CONTROL_KINDS:   # 控場走集中 helper(R44:fear/paralyze 受 solo 機率減免)
+                    apply_control(e, st["status"], gamedata, rng,
+                                  magnitude=st.get("magnitude", 0.0), turns=st["turns"])
+                else:                                    # dot/soul_trap 等照常(各敵獨立 dict,R17)
+                    e.active_effects.append(make_status_effect(st))
         if kind == "status_all":
             msg = f"{sp['name']} —— 全體敵人{_status_verb(eff['status'])}!"
         else:
@@ -452,6 +459,41 @@ def weaken_factor(creature) -> float:
         if e["kind"] == "weaken" and e["turns"] > 0:
             factor = min(factor, 1.0 - e["magnitude"])
     return max(0.1, factor)
+
+
+# 控場 kind 分類(R44:集中施加判定)
+_HARD_CONTROL = ("fear", "paralyze")     # 失能(經 is_incapacitated 跳過行動)→ 受抵抗/去重
+_CONTROL_KINDS = ("fear", "paralyze", "stagger", "slow", "weaken")
+
+
+def apply_control(target, kind, gamedata, rng, *, magnitude=0.0, turns=1, source=None) -> str:
+    """集中施加「控場 debuff」到 target,統一 solo/willpower 抵抗與去重(R44 單一決策點)。回傳:
+      'applied'  —— 實際施加
+      'resisted' —— 被抵抗(玩家意志 resisted_mind / solo BOSS 機率減免)
+      'blocked'  —— 已有同硬控/同源效果生效中(去重防延長鎖定)
+
+    硬控(fear/paralyze)= 失能控場:玩家以 willpower 抗、solo BOSS 以
+    `SOLO_CONTROL_RESIST_CHANCE` 機率抗(取代舊「完全免疫」);軟控(stagger/slow/weaken)
+    一律照施(solo 無免疫)→ 收斂鈍器內建 stagger 與其餘 stagger 路徑的不一致。
+    source:帶來源標(如元素 rider `ench_chill`)→ 同源去重(雙持不疊兩份)。
+    dot/soul_trap/deathmark 等非控場不走此 helper。"""
+    hard = kind in _HARD_CONTROL
+    if hard and any(e.get("kind") == kind and e.get("turns", 0) > 0 for e in target.active_effects):
+        return "blocked"                                  # 去重:硬控不疊、不延長鎖定
+    if source and any(e.get("source") == source and e.get("turns", 0) > 0 for e in target.active_effects):
+        return "blocked"                                  # 同源去重(元素 rider 雙持不疊)
+    if hard:
+        if resisted_mind(target, kind, rng):              # 玩家意志(非玩家/非心智 → False,不變)
+            return "resisted"
+        if _is_solo(target, gamedata) and rng.chance(formulas.SOLO_CONTROL_RESIST_CHANCE):
+            return "resisted"                             # solo BOSS 機率減免(R44)
+    eff = {"kind": kind, "turns": turns}
+    if magnitude:
+        eff["magnitude"] = magnitude
+    if source is not None:
+        eff["source"] = source
+    target.active_effects.append(eff)
+    return "applied"
 
 
 def has_soul_trap(creature) -> bool:

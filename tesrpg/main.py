@@ -766,8 +766,8 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
                                                       sneak_attack=sneak,
                                                       aimed=(action["type"] == "aimed")), gamedata)
                 if action["type"] == "crippling" and combat.is_alive(tgt):
-                    tgt.active_effects.append({"kind": "weaken", "magnitude": formulas.CRIPPLING_WEAKEN,
-                                               "turns": formulas.CRIPPLING_TURNS})
+                    magic.apply_control(tgt, "weaken", gamedata, state.rng,   # R44:集中 helper
+                                        magnitude=formulas.CRIPPLING_WEAKEN, turns=formulas.CRIPPLING_TURNS)
                     ui.message(f"{tgt.name}被牽制射壓制,攻勢一時削弱。", style="cyan")
                 if action["type"] == "skirmish":   # 射後遁走:複用既有 vanish 三道煞車(防無限風箏)
                     combat.player_vanish_cost(player)

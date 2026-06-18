@@ -79,6 +79,7 @@ MAGICKA_REGEN_REST_PER = 0.0167   # 休息回魔倍率:每點意志(>40)
 MAGICKA_REGEN_REST_CAP = 2.5
 MIND_RESIST_PER = 0.0083          # 抗恐懼/麻痺機率:每點意志(>40)
 MIND_RESIST_CAP = 0.75
+SOLO_CONTROL_RESIST_CHANCE = 0.65  # solo BOSS 抵抗硬控(fear/paralyze)機率(R44:取代 100% 免疫;生效率=1-此值)
 LUCK_LOOT_PER = 0.005             # 戰利掉落/金幣倍率:每點幸運(>40)
 LUCK_LOOT_CAP = 1.5
 LUCK_FORTUNE_PER = 0.0017         # 命運加性(撬鎖/逃跑/事件):每點幸運(>40)

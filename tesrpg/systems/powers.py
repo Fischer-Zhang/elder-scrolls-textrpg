@@ -90,8 +90,12 @@ def use(char: Character, state, gamedata: GameData, target=None) -> dict:
         if removed:
             messages.append("身上的持續傷害被淨化了。")
     if "paralyze" in eff and target is not None:
-        target.active_effects.append({"kind": "paralyze", "turns": eff["paralyze"]})
-        messages.append(f"{target.name}被{pdef['name']}定在原地({eff['paralyze']} 回合)!")
+        # R44:戀人座麻痺走集中 helper → solo BOSS 由「保證 3 回合鎖」改機率減免(閉合反鎖王破口)
+        from tesrpg.systems import magic
+        if magic.apply_control(target, "paralyze", gamedata, state.rng, turns=eff["paralyze"]) == "applied":
+            messages.append(f"{target.name}被{pdef['name']}定在原地({eff['paralyze']} 回合)!")
+        else:
+            messages.append(f"{target.name}意志如淵,掙脫了{pdef['name']}的禁錮。")
     if "poison" in eff and target is not None:
         p = eff["poison"]
         target.active_effects.append({"kind": "dot", "element": "poison",
