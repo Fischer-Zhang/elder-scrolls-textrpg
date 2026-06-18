@@ -456,7 +456,8 @@ def _choose_combat_action(state: GameState, gamedata: GameData, enemies: list, a
         if choice == "attack":
             return {"type": "attack", "target": _choose_enemy_target(state, gamedata, enemies, allies)}
         return {"type": choice}
-    opts = [("attack", f"攻擊（{gamedata.item(player.weapon)['name']})")]
+    _gs = inventory.is_great_shield(gamedata, player.equipped.get("shield"))
+    opts = [("attack", f"攻擊（{combat.effective_weapon_name(player, gamedata)}{' · 盾擊' if _gs else ''})")]
     castable = [s for s in player.spells if magic.can_cast(player, gamedata, s)]
     if castable:
         opts.append(("cast", "施法"))

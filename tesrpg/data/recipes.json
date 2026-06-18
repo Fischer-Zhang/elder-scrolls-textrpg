@@ -70,6 +70,11 @@
   "forge_daedric_gauntlets": {"name": "鍛造魔族護手", "station": "smith", "skill": "smithing", "skill_req": 90, "inputs": {"ebony_ingot": 1, "daedra_heart": 1}, "output": "daedric_gauntlets", "output_qty": 1},
   "forge_daedric_boots":     {"name": "鍛造魔族靴",   "station": "smith", "skill": "smithing", "skill_req": 90, "inputs": {"ebony_ingot": 1, "daedra_heart": 1}, "output": "daedric_boots", "output_qty": 1},
   "forge_daedric_shield":    {"name": "鍛造魔族盾",   "station": "smith", "skill": "smithing", "skill_req": 90, "inputs": {"ebony_ingot": 2, "daedra_heart": 1}, "output": "daedric_shield", "output_qty": 1},
+  "forge_iron_great_shield":    {"name": "鍛造鐵重盾",   "station": "smith", "skill": "smithing", "inputs": {"iron_ingot": 4}, "output": "iron_great_shield", "output_qty": 1},
+  "forge_steel_great_shield":   {"name": "鍛造鋼重盾",   "station": "smith", "skill": "smithing", "skill_req": 25, "inputs": {"steel_ingot": 4}, "output": "steel_great_shield", "output_qty": 1},
+  "forge_dwarven_great_shield": {"name": "鍛造矮人重盾", "station": "smith", "skill": "smithing", "skill_req": 55, "inputs": {"dwarven_ingot": 4}, "output": "dwarven_great_shield", "output_qty": 1},
+  "forge_ebony_great_shield":   {"name": "鍛造黑檀重盾", "station": "smith", "skill": "smithing", "skill_req": 85, "inputs": {"ebony_ingot": 4}, "output": "ebony_great_shield", "output_qty": 1},
+  "forge_daedric_great_shield": {"name": "鍛造魔族重盾", "station": "smith", "skill": "smithing", "skill_req": 90, "inputs": {"ebony_ingot": 3, "daedra_heart": 1}, "output": "daedric_great_shield", "output_qty": 1},
 
   "forge_daedric_dagger":  {"name": "鍛造魔族匕首", "station": "smith", "skill": "smithing", "skill_req": 90, "inputs": {"ebony_ingot": 1, "daedra_heart": 1}, "output": "daedric_dagger", "output_qty": 1},
   "forge_daedric_sword":   {"name": "鍛造魔族長劍", "station": "smith", "skill": "smithing", "skill_req": 90, "inputs": {"ebony_ingot": 2, "daedra_heart": 1}, "output": "daedric_sword", "output_qty": 1},

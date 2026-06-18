@@ -185,20 +185,29 @@ def _weapon_profile(actor, gamedata: GameData):
                    if e.get("kind") == "bound_weapon" and e.get("turns", 0) > 0), None)
         if bw:   # 召喚「束縛兵刃」:取代裝備武器 → 固定傷害、用咒術技能、不吃淬鍊/附魔/塗毒/耐久(skill_id=None)
             return bw["magnitude"], actor.skill("conjuration"), None
+        gs = actor.equipped.get("shield")
+        gsd = gamedata.item_or_none(gs) if gs else None
+        if gsd and gsd.get("great_shield"):   # 雙手重盾占雙手 → 盾擊作戰(手持武器休眠);用 block 技、算物理、無附魔/塗毒/archetype
+            return gsd.get("bash_damage", 0), actor.skill("block"), "block"
         wp = gamedata.item(actor.weapon)   # 用 item() 以支援附魔(合成)武器
         return wp["damage"] + smithing.weapon_temper_bonus(actor, gamedata), actor.skill(wp["skill"]), wp["skill"]
     return actor.attack["damage"], actor.attack["skill"], None
 
 
-def eff_weapon_id(player) -> str:
-    """玩家當前實際使用的武器 id(獸形 → beast_claws;否則裝備武器)。"""
+def eff_weapon_id(player, gamedata: GameData | None = None) -> str:
+    """玩家當前實際使用的武器 id(獸形 → beast_claws;雙手重盾 → 該盾〔盾擊〕;否則裝備武器)。"""
     from tesrpg.systems import lycanthropy
-    return lycanthropy.BEAST_CLAW if getattr(player, "beast_form", False) else player.weapon
+    if getattr(player, "beast_form", False):
+        return lycanthropy.BEAST_CLAW
+    gs = getattr(player, "equipped", {}).get("shield")
+    if gamedata is not None and gs and (gamedata.item_or_none(gs) or {}).get("great_shield"):
+        return gs   # 雙手重盾占雙手 → 以盾為「武器」(盾擊),手持武器休眠
+    return player.weapon
 
 
 def effective_weapon_name(player, gamedata: GameData) -> str:
-    """玩家當前實際使用的武器名(獸形 → 獸爪;否則裝備武器)。供戰鬥/選單標籤。"""
-    return gamedata.item(eff_weapon_id(player))["name"]
+    """玩家當前實際使用的武器名(獸形 → 獸爪;雙手重盾 → 盾;否則裝備武器)。供戰鬥/選單標籤。"""
+    return gamedata.item(eff_weapon_id(player, gamedata))["name"]
 
 
 def _armor_rating(actor, gamedata: GameData) -> int:
@@ -290,6 +299,14 @@ def _shield_wall_factor(defender) -> float:
     return (1.0 - e.get("mitigation", 0.0)) if e else 1.0
 
 
+def _great_shield_mitigation_factor(defender, gamedata: GameData) -> float:
+    """雙手重盾被動物理減傷倍率(<1.0 = 更耐打);非重盾/獸形 → 1.0。讀裝備盾的 `mitigation` 欄。"""
+    if not _is_player(defender) or _is_beast(defender):
+        return 1.0
+    sd = gamedata.item_or_none(defender.equipped.get("shield")) if defender.equipped.get("shield") else None
+    return (1.0 - sd.get("mitigation", 0.0)) if (sd and sd.get("great_shield")) else 1.0
+
+
 def initiative_order(player: Character, creature: Creature) -> list:
     """速度高者先行;同速玩家優先。"""
     return sorted([player, creature], key=lambda a: (_speed(a), _is_player(a)), reverse=True)
@@ -333,6 +350,9 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
     # 🔴 紅線:獸形攻擊永不吃偷襲倍率(防禦縱深 —— 即便呼叫端誤傳 sneak_attack=True 亦然;
     # 變身破壞潛行 → solo boss 反一刀夾限不被觸碰)
     sneaking = sneak_attack and _is_player(attacker) and not beast
+    # 雙手重盾:以盾擊作戰,手持武器戰中休眠(比照束縛兵刃,完全取代武器 → 無 archetype 破甲/控制、無附魔/塗毒)。
+    great = (inventory.is_great_shield(gamedata, attacker.equipped.get("shield"))
+             if _is_player(attacker) and not beast and not bound else False)
     wpn_dmg, wpn_skill, wpn_skill_id = _weapon_profile(attacker, gamedata)
     # 雙持副手傷害另計:作為一記「普通補刀」疊上,不吃偷襲倍率(避免偷襲秒精英)。獸形/束縛兵刃無副手。
     offhand_dmg = (inventory.dual_wield_bonus_damage(attacker, gamedata)
@@ -341,7 +361,7 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
     # (與副手補刀傷害同一個折扣;非雙持為 None)。
     offhand_ench = (gamedata.item(attacker.offhand).get("enchant")
                     if offhand_dmg and getattr(attacker, "offhand", "") else None)
-    wdef = gamedata.item(attacker.weapon) if _is_player(attacker) and not beast and not bound else None
+    wdef = gamedata.item(attacker.weapon) if _is_player(attacker) and not beast and not bound and not great else None
     archetype = wdef.get("archetype") if wdef else None
     speed = wdef.get("speed", formulas.WEAPON_SPEED_DEFAULT) if wdef else formulas.WEAPON_SPEED_DEFAULT
     fr = _fatigue_ratio(attacker)
@@ -443,8 +463,9 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
             dmg = formulas.damage_after_armor(raw, _armor_rating(defender, gamedata), pen)
             dmg *= mastery.incoming_physical_factor(defender, gamedata)   # 里程碑「壁壘」:物理再減傷
             dmg *= _shield_wall_factor(defender)            # 戰士「盾牆」架勢:物理再減傷(僅物理,元素穿透)
-            # 武器附魔:額外元素傷害(無視護甲,受對方元素抗性)。獸形以獸爪戰鬥 → 無附魔
-            if _is_player(attacker) and not beast:
+            dmg *= _great_shield_mitigation_factor(defender, gamedata)   # 雙手重盾被動物理減傷(乘性疊加,僅物理)
+            # 武器附魔:額外元素傷害(無視護甲,受對方元素抗性)。獸形/重盾盾擊以非裝備武器戰鬥 → 無附魔
+            if _is_player(attacker) and not beast and not great:
                 ench = gamedata.item(attacker.weapon).get("enchant")
                 # 嗜血怒擊 berserk:依攻方已損生命比例提傷(滿血=×1 → 開場偷襲不放大);
                 # 乘在物理 dmg、於 solo 偷襲/衝鋒夾限之前 → solo boss 仍受夾、守紅線。
@@ -538,7 +559,7 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
                     infect_kind = kind
 
         # 玩家武器塗毒 → 命中即把毒效附到敵人身上,消耗一次塗層。獸形/束縛兵刃以非裝備武器戰鬥 → 不沾塗毒
-        if (_is_player(attacker) and not beast and not bound
+        if (_is_player(attacker) and not beast and not bound and not great
                 and attacker.weapon_poison and attacker.weapon_poison["charges"] > 0):
             wp = attacker.weapon_poison
             pk = wp["status"].get("status")
@@ -556,8 +577,8 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
                 attacker.weapon_poison = None
 
         # 武器命中觸發附魔(weapon_status:吸血/麻痺/再生)—— 玩家專屬,與元素/毒/里程碑各自獨立、不重複套。
-        # 獸形/束縛兵刃以非裝備武器戰鬥 → 無裝備武器附魔
-        if _is_player(attacker) and not beast and not bound:
+        # 獸形/束縛兵刃/雙手重盾盾擊以非裝備武器戰鬥 → 無裝備武器附魔
+        if _is_player(attacker) and not beast and not bound and not great:
             # 主手 + 副手(雙持)的命中觸發附魔:副手以 OFFHAND_DAMAGE_FACTOR 權重疊加。
             # 吸血累計成總比例後一次回血;再生以 source 去重(主手優先);麻痺各自獨立擲一次(binary 不打折,solo 仍免疫)。
             heal_frac = 0.0
@@ -848,7 +869,7 @@ def estimate_sneak_damage(player: Character, gamedata: GameData, creature: Creat
     beast = _is_beast(player)
     wpn_dmg, wpn_skill, wpn_skill_id = _weapon_profile(player, gamedata)
     offhand_dmg = 0.0 if beast else inventory.dual_wield_bonus_damage(player, gamedata)
-    archetype = gamedata.item(eff_weapon_id(player)).get("archetype")
+    archetype = gamedata.item(eff_weapon_id(player, gamedata)).get("archetype")
     wm = mastery.weapon_mod(player, gamedata, wpn_skill_id)   # 與 resolve_attack 一致
     raw = formulas.attack_damage(wpn_dmg, wpn_skill, _strength(player), 1.0)
     power_bonus = raw * wm.get("power", 0.0)                  # weapon_mod 威力:flat 補傷(不吃偷襲倍率)

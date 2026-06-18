@@ -88,6 +88,11 @@ def is_two_handed(gamedata: GameData, item_id: str) -> bool:
     return bool((gamedata.item_or_none(item_id) or {}).get("two_handed"))
 
 
+def is_great_shield(gamedata: GameData, item_id) -> bool:
+    """盾是否為雙手重盾(占雙手·無武器·盾擊作戰·高護甲+被動減傷)。item_id 可為 None/空。"""
+    return bool(item_id and (gamedata.item_or_none(item_id) or {}).get("great_shield"))
+
+
 def equip_weapon(char: Character, gamedata: GameData, item_id: str) -> bool:
     if gamedata.item(item_id).get("kind") != "weapon":
         return False
@@ -147,15 +152,19 @@ def equip_armor(char: Character, gamedata: GameData, item_id: str) -> bool:
     if d["slot"] == "shield" and is_two_handed(gamedata, char.weapon):   # 雙手武器在手 → 不能裝盾
         return False
     char.equipped[d["slot"]] = item_id
+    if d["slot"] == "shield" and is_great_shield(gamedata, item_id):   # 雙手重盾占雙手 → 卸副手(手持武器戰中休眠)
+        char.offhand = ""
     return True
 
 
 def ensure_grip(char: Character, gamedata: GameData) -> None:
-    """握法正規化(載入路徑;idempotent):雙手武器在手 → 清掉殘留的盾與副手
-    (處理舊存檔『雙手武器 + 盾』並存的情形)。無新存檔欄位。"""
+    """握法正規化(載入路徑;idempotent):雙手武器在手 → 清殘留盾與副手;雙手重盾在手 → 清殘留副手
+    (處理舊存檔『雙手武器/重盾 + 並存』的情形)。無新存檔欄位。"""
     if is_two_handed(gamedata, getattr(char, "weapon", "")):
         char.offhand = ""
         char.equipped.pop("shield", None)
+    elif is_great_shield(gamedata, getattr(char, "equipped", {}).get("shield")):
+        char.offhand = ""
 
 
 def equip_jewelry(char: Character, gamedata: GameData, item_id: str) -> str | None:

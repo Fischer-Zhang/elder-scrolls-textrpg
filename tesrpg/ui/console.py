@@ -1614,6 +1614,12 @@ def _armor_display(char: Character, gamedata: GameData) -> int:
 
 
 def weapon_line(char: Character, gamedata: GameData) -> str:
+    from tesrpg.systems import inventory, smithing
+    gs = char.equipped.get("shield")
+    if inventory.is_great_shield(gamedata, gs):    # 雙手重盾:以盾擊作戰(手持武器休眠)
+        sd = gamedata.item(gs)
+        return (f"{sd['name']}（盾擊 傷害 {sd.get('bash_damage', 0)} · "
+                f"{gamedata.skill_name('block')} {char.skill('block')}·雙手重盾)")
     wp = gamedata.item_or_none(char.weapon)
     if wp is None:                       # 毀損/未知武器 id → 顯示原 id,不崩潰(防毀損存檔)
         return f"{char.weapon}(未知武器)"

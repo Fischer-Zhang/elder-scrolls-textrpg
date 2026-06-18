@@ -70,6 +70,9 @@ def can_charge(char: Character, gamedata: GameData, mounted: bool) -> bool:
     m = _active(char, gamedata)
     if not m or m.get("category") != "warhorse" or "charge" not in m:
         return False
+    sh = char.equipped.get("shield")
+    if sh and (gamedata.item_or_none(sh) or {}).get("great_shield"):
+        return False   # 雙手重盾占雙手(手持武器休眠)→ 無法持武器衝鋒
     wpn = gamedata.item_or_none(char.weapon) or {}
     return wpn.get("archetype") in MELEE_ARCHETYPES and not wpn.get("two_handed")   # 雙手重武器太笨重 → 不能馬背衝鋒
 
