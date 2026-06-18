@@ -3027,16 +3027,19 @@ def action_enchant(state: GameState, gamedata: GameData) -> None:
             akind = ui.menu("附魔型別?", enchanting.ARMOR_KINDS, allow_back=True)
             if akind is None:
                 return
-            if akind == "skill":
-                aparam_opts = [(sid, gamedata.skill_name(sid)) for sid in gamedata.skills]
-            elif akind == "resist":
-                aparam_opts = [("fire", "烈焰"), ("frost", "冰霜"), ("shock", "雷電"),
-                               ("poison", "毒素"), ("magic", "魔法")]
-            else:  # res
-                aparam_opts = [("health", "生命"), ("magicka", "魔力"), ("fatigue", "體力")]
-            aparam = ui.menu("強化哪一項?", aparam_opts, allow_back=True)
-            if aparam is None:
-                return
+            if akind == "thorns":   # 荊棘無 param(純反傷%,靈魂石階決定)
+                aparam = ""
+            else:
+                if akind == "skill":
+                    aparam_opts = [(sid, gamedata.skill_name(sid)) for sid in gamedata.skills]
+                elif akind == "resist":
+                    aparam_opts = [("fire", "烈焰"), ("frost", "冰霜"), ("shock", "雷電"),
+                                   ("poison", "毒素"), ("magic", "魔法")]
+                else:  # res
+                    aparam_opts = [("health", "生命"), ("magicka", "魔力"), ("fatigue", "體力")]
+                aparam = ui.menu("強化哪一項?", aparam_opts, allow_back=True)
+                if aparam is None:
+                    return
             res = enchanting.enchant_armor(char, gamedata, aid, akind, aparam, gem)
         else:   # jewelry
             jid = ui.menu("為哪件飾品附魔?",

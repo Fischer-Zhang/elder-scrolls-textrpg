@@ -85,6 +85,8 @@ def _armor_enchant(kind: str, param: str, mag: int, gamedata) -> tuple[dict, str
     if kind == "res":
         return ({"kind": "armor_fortify", "stat": param, "magnitude": mag},
                 f"強化{_STAT_NAME.get(param, param)} +{mag}")
+    if kind == "thorns":   # 荊棘反傷(R42):magnitude = 反傷%(靈魂石階 1~5);combat 端 thorns_reflect 聚合 /100
+        return ({"kind": "thorns", "magnitude": mag}, f"荊棘 反傷 +{mag}%")
     # skill / resist 複用飾品同形 dict
     return _jewelry_enchant(kind, param, mag, gamedata)
 

@@ -17,8 +17,8 @@
 
   {"id": "block_50", "skill": "block", "threshold": 50,
    "options": [
-     {"opt_id": "shieldwall", "name": "盾反", "kind": "block_reflect", "reflect": 0.20, "fatigue": 6,
-      "desc": "盾反戰技:被近戰物理擊中時,以盾卸力反震 —— 反彈該擊 20% 傷害給攻擊者(每次耗 6 體力,力竭則施展不出;可與重甲反震疊加,重甲+盾共 32%)。"},
+     {"opt_id": "shieldwall", "name": "盾反", "kind": "block_reflect", "reflect": 0.10, "fatigue": 10,
+      "desc": "盾反戰技:被近戰物理擊中時,以盾卸力反震 —— 反彈該擊「攻方完整物理輸出」10%(R42:吃 raw、解耦護甲;每次耗 10 體力,力竭則施展不出;與重甲反震/荊棘附魔相加)。"},
      {"opt_id": "shield_bash", "name": "盾擊踉蹌", "kind": "block_riposte", "stagger_chance": 0.35,
       "desc": "以盾反擊:成功格擋時 35% 機率震開來犯者,使其下一擊踉蹌。"}
    ]},
@@ -275,8 +275,8 @@
 
   {"id": "heavy_armor_50", "skill": "heavy_armor", "threshold": 50,
    "options": [
-     {"opt_id": "armor_reflect", "name": "重甲反震", "kind": "armor_reflect", "reflect": 0.12,
-      "desc": "厚甲卸力反震:被近戰物理擊中時,反彈該擊 12% 傷害給攻擊者。"},
+     {"opt_id": "armor_reflect", "name": "重甲反震", "kind": "armor_reflect", "reflect": 0.06,
+      "desc": "厚甲卸力反震:被近戰物理擊中時,反彈「攻方完整物理輸出」6% 給攻擊者(R42:吃 raw、解耦護甲;與盾反/荊棘附魔相加,無耗體)。"},
      {"opt_id": "disease_ward", "name": "百戰不染", "kind": "resist_fortify", "resist": {"disease": 25},
       "desc": "厚甲護身,瘴癘難侵(疾病抗性 +25%)。"}
    ]},

@@ -93,6 +93,19 @@ def is_great_shield(gamedata: GameData, item_id) -> bool:
     return bool(item_id and (gamedata.item_or_none(item_id) or {}).get("great_shield"))
 
 
+def thorns_reflect(char: Character, gamedata: GameData) -> float:
+    """荊棘附魔反傷比例(R42):盔/胸/手/靴/盾各可附一條,magnitude=反傷%(靈魂石階 1~5),聚合相加後 /100。"""
+    total = 0
+    for slot in ARMOR_SLOTS:
+        iid = char.equipped.get(slot)
+        if not iid:
+            continue
+        ench = (gamedata.item_or_none(iid) or {}).get("enchant")
+        if ench and ench.get("kind") == "thorns":
+            total += ench.get("magnitude", 0)
+    return total / 100.0
+
+
 def equip_weapon(char: Character, gamedata: GameData, item_id: str) -> bool:
     if gamedata.item(item_id).get("kind") != "weapon":
         return False

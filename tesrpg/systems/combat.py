@@ -514,13 +514,18 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
 
         # 里程碑「重甲反震/重壓 + 格擋盾反」:玩家受物理擊中 → 反彈傷害 + 機率震開攻擊者(只物理;攻擊者可被反殺)
         if _is_player(defender) and not atk_element and dmg_done > 0:
-            refl = mastery.armor_reflect(defender, gamedata)            # 重甲反震(被動,無耗體)
-            if refl:
-                _set_hp(attacker, _get_hp(attacker) - int(round(dmg_done * refl)))
-            br = mastery.block_reflect(defender, gamedata)              # 「盾反」戰技:**與重甲反震疊加**(使用者拍板可疊;重甲+盾=32%)+ 耗體(力竭=自帶煞車)
+            # 反傷流(R42):吃「攻方完整物理輸出(連格擋前)」= raw / block_factor → 解耦護甲/盾牆/重盾/格擋,
+            # 讓龜也能反出有意義的傷。物理限定(元素穿透不反)+ player-only(直接扣血、非遞迴 → 無 A→B→A 環)。
+            # 來源相加:重甲反震 0.06 + 荊棘附魔(盔/胸/手/靴/盾·1%/靈魂階)+ 盾反 0.10(耗體 10、力竭則不計)。
+            base = raw / block_factor if block_factor else raw
+            ratio = (mastery.armor_reflect(defender, gamedata)
+                     + inventory.thorns_reflect(defender, gamedata))
+            br = mastery.block_reflect(defender, gamedata)
             if br and defender.fatigue >= br["fatigue"]:
                 defender.fatigue = max(0, defender.fatigue - br["fatigue"])
-                _set_hp(attacker, _get_hp(attacker) - int(round(dmg_done * br["reflect"])))
+                ratio += br["reflect"]
+            if ratio:
+                _set_hp(attacker, _get_hp(attacker) - int(round(base * ratio)))
             st = mastery.armor_stagger(defender, gamedata)
             if st and is_alive(attacker) and rng.chance(st):
                 # turns:2 → 撐過本回合末 tick,於攻擊者「下一次出手」時仍踉蹌生效(防守側反制的正確時序)

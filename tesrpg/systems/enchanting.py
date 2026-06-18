@@ -20,7 +20,7 @@ RESIST_ELEMENTS = ["fire", "frost", "shock", "poison", "magic"]   # 飾品可抗
 JEWELRY_KINDS = [("skill", "強化技能"), ("attr", "強化屬性"),
                  ("resist", "抗元素"), ("res", "強化最大資源")]
 # 護甲附魔型別(刻意不含 attr:屬性 fortify 最強、會疊乘衍生資源,留給飾品 3 槽)
-ARMOR_KINDS = [("res", "強化最大資源"), ("skill", "強化技能"), ("resist", "抗元素")]
+ARMOR_KINDS = [("res", "強化最大資源"), ("skill", "強化技能"), ("resist", "抗元素"), ("thorns", "荊棘反傷")]
 # 武器命中觸發附魔型別(供 UI 分家族;見 main.action_enchant)
 WEAPON_DOT_KINDS = [("burn", "焚燒(火 · 持續傷)"), ("chill", "凍緩(霜 · 持續傷+減敵)"),
                     ("jolt", "感電(電 · 持續傷+燒魔)")]
@@ -143,6 +143,8 @@ def armor_magnitude(kind: str, soul: int, mysticism_skill: int) -> int:
     曲線(skill 1.5 vs 飾品 2.0、resist 4.0 vs 5.0)→ 飾品仍是技能 fortify 首選、軟化多件疊加上限。"""
     if kind == "res":
         return enchant_magnitude(soul, mysticism_skill)
+    if kind == "thorns":   # 荊棘反傷(R42):反傷% = 靈魂石階(1~5),不吃 mysticism/enchant_potency(使用者拍板「1階=1%」)
+        return max(1, soul)
     base = 0.5 + mysticism_skill / 100.0
     factor = {"skill": 1.5, "resist": 4.0}[kind]
     floor = 2 if kind == "resist" else 1
@@ -154,12 +156,15 @@ def enchant_armor(char: Character, gamedata: GameData, base_armor: str,
     """以靈魂石為護甲附上 強化資源/技能/抗元素(res/skill/resist)。回傳同 enchant_weapon。"""
     if inventory.count_item(char, base_armor) < 1 or inventory.count_item(char, gem_id) < 1:
         return {"ok": False, "message": "缺少護甲或靈魂石。", "hours": 0, "tired": False, "skill_events": []}
-    if kind not in ("res", "skill", "resist"):
+    if kind not in ("res", "skill", "resist", "thorns"):
         return {"ok": False, "message": "未知的附魔型別。", "hours": 0, "tired": False, "skill_events": []}
 
     soul = gamedata.item(gem_id).get("soul", 1)
     from tesrpg.systems import mastery
-    mag = round(armor_magnitude(kind, soul, char.skill("mysticism")) * (1 + mastery.enchant_potency(char, gamedata)))
+    if kind == "thorns":   # 荊棘:純靈魂石階%、不吃 enchant_potency
+        mag = armor_magnitude(kind, soul, char.skill("mysticism"))
+    else:
+        mag = round(armor_magnitude(kind, soul, char.skill("mysticism")) * (1 + mastery.enchant_potency(char, gamedata)))
 
     inventory.remove_item(char, base_armor, 1)
     inventory.remove_item(char, gem_id, 1)

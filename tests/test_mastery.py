@@ -78,12 +78,12 @@ def test_two_option_choice_plumbing():
 
 # --- 盾反(block 50;R39)----------------------------------------------------
 def test_block_reflect_returns_damage_and_costs_fatigue():
-    """R39 盾反:受物理近戰擊中 → 反彈 20% + 每次扣 6 體;力竭(< 6 體)則不反、不扣。"""
+    """R42 盾反:受物理近戰擊中 → 反彈「攻方完整物理輸出」10%(吃 raw)+ 每次扣 10 體;力竭(< 10 體)則不反、不扣。"""
     gd, c = _char(block=50)
     assert mastery.block_reflect(c, gd) == {}                              # 未選 → 空
     assert mastery.block_hit_penalty(c, gd) == formulas.BLOCK_HIT_PENALTY  # 盾陣已移除 → 格擋基礎懲罰仍預設
     mastery.choose(c, gd, "block_50", "shieldwall")
-    assert mastery.block_reflect(c, gd) == {"reflect": 0.20, "fatigue": 6}
+    assert mastery.block_reflect(c, gd) == {"reflect": 0.10, "fatigue": 10}
     c.health = c.max_health = 9999; c.weapon = "fists"                     # 排除被秒;徒手(不附元素)
     foe = combat.spawn_creature(gd, "bandit", RNG(1)); foe.attack["skill"] = 90; foe.attack["damage"] = 20
     hp0 = foe.health
@@ -91,11 +91,11 @@ def test_block_reflect_returns_damage_and_costs_fatigue():
         foe.health = hp0; c.fatigue = 100
         r = combat.resolve_attack(foe, c, gd, RNG(s))
         if r["hit"] and r["damage"] > 0:
-            assert foe.health < hp0 and c.fatigue == 94                    # 攻擊者被反彈 + 扣 6 體
+            assert foe.health < hp0 and c.fatigue == 90                    # 攻擊者被反彈 + 扣 10 體
             break
     else:
         raise AssertionError("應至少一次命中以驗盾反")
-    for s in range(80):                                                    # 力竭(3 < 6)→ 不反、不扣負
+    for s in range(80):                                                    # 力竭(3 < 10)→ 不反、不扣負
         foe.health = hp0; c.fatigue = 3
         r = combat.resolve_attack(foe, c, gd, RNG(s))
         if r["hit"] and r["damage"] > 0:
@@ -1150,7 +1150,7 @@ def test_flee_bonus_getter_and_try_flee():
 def test_armor_reflect_damages_attacker():
     gd, c = _char(heavy_armor=50)
     mastery.choose(c, gd, "heavy_armor_50", "armor_reflect")
-    assert mastery.armor_reflect(c, gd) == 0.12
+    assert mastery.armor_reflect(c, gd) == 0.06            # R42:吃 raw 後重定 0.12→0.06
     c.health = c.max_health = 9999
     foe = combat.spawn_creature(gd, "bear", RNG(0)); foe.health = foe.max_health = 9999
     reflected = False

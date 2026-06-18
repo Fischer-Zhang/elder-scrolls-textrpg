@@ -261,11 +261,49 @@ def test_mace_builtin_stagger_and_solo_immune():
         assert not any(e.get("kind") == "stagger" for e in foe.active_effects)
 
 
+def test_reflect_r42_raw_decoupled_thorns_redlines():
+    """R42 反傷流:荊棘聚合 5 槽、吃 raw(解耦護甲:高甲龜反傷仍是 raw 級而非 dmg_done 級)、元素不反、不一擊反殺。"""
+    import tesrpg.synth as synth
+    from tesrpg.systems import inventory, stats
+    gd, c = _warrior()
+    c.skills["heavy_armor"] = 100
+    c.skills["block"] = 100
+    c.health = c.max_health = 99999
+    c.fatigue = c.max_fatigue = 9999
+    # 全套魔族重甲(高減傷·小 dmg_done)+ 5 件大靈魂荊棘 → 總反傷 0.06+0.10+0.25 = 0.41
+    for slot, base in (("helmet", "daedric_helmet"), ("cuirass", "daedric_cuirass"),
+                       ("gauntlets", "daedric_gauntlets"), ("boots", "daedric_boots"), ("shield", "daedric_shield")):
+        tid = synth.enchant_armor_id(base, "thorns", "", 5)
+        inventory.add_item(c, tid, 1)
+        inventory.equip_armor(c, gd, tid)
+    stats.recompute_max_resources(c, gd)
+    c.mastery_choices = {"heavy_armor_50": "armor_reflect", "block_50": "shieldwall"}
+    assert abs(inventory.thorns_reflect(c, gd) - 0.25) < 1e-9          # 5 件聚合 = 25%
+
+    def refl(foe_id, seed):
+        foe = combat.spawn_creature(gd, foe_id, RNG(seed))
+        foe.health = foe.max_health = 99999
+        b = foe.health
+        c.fatigue = 9999
+        ev = combat.resolve_attack(foe, c, gd, RNG(seed))             # 敵打玩家 → 玩家反傷
+        return b - foe.health, ev["damage"]
+
+    # 解耦證明:高甲龜 dmg_done 被護甲壓小,但反傷仍 = raw×0.41(raw 級)→ 最大反傷 ≥12
+    #   (若錯吃 dmg_done,反傷 = 0.41×小dmg_done,最大只 ~6 → 永遠到不了 12)
+    reflects = [refl("werewolf_alpha", s)[0] for s in range(40)]
+    assert max(reflects) >= 12
+    # 紅線:元素敵攻(古龍)完全不反
+    assert all(refl("ancient_dragon", s)[0] == 0 for s in range(15))
+    # 紅線:不一擊反殺(0.41×raw〔max~17〕遠小於任何物理 boss HP)
+    assert max(reflects) < 30
+
+
 def run():
     test_formulas_monotonic()
     test_berserk_factor()
     test_vampiric_fraction()
     test_mace_builtin_stagger_and_solo_immune()
+    test_reflect_r42_raw_decoupled_thorns_redlines()
     test_starter_weapon_assigned()
     test_player_beats_weak_creature_and_trains()
     test_sneak_attack_multiplies_damage()
