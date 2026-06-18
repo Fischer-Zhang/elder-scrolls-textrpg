@@ -19,7 +19,8 @@ class Creature:
     max_health: int
     health: float
     armor_rating: int
-    attack: dict                       # {"name", "damage", "skill"}
+    attack: dict                       # {"name", "damage", "skill"} —— 後備單招(無 attacks 時用)
+    attacks: list = field(default_factory=list)  # 攻擊曲目 [{...attack, "weight"?, "when"?, "cooldown"?}];空=只用 attack
     loot_gold: list = field(default_factory=lambda: [0, 0])
     loot_table: list = field(default_factory=list)   # [{"item","chance"}, ...]
     flavor: str = ""

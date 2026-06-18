@@ -181,6 +181,12 @@
       "damage": 16,
       "skill": 45
     },
+    "attacks": [
+      {"name": "熊掌橫掃", "damage": 16, "skill": 45, "weight": 3},
+      {"name": "血盆撕咬", "damage": 13, "skill": 45, "weight": 2,
+       "on_hit": {"status": "dot", "element": "bleed", "magnitude": 3, "turns": 2, "chance": 0.4}},
+      {"name": "狂暴揮爪", "damage": 26, "skill": 48, "weight": 2, "cooldown": 3, "when": {"hp_below": 0.5}}
+    ],
     "loot_gold": [
       0,
       6
@@ -336,6 +342,12 @@
       "damage": 14,
       "skill": 55
     },
+    "attacks": [
+      {"name": "衛兵長劍", "damage": 14, "skill": 55, "weight": 3},
+      {"name": "盾牌猛擊", "damage": 10, "skill": 55, "weight": 2,
+       "on_hit": {"status": "stagger", "turns": 1, "chance": 0.3}},
+      {"name": "破陣重劈", "damage": 22, "skill": 58, "weight": 1, "cooldown": 3}
+    ],
     "loot_gold": [
       5,
       15
@@ -499,6 +511,11 @@
       "skill": 60,
       "element": "fire"
     },
+    "attacks": [
+      {"name": "黑檀巨劍", "damage": 20, "skill": 60, "element": "fire", "weight": 2},
+      {"name": "巨刃橫掃", "damage": 18, "skill": 60, "weight": 2},
+      {"name": "湮滅怒斬", "damage": 30, "skill": 62, "element": "fire", "weight": 1, "cooldown": 3}
+    ],
     "loot_gold": [
       20,
       50
@@ -547,6 +564,11 @@
         "chance": 0.4
       }
     },
+    "attacks": [
+      {"name": "霜噬", "damage": 11, "skill": 45, "element": "frost", "weight": 2,
+       "on_hit": {"status": "dot", "element": "frost", "magnitude": 2, "turns": 2, "chance": 0.4}},
+      {"name": "冰棱穿刺", "damage": 10, "skill": 48, "weight": 2}
+    ],
     "resist": {
       "frost": 100,
       "fire": -50
@@ -568,6 +590,12 @@
     "name": "霜巨魔", "strength": 58, "agility": 38, "speed": 45,
     "max_health": 135, "armor_rating": 8,
     "attack": {"name": "雙爪猛擊", "damage": 22, "skill": 55, "element": "frost"},
+    "attacks": [
+      {"name": "雙爪猛擊", "damage": 22, "skill": 55, "element": "frost", "weight": 2},
+      {"name": "巨臂橫掃", "damage": 20, "skill": 55, "weight": 2,
+       "on_hit": {"status": "stagger", "turns": 1, "chance": 0.25}},
+      {"name": "狂怒撕咬", "damage": 32, "skill": 58, "weight": 1, "cooldown": 3, "when": {"hp_below": 0.5}}
+    ],
     "danger": 5, "min_level": 6, "weight": 2,
     "resist": {"frost": 50},
     "loot_gold": [10, 30],
@@ -579,6 +607,11 @@
     "name": "雷暴元素", "strength": 58, "agility": 42, "speed": 40,
     "max_health": 150, "armor_rating": 16,
     "attack": {"name": "雷殛", "damage": 24, "skill": 58, "element": "shock"},
+    "attacks": [
+      {"name": "雷殛", "damage": 24, "skill": 58, "element": "shock", "weight": 2},
+      {"name": "岩拳轟擊", "damage": 21, "skill": 58, "weight": 2},
+      {"name": "雷暴釋放", "damage": 34, "skill": 60, "element": "shock", "weight": 1, "cooldown": 3}
+    ],
     "danger": 5, "min_level": 8, "weight": 2,
     "resist": {"shock": 100, "fire": -25},
     "loot_gold": [0, 0],
@@ -591,6 +624,13 @@
     "max_health": 178, "armor_rating": 16,
     "attack": {"name": "巨顎撕咬", "damage": 26, "skill": 58, "element": "poison",
                "on_hit": {"status": "dot", "element": "poison", "magnitude": 4, "turns": 3, "chance": 0.5}},
+    "attacks": [
+      {"name": "巨顎撕咬", "damage": 26, "skill": 58, "element": "poison", "weight": 2,
+       "on_hit": {"status": "dot", "element": "poison", "magnitude": 4, "turns": 3, "chance": 0.5}},
+      {"name": "尾鞭橫掃", "damage": 24, "skill": 58, "weight": 2,
+       "on_hit": {"status": "stagger", "turns": 1, "chance": 0.25}},
+      {"name": "吞噬猛咬", "damage": 36, "skill": 60, "weight": 1, "cooldown": 3}
+    ],
     "danger": 5, "min_level": 9, "weight": 2,
     "resist": {"fire": 50, "poison": 75},
     "loot_gold": [20, 60],
@@ -602,6 +642,14 @@
     "max_health": 175, "armor_rating": 12,
     "attack": {"name": "寒冰枯萎", "damage": 28, "skill": 64, "element": "frost",
                "on_hit": {"status": "dot", "element": "frost", "magnitude": 5, "turns": 3, "chance": 0.5}},
+    "attacks": [
+      {"name": "寒冰枯萎", "damage": 28, "skill": 64, "element": "frost", "weight": 2,
+       "on_hit": {"status": "dot", "element": "frost", "magnitude": 5, "turns": 3, "chance": 0.5}},
+      {"name": "死靈觸碰", "damage": 18, "skill": 64, "weight": 2,
+       "on_hit": {"status": "weaken", "magnitude": 0.25, "turns": 2, "chance": 0.3}},
+      {"name": "恐懼低語", "damage": 12, "skill": 64, "weight": 1,
+       "on_hit": {"status": "fear", "turns": 1, "chance": 0.25}}
+    ],
     "danger": 5, "min_level": 11, "weight": 1,
     "resist": {"frost": 75, "poison": 100, "magic": 30},
     "loot_gold": [40, 90],
@@ -613,6 +661,13 @@
     "name": "魔人領主", "strength": 74, "agility": 50, "speed": 48,
     "max_health": 218, "armor_rating": 22,
     "attack": {"name": "湮滅巨刃", "damage": 29, "skill": 66, "element": "fire"},
+    "attacks": [
+      {"name": "湮滅巨刃", "damage": 29, "skill": 66, "element": "fire", "weight": 2},
+      {"name": "黑檀重斬", "damage": 26, "skill": 66, "weight": 2},
+      {"name": "魔界威壓", "damage": 14, "skill": 66, "weight": 1,
+       "on_hit": {"status": "fear", "turns": 1, "chance": 0.25}},
+      {"name": "湮滅烈斬", "damage": 42, "skill": 68, "element": "fire", "weight": 1, "cooldown": 3, "when": {"hp_below": 0.5}}
+    ],
     "danger": 5, "min_level": 12, "weight": 1, "solo": true,
     "resist": {"fire": 75, "magic": 30},
     "loot_gold": [60, 140],
@@ -624,6 +679,12 @@
     "name": "霜巨人", "strength": 88, "agility": 35, "speed": 40,
     "max_health": 290, "armor_rating": 16,
     "attack": {"name": "冰錘橫掃", "damage": 35, "skill": 60, "element": "frost"},
+    "attacks": [
+      {"name": "冰錘橫掃", "damage": 35, "skill": 60, "element": "frost", "weight": 2},
+      {"name": "巨拳砸擊", "damage": 32, "skill": 60, "weight": 2,
+       "on_hit": {"status": "stagger", "turns": 1, "chance": 0.3}},
+      {"name": "踏地震擊", "damage": 48, "skill": 62, "weight": 1, "cooldown": 3}
+    ],
     "danger": 5, "min_level": 14, "weight": 1, "solo": true,
     "resist": {"frost": 50},
     "loot_gold": [80, 180],
@@ -635,6 +696,14 @@
     "max_health": 400, "armor_rating": 22,
     "attack": {"name": "烈焰吐息", "damage": 40, "skill": 70, "element": "fire",
                "on_hit": {"status": "dot", "element": "fire", "magnitude": 6, "turns": 3, "chance": 0.5}},
+    "attacks": [
+      {"name": "烈焰吐息", "damage": 40, "skill": 70, "element": "fire", "weight": 2,
+       "on_hit": {"status": "dot", "element": "fire", "magnitude": 6, "turns": 3, "chance": 0.5}},
+      {"name": "巨顎咬擊", "damage": 38, "skill": 70, "weight": 2},
+      {"name": "巨尾橫掃", "damage": 30, "skill": 70, "weight": 2,
+       "on_hit": {"status": "stagger", "turns": 1, "chance": 0.3}},
+      {"name": "烈焰風暴", "damage": 55, "skill": 72, "element": "fire", "weight": 1, "cooldown": 3, "when": {"hp_below": 0.5}}
+    ],
     "danger": 5, "min_level": 16, "weight": 1, "solo": true,
     "resist": {"fire": 80, "frost": 50, "magic": 40},
     "loot_gold": [150, 350],
@@ -669,6 +738,12 @@
     "max_health": 160,
     "armor_rating": 18,
     "attack": {"name": "貴族之噬", "damage": 22, "skill": 62, "infect": 0.45},
+    "attacks": [
+      {"name": "貴族之噬", "damage": 22, "skill": 62, "infect": 0.45, "weight": 2},
+      {"name": "撕裂爪擊", "damage": 24, "skill": 62, "weight": 2},
+      {"name": "魅惑凝視", "damage": 14, "skill": 62, "weight": 1,
+       "on_hit": {"status": "fear", "turns": 1, "chance": 0.25}}
+    ],
     "resist": {"frost": 50, "poison": 75, "fire": -25, "magic": 20},
     "loot_gold": [50, 120],
     "loot": [{"item": "gold_amulet", "chance": 0.25}, {"item": "filled_common_soul_gem", "chance": 0.3}, {"item": "healing_potion", "chance": 0.5}],
@@ -715,6 +790,12 @@
     "name": "泥沼巨魔", "strength": 62, "agility": 36, "speed": 42,
     "max_health": 150, "armor_rating": 8,
     "attack": {"name": "雙爪猛擊", "damage": 23, "skill": 55},
+    "attacks": [
+      {"name": "雙爪猛擊", "damage": 23, "skill": 55, "weight": 3},
+      {"name": "藻臂橫掃", "damage": 20, "skill": 55, "weight": 2,
+       "on_hit": {"status": "stagger", "turns": 1, "chance": 0.25}},
+      {"name": "癲狂亂抓", "damage": 33, "skill": 58, "weight": 1, "cooldown": 3, "when": {"hp_below": 0.5}}
+    ],
     "danger": 5, "min_level": 7, "weight": 2,
     "resist": {"poison": 75, "fire": -50},
     "loot_gold": [10, 30],
@@ -727,6 +808,13 @@
     "max_health": 255, "armor_rating": 18,
     "attack": {"name": "雷霆巨顎", "damage": 30, "skill": 64, "element": "shock",
                "on_hit": {"status": "dot", "element": "shock", "magnitude": 5, "turns": 3, "chance": 0.5}},
+    "attacks": [
+      {"name": "雷霆巨顎", "damage": 30, "skill": 64, "element": "shock", "weight": 2,
+       "on_hit": {"status": "dot", "element": "shock", "magnitude": 5, "turns": 3, "chance": 0.5}},
+      {"name": "巨尾抽擊", "damage": 27, "skill": 64, "weight": 2,
+       "on_hit": {"status": "stagger", "turns": 1, "chance": 0.25}},
+      {"name": "雷霆奔騰", "damage": 40, "skill": 66, "element": "shock", "weight": 1, "cooldown": 3}
+    ],
     "danger": 5, "min_level": 13, "weight": 1, "solo": true,
     "resist": {"shock": 100, "poison": 75, "fire": -25, "frost": 25},
     "loot_gold": [70, 160],
@@ -776,6 +864,12 @@
     "name": "落魄的騎士", "strength": 58, "agility": 42, "speed": 38,
     "max_health": 120, "armor_rating": 28,
     "attack": {"name": "重劍劈斬", "damage": 19, "skill": 56},
+    "attacks": [
+      {"name": "重劍劈斬", "damage": 19, "skill": 56, "weight": 3},
+      {"name": "撕裂突刺", "damage": 16, "skill": 56, "weight": 2,
+       "on_hit": {"status": "dot", "element": "bleed", "magnitude": 3, "turns": 2, "chance": 0.4}},
+      {"name": "孤注重斬", "damage": 28, "skill": 58, "weight": 1, "cooldown": 3}
+    ],
     "danger": 5, "min_level": 99, "weight": 0,
     "loot_gold": [50, 110],
     "loot": [{"item": "steel_cuirass", "chance": 0.3}, {"item": "healing_potion", "chance": 0.4}],
@@ -785,6 +879,12 @@
     "name": "競技場冠軍", "strength": 70, "agility": 52, "speed": 50,
     "max_health": 165, "armor_rating": 22,
     "attack": {"name": "鬥技連擊", "damage": 25, "skill": 62},
+    "attacks": [
+      {"name": "鬥技連擊", "damage": 25, "skill": 62, "weight": 3},
+      {"name": "盾緣猛撞", "damage": 18, "skill": 62, "weight": 2,
+       "on_hit": {"status": "stagger", "turns": 1, "chance": 0.3}},
+      {"name": "致命重劈", "damage": 36, "skill": 64, "weight": 1, "cooldown": 3, "when": {"hp_below": 0.5}}
+    ],
     "danger": 5, "min_level": 99, "weight": 0,
     "loot_gold": [80, 160],
     "loot": [{"item": "ebony_sword", "chance": 0.25}, {"item": "healing_potion", "chance": 0.5}],
@@ -847,6 +947,12 @@
     "name": "九神聖騎士", "strength": 60, "agility": 42, "speed": 38,
     "max_health": 130, "armor_rating": 30,
     "attack": {"name": "聖光劈斬", "damage": 20, "skill": 58},
+    "attacks": [
+      {"name": "聖光劈斬", "damage": 20, "skill": 58, "weight": 3},
+      {"name": "盾牆撞擊", "damage": 15, "skill": 58, "weight": 2,
+       "on_hit": {"status": "stagger", "turns": 1, "chance": 0.3}},
+      {"name": "制裁重擊", "damage": 30, "skill": 60, "weight": 1, "cooldown": 3}
+    ],
     "danger": 5, "min_level": 99, "weight": 0,
     "resist": {"magic": 20, "fire": 20},
     "loot_gold": [60, 130],
@@ -1292,6 +1398,6 @@
     "loot": [{"item": "nightshade", "chance": 0.6}, {"item": "garlic", "chance": 0.4}, {"item": "healing_potion", "chance": 0.3}],
     "flavor": "蓬髮糾結、羽爪生鱗的格倫魔女蜷在火堆旁低吟 —— 唯有她們的巫血,能洗去戰友體內的獸性。"
   },
-  "mehrunes_dagon": {"name": "梅魯尼斯·達貢", "strength": 98, "agility": 50, "speed": 50, "max_health": 720, "armor_rating": 26, "attack": {"name": "湮滅四臂連斬", "damage": 44, "skill": 72, "element": "fire", "on_hit": {"status": "dot", "element": "fire", "magnitude": 8, "turns": 3, "chance": 0.6}}, "danger": 6, "min_level": 18, "weight": 1, "solo": true, "resist": {"fire": 85, "frost": 40, "shock": 40, "magic": 50, "poison": 100}, "loot_gold": [400, 800], "loot": [{"item": "daedra_heart", "chance": 1.0}, {"item": "dawnfang", "chance": 0.5}, {"item": "daedric_sword", "chance": 0.4}, {"item": "filled_greater_soul_gem", "chance": 0.6}], "flavor": "天色化為赤紅 —— 梅魯尼斯·達貢踏碎自己的祭壇而來,四臂各執一柄燃燒的黑檀刃,湮滅之君的怒火足以將位面燒成灰燼。"},
-  "mehrunes_dagon_diminished": {"name": "削弱的達貢", "strength": 80, "agility": 46, "speed": 46, "max_health": 380, "armor_rating": 20, "attack": {"name": "殘焰揮斬", "damage": 30, "skill": 64, "element": "fire", "on_hit": {"status": "dot", "element": "fire", "magnitude": 5, "turns": 3, "chance": 0.5}}, "danger": 6, "min_level": 16, "weight": 1, "solo": true, "resist": {"fire": 60, "frost": 25, "shock": 25, "magic": 30, "poison": 100}, "loot_gold": [300, 600], "loot": [{"item": "daedra_heart", "chance": 1.0}, {"item": "daedric_sword", "chance": 0.4}, {"item": "filled_greater_soul_gem", "chance": 0.5}], "flavor": "逆轉的法陣抽走了他大半神力 —— 達貢的化身搖晃著,四臂的烈焰黯淡如將熄的炭火,但仍足以致命。"}
+  "mehrunes_dagon": {"name": "梅魯尼斯·達貢", "strength": 98, "agility": 50, "speed": 50, "max_health": 720, "armor_rating": 26, "attack": {"name": "湮滅四臂連斬", "damage": 44, "skill": 72, "element": "fire", "on_hit": {"status": "dot", "element": "fire", "magnitude": 8, "turns": 3, "chance": 0.6}}, "attacks": [{"name": "湮滅四臂連斬", "damage": 44, "skill": 72, "element": "fire", "weight": 2, "on_hit": {"status": "dot", "element": "fire", "magnitude": 8, "turns": 3, "chance": 0.6}}, {"name": "黑檀亂舞", "damage": 40, "skill": 72, "weight": 2}, {"name": "湮滅威壓", "damage": 20, "skill": 72, "weight": 1, "on_hit": {"status": "fear", "turns": 1, "chance": 0.3}}, {"name": "位面爆燃", "damage": 60, "skill": 74, "element": "fire", "weight": 1, "cooldown": 3, "when": {"hp_below": 0.5}}], "danger": 6, "min_level": 18, "weight": 1, "solo": true, "resist": {"fire": 85, "frost": 40, "shock": 40, "magic": 50, "poison": 100}, "loot_gold": [400, 800], "loot": [{"item": "daedra_heart", "chance": 1.0}, {"item": "dawnfang", "chance": 0.5}, {"item": "daedric_sword", "chance": 0.4}, {"item": "filled_greater_soul_gem", "chance": 0.6}], "flavor": "天色化為赤紅 —— 梅魯尼斯·達貢踏碎自己的祭壇而來,四臂各執一柄燃燒的黑檀刃,湮滅之君的怒火足以將位面燒成灰燼。"},
+  "mehrunes_dagon_diminished": {"name": "削弱的達貢", "strength": 80, "agility": 46, "speed": 46, "max_health": 380, "armor_rating": 20, "attack": {"name": "殘焰揮斬", "damage": 30, "skill": 64, "element": "fire", "on_hit": {"status": "dot", "element": "fire", "magnitude": 5, "turns": 3, "chance": 0.5}}, "attacks": [{"name": "殘焰揮斬", "damage": 30, "skill": 64, "element": "fire", "weight": 2, "on_hit": {"status": "dot", "element": "fire", "magnitude": 5, "turns": 3, "chance": 0.5}}, {"name": "黑檀揮斬", "damage": 27, "skill": 64, "weight": 2}, {"name": "殘威懾心", "damage": 16, "skill": 64, "weight": 1, "on_hit": {"status": "fear", "turns": 1, "chance": 0.25}}], "danger": 6, "min_level": 16, "weight": 1, "solo": true, "resist": {"fire": 60, "frost": 25, "shock": 25, "magic": 30, "poison": 100}, "loot_gold": [300, 600], "loot": [{"item": "daedra_heart", "chance": 1.0}, {"item": "daedric_sword", "chance": 0.4}, {"item": "filled_greater_soul_gem", "chance": 0.5}], "flavor": "逆轉的法陣抽走了他大半神力 —— 達貢的化身搖晃著,四臂的烈焰黯淡如將熄的炭火,但仍足以致命。"}
 }

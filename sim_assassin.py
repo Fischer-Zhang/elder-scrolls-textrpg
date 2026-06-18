@@ -43,7 +43,7 @@ def _round(c, foes, rng, opening, used):
     combat.resolve_attack(c, tgt, gd, rng, sneak_attack=opening)
     for e in foes:
         if combat.is_alive(e) and c.health > 0 and not magic.is_incapacitated(e):
-            combat.resolve_attack(e, c, gd, rng)
+            combat.resolve_attack(e, c, gd, rng, attack=combat.choose_attack(e, rng, c))   # 多攻擊模式選招
     return False
 
 

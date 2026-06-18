@@ -2009,8 +2009,12 @@ def dungeon_grid(grid: dict, z: int, cx: int, cy: int, explored: list, resolved:
     console.print(Text("   " + _DUNGEON_LEGEND, style="grey50"))
 
 
-_ELEM_CN = {"fire": "火焰", "frost": "冰霜", "shock": "雷電", "poison": "毒素", "magic": "魔法"}
+_ELEM_CN = {"fire": "火焰", "frost": "冰霜", "shock": "雷電", "poison": "毒素", "magic": "魔法", "bleed": "撕裂"}
 _STAT_CN = {"health": "生命", "magicka": "魔力", "fatigue": "體力"}
+# 怪物控場命中(R43):status_applied 為 kind(非元素)→ 對應敘事
+_CC_CN = {"stagger": "陣腳大亂(下一擊更難命中)", "slow": "步伐遲滯(先攻與命中下降)",
+          "weaken": "氣力被削(攻勢轉弱)", "fear": "心生恐懼(本回合無法行動)",
+          "paralyze": "僵立當場(麻痺)"}
 _ARCHETYPE_CN = {"dagger": "匕首", "sword": "劍", "blunt": "鈍器", "bow": "弓",
                  "staff": "法杖", "hand_to_hand": "徒手",
                  "mace": "釘錘", "axe": "短斧", "war_axe": "短斧"}
@@ -2018,6 +2022,7 @@ _ARCHETYPE_CN = {"dagger": "匕首", "sword": "劍", "blunt": "鈍器", "bow": "
 
 def combat_event(ev: dict, gamedata: GameData) -> None:
     lines = []
+    mv = f"使出【{ev['attack_name']}】" if ev.get("attack_name") else ""   # 怪物選定招名(玩家=空)
     if ev.get("absorbed"):
         lines.append(f"[bold cyan]{ev['defender']} 吸收了來襲的魔法,化為魔力![/]")
     elif ev["hit"]:
@@ -2027,16 +2032,17 @@ def combat_event(ev: dict, gamedata: GameData) -> None:
                          f"[white]{ev['defender']}[/],致命一擊造成 "
                          f"[bold red]{ev['damage']}[/] 傷害(×{ev['sneak']:.1f}){blk}")
         else:
-            lines.append(f"[white]{ev['attacker']}[/] 命中 [white]{ev['defender']}[/]"
+            lines.append(f"[white]{ev['attacker']}[/] {mv}命中 [white]{ev['defender']}[/]"
                          f",造成 [bold red]{ev['damage']}[/] 傷害{blk}")
     else:
         sneak_miss = "[magenta](偷襲落空!)[/] " if ev.get("sneak") else ""
-        lines.append(f"{sneak_miss}[grey62]{ev['attacker']} 的攻擊被 {ev['defender']} 閃過了。[/]")
+        lines.append(f"{sneak_miss}[grey62]{ev['attacker']} {mv}的攻擊被 {ev['defender']} 閃過了。[/]")
     if ev.get("status_applied"):
-        if ev["status_applied"] == "paralyze":
-            lines.append(f"[magenta]{ev['defender']} 被兵刃上的符文震懾,僵立當場(麻痺)![/]")
-        else:
-            lines.append(f"[magenta]{ev['defender']} 中了{_ELEM_CN.get(ev['status_applied'], '異常')}![/]")
+        sa = ev["status_applied"]
+        if sa in _CC_CN:   # 控場 kind(R43):stagger/slow/weaken/fear/paralyze
+            lines.append(f"[magenta]{ev['defender']} {_CC_CN[sa]}![/]")
+        else:              # 元素 dot:status_applied 為元素名
+            lines.append(f"[magenta]{ev['defender']} 中了{_ELEM_CN.get(sa, '異常')}![/]")
     if ev.get("poison_applied"):
         lines.append(f"[green]武器上的{ev['poison_applied']}滲入了{ev['defender']}的傷口![/]")
     if ev.get("lifesteal"):

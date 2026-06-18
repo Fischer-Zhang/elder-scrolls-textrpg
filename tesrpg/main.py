@@ -723,10 +723,18 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
     while combat.is_alive(player) and alive_e():
         round_no += 1
         player._evade_counter_used = False        # 每回合重置 on_evade 反制額度(守群戰風險;鏡像 EVASION_BONUS_CAP)
-        action = _choose_combat_action(state, gamedata, enemies, battle["allies"], vanishes_done,
-                                       mounted=mounted, first_round=(round_no == 1))
-        blocking = action["type"] == "block"
         vanish_success = False        # 本回合是否成功隱遁(成功 → 重置偷襲 + 跳過敵人階段)
+        # 怪物硬控(R43):恐懼/麻痺 → 玩家本回合無法行動 → 跳過選單與玩家階段(同伴/敵人照常,回合末 tick 解除)。
+        # 防禦雙軌第二道(命中後)已由 willpower resisted_mind 機率擋下;此處只結算「已成功上身」的硬控。
+        if magic.is_incapacitated(player):
+            why = "恐懼" if magic.is_feared(player) else "麻痺"
+            ui.message(f"你因{why}而無法行動!", style="bold red")
+            action = {"type": "incapacitated"}
+            blocking = False
+        else:
+            action = _choose_combat_action(state, gamedata, enemies, battle["allies"], vanishes_done,
+                                           mounted=mounted, first_round=(round_no == 1))
+            blocking = action["type"] == "block"
 
         # ---- 玩家階段 ----
         if action["type"] == "flee":
@@ -875,7 +883,8 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
             if not combat.is_alive(a) or magic.is_incapacitated(a):
                 continue
             tgt = state.rng.choice(alive_e())
-            ui.combat_event(combat.resolve_attack(a, tgt, gamedata, state.rng), gamedata)
+            a_atk = combat.choose_attack(a, state.rng, tgt)   # 同伴多攻擊模式(無曲目 → 後備單招,行為不變)
+            ui.combat_event(combat.resolve_attack(a, tgt, gamedata, state.rng, attack=a_atk), gamedata)
             note_trap(tgt)
 
         # ---- 敵人階段(各自挑我方一個目標)----隱遁成功則本回合敵人撲空 ----
@@ -890,7 +899,8 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
                 continue
             tgt = combat.pick_player_side_target(player, battle["allies"], state.rng)
             blk = blocking if tgt is player else False
-            ev = combat.resolve_attack(e, tgt, gamedata, state.rng, defender_blocking=blk)
+            e_atk = combat.choose_attack(e, state.rng, tgt)   # 怪物多攻擊模式:選招(加權/血量階段/蓄力冷卻)
+            ev = combat.resolve_attack(e, tgt, gamedata, state.rng, defender_blocking=blk, attack=e_atk)
             ui.combat_event(ev, gamedata)
             if ev.get("infected"):    # 疾病傳染:依種類分派到吸血鬼 / 狼人狀態機
                 kind = ev.get("infect_kind", "vampire")

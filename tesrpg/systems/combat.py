@@ -25,7 +25,8 @@ def spawn_creature(gamedata: GameData, template_id: str, rng: RNG) -> Creature:
         template_id=template_id, name=t["name"],
         strength=t["strength"], agility=t["agility"], speed=t["speed"],
         max_health=hp, health=hp, armor_rating=t["armor_rating"],
-        attack=dict(t["attack"]), loot_gold=list(t["loot_gold"]),
+        attack=dict(t["attack"]), attacks=[dict(a) for a in t.get("attacks", [])],
+        loot_gold=list(t["loot_gold"]),
         loot_table=list(t.get("loot", [])), flavor=t.get("flavor", ""),
         danger=t.get("danger", 1), resist=dict(t.get("resist", {})),
     )
@@ -108,12 +109,68 @@ def spawn_boss(gamedata: GameData, template_id: str, rng: RNG, name: str | None 
     cr.max_health = round(cr.max_health * 1.6)
     cr.health = cr.max_health
     cr.attack = dict(cr.attack)
-    cr.attack["damage"] = round(cr.attack["damage"] * 1.3)
-    cr.attack["skill"] = min(100, cr.attack["skill"] + 15)
+    cr.attacks = [dict(a) for a in cr.attacks]   # 強化套到整個曲目(每招獨立 copy → 不動模板)
+    for a in [cr.attack] + cr.attacks:
+        a["damage"] = round(a["damage"] * 1.3)
+        a["skill"] = min(100, a["skill"] + 15)
     cr.armor_rating += 6
     if name:
         cr.name = name
     return cr
+
+
+# ======================================================================
+# 攻擊曲目選招(怪物多攻擊模式)
+# ======================================================================
+ATTACK_COOLDOWN_MARKER = "atk_cooldown"   # 蓄力/大招冷卻:暫存 active_effects、由 tick_effects 每回合遞減(未知 kind → 靜默)
+
+
+def _attack_on_cooldown(creature, name) -> bool:
+    return any(e.get("kind") == ATTACK_COOLDOWN_MARKER and e.get("name") == name and e.get("turns", 0) > 0
+               for e in creature.active_effects)
+
+
+def _weighted_pick(items: list, rng: RNG):
+    """依各條 `weight`(預設 1)加權隨機;零/負總權退化為均勻挑。"""
+    total = sum(max(0.0, a.get("weight", 1)) for a in items)
+    if total <= 0:
+        return rng.choice(items)
+    r = rng.random() * total
+    upto = 0.0
+    for a in items:
+        upto += max(0.0, a.get("weight", 1))
+        if r < upto:
+            return a
+    return items[-1]
+
+
+def choose_attack(creature, rng: RNG, target=None) -> dict:
+    """從怪物攻擊曲目 `attacks` 選一招:`when` 血量階段閘 + `cooldown` 蓄力冷卻 + `weight` 加權隨機。
+
+    無 `attacks`(同伴/未配曲目的怪)→ 回後備單招 `creature.attack`(byte-identical,行為不變)。
+    選到帶 cooldown 的招 → 推一條冷卻標記到 active_effects(由回合末 tick_effects 遞減)。"""
+    reps = getattr(creature, "attacks", None)
+    if not reps:
+        return creature.attack
+    hp_ratio = (creature.health / creature.max_health) if getattr(creature, "max_health", 0) else 1.0
+    avail = []
+    for a in reps:
+        when = a.get("when")
+        if when:
+            if "hp_below" in when and hp_ratio >= when["hp_below"]:
+                continue
+            if "hp_above" in when and hp_ratio < when["hp_above"]:
+                continue
+        if a.get("cooldown") and _attack_on_cooldown(creature, a.get("name")):
+            continue
+        avail.append(a)
+    if not avail:   # 全被 when/cooldown 濾掉 → 落回無階段限制者,再不行用後備單招
+        avail = [a for a in reps if not a.get("when")] or [creature.attack]
+    chosen = _weighted_pick(avail, rng)
+    if chosen.get("cooldown"):
+        creature.active_effects.append({"kind": ATTACK_COOLDOWN_MARKER,
+                                        "name": chosen.get("name"), "turns": chosen["cooldown"]})
+    return chosen
 
 
 def random_encounter(gamedata: GameData, player_level: int, rng: RNG,
@@ -174,8 +231,10 @@ def _is_beast(actor) -> bool:
     return _is_player(actor) and getattr(actor, "beast_form", False)
 
 
-def _weapon_profile(actor, gamedata: GameData):
-    """回傳 (weapon_damage, weapon_skill_level, weapon_skill_id|None)。"""
+def _weapon_profile(actor, gamedata: GameData, attack: dict | None = None):
+    """回傳 (weapon_damage, weapon_skill_level, weapon_skill_id|None)。
+
+    attack:怪物的「選定招」(多攻擊模式);None → 用 actor.attack 後備(玩家側忽略)。"""
     if _is_player(actor):
         if _is_beast(actor):     # 獸形:以獸爪戰鬥,略過裝備武器/淬鍊/附魔(資料驅動讀 beast_claws)
             from tesrpg.systems import lycanthropy
@@ -191,7 +250,8 @@ def _weapon_profile(actor, gamedata: GameData):
             return gsd.get("bash_damage", 0), actor.skill("block"), "block"
         wp = gamedata.item(actor.weapon)   # 用 item() 以支援附魔(合成)武器
         return wp["damage"] + smithing.weapon_temper_bonus(actor, gamedata), actor.skill(wp["skill"]), wp["skill"]
-    return actor.attack["damage"], actor.attack["skill"], None
+    src = attack if attack is not None else actor.attack
+    return src["damage"], src["skill"], None
 
 
 def eff_weapon_id(player, gamedata: GameData | None = None) -> str:
@@ -331,7 +391,7 @@ def _player_counter_damage(player, gamedata: GameData, rng: RNG) -> float:
 def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
                    defender_blocking: bool = False, sneak_attack: bool = False,
                    aimed: bool = False, mounted_charge: bool = False,
-                   charge_spec: dict | None = None) -> dict:
+                   charge_spec: dict | None = None, attack: dict | None = None) -> dict:
     """attacker 攻擊 defender,套用傷害、發放玩家技能 xp。回傳事件 dict。
 
     sneak_attack:玩家開場偷襲(不察之敵)→ 傷害依潛行加倍、命中下限拉高、鍛鍊潛行。
@@ -341,6 +401,9 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
     事件:{"attacker","defender","hit":bool,"damage":int,"blocked":bool,
            "skill_events":[...], "defender_dead":bool, "sneak":倍率|None}
     """
+    # 怪物的「選定招」(多攻擊模式 R43):呼叫端傳入 choose_attack 的結果;未傳則用單招 attack 後備。
+    # 玩家無 .attack → atk=None(下方所有 atk 讀取點皆已 None-guard 或在 not-player 區塊內)。
+    atk = (attack if attack is not None else attacker.attack) if not _is_player(attacker) else None
     beast = _is_beast(attacker)     # 獸形:獸爪戰鬥,結構性略過裝備武器/附魔/淬鍊/副手/耐久
     # 召喚「束縛兵刃」:凝出的法系武器「完全取代」裝備武器(比照獸形)→ 不吃裝備武器的塗毒/命中附魔/
     # 耐久/副手/archetype/法杖命中回資源。存效果 dict(供下方 atk_element 取元素);無則 None。
@@ -353,7 +416,7 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
     # 雙手重盾:以盾擊作戰,手持武器戰中休眠(比照束縛兵刃,完全取代武器 → 無 archetype 破甲/控制、無附魔/塗毒)。
     great = (inventory.is_great_shield(gamedata, attacker.equipped.get("shield"))
              if _is_player(attacker) and not beast and not bound else False)
-    wpn_dmg, wpn_skill, wpn_skill_id = _weapon_profile(attacker, gamedata)
+    wpn_dmg, wpn_skill, wpn_skill_id = _weapon_profile(attacker, gamedata, atk)
     # 雙持副手傷害另計:作為一記「普通補刀」疊上,不吃偷襲倍率(避免偷襲秒精英)。獸形/束縛兵刃無副手。
     offhand_dmg = (inventory.dual_wield_bonus_damage(attacker, gamedata)
                    if _is_player(attacker) and not beast and not bound else 0.0)
@@ -432,11 +495,10 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
         if offhand_dmg:    # 雙持副手補刀:照常吃技能/力量,但不吃偷襲倍率
             raw += formulas.attack_damage(offhand_dmg, wpn_skill, _strength(attacker),
                                           roll, block_factor)
-        atk_element = None if _is_player(attacker) else attacker.attack.get("element")
+        atk_element = atk.get("element") if atk else None
         if bound:   # 召喚「束縛兵刃」:法系近戰 → 走元素分支(無視護甲、吃元素抗性;元素分支不讀附魔/灌注 → 不雙吃)
             atk_element = bound.get("element", "magic")
-        if not _is_player(attacker):
-            raw *= magic.weaken_factor(attacker)        # 怪物受耗弱影響
+        raw *= magic.weaken_factor(attacker)            # 耗弱:攻方傷害打折(玩家/怪皆適用 R43;無耗弱→×1 byte-identical)
 
         if atk_element:
             # 元素攻擊:無視物理護甲,改吃元素抗性;巨魔像座可吸收為魔力
@@ -543,19 +605,27 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
             if mox:
                 attacker.magicka = attacker.magicka + mox
 
-        # 怪物攻擊的觸發狀態(中毒/凍傷等)→ 加到玩家身上
+        # 怪物攻擊的觸發狀態(中毒/凍傷/控場)→ 加到玩家身上(R43 放寬:不再只 dot,支援控場 kind)
+        # 防禦雙軌:① on_hit 整段在 `if hit:` 內 → 落空即連控帶傷全免(閃躲/格擋第一道);
+        #          ② fear/paralyze 命中後再吃 resisted_mind(willpower)第二道;軟控命中即中。
         if not _is_player(attacker) and _is_player(defender):
-            oh = attacker.attack.get("on_hit")
+            oh = atk.get("on_hit")
             if oh and rng.chance(oh.get("chance", 1.0)) and not magic.resisted_mind(defender, oh["status"], rng):
-                _apply_dot_capped(defender, {"kind": oh["status"], "element": oh.get("element"),
-                                             "magnitude": oh["magnitude"], "turns": oh["turns"]})
-                status_applied = oh.get("element")
+                st = oh["status"]
+                if st == "dot":
+                    _apply_dot_capped(defender, {"kind": "dot", "element": oh.get("element"),
+                                                 "magnitude": oh["magnitude"], "turns": oh["turns"]})
+                    status_applied = oh.get("element")
+                # 控場(stagger/slow/weaken/fear/paralyze):去重防連鎖鎖死(鏡像塗毒控制路徑)
+                elif not any(e.get("kind") == st and e.get("turns", 0) > 0 for e in defender.active_effects):
+                    defender.active_effects.append(magic.make_status_effect(oh))
+                    status_applied = st
             # 疾病傳染(吸血鬼吸血熱 / 狼人狼人熱):命中機率 × 疾病抗性削弱(只標記,轉化由各系驅動)。
             # `infect_kind` 缺省 "vampire"(舊吸血鬼敵向後相容);跨詛咒互斥靠疾病免疫使 dmult=0 自然擋掉,
             # 此處再以 `already` 防同詛咒重複感染。
-            inf = attacker.attack.get("infect")
+            inf = atk.get("infect")
             if inf:
-                kind = attacker.attack.get("infect_kind", "vampire")
+                kind = atk.get("infect_kind", "vampire")
                 already = (defender.is_vampire if kind == "vampire"
                            else getattr(defender, "is_werewolf", False))
                 dmult = formulas.resist_multiplier(magic.entity_resist(defender, gamedata), "disease")
@@ -765,6 +835,7 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
 
     return {
         "attacker": _name(attacker), "defender": _name(defender),
+        "attack_name": atk.get("name") if atk else None,   # 怪物選定招名(玩家=None)→ 供 UI 顯示「使出【招】」
         "hit": hit, "damage": dmg_done, "blocked": defender_blocking,
         "skill_events": skill_events, "defender_dead": not is_alive(defender),
         "absorbed": absorbed, "status_applied": status_applied, "poison_applied": poison_applied,
@@ -920,7 +991,7 @@ def auto_resolve(player: Character, creature: Creature, gamedata: GameData,
                 player_attack_cost(player, gamedata)
                 resolve_attack(player, creature, gamedata, rng)
             else:
-                resolve_attack(creature, player, gamedata, rng)
+                resolve_attack(creature, player, gamedata, rng, attack=choose_attack(creature, rng, player))
         # 回合結束結算持續傷害/再生/狀態(與 run_battle 一致,讓毒/法術 DoT 生效)
         hregen = mastery.combat_regen(player, gamedata)   # 里程碑「生生不息」:每回合自癒
         if hregen and is_alive(player) and player.health < player.max_health:

@@ -985,6 +985,19 @@ tesrpg/
 
 ---
 
+### R43 · 怪物攻擊多樣化:多攻擊模式曲目 + on_hit 控場放寬(全控)[re-sim] [save]
+
+使用者點名「建立多種攻擊模式,元素怪也要有物理手段」,並逐項拍板:① 干擾型 = **全控場含硬控**(fear/paralyze),玩家以 willpower 抗;② 控場可閃躲(**雙軌**:閃躲第一道 + 命中後硬控吃意志第二道)。
+
+- **攻擊曲目 + 選招**:bestiary 新增**可選** `attacks`(現有 attack dict 的 list,每條多帶 `weight`/`when`〔`hp_below`/`hp_above` 階段閘〕/`cooldown`);保留單一 `attack` 作 back-compat 後備。`Creature` 加 `attacks` 欄(**戰鬥暫態、無 to_dict → 零存檔遷移**)。新 `combat.choose_attack(creature, rng, target=None)`:無曲目→回 `attack`(byte-identical);否則 `when` 過濾 + cooldown 過濾 + `weight` 加權挑。**cooldown 靠 active_effects `{"kind":"atk_cooldown"}` 標記 + 既有 `tick_effects` 每回合遞減**(未知 kind 靜默 tick;所有 effect getter 皆 `==` 比對 → 天然忽略)。`spawn_boss` 縮放套到 `[attack]+attacks` 全部。呼叫端 main.py(敵/同伴階段)、`auto_resolve`、`sim_assassin._round` 皆走 `choose_attack` 再傳 `resolve_attack(..., attack=)`。
+- **resolve_attack 吃選定招**:加 `attack=None` 參數;頂端 `atk = (attack or attacker.attack) if not _is_player else None`;5 個 creature 讀取點(`_weapon_profile` damage/skill、element、on_hit、infect×2)改讀 `atk`。**玩家攻擊路徑不變** → sim **byte-identical**。事件加 `attack_name`(玩家=None)。
+- **on_hit dispatch 放寬(R31 控場路徑反向開給怪)**:`combat.py` 怪→玩家 on_hit 區依 `oh["status"]` 分派 —— `dot`→`_apply_dot_capped`;`weaken/slow/stagger/fear/paralyze`→`make_status_effect` 推入(**控場去重**鏡像塗毒路徑,防連鎖鎖死)。**零新 kind、零新 getter**(全複用 magic 既有中立 kind)。
+- **🔴 雙軌防禦(使用者拍板)**:① on_hit 整段在 `if hit:` 內 → **落空即連控帶傷全免**(閃躲/格擋/敏捷/雜技/輕甲 = 第一道,所有 build 通用);② 命中後 fear/paralyze 再吃 `resisted_mind`(willpower)第二道;軟控命中即中。**兩個功能性修復**:(a) main.py 回合頂加 `is_incapacitated(player)` 閘 → 麻痺/恐懼跳過玩家行動(否則硬控對玩家 no-op);(b) `weaken_factor` 由 player-only 改**對稱**(`raw *= weaken_factor(attacker)` 去 `not _is_player` 守;無耗弱→×1 byte-identical)否則怪→玩家 weaken 失效。
+- **內容紀律(平衡預設,保守)**:控場 `chance ≤ 0.30`、硬控 `turns=1` 去重、軟控 `turns=2`;**硬控只放中/高危怪**;早期 trash(rat/wolf/skeleton/bandit)**保持簡單不放控**(早期不被連控 + 守 sim 群戰回歸乾淨)。curated 19 隻(元素怪加物理+蓄力、8 隻死板高危加曲目、首領加控場 fear/stagger/charged enrage),其餘日後純 JSON 擴。
+- **驗證**:`run_all` 65 綠(新 `test_monster_attacks`:選招後備/加權/血量閘/cooldown 標記與 tick/spawn_boss 縮放曲目;軟控+硬控命中套用/硬控去重/willpower 抗/**落空不上控**/weaken 對稱降傷/事件 attack_name/**run_battle 玩家麻痺跳回合**整合)。`sim_assassin` **byte-identical**(diff HEAD worktree 證:玩家攻擊未動、sim 群戰怪 bandit/wolf/vampire_fledgling 未配曲目、solo boss 段為玩家偷襲〔曲目無關〕→ solo 秒殺全 0% 紅線守)。⚠ **CC-on-player 平衡非由 sim 量**(sim 群戰用未改 trash)→ 靠保守內容 + 去重 + 雙軌防禦 + 煙霧守;日後若加高物理 raw 或加重控場密度再評估。
+
+---
+
 ## 4. 開發節奏(ultracode 開著 → 每個功能都這樣做)
 
 > 完整五階段流程(評估 → 決定方向 → 實作 → 驗證 → 文件 + 提交)見 `CLAUDE.md`「開發流程」;以下是「驗證」段的細節。**驗證綠後依 R22 自動 `commit` & `push origin main`。**
