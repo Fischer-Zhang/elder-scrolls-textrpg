@@ -241,5 +241,17 @@
   "valor_blade":     {"name": "百戰勳刃",   "skill": "blade", "damage": 22, "value": 1900, "weight": 14, "archetype": "sword",   "speed": 1.0, "enchant": {"kind": "weapon_status", "status": "regen",    "magnitude": 3, "turns": 3}},
   "staff_of_magnus": {"name": "馬格努斯之杖", "skill": "destruction", "damage": 11, "value": 2000, "weight": 7, "archetype": "staff", "speed": 1.0, "enchant": {"kind": "weapon_element", "element": "shock", "magnitude": 26}},
   "blade_of_woe":    {"name": "悲傷之刃",   "skill": "blade", "damage": 16, "value": 2000, "weight": 4,  "archetype": "dagger",  "speed": 1.5, "enchant": {"kind": "weapon_status", "status": "vampiric", "magnitude": 50}},
-  "wuuthrad":        {"name": "維蘇拉德",   "skill": "blunt", "damage": 32, "value": 2000, "weight": 26, "archetype": "axe", "speed": 0.65, "two_handed": true, "enchant": {"kind": "berserk", "magnitude": 30}}
+  "wuuthrad":        {"name": "維蘇拉德",   "skill": "blunt", "damage": 32, "value": 2000, "weight": 26, "archetype": "axe", "speed": 0.65, "two_handed": true, "enchant": {"kind": "berserk", "magnitude": 30}},
+
+  "iron_bow":    {"name": "鐵弓",   "skill": "marksman", "damage": 12, "value": 50,  "weight": 10, "archetype": "bow", "speed": 0.9},
+  "steel_bow":   {"name": "鋼弓",   "skill": "marksman", "damage": 13, "value": 130, "weight": 10, "archetype": "bow", "speed": 0.9},
+  "dwarven_bow": {"name": "矮人弓", "skill": "marksman", "damage": 16, "value": 290, "weight": 11, "archetype": "bow", "speed": 0.9},
+  "glass_bow":   {"name": "玻璃弓", "skill": "marksman", "damage": 17, "value": 300, "weight": 8,  "archetype": "bow", "speed": 0.9},
+  "ebony_bow":   {"name": "黑檀弓", "skill": "marksman", "damage": 18, "value": 560, "weight": 11, "archetype": "bow", "speed": 0.9},
+
+  "elven_dagger":   {"name": "精靈匕首", "skill": "blade", "damage": 10, "value": 110, "weight": 3, "archetype": "dagger", "speed": 1.4},
+  "dwarven_dagger": {"name": "矮人匕首", "skill": "blade", "damage": 11, "value": 140, "weight": 4, "archetype": "dagger", "speed": 1.4},
+  "ebony_dagger":   {"name": "黑檀匕首", "skill": "blade", "damage": 13, "value": 170, "weight": 4, "archetype": "dagger", "speed": 1.4},
+
+  "ebony_mace":  {"name": "黑檀釘錘", "skill": "blunt", "damage": 21, "value": 560, "weight": 16, "archetype": "mace", "speed": 0.75}
 }

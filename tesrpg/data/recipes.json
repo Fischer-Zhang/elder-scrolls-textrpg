@@ -101,5 +101,17 @@
   "tailor_dragonpriest_hood":     {"name": "縫製龍祭司兜帽", "station": "smith", "skill": "smithing", "skill_req": 90, "inputs": {"bolt_of_cloth": 4, "dragon_scale": 1}, "output": "dragonpriest_hood", "output_qty": 1},
   "tailor_dragonpriest_robe":     {"name": "縫製龍祭司法袍", "station": "smith", "skill": "smithing", "skill_req": 90, "inputs": {"bolt_of_cloth": 5, "dragon_scale": 1}, "output": "dragonpriest_robe", "output_qty": 1},
   "tailor_dragonpriest_gloves":   {"name": "縫製龍祭司手套", "station": "smith", "skill": "smithing", "skill_req": 90, "inputs": {"bolt_of_cloth": 3, "dragon_scale": 1}, "output": "dragonpriest_gloves", "output_qty": 1},
-  "tailor_dragonpriest_slippers": {"name": "縫製龍祭司便鞋", "station": "smith", "skill": "smithing", "skill_req": 90, "inputs": {"bolt_of_cloth": 3, "dragon_scale": 1}, "output": "dragonpriest_slippers", "output_qty": 1}
+  "tailor_dragonpriest_slippers": {"name": "縫製龍祭司便鞋", "station": "smith", "skill": "smithing", "skill_req": 90, "inputs": {"bolt_of_cloth": 3, "dragon_scale": 1}, "output": "dragonpriest_slippers", "output_qty": 1},
+
+  "forge_iron_bow":    {"name": "鍛造鐵弓",   "station": "smith", "skill": "smithing", "inputs": {"iron_ingot": 3}, "output": "iron_bow", "output_qty": 1},
+  "forge_steel_bow":   {"name": "鍛造鋼弓",   "station": "smith", "skill": "smithing", "skill_req": 25, "inputs": {"steel_ingot": 3}, "output": "steel_bow", "output_qty": 1},
+  "forge_dwarven_bow": {"name": "鍛造矮人弓", "station": "smith", "skill": "smithing", "skill_req": 55, "inputs": {"dwarven_ingot": 3}, "output": "dwarven_bow", "output_qty": 1},
+  "forge_glass_bow":   {"name": "鍛造玻璃弓", "station": "smith", "skill": "smithing", "skill_req": 70, "inputs": {"malachite_ingot": 3}, "output": "glass_bow", "output_qty": 1},
+  "forge_ebony_bow":   {"name": "鍛造黑檀弓", "station": "smith", "skill": "smithing", "skill_req": 85, "inputs": {"ebony_ingot": 3}, "output": "ebony_bow", "output_qty": 1},
+
+  "forge_elven_dagger":   {"name": "鍛造精靈匕首", "station": "smith", "skill": "smithing", "skill_req": 40, "inputs": {"moonstone_ingot": 2}, "output": "elven_dagger", "output_qty": 1},
+  "forge_dwarven_dagger": {"name": "鍛造矮人匕首", "station": "smith", "skill": "smithing", "skill_req": 55, "inputs": {"dwarven_ingot": 2}, "output": "dwarven_dagger", "output_qty": 1},
+  "forge_ebony_dagger":   {"name": "鍛造黑檀匕首", "station": "smith", "skill": "smithing", "skill_req": 85, "inputs": {"ebony_ingot": 1}, "output": "ebony_dagger", "output_qty": 1},
+
+  "forge_ebony_mace":  {"name": "鍛造黑檀釘錘", "station": "smith", "skill": "smithing", "skill_req": 85, "inputs": {"ebony_ingot": 3}, "output": "ebony_mace", "output_qty": 1}
 }
