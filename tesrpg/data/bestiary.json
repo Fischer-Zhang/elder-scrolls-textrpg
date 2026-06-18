@@ -316,6 +316,11 @@
       "skill": 56,
       "element": "fire"
     },
+    "attacks": [
+      {"name": "黑檀巨劍", "damage": 18, "skill": 56, "element": "fire", "weight": 2},
+      {"name": "巨刃橫掃", "damage": 16, "skill": 56, "weight": 2},
+      {"name": "烈焰斬", "damage": 26, "skill": 58, "element": "fire", "weight": 1, "cooldown": 3}
+    ],
     "resist": {
       "fire": 50,
       "magic": 20
@@ -767,6 +772,13 @@
     "max_health": 62, "armor_rating": 10,
     "attack": {"name": "腐爛撕抓", "damage": 13, "skill": 44, "element": "poison",
                "on_hit": {"status": "dot", "element": "poison", "magnitude": 4, "turns": 3, "chance": 0.5}},
+    "attacks": [
+      {"name": "腐爛撕抓", "damage": 13, "skill": 44, "element": "poison", "weight": 2,
+       "on_hit": {"status": "dot", "element": "poison", "magnitude": 4, "turns": 3, "chance": 0.5}},
+      {"name": "腐臂橫掃", "damage": 14, "skill": 44, "weight": 2,
+       "on_hit": {"status": "stagger", "turns": 1, "chance": 0.25}},
+      {"name": "瘟疫撲擊", "damage": 22, "skill": 46, "weight": 1, "cooldown": 3}
+    ],
     "danger": 4, "min_level": 4, "weight": 4,
     "resist": {"poison": 100, "frost": 25},
     "loot_gold": [4, 16],
@@ -779,6 +791,13 @@
     "max_health": 46, "armor_rating": 4,
     "attack": {"name": "蝕魂電擊", "damage": 16, "skill": 56, "element": "shock",
                "on_hit": {"status": "dot", "element": "shock", "magnitude": 3, "turns": 2, "chance": 0.45}},
+    "attacks": [
+      {"name": "蝕魂電擊", "damage": 16, "skill": 56, "element": "shock", "weight": 2,
+       "on_hit": {"status": "dot", "element": "shock", "magnitude": 3, "turns": 2, "chance": 0.45}},
+      {"name": "幽光撞擊", "damage": 14, "skill": 56, "weight": 2},
+      {"name": "麻電閃擊", "damage": 12, "skill": 56, "element": "shock", "weight": 2,
+       "on_hit": {"status": "stagger", "turns": 1, "chance": 0.25}}
+    ],
     "danger": 4, "min_level": 5, "weight": 3,
     "resist": {"shock": 100, "poison": 100, "fire": -25, "magic": 25},
     "loot_gold": [0, 6],
@@ -844,6 +863,13 @@
     "max_health": 58, "armor_rating": 12,
     "attack": {"name": "毒刃突刺", "damage": 13, "skill": 50,
                "on_hit": {"status": "dot", "element": "poison", "magnitude": 3, "turns": 3, "chance": 0.4}},
+    "attacks": [
+      {"name": "毒刃突刺", "damage": 13, "skill": 50, "weight": 2,
+       "on_hit": {"status": "dot", "element": "poison", "magnitude": 3, "turns": 3, "chance": 0.4}},
+      {"name": "短刀斬擊", "damage": 14, "skill": 50, "weight": 2},
+      {"name": "卸力擒拿", "damage": 11, "skill": 50, "weight": 2,
+       "on_hit": {"status": "stagger", "turns": 1, "chance": 0.25}}
+    ],
     "danger": 4, "min_level": 99, "weight": 0,
     "loot_gold": [25, 60],
     "loot": [{"item": "glass_dagger", "chance": 0.25}, {"item": "silver_ring", "chance": 0.3}],
@@ -854,6 +880,12 @@
     "max_health": 66, "armor_rating": 6,
     "attack": {"name": "烈焰箭", "damage": 17, "skill": 56, "element": "fire",
                "on_hit": {"status": "dot", "element": "fire", "magnitude": 3, "turns": 3, "chance": 0.45}},
+    "attacks": [
+      {"name": "烈焰箭", "damage": 17, "skill": 56, "element": "fire", "weight": 2,
+       "on_hit": {"status": "dot", "element": "fire", "magnitude": 3, "turns": 3, "chance": 0.45}},
+      {"name": "奧術法杖", "damage": 15, "skill": 56, "weight": 2},
+      {"name": "烈焰新星", "damage": 28, "skill": 58, "element": "fire", "weight": 1, "cooldown": 3}
+    ],
     "danger": 4, "min_level": 99, "weight": 0,
     "resist": {"fire": 30, "magic": 20},
     "loot_gold": [40, 90],
@@ -940,6 +972,12 @@
     "max_health": 62, "armor_rating": 14,
     "attack": {"name": "刀刃突襲", "damage": 14, "skill": 54,
                "on_hit": {"status": "dot", "element": "bleed", "magnitude": 3, "turns": 3, "chance": 0.35}},
+    "attacks": [
+      {"name": "刀刃突襲", "damage": 14, "skill": 54, "weight": 2,
+       "on_hit": {"status": "dot", "element": "bleed", "magnitude": 3, "turns": 3, "chance": 0.35}},
+      {"name": "影襲突刺", "damage": 15, "skill": 54, "weight": 2},
+      {"name": "致命突刺", "damage": 26, "skill": 56, "weight": 1, "cooldown": 3, "when": {"hp_below": 0.5}}
+    ],
     "danger": 4, "min_level": 99, "weight": 0,
     "loot_gold": [30, 70],
     "loot": [{"item": "silver_ring", "chance": 0.3}, {"item": "healing_potion", "chance": 0.4}],
@@ -950,6 +988,13 @@
     "max_health": 70, "armor_rating": 6,
     "attack": {"name": "枯萎觸擊", "damage": 18, "skill": 58, "element": "shock",
                "on_hit": {"status": "dot", "element": "shock", "magnitude": 3, "turns": 3, "chance": 0.45}},
+    "attacks": [
+      {"name": "枯萎觸擊", "damage": 18, "skill": 58, "element": "shock", "weight": 2,
+       "on_hit": {"status": "dot", "element": "shock", "magnitude": 3, "turns": 3, "chance": 0.45}},
+      {"name": "黑蠕蟲法杖", "damage": 16, "skill": 58, "weight": 2},
+      {"name": "死靈低語", "damage": 12, "skill": 58, "weight": 1,
+       "on_hit": {"status": "fear", "turns": 1, "chance": 0.25}}
+    ],
     "danger": 4, "min_level": 99, "weight": 0,
     "resist": {"magic": 25, "poison": 30},
     "loot_gold": [40, 90],
@@ -1053,6 +1098,13 @@
     "max_health": 68, "armor_rating": 6,
     "attack": {"name": "腐朽之握", "damage": 17, "skill": 56, "element": "shock",
                "on_hit": {"status": "dot", "element": "shock", "magnitude": 3, "turns": 3, "chance": 0.45}},
+    "attacks": [
+      {"name": "腐朽之握", "damage": 17, "skill": 56, "element": "shock", "weight": 2,
+       "on_hit": {"status": "dot", "element": "shock", "magnitude": 3, "turns": 3, "chance": 0.45}},
+      {"name": "枯骨法杖", "damage": 15, "skill": 56, "weight": 2},
+      {"name": "死寂之觸", "damage": 11, "skill": 56, "weight": 2,
+       "on_hit": {"status": "weaken", "magnitude": 0.2, "turns": 2, "chance": 0.3}}
+    ],
     "danger": 4, "min_level": 99, "weight": 0,
     "resist": {"magic": 25, "poison": 30},
     "loot_gold": [40, 90],
@@ -1081,6 +1133,12 @@
     "name": "墮落騎士", "strength": 60, "agility": 42, "speed": 38,
     "max_health": 110, "armor_rating": 26,
     "attack": {"name": "蒙塵重劍", "damage": 19, "skill": 56},
+    "attacks": [
+      {"name": "蒙塵重劍", "damage": 19, "skill": 56, "weight": 3},
+      {"name": "盾牌猛擊", "damage": 14, "skill": 56, "weight": 2,
+       "on_hit": {"status": "stagger", "turns": 1, "chance": 0.3}},
+      {"name": "絕望重劈", "damage": 30, "skill": 58, "weight": 1, "cooldown": 3}
+    ],
     "danger": 4, "min_level": 99, "weight": 0,
     "loot_gold": [50, 110],
     "loot": [{"item": "ebony_shield", "chance": 0.25}, {"item": "healing_potion", "chance": 0.4}],
@@ -1167,6 +1225,13 @@
     "max_health": 70, "armor_rating": 10,
     "attack": {"name": "魅惑爪擊", "damage": 16, "skill": 56, "element": "shock",
                "on_hit": {"status": "dot", "element": "shock", "magnitude": 3, "turns": 2, "chance": 0.4}},
+    "attacks": [
+      {"name": "魅惑爪擊", "damage": 16, "skill": 56, "element": "shock", "weight": 2,
+       "on_hit": {"status": "dot", "element": "shock", "magnitude": 3, "turns": 2, "chance": 0.4}},
+      {"name": "蛇尾纏擊", "damage": 15, "skill": 56, "weight": 2},
+      {"name": "攝魂凝視", "damage": 10, "skill": 56, "weight": 1,
+       "on_hit": {"status": "fear", "turns": 1, "chance": 0.25}}
+    ],
     "danger": 4, "min_level": 5, "weight": 4,
     "resist": {"fire": 50, "frost": -25, "magic": 25},
     "loot_gold": [8, 22],
@@ -1244,6 +1309,13 @@
     "max_health": 96, "armor_rating": 24,
     "attack": {"name": "幽冥劍斬", "damage": 18, "skill": 56, "element": "frost",
                "on_hit": {"status": "dot", "element": "frost", "magnitude": 3, "turns": 2, "chance": 0.35}},
+    "attacks": [
+      {"name": "幽冥劍斬", "damage": 18, "skill": 56, "element": "frost", "weight": 2,
+       "on_hit": {"status": "dot", "element": "frost", "magnitude": 3, "turns": 2, "chance": 0.35}},
+      {"name": "盾斧橫掃", "damage": 16, "skill": 56, "weight": 2,
+       "on_hit": {"status": "stagger", "turns": 1, "chance": 0.25}},
+      {"name": "古墓重劈", "damage": 28, "skill": 58, "weight": 1, "cooldown": 3}
+    ],
     "danger": 4, "min_level": 6, "weight": 3,
     "resist": {"frost": 50, "magic": 30, "poison": 100, "shock": -75},
     "loot_gold": [6, 18],
@@ -1312,6 +1384,13 @@
     "max_health": 90, "armor_rating": 12,
     "attack": {"name": "劇毒撕咬", "damage": 18, "skill": 56, "element": "poison",
                "on_hit": {"status": "dot", "element": "poison", "magnitude": 3, "turns": 2, "chance": 0.4}},
+    "attacks": [
+      {"name": "劇毒撕咬", "damage": 18, "skill": 56, "element": "poison", "weight": 2,
+       "on_hit": {"status": "dot", "element": "poison", "magnitude": 3, "turns": 2, "chance": 0.4}},
+      {"name": "蛛足猛刺", "damage": 16, "skill": 56, "weight": 2},
+      {"name": "蛛網纏縛", "damage": 12, "skill": 56, "weight": 2,
+       "on_hit": {"status": "slow", "magnitude": 0.3, "turns": 2, "chance": 0.3}}
+    ],
     "danger": 4, "min_level": 6, "weight": 3,
     "resist": {"poison": 100, "frost": 25, "fire": -50},
     "loot_gold": [6, 18],
@@ -1381,6 +1460,12 @@
     "max_health": 92, "armor_rating": 12,
     "attack": {"name": "撲擊毒爪", "damage": 18, "skill": 56, "element": "poison",
                "on_hit": {"status": "dot", "element": "poison", "magnitude": 3, "turns": 2, "chance": 0.4}},
+    "attacks": [
+      {"name": "撲擊毒爪", "damage": 18, "skill": 56, "element": "poison", "weight": 2,
+       "on_hit": {"status": "dot", "element": "poison", "magnitude": 3, "turns": 2, "chance": 0.4}},
+      {"name": "猛撲利爪", "damage": 17, "skill": 56, "weight": 2},
+      {"name": "狂猛撲咬", "damage": 26, "skill": 58, "weight": 1, "cooldown": 3, "when": {"hp_below": 0.5}}
+    ],
     "danger": 4, "min_level": 6, "weight": 3,
     "resist": {"poison": -45, "frost": 25},
     "loot_gold": [6, 18],
@@ -1393,6 +1478,13 @@
     "max_health": 96, "armor_rating": 12,
     "attack": {"name": "虛無低吟", "damage": 19, "skill": 58, "element": "poison",
                "on_hit": {"status": "dot", "element": "poison", "magnitude": 4, "turns": 2, "chance": 0.4}},
+    "attacks": [
+      {"name": "虛無低吟", "damage": 19, "skill": 58, "element": "poison", "weight": 2,
+       "on_hit": {"status": "dot", "element": "poison", "magnitude": 4, "turns": 2, "chance": 0.4}},
+      {"name": "暗影撕抓", "damage": 17, "skill": 58, "weight": 2},
+      {"name": "懾魂之嘯", "damage": 12, "skill": 58, "weight": 1,
+       "on_hit": {"status": "fear", "turns": 1, "chance": 0.25}}
+    ],
     "danger": 4, "min_level": 7, "weight": 3,
     "resist": {"poison": -45, "frost": 25, "shock": 20},
     "loot_gold": [6, 18],
@@ -1447,6 +1539,13 @@
     "max_health": 190,
     "armor_rating": 16,
     "attack": {"name": "裂顎撕咬", "damage": 26, "skill": 62, "infect": 0.4, "infect_kind": "lycanthropy"},
+    "attacks": [
+      {"name": "裂顎撕咬", "damage": 26, "skill": 62, "weight": 2, "infect": 0.4, "infect_kind": "lycanthropy"},
+      {"name": "狂亂爪擊", "damage": 24, "skill": 62, "weight": 2},
+      {"name": "撕咬橫掃", "damage": 20, "skill": 62, "weight": 2,
+       "on_hit": {"status": "stagger", "turns": 1, "chance": 0.3}},
+      {"name": "月下狂暴", "damage": 38, "skill": 64, "weight": 1, "cooldown": 3, "when": {"hp_below": 0.5}}
+    ],
     "resist": {"poison": 50, "frost": 25},
     "loot_gold": [40, 110],
     "loot": [{"item": "wolf_pelt", "chance": 0.8}, {"item": "healing_potion", "chance": 0.4}, {"item": "filled_common_soul_gem", "chance": 0.25}, {"item": "hircine_ring", "chance": 0.5}],
@@ -1480,6 +1579,13 @@
     "max_health": 72,
     "armor_rating": 10,
     "attack": {"name": "詛咒之火", "damage": 18, "skill": 58, "element": "fire", "on_hit": {"status": "dot", "element": "fire", "magnitude": 4, "turns": 3, "chance": 0.4}},
+    "attacks": [
+      {"name": "詛咒之火", "damage": 18, "skill": 58, "element": "fire", "weight": 2,
+       "on_hit": {"status": "dot", "element": "fire", "magnitude": 4, "turns": 3, "chance": 0.4}},
+      {"name": "鉤爪撕抓", "damage": 16, "skill": 58, "weight": 2},
+      {"name": "懾魂尖嘯", "damage": 12, "skill": 58, "weight": 1,
+       "on_hit": {"status": "fear", "turns": 1, "chance": 0.25}}
+    ],
     "resist": {"magic": 25, "fire": 25},
     "loot_gold": [20, 60],
     "loot": [{"item": "nightshade", "chance": 0.6}, {"item": "garlic", "chance": 0.4}, {"item": "healing_potion", "chance": 0.3}],
