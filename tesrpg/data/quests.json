@@ -1851,5 +1851,17 @@
       {"objective": {"type": "reach", "location": "molag_vault"}, "text": "步入莫拉格瑪城郊、熔岩裂隙下的玷污血色密室。"},
       {"objective": {"type": "clear_dungeon", "dungeon": "molag_vault"}, "text": "解開祭品的枷鎖,在鎖鏈祭壇前擊潰莫拉格巴爾的血裔領主 —— 以不屈之志反噬奴役之主。"}
     ], "reward": {"gold": 600, "fame": 30, "grant_boon": "molag_defiance", "world_flags": ["molag_bal_defied"]}}
+  ]},
+  "hircine_hunt": {"name": "血月狩獵", "faction": null, "rank": null, "source": "daedric", "shrine": "hircine", "requires_level": 16, "text": "格拉特林地的苔石獵壇在你獻祭時躁動 —— 狩獵之主海爾辛的低吼自血月下傳來。他的禁林深處,一頭被詛咒撐裂軀體的巨獸正獵殺著闖入的獵人。加入這場大狩獵 —— 但獵物的血皮,是要獻給海爾辛、換取獵者的庇佑,還是據為己有?", "branches": [
+    {"label": "狩成之路 —— 為海爾辛完成大狩獵(賜永久誓福:獵者之佑)", "text": "以獵人之姿循血跡而行,在血月下擊倒那頭受詛的巨獸,將獵物獻予狩獵之主 —— 海爾辛將以獵者的敏捷與野性回報於你。", "stages": [
+      {"objective": {"type": "kill", "creature": "wolf", "count": 3}, "text": "大狩獵以初獵之血為始:在荒野中追殺 3 隻野狼,向海爾辛證明你配得上這場狩獵。"},
+      {"objective": {"type": "reach", "location": "moonlit_grove"}, "text": "循血月的指引,深入格拉特禁林深處的月噬林地。"},
+      {"objective": {"type": "clear_dungeon", "dungeon": "moonlit_grove"}, "text": "在血月祭場擊倒受詛的血月巨獸,將牠的血皮獻予狩獵之主海爾辛。"}
+    ], "reward": {"gold": 600, "fame": 30, "grant_boon": "hircine_blessing", "world_flags": ["hircine_hunt_completed"]}},
+    {"label": "奪皮之路 —— 親手剝下獵物的血皮據為己有(得神器:救主之皮)", "text": "你不願將戰利品拱手讓給狩獵之主 —— 親手剝下那頭受詛巨獸的血皮,鞣製成護甲。海爾辛或許不悅,但這張刀槍與法術難傷的獸皮,將永遠護你周全。", "stages": [
+      {"objective": {"type": "kill", "creature": "wolf", "count": 3}, "text": "大狩獵以初獵之血為始:在荒野中追殺 3 隻野狼,循血跡逼近那頭巨獸。"},
+      {"objective": {"type": "reach", "location": "moonlit_grove"}, "text": "循血月的指引,深入格拉特禁林深處的月噬林地。"},
+      {"objective": {"type": "clear_dungeon", "dungeon": "moonlit_grove"}, "text": "在血月祭場擊倒受詛的血月巨獸,親手剝下牠那張刀槍難傷的血皮。"}
+    ], "reward": {"gold": 500, "fame": 25, "items": ["saviors_hide"], "world_flags": ["hircine_hide_claimed"]}}
   ]}
 }

@@ -12,5 +12,12 @@
     "skill": {"restoration": 8},
     "resist": {"shock": 15},
     "magicka": 0
+  },
+  "hircine_blessing": {
+    "name": "獵者之佑",
+    "attr": {"agility": 10, "speed": 6},
+    "skill": {"light_armor": 8},
+    "resist": {"frost": 15},
+    "magicka": 0
   }
 }

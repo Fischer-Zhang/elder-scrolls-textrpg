@@ -743,6 +743,28 @@
     "loot": [{"item": "filled_grand_soul_gem", "chance": 0.6}, {"item": "vampire_dust", "chance": 0.5}],
     "flavor": "奴役之主自他血裔的軀殼中俯視眾生 —— 鎖鏈、雷光與亡魂的哀嚎,皆是他支配萬物的工具。"
   },
+  "blood_moon_beast": {
+    "name": "受詛的血月巨獸", "strength": 70, "agility": 56, "speed": 58,
+    "max_health": 210, "armor_rating": 14,
+    "attack": {"name": "撕裂猛撲", "damage": 38, "skill": 66,
+               "on_hit": {"status": "stagger", "turns": 1, "chance": 0.3}},
+    "attacks": [
+      {"name": "撕裂猛撲", "damage": 38, "skill": 66, "weight": 3,
+       "on_hit": {"status": "stagger", "turns": 1, "chance": 0.3}},
+      {"name": "獠牙連咬", "damage": 34, "skill": 66, "weight": 2},
+      {"name": "重爪掃擊", "damage": 30, "skill": 66, "weight": 2,
+       "on_hit": {"status": "weaken", "magnitude": 0.2, "turns": 2, "chance": 0.4}},
+      {"name": "血月嚎叫", "damage": 14, "skill": 66, "weight": 1,
+       "on_hit": {"status": "fear", "turns": 1, "chance": 0.25}},
+      {"name": "狂亂撕咬", "damage": 54, "skill": 68, "weight": 1,
+       "cooldown": 3, "when": {"hp_below": 0.5}}
+    ],
+    "danger": 5, "min_level": 16, "weight": 1, "solo": true,
+    "resist": {"frost": 30, "poison": 40, "shock": 20},
+    "loot_gold": [180, 380],
+    "loot": [{"item": "wolf_pelt", "chance": 0.8}, {"item": "filled_greater_soul_gem", "chance": 0.4}],
+    "flavor": "血月當空,海爾辛的獵物自林影中暴起 —— 一頭被詛咒撐裂了軀體的巨獸,獠牙與爪間還滴著上一個獵人的血。"
+  },
   "dremora_lord": {
     "biomes": ["ashland"],
     "name": "魔人領主", "strength": 74, "agility": 50, "speed": 48,

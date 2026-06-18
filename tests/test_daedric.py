@@ -229,6 +229,69 @@ def test_molag_content_integrity():
                 & set(gd.boons["molag_defiance"].get("skill", {})))
 
 
+# --- 第三位親王:海爾辛(hunt→誓福 vs claim→神器)----------------------
+def _complete_hircine(gd, c, branch):
+    quests.accept_quest(c, gd, "hircine_hunt", branch=branch)
+    c.kill_counts["wolf"] = c.kill_counts.get("wolf", 0) + 3   # 初獵之血(kill 階段)
+    c.location_id = "moonlit_grove"
+    quests.record_dungeon_clear(c, "moonlit_grove")
+    quests.check_completion(c, gd)
+
+
+def test_hircine_hunt_branch_grants_boon_not_hide():
+    """狩成之路 → 永久誓福 獵者之佑(agility+10/speed+6/light_armor+8)、不得神器。"""
+    gd, c = _gd_char(level=16)
+    a0, sp0, la0 = c.attr("agility"), c.attr("speed"), c.skill("light_armor")
+    _complete_hircine(gd, c, 0)
+    assert "hircine_hunt" in c.completed_quests
+    assert boons.has_boon(c, "hircine_blessing")
+    assert c.attr("agility") == a0 + 10 and c.attr("speed") == sp0 + 6
+    assert c.skill("light_armor") == la0 + 8
+    assert c.base_attr("agility") == a0          # 🔴 不寫 base
+    assert inventory.count_item(c, "saviors_hide") == 0
+    assert "hircine_hunt_completed" in c.world_events_fired
+
+
+def test_hircine_claim_branch_grants_hide_not_boon():
+    """奪皮之路 → 得神器 救主之皮(輕甲·魔抗)、不得誓福。"""
+    gd, c = _gd_char(level=16)
+    _complete_hircine(gd, c, 1)
+    assert "hircine_hunt" in c.completed_quests
+    assert inventory.count_item(c, "saviors_hide") == 1
+    assert not boons.has_boon(c, "hircine_blessing")
+    assert "hircine_hide_claimed" in c.world_events_fired
+
+
+def test_hircine_availability_and_three_shrines_coexist():
+    gd, c = _gd_char(level=15)
+    assert "hircine_hunt" not in quests.available_quests(c, gd, "daedric")   # 等級不足
+    c.level = 16
+    av = quests.available_quests(c, gd, "daedric")
+    assert {"azura_star", "molag_bal_vault", "hircine_hunt"} <= set(av)        # 三座神殿任務並存
+    assert gd.quests["hircine_hunt"]["shrine"] == "hircine"
+
+
+def test_hircine_content_integrity():
+    gd, _ = _gd_char()
+    assert "hircine_blessing" in gd.boons and "saviors_hide" in gd.items
+    assert gd.world["locations"]["grahtwood"].get("shrine") == "hircine"
+    boss = gd.dungeons["moonlit_grove"]["boss"]["enemy"]
+    assert boss == "blood_moon_beast" and gd.bestiary[boss].get("solo") is True
+    for atk in gd.bestiary[boss].get("attacks", []):
+        oh = atk.get("on_hit") or {}
+        if oh.get("status") in ("fear", "paralyze"):
+            assert oh.get("chance", 1.0) <= 0.30 and oh.get("turns", 1) <= 1, atk
+    # Savior's Hide 為輕甲·魔抗,且僅任務 reward(不漏進地城寶藏 → 分支抉擇有意義)
+    hide = gd.items["saviors_hide"]
+    assert hide["weight_class"] == "light" and hide["enchant"]["element"] == "magic"
+    for dd in gd.dungeons.values():
+        tl = [x for x in dd.get("boss", {}).get("treasure", {}).get("loot", []) if isinstance(x, str)]
+        assert "saviors_hide" not in tl + dd.get("loot", [])
+    # 誓福守紅線:無 sneak/武器技能(agility/speed/light_armor 安全)
+    assert not ({"sneak", "blade", "blunt", "marksman", "hand_to_hand"}
+                & set(gd.boons["hircine_blessing"].get("skill", {})))
+
+
 def run():
     for name, fn in sorted(globals().items()):
         if name.startswith("test_") and callable(fn):
