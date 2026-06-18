@@ -163,6 +163,7 @@
 - **Tier1-c 省份風味事件**:`events.json` 15→23,用早就支援卻沒人用的 `trigger.provinces` 加 8 個四省限定事件(暴風雪/灰燼風暴/希斯特低語/帝國巡邏 + 在地掠食 ice_wraith/will_o_wisp + 火山/沼澤野採),把全域同文事件換成在地風味。
 - **對抗審查修正(5 處)**:① `frostbite_spider`(霜咬)biome swamp→snow(名實相符,且補上雪原缺的低階 d2 怪);② 兩個 predator 事件移除「邊境」(避免冰魂在沼澤觸發);③ `ashland_waste` 補上(灰蹦蟲懸賞就近可獵);④ `job_falkreath` 120→130 金(解除被 job_wolf 嚴格支配);⑤ 天際雪原早期偏硬(lv2 d3 遇敵率 ~55%)為**刻意省份難度區隔**(雪原較險,接在和緩的賽羅迪爾起點之後),已記錄於此。
 - **驗證**:25 測試模組全綠(新增 `test_detailing`)+ 生態分流抽樣(各省招牌生態 + 池不空)+ sim_assassin 基線不變 + 無頭煙霧(旅行生態遇遇/告示板過濾/NPC 委託/省份事件/新地城)+ 對抗審查 workflow。**加在地怪純改 biomes、加在地懸賞純改 quests provinces、加省份事件純改 trigger.provinces**。
+- **🌿 野怪種類擴展(結構補完)**:評估揪出三結構洞(heartland 只 2 隻原生怪/21 地點、d1 階全通用、swamp 無 d3)→ 純 `bestiary.json` 新增 **14 隻野外怪**(86→100):**heartland 6**(野豬 d1/哥布林 d2/哥布林薩滿 d3 法系/山獅 d3/奧格瑞姆 d4/陸行德魯格 d5,賽羅迪爾終於有在地 fauna)+ **各 biome d1 起手在地小動物 7**(雪原狐/灰燼甲蟲/叢林毒蛙/草原胡狼/沼澤水蛭/沙地響尾蛇/荒沼獵犬)+ **沼澤巨鱷 d3**(填 swamp 空缺)。d3+ 給 R43 曲目;**🔴 加 moor/jungle/savanna 怪必弱該省剋星元素**(`test_detailing`:moor→shock、jungle→fire〔不帶 magic 鍵〕、savanna→poison,`resist_multiplier>1`);heartland d3+ 靠 danger 門檻自動不上起手道。`sim_assassin` byte-identical(sim 生指定 id 非隨機遭遇);`run_all` 66 綠;全名單見 `BESTIARY.md`。
 
 **再進一步細化(評估 workflow→①②③ 套餐;對抗審查修掉 minotaur 危險度)**:承上輪,活化仍偏弱的面向。
 - **① heartland 招牌生態怪**:賽羅迪爾原本是唯一**零專屬生態怪**的省(野外只噴鼠/蟹)。`bestiary` 加 `imperial_ghost`(帝國亡魂,d2/min1,`biomes:heartland`,resist `magic`/`poison`——刻意用 magic 抗**而非 frost**以區隔屍鬼)+ `minotaur`(米諾陶,**d3**/min3);`events` 加 `cyrodiil_ayleid_ruin`(埃雷德殘墟,賽羅迪爾省份事件)。現在帝國大道一出城就見帝國亡魂,有了識別度。
