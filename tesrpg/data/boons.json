@@ -33,5 +33,12 @@
     "skill": {"speechcraft": 12},
     "resist": {"magic": 10},
     "magicka": 0
+  },
+  "peryite_ward": {
+    "name": "守序之佑",
+    "attr": {"endurance": 10, "willpower": 6},
+    "skill": {"block": 10},
+    "resist": {"magic": 12, "disease": 25},
+    "magicka": 0
   }
 }

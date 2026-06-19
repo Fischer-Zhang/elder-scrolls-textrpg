@@ -810,6 +810,28 @@
     "loot": [{"item": "filled_grand_soul_gem", "chance": 0.5}, {"item": "ruby", "chance": 0.3}],
     "flavor": "他曾向克拉維克斯·瓦爾許下一個願望 —— 如今那願望反噬其身,把他變成一具被言靈啃噬殆盡、只剩咒術本能的軀殼。"
   },
+  "plague_renegade": {
+    "name": "棄疫的奧爾肯多", "strength": 52, "agility": 48, "speed": 46,
+    "max_health": 205, "armor_rating": 14,
+    "attack": {"name": "腐疫吐息", "damage": 34, "skill": 66, "element": "poison",
+               "on_hit": {"status": "dot", "element": "poison", "magnitude": 7, "turns": 3, "chance": 0.5}},
+    "attacks": [
+      {"name": "腐疫吐息", "damage": 34, "skill": 66, "element": "poison", "weight": 2,
+       "on_hit": {"status": "dot", "element": "poison", "magnitude": 7, "turns": 3, "chance": 0.5}},
+      {"name": "瘟疫法擊", "damage": 36, "skill": 66, "element": "poison", "weight": 2},
+      {"name": "枯朽之觸", "damage": 28, "skill": 66, "weight": 2,
+       "on_hit": {"status": "weaken", "magnitude": 0.25, "turns": 2, "chance": 0.4}},
+      {"name": "疫鳴", "damage": 16, "skill": 66, "weight": 1,
+       "on_hit": {"status": "fear", "turns": 1, "chance": 0.25}},
+      {"name": "疫病爆發", "damage": 52, "skill": 68, "element": "poison", "weight": 1,
+       "cooldown": 3, "when": {"hp_below": 0.5}}
+    ],
+    "danger": 5, "min_level": 16, "weight": 1, "solo": true,
+    "resist": {"poison": 70, "disease": 80, "magic": 30, "fire": -15},
+    "loot_gold": [200, 400],
+    "loot": [{"item": "filled_grand_soul_gem", "chance": 0.5}, {"item": "deathbell", "chance": 0.5}],
+    "flavor": "他曾是瘦疫之主秩序中的一員,卻背棄了佩雷丽特、私吞了一整窟的腐疫 —— 如今膿瘡爬滿全身,他自己也成了行走的瘟疫。"
+  },
   "dremora_lord": {
     "biomes": ["ashland"],
     "name": "魔人領主", "strength": 74, "agility": 50, "speed": 48,

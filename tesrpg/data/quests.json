@@ -1887,5 +1887,17 @@
       {"objective": {"type": "reach", "location": "haemars_shame"}, "text": "隨巴巴斯前往風暴港原野東緣的海瑪之恥,那名濫用願望的術士藏身於此。"},
       {"objective": {"type": "clear_dungeon", "dungeon": "haemars_shame"}, "text": "了結被言靈啃噬的術士、取回悲愴之斧 —— 拒絕克拉維克斯的獻祭之命,信守對巴巴斯的承諾。"}
     ], "reward": {"gold": 600, "fame": 25, "grant_boon": "clavicus_silver_tongue", "world_flags": ["clavicus_kept_word"]}}
+  ]},
+  "peryite_cure": {"name": "唯一的解藥", "faction": null, "rank": null, "source": "daedric", "shrine": "peryite", "requires_level": 17, "text": "影沼邊那座爬滿黴斑的黑石龕滲出瘴氣 —— 瘦疫之主佩雷丽特的低語在膿瘡般的水泡間響起。他秩序中的一員奧爾肯多背棄了他、私吞了一整窟的腐疫,藏身於影沼旁的窪地。佩雷丽特要你前去了結這名叛徒。是替瘦疫之主執行清算、換取那面彈開法術的靈破之盾,還是淨化瘟疫卻拒做他的爪牙?", "branches": [
+    {"label": "役疫之路 —— 替佩雷丽特清算叛徒(得神器:靈破者)", "text": "領受瘦疫之主的委託 —— 深入腐疫巢窟,了結背棄秩序的奧爾肯多,將這窟瘟疫重歸佩雷丽特的掌控。瘦疫之主將賜你那面能在格擋間彈開法術的靈破之盾。", "stages": [
+      {"objective": {"type": "collect", "item": "deathbell", "count": 2}, "text": "與瘦疫之主交感需以疫物為引:採集兩株死亡鐘,在黑石龕前焚作瘴煙。"},
+      {"objective": {"type": "reach", "location": "plague_warren"}, "text": "前往影沼與吉迪恩之間的瘴霧窪地 —— 腐疫巢窟。"},
+      {"objective": {"type": "clear_dungeon", "dungeon": "plague_warren"}, "text": "在腐疫法陣前了結背棄秩序的奧爾肯多 —— 替佩雷丽特清算叛徒,接過靈破之盾。"}
+    ], "reward": {"gold": 700, "infamy": 25, "items": ["spellbreaker"], "world_flags": ["peryite_served"]}},
+    {"label": "淨疫之路 —— 淨化瘟疫卻拒做瘦疫之主的爪牙(賜永久誓福:守序之佑)", "text": "你願淨化這窟瘟疫,卻不願做瘦疫之主的爪牙 —— 了結奧爾肯多、燒盡腐疫,以己法守序,拒絕佩雷丽特的差遣。他雖不悅,卻也將一縷抗疫禦法的秩序之力留予了你。", "stages": [
+      {"objective": {"type": "collect", "item": "deathbell", "count": 2}, "text": "與瘦疫之主交感需以疫物為引:採集兩株死亡鐘,在黑石龕前焚作瘴煙。"},
+      {"objective": {"type": "reach", "location": "plague_warren"}, "text": "前往影沼與吉迪恩之間的瘴霧窪地 —— 腐疫巢窟。"},
+      {"objective": {"type": "clear_dungeon", "dungeon": "plague_warren"}, "text": "了結奧爾肯多、燒盡整窟腐疫 —— 淨化瘟疫,卻拒絕成為瘦疫之主的爪牙。"}
+    ], "reward": {"gold": 600, "fame": 25, "grant_boon": "peryite_ward", "world_flags": ["peryite_defied"]}}
   ]}
 }

@@ -437,6 +437,82 @@ def test_clavicus_content_integrity():
                 & set(gd.boons["clavicus_silver_tongue"].get("skill", {})))
 
 
+# --- 第六位親王:佩雷丽特(盾/防魔軸;serve→Spellbreaker 神器 vs defy→誓福)----
+def _complete_peryite(gd, c, branch):
+    quests.accept_quest(c, gd, "peryite_cure", branch=branch)
+    inventory.add_item(c, "deathbell", 2)   # 疫物之引(collect 階段)
+    c.location_id = "plague_warren"
+    quests.record_dungeon_clear(c, "plague_warren")
+    quests.check_completion(c, gd)
+
+
+def test_peryite_serve_branch_grants_shield_not_boon():
+    """役疫之路 → 得神器 靈破者、惡名上升、不得誓福。"""
+    gd, c = _gd_char(level=17)
+    _complete_peryite(gd, c, 0)
+    assert "peryite_cure" in c.completed_quests
+    assert inventory.count_item(c, "spellbreaker") == 1
+    assert not boons.has_boon(c, "peryite_ward") and c.infamy >= 25
+    assert "peryite_served" in c.world_events_fired
+
+
+def test_spellbreaker_magic_resist_when_worn():
+    """靈破者穿戴 → 魔法抗性 +45(防魔/盾軸 / resist_element 路徑)。"""
+    from tesrpg.systems import magic, stats
+    gd, c = _gd_char(level=17)
+    mr0 = magic.entity_resist(c, gd).get("magic", 0)
+    _complete_peryite(gd, c, 0)
+    inventory.equip_armor(c, gd, "spellbreaker")
+    stats.recompute_equipment(c, gd)
+    assert magic.entity_resist(c, gd).get("magic", 0) == mr0 + 45
+
+
+def test_peryite_defy_branch_grants_boon_not_shield():
+    """淨疫之路 → 永久誓福 守序之佑(endurance+10/block+10/disease+25)、不得神器。"""
+    gd, c = _gd_char(level=17)
+    e0, bl0 = c.attr("endurance"), c.skill("block")
+    dis0 = __import__("tesrpg.systems.magic", fromlist=["entity_resist"]).entity_resist(c, gd).get("disease", 0)
+    _complete_peryite(gd, c, 1)
+    assert boons.has_boon(c, "peryite_ward")
+    assert c.attr("endurance") == e0 + 10 and c.skill("block") == bl0 + 10
+    assert c.base_attr("endurance") == e0          # 🔴 不寫 base
+    from tesrpg.systems import magic
+    assert magic.entity_resist(c, gd).get("disease", 0) == dis0 + 25
+    assert inventory.count_item(c, "spellbreaker") == 0
+    assert "peryite_defied" in c.world_events_fired
+
+
+def test_peryite_availability_and_six_shrines_coexist():
+    gd, c = _gd_char(level=16)
+    assert "peryite_cure" not in quests.available_quests(c, gd, "daedric")   # 等級不足(需 17)
+    c.level = 17
+    av = quests.available_quests(c, gd, "daedric")
+    assert {"azura_star", "molag_bal_vault", "hircine_hunt", "boethiah_calling",
+            "clavicus_bargain", "peryite_cure"} <= set(av)
+    assert gd.quests["peryite_cure"]["shrine"] == "peryite"
+
+
+def test_peryite_content_integrity():
+    gd, _ = _gd_char()
+    assert "peryite_ward" in gd.boons and "spellbreaker" in gd.items
+    assert gd.world["locations"]["shadowfen"].get("shrine") == "peryite"
+    boss = gd.dungeons["plague_warren"]["boss"]["enemy"]
+    assert boss == "plague_renegade" and gd.bestiary[boss].get("solo") is True
+    for atk in gd.bestiary[boss].get("attacks", []):
+        oh = atk.get("on_hit") or {}
+        if oh.get("status") in ("fear", "paralyze"):
+            assert oh.get("chance", 1.0) <= 0.30 and oh.get("turns", 1) <= 1, atk
+    # Spellbreaker：1H shield(非 great_shield)·magic resist·無 material·僅任務 reward
+    sb = gd.items["spellbreaker"]
+    assert sb["slot"] == "shield" and not sb.get("great_shield") and sb["enchant"]["element"] == "magic" and "material" not in sb
+    for dd in gd.dungeons.values():
+        tl = [x for x in dd.get("boss", {}).get("treasure", {}).get("loot", []) if isinstance(x, str)]
+        assert "spellbreaker" not in tl + dd.get("loot", [])
+    # 誓福守紅線:無 sneak/武器技能(endurance/willpower/block 安全)
+    assert not ({"sneak", "blade", "blunt", "marksman", "hand_to_hand"}
+                & set(gd.boons["peryite_ward"].get("skill", {})))
+
+
 def run():
     for name, fn in sorted(globals().items()):
         if name.startswith("test_") and callable(fn):
