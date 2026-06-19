@@ -1381,6 +1381,118 @@ def test_jyggalag_content_integrity():
     assert "strength" not in gd.boons["jyggalag_order"].get("attr", {})
 
 
+# --- 赫麥尤斯·莫拉(第十六位親王·R49:Oghma 無限祕典三徑機制)-------------
+def _complete_forbidden_knowledge(gd, c):
+    quests.accept_quest(c, gd, "forbidden_knowledge")
+    inventory.add_item(c, "moonstone_ingot", 2)   # 無瑕之引(collect 階段)
+    c.location_id = "forbidden_archive"
+    quests.record_dungeon_clear(c, "forbidden_archive")
+    quests.check_completion(c, gd)
+
+
+def test_hermaeus_quest_grants_oghma_book_no_boon_yet():
+    """完成試煉 → 得無限祕典(書)、聲望+30、world_flag;讀書前不得任何誓福。"""
+    gd, c = _gd_char(level=18)
+    _complete_forbidden_knowledge(gd, c)
+    assert "forbidden_knowledge" in c.completed_quests
+    assert inventory.count_item(c, "oghma_infinium") == 1
+    assert not any(boons.has_boon(c, b)
+                   for b in ("hermaeus_might", "hermaeus_shadow", "hermaeus_magic"))
+    assert c.fame >= 30 and "hermaeus_mora_seeker" in c.world_events_fired
+
+
+def test_oghma_read_grants_chosen_boon_and_consumes_book():
+    """R49 新機制:讀無限祕典 → 三選一永久誓福、書消耗;走通用 boons 層、不寫 base。"""
+    import types
+    from tesrpg import main
+    from tesrpg.ui import console as ui
+    gd, c = _gd_char(level=18)
+    inventory.add_item(c, "oghma_infinium", 1)
+    i0, w0, d0, my0, mg0 = (c.attr("intelligence"), c.attr("willpower"),
+                            c.skill("destruction"), c.skill("mysticism"), c.max_magicka)
+    state = types.SimpleNamespace(player=c)
+    _menu, _msg = ui.menu, ui.message
+    ui.menu = lambda *a, **k: "hermaeus_magic"     # 玩家擇「魔法之徑」
+    ui.message = lambda *a, **k: None
+    try:
+        main._read_book(state, gd, "oghma_infinium")
+    finally:
+        ui.menu, ui.message = _menu, _msg
+    assert boons.has_boon(c, "hermaeus_magic")
+    assert inventory.count_item(c, "oghma_infinium") == 0   # 書消耗(Mora 收回)
+    assert c.attr("intelligence") == i0 + 10 and c.attr("willpower") == w0 + 6
+    assert c.skill("destruction") == d0 + 8 and c.skill("mysticism") == my0 + 8
+    assert c.max_magicka >= mg0 + 25
+    assert c.base_attr("intelligence") == i0          # 🔴 不寫 base
+
+
+def test_oghma_read_back_does_not_consume_book():
+    """選擇返回(未擇徑)→ 書不消耗、無誓福(可日後再讀)。"""
+    import types
+    from tesrpg import main
+    from tesrpg.ui import console as ui
+    gd, c = _gd_char(level=18)
+    inventory.add_item(c, "oghma_infinium", 1)
+    state = types.SimpleNamespace(player=c)
+    _menu, _msg = ui.menu, ui.message
+    ui.menu = lambda *a, **k: None      # 返回
+    ui.message = lambda *a, **k: None
+    try:
+        main._read_book(state, gd, "oghma_infinium")
+    finally:
+        ui.menu, ui.message = _menu, _msg
+    assert inventory.count_item(c, "oghma_infinium") == 1
+    assert not any(boons.has_boon(c, b)
+                   for b in ("hermaeus_might", "hermaeus_shadow", "hermaeus_magic"))
+
+
+def test_hermaeus_availability_and_sixteen_shrines_coexist():
+    gd, c = _gd_char(level=17)
+    assert "forbidden_knowledge" not in quests.available_quests(c, gd, "daedric")   # 等級不足(需 18)
+    c.level = 18
+    av = quests.available_quests(c, gd, "daedric")
+    assert {"azura_star", "molag_bal_vault", "hircine_hunt", "boethiah_calling",
+            "clavicus_bargain", "peryite_cure", "mephala_whisper", "sanguine_party",
+            "malacath_curse", "meridia_beacon", "waking_nightmare", "namira_feast",
+            "mind_of_madness", "twilight_sepulcher", "greymarch",
+            "forbidden_knowledge"} <= set(av)
+    assert gd.quests["forbidden_knowledge"]["shrine"] == "hermaeus_mora"
+
+
+def test_hermaeus_content_integrity():
+    gd, _ = _gd_char()
+    # 三徑誓福 + 書登錄(新 kind "book" + grant_choice 三路徑)
+    for b in ("hermaeus_might", "hermaeus_shadow", "hermaeus_magic"):
+        assert b in gd.boons, b
+    bk = gd.items["oghma_infinium"]
+    assert bk["kind"] == "book" and bk["effect"]["type"] == "grant_choice"
+    assert {p["boon"] for p in bk["effect"]["paths"]} == \
+        {"hermaeus_might", "hermaeus_shadow", "hermaeus_magic"}
+    # 神殿(高岩第二座)/地城/boss
+    assert gd.world["locations"]["rivenspire"].get("shrine") == "hermaeus_mora"
+    assert "forbidden_archive" in gd.dungeons and "forbidden_archive" in gd.world["locations"]
+    boss = gd.dungeons["forbidden_archive"]["boss"]["enemy"]
+    assert boss == "apocrypha_seeker" and gd.bestiary[boss].get("solo") is True
+    assert gd.dungeons["forbidden_archive"]["boss"].get("raw") is True
+    # boss 控場紀律:硬控 fear/paralyze ≤0.30 機率·turns ≤1(R43/R44)
+    for atk in gd.bestiary[boss].get("attacks", []):
+        oh = atk.get("on_hit") or {}
+        if oh.get("status") in ("fear", "paralyze"):
+            assert oh.get("chance", 1.0) <= 0.30 and oh.get("turns", 1) <= 1, atk
+    # 無限祕典:僅任務 reward·不在任何 loot 表(神器規則)
+    for dd in gd.dungeons.values():
+        tl = [x for x in dd.get("boss", {}).get("treasure", {}).get("loot", []) if isinstance(x, str)]
+        assert "oghma_infinium" not in tl + dd.get("loot", [])
+    # 地城怪皆存在
+    for m in gd.dungeons["forbidden_archive"]["monsters"]:
+        assert m in gd.bestiary, m
+    # 🔴 三徑誓福守紅線:無 sneak/任何武器技能·無 strength
+    for b in ("hermaeus_might", "hermaeus_shadow", "hermaeus_magic"):
+        assert not ({"sneak", "blade", "blunt", "marksman", "hand_to_hand"}
+                    & set(gd.boons[b].get("skill", {}))), b
+        assert "strength" not in gd.boons[b].get("attr", {}), b
+
+
 def run():
     for name, fn in sorted(globals().items()):
         if name.startswith("test_") and callable(fn):

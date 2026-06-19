@@ -103,5 +103,26 @@
     "skill": {"scout": 12},
     "resist": {"magic": 15},
     "magicka": 10
+  },
+  "hermaeus_might": {
+    "name": "真知·力量之書",
+    "attr": {"endurance": 10, "willpower": 6},
+    "skill": {"heavy_armor": 10, "block": 8},
+    "resist": {"fire": 15},
+    "magicka": 0
+  },
+  "hermaeus_shadow": {
+    "name": "真知·暗影之書",
+    "attr": {"agility": 10, "speed": 6},
+    "skill": {"acrobatics": 10, "light_armor": 8},
+    "resist": {"poison": 15},
+    "magicka": 0
+  },
+  "hermaeus_magic": {
+    "name": "真知·魔法之書",
+    "attr": {"intelligence": 10, "willpower": 6},
+    "skill": {"destruction": 8, "mysticism": 8},
+    "resist": {"magic": 15},
+    "magicka": 25
   }
 }

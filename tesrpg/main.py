@@ -12,7 +12,7 @@ from tesrpg import creation, formulas
 from tesrpg.gamedata import GameData, get_gamedata
 from tesrpg.rng import RNG, make_seed
 from tesrpg.state import GameState
-from tesrpg.systems import (aiwar, alchemy, brotherhood, combat, court, crafting, crime, dialogue, dungeon,
+from tesrpg.systems import (aiwar, alchemy, boons, brotherhood, combat, court, crafting, crime, dialogue, dungeon,
                             dungeoncrawl, enchanting, events, factions, housing, inventory, landmarks, legacy,
                             lycanthropy, magic, mastery, mounts, party, politics, potion_buff, powers,
                             progression, quests, skooma, smithing, stats, vampirism, warband, world, worldstate)
@@ -1547,6 +1547,35 @@ def action_dungeon(state: GameState, gamedata: GameData) -> str | None:
 # ======================================================================
 # 背包與裝備
 # ======================================================================
+def _read_book(state: GameState, gamedata: GameData, item_id: str) -> None:
+    """閱讀一本「擇徑禁書」(R49:赫麥尤斯·莫拉的無限祕典)——
+
+    三選一永久誓福機制:讀者於力量/暗影/魔法之徑中擇一,授予對應誓福(走通用 boons 層),
+    書隨即消耗(Mora 收回)。**選擇永久且不可逆**;未選(返回)則不消耗,可日後再讀。
+    UI 留在 main.py(R27:systems 不直呼 ui),比照 action_shrine。
+    """
+    char = state.player
+    d = gamedata.item(item_id)
+    eff = d.get("effect") or {}
+    if eff.get("type") != "grant_choice" or inventory.count_item(char, item_id) <= 0:
+        return
+    paths = eff.get("paths") or []
+    opts = [(p["boon"], p["label"]) for p in paths
+            if p.get("boon") in getattr(gamedata, "boons", {})]
+    if not opts:
+        return
+    ui.message(f"你翻開了{d['name']} —— 書頁自行翻動,墨綠色的字句在眼前重組,"
+               "要你擇一徑而行。此選擇永久且不可逆。", style="cyan")
+    choice = ui.menu("無限祕典 —— 擇一徑而行(永久且不可逆)", opts, allow_back=True)
+    if choice is None:
+        return   # 未擇徑:書不消耗,可日後再讀
+    boons.grant(char, gamedata, choice)            # 末尾自帶 recompute_max_resources
+    inventory.remove_item(char, item_id, 1)        # 書隨即消失(Mora 收回)
+    bname = gamedata.boons[choice]["name"]
+    ui.message(f"真知如潮水般湧入你的識海 —— 你得到了永久的誓福「{bname}」。"
+               f"{d['name']}在你掌中化作墨綠色的霧氣消散,回到了莫拉的書架上。", style="green")
+
+
 def action_inventory(state: GameState, gamedata: GameData) -> None:
     char = state.player
     while True:
@@ -1590,6 +1619,8 @@ def _item_actions(state: GameState, gamedata: GameData, item_id: str) -> None:
         acts.append(("unequip", "卸下"))
     if d["kind"] == "potion":
         acts.append(("use", "使用"))
+    if d["kind"] == "book" and (d.get("effect") or {}).get("type") == "grant_choice":
+        acts.append(("read", "閱讀"))
     if item_id in ("moon_sugar", "skooma"):
         acts.append(("dose", "服用(亢奮 ↔ 成癮)"))
     acts.append(("drop", "丟棄一件"))
@@ -1623,6 +1654,8 @@ def _item_actions(state: GameState, gamedata: GameData, item_id: str) -> None:
     elif act == "use":
         msg = inventory.use_item(char, gamedata, item_id, state)
         ui.message(msg or "無法使用。", style="green")
+    elif act == "read":
+        _read_book(state, gamedata, item_id)
     elif act == "dose":
         res = skooma.dose(state, gamedata, strong=(item_id == "skooma"))
         inventory.remove_item(char, item_id, 1)
