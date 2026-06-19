@@ -923,6 +923,28 @@
     "loot": [{"item": "filled_grand_soul_gem", "chance": 0.5}, {"item": "glow_dust", "chance": 0.4}],
     "flavor": "熄滅的光柱下,一名死靈法師盤踞在梅瑞迪雅的聖光燈塔殘骸間 —— 他以亡者之軍玷污了破曉之光,枯骨的寒氣與夢魘的低語自他腐朽的指尖湧出,只待把又一具軀體納入他的亡軍。"
   },
+  "dream_devourer": {
+    "name": "噬夢者", "strength": 50, "agility": 52, "speed": 50,
+    "max_health": 200, "armor_rating": 10,
+    "attack": {"name": "夢魘雷擊", "damage": 34, "skill": 66, "element": "shock",
+               "on_hit": {"status": "dot", "element": "shock", "magnitude": 6, "turns": 3, "chance": 0.5}},
+    "attacks": [
+      {"name": "夢魘雷擊", "damage": 34, "skill": 66, "element": "shock", "weight": 2,
+       "on_hit": {"status": "dot", "element": "shock", "magnitude": 6, "turns": 3, "chance": 0.5}},
+      {"name": "蝕心低語", "damage": 30, "skill": 66, "weight": 2,
+       "on_hit": {"status": "weaken", "magnitude": 0.25, "turns": 2, "chance": 0.35}},
+      {"name": "深眠之懼", "damage": 16, "skill": 66, "weight": 1,
+       "on_hit": {"status": "fear", "turns": 1, "chance": 0.25}},
+      {"name": "寒夢冰縛", "damage": 36, "skill": 66, "element": "frost", "weight": 2},
+      {"name": "永夜夢魘", "damage": 54, "skill": 68, "element": "shock", "weight": 1,
+       "cooldown": 3, "when": {"hp_below": 0.5}}
+    ],
+    "danger": 5, "min_level": 17, "weight": 1, "solo": true,
+    "resist": {"magic": 35, "shock": 30, "frost": 20},
+    "loot_gold": [220, 420],
+    "loot": [{"item": "filled_grand_soul_gem", "chance": 0.5}, {"item": "glow_dust", "chance": 0.4}],
+    "flavor": "靛紫夢霧裡浮出一具不成人形的夢魘編織者 —— 噬夢者,瓦瑪納的爪牙。牠以千年沉睡者的惡夢為食,指間迸出夢魘的雷光,要把闖入者也拖進那場永不甦醒的夢。"
+  },
   "dremora_lord": {
     "biomes": ["ashland"],
     "name": "魔人領主", "strength": 74, "agility": 50, "speed": 48,

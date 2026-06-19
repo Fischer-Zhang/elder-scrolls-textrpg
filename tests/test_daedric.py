@@ -867,6 +867,100 @@ def test_meridia_content_integrity():
     assert "strength" not in gd.boons["meridia_light"].get("attr", {})
 
 
+# --- 第十一位親王:瓦瑪納(純元素破壞法系軸;serve→Skull of Corruption 神器 vs defy→誓福)----
+def _complete_vaermina(gd, c, branch):
+    quests.accept_quest(c, gd, "waking_nightmare", branch=branch)
+    inventory.add_item(c, "lavender", 2)   # 沉眠夢香(collect 階段)
+    c.location_id = "nightcaller_temple"
+    quests.record_dungeon_clear(c, "nightcaller_temple")
+    quests.check_completion(c, gd)
+
+
+def test_vaermina_serve_branch_grants_skull_not_boon():
+    """執顱之路 → 得神器 腐敗之顱、惡名上升、不得誓福。"""
+    gd, c = _gd_char(level=18)
+    _complete_vaermina(gd, c, 0)
+    assert "waking_nightmare" in c.completed_quests
+    assert inventory.count_item(c, "skull_of_corruption") == 1
+    assert not boons.has_boon(c, "vaermina_nightmare") and c.infamy >= 30
+    assert "vaermina_served" in c.world_events_fired
+
+
+def test_skull_of_corruption_shock_damage():
+    """腐敗之顱 weapon_element shock → 命中附加電擊傷,且吃目標電抗(複用既有 weapon_element 路徑)。"""
+    from tesrpg.systems import combat
+    from tesrpg.rng import RNG
+    gd, c = _gd_char(level=18)
+    _complete_vaermina(gd, c, 0)
+    c.weapon = "skull_of_corruption"; c.is_player = True
+    c.skills["destruction"] = 100
+
+    def total_dmg(resist_shock):
+        tot = 0
+        for i in range(12):
+            d = combat.spawn_creature(gd, "bandit", RNG(i)); d.max_health = d.health = 9999
+            d.agility = 1; d.armor_rating = 0; d.resist = {"shock": resist_shock}
+            combat.resolve_attack(c, d, gd, RNG(50 + i))
+            tot += 9999 - d.health
+        return tot
+
+    assert total_dmg(0) > total_dmg(80), "電抗未削減電擊傷(weapon_element 未生效或未吃抗性)"
+    assert gd.items["skull_of_corruption"]["archetype"] == "staff"
+
+
+def test_vaermina_defy_branch_grants_boon_not_skull():
+    """破夢之路 → 永久誓福 夢魘之佑(intelligence+8/willpower+6/destruction+10/magicka+20)、不得神器。"""
+    gd, c = _gd_char(level=18)
+    i0, w0, ds0, mg0 = c.attr("intelligence"), c.attr("willpower"), c.skill("destruction"), c.max_magicka
+    _complete_vaermina(gd, c, 1)
+    assert boons.has_boon(c, "vaermina_nightmare")
+    assert c.attr("intelligence") == i0 + 8 and c.attr("willpower") == w0 + 6
+    assert c.skill("destruction") == ds0 + 10
+    assert c.max_magicka >= mg0 + 20                   # 法師續航(固定魔力上限 +20)
+    assert c.base_attr("intelligence") == i0          # 🔴 不寫 base
+    assert inventory.count_item(c, "skull_of_corruption") == 0
+    assert "vaermina_defied" in c.world_events_fired
+
+
+def test_vaermina_availability_and_eleven_shrines_coexist():
+    gd, c = _gd_char(level=17)
+    assert "waking_nightmare" not in quests.available_quests(c, gd, "daedric")   # 等級不足(需 18)
+    c.level = 18
+    av = quests.available_quests(c, gd, "daedric")
+    assert {"azura_star", "molag_bal_vault", "hircine_hunt", "boethiah_calling",
+            "clavicus_bargain", "peryite_cure", "mephala_whisper", "sanguine_party",
+            "malacath_curse", "meridia_beacon", "waking_nightmare"} <= set(av)
+    assert gd.quests["waking_nightmare"]["shrine"] == "vaermina"
+
+
+def test_vaermina_content_integrity():
+    gd, _ = _gd_char()
+    assert "vaermina_nightmare" in gd.boons and "skull_of_corruption" in gd.items
+    assert gd.world["locations"]["the_pale_tundra"].get("shrine") == "vaermina"
+    assert "nightcaller_temple" in gd.dungeons and "nightcaller_temple" in gd.world["locations"]
+    boss = gd.dungeons["nightcaller_temple"]["boss"]["enemy"]
+    assert boss == "dream_devourer" and gd.bestiary[boss].get("solo") is True
+    assert gd.dungeons["nightcaller_temple"]["boss"].get("raw") is True
+    for atk in gd.bestiary[boss].get("attacks", []):
+        oh = atk.get("on_hit") or {}
+        if oh.get("status") in ("fear", "paralyze"):
+            assert oh.get("chance", 1.0) <= 0.30 and oh.get("turns", 1) <= 1, atk
+    # Skull of Corruption:staff·destruction·weapon_element shock·僅任務 reward
+    sk = gd.items["skull_of_corruption"]
+    assert sk["archetype"] == "staff" and sk["skill"] == "destruction"
+    assert sk["enchant"]["kind"] == "weapon_element" and sk["enchant"]["element"] == "shock"
+    for dd in gd.dungeons.values():
+        tl = [x for x in dd.get("boss", {}).get("treasure", {}).get("loot", []) if isinstance(x, str)]
+        assert "skull_of_corruption" not in tl + dd.get("loot", [])
+    # 地城怪皆存在
+    for m in gd.dungeons["nightcaller_temple"]["monsters"]:
+        assert m in gd.bestiary, m
+    # 誓福守紅線:destruction 是魔法學派(已見於達貢誓福)·非 sneak/武器技能;無 strength
+    assert not ({"sneak", "blade", "blunt", "marksman", "hand_to_hand"}
+                & set(gd.boons["vaermina_nightmare"].get("skill", {})))
+    assert "strength" not in gd.boons["vaermina_nightmare"].get("attr", {})
+
+
 def run():
     for name, fn in sorted(globals().items()):
         if name.startswith("test_") and callable(fn):

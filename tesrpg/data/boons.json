@@ -68,5 +68,12 @@
     "skill": {"restoration": 10, "light_armor": 6},
     "resist": {"fire": 20, "magic": 10},
     "magicka": 15
+  },
+  "vaermina_nightmare": {
+    "name": "夢魘之佑",
+    "attr": {"intelligence": 8, "willpower": 6},
+    "skill": {"destruction": 10},
+    "resist": {"shock": 15, "magic": 10},
+    "magicka": 20
   }
 }

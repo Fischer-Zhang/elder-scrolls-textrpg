@@ -1947,5 +1947,17 @@
       {"objective": {"type": "reach", "location": "defiled_lightshrine"}, "text": "深入黃金海岸岬角下沉沒的光之神殿。"},
       {"objective": {"type": "clear_dungeon", "dungeon": "defiled_lightshrine"}, "text": "在熄滅的光柱前燒盡那名死靈法師與亡軍、重燃破曉之燈 —— 解救被困的生者,卻婉拒成為女神偏執聖戰的刀刃。"}
     ], "reward": {"gold": 600, "fame": 30, "grant_boon": "meridia_light", "world_flags": ["meridia_light_kept"]}}
+  ]},
+  "waking_nightmare": {"name": "甦醒的夢魘", "faction": null, "rank": null, "source": "daedric", "shrine": "vaermina", "requires_level": 18, "text": "蒼原山岬那座骨石壘成的夜喚祭壇在你獻祭時滲出靛紫的夢霧 —— 夢魘之主瓦瑪納的低語自沉睡者的囈語間升起。岬上的夜喚神殿陷入了永夜的夢魘:整座神殿的祭司被瓦瑪納的『腐敗之顱』拖入無盡惡夢,沉睡千年不醒。瓦瑪納要你登上神殿、走入那場夢魘。是執起那柄編織惡夢的腐敗之顱、成為她的夢魘之手,還是搗毀夢魘之源、喚醒沉睡者,只取走一縷窺見惡夢的洞察?", "branches": [
+    {"label": "執顱之路 —— 順從夢魘之主、執起腐敗之顱(得神器:腐敗之顱)", "text": "領受夢魘之主的低語 —— 任由神殿的祭司永墮惡夢,走入夢境核心,執起那柄編織千年惡夢的腐敗之顱。瓦瑪納將這柄以夢魘為弓的法杖賜予你,你自此成為她散播惡夢的夢魘之手。", "stages": [
+      {"objective": {"type": "collect", "item": "lavender", "count": 2}, "text": "與夢魘之主交感需以安魂之物為引:備妥兩束薰衣草,在夜喚祭壇前焚作沉眠的夢香。"},
+      {"objective": {"type": "reach", "location": "nightcaller_temple"}, "text": "登上蒼原山岬上陷入永夜夢魘的夜喚神殿。"},
+      {"objective": {"type": "clear_dungeon", "dungeon": "nightcaller_temple"}, "text": "走入夢境核心、了結盤踞其中的噬夢者 —— 任沉睡者永墮惡夢,執起瓦瑪納的腐敗之顱。"}
+    ], "reward": {"gold": 800, "infamy": 30, "items": ["skull_of_corruption"], "world_flags": ["vaermina_served"]}},
+    {"label": "破夢之路 —— 搗毀夢魘之源、喚醒沉睡者(賜永久誓福:夢魘之佑)", "text": "你願走入夢魘,卻不願讓沉睡者永墮惡夢 —— 了結噬夢者後,你搗毀了那柄編織惡夢的腐敗之顱,喚醒了千年沉睡的祭司。瓦瑪納雖被拒,但你曾親手撕裂她的夢魘,那一縷窺見惡夢本質的洞察,已悄然烙進你的識海。", "stages": [
+      {"objective": {"type": "collect", "item": "lavender", "count": 2}, "text": "與夢魘之主交感需以安魂之物為引:備妥兩束薰衣草,在夜喚祭壇前焚作沉眠的夢香。"},
+      {"objective": {"type": "reach", "location": "nightcaller_temple"}, "text": "登上蒼原山岬上陷入永夜夢魘的夜喚神殿。"},
+      {"objective": {"type": "clear_dungeon", "dungeon": "nightcaller_temple"}, "text": "走入夢境核心、了結噬夢者,搗毀那柄腐敗之顱 —— 喚醒千年沉睡的祭司,拒做夢魘之主的夢魘之手。"}
+    ], "reward": {"gold": 600, "fame": 30, "grant_boon": "vaermina_nightmare", "world_flags": ["vaermina_defied"]}}
   ]}
 }
