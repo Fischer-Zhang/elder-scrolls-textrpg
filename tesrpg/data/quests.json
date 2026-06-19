@@ -1959,5 +1959,17 @@
       {"objective": {"type": "reach", "location": "nightcaller_temple"}, "text": "登上蒼原山岬上陷入永夜夢魘的夜喚神殿。"},
       {"objective": {"type": "clear_dungeon", "dungeon": "nightcaller_temple"}, "text": "走入夢境核心、了結噬夢者,搗毀那柄腐敗之顱 —— 喚醒千年沉睡的祭司,拒做夢魘之主的夢魘之手。"}
     ], "reward": {"gold": 600, "fame": 30, "grant_boon": "vaermina_nightmare", "world_flags": ["vaermina_defied"]}}
+  ]},
+  "namira_feast": {"name": "饕餮之宴", "faction": null, "rank": null, "source": "daedric", "shrine": "namira", "requires_level": 18, "text": "馬拉巴爾陶深林那座爬滿腐藤的食屍祭壇,在你獻祭時飄出腐甜的氣息 —— 腐朽之主娜米拉的低語自蛆蟲蠕動的暗影間升起。林窟深處,一群食屍者正圍著腐肉之宴膜拜娜米拉,以同類的血肉餵養腐朽女神。娜米拉邀你赴這場饕餮之宴。是加入食屍者、接過她那枚與腐朽同在的戒指,還是淨化這窟褻瀆、了結食屍祭司,只取走一縷駕馭腐毒的洞察?", "branches": [
+    {"label": "赴宴之路 —— 加入食屍者、接過娜米拉之戒(得神器:娜米拉之戒)", "text": "投入腐朽女神的懷抱 —— 走入食屍林窟,與食屍者同赴那場腐肉之宴,了結祭壇上的食屍祭司、將他的血肉獻予娜米拉。腐朽女神將那枚與腐朽同在的戒指賜予你,你戴上它,腐毒與菌絲自此聽你調遣。", "stages": [
+      {"objective": {"type": "collect", "item": "imp_stool", "count": 2}, "text": "與腐朽女神交感需以腐物為引:備妥兩株魔菌,在食屍祭壇前焚作腐甜的菌煙。"},
+      {"objective": {"type": "reach", "location": "carrion_grotto"}, "text": "走入馬拉巴爾陶深林裡爬滿腐藤的食屍腐窟。"},
+      {"objective": {"type": "clear_dungeon", "dungeon": "carrion_grotto"}, "text": "在腐肉祭壇前了結食屍祭司、與食屍者同赴饕餮之宴 —— 接過娜米拉之戒。"}
+    ], "reward": {"gold": 800, "infamy": 30, "items": ["ring_of_namira"], "world_flags": ["namira_feast_joined"]}},
+    {"label": "淨化之路 —— 淨化食屍褻瀆、了結食屍祭司(賜永久誓福:腐朽之佑)", "text": "你願深入林窟、了結那群食屍者,卻不願加入她們的腐肉之宴 —— 燒盡食屍祭壇、淨化整窟褻瀆,拒做腐朽女神的食屍信徒。娜米拉雖被拒,但你曾親手翻遍那窟腐毒與菌絲,那一縷駕馭腐朽的洞察,已悄然滲入你的指掌。", "stages": [
+      {"objective": {"type": "collect", "item": "imp_stool", "count": 2}, "text": "與腐朽女神交感需以腐物為引:備妥兩株魔菌,在食屍祭壇前焚作腐甜的菌煙。"},
+      {"objective": {"type": "reach", "location": "carrion_grotto"}, "text": "走入馬拉巴爾陶深林裡爬滿腐藤的食屍腐窟。"},
+      {"objective": {"type": "clear_dungeon", "dungeon": "carrion_grotto"}, "text": "在腐肉祭壇前了結食屍祭司、燒盡整窟褻瀆 —— 淨化食屍腐窟,拒做腐朽女神的食屍信徒。"}
+    ], "reward": {"gold": 600, "fame": 30, "grant_boon": "namira_decay", "world_flags": ["namira_cult_purged"]}}
   ]}
 }

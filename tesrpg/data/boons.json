@@ -75,5 +75,12 @@
     "skill": {"destruction": 10},
     "resist": {"shock": 15, "magic": 10},
     "magicka": 20
+  },
+  "namira_decay": {
+    "name": "腐朽之佑",
+    "attr": {"agility": 8, "endurance": 6},
+    "skill": {"alchemy": 12},
+    "resist": {"poison": 20, "disease": 15},
+    "magicka": 0
   }
 }

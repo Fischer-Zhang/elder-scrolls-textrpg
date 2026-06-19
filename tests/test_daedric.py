@@ -961,6 +961,90 @@ def test_vaermina_content_integrity():
     assert "strength" not in gd.boons["vaermina_nightmare"].get("attr", {})
 
 
+# --- 第十二位親王:娜米拉(煉金/毒藥匠軸;serve→Ring of Namira 神器 vs defy→誓福)----
+def _complete_namira(gd, c, branch):
+    quests.accept_quest(c, gd, "namira_feast", branch=branch)
+    inventory.add_item(c, "imp_stool", 2)   # 腐物之引(collect 階段)
+    c.location_id = "carrion_grotto"
+    quests.record_dungeon_clear(c, "carrion_grotto")
+    quests.check_completion(c, gd)
+
+
+def test_namira_serve_branch_grants_ring_not_boon():
+    """赴宴之路 → 得神器 娜米拉之戒、惡名上升、不得誓福。"""
+    gd, c = _gd_char(level=18)
+    _complete_namira(gd, c, 0)
+    assert "namira_feast" in c.completed_quests
+    assert inventory.count_item(c, "ring_of_namira") == 1
+    assert not boons.has_boon(c, "namira_decay") and c.infamy >= 30
+    assert "namira_feast_joined" in c.world_events_fired
+
+
+def test_ring_of_namira_fortifies_alchemy_when_worn():
+    """娜米拉之戒穿戴 → 煉金技能 +25(毒藥匠軸 / 飾品 fortify_skill 路徑)。"""
+    from tesrpg.systems import stats
+    gd, c = _gd_char(level=18)
+    al0 = c.skill("alchemy")
+    _complete_namira(gd, c, 0)
+    inventory.equip_jewelry(c, gd, "ring_of_namira")
+    stats.recompute_equipment(c, gd)
+    assert c.skill("alchemy") == al0 + 25
+    assert c.base_skill("alchemy") == al0          # 🔴 裝備層不寫 base
+
+
+def test_namira_defy_branch_grants_boon_not_ring():
+    """淨化之路 → 永久誓福 腐朽之佑(agility+8/endurance+6/alchemy+12)、不得神器。"""
+    gd, c = _gd_char(level=18)
+    a0, e0, al0 = c.attr("agility"), c.attr("endurance"), c.skill("alchemy")
+    _complete_namira(gd, c, 1)
+    assert boons.has_boon(c, "namira_decay")
+    assert c.attr("agility") == a0 + 8 and c.attr("endurance") == e0 + 6
+    assert c.skill("alchemy") == al0 + 12
+    assert c.base_attr("agility") == a0          # 🔴 不寫 base
+    from tesrpg.systems import magic
+    assert magic.entity_resist(c, gd).get("poison", 0) >= 20
+    assert inventory.count_item(c, "ring_of_namira") == 0
+    assert "namira_cult_purged" in c.world_events_fired
+
+
+def test_namira_availability_and_twelve_shrines_coexist():
+    gd, c = _gd_char(level=17)
+    assert "namira_feast" not in quests.available_quests(c, gd, "daedric")   # 等級不足(需 18)
+    c.level = 18
+    av = quests.available_quests(c, gd, "daedric")
+    assert {"azura_star", "molag_bal_vault", "hircine_hunt", "boethiah_calling",
+            "clavicus_bargain", "peryite_cure", "mephala_whisper", "sanguine_party",
+            "malacath_curse", "meridia_beacon", "waking_nightmare", "namira_feast"} <= set(av)
+    assert gd.quests["namira_feast"]["shrine"] == "namira"
+
+
+def test_namira_content_integrity():
+    gd, _ = _gd_char()
+    assert "namira_decay" in gd.boons and "ring_of_namira" in gd.items
+    assert gd.world["locations"]["malabal_tor"].get("shrine") == "namira"
+    assert "carrion_grotto" in gd.dungeons and "carrion_grotto" in gd.world["locations"]
+    boss = gd.dungeons["carrion_grotto"]["boss"]["enemy"]
+    assert boss == "carrion_priest" and gd.bestiary[boss].get("solo") is True
+    assert gd.dungeons["carrion_grotto"]["boss"].get("raw") is True
+    for atk in gd.bestiary[boss].get("attacks", []):
+        oh = atk.get("on_hit") or {}
+        if oh.get("status") in ("fear", "paralyze"):
+            assert oh.get("chance", 1.0) <= 0.30 and oh.get("turns", 1) <= 1, atk
+    # Ring of Namira:jewelry ring·fortify_skill alchemy·僅任務 reward
+    rn = gd.items["ring_of_namira"]
+    assert rn["slot"] == "ring" and rn["enchant"]["kind"] == "fortify_skill" and rn["enchant"]["skill"] == "alchemy"
+    for dd in gd.dungeons.values():
+        tl = [x for x in dd.get("boss", {}).get("treasure", {}).get("loot", []) if isinstance(x, str)]
+        assert "ring_of_namira" not in tl + dd.get("loot", [])
+    # 地城怪皆存在
+    for m in gd.dungeons["carrion_grotto"]["monsters"]:
+        assert m in gd.bestiary, m
+    # 誓福守紅線:alchemy 是工藝技能(非 sneak/武器技能);無 strength
+    assert not ({"sneak", "blade", "blunt", "marksman", "hand_to_hand"}
+                & set(gd.boons["namira_decay"].get("skill", {})))
+    assert "strength" not in gd.boons["namira_decay"].get("attr", {})
+
+
 def run():
     for name, fn in sorted(globals().items()):
         if name.startswith("test_") and callable(fn):

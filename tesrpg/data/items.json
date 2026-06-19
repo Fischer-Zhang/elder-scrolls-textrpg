@@ -40,5 +40,6 @@
   "sigil_stone_fragment": {"name": "封印石碎片", "kind": "misc", "value": 0, "weight": 0.1},
   "mysterium_xarxes": {"name": "魔典·哲思之卷", "kind": "jewelry", "slot": "amulet", "value": 2500, "weight": 0.5, "enchant": {"kind": "fortify_skill", "skill": "conjuration", "magnitude": 15}},
   "skeleton_key": {"name": "骷髏鑰匙", "kind": "jewelry", "slot": "amulet", "value": 2000, "weight": 0.3, "skeleton_key": true, "enchant": {"kind": "fortify_skill", "skill": "security", "magnitude": 20}},
-  "black_star_amulet": {"name": "黑星護符", "kind": "jewelry", "slot": "amulet", "value": 2200, "weight": 0.3, "enchant": {"kind": "fortify_skill", "skill": "mysticism", "magnitude": 20}}
+  "black_star_amulet": {"name": "黑星護符", "kind": "jewelry", "slot": "amulet", "value": 2200, "weight": 0.3, "enchant": {"kind": "fortify_skill", "skill": "mysticism", "magnitude": 20}},
+  "ring_of_namira": {"name": "娜米拉之戒", "kind": "jewelry", "slot": "ring", "value": 2300, "weight": 0.2, "enchant": {"kind": "fortify_skill", "skill": "alchemy", "magnitude": 25}}
 }

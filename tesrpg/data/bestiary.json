@@ -945,6 +945,29 @@
     "loot": [{"item": "filled_grand_soul_gem", "chance": 0.5}, {"item": "glow_dust", "chance": 0.4}],
     "flavor": "靛紫夢霧裡浮出一具不成人形的夢魘編織者 —— 噬夢者,瓦瑪納的爪牙。牠以千年沉睡者的惡夢為食,指間迸出夢魘的雷光,要把闖入者也拖進那場永不甦醒的夢。"
   },
+  "carrion_priest": {
+    "name": "食屍祭司", "strength": 72, "agility": 48, "speed": 44,
+    "max_health": 225, "armor_rating": 18,
+    "attack": {"name": "腐骨重擊", "damage": 38, "skill": 68,
+               "on_hit": {"status": "dot", "element": "poison", "magnitude": 6, "turns": 3, "chance": 0.5}},
+    "attacks": [
+      {"name": "腐骨重擊", "damage": 38, "skill": 68, "weight": 3,
+       "on_hit": {"status": "dot", "element": "poison", "magnitude": 6, "turns": 3, "chance": 0.5}},
+      {"name": "饕餮啃噬", "damage": 32, "skill": 68, "weight": 2,
+       "on_hit": {"status": "weaken", "magnitude": 0.25, "turns": 2, "chance": 0.35}},
+      {"name": "腐疫毒霧", "damage": 28, "skill": 68, "weight": 2,
+       "on_hit": {"status": "dot", "element": "poison", "magnitude": 8, "turns": 2, "chance": 0.5}},
+      {"name": "腐臭懾魂", "damage": 16, "skill": 68, "weight": 1,
+       "on_hit": {"status": "fear", "turns": 1, "chance": 0.25}},
+      {"name": "盛宴狂噬", "damage": 58, "skill": 70, "weight": 1,
+       "cooldown": 3, "when": {"hp_below": 0.5}}
+    ],
+    "danger": 5, "min_level": 17, "weight": 1, "solo": true,
+    "resist": {"poison": 40, "disease": 40, "magic": 15},
+    "loot_gold": [220, 420],
+    "loot": [{"item": "filled_grand_soul_gem", "chance": 0.5}, {"item": "imp_stool", "chance": 0.4}],
+    "flavor": "腐肉祭壇後直起身的,是一具以同類血肉餵養至腫脹的食屍祭司 —— 娜米拉的腐朽之力在他爛透的軀體裡蠕動,蛆蟲與毒霧自他每一道裂口湧出,只想把你也拖上他那永不散場的腐肉之宴。"
+  },
   "dremora_lord": {
     "biomes": ["ashland"],
     "name": "魔人領主", "strength": 74, "agility": 50, "speed": 48,
