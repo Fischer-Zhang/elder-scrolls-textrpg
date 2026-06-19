@@ -1875,5 +1875,17 @@
       {"objective": {"type": "reach", "location": "boethiah_proving"}, "text": "登上佛克瑞斯林上方的刀鋒山脊,步入波耶西亞的血色競技場。"},
       {"objective": {"type": "clear_dungeon", "dungeon": "boethiah_proving"}, "text": "斬碎競技場中所有傀儡與現任勇者,將戰利品棄於黑檀祭壇 —— 以己志反抗陰謀女神的擺布。"}
     ], "reward": {"gold": 600, "fame": 25, "grant_boon": "boethiah_resolve", "world_flags": ["boethiah_defied"]}}
+  ]},
+  "clavicus_bargain": {"name": "言靈之犬", "faction": null, "rank": null, "source": "daedric", "shrine": "clavicus", "requires_level": 17, "text": "風暴港原野的石龕前,那頭石雕惡犬竟開口說話 —— 牠是巴巴斯,言靈之神克拉維克斯·瓦爾流放的忠犬。一名術士濫用了主人的願望、險些釀成大禍,巴巴斯求你隨牠前往海瑪之恥了結此事。但克拉維克斯的低語也已盤上你心頭:在洞窟盡頭,你將面臨一個交易 —— 而代價,是巴巴斯的性命。", "branches": [
+    {"label": "獻祭之路 —— 以悲愴之斧斬殺忠犬巴巴斯,換取面具(得神器:克拉維克斯面具)", "text": "了結濫用願望的術士後,克拉維克斯命你以洞中尋得的悲愴之斧斬殺巴巴斯 —— 獻上這頭忠犬的性命,換取他那張能令舌綻蓮花的面具。你照做了,雙手沾上忠誠的血。", "stages": [
+      {"objective": {"type": "collect", "item": "filled_greater_soul_gem", "count": 1}, "text": "言靈之神只與帶著籌碼的人交易:備妥一枚已充能的上等魂石,作為與克拉維克斯議價的投名狀。"},
+      {"objective": {"type": "reach", "location": "haemars_shame"}, "text": "隨巴巴斯前往風暴港原野東緣的海瑪之恥,那名濫用願望的術士藏身於此。"},
+      {"objective": {"type": "clear_dungeon", "dungeon": "haemars_shame"}, "text": "了結被言靈啃噬的術士、取回悲愴之斧 —— 依克拉維克斯之命斬殺巴巴斯,接過他的面具。"}
+    ], "reward": {"gold": 700, "infamy": 25, "items": ["masque_of_clavicus_vile"], "world_flags": ["clavicus_masque_won"]}},
+    {"label": "守諾之路 —— 信守對巴巴斯的承諾、拒絕獻祭(賜永久誓福:言靈之佑)", "text": "了結濫用願望的術士後,克拉維克斯要你斬殺巴巴斯 —— 你拒絕了。信守對這頭忠犬的承諾,以不受言靈擺布的己諾反抗他。克拉維克斯收回面具,卻也敬你三分,賜你一縷令人信服的言靈之力。", "stages": [
+      {"objective": {"type": "collect", "item": "filled_greater_soul_gem", "count": 1}, "text": "言靈之神只與帶著籌碼的人交易:備妥一枚已充能的上等魂石,作為與克拉維克斯議價的投名狀。"},
+      {"objective": {"type": "reach", "location": "haemars_shame"}, "text": "隨巴巴斯前往風暴港原野東緣的海瑪之恥,那名濫用願望的術士藏身於此。"},
+      {"objective": {"type": "clear_dungeon", "dungeon": "haemars_shame"}, "text": "了結被言靈啃噬的術士、取回悲愴之斧 —— 拒絕克拉維克斯的獻祭之命,信守對巴巴斯的承諾。"}
+    ], "reward": {"gold": 600, "fame": 25, "grant_boon": "clavicus_silver_tongue", "world_flags": ["clavicus_kept_word"]}}
   ]}
 }

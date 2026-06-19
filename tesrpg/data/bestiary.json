@@ -788,6 +788,28 @@
     "loot": [{"item": "ebony_sword", "chance": 0.4}, {"item": "filled_greater_soul_gem", "chance": 0.4}],
     "flavor": "黑檀重鎧自陰影中跨步而出 —— 波耶西亞的現任勇者,踏著前任挑戰者的屍骨,等著被你取代,或取代你。"
   },
+  "wish_eaten_sorcerer": {
+    "name": "言靈所噬的術士", "strength": 50, "agility": 50, "speed": 48,
+    "max_health": 195, "armor_rating": 12,
+    "attack": {"name": "雷霆咒擊", "damage": 34, "skill": 66, "element": "shock",
+               "on_hit": {"status": "dot", "element": "shock", "magnitude": 6, "turns": 3, "chance": 0.5}},
+    "attacks": [
+      {"name": "雷霆咒擊", "damage": 34, "skill": 66, "element": "shock", "weight": 2,
+       "on_hit": {"status": "dot", "element": "shock", "magnitude": 6, "turns": 3, "chance": 0.5}},
+      {"name": "烈焰契約", "damage": 36, "skill": 66, "element": "fire", "weight": 2},
+      {"name": "魂力榨取", "damage": 30, "skill": 66, "weight": 2,
+       "on_hit": {"status": "weaken", "magnitude": 0.25, "turns": 2, "chance": 0.35}},
+      {"name": "夢魘低語", "damage": 16, "skill": 66, "weight": 1,
+       "on_hit": {"status": "fear", "turns": 1, "chance": 0.25}},
+      {"name": "言靈崩解", "damage": 52, "skill": 68, "element": "shock", "weight": 1,
+       "cooldown": 3, "when": {"hp_below": 0.5}}
+    ],
+    "danger": 5, "min_level": 16, "weight": 1, "solo": true,
+    "resist": {"magic": 35, "shock": 30, "fire": 20},
+    "loot_gold": [200, 400],
+    "loot": [{"item": "filled_grand_soul_gem", "chance": 0.5}, {"item": "ruby", "chance": 0.3}],
+    "flavor": "他曾向克拉維克斯·瓦爾許下一個願望 —— 如今那願望反噬其身,把他變成一具被言靈啃噬殆盡、只剩咒術本能的軀殼。"
+  },
   "dremora_lord": {
     "biomes": ["ashland"],
     "name": "魔人領主", "strength": 74, "agility": 50, "speed": 48,

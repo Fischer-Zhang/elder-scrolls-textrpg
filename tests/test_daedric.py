@@ -363,6 +363,80 @@ def test_boethiah_content_integrity():
                 & set(gd.boons["boethiah_resolve"].get("skill", {})))
 
 
+# --- 第五位親王:克拉維克斯·瓦爾(社交軸;serve→Masque 神器 vs keep-word→誓福)--
+def _complete_clavicus(gd, c, branch):
+    quests.accept_quest(c, gd, "clavicus_bargain", branch=branch)
+    inventory.add_item(c, "filled_greater_soul_gem", 1)   # 議價籌碼(collect 階段)
+    c.location_id = "haemars_shame"
+    quests.record_dungeon_clear(c, "haemars_shame")
+    quests.check_completion(c, gd)
+
+
+def test_clavicus_serve_branch_grants_masque_not_boon():
+    """獻祭之路 → 得神器 克拉維克斯面具、惡名上升、不得誓福。"""
+    gd, c = _gd_char(level=17)
+    _complete_clavicus(gd, c, 0)
+    assert "clavicus_bargain" in c.completed_quests
+    assert inventory.count_item(c, "masque_of_clavicus_vile") == 1
+    assert not boons.has_boon(c, "clavicus_silver_tongue") and c.infamy >= 25
+    assert "clavicus_masque_won" in c.world_events_fired
+
+
+def test_masque_fortifies_speechcraft_when_worn():
+    """克拉維克斯面具穿戴 → 口才技能 +25(社交軸 / fortify_skill 路徑)。"""
+    from tesrpg.systems import stats
+    gd, c = _gd_char(level=17)
+    sp0 = c.skill("speechcraft")
+    _complete_clavicus(gd, c, 0)
+    inventory.equip_armor(c, gd, "masque_of_clavicus_vile")
+    stats.recompute_equipment(c, gd)
+    assert c.skill("speechcraft") == sp0 + 25
+    assert c.base_skill("speechcraft") == sp0          # 🔴 裝備層不寫 base
+
+
+def test_clavicus_keepword_branch_grants_boon_not_masque():
+    """守諾之路 → 永久誓福 言靈之佑(personality+12/speechcraft+12)、不得神器。"""
+    gd, c = _gd_char(level=17)
+    p0, sp0 = c.attr("personality"), c.skill("speechcraft")
+    _complete_clavicus(gd, c, 1)
+    assert boons.has_boon(c, "clavicus_silver_tongue")
+    assert c.attr("personality") == p0 + 12 and c.skill("speechcraft") == sp0 + 12
+    assert c.base_attr("personality") == p0          # 🔴 不寫 base
+    assert inventory.count_item(c, "masque_of_clavicus_vile") == 0
+    assert "clavicus_kept_word" in c.world_events_fired
+
+
+def test_clavicus_availability_and_five_shrines_coexist():
+    gd, c = _gd_char(level=16)
+    assert "clavicus_bargain" not in quests.available_quests(c, gd, "daedric")   # 等級不足(需 17)
+    c.level = 17
+    av = quests.available_quests(c, gd, "daedric")
+    assert {"azura_star", "molag_bal_vault", "hircine_hunt", "boethiah_calling",
+            "clavicus_bargain"} <= set(av)
+    assert gd.quests["clavicus_bargain"]["shrine"] == "clavicus"
+
+
+def test_clavicus_content_integrity():
+    gd, _ = _gd_char()
+    assert "clavicus_silver_tongue" in gd.boons and "masque_of_clavicus_vile" in gd.items
+    assert gd.world["locations"]["stormhaven"].get("shrine") == "clavicus"
+    boss = gd.dungeons["haemars_shame"]["boss"]["enemy"]
+    assert boss == "wish_eaten_sorcerer" and gd.bestiary[boss].get("solo") is True
+    for atk in gd.bestiary[boss].get("attacks", []):
+        oh = atk.get("on_hit") or {}
+        if oh.get("status") in ("fear", "paralyze"):
+            assert oh.get("chance", 1.0) <= 0.30 and oh.get("turns", 1) <= 1, atk
+    # Masque：helmet·fortify_skill speechcraft·無 material·僅任務 reward
+    mq = gd.items["masque_of_clavicus_vile"]
+    assert mq["slot"] == "helmet" and mq["enchant"]["skill"] == "speechcraft" and "material" not in mq
+    for dd in gd.dungeons.values():
+        tl = [x for x in dd.get("boss", {}).get("treasure", {}).get("loot", []) if isinstance(x, str)]
+        assert "masque_of_clavicus_vile" not in tl + dd.get("loot", [])
+    # 社交誓福純社交/防禦,守紅線(無 sneak/武器技能)
+    assert not ({"sneak", "blade", "blunt", "marksman", "hand_to_hand"}
+                & set(gd.boons["clavicus_silver_tongue"].get("skill", {})))
+
+
 def run():
     for name, fn in sorted(globals().items()):
         if name.startswith("test_") and callable(fn):

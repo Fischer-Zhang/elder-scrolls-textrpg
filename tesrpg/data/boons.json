@@ -26,5 +26,12 @@
     "skill": {"heavy_armor": 10},
     "resist": {"poison": 15},
     "magicka": 0
+  },
+  "clavicus_silver_tongue": {
+    "name": "言靈之佑",
+    "attr": {"personality": 12},
+    "skill": {"speechcraft": 12},
+    "resist": {"magic": 10},
+    "magicka": 0
   }
 }
