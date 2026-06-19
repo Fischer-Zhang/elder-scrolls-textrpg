@@ -243,6 +243,7 @@
   "blade_of_woe":    {"name": "悲傷之刃",   "skill": "blade", "damage": 16, "value": 2000, "weight": 4,  "archetype": "dagger",  "speed": 1.5, "enchant": {"kind": "weapon_status", "status": "vampiric", "magnitude": 50}},
   "wuuthrad":        {"name": "維蘇拉德",   "skill": "blunt", "damage": 32, "value": 2000, "weight": 26, "archetype": "axe", "speed": 0.65, "two_handed": true, "enchant": {"kind": "berserk", "magnitude": 30}},
   "mace_of_molag_bal": {"name": "莫拉格巴爾之鎚", "skill": "blunt", "damage": 26, "value": 2100, "weight": 18, "archetype": "mace", "speed": 0.7, "material": "daedric", "enchant": {"kind": "weapon_status", "status": "absorb_health", "magnitude": 10}},
+  "ebony_blade": {"name": "黑檀刃", "skill": "blade", "damage": 24, "value": 2300, "weight": 12, "archetype": "sword", "speed": 1.1, "enchant": {"kind": "weapon_status", "status": "vampiric", "magnitude": 50}},
 
   "iron_bow":    {"name": "鐵弓",   "skill": "marksman", "damage": 12, "value": 50,  "weight": 10, "archetype": "bow", "speed": 0.9},
   "steel_bow":   {"name": "鋼弓",   "skill": "marksman", "damage": 13, "value": 130, "weight": 10, "archetype": "bow", "speed": 0.9},

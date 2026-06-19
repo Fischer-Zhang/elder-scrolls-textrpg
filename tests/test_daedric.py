@@ -513,6 +513,89 @@ def test_peryite_content_integrity():
                 & set(gd.boons["peryite_ward"].get("skill", {})))
 
 
+# --- 第七位親王:梅赫拉(暗影/魂刃軸;serve→Ebony Blade 神器 vs seal→誓福)----
+def _complete_mephala(gd, c, branch):
+    quests.accept_quest(c, gd, "mephala_whisper", branch=branch)
+    inventory.add_item(c, "spider_egg", 2)   # 蛛裔供奉(collect 階段)
+    c.location_id = "whispering_warren"
+    quests.record_dungeon_clear(c, "whispering_warren")
+    quests.check_completion(c, gd)
+
+
+def test_mephala_serve_branch_grants_blade_not_boon():
+    """弒密之路 → 得神器 黑檀刃、惡名上升、不得誓福。"""
+    gd, c = _gd_char(level=17)
+    _complete_mephala(gd, c, 0)
+    assert "mephala_whisper" in c.completed_quests
+    assert inventory.count_item(c, "ebony_blade") == 1
+    assert not boons.has_boon(c, "mephala_shadow") and c.infamy >= 30
+    assert "mephala_blade_claimed" in c.world_events_fired
+
+
+def test_ebony_blade_vampiric_lifesteal_in_combat():
+    """黑檀刃 vampiric → 命中造成傷害後回血(複用 blade_of_woe 路徑;sword archetype 無偷襲加成)。"""
+    from tesrpg.systems import combat
+    from tesrpg.rng import RNG
+    gd, c = _gd_char(level=17)
+    _complete_mephala(gd, c, 0)
+    c.weapon = "ebony_blade"; c.is_player = True
+    c.skills["blade"] = 100; c.max_health = 300
+    healed = 0
+    for i in range(8):
+        c.health = 50
+        d = combat.spawn_creature(gd, "bandit", RNG(i)); d.max_health = d.health = 400
+        d.agility = 1; d.armor_rating = 0
+        combat.resolve_attack(c, d, gd, RNG(70 + i))
+        if c.health > 50:
+            healed += c.health - 50
+    assert healed > 0, "vampiric 未回血(命中造成傷害應吸血)"
+    # sword archetype:無偷襲加成(守刺客紅線,非 dagger/bow)
+    assert gd.items["ebony_blade"]["archetype"] == "sword"
+
+
+def test_mephala_seal_branch_grants_boon_not_blade():
+    """封密之路 → 永久誓福 蛛影之佑(agility+10/illusion+10)、不得神器。"""
+    gd, c = _gd_char(level=17)
+    a0, il0 = c.attr("agility"), c.skill("illusion")
+    _complete_mephala(gd, c, 1)
+    assert boons.has_boon(c, "mephala_shadow")
+    assert c.attr("agility") == a0 + 10 and c.skill("illusion") == il0 + 10
+    assert c.base_attr("agility") == a0          # 🔴 不寫 base
+    assert inventory.count_item(c, "ebony_blade") == 0
+    assert "mephala_door_sealed" in c.world_events_fired
+
+
+def test_mephala_availability_and_seven_shrines_coexist():
+    gd, c = _gd_char(level=16)
+    assert "mephala_whisper" not in quests.available_quests(c, gd, "daedric")   # 等級不足
+    c.level = 17
+    av = quests.available_quests(c, gd, "daedric")
+    assert {"azura_star", "molag_bal_vault", "hircine_hunt", "boethiah_calling",
+            "clavicus_bargain", "peryite_cure", "mephala_whisper"} <= set(av)
+    assert gd.quests["mephala_whisper"]["shrine"] == "mephala"
+
+
+def test_mephala_content_integrity():
+    gd, _ = _gd_char()
+    assert "mephala_shadow" in gd.boons and "ebony_blade" in gd.items
+    assert gd.world["locations"]["blackwood"].get("shrine") == "mephala"
+    boss = gd.dungeons["whispering_warren"]["boss"]["enemy"]
+    assert boss == "mephala_webspinner" and gd.bestiary[boss].get("solo") is True
+    for atk in gd.bestiary[boss].get("attacks", []):
+        oh = atk.get("on_hit") or {}
+        if oh.get("status") in ("fear", "paralyze"):
+            assert oh.get("chance", 1.0) <= 0.30 and oh.get("turns", 1) <= 1, atk
+    # Ebony Blade：sword archetype(非 dagger/bow → 無偷襲加成)·vampiric·僅任務 reward
+    eb = gd.items["ebony_blade"]
+    assert eb["archetype"] == "sword" and eb["enchant"]["status"] == "vampiric"
+    for dd in gd.dungeons.values():
+        tl = [x for x in dd.get("boss", {}).get("treasure", {}).get("loot", []) if isinstance(x, str)]
+        assert "ebony_blade" not in tl + dd.get("loot", [])
+    # 誓福守紅線:illusion 是魔法學派(非武器技能/sneak)
+    assert not ({"sneak", "blade", "blunt", "marksman", "hand_to_hand"}
+                & set(gd.boons["mephala_shadow"].get("skill", {})))
+
+
 def run():
     for name, fn in sorted(globals().items()):
         if name.startswith("test_") and callable(fn):

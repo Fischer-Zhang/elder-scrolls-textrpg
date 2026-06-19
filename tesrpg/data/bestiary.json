@@ -832,6 +832,29 @@
     "loot": [{"item": "filled_grand_soul_gem", "chance": 0.5}, {"item": "deathbell", "chance": 0.5}],
     "flavor": "他曾是瘦疫之主秩序中的一員,卻背棄了佩雷丽特、私吞了一整窟的腐疫 —— 如今膿瘡爬滿全身,他自己也成了行走的瘟疫。"
   },
+  "mephala_webspinner": {
+    "name": "梅赫拉的織影蛛母", "strength": 60, "agility": 56, "speed": 52,
+    "max_health": 215, "armor_rating": 14,
+    "attack": {"name": "撕咬注毒", "damage": 34, "skill": 66, "element": "poison",
+               "on_hit": {"status": "dot", "element": "poison", "magnitude": 7, "turns": 3, "chance": 0.5}},
+    "attacks": [
+      {"name": "撕咬注毒", "damage": 34, "skill": 66, "element": "poison", "weight": 2,
+       "on_hit": {"status": "dot", "element": "poison", "magnitude": 7, "turns": 3, "chance": 0.5}},
+      {"name": "蛛網纏縛", "damage": 28, "skill": 66, "weight": 2,
+       "on_hit": {"status": "stagger", "turns": 1, "chance": 0.35}},
+      {"name": "萎縮毒牙", "damage": 30, "skill": 66, "weight": 2,
+       "on_hit": {"status": "weaken", "magnitude": 0.25, "turns": 2, "chance": 0.4}},
+      {"name": "織影低語", "damage": 16, "skill": 66, "weight": 1,
+       "on_hit": {"status": "fear", "turns": 1, "chance": 0.25}},
+      {"name": "萬足圍獵", "damage": 52, "skill": 68, "weight": 1,
+       "cooldown": 3, "when": {"hp_below": 0.5}}
+    ],
+    "danger": 5, "min_level": 16, "weight": 1, "solo": true,
+    "resist": {"poison": 60, "magic": 30, "frost": 20},
+    "loot_gold": [220, 420],
+    "loot": [{"item": "filled_grand_soul_gem", "chance": 0.5}, {"item": "spider_egg", "chance": 0.6}],
+    "flavor": "黑木最深的蛛網法陣裡,謀殺之蛛梅赫拉的化身懸於織影之網 —— 八足的蛛母吐著低語,用每一個祕密與背叛餵養她的網。"
+  },
   "dremora_lord": {
     "biomes": ["ashland"],
     "name": "魔人領主", "strength": 74, "agility": 50, "speed": 48,

@@ -1899,5 +1899,17 @@
       {"objective": {"type": "reach", "location": "plague_warren"}, "text": "前往影沼與吉迪恩之間的瘴霧窪地 —— 腐疫巢窟。"},
       {"objective": {"type": "clear_dungeon", "dungeon": "plague_warren"}, "text": "了結奧爾肯多、燒盡整窟腐疫 —— 淨化瘟疫,卻拒絕成為瘦疫之主的爪牙。"}
     ], "reward": {"gold": 600, "fame": 25, "grant_boon": "peryite_ward", "world_flags": ["peryite_defied"]}}
+  ]},
+  "mephala_whisper": {"name": "低語之門", "faction": null, "rank": null, "source": "daedric", "shrine": "mephala", "requires_level": 17, "text": "黑木林深處那座纏滿蛛網的黑石祭壇,在你靠近時滲出細若游絲的低語 —— 謀殺之蛛梅赫拉的聲音鑽進你耳裡。林深的古墓中,一道封印的門後藏著她那柄以背叛之血淬鍊的黑檀刃,低語驅人發狂、誘人相殘。是取下那柄愈親近愈飢渴的魂刃,還是封印低語、拒踏背叛之路?", "branches": [
+    {"label": "弒密之路 —— 取下以背叛淬鍊的黑檀刃(得神器:黑檀刃)", "text": "領受謀殺之蛛的低語 —— 深入低語蛛窟,了結織影蛛母,取下門後那柄黑檀刃。自此,愈是親近、信任你的人,愈餵養它對鮮血的飢渴。", "stages": [
+      {"objective": {"type": "collect", "item": "spider_egg", "count": 2}, "text": "織影蛛母只納帶著蛛裔的供奉:採集兩枚蜘蛛卵,在黑木的蛛網祭壇前獻上。"},
+      {"objective": {"type": "reach", "location": "whispering_warren"}, "text": "循那道低語,深入黑木林深處纏滿蛛絲的低語蛛窟。"},
+      {"objective": {"type": "clear_dungeon", "dungeon": "whispering_warren"}, "text": "在蛛網法陣前了結梅赫拉的織影蛛母,推開封印之門 —— 取下那柄飢渴的黑檀刃。"}
+    ], "reward": {"gold": 700, "infamy": 30, "items": ["ebony_blade"], "world_flags": ["mephala_blade_claimed"]}},
+    {"label": "封密之路 —— 封印低語、拒踏背叛之路(賜永久誓福:蛛影之佑)", "text": "你不願讓那柄魂刃以親信之血餵養 —— 了結織影蛛母後,封印了低語之門,拒絕梅赫拉的背叛之路。謀殺之蛛雖被拒,織影的身手卻已悄然纏上你。", "stages": [
+      {"objective": {"type": "collect", "item": "spider_egg", "count": 2}, "text": "織影蛛母只納帶著蛛裔的供奉:採集兩枚蜘蛛卵,在黑木的蛛網祭壇前獻上。"},
+      {"objective": {"type": "reach", "location": "whispering_warren"}, "text": "循那道低語,深入黑木林深處纏滿蛛絲的低語蛛窟。"},
+      {"objective": {"type": "clear_dungeon", "dungeon": "whispering_warren"}, "text": "了結梅赫拉的織影蛛母,封印那道低語之門 —— 拒絕背叛之路,不讓黑檀刃出鞘。"}
+    ], "reward": {"gold": 600, "fame": 25, "grant_boon": "mephala_shadow", "world_flags": ["mephala_door_sealed"]}}
   ]}
 }
