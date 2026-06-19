@@ -66,6 +66,7 @@ HOWL_FATIGUE = 25
 HOWL_FEAR_TURNS = 2
 
 HIRCINE_RING = "hircine_ring"   # 獵者之戒(具名神器):穿戴時可隨意變身(繞過每日冷卻)
+FULL_MOON_DURATION_BONUS = 2    # 滿月(R50):獸形額外延長時數(月之主宰;只動時程不動戰鬥數值)
 
 
 def _today(state) -> int:
@@ -107,10 +108,17 @@ def is_beast(char: Character, state) -> bool:
 
 
 def can_transform(char: Character, state, gamedata: GameData) -> bool:
-    """是否可發動獸化(狼人、未在獸形中、今日尚未變身過)。"""
+    """是否可發動獸化(狼人、未在獸形中、冷卻就緒)。R50:戰鬥或平時(野外/城鎮)皆可。"""
     from tesrpg.systems import powers
     return (is_werewolf(char) and not getattr(char, "beast_form", False)
-            and powers.usable_in(char, state, gamedata, "combat"))
+            and (powers.usable_in(char, state, gamedata, "combat")
+                 or powers.usable_in(char, state, gamedata, "utility")))
+
+
+def effective_duration(char: Character, state) -> int:
+    """本次獸形持續時數:獸血階基礎 + 滿月加成(R50,只動時程不動戰鬥數值)。"""
+    from tesrpg.systems import moons
+    return beast_duration(char) + (FULL_MOON_DURATION_BONUS if moons.is_full_moon(state) else 0)
 
 
 def can_offer_ritual(char: Character) -> bool:
@@ -292,7 +300,7 @@ def transform(char: Character, state, gamedata: GameData) -> dict:
 
     回傳 {"messages": [...]}(供 powers.use 串接)。
     """
-    char.beast_form_until = _now(state) + beast_duration(char)   # 隨獸血階延長
+    char.beast_form_until = _now(state) + effective_duration(char, state)   # 隨獸血階 + 滿月延長
     char.beast_feeds = 0
     before_max = char.max_health
     apply_to_character(char, state, gamedata)     # 套獸形層 + recompute(生命/體力上限上升)

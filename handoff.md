@@ -1070,6 +1070,14 @@ tesrpg/
 - **任務 `forbidden_knowledge`「禁忌的真知」**(`source:"daedric"`·`shrine:"hermaeus_mora"`·`requires_level:18`·**線性無分支** collect moonstone_ingot×2→reach forbidden_archive→clear_dungeon·reward `gold700/fame30/items:["oghma_infinium"]`·**無 grant_boon**〔誓福改由讀書授予〕)。
 - **🔴 byte-identical**:未碰 combat/formulas/刺客常數·誓福不餵 sneak/武傷·sim fixtures `boons=[]`·新 item kind/boss/地城皆不在 sim 路徑(**隔離 worktree 法定證 byte-identical**)。零新存檔欄(書=背包物品 count·誓福=`char.boons` 字串·`ensure_boon_fields` 既有遷移)。`run_all` 67(test_daedric +5 測:得書未得誓福/讀書授福消書〔patch ui.menu·驗 attr/skill/magicka+不寫 base〕/返回不消耗/L18+16 神殿並存/內容完整)。BESTIARY.md 重生(116 怪)。**全 17 親王神殿線完成。**
 
+### R50 · 血月詛咒深化:吸血鬼/狼人(月相 + 主動獸性 + 識破圍捕)[re-sim] [save]
+
+戴德拉線完結後評估下一步,使用者選方向=**吸血鬼/狼人深化**(§6 兩血脈剩餘缺口),拍板聚焦=**完整血月包(三件互扣)**。補 handoff §6 列的 4 個 flagged gap;**零新存檔欄**、`sim_assassin` byte-identical(刺客匕首 build 永不化身詛咒,同 R45 fixtures)。
+- **① 月相系統(共用·純推導·零存檔欄)** 新 `systems/moons.py`:`LUNAR_PERIOD_DAYS=24`、八相、`is_full_moon`/`is_new_moon`(各 3 日窗·新月=週期起點/滿月=中點)。由 `time.absolute_hours()//24` 推導 → 決定性、零遷移。`state.GameTime.label()` 附帶月相(時間列到處顯示;moons 零依賴 → 無循環 import)。
+- **② 狼人野外/城鎮主動變身 + 月相**:`powers.beast_form` `contexts` 加 `"utility"` → 平時(hub)選單 surface 主動獸化(複用 `action_use_power`→`powers.use`→`lycanthropy.transform`,語境無關)。`powers.available` + `lycanthropy.can_transform` 加 **滿月免每日冷卻**(比照 `has_hircine_ring` 旁路);新 `effective_duration`=`beast_duration`+`FULL_MOON_DURATION_BONUS=2`(滿月時程加成·**只動時程不動戰鬥數值**)。hub 加「🧍 變回人形」action(複用 `revert`·力竭)。
+- **③ 雙血脈識破→衛兵實戰圍捕** 新 `main._curse_manhunt`(複用 guard resist 分支:`spawn_creature("city_guard")`×N + `run_battle` + `crime.add_bounty` + infamy;只城/鎮·互斥兩源):**獸形現於城中** `_BEAST_TOWN_MANHUNT_CHANCE=0.85`(N=3+min(2,tier));**高階吸血鬼** `vampirism.detection_chance`(shunned·base0.25+0.15/階·滿月+0.15·cap0.7;N=2+min(2,stage−SHUN))。掛**抵城**(既有 `guard_confrontation` 旁)+ **城內主動變身後**。進食壓階/變回人形即規避 = 玩家可管理的詛咒 loop。月相連動:滿月↑吸血鬼識破、新月↓`feed` 被撞見機率(`NEW_MOON_STEALTH_BONUS=0.10`)。
+- **🔴 平衡**:滿月只給「可用性/時程」(beast 戰鬥數值不變);圍捕用既有 city_guard(無新戰力常數)→ 對 sim_assassin byte-identical(隔離 worktree 法定證·未碰 combat/formulas)。curse build 平衡走 by-design + 煙霧(同 R43/詛咒層慣例);「滿月強化 beast 戰鬥數值」屬平衡取捨,**刻意不做**(留待先問)。零新存檔欄(月相純推導;變身/圍捕複用既有 `beast_form_until`/`vampire_stage`/bounty/infamy)。`run_all` **68**(新 `test_curse_depth`:月相決定性/窗、滿月免冷卻+時程、utility 主動變身+revert、雙血脈圍捕〔patch run_battle/ui/rng〕、月相連動、月相不入檔)。**剩餘(後續里程碑)**:吸血鬼夜視/魅惑/裝備、雙血脈巢穴/同類 NPC。
+
 ---
 
 ## 4. 開發節奏(ultracode 開著 → 每個功能都這樣做)
@@ -1162,8 +1170,8 @@ tesrpg/
 > 黑兄後續可再加:夜母「祕密之死」隨機合約(超出 6 階後的無限委託)/ 違反五戒的懲處(殺同袍→被追殺)/ 聖所升級與密探同伴 / 謀殺後即時衛兵圍捕(目前靠賞金+城門盤查)/ 具名導師(露西恩式)對話包裝。
 > 裝備後續可再加:獨特/具名裝備(套裝外的具名神器)、~~附魔護甲擴展到技能/抗性~~ ✅ **已做**、~~武器附魔可帶狀態(吸血/麻痺)~~ ✅ **已做**、~~回復型附魔(per-turn regen)~~ ✅ **已做**(見 §1「附魔系統擴展」:護甲 skill/resist + 武器 vampiric/paralyze/regen,solo boss 免疫麻痺)。~~武器附魔帶元素 DoT~~ ✅ **已做**(見 §1/R15「附魔深化」:武器命中 DoT〔焚燒/凍緩/感電,帶 rider〕+ 命中吸取 + 充能型擒魂/麻痺 + 靈魂石經濟〔空魂石填充/大·黑魂石〕,Phase 1+2;**Phase 3 秘術節點刻意未做** —— 秘術樹已滿〔嚴格二選一〕且 soul_siphon 已自動放大新效果)。可再加:**附魔可疊雙效(雙重附魔)**(最高摩擦軸,留待)、秘術里程碑騰位後的附魔專屬節點。
 > 開局後續可再加(✅ 已加 6 個:戰友團/盜賊公會/阿利克爾劍客/海難倖存者/神殿治療者/獸人放逐者,共 14 開局):開局附帶**起手任務鉤子**(MVP 刻意未做)、`armor` 起手整套裝(目前開局只給單件護甲/飾品/法杖)、開局選單依職業/種族過濾推薦。
-> 吸血鬼後續可再加:夜視/魅惑等更多吸血鬼能力、~~狼人(同套狀態機另一支)~~ ✅ **已做**(見 §1「狼人化 / 獸形」:主動限時獸形變身、與吸血鬼互斥、戰友團獸血儀式 + 野咬感染 + 解咒;對抗審查修 4 真 bug)、吸血鬼專屬裝備/巢穴、NPC 識破後衛兵敵對(目前只社交封鎖)、解咒任務的具名 NPC/對話包裝。
-> 狼人後續可再加:~~餵食進程樹~~ ✅ **已做**(§1「狼人深化」:5 階獸血進程)、~~希爾辛神器(獵者之戒)~~ ✅ **已做**、~~howl 咆哮恐懼 power~~ ✅ **已做**(恫嚇之嚎,solo 免疫);**剩餘**:野外主動變身(目前限戰鬥語境)、獸形在城衛兵實戰圍捕(目前 shunning-light)、月相影響變身、狼人專屬巢穴/同類 NPC。
+> 吸血鬼後續可再加:夜視/魅惑等更多吸血鬼能力、~~狼人(同套狀態機另一支)~~ ✅ **已做**(見 §1「狼人化 / 獸形」:主動限時獸形變身、與吸血鬼互斥、戰友團獸血儀式 + 野咬感染 + 解咒;對抗審查修 4 真 bug)、吸血鬼專屬裝備/巢穴、~~NPC 識破後衛兵敵對(目前只社交封鎖)~~ ✅ **已做**(R50:高階吸血鬼被識破 → 衛兵實戰圍捕)、解咒任務的具名 NPC/對話包裝。
+> 狼人後續可再加:~~餵食進程樹~~ ✅ **已做**(§1「狼人深化」:5 階獸血進程)、~~希爾辛神器(獵者之戒)~~ ✅ **已做**、~~howl 咆哮恐懼 power~~ ✅ **已做**(恫嚇之嚎,solo 免疫)、~~野外主動變身(目前限戰鬥語境)~~ ✅ **已做**(R50)、~~獸形在城衛兵實戰圍捕(目前 shunning-light)~~ ✅ **已做**(R50)、~~月相影響變身~~ ✅ **已做**(R50:滿月免冷卻+時程加成);**剩餘**:狼人專屬巢穴/同類 NPC。
 > 技能里程碑後續可再加(**P2/P3,路線已拍板**):P2 持久 `mastery_*_bonus` 加成層(吸血鬼模式)+ 更多真權衡戰鬥型(**逐條 sim 背書 + 非 boss 精英秒殺率覆核**);P3 純改 JSON 補三系密度(優先 marksman/light_armor 等冷門技,避免 sneak 過載);可另評估『達門檻二選一』能動性(引入最佳化空間=支柱級取捨,需使用者拍板)。
 
 > ⚠️ 開新功能務必沿用「§4 開發節奏」:實作 → 測試 → 平衡 → 煙霧 →(ultracode 開時)對抗式審查 → 覆核修正。

@@ -64,8 +64,9 @@ class GameTime:
                  + (self.day - 1)) * HOURS_PER_DAY + self.hour)
 
     def label(self) -> str:
+        from tesrpg.systems import moons   # R50:時間列附帶月相(純推導,零存檔欄)
         return (f"{self.era}E{self.year} {MONTH_NAMES[self.month - 1]} "
-                f"{self.day}日 {self.hour:02d}時({self.day_part})")
+                f"{self.day}日 {self.hour:02d}時({self.day_part}) 🌙{moons.phase_name(self)}")
 
     def to_dict(self) -> dict:
         return {"era": self.era, "year": self.year, "month": self.month,

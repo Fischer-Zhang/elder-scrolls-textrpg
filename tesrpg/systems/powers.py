@@ -30,8 +30,8 @@ POWERS = {
     # 吸血鬼專屬(轉化後取代出生星座之力):每日一次的汲血擁抱
     "vampiric_drain":   {"name": "汲血擁抱", "contexts": ["combat"],
                          "effect": {"drain": 40}, "desc": "撕咬汲取敵人 40 點生命為己用。"},
-    # 狼人專屬(取代出生星座之力):每日一次的獸化變身
-    "beast_form":       {"name": "獸化變身", "contexts": ["combat"],
+    # 狼人專屬(取代出生星座之力):每日一次的獸化變身。R50:加 utility → 平時(野外/城鎮)亦可主動變身。
+    "beast_form":       {"name": "獸化變身", "contexts": ["combat", "utility"],
                          "effect": {"transform": True},
                          "desc": "化為嗜血巨狼:利爪撕敵、刀槍難傷,但無法施法、用物或持械。"},
 }
@@ -61,9 +61,9 @@ def available(char: Character, state, gamedata: GameData, context: str | None = 
         return False
     if context is not None and context not in POWERS[pid]["contexts"]:
         return False
-    if pid == "beast_form":   # 獵者之戒:狼人可隨意變身(繞過每日冷卻)
-        from tesrpg.systems import lycanthropy
-        if lycanthropy.has_hircine_ring(char, gamedata):
+    if pid == "beast_form":   # 獵者之戒 / 滿月(R50):狼人可隨意變身(繞過每日冷卻)
+        from tesrpg.systems import lycanthropy, moons
+        if lycanthropy.has_hircine_ring(char, gamedata) or moons.is_full_moon(state):
             return True
     return char.power_last_day.get(pid) != _today(state)
 

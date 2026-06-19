@@ -1304,6 +1304,10 @@ def _travel_to(state: GameState, gamedata: GameData, dest: str) -> str | None:
     if loc["type"] in ("city", "town") and crime.bounty(state.player, loc["province"]) > 0:
         if guard_confrontation(state, gamedata) == "dead":
             return "dead"
+    # R50:詛咒被識破 → 衛兵圍捕(高階吸血鬼被看破 / 獸形現於城中)
+    if loc["type"] in ("city", "town"):
+        if _curse_manhunt(state, gamedata) == "dead":
+            return "dead"
     return None
 
 
@@ -3631,6 +3635,44 @@ def guard_confrontation(state: GameState, gamedata: GameData) -> str | None:
     return None
 
 
+_BEAST_TOWN_MANHUNT_CHANCE = 0.85   # R50:獸形現於城中被衛兵圍捕的機率(主動入城=自找;高但非必中)
+
+
+def _curse_manhunt(state: GameState, gamedata: GameData) -> str | None:
+    """R50:詛咒被識破 → 衛兵實戰圍捕(把被動社交封鎖升為主動危險)。回傳 'dead' 或 None。
+
+    只在城/鎮觸發、互斥兩源(吸血鬼/狼人不能同時):
+      - 狼人獸形現於城中 → 高機率引衛兵+鎮民圍捕(鬧市現巨狼)。
+      - 高階(shunned)吸血鬼 → `vampirism.detection_chance`(隨階/滿月升)被識破。
+    進食壓階 / 變回人形即可規避(= 玩家可管理的詛咒 loop)。複用 guard resist 分支的 spawn 管線。"""
+    char = state.player
+    loc = world.current_location(char, gamedata)
+    if loc["type"] not in ("city", "town"):
+        return None
+    province = crime.province_of(char, gamedata)
+    if lycanthropy.is_beast(char, state):
+        if not state.rng.chance(_BEAST_TOWN_MANHUNT_CHANCE):
+            return None
+        n = 3 + min(2, lycanthropy.tier(char))
+        bounty_add = 100
+        ui.message("一頭巨狼現身鬧市 —— 鎮民驚逃、警鐘大作,衛兵舉刃自四面湧來圍捕你!", style="bold red")
+    elif vampirism.is_shunned(char, state):
+        if not state.rng.chance(vampirism.detection_chance(char, state)):
+            return None
+        n = 2 + min(2, vampirism.stage(char, state) - vampirism.SHUN_STAGE)
+        bounty_add = vampirism.FEED_BOUNTY
+        ui.message("人群中有人厲聲尖叫:「是吸血鬼!」—— 火把與刀刃霎時將你團團圍住!", style="bold red")
+    else:
+        return None
+    crime.add_bounty(char, province, bounty_add)
+    char.infamy += 1
+    guards = [combat.spawn_creature(gamedata, "city_guard", state.rng) for _ in range(n)]
+    if run_battle(state, gamedata, guards) == "dead":
+        return "dead"
+    ui.message("你殺退了圍捕的衛兵,趁亂遁入暗巷 —— 但通緝令已然加身。", style="red")
+    return None
+
+
 def action_character_sheet(state: GameState, gamedata: GameData) -> None:
     """互動式角色卡:渲染 overview,再提供唯讀檢視子選單(空/不適用項自動隱藏)。"""
     char = state.player
@@ -3890,8 +3932,13 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
         if player.spells:
             craft.append(("cast", "施法增益"))
         if powers.usable_in(player, state, gamedata, "utility"):
-            pdef = powers.power_def(powers.power_id(player, gamedata))
-            craft.append(("power", f"星座之力({pdef['name']})"))
+            _pid = powers.power_id(player, gamedata)
+            if _pid == "beast_form":     # R50:狼人平時(野外/城鎮)可主動獸化(滿月免冷卻)
+                craft.append(("power", "🐺 獸化變身(化身嗜血巨狼)"))
+            else:
+                craft.append(("power", f"星座之力({powers.power_def(_pid)['name']})"))
+        if lycanthropy.is_beast(player, state):   # R50:獸形中可主動變回人形(力竭代價)
+            craft.append(("revert_human", "🧍 變回人形(力竭)"))
         craft.append(("alchemy", "煉金"))
         if any(gamedata.item(s["id"]).get("kind") == "poison" for s in player.inventory):
             craft.append(("coat", "塗毒"))
@@ -3995,6 +4042,12 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
             action_cast_self(state, gamedata)
         elif choice == "power":
             action_use_power(state, gamedata)
+            # R50:若剛在城鎮中主動獸化 → 鬧市現巨狼,衛兵圍捕
+            if lycanthropy.is_beast(player, state):
+                died = _curse_manhunt(state, gamedata)
+        elif choice == "revert_human":
+            lycanthropy.revert(player, state, gamedata)
+            ui.message("你的骨骼重新歸位、獸性褪去 —— 你變回了人形,精疲力竭。", style="grey70")
         elif choice == "alchemy":
             action_alchemy(state, gamedata)
         elif choice == "coat":

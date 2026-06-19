@@ -37,6 +37,13 @@ FEED_HEAL = 50                       # 進食回復的生命
 FEED_BOUNTY = 60                     # 進食被撞見時的賞金
 SUN_HOUR_START, SUN_HOUR_END = 8, 18   # 烈日時段 [8,18)
 
+# --- R50 識破圍捕 / 月相連動 --------------------------------------------
+SHUN_DETECT_BASE = 0.25         # 高階(shunned)吸血鬼在城被識破→衛兵圍捕的基礎機率(每次抵城擲一次)
+SHUN_DETECT_PER_STAGE = 0.15    # 每超過 SHUN_STAGE 一階 +識破機率
+FULL_MOON_DETECT_BONUS = 0.15   # 滿月亮夜曝獠牙 → 更易被識破
+DETECT_CHANCE_CAP = 0.70        # 識破機率上限(進食壓階即可規避,非必中)
+NEW_MOON_STEALTH_BONUS = 0.10   # 新月暗夜助獵 → 進食更難被撞見
+
 
 def _today(state) -> int:
     return state.time.absolute_hours() // 24
@@ -76,6 +83,18 @@ def stage(char: Character, state) -> int:
 
 def is_shunned(char: Character, state) -> bool:
     return is_vampire(char) and stage(char, state) >= SHUN_STAGE
+
+
+def detection_chance(char: Character, state) -> float:
+    """R50:高階吸血鬼在城被世人識破 → 引衛兵圍捕的機率(每次抵城/城內擲)。
+    非 shunned(階級 < SHUN_STAGE)= 0;階級越高、滿月越易被識破。進食壓階即可規避。"""
+    if not is_shunned(char, state):
+        return 0.0
+    from tesrpg.systems import moons
+    p = SHUN_DETECT_BASE + SHUN_DETECT_PER_STAGE * (stage(char, state) - SHUN_STAGE)
+    if moons.is_full_moon(state):
+        p += FULL_MOON_DETECT_BONUS
+    return min(DETECT_CHANCE_CAP, p)
 
 
 # ======================================================================
@@ -187,6 +206,9 @@ def feed(state, gamedata: GameData) -> dict:
 
     hour = state.time.hour
     caught_chance = 0.45 if _is_sun_hour(hour) else 0.12
+    from tesrpg.systems import moons
+    if moons.is_new_moon(state):                     # R50:新月暗夜助獵 → 更難被撞見
+        caught_chance = max(0.0, caught_chance - NEW_MOON_STEALTH_BONUS)
     caught = state.rng.chance(caught_chance)
     province = crime.province_of(char, gamedata)
     if caught:
