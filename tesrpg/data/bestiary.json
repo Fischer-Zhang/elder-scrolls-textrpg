@@ -901,6 +901,28 @@
     "loot": [{"item": "filled_grand_soul_gem", "chance": 0.4}, {"item": "daedra_heart", "chance": 0.4}],
     "flavor": "受詛巨鎚拖過石地、迸出火星 —— 棄絕者酋長背棄了馬拉凱斯,如今全族的詛咒都壓在他撐裂的軀體上。他不再求饒,只想把每一個闖入者砸進塵土,陪他一同被棄絕。"
   },
+  "meridia_defiler": {
+    "name": "玷污聖光的死靈法師", "strength": 52, "agility": 50, "speed": 48,
+    "max_health": 205, "armor_rating": 12,
+    "attack": {"name": "寒墓冰矢", "damage": 34, "skill": 66, "element": "frost",
+               "on_hit": {"status": "dot", "element": "frost", "magnitude": 6, "turns": 3, "chance": 0.5}},
+    "attacks": [
+      {"name": "寒墓冰矢", "damage": 34, "skill": 66, "element": "frost", "weight": 2,
+       "on_hit": {"status": "dot", "element": "frost", "magnitude": 6, "turns": 3, "chance": 0.5}},
+      {"name": "枯朽之觸", "damage": 30, "skill": 66, "weight": 2,
+       "on_hit": {"status": "weaken", "magnitude": 0.25, "turns": 2, "chance": 0.35}},
+      {"name": "亡者低語", "damage": 16, "skill": 66, "weight": 1,
+       "on_hit": {"status": "fear", "turns": 1, "chance": 0.25}},
+      {"name": "暗影爆裂", "damage": 36, "skill": 66, "element": "shock", "weight": 2},
+      {"name": "亡靈洪流", "damage": 54, "skill": 68, "element": "frost", "weight": 1,
+       "cooldown": 3, "when": {"hp_below": 0.5}}
+    ],
+    "danger": 5, "min_level": 17, "weight": 1, "solo": true,
+    "resist": {"magic": 35, "frost": 30, "poison": 25},
+    "loot_gold": [220, 420],
+    "loot": [{"item": "filled_grand_soul_gem", "chance": 0.5}, {"item": "glow_dust", "chance": 0.4}],
+    "flavor": "熄滅的光柱下,一名死靈法師盤踞在梅瑞迪雅的聖光燈塔殘骸間 —— 他以亡者之軍玷污了破曉之光,枯骨的寒氣與夢魘的低語自他腐朽的指尖湧出,只待把又一具軀體納入他的亡軍。"
+  },
   "dremora_lord": {
     "biomes": ["ashland"],
     "name": "魔人領主", "strength": 74, "agility": 50, "speed": 48,

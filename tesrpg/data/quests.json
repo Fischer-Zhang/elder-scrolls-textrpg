@@ -1935,5 +1935,17 @@
       {"objective": {"type": "reach", "location": "malacath_cursed_hold"}, "text": "下山攻入半沒於黃沙的受詛棄絕者堡。"},
       {"objective": {"type": "clear_dungeon", "dungeon": "malacath_cursed_hold"}, "text": "在崩塌的鍛爐殿堂前了結傲慢的酋長,以己力斬斷纏住全族的詛咒 —— 放生倖存者,卻拒做棄絕之主的劊子手。"}
     ], "reward": {"gold": 600, "fame": 30, "grant_boon": "malacath_might", "world_flags": ["malacath_defied"]}}
+  ]},
+  "meridia_beacon": {"name": "破曉之燈", "faction": null, "rank": null, "source": "daedric", "shrine": "meridia", "requires_level": 18, "text": "黃金海岸岬角高處那座艾雷德光之神殿在你獻祭時泛起金芒 —— 破曉之女神梅瑞迪雅的聲音自光柱中降下。一名死靈法師玷污了她的聖光燈塔,將整座神殿化作亡者的巢穴,熄滅了破曉之光。梅瑞迪雅要你重燃聖光、肅清那名褻瀆者。是執起她的破曉之刃、成為她令亡者聞風喪膽的聖戰士,還是只借她一縷聖光、守護生者卻不為她的偏執所役?", "branches": [
+    {"label": "執刃之路 —— 成為梅瑞迪雅的破曉聖戰士、執起破曉者(得神器:破曉者)", "text": "領受破曉之女神的聖戰 —— 深入沉沒的光之神殿,以聖光燒盡那名死靈法師與他的亡軍,重燃破曉之燈。梅瑞迪雅將那柄焚盡黑暗的破曉者賜予你,你自此成為她令一切亡者與『不潔之物』聞風喪膽的聖戰士。", "stages": [
+      {"objective": {"type": "collect", "item": "glow_dust", "count": 2}, "text": "與破曉之女神交感需以光為引:備妥兩份光塵,在岬角的聖光祭壇前點燃成一道破曉之芒。"},
+      {"objective": {"type": "reach", "location": "defiled_lightshrine"}, "text": "深入黃金海岸岬角下沉沒的光之神殿。"},
+      {"objective": {"type": "clear_dungeon", "dungeon": "defiled_lightshrine"}, "text": "在熄滅的光柱前以聖光燒盡那名死靈法師、重燃破曉之燈 —— 執起女神的破曉者。"}
+    ], "reward": {"gold": 800, "infamy": 25, "items": ["dawnbreaker"], "world_flags": ["meridia_champion"]}},
+    {"label": "守光之路 —— 守護生者、只借一縷聖光不為偏執所役(賜永久誓福:光之佑)", "text": "你願重燃聖光、肅清那名死靈法師,卻不願做破曉之女神偏執聖戰的刀刃 —— 燒盡亡軍、解救被困的生者後,你婉拒了那柄破曉之刃,只請她賜一縷護佑生靈的聖光。梅瑞迪雅雖嫌你不夠決絕,仍將一縷破曉之佑留予了你。", "stages": [
+      {"objective": {"type": "collect", "item": "glow_dust", "count": 2}, "text": "與破曉之女神交感需以光為引:備妥兩份光塵,在岬角的聖光祭壇前點燃成一道破曉之芒。"},
+      {"objective": {"type": "reach", "location": "defiled_lightshrine"}, "text": "深入黃金海岸岬角下沉沒的光之神殿。"},
+      {"objective": {"type": "clear_dungeon", "dungeon": "defiled_lightshrine"}, "text": "在熄滅的光柱前燒盡那名死靈法師與亡軍、重燃破曉之燈 —— 解救被困的生者,卻婉拒成為女神偏執聖戰的刀刃。"}
+    ], "reward": {"gold": 600, "fame": 30, "grant_boon": "meridia_light", "world_flags": ["meridia_light_kept"]}}
   ]}
 }

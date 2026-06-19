@@ -61,5 +61,12 @@
     "skill": {"smithing": 10},
     "resist": {"poison": 10, "disease": 15},
     "magicka": 0
+  },
+  "meridia_light": {
+    "name": "光之佑",
+    "attr": {"personality": 8, "willpower": 6},
+    "skill": {"restoration": 10, "light_armor": 6},
+    "resist": {"fire": 20, "magic": 10},
+    "magicka": 15
   }
 }

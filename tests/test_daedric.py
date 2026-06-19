@@ -774,6 +774,99 @@ def test_malacath_content_integrity():
     assert gd.boons["malacath_might"].get("attr", {}).get("strength", 0) <= 18 + 18
 
 
+# --- 第十位親王:梅瑞迪雅(恢復/聖光軸;serve→Dawnbreaker 神器 vs defy→誓福)----
+def _complete_meridia(gd, c, branch):
+    quests.accept_quest(c, gd, "meridia_beacon", branch=branch)
+    inventory.add_item(c, "glow_dust", 2)   # 聖光之引(collect 階段)
+    c.location_id = "defiled_lightshrine"
+    quests.record_dungeon_clear(c, "defiled_lightshrine")
+    quests.check_completion(c, gd)
+
+
+def test_meridia_serve_branch_grants_sword_not_boon():
+    """執刃之路 → 得神器 破曉者、惡名上升、不得誓福。"""
+    gd, c = _gd_char(level=18)
+    _complete_meridia(gd, c, 0)
+    assert "meridia_beacon" in c.completed_quests
+    assert inventory.count_item(c, "dawnbreaker") == 1
+    assert not boons.has_boon(c, "meridia_light") and c.infamy >= 25
+    assert "meridia_champion" in c.world_events_fired
+
+
+def test_dawnbreaker_burns_on_hit():
+    """破曉者 weapon_status burn → 命中對目標施加火焰 DoT(複用既有 ench_dot 路徑)。"""
+    from tesrpg.systems import combat
+    from tesrpg.rng import RNG
+    gd, c = _gd_char(level=18)
+    _complete_meridia(gd, c, 0)
+    c.weapon = "dawnbreaker"; c.is_player = True
+    c.skills["blade"] = 100
+    applied = 0
+    for i in range(8):
+        d = combat.spawn_creature(gd, "bandit", RNG(i)); d.max_health = d.health = 400
+        d.agility = 1; d.armor_rating = 0
+        combat.resolve_attack(c, d, gd, RNG(60 + i))
+        if any(e.get("kind") == "dot" and e.get("element") == "fire" and e.get("source") == "ench_dot"
+               for e in d.active_effects):
+            applied += 1
+    assert applied > 0, "burn 未施加火焰 DoT(命中應點燃目標)"
+    # sword archetype:無偷襲加成(守刺客紅線,非 dagger/bow)
+    assert gd.items["dawnbreaker"]["archetype"] == "sword"
+
+
+def test_meridia_defy_branch_grants_boon_not_sword():
+    """守光之路 → 永久誓福 光之佑(personality+8/willpower+6/restoration+10/light_armor+6)、不得神器。"""
+    gd, c = _gd_char(level=18)
+    p0, w0 = c.attr("personality"), c.attr("willpower")
+    rs0, la0 = c.skill("restoration"), c.skill("light_armor")
+    _complete_meridia(gd, c, 1)
+    assert boons.has_boon(c, "meridia_light")
+    assert c.attr("personality") == p0 + 8 and c.attr("willpower") == w0 + 6
+    assert c.skill("restoration") == rs0 + 10 and c.skill("light_armor") == la0 + 6
+    assert c.base_attr("personality") == p0          # 🔴 不寫 base
+    assert inventory.count_item(c, "dawnbreaker") == 0
+    assert "meridia_light_kept" in c.world_events_fired
+
+
+def test_meridia_availability_and_ten_shrines_coexist():
+    gd, c = _gd_char(level=17)
+    assert "meridia_beacon" not in quests.available_quests(c, gd, "daedric")   # 等級不足(需 18)
+    c.level = 18
+    av = quests.available_quests(c, gd, "daedric")
+    assert {"azura_star", "molag_bal_vault", "hircine_hunt", "boethiah_calling",
+            "clavicus_bargain", "peryite_cure", "mephala_whisper", "sanguine_party",
+            "malacath_curse", "meridia_beacon"} <= set(av)
+    assert gd.quests["meridia_beacon"]["shrine"] == "meridia"
+
+
+def test_meridia_content_integrity():
+    gd, _ = _gd_char()
+    assert "meridia_light" in gd.boons and "dawnbreaker" in gd.items
+    assert gd.world["locations"]["gold_coast"].get("shrine") == "meridia"
+    assert "defiled_lightshrine" in gd.dungeons and "defiled_lightshrine" in gd.world["locations"]
+    boss = gd.dungeons["defiled_lightshrine"]["boss"]["enemy"]
+    assert boss == "meridia_defiler" and gd.bestiary[boss].get("solo") is True
+    assert gd.dungeons["defiled_lightshrine"]["boss"].get("raw") is True
+    for atk in gd.bestiary[boss].get("attacks", []):
+        oh = atk.get("on_hit") or {}
+        if oh.get("status") in ("fear", "paralyze"):
+            assert oh.get("chance", 1.0) <= 0.30 and oh.get("turns", 1) <= 1, atk
+    # Dawnbreaker:sword archetype(非 dagger/bow → 無偷襲)·火焰 burn DoT·僅任務 reward
+    db = gd.items["dawnbreaker"]
+    assert db["archetype"] == "sword" and db["skill"] == "blade"
+    assert db["enchant"]["kind"] == "weapon_status" and db["enchant"]["status"] == "burn" and db["enchant"]["element"] == "fire"
+    for dd in gd.dungeons.values():
+        tl = [x for x in dd.get("boss", {}).get("treasure", {}).get("loot", []) if isinstance(x, str)]
+        assert "dawnbreaker" not in tl + dd.get("loot", [])
+    # 地城怪皆存在
+    for m in gd.dungeons["defiled_lightshrine"]["monsters"]:
+        assert m in gd.bestiary, m
+    # 誓福守紅線:restoration 是魔法學派、light_armor 是護甲技能(皆非 sneak/武器技能);無 strength
+    assert not ({"sneak", "blade", "blunt", "marksman", "hand_to_hand"}
+                & set(gd.boons["meridia_light"].get("skill", {})))
+    assert "strength" not in gd.boons["meridia_light"].get("attr", {})
+
+
 def run():
     for name, fn in sorted(globals().items()):
         if name.startswith("test_") and callable(fn):
