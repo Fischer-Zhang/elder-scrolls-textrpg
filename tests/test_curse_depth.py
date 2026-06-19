@@ -63,7 +63,7 @@ def test_full_moon_free_transform_and_duration_bonus():
     lycanthropy.contract(c, st, gd)
     assert _advance_until(st, lambda: moons.is_full_moon(st))
     base = lycanthropy.beast_duration(c)
-    assert lycanthropy.effective_duration(c, st) == base + lycanthropy.FULL_MOON_DURATION_BONUS
+    assert lycanthropy.effective_duration(c, st, gd) == base + lycanthropy.FULL_MOON_DURATION_BONUS
     powers.use(c, st, gd)                                       # 滿月變身(設當日冷卻)
     assert lycanthropy.is_beast(c, st)
     rem = c.beast_form_until - st.time.absolute_hours()

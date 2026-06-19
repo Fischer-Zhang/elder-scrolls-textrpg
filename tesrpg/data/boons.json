@@ -124,5 +124,33 @@
     "skill": {"destruction": 8, "mysticism": 8},
     "resist": {"magic": 15},
     "magicka": 25
+  },
+  "coven_usurper": {
+    "name": "血主之威",
+    "attr": {"willpower": 10, "endurance": 6},
+    "skill": {"restoration": 8},
+    "resist": {"magic": 15},
+    "magicka": 10
+  },
+  "coven_heir": {
+    "name": "血裔之佑",
+    "attr": {"personality": 8, "willpower": 6},
+    "skill": {"illusion": 8},
+    "resist": {"magic": 10},
+    "magicka": 10
+  },
+  "pack_usurper": {
+    "name": "頭狼之威",
+    "attr": {"strength": 8, "endurance": 8},
+    "skill": {"athletics": 8},
+    "resist": {"frost": 15},
+    "magicka": 0
+  },
+  "pack_heir": {
+    "name": "獵群之佑",
+    "attr": {"endurance": 10, "willpower": 6},
+    "skill": {"athletics": 8},
+    "resist": {"frost": 10, "disease": 15},
+    "magicka": 0
   }
 }

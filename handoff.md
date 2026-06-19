@@ -1085,7 +1085,18 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 - **`action_lair`(複用既有管線)**:`休息`(全回 + `housing.set_well_rested`)/`密窖`(`housing.stash[巢穴 loc_id]` deposit/withdraw·複用 `_stash_transfer`·**不需 owns**)/`與同類交談`(`dialogue.offered_quest`→`_accept_and_brief` 接招募任務);吸血鬼隱穴另有 `安心進食`(`vampirism.feed(safe=True)` 新旗:略過 caught 擲+賞金),狼人巢穴另有 `安心獸化`(`action_use_power`→transform;非城鎮無圍捕)。
 - **同類 NPC + 招募 kin(純資料)**:`npcs.json` 加血族族長瓦瑞拉(bloodmoor_crypt)/頭狼斯卡爾(moonhowl_den)〔`quest` 欄掛招募任務·disposition 75〕;`quests.json` 加 `recruit_blood_thrall`(殺雛血×3→回隱穴)/`recruit_pack_warrior`(獵巨熊×3→回獸穴)〔`source:"npc"`·`reward.companion`〕;`companions.json` 加 `blood_thrall` 血僕妮拉 / `pack_warrior` 同窩戰士庫爾(`cost:0`·`recruit_quest` 回指·數值對齊 aela/veteran 帶)→ 完成即 `party` 招募。
 - **地理(R28)**:`bloodmoor_crypt`「血沼地窖」(高岩·pos[7,2]·links rivenspire+northpoint·rivenspire=正典吸血鬼傳說地)/`moonhowl_den`「月嚎獸穴」(瓦倫森林·pos[7,21]·links greenshade+grahtwood·grahtwood=海爾辛狩獵地)。轉化時(update `turn` 事件)main 加一句巢穴方位線索。
-- **🔴 安全區/平衡**:巢穴非城/鎮 → `_curse_manhunt` 天然不觸發(零改 R50);安心進食 `safe=True` 不被撞見;**城鎮仍危險**(巢穴是「主動前往的避風港」非「城內豁免」→ R50 loop 不破)。kin 同伴對 solo sim 不可達 → byte-identical(隔離 worktree 法定·未碰 combat/formulas)。零新存檔欄(密窖走 `house_stash[巢穴]`·招募走 `companions`/`completed_quests`·`lair`/`quest` 為地點/NPC 欄)。`run_all` **69**(新 `test_curse_kin`:巢穴閘/安心進食/密窖+休息/雙血脈招募/巢穴免圍捕/凡人不見同類/內容完整/存檔)。**剩餘**:吸血鬼夜視/魅惑/專屬裝備、巢穴升級/血族階級政治。
+- **🔴 安全區/平衡**:巢穴非城/鎮 → `_curse_manhunt` 天然不觸發(零改 R50);安心進食 `safe=True` 不被撞見;**城鎮仍危險**(巢穴是「主動前往的避風港」非「城內豁免」→ R50 loop 不破)。kin 同伴對 solo sim 不可達 → byte-identical(隔離 worktree 法定·未碰 combat/formulas)。零新存檔欄(密窖走 `house_stash[巢穴]`·招募走 `companions`/`completed_quests`·`lair`/`quest` 為地點/NPC 欄)。`run_all` **69**(新 `test_curse_kin`:巢穴閘/安心進食/密窖+休息/雙血脈招募/巢穴免圍捕/凡人不見同類/內容完整/存檔)。**剩餘**:吸血鬼夜視/魅惑/專屬裝備、~~巢穴升級/血族階級政治~~ ✅ **已做**(R52:血族/獵群階級梯 + 詛咒戰鬥 perk + 弒主/繼承頂階)。
+
+### R52 · 血族階級政治 + 巢穴升級:吸血鬼血族 / 狼人獵群階級梯 [re-sim] [save]
+
+把 R51 巢穴/同類深化成**詛咒陣營階級梯**。使用者兩道拍板:晉階回報**含詛咒戰鬥強化**(by-design 平衡取捨)、頂階政治**弒主篡位 vs 忠誠繼承**。**極高複用**:整套 `factions` 階級系統(`join`/rank/`available_quests("guild")`/`quests._complete` 晉升/`perk_value`+`_best_perk`),**零新存檔欄**(`char.factions` dict)。
+- **curse-gated 陣營(不改 factions.py)**:`coven_vampire`「血族」(賓客→血僕→夜眷→血主)/`werewolf_pack`「獵群」(客狼→獵手→撕咬者→頭狼);`gate_skills:[]`/`join_skill:0`/`rank_skill_req:[0…]`/`lawful:false` → 技能/賞金閘恆過,**curse 閘=巢穴本身**(`action_lair` 只詛咒者可達)。`hall`=對應巢穴(無 city service → 不現城公會)。
+- **2 新 perk kind(詛咒戰鬥強化·只詛咒模組讀)**:`sun_ward`(`vampirism.expose_to_sun` 灼傷 ×(1−ward)·per_rank0.20·cap0.6→高階吸血鬼漸耐日)、`beast_vigor`(`lycanthropy.effective_duration` +int(base×vigor) 獸形時程延長 + `devour` 回血 ×(1+vigor))。`factions.py` 各加一行 `_best_perk` accessor。
+- **階級任務(quests.json·source guild·逐階閘)**:`coven1/2`(獵盜匪/獵狼人=血族vs狼人宿仇)、`pack1/2`(獵猛獸/獵雛血);`coven3`/`pack3`=**分支頂階**(`faction`+`rank:2` 頂層→晉升不分支·`branches` 篡位 vs 繼承皆 `kill <master>`)。
+- **頂階決鬥**:`action_lair`「血族/獵群事務」(比照 `action_guild_hall`:join/accept;頂階已接→「⚔ X之爭」`run_battle` vs master→`record_kill`+`check_completion`)。2 新 boss `coven_patriarch`/`dire_alpha`(solo·raw·fear0.25-1)·**不新增地城**。
+- **頂階誓福(R45 boons·守紅線)**:篡位 `coven_usurper`/`pack_usurper`(+infamy+`*_usurped` 旗)vs 繼承 `coven_heir`/`pack_heir`(+fame+`*_inherited` 旗)·皆無 sneak/武器技·strength≤8。
+- **巢穴升級(rank-gated `action_lair` 設施)**:rank≥1 血泉/獵壇(即時全回)、rank≥2 血庫/獸糧(補滿治療藥水至 3)。
+- **🔴 sim byte-identical**:perk 只詛咒模組讀且非會員=0、刺客永不入會(隔離 worktree 法定·未碰 combat/formulas)。curse build 平衡 by-design(perk cap 0.6·頂階誓福守紅線·boss solo/raw/cc≤0.30)。零新存檔欄。`run_all` **70**(新 `test_curse_rank`);BESTIARY.md 重生(118 怪)。**剩餘**:吸血鬼夜視/魅惑/專屬裝備。
 
 ---
 
@@ -1180,7 +1191,7 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 > 裝備後續可再加:獨特/具名裝備(套裝外的具名神器)、~~附魔護甲擴展到技能/抗性~~ ✅ **已做**、~~武器附魔可帶狀態(吸血/麻痺)~~ ✅ **已做**、~~回復型附魔(per-turn regen)~~ ✅ **已做**(見 §1「附魔系統擴展」:護甲 skill/resist + 武器 vampiric/paralyze/regen,solo boss 免疫麻痺)。~~武器附魔帶元素 DoT~~ ✅ **已做**(見 §1/R15「附魔深化」:武器命中 DoT〔焚燒/凍緩/感電,帶 rider〕+ 命中吸取 + 充能型擒魂/麻痺 + 靈魂石經濟〔空魂石填充/大·黑魂石〕,Phase 1+2;**Phase 3 秘術節點刻意未做** —— 秘術樹已滿〔嚴格二選一〕且 soul_siphon 已自動放大新效果)。可再加:**附魔可疊雙效(雙重附魔)**(最高摩擦軸,留待)、秘術里程碑騰位後的附魔專屬節點。
 > 開局後續可再加(✅ 已加 6 個:戰友團/盜賊公會/阿利克爾劍客/海難倖存者/神殿治療者/獸人放逐者,共 14 開局):開局附帶**起手任務鉤子**(MVP 刻意未做)、`armor` 起手整套裝(目前開局只給單件護甲/飾品/法杖)、開局選單依職業/種族過濾推薦。
 > 吸血鬼後續可再加:夜視/魅惑等更多吸血鬼能力、吸血鬼專屬裝備、~~巢穴~~ ✅ **已做**(R51:血沼地窖隱穴 —— 安心進食/休息/密窖 + 血族族長招募血僕)、~~狼人(同套狀態機另一支)~~ ✅ **已做**(見 §1「狼人化 / 獸形」)、~~NPC 識破後衛兵敵對(目前只社交封鎖)~~ ✅ **已做**(R50)、解咒任務的具名 NPC/對話包裝。
-> 狼人後續可再加:~~餵食進程樹~~ ✅ **已做**(§1「狼人深化」:5 階獸血進程)、~~希爾辛神器(獵者之戒)~~ ✅ **已做**、~~howl 咆哮恐懼 power~~ ✅ **已做**(恫嚇之嚎,solo 免疫)、~~野外主動變身(目前限戰鬥語境)~~ ✅ **已做**(R50)、~~獸形在城衛兵實戰圍捕(目前 shunning-light)~~ ✅ **已做**(R50)、~~月相影響變身~~ ✅ **已做**(R50:滿月免冷卻+時程加成)、~~狼人專屬巢穴/同類 NPC~~ ✅ **已做**(R51:月嚎獸穴 —— 安心獸化/休息/密窖 + 頭狼招募同窩戰士);**剩餘**:吸血鬼夜視/魅惑/專屬裝備、巢穴升級/血族階級政治。
+> 狼人後續可再加:~~餵食進程樹~~ ✅ **已做**(§1「狼人深化」:5 階獸血進程)、~~希爾辛神器(獵者之戒)~~ ✅ **已做**、~~howl 咆哮恐懼 power~~ ✅ **已做**(恫嚇之嚎,solo 免疫)、~~野外主動變身(目前限戰鬥語境)~~ ✅ **已做**(R50)、~~獸形在城衛兵實戰圍捕(目前 shunning-light)~~ ✅ **已做**(R50)、~~月相影響變身~~ ✅ **已做**(R50:滿月免冷卻+時程加成)、~~狼人專屬巢穴/同類 NPC~~ ✅ **已做**(R51)、~~巢穴升級/血族階級政治~~ ✅ **已做**(R52:獵群階級梯〔客狼→頭狼〕+ 獸血之盛 perk + 弒位/繼承頂階);**剩餘**:吸血鬼夜視/魅惑/專屬裝備。
 > 技能里程碑後續可再加(**P2/P3,路線已拍板**):P2 持久 `mastery_*_bonus` 加成層(吸血鬼模式)+ 更多真權衡戰鬥型(**逐條 sim 背書 + 非 boss 精英秒殺率覆核**);P3 純改 JSON 補三系密度(優先 marksman/light_armor 等冷門技,避免 sneak 過載);可另評估『達門檻二選一』能動性(引入最佳化空間=支柱級取捨,需使用者拍板)。
 
 > ⚠️ 開新功能務必沿用「§4 開發節奏」:實作 → 測試 → 平衡 → 煙霧 →(ultracode 開時)對抗式審查 → 覆核修正。

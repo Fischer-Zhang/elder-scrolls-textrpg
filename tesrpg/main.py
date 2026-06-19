@@ -1960,35 +1960,120 @@ def _player_is_lair_kin(player, loc: dict) -> bool:
             or (lr == "werewolf" and lycanthropy.is_werewolf(player)))
 
 
-def action_lair(state: GameState, gamedata: GameData) -> None:
-    """R51:詛咒巢穴(安全區)—— 同類接納處:安心進食/獸化、安歇(精神飽滿)、密窖倉庫、與同類交談接委託。
-    巢穴非城/鎮 → R50 的衛兵圍捕天然不觸發;凡人/異種詛咒由 hub 閘擋於門外(此處再守一道)。"""
+_LAIR_FACTION = {"vampire": "coven_vampire", "werewolf": "werewolf_pack"}   # R52:巢穴 → 詛咒陣營
+
+
+def _lair_pending_duel(char, gamedata: GameData, fac: str):
+    """頂階任務已接、未完成 → 回 (qid, master 生物 id)(決鬥對象);否則 (None, None)。"""
+    cap_qid = gamedata.factions[fac]["rank_quests"][-1]
+    if cap_qid in char.quests and cap_qid not in char.completed_quests:
+        obj = quests.resolved(char, gamedata, cap_qid).get("objective") or {}
+        if obj.get("type") == "kill":
+            return cap_qid, obj.get("creature")
+    return None, None
+
+
+def _lair_affairs(state: GameState, gamedata: GameData, fac: str) -> str | None:
+    """R52 血族/獵群事務:入會 / 接晉階任務 / 頂階決鬥(挑戰現任血主·頭狼)。比照 action_guild_hall。
+    回傳 'dead'(決鬥身亡)或 None。"""
+    char = state.player
+    f = gamedata.factions[fac]
+    while True:
+        opts = []
+        if not factions.is_member(char, fac):
+            opts.append(("join", f"加入{f['name']}"))
+        else:
+            _qid, master = _lair_pending_duel(char, gamedata, fac)
+            if master:
+                opts.append(("duel", f"⚔ {f['ranks'][-1]}之爭 —— 挑戰{gamedata.bestiary[master]['name']}"))
+            avail = quests.available_quests(char, gamedata, "guild", fac)
+            if avail:
+                opts.append(("accept", f"接取晉階任務:{gamedata.quests[avail[0]]['name']}"))
+        rank_lbl = f"(階級:{factions.rank_name(char, gamedata, fac)})" if factions.is_member(char, fac) else ""
+        choice = ui.menu(f"{f['name']}事務{rank_lbl}", opts, allow_back=True)
+        if choice is None:
+            return None
+        if choice == "join":
+            reason = factions.join_block_reason(char, gamedata, fac)
+            if reason:
+                ui.message(reason, style="yellow")
+            else:
+                factions.join(char, fac)
+                ui.message(f"你被接納為{f['name']}的{factions.rank_name(char, gamedata, fac)} —— "
+                           "自此巢穴是你的家,階序是你攀爬的路。", style="bold red")
+        elif choice == "accept":
+            avail = quests.available_quests(char, gamedata, "guild", fac)
+            if avail:
+                _accept_and_brief(state, gamedata, avail[0])
+                return None
+        elif choice == "duel":
+            _qid, master = _lair_pending_duel(char, gamedata, fac)
+            if not master:
+                continue
+            ui.rule(f"{f['ranks'][-1]}之爭")
+            ui.message(f"最後一階只能以血與牙來定 —— 你直面{gamedata.bestiary[master]['name']}。", style="bold red")
+            boss = combat.spawn_creature(gamedata, master, state.rng)
+            if run_battle(state, gamedata, boss) == "dead":
+                return "dead"
+            quests.record_kill(char, master)
+            quests.check_completion(char, gamedata)   # 頂階任務完成 → 晉升 + 授頂階誓福(grant_boon)+ 頭銜旗
+            ui.message(f"你踏著對手的血,坐上了{f['name']}的最高之位 —— 你成了"
+                       f"{factions.rank_name(char, gamedata, fac)}。", style="bold green")
+            return None
+
+
+def action_lair(state: GameState, gamedata: GameData) -> str | None:
+    """R51 巢穴(安全區)+ R52 血族/獵群階級事務 + 巢穴升級(rank-gated 設施)。
+    回傳 'dead'(頂階決鬥身亡)或 None。巢穴非城/鎮 → R50 圍捕不觸發;hub 已以詛咒閘擋凡人。"""
     char = state.player
     loc = world.current_location(char, gamedata)
     if not _player_is_lair_kin(char, loc):
-        return
+        return None
     lair = loc.get("lair")
+    fac = _LAIR_FACTION[lair]
     loc_id = char.location_id
     kin = next((n for n in gamedata.npcs if gamedata.npcs[n].get("location") == loc_id), None)
     while True:
-        opts = []
+        rank = factions.rank_index(char, fac)
+        affairs_lbl = ("🩸 血族事務" if lair == "vampire" else "🐺 獵群事務") \
+            + (f"(階級:{factions.rank_name(char, gamedata, fac)})" if rank >= 0 else "(入會)")
+        opts = [("affairs", affairs_lbl)]
         if lair == "vampire":
             opts.append(("feed", "🩸 安心進食(同類供血,不被撞見)"))
         elif lair == "werewolf" and lycanthropy.can_transform(char, state, gamedata):
             opts.append(("shift", "🐺 在巢穴中獸化(安全)"))
+        if rank >= 1:        # R52 巢穴升級:血泉/獵壇(即時全回)
+            opts.append(("font", "🩸 血泉(即時全回)" if lair == "vampire" else "🐺 獵壇(即時全回)"))
+        if rank >= 2:        # R52 巢穴升級:補給(補滿治療藥水)
+            opts.append(("supply", "血庫補給(補滿治療藥水)" if lair == "vampire" else "獸糧補給(補滿治療藥水)"))
         opts += [("rest", "在此安歇(免費全回 + 精神飽滿)"),
                  ("deposit", "存入密窖(卸下負重)"), ("withdraw", "從密窖取出")]
         if kin:
             opts.append(("kin", f"與{gamedata.npcs[kin]['name']}交談"))
         choice = ui.menu(loc["name"], opts, allow_back=True)
         if choice is None:
-            return
-        if choice == "feed":
+            return None
+        if choice == "affairs":
+            if _lair_affairs(state, gamedata, fac) == "dead":
+                return "dead"
+        elif choice == "feed":
             res = vampirism.feed(state, gamedata, safe=True)     # 同類供血:必不被撞見
             ui.message(f"同類為你引來溫順的活人 —— 你飽飲一頓,飢渴盡退(回復 {res['healed']} 生命),無人撞見。",
                        style="bold green")
         elif choice == "shift":
             action_use_power(state, gamedata)                    # 變身;巢穴非城鎮 → 無圍捕
+        elif choice == "font":
+            char.health, char.magicka, char.fatigue = char.max_health, char.max_magicka, char.max_fatigue
+            party.heal_full(char, gamedata)
+            ui.message("你俯身飲下巢穴湧出的血泉 —— 傷勢瞬間癒合、氣力如新(即時、不耗時)。" if lair == "vampire"
+                       else "你在獵壇前飽食生肉 —— 傷勢瞬間癒合、氣力如新(即時、不耗時)。", style="bold green")
+        elif choice == "supply":
+            got = 0
+            while inventory.count_item(char, "healing_potion") < 3:
+                inventory.add_item(char, "healing_potion", 1)
+                got += 1
+            ui.message(f"同類替你備足了補給(治療藥水 +{got},補至 3 瓶)。" if got else "你的補給已滿。",
+                       style="green")
         elif choice == "rest":
             char.health, char.magicka, char.fatigue = char.max_health, char.max_magicka, char.max_fatigue
             party.heal_full(char, gamedata)
@@ -4058,7 +4143,7 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
         elif choice == "shrine":
             action_shrine(state, gamedata)
         elif choice == "lair":
-            action_lair(state, gamedata)
+            died = action_lair(state, gamedata)
         elif choice == "travel":
             died = action_travel(state, gamedata)
         elif choice == "shop":

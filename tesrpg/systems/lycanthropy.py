@@ -115,10 +115,11 @@ def can_transform(char: Character, state, gamedata: GameData) -> bool:
                  or powers.usable_in(char, state, gamedata, "utility")))
 
 
-def effective_duration(char: Character, state) -> int:
-    """本次獸形持續時數:獸血階基礎 + 滿月加成(R50,只動時程不動戰鬥數值)。"""
-    from tesrpg.systems import moons
-    return beast_duration(char) + (FULL_MOON_DURATION_BONUS if moons.is_full_moon(state) else 0)
+def effective_duration(char: Character, state, gamedata: GameData) -> int:
+    """本次獸形持續時數:獸血階基礎 + 滿月加成(R50) + 獵群「獸血之盛」階級延長(R52,只詛咒者可達)。"""
+    from tesrpg.systems import moons, factions
+    base = beast_duration(char) + (FULL_MOON_DURATION_BONUS if moons.is_full_moon(state) else 0)
+    return base + int(base * factions.beast_vigor(char, gamedata))
 
 
 def can_offer_ritual(char: Character) -> bool:
@@ -300,7 +301,7 @@ def transform(char: Character, state, gamedata: GameData) -> dict:
 
     回傳 {"messages": [...]}(供 powers.use 串接)。
     """
-    char.beast_form_until = _now(state) + effective_duration(char, state)   # 隨獸血階 + 滿月延長
+    char.beast_form_until = _now(state) + effective_duration(char, state, gamedata)   # 隨獸血階 + 滿月 + 獵群階級延長
     char.beast_feeds = 0
     before_max = char.max_health
     apply_to_character(char, state, gamedata)     # 套獸形層 + recompute(生命/體力上限上升)
@@ -324,7 +325,9 @@ def devour(char: Character, state, gamedata: GameData) -> dict:
     apply_to_character(char, state, gamedata)
     char.beast_form_until = max(char.beast_form_until, _now(state)) + FEED_EXTEND_HOURS
     before = char.health
-    char.health = min(char.max_health, char.health + beast_health(char) // 2)
+    from tesrpg.systems import factions          # R52:獵群「獸血之盛」隨階強化吞噬回血(只詛咒者可達)
+    heal = int(beast_health(char) // 2 * (1 + factions.beast_vigor(char, gamedata)))
+    char.health = min(char.max_health, char.health + heal)
     return {"extended": True, "healed": int(char.health - before)}
 
 

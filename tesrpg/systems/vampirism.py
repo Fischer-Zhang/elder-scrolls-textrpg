@@ -240,6 +240,8 @@ def expose_to_sun(state, gamedata: GameData, hours: int) -> int:
     if sun_hours <= 0:
         return 0
     dmg = sun_hours * stg * SUN_DMG_PER_HOUR_PER_STAGE
+    from tesrpg.systems import factions          # R52:血族「晝行之佑」隨階遞減日光灼傷(只詛咒者可達)
+    dmg *= (1 - factions.sun_ward(char, gamedata))
     dmg = min(dmg, max(0.0, char.health - 1))     # 不在選單中曬死
     char.health -= dmg
     return int(round(dmg))

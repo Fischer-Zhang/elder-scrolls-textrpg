@@ -167,6 +167,16 @@ def merc_discount(char: Character, gamedata: GameData) -> float:
     return _best_perk(char, gamedata, "merc_discount")
 
 
+def sun_ward(char: Character, gamedata: GameData) -> float:
+    """血族(R52):晝行之佑 —— 日光灼傷遞減比例(0..cap;只 vampirism 讀)。"""
+    return _best_perk(char, gamedata, "sun_ward")
+
+
+def beast_vigor(char: Character, gamedata: GameData) -> float:
+    """獵群(R52):獸血之盛 —— 獸形時程延長 + 吞噬回血強化比例(0..cap;只 lycanthropy 讀)。"""
+    return _best_perk(char, gamedata, "beast_vigor")
+
+
 def perk_desc(char: Character, gamedata: GameData, faction_id: str) -> str | None:
     """給 UI 顯示的福利說明(含目前強度)。"""
     perk = gamedata.factions[faction_id].get("perk")
