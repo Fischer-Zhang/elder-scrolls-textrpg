@@ -968,6 +968,28 @@
     "loot": [{"item": "filled_grand_soul_gem", "chance": 0.5}, {"item": "imp_stool", "chance": 0.4}],
     "flavor": "腐肉祭壇後直起身的,是一具以同類血肉餵養至腫脹的食屍祭司 —— 娜米拉的腐朽之力在他爛透的軀體裡蠕動,蛆蟲與毒霧自他每一道裂口湧出,只想把你也拖上他那永不散場的腐肉之宴。"
   },
+  "madness_avatar": {
+    "name": "瘋癲化身", "strength": 50, "agility": 52, "speed": 50,
+    "max_health": 205, "armor_rating": 11,
+    "attack": {"name": "錯亂幻擊", "damage": 34, "skill": 66, "element": "fire",
+               "on_hit": {"status": "dot", "element": "fire", "magnitude": 6, "turns": 3, "chance": 0.5}},
+    "attacks": [
+      {"name": "錯亂幻擊", "damage": 34, "skill": 66, "element": "fire", "weight": 2,
+       "on_hit": {"status": "dot", "element": "fire", "magnitude": 6, "turns": 3, "chance": 0.5}},
+      {"name": "冰封囈語", "damage": 34, "skill": 66, "element": "frost", "weight": 2,
+       "on_hit": {"status": "weaken", "magnitude": 0.25, "turns": 2, "chance": 0.35}},
+      {"name": "癲雷亂舞", "damage": 36, "skill": 66, "element": "shock", "weight": 2},
+      {"name": "癲狂低語", "damage": 16, "skill": 66, "weight": 1,
+       "on_hit": {"status": "fear", "turns": 1, "chance": 0.25}},
+      {"name": "現實崩解", "damage": 54, "skill": 68, "element": "fire", "weight": 1,
+       "cooldown": 3, "when": {"hp_below": 0.5}}
+    ],
+    "danger": 5, "min_level": 17, "weight": 1, "solo": true,
+    "resist": {"magic": 35, "fire": 20, "frost": 20, "shock": 20},
+    "loot_gold": [220, 420],
+    "loot": [{"item": "filled_grand_soul_gem", "chance": 0.5}, {"item": "monarch_wing", "chance": 0.4}],
+    "flavor": "五彩斑斕的幻光裡走出一具不斷變形的軀體 —— 瘋神謝歐格拉斯的瘋癲化身,前一刻是烈焰、下一刻是寒冰,招式毫無章法卻招招致命,只因連牠自己也猜不到下一擊會變成什麼。"
+  },
   "dremora_lord": {
     "biomes": ["ashland"],
     "name": "魔人領主", "strength": 74, "agility": 50, "speed": 48,

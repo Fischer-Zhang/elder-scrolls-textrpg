@@ -1045,6 +1045,138 @@ def test_namira_content_integrity():
     assert "strength" not in gd.boons["namira_decay"].get("attr", {})
 
 
+# --- 第十三位親王:謝歐格拉斯(瘋神;新機制 Wabbajack 混沌·serve→神器 vs defy→alteration 誓福)----
+def _complete_sheogorath(gd, c, branch):
+    quests.accept_quest(c, gd, "mind_of_madness", branch=branch)
+    inventory.add_item(c, "monarch_wing", 2)   # 沒道理的供品(collect 階段)
+    c.location_id = "madness_realm"
+    quests.record_dungeon_clear(c, "madness_realm")
+    quests.check_completion(c, gd)
+
+
+def test_sheogorath_serve_branch_grants_wabbajack_not_boon():
+    """執杖之路 → 得神器 瓦巴賈克、惡名上升、不得誓福。"""
+    gd, c = _gd_char(level=18)
+    _complete_sheogorath(gd, c, 0)
+    assert "mind_of_madness" in c.completed_quests
+    assert inventory.count_item(c, "wabbajack") == 1
+    assert not boons.has_boon(c, "sheogorath_madness") and c.infamy >= 30
+    assert "sheogorath_served" in c.world_events_fired
+
+
+def test_sheogorath_defy_branch_grants_boon_not_wabbajack():
+    """守心之路 → 永久誓福 瘋癲之佑(willpower+8/intelligence+6/alteration+12/magicka+20)、不得神器。"""
+    gd, c = _gd_char(level=18)
+    w0, i0, al0, mg0 = c.attr("willpower"), c.attr("intelligence"), c.skill("alteration"), c.max_magicka
+    _complete_sheogorath(gd, c, 1)
+    assert boons.has_boon(c, "sheogorath_madness")
+    assert c.attr("willpower") == w0 + 8 and c.attr("intelligence") == i0 + 6
+    assert c.skill("alteration") == al0 + 12
+    assert c.max_magicka >= mg0 + 20
+    assert c.base_attr("willpower") == w0          # 🔴 不寫 base
+    assert inventory.count_item(c, "wabbajack") == 0
+    assert "sheogorath_defied" in c.world_events_fired
+
+
+def test_wabbajack_chaos_effects_fire_and_stay_safe():
+    """瓦巴賈克命中觸發隨機混沌(R46):多種不同效果都會出現·回火永不致死·不拋例外。"""
+    from tesrpg.systems import combat
+    from tesrpg.rng import RNG
+    gd, c = _gd_char(level=19)
+    c.weapon = "wabbajack"; c.is_player = True
+    c.skills["destruction"] = 100
+    c.max_health = 300; c.max_magicka = 300; c.max_fatigue = 300
+    seen = set()
+    for i in range(150):
+        c.health = 250; c.magicka = 0; c.fatigue = 0
+        d = combat.spawn_creature(gd, "bandit", RNG(i)); d.max_health = d.health = 9999
+        d.agility = 1; d.armor_rating = 0; d.active_effects = []
+        combat.resolve_attack(c, d, gd, RNG(3000 + i))   # 絕不拋例外
+        assert c.health >= 1, "回火自傷不可致死(max(1,…))"
+        wsrc = [e for e in d.active_effects if e.get("source") == "wabbajack"]
+        if any(e.get("kind") in ("fear", "paralyze", "stagger") for e in wsrc): seen.add("control")
+        if any(e.get("kind") == "weaken" for e in wsrc): seen.add("weaken")
+        if c.magicka > 0 or c.health > 250: seen.add("self_restore")
+        if c.health < 250: seen.add("backfire_self")
+    assert len(seen) >= 3, f"混沌效果種類過少:{seen}"
+    assert gd.items["wabbajack"]["archetype"] == "staff"   # staff → 零偷襲守紅線
+
+
+def test_wabbajack_control_routes_apply_control_solo_resists():
+    """硬控走 magic.apply_control:solo BOSS 比一般怪更難被控(SOLO_CONTROL_RESIST_CHANCE);且永不一擊秒殺 solo。"""
+    from tesrpg.systems import combat
+    from tesrpg.rng import RNG
+    gd, c = _gd_char(level=20)
+    c.weapon = "wabbajack"; c.is_player = True; c.skills["destruction"] = 100
+
+    def hard_control_landings(template, n):
+        applied = 0; max_hit = 0.0
+        for i in range(n):
+            t = combat.spawn_creature(gd, template, RNG(i))
+            t.active_effects = []; t.max_health = 9999; t.health = 9999
+            t.agility = 1; t.armor_rating = 0
+            combat.resolve_attack(c, t, gd, RNG(i))
+            if any(e.get("kind") in ("fear", "paralyze") for e in t.active_effects):
+                applied += 1
+            max_hit = max(max_hit, 9999 - t.health)
+        return applied, max_hit
+
+    solo_applied, solo_max_hit = hard_control_landings("madness_avatar", 300)   # solo:true
+    mob_applied, _ = hard_control_landings("bandit", 300)                       # 一般怪無 solo 抵抗
+    assert solo_applied > 0, "硬控完全沒上 → apply_control 未生效"
+    assert solo_applied < mob_applied, "solo BOSS 未享機率抵抗(應比一般怪更難被控)"
+    # 單擊永不秒殺 solo BOSS(法杖無偷襲·爆發受 WABBAJACK_BURST_SOLO_FACTOR 夾)
+    boss_hp = gd.bestiary["madness_avatar"]["max_health"]
+    assert solo_max_hit < boss_hp, "單擊不可秒殺 solo BOSS"
+
+
+def test_wabbajack_not_craftable_and_sim_isolated():
+    """瓦巴賈克玩家不可鍛造(不入白名單);且 sim 的匕首路徑無附魔 → 機制與 sim_assassin 完全隔離。"""
+    from tesrpg.systems import enchanting
+    gd, _ = _gd_char()
+    assert "wabbajack" not in enchanting._WEAPON_STATUSES
+    assert gd.items["steel_dagger"].get("enchant") is None
+
+
+def test_sheogorath_availability_and_thirteen_shrines_coexist():
+    gd, c = _gd_char(level=17)
+    assert "mind_of_madness" not in quests.available_quests(c, gd, "daedric")   # 等級不足(需 18)
+    c.level = 18
+    av = quests.available_quests(c, gd, "daedric")
+    assert {"azura_star", "molag_bal_vault", "hircine_hunt", "boethiah_calling",
+            "clavicus_bargain", "peryite_cure", "mephala_whisper", "sanguine_party",
+            "malacath_curse", "meridia_beacon", "waking_nightmare", "namira_feast",
+            "mind_of_madness"} <= set(av)
+    assert gd.quests["mind_of_madness"]["shrine"] == "sheogorath"
+
+
+def test_sheogorath_content_integrity():
+    gd, _ = _gd_char()
+    assert "sheogorath_madness" in gd.boons and "wabbajack" in gd.items
+    assert gd.world["locations"]["hist_grove"].get("shrine") == "sheogorath"
+    assert "madness_realm" in gd.dungeons and "madness_realm" in gd.world["locations"]
+    boss = gd.dungeons["madness_realm"]["boss"]["enemy"]
+    assert boss == "madness_avatar" and gd.bestiary[boss].get("solo") is True
+    assert gd.dungeons["madness_realm"]["boss"].get("raw") is True
+    for atk in gd.bestiary[boss].get("attacks", []):
+        oh = atk.get("on_hit") or {}
+        if oh.get("status") in ("fear", "paralyze"):
+            assert oh.get("chance", 1.0) <= 0.30 and oh.get("turns", 1) <= 1, atk
+    # Wabbajack:staff·weapon_status "wabbajack"·僅任務 reward
+    wj = gd.items["wabbajack"]
+    assert wj["archetype"] == "staff" and wj["enchant"]["kind"] == "weapon_status" and wj["enchant"]["status"] == "wabbajack"
+    for dd in gd.dungeons.values():
+        tl = [x for x in dd.get("boss", {}).get("treasure", {}).get("loot", []) if isinstance(x, str)]
+        assert "wabbajack" not in tl + dd.get("loot", [])
+    # 地城怪皆存在
+    for m in gd.dungeons["madness_realm"]["monsters"]:
+        assert m in gd.bestiary, m
+    # 誓福守紅線:alteration 是魔法學派(補最後一個未覆蓋學派)·非 sneak/武器技能·無 strength
+    assert not ({"sneak", "blade", "blunt", "marksman", "hand_to_hand"}
+                & set(gd.boons["sheogorath_madness"].get("skill", {})))
+    assert "strength" not in gd.boons["sheogorath_madness"].get("attr", {})
+
+
 def run():
     for name, fn in sorted(globals().items()):
         if name.startswith("test_") and callable(fn):

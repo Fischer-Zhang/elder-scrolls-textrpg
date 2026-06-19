@@ -161,6 +161,15 @@ WEAPON_JOLT_MAGICKA = 8           # 電 DoT「感電」rider:每觸發扣目標�
 WEAPON_JOLT_STAGGER = 0.20        # 電 DoT「感電」rider:踉蹌機率
 WEAPON_ABSORB_FACTOR = 1.5        # 命中吸取(生命/魔力/體力)每擊回攻擊者量的係數
 WEAPON_ABSORB_SOLO_FACTOR = 0.5   # 吸取生命對 solo BOSS 受夾(杜絕無限回血泵;比照偷襲夾限精神)
+# Wabbajack(瘋神謝歐格拉斯神器)命中隨機混沌效果(R46)——常數放此讓紅線一眼可見
+WABBAJACK_ELEMENT_BURST = 14      # 隨機元素爆發:命中後追加傷(吃元素抗性;非偷襲傷,solo 另受夾)
+WABBAJACK_BURST_SOLO_FACTOR = 0.5 # solo BOSS 爆發受夾(鏡像 WEAPON_ABSORB_SOLO_FACTOR 紅線)
+WABBAJACK_SELF_RESTORE = 12       # 回施術者資源(生命/魔力/體力之一,clamp max)
+WABBAJACK_WEAKEN_MAG = 0.20       # 軟控 weaken 幅度(≤0.30 內容紀律)
+WABBAJACK_BACKFIRE_SELF = 8       # 回火:自傷(max(1,…) 永不致死)
+WABBAJACK_BACKFIRE_TARGET_HEAL = 6  # 回火:小幅治敵(自限 → 瘋神不可靠,神器永不嚴格最優)
+WABBAJACK_TABLE = [(5, "burst"), (4, "control"), (4, "self_restore"),
+                   (3, "weaken"), (2, "backfire_self"), (1, "backfire_enemy")]  # (權重, 效果) 累加和抽選
 CHARGE_PER_SOUL = 5              # 充能電池容量 = round(soul × 此 × (0.6+祕術/100));soul_trap/paralyze 用,魂石等級=電池大小
 WEAPON_SOULTRAP_TURNS = 3        # 命中擒魂掛在目標的 soul_trap 效果回合
 DOT_STACK_CAP = 3                # 同元素 DoT 在玩家身上的疊加上限(防多次被擊疊毒暴斃;攻擊側不限,法術/塗毒照疊)

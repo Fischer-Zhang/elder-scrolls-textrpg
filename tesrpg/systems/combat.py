@@ -725,6 +725,46 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
                             if cap > 0:
                                 charges[wid] = max(0, charges.get(wid, cap) - 1)
                             status_applied = status_applied or "paralyze"
+                elif st == "wabbajack":
+                    # 瘋神謝歐格拉斯·瓦巴賈克:命中觸發隨機混沌效果(R46)——六效果各走既有安全 helper,
+                    # solo 夾/控場機率抵抗/非遞迴 由 helper 自動成立;玩家專屬(此區已被 _is_player 包住)。
+                    _wab_total = sum(_wt for _wt, _ in formulas.WABBAJACK_TABLE)
+                    _wab_r = rng.roll(0, _wab_total)
+                    _wab_acc = 0.0
+                    _wab_effect = formulas.WABBAJACK_TABLE[-1][1]
+                    for _wt, _eid in formulas.WABBAJACK_TABLE:
+                        _wab_acc += _wt
+                        if _wab_r < _wab_acc:
+                            _wab_effect = _eid
+                            break
+                    if _wab_effect == "burst" and is_alive(defender):
+                        # 隨機元素爆發:複用 weapon_element 數學(吃抗性)·非偷襲傷·solo 另受夾
+                        _wab_elem = rng.choice(("fire", "frost", "shock"))
+                        _wab_em = formulas.resist_multiplier(magic.entity_resist(defender, gamedata), _wab_elem)
+                        _wab_amt = magic._scaled_damage(formulas.WABBAJACK_ELEMENT_BURST, _wab_em)
+                        if _is_solo(defender, gamedata):
+                            _wab_amt = max(1, int(round(_wab_amt * formulas.WABBAJACK_BURST_SOLO_FACTOR)))
+                        _set_hp(defender, _get_hp(defender) - _wab_amt)
+                    elif _wab_effect == "control" and is_alive(defender):
+                        # 隨機硬/軟控 → 中央 helper(solo BOSS 機率抵抗 + willpower + 去重;turns 1 守紀律)
+                        magic.apply_control(defender, rng.choice(("fear", "paralyze", "stagger")),
+                                            gamedata, rng, turns=1, source="wabbajack")
+                    elif _wab_effect == "self_restore":
+                        _wab_stat = rng.choice(("health", "magicka", "fatigue"))
+                        _wab_cur = getattr(attacker, _wab_stat, 0)
+                        setattr(attacker, _wab_stat,
+                                min(getattr(attacker, "max_" + _wab_stat, _wab_cur),
+                                    _wab_cur + formulas.WABBAJACK_SELF_RESTORE))
+                    elif _wab_effect == "weaken" and is_alive(defender):
+                        magic.apply_control(defender, "weaken", gamedata, rng,
+                                            magnitude=formulas.WABBAJACK_WEAKEN_MAG, turns=2, source="wabbajack")
+                    elif _wab_effect == "backfire_self":
+                        # 回火自傷:max(1,…) 永不致死;直接賦值非遞迴
+                        attacker.health = max(1, attacker.health - formulas.WABBAJACK_BACKFIRE_SELF)
+                    elif _wab_effect == "backfire_enemy" and is_alive(defender):
+                        # 回火治敵:自限的混沌·直接賦值非遞迴(solo 上微不足道)
+                        _set_hp(defender, min(defender.max_health,
+                                              _get_hp(defender) + formulas.WABBAJACK_BACKFIRE_TARGET_HEAL))
             if heal_frac > 0:   # 雙持雙吸血 → 0.30 + 0.30×0.6 = 0.48(回血夾在本擊傷害內,不超過造成傷害)
                 heal = min(int(round(dmg_done * heal_frac)), dmg_done)
                 before = attacker.health

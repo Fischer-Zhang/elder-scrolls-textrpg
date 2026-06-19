@@ -114,6 +114,7 @@
 | 悲傷之刃 blade_of_woe | 續航 | vampiric 吸血 50%;dmg16 dagger(★黑暗兄弟會掌門) |
 | 十字軍聖盾 crusaders_ward | 抗性 | resist magic +30%;armor 16(heavy shield;★九神騎士團掌門) |
 | 維蘇拉德 wuuthrad | 傷害 | berserk 最高 +30%(依已損生命);dmg23 war_axe(★戰友團掌門) |
+| 瓦巴賈克 wabbajack | 混沌(R46) | weapon_status `"wabbajack"`:命中**隨機六效果**〔元素爆發 solo 夾0.5 / 隨機控場走 `apply_control` / 回自身資源 / weaken0.20 / 回火自傷 max(1) / 回火治敵〕·回火 16% 自平衡(永不嚴格最優)·**玩家不可鍛造**·dmg10 staff(★瘋神謝歐格拉斯神器) |
 
 ---
 

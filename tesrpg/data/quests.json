@@ -1971,5 +1971,17 @@
       {"objective": {"type": "reach", "location": "carrion_grotto"}, "text": "走入馬拉巴爾陶深林裡爬滿腐藤的食屍腐窟。"},
       {"objective": {"type": "clear_dungeon", "dungeon": "carrion_grotto"}, "text": "在腐肉祭壇前了結食屍祭司、燒盡整窟褻瀆 —— 淨化食屍腐窟,拒做腐朽女神的食屍信徒。"}
     ], "reward": {"gold": 600, "fame": 30, "grant_boon": "namira_decay", "world_flags": ["namira_cult_purged"]}}
+  ]},
+  "mind_of_madness": {"name": "癲狂之心", "faction": null, "rank": null, "source": "daedric", "shrine": "sheogorath", "requires_level": 18, "text": "希斯特聖林林心那座扭曲樹根纏成的祭壇,在你獻祭時迸出五彩斑斕的幻光 —— 瘋神謝歐格拉斯的笑聲自致幻的樹液氣息裡四面八方傳來。『又一個自以為清醒的腦袋!』他咯咯笑著,要你走進希斯特撕開的癲狂之境,陪他玩一場沒有規則的遊戲。是接過那柄反覆無常的瓦巴賈克、成為他混沌的玩物,還是守住自己的心智、笑著婉拒這場癲狂?", "branches": [
+    {"label": "執杖之路 —— 接過反覆無常的瓦巴賈克(得神器:瓦巴賈克)", "text": "你笑著跳進瘋神的遊戲 —— 走入希斯特撕開的癲狂之境,在錯亂扭曲的現實裡了結那具瘋癲化身,陪謝歐格拉斯玩到他盡興。瘋神大笑著把那柄誰也猜不透的瓦巴賈克塞進你手裡:『拿去!變點什麼出來!』從此你的每一擊都成了一場無人能料的賭局。", "stages": [
+      {"objective": {"type": "collect", "item": "monarch_wing", "count": 2}, "text": "瘋神只收最沒道理的供品:備妥兩片帝王蝶翅,在希斯特祭壇前隨手一拋,當作叩門的籌碼。"},
+      {"objective": {"type": "reach", "location": "madness_realm"}, "text": "走進希斯特致幻樹液撕開的癲狂之境。"},
+      {"objective": {"type": "clear_dungeon", "dungeon": "madness_realm"}, "text": "在錯亂崩解的現實裡了結瘋癲化身、陪謝歐格拉斯玩到盡興 —— 接過那柄反覆無常的瓦巴賈克。"}
+    ], "reward": {"gold": 800, "infamy": 30, "items": ["wabbajack"], "world_flags": ["sheogorath_served"]}},
+    {"label": "守心之路 —— 守住心智、笑著婉拒癲狂(賜永久誓福:瘋癲之佑)", "text": "你陪瘋神玩了一場,卻在最後一刻守住了自己的心智 —— 了結瘋癲化身後,你笑著把那柄瓦巴賈克推還給謝歐格拉斯,不願永遠當他的玩物。瘋神歪著頭打量你良久,忽然咧嘴大笑:『有意思!』他彈了個響指,把一縷扭曲現實的癲狂之力,當作見面禮塞進了你的腦袋。", "stages": [
+      {"objective": {"type": "collect", "item": "monarch_wing", "count": 2}, "text": "瘋神只收最沒道理的供品:備妥兩片帝王蝶翅,在希斯特祭壇前隨手一拋,當作叩門的籌碼。"},
+      {"objective": {"type": "reach", "location": "madness_realm"}, "text": "走進希斯特致幻樹液撕開的癲狂之境。"},
+      {"objective": {"type": "clear_dungeon", "dungeon": "madness_realm"}, "text": "在錯亂崩解的現實裡了結瘋癲化身,卻守住自己的心智 —— 笑著婉拒那柄瓦巴賈克,不做瘋神的玩物。"}
+    ], "reward": {"gold": 600, "fame": 30, "grant_boon": "sheogorath_madness", "world_flags": ["sheogorath_defied"]}}
   ]}
 }

@@ -82,5 +82,12 @@
     "skill": {"alchemy": 12},
     "resist": {"poison": 20, "disease": 15},
     "magicka": 0
+  },
+  "sheogorath_madness": {
+    "name": "瘋癲之佑",
+    "attr": {"willpower": 8, "intelligence": 6},
+    "skill": {"alteration": 12},
+    "resist": {"magic": 15},
+    "magicka": 20
   }
 }
