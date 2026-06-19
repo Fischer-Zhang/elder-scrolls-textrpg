@@ -110,7 +110,8 @@
 | 焚天劍 skyburner | 傷害 | weapon_element fire +26;dmg23 sword(龍喉巢穴專屬,單一來源不可刷) |
 | 百戰勳刃 valor_blade | 傷害+續航 | regen 3×3 HoT;dmg22 sword(★戰士公會掌門) |
 | 馬格努斯之杖 staff_of_magnus | 傷害 | weapon_element shock +26;dmg11 staff(★法師公會掌門) |
-| 骷髏鑰匙 skeleton_key | 技能+效用 | security +20 + 撬鎖必成/不耗開鎖器(amulet;★盜賊公會掌門) |
+| 骷髏鑰匙 skeleton_key | 技能+效用 | security +20 + 撬鎖必成/不耗開鎖器(amulet;★**Nocturnal 暮光聖陵**神器,竊鑰分支;R47 換手自盜賊公會) |
+| 灰狐面具 gray_fox_mask | 效用(R47) | `talk_down_cap`:衛兵說退**賞金上限 +120**(120→240,疊 silver_pardon 320)+ 成功率下限 0.25(helmet;★**盜賊公會掌門**·提高可協商罰金) |
 | 悲傷之刃 blade_of_woe | 續航 | vampiric 吸血 50%;dmg16 dagger(★黑暗兄弟會掌門) |
 | 十字軍聖盾 crusaders_ward | 抗性 | resist magic +30%;armor 16(heavy shield;★九神騎士團掌門) |
 | 維蘇拉德 wuuthrad | 傷害 | berserk 最高 +30%(依已損生命);dmg23 war_axe(★戰友團掌門) |

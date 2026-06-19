@@ -537,12 +537,23 @@ def intimidate_floor(char, gamedata: GameData) -> float:
 
 
 def talk_down_mod(char, gamedata: GameData) -> dict:
-    """巧言脫罪(speechcraft_75):衛兵說退 —— 賞金上限加成(相加)+ 成功率下限(取最)。空 = 無。"""
-    opts = _chosen_options_by_kind(char, gamedata, "talk_down_lever")
-    if not opts:
+    """衛兵說退 —— 賞金上限加成(相加)+ 成功率下限(取最)。空 = 無。
+    來源聚合:里程碑 `talk_down_lever`(speechcraft_75 silver_pardon)+ 任意裝備附魔 `kind=="talk_down_cap"`
+    (灰狐面具,R47)。兩源皆用 cap_bonus/floor 鍵 → 同一路徑相加/取最;皆無則回 {}(back-compat)。
+    """
+    cap = 0
+    floors = []
+    for o in _chosen_options_by_kind(char, gamedata, "talk_down_lever"):
+        cap += o.get("cap_bonus", 0)
+        floors.append(o.get("floor", 0.0))
+    for iid in getattr(char, "equipped", {}).values():
+        ench = (gamedata.item_or_none(iid) or {}).get("enchant")
+        if ench and ench.get("kind") == "talk_down_cap":
+            cap += ench.get("cap_bonus", 0)
+            floors.append(ench.get("floor", 0.0))
+    if cap == 0 and not floors:
         return {}
-    return {"cap_bonus": sum(o.get("cap_bonus", 0) for o in opts),
-            "floor": max((o.get("floor", 0.0) for o in opts), default=0.0)}
+    return {"cap_bonus": cap, "floor": max(floors, default=0.0)}
 
 
 def has_rally(char, gamedata: GameData) -> bool:

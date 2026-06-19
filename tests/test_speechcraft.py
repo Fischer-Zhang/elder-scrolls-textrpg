@@ -163,6 +163,26 @@ def test_talk_down_lever_raises_cap_and_floor():
     assert dialogue.talk_down_chance(c, 999) < 0.20                   # 不帶 gamedata → 無 floor(back-compat)
 
 
+def test_gray_fox_mask_raises_talk_down_cap():
+    """R47 灰狐面具(裝備附魔 talk_down_cap):抬高說退賞金上限 +120 + 成功率下限 0.25;與巧言脫罪疊加。"""
+    from tesrpg.systems import inventory
+    gd, c = _char(speechcraft=40)
+    assert mastery.talk_down_mod(c, gd) == {}                        # 無裝備無里程碑 → 空(back-compat)
+    inventory.add_item(c, "gray_fox_mask")
+    inventory.equip_armor(c, gd, "gray_fox_mask")
+    assert mastery.talk_down_mod(c, gd) == {"cap_bonus": 120, "floor": 0.25}
+    # 對齊 main.py 的 cap 公式:賞金 200 無面具說不過去(>TALK_DOWN_MAX 120),戴面具後 cap=240 可說退
+    cap = dialogue.TALK_DOWN_MAX + mastery.talk_down_mod(c, gd).get("cap_bonus", 0)
+    assert dialogue.TALK_DOWN_MAX < 200 <= cap
+    assert dialogue.talk_down_chance(c, 200, gd) >= 0.25             # floor 0.25 生效(帶 gamedata)
+    # 與 silver_pardon 疊加:cap 相加(120+80)、floor 取最(max(0.25,0.20))
+    c2 = _char(speechcraft=75)[1]
+    mastery.choose(c2, gd, "speechcraft_75", "silver_pardon")
+    inventory.add_item(c2, "gray_fox_mask")
+    inventory.equip_armor(c2, gd, "gray_fox_mask")
+    assert mastery.talk_down_mod(c2, gd) == {"cap_bonus": 200, "floor": 0.25}
+
+
 def test_rally_unlock_and_below_standard():
     """R38 戰陣號令(speechcraft_100 rally):布林解鎖 + empower 嚴格 < 騎士戰旗上界(區隔)。"""
     gd, c = _char(speechcraft=100)
@@ -182,6 +202,7 @@ def run():
     test_intimidate_chance_scales_and_pays_practice()
     test_offer_battle_intimidate_success_avoids_combat_no_loot()
     test_talk_down_lever_raises_cap_and_floor()
+    test_gray_fox_mask_raises_talk_down_cap()
     test_rally_unlock_and_below_standard()
 
 

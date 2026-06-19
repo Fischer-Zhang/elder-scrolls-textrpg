@@ -89,5 +89,12 @@
     "skill": {"alteration": 12},
     "resist": {"magic": 15},
     "magicka": 20
+  },
+  "nocturnal_shadow": {
+    "name": "夜影之佑",
+    "attr": {"agility": 8, "speed": 6},
+    "skill": {"security": 12},
+    "resist": {"magic": 10},
+    "magicka": 0
   }
 }

@@ -990,6 +990,29 @@
     "loot": [{"item": "filled_grand_soul_gem", "chance": 0.5}, {"item": "monarch_wing", "chance": 0.4}],
     "flavor": "五彩斑斕的幻光裡走出一具不斷變形的軀體 —— 瘋神謝歐格拉斯的瘋癲化身,前一刻是烈焰、下一刻是寒冰,招式毫無章法卻招招致命,只因連牠自己也猜不到下一擊會變成什麼。"
   },
+  "twilight_sentinel": {
+    "name": "暮光哨衛", "strength": 62, "agility": 58, "speed": 56,
+    "max_health": 200, "armor_rating": 16,
+    "attack": {"name": "暗影刃連擊", "damage": 36, "skill": 70,
+               "on_hit": {"status": "dot", "element": "poison", "magnitude": 6, "turns": 3, "chance": 0.5}},
+    "attacks": [
+      {"name": "暗影刃連擊", "damage": 36, "skill": 70, "weight": 3,
+       "on_hit": {"status": "dot", "element": "poison", "magnitude": 6, "turns": 3, "chance": 0.5}},
+      {"name": "奪鑰擒拿", "damage": 30, "skill": 70, "weight": 2,
+       "on_hit": {"status": "weaken", "magnitude": 0.25, "turns": 2, "chance": 0.35}},
+      {"name": "暮光匿蹤", "damage": 26, "skill": 70, "weight": 2,
+       "on_hit": {"status": "stagger", "turns": 1, "chance": 0.3}},
+      {"name": "夜影低語", "damage": 16, "skill": 70, "weight": 1,
+       "on_hit": {"status": "fear", "turns": 1, "chance": 0.25}},
+      {"name": "永夜斷罪", "damage": 56, "skill": 72, "weight": 1,
+       "cooldown": 3, "when": {"hp_below": 0.5}}
+    ],
+    "danger": 5, "min_level": 17, "weight": 1, "solo": true,
+    "resist": {"poison": 30, "frost": 20, "magic": 15},
+    "loot_gold": [220, 420],
+    "loot": [{"item": "filled_grand_soul_gem", "chance": 0.5}, {"item": "ruby", "chance": 0.4}],
+    "flavor": "暮光在祭壇邊凝成人形 —— 一名守了千年「萬能之鑰」的夜鶯哨衛,身形在陰影間忽隱忽現,出手如夜風般無聲,專取闖入者的咽喉與膝彎,要讓每一個覬覦鑰匙的賊永遠留在這片暮光裡。"
+  },
   "dremora_lord": {
     "biomes": ["ashland"],
     "name": "魔人領主", "strength": 74, "agility": 50, "speed": 48,

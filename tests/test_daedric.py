@@ -1177,6 +1177,93 @@ def test_sheogorath_content_integrity():
     assert "strength" not in gd.boons["sheogorath_madness"].get("attr", {})
 
 
+# --- 第十四位親王:諾克圖娜爾(盜賊/security 軸;steal→骷髏鑰 神器 vs guard→誓福)----
+def _complete_nocturnal(gd, c, branch):
+    quests.accept_quest(c, gd, "twilight_sepulcher", branch=branch)
+    inventory.add_item(c, "ruby", 2)   # 賊贓供奉(collect 階段)
+    c.location_id = "twilight_crypt"
+    quests.record_dungeon_clear(c, "twilight_crypt")
+    quests.check_completion(c, gd)
+
+
+def test_nocturnal_steal_branch_grants_skeleton_key_not_boon():
+    """竊鑰之路 → 得神器 骷髏鑰匙、惡名上升、不得誓福。"""
+    gd, c = _gd_char(level=18)
+    _complete_nocturnal(gd, c, 0)
+    assert "twilight_sepulcher" in c.completed_quests
+    assert inventory.count_item(c, "skeleton_key") == 1
+    assert not boons.has_boon(c, "nocturnal_shadow") and c.infamy >= 30
+    assert "nocturnal_key_taken" in c.world_events_fired
+
+
+def test_skeleton_key_still_perfect_lockpick_after_rehome():
+    """骷髏鑰換手到 Nocturnal 後,撬鎖必成機制不變(認 skeleton_key 旗標,非發放來源)。"""
+    from tesrpg.systems import dungeon
+    from tesrpg.rng import RNG
+    gd, c = _gd_char(level=18)
+    c.skills["security"] = 0
+    assert not dungeon.has_skeleton_key(c, gd)
+    c.equipped["amulet"] = "skeleton_key"
+    assert dungeon.has_skeleton_key(c, gd)
+    assert dungeon.effective_pick_lock_chance(c, gd, 80) == 1.0
+    sec0 = c.base_skill("security")
+    r = dungeon.pick_lock(c, gd, 80, RNG(0))
+    assert r["success"] and r.get("skeleton_key") and not r["no_pick"]
+    assert c.base_skill("security") == sec0          # 仍不給 security xp
+
+
+def test_nocturnal_guard_branch_grants_boon_not_key():
+    """守鑰之路 → 永久誓福 夜影之佑(agility+8/speed+6/security+12)、不得神器。"""
+    gd, c = _gd_char(level=18)
+    a0, sp0, se0 = c.attr("agility"), c.attr("speed"), c.skill("security")
+    _complete_nocturnal(gd, c, 1)
+    assert boons.has_boon(c, "nocturnal_shadow")
+    assert c.attr("agility") == a0 + 8 and c.attr("speed") == sp0 + 6
+    assert c.skill("security") == se0 + 12
+    assert c.base_attr("agility") == a0          # 🔴 不寫 base
+    assert inventory.count_item(c, "skeleton_key") == 0
+    assert "nocturnal_nightingale" in c.world_events_fired
+
+
+def test_nocturnal_availability_and_fourteen_shrines_coexist():
+    gd, c = _gd_char(level=17)
+    assert "twilight_sepulcher" not in quests.available_quests(c, gd, "daedric")   # 等級不足(需 18)
+    c.level = 18
+    av = quests.available_quests(c, gd, "daedric")
+    assert {"azura_star", "molag_bal_vault", "hircine_hunt", "boethiah_calling",
+            "clavicus_bargain", "peryite_cure", "mephala_whisper", "sanguine_party",
+            "malacath_curse", "meridia_beacon", "waking_nightmare", "namira_feast",
+            "mind_of_madness", "twilight_sepulcher"} <= set(av)
+    assert gd.quests["twilight_sepulcher"]["shrine"] == "nocturnal"
+
+
+def test_nocturnal_content_integrity():
+    gd, _ = _gd_char()
+    assert "nocturnal_shadow" in gd.boons and "skeleton_key" in gd.items
+    assert gd.world["locations"]["tenmar_forest"].get("shrine") == "nocturnal"
+    assert "twilight_crypt" in gd.dungeons and "twilight_crypt" in gd.world["locations"]
+    boss = gd.dungeons["twilight_crypt"]["boss"]["enemy"]
+    assert boss == "twilight_sentinel" and gd.bestiary[boss].get("solo") is True
+    assert gd.dungeons["twilight_crypt"]["boss"].get("raw") is True
+    for atk in gd.bestiary[boss].get("attacks", []):
+        oh = atk.get("on_hit") or {}
+        if oh.get("status") in ("fear", "paralyze"):
+            assert oh.get("chance", 1.0) <= 0.30 and oh.get("turns", 1) <= 1, atk
+    # skeleton_key 換手:Nocturnal 任務發、不在任何 dungeon loot;tg5 改發 gray_fox_mask
+    tg5_items = [it for b in gd.quests["tg5"]["branches"] for it in b.get("reward", {}).get("items", [])]
+    assert "gray_fox_mask" in tg5_items and "skeleton_key" not in tg5_items
+    for dd in gd.dungeons.values():
+        tl = [x for x in dd.get("boss", {}).get("treasure", {}).get("loot", []) if isinstance(x, str)]
+        assert "skeleton_key" not in tl + dd.get("loot", [])
+    # 地城怪皆存在
+    for m in gd.dungeons["twilight_crypt"]["monsters"]:
+        assert m in gd.bestiary, m
+    # 誓福守紅線:security 是盜賊技能(非 sneak/武器技能)·無 strength
+    assert not ({"sneak", "blade", "blunt", "marksman", "hand_to_hand"}
+                & set(gd.boons["nocturnal_shadow"].get("skill", {})))
+    assert "strength" not in gd.boons["nocturnal_shadow"].get("attr", {})
+
+
 def run():
     for name, fn in sorted(globals().items()):
         if name.startswith("test_") and callable(fn):

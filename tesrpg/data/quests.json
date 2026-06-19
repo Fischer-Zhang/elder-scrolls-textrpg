@@ -625,7 +625,7 @@
           "fame": 25,
           "items": [
             "glass_dagger",
-            "skeleton_key"
+            "gray_fox_mask"
           ]
         }
       },
@@ -662,7 +662,7 @@
           "items": [
             "glass_dagger",
             "ruby",
-            "skeleton_key"
+            "gray_fox_mask"
           ]
         }
       }
@@ -1983,5 +1983,17 @@
       {"objective": {"type": "reach", "location": "madness_realm"}, "text": "走進希斯特致幻樹液撕開的癲狂之境。"},
       {"objective": {"type": "clear_dungeon", "dungeon": "madness_realm"}, "text": "在錯亂崩解的現實裡了結瘋癲化身,卻守住自己的心智 —— 笑著婉拒那柄瓦巴賈克,不做瘋神的玩物。"}
     ], "reward": {"gold": 600, "fame": 30, "grant_boon": "sheogorath_madness", "world_flags": ["sheogorath_defied"]}}
+  ]},
+  "twilight_sepulcher": {"name": "暮光聖陵", "faction": null, "rank": null, "source": "daedric", "shrine": "nocturnal", "requires_level": 18, "text": "騰瑪林月影最深的那座暮光石龕,在你獻祭時滲出一片不分晝夜的微光 —— 暗夜女神諾克圖娜爾的低語自陰影裡浮起,不帶溫度也不帶惡意,只像夜風拂過。她的暮光位面盡頭,懸著那柄能解開一切鎖的『萬能之鑰』,千年來由不眠的夜鶯哨衛看守。諾克圖娜爾允你下到陵墓深處。是奪下那柄萬能之鑰、據為己有,還是將它歸還暮光、成為她沉默的夜鶯?", "branches": [
+    {"label": "竊鑰之路 —— 奪下萬能之鑰、據為己有(得神器:骷髏鑰匙)", "text": "你不願把到手的寶物拱手歸還 —— 潛入暮光陵墓,了結那名守鑰的夜鶯哨衛,將萬能之鑰從祭壇上取下、收進自己懷裡。暗夜女神沒有動怒,只是那片微光忽然黯了一瞬:你違逆了她,卻也帶走了那柄能解開一切鎖的鑰匙,自此惡名隨影而行。", "stages": [
+      {"objective": {"type": "collect", "item": "ruby", "count": 2}, "text": "暗夜女神只收失竊之物的供奉:備妥兩顆紅寶石,在暮光石龕前作為叩門的賊贓奉上。"},
+      {"objective": {"type": "reach", "location": "twilight_crypt"}, "text": "潛入騰瑪林月影下沉入地底的暮光陵墓。"},
+      {"objective": {"type": "clear_dungeon", "dungeon": "twilight_crypt"}, "text": "在暮光祭壇前了結守鑰的夜鶯哨衛 —— 奪下那柄萬能之鑰,據為己有。"}
+    ], "reward": {"gold": 800, "infamy": 30, "items": ["skeleton_key"], "world_flags": ["nocturnal_key_taken"]}},
+    {"label": "守鑰之路 —— 歸還萬能之鑰、成為她的夜鶯(賜永久誓福:夜影之佑)", "text": "你了結了守鑰的哨衛,卻在最後一刻將萬能之鑰放回了暮光祭壇 —— 不為占有,只為守護。暗夜女神的微光柔和了下來:你成了她新的夜鶯,從此能在陰影裡來去無聲,連最深的鎖也彷彿願意為你讓路。", "stages": [
+      {"objective": {"type": "collect", "item": "ruby", "count": 2}, "text": "暗夜女神只收失竊之物的供奉:備妥兩顆紅寶石,在暮光石龕前作為叩門的賊贓奉上。"},
+      {"objective": {"type": "reach", "location": "twilight_crypt"}, "text": "潛入騰瑪林月影下沉入地底的暮光陵墓。"},
+      {"objective": {"type": "clear_dungeon", "dungeon": "twilight_crypt"}, "text": "在暮光祭壇前了結守鑰的夜鶯哨衛,卻將萬能之鑰歸還暮光 —— 成為諾克圖娜爾沉默的夜鶯。"}
+    ], "reward": {"gold": 600, "fame": 30, "grant_boon": "nocturnal_shadow", "world_flags": ["nocturnal_nightingale"]}}
   ]}
 }

@@ -334,6 +334,7 @@
   "saviors_hide": {"name": "救主之皮", "slot": "cuirass", "weight_class": "light", "armor_rating": 22, "value": 2000, "weight": 6, "enchant": {"kind": "resist_element", "element": "magic", "magnitude": 50}},
   "ebony_mail": {"name": "烏木甲", "slot": "cuirass", "weight_class": "heavy", "armor_rating": 28, "value": 2200, "weight": 16, "enchant": {"kind": "thorns", "magnitude": 8}},
   "masque_of_clavicus_vile": {"name": "克拉維克斯·瓦爾面具", "slot": "helmet", "weight_class": "light", "armor_rating": 12, "value": 2300, "weight": 3, "enchant": {"kind": "fortify_skill", "skill": "speechcraft", "magnitude": 25}},
+  "gray_fox_mask": {"name": "灰狐面具", "slot": "helmet", "weight_class": "light", "armor_rating": 12, "value": 2200, "weight": 2, "enchant": {"kind": "talk_down_cap", "cap_bonus": 120, "floor": 0.25}},
   "spellbreaker": {"name": "靈破者", "slot": "shield", "weight_class": "heavy", "armor_rating": 20, "value": 2300, "weight": 12, "enchant": {"kind": "resist_element", "element": "magic", "magnitude": 45}},
   "iron_great_shield":    {"name": "鐵重盾",   "slot": "shield", "weight_class": "heavy", "armor_rating": 12, "value": 80,   "weight": 20, "material": "iron",    "great_shield": true, "two_handed": true, "bash_damage": 6,  "mitigation": 0.05},
   "steel_great_shield":   {"name": "鋼重盾",   "slot": "shield", "weight_class": "heavy", "armor_rating": 16, "value": 200,  "weight": 22, "material": "steel",   "great_shield": true, "two_handed": true, "bash_damage": 8,  "mitigation": 0.06},
