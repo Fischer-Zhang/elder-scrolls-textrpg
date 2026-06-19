@@ -681,6 +681,99 @@ def test_sanguine_content_integrity():
                 & set(gd.boons["sanguine_revel"].get("skill", {})))
 
 
+# --- 第九位親王:馬拉凱斯(雙手武器軸;serve→Volendrung 神器 vs defy→誓福)----
+def _complete_malacath(gd, c, branch):
+    quests.accept_quest(c, gd, "malacath_curse", branch=branch)
+    inventory.add_item(c, "bone_meal", 2)   # 詛咒之引(collect 階段)
+    c.location_id = "malacath_cursed_hold"
+    quests.record_dungeon_clear(c, "malacath_cursed_hold")
+    quests.check_completion(c, gd)
+
+
+def test_malacath_serve_branch_grants_hammer_not_boon():
+    """臣服之路 → 得神器 沃倫鎚、惡名上升、不得誓福。"""
+    gd, c = _gd_char(level=18)
+    _complete_malacath(gd, c, 0)
+    assert "malacath_curse" in c.completed_quests
+    assert inventory.count_item(c, "volendrung") == 1
+    assert not boons.has_boon(c, "malacath_might") and c.infamy >= 30
+    assert "malacath_served" in c.world_events_fired
+
+
+def test_volendrung_restores_fatigue_on_hit():
+    """沃倫鎚 absorb_fatigue → 命中回復揮鎚者氣力(雙手鈍器續航;複用 absorb_fatigue 路徑)。"""
+    from tesrpg.systems import combat, stats
+    from tesrpg.rng import RNG
+    gd, c = _gd_char(level=18)
+    _complete_malacath(gd, c, 0)
+    c.weapon = "volendrung"; c.is_player = True
+    c.skills["blunt"] = 100
+    stats.recompute_max_resources(c, gd, restore_full=True)
+    gained = 0
+    for i in range(6):
+        c.fatigue = 0
+        d = combat.spawn_creature(gd, "bandit", RNG(i)); d.max_health = d.health = 400
+        d.agility = 1; d.armor_rating = 0
+        combat.resolve_attack(c, d, gd, RNG(80 + i))
+        if c.fatigue > 0:
+            gained += c.fatigue
+    assert gained > 0, "absorb_fatigue 未回氣力(命中應回復揮鎚者氣力)"
+    # 雙手鈍器(blunt 非 dagger/bow → 無偷襲加成,守刺客紅線)
+    assert gd.items["volendrung"]["two_handed"] is True and gd.items["volendrung"]["archetype"] == "mace"
+
+
+def test_malacath_defy_branch_grants_boon_not_hammer():
+    """抗咒之路 → 永久誓福 棄絕者之力(strength+10/endurance+8/smithing+10)、不得神器。"""
+    gd, c = _gd_char(level=18)
+    s0, e0, sm0 = c.attr("strength"), c.attr("endurance"), c.skill("smithing")
+    _complete_malacath(gd, c, 1)
+    assert boons.has_boon(c, "malacath_might")
+    assert c.attr("strength") == s0 + 10 and c.attr("endurance") == e0 + 8
+    assert c.skill("smithing") == sm0 + 10
+    assert c.base_attr("strength") == s0          # 🔴 不寫 base
+    assert inventory.count_item(c, "volendrung") == 0
+    assert "malacath_defied" in c.world_events_fired
+
+
+def test_malacath_availability_and_nine_shrines_coexist():
+    gd, c = _gd_char(level=17)
+    assert "malacath_curse" not in quests.available_quests(c, gd, "daedric")   # 等級不足(需 18)
+    c.level = 18
+    av = quests.available_quests(c, gd, "daedric")
+    assert {"azura_star", "molag_bal_vault", "hircine_hunt", "boethiah_calling",
+            "clavicus_bargain", "peryite_cure", "mephala_whisper", "sanguine_party",
+            "malacath_curse"} <= set(av)
+    assert gd.quests["malacath_curse"]["shrine"] == "malacath"
+
+
+def test_malacath_content_integrity():
+    gd, _ = _gd_char()
+    assert "malacath_might" in gd.boons and "volendrung" in gd.items
+    assert gd.world["locations"]["dragontail_peaks"].get("shrine") == "malacath"
+    assert "malacath_cursed_hold" in gd.dungeons and "malacath_cursed_hold" in gd.world["locations"]
+    boss = gd.dungeons["malacath_cursed_hold"]["boss"]["enemy"]
+    assert boss == "malacath_outcast_chief" and gd.bestiary[boss].get("solo") is True
+    assert gd.dungeons["malacath_cursed_hold"]["boss"].get("raw") is True
+    for atk in gd.bestiary[boss].get("attacks", []):
+        oh = atk.get("on_hit") or {}
+        if oh.get("status") in ("fear", "paralyze"):
+            assert oh.get("chance", 1.0) <= 0.30 and oh.get("turns", 1) <= 1, atk
+    # Volendrung:雙手鈍器(two_handed mace)·absorb_fatigue·blunt 非 dagger/bow·僅任務 reward
+    v = gd.items["volendrung"]
+    assert v["two_handed"] is True and v["archetype"] == "mace" and v["skill"] == "blunt"
+    assert v["enchant"]["kind"] == "weapon_status" and v["enchant"]["status"] == "absorb_fatigue"
+    for dd in gd.dungeons.values():
+        tl = [x for x in dd.get("boss", {}).get("treasure", {}).get("loot", []) if isinstance(x, str)]
+        assert "volendrung" not in tl + dd.get("loot", [])
+    # 地城怪皆存在
+    for m in gd.dungeons["malacath_cursed_hold"]["monsters"]:
+        assert m in gd.bestiary, m
+    # 誓福守紅線:無 sneak/武器技能(smithing 是工匠技能);strength ≤ 達貢(18)+18
+    assert not ({"sneak", "blade", "blunt", "marksman", "hand_to_hand"}
+                & set(gd.boons["malacath_might"].get("skill", {})))
+    assert gd.boons["malacath_might"].get("attr", {}).get("strength", 0) <= 18 + 18
+
+
 def run():
     for name, fn in sorted(globals().items()):
         if name.startswith("test_") and callable(fn):

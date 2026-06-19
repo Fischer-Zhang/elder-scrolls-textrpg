@@ -878,6 +878,29 @@
     "loot": [{"item": "filled_grand_soul_gem", "chance": 0.5}, {"item": "moon_sugar", "chance": 0.5}],
     "flavor": "永不散場的迷霧醉宴中,放蕩之主桑格玖完的醉宴主舉著酒到處挑釁 —— 笑著把每一個闖入者灌進這場沒有盡頭的狂歡。"
   },
+  "malacath_outcast_chief": {
+    "name": "棄絕者酋長", "strength": 80, "agility": 42, "speed": 40,
+    "max_health": 250, "armor_rating": 28,
+    "attack": {"name": "巨鎚橫掃", "damage": 42, "skill": 70,
+               "on_hit": {"status": "stagger", "turns": 1, "chance": 0.3}},
+    "attacks": [
+      {"name": "巨鎚橫掃", "damage": 42, "skill": 70, "weight": 3,
+       "on_hit": {"status": "stagger", "turns": 1, "chance": 0.3}},
+      {"name": "碎甲重砸", "damage": 36, "skill": 70, "weight": 2,
+       "on_hit": {"status": "weaken", "magnitude": 0.25, "turns": 2, "chance": 0.4}},
+      {"name": "怒吼踐踏", "damage": 26, "skill": 70, "weight": 2,
+       "on_hit": {"status": "stagger", "turns": 1, "chance": 0.3}},
+      {"name": "棄絕者的詛咒", "damage": 18, "skill": 70, "weight": 1,
+       "on_hit": {"status": "fear", "turns": 1, "chance": 0.25}},
+      {"name": "斷頭怒擊", "damage": 62, "skill": 72, "weight": 1,
+       "cooldown": 3, "when": {"hp_below": 0.5}}
+    ],
+    "danger": 5, "min_level": 17, "weight": 1, "solo": true,
+    "resist": {"magic": 20, "poison": 30, "frost": 20},
+    "loot_gold": [240, 440],
+    "loot": [{"item": "filled_grand_soul_gem", "chance": 0.4}, {"item": "daedra_heart", "chance": 0.4}],
+    "flavor": "受詛巨鎚拖過石地、迸出火星 —— 棄絕者酋長背棄了馬拉凱斯,如今全族的詛咒都壓在他撐裂的軀體上。他不再求饒,只想把每一個闖入者砸進塵土,陪他一同被棄絕。"
+  },
   "dremora_lord": {
     "biomes": ["ashland"],
     "name": "魔人領主", "strength": 74, "agility": 50, "speed": 48,

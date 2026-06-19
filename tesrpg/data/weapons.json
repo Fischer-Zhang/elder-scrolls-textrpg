@@ -245,6 +245,7 @@
   "mace_of_molag_bal": {"name": "莫拉格巴爾之鎚", "skill": "blunt", "damage": 26, "value": 2100, "weight": 18, "archetype": "mace", "speed": 0.7, "material": "daedric", "enchant": {"kind": "weapon_status", "status": "absorb_health", "magnitude": 10}},
   "ebony_blade": {"name": "黑檀刃", "skill": "blade", "damage": 24, "value": 2300, "weight": 12, "archetype": "sword", "speed": 1.1, "enchant": {"kind": "weapon_status", "status": "vampiric", "magnitude": 50}},
   "sanguine_rose": {"name": "桑格玖完之薔薇", "skill": "conjuration", "damage": 7, "value": 2300, "weight": 7, "archetype": "staff", "speed": 1.0, "on_hit_self": {"stat": "magicka", "magnitude": 12}},
+  "volendrung": {"name": "沃倫鎚", "skill": "blunt", "damage": 38, "value": 2400, "weight": 32, "archetype": "mace", "speed": 0.55, "two_handed": true, "enchant": {"kind": "weapon_status", "status": "absorb_fatigue", "magnitude": 15}},
 
   "iron_bow":    {"name": "鐵弓",   "skill": "marksman", "damage": 12, "value": 50,  "weight": 10, "archetype": "bow", "speed": 0.9},
   "steel_bow":   {"name": "鋼弓",   "skill": "marksman", "damage": 13, "value": 130, "weight": 10, "archetype": "bow", "speed": 0.9},

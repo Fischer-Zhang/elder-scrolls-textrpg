@@ -1923,5 +1923,17 @@
       {"objective": {"type": "reach", "location": "misty_grove"}, "text": "循荒漠裂隙後的笙歌,踏入桑格玖完的迷霧醉宴。"},
       {"objective": {"type": "clear_dungeon", "dungeon": "misty_grove"}, "text": "在迷霧醉宴中了結放蕩之主的醉宴主 —— 享過狂歡,卻清醒地婉拒那柄薔薇。"}
     ], "reward": {"gold": 600, "fame": 25, "grant_boon": "sanguine_revel", "world_flags": ["sanguine_declined"]}}
+  ]},
+  "malacath_curse": {"name": "棄絕者的詛咒", "faction": null, "rank": null, "source": "daedric", "shrine": "malacath", "requires_level": 18, "text": "龍尾峰風蝕的峰脊間,那座巨石壘成的棄絕者祭壇在你獻祭時迸出火星 —— 棄絕之主馬拉凱斯的低吼自塵風中傳來。山下一族棄絕者因酋長的傲慢觸怒了他,全族被受詛的巨獸與惡魔反噬,困死堡中。馬拉凱斯要你下山了結那名傲慢的酋長。是替棄絕之主執行審判、奪下他的受詛巨鎚沃倫鎚,還是不做他的劊子手、以己力破除全族的詛咒?", "branches": [
+    {"label": "臣服之路 —— 替馬拉凱斯執行審判、奪取沃倫鎚(得神器:沃倫鎚)", "text": "領受棄絕之主的審判 —— 下山攻入受詛的棄絕者堡,以馬拉凱斯之名了結傲慢的酋長,將他撐裂的軀體連同詛咒一併砸碎。棄絕之主將那柄千鈞的受詛巨鎚沃倫鎚賜予你,而你的雙手也染上了棄絕者的血。", "stages": [
+      {"objective": {"type": "collect", "item": "bone_meal", "count": 2}, "text": "與棄絕之主交感需以枯朽之物為引:備妥兩份骨粉,在龍尾峰的巨石祭壇前焚作詛咒之煙。"},
+      {"objective": {"type": "reach", "location": "malacath_cursed_hold"}, "text": "下山攻入半沒於黃沙的受詛棄絕者堡。"},
+      {"objective": {"type": "clear_dungeon", "dungeon": "malacath_cursed_hold"}, "text": "在崩塌的鍛爐殿堂前以馬拉凱斯之名了結傲慢的酋長 —— 砸碎他的詛咒,奪下那柄受詛的沃倫鎚。"}
+    ], "reward": {"gold": 800, "infamy": 30, "items": ["volendrung"], "world_flags": ["malacath_served"]}},
+    {"label": "抗咒之路 —— 不做棄絕之主的劊子手、以己力破除詛咒(賜永久誓福:棄絕者之力)", "text": "你願下山解救那困死堡中的一族,卻不願做棄絕之主的劊子手 —— 了結傲慢的酋長後,你以己力斬斷纏住全族的詛咒,放生倖存者,將沃倫鎚棄於祭壇。馬拉凱斯雖被拒,卻也敬你這份不肯屈膝的硬骨,賜你一縷棄絕者堅不可摧的氣力。", "stages": [
+      {"objective": {"type": "collect", "item": "bone_meal", "count": 2}, "text": "與棄絕之主交感需以枯朽之物為引:備妥兩份骨粉,在龍尾峰的巨石祭壇前焚作詛咒之煙。"},
+      {"objective": {"type": "reach", "location": "malacath_cursed_hold"}, "text": "下山攻入半沒於黃沙的受詛棄絕者堡。"},
+      {"objective": {"type": "clear_dungeon", "dungeon": "malacath_cursed_hold"}, "text": "在崩塌的鍛爐殿堂前了結傲慢的酋長,以己力斬斷纏住全族的詛咒 —— 放生倖存者,卻拒做棄絕之主的劊子手。"}
+    ], "reward": {"gold": 600, "fame": 30, "grant_boon": "malacath_might", "world_flags": ["malacath_defied"]}}
   ]}
 }

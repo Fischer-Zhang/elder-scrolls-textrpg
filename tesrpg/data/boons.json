@@ -54,5 +54,12 @@
     "skill": {"conjuration": 12},
     "resist": {"poison": 15},
     "magicka": 15
+  },
+  "malacath_might": {
+    "name": "棄絕者之力",
+    "attr": {"strength": 10, "endurance": 8},
+    "skill": {"smithing": 10},
+    "resist": {"poison": 10, "disease": 15},
+    "magicka": 0
   }
 }
