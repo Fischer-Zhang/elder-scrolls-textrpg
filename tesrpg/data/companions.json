@@ -145,5 +145,29 @@
     "personal_quest": "arc_rashid", "personal_quest_gate": 2,
     "capstone": {"kind": "ally_empower", "magnitude": 0.15, "label": "戰意",
                  "desc": "劍歌激揚戰意 —— 全隊同伴傷害提升(只作用盟友)。"}
+  },
+  "blood_thrall": {
+    "name": "血僕妮拉", "cost": 0, "recruit_quest": "recruit_blood_thrall",
+    "strength": 52, "agility": 56, "speed": 54, "max_health": 80, "armor_rating": 16,
+    "attack": {"name": "吸血爪擊", "damage": 16, "skill": 60},
+    "blurb": "血族族長賜下的年輕血僕妮拉 —— 動作快得像一道暗影,獠牙永遠飢渴。她視你為同類兄姊,以爪牙與不死之軀替你斷後。",
+    "dialogue": [
+      "「族長說你是自己人。那我這條不死的命,就先記在你名下了。」",
+      "「……並肩獵了幾回,我漸漸明白族長為何看重你。你不只是強,你還護著我。」",
+      "「血是濃的,可你我之間的,比血更濃。往哪去,妮拉的獠牙替你開路。」",
+      "「生死早與我無關 —— 但你的生死,我認。永遠跟著你。」"
+    ]
+  },
+  "pack_warrior": {
+    "name": "同窩戰士庫爾", "cost": 0, "recruit_quest": "recruit_pack_warrior",
+    "strength": 60, "agility": 50, "speed": 56, "max_health": 92, "armor_rating": 14,
+    "attack": {"name": "獸爪撕咬", "damage": 18, "skill": 60},
+    "blurb": "月嚎獵群裡認你為同窩的壯狼庫爾 —— 半人半獸、力大如熊,血月之夜嚎聲最烈。他以利爪與厚毛替你扛下最兇的敵人。",
+    "dialogue": [
+      "「頭狼認了你,獵群便認了你。庫爾的爪子,從此為你而張。」",
+      "「……你獵得乾淨俐落,像條真正的狼。這趟,值得同窩。」",
+      "「血月在上 —— 你我同窩,生死同狩。哪裡有敵,庫爾先撲上去。」",
+      "「人言獸性難馴,可你馴的不是我的獸性,是我的心。同狩至死。」"
+    ]
   }
 }

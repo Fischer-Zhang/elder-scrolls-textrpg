@@ -188,9 +188,10 @@ def update(state, gamedata: GameData) -> list[dict]:
 # ======================================================================
 # 進食(重置階級)與陽光灼傷
 # ======================================================================
-def feed(state, gamedata: GameData) -> dict:
+def feed(state, gamedata: GameData, safe: bool = False) -> dict:
     """吸食活人 → 階級歸 0、回復生命;可能被撞見(白天機率高)→ 賞金 + 惡名。
 
+    R51:`safe=True`(巢穴安心進食)→ 同類供血、不被撞見(略過 caught 擲與賞金)。
     回傳 {"ok", "healed", "caught", "bounty", "province"}。
     """
     char = state.player
@@ -204,16 +205,19 @@ def feed(state, gamedata: GameData) -> dict:
     char.health = min(char.max_health, char.health + FEED_HEAL)
     healed = int(char.health - before)
 
-    hour = state.time.hour
-    caught_chance = 0.45 if _is_sun_hour(hour) else 0.12
-    from tesrpg.systems import moons
-    if moons.is_new_moon(state):                     # R50:新月暗夜助獵 → 更難被撞見
-        caught_chance = max(0.0, caught_chance - NEW_MOON_STEALTH_BONUS)
-    caught = state.rng.chance(caught_chance)
     province = crime.province_of(char, gamedata)
-    if caught:
-        crime.add_bounty(char, province, FEED_BOUNTY)
-        char.infamy += 1
+    if safe:                                         # R51:巢穴同類供血 → 必不被撞見
+        caught = False
+    else:
+        hour = state.time.hour
+        caught_chance = 0.45 if _is_sun_hour(hour) else 0.12
+        from tesrpg.systems import moons
+        if moons.is_new_moon(state):                 # R50:新月暗夜助獵 → 更難被撞見
+            caught_chance = max(0.0, caught_chance - NEW_MOON_STEALTH_BONUS)
+        caught = state.rng.chance(caught_chance)
+        if caught:
+            crime.add_bounty(char, province, FEED_BOUNTY)
+            char.infamy += 1
     state.time.advance(1)
     return {"ok": True, "healed": healed, "caught": caught,
             "bounty": FEED_BOUNTY, "province": province}

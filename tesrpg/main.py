@@ -1953,6 +1953,70 @@ def _stash_transfer(state: GameState, gamedata: GameData, loc_id: str, deposit: 
                        style="green" if ok else "red")
 
 
+def _player_is_lair_kin(player, loc: dict) -> bool:
+    """R51:玩家是否為此巢穴的同類(吸血鬼隱穴↔吸血鬼、狼人巢穴↔狼人)。"""
+    lr = loc.get("lair")
+    return ((lr == "vampire" and vampirism.is_vampire(player))
+            or (lr == "werewolf" and lycanthropy.is_werewolf(player)))
+
+
+def action_lair(state: GameState, gamedata: GameData) -> None:
+    """R51:詛咒巢穴(安全區)—— 同類接納處:安心進食/獸化、安歇(精神飽滿)、密窖倉庫、與同類交談接委託。
+    巢穴非城/鎮 → R50 的衛兵圍捕天然不觸發;凡人/異種詛咒由 hub 閘擋於門外(此處再守一道)。"""
+    char = state.player
+    loc = world.current_location(char, gamedata)
+    if not _player_is_lair_kin(char, loc):
+        return
+    lair = loc.get("lair")
+    loc_id = char.location_id
+    kin = next((n for n in gamedata.npcs if gamedata.npcs[n].get("location") == loc_id), None)
+    while True:
+        opts = []
+        if lair == "vampire":
+            opts.append(("feed", "🩸 安心進食(同類供血,不被撞見)"))
+        elif lair == "werewolf" and lycanthropy.can_transform(char, state, gamedata):
+            opts.append(("shift", "🐺 在巢穴中獸化(安全)"))
+        opts += [("rest", "在此安歇(免費全回 + 精神飽滿)"),
+                 ("deposit", "存入密窖(卸下負重)"), ("withdraw", "從密窖取出")]
+        if kin:
+            opts.append(("kin", f"與{gamedata.npcs[kin]['name']}交談"))
+        choice = ui.menu(loc["name"], opts, allow_back=True)
+        if choice is None:
+            return
+        if choice == "feed":
+            res = vampirism.feed(state, gamedata, safe=True)     # 同類供血:必不被撞見
+            ui.message(f"同類為你引來溫順的活人 —— 你飽飲一頓,飢渴盡退(回復 {res['healed']} 生命),無人撞見。",
+                       style="bold green")
+        elif choice == "shift":
+            action_use_power(state, gamedata)                    # 變身;巢穴非城鎮 → 無圍捕
+        elif choice == "rest":
+            char.health, char.magicka, char.fatigue = char.max_health, char.max_magicka, char.max_fatigue
+            party.heal_full(char, gamedata)
+            housing.set_well_rested(char, state.time.absolute_hours())
+            state.time.advance(8)
+            ui.message("你在同類環伺的巢穴中安歇一晚 —— 氣力盡復,精神飽滿(此後一段時間技能成長加速)。",
+                       style="bold green")
+        elif choice == "deposit":
+            _stash_transfer(state, gamedata, loc_id, deposit=True)
+        elif choice == "withdraw":
+            _stash_transfer(state, gamedata, loc_id, deposit=False)
+        elif choice == "kin" and kin:
+            _lair_kin_talk(state, gamedata, kin)
+
+
+def _lair_kin_talk(state: GameState, gamedata: GameData, nid: str) -> None:
+    """與巢穴同類交談:招呼 +(好感足夠且未接/未完成)接其委託(招募同類同伴)。複用 dialogue/任務管線。"""
+    char = state.player
+    npc = gamedata.npcs[nid]
+    ui.message(npc.get("greeting", ""), style="cyan")
+    offered = dialogue.offered_quest(char, gamedata, nid)
+    if offered:
+        if ui.confirm(f"接受{npc['name']}的委託「{gamedata.quests[offered]['name']}」?"):
+            _accept_and_brief(state, gamedata, offered)
+    else:
+        ui.message("(你與同類在火光邊低語了一陣 —— 暫無新的託付。)", style="grey70")
+
+
 def action_feed(state: GameState, gamedata: GameData) -> None:
     """吸血鬼進食:獵取活人 → 飢餓歸零(階級 0)、回血;白天易被撞見而染上賞金。"""
     char = state.player
@@ -3445,7 +3509,10 @@ def action_quest_log(state: GameState, gamedata: GameData) -> None:
 
 
 def _living_npcs_at(state: GameState, gamedata: GameData) -> list[str]:
-    """當地仍在世(未被你滅口)的可攀談 NPC。"""
+    """當地仍在世(未被你滅口)的可攀談 NPC。R51:巢穴同類只透過 action_lair(詛咒閘)互動,
+    不入一般「攀談」→ 凡人/異種詛咒在巢穴只見沉寂,不外露同類。"""
+    if gamedata.location(state.player.location_id).get("lair"):
+        return []
     return [n for n in gamedata.npcs_at(state.player.location_id)
             if n not in state.player.murdered_npcs]
 
@@ -3754,6 +3821,8 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
                 ui.rule("血色甦醒")
                 ui.message("高燒退去,飢渴湧上 —— 你已不再是活人。從此夜行嗜血,直到詛咒解除或永滅。",
                            style="bold red")
+                ui.message("……血脈深處浮起一個方位:高岩裂石郡的荒沼下,一座血族地窖正召喚同類前去。",
+                           style="grey70")
             elif ev["kind"] == "stage" and ev.get("rising"):
                 name = vampirism.STAGE_NAMES[ev["stage"]]
                 ui.message(f"血之飢渴加深 —— 你進入「{name}」之境:力量更盛,卻更難見容於日光與世人。",
@@ -3780,6 +3849,8 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
                 ui.rule("獸血甦醒")
                 ui.message("月升之夜,你的骨骼錯裂、皮肉迸張 —— 狼人之血自此在你體內奔流。"
                            "從今往後,你能化身嗜血巨狼,直到詛咒解除。", style="bold red")
+                ui.message("……血液裡躁動著歸屬的渴望:瓦倫森林綠影林深處,一支獵群在血月下嚎叫,等你同窩。",
+                           style="grey70")
             elif ev["kind"] == "revert":
                 ui.message("獸形的狂暴退去,你重歸人形 —— 筋疲力盡,四肢仍因方才的撕咬而顫抖。",
                            style="magenta")
@@ -3852,11 +3923,14 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
         adventure: list = []
         if loc["type"] == "dungeon":
             adventure.append(("dungeon", "深入地城 ⚔"))
-        if loc.get("danger", 0) > 0 and loc["type"] != "dungeon":
+        if loc.get("danger", 0) > 0 and loc["type"] != "dungeon" and not loc.get("lair"):
             adventure.append(("explore", "探索狩獵 ⚔"))
         # 戴德拉神殿:在此地祭壇供奉祈願,接取該親王的試煉任務(R45;達門檻才現任務)。
         if loc.get("shrine"):
             adventure.append(("shrine", "🕯 供奉祈願"))
+        # R51:詛咒巢穴(吸血鬼隱穴 / 狼人巢穴)——唯對應詛咒者得入,凡人只見沉寂。
+        if _player_is_lair_kin(player, loc):
+            adventure.append(("lair", "🦇 進入血族地窖" if loc["lair"] == "vampire" else "🐺 進入獵群巢穴"))
         adventure.append(("travel", "旅行"))
         adventure.append(("map", "世界地圖"))
         # --- 城區(分區域:市集區 / 公會區 / 廣場)---
@@ -3983,6 +4057,8 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
             died = action_explore(state, gamedata)
         elif choice == "shrine":
             action_shrine(state, gamedata)
+        elif choice == "lair":
+            action_lair(state, gamedata)
         elif choice == "travel":
             died = action_travel(state, gamedata)
         elif choice == "shop":

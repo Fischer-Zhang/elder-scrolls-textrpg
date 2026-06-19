@@ -1272,6 +1272,8 @@
     ]
   },
 
+  "recruit_blood_thrall": {"name": "血誓同盟", "faction": null, "rank": null, "source": "npc", "stages": [{"objective": {"type": "kill", "creature": "vampire_fledgling", "count": 3}, "text": "幾名年輕血僕嗜血無度、險些暴露巢穴 —— 族長要你替血族清理門戶(了結失控的雛血 ×3)。"}, {"objective": {"type": "reach", "location": "bloodmoor_crypt"}, "text": "回到血沼地窖,向族長瓦瑞拉覆命。"}], "reward": {"gold": 200, "infamy": 5, "companion": "blood_thrall"}, "turn_in": "auto", "text": "「替血族清理門戶,瓦瑞拉便賜你一名血僕同行 —— 同類的爪牙,永遠向著你。」"},
+  "recruit_pack_warrior": {"name": "血月同狩", "faction": null, "rank": null, "source": "npc", "stages": [{"objective": {"type": "kill", "creature": "bear", "count": 3}, "text": "頭狼以一場大狩試你的獸性 —— 獵下三頭巨熊,把獸血證明給獵群看。"}, {"objective": {"type": "reach", "location": "moonhowl_den"}, "text": "帶著獵物的氣味回到月嚎獸穴,向頭狼斯卡爾覆命。"}], "reward": {"gold": 200, "fame": 5, "companion": "pack_warrior"}, "turn_in": "auto", "text": "「與獵群同狩一場,斯卡爾便許你一名同窩戰士 —— 血月之下,同窩共死。」"},
   "recruit_drelas": {
     "name": "灰燼裡的丹莫", "faction": null, "rank": null, "source": "npc",
     "stages": [

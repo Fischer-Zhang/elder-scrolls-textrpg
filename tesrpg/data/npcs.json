@@ -1386,5 +1386,23 @@
     "disposition": 49,
     "greeting": "「托瓦爾雖小,月亮在這裡看得最清,旅人。兩月當空時,記得對著它們許願。」",
     "rumor": "往月華搖籃的小徑上,聽說有先祖之靈在月光下遊蕩,虎人都繞道而行。"
+  },
+  "coven_elder": {
+    "name": "血族族長瓦瑞拉",
+    "location": "bloodmoor_crypt",
+    "disposition": 75,
+    "greeting": "「同類……我嗅得出你血裡的渴。歡迎回家,夜之子 —— 在這地窖裡,你無需藏起獠牙。」",
+    "rumor": "血沼地窖深處盤踞著一支古老的血族,只接納同沾血咒之人。",
+    "quest": "recruit_blood_thrall",
+    "quest_disposition": 50
+  },
+  "pack_alpha": {
+    "name": "頭狼斯卡爾",
+    "location": "moonhowl_den",
+    "disposition": 75,
+    "greeting": "「血月認得你的氣味,承獸血者。坐到火邊來 —— 在這巢穴裡,你不必假扮成人。」",
+    "rumor": "綠影林深處的月嚎獸穴住著一支海爾辛獵群,唯承獸血者得以近身。",
+    "quest": "recruit_pack_warrior",
+    "quest_disposition": 50
   }
 }
