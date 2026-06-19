@@ -52,6 +52,7 @@ class GameData:
         self.world_events: dict = _load("world_events.json")   # 陣營大事件時間軸(動態政局;見 systems/worldstate.py)
         self.landmarks: dict = _load("landmarks.json")   # 具名地標(首次抵達一次性發現;見 systems/landmarks.py)
         self.boons: dict = _load("boons.json")   # 戴德拉誓福登錄表(神殿任務永久回報;R45,見 systems/boons.py)
+        self.diseases: dict = _load("diseases.json")   # 疾病登錄表(普通病懲罰層;R53,見 systems/diseases.py)
         self.achievements: list = _load("achievements.json")   # 成就(達門檻自動表彰;唯讀推導,見 systems/achievements.py)
         self._misc: dict = _load("items.json")
 

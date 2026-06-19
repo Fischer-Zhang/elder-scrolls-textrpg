@@ -119,6 +119,12 @@ class Character:
     boon_skill_bonus: dict = field(default_factory=dict)     # skill_id -> +點數(推導快取)
     boon_resist: dict = field(default_factory=dict)          # element -> +百分比(推導快取)
     boon_magic_bonus: int = 0            # 額外魔力上限(走 stats.recompute_max_resources)
+    # 疾病(R53;普通病=被怪傳染的懲罰層,治癒前持續、可惡化/帶 DoT)。與斯庫瑪戒斷負層同模式:
+    # diseases 為唯一權威(已染病 id + 染病絕對日);兩個 *_penalty 是「由 diseases + diseases.json 決定性推導的
+    # 負值快取」,attr()/skill() 疊加、成長/夾限只用 base_*、絕不寫 base。吸血鬼/狼人疾病免疫天然不染。詳見 systems/diseases.py。
+    diseases: list = field(default_factory=list)              # [{"id","day"}](權威;day=染病絕對日,供惡化計時)
+    disease_attr_penalty: dict = field(default_factory=dict)  # attr_id  -> 負點數(推導快取)
+    disease_skill_penalty: dict = field(default_factory=dict) # skill_id -> 負點數(推導快取)
     factions: dict = field(default_factory=dict)         # faction_id -> 階級索引(已入會)
     # 黑暗兄弟會(里程碑;血債招募 → 合約晉升 → 夜母祝福)。詳見 systems/brotherhood.py。
     # 階級存在 factions["dark_brotherhood"];此處只記入會「前」的狀態機欄位:
@@ -221,7 +227,8 @@ class Character:
                 + self.mastery_attr_bonus.get(key, 0) + self.skooma_attr_bonus.get(key, 0)
                 + self.werewolf_attr_bonus.get(key, 0) + self.dagon_attr_bonus.get(key, 0)
                 + self.boon_attr_bonus.get(key, 0)
-                + self.potion_attr_bonus.get(key, 0))
+                + self.potion_attr_bonus.get(key, 0)
+                + self.disease_attr_penalty.get(key, 0))   # R53:疾病負層(空 dict → 未染病者 +0)
 
     def skill(self, key: str) -> int:
         return (self.skills.get(key, 0)
@@ -229,7 +236,8 @@ class Character:
                 + self.mastery_skill_bonus.get(key, 0) + self.skooma_skill_bonus.get(key, 0)
                 + self.werewolf_skill_bonus.get(key, 0) + self.dagon_skill_bonus.get(key, 0)
                 + self.boon_skill_bonus.get(key, 0)
-                + self.potion_skill_bonus.get(key, 0))
+                + self.potion_skill_bonus.get(key, 0)
+                + self.disease_skill_penalty.get(key, 0))   # R53:疾病負層(空 dict → 未染病者 +0)
 
     def base_attr(self, key: str) -> int:
         """不含裝備加成的原始屬性(供成長/夾限用)。"""
@@ -293,6 +301,8 @@ class Character:
             "boons": self.boons, "boon_attr_bonus": self.boon_attr_bonus,
             "boon_skill_bonus": self.boon_skill_bonus, "boon_resist": self.boon_resist,
             "boon_magic_bonus": self.boon_magic_bonus,
+            "diseases": self.diseases, "disease_attr_penalty": self.disease_attr_penalty,
+            "disease_skill_penalty": self.disease_skill_penalty,
             "factions": self.factions,
             "murders": self.murders, "db_invited": self.db_invited,
             "murdered_npcs": self.murdered_npcs,

@@ -374,6 +374,9 @@ def use_item(char: Character, gamedata: GameData, item_id: str, state=None) -> s
         char.fatigue = min(char.max_fatigue, char.fatigue + eff["magnitude"])
         gained = int(char.fatigue - before)
         msg = f"飲下{d['name']},回復 {gained} 點體力。"
+    elif eff["type"] == "cure_disease":     # R53:治療疾病藥水 → 統一治癒(普通病 + 吸血/狼人潛伏期)
+        from tesrpg.systems import diseases
+        msg = f"飲下{d['name']} —— " + diseases.purify_message(diseases.purify(char, gamedata))
     else:
         return None
     remove_item(char, item_id, 1)

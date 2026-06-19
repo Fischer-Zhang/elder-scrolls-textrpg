@@ -1,0 +1,36 @@
+{
+  "rockjoint": {
+    "name": "關節炎",
+    "symptom": "關節腫脹僵硬、揮砍乏力 —— 力量下降,且日漸加重。",
+    "attr": {"strength": -10},
+    "worsen": {"per_days": 2, "max_steps": 3, "attr": {"strength": -4}}
+  },
+  "bone_break_fever": {
+    "name": "邪骨熱",
+    "symptom": "高燒蝕骨、氣力流失 —— 耐力下降,且日漸加重。",
+    "attr": {"endurance": -10},
+    "worsen": {"per_days": 3, "max_steps": 2, "attr": {"endurance": -3}}
+  },
+  "brain_rot": {
+    "name": "腦腐",
+    "symptom": "思緒昏沉、意志渙散 —— 智力與意志下降(魔力受損)。",
+    "attr": {"intelligence": -8, "willpower": -6}
+  },
+  "witbane": {
+    "name": "萎魔症",
+    "symptom": "魔力如沙漏般流失 —— 智力下降,且日漸加重。",
+    "attr": {"intelligence": -10},
+    "worsen": {"per_days": 3, "max_steps": 2, "attr": {"intelligence": -3}}
+  },
+  "ataxia": {
+    "name": "共濟失調",
+    "symptom": "手指顫抖、行動失準 —— 開鎖與潛行技能下降。",
+    "skill": {"security": -10, "sneak": -8}
+  },
+  "swamp_rot": {
+    "name": "腐沼熱",
+    "symptom": "潰爛的傷口不斷滲血 —— 耐力下降,且持續流失生命(治癒前不止)。",
+    "attr": {"endurance": -6},
+    "dot": {"per_hours": 6, "magnitude": 2}
+  }
+}

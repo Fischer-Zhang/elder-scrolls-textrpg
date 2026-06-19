@@ -12,7 +12,7 @@ from tesrpg import creation, formulas
 from tesrpg.gamedata import GameData, get_gamedata
 from tesrpg.rng import RNG, make_seed
 from tesrpg.state import GameState
-from tesrpg.systems import (aiwar, alchemy, boons, brotherhood, combat, court, crafting, crime, dialogue, dungeon,
+from tesrpg.systems import (aiwar, alchemy, boons, brotherhood, combat, court, crafting, crime, dialogue, diseases, dungeon,
                             dungeoncrawl, enchanting, events, factions, housing, inventory, landmarks, legacy,
                             lycanthropy, magic, mastery, mounts, party, politics, potion_buff, powers,
                             progression, quests, skooma, smithing, stats, vampirism, warband, world, worldstate)
@@ -910,6 +910,10 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
                 elif kind == "vampire" and vampirism.infect(player, state):
                     ui.message("獠牙刺入你的頸側 —— 傷口隱隱發燙。你染上了某種不祥的熱症……",
                                style="bold red")
+                elif kind == "disease" and diseases.contract(player, state, gamedata, ev.get("disease_id")):
+                    _spec = gamedata.diseases.get(ev.get("disease_id"), {})
+                    ui.message(f"傷口紅腫發熱、隱隱作痛 —— 你染上了「{_spec.get('name', '某種疾病')}」。"
+                               f"{_spec.get('symptom', '')}", style="bold red")
         for e in enemies:          # 敵人階段可能因「重甲反震」反殺被擒魂的敵 → 補記擒魂(免漏靈魂石)
             note_trap(e)
 
@@ -2190,6 +2194,20 @@ def action_skooma_cure(state: GameState, gamedata: GameData) -> None:
 
 
 WEREWOLF_CURE_QID = "cure_lycanthropy"
+
+
+def action_disease_cure(state: GameState, gamedata: GameData) -> None:
+    """R53 神殿療者淨化(任何聚落,僅有病/潛伏時可見):免費治好普通病 + 解吸血/狼人**潛伏期**。
+    🔴 **不解已轉化的吸血鬼/狼人**(那仍須各自的深度解咒任務)。"""
+    char = state.player
+    if not (diseases.has_any(char) or vampirism.is_infected(char) or lycanthropy.is_infected(char)):
+        ui.message("神殿療者端詳了你一陣:「你身上並無需要淨化的病症,旅人。」", style="grey70")
+        return
+    if not ui.confirm("讓神殿療者為你誦經淨化(免費)?"):
+        return
+    res = diseases.purify(char, gamedata)
+    ui.rule("神殿淨化")
+    ui.message("神殿療者以聖水與禱詞為你淨化 —— " + diseases.purify_message(res), style="bold green")
 
 
 def action_werewolf_cure(state: GameState, gamedata: GameData) -> None:
@@ -3923,6 +3941,14 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
             elif ev["kind"] == "clean":
                 ui.message("你撐過了最深的渴求,身體漸漸清明 —— 月糖的枷鎖鬆開了。", style="green")
 
+        # 疾病(R53):惡化 / DoT 扣血(掛在斯庫瑪之後)
+        for ev in diseases.update(state, gamedata):
+            if ev["kind"] == "dot":
+                ui.message(f"病灶在你體內潰爛 —— 你流失了 {ev['total']} 點生命(病痛不止,該求治了)。",
+                           style="red")
+            elif ev["kind"] == "worsen":
+                ui.message("拖著未治的病,你的身子一日壞過一日 —— 症狀加重了。", style="yellow")
+
         # 限時增益藥水(R30):藥力到期 → 重算 + 報「藥力散去」(掛在斯庫瑪之後)
         for ev in potion_buff.update(state, gamedata):
             if ev["kind"] == "expire":
@@ -4061,6 +4087,10 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
             plaza.append(("skooma_cure", "🌙 尋訪療者,求解月糖之癮"))
         if lycanthropy.is_werewolf(player) and loc["type"] in ("town", "city") and not shunned:
             plaza.append(("werewolf_cure", "🐺 尋訪獵巫女巫,求解獸血之咒"))
+        if (loc["type"] in ("town", "city") and not shunned
+                and (diseases.has_any(player) or vampirism.is_infected(player)
+                     or lycanthropy.is_infected(player))):
+            plaza.append(("disease_cure", "🩹 尋訪神殿療者(淨化疾病)"))
         if (gamedata.house_at(player.location_id) or housing.owns(player, player.location_id)) and not shunned:
             owned = housing.owns(player, player.location_id)
             plaza.append(("house", "🏠 我的房產" if owned else "🏠 房產仲介(置產)"))
@@ -4160,6 +4190,8 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
             action_skooma_cure(state, gamedata)
         elif choice == "werewolf_cure":
             action_werewolf_cure(state, gamedata)
+        elif choice == "disease_cure":
+            action_disease_cure(state, gamedata)
         elif choice == "trainer":
             action_trainer(state, gamedata)
         elif choice == "court":

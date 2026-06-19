@@ -262,6 +262,15 @@ def cure(char: Character, gamedata: GameData) -> None:
     apply_to_character(char, None, gamedata)   # 非狼人分支:清空 werewolf_* 並 recompute
 
 
+def cure_infection(char: Character) -> bool:
+    """R53:解除「狼人熱潛伏期」(尚未轉化)→ 重置感染日,避免轉化。**只解潛伏,不碰已轉化的 `is_werewolf`**
+    (已是狼人仍須走深度解咒任務)。供統一治癒(藥水/神殿/法術)在 3 日轉化前阻斷。回傳是否確實解了潛伏。"""
+    if not is_infected(char):
+        return False
+    char.werewolf_infected_day = -1
+    return True
+
+
 def update(state, gamedata: GameData) -> list[dict]:
     """每個主迴圈回合呼叫(掛 game_loop 頂端,vampirism→skooma 之後):
     處理潛伏→轉化、獸形過期→變回、開局狼人初始化。回傳事件清單供 UI。

@@ -300,6 +300,7 @@
   "healing_circle": {"name": "治療之環", "school": "restoration", "cost": 40, "target": "allies", "effect": {"kind": "heal", "magnitude": 30}},
   "ward_ally": {"name": "庇護術", "school": "alteration", "cost": 22, "target": "ally", "effect": {"kind": "shield", "magnitude": 40, "turns": 5}},
   "regen_aura": {"name": "生機共鳴", "school": "restoration", "cost": 34, "target": "allies", "effect": {"kind": "apply_status", "status": {"status": "regen", "magnitude": 8, "turns": 4}}},
+  "cure_disease": {"name": "淨疫術", "school": "restoration", "cost": 30, "target": "self", "effect": {"kind": "cure_disease"}},
 
   "rally": {"name": "號令", "school": "illusion", "cost": 30, "target": "allies", "effect": {"kind": "empower", "magnitude": 0.25, "turns": 4}},
 

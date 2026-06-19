@@ -2,6 +2,7 @@
   "minor_healing_potion": {"name": "次級治療藥水", "kind": "potion", "effect": {"type": "heal", "magnitude": 25}, "value": 15, "weight": 0.5},
   "healing_potion":       {"name": "治療藥水", "kind": "potion", "effect": {"type": "heal", "magnitude": 50}, "value": 40, "weight": 0.5},
   "minor_magicka_potion": {"name": "次級魔力藥水", "kind": "potion", "effect": {"type": "restore_magicka", "magnitude": 25}, "value": 18, "weight": 0.5},
+  "cure_disease_potion": {"name": "治療疾病藥水", "kind": "potion", "effect": {"type": "cure_disease"}, "value": 30, "weight": 0.5},
   "ruby":        {"name": "紅寶石", "kind": "misc", "value": 50,  "weight": 0.1},
   "gold_ingot":  {"name": "金錠", "kind": "misc", "value": 100, "weight": 1},
   "wolf_pelt":   {"name": "狼皮", "kind": "misc", "value": 6,   "weight": 1},

@@ -154,6 +154,15 @@ def cure(char: Character, gamedata: GameData) -> None:
     apply_to_character(char, None, gamedata)   # 非吸血鬼分支:清空 vampire_* 並 recompute
 
 
+def cure_infection(char: Character) -> bool:
+    """R53:解除「吸血熱潛伏期」(尚未轉化)→ 重置感染日,避免轉化。**只解潛伏,不碰已轉化的 `is_vampire`**
+    (已是吸血鬼仍須走深度解咒任務)。供統一治癒(藥水/神殿/法術)在 3 日轉化前阻斷。回傳是否確實解了潛伏。"""
+    if not is_infected(char):
+        return False
+    char.vampire_infected_day = -1
+    return True
+
+
 def update(state, gamedata: GameData) -> list[dict]:
     """每個主迴圈回合呼叫:處理潛伏→轉化、初始化 fed_day、同步階級加成。
 

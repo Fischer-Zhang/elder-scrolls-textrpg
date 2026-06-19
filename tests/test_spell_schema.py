@@ -16,6 +16,7 @@ _KINDS = {
     "damage", "damage_status", "heal", "restore_fatigue", "shield", "ward", "weapon_imbue",
     "bound_weapon", "fear", "weaken", "soul_trap", "dispel", "apply_status",
     "damage_all", "damage_status_all", "status_all", "summon", "reanimate", "empower",
+    "cure_disease",
 }
 _ELEMENT_KINDS = {"damage", "damage_status", "damage_all", "damage_status_all", "weapon_imbue", "bound_weapon"}
 _ALL_KINDS = {"damage_all", "damage_status_all", "status_all"}

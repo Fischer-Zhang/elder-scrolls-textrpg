@@ -224,6 +224,10 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
         char.fatigue = min(char.max_fatigue, char.fatigue + eff["magnitude"])
         msg = f"{sp['name']}回復了 {int(char.fatigue - before)} 點體力。"
 
+    elif kind == "cure_disease":   # R53「淨疫術」:統一治癒(普通病 + 吸血/狼人潛伏期);不解已轉化詛咒
+        from tesrpg.systems import diseases
+        msg = f"{sp['name']} —— " + diseases.purify_message(diseases.purify(char, gamedata))
+
     elif kind == "shield":
         mag = round(eff["magnitude"] * power)
         char.active_effects.append({"kind": "shield", "magnitude": mag, "turns": eff["turns"]})

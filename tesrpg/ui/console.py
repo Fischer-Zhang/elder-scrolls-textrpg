@@ -638,6 +638,8 @@ def status_line(state: GameState, gamedata: GameData | None = None, allies: list
         extra.append("[magenta]🌙 月糖之醉[/]")
     elif skooma.is_addicted(c):
         extra.append("[red]💀 斯庫瑪戒斷[/]")
+    if getattr(c, "diseases", None):                       # R53:疾病標記(數量;名稱見染病/惡化播報)
+        extra.append(f"[yellow]🩹 染病×{len(c.diseases)}[/]")
     if c.fame:
         extra.append(f"[cyan]聲望 {c.fame}[/]")
     total_bounty = sum(c.bounties.values())
@@ -1436,6 +1438,8 @@ def spell_effect_summary(gamedata: GameData, spell_id: str) -> str:
         return f"結界:吸收法術傷害 {mag}{ab}（{turns} 回合)"
     if k == "dispel":         # 秘術驅散
         return "驅散自身的恐懼/麻痺/侵蝕等不良效果"
+    if k == "cure_disease":   # R53 淨疫術
+        return "淨化自身的疾病 + 吸血/狼人潛伏期(不解已轉化詛咒)"
     if k == "reanimate":      # 召喚亡者復生
         return f"復生一具敵屍為盟友（{turns} 回合)"
     if k == "apply_status":

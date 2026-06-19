@@ -456,7 +456,8 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
     poison_applied = None
     self_restored = None
     infected = False
-    infect_kind = None     # 傳染的詛咒種類("vampire"/"lycanthropy"),供 run_battle 分派
+    infect_kind = None     # 傳染的詛咒種類("vampire"/"lycanthropy"/"disease"),供 run_battle 分派
+    disease_id = None      # R53:普通病感染的病種 id(僅 infect_kind=="disease" 時有值)
     lifesteal = 0          # 武器吸血附魔本擊回血量(供敘事)
     aftermath = None
     sneak_mult = (formulas.sneak_attack_multiplier(attacker.skill("sneak"))
@@ -640,6 +641,15 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
                 if not already and dmult > 0 and rng.chance(inf * dmult):
                     infected = True
                     infect_kind = kind
+            # R53 普通病傳染:`atk["disease"]={"id","chance"}`,同走疾病抗性削弱(吸血鬼/狼人 disease:100 → dmult=0 自然免疫)。
+            # 只標記,實際 contract 由 run_battle 分派。`disease` 欄只加在非 sim 怪 → sim byte-identical。
+            dis = atk.get("disease")
+            if dis and infect_kind is None:    # 詛咒感染優先;同一擊不同時染詛咒與普通病
+                dmult2 = formulas.resist_multiplier(magic.entity_resist(defender, gamedata), "disease")
+                if dmult2 > 0 and rng.chance(dis.get("chance", 0.3) * dmult2):
+                    infected = True
+                    infect_kind = "disease"
+                    disease_id = dis.get("id")
 
         # 玩家武器塗毒 → 命中即把毒效附到敵人身上,消耗一次塗層。獸形/束縛兵刃以非裝備武器戰鬥 → 不沾塗毒
         if (_is_player(attacker) and not beast and not bound and not great
@@ -877,7 +887,7 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
         "skill_events": skill_events, "defender_dead": not is_alive(defender),
         "absorbed": absorbed, "status_applied": status_applied, "poison_applied": poison_applied,
         "sneak": sneak_mult, "self_restored": self_restored, "infected": infected,
-        "infect_kind": infect_kind, "lifesteal": lifesteal,
+        "infect_kind": infect_kind, "disease_id": disease_id, "lifesteal": lifesteal,
         "aftermath": aftermath,
     }
 

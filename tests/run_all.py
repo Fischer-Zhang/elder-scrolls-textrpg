@@ -75,6 +75,7 @@ import test_daedric
 import test_curse_depth
 import test_curse_kin
 import test_curse_rank
+import test_disease
 
 if __name__ == "__main__":
     modules = [test_creation, test_progression, test_state, test_combat, test_world, test_seed,
@@ -90,7 +91,7 @@ if __name__ == "__main__":
                test_oblivion, test_webdriver, test_potion_buff, test_poison_depth,
                test_alchemy_discovery, test_two_handed, test_great_shield,
                test_monster_attacks, test_solo_control, test_daedric, test_curse_depth,
-               test_curse_kin, test_curse_rank]
+               test_curse_kin, test_curse_rank, test_disease]
     for m in modules:
         m.run()
         print(f"✓ {m.__name__}")

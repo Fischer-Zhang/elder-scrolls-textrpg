@@ -117,7 +117,7 @@ class GameState:
         # 改版前存檔:把停用的 level_progress 進度遷移成 level_xp,讓載入當下 can_level_up 即正確
         # (否則已可升級的舊存檔,升級入口要等到下次 use_skill 才出現)。區域 import 避免循環。
         from tesrpg.gamedata import get_gamedata
-        from tesrpg.systems import aiwar, alchemy, boons, dagon_boon, inventory, lycanthropy, potion_buff, progression, skooma
+        from tesrpg.systems import aiwar, alchemy, boons, dagon_boon, diseases, inventory, lycanthropy, potion_buff, progression, skooma
         progression.ensure_level_xp(player)
         inventory.ensure_grip(player, get_gamedata())   # 握法正規化:雙手武器/重盾在手 → 清殘留盾與副手(R41)
         progression.ensure_all_skills(player, get_gamedata())   # 補上新增技能(scout 等)
@@ -128,6 +128,7 @@ class GameState:
         lycanthropy.ensure_lycanthropy_fields(player, time, get_gamedata())   # 狼人:補欄 + 過期獸形自動變回 + 夾血
         dagon_boon.ensure_dagon_fields(player, get_gamedata())   # 達貢之力:補欄 + 依 flag 重算永久層
         boons.ensure_boon_fields(player, get_gamedata())   # 戴德拉誓福:補欄 + 依持有清單重算永久層(R45)
+        diseases.ensure_disease_fields(player, time, get_gamedata())   # 疾病:補欄 + 依當前時間重算惡化負層(R53)
         aiwar.ensure_war_fields(player, time)   # AI 戰爭:補欄 + war_tick_at 起算下個整週
         return cls(
             player=player,
