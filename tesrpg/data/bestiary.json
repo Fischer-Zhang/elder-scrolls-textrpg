@@ -855,6 +855,29 @@
     "loot": [{"item": "filled_grand_soul_gem", "chance": 0.5}, {"item": "spider_egg", "chance": 0.6}],
     "flavor": "黑木最深的蛛網法陣裡,謀殺之蛛梅赫拉的化身懸於織影之網 —— 八足的蛛母吐著低語,用每一個祕密與背叛餵養她的網。"
   },
+  "revel_daedra": {
+    "name": "桑格玖完的醉宴主", "strength": 66, "agility": 50, "speed": 50,
+    "max_health": 210, "armor_rating": 16,
+    "attack": {"name": "醉拳連擊", "damage": 36, "skill": 66,
+               "on_hit": {"status": "stagger", "turns": 1, "chance": 0.3}},
+    "attacks": [
+      {"name": "醉拳連擊", "damage": 36, "skill": 66, "weight": 3,
+       "on_hit": {"status": "stagger", "turns": 1, "chance": 0.3}},
+      {"name": "烈酒噴吐", "damage": 36, "skill": 66, "element": "fire", "weight": 2,
+       "on_hit": {"status": "dot", "element": "fire", "magnitude": 6, "turns": 3, "chance": 0.5}},
+      {"name": "萎靡之觸", "damage": 28, "skill": 66, "weight": 2,
+       "on_hit": {"status": "weaken", "magnitude": 0.25, "turns": 2, "chance": 0.4}},
+      {"name": "迷醉低語", "damage": 16, "skill": 66, "weight": 1,
+       "on_hit": {"status": "fear", "turns": 1, "chance": 0.25}},
+      {"name": "狂歡爆發", "damage": 54, "skill": 68, "element": "fire", "weight": 1,
+       "cooldown": 3, "when": {"hp_below": 0.5}}
+    ],
+    "danger": 5, "min_level": 16, "weight": 1, "solo": true,
+    "resist": {"fire": 40, "magic": 30, "poison": 30},
+    "loot_gold": [220, 420],
+    "loot": [{"item": "filled_grand_soul_gem", "chance": 0.5}, {"item": "moon_sugar", "chance": 0.5}],
+    "flavor": "永不散場的迷霧醉宴中,放蕩之主桑格玖完的醉宴主舉著酒到處挑釁 —— 笑著把每一個闖入者灌進這場沒有盡頭的狂歡。"
+  },
   "dremora_lord": {
     "biomes": ["ashland"],
     "name": "魔人領主", "strength": 74, "agility": 50, "speed": 48,

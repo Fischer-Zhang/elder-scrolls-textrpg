@@ -596,6 +596,91 @@ def test_mephala_content_integrity():
                 & set(gd.boons["mephala_shadow"].get("skill", {})))
 
 
+# --- 第八位親王:桑格玖完(召喚師軸;serve→Sanguine Rose 神器 vs sober→誓福)--
+def _complete_sanguine(gd, c, branch):
+    quests.accept_quest(c, gd, "sanguine_party", branch=branch)
+    inventory.add_item(c, "moon_sugar", 2)   # 縱情供奉(collect 階段)
+    c.location_id = "misty_grove"
+    quests.record_dungeon_clear(c, "misty_grove")
+    quests.check_completion(c, gd)
+
+
+def test_sanguine_serve_branch_grants_rose_not_boon():
+    """縱酒之路 → 得神器 桑格玖完之薔薇、惡名上升、不得誓福。"""
+    gd, c = _gd_char(level=17)
+    _complete_sanguine(gd, c, 0)
+    assert "sanguine_party" in c.completed_quests
+    assert inventory.count_item(c, "sanguine_rose") == 1
+    assert not boons.has_boon(c, "sanguine_revel") and c.infamy >= 25
+    assert "sanguine_rose_taken" in c.world_events_fired
+
+
+def test_sanguine_rose_restores_magicka_on_hit():
+    """桑格玖完之薔薇 on_hit_self → 命中回復施術者法力(召喚師續航;複用 magicka_staff 路徑)。"""
+    from tesrpg.systems import combat, stats
+    from tesrpg.rng import RNG
+    gd, c = _gd_char(level=17)
+    _complete_sanguine(gd, c, 0)
+    c.weapon = "sanguine_rose"; c.is_player = True
+    c.skills["conjuration"] = 100
+    stats.recompute_max_resources(c, gd, restore_full=True)
+    c.magicka = 0
+    gained = 0
+    for i in range(6):
+        c.magicka = 0
+        d = combat.spawn_creature(gd, "bandit", RNG(i)); d.max_health = d.health = 400
+        d.agility = 1; d.armor_rating = 0
+        combat.resolve_attack(c, d, gd, RNG(80 + i))
+        if c.magicka > 0:
+            gained += c.magicka
+    assert gained > 0, "on_hit_self 未回魔(命中應回復法力)"
+    assert gd.items["sanguine_rose"]["archetype"] == "staff"
+
+
+def test_sanguine_sober_branch_grants_boon_not_rose():
+    """清醒之路 → 永久誓福 歡愉之佑(conjuration+12/willpower+8/magicka+15)、不得神器。"""
+    gd, c = _gd_char(level=17)
+    cj0, mg0 = c.skill("conjuration"), c.max_magicka
+    _complete_sanguine(gd, c, 1)
+    assert boons.has_boon(c, "sanguine_revel")
+    assert c.skill("conjuration") == cj0 + 12
+    assert c.base_skill("conjuration") == cj0          # 🔴 不寫 base
+    assert c.max_magicka >= mg0 + 15                   # 召喚續航(固定魔力上限 +15)
+    assert inventory.count_item(c, "sanguine_rose") == 0
+    assert "sanguine_declined" in c.world_events_fired
+
+
+def test_sanguine_availability_and_eight_shrines_coexist():
+    gd, c = _gd_char(level=16)
+    assert "sanguine_party" not in quests.available_quests(c, gd, "daedric")   # 等級不足
+    c.level = 17
+    av = quests.available_quests(c, gd, "daedric")
+    assert {"azura_star", "molag_bal_vault", "hircine_hunt", "boethiah_calling",
+            "clavicus_bargain", "peryite_cure", "mephala_whisper", "sanguine_party"} <= set(av)
+    assert gd.quests["sanguine_party"]["shrine"] == "sanguine"
+
+
+def test_sanguine_content_integrity():
+    gd, _ = _gd_char()
+    assert "sanguine_revel" in gd.boons and "sanguine_rose" in gd.items
+    assert gd.world["locations"]["rimmen_desert"].get("shrine") == "sanguine"
+    boss = gd.dungeons["misty_grove"]["boss"]["enemy"]
+    assert boss == "revel_daedra" and gd.bestiary[boss].get("solo") is True
+    for atk in gd.bestiary[boss].get("attacks", []):
+        oh = atk.get("on_hit") or {}
+        if oh.get("status") in ("fear", "paralyze"):
+            assert oh.get("chance", 1.0) <= 0.30 and oh.get("turns", 1) <= 1, atk
+    # Sanguine Rose：staff·on_hit_self 回魔(召喚續航)·僅任務 reward
+    sr = gd.items["sanguine_rose"]
+    assert sr["archetype"] == "staff" and sr["on_hit_self"]["stat"] == "magicka"
+    for dd in gd.dungeons.values():
+        tl = [x for x in dd.get("boss", {}).get("treasure", {}).get("loot", []) if isinstance(x, str)]
+        assert "sanguine_rose" not in tl + dd.get("loot", [])
+    # 誓福守紅線:conjuration 是召喚學派(已見於達貢誓福),非武器/sneak 技能
+    assert not ({"sneak", "blade", "blunt", "marksman", "hand_to_hand"}
+                & set(gd.boons["sanguine_revel"].get("skill", {})))
+
+
 def run():
     for name, fn in sorted(globals().items()):
         if name.startswith("test_") and callable(fn):

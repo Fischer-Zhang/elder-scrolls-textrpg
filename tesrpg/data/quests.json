@@ -1911,5 +1911,17 @@
       {"objective": {"type": "reach", "location": "whispering_warren"}, "text": "循那道低語,深入黑木林深處纏滿蛛絲的低語蛛窟。"},
       {"objective": {"type": "clear_dungeon", "dungeon": "whispering_warren"}, "text": "了結梅赫拉的織影蛛母,封印那道低語之門 —— 拒絕背叛之路,不讓黑檀刃出鞘。"}
     ], "reward": {"gold": 600, "fame": 25, "grant_boon": "mephala_shadow", "world_flags": ["mephala_door_sealed"]}}
+  ]},
+  "sanguine_party": {"name": "永不散場的醉宴", "faction": null, "rank": null, "source": "daedric", "shrine": "sanguine", "requires_level": 17, "text": "瑞門荒漠那座酒紅石龕在你靠近時飄出甜膩的醉香 —— 放蕩之主桑格玖完的笑聲自荒漠裂隙後傳來。他邀你赴一場永不散場的醉宴:闖過迷霧醉宴的狂歡、了結他那喧鬧的醉宴主,他便將那柄能召喚魔裔助戰、令法力如美酒長流的桑格玖完之薔薇相贈。是縱情接過那柄薔薇,還是清醒地婉拒這場放蕩?", "branches": [
+    {"label": "縱酒之路 —— 縱情狂歡、接過桑格玖完之薔薇(得神器:桑格玖完之薔薇)", "text": "投入放蕩之主的懷抱 —— 在迷霧醉宴裡不醉不歸,了結那喧鬧的醉宴主,接過那柄召喚魔裔、令法力長流不竭的薔薇法杖。狂歡過後,荒唐的名聲也隨你而去。", "stages": [
+      {"objective": {"type": "collect", "item": "moon_sugar", "count": 2}, "text": "放蕩之主只納縱情之物的供奉:備上兩份月糖,在瑞門荒漠的酒紅石龕前焚作甜煙。"},
+      {"objective": {"type": "reach", "location": "misty_grove"}, "text": "循荒漠裂隙後的笙歌,踏入桑格玖完的迷霧醉宴。"},
+      {"objective": {"type": "clear_dungeon", "dungeon": "misty_grove"}, "text": "在永不散場的狂歡中了結放蕩之主的醉宴主 —— 接過那柄桑格玖完之薔薇。"}
+    ], "reward": {"gold": 700, "infamy": 25, "items": ["sanguine_rose"], "world_flags": ["sanguine_rose_taken"]}},
+    {"label": "清醒之路 —— 婉拒放蕩、保持節制(賜永久誓福:歡愉之佑)", "text": "你享受了這場狂歡,卻在最後一刻清醒地婉拒了那柄薔薇 —— 不願永遠留在放蕩之主的醉宴裡。桑格玖完大笑著敬你的節制,仍贈你一縷召喚魔裔的笙歌之力。", "stages": [
+      {"objective": {"type": "collect", "item": "moon_sugar", "count": 2}, "text": "放蕩之主只納縱情之物的供奉:備上兩份月糖,在瑞門荒漠的酒紅石龕前焚作甜煙。"},
+      {"objective": {"type": "reach", "location": "misty_grove"}, "text": "循荒漠裂隙後的笙歌,踏入桑格玖完的迷霧醉宴。"},
+      {"objective": {"type": "clear_dungeon", "dungeon": "misty_grove"}, "text": "在迷霧醉宴中了結放蕩之主的醉宴主 —— 享過狂歡,卻清醒地婉拒那柄薔薇。"}
+    ], "reward": {"gold": 600, "fame": 25, "grant_boon": "sanguine_revel", "world_flags": ["sanguine_declined"]}}
   ]}
 }

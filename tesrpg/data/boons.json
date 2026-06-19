@@ -47,5 +47,12 @@
     "skill": {"illusion": 10},
     "resist": {"magic": 10},
     "magicka": 0
+  },
+  "sanguine_revel": {
+    "name": "歡愉之佑",
+    "attr": {"willpower": 8, "personality": 6},
+    "skill": {"conjuration": 12},
+    "resist": {"poison": 15},
+    "magicka": 15
   }
 }
