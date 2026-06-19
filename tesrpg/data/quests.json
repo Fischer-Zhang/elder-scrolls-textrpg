@@ -1995,5 +1995,17 @@
       {"objective": {"type": "reach", "location": "twilight_crypt"}, "text": "潛入騰瑪林月影下沉入地底的暮光陵墓。"},
       {"objective": {"type": "clear_dungeon", "dungeon": "twilight_crypt"}, "text": "在暮光祭壇前了結守鑰的夜鶯哨衛,卻將萬能之鑰歸還暮光 —— 成為諾克圖娜爾沉默的夜鶯。"}
     ], "reward": {"gold": 600, "fame": 30, "grant_boon": "nocturnal_shadow", "world_flags": ["nocturnal_nightingale"]}}
+  ]},
+  "greymarch": {"name": "灰潮的試煉", "faction": null, "rank": null, "source": "daedric", "shrine": "jyggalag", "requires_level": 18, "text": "巴薩拉谷那座水晶切割成的灰色石龕,在你獻祭時泛起一片毫無偏差的銀灰之光 —— 秩序之主賈格拉格的聲音平直得不帶一絲起伏,像一道早已寫定的結論。他的灰潮在矮人遺城深處的位面殿堂裡無聲推進,要把一切混亂、偶然與生機都碾成整齊劃一的塵埃。賈格拉格允你進入秩序聖殿,面對守劍的秩序騎士。是執起那柄移除一切變數的秩序之劍、成為灰潮的一部分,還是抗拒被同化、以你那不可預測的自由意志斬斷必然?", "branches": [
+    {"label": "臣服之路 —— 成為秩序騎士、執起秩序之劍(得神器:秩序之劍)", "text": "你接受了那道早已寫定的結論 —— 步入無瑕的水晶殿堂,以毫無多餘的精準了結守劍的秩序騎士,執起殿心那柄移除一切變數的秩序之劍。自此你的每一擊都不再有偶然,如灰潮般落在同一道無可閃避的軌跡上;而你也成了那份冰冷必然的一部分。", "stages": [
+      {"objective": {"type": "collect", "item": "moonstone_ingot", "count": 2}, "text": "與秩序之主交感需以無瑕之物為引:備妥兩錠精煉得毫無雜質的月長石錠,在灰色石龕前獻上。"},
+      {"objective": {"type": "reach", "location": "order_sanctum"}, "text": "步入巴薩拉谷矮人遺城深處通往灰色位面的秩序聖殿。"},
+      {"objective": {"type": "clear_dungeon", "dungeon": "order_sanctum"}, "text": "在無瑕的水晶殿堂裡了結守劍的秩序騎士 —— 執起那柄移除一切變數的秩序之劍。"}
+    ], "reward": {"gold": 800, "infamy": 30, "items": ["sword_of_jyggalag"], "world_flags": ["jyggalag_served"]}},
+    {"label": "抗序之路 —— 抗拒灰潮同化、以自由意志斬斷必然(賜永久誓福:秩序之佑)", "text": "你了結了守劍的秩序騎士,卻在最後一刻拒絕執起那柄抹平一切偶然的劍 —— 你不願成為灰潮中又一塊無差別的水晶。賈格拉格沒有動怒(他從不動怒),只是平直地記下了這個變數;而你在直視那份完美秩序的過程裡,卻也窺見了萬物背後的必然紋理,將它化作了你自己的洞察。", "stages": [
+      {"objective": {"type": "collect", "item": "moonstone_ingot", "count": 2}, "text": "與秩序之主交感需以無瑕之物為引:備妥兩錠精煉得毫無雜質的月長石錠,在灰色石龕前獻上。"},
+      {"objective": {"type": "reach", "location": "order_sanctum"}, "text": "步入巴薩拉谷矮人遺城深處通往灰色位面的秩序聖殿。"},
+      {"objective": {"type": "clear_dungeon", "dungeon": "order_sanctum"}, "text": "在無瑕的水晶殿堂裡了結守劍的秩序騎士,卻拒絕執起秩序之劍 —— 以不可預測的自由意志斬斷必然。"}
+    ], "reward": {"gold": 600, "fame": 30, "grant_boon": "jyggalag_order", "world_flags": ["jyggalag_defied"]}}
   ]}
 }

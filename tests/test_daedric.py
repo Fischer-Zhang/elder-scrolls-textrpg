@@ -1264,6 +1264,123 @@ def test_nocturnal_content_integrity():
     assert "strength" not in gd.boons["nocturnal_shadow"].get("attr", {})
 
 
+# --- 第十五位親王:賈格拉格(秩序之主;新機制 order 移除傷害變異·serve→秩序之劍 vs defy→誓福)----
+def _complete_jyggalag(gd, c, branch):
+    quests.accept_quest(c, gd, "greymarch", branch=branch)
+    inventory.add_item(c, "moonstone_ingot", 2)   # 無瑕之引(collect 階段)
+    c.location_id = "order_sanctum"
+    quests.record_dungeon_clear(c, "order_sanctum")
+    quests.check_completion(c, gd)
+
+
+def test_jyggalag_serve_branch_grants_sword_not_boon():
+    """臣服之路 → 得神器 秩序之劍、惡名上升、不得誓福。"""
+    gd, c = _gd_char(level=18)
+    _complete_jyggalag(gd, c, 0)
+    assert "greymarch" in c.completed_quests
+    assert inventory.count_item(c, "sword_of_jyggalag") == 1
+    assert not boons.has_boon(c, "jyggalag_order") and c.infamy >= 30
+    assert "jyggalag_served" in c.world_events_fired
+
+
+def test_sword_of_jyggalag_removes_damage_variance():
+    """R48 秩序之劍 order 附魔:命中傷害零變異(永遠最大 roll = DAMAGE_ROLL_HI);普通劍仍有變異(對照)。"""
+    from tesrpg.systems import combat
+    from tesrpg.rng import RNG
+    from tesrpg import formulas
+    gd, c = _gd_char(level=18)
+    c.is_player = True; c.skills["blade"] = 80
+    def dmg_values(weapon):
+        c.weapon = weapon
+        out = set()
+        for i in range(40):
+            c.fatigue = c.max_fatigue; c.skills["blade"] = 80   # 固定體力/技能 → 隔離,只看 roll 變異
+            d = combat.spawn_creature(gd, "bandit", RNG(i)); d.max_health = d.health = 99999
+            d.agility = 1; d.armor_rating = 0
+            combat.resolve_attack(c, d, gd, RNG(500 + i))
+            dealt = round(99999 - d.health, 3)
+            if dealt > 0:   # 命中
+                out.add(dealt)
+        return out
+    order = dmg_values("sword_of_jyggalag")
+    normal = dmg_values("daedric_sword")
+    assert len(order) == 1, f"秩序之劍命中傷害應零變異,實得 {order}"
+    assert len(normal) > 1, f"普通劍應有傷害變異(對照組),實得 {normal}"
+    # 固定值 = 最大 roll(armor 0·無格擋/增益 → dealt = attack_damage(26,blade,str,HI))
+    exp = formulas.attack_damage(26, c.skill("blade"), c.attr("strength"), formulas.DAMAGE_ROLL_HI)
+    assert abs(next(iter(order)) - exp) < 0.5, (order, exp)
+
+
+def test_jyggalag_sword_no_oneshot_solo():
+    """秩序之劍 always-max 仍不破 solo 偷襲夾(sword archetype 偷襲 ×1.0·夾在 always-max 之後)。"""
+    from tesrpg.systems import combat
+    from tesrpg.rng import RNG
+    gd, c = _gd_char(level=20)
+    c.is_player = True; c.weapon = "sword_of_jyggalag"
+    c.skills["blade"] = 100; c.skills["sneak"] = 100; c.attributes["strength"] = 100
+    boss_hp = gd.bestiary["knight_of_order"]["max_health"]
+    worst = 0
+    for i in range(60):
+        b = combat.spawn_creature(gd, "knight_of_order", RNG(i)); b.max_health = b.health = boss_hp
+        b.agility = 1; b.armor_rating = 0
+        combat.resolve_attack(c, b, gd, RNG(700 + i), sneak_attack=True)
+        worst = max(worst, boss_hp - b.health)
+    assert worst < boss_hp, f"秩序之劍單擊不可秒殺 solo BOSS(實得 {worst}/{boss_hp})"
+
+
+def test_jyggalag_defy_branch_grants_boon_not_sword():
+    """抗序之路 → 永久誓福 秩序之佑(intelligence+8/willpower+6/scout+12/magicka+10)、不得神器。"""
+    gd, c = _gd_char(level=18)
+    i0, w0, sc0, mg0 = c.attr("intelligence"), c.attr("willpower"), c.skill("scout"), c.max_magicka
+    _complete_jyggalag(gd, c, 1)
+    assert boons.has_boon(c, "jyggalag_order")
+    assert c.attr("intelligence") == i0 + 8 and c.attr("willpower") == w0 + 6
+    assert c.skill("scout") == sc0 + 12
+    assert c.max_magicka >= mg0 + 10
+    assert c.base_attr("intelligence") == i0          # 🔴 不寫 base
+    assert inventory.count_item(c, "sword_of_jyggalag") == 0
+    assert "jyggalag_defied" in c.world_events_fired
+
+
+def test_jyggalag_availability_and_fifteen_shrines_coexist():
+    gd, c = _gd_char(level=17)
+    assert "greymarch" not in quests.available_quests(c, gd, "daedric")   # 等級不足(需 18)
+    c.level = 18
+    av = quests.available_quests(c, gd, "daedric")
+    assert {"azura_star", "molag_bal_vault", "hircine_hunt", "boethiah_calling",
+            "clavicus_bargain", "peryite_cure", "mephala_whisper", "sanguine_party",
+            "malacath_curse", "meridia_beacon", "waking_nightmare", "namira_feast",
+            "mind_of_madness", "twilight_sepulcher", "greymarch"} <= set(av)
+    assert gd.quests["greymarch"]["shrine"] == "jyggalag"
+
+
+def test_jyggalag_content_integrity():
+    gd, _ = _gd_char()
+    assert "jyggalag_order" in gd.boons and "sword_of_jyggalag" in gd.items
+    assert gd.world["locations"]["bangkorai_valley"].get("shrine") == "jyggalag"
+    assert "order_sanctum" in gd.dungeons and "order_sanctum" in gd.world["locations"]
+    boss = gd.dungeons["order_sanctum"]["boss"]["enemy"]
+    assert boss == "knight_of_order" and gd.bestiary[boss].get("solo") is True
+    assert gd.dungeons["order_sanctum"]["boss"].get("raw") is True
+    for atk in gd.bestiary[boss].get("attacks", []):
+        oh = atk.get("on_hit") or {}
+        if oh.get("status") in ("fear", "paralyze"):
+            assert oh.get("chance", 1.0) <= 0.30 and oh.get("turns", 1) <= 1, atk
+    # 秩序之劍:sword archetype(非 dagger/bow → 無偷襲)·order 附魔·僅任務 reward
+    sj = gd.items["sword_of_jyggalag"]
+    assert sj["archetype"] == "sword" and sj["enchant"]["kind"] == "order"
+    for dd in gd.dungeons.values():
+        tl = [x for x in dd.get("boss", {}).get("treasure", {}).get("loot", []) if isinstance(x, str)]
+        assert "sword_of_jyggalag" not in tl + dd.get("loot", [])
+    # 地城怪皆存在
+    for m in gd.dungeons["order_sanctum"]["monsters"]:
+        assert m in gd.bestiary, m
+    # 誓福守紅線:scout 是偵查技能(非 sneak/武器技能)·無 strength
+    assert not ({"sneak", "blade", "blunt", "marksman", "hand_to_hand"}
+                & set(gd.boons["jyggalag_order"].get("skill", {})))
+    assert "strength" not in gd.boons["jyggalag_order"].get("attr", {})
+
+
 def run():
     for name, fn in sorted(globals().items()):
         if name.startswith("test_") and callable(fn):

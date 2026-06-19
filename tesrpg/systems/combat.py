@@ -467,7 +467,14 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
                   ) if sneaking else None
 
     if hit:
-        roll = rng.roll(0.85, 1.15)
+        # 秩序之劍(賈格拉格神器)order 附魔:移除傷害變異,永遠取最大 roll(反 Wabbajack;R48)。
+        # 僅玩家裝備武器(非獸形/束縛/重盾)且 enchant.kind=="order" 時生效 → sim 持匕首走 else、rng 序不變。
+        # always-max 流進 attack_damage,在 solo 偷襲夾之前;sword archetype 偷襲 ×1.0 → 永不破 solo 夾。
+        if (_is_player(attacker) and not beast and not bound and not great
+                and (gamedata.item(attacker.weapon).get("enchant") or {}).get("kind") == "order"):
+            roll = formulas.DAMAGE_ROLL_HI
+        else:
+            roll = rng.roll(formulas.DAMAGE_ROLL_LO, formulas.DAMAGE_ROLL_HI)
         block_factor = (formulas.block_damage_factor(defender.skill("block"))
                         if defender_blocking else 1.0)
         raw = formulas.attack_damage(wpn_dmg, wpn_skill, _strength(attacker),

@@ -324,11 +324,15 @@ def hit_chance(atk_skill: int, atk_agility: int, def_agility: int,
     return max(0.05, min(0.95, chance))
 
 
+DAMAGE_ROLL_LO = 0.85            # 傷害隨機下界
+DAMAGE_ROLL_HI = 1.15           # 傷害隨機上界(秩序之劍 order 附魔=永遠取此值,移除變異;R48)
+
+
 def attack_damage(weapon_damage: float, weapon_skill: int, strength: int,
                   roll: float, block_factor: float = 1.0) -> float:
     """傷害 = 武器基礎 × 技能倍率 × 力量倍率 × 隨機 × 格擋減傷倍率。
 
-    roll 由呼叫端用 rng.roll(0.85, 1.15) 取得(保持本函式為純函式、可測)。
+    roll 由呼叫端用 rng.roll(DAMAGE_ROLL_LO, DAMAGE_ROLL_HI) 取得(保持本函式為純函式、可測)。
     block_factor 由呼叫端用 block_damage_factor(防守方格擋技能) 算出(無格擋=1.0)。
     """
     skill_mult = 0.5 + weapon_skill / 100.0         # 0.5 .. 1.5

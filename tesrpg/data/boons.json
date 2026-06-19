@@ -96,5 +96,12 @@
     "skill": {"security": 12},
     "resist": {"magic": 10},
     "magicka": 0
+  },
+  "jyggalag_order": {
+    "name": "秩序之佑",
+    "attr": {"intelligence": 8, "willpower": 6},
+    "skill": {"scout": 12},
+    "resist": {"magic": 15},
+    "magicka": 10
   }
 }
