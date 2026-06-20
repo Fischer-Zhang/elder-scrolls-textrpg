@@ -402,15 +402,34 @@ def test_sheet_subview_models():
     from tesrpg.creation import build_character
     gd = get_gamedata()
     c = build_character(gd, name="測", sex="male", race="altmer", birthsign="mage", class_id="mage")
-    c.skills["block"] = 44       # 製造一個未解鎖里程碑(block 50,差一級)
+    c.skills["block"] = 44       # block 25 待選(達門檻未選)/ 50 未達(差 6 級)
+    from tesrpg.systems import mastery as _m   # 再製造一個已選節點 → 覆蓋 chosen 形狀
+    _bn = next(n for n in _m._nodes(gd) if n["skill"] == "destruction" and n["threshold"] == 25)
+    c.skills["destruction"] = 30
+    _m.choose(c, gd, _bn["id"], _m._choosable_options(_bn)[0]["opt_id"])
     backend = WebBackend()
     ui.use_web_backend(backend, _rec())
     try:
         ui.sheet_masteries(c, gd)
         b = backend.blocks[-1]
         assert b["kind"] == "view" and b["name"] == "masteries"
-        assert "unlocked" in b["data"] and "locked" in b["data"]
-        assert all(m["remaining"] >= 0 and "cur" in m and "threshold" in m for m in b["data"]["locked"])
+        data = b["data"]
+        assert {"chosen", "pending"} <= set(data["summary"])
+        assert [s["key"] for s in data["systems"]] == ["combat", "magic", "stealth"]   # 按系統分組
+        allnodes = [nd for s in data["systems"] for sk in s["skills"] for nd in sk["nodes"]]
+        assert allnodes, "里程碑節點不應為空"
+        for nd in allnodes:                                  # 三態 + 配對卡形狀不變式
+            assert nd["state"] in ("chosen", "pending", "future")
+            assert nd["threshold"] in (25, 50, 75, 100)
+            assert nd["options"] and all("name" in o and "desc" in o for o in nd["options"])
+            if nd["state"] == "future":
+                assert nd["remaining"] >= 0
+        blk = next(sk for s in data["systems"] for sk in s["skills"] if sk["skill"] == gd.skill_name("block"))
+        n50 = next(nd for nd in blk["nodes"] if nd["threshold"] == 50)
+        assert n50["state"] == "future" and n50["remaining"] == 6   # base 44 → 差 6 級未達
+        assert blk["has_pending"]                                   # block 25 已達門檻未選 → 預設展開
+        chosen = [nd for nd in allnodes if nd["state"] == "chosen"]   # 已選節點:單一 option + foregone 鍵
+        assert chosen and all(len(nd["options"]) == 1 and "foregone" in nd for nd in chosen)
         ui.sheet_resistances(c, gd)
         b = backend.blocks[-1]
         assert b["name"] == "resistances" and len(b["data"]["rows"]) == 6

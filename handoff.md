@@ -1151,6 +1151,15 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 - **契約依賴有測試守**:伺服器「敘事→`kind:"log"`」由 `test_blocks_protocol` 釘死(+ `test_web` 的 combat/dungeon_grid/masteries view 形狀)→ 日誌資料源不會被悄悄改掉。**驗證**:`node --check`(JS 合法)+ `run_all` **77 全綠**(未碰 Python)+ 伺服器啟動 serves `#log` markup + clean log。**無 JS 測試框架**(純 Python 專案)→ 前端路由靠 node 語法檢查 + 既有 block-kind 契約測試覆蓋。
 - 🔴 **鐵律**:新增「**當前狀態快照**」走 view block(`#screen` 替換);「**敘事/旁白**」走 log block(入持久日誌);**絕不**把敘事塞進 view(否則它不進日誌、且一行動就消失)。改日誌呈現動 `index.html` 的 `render`/`appendJournal`/`#log` CSS 三點。
 
+### R59 · 角色卡里程碑頁面 redesign:扁平 154 卡 → 系統/技能折疊手風琴 + 配對卡 + 三態 [UI-only]
+
+評估「里程碑頁面太雜亂」(ultracode workflow:5 設計方案 × 對抗驗證 → 使用者選「**手風琴 + 配對卡 + 三態**」完整版)。**根因**:`sheet_masteries` 的 web 分支走 `mastery._defs`(option 層攤平)→ 66 二選一×2 + 22 單一 = **154 張卡一次平鋪**(新角色「未解鎖」區 147 張),無分組/折疊/漸進揭露;二選一兩 option 被拆成**兩張並排卡**(either/or 失真 + 密度翻倍);狀態壓成「已/未解鎖」二分(漏掉決策價值最高的「待選」);缺技能「成長線」視角。**這頁是唯讀參考**(真抉擇在 `_drain_mastery_choices` 於升級/回城呈現)→ 純 UI/唯讀/零存檔/低風險。
+- **view-model 改回 node 層**:新 `console._masteries_view(char, gamedata)` 取代 option 攤平 —— 按 **系統(combat/magic/stealth,`gamedata.skills_by_spec`)→ 技能 → 節點(門檻 25/50/75/100)** 聚合;每節點 `state ∈ {chosen✦, pending◆(達門檻未選), future○}`、`single`(自動授予)、`options`(chosen→只列已選 + `foregone`;pending/future→列 `_choosable_options`)、`remaining`、`has_pending`(預設展開鍵)。`sheet_masteries` web 分支改 `_emit_view("masteries", _masteries_view(...))`;**終端退路保留**(R27,web-only 不執行)。
+- **前端 `renderMasteries` 重寫成手風琴**:系統小標(三系著色)→ 技能可折疊列(標頭顯示 `✦/◆/○+門檻` 門檻點 + 「已選 x/4 · 待選 n」)→ 展開後每節點一張 `.msk-node` 卡(二選一 A|B 並列 + `擇一` 分隔、✦已選〔含「放棄 X」〕、◆待選、○未達〔含「還 N 級」〕)。**折疊純前端**(click/Enter/Space toggle + `aria-expanded`),**預設只展開 `has_pending` 的技能** → 把 154 卡的滾動噪音壓成 ~22 個可掃技能列、決策價值最高的待選自動浮現。
+- **對抗審查(10-agent workflow:4 維 × 每 finding 獨立驗證)**:**0 真功能 bug**,**1 minor cosmetic**(已修)—— 新節點卡誤用既有(已死)地圖 class `.mnode`(line 212,map 改用 `.mmark` 後成死 CSS),其 `border-left:2px`/`margin`/`font-size` 經 cascade 洩入新卡 → 改名 `.msk-node`(CSS 3 + JS 1)即修。
+- **驗證**:`run_all` **77**(`test_web.test_sheet_subview_models` 改驗新 grouped 形狀:系統分組 + 三態不變式 + 配對卡 + chosen/foregone + 預設展開)+ `node --check` + 伺服器 serves markup + Python 眼驗手風琴。**achievements 面板仍用舊 `.mst-grid`/`.mst`**(不受影響)。
+- 🔴 **鐵律**:里程碑頁面是**唯讀參考**(抉擇在 `_drain_mastery_choices`);改顯示動 `console._masteries_view`(資料)+ `index.html renderMasteries`(渲染/折疊)+ `.msk-*`/`.mn-*` CSS;**不碰 mastery 邏輯/opt_id**(R34)、零存檔欄、R27 native view 模式;新前端 class 用 `.msk-*` 命名空間(避開既有 `.mnode`/`.mst` 等)。
+
 ---
 
 ## 4. 開發節奏(ultracode 開著 → 每個功能都這樣做)

@@ -926,11 +926,64 @@ def sheet_factions(char: Character, gamedata: GameData) -> None:
     console.print(_panel(body, title="公會與階級"))
 
 
-def sheet_masteries(char: Character, gamedata: GameData) -> None:
-    """技能里程碑(v2 二選一):已選(✦)/ 待選=達門檻未選(◆,回城或升級時二選一)/ 未達門檻(○)。
+def _masteries_view(char: Character, gamedata: GameData) -> dict:
+    """里程碑頁面(web 原生):按 系統(戰鬥/魔法/潛行)→ 技能 折疊;每節點一張卡含
+    二選一兩 option 並列、三態著色(✦已選 / ◆待選=達門檻未選 / ○未達);預設只展開
+    有待選的技能。降噪:把扁平 154 卡壓成 22 個可掃技能列、按需展開。唯讀、零存檔。"""
+    choices = getattr(char, "mastery_choices", {}) or {}
+    by_skill: dict = {}
+    for n in mastery._nodes(gamedata):
+        by_skill.setdefault(n["skill"], []).append(n)
+    n_chosen = n_pending = 0
+    systems = []
+    for sysk in ("combat", "magic", "stealth"):
+        skills_vm = []
+        for sid in gamedata.skills_by_spec(sysk):
+            nlist = sorted(by_skill.get(sid, []), key=lambda nd: nd["threshold"])
+            if not nlist:
+                continue
+            cur = char.base_skill(sid)
+            nodes_vm = []
+            c = p = f = 0
+            for node in nlist:
+                thr = node["threshold"]
+                opts = mastery._choosable_options(node)
+                single = len(opts) == 1
+                oid = choices.get(node["id"])
+                if oid is not None:                          # 已選
+                    c += 1
+                    co = next((o for o in node["options"] if o.get("opt_id") == oid), None)
+                    nodes_vm.append({"threshold": thr, "state": "chosen", "single": single,
+                                     "options": [{"name": co["name"], "desc": co["desc"]}] if co else [],
+                                     "foregone": [] if single else
+                                                 [o["name"] for o in opts if o.get("opt_id") != oid]})
+                else:                                        # 待選(達門檻)/ 未達
+                    reached = cur >= thr
+                    if reached:
+                        p += 1
+                    else:
+                        f += 1
+                    nodes_vm.append({"threshold": thr, "state": "pending" if reached else "future",
+                                     "single": single,
+                                     "options": [{"name": o["name"], "desc": o["desc"]} for o in opts],
+                                     "remaining": 0 if reached else max(0, thr - cur)})
+            n_chosen += c
+            n_pending += p
+            skills_vm.append({"skill": gamedata.skill_name(sid), "cur": cur, "nodes": nodes_vm,
+                              "counts": {"chosen": c, "pending": p, "future": f}, "has_pending": p > 0})
+        systems.append({"key": sysk, "name": formulas.SPEC_NAMES[sysk], "skills": skills_vm})
+    return {"summary": {"chosen": n_chosen, "pending": n_pending}, "systems": systems}
 
-    待選與未達各列出該節點的兩個選項,讓玩家預覽抉擇。已選節點的「另一條路」不再列出。
+
+def sheet_masteries(char: Character, gamedata: GameData) -> None:
+    """技能里程碑(v2 二選一):已選(✦)/ 待選=達門檻未選(◆)/ 未達門檻(○)。
+
+    Web:按 系統→技能 折疊的手風琴(`_masteries_view`,二選一配對卡 + 三態著色)。
+    終端退路(R27;web-only 下不執行)維持扁平三段列表。
     """
+    if _web is not None:
+        _emit_view("masteries", _masteries_view(char, gamedata))
+        return
     unl = mastery.unlocked(char, gamedata)
     chosen_nodes = set(getattr(char, "mastery_choices", {}).keys())
     other = [e for e in mastery._defs(gamedata)
@@ -939,19 +992,6 @@ def sheet_masteries(char: Character, gamedata: GameData) -> None:
                      key=lambda x: (x["skill"], x["threshold"]))
     future = sorted([e for e in other if char.base_skill(e["skill"]) < e["threshold"]],
                     key=lambda x: (x["skill"], x["threshold"]))
-    if _web is not None:
-        vm_unl = [{"name": e["name"], "skill": gamedata.skill_name(e["skill"]), "desc": e["desc"]}
-                  for e in unl]
-        single_nodes = {n["id"] for n in mastery._nodes(gamedata) if len(mastery._choosable_options(n)) == 1}
-        vm_lock = []
-        for e in pending + future:
-            cur = char.base_skill(e["skill"])
-            vm_lock.append({"name": e["name"], "skill": gamedata.skill_name(e["skill"]),
-                            "desc": e["desc"], "cur": cur, "threshold": e["threshold"],
-                            "remaining": max(0, e["threshold"] - cur),
-                            "auto": e["node_id"] in single_nodes})   # 單一 perk 自動授予(非二選一)
-        _emit_view("masteries", {"unlocked": vm_unl, "locked": vm_lock})
-        return
     body = Text()
     if unl:
         body.append("已銘刻\n", style=f"bold {GOLD}")
