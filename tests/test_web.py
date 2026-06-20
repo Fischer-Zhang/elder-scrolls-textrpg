@@ -625,6 +625,38 @@ def test_back_key_works_on_large_menus():
     assert 'e.key === "0" && !digitBuf' in html       # 大選單:首位 0(非接續數字)→ 返回
 
 
+def test_origin_pick_clears_screen():
+    """創角開局選定/返回後送出 clear 狀態塊 → 後續職業選單不殘留『開局一覽』面板(stale residue 修)。"""
+    from tesrpg import main as M
+    from tesrpg.gamedata import get_gamedata
+    gd = get_gamedata()
+    backend = WebBackend()
+    ui.use_web_backend(backend, _rec())
+    try:
+        def ans(spec):
+            if spec["type"] == "menu":                       # 類別選單 → 選第一類
+                return spec["options"][0]["key"]
+            return spec.get("extra_keys", ["__back__"])[0]   # picker(grouped)→ 點第一張開局卡
+        frames, pick = _drive_multi(backend, lambda: M._choose_origin(gd, allow_back=True), [ans, ans])
+        assert pick is not None
+        assert any(b["kind"] == "clear" for b in frames[0]["blocks"])    # 類別選單前已清屏
+        assert any(b.get("kind") == "clear" for b in backend.blocks)     # 選定後 pending clear(供下一步職業清屏)
+    finally:
+        _restore()
+
+
+def test_clear_block_and_frontend_filter():
+    """clear 機制契約:後端 clear_block 出 clear kind;前端 render 把 clear 計入 stateBlocks(→ 清屏)。"""
+    backend = WebBackend()
+    backend.clear_block()
+    assert backend.blocks and backend.blocks[-1]["kind"] == "clear"
+    static = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                          "tesrpg", "web", "static", "index.html")
+    with open(static, encoding="utf-8") as f:
+        html = f.read()
+    assert 'b.kind === "clear"' in html   # render() 把 clear 視為 state block → renderScreen 清屏
+
+
 def run():
     # 其他測試模組(test_m12/m13 等)在 import 時就把 ui.menu 換成 stub 並未還原;
     # reload 還原真正的 5 個輸入原語,確保此處測到的是 web seam 而非別人的 stub。

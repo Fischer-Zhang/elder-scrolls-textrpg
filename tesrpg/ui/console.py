@@ -110,6 +110,14 @@ def _emit_view(name: str, data) -> None:
     _web.add_block(html, name, data)
 
 
+def clear_screen() -> None:
+    """清空 #screen 狀態快照(web)——離開帶面板的子畫面(如創角開局一覽)後呼叫,
+    使後續純選單畫面不殘留前一面板。終端模式無副作用。"""
+    if _web is not None:
+        html = console.export_html(inline_styles=True, code_format="{code}", clear=True)
+        _web.clear_block(html)
+
+
 _fmt_console = None
 
 

@@ -44,6 +44,13 @@ class WebBackend:
             self.blocks.append({"kind": "html", "html": pending_html})
         self.blocks.append({"kind": "log", "html": log_html})
 
+    def clear_block(self, pending_html: str = "") -> None:
+        """送出一個『清空 #screen』狀態塊(clear kind):前端會 renderScreen→innerHTML 清空但不附任何面板。
+        用於離開帶面板的子畫面(如創角開局一覽)後,讓後續純選單畫面不殘留前一面板。"""
+        if pending_html.strip():
+            self.blocks.append({"kind": "html", "html": pending_html})
+        self.blocks.append({"kind": "clear"})
+
     def prompt(self, trailing_html: str, spec: dict, hud=None):
         """送出一幀(blocks 串 + 輸入規格 + 常駐 HUD),阻塞等使用者送回並驗證後回傳。
 

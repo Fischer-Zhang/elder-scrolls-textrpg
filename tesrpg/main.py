@@ -142,12 +142,14 @@ def _choose_origin(gamedata: GameData, allow_back: bool = False) -> str | None:
             for i, (lbl, oids) in enumerate(ORIGIN_CATEGORIES)]
     cats = [(lbl, oids) for lbl, oids in cats if oids]
     while True:
+        ui.clear_screen()                     # 進類別選單前清 #screen → 沖掉上一輪 picker 的開局一覽面板(免殘留)
         cat = ui.menu("開局背景(不一樣的人生)—— 先選一類",
                       [(lbl, f"{lbl}（{len(oids)} 種)") for lbl, oids in cats], allow_back=allow_back)
-        if cat is None:                       # 類別選單返回 → 退回上一步(星座)
+        if cat is None:                       # 類別選單返回 → 退回上一步(星座);#screen 已於本圈頂清乾淨
             return None
         pick = ui.origin_picker(gamedata, dict(cats)[cat])   # 一覽即選單:點開局卡(web)/輸入編號(終端)
         if pick is not None:
+            ui.clear_screen()                 # 選定 → 沖開局一覽面板,讓下一步(職業)從乾淨畫面開始
             return pick
 
 

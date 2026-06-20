@@ -1113,7 +1113,7 @@
     const prevVal = prev ? prev.value : null;
     const samePrompt = (curPid !== null && frame.prompt_id === curPid);
     const blocks = frame.blocks || [];
-    const stateBlocks = blocks.filter(function (b) { return b.kind === "view" || b.kind === "html"; });
+    const stateBlocks = blocks.filter(function (b) { return b.kind === "view" || b.kind === "html" || b.kind === "clear"; });
     const logBlocks = blocks.filter(function (b) { return b.kind === "log"; });
     renderHud(frame.hud);
     if (stateBlocks.length) renderScreen(stateBlocks);   // 只在有新狀態時替換;純敘事幀保留前畫面
