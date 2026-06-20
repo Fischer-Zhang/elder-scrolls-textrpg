@@ -94,7 +94,7 @@
 | 學徒布袍 cloth | 資源上限+施法折扣 | magicka +40;★cast_fatigue_factor=0.80 |
 | 大法師 archmage | 資源上限+施法折扣 | magicka +70;cast_fatigue_factor=0.65 |
 
-### 淬鍊(★獨立永久層,綁 item_id,不隨耐久折損;僅玩家;改 combat/formulas 必跑 sim R25)
+### 淬鍊(★獨立永久層,綁 item_id,永久不衰減;僅玩家;改 combat/formulas 必跑 sim R25)
 | 淬鍊 | kind | 數值 | 上限 |
 |---|---|---|---|
 | 武器淬鍊 | 傷害 | +2 傷/級,滿 +10 | min(5, smithing//20) + 里程碑「淬火宗師」+1 |

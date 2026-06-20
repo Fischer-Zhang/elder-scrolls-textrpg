@@ -4,7 +4,7 @@
 從一無所有開始:**做什麼、就練什麼**(learn-by-doing),自由探索九大省份、鑽地城、打怪、學魔法、
 加入公會、闖蕩天下。沒有固定主線逼你走,**你的技能成長軌跡就是你的故事**。
 
-- **平台**:Python 3.11+,終端機 CLI(使用 [`rich`](https://github.com/Textualize/rich) 做角色卡/戰鬥面板/地圖選單/色彩)
+- **平台**:Python 3.11+,**瀏覽器 Web 版**(純 stdlib 本機伺服器;後端用 [`rich`](https://github.com/Textualize/rich) 把角色卡/戰鬥面板/地圖渲成 HTML view-model);終端版已於 R27 移除
 - **語言慣例**:程式碼、變數、資料 key 用英文(沿用上古卷軸原文術語,如 `destruction`、`altmer`);玩家看到的文字(地名、對話、UI 標籤)用繁體中文
 - **核心循環**:行動制(非即時、非回合=年)。玩家在某地點選擇行動 → 推進時間(時/日)→ 觸發事件/遭遇;戰鬥是獨立的回合制子迴圈
 
@@ -112,7 +112,7 @@ Faction       data/factions.json   公會
 - **八大學派**:Destruction、Restoration、Alteration、Illusion、Conjuration、Mysticism、(+ Alchemy、Enchant 作為技能)
 - 施法成功率/費用隨學派技能改善;法術效果走統一 `effects` 結構(傷害/治療/變形/召喚/隱身/開鎖…)
 - **煉金 (Alchemy)**:採集材料(ingredient)→ 組合 → 依技能與材料共有效果產出藥水;**效果靠試驗/技能逐步揭露**(吃材料試出第一個效果)✅ **已實作(深化 Phase 3 / R32:材料效果預設 `???`,嚐一口/煉製成功/技能被動三源揭露)**。產出涵蓋即時回復(回血/魔/體)、**限時增益(強化屬性/技能 + 抗元素;深化 Phase 1 / R30,走獨立 `potion_*` 層)**、與有害毒劑(塗武器,見 M9;深化 Phase 2 / R31 擴五毒型)
-- **附魔 (Enchant)**:用充能靈魂石把效果附到裝備;武器/防具走 condition(耐久)系統,需 Armorer 技能修理
+- **附魔 (Enchant)**:用充能靈魂石把效果附到裝備(武器命中效果 / 護甲強化技能·抗性 / 飾品;靈魂石經濟見 R15)。**裝備無耐久損耗**(condition/Armorer 修理整套已於 R33 移除,Skyrim 式)
 
 ### 3.5 世界與探索 (World & Exploration)
 - 世界 = **地區圖(graph)**,非像素地圖:Region 之間 `connected_regions` 連通,旅行耗時(受 speed/坐騎/天氣)
@@ -125,7 +125,7 @@ Faction       data/factions.json   公會
 ### 3.6 經濟與物品 (Economy & Inventory)
 - **負重 (encumbrance)**:物品有重量,上限由 strength 決定;超重影響移動/戰鬥
 - **交易**:買賣價受 Mercantile + Personality + NPC disposition 影響;商店有金幣上限與庫存
-- **裝備槽**:武器 + 各防具部位;condition 下降 → 效能降,Armorer 修理
+- **裝備槽**:武器 + 各防具部位(無耐久損耗,見 §3.4 附魔 / R33)
 - 戰利品、寶箱、屍體搜刮、偷竊(觸發犯罪)
 
 ### 3.7 公會、任務與聲望 (Factions / Quests / Crime) — 內容層,先做骨架
@@ -189,8 +189,8 @@ SLG/
 能在 Tamriel 上旅行、鑽地城、撿裝備。
 
 ### ✅ M4 — 魔法與製作
-六大學派與法術(毀滅無視護甲、召喚盟友、護盾/恐懼/擒魂)、煉金、附魔、武器/防具 condition 與 Armorer 修理。
-能當法師打、煉藥、附魔、修裝。
+六大學派與法術(毀滅無視護甲、召喚盟友、護盾/恐懼/擒魂)、煉金、附魔。
+能當法師打、煉藥、附魔。(原 M4 的裝備耐久/修理已於 R33 整套移除)
 
 ### ✅ M5 — 公會、任務與犯罪
 三大公會入會/晉升、任務引擎(四類目標自動結算)、犯罪賞金、衛兵盤查、disposition 對話。
