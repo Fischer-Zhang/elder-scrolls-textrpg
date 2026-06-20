@@ -24,6 +24,9 @@
 | `vampire_skill_bonus` | 技能 | sneak/illusion 各 +5/+10/+15 | ★唯一餵 sneak 技能的身分層;加潛行命中/門檻**非**偷襲倍率 |
 | `vampire_resist` | 抗性 | disease +100(各階恆有含T0)、frost +10/+20/+30、**fire −10/−20/−30(弱點▼)** | fire/frost 吃 magic 管線(R14);disease 100=免疫(故與狼人互斥) |
 | 陽光灼傷▼ | 懲罰 | SUN_DMG=1.5×日照時×階(stg≥1,地城遮蔽) | 戶外懲罰非戰鬥增益 |
+| 夜視(R56) | 情境 | 夜間潛近 +0.05×階 / 旅行迴避 +0.04×階(僅夜晚·讀快取 stage) | 陽光的鏡像(日損夜利);非戰鬥數值·折入 stealth approach_bonus |
+| 社交魅惑(R56) | 情境 | persuade/talk_down +0.10(任一階·vampire-only) | 逆補階級 shun 社交懲罰·沿用既有夾限 |
+| 偽裝(R56) | 功能 | 穿滿 `nightshade` 四件套裝(disguise 旗)→ 城內不被識破圍捕/shun | 非數值;`is_disguised` 覆寫 manhunt/shun/attitude·requires_vampire |
 
 ### 狼人(獸血階 tier 0→4,門檻累計吞噬 FEED_TIERS=[10,25,50,100];限獸形中)
 | 子層 | kind | 數值(T0→T4) | 備註 |

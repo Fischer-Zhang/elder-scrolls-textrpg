@@ -439,7 +439,8 @@ def _triage_armed(char) -> bool:
 
 
 def _choose_combat_action(state: GameState, gamedata: GameData, enemies: list, allies: list,
-                          vanish_used: int = 0, mounted: bool = False, first_round: bool = False):
+                          vanish_used: int = 0, mounted: bool = False, first_round: bool = False,
+                          charm_used: bool = False):
     """回傳玩家本回合的行動 dict:{type, spell_id?, target?}。
 
     mounted/first_round:野外騎乘遭遇的第一回合 → 開放坐騎戰技(戰馬衝鋒 / 獵馬騎射)。
@@ -508,6 +509,11 @@ def _choose_combat_action(state: GameState, gamedata: GameData, enemies: list, a
     if (mastery.has_rally(player, gamedata) and not _has_rally(player)
             and player.fatigue >= RALLY_FATIGUE):
         opts.append(("rally", "📣 號令（鼓舞全隊增傷 · 耗體)"))
+    # 吸血鬼「魅惑凝視」:轉化後 + 體力足 + 本場未用 → 迷惑一敵使其恐懼不進攻(每場一次;R56)
+    if (vampirism.is_vampire(player) and not charm_used
+            and player.fatigue >= VAMPIRE_CHARM_FATIGUE
+            and any(combat.is_alive(e) for e in enemies)):
+        opts.append(("vampire_charm", f"🩸 魅惑凝視（迷惑一敵 · 使其恐懼不進攻 · 耗 {VAMPIRE_CHARM_FATIGUE} 體力)"))
     # 刺客「致命烙印」:選了里程碑 + 潛行達門檻 + 體力足 → 標記一敵(後續近戰破甲)
     _dm = mastery.deathmark(player, gamedata)
     if (_dm and player.base_skill("sneak") >= _dm.get("sneak_gate", 50)
@@ -538,7 +544,7 @@ def _choose_combat_action(state: GameState, gamedata: GameData, enemies: list, a
         else:
             target = None
         return {"type": "cast", "spell_id": sid, "target": target}
-    if choice in ("aimed", "crippling", "skirmish", "deathmark", "charge", "skirmish_ride"):   # 皆先選敵方目標(散兵武技 / 刺客烙印 / 坐騎戰技)
+    if choice in ("aimed", "crippling", "skirmish", "deathmark", "charge", "skirmish_ride", "vampire_charm"):   # 皆先選敵方目標(散兵武技 / 刺客烙印 / 坐騎戰技 / 吸血鬼魅惑)
         return {"type": choice, "target": _choose_enemy_target(state, gamedata, enemies, allies)}
     if choice == "power":
         eff = powers.power_def(powers.power_id(player, gamedata))["effect"]
@@ -687,6 +693,7 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
     trapped_kills: set[int] = set()
     opening = not alerted   # 開場偷襲:首個攻擊吃潛行加成;若敵人已警覺(撤退失敗)則無
     vanishes_done = 0  # 本場已成功隱遁次數(成功率遞減,防無限風箏)
+    charm_used = False  # 本場是否已用吸血鬼「魅惑凝視」(每場一次;暫態,不入檔)
 
     # 獸形快取對齊:旅行/休息可能在「同一動作內」推進時間過了獸形時效又觸發戰鬥,
     # 而 combat 讀快取布林、game_loop 的 update 只在每圈頂端刷新 → 進戰前對齊,杜絕以過期獸形作戰。
@@ -733,7 +740,7 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
             blocking = False
         else:
             action = _choose_combat_action(state, gamedata, enemies, battle["allies"], vanishes_done,
-                                           mounted=mounted, first_round=(round_no == 1))
+                                           mounted=mounted, first_round=(round_no == 1), charm_used=charm_used)
             blocking = action["type"] == "block"
 
         # ---- 玩家階段 ----
@@ -823,6 +830,17 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
                            style="bold magenta")
             else:
                 ui.message("你發出震懾的狼嚎,但眼前的強敵毫不退縮。", style="grey70")
+        elif action["type"] == "vampire_charm":   # 吸血鬼:魅惑凝視 → 迷惑一敵使其恐懼不進攻(每場一次;R56)
+            tgt = action["target"]
+            if combat.is_alive(tgt):
+                player.fatigue = max(0, player.fatigue - VAMPIRE_CHARM_FATIGUE)
+                charm_used = True
+                res = magic.apply_control(tgt, "fear", gamedata, state.rng,   # R44:走集中 helper(solo BOSS 機率抵抗 + 去重)
+                                          turns=VAMPIRE_CHARM_TURNS, source="vampire_charm")
+                if res == "applied":
+                    ui.message(f"你以血族魅力凝視{tgt.name} —— 牠目光渙散、心神被攝,不敢進攻。", style="bold magenta")
+                else:
+                    ui.message(f"你施展魅惑凝視,但{tgt.name}意志如鐵,掙脫了你的蠱惑。", style="grey70")
         elif action["type"] == "block":
             combat.player_block_cost(player)
             ui.message("你舉盾戒備,準備擋下來襲。", style="grey70")
@@ -1793,6 +1811,8 @@ STANDARD_COST_MAGICKA = 15      # 立旗魔力代價
 STANDARD_COST_FATIGUE = 10      # 立旗體力代價
 RALLY_EMPOWER = 0.15            # 口才「戰陣號令」對同伴的增傷(固定,不吃 power;嚴格 < 戰旗 0.20 上界)
 RALLY_FATIGUE = 12             # 立號令體力代價(純耗體不耗魔;口才宗師以聲喝振士氣)
+VAMPIRE_CHARM_FATIGUE = 10     # 吸血鬼「魅惑凝視」體力代價(每場一次;R56)
+VAMPIRE_CHARM_TURNS = 2        # 魅惑凝視:被迷惑之敵恐懼不進攻的回合數
 TRIAGE_ALLY_HP_RATIO = 0.30     # 同伴生命低於此 → 觸發治療師「戰地搶救」武裝
 
 
@@ -3828,7 +3848,7 @@ def _curse_manhunt(state: GameState, gamedata: GameData) -> str | None:
         n = 3 + min(2, lycanthropy.tier(char))
         bounty_add = 100
         ui.message("一頭巨狼現身鬧市 —— 鎮民驚逃、警鐘大作,衛兵舉刃自四面湧來圍捕你!", style="bold red")
-    elif vampirism.is_shunned(char, state):
+    elif vampirism.is_shunned(char, state) and not vampirism.is_disguised(char, gamedata):   # 偽裝入城 → 不被識破圍捕(R56)
         if not state.rng.chance(vampirism.detection_chance(char, state)):
             return None
         n = 2 + min(2, vampirism.stage(char, state) - vampirism.SHUN_STAGE)
@@ -4037,7 +4057,8 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
         player = state.player
         # 世人拒於門外:高階吸血鬼,或在城鎮中仍處獸形的狼人(獸形入城經計時 carryover)
         beast_in_town = lycanthropy.is_beast(player, state) and loc["type"] in ("town", "city")
-        shunned = vampirism.is_shunned(player, state) or beast_in_town
+        shunned = (vampirism.is_shunned(player, state)
+                   and not vampirism.is_disguised(player, gamedata)) or beast_in_town   # 偽裝入城 → 不被拒於門外(R56)
         # --- 冒險 ---
         adventure: list = []
         if loc["type"] == "dungeon":

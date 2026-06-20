@@ -79,7 +79,7 @@ def travel(char: Character, gamedata: GameData, dest_id: str, time, rng: RNG) ->
     回傳 {"foe":遭遇 Creature 或 None, "hours":實際耗時, "base_hours":名目耗時,
           "skill_events":運動升點事件}。遭遇尚未開打 —— 由上層決定接戰/逃避。
     """
-    from tesrpg.systems import mastery, mounts, party
+    from tesrpg.systems import mastery, mounts, party, vampirism
     links = current_location(char, gamedata).get("links", {})
     base_hours = links[dest_id]
     travel_factor = max(0.5, formulas.athletics_travel_factor(char.skill("athletics"))
@@ -90,7 +90,9 @@ def travel(char: Character, gamedata: GameData, dest_id: str, time, rng: RNG) ->
     dest = gamedata.location(dest_id)
 
     foe = None
-    chance = encounter_chance(dest.get("danger", 0), time.hour) * (1 - mounts.encounter_evade(char, gamedata))   # 獵馬規避路途埋伏
+    chance = (encounter_chance(dest.get("danger", 0), time.hour)
+              * (1 - mounts.encounter_evade(char, gamedata))     # 獵馬規避路途埋伏
+              * (1 - vampirism.night_evade(char, time)))         # 吸血鬼夜視:夜間旅行更易避開埋伏(R56)
     if rng.chance(chance):
         foe = combat.random_encounter(gamedata, char.level, rng,
                                       max_danger=dest.get("danger", 1) + 1,

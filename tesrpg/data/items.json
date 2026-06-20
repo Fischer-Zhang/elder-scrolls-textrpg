@@ -47,5 +47,6 @@
     {"boon": "hermaeus_might",  "label": "力量之徑 —— 鍛體禦敵:耐力·重甲·格擋·鍛造(火焰抗性)"},
     {"boon": "hermaeus_shadow", "label": "暗影之徑 —— 身輕如影:敏捷·速度·雜技·輕甲(毒素抗性)"},
     {"boon": "hermaeus_magic",  "label": "魔法之徑 —— 真知禁咒:智力·意志·破壞·秘術·魔力(魔法抗性)"}
-  ]}}
+  ]}},
+  "bloodkin_amulet": {"name": "血親護符", "kind": "jewelry", "slot": "amulet", "value": 800, "weight": 0.3, "requires_vampire": true, "enchant": {"kind": "fortify_attribute", "attr": "personality", "magnitude": 10}}
 }

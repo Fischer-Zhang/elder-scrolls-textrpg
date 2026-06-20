@@ -106,10 +106,32 @@ def thorns_reflect(char: Character, gamedata: GameData) -> float:
     return total / 100.0
 
 
+def _vampire_locked(char: Character, gamedata: GameData, item_id) -> bool:
+    """吸血鬼專屬裝備:非吸血鬼不可裝(R56·資料欄 `requires_vampire`·向後相容預設無)。"""
+    if not (gamedata.item_or_none(item_id) or {}).get("requires_vampire"):
+        return False
+    from tesrpg.systems import vampirism
+    return not vampirism.is_vampire(char)
+
+
+def shed_vampire_locked(char: Character, gamedata: GameData) -> None:
+    """卸下所有 `requires_vampire` 裝備(失去吸血鬼身分時用,如治癒):物品留背包、僅脫下,
+    以免凡人之身仍吃到吸血鬼專屬套裝/附魔加成(R56)。"""
+    def _locked(iid):
+        return bool(iid and (gamedata.item_or_none(iid) or {}).get("requires_vampire"))
+    if _locked(getattr(char, "weapon", "")):
+        char.weapon = "fists"
+    if _locked(getattr(char, "offhand", "")):
+        char.offhand = ""
+    for slot, iid in list(getattr(char, "equipped", {}).items()):
+        if _locked(iid):
+            char.equipped.pop(slot, None)
+
+
 def equip_weapon(char: Character, gamedata: GameData, item_id: str) -> bool:
     if gamedata.item(item_id).get("kind") != "weapon":
         return False
-    if count_item(char, item_id) <= 0:
+    if count_item(char, item_id) <= 0 or _vampire_locked(char, gamedata, item_id):
         return False
     char.weapon = item_id
     if is_two_handed(gamedata, item_id):    # 雙手握持 → 自動卸下盾與副手(沿用 remove_item 自動卸裝風格)
@@ -145,7 +167,7 @@ def equip_offhand(char: Character, gamedata: GameData, item_id: str) -> bool:
     if is_two_handed(gamedata, char.weapon):   # 主手雙手武器占雙手 → 無副手槽
         return False
     d = gamedata.item(item_id)
-    if d.get("kind") != "weapon" or d.get("archetype") != "dagger":
+    if d.get("kind") != "weapon" or d.get("archetype") != "dagger" or _vampire_locked(char, gamedata, item_id):
         return False
     need = 2 if item_id == char.weapon else 1
     if count_item(char, item_id) < need:
@@ -160,7 +182,7 @@ def unequip_offhand(char: Character) -> None:
 
 def equip_armor(char: Character, gamedata: GameData, item_id: str) -> bool:
     d = gamedata.item(item_id)
-    if d.get("kind") != "armor" or count_item(char, item_id) <= 0:
+    if d.get("kind") != "armor" or count_item(char, item_id) <= 0 or _vampire_locked(char, gamedata, item_id):
         return False
     if d["slot"] == "shield" and is_two_handed(gamedata, char.weapon):   # 雙手武器在手 → 不能裝盾
         return False
@@ -186,7 +208,7 @@ def equip_jewelry(char: Character, gamedata: GameData, item_id: str) -> str | No
     回傳實際使用的槽位(供 UI),不可戴回傳 None。
     """
     d = gamedata.item(item_id)
-    if d.get("kind") != "jewelry" or count_item(char, item_id) <= 0:
+    if d.get("kind") != "jewelry" or count_item(char, item_id) <= 0 or _vampire_locked(char, gamedata, item_id):
         return None
     slot = d["slot"]
     if slot == "ring":

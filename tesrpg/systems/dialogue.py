@@ -48,8 +48,10 @@ def persuade_chance(char: Character, gamedata: GameData, npc_id: str) -> float:
     """說服成功率(唯讀,供 UI 預示;與 persuade 公式單一來源)。折服里程碑 → 1.0。"""
     if mastery.can_guaranteed_persuade(char, gamedata, npc_id):
         return 1.0
+    from tesrpg.systems import vampirism
     skill = char.skill("speechcraft")
-    return max(0.1, min(0.9, 0.35 + (skill + char.attr("personality") - 50) * 0.005))
+    return max(0.1, min(0.9, 0.35 + (skill + char.attr("personality") - 50) * 0.005
+                        + vampirism.charm_social_bonus(char)))      # 吸血鬼社交魅惑(R56·沿用夾限)
 
 
 def persuade(char: Character, gamedata: GameData, npc_id: str, rng: RNG) -> dict:
@@ -101,8 +103,10 @@ def offered_quest(char: Character, gamedata: GameData, npc_id: str) -> str | Non
 def talk_down_chance(char: Character, bounty: int, gamedata: GameData = None) -> float:
     """以口才說退衛兵的成功率:吃口才+魅力,賞金越高越難。夾 0.05–0.80。
     里程碑「巧言脫罪」(talk_down_lever)抬高下限。"""
+    from tesrpg.systems import vampirism
     base = max(0.05, min(0.80,
-               0.10 + (char.skill("speechcraft") + char.attr("personality") - 50) * 0.005 - bounty * 0.002))
+               0.10 + (char.skill("speechcraft") + char.attr("personality") - 50) * 0.005 - bounty * 0.002
+               + vampirism.charm_social_bonus(char)))               # 吸血鬼社交魅惑(R56·沿用夾限)
     if gamedata is not None:
         from tesrpg.systems import mastery
         base = max(base, mastery.talk_down_mod(char, gamedata).get("floor", 0.0))
@@ -217,7 +221,7 @@ def attitude(char: Character, state, gamedata: GameData, npc_id: str, ctx: dict 
     """NPC 對玩家的態度分級(驅動問候池 + 話題可見性):
     vampire_seen(看破吸血鬼,優先)> hostile(敵陣營)> cold(好感<25)> friendly(同陣營)> neutral。"""
     from tesrpg.systems import vampirism
-    if vampirism.is_shunned(char, state):
+    if vampirism.is_shunned(char, state) and not vampirism.is_disguised(char, gamedata):   # 偽裝入城 → 不被看破(R56)
         return "vampire_seen"
     rel = (ctx or talk_ctx(state, gamedata, npc_id))["relationship"]
     if rel == "enemy":

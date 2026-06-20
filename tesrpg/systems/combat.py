@@ -973,9 +973,13 @@ def stealth_approach_chance(player: Character, enemies: list, gamedata: GameData
                             night: bool = False, scouted: bool = False, surprise: bool = False) -> float:
     foe_agi = max((e.agility for e in enemies), default=0)
     armor_weight = inventory.armor_worn_weight(player, gamedata)
+    approach_bonus = mastery.approach_bonus(player, gamedata)          # 「無聲潛近」
+    if night:                                                          # 吸血鬼夜視:夜間潛近額外加成(R56·非吸血鬼為 0 → sim byte-identical)
+        from tesrpg.systems import vampirism
+        approach_bonus += vampirism.night_vision_bonus(player)
     return formulas.stealth_approach_chance(
         player.skill("sneak"), foe_agi, len(enemies), armor_weight, night, scouted, surprise,
-        approach_bonus=mastery.approach_bonus(player, gamedata),       # 「無聲潛近」
+        approach_bonus=approach_bonus,
         armor_relief=mastery.armor_sneak_relief(player, gamedata))     # 「無聲披掛」
 
 

@@ -261,5 +261,7 @@
   "dwarven_dagger": {"name": "矮人匕首", "skill": "blade", "damage": 11, "value": 140, "weight": 4, "archetype": "dagger", "speed": 1.4},
   "ebony_dagger":   {"name": "黑檀匕首", "skill": "blade", "damage": 13, "value": 170, "weight": 4, "archetype": "dagger", "speed": 1.4},
 
-  "ebony_mace":  {"name": "黑檀釘錘", "skill": "blunt", "damage": 21, "value": 560, "weight": 16, "archetype": "mace", "speed": 0.75}
+  "ebony_mace":  {"name": "黑檀釘錘", "skill": "blunt", "damage": 21, "value": 560, "weight": 16, "archetype": "mace", "speed": 0.75},
+
+  "nightfang_dagger": {"name": "夜牙匕首", "skill": "blade", "damage": 14, "value": 1400, "weight": 3, "archetype": "dagger", "speed": 1.5, "requires_vampire": true, "enchant": {"kind": "weapon_status", "status": "vampiric", "magnitude": 50}}
 }

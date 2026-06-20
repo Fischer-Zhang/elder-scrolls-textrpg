@@ -48,3 +48,10 @@ def is_full_moon(state_or_time) -> bool:
 def is_new_moon(state_or_time) -> bool:
     """新月窗(週期起點 _DAYS_PER_PHASE 日)。"""
     return _bucket(state_or_time) == _NEW_BUCKET
+
+
+def is_night(state_or_time) -> bool:
+    """夜晚窗 [21:00, 6:00):吸血鬼夜視/夜行的判斷,與陽光時段 [8,18) 對位(日損夜利)。"""
+    t = getattr(state_or_time, "time", state_or_time)
+    h = t.hour % 24
+    return h < 6 or h >= 21

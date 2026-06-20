@@ -10,5 +10,6 @@
   "archmage": {"name": "大法師套裝", "bonus": {"kind": "fortify_resource", "stat": "magicka", "magnitude": 70, "cast_fatigue_factor": 0.65}},
   "daedric":      {"name": "魔族套裝",   "bonus": {"kind": "fortify_resource", "stat": "health", "magnitude": 60}},
   "dragonscale":  {"name": "龍鱗套裝",   "bonus": {"kind": "resist_element", "element": "fire", "magnitude": 25}},
-  "dragonpriest": {"name": "龍祭司套裝", "bonus": {"kind": "fortify_resource", "stat": "magicka", "magnitude": 110}}
+  "dragonpriest": {"name": "龍祭司套裝", "bonus": {"kind": "fortify_resource", "stat": "magicka", "magnitude": 110}},
+  "nightshade":   {"name": "夜影套裝", "bonus": {"kind": "fortify_skill", "skill": "illusion", "magnitude": 20, "disguise": true}}
 }

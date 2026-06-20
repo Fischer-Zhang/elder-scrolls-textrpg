@@ -98,6 +98,42 @@ def detection_chance(char: Character, state) -> float:
 
 
 # ======================================================================
+# R56 能力深化:夜視 / 社交魅惑 / 偽裝
+# ======================================================================
+NIGHT_VISION_PER_STAGE = 0.05    # 夜視:夜間潛近成功率每階加成(階級 3 → +0.15;陽光詛咒的鏡像)
+NIGHT_EVADE_PER_STAGE = 0.04     # 夜視:夜間旅行迴避遭遇每階(乘性削遭遇率)
+CHARM_SOCIAL_BONUS = 0.10        # 社交魅惑:吸血鬼超自然魅力 → 說服/說退衛兵成功率小幅加成(有界·逆補 shun)
+
+
+def night_vision_bonus(char: Character) -> float:
+    """夜視:夜間潛近的額外成功率(讀快取 `vampire_stage`;**呼叫端負責只在夜間套用**)。
+    非吸血鬼 → 0;進食壓階(stage 0)→ 0(獵性隨饑渴覺醒)。"""
+    return getattr(char, "vampire_stage", 0) * NIGHT_VISION_PER_STAGE if is_vampire(char) else 0.0
+
+
+def night_evade(char: Character, state_or_time) -> float:
+    """夜視:吸血鬼夜間旅行對遭遇率的乘性削減(僅夜晚·隨快取階級)。供 world.travel 用(只有 time)。"""
+    from tesrpg.systems import moons
+    if not is_vampire(char) or not moons.is_night(state_or_time):
+        return 0.0
+    return min(0.5, getattr(char, "vampire_stage", 0) * NIGHT_EVADE_PER_STAGE)
+
+
+def charm_social_bonus(char: Character) -> float:
+    """社交魅惑:吸血鬼 → 說服/說退衛兵成功率小幅加成(有界·沿用呼叫端夾限)。"""
+    return CHARM_SOCIAL_BONUS if is_vampire(char) else 0.0
+
+
+def is_disguised(char: Character, gamedata: GameData) -> bool:
+    """穿滿吸血鬼暗影套裝(nightshade 四件·套裝 bonus 帶 `disguise` 旗)→ 混入凡人社會:
+    不被 R50 識破圍捕、不受階級 shun 社交封鎖。比照 `inventory.cast_fatigue_factor` 隱藏鍵範式·零存檔欄。"""
+    if not is_vampire(char):
+        return False
+    from tesrpg.systems import inventory
+    return bool((inventory.active_set_bonus(char, gamedata) or {}).get("disguise"))
+
+
+# ======================================================================
 # 階級加成(獨立層,與裝備加成同模式)
 # ======================================================================
 def _bonuses(stg: int) -> tuple[dict, dict, dict]:
@@ -151,7 +187,9 @@ def cure(char: Character, gamedata: GameData) -> None:
     char.is_vampire = False
     char.vampire_infected_day = -1
     char.vampire_fed_day = 0
-    apply_to_character(char, None, gamedata)   # 非吸血鬼分支:清空 vampire_* 並 recompute
+    from tesrpg.systems import inventory
+    inventory.shed_vampire_locked(char, gamedata)   # 卸下吸血鬼專屬裝(凡人之身不再吃其加成;R56·留背包)
+    apply_to_character(char, None, gamedata)   # 非吸血鬼分支:清空 vampire_* 並 recompute(讀已脫下的 equipped)
 
 
 def cure_infection(char: Character) -> bool:

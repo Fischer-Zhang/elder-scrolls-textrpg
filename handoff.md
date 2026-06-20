@@ -50,7 +50,7 @@
 
 #### 公會、任務與政治
 - **七大公會**:戰士/法師/盜賊 + 黑暗兄弟會 + 神話黎明 + 九神騎士團 + **戰友團**(白漫·狼人血脈歸宿,獸血儀式繫於其內圈)(技能門檻/福利/對立/分支壓軸)
-- **多階段任務引擎**;犯罪賞金 + 衛兵 + 謀殺;**吸血鬼化**(力量↔詛咒天平)、**狼人化**(戰友團內圈獸血,獸形變身)、**斯庫瑪/月糖成癮**(亢奮↔戒斷天平,艾爾斯維爾)
+- **多階段任務引擎**;犯罪賞金 + 衛兵 + 謀殺;**吸血鬼化**(力量↔詛咒天平·夜視/戰鬥+社交魅惑/偽裝暗影套裝 R56)、**狼人化**(戰友團內圈獸血,獸形變身)、**斯庫瑪/月糖成癮**(亢奮↔戒斷天平,艾爾斯維爾)
 - **領主政治 / 城戰**:謁見 → 委託 → 武士冊封;圍城 + 破城 + 收稅 + 招兵買馬;**陣營動態大事件**
 
 #### 系統與打磨
@@ -1124,6 +1124,15 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 - **~10 新成就(`data/achievements.json`·id 對既有 27 個無撞)**:親王所眷/湮滅寵兒(誓福 8/15)、血主臨朝(coven_vampire r3)、群狼之首(werewolf_pack r3)、沉默者(dark_brotherhood r4)、染恙之軀/百病纏身(disease 1/3)、魂石藏家(魂石 5)、弒裂之手(kill malyn_varen)、叩問禁知(kill apocrypha_seeker)。
 - `run_all` **71**(`test_achievements` +9:boons_count/faction_rank/disease/soul_gems/prince-boss/新type登錄/首達去重/seed抑制/update唯讀;擴 `test_shipped_ids_are_legal` 覆蓋 faction_rank faction 合法性)。
 
+### R56 · 吸血鬼能力深化:夜視 + 魅惑(戰鬥+社交)+ 偽裝套裝 [re-sim] [recompute]
+
+詛咒線(R50–R53)後補 handoff 明列吸血鬼「剩餘」三項。使用者兩道拍板:**夜視=潛行/偵察加成**(非夜間戰鬥數值,守 R50 延後的平衡取捨)、**魅惑=戰鬥凝視+社交兩者都做**;裝備=**輕甲暗影四件套裝**,**套裝 bonus=偽裝入城**(功能性·解 R50 城內被識破/shun 痛點)。**零新存檔欄·`sim_assassin` byte-identical**(吸血鬼/夜間/魅惑/裝備皆 vampire-only·刺客非吸血鬼·隔離 worktree 已驗,含 combat.py 改動)。
+- **夜視(被動·零 sim)**:`moons.is_night`(封裝 [21,6) 窗·陽光時段鏡像)+ `vampirism.night_vision_bonus(char)`(讀**快取 `vampire_stage`**·非吸血鬼/stage0 為 0)/`night_evade`。`combat.stealth_approach_chance` 在 `night` 時把 night_vision_bonus 折入既有 `approach_bonus`(**非吸血鬼/白天為 0 → sim byte-identical**·無 formulas 改動);`world.travel` 夜間吸血鬼乘 `(1−night_evade)` 削遭遇率。
+- **魅惑凝視(戰鬥·複用 apply_control fear·零新 kind)**:`main.py _choose_combat_action` 加 `is_vampire`+本場未用(`charm_used` 暫態·`run_battle` 初始化/傳入/用後 True·**不入檔**)→ action `vampire_charm`(選一敵);`run_battle` 扣 `VAMPIRE_CHARM_FATIGUE=10` + `magic.apply_control(tgt,"fear",turns=2,source="vampire_charm")`(solo BOSS 機率抵抗+去重由 R44 自動)。比照 rally/deathmark **里程碑外戰鬥動作**範式,不擠占 `power_id` 單一 power(vampiric_drain 不變)。
+- **社交魅惑(被動)**:`vampirism.charm_social_bonus(char)=+0.10`(vampire-only·有界)加進 `dialogue.persuade_chance`/`talk_down_chance`(沿用既有夾限·逆補階級 shun 社交懲罰)。
+- **偽裝套裝(功能 set bonus)**:`armor.json` 4 件 `nightshade`(material·light·`requires_vampire`·協同 sneak/illusion enchant)+ `armor_sets.json` `nightshade` bonus=`{fortify_skill illusion 20, **disguise:true**}`(`disguise` 鍵藏 bonus 內·`_apply_enchant` 不認故安全忽略 → **比照 `cast_fatigue_factor` 範式·零存檔欄**)。新 `vampirism.is_disguised(char,gd)`=`is_vampire && active_set_bonus.disguise`。在**負面後果**處疊 `and not is_disguised`:識破圍捕(`_curse_manhunt`)、城鎮 shun(game_loop)、NPC `vampire_seen` 態度(`dialogue.attitude`)→ **偽裝時可在城內正常往來/購物/交談**;`is_shunned`/`detection_chance` 不改簽名(只後果端覆寫)·保留 dialogue `vampire_shunned` req(coven 內容仍可用)。招牌件 `nightfang_dagger`(vampiric)+`bloodkin_amulet`(personality);`inventory.equip_*` 加 `_vampire_locked` 閘(`requires_vampire` 資料欄·向後相容)。取得:coven1/2 rank 任務 reward(整套)+ `vampire_lord`/`coven_patriarch` boss loot(招牌件)。
+- **平衡(by-design)**:偽裝=以全輕甲四件 exclusive 套裝換城內社交安全;**陽光詛咒仍在**(偽裝≠抗陽光)、仍須進食 → 公平封頂 QoL。**不做**夜間戰鬥數值/抗陽光新 kind(留待)。**對抗審查**(22-agent·1.2M tok):修 1 真 bug —— `vampirism.cure` 後 `requires_vampire` 裝備殘留(凡人仍吃套裝加成)→ 新 `inventory.shed_vampire_locked` 治癒時脫下(留背包);其餘確認為 by-design(偽裝無 stage 閘=刻意〔穿滿套裝即融入,不論饑渴〕、travel night_evade 用出發時=與既有 `encounter_chance(hour)` 一致、`meets_dialogue` `vampire_shunned` 保留=coven 內容偽裝時仍可用且當前無 JSON 用到)。`run_all` **76**(新 `test_vampire_abilities` 含 cure-shed;戰鬥魅惑凝視走煙霧)。
+
 ---
 
 ## 4. 開發節奏(ultracode 開著 → 每個功能都這樣做)
@@ -1216,7 +1225,7 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 > 黑兄後續可再加:夜母「祕密之死」隨機合約(超出 6 階後的無限委託)/ 違反五戒的懲處(殺同袍→被追殺)/ 聖所升級與密探同伴 / 謀殺後即時衛兵圍捕(目前靠賞金+城門盤查)/ 具名導師(露西恩式)對話包裝。
 > 裝備後續可再加:獨特/具名裝備(套裝外的具名神器)、~~附魔護甲擴展到技能/抗性~~ ✅ **已做**、~~武器附魔可帶狀態(吸血/麻痺)~~ ✅ **已做**、~~回復型附魔(per-turn regen)~~ ✅ **已做**(見 §1「附魔系統擴展」:護甲 skill/resist + 武器 vampiric/paralyze/regen,solo boss 免疫麻痺)。~~武器附魔帶元素 DoT~~ ✅ **已做**(見 §1/R15「附魔深化」:武器命中 DoT〔焚燒/凍緩/感電,帶 rider〕+ 命中吸取 + 充能型擒魂/麻痺 + 靈魂石經濟〔空魂石填充/大·黑魂石〕,Phase 1+2;**Phase 3 秘術節點刻意未做** —— 秘術樹已滿〔嚴格二選一〕且 soul_siphon 已自動放大新效果)。可再加:**附魔可疊雙效(雙重附魔)**(最高摩擦軸,留待)、秘術里程碑騰位後的附魔專屬節點。
 > 開局後續可再加(✅ 已加 6 個:戰友團/盜賊公會/阿利克爾劍客/海難倖存者/神殿治療者/獸人放逐者,共 14 開局):開局附帶**起手任務鉤子**(MVP 刻意未做)、`armor` 起手整套裝(目前開局只給單件護甲/飾品/法杖)、開局選單依職業/種族過濾推薦。
-> 吸血鬼後續可再加:夜視/魅惑等更多吸血鬼能力、吸血鬼專屬裝備、~~巢穴~~ ✅ **已做**(R51:血沼地窖隱穴 —— 安心進食/休息/密窖 + 血族族長招募血僕)、~~狼人(同套狀態機另一支)~~ ✅ **已做**(見 §1「狼人化 / 獸形」)、~~NPC 識破後衛兵敵對(目前只社交封鎖)~~ ✅ **已做**(R50)、解咒任務的具名 NPC/對話包裝。
+> 吸血鬼後續可再加:~~夜視/魅惑等更多吸血鬼能力、吸血鬼專屬裝備~~ ✅ **已做**(R56:夜視〔夜間潛近/迴避〕+ 戰鬥魅惑凝視〔fear〕+ 社交魅惑〔persuade/talk_down〕+ 夜影暗影套裝〔偽裝入城·requires_vampire〕)、~~巢穴~~ ✅ **已做**(R51:血沼地窖隱穴 —— 安心進食/休息/密窖 + 血族族長招募血僕)、~~狼人(同套狀態機另一支)~~ ✅ **已做**(見 §1「狼人化 / 獸形」)、~~NPC 識破後衛兵敵對(目前只社交封鎖)~~ ✅ **已做**(R50)、解咒任務的具名 NPC/對話包裝。
 > 狼人後續可再加:~~餵食進程樹~~ ✅ **已做**(§1「狼人深化」:5 階獸血進程)、~~希爾辛神器(獵者之戒)~~ ✅ **已做**、~~howl 咆哮恐懼 power~~ ✅ **已做**(恫嚇之嚎,solo 免疫)、~~野外主動變身(目前限戰鬥語境)~~ ✅ **已做**(R50)、~~獸形在城衛兵實戰圍捕(目前 shunning-light)~~ ✅ **已做**(R50)、~~月相影響變身~~ ✅ **已做**(R50:滿月免冷卻+時程加成)、~~狼人專屬巢穴/同類 NPC~~ ✅ **已做**(R51)、~~巢穴升級/血族階級政治~~ ✅ **已做**(R52:獵群階級梯〔客狼→頭狼〕+ 獸血之盛 perk + 弒位/繼承頂階);**剩餘**:吸血鬼夜視/魅惑/專屬裝備。
 > 技能里程碑後續可再加(**P2/P3,路線已拍板**):P2 持久 `mastery_*_bonus` 加成層(吸血鬼模式)+ 更多真權衡戰鬥型(**逐條 sim 背書 + 非 boss 精英秒殺率覆核**);P3 純改 JSON 補三系密度(優先 marksman/light_armor 等冷門技,避免 sneak 過載);可另評估『達門檻二選一』能動性(引入最佳化空間=支柱級取捨,需使用者拍板)。
 
