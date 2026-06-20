@@ -114,29 +114,20 @@ class GameState:
         # 否則在世年數會被算成 0。
         start = GameTime.from_dict(d["start_time"]) if "start_time" in d else GameTime()
         player = Character.from_dict(d["player"])
-        # 改版前存檔:把停用的 level_progress 進度遷移成 level_xp,讓載入當下 can_level_up 即正確
-        # (否則已可升級的舊存檔,升級入口要等到下次 use_skill 才出現)。區域 import 避免循環。
+        # 載入遷移(補新欄 / 清陳舊 / 依時間重算推導快取層)集中於 save_migrations,順序即權威;
+        # 區域 import 避免循環(沿用原模式;save_migrations module-top import 各系統,本身不 import state)。
         from tesrpg.gamedata import get_gamedata
-        from tesrpg.systems import aiwar, alchemy, boons, dagon_boon, diseases, inventory, lycanthropy, potion_buff, progression, skooma
-        progression.ensure_level_xp(player)
-        inventory.ensure_grip(player, get_gamedata())   # 握法正規化:雙手武器/重盾在手 → 清殘留盾與副手(R41)
-        progression.ensure_all_skills(player, get_gamedata())   # 補上新增技能(scout 等)
-        progression.ensure_mastery_choices(player, get_gamedata())   # 里程碑 v2:補欄/清陳舊選擇/重算 fortify
-        skooma.ensure_skooma_fields(player, time, get_gamedata())   # 斯庫瑪:補欄 + 依當前時間重算亢奮/戒斷層
-        potion_buff.ensure_potion_fields(player, time, get_gamedata())   # 限時增益藥水:補欄 + 依當前時間剔除過期(R30)
-        alchemy.ensure_known_effects(player, get_gamedata())   # 煉金效果揭露:補欄/防呆/清陳舊 ing_id(R32)
-        lycanthropy.ensure_lycanthropy_fields(player, time, get_gamedata())   # 狼人:補欄 + 過期獸形自動變回 + 夾血
-        dagon_boon.ensure_dagon_fields(player, get_gamedata())   # 達貢之力:補欄 + 依 flag 重算永久層
-        boons.ensure_boon_fields(player, get_gamedata())   # 戴德拉誓福:補欄 + 依持有清單重算永久層(R45)
-        diseases.ensure_disease_fields(player, time, get_gamedata())   # 疾病:補欄 + 依當前時間重算惡化負層(R53)
-        aiwar.ensure_war_fields(player, time)   # AI 戰爭:補欄 + war_tick_at 起算下個整週
-        return cls(
+        from tesrpg.systems import save_migrations
+        save_migrations.run_load_migrations(player, time, get_gamedata())
+        gs = cls(
             player=player,
             time=time,
             rng=rng,
             start_time=start,
             game_mode=d.get("game_mode", "adventure"),
         )
+        gs.loaded_version = int(d.get("version", 1))   # 順手讀存檔版本供診斷(to_dict 仍寫 SAVE_VERSION 常數 → 零格式變更)
+        return gs
 
     def save(self, path: str | Path) -> None:
         path = Path(path)

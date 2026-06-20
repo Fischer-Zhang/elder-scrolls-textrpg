@@ -70,6 +70,34 @@ def test_legacy_save_drops_removed_durability_and_armorer():
     assert "smithing_50" not in pl.mastery_choices  # 舊 opt 不存在 → 清掉(回 pending)
 
 
+def test_load_migrations_idempotent_and_runs():
+    """載入遷移集中於 save_migrations.run_load_migrations:確實有跑(補回缺欄)+ 冪等 + 讀版本。"""
+    import json
+    from tesrpg.systems import save_migrations
+    gd = get_gamedata()
+    c = build_character(gd, name="Mig", sex="male", race="imperial",
+                        birthsign="warrior", class_id="warrior")
+    state = GameState(player=c, time=GameTime(year=433, month=2, day=2, hour=10), rng=RNG(3))
+    with tempfile.TemporaryDirectory() as d:
+        path = Path(d) / "save.json"
+        state.save(path)
+        raw = json.loads(path.read_text(encoding="utf-8"))
+        dropped = next(iter(raw["player"]["skills"]))   # 剝掉一個技能 key → ensure_all_skills 應補回
+        del raw["player"]["skills"][dropped]
+        raw["version"] = 1                              # 舊版號 → loaded_version 應反映
+        path.write_text(json.dumps(raw), encoding="utf-8")
+        loaded = GameState.load(path)
+    assert dropped in loaded.player.skills, "run_load_migrations 應補回缺漏技能(證明 registry 確有跑)"
+    assert loaded.loaded_version == 1, "from_dict 應讀入存檔 version"
+    # 冪等①:再 to_dict→from_dict,player 逐欄相等
+    again = GameState.from_dict(loaded.to_dict())
+    assert again.player.to_dict() == loaded.player.to_dict(), "載入遷移應冪等(再載入不變)"
+    # 冪等②:直呼 run_load_migrations 重跑應無變化
+    before = loaded.player.to_dict()
+    save_migrations.run_load_migrations(loaded.player, loaded.time, gd)
+    assert loaded.player.to_dict() == before, "run_load_migrations 重跑應冪等"
+
+
 def run():
     for name, fn in sorted(globals().items()):
         if name.startswith("test_") and callable(fn):
