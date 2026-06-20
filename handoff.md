@@ -1231,6 +1231,7 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 - `mass_paralysis` 等純 CC 法術單用不會贏(無傷害),是 combo 工具,符合設計。
 - 沒有 CI;測試靠手動 `python3 tests/run_all.py`。可考慮加 GitHub Actions 跑它。
 - **測試基建瘦身(2026-06)**:`run_all.py` 改**自動探索** `tests/test_*.py`(刪原「import 清單 + modules 清單」雙清單 footgun);所有模組 `run()` 統一 `sorted(globals())` 自動跑 `test_*`(新測**無需登錄**;轉換時揪出 1 個原本靜默漏跑的 `test_mastery.test_dedup_nobrainer_wave`)。修 `test_web._drive_one_game` 競態(最終答 quit 後盲等永不到來的幀吃滿 `timeout=5`×2 局)→ `timeout=0.5`+`is_alive()` 判結束 → 套件 **11.9s→3.0s(4×)**。純動 `tests/`、零產品碼 → `sim_assassin` byte-identical。
+- **品質精煉(2026-06,承健康分析)**:① **base-write 紅線靜態守門** `test_redline_base.py`:AST 掃 `tesrpg/**/*.py`,斷言對 base 儲存(`char.skills`/`attributes`/`base_max_health`)的寫入只在白名單 `{creation, progression, stats}` 發生 → 把「絕不寫 base、加成走疊加層」這條**最高紅線從人工守變機器守**(零執行期開銷,附反向驗證證 scanner 有效);② 補 3 個薄專屬測試 `test_crime`/`test_enchanting`/`test_inventory`(原僅整合測試覆蓋)。**刻意不做** main.py dispatch dict 化(161 elif god-module 大重構·純美觀·回歸風險高)。純動 `tests/`、零產品碼 → `sim_assassin` byte-identical;`run_all` 71→**75**(自動探索 +4)。
 
 ---
 
