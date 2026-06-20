@@ -547,7 +547,8 @@ def _choose_combat_action(state: GameState, gamedata: GameData, enemies: list, a
                       for s in castable]
         sid = ui.menu("施放哪道法術?", spell_opts, allow_back=True)
         if sid is None:
-            return _choose_combat_action(state, gamedata, enemies, allies, vanish_used, mounted, first_round)
+            return _choose_combat_action(state, gamedata, enemies, allies, vanish_used,
+                                         mounted, first_round, charm_used)   # 補 charm_used:施法→返回重入不得重置「每場一次」魅惑
         tk = gamedata.spells[sid]["target"]
         if tk == "enemy":
             target = _choose_enemy_target(state, gamedata, enemies, allies)

@@ -1136,6 +1136,7 @@
     if (e.key >= "0" && e.key <= "9") {
       e.preventDefault();
       if (flatButtons.length < 10) { if (e.key === "0") { if (backButton) backButton.click(); } else clickIdx(parseInt(e.key, 10)); return; }
+      if (e.key === "0" && !digitBuf) { if (backButton) backButton.click(); return; }   // 大選單(≥10):0(非多位數接續)= 返回(選項編號恆 1+,首位 0 必為返回)
       digitBuf += e.key; if (digitTimer) clearTimeout(digitTimer);
       if (digitBuf.length >= String(flatButtons.length).length) resolveBuf(); else digitTimer = setTimeout(resolveBuf, 450);
     } else if (e.key === "Enter" && digitBuf) { e.preventDefault(); resolveBuf(); }

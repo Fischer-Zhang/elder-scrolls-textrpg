@@ -130,6 +130,46 @@ def test_cure_sheds_requires_vampire_gear():
     assert not vampirism.is_disguised(c, gd)                    # 已非吸血鬼
 
 
+def _drive_combat_menu(gd, c, enemies, charm_used, choices):
+    """patch ui 驅動 _choose_combat_action,回傳每次 ui.menu 看到的選項 key 列表。"""
+    from tesrpg import main as M
+    from tesrpg.ui import console as _ui
+    st = GameState(player=c, time=GameTime())
+    seen = []
+    seq = iter(choices)
+    orig_menu, orig_csg = _ui.menu, _ui.combat_status_group
+    _ui.menu = lambda title, options, allow_back=False: (seen.append([o[0] for o in options]) or next(seq, "flee"))
+    _ui.combat_status_group = lambda *a, **k: None
+    try:
+        M._choose_combat_action(st, gd, enemies, [], charm_used=charm_used)
+    finally:
+        _ui.menu, _ui.combat_status_group = orig_menu, orig_csg
+    return seen
+
+
+def test_charm_used_survives_cast_back_recursion():
+    """選單審查修:施法→返回的遞迴重入須保留 charm_used,否則吸血鬼可重用『每場一次』魅惑凝視。"""
+    gd, c = _char(is_vampire=True)
+    c.spells = ["flames"]
+    c.magicka = 999
+    c.fatigue = c.max_fatigue
+    enemy = combat.spawn_creature(gd, "bandit", RNG(0))
+    # 動作選單 → cast;法術子選單 → None(返回,觸發遞迴);遞迴動作選單 → flee
+    seen = _drive_combat_menu(gd, c, [enemy], charm_used=True, choices=["cast", None, "flee"])
+    assert len(seen) >= 3
+    assert "vampire_charm" not in seen[0]    # 初次:charm_used=True → 不提供
+    assert "vampire_charm" not in seen[2]    # 🔴 遞迴後仍不提供(修前 charm_used 被重置 → 會冒出)
+
+
+def test_charm_offered_when_unused():
+    """對照:charm_used=False 時魅惑凝視確實提供(確認 gate 正常、上一測非恆缺)。"""
+    gd, c = _char(is_vampire=True)
+    c.fatigue = c.max_fatigue
+    enemy = combat.spawn_creature(gd, "bandit", RNG(0))
+    seen = _drive_combat_menu(gd, c, [enemy], charm_used=False, choices=["flee"])
+    assert "vampire_charm" in seen[0]
+
+
 def run():
     for name, fn in sorted(globals().items()):
         if name.startswith("test_") and callable(fn):

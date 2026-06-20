@@ -616,6 +616,15 @@ def test_card_grid_for_chip_menus():
     assert "o.chips && o.chips.length" in html                   # 偵測訊號 = 選項帶 chips
 
 
+def test_back_key_works_on_large_menus():
+    """選單審查修:≥10 項選單按 0 也要觸發返回(原本被多位數字緩衝吞掉 → 頁尾承諾的 0=返回 失效)。"""
+    static = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                          "tesrpg", "web", "static", "index.html")
+    with open(static, encoding="utf-8") as f:
+        html = f.read()
+    assert 'e.key === "0" && !digitBuf' in html       # 大選單:首位 0(非接續數字)→ 返回
+
+
 def run():
     # 其他測試模組(test_m12/m13 等)在 import 時就把 ui.menu 換成 stub 並未還原;
     # reload 還原真正的 5 個輸入原語,確保此處測到的是 web seam 而非別人的 stub。
