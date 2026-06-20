@@ -87,7 +87,7 @@ def test_beast_vigor_extends_duration():
 
 # --- 頂階分支(篡位 / 繼承)---------------------------------------------
 def _climb_and_capstone(gd, c, cap_qid, fac, master, branch):
-    c.factions[fac] = 2                                               # 直升夜眷/撕咬者(rank 2)
+    c.factions[fac] = 4                                               # 直升夜爵/血爪(rank 4,深化後決鬥前一階·R57)
     quests.accept_quest(c, gd, cap_qid, branch=branch)
     quests.record_kill(c, master)                                    # 決鬥勝(直接記擊殺)
     quests.check_completion(c, gd)
@@ -96,7 +96,7 @@ def _climb_and_capstone(gd, c, cap_qid, fac, master, branch):
 def test_coven_capstone_usurp():
     gd, c, st = _state(); _vampire(gd, c, st)
     _climb_and_capstone(gd, c, "coven3", "coven_vampire", "coven_patriarch", branch=0)
-    assert factions.rank_index(c, "coven_vampire") == 3              # 血主
+    assert factions.rank_index(c, "coven_vampire") == 5              # 血主(6 階頂·R57)
     assert boons.has_boon(c, "coven_usurper") and "coven_usurped" in c.world_events_fired
     assert c.infamy >= 20 and not boons.has_boon(c, "coven_heir")
 
@@ -104,7 +104,7 @@ def test_coven_capstone_usurp():
 def test_coven_capstone_inherit():
     gd, c, st = _state(); _vampire(gd, c, st)
     _climb_and_capstone(gd, c, "coven3", "coven_vampire", "coven_patriarch", branch=1)
-    assert factions.rank_index(c, "coven_vampire") == 3
+    assert factions.rank_index(c, "coven_vampire") == 5
     assert boons.has_boon(c, "coven_heir") and "coven_inherited" in c.world_events_fired
     assert c.fame >= 20 and not boons.has_boon(c, "coven_usurper")
 
@@ -112,7 +112,7 @@ def test_coven_capstone_inherit():
 def test_pack_capstone_both_branches():
     gd, c, st = _state(); lycanthropy.contract(c, st, gd)
     _climb_and_capstone(gd, c, "pack3", "werewolf_pack", "dire_alpha", branch=0)
-    assert factions.rank_index(c, "werewolf_pack") == 3 and boons.has_boon(c, "pack_usurper")
+    assert factions.rank_index(c, "werewolf_pack") == 5 and boons.has_boon(c, "pack_usurper")
     gd2, c2, st2 = _state(); lycanthropy.contract(c2, st2, gd2)
     _climb_and_capstone(gd2, c2, "pack3", "werewolf_pack", "dire_alpha", branch=1)
     assert boons.has_boon(c2, "pack_heir") and "pack_inherited" in c2.world_events_fired
@@ -156,7 +156,7 @@ def test_save_roundtrip_faction_and_capstone_boon():
     _climb_and_capstone(gd, c, "coven3", "coven_vampire", "coven_patriarch", branch=0)
     d = c.to_dict()
     c2 = type(c).from_dict(d)
-    assert c2.factions.get("coven_vampire") == 3 and boons.has_boon(c2, "coven_usurper")
+    assert c2.factions.get("coven_vampire") == 5 and boons.has_boon(c2, "coven_usurper")
     assert not any(k in ("rank", "perk") for k in d)                  # 無新存檔頂層欄
 
 

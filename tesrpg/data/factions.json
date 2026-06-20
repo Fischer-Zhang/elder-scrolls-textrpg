@@ -205,29 +205,29 @@
   "coven_vampire": {
     "name": "血族",
     "hall": "bloodmoor_crypt",
-    "blurb": "盤踞血沼地窖的古老血族 —— 不問王法、只認血脈與夜的階序。新加入的夜之子須循階晉升:賓客、血僕、夜眷,直至有資格爭奪血主之位。階級越高,血族的庇蔭越深,連日光的灼傷也漸能承受。",
+    "blurb": "盤踞血沼地窖的古老血族 —— 不問王法、只認血脈與夜的階序。新加入的夜之子須循階晉升:賓客、血僕、夜眷、血裔、夜爵,直至有資格爭奪血主之位。階級越高,血族的庇蔭越深,連日光的灼傷也漸能承受。",
     "gate_skills": [],
     "join_skill": 0,
-    "rank_skill_req": [0, 0, 0, 0],
+    "rank_skill_req": [0, 0, 0, 0, 0, 0],
     "rivals": [],
     "lawful": false,
     "perk": {"kind": "sun_ward", "per_rank": 0.20, "cap": 0.6,
              "desc": "晝行之佑 —— 血族庇蔭使日光灼傷遞減"},
-    "ranks": ["賓客", "血僕", "夜眷", "血主"],
-    "rank_quests": ["coven1", "coven2", "coven3"]
+    "ranks": ["賓客", "血僕", "夜眷", "血裔", "夜爵", "血主"],
+    "rank_quests": ["coven1", "coven2", "coven_a", "coven_b", "coven3"]
   },
   "werewolf_pack": {
     "name": "獵群",
     "hall": "moonhowl_den",
-    "blurb": "棲於月嚎獸穴的海爾辛獵群 —— 以血月為令、以獠牙定序。承獸血者須循階證明自己:客狼、獵手、撕咬者,直至有資格挑戰頭狼之位。獸血越濃,獸形之力越盛,撕咬獵物的回饋也越豐。",
+    "blurb": "棲於月嚎獸穴的海爾辛獵群 —— 以血月為令、以獠牙定序。承獸血者須循階證明自己:客狼、獵手、撕咬者、月牙、血爪,直至有資格挑戰頭狼之位。獸血越濃,獸形之力越盛,撕咬獵物的回饋也越豐。",
     "gate_skills": [],
     "join_skill": 0,
-    "rank_skill_req": [0, 0, 0, 0],
+    "rank_skill_req": [0, 0, 0, 0, 0, 0],
     "rivals": [],
     "lawful": false,
     "perk": {"kind": "beast_vigor", "per_rank": 0.20, "cap": 0.6,
              "desc": "獸血之盛 —— 獸形時程延長、吞噬回饋增強"},
-    "ranks": ["客狼", "獵手", "撕咬者", "頭狼"],
-    "rank_quests": ["pack1", "pack2", "pack3"]
+    "ranks": ["客狼", "獵手", "撕咬者", "月牙", "血爪", "頭狼"],
+    "rank_quests": ["pack1", "pack2", "pack_a", "pack_b", "pack3"]
   }
 }

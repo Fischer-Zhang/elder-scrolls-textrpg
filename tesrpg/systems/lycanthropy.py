@@ -119,7 +119,8 @@ def effective_duration(char: Character, state, gamedata: GameData) -> int:
     """本次獸形持續時數:獸血階基礎 + 滿月加成(R50) + 獵群「獸血之盛」階級延長(R52,只詛咒者可達)。"""
     from tesrpg.systems import moons, factions
     base = beast_duration(char) + (FULL_MOON_DURATION_BONUS if moons.is_full_moon(state) else 0)
-    return base + int(base * factions.beast_vigor(char, gamedata))
+    dur = base + int(base * factions.beast_vigor(char, gamedata))
+    return dur + (ALPHA_BLOOD_DURATION if _pack_capstone(char) else 0)   # 獵群頂階 capstone(R57)
 
 
 def can_offer_ritual(char: Character) -> bool:
@@ -146,9 +147,22 @@ def beast_health(char: Character) -> int:
     return _TIER_HEALTH[tier(char)]
 
 
+# --- 獵群頂階「獸形強化」capstone(R57:複用既有 pack_heir/pack_usurper 誓福旗標)---------
+# 狼人戰鬥在獸形(裝備不生效)→ 獵群的頂階獎勵強化獸形本身,而非給裝。決鬥授予 pack_heir/
+# pack_usurper(人形 attr 誓福)後,額外解鎖獸爪傷 + 獸形時程強化。讀 char.boons 旗標,零新存檔欄。
+ALPHA_BLOOD_CLAW = 3        # 頂階獸形爪傷額外強化
+ALPHA_BLOOD_DURATION = 2    # 頂階獸形時程額外延長(小時)
+
+
+def _pack_capstone(char: Character) -> bool:
+    """是否已達獵群頂階(持 pack_heir/pack_usurper 誓福)→ 獸形強化 capstone。"""
+    boons = getattr(char, "boons", None) or []
+    return "pack_heir" in boons or "pack_usurper" in boons
+
+
 def claw_bonus(char: Character) -> int:
-    """獸爪隨階的額外傷害(加在 beast_claws base 之上;combat._weapon_profile 讀)。"""
-    return _TIER_CLAW[tier(char)]
+    """獸爪隨階的額外傷害(加在 beast_claws base 之上;combat._weapon_profile 讀)+ 獵群頂階 capstone。"""
+    return _TIER_CLAW[tier(char)] + (ALPHA_BLOOD_CLAW if _pack_capstone(char) else 0)
 
 
 def beast_duration(char: Character) -> int:
