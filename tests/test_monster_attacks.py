@@ -280,18 +280,9 @@ def test_player_incapacitation_skips_turn_in_run_battle():
 
 
 def run():
-    test_choose_attack_fallback_when_no_repertoire()
-    test_choose_attack_weighted_covers_modes_and_hp_gate()
-    test_choose_attack_cooldown_blocks_reselection_until_tick()
-    test_spawn_boss_scales_whole_repertoire()
-    test_soft_cc_applied_on_hit()
-    test_slow_and_weaken_applied_with_magnitude()
-    test_hard_cc_dedup_no_chain_lock()
-    test_hard_cc_resisted_by_willpower()
-    test_miss_applies_no_cc()
-    test_weaken_reduces_player_damage_symmetric()
-    test_event_carries_attack_name()
-    test_player_incapacitation_skips_turn_in_run_battle()
+    for name, fn in sorted(globals().items()):
+        if name.startswith("test_") and callable(fn):
+            fn()
 
 
 if __name__ == "__main__":

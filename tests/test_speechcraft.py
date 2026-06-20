@@ -195,15 +195,9 @@ def test_rally_unlock_and_below_standard():
 
 
 def run():
-    test_persuade_delta_scales_and_beats_bribe()
-    test_persuade_chance_readonly()
-    test_talk_down_guard_clears_on_success_pays_practice()
-    test_intimidate_gating()
-    test_intimidate_chance_scales_and_pays_practice()
-    test_offer_battle_intimidate_success_avoids_combat_no_loot()
-    test_talk_down_lever_raises_cap_and_floor()
-    test_gray_fox_mask_raises_talk_down_cap()
-    test_rally_unlock_and_below_standard()
+    for name, fn in sorted(globals().items()):
+        if name.startswith("test_") and callable(fn):
+            fn()
 
 
 if __name__ == "__main__":

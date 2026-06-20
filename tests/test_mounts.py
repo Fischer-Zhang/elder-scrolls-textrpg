@@ -184,18 +184,9 @@ def test_save_roundtrip_and_old_save():
 
 
 def run():
-    test_buy_and_active()
-    test_travel_speed_and_saddlebag()
-    test_saddlebag_not_a_resource()
-    test_travel_integration_mounted_faster()
-    test_travel_floor_respected()
-    test_skill_gating_by_mount_weapon_and_context()
-    test_charge_not_sneak_and_stronger()
-    test_charge_solo_boss_capped()
-    test_magesteed_spell_bonus()
-    test_magesteed_cast_damage_higher_when_mounted()
-    test_action_stable_deducts_gold()
-    test_save_roundtrip_and_old_save()
+    for name, fn in sorted(globals().items()):
+        if name.startswith("test_") and callable(fn):
+            fn()
 
 
 if __name__ == "__main__":

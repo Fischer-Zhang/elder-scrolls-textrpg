@@ -25,7 +25,7 @@ PYTHONPATH=. python3 sim_assassin.py      # 平衡回歸模擬(改戰鬥常數�
 2. **決定方向**:給選項、讓使用者拍板(功能性 > 數值;不替使用者預設方向)。
 3. **實作**(data + systems + main/ui;內容優先純改 JSON)。
 4. **驗證**(全綠才算數;一鍵 a–c = `bash check.sh` / `/check`):
-   - a. 單元測試 `tests/run_all.py`(新測登錄 run_all,須全綠)
+   - a. 單元測試 `tests/run_all.py`(**自動探索** `tests/test_*.py`:新模組/新測試函式皆無需登錄;每模組 `run()` 用 `sorted(globals())` 跑全部 `test_*`;須全綠)
    - b. 平衡模擬:改戰鬥常數跑 `sim_assassin.py`,勝率/回合數不退化
    - c. 無頭煙霧:WebBackend 自動作答驅動 `main()`(或 patch `ui.menu`/`Console(file=StringIO())`)抓 traceback
    - d. 對抗審查(Workflow):多維 fan-out → 獨立懷疑者**對抗式驗證**,只留能真實重現的

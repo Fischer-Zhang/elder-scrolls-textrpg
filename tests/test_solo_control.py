@@ -123,13 +123,9 @@ def test_lover_paralyze_touch_solo_reduced():
 
 
 def run():
-    test_hard_control_solo_probabilistic_rate()
-    test_nonsolo_enemy_full_control()
-    test_player_hard_control_via_willpower()
-    test_hard_control_dedup()
-    test_soft_control_solo_always_applies()
-    test_source_dedup_soft_control()
-    test_lover_paralyze_touch_solo_reduced()
+    for name, fn in sorted(globals().items()):
+        if name.startswith("test_") and callable(fn):
+            fn()
 
 
 if __name__ == "__main__":

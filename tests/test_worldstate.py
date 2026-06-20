@@ -107,14 +107,9 @@ def test_deterministic_replay():
 
 
 def run():
-    test_kvatch_falls_after_days_and_once_fire()
-    test_player_held_city_immune_to_flip()
-    test_red_line_world_faction_not_taxed()
-    test_requires_chain()
-    test_daedric_unlock_after_kvatch()
-    test_kvatch_liberated_player_driven()
-    test_lost_city_reverts_to_event_state()
-    test_deterministic_replay()
+    for name, fn in sorted(globals().items()):
+        if name.startswith("test_") and callable(fn):
+            fn()
 
 
 if __name__ == "__main__":

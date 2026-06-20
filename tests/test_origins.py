@@ -239,17 +239,9 @@ def test_old_save_without_origin_field_loads():
 
 
 def run():
-    test_default_origin_matches_standard_start()
-    test_unknown_origin_is_noop()
-    test_origin_is_situational_not_power()
-    test_origin_field_mechanics_apply()
-    test_every_origin_references_valid_content()
-    test_origin_class_recommendations()
-    test_caster_origin_weapon_not_force_equipped()
-    test_quick_character_picks_fitting_class()
-    test_origin_card_surfaces_recommended_classes()
-    test_save_roundtrip_preserves_origin_state()
-    test_old_save_without_origin_field_loads()
+    for name, fn in sorted(globals().items()):
+        if name.startswith("test_") and callable(fn):
+            fn()
 
 
 if __name__ == "__main__":

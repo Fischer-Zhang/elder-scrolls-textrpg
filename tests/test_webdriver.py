@@ -91,7 +91,9 @@ def test_web_entry_boots_into_game_loop():
 
 
 def run():
-    test_web_entry_boots_into_game_loop()
+    for name, fn in sorted(globals().items()):
+        if name.startswith("test_") and callable(fn):
+            fn()
 
 
 if __name__ == "__main__":

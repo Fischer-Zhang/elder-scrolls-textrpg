@@ -1230,6 +1230,7 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 - ✅ **同伴持久 HP/負傷/羈絆 + 角色化已做**(見 §1「同伴系統深化」+「同伴角色化」):HP 跨戰持久、倒下→負傷 benched(休息康復)、並肩獲勝累積羈絆;**具名招募任務 + 羈絆階解鎖的專屬支線 + 就地對話 + 完成支線的忠誠弧頂點(戰術盟友光環/被動非戰鬥槓桿)**。攻城永久死(既有)+ 冒險模式正常戰鬥不永久死(刻意寬容)。**剩餘**:冒險模式以外的永久死選項、坐騎、同伴間互動/吃醋、開局起手同伴任務鉤子。
 - `mass_paralysis` 等純 CC 法術單用不會贏(無傷害),是 combo 工具,符合設計。
 - 沒有 CI;測試靠手動 `python3 tests/run_all.py`。可考慮加 GitHub Actions 跑它。
+- **測試基建瘦身(2026-06)**:`run_all.py` 改**自動探索** `tests/test_*.py`(刪原「import 清單 + modules 清單」雙清單 footgun);所有模組 `run()` 統一 `sorted(globals())` 自動跑 `test_*`(新測**無需登錄**;轉換時揪出 1 個原本靜默漏跑的 `test_mastery.test_dedup_nobrainer_wave`)。修 `test_web._drive_one_game` 競態(最終答 quit 後盲等永不到來的幀吃滿 `timeout=5`×2 局)→ `timeout=0.5`+`is_alive()` 判結束 → 套件 **11.9s→3.0s(4×)**。純動 `tests/`、零產品碼 → `sim_assassin` byte-identical。
 
 ---
 

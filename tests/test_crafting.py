@@ -117,12 +117,9 @@ def test_craft_smoke_at_smith():
 
 
 def run():
-    test_craft_consumes_inputs_produces_output_and_costs()
-    test_cant_craft_without_materials()
-    test_recipes_for_station()
-    test_all_ingredients_have_wild_source()
-    test_bone_meal_is_now_alchemy_ingredient()
-    test_craft_smoke_at_smith()
+    for name, fn in sorted(globals().items()):
+        if name.startswith("test_") and callable(fn):
+            fn()
 
 
 if __name__ == "__main__":

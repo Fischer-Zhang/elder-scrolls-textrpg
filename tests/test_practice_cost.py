@@ -362,22 +362,9 @@ def test_practice_stops_at_skill_cap():
 
 
 def run():
-    test_practice_cost_deducts_fatigue_and_matches_skills_json()
-    test_practice_cost_tired_halves_xp_and_clamps()
-    test_steal_xp_only_on_success()
-    test_pick_lock_needs_pick_no_time_low_fatigue()
-    test_every_attempt_consumes_pick_gates_xp()
-    test_lockpick_broken_on_failure_small_xp()
-    test_tower_key_unlock_is_free_and_keeps_signature()
-    test_charm_path_also_pays_cost()
-    test_smoke_shop_steal_advances_time()
-    test_smoke_lockpick_no_time()
-    test_smoke_talk_persuade_advances_time()
-    test_lockpick_loop_bounded_by_picks()
-    test_crafting_entries_pay_practice()
-    test_brew_fail_still_costs_fatigue_and_time()
-    test_practice_batches_multiple_hours()
-    test_practice_stops_at_skill_cap()
+    for name, fn in sorted(globals().items()):
+        if name.startswith("test_") and callable(fn):
+            fn()
 
 
 if __name__ == "__main__":

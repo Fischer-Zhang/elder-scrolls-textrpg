@@ -518,38 +518,9 @@ def test_daedric_not_a_pledgeable_cause():
 
 
 def run():
-    test_relationship_and_pledge()
-    test_assault_waves_scale_with_garrison()
-    test_ops_gated_by_skill_and_once_each()
-    test_op_deplete_and_costs()
-    test_risky_op_marks_done_even_on_fail()
-    test_conquer_flips_regarrisons_and_clears_ops()
-    test_siege_op_then_assault_conquers()
-    test_siege_assault_flee_keeps_op_progress()
-    test_siege_assault_runs_multiple_waves()
-    test_siege_assault_retreat_keeps_wave_depletion()
-    test_save_roundtrip_and_backward_compat()
-    test_steward_relieves_unrest_and_stabilizes()
-    test_steward_dead_companion_no_relief()
-    test_current_banner_label_flips_on_conquest()
-    test_court_shows_conqueror_as_ruler()
-    test_all_cities_have_population()
-    test_red_line_tax_only_conquered_not_allied()
-    test_conquer_records_cycle_and_collects_net()
-    test_unrest_suspends_tax_but_charges_maint()
-    test_garrison_decays_and_city_revolts()
-    test_tick_tax_catches_up_multiple_periods()
-    test_garrison_regen_on_stable_city()
-    test_regen_blocked_under_unrest()
-    test_action_territory_lists_only_conquered_and_reinforces()
-    test_reinforce_caps_and_costs()
-    test_legacy_counts_dominion()
-    test_legacy_survives_corrupt_faction_id()
-    test_expansionist_causes_attack_neutral()
-    test_own_conquer_taxes_red_line()
-    test_world_fields_save_roundtrip()
-    test_pledge_menu_four_choice_smoke()
-    test_daedric_not_a_pledgeable_cause()
+    for name, fn in sorted(globals().items()):
+        if name.startswith("test_") and callable(fn):
+            fn()
 
 
 if __name__ == "__main__":

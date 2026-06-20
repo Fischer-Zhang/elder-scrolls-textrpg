@@ -290,20 +290,9 @@ def test_siege_assault_applies_permanent_losses():
 
 
 def run():
-    test_warlord_gate()
-    test_camp_eligibility()
-    test_recruit_caps_and_costs()
-    test_save_roundtrip_and_backward_compat()
-    test_army_press_depletes_garrison_once()
-    test_assault_fields_soldiers_as_allies()
-    test_upkeep_grace_then_pay()
-    test_upkeep_desertion_when_broke()
-    test_upkeep_catches_up_multiple_periods()
-    test_apply_casualties_deducts_roster()
-    test_wipe_then_rebuild_gets_fresh_grace()
-    test_run_battle_reports_dead_ally()
-    test_warlord_officer_pool()
-    test_siege_assault_applies_permanent_losses()
+    for name, fn in sorted(globals().items()):
+        if name.startswith("test_") and callable(fn):
+            fn()
 
 
 if __name__ == "__main__":

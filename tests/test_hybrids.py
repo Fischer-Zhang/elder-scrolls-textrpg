@@ -152,16 +152,9 @@ def test_class_signature_spells():
 
 
 def run():
-    test_imbue_cast_sets_buff_and_adds_element()
-    test_imbue_capped_on_sneak_solo_boss()
-    test_ally_heal_in_battle_and_persists()
-    test_ally_spell_needs_battle_and_living_ally()
-    test_ally_aoe_heal_and_regen_aura()
-    test_rally_empowers_allies_not_player()
-    test_empower_scales_with_caster_power()
-    test_empower_aggregates_diminishing_not_sum()
-    test_aimed_shot_stronger_but_capped()
-    test_class_signature_spells()
+    for name, fn in sorted(globals().items()):
+        if name.startswith("test_") and callable(fn):
+            fn()
 
 
 if __name__ == "__main__":

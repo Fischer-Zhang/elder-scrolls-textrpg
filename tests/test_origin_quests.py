@@ -161,16 +161,9 @@ def test_save_roundtrip_preserves_active_origin_quest():
 
 
 def run():
-    test_every_origin_grants_its_quest()
-    test_npc_build_gets_no_origin_quest()
-    test_origin_quest_schema_lint()
-    test_no_reach_self_pitfall()
-    test_not_premet_on_creation()
-    test_representative_chains_complete_and_reward()
-    test_reward_band_modest()
-    test_quests_view_grouped_and_sheet_origin()
-    test_origin_categories_cover_all()
-    test_save_roundtrip_preserves_active_origin_quest()
+    for name, fn in sorted(globals().items()):
+        if name.startswith("test_") and callable(fn):
+            fn()
 
 
 if __name__ == "__main__":

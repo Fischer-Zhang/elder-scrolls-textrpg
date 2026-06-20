@@ -120,16 +120,9 @@ def test_ensure_prunes_bad_and_stale():
 
 
 def run():
-    test_auto_reveal_count_scales_with_skill()
-    test_passive_reveal_floor_one_full_at_high_skill()
-    test_taste_reveals_first_deterministic_and_consumes()
-    test_taste_without_ingredient_fails()
-    test_brew_success_reveals_shared_and_math_unchanged()
-    test_brew_failure_reveals_nothing()
-    test_reveal_only_real_kinds()
-    test_generic_over_new_effect_kinds()
-    test_save_roundtrip_and_old_save_migration()
-    test_ensure_prunes_bad_and_stale()
+    for name, fn in sorted(globals().items()):
+        if name.startswith("test_") and callable(fn):
+            fn()
 
 
 if __name__ == "__main__":

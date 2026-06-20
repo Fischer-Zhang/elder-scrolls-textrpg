@@ -505,9 +505,12 @@ def _drive_one_game(backend):
     mm = 0
     for _ in range(80):                   # 步數上限防卡死
         try:
-            fr = backend.outbound.get(timeout=5)
+            fr = backend.outbound.get(timeout=0.5)
         except _q.Empty:
-            break
+            if t.is_alive():
+                continue                  # worker 仍在跑、偶發慢幀 → 續等(不誤判本局結束)
+            break                         # worker 已返回 → 無更多幀,本局正常結束
+                                          # (修競態:原 timeout=5 在最終答 quit 後盲等永不到來的幀 → 每局吃滿 5s)
         spec = fr["prompt"]; typ = spec.get("type"); title = spec.get("title", "")
         if typ == "end":
             break

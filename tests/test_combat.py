@@ -304,22 +304,9 @@ def test_reflect_r42_raw_decoupled_thorns_redlines():
 
 
 def run():
-    test_formulas_monotonic()
-    test_berserk_factor()
-    test_vampiric_fraction()
-    test_mace_builtin_stagger_solo_consistent()
-    test_reflect_r42_raw_decoupled_thorns_redlines()
-    test_starter_weapon_assigned()
-    test_player_beats_weak_creature_and_trains()
-    test_sneak_attack_multiplies_damage()
-    test_sneak_attack_trains_sneak_and_is_player_only()
-    test_acrobatics_dodge_reduces_hit_chance()
-    test_acrobatics_trains_on_dodge()
-    test_athletics_reduces_combat_fatigue_and_block_costs()
-    test_block_skill_actually_read_in_combat()
-    test_elite_enemies_gated_by_min_level()
-    test_group_size_scales_with_danger()
-    test_boss_elites_appear_solo()
+    for name, fn in sorted(globals().items()):
+        if name.startswith("test_") and callable(fn):
+            fn()
 
 
 if __name__ == "__main__":

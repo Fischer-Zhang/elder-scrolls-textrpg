@@ -168,18 +168,9 @@ def test_debuff_expiry_messages():
 
 
 def run():
-    test_weaken_needs_unlock_else_dot()
-    test_slow_unlock_and_duration_bonus()
-    test_fear_unlock_requires_alchemy_100()
-    test_existing_poison_routes_unchanged()
-    test_synth_roundtrip_new_poisons()
-    test_coat_charges_per_family()
-    test_solo_boss_coated_control_reduced()
-    test_coated_control_lands_on_nonsolo()
-    test_slow_reduces_speed_and_hit()
-    test_weaken_poison_applies_in_combat()
-    test_slow_is_dispellable()
-    test_debuff_expiry_messages()
+    for name, fn in sorted(globals().items()):
+        if name.startswith("test_") and callable(fn):
+            fn()
 
 
 if __name__ == "__main__":

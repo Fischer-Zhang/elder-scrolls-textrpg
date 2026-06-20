@@ -197,19 +197,9 @@ def test_dismiss_clears_steward_assignment():
 
 
 def run():
-    test_persistent_hp_spawn_and_record()
-    test_steward_leaves_active_party()
-    test_dismiss_clears_steward_assignment()
-    test_downed_benched_then_heal_restores_fieldable()
-    test_bond_grows_on_victory_and_boosts_hp()
-    test_heal_full_and_forget()
-    test_siege_casualty_forgets_persistent_state()
-    test_save_roundtrip_and_old_save_defaults()
-    test_defensive_clamps_and_no_stale_legacy()
-    test_display_safe_on_unknown_companion_id()
-    test_companion_schema_complete()
-    test_full_party_thane_housecarl_goes_pending_not_dropped()
-    test_pending_companions_save_roundtrip()
+    for name, fn in sorted(globals().items()):
+        if name.startswith("test_") and callable(fn):
+            fn()
 
 
 if __name__ == "__main__":

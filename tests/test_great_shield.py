@@ -75,11 +75,9 @@ def test_great_shield_bash_hits_and_is_physical():
 
 
 def run():
-    test_great_shield_bash_profile()
-    test_great_shield_ignores_held_weapon_enchant()
-    test_great_shield_mitigation_factor()
-    test_great_shield_equip_clears_offhand_and_crusaders_ward()
-    test_great_shield_bash_hits_and_is_physical()
+    for name, fn in sorted(globals().items()):
+        if name.startswith("test_") and callable(fn):
+            fn()
 
 
 if __name__ == "__main__":

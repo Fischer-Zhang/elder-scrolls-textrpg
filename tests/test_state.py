@@ -71,9 +71,9 @@ def test_legacy_save_drops_removed_durability_and_armorer():
 
 
 def run():
-    test_time_rollover()
-    test_save_load_roundtrip()
-    test_legacy_save_drops_removed_durability_and_armorer()
+    for name, fn in sorted(globals().items()):
+        if name.startswith("test_") and callable(fn):
+            fn()
 
 
 if __name__ == "__main__":

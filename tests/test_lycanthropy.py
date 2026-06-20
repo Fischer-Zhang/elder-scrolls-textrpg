@@ -372,25 +372,9 @@ def test_beast_blooded_origin():
 
 
 def run():
-    test_infect_incubate_transform()
-    test_transform_grants_beast_then_revert_clamps()
-    test_beast_attack_never_sneaks_even_if_flagged()
-    test_beast_single_hit_far_below_solo_boss_hp()
-    test_estimate_sneak_damage_beast_form_no_sneak_inflation()
-    test_sync_beast_form_reverts_expired_cache()
-    test_beast_form_suppresses_equipment()
-    test_mutual_exclusion_both_directions()
-    test_devour_caps_per_form()
-    test_transform_via_power_once_per_day()
-    test_cure_quest_flow_repeatable_and_gated()
-    test_save_roundtrip_and_old_save_migration()
-    test_save_in_beast_form_then_expire_reverts_on_load()
-    test_legacy_and_achievement()
-    test_feed_tier_progression()
-    test_howl_fears_non_solo_costs_fatigue_solo_immune()
-    test_devour_tier_up_recomputes_and_heal_scales()
-    test_hircine_ring_bypasses_transform_cooldown()
-    test_beast_blooded_origin()
+    for name, fn in sorted(globals().items()):
+        if name.startswith("test_") and callable(fn):
+            fn()
 
 
 if __name__ == "__main__":

@@ -257,18 +257,9 @@ def test_province_commissions_are_varied():
 
 
 def run():
-    test_reception_tiers()
-    test_province_commissions_are_varied()
-    test_every_ruler_settlement_is_thaneable()
-    test_procedural_commissions_earn_thaneship()
-    test_action_court_shows_ruler_panel()
-    test_ruler_quests_open_in_order_and_grant_standing()
-    test_thaneship_grants_gift_and_housecarl()
-    test_thane_bounty_leniency_in_province()
-    test_thane_privilege_suspended_when_city_flips()
-    test_thane_privilege_intact_before_pledge()
-    test_thane_suspended_blocks_guard_forgive()
-    test_save_roundtrip_and_backward_compat()
+    for name, fn in sorted(globals().items()):
+        if name.startswith("test_") and callable(fn):
+            fn()
 
 
 if __name__ == "__main__":

@@ -176,17 +176,9 @@ def test_legacy_label():
 
 
 def run():
-    test_dose_grants_timed_high_effective_not_base()
-    test_addiction_triggers_withdrawal()
-    test_deeper_addiction_deeper_withdrawal()
-    test_redose_relieves_withdrawal_but_deepens_addiction()
-    test_ride_it_out_decay_to_clean()
-    test_cure_quest_flow_and_repeatable()
-    test_no_free_cure_after_riding_out_a_completed_quest()
-    test_high_never_touches_strength_or_sneak()
-    test_save_roundtrip_preserves_skooma_state()
-    test_old_save_without_skooma_fields_loads()
-    test_legacy_label()
+    for name, fn in sorted(globals().items()):
+        if name.startswith("test_") and callable(fn):
+            fn()
 
 
 if __name__ == "__main__":

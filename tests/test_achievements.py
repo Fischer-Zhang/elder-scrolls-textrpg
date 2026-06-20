@@ -285,29 +285,9 @@ def test_legacy_integration_lists_without_scoring():
 
 
 def run():
-    test_kills_total_and_kill_boss()
-    test_progress_counters()
-    test_provinces_and_landmarks()
-    test_skill_cap_uses_base_only()
-    test_guildmaster_any_and_specific()
-    test_mastery_count()
-    test_dominion_allegiance_vampire()
-    test_pure_spec_not_trivially_earned()
-    test_fresh_character_earns_none()
-    test_boons_count()
-    test_faction_rank()
-    test_disease_achievements()
-    test_soul_gems_filled()
-    test_soul_gems_filled_handles_corrupt_inventory()
-    test_prince_boss_kills()
-    test_new_types_implemented()
-    test_first_earned_notification_once()
-    test_seed_suppresses_already_earned()
-    test_update_is_read_only()
-    test_shipped_ids_are_legal()
-    test_unimplemented_type_is_inert()
-    test_evaluator_is_read_only()
-    test_legacy_integration_lists_without_scoring()
+    for name, fn in sorted(globals().items()):
+        if name.startswith("test_") and callable(fn):
+            fn()
 
 
 if __name__ == "__main__":

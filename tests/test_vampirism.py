@@ -190,17 +190,9 @@ def test_legacy_label():
 
 
 def run():
-    test_infection_incubates_then_turns()
-    test_stage_rises_with_hunger_and_feeding_resets()
-    test_disease_resist_blocks_infection()
-    test_stage_bonus_is_effective_not_base()
-    test_vampire_power_overrides_and_drains()
-    test_sun_burns_by_day_not_night_or_dungeon()
-    test_shunned_at_high_stage()
-    test_save_roundtrip_preserves_vampire_state()
-    test_old_save_without_vampire_fields_loads()
-    test_cure_quest_flow_and_repeatable()
-    test_legacy_label()
+    for name, fn in sorted(globals().items()):
+        if name.startswith("test_") and callable(fn):
+            fn()
 
 
 if __name__ == "__main__":

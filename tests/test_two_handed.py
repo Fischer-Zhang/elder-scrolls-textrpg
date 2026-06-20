@@ -89,12 +89,9 @@ def test_two_handed_none_safe_and_recompute_clears_ghost():
 
 
 def run():
-    test_two_handed_auto_doffs_shield_and_offhand()
-    test_two_handed_none_safe_and_recompute_clears_ghost()
-    test_two_handed_bars_offhand_and_shield()
-    test_ensure_grip_normalizes_stale_save()
-    test_two_handed_damage_premium()
-    test_wuuthrad_is_two_handed_axe()
+    for name, fn in sorted(globals().items()):
+        if name.startswith("test_") and callable(fn):
+            fn()
 
 
 if __name__ == "__main__":

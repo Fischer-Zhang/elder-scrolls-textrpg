@@ -207,23 +207,9 @@ def test_bad_buff_entry_is_pruned():
 
 
 def run():
-    test_brew_fortify_attribute()
-    test_brew_fortify_skill()
-    test_brew_resist_element()
-    test_param_specific_kind_not_falsely_shared()
-    test_buff_brew_time_cost_is_practice_not_duration()
-    test_higher_alchemy_stronger_buff()
-    test_synth_roundtrip()
-    test_use_fortify_effective_not_base()
-    test_use_item_requires_state_for_buff()
-    test_resist_into_entity_resist()
-    test_fortify_endurance_raises_max_fatigue()
-    test_stacking_refresh_or_max_not_additive()
-    test_different_params_stack_independently()
-    test_save_roundtrip_preserves_buffs()
-    test_old_save_without_potion_fields_loads()
-    test_expired_buff_dropped_on_load()
-    test_bad_buff_entry_is_pruned()
+    for name, fn in sorted(globals().items()):
+        if name.startswith("test_") and callable(fn):
+            fn()
 
 
 if __name__ == "__main__":

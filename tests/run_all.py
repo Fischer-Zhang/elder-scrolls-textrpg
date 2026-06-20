@@ -1,98 +1,38 @@
-"""不需要 pytest 的測試執行器:python3 tests/run_all.py"""
+"""不需要 pytest 的測試執行器:python3 tests/run_all.py
 
+自動探索 tests/test_*.py:每個模組需有可呼叫的 run()(慣例:run() 用
+`sorted(globals())` 自動跑該模組所有 test_* 函式)。新增測試模組或測試函式
+**無需登錄** —— 根除原「頂部 import 清單 + __main__ modules 清單」雙清單漏同步、
+以及「寫了 test_ 卻忘了加進 run()」這兩類靜默漏跑 footgun。
+"""
+
+import importlib
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+TESTS_DIR = Path(__file__).resolve().parent
+sys.path.insert(0, str(TESTS_DIR.parent))   # 專案根:import tesrpg
+sys.path.insert(0, str(TESTS_DIR))           # 讓 test_* 模組可被 import_module / 互相 import
 
-import test_assassin
-import test_combat
-import test_court
-import test_crafting
-import test_creation
-import test_equipment
-import test_guild_depth
-import test_m5
-import test_m6
-import test_m7
-import test_m8
-import test_m9
-import test_m10
-import test_m12
-import test_m13
-import test_m14
-import test_m15
-import test_magic
-import test_spell_schema
-import test_mastery
-import test_origins
-import test_politics
-import test_practice_cost
-import test_progression
-import test_seed
-import test_shop
-import test_state
-import test_brotherhood
-import test_detailing
-import test_vampirism
-import test_warband
-import test_weapons
-import test_world
-import test_worldstate
-import test_mythicdawn
-import test_achievements
-import test_knights
-import test_landmarks
-import test_polish
-import test_sheet
-import test_web
-import test_smithing
-import test_dungeon
-import test_speechcraft
-import test_skooma
-import test_lycanthropy
-import test_party
-import test_attributes
-import test_hybrids
-import test_companions
-import test_class_identity
-import test_companion_arcs
-import test_dialogue_tree
-import test_aiwar
-import test_housing
-import test_mounts
-import test_origin_quests
-import test_oblivion
-import test_webdriver
-import test_potion_buff
-import test_poison_depth
-import test_alchemy_discovery
-import test_two_handed
-import test_great_shield
-import test_monster_attacks
-import test_solo_control
-import test_daedric
-import test_curse_depth
-import test_curse_kin
-import test_curse_rank
-import test_disease
+
+def discover() -> list[str]:
+    """tests/ 下所有 test_*.py 的模組名(決定性 sorted;m12<m13 等 import-time patch 相對序不變)。"""
+    return sorted(p.stem for p in TESTS_DIR.glob("test_*.py") if p.stem != "run_all")
+
+
+def main() -> None:
+    names = discover()
+    passed = 0
+    for name in names:
+        mod = importlib.import_module(name)
+        run = getattr(mod, "run", None)
+        if not callable(run):
+            raise SystemExit(f"✗ {name}:缺少可呼叫的 run()(每個 test_*.py 都須提供)")
+        run()
+        print(f"✓ {name}")
+        passed += 1
+    print(f"\n全部通過 ({passed} 個測試模組)")
+
 
 if __name__ == "__main__":
-    modules = [test_creation, test_progression, test_state, test_combat, test_world, test_seed,
-               test_magic, test_spell_schema, test_m5, test_m6, test_m7, test_m8, test_m9, test_m10, test_m12, test_m13,
-               test_m14, test_m15, test_guild_depth, test_equipment, test_weapons, test_origins,
-               test_vampirism, test_assassin, test_brotherhood, test_detailing, test_mastery,
-               test_practice_cost, test_shop, test_crafting, test_court, test_politics,
-               test_warband, test_worldstate, test_mythicdawn, test_knights, test_landmarks,
-               test_polish, test_sheet, test_web, test_achievements, test_smithing, test_dungeon,
-               test_speechcraft, test_skooma, test_lycanthropy, test_party, test_attributes,
-               test_hybrids, test_companions, test_class_identity, test_companion_arcs,
-               test_dialogue_tree, test_aiwar, test_housing, test_mounts, test_origin_quests,
-               test_oblivion, test_webdriver, test_potion_buff, test_poison_depth,
-               test_alchemy_discovery, test_two_handed, test_great_shield,
-               test_monster_attacks, test_solo_control, test_daedric, test_curse_depth,
-               test_curse_kin, test_curse_rank, test_disease]
-    for m in modules:
-        m.run()
-        print(f"✓ {m.__name__}")
-    print(f"\n全部通過 ({len(modules)} 個測試模組)")
+    main()

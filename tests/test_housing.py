@@ -127,15 +127,9 @@ def test_save_roundtrip_and_old_save():
 
 
 def run():
-    test_buy_ownership()
-    test_action_house_buy_deducts_gold()
-    test_stash_weight_exempt_roundtrip()
-    test_deposit_equipped_blocked()
-    test_withdraw_gated_by_weight()
-    test_stash_broken_id_safe()
-    test_well_rested_lifecycle()
-    test_well_rested_xp_multiplier_and_no_base_write()
-    test_save_roundtrip_and_old_save()
+    for name, fn in sorted(globals().items()):
+        if name.startswith("test_") and callable(fn):
+            fn()
 
 
 if __name__ == "__main__":

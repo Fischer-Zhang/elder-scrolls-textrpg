@@ -103,12 +103,9 @@ def test_combat_fear_resisted_by_willpower():
 
 
 def run():
-    test_factors_neutral_at_base()
-    test_luck_loot_factor_in_resolve()
-    test_grant_loot_uses_player_luck()
-    test_luck_fortune_lockpick_and_flee()
-    test_mind_resist_helper()
-    test_combat_fear_resisted_by_willpower()
+    for name, fn in sorted(globals().items()):
+        if name.startswith("test_") and callable(fn):
+            fn()
 
 
 if __name__ == "__main__":

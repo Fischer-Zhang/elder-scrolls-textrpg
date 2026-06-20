@@ -45,9 +45,9 @@ def test_custom_class():
 
 
 def run():
-    test_build_warrior_nord()
-    test_magicka_bonus_altmer_mage_sign()
-    test_custom_class()
+    for name, fn in sorted(globals().items()):
+        if name.startswith("test_") and callable(fn):
+            fn()
 
 
 if __name__ == "__main__":

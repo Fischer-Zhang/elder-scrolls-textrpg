@@ -142,13 +142,9 @@ def test_material_distribution_tiered_by_city():
 
 
 def run():
-    test_stock_initializes_finite()
-    test_material_distribution_tiered_by_city()
-    test_buy_depletes_and_sells_out()
-    test_restock_after_timer()
-    test_save_roundtrip_and_backward_compat()
-    test_shop_buy_smoke_depletes_stock()
-    test_crafting_materials_restock_generously()
+    for name, fn in sorted(globals().items()):
+        if name.startswith("test_") and callable(fn):
+            fn()
 
 
 if __name__ == "__main__":
