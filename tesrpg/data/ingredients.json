@@ -56,6 +56,10 @@
       {
         "kind": "fattr_agility",
         "magnitude": 4
+      },
+      {
+        "kind": "cure_disease",
+        "magnitude": 1
       }
     ]
   },
@@ -90,6 +94,10 @@
       {
         "kind": "restore_fatigue",
         "magnitude": 8
+      },
+      {
+        "kind": "cure_disease",
+        "magnitude": 1
       }
     ]
   },
@@ -289,6 +297,10 @@
       },
       {
         "kind": "fear",
+        "magnitude": 1
+      },
+      {
+        "kind": "cure_disease",
         "magnitude": 1
       }
     ]

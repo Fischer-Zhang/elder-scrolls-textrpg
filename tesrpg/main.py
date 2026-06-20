@@ -3414,7 +3414,9 @@ _EFFECT_CN = {"heal": "回血", "restore_magicka": "回魔", "restore_fatigue": 
               "fattr_willpower": "強意志", "fattr_agility": "強敏捷",
               "fskill_alchemy": "精煉金", "resist_magic": "抗魔法",
               # 毒劑深化(R31):特殊有害效果
-              "damage_strength": "弱攻", "slow": "遲緩", "fear": "懼意"}
+              "damage_strength": "弱攻", "slow": "遲緩", "fear": "懼意",
+              # 疾病可釀(R54):療疾類
+              "cure_disease": "療疾"}
 
 
 def action_coat_weapon(state: GameState, gamedata: GameData) -> None:

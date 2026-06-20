@@ -1,8 +1,9 @@
 """煉金:把兩種材料的共通效果調成藥水或毒藥。
 
 共通效果若是「恢復類」(回血/回魔/回體)→ 飲用藥水;
-若是「有害類」(毒傷/麻痺)→ 塗抹用毒藥(可塗在武器上,見 inventory.coat_weapon)。
-技能越高 → 成品越強。learn-by-doing 鍛鍊煉金。產出為合成物品(見 synth)。
+若是「有害類」(毒傷/麻痺)→ 塗抹用毒藥(可塗在武器上,見 inventory.coat_weapon);
+若是「療疾類」(cure_disease,R54)→ 療疾藥水(統一淨化,效果同神殿/法術/cure_disease_potion)。
+技能越高 → 成品越強(療疾為二元、不隨技能縮放)。learn-by-doing 鍛鍊煉金。產出為合成物品(見 synth)。
 """
 
 from __future__ import annotations
@@ -38,7 +39,7 @@ def ingredient_effects(gamedata: GameData, ing_id: str) -> list[dict]:
 TASTE_FATIGUE = 2   # 嚐一口的微體力代價(由呼叫端扣;便宜,絕不勸退早期玩家)
 _TASTE_HINT = {"heal": "暖意", "restore_magicka": "靈光", "restore_fatigue": "提神的甘",
                "damage_health": "灼痛", "paralyze": "麻木", "fear": "莫名的悸慄",
-               "slow": "遲滯的沉重", "damage_strength": "酸軟無力"}
+               "slow": "遲滯的沉重", "damage_strength": "酸軟無力", "cure_disease": "滌淨的清涼"}
 
 
 def known_kinds(char: Character, ing_id: str) -> list[str]:
@@ -171,6 +172,13 @@ def brew(char: Character, gamedata: GameData, ing_a: str, ing_b: str, rng: RNG) 
         per_turn = max(1, round((eff_a["damage_health"] + eff_b["damage_health"]) / 2.0 * factor))
         item_id = synth.poison_id("dot", per_turn, 3 + dur_bonus)
         result_kind = "poison"
+    elif "cure_disease" in shared:
+        # 有益共通效果之首:療疾(R54 疾病可釀)→ 統一淨化(治所有普通病 + 斬斷吸血/狼人潛伏期,
+        # 與藥水/神殿/法術同一行為)。治療為二元(無強度),不隨煉金縮放;煉金仍經 practice 練功。
+        # 🔴 現有資料中,帶 cure_disease 的材料(大蒜/焦皮鼠革/吸血鬼塵)無一與其他 cure 材料共享有害效果
+        # → 永不落入上方毒藥分支;此分支只在「兩材皆療疾」時觸發。
+        item_id = synth.brew_cure_id()
+        result_kind = "cure"
     else:
         # 有益共通效果:限時增益(強化屬性/技能/抗元素)優先於即時回復藥水
         buff_kinds = [k for k in shared if _is_buff_kind(k)]
@@ -187,7 +195,7 @@ def brew(char: Character, gamedata: GameData, ing_a: str, ing_b: str, rng: RNG) 
             item_id = synth.brew_id(kind, magnitude)
             result_kind = "potion"
         else:
-            # 防呆:共有效果不屬有害/增益/回復(現有資料不會發生;留給未來新 kind 不致 max() 空集崩潰)
+            # 防呆:共有效果不屬有害/療疾/增益/回復(現有資料不會發生;留給未來新 kind 不致 max() 空集崩潰)
             return {"ok": False, "message": "兩種材料的效果無法調合,化作一灘廢液。",
                     "hours": hours, "tired": tired, "skill_events": events, "learn": {}}
 
@@ -195,6 +203,7 @@ def brew(char: Character, gamedata: GameData, ing_a: str, ing_b: str, rng: RNG) 
     name = gamedata.item(item_id)["name"]
     verb = ("煉出了一瓶毒藥" if result_kind == "poison"
             else "調出了一瓶增益藥劑" if result_kind == "buff"
+            else "調出了一瓶療疾藥水" if result_kind == "cure"
             else "調出了一瓶藥水")
     # 成功 → 兩材料皆「學會」這次用到的共有效果(R32:純資料,由呼叫端套用 reveal)。
     learn = {ing_a: sorted(shared), ing_b: sorted(shared)}

@@ -93,6 +93,59 @@ def test_cure_spell_route():
     assert not diseases.has_any(c)
 
 
+# --- 疾病可釀(R54:煉金療疾藥水,統一淨化)----------------------------
+def test_brew_cure_potion_cures_disease():
+    """大蒜 + 吸血鬼塵 共有 cure_disease → 療疾藥水 → 飲下走統一淨化治普通病。"""
+    from tesrpg.systems import alchemy
+    gd, c, st = _state()
+    c.known_effects = {}
+    inventory.add_item(c, "garlic", 1); inventory.add_item(c, "vampire_dust", 1)
+    res = alchemy.brew(c, gd, "garlic", "vampire_dust", RNG(0))   # shared = {cure_disease}
+    assert res["ok"] and res["kind"] == "cure"
+    pot = gd.item(res["item_id"])                                 # 合成 id 解析回藥水
+    assert pot["kind"] == "potion" and pot["effect"]["type"] == "cure_disease"
+    diseases.contract(c, st, gd, "rockjoint")
+    msg = inventory.use_item(c, gd, res["item_id"], st)
+    assert msg and not diseases.has_any(c)                        # 統一淨化清病
+    assert inventory.count_item(c, res["item_id"]) == 0          # 藥水消耗
+
+
+def test_any_two_cure_reagents_brew_cure():
+    """大蒜/焦皮鼠革/吸血鬼塵 兩兩皆療疾(縱有共享回復效果,療疾優先於回復/增益)。"""
+    from tesrpg.systems import alchemy
+    gd, c, st = _state()
+    for a, b in (("garlic", "charred_skeever_hide"), ("charred_skeever_hide", "vampire_dust")):
+        inventory.add_item(c, a, 1); inventory.add_item(c, b, 1)
+        res = alchemy.brew(c, gd, a, b, RNG(0))
+        assert res["ok"] and res["kind"] == "cure", (a, b)
+        assert gd.item(res["item_id"])["effect"]["type"] == "cure_disease"
+
+
+def test_cure_brew_does_not_intercept_restore_or_poison():
+    """回歸守門:非「雙療疾」材料的既有回復/毒藥路徑不被療疾分支攔截。"""
+    from tesrpg.systems import alchemy
+    gd, c, st = _state()
+    # wheat(無 cure)+ charred(有 cure)→ 共有 heal/restore_fatigue,cure 不在交集 → 回復藥水
+    inventory.add_item(c, "wheat", 1); inventory.add_item(c, "charred_skeever_hide", 1)
+    r = alchemy.brew(c, gd, "wheat", "charred_skeever_hide", RNG(0))
+    assert r["ok"] and r["kind"] == "potion"
+    assert gd.item(r["item_id"])["effect"]["type"] in ("heal", "restore_fatigue")
+    # deathbell + vampire_dust → 共有 damage_health/fear,cure 不在交集 → 毒藥
+    inventory.add_item(c, "deathbell", 1); inventory.add_item(c, "vampire_dust", 1)
+    r2 = alchemy.brew(c, gd, "deathbell", "vampire_dust", RNG(0))
+    assert r2["ok"] and r2["kind"] == "poison"
+
+
+def test_brew_cure_id_synthesizes_potion():
+    """synth 療疾 id 可單獨重建(存讀檔還原):brewcure|1 → cure_disease 藥水。"""
+    from tesrpg import synth
+    gd, c, st = _state()
+    iid = synth.brew_cure_id()
+    assert synth.is_synth(iid)                                    # 含 SEP → 走 synthesize 非靜態查表
+    d = gd.item(iid)
+    assert d["kind"] == "potion" and d["effect"]["type"] == "cure_disease" and d["value"] == 30
+
+
 # --- 吸血熱/狼人熱潛伏期解除(治癒含此)-------------------------------
 def test_cure_infection_clears_incubation_not_transformed():
     gd, c, st = _state()

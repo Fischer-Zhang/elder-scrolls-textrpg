@@ -35,7 +35,7 @@
 #### 戰鬥與魔法
 - 回合制**多敵 + 團隊戰鬥**(召喚物/傭兵同伴);**同伴角色化**(9 具名同伴:持久 HP/羈絆 + 具名招募任務 + 羈絆階解鎖的專屬支線 + 就地對話 + 完成支線的忠誠弧頂點〔戰術盟友光環/被動非戰鬥槓桿;盟友限定守刺客紅線〕;復用 `companion_bond` 當忠誠軸,零新存檔欄);**六大學派 + AoE**(召喚/秘術補完至各 7 法術,與毀滅/復原/變換同列;**召喚**=元素元身/魔人 + 束縛兵刃〔法系近戰〕+ 亡者復生〔屍起為盟〕、**秘術**=法術結界〔吸法術傷·吸魔變體〕+ 驅散 + 群體擒魂);元素抗性/弱點、狀態效果、出生星座每日之力
 - **三系資源對稱**:施法也耗體力、力竭降法效(`cast_fatigue_*`),**法袍套裝**省體施法(法師的對應裝甲)
-- **煉金毒藥 + 武器塗毒**;**毒劑深化(Phase 2 / R31)**:五毒型(DoT/麻痺 + 衰毒/遲緩/懼毒,特殊型需里程碑解鎖;solo BOSS 對控制型免疫);**煉金限時增益藥水(深化 Phase 1 / R30)**:強化屬性/技能 + 抗元素**限時**藥劑(走獨立 `potion_*` 層、絕不寫 base;可釀池避 strength/武器技能守刺客紅線);**效果逐步揭露(Phase 3 / R32)**:材料效果預設 `???`,經嚐試/煉製/技能揭露(純資訊層,不碰 brew 數學);**潛行刺客系**:偷襲先機、暗殺殘響、雙持、**隱遁再襲(潛行 25 里程碑「隱遁之術」;連環踏影對單體仍遞減、反 solo boss 風箏)**、戰前偵查;武器流派(潛襲/破甲/速度)
+- **煉金毒藥 + 武器塗毒**;**毒劑深化(Phase 2 / R31)**:五毒型(DoT/麻痺 + 衰毒/遲緩/懼毒,特殊型需里程碑解鎖;solo BOSS 對控制型免疫);**煉金限時增益藥水(深化 Phase 1 / R30)**:強化屬性/技能 + 抗元素**限時**藥劑(走獨立 `potion_*` 層、絕不寫 base;可釀池避 strength/武器技能守刺客紅線);**效果逐步揭露(Phase 3 / R32)**:材料效果預設 `???`,經嚐試/煉製/技能揭露(純資訊層,不碰 brew 數學);**疾病可釀(R54)**:療疾材料(大蒜/焦皮鼠革/吸血鬼塵 `cure_disease`)→ 釀療疾藥水(統一淨化,同神殿/法術/`cure_disease_potion`);**潛行刺客系**:偷襲先機、暗殺殘響、雙持、**隱遁再襲(潛行 25 里程碑「隱遁之術」;連環踏影對單體仍遞減、反 solo boss 風箏)**、戰前偵查;武器流派(潛襲/破甲/速度)
 
 #### 世界與探索
 - **八省 ~168 地點 / 48 城 + 17 鎮 + 70 野區 + 33 地城**(含海爾根 Helgen=白隘北口、賽→天門戶)(每省 5–9 城 + 多個正典分區野區〔黃金海岸/苦岸/裂石郡/收割者三月…〕做城際過場;邊境戍堡為省際接縫)+ **`pos[col,row]` 與 `links` 皆依正典 TES 地理**(頂層 `world["map"]` 40×24);旅行/晝夜/危險度(數字為快照,以 JSON/測試為準)
@@ -1105,7 +1105,16 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 - **疾病層(新 `systems/diseases.py` + `data/diseases.json`·比照斯庫瑪戒斷負層)**:6 種正典病(rockjoint/bone_break_fever/brain_rot/witbane/ataxia/swamp_rot),`char.diseases` 權威 + `disease_attr_penalty`/`disease_skill_penalty` **負值快取**(只疊 `attr()/skill()`·**絕不寫 base**)。`contract`/`apply_to_character`/`update`(game-loop:**惡化**每 N 日加深·cap + **DoT** 每 per_hours 扣血·**clamp≥1 不致死**)/`cure_all`/`purify`/`ensure_disease_fields`。Character 加 3 欄(dataclass 預設·`ensure_*` 遷移)+ `attr()/skill()` 各加一項聚合。
 - **感染(combat on-hit·只非 sim 怪)**:`combat.py` on-hit 加 `atk["disease"]={"id","chance"}` → 受 `entity_resist` 的 disease 削弱(吸血鬼/狼人 disease:100→dmult0 天然免疫)→ 回 `infect_kind="disease"`+`disease_id`;`run_battle` 分派 `diseases.contract`。`disease` 欄只加在 **6 非 sim 怪**(giant_rat/swamp_leech/jungle_toad/moor_hound/sand_adder/moor_witch;sim 用 bandit/skeleton/vampire_fledgling/dremora/frost_troll/wolf → byte-identical)。
 - **統一治癒三途(皆解普通病 + 潛伏期·不解已轉化詛咒)**:共用 `diseases.purify` = `cure_all` + `vampirism.cure_infection` + `lycanthropy.cure_infection`(新·只重置 `infected_day=-1`、不碰 `is_vampire/is_werewolf`)。(a) 藥水 `cure_disease_potion`(use_item 新 effect·入 42 城 merchant_stock)、(b) 神殿療者 plaza 動作 `action_disease_cure`(免費·比照 skooma_cure)、(c) 恢復法術 `cure_disease`「淨疫術」(magic.cast 新 kind·入 7 法師公會)。**(d) 釀製刻意延後**(順手項)。
-- **🔴 sim byte-identical**(隔離 worktree 法定·動 combat/character 仍逐位元組同):disease 層空 dict→刺客 attr/skill 多一項 `+0`;`disease` on-hit 只非 sim 怪;DoT/惡化只 game-loop(sim 不跑);治癒三途非戰鬥。**疾病=懲罰層不強化玩家**(非 make-stronger 取捨)。零寫 base;新欄 dataclass 預設 + `ensure_disease_fields` 遷移。`run_all` **71**(新 `test_disease`);BESTIARY.md 重生(118 怪)。**剩餘**:疾病可釀(alchemy `cure_disease` 材料)。
+- **🔴 sim byte-identical**(隔離 worktree 法定·動 combat/character 仍逐位元組同):disease 層空 dict→刺客 attr/skill 多一項 `+0`;`disease` on-hit 只非 sim 怪;DoT/惡化只 game-loop(sim 不跑);治癒三途非戰鬥。**疾病=懲罰層不強化玩家**(非 make-stronger 取捨)。零寫 base;新欄 dataclass 預設 + `ensure_disease_fields` 遷移。`run_all` **71**(新 `test_disease`);BESTIARY.md 重生(118 怪)。~~**剩餘**:疾病可釀~~ ✅ **已做**(R54)。
+
+### R54 · 疾病可釀:煉金療疾藥水(R53 收尾)[save]
+
+承 R53 明列「剩餘:疾病可釀」。使用者兩道拍板:**形態=統一淨化**(釀出的藥走既有 `purify`,治所有普通病 + 斬斷吸血/狼人潛伏期,與 `cure_disease_potion`/神殿/法術完全一致;二元無強度)+ **範圍=純收尾**(只做「疾病可釀」,不深化)。**極小、純資料 + 一條 brew 分支·零新存檔欄·`sim_assassin` byte-identical**(非戰鬥改動·刺客 fixtures 無療疾材料/疾病·隔離 worktree 法定)。
+- **療疾材料(`data/ingredients.json`)**:給 3 種正典治病材料各加 `cure_disease` 效果(`magnitude:1`·二元忽略強度)—— **大蒜 garlic / 焦皮鼠革 charred_skeever_hide / 吸血鬼塵 vampire_dust**(皆 Skyrim 正典 cure-disease reagent)。
+- **brew 分支(`systems/alchemy.py`)**:在毒藥分派鏈末、有益 else 之前插 `elif "cure_disease" in shared:` → `synth.brew_cure_id()`,`result_kind="cure"`(verb「調出了一瓶療疾藥水」)。**療疾優先於回復/增益**(兩材皆療疾即出療疾藥,縱使另共享 restore_fatigue)。🔴 **無回歸**:`cure_disease` 只在 garlic/charred/vampire_dust;**現有測試無任一配對「雙療疾」材料** → 任何既有 buff/回復/毒藥路徑都不被攔截(`cure_disease` 永不入其交集);且 3 材料中只有 vampire_dust 帶 harmful(damage_health/fear),而 garlic/charred 無 harmful → **療疾配對永不共享有害效果**、永不落入上方毒藥分支。
+- **合成物品(`synth.py`)**:新 `brew_cure_id()`=`brewcure|1`(含 `|` → `is_synth` 真·走 `synthesize` 非靜態查表);`synthesize` 加 `brewcure` 分支 → `{kind:"potion", effect:{type:"cure_disease"}, value:30}`(同 `cure_disease_potion`)→ `use_item` 既有 `cure_disease` 分支走 `diseases.purify`。零新存檔欄(藥水=合成 id,存讀檔由 id 還原)。
+- **UI**:`main._EFFECT_CN` 加 `cure_disease:"療疾"`;`alchemy._TASTE_HINT` 加 `cure_disease:"滌淨的清涼"`(嚐一口提示)。效果逐步揭露(R32)/learn 對新 kind 天然通用(無特判)。
+- `run_all` **71**(`test_disease` +4:釀療疾藥治病 / 任兩療疾材料皆出療疾 / 非雙療疾不攔截回復+毒藥 / brewcure id 合成往返)。
 
 ---
 

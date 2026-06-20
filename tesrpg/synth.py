@@ -7,6 +7,7 @@ id 格式(以 '|' 分段):
   brew|<effect_kind>|<magnitude>                         → 自製藥水(即時回血/回魔/回體)
   brewb|<kind>|<magnitude>|<hours>                        → 限時增益藥水(R30);kind 參數內嵌:
         fattr_<屬性> 強化屬性 | fskill_<技能> 強化技能 | resist_<元素> 抗元素(magnitude=量/百分比;hours=持續小時)
+  brewcure|1                                              → 自製療疾藥水(R54;統一淨化:治所有普通病 + 斬斷吸血/狼人潛伏期;二元無強度)
   psn|<status_kind>|<a>|<b>                              → 塗抹用毒藥(dot:每回合a傷×b回合;paralyze:a回合)
   enchw|<base_weapon_id>|<element>|<magnitude>           → 附魔武器(元素傷害)
   enchws|<base_weapon_id>|<status>|<magnitude>|<turns>   → 附魔武器(命中觸發:vampiric/paralyze/regen)
@@ -41,6 +42,11 @@ def brew_id(effect_kind: str, magnitude: int) -> str:
 def brew_buff_id(kind: str, magnitude: int, hours: int) -> str:
     """限時增益藥水 id。kind 為參數內嵌字串(fattr_<屬性>/fskill_<技能>/resist_<元素>)。"""
     return f"brewb{SEP}{kind}{SEP}{magnitude}{SEP}{hours}"
+
+
+def brew_cure_id() -> str:
+    """療疾藥水 id(R54:疾病可釀)。治療為二元(無強度)→ 固定參數段確保 is_synth=True。"""
+    return f"brewcure{SEP}1"
 
 
 def poison_id(status_kind: str, a: int, b: int = 0) -> str:
@@ -150,6 +156,10 @@ def synthesize(item_id: str, gamedata) -> dict:
             name = f"自製強化{skname}藥水（+{mag} · {hours} 時)"
         return {"name": name, "kind": "potion", "effect": effect,
                 "value": max(10, mag * hours), "weight": 0.5}
+
+    if tag == "brewcure":                                   # R54:療疾藥水(統一淨化,效果同 cure_disease_potion)
+        return {"name": "自製療疾藥水", "kind": "potion",
+                "effect": {"type": "cure_disease"}, "value": 30, "weight": 0.5}
 
     if tag == "psn":
         _, kind, a, b = parts
