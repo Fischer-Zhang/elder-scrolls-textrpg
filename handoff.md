@@ -54,7 +54,7 @@
 - **領主政治 / 城戰**:謁見 → 委託 → 武士冊封;圍城 + 破城 + 收稅 + 招兵買馬;**陣營動態大事件**
 
 #### 系統與打磨
-- **事件引擎**、**成就系統**(37 成就含後期軸〔誓福/血族頂階/疾病/魂石〕+ 首達通知 + 結算/角色卡檢視,R55)、**反 min-max 經濟**(practice 成本)、**Web 版**(原生渲染、可點互動、常駐故事日誌 R58)
+- **事件引擎**、**成就系統**(37 成就含後期軸〔誓福/血族頂階/疾病/魂石〕+ 首達通知 + 結算/角色卡檢視,R55)、**反 min-max 經濟**(practice 成本)、**Web 版**(原生渲染、可點互動、常駐故事日誌 R58、里程碑手風琴 R59、遊戲內指南/圖鑑 R60)
 
 ### 里程碑歷程
 
@@ -1161,6 +1161,15 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 - **驗證**:`run_all` **77**(`test_web.test_sheet_subview_models` 改驗新 grouped 形狀:系統分組 + 三態不變式 + 配對卡 + chosen/foregone + 預設展開)+ `node --check` + 伺服器 serves markup + Python 眼驗手風琴。**achievements 面板仍用舊 `.mst-grid`/`.mst`**(不受影響)。
 - 🔴 **鐵律**:里程碑頁面是**唯讀參考**(抉擇在 `_drain_mastery_choices`);改顯示動 `console._masteries_view`(資料)+ `index.html renderMasteries`(渲染/折疊)+ `.msk-*`/`.mn-*` CSS;**不碰 mastery 邏輯/opt_id**(R34)、零存檔欄、R27 native view 模式;新前端 class 用 `.msk-*` 命名空間(避開既有 `.mnode`/`.mst` 等)。
 
+### R60 · 遊戲內指南/圖鑑(codex):深沙盒 how-to 入口 [UI-only]
+
+評估「下一步」→ 使用者選**遊戲內指南/圖鑑**(survey:UI 已近乎全原生,最大玩家友善度缺口=深沙盒〔吸血鬼/狼人/煉金/附魔/公會/17 戴德拉親王/疾病/88 里程碑〕**零遊戲內說明**,新玩家迷路)。**純 UI/內容向 · 唯讀 · 零新存檔欄 · 不碰 combat/formulas → 免 sim · 前端零改動**(複用既有 `panel` 原生 view)。內容優先純改 JSON(R02)。
+- **內容**:新 `data/codex.json` —— 13 個 curated 質化 how-to 分類(操作循環/技能里程碑/戰鬥控場/六學派/煉金毒藥/附魔靈魂石/公會派系/吸血鬼/狼人/疾病神殿誓福/犯罪賞金/世界探索/城邦領地)。section 四形狀 `{h}|{p,c?}|{kv:[k,v]}|{li,c?}`(著色限合法 TONE);`_` 前綴鍵不渲染;`order` 排序;**內容質化**(講機制方向不寫精確數值)→ 抗陳舊。
+- **動態鉤子**:`disease_temple` 帶 `"dynamic":"shrines"` → `_codex_rows` 末追加 `_shrine_index_rows`(掃 `gamedata.world` 帶 `shrine` 的地點 → 地名+省)→ 神殿一覽隨新增親王自動更新(防陳舊)。**唯一動態,其餘全 curated**。
+- **接線**:`gamedata.codex = _load("codex.json")`(1 行);`console.py` 加 `codex_index`(依 order 排序選單)/`_codex_rows`(section→`_hd/_kv/_ln`,未知形狀靜默略過)/`codex_panel`(web `_emit_panel` + 終端 fallback,比照 `sheet_factions`)/`_shrine_index_rows`;`main.py` 加 `action_codex`(比照 `action_character_sheet` while-loop)+ 人物組加 `("guide","指南/圖鑑 📖")` + dispatch elif。**index.html 不改**(`renderPanel`/`VIEWS.panel` 已存在)。
+- **驗證**:`run_all` **78**(新 `test_codex`:schema lint〔每 entry title/sections·section 恰含 h/p/kv/li 其一·kv 2 元素·c∈TONE·id 格式·13 類覆蓋〕+ 渲染煙霧〔WebBackend 驅每 entry→合法 panel view·神殿一覽對上 world shrine 數〕+ 終端 fallback + action 唯讀〔menu-stub 驅 `action_codex`→回 None·`to_dict()` 不變·時間不推進〕)+ 無頭煙霧(真實 game loop 進 hub→人物→指南→渲染分類無 traceback)+ server boot。
+- 🔴 **鐵律**:codex 是**唯讀參考**(讀 gamedata,不碰 char/state);**加/改分類純改 `data/codex.json`**(R02;section 走 `h/p/kv/li`、著色限 TONE、id 穩定不重命名);內容務必**質化**抗陳舊,需「清單」用動態鉤子(`entry.dynamic` + `_xxx_index_rows`)而非硬寫;改呈現動 `console.codex_panel`/`_codex_rows`。**v1.1 候選**:法術/材料/怪物完整 data 目錄(更「圖鑑」)、footer 入口提示。
+
 ---
 
 ## 4. 開發節奏(ultracode 開著 → 每個功能都這樣做)
@@ -1196,7 +1205,7 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 
 ## 6. 下一步候選(依槓桿排序)
 
-> **Web UI/UX 候選**(R58「改善 UI/UX」評估盤點;UI 已近乎全原生,以下為剩餘真缺口,皆 UI-only/低風險):① ✅ **敘事捲動歷史已做**(R58 故事日誌);② **遊戲內說明/圖鑑**(深沙盒〔吸血鬼/狼人/煉金/附魔/公會/戴德拉/疾病/里程碑〕learn-by-doing 卻零遊戲內指南;純加 hub action + 新 view,比照 `action_shrine`);③ **無障礙/動效打磨**(全頁 `aria-live`、`prefers-reduced-motion`〔R58 已起頭〕、圖示按鈕語意標籤、處理中 spinner、焦點管理);④ **QoL/設定**(字級切換、多存檔槽 UI)。
+> **Web UI/UX 候選**(R58「改善 UI/UX」評估盤點;UI 已近乎全原生,以下為剩餘真缺口,皆 UI-only/低風險):① ✅ **敘事捲動歷史已做**(R58 故事日誌);② ✅ **遊戲內說明/圖鑑已做**(R60 codex:`data/codex.json` 13 質化分類 + 動態神殿一覽,人物組「指南/圖鑑」hub action);③ **無障礙/動效打磨**(全頁 `aria-live`、`prefers-reduced-motion`〔R58 已起頭〕、圖示按鈕語意標籤、處理中 spinner、焦點管理);④ **QoL/設定**(字級切換、多存檔槽 UI)。
 
 0. **城戰/領主區路線(已立藍圖,Oblivion+Skyrim 參考,逐 Phase 推進)** —— ✅ **Phase 1 已做**(見 §1「領主區 Phase 1」:第 4 城區 `領主區 👑` + 謁見領主,讓 21 城主活起來)。藍圖:
    - ✅ **Phase 2 已做**(見 §1「領主區 Phase 2」):領主委託(source `ruler`)→ `city_standing` → 達 `THANE_STANDING` 受封武士;特權=該省賞金寬待 + 侍從 + 信物。新 Character 欄 `city_standing`/`thaneships`。

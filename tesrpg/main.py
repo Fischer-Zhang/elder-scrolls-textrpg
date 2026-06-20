@@ -3927,6 +3927,18 @@ def action_character_sheet(state: GameState, gamedata: GameData) -> None:
             ui.character_sheet(char, gamedata)
 
 
+def action_codex(state: GameState, gamedata: GameData) -> None:
+    """遊戲內指南/圖鑑(唯讀、零存檔):選系統分類 → 渲染該條目 panel → 迴圈。
+
+    比照 action_character_sheet;內容在 data/codex.json,渲染走 ui.codex_panel(R60)。"""
+    index = ui.codex_index(gamedata)
+    while True:
+        choice = ui.menu("指南 / 圖鑑 📖", index, allow_back=True)
+        if choice is None:
+            return
+        ui.codex_panel(gamedata.codex[choice], gamedata)
+
+
 # ======================================================================
 # 主迴圈
 # ======================================================================
@@ -4166,7 +4178,8 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
                 craft.append(("recharge", "附魔充能"))
         # --- 角色與物品 ---
         character: list = [("quests", "任務日誌"), ("inventory", "背包"),
-                           ("practice", "練習技能"), ("rest", "原地休息"), ("sheet", "角色卡")]
+                           ("practice", "練習技能"), ("rest", "原地休息"), ("sheet", "角色卡"),
+                           ("guide", "指南/圖鑑 📖")]
         if player.companions:                            # 有同伴 → 隊伍管理(檢視 HP/羈絆/解散)
             character.insert(0, ("party", "隊伍 ⚔"))
         if politics.held_tax_cities(player, gamedata):   # 有親手攻下的城 → 領地總覽(階段四)
@@ -4292,6 +4305,8 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
             died = action_rest(state, gamedata)
         elif choice == "sheet":
             action_character_sheet(state, gamedata)
+        elif choice == "guide":
+            action_codex(state, gamedata)
         elif choice == "levelup":
             action_level_up(state, gamedata)
         elif choice == "save":

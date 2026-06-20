@@ -926,6 +926,63 @@ def sheet_factions(char: Character, gamedata: GameData) -> None:
     console.print(_panel(body, title="公會與階級"))
 
 
+# --- 遊戲內指南/圖鑑(codex;唯讀 how-to 內容,R60)------------------------
+_CODEX_TONES = {"muted", "faint", "green", "red", "cyan", "gold", "magenta", "yellow"}
+
+
+def codex_index(gamedata: GameData) -> list:
+    """codex 主選單項:[(id, "icon title")],依 order 排序;跳過 _ 前綴的 meta 鍵。"""
+    items = [(cid, e) for cid, e in gamedata.codex.items()
+             if not cid.startswith("_") and isinstance(e, dict)]
+    items.sort(key=lambda kv: (kv[1].get("order", 9999), kv[0]))
+    return [(cid, f"{e.get('icon', '📖')} {e.get('title', cid)}") for cid, e in items]
+
+
+def _shrine_index_rows(gamedata: GameData) -> list:
+    """動態『神殿一覽』:掃 world 帶 shrine 欄的地點 → 地名 + 省(隨新增親王自動更新,防陳舊)。"""
+    rows = [_hd("已知神殿一覽(隨世界更新)")]
+    for loc in (gamedata.world or {}).get("locations", {}).values():
+        if loc.get("shrine"):
+            rows.append(_kv(loc.get("name", "?"), loc.get("province", "")))
+    return rows
+
+
+def _codex_rows(entry: dict, gamedata: GameData) -> list:
+    """codex entry.sections → panel rows(h/p/kv/li → _hd/_kv/_ln);未知形狀靜默略過(防陳舊)。"""
+    rows = []
+    for sec in entry.get("sections", []):
+        if "h" in sec:
+            rows.append(_hd(sec["h"]))
+        elif "kv" in sec and isinstance(sec["kv"], (list, tuple)) and len(sec["kv"]) == 2:
+            rows.append(_kv(sec["kv"][0], sec["kv"][1]))
+        elif "li" in sec:
+            rows.append(_ln("• " + str(sec["li"]), sec.get("c") if sec.get("c") in _CODEX_TONES else None))
+        elif "p" in sec:
+            rows.append(_ln(str(sec["p"]), sec.get("c") if sec.get("c") in _CODEX_TONES else None))
+    if entry.get("dynamic") == "shrines":          # 唯一動態鉤子:curated 內容後追加神殿清單
+        rows += _shrine_index_rows(gamedata)
+    return rows or [_ln("(本條目尚無內容)", "muted")]
+
+
+def codex_panel(entry: dict, gamedata: GameData) -> None:
+    """渲染一條 codex 條目(web:原生 panel view;終端:rich fallback)。唯讀、零副作用。"""
+    title = f"{entry.get('icon', '📖')} {entry.get('title', '指南')}"
+    rows = _codex_rows(entry, gamedata)
+    if _web is not None:
+        _emit_panel(title, rows)
+        return
+    body = Text()                                  # 終端 fallback(R27;web-only 下不執行)
+    for r in rows:
+        if r["t"] == "head":
+            body.append(r["s"] + "\n", style=f"bold {GOLD}")
+        elif r["t"] == "kv":
+            body.append(f"{r['k']}：", style=PARCH)
+            body.append(f"{r['v']}\n", style=INK)
+        else:
+            body.append(r["s"] + "\n", style=INK)
+    console.print(_panel(body, title=title))
+
+
 def _masteries_view(char: Character, gamedata: GameData) -> dict:
     """里程碑頁面(web 原生):按 系統(戰鬥/魔法/潛行)→ 技能 折疊;每節點一張卡含
     二選一兩 option 並列、三態著色(✦已選 / ◆待選=達門檻未選 / ○未達);預設只展開
