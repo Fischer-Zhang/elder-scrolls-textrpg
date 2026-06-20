@@ -234,6 +234,28 @@
     "loot": [],
     "flavor": "一頭由魔族界召喚而來的靈狼。"
   },
+  "ancestral_ghost": {
+    "name": "先祖之靈",
+    "danger": 2,
+    "min_level": 99,
+    "weight": 0,
+    "strength": 42,
+    "agility": 46,
+    "speed": 46,
+    "max_health": 28,
+    "armor_rating": 6,
+    "attack": {
+      "name": "靈刃",
+      "damage": 12,
+      "skill": 48
+    },
+    "loot_gold": [
+      0,
+      0
+    ],
+    "loot": [],
+    "flavor": "暗精靈血脈呼喚而出的先祖魂魄,持半透明的靈刃護佑後嗣。"
+  },
   "summoned_atronach": {
     "name": "火焰元素",
     "danger": 3,

@@ -119,3 +119,126 @@ def use(char: Character, state, gamedata: GameData, target=None) -> dict:
 
     char.power_last_day[pid] = _today(state)
     return {"messages": messages, "escape": escape}
+
+
+# ── 種族威能(R61):與星座威能槽**不相交**的「第二威能槽」。每日一次,複用 char.power_last_day
+#    (種族 pid 與星座 pid 天然不撞 → 零新存檔欄)。`power_id()` 一字不動。
+#    戰系種族各一招:獸人/紅衛=自身增傷 buff、木精靈/帝國/諾德=控場(走 magic.apply_control)、
+#    暗精靈=召喚靈體;被動族(虎人/亞龍/高精靈/布萊頓)無 racial_power key → racial_power_id 回 None。
+RACIAL_POWERS = {
+    "orc_berserk":       {"name": "獸人狂暴", "contexts": ["combat"],
+                          "effect": {"self_empower": 0.20, "empower_turns": 3, "heal": 40},
+                          "desc": "血脈狂怒奔湧:增傷 3 回合,並回復 40 點生命。"},
+    "adrenaline_rush":   {"name": "腎上腺爆發", "contexts": ["combat"],
+                          "effect": {"self_empower": 0.15, "empower_turns": 3, "restore_fatigue": True},
+                          "desc": "腎上腺奔湧:增傷 3 回合,並回滿體力。"},
+    "command_beast":     {"name": "林語馭獸", "contexts": ["combat"],
+                          "effect": {"control": "fear", "turns": 1, "target_class": "beast"},
+                          "desc": "以林間之語震懾一頭野獸,使其驚懼退縮 1 回合。"},
+    "imperial_voice":    {"name": "帝皇之聲", "contexts": ["combat"],
+                          "effect": {"control": "fear", "turns": 1, "target_class": "humanoid"},
+                          "desc": "天生威儀震懾一名人形之敵,使其驚懼退縮 1 回合。"},
+    "battle_cry":        {"name": "諾德戰吼", "contexts": ["combat"],
+                          "effect": {"control": "fear", "turns": 1, "target_class": "all"},
+                          "desc": "撼天戰吼,使全體敵人驚懼退縮 1 回合。"},
+    "ancestor_guardian": {"name": "祖靈守護", "contexts": ["combat"],
+                          "effect": {"summon": "ancestral_ghost", "turns": 5},
+                          "desc": "召喚一縷先祖之靈並肩作戰(5 回合)。"},
+}
+
+
+def racial_power_id(char: Character, gamedata: GameData) -> str | None:
+    """種族威能 id(與 power_id 不相交)。被動族無 racial_power → None;獸形中關閉(鏡像 power_id 狼人 guard)。"""
+    if getattr(char, "beast_form", False):   # 獸形:化身巨狼,種族威能槽暫閉
+        return None
+    pid = (getattr(gamedata, "races", {}) or {}).get(getattr(char, "race", ""), {}).get("racial_power")
+    return pid if pid in RACIAL_POWERS else None
+
+
+def racial_def(pid: str) -> dict:
+    return RACIAL_POWERS[pid]
+
+
+def racial_available(char: Character, state, gamedata: GameData, context: str | None = None) -> bool:
+    pid = racial_power_id(char, gamedata)
+    if not pid:
+        return False
+    if context is not None and context not in RACIAL_POWERS[pid]["contexts"]:
+        return False
+    return char.power_last_day.get(pid) != _today(state)
+
+
+def racial_needs_target(pid: str) -> bool:
+    """是否需先選單一敵方目標(單體控場=是;AoE/召喚/自身 buff=否)。"""
+    return RACIAL_POWERS[pid]["effect"].get("target_class") in ("beast", "humanoid")
+
+
+def _control_class_ok(target, gamedata: GameData, target_class) -> bool:
+    """敵方類別閘:beast=非 sentient(野獸/構裝);humanoid=sentient(人形);all/None=不限。"""
+    if target_class in (None, "all"):
+        return True
+    sentient = bool((getattr(gamedata, "bestiary", {}) or {})
+                    .get(getattr(target, "template_id", ""), {}).get("sentient"))
+    return sentient if target_class == "humanoid" else not sentient
+
+
+def racial_combat_targets(pid: str, enemies: list, gamedata: GameData) -> list:
+    """該威能在當前敵群中的有效目標 list(控場單體=合類存活敵;all=全存活;自身/召喚=[])。"""
+    eff = RACIAL_POWERS[pid]["effect"]
+    if "control" not in eff:
+        return []   # 自身 buff / 召喚:不需選目標
+    from tesrpg.systems import combat
+    tcls = eff.get("target_class")
+    living = [e for e in enemies if combat.is_alive(e)]
+    if tcls == "all":
+        return living
+    return [e for e in living if _control_class_ok(e, gamedata, tcls)]
+
+
+def racial_use(char: Character, state, gamedata: GameData, target=None,
+               battle=None, enemies=None) -> dict:
+    """施展種族威能。回傳 {"messages": [...]}。設置當日冷卻。"""
+    from tesrpg.systems import combat, magic
+    pid = racial_power_id(char, gamedata)
+    if pid is None:   # 防呆:正常呼叫端皆先過 racial_available;無種族威能時安全 no-op(不崩、不燒冷卻)
+        return {"messages": []}
+    pdef = RACIAL_POWERS[pid]
+    eff = pdef["effect"]
+    name = pdef["name"]
+    messages: list[str] = []
+
+    if "self_empower" in eff:   # 自身增傷 buff(combat._self_empower 讀 → 加在 power_bonus,偷襲倍率之後相加 → 守紅線)
+        char.active_effects.append({"kind": "berserk_buff",
+                                    "magnitude": eff["self_empower"],
+                                    "turns": eff.get("empower_turns", 3)})
+        messages.append(f"{name} —— 你怒意爆發,攻勢凌厲了起來({eff.get('empower_turns', 3)} 回合)。")
+    if "heal" in eff:
+        before = char.health
+        char.health = min(char.max_health, char.health + eff["heal"])
+        if char.health > before:
+            messages.append(f"傷處迅速癒合,回復了 {int(char.health - before)} 點生命。")
+    if eff.get("restore_fatigue"):
+        char.fatigue = char.max_fatigue
+        messages.append("你氣力全復、精神抖擻。")
+    if "control" in eff:
+        tcls = eff.get("target_class")
+        if tcls == "all":
+            targets = [e for e in (enemies or []) if combat.is_alive(e)]
+        else:
+            targets = [target] if (target is not None and combat.is_alive(target)) else []
+        affected = 0
+        for t in targets:
+            if _control_class_ok(t, gamedata, tcls) and \
+                    magic.apply_control(t, eff["control"], gamedata, state.rng,
+                                        turns=eff.get("turns", 1), source=pid) == "applied":
+                affected += 1
+        messages.append(f"{name} —— {affected} 名敵人膽寒退縮!" if affected
+                        else f"{name},但敵人無動於衷。")
+    if "summon" in eff and battle is not None:
+        ally = combat.spawn_creature(gamedata, eff["summon"], state.rng)
+        ally.summon_turns = eff.get("turns", 5)
+        battle.setdefault("allies", []).append(ally)
+        messages.append(f"{name} —— {ally.name}自靈界現身,與你並肩而戰({ally.summon_turns} 回合)。")
+
+    char.power_last_day[pid] = _today(state)
+    return {"messages": messages}

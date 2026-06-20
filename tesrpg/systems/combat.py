@@ -12,7 +12,7 @@ from tesrpg import formulas
 from tesrpg.gamedata import GameData
 from tesrpg.models import Character, Creature
 from tesrpg.rng import RNG
-from tesrpg.systems import inventory, loot, magic, mastery, progression, smithing, stats
+from tesrpg.systems import inventory, loot, magic, mastery, progression, race_ability, smithing, stats
 
 
 # ======================================================================
@@ -231,6 +231,15 @@ def _is_beast(actor) -> bool:
     return _is_player(actor) and getattr(actor, "beast_form", False)
 
 
+def _self_empower(actor) -> float:
+    """玩家「獸人狂暴/紅衛腎上腺」自身增傷(R61)。加在 power_bonus → 在偷襲倍率之後相加 →
+    不餵偷襲爆發(守紅線),且整體流進 dmg → solo 偷襲夾仍夾。非玩家/無 buff → 0.0(sim byte-identical)。"""
+    if not _is_player(actor):
+        return 0.0
+    return sum(e.get("magnitude", 0.0) for e in getattr(actor, "active_effects", [])
+               if e.get("kind") == "berserk_buff" and e.get("turns", 0) > 0)
+
+
 def _weapon_profile(actor, gamedata: GameData, attack: dict | None = None):
     """回傳 (weapon_damage, weapon_skill_level, weapon_skill_id|None)。
 
@@ -249,7 +258,9 @@ def _weapon_profile(actor, gamedata: GameData, attack: dict | None = None):
         if gsd and gsd.get("great_shield"):   # 雙手重盾占雙手 → 盾擊作戰(手持武器休眠);用 block 技、算物理、無附魔/塗毒/archetype
             return gsd.get("bash_damage", 0), actor.skill("block"), "block"
         wp = gamedata.item(actor.weapon)   # 用 item() 以支援附魔(合成)武器
-        return wp["damage"] + smithing.weapon_temper_bonus(actor, gamedata), actor.skill(wp["skill"]), wp["skill"]
+        # 虎人利爪(R61):僅徒手(hand_to_hand)時加爪傷;匕首/blade 路徑永不觸發 → 不餵偷襲倍率、sim byte-identical
+        claw = race_ability.claw_bonus(actor, gamedata) if wp["skill"] == "hand_to_hand" else 0
+        return wp["damage"] + smithing.weapon_temper_bonus(actor, gamedata) + claw, actor.skill(wp["skill"]), wp["skill"]
     src = attack if attack is not None else actor.attack
     return src["damage"], src["skill"], None
 
@@ -491,6 +502,9 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
                 raw *= (1 + emp)
         # 里程碑武器威力 + 弓手「瞄準射」:補傷「不吃偷襲倍率」(同副手補刀模式,守紅線;仍受 solo 夾限)
         power_bonus = raw * (wmod.get("power", 0.0) + (formulas.AIMED_SHOT_POWER if aimed else 0.0))
+        _se = _self_empower(attacker)   # 種族「狂暴/腎上腺」自身增傷(R61):同 power_bonus 模式,偷襲倍率後加 → 守紅線
+        if _se:
+            power_bonus += raw * _se
         # 坐騎「衝鋒」:長槍藉馬勢洞穿(武器傷×高倍率)/ 其他近戰追加坐騎踐踏(flat)。不吃偷襲倍率(charge≠sneak)。
         if mounted_charge and not beast and not bound and charge_spec:
             if archetype == "spear":
@@ -511,6 +525,15 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
         if atk_element:
             # 元素攻擊:無視物理護甲,改吃元素抗性;巨魔像座可吸收為魔力
             if _is_player(defender) and defender.birthsign == "atronach" and rng.chance(0.5):
+                gain = int(round(raw))
+                defender.magicka = min(defender.max_magicka, defender.magicka + gain)
+                absorbed = True
+                dmg = 0.0
+            elif (_is_player(defender)
+                  and (_ds := race_ability.dragonskin_chance(defender, gamedata)) > 0
+                  and rng.chance(_ds)):
+                # 布萊頓龍皮(R61):來襲元素/魔法吸收為魔力(比照巨魔像座)。
+                # 🔴 非布萊頓 _ds=0 → `> 0` 短路 → 永不擲 rng → sim(虎人)byte-identical。
                 gain = int(round(raw))
                 defender.magicka = min(defender.max_magicka, defender.magicka + gain)
                 absorbed = True
@@ -977,6 +1000,7 @@ def stealth_approach_chance(player: Character, enemies: list, gamedata: GameData
     if night:                                                          # 吸血鬼夜視:夜間潛近額外加成(R56·非吸血鬼為 0 → sim byte-identical)
         from tesrpg.systems import vampirism
         approach_bonus += vampirism.night_vision_bonus(player)
+        approach_bonus += race_ability.night_eye_bonus(player, gamedata)   # 虎人夜視(R61·非虎人 0;sim night=False 不入此區)
     return formulas.stealth_approach_chance(
         player.skill("sneak"), foe_agi, len(enemies), armor_weight, night, scouted, surprise,
         approach_bonus=approach_bonus,

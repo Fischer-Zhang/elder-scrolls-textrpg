@@ -15,7 +15,7 @@ from tesrpg.state import GameState
 from tesrpg.systems import (achievements, aiwar, alchemy, boons, brotherhood, combat, court, crafting, crime, dialogue, diseases, dungeon,
                             dungeoncrawl, enchanting, events, factions, housing, inventory, landmarks, legacy,
                             lycanthropy, magic, mastery, mounts, party, politics, potion_buff, powers,
-                            progression, quests, skooma, smithing, stats, vampirism, warband, world, worldstate)
+                            progression, quests, race_ability, skooma, smithing, stats, vampirism, warband, world, worldstate)
 from tesrpg.ui import console as ui
 
 SAVE_PATH = Path.home() / ".tesrpg" / "save.json"
@@ -188,6 +188,10 @@ def _race_chips(gamedata: GameData, r: dict) -> list[dict]:
             name = _RESIST_CN_MAIN.get(elem, elem)
             chips.append({"text": f"抗{name}{v}%" if v > 0 else f"{name}弱{abs(v)}%",
                           "tone": "gold" if v > 0 else "red"})
+    if r.get("racial_power"):                       # R61:種族每日主動威能(比照星座「異能×N」)
+        chips.append({"text": "種族威能", "tone": "mag"})
+    if r.get("passive"):                            # R61:種族持續被動天賦
+        chips.append({"text": "天賦", "tone": "mag"})
     return chips
 
 
@@ -267,9 +271,12 @@ def action_rest(state: GameState, gamedata: GameData) -> str | None:
     no_magicka_regen = char.birthsign == "atronach"
 
     char.fatigue = min(char.max_fatigue, char.fatigue + char.max_fatigue * hours / 8)
-    char.health = min(char.max_health, char.health + char.max_health * hours / 24)
-    if not no_magicka_regen:   # 意志「施法續航」:回魔速率隨意志(base-40 中性 ×1.0)
-        rate = hours / 12 * formulas.magicka_regen_rest_factor(char.attr("willpower"))
+    # 亞龍癒膚(R61):休息 HP 回復加成(非亞龍 ×1 → 不變)
+    char.health = min(char.max_health, char.health
+                      + char.max_health * hours / 24 * (1 + race_ability.histskin_factor(char, gamedata)))
+    if not no_magicka_regen:   # 意志「施法續航」:回魔速率隨意志(base-40 中性 ×1.0)。高精靈高貴血脈再乘加成(非高精靈 ×1)
+        rate = (hours / 12 * formulas.magicka_regen_rest_factor(char.attr("willpower"))
+                * race_ability.magicka_regen_factor(char, gamedata))
         char.magicka = min(char.max_magicka, char.magicka + char.max_magicka * rate)
 
     party.heal(char, gamedata, hours / 24)   # 同伴隨休息回復(負傷者康復後可再上陣)
@@ -469,6 +476,11 @@ def _choose_combat_action(state: GameState, gamedata: GameData, enemies: list, a
         else:
             plabel = "吸血之力" if player.is_vampire else "星座之力"
             opts.append(("power", f"{plabel}({powers.power_def(pid)['name']})"))
+    # 種族之力(R61):與星座威能槽不相交的第二槽 —— 戰系種族每日一招。控場威能須有合類存活敵才提供。
+    if powers.racial_available(player, state, gamedata, "combat"):
+        rpid = powers.racial_power_id(player, gamedata)
+        if "control" not in powers.racial_def(rpid)["effect"] or powers.racial_combat_targets(rpid, enemies, gamedata):
+            opts.append(("racial_power", f"🐾 種族之力（{powers.racial_def(rpid)['name']})"))
     if (not inventory.is_dual_wielding(player, gamedata)
             and not inventory.is_two_handed(gamedata, player.weapon)):   # 雙持/雙手武器占雙手 → 不能格擋
         opts.append(("block", "格擋"))
@@ -551,6 +563,12 @@ def _choose_combat_action(state: GameState, gamedata: GameData, enemies: list, a
         needs_target = any(k in eff for k in ("paralyze", "poison", "drain"))
         target = _choose_enemy_target(state, gamedata, enemies, allies) if needs_target else None
         return {"type": "power", "target": target}
+    if choice == "racial_power":
+        rpid = powers.racial_power_id(player, gamedata)
+        if powers.racial_needs_target(rpid):    # 單體控場:限定合類(野獸/人形)存活敵
+            valid = powers.racial_combat_targets(rpid, enemies, gamedata)
+            return {"type": "racial_power", "target": _choose_enemy_target(state, gamedata, valid, allies)}
+        return {"type": "racial_power", "target": None}
     return {"type": choice}
 
 
@@ -820,6 +838,11 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
                 state.time.advance(1)
                 tally_casualties()
                 return "fled"
+        elif action["type"] == "racial_power":   # 種族之力(R61):自身增傷 / 控場(走 apply_control)/ 召喚靈體
+            rres = powers.racial_use(player, state, gamedata, target=action.get("target"),
+                                     battle=battle, enemies=alive_e())
+            for m in rres["messages"]:
+                ui.message(m, style="bold magenta")
         elif action["type"] == "revert":          # 狼人:主動變回人形(力竭代價)
             lycanthropy.revert(player, state, gamedata)
             ui.message("你壓下狂暴,重歸人形 —— 筋疲力盡。", style="magenta")
@@ -938,6 +961,9 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
         # ---- 回合結束:持續傷害/狀態計時 ----
         # 意志「施法續航」:戰鬥每回合被動回魔(base-40 中性;巨魔像座不自然回魔,沿用既有設定)
         mregen = formulas.magicka_regen_combat(player.attr("willpower"))
+        _rf = race_ability.magicka_regen_factor(player, gamedata)   # 高精靈高貴血脈:戰鬥回魔加成(非高精靈 ×1 不變)
+        if _rf != 1.0:
+            mregen *= _rf
         if mregen and player.birthsign != "atronach" and player.magicka < player.max_magicka:
             player.magicka = min(player.max_magicka, player.magicka + mregen)
         hregen = mastery.combat_regen(player, gamedata)   # 里程碑「生生不息」:戰鬥中每回合自癒

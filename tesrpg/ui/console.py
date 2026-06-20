@@ -693,7 +693,8 @@ def _effect_label(e: dict) -> str:
     elem = _RESIST_CN.get(e.get("element"), "")
     names = {"shield": f"護盾 +{mag}", "regen": f"再生 +{mag}/回合",
              "dot": f"{elem}侵蝕 {mag}/回合", "fear": "恐懼", "paralyze": "麻痺",
-             "weaken": "耗弱", "stagger": "踉蹌", "soul_trap": "擒魂"}
+             "weaken": "耗弱", "stagger": "踉蹌", "soul_trap": "擒魂",
+             "berserk_buff": f"狂暴 +{int(mag * 100)}%傷"}
     base = names.get(k, k or "效果")
     return f"{base}（{turns} 回合)" if turns else base
 
