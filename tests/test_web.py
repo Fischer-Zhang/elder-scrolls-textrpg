@@ -603,6 +603,19 @@ def test_flush_final_and_generation():
     assert fr["seq"] > 0
 
 
+def test_card_grid_for_chip_menus():
+    """R61:帶 chips 的選卡選單(種族/星座/職業)走等寬 grid → 孤卡不撐滿整排。
+    守前端契約:cardgrid CSS 規則 + renderPrompt 依 o.chips 切換 class 不被誤刪。"""
+    static = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                          "tesrpg", "web", "static", "index.html")
+    with open(static, encoding="utf-8") as f:
+        html = f.read()
+    assert ".btns.cardgrid" in html                              # grid 規則存在
+    assert "repeat(auto-fill, minmax(230px, 1fr))" in html       # auto-fill 保留空軌(孤卡不撐大)
+    assert 'classList.add("cardgrid")' in html                   # renderPrompt 依 chips 切換
+    assert "o.chips && o.chips.length" in html                   # 偵測訊號 = 選項帶 chips
+
+
 def run():
     # 其他測試模組(test_m12/m13 等)在 import 時就把 ui.menu 換成 stub 並未還原;
     # reload 還原真正的 5 個輸入原語,確保此處測到的是 web seam 而非別人的 stub。
