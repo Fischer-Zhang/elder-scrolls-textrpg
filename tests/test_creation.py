@@ -44,6 +44,49 @@ def test_custom_class():
     assert not c.is_major_skill("destruction")
 
 
+def test_create_character_back_and_review():
+    """逐步返回 + 總覽改項:create_character 可退上一步重選,並在總覽逐項改後才確認生成。"""
+    from tesrpg import main as M
+    from tesrpg.rng import RNG
+    from tesrpg.ui import console as ui
+    gd = get_gamedata()
+    calls = {}
+    seqs = {
+        "性別": iter(["male", "male"]),
+        "種族": iter(["khajiit", "nord", "orsimer"]),   # 初選 → 星座返回後重選 → 總覽改種族
+        "出生星座": iter([None, "warrior"]),            # 返回上一步 → 再選
+        "開局背景": iter(["⚔ 戰士 · 近戰"]),
+        "職業": iter(["warrior"]),
+        "確認開局": iter(["race", "confirm"]),          # 總覽改種族一次 → 確認
+    }
+
+    def key_of(title):
+        return next((k for k in seqs if title.startswith(k)), None)
+
+    def fake_menu(title, options, allow_back=False):
+        k = key_of(title)
+        calls[k] = calls.get(k, 0) + 1
+        return next(seqs[k])
+
+    orig = (ui.confirm, ui.menu, ui.ask_text, ui.origin_picker)
+    ui.confirm = lambda *a, **k: False                  # 不走快速開始
+    ui.menu = fake_menu
+    ui.ask_text = lambda *a, **k: "Hero"
+    ui.origin_picker = lambda _gd, _oids: "sellsword"
+    try:
+        char = M.create_character(gd, RNG(1))
+    finally:
+        ui.confirm, ui.menu, ui.ask_text, ui.origin_picker = orig
+
+    assert char.race == "orsimer"          # 總覽改種族生效(khajiit→nord→orsimer 最終)
+    assert char.birthsign == "warrior"
+    assert char.name == "Hero"
+    assert char.origin == "sellsword"
+    assert calls["種族"] == 3              # 初選 + 星座返回重選 + 總覽改 → 證「逐步返回 + 總覽改」
+    assert calls["出生星座"] == 2          # None(返回)+ warrior
+    assert calls["確認開局"] == 2          # 改項 + 確認
+
+
 def run():
     for name, fn in sorted(globals().items()):
         if name.startswith("test_") and callable(fn):

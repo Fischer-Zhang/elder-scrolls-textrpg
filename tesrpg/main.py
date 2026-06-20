@@ -29,26 +29,57 @@ def create_character(gamedata: GameData, rng: RNG):
     if ui.confirm("快速開始(隨機種族/職業)?"):
         return _quick_character(gamedata, rng)
 
-    sex = ui.menu("性別", [("male", "男"), ("female", "女")])
-
-    race = ui.menu("種族", [
-        (rid, f"{r['name']} — {r['ability']}", _race_chips(gamedata, r))
-        for rid, r in gamedata.races.items()
-    ])
-
-    sign = ui.menu("出生星座", [
-        (sid, f"{s['name']} — {s['note']}", _sign_chips(s))
-        for sid, s in gamedata.birthsigns.items()
-    ])
-
-    # 先選出身(我是誰),再依出身推薦職業(我會什麼)——讓敘事身分領導機制選擇。
-    origin_id = _choose_origin(gamedata)
-
-    class_id = _choose_class(gamedata, origin_id)
-    custom = _create_custom_class(gamedata) if class_id == "custom" else None
-
-    default_name = creation.random_name(gamedata, race, sex, rng)
-    name = ui.ask_text("姓名", default=default_name)
+    # 逐步創角:每步可返回上一步(選單按「返回」→ 退回重選);走完進總覽,可逐項改、確認才生成。
+    # 角色直到 build_character 才真正生成 → 全程零存檔、零遊戲時間,任何重選皆無損失。
+    sex = _pick_sex()                     # 首步:無上一步
+    race = sign = origin_id = class_id = custom = name = None
+    STEPS = ("race", "sign", "origin", "class", "name", "review")
+    i = 0
+    while i < len(STEPS):
+        step = STEPS[i]
+        if step == "race":
+            r = _pick_race(gamedata, allow_back=True)
+            if r is None:                 # 返回 → 退回性別(再選一次)
+                sex = _pick_sex()
+            else:
+                race, i = r, i + 1
+        elif step == "sign":
+            sg = _pick_sign(gamedata, allow_back=True)
+            sign, i = (sign, i - 1) if sg is None else (sg, i + 1)
+        elif step == "origin":
+            o = _choose_origin(gamedata, allow_back=True)
+            origin_id, i = (origin_id, i - 1) if o is None else (o, i + 1)
+        elif step == "class":
+            cid = _choose_class(gamedata, origin_id, allow_back=True)
+            if cid is None:
+                i -= 1
+            else:
+                class_id = cid
+                custom = _create_custom_class(gamedata) if cid == "custom" else None
+                i += 1
+        elif step == "name":
+            name = ui.ask_text("姓名", default=creation.random_name(gamedata, race, sex, rng))
+            i += 1                        # 文字輸入無返回 → 進總覽(可在總覽改名)
+        elif step == "review":
+            action = _creation_review(gamedata, sex, race, sign, origin_id, class_id, custom, name)
+            if action == "confirm":
+                break
+            if action == "sex":
+                sex = _pick_sex(allow_back=True) or sex
+            elif action == "race":
+                race = _pick_race(gamedata, allow_back=True) or race
+            elif action == "sign":
+                sign = _pick_sign(gamedata, allow_back=True) or sign
+            elif action == "origin":
+                origin_id = _choose_origin(gamedata, allow_back=True) or origin_id
+            elif action == "class":
+                cid = _choose_class(gamedata, origin_id, allow_back=True)
+                if cid is not None:
+                    class_id = cid
+                    custom = _create_custom_class(gamedata) if cid == "custom" else None
+            elif action == "name":
+                name = ui.ask_text("姓名", default=name)
+            # 改完留在總覽(i 不變)→ 再確認
 
     char = creation.build_character(
         gamedata, name=name, sex=sex, race=race, birthsign=sign,
@@ -56,6 +87,38 @@ def create_character(gamedata: GameData, rng: RNG):
     )
     ui.message(f"歡迎來到 Tamriel,{char.name}。", style="bold green")
     return char
+
+
+def _pick_sex(allow_back: bool = False) -> str | None:
+    return ui.menu("性別", [("male", "男"), ("female", "女")], allow_back=allow_back)
+
+
+def _pick_race(gamedata: GameData, allow_back: bool = False) -> str | None:
+    return ui.menu("種族", [(rid, f"{r['name']} — {r['ability']}", _race_chips(gamedata, r))
+                            for rid, r in gamedata.races.items()], allow_back=allow_back)
+
+
+def _pick_sign(gamedata: GameData, allow_back: bool = False) -> str | None:
+    return ui.menu("出生星座", [(sid, f"{s['name']} — {s['note']}", _sign_chips(s))
+                               for sid, s in gamedata.birthsigns.items()], allow_back=allow_back)
+
+
+def _creation_review(gamedata: GameData, sex, race, sign, origin_id, class_id, custom, name) -> str:
+    """創角總覽:列出目前選擇,可逐項改;回傳 'confirm' 或要改的欄位 key(改完回到總覽)。"""
+    rn = gamedata.races[race]["name"]
+    sn = gamedata.birthsigns[sign]["name"]
+    on = gamedata.origins.get(origin_id, {}).get("name", origin_id)
+    cn = custom["name"] if custom else gamedata.classes.get(class_id, {}).get("name", class_id)
+    sx = "男" if sex == "male" else "女"
+    return ui.menu(f"確認開局 —— {name}", [
+        ("confirm", "✔ 確認,以此踏上 Tamriel 之旅"),
+        ("race", f"改種族(目前:{rn})"),
+        ("sign", f"改星座(目前:{sn})"),
+        ("origin", f"改開局(目前:{on})"),
+        ("class", f"改職業(目前:{cn})"),
+        ("sex", f"改性別(目前:{sx})"),
+        ("name", f"改名字(目前:{name})"),
+    ])
 
 
 # 開局分類(兩層選單:24 種太長 → 先選一類、再選開局)。新增開局未列入者自動歸「浪人 · 處境」。
@@ -70,8 +133,9 @@ ORIGIN_CATEGORIES = [
 ]
 
 
-def _choose_origin(gamedata: GameData) -> str:
-    """兩層開局選單:先選類別 → 看該類資訊面板 → 選開局(可返回)。"""
+def _choose_origin(gamedata: GameData, allow_back: bool = False) -> str | None:
+    """兩層開局選單:先選類別 → 看該類資訊面板 → 選開局。
+    類別選單可返回(allow_back → 回上一步,回傳 None);開局卡選單返回 → 退回類別(內層 always-on)。"""
     listed = {oid for _, oids in ORIGIN_CATEGORIES for oid in oids}
     extra = [oid for oid in gamedata.origins if oid not in listed]   # 安全網:漏歸類者進浪人
     cats = [(lbl, [o for o in oids if o in gamedata.origins] + (extra if i == len(ORIGIN_CATEGORIES) - 1 else []))
@@ -79,13 +143,15 @@ def _choose_origin(gamedata: GameData) -> str:
     cats = [(lbl, oids) for lbl, oids in cats if oids]
     while True:
         cat = ui.menu("開局背景(不一樣的人生)—— 先選一類",
-                      [(lbl, f"{lbl}（{len(oids)} 種)") for lbl, oids in cats])
+                      [(lbl, f"{lbl}（{len(oids)} 種)") for lbl, oids in cats], allow_back=allow_back)
+        if cat is None:                       # 類別選單返回 → 退回上一步(星座)
+            return None
         pick = ui.origin_picker(gamedata, dict(cats)[cat])   # 一覽即選單:點開局卡(web)/輸入編號(終端)
         if pick is not None:
             return pick
 
 
-def _choose_class(gamedata: GameData, origin_id: str) -> str:
+def _choose_class(gamedata: GameData, origin_id: str, allow_back: bool = False) -> str | None:
     """選職業:把契合所選出身的職業標★推薦並排到最前(不過濾、不強制——自由組合保留)。
 
     出身的 `classes` 欄(origins.json,選用)是純 UI 推薦清單:只排序/標記,不碰屬性/技能(守 R18)。
@@ -102,7 +168,7 @@ def _choose_class(gamedata: GameData, origin_id: str) -> str:
         class_opts.append((cid, f"{c['name']} — {c['desc']}", chips))
     class_opts.append(("custom", "自訂職業（選專精、偏好屬性、主修技能）"))
     title = f"職業(★ = 契合你的出身「{odef.get('name', '')}」)" if rec else "職業"
-    return ui.menu(title, class_opts)
+    return ui.menu(title, class_opts, allow_back=allow_back)
 
 
 def _intro_quest_briefing(state: GameState, gamedata: GameData) -> None:
