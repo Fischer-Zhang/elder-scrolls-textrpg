@@ -54,7 +54,7 @@
 - **領主政治 / 城戰**:謁見 → 委託 → 武士冊封;圍城 + 破城 + 收稅 + 招兵買馬;**陣營動態大事件**
 
 #### 系統與打磨
-- **事件引擎**、**成就系統**、**反 min-max 經濟**(practice 成本)、**Web 版**(原生渲染、可點互動)
+- **事件引擎**、**成就系統**(37 成就含後期軸〔誓福/血族頂階/疾病/魂石〕+ 首達通知 + 結算/角色卡檢視,R55)、**反 min-max 經濟**(practice 成本)、**Web 版**(原生渲染、可點互動)
 
 ### 里程碑歷程
 
@@ -1116,6 +1116,14 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 - **UI**:`main._EFFECT_CN` 加 `cure_disease:"療疾"`;`alchemy._TASTE_HINT` 加 `cure_disease:"滌淨的清涼"`(嚐一口提示)。效果逐步揭露(R32)/learn 對新 kind 天然通用(無特判)。
 - `run_all` **71**(`test_disease` +4:釀療疾藥治病 / 任兩療疾材料皆出療疾 / 非雙療疾不攔截回復+毒藥 / brewcure id 合成往返)。
 
+### R55 · 成就/重玩性:首達通知 + 後期成就(複用 accessor,零存檔欄)
+
+評估揪出成就系統兩個「建好卻看不見」的冷迴圈,使用者拍板**零風險集**(首達通知 + ~10 後期成就;全複用既有 accessor·**零新存檔欄**·零 combat·`sim_assassin` byte-identical 隔離 worktree 已驗)。**顯示層原已完整**(`sheet_achievements` console.py:979 + web `renderAchievements` + 結算 `legacy_screen`)→ 新成就自動流入,**不動顯示層**。
+- **首達通知(`systems/achievements.py`)**:新 `seed_seen(char,gd)`(載入當下已達成 id 集合)+ `update(state,gd,seen)→events`(對齊 vampirism/skooma update 範式:偵測本圈新達成、記入呼叫端 `seen`、**純讀零 char 變動**)。`main.py game_loop` while 前 `_ach_seen=seed_seen(...)`、`_drain_mastery_choices` 與 `ui.rule()` 之間冒泡 `ui.message("★ 成就達成…")`(安全互動點·絕不在戰鬥中,同 mastery 二選一)。**去重=session 暫態 `_ach_seen`**:同 session 每成就只報一次、**重載 seed 既得成就不重報** → **零存檔欄**(不需 `achievements_notified`)。成就一旦入 `seen` 即不再報 → 達成後狀態回退(疾病治癒/賣魂石)也不閃爍重報。
+- **4 新 cond.type(複用既有 accessor·登錄 `_IMPLEMENTED_TYPES` 否則被 `_defs` 過濾)**:`boons_count`(`len(char.boons)`·R45 親王誓福)、`faction_rank`(`factions.rank_index(char,fac)>=rank`·非會員回 -1 安全·與 `guildmaster` 動態頂階互補)、`disease_count`(`len(diseases.active_ids(char))`·R53)、`soul_gems_filled`(**inventory qty 加總** `kind=="soul_gem"` 的顆數 —— ⚠ 不可用 `enchanting.filled_soul_gems`〔回每堆一 id·數的是堆疊型別非顆數〕,故就地 qty-sum)。頂層 import `diseases`(不反向 import achievements·無循環)。
+- **~10 新成就(`data/achievements.json`·id 對既有 27 個無撞)**:親王所眷/湮滅寵兒(誓福 8/15)、血主臨朝(coven_vampire r3)、群狼之首(werewolf_pack r3)、沉默者(dark_brotherhood r4)、染恙之軀/百病纏身(disease 1/3)、魂石藏家(魂石 5)、弒裂之手(kill malyn_varen)、叩問禁知(kill apocrypha_seeker)。
+- `run_all` **71**(`test_achievements` +9:boons_count/faction_rank/disease/soul_gems/prince-boss/新type登錄/首達去重/seed抑制/update唯讀;擴 `test_shipped_ids_are_legal` 覆蓋 faction_rank faction 合法性)。
+
 ---
 
 ## 4. 開發節奏(ultracode 開著 → 每個功能都這樣做)
@@ -1168,7 +1176,7 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
    ⭐ 世界已**閉合成大環**(見 §1「地圖擴展:黑沼澤」——黑沼澤已把賽羅迪爾↔晨風接成環)。再加新省請沿用該模式:**雙向連通、最好再閉一個環**(別接成走廊尾巴);新城/鎮**務必同步加 `rulers.json` 城主**(否則 `test_world` 紅);新地城首領是 elite 就加 `"raw": true`;**新地點記得加 `biome`、主題新怪加 `biomes`**(見 §1「細化省分」,讓生態遭遇分流);新省可加 `trigger.provinces` 風味事件 + `provinces` 在地懸賞;**新地點記得加 `biome`、主題新怪加 `biomes`,新 biome 要補 `test_detailing` 兩個 valid-biome set**。✅ **漢默法爾已做**(西環/desert/抗火弱霜)、✅ **高岩已做**(西北環/moor/抗魔抗霜弱電)、✅ **瓦倫森林已做**(§1「瓦倫森林 Valenwood」西南環/雨林 jungle/**抗霜抗毒弱火**/5 雨林怪/絞藤蛛巢/玻璃整甲掉落)。**元素軸**:火剋×3(snow/swamp/瓦倫)、霜剋×2(ashland/desert)、電剋×1(高岩)、✅ **毒剋×1(艾爾斯維爾草原,首個弱毒省 → 回饋塗毒/煉金刺客)**;**剩餘可候選**:落錘外島羣、史科威爾(若再開省,毒/火/霜/電軸均已用,可循「全新機制」路線如斯庫瑪)。✅ **艾爾斯維爾已做**(§1「斯庫瑪/月糖成癮系統 + 艾爾斯維爾省」:savanna 弱毒/南方大環 + 仿吸血鬼的斯庫瑪成癮機制)。
    ✅ **細化省分已做**(見 §1):生態遭遇表(biome)、告示板按省過濾、天際/晨風補密度、四省 NPC/在地任務/風味事件;**再進一步**亦做了 heartland 招牌生態怪、2 條在地任務鏈、NPC rumor 指路/補齊委託。
    後續評估過、可再做(依槓桿):~~**商店法術分散**(海芬古/黑光城法術重疊、鎮級無法術 → 各省守一學派強制跨省採購)~~ ✅ **已做**(見 §1「城鎮服務專精化」/ R29:各省守護學派 + 保底集 9 道 + imperial_city 通才;順手補 6 空法術城、清 rimmen/torval 孤兒)、~~具名地標與發現~~ ✅ **已做**(見 §1「區域細化:具名地標與發現系統」—— 專用 landmarks.json + game_loop hook,首次抵達一次性發現,邊境 4 節點全有)、**地區氣候機械效果**(非染病版,低槓桿)。**邊境刻意不補 NPC**(全荒野、無城主模型 → 已以地標填內容)。
-3. **成就系統**(重玩性,種子已開放):`legacy.compute` 已輸出種子;可加一張結算成就表(首殺 boss / 無傷清地城 / 純法師通關…),複用 `kill_counts`/`cleared_dungeons` 等既有計數。每日/分享種子的前置(種子輸入)已完成。
+3. **成就系統**(重玩性,種子已開放):✅ **核心已做**(R55:首達通知〔game_loop 冒泡·零存檔欄·session 暫態去重〕+ 27→37 成就補後期軸〔親王誓福/血族·獵群頂階/黑兄中階/疾病/魂石/親王 boss〕,複用既有 accessor;結算/角色卡/web 顯示原已完整)。**剩餘可再加**:需新追蹤欄位的「挑戰型」成就(無傷清地城 / 純法系通關 / 黑兄五戒;各需新存檔欄 + combat/quest 鉤子,R55 刻意 out-of-scope 守零風險);成就達成計分/徽章/種子成就表分享。每日/分享種子的前置(種子輸入)已完成。
 4. ✅ **體力對法師仍是死資源 —— 已做**(見 §1「法師體力資源對稱化」):施法耗體力(`magic.spell_fatigue_cost`)+ 低體力降法效(`formulas.cast_fatigue_power_factor` ×0.75)+ 法袍套裝省體(`cast_fatigue_factor` 0.80/0.65);純規則層、零存檔欄位、刺客紅線零位移。
 5. **半成品/微調**:創角問答推職業(DESIGN 標暫未做);更多事件/任務。(✅ 護甲附魔擴到技能/抗性、武器命中觸發 已做,見 §1「附魔系統擴展」。)
    - ✅ **戰法師體驗 —— 已做**(見 §1「八職功能性身份網格」):**法力回擊** + **spellblade 里程碑(共鳴一擊)** 皆已實作,且毀滅 50/75 互換後**可兼得**(雙 gish loop 成環);**戰法師套裝**評估後不做(本作無 armor→施法懲罰,輕甲套裝=陷阱裝)。

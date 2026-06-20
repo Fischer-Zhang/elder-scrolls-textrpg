@@ -25,5 +25,15 @@
   {"id": "bloodprice", "name": "血債累累", "desc": "謀害 10 名無辜者。", "cond": {"type": "murders", "count": 10}},
   {"id": "beast_blood", "name": "獸血詛咒", "desc": "成為狼人一族。", "cond": {"type": "lycanthropy"}},
   {"id": "moonlit_hunter", "name": "月下獵手", "desc": "獸形中吞噬 25 名獵物。", "cond": {"type": "werewolf_feeds", "count": 25}},
-  {"id": "magnate", "name": "富甲一方", "desc": "積攢 50000 枚金幣。", "cond": {"type": "gold", "amount": 50000}}
+  {"id": "magnate", "name": "富甲一方", "desc": "積攢 50000 枚金幣。", "cond": {"type": "gold", "amount": 50000}},
+  {"id": "prince_favored", "name": "親王所眷", "desc": "集滿 8 位戴德拉親王的誓福。", "cond": {"type": "boons_count", "count": 8}},
+  {"id": "prince_chosen", "name": "湮滅寵兒", "desc": "集滿 15 位戴德拉親王的誓福。", "cond": {"type": "boons_count", "count": 15}},
+  {"id": "blood_matron", "name": "血主臨朝", "desc": "登上血族夜會的頂階「血主」。", "cond": {"type": "faction_rank", "faction": "coven_vampire", "rank": 3}},
+  {"id": "alpha_wolf", "name": "群狼之首", "desc": "登上獵群的頂階「頭狼」。", "cond": {"type": "faction_rank", "faction": "werewolf_pack", "rank": 3}},
+  {"id": "silencer", "name": "沉默者", "desc": "晉升為黑暗兄弟會的沉默者。", "cond": {"type": "faction_rank", "faction": "dark_brotherhood", "rank": 4}},
+  {"id": "afflicted", "name": "染恙之軀", "desc": "身染一種疾病而不治。", "cond": {"type": "disease_count", "count": 1}},
+  {"id": "pestilent", "name": "百病纏身", "desc": "同時身染 3 種疾病。", "cond": {"type": "disease_count", "count": 3}},
+  {"id": "soul_collector", "name": "魂石藏家", "desc": "囊中持有 5 顆充能魂石。", "cond": {"type": "soul_gems_filled", "count": 5}},
+  {"id": "star_breaker", "name": "弒裂之手", "desc": "討伐墮法師馬林·瓦倫(阿祖拉黑星)。", "cond": {"type": "kill_boss", "creature": "malyn_varen"}},
+  {"id": "forbidden_bane", "name": "叩問禁知", "desc": "討伐亞波克里法求知者(赫麥尤斯·莫拉)。", "cond": {"type": "kill_boss", "creature": "apocrypha_seeker"}}
 ]

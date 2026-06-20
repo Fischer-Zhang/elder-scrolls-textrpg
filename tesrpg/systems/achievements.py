@@ -14,8 +14,10 @@
 from __future__ import annotations
 
 from tesrpg.gamedata import GameData
-from tesrpg.systems import factions, lycanthropy, mastery, politics, vampirism, warband
+from tesrpg.systems import (diseases, factions, lycanthropy, mastery,
+                            politics, vampirism, warband)
 # 注意:legacy 在 pure_spec 分支內就地 import(legacy 會頂層 import 本模組 → 避免循環)。
+# diseases 不反向 import 本模組(已驗)→ 頂層 import 安全。
 
 # 已實作分派的 cond.type 白名單(單一真實來源)。不在此集合者視為「未實作」→
 # 過濾、不顯示、不計數(避免 JSON 打錯 type 時「列出卻永不可達」的沉默 foot-gun)。
@@ -25,6 +27,8 @@ _IMPLEMENTED_TYPES = {
     "skill_cap", "landmarks", "provinces", "cities_held", "thanes",
     "vampire", "lycanthropy", "werewolf_feeds", "skooma_addiction", "murders",
     "pure_spec", "allegiance",
+    # 後期內容(R55):親王誓福 / 詛咒陣營頂階 / 黑兄階級 / 疾病 / 充能魂石,皆複用既有 accessor
+    "boons_count", "faction_rank", "disease_count", "soul_gems_filled",
 }
 
 # pure_spec 判定:主專精「絕對總和」與「領先次高的差距」雙門檻。初生角色因起始職業
@@ -67,6 +71,9 @@ def _eval(char, gamedata: GameData, cond: dict) -> bool:
         if not fdef:
             return False
         return factions.rank_index(char, cond["faction"]) >= len(fdef["ranks"]) - 1
+    if t == "faction_rank":
+        # 指定 faction 達指定 rank(rank_index 非會員回 -1 → 安全)。與 guildmaster(動態頂階)互補。
+        return factions.rank_index(char, cond["faction"]) >= cond["rank"]
 
     if t == "mastery_count":
         return len(mastery.unlocked(char, gamedata)) >= cond["count"]
@@ -102,6 +109,16 @@ def _eval(char, gamedata: GameData, cond: dict) -> bool:
     if t == "murders":
         return getattr(char, "murders", 0) >= cond["count"]
 
+    if t == "boons_count":
+        return len(getattr(char, "boons", []) or []) >= cond["count"]   # 親王誓福收集(R45)
+    if t == "disease_count":
+        return len(diseases.active_ids(char)) >= cond["count"]          # 同時患病數(R53)
+    if t == "soul_gems_filled":
+        # 持有的充能魂石「顆數」(qty 加總,非堆疊數 —— 同型魂石堆成一格);kind 判定同 enchanting.filled_soul_gems
+        # 🔴 用 item_or_none 防禦毀損存檔的未知 item id(achievements 鐵律「缺漏/空欄位安全·不崩潰」;同 R47)
+        return sum(s.get("qty", 1) for s in getattr(char, "inventory", []) or []
+                   if (gamedata.item_or_none(s.get("id")) or {}).get("kind") == "soul_gem") >= cond["count"]
+
     if t == "pure_spec":
         if not hasattr(char, "skills"):
             return False
@@ -127,3 +144,24 @@ def earned_and_locked(char, gamedata: GameData) -> tuple[list, list]:
     won_ids = {a["id"] for a in won}
     locked = [a for a in defs if a["id"] not in won_ids]
     return won, locked
+
+
+# --- 首達通知(R55:零存檔欄;去重靠呼叫端持有的 session 暫態 seen 集合)----------
+def seed_seen(char, gamedata: GameData) -> set:
+    """載入當下已達成的成就 id 集合 —— game_loop 啟動時呼叫,使重載不重報既得成就。"""
+    return {a["id"] for a in earned(char, gamedata)}
+
+
+def update(state, gamedata: GameData, seen: set) -> list[dict]:
+    """偵測本圈新達成(不在 seen)的成就 → 回一次性通知事件並記入 seen(對齊 vampirism/skooma update 範式)。
+
+    純讀 char(零變動);`seen` 為呼叫端持有的 session 暫態集合(零存檔欄)。成就可能在戰鬥/子動作
+    中達成 → 回到 hub 迴圈頂端才冒泡,與里程碑二選一/吸血轉化同模式(安全互動點)。
+    """
+    char = state.player
+    events: list[dict] = []
+    for a in _defs(gamedata):
+        if a["id"] not in seen and _eval(char, gamedata, a["cond"]):
+            seen.add(a["id"])
+            events.append({"id": a["id"], "name": a["name"], "desc": a["desc"]})
+    return events

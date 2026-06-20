@@ -12,7 +12,7 @@ from tesrpg import creation, formulas
 from tesrpg.gamedata import GameData, get_gamedata
 from tesrpg.rng import RNG, make_seed
 from tesrpg.state import GameState
-from tesrpg.systems import (aiwar, alchemy, boons, brotherhood, combat, court, crafting, crime, dialogue, diseases, dungeon,
+from tesrpg.systems import (achievements, aiwar, alchemy, boons, brotherhood, combat, court, crafting, crime, dialogue, diseases, dungeon,
                             dungeoncrawl, enchanting, events, factions, housing, inventory, landmarks, legacy,
                             lycanthropy, magic, mastery, mounts, party, politics, potion_buff, powers,
                             progression, quests, skooma, smithing, stats, vampirism, warband, world, worldstate)
@@ -3919,6 +3919,7 @@ def _try_discover(state: GameState, gamedata: GameData, loc_id: str) -> None:
 
 def game_loop(state: GameState, gamedata: GameData) -> None:
     last_hub_loc = None
+    _ach_seen = achievements.seed_seen(state.player, gamedata)   # 成就首達通知:載入當下已達成 → 重載不重報(零存檔欄)
     while True:
         # 吸血鬼狀態先結算(潛伏轉化 / 階級升降),再呈現本回合
         for ev in vampirism.update(state, gamedata):
@@ -4019,6 +4020,11 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
 
         # 技能里程碑 v2:達門檻的待決二選一,在安全互動點(回城迴圈頂)呈現 —— 絕不在戰鬥中
         _drain_mastery_choices(state, gamedata)
+
+        # 成就首達通知(R55):本圈新達成的成就 → 一次性「榮譽印記」(去重靠 session 暫態 _ach_seen)
+        for ev in achievements.update(state, gamedata, _ach_seen):
+            ui.rule("榮譽印記")
+            ui.message(f"★ 成就達成:「{ev['name']}」—— {ev['desc']}", style="bold yellow")
 
         ui.rule()
         ui.status_line(state, gamedata)

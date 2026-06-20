@@ -10,7 +10,7 @@ from tesrpg.creation import build_character
 from tesrpg.gamedata import get_gamedata
 from tesrpg.rng import RNG
 from tesrpg.state import GameState, GameTime
-from tesrpg.systems import achievements, legacy, mastery
+from tesrpg.systems import achievements, inventory, legacy, mastery
 
 
 def _char(**kw):
@@ -123,6 +123,109 @@ def test_fresh_character_earns_none():
     assert achievements.earned(c, gd) == []
 
 
+# --- R55 後期成就(新 cond.type,複用既有 accessor)-----------------------
+def test_boons_count():
+    gd, c = _char()
+    c.boons = ["azura", "hircine_blessing", "boethiah_resolve", "meridia_light",
+               "namira_decay", "nocturnal_shadow", "jyggalag_order"]            # 7 個
+    assert "prince_favored" not in _ids(gd, c)
+    c.boons = c.boons + ["hermaeus_magic"]                                      # 8 個
+    assert "prince_favored" in _ids(gd, c) and "prince_chosen" not in _ids(gd, c)
+    c.boons = c.boons + ["sanguine_revel", "malacath_might", "vaermina_nightmare",
+                         "peryite_ward", "clavicus_silver_tongue", "molag_defiance",
+                         "sheogorath_madness"]                                  # 15 個
+    assert "prince_chosen" in _ids(gd, c)
+
+
+def test_faction_rank():
+    gd, c = _char()
+    c.factions["coven_vampire"] = 2
+    assert "blood_matron" not in _ids(gd, c)                                   # 未達頂階
+    c.factions["coven_vampire"] = 3
+    assert "blood_matron" in _ids(gd, c)
+    c.factions["werewolf_pack"] = 3
+    assert "alpha_wolf" in _ids(gd, c)
+    c.factions["dark_brotherhood"] = 3
+    assert "silencer" not in _ids(gd, c)                                       # rank 4 才是沉默者
+    c.factions["dark_brotherhood"] = 4
+    assert "silencer" in _ids(gd, c)
+
+
+def test_disease_achievements():
+    gd, c = _char()
+    assert "afflicted" not in _ids(gd, c)
+    c.diseases = [{"id": "rockjoint"}]
+    assert "afflicted" in _ids(gd, c) and "pestilent" not in _ids(gd, c)
+    c.diseases = [{"id": "rockjoint"}, {"id": "witbane"}, {"id": "ataxia"}]
+    assert "pestilent" in _ids(gd, c)
+
+
+def test_soul_gems_filled():
+    gd, c = _char()
+    inventory.add_item(c, "filled_petty_soul_gem", 4)
+    assert "soul_collector" not in _ids(gd, c)                                 # 4 顆不足
+    inventory.add_item(c, "filled_petty_soul_gem", 1)                          # 同型堆成一格、qty=5
+    assert "soul_collector" in _ids(gd, c)                                     # qty 加總計顆數,非堆疊數
+
+
+def test_soul_gems_filled_handles_corrupt_inventory():
+    """毀損存檔:背包含未知 item id → 求值不崩潰(achievements 鐵律「缺漏/空欄位安全」,同 R47)。"""
+    gd, c = _char()
+    c.inventory = [{"id": "filled_petty_soul_gem", "qty": 5}, {"id": "BOGUS_ITEM_ID", "qty": 1}]
+    assert "soul_collector" in _ids(gd, c)        # 未知 id 安全略過、有效魂石照計
+    st = GameState(player=c, time=GameTime(), rng=RNG(1))
+    achievements.seed_seen(c, gd)                 # 載入鉤不崩
+    achievements.update(st, gd, set())            # 迴圈鉤不崩
+
+
+def test_prince_boss_kills():
+    gd, c = _char()
+    assert "malyn_varen" in gd.bestiary and "apocrypha_seeker" in gd.bestiary
+    c.kill_counts = {"malyn_varen": 1}
+    assert "star_breaker" in _ids(gd, c) and "forbidden_bane" not in _ids(gd, c)
+    c.kill_counts = {"apocrypha_seeker": 1}
+    assert "forbidden_bane" in _ids(gd, c)
+
+
+def test_new_types_implemented():
+    for t in ("boons_count", "faction_rank", "disease_count", "soul_gems_filled"):
+        assert t in achievements._IMPLEMENTED_TYPES
+    # 新成就全通過 _defs 過濾(非靜默消失)
+    gd = get_gamedata()
+    ids = {a["id"] for a in achievements._defs(gd)}
+    for aid in ("prince_favored", "blood_matron", "afflicted", "soul_collector", "star_breaker"):
+        assert aid in ids
+
+
+# --- R55 首達通知(零存檔欄,session 暫態去重)----------------------------
+def test_first_earned_notification_once():
+    gd, c = _char()
+    st = GameState(player=c, time=GameTime(), rng=RNG(1))
+    seen = achievements.seed_seen(c, gd)                  # 初生:近乎空
+    c.gold = 50000
+    evs = achievements.update(st, gd, seen)
+    assert any(e["id"] == "magnate" for e in evs)         # 首次達成 → 報一次
+    evs2 = achievements.update(st, gd, seen)
+    assert all(e["id"] != "magnate" for e in evs2)        # 同 session 不重報
+
+
+def test_seed_suppresses_already_earned():
+    gd, c = _char(gold=50000)                             # 載入當下已達成
+    st = GameState(player=c, time=GameTime(), rng=RNG(1))
+    seen = achievements.seed_seen(c, gd)                  # magnate 已在 seed
+    assert "magnate" in seen
+    evs = achievements.update(st, gd, seen)
+    assert all(e["id"] != "magnate" for e in evs)         # 重載不重報既得成就
+
+
+def test_update_is_read_only():
+    gd, c = _char(gold=50000, level=20)
+    st = GameState(player=c, time=GameTime(), rng=RNG(1))
+    snapshot = copy.deepcopy(c.to_dict())
+    achievements.update(st, gd, set())
+    assert c.to_dict() == snapshot                        # update 純讀(只動呼叫端 seen)
+
+
 def test_shipped_ids_are_legal():
     gd = get_gamedata()
     for a in gd.achievements:
@@ -131,7 +234,7 @@ def test_shipped_ids_are_legal():
         assert a.get("id") and a.get("name") and a.get("desc")
         if t == "kill_boss":
             assert a["cond"]["creature"] in gd.bestiary, a["cond"]["creature"]
-        if t == "guildmaster":
+        if t in ("guildmaster", "faction_rank"):
             assert a["cond"]["faction"] in gd.factions, a["cond"]["faction"]
         if t == "allegiance":
             assert a["cond"]["cause"] in {"imperial", "independent", "own"}
@@ -191,6 +294,16 @@ def run():
     test_dominion_allegiance_vampire()
     test_pure_spec_not_trivially_earned()
     test_fresh_character_earns_none()
+    test_boons_count()
+    test_faction_rank()
+    test_disease_achievements()
+    test_soul_gems_filled()
+    test_soul_gems_filled_handles_corrupt_inventory()
+    test_prince_boss_kills()
+    test_new_types_implemented()
+    test_first_earned_notification_once()
+    test_seed_suppresses_already_earned()
+    test_update_is_read_only()
     test_shipped_ids_are_legal()
     test_unimplemented_type_is_inert()
     test_evaluator_is_read_only()
