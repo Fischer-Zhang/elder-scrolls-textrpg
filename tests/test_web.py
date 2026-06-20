@@ -607,23 +607,10 @@ def run():
     # 其他測試模組(test_m12/m13 等)在 import 時就把 ui.menu 換成 stub 並未還原;
     # reload 還原真正的 5 個輸入原語,確保此處測到的是 web seam 而非別人的 stub。
     importlib.reload(ui)
-    test_validate()
-    test_seam_roundtrip()
-    test_blocks_protocol()
-    test_hud_and_view_block()
-    test_dungeon_grid_view_block()
-    test_hud_includes_party_and_allies()
-    test_view_model_shapes()
-    test_combat_target_key_parity()
-    test_combat_target_reemit_web()
-    test_web_combat_menus_each_show_one_board()
-    test_sheet_subview_models()
-    test_board_and_shop_view_shapes()
-    test_double_submit_and_stale()
-    test_int_revalidate()
-    test_flush_final_and_generation()
-    test_web_session_restartable_after_game_over()
-    _restore()
+    for _name, _fn in sorted(globals().items()):      # 與其餘模組一致:globals() 自動收集,免手動清單漏跑
+        if _name.startswith("test_") and callable(_fn):
+            _fn()
+    _restore()                                         # 清 ui._web,免污染後續模組
 
 
 if __name__ == "__main__":
