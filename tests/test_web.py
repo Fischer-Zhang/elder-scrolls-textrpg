@@ -495,9 +495,12 @@ def test_int_revalidate():
         t = threading.Thread(target=lambda: box.__setitem__("v", ui.ask_int("?", 8, 1, 24)))
         t.start()
         fr1 = backend.outbound.get(timeout=5)
+        assert fr1["resend"] is False                         # 首送 → 故事日誌照記
         assert backend.submit(fr1["prompt_id"], 99) is True   # 投遞成功但越界 → 重新詢問
         fr2 = backend.outbound.get(timeout=5)
         assert fr2["prompt_id"] != fr1["prompt_id"]
+        assert fr2["resend"] is True                          # 重送同 blocks → 前端據此才做內容去重(否則正常重複敘事被誤吞)
+        assert fr2["blocks"] == fr1["blocks"]                 # 重送=逐位元組同一 blocks
         assert backend.submit(fr2["prompt_id"], 10) is True
         t.join(timeout=5)
         assert box["v"] == 10

@@ -395,7 +395,7 @@
   const dot = document.getElementById("dot");
   const conn = document.getElementById("conn");
   let curPid = null, locked = false, flatButtons = [], backButton = null;
-  let journalSeq = -1, lastLogSig = "";   // 故事日誌:seq 去重(斷線重連)+ 內容簽名去重(int 越界重提示)
+  let journalSeq = -1, lastLogSig = "";   // 故事日誌:seq 去重(斷線重連)+ 內容簽名去重(僅對 backend resend 幀,防 int 越界重送重記)
 
   function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) {
     return { "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" }[c]; }); }
@@ -1046,10 +1046,10 @@
     }
     return logEl.querySelector(".jbody");
   }
-  function appendJournal(logBlocks) {
+  function appendJournal(logBlocks, isResend) {
     if (!logBlocks.length) return;
     const sig = logBlocks.map(function (b) { return b.html; }).join("");
-    if (sig === lastLogSig) return;            // 同內容重送(int 越界重提示)→ 不重覆記
+    if (isResend && sig === lastLogSig) return;            // 同內容重送(int 越界重提示)→ 不重覆記
     lastLogSig = sig;
     const body = journalBody();
     if (body.children.length) { const sep = document.createElement("div"); sep.className = "jturn"; body.appendChild(sep); }
@@ -1112,7 +1112,7 @@
     renderHud(frame.hud);
     if (stateBlocks.length) renderScreen(stateBlocks);   // 只在有新狀態時替換;純敘事幀保留前畫面
     const fresh = (frame.seq == null) || (frame.seq > journalSeq);
-    if (fresh) { appendJournal(logBlocks); if (frame.seq != null) journalSeq = frame.seq; }   // 重連重送(seq≤)不重記
+    if (fresh) { appendJournal(logBlocks, frame.resend); if (frame.seq != null) journalSeq = frame.seq; }   // 重連重送(seq≤)由 seq gate 擋;int 越界重送(resend)由內容簽名擋
     curPid = frame.prompt_id; locked = false;
     renderPrompt(frame.prompt);
     wireActionableRows(frame.prompt);

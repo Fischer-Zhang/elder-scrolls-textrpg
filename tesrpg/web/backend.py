@@ -54,13 +54,15 @@ class WebBackend:
             self.blocks.append({"kind": "html", "html": trailing_html})
         blocks = self.blocks
         self.blocks = []
+        resend = False                       # 首送=False;非法輸入後重送同 blocks=True
         while True:                          # 越界整數等:重送同一 blocks(新 seq/pid)
             with self._lock:
                 self.prompt_id += 1
                 self.seq += 1
                 pid = self.prompt_id
+                # resend 旗:前端據此「只對重送幀」做內容去重,正常遞進幀(含合法重複敘事)一律照記
                 frame = {"seq": self.seq, "prompt_id": pid, "blocks": blocks,
-                         "prompt": spec, "hud": hud}
+                         "prompt": spec, "hud": hud, "resend": resend}
                 self.last_frame = frame
                 self.awaiting = True
             self.outbound.put(frame)
@@ -70,6 +72,7 @@ class WebBackend:
                 with self._lock:
                     self.awaiting = False
                 return norm
+            resend = True                     # 下一圈重送同 blocks(新 seq)→ 標記供前端去重
 
     def flush_final(self, trailing_html: str, hud=None) -> None:
         """遊戲 thread 結束(quit/未捕捉例外)後沖出殘餘 blocks + end 哨兵。"""
@@ -80,7 +83,7 @@ class WebBackend:
         with self._lock:
             self.seq += 1
             frame = {"seq": self.seq, "prompt_id": -1, "blocks": blocks,
-                     "prompt": {"type": "end"}, "hud": hud}
+                     "prompt": {"type": "end"}, "hud": hud, "resend": False}
             self.last_frame = frame
             self.awaiting = False
         self.outbound.put(frame)
