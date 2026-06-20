@@ -54,7 +54,7 @@
 - **領主政治 / 城戰**:謁見 → 委託 → 武士冊封;圍城 + 破城 + 收稅 + 招兵買馬;**陣營動態大事件**
 
 #### 系統與打磨
-- **事件引擎**、**成就系統**(37 成就含後期軸〔誓福/血族頂階/疾病/魂石〕+ 首達通知 + 結算/角色卡檢視,R55)、**反 min-max 經濟**(practice 成本)、**Web 版**(原生渲染、可點互動)
+- **事件引擎**、**成就系統**(37 成就含後期軸〔誓福/血族頂階/疾病/魂石〕+ 首達通知 + 結算/角色卡檢視,R55)、**反 min-max 經濟**(practice 成本)、**Web 版**(原生渲染、可點互動、常駐故事日誌 R58)
 
 ### 里程碑歷程
 
@@ -1142,6 +1142,15 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 - **獸形強化 capstone**(`lycanthropy.py`·複用既有 pack 誓福):新 `_pack_capstone(char)`=`pack_heir`/`pack_usurper` ∈ `char.boons`(決鬥已授)→ `claw_bonus` +`ALPHA_BLOOD_CLAW=3`(獸爪傷)、`effective_duration` +`ALPHA_BLOOD_DURATION=2`(獸形時程)。讀 `char.boons` 旗標·**不新增 boon·零存檔欄**。狼人爪傷餵 combat,但**刺客非狼人 → byte-identical**;curse build 平衡 by-design(同 R50-R52)。
 - **perk 不動**(per_rank 0.2/cap 0.6 仍 rank 3 達 cap;高階回報靠任務難度+capstone,比照 dark_brotherhood 7 階)。**存檔相容**:既有 mid-coven 存檔 self-heal(舊 rank 2 玩家接到新 coven_a→爬到 rank 4 後舊 coven3 自然生效)。**對抗審查**(21-agent·1M tok):**0 真 bug**(13 確認實作正確 + 1 誤報「存檔永久卡死」—— 實機重現證明 self-heal,已補 `test_old_save_with_accepted_capstone_self_heals` 回歸釘死)。`run_all` **77**(改 `test_curse_rank` 頂階 rank 3→5·新 `test_curse_quest_depth` 含 self-heal)。
 
+### R58 · Web 故事日誌:敘事 log 區持久化(分區捲動)[UI-only]
+
+評估「改善 UI/UX」揪出:Web UI 其實**近乎全原生**(27 view 元件 + 常駐 HUD + 互動地圖/地城格 + 可點列;原以為的 rich→HTML 等寬退路只剩 `banner`/`status_line`/`skill_table` 三個**終端死碼**)。最大真缺口是 **`renderScreen` 每幀 `innerHTML=""` 全清 → 對一款*文字* RPG,每次行動會抹掉上一回合的戰鬥/事件敘事**。使用者兩道拍板:方向=**敘事捲動歷史**;feel=**分區持久日誌**(狀態照常替換、另闢常駐可捲日誌)。**純前端**(`tesrpg/web/static/index.html` 一檔)·**零 Python/零存檔/`sim_assassin` 不適用**(未碰 combat/formulas)。
+- **機制靠既有 block kind**(`backend.add_block`→`kind:"view"`/`add_log`→`kind:"log"`/退路 `kind:"html"`):client `render(frame)` 把 blocks 分流 —— **view/html → `#screen`(替換),log → 常駐 `#log` 故事日誌(append)**。`#screen` **只在該幀有 state block 時才替換**(純敘事幀保留前畫面,避免閃空)。日誌 append 後 cap 240 列滾動、每幀前插 `.jturn` 分隔(回合界)、`scrollTop=scrollHeight` 自動捲到最新、`.jbody` 帶 `aria-live="polite"`(順帶無障礙)、`prefers-reduced-motion` 關動畫。
+- **去重雙保險**:① **seq gate**(`frame.seq>journalSeq` 才記 → 斷線重連重送 `last_frame`〔同 seq〕不重記);② **內容簽名**(`lastLogSig` → int 越界 backend 重送**同 blocks 新 seq** 時不重記)。**session 暫態**(client 端·重整/重連重置)→ **不入存檔**(比照 `active_effects` 不入檔 / R55 `_ach_seen`)。
+- **scope(v1)**:只 `kind:"log"` 敘事(combat_event/loot_report/message/ally_event/combat_tick)入日誌;**敘事型一次性 view(event/discovery/encounter)維持 `#screen`**(於 prompt 邊界即讀,不會被下一動作抹掉)。日後若要把這些也鏡進日誌再評估。
+- **契約依賴有測試守**:伺服器「敘事→`kind:"log"`」由 `test_blocks_protocol` 釘死(+ `test_web` 的 combat/dungeon_grid/masteries view 形狀)→ 日誌資料源不會被悄悄改掉。**驗證**:`node --check`(JS 合法)+ `run_all` **77 全綠**(未碰 Python)+ 伺服器啟動 serves `#log` markup + clean log。**無 JS 測試框架**(純 Python 專案)→ 前端路由靠 node 語法檢查 + 既有 block-kind 契約測試覆蓋。
+- 🔴 **鐵律**:新增「**當前狀態快照**」走 view block(`#screen` 替換);「**敘事/旁白**」走 log block(入持久日誌);**絕不**把敘事塞進 view(否則它不進日誌、且一行動就消失)。改日誌呈現動 `index.html` 的 `render`/`appendJournal`/`#log` CSS 三點。
+
 ---
 
 ## 4. 開發節奏(ultracode 開著 → 每個功能都這樣做)
@@ -1176,6 +1185,8 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 ---
 
 ## 6. 下一步候選(依槓桿排序)
+
+> **Web UI/UX 候選**(R58「改善 UI/UX」評估盤點;UI 已近乎全原生,以下為剩餘真缺口,皆 UI-only/低風險):① ✅ **敘事捲動歷史已做**(R58 故事日誌);② **遊戲內說明/圖鑑**(深沙盒〔吸血鬼/狼人/煉金/附魔/公會/戴德拉/疾病/里程碑〕learn-by-doing 卻零遊戲內指南;純加 hub action + 新 view,比照 `action_shrine`);③ **無障礙/動效打磨**(全頁 `aria-live`、`prefers-reduced-motion`〔R58 已起頭〕、圖示按鈕語意標籤、處理中 spinner、焦點管理);④ **QoL/設定**(字級切換、多存檔槽 UI)。
 
 0. **城戰/領主區路線(已立藍圖,Oblivion+Skyrim 參考,逐 Phase 推進)** —— ✅ **Phase 1 已做**(見 §1「領主區 Phase 1」:第 4 城區 `領主區 👑` + 謁見領主,讓 21 城主活起來)。藍圖:
    - ✅ **Phase 2 已做**(見 §1「領主區 Phase 2」):領主委託(source `ruler`)→ `city_standing` → 達 `THANE_STANDING` 受封武士;特權=該省賞金寬待 + 侍從 + 信物。新 Character 欄 `city_standing`/`thaneships`。
