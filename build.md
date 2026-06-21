@@ -148,7 +148,7 @@
 > 與潛行流**完全不同的天花板邏輯**:法師傷害**不走偷襲倍率鏈**(不觸 `SOLO_SNEAK_DAMAGE_CAP_RATIO`),而是受 **magicka 池容量**(智力決定)、**控制法術對 solo boss 全免疫**、與**力竭法效折減**三道天花板所限。「畢業」靠把六系技能買到上限 + 疊魔力池 + 法袍省體續航。`狼人不相容`(獸形脫整套裝備、無法施法,與法師核心衝突)。
 
 ### 根:吃哪些數值
-法師五圍:**magicka 池=智力**(`formulas.max_magicka(int, magicka_bonus) = int×2 + magicka_bonus`,`formulas.py:58-60`;遊戲生效上限再加升級 res + 裝備 fortify + 達貢層,`stats.py:75-77`);**回魔/抗控/施法續航=意志**(三條:戰鬥每回合回魔、休息回魔倍率、抗恐懼/麻痺,`formulas.py:76-81,97-110`);**法術威力 / 魔耗=各「學派技能」**(destruction/alteration/restoration/conjuration/illusion/mysticism 六系各自獨立)。
+法師五圍:**magicka 池=智力**(`formulas.max_magicka(int, magicka_bonus) = int×2 + magicka_bonus`,`formulas.py:58-60`;遊戲生效上限再加升級 res + 裝備 fortify + 達貢層,`stats.py:75-77`)**+ R63 智力第二段=法術威力**(`intelligence_spell_potency`:int>100 漸近 +25%·乘進 `magic._power`);**回魔/抗控/施法續航=意志**(戰鬥每回合回魔〔整數頂 5〕、休息回魔倍率〔R63 漸近 3.2〕、抗恐懼/麻痺〔R63 漸近 0.90〕)**+ R63 意志第二段=省魔**(`willpower_cost_factor`:wil>115 漸近 −15%·乘進 `effective_cost`·`max(1)` 地板);**法術威力基底 / 魔耗=各「學派技能」**(六系各自獨立)。**R63:智力/意志高屬性過 200 仍漸進有意義(趨近永不抵達)。**
 **五圍序:intelligence(魔力池)≈ 學派技能 > willpower(回魔/抗控)> endurance/speed**。
 
 施法**威力鏈**(`magic._power`,`magic.py:46-49`,**相加**入括號再整體相乘):

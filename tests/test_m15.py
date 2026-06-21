@@ -2,7 +2,7 @@
 
 鎖死這次改版要消滅的三個結構性缺陷:
   ① 屬性倍率 min-max → 升級每級至多給 LEVELUP_ATTRIBUTE_POINTS 點,與練功序列無關。
-  ② 耐力時機陷阱 → max_health 與耐力完全解耦(只由創建基底 + 升級「生命」選擇決定)。
+  ② 耐力:R63 改 live 耦合 → max_health 隨『當前』耐力長(早投晚投同耐力同血,無累加時機陷阱)。
   ③ Luck 死屬性 → 可自由加點(已在 test_progression 覆蓋)。
 另含:舊存檔(level_progress→level_xp)遷移、缺新欄位的舊存檔可載入。
 """
@@ -45,26 +45,25 @@ def test_no_minmax_attribute_points_capped():
     assert total1b - total0b == formulas.LEVELUP_ATTRIBUTE_POINTS
 
 
-# ② 耐力時機陷阱已死:max_health 與耐力完全解耦 -------------------------
-def test_health_decoupled_from_endurance():
+# ② R63:max_health 隨『當前 effective 耐力』live 耦合(早投晚投同耐力同血,無累加時機陷阱)-
+def test_health_couples_to_endurance():
     c = build_character(gd, name="T", sex="male", race="imperial",
                         birthsign="warrior", class_id="warrior")
     hp0, fat0 = c.max_health, c.max_fatigue
     base0 = c.base_max_health
-    # 把耐力拉高 20 → max_health 不動(只影響 max_fatigue 與創建已定的基底)
-    c.attributes["endurance"] = c.attr("endurance") + 20
+    end0 = c.attr("endurance")
+    assert end0 + 20 <= formulas.ATTRIBUTE_CAP, "前提:仍在 ×2 線性區(否則增量不是 ×20×2)"
+    # 把耐力拉高 20 → max_health 隨之 +40(每點 ×2,≤cap);max_fatigue +20;base_max_health 冗餘不動
+    c.attributes["endurance"] = end0 + 20
     stats.recompute_max_resources(c, gd)
-    assert c.max_health == hp0, "生命上限不應隨耐力改變(時機陷阱已消除)"
-    assert c.base_max_health == base0, "base_max_health 不隨耐力變動"
+    assert c.max_health == hp0 + 20 * formulas.ENDURANCE_HEALTH_PER, "生命上限隨耐力上升(R63 live 耦合)"
+    assert c.base_max_health == base0, "base_max_health 已冗餘:不寫、不再是有效上限權威"
     assert c.max_fatigue == fat0 + 20, "耐力仍計入體力上限"
-    # (併入)同一解耦不變量的 apply_level_up 入口:升級時把點全投耐力 + 選「魔力」資源
-    # → 生命基底與生命上限都不該因耐力而漲。須用獨立的已可升級角色。
+    # (併入)apply_level_up 入口:只加耐力 + 選「魔力」資源 → 生命仍因耐力 live 耦合而漲。獨立可升級角色。
     c2 = _ready_warrior()
-    base0b = c2.base_max_health
     hp0b = c2.max_health
     progression.apply_level_up(c2, gd, {"endurance": 4}, "magicka")
-    assert c2.base_max_health == base0b
-    assert c2.max_health == hp0b, "未選生命 + 只加耐力 → 生命上限不變"
+    assert c2.max_health == hp0b + 4 * formulas.ENDURANCE_HEALTH_PER, "加耐力 → 生命上限隨之漲(即使資源選魔力)"
 
 
 # ③ + 存檔:遷移與向後相容 ----------------------------------------------

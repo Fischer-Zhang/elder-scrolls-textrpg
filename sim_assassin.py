@@ -79,6 +79,22 @@ def oneshot(maker, tid, n=2500):
     return k / n
 
 
+def oneshot_with_followup(maker, tid, n=2500):
+    """R63 速度追擊紅線:首擊偷襲(受 SOLO_SNEAK 夾)+ 一記『必中』普通追擊(sneak_attack=False)。
+    模擬高速度玩家一回合內偷襲+追擊是否秒殺 solo boss(追擊為普通擊 → boss 偷襲後 ≥60% HP,
+    普通擊遠不足補刀 → 應仍 0%)。刻意每次都追擊(略過機率)以驗最壞情形。"""
+    k = 0
+    for i in range(n):
+        atk = maker()
+        boss = combat.spawn_creature(gd, tid, RNG(i + 1))
+        rng = RNG(i * 7 + 3)
+        combat.resolve_attack(atk, boss, gd, rng, sneak_attack=True)
+        if combat.is_alive(boss):
+            combat.resolve_attack(atk, boss, gd, rng, sneak_attack=False)   # 追擊=普通擊(非偷襲)
+        k += not combat.is_alive(boss)
+    return k / n
+
+
 if __name__ == "__main__":
     mid = lambda: assassin()
     mid_dual = lambda: assassin(dual=True)
@@ -132,6 +148,13 @@ if __name__ == "__main__":
         rate_max = oneshot(apex_max, t)
         flag = " ⚠破紅線(應為 0%)" if rate_max > 0.0 else " ✓存活"
         print(f"  {t:16} (HP {hp})  最壞 apex 秒殺 {rate_max:5.1%}{flag}")
+
+    print("\n== R63 速度追擊紅線:apex 偷襲 + 一記普通追擊一回合內是否秒殺 solo boss(應 0%)==")
+    print("   追擊強制 sneak_attack=False(普通擊) → 不碰 SOLO_SNEAK 夾;偷襲後 boss ≥60% HP 普通擊補不掉:")
+    for t in ["dremora_lord", "vampire_lord", "ancient_dragon", "mehrunes_dagon"]:
+        r = oneshot_with_followup(apex_max, t)
+        flag = " ⚠破紅線(應為 0%)" if r > 0.0 else " ✓存活"
+        print(f"  {t:16} 偷襲+追擊秒殺 {r:5.1%}{flag}")
 
     print("\n== R37 鋒銳覆核:temper_power apex(全鋒銳 50/75/100 → cap6+power0.25 → 武器淬鍊 +15 vs apex_max +10)==")
     def apex_temper():

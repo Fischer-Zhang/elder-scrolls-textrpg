@@ -27,16 +27,24 @@ def test_factors_neutral_at_base():
     assert formulas.mind_resist_chance(b) == 0.0
     assert formulas.luck_loot_factor(b) == 1.0
     assert formulas.luck_fortune(b) == 0.0
-    # 縮放端(>base)+ 上界夾限
+    # 縮放端(>base):投資越多越強,但嚴格低於 asymptote(R63 漸進);combat 回魔仍整數硬頂
     assert formulas.magicka_regen_combat(100) > 0
     assert formulas.magicka_regen_rest_factor(100) > 1.0
-    assert 0 < formulas.mind_resist_chance(100) <= formulas.MIND_RESIST_CAP
-    assert 1.0 < formulas.luck_loot_factor(100) <= formulas.LUCK_LOOT_CAP
-    assert 0 < formulas.luck_fortune(100) <= formulas.LUCK_FORTUNE_CAP
-    # 夾限端(超大值 == 各 CAP)
+    assert 0 < formulas.mind_resist_chance(100) < formulas.MIND_RESIST_ASYMPTOTE
+    assert 1.0 < formulas.luck_loot_factor(100) < formulas.LUCK_LOOT_ASYMPTOTE
+    assert 0 < formulas.luck_fortune(100) < formulas.LUCK_FORTUNE_ASYMPTOTE
+    # 漸進端(超大值):趨近 asymptote 但永不抵達(R63);唯 combat 回魔仍 == 硬整數頂
     assert formulas.magicka_regen_combat(999) == formulas.MAGICKA_REGEN_COMBAT_CAP
-    assert formulas.luck_loot_factor(999) == formulas.LUCK_LOOT_CAP
-    assert formulas.mind_resist_chance(999) == formulas.MIND_RESIST_CAP
+    assert (formulas.MIND_RESIST_ASYMPTOTE - 0.01
+            < formulas.mind_resist_chance(999) < formulas.MIND_RESIST_ASYMPTOTE)
+    assert (formulas.LUCK_LOOT_ASYMPTOTE - 0.01
+            < formulas.luck_loot_factor(999) < formulas.LUCK_LOOT_ASYMPTOTE)
+    assert (formulas.LUCK_FORTUNE_ASYMPTOTE - 0.01
+            < formulas.luck_fortune(999) < formulas.LUCK_FORTUNE_ASYMPTOTE)
+    # 「過 200 仍有意義」:200 嚴格優於剛過拐點,且 250>200(邊際非零)
+    assert formulas.mind_resist_chance(200) > formulas.mind_resist_chance(140)
+    assert formulas.luck_loot_factor(250) > formulas.luck_loot_factor(200)
+    assert formulas.luck_fortune(250) > formulas.luck_fortune(200)
 
 
 # --- 幸運:戰利豐厚 -----------------------------------------------------
@@ -100,6 +108,53 @@ def test_combat_fear_resisted_by_willpower():
         combat.resolve_attack(foe, t, gd, RNG(s))
         tough_feared += magic.is_feared(t)
     assert base_feared > tough_feared                          # 高意志較不易被控場
+
+
+# --- R63 第二段效果:閾以下中性,過閾漸近(過 200 仍漲)----------------------
+def test_second_stage_neutral_below_knee():
+    f = formulas
+    assert f.intelligence_spell_potency(100) == 1.0 and f.intelligence_spell_potency(40) == 1.0
+    assert f.willpower_cost_factor(115) == 1.0 and f.willpower_cost_factor(40) == 1.0
+    assert f.agility_evasion(100) == 0.0 and f.agility_evasion(55) == 0.0       # 命中夾不動
+    assert f.speed_extra_action_chance(100) == 0.0 and f.speed_extra_action_chance(50) == 0.0
+
+
+def test_second_stage_scales_and_caps():
+    f = formulas
+    assert 1.0 < f.intelligence_spell_potency(200) < 1.0 + f.INTELLIGENCE_POTENCY_CAP
+    assert f.intelligence_spell_potency(300) > f.intelligence_spell_potency(200)
+    assert 1.0 - f.WILLPOWER_COST_CAP < f.willpower_cost_factor(200) < 1.0
+    assert f.willpower_cost_factor(300) < f.willpower_cost_factor(200)
+    assert 0 < f.agility_evasion(200) < f.AGILITY_EVASION_CAP
+    assert f.agility_evasion(300) > f.agility_evasion(200)
+    assert 0 < f.speed_extra_action_chance(200) <= f.SPEED_EXTRA_ACTION_CAP
+    assert f.speed_extra_action_chance(300) > f.speed_extra_action_chance(200)
+
+
+def test_endurance_health_couples_and_diminishes():
+    f = formulas
+    assert f.endurance_health(50) == 50 * f.ENDURANCE_HEALTH_PER        # ≤cap == 舊 base_max_health
+    assert f.endurance_health(100) == f.base_max_health(100)            # 拐點對齊(逐位元組)
+    assert f.endurance_health(200) > f.endurance_health(100)            # 過 cap 仍長
+    assert f.endurance_health(300) > f.endurance_health(200)            # 無上限
+    # 過 cap 為遞減(同 50 點跨距,over 區增量 < 線性 ×2 區)
+    assert (f.endurance_health(200) - f.endurance_health(150)) < (f.endurance_health(100) - f.endurance_health(50))
+
+
+def test_intelligence_raises_power_and_willpower_lowers_cost():
+    gd = get_gamedata()
+    c = build_character(gd, name="M", sex="male", race="altmer", birthsign="mage", class_id="mage")
+    sid = next(iter(gd.spells))
+    school = gd.spells[sid]["school"]
+    c.attributes["intelligence"] = 40
+    p_lo = magic._power(c, gd, school)
+    c.attributes["intelligence"] = 200
+    assert magic._power(c, gd, school) > p_lo                            # 智力 → 法術威力(過 100)
+    c.attributes["willpower"] = 40
+    cost_lo = magic.effective_cost(c, gd, sid)
+    c.attributes["willpower"] = 250
+    cost_hi = magic.effective_cost(c, gd, sid)
+    assert 1 <= cost_hi <= cost_lo                                       # 意志 → 省魔(過 115);max(1) 地板防免費
 
 
 def run():

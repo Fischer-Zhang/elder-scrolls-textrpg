@@ -86,7 +86,8 @@ def test_apply_level_up_allocates_attributes_and_resource():
     assert summary["attr_gains"] == {"strength": 2, "endurance": 1, "luck": 1}
     assert summary["resource_choice"] == "health"
     assert summary["resource_gain"] == formulas.LEVELUP_RESOURCE_GAIN["health"]
-    assert c.max_health == hp0 + formulas.LEVELUP_RESOURCE_GAIN["health"]
+    # R63:max_health = 生命三選一加量 + 耐力 live 耦合(本次 +1 耐力 → +ENDURANCE_HEALTH_PER 生命)
+    assert c.max_health == hp0 + formulas.LEVELUP_RESOURCE_GAIN["health"] + 1 * formulas.ENDURANCE_HEALTH_PER
     assert c.level_xp == xp0 - thresh           # 保留溢出
     assert c.health == c.max_health and c.fatigue == c.max_fatigue   # 升級回滿
 

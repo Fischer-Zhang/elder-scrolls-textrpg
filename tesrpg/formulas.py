@@ -5,6 +5,8 @@
 
 from __future__ import annotations
 
+import math
+
 # --- 基準 ---------------------------------------------------------------
 BASE_ATTRIBUTE = 40          # 所有屬性的起始基準(再加種族/星座修正)
 ATTRIBUTE_CAP = 100
@@ -52,9 +54,24 @@ SPEC_NAMES = {"combat": "戰鬥", "magic": "魔法", "stealth": "潛行"}
 
 # --- 衍生數值 -----------------------------------------------------------
 def base_max_health(endurance: int) -> int:
-    """創建時的生命上限基底(耐力×2)。之後生命只由升級時的「生命」選擇成長,
-    不再隨耐力逐級長 —— 消除「早衝耐力」的時機陷阱。"""
+    """創建時的生命上限基底(耐力×2)。R63 後此值已冗餘(生命改由 endurance_health 跑時推導);
+    保留供舊存檔/創角結算相容,不再是有效上限的權威。"""
     return endurance * 2
+
+
+ENDURANCE_HEALTH_PER = 2           # 每點耐力的生命(≤ ATTRIBUTE_CAP)
+ENDURANCE_HEALTH_SOFT_PER = 1      # 過 cap 後每點耐力的生命(遞減但無上限 → 耐力過 200 仍持續加血,R63)
+
+
+def endurance_health(endurance: int) -> int:
+    """生命上限基底隨『當前 effective 耐力』(R63 逆轉舊解耦設計):
+    ≤ ATTRIBUTE_CAP 每點 ×2(== 舊 base_max_health,capped 角色逐位元組不變、sim 零位移);
+    過 cap 每點 ×1(遞減但無上限,耐力過 200 仍有意義)。live 耦合 → 早投晚投同耐力同血,
+    無「每級累加」舊時機陷阱。"""
+    if endurance <= ATTRIBUTE_CAP:
+        return endurance * ENDURANCE_HEALTH_PER
+    return (ATTRIBUTE_CAP * ENDURANCE_HEALTH_PER
+            + (endurance - ATTRIBUTE_CAP) * ENDURANCE_HEALTH_SOFT_PER)
 
 
 def max_magicka(intelligence: int, magicka_bonus: int) -> int:
@@ -71,21 +88,66 @@ def max_encumbrance(strength: int) -> int:
     return strength * 5
 
 
+# --- 屬性曲線 helper:硬上限 → 漸進漸近(R63)--------------------------------
+# 把舊「夾 CAP」改成「趨近但永不抵達 ceiling」的衰減曲線:knee(=舊 CAP)以下原值回傳
+# (與改前逐位元組相同 → base-40 / sim 零位移),過 knee 才彎。讓高屬性(effective 200+)
+# 每點永遠有邊際,同時 100% 命中/完全免控/必逃等紅線永遠到不了。
+def _soft_cap(value: float, knee: float, slope: float, ceiling: float) -> float:
+    """純量曲線:value<=knee 原值;過 knee 以斜率相接(C1 平滑)漸近 ceiling、永不抵達。
+    (亦用於『0 起點漸近至 cap』的第二段效果:傳 knee=0、value=max(0,attr-閾))。"""
+    if value <= knee:
+        return value
+    gap = ceiling - knee
+    return ceiling - gap * math.exp(-(slope / gap) * (value - knee))
+
+
+def _soft_ceiling(value: float, knee: float, width: float, ceiling: float) -> float:
+    """整體機率曲線:value<=knee 原值;過 knee 以 width 緩肩漸近 ceiling、永不抵達。"""
+    if value <= knee:
+        return value
+    return ceiling - (ceiling - knee) * math.exp(-(value - knee) / width)
+
+
 # --- 意志 willpower:施法續航 + 精神韌性 / 幸運 luck:天命 -----------------
 # 補屬性功能缺口:讓「治理魔法卻無施法價值」的意志、「近乎死屬性」的幸運名實相符。
 # 鐵律:所有係數在屬性 = BASE_ATTRIBUTE(40)時回中性值(=改前行為)→ base-40 角色與
 # sim_assassin 零位移;唯有投資到 40 以上才生效。刻意不碰玩家近戰傷害 → 與偷襲紅線解耦。
+# R63:抗控/休息回魔/戰利/命運的舊硬上限改漸進(knee=舊 CAP → 趨近 ASYMPTOTE);
+#      戰鬥每回合回魔維持整數硬頂(意志過此靠 cost-reduction + 休息回魔續航)。
 MAGICKA_REGEN_COMBAT_PER = 15     # 每 N 點意志(>40)→ 戰鬥每回合 +1 回魔
-MAGICKA_REGEN_COMBAT_CAP = 5
+MAGICKA_REGEN_COMBAT_CAP = 5      # 整數硬頂(per-turn 被動回魔;不漸進,避免分數魔力)
 MAGICKA_REGEN_REST_PER = 0.0167   # 休息回魔倍率:每點意志(>40)
-MAGICKA_REGEN_REST_CAP = 2.5
+MAGICKA_REGEN_REST_KNEE = 2.5     # 舊夾 → 漸進拐點
+MAGICKA_REGEN_REST_ASYMPTOTE = 3.2  # 趨近、永不抵達
+MAGICKA_REGEN_REST_WIDTH = 1.0    # 漸近寬度(輸出單位;愈小愈快趨近)
 MIND_RESIST_PER = 0.0083          # 抗恐懼/麻痺機率:每點意志(>40)
-MIND_RESIST_CAP = 0.75
+MIND_RESIST_KNEE = 0.75           # 舊夾 → 漸進拐點
+MIND_RESIST_ASYMPTOTE = 0.90      # 趨近、永不完全免控(solo 另有 SOLO_CONTROL_RESIST_CHANCE)
+MIND_RESIST_WIDTH = 0.5
 SOLO_CONTROL_RESIST_CHANCE = 0.65  # solo BOSS 抵抗硬控(fear/paralyze)機率(R44:取代 100% 免疫;生效率=1-此值)
 LUCK_LOOT_PER = 0.005             # 戰利掉落/金幣倍率:每點幸運(>40)
-LUCK_LOOT_CAP = 1.5
+LUCK_LOOT_KNEE = 1.5              # 舊夾 → 漸進拐點
+LUCK_LOOT_ASYMPTOTE = 1.75        # 趨近、永不抵達
+LUCK_LOOT_WIDTH = 0.4
 LUCK_FORTUNE_PER = 0.0017         # 命運加性(撬鎖/逃跑/事件):每點幸運(>40)
-LUCK_FORTUNE_CAP = 0.20
+LUCK_FORTUNE_KNEE = 0.20          # 舊夾 → 漸進拐點
+LUCK_FORTUNE_ASYMPTOTE = 0.30     # 趨近、永不抵達
+LUCK_FORTUNE_WIDTH = 0.15
+
+# --- 屬性第二段效果(R63):主效果封頂後仍給新收益 ---------------------------
+# 皆「閾值以下中性(0 或 ×1.0)→ 過閾漸近至 cap」:base-40 與 sim(刺客相關屬性皆 ≤閾)零位移。
+INTELLIGENCE_POTENCY_KNEE = 100   # 智力 → 法術威力:此值以下 ×1.0(不擾現有施法平衡)
+INTELLIGENCE_POTENCY_PER = 0.0025  # 每點智力(>knee)
+INTELLIGENCE_POTENCY_CAP = 0.25   # 法術威力加成漸近上限(+25%)
+WILLPOWER_COST_KNEE = 115         # 意志 → 法術省魔:回魔飽和點(=combat regen 飽和)以下不折(=改前)
+WILLPOWER_COST_PER = 0.0015       # 每點意志(>knee)
+WILLPOWER_COST_CAP = 0.15         # 法術省魔漸近上限(-15%;與技能折扣相乘,仍受 effective_cost 的 max(1) 地板防免費施法)
+AGILITY_EVASION_KNEE = 100        # 敏捷 → 閃避:此值以下 0(命中夾 0.95 不動 → sim 紅線不破)
+AGILITY_EVASION_PER = 0.0015      # 每點敏捷(>knee)
+AGILITY_EVASION_CAP = 0.12        # 閃避漸近上限(+12%;命中下夾 0.05 仍在 → 永不無敵、群戰仍危險)
+SPEED_EXTRA_ACTION_KNEE = 100     # 速度 → 追擊:此值以下 0
+SPEED_EXTRA_ACTION_PER = 0.003    # 每點速度(>knee)
+SPEED_EXTRA_ACTION_CAP = 0.30     # 追擊機率漸近上限(30%;追擊=普通擊·非偷襲·耗體力 → 不破 solo 秒殺紅線)
 
 
 # --- 中庸職業功能性區分:弓手散兵武技(瞄準射/牽制射)常數 ---------------
@@ -104,23 +166,52 @@ def magicka_regen_combat(willpower: int) -> int:
 
 
 def magicka_regen_rest_factor(willpower: int) -> float:
-    """休息回魔速率倍率(意志):40 → 1.0(中性),投資越多回藍越快。"""
-    return min(MAGICKA_REGEN_REST_CAP, 1.0 + max(0, willpower - BASE_ATTRIBUTE) * MAGICKA_REGEN_REST_PER)
+    """休息回魔速率倍率(意志):40 → 1.0(中性),投資越多回藍越快;過舊夾 2.5 漸近 3.2(R63)。"""
+    raw = 1.0 + max(0, willpower - BASE_ATTRIBUTE) * MAGICKA_REGEN_REST_PER
+    return _soft_ceiling(raw, MAGICKA_REGEN_REST_KNEE, MAGICKA_REGEN_REST_WIDTH, MAGICKA_REGEN_REST_ASYMPTOTE)
 
 
 def mind_resist_chance(willpower: int) -> float:
-    """抵抗恐懼/麻痺的機率(意志=精神韌性):40 → 0(中性),投資越多越能抗控。"""
-    return max(0.0, min(MIND_RESIST_CAP, (willpower - BASE_ATTRIBUTE) * MIND_RESIST_PER))
+    """抵抗恐懼/麻痺的機率(意志=精神韌性):40 → 0(中性);過舊夾 0.75 漸近 0.90、永不完全免控(R63)。"""
+    raw = max(0.0, (willpower - BASE_ATTRIBUTE) * MIND_RESIST_PER)
+    return _soft_ceiling(raw, MIND_RESIST_KNEE, MIND_RESIST_WIDTH, MIND_RESIST_ASYMPTOTE)
 
 
 def luck_loot_factor(luck: int) -> float:
-    """戰利掉落機率/金幣倍率(幸運=天命):40 → 1.0(中性),投資越多戰利越豐。"""
-    return max(1.0, min(LUCK_LOOT_CAP, 1.0 + max(0, luck - BASE_ATTRIBUTE) * LUCK_LOOT_PER))
+    """戰利掉落機率/金幣倍率(幸運=天命):40 → 1.0(中性);過舊夾 1.5 漸近 1.75(R63)。"""
+    raw = 1.0 + max(0, luck - BASE_ATTRIBUTE) * LUCK_LOOT_PER
+    return _soft_ceiling(raw, LUCK_LOOT_KNEE, LUCK_LOOT_WIDTH, LUCK_LOOT_ASYMPTOTE)
 
 
 def luck_fortune(luck: int) -> float:
-    """命運加性微調(撬鎖/逃跑/事件擲骰):40 → 0(中性),投資越多時來運轉。"""
-    return max(0.0, min(LUCK_FORTUNE_CAP, max(0, luck - BASE_ATTRIBUTE) * LUCK_FORTUNE_PER))
+    """命運加性微調(撬鎖/逃跑/事件擲骰):40 → 0(中性);過舊夾 0.20 漸近 0.30(R63)。"""
+    raw = max(0.0, (luck - BASE_ATTRIBUTE) * LUCK_FORTUNE_PER)
+    return _soft_ceiling(raw, LUCK_FORTUNE_KNEE, LUCK_FORTUNE_WIDTH, LUCK_FORTUNE_ASYMPTOTE)
+
+
+# --- 屬性第二段效果函式(R63):皆「閾以下中性 → 過閾漸近 cap」(_soft_cap knee=0) -------
+def intelligence_spell_potency(intelligence: int) -> float:
+    """智力 → 法術威力倍率:≤100 → ×1.0(不擾現有平衡);過 100 漸近 +25%(過 200 仍漲)。"""
+    over = max(0, intelligence - INTELLIGENCE_POTENCY_KNEE)
+    return 1.0 + _soft_cap(over, 0, INTELLIGENCE_POTENCY_PER, INTELLIGENCE_POTENCY_CAP)
+
+
+def willpower_cost_factor(willpower: int) -> float:
+    """意志 → 法術省魔倍率(續航):≤115 → ×1.0;過 115 漸近 −15%(過 200 仍省)。"""
+    over = max(0, willpower - WILLPOWER_COST_KNEE)
+    return 1.0 - _soft_cap(over, 0, WILLPOWER_COST_PER, WILLPOWER_COST_CAP)
+
+
+def agility_evasion(agility: int) -> float:
+    """敏捷 → 閃避加成(命中夾不動,改給防禦):≤100 → 0;過 100 漸近 +0.12(過 200 仍漲)。"""
+    over = max(0, agility - AGILITY_EVASION_KNEE)
+    return _soft_cap(over, 0, AGILITY_EVASION_PER, AGILITY_EVASION_CAP)
+
+
+def speed_extra_action_chance(speed: int) -> float:
+    """速度 → 追擊機率:≤100 → 0;過 100 漸近 0.30(過 200 仍漲)。追擊為普通擊(非偷襲)。"""
+    over = max(0, speed - SPEED_EXTRA_ACTION_KNEE)
+    return _soft_cap(over, 0, SPEED_EXTRA_ACTION_PER, SPEED_EXTRA_ACTION_CAP)
 
 
 # --- 技能成長 (learn-by-doing) -----------------------------------------
@@ -406,9 +497,27 @@ def player_armor_rating(heavy_armor_skill: int, light_armor_skill: int) -> int:
     return max(heavy_armor_skill, light_armor_skill) // 4
 
 
+FLEE_FLOOR = 0.10
+FLEE_KNEE = 0.90              # 舊上夾 → 漸進拐點(R63)
+FLEE_WIDTH = 0.30            # 緩肩寬度(獨立於 ceiling-knee → 過 200 速度仍緩漲)
+FLEE_ASYMPTOTE = 0.95        # 趨近、永不抵達
+
+
 def flee_chance(player_speed: int, player_agility: int, foe_speed: int) -> float:
     chance = 0.45 + (player_speed + player_agility * 0.5 - foe_speed) * 0.006
-    return max(0.10, min(0.90, chance))
+    return max(FLEE_FLOOR, _soft_ceiling(chance, FLEE_KNEE, FLEE_WIDTH, FLEE_ASYMPTOTE))
+
+
+PERSUADE_FLOOR = 0.10
+PERSUADE_KNEE = 0.90         # 舊上夾 → 漸進拐點(R63)
+PERSUADE_WIDTH = 0.30
+PERSUADE_ASYMPTOTE = 0.95    # 趨近、永不抵達
+
+
+def persuade_curve(raw_chance: float) -> float:
+    """說服率上界漸進(R63):raw<=0.90 原值(下夾 0.10);過 0.90 漸近 0.95、永不抵達。
+    供 dialogue.persuade/persuade_chance 共用(recruit/talk_down 各有獨立天花板,本輪不套)。"""
+    return max(PERSUADE_FLOOR, _soft_ceiling(raw_chance, PERSUADE_KNEE, PERSUADE_WIDTH, PERSUADE_ASYMPTOTE))
 
 
 # --- 隱遁再襲(戰鬥中重新潛入陰影:成功則跳過本回合挨打 + 重置偷襲)---------

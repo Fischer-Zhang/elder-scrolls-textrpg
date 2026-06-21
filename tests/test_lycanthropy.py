@@ -4,6 +4,7 @@
   🔴 紅線(獸形不走偷襲、不秒 solo boss)、裝備抑制、存讀檔計時、互斥雙向、devour 封頂。
 """
 
+from tesrpg import formulas
 from tesrpg.creation import build_character
 from tesrpg.gamedata import get_gamedata
 from tesrpg.models import Character
@@ -51,12 +52,15 @@ def test_transform_grants_beast_then_revert_clamps():
     _make_werewolf(gd, c, st)
     base_str = c.base_attr("strength")
     base_maxhp = c.max_health
+    human_end = c.attr("endurance")
     c.health = 10
     lycanthropy.transform(c, st, gd)
     assert c.beast_form and lycanthropy.is_beast(c, st)
     assert c.attr("strength") == base_str + lycanthropy.BEAST_ATTR["strength"]   # 有效值
     assert c.base_attr("strength") == base_str                                   # base 不動(鐵律)
-    assert c.max_health == base_maxhp + lycanthropy.BEAST_HEALTH                  # 巨量生命
+    # R63:獸形 BEAST_HEALTH 之外,獸形耐力加成現也經 endurance_health 計入生命(耐力 live 耦合)
+    end_hp = formulas.endurance_health(c.attr("endurance")) - formulas.endurance_health(human_end)
+    assert c.max_health == base_maxhp + lycanthropy.BEAST_HEALTH + end_hp        # 巨量生命 + 耐力耦合
     assert c.health >= 10 + lycanthropy.BEAST_HEALTH                             # 變身補上增幅(非半條血)
     # 變回:清層、夾血上限、力竭
     c.health = c.max_health

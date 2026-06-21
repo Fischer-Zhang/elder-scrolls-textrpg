@@ -70,7 +70,10 @@ def recompute_max_resources(char: Character, gamedata=None,
 
     res = char.resource_levels   # 升級三選一累積的資源加成
     # 獸形額外生命(狼人變身的巨量血量;脫甲 → 靠血量扛;getattr 預設 0 → 非狼人/舊存檔零影響)
-    char.max_health = (char.base_max_health + res.get("health", 0) + fort.get("health", 0)
+    # R63:生命改隨『當前 effective 耐力』推導(逆轉舊解耦);≤cap ×2==舊 base_max_health
+    # → capped 角色/sim 零位移。絕不寫 char.base_max_health(R05/test_redline_base 守)。
+    char.max_health = (formulas.endurance_health(char.attr("endurance"))
+                       + res.get("health", 0) + fort.get("health", 0)
                        + getattr(char, "werewolf_health_bonus", 0))
     char.max_magicka = (formulas.max_magicka(char.attr("intelligence"), char.magicka_bonus)
                         + res.get("magicka", 0) + fort.get("magicka", 0)

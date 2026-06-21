@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+from tesrpg import formulas
 from tesrpg.gamedata import GameData
 from tesrpg.models import Character
 from tesrpg.rng import RNG
@@ -50,8 +51,8 @@ def persuade_chance(char: Character, gamedata: GameData, npc_id: str) -> float:
         return 1.0
     from tesrpg.systems import vampirism
     skill = char.skill("speechcraft")
-    return max(0.1, min(0.9, 0.35 + (skill + char.attr("personality") - 50) * 0.005
-                        + vampirism.charm_social_bonus(char)))      # 吸血鬼社交魅惑(R56·沿用夾限)
+    return formulas.persuade_curve(0.35 + (skill + char.attr("personality") - 50) * 0.005
+                                   + vampirism.charm_social_bonus(char))   # R63 漸進(舊夾 0.9→漸近 0.95);R56 吸血鬼魅惑
 
 
 def persuade(char: Character, gamedata: GameData, npc_id: str, rng: RNG) -> dict:
@@ -70,7 +71,7 @@ def persuade(char: Character, gamedata: GameData, npc_id: str, rng: RNG) -> dict
         _adjust(char, npc_id, delta)
         return {"ok": True, "delta": delta, "charmed": True,
                 "hours": hours, "tired": tired, "skill_events": events}
-    chance = max(0.1, min(0.9, 0.35 + (skill + char.attr("personality") - 50) * 0.005))
+    chance = formulas.persuade_curve(0.35 + (skill + char.attr("personality") - 50) * 0.005)   # R63 漸進
     if rng.chance(chance):
         _adjust(char, npc_id, delta)
         return {"ok": True, "delta": delta, "hours": hours, "tired": tired, "skill_events": events}

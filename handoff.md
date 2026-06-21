@@ -696,14 +696,14 @@ tesrpg/
 
 ### R05 · 衍生上限 / 護甲 fortify [recompute]
 
-- **衍生上限/護甲 fortify**:`max_health` 是**有效**上限(`base_max_health` 真基底 + 升級 `resource_levels` + 穿戴護甲 `armor_fortify`);
+- **衍生上限/護甲 fortify**:`max_health` 是**有效**上限(**R63 起** = `formulas.endurance_health(attr("endurance"))` live 耦合 + 升級 `resource_levels` + 穿戴護甲 `armor_fortify`;`base_max_health` 已冗餘·不再是基底權威·**絕不寫入**);
   `stats.recompute_max_resources(char, gamedata, …)` **務必帶 gamedata**(否則 fortify 視為 0,會吃掉加成)。
   **任何改動 `char.equipped` 的路徑(穿/卸/丟棄/出售)之後都要 recompute**;`inventory.remove_item` 會自動卸下但**不**重算(M14 踩過這個雷)。
 ### R06 · 升級系統(M15) [migrate]
 
 - **升級系統(M15)**:`level_xp` 是升級進度(**所有技能升點都餵**,主修 ×1.5);`level_progress`/`level_skillups` 是停用的舊欄位,只為舊存檔 `cls(**d)` 保留。
   `apply_level_up(char, gd, attribute_points: dict, resource_choice)`。**載入存檔走 `GameState.from_dict` 會自動 `ensure_level_xp` 遷移**(舊 `level_progress`→`level_xp`),別繞過它直接建 Character 否則舊存檔升級入口會被隱藏(審查踩過)。
-  `max_health` **不再隨耐力逐級長**(改由升級「生命」三選一);改升級公式只動 `formulas.py` 的 `LEVELUP_*` 常數即可平衡。
+  ~~`max_health` 不再隨耐力逐級長~~ **(R63 反轉)**:`max_health` 現隨『當前 effective 耐力』live 耦合(`formulas.endurance_health`·≤cap ×2==舊基底·>cap 遞減無上限);live 耦合本身無「每級累加」時機陷阱(早投晚投同耐力同血)。升級「生命」三選一仍加性疊上。
 **潛行 · 刺客 · 魔法(R07–R10)**
 
 ### R07 · 潛行系戰鬥(偷襲 / 隱遁 / 雙持) [re-sim]
@@ -1005,7 +1005,7 @@ tesrpg/
 
 評估(10-agent 對抗驗證工作流)揪出三事:① **stagger 不一致**(只有鈍器內建擊暈對 solo 免疫,里程碑/盾反/感電/反震/偷襲殘響 stagger 皆不免疫);② **真破口**:戀人座 `paralyze_touch` 對任意 solo BOSS append paralyze 3 回合零 `_is_solo` 守(每日一次、零資源 → 硬鎖王);③ **潛在缺口**:`magic.cast` 的 damage_status/spell_on_hit/apply_status 單體路徑無 solo 守(現無 fear/paralyze 料,日後加即破)。**使用者拍板:fear/paralyze 對 solo 由「完全免疫」改機率減免 + 把所有控場集中成一個 helper**。
 
-- **新 `magic.apply_control(target, kind, gamedata, rng, *, magnitude=0.0, turns=1, source=None) -> str`**(`'applied'/'resisted'/'blocked'`)= **唯一控場決策點**:硬控(fear/paralyze)去重(已上身→blocked,防延長鎖定)+ 玩家 `resisted_mind`(willpower,不變)/ solo BOSS `rng.chance(formulas.SOLO_CONTROL_RESIST_CHANCE=0.65)`(**機率抵抗,取代 100% 免疫**);軟控(stagger/slow/weaken)一律 append(無 solo 免疫);`source` 帶來源標 → 同源去重(元素 rider 雙持不疊)。
+- **新 `magic.apply_control(target, kind, gamedata, rng, *, magnitude=0.0, turns=1, source=None) -> str`**(`'applied'/'resisted'/'blocked'`)= **唯一控場決策點**:硬控(fear/paralyze)去重(已上身→blocked,防延長鎖定)+ 玩家 `resisted_mind`(willpower→`mind_resist_chance`;**R63 起該曲線由硬夾 0.75 改漸近 0.90·永不完全免控**)/ solo BOSS `rng.chance(formulas.SOLO_CONTROL_RESIST_CHANCE=0.65)`(**機率抵抗,取代 100% 免疫**);軟控(stagger/slow/weaken)一律 append(無 solo 免疫);`source` 帶來源標 → 同源去重(元素 rider 雙持不疊)。
 - **~18 施加點全路由 helper**:`combat.py`(塗毒控場 / 附魔麻痺 / chill→weaken·jolt→stagger rider / on_hit_status / **鈍器內建 stagger〔收斂點:移除原 mace-only `not _is_solo`,boss 比照其餘 stagger 照吃軟控〕** / 盾反 block_riposte / fear_on_hit / 重甲反震 armor_stagger / 閃避反制 on_evade / 偷襲殘響 / R43 怪→玩家 on_hit〔`resisted_mind`+去重移入 helper〕)、`magic.py`(cast fear·weaken / AoE status_all·damage_status_all / **潛在缺口 damage_status·spell_on_hit·apply_status 對敵 → 自動受 solo 管,閉合**)、`powers.paralyze_touch`(**戀人座破口閉合**:對 solo 改機率減免)、`lycanthropy.howl`(嚎叫對 solo 改機率減免)、`main.py` 牽制射 weaken。**不走 helper**:dot(`_apply_dot_capped`)/soul_trap/deathmark/反傷扣血(R42)/empower·shield·ward(非控場)。
 - **🔴 改既有紅線**:R31/R15 的「solo 完全免疫 fear/paralyze」→ 機率減免。**更新 5 個舊免疫測試為機率模型**(`test_magic` 武器麻痺·法術控場、`test_poison_depth` 塗毒、`test_mastery` 懾心、`test_lycanthropy` 嚎叫:皆改「`0 < count < N` 既會中也會抗」)+ 新 `test_solo_control`(helper 直測:機率率≈1−0.65、非 solo 100%、玩家 willpower、去重/同源去重、軟控對 solo 照施、戀人座破口閉合整合)。`test_combat` 鈍器 stagger 改「solo 也生效」。
 - **驗證**:`run_all` 66 綠;`sim_assassin` **byte-identical**(刺客無 fear/paralyze/stagger 投入、偷襲傷害夾 `SOLO_SNEAK_DAMAGE_CAP_RATIO` 與控場無關 → solo 秒殺仍全 0%;diff HEAD worktree 證);`check.sh --sim --smoke` 全綠。**⚠ 平衡備註**:機率減免後長時程控場(戀人座 paralyze 3 回合)35% 命中時仍鎖 3 回合 → 若過強,加「solo 控場時程上限 ≤1」或調 `SOLO_CONTROL_RESIST_CHANCE`(數值微調,留待回饋)。
@@ -1191,6 +1191,17 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 - **🔴 平衡(`sim_assassin` 必跑·非 byte-identical)**:刺客偏好 speed/agility → +5 各。隔離 worktree diff 證:**solo boss 秒殺仍全 0%**(SOLO_SNEAK_DAMAGE_CAP 與屬性無關·紅線守)、**精英 oneshot 率不變**(偷襲爆發不吃 speed/agility·零爆發創傷)、**群戰死亡率 ↓3–5pp**(27.2→22.6%·偏好閃避微升·apex 仍承受真實風險〔22.6%〕→ 紅線守)。spec-XP 不入 sim 戰鬥(sim 不練功)。
 - **驗證**:`run_all` **80**(`test_creation` 加 `test_favored_attributes_give_creation_bonus` + 更新 warrior_nord 55→60;`test_progression` 加 `test_spec_skill_trains_faster`;`test_practice_cost._char` 設 `specialization=""` 中性化以隔離 spec-XP 層測 practice 基礎)+ `sim_assassin` 紅線守(隔離 worktree diff)+ `check.sh --smoke` 全綠。
 - 🔴 **鐵律**:調 `FAVORED_ATTR_BONUS`/`SPEC_SKILL_XP_MULT` → **必跑 `sim_assassin`**(favored 動刺客 speed/agility→survival·守 solo 秒殺 0%/群戰仍有真實風險);favored 是創角層(`creation` 屬性迴圈·不寫舊存檔)、spec-XP 是跑時層(`use_skill`·只玩家·非專精 ×1);測 practice/技能 XP 精確值時用 `specialization=""` 隔離 spec 層。
+
+### R63 · 屬性深化:讓每個屬性過 200 仍有意義(漸進曲線 + 第二段效果)[re-sim] [save]
+
+評估「屬性上限擴張」→ 揪出更根本問題:8 屬性只有力量(近戰 `0.75+str/160` 無上限)真吃到頂,其餘 6 個在 100~158 就因硬上限或「生命只創角結算」失效;而 effective 屬性靠誓福/裝備/詛咒疊加**現在就**到 ~190–285。使用者三道拍板:**機制=漸進衰減曲線 + 第二段效果**·**耐力=生命改跑時隨耐力長**·**能力膨脹=接受為終局強度**(R11 不縮放怪;solo 秒殺仍 ratio-cap 擋)。
+- **兩 helper(`formulas.py`)**:`_soft_cap`(斜率相接·0 起點漸近 cap 用)、`_soft_ceiling`(緩肩 width·硬上限替換用)。皆 **knee 以下原值回傳 → 改前逐位元組相同**。
+- **5 條硬上限改漸進(`_soft_ceiling` width-based,過 200 仍有感)**:`mind_resist_chance` 0.75→漸近 0.90、`luck_loot_factor` 1.5→1.75、`luck_fortune` 0.20→0.30、`magicka_regen_rest_factor` 2.5→3.2、`flee_chance` 0.90→0.95;`persuade_curve`(0.90→0.95)套進 `dialogue.persuade`/`persuade_chance`(recruit/talk_down 獨立天花板·本輪不套)。常數 `*_CAP` 改名 `*_KNEE`+新增 `*_ASYMPTOTE`/`*_WIDTH`。**`hit_chance` 完全不動**(刺客 agi55 高 blade 撞 0.95 舊夾→改它即破 byte-identical)。
+- **第二段效果(`_soft_cap` knee=0·過閾漸近 cap·閾以下中性)**:智力→`intelligence_spell_potency`(過 100 漸近 +25%·`magic._power` 乘);意志→`willpower_cost_factor`(過 115 漸近 −15% 省魔·`magic.effective_cost` 乘·`max(1)` 地板防免費)+ 休息回魔漸進(**戰鬥每回合回魔維持整數硬頂 5·不漸進避免分數魔力**);敏捷→`agility_evasion`(過 100 漸近 +0.12·`combat` evasion 聚合·命中下夾 0.05 仍在→永不無敵);速度→`speed_extra_action_chance`(過 100 漸近 30%·`main.run_battle` 玩家攻擊分支追擊一記·**強制 `sneak_attack=False`=普通擊·不碰 SOLO_SNEAK 夾·耗體力自限**)。
+- **耐力→跑時生命**:新 `formulas.endurance_health`(≤cap ×2==舊 `base_max_health`·>cap ×1 遞減無上限);`stats.recompute_max_resources` 第 73 行改讀 `endurance_health(char.attr("endurance"))`。**絕不寫 `base_max_health`**(冗餘保留欄·R03 不刪)。live 耦合→早投晚投同耐力同血·**無「每級累加」舊時機陷阱**(R06 反轉)。**副作用(intended)**:任何耐力加成源(達貢/誓福/裝備/**狼人獸形 +40 耐力**)現也經 endurance_health 加血→獸形更耐打(接受的終局創傷)。
+- **🔴 byte-identical(隔離 worktree diff 證·非 stash)**:刺客 fixture wil30/agi55/spd50/end35/luck40/int40 皆 ≤閾或在 knee 線性段·`hit_chance` 未動·sim 不施法/不逃跑/不說服·追擊只在 `run_battle`(sim 走自有 `_round`)→ HEAD sim 腳本對「改前/改後 tesrpg」逐位元組同。**動 combat/formulas 仍必跑 `sim_assassin`**:solo 全 0% 存活、新「R63 追擊紅線」場景(偷襲+普通追擊一回合)solo 全 0%、精英 oneshot Δ0%、4-bandit 22.6% 真實風險。
+- **驗證**:`run_all` **80**(`test_attributes` 改漸進斷言+第二段 4 測·`test_m15` 反轉 `test_health_couples_to_endurance`·`test_progression`/`test_lycanthropy` 加耐力耦合增量·`test_solo_control` 續綠 applied(255)<0.5)+ `check.sh --smoke` 全綠。
+- 🔴 **鐵律**:調任何 `*_ASYMPTOTE`/`*_WIDTH`/`*_KNEE`/第二段 cap/`ENDURANCE_HEALTH_*`/`SPEED_EXTRA_ACTION_*` → **必跑 `sim_assassin`**;軟上限一律「漸近(趨近·永不抵達)」非硬夾;`hit_chance` 與 combat 每回合整數回魔**刻意不漸進**(前者守 sim byte-identical·後者避免分數魔力);耐力生命只在 `recompute_max_resources` 經 `attr()` live 算、**絕不寫 base**;速度追擊必 `sneak_attack=False`(守 solo 秒殺紅線)。
 
 ---
 

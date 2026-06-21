@@ -441,6 +441,7 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
     fr = _fatigue_ratio(attacker)
     evasion = (formulas.dodge_evasion(defender.skill("acrobatics"))
                + mastery.evasion_bonus(defender, gamedata)
+               + formulas.agility_evasion(_agility(defender))   # R63 敏捷第二段:過 100 漸近 +0.12(命中下夾 0.05 仍在)
                + _ride_evasion(defender)) if _is_player(defender) else 0.0   # 騎射閃避:聚合相加,不遮蔽
     block_pen = mastery.block_hit_penalty(defender, gamedata) if defender_blocking else formulas.BLOCK_HIT_PENALTY
     chance = formulas.hit_chance(wpn_skill, _agility(attacker), _agility(defender),

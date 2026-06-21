@@ -852,6 +852,14 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
                 sneak = opening and not getattr(player, "beast_form", False)
                 ui.combat_event(combat.resolve_attack(player, tgt, gamedata, state.rng,
                                                       sneak_attack=sneak), gamedata)
+                # R63 速度第二段:過 100 漸近 30% 機率追擊一記。追擊強制 sneak_attack=False
+                # → 普通擊(不碰 SOLO_SNEAK 夾;首擊已耗 opening),耗體力自限,不破 solo 秒殺紅線。
+                if combat.is_alive(tgt) and state.rng.chance(
+                        formulas.speed_extra_action_chance(player.attr("speed"))):
+                    combat.player_attack_cost(player, gamedata)
+                    ui.message("你身形如電,順勢追擊!", style="cyan")
+                    ui.combat_event(combat.resolve_attack(player, tgt, gamedata, state.rng,
+                                                          sneak_attack=False), gamedata)
         elif action["type"] in ("aimed", "crippling", "skirmish"):   # 弓手散兵武技
             tgt = action["target"]
             if combat.is_alive(tgt):
