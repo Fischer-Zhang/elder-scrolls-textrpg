@@ -33,19 +33,22 @@ def assassin(sneak=70, blade=50, alchemy=40, scout=40, weapon="steel_dagger", du
 
 
 def _round(c, foes, rng, opening, used):
-    """打一個回合:低血(<45%)且能隱遁就嘗試隱遁,否則攻最低血敵人。回傳新的 opening。"""
+    """打一個回合:低血(<45%)且能隱遁就嘗試隱遁,否則攻最低血敵人。回傳新的 opening。
+    R71:隱遁不再無敵 —— 成功只重置偷襲,敵人照常攻擊(防禦純靠 evasion)。"""
     alive = [e for e in foes if combat.is_alive(e)]
+    vanished = False
     if c.health < c.max_health * 0.45 and combat.can_vanish(c, gd) \
             and combat.try_vanish(c, len(alive), used[0], rng):
         used[0] += 1
         combat.player_vanish_cost(c)         # 保真:隱遁耗體力(連續隱遁會耗竭→後續命中下降),對齊 main.py
-        return True                          # 隱遁成功:敵人撲空、重置偷襲
-    tgt = min(alive, key=lambda e: e.health)
-    combat.resolve_attack(c, tgt, gd, rng, sneak_attack=opening)
-    for e in foes:
+        vanished = True                      # R71:只重獲偷襲先機,不再讓敵人撲空
+    else:
+        tgt = min(alive, key=lambda e: e.health)
+        combat.resolve_attack(c, tgt, gd, rng, sneak_attack=opening)
+    for e in foes:                           # R71:敵人照常攻擊(隱遁不再無敵)
         if combat.is_alive(e) and c.health > 0 and not magic.is_incapacitated(e):
             combat.resolve_attack(e, c, gd, rng, attack=combat.choose_attack(e, rng, c))   # 多攻擊模式選招
-    return False
+    return vanished
 
 
 def fight(maker, enemy_ids, seed):

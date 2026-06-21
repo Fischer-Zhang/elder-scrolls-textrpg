@@ -1278,6 +1278,16 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 
 ---
 
+### R71 · 隱遁不再無敵:純再潛行(無防禦)+ 命中地板 5%→3% [re-sim]
+
+承「讓隱遁不再無敵」評估(R69 已讓 vanish 不躲 solo boss);使用者選 **A:隱遁全面去防禦化、防禦改純靠 evasion**,並知情接受「群戰大幅變脆」。
+- **① 隱遁不再跳過敵人攻擊(全敵)**:`main.py` 敵人階段移除 `vanish_success` 的 skip(R69 原只對 solo 不躲 → 現對**任何敵**都不躲)。vanish 僅 `opening = vanish_success`(重置偷襲)·**無任何免疫**。vanish 選項標籤改「重獲偷襲·不閃避」、成功訊息改「敵人並未被甩脫」。
+- **② 命中地板 5%→3%**:`formulas.hit_chance` 末 `max(HIT_CHANCE_FLOOR 0.03, min(HIT_CHANCE_CEIL 0.95,...))`(原內聯 0.05)→ 提高 evasion 上限(滿堆閃避可把敵命中壓到 3%)。新常數 `HIT_CHANCE_FLOOR/CEIL`。
+- **效果**:**boss 勝率無變化**(vanish 早在 R69 對 solo 不閃避 → 此項對 boss 無額外效果·floor 3% 杯水車薪):刺客 mehrunes_dagon 仍 25%、弓 34%、27 王均 96/97%。**真正衝擊在群戰生存**(vanish 原為被圍毆逃命):**apex 4-bandit 死亡率 22.6%→60.6%、2b2w 10.1%→40.8%**。刺客 = 真潛行刺客(打 boss 不變·被群圍很危險·隱遁純再偷襲、無逃命)。⚠ 使用者知情拍板:目標雖是削 boss,但 boss 早被 R69 處理→此項實際只重削群戰(可日後軟化:隱遁對非 solo 仍閃 / 給 evasion buff)。
+- **🔴 sim_assassin 全綠**:solo 偷襲秒殺 0% ✓(vanish/floor 不碰偷襲 cap)、R63 追擊 0% ✓。三 sim 同步:`sim_assassin._round` vanish 不再 return-skip(改設 vanished 旗·敵照常攻擊)、`sim_builds` `skip_boss=False`、`sim_duel` `skip=False`。零新存檔欄·無測試破(無測試斷言舊 0.05 地板)。`run_all` **80**。🔴 鐵律:floor 在 `formulas.hit_chance`(全域)、vanish-skip 已**全移除**(`main.py` 敵人階段);動 → 必跑 sim_assassin(守 solo 0%)+ sim_builds。
+
+---
+
 ## 4. 開發節奏(ultracode 開著 → 每個功能都這樣做)
 
 > 完整五階段流程(評估 → 決定方向 → 實作 → 驗證 → 文件 + 提交)見 `CLAUDE.md`「開發流程」;以下是「驗證」段的細節。**驗證綠後依 R22 自動 `commit` & `push origin main`。**

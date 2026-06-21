@@ -428,6 +428,8 @@ EMPOWER_STACK_RATIO = 0.7       # 盟友增傷(empower)多源遞減疊加比率:
 EVASION_DIMINISH_KNEE = 0.15
 EVASION_DIMINISH_SLOPE = 1.0
 EVASION_DIMINISH_CEIL = 0.35
+HIT_CHANCE_FLOOR = 0.03   # 命中下限(R71:0.05→0.03·提高閃避上限·配「隱遁不再無敵」純靠 evasion)
+HIT_CHANCE_CEIL = 0.95    # 命中上限
 
 
 def hit_chance(atk_skill: int, atk_agility: int, def_agility: int,
@@ -444,7 +446,7 @@ def hit_chance(atk_skill: int, atk_agility: int, def_agility: int,
         chance -= block_penalty
     # 閃避(僅玩家防守時)效益遞減(R69):總量過 _soft_cap → 疊滿封頂,防線性壓到命中地板
     chance -= _soft_cap(defender_evasion, EVASION_DIMINISH_KNEE, EVASION_DIMINISH_SLOPE, EVASION_DIMINISH_CEIL)
-    return max(0.05, min(0.95, chance))
+    return max(HIT_CHANCE_FLOOR, min(HIT_CHANCE_CEIL, chance))
 
 
 DAMAGE_ROLL_LO = 0.85            # 傷害隨機下界

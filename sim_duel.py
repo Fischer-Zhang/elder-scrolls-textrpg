@@ -61,7 +61,7 @@ def _bm_act(c, opp, rng, st):
 def _sneak_act(c, opp, rng, st):
     if c.health < c.max_health * 0.45 and combat.can_vanish(c, gd) \
             and combat.try_vanish(c, 1, st["vanish"], rng, gd):
-        st["vanish"] += 1; combat.player_vanish_cost(c); st["opening"] = True; st["skip"] = True; return   # 隱遁:耗體力(保真)+ 躲過 + 重置偷襲(對 build 無夾)
+        st["vanish"] += 1; combat.player_vanish_cost(c); st["opening"] = True; st["skip"] = False; return   # R71:隱遁不再無敵 → 不躲過,只重置偷襲(耗體力保真)
     combat.player_attack_cost(c, gd)
     combat.resolve_attack(c, opp, gd, rng, sneak_attack=st["opening"])
     st["opening"] = False
