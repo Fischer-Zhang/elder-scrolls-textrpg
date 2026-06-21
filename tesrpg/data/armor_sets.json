@@ -61,7 +61,11 @@
       "kind": "fortify_resource",
       "stat": "magicka",
       "magnitude": 40,
-      "cast_fatigue_factor": 0.8
+      "cast_fatigue_factor": 0.8,
+      "resist": {
+        "magic": 5
+      },
+      "spell_power": 0.05
     }
   },
   "archmage": {
@@ -72,8 +76,9 @@
       "magnitude": 70,
       "cast_fatigue_factor": 0.65,
       "resist": {
-        "magic": 25
-      }
+        "magic": 15
+      },
+      "spell_power": 0.15
     }
   },
   "daedric": {
@@ -97,7 +102,11 @@
     "bonus": {
       "kind": "fortify_resource",
       "stat": "magicka",
-      "magnitude": 110
+      "magnitude": 110,
+      "resist": {
+        "magic": 25
+      },
+      "spell_power": 0.25
     }
   },
   "nightshade": {

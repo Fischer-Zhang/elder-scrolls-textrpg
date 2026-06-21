@@ -282,6 +282,13 @@ def cast_fatigue_factor(char: Character, gamedata: GameData) -> float:
     return float((active_set_bonus(char, gamedata) or {}).get("cast_fatigue_factor", 1.0))
 
 
+def set_spell_power_bonus(char: Character, gamedata: GameData) -> float:
+    """穿滿整套法袍(cloth/archmage/dragonpriest 四件)→ 法術威力加成(R68;乘進 magic._power);否則 0.0。
+    `spell_power` 鍵藏在套裝 bonus dict 內,_apply_enchant 不認故安全忽略(同 cast_fatigue_factor/disguise/resist 子鍵);
+    on-the-fly 讀取,不需新存檔欄位。"""
+    return float((active_set_bonus(char, gamedata) or {}).get("spell_power", 0.0))
+
+
 def equipment_bonuses(char: Character, gamedata: GameData) -> dict:
     """穿戴護甲/飾品的所有附魔 + 套裝加成,彙整成 {skills,attrs,resist,resources}。"""
     out = {"skills": {}, "attrs": {}, "resist": {}, "resources": {}}

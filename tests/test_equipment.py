@@ -31,11 +31,31 @@ def _wear_set(c, gd, material):
 
 
 def test_archmage_set_grants_magic_resist_r65():
-    """R65:大法師套裝 bonus 帶 resist:{magic:25} → 經 equipment_bonuses 入 entity_resist。"""
+    """R65/R68:大法師套裝 bonus 帶 resist:{magic:15}(R68 由 25 下修)→ 經 equipment_bonuses 入 entity_resist。"""
     gd, c = _char()
     before = magic.entity_resist(c, gd).get("magic", 0)   # 意志魔抗不因穿甲而變 → 前後差即套裝貢獻
     _wear_set(c, gd, "archmage")
-    assert magic.entity_resist(c, gd).get("magic", 0) - before == 25
+    assert magic.entity_resist(c, gd).get("magic", 0) - before == 15
+
+
+def test_robe_sets_spell_power_and_resist_r68():
+    """R68:法袍三階套裝 → spell_power 乘進 magic._power(與智力威力疊乘)+ 魔抗分級(學徒5/大法師15/龍祭司25)。"""
+    import tesrpg.formulas as F
+    expect = {"cloth": (0.05, 5), "archmage": (0.15, 15), "dragonpriest": (0.25, 25)}
+    for mat, (pct, res) in expect.items():
+        gd, c = _char(race="altmer")
+        base_res = magic.entity_resist(c, gd).get("magic", 0)   # 穿甲不改意志/種族魔抗 → 差即套裝貢獻
+        _wear_set(c, gd, mat)
+        assert inventory.set_spell_power_bonus(c, gd) == pct
+        assert magic.entity_resist(c, gd).get("magic", 0) - base_res == res
+        # spell_power 乘性疊進 _power:拆出乘子前的 bracket×智力威力,再 ×(1+pct) 應等於 _power
+        bracket = (0.7 + c.skill("destruction") / 150.0
+                   + magic.mastery.spell_power_bonus(c, gd, "destruction")
+                   + magic.mastery.cascade_power(c, gd)) * F.intelligence_spell_potency(c.attr("intelligence"))
+        assert abs(magic._power(c, gd, "destruction") - bracket * (1 + pct)) < 1e-9
+    # 未穿法袍套裝 → 無乘子(零位移)
+    gd, c = _char()
+    assert inventory.set_spell_power_bonus(c, gd) == 0.0
 
 
 # --- C 套組資料完整性 ---------------------------------------------------

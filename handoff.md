@@ -1218,7 +1218,7 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 
 新建 `sim_builds.py`(各 build 完全體 vs solo boss 勝率矩陣)評估揪出:法師對高血**元素** boss 極脆(vs ancient_dragon 28%、vs mehrunes_dagon 0%),因魔抗(減 fire/frost/shock,R14)只來自種族/誓福/附魔,非職業。使用者拍板:**意志 + 大法師套裝給魔抗(中等)+ 種族魔抗下修防堆免疫**。
 - **意志=精神壁壘**:新 `formulas.willpower_magic_resist(wp)`(`_soft_cap` knee=40·per0.38·cap25;wp100≈15·effective200+→~23·9999 仍 ≤25)→ `magic.entity_resist` 末加進 `merged["magic"]`(讀 effective 意志 → 誓福/附魔抬意志連帶增魔抗)。
-- **大法師套裝**:`armor_sets.json` archmage bonus 加 `resist:{magic:25}` 子鍵;`inventory.equipment_bonuses` 加一行合併套裝 `bonus.get("resist")`(任何套裝皆可帶此子鍵·比照 `cast_fatigue_factor`/`disguise` 額外鍵·`_apply_enchant` 主 kind 仍處理 fortify_resource)。
+- **大法師套裝**:`armor_sets.json` archmage bonus 加 `resist:{magic:25}` 子鍵(**R68 下修為 15**·並加 spell_power 0.15);`inventory.equipment_bonuses` 加一行合併套裝 `bonus.get("resist")`(任何套裝皆可帶此子鍵·比照 `cast_fatigue_factor`/`disguise` 額外鍵·`_apply_enchant` 主 kind 仍處理 fortify_resource)。
 - **布萊頓 magic 50→25**(`races.json`;唯一免疫驅動 → 下修騰出意志+套裝空間)。Orsimer 25 **不動**(非 caster 堆疊路徑·且戰士 sim 用 orsimer·動之破 byte-identical)。
 - **效果(sim_builds 重跑)**:Altmer 法師 0→**40 魔抗**(意志15+套裝25)→ vs ancient_dragon **28%→77%**、vs dagon_diminished 85%→99%、多數中階元素 boss →100%;**仍守**:vs 物理 bruiser(knight_of_order 73%·魔抗不減物理)+ vs mehrunes_dagon 720(0%·HP 牆+脆皮 DPS race 輸)。免疫仍需 Breton+套裝+高意志+多誓福**極限堆**(R63 接受深投資膨脹),非輕易。
 - **🔴 sim_assassin byte-identical**(刺客 khajiit wp30→`willpower_magic_resist`=0·非布萊頓·隔離 worktree diff 證);**動 `entity_resist`=戰鬥減傷 → 必跑 sim_assassin**;意志魔抗 **knee=40 必保**(刺客 wp30 零位移)。
@@ -1244,6 +1244,16 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 - **影響**(`eval_int_potency.py` 探針·法系皆 eff int100→+30%):單擊 mage 72→**93**、battlemage 法術 69→**90**(>長劍 84·法術躍為其最大單擊);vs 27 solo boss 平均勝率 mage 93.7→**95.3%**、battlemage 94.4→**96.9%**,收益集中硬尾(ancient_dragon 戰法 43→**89%**·knight_of_order 法師 78→92%·mehrunes_dagon 戰法 9→31%·**法師對終王仍 0%**=破不了牆)。
 - **🔴 byte-identical(sim_assassin)**:刺客虎人 int≤50 且永不施法 → 公式零呼叫 → 隔離 worktree diff=0(即使 knee 改 50 亦然)。**無「法術 vs solo 夾」但有界**(base int 夾 100 → 固定 +30%·無法一擊·破不了終王牆);+30% 同及治療(close_wounds 130→169)但受動作+魔力雙閘不可剝削。
 - **零存檔遷移、零 recompute**(純讀時公式;`max_magicka` 為另一條公式·不受影響)。驗證:`run_all` **80**(test_attributes 的 neutral-below-knee 改 50 + 新 `test_intelligence_potency_r67_curve`)。🔴 鐵律:調 knee/at_cap/over_cap → 改此單函式 → 重跑 `sim_builds`(法系勝率會升=by design,**非** byte-identical)+ `sim_assassin`(須仍 byte-identical);**knee=50 必保**(刺客 int≤50 零位移)。
+
+---
+
+### R68 · 法袍三階套裝再平衡:新增「法術威力」套裝效果 + 魔抗分級 [re-sim]
+
+承「盤點法師套裝效果」評估,使用者拍板把法袍三階做成「魔抗 + 法術威力」分級身份:**新 set-bonus 機制 `spell_power`**(乘進 `magic._power`,與 R67 智力威力疊乘)。
+- **數值**(`armor_sets.json` 三套):學徒布袍 `cloth` 魔抗 +5/法術威力 +5%(新)、大法師 `archmage` 魔抗 25→**15**·法術威力 **+15%**(新)、龍祭司 `dragonpriest` 魔抗 +25/法術威力 +25%(新)。階梯遞增 → 龍祭司躍為最強法袍(魔抗25+威力25%+魔力200),大法師轉「攻防均衡」(魔抗降但補威力)。
+- **新機制**:`inventory.set_spell_power_bonus(char,gd)` = `active_set_bonus().get("spell_power",0.0)`(藏在套裝 bonus dict·`_apply_enchant` 不認故安全忽略·比照 `cast_fatigue_factor`/`disguise`/`resist` 子鍵·**零新存檔欄**);`magic._power` 末乘 `×(1+set_spell_power_bonus)`(區域 import inventory 避循環)。**乘性 → 與智力威力(R67)疊乘**(滿練法師大法師袍:int +30% × 套裝 +15% ≈ +49.5% 法術威力;龍祭司 ×1.30×1.25=+62.5%)。同 R67 及所有學派(傷害/治療/護盾)。魔抗子鍵走既有 `equipment_bonuses` resist 合併路徑(R65)。
+- **影響**(sim_builds·法師穿 archmage):單擊 mage 93→**107**(archmage)·龍祭司袍法師 **122**;27 王平均勝率 **95.3%→95.3%**(攻威 +15% 與魔抗 25→15 防禦下修互抵·淨中性但爆發更高·硬尾 knight_of_order 92→97%);龍祭司袍法師 **96.0%**(ancient_dragon 86→95%)。**mehrunes_dagon 仍 0%**(終王牆=fire85+magic50 抗性·非傷害不足→未被破)。戰法穿 ebony(非法袍)→ 不受影響。
+- **🔴 byte-identical(sim_assassin)**:刺客穿皮甲非法袍·永不施法 → `_power`/`set_spell_power_bonus` 零呼叫 → 隔離 worktree diff=0。**零存檔遷移、零 recompute**(set bonus on-the-fly 讀)。驗證:`run_all` **80**(test_equipment R65 archmage 魔抗斷言 25→15·新 `test_robe_sets_spell_power_and_resist_r68`)。🔴 鐵律:調法袍 `spell_power`/`resist` → 純改 `armor_sets.json` → 重跑 `sim_builds`(法系升=by design)+ `sim_assassin`(byte-identical);新 set-bonus 鍵一律藏 bonus dict + 專屬 getter(勿進 `_apply_enchant`)。
 
 ---
 

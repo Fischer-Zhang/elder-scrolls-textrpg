@@ -45,10 +45,12 @@ def effective_cost(char: Character, gamedata: GameData, spell_id: str) -> int:
 
 
 def _power(char: Character, gamedata: GameData, school: str) -> float:
-    """學派技能對效果強度的加成(0.7x ~ 1.37x);里程碑「過載」+「奧術連鎖」+ R63 智力威力再疊加。"""
+    """學派技能對效果強度的加成(0.7x ~ 1.37x);里程碑「過載」+「奧術連鎖」+ R63 智力威力 + R68 法袍套裝威力再疊加。"""
+    from tesrpg.systems import inventory   # 區域匯入避免循環(同 spell_fatigue_cost)
     return ((0.7 + char.skill(school) / 150.0 + mastery.spell_power_bonus(char, gamedata, school)
              + mastery.cascade_power(char, gamedata))   # 法師「奧術連鎖」:連續施法漸增威力
-            * formulas.intelligence_spell_potency(char.attr("intelligence")))   # R63 智力 → 法術威力(過 100 漸近)
+            * formulas.intelligence_spell_potency(char.attr("intelligence"))   # R63 智力 → 法術威力(過 100 漸近)
+            * (1.0 + inventory.set_spell_power_bonus(char, gamedata)))   # R68 法袍套裝:法術威力(乘性,與智力威力疊乘)
 
 
 def spell_fatigue_cost(char: Character, gamedata: GameData, spell_id: str) -> int:
