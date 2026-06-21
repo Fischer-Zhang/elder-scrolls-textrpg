@@ -137,10 +137,12 @@ LUCK_FORTUNE_ASYMPTOTE = 0.30     # 趨近、永不抵達
 LUCK_FORTUNE_WIDTH = 0.15
 
 # --- 屬性第二段效果(R63):主效果封頂後仍給新收益 ---------------------------
-# 皆「閾值以下中性(0 或 ×1.0)→ 過閾漸近至 cap」:base-40 與 sim(刺客相關屬性皆 ≤閾)零位移。
-INTELLIGENCE_POTENCY_KNEE = 100   # 智力 → 法術威力:此值以下 ×1.0(不擾現有施法平衡)
-INTELLIGENCE_POTENCY_PER = 0.0025  # 每點智力(>knee)
-INTELLIGENCE_POTENCY_CAP = 0.25   # 法術威力加成漸近上限(+25%)
+# 意志/敏捷/速度:皆「閾值以下中性(0 或 ×1.0)→ 過閾漸近至 cap」,base-40 與 sim(刺客相關屬性皆 ≤閾)零位移。
+# 智力(R67 升級):不再純第二段 —— ≤50 中性、50→100 線性至 +30%(法術威力主貢獻)、>100 才漸近(總 +45%);刺客 int≤50 仍零位移。
+INTELLIGENCE_POTENCY_KNEE = 50    # 智力 → 法術威力:此值以下 ×1.0(低智力中性;非施法/分流/刺客 build 不受擾)
+INTELLIGENCE_POTENCY_AT_CAP = 0.30   # int=100 的法術威力加成(+30%;knee→100 線性爬升)
+INTELLIGENCE_POTENCY_OVER_SLOPE = 0.006  # >100 softcap 初始斜率(= 線性段 0.30/50,C1 平滑接續)
+INTELLIGENCE_POTENCY_OVER_CAP = 0.15     # >100 額外漸近上限(總漸近 +45%;壓制深層誓福堆疊膨脹)
 WILLPOWER_COST_KNEE = 115         # 意志 → 法術省魔:回魔飽和點(=combat regen 飽和)以下不折(=改前)
 WILLPOWER_COST_PER = 0.0015       # 每點意志(>knee)
 WILLPOWER_COST_CAP = 0.15         # 法術省魔漸近上限(-15%;與技能折扣相乘,仍受 effective_cost 的 max(1) 地板防免費施法)
@@ -196,9 +198,15 @@ def luck_fortune(luck: int) -> float:
 
 # --- 屬性第二段效果函式(R63):皆「閾以下中性 → 過閾漸近 cap」(_soft_cap knee=0) -------
 def intelligence_spell_potency(intelligence: int) -> float:
-    """智力 → 法術威力倍率:≤100 → ×1.0(不擾現有平衡);過 100 漸近 +25%(過 200 仍漲)。"""
-    over = max(0, intelligence - INTELLIGENCE_POTENCY_KNEE)
-    return 1.0 + _soft_cap(over, 0, INTELLIGENCE_POTENCY_PER, INTELLIGENCE_POTENCY_CAP)
+    """智力 → 法術威力倍率(R67):≤50 → ×1.0(低智力中性);50→100 線性爬升至 +30%;>100 才套 softcap 漸近(總漸近 +45%)。
+    乘進 magic._power → 同步抬升傷害/治療/護盾/結界(召喚與束縛兵刃 HP 不吃 power → 不受影響);
+    只有投資智力 >50 的施法者受惠,刺客等低智力 build(≤50)零位移。"""
+    if intelligence <= INTELLIGENCE_POTENCY_KNEE:
+        return 1.0
+    if intelligence <= 100:
+        return 1.0 + INTELLIGENCE_POTENCY_AT_CAP * (intelligence - INTELLIGENCE_POTENCY_KNEE) / (100 - INTELLIGENCE_POTENCY_KNEE)
+    return (1.0 + INTELLIGENCE_POTENCY_AT_CAP
+            + _soft_cap(intelligence - 100, 0, INTELLIGENCE_POTENCY_OVER_SLOPE, INTELLIGENCE_POTENCY_OVER_CAP))
 
 
 def willpower_cost_factor(willpower: int) -> float:

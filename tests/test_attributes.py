@@ -113,7 +113,7 @@ def test_combat_fear_resisted_by_willpower():
 # --- R63 第二段效果:閾以下中性,過閾漸近(過 200 仍漲)----------------------
 def test_second_stage_neutral_below_knee():
     f = formulas
-    assert f.intelligence_spell_potency(100) == 1.0 and f.intelligence_spell_potency(40) == 1.0
+    assert f.intelligence_spell_potency(50) == 1.0 and f.intelligence_spell_potency(40) == 1.0   # R67:智力 knee 降至 50
     assert f.willpower_cost_factor(115) == 1.0 and f.willpower_cost_factor(40) == 1.0
     assert f.agility_evasion(100) == 0.0 and f.agility_evasion(55) == 0.0       # 命中夾不動
     assert f.speed_extra_action_chance(100) == 0.0 and f.speed_extra_action_chance(50) == 0.0
@@ -121,8 +121,21 @@ def test_second_stage_neutral_below_knee():
 
 def test_second_stage_scales_and_caps():
     f = formulas
-    assert 1.0 < f.intelligence_spell_potency(200) < 1.0 + f.INTELLIGENCE_POTENCY_CAP
+    # R67 智力:漸近上限 = +30%(int100 線性峰)+ >100 額外 cap;過 200 仍漲、永不抵達
+    int_asymptote = 1.0 + f.INTELLIGENCE_POTENCY_AT_CAP + f.INTELLIGENCE_POTENCY_OVER_CAP
+    assert 1.0 < f.intelligence_spell_potency(200) < int_asymptote
     assert f.intelligence_spell_potency(300) > f.intelligence_spell_potency(200)
+
+
+def test_intelligence_potency_r67_curve():
+    """R67:智力法術威力 —— ≤50 中性 / 50→100 線性至 +30% / >100 softcap 漸近(總 +45%)。"""
+    f = formulas
+    assert f.intelligence_spell_potency(50) == 1.0                      # knee 下中性
+    assert abs(f.intelligence_spell_potency(75) - 1.15) < 1e-9          # 中點:+15%
+    assert abs(f.intelligence_spell_potency(100) - 1.30) < 1e-9         # int100 = +30%(線性峰)
+    assert f.intelligence_spell_potency(100) < f.intelligence_spell_potency(138) < f.intelligence_spell_potency(200)  # >100 仍漲
+    asy = 1.0 + f.INTELLIGENCE_POTENCY_AT_CAP + f.INTELLIGENCE_POTENCY_OVER_CAP
+    assert f.intelligence_spell_potency(10_000) < asy + 1e-6            # 漸近不破 +45%
     assert 1.0 - f.WILLPOWER_COST_CAP < f.willpower_cost_factor(200) < 1.0
     assert f.willpower_cost_factor(300) < f.willpower_cost_factor(200)
     assert 0 < f.agility_evasion(200) < f.AGILITY_EVASION_CAP

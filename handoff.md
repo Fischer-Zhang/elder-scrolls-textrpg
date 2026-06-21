@@ -1197,7 +1197,7 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 評估「屬性上限擴張」→ 揪出更根本問題:8 屬性只有力量(近戰 `0.75+str/160` 無上限)真吃到頂,其餘 6 個在 100~158 就因硬上限或「生命只創角結算」失效;而 effective 屬性靠誓福/裝備/詛咒疊加**現在就**到 ~190–285。使用者三道拍板:**機制=漸進衰減曲線 + 第二段效果**·**耐力=生命改跑時隨耐力長**·**能力膨脹=接受為終局強度**(R11 不縮放怪;solo 秒殺仍 ratio-cap 擋)。
 - **兩 helper(`formulas.py`)**:`_soft_cap`(斜率相接·0 起點漸近 cap 用)、`_soft_ceiling`(緩肩 width·硬上限替換用)。皆 **knee 以下原值回傳 → 改前逐位元組相同**。
 - **5 條硬上限改漸進(`_soft_ceiling` width-based,過 200 仍有感)**:`mind_resist_chance` 0.75→漸近 0.90、`luck_loot_factor` 1.5→1.75、`luck_fortune` 0.20→0.30、`magicka_regen_rest_factor` 2.5→3.2、`flee_chance` 0.90→0.95;`persuade_curve`(0.90→0.95)套進 `dialogue.persuade`/`persuade_chance`(recruit/talk_down 獨立天花板·本輪不套)。常數 `*_CAP` 改名 `*_KNEE`+新增 `*_ASYMPTOTE`/`*_WIDTH`。**`hit_chance` 完全不動**(刺客 agi55 高 blade 撞 0.95 舊夾→改它即破 byte-identical)。
-- **第二段效果(`_soft_cap` knee=0·過閾漸近 cap·閾以下中性)**:智力→`intelligence_spell_potency`(過 100 漸近 +25%·`magic._power` 乘);意志→`willpower_cost_factor`(過 115 漸近 −15% 省魔·`magic.effective_cost` 乘·`max(1)` 地板防免費)+ 休息回魔漸進(**戰鬥每回合回魔維持整數硬頂 5·不漸進避免分數魔力**);敏捷→`agility_evasion`(過 100 漸近 +0.12·`combat` evasion 聚合·命中下夾 0.05 仍在→永不無敵);速度→`speed_extra_action_chance`(過 100 漸近 30%·`main.run_battle` 玩家攻擊分支追擊一記·**強制 `sneak_attack=False`=普通擊·不碰 SOLO_SNEAK 夾·耗體力自限**)。
+- **第二段效果(`_soft_cap` knee=0·過閾漸近 cap·閾以下中性)**:智力→`intelligence_spell_potency`(**R67 已大改:見 §3 R67·≤50 中性/int100=+30%/>100 softcap**;R63 原為過 100 漸近 +25%);意志→`willpower_cost_factor`(過 115 漸近 −15% 省魔·`magic.effective_cost` 乘·`max(1)` 地板防免費)+ 休息回魔漸進(**戰鬥每回合回魔維持整數硬頂 5·不漸進避免分數魔力**);敏捷→`agility_evasion`(過 100 漸近 +0.12·`combat` evasion 聚合·命中下夾 0.05 仍在→永不無敵);速度→`speed_extra_action_chance`(過 100 漸近 30%·`main.run_battle` 玩家攻擊分支追擊一記·**強制 `sneak_attack=False`=普通擊·不碰 SOLO_SNEAK 夾·耗體力自限**)。
 - **耐力→跑時生命**:新 `formulas.endurance_health`(≤cap ×2==舊 `base_max_health`·>cap ×1 遞減無上限);`stats.recompute_max_resources` 第 73 行改讀 `endurance_health(char.attr("endurance"))`。**絕不寫 `base_max_health`**(冗餘保留欄·R03 不刪)。live 耦合→早投晚投同耐力同血·**無「每級累加」舊時機陷阱**(R06 反轉)。**副作用(intended)**:任何耐力加成源(達貢/誓福/裝備/**狼人獸形 +40 耐力**)現也經 endurance_health 加血→獸形更耐打(接受的終局創傷)。
 - **🔴 byte-identical(隔離 worktree diff 證·非 stash)**:刺客 fixture wil30/agi55/spd50/end35/luck40/int40 皆 ≤閾或在 knee 線性段·`hit_chance` 未動·sim 不施法/不逃跑/不說服·追擊只在 `run_battle`(sim 走自有 `_round`)→ HEAD sim 腳本對「改前/改後 tesrpg」逐位元組同。**動 combat/formulas 仍必跑 `sim_assassin`**:solo 全 0% 存活、新「R63 追擊紅線」場景(偷襲+普通追擊一回合)solo 全 0%、精英 oneshot Δ0%、4-bandit 22.6% 真實風險。
 - **驗證**:`run_all` **80**(`test_attributes` 改漸進斷言+第二段 4 測·`test_m15` 反轉 `test_health_couples_to_endurance`·`test_progression`/`test_lycanthropy` 加耐力耦合增量·`test_solo_control` 續綠 applied(255)<0.5)+ `check.sh --smoke` 全綠。
@@ -1233,6 +1233,17 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 - **未動的免疫路徑**(刻意):誓福(全親王 magic 142)完成者仍可全免疫;種族 fire75/frost50 基底仍在 → 免疫成「深完成者成就」而非「3 件附魔速成」。要徹底封免疫再加 boon 夾 / 總減傷 <100 夾(留待先問)。
 - **🔴 byte-identical**:刺客無 resist 附魔 → `sim_assassin` 隔離 worktree diff=0;改 `enchanting.py`(非 combat/formulas)。**零存檔欄**:synth id 沿存已算磁量(舊存檔附魔不變);**pre-made 神器 resist 數值資料端硬寫·不受公式影響**(spellbreaker magic45 等如舊)。
 - **驗證**:`run_all` **80**(新 `test_resist_magnitude_r66_nonlinear_and_magic_split`)。🔴 鐵律:調 `RESIST_SOUL_EXP`/`RESIST_MAGIC_ANCHOR` 或 element×2 倍率 → 改 `_resist_magnitude` 單點;單元素=魔抗×2 是構造式(魔抗每點覆蓋三系 → 每件給半);此再平衡只及**玩家自附魔**,神器/藥水抗性各走自身資料/路徑。
+
+---
+
+### R67 · 智力法術威力大改:int100 = +30%(50→100 線性)+ >100 才 softcap [re-sim]
+
+承「各 build 非潛行單擊評估 → 法系單擊偏低、且智力在 ≤100 對法術威力零作用」評估;使用者三段拍板:① int100 給 **+30%** ② 起點上移到 **50**(≤50 中性) ③ **>100 才套 softcap、收口 +0.15**。**刻意反轉 R63「智力 ≤100 ×1.0 不擾平衡」宣言**(R63 把 knee 設 100 是為了不動出廠法系平衡;本輪正是要讓主屬性對法術威力有感 —— 出廠法系皆 eff int100,今前是 ×1.0、零收益)。
+- **只動 `formulas.intelligence_spell_potency`**(單一呼叫點 `magic._power`,乘進**所有**學派效果:傷害/治療/護盾/結界/灌注;**召喚與束縛兵刃 HP 不吃 `power` → 不受影響**)。三段:≤50 → ×1.0;50→100 → `1 + 0.30×(int−50)/50` 線性至 +30%;>100 → `1.30 + _soft_cap(int−100, 0, 0.006, 0.15)`(初始斜率 0.006 = 線性段 0.30/50,C1 平滑;總漸近 +45%)。
+- **常數**:`INTELLIGENCE_POTENCY_KNEE=50`、`_AT_CAP=0.30`、`_OVER_SLOPE=0.006`、`_OVER_CAP=0.15`(取代舊 `_PER/_CAP`)。表 int40/50/75/100/138/200 = ×1.00/1.00/1.15/1.30/1.42/1.45。
+- **影響**(`eval_int_potency.py` 探針·法系皆 eff int100→+30%):單擊 mage 72→**93**、battlemage 法術 69→**90**(>長劍 84·法術躍為其最大單擊);vs 27 solo boss 平均勝率 mage 93.7→**95.3%**、battlemage 94.4→**96.9%**,收益集中硬尾(ancient_dragon 戰法 43→**89%**·knight_of_order 法師 78→92%·mehrunes_dagon 戰法 9→31%·**法師對終王仍 0%**=破不了牆)。
+- **🔴 byte-identical(sim_assassin)**:刺客虎人 int≤50 且永不施法 → 公式零呼叫 → 隔離 worktree diff=0(即使 knee 改 50 亦然)。**無「法術 vs solo 夾」但有界**(base int 夾 100 → 固定 +30%·無法一擊·破不了終王牆);+30% 同及治療(close_wounds 130→169)但受動作+魔力雙閘不可剝削。
+- **零存檔遷移、零 recompute**(純讀時公式;`max_magicka` 為另一條公式·不受影響)。驗證:`run_all` **80**(test_attributes 的 neutral-below-knee 改 50 + 新 `test_intelligence_potency_r67_curve`)。🔴 鐵律:調 knee/at_cap/over_cap → 改此單函式 → 重跑 `sim_builds`(法系勝率會升=by design,**非** byte-identical)+ `sim_assassin`(須仍 byte-identical);**knee=50 必保**(刺客 int≤50 零位移)。
 
 ---
 
