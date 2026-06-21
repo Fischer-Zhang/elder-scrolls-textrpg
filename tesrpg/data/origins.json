@@ -243,5 +243,117 @@
     "items": [["minor_healing_potion", 1], ["healing_potion", 1]],
     "quest": "origin_wandering_bard",
     "classes": ["thief"]
+  },
+  "ranger_scout": {
+    "name": "綠約遊俠",
+    "blurb": "你是瓦倫森林綠約的巨木林遊俠,與獵群為伍,以長弓與獸語巡守樹冠。箭無虛發,足跡不留痕。",
+    "location": "falinesti",
+    "gold": 55,
+    "weapon": "long_bow",
+    "equip": ["leather_cuirass", "leather_boots"],
+    "items": [["minor_healing_potion", 2]],
+    "companions": ["ranger"],
+    "quest": "origin_ranger_scout",
+    "classes": ["archer", "thief"]
+  },
+  "khajiit_trader": {
+    "name": "月糖商隊主",
+    "blurb": "你是艾爾斯維爾的虎人商隊主,以帳本與三寸不爛之舌闖蕩天下。生意才是你的劍,銀幣才是你的甲。",
+    "location": "corinthe",
+    "gold": 90,
+    "weapon": "iron_dagger",
+    "items": [["moon_sugar", 3], ["bolt_of_cloth", 2], ["minor_healing_potion", 1]],
+    "quest": "origin_khajiit_trader",
+    "classes": ["thief"]
+  },
+  "hist_warden": {
+    "name": "希斯特守林者",
+    "blurb": "你是黑沼澤的亞龍守林者,受希斯特低語所選,執長槍守護深沼的聖林。泥水與蘆葦,便是你的疆界。",
+    "location": "stormhold",
+    "gold": 50,
+    "weapon": "iron_spear",
+    "equip": ["leather_cuirass"],
+    "items": [["minor_healing_potion", 2]],
+    "quest": "origin_hist_warden",
+    "classes": ["warrior"]
+  },
+  "marsh_conjurer": {
+    "name": "沼澤招魂者",
+    "blurb": "你是黑沼澤吉迪恩公會邊緣的亞龍召喚師,能自迷霧裡喚出助力。靈體與你並肩,沼氣供你驅策。",
+    "location": "gideon",
+    "gold": 50,
+    "faction": {"mages_guild": 0},
+    "spells": ["conjure_familiar"],
+    "items": [["minor_magicka_potion", 2]],
+    "quest": "origin_marsh_conjurer",
+    "classes": ["mage", "battlemage"]
+  },
+  "oathbound_paladin": {
+    "name": "誓盟聖騎士",
+    "blurb": "你是高岩威岩禮拜堂的布萊頓騎士,執劍盾、亦執癒合的聖光。誓約在身,以九神之名而戰。",
+    "location": "wayrest",
+    "gold": 70,
+    "weapon": "steel_sword",
+    "equip": ["leather_cuirass", "iron_shield"],
+    "spells": ["minor_heal"],
+    "items": [["minor_healing_potion", 1], ["minor_magicka_potion", 1]],
+    "quest": "origin_oathbound_paladin",
+    "classes": ["knight", "healer"]
+  },
+  "desert_spellsword": {
+    "name": "沙漠法刃武者",
+    "blurb": "你是漢默法爾的紅衛劍歌傳人,將約庫達的劍術與毀滅之焰合而為一。劍與火,在你手中如一。",
+    "location": "tava_oasis",
+    "gold": 60,
+    "weapon": "steel_sword",
+    "equip": ["leather_cuirass"],
+    "spells": ["flames"],
+    "items": [["minor_healing_potion", 1], ["minor_magicka_potion", 1]],
+    "quest": "origin_desert_spellsword",
+    "classes": ["battlemage", "warrior"]
+  },
+  "tribunal_battlemage": {
+    "name": "神諭團戰法師",
+    "blurb": "你是晨風神諭神殿的暗精靈戰法師,鐵甲在身、電火在握。神諭團的戰陣與儀式,皆由你執行。",
+    "location": "blacklight",
+    "gold": 55,
+    "faction": {"mages_guild": 0},
+    "weapon": "steel_mace",
+    "equip": ["iron_cuirass"],
+    "spells": ["sparks"],
+    "items": [["minor_magicka_potion", 2]],
+    "quest": "origin_tribunal_battlemage",
+    "classes": ["battlemage"]
+  },
+  "cloud_monk": {
+    "name": "雙月武僧",
+    "blurb": "你是艾爾斯維爾托瓦爾月廟的虎人武僧,以拳為刃、以靜制動,捨棄鋼鐵而修筋骨。雙月之律即是你的劍。",
+    "location": "torval",
+    "gold": 45,
+    "items": [["minor_healing_potion", 2], ["moon_sugar", 1]],
+    "quest": "origin_cloud_monk",
+    "classes": ["warrior"]
+  },
+  "arcane_scholar": {
+    "name": "奧術博識者",
+    "blurb": "你是高岩耶漢納圖書館的布萊頓博識者,研習秘術與煉金,書卷即是兵刃。魂石與筆記,便是你的軍械。",
+    "location": "jehanna",
+    "gold": 55,
+    "faction": {"mages_guild": 0},
+    "weapon": "magicka_staff",
+    "spells": ["soul_trap"],
+    "items": [["minor_magicka_potion", 2], ["filled_lesser_soul_gem", 1]],
+    "quest": "origin_arcane_scholar",
+    "classes": ["mage", "battlemage"]
+  },
+  "marsh_healer": {
+    "name": "沼澤巫醫",
+    "blurb": "你是黑沼澤希斯特的亞龍巫醫,以恢復之術為族人療傷。但沼澤的傷者,得先除掉傷人的禍患才能醫治。",
+    "location": "helstrom",
+    "gold": 45,
+    "spells": ["minor_heal"],
+    "items": [["minor_magicka_potion", 2], ["healing_potion", 1], ["scrib_jelly", 1]],
+    "quest": "origin_marsh_healer",
+    "classes": ["healer", "mage"]
   }
 }

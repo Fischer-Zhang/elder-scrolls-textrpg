@@ -124,12 +124,15 @@ def _creation_review(gamedata: GameData, sex, race, sign, origin_id, class_id, c
 # 開局分類(兩層選單:24 種太長 → 先選一類、再選開局)。新增開局未列入者自動歸「浪人 · 處境」。
 ORIGIN_CATEGORIES = [
     ("⚔ 戰士 · 近戰", ["sellsword", "fighters_recruit", "alikr_blade", "orc_outcast",
-                       "legion_veteran", "caravan_guard", "knight_aspirant"]),
-    ("✦ 法師 · 法術", ["mage_initiate", "temple_healer", "reach_witch"]),
-    ("🗡 潛行 · 弓手", ["dark_initiate", "guild_thief", "tomb_seeker", "dockside_stowaway", "wood_hunter"]),
+                       "legion_veteran", "caravan_guard", "knight_aspirant",
+                       "hist_warden", "oathbound_paladin", "desert_spellsword", "cloud_monk"]),
+    ("✦ 法師 · 法術", ["mage_initiate", "temple_healer", "reach_witch",
+                       "marsh_conjurer", "tribunal_battlemage", "arcane_scholar", "marsh_healer"]),
+    ("🗡 潛行 · 弓手", ["dark_initiate", "guild_thief", "tomb_seeker", "dockside_stowaway",
+                       "wood_hunter", "ranger_scout"]),
     ("🩸 特殊血脈", ["nightborn", "beast_blooded"]),
     ("🧭 浪人 · 處境", ["newcomer", "fugitive", "pilgrim", "fallen_noble",
-                       "shipwreck_survivor", "ashlander", "wandering_bard"]),
+                       "shipwreck_survivor", "ashlander", "wandering_bard", "khajiit_trader"]),
 ]
 
 

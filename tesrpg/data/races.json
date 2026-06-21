@@ -85,7 +85,7 @@
     "attr_mods": {"agility": 10, "speed": 5, "personality": 5, "willpower": -10, "endurance": -5},
     "skill_bonuses": {"blade": 5, "hand_to_hand": 10, "athletics": 5, "acrobatics": 5, "light_armor": 5, "sneak": 5, "security": 5},
     "magicka_bonus": 0,
-    "ability": "艾斯維爾的貓族,擁有夜視與致命的徒手利爪。",
+    "ability": "艾爾斯維爾的貓族,擁有夜視與致命的徒手利爪。",
     "resist": {},
     "passive": {"night_eye": 0.15, "claw_bonus": 4}
   }

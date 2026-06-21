@@ -1802,6 +1802,106 @@
     ],
     "reward": {"gold": 50, "fame": 5}
   },
+  "origin_ranger_scout": {
+    "name": "綠約的箭", "source": "origin", "turn_in": "auto",
+    "text": "綠約的箭從不虛發。先在巨木林證明你的眼力與弓藝,再循古律向獵群覆命。",
+    "stages": [
+      {"objective": {"type": "kill", "creature": "strangler_vine", "count": 2}, "text": "巨木林邊緣的絞殺藤纏擾獵徑 —— 射落 2 株。"},
+      {"objective": {"type": "kill", "creature": "jungle_toad", "count": 2}, "text": "林沼裡的叢林毒蛙也在清剿之列。"},
+      {"objective": {"type": "reach", "location": "silvenar"}, "text": "把獵物送往希凡納的代言者。"}
+    ],
+    "reward": {"gold": 70, "fame": 4}
+  },
+  "origin_khajiit_trader": {
+    "name": "第一批貨", "source": "origin", "turn_in": "auto",
+    "text": "賒帳、斡旋、轉手 —— 生意才是你的劍。先護好第一批貨,再把它賣到該去的地方。",
+    "stages": [
+      {"objective": {"type": "kill", "creature": "sugar_vine", "count": 2}, "text": "糖晶藤絆住了你的駝隊,清出商道。"},
+      {"objective": {"type": "collect", "item": "glow_dust", "count": 2}, "text": "替北方買家湊齊兩份螢光粉(草海的糖晶藤身上可得)。"},
+      {"objective": {"type": "reach", "location": "senchal"}, "text": "把貨運到森查爾的不夜港脫手。"}
+    ],
+    "reward": {"gold": 80, "fame": 3}
+  },
+  "origin_hist_warden": {
+    "name": "聖林之槍", "source": "origin", "turn_in": "auto",
+    "text": "希斯特的低語選中了你執槍守林。先肅清侵擾聖林的沼物,再向赫爾斯壯的樹語祭司覆命。",
+    "stages": [
+      {"objective": {"type": "kill", "creature": "swamp_lizard", "count": 2}, "text": "蘆葦間的沼澤蜥蜴逼近聖林。"},
+      {"objective": {"type": "kill", "creature": "swamp_leech", "count": 2}, "text": "泥水裡的沼澤水蛭也得清掉。"},
+      {"objective": {"type": "reach", "location": "helstrom"}, "text": "前往赫爾斯壯,向樹語祭司覆命。"}
+    ],
+    "reward": {"gold": 60, "fame": 3}
+  },
+  "origin_marsh_conjurer": {
+    "name": "迷霧之僕", "source": "origin", "turn_in": "auto",
+    "text": "你能自迷霧裡喚出助力。公會要你先驗證召喚之術,再為煉金室補上材料。",
+    "stages": [
+      {"objective": {"type": "kill", "creature": "swamp_lizard", "count": 2}, "text": "讓你的魔靈伴撕碎 2 隻沼澤蜥蜴。"},
+      {"objective": {"type": "collect", "item": "bone_meal", "count": 2}, "text": "為招魂儀式採集 2 份骨粉。"},
+      {"objective": {"type": "reach", "location": "stormhold"}, "text": "把材料送往石落城的聯絡人。"}
+    ],
+    "reward": {"gold": 60, "fame": 3, "items": ["minor_magicka_potion"]}
+  },
+  "origin_oathbound_paladin": {
+    "name": "第一樁誓行", "source": "origin", "turn_in": "auto",
+    "text": "你執劍盾、亦執聖光。在霧沼間討伐邪祟,以聖騎士之名立下你的第一樁誓行。",
+    "stages": [
+      {"objective": {"type": "kill", "creature": "moor_witch", "count": 2}, "text": "風暴港原野的沼地女巫作祟,以聖光討伐。"},
+      {"objective": {"type": "kill", "creature": "moor_hound", "count": 2}, "text": "護衛鄉里,驅散 2 頭荒沼獵犬。"},
+      {"objective": {"type": "reach", "location": "daggerfall"}, "text": "前往匕落的禮拜堂,在九神壇前更新你的誓約。"}
+    ],
+    "reward": {"gold": 75, "fame": 5}
+  },
+  "origin_desert_spellsword": {
+    "name": "劍與焰", "source": "origin", "turn_in": "auto",
+    "text": "劍與焰在你手中合一。先在黃沙邊緣磨合這門技藝,再讓劍歌庭聽見你的名。",
+    "stages": [
+      {"objective": {"type": "kill", "creature": "sand_scorpion", "count": 2}, "text": "綠洲外的沙蠍橫行,以焰刃驅之。"},
+      {"objective": {"type": "kill", "creature": "sand_adder", "count": 2}, "text": "沙地響尾蛇潛伏於商道。"},
+      {"objective": {"type": "reach", "location": "sentinel"}, "text": "前往森塔,讓劍術大師見識你的法刃。"}
+    ],
+    "reward": {"gold": 70, "fame": 4}
+  },
+  "origin_tribunal_battlemage": {
+    "name": "鐵甲電火", "source": "origin", "turn_in": "auto",
+    "text": "鐵甲與電火同在你身。神諭團要你先在灰原驗證戰技,再採回儀式所需。",
+    "stages": [
+      {"objective": {"type": "kill", "creature": "wolf", "count": 2}, "text": "灰原邊的狼群擾民,以電花清剿。"},
+      {"objective": {"type": "collect", "item": "scrib_jelly", "count": 2}, "text": "為神殿煉金室採集 2 份史克利伯凍。"},
+      {"objective": {"type": "reach", "location": "balmora"}, "text": "把材料送往巴爾莫拉的神諭團駐地。"}
+    ],
+    "reward": {"gold": 65, "fame": 3}
+  },
+  "origin_cloud_monk": {
+    "name": "以拳為刃", "source": "origin", "turn_in": "auto",
+    "text": "你以拳為刃、以靜制動。先在草海邊磨練筋骨,再循雙月之律向瑪恩覆命。",
+    "stages": [
+      {"objective": {"type": "kill", "creature": "savanna_jackal", "count": 2}, "text": "草原胡狼成群,以拳腳驅之。"},
+      {"objective": {"type": "kill", "creature": "sugar_vine", "count": 2}, "text": "糖晶藤纏住了山徑。"},
+      {"objective": {"type": "reach", "location": "corinthe"}, "text": "前往科林斯的市集,印證你修行的成果。"}
+    ],
+    "reward": {"gold": 55, "fame": 4}
+  },
+  "origin_arcane_scholar": {
+    "name": "書卷與魂石", "source": "origin", "turn_in": "auto",
+    "text": "你研習秘術與煉金,書卷即是你的兵刃。先採齊研究所需,再將筆記送往同道手中。",
+    "stages": [
+      {"objective": {"type": "kill", "creature": "moor_hound", "count": 2}, "text": "荒沼獵犬擾及採集路線,以擒魂術試刀。"},
+      {"objective": {"type": "collect", "item": "nightshade", "count": 2}, "text": "為煉金研究採集 2 株顛茄。"},
+      {"objective": {"type": "reach", "location": "wayrest"}, "text": "把研究筆記送往威岩的法師公會。"}
+    ],
+    "reward": {"gold": 65, "fame": 3, "items": ["minor_magicka_potion"]}
+  },
+  "origin_marsh_healer": {
+    "name": "癒手與禍患", "source": "origin", "turn_in": "auto",
+    "text": "希斯特賜你癒合之手。但沼澤的傷者,得先除掉傷人的禍患才能醫治。",
+    "stages": [
+      {"objective": {"type": "kill", "creature": "swamp_leech", "count": 2}, "text": "纏附村民的沼澤水蛭得先清除。"},
+      {"objective": {"type": "collect", "item": "bone_meal", "count": 2}, "text": "為退熱藥劑研磨 2 份骨粉。"},
+      {"objective": {"type": "reach", "location": "stormhold"}, "text": "帶著藥劑前往石落城義診。"}
+    ],
+    "reward": {"gold": 55, "fame": 5}
+  },
   "main_oblivion": {"source": "main", "name": "湮滅危機", "requires_event": "kvatch_falls", "expel_faction": "mythic_dawn", "text": "凱瓦奇上空的天裂開了。湮滅之門吞噬城池,神話黎明的赤袍信徒湧上街頭 —— 達貢的入侵已然降臨。有人必須挺身而出,逐省關閉湮滅之門,直搗達貢的位面。", "stages": [{"objective": {"type": "clear_dungeon", "dungeon": "kvatch_gate"}, "text": "踏入凱瓦奇城下的湮滅之門,拔下封印石,合上第一道裂隙。"}, {"objective": {"type": "clear_dungeon", "dungeon": "bravil_gate"}, "text": "南下布拉維爾,封閉尼本河畔的第二道湮滅之門。"}, {"objective": {"type": "clear_dungeon", "dungeon": "dagon_shrine"}, "text": "突襲切迪納近郊的達貢祭壇,奪取通往死亡之地的鑰匙 —— 但這也將撕開最後的大裂隙。"}, {"objective": {"type": "clear_dungeon", "dungeon": "the_deadlands"}, "text": "穿過死亡之地的烈焰荒原,直面梅魯尼斯·達貢的化身,終結這場危機。"}], "reward": {"gold": 2000, "fame": 80, "items": ["crusaders_aegis", "dawnfang"], "eradicate_faction": "mythic_dawn", "world_flags": ["oblivion_crisis_ended", "mythic_dawn_eradicated"]}},
   "md7": {"source": "main", "name": "曼卡的獻禮", "requires_event": "kvatch_falls", "requires_faction": "mythic_dawn", "requires_faction_rank": 6, "text": "曼卡·卡莫蘭召你前往神話黎明聖殿,參與達貢現世的最終儀式。但你不知道的是 —— 現世的祭品,是神話黎明的全體信徒,包括你。", "stages": [{"objective": {"type": "reach", "location": "dawn_sanctum"}, "text": "應曼卡之召,前往神話黎明聖殿,見證達貢的現世之禮。"}, {"objective": {"type": "clear_dungeon", "dungeon": "dawn_sanctum"}, "text": "達貢獻祭了滿殿信徒以現世 —— 為了自保,你逆轉了召喚法陣,將半成的達貢化身困住。在崩塌的聖殿裡,了結這位背叛了你、也被你背叛的神。"}], "reward": {"gold": 1500, "fame": -30, "infamy": 40, "items": ["mysterium_xarxes", "mehrunes_razor"], "grant_boon": "dagon", "eradicate_faction": "mythic_dawn", "world_flags": ["mythic_dawn_eradicated", "oblivion_crisis_ended"]}},
   "job_saarthal": {"name": "委託:薩爾薩斯", "faction": null, "rank": null, "source": "board", "provinces": ["天際"], "objective": {"type": "clear_dungeon", "dungeon": "saarthal"}, "reward": {"gold": 360, "fame": 18}, "turn_in": "auto", "text": "委託:肅清薩爾薩斯。"},
