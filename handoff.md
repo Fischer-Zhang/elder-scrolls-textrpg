@@ -1224,6 +1224,16 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 - **🔴 sim_assassin byte-identical**(刺客 khajiit wp30→`willpower_magic_resist`=0·非布萊頓·隔離 worktree diff 證);**動 `entity_resist`=戰鬥減傷 → 必跑 sim_assassin**;意志魔抗 **knee=40 必保**(刺客 wp30 零位移)。
 - **驗證**:`run_all` **80**(`test_attributes`+`test_willpower_magic_resist_r65`·`test_equipment`+`test_archmage_set_grants_magic_resist_r65`·`test_daedric` 補「誓福抬意志連帶增魔抗」增量)。調 `WILLPOWER_MAGIC_RESIST_*` / 套裝 resist / 種族魔抗 → 必跑 sim_assassin。
 
+### R66 · resist 附魔再平衡:soul^0.7 非線性 + 魔抗/單元素分流 [save]
+
+承魔抗免疫評估(sim_builds + 手算):元素免疫(減 fire/frost/shock,R14)可由「3 件 magic 附魔」輕易達成 —— 因 resist 附魔線性(大魂=微魂×5)且魔抗=單元素同量(`resist` 單一 kind/factor)。使用者逐步拍板:① 魂石階改 **soul^0.7**(大魂≈微魂×3.1 而非 ×5)② **魔抗基數低、單元素=魔抗×2**。
+- **只動 `enchanting.py` 的 resist 分支**(skill/attr/res/weapon/thorns 全不變)。新 `_resist_magnitude(slot, param, soul, myst)` = `round(RESIST_MAGIC_ANCHOR[slot] × soul^RESIST_SOUL_EXP × (0.5+myst/100)/1.5)`;`param=="magic"` 回該值,否則 **×2**(單元素)。`armor_magnitude`/`jewelry_magnitude` 加 `param=None` 參數;3 個 callsite(enchant_armor×2 + enchant_jewelry)傳 `param`。
+- **常數**:`RESIST_SOUL_EXP=0.7`、`RESIST_MAGIC_ANCHOR={"armor":2,"jewelry":3}`(soul1·myst100 魔抗 %)。表(myst100·raw):魔甲 2/3/4/5/6·魔飾 3/5/6/8/9·元甲=魔甲×2·元飾=魔飾×2(大魂 元飾18);myst75 ×0.83·myst50 ×0.67。
+- **效果**:8 槽全魔抗附魔 ~68(舊 318)→ **gear 魔抗免疫死透**(無法靠附魔堆到 100);單元素需 種族+2~3 件(dunmer 火75 + 1 大魂元飾22 = 97 仍差一截);低階魂石救活(grand=petty×3.1·非 ×5)。
+- **未動的免疫路徑**(刻意):誓福(全親王 magic 142)完成者仍可全免疫;種族 fire75/frost50 基底仍在 → 免疫成「深完成者成就」而非「3 件附魔速成」。要徹底封免疫再加 boon 夾 / 總減傷 <100 夾(留待先問)。
+- **🔴 byte-identical**:刺客無 resist 附魔 → `sim_assassin` 隔離 worktree diff=0;改 `enchanting.py`(非 combat/formulas)。**零存檔欄**:synth id 沿存已算磁量(舊存檔附魔不變);**pre-made 神器 resist 數值資料端硬寫·不受公式影響**(spellbreaker magic45 等如舊)。
+- **驗證**:`run_all` **80**(新 `test_resist_magnitude_r66_nonlinear_and_magic_split`)。🔴 鐵律:調 `RESIST_SOUL_EXP`/`RESIST_MAGIC_ANCHOR` 或 element×2 倍率 → 改 `_resist_magnitude` 單點;單元素=魔抗×2 是構造式(魔抗每點覆蓋三系 → 每件給半);此再平衡只及**玩家自附魔**,神器/藥水抗性各走自身資料/路徑。
+
 ---
 
 ## 4. 開發節奏(ultracode 開著 → 每個功能都這樣做)

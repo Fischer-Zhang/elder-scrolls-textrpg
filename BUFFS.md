@@ -68,7 +68,7 @@
 | fortify_skill | 技能 | 飾品×2.0→8→12;護甲×1.5→6→9 | enchj/encha | 聚合相加→skills;餵 char.skill() 不回門檻(R21) |
 | fortify_attribute | 屬性 | ★僅飾品×1.2→5→7 | enchj | 聚合相加;護甲刻意排除 attr |
 | fortify_resource | 資源上限 | 飾品×3.0→12→18;護甲版 armor_fortify→13→19 | enchj/encha | 護甲版額外經 armor_fortify_totals 餵 recompute;進有效上限(R05) |
-| resist_element | 抗性 | 飾品×5.0→20%→30%(下限2);護甲×4.0→16%→24% | enchj/encha | 聚合相加;100%=免疫,負值=弱點放大(最高2×) |
+| resist_element | 抗性 | **R66 soul^0.7 非線性**·大魂飾 單元素~18/魔抗~9(護甲 12/6)·**魔抗=單元素÷2**(每點覆蓋火/霜/電);myst75 ×0.83·myst50 ×0.67·+potency ×1.2 | enchj/encha | 聚合相加;100%=免疫,負值=弱點放大(最高2×) |
 | weapon_element | 傷害 | ×3.0→13→19;fire/frost/shock | enchw | 🔴**無視物理護甲**、吃元素抗;加在偷襲夾限**之前** |
 | weapon vampiric | 續航回復 | ★傷害×0.30 回血(雙持 0.48);**enchant.magnitude(%)可覆寫**(悲傷之刃 50);命中必觸發 | enchws | 主+副(×0.6)累計一次回血;夾本擊 dmg 內 |
 | weapon paralyze | 控場(★充能) | proc 10%、turns=1;**mag=充能容量**=round(soul×5×(0.6+myst/100))→ soul4·myst50≈22 | enchws | 🔴**solo boss 免疫**(R15);觸發扣一格、歸零不觸發;舊式 mag=0=legacy 無限 |

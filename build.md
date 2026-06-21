@@ -173,7 +173,7 @@ effective_cost = base × (1 − min(0.4, 學派技能/250)) × Π spell_cost_fac
 | ~~狼人~~ | ✗ **不相容**:獸形脫整套裝備 + 無法施法 | 法師絕不取 |
 | **裝備:法袍套裝**(四件同材質,盾不計) | 學徒布袍 magicka+40·施法省體 ×0.80 / 大法師 magicka+70·★施法省體 ×0.65 / 龍祭司 ★magicka+110(全遊戲最高·但**無施法折扣**) | `armor_sets.json:9-10,13`;法袍互斥、佔胸頭手腳四槽 |
 | **裝備:法袍件附魔** | 胸/靴 `armor_fortify magicka`(學徒 +15/+10、大法師 +25/+15、龍祭司 +40/+25);兜帽/手套 `fortify_skill destruction/alteration`(學徒 +6、大法師 +10、龍祭司毀滅兜帽 +20) | `armor.json:307-331`;改 equipped 後必 recompute(R05) |
-| **裝備:自附魔飾品(3 槽)** | `fortify_resource magicka`(soul5·myst100 ≈ 22)、`fortify_attribute int/will`(★僅飾品可附 ≈ 9)、`fortify_skill 學派`(≈ 15)、`resist 元素`(≈ 38%) | `enchanting.py:89-94`;餵 skill()/attr() 不回門檻(R21) |
+| **裝備:自附魔飾品(3 槽)** | `fortify_resource magicka`(soul5·myst100 ≈ 22)、`fortify_attribute int/will`(★僅飾品可附 ≈ 9)、`fortify_skill 學派`(≈ 15)、`resist`(**R66**:大魂飾單元素 ≈ 22%·魔抗 ≈ 11%·soul^0.7 非線性) | `enchanting.py`;餵 skill()/attr() 不回門檻(R21) |
 | **裝備:神器(法杖)** | 魔典·哲思之卷(amulet)conj+15;馬格努斯之杖(法師公會掌門)、法力法杖(命中回魔 +8,`on_hit_self`)、元素法杖 | ⚠ 法杖 `weapon_element` 是**近戰命中元素傷**,非 spell power;本遊戲**無裝備直接加 spell power 的物品**(只能經 fortify_skill 抬學派技能間接放大) |
 | **裝備:十字軍神器** | 護心(fire+50%·胸甲槽→排斥法袍套裝)、聖盾(magic+30%·盾槽不計套裝→可與法袍並存) | `armor.json:332-333` |
 | **星座(建檔一次性·互斥)** | ★巨魔像 magicka+150+法術吸收(▼代價見下)/ 學徒 magicka+100(▼magic 抗−50)/ 法師 int+5·magicka+50(★無痛)/ 領主·儀式(每日自療 power) | `birthsigns.json` |
@@ -282,7 +282,7 @@ effective_cost = base × (1 − min(0.4, 學派技能/250)) × Π spell_cost_fac
 | **裝備:護甲本體** | 穿戴件 `worn × (0.5 + heavy_armor/100)`;最高材質單件:魔族胸甲 30·盔 17·護手 12·靴 13·魔族盾 15;十字軍護心 32(火抗+50%)。重甲滿級 → worn 乘子 ×1.5 | `armor.json`;`combat.py:204-221 _armor_rating` |
 | **裝備:武器淬鍊** | 主手武器 +2 傷/級;基礎上限 `min(5, smithing//20)` → +10;含鋒銳里程碑 `temper_power` ×(1+0.25)、淬火宗師 cap+1 → apex **+15 傷** | ⚠ 雙持**副手淬鍊不套倍率**(既有行為);加進 weapon_damage 吃進全攻擊鏈 |
 | **裝備:護甲淬鍊** | 穿戴各甲件淬鍊**等級總和** ×(1+temper_power),**一次取整**:`int(Σlvl × (1+power))`;apex(cap6·power0.25·4 件)= int(24×1.25)=**+30 護甲值**(非逐件取整相加) | `smithing.py:178-184`;卸下不計 |
-| **裝備:★fortify str/技能 附魔(僅飾品,3 槽 amulet+ring1+ring2)** | ★**fortify_attribute strength 唯一靠飾品**(soul5·myst100 ≈ +9/件);`fortify_skill` blade/blunt/block/heavy_armor ≈ +15/件;`fortify_resource health` ≈ +22/件;`resist 元素` ≈ +38%/件 | **護甲刻意排除 attr**(`enchanting.py:22-23` ARMOR_KINDS·僅飾品 jewelry_magnitude 89-94 才有 attr);餵 skill()/attr() 不回門檻(R21);★**無藥可釀**(見下) |
+| **裝備:★fortify str/技能 附魔(僅飾品,3 槽 amulet+ring1+ring2)** | ★**fortify_attribute strength 唯一靠飾品**(soul5·myst100 ≈ +9/件);`fortify_skill` blade/blunt/block/heavy_armor ≈ +15/件;`fortify_resource health` ≈ +22/件;`resist` **R66**:單元素 ≈ +22%/件·魔抗 ≈ +11%/件(soul^0.7 非線性) | **護甲刻意排除 attr**(`enchanting.py:22-23` ARMOR_KINDS·僅飾品 jewelry_magnitude 89-94 才有 attr);餵 skill()/attr() 不回門檻(R21);★**無藥可釀**(見下) |
 | **裝備:護甲件附魔** | 護甲版 factor 較低:`fortify_skill` +11/件、`resist` +30%/件、`fortify_resource` health +24/件;武器可附 `weapon_element` fire/frost/shock ≈ +24(無視物理甲、吃元素抗、加在傷害) | 改 equipped 後必 recompute(R05) |
 | **種族(建檔寫 base)** | 諾德 str/end+10·blade+5·**blunt+10**·heavy_armor+5·block+5·frost 抗 50 / 獸人 str/end+10·will+5·blunt+10·**heavy_armor+10(全種族最高)**·block+5·magic 抗 25(★重甲鈍器向最佳) / 紅衛 str/end+10·agi+5·**blade+10**·blunt+5·heavy_armor+5·疾/毒抗 75(刀劍向最佳);帝國人 blade/blunt/heavy_armor+5·per+10(均衡) | `races.json`;技能起始與屬性皆併 base,非獨立層;block 起始諾德=獸人=+5(非獸人獨高) |
 | **星座(建檔寫 base)** | ★**戰士座** str+5·end+5(無代價,純戰士最佳)/ 領主座 end+5+每日自療 60(▼火抗−25)/ 淑女座 per+10·end+5 | `birthsigns.json` |

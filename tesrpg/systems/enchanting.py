@@ -16,6 +16,12 @@ ELEMENTS = ["fire", "frost", "shock"]
 FORTIFY_STATS = ["health", "magicka", "fatigue"]   # 護甲附魔可強化的最大資源
 RESIST_ELEMENTS = ["fire", "frost", "shock", "poison", "magic"]   # 飾品可抗的元素
 
+# R66:resist 附魔再平衡 —— ① 魂石階非線性(soul^0.7,大魂≈微魂×3.1 而非 ×5)→ 軟化高階堆疊、
+# 救活低階魂石經濟;② 魔抗(universal·減火/霜/電)基數低、單元素 = 魔抗×2(魔抗每點覆蓋三系故每件給少)。
+# 錨點 = soul-1·mysticism100 的魔抗值(armor 2 / jewelry 3);單元素 = 該魔抗×2。
+RESIST_SOUL_EXP = 0.7
+RESIST_MAGIC_ANCHOR = {"armor": 2, "jewelry": 3}   # 魔抗 % @ soul1·myst100;單元素 ×2
+
 # 飾品附魔的 4 種型別(供 UI 列表):(kind, 顯示名)
 JEWELRY_KINDS = [("skill", "強化技能"), ("attr", "強化屬性"),
                  ("resist", "抗元素"), ("res", "強化最大資源")]
@@ -86,12 +92,22 @@ def enchantable_jewelry(char: Character, gamedata: GameData) -> list[str]:
     return out
 
 
-def jewelry_magnitude(kind: str, soul: int, mysticism_skill: int) -> int:
-    """各型別的附魔強度(屬性最珍貴給最少、抗性以百分比給較多)。"""
+def _resist_magnitude(slot: str, param: str | None, soul: int, mysticism_skill: int) -> int:
+    """R66 resist 附魔量值:魂石 soul^0.7 非線性 + 魔抗/單元素分流。
+    魔抗 = round(錨點 × soul^0.7 × (0.5+myst/100)/1.5);單元素(param≠"magic")= 魔抗×2。
+    (除以 1.5 使 soul1·myst100 = 錨點;myst75≈×0.83、myst50≈×0.67。)"""
+    base = (0.5 + mysticism_skill / 100.0) / 1.5
+    magic = max(1, round(RESIST_MAGIC_ANCHOR[slot] * soul ** RESIST_SOUL_EXP * base))
+    return magic if param == "magic" else magic * 2
+
+
+def jewelry_magnitude(kind: str, soul: int, mysticism_skill: int, param: str | None = None) -> int:
+    """各型別的附魔強度(屬性最珍貴給最少;抗性走 R66 非線性/分流 _resist_magnitude)。"""
+    if kind == "resist":
+        return _resist_magnitude("jewelry", param, soul, mysticism_skill)
     base = 0.5 + mysticism_skill / 100.0
-    factor = {"skill": 2.0, "attr": 1.2, "resist": 5.0, "res": 3.0}[kind]
-    floor = 2 if kind == "resist" else 1
-    return max(floor, round(soul * factor * base))
+    factor = {"skill": 2.0, "attr": 1.2, "res": 3.0}[kind]
+    return max(1, round(soul * factor * base))
 
 
 def enchant_jewelry(char: Character, gamedata: GameData, base_jewelry: str,
@@ -104,7 +120,7 @@ def enchant_jewelry(char: Character, gamedata: GameData, base_jewelry: str,
 
     soul = gamedata.item(gem_id).get("soul", 1)
     from tesrpg.systems import mastery
-    mag = round(jewelry_magnitude(kind, soul, char.skill("mysticism")) * (1 + mastery.enchant_potency(char, gamedata)))
+    mag = round(jewelry_magnitude(kind, soul, char.skill("mysticism"), param) * (1 + mastery.enchant_potency(char, gamedata)))
 
     inventory.remove_item(char, base_jewelry, 1)
     inventory.remove_item(char, gem_id, 1)
@@ -138,17 +154,17 @@ def enchant_weapon(char: Character, gamedata: GameData, base_weapon: str,
             "item_id": item_id, "hours": hours, "tired": tired, "skill_events": events}
 
 
-def armor_magnitude(kind: str, soul: int, mysticism_skill: int) -> int:
-    """護甲附魔強度:res 沿用 enchant_magnitude(資源附魔數值零位移);skill/resist 用略低於飾品的
-    曲線(skill 1.5 vs 飾品 2.0、resist 4.0 vs 5.0)→ 飾品仍是技能 fortify 首選、軟化多件疊加上限。"""
+def armor_magnitude(kind: str, soul: int, mysticism_skill: int, param: str | None = None) -> int:
+    """護甲附魔強度:res 沿用 enchant_magnitude(零位移);skill 略低於飾品(1.5 vs 2.0);
+    resist 走 R66 非線性/魔抗分流 _resist_magnitude(armor 錨點低於 jewelry)。"""
     if kind == "res":
         return enchant_magnitude(soul, mysticism_skill)
     if kind == "thorns":   # 荊棘反傷(R42):反傷% = 靈魂石階(1~5),不吃 mysticism/enchant_potency(使用者拍板「1階=1%」)
         return max(1, soul)
+    if kind == "resist":
+        return _resist_magnitude("armor", param, soul, mysticism_skill)
     base = 0.5 + mysticism_skill / 100.0
-    factor = {"skill": 1.5, "resist": 4.0}[kind]
-    floor = 2 if kind == "resist" else 1
-    return max(floor, round(soul * factor * base))
+    return max(1, round(soul * {"skill": 1.5}[kind] * base))
 
 
 def enchant_armor(char: Character, gamedata: GameData, base_armor: str,
@@ -164,7 +180,7 @@ def enchant_armor(char: Character, gamedata: GameData, base_armor: str,
     if kind == "thorns":   # 荊棘:純靈魂石階%、不吃 enchant_potency
         mag = armor_magnitude(kind, soul, char.skill("mysticism"))
     else:
-        mag = round(armor_magnitude(kind, soul, char.skill("mysticism")) * (1 + mastery.enchant_potency(char, gamedata)))
+        mag = round(armor_magnitude(kind, soul, char.skill("mysticism"), param) * (1 + mastery.enchant_potency(char, gamedata)))
 
     inventory.remove_item(char, base_armor, 1)
     inventory.remove_item(char, gem_id, 1)
