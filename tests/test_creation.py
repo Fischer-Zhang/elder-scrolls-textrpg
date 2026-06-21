@@ -9,15 +9,15 @@ def test_build_warrior_nord():
     gd = get_gamedata()
     c = build_character(gd, name="Test", sex="male", race="nord",
                         birthsign="warrior", class_id="warrior")
-    # 諾德 STR+10、戰士座 STR+5 → 40+15 = 55
-    assert c.attr("strength") == 55
-    # 諾德 END+10、戰士座 END+5 → 55
-    assert c.attr("endurance") == 55
+    # 諾德 STR+10、戰士座 STR+5、戰士偏好 strength +5 → 40+20 = 60
+    assert c.attr("strength") == 60
+    # 諾德 END+10、戰士座 END+5、戰士偏好 endurance +5 → 60
+    assert c.attr("endurance") == 60
     # 主修技能起始 = 5 + 20(主修) + 5(戰鬥專精) + 種族加成
     assert c.is_major_skill("blade")
     assert c.skill("blade") == 5 + 20 + 5 + gd.races["nord"]["skill_bonuses"].get("blade", 0)
     # 衍生數值
-    assert c.max_health == formulas.base_max_health(55)
+    assert c.max_health == formulas.base_max_health(60)
     assert c.max_fatigue == c.attr("strength") + c.attr("willpower") + c.attr("agility") + c.attr("endurance")
     assert c.health == c.max_health and c.fatigue == c.max_fatigue
 
@@ -42,6 +42,19 @@ def test_custom_class():
     assert c.specialization == "stealth"
     assert c.is_major_skill("sneak")
     assert not c.is_major_skill("destruction")
+
+
+def test_favored_attributes_give_creation_bonus():
+    """職業偏好屬性創角 +5(正典);非偏好不加。同種族/星座下,只差職業偏好的屬性差 5。"""
+    gd = get_gamedata()
+    w = build_character(gd, name="W", sex="male", race="imperial", birthsign="lady", class_id="warrior")  # 偏好 str/end
+    m = build_character(gd, name="M", sex="male", race="imperial", birthsign="lady", class_id="mage")       # 偏好 int/wil
+    b = formulas.FAVORED_ATTR_BONUS
+    assert w.attributes["strength"] == m.attributes["strength"] + b
+    assert w.attributes["endurance"] == m.attributes["endurance"] + b
+    assert m.attributes["intelligence"] == w.attributes["intelligence"] + b
+    assert m.attributes["willpower"] == w.attributes["willpower"] + b
+    assert w.attributes["agility"] == m.attributes["agility"]   # 非偏好 → 相同
 
 
 def test_create_character_back_and_review():

@@ -14,11 +14,13 @@ TRAINER_CAP = 75             # 一般訓練師付費指點的上限;招牌城「
 SKILL_BASE = 5               # 角色創建時每個技能的底值
 SKILL_MAJOR_BONUS = 20       # 主修技能額外起始值(→ 25)
 SKILL_SPEC_BONUS = 5         # 與職業專精同類的技能額外起始值
+FAVORED_ATTR_BONUS = 5       # 職業偏好屬性的創角加值(正典 TES「偏好屬性」;每個偏好 +5)
 
 # --- 升級(混合 Skyrim 式:技能成長餵養等級 XP 池) ---------------------
 LEVELUP_XP_BASE = 12         # Lv1→2 所需等級經驗
 LEVELUP_XP_STEP = 1          # 每級遞增的門檻(平緩曲線,避免高等過於肝)
 MAJOR_SKILL_XP_MULT = 1.5    # 主修技能升點給的等級經驗倍率(保留職業認同)
+SPEC_SKILL_XP_MULT = 1.2     # 職業專精同系技能的技能 XP 加速(跑時 learn-by-doing 身份;非專精=×1)
 LEVELUP_ATTRIBUTE_POINTS = 4  # 每級可自由分配的屬性點(無倍率)
 LEVELUP_RESOURCE_GAIN = {"health": 14, "magicka": 12, "fatigue": 12}  # 升級三選一各自加量
 

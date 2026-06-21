@@ -100,6 +100,25 @@ def test_apply_level_up_allocates_attributes_and_resource():
     assert c2.max_magicka == mp0 + 4 * 2 + formulas.LEVELUP_RESOURCE_GAIN["magicka"]
 
 
+def test_spec_skill_trains_faster():
+    """職業專精同系技能練更快(×SPEC_SKILL_XP_MULT);非專精系 ×1。"""
+    gd = get_gamedata()
+    thief = build_character(gd, name="T", sex="male", race="imperial",
+                            birthsign="warrior", class_id="thief")      # stealth 專精
+    warrior = build_character(gd, name="W", sex="male", race="imperial",
+                              birthsign="warrior", class_id="warrior")  # combat 專精
+    sk = next(s for s, d in gd.skills.items() if d.get("spec") == "stealth")   # 一個潛行系技能
+    for c in (thief, warrior):
+        c.skills[sk] = 5
+        c.skill_xp[sk] = 0.0
+        c.well_rested = False
+    progression.use_skill(thief, gd, sk, 1.0)     # 潛行專精 → ×1.2
+    progression.use_skill(warrior, gd, sk, 1.0)   # 戰鬥專精,潛行非其專精 → ×1.0
+    assert abs(thief.skill_xp[sk] - formulas.SPEC_SKILL_XP_MULT) < 1e-9
+    assert abs(warrior.skill_xp[sk] - 1.0) < 1e-9
+    assert thief.skill_xp[sk] == warrior.skill_xp[sk] * formulas.SPEC_SKILL_XP_MULT
+
+
 def run():
     for name, fn in sorted(globals().items()):
         if name.startswith("test_") and callable(fn):

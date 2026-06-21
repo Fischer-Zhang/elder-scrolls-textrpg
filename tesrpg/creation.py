@@ -51,6 +51,8 @@ def build_character(
         val = formulas.BASE_ATTRIBUTE
         val += race_def.get("attr_mods", {}).get(attr, 0)
         val += sign_def.get("attr_mods", {}).get(attr, 0)
+        if attr in favored:                  # 職業偏好屬性:創角加值(正典 TES「偏好屬性」)
+            val += formulas.FAVORED_ATTR_BONUS
         attributes[attr] = max(1, min(formulas.ATTRIBUTE_CAP, val))
 
     magicka_bonus = race_def.get("magicka_bonus", 0) + sign_def.get("magicka_bonus", 0)

@@ -94,6 +94,9 @@ def use_skill(char: Character, gamedata: GameData, skill_id: str, xp: float) -> 
     # 房產「精神飽滿」:在家最佳休息後一段時間技能成長加速(讀快取布林;舊存檔/未睡 → 中性)。
     if getattr(char, "well_rested", False):
         xp *= formulas.WELL_RESTED_XP_MULT
+    # 職業專精:同專精系(combat/magic/stealth)技能練更快(跑時 learn-by-doing 身份;非專精系 ×1)
+    if gamedata.skills[skill_id].get("spec") == getattr(char, "specialization", None):
+        xp *= formulas.SPEC_SKILL_XP_MULT
 
     ensure_level_xp(char)
     could_level_before = char.can_level_up()

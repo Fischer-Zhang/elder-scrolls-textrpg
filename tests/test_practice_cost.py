@@ -20,6 +20,7 @@ def _char(**skills):
     gd = get_gamedata()
     c = build_character(gd, name="P", sex="male", race="imperial",
                         birthsign="warrior", class_id="thief")
+    c.specialization = ""   # 中性化專精 → 隔離「專精系技能 +20% XP」層,純測 practice 基礎成本/xp
     for k, v in skills.items():
         c.skills[k] = v
     return gd, c

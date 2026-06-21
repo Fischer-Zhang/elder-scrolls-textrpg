@@ -1183,6 +1183,15 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 - **對抗審查(ultracode 4 維 fan-out × 每發現獨立驗證)**:7 發現全 minor,**1 確認真 bug**(高精靈 flavor「對魔法較敏感」陳舊·資料無負魔抗·R61 觸此字串 → **內容向修**移除該句;canonical 魔抗弱點屬平衡 nerf,依 `ask-before-balance-tradeoffs` **留待使用者拍板**)+ 2 順手 minor 強化(`_race_chips` 補「種族威能/天賦」chip 提升創角可發現性·比照星座異能;`racial_use` 加 None 防呆)。byte-identity 4 處插入皆獲獨立驗證確認 HOLDS;控場路由/利爪不餵偷襲/雙槽冷卻不撞 = 全正向確認(零真 bug)。bosmer「驅使野獸」措辭 = by-design(駁回)。
 - 🔴 **鐵律**:加戰系種族威能 → `RACIAL_POWERS` + races.json `racial_power`(控場必走 `apply_control`·turns≤1·類別閘讀 `sentient`);加被動天賦 → `race_ability.py` read helper + races.json `passive`(即時讀·非對應族回中性·**絕不寫 base**·**利爪只進 hand_to_hand·絕不餵偷襲倍率**);動 combat → **必跑 `sim_assassin` 並驗 byte-identical**(隔離 worktree);**星座深化**(5 冷座)留後續小里程碑,複用本輪被動即時讀模式。
 
+### R62 · 職業深化:偏好屬性功能化(創角 +5)+ 專精跑時加速(同系技能 +20% XP)[re-sim]
+
+評估「職業的作用」→ 職業由 4 物定義但只 1 個有持續作用:`major_skills`(起始 +20·升技 ×1.5 等級 XP=唯一真槓桿);`specialization` 只創角給 +5 同系技能(跑時純顯示);**`favored_attributes` 完全空殼**(連正典 +5 都沒有·跑時從不被讀·卻在角色卡掛金 ★ 誤導)。使用者拍板**兩個都功能化**(favored=創角 +5·spec=同系技能練更快)。**碰屬性/XP → 平衡改動·非 byte-identical**。
+- **favored +5**(`formulas.FAVORED_ATTR_BONUS=5`):`creation.build_character` 屬性迴圈內 `if attr in favored: val += 5`(夾 ATTRIBUTE_CAP)。正典「偏好屬性」原意;每角 +10 總屬性(2 偏好)。custom class 的 favored 一體適用。**創角限定**(舊存檔屬性已 baked·不回溯·無遷移)。
+- **spec 同系技能 +20% XP**(`formulas.SPEC_SKILL_XP_MULT=1.2`):`progression.use_skill` 在 well_rested 乘數後 `if gamedata.skills[sid].get("spec")==char.specialization: xp *= 1.2`。跑時 learn-by-doing 身份;非專精系 ×1;只玩家走 use_skill(怪/同伴不練)。與 `major×1.5 等級 XP` 獨立池(skill_xp vs level_xp)→ 不雙算。
+- **🔴 平衡(`sim_assassin` 必跑·非 byte-identical)**:刺客偏好 speed/agility → +5 各。隔離 worktree diff 證:**solo boss 秒殺仍全 0%**(SOLO_SNEAK_DAMAGE_CAP 與屬性無關·紅線守)、**精英 oneshot 率不變**(偷襲爆發不吃 speed/agility·零爆發創傷)、**群戰死亡率 ↓3–5pp**(27.2→22.6%·偏好閃避微升·apex 仍承受真實風險〔22.6%〕→ 紅線守)。spec-XP 不入 sim 戰鬥(sim 不練功)。
+- **驗證**:`run_all` **80**(`test_creation` 加 `test_favored_attributes_give_creation_bonus` + 更新 warrior_nord 55→60;`test_progression` 加 `test_spec_skill_trains_faster`;`test_practice_cost._char` 設 `specialization=""` 中性化以隔離 spec-XP 層測 practice 基礎)+ `sim_assassin` 紅線守(隔離 worktree diff)+ `check.sh --smoke` 全綠。
+- 🔴 **鐵律**:調 `FAVORED_ATTR_BONUS`/`SPEC_SKILL_XP_MULT` → **必跑 `sim_assassin`**(favored 動刺客 speed/agility→survival·守 solo 秒殺 0%/群戰仍有真實風險);favored 是創角層(`creation` 屬性迴圈·不寫舊存檔)、spec-XP 是跑時層(`use_skill`·只玩家·非專精 ×1);測 practice/技能 XP 精確值時用 `specialization=""` 隔離 spec 層。
+
 ---
 
 ## 4. 開發節奏(ultracode 開著 → 每個功能都這樣做)
