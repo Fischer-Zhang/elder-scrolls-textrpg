@@ -16,6 +16,7 @@ raw·只 ±15% HP 變異·不縮放),回合制直到一方死或逾時。每回�
 from tesrpg.gamedata import get_gamedata
 from tesrpg.creation import build_character
 from tesrpg.systems import combat, magic, stats, inventory, mastery
+from tesrpg.synth import enchant_armor_id
 from tesrpg import formulas
 from tesrpg.rng import RNG
 
@@ -122,8 +123,27 @@ def make_battlemage():
     return c
 
 
+def make_shield_reflect():
+    """盾反坦(R42 反傷流):daedric_sword + 荊棘 daedric 全套(5×5%=25%)+ 重甲反震 + 盾反 shieldwall。
+    被物理擊中 → 反彈 ~0.41 攻方 raw(thorns25 + armor_reflect6 + block_reflect10·力竭不計);**反傷物理限定**
+    (元素 boss 完全不反=天然剋星)。perfect_block 反擊需主動格擋·此 policy 純攻不格擋故未用(by design 保守)。"""
+    c = build_character(gd, name="盾反", sex="male", race="orsimer", birthsign="warrior", class_id="warrior")
+    c.skills.update(blade=100, heavy_armor=100, block=100, smithing=100, athletics=75)
+    c.attributes.update(strength=85, endurance=100, agility=60)
+    c.weapon = "daedric_sword"; inventory.add_item(c, "daedric_sword", 1)
+    c.weapon_temper = {"daedric_sword": 6}
+    for slot in ("helmet", "cuirass", "gauntlets", "boots", "shield"):   # 荊棘 daedric 5 件(同材質→保套裝 health+60)
+        iid = enchant_armor_id(f"daedric_{slot}", "thorns", "x", 5)
+        inventory.add_item(c, iid, 1); inventory.equip_armor(c, gd, iid)
+    _choices(c, {"block_50": "shieldwall", "heavy_armor_50": "armor_reflect", "block_100": "perfect_block",
+                 "heavy_armor_100": "ironhide", "smithing_75": "master_temper"})
+    stats.recompute_max_resources(c, gd, restore_full=True)
+    return c
+
+
 BUILDS = {"assassin": make_assassin, "archer": make_archer, "warrior_1H": make_warrior_sword,
-          "warrior_2H": make_warrior_2h, "mage": make_mage, "battlemage": make_battlemage}
+          "warrior_2H": make_warrior_2h, "shield_reflect": make_shield_reflect,
+          "mage": make_mage, "battlemage": make_battlemage}
 
 # --- per-build 戰鬥 policy ----------------------------------------------
 def _regen(c):
@@ -196,7 +216,7 @@ def _attack_act(c, boss, rng, st):
 
 
 _POLICY = {"assassin": _melee_sneak_act, "archer": _melee_sneak_act,
-           "warrior_1H": _attack_act, "warrior_2H": _attack_act,
+           "warrior_1H": _attack_act, "warrior_2H": _attack_act, "shield_reflect": _attack_act,
            "mage": _mage_act, "battlemage": _battlemage_act}
 
 

@@ -72,7 +72,7 @@ def _atk_act(c, opp, rng, st):
 
 
 POLICY = {"assassin": _sneak_act, "archer": _sneak_act, "warrior_1H": _atk_act,
-          "warrior_2H": _atk_act, "mage": _mage_act, "battlemage": _bm_act}
+          "warrior_2H": _atk_act, "shield_reflect": _atk_act, "mage": _mage_act, "battlemage": _bm_act}
 
 
 def _post(c):
