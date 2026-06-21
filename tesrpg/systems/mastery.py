@@ -429,7 +429,8 @@ def approach_bonus(char, gamedata: GameData) -> float:
 
 
 def armor_sneak_relief(char, gamedata: GameData) -> float:
-    """無聲披掛:抵消護甲噪音對潛近的懲罰(0~1,1=全免)。"""
+    """無聲披掛:抵消護甲對偷襲的兩道懲罰(0~1,1=全免)。
+    命中端=潛近噪音(stealth_approach_chance);傷害端=偷襲倍率重量折扣(R72,armor_sneak_mult_factor)。"""
     return _param(char, gamedata, "armor_sneak_relief", "relief", 0.0)
 
 

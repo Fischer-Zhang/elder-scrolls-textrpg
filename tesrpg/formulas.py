@@ -368,16 +368,21 @@ def night_mother_sneak_bonus(db_rank: int) -> float:
 
 
 # 偷襲倍率的「穿戴重量折扣」:鏗鏘重甲就算偷到、爆發也打折(輕甲對重甲的潛行優勢之二)。
-# 門檻 18(方案 B):總重 ≤18 完全不打折 → 法袍/皮甲/玻璃/龍鱗等輕甲全段保護(W≤18),
-# 只有重甲(W>18)才隨重量遞減,夾在 [0.45,1.0]。改此值踩偷襲倍率紅線 → 必跑 sim_assassin.py。
-# ⚠ 與命中端各自獨立:armor_relief(無聲披掛)只抵命中端噪音,**不抵此倍率折扣**(見 R07/R25)。
-SNEAK_MULT_WEIGHT_PER = 0.012     # 每點護甲重 → 偷襲倍率 ×(1−此值)(R70:取消 W≤18 grace + 0.45 下限,僅夾 ≥0)
+# R70:從 W=0 起罰、無 0.45 下限、僅夾 ≥0(W9→×0.892、W18→×0.784、W59→×0.292、極重歸 0)。
+#      改此值踩偷襲倍率紅線 → 必跑 sim_assassin.py。
+# R72:里程碑「無聲披掛」(armor_relief)現在『也』抵此倍率折扣(對稱命中端,不再如 R07/R25 各自獨立)。
+#      relief=1.0 → 等效重量歸 0 → factor=1.0(穿龍鱗也滿偷襲)。上界=無甲 apex(sim 已涵蓋)→ 不破既有紅線;
+#      非里程碑 relief=0.0 → 與 R70 逐位元組同(sim 無此里程碑亦無甲 → byte-identical)。
+SNEAK_MULT_WEIGHT_PER = 0.012     # 每點護甲重 → 偷襲倍率 ×(1−此值)
 
 
-def armor_sneak_mult_factor(armor_weight: float) -> float:
+def armor_sneak_mult_factor(armor_weight: float, relief: float = 0.0) -> float:
     """穿戴護甲總重 → 偷襲傷害倍率折扣係數(R70:從 W=0 起罰、無 0.45 下限,僅夾 ≥0)。
-    輕甲也吃小罰(W9→×0.892),重甲偷襲爆發大減(W59→×0.292);極重可歸 0。"""
-    return max(0.0, 1.0 - armor_weight * SNEAK_MULT_WEIGHT_PER)
+    輕甲也吃小罰(W9→×0.892),重甲偷襲爆發大減(W59→×0.292);極重可歸 0。
+
+    relief(R72,里程碑「無聲披掛」0~1,1=全免):縮放等效重量 → 對稱命中端 armor_relief。
+    relief=1.0 時 factor=1.0(穿龍鱗偷襲零損失);relief=0.0(預設/非里程碑)逐位元組同 R70。"""
+    return max(0.0, 1.0 - armor_weight * (1.0 - relief) * SNEAK_MULT_WEIGHT_PER)
 
 
 def dodge_evasion(acrobatics_skill: int) -> float:

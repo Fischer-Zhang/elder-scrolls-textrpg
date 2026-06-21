@@ -1286,6 +1286,13 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 - **效果**:**boss 勝率無變化**(vanish 早在 R69 對 solo 不閃避 → 此項對 boss 無額外效果·floor 3% 杯水車薪):刺客 mehrunes_dagon 仍 25%、弓 34%、27 王均 96/97%。**真正衝擊在群戰生存**(vanish 原為被圍毆逃命):**apex 4-bandit 死亡率 22.6%→60.6%、2b2w 10.1%→40.8%**。刺客 = 真潛行刺客(打 boss 不變·被群圍很危險·隱遁純再偷襲、無逃命)。⚠ 使用者知情拍板:目標雖是削 boss,但 boss 早被 R69 處理→此項實際只重削群戰(可日後軟化:隱遁對非 solo 仍閃 / 給 evasion buff)。
 - **🔴 sim_assassin 全綠**:solo 偷襲秒殺 0% ✓(vanish/floor 不碰偷襲 cap)、R63 追擊 0% ✓。三 sim 同步:`sim_assassin._round` vanish 不再 return-skip(改設 vanished 旗·敵照常攻擊)、`sim_builds` `skip_boss=False`、`sim_duel` `skip=False`。零新存檔欄·無測試破(無測試斷言舊 0.05 地板)。`run_all` **80**。🔴 鐵律:floor 在 `formulas.hit_chance`(全域)、vanish-skip 已**全移除**(`main.py` 敵人階段);動 → 必跑 sim_assassin(守 solo 0%)+ sim_builds。
 
+### R72 · 無聲披掛也免「偷襲傷害」護甲折扣(對稱命中端 + 修 R70 過時註解)[re-sim]
+
+承「評估輕甲里程碑無聲披掛是否真有作用」:評估揪出此里程碑(`light_armor_75`/`featherweight`/kind `armor_sneak_relief`/relief 1.0)**唯一讀取點**在 `combat.stealth_approach_chance`,只抵**接戰端**護甲噪音(搶開場偷襲的機率,含龍鱗 −23.8pp),**不抵傷害端**偷襲倍率折扣 `armor_sneak_mult_factor`(R70 後輕甲也吃,龍鱗 −21.6% 且不可免)。使用者拍板:**讓它『也』減免傷害端、全免(relief 1.0、對稱命中端、玩家側依穿戴總重)**。
+- **① 傷害端 relief**:`formulas.armor_sneak_mult_factor(armor_weight, relief=0.0)` 加 `relief` 參數 → `max(0, 1 − W×(1−relief)×0.012)`(relief 縮放等效重量);relief=1.0 → factor 1.0(穿龍鱗滿偷襲),relief=0.0(預設/非里程碑)**逐位元組同 R70**。兩呼叫端 `combat.resolve_attack`(:479)/`estimate_sneak_damage`(:1034)各傳 `mastery.armor_sneak_relief(attacker/player, gamedata)`(`_param` 走 `getattr(char,'mastery_choices',{})` → 非 Character 怪物安全回 0.0,與既有 `sneak_mult_bonus` 同塊一致)。
+- **② 修 R70 過時註解(順帶 doc bug)**:`formulas.py` 重量折扣註解區塊原仍寫「門檻 18·總重 ≤18 完全不打折·夾在 [0.45,1.0]·輕甲 W≤18 不罰·armor_relief **不抵此倍率折扣**」——R70 早刪了 W≤18 grace + 0.45 下限、本輪又讓 relief **抵此折扣** → 全數改寫對齊現況;`combat.py:479` 行內「輕甲 W≤18 不罰」一併修。
+- **🔴 sim_assassin BYTE-IDENTICAL**(隔離 worktree vs R71/HEAD 證·非 stash):**無任何 sim fixture 選 featherweight 且 apex 不穿甲**(`armor_worn_weight=0`)→ `armor_sneak_relief` 全回 0.0 → relief=0.0 代數恆等舊式。**紅線天然守**:全免 = 等效無甲,而**無甲 apex 正是 sim 已驗的上界**(solo 全 0%·精英 oneshot·4-bandit 60.6%)→ 龍鱗 build 至多打平無甲 apex、不可能超出 → solo 一刀夾(`SOLO_SNEAK_DAMAGE_CAP`)與所有既有紅線不動。`run_all` **80**(`test_assassin` +`test_featherweight_relieves_sneak_damage_penalty_r72`:公式層 relief 0/0.5/1 + 整合龍鱗 4 件經 `estimate_sneak_damage` 折扣全免)。零新存檔欄(relief 走既有 `mastery_choices`)。🔴 鐵律:傷害端 relief 走 `armor_sneak_mult_factor` 的 `relief` 參數(預設 0=back-compat);此里程碑現**同時**抵接戰+傷害兩端(R07/R25 的「兩端各自獨立」已由本輪刻意打破·僅限此玩家里程碑);動 → 必跑 sim_assassin。
+
 ---
 
 ## 4. 開發節奏(ultracode 開著 → 每個功能都這樣做)

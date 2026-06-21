@@ -300,6 +300,34 @@ def test_armor_sneak_mult_factor_threshold18():
     assert F.armor_sneak_mult_factor(1000) == 0.0          # 無下限夾,極重歸 0
 
 
+def test_featherweight_relieves_sneak_damage_penalty_r72():
+    """R72:里程碑「無聲披掛」relief 對稱命中端,也免去偷襲『傷害』的護甲重量折扣。
+    relief 縮放等效重量:0=不變(back-compat)、1=全免(等同無甲)、0.5=半免。
+    整合:穿龍鱗(W18)點了無聲披掛 → estimate_sneak_damage 回到無甲水準(更痛)。"""
+    from tesrpg import formulas as F
+    from tesrpg.systems import inventory, mastery
+    # 公式層
+    assert F.armor_sneak_mult_factor(18, 0.0) == F.armor_sneak_mult_factor(18)    # 預設 relief=0 → 與 R70 逐位元組同
+    assert abs(F.armor_sneak_mult_factor(18, 0.0) - (1 - 18 * 0.012)) < 1e-9      # 未免 →×0.784
+    assert F.armor_sneak_mult_factor(18, 1.0) == 1.0                              # 全免 → 等效無甲(穿龍鱗滿偷襲)
+    assert abs(F.armor_sneak_mult_factor(18, 0.5) - (1 - 9 * 0.012)) < 1e-9       # 半免 → 等效 W9
+    # 整合層:穿龍鱗 4 件(W18)
+    gd, c = _assassin(sneak=100, blade=60)
+    for piece in ("dragonscale_helmet", "dragonscale_cuirass",
+                  "dragonscale_gauntlets", "dragonscale_boots"):
+        inventory.add_item(c, piece, 1)
+        assert inventory.equip_armor(c, gd, piece)
+    assert inventory.armor_worn_weight(c, gd) == 18
+    creature = combat.spawn_creature(gd, "bandit", RNG(1))
+    dmg_penalized = combat.estimate_sneak_damage(c, gd, creature)     # 未點里程碑 → 吃 ×0.784 折扣
+    assert mastery.armor_sneak_relief(c, gd) == 0.0
+    c.skills["light_armor"] = 75
+    mastery.choose(c, gd, "light_armor_75", "featherweight")
+    assert mastery.armor_sneak_relief(c, gd) == 1.0
+    dmg_relieved = combat.estimate_sneak_damage(c, gd, creature)      # 點了 → 折扣全免
+    assert dmg_relieved > dmg_penalized          # 免去傷害折扣 → 偷襲明顯更痛
+
+
 def test_offhand_enchant_applies_at_factor():
     """副手附魔生效(以 ×0.6 權重疊主手):雙吸血 = 0.30+0.30×0.6 = 0.48;副手元素無視護甲加傷。"""
     from tesrpg import synth

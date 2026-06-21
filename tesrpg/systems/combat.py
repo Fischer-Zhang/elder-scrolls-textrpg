@@ -476,7 +476,8 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
                   * formulas.archetype_sneak_bonus(archetype)
                   * formulas.night_mother_sneak_bonus(attacker.factions.get("dark_brotherhood", -1))
                   * (1 + mastery.sneak_mult_bonus(attacker, gamedata))   # 里程碑「影刃」:apex 偷襲倍率
-                  * formulas.armor_sneak_mult_factor(inventory.armor_worn_weight(attacker, gamedata))  # 重甲鏗鏘→爆發打折(輕甲 W≤18 不罰)
+                  * formulas.armor_sneak_mult_factor(inventory.armor_worn_weight(attacker, gamedata),
+                                                     mastery.armor_sneak_relief(attacker, gamedata))  # R70 重甲爆發打折(W=0 起罰);R72 里程碑「無聲披掛」relief 對稱免之
                   ) if sneaking else None
 
     if hit:
@@ -1030,7 +1031,8 @@ def estimate_sneak_damage(player: Character, gamedata: GameData, creature: Creat
                 * formulas.archetype_sneak_bonus(archetype)
                 * formulas.night_mother_sneak_bonus(player.factions.get("dark_brotherhood", -1))
                 * (1 + mastery.sneak_mult_bonus(player, gamedata))   # 里程碑「影刃」
-                * formulas.armor_sneak_mult_factor(inventory.armor_worn_weight(player, gamedata)))  # 與 resolve_attack 一致:重量倍率折扣
+                * formulas.armor_sneak_mult_factor(inventory.armor_worn_weight(player, gamedata),
+                                                   mastery.armor_sneak_relief(player, gamedata)))  # 與 resolve_attack 一致:重量折扣 + R72 無聲披掛 relief
     raw += power_bonus
     if offhand_dmg:    # 副手補刀不吃偷襲倍率(與 resolve_attack 一致)
         raw += formulas.attack_damage(offhand_dmg, wpn_skill, _strength(player), 1.0)
