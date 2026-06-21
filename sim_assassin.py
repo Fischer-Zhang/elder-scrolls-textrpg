@@ -38,6 +38,7 @@ def _round(c, foes, rng, opening, used):
     if c.health < c.max_health * 0.45 and combat.can_vanish(c, gd) \
             and combat.try_vanish(c, len(alive), used[0], rng):
         used[0] += 1
+        combat.player_vanish_cost(c)         # 保真:隱遁耗體力(連續隱遁會耗竭→後續命中下降),對齊 main.py
         return True                          # 隱遁成功:敵人撲空、重置偷襲
     tgt = min(alive, key=lambda e: e.health)
     combat.resolve_attack(c, tgt, gd, rng, sneak_attack=opening)

@@ -205,7 +205,7 @@ def _melee_sneak_act(c, boss, rng, st):
     + 偷襲 + 隱遁(保守基準;偶發 aimed 蓄力會再添爆發,刻意不模型化以免高估)。"""
     if c.health < c.max_health * 0.45 and combat.can_vanish(c, gd) \
             and combat.try_vanish(c, 1, st["vanish"], rng, gd):
-        st["vanish"] += 1; st["opening"] = True; st["skip_boss"] = True; return
+        st["vanish"] += 1; combat.player_vanish_cost(c); st["opening"] = True; st["skip_boss"] = True; return  # 保真:隱遁耗體力(對齊 main.py)
     combat.player_attack_cost(c, gd)
     combat.resolve_attack(c, boss, gd, rng, sneak_attack=st["opening"])
     st["opening"] = False
