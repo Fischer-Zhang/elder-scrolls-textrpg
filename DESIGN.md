@@ -89,7 +89,7 @@ Faction       data/factions.json   公會
 ### 3.1 技能成長 (Skill Progression) — learn-by-doing,本作靈魂 ★
 - **技能成長 = learn-by-doing(不變)**:每次「使用」一個技能就給該技能 `skill_xp`(揮劍命中 → blade、施法成功 → 對應學派、撬開鎖 → security、討價還價 → mercantile…);xp 滿門檻 → 該技能 **+1 點**,門檻**隨技能等級遞增**。
 - **升級 = 混合 Skyrim 式(M15 改版)**:每次技能 +1 都餵養「**等級 XP 池** `level_xp`」,**所有技能都計入**(主修 ×1.5,保留職業認同);`level_xp` 達 `levelup_xp_threshold(level)=12+(level-1)` → **可升級**。
-- **升級給予**:① 生命/魔力/體力**三選一** +固定值(累積進 `resource_levels`);② **`LEVELUP_ATTRIBUTE_POINTS`(=4)點屬性點自由分配**(含 Luck),**無倍率**。升級回滿三資源。
+- **升級給予**(R64):**`LEVELUP_ATTRIBUTE_POINTS`(=5)點屬性點自由分配**(含 Luck),**無倍率**;升級回滿三資源。生命/魔力/體力**全由屬性驅動**(耐力→生命〔R63 live 耦合〕·智力→魔力·力量/意志/敏捷/耐力→體力),不再有「資源三選一」(舊 `resource_levels` 僅為存檔相容遺留)。
 - **衍生數值**:`max_health = 創建耐力×2 + resource_levels[health]`(**不隨耐力逐級長**)、`max_magicka = 智力×2 + 種族/星座 + resource_levels[magicka]`、`max_fatigue = 力+意+敏+耐 + resource_levels[fatigue]`(均再疊加護甲 fortify)、負重上限 = f(strength)。
 - **改版動機**:舊 Oblivion 式(主修觸發升級 + 練功倍率)有兩個量化驗證過的結構缺陷 —— **屬性倍率 min-max**(囤非主修升點換 +5/+5/+5)與**耐力時機陷阱**(早衝耐力多賺終身血)。混合制把「升級觸發 / 屬性成長 / 血量成長」全部解耦點數化,一次消除兩者,並讓 Luck 可投資。
 - 訓練師(城鎮服務)可付錢直接練技能(技能升點同樣餵 `level_xp`),作為 learn-by-doing 的補充。

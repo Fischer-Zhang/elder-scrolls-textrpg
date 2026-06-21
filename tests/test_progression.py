@@ -68,7 +68,8 @@ def _level_to_ready(gd, c):
     raise AssertionError("未能累積到可升級")
 
 
-def test_apply_level_up_allocates_attributes_and_resource():
+def test_apply_level_up_allocates_attributes():
+    """R64:升級給 LEVELUP_ATTRIBUTE_POINTS 點屬性 + 回滿,無資源三選一;資源純屬性驅動。"""
     gd, c = _fresh_warrior()
     _level_to_ready(gd, c)
     str0, end0, luck0 = c.attr("strength"), c.attr("endurance"), c.attr("luck")
@@ -76,29 +77,25 @@ def test_apply_level_up_allocates_attributes_and_resource():
     lvl0, xp0 = c.level, c.level_xp
     thresh = formulas.levelup_xp_threshold(lvl0)
 
-    summary = progression.apply_level_up(
-        c, gd, {"strength": 2, "endurance": 1, "luck": 1}, "health")
+    summary = progression.apply_level_up(c, gd, {"strength": 2, "endurance": 1, "luck": 1})
 
     assert c.level == lvl0 + 1
     assert c.attr("strength") == str0 + 2
     assert c.attr("endurance") == end0 + 1
     assert c.attr("luck") == luck0 + 1          # Luck 不再是死屬性:可自由加點
     assert summary["attr_gains"] == {"strength": 2, "endurance": 1, "luck": 1}
-    assert summary["resource_choice"] == "health"
-    assert summary["resource_gain"] == formulas.LEVELUP_RESOURCE_GAIN["health"]
-    # R63:max_health = 生命三選一加量 + 耐力 live 耦合(本次 +1 耐力 → +ENDURANCE_HEALTH_PER 生命)
-    assert c.max_health == hp0 + formulas.LEVELUP_RESOURCE_GAIN["health"] + 1 * formulas.ENDURANCE_HEALTH_PER
+    assert "resource_choice" not in summary and "resource_gain" not in summary   # R64:無資源三選一
+    # R63/R64:生命純由耐力 live 耦合(本次 +1 耐力 → +ENDURANCE_HEALTH_PER 生命),無資源加量
+    assert c.max_health == hp0 + 1 * formulas.ENDURANCE_HEALTH_PER
     assert c.level_xp == xp0 - thresh           # 保留溢出
     assert c.health == c.max_health and c.fatigue == c.max_fatigue   # 升級回滿
 
-    # magicka 資源分支(原 test_resource_choice_magicka_and_fatigue,折入此處):
-    # 同一個 level-up 已選 health,無法再選 magicka,故另起新鮮角色驗魔力公式。
+    # 魔力分支:智力 +4 → 魔力上限 +8(×2);無資源三選一加量(R64)
     gd2, c2 = _fresh_warrior()
     _level_to_ready(gd2, c2)
     mp0 = c2.max_magicka
-    progression.apply_level_up(c2, gd2, {"intelligence": 4}, "magicka")
-    # 魔力上限 = 智力×2 + magicka_bonus + resource_levels[magicka]
-    assert c2.max_magicka == mp0 + 4 * 2 + formulas.LEVELUP_RESOURCE_GAIN["magicka"]
+    progression.apply_level_up(c2, gd2, {"intelligence": 4})
+    assert c2.max_magicka == mp0 + 4 * 2          # = 智力×2 + magicka_bonus(無資源加量)
 
 
 def test_spec_skill_trains_faster():

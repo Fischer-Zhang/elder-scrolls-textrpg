@@ -23,8 +23,10 @@ LEVELUP_XP_BASE = 12         # Lv1→2 所需等級經驗
 LEVELUP_XP_STEP = 1          # 每級遞增的門檻(平緩曲線,避免高等過於肝)
 MAJOR_SKILL_XP_MULT = 1.5    # 主修技能升點給的等級經驗倍率(保留職業認同)
 SPEC_SKILL_XP_MULT = 1.2     # 職業專精同系技能的技能 XP 加速(跑時 learn-by-doing 身份;非專精=×1)
-LEVELUP_ATTRIBUTE_POINTS = 4  # 每級可自由分配的屬性點(無倍率)
-LEVELUP_RESOURCE_GAIN = {"health": 14, "magicka": 12, "fatigue": 12}  # 升級三選一各自加量
+LEVELUP_ATTRIBUTE_POINTS = 5  # 每級可自由分配的屬性點(R64:4→5,吸收原「資源三選一」價值;資源改全屬性驅動)
+# R64:移除升級資源三選一(R63 後三資源皆屬性驅動 → 三選一變對稱 no-brainer)。
+# 資源改純靠屬性(endurance→生命·int→魔力·str/wil/agi/end→體力)+ 創角/裝備。
+# `char.resource_levels` 仍由 stats 讀(舊存檔已累積的加成續生效),只是不再新增。
 
 ATTRIBUTES = [
     "strength", "intelligence", "willpower", "agility",

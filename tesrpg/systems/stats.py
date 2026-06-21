@@ -1,8 +1,8 @@
 """衍生數值的重算與夾限。
 
-生命上限基底(base_max_health)= 創建耐力×2,不隨耐力逐級長(消除耐力時機陷阱);
-魔力/體力上限可由當前屬性直接推得,屬性一變就重算。
-有效上限 = 基底/公式 + 升級三選一累積(resource_levels)+ 穿戴護甲 armor_fortify(需 gamedata)。
+R63:生命/魔力/體力上限皆由『當前 effective 屬性』直接推得(endurance/int/attr-sum),屬性一變就重算。
+有效上限 = 屬性公式 + `resource_levels`(R64 前升級三選一累積·**舊存檔遺留·不再新增**)+ 穿戴護甲 armor_fortify(需 gamedata)。
+`base_max_health` 已冗餘(R63)·僅為舊存檔相容保留·絕不寫入。
 """
 
 from __future__ import annotations
@@ -68,7 +68,7 @@ def recompute_max_resources(char: Character, gamedata=None,
         # 里程碑持久 fortify 須在讀 char.attr() 推衍生資源「之前」生效(attr fortify 流進上限)
         recompute_mastery_bonuses(char, gamedata)
 
-    res = char.resource_levels   # 升級三選一累積的資源加成
+    res = char.resource_levels   # 舊存檔升級資源累積(R64 後不再新增·僅遺留相容)
     # 獸形額外生命(狼人變身的巨量血量;脫甲 → 靠血量扛;getattr 預設 0 → 非狼人/舊存檔零影響)
     # R63:生命改隨『當前 effective 耐力』推導(逆轉舊解耦);≤cap ×2==舊 base_max_health
     # → capped 角色/sim 零位移。絕不寫 char.base_max_health(R05/test_redline_base 守)。

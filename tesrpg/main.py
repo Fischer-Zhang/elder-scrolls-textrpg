@@ -421,15 +421,8 @@ def action_level_up(state: GameState, gamedata: GameData) -> None:
 
     ui.rule(f"升級 → Lv {char.level + 1}")
 
-    # ① 三選一:強化哪條資源
-    gains = formulas.LEVELUP_RESOURCE_GAIN
-    resource = ui.menu("這一級要強化哪條資源?", [
-        ("health", f"生命 +{gains['health']}"),
-        ("magicka", f"魔力 +{gains['magicka']}"),
-        ("fatigue", f"體力 +{gains['fatigue']}"),
-    ])
-
-    # ② 自由分配屬性點(逐點挑屬性,clamp 100;選到已滿的不耗點,重挑)
+    # 自由分配屬性點(逐點挑屬性,clamp 100;選到已滿的不耗點,重挑)。
+    # R64:資源已純屬性驅動(endurance→生命·int→魔力·str/wil/agi/end→體力)→ 無資源三選一,屬性點 4→5。
     points = formulas.LEVELUP_ATTRIBUTE_POINTS
     alloc: dict[str, int] = {}
 
@@ -449,12 +442,11 @@ def action_level_up(state: GameState, gamedata: GameData) -> None:
             alloc[a] = alloc.get(a, 0) + 1
             remaining -= 1
 
-    summary = progression.apply_level_up(char, gamedata, alloc, resource)
+    summary = progression.apply_level_up(char, gamedata, alloc)
     ui.message(f"★ 升級!現在是 Lv {summary['level']}。", style="bold yellow")
     for a, g in summary["attr_gains"].items():
         ui.message(f"  {formulas.ATTRIBUTE_NAMES[a]} +{g}", style="green")
-    rname = {"health": "生命", "magicka": "魔力", "fatigue": "體力"}[summary["resource_choice"]]
-    ui.message(f"  {rname}上限 +{summary['resource_gain']},三圍已回滿。", style="green")
+    ui.message("  三圍已回滿。", style="green")
     if summary["can_level_again"]:
         ui.message("  你還能再升一級!", style="yellow")
     _drain_mastery_choices(state, gamedata)   # 升級是「你成長了」的自然節拍 → 順勢二選一

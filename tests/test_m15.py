@@ -33,14 +33,14 @@ def test_no_minmax_attribute_points_capped():
     c = _ready_warrior()
     total0 = sum(c.attr(a) for a in formulas.ATTRIBUTES)
     # 試圖一次塞 10 點到單屬性 → 只會套用 LEVELUP_ATTRIBUTE_POINTS 點
-    progression.apply_level_up(c, gd, {"strength": 10}, "health")
+    progression.apply_level_up(c, gd, {"strength": 10})
     total1 = sum(c.attr(a) for a in formulas.ATTRIBUTES)
     assert total1 - total0 == formulas.LEVELUP_ATTRIBUTE_POINTS
     # (併入)分散塞 3+3+3=9 點 → 同一 clamp 第二種輸入形態,仍只套用 4 點上限。
     # 須用獨立角色:升級後 level_xp 餘額不足、且 level+1 抬高下一門檻,無法再升第二級。
     c2 = _ready_warrior()
     total0b = sum(c2.attr(a) for a in formulas.ATTRIBUTES)
-    progression.apply_level_up(c2, gd, {"strength": 3, "agility": 3, "luck": 3}, "fatigue")
+    progression.apply_level_up(c2, gd, {"strength": 3, "agility": 3, "luck": 3})
     total1b = sum(c2.attr(a) for a in formulas.ATTRIBUTES)
     assert total1b - total0b == formulas.LEVELUP_ATTRIBUTE_POINTS
 
@@ -59,11 +59,11 @@ def test_health_couples_to_endurance():
     assert c.max_health == hp0 + 20 * formulas.ENDURANCE_HEALTH_PER, "生命上限隨耐力上升(R63 live 耦合)"
     assert c.base_max_health == base0, "base_max_health 已冗餘:不寫、不再是有效上限權威"
     assert c.max_fatigue == fat0 + 20, "耐力仍計入體力上限"
-    # (併入)apply_level_up 入口:只加耐力 + 選「魔力」資源 → 生命仍因耐力 live 耦合而漲。獨立可升級角色。
+    # (併入)apply_level_up 入口:加耐力 → 生命因耐力 live 耦合而漲(R64 已無資源三選一)。獨立可升級角色。
     c2 = _ready_warrior()
     hp0b = c2.max_health
-    progression.apply_level_up(c2, gd, {"endurance": 4}, "magicka")
-    assert c2.max_health == hp0b + 4 * formulas.ENDURANCE_HEALTH_PER, "加耐力 → 生命上限隨之漲(即使資源選魔力)"
+    progression.apply_level_up(c2, gd, {"endurance": 4})
+    assert c2.max_health == hp0b + 4 * formulas.ENDURANCE_HEALTH_PER, "加耐力 → 生命上限隨之漲"
 
 
 # ③ + 存檔:遷移與向後相容 ----------------------------------------------
@@ -103,14 +103,16 @@ def test_load_migrates_so_levelup_visible_immediately():
 def test_apply_level_up_capped_attribute_does_not_waste_points():
     """屬性觸頂時,剩餘點數應流給其它屬性,不可憑空吞掉(spent 以實際套用計帳)。"""
     c = _ready_warrior()
-    c.attributes["strength"] = 99               # 距上限 1
+    pts = formulas.LEVELUP_ATTRIBUTE_POINTS
+    c.attributes["strength"] = formulas.ATTRIBUTE_CAP - 1    # 距上限 1
     agi0 = c.attr("agility")
     total0 = sum(c.attr(a) for a in formulas.ATTRIBUTES)
-    progression.apply_level_up(c, gd, {"strength": 3, "agility": 3}, "health")
+    # 力量請求滿預算(觸頂只吃 1)、敏捷也請求滿預算 → 力量溢出的預算流給敏捷,總量不浪費
+    progression.apply_level_up(c, gd, {"strength": pts, "agility": pts})
     total1 = sum(c.attr(a) for a in formulas.ATTRIBUTES)
-    assert c.attr("strength") == 100
-    assert total1 - total0 == formulas.LEVELUP_ATTRIBUTE_POINTS, "觸頂不應浪費升級點"
-    assert c.attr("agility") == agi0 + 3        # 力量只吃 1 點,其餘 3 點流給敏捷
+    assert c.attr("strength") == formulas.ATTRIBUTE_CAP
+    assert total1 - total0 == pts, "觸頂不應浪費升級點"
+    assert c.attr("agility") == agi0 + (pts - 1)   # 力量只吃 1 點,其餘流給敏捷
 
 
 def run():

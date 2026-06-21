@@ -162,10 +162,11 @@ def test_legacy_save_levelup_no_collapse():
     old_hp = old.max_health
     old.level_xp = formulas.levelup_xp_threshold(old.level)   # 直接設成可升級
 
-    progression.apply_level_up(old, gd, {"strength": 4}, "health")
-    assert old.base_max_health == old_hp, "ensure_base_health 應把現值搬成基底"
-    assert old.max_health == old_hp + formulas.LEVELUP_RESOURCE_GAIN["health"], \
-        "選『生命』→ 上限上升,且不崩塌"
+    progression.apply_level_up(old, gd, {"endurance": 4})
+    assert old.base_max_health == old_hp, "ensure_base_health 應把現值搬成基底(冗餘相容)"
+    # R64:無資源三選一;R63 生命隨耐力 live 耦合 → 加 4 耐力 → +4×ENDURANCE_HEALTH_PER 生命,不崩塌
+    assert old.max_health == old_hp + 4 * formulas.ENDURANCE_HEALTH_PER, \
+        "舊存檔升級不崩塌 + 耐力 live 耦合加血"
 
 
 # ---------------------------------------------------------------------------

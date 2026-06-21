@@ -233,7 +233,7 @@ def test_levelup_with_fortify_attr_does_not_inflate_base():
     stats.recompute_max_resources(c, gd)
     base_str = c.base_attr("strength")
     c.level_xp = 9999                                    # 強制可升級
-    progression.apply_level_up(c, gd, {"strength": 2}, "health")
+    progression.apply_level_up(c, gd, {"strength": 2})
     assert c.base_attr("strength") == base_str + 2       # 只加實際點數,非 base+10+2
     assert c.attr("strength") == base_str + 2 + 10       # 有效值仍含飾品加成
 

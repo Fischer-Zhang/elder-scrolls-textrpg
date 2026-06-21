@@ -135,11 +135,12 @@ def _on_skill_increase(char: Character, gamedata: GameData, skill_id: str, event
 
 
 def apply_level_up(char: Character, gamedata: GameData,
-                   attribute_points: dict[str, int], resource_choice: str) -> dict:
-    """套用升級:分配屬性點 + 生命/魔力/體力三選一,回滿資源。回傳結算摘要供 UI。
+                   attribute_points: dict[str, int]) -> dict:
+    """套用升級:分配屬性點 + 回滿三資源。回傳結算摘要供 UI。
 
     attribute_points: {attr: 點數};總和上限 LEVELUP_ATTRIBUTE_POINTS,逐屬夾 ATTRIBUTE_CAP。
-    resource_choice: "health"|"magicka"|"fatigue",加 LEVELUP_RESOURCE_GAIN[choice] 到對應上限。
+    R64:移除資源三選一 → 資源純屬性驅動(endurance→生命·int→魔力·str/wil/agi/end→體力);
+    `resource_levels`(舊存檔累積)仍由 recompute 讀,只是不再新增。
     """
     ensure_level_xp(char)
     if not char.can_level_up():
@@ -162,13 +163,6 @@ def apply_level_up(char: Character, gamedata: GameData,
         if applied:
             attr_gains[attr] = applied
 
-    # 資源三選一
-    resource_gain = 0
-    if resource_choice in formulas.LEVELUP_RESOURCE_GAIN:
-        resource_gain = formulas.LEVELUP_RESOURCE_GAIN[resource_choice]
-        char.resource_levels[resource_choice] = (
-            char.resource_levels.get(resource_choice, 0) + resource_gain)
-
     char.level_xp -= formulas.levelup_xp_threshold(char.level)  # 保留溢出
     char.level += 1
     stats.ensure_base_health(char)
@@ -177,7 +171,5 @@ def apply_level_up(char: Character, gamedata: GameData,
     return {
         "level": char.level,
         "attr_gains": attr_gains,
-        "resource_choice": resource_choice,
-        "resource_gain": resource_gain,
         "can_level_again": char.can_level_up(),
     }

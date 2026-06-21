@@ -702,8 +702,8 @@ tesrpg/
 ### R06 · 升級系統(M15) [migrate]
 
 - **升級系統(M15)**:`level_xp` 是升級進度(**所有技能升點都餵**,主修 ×1.5);`level_progress`/`level_skillups` 是停用的舊欄位,只為舊存檔 `cls(**d)` 保留。
-  `apply_level_up(char, gd, attribute_points: dict, resource_choice)`。**載入存檔走 `GameState.from_dict` 會自動 `ensure_level_xp` 遷移**(舊 `level_progress`→`level_xp`),別繞過它直接建 Character 否則舊存檔升級入口會被隱藏(審查踩過)。
-  ~~`max_health` 不再隨耐力逐級長~~ **(R63 反轉)**:`max_health` 現隨『當前 effective 耐力』live 耦合(`formulas.endurance_health`·≤cap ×2==舊基底·>cap 遞減無上限);live 耦合本身無「每級累加」時機陷阱(早投晚投同耐力同血)。升級「生命」三選一仍加性疊上。
+  `apply_level_up(char, gd, attribute_points: dict)`(**R64:移除 `resource_choice` 參數**)。**載入存檔走 `GameState.from_dict` 會自動 `ensure_level_xp` 遷移**(舊 `level_progress`→`level_xp`),別繞過它直接建 Character 否則舊存檔升級入口會被隱藏(審查踩過)。
+  ~~`max_health` 不再隨耐力逐級長~~ **(R63 反轉)**:`max_health` 現隨『當前 effective 耐力』live 耦合(`formulas.endurance_health`·≤cap ×2==舊基底·>cap 遞減無上限);live 耦合本身無「每級累加」時機陷阱(早投晚投同耐力同血)。**R64:移除升級「資源三選一」**(三資源皆屬性驅動後變對稱 no-brainer)→ 升級=分配 `LEVELUP_ATTRIBUTE_POINTS`(**4→5**)點 + 三圍回滿;`resource_levels`(舊存檔累積)仍由 recompute 讀但不再新增。
 **潛行 · 刺客 · 魔法(R07–R10)**
 
 ### R07 · 潛行系戰鬥(偷襲 / 隱遁 / 雙持) [re-sim]
@@ -1202,6 +1202,17 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 - **🔴 byte-identical(隔離 worktree diff 證·非 stash)**:刺客 fixture wil30/agi55/spd50/end35/luck40/int40 皆 ≤閾或在 knee 線性段·`hit_chance` 未動·sim 不施法/不逃跑/不說服·追擊只在 `run_battle`(sim 走自有 `_round`)→ HEAD sim 腳本對「改前/改後 tesrpg」逐位元組同。**動 combat/formulas 仍必跑 `sim_assassin`**:solo 全 0% 存活、新「R63 追擊紅線」場景(偷襲+普通追擊一回合)solo 全 0%、精英 oneshot Δ0%、4-bandit 22.6% 真實風險。
 - **驗證**:`run_all` **80**(`test_attributes` 改漸進斷言+第二段 4 測·`test_m15` 反轉 `test_health_couples_to_endurance`·`test_progression`/`test_lycanthropy` 加耐力耦合增量·`test_solo_control` 續綠 applied(255)<0.5)+ `check.sh --smoke` 全綠。
 - 🔴 **鐵律**:調任何 `*_ASYMPTOTE`/`*_WIDTH`/`*_KNEE`/第二段 cap/`ENDURANCE_HEALTH_*`/`SPEED_EXTRA_ACTION_*` → **必跑 `sim_assassin`**;軟上限一律「漸近(趨近·永不抵達)」非硬夾;`hit_chance` 與 combat 每回合整數回魔**刻意不漸進**(前者守 sim byte-identical·後者避免分數魔力);耐力生命只在 `recompute_max_resources` 經 `attr()` live 算、**絕不寫 base**;速度追擊必 `sneak_attack=False`(守 solo 秒殺紅線)。
+
+### R64 · 升級資源精簡:移除三選一資源 + 屬性點 4→5(資源全屬性驅動)[save]
+
+承 R63 的「評估調整升級資源」:R63 把三資源全變屬性驅動後,升級「生命/魔力/體力三選一」變成對稱 no-brainer(健康 +14 偏差失去依據·聚焦 build 還會與屬性雙重疊加)。使用者拍板**取消三選一 + 補償=屬性點 +1**。
+- **`LEVELUP_ATTRIBUTE_POINTS` 4→5**(吸收原三選一價值);**移除** `LEVELUP_RESOURCE_GAIN` 常數 + `apply_level_up` 的 `resource_choice` 參數/邏輯/回傳鍵 + `main.action_level_up` 的三選一 `ui.menu` 與結算訊息(改印「三圍已回滿」)。
+- **資源純屬性驅動**:生命=`endurance_health(endurance)`(R63)、魔力=int×2、體力=str+wil+agi+end(+創角/裝備/舊存檔遺留)。想要血→練耐力、想要魔→練智力。
+- **🔴 存檔相容(零遷移)**:`char.resource_levels` 欄位**保留**、`stats.recompute_max_resources` **續讀**→ 舊存檔已累積的資源加成續生效,只是不再新增。`base_max_health` 同樣冗餘保留。不刪欄(R03)。
+- **平衡 by-design**:取消三選一是**淨資源 nerf**(每級 −~13/池),squishy/法系 build 最吟(原靠生命選項撐血);+1 屬性點僅**部分補償**(1 點=+2 資源 vs 原 +13)→ 溫和 nerf + 分配彈性。升級仍有決策(分配 5 點 + 里程碑二選一)。
+- **🔴 sim byte-identical**:sim 不升級 → 不觸 `LEVELUP_*`/三選一/資源層(隔離 worktree diff vs R63 commit 證·逐位元組同);**不碰 combat/formulas 戰鬥常數**。
+- **驗證**:`run_all` **80**(`test_progression` 改 `test_apply_level_up_allocates_attributes`〔去資源斷言·驗 5 點 + 屬性驅動資源 + 回滿〕·`test_m14`/`test_m15`/`test_equipment` 去 `resource_choice` 引數·capping 測常數化 `ATTRIBUTE_CAP`/`LEVELUP_ATTRIBUTE_POINTS`)+ `check.sh --smoke` 全綠。
+- 🔴 **鐵律**:`resource_levels` 自 R64 起是**唯讀遺留層**(舊存檔相容·勿再寫入);要加回升級獎勵 → 改 `apply_level_up`+`main.action_level_up`(別重引三選一除非有新理由)。
 
 ---
 
