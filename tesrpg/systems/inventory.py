@@ -287,7 +287,10 @@ def equipment_bonuses(char: Character, gamedata: GameData) -> dict:
     out = {"skills": {}, "attrs": {}, "resist": {}, "resources": {}}
     for iid in char.equipped.values():
         _apply_enchant(out, (gamedata.item_or_none(iid) or {}).get("enchant"))
-    _apply_enchant(out, active_set_bonus(char, gamedata))
+    sb = active_set_bonus(char, gamedata)
+    _apply_enchant(out, sb)
+    for elem, val in (sb or {}).get("resist", {}).items():   # R65:套裝 bonus 可帶額外 resist 子鍵(如大法師套裝魔抗)
+        out["resist"][elem] = out["resist"].get(elem, 0) + val
     return out
 
 

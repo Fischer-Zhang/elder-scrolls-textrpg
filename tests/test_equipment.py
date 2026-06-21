@@ -30,6 +30,14 @@ def _wear_set(c, gd, material):
     stats.recompute_max_resources(c, gd)
 
 
+def test_archmage_set_grants_magic_resist_r65():
+    """R65:大法師套裝 bonus 帶 resist:{magic:25} → 經 equipment_bonuses 入 entity_resist。"""
+    gd, c = _char()
+    before = magic.entity_resist(c, gd).get("magic", 0)   # 意志魔抗不因穿甲而變 → 前後差即套裝貢獻
+    _wear_set(c, gd, "archmage")
+    assert magic.entity_resist(c, gd).get("magic", 0) - before == 25
+
+
 # --- C 套組資料完整性 ---------------------------------------------------
 def test_every_material_has_full_set():
     gd, _ = _char()

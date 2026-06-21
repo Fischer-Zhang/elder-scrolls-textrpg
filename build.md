@@ -167,7 +167,7 @@ effective_cost = base × (1 − min(0.4, 學派技能/250)) × Π spell_cost_fac
 ### A · 通用加成(任何法師都疊)
 | 層 | 內容 | 備註 |
 |---|---|---|
-| **核心數值** | 智力↑→魔力池(×2);意志↑→回魔三條(`magicka_regen_combat`/`rest_factor`/`mind_resist`);學派技能↑→威力 +、魔耗 −(訓練師買到 75、宗師城招牌技破 75→100) | 種族/星座加 int/will 直接吃滿 |
+| **核心數值** | 智力↑→魔力池(×2)+R63 法術威力;意志↑→回魔三條(`magicka_regen_combat`/`rest_factor`/`mind_resist`)+R63 省魔(>115)+**R65 魔抗**(過40漸近+25·減火/霜/雷);學派技能↑→威力 +、魔耗 − | 種族/星座加 int/will 直接吃滿;★**R65 大法師套裝 magic抗+25** |
 | **身分:達貢之力** | ★純永久無懲罰:magicka+25(`dagon_magic_bonus` 獨立疊加層)、str+18、fire+60 | 法師首選永久層,與吸血並存 |
 | **身分:吸血鬼 T3** | str/speed/will+15(★will+15 吃滿回魔三條)、frost+30 | fire−30 弱點可被達貢 fire+60 抵成淨 +30 |
 | ~~狼人~~ | ✗ **不相容**:獸形脫整套裝備 + 無法施法 | 法師絕不取 |
@@ -177,7 +177,7 @@ effective_cost = base × (1 − min(0.4, 學派技能/250)) × Π spell_cost_fac
 | **裝備:神器(法杖)** | 魔典·哲思之卷(amulet)conj+15;馬格努斯之杖(法師公會掌門)、法力法杖(命中回魔 +8,`on_hit_self`)、元素法杖 | ⚠ 法杖 `weapon_element` 是**近戰命中元素傷**,非 spell power;本遊戲**無裝備直接加 spell power 的物品**(只能經 fortify_skill 抬學派技能間接放大) |
 | **裝備:十字軍神器** | 護心(fire+50%·胸甲槽→排斥法袍套裝)、聖盾(magic+30%·盾槽不計套裝→可與法袍並存) | `armor.json:332-333` |
 | **星座(建檔一次性·互斥)** | ★巨魔像 magicka+150+法術吸收(▼代價見下)/ 學徒 magicka+100(▼magic 抗−50)/ 法師 int+5·magicka+50(★無痛)/ 領主·儀式(每日自療 power) | `birthsigns.json` |
-| **種族(建檔寫 base)** | ★阿爾特默 int/will+10·magicka+100·六系 skill_bonuses(dest+10·alt/conj/illu/myst/鍊+5,最強通才;▼str/end−10)/ 布萊頓 int/will+10·magicka+50·★magic 抗+50/ 丹莫 dest+10·★fire+75 | `races.json` `skill_bonuses` |
+| **種族(建檔寫 base)** | ★阿爾特默 int/will+10·magicka+100·六系 skill_bonuses(dest+10·alt/conj/illu/myst/鍊+5,最強通才;▼str/end−10)/ 布萊頓 int/will+10·magicka+50·★magic 抗+25(R65 下修)/ 丹莫 dest+10·★fire+75 | `races.json` `skill_bonuses` |
 | **法師公會 / 精神飽滿** | 法師公會 `spell_discount`(折**買法書價** cap 0.45,非魔耗)+ 每省守一學派·保底 9 道法書(廣度);精神飽滿各學派練功 xp×1.25 | `factions.py:145`;經濟/廣度層,非數值 buff |
 | **消耗品:回復** | `restore_magicka`(商店 minor +25 / 自釀,夾 max_magicka)、`restore_fatigue`(回體續航);可釀池 ×`potion_potency`(煉金 75/100 ≤+0.35)放大 | `items.json`/`alchemy.py:184-188` |
 | **消耗品:限時增益** | ⚠ 智力/魔法學派強化藥**無材料可釀**(`ingredients.json` 無 `fattr_intelligence`/`fskill_<學派>`);法師可釀僅 `fattr_willpower`(回魔/抗控)、`resist_magic`、`fattr_agility`;走獨立 `potion_*` 層(R30,同 kind 取最強+取較晚到期非相加) | `alchemy.py:176-183`;可釀範圍純由材料資料決定、無 code 白名單 |

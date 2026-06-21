@@ -1214,6 +1214,16 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 - **驗證**:`run_all` **80**(`test_progression` 改 `test_apply_level_up_allocates_attributes`〔去資源斷言·驗 5 點 + 屬性驅動資源 + 回滿〕·`test_m14`/`test_m15`/`test_equipment` 去 `resource_choice` 引數·capping 測常數化 `ATTRIBUTE_CAP`/`LEVELUP_ATTRIBUTE_POINTS`)+ `check.sh --smoke` 全綠。
 - 🔴 **鐵律**:`resource_levels` 自 R64 起是**唯讀遺留層**(舊存檔相容·勿再寫入);要加回升級獎勵 → 改 `apply_level_up`+`main.action_level_up`(別重引三選一除非有新理由)。
 
+### R65 · 魔抗再分配:意志 + 大法師套裝給魔抗 + 布萊頓魔抗下修 [re-sim] [recompute]
+
+新建 `sim_builds.py`(各 build 完全體 vs solo boss 勝率矩陣)評估揪出:法師對高血**元素** boss 極脆(vs ancient_dragon 28%、vs mehrunes_dagon 0%),因魔抗(減 fire/frost/shock,R14)只來自種族/誓福/附魔,非職業。使用者拍板:**意志 + 大法師套裝給魔抗(中等)+ 種族魔抗下修防堆免疫**。
+- **意志=精神壁壘**:新 `formulas.willpower_magic_resist(wp)`(`_soft_cap` knee=40·per0.38·cap25;wp100≈15·effective200+→~23·9999 仍 ≤25)→ `magic.entity_resist` 末加進 `merged["magic"]`(讀 effective 意志 → 誓福/附魔抬意志連帶增魔抗)。
+- **大法師套裝**:`armor_sets.json` archmage bonus 加 `resist:{magic:25}` 子鍵;`inventory.equipment_bonuses` 加一行合併套裝 `bonus.get("resist")`(任何套裝皆可帶此子鍵·比照 `cast_fatigue_factor`/`disguise` 額外鍵·`_apply_enchant` 主 kind 仍處理 fortify_resource)。
+- **布萊頓 magic 50→25**(`races.json`;唯一免疫驅動 → 下修騰出意志+套裝空間)。Orsimer 25 **不動**(非 caster 堆疊路徑·且戰士 sim 用 orsimer·動之破 byte-identical)。
+- **效果(sim_builds 重跑)**:Altmer 法師 0→**40 魔抗**(意志15+套裝25)→ vs ancient_dragon **28%→77%**、vs dagon_diminished 85%→99%、多數中階元素 boss →100%;**仍守**:vs 物理 bruiser(knight_of_order 73%·魔抗不減物理)+ vs mehrunes_dagon 720(0%·HP 牆+脆皮 DPS race 輸)。免疫仍需 Breton+套裝+高意志+多誓福**極限堆**(R63 接受深投資膨脹),非輕易。
+- **🔴 sim_assassin byte-identical**(刺客 khajiit wp30→`willpower_magic_resist`=0·非布萊頓·隔離 worktree diff 證);**動 `entity_resist`=戰鬥減傷 → 必跑 sim_assassin**;意志魔抗 **knee=40 必保**(刺客 wp30 零位移)。
+- **驗證**:`run_all` **80**(`test_attributes`+`test_willpower_magic_resist_r65`·`test_equipment`+`test_archmage_set_grants_magic_resist_r65`·`test_daedric` 補「誓福抬意志連帶增魔抗」增量)。調 `WILLPOWER_MAGIC_RESIST_*` / 套裝 resist / 種族魔抗 → 必跑 sim_assassin。
+
 ---
 
 ## 4. 開發節奏(ultracode 開著 → 每個功能都這樣做)

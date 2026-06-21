@@ -4,6 +4,7 @@
 - 神殿任務可接門檻(requires_level/requires_fame)+ 神殿(shrine)分流;
 - 首位親王阿祖拉深線雙結局(淨化→永久誓福 / 墮化→神器)+ 內容資料完整(boss solo/控場節制/地城有任務)。
 """
+from tesrpg import formulas
 from tesrpg.creation import build_character
 from tesrpg.gamedata import get_gamedata
 from tesrpg.models import Character
@@ -23,13 +24,16 @@ def test_boon_layer_stacks_without_base_write():
     gd, c = _gd_char()
     w0, i0, mg0 = c.attr("willpower"), c.attr("intelligence"), c.max_magicka
     myst0 = c.skill("mysticism")
+    wmr0 = formulas.willpower_magic_resist(c.attr("willpower"))   # R65 意志魔抗(誓福抬意志 → 連帶增)
     magres0 = magic.entity_resist(c, gd).get("magic", 0)
     boons.grant(c, gd, "azura")
     assert c.attr("willpower") == w0 + 8 and c.attr("intelligence") == i0 + 6
     assert c.skill("mysticism") == myst0 + 10
     # max_magicka 升幅 = 智力 +6 的公式貢獻 + 誓福固定 +20(故 ≥ +20)
     assert c.boon_magic_bonus == 20 and c.max_magicka >= mg0 + 20
-    assert magic.entity_resist(c, gd).get("magic", 0) == magres0 + 20
+    # 魔抗升幅 = 誓福直接 +20 + 意志 +8 連帶的 R65 意志魔抗增量
+    wmr1 = formulas.willpower_magic_resist(c.attr("willpower"))
+    assert magic.entity_resist(c, gd).get("magic", 0) == magres0 + 20 + (wmr1 - wmr0)
     # 🔴 鐵律:絕不寫回 base
     assert c.base_attr("willpower") == w0 and c.base_skill("mysticism") == myst0
     assert boons.has_boon(c, "azura")

@@ -533,6 +533,7 @@ def entity_resist(entity, gamedata) -> dict:
             merged[elem] = merged.get(elem, 0) + val
         for elem, val in getattr(entity, "potion_resist", {}).items():   # 限時抗元素藥水(R30)
             merged[elem] = merged.get(elem, 0) + val
+        merged["magic"] = merged.get("magic", 0) + formulas.willpower_magic_resist(entity.attr("willpower"))  # R65 意志=精神壁壘
         return merged
     return getattr(entity, "resist", {}) or {}
 

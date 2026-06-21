@@ -141,6 +141,17 @@ def test_endurance_health_couples_and_diminishes():
     assert (f.endurance_health(200) - f.endurance_health(150)) < (f.endurance_health(100) - f.endurance_health(50))
 
 
+def test_willpower_magic_resist_r65():
+    f = formulas
+    assert f.willpower_magic_resist(40) == 0 and f.willpower_magic_resist(30) == 0   # 中性 ≤40(sim 不位移)
+    assert 0 < f.willpower_magic_resist(100) < f.WILLPOWER_MAGIC_RESIST_CAP          # 投資見效、未封頂
+    assert f.willpower_magic_resist(200) > f.willpower_magic_resist(100)             # 過 200 仍漲
+    assert f.willpower_magic_resist(9999) <= f.WILLPOWER_MAGIC_RESIST_CAP            # 漸近不超 cap
+    # entity_resist 聚合意志魔抗(R14:減 fire/frost/shock)
+    gd, c = _char(willpower=100)
+    assert magic.entity_resist(c, gd).get("magic", 0) >= f.willpower_magic_resist(100)
+
+
 def test_intelligence_raises_power_and_willpower_lowers_cost():
     gd = get_gamedata()
     c = build_character(gd, name="M", sex="male", race="altmer", birthsign="mage", class_id="mage")

@@ -144,6 +144,9 @@ INTELLIGENCE_POTENCY_CAP = 0.25   # 法術威力加成漸近上限(+25%)
 WILLPOWER_COST_KNEE = 115         # 意志 → 法術省魔:回魔飽和點(=combat regen 飽和)以下不折(=改前)
 WILLPOWER_COST_PER = 0.0015       # 每點意志(>knee)
 WILLPOWER_COST_CAP = 0.15         # 法術省魔漸近上限(-15%;與技能折扣相乘,仍受 effective_cost 的 max(1) 地板防免費施法)
+WILLPOWER_MAGIC_RESIST_KNEE = 40  # 意志=精神壁壘(R65):此值以下 0 魔抗(中性·sim 不位移)
+WILLPOWER_MAGIC_RESIST_PER = 0.38  # 每點意志(>40)
+WILLPOWER_MAGIC_RESIST_CAP = 25   # 魔抗漸近上限(點數·減 fire/frost/shock,R14;effective 200+ 趨近)
 AGILITY_EVASION_KNEE = 100        # 敏捷 → 閃避:此值以下 0(命中夾 0.95 不動 → sim 紅線不破)
 AGILITY_EVASION_PER = 0.0015      # 每點敏捷(>knee)
 AGILITY_EVASION_CAP = 0.12        # 閃避漸近上限(+12%;命中下夾 0.05 仍在 → 永不無敵、群戰仍危險)
@@ -202,6 +205,13 @@ def willpower_cost_factor(willpower: int) -> float:
     """意志 → 法術省魔倍率(續航):≤115 → ×1.0;過 115 漸近 −15%(過 200 仍省)。"""
     over = max(0, willpower - WILLPOWER_COST_KNEE)
     return 1.0 - _soft_cap(over, 0, WILLPOWER_COST_PER, WILLPOWER_COST_CAP)
+
+
+def willpower_magic_resist(willpower: int) -> int:
+    """意志=精神壁壘(R65):過 40 漸近至 +25 魔抗點數(減 fire/frost/shock,R14);≤40 → 0(中性)。
+    走 entity_resist 的 magic 抗性聚合;讀 effective 意志 → 誓福/附魔抬意志亦增魔抗。"""
+    over = max(0, willpower - WILLPOWER_MAGIC_RESIST_KNEE)
+    return int(round(_soft_cap(over, 0, WILLPOWER_MAGIC_RESIST_PER, WILLPOWER_MAGIC_RESIST_CAP)))
 
 
 def agility_evasion(agility: int) -> float:

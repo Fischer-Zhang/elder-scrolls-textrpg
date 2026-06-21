@@ -1,92 +1,256 @@
 {
   "altmer": {
-    "name": "高精靈", "kind": "mer",
-    "attr_mods": {"intelligence": 10, "willpower": 10, "strength": -10, "endurance": -10},
-    "skill_bonuses": {"destruction": 10, "alteration": 5, "conjuration": 5, "illusion": 5, "mysticism": 5, "alchemy": 5},
+    "name": "高精靈",
+    "kind": "mer",
+    "attr_mods": {
+      "intelligence": 10,
+      "willpower": 10,
+      "strength": -10,
+      "endurance": -10
+    },
+    "skill_bonuses": {
+      "destruction": 10,
+      "alteration": 5,
+      "conjuration": 5,
+      "illusion": 5,
+      "mysticism": 5,
+      "alchemy": 5
+    },
     "magicka_bonus": 100,
     "ability": "魔力天賦極高,但體魄孱弱;血脈使魔力回復格外迅速。",
-    "resist": {"disease": 75},
-    "passive": {"magicka_regen": 1.5}
+    "resist": {
+      "disease": 75
+    },
+    "passive": {
+      "magicka_regen": 1.5
+    }
   },
   "bosmer": {
-    "name": "木精靈", "kind": "mer",
-    "attr_mods": {"agility": 10, "speed": 10, "strength": -10, "personality": -10},
-    "skill_bonuses": {"marksman": 10, "sneak": 5, "alchemy": 5, "light_armor": 5, "acrobatics": 5, "alteration": 5},
+    "name": "木精靈",
+    "kind": "mer",
+    "attr_mods": {
+      "agility": 10,
+      "speed": 10,
+      "strength": -10,
+      "personality": -10
+    },
+    "skill_bonuses": {
+      "marksman": 10,
+      "sneak": 5,
+      "alchemy": 5,
+      "light_armor": 5,
+      "acrobatics": 5,
+      "alteration": 5
+    },
     "magicka_bonus": 0,
     "ability": "林間獵手,擅長弓術與潛行,可短暫以林語驅使野獸。",
-    "resist": {"disease": 75, "poison": 75},
+    "resist": {
+      "disease": 75,
+      "poison": 75
+    },
     "racial_power": "command_beast"
   },
   "dunmer": {
-    "name": "暗精靈", "kind": "mer",
-    "attr_mods": {"speed": 10, "intelligence": 5, "agility": 5, "willpower": -5, "personality": -5},
-    "skill_bonuses": {"blade": 5, "destruction": 10, "marksman": 5, "athletics": 5, "mysticism": 5, "light_armor": 5},
+    "name": "暗精靈",
+    "kind": "mer",
+    "attr_mods": {
+      "speed": 10,
+      "intelligence": 5,
+      "agility": 5,
+      "willpower": -5,
+      "personality": -5
+    },
+    "skill_bonuses": {
+      "blade": 5,
+      "destruction": 10,
+      "marksman": 5,
+      "athletics": 5,
+      "mysticism": 5,
+      "light_armor": 5
+    },
     "magicka_bonus": 0,
     "ability": "晨風之民,劍與火兼修,血脈帶有抗火天賦,可召喚先祖之靈助戰。",
-    "resist": {"fire": 75},
+    "resist": {
+      "fire": 75
+    },
     "racial_power": "ancestor_guardian"
   },
   "nord": {
-    "name": "諾德人", "kind": "men",
-    "attr_mods": {"strength": 10, "endurance": 10, "intelligence": -10, "willpower": -5, "personality": -5},
-    "skill_bonuses": {"blade": 5, "blunt": 10, "heavy_armor": 5, "block": 5, "smithing": 5, "restoration": 5},
+    "name": "諾德人",
+    "kind": "men",
+    "attr_mods": {
+      "strength": 10,
+      "endurance": 10,
+      "intelligence": -10,
+      "willpower": -5,
+      "personality": -5
+    },
+    "skill_bonuses": {
+      "blade": 5,
+      "blunt": 10,
+      "heavy_armor": 5,
+      "block": 5,
+      "smithing": 5,
+      "restoration": 5
+    },
     "magicka_bonus": 0,
     "ability": "天際的戰士民族,天生抗寒,戰意如火,一聲戰吼可震懾群敵。",
-    "resist": {"frost": 50},
+    "resist": {
+      "frost": 50
+    },
     "racial_power": "battle_cry"
   },
   "imperial": {
-    "name": "帝國人", "kind": "men",
-    "attr_mods": {"personality": 10, "willpower": 5, "agility": -5},
-    "skill_bonuses": {"blade": 5, "blunt": 5, "heavy_armor": 5, "speechcraft": 10, "mercantile": 10, "hand_to_hand": 5},
+    "name": "帝國人",
+    "kind": "men",
+    "attr_mods": {
+      "personality": 10,
+      "willpower": 5,
+      "agility": -5
+    },
+    "skill_bonuses": {
+      "blade": 5,
+      "blunt": 5,
+      "heavy_armor": 5,
+      "speechcraft": 10,
+      "mercantile": 10,
+      "hand_to_hand": 5
+    },
     "magicka_bonus": 0,
     "ability": "帝都之民,八面玲瓏的外交與經商長才,天生威儀可懾服人形之敵。",
     "resist": {},
     "racial_power": "imperial_voice"
   },
   "breton": {
-    "name": "布萊頓人", "kind": "men",
-    "attr_mods": {"intelligence": 10, "willpower": 10, "strength": -10, "endurance": -5},
-    "skill_bonuses": {"conjuration": 5, "mysticism": 5, "restoration": 10, "alchemy": 5, "alteration": 5, "illusion": 5},
+    "name": "布萊頓人",
+    "kind": "men",
+    "attr_mods": {
+      "intelligence": 10,
+      "willpower": 10,
+      "strength": -10,
+      "endurance": -5
+    },
+    "skill_bonuses": {
+      "conjuration": 5,
+      "mysticism": 5,
+      "restoration": 10,
+      "alchemy": 5,
+      "alteration": 5,
+      "illusion": 5
+    },
     "magicka_bonus": 50,
     "ability": "高石之民,血脈帶有強大的抗魔屏障,龍皮之力可將來襲魔法吸收為魔力。",
-    "resist": {"magic": 50},
-    "passive": {"spell_absorb": 0.25}
+    "resist": {
+      "magic": 25
+    },
+    "passive": {
+      "spell_absorb": 0.25
+    }
   },
   "redguard": {
-    "name": "紅衛人", "kind": "men",
-    "attr_mods": {"strength": 10, "endurance": 10, "agility": 5, "intelligence": -10, "willpower": -5},
-    "skill_bonuses": {"blade": 10, "blunt": 5, "heavy_armor": 5, "light_armor": 5, "athletics": 5, "mercantile": 5},
+    "name": "紅衛人",
+    "kind": "men",
+    "attr_mods": {
+      "strength": 10,
+      "endurance": 10,
+      "agility": 5,
+      "intelligence": -10,
+      "willpower": -5
+    },
+    "skill_bonuses": {
+      "blade": 10,
+      "blunt": 5,
+      "heavy_armor": 5,
+      "light_armor": 5,
+      "athletics": 5,
+      "mercantile": 5
+    },
     "magicka_bonus": 0,
     "ability": "天生劍客,精力旺盛,對疾病與毒素有抗性,危急時可激發腎上腺爆發。",
-    "resist": {"disease": 75, "poison": 75},
+    "resist": {
+      "disease": 75,
+      "poison": 75
+    },
     "racial_power": "adrenaline_rush"
   },
   "orsimer": {
-    "name": "獸人", "kind": "mer",
-    "attr_mods": {"strength": 10, "endurance": 10, "willpower": 5, "intelligence": -10, "personality": -10},
-    "skill_bonuses": {"blunt": 10, "heavy_armor": 10, "block": 5, "smithing": 5, "hand_to_hand": 5},
+    "name": "獸人",
+    "kind": "mer",
+    "attr_mods": {
+      "strength": 10,
+      "endurance": 10,
+      "willpower": 5,
+      "intelligence": -10,
+      "personality": -10
+    },
+    "skill_bonuses": {
+      "blunt": 10,
+      "heavy_armor": 10,
+      "block": 5,
+      "smithing": 5,
+      "hand_to_hand": 5
+    },
     "magicka_bonus": 0,
     "ability": "鐵壁般的戰士,可進入狂怒爆發。",
-    "resist": {"magic": 25},
+    "resist": {
+      "magic": 25
+    },
     "racial_power": "orc_berserk"
   },
   "argonian": {
-    "name": "亞龍人", "kind": "beast",
-    "attr_mods": {"speed": 10, "intelligence": 5, "agility": 5, "strength": -5, "endurance": -5},
-    "skill_bonuses": {"blade": 5, "alchemy": 5, "illusion": 5, "mysticism": 5, "security": 10, "athletics": 5, "hand_to_hand": 5},
+    "name": "亞龍人",
+    "kind": "beast",
+    "attr_mods": {
+      "speed": 10,
+      "intelligence": 5,
+      "agility": 5,
+      "strength": -5,
+      "endurance": -5
+    },
+    "skill_bonuses": {
+      "blade": 5,
+      "alchemy": 5,
+      "illusion": 5,
+      "mysticism": 5,
+      "security": 10,
+      "athletics": 5,
+      "hand_to_hand": 5
+    },
     "magicka_bonus": 0,
     "ability": "黑沼澤的蜥人,免疫毒素、抗疾病,癒膚天賦使休憩時傷勢復原格外迅速。",
-    "resist": {"poison": 100, "disease": 75},
-    "passive": {"histskin": 0.5}
+    "resist": {
+      "poison": 100,
+      "disease": 75
+    },
+    "passive": {
+      "histskin": 0.5
+    }
   },
   "khajiit": {
-    "name": "虎人", "kind": "beast",
-    "attr_mods": {"agility": 10, "speed": 5, "personality": 5, "willpower": -10, "endurance": -5},
-    "skill_bonuses": {"blade": 5, "hand_to_hand": 10, "athletics": 5, "acrobatics": 5, "light_armor": 5, "sneak": 5, "security": 5},
+    "name": "虎人",
+    "kind": "beast",
+    "attr_mods": {
+      "agility": 10,
+      "speed": 5,
+      "personality": 5,
+      "willpower": -10,
+      "endurance": -5
+    },
+    "skill_bonuses": {
+      "blade": 5,
+      "hand_to_hand": 10,
+      "athletics": 5,
+      "acrobatics": 5,
+      "light_armor": 5,
+      "sneak": 5,
+      "security": 5
+    },
     "magicka_bonus": 0,
     "ability": "艾爾斯維爾的貓族,擁有夜視與致命的徒手利爪。",
     "resist": {},
-    "passive": {"night_eye": 0.15, "claw_bonus": 4}
+    "passive": {
+      "night_eye": 0.15,
+      "claw_bonus": 4
+    }
   }
 }
