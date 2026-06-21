@@ -13,7 +13,7 @@
   {"id": "archmage", "name": "首席法師", "desc": "晉升為法師公會的首席法師。", "cond": {"type": "guildmaster", "faction": "mages_guild"}},
   {"id": "veteran_hero", "name": "沙場宿將", "desc": "角色等級達到 20 級。", "cond": {"type": "level", "level": 20}},
   {"id": "grandmaster_skill", "name": "技驚四座", "desc": "將任意 3 項技能練至滿級 100。", "cond": {"type": "skill_cap", "count": 3}},
-  {"id": "milestone_walker", "name": "身份印記", "desc": "解鎖 4 個技能里程碑。", "cond": {"type": "mastery_count", "count": 4}},
+  {"id": "milestone_walker", "name": "身份印記", "desc": "解鎖 12 個技能里程碑。", "cond": {"type": "mastery_count", "count": 12}},
   {"id": "purist_warrior", "name": "純粹武者", "desc": "戰鬥技能總和遠勝其餘,走出純粹的戰士之道。", "cond": {"type": "pure_spec", "spec": "combat"}},
   {"id": "purist_mage", "name": "純粹法師", "desc": "魔法技能總和遠勝其餘,走出純粹的法師之道。", "cond": {"type": "pure_spec", "spec": "magic"}},
   {"id": "purist_thief", "name": "純粹盜賊", "desc": "潛行技能總和遠勝其餘,走出純粹的盜賊之道。", "cond": {"type": "pure_spec", "spec": "stealth"}},

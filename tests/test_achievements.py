@@ -86,13 +86,34 @@ def test_guildmaster_any_and_specific():
 
 
 def test_mastery_count():
+    """milestone_walker 計『已選』里程碑數(count=12)。
+    🔴 回歸守門:創角主修起始 30-40 ≥ 首階門檻 25 → 白送 7 個里程碑可選;選 4 個(舊 count)
+    不該達成,須真投資到 12 個才達標(否則一開局即達成)。"""
     gd, c = _char()
-    c.skills.update({"block": 50, "heavy_armor": 75, "destruction": 100, "security": 75})
-    # v2:達門檻後須二選一銘刻,milestone_walker 計的是「已選」的里程碑數
-    for nid, oid in (("block_50", "shieldwall"), ("heavy_armor_75", "bulwark"),
-                     ("destruction_100", "overload"), ("security_75", "master_floor")):
-        mastery.choose(c, gd, nid, oid)
-    assert "milestone_walker" in _ids(gd, c)
+    for s in ("block", "heavy_armor", "destruction", "security", "blade", "sneak"):
+        c.skills[s] = 100   # 練滿數技 → 解鎖大量 _25/_50/_75/_100 節點
+    reached = [n for n in mastery._nodes(gd) if mastery._node_reached(c, n)]
+    chosen = 0
+    for n in reached:
+        if mastery.choose(c, gd, n["id"], n["options"][0]["opt_id"]):
+            chosen += 1
+        if chosen == 4:
+            assert "milestone_walker" not in _ids(gd, c)   # 選 4 個(含創角白送)不達成
+        if chosen >= 12:
+            break
+    assert chosen >= 12
+    assert "milestone_walker" in _ids(gd, c)               # 滿 12 個 → 達成
+
+
+def test_milestone_walker_not_earned_at_creation():
+    """🔴 核心回歸:即使把創角白送的 7 個里程碑全選滿,也不該得 milestone_walker(7 < 12)。"""
+    gd, c = _char()
+    pend = [n for n in mastery._nodes(gd)
+            if mastery._node_reached(c, n) and n["id"] not in (c.mastery_choices or {})]
+    for n in pend:
+        mastery.choose(c, gd, n["id"], n["options"][0]["opt_id"])
+    assert len(mastery.unlocked(c, gd)) <= 7                # 創角白送上限 = 7 個主修 _25
+    assert "milestone_walker" not in _ids(gd, c)
 
 
 def test_dominion_allegiance_vampire():
