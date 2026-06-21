@@ -420,6 +420,13 @@ def cast_fatigue_power_factor(fatigue_ratio: float) -> float:
 BLOCK_HIT_PENALTY = 0.15        # 對方格擋時攻擊命中率的基礎扣減
 EMPOWER_STACK_RATIO = 0.7       # 盟友增傷(empower)多源遞減疊加比率:最強×1 + 次強×0.7 + 第三×0.49…(上限 1/(1−r)≈3.33×最強;防暴衝又獎勵指揮官疊旗)
 
+# R69 閃避效益遞減:總 evasion(雜技 dodge_evasion + 里程碑 + 敏捷)在從命中扣除「之前」過此曲線。
+# ≤knee 線性不動(一般 build 無感);過 knee 漸近 ceiling → 疊滿也封頂、無法把命中壓到 5% 地板。
+# 修主破口:dodge_evasion(acro×0.0025)本身無 cap,acro100=0.25 已可線性疊到地板。
+EVASION_DIMINISH_KNEE = 0.15
+EVASION_DIMINISH_SLOPE = 1.0
+EVASION_DIMINISH_CEIL = 0.35
+
 
 def hit_chance(atk_skill: int, atk_agility: int, def_agility: int,
                attacker_fatigue_ratio: float, defender_blocking: bool = False,
@@ -433,7 +440,8 @@ def hit_chance(atk_skill: int, atk_agility: int, def_agility: int,
     chance -= (1.0 - max(0.0, min(1.0, attacker_fatigue_ratio))) * 0.25
     if defender_blocking:
         chance -= block_penalty
-    chance -= defender_evasion                       # 雜技閃避(僅玩家防守時)
+    # 閃避(僅玩家防守時)效益遞減(R69):總量過 _soft_cap → 疊滿封頂,防線性壓到命中地板
+    chance -= _soft_cap(defender_evasion, EVASION_DIMINISH_KNEE, EVASION_DIMINISH_SLOPE, EVASION_DIMINISH_CEIL)
     return max(0.05, min(0.95, chance))
 
 

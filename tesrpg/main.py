@@ -552,7 +552,9 @@ def _choose_combat_action(state: GameState, gamedata: GameData, enemies: list, a
         n_alive = len([e for e in enemies if combat.is_alive(e)])
         pct = int(combat.vanish_chance(player, n_alive, vanish_used, gamedata) * 100)
         left = "∞" if vcap >= 99 else (vcap - vanish_used)
-        opts.append(("vanish", f"隱遁再襲（成功率 {pct}%,剩 {left} 次)"))
+        boss_tag = "·BOSS 看穿隱遁" if any(combat._is_solo(e, gamedata)   # R69:solo BOSS 不被躲過,提示玩家
+                                          for e in enemies if combat.is_alive(e)) else ""
+        opts.append(("vanish", f"隱遁再襲（成功率 {pct}%,剩 {left} 次{boss_tag})"))
     # 弓手「散兵」武技:持弓 + 選了對應 marksman 里程碑才開放(瞄準射 75 / 牽制射 50 / 散兵走位 50)
     # —— 不再「裝備弓即免費全給」;散兵走位選了即可用(解鎖自帶,不再要 sneak 隱遁),仍受每場 vanish 次數上限。
     if (gamedata.item(player.weapon).get("archetype") == "bow"
@@ -1000,8 +1002,10 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
             ui.combat_event(combat.resolve_attack(a, tgt, gamedata, state.rng, attack=a_atk), gamedata)
             note_trap(tgt)
 
-        # ---- 敵人階段(各自挑我方一個目標)----隱遁成功則本回合敵人撲空 ----
-        for e in (enemies if not vanish_success else []):
+        # ---- 敵人階段(各自挑我方一個目標)----隱遁成功則一般敵撲空;solo BOSS 不被躲過(R69)----
+        for e in enemies:
+            if vanish_success and not combat._is_solo(e, gamedata):
+                continue                      # R69:隱遁躲過一般敵;solo BOSS 看穿隱遁、照常攻擊
             if not combat.is_alive(player):
                 break
             if not combat.is_alive(e):

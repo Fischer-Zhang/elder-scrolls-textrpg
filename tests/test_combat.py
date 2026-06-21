@@ -97,6 +97,18 @@ def test_acrobatics_dodge_reduces_hit_chance():
     assert formulas.dodge_evasion(100) > formulas.dodge_evasion(40) > formulas.dodge_evasion(0) == 0
 
 
+def test_evasion_diminishing_returns_r69():
+    """R69:閃避效益遞減 —— ≤knee 線性、過 knee 漸近、疊滿封頂(防把命中壓到 5% 地板)。"""
+    f = formulas
+    base = f.hit_chance(80, 50, 100, 1.0)                            # 無閃避
+    low = base - f.hit_chance(80, 50, 100, 1.0, defender_evasion=0.15)   # =knee → 線性全扣
+    high = base - f.hit_chance(80, 50, 100, 1.0, defender_evasion=0.45)  # 疊滿 → 遞減
+    huge = base - f.hit_chance(80, 50, 100, 1.0, defender_evasion=2.0)   # 極端 → 封頂
+    assert abs(low - 0.15) < 1e-9                  # knee 以下原值
+    assert 0.15 < high < 0.45                      # 過 knee:仍有增益但 < 線性
+    assert huge <= f.EVASION_DIMINISH_CEIL + 1e-9  # 封頂於 ceiling,再多也無用
+
+
 def test_acrobatics_trains_on_dodge():
     """敵人攻擊落空(玩家成功閃避)→ 鍛鍊雜技;且不會因怪物無 skill() 而出錯。"""
     gd, c = _warrior()

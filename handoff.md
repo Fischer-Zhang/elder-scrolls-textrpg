@@ -1257,6 +1257,17 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 
 ---
 
+### R69 · 反風箏:閃避效益遞減(全域)+ vanish 不躲 solo BOSS [re-sim]
+
+承多輪「刺客打 solo boss 太穩」評估收斂:傷害/護甲/cap 側旋鈕**全部失效或反效果**(偷襲被 cap 鎖死、堆護甲反誤殺戰士+相對抬法系、移除 cap 破秒殺紅線);唯有動 stealth 的**兩層防禦**(evasion + vanish)才對症、且 stealth 專屬無連帶。使用者拍板實作下列兩項(刻意**不含**護甲/機率÷2,保零連帶)。
+- **① 閃避效益遞減(全域)**:`formulas.hit_chance` 把總 `defender_evasion`(雜技 `dodge_evasion` + 里程碑 `evasion_bonus` + 敏捷 `agility_evasion`)過 `_soft_cap(EVASION_DIMINISH_KNEE 0.15, SLOPE 1.0, CEIL 0.35)` 才從命中扣。修主破口:`dodge_evasion`=acro×0.0025(acro100=0.25)本身**無 cap**,線性可疊到命中 5% 地板。≤0.15 線性不動(一般 build 無感)、疊滿封 0.35 → 滿堆刺客對 boss 命中由 5%(地板)抬到 ~12%。
+- **② vanish 不躲 solo BOSS**:`main.py` 敵人階段由 `for e in (enemies if not vanish_success else [])` 改 **per-enemy**:`for e in enemies: if vanish_success and not combat._is_solo(e, gamedata): continue` → 一般敵仍被躲過,**solo BOSS 看穿隱遁、照常攻擊**(玩家仍重置偷襲 opening)。vanish 選項顯示加「·BOSS 看穿隱遁」提示。**此項是主削**(打第一層引擎=vanish 免疫):刺客 mehrunes_dagon 單此項 84→54。
+- **效果**(sim_builds n=300):刺客 mehrunes_dagon **84→45%**、弓 85→50%;ancient_dragon 刺客 96→**82%**、弓 99→84%。**戰士/法系零位移**(無 evasion 堆疊、不 vanish → 兩旋鈕皆碰不到:warrior_1H 99/13、mage 86/0 不變)→ 終王對 stealth 變真挑戰、**無連帶**(完勝堆護甲方案)。殘留:滿投資 evasion+agi 刺客仍 ~82%(by-design 獎勵深投資;要再壓需加 vanish 機率÷2)。
+- **🔴 sim_assassin 全綠**:solo 偷襲秒殺 0%(evasion/vanish 不碰偷襲 cap)、4-bandit 死亡率 **22.6%**/2b2w **10.1%** **不變**(diminish 對 acro 群戰 evasion 影響 <0.02 可忽略;sim_assassin 群戰 vanish 為**非 solo** → no-dodge 不觸及)。**全域 diminish 仍動戰鬥常數 → 必跑 sim(已跑·綠)**。
+- **sims 同步**:`sim_builds` vanish 對 solo 不再跳過(`skip_boss = not combat._is_solo(boss, gd)`);`hit_chance` 全域改 → 三 sim 自動吃 diminish。零新存檔欄。`run_all` **80**(新 `test_evasion_diminishing_returns_r69`)。🔴 鐵律:調 diminish `KNEE/CEIL` 或 vanish 規則 → 改 `formulas.hit_chance`(evasion 全域)/ `main.py` 敵人階段(vanish-nododge **僅 solo**)單點;務必重跑 sim_assassin(守 solo 0%)+ sim_builds(stealth 終王勝率=by design 下降)。
+
+---
+
 ## 4. 開發節奏(ultracode 開著 → 每個功能都這樣做)
 
 > 完整五階段流程(評估 → 決定方向 → 實作 → 驗證 → 文件 + 提交)見 `CLAUDE.md`「開發流程」;以下是「驗證」段的細節。**驗證綠後依 R22 自動 `commit` & `push origin main`。**
