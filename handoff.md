@@ -1268,6 +1268,16 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 
 ---
 
+### R70 · 偷襲倍率全面重構:基倍遞減 + 各因子下修(反深堆 + 削手感)[re-sim]
+
+承「偷襲倍率全情境評估」(apex ×11.33·主要被 cap/overkill 吸收);使用者拍板五項齊改。**純改 `formulas.py`(4 點)+ `mastery.json`(影刃)**,combat 不動(`resolve_attack`/`estimate_sneak_damage` 兩處都讀 formulas → 自動生效)。
+- **① 基倍效益遞減**:`sneak_attack_multiplier` 由線性 `1+sneak×0.03`(100→×4)改 `1+_soft_cap(sneak,0,SLOPE0.0277,CEIL4.0)` → **sneak100→×3、200→×4、漸近 ×5**;解出兩錨點(100=+2.0、200=+3.0)。專治「潛行+誓福深堆無限放大」,≤100 仍順成長。
+- **② 匕首 archetype 1.6→1.5**(`_ARCHETYPE_SNEAK_BONUS`,弓 1.3 不動)。**③ 夜母每階 0.03→0.0167**(聆聽者6階 ×1.18→**×1.10**)。**④ 影刃 `shadowblade` mult_bonus 0.5→0.2**(`mastery.json`,×1.5→×1.2)。**⑤ 護甲重量係數**:`armor_sneak_mult_factor` 由 `min(1,max(0.45,1−(W−18)×0.012))`(W≤18 grace + 0.45 夾)改 `max(0,1−W×0.012)`——**取消 W≤18 grace(輕甲也吃小罰,W9→×0.892)+ 取消 0.45 下限**(重甲 W59→×0.292·極重歸 0)。移除 `SNEAK_ATTACK_SCALE`/`SNEAK_MULT_WEIGHT_FLOOR`/`_MIN`。
+- **效果**:apex 偷襲總倍率 **刺客 ×11.33→×5.30、弓 ×9.20→×4.34(−53%)**。但因 **cap + overkill** 吸收 → 實戰局部:**trash 秒殺幾不變**(apex bandit 95%·偷襲仍 overkill);**精英 oneshot 顯著下修**(sim_assassin:中階 sneak70 bandit 74→13%·apex frost_troll→0%/dremora→16%)=力量幻想收斂(刻意);**多數 boss cap 綁定不變**;**最硬王明顯削**(sim_builds:刺客 mehrunes_dagon 45→**25%**、弓 52→**34%**·疊在 R69 上);**深堆(sneak>100)重砍**(138 ×5.14→×3.46、200 ×7→×4)。
+- **🔴 sim_assassin 全綠**:**solo 偷襲秒殺 0% ✓**(倍率降只更安全)、R63 追擊 0% ✓、**4-bandit 死亡率 22.6%/2b2w 10.1% 不變**(群戰死亡來自圍毆非殺速·apex 仍秒小怪)。零新存檔欄。`run_all` **80**(test_assassin armor 係數重寫無 grace/夾·test_mastery 影刃 0.5→0.2)。🔴 鐵律:偷襲五因子皆在 `formulas.py`(+影刃在 mastery.json)·動任一 → 必跑 sim_assassin(守 solo 0%)+ sim_builds;基倍遞減錨點(100=×3、200=×4)由 SLOPE/CEIL 解出,調錨點需重解。
+
+---
+
 ## 4. 開發節奏(ultracode 開著 → 每個功能都這樣做)
 
 > 完整五階段流程(評估 → 決定方向 → 實作 → 驗證 → 文件 + 提交)見 `CLAUDE.md`「開發流程」;以下是「驗證」段的細節。**驗證綠後依 R22 自動 `commit` & `push origin main`。**

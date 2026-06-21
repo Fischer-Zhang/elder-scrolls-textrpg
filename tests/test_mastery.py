@@ -738,7 +738,7 @@ def test_sneak_mult_bonus_raises_sneak_damage():
     foe.health = foe.max_health = 99999
     base = combat.estimate_sneak_damage(c, gd, foe)
     mastery.choose(c, gd, "sneak_100", "shadowblade")
-    assert mastery.sneak_mult_bonus(c, gd) == 0.50
+    assert mastery.sneak_mult_bonus(c, gd) == 0.20          # R70:影刃 0.5→0.2
     assert combat.estimate_sneak_damage(c, gd, foe) > base   # 影刃放大偷襲傷害
 
 

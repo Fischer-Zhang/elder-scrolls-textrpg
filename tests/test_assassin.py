@@ -291,13 +291,13 @@ def test_stealth_weight_penalty_continuous_and_cap():
 
 
 def test_armor_sneak_mult_factor_threshold18():
-    """倍率端(方案B):W≤18 不打折(輕甲/龍鱗全保護)、重甲遞減、下限 0.45。"""
+    """R70:偷襲倍率折扣從 W=0 起罰(取消 W≤18 grace)、無 0.45 下限(僅夾 ≥0)。"""
     from tesrpg import formulas as F
-    assert F.armor_sneak_mult_factor(5) == 1.0 and F.armor_sneak_mult_factor(13) == 1.0
-    assert F.armor_sneak_mult_factor(18) == 1.0              # 門檻:龍鱗 W18 仍不打折
-    assert abs(F.armor_sneak_mult_factor(43) - (1 - (43 - 18) * 0.012)) < 1e-9   # 魔族重甲 →×0.70
-    assert F.armor_sneak_mult_factor(20) > F.armor_sneak_mult_factor(30)         # 重甲越重越打折
-    assert F.armor_sneak_mult_factor(1000) == 0.45          # 下限
+    assert F.armor_sneak_mult_factor(0) == 1.0                                   # 無甲不罰
+    assert abs(F.armor_sneak_mult_factor(9) - (1 - 9 * 0.012)) < 1e-9            # 輕甲皮革 W9 →×0.892(也吃小罰)
+    assert abs(F.armor_sneak_mult_factor(59) - (1 - 59 * 0.012)) < 1e-9          # 魔族重甲 W59 →×0.292
+    assert F.armor_sneak_mult_factor(20) > F.armor_sneak_mult_factor(30)         # 越重越打折
+    assert F.armor_sneak_mult_factor(1000) == 0.0          # 無下限夾,極重歸 0
 
 
 def test_offhand_enchant_applies_at_factor():

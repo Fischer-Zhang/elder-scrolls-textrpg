@@ -309,7 +309,10 @@ COMBAT_DODGE_XP = 0.4        # 成功閃避(敵人攻擊落空)→ 雜技技能 
 DUNGEON_REVEAL_SCOUT_XP = 0.12  # 地城每探明一格(踏入/偵查揭示)→ 偵查技能 xp(被動探索成長,低於 COMBAT 系)
 SECURITY_FAIL_XP_FRAC = 0.3      # 撬鎖/解陷阱「失敗」給的 security xp 比例(learn-by-doing 也學失敗;小到讓故意失敗刷功不划算 + lockpick 金幣閘仍在)
 
-SNEAK_ATTACK_SCALE = 0.03    # 偷襲傷害倍率係數
+# R70:偷襲基倍效益遞減(原線性 1+sneak×0.03 讓潛行+誓福堆疊無限放大)。改 _soft_cap:
+# 解出使 sneak100→+2.0(×3.0)、200→+3.0(×4.0),漸近加成 4.0(總倍率漸近 ×5)。
+SNEAK_MULT_SOFT_SLOPE = 0.0277   # 初始斜率(解 100→+2.0、200→+3.0)
+SNEAK_MULT_SOFT_CEIL = 4.0       # 加成漸近上限(總偷襲基倍漸近 ×5)
 SNEAK_ATTACK_HIT_FLOOR = 0.90  # 偷襲命中率下限(伏擊不察之敵,極少落空)
 DODGE_EVASION_SCALE = 0.0025   # 雜技閃避係數(acrobatics 100 → 敵人命中 −0.25)
 
@@ -337,11 +340,12 @@ def sneak_bleed_magnitude(sneak_skill: int, alchemy_skill: int) -> int:
 
 
 def sneak_attack_multiplier(sneak_skill: int) -> float:
-    """開場偷襲的傷害倍率:潛行越高,致命一擊越狠(sneak 0→×1.0、50→×2.5、100→×4.0)。"""
-    return 1.0 + sneak_skill * SNEAK_ATTACK_SCALE
+    """開場偷襲傷害倍率(R70 效益遞減):sneak 0→×1.0、50→×2.17、100→×3.0、200→×4.0(漸近 ×5)。
+    原線性(1+sneak×0.03→100=×4)讓潛行+誓福深堆無限放大;改遞減杜絕深堆暴衝、≤100 仍順暢成長。"""
+    return 1.0 + _soft_cap(sneak_skill, 0, SNEAK_MULT_SOFT_SLOPE, SNEAK_MULT_SOFT_CEIL)
 
 
-NIGHT_MOTHER_SNEAK_PER_RANK = 0.03   # 黑暗兄弟會每階對偷襲倍率的加成(夜母祝福)
+NIGHT_MOTHER_SNEAK_PER_RANK = 0.0167   # 黑暗兄弟會每階偷襲倍率加成(R70:0.03→0.0167·聆聽者6階×1.10,原×1.18)
 # solo BOSS 反一刀:對 `solo` 目標,單次偷襲傷害夾在其生命上限的此比例 → 開場一擊絕不致死。
 # apex(玻璃雙持+聆聽者+淬鍊+影刃)仍可靠隱遁循環無傷清 boss,但須多刀(守 approved plan
 # 「solo boss 仍存活」;精英/小遭遇不受影響,apex 照常秒殺)。調此值或夜母/影刃常數務必重跑 sim_assassin.py。
@@ -367,15 +371,13 @@ def night_mother_sneak_bonus(db_rank: int) -> float:
 # 門檻 18(方案 B):總重 ≤18 完全不打折 → 法袍/皮甲/玻璃/龍鱗等輕甲全段保護(W≤18),
 # 只有重甲(W>18)才隨重量遞減,夾在 [0.45,1.0]。改此值踩偷襲倍率紅線 → 必跑 sim_assassin.py。
 # ⚠ 與命中端各自獨立:armor_relief(無聲披掛)只抵命中端噪音,**不抵此倍率折扣**(見 R07/R25)。
-SNEAK_MULT_WEIGHT_FLOOR = 18      # 總重 ≤ 此值偷襲倍率不打折
-SNEAK_MULT_WEIGHT_PER = 0.012     # 每超出一點重量 → 倍率 ×(1−此值)
-SNEAK_MULT_WEIGHT_MIN = 0.45      # 倍率折扣下限(再重也保留 45% 偷襲爆發)
+SNEAK_MULT_WEIGHT_PER = 0.012     # 每點護甲重 → 偷襲倍率 ×(1−此值)(R70:取消 W≤18 grace + 0.45 下限,僅夾 ≥0)
 
 
 def armor_sneak_mult_factor(armor_weight: float) -> float:
-    """穿戴護甲總重 → 偷襲傷害倍率折扣係數(W≤18=×1.0;重甲遞減,夾 [0.45,1.0])。"""
-    return min(1.0, max(SNEAK_MULT_WEIGHT_MIN,
-                        1.0 - (armor_weight - SNEAK_MULT_WEIGHT_FLOOR) * SNEAK_MULT_WEIGHT_PER))
+    """穿戴護甲總重 → 偷襲傷害倍率折扣係數(R70:從 W=0 起罰、無 0.45 下限,僅夾 ≥0)。
+    輕甲也吃小罰(W9→×0.892),重甲偷襲爆發大減(W59→×0.292);極重可歸 0。"""
+    return max(0.0, 1.0 - armor_weight * SNEAK_MULT_WEIGHT_PER)
 
 
 def dodge_evasion(acrobatics_skill: int) -> float:
@@ -489,7 +491,7 @@ def damage_after_armor(damage: float, armor_rating: int, armor_pen: float = 0.0)
 # --- 武器流派(B:讓武器選擇是 build 而非純傷害數字)--------------------
 WEAPON_SPEED_DEFAULT = 1.0
 _ARCHETYPE_ARMOR_PEN = {"axe": 0.30}            # 斧破甲:無視 30% 護甲(鈍器分流:斧=破甲流,釘錘=控制流)
-_ARCHETYPE_SNEAK_BONUS = {"dagger": 1.6, "bow": 1.3}   # 潛襲倍率額外加成(刺客/獵手)
+_ARCHETYPE_SNEAK_BONUS = {"dagger": 1.5, "bow": 1.3}   # 潛襲倍率額外加成(R70:匕首 1.6→1.5)
 # 武器原型「內建命中附狀態」:釘錘/戰錘=控制流(命中機率擊暈,與斧的破甲對位);斧/其餘無。
 _ARCHETYPE_BUILTIN_STATUS = {"mace": {"kind": "stagger", "chance": 0.20, "turns": 1}}
 

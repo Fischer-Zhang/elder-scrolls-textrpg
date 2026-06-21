@@ -1,597 +1,1823 @@
 [
-  {"id": "athletics_50", "skill": "athletics", "threshold": 50,
-   "options": [
-     {"opt_id": "marathon", "name": "長途健步", "kind": "travel_factor_bonus", "bonus": 0.10,
-      "desc": "健步如飛:長途跋涉更省時(旅行耗時再 −10%)。"},
-     {"opt_id": "second_wind", "name": "不竭之軀", "kind": "fatigue_cost_bonus", "bonus": 0.10,
-      "desc": "氣力悠長:戰鬥揮擊更省力(攻擊耗體 −10%)。"}
-   ]},
-
-  {"id": "blade_100", "skill": "blade", "threshold": 100,
-   "options": [
-     {"opt_id": "precision", "name": "鋒芒畢露", "kind": "weapon_mod", "target": "blade", "hit": 0.05,
-      "desc": "刀劍大師:出招精準,刀劍攻擊命中 +5%(命中,非傷害)。"},
-     {"opt_id": "savage", "name": "迅捷連斬", "kind": "weapon_mod", "target": "blade", "power": 0.12, "recoil": 0.05,
-      "desc": "搏命連斬:刀劍傷害 +12% —— 代價是過度發力,每擊回噬自身 5% 傷害(不致死)。"}
-   ]},
-
-  {"id": "block_50", "skill": "block", "threshold": 50,
-   "options": [
-     {"opt_id": "shieldwall", "name": "盾反", "kind": "block_reflect", "reflect": 0.10, "fatigue": 10,
-      "desc": "盾反戰技:被近戰物理擊中時,以盾卸力反震 —— 反彈該擊「攻方完整物理輸出」10%(R42:吃 raw、解耦護甲;每次耗 10 體力,力竭則施展不出;與重甲反震/荊棘附魔相加)。"},
-     {"opt_id": "shield_bash", "name": "盾擊踉蹌", "kind": "block_riposte", "stagger_chance": 0.35,
-      "desc": "以盾反擊:成功格擋時 35% 機率震開來犯者,使其下一擊踉蹌。"}
-   ]},
-
-  {"id": "blunt_100", "skill": "blunt", "threshold": 100,
-   "options": [
-     {"opt_id": "sunder", "name": "破甲重錘", "kind": "weapon_mod", "target": "blunt", "pen": 0.15,
-      "desc": "鈍器大師:重錘碎甲,鈍器額外無視 15% 護甲。"},
-     {"opt_id": "concussion", "name": "震盪一擊", "kind": "weapon_mod", "target": "blunt",
-      "on_hit_status": {"kind": "weaken", "magnitude": 0.15, "turns": 1, "chance": 0.30},
-      "desc": "震盪打擊:30% 機率震懵敵人,使其下一回合攻擊削弱 15%。"}
-   ]},
-
-  {"id": "hand_to_hand_75", "skill": "hand_to_hand", "threshold": 75,
-   "options": [
-     {"opt_id": "iron_fists", "name": "鐵拳", "kind": "weapon_mod", "target": "hand_to_hand", "power": 0.15,
-      "desc": "徒手宗師:拳腳生風,徒手傷害 +15%(補徒手無法淬鍊附魔的劣勢)。"},
-     {"opt_id": "disarm", "name": "卸力擒拿", "kind": "weapon_mod", "target": "hand_to_hand",
-      "on_hit_status": {"kind": "stagger", "turns": 1, "chance": 0.40},
-      "desc": "卸力擒拿:40% 機率以巧勁卸開敵勢,使其踉蹌。"}
-   ]},
-
-  {"id": "heavy_armor_75", "skill": "heavy_armor", "threshold": 75,
-   "options": [
-     {"opt_id": "bulwark", "name": "壁壘", "kind": "bulwark", "factor": 0.85, "attack_fatigue_factor": 1.20,
-      "desc": "重甲宗師:化身移動堡壘,受到的物理傷害再減 15% —— 代價是揮擊更沉,攻擊耗體 +20%。"},
-     {"opt_id": "unyielding", "name": "巍然不動", "kind": "resist_fortify", "resist": {"magic": 10},
-      "desc": "厚重甲冑卸去法術衝擊:元素/法術抗性 +10%(純防禦,無耗體代價)。"}
-   ]},
-
-  {"id": "smithing_75", "skill": "smithing", "threshold": 75,
-   "options": [
-     {"opt_id": "master_temper", "name": "淬火宗師", "kind": "temper_cap_bonus", "cap_bonus": 1,
-      "desc": "鍛造宗師:淬鍊上限 +1 級(可把裝備鍛得更鋒利,仍受材料/時間經濟所限)。"},
-     {"opt_id": "efficient", "name": "物盡其用", "kind": "temper_cost_free", "free_chance": 0.30,
-      "desc": "用料精省:淬鍊時 30% 機率不消耗錠錠材料。"}
-   ]},
-
-  {"id": "alchemy_75", "skill": "alchemy", "threshold": 75,
-   "options": [
-     {"opt_id": "potent_poison", "name": "劇毒淬煉", "kind": "poison_unlock", "families": ["slow"], "duration_bonus": 1,
-      "desc": "毒性綿長:習得萃取『遲緩毒』(降敵先攻/命中),且你一切毒效延長 1 回合。"},
-     {"opt_id": "concentrated", "name": "濃縮萃取", "kind": "potion_potency", "potency_bonus": 0.20,
-      "desc": "煉金宗師:你調製的藥水與毒藥效力 +20%。"}
-   ]},
-
-  {"id": "alteration_75", "skill": "alteration", "threshold": 75,
-   "options": [
-     {"opt_id": "stoneflesh", "name": "石膚", "kind": "passive_armor", "armor_bonus": 20,
-      "desc": "變化宗師:只要尚有魔力,皮膚便如磐石(被動護甲 +20)。"},
-     {"opt_id": "spell_reach", "name": "術法增幅", "kind": "spell_mod", "school": "alteration", "power_bonus": 0.15,
-      "desc": "變化術法的護盾/變形效果增強 15%。"}
-   ]},
-
-  {"id": "conjuration_100", "skill": "conjuration", "threshold": 100,
-   "options": [
-     {"opt_id": "twin_summon", "name": "雙重召喚", "kind": "summon_mod", "extra": 1, "hp_factor": 0.6,
-      "desc": "召喚大師:每次召喚多喚出一隻較弱的盟友(血量六成)。"},
-     {"opt_id": "bound_blade", "name": "束縛兵刃", "kind": "summon_mod", "hp_bonus": 0.25, "turn_bonus": 1,
-      "desc": "召喚大師:召喚物更強韌(血量 +25%,多駐留 1 回合)。"}
-   ]},
-
-  {"id": "restoration_75", "skill": "restoration", "threshold": 75,
-   "options": [
-     {"opt_id": "overheal_ward", "name": "聖光·溢盾", "kind": "overheal_ward", "convert": 0.6, "cap_ratio": 0.5, "turns": 4,
-      "desc": "復原宗師:治療超出生命上限的部分化為臨時護盾(60% 轉化,上限為生命上限一半,4 回合)。"},
-     {"opt_id": "steadfast", "name": "不屈祝禱", "kind": "regen_on_low", "threshold": 0.25, "regen": 4, "turns": 3,
-      "desc": "命懸一線時(生命低於 25%)聖光自湧,持續再生 4/回合,共 3 回合。"}
-   ]},
-
-  {"id": "illusion_75", "skill": "illusion", "threshold": 75,
-   "options": [
-     {"opt_id": "charm_market", "name": "魅惑交易", "kind": "merchant_bonus", "disposition_bonus": 0.12,
-      "desc": "幻術宗師:以魅惑左右商人,買賣更划算(議價 +0.12)。"},
-     {"opt_id": "cowardice", "name": "懾心術", "kind": "fear_on_hit", "chance": 0.20, "turns": 2,
-      "desc": "你的攻擊夾帶懼意:命中時 20% 機率使敵人陷入恐懼(2 回合不敢進攻)。"}
-   ]},
-
-  {"id": "mysticism_100", "skill": "mysticism", "threshold": 100,
-   "options": [
-     {"opt_id": "soul_siphon", "name": "靈魂虹吸", "kind": "enchant_potency", "potency_bonus": 0.20,
-      "desc": "神秘大師:你的附魔強度 +20%(靈魂石的力量榨取得更徹底)。"},
-     {"opt_id": "spectral_aegis", "name": "靈光護壁", "kind": "passive_armor", "armor_bonus": 15,
-      "desc": "祕法登峰:靈光恆繞護體於外(被動護甲 +15,與靈體護壁相加)。"}
-   ]},
-
-  {"id": "destruction_100", "skill": "destruction", "threshold": 100,
-   "options": [
-     {"opt_id": "overload", "name": "過載", "kind": "spell_mod", "school": "destruction",
-      "power_bonus": 0.20, "cost_factor": 1.30,
-      "desc": "毀滅大師:可催動法術過載,威力大增 —— 代價是每次施法多耗 30% 魔力。"},
-     {"opt_id": "impact", "name": "衝擊餘波", "kind": "spell_mod", "school": "destruction",
-      "on_hit": {"kind": "stagger", "chance": 0.35},
-      "desc": "毀滅法術的衝擊震懾敵人:命中時 35% 機率使其踉蹌(無額外魔耗)。"}
-   ]},
-
-  {"id": "acrobatics_75", "skill": "acrobatics", "threshold": 75,
-   "options": [
-     {"opt_id": "evasion", "name": "身輕如燕", "kind": "evasion_bonus", "evasion_bonus": 0.05,
-      "desc": "雜技宗師:身法飄忽,敵人命中你的機率再 −5%。"},
-     {"opt_id": "tumble", "name": "翻滾脫離", "kind": "vanish_floor", "floor": 0.10,
-      "desc": "縱身翻滾脫離纏鬥:戰鬥中隱遁成功率保底 10%。"}
-   ]},
-
-  {"id": "light_armor_75", "skill": "light_armor", "threshold": 75,
-   "options": [
-     {"opt_id": "featherweight", "name": "無聲披掛", "kind": "armor_sneak_relief", "relief": 1.0,
-      "desc": "輕甲宗師:身手不受甲冑所累,潛近時護甲噪音懲罰全免。"},
-     {"opt_id": "fluid_motion", "name": "順勢借力", "kind": "on_evade", "restamina": 8,
-      "desc": "卸力借勢:每次閃過敵攻即回復 8 點體力 —— 游擊纏鬥久戰不竭。"}
-   ]},
-
-  {"id": "marksman_100", "skill": "marksman", "threshold": 100,
-   "options": [
-     {"opt_id": "steady_aim", "name": "穩準狠", "kind": "weapon_mod", "target": "marksman", "hit": 0.07,
-      "desc": "射術大師:箭無虛發,弓弩攻擊命中 +7%(命中,非傷害)。"},
-     {"opt_id": "penetrator", "name": "穿甲箭", "kind": "weapon_mod", "target": "marksman", "pen": 0.15, "fatigue": 4,
-      "desc": "穿甲箭頭:弓弩額外無視 15% 護甲 —— 代價是強弓難開,每箭多耗 4 體力。"}
-   ]},
-
-  {"id": "mercantile_50", "skill": "mercantile", "threshold": 50,
-   "options": [
-     {"opt_id": "haggler", "name": "精算買賣", "kind": "merchant_bonus", "disposition_bonus": 0.12,
-      "desc": "交易宗師:精打細算,買賣價格更划算(議價 +0.12)。"},
-     {"opt_id": "investor", "name": "行商人脈", "kind": "restock_bonus", "restock_mult": 1.5,
-      "desc": "你打通了商路:各地商人的補貨量 ×1.5(貨源更充足)。"}
-   ]},
-
-  {"id": "scout_75", "skill": "scout", "threshold": 75,
-   "options": [
-     {"opt_id": "vanguard", "name": "先機在握", "kind": "prep_bonus", "prep_bonus": 1,
-      "desc": "偵查宗師:搶得先機時,開戰前可多做 1 個準備動作。"},
-     {"opt_id": "preempt", "name": "臨陣預判", "kind": "evasion_bonus", "evasion_bonus": 0.04,
-      "desc": "洞悉敵之動向與出手時機,臨陣預判閃避更俐落(敵人命中你的機率 −4%,夾總上限)。"}
-   ]},
-
-  {"id": "sneak_75", "skill": "sneak", "threshold": 75,
-   "options": [
-     {"opt_id": "relentless_shadow", "name": "連環踏影", "kind": "vanish_relentless",
-      "desc": "踏影成性:再隱匿不再因同場重複而遞減、且不限次數 —— 但敵眾(>3)時仍難遁形。"},
-     {"opt_id": "silent_approach", "name": "無聲潛近", "kind": "approach_bonus", "approach_bonus": 0.10,
-      "desc": "你潛行如鬼魅:接戰時更常搶到開場偷襲先機(+10%)。"}
-   ]},
-
-  {"id": "sneak_100", "skill": "sneak", "threshold": 100,
-   "options": [
-     {"opt_id": "shadowblade", "name": "影刃·暗殺宗師", "kind": "sneak_mult_bonus", "mult_bonus": 0.50,
-      "desc": "暗殺登峰造極:偷襲一擊的倍率再 ×1.5 —— 小遭遇可一刀無傷清場(但敵眾仍須正面接戰)。"},
-     {"opt_id": "shadowstep", "name": "踏影", "kind": "vanish_floor", "floor": 0.15,
-      "desc": "影遁之術登峰:戰鬥中隱遁成功率保底 15%(逃脫,非傷害)。"}
-   ]},
-
-  {"id": "security_75", "skill": "security", "threshold": 75,
-   "options": [
-     {"opt_id": "master_floor", "name": "撬鎖名家", "kind": "lock_floor", "floor": 0.30,
-      "desc": "安全宗師:再刁鑽的鎖你都有把握(撬鎖成功率下限 30%)。"},
-     {"opt_id": "pick_thrift", "name": "巧手不折", "kind": "pick_no_break", "keep_chance": 0.50,
-      "desc": "巧勁開鎖:撬鎖失敗時 50% 機率不折斷開鎖器。"}
-   ]},
-
-  {"id": "speechcraft_100", "skill": "speechcraft", "threshold": 100,
-   "options": [
-     {"opt_id": "charm", "name": "辯舌·折服", "kind": "guaranteed_persuade",
-      "desc": "口才大師:三寸不爛之舌,說服必定成功 —— 但每個人只會被你折服一次。"},
-     {"opt_id": "rally", "name": "戰陣號令", "kind": "rally",
-      "desc": "口才登峰:開戰可振臂號令,旗鼓相和 —— 全隊同袍士氣大振、增傷一波接一波(耗體;鼓舞他人,單挑無益)。"}
-   ]},
-  {"id": "mysticism_75", "skill": "mysticism", "threshold": 75, "options": [
-     {"opt_id": "arcane_cascade", "name": "奧術連鎖", "kind": "cascade",
-      "power_per_depth": 0.08, "fatigue_relief_per_depth": 0.12, "max_depth": 2, "window": 1,
-      "desc": "法師心流:連續施法漸入佳境 —— 每連一發,下一道法術威力 +8%、施法省體 12%(最多疊 2 層,停手即散)。"},
-     {"opt_id": "spectral_ward", "name": "靈體護壁", "kind": "passive_armor", "armor_bonus": 15,
-      "desc": "祕法宗師:只要尚有魔力,靈光便護體於外(被動護甲 +15)。"}
-   ]},
-  {"id": "destruction_75", "skill": "destruction", "threshold": 75, "options": [
-     {"opt_id": "efficient_destruction", "name": "省魔催動", "kind": "spell_mod", "school": "destruction", "cost_factor": 0.85,
-      "desc": "毀滅嫻熟:毀滅術施法省魔 15%(可抵過載的加耗)。"},
-     {"opt_id": "arcane_battery", "name": "法力回擊", "kind": "mana_on_hit", "magnitude": 4,
-      "desc": "法武共鳴(自持流):以刃淬魔 —— 近戰命中回復 4 點魔力,揮劍補魔、續法不竭(穿重甲亦可,本作施法不罰甲)。"}
-   ]},
-  {"id": "mercantile_75", "skill": "mercantile", "threshold": 75, "options": [
-     {"opt_id": "subterfuge_intel", "name": "諜報偵搜", "kind": "prep_bonus", "prep_bonus": 1,
-      "desc": "盜賊情報網:以人脈與口舌探明敵情 —— 搶得先機時,開戰前可多做 1 個準備動作(與偵查的先機在握相加)。"},
-     {"opt_id": "informant", "name": "線人耳目", "kind": "recon_resist_read",
-      "desc": "線人通報虛實:偵查揭露敵抗性/弱點的門檻由 75 降為 50。"}
-   ]},
-  {"id": "restoration_50", "skill": "restoration", "threshold": 50, "options": [
-     {"opt_id": "triage", "name": "戰地搶救", "kind": "triage_heal",
-      "magicka_factor": 0.15, "fatigue_factor": 0.25,
-      "desc": "戰地醫者本能:當同袍生命垂危(<30%),你下一道治療/援護術近乎免費施放(魔力 15%、體力 25%)。"},
-     {"opt_id": "cleanse", "name": "潔淨之軀", "kind": "resist_fortify", "resist": {"disease": 30},
-      "desc": "白袍的庇佑:長伴病榻而百毒不侵(疾病抗性 +30%)。"}
-   ]},
-  {"id": "marksman_50", "skill": "marksman", "threshold": 50, "options": [
-     {"opt_id": "skirmish_shot", "name": "散兵走位", "kind": "bow_technique", "technique": "skirmish",
-      "desc": "散兵游擊:戰中可射一箭旋即遁走 —— 重歸陰影、重得偷襲先機(成功率隨潛行/雜技漸高,敵眾或久戰漸難)。"},
-     {"opt_id": "crippling_shot", "name": "牽制射", "kind": "bow_technique", "technique": "crippling",
-      "desc": "牽制射擊:射一箭壓制目標,削弱其攻勢數回合(weaken)—— 風箏拉距的射手控場。"}
-   ]},
-  {"id": "sneak_25", "skill": "sneak", "threshold": 25, "options": [
-     {"opt_id": "vanish_art", "name": "隱遁之術", "kind": "vanish_unlock",
-      "desc": "潛行有成,習得戰中遁形之法 —— 可花一回合重歸陰影:避過本回合敵襲、並重得偷襲先機。敵眾(>3)或被單一強敵死咬時,再三遁形漸難。"}
-   ]},
-  {"id": "sneak_50", "skill": "sneak", "threshold": 50, "options": [
-     {"opt_id": "deathmark", "name": "致命烙印", "kind": "deathmark",
-      "pen": 0.35, "fatigue_cost": 15, "sneak_gate": 50, "turns": 4, "cooldown": 6,
-      "desc": "獵殺標記:耗 15 體力標記一敵(標記 4 回 + 落印後冷卻,每目標約 6 回才可再標)→ 對其後續(非開場)近戰破甲 +35%。開場偷襲不受惠(守 boss 反一刀)。"},
-     {"opt_id": "cutpurse", "name": "扒竊聖手", "kind": "skill_fortify", "skill": {"mercantile": 10},
-      "desc": "暗影中的巧手:銷贓議價更在行(商貿技能 +10)。"}
-   ]},
-
-  {"id": "athletics_75", "skill": "athletics", "threshold": 75,
-   "options": [
-     {"opt_id": "escape_artist", "name": "逃命好手", "kind": "flee_bonus", "bonus": 0.15,
-      "desc": "腳程與機變過人:脫離戰鬥的成功率 +15%。"},
-     {"opt_id": "enduring", "name": "不竭之軀", "kind": "attr_fortify", "attr": {"endurance": 5},
-      "desc": "長年磨練的底子(耐力 +5 → 生命/體力上限隨之提升)。"}
-   ]},
-
-  {"id": "blade_50", "skill": "blade", "threshold": 50,
-   "options": [
-     {"opt_id": "riposte_blade", "name": "還擊架式", "kind": "weapon_mod", "target": "blade",
-      "on_hit_status": {"kind": "stagger", "turns": 1, "chance": 0.25},
-      "desc": "劍勢連綿:刀劍命中時 25% 機率震開敵勢,使其踉蹌一回合。"},
-     {"opt_id": "keen_edge", "name": "鋒刃輕靈", "kind": "weapon_mod", "target": "blade", "hit": 0.05,
-      "desc": "劍走輕靈,出手更準(刀劍命中 +5%)。"}
-   ]},
-
-  {"id": "block_75", "skill": "block", "threshold": 75,
-   "options": [
-     {"opt_id": "bracing", "name": "撐架穩步", "kind": "passive_armor", "armor_bonus": 10,
-      "desc": "舉盾撐架,身形如樁:被動護甲 +10。"},
-     {"opt_id": "shield_break", "name": "盾擊破勢", "kind": "block_riposte", "stagger_chance": 0.35, "weaken": 0.15, "weaken_turns": 2,
-      "desc": "盾擊破勢:格擋反擊時不僅震開來犯者,更挫其攻勢 —— 其後 2 回合攻擊削弱 15%(與盾擊踉蹌相加)。"}
-   ]},
-
-  {"id": "blunt_50", "skill": "blunt", "threshold": 50,
-   "options": [
-     {"opt_id": "crippling", "name": "碎骨重擊", "kind": "weapon_mod", "target": "blunt",
-      "on_hit_status": {"kind": "weaken", "magnitude": 0.10, "turns": 2, "chance": 0.25},
-      "desc": "碎其筋骨:鈍器命中時 25% 機率使敵 2 回合攻擊削弱 10%。"},
-     {"opt_id": "heavy_swing", "name": "沉勁揮擊", "kind": "weapon_mod", "target": "blunt", "power": 0.10, "recoil": 0.04,
-      "desc": "沉勁傾注:鈍器傷害 +10% —— 代價是回噬自身 4% 傷害(不致死)。"}
-   ]},
-
-  {"id": "hand_to_hand_50", "skill": "hand_to_hand", "threshold": 50,
-   "options": [
-     {"opt_id": "pressure_point", "name": "點穴卸力", "kind": "weapon_mod", "target": "hand_to_hand",
-      "on_hit_status": {"kind": "weaken", "magnitude": 0.12, "turns": 1, "chance": 0.30},
-      "desc": "點穴卸力:徒手命中時 30% 機率使敵下一擊削弱 12%。"},
-     {"opt_id": "grappler", "name": "擒拿根基", "kind": "skill_fortify", "skill": {"hand_to_hand": 8},
-      "desc": "馬步紮實,徒手根基更穩(徒手技能 +8)。"}
-   ]},
-
-  {"id": "heavy_armor_50", "skill": "heavy_armor", "threshold": 50,
-   "options": [
-     {"opt_id": "armor_reflect", "name": "重甲反震", "kind": "armor_reflect", "reflect": 0.06,
-      "desc": "厚甲卸力反震:被近戰物理擊中時,反彈「攻方完整物理輸出」6% 給攻擊者(R42:吃 raw、解耦護甲;與盾反/荊棘附魔相加,無耗體)。"},
-     {"opt_id": "disease_ward", "name": "百戰不染", "kind": "resist_fortify", "resist": {"disease": 25},
-      "desc": "厚甲護身,瘴癘難侵(疾病抗性 +25%)。"}
-   ]},
-
-  {"id": "smithing_50", "skill": "smithing", "threshold": 50,
-   "options": [
-     {"opt_id": "thrifty_forge", "name": "淬火精算", "kind": "temper_cost_free", "free_chance": 0.20,
-      "desc": "用料精算:淬鍊時有兩成機率不耗錠(與其他省料里程碑取最高)。"},
-     {"opt_id": "temper_edge", "name": "淬鋒", "kind": "temper_power", "power": 0.10,
-      "desc": "淬火更深:每級淬鍊的武器加傷與護甲加值再 ×1.10(與淬鍊大師相加)。"}
-   ]},
-
-  {"id": "alchemy_50", "skill": "alchemy", "threshold": 50,
-   "options": [
-     {"opt_id": "toxin_master", "name": "淬毒名家", "kind": "poison_unlock", "families": ["weaken"],
-      "desc": "淬毒名家:習得萃取『衰毒』—— 命中削弱敵之攻勢(數回合內敵傷害下降)。"},
-     {"opt_id": "field_brewer", "name": "案前苦工", "kind": "attr_fortify", "attr": {"intelligence": 4},
-      "desc": "案前苦工磨出靈思(智力 +4 → 魔力上限提升、煉金更精)。"}
-   ]},
-
-  {"id": "alteration_50", "skill": "alteration", "threshold": 50,
-   "options": [
-     {"opt_id": "efficient_shield", "name": "省魔護持", "kind": "spell_mod", "school": "alteration", "cost_factor": 0.85,
-      "desc": "變化術駕輕就熟:施法省魔 15%(護盾/開鎖更頻繁可用)。"},
-     {"opt_id": "shield_focus", "name": "術法凝練", "kind": "spell_mod", "school": "alteration", "power_bonus": 0.10,
-      "desc": "變化系術法效力 +10%(吃 _power → 護盾更厚、附魔之刃〔火/霜/電刃〕元素傷更高;與術法增幅/精純相加)。"}
-   ]},
-
-  {"id": "conjuration_75", "skill": "conjuration", "threshold": 75,
-   "options": [
-     {"opt_id": "warding_summon", "name": "護體召喚", "kind": "passive_armor", "armor_bonus": 15,
-      "desc": "召喚靈光環體:被動護甲 +15。"},
-     {"opt_id": "summoner_focus", "name": "召喚精研", "kind": "skill_fortify", "skill": {"conjuration": 8},
-      "desc": "召喚精研,束縛/喚物更強更省魔(召喚技能 +8)。"}
-   ]},
-
-  {"id": "illusion_100", "skill": "illusion", "threshold": 100,
-   "options": [
-     {"opt_id": "mind_mastery", "name": "操心駕輕", "kind": "spell_mod", "school": "illusion", "cost_factor": 0.85,
-      "desc": "心智操弄駕輕就熟:幻術施法省魔 15%(恐懼/挫志/群控更頻繁可用)。"},
-     {"opt_id": "soul_dread", "name": "懾魂奪魄", "kind": "fear_on_hit", "chance": 0.15, "turns": 3,
-      "desc": "幻術登峰:武器命中施加懼意,且懼意持續更長(3 回合,turns 取最)—— 命中率與懾意/懾心術相加夾 30%;solo BOSS 免疫。"}
-   ]},
-
-  {"id": "acrobatics_50", "skill": "acrobatics", "threshold": 50,
-   "options": [
-     {"opt_id": "tumbler", "name": "翻滾卸勁", "kind": "evasion_bonus", "evasion_bonus": 0.04,
-      "desc": "翻滾卸勁,身形更難捉摸(閃避率 +4%)。"},
-     {"opt_id": "tumbling_charge", "name": "翻滾突進", "kind": "approach_bonus", "approach_bonus": 0.10,
-      "desc": "翻滾切入有利位:接戰時更常搶到開場偷襲先機(+10%,與潛近/情報來源相加)。"}
-   ]},
-
-  {"id": "light_armor_50", "skill": "light_armor", "threshold": 50,
-   "options": [
-     {"opt_id": "lithe_evasion", "name": "柔革閃身", "kind": "evasion_bonus", "evasion_bonus": 0.05,
-      "desc": "柔革貼身、卸力游走:身形更難捉摸,敵人命中你的機率 −5%(與雜技/運動相加,夾總上限)。"},
-     {"opt_id": "riposte_step", "name": "迴身反打", "kind": "on_evade", "counter_chance": 0.35, "counter_frac": 0.5,
-      "desc": "輕裝游擊:閃過敵攻時 35% 機率順勢回敬一擊(造成你武器基礎傷害的五成)—— 以閃化打。"}
-   ]},
-
-  {"id": "security_50", "skill": "security", "threshold": 50,
-   "options": [
-     {"opt_id": "trapwise", "name": "機關通曉", "kind": "trap_floor", "floor": 0.30,
-      "desc": "機關通曉:再刁鑽的陷阱也有把握(解陷/避陷成功率保底 30%)。"},
-     {"opt_id": "light_fingers", "name": "順手牽羊", "kind": "theft_skill",
-      "steal_bonus": 0.15, "bounty_factor": 0.5,
-      "desc": "市集神偷:行竊得手率 +15%,且即便失風,被索的賞金也減半(膽大心細的扒手)。"}
-   ]},
-
-  {"id": "scout_50", "skill": "scout", "threshold": 50,
-   "options": [
-     {"opt_id": "intel_strike", "name": "料敵機先", "kind": "approach_bonus", "approach_bonus": 0.10,
-      "desc": "情報轉戰力:摸清敵之站位與警覺 → 接戰時更常搶得開場偷襲先機(+10%,與無聲潛近相加)。"},
-     {"opt_id": "threat_read", "name": "料敵判讀", "kind": "recon_resist_read",
-      "desc": "戰場判讀入微:接戰前更早看穿敵之抗性與弱點(揭露門檻 75→50);斥候洞悉虛實的眼力。"}
-   ]},
-
-  {"id": "speechcraft_50", "skill": "speechcraft", "threshold": 50,
-   "options": [
-     {"opt_id": "war_cry", "name": "威風喝退", "kind": "intimidate_floor", "floor": 0.30,
-      "desc": "威風凜凜:喝退弱敵(盜匪/盜賊/城衛)的成功率保底 30% —— 不戰而屈人之兵(solo BOSS 不為所動)。"},
-     {"opt_id": "silver_voiced", "name": "辯才無礙", "kind": "skill_fortify", "skill": {"speechcraft": 8},
-      "desc": "辯才無礙:口才技能 +8 —— 說服/化解/威嚇/套話,一切言談檢定更易成。"}
-   ]},
-
-  {"id": "athletics_100", "skill": "athletics", "threshold": 100, "options": [
-     {"opt_id": "windstep", "name": "疾風身法", "kind": "evasion_bonus", "evasion_bonus": 0.05,
-      "desc": "運動登峰:步法飄忽如風,敵人命中你的機率再 −5%(多源相加)。"},
-     {"opt_id": "tireless", "name": "不竭極致", "kind": "attr_fortify", "attr": {"speed": 6},
-      "desc": "腳程與爆發過人(速度 +6 → 出手順序/逃脫/命中提升)。"}
-   ]},
-
-  {"id": "block_100", "skill": "block", "threshold": 100, "options": [
-     {"opt_id": "iron_bastion", "name": "銅牆鐵壁", "kind": "passive_armor", "armor_bonus": 12,
-      "desc": "格擋登峰:架盾撐架如鑄鐵堡壘(被動護甲 +12,與撐架穩步相加)。"},
-     {"opt_id": "perfect_block", "name": "盾威·完美格擋", "kind": "block_riposte", "stagger_chance": 0.40, "counter": 0.5,
-      "desc": "格擋登峰:格擋反擊時以盾痛擊來犯者 —— 40% 機率震開,並回敬一記盾擊(造成你武器基礎傷害的五成;與盾擊踉蹌/破勢相加)。"}
-   ]},
-
-  {"id": "hand_to_hand_100", "skill": "hand_to_hand", "threshold": 100, "options": [
-     {"opt_id": "transcend_fist", "name": "化勁通玄", "kind": "weapon_mod", "target": "hand_to_hand", "power": 0.10,
-      "desc": "徒手登峰:拳掌吞吐勁力,徒手傷害 +10%(與鐵拳相加;補徒手無法淬鍊附魔的劣勢)。"},
-     {"opt_id": "iron_shirt", "name": "鐵布衫", "kind": "passive_armor", "armor_bonus": 12,
-      "desc": "徒手登峰:千錘百鍊以氣血護體如甲(被動護甲 +12;名實相符的體防頂點)。"}
-   ]},
-
-  {"id": "heavy_armor_100", "skill": "heavy_armor", "threshold": 100, "options": [
-     {"opt_id": "ironhide", "name": "銅皮鐵骨", "kind": "passive_armor", "armor_bonus": 18,
-      "desc": "重甲登峰:厚甲與血肉融為一體,化身行走的堡壘(被動護甲 +18)。"},
-     {"opt_id": "crushing_bulk", "name": "重壓", "kind": "armor_stagger", "chance": 0.22,
-      "desc": "重甲登峰:厚甲之軀撞開來犯者 —— 被近戰物理擊中時 22% 機率震開攻擊者使其踉蹌(以重制敵)。"}
-   ]},
-
-  {"id": "smithing_100", "skill": "smithing", "threshold": 100, "options": [
-     {"opt_id": "legendary_smith", "name": "傳奇工匠", "kind": "temper_cost_free", "free_chance": 0.50,
-      "desc": "鍛造登峰:對材料的拿捏出神入化 —— 淬鍊時 50% 機率不消耗錠材(多源取最高)。"},
-     {"opt_id": "temper_mastery", "name": "淬鍊大師", "kind": "temper_power", "power": 0.15,
-      "desc": "鍛技通玄:淬鍊加成再 ×1.15(與淬鋒相加,50+100 合計 ×1.25)。"}
-   ]},
-
-  {"id": "alchemy_100", "skill": "alchemy", "threshold": 100, "options": [
-     {"opt_id": "venom_lord", "name": "百毒宗師", "kind": "poison_unlock", "families": ["fear"],
-      "desc": "百毒宗師:習得萃取『懼毒』—— 命中令敵陷入驚懼、短暫失能(solo BOSS 免疫)。"},
-     {"opt_id": "panacea", "name": "萬靈藥", "kind": "potion_potency", "potency_bonus": 0.15,
-      "desc": "煉金登峰:你調製的藥水與毒藥效力再 +15%(與濃縮萃取相加)。"}
-   ]},
-
-  {"id": "alteration_100", "skill": "alteration", "threshold": 100, "options": [
-     {"opt_id": "pure_form", "name": "術法精純", "kind": "spell_mod", "school": "alteration", "power_bonus": 0.15,
-      "desc": "變化登峰:護盾/變形術法效力 +15%(與術法增幅相加)。"},
-     {"opt_id": "mage_flesh", "name": "魔皮", "kind": "passive_armor", "armor_bonus": 14,
-      "desc": "變化登峰:肌膚常駐石化魔甲(被動護甲 +14,與石膚相加)。"}
-   ]},
-
-  {"id": "restoration_100", "skill": "restoration", "threshold": 100, "options": [
-     {"opt_id": "divine_grace", "name": "聖療登峰", "kind": "spell_mod", "school": "restoration", "power_bonus": 0.20,
-      "desc": "復原登峰:治療/援護術回復量 +20%(聖光更盛)。"},
-     {"opt_id": "everflow", "name": "生生不息", "kind": "combat_regen", "heal": 8,
-      "desc": "復原登峰:聖光長駐,戰鬥中每回合自癒 8 點生命(久戰不衰的持續流)。"}
-   ]},
-
-  {"id": "acrobatics_100", "skill": "acrobatics", "threshold": 100, "options": [
-     {"opt_id": "aerial_ambush", "name": "凌空奇襲", "kind": "on_evade", "restamina": 10,
-      "desc": "雜技登峰:身形如煙、卸勁不竭 —— 每次閃過敵攻即回復 10 點體力,翻飛纏鬥久戰愈穩(與順勢借力相加夾上限)。"},
-     {"opt_id": "wind_step", "name": "凌風身法", "kind": "evasion_bonus", "evasion_bonus": 0.06,
-      "desc": "雜技登峰(閃避流):翻飛縱躍、身形如風,敵人難以鎖定你的軌跡 —— 命中你的機率再 −6%(與輕甲/運動相加夾上限);與凌空奇襲的回體流互為身法兩極。"}
-   ]},
-
-  {"id": "light_armor_100", "skill": "light_armor", "threshold": 100, "options": [
-     {"opt_id": "storm_dance", "name": "風暴之舞", "kind": "on_evade", "counter_chance": 0.6, "counter_frac": 0.6, "counter_stagger": true,
-      "desc": "游擊登峰:閃過敵攻時 60% 機率回敬一記(武器基礎傷害六成)並震開來犯者 —— 以閃化打臻於化境(與迴身反打取最)。"},
-     {"opt_id": "phantom_step", "name": "身如鬼魅", "kind": "evasion_bonus", "evasion_bonus": 0.06,
-      "desc": "游擊登峰(閃避流):步法飄忽如鬼魅,敵人幾乎抓不住你的身影 —— 命中你的機率再 −6%(多源相加夾上限);輕裝弓手/法者的不敗身法。"}
-   ]},
-
-  {"id": "mercantile_100", "skill": "mercantile", "threshold": 100, "options": [
-     {"opt_id": "master_trader", "name": "頂級議價", "kind": "merchant_bonus", "disposition_bonus": 0.10,
-      "desc": "交易登峰:左右逢源,買賣價格再優(議價 +0.10,與各議價來源相加)。"},
-     {"opt_id": "charisma", "name": "八面玲瓏", "kind": "attr_fortify", "attr": {"personality": 5},
-      "desc": "長袖善舞、八面玲瓏(魅力 +5 → 議價/說服更易)。"}
-   ]},
-
-  {"id": "scout_100", "skill": "scout", "threshold": 100, "options": [
-     {"opt_id": "battle_master", "name": "決勝先機", "kind": "prep_bonus", "prep_bonus": 1,
-      "desc": "偵查登峰:洞悉戰機,搶得先機時開戰前可再多做 1 個準備動作(多源相加)。"},
-     {"opt_id": "first_blood", "name": "先聲奪人", "kind": "approach_bonus", "approach_bonus": 0.12,
-      "desc": "斥候之術登峰:對戰場了然於胸,接戰幾乎必搶得開場偷襲先機(+12%,與其他潛近來源相加)。"}
-   ]},
-
-  {"id": "security_100", "skill": "security", "threshold": 100, "options": [
-     {"opt_id": "master_thief", "name": "神偷之手", "kind": "lock_floor", "floor": 0.50,
-      "desc": "安全登峰:再固若金湯的鎖你都有半數把握(撬鎖成功率下限 50%;多源取最高)。"},
-     {"opt_id": "thiefs_eye", "name": "賊眼·窺探", "kind": "dungeon_casing",
-      "desc": "賊眼如炬:每踏入地城新一層,即洞悉該層所有陷阱與上鎖寶箱的位置(預知佈防;不含怪/樓梯/首領)。"}
-   ]},
-
-  {"id": "blade_75", "skill": "blade", "threshold": 75, "options": [
-     {"opt_id": "blade_flow", "name": "劍勢如虹", "kind": "weapon_mod", "target": "blade", "power": 0.08,
-      "desc": "劍勢漸入化境:刀劍傷害 +8%(與其他刀劍流派相加)。"},
-     {"opt_id": "swift_blade", "name": "輕劍捷影", "kind": "attr_fortify", "attr": {"agility": 4},
-      "desc": "持劍輕靈,身手更捷(敏捷 +4 → 命中/閃避提升)。"}
-   ]},
-
-  {"id": "blunt_75", "skill": "blunt", "threshold": 75, "options": [
-     {"opt_id": "bone_crush", "name": "碎骨之力", "kind": "weapon_mod", "target": "blunt", "pen": 0.08,
-      "desc": "鈍器漸入化境:額外無視 8% 護甲(與其他鈍器流派相加)。"},
-     {"opt_id": "mighty_arm", "name": "巨力臂", "kind": "attr_fortify", "attr": {"strength": 4},
-      "desc": "揮錘之力更沉(力量 +4 → 近戰傷害/負重提升)。"}
-   ]},
-
-  {"id": "marksman_75", "skill": "marksman", "threshold": 75, "options": [
-     {"opt_id": "swift_shot", "name": "疾矢", "kind": "weapon_mod", "target": "marksman", "hit": 0.04,
-      "desc": "箭術漸精:弓弩命中 +4%(與其他射術流派相加)。"},
-     {"opt_id": "aimed_shot", "name": "瞄準射", "kind": "bow_technique", "technique": "aimed",
-      "desc": "蓄力瞄準:額外耗體換一記強擊 —— 命中、破甲與傷害皆大幅提升(不吃偷襲倍率、受 solo 夾限)。"}
-   ]},
-
-  {"id": "speechcraft_75", "skill": "speechcraft", "threshold": 75, "options": [
-     {"opt_id": "silver_pardon", "name": "巧言脫罪", "kind": "talk_down_lever", "cap_bonus": 80, "floor": 0.20,
-      "desc": "三言兩語化干戈:說退攔路衛兵的賞金上限提至 200 金、且成功率保底 20% —— 大事化小。"},
-     {"opt_id": "iron_presence", "name": "威名懾敵", "kind": "intimidate_floor", "floor": 0.45,
-      "desc": "威名遠播:喝退弱敵的成功率保底 45%(與威風喝退取最)—— 你的名號本身就是武器。"}
-   ]},
-
-  {"id": "conjuration_50", "skill": "conjuration", "threshold": 50, "options": [
-     {"opt_id": "efficient_summon", "name": "省魔召喚", "kind": "spell_mod", "school": "conjuration", "cost_factor": 0.85,
-      "desc": "召喚漸熟:召喚/束縛/亡者復生施法省魔 15%(更頻繁可用)。"},
-     {"opt_id": "warding_focus", "name": "護體召喚初窺", "kind": "passive_armor", "armor_bonus": 8,
-      "desc": "召喚靈光初凝環體護持(被動護甲 +8;與護體召喚〔75〕相加)。"}
-   ]},
-
-  {"id": "destruction_50", "skill": "destruction", "threshold": 50, "options": [
-     {"opt_id": "resonant_strike", "name": "共鳴一擊", "kind": "resonant_strike",
-      "transfer": 0.5, "dot_magnitude": 4, "dot_turns": 3,
-      "desc": "法武共鳴(爆發流):施放毀滅傷害法術後,下一記近戰灌入其半數法力 —— 額外元素傷害並引燃同系持續傷害。"},
-     {"opt_id": "focused_mind", "name": "凝神聚法", "kind": "attr_fortify", "attr": {"intelligence": 4},
-      "desc": "凝神聚法,魔力更充沛(智力 +4 → 魔力上限提升)。"}
-   ]},
-
-  {"id": "illusion_50", "skill": "illusion", "threshold": 50, "options": [
-     {"opt_id": "efficient_illusion", "name": "省魔幻術", "kind": "spell_mod", "school": "illusion", "cost_factor": 0.85,
-      "desc": "幻術漸熟:幻術施法省魔 15%(恐懼/挫志/群控更頻繁可用)。"},
-     {"opt_id": "dread_touch", "name": "懾意初窺", "kind": "fear_on_hit", "chance": 0.10, "turns": 1,
-      "desc": "惑心入微:武器命中時 10% 機率使敵短暫驚懼(1 回合不敢進攻;solo BOSS 免疫;與懾心術/懾魂相加夾總上限)。"}
-   ]},
-
-  {"id": "mysticism_50", "skill": "mysticism", "threshold": 50, "options": [
-     {"opt_id": "efficient_mysticism", "name": "省魔秘法", "kind": "spell_mod", "school": "mysticism", "cost_factor": 0.85,
-      "desc": "秘法漸熟:秘術(結界/驅散/擒魂)施法省魔 15%(更頻繁可用)。"},
-     {"opt_id": "ward_focus", "name": "結界凝練", "kind": "spell_mod", "school": "mysticism", "power_bonus": 0.10,
-      "desc": "秘術凝練:結界吸收量 +10%(吃 _power → 結界更厚實;秘術系唯一增幅來源)。"}
-   ]},
-
-  {"id": "athletics_25", "skill": "athletics", "threshold": 25, "options": [
-     {"opt_id": "light_step", "name": "健步輕身", "kind": "evasion_bonus", "evasion_bonus": 0.02,
-      "desc": "步法漸輕,挪移更俐落,敵人命中你的機率 −2%(多源相加,夾總上限)。"}
-   ]},
-  {"id": "blade_25", "skill": "blade", "threshold": 25, "options": [
-     {"opt_id": "blade_basics", "name": "持劍入門", "kind": "weapon_mod", "target": "blade", "hit": 0.02,
-      "desc": "握劍漸穩,出手更準(刀劍命中 +2%,與其他刀劍流派相加)。"}
-   ]},
-  {"id": "block_25", "skill": "block", "threshold": 25, "options": [
-     {"opt_id": "shield_basics", "name": "持盾入門", "kind": "passive_armor", "armor_bonus": 5,
-      "desc": "略通舉盾撐架之法(被動護甲 +5,與其他護甲來源相加)。"}
-   ]},
-  {"id": "blunt_25", "skill": "blunt", "threshold": 25, "options": [
-     {"opt_id": "blunt_basics", "name": "持錘入門", "kind": "weapon_mod", "target": "blunt", "pen": 0.03,
-      "desc": "揮錘漸沉,略能破甲(鈍器額外無視 3% 護甲,與其他鈍器流派相加)。"}
-   ]},
-  {"id": "hand_to_hand_25", "skill": "hand_to_hand", "threshold": 25, "options": [
-     {"opt_id": "fist_basics", "name": "拳腳入門", "kind": "weapon_mod", "target": "hand_to_hand", "power": 0.05,
-      "desc": "略通拳腳發勁,徒手傷害 +5%(與其他徒手流派相加)。"}
-   ]},
-  {"id": "heavy_armor_25", "skill": "heavy_armor", "threshold": 25, "options": [
-     {"opt_id": "heavy_basics", "name": "重甲入門", "kind": "passive_armor", "armor_bonus": 6,
-      "desc": "略通負甲行止,厚甲護身更實(被動護甲 +6)。"}
-   ]},
-  {"id": "smithing_25", "skill": "smithing", "threshold": 25, "options": [
-     {"opt_id": "thrifty_basics", "name": "用料入門", "kind": "temper_cost_free", "free_chance": 0.10,
-      "desc": "略懂節省材料:淬鍊時 10% 機率不消耗錠材(多源取最高)。"}
-   ]},
-  {"id": "alchemy_25", "skill": "alchemy", "threshold": 25, "options": [
-     {"opt_id": "poison_basics", "name": "塗毒入門", "kind": "poison_charge_bonus", "charge_bonus": 1,
-      "desc": "略通塗毒之法:武器塗毒可多用 1 次(多源相加)。"}
-   ]},
-  {"id": "alteration_25", "skill": "alteration", "threshold": 25, "options": [
-     {"opt_id": "alt_basics", "name": "變化入門", "kind": "spell_mod", "school": "alteration", "cost_factor": 0.92,
-      "desc": "粗通變化法理:變化術施法省魔 8%(與其他省魔相乘)。"}
-   ]},
-  {"id": "conjuration_25", "skill": "conjuration", "threshold": 25, "options": [
-     {"opt_id": "conj_basics", "name": "召喚入門", "kind": "spell_mod", "school": "conjuration", "cost_factor": 0.92,
-      "desc": "粗通召喚法理:召喚術施法省魔 8%(與其他省魔相乘)。"}
-   ]},
-  {"id": "destruction_25", "skill": "destruction", "threshold": 25, "options": [
-     {"opt_id": "dest_basics", "name": "毀滅入門", "kind": "spell_mod", "school": "destruction", "cost_factor": 0.92,
-      "desc": "粗通毀滅法理:毀滅術施法省魔 8%(與其他省魔相乘)。"}
-   ]},
-  {"id": "illusion_25", "skill": "illusion", "threshold": 25, "options": [
-     {"opt_id": "illu_basics", "name": "幻術入門", "kind": "spell_mod", "school": "illusion", "cost_factor": 0.92,
-      "desc": "粗通幻術法理:幻術施法省魔 8%(與其他省魔相乘)。"}
-   ]},
-  {"id": "mysticism_25", "skill": "mysticism", "threshold": 25, "options": [
-     {"opt_id": "myst_basics", "name": "秘法入門", "kind": "spell_mod", "school": "mysticism", "cost_factor": 0.92,
-      "desc": "粗通秘法法理:秘術施法省魔 8%(與其他省魔相乘)。"}
-   ]},
-  {"id": "restoration_25", "skill": "restoration", "threshold": 25, "options": [
-     {"opt_id": "resto_basics", "name": "復原入門", "kind": "spell_mod", "school": "restoration", "cost_factor": 0.92,
-      "desc": "粗通復原法理:治療/援護術施法省魔 8%(與其他省魔相乘)。"}
-   ]},
-  {"id": "acrobatics_25", "skill": "acrobatics", "threshold": 25, "options": [
-     {"opt_id": "tumble_basics", "name": "翻滾入門", "kind": "evasion_bonus", "evasion_bonus": 0.02,
-      "desc": "略通翻滾卸勁,身形更難捉摸,敵人命中你的機率 −2%(多源相加,夾總上限)。"}
-   ]},
-  {"id": "light_armor_25", "skill": "light_armor", "threshold": 25, "options": [
-     {"opt_id": "light_basics", "name": "輕甲入門", "kind": "passive_armor", "armor_bonus": 4,
-      "desc": "略通輕甲穿著,柔革貼身卸力(被動護甲 +4)。"}
-   ]},
-  {"id": "marksman_25", "skill": "marksman", "threshold": 25, "options": [
-     {"opt_id": "bow_basics", "name": "弓術入門", "kind": "weapon_mod", "target": "marksman", "hit": 0.02,
-      "desc": "持弓漸穩,瞄準更準(弓弩命中 +2%,與其他射術流派相加)。"}
-   ]},
-  {"id": "mercantile_25", "skill": "mercantile", "threshold": 25, "options": [
-     {"opt_id": "haggle_basics", "name": "議價入門", "kind": "merchant_bonus", "disposition_bonus": 0.03,
-      "desc": "略通討價還價,買賣稍占便宜(議價 +0.03,與各議價來源相加)。"}
-   ]},
-  {"id": "scout_25", "skill": "scout", "threshold": 25, "options": [
-     {"opt_id": "recon_basics", "name": "斥候之眼", "kind": "recon_reveal_floor", "scout_floor": 25,
-      "desc": "習得敵情判讀:**解鎖地城探明四鄰**(踏入即偵知鄰格);接戰前的敵情報告隨偵查技能愈練愈清。"}
-   ]},
-  {"id": "security_25", "skill": "security", "threshold": 25, "options": [
-     {"opt_id": "lockpick_basics", "name": "撬鎖入門", "kind": "lock_floor", "floor": 0.10,
-      "desc": "略通撬鎖之法:再生的鎖也有一成把握(撬鎖成功率下限 10%;多源取最高)。"}
-   ]},
-  {"id": "speechcraft_25", "skill": "speechcraft", "threshold": 25, "options": [
-     {"opt_id": "speech_basics", "name": "口才入門", "kind": "merchant_bonus", "disposition_bonus": 0.03,
-      "desc": "略通言談之道,人情練達、買賣亦稍占便宜(議價 +0.03,與各議價來源相加)。"}
-   ]}
+  {
+    "id": "athletics_50",
+    "skill": "athletics",
+    "threshold": 50,
+    "options": [
+      {
+        "opt_id": "marathon",
+        "name": "長途健步",
+        "kind": "travel_factor_bonus",
+        "bonus": 0.1,
+        "desc": "健步如飛:長途跋涉更省時(旅行耗時再 −10%)。"
+      },
+      {
+        "opt_id": "second_wind",
+        "name": "不竭之軀",
+        "kind": "fatigue_cost_bonus",
+        "bonus": 0.1,
+        "desc": "氣力悠長:戰鬥揮擊更省力(攻擊耗體 −10%)。"
+      }
+    ]
+  },
+  {
+    "id": "blade_100",
+    "skill": "blade",
+    "threshold": 100,
+    "options": [
+      {
+        "opt_id": "precision",
+        "name": "鋒芒畢露",
+        "kind": "weapon_mod",
+        "target": "blade",
+        "hit": 0.05,
+        "desc": "刀劍大師:出招精準,刀劍攻擊命中 +5%(命中,非傷害)。"
+      },
+      {
+        "opt_id": "savage",
+        "name": "迅捷連斬",
+        "kind": "weapon_mod",
+        "target": "blade",
+        "power": 0.12,
+        "recoil": 0.05,
+        "desc": "搏命連斬:刀劍傷害 +12% —— 代價是過度發力,每擊回噬自身 5% 傷害(不致死)。"
+      }
+    ]
+  },
+  {
+    "id": "block_50",
+    "skill": "block",
+    "threshold": 50,
+    "options": [
+      {
+        "opt_id": "shieldwall",
+        "name": "盾反",
+        "kind": "block_reflect",
+        "reflect": 0.1,
+        "fatigue": 10,
+        "desc": "盾反戰技:被近戰物理擊中時,以盾卸力反震 —— 反彈該擊「攻方完整物理輸出」10%(R42:吃 raw、解耦護甲;每次耗 10 體力,力竭則施展不出;與重甲反震/荊棘附魔相加)。"
+      },
+      {
+        "opt_id": "shield_bash",
+        "name": "盾擊踉蹌",
+        "kind": "block_riposte",
+        "stagger_chance": 0.35,
+        "desc": "以盾反擊:成功格擋時 35% 機率震開來犯者,使其下一擊踉蹌。"
+      }
+    ]
+  },
+  {
+    "id": "blunt_100",
+    "skill": "blunt",
+    "threshold": 100,
+    "options": [
+      {
+        "opt_id": "sunder",
+        "name": "破甲重錘",
+        "kind": "weapon_mod",
+        "target": "blunt",
+        "pen": 0.15,
+        "desc": "鈍器大師:重錘碎甲,鈍器額外無視 15% 護甲。"
+      },
+      {
+        "opt_id": "concussion",
+        "name": "震盪一擊",
+        "kind": "weapon_mod",
+        "target": "blunt",
+        "on_hit_status": {
+          "kind": "weaken",
+          "magnitude": 0.15,
+          "turns": 1,
+          "chance": 0.3
+        },
+        "desc": "震盪打擊:30% 機率震懵敵人,使其下一回合攻擊削弱 15%。"
+      }
+    ]
+  },
+  {
+    "id": "hand_to_hand_75",
+    "skill": "hand_to_hand",
+    "threshold": 75,
+    "options": [
+      {
+        "opt_id": "iron_fists",
+        "name": "鐵拳",
+        "kind": "weapon_mod",
+        "target": "hand_to_hand",
+        "power": 0.15,
+        "desc": "徒手宗師:拳腳生風,徒手傷害 +15%(補徒手無法淬鍊附魔的劣勢)。"
+      },
+      {
+        "opt_id": "disarm",
+        "name": "卸力擒拿",
+        "kind": "weapon_mod",
+        "target": "hand_to_hand",
+        "on_hit_status": {
+          "kind": "stagger",
+          "turns": 1,
+          "chance": 0.4
+        },
+        "desc": "卸力擒拿:40% 機率以巧勁卸開敵勢,使其踉蹌。"
+      }
+    ]
+  },
+  {
+    "id": "heavy_armor_75",
+    "skill": "heavy_armor",
+    "threshold": 75,
+    "options": [
+      {
+        "opt_id": "bulwark",
+        "name": "壁壘",
+        "kind": "bulwark",
+        "factor": 0.85,
+        "attack_fatigue_factor": 1.2,
+        "desc": "重甲宗師:化身移動堡壘,受到的物理傷害再減 15% —— 代價是揮擊更沉,攻擊耗體 +20%。"
+      },
+      {
+        "opt_id": "unyielding",
+        "name": "巍然不動",
+        "kind": "resist_fortify",
+        "resist": {
+          "magic": 10
+        },
+        "desc": "厚重甲冑卸去法術衝擊:元素/法術抗性 +10%(純防禦,無耗體代價)。"
+      }
+    ]
+  },
+  {
+    "id": "smithing_75",
+    "skill": "smithing",
+    "threshold": 75,
+    "options": [
+      {
+        "opt_id": "master_temper",
+        "name": "淬火宗師",
+        "kind": "temper_cap_bonus",
+        "cap_bonus": 1,
+        "desc": "鍛造宗師:淬鍊上限 +1 級(可把裝備鍛得更鋒利,仍受材料/時間經濟所限)。"
+      },
+      {
+        "opt_id": "efficient",
+        "name": "物盡其用",
+        "kind": "temper_cost_free",
+        "free_chance": 0.3,
+        "desc": "用料精省:淬鍊時 30% 機率不消耗錠錠材料。"
+      }
+    ]
+  },
+  {
+    "id": "alchemy_75",
+    "skill": "alchemy",
+    "threshold": 75,
+    "options": [
+      {
+        "opt_id": "potent_poison",
+        "name": "劇毒淬煉",
+        "kind": "poison_unlock",
+        "families": [
+          "slow"
+        ],
+        "duration_bonus": 1,
+        "desc": "毒性綿長:習得萃取『遲緩毒』(降敵先攻/命中),且你一切毒效延長 1 回合。"
+      },
+      {
+        "opt_id": "concentrated",
+        "name": "濃縮萃取",
+        "kind": "potion_potency",
+        "potency_bonus": 0.2,
+        "desc": "煉金宗師:你調製的藥水與毒藥效力 +20%。"
+      }
+    ]
+  },
+  {
+    "id": "alteration_75",
+    "skill": "alteration",
+    "threshold": 75,
+    "options": [
+      {
+        "opt_id": "stoneflesh",
+        "name": "石膚",
+        "kind": "passive_armor",
+        "armor_bonus": 20,
+        "desc": "變化宗師:只要尚有魔力,皮膚便如磐石(被動護甲 +20)。"
+      },
+      {
+        "opt_id": "spell_reach",
+        "name": "術法增幅",
+        "kind": "spell_mod",
+        "school": "alteration",
+        "power_bonus": 0.15,
+        "desc": "變化術法的護盾/變形效果增強 15%。"
+      }
+    ]
+  },
+  {
+    "id": "conjuration_100",
+    "skill": "conjuration",
+    "threshold": 100,
+    "options": [
+      {
+        "opt_id": "twin_summon",
+        "name": "雙重召喚",
+        "kind": "summon_mod",
+        "extra": 1,
+        "hp_factor": 0.6,
+        "desc": "召喚大師:每次召喚多喚出一隻較弱的盟友(血量六成)。"
+      },
+      {
+        "opt_id": "bound_blade",
+        "name": "束縛兵刃",
+        "kind": "summon_mod",
+        "hp_bonus": 0.25,
+        "turn_bonus": 1,
+        "desc": "召喚大師:召喚物更強韌(血量 +25%,多駐留 1 回合)。"
+      }
+    ]
+  },
+  {
+    "id": "restoration_75",
+    "skill": "restoration",
+    "threshold": 75,
+    "options": [
+      {
+        "opt_id": "overheal_ward",
+        "name": "聖光·溢盾",
+        "kind": "overheal_ward",
+        "convert": 0.6,
+        "cap_ratio": 0.5,
+        "turns": 4,
+        "desc": "復原宗師:治療超出生命上限的部分化為臨時護盾(60% 轉化,上限為生命上限一半,4 回合)。"
+      },
+      {
+        "opt_id": "steadfast",
+        "name": "不屈祝禱",
+        "kind": "regen_on_low",
+        "threshold": 0.25,
+        "regen": 4,
+        "turns": 3,
+        "desc": "命懸一線時(生命低於 25%)聖光自湧,持續再生 4/回合,共 3 回合。"
+      }
+    ]
+  },
+  {
+    "id": "illusion_75",
+    "skill": "illusion",
+    "threshold": 75,
+    "options": [
+      {
+        "opt_id": "charm_market",
+        "name": "魅惑交易",
+        "kind": "merchant_bonus",
+        "disposition_bonus": 0.12,
+        "desc": "幻術宗師:以魅惑左右商人,買賣更划算(議價 +0.12)。"
+      },
+      {
+        "opt_id": "cowardice",
+        "name": "懾心術",
+        "kind": "fear_on_hit",
+        "chance": 0.2,
+        "turns": 2,
+        "desc": "你的攻擊夾帶懼意:命中時 20% 機率使敵人陷入恐懼(2 回合不敢進攻)。"
+      }
+    ]
+  },
+  {
+    "id": "mysticism_100",
+    "skill": "mysticism",
+    "threshold": 100,
+    "options": [
+      {
+        "opt_id": "soul_siphon",
+        "name": "靈魂虹吸",
+        "kind": "enchant_potency",
+        "potency_bonus": 0.2,
+        "desc": "神秘大師:你的附魔強度 +20%(靈魂石的力量榨取得更徹底)。"
+      },
+      {
+        "opt_id": "spectral_aegis",
+        "name": "靈光護壁",
+        "kind": "passive_armor",
+        "armor_bonus": 15,
+        "desc": "祕法登峰:靈光恆繞護體於外(被動護甲 +15,與靈體護壁相加)。"
+      }
+    ]
+  },
+  {
+    "id": "destruction_100",
+    "skill": "destruction",
+    "threshold": 100,
+    "options": [
+      {
+        "opt_id": "overload",
+        "name": "過載",
+        "kind": "spell_mod",
+        "school": "destruction",
+        "power_bonus": 0.2,
+        "cost_factor": 1.3,
+        "desc": "毀滅大師:可催動法術過載,威力大增 —— 代價是每次施法多耗 30% 魔力。"
+      },
+      {
+        "opt_id": "impact",
+        "name": "衝擊餘波",
+        "kind": "spell_mod",
+        "school": "destruction",
+        "on_hit": {
+          "kind": "stagger",
+          "chance": 0.35
+        },
+        "desc": "毀滅法術的衝擊震懾敵人:命中時 35% 機率使其踉蹌(無額外魔耗)。"
+      }
+    ]
+  },
+  {
+    "id": "acrobatics_75",
+    "skill": "acrobatics",
+    "threshold": 75,
+    "options": [
+      {
+        "opt_id": "evasion",
+        "name": "身輕如燕",
+        "kind": "evasion_bonus",
+        "evasion_bonus": 0.05,
+        "desc": "雜技宗師:身法飄忽,敵人命中你的機率再 −5%。"
+      },
+      {
+        "opt_id": "tumble",
+        "name": "翻滾脫離",
+        "kind": "vanish_floor",
+        "floor": 0.1,
+        "desc": "縱身翻滾脫離纏鬥:戰鬥中隱遁成功率保底 10%。"
+      }
+    ]
+  },
+  {
+    "id": "light_armor_75",
+    "skill": "light_armor",
+    "threshold": 75,
+    "options": [
+      {
+        "opt_id": "featherweight",
+        "name": "無聲披掛",
+        "kind": "armor_sneak_relief",
+        "relief": 1.0,
+        "desc": "輕甲宗師:身手不受甲冑所累,潛近時護甲噪音懲罰全免。"
+      },
+      {
+        "opt_id": "fluid_motion",
+        "name": "順勢借力",
+        "kind": "on_evade",
+        "restamina": 8,
+        "desc": "卸力借勢:每次閃過敵攻即回復 8 點體力 —— 游擊纏鬥久戰不竭。"
+      }
+    ]
+  },
+  {
+    "id": "marksman_100",
+    "skill": "marksman",
+    "threshold": 100,
+    "options": [
+      {
+        "opt_id": "steady_aim",
+        "name": "穩準狠",
+        "kind": "weapon_mod",
+        "target": "marksman",
+        "hit": 0.07,
+        "desc": "射術大師:箭無虛發,弓弩攻擊命中 +7%(命中,非傷害)。"
+      },
+      {
+        "opt_id": "penetrator",
+        "name": "穿甲箭",
+        "kind": "weapon_mod",
+        "target": "marksman",
+        "pen": 0.15,
+        "fatigue": 4,
+        "desc": "穿甲箭頭:弓弩額外無視 15% 護甲 —— 代價是強弓難開,每箭多耗 4 體力。"
+      }
+    ]
+  },
+  {
+    "id": "mercantile_50",
+    "skill": "mercantile",
+    "threshold": 50,
+    "options": [
+      {
+        "opt_id": "haggler",
+        "name": "精算買賣",
+        "kind": "merchant_bonus",
+        "disposition_bonus": 0.12,
+        "desc": "交易宗師:精打細算,買賣價格更划算(議價 +0.12)。"
+      },
+      {
+        "opt_id": "investor",
+        "name": "行商人脈",
+        "kind": "restock_bonus",
+        "restock_mult": 1.5,
+        "desc": "你打通了商路:各地商人的補貨量 ×1.5(貨源更充足)。"
+      }
+    ]
+  },
+  {
+    "id": "scout_75",
+    "skill": "scout",
+    "threshold": 75,
+    "options": [
+      {
+        "opt_id": "vanguard",
+        "name": "先機在握",
+        "kind": "prep_bonus",
+        "prep_bonus": 1,
+        "desc": "偵查宗師:搶得先機時,開戰前可多做 1 個準備動作。"
+      },
+      {
+        "opt_id": "preempt",
+        "name": "臨陣預判",
+        "kind": "evasion_bonus",
+        "evasion_bonus": 0.04,
+        "desc": "洞悉敵之動向與出手時機,臨陣預判閃避更俐落(敵人命中你的機率 −4%,夾總上限)。"
+      }
+    ]
+  },
+  {
+    "id": "sneak_75",
+    "skill": "sneak",
+    "threshold": 75,
+    "options": [
+      {
+        "opt_id": "relentless_shadow",
+        "name": "連環踏影",
+        "kind": "vanish_relentless",
+        "desc": "踏影成性:再隱匿不再因同場重複而遞減、且不限次數 —— 但敵眾(>3)時仍難遁形。"
+      },
+      {
+        "opt_id": "silent_approach",
+        "name": "無聲潛近",
+        "kind": "approach_bonus",
+        "approach_bonus": 0.1,
+        "desc": "你潛行如鬼魅:接戰時更常搶到開場偷襲先機(+10%)。"
+      }
+    ]
+  },
+  {
+    "id": "sneak_100",
+    "skill": "sneak",
+    "threshold": 100,
+    "options": [
+      {
+        "opt_id": "shadowblade",
+        "name": "影刃·暗殺宗師",
+        "kind": "sneak_mult_bonus",
+        "mult_bonus": 0.2,
+        "desc": "暗殺登峰造極:偷襲一擊的倍率再 ×1.5 —— 小遭遇可一刀無傷清場(但敵眾仍須正面接戰)。"
+      },
+      {
+        "opt_id": "shadowstep",
+        "name": "踏影",
+        "kind": "vanish_floor",
+        "floor": 0.15,
+        "desc": "影遁之術登峰:戰鬥中隱遁成功率保底 15%(逃脫,非傷害)。"
+      }
+    ]
+  },
+  {
+    "id": "security_75",
+    "skill": "security",
+    "threshold": 75,
+    "options": [
+      {
+        "opt_id": "master_floor",
+        "name": "撬鎖名家",
+        "kind": "lock_floor",
+        "floor": 0.3,
+        "desc": "安全宗師:再刁鑽的鎖你都有把握(撬鎖成功率下限 30%)。"
+      },
+      {
+        "opt_id": "pick_thrift",
+        "name": "巧手不折",
+        "kind": "pick_no_break",
+        "keep_chance": 0.5,
+        "desc": "巧勁開鎖:撬鎖失敗時 50% 機率不折斷開鎖器。"
+      }
+    ]
+  },
+  {
+    "id": "speechcraft_100",
+    "skill": "speechcraft",
+    "threshold": 100,
+    "options": [
+      {
+        "opt_id": "charm",
+        "name": "辯舌·折服",
+        "kind": "guaranteed_persuade",
+        "desc": "口才大師:三寸不爛之舌,說服必定成功 —— 但每個人只會被你折服一次。"
+      },
+      {
+        "opt_id": "rally",
+        "name": "戰陣號令",
+        "kind": "rally",
+        "desc": "口才登峰:開戰可振臂號令,旗鼓相和 —— 全隊同袍士氣大振、增傷一波接一波(耗體;鼓舞他人,單挑無益)。"
+      }
+    ]
+  },
+  {
+    "id": "mysticism_75",
+    "skill": "mysticism",
+    "threshold": 75,
+    "options": [
+      {
+        "opt_id": "arcane_cascade",
+        "name": "奧術連鎖",
+        "kind": "cascade",
+        "power_per_depth": 0.08,
+        "fatigue_relief_per_depth": 0.12,
+        "max_depth": 2,
+        "window": 1,
+        "desc": "法師心流:連續施法漸入佳境 —— 每連一發,下一道法術威力 +8%、施法省體 12%(最多疊 2 層,停手即散)。"
+      },
+      {
+        "opt_id": "spectral_ward",
+        "name": "靈體護壁",
+        "kind": "passive_armor",
+        "armor_bonus": 15,
+        "desc": "祕法宗師:只要尚有魔力,靈光便護體於外(被動護甲 +15)。"
+      }
+    ]
+  },
+  {
+    "id": "destruction_75",
+    "skill": "destruction",
+    "threshold": 75,
+    "options": [
+      {
+        "opt_id": "efficient_destruction",
+        "name": "省魔催動",
+        "kind": "spell_mod",
+        "school": "destruction",
+        "cost_factor": 0.85,
+        "desc": "毀滅嫻熟:毀滅術施法省魔 15%(可抵過載的加耗)。"
+      },
+      {
+        "opt_id": "arcane_battery",
+        "name": "法力回擊",
+        "kind": "mana_on_hit",
+        "magnitude": 4,
+        "desc": "法武共鳴(自持流):以刃淬魔 —— 近戰命中回復 4 點魔力,揮劍補魔、續法不竭(穿重甲亦可,本作施法不罰甲)。"
+      }
+    ]
+  },
+  {
+    "id": "mercantile_75",
+    "skill": "mercantile",
+    "threshold": 75,
+    "options": [
+      {
+        "opt_id": "subterfuge_intel",
+        "name": "諜報偵搜",
+        "kind": "prep_bonus",
+        "prep_bonus": 1,
+        "desc": "盜賊情報網:以人脈與口舌探明敵情 —— 搶得先機時,開戰前可多做 1 個準備動作(與偵查的先機在握相加)。"
+      },
+      {
+        "opt_id": "informant",
+        "name": "線人耳目",
+        "kind": "recon_resist_read",
+        "desc": "線人通報虛實:偵查揭露敵抗性/弱點的門檻由 75 降為 50。"
+      }
+    ]
+  },
+  {
+    "id": "restoration_50",
+    "skill": "restoration",
+    "threshold": 50,
+    "options": [
+      {
+        "opt_id": "triage",
+        "name": "戰地搶救",
+        "kind": "triage_heal",
+        "magicka_factor": 0.15,
+        "fatigue_factor": 0.25,
+        "desc": "戰地醫者本能:當同袍生命垂危(<30%),你下一道治療/援護術近乎免費施放(魔力 15%、體力 25%)。"
+      },
+      {
+        "opt_id": "cleanse",
+        "name": "潔淨之軀",
+        "kind": "resist_fortify",
+        "resist": {
+          "disease": 30
+        },
+        "desc": "白袍的庇佑:長伴病榻而百毒不侵(疾病抗性 +30%)。"
+      }
+    ]
+  },
+  {
+    "id": "marksman_50",
+    "skill": "marksman",
+    "threshold": 50,
+    "options": [
+      {
+        "opt_id": "skirmish_shot",
+        "name": "散兵走位",
+        "kind": "bow_technique",
+        "technique": "skirmish",
+        "desc": "散兵游擊:戰中可射一箭旋即遁走 —— 重歸陰影、重得偷襲先機(成功率隨潛行/雜技漸高,敵眾或久戰漸難)。"
+      },
+      {
+        "opt_id": "crippling_shot",
+        "name": "牽制射",
+        "kind": "bow_technique",
+        "technique": "crippling",
+        "desc": "牽制射擊:射一箭壓制目標,削弱其攻勢數回合(weaken)—— 風箏拉距的射手控場。"
+      }
+    ]
+  },
+  {
+    "id": "sneak_25",
+    "skill": "sneak",
+    "threshold": 25,
+    "options": [
+      {
+        "opt_id": "vanish_art",
+        "name": "隱遁之術",
+        "kind": "vanish_unlock",
+        "desc": "潛行有成,習得戰中遁形之法 —— 可花一回合重歸陰影:避過本回合敵襲、並重得偷襲先機。敵眾(>3)或被單一強敵死咬時,再三遁形漸難。"
+      }
+    ]
+  },
+  {
+    "id": "sneak_50",
+    "skill": "sneak",
+    "threshold": 50,
+    "options": [
+      {
+        "opt_id": "deathmark",
+        "name": "致命烙印",
+        "kind": "deathmark",
+        "pen": 0.35,
+        "fatigue_cost": 15,
+        "sneak_gate": 50,
+        "turns": 4,
+        "cooldown": 6,
+        "desc": "獵殺標記:耗 15 體力標記一敵(標記 4 回 + 落印後冷卻,每目標約 6 回才可再標)→ 對其後續(非開場)近戰破甲 +35%。開場偷襲不受惠(守 boss 反一刀)。"
+      },
+      {
+        "opt_id": "cutpurse",
+        "name": "扒竊聖手",
+        "kind": "skill_fortify",
+        "skill": {
+          "mercantile": 10
+        },
+        "desc": "暗影中的巧手:銷贓議價更在行(商貿技能 +10)。"
+      }
+    ]
+  },
+  {
+    "id": "athletics_75",
+    "skill": "athletics",
+    "threshold": 75,
+    "options": [
+      {
+        "opt_id": "escape_artist",
+        "name": "逃命好手",
+        "kind": "flee_bonus",
+        "bonus": 0.15,
+        "desc": "腳程與機變過人:脫離戰鬥的成功率 +15%。"
+      },
+      {
+        "opt_id": "enduring",
+        "name": "不竭之軀",
+        "kind": "attr_fortify",
+        "attr": {
+          "endurance": 5
+        },
+        "desc": "長年磨練的底子(耐力 +5 → 生命/體力上限隨之提升)。"
+      }
+    ]
+  },
+  {
+    "id": "blade_50",
+    "skill": "blade",
+    "threshold": 50,
+    "options": [
+      {
+        "opt_id": "riposte_blade",
+        "name": "還擊架式",
+        "kind": "weapon_mod",
+        "target": "blade",
+        "on_hit_status": {
+          "kind": "stagger",
+          "turns": 1,
+          "chance": 0.25
+        },
+        "desc": "劍勢連綿:刀劍命中時 25% 機率震開敵勢,使其踉蹌一回合。"
+      },
+      {
+        "opt_id": "keen_edge",
+        "name": "鋒刃輕靈",
+        "kind": "weapon_mod",
+        "target": "blade",
+        "hit": 0.05,
+        "desc": "劍走輕靈,出手更準(刀劍命中 +5%)。"
+      }
+    ]
+  },
+  {
+    "id": "block_75",
+    "skill": "block",
+    "threshold": 75,
+    "options": [
+      {
+        "opt_id": "bracing",
+        "name": "撐架穩步",
+        "kind": "passive_armor",
+        "armor_bonus": 10,
+        "desc": "舉盾撐架,身形如樁:被動護甲 +10。"
+      },
+      {
+        "opt_id": "shield_break",
+        "name": "盾擊破勢",
+        "kind": "block_riposte",
+        "stagger_chance": 0.35,
+        "weaken": 0.15,
+        "weaken_turns": 2,
+        "desc": "盾擊破勢:格擋反擊時不僅震開來犯者,更挫其攻勢 —— 其後 2 回合攻擊削弱 15%(與盾擊踉蹌相加)。"
+      }
+    ]
+  },
+  {
+    "id": "blunt_50",
+    "skill": "blunt",
+    "threshold": 50,
+    "options": [
+      {
+        "opt_id": "crippling",
+        "name": "碎骨重擊",
+        "kind": "weapon_mod",
+        "target": "blunt",
+        "on_hit_status": {
+          "kind": "weaken",
+          "magnitude": 0.1,
+          "turns": 2,
+          "chance": 0.25
+        },
+        "desc": "碎其筋骨:鈍器命中時 25% 機率使敵 2 回合攻擊削弱 10%。"
+      },
+      {
+        "opt_id": "heavy_swing",
+        "name": "沉勁揮擊",
+        "kind": "weapon_mod",
+        "target": "blunt",
+        "power": 0.1,
+        "recoil": 0.04,
+        "desc": "沉勁傾注:鈍器傷害 +10% —— 代價是回噬自身 4% 傷害(不致死)。"
+      }
+    ]
+  },
+  {
+    "id": "hand_to_hand_50",
+    "skill": "hand_to_hand",
+    "threshold": 50,
+    "options": [
+      {
+        "opt_id": "pressure_point",
+        "name": "點穴卸力",
+        "kind": "weapon_mod",
+        "target": "hand_to_hand",
+        "on_hit_status": {
+          "kind": "weaken",
+          "magnitude": 0.12,
+          "turns": 1,
+          "chance": 0.3
+        },
+        "desc": "點穴卸力:徒手命中時 30% 機率使敵下一擊削弱 12%。"
+      },
+      {
+        "opt_id": "grappler",
+        "name": "擒拿根基",
+        "kind": "skill_fortify",
+        "skill": {
+          "hand_to_hand": 8
+        },
+        "desc": "馬步紮實,徒手根基更穩(徒手技能 +8)。"
+      }
+    ]
+  },
+  {
+    "id": "heavy_armor_50",
+    "skill": "heavy_armor",
+    "threshold": 50,
+    "options": [
+      {
+        "opt_id": "armor_reflect",
+        "name": "重甲反震",
+        "kind": "armor_reflect",
+        "reflect": 0.06,
+        "desc": "厚甲卸力反震:被近戰物理擊中時,反彈「攻方完整物理輸出」6% 給攻擊者(R42:吃 raw、解耦護甲;與盾反/荊棘附魔相加,無耗體)。"
+      },
+      {
+        "opt_id": "disease_ward",
+        "name": "百戰不染",
+        "kind": "resist_fortify",
+        "resist": {
+          "disease": 25
+        },
+        "desc": "厚甲護身,瘴癘難侵(疾病抗性 +25%)。"
+      }
+    ]
+  },
+  {
+    "id": "smithing_50",
+    "skill": "smithing",
+    "threshold": 50,
+    "options": [
+      {
+        "opt_id": "thrifty_forge",
+        "name": "淬火精算",
+        "kind": "temper_cost_free",
+        "free_chance": 0.2,
+        "desc": "用料精算:淬鍊時有兩成機率不耗錠(與其他省料里程碑取最高)。"
+      },
+      {
+        "opt_id": "temper_edge",
+        "name": "淬鋒",
+        "kind": "temper_power",
+        "power": 0.1,
+        "desc": "淬火更深:每級淬鍊的武器加傷與護甲加值再 ×1.10(與淬鍊大師相加)。"
+      }
+    ]
+  },
+  {
+    "id": "alchemy_50",
+    "skill": "alchemy",
+    "threshold": 50,
+    "options": [
+      {
+        "opt_id": "toxin_master",
+        "name": "淬毒名家",
+        "kind": "poison_unlock",
+        "families": [
+          "weaken"
+        ],
+        "desc": "淬毒名家:習得萃取『衰毒』—— 命中削弱敵之攻勢(數回合內敵傷害下降)。"
+      },
+      {
+        "opt_id": "field_brewer",
+        "name": "案前苦工",
+        "kind": "attr_fortify",
+        "attr": {
+          "intelligence": 4
+        },
+        "desc": "案前苦工磨出靈思(智力 +4 → 魔力上限提升、煉金更精)。"
+      }
+    ]
+  },
+  {
+    "id": "alteration_50",
+    "skill": "alteration",
+    "threshold": 50,
+    "options": [
+      {
+        "opt_id": "efficient_shield",
+        "name": "省魔護持",
+        "kind": "spell_mod",
+        "school": "alteration",
+        "cost_factor": 0.85,
+        "desc": "變化術駕輕就熟:施法省魔 15%(護盾/開鎖更頻繁可用)。"
+      },
+      {
+        "opt_id": "shield_focus",
+        "name": "術法凝練",
+        "kind": "spell_mod",
+        "school": "alteration",
+        "power_bonus": 0.1,
+        "desc": "變化系術法效力 +10%(吃 _power → 護盾更厚、附魔之刃〔火/霜/電刃〕元素傷更高;與術法增幅/精純相加)。"
+      }
+    ]
+  },
+  {
+    "id": "conjuration_75",
+    "skill": "conjuration",
+    "threshold": 75,
+    "options": [
+      {
+        "opt_id": "warding_summon",
+        "name": "護體召喚",
+        "kind": "passive_armor",
+        "armor_bonus": 15,
+        "desc": "召喚靈光環體:被動護甲 +15。"
+      },
+      {
+        "opt_id": "summoner_focus",
+        "name": "召喚精研",
+        "kind": "skill_fortify",
+        "skill": {
+          "conjuration": 8
+        },
+        "desc": "召喚精研,束縛/喚物更強更省魔(召喚技能 +8)。"
+      }
+    ]
+  },
+  {
+    "id": "illusion_100",
+    "skill": "illusion",
+    "threshold": 100,
+    "options": [
+      {
+        "opt_id": "mind_mastery",
+        "name": "操心駕輕",
+        "kind": "spell_mod",
+        "school": "illusion",
+        "cost_factor": 0.85,
+        "desc": "心智操弄駕輕就熟:幻術施法省魔 15%(恐懼/挫志/群控更頻繁可用)。"
+      },
+      {
+        "opt_id": "soul_dread",
+        "name": "懾魂奪魄",
+        "kind": "fear_on_hit",
+        "chance": 0.15,
+        "turns": 3,
+        "desc": "幻術登峰:武器命中施加懼意,且懼意持續更長(3 回合,turns 取最)—— 命中率與懾意/懾心術相加夾 30%;solo BOSS 免疫。"
+      }
+    ]
+  },
+  {
+    "id": "acrobatics_50",
+    "skill": "acrobatics",
+    "threshold": 50,
+    "options": [
+      {
+        "opt_id": "tumbler",
+        "name": "翻滾卸勁",
+        "kind": "evasion_bonus",
+        "evasion_bonus": 0.04,
+        "desc": "翻滾卸勁,身形更難捉摸(閃避率 +4%)。"
+      },
+      {
+        "opt_id": "tumbling_charge",
+        "name": "翻滾突進",
+        "kind": "approach_bonus",
+        "approach_bonus": 0.1,
+        "desc": "翻滾切入有利位:接戰時更常搶到開場偷襲先機(+10%,與潛近/情報來源相加)。"
+      }
+    ]
+  },
+  {
+    "id": "light_armor_50",
+    "skill": "light_armor",
+    "threshold": 50,
+    "options": [
+      {
+        "opt_id": "lithe_evasion",
+        "name": "柔革閃身",
+        "kind": "evasion_bonus",
+        "evasion_bonus": 0.05,
+        "desc": "柔革貼身、卸力游走:身形更難捉摸,敵人命中你的機率 −5%(與雜技/運動相加,夾總上限)。"
+      },
+      {
+        "opt_id": "riposte_step",
+        "name": "迴身反打",
+        "kind": "on_evade",
+        "counter_chance": 0.35,
+        "counter_frac": 0.5,
+        "desc": "輕裝游擊:閃過敵攻時 35% 機率順勢回敬一擊(造成你武器基礎傷害的五成)—— 以閃化打。"
+      }
+    ]
+  },
+  {
+    "id": "security_50",
+    "skill": "security",
+    "threshold": 50,
+    "options": [
+      {
+        "opt_id": "trapwise",
+        "name": "機關通曉",
+        "kind": "trap_floor",
+        "floor": 0.3,
+        "desc": "機關通曉:再刁鑽的陷阱也有把握(解陷/避陷成功率保底 30%)。"
+      },
+      {
+        "opt_id": "light_fingers",
+        "name": "順手牽羊",
+        "kind": "theft_skill",
+        "steal_bonus": 0.15,
+        "bounty_factor": 0.5,
+        "desc": "市集神偷:行竊得手率 +15%,且即便失風,被索的賞金也減半(膽大心細的扒手)。"
+      }
+    ]
+  },
+  {
+    "id": "scout_50",
+    "skill": "scout",
+    "threshold": 50,
+    "options": [
+      {
+        "opt_id": "intel_strike",
+        "name": "料敵機先",
+        "kind": "approach_bonus",
+        "approach_bonus": 0.1,
+        "desc": "情報轉戰力:摸清敵之站位與警覺 → 接戰時更常搶得開場偷襲先機(+10%,與無聲潛近相加)。"
+      },
+      {
+        "opt_id": "threat_read",
+        "name": "料敵判讀",
+        "kind": "recon_resist_read",
+        "desc": "戰場判讀入微:接戰前更早看穿敵之抗性與弱點(揭露門檻 75→50);斥候洞悉虛實的眼力。"
+      }
+    ]
+  },
+  {
+    "id": "speechcraft_50",
+    "skill": "speechcraft",
+    "threshold": 50,
+    "options": [
+      {
+        "opt_id": "war_cry",
+        "name": "威風喝退",
+        "kind": "intimidate_floor",
+        "floor": 0.3,
+        "desc": "威風凜凜:喝退弱敵(盜匪/盜賊/城衛)的成功率保底 30% —— 不戰而屈人之兵(solo BOSS 不為所動)。"
+      },
+      {
+        "opt_id": "silver_voiced",
+        "name": "辯才無礙",
+        "kind": "skill_fortify",
+        "skill": {
+          "speechcraft": 8
+        },
+        "desc": "辯才無礙:口才技能 +8 —— 說服/化解/威嚇/套話,一切言談檢定更易成。"
+      }
+    ]
+  },
+  {
+    "id": "athletics_100",
+    "skill": "athletics",
+    "threshold": 100,
+    "options": [
+      {
+        "opt_id": "windstep",
+        "name": "疾風身法",
+        "kind": "evasion_bonus",
+        "evasion_bonus": 0.05,
+        "desc": "運動登峰:步法飄忽如風,敵人命中你的機率再 −5%(多源相加)。"
+      },
+      {
+        "opt_id": "tireless",
+        "name": "不竭極致",
+        "kind": "attr_fortify",
+        "attr": {
+          "speed": 6
+        },
+        "desc": "腳程與爆發過人(速度 +6 → 出手順序/逃脫/命中提升)。"
+      }
+    ]
+  },
+  {
+    "id": "block_100",
+    "skill": "block",
+    "threshold": 100,
+    "options": [
+      {
+        "opt_id": "iron_bastion",
+        "name": "銅牆鐵壁",
+        "kind": "passive_armor",
+        "armor_bonus": 12,
+        "desc": "格擋登峰:架盾撐架如鑄鐵堡壘(被動護甲 +12,與撐架穩步相加)。"
+      },
+      {
+        "opt_id": "perfect_block",
+        "name": "盾威·完美格擋",
+        "kind": "block_riposte",
+        "stagger_chance": 0.4,
+        "counter": 0.5,
+        "desc": "格擋登峰:格擋反擊時以盾痛擊來犯者 —— 40% 機率震開,並回敬一記盾擊(造成你武器基礎傷害的五成;與盾擊踉蹌/破勢相加)。"
+      }
+    ]
+  },
+  {
+    "id": "hand_to_hand_100",
+    "skill": "hand_to_hand",
+    "threshold": 100,
+    "options": [
+      {
+        "opt_id": "transcend_fist",
+        "name": "化勁通玄",
+        "kind": "weapon_mod",
+        "target": "hand_to_hand",
+        "power": 0.1,
+        "desc": "徒手登峰:拳掌吞吐勁力,徒手傷害 +10%(與鐵拳相加;補徒手無法淬鍊附魔的劣勢)。"
+      },
+      {
+        "opt_id": "iron_shirt",
+        "name": "鐵布衫",
+        "kind": "passive_armor",
+        "armor_bonus": 12,
+        "desc": "徒手登峰:千錘百鍊以氣血護體如甲(被動護甲 +12;名實相符的體防頂點)。"
+      }
+    ]
+  },
+  {
+    "id": "heavy_armor_100",
+    "skill": "heavy_armor",
+    "threshold": 100,
+    "options": [
+      {
+        "opt_id": "ironhide",
+        "name": "銅皮鐵骨",
+        "kind": "passive_armor",
+        "armor_bonus": 18,
+        "desc": "重甲登峰:厚甲與血肉融為一體,化身行走的堡壘(被動護甲 +18)。"
+      },
+      {
+        "opt_id": "crushing_bulk",
+        "name": "重壓",
+        "kind": "armor_stagger",
+        "chance": 0.22,
+        "desc": "重甲登峰:厚甲之軀撞開來犯者 —— 被近戰物理擊中時 22% 機率震開攻擊者使其踉蹌(以重制敵)。"
+      }
+    ]
+  },
+  {
+    "id": "smithing_100",
+    "skill": "smithing",
+    "threshold": 100,
+    "options": [
+      {
+        "opt_id": "legendary_smith",
+        "name": "傳奇工匠",
+        "kind": "temper_cost_free",
+        "free_chance": 0.5,
+        "desc": "鍛造登峰:對材料的拿捏出神入化 —— 淬鍊時 50% 機率不消耗錠材(多源取最高)。"
+      },
+      {
+        "opt_id": "temper_mastery",
+        "name": "淬鍊大師",
+        "kind": "temper_power",
+        "power": 0.15,
+        "desc": "鍛技通玄:淬鍊加成再 ×1.15(與淬鋒相加,50+100 合計 ×1.25)。"
+      }
+    ]
+  },
+  {
+    "id": "alchemy_100",
+    "skill": "alchemy",
+    "threshold": 100,
+    "options": [
+      {
+        "opt_id": "venom_lord",
+        "name": "百毒宗師",
+        "kind": "poison_unlock",
+        "families": [
+          "fear"
+        ],
+        "desc": "百毒宗師:習得萃取『懼毒』—— 命中令敵陷入驚懼、短暫失能(solo BOSS 免疫)。"
+      },
+      {
+        "opt_id": "panacea",
+        "name": "萬靈藥",
+        "kind": "potion_potency",
+        "potency_bonus": 0.15,
+        "desc": "煉金登峰:你調製的藥水與毒藥效力再 +15%(與濃縮萃取相加)。"
+      }
+    ]
+  },
+  {
+    "id": "alteration_100",
+    "skill": "alteration",
+    "threshold": 100,
+    "options": [
+      {
+        "opt_id": "pure_form",
+        "name": "術法精純",
+        "kind": "spell_mod",
+        "school": "alteration",
+        "power_bonus": 0.15,
+        "desc": "變化登峰:護盾/變形術法效力 +15%(與術法增幅相加)。"
+      },
+      {
+        "opt_id": "mage_flesh",
+        "name": "魔皮",
+        "kind": "passive_armor",
+        "armor_bonus": 14,
+        "desc": "變化登峰:肌膚常駐石化魔甲(被動護甲 +14,與石膚相加)。"
+      }
+    ]
+  },
+  {
+    "id": "restoration_100",
+    "skill": "restoration",
+    "threshold": 100,
+    "options": [
+      {
+        "opt_id": "divine_grace",
+        "name": "聖療登峰",
+        "kind": "spell_mod",
+        "school": "restoration",
+        "power_bonus": 0.2,
+        "desc": "復原登峰:治療/援護術回復量 +20%(聖光更盛)。"
+      },
+      {
+        "opt_id": "everflow",
+        "name": "生生不息",
+        "kind": "combat_regen",
+        "heal": 8,
+        "desc": "復原登峰:聖光長駐,戰鬥中每回合自癒 8 點生命(久戰不衰的持續流)。"
+      }
+    ]
+  },
+  {
+    "id": "acrobatics_100",
+    "skill": "acrobatics",
+    "threshold": 100,
+    "options": [
+      {
+        "opt_id": "aerial_ambush",
+        "name": "凌空奇襲",
+        "kind": "on_evade",
+        "restamina": 10,
+        "desc": "雜技登峰:身形如煙、卸勁不竭 —— 每次閃過敵攻即回復 10 點體力,翻飛纏鬥久戰愈穩(與順勢借力相加夾上限)。"
+      },
+      {
+        "opt_id": "wind_step",
+        "name": "凌風身法",
+        "kind": "evasion_bonus",
+        "evasion_bonus": 0.06,
+        "desc": "雜技登峰(閃避流):翻飛縱躍、身形如風,敵人難以鎖定你的軌跡 —— 命中你的機率再 −6%(與輕甲/運動相加夾上限);與凌空奇襲的回體流互為身法兩極。"
+      }
+    ]
+  },
+  {
+    "id": "light_armor_100",
+    "skill": "light_armor",
+    "threshold": 100,
+    "options": [
+      {
+        "opt_id": "storm_dance",
+        "name": "風暴之舞",
+        "kind": "on_evade",
+        "counter_chance": 0.6,
+        "counter_frac": 0.6,
+        "counter_stagger": true,
+        "desc": "游擊登峰:閃過敵攻時 60% 機率回敬一記(武器基礎傷害六成)並震開來犯者 —— 以閃化打臻於化境(與迴身反打取最)。"
+      },
+      {
+        "opt_id": "phantom_step",
+        "name": "身如鬼魅",
+        "kind": "evasion_bonus",
+        "evasion_bonus": 0.06,
+        "desc": "游擊登峰(閃避流):步法飄忽如鬼魅,敵人幾乎抓不住你的身影 —— 命中你的機率再 −6%(多源相加夾上限);輕裝弓手/法者的不敗身法。"
+      }
+    ]
+  },
+  {
+    "id": "mercantile_100",
+    "skill": "mercantile",
+    "threshold": 100,
+    "options": [
+      {
+        "opt_id": "master_trader",
+        "name": "頂級議價",
+        "kind": "merchant_bonus",
+        "disposition_bonus": 0.1,
+        "desc": "交易登峰:左右逢源,買賣價格再優(議價 +0.10,與各議價來源相加)。"
+      },
+      {
+        "opt_id": "charisma",
+        "name": "八面玲瓏",
+        "kind": "attr_fortify",
+        "attr": {
+          "personality": 5
+        },
+        "desc": "長袖善舞、八面玲瓏(魅力 +5 → 議價/說服更易)。"
+      }
+    ]
+  },
+  {
+    "id": "scout_100",
+    "skill": "scout",
+    "threshold": 100,
+    "options": [
+      {
+        "opt_id": "battle_master",
+        "name": "決勝先機",
+        "kind": "prep_bonus",
+        "prep_bonus": 1,
+        "desc": "偵查登峰:洞悉戰機,搶得先機時開戰前可再多做 1 個準備動作(多源相加)。"
+      },
+      {
+        "opt_id": "first_blood",
+        "name": "先聲奪人",
+        "kind": "approach_bonus",
+        "approach_bonus": 0.12,
+        "desc": "斥候之術登峰:對戰場了然於胸,接戰幾乎必搶得開場偷襲先機(+12%,與其他潛近來源相加)。"
+      }
+    ]
+  },
+  {
+    "id": "security_100",
+    "skill": "security",
+    "threshold": 100,
+    "options": [
+      {
+        "opt_id": "master_thief",
+        "name": "神偷之手",
+        "kind": "lock_floor",
+        "floor": 0.5,
+        "desc": "安全登峰:再固若金湯的鎖你都有半數把握(撬鎖成功率下限 50%;多源取最高)。"
+      },
+      {
+        "opt_id": "thiefs_eye",
+        "name": "賊眼·窺探",
+        "kind": "dungeon_casing",
+        "desc": "賊眼如炬:每踏入地城新一層,即洞悉該層所有陷阱與上鎖寶箱的位置(預知佈防;不含怪/樓梯/首領)。"
+      }
+    ]
+  },
+  {
+    "id": "blade_75",
+    "skill": "blade",
+    "threshold": 75,
+    "options": [
+      {
+        "opt_id": "blade_flow",
+        "name": "劍勢如虹",
+        "kind": "weapon_mod",
+        "target": "blade",
+        "power": 0.08,
+        "desc": "劍勢漸入化境:刀劍傷害 +8%(與其他刀劍流派相加)。"
+      },
+      {
+        "opt_id": "swift_blade",
+        "name": "輕劍捷影",
+        "kind": "attr_fortify",
+        "attr": {
+          "agility": 4
+        },
+        "desc": "持劍輕靈,身手更捷(敏捷 +4 → 命中/閃避提升)。"
+      }
+    ]
+  },
+  {
+    "id": "blunt_75",
+    "skill": "blunt",
+    "threshold": 75,
+    "options": [
+      {
+        "opt_id": "bone_crush",
+        "name": "碎骨之力",
+        "kind": "weapon_mod",
+        "target": "blunt",
+        "pen": 0.08,
+        "desc": "鈍器漸入化境:額外無視 8% 護甲(與其他鈍器流派相加)。"
+      },
+      {
+        "opt_id": "mighty_arm",
+        "name": "巨力臂",
+        "kind": "attr_fortify",
+        "attr": {
+          "strength": 4
+        },
+        "desc": "揮錘之力更沉(力量 +4 → 近戰傷害/負重提升)。"
+      }
+    ]
+  },
+  {
+    "id": "marksman_75",
+    "skill": "marksman",
+    "threshold": 75,
+    "options": [
+      {
+        "opt_id": "swift_shot",
+        "name": "疾矢",
+        "kind": "weapon_mod",
+        "target": "marksman",
+        "hit": 0.04,
+        "desc": "箭術漸精:弓弩命中 +4%(與其他射術流派相加)。"
+      },
+      {
+        "opt_id": "aimed_shot",
+        "name": "瞄準射",
+        "kind": "bow_technique",
+        "technique": "aimed",
+        "desc": "蓄力瞄準:額外耗體換一記強擊 —— 命中、破甲與傷害皆大幅提升(不吃偷襲倍率、受 solo 夾限)。"
+      }
+    ]
+  },
+  {
+    "id": "speechcraft_75",
+    "skill": "speechcraft",
+    "threshold": 75,
+    "options": [
+      {
+        "opt_id": "silver_pardon",
+        "name": "巧言脫罪",
+        "kind": "talk_down_lever",
+        "cap_bonus": 80,
+        "floor": 0.2,
+        "desc": "三言兩語化干戈:說退攔路衛兵的賞金上限提至 200 金、且成功率保底 20% —— 大事化小。"
+      },
+      {
+        "opt_id": "iron_presence",
+        "name": "威名懾敵",
+        "kind": "intimidate_floor",
+        "floor": 0.45,
+        "desc": "威名遠播:喝退弱敵的成功率保底 45%(與威風喝退取最)—— 你的名號本身就是武器。"
+      }
+    ]
+  },
+  {
+    "id": "conjuration_50",
+    "skill": "conjuration",
+    "threshold": 50,
+    "options": [
+      {
+        "opt_id": "efficient_summon",
+        "name": "省魔召喚",
+        "kind": "spell_mod",
+        "school": "conjuration",
+        "cost_factor": 0.85,
+        "desc": "召喚漸熟:召喚/束縛/亡者復生施法省魔 15%(更頻繁可用)。"
+      },
+      {
+        "opt_id": "warding_focus",
+        "name": "護體召喚初窺",
+        "kind": "passive_armor",
+        "armor_bonus": 8,
+        "desc": "召喚靈光初凝環體護持(被動護甲 +8;與護體召喚〔75〕相加)。"
+      }
+    ]
+  },
+  {
+    "id": "destruction_50",
+    "skill": "destruction",
+    "threshold": 50,
+    "options": [
+      {
+        "opt_id": "resonant_strike",
+        "name": "共鳴一擊",
+        "kind": "resonant_strike",
+        "transfer": 0.5,
+        "dot_magnitude": 4,
+        "dot_turns": 3,
+        "desc": "法武共鳴(爆發流):施放毀滅傷害法術後,下一記近戰灌入其半數法力 —— 額外元素傷害並引燃同系持續傷害。"
+      },
+      {
+        "opt_id": "focused_mind",
+        "name": "凝神聚法",
+        "kind": "attr_fortify",
+        "attr": {
+          "intelligence": 4
+        },
+        "desc": "凝神聚法,魔力更充沛(智力 +4 → 魔力上限提升)。"
+      }
+    ]
+  },
+  {
+    "id": "illusion_50",
+    "skill": "illusion",
+    "threshold": 50,
+    "options": [
+      {
+        "opt_id": "efficient_illusion",
+        "name": "省魔幻術",
+        "kind": "spell_mod",
+        "school": "illusion",
+        "cost_factor": 0.85,
+        "desc": "幻術漸熟:幻術施法省魔 15%(恐懼/挫志/群控更頻繁可用)。"
+      },
+      {
+        "opt_id": "dread_touch",
+        "name": "懾意初窺",
+        "kind": "fear_on_hit",
+        "chance": 0.1,
+        "turns": 1,
+        "desc": "惑心入微:武器命中時 10% 機率使敵短暫驚懼(1 回合不敢進攻;solo BOSS 免疫;與懾心術/懾魂相加夾總上限)。"
+      }
+    ]
+  },
+  {
+    "id": "mysticism_50",
+    "skill": "mysticism",
+    "threshold": 50,
+    "options": [
+      {
+        "opt_id": "efficient_mysticism",
+        "name": "省魔秘法",
+        "kind": "spell_mod",
+        "school": "mysticism",
+        "cost_factor": 0.85,
+        "desc": "秘法漸熟:秘術(結界/驅散/擒魂)施法省魔 15%(更頻繁可用)。"
+      },
+      {
+        "opt_id": "ward_focus",
+        "name": "結界凝練",
+        "kind": "spell_mod",
+        "school": "mysticism",
+        "power_bonus": 0.1,
+        "desc": "秘術凝練:結界吸收量 +10%(吃 _power → 結界更厚實;秘術系唯一增幅來源)。"
+      }
+    ]
+  },
+  {
+    "id": "athletics_25",
+    "skill": "athletics",
+    "threshold": 25,
+    "options": [
+      {
+        "opt_id": "light_step",
+        "name": "健步輕身",
+        "kind": "evasion_bonus",
+        "evasion_bonus": 0.02,
+        "desc": "步法漸輕,挪移更俐落,敵人命中你的機率 −2%(多源相加,夾總上限)。"
+      }
+    ]
+  },
+  {
+    "id": "blade_25",
+    "skill": "blade",
+    "threshold": 25,
+    "options": [
+      {
+        "opt_id": "blade_basics",
+        "name": "持劍入門",
+        "kind": "weapon_mod",
+        "target": "blade",
+        "hit": 0.02,
+        "desc": "握劍漸穩,出手更準(刀劍命中 +2%,與其他刀劍流派相加)。"
+      }
+    ]
+  },
+  {
+    "id": "block_25",
+    "skill": "block",
+    "threshold": 25,
+    "options": [
+      {
+        "opt_id": "shield_basics",
+        "name": "持盾入門",
+        "kind": "passive_armor",
+        "armor_bonus": 5,
+        "desc": "略通舉盾撐架之法(被動護甲 +5,與其他護甲來源相加)。"
+      }
+    ]
+  },
+  {
+    "id": "blunt_25",
+    "skill": "blunt",
+    "threshold": 25,
+    "options": [
+      {
+        "opt_id": "blunt_basics",
+        "name": "持錘入門",
+        "kind": "weapon_mod",
+        "target": "blunt",
+        "pen": 0.03,
+        "desc": "揮錘漸沉,略能破甲(鈍器額外無視 3% 護甲,與其他鈍器流派相加)。"
+      }
+    ]
+  },
+  {
+    "id": "hand_to_hand_25",
+    "skill": "hand_to_hand",
+    "threshold": 25,
+    "options": [
+      {
+        "opt_id": "fist_basics",
+        "name": "拳腳入門",
+        "kind": "weapon_mod",
+        "target": "hand_to_hand",
+        "power": 0.05,
+        "desc": "略通拳腳發勁,徒手傷害 +5%(與其他徒手流派相加)。"
+      }
+    ]
+  },
+  {
+    "id": "heavy_armor_25",
+    "skill": "heavy_armor",
+    "threshold": 25,
+    "options": [
+      {
+        "opt_id": "heavy_basics",
+        "name": "重甲入門",
+        "kind": "passive_armor",
+        "armor_bonus": 6,
+        "desc": "略通負甲行止,厚甲護身更實(被動護甲 +6)。"
+      }
+    ]
+  },
+  {
+    "id": "smithing_25",
+    "skill": "smithing",
+    "threshold": 25,
+    "options": [
+      {
+        "opt_id": "thrifty_basics",
+        "name": "用料入門",
+        "kind": "temper_cost_free",
+        "free_chance": 0.1,
+        "desc": "略懂節省材料:淬鍊時 10% 機率不消耗錠材(多源取最高)。"
+      }
+    ]
+  },
+  {
+    "id": "alchemy_25",
+    "skill": "alchemy",
+    "threshold": 25,
+    "options": [
+      {
+        "opt_id": "poison_basics",
+        "name": "塗毒入門",
+        "kind": "poison_charge_bonus",
+        "charge_bonus": 1,
+        "desc": "略通塗毒之法:武器塗毒可多用 1 次(多源相加)。"
+      }
+    ]
+  },
+  {
+    "id": "alteration_25",
+    "skill": "alteration",
+    "threshold": 25,
+    "options": [
+      {
+        "opt_id": "alt_basics",
+        "name": "變化入門",
+        "kind": "spell_mod",
+        "school": "alteration",
+        "cost_factor": 0.92,
+        "desc": "粗通變化法理:變化術施法省魔 8%(與其他省魔相乘)。"
+      }
+    ]
+  },
+  {
+    "id": "conjuration_25",
+    "skill": "conjuration",
+    "threshold": 25,
+    "options": [
+      {
+        "opt_id": "conj_basics",
+        "name": "召喚入門",
+        "kind": "spell_mod",
+        "school": "conjuration",
+        "cost_factor": 0.92,
+        "desc": "粗通召喚法理:召喚術施法省魔 8%(與其他省魔相乘)。"
+      }
+    ]
+  },
+  {
+    "id": "destruction_25",
+    "skill": "destruction",
+    "threshold": 25,
+    "options": [
+      {
+        "opt_id": "dest_basics",
+        "name": "毀滅入門",
+        "kind": "spell_mod",
+        "school": "destruction",
+        "cost_factor": 0.92,
+        "desc": "粗通毀滅法理:毀滅術施法省魔 8%(與其他省魔相乘)。"
+      }
+    ]
+  },
+  {
+    "id": "illusion_25",
+    "skill": "illusion",
+    "threshold": 25,
+    "options": [
+      {
+        "opt_id": "illu_basics",
+        "name": "幻術入門",
+        "kind": "spell_mod",
+        "school": "illusion",
+        "cost_factor": 0.92,
+        "desc": "粗通幻術法理:幻術施法省魔 8%(與其他省魔相乘)。"
+      }
+    ]
+  },
+  {
+    "id": "mysticism_25",
+    "skill": "mysticism",
+    "threshold": 25,
+    "options": [
+      {
+        "opt_id": "myst_basics",
+        "name": "秘法入門",
+        "kind": "spell_mod",
+        "school": "mysticism",
+        "cost_factor": 0.92,
+        "desc": "粗通秘法法理:秘術施法省魔 8%(與其他省魔相乘)。"
+      }
+    ]
+  },
+  {
+    "id": "restoration_25",
+    "skill": "restoration",
+    "threshold": 25,
+    "options": [
+      {
+        "opt_id": "resto_basics",
+        "name": "復原入門",
+        "kind": "spell_mod",
+        "school": "restoration",
+        "cost_factor": 0.92,
+        "desc": "粗通復原法理:治療/援護術施法省魔 8%(與其他省魔相乘)。"
+      }
+    ]
+  },
+  {
+    "id": "acrobatics_25",
+    "skill": "acrobatics",
+    "threshold": 25,
+    "options": [
+      {
+        "opt_id": "tumble_basics",
+        "name": "翻滾入門",
+        "kind": "evasion_bonus",
+        "evasion_bonus": 0.02,
+        "desc": "略通翻滾卸勁,身形更難捉摸,敵人命中你的機率 −2%(多源相加,夾總上限)。"
+      }
+    ]
+  },
+  {
+    "id": "light_armor_25",
+    "skill": "light_armor",
+    "threshold": 25,
+    "options": [
+      {
+        "opt_id": "light_basics",
+        "name": "輕甲入門",
+        "kind": "passive_armor",
+        "armor_bonus": 4,
+        "desc": "略通輕甲穿著,柔革貼身卸力(被動護甲 +4)。"
+      }
+    ]
+  },
+  {
+    "id": "marksman_25",
+    "skill": "marksman",
+    "threshold": 25,
+    "options": [
+      {
+        "opt_id": "bow_basics",
+        "name": "弓術入門",
+        "kind": "weapon_mod",
+        "target": "marksman",
+        "hit": 0.02,
+        "desc": "持弓漸穩,瞄準更準(弓弩命中 +2%,與其他射術流派相加)。"
+      }
+    ]
+  },
+  {
+    "id": "mercantile_25",
+    "skill": "mercantile",
+    "threshold": 25,
+    "options": [
+      {
+        "opt_id": "haggle_basics",
+        "name": "議價入門",
+        "kind": "merchant_bonus",
+        "disposition_bonus": 0.03,
+        "desc": "略通討價還價,買賣稍占便宜(議價 +0.03,與各議價來源相加)。"
+      }
+    ]
+  },
+  {
+    "id": "scout_25",
+    "skill": "scout",
+    "threshold": 25,
+    "options": [
+      {
+        "opt_id": "recon_basics",
+        "name": "斥候之眼",
+        "kind": "recon_reveal_floor",
+        "scout_floor": 25,
+        "desc": "習得敵情判讀:**解鎖地城探明四鄰**(踏入即偵知鄰格);接戰前的敵情報告隨偵查技能愈練愈清。"
+      }
+    ]
+  },
+  {
+    "id": "security_25",
+    "skill": "security",
+    "threshold": 25,
+    "options": [
+      {
+        "opt_id": "lockpick_basics",
+        "name": "撬鎖入門",
+        "kind": "lock_floor",
+        "floor": 0.1,
+        "desc": "略通撬鎖之法:再生的鎖也有一成把握(撬鎖成功率下限 10%;多源取最高)。"
+      }
+    ]
+  },
+  {
+    "id": "speechcraft_25",
+    "skill": "speechcraft",
+    "threshold": 25,
+    "options": [
+      {
+        "opt_id": "speech_basics",
+        "name": "口才入門",
+        "kind": "merchant_bonus",
+        "disposition_bonus": 0.03,
+        "desc": "略通言談之道,人情練達、買賣亦稍占便宜(議價 +0.03,與各議價來源相加)。"
+      }
+    ]
+  }
 ]
