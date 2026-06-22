@@ -1318,6 +1318,14 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 - **🔴 sim_assassin BYTE-IDENTICAL**(隔離 worktree·`magic.cast` only·刺客不施法→零呼叫)。零新存檔欄(`conduct`=`active_effects` 暫態·R03)。`run_all` **80**(`test_m8` +conduct 疊層/放大/清零回歸·schema thunderbolt damage_status→damage)。平衡:**不破終王牆**(達貢 0%·易傷在抗性後乘);greedy `_mage_act` 不疊層→電被低估→法師 ancient_dragon 95→90%(by-design·專電 ramp 法師更高)·27 王均 96% 無 trivialize。
 - 🔴 鐵律:`conduct` 是 ramp 易傷(非控場)·**只電系法術讀**·每擊刷新計時/3 回合清零/夾 10 層(**滿層仍刷新**·經驗證非 bug)·改層數/上限/倍率→重跑 sim_builds·動法術傷害→sim_assassin byte-identical。**流程教訓**:測「疊層機制」須給**大魔力池**(低 MP 法師連續施法會 OOM 致 cast 失敗、stuck 在中途·誤判為機制 bug)。
 
+### R76 · 法術 DoT/HoT 吃法術威力(一致性修復)[re-sim]
+
+承「評估法術威力套用到 DoT」:法術直擊(damage)與直接治療(heal)/護盾(shield)/號令(empower)都吃 `_power`,**唯獨 DoT(延燒/焚世/毒雲)與 HoT(再生 renewal/regen_aura)不吃**(R73 點名的 flat tax)→ 高階法師直擊翻倍但 DoT/HoT 原地踏步、火系灼燒身份淡化。使用者拍板:**全額 ×power + 一併含 HoT**。
+- **`magic.py` 新 `_scaled_status(status, power)`**:`status` ∈ `_POWER_SCALED_STATUSES=("dot","regen")` → magnitude × 對應學派 `power`(夾 ≥1);其餘(soul_trap 等)原樣。**4 個 `make_status_effect` 呼叫點各包一層**:`_apply_to_allies`(:87 regen_aura)·enemy `damage_status`(:188 延燒/焚世)·`apply_status`(:294 毒雲 enemy + 再生 self)·AoE `damage_status_all`(:331)。**只 `cast` 路徑** → 武器 `ench_dot`(burn/chill/jolt)/塗毒/撕裂/感染的 DoT 走 `combat.py` 直接 append、**天然不受影響**。
+- **影響(×2.06 滿練·對無抗)**:DoT 越重越受益 —— 毒雲 24→49(+104%)·延燒 34→53(+56%)·焚世 139→177(+27%);HoT renewal 10/回→~18/回(倍增·與直接治療一致)。**不破終王牆**(火 DoT 對達貢 fire85→~0·毒對達貢 poison100 免疫→0)。
+- **🔴 sim_assassin BYTE-IDENTICAL**(隔離 worktree·`magic.cast` only·刺客不施法)。零新存檔欄。`run_all` **80**(`test_m8` +DoT/HoT 放大回歸·既有 `test_dot_ticks` 只驗 DoT 存在不破)。greedy `_mage_act` 不主用 DoT/HoT(用直擊/close_wounds)→ 法師 27 王均 **96% 不變**(fidelity 限制·DoT/HoT-build 玩家才有感)·apex 0%·無 trivialize。
+- 🔴 鐵律:`cast` 施加的 `dot`/`regen` magnitude 吃對應學派 `_power`(與直擊/heal/shield 一致)·僅 `_POWER_SCALED_STATUSES`·**combat 路徑 DoT 不吃威力**(武器/塗毒/撕裂);改套用集合/幅度→重跑 sim_builds+sim_assassin(byte-identical)。
+
 ---
 
 ## 4. 開發節奏(ultracode 開著 → 每個功能都這樣做)

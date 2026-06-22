@@ -84,7 +84,7 @@ def _apply_to_allies(kind: str, eff: dict, power: float, dests: list) -> list[st
             d.active_effects.append({"kind": "shield", "magnitude": round(eff["magnitude"] * power),
                                      "turns": eff["turns"]})
         elif kind == "apply_status":
-            d.active_effects.append(make_status_effect(eff["status"]))
+            d.active_effects.append(make_status_effect(_scaled_status(eff["status"], power)))   # R76 HoT/DoT 吃威力
         elif kind == "empower":
             # 號令增傷比照 heal/shield 吃施法 power(學派技能 + 力竭)→ 投資越深、鼓舞越強;
             # 維持分數型(不取整,否則 0.25 會被 round 成 0)。combat 端以 max 聚合,封堆疊暴衝。
@@ -185,7 +185,7 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
                                  magnitude=st.get("magnitude", 0.0), turns=st["turns"]) == "applied":
                     msg += f" {target.name}{_status_verb(st)}!"
             else:
-                target.active_effects.append(make_status_effect(st))   # dot 等非控場照舊
+                target.active_effects.append(make_status_effect(_scaled_status(st, power)))   # R76 DoT 吃威力
                 msg += f" {target.name}{_status_verb(st)}!"
         # 里程碑「衝擊餘波」:該學派傷害法術命中時附加狀態(stagger/weaken/fear)→ 集中 helper(R44)
         if not killed:
@@ -291,7 +291,7 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
                 apply_control(dest, st["status"], gamedata, rng,
                               magnitude=st.get("magnitude", 0.0), turns=st["turns"])
             else:                                                          # 自身/盟友增益、dot 照舊
-                dest.active_effects.append(make_status_effect(st))
+                dest.active_effects.append(make_status_effect(_scaled_status(st, power)))   # R76 DoT/HoT 吃威力
             who = "你" if dest is char else dest.name
             msg = f"{sp['name']} —— {who}{_status_verb(st)}。"
 
@@ -328,7 +328,7 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
                     apply_control(e, st["status"], gamedata, rng,
                                   magnitude=st.get("magnitude", 0.0), turns=st["turns"])
                 else:                                    # dot/soul_trap 等照常(各敵獨立 dict,R17)
-                    e.active_effects.append(make_status_effect(st))
+                    e.active_effects.append(make_status_effect(_scaled_status(st, power)))   # R76 DoT 吃威力
         if kind == "status_all":
             msg = f"{sp['name']} —— 全體敵人{_status_verb(eff['status'])}!"
         else:
@@ -604,6 +604,18 @@ def make_status_effect(status: dict) -> dict:
     """把資料中的狀態定義({"status": "dot"...})正規化成 active_effects 條目({"kind": ...})。"""
     return {"kind": status["status"], "element": status.get("element"),
             "magnitude": status.get("magnitude", 0), "turns": status["turns"]}
+
+
+# R76:法術施加的「持續傷害 DoT / 持續治療 HoT(regen)」的 magnitude 吃法術威力(與直擊/直接治療一致);
+# 其餘狀態(soul_trap 等)原樣。只在 cast 路徑套用 → 武器/塗毒/撕裂/感染的 DoT(combat 路徑)不受影響。
+_POWER_SCALED_STATUSES = ("dot", "regen")
+
+
+def _scaled_status(status: dict, power: float) -> dict:
+    """DoT/HoT 的 magnitude × 法術威力(夾 ≥1);非 DoT/HoT 原樣回傳。"""
+    if status.get("status") in _POWER_SCALED_STATUSES:
+        return {**status, "magnitude": max(1, int(round(status.get("magnitude", 0) * power)))}
+    return status
 
 
 def _status_verb(status: dict) -> str:

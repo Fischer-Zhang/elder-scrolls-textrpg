@@ -59,6 +59,24 @@ def test_frostbite_applies_benumb_control():
     assert all(magic.benumb_hit_penalty(e) > 0 for e in mob)
 
 
+def test_dot_and_hot_scale_with_spell_power_r76():
+    """R76:DoT(延燒/毒雲)與 HoT(再生 renewal)的 magnitude 吃法術威力(同直擊/直接治療);
+    低威力(基礎)→ 高威力(放大)。非 cast 來源(武器/塗毒)不受影響(走 combat 路徑)。"""
+    gd, c = _mage()
+    c.skills.update(destruction=100, restoration=100)
+    c.attributes.update(intelligence=100)
+    c.magicka = 999999
+    foe = combat.spawn_creature(gd, "frost_troll", RNG(1)); foe.health = foe.max_health = 10**6
+    magic.cast(c, gd, "ignite", RNG(1), target=foe)               # 延燒基礎 DoT 6
+    assert next(e["magnitude"] for e in foe.active_effects if e["kind"] == "dot") > 6   # 吃威力放大
+    foe2 = combat.spawn_creature(gd, "bandit", RNG(2)); foe2.health = foe2.max_health = 10**6
+    magic.cast(c, gd, "poison_cloud", RNG(2), target=foe2)        # 毒雲基礎 DoT 6
+    assert next(e["magnitude"] for e in foe2.active_effects if e["kind"] == "dot") > 6
+    c.health = 1
+    magic.cast(c, gd, "renewal", RNG(3))                          # 再生 HoT 基礎 10(self)
+    assert next(e["magnitude"] for e in c.active_effects if e["kind"] == "regen") > 10  # HoT 吃威力放大
+
+
 def test_conduct_stacks_amplifies_shock_and_clears():
     """R75 感電易傷:電系法術每命中疊一層導電(夾10·+3%/層·只放大電傷);3 回合無電擊清零。"""
     gd, c = _mage()
