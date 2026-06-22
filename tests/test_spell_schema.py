@@ -71,6 +71,11 @@ def test_every_spell_is_reachable():
     odata = json.load(open(os.path.join(os.path.dirname(__file__), "..", "tesrpg", "data", "origins.json")))
     for od in odata.values():
         reachable |= set(od.get("spells", []))
+    # 終極法術改走任務獎勵(R-arcane:reward.spells)→ 掃頂層 reward 與分支 reward(分支可在 branches[].reward 掛)。
+    for qd in gd.quests.values():
+        reachable |= set(qd.get("reward", {}).get("spells", []))
+        for b in qd.get("branches", []):
+            reachable |= set(b.get("reward", {}).get("spells", []))
     dead = [sid for sid in gd.spells if sid not in reachable]
     assert not dead, f"死內容法術(無任何取得途徑):{dead}"
     # 帝都樞紐全備 pin(對抗審查:8 新法術曾誤上架到海芬古而非帝都中央 → 確保中央可學)

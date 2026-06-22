@@ -103,6 +103,15 @@ def available_quests(char: Character, gamedata: GameData, source: str,
         rq = q.get("requires_quest")
         if rq and rq not in char.completed_quests:
             continue
+        # 多前置 gate(複數,全完成才開放):任務鏈匯流,如合體王頂點需三系試煉皆畢(R-arcane)。
+        rqs = q.get("requires_quests")
+        if rqs and any(r not in char.completed_quests for r in rqs):
+            continue
+        # 技能門檻 gate(R21:以 base_skill 判定,不含裝備/藥水/詛咒/誓福臨時加成 ——
+        # 終極法術試煉須真本事達標,不可靠臨時加成蒙混)。dict {"destruction":75};向後相容(無欄=不限)。
+        rs = q.get("requires_skill")
+        if rs and any(char.base_skill(s) < v for s, v in rs.items()):
+            continue
         if source == "guild":
             if q.get("faction") != faction or faction not in char.factions:
                 continue
@@ -235,6 +244,11 @@ def _complete(char: Character, gamedata: GameData, quest_id: str) -> dict:
     char.infamy += reward.get("infamy", 0)                  # 惡名(教徒結局竊神之力 → 惡名遠播)
     for item_id in reward.get("items", []):
         inventory.add_item(char, item_id, 1)
+    # 法術獎勵(R-arcane:奧術試煉授終極法術 → 不再商店販售)。資料驅動、去重,
+    # 鏡像 creation.py 開局授法術 / events.learn_spell;char.spells 為純 list 免遷移。
+    for sid in reward.get("spells", []):
+        if sid not in char.spells:
+            char.spells.append(sid)
 
     # 永久誓福:資料驅動 reward.grant_boon。達貢誓福(主線慘勝)走其獨立 dagon_* 層(敘事專屬,維持不動);
     # 其餘戴德拉親王誓福(R45)走通用 boons 層 + boons.json 登錄表。

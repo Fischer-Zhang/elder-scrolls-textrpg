@@ -1138,6 +1138,8 @@ def _report_quests(state: GameState, gamedata: GameData) -> None:
             ui.message(f"  獎勵 {r['gold']} 金", style="yellow")
         for iid in r.get("items", []):
             ui.message(f"  獎勵 {gamedata.item_name(iid)}", style="green")
+        for sid in r.get("spells", []):                # R-arcane:奧術試煉授終極法術(實際發放在 quests._complete)
+            ui.message(f"  ✦ 習得終極奧義:{gamedata.spells[sid]['name']}", style="bold magenta")
         if r.get("fame"):
             ui.message(f"  聲望 +{r['fame']}", style="cyan")
         if r.get("companion"):                         # 同伴角色化:招募任務授予具名同伴(入夥 / 滿員待召集)
@@ -3711,6 +3713,31 @@ def action_shrine(state: GameState, gamedata: GameData) -> None:
     _accept_and_brief(state, gamedata, qid)
 
 
+def action_arcane_trials(state: GameState, gamedata: GameData) -> None:
+    """奧術試煉的引路人(R-arcane):毀滅 base≥75 → 三系終極法術試煉 + 融合頂點。
+
+    比照 action_shrine:列出 source="arcane" 的可接任務,複用 _accept_and_brief(簡報/自動結算)。
+    門檻(requires_skill destruction 75 / requires_level / requires_quests)由 available_quests 把關。
+    """
+    char = state.player
+    avail = quests.available_quests(char, gamedata, "arcane")
+    if not avail:
+        if char.base_skill("destruction") < 75:
+            ui.message("引路人瞥了你一眼,搖頭:「你的破壞之術還沒到能承受終極奧義的境界 —— "
+                       "回去再淬煉,毀滅之道至少要登堂入室(75)才談得上試煉。」", style="grey70")
+        else:
+            ui.message("引路人微微頷首:「此刻沒有適合你的試煉了 —— 該試的,你都已試過。」", style="grey70")
+        return
+    ui.message("一名眼瞳燃著奧術微光的引路人打量著你:「火、冰、雷……三系終極真言不予空有天賦者。"
+               "你不能用一個元素去征服它的化身 —— 先以血肉與鋼鐵勝過牠,真言才會降臨於你。」", style="cyan")
+    opts = [(qid, f"{gamedata.quests[qid]['name']} — {quests.objective_text(char, gamedata, qid)}")
+            for qid in avail]
+    qid = ui.menu("奧術試煉的引路人", opts, allow_back=True)
+    if qid is None:
+        return
+    _accept_and_brief(state, gamedata, qid)
+
+
 def _accept_and_brief(state: GameState, gamedata: GameData, qid: str) -> None:
     q = gamedata.quests[qid]
     branch = 0
@@ -4339,6 +4366,8 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
             died = action_court(state, gamedata)
         elif choice == "guild_mages":
             mg_opts = [("spells", "學習法術"), ("mg_hall", "公會事務(入會 / 任務)")]
+            if loc.get("arcane_trials"):                 # R-arcane:奧術試煉引路人(終極法術試煉發起點)
+                mg_opts.append(("arcane", "🔥 奧術試煉的引路人"))
             if player.is_vampire:
                 mg_opts.append(("cure", "✦ 探詢血咒的解法"))
             sub = ui.menu("法師公會", mg_opts, allow_back=True)
@@ -4346,6 +4375,8 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
                 action_spell_vendor(state, gamedata)
             elif sub == "mg_hall":
                 action_guild_hall(state, gamedata, "mages_guild")
+            elif sub == "arcane":
+                action_arcane_trials(state, gamedata)
             elif sub == "cure":
                 action_vampire_cure(state, gamedata)
         elif choice == "fg_hall":
