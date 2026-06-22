@@ -142,9 +142,30 @@ def make_shield_reflect():
     return c
 
 
+# 法師三系專精(各鎖單一元素 → 火 DoT / 冰凍麻控場 / 電感電 ramp 三身份分明;取代單一 greedy 法師)。
+# 政策 `_mage_act` 讀 char._dmg_pool(缺省回 _MAGE_DMG)→ 各元素法師只挑自系最佳法術。
+_MAGE_ELEMENTS = {
+    "mage_fire":  ["incinerate", "fireball", "ignite", "flames"],
+    "mage_frost": ["absolute_zero", "ice_spike", "frostbite", "frost_nova"],
+    "mage_shock": ["thunderbolt", "lightning_bolt", "sparks", "chain_lightning"],
+}
+
+
+def _make_element_mage(pool):
+    def mk():
+        c = make_mage()
+        c.spells = list(pool) + ["close_wounds", "heal", "stoneflesh"]
+        c._dmg_pool = pool
+        return c
+    return mk
+
+
 BUILDS = {"assassin": make_assassin, "archer": make_archer, "warrior_1H": make_warrior_sword,
           "warrior_2H": make_warrior_2h, "shield_reflect": make_shield_reflect,
-          "mage": make_mage, "battlemage": make_battlemage}
+          "mage_fire": _make_element_mage(_MAGE_ELEMENTS["mage_fire"]),
+          "mage_frost": _make_element_mage(_MAGE_ELEMENTS["mage_frost"]),
+          "mage_shock": _make_element_mage(_MAGE_ELEMENTS["mage_shock"]),
+          "battlemage": make_battlemage}
 
 # --- per-build 戰鬥 policy ----------------------------------------------
 def _regen(c):
@@ -162,9 +183,9 @@ def _mage_act(c, boss, rng, st):
         for h in ("close_wounds", "heal"):
             if magic.can_cast(c, gd, h):
                 magic.cast(c, gd, h, rng); return
-    # 選對 boss 最佳元素的可負擔傷害法術(magnitude×(1−resist))
+    # 選對 boss 最佳元素的可負擔傷害法術(magnitude×(1−resist));專精法師只挑自系池(_dmg_pool)
     best, best_ev = None, -1
-    for sid in _MAGE_DMG:
+    for sid in getattr(c, "_dmg_pool", _MAGE_DMG):
         if not magic.can_cast(c, gd, sid):
             continue
         eff = gd.spells[sid]["effect"]; el = eff.get("element"); mag = eff.get("magnitude", 0)
@@ -220,7 +241,8 @@ def _attack_act(c, boss, rng, st):
 
 _POLICY = {"assassin": _melee_sneak_act, "archer": _melee_sneak_act,
            "warrior_1H": _attack_act, "warrior_2H": _attack_act, "shield_reflect": _attack_act,
-           "mage": _mage_act, "battlemage": _battlemage_act}
+           "mage_fire": _mage_act, "mage_frost": _mage_act, "mage_shock": _mage_act,
+           "battlemage": _battlemage_act}
 
 
 def fight(build_name, boss_id, seed, max_rounds=80):

@@ -28,7 +28,7 @@ def _mage_act(c, opp, rng, st):
             if magic.can_cast(c, gd, h):
                 magic.cast(c, gd, h, rng); return
     best, bev = None, -1.0
-    for sid in S._MAGE_DMG:
+    for sid in getattr(c, "_dmg_pool", S._MAGE_DMG):    # 專精法師只挑自系池
         if not magic.can_cast(c, gd, sid):
             continue
         eff = gd.spells[sid]["effect"]
@@ -72,7 +72,8 @@ def _atk_act(c, opp, rng, st):
 
 
 POLICY = {"assassin": _sneak_act, "archer": _sneak_act, "warrior_1H": _atk_act,
-          "warrior_2H": _atk_act, "shield_reflect": _atk_act, "mage": _mage_act, "battlemage": _bm_act}
+          "warrior_2H": _atk_act, "shield_reflect": _atk_act, "battlemage": _bm_act,
+          "mage_fire": _mage_act, "mage_frost": _mage_act, "mage_shock": _mage_act}
 
 
 def _post(c):
@@ -130,6 +131,6 @@ if __name__ == "__main__":
         print(f"  {a:12}{row}")
     print("\n== 參考:ambush(潛行 build 拿到開場偷襲·固定先手)→ 勝率(展示退化:開場即秒)==")
     for a in ("assassin", "archer"):
-        for d in ("mage", "warrior_1H", "warrior_2H"):
+        for d in ("mage_fire", "warrior_1H", "warrior_2H"):
             w = sum(duel(a, d, s, a_first=True, ambush=True) == "A" for s in range(150)) / 150
             print(f"  {a} 開場偷襲 vs {d}: {w:.0%} 勝")

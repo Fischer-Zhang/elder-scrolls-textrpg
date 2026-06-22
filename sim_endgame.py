@@ -20,7 +20,7 @@ RESIST_SOUL = 5        # grand soul → 抗火每件 mag 12
 # 近戰/遠程武器流派 → 吸血續戰;法師走法術不換武器
 _VAMP_BUILDS = {"assassin", "archer", "warrior_1H", "warrior_2H", "shield_reflect", "battlemage"}
 # 保留套裝 bonus 不重附魔的 build(法師 archmage = 魔抗+法威來源)
-_KEEP_ARMOR = {"mage"}
+_KEEP_ARMOR = {"mage_fire", "mage_frost", "mage_shock"}   # 法系保法袍套裝(魔抗/法威)不重附魔抗火
 
 
 def buff(c, name):
@@ -106,9 +106,10 @@ if __name__ == "__main__":
     # 牆的性質:輸的是「戰死」(survival 不足→可再 buff)還是「逾時」(DPS 不足→buff 無解)
     from collections import Counter
     print("\n== 達貢滿血(720)輸法拆解(增益版·n=300)==")
-    for n in ("mage_e", "assassin_e", "archer_e"):
+    for n in ("mage_shock_e", "assassin_e", "archer_e"):
         out = Counter(S.fight(n, "mehrunes_dagon", s) for s in range(300))
-        print(f"  {n:12} " + " ".join(f"{k}={round(v/300*100)}%" for k, v in out.items()))
-    print("== 古龍(400)mage 輸法拆解 ==")
-    out = Counter(S.fight("mage_e", "ancient_dragon", s) for s in range(300))
-    print(f"  mage_e       " + " ".join(f"{k}={round(v/300*100)}%" for k, v in out.items()))
+        print(f"  {n:14} " + " ".join(f"{k}={round(v/300*100)}%" for k, v in out.items()))
+    print("== 古龍(400)各系法師輸法拆解(火被牆 vs 電可贏)==")
+    for n in ("mage_fire_e", "mage_shock_e"):
+        out = Counter(S.fight(n, "ancient_dragon", s) for s in range(300))
+        print(f"  {n:14} " + " ".join(f"{k}={round(v/300*100)}%" for k, v in out.items()))
