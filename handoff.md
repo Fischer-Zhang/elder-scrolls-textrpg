@@ -1310,6 +1310,14 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 - **平衡(re-sim)**:助益落在**中高階非終王**(ancient_dragon 86→**95%**·knight_of_order 96→100%)·**不破終王牆**(mehrunes_dagon 0→**0%** by-design,有削弱結局逃生口)·無 trivialize(多數王本就 95-100%)。`sim_builds._MAGE_DMG` 加 4 法術(完全體法師反映新工具·`_mage_act` 按 mag×(1−resist) 自動選用,can_cast 守魔耗)。
 - **🔴 sim_assassin BYTE-IDENTICAL**(隔離 worktree·純資料改 spells.json/world.json·刺客不施法)。零新存檔欄。`run_all` 80(schema 自動驗新法術 kind/status·reachability 守 spell_stock)。🔴 鐵律:加傷害法術純改 `spells.json`+`world.json spell_stock`(R02/R29)·終極不穿透(保抗性設計)·DoT/控場 magnitude 不吃法術威力(R73)·動法術數值→重跑 sim_builds(法系升=by design)+sim_assassin(byte-identical)。
 
+### R75 · 電系識別:感電易傷 `conduct`(疊層放大電傷)+ 電傷降火/冰中間 [re-sim]
+
+承「評估電系沒附帶效果」:評估揪出電的正典招牌(燒魔 magicka drain)在本遊戲**空轉** —— `Creature` 無 magicka 欄、怪攻全走 bestiary `attack`/`attacks` 不耗魔(連 3 隻法系怪的 magicka 值都不載入);可用的 stagger 又與冰的減命中重疊。使用者拍板:電效果改**「增加被擊傷害」+ 下修傷害**(電從 raw 王 → ramp 軸)。
+- **新狀態 kind `conduct`(導電,非控場·不走 apply_control)**:電系法術命中 → 目標疊 **1 層**(每層 +3% 受電傷·夾 **10 層=+30%**)·**每次電擊刷新 3 回合計時**·3 回合無電擊則**整組清零**(turns 歸零移除·非逐層遞減)·**只放大電系法術傷害**(`magic.cast` 內讀·combat/武器/他系不讀)。`magic.py`:`CONDUCT_PER_STACK/MAX_STACKS/TURNS` + `conduct_stacks`/`conduct_damage_multiplier`/`add_conduct` + cast 單體(:171)/AoE(:311)電系分支各 hook(讀現層放大→施傷→`not killed` 疊 1 層)+ tick 退場文案。
+- **電傷降到同階火/冰中間**(`spells.json`):閃電束 40→**30**(=火球/冰錐 30)·連鎖閃電 22→**20**·天雷 56→**48**(焚世50/絕對零度46 之間·**移除 R74 stagger** 改純傷)·電花 15 不動。**電身份 = ramp**:開場與火/冰持平,持續電擊疊到 +30%(天雷滿層 142 > 舊 56)→ 獎勵持久單體(打王)、懲罰一次性爆發。
+- **🔴 sim_assassin BYTE-IDENTICAL**(隔離 worktree·`magic.cast` only·刺客不施法→零呼叫)。零新存檔欄(`conduct`=`active_effects` 暫態·R03)。`run_all` **80**(`test_m8` +conduct 疊層/放大/清零回歸·schema thunderbolt damage_status→damage)。平衡:**不破終王牆**(達貢 0%·易傷在抗性後乘);greedy `_mage_act` 不疊層→電被低估→法師 ancient_dragon 95→90%(by-design·專電 ramp 法師更高)·27 王均 96% 無 trivialize。
+- 🔴 鐵律:`conduct` 是 ramp 易傷(非控場)·**只電系法術讀**·每擊刷新計時/3 回合清零/夾 10 層(**滿層仍刷新**·經驗證非 bug)·改層數/上限/倍率→重跑 sim_builds·動法術傷害→sim_assassin byte-identical。**流程教訓**:測「疊層機制」須給**大魔力池**(低 MP 法師連續施法會 OOM 致 cast 失敗、stuck 在中途·誤判為機制 bug)。
+
 ---
 
 ## 4. 開發節奏(ultracode 開著 → 每個功能都這樣做)

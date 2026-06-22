@@ -59,6 +59,29 @@ def test_frostbite_applies_benumb_control():
     assert all(magic.benumb_hit_penalty(e) > 0 for e in mob)
 
 
+def test_conduct_stacks_amplifies_shock_and_clears():
+    """R75 感電易傷:電系法術每命中疊一層導電(夾10·+3%/層·只放大電傷);3 回合無電擊清零。"""
+    gd, c = _mage()
+    c.max_magicka = c.magicka = 10**6             # 大魔力池 → 連續電擊不 OOM(純測疊層)
+    foe = combat.spawn_creature(gd, "frost_troll", RNG(1))
+    foe.health = foe.max_health = 10**6           # 高血 → 永不被秒,純測疊層
+    for i in range(1, 6):
+        magic.cast(c, gd, "lightning_bolt", RNG(i), target=foe)
+        assert magic.conduct_stacks(foe) == i      # 每擊 +1 層
+    for i in range(20):
+        magic.cast(c, gd, "lightning_bolt", RNG(i + 99), target=foe)
+    assert magic.conduct_stacks(foe) == 10         # 夾 10 層
+    assert abs(magic.conduct_damage_multiplier(foe) - 1.30) < 1e-9   # +30%
+    # 非電系不疊也不放大
+    fb_foe = combat.spawn_creature(gd, "bandit", RNG(2)); fb_foe.health = fb_foe.max_health = 10**6
+    magic.cast(c, gd, "fireball", RNG(3), target=fb_foe)
+    assert magic.conduct_stacks(fb_foe) == 0
+    # 3 回合無電擊 → 整組清零(turns 歸零移除,非逐層遞減)
+    for _ in range(3):
+        magic.tick_effects(foe, gd)
+    assert magic.conduct_stacks(foe) == 0
+
+
 # --- 狀態效果 -----------------------------------------------------------
 def test_dot_ticks_and_respects_resist():
     gd, c = _mage()

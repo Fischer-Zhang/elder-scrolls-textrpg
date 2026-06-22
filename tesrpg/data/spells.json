@@ -171,7 +171,7 @@
     "effect": {
       "kind": "damage",
       "element": "shock",
-      "magnitude": 40
+      "magnitude": 30
     }
   },
   "ice_spike": {
@@ -213,13 +213,9 @@
     "cost": 70,
     "target": "enemy",
     "effect": {
-      "kind": "damage_status",
+      "kind": "damage",
       "element": "shock",
-      "magnitude": 56,
-      "status": {
-        "status": "stagger",
-        "turns": 1
-      }
+      "magnitude": 48
     }
   },
   "absolute_zero": {
@@ -314,7 +310,7 @@
     "effect": {
       "kind": "damage_all",
       "element": "shock",
-      "magnitude": 22
+      "magnitude": 20
     }
   },
   "frost_nova": {

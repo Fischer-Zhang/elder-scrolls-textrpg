@@ -169,10 +169,14 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
         element = eff.get("element", "magic")
         mult = formulas.resist_multiplier(entity_resist(target, gamedata), element)
         dmg = _scaled_damage(eff["magnitude"] * power * rng.roll(0.9, 1.1), mult)
+        if element == "shock":                         # 感電易傷(R75):依目標導電層放大電傷(抗性後)
+            dmg = max(1, int(round(dmg * conduct_damage_multiplier(target))))
         before = target.health
         target.health = max(0, target.health - dmg)   # 法術傷害無視物理護甲(但受元素抗性)
         damage = before - target.health               # 實際扣血(避免溢殺灌水)
         killed = target.health <= 0
+        if element == "shock" and not killed:          # 每次電擊 +1 層導電(夾 10·刷新 3 回合)
+            add_conduct(target)
         msg = f"{sp['name']}命中{target.name},造成 {dmg} 點魔法傷害{_resist_tag(mult)}!"
         if kind == "damage_status" and not killed:
             st = eff["status"]
@@ -309,10 +313,14 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
             if kind != "status_all":            # 含傷害的 AoE
                 mult = formulas.resist_multiplier(entity_resist(e, gamedata), element)
                 dmg = _scaled_damage(eff["magnitude"] * power * rng.roll(0.9, 1.1), mult)
+                if element == "shock":          # 感電易傷(R75):每敵各依自身導電層放大電傷
+                    dmg = max(1, int(round(dmg * conduct_damage_multiplier(e))))
                 before = e.health
                 e.health = max(0, e.health - dmg)
                 loss = before - e.health        # 實際扣血(避免溢殺灌水)
                 damage += loss
+                if e.health > 0:                # 每敵各 +1 層導電
+                    add_conduct(e)
                 parts.append(f"{e.name} {loss}{_resist_tag(mult)}")
             if kind in ("status_all", "damage_status_all") and e.health > 0:
                 st = eff["status"]
@@ -477,6 +485,34 @@ def benumb_hit_penalty(creature) -> float:
     return max(0.0, min(0.6, mag))
 
 
+# 感電易傷(R75 電系識別):電系法術命中 → 目標疊「導電 conduct」層,每層 +CONDUCT_PER_STACK
+# 受電傷(夾 CONDUCT_MAX_STACKS 層=+30%);每次電擊刷新 CONDUCT_TURNS,3 回合內無新電擊則
+# 整組清零(非逐層遞減,靠 tick turns 歸零移除)。**只放大電系法術傷害**(combat 武器/他系不讀)。
+CONDUCT_PER_STACK = 0.03
+CONDUCT_MAX_STACKS = 10
+CONDUCT_TURNS = 3
+
+
+def conduct_stacks(creature) -> int:
+    e = next((x for x in creature.active_effects if x.get("kind") == "conduct" and x.get("turns", 0) > 0), None)
+    return e.get("stacks", 0) if e else 0
+
+
+def conduct_damage_multiplier(creature) -> float:
+    """電系法術對該目標的傷害放大倍率(1 + 每層 0.03,夾 +30%)。電系傷害路徑專讀。"""
+    return 1.0 + CONDUCT_PER_STACK * conduct_stacks(creature)
+
+
+def add_conduct(creature) -> None:
+    """命中電擊 → 疊一層導電(夾 CONDUCT_MAX_STACKS)+ 刷新計時;無則新建。"""
+    e = next((x for x in creature.active_effects if x.get("kind") == "conduct" and x.get("turns", 0) > 0), None)
+    if e:
+        e["stacks"] = min(CONDUCT_MAX_STACKS, e.get("stacks", 0) + 1)
+        e["turns"] = CONDUCT_TURNS
+    else:
+        creature.active_effects.append({"kind": "conduct", "stacks": 1, "turns": CONDUCT_TURNS})
+
+
 # 控場 kind 分類(R44:集中施加判定)
 _HARD_CONTROL = ("fear", "paralyze")     # 失能(經 is_incapacitated 跳過行動)→ 受抵抗/去重
 _CONTROL_KINDS = ("fear", "paralyze", "stagger", "slow", "weaken", "benumb")
@@ -633,6 +669,8 @@ def tick_effects(entity, gamedata=None) -> list[str]:
                 msgs.append(f"{name}重整了陣腳。")
             elif e["kind"] == "benumb":
                 msgs.append(f"{name}自凍麻中回復了準頭。")
+            elif e["kind"] == "conduct":
+                msgs.append(f"{name}身上的導電消退了。")
     return msgs
 
 
