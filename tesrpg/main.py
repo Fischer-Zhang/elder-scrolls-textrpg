@@ -3714,22 +3714,32 @@ def action_shrine(state: GameState, gamedata: GameData) -> None:
 
 
 def action_arcane_trials(state: GameState, gamedata: GameData) -> None:
-    """奧術試煉的引路人(R-arcane):毀滅 base≥75 → 三系終極法術試煉 + 融合頂點。
+    """奧術試煉的在地引路人(R-arcane):毀滅 base≥75 → 該地點對應的元素試煉。
 
-    比照 action_shrine:列出 source="arcane" 的可接任務,複用 _accept_and_brief(簡報/自動結算)。
-    門檻(requires_skill destruction 75 / requires_level / requires_quests)由 available_quests 把關。
+    比照 action_shrine:地點 `arcane_trials` 標籤(fire/frost/shock 分散各省法師城·fused 在帝都)
+    配對任務 `arcane_site`,列可接者 → 複用 _accept_and_brief。門檻(requires_skill/level/quests)
+    由 available_quests 把關。
     """
     char = state.player
-    avail = quests.available_quests(char, gamedata, "arcane")
+    loc = world.current_location(char, gamedata)
+    site = loc.get("arcane_trials")
+    if not site:
+        return
+    avail = [qid for qid in quests.available_quests(char, gamedata, "arcane")
+             if gamedata.quests[qid].get("arcane_site") == site]
     if not avail:
         if char.base_skill("destruction") < 75:
             ui.message("引路人瞥了你一眼,搖頭:「你的破壞之術還沒到能承受終極奧義的境界 —— "
                        "回去再淬煉,毀滅之道至少要登堂入室(75)才談得上試煉。」", style="grey70")
+        elif site == "fused":
+            ui.message("引路人凝視著你:「三系真言尚未在你身上齊聚 —— 先走遍各省、集齊火冰雷的試煉,"
+                       "融合的試煉方會在此顯現。」", style="grey70")
         else:
-            ui.message("引路人微微頷首:「此刻沒有適合你的試煉了 —— 該試的,你都已試過。」", style="grey70")
+            ui.message("引路人微微頷首:「此地的試煉你已了結 —— 其餘真言,得往別省的法師公會尋訪。」",
+                       style="grey70")
         return
-    ui.message("一名眼瞳燃著奧術微光的引路人打量著你:「火、冰、雷……三系終極真言不予空有天賦者。"
-               "你不能用一個元素去征服它的化身 —— 先以血肉與鋼鐵勝過牠,真言才會降臨於你。」", style="cyan")
+    ui.message("一名眼瞳燃著奧術微光的引路人打量著你:「終極真言不予空有天賦者 —— "
+               "你不能用一個元素去征服它的化身,先以血肉與鋼鐵勝過牠,真言才會降臨於你。」", style="cyan")
     opts = [(qid, f"{gamedata.quests[qid]['name']} — {quests.objective_text(char, gamedata, qid)}")
             for qid in avail]
     qid = ui.menu("奧術試煉的引路人", opts, allow_back=True)

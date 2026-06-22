@@ -128,6 +128,40 @@ def test_fused_capstone_boss_valid():
     assert "spells" not in gd.quests["trial_fused"].get("reward", {})   # 頂點無第 4 法術
 
 
+# --- 分散發起點:地點 arcane_trials 標籤配對任務 arcane_site(各省法師城) ----------
+_SITES = {"fire": "blacklight", "frost": "winterhold", "shock": "gideon", "fused": "imperial_city"}
+
+
+def test_arcane_site_tags_pair_quest_and_location():
+    gd = get_gamedata()
+    w = gd.world["locations"]
+    assert gd.quests["trial_fire"]["arcane_site"] == "fire"
+    assert gd.quests["trial_frost"]["arcane_site"] == "frost"
+    assert gd.quests["trial_shock"]["arcane_site"] == "shock"
+    assert gd.quests["trial_fused"]["arcane_site"] == "fused"
+    for site, city in _SITES.items():
+        assert w[city].get("arcane_trials") == site, f"{city} 應掛 arcane_trials={site}"
+        assert "mages_guild" in w[city].get("services", []), f"{city} 需有法師公會發起點"
+    # 僅這四座掛旗(無孤兒標籤)
+    assert {k for k, v in w.items() if v.get("arcane_trials")} == set(_SITES.values())
+
+
+def test_per_site_pickup_filters_correctly():
+    """模擬 action_arcane_trials 的地點配對:每座引路人只給該系試煉,頂點僅在帝都且需三系皆畢。"""
+    gd, c = _gd_char()
+
+    def at_site(site):
+        return [q for q in quests.available_quests(c, gd, "arcane")
+                if gd.quests[q].get("arcane_site") == site]
+    assert at_site("fire") == ["trial_fire"]
+    assert at_site("frost") == ["trial_frost"]
+    assert at_site("shock") == ["trial_shock"]
+    assert at_site("fused") == []                       # 未完成三系 → 帝都頂點未現
+    c.completed_quests = ["trial_fire", "trial_frost", "trial_shock"]
+    assert at_site("fused") == ["trial_fused"]
+    assert at_site("fire") == []                        # 已完成 → 該系不再現(is_done 過濾)
+
+
 def run():
     for name, fn in sorted(globals().items()):
         if name.startswith("test_") and callable(fn):
