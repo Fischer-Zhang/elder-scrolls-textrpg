@@ -51,7 +51,8 @@ def _power(char: Character, gamedata: GameData, school: str) -> float:
              + mastery.cascade_power(char, gamedata))   # 法師「奧術連鎖」:連續施法漸增威力
             * formulas.intelligence_spell_potency(char.attr("intelligence"))   # R63 智力 → 法術威力(過 100 漸近)
             * (1.0 + inventory.set_spell_power_bonus(char, gamedata)           # R68 法袍套裝:法術威力(乘性,與智力威力疊乘)
-                   + inventory.staff_spell_power(char, gamedata)))            # R77 持杖施法焦點:法術威力(與套裝相加)
+                   + inventory.staff_spell_power(char, gamedata)              # R77 持杖施法焦點:法術威力(與套裝相加)
+                   + getattr(char, "boon_spell_power", 0.0)))                 # R78b 大法師通悟誓福:法術威力(與套裝/法杖相加)
 
 
 def spell_fatigue_cost(char: Character, gamedata: GameData, spell_id: str) -> int:

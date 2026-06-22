@@ -7,7 +7,7 @@
 """
 from tesrpg.creation import build_character
 from tesrpg.gamedata import get_gamedata
-from tesrpg.systems import boons, quests
+from tesrpg.systems import boons, magic, quests
 
 _ULTIMATES = ("incinerate", "thunderbolt", "absolute_zero")
 _TRIALS = {
@@ -160,6 +160,20 @@ def test_per_site_pickup_filters_correctly():
     c.completed_quests = ["trial_fire", "trial_frost", "trial_shock"]
     assert at_site("fused") == ["trial_fused"]
     assert at_site("fire") == []                        # 已完成 → 該系不再現(is_done 過濾)
+
+
+# --- 大法師通悟誓福:+10% 法術威力層(R78b·法師公會 mg5 改授) ----------------
+def test_archmage_insight_boon_raises_spell_power():
+    gd, c = _gd_char()
+    c.equipped = {}; c.weapon = "iron_dagger"        # 中性化裝備:set/staff 威力層歸 0,孤立誓福層
+    before = magic._power(c, gd, "destruction")
+    boons.grant(c, gd, "archmage_insight")
+    assert abs(c.boon_spell_power - 0.10) < 1e-9
+    after = magic._power(c, gd, "destruction")
+    # 誓福層與套裝/法杖相加(此處皆 0)→ _power 應整體 ×1.10
+    assert abs(after - before * 1.10) < 1e-6, (before, after)
+    # 🔴 不寫 base、不碰技能
+    assert c.base_skill("destruction") == c.skill("destruction")
 
 
 def run():

@@ -152,5 +152,9 @@
     "skill": {"athletics": 8},
     "resist": {"frost": 10, "disease": 15},
     "magicka": 0
+  },
+  "archmage_insight": {
+    "name": "大法師通悟",
+    "spell_power": 0.1
   }
 }

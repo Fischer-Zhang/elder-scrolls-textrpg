@@ -33,6 +33,7 @@ def apply_to_character(char: Character, gamedata: GameData) -> None:
     skill: dict[str, int] = {}
     resist: dict[str, int] = {}
     magicka = 0
+    spell_power = 0.0
     registry = getattr(gamedata, "boons", {}) or {}
     for bid in getattr(char, "boons", []):
         spec = registry.get(bid)
@@ -45,10 +46,12 @@ def apply_to_character(char: Character, gamedata: GameData) -> None:
         for k, v in spec.get("resist", {}).items():
             resist[k] = resist.get(k, 0) + v
         magicka += spec.get("magicka", 0)
+        spell_power += spec.get("spell_power", 0.0)   # R78b 法術威力誓福層(乘進 magic._power)
     char.boon_attr_bonus = attr
     char.boon_skill_bonus = skill
     char.boon_resist = resist
     char.boon_magic_bonus = magicka
+    char.boon_spell_power = spell_power
     # attr()/max_magicka 已含 boon_* → 重算讓屬性流進衍生資源、魔力流進 max_magicka。
     stats.recompute_max_resources(char, gamedata)
 
@@ -71,4 +74,6 @@ def ensure_boon_fields(char: Character, gamedata: GameData) -> None:
             setattr(char, fld, {})
     if getattr(char, "boon_magic_bonus", None) is None:
         char.boon_magic_bonus = 0
+    if getattr(char, "boon_spell_power", None) is None:
+        char.boon_spell_power = 0.0
     apply_to_character(char, gamedata)

@@ -178,15 +178,28 @@ def test_branch_persists_across_stage_advance():
 
 
 def test_guildmaster_artifacts():
-    """6 個持久公會的壓軸任務(掌門)兩條 branch 皆授予該會專屬神器;神器皆有定義。"""
+    """5 個持久公會的壓軸任務(掌門)兩條 branch 皆授予該會專屬神器;神器皆有定義。
+    (法師公會 mg5 改授永久『大法師通悟』誓福〔+10% 法術威力〕而非神器 → 見下測。)"""
     gd, _ = _char()
     reg = {**gd.weapons, **gd.armor, **gd.items}
-    arts = {"fg7": "valor_blade", "mg5": "staff_of_magnus", "tg5": "gray_fox_mask",
+    arts = {"fg7": "valor_blade", "tg5": "gray_fox_mask",
             "db6": "blade_of_woe", "kn6": "crusaders_ward", "companions6": "wuuthrad"}
     for qid, art in arts.items():
         assert art in reg, f"神器未定義:{art}"
         for b in gd.quests[qid]["branches"]:
             assert art in b.get("reward", {}).get("items", []), f"{qid} 某 branch 未授予 {art}"
+
+
+def test_mages_guild_capstone_grants_spell_power_boon():
+    """法師公會壓軸 mg5(首席法師)兩條 branch 皆授予『大法師通悟』誓福(+10% 法術威力),
+    不再給馬格努斯之杖(改由 R78 奧術試煉合體王頂點 trial_fused 提供)。"""
+    gd, _ = _char()
+    boon = gd.boons["archmage_insight"]
+    assert boon.get("spell_power") == 0.1
+    for b in gd.quests["mg5"]["branches"]:
+        r = b.get("reward", {})
+        assert r.get("grant_boon") == "archmage_insight", "mg5 某 branch 未授予大法師通悟誓福"
+        assert "staff_of_magnus" not in r.get("items", []), "mg5 不應再給馬格努斯之杖"
 
 
 def run():

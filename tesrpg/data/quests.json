@@ -509,9 +509,9 @@
           "fame": 35,
           "items": [
             "filled_greater_soul_gem",
-            "ebony_shield",
-            "staff_of_magnus"
-          ]
+            "ebony_shield"
+          ],
+          "grant_boon": "archmage_insight"
         }
       },
       {
@@ -546,9 +546,9 @@
           "fame": 30,
           "items": [
             "filled_greater_soul_gem",
-            "filled_greater_soul_gem",
-            "staff_of_magnus"
-          ]
+            "filled_greater_soul_gem"
+          ],
+          "grant_boon": "archmage_insight"
         }
       }
     ]

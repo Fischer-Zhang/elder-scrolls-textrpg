@@ -119,6 +119,7 @@ class Character:
     boon_skill_bonus: dict = field(default_factory=dict)     # skill_id -> +點數(推導快取)
     boon_resist: dict = field(default_factory=dict)          # element -> +百分比(推導快取)
     boon_magic_bonus: int = 0            # 額外魔力上限(走 stats.recompute_max_resources)
+    boon_spell_power: float = 0.0        # 法術威力加成(誓福層·乘進 magic._power·推導快取;R78b 大法師通悟)
     # 疾病(R53;普通病=被怪傳染的懲罰層,治癒前持續、可惡化/帶 DoT)。與斯庫瑪戒斷負層同模式:
     # diseases 為唯一權威(已染病 id + 染病絕對日);兩個 *_penalty 是「由 diseases + diseases.json 決定性推導的
     # 負值快取」,attr()/skill() 疊加、成長/夾限只用 base_*、絕不寫 base。吸血鬼/狼人疾病免疫天然不染。詳見 systems/diseases.py。
@@ -300,7 +301,7 @@ class Character:
             "dagon_magic_bonus": self.dagon_magic_bonus,
             "boons": self.boons, "boon_attr_bonus": self.boon_attr_bonus,
             "boon_skill_bonus": self.boon_skill_bonus, "boon_resist": self.boon_resist,
-            "boon_magic_bonus": self.boon_magic_bonus,
+            "boon_magic_bonus": self.boon_magic_bonus, "boon_spell_power": self.boon_spell_power,
             "diseases": self.diseases, "disease_attr_penalty": self.disease_attr_penalty,
             "disease_skill_penalty": self.disease_skill_penalty,
             "factions": self.factions,
