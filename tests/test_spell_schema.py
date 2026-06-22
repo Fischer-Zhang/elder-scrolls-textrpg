@@ -21,7 +21,7 @@ _KINDS = {
 _ELEMENT_KINDS = {"damage", "damage_status", "damage_all", "damage_status_all", "weapon_imbue", "bound_weapon"}
 _ALL_KINDS = {"damage_all", "damage_status_all", "status_all"}
 _ALLY_KINDS = {"heal", "shield", "apply_status", "empower"}
-_STATUSES = {"dot", "regen", "paralyze", "fear", "soul_trap", "stagger", "weaken"}
+_STATUSES = {"dot", "regen", "paralyze", "fear", "soul_trap", "stagger", "weaken", "benumb"}
 
 
 def test_every_spell_has_required_keys_and_valid_enums():

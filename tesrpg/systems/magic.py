@@ -469,9 +469,17 @@ def weaken_factor(creature) -> float:
     return max(0.1, factor)
 
 
+def benumb_hit_penalty(creature) -> float:
+    """凍麻(冰系法術控場·純減命中):直接從攻方命中率扣除的比例(多源取最強,非相加;夾 0..0.6)。
+    刻意只減命中、不碰先攻(1v1 持久戰減先攻幾近空轉);鏡像 slow_factor 結構。"""
+    mag = max((e.get("magnitude", 0.0) for e in creature.active_effects
+               if e["kind"] == "benumb" and e["turns"] > 0), default=0.0)
+    return max(0.0, min(0.6, mag))
+
+
 # 控場 kind 分類(R44:集中施加判定)
 _HARD_CONTROL = ("fear", "paralyze")     # 失能(經 is_incapacitated 跳過行動)→ 受抵抗/去重
-_CONTROL_KINDS = ("fear", "paralyze", "stagger", "slow", "weaken")
+_CONTROL_KINDS = ("fear", "paralyze", "stagger", "slow", "weaken", "benumb")
 
 
 def apply_control(target, kind, gamedata, rng, *, magnitude=0.0, turns=1, source=None) -> str:
@@ -570,6 +578,8 @@ def _status_verb(status: dict) -> str:
         return f"被麻痺({status['turns']} 回合)"
     if k == "regen":
         return f"獲得再生({status['turns']} 回合)"
+    if k == "benumb":
+        return f"被凍麻,命中下降({status['turns']} 回合)"
     return "受到法術影響"
 
 
@@ -621,6 +631,8 @@ def tick_effects(entity, gamedata=None) -> list[str]:
                 msgs.append(f"{name}的攻勢恢復了氣力。")
             elif e["kind"] == "stagger":
                 msgs.append(f"{name}重整了陣腳。")
+            elif e["kind"] == "benumb":
+                msgs.append(f"{name}自凍麻中回復了準頭。")
     return msgs
 
 

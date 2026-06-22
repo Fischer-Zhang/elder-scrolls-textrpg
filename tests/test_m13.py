@@ -86,7 +86,7 @@ def test_damage_status_all():
     hp = [e.health for e in enemies]
     magic.cast(c, gd, "frost_nova", RNG(0), enemies=enemies)
     assert all(e.health < h for h, e in zip(hp, enemies))          # 有傷害
-    assert all(any(x["kind"] == "dot" for x in e.active_effects) for e in enemies)  # 且附 DoT
+    assert all(any(x["kind"] == "benumb" for x in e.active_effects) for e in enemies)  # 且附凍麻(AoE 控場)
 
 
 def test_aoe_damage_field_is_actual_loss():

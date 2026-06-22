@@ -1293,6 +1293,14 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 - **② 修 R70 過時註解(順帶 doc bug)**:`formulas.py` 重量折扣註解區塊原仍寫「門檻 18·總重 ≤18 完全不打折·夾在 [0.45,1.0]·輕甲 W≤18 不罰·armor_relief **不抵此倍率折扣**」——R70 早刪了 W≤18 grace + 0.45 下限、本輪又讓 relief **抵此折扣** → 全數改寫對齊現況;`combat.py:479` 行內「輕甲 W≤18 不罰」一併修。
 - **🔴 sim_assassin BYTE-IDENTICAL**(隔離 worktree vs R71/HEAD 證·非 stash):**無任何 sim fixture 選 featherweight 且 apex 不穿甲**(`armor_worn_weight=0`)→ `armor_sneak_relief` 全回 0.0 → relief=0.0 代數恆等舊式。**紅線天然守**:全免 = 等效無甲,而**無甲 apex 正是 sim 已驗的上界**(solo 全 0%·精英 oneshot·4-bandit 60.6%)→ 龍鱗 build 至多打平無甲 apex、不可能超出 → solo 一刀夾(`SOLO_SNEAK_DAMAGE_CAP`)與所有既有紅線不動。`run_all` **80**(`test_assassin` +`test_featherweight_relieves_sneak_damage_penalty_r72`:公式層 relief 0/0.5/1 + 整合龍鱗 4 件經 `estimate_sneak_damage` 折扣全免)。零新存檔欄(relief 走既有 `mastery_choices`)。🔴 鐵律:傷害端 relief 走 `armor_sneak_mult_factor` 的 `relief` 參數(預設 0=back-compat);此里程碑現**同時**抵接戰+傷害兩端(R07/R25 的「兩端各自獨立」已由本輪刻意打破·僅限此玩家里程碑);動 → 必跑 sim_assassin。
 
+### R73 · 冰系法術補控場:凍麻 `benumb`(純減命中軟控)[re-sim]
+
+承「法師三系效果平衡」評估(4 維 workflow + 對抗 critic):冰系是陷阱元素 —— 單體無核彈、最被抗(119 敵中 44·27 王 0 弱點)、招牌控場 chill(減速/弱化)**只活在武器附魔路徑、法術全無** → 純冰法師吃全缺點卻無控場上界(唯一真缺陷)。使用者拍板:給冰系破壞法術補控場,且指定**做成「純減命中」**(`combat.initiative_order` 只決回合內出手序、1v1 持久戰減先攻空轉 → `slow` 的減先攻對法師生存無用;真正有價值的是減命中)。
+- **新軟控 kind `benumb`(凍麻)= 純減命中**(R21 三步):`magic._CONTROL_KINDS` 加 `benumb`(→ `cast()` 既有路由自動走 `apply_control`,R44,零 cast 改動)+ 新 `magic.benumb_hit_penalty(creature)`(掃 `active_effects` 取 max magnitude,夾 0..0.6,鏡像 `slow_factor`)+ `combat.py` hit-chance 區一行(`is_slowed` 後:`if (benumb:=magic.benumb_hit_penalty(attacker)): chance=max(0.05,chance-benumb)`,各自夾 0.05、可疊)+ `_status_verb`/`tick_effects` 文案。**刻意不碰先攻**(不重用 slow、不改全域 slow)。
+- **法術資料**(`spells.json` 純 JSON):`frostbite` `damage`→`damage_status` + `status benumb 0.20/2t`(單體);`frost_nova` 把可忽略 DoT(`dot 4×2`,整場~8)**換成** `benumb 0.12/2t`(AoE 較弱=設計紀律,單體 0.20 > AoE 0.12)。傷害 magnitude 全不動。
+- **平衡**:冰=控場元素(降敵命中→脆皮法師熬消耗戰)。frost-only 法師 survival 示範(A/B vs HEAD):vampire_lord 存活 15.3→17.2、frost_giant 16.4→18.8 回合(全王存活↑)。**by-design 取捨**:frost_nova 以 DoT 換控場 → 單體 solo 殺傷略降(frost_giant 勝率 78→72%,群戰則 AoE 凍麻>DoT)。**軟控對 solo BOSS 照施**(無免疫,R31/R44)→ 順帶補 frost 對王價值。
+- **🔴 sim_assassin BYTE-IDENTICAL**(隔離 worktree vs HEAD 證):碰 combat.py(hit-chance)但刺客不施法、無敵帶 benumb → `benumb_hit_penalty` 恆回 0 → 新增行 `if 0:` False、不擲 rng → 逐位元組同。零新存檔欄(`benumb`=`active_effects` 暫態·不入檔=R03)。`run_all` **80**(`test_m8` +frostbite/frost_nova 凍麻回歸·`test_m13` dot→benumb·`test_solo_control` +benumb 軟控·`test_spell_schema` `_STATUSES` +benumb)。🔴 鐵律:控場走 `apply_control`(R44)·新 combat kind 三步(`_CONTROL_KINDS`+getter+combat 呼叫端+schema 白名單)·benumb 純減命中不碰先攻/傷害·動 combat → 必跑 sim_assassin。延後:`frost_blade`(weapon_imbue 已有 chill rider)/`conjure_frost_atronach` 不動。
+
 ---
 
 ## 4. 開發節奏(ultracode 開著 → 每個功能都這樣做)

@@ -458,6 +458,8 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
         chance = max(0.05, chance - formulas.STAGGER_HIT_PENALTY)
     if magic.is_slowed(attacker):      # 遲緩毒(R31):遲鈍 → 命中下降(疊踉蹌則更低,各自夾 0.05)
         chance = max(0.05, chance - formulas.SLOW_HIT_PENALTY)
+    if (benumb := magic.benumb_hit_penalty(attacker)):   # 凍麻(冰系法術控場):純減命中(magnitude 驅動,各自夾 0.05)
+        chance = max(0.05, chance - benumb)
     if sneaking:
         chance = max(chance, formulas.SNEAK_ATTACK_HIT_FLOOR)
     skill_events: list[dict] = []

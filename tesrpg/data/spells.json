@@ -16,9 +16,14 @@
     "cost": 16,
     "target": "enemy",
     "effect": {
-      "kind": "damage",
+      "kind": "damage_status",
       "element": "frost",
-      "magnitude": 16
+      "magnitude": 16,
+      "status": {
+        "status": "benumb",
+        "magnitude": 0.2,
+        "turns": 2
+      }
     }
   },
   "sparks": {
@@ -258,9 +263,8 @@
       "element": "frost",
       "magnitude": 16,
       "status": {
-        "status": "dot",
-        "element": "frost",
-        "magnitude": 4,
+        "status": "benumb",
+        "magnitude": 0.12,
         "turns": 2
       }
     }

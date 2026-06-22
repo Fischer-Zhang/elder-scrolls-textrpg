@@ -46,6 +46,19 @@ def test_cast_respects_resist_and_weakness():
     assert "弱點" in weak["message"]
 
 
+def test_frostbite_applies_benumb_control():
+    """冰系法術凍麻(純減命中):frostbite 命中未殺即附 benumb → 降敵命中;軟控對 solo BOSS 照施。"""
+    gd, c = _mage()
+    foe = combat.spawn_creature(gd, "dremora_lord", RNG(3))    # solo BOSS·高血 → 不會被一發秒
+    magic.cast(c, gd, "frostbite", RNG(3), target=foe)
+    assert any(e["kind"] == "benumb" and e["turns"] > 0 for e in foe.active_effects)  # 凍麻施加
+    assert magic.benumb_hit_penalty(foe) > 0                   # 命中懲罰生效(降敵命中)
+    # frost_nova 對群附 AoE 凍麻(較弱)
+    mob = [combat.spawn_creature(gd, "bandit", RNG(i)) for i in range(2)]
+    magic.cast(c, gd, "frost_nova", RNG(0), enemies=mob)
+    assert all(magic.benumb_hit_penalty(e) > 0 for e in mob)
+
+
 # --- 狀態效果 -----------------------------------------------------------
 def test_dot_ticks_and_respects_resist():
     gd, c = _mage()

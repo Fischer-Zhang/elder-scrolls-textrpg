@@ -81,9 +81,9 @@ def test_hard_control_dedup():
 
 
 def test_soft_control_solo_always_applies():
-    """軟控(stagger/slow/weaken)對 solo BOSS 一律生效(無免疫;收斂鈍器內建 stagger 的不一致)。"""
+    """軟控(stagger/slow/weaken/benumb)對 solo BOSS 一律生效(無免疫;收斂鈍器內建 stagger 的不一致)。"""
     gd = _gd()
-    for kind, mag in (("stagger", 0.0), ("slow", 0.3), ("weaken", 0.25)):
+    for kind, mag in (("stagger", 0.0), ("slow", 0.3), ("weaken", 0.25), ("benumb", 0.2)):
         boss = _solo_boss(gd)
         boss.active_effects = []
         # 多次擲皆 applied(軟控不受 SOLO_CONTROL_RESIST_CHANCE)
