@@ -60,9 +60,12 @@ python3 -m tesrpg.web      # 啟動後用瀏覽器開 http://127.0.0.1:8080
 ---
 
 開發/設計文件見 [DESIGN.md](DESIGN.md) 與 [CLAUDE.md](CLAUDE.md)。
+數量快照若有疑義,以 `python3 tests/run_all.py` 輸出與 `get_gamedata()`/`tesrpg/data/*.json` 載入結果為準
+(目前:22 技能、191 地點、任務 raw 206 / 載入 320〔含程序化領主委託〕、123 怪物、48 法術、
+201 物品索引、13 同伴、45 事件)。
 
 ## 測試
 
 ```bash
-python3 tests/run_all.py     # 43 個測試模組,不需 pytest
+python3 tests/run_all.py     # 測試模組數見執行輸出結尾,不需 pytest
 ```

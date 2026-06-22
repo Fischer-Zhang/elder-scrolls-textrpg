@@ -135,6 +135,50 @@ def test_dialogue_foreign_keys():
             assert tid in topics or tid in deep, f"{npc_id} extra 引用不存在話題 {tid}"
 
 
+def test_monster_on_hit_status_is_implemented():
+    """怪物 attack/attacks on_hit.status 必為 combat on_hit dispatch 認得的 kind
+    (combat.py:649-657:'dot' -> _apply_dot_capped,其餘 -> magic.apply_control)。
+    防「conduct 寫進 on_hit 卻 no-op」(conduct 是 magic.cast 專用)類靜默失效。"""
+    from tesrpg.systems import magic
+    gd = get_gamedata()
+    legal = {"dot"} | set(magic._CONTROL_KINDS)
+    bad = []
+    for cid, c in gd.bestiary.items():
+        for a in [c.get("attack", {})] + c.get("attacks", []):
+            st = (a.get("on_hit") or {}).get("status")
+            if st and st not in legal:
+                bad.append(f"{cid}:{a.get('name')}={st}")
+    assert not bad, f"on_hit.status 非法/未實作:{bad}(合法:{sorted(legal)})"
+
+
+def test_quest_objective_types_and_reward_keys_implemented():
+    """所有任務(含 stages/branches)objective.type ∈ _OBJECTIVE_TYPES、reward key ∈ _REWARD_KEYS。
+    防 objective.type 打錯 -> 任務永不可完成;reward key 打錯 -> 獎勵被 .get() 默默吃掉。"""
+    from tesrpg.systems import quests
+    gd = get_gamedata()
+
+    def objs(qd):
+        out = ([qd["objective"]] if "objective" in qd else []) + \
+              [s.get("objective", {}) for s in qd.get("stages", [])]
+        for b in qd.get("branches", []):
+            out += ([b["objective"]] if "objective" in b else []) + \
+                   [s.get("objective", {}) for s in b.get("stages", [])]
+        return out
+
+    def rewards(qd):
+        return [qd.get("reward", {})] + [b.get("reward", {}) for b in qd.get("branches", [])]
+
+    bad_obj, bad_rwd = [], []
+    for qid, q in gd.quests.items():
+        for o in objs(q):
+            if o.get("type") and o["type"] not in quests._OBJECTIVE_TYPES:
+                bad_obj.append(f"{qid}:{o['type']}")
+        for r in rewards(q):
+            bad_rwd.extend(f"{qid}:{k}" for k in r if k not in quests._REWARD_KEYS)
+    assert not bad_obj, f"objective.type 未實作:{bad_obj}"
+    assert not bad_rwd, f"reward key 未實作:{bad_rwd}"
+
+
 def run():
     for name, fn in sorted(globals().items()):
         if name.startswith("test_") and callable(fn):

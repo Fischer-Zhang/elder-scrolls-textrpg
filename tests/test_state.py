@@ -1,13 +1,26 @@
 """時間/曆法與存讀檔的單元測試。"""
 
+import dataclasses
 import tempfile
 from pathlib import Path
 
 from tesrpg.creation import build_character
 from tesrpg.gamedata import get_gamedata
+from tesrpg.models.character import Character
 from tesrpg.rng import RNG
 from tesrpg.state import GameState, GameTime
 from tesrpg.systems import progression
+
+# 刻意不入檔的欄位(暫態 / 載入時重算):每個都要有明確理由
+_NOT_PERSISTED = {
+    "active_effects",   # character.py:310 註解:戰鬥暫態,不入檔
+}
+
+
+def _make_char():
+    gd = get_gamedata()
+    return build_character(gd, name="Cov", sex="female", race="breton",
+                           birthsign="mage", class_id="battlemage")
 
 
 def test_time_rollover():
@@ -96,6 +109,23 @@ def test_load_migrations_idempotent_and_runs():
     before = loaded.player.to_dict()
     save_migrations.run_load_migrations(loaded.player, loaded.time, gd)
     assert loaded.player.to_dict() == before, "run_load_migrations 重跑應冪等"
+
+
+def test_to_dict_covers_all_persistent_fields():
+    """每個 Character dataclass 欄位:要嘛在 to_dict() 出現,要嘛明列於 _NOT_PERSISTED。
+    強迫新增欄位時做出「要不要存」的自覺決定(現有 round-trip 測試抓不到漏欄,因兩側都漏->仍相等)。"""
+    keys = set(_make_char().to_dict())
+    fields = {f.name for f in dataclasses.fields(Character)}
+    missing = fields - keys - _NOT_PERSISTED
+    assert not missing, f"這些欄位漏寫進 to_dict()(或該列入 _NOT_PERSISTED):{missing}"
+
+
+def test_to_dict_keys_are_all_constructor_fields():
+    """反向:to_dict() 不得吐出非 dataclass 欄位的 key,否則 from_dict 的 cls(**d) 會 TypeError
+    (unexpected keyword argument)。"""
+    fields = {f.name for f in dataclasses.fields(Character)}
+    stray = set(_make_char().to_dict()) - fields
+    assert not stray, f"to_dict() 含非欄位 key(from_dict 的 cls(**d) 會 TypeError):{stray}"
 
 
 def run():

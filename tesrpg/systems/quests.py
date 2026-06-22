@@ -15,6 +15,13 @@ from tesrpg.systems import factions, inventory, party
 
 STIPEND_PER_RANK = 40   # 晉升俸祿:每升一階,公會額外發 40×新階級 金
 
+# 任務目標/獎勵的「已實作」契約(單一真實來源:_objective_met 與 _complete 必須與此一致)
+_OBJECTIVE_TYPES = frozenset({"kill", "clear_dungeon", "reach", "collect"})
+_REWARD_KEYS = frozenset({
+    "gold", "fame", "infamy", "items", "spells", "grant_boon",
+    "world_flags", "eradicate_faction", "companion", "bond", "standing",
+})
+
 
 # --- 進度記錄(由戰鬥/探索/旅行 hook 呼叫)-----------------------------
 def record_kill(char: Character, creature_tid: str) -> None:
