@@ -96,7 +96,8 @@ def make_warrior_2h():
     return c
 
 
-_MAGE_DMG = ["lightning_bolt", "fireball", "ignite", "frostbite", "sparks", "flames"]
+_MAGE_DMG = ["thunderbolt", "incinerate", "absolute_zero", "ice_spike",   # 終極/高級(R74)
+             "lightning_bolt", "fireball", "ignite", "frostbite", "sparks", "flames"]
 
 
 def make_mage():

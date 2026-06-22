@@ -174,6 +174,70 @@
       "magnitude": 40
     }
   },
+  "ice_spike": {
+    "name": "冰錐術",
+    "school": "destruction",
+    "cost": 32,
+    "target": "enemy",
+    "effect": {
+      "kind": "damage_status",
+      "element": "frost",
+      "magnitude": 30,
+      "status": {
+        "status": "benumb",
+        "magnitude": 0.2,
+        "turns": 2
+      }
+    }
+  },
+  "incinerate": {
+    "name": "焚世",
+    "school": "destruction",
+    "cost": 68,
+    "target": "enemy",
+    "effect": {
+      "kind": "damage_status",
+      "element": "fire",
+      "magnitude": 50,
+      "status": {
+        "status": "dot",
+        "element": "fire",
+        "magnitude": 12,
+        "turns": 3
+      }
+    }
+  },
+  "thunderbolt": {
+    "name": "天雷",
+    "school": "destruction",
+    "cost": 70,
+    "target": "enemy",
+    "effect": {
+      "kind": "damage_status",
+      "element": "shock",
+      "magnitude": 56,
+      "status": {
+        "status": "stagger",
+        "turns": 1
+      }
+    }
+  },
+  "absolute_zero": {
+    "name": "絕對零度",
+    "school": "destruction",
+    "cost": 66,
+    "target": "enemy",
+    "effect": {
+      "kind": "damage_status",
+      "element": "frost",
+      "magnitude": 46,
+      "status": {
+        "status": "benumb",
+        "magnitude": 0.3,
+        "turns": 3
+      }
+    }
+  },
   "ironflesh": {
     "name": "鐵膚",
     "school": "alteration",

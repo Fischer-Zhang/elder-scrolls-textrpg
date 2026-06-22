@@ -1301,6 +1301,15 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 - **平衡**:冰=控場元素(降敵命中→脆皮法師熬消耗戰)。frost-only 法師 survival 示範(A/B vs HEAD):vampire_lord 存活 15.3→17.2、frost_giant 16.4→18.8 回合(全王存活↑)。**by-design 取捨**:frost_nova 以 DoT 換控場 → 單體 solo 殺傷略降(frost_giant 勝率 78→72%,群戰則 AoE 凍麻>DoT)。**軟控對 solo BOSS 照施**(無免疫,R31/R44)→ 順帶補 frost 對王價值。
 - **🔴 sim_assassin BYTE-IDENTICAL**(隔離 worktree vs HEAD 證):碰 combat.py(hit-chance)但刺客不施法、無敵帶 benumb → `benumb_hit_penalty` 恆回 0 → 新增行 `if 0:` False、不擲 rng → 逐位元組同。零新存檔欄(`benumb`=`active_effects` 暫態·不入檔=R03)。`run_all` **80**(`test_m8` +frostbite/frost_nova 凍麻回歸·`test_m13` dot→benumb·`test_solo_control` +benumb 軟控·`test_spell_schema` `_STATUSES` +benumb)。🔴 鐵律:控場走 `apply_control`(R44)·新 combat kind 三步(`_CONTROL_KINDS`+getter+combat 呼叫端+schema 白名單)·benumb 純減命中不碰先攻/傷害·動 combat → 必跑 sim_assassin。延後:`frost_blade`(weapon_imbue 已有 chill rider)/`conjure_frost_atronach` 不動。
 
+### R74 · 冰系高級法術 + 三系終極法術(純 JSON 內容)[re-sim]
+
+承「列出傷害法術」盤點:破壞系階梯**冰系缺整條進階+專家單體線**(最高霜寒 mag16,火/電的一半);且三系無「終極」階。使用者兩道拍板:終極形態=**單體大核彈**(補法師最弱的對王單體;AoE 已有);**不穿透**(保留 R14 抗性設計+火終王牆 by-design;sim 證完全穿透〔magic 元素 mag55〕也破不了滿血達貢→終王=offense+survival 雙牆)。
+- **冰系高級「冰錐術 `ice_spike`」**(進階·填缺口):單體 frost mag30/cost32 + 凍麻 benumb 0.2/2(延續 R73 冰=控場)→ 冰系單體 33→**62**(火球同階)。
+- **三系終極**(單體大師階·保留三系識別:電 raw 王/火 burst+DoT/冰 低 raw+強控):`incinerate` 焚世(火 mag50/cost68 +火 DoT 12/3)、`thunderbolt` 天雷(電 mag56/cost70 +踉蹌 stagger 1)、`absolute_zero` 絕對零度(冰 mag46/cost66 +強凍麻 0.3/3)。
+- **取得閘=純 JSON**(無 schema 等級欄):魔耗高(66-70)需高 int/破壞才放得起 + `spell_stock`(`ice_spike`→6 法師城〔有 fireball 者〕·終極→**winterhold〔冬堡法師學院〕+imperial_city** 兩大法師樞紐)。`test_every_spell_is_reachable` 守(每法術須在某 stock)。
+- **平衡(re-sim)**:助益落在**中高階非終王**(ancient_dragon 86→**95%**·knight_of_order 96→100%)·**不破終王牆**(mehrunes_dagon 0→**0%** by-design,有削弱結局逃生口)·無 trivialize(多數王本就 95-100%)。`sim_builds._MAGE_DMG` 加 4 法術(完全體法師反映新工具·`_mage_act` 按 mag×(1−resist) 自動選用,can_cast 守魔耗)。
+- **🔴 sim_assassin BYTE-IDENTICAL**(隔離 worktree·純資料改 spells.json/world.json·刺客不施法)。零新存檔欄。`run_all` 80(schema 自動驗新法術 kind/status·reachability 守 spell_stock)。🔴 鐵律:加傷害法術純改 `spells.json`+`world.json spell_stock`(R02/R29)·終極不穿透(保抗性設計)·DoT/控場 magnitude 不吃法術威力(R73)·動法術數值→重跑 sim_builds(法系升=by design)+sim_assassin(byte-identical)。
+
 ---
 
 ## 4. 開發節奏(ultracode 開著 → 每個功能都這樣做)
