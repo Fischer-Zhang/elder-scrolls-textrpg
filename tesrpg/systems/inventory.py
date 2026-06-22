@@ -289,6 +289,33 @@ def set_spell_power_bonus(char: Character, gamedata: GameData) -> float:
     return float((active_set_bonus(char, gamedata) or {}).get("spell_power", 0.0))
 
 
+def staff_spell_focus(char: Character, gamedata: GameData) -> dict:
+    """R77 持杖施法焦點:{power: 法術威力加成, flat: 元素直擊加傷, elements: [適用元素]}。非持杖回 {}。
+    法力法杖/馬格努斯之杖由資料 `spell_focus` 明寫;元素法杖(flame/frost/storm/daedric/skull)由
+    既有 `weapon_element`(命中元素)推導同系加傷 → 同一支杖同時強化近戰元素與同系法術直擊。"""
+    wid = getattr(char, "weapon", "") or ""
+    d = gamedata.item(wid) if wid else {}
+    if d.get("archetype") != "staff":
+        return {}
+    if "spell_focus" in d:                                  # 資料明寫優先(法力法杖/馬格努斯)
+        return d["spell_focus"]
+    el = d.get("enchant") or {}                             # 元素法杖:weapon_element → 同系直擊加傷
+    if el.get("kind") == "weapon_element":
+        return {"flat": el.get("magnitude", 0), "elements": [el.get("element")]}
+    return {}
+
+
+def staff_spell_power(char: Character, gamedata: GameData) -> float:
+    """持杖的法術威力加成(乘進 _power,與法袍套裝相加);非持杖/無加成 0.0。"""
+    return float(staff_spell_focus(char, gamedata).get("power", 0.0))
+
+
+def staff_element_flat(char: Character, gamedata: GameData, element) -> int:
+    """持杖對該元素傷害法術直擊的加傷(吃抗性);法杖不適用該元素則 0。"""
+    sf = staff_spell_focus(char, gamedata)
+    return int(sf.get("flat", 0)) if element in (sf.get("elements") or ()) else 0
+
+
 def equipment_bonuses(char: Character, gamedata: GameData) -> dict:
     """穿戴護甲/飾品的所有附魔 + 套裝加成,彙整成 {skills,attrs,resist,resources}。"""
     out = {"skills": {}, "attrs": {}, "resist": {}, "resources": {}}

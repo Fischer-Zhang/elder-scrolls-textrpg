@@ -50,7 +50,8 @@ def _power(char: Character, gamedata: GameData, school: str) -> float:
     return ((0.7 + char.skill(school) / 150.0 + mastery.spell_power_bonus(char, gamedata, school)
              + mastery.cascade_power(char, gamedata))   # 法師「奧術連鎖」:連續施法漸增威力
             * formulas.intelligence_spell_potency(char.attr("intelligence"))   # R63 智力 → 法術威力(過 100 漸近)
-            * (1.0 + inventory.set_spell_power_bonus(char, gamedata)))   # R68 法袍套裝:法術威力(乘性,與智力威力疊乘)
+            * (1.0 + inventory.set_spell_power_bonus(char, gamedata)           # R68 法袍套裝:法術威力(乘性,與智力威力疊乘)
+                   + inventory.staff_spell_power(char, gamedata)))            # R77 持杖施法焦點:法術威力(與套裝相加)
 
 
 def spell_fatigue_cost(char: Character, gamedata: GameData, spell_id: str) -> int:
@@ -133,6 +134,7 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
     eff = sp["effect"]
     kind = eff["kind"]
     power = _power(char, gamedata, sp["school"]) * formulas.cast_fatigue_power_factor(fatigue_ratio)
+    from tesrpg.systems import inventory   # R77 持杖施法焦點(元素直擊加傷);區域匯入避循環
     # 法駒:騎乘作戰時法術增益(只在野外騎乘戰生效;mounted=False 處處中性,sim/地城不受影響)。
     if mounted:
         from tesrpg.systems import mounts
@@ -171,6 +173,7 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
         dmg = _scaled_damage(eff["magnitude"] * power * rng.roll(0.9, 1.1), mult)
         if element == "shock":                         # 感電易傷(R75):依目標導電層放大電傷(抗性後)
             dmg = max(1, int(round(dmg * conduct_damage_multiplier(target))))
+        dmg += round(inventory.staff_element_flat(char, gamedata, element) * mult)   # R77 持杖同系直擊加傷(吃抗性)
         before = target.health
         target.health = max(0, target.health - dmg)   # 法術傷害無視物理護甲(但受元素抗性)
         damage = before - target.health               # 實際扣血(避免溢殺灌水)
@@ -315,6 +318,7 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
                 dmg = _scaled_damage(eff["magnitude"] * power * rng.roll(0.9, 1.1), mult)
                 if element == "shock":          # 感電易傷(R75):每敵各依自身導電層放大電傷
                     dmg = max(1, int(round(dmg * conduct_damage_multiplier(e))))
+                dmg += round(inventory.staff_element_flat(char, gamedata, element) * mult)   # R77 持杖同系直擊加傷
                 before = e.health
                 e.health = max(0, e.health - dmg)
                 loss = before - e.health        # 實際扣血(避免溢殺灌水)

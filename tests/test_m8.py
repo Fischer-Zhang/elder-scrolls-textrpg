@@ -77,6 +77,23 @@ def test_dot_and_hot_scale_with_spell_power_r76():
     assert next(e["magnitude"] for e in c.active_effects if e["kind"] == "regen") > 10  # HoT 吃威力放大
 
 
+def test_staff_spell_focus_r77():
+    """R77 持杖施法焦點:元素法杖同系直擊加傷(他系不受益)、馬格努斯 +威力+全元素加傷、法力法杖 +威力。"""
+    gd, c = _mage()
+    c.skills.update(destruction=100); c.attributes.update(intelligence=100)
+    def dmg(staff, spell):
+        c.weapon = staff or ""
+        c.magicka = 99999; c.active_effects = []
+        foe = combat.spawn_creature(gd, "bandit", RNG(1)); foe.health = foe.max_health = 10**7; foe.resist = {}
+        return magic.cast(c, gd, spell, RNG(1), target=foe)["damage"]
+    base_fire, base_frost = dmg(None, "fireball"), dmg(None, "frostbite")
+    assert dmg("flame_staff", "fireball") > base_fire                 # 烈焰杖:火受益
+    assert dmg("flame_staff", "frostbite") == base_frost             # 烈焰杖:冰不受益(同系限定)
+    assert dmg("staff_of_magnus", "fireball") > base_fire            # 馬格努斯:全元素受益
+    assert dmg("staff_of_magnus", "frostbite") > base_frost
+    assert dmg("magicka_staff", "fireball") > base_fire              # 法力法杖:法術威力加成
+
+
 def test_conduct_stacks_amplifies_shock_and_clears():
     """R75 感電易傷:電系法術每命中疊一層導電(夾10·+3%/層·只放大電傷);3 回合無電擊清零。"""
     gd, c = _mage()

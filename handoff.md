@@ -1326,6 +1326,15 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 - **🔴 sim_assassin BYTE-IDENTICAL**(隔離 worktree·`magic.cast` only·刺客不施法)。零新存檔欄。`run_all` **80**(`test_m8` +DoT/HoT 放大回歸·既有 `test_dot_ticks` 只驗 DoT 存在不破)。greedy `_mage_act` 不主用 DoT/HoT(用直擊/close_wounds)→ 法師 27 王均 **96% 不變**(fidelity 限制·DoT/HoT-build 玩家才有感)·apex 0%·無 trivialize。
 - 🔴 鐵律:`cast` 施加的 `dot`/`regen` magnitude 吃對應學派 `_power`(與直擊/heal/shield 一致)·僅 `_POWER_SCALED_STATUSES`·**combat 路徑 DoT 不吃威力**(武器/塗毒/撕裂);改套用集合/幅度→重跑 sim_builds+sim_assassin(byte-identical)。
 
+### R77 · 法杖施法焦點(spell focus:持杖強化施法,不再只是 OOM 近戰棒)[re-sim]
+
+承「評估法杖作用」:評估揪出法杖**設計正確但邊緣** —— 是施法者近戰武器(用魔法技命中 96% vs 鐵劍 51% + 元素/回魔電池),但(a)法師很少缺魔、(b)**持杖對「放法術」零加成**、(c)sim/meta 根本不用(法師拿 iron_sword)→ 實戰幾乎不起作用,缺「常駐持杖的理由」。使用者拍板:給法杖 spell-focus 身份。
+- **① 法術威力加成**(乘進 `_power`,與 R68 法袍套裝**相加**):法力法杖 **+10%**、馬格努斯之杖 **+20%**(全學派)。`inventory.staff_spell_power` → `magic._power` 的 `(1.0 + set + staff)`。
+- **② 元素直擊加傷**(加到傷害法術直擊·**吃抗性** `× mult`):馬格努斯 **+20 → 全元素**(fire/frost/shock);元素法杖由既有 `weapon_element` 推導**同系**加傷(烈焰/冰霜 +12·風暴 +14·魔族 +22·腐敗之顱 +32)→ 一支杖同時強化近戰元素與同系法術。`inventory.staff_element_flat(char,gd,element)` → `magic.cast` 單體(:174)/AoE(:316)傷害分支 `dmg += round(flat × mult)`。
+- **資料**:`weapons.json` 只加 `spell_focus` 到 `magicka_staff`(power 0.1)/`staff_of_magnus`(power 0.2·flat 20·all);元素杖由 `weapon_element` 自動推導(改元素杖數值即連動)。桑格玖薔薇/瓦巴賈克維持原樣(電池/混沌)。
+- **平衡**:**不破終王牆**(flat 吃抗性 → 達貢滿血三系仍 0→0);馬格努斯助電法 ancient_dragon 90→96%·火法仍被火抗牆。法師現有「常駐持杖」誘因(強化施法)。**🔴 sim_assassin BYTE-IDENTICAL**(隔離 worktree·刺客不施法/持匕首非杖 → staff getter 回 0/{})。零新存檔欄(讀 `char.weapon` 武器資料)。`run_all` 80(`test_m8` +staff focus 回歸:元素杖同系限定/magnus 全元素/法力杖威力)。
+- 🔴 鐵律:持杖法術威力走 `staff_spell_power`(乘進 `_power`·與套裝相加)·元素直擊加傷走 `staff_element_flat`(**同系限定·吃抗性**·magnus 全元素)·元素杖由 `weapon_element` 推導;動 → sim_builds(法系升=by design)+sim_assassin(byte-identical)。
+
 ---
 
 ## 4. 開發節奏(ultracode 開著 → 每個功能都這樣做)
