@@ -178,6 +178,51 @@ def test_quest_objective_types_and_reward_keys_implemented():
     assert not bad_obj, f"objective.type 未實作:{bad_obj}"
     assert not bad_rwd, f"reward key 未實作:{bad_rwd}"
 
+    # 常態世界脈動(R-pulse):可重複委託只准帶 gold/fame/infamy(反 min-max,不可刷限定內容);
+    # 且其 objective 不可為 clear_dungeon(cleared_dungeons 永久 → 已清地城會即時重複達標=免費金)。
+    bad_rep, bad_rep_obj = [], []
+    for qid, q in gd.quests.items():
+        if not q.get("repeatable"):
+            continue
+        for r in rewards(q):
+            bad_rep.extend(f"{qid}:{k}" for k in r if k not in quests._REPEATABLE_REWARD_KEYS)
+        for o in objs(q):
+            if o.get("type") == "clear_dungeon":
+                bad_rep_obj.append(qid)
+    assert not bad_rep, f"可重複委託只准 gold/fame/infamy:{bad_rep}"
+    assert not bad_rep_obj, f"可重複委託 objective 不可為 clear_dungeon(永久達標):{bad_rep_obj}"
+
+
+def test_world_pulse_schema_and_foreign_keys():
+    """常態世界脈動 world_pulse.json:province 合法、cooldown≥active_window、weight>0、
+    spotlight_quests 指向真實的 repeatable board 委託、requires_event 指向真實大事件(R-pulse)。"""
+    gd = get_gamedata()
+    provinces = {loc["province"] for loc in gd.world["locations"].values() if "province" in loc}
+    bad = []
+    for pid, p in gd.world_pulse.items():
+        if p.get("province") not in provinces:
+            bad.append(f"{pid}: province {p.get('province')} 不在世界省份")
+        if p.get("weight", 1) <= 0:
+            bad.append(f"{pid}: weight<=0")
+        if p.get("cooldown_days", 0) < p.get("active_window_days", 7):
+            bad.append(f"{pid}: cooldown_days < active_window_days(視窗未閉即可重觸)")
+        req = p.get("requires_event")
+        if req and req not in gd.world_events and req not in _KNOWN_WORLD_FLAGS:
+            bad.append(f"{pid}: requires_event {req} 非真實大事件/旗標")
+        for sq in p.get("spotlight_quests", []):
+            q = gd.quests.get(sq)
+            if q is None:
+                bad.append(f"{pid}: spotlight {sq} 不存在")
+            elif not q.get("repeatable"):
+                bad.append(f"{pid}: spotlight {sq} 非 repeatable")
+            elif q.get("source") != "board":
+                bad.append(f"{pid}: spotlight {sq} 非 board 委託")
+    assert not bad, "world_pulse schema 違規:" + "; ".join(bad)
+
+
+# 非 world_events.json 但仍合法的世界旗標(由任務 reward.world_flags 設入 world_events_fired)。
+_KNOWN_WORLD_FLAGS = frozenset({"oblivion_crisis_ended"})
+
 
 def run():
     for name, fn in sorted(globals().items()):

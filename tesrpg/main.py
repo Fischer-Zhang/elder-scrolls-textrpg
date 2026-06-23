@@ -15,7 +15,7 @@ from tesrpg.state import GameState
 from tesrpg.systems import (achievements, aiwar, alchemy, boons, brotherhood, combat, court, crafting, crime, dialogue, diseases, dungeon,
                             dungeoncrawl, enchanting, events, factions, housing, inventory, landmarks, legacy,
                             lycanthropy, magic, mastery, mounts, party, politics, potion_buff, powers,
-                            progression, quests, race_ability, skooma, smithing, stats, vampirism, warband, world, worldstate)
+                            progression, quests, race_ability, skooma, smithing, stats, vampirism, warband, world, worldpulse, worldstate)
 from tesrpg.ui import console as ui
 
 SAVE_PATH = Path.home() / ".tesrpg" / "save.json"
@@ -3674,14 +3674,18 @@ def action_board(state: GameState, gamedata: GameData) -> None:
     province = world.current_location(char, gamedata)["province"]
     while True:                                       # 留在告示板可連續接多個委託,返回才離開
         # 主線(湮滅危機)在 kvatch_falls 後現於各地告示板;md7 教徒頂點受 requires_faction 閘只對教徒露出。
+        # 常態世界脈動:board 傳 day → 可重複委託只在被 active 脈動聚光時現身(R-pulse)。
+        # day 必用 worldpulse.day_index(開局後天數)= 與 world_pulse_day 同基準,否則 active 視窗永不命中。
+        today = worldpulse.day_index(state)
         main = quests.available_quests(char, gamedata, "main")
-        avail = main + quests.available_quests(char, gamedata, "board", province=province)
+        avail = main + quests.available_quests(char, gamedata, "board", province=province, day=today)
         if not avail:
             ui.message("告示板上沒有你還沒接的委託。", style="grey70")
             return
         opts = [(qid, f"{'【主線】' if gamedata.quests[qid].get('source') == 'main' else ''}"
                  f"{gamedata.quests[qid]['name']} — {quests.objective_text(char, gamedata, qid)}"
-                 f"(賞 {gamedata.quests[qid]['reward'].get('gold', 0)} 金)") for qid in avail]
+                 f"({'可重複·' if gamedata.quests[qid].get('repeatable') else ''}"
+                 f"賞 {gamedata.quests[qid]['reward'].get('gold', 0)} 金)") for qid in avail]
         ui.board_panel(char, gamedata, avail)     # web:可點委託卡(對齊選單 key=qid)
         qid = ui.menu("告示板委託", opts, allow_back=True)
         if qid is None:
@@ -4144,6 +4148,12 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
         for ev in worldstate.update(state, gamedata):
             ui.rule("天下大勢")
             ui.message(ev["news"], style="bold magenta")
+
+        # 常態世界脈動(動態新聞層):主線後世界不靜默,持續廣播在地新聞;部分聚光某省可重複委託一段時間。
+        # 別於 worldstate「天下大勢」(政權劇變):脈動是常態餘響,以「四方傳聞」橫幅 + 別色區隔。
+        for ev in worldpulse.update(state, gamedata):
+            ui.rule("四方傳聞")
+            ui.message(ev["news"], style="cyan")
 
         # 湮滅之門逐門開合:所在地若已不可見(如殺達貢、危機落幕後死亡之地崩合),拋回最近的城
         if not world.is_visible(state.player, gamedata, state.player.location_id):

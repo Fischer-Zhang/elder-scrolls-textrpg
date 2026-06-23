@@ -201,6 +201,9 @@ class Character:
     # 陣營大事件(動態政局):事件驅動的城邦易幟層 + 已觸發大事件。詳見 systems/worldstate.py(階段 C)。
     world_faction: dict = field(default_factory=dict)      # loc_id -> 大事件易幟的立場(覆蓋種子;玩家征服 city_faction 優先)
     world_events_fired: list = field(default_factory=list) # 已觸發的大事件 id(once-fire + 解鎖判定,如神話黎明)
+    # 常態世界脈動(動態新聞層 + 聚光激增可重複委託)。詳見 systems/worldpulse.py。
+    world_pulse_day: dict = field(default_factory=dict)     # pulse_id -> 上次廣播的絕對日(脈動冷卻 + 推導聚光 active window)
+    pulse_eval_day: int = 0                                 # 本日已評估脈動的絕對日(同日多圈只評一次,防洗版)
     # AI 陣營自走戰爭(worldstate 階段五)。garrison_current 同時承載「非玩家城」現存守軍(aiwar 寫,
     # 在 tick_tax 前跑;tick_tax 只迭代玩家城故不衝突)。詳見 systems/aiwar.py。
     war_tick_at: int = 0                                   # 下次 AI 戰爭結算的絕對小時(0=未開戰,首圈給一週寬限)
@@ -330,6 +333,7 @@ class Character:
             "garrison_current": self.garrison_current, "siege_ops": self.siege_ops,
             "tax_due_at": self.tax_due_at, "stewards": self.stewards,
             "world_faction": self.world_faction, "world_events_fired": self.world_events_fired,
+            "world_pulse_day": self.world_pulse_day, "pulse_eval_day": self.pulse_eval_day,
             "war_tick_at": self.war_tick_at, "city_threat": self.city_threat,
             "soldiers": self.soldiers, "camp": self.camp,
             "wage_due_at": self.wage_due_at,

@@ -15,7 +15,7 @@
 from __future__ import annotations
 
 from tesrpg.systems import (aiwar, alchemy, boons, dagon_boon, diseases,
-                            inventory, lycanthropy, potion_buff, progression, skooma)
+                            inventory, lycanthropy, potion_buff, progression, skooma, worldpulse)
 
 
 def run_load_migrations(player, time, gamedata) -> None:
@@ -32,3 +32,4 @@ def run_load_migrations(player, time, gamedata) -> None:
     boons.ensure_boon_fields(player, gamedata)                   # 戴德拉誓福:補欄 + 依持有清單重算永久層(R45)
     diseases.ensure_disease_fields(player, time, gamedata)       # 疾病:補欄 + 依當前時間重算惡化負層(R53)
     aiwar.ensure_war_fields(player, time)                        # AI 戰爭:補欄 + war_tick_at 起算下個整週
+    worldpulse.ensure_pulse_fields(player)                       # 常態世界脈動:補欄(world_pulse_day/pulse_eval_day)+ 防呆冪等

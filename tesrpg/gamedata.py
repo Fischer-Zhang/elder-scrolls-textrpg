@@ -50,6 +50,7 @@ class GameData:
         self.mastery: list = _load("mastery.json")   # 技能里程碑(達門檻自動解鎖;見 systems/mastery.py)
         self.recipes: dict = _load("recipes.json")   # 製作配方(獸皮等原料 → 裝備;見 systems/crafting.py)
         self.world_events: dict = _load("world_events.json")   # 陣營大事件時間軸(動態政局;見 systems/worldstate.py)
+        self.world_pulse: dict = _load("world_pulse.json")   # 常態世界脈動情境(動態新聞 + 聚光激增可重複委託;見 systems/worldpulse.py)
         self.landmarks: dict = _load("landmarks.json")   # 具名地標(首次抵達一次性發現;見 systems/landmarks.py)
         self.boons: dict = _load("boons.json")   # 戴德拉誓福登錄表(神殿任務永久回報;R45,見 systems/boons.py)
         self.diseases: dict = _load("diseases.json")   # 疾病登錄表(普通病懲罰層;R53,見 systems/diseases.py)

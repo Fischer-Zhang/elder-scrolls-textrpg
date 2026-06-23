@@ -21,6 +21,10 @@ _REWARD_KEYS = frozenset({
     "gold", "fame", "infamy", "items", "spells", "grant_boon",
     "world_flags", "eradicate_faction", "companion", "bond", "standing",
 })
+# 可重複委託(repeatable:常態世界脈動聚光款)只准帶「可無限刷的安全純量獎勵」——
+# 絕不帶 items/spells/boons/companion(一次性/限定內容),否則可刷取限定法術/誓福/同伴
+# → 破壞稀缺性與反 min-max。由 schema 測試把關(test_data_schema)。
+_REPEATABLE_REWARD_KEYS = frozenset({"gold", "fame", "infamy"})
 
 
 # --- 進度記錄(由戰鬥/探索/旅行 hook 呼叫)-----------------------------
@@ -89,7 +93,8 @@ def is_done(char: Character, quest_id: str) -> bool:
 
 
 def available_quests(char: Character, gamedata: GameData, source: str,
-                     faction: str | None = None, province: str | None = None) -> list[str]:
+                     faction: str | None = None, province: str | None = None,
+                     day: int | None = None) -> list[str]:
     out = []
     for qid, q in gamedata.quests.items():
         if q.get("source") != source or is_active(char, qid) or is_done(char, qid):
@@ -130,10 +135,17 @@ def available_quests(char: Character, gamedata: GameData, source: str,
                 continue
         # 告示板委託可帶 provinces 做「在地懸賞」:只在指定行省的告示板出現;
         # 無 provinces 者=全圖通用(向後相容,既有 board 委託照舊到處可接)。
-        if source == "board" and province is not None:
+        if source == "board":
             provs = q.get("provinces")
-            if provs and province not in provs:
+            if province is not None and provs and province not in provs:
                 continue
+            # 常態世界脈動:可重複委託只在被 active 脈動「聚光」時現身於告示板(R-pulse)。
+            # 需 province + day + 正被聚光,缺一即隱藏(不灰顯;防 province/day 缺漏時 ungated 洩漏)。
+            if q.get("repeatable"):
+                from tesrpg.systems import worldpulse
+                if province is None or day is None \
+                        or qid not in worldpulse.spotlighted_board_quests(char, gamedata, province, day):
+                    continue
         out.append(qid)
     return out
 
@@ -311,7 +323,10 @@ def _complete(char: Character, gamedata: GameData, quest_id: str) -> dict:
             char.gold += stipend
 
     char.quests.pop(quest_id, None)
-    char.completed_quests.append(quest_id)
+    # 可重複委託(常態世界脈動聚光款)不進 completed_quests → is_done 恆 False、可再接;
+    # 能見度全由脈動聚光 active window 控制(available_quests),不污染 requires_quest 鏈(R-pulse)。
+    if not q.get("repeatable"):
+        char.completed_quests.append(quest_id)
     return {"type": "completed", "quest_id": quest_id, "name": q["name"],
             "reward": reward, "promoted": promoted, "stipend": stipend,
             "standing_loc": standing_loc}
