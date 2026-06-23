@@ -6,7 +6,9 @@
     "greeting": "「雪下個不停……你不是本地人吧?」",
     "rumor": "聽說帝國大道旁的埃雷德殘墟,夜裡會有古老的亡魂遊蕩。",
     "quest": "favor_bruma",
-    "quest_disposition": 60
+    "quest_disposition": 60,
+    "rumor_landmark": "imperial_road",
+    "rumor_disposition": 30
   },
   "jovan": {
     "name": "喬凡",
@@ -15,7 +17,9 @@
     "greeting": "「龍橋的木材是天際最好的,旅人。不過南邊佛克瑞斯林那夥迷刀盜匪,最近鬧得兇。」",
     "rumor": "佛克瑞斯林雪深,迷了路的旅人說林子裡有冰魂出沒。",
     "quest": "favor_lostknife",
-    "quest_disposition": 55
+    "quest_disposition": 55,
+    "rumor_landmark": "falkreath_wood",
+    "rumor_disposition": 30
   },
   "seridia": {
     "name": "賽莉迪雅",
@@ -33,7 +37,9 @@
     "greeting": "「願八聖庇佑你,陌生人。腹地最近很不安寧。」",
     "rumor": "切德納寇洞窟的強盜,近來連腹地的米諾陶都驚動了。",
     "quest": "chain_kvatch",
-    "quest_disposition": 55
+    "quest_disposition": 55,
+    "rumor_quest": "rumor_cedernoc",
+    "rumor_disposition": 45
   },
   "verand": {
     "name": "維蘭德",
@@ -42,7 +48,9 @@
     "greeting": "「黑光城的灰燼會鑽進每一道門縫……灰蹦蟲也是。牠們快把城外的灰田啃光了。」",
     "rumor": "灰燼荒原的蟲災,老人說是灰燼墓塚那邊招來的。",
     "quest": "favor_blacklight",
-    "quest_disposition": 55
+    "quest_disposition": 55,
+    "rumor_quest": "rumor_ashfall",
+    "rumor_disposition": 45
   },
   "dralasa": {
     "name": "卓菈莎",
@@ -60,7 +68,9 @@
     "greeting": "「總督要我盯著贊密爾沉廟的動靜——可沒人活著從那金字塔回來過。」",
     "rumor": "幽沼濕地的鬼火會引人步入泥潭,別跟著那團光走。",
     "quest": "favor_gideon",
-    "quest_disposition": 55
+    "quest_disposition": 55,
+    "rumor_landmark": "murkmire",
+    "rumor_disposition": 30
   },
   "silent_water": {
     "name": "靜水-觀霧",
@@ -69,7 +79,9 @@
     "greeting": "「希斯特看著你,外鄉人。沼裡的巨蜥近來太放肆,擾了樹的清夢。」",
     "rumor": "希斯特聖林深處,樹語者說神樹的低語能撫平迷途者的傷與疲憊。",
     "quest": "favor_stormhold",
-    "quest_disposition": 55
+    "quest_disposition": 55,
+    "rumor_landmark": "hist_grove",
+    "rumor_disposition": 30
   },
   "tertius": {
     "name": "泰提烏斯",
@@ -152,7 +164,8 @@
     "disposition": 45,
     "greeting": "天上鍛爐的火日夜不熄——要兵器還是要修甲,儘管開口。",
     "rumor": "西邊馬卡斯城的鋼鐵比我們的還硬,可那條山路凶險,獨行的我可不敢走。",
-    "quest": null
+    "quest": null,
+    "role": "blacksmith"
   },
   "windhelm_galmar": {
     "name": "加爾瑪·石拳",
@@ -169,7 +182,8 @@
     "disposition": 45,
     "greeting": "白霜鍛爐的鋼是天際最耐用的——要打仗,先把甲胄備齊了。",
     "rumor": "白漫城的領主在帝國跟咱們之間搖擺不定,遲早得選邊站,那條西去的路只會越來越熱鬧。",
-    "quest": null
+    "quest": null,
+    "role": "blacksmith"
   },
   "riften_brynjolf": {
     "name": "布林約夫",
@@ -201,7 +215,8 @@
     "disposition": 45,
     "greeting": "矮人黃銅鑄的甲,連惡狼的牙都咬不穿,要不要試試?",
     "rumor": "往東去白漫城的山路雖長,卻是西境通往天際腹地最穩當的一條道。",
-    "quest": null
+    "quest": null,
+    "role": "blacksmith"
   },
   "vivec_canon_dralas": {
     "name": "正典僧 德拉拉斯",
@@ -209,7 +224,8 @@
     "disposition": 45,
     "greeting": "外邦人,在神王的城裡請收斂腳步。三相神看顧著這片內海的每一道波紋。",
     "rumor": "莫拉格瑪的法蘿司祭長與我們同奉守正,你若往南去那座朝聖鎮,記得帶上敬香——守正軍盤查嚴得很。",
-    "quest": null
+    "quest": null,
+    "role": "priest"
   },
   "vivec_dockmaster_avon": {
     "name": "碼頭總管 阿馮·瑟羅",
@@ -217,7 +233,8 @@
     "disposition": 45,
     "greeting": "運河泊位每日都滿,要交易就趁早。神廟區的香火比黑光城的灰燼還重。",
     "rumor": "走巴爾莫拉的商隊賺得最多,那邊哈拉魯家把奧迪河谷攥得死死的,黑光城的貨也得先過他們的手。",
-    "quest": null
+    "quest": null,
+    "role": "merchant"
   },
   "balmora_smuggler_drarayne": {
     "name": "私梟 德拉萊妮",
@@ -225,7 +242,8 @@
     "disposition": 45,
     "greeting": "想在哈拉魯的城裡做點不見光的買賣?運河南岸找對人就行,別張揚。",
     "rumor": "灰燼荒原往黑光城那條道近來不太平,灰蹦蟲鬧得凶;你若要去奧德盧恩,跟我們的灰塵商隊走最穩。",
-    "quest": null
+    "quest": null,
+    "role": "merchant"
   },
   "balmora_fighter_eydis": {
     "name": "戰士公會 艾迪絲",
@@ -242,7 +260,8 @@
     "disposition": 45,
     "greeting": "蟹殼之下,雷多然以榮譽待客。守規矩,你在灰原便有立足之地。",
     "rumor": "龍喉峰那條道沒人敢走全程,連我們的斥候到了灰暴邊緣就折返——聽說峰頂盤著的東西,連魔族都繞道。",
-    "quest": null
+    "quest": null,
+    "role": "guard"
   },
   "ald_ruhn_caravaner_galtis": {
     "name": "灰塵商隊頭 高提斯",
@@ -251,7 +270,8 @@
     "greeting": "灰暴要起時別出城,商隊都在背風坡歇腳。要捎貨往巴爾莫拉,搭我的隊。",
     "rumor": "黑光城的精靈裝甲在這兒不好弄,雷多然議長把好貨都留給城防了;真要矮人甲,還是我們奧德盧恩齊全。",
     "quest": "favor_aldruhn_caravan",
-    "quest_disposition": 60
+    "quest_disposition": 60,
+    "role": "merchant"
   },
   "helstrom_treeminder": {
     "name": "苔語-垂葉",
@@ -259,7 +279,8 @@
     "disposition": 45,
     "greeting": "外族客,神樹容你踏入聖地,便管好你的舌與刀。",
     "rumor": "希斯特聖林近在西邊,神樹的低語近年愈發焦躁;再往石落城去,那邊的祭司聽得懂樹的話。",
-    "quest": null
+    "quest": null,
+    "role": "priest"
   },
   "helstrom_smith": {
     "name": "硬鱗-鍛泥",
@@ -267,7 +288,8 @@
     "disposition": 45,
     "greeting": "皮甲沾了沼水才耐穿,我這的料子比城裡那些鐵罐子強。",
     "rumor": "東邊黑荊棘堡近來收押了不少人,押解隊伍穿過沼澤時,黑水泥潭吞過好幾個迷路的看守。",
-    "quest": null
+    "quest": null,
+    "role": "blacksmith"
   },
   "blackrose_warden": {
     "name": "短尾-鎖鳴",
@@ -275,7 +297,8 @@
     "disposition": 45,
     "greeting": "進城可以,別在牢牆邊探頭,堡主最恨閒人盯著鐵柵看。",
     "rumor": "往西去赫爾斯壯要繞開沿途的泥潭;聽說那座聖城的議長正召集諸族,連石落城的祭司都動身了。",
-    "quest": null
+    "quest": null,
+    "role": "guard"
   },
   "blackrose_trader": {
     "name": "綠鰓-販沼",
@@ -283,7 +306,10 @@
     "disposition": 45,
     "greeting": "新鮮的死亡鐘與妖菌,獄卒們搶著買來煉藥,你也來一份?",
     "rumor": "南邊贊密爾沉廟近來爬出不少巨蜥,堡裡派去吉迪恩報信的隊伍在沼路上吃了大虧。",
-    "quest": null
+    "quest": null,
+    "role": "merchant",
+    "rumor_quest": "rumor_xanmeer",
+    "rumor_disposition": 45
   },
   "bruma_innkeeper_helga": {
     "name": "海爾嘉",
@@ -291,7 +317,10 @@
     "disposition": 48,
     "greeting": "「進來烤烤火吧,旅人。雪城的爐子整夜不熄,熱蜜酒管夠——錢袋掏出來就行。」",
     "rumor": "南下走帝國大道便是切德納寇洞窟,那窩強盜近來連雪城的商隊都敢劫,押貨的最好結伴而行。",
-    "quest": null
+    "quest": null,
+    "role": "innkeeper",
+    "rumor_quest": "rumor_cedernoc",
+    "rumor_disposition": 45
   },
   "bruma_legion_veteran_brand": {
     "name": "布蘭德·瓦倫",
@@ -307,7 +336,9 @@
     "disposition": 47,
     "greeting": "「競技場的沙子喝過不少血,陌生人。想討口飯吃?先掂量掂量自己的劍。」",
     "rumor": "城北山路下的切德納寇洞窟盤著一夥硬骨頭強盜,衛隊抽不出人去清,賞金可都掛在公會的板子上。",
-    "quest": null
+    "quest": null,
+    "rumor_quest": "rumor_cedernoc",
+    "rumor_disposition": 45
   },
   "imperial_city_scribe_aurelia": {
     "name": "奧蕾莉雅·門狄斯",
@@ -315,7 +346,8 @@
     "disposition": 50,
     "greeting": "「議會書記室什麼卷宗都經我的手,旅人。可惜墨水寫不出個皇帝來。」",
     "rumor": "往北走帝國大道便到布魯瑪雪城,卡薇恩伯爵一人撐著北疆門戶,聽說連天際那邊的山道都得她費心提防。",
-    "quest": null
+    "quest": null,
+    "role": "scholar"
   },
   "skingrad_vintner_pelagius": {
     "name": "佩拉吉烏斯·維諾",
@@ -331,7 +363,8 @@
     "disposition": 46,
     "greeting": "「願瑪拉的慈光照看你,旅人。這城裡半是丹莫的信眾,神龕前倒是不分種族。」",
     "rumor": "切迪納東北、阿留斯湖畔的洞窟近來不太平 —— 有牧人見到赤袍人影在湖邊聚集,口中誦著瀆神的經文。九聖在上,但願只是我多心。",
-    "quest": null
+    "quest": null,
+    "role": "priest"
   },
   "anvil_sailor_dabienne": {
     "name": "妲碧恩·寇爾",
@@ -347,7 +380,9 @@
     "disposition": 48,
     "greeting": "「劍上要見真章,別只動嘴皮子。海芬古的酒館裡盡是吹噓的軟骨頭,真戰友該去刀口上掙名聲。」",
     "rumor": "城南的冰風廢墟裡躺著古諾德的亡者,聽說有勇士進去取墓中寶劍,至今沒一個活著回來——那才是試膽的好去處。",
-    "quest": null
+    "quest": null,
+    "rumor_quest": "rumor_frostwind",
+    "rumor_disposition": 45
   },
   "haafingar_dockworker_torvald": {
     "name": "碼頭工 托瓦德",
@@ -355,7 +390,8 @@
     "disposition": 45,
     "greeting": "「白塔底下卸了一整天的貨,腰都快斷了。商船是來了不少,可這世道,誰知道哪船載的是貨、哪船載的是兵。」",
     "rumor": "西邊去馬卡斯城那條山道難走得很,銀血氏族把礦上的好鋼都攥在手裡,卻沒幾個敢替他們押貨翻那道險峽。",
-    "quest": null
+    "quest": null,
+    "role": "merchant"
   },
   "dragon_bridge_huntress_ingrid": {
     "name": "獵人 英格麗",
@@ -363,7 +399,9 @@
     "disposition": 50,
     "greeting": "「龍首石橋下的河灘有鹿群飲水,要弓還是要肉乾,我這都有。出鎮可帶上眼睛,別丟了性命。」",
     "rumor": "南邊佛克瑞斯林的雪林深得能吞人,迷刀洞窟那夥盜匪就盤在林子裡,連我設的獸夾都被他們順走過。",
-    "quest": null
+    "quest": null,
+    "rumor_quest": "rumor_lostknife",
+    "rumor_disposition": 45
   },
   "whiterun_bard_mikael": {
     "name": "吟遊詩人 米卡爾",
@@ -387,7 +425,8 @@
     "disposition": 50,
     "greeting": "「運河邊飄的甜香,就是我家蜜酒桶冒出來的。在裂谷城啊,蜜酒比金幣可靠,金幣會被黑荊棘家的人摸走。」",
     "rumor": "城西那片佛克瑞斯林林子,蜜酒坊收蜂蜜的腳夫總抄那條道,可近來盜匪鬧得兇,押貨的回來時臉都白了。",
-    "quest": null
+    "quest": null,
+    "role": "innkeeper"
   },
   "markarth_guard_eltrys": {
     "name": "守衛 埃爾崔斯",
@@ -395,7 +434,8 @@
     "disposition": 44,
     "greeting": "「矮人石牆下,睜一隻眼閉一隻眼才活得久,陌生人。銀血氏族的眼睛比我多,你的話最好過過腦子再出口。」",
     "rumor": "南邊那片佛克瑞斯林雪林是西境最不太平的去處,棄誓者與盜匪都往松林裡鑽,出城巡邏的弟兄沒一個願意往那頭走遠。",
-    "quest": null
+    "quest": null,
+    "role": "guard"
   },
   "blacklight_ashminer_velam": {
     "name": "灰燼礦工 韋拉姆·薩德拉斯",
@@ -403,7 +443,9 @@
     "disposition": 44,
     "greeting": "「灰塔底下挖了二十年硫磺礦,旅人。這城的肺,早被灰燼醃透了——你聞,連我吐的氣都是灰味。」",
     "rumor": "城外那片灰燼荒原,灰蹦蟲愈鬧愈兇,礦工都說是灰燼墓塚那頭的死氣把蟲子逼出了灰田。",
-    "quest": null
+    "quest": null,
+    "rumor_quest": "rumor_ashfall",
+    "rumor_disposition": 45
   },
   "blacklight_mushroomfarmer_idrene": {
     "name": "蘑菇農 伊德蓮·瑟蘭",
@@ -419,7 +461,10 @@
     "disposition": 50,
     "greeting": "「三相神庇佑,外鄉人。我從黑光城一路徒步而來,只為在熔岩裂隙旁向神王獻上敬香。」",
     "rumor": "守正軍封了北去灰燼墓塚的岔道——說那墓塚裡爬出的亡者連這朝聖鎮的香火都壓不住,虔信者也莫要靠近。",
-    "quest": null
+    "quest": null,
+    "role": "priest",
+    "rumor_quest": "rumor_ashfall",
+    "rumor_disposition": 45
   },
   "molag_mar_dragonhunter_jorgen": {
     "name": "屠龍者 約爾根",
@@ -436,7 +481,8 @@
     "disposition": 48,
     "greeting": "「神王的城裡,腳步要輕,心要正。外邦客,守正軍的金面具盯著每一道石橋——別在神廟區生事。」",
     "rumor": "近來只放掛著莫拉格瑪法蘿司祭長印信的信使過橋——你若要往南去那座朝聖鎮,路上守正軍盤查得緊,記得備好敬香。",
-    "quest": null
+    "quest": null,
+    "role": "guard"
   },
   "balmora_armsdealer_neloth": {
     "name": "軍械商 內洛斯·歐索",
@@ -444,7 +490,8 @@
     "disposition": 43,
     "greeting": "「運河南岸的鋪子,武具一應俱全,客人。哈拉魯的稅吏抽得狠,可只要你出得起價,什麼甲我都調得到。」",
     "rumor": "黑光城的精靈裝甲在這兒翻倍都難買,雷多然把好貨全鎖進城防了;真要矮人甲,還是順河往北去奧德盧恩最齊全。",
-    "quest": null
+    "quest": null,
+    "role": "merchant"
   },
   "ald_ruhn_smith_dralor": {
     "name": "雷多然鐵匠 德拉洛·薩魯",
@@ -452,7 +499,8 @@
     "disposition": 46,
     "greeting": "「蟹殼之下,我這爐子日夜替甲士打矮人甲。灰暴將起,客人,要修甲要打兵器趁早,風大了爐火留不住。」",
     "rumor": "大議員正向巴爾莫拉催兵餉——哈拉魯那邊只肯給空頭支票,他寧可從黑光城調議長的家族甲士來補灰原邊防的缺口。",
-    "quest": null
+    "quest": null,
+    "role": "blacksmith"
   },
   "gideon_legionary": {
     "name": "鏽矛-守關",
@@ -460,7 +508,8 @@
     "disposition": 44,
     "greeting": "「總督的旗子還掛著,可咱們這些守關的,早分不清是替帝國站崗,還是替沼澤看門了。要進城就快些,別讓瘴氣灌進門縫。」",
     "rumor": "東邊黑荊棘堡近來頻頻向吉迪恩討兵,押解的隊伍在沼路上折損了大半,連高腳屋下的衛兵都被抽調走了。",
-    "quest": null
+    "quest": null,
+    "role": "guard"
   },
   "gideon_apothecary": {
     "name": "黃眼-煎藥",
@@ -469,7 +518,10 @@
     "greeting": "「死亡鐘、妖菌、沼蟲膽……我這小爐子煎出的解瘴湯,連總督府的帝國軍醫都偷偷來討。外鄉人,你的氣色可不太好。」",
     "rumor": "南邊那座贊密爾沉廟近來潮氣異常,聽說廟裡爬出的巨蜥連採藥人都避得遠遠的,但廟階縫裡的妖菌,是煎藥的上好藥引。",
     "quest": "favor_gideon_apothecary",
-    "quest_disposition": 60
+    "quest_disposition": 60,
+    "role": "scholar",
+    "rumor_quest": "rumor_xanmeer",
+    "rumor_disposition": 45
   },
   "stormhold_hunter": {
     "name": "緩流-探沼",
@@ -477,7 +529,9 @@
     "disposition": 46,
     "greeting": "「沼裡的路,得用腳趾去聽。城裡那些石屋住久了,鼻子就鈍了——外鄉人,跟緊我的足印,別踩進冒泡的黑泥。」",
     "rumor": "順著沼路往北不遠便是贊密爾沉廟,那金字塔近來巨蜥放肆,連我設在廟外的陷阱都被撞翻,獵物倒是肥得很。",
-    "quest": null
+    "quest": null,
+    "rumor_quest": "rumor_xanmeer",
+    "rumor_disposition": 45
   },
   "helstrom_treesinger": {
     "name": "綠藤-聆樹",
@@ -485,7 +539,8 @@
     "disposition": 47,
     "greeting": "「噓——神樹正在說話。外族客,在 An-Xileel 之心,先學會閉嘴聆聽,沼澤之民從不向不懂傾聽的人開口。」",
     "rumor": "神樹的低語近年愈發焦躁,議長已遣使前往石落城,要那邊的樹語祭司一同問詢希斯特之意——往北那座古城,如今也只向神樹俯首了。",
-    "quest": null
+    "quest": null,
+    "role": "priest"
   },
   "blackrose_jailer": {
     "name": "缺齒-提燈",
@@ -502,7 +557,10 @@
     "greeting": "「劍與駿馬,是約凱後裔的全部。外鄉人,你握劍的手太僵了 —— 但沙下那些黃銅怪物,可不在乎你的姿勢。」",
     "rumor": "東邊沙海裡的沃倫菲爾遺城,矮人機關近來頻頻甦醒;王宮想知道裡頭究竟藏著什麼,卻沒人敢去探。",
     "quest": "favor_sentinel",
-    "quest_disposition": 55
+    "quest_disposition": 55,
+    "role": "guard",
+    "rumor_quest": "rumor_volenfell",
+    "rumor_disposition": 45
   },
   "sentinel_quartermaster": {
     "name": "軍需官 蘇拉妮",
@@ -511,7 +569,10 @@
     "greeting": "「女王的劍士不缺鋼鐵,缺的是能扛住烈日的料子。要補給就快,沙暴一起,城門可不等人。」",
     "rumor": "告示板上沃倫菲爾的懸賞掛了好幾月 —— 聽說進去的隊伍,連回音都沒傳出來。",
     "quest": "favor_sentinel_quarter",
-    "quest_disposition": 60
+    "quest_disposition": 60,
+    "role": "guard",
+    "rumor_quest": "rumor_volenfell",
+    "rumor_disposition": 45
   },
   "sentinel_priestess": {
     "name": "戰魂祭司 娜茲拉",
@@ -519,7 +580,8 @@
     "disposition": 46,
     "greeting": "「劍之道場接引每一縷約凱戰魂。你身上有死氣,外鄉人 —— 是沙漠的拉米亞纏上你了麼?」",
     "rumor": "阿利克爾深處的綠洲別輕信,蛇女拉米亞會以歌聲與倒影誘人入沙;聽說赫加西的法師懂得驅蛇的霜咒。",
-    "quest": null
+    "quest": null,
+    "role": "priest"
   },
   "hegathe_warden": {
     "name": "聖城護衛 祖貝爾",
@@ -527,7 +589,8 @@
     "disposition": 45,
     "greeting": "「玄武岩牆擋得住沙暴,擋不住人心的妥協。外鄉人,在赫加西,先學會敬重先祖的劍。」",
     "rumor": "森塔與蓋蘭為了向不向帝國通商爭執不休;可沙漠裡的沙嘯獸不管你是王冠還是先鋒,撲上來照樣咬。",
-    "quest": null
+    "quest": null,
+    "role": "guard"
   },
   "hegathe_mage": {
     "name": "霜咒法師 因德拉",
@@ -535,7 +598,10 @@
     "disposition": 47,
     "greeting": "「沙漠的怪物畏火不畏熱 —— 唯有寒霜能教牠們真正恐懼。我這的霜咒,連百夫長的爐火都能澆熄。」",
     "rumor": "沃倫菲爾的百夫長以爐火為命,烈焰加身刀槍不入;唯有冰霜能裂其黃銅之軀 —— 進城前,先到我這備齊霜咒。",
-    "quest": null
+    "quest": null,
+    "role": "scholar",
+    "rumor_quest": "rumor_volenfell",
+    "rumor_disposition": 45
   },
   "gilane_harbormaster": {
     "name": "港務副管 哈基姆",
@@ -543,7 +609,8 @@
     "disposition": 46,
     "greeting": "「香料、駿馬、鋼鐵 —— 蓋蘭的碼頭什麼都賣。先鋒派懂得做生意,可不像森塔那群只會擦劍的。」",
     "rumor": "龍尾山麓那條商道近來常見沙蠍,從金海岸來的商隊在沙坡上折了好幾車貨。",
-    "quest": null
+    "quest": null,
+    "role": "merchant"
   },
   "gilane_trader": {
     "name": "香料商 雅絲敏",
@@ -552,7 +619,8 @@
     "greeting": "「新鮮的紅蘋果、灰薯與沙地藥草,煉藥人搶著要。外鄉人,你的水囊看著空了,要不要添點?」",
     "rumor": "告示板上阿利克爾的沙蠍懸賞開了好價;那些毒尾蠍子的甲殼,煉藥行可是當寶。",
     "quest": "favor_gilane_spice",
-    "quest_disposition": 60
+    "quest_disposition": 60,
+    "role": "merchant"
   },
   "daggerfall_courtmage": {
     "name": "宮廷法師 因瑟瑞絲",
@@ -560,7 +628,8 @@
     "disposition": 47,
     "greeting": "「布雷頓人的血裡流著抗魔的天賦,外鄉人 —— 火與冰在我們身上都得打個折。可你若想對付荒沼的石魔與女巫,光靠這些可不夠。」",
     "rumor": "石像鬼與沼地女巫皆畏雷:牠們的霜咒與石軀抵得住火與冰,卻擋不住一道雷霆 —— 匕落的法師舖正備著閃電咒,進荒沼前該去添一卷。",
-    "quest": null
+    "quest": null,
+    "role": "scholar"
   },
   "daggerfall_knight": {
     "name": "鐵衛隊長 加里克",
@@ -568,7 +637,10 @@
     "disposition": 45,
     "greeting": "「匕落的鐵衛不靠巫術,靠的是劍與膽。外鄉人,握緊你的傢伙 —— 霧裡的東西可不會跟你講騎士禮節。」",
     "rumor": "荒沼深處的海妖岩巫窟近來不太平,連古墓裡的鏽甲鐵衛都被女巫的咒法喚醒了;告示板上掛著清剿巫圈的高額懸賞。",
-    "quest": null
+    "quest": null,
+    "role": "guard",
+    "rumor_quest": "rumor_hagrock",
+    "rumor_disposition": 45
   },
   "daggerfall_herbalist": {
     "name": "藥草婦 茉德",
@@ -577,7 +649,10 @@
     "greeting": "「死亡鐘與薰衣草,荒沼的霧氣養出來的好東西。煉藥的話,我這兒的料子比城裡任何人都新鮮。」",
     "rumor": "沃斯加荒沼的石南叢裡藏著上好的藥草,膽大的採藥人都往那兒去;石南坡上還立著一圈上古布雷頓人的巨石,據說夜裡會發出微光。",
     "quest": "favor_daggerfall_herbs",
-    "quest_disposition": 60
+    "quest_disposition": 60,
+    "role": "scholar",
+    "rumor_landmark": "wrothgar_moor",
+    "rumor_disposition": 30
   },
   "wayrest_merchant": {
     "name": "玫瑰商會主 塞德里克",
@@ -585,7 +660,8 @@
     "disposition": 46,
     "greeting": "「歡迎來到威岩 —— 伊利亞克灣最富庶的港城。在這兒,金幣能買到的東西,可比一柄劍能搶到的多得多。」",
     "rumor": "威岩王室嘴上對帝國恭順,暗地裡卻什麼買賣都做;城東的永恒城倒是兩邊都不沾,守著通往天際的隘口過自己的小日子。",
-    "quest": null
+    "quest": null,
+    "role": "merchant"
   },
   "wayrest_scout": {
     "name": "王室斥候 莉薇雅",
@@ -594,7 +670,9 @@
     "greeting": "「王室想知道荒沼那窩女巫究竟在謀劃什麼,可派出去的人沒一個回來的。你看著像是能潛進去又能活著出來的料子。」",
     "rumor": "海妖岩巫窟的魔女祭主據說已活了上千年;王室願出重金,只求有人能潛進巫圈、探明她的虛實。",
     "quest": "favor_wayrest",
-    "quest_disposition": 50
+    "quest_disposition": 50,
+    "rumor_quest": "rumor_hagrock",
+    "rumor_disposition": 45
   },
   "evermore_warden": {
     "name": "邊伯護衛 布蘭",
@@ -602,7 +680,8 @@
     "disposition": 45,
     "greeting": "「永恒城雖小,卻是高岩的東門閂。外鄉人,往東過了卡斯特廢村就是天際的地界 —— 銀血氏族與拒誓者,沒一個好惹的。」",
     "rumor": "東邊卡斯特廢村早被銀血氏族與拒誓者爭奪得十室九空;穿過那片霧坡,便是馬卡斯城的礦道了。",
-    "quest": null
+    "quest": null,
+    "role": "guard"
   },
   "evermore_hedgewitch": {
     "name": "隱居女巫 葛蕾妲",
@@ -610,7 +689,8 @@
     "disposition": 46,
     "greeting": "「別用那種眼神看我,外鄉人 —— 不是所有懂咒法的布雷頓婦人都跟海妖岩那群同流合污。我只是想清靜地過日子。」",
     "rumor": "海妖岩巫圈早已墮入黑暗,那位魔女祭主以靈魂石豢養不死之軀;荒沼裡的巨石巫圈才是上古布雷頓人真正的聖地,如今卻成了石像鬼的棲所。",
-    "quest": null
+    "quest": null,
+    "role": "scholar"
   },
   "falinesti_treespeaker": {
     "name": "樹語祭司 艾蘭薇",
@@ -618,7 +698,9 @@
     "disposition": 47,
     "greeting": "「歡迎踏上行走的王城,外鄉人。請別折斷任何枝葉 —— 綠約之下,連枯枝都是聖物。」",
     "rumor": "巨木林最深處的絞藤蛛巢病了:一株沉睡千年的遠古樹靈甦醒,毒藤正一寸寸絞死整片聖林,告示板已掛出清剿的重賞。",
-    "quest": null
+    "quest": null,
+    "rumor_quest": "rumor_spidergrove",
+    "rumor_disposition": 45
   },
   "falinesti_archer": {
     "name": "綠約獵手 芬羅斯",
@@ -634,7 +716,10 @@
     "disposition": 48,
     "greeting": "「帝王蝶翼、發光的鬼火塵、林子裡的奇花異草 —— 煉藥人千里迢迢就為這些。要添點嗎?」",
     "rumor": "格拉特巨木林的樹蔭下藏著上好的煉藥素材,膽大的採藥人都往那兒去;林心那株傳說中的艾爾登神木,更是綠約之民朝聖的聖樹。",
-    "quest": null
+    "quest": null,
+    "role": "merchant",
+    "rumor_landmark": "graht_forest",
+    "rumor_disposition": 30
   },
   "haven_huntmaster": {
     "name": "綠約獵長 塔露薇",
@@ -643,7 +728,9 @@
     "greeting": "「林子近來不對勁,毒藤蔓延、巨蛛離巢。我需要有人潛進聖林深處,探明那株老樹靈究竟醒到了什麼地步。」",
     "rumor": "綠約獵人接連在絞藤蛛巢外失蹤;海文城願出重金,只求有人能活著探明遠古樹靈甦醒的徵兆。",
     "quest": "favor_haven",
-    "quest_disposition": 52
+    "quest_disposition": 52,
+    "rumor_quest": "rumor_spidergrove",
+    "rumor_disposition": 45
   },
   "haven_merchant": {
     "name": "海港商會主 卓里安",
@@ -651,7 +738,8 @@
     "disposition": 46,
     "greeting": "「歡迎來到海文 —— 阿比西亞海最熱鬧的港。波斯莫的異木、卡傑特的香料、帝國的銀幣,在這兒都能換成你要的東西。」",
     "rumor": "海文城嘴上奉帝國為盟,實則只認銀幣的流向;倒是內陸希凡納的代言者,連卡莫蘭樹王都得敬他三分。",
-    "quest": null
+    "quest": null,
+    "role": "merchant"
   },
   "silvenar_attendant": {
     "name": "代言者侍從 葉拉",
@@ -668,7 +756,8 @@
     "greeting": "「綠約不許折活枝,但落葉、蝶翼與鬼火塵,森林是慷慨給予的。要煉藥的話,我這兒的料子最新鮮。」",
     "rumor": "巨木林裡循著螢光便能找到帝王蝶聚集的花叢;林心那株艾爾登神木的樹蔭下,據說落著綠約之民世代供奉的遺珍。",
     "quest": "favor_silvenar_herbs",
-    "quest_disposition": 60
+    "quest_disposition": 60,
+    "role": "scholar"
   },
   "rimmen_warchief": {
     "name": "戰族操演官 卡傑·斷牙",
@@ -676,7 +765,10 @@
     "disposition": 47,
     "greeting": "「歡迎踏上安納奎那的草海,外鄉人。瑞門的鬥獸場不問你的血脈,只問你的彎刀夠不夠快。」",
     "rumor": "騰瑪林深處的暗月窟近來不對勁:被月糖浸瘋的野獸成群下山,壇心那頭暗潮腐化的暗虎據說連森奇戰虎都不敢近身,告示板已掛出清剿的重賞。",
-    "quest": null
+    "quest": null,
+    "role": "guard",
+    "rumor_quest": "rumor_darkmoon",
+    "rumor_disposition": 45
   },
   "rimmen_alchemist": {
     "name": "草原煉藥師 莉莎芭",
@@ -685,7 +777,8 @@
     "greeting": "「這片草原的怪物啊 —— 血肉早被月糖泡得半化為毒。對牠們用毒沒用,反倒是讓牠們再多嚐一口毒,牠們就垮了。帶夠塗毒的傢伙了嗎?」",
     "rumor": "騰瑪林的糖癮野獸、暗潮幽魂與那頭暗月暗虎,血裡早已半是毒液 —— 牠們最受不了的偏偏就是毒;塗毒的刀刃與毒霧,比烈焰更能放倒牠們。",
     "quest": "favor_rimmen_alchemy",
-    "quest_disposition": 60
+    "quest_disposition": 60,
+    "role": "scholar"
   },
   "senchal_portmistress": {
     "name": "港閥帳房 里安杜",
@@ -693,7 +786,8 @@
     "disposition": 46,
     "greeting": "「歡迎來到森查爾 —— 阿比西亞海最熱鬧的港。月糖、香料、銀幣,還有……您懂的那些貨,在這兒都能換成您要的東西。」",
     "rumor": "森查爾嘴上奉帝國為盟,實則只認糖晶的流向;真要找門路的,別問港閥,去碼頭暗巷找那位糖客 —— 暗月窟的祕藏,他比誰都清楚。",
-    "quest": null
+    "quest": null,
+    "role": "merchant"
   },
   "senchal_smuggler": {
     "name": "糖客 拉吉德",
@@ -702,7 +796,10 @@
     "greeting": "「噓,小聲點。暗月窟的糖蜜祕藏,值連城的價 —— 可那地方,進去的人十個有九個再沒出來。你看起來……命比較硬?」",
     "rumor": "走私客接連在暗月窟外失蹤;森查爾的糖客願出重金,只求有人能活著探明壇心那頭暗虎醒到了什麼地步。",
     "quest": "favor_senchal",
-    "quest_disposition": 52
+    "quest_disposition": 52,
+    "role": "merchant",
+    "rumor_quest": "rumor_darkmoon",
+    "rumor_disposition": 45
   },
   "senchal_skooma_den": {
     "name": "斯庫瑪窟老闆娘 阿婭",
@@ -710,7 +807,8 @@
     "disposition": 44,
     "greeting": "「進來吧,別讓暖簾的香氣跑了。第一口斯庫瑪,算我請客 —— 之後嘛,您就會自己回來了。」",
     "rumor": "斯庫瑪甜得像雙月的低語,可一旦上癮,身子就空了;托瓦爾的讀月祭司有古法可解,但得先替他取齊淨化的聖物。",
-    "quest": null
+    "quest": null,
+    "role": "innkeeper"
   },
   "torval_moonpriest": {
     "name": "讀月祭司 多·瓦薩",
@@ -718,7 +816,8 @@
     "disposition": 48,
     "greeting": "「迦哈傑的月光照見你的影子 —— 外鄉人,你身上沾著糖晶的甜腥。是來聆聽雙月,還是來求一條解脫之路的?」",
     "rumor": "讀月者尊主說,斯庫瑪之癮可解,但古法繁複:成癮者只須在任一聚落尋訪療者,備齊淨化聖物與一縷暗潮腐血,便能在雙月之下行淨糖之儀。",
-    "quest": null
+    "quest": null,
+    "role": "priest"
   },
   "drelas": {
     "name": "德雷拉斯",
@@ -727,7 +826,9 @@
     "greeting": "「自我放逐的丹莫沒什麼好說的,外鄉人。可灰燼荒原的蹦蟲毀了我的營地、連同我為之蒙冤的手稿線索 —— 你若肯出手,德雷拉斯記得這份人情,也願以秘法相報、與你同行。」",
     "rumor": "灰燼荒原深處的蹦蟲群襲了一名丹莫法師的營地;那法師說,只要有人替他清出條路,他願追隨可信之人。",
     "quest": "recruit_drelas",
-    "quest_disposition": 35
+    "quest_disposition": 35,
+    "rumor_landmark": "ashland_waste",
+    "rumor_disposition": 30
   },
   "ja_rakal": {
     "name": "賈拉卡爾",
@@ -745,7 +846,9 @@
     "greeting": "「劍歌者拉希德,蒙冤被逐出劍術館。阿利克爾的沙嘯獸正擾著商隊 —— 你若肯與我並肩斬了牠們,還我一線清白,這柄彎刀便為你而歌。」",
     "rumor": "森提奈外的阿利克爾沙漠裡,一名蒙冤的紅衛劍歌者獨自獵著沙嘯獸,等著能還他清白、值得追隨的人。",
     "quest": "recruit_rashid",
-    "quest_disposition": 35
+    "quest_disposition": 35,
+    "rumor_landmark": "alikr_desert",
+    "rumor_disposition": 30
   },
   "tava_oasis_swordsinger": {
     "name": "劍歌庭主 努拉",
@@ -759,14 +862,16 @@
     "location": "tava_oasis",
     "disposition": 44,
     "greeting": "「玻璃匕首、火玻璃、月長石 —— 從金海岸到龍尾山,塔瓦綠洲是唯一不收買路錢的活水。」札希拉拍拍駱駝的鞍囊,「先鋒派懂得做生意,可不像森塔那群,擦劍擦到忘了肚子要吃飯。」",
-    "rumor": "森塔的女王與蓋蘭的港務總管為了向不向帝國通商鬧得不可開交;可阿利克爾的沙蠍和沙丘裂獸不管你是王冠還是先鋒,撲上來照樣咬斷駝腿。"
+    "rumor": "森塔的女王與蓋蘭的港務總管為了向不向帝國通商鬧得不可開交;可阿利克爾的沙蠍和沙丘裂獸不管你是王冠還是先鋒,撲上來照樣咬斷駝腿。",
+    "role": "merchant"
   },
   "tava_oasis_waterwarden": {
     "name": "守水人 阿瑪爾",
     "location": "tava_oasis",
     "disposition": 42,
     "greeting": "「空之女神塔瓦引約凱遺民越過沙海,賜下這泓活水 —— 守水,便是守先祖的命脈。」阿瑪爾舀起一瓢清水遞給你,「喝吧,外鄉人。在沙漠裡,水比金子誠實。」",
-    "rumor": "西陲赫加西外的朝聖古道上,蛇女以歌聲誘殺信徒,連聖城的衛兵都不敢深入那片荒漠 —— 信徒們只能繞遠路,把性命交給塔瓦的活水。"
+    "rumor": "西陲赫加西外的朝聖古道上,蛇女以歌聲誘殺信徒,連聖城的衛兵都不敢深入那片荒漠 —— 信徒們只能繞遠路,把性命交給塔瓦的活水。",
+    "role": "guard"
   },
   "camlorn_1": {
     "name": "酒館主婦 茉黛蓮",
@@ -903,7 +1008,9 @@
     "greeting": "「冬堡曾是天際的驕傲,如今大崩塌只剩下這幾棟殘屋與學院的高塔。」",
     "rumor": "城外不遠的薩爾薩斯古墓被學院的人挖開了,如今屍鬼在地底深處躁動不安。",
     "quest": "favor_winterhold",
-    "quest_disposition": 62
+    "quest_disposition": 62,
+    "rumor_quest": "rumor_saarthal",
+    "rumor_disposition": 45
   },
   "winterhold_b": {
     "name": "伊絲嘉",
@@ -924,14 +1031,18 @@
     "location": "helgen",
     "disposition": 46,
     "greeting": "「海爾根只是白漫城邊上的一座小邊鎮,旅人。城牆雖小,風雪可不留情。」",
-    "rumor": "鎮南的冰風廢墟封了多年,如今裡頭傳出響動,衛兵說怕是屍鬼又活了過來。"
+    "rumor": "鎮南的冰風廢墟封了多年,如今裡頭傳出響動,衛兵說怕是屍鬼又活了過來。",
+    "rumor_quest": "rumor_frostwind",
+    "rumor_disposition": 45
   },
   "helgen_b": {
     "name": "蕾達",
     "location": "helgen",
     "disposition": 50,
     "greeting": "「我在這小鎮擺攤賣皮貨,客人。往白漫城去的隊伍,常在我這兒添置行頭。」",
-    "rumor": "往冰風廢墟的山徑上,凍咬蜘蛛結了滿洞的網,連老獵戶都不敢深入。"
+    "rumor": "往冰風廢墟的山徑上,凍咬蜘蛛結了滿洞的網,連老獵戶都不敢深入。",
+    "rumor_quest": "rumor_frostwind",
+    "rumor_disposition": 45
   },
   "sadrith_mora_a": {
     "name": "尼洛斯·薩魯",
@@ -977,7 +1088,9 @@
     "location": "gnisis",
     "disposition": 43,
     "greeting": "「我守著禮拜堂的祭壇,也守著鎮民的安寧。風從紅山吹來時,連聖徒的雕像都會落淚。」",
-    "rumor": "鎮外天空崖游怪愈聚愈多,老人說那是灰燼墓塚將要躁動的凶兆。"
+    "rumor": "鎮外天空崖游怪愈聚愈多,老人說那是灰燼墓塚將要躁動的凶兆。",
+    "rumor_quest": "rumor_ashfall",
+    "rumor_disposition": 45
   },
   "taneth_a": {
     "name": "納齊爾",
@@ -1000,7 +1113,9 @@
     "location": "taneth",
     "disposition": 50,
     "greeting": "「守城這些年,我見慣了沙暴與刀光。你看著倒不像找麻煩的人。」",
-    "rumor": "劍聖之墓裡長眠著古代劍聖,可那地方近來不太安寧,鎮上沒人敢踏進去。"
+    "rumor": "劍聖之墓裡長眠著古代劍聖,可那地方近來不太安寧,鎮上沒人敢踏進去。",
+    "rumor_quest": "rumor_anseitomb",
+    "rumor_disposition": 45
   },
   "lainlyn_a": {
     "name": "拉雅",
@@ -1009,7 +1124,9 @@
     "greeting": "「蘭林是通往四方的門戶,北接森塔,西連赫加西——你要往哪兒去?」",
     "rumor": "往沃倫菲爾的礦道荒廢已久,有人說裡頭的矮人蜘蛛還在地底織著金屬的網。",
     "quest": "clear_rourken_halls",
-    "quest_disposition": 62
+    "quest_disposition": 62,
+    "rumor_quest": "rumor_volenfell",
+    "rumor_disposition": 45
   },
   "lainlyn_b": {
     "name": "亞姆蘭",
@@ -1099,7 +1216,9 @@
     "greeting": "「木心港的海風帶著鹹味與樹脂香,旅人。我打撈一輩子,只怕林子比海更難測。」",
     "rumor": "通往法林斯提的人說,絞藤蛛巢裡的叢林巨蛛多得結成了一片網。",
     "quest": "favor_woodhearth",
-    "quest_disposition": 62
+    "quest_disposition": 62,
+    "rumor_quest": "rumor_spidergrove",
+    "rumor_disposition": 45
   },
   "woodhearth_b": {
     "name": "船匠·梅瑞絲",
@@ -1129,14 +1248,18 @@
     "location": "dune",
     "disposition": 44,
     "greeting": "「這位香料給你聞聞 —— 對對對,杜恩的肉桂與糖晶,全艾爾斯維爾最香。買一點吧,駝隊一走又得等上半月囉。」",
-    "rumor": "梅里谷遺址那邊出了怪事,商隊說廢墟深處有阿爾菲克貓巫在唸咒招魂,連路過的糖晶藤都被養得比人還高。"
+    "rumor": "梅里谷遺址那邊出了怪事,商隊說廢墟深處有阿爾菲克貓巫在唸咒招魂,連路過的糖晶藤都被養得比人還高。",
+    "rumor_quest": "rumor_merryvale",
+    "rumor_disposition": 45
   },
   "dune_c": {
     "name": "讀月女祭 莎拉·黛兒",
     "location": "dune",
     "disposition": 48,
     "greeting": "「雙月照見你的來路,旅人。杜恩是糖晶與信仰交織的城,你帶著風塵,卻也帶著一絲月糖的甜腥 —— 坐下,讓這一位替你讀月吧。」",
-    "rumor": "讀月者說,梅里谷遺址的暗潮幽魂越聚越多,是雙月失序之兆;唯有有膽之人入廢墟肅清,迦哈傑的月光才能重照那片瓦礫。"
+    "rumor": "讀月者說,梅里谷遺址的暗潮幽魂越聚越多,是雙月失序之兆;唯有有膽之人入廢墟肅清,迦哈傑的月光才能重照那片瓦礫。",
+    "rumor_quest": "rumor_merryvale",
+    "rumor_disposition": 45
   },
   "riverhold_a": {
     "name": "河市稅吏 哈馬爾·卓",
@@ -1166,7 +1289,9 @@
     "greeting": "「科林斯,五路交會之城 —— 托瓦爾的月糖、杜恩的香料、河關的北貨,全打這兒過。守好這座城,就是守好半個艾爾斯維爾,沙之子。」",
     "rumor": "城東不遠的暗月窟最近不對勁,被月糖浸瘋的野獸成群下山,守關的弓手已經射不退牠們了;告示板上清剿的賞金天天往上加。",
     "quest": "favor_corinthe",
-    "quest_disposition": 62
+    "quest_disposition": 62,
+    "rumor_quest": "rumor_darkmoon",
+    "rumor_disposition": 45
   },
   "corinthe_b": {
     "name": "月糖行商 妮莎·阿達",
@@ -1196,7 +1321,9 @@
     "greeting": "「魚剛從拉爾薩河撈上來的,還在跳呢。布拉維爾窮歸窮,鮮魚可不缺,先生。」",
     "rumor": "下游的維爾凡林是座淹了半截的古艾爾夫廢墟,聽說裡頭的亡者夜裡會發冷光。",
     "quest": "favor_bravil",
-    "quest_disposition": 60
+    "quest_disposition": 60,
+    "rumor_quest": "rumor_vilverin",
+    "rumor_disposition": 45
   },
   "bravil_c": {
     "name": "提圖斯·門迪斯",
@@ -1212,7 +1339,9 @@
     "greeting": "「願八聖庇佑你的旅途。切若爾倚著大綠林,城牆厚實,人心也還算厚道,旅人。」",
     "rumor": "城外的切德納寇洞窟近來不寧,獵人說洞口附近常聞到米諾陶的腥臊氣。",
     "quest": "favor_chorrol",
-    "quest_disposition": 62
+    "quest_disposition": 62,
+    "rumor_quest": "rumor_cedernoc",
+    "rumor_disposition": 45
   },
   "chorrol_b": {
     "name": "加維烏斯·歐瑞利",
@@ -1233,7 +1362,9 @@
     "location": "leyawiin",
     "disposition": 43,
     "greeting": "「歡迎來到雷雅維因,賽羅迪爾的南大門。城跨拉爾薩與下黑檀河之上,潮濕是潮濕,風光倒不賴。」",
-    "rumor": "城南濕地深處的維爾凡林廢墟淹在水下,夜裡那些帝國亡魂的冷光能照亮整片沼澤。"
+    "rumor": "城南濕地深處的維爾凡林廢墟淹在水下,夜裡那些帝國亡魂的冷光能照亮整片沼澤。",
+    "rumor_quest": "rumor_vilverin",
+    "rumor_disposition": 45
   },
   "leyawiin_b": {
     "name": "奧古斯都·凱西利",
@@ -1247,7 +1378,9 @@
     "location": "leyawiin",
     "disposition": 49,
     "greeting": "「划船嗎?我熟這片水路。雷雅維因的漁獵人靠河吃飯,只是近來連白日都不太敢往沼澤深處去了。」",
-    "rumor": "順流而下的維爾凡林沉在水底,撈魚的都說那古墟裡的亡者見不得活人。"
+    "rumor": "順流而下的維爾凡林沉在水底,撈魚的都說那古墟裡的亡者見不得活人。",
+    "rumor_quest": "rumor_vilverin",
+    "rumor_disposition": 45
   },
   "orsinium_a": {
     "name": "邊衛隊長 戈德溫",
@@ -1270,14 +1403,18 @@
     "location": "orsinium",
     "disposition": 47,
     "greeting": "「願八聖庇佑你,旅人。我自永恒城一路講道而來,在這圍城裡,信仰是唯一不必鑄成鐵的盾。」",
-    "rumor": "古老的戴尼瑞塔深處,還盤踞著上古精靈的餘孽與石像鬼;膽敢入塔的人,沒幾個能囫圇地走出來。"
+    "rumor": "古老的戴尼瑞塔深處,還盤踞著上古精靈的餘孽與石像鬼;膽敢入塔的人,沒幾個能囫圇地走出來。",
+    "rumor_quest": "rumor_direnni",
+    "rumor_disposition": 45
   },
   "northpoint_a": {
     "name": "港務官 莉賽特",
     "location": "northpoint",
     "disposition": 45,
     "greeting": "「歡迎來到北角 —— 高岩北岸最忙的港口。從這兒往南是威岩的富庶,往西是坎洛恩的麥酒,往東則是奧西尼姆的鐵城。」",
-    "rumor": "往坎洛恩的路上近來不太平,荒原的石像鬼擾了商隊;南邊威岩王室也在懸賞,要人去探海妖岩巫窟那群女巫的底細。"
+    "rumor": "往坎洛恩的路上近來不太平,荒原的石像鬼擾了商隊;南邊威岩王室也在懸賞,要人去探海妖岩巫窟那群女巫的底細。",
+    "rumor_quest": "rumor_hagrock",
+    "rumor_disposition": 45
   },
   "northpoint_b": {
     "name": "魚市販婦 蔻蕾特",
@@ -1316,7 +1453,9 @@
     "location": "jehanna",
     "disposition": 46,
     "greeting": "「願瑪菈的慈光照你前路。耶漢納雖偏僻,八聖的祭壇從不冷清 —— 在這霧鎖的城裡,人們比哪兒都更需要慰藉。」",
-    "rumor": "上古精靈的戴尼瑞塔就矗在這片地界,塔身被石像鬼盤踞;老一輩說,塔越古老,守它的咒就越是凶險。"
+    "rumor": "上古精靈的戴尼瑞塔就矗在這片地界,塔身被石像鬼盤踞;老一輩說,塔越古老,守它的咒就越是凶險。",
+    "rumor_quest": "rumor_direnni",
+    "rumor_disposition": 45
   },
   "archon_a": {
     "name": "厚甲-巡牆",
@@ -1332,7 +1471,9 @@
     "location": "archon",
     "disposition": 48,
     "greeting": "「希斯特的恩賜,在阿爾孔市集樣樣買得到 —— 樹脂、苔酒、根水的鱗甲。」",
-    "rumor": "南鄰索恩的旅人說,凡納·蘇爾沉廟的古階下飄著鬼火,引人入沼。"
+    "rumor": "南鄰索恩的旅人說,凡納·蘇爾沉廟的古階下飄著鬼火,引人入沼。",
+    "rumor_quest": "rumor_vunnar",
+    "rumor_disposition": 45
   },
   "archon_c": {
     "name": "黃瞳-誦根",
@@ -1362,7 +1503,9 @@
     "location": "thorn",
     "disposition": 51,
     "greeting": "「希斯特之樹根扎進索恩的城基,旅人。聽見樹的低語,便算是回了家。」",
-    "rumor": "城外淤地裡近來沼屍橫行,聽說都是從贊密爾沉廟的水道湧出的。"
+    "rumor": "城外淤地裡近來沼屍橫行,聽說都是從贊密爾沉廟的水道湧出的。",
+    "rumor_quest": "rumor_xanmeer",
+    "rumor_disposition": 45
   },
   "hegathe_swordsinger": {
     "name": "塔茲拉",
@@ -1376,28 +1519,37 @@
     "location": "wayrest",
     "disposition": 48,
     "greeting": "「威岩是高岩最體面的港城,旅人 —— 宮廷的禮數,連海風都得讓三分。」",
-    "rumor": "北邊戴尼瑞塔的古塔近來不寧,獵巫人說石像鬼夜裡會從塔頂俯衝而下。"
+    "rumor": "北邊戴尼瑞塔的古塔近來不寧,獵巫人說石像鬼夜裡會從塔頂俯衝而下。",
+    "rumor_quest": "rumor_direnni",
+    "rumor_disposition": 45
   },
   "haven_treesinger": {
     "name": "艾蘭希爾",
     "location": "haven",
     "disposition": 46,
     "greeting": "「綠約之下,海文城與巨木同生,外鄉人。取所需,還所欠 —— 這是波斯莫的規矩。」",
-    "rumor": "城外絞藤蛛巢裡的叢林巨蛛愈發猖獗,樵夫們已不敢往那片林子去。"
+    "rumor": "城外絞藤蛛巢裡的叢林巨蛛愈發猖獗,樵夫們已不敢往那片林子去。",
+    "role": "priest",
+    "rumor_quest": "rumor_spidergrove",
+    "rumor_disposition": 45
   },
   "rimmen_caravaner": {
     "name": "佐巴爾",
     "location": "rimmen",
     "disposition": 47,
     "greeting": "「瑞門的市集什麼都賣,朋友 —— 月糖、香料、舊王朝的祕密,只看你出得起什麼價。」",
-    "rumor": "暗月窟那頭有月華瘋癲的森查虎出沒,夜裡的吼聲連商隊的駝獸都嚇得發抖。"
+    "rumor": "暗月窟那頭有月華瘋癲的森查虎出沒,夜裡的吼聲連商隊的駝獸都嚇得發抖。",
+    "role": "merchant",
+    "rumor_quest": "rumor_darkmoon",
+    "rumor_disposition": 45
   },
   "torval_priest": {
     "name": "莎拉碧",
     "location": "torval",
     "disposition": 49,
     "greeting": "「托瓦爾雖小,月亮在這裡看得最清,旅人。兩月當空時,記得對著它們許願。」",
-    "rumor": "往月華搖籃的小徑上,聽說有先祖之靈在月光下遊蕩,虎人都繞道而行。"
+    "rumor": "往月華搖籃的小徑上,聽說有先祖之靈在月光下遊蕩,虎人都繞道而行。",
+    "role": "priest"
   },
   "coven_elder": {
     "name": "血族族長瓦瑞拉",

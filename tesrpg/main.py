@@ -3839,6 +3839,10 @@ def action_talk(state: GameState, gamedata: GameData) -> str | None:
         offered = dialogue.offered_quest(char, gamedata, nid)
         if offered and att != "hostile":                 # 敵陣營不託付委託
             opts.append(("quest", f"接受委託:{gamedata.quests[offered]['name']}"))
+        rumor = dialogue.offered_rumor(char, gamedata, nid)   # R81:追問傳聞 → 線索任務 / 即時指路
+        if rumor and att != "hostile":
+            tag = "線索" if rumor["kind"] == "quest" else "指路"
+            opts.append(("rumor", f"追問傳聞·{tag}:「{npc.get('rumor', '')[:16]}…」"))
         pc = int(dialogue.persuade_chance(char, gamedata, nid) * 100)
         sp = gamedata.skills["speechcraft"]["practice"]   # 唯讀靜態價碼;勿呼叫 practice_cost(會扣體力)
         opts.append(("persuade", "說服(口才)",
@@ -3859,6 +3863,17 @@ def action_talk(state: GameState, gamedata: GameData) -> str | None:
         elif choice == "quest":
             _accept_and_brief(state, gamedata, offered)
             return None
+        elif choice == "rumor":                              # R81:追問傳聞兌現
+            if rumor["kind"] == "quest":
+                _accept_and_brief(state, gamedata, rumor["id"])
+                return None
+            res = landmarks.discover(state, gamedata, rumor["id"])   # 即時揭露同省地標 + 小獎勵
+            ui.message("對方壓低聲音,給你指了條道。", style="grey70")
+            if res:
+                ui.landmark_discovery(res)
+            else:
+                ui.message("那地方你早已知曉了。", style="grey70")
+            att = dialogue.attitude(char, state, gamedata, nid, ctx)
         elif choice == "persuade":
             r = dialogue.persuade(char, gamedata, nid, state.rng)
             state.time.advance(r["hours"])

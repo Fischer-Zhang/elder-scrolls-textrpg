@@ -100,6 +100,28 @@ def offered_quest(char: Character, gamedata: GameData, npc_id: str) -> str | Non
     return qid
 
 
+def offered_rumor(char: Character, gamedata: GameData, npc_id: str) -> dict | None:
+    """好感足夠且未兌現 → 回傳該 NPC 可「追問」的傳聞線索(R81 流言復活)。
+    {"kind":"quest","id":qid}(線索任務,呼叫端走 _accept_and_brief)或
+    {"kind":"landmark","id":loc}(即時揭露同省地標,呼叫端走 landmarks.discover)。
+    一次性鎖全由既有狀態推導(quests/completed_quests/discovered_landmarks)→ 零新存檔欄。"""
+    npc = gamedata.npcs[npc_id]
+    if disposition(char, gamedata, npc_id) < npc.get("rumor_disposition", 0):
+        return None
+    qid = npc.get("rumor_quest")
+    if qid and qid not in char.quests and qid not in char.completed_quests:
+        obj = (gamedata.quests.get(qid) or {}).get("objective", {})
+        # clear_dungeon 線索:已肅清過則不再給(避免接取即時免費完成)
+        if not (obj.get("type") == "clear_dungeon" and obj.get("dungeon") in char.cleared_dungeons):
+            return {"kind": "quest", "id": qid}
+    loc = npc.get("rumor_landmark")
+    if loc:
+        from tesrpg.systems import landmarks
+        if not landmarks.is_discovered(char, loc):
+            return {"kind": "landmark", "id": loc}
+    return None
+
+
 # --- 拓展用途①:說服衛兵減免賞金(犯罪/社交;對位武士特權,走技能)----------
 def talk_down_chance(char: Character, bounty: int, gamedata: GameData = None) -> float:
     """以口才說退衛兵的成功率:吃口才+魅力,賞金越高越難。夾 0.05–0.80。

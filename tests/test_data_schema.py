@@ -27,7 +27,12 @@ _RESIST_ELEMENTS = {"fire", "frost", "shock", "poison", "magic", "disease", "ble
 _SET_BONUS_KINDS = {"fortify_skill", "fortify_attribute", "fortify_resource", "armor_fortify", "resist_element"}
 # world_events effect type:對照 worldstate.py:_apply
 _WE_EFFECT_TYPES = {"faction_flip", "clear_flip", "fame", "message"}
-_DLG_EFFECT_TYPES = {"faction_standing"}           # 對照 dialogue.apply_topic_effects
+# events.apply_effects 支援的 effect type(對照 events.py:apply_effects dispatch)
+_EVENTS_EFFECT_TYPES = {"gold", "item", "skill_xp", "heal", "restore_magicka", "restore_fatigue",
+                        "damage", "fame", "infamy", "bounty", "start_quest", "learn_spell",
+                        "combat", "message"}
+# 對話 topic effect:dialogue._apply_topic_effects 攔 faction_standing、其餘委派 events.apply_effects(R81)
+_DLG_EFFECT_TYPES = {"faction_standing"} | _EVENTS_EFFECT_TYPES
 _GREETING_ATTITUDES = {"friendly", "neutral", "cold", "hostile", "vampire_seen"}
 _REL_KEYS = {"ally", "enemy", "neutral", "unaligned"}
 
@@ -110,6 +115,14 @@ def test_dialogue_foreign_keys():
         assert att in _GREETING_ATTITUDES, f"attitude_topics 不明 attitude {att}"
         for tid in lst:
             assert tid in topics, f"attitude_topics[{att}] 引用不存在話題 {tid}"
+    # R81 role 身份話題:roles map 每個 topic id ∈ topics;每個 npc.role ∈ roles keys(防死 role)
+    roles = dlg.get("roles", {})
+    for role, tids in roles.items():
+        for tid in tids:
+            assert tid in topics, f"roles[{role}] 引用不存在話題 {tid}"
+    for npc_id, npc in gd.npcs.items():
+        if npc.get("role"):
+            assert npc["role"] in roles, f"npc {npc_id}: role {npc['role']} 不在 dialogue.roles"
 
     def _check_topic(where, t):
         r = t.get("requires", {})
@@ -267,12 +280,38 @@ def test_quest_givers_and_reachability():
             event_quests.add(qid)
             if qid not in gd.quests:
                 bad.append(f"event {eid}: start_quest {qid} 不存在")
-    # ③ source:npc 任務可達性(npc 欄 ∪ 事件 start_quest ∪ 同伴 recruit_quest)
+    # ③ R81 流言線索外鍵:npc.rumor_quest → 存在且 source=="rumor";npc.rumor_landmark → 真實地標;
+    #    rumor_disposition → 0-100 int。
+    world = gd.world["locations"]
+    rumor_quests = set()
+    for nid, npc in gd.npcs.items():
+        rq = npc.get("rumor_quest")
+        if rq:
+            rumor_quests.add(rq)
+            if rq not in gd.quests:
+                bad.append(f"npc {nid}: rumor_quest {rq} 不存在")
+            elif gd.quests[rq].get("source") != "rumor":
+                bad.append(f"npc {nid}: rumor_quest {rq} source 非 rumor")
+        rl = npc.get("rumor_landmark")
+        if rl and gd.landmark_at(rl) is None:
+            bad.append(f"npc {nid}: rumor_landmark {rl} 非真實地標")
+        rd = npc.get("rumor_disposition")
+        if rd is not None and not (isinstance(rd, int) and 0 <= rd <= 100):
+            bad.append(f"npc {nid}: rumor_disposition {rd} 非 0-100 int")
+    # ④ 可達性:source:npc(npc 欄∪事件∪招募);source:rumor(npc.rumor_quest 派發,防孤兒)
     recruit_quests = {c.get("recruit_quest") for c in gd.companions.values() if c.get("recruit_quest")}
     reachable = npc_quests | event_quests | recruit_quests
     for qid, q in gd.quests.items():
         if q.get("source") == "npc" and qid not in reachable:
             bad.append(f"孤兒 npc 任務 {qid}:無 NPC/事件/招募 派發 → 永不可接")
+        if q.get("source") == "rumor":
+            if qid not in rumor_quests:
+                bad.append(f"孤兒 rumor 線索 {qid}:無 NPC rumor_quest 回指 → 永不可接")
+            # ⑤ 線索目標地城/地點不可有 visible gate(否則可接卻去不了)
+            obj = q.get("objective", {})
+            loc = obj.get("dungeon") or obj.get("location")
+            if loc and world.get(loc, {}).get("visible"):
+                bad.append(f"rumor 線索 {qid}:目標 {loc} 有 visible gate(可接去不了)")
     assert not bad, "任務派發/可達性違規:" + "; ".join(bad)
 
 
