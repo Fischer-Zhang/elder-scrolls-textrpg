@@ -146,6 +146,18 @@ def test_dialogue_foreign_keys():
             _check_topic(f"npc:{npc_id}:deep:{tid}", t)
         for tid in npc.get("extra") or []:
             assert tid in topics or tid in deep, f"{npc_id} extra 引用不存在話題 {tid}"
+        # R82 功能化秘密:secret 可為 str(flavor)或 {text, effects}(撬出藏寶/線索);
+        # 效果型別 ∈ _DLG_EFFECT_TYPES,且 start_quest→quests、item→items 外鍵成立。
+        sec = npc.get("secret")
+        assert sec is None or isinstance(sec, (str, dict)), f"{npc_id} secret 須為 str 或 dict"
+        if isinstance(sec, dict):
+            assert isinstance(sec.get("text", ""), str), f"{npc_id} secret.text 須為 str"
+            for e in sec.get("effects", []):
+                assert e.get("type") in _DLG_EFFECT_TYPES, f"{npc_id} secret effect {e.get('type')} 未實作"
+                if e.get("type") == "start_quest":
+                    assert e["quest"] in gd.quests, f"{npc_id} secret start_quest {e['quest']} 不存在"
+                if e.get("type") == "item":
+                    assert gd.item_or_none(e["item"]) is not None, f"{npc_id} secret item {e['item']} 不存在"
 
 
 def test_monster_on_hit_status_is_implemented():
@@ -298,9 +310,15 @@ def test_quest_givers_and_reachability():
         rd = npc.get("rumor_disposition")
         if rd is not None and not (isinstance(rd, int) and 0 <= rd <= 100):
             bad.append(f"npc {nid}: rumor_disposition {rd} 非 0-100 int")
-    # ④ 可達性:source:npc(npc 欄∪事件∪招募);source:rumor(npc.rumor_quest 派發,防孤兒)
+    # R82 套話功能化:dialogue.npcs[*].secret(dict 形)的 start_quest 也是任務派發來源(秘藏線索)
+    secret_quests = set()
+    for npc in gd.dialogue.get("npcs", {}).values():
+        sec = npc.get("secret")
+        if isinstance(sec, dict):
+            secret_quests |= {e["quest"] for e in sec.get("effects", []) if e.get("type") == "start_quest"}
+    # ④ 可達性:source:npc(npc 欄∪事件∪招募∪秘藏);source:rumor(npc.rumor_quest 派發,防孤兒)
     recruit_quests = {c.get("recruit_quest") for c in gd.companions.values() if c.get("recruit_quest")}
-    reachable = npc_quests | event_quests | recruit_quests
+    reachable = npc_quests | event_quests | recruit_quests | secret_quests
     for qid, q in gd.quests.items():
         if q.get("source") == "npc" and qid not in reachable:
             bad.append(f"孤兒 npc 任務 {qid}:無 NPC/事件/招募 派發 → 永不可接")

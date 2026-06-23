@@ -134,6 +134,21 @@
   },
 
   "npcs": {
+    "whiterun_steward": {"secret": {"text": "「城庫那本帳……有一筆糊塗錢,沒人對得上。我替你支一支,你也替我把這事爛在肚裡。」", "effects": [{"type": "gold", "amount": 60}]}},
+    "balmora_armsdealer_neloth": {"secret": {"text": "「壓箱底的東西不上架。喏 —— 這幾根開鎖器,城裡買不到的貨,拿去。」", "effects": [{"type": "item", "item": "lockpick", "qty": 3}]}},
+    "wayrest_merchant": {"secret": {"text": "「帳房的暗格……也罷,你我都是聰明人。這點分紅,當作封口費。」", "effects": [{"type": "gold", "amount": 70}]}},
+    "sentinel_swordmaster": {"secret": {"text": "「退役時我藏了把好刀,本想留給徒弟 —— 可你眼裡有殺氣,更配得上它。」", "effects": [{"type": "item", "item": "steel_dagger", "qty": 1}]}},
+    "evermore_warden": {"secret": {"text": "「沒入庫的贓款,帳上一向不全。漏這麼一筆給你,衛所也查不出。」", "effects": [{"type": "gold", "amount": 55}]}},
+    "imperial_city_scribe_aurelia": {"secret": {"text": "「我抄錄舊賬時記下一筆無主的款項……既然你問起了,就當是還給有緣人。」", "effects": [{"type": "gold", "amount": 65}]}},
+    "blackrose_warden": {"secret": {"text": "「沒收的走私品堆在庫房落灰。這顆紅寶石登記在案外 —— 你懂的。」", "effects": [{"type": "item", "item": "ruby", "qty": 1}]}},
+    "hegathe_mage": {"secret": {"text": "「私藏的魂石不便聲張……拿去吧,別問來路,也別讓學派的人知道。」", "effects": [{"type": "item", "item": "filled_common_soul_gem", "qty": 1}]}},
+    "rimmen_warchief": {"secret": {"text": "「操演的犒賞,我向來剋扣一成入私囊。分你一點,只當沒這回事。」", "effects": [{"type": "gold", "amount": 50}]}},
+    "markarth_guard_eltrys": {"secret": {"text": "「從盜匪身上沒收的開鎖器,登記簿上少記兩根 —— 拿去,別在我當值時用。」", "effects": [{"type": "item", "item": "lockpick", "qty": 2}]}},
+    "daggerfall_courtmage": {"secret": {"text": "「我的卷冊記載:溫迪爾古墟的地穴深處,藏著直裔家族的秘藏。古墓鐵衛守著它 —— 有膽的去取。」", "effects": [{"type": "start_quest", "quest": "secret_wendir"}]}},
+    "vivec_ordinator_aurane": {"secret": {"text": "「守正軍的密檔提過:科戈魯恩廢墟下,第六家族留了一處未被劫掠的窖藏。此事不入官錄,你自行斟酌。」", "effects": [{"type": "start_quest", "quest": "secret_kogoruhn"}]}},
+    "bruma_legion_veteran_brand": {"secret": {"text": "「奧圖斯堡那座荒廢軍堡,我們撤離時來不及搬走軍械庫的東西 —— 如今亡靈守著。你若取得回,算物歸有用之人。」", "effects": [{"type": "start_quest", "quest": "secret_fortontus"}]}},
+    "falinesti_treespeaker": {"secret": {"text": "「綠約的古祕:文迪西地城最深處供著一件先祖遺物,獸群護持不容外人。你若虔敬,或可取之。」", "effects": [{"type": "start_quest", "quest": "secret_vindisi"}]}},
+    "gideon_legionary": {"secret": {"text": "「根水沼窟的洞底,前朝走私客埋過一批貨,鬼火引人迷途至今無人取回。你膽子夠的話……」", "effects": [{"type": "start_quest", "quest": "secret_rootwater"}]}},
     "riften_brynjolf": {
       "extra": ["guild_insider"],
       "secret": "「壁爐廳地底的『鼠道』……懂的人自然懂。空殼酒桶後頭那道門,可不是給良民開的。」",

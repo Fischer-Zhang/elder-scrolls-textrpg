@@ -410,18 +410,34 @@ def pry_chance(char: Character) -> float:
     return max(0.1, min(0.9, 0.30 + (char.skill("speechcraft") + char.attr("personality") - PRY_DIFFICULTY) * 0.005))
 
 
+_PUMP_PAID = "__pump_paid__"      # dialogue_done[npc_id] 標記:該 NPC 的功能化秘密已兌現一次(防刷,零新存檔欄)
+
+
 def _do_pump(state, gamedata: GameData, npc_id: str, topic: dict, ctx: dict, rng: RNG) -> dict:
     """旁敲側擊套話:付 speechcraft practice(體力+時間,非免費刷)。
-    成功 → 揭露隱藏情報(topic/NPC `secret`)+ 小幅外交立場;失敗 → 略降好感。"""
+    成功 → 揭露隱藏情報(topic/NPC `secret`);**功能化秘密**(dict 形)額外撬出可行動情報
+    (藏寶 gold/item·線索 start_quest)一次性兌現(`dialogue_done` 標記去重);失敗 → 略降好感。"""
     char = state.player
     xp, hours, tired = progression.practice_cost(char, gamedata, "speechcraft")
     skill_events = progression.use_skill(char, gamedata, "speechcraft", xp)
     if rng.chance(pry_chance(char)):
-        secret = topic.get("secret") or gamedata.npcs[npc_id].get("secret") or "對方壓低聲音,透了個風聲給你。"
-        secret = _interp(secret, char, gamedata, npc_id, ctx)
-        # 套話只給情報(+練口才),不推進外交軸(外交立場走顯式的表態/結交一次性話題)
-        return {"text": secret, "ok": True, "hours": hours, "tired": tired,
-                "skill_events": skill_events, "messages": [], "combat": [], "subtopics": []}
+        # 🔴 秘密存於 dialogue.json 的 npcs 覆寫層(非 npcs.json)。R82 前 _do_pump 誤讀 gamedata.npcs
+        # → 既有秘密永遠讀不到、套話只吐預設旁白(等同死功能)。本輪正讀 dialogue 覆寫並功能化。
+        dlg_npc = (gamedata.dialogue.get("npcs", {}) or {}).get(npc_id, {})
+        raw = topic.get("secret") or dlg_npc.get("secret") or "對方壓低聲音,透了個風聲給你。"
+        messages, combat = [], []
+        if isinstance(raw, dict):                          # R82 功能化秘密:{text, effects}
+            text = _interp(raw.get("text", ""), char, gamedata, npc_id, ctx)
+            done = char.dialogue_done.setdefault(npc_id, [])
+            if raw.get("effects") and _PUMP_PAID not in done:   # 一次性兌現(再套話只重述、不重發)
+                res = _apply_topic_effects(state, gamedata, raw["effects"], ctx)
+                messages, combat = res["messages"], res["combat"]
+                done.append(_PUMP_PAID)
+        else:
+            text = _interp(raw, char, gamedata, npc_id, ctx)
+        # 套話只給情報/藏寶(+練口才),不推進外交軸(外交立場走顯式的表態話題)
+        return {"text": text, "ok": True, "hours": hours, "tired": tired,
+                "skill_events": skill_events, "messages": messages, "combat": combat, "subtopics": []}
     _adjust(char, npc_id, -3)
     return {"text": "對方守口如瓶,還似乎有些被你冒犯。", "ok": False, "hours": hours, "tired": tired,
             "skill_events": skill_events, "messages": [], "combat": [], "subtopics": []}
