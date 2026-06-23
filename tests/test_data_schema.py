@@ -178,9 +178,15 @@ def test_quest_objective_types_and_reward_keys_implemented():
     assert not bad_obj, f"objective.type 未實作:{bad_obj}"
     assert not bad_rwd, f"reward key 未實作:{bad_rwd}"
 
-    # 常態世界脈動(R-pulse):可重複委託只准帶 gold/fame/infamy(反 min-max,不可刷限定內容);
-    # 且其 objective 不可為 clear_dungeon(cleared_dungeons 永久 → 已清地城會即時重複達標=免費金)。
-    bad_rep, bad_rep_obj = [], []
+    # 常態世界脈動(R-pulse / R80):可重複委託只准帶 gold/fame/infamy(反 min-max,不可刷限定內容);
+    # objective 不可為 clear_dungeon(cleared_dungeons 永久 → 已清地城即時重複達標=免費金);
+    # 首階段 objective 不可為 reach(接取時若已在目標地會即時自動完成=免費刷;reach 只可做後段交付)。
+    def first_obj(q):
+        if "stages" in q and q["stages"]:
+            return q["stages"][0].get("objective", {})
+        return q.get("objective", {})
+
+    bad_rep, bad_rep_obj, bad_rep_reach = [], [], []
     for qid, q in gd.quests.items():
         if not q.get("repeatable"):
             continue
@@ -189,8 +195,11 @@ def test_quest_objective_types_and_reward_keys_implemented():
         for o in objs(q):
             if o.get("type") == "clear_dungeon":
                 bad_rep_obj.append(qid)
+        if first_obj(q).get("type") == "reach":
+            bad_rep_reach.append(qid)
     assert not bad_rep, f"可重複委託只准 gold/fame/infamy:{bad_rep}"
     assert not bad_rep_obj, f"可重複委託 objective 不可為 clear_dungeon(永久達標):{bad_rep_obj}"
+    assert not bad_rep_reach, f"可重複委託首階段不可為 reach(接取即在目標地會自動完成):{bad_rep_reach}"
 
 
 def test_world_pulse_schema_and_foreign_keys():
@@ -222,6 +231,49 @@ def test_world_pulse_schema_and_foreign_keys():
 
 # 非 world_events.json 但仍合法的世界旗標(由任務 reward.world_flags 設入 world_events_fired)。
 _KNOWN_WORLD_FLAGS = frozenset({"oblivion_crisis_ended"})
+
+
+def _event_start_quests(ev):
+    """蒐集一個事件所有 option(含 check success/failure)的 start_quest 目標 id。"""
+    out = []
+    for opt in ev.get("options", []):
+        out += [ef["quest"] for ef in opt.get("effects", []) if ef.get("type") == "start_quest"]
+        chk = opt.get("check")
+        if chk:
+            for br in ("success", "failure"):
+                out += [ef["quest"] for ef in chk.get(br, {}).get("effects", [])
+                        if ef.get("type") == "start_quest"]
+    return out
+
+
+def test_quest_givers_and_reachability():
+    """任務派發外鍵 + 不成孤兒(R80):① npcs.json 每個 quest 欄 → 存在於 quests;
+    ② events.json 每個 start_quest → 存在;③ 每個 source:'npc' 任務必可達(由某 NPC quest 欄、
+    或某事件 start_quest、或某同伴 recruit_quest 回指)—— 防新增一次性任務成孤兒永不可接。"""
+    gd = get_gamedata()
+    bad = []
+    # ① NPC quest 欄外鍵
+    npc_quests = set()
+    for nid, npc in gd.npcs.items():
+        qid = npc.get("quest")
+        if qid:
+            npc_quests.add(qid)
+            if qid not in gd.quests:
+                bad.append(f"npc {nid}: quest {qid} 不存在")
+    # ② 事件 start_quest 外鍵
+    event_quests = set()
+    for eid, ev in gd.events.items():
+        for qid in _event_start_quests(ev):
+            event_quests.add(qid)
+            if qid not in gd.quests:
+                bad.append(f"event {eid}: start_quest {qid} 不存在")
+    # ③ source:npc 任務可達性(npc 欄 ∪ 事件 start_quest ∪ 同伴 recruit_quest)
+    recruit_quests = {c.get("recruit_quest") for c in gd.companions.values() if c.get("recruit_quest")}
+    reachable = npc_quests | event_quests | recruit_quests
+    for qid, q in gd.quests.items():
+        if q.get("source") == "npc" and qid not in reachable:
+            bad.append(f"孤兒 npc 任務 {qid}:無 NPC/事件/招募 派發 → 永不可接")
+    assert not bad, "任務派發/可達性違規:" + "; ".join(bad)
 
 
 def run():

@@ -2,73 +2,73 @@
   "pulse_cyrodiil_banditry": {
     "province": "賽羅迪爾",
     "weight": 3,
-    "cooldown_days": 12,
+    "cooldown_days": 10,
     "active_window_days": 8,
     "min_day": 4,
-    "spotlight_quests": ["comm_cyrodiil_bandit"],
-    "news": "帝國大道近來盜匪橫行,沿途村鎮在告示板高懸剿匪賞金 —— 有膽識者可往一試。"
+    "spotlight_quests": ["comm_cyrodiil_bandit", "comm_cyrodiil_minotaur", "comm_cyrodiil_relics"],
+    "news": "帝國大道近來不寧 —— 盜匪橫行、腹地遺跡有牛魔作亂,沿途村鎮的告示板貼滿了懸賞與供應委託。"
   },
   "pulse_skyrim_wolves": {
     "province": "天際",
     "weight": 3,
-    "cooldown_days": 12,
+    "cooldown_days": 10,
     "active_window_days": 8,
     "min_day": 4,
-    "spotlight_quests": ["comm_skyrim_wolf"],
-    "news": "天際雪原入冬,餓狼成群下山襲擊驛道商旅,各地領主貼出獵狼懸賞。"
+    "spotlight_quests": ["comm_skyrim_wolf", "comm_skyrim_troll", "comm_skyrim_glowdust"],
+    "news": "天際雪原入冬,餓狼下山、霜巨魔擋道,各地領主與冬堡學徒在告示板貼出獵殺與採集委託。"
   },
   "pulse_morrowind_ashland": {
     "province": "晨風",
     "weight": 2,
-    "cooldown_days": 12,
+    "cooldown_days": 10,
     "active_window_days": 8,
     "min_day": 5,
-    "spotlight_quests": ["comm_morrowind_ash"],
-    "news": "晨風灰原近日蟲群異動,灰蹦蟲啃食農田,瓦登費爾的告示板貼出除蟲賞格。"
+    "spotlight_quests": ["comm_morrowind_ash", "comm_morrowind_daedra", "comm_morrowind_ashyam"],
+    "news": "晨風灰原蟲群異動、紅山裂隙湧出魔人,瓦登費爾的大家族與煉金師貼出多項懸賞與供應委託。"
   },
   "pulse_hammerfell_raiders": {
     "province": "漢默法爾",
     "weight": 2,
-    "cooldown_days": 13,
+    "cooldown_days": 11,
     "active_window_days": 8,
     "min_day": 5,
-    "spotlight_quests": ["comm_hammerfell_scorpion"],
-    "news": "漢默法爾沙海商隊頻遭沙蠍與劫掠者侵擾,各綠洲城鎮張貼護路懸賞。"
+    "spotlight_quests": ["comm_hammerfell_scorpion", "comm_hammerfell_lamia", "comm_hammerfell_patrol"],
+    "news": "漢默法爾沙海商道頻遭沙蠍與拉米亞侵擾,森塔商隊在各綠洲城鎮張貼護路與巡剿委託。"
   },
   "pulse_highrock_hagraven": {
     "province": "高岩",
     "weight": 2,
-    "cooldown_days": 13,
-    "active_window_days": 7,
+    "cooldown_days": 11,
+    "active_window_days": 8,
     "min_day": 5,
-    "spotlight_quests": ["comm_highrock_witch"],
-    "news": "高岩荒沼間女巫蹤跡再現,村民惶惶,領主懸賞剿除為禍的荒沼女巫。"
+    "spotlight_quests": ["comm_highrock_witch", "comm_highrock_barrow", "comm_highrock_nightshade"],
+    "news": "高岩荒沼間女巫蹤跡再現、古墓鐵衛甦醒,匕落領主與威岩煉金師貼出剿巫、破墓與採集委託。"
   },
   "pulse_valenwood_stranglers": {
     "province": "瓦倫森林",
     "weight": 2,
-    "cooldown_days": 12,
-    "active_window_days": 7,
+    "cooldown_days": 10,
+    "active_window_days": 8,
     "min_day": 5,
-    "spotlight_quests": ["comm_valenwood_vine"],
-    "news": "瓦倫森林深處絞殺藤瘋長,纏斃過路旅人,綠徑沿線貼出清藤賞金。"
+    "spotlight_quests": ["comm_valenwood_vine", "comm_valenwood_spider", "comm_valenwood_eggs"],
+    "news": "瓦倫森林綠徑絞殺藤瘋長、巨蛛織網捕人,法林斯提的獵手在沿線貼出清藤、獵蛛與取卵委託。"
   },
   "pulse_elsweyr_skooma": {
     "province": "艾爾斯維爾",
     "weight": 2,
-    "cooldown_days": 14,
+    "cooldown_days": 11,
     "active_window_days": 8,
     "min_day": 6,
-    "spotlight_quests": ["comm_elsweyr_senche"],
-    "news": "艾爾斯維爾月糖黑市猖獗,亢奮失控的彪猛獸襲擊商隊,各城張貼平亂懸賞。"
+    "spotlight_quests": ["comm_elsweyr_senche", "comm_elsweyr_tiger", "comm_elsweyr_hunt"],
+    "news": "艾爾斯維爾月糖黑市猖獗、森奇巨虎下山,瑞門各城張貼平亂、獵虎與草原清剿委託。"
   },
   "pulse_blackmarsh_floods": {
     "province": "黑沼澤",
     "weight": 2,
-    "cooldown_days": 13,
+    "cooldown_days": 11,
     "active_window_days": 8,
     "min_day": 5,
-    "spotlight_quests": ["comm_blackmarsh_lizard"],
-    "news": "黑沼澤濕地水位上漲,沼蜥成群侵入村落,吉迪恩的告示板貼出獵蜥賞格。"
+    "spotlight_quests": ["comm_blackmarsh_lizard", "comm_blackmarsh_troll", "comm_blackmarsh_deathbell"],
+    "news": "黑沼澤濕地水漲,沼蜥侵村、泥沼巨魔潛伏,吉迪恩的告示板貼出獵蜥、獵魔與供應委託。"
   }
 }

@@ -55,7 +55,8 @@
 
 #### 系統與打磨
 - **事件引擎**、**成就系統**(37 成就含後期軸〔誓福/血族頂階/疾病/魂石〕+ 首達通知 + 結算/角色卡檢視,R55)、**反 min-max 經濟**(practice 成本)、**Web 版**(原生渲染、可點互動、常駐故事日誌 R58、里程碑手風琴 R59、遊戲內指南/圖鑑 R60)
-- **常態世界脈動(R79)**:主線後世界不再永久靜默 —— `systems/worldpulse.py` 每圈頂端(worldstate 後)決定性廣播在地新聞「四方傳聞」(盜匪/商隊/獸患…分散八省·每日至多一筆·低機率·冷卻),部分新聞**聚光激增**某省的**可重複委託**(`comm_*`·`repeatable:true`·只在 active window 期間浮現於告示板·**固定低額** gold/fame·僅 kill 目標)→「看新聞→決定回應→去探索」常態 loop,治後期任務泉枯竭。零碰 combat(sim byte-identical);2 新存檔欄(world_pulse_day/pulse_eval_day)。加脈動/委託純改 `world_pulse.json`/`quests.json`
+- **常態世界脈動(R79)**:主線後世界不再永久靜默 —— `systems/worldpulse.py` 每圈頂端(worldstate 後)決定性廣播在地新聞「四方傳聞」(盜匪/商隊/獸患…分散八省·每日至多一筆·低機率·冷卻),部分新聞**聚光激增**某省的**可重複委託**(`comm_*`·`repeatable:true`·只在 active window 期間浮現於告示板·**固定低額** gold/fame)→「看新聞→決定回應→去探索」常態 loop,治後期任務泉枯竭。零碰 combat(sim byte-identical);2 新存檔欄(world_pulse_day/pulse_eval_day)。
+- **任務生態活化(R80)**:回應「太少太泛用」—— **三條派發管線**讓世界活起來:① 告示板可重複委託(R79)擴為 **24 個四型別在地委託**(kill 雜怪/精英 + collect 採集供應 + collect→reach 供應運送 + kill+kill 多階段·綁各省 lore·脈動每省聚光 3 個);② **城鎮 NPC 一次性任務**(12 個 NPC 補 `quest` 欄·`dialogue.offered_quest` 好感 gate);③ **野外遊蕩 NPC 遭遇**(8 個 `events.json` 隨機遭遇·province 在地化·`start_quest` 接一次性任務)。**全純資料·零產品邏輯**(唯一 Python=tests guard)·sim byte-identical·零新存檔欄。加委託改 `quests.json`、加 NPC 任務改 `npcs.json`+`quests.json`、加野外遭遇改 `events.json`+`quests.json`
 
 ### 里程碑歷程
 
@@ -1362,6 +1363,24 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 - **schema guard**:`quests._REPEATABLE_REWARD_KEYS = {gold,fame,infamy}`(repeatable 委託 reward 只准純量·**絕不帶 items/spells/boons/companion** → 不可刷限定內容);`test_data_schema` 擴 = repeatable reward ⊆ 白名單 + repeatable objective≠clear_dungeon + `world_pulse.json` lint(province∈八省·`spotlight_quests` 指真實 repeatable board 委託·`cooldown_days≥active_window_days`·weight>0·requires_event 指真實大事件/旗標)。
 - **🔴 sim_assassin BYTE-IDENTICAL**(隔離 worktree vs HEAD 法定:零碰 combat/formulas/magic·`_complete` 獎勵路徑不變·委託達標仍走既有 record_kill/spawn/run_battle·`sim_assassin.py` 不 import worldpulse/quests、不跑 game_loop → 程式與資料路徑皆未觸及)。`run_all` 83(新 `test_worldpulse`〔決定性同seed同結果/冷卻擋連發/每日一次/視窗推導/聚光 gate/min_day 解鎖/遷移冪等/no-heavy-effect〕、新 `test_repeatable_quests`〔不鎖定·可再接/固定低額無遞減/guard/一次性回歸〕、`test_data_schema` 擴)。check.sh --smoke 含 save/load 往返驗新欄。
 - **🔴 鐵律**:加脈動純改 `world_pulse.json`(R02·province/cooldown_days/active_window_days/min_day/spotlight_quests/news);加可重複委託純改 `quests.json`(`repeatable:true` + 低 gold/fame + **僅 kill 目標**);決定性走 `sorted`+`state.rng`(迭代序不餵 rng);**day 一律 `worldpulse.day_index`(開局後天數)**;聚光 gate 在 `available_quests` board 分支(脫離 province 巢狀防洩漏);`_complete` 對 repeatable 不 append completed_quests;動 worldpulse/委託引擎 → 跑 `run_all`(免 sim·應 byte-identical,改動到 combat/formulas 才需 sim)。**前瞻**:後續可純 JSON 擴脈動/委託;若要脈動帶輕量 effect 限 `fame` 白名單(守反 min-max·脈動是引子非數值來源)。
+- **R80 後續**:委託多樣化 + collect 目標(消耗物品 turn-in)+ 多階段(collect→reach 交付,reach 只做後段)解除「僅 kill 目標」限制(schema guard 改為「首階段≠reach」+「objective≠clear_dungeon」);脈動 spotlight 1→3/省。詳見 R80。
+
+---
+
+### R80 · 任務生態活化:委託多樣化/在地化 + NPC 一次性任務(城鎮 + 野外)[save]
+
+承 R79 上線後使用者回饋「**任務太少而且太泛用**」:R79 的 8 個委託全是 `kill N 雜怪`、名稱泛用、且聚光制下沒激增的省告示板會空。使用者兩道拍板:① 委託加 4 型別(採集供應/多階段雜役/供應運送/精英懸賞)+ **強化在地性**;② 不只調聚光 ——「**加一些非重複任務,由 NPC 派發,同時讓野外有機會出現 NPC**」(新增一次性任務層當「永遠有事可做」底盤,聚光委託維持 R79 不動)。**評估結論=三件事全可純資料達成、複用既有管線、零產品邏輯**(唯一 Python 改動 = `tests/` schema guard)。
+
+- **Phase A 可重複委託大改**(`quests.json` + `world_pulse.json`):8 → **24 個四型別在地委託**——
+  - **kill-雜怪**(8·每省 1·賞 45-60);**kill-精英**(8·每省 1·**複用既有 elite 怪無新怪**:minotaur/frost_troll/dremora/lamia/barrow_sentinel/giant_spider/senche_tiger/bog_troll·賞 80-100·**仍<一次性同難度 120-480**);**collect-供應**(3·消耗掉落材料 glow_dust/nightshade/spider_egg·賞 55-65);**collect→reach 供應運送**(3·採集→送達省會·**reach 只做第二階段**避自動完成退化·賞 75-80);**kill+kill 多階段雜役**(2·混兩種省怪·賞 80)。
+  - **在地化**(回應「評估地區性」):名稱/風味/材料/威脅綁各省文化(腹地帝國/雪原諾德/灰原大家族/黃沙紅衛/荒沼女巫/綠約食人/月糖貓人/沼澤亞龍人)。
+  - **脈動重構**:每省脈動 `spotlight_quests` 由 1 個 → **3 個**(激增=豐富在地小榜,直接緩解「太少」感);`cooldown_days` 收緊至 10-11(active_window 8 → 多省常有激增)。
+- **Phase B 城鎮 NPC 一次性任務**(`npcs.json` + `quests.json`·**零邏輯**):12 個無任務 NPC(分散八省城鎮·依角色選主題:煎藥師→採妖菌、戰士→獵巨魔、香料商→採野蒜…)補 `quest`/`quest_disposition:60` 欄 → 各指一個新 `source:"npc"` **一次性**任務(kill/collect·在地·完成進 `completed_quests` 永久鎖·可帶 `items` 較豐獎勵 120-180g)。複用 `dialogue.offered_quest`(好感 gate)→ `action_talk` → `_accept_and_brief`,全自動既有。
+- **Phase C 野外遊蕩 NPC 遭遇**(`events.json` + `quests.json`·**零邏輯·複用事件引擎**):8 個新隨機遭遇(`contexts:travel/explore/rest`·`provinces` 在地化·`location_types:wilderness`)= 旅途遇傷獵人/拾荒人/信使/難民/採集人/貓商/亞龍人/帝國信使 → 選項 `start_quest` 接一次性任務(`requirements:{quest_available}` 去重 + 純聊天/施捨備選),配 8 個 `wq_*` 一次性任務(kill/collect·在地)。複用 `merchant_caravan`/`campfire_companion` 範式(`apply_effects` 的 `start_quest` 現成)。
+- **世界靠三管線活化**:告示板委託(可重複·聚光·多型別·在地)+ 城鎮 NPC(一次性·常駐·好感 gate)+ 野外遊蕩 NPC(一次性·隨機·province gate)。
+- **guards(僅 `tests/test_data_schema`,零產品邏輯)**:① **repeatable 首階段 objective ≠ reach**(接取即在目標地會自動完成=免費刷;reach 只可做後段交付);② `npcs.json` 每 `quest` 欄 → 存在於 quests;③ `events.json` 每 `start_quest` → 存在;④ **每 `source:"npc"` 任務可達性**(npc.quest ∪ event start_quest ∪ companion recruit_quest·防新增一次性任務成孤兒永不可接·現 57 個 npc 任務 0 孤兒);沿用 repeatable reward⊆{gold,fame,infamy}+objective≠clear_dungeon+world_pulse lint。
+- **🔴 sim_assassin BYTE-IDENTICAL**(隔離 worktree vs HEAD 證:純內容·零碰 combat/formulas·**無新怪**〔精英複用既有 bestiary〕·新任務走既有 record_kill/spawn/run_battle·sim 不跑 quests/events/game_loop)。**零新存檔欄**(複用 `char.quests`/`completed_quests`〔一次性鎖〕/`world_pulse_day`〔R79〕;一次性 start_quest 去重)。**反 min-max**:repeatable<一次性同難度·collect 報酬≤材料買價(優先掉落材料·marginal 套利受激增視窗自限)·精英報酬中等。`run_all` 83(test_data_schema 擴 4 guard;test_repeatable_quests/test_worldpulse 沿用);content-accuracy 自檢(text 數量/地點與 objective 一致,0 矛盾)。
+- **🔴 鐵律**:加委託純改 `quests.json`(repeatable + 低 gold/fame + 僅 kill/collect/多階段·**首階段≠reach**·collect 優先掉落材料防套利);加城鎮 NPC 任務純改 `npcs.json`(quest/quest_disposition 欄)+ `quests.json`(source npc 一次性);加野外遭遇純改 `events.json`(start_quest + quest_available 去重)+ `quests.json`;**新增 source:npc 任務務必由某 NPC/事件/招募派發**(否則 reachability guard 攔=孤兒);任務 text 數量/地點須與 objective 一致;純內容 → sim byte-identical 免跑(動 combat/formulas 才需)。
 
 ---
 

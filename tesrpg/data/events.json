@@ -955,5 +955,77 @@
       {"text": "記下這些線索 —— 各省法師公會", "effects": [{"type": "message", "text": "你將三座法師公會的名字銘記於心 —— 黑光城、冬堡、吉迪恩,而盡頭在帝都。"}]},
       {"text": "當作耳邊風", "effects": [{"type": "message", "text": "你聳聳肩,繼續趕路。"}]}
     ]
+  },
+  "wild_skyrim_hunter": {
+    "weight": 3, "trigger": {"contexts": ["travel", "explore"], "location_types": ["wilderness"], "provinces": ["天際"]},
+    "title": "雪原傷獵人", "text": "一名諾德獵人拄著獵弓蹣跚而來,小腿纏著滲血的布條:「冰魂……成群結隊,把我的營地都凍住了。」",
+    "options": [
+      {"text": "接下狩冰魂的委託", "requirements": {"quest_available": "wq_skyrim_hunter"}, "effects": [{"type": "start_quest", "quest": "wq_skyrim_hunter"}, {"type": "message", "text": "獵人感激地指出冰魂遊蕩的隘口。"}]},
+      {"text": "替他包紮傷口", "requirements": {"item": "minor_healing_potion"}, "effects": [{"type": "item", "item": "minor_healing_potion", "qty": -1}, {"type": "fame", "amount": 4}, {"type": "message", "text": "獵人千恩萬謝,塞給你一把碎金。"}, {"type": "gold", "amount": 20}]},
+      {"text": "祝他好運後離開", "effects": [{"type": "message", "text": "你點點頭,繼續趕路。"}]}
+    ]
+  },
+  "wild_morrowind_ashman": {
+    "weight": 3, "trigger": {"contexts": ["travel", "explore"], "location_types": ["wilderness"], "provinces": ["晨風"]},
+    "title": "灰原拾荒人", "text": "一個蒙著灰巾的丹莫從灰燼中直起身:「崖行鳥又來搶我撿的菌貨了……外鄉人,你那武器看著管用。」",
+    "options": [
+      {"text": "接下驅鳥的委託", "requirements": {"quest_available": "wq_morrowind_ashman"}, "effects": [{"type": "start_quest", "quest": "wq_morrowind_ashman"}, {"type": "message", "text": "拾荒人比劃著崖行鳥盤旋的方向。"}]},
+      {"text": "打聽灰原見聞", "effects": [{"type": "fame", "amount": 2}, {"type": "skill_xp", "skill": "speechcraft", "amount": 0.4}]},
+      {"text": "繼續趕路", "effects": []}
+    ]
+  },
+  "wild_hammerfell_courier": {
+    "weight": 3, "trigger": {"contexts": ["travel", "explore"], "location_types": ["wilderness"], "provinces": ["漢默法爾"]},
+    "title": "沙路信使", "text": "一名紅衛信使勒住駱駝,神色焦急:「前頭商道有盜匪設卡,我的急件遞不過去。壯士可願替我清道?」",
+    "options": [
+      {"text": "接下清道的委託", "requirements": {"quest_available": "wq_hammerfell_courier"}, "effects": [{"type": "start_quest", "quest": "wq_hammerfell_courier"}, {"type": "message", "text": "信使道明盜匪盤踞的位置。"}]},
+      {"text": "打聽沙海消息", "effects": [{"type": "fame", "amount": 2}, {"type": "skill_xp", "skill": "speechcraft", "amount": 0.4}]},
+      {"text": "繼續趕路", "effects": []}
+    ]
+  },
+  "wild_highrock_refugee": {
+    "weight": 3, "trigger": {"contexts": ["travel", "explore"], "location_types": ["wilderness"], "provinces": ["高岩"]},
+    "title": "荒沼難民", "text": "幾個衣衫襤褸的布萊頓村民縮在岩後:「鴉妖……牠們從崖上俯衝下來抓人,我們不敢回村。」",
+    "options": [
+      {"text": "接下驅鴉妖的委託", "requirements": {"quest_available": "wq_highrock_refugee"}, "effects": [{"type": "start_quest", "quest": "wq_highrock_refugee"}, {"type": "message", "text": "村民指出鴉妖築巢的崖壁。"}]},
+      {"text": "分些乾糧給他們", "requirements": {"gold_min": 10}, "effects": [{"type": "gold", "amount": -10}, {"type": "fame", "amount": 3}, {"type": "message", "text": "難民們連聲道謝。"}]},
+      {"text": "繼續趕路", "effects": []}
+    ]
+  },
+  "wild_valenwood_forager": {
+    "weight": 3, "trigger": {"contexts": ["explore", "rest"], "location_types": ["wilderness"], "provinces": ["瓦倫森林"]},
+    "title": "綠約採集人", "text": "一名波斯莫攀在巨木枝幹間招手:「採藥要帝王蝶翅,可崖行鳥和樹靈把蝶群嚇散了。替我收些回來,我以綠徑之名謝你。」",
+    "options": [
+      {"text": "接下採蝶翅的委託", "requirements": {"quest_available": "wq_valenwood_forager"}, "effects": [{"type": "start_quest", "quest": "wq_valenwood_forager"}, {"type": "message", "text": "採集人告訴你蝶群常聚的林間空地。"}]},
+      {"text": "交換林中見聞", "effects": [{"type": "fame", "amount": 2}, {"type": "skill_xp", "skill": "speechcraft", "amount": 0.4}]},
+      {"text": "繼續趕路", "effects": []}
+    ]
+  },
+  "wild_elsweyr_trader": {
+    "weight": 3, "trigger": {"contexts": ["travel", "explore"], "location_types": ["wilderness"], "provinces": ["艾爾斯維爾"]},
+    "title": "貓商護衛", "text": "一隊卡基特商旅停在路旁,領隊甩著尾巴:「草原胡狼成群盯上我們的貨了。這位朋友,願不願賺點月糖路費?」",
+    "options": [
+      {"text": "接下護商的委託", "requirements": {"quest_available": "wq_elsweyr_trader"}, "effects": [{"type": "start_quest", "quest": "wq_elsweyr_trader"}, {"type": "message", "text": "領隊指向胡狼群潛伏的草叢。"}]},
+      {"text": "打聽月糖門路", "effects": [{"type": "fame", "amount": 2}, {"type": "skill_xp", "skill": "speechcraft", "amount": 0.4}]},
+      {"text": "繼續趕路", "effects": []}
+    ]
+  },
+  "wild_blackmarsh_runner": {
+    "weight": 3, "trigger": {"contexts": ["travel", "explore"], "location_types": ["wilderness"], "provinces": ["黑沼澤"]},
+    "title": "沼澤信使", "text": "一名亞龍人信使從蘆葦間鑽出,鱗片沾滿泥漿:「沼徑被巨鱷霸佔,我的口信送不到聚落。族人會記得你的恩。」",
+    "options": [
+      {"text": "接下獵鱷的委託", "requirements": {"quest_available": "wq_blackmarsh_runner"}, "effects": [{"type": "start_quest", "quest": "wq_blackmarsh_runner"}, {"type": "message", "text": "信使以希斯特之名指出巨鱷盤踞的水道。"}]},
+      {"text": "交換沼澤傳聞", "effects": [{"type": "fame", "amount": 2}, {"type": "skill_xp", "skill": "speechcraft", "amount": 0.4}]},
+      {"text": "繼續趕路", "effects": []}
+    ]
+  },
+  "wild_cyrodiil_courier": {
+    "weight": 3, "trigger": {"contexts": ["travel", "explore"], "location_types": ["wilderness"], "provinces": ["賽羅迪爾"]},
+    "title": "帝國信使", "text": "一名帝國軍團信使勒馬而立:「腹地洞窟的哥布林又出來劫道了,軍團騰不出人。公民,可願替帝國清剿?」",
+    "options": [
+      {"text": "接下剿哥布林的委託", "requirements": {"quest_available": "wq_cyrodiil_courier"}, "effects": [{"type": "start_quest", "quest": "wq_cyrodiil_courier"}, {"type": "message", "text": "信使在地圖上圈出哥布林的巢穴。"}]},
+      {"text": "打聽帝都近況", "effects": [{"type": "fame", "amount": 2}, {"type": "skill_xp", "skill": "speechcraft", "amount": 0.4}]},
+      {"text": "繼續趕路", "effects": []}
+    ]
   }
 }
