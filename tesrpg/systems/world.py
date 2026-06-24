@@ -79,13 +79,14 @@ def travel(char: Character, gamedata: GameData, dest_id: str, time, rng: RNG) ->
     回傳 {"foe":遭遇 Creature 或 None, "hours":實際耗時, "base_hours":名目耗時,
           "skill_events":運動升點事件}。遭遇尚未開打 —— 由上層決定接戰/逃避。
     """
-    from tesrpg.systems import mastery, mounts, party, vampirism
+    from tesrpg.systems import birthsign_ability, mastery, mounts, party, vampirism
     links = current_location(char, gamedata).get("links", {})
     base_hours = links[dest_id]
     travel_factor = max(0.5, formulas.athletics_travel_factor(char.skill("athletics"))
                         - mastery.travel_factor_bonus(char, gamedata)
                         - party.passive_capstone_factor(char, gamedata, "travel")
-                        - mounts.travel_factor_bonus(char, gamedata))   # 「長途健步」+ 同伴「識途」+ 坐騎,夾 floor 0.5
+                        - mounts.travel_factor_bonus(char, gamedata)
+                        - birthsign_ability.travel_factor_bonus(char, gamedata))   # 「長途健步」+ 同伴「識途」+ 坐騎 + 駿馬座疾行,夾 floor 0.5
     hours = max(1, round(base_hours * travel_factor))
     dest = gamedata.location(dest_id)
 

@@ -176,8 +176,12 @@ def test_power_id_per_sign():
         return powers.power_id(c, gd)
     assert pid("lord") == "heal_self"
     assert pid("lover") == "paralyze_touch"
-    assert pid("warrior") is None          # 三大守護星無主動能力
-    assert pid("mage") is None
+    # 星座深化(R61 後續):戰士/法師/淑女補主動威能;竊賊/駿馬走被動(主動槽仍 None)
+    assert pid("warrior") == "warrior_fury"
+    assert pid("mage") == "magicka_surge"
+    assert pid("lady") == "ladys_grace"
+    assert pid("thief") is None            # 竊賊座走被動巧手(無主動威能槽)
+    assert pid("steed") is None            # 駿馬座走被動疾行
 
 
 def test_power_cooldown_per_day():

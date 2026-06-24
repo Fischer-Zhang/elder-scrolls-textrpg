@@ -21,6 +21,16 @@ POWERS = {
     "serpent_curse":    {"name": "蛇之詛咒", "contexts": ["combat"],
                          "effect": {"poison": {"magnitude": 8, "turns": 4}, "heal": 25},
                          "desc": "對敵人下毒(每回合 8 點,4 回合),並汲取 25 點生命。"},
+    # 三大守護星(原本只給屬性/魔力,零主動能力)各補一招(R61 種族威能同構;冷卻共用 power_last_day):
+    "warrior_fury":     {"name": "戰意奔湧", "contexts": ["combat"],
+                         "effect": {"self_empower": 0.20, "empower_turns": 3},
+                         "desc": "戰意奔湧,攻勢凌厲 3 回合(增傷 20%)。"},
+    "magicka_surge":    {"name": "魔力湧現", "contexts": ["combat", "utility"],
+                         "effect": {"restore_magicka": True},
+                         "desc": "魔力如泉湧現,瞬間補滿法力。"},
+    "ladys_grace":      {"name": "淑女恩典", "contexts": ["combat", "utility"],
+                         "effect": {"heal": 70, "restore_fatigue": True, "cure": True},
+                         "desc": "重整旗鼓:回復 70 點生命與全部氣力,並淨化身上的持續傷害。"},
     "invisibility":     {"name": "陰影遁形", "contexts": ["combat"],
                          "effect": {"escape": True}, "desc": "遁入陰影,必定脫離戰鬥。"},
     "tower_key":        {"name": "塔之鑰", "contexts": ["utility"],
@@ -80,10 +90,22 @@ def use(char: Character, state, gamedata: GameData, target=None) -> dict:
     messages: list[str] = []
     escape = False
 
+    if "self_empower" in eff:   # 戰士座戰意:自身增傷 buff(combat._self_empower 讀 → power_bonus,偷襲倍率後相加 → 守紅線;與 R61 種族狂暴同槽相加)
+        char.active_effects.append({"kind": "berserk_buff",
+                                    "magnitude": eff["self_empower"],
+                                    "turns": eff.get("empower_turns", 3)})
+        messages.append(f"{pdef['name']} —— 戰意奔湧,攻勢凌厲了起來({eff.get('empower_turns', 3)} 回合)。")
     if "heal" in eff:
         before = char.health
         char.health = min(char.max_health, char.health + eff["heal"])
         messages.append(f"{pdef['name']}回復了 {int(char.health - before)} 點生命。")
+    if eff.get("restore_magicka"):   # 法師座魔力湧現:補滿法力
+        before = char.magicka
+        char.magicka = char.max_magicka
+        messages.append(f"{pdef['name']}補滿了法力(+{int(char.magicka - before)})。")
+    if eff.get("restore_fatigue"):   # 淑女座恩典:回滿氣力
+        char.fatigue = char.max_fatigue
+        messages.append("你氣力全復、精神抖擻。")
     if eff.get("cure"):
         removed = [e for e in char.active_effects if e["kind"] == "dot"]
         char.active_effects = [e for e in char.active_effects if e["kind"] != "dot"]

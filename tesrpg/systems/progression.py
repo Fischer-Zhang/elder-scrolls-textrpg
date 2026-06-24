@@ -97,6 +97,10 @@ def use_skill(char: Character, gamedata: GameData, skill_id: str, xp: float) -> 
     # 職業專精:同專精系(combat/magic/stealth)技能練更快(跑時 learn-by-doing 身份;非專精系 ×1)
     if gamedata.skills[skill_id].get("spec") == getattr(char, "specialization", None):
         xp *= formulas.SPEC_SKILL_XP_MULT
+    # 竊賊座巧手:潛行系技能 learn-by-doing 加速(獨立於職業專精;非竊賊座/非潛行系 → ×1 中性)
+    if gamedata.skills[skill_id].get("spec") == "stealth":
+        from tesrpg.systems import birthsign_ability
+        xp *= 1.0 + birthsign_ability.stealth_aptitude(char, gamedata)
 
     ensure_level_xp(char)
     could_level_before = char.can_level_up()

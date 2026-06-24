@@ -27,7 +27,7 @@
 ### 系統現況總覽(依系統分類)
 
 #### 角色與成長
-- 10 種族 × 13 星座 × 8 職業/自訂;八屬性 + **22 技能** learn-by-doing;混合 Skyrim 式升級(等級 XP 池 → 三選一資源 + 屬性點);**種族身份化**(R61:戰系 6 族每日主動威能〔狂暴/腎上腺/馭獸/帝皇之聲/戰吼/祖靈〕走獨立第二威能槽 + 其餘 4 族持續被動〔虎人夜視利爪/亞龍癒膚/高精靈魔力/布萊頓龍皮〕)
+- 10 種族 × 13 星座 × 8 職業/自訂;八屬性 + **22 技能** learn-by-doing;混合 Skyrim 式升級(等級 XP 池 → 三選一資源 + 屬性點);**種族身份化**(R61:戰系 6 族每日主動威能〔狂暴/腎上腺/馭獸/帝皇之聲/戰吼/祖靈〕走獨立第二威能槽 + 其餘 4 族持續被動〔虎人夜視利爪/亞龍癒膚/高精靈魔力/布萊頓龍皮〕);**星座身份化**(R83:5 冷星座功能化 —— 戰士戰意/法師魔力湧現/淑女恩典 = 每日主動威能,竊賊巧手〔潛行系練更快〕/駿馬疾行〔旅行更快〕= 持續被動)
 - **技能里程碑 v2 + 完整階梯**:全 22 技能各 **25/50/75/100 四節點(88 節點)**;**25=單一 perk 自動授予**(入門技,複用退化節點)、**50/75/100=達門檻二選一**永久銘刻 + 持久 fortify 加成層(skill/attr/resist)+ 功能槓桿(武器/法術控場、弓手牽制、盾擊宗師、閃身/閃避雙路線、重甲反震/盾反、逃命、解陷保底、盜賊行竊/地城賊眼預知、鍛造淬鍊威力、口才威嚇避戰/化解犯罪/戰陣號令、頂點 capstone…);反 min-max、守刺客紅線(同源多節點 getter 必聚合不遮蔽;下限/floor 類 perk 的 floor 須高於門檻 base cap)
 - **八職功能性身份網格**:全 8 職各一招牌戰術 loop(功能性非數值)—— 戰士盾牆(減傷·嘲諷)/法師奧術連鎖/盜賊諜報偵搜/騎士戰旗/戰法師共鳴一擊+法力回擊(毀滅 50/75 兩節點,可兼得)/刺客致命烙印/治療師戰地搶救/弓手獵手偵察(6 mastery 二選一節點 + 2 戰鬥動作;以技能/裝備 gate、零新存檔欄、守刺客紅線)
 - **開局背景**(14 種,只給處境不給數值)+ **種子重玩性**;冒險/傳奇兩種死亡模式 + 一生傳奇總結評分
@@ -1400,6 +1400,25 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 - **guards(僅 `tests/test_data_schema`)**:① 放寬 `_DLG_EFFECT_TYPES` = `{faction_standing} ∪ events 支援集`(否則 `blessing` heal 被既有 guard 誤殺);② role FK(`roles` 值 ∈ topics、`npc.role` ∈ roles keys);③ rumor FK(`rumor_quest` ∈ quests 且 source==rumor、`rumor_landmark` ∈ landmarks、`rumor_disposition` 0-100 int);④ **source:"rumor" 可達性**(每條由某 NPC `rumor_quest` 回指·防孤兒,擴 R80 guard);⑤ 線索目標 location **無 `visible` gate**(可接去不了)。新 `tests/test_rumor_clues.py`(role 話題出現/好感 gate·offered_rumor quest/landmark 兩路·rumor_disposition gate·blessing once·already-cleared 跳過·不漏告示板·action_talk 追問傳聞煙霧手動 patch UI)。
 - **🔴 sim_assassin BYTE-IDENTICAL**(隔離 worktree vs HEAD 證:純社交/內容·`sim_assassin.py` 只 import combat/magic/stats/inventory,不碰 dialogue/npcs/quests/landmarks·零碰 combat/formulas)。**零新存檔欄**(rumor 線索 → `char.quests`/`completed_quests`;rumor 地標 → `discovered_landmarks`;role `once` → `dialogue_done`;好感 → `npc_disposition`;新 NPC 欄 = gamedata 唯讀非存檔·舊存檔載入即相容無遷移)。**防刷**:追問傳聞一次性鎖、`blessing` once、線索 reward 只純量。`run_all` 84(新 `test_rumor_clues`)。
 - **🔴 鐵律**:加 role 純改 `dialogue.json`(roles map + topics·身份 flavor 為主·功能 effect 走 events 支援集 + `once` 防刷·不帶 skill_xp)+ `npcs.json` role 欄;加流言線索純改 `npcs.json`(rumor_quest/rumor_landmark/rumor_disposition)+ `quests.json`(`source:"rumor"`·僅 clear/reach·**目標無 visible gate**·NPC↔線索目標**須同省**);**新增 source:rumor 任務務必有 NPC rumor_quest 回指**(否則 reachability guard 攔=孤兒);追問傳聞兌現走既有 `_accept_and_brief`/`landmarks.discover`;純社交內容 → sim byte-identical 免跑(動 combat/formulas 才需)。**前瞻**:Phase D 可純資料把其餘 ~40 具名 rumor NPC 逐批接上 + 補 role 密度;若要更多功能 role 話題(商人折扣等)需新 effect + 評估碰 shop/存檔欄。
+
+---
+
+### R83 · 出生星座深化:5 個冷星座補主動威能 + 被動天賦(完成 R61「星座留後續」)[re-sim] [save-safe]
+
+評估 workflow(7 lens · 8 agent · 對抗式去偽,丟掉 2 個 false positive)揪出最強下一步 = **星座深化**:13 個出生星座只有 8 個有主動威能(領主/學徒/巨魔像/儀式/戀人/陰影/塔/蛇),**戰士/法師/竊賊/淑女/駿馬 5 座是純創角屬性加值、零跑時分支**(`birthsigns.json` 那 5 行 `"powers": []`)。dev 在 R61 親口延後(「星座深化(5 冷座)留後續」),且 R61 已用一模一樣的平行威能槽把種族功能化 → 藍圖現成、風險最低、最貼 R34–R82 節奏。使用者拍板方向 = 星座深化。
+
+- **架構 = R61 種族同構**:三大守護星各補一招主動威能,填入既有空 `powers: []` → 走 `powers.POWERS`/`use()` 既有管線(戰鬥選單 `usable_in("combat")` + hub `usable_in("utility")` 自動現身、冷卻共用 `char.power_last_day`、**零新威能槽/零新存檔欄**);竊賊/駿馬走持續被動 —— 新 `systems/birthsign_ability.py` 即時讀 `birthsigns[sign].passive`(**鏡像 `race_ability.py`**:非該座回中性值、零快取/零存檔/零遷移、不寫 base)。
+- **3 主動(`powers.use()` 加 3 個 effect 分支)**:
+  - **戰士座 `warrior_fury`「戰意奔湧」**(combat):`self_empower 0.20 / 3t` —— **複用 R61 `berserk_buff`**(`combat._self_empower` 讀 → 加在 power_bonus、**偷襲倍率之後相加**守紅線、整體流進 dmg 仍受 solo 夾)。
+  - **法師座 `magicka_surge`「魔力湧現」**(combat+utility):新 `restore_magicka` → 補滿法力(法師持續戰的續航)。
+  - **淑女座 `ladys_grace`「淑女恩典」**(combat+utility):`heal 70` + 新 `restore_fatigue`(回滿氣力)+ 既有 `cure`(淨化 DoT)= 一次性「重整旗鼓」。
+- **2 被動(`birthsign_ability.py` 兩 helper + 兩 callsite)**:
+  - **竊賊座 `stealth_aptitude 0.15`**:潛行系(skill `spec=="stealth"` 的 8 技)learn-by-doing ×1.15 —— `progression.use_skill` 在職業專精 mult **之後**讀(獨立於 R62 spec 層、非竊賊座/非潛行系 ×1 中性)。
+  - **駿馬座 `swift_travel 0.15`**:旅行耗時係數減量 —— `world.travel` 的 `travel_factor` 比照運動/坐騎/同伴識途加一個減項(夾 floor 0.5)。
+- **🔴 by-design 有界 note**:戰士座 + 獸人/紅衛 = **兩個獨立每日威能**(星座槽 + R61 種族槽),各加一道 `berserk_buff` → `_self_empower` SUM 至多 **0.40**(只兩個 berserk 源 → 有界;gate 在兩道每日冷卻 → 一場一次性爆發)。這是**內容加成不是 lever 變更**(未動 `_self_empower` 聚合/cap);若日後嫌強再「先問」加 cap。`test_warrior_fury_stacks_with_orc_berserk_bounded` 守此上界。
+- **🔴 sim_assassin BYTE-IDENTICAL**(隔離 worktree vs HEAD `diff` 逐位元組空):**未碰 `combat.py`/`formulas.py`**;sim 刺客 = 陰影座(`invisibility`)永不用此 5 招;`use_skill`/`travel`/`powers.use` 皆**不在 sim_assassin 路徑**(sim 直驅 `resolve_attack`);被動非該座讀回 0/中性。仍因 self_empower 流進 combat 讀取點 → 跑 sim 確認(byte-identical + 全紅線綠)。
+- **零新存檔欄**:主動冷卻複用 `power_last_day`(星座 pid 與種族/詛咒 pid 天然不撞);被動即時讀 gamedata;星座 = gamedata 唯讀,非 char 狀態 → 零遷移。`run_all` 86(新 `tests/test_birthsign_abilities.py` 8 測;`test_m8.test_power_id_per_sign` 更新:warrior/mage/lady 改有 pid、thief/steed 仍 None〔走被動〕)。
+- **🔴 鐵律**:加星座主動純改 `birthsigns.json` `powers[]` + `powers.POWERS`(任何控場必走 `magic.apply_control` R44、自身 buff 複用 `berserk_buff`);加被動純改 `birthsigns.json` `passive` + `birthsign_ability` helper(**絕不寫 base**·非該座回中性)。動 self_empower / 任何 combat 讀取路徑 → 跑 `sim_assassin`(守 solo 0% + byte-identical)。**前瞻**:可純資料微調威能數值/被動幅度;若要 Thief/Steed 改主動或加更多被動軸,沿 `birthsign_ability` 模式。
 
 ---
 
