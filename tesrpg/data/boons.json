@@ -6,6 +6,20 @@
     "resist": {"magic": 20},
     "magicka": 20
   },
+  "kvatch_hero": {
+    "name": "救世主之譽",
+    "attr": {"personality": 10, "endurance": 6},
+    "skill": {"restoration": 10, "speechcraft": 8},
+    "resist": {"magic": 10},
+    "magicka": 0
+  },
+  "dagon_apostate": {
+    "name": "使徒之影",
+    "attr": {"willpower": 8, "personality": 6},
+    "skill": {"illusion": 10, "mysticism": 8},
+    "resist": {"magic": 10},
+    "magicka": 10
+  },
   "molag_defiance": {
     "name": "不屈之心",
     "attr": {"willpower": 10, "endurance": 6},
