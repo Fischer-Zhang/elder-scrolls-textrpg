@@ -1398,6 +1398,12 @@ def _travel_to(state: GameState, gamedata: GameData, dest: str) -> str | None:
     """前往指定地點(供旅行選單與 hub/地點卡的可點出口共用)。回傳 'dead' 或 None。"""
     res = world.travel(state.player, gamedata, dest, state.time, state.rng)
     foe = res["foe"]
+    # R84:被通緝者路途遭賞金獵人追殺 —— 觸發則「取代」本趟一般遭遇(一趟最多一場戰);騎馬降低被攔機率
+    heat = crime.active_heat(state.player)
+    ambush = heat >= 1 and state.rng.chance(
+        min(0.75, _BOUNTY_HUNT_BASE_CHANCE + 0.12 * (heat - 1)) * (1 - mounts.encounter_evade(state.player, gamedata)))
+    if ambush:
+        foe = None
     if dest not in state.player.visited_locations:   # 已抵達(location_id 已更新)→ 先記足跡,
         state.player.visited_locations.append(dest)  # 即使途中埋伏致死也算到過此地
     ui.message(f"你啟程前往{gamedata.location(dest)['name']}……", style="grey70")
@@ -1406,7 +1412,10 @@ def _travel_to(state: GameState, gamedata: GameData, dest: str) -> str | None:
         ui.message(f"矯健的身手讓旅程縮短到 {res['hours']} 時(原需 {res['base_hours']} 時)。",
                    style="grey70")
     ui.show_events(res["skill_events"], gamedata)
-    if foe is not None:
+    if ambush:
+        if _bounty_hunter_ambush(state, gamedata) == "dead":
+            return "dead"
+    elif foe is not None:
         ui.message("途中遭遇了埋伏!", style="yellow")
         result = offer_battle(state, gamedata, foe, ambush_chance=0.4, surprise=True, mounted=True)   # 旅途=騎乘語境
         if result == "dead":
@@ -3976,9 +3985,11 @@ def guard_confrontation(state: GameState, gamedata: GameData) -> str | None:
             r = crime.serve_sentence(char, gamedata, state.time)
             ui.message(f"你被關押了 {r['hours']} 小時,{province}的賞金一筆勾銷。", style="grey70")
         elif choice == "resist":
-            # 賞金越高,出動的衛兵越多(1–3 名)
+            # 賞金越高,出動的衛兵越多(1–3 名);省賞金達 T3 → 一名換成衛兵隊長(R84 城門升級)
             n = 1 + min(2, crime.bounty(char, province) // 80)
             guards = [combat.spawn_creature(gamedata, "city_guard", state.rng) for _ in range(n)]
+            if crime.bounty(char, province) >= crime.ACTIVE_HEAT_THRESHOLDS[-1]:
+                guards[0] = combat.spawn_creature(gamedata, "city_captain", state.rng)
             if run_battle(state, gamedata, guards) == "dead":
                 return "dead"
             crime.add_bounty(char, province, 40)   # 拒捕罪加一等
@@ -4022,6 +4033,29 @@ def _curse_manhunt(state: GameState, gamedata: GameData) -> str | None:
     if run_battle(state, gamedata, guards) == "dead":
         return "dead"
     ui.message("你殺退了圍捕的衛兵,趁亂遁入暗巷 —— 但通緝令已然加身。", style="red")
+    return None
+
+
+# R84:賞金獵人路途追殺 —— 城門有衛兵,路上有獵人。tier 隨「最高省賞金」(active_heat)升。
+_BOUNTY_HUNT_BASE_CHANCE = 0.35   # active_heat=1 的基礎被攔機率;每升一階 +0.12 夾 0.75;騎馬另乘 (1−規避)
+_BOUNTY_HUNT_TIER = {1: "bounty_hunter", 2: "mercenary_tracker", 3: "master_hunter"}
+
+
+def _bounty_hunter_ambush(state: GameState, gamedata: GameData) -> str | None:
+    """R84:被通緝者旅途中遭賞金獵人攔截(tier 隨 active_heat,1–3 名)。回傳 'dead' 或 None。
+
+    與城門 guard_confrontation 互補(城門=地方治安·讀省賞金;路途=跨省獵人·讀全域最高賞金 active_heat)。
+    存活**不**加賞金/惡名(自衛 → 保「付清即冷卻路途」的可清契約);無新冷卻欄(travel 本身節流)。
+    複用 offer_battle → 玩家保有 偵查/潛行撤退 等路途遭遇選項(專業獵人不可威嚇)。"""
+    char = state.player
+    heat = crime.active_heat(char)
+    if heat < 1:
+        return None
+    tid = _BOUNTY_HUNT_TIER[heat]
+    hunters = [combat.spawn_creature(gamedata, tid, state.rng) for _ in range(heat)]   # T1→1 / T2→2 / T3→3
+    ui.message("一夥賞金獵人攔住了去路 —— 你的人頭,正高價懸賞。", style="bold red")
+    if offer_battle(state, gamedata, hunters, surprise=True, mounted=True) == "dead":
+        return "dead"
     return None
 
 

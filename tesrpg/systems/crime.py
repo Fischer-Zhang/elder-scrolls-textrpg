@@ -84,3 +84,52 @@ def pay_fine(char: Character, gamedata: GameData) -> dict:
     char.gold -= amt
     clear_bounty(char, province)
     return {"ok": True, "paid": amt}
+
+
+# --- 通緝身份(純衍生·零存檔欄)------------------------------------------------
+#   雙軸刻意不耦合:威脅側讀 active_heat(由賞金衍生·付清/坐牢即降溫=可管理的脫身閥);
+#   地下側讀 outlaw_standing(由累積惡名 infamy 衍生·終身·清賞金不抹去)。
+#   階梯複用 lycanthropy.tier 的 `sum(1 for thr in THRESHOLDS if v>=thr)` 慣用法。
+#   全為只吃 char 的純函式(無 gamedata/rng/state)→ sim/測試/威脅側/地下側共用同一真相源。
+ACTIVE_HEAT_THRESHOLDS = (80, 300, 700)      # 最高省賞金 → 路途獵殺 tier 0..3(可清)
+OUTLAW_THRESHOLDS = (5, 20, 50)              # 累積惡名 → 地下身份 tier 0..3(終身)
+_NOTORIETY_TITLES = ("", "通緝犯", "惡名昭彰", "江湖鬼影")   # outlaw_standing 對應稱號
+FENCE_BONUS_BY_TIER = (0.0, 0.15, 0.30, 0.45)   # 銷贓加價(對標盜賊公會 0.40·上限 0.45)
+
+
+def max_bounty(char: Character) -> int:
+    """玩家當前最高的「單一行省」賞金(取最大·非加總)。無賞金 → 0。"""
+    return max(getattr(char, "bounties", {}).values(), default=0)
+
+
+def active_heat(char: Character) -> int:
+    """路途獵殺強度 tier(0..3),由最高省賞金衍生 —— 威脅軸·可清(付清/坐牢該省即降溫)。"""
+    v = max_bounty(char)
+    return sum(1 for thr in ACTIVE_HEAT_THRESHOLDS if v >= thr)
+
+
+def outlaw_standing(char: Character) -> int:
+    """地下身份 tier(0..3),由累積惡名 infamy 衍生 —— 身份軸·終身(清賞金不降)。"""
+    v = getattr(char, "infamy", 0)
+    return sum(1 for thr in OUTLAW_THRESHOLDS if v >= thr)
+
+
+def notoriety_tier(char: Character) -> int:
+    """惡名總評(UI/世界脈動·取兩軸最大);**不**用於閘戰鬥(戰鬥只讀 active_heat)。"""
+    return max(active_heat(char), outlaw_standing(char))
+
+
+def is_outlaw(char: Character) -> bool:
+    """是否亡命徒(可見地下世界):地下身份達 tier1 **或** 當前有賞金在身
+    (雙軸:有賞金即開門·累積惡名讓門常開)。"""
+    return outlaw_standing(char) >= 1 or max_bounty(char) > 0
+
+
+def notoriety_title(char: Character) -> str:
+    """亡命徒身分稱號(由地下身份 tier;tier0 → 空字串)。"""
+    return _NOTORIETY_TITLES[outlaw_standing(char)]
+
+
+def fence_bonus(char: Character) -> float:
+    """銷贓加價倍率(由地下身份 tier;上限 0.45)。"""
+    return FENCE_BONUS_BY_TIER[outlaw_standing(char)]

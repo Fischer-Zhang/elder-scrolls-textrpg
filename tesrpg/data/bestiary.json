@@ -1282,7 +1282,71 @@
     "loot": [{"item": "glass_dagger", "chance": 0.25}, {"item": "silver_ring", "chance": 0.3}],
     "flavor": "一名出賣了同夥的盜賊,身手敏捷、刀尖淬毒,深知自己被盯上了。"
   },
-  "reclusive_mage": {"sentient": true, 
+  "bounty_hunter": {"sentient": true,
+    "name": "賞金獵人", "strength": 46, "agility": 50, "speed": 48,
+    "max_health": 44, "armor_rating": 16,
+    "attack": {"name": "弩矢攢射", "damage": 12, "skill": 50},
+    "attacks": [
+      {"name": "弩矢攢射", "damage": 12, "skill": 50, "weight": 3},
+      {"name": "短劍突刺", "damage": 11, "skill": 48, "weight": 2},
+      {"name": "拋網絆索", "damage": 7, "skill": 48, "weight": 1, "cooldown": 3,
+       "on_hit": {"status": "stagger", "turns": 1, "chance": 0.3}}
+    ],
+    "danger": 3, "min_level": 99, "weight": 0,
+    "loot_gold": [20, 50],
+    "loot": [{"item": "iron_sword", "chance": 0.25}, {"item": "leather_cuirass", "chance": 0.2},
+             {"item": "minor_healing_potion", "chance": 0.25}, {"item": "lockpick", "chance": 0.3}],
+    "flavor": "一名背負懸賞令的賞金獵人攔住去路:「你的人頭值不少錢 —— 乖乖跟我走一趟。」"
+  },
+  "mercenary_tracker": {"sentient": true,
+    "name": "傭兵追蹤者", "strength": 50, "agility": 52, "speed": 50,
+    "max_health": 60, "armor_rating": 20,
+    "attack": {"name": "鋼弩重矢", "damage": 15, "skill": 54},
+    "attacks": [
+      {"name": "鋼弩重矢", "damage": 15, "skill": 54, "weight": 3},
+      {"name": "獵刀斬擊", "damage": 14, "skill": 54, "weight": 2,
+       "on_hit": {"status": "dot", "element": "bleed", "magnitude": 3, "turns": 2, "chance": 0.35}},
+      {"name": "陷阱絆摔", "damage": 12, "skill": 54, "weight": 1, "cooldown": 3,
+       "on_hit": {"status": "stagger", "turns": 1, "chance": 0.3}}
+    ],
+    "danger": 4, "min_level": 99, "weight": 0,
+    "loot_gold": [40, 90],
+    "loot": [{"item": "steel_sword", "chance": 0.25}, {"item": "healing_potion", "chance": 0.4},
+             {"item": "silver_ring", "chance": 0.2}],
+    "flavor": "一名訓練有素的傭兵追蹤者,循著你的蹤跡而來 —— 弩上鋼矢,眼神冷冽。"
+  },
+  "master_hunter": {"sentient": true,
+    "name": "懸賞獵殺者", "strength": 56, "agility": 54, "speed": 52,
+    "max_health": 95, "armor_rating": 24,
+    "attack": {"name": "精準弩擊", "damage": 18, "skill": 58},
+    "attacks": [
+      {"name": "精準弩擊", "damage": 18, "skill": 58, "weight": 3},
+      {"name": "雙刃連斬", "damage": 16, "skill": 58, "weight": 2,
+       "on_hit": {"status": "dot", "element": "bleed", "magnitude": 4, "turns": 2, "chance": 0.35}},
+      {"name": "致命狙殺", "damage": 30, "skill": 60, "weight": 1, "cooldown": 3, "when": {"hp_below": 0.5}}
+    ],
+    "danger": 5, "min_level": 99, "weight": 0,
+    "loot_gold": [80, 160],
+    "loot": [{"item": "glass_dagger", "chance": 0.3}, {"item": "steel_cuirass", "chance": 0.25},
+             {"item": "healing_potion", "chance": 0.5}],
+    "flavor": "一名聲名遠播的懸賞獵殺者,專獵最惡名昭彰之徒 —— 你的賞金已高到驚動了他。"
+  },
+  "city_captain": {"sentient": true,
+    "name": "衛兵隊長", "strength": 54, "agility": 48, "speed": 46,
+    "max_health": 90, "armor_rating": 32,
+    "attack": {"name": "隊長闊劍", "damage": 16, "skill": 58},
+    "attacks": [
+      {"name": "隊長闊劍", "damage": 16, "skill": 58, "weight": 3},
+      {"name": "盾牆撞擊", "damage": 12, "skill": 58, "weight": 2,
+       "on_hit": {"status": "stagger", "turns": 1, "chance": 0.35}},
+      {"name": "破甲重斬", "damage": 26, "skill": 60, "weight": 1, "cooldown": 3}
+    ],
+    "danger": 5, "min_level": 99, "weight": 0,
+    "loot_gold": [30, 70],
+    "loot": [{"item": "steel_sword", "chance": 0.25}, {"item": "steel_shield", "chance": 0.2}],
+    "flavor": "聞訊趕來的衛兵隊長,一身重甲、劍法老練:「重罪在身還敢拒捕 —— 拿下!」"
+  },
+  "reclusive_mage": {"sentient": true,
     "name": "隱居的法師", "strength": 38, "agility": 46, "speed": 44,
     "max_health": 66, "armor_rating": 6,
     "attack": {"name": "烈焰箭", "damage": 17, "skill": 56, "element": "fire",
