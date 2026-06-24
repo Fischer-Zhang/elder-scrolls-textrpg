@@ -1751,6 +1751,8 @@ def _item_actions(state: GameState, gamedata: GameData, item_id: str) -> None:
     if item_id in ("moon_sugar", "skooma"):
         acts.append(("dose", "服用(亢奮 ↔ 成癮)"))
     acts.append(("drop", "丟棄一件"))
+    if any(a[0] in ("equip_w", "equip_a") for a in acts):   # 可換裝武器/護甲 → 先呈現換裝對比
+        ui.item_compare_panel(char, gamedata, item_id)
     act = ui.menu(d["name"], acts, allow_back=True)
     if act == "equip_w":
         inventory.equip_weapon(char, gamedata, item_id)

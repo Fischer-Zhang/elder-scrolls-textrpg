@@ -306,12 +306,28 @@ def _legacy_view(s: dict) -> dict:
             "score": s["score"], "title": s["title"]}
 
 
+def _item_tier(d: dict) -> str:
+    """物品品質階(由價值推導,附魔/神器升頂;value 永遠存在故比 material 可靠)。
+    common < 80 ≤ uncommon < 250 ≤ rare < 700 ≤ legendary(或帶附魔)。"""
+    if d.get("enchant"):
+        return "legendary"
+    v = d.get("value", 0) or 0
+    if v >= 700:
+        return "legendary"
+    if v >= 250:
+        return "rare"
+    if v >= 80:
+        return "uncommon"
+    return "common"
+
+
 def _inventory_view(char: Character, gamedata: GameData) -> dict:
     from tesrpg.systems import inventory as inv
-    order = {"weapon": 0, "armor": 1, "potion": 2, "misc": 3}
+    order = {"weapon": 0, "armor": 1, "jewelry": 2, "potion": 3, "book": 4, "misc": 5}
     stacks = sorted(char.inventory, key=lambda s: order.get(gamedata.item(s["id"])["kind"], 9))
     items = [{"key": s["id"], "label": _plain(item_label(gamedata, char, s["id"], s["qty"])),
-              "kind": gamedata.item(s["id"])["kind"]} for s in stacks]
+              "kind": gamedata.item(s["id"])["kind"], "tier": _item_tier(gamedata.item(s["id"]))}
+             for s in stacks]
     w = inv.total_weight(char, gamedata)
     mx = inv.max_weight(char, gamedata)
     return {"items": items, "weight": float(w), "max": mx, "over": w > mx, "gold": char.gold}
@@ -1901,6 +1917,42 @@ def inventory_panel(char: Character, gamedata: GameData) -> None:
     foot.append(over, style="")
     foot.append(f"   金幣 {char.gold}", style=GOLD)
     console.print(_panel(Group(tbl, Rule(style=GOLD_DIM), foot), title="🎒 背包"))
+
+
+_TIER_CN = {"common": "凡品", "uncommon": "精良", "rare": "稀有", "legendary": "傳奇"}
+
+
+def item_compare_panel(char: Character, gamedata: GameData, item_id: str) -> None:
+    """換裝對比:選了可換裝的武器/護甲時,先呈現「此物 vs 當前同位裝備」的傷害/護甲增減
+    (供 main._item_actions 在動作選單前呼叫;純呈現,不改狀態)。"""
+    d = gamedata.item(item_id)
+
+    def _delta(new: int, old: int) -> str:
+        n = new - old
+        return "(持平)" if n == 0 else (f"(+{n})" if n > 0 else f"({n})")
+
+    rows = [{"t": "head", "s": f"{d['name']} · {_TIER_CN.get(_item_tier(d), '')}"}]
+    if d["kind"] == "weapon":
+        cur = gamedata.item(char.weapon)
+        rows.append({"t": "kv", "k": "傷害", "v": f"{d['damage']}　·　手持 {cur['damage']} {_delta(d['damage'], cur['damage'])}"})
+        rows.append({"t": "kv", "k": "技能", "v": gamedata.skill_name(d["skill"])})
+        arch = _ARCHETYPE_CN.get(d.get("archetype"))
+        if arch:
+            rows.append({"t": "kv", "k": "流派", "v": arch})
+    elif d["kind"] == "armor":
+        slot = d.get("slot", "")
+        cur_id = char.equipped.get(slot)
+        cur_r = gamedata.item(cur_id)["armor_rating"] if cur_id else 0
+        cur_n = gamedata.item(cur_id)["name"] if cur_id else "未穿戴"
+        rows.append({"t": "kv", "k": "護甲", "v": f"{d['armor_rating']}　·　該位現 {cur_r} {_delta(d['armor_rating'], cur_r)}"})
+        rows.append({"t": "kv", "k": "現穿", "v": cur_n})
+    if d.get("value"):
+        rows.append({"t": "kv", "k": "價值", "v": f"{d['value']} 金"})
+    if _web is not None:
+        _emit_panel("換裝對比", rows)
+    else:
+        lines = [f"{r['k']}: {r['v']}" for r in rows if r.get("t") == "kv"]
+        console.print(_panel("\n".join(lines), title=f"換裝對比 — {d['name']}"))
 
 
 def _emit_or_print(markup: str) -> None:

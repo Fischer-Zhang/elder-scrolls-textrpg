@@ -319,6 +319,32 @@ def test_view_model_shapes():
         assert e["a"] in ids and e["b"] in ids, f"edge 指向不存在節點:{e}"
         assert isinstance(e["h"], int) and e["h"] >= 1
 
+    # --- 背包(R-inv):items 帶 kind+tier;weight/max/over 齊;品質階由價值推導 ---
+    from tesrpg.systems import inventory as _inv
+    for it, q in [("iron_sword", 1), ("steel_sword", 1), ("daedric_mace", 1),
+                  ("glass_cuirass", 1), ("healing_potion", 2)]:
+        _inv.add_item(c, it, q)
+    iv = ui._inventory_view(c, gd)
+    assert isinstance(iv["weight"], float) and isinstance(iv["max"], int) and isinstance(iv["over"], bool)
+    by = {x["key"]: x for x in iv["items"]}
+    assert all("tier" in x and "kind" in x for x in iv["items"])
+    assert by["iron_sword"]["tier"] == "common" and by["steel_sword"]["tier"] == "uncommon"
+    assert by["glass_cuirass"]["tier"] == "rare" and by["daedric_mace"]["tier"] == "legendary"
+    assert ui._item_tier({"enchant": {"kind": "x"}, "value": 1}) == "legendary"   # 附魔升頂
+    # --- 換裝對比 panel:武器比當前手持,含傷害增減 head/kv 行 ---
+    cap = {}
+    orig_ep = ui._emit_panel
+    ui._emit_panel = lambda title, rws: cap.update(title=title, rows=rws)
+    ui._web = object()
+    try:
+        ui.item_compare_panel(c, gd, "daedric_mace")
+    finally:
+        ui._emit_panel = orig_ep
+        ui._web = None
+    assert cap["title"] == "換裝對比"
+    kv = {r["k"]: r["v"] for r in cap["rows"] if r.get("t") == "kv"}
+    assert "傷害" in kv and "手持" in kv["傷害"] and "+" in kv["傷害"]   # 顯示與當前手持的增減
+
 
 def test_combat_target_key_parity():
     """戰鬥可點目標的命脈不變式:存活敵人卡的 key 為 0-based 且對齊 _choose_enemy_target

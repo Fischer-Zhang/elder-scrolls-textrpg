@@ -210,6 +210,15 @@
   .gold{color:var(--gold);}
   .ik{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:9px;vertical-align:middle;background:var(--muted);}
   .ik.weapon{background:var(--red);} .ik.armor{background:var(--cyan);} .ik.potion{background:var(--green);} .ik.jewelry{background:var(--gold);}
+  .ik.book{background:#b48ead;} .ik.soul_gem{background:#9d7fe0;} .ik.ingredient{background:#8fae6e;}
+  /* 背包:負重條 + 種類分組 + 品質色階(R-inv) */
+  .inv-weight{display:flex;align-items:center;gap:8px;margin:8px 0 4px;font-size:12.5px;}
+  .inv-weight .iw-lab{color:var(--gold-dim);font-weight:700;flex:0 0 auto;} .inv-weight .m-track{flex:1;}
+  .inv-weight .iw-val{flex:0 0 auto;color:var(--muted);font-variant-numeric:tabular-nums;}
+  .inv-grp{margin-top:10px;} .inv-grp:first-child{margin-top:4px;}
+  .inv-grp-h{font-family:var(--serif);color:var(--gold-dim);font-weight:700;font-size:12.5px;letter-spacing:.04em;
+    padding-bottom:3px;margin-bottom:2px;border-bottom:1px solid var(--gold-soft);}
+  .tier-common{color:var(--ink);} .tier-uncommon{color:#7fb069;} .tier-rare{color:#6ea8d8;} .tier-legendary{color:var(--gold);}
   /* 地圖 */
   .mprov{margin-top:12px;} .mprov-h{color:var(--cyan);font-weight:700;margin-bottom:6px;font-size:14px;}
   .mprov-n{color:var(--faint);font-size:11px;font-weight:400;margin-left:8px;}
@@ -524,11 +533,31 @@
     const foes = (d.enemies || []).map(function (e) { return row(e, "foe"); }).join("");
     return elFrom(`<div class="card combat"><div class="cside">${mine}</div><div class="vs">⚔ VS ⚔</div><div class="cside">${foes}</div></div>`);
   }
+  const INV_KIND_CN = { weapon: "⚔ 武器", armor: "🛡 護甲", jewelry: "💍 飾品", potion: "🧪 藥水",
+    book: "📖 書冊", soul_gem: "💎 魂石", ingredient: "🌿 煉金材料", misc: "📦 雜物" };
+  const INV_KIND_ORDER = ["weapon", "armor", "jewelry", "potion", "book", "soul_gem", "ingredient", "misc"];
   function renderInventory(d) {
     if (!d.items.length) return elFrom(`<div class="card"><div class="card-head">🎒 背包</div><div class="dim" style="margin-top:8px">背包空空如也。</div></div>`);
-    const rows = d.items.map(function (it) { return `<div class="inv-row" data-key="${esc(it.key)}"><span class="ik ${esc(it.kind)}"></span>${esc(it.label)}</div>`; }).join("");
-    return elFrom(`<div class="card"><div class="card-head">🎒 背包</div><div class="inv">${rows}</div>`
-      + `<div class="inv-foot"><span ${d.over ? 'style="color:#e08b82"' : ""}>負重 ${d.weight}/${d.max}${d.over ? " 超重!" : ""}</span><span class="gold">金幣 ${d.gold}</span></div></div>`);
+    // 負重條(超載轉紅)
+    const wpct = d.max > 0 ? Math.max(0, Math.min(100, d.weight / d.max * 100)) : 0;
+    const wbar = `<div class="inv-weight"><span class="iw-lab">負重</span>`
+      + `<div class="m-track"><div class="m-fill ${d.over ? "hp" : "fp"}" style="width:${wpct}%"></div></div>`
+      + `<span class="iw-val"${d.over ? ' style="color:#e08b82"' : ""}>${d.weight}/${d.max}${d.over ? " ⚠超載" : ""}</span></div>`;
+    // 依種類分組(R59 範式:扁平→分組);每列依品質階上色
+    const groups = {};
+    d.items.forEach(function (it) { (groups[it.kind] = groups[it.kind] || []).push(it); });
+    const kinds = Object.keys(groups).sort(function (a, b) {
+      return ((INV_KIND_ORDER.indexOf(a) + 1) || 99) - ((INV_KIND_ORDER.indexOf(b) + 1) || 99);
+    });
+    const sections = kinds.map(function (k) {
+      const rows = groups[k].map(function (it) {
+        return `<div class="inv-row tier-${esc(it.tier || "common")}" data-key="${esc(it.key)}">`
+          + `<span class="ik ${esc(it.kind)}"></span>${esc(it.label)}</div>`;
+      }).join("");
+      return `<div class="inv-grp"><div class="inv-grp-h">${INV_KIND_CN[k] || esc(k)}</div>${rows}</div>`;
+    }).join("");
+    return elFrom(`<div class="card"><div class="card-head">🎒 背包</div>${wbar}<div class="inv">${sections}</div>`
+      + `<div class="inv-foot"><span class="gold">金幣 ${d.gold}</span></div></div>`);
   }
   function renderMap(d) {
     // 相對位置地圖:依 pos 座標繪製(連線=相鄰路徑);滑鼠滾輪縮放 + 拖曳平移;放大/行省檢視顯示地名與路徑時長;點 marker 看設施
