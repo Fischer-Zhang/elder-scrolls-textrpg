@@ -2238,6 +2238,120 @@ def _lair_kin_talk(state: GameState, gamedata: GameData, nid: str) -> None:
         ui.message("(你與同類在火光邊低語了一陣 —— 暫無新的託付。)", style="grey70")
 
 
+# R84 亡命徒地下世界:銷贓 fence + 地下委託 + 藏身處(安全區)。is_outlaw 閘可見性;refuge 地點 danger1·非城鎮 → 天然安全區。
+_BLACK_MARKET = ["lockpick", "skooma", "moon_sugar", "nightshade"]   # 黑市常售(亡命徒窩點;防套利地板恆守)
+
+
+def action_fence(state: GameState, gamedata: GameData) -> None:
+    """銷贓窩點:贓物/雜物以加價(fence_bonus·隨惡名分級)賣出 + 購入黑市貨。
+    🔴 防套利:黑市買價恆 = max(正常買價, 該物銷價+1) > 銷價 → 買來回銷必虧,杜絕無限刷錢(比照 R33)。"""
+    char = state.player
+    bonus = crime.fence_bonus(char)
+
+    def fsell(iid):                                 # 銷贓價(加價);buy 端用它築地板
+        return int(world.sell_price(char, gamedata, iid) * (1 + bonus))
+
+    while True:
+        choice = ui.menu(f"銷贓窩點(加價 +{int(bonus * 100)}%)",
+                         [("sell", "銷贓(賣出贓物/雜物)"), ("buy", "購入黑市貨")], allow_back=True)
+        if choice is None:
+            return
+        if choice == "sell":
+            while True:
+                sellable = [s for s in char.inventory if gamedata.item(s["id"])["value"] > 0]
+                if not sellable:
+                    ui.message("沒有可銷的東西。", style="grey70")
+                    break
+                opts = [(s["id"], f"{ui.item_label(gamedata, char, s['id'], s['qty'])} — 銷 {fsell(s['id'])} 金")
+                        for s in sellable]
+                iid = ui.menu(f"銷什麼?(你有 {char.gold} 金)", opts, allow_back=True)
+                if iid is None:
+                    break
+                owned = inventory.count_item(char, iid)
+                qty = 1 if owned <= 1 else ui.ask_int(f"銷幾個?(共 {owned})", 1, 1, owned)
+                total = sold = 0
+                for _ in range(qty):
+                    if inventory.count_item(char, iid) <= 0:
+                        break
+                    total += fsell(iid)
+                    inventory.remove_item(char, iid, 1)
+                    sold += 1
+                    progression.use_skill(char, gamedata, "mercantile", 0.3)
+                char.gold += total
+                stats.recompute_max_resources(char, gamedata)   # 銷掉穿戴中最後一件會自動卸下 → 重算
+                ui.message(f"銷出 {gamedata.item_name(iid)} ×{sold},得 {total} 金。", style="green")
+        elif choice == "buy":
+            while True:
+                opts = [(iid, f"{gamedata.item_name(iid)} — {max(world.buy_price(char, gamedata, iid), fsell(iid) + 1)} 金")
+                        for iid in _BLACK_MARKET]
+                iid = ui.menu(f"購入什麼?(你有 {char.gold} 金)", opts, allow_back=True)
+                if iid is None:
+                    break
+                price = max(world.buy_price(char, gamedata, iid), fsell(iid) + 1)   # 防套利地板:恆 > 銷贓價
+                if char.gold < price:
+                    ui.message("錢不夠。", style="yellow")
+                    continue
+                char.gold -= price
+                inventory.add_item(char, iid, 1)
+                ui.message(f"購入 {gamedata.item_name(iid)},付 {price} 金。", style="green")
+
+
+def _underworld_contracts(state: GameState, gamedata: GameData) -> None:
+    """地下委託:列出本省被聚光的 ucomm_* 可重複契約(複用 R79 board+pulse;與正規告示板分流)。"""
+    char = state.player
+    province = world.current_location(char, gamedata)["province"]
+    while True:
+        today = worldpulse.day_index(state)
+        avail = [q for q in quests.available_quests(char, gamedata, "board", province=province, day=today)
+                 if q.startswith("ucomm_")]
+        if not avail:
+            ui.message("地下風聲未起 —— 眼下沒有見得了人的委託。(地下委託隨『四方傳聞』的風向起落)", style="grey70")
+            return
+        opts = [(qid, f"{gamedata.quests[qid]['name']} — {quests.objective_text(char, gamedata, qid)}"
+                 f"(賞 {gamedata.quests[qid]['reward'].get('gold', 0)} 金·惡名 +{gamedata.quests[qid]['reward'].get('infamy', 0)})")
+                for qid in avail]
+        qid = ui.menu("地下委託", opts, allow_back=True)
+        if qid is None:
+            return
+        _accept_and_brief(state, gamedata, qid)
+
+
+def action_refuge(state: GameState, gamedata: GameData) -> None:
+    """R84 亡命徒藏身處(安全區):休息 / 密窖 / 銷贓 / 地下委託。
+    refuge 地點 danger1·非城鎮 → guard_confrontation/_curse_manhunt 天然不觸發;hub 已以 is_outlaw 閘擋良民。"""
+    char = state.player
+    loc = world.current_location(char, gamedata)
+    if not crime.is_outlaw(char) or not loc.get("refuge"):
+        return
+    loc_id = char.location_id
+    while True:
+        title = crime.notoriety_title(char)
+        header = loc["name"] + (f"(身分:{title})" if title else "")
+        opts = [("rest", "在此安歇(免費全回 + 精神飽滿)"),
+                ("fence", "🪙 銷贓窩點"),
+                ("contracts", "📜 地下委託"),
+                ("deposit", "存入密窖(卸下負重)"),
+                ("withdraw", "從密窖取出")]
+        choice = ui.menu(header, opts, allow_back=True)
+        if choice is None:
+            return
+        if choice == "rest":
+            char.health, char.magicka, char.fatigue = char.max_health, char.max_magicka, char.max_fatigue
+            party.heal_full(char, gamedata)
+            housing.set_well_rested(char, state.time.absolute_hours())
+            state.time.advance(8)
+            ui.message("你在亡命徒環伺的窩點歇了一晚 —— 氣力盡復,精神飽滿(此後一段時間技能成長加速)。",
+                       style="bold green")
+        elif choice == "fence":
+            action_fence(state, gamedata)
+        elif choice == "contracts":
+            _underworld_contracts(state, gamedata)
+        elif choice == "deposit":
+            _stash_transfer(state, gamedata, loc_id, deposit=True)
+        elif choice == "withdraw":
+            _stash_transfer(state, gamedata, loc_id, deposit=False)
+
+
 def action_feed(state: GameState, gamedata: GameData) -> None:
     """吸血鬼進食:獵取活人 → 飢餓歸零(階級 0)、回血;白天易被撞見而染上賞金。"""
     char = state.player
@@ -3692,7 +3806,9 @@ def action_board(state: GameState, gamedata: GameData) -> None:
         # day 必用 worldpulse.day_index(開局後天數)= 與 world_pulse_day 同基準,否則 active 視窗永不命中。
         today = worldpulse.day_index(state)
         main = quests.available_quests(char, gamedata, "main")
-        avail = main + quests.available_quests(char, gamedata, "board", province=province, day=today)
+        board = [q for q in quests.available_quests(char, gamedata, "board", province=province, day=today)
+                 if not q.startswith("ucomm_")]   # R84:地下委託(ucomm_)只在亡命徒藏身處接,不上正規告示板
+        avail = main + board
         if not avail:
             ui.message("告示板上沒有你還沒接的委託。", style="grey70")
             return
@@ -4275,7 +4391,7 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
         adventure: list = []
         if loc["type"] == "dungeon":
             adventure.append(("dungeon", "深入地城 ⚔"))
-        if loc.get("danger", 0) > 0 and loc["type"] != "dungeon" and not loc.get("lair"):
+        if loc.get("danger", 0) > 0 and loc["type"] != "dungeon" and not loc.get("lair") and not loc.get("refuge"):
             adventure.append(("explore", "探索狩獵 ⚔"))
         # 戴德拉神殿:在此地祭壇供奉祈願,接取該親王的試煉任務(R45;達門檻才現任務)。
         if loc.get("shrine"):
@@ -4283,6 +4399,9 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
         # R51:詛咒巢穴(吸血鬼隱穴 / 狼人巢穴)——唯對應詛咒者得入,凡人只見沉寂。
         if _player_is_lair_kin(player, loc):
             adventure.append(("lair", "🦇 進入血族地窖" if loc["lair"] == "vampire" else "🐺 進入獵群巢穴"))
+        # R84:亡命徒藏身處 —— 唯通緝者/亡命徒得入(衛兵不擾的安全區),良民只見沉寂。
+        if loc.get("refuge") and crime.is_outlaw(player):
+            adventure.append(("refuge", "🗡 潛入藏身處"))
         adventure.append(("travel", "旅行"))
         adventure.append(("map", "世界地圖"))
         # --- 城區(分區域:市集區 / 公會區 / 廣場)---
@@ -4416,6 +4535,8 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
             action_shrine(state, gamedata)
         elif choice == "lair":
             died = action_lair(state, gamedata)
+        elif choice == "refuge":
+            action_refuge(state, gamedata)
         elif choice == "travel":
             died = action_travel(state, gamedata)
         elif choice == "shop":

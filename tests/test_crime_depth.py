@@ -7,7 +7,7 @@ from tesrpg import main
 from tesrpg.creation import build_character
 from tesrpg.gamedata import get_gamedata
 from tesrpg.state import GameState, GameTime
-from tesrpg.systems import magic
+from tesrpg.systems import crime, magic
 
 
 def _state(**kw):
@@ -72,6 +72,54 @@ def test_bounty_hunter_creatures_schema_spawn_only():
 
 def test_tier_template_mapping():
     assert main._BOUNTY_HUNT_TIER == {1: "bounty_hunter", 2: "mercenary_tracker", 3: "master_hunter"}
+
+
+# --- 回報側:藏身處 / 銷贓 / 地下委託 -----------------------------------------
+def test_refuges_are_safe_zones():
+    gd = get_gamedata()
+    refuges = [k for k, d in gd.world["locations"].items() if d.get("refuge")]
+    assert len(refuges) >= 3
+    for r in refuges:
+        d = gd.location(r)
+        assert d["danger"] == 1 and d["type"] == "wilderness"   # danger1·荒野 → guard/manhunt 天然不觸發
+        assert d["type"] not in ("city", "town")
+        assert not d.get("services")                            # 無 city service(銷贓走 action_fence)
+
+
+def test_black_market_items_exist_and_no_arbitrage():
+    """黑市每件:買價恆 > 銷贓價(防套利地板),且 id 合法。"""
+    gd = get_gamedata()
+    from tesrpg.creation import build_character
+    from tesrpg.systems import world
+    c = build_character(gd, name="x", sex="male", race="imperial", birthsign="thief", class_id="thief")
+    c.infamy = 200                                              # 頂階 fence_bonus(最大加價下測地板)
+    for iid in main._BLACK_MARKET:
+        assert gd.item_or_none(iid), iid
+        fsell = int(world.sell_price(c, gd, iid) * (1 + crime.fence_bonus(c)))
+        buy = max(world.buy_price(c, gd, iid), fsell + 1)
+        assert buy > fsell, (iid, buy, fsell)                  # 買來回銷必虧
+
+
+def test_underworld_contracts_schema():
+    """ucomm_* 地下委託:repeatable·source board·reward ⊆ {gold,infamy}·gold 在正規委託區間·無 fame。"""
+    gd = get_gamedata()
+    ucomm = {k: v for k, v in gd.quests.items() if k.startswith("ucomm_")}
+    assert len(ucomm) >= 6
+    for k, q in ucomm.items():
+        assert q.get("repeatable") and q.get("source") == "board", k
+        assert set(q["reward"]) <= {"gold", "infamy"}, (k, q["reward"])   # 無 fame(這是犯罪)
+        assert 40 <= q["reward"]["gold"] <= 110, (k, q["reward"]["gold"])  # 守正規委託區間(防經濟外溢)
+        assert q["objective"]["type"] == "kill"                # 純擊殺(不可 clear_dungeon 免費刷)
+        assert q.get("provinces")                              # 在地化(由藏身處所在省定可見性)
+
+
+def test_underworld_contracts_spotlighted_by_pulse():
+    """每條 ucomm_* 都被某地下脈動聚光(否則永不可見=孤兒)。"""
+    gd = get_gamedata()
+    spotlit = {sq for p in gd.world_pulse.values() for sq in p.get("spotlight_quests", [])}
+    for k in gd.quests:
+        if k.startswith("ucomm_"):
+            assert k in spotlit, f"{k} 未被任何脈動聚光"
 
 
 def run():

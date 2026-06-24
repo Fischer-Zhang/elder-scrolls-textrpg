@@ -8,6 +8,33 @@
     "spotlight_quests": ["comm_cyrodiil_bandit", "comm_cyrodiil_minotaur", "comm_cyrodiil_relics"],
     "news": "帝國大道近來不寧 —— 盜匪橫行、腹地遺跡有牛魔作亂,沿途村鎮的告示板貼滿了懸賞與供應委託。"
   },
+  "pulse_cyrodiil_underworld": {
+    "province": "賽羅迪爾",
+    "weight": 2,
+    "cooldown_days": 14,
+    "active_window_days": 10,
+    "min_day": 12,
+    "spotlight_quests": ["ucomm_cyrodiil_silence", "ucomm_cyrodiil_turf"],
+    "news": "帝都鼠道暗流湧動 —— 黑市掮客正高價尋人,辦幾樁見不得光的差事。亡命徒的窩點裡,委託悄悄上了牆。"
+  },
+  "pulse_skyrim_underworld": {
+    "province": "天際",
+    "weight": 2,
+    "cooldown_days": 14,
+    "active_window_days": 10,
+    "min_day": 12,
+    "spotlight_quests": ["ucomm_skyrim_vendetta", "ucomm_skyrim_debt"],
+    "news": "裂谷城的黑街蠢動,鼠道裡有人在散布見不得光的契約 —— 有血仇要結,有債要討。"
+  },
+  "pulse_hammerfell_underworld": {
+    "province": "漢默法爾",
+    "weight": 2,
+    "cooldown_days": 14,
+    "active_window_days": 10,
+    "min_day": 12,
+    "spotlight_quests": ["ucomm_hammerfell_smuggle", "ucomm_hammerfell_purge"],
+    "news": "沙海亡命營傳出風聲 —— 走私隊被劫、有冤家要結,掮客在篝火邊張羅著幾樁買賣。"
+  },
   "pulse_skyrim_wolves": {
     "province": "天際",
     "weight": 3,
