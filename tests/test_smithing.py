@@ -281,6 +281,35 @@ def test_meltdown_excludes_non_metal_rare_and_equipped():
     assert not smithing.meltdown(c, gd, "glass_dagger")["ok"]
 
 
+def test_meltdown_spare_copies_of_equipped_item():
+    """同型多件:穿戴/手持一件後,仍可回爐「多餘」的份;穿戴中那件受保護不脫鉤(本輪修復)。"""
+    gd, c = _char()
+    inventory.add_item(c, "steel_sword", 2)
+    c.weapon = "steel_sword"                               # 手持一把,背包共 2 把
+    assert smithing.worn_count(c, "steel_sword") == 1
+    assert inventory.count_item(c, "steel_sword") == 2
+    res = smithing.meltdown(c, gd, "steel_sword")          # 熔多餘那把 → 成功
+    assert res["ok"], res["message"]
+    assert inventory.count_item(c, "steel_sword") == 1     # 剩一把
+    assert c.weapon == "steel_sword"                       # 仍手持(未脫鉤)
+    # 剩唯一一把(= 手持)→ 已無多餘,不可再熔
+    assert not smithing.meltdown(c, gd, "steel_sword")["ok"]
+    assert c.weapon == "steel_sword"
+
+
+def test_meltdown_spare_copies_of_worn_armor():
+    """護甲同理:穿戴一件後仍可熔多餘份;穿戴中的受保護。"""
+    gd, c = _char()
+    inventory.add_item(c, "steel_cuirass", 3)
+    inventory.equip_armor(c, gd, "steel_cuirass")          # 穿一件,共 3
+    assert smithing.worn_count(c, "steel_cuirass") == 1
+    assert smithing.meltdown(c, gd, "steel_cuirass")["ok"]  # 熔多餘
+    assert smithing.meltdown(c, gd, "steel_cuirass")["ok"]  # 再熔一件多餘 → 剩 1 件穿著
+    assert inventory.count_item(c, "steel_cuirass") == 1
+    assert c.equipped.get("cuirass") == "steel_cuirass"     # 仍穿著(未脫鉤)
+    assert not smithing.meltdown(c, gd, "steel_cuirass")["ok"]  # 無多餘,不可再熔
+
+
 def test_meltdown_no_arbitrage_on_cheap_singletons():
     """反套利:廉於一錠或單錠成品(買來回爐可套錠者)回爐無所得 → 不可回爐。"""
     gd, c = _char()

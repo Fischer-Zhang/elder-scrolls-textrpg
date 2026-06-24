@@ -3507,17 +3507,20 @@ def action_meltdown(state: GameState, gamedata: GameData) -> None:
         ui.message("這裡沒有鐵匠的鐵砧。", style="grey70")
         return
     while True:                                       # 可連續回爐,返回才離開
-        worn = set(char.equipped.values()) | {char.weapon, getattr(char, "offhand", "")}
         opts = []
         for s in char.inventory:
             iid = s["id"]
-            if iid in worn or not smithing.meltable(gamedata, iid):
+            if not smithing.meltable(gamedata, iid):
+                continue
+            spare = s["qty"] - smithing.worn_count(char, iid)   # 只熔多餘份(穿戴/手持中的受保護)
+            if spare <= 0:
                 continue
             ingot, qty = smithing.meltdown_yield(gamedata, iid)
-            opts.append((iid, f"{gamedata.item_name(iid)}(持有 {s['qty']}) → 每件 {gamedata.item_name(ingot)} ×{qty}"))
+            held = f"可熔 {spare}/{s['qty']}" if spare < s["qty"] else f"可熔 {spare}"
+            opts.append((iid, f"{gamedata.item_name(iid)}({held}) → 每件 {gamedata.item_name(ingot)} ×{qty}"))
         if not opts:
-            ui.message("背包裡沒有可回爐的武器/護甲(穿戴/手持中請先卸下;法杖·弓·飾品·附魔神器·龍鱗裝、"
-                       "及熔之無得的廉價單品不可回爐)。", style="grey70")
+            ui.message("背包裡沒有可回爐的多餘武器/護甲(穿戴/手持中的份受保護,無多餘者請先卸下;"
+                       "法杖·弓·飾品·附魔神器·龍鱗裝、及熔之無得的廉價單品不可回爐)。", style="grey70")
             return
         iid = ui.menu(f"回爐哪件?(熔解有損耗,煉回部分材料並練鍛造 {char.skill('smithing')} 級)",
                       opts, allow_back=True)

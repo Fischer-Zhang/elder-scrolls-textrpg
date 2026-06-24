@@ -147,15 +147,27 @@ def meltable(gamedata: GameData, item_id: str) -> bool:
     return ingot is not None and ingot not in _NON_RECYCLE_INGOTS and qty > 0
 
 
+def worn_count(char: Character, item_id: str) -> int:
+    """該 item_id 當前佔用的穿戴/手持份數(手持 + 副手 + 各護甲/飾品槽)。
+    回爐須保留這些份,只熔多餘的(held − worn)→ 同型多件時不必先卸下。"""
+    n = 1 if char.weapon == item_id else 0
+    if getattr(char, "offhand", "") == item_id:
+        n += 1
+    n += sum(1 for v in char.equipped.values() if v == item_id)
+    return n
+
+
 def meltdown(char: Character, gamedata: GameData, item_id: str) -> dict:
     """回爐一件成品 → 部分材料(有損耗),並付 smithing practice 成本(同時練鍛造)。
-    回傳 {ok, message, ingot?, qty?, hours, tired, skill_events}。穿戴中/手持者須先卸下(防裝備脫鉤)。"""
+    回傳 {ok, message, ingot?, qty?, hours, tired, skill_events}。
+    只熔「多餘」份(held − worn);穿戴/手持中的份受保護(防裝備脫鉤),無多餘者須先卸下。"""
     if not meltable(gamedata, item_id):
         return {"ok": False, "message": "此物品無法回爐。", "hours": 0, "tired": False, "skill_events": []}
-    if item_id in (char.weapon, getattr(char, "offhand", "")) or item_id in char.equipped.values():
-        return {"ok": False, "message": "請先卸下這件裝備再回爐。", "hours": 0, "tired": False, "skill_events": []}
     if inventory.count_item(char, item_id) <= 0:
         return {"ok": False, "message": "你沒有這件物品。", "hours": 0, "tired": False, "skill_events": []}
+    if inventory.count_item(char, item_id) - worn_count(char, item_id) <= 0:
+        return {"ok": False, "message": "這是你穿戴/手持中的唯一一件,請先卸下、或多備一件再回爐。",
+                "hours": 0, "tired": False, "skill_events": []}
     ingot, qty = meltdown_yield(gamedata, item_id)
     inventory.remove_item(char, item_id, 1)
     inventory.add_item(char, ingot, qty)
