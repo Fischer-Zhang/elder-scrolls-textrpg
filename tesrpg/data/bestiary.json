@@ -1563,7 +1563,7 @@
     "loot": [{"item": "ebony_sword", "chance": 0.3}, {"item": "filled_greater_soul_gem", "chance": 0.4}, {"item": "gold_amulet", "chance": 0.3}],
     "flavor": "傳授你達貢教義的導師,赤袍下藏著《魔典》的真意 —— 如今你的刀,指向了引你入道的人。"
   },
-  "corrupt_priest": {"sentient": true, 
+  "corrupt_priest": {"sentient": true, "spells": ["ward_ally", "heal_other"],
     "name": "墮落的祭司", "strength": 40, "agility": 42, "speed": 40,
     "max_health": 52, "armor_rating": 8,
     "attack": {"name": "瀆神之觸", "damage": 11, "skill": 44, "element": "shock",
@@ -1579,7 +1579,7 @@
     "loot": [{"item": "gold_ring", "chance": 0.3}, {"item": "healing_potion", "chance": 0.3}],
     "flavor": "一名背棄九聖、轉而崇拜魔神的祭司,聖袍之下藏著瀆神的咒文 —— 騎士團視其為必須拔除的毒瘤。"
   },
-  "necromancer_acolyte": {"sentient": true, 
+  "necromancer_acolyte": {"sentient": true, "spells": ["ward_ally"],
     "name": "死靈門徒", "strength": 38, "agility": 48, "speed": 46,
     "max_health": 68, "armor_rating": 6,
     "attack": {"name": "腐朽之握", "damage": 17, "skill": 56, "element": "shock",
@@ -1770,7 +1770,7 @@
     "loot": [{"item": "dwarven_cuirass", "chance": 0.3}, {"item": "filled_greater_soul_gem", "chance": 0.5}, {"item": "gold_ingot", "chance": 0.5}],
     "flavor": "沃倫菲爾廟心的蒸汽驟然轟鳴 —— 一尊三人高的矮人百夫長嘎然立起,黃銅巨錘掃過,千年的烈焰自胸甲縫隙噴湧而出。"
   },
-  "moor_witch": {"sentient": true, 
+  "moor_witch": {"sentient": true, "spells": ["heal_other"],
     "biomes": ["moor"],
     "name": "沼地女巫", "strength": 30, "agility": 44, "speed": 46,
     "max_health": 28, "armor_rating": 4,
@@ -2108,7 +2108,7 @@
     "loot": [{"item": "silver_ring", "chance": 0.3}, {"item": "healing_potion", "chance": 0.25}, {"item": "lockpick", "chance": 0.3}],
     "flavor": "一群佩銀刃的悍徒自雪林中現身 —— 銀手,專獵狼人的狂熱者,刀刃淬銀、見『獸』即殺,連戰友團也視為仇讎。"
   },
-  "glenmoril_witch": {"sentient": true, 
+  "glenmoril_witch": {"sentient": true, "spells": ["regen_aura", "heal_other"], 
     "biomes": ["snow"],
     "name": "格倫魔女",
     "danger": 4,
@@ -2139,7 +2139,7 @@
   "dire_alpha": {"name": "血月頭狼", "strength": 72, "agility": 56, "speed": 60, "max_health": 215, "armor_rating": 14, "attack": {"name": "裂顎撕咬", "damage": 38, "skill": 70}, "attacks": [{"name": "裂顎撕咬", "damage": 38, "skill": 70, "weight": 3}, {"name": "月下猛撲", "damage": 30, "skill": 70, "weight": 2, "on_hit": {"status": "stagger", "turns": 1, "chance": 0.3}}, {"name": "撕咬橫掃", "damage": 26, "skill": 70, "weight": 2, "on_hit": {"status": "weaken", "magnitude": 0.25, "turns": 2, "chance": 0.35}}, {"name": "血月威嚇", "damage": 16, "skill": 70, "weight": 1, "on_hit": {"status": "fear", "turns": 1, "chance": 0.25}}, {"name": "血月狂暴", "damage": 58, "skill": 72, "weight": 1, "cooldown": 3, "when": {"hp_below": 0.5}}], "danger": 5, "min_level": 17, "weight": 1, "solo": true, "resist": {"poison": 50, "frost": 30}, "loot_gold": [240, 450], "loot": [{"item": "wolf_pelt", "chance": 0.8}, {"item": "filled_grand_soul_gem", "chance": 0.4}, {"item": "healing_potion", "chance": 0.5}], "flavor": "血月當空時,牠的嚎聲能讓整片森林噤聲 —— 統御月嚎獵群的頭狼,半人半獸、力裂巨木。唯有踏著牠的屍體,你才配坐上那把獸骨王座。"},
   "wild_boar": {"biomes": ["heartland"], "name": "野豬", "danger": 1, "min_level": 1, "weight": 5, "strength": 48, "agility": 32, "speed": 42, "max_health": 26, "armor_rating": 8, "attack": {"name": "獠牙衝撞", "damage": 8, "skill": 35}, "loot_gold": [0, 5], "loot": [{"item": "charred_skeever_hide", "chance": 0.4}, {"item": "bone_meal", "chance": 0.2}], "flavor": "一頭獠牙外突的野豬自灌木叢衝出,蹄聲如鼓。"},
   "goblin": {"sentient": true, "biomes": ["heartland"], "name": "哥布林", "danger": 2, "min_level": 2, "weight": 4, "strength": 44, "agility": 46, "speed": 46, "max_health": 32, "armor_rating": 10, "attack": {"name": "粗製短刀", "damage": 9, "skill": 42}, "loot_gold": [2, 12], "loot": [{"item": "lockpick", "chance": 0.3}, {"item": "minor_healing_potion", "chance": 0.3}], "flavor": "一隻綠皮哥布林齜牙咧嘴,揮舞著鏽蝕的粗製短刀。"},
-  "goblin_shaman": {"sentient": true, "biomes": ["heartland"], "name": "哥布林薩滿", "danger": 3, "min_level": 3, "weight": 2, "strength": 38, "agility": 48, "speed": 46, "max_health": 50, "armor_rating": 8, "attack": {"name": "電擊咒", "damage": 13, "skill": 56, "element": "shock", "on_hit": {"status": "dot", "element": "shock", "magnitude": 3, "turns": 2, "chance": 0.4}}, "attacks": [{"name": "電擊咒", "damage": 13, "skill": 56, "element": "shock", "weight": 2, "on_hit": {"status": "dot", "element": "shock", "magnitude": 3, "turns": 2, "chance": 0.4}}, {"name": "骨杖打擊", "damage": 12, "skill": 56, "weight": 2}, {"name": "懾心咒", "damage": 9, "skill": 56, "weight": 1, "on_hit": {"status": "fear", "turns": 1, "chance": 0.25}}], "resist": {"magic": 20}, "loot_gold": [3, 16], "loot": [{"item": "glow_dust", "chance": 0.4}, {"item": "imp_stool", "chance": 0.3}, {"item": "minor_magicka_potion", "chance": 0.3}], "flavor": "哥布林薩滿揮舞綴骨法杖,指尖躍動著粗野的電光。"},
+  "goblin_shaman": {"sentient": true, "spells": ["heal_other"], "biomes": ["heartland"], "name": "哥布林薩滿", "danger": 3, "min_level": 3, "weight": 2, "strength": 38, "agility": 48, "speed": 46, "max_health": 50, "armor_rating": 8, "attack": {"name": "電擊咒", "damage": 13, "skill": 56, "element": "shock", "on_hit": {"status": "dot", "element": "shock", "magnitude": 3, "turns": 2, "chance": 0.4}}, "attacks": [{"name": "電擊咒", "damage": 13, "skill": 56, "element": "shock", "weight": 2, "on_hit": {"status": "dot", "element": "shock", "magnitude": 3, "turns": 2, "chance": 0.4}}, {"name": "骨杖打擊", "damage": 12, "skill": 56, "weight": 2}, {"name": "懾心咒", "damage": 9, "skill": 56, "weight": 1, "on_hit": {"status": "fear", "turns": 1, "chance": 0.25}}], "resist": {"magic": 20}, "loot_gold": [3, 16], "loot": [{"item": "glow_dust", "chance": 0.4}, {"item": "imp_stool", "chance": 0.3}, {"item": "minor_magicka_potion", "chance": 0.3}], "flavor": "哥布林薩滿揮舞綴骨法杖,指尖躍動著粗野的電光。"},
   "mountain_lion": {"biomes": ["heartland"], "name": "山獅", "danger": 3, "min_level": 3, "weight": 3, "strength": 56, "agility": 56, "speed": 58, "max_health": 58, "armor_rating": 8, "attack": {"name": "撲擊利爪", "damage": 15, "skill": 54}, "attacks": [{"name": "撲擊利爪", "damage": 15, "skill": 54, "weight": 2}, {"name": "獠牙咬擊", "damage": 14, "skill": 54, "weight": 2}, {"name": "狂猛撲咬", "damage": 24, "skill": 56, "weight": 1, "cooldown": 3, "when": {"hp_below": 0.5}}], "loot_gold": [0, 8], "loot": [{"item": "wolf_pelt", "chance": 0.5}, {"item": "bone_meal", "chance": 0.2}], "flavor": "一頭科洛溫高地的山獅伏低身軀,金瞳鎖定了你。"},
   "ogre": {"biomes": ["heartland"], "name": "奧格瑞姆", "danger": 4, "min_level": 5, "weight": 2, "strength": 74, "agility": 32, "speed": 36, "max_health": 92, "armor_rating": 14, "attack": {"name": "巨拳重砸", "damage": 18, "skill": 52}, "attacks": [{"name": "巨拳重砸", "damage": 18, "skill": 52, "weight": 2}, {"name": "橫掃猛擊", "damage": 16, "skill": 52, "weight": 2, "on_hit": {"status": "stagger", "turns": 1, "chance": 0.3}}, {"name": "狂怒猛砸", "damage": 28, "skill": 54, "weight": 1, "cooldown": 3, "when": {"hp_below": 0.5}}], "resist": {"frost": 25}, "loot_gold": [5, 22], "loot": [{"item": "healing_potion", "chance": 0.4}, {"item": "bone_meal", "chance": 0.5}], "flavor": "一尊兩人高的奧格瑞姆從岩後直起身,巨拳一晃就能碾碎人骨。"},
   "land_dreugh": {"biomes": ["heartland"], "name": "陸行德魯格", "danger": 5, "min_level": 8, "weight": 1, "strength": 76, "agility": 46, "speed": 44, "max_health": 200, "armor_rating": 22, "attack": {"name": "電爪重擊", "damage": 28, "skill": 64, "element": "shock", "on_hit": {"status": "dot", "element": "shock", "magnitude": 5, "turns": 2, "chance": 0.4}}, "attacks": [{"name": "電爪重擊", "damage": 28, "skill": 64, "element": "shock", "weight": 2, "on_hit": {"status": "dot", "element": "shock", "magnitude": 5, "turns": 2, "chance": 0.4}}, {"name": "巨螯夾擊", "damage": 26, "skill": 64, "weight": 2}, {"name": "巨螯橫掃", "damage": 22, "skill": 64, "weight": 2, "on_hit": {"status": "stagger", "turns": 1, "chance": 0.25}}, {"name": "雷霆爆發", "damage": 40, "skill": 66, "element": "shock", "weight": 1, "cooldown": 3}], "resist": {"shock": 50, "magic": 20}, "loot_gold": [20, 60], "loot": [{"item": "glow_dust", "chance": 0.5}, {"item": "ruby", "chance": 0.2}, {"item": "healing_potion", "chance": 0.5}], "flavor": "季節驅使陸行德魯格離水上岸——甲殼森然、巨螯間躍動著積蓄的雷荷。"},

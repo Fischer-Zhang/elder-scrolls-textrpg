@@ -1016,6 +1016,11 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
                 why = "恐懼" if magic.is_feared(e) else "麻痺"
                 ui.message(f"{e.name}因{why}而無法行動。", style="blue")
                 continue
+            # R87 敵方支援施法者:法系/祭司怪在隊友血低/缺 buff 時治療/護盾/號令其他敵人(換損該回合攻擊)。
+            support = magic.enemy_support_act(e, enemies, gamedata)
+            if support is not None:
+                ui.message(support["message"], style="cyan")
+                continue
             tgt = combat.pick_player_side_target(player, battle["allies"], state.rng)
             blk = blocking if tgt is player else False
             e_atk = combat.choose_attack(e, state.rng, tgt)   # 怪物多攻擊模式:選招(加權/血量階段/蓄力冷卻)
