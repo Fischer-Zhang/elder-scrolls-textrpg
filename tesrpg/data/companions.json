@@ -18,6 +18,7 @@
     "name": "葛蕾塔", "cost": 240,
     "strength": 50, "agility": 38, "speed": 38, "max_health": 100, "armor_rating": 28,
     "attack": {"name": "盾擊", "damage": 11, "skill": 48},
+    "spells": ["ward_ally"],
     "blurb": "以重盾聞名的女戰士葛蕾塔,血厚甲硬,替你扛下傷害 —— 沉默如山,卻把同袍護在身後。",
     "dialogue": [
       "「站我身後。盾是我的,傷我替你擋。」",
@@ -33,6 +34,7 @@
     "name": "薇拉妮", "cost": 260,
     "strength": 40, "agility": 46, "speed": 50, "max_health": 50, "armor_rating": 8,
     "attack": {"name": "火焰飛彈", "damage": 15, "skill": 56, "element": "fire"},
+    "spells": ["heal_other"],
     "blurb": "流浪的火系術士薇拉妮,輸出兇猛但體質脆弱,攻擊無視護甲 —— 也藏著一手不外傳的生機之術。",
     "dialogue": [
       "「火焰歸我管,別站太近。錢付清了,法術自然到位。」",
@@ -69,6 +71,7 @@
     "name": "老兵隊長", "cost": 400, "warlord": true,
     "strength": 62, "agility": 50, "speed": 44, "max_health": 96, "armor_rating": 28,
     "attack": {"name": "戰錘", "damage": 18, "skill": 62},
+    "spells": ["rally"],
     "blurb": "身經百戰的隊長,唯有立足一方的領袖請得動 —— 帶兵嚴整,能在亂軍中穩住陣腳。"
   },
   "farkas": {
@@ -105,6 +108,7 @@
     "name": "德雷拉斯", "cost": 0, "recruit_quest": "recruit_drelas",
     "strength": 38, "agility": 48, "speed": 50, "max_health": 54, "armor_rating": 8,
     "attack": {"name": "冰焰術", "damage": 16, "skill": 58, "element": "frost"},
+    "spells": ["regen_aura", "heal_other"],
     "blurb": "晨風的丹莫秘法者德雷拉斯,自我放逐於灰燼荒原 —— 法術精深卻體質孱弱,尋找失落的秘法手稿以證清白。",
     "dialogue": [
       "「外鄉人,你替我了結了灰燼裡的麻煩。我以秘法相報 —— 暫且同行。」",

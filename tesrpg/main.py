@@ -990,11 +990,16 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
         for e in enemies:
             note_trap(e)
 
-        # ---- 同伴階段(各自攻擊一個隨機存活敵人)----
+        # ---- 同伴階段(輔助型先試支援施法,否則攻擊一個隨機存活敵人)----
         for a in battle["allies"]:
             if not alive_e():
                 break
             if not combat.is_alive(a) or magic.is_incapacitated(a):
+                continue
+            # R86 角色感知支援:輔助型同伴在受傷/缺 buff 時施治療/護盾/激勵(含照顧玩家),否則攻擊。
+            support = magic.companion_support_act(a, player, battle["allies"], gamedata)
+            if support is not None:
+                ui.message(support["message"], style="green")
                 continue
             tgt = state.rng.choice(alive_e())
             a_atk = combat.choose_attack(a, state.rng, tgt)   # 同伴多攻擊模式(無曲目 → 後備單招,行為不變)

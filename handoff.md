@@ -33,7 +33,7 @@
 - **開局背景**(14 種,只給處境不給數值)+ **種子重玩性**;冒險/傳奇兩種死亡模式 + 一生傳奇總結評分
 
 #### 戰鬥與魔法
-- 回合制**多敵 + 團隊戰鬥**(召喚物/傭兵同伴);**同伴角色化**(9 具名同伴:持久 HP/羈絆 + 具名招募任務 + 羈絆階解鎖的專屬支線 + 就地對話 + 完成支線的忠誠弧頂點〔戰術盟友光環/被動非戰鬥槓桿;盟友限定守刺客紅線〕;復用 `companion_bond` 當忠誠軸,零新存檔欄);**六大學派 + AoE**(召喚/秘術補完至各 7 法術,與毀滅/復原/變換同列;**召喚**=元素元身/魔人 + 束縛兵刃〔法系近戰〕+ 亡者復生〔屍起為盟〕、**秘術**=法術結界〔吸法術傷·吸魔變體〕+ 驅散 + 群體擒魂);元素抗性/弱點、狀態效果、出生星座每日之力
+- 回合制**多敵 + 團隊戰鬥**(召喚物/傭兵同伴);**同伴角色化**(9 具名同伴:持久 HP/羈絆 + 具名招募任務 + 羈絆階解鎖的專屬支線 + 就地對話 + 完成支線的忠誠弧頂點〔戰術盟友光環/被動非戰鬥槓桿;盟友限定守刺客紅線〕;復用 `companion_bond` 當忠誠軸,零新存檔欄;**R86 同伴戰鬥施法**:輔助型同伴角色感知主動支援 —— 法系治療〔含治療玩家〕/盾衛護盾/領袖激勵,門檻+冷卻+固定威力「輔助但不破關」〔sim_party 驗施法邊際 +0~8%·無 stalemate〕);**六大學派 + AoE**(召喚/秘術補完至各 7 法術,與毀滅/復原/變換同列;**召喚**=元素元身/魔人 + 束縛兵刃〔法系近戰〕+ 亡者復生〔屍起為盟〕、**秘術**=法術結界〔吸法術傷·吸魔變體〕+ 驅散 + 群體擒魂);元素抗性/弱點、狀態效果、出生星座每日之力
 - **三系資源對稱**:施法也耗體力、力竭降法效(`cast_fatigue_*`),**法袍套裝**省體施法(法師的對應裝甲)
 - **煉金毒藥 + 武器塗毒**;**毒劑深化(Phase 2 / R31)**:五毒型(DoT/麻痺 + 衰毒/遲緩/懼毒,特殊型需里程碑解鎖;solo BOSS 對控制型免疫);**煉金限時增益藥水(深化 Phase 1 / R30)**:強化屬性/技能 + 抗元素**限時**藥劑(走獨立 `potion_*` 層、絕不寫 base;可釀池避 strength/武器技能守刺客紅線);**效果逐步揭露(Phase 3 / R32)**:材料效果預設 `???`,經嚐試/煉製/技能揭露(純資訊層,不碰 brew 數學);**疾病可釀(R54)**:療疾材料(大蒜/焦皮鼠革/吸血鬼塵 `cure_disease`)→ 釀療疾藥水(統一淨化,同神殿/法術/`cure_disease_potion`);**潛行刺客系**:偷襲先機、暗殺殘響、雙持、**隱遁再襲(潛行 25 里程碑「隱遁之術」;連環踏影對單體仍遞減、反 solo boss 風箏)**、戰前偵查;武器流派(潛襲/破甲/速度)
 
@@ -1401,6 +1401,19 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 - **guards(僅 `tests/test_data_schema`)**:① 放寬 `_DLG_EFFECT_TYPES` = `{faction_standing} ∪ events 支援集`(否則 `blessing` heal 被既有 guard 誤殺);② role FK(`roles` 值 ∈ topics、`npc.role` ∈ roles keys);③ rumor FK(`rumor_quest` ∈ quests 且 source==rumor、`rumor_landmark` ∈ landmarks、`rumor_disposition` 0-100 int);④ **source:"rumor" 可達性**(每條由某 NPC `rumor_quest` 回指·防孤兒,擴 R80 guard);⑤ 線索目標 location **無 `visible` gate**(可接去不了)。新 `tests/test_rumor_clues.py`(role 話題出現/好感 gate·offered_rumor quest/landmark 兩路·rumor_disposition gate·blessing once·already-cleared 跳過·不漏告示板·action_talk 追問傳聞煙霧手動 patch UI)。
 - **🔴 sim_assassin BYTE-IDENTICAL**(隔離 worktree vs HEAD 證:純社交/內容·`sim_assassin.py` 只 import combat/magic/stats/inventory,不碰 dialogue/npcs/quests/landmarks·零碰 combat/formulas)。**零新存檔欄**(rumor 線索 → `char.quests`/`completed_quests`;rumor 地標 → `discovered_landmarks`;role `once` → `dialogue_done`;好感 → `npc_disposition`;新 NPC 欄 = gamedata 唯讀非存檔·舊存檔載入即相容無遷移)。**防刷**:追問傳聞一次性鎖、`blessing` once、線索 reward 只純量。`run_all` 84(新 `test_rumor_clues`)。
 - **🔴 鐵律**:加 role 純改 `dialogue.json`(roles map + topics·身份 flavor 為主·功能 effect 走 events 支援集 + `once` 防刷·不帶 skill_xp)+ `npcs.json` role 欄;加流言線索純改 `npcs.json`(rumor_quest/rumor_landmark/rumor_disposition)+ `quests.json`(`source:"rumor"`·僅 clear/reach·**目標無 visible gate**·NPC↔線索目標**須同省**);**新增 source:rumor 任務務必有 NPC rumor_quest 回指**(否則 reachability guard 攔=孤兒);追問傳聞兌現走既有 `_accept_and_brief`/`landmarks.discover`;純社交內容 → sim byte-identical 免跑(動 combat/formulas 才需)。**前瞻**:Phase D 可純資料把其餘 ~40 具名 rumor NPC 逐批接上 + 補 role 密度;若要更多功能 role 話題(商人折扣等)需新 effect + 評估碰 shop/存檔欄。
+
+---
+
+### R86 · 同伴戰鬥施法:輔助型同伴在戰鬥中各施其職(角色感知支援)[re-sim]
+
+評估揪出最大「死 build」:13 同伴全 `spells=null`,戰鬥中只 `choose_attack→resolve_attack` **純近戰**(main.py ally phase);盟友支援法術(heal_other/healing_circle/regen_aura/ward_ally/rally)有售卻**無實體能施**;`sim_builds` 全程 `allies=[]` 從不模擬同伴 → 治療型同伴是死內容。使用者點名「**騎士這種輔助型 NPC 也該用他該用的法術**」→ 做 **角色感知支援**(各原型各施其職)、拍板 **輔助但不破關**。
+
+- **機制(`magic.py`·複用 `_apply_to_allies`·🔴 不碰 player-only 的 `magic.cast`)**:新 `companion_support_act(companion, player, allies, gd)` 回施放結果或 `None`(→ 走攻擊)。目標池=`[player]+存活同伴`(**含玩家** —— 治療/護盾照顧英雄;player 是 Character 但 health/max_health/active_effects 同介面,`_apply_to_allies` 直接適用)。優先序:**① 反應式治療**(heal/regen·池中 HP 比 < `COMPANION_HEAL_THRESHOLD=0.55`;regen 只在無人持有時施=不疊)優先於 **② 主動式增益**(shield/empower·目標缺該 buff 才施)。**固定 `power=1.0`**(法術 base magnitude·不吃智力/裝備·同伴支援不隨玩家成長爆走)。冷卻 `support_cd`(active_effects 暫態·`tick_effects` 遞減·`COMPANION_SUPPORT_COOLDOWN=2`)。**🔴 與 capstone 光環/自身去重**(掃 active_effects 同 kind:完成羈絆弧者光環常駐→主動施法閒置走攻擊);**empower 玩家被 combat `not _is_player` 守門**(combat.py:501)→ 主動排除玩家 → veteran 的 rally 只益同伴(守玩家偷襲紅線)。
+- **資料(`companions.json`)**:4 輔助同伴角色感知 `spells` —— `hedge_mage` `["heal_other"]`、`drelas` `["regen_aura","heal_other"]`(法系治療)、`shieldmaiden` `["ward_ally"]`(盾衛護盾)、`veteran` `["rally"]`(領袖激勵)。其餘 9 同伴無 `spells`=純近戰不變。
+- **接線(`main.py` ally phase·:994)**:同伴攻擊前 `res = magic.companion_support_act(...)`;`res is not None` → `ui.message(res["message"])`+`continue`(用本回合支援)。
+- **🔴 平衡(新 `sim_party.py`·輔助但不破關)**:比照 sim_builds minimal `_round` + 同伴階段。關鍵驗證=**「施法」的邊際效應 vs 純近戰同伴(同隊伍)= +0~8%**(3 同伴打終王 mehrunes_dagon 96% 中 **88% 來自 4v1 隊伍規模·施法僅 +8%**)→ 不是施法 trivialize 而是隊伍人數(pre-existing)。**無 stalemate**(逾時 0%)·單同伴終王仍難(warrior_1H solo 14%→帶 1 同伴 30-51%)·solo/輕隊仍有真實難度。**結論:施法邊際 +0~8% 為「輔助但不破關」達標**(大數字是隊伍規模非施法)。
+- **🔴 sim_assassin/sim_builds BYTE-IDENTICAL**(隔離 worktree diff 空):未碰 `combat.py`/`formulas.py`;helper 是 `magic.py` additive 函式(sim 不呼叫);ally-phase 改動只在 `main.run_battle`(sim_assassin 走自有 `_round`·sim_builds `battle={"allies":[]}` 從不入 ally phase)。**零新存檔欄**(`spells`=gamedata 唯讀·`support_cd`=暫態 active_effect R03)。`run_all` 89(新 `test_companion_cast`:治療含玩家/門檻/冷卻/AoE·單體/護盾含玩家·激勵排除玩家/buff 去重〔含 capstone〕/反應優先);run_battle 煙霧(同伴治療受傷玩家·無 crash)。
+- **🔴 鐵律**:加輔助同伴純改 `companions.json spells` 欄(helper 通用·heal 反應式/shield+empower 主動式自動分流·spells ∈ spells.json·target ∈ {ally,allies}·kind ∈ `_ALLY_KINDS`);治療含玩家、empower 排除玩家(守 `not _is_player`)、固定 power=1.0(不餵玩家成長);調 `COMPANION_HEAL_THRESHOLD`/`COMPANION_SUPPORT_COOLDOWN`/幅度 = 平衡取捨→跑 `sim_party`(守邊際溫和/無 stalemate);動 helper/ally-phase→跑 `sim_assassin`(守 byte-identical)。**前瞻**:① 擴更多同伴 `spells`(farkas/aela…)② 同伴攻擊法術(元素 nuke·非支援·另評估平衡)③ 敵方支援施法者(enemy healer·更大 AI·另里程碑)。
 
 ---
 

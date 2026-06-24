@@ -101,6 +101,99 @@ def _ally_verb(kind: str) -> str:
             "empower": "受號令鼓舞、戰意大振"}.get(kind, "受到法術影響")
 
 
+# ── 同伴支援施法(R86 角色感知)──────────────────────────────────────────────
+# 輔助型同伴依其 `spells`(companions.json)在戰鬥中主動施放支援:法系→治療(反應式)、
+# 盾衛→護盾 / 領袖→激勵(主動式)。複用 `_apply_to_allies`(非玩家耦合的套用路徑),**不碰 magic.cast**
+# (cast 是玩家專用,讀 magicka/skill/attr,Creature 無)。🔴 平衡:固定 power=1.0(不吃智力/裝備)、
+# HP 門檻觸發治療、冷卻、與 capstone 光環/自身去重(掃 active_effects 同 kind)。只在 main.run_battle 的
+# ally phase 呼叫(sim_assassin/sim_builds 無此路徑 → byte-identical)。
+COMPANION_HEAL_THRESHOLD = 0.55   # 池中(含玩家)HP 比最低者低於此 → 反應式治療
+COMPANION_SUPPORT_COOLDOWN = 2    # 任一支援後的冷卻回合(active_effects support_cd;tick_effects 遞減)
+_COMPANION_HEAL_KINDS = ("heal", "apply_status")   # 反應式(直接治療 / HoT)
+_COMPANION_BUFF_KINDS = ("shield", "empower")      # 主動式(護盾 / 激勵)
+
+
+def _co_hp_ratio(e) -> float:
+    mx = getattr(e, "max_health", 0) or 1
+    return e.health / mx
+
+
+def _co_has_kind(entity, kind: str) -> bool:
+    return any(x.get("kind") == kind and x.get("turns", 0) > 0
+               for x in getattr(entity, "active_effects", []))
+
+
+def _companion_spells(companion, gamedata) -> list:
+    return list(gamedata.companions.get(getattr(companion, "template_id", ""), {}).get("spells", []) or [])
+
+
+def companion_support_act(companion, player, allies, gamedata) -> dict | None:
+    """輔助型同伴的支援施法決策(角色感知)。回施放結果 dict(用本回合)或 None(→ 呼叫端走攻擊)。
+
+    優先序:① 反應式治療(池含玩家·HP 比 < 門檻)② 主動式增益(目標缺該 buff)。冷卻中或無 spells → None。
+    幅度固定 power=1.0;與 capstone 光環/自身去重(掃 active_effects 同 kind)。"""
+    spells = _companion_spells(companion, gamedata)
+    if not spells or _co_has_kind(companion, "support_cd"):
+        return None
+    from tesrpg.systems import combat
+    pool = [player] + [a for a in allies if combat.is_alive(a)]        # 含玩家(治療/護盾照顧英雄)
+    res = (_companion_try_heal(companion, spells, pool, gamedata)
+           or _companion_try_buff(companion, spells, player, pool, gamedata))
+    if res:
+        companion.active_effects.append({"kind": "support_cd", "turns": COMPANION_SUPPORT_COOLDOWN})
+    return res
+
+
+def _companion_try_heal(companion, spells, pool, gamedata):
+    """反應式治療:池中最低 HP 比 < 門檻才施。regen(HoT)只在無人持有時施(不疊);否則直接治療。"""
+    heals = [s for s in spells if gamedata.spells[s]["effect"]["kind"] in _COMPANION_HEAL_KINDS]
+    if not heals:
+        return None
+    lowest = min(pool, key=_co_hp_ratio)
+    if _co_hp_ratio(lowest) >= COMPANION_HEAL_THRESHOLD:
+        return None
+    living = [e for e in pool if e.health > 0]
+    for s in heals:                                                    # regen(AoE HoT):無人持有才施(避免疊)
+        eff = gamedata.spells[s]["effect"]
+        if eff["kind"] == "apply_status" and all(not _co_has_kind(e, eff["status"]["status"]) for e in living):
+            return _companion_cast(companion, s, living, gamedata)
+    hurt_n = sum(1 for e in pool if _co_hp_ratio(e) < COMPANION_HEAL_THRESHOLD)
+    aoe = [s for s in heals if gamedata.spells[s]["effect"]["kind"] == "heal"
+           and gamedata.spells[s]["target"] == "allies"]
+    if aoe and hurt_n >= 2:                                            # ≥2 人傷且有 AoE → AoE 直接治療
+        return _companion_cast(companion, aoe[0], living, gamedata)
+    single = [s for s in heals if gamedata.spells[s]["effect"]["kind"] == "heal"
+              and gamedata.spells[s]["target"] == "ally"]
+    if single:                                                         # 否則單體援護最低者
+        return _companion_cast(companion, single[0], [lowest], gamedata)
+    return None
+
+
+def _companion_try_buff(companion, spells, player, pool, gamedata):
+    """主動式增益:目標缺該 buff 才施(與 capstone 光環/自身去重)。
+    shield 護池中最脆且無盾者(含玩家);empower 套缺激勵的同伴(玩家被 combat `not _is_player` 守門 → 排除)。"""
+    from tesrpg.systems import combat
+    for s in spells:
+        kind = gamedata.spells[s]["effect"]["kind"]
+        if kind == "shield":
+            cand = [e for e in pool if e.health > 0 and not _co_has_kind(e, "shield")]
+            if cand:
+                return _companion_cast(companion, s, [min(cand, key=_co_hp_ratio)], gamedata)
+        elif kind == "empower":
+            troops = [a for a in pool if a is not player and combat.is_alive(a) and not _co_has_kind(a, "empower")]
+            if troops:
+                return _companion_cast(companion, s, troops, gamedata)
+    return None
+
+
+def _companion_cast(companion, spell_id, dests, gamedata) -> dict:
+    """套用同伴支援法術到 dests(固定 power=1.0;複用 `_apply_to_allies`)。回 UI 結果。"""
+    sp = gamedata.spells[spell_id]
+    names = _apply_to_allies(sp["effect"]["kind"], sp["effect"], 1.0, dests)
+    return {"ok": True, "spell": spell_id,
+            "message": f"{companion.name}施展「{sp['name']}」 —— {'、'.join(names)}{_ally_verb(sp['effect']['kind'])}。"}
+
+
 def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
          target=None, battle: dict | None = None, enemies: list | None = None,
          corpses: list | None = None, mounted: bool = False) -> dict:
