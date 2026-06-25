@@ -1,0 +1,55 @@
+{
+  "_doc": "生態系 → 煉金材料池(R93)。野採事件的 forage_pool 效果引用 pool id,從該生態系池加權隨機抽取任意組合 + 數量(有上限)。tier(common/uncommon/rare)決定抽中權重,見 events._FORAGE_TIER_WEIGHTS;採集次數/總量上限隨 scout(偵查)技能成長,見 events.forage_pool_draw。新增可野採材料:把 id 放進對應生態系的某個 tier 即可(純資料,R02)。每個材料至少入一個池(test_foraging 守);改池不碰戰鬥 → sim 免疫。",
+  "pools": {
+    "ashland": {
+      "_name": "晨風火山灰田",
+      "common": ["ash_yam", "scrib_jelly", "canis_root"],
+      "uncommon": ["brimstone", "shade_cap", "imp_stool"],
+      "rare": ["charred_skeever_hide"]
+    },
+    "swamp": {
+      "_name": "黑沼澤毒沼",
+      "common": ["nightshade", "imp_stool", "deathbell"],
+      "uncommon": ["bone_meal", "vampire_dust"],
+      "rare": ["spider_egg"]
+    },
+    "heartland": {
+      "_name": "賽羅迪爾腹地農田",
+      "common": ["wheat", "garlic", "red_apple"],
+      "uncommon": ["juniper_berries", "blue_mountain_flower"]
+    },
+    "snow": {
+      "_name": "天際凍原",
+      "common": ["frost_mirriam", "snowberries", "tundra_cotton", "blue_mountain_flower", "lavender"],
+      "uncommon": ["monarch_wing", "troll_fat", "ogres_teeth", "bear_claw"],
+      "rare": ["spider_egg", "charred_skeever_hide"]
+    },
+    "desert": {
+      "_name": "漢默法爾黃沙綠洲",
+      "common": ["dragons_tongue", "fire_salts", "canis_root"],
+      "uncommon": ["ash_yam", "pearl"],
+      "rare": ["bone_meal"]
+    },
+    "moor": {
+      "_name": "高岩荒沼",
+      "common": ["lavender", "deathbell", "void_salts"],
+      "uncommon": ["nightshade", "vampire_dust"]
+    },
+    "jungle": {
+      "_name": "瓦倫巨木林",
+      "common": ["monarch_wing", "hawk_feather", "nightingale_feather"],
+      "uncommon": ["glow_dust", "scrib_jelly"],
+      "rare": ["nightshade"]
+    },
+    "savanna": {
+      "_name": "艾爾斯維爾糖楓草海",
+      "common": ["moon_sugar", "glow_dust"],
+      "uncommon": ["hawk_feather", "nightshade"]
+    },
+    "border": {
+      "_name": "邊陲混生荒地",
+      "common": ["blue_mountain_flower", "nightshade"],
+      "uncommon": ["lavender"]
+    }
+  }
+}

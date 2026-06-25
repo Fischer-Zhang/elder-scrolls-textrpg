@@ -1404,6 +1404,20 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 
 ---
 
+### R93 · 野外採集解耦:生態系材料池隨機抽取(動作/物品/數量三者解耦·偵查成長)[save-safe]
+
+承使用者「評估」兩問(野採是否固定組合 / 毒藥幾型)→ 拍板把採集動作/採到的物品/數量**三者解耦**:一次採集從「該生態系材料池」加權隨機抽**任意組合 + 數量(有上限)**,取代舊「寫死固定材料束、一次選一束」。三道方向使用者拍板:**① 池資料放新檔 `alchemical_ecology.json`**(專檔·可擴 tier/季節);**② 採集量隨 `scout`(偵查)技能成長**(跨技能 synergy·明確平衡軸·使用者選);**③ 範圍 = 轉換 9 forage + 把非 forage 材料納入野採池**。
+
+- **新檔 `data/alchemical_ecology.json`**:9 生態系池(ashland/swamp/heartland/snow/desert/moor/jungle/savanna/border)·各 `common/uncommon/rare` tier·`_doc`/`_name` 以 `_` 前綴不入抽取。`gamedata.ecology` 載入(`gamedata.py` +1 行)。**全 33 材料皆入 ≥1 池**(`test_foraging` 守)→ 含舊「只靠掉落」的 charred_skeever_hide/bone_meal/spider_egg/vampire_dust 與「forage+shop 無 loot」者全部野採可得。
+- **新 effect type `forage_pool`**(`systems/events.py`·**非純 JSON·必動邏輯**:`item` 效果無法表達隨機抽池):`forage_pool_draw(char,gd,pool_id,rng)` 加權抽取(`_weighted_pick` 整數累積·決定性走傳入 `state.rng`)·`apply_effects` 加 `elif t=="forage_pool"` 分支。**採集量公式**(`_FORAGE_*` 常數·**唯一旋鈕**):`draws = 2 + scout//40`·`cap(總量) = 4 + scout//25`·每抽 qty 1..2·tier 權重 common4/uncommon2/rare1。**learn-by-doing**:採到才練 scout 0.4 + alchemy 0.5(**空手不練**·R93 審查 nit 修正:`use_skill` 移入 `if picks:`)。
+- **events.json**:9 個 `*_forage` 事件 options 改成單一 `forage_pool` 選項 + 保留 opt-out;scene `text` 保留。`wild_valenwood_forager`(NPC 任務鉤)/`herb_patch`(通用墊底)/`*_ayleid_ruin`/`witch_coven`/`two_moons_dance`(check 型特殊事件)**不轉**。
+- **guards**:`test_crafting._wild_gatherable` + `test_polish._is_forage`/`test_new_forage_ingredients_valid` 認得 `forage_pool`(掃池成員·跳過 `_` 鍵);新 `tests/test_foraging.py`(決定性/上限/scout 成長/全材料入池/全 pool id 解析/空池不練/整合進背包)。
+- **🔴 平衡(crux·brew 邏輯零改·只動取得端)**:對抗審查(3 維 + 逐發現驗證·9 agent)**6 發現·0 defect**(3 confirmed 皆 minor/nit·餘 by_design):**① 攻擊向 fortify 對「零新共置」**(troll_fat+ogres_teeth=str 等舊本就同 option 共置;blade/h2h/sneak 對現仍跨池分離)→ R92 sim-gated 紅線守住;**② smithing/mysticism 無對應材料**(grep 空)→ 野採物理不可能產出永久逃逸藥;**③ 但「不引入新共置」對 buff 池不成立**:**5 對安全增益材料**首次同池共置(fattr_speed·fskill_alchemy·fskill_athletics·fskill_security〔皆 desert〕·resist_magic〔jungle〕)→ 可單次野採湊齊,**但五者全在 R90/R91 安全池**(非 strength/武器/sneak/destruction/smithing/mysticism)→ 不破紅線;FAIL-pair 不變式(每 kind 全域恰一對)仍成立;**④ scout cap 無硬天花板**(線性放大)= by-design 豐度(材料非戰鬥·限時 buff/毒個別受 R30/R31 夾)。
+- **🔴 sim_assassin BYTE-IDENTICAL**(零碰 combat.py/formulas.py·diff --stat 證·forage 不在 sim 路徑·solo 0%/精英 95.4%/4-bandit 60.6% 與基線同)·**零新存檔欄**(`forage_pool` 效果不入檔·`ecology` gamedata 唯讀·`scout` 既有技能·forage 走 `state.rng` 已序列化→決定性可重現)。`run_all` **94**(新 `test_foraging`)。
+- 🔴 **鐵律**:加可野採材料純改 `alchemical_ecology.json`(放進對應生態系某 tier·**每材料須入 ≥1 池**·`test_foraging` 守)+ 用 `forage_pool` 引用(pool id 須存在·防孤兒);採集量唯一旋鈕 = `events._FORAGE_*` 常數(scout 成長軸·動之屬平衡取捨**先問**);**安全池共置 OK·攻擊向新共置須先過 R92 sim 閘·smithing/mysticism 永不入池**;forage 走 `state.rng`(決定性)·空手不練技能;不碰 combat/formulas → sim byte-identical 免跑(確認跑)。**前瞻**:tier 權重/季節/天氣物種變化、稀有材料專屬高 scout gate 可後續純資料擴。
+
+---
+
 ### R92 · 攻擊向 fortify 藥開放:力量/武器技能/潛行/毀滅(依 R30「放開→必過 sim」)[re-sim] [save-safe]
 
 使用者質疑 R90/R91 的「安全池排除強化力量/毀滅」=平衡實作妥協,非設定真理(這些是 ES 正典煉金台柱);R30 紅線原文是「可釀池避 strength/武器技能…**放開則必過 `sim_assassin` 閘**」= 暫禁、要開先驗 sim。使用者拍板:**開攻擊向 fortify + 跑 sim 驗·smithing 永久擋**。本輪刻意**非 byte-identical**(開放玩家可釀攻擊藥 = 平衡變動),但**戰鬥數學零改**(只加資料 + 新 sim 驗證段)。

@@ -244,19 +244,9 @@
   },
   "morrowind_forage": {
     "weight": 3, "trigger": {"contexts": ["explore"], "provinces": ["晨風"]},
-    "title": "火山灰田", "text": "灰燼覆蓋的田壟間,冒出幾叢火山特有的菌菇與作物。",
+    "title": "火山灰田", "text": "灰燼覆蓋的田壟間,冒出幾叢火山特有的菌菇與作物,岩縫陰影裡還藏著些別的東西。",
     "options": [
-      {"text": "採集火山材料",
-       "effects": [{"type": "item", "item": "ash_yam", "qty": 1},
-                   {"type": "item", "item": "scrib_jelly", "qty": 1},
-                   {"type": "item", "item": "canis_root", "qty": 1},
-                   {"type": "skill_xp", "skill": "alchemy", "amount": 0.5},
-                   {"type": "message", "text": "你採下了灰薯、彈蟲凍與一截犬根。"}]},
-      {"text": "鑿掘火山岩穴",
-       "effects": [{"type": "item", "item": "brimstone", "qty": 1},
-                   {"type": "item", "item": "shade_cap", "qty": 1},
-                   {"type": "skill_xp", "skill": "alchemy", "amount": 0.5},
-                   {"type": "message", "text": "你從火山岩縫鑿得幾塊硫磺,陰影裡還採到一叢影菇。"}]},
+      {"text": "細心採集這片火山灰地", "effects": [{"type": "forage_pool", "pool": "ashland"}]},
       {"text": "沒興趣", "effects": []}
     ]
   },
@@ -285,56 +275,25 @@
   },
   "blackmarsh_forage": {
     "weight": 3, "trigger": {"contexts": ["explore"], "provinces": ["黑沼澤"]},
-    "title": "沼澤毒草", "text": "陰濕的水窪邊,毒茄參與傘菌在腐葉間悄然生長。",
+    "title": "沼澤毒草", "text": "陰濕的水窪邊,毒茄參與傘菌在腐葉間悄然生長,泥水深處還沉著些不知名的東西。",
     "options": [
-      {"text": "採集沼澤材料",
-       "effects": [{"type": "item", "item": "deathbell", "qty": 1},
-                   {"type": "item", "item": "imp_stool", "qty": 1},
-                   {"type": "item", "item": "nightshade", "qty": 1},
-                   {"type": "skill_xp", "skill": "alchemy", "amount": 0.5},
-                   {"type": "message", "text": "你小心採下了毒茄參、傘菌與顛茄。"}]},
+      {"text": "小心採集這片毒沼", "effects": [{"type": "forage_pool", "pool": "swamp"}]},
       {"text": "沒興趣", "effects": []}
     ]
   },
   "cyrodiil_forage": {
     "weight": 3, "trigger": {"contexts": ["explore"], "provinces": ["賽羅迪爾"]},
-    "title": "帝國農田", "text": "帝都近郊的農田與果園間,麥穗、蒜株與紅蘋果正當時節。",
+    "title": "帝國農田", "text": "帝都近郊的農田與果園間,麥穗、蒜株與紅蘋果正當時節,田畔矮灌叢上還結著野莓。",
     "options": [
-      {"text": "採集農作",
-       "effects": [{"type": "item", "item": "wheat", "qty": 1},
-                   {"type": "item", "item": "garlic", "qty": 1},
-                   {"type": "item", "item": "red_apple", "qty": 1},
-                   {"type": "skill_xp", "skill": "alchemy", "amount": 0.5},
-                   {"type": "message", "text": "你摘了些麥穗、大蒜與紅蘋果。"}]},
-      {"text": "摘採灌叢野莓",
-       "effects": [{"type": "item", "item": "juniper_berries", "qty": 1},
-                   {"type": "skill_xp", "skill": "alchemy", "amount": 0.5},
-                   {"type": "message", "text": "你從田畔的矮灌叢摘下一串杜松子。"}]},
+      {"text": "在農田與灌叢間採集", "effects": [{"type": "forage_pool", "pool": "heartland"}]},
       {"text": "沒興趣", "effects": []}
     ]
   },
   "skyrim_forage": {
     "weight": 3, "trigger": {"contexts": ["explore"], "provinces": ["天際"]},
-    "title": "凍原採集", "text": "雪線下的背風坡上,幾叢耐寒的山藍花與薰衣草頂著霜開了花。",
+    "title": "凍原採集", "text": "雪線下的背風坡上,幾叢耐寒的香草頂著霜開了花;不遠處的雪地裡還散著猛獸啃剩的殘骸。",
     "options": [
-      {"text": "採集寒帶香草",
-       "effects": [{"type": "item", "item": "blue_mountain_flower", "qty": 1},
-                   {"type": "item", "item": "lavender", "qty": 1},
-                   {"type": "item", "item": "monarch_wing", "qty": 1},
-                   {"type": "skill_xp", "skill": "alchemy", "amount": 0.5},
-                   {"type": "message", "text": "你採下了山藍花、薰衣草與一對帝王蝶翼。"}]},
-      {"text": "翻找霜地野物",
-       "effects": [{"type": "item", "item": "frost_mirriam", "qty": 1},
-                   {"type": "item", "item": "snowberries", "qty": 1},
-                   {"type": "item", "item": "tundra_cotton", "qty": 1},
-                   {"type": "skill_xp", "skill": "alchemy", "amount": 0.5},
-                   {"type": "message", "text": "你採下了霜薄荷、雪莓與一把苔原棉。"}]},
-      {"text": "搜尋猛獸殘骸",
-       "effects": [{"type": "item", "item": "troll_fat", "qty": 1},
-                   {"type": "item", "item": "ogres_teeth", "qty": 1},
-                   {"type": "item", "item": "bear_claw", "qty": 1},
-                   {"type": "skill_xp", "skill": "alchemy", "amount": 0.5},
-                   {"type": "message", "text": "你從雪地裡的獸骸取得巨魔脂、食人魔牙與一副熊爪。"}]},
+      {"text": "在凍原上四處搜採", "effects": [{"type": "forage_pool", "pool": "snow"}]},
       {"text": "沒興趣", "effects": []}
     ]
   },
@@ -342,11 +301,7 @@
     "weight": 3, "trigger": {"contexts": ["explore"], "provinces": ["邊境"]},
     "title": "邊陲野採", "text": "無人管轄的邊境荒地上,各方草藥在亂石與沼氣間混雜叢生。",
     "options": [
-      {"text": "採集野草",
-       "effects": [{"type": "item", "item": "blue_mountain_flower", "qty": 1},
-                   {"type": "item", "item": "nightshade", "qty": 1},
-                   {"type": "skill_xp", "skill": "alchemy", "amount": 0.5},
-                   {"type": "message", "text": "你在亂石間採得山藍花,又在沼氣邊摘下一株顛茄。"}]},
+      {"text": "在混生荒地上採集", "effects": [{"type": "forage_pool", "pool": "border"}]},
       {"text": "沒興趣", "effects": []}
     ]
   },
@@ -379,19 +334,9 @@
   },
   "hammerfell_forage": {
     "weight": 3, "trigger": {"contexts": ["explore"], "provinces": ["漢默法爾"]},
-    "title": "綠洲採集", "text": "沙丘背風處的一小片綠洲邊,沙地藥草與耐旱的根莖在棕櫚蔭下悄然生長。",
+    "title": "綠洲採集", "text": "沙丘背風處的一小片綠洲邊,沙地藥草與耐旱的根莖在棕櫚蔭下悄然生長,鹽灘與礁岩間還散著別的東西。",
     "options": [
-      {"text": "採集沙地藥草",
-       "effects": [{"type": "item", "item": "canis_root", "qty": 1},
-                   {"type": "item", "item": "ash_yam", "qty": 1},
-                   {"type": "skill_xp", "skill": "alchemy", "amount": 0.5},
-                   {"type": "message", "text": "你採下了犬根草與一顆灰薯。"}]},
-      {"text": "搜羅鹽灘與礁岩",
-       "effects": [{"type": "item", "item": "dragons_tongue", "qty": 1},
-                   {"type": "item", "item": "fire_salts", "qty": 1},
-                   {"type": "item", "item": "pearl", "qty": 1},
-                   {"type": "skill_xp", "skill": "alchemy", "amount": 0.5},
-                   {"type": "message", "text": "你掘得龍舌草,又從鹽灘與礁岩拾得火鹽與一枚海珍珠。"}]},
+      {"text": "在綠洲與鹽灘間搜採", "effects": [{"type": "forage_pool", "pool": "desert"}]},
       {"text": "沒興趣", "effects": []}
     ]
   },
@@ -411,10 +356,9 @@
     "weight": 3,
     "trigger": {"contexts": ["explore"], "provinces": ["高岩"]},
     "title": "荒沼採藥",
-    "text": "霧鎖的石南坡上,死亡鐘與薰衣草在濕冷的泥炭間悄然綻放,正是煉藥的好材料。",
+    "text": "霧鎖的石南坡上,死亡鐘與薰衣草在濕冷的泥炭間悄然綻放,礦脈縫隙裡還泛著紫晶的微光。",
     "options": [
-      {"text": "採集沼澤藥草", "effects": [{"type": "item", "item": "deathbell", "qty": 1}, {"type": "item", "item": "lavender", "qty": 1}, {"type": "skill_xp", "skill": "alchemy", "amount": 0.5}, {"type": "message", "text": "你採下了一束死亡鐘與薰衣草。"}]},
-      {"text": "鑿取礦脈鹽晶", "effects": [{"type": "item", "item": "void_salts", "qty": 1}, {"type": "skill_xp", "skill": "alchemy", "amount": 0.5}, {"type": "message", "text": "你從礦脈縫隙鑿下幾粒泛紫的虛鹽。"}]},
+      {"text": "在荒沼與礦脈間採集", "effects": [{"type": "forage_pool", "pool": "moor"}]},
       {"text": "沒興趣", "effects": []}
     ]
   },
@@ -434,10 +378,9 @@
     "weight": 3,
     "trigger": {"contexts": ["explore"], "provinces": ["瓦倫森林"]},
     "title": "巨木林採集",
-    "text": "螢光在濕熱的林蔭間明滅 —— 一叢開滿異花的灌木邊,帝王蝶翩然聚集,腐木上還浮著一層發光的鬼火塵。",
+    "text": "螢光在濕熱的林蔭間明滅 —— 一叢開滿異花的灌木邊,帝王蝶翩然聚集,腐木上浮著發光的鬼火塵,林間還不時掠過鳥影。",
     "options": [
-      {"text": "採集蝶翼與鬼火塵", "effects": [{"type": "item", "item": "monarch_wing", "qty": 1}, {"type": "item", "item": "glow_dust", "qty": 1}, {"type": "skill_xp", "skill": "alchemy", "amount": 0.5}, {"type": "message", "text": "你採下了一對帝王蝶翼與一撮鬼火塵。"}]},
-      {"text": "搜尋林間獵物", "effects": [{"type": "item", "item": "hawk_feather", "qty": 1}, {"type": "item", "item": "nightingale_feather", "qty": 1}, {"type": "skill_xp", "skill": "alchemy", "amount": 0.5}, {"type": "message", "text": "你在林間拾得一根鷹羽與一支夜鶯羽。"}]},
+      {"text": "在巨木林間採集", "effects": [{"type": "forage_pool", "pool": "jungle"}]},
       {"text": "沒興趣", "effects": []}
     ]
   },
@@ -456,9 +399,9 @@
   "savanna_sugar_harvest": {
     "weight": 3,
     "trigger": {"contexts": ["explore"], "provinces": ["艾爾斯維爾"]},
-    "title": "糖楓林採集", "text": "騰瑪林的糖楓在烈日下滲出黏稠的汁液,結成一串串天然的月糖晶;腐木上還浮著一層發光的鬼火塵。",
+    "title": "糖楓林採集", "text": "騰瑪林的糖楓在烈日下滲出黏稠的汁液,結成一串串天然的月糖晶;腐木上還浮著一層發光的鬼火塵,草海間不時有鳥影掠過。",
     "options": [
-      {"text": "採集月糖晶與鬼火塵", "effects": [{"type": "item", "item": "moon_sugar", "qty": 1}, {"type": "item", "item": "glow_dust", "qty": 1}, {"type": "skill_xp", "skill": "alchemy", "amount": 0.5}, {"type": "message", "text": "你刮下了一捧月糖晶與一撮鬼火塵。"}]},
+      {"text": "在糖楓草海間採集", "effects": [{"type": "forage_pool", "pool": "savanna"}]},
       {"text": "不碰那甜膩的東西", "effects": []}
     ]
   },

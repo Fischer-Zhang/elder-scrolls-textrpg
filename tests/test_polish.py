@@ -86,12 +86,15 @@ def test_dragon_lair_quest_wired():
 
 # --- forage 省份齊備 ----------------------------------------------------
 def _is_forage(e):
-    # 採集事件特徵:explore 觸發 + 限省份 + 某選項給「煉金 xp + 物品」(與掠食/風暴等省份事件區隔)
+    # 採集事件特徵:explore 觸發 + 限省份 + 某選項是 forage_pool 生態系採集(R93;
+    # 或 legacy「煉金 xp + 物品」固定束),與掠食/風暴等省份事件區隔。
     t = e.get("trigger", {})
     if "explore" not in t.get("contexts", []) or not t.get("provinces"):
         return False
     for opt in e.get("options", []):
         effs = opt.get("effects", [])
+        if any(ef.get("type") == "forage_pool" for ef in effs):
+            return True
         gives_item = any(ef.get("type") == "item" for ef in effs)
         gives_alch = any(ef.get("type") == "skill_xp" and ef.get("skill") == "alchemy" for ef in effs)
         if gives_item and gives_alch:
@@ -114,6 +117,7 @@ def test_every_explorable_province_has_forage():
 def test_new_forage_ingredients_valid():
     gd = _gd()
     ing = set(gd.ingredients)
+    pools = gd.ecology["pools"]
     for fe in ("skyrim_forage", "border_forage"):
         e = gd.events[fe]
         assert e["trigger"]["provinces"][0] in {"天際", "邊境"}
@@ -121,6 +125,11 @@ def test_new_forage_ingredients_valid():
             for eff in opt["effects"]:
                 if eff["type"] == "item":
                     assert eff["item"] in ing, f"{fe} 不明素材 {eff['item']}"
+                elif eff["type"] == "forage_pool":   # R93:採集走生態系池,驗 pool 存在且成員皆合法材料
+                    pool = pools[eff["pool"]]
+                    for members in pool.values():
+                        if isinstance(members, list):
+                            assert all(m in ing for m in members), f"{fe} 池含不明素材"
 
 
 def run():

@@ -113,6 +113,53 @@ def resolve_check(char: Character, check: dict, rng: RNG) -> bool:
     return rng.chance(check_chance(char, check))
 
 
+# --- 野採:生態系材料池隨機抽取(R93)---------------------------------------
+# 採集動作 / 採到的物品 / 數量三者解耦:從該生態系材料池加權隨機抽取任意組合 +
+# 數量;採集次數與總量上限隨 scout(偵查)技能成長。決定性走傳入的 rng(存檔可重現)。
+_FORAGE_BASE_DRAWS = 2          # 基礎抽取次數
+_FORAGE_DRAWS_PER_SCOUT = 40    # 每 N 點偵查 +1 次抽取
+_FORAGE_BASE_CAP = 4           # 基礎總量上限(件)
+_FORAGE_CAP_PER_SCOUT = 25     # 每 N 點偵查 +1 總量上限
+_FORAGE_QTY_PER_DRAW = 2       # 每次抽取最多拿幾個(1.._FORAGE_QTY_PER_DRAW)
+_FORAGE_TIER_WEIGHTS = {"common": 4, "uncommon": 2, "rare": 1}   # 抽中權重(常見>少見>稀有)
+
+
+def _weighted_pick(weighted: list, rng: RNG) -> str:
+    """從 [(item_id, weight), ...] 依權重抽一個(決定性:整數累積 + rng.randint)。"""
+    total = sum(w for _, w in weighted)
+    r = rng.randint(1, total)
+    acc = 0
+    for iid, w in weighted:
+        acc += w
+        if r <= acc:
+            return iid
+    return weighted[-1][0]
+
+
+def forage_pool_draw(char: Character, gamedata: GameData, pool_id: str, rng: RNG) -> list:
+    """從生態系材料池加權隨機抽取;偵查技能決定抽取次數/總量上限。回傳 [(item_id, qty), ...]。"""
+    pool = (gamedata.ecology.get("pools", {}) or {}).get(pool_id, {})
+    weighted = [(iid, w) for tier, w in _FORAGE_TIER_WEIGHTS.items()
+                for iid in pool.get(tier, [])]
+    if not weighted:
+        return []
+    scout = int(char.skill("scout"))
+    draws = _FORAGE_BASE_DRAWS + scout // _FORAGE_DRAWS_PER_SCOUT
+    cap = _FORAGE_BASE_CAP + scout // _FORAGE_CAP_PER_SCOUT
+    got: dict = {}
+    total = 0
+    for _ in range(draws):
+        if total >= cap:
+            break
+        iid = _weighted_pick(weighted, rng)
+        qty = min(rng.randint(1, _FORAGE_QTY_PER_DRAW), cap - total)
+        if qty <= 0:
+            break
+        got[iid] = got.get(iid, 0) + qty
+        total += qty
+    return sorted(got.items())
+
+
 # --- 效果套用(combat 類延遲回傳給 main)--------------------------------
 def apply_effects(state, gamedata: GameData, effects: list, rng: RNG) -> dict:
     char = state.player
@@ -165,6 +212,17 @@ def apply_effects(state, gamedata: GameData, effects: list, rng: RNG) -> dict:
             combat_foes.append(ef["creature"])
         elif t == "message":
             messages.append(ef["text"])
+        elif t == "forage_pool":
+            picks = forage_pool_draw(char, gamedata, ef["pool"], rng)
+            if picks:
+                for iid, qty in picks:
+                    inventory.add_item(char, iid, qty)
+                    messages.append(f"採得 {gamedata.item_name(iid)} ×{qty}")
+                # learn-by-doing:採集練偵查、辨識練煉金(空手不練)
+                progression.use_skill(char, gamedata, "scout", ef.get("scout_xp", 0.4))
+                progression.use_skill(char, gamedata, "alchemy", ef.get("alchemy_xp", 0.5))
+            else:
+                messages.append("這一帶幾乎沒有可採的材料。")
 
     stats.clamp_resources(char)
     return {"messages": messages, "combat": combat_foes}

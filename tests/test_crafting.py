@@ -65,11 +65,18 @@ def _wild_gatherable(gd):
             iid = e if isinstance(e, str) else (e.get("item") or e.get("id"))
             if iid in ings:
                 got.add(iid)
-    # 野採事件(option.effects 與 option.check.success.effects 內的 item 給予)
+    # 野採事件:option.effects 與 option.check.success.effects 內的 item 給予,
+    # 以及 forage_pool 引用的生態系材料池(R93;池內所有材料皆可野採)。
+    pools = gd.ecology.get("pools", {}) or {}
     def scan_effects(effs):
         for ef in effs or []:
             if ef.get("type") == "item" and ef.get("qty", 0) > 0 and ef.get("item") in ings:
                 got.add(ef["item"])
+            elif ef.get("type") == "forage_pool":
+                pool = pools.get(ef.get("pool"), {})
+                for tier, members in pool.items():
+                    if isinstance(members, list):
+                        got.update(m for m in members if m in ings)
     for ev in gd.events.values():
         for opt in ev.get("options", []):
             scan_effects(opt.get("effects"))
