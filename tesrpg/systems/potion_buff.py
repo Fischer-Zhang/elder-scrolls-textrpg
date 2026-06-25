@@ -23,7 +23,7 @@ from tesrpg.systems import stats
 
 _ATTR_CN = {"strength": "力量", "intelligence": "智力", "willpower": "意志", "agility": "敏捷",
             "speed": "速度", "endurance": "耐力", "personality": "魅力", "luck": "幸運"}
-_RESIST_CN = {"fire": "烈焰", "frost": "冰霜", "shock": "雷電", "poison": "毒素", "magic": "魔法"}
+_RESIST_CN = {"fire": "烈焰", "frost": "冰霜", "shock": "雷電", "poison": "毒素", "disease": "疾病", "magic": "魔法"}
 
 
 class _TimeState:

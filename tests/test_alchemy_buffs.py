@@ -120,6 +120,67 @@ def test_new_reagents_buyable_in_at_least_two_cities():
         assert n >= 2, f"{iid} 只在 {n} 城可買(需 ≥2)"
 
 
+_R94_NEW_KINDS = {"fskill_alteration", "fskill_conjuration", "fskill_illusion",
+                  "fskill_acrobatics", "resist_poison", "resist_disease"}
+
+
+def test_r94_new_buff_axis_is_brewable():
+    """R94:補魔法三學派/雜技 fortify 缺口 + resist_poison/disease 新家族,皆可釀。"""
+    gd = get_gamedata()
+    missing = _R94_NEW_KINDS - _reachable_buffs(gd)
+    assert not missing, f"以下 R94 新增益仍不可釀:{missing}"
+
+
+def _best_tier(gd):
+    """每材料在生態池中的最低稀有度(common<uncommon<rare)。"""
+    rank = {"common": 0, "uncommon": 1, "rare": 2}
+    best = {}
+    for pool in gd.ecology["pools"].values():
+        for tier, mats in pool.items():
+            if isinstance(mats, list):
+                for m in mats:
+                    if m not in best or rank[tier] < rank[best[m]]:
+                        best[m] = tier
+    return best
+
+
+def test_r94_new_kinds_reachable_without_rare():
+    """🔴 R94:6 個新可釀 kind 各須有「兩材皆 common/uncommon」的配對(低偵查可湊·rare 純獎勵不 gate)。"""
+    gd = get_gamedata()
+    best = _best_tier(gd)
+    nonrare = lambda m: best.get(m) in ("common", "uncommon")
+    ings = sorted(gd.ingredients)
+    reach = set()
+    for i in range(len(ings)):
+        for j in range(i + 1, len(ings)):
+            if not (nonrare(ings[i]) and nonrare(ings[j])):
+                continue
+            c = build_character(gd, name="C", sex="male", race="breton", birthsign="mage", class_id="mage")
+            c.skills["alchemy"] = 80
+            inventory.add_item(c, ings[i], 1)
+            inventory.add_item(c, ings[j], 1)
+            r = alchemy.brew(c, gd, ings[i], ings[j], RNG(1))
+            if r.get("ok") and r.get("kind") == "buff":
+                reach.add(r["item_id"].split("|")[1])
+    gated = _R94_NEW_KINDS - reach
+    assert not gated, f"以下新 kind 只能靠 rare 材料(被 scout 變相 gate):{gated}"
+
+
+def test_resist_poison_potion_applies_combat_functionally():
+    """釀 resist_poison 藥 → use → entity_resist poison 上升(引擎真的減毒·補低耐角色對毒沼怪)。"""
+    gd = get_gamedata()
+    c = build_character(gd, name="C", sex="male", race="breton", birthsign="mage", class_id="mage")
+    c.skills["alchemy"] = 80
+    st = GameState(player=c, time=GameTime())
+    inventory.add_item(c, "mudcrab_chitin", 1)
+    inventory.add_item(c, "slaughterfish_scale", 1)
+    r = alchemy.brew(c, gd, "mudcrab_chitin", "slaughterfish_scale", RNG(1))
+    assert r["ok"] and r["item_id"].split("|")[1] == "resist_poison"
+    before = magic.entity_resist(c, gd).get("poison", 0)
+    inventory.use_item(c, gd, r["item_id"], state=st)
+    assert magic.entity_resist(c, gd).get("poison", 0) > before
+
+
 def run():
     for name, fn in sorted(globals().items()):
         if name.startswith("test_") and callable(fn):

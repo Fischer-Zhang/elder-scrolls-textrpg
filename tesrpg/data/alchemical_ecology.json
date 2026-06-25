@@ -3,53 +3,163 @@
   "pools": {
     "ashland": {
       "_name": "晨風火山灰田",
-      "common": ["ash_yam", "scrib_jelly", "canis_root"],
-      "uncommon": ["brimstone", "shade_cap", "imp_stool"],
-      "rare": ["charred_skeever_hide"]
+      "common": [
+        "ash_yam",
+        "scrib_jelly",
+        "canis_root"
+      ],
+      "uncommon": [
+        "brimstone",
+        "shade_cap",
+        "imp_stool",
+        "namiras_rot",
+        "taproot"
+      ],
+      "rare": [
+        "charred_skeever_hide",
+        "crimson_nirnroot"
+      ]
     },
     "swamp": {
       "_name": "黑沼澤毒沼",
-      "common": ["nightshade", "imp_stool", "deathbell"],
-      "uncommon": ["bone_meal", "vampire_dust"],
-      "rare": ["spider_egg"]
+      "common": [
+        "nightshade",
+        "imp_stool",
+        "deathbell",
+        "swamp_fungal_pod",
+        "mudcrab_chitin",
+        "slaughterfish_scale",
+        "slaughterfish_egg"
+      ],
+      "uncommon": [
+        "bone_meal",
+        "vampire_dust",
+        "namiras_rot",
+        "taproot",
+        "mora_tapinella",
+        "hag_taper",
+        "bittergreen_petal",
+        "nirnroot"
+      ],
+      "rare": [
+        "spider_egg"
+      ]
     },
     "heartland": {
       "_name": "賽羅迪爾腹地農田",
-      "common": ["wheat", "garlic", "red_apple"],
-      "uncommon": ["juniper_berries", "blue_mountain_flower"]
+      "common": [
+        "wheat",
+        "garlic",
+        "red_apple",
+        "torchbug_thorax",
+        "slaughterfish_scale"
+      ],
+      "uncommon": [
+        "juniper_berries",
+        "blue_mountain_flower",
+        "luna_moth_wing"
+      ]
     },
     "snow": {
       "_name": "天際凍原",
-      "common": ["frost_mirriam", "snowberries", "tundra_cotton", "blue_mountain_flower", "lavender"],
-      "uncommon": ["monarch_wing", "troll_fat", "ogres_teeth", "bear_claw"],
-      "rare": ["spider_egg", "charred_skeever_hide"]
+      "common": [
+        "frost_mirriam",
+        "snowberries",
+        "tundra_cotton",
+        "blue_mountain_flower",
+        "lavender"
+      ],
+      "uncommon": [
+        "monarch_wing",
+        "troll_fat",
+        "ogres_teeth",
+        "bear_claw"
+      ],
+      "rare": [
+        "spider_egg",
+        "charred_skeever_hide",
+        "giants_toe",
+        "hagraven_claw"
+      ]
     },
     "desert": {
       "_name": "漢默法爾黃沙綠洲",
-      "common": ["dragons_tongue", "fire_salts", "canis_root"],
-      "uncommon": ["ash_yam", "pearl"],
-      "rare": ["bone_meal"]
+      "common": [
+        "dragons_tongue",
+        "fire_salts",
+        "canis_root",
+        "mudcrab_chitin"
+      ],
+      "uncommon": [
+        "ash_yam",
+        "pearl"
+      ],
+      "rare": [
+        "bone_meal"
+      ]
     },
     "moor": {
       "_name": "高岩荒沼",
-      "common": ["lavender", "deathbell", "void_salts"],
-      "uncommon": ["nightshade", "vampire_dust"]
+      "common": [
+        "lavender",
+        "deathbell",
+        "void_salts"
+      ],
+      "uncommon": [
+        "nightshade",
+        "vampire_dust",
+        "spriggan_sap",
+        "mora_tapinella",
+        "hag_taper"
+      ],
+      "rare": [
+        "giants_toe",
+        "hagraven_claw"
+      ]
     },
     "jungle": {
       "_name": "瓦倫巨木林",
-      "common": ["monarch_wing", "hawk_feather", "nightingale_feather"],
-      "uncommon": ["glow_dust", "scrib_jelly"],
-      "rare": ["nightshade"]
+      "common": [
+        "monarch_wing",
+        "hawk_feather",
+        "nightingale_feather",
+        "torchbug_thorax"
+      ],
+      "uncommon": [
+        "glow_dust",
+        "scrib_jelly",
+        "spriggan_sap",
+        "luna_moth_wing",
+        "bittergreen_petal",
+        "nirnroot"
+      ],
+      "rare": [
+        "nightshade"
+      ]
     },
     "savanna": {
       "_name": "艾爾斯維爾糖楓草海",
-      "common": ["moon_sugar", "glow_dust"],
-      "uncommon": ["hawk_feather", "nightshade"]
+      "common": [
+        "moon_sugar",
+        "glow_dust"
+      ],
+      "uncommon": [
+        "hawk_feather",
+        "nightshade"
+      ],
+      "rare": [
+        "jarrin_root"
+      ]
     },
     "border": {
       "_name": "邊陲混生荒地",
-      "common": ["blue_mountain_flower", "nightshade"],
-      "uncommon": ["lavender"]
+      "common": [
+        "blue_mountain_flower",
+        "nightshade"
+      ],
+      "uncommon": [
+        "lavender"
+      ]
     }
   }
 }

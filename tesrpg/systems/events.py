@@ -113,50 +113,58 @@ def resolve_check(char: Character, check: dict, rng: RNG) -> bool:
     return rng.chance(check_chance(char, check))
 
 
-# --- 野採:生態系材料池隨機抽取(R93)---------------------------------------
-# 採集動作 / 採到的物品 / 數量三者解耦:從該生態系材料池加權隨機抽取任意組合 +
-# 數量;採集次數與總量上限隨 scout(偵查)技能成長。決定性走傳入的 rng(存檔可重現)。
-_FORAGE_BASE_DRAWS = 2          # 基礎抽取次數
-_FORAGE_DRAWS_PER_SCOUT = 40    # 每 N 點偵查 +1 次抽取
-_FORAGE_BASE_CAP = 4           # 基礎總量上限(件)
-_FORAGE_CAP_PER_SCOUT = 25     # 每 N 點偵查 +1 總量上限
-_FORAGE_QTY_PER_DRAW = 2       # 每次抽取最多拿幾個(1.._FORAGE_QTY_PER_DRAW)
-_FORAGE_TIER_WEIGHTS = {"common": 4, "uncommon": 2, "rare": 1}   # 抽中權重(常見>少見>稀有)
+# --- 野採:生態系材料池「定值預算」抽取(R94·稀有度功能化)----------------------
+# 採集動作 / 物品 / 數量解耦,且稀有度真有意義:偵查(scout)決定一個「浮動預算」
+# (點數),稀有材料每件成本更高(tier 成本 common1/uncommon3/rare6)。在預算內反覆
+# 加權抽、扣成本,直到買不起 → 「偵查高 → 大量低稀有 OR 少量高稀有」自然湧現。
+# 預算帶 jitter(浮動制)→ 低偵查仍有「非常小機會」湊到一個 rare(預算偶爾擦邊買得起)。
+# 決定性走傳入的 rng(存檔可重現);不碰 combat/formulas → sim byte-identical。
+_FORAGE_BASE_BUDGET = 4          # 基礎預算點數(scout 0 的底·對標舊 cap 4)
+_FORAGE_BUDGET_PER_SCOUT = 8     # 每 N 點偵查 +1 預算
+_FORAGE_BUDGET_JITTER = 2        # 浮動幅度(rng.randint(0,J)·讓低偵查偶爾擦邊買得起 rare)
+_FORAGE_TIER_COST = {"common": 1, "uncommon": 3, "rare": 6}   # 每件成本(稀有更貴=「定值分配」本體)
+_FORAGE_MAX_QTY_PER_ITEM = 3     # 單一材料一趟最多幾件(防預算全砸同一 common)
+_FORAGE_TIER_WEIGHTS = {"common": 4, "uncommon": 2, "rare": 1}   # 抽中傾向(常見>少見>稀有)
 
 
-def _weighted_pick(weighted: list, rng: RNG) -> str:
-    """從 [(item_id, weight), ...] 依權重抽一個(決定性:整數累積 + rng.randint)。"""
+def _weighted_pick(weighted: list, rng: RNG):
+    """從 [(item, weight), ...] 依權重抽一個(決定性:整數累積 + rng.randint)。"""
     total = sum(w for _, w in weighted)
     r = rng.randint(1, total)
     acc = 0
-    for iid, w in weighted:
+    for item, w in weighted:
         acc += w
         if r <= acc:
-            return iid
+            return item
     return weighted[-1][0]
 
 
+def _forage_budget(scout: int, rng: RNG) -> int:
+    """偵查 → 浮動預算點數(jitter 讓低偵查偶爾擦邊買得起一個 rare)。"""
+    return _FORAGE_BASE_BUDGET + scout // _FORAGE_BUDGET_PER_SCOUT + rng.randint(0, _FORAGE_BUDGET_JITTER)
+
+
 def forage_pool_draw(char: Character, gamedata: GameData, pool_id: str, rng: RNG) -> list:
-    """從生態系材料池加權隨機抽取;偵查技能決定抽取次數/總量上限。回傳 [(item_id, qty), ...]。"""
+    """生態系材料池「定值預算」抽取:偵查決定浮動預算,稀有材料每件成本高;在預算內加權
+    反覆抽、扣成本 → 大量低稀有 OR 少量高稀有自然湧現。回傳 [(item_id, qty), ...]。"""
     pool = (gamedata.ecology.get("pools", {}) or {}).get(pool_id, {})
-    weighted = [(iid, w) for tier, w in _FORAGE_TIER_WEIGHTS.items()
-                for iid in pool.get(tier, [])]
-    if not weighted:
+    # 候選 = {item_id: (weight, cost)};_ 前綴鍵(_name/_doc)非 list → 跳過
+    cand: dict = {iid: (_FORAGE_TIER_WEIGHTS[tier], _FORAGE_TIER_COST[tier])
+                  for tier in _FORAGE_TIER_WEIGHTS for iid in pool.get(tier, [])}
+    if not cand:
         return []
-    scout = int(char.skill("scout"))
-    draws = _FORAGE_BASE_DRAWS + scout // _FORAGE_DRAWS_PER_SCOUT
-    cap = _FORAGE_BASE_CAP + scout // _FORAGE_CAP_PER_SCOUT
+    budget = _forage_budget(int(char.skill("scout")), rng)
     got: dict = {}
-    total = 0
-    for _ in range(draws):
-        if total >= cap:
+    spent = 0
+    # 防呆迴圈上限 = 該池理論最大產出(每材料各 cap 件)+1 → 絕不靜默截斷,純終止保險
+    for _ in range(len(cand) * _FORAGE_MAX_QTY_PER_ITEM + 1):
+        affordable = [(iid, w) for iid, (w, c) in cand.items()
+                      if c <= budget - spent and got.get(iid, 0) < _FORAGE_MAX_QTY_PER_ITEM]
+        if not affordable:
             break
-        iid = _weighted_pick(weighted, rng)
-        qty = min(rng.randint(1, _FORAGE_QTY_PER_DRAW), cap - total)
-        if qty <= 0:
-            break
-        got[iid] = got.get(iid, 0) + qty
-        total += qty
+        iid = _weighted_pick(affordable, rng)
+        got[iid] = got.get(iid, 0) + 1
+        spent += cand[iid][1]
     return sorted(got.items())
 
 

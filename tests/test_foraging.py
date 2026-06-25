@@ -41,28 +41,61 @@ def test_forage_draw_is_deterministic():
         events.forage_pool_draw(c, gd, "snow", RNG(9999))
 
 
-# --- 總量上限:任何 scout 都不超過 cap 公式 --------------------------------
-def test_forage_respects_cap():
+def _tier_of(gd, pool_id, iid):
+    pool = gd.ecology["pools"][pool_id]
+    for tier in ("common", "uncommon", "rare"):
+        if iid in pool.get(tier, []):
+            return tier
+    return None
+
+
+def _spent(gd, pool_id, picks):
+    return sum(events._FORAGE_TIER_COST[_tier_of(gd, pool_id, i)] * q for i, q in picks)
+
+
+# --- 定值預算:總成本不超過最大可能預算(R94)-----------------------------
+def test_forage_respects_budget():
     gd = get_gamedata()
     for scout in (0, 25, 50, 100, 200):
         _, c = _char(scout=scout)
-        scout_eff = int(c.skill("scout"))   # helper 讀有效偵查;cap 須以同一值算
-        cap = events._FORAGE_BASE_CAP + scout_eff // events._FORAGE_CAP_PER_SCOUT
-        for seed in range(40):
+        scout_eff = int(c.skill("scout"))
+        max_budget = (events._FORAGE_BASE_BUDGET + scout_eff // events._FORAGE_BUDGET_PER_SCOUT
+                      + events._FORAGE_BUDGET_JITTER)   # jitter 最大值
+        for seed in range(60):
             picks = events.forage_pool_draw(c, gd, "snow", RNG(seed))
-            assert sum(q for _, q in picks) <= cap
+            assert _spent(gd, "snow", picks) <= max_budget
+            for i, q in picks:                      # 單品上限
+                assert q <= events._FORAGE_MAX_QTY_PER_ITEM
 
 
-# --- scout 成長放大採集產出 ------------------------------------------------
-def test_higher_scout_yields_more():
+# --- scout 成長同時放大「數量」與「稀有度」(R94 核心語意)-----------------
+def test_higher_scout_yields_more_and_rarer():
     gd = get_gamedata()
-    _, low = _char(scout=0)
-    _, high = _char(scout=160)
-    lo = sum(sum(q for _, q in events.forage_pool_draw(low, gd, "snow", RNG(s)))
-             for s in range(60))
-    hi = sum(sum(q for _, q in events.forage_pool_draw(high, gd, "snow", RNG(s)))
-             for s in range(60))
-    assert hi > lo
+    def sample(scout, n=400):
+        _, c = _char(scout=scout)
+        items = rares = 0
+        for s in range(n):
+            picks = events.forage_pool_draw(c, gd, "snow", RNG(s))
+            items += sum(q for _, q in picks)
+            rares += sum(q for i, q in picks if _tier_of(gd, "snow", i) == "rare")
+        return items, rares
+    lo_items, lo_rare = sample(0)
+    hi_items, hi_rare = sample(160)
+    assert hi_items > lo_items          # 偵查高 → 件數更多
+    assert hi_rare > lo_rare            # 偵查高 → 稀有件數更多
+
+
+# --- 浮動制:低偵查仍有「非常小機會」採到 rare(但確實很小)----------------
+def test_low_scout_rare_is_small_but_possible():
+    gd = get_gamedata()
+    _, c = _char(scout=0)
+    n = 1000
+    got_rare = sum(
+        1 for s in range(n)
+        if any(_tier_of(gd, "snow", i) == "rare" for i, _ in events.forage_pool_draw(c, gd, "snow", RNG(s)))
+    )
+    frac = got_rare / n
+    assert 0 < frac < 0.10, f"低偵查 rare 機率應「小而非零」,實得 {frac:.1%}"
 
 
 # --- 至少抽到一樣(基礎抽取次數 ≥1)----------------------------------------
@@ -87,11 +120,21 @@ def test_pool_members_are_valid_ingredients():
     assert not bad, f"生態池含非材料 id:{sorted(bad)}"
 
 
-# --- 每種材料都入某池(野外可採;補商店/掉落限定材料入野採)-----------------
-def test_every_ingredient_is_in_some_pool():
+# --- 每種材料皆可取得:入某生態池 或 有非野採來源(怪掉落/商店)------------
+# daedra_heart 等「打稀有怪才得」的材料刻意 loot-only(不入野採池);其餘野採材料須入池。
+def test_every_ingredient_is_reachable():
     gd = get_gamedata()
-    missing = set(gd.ingredients) - _all_pool_members(gd)
-    assert not missing, f"無任何生態池可野採的材料:{sorted(missing)}"
+    pooled = _all_pool_members(gd)
+    loot = set()
+    for c in gd.bestiary.values():
+        for e in (c.get("loot") or []):
+            iid = e if isinstance(e, str) else (e.get("item") or e.get("id"))
+            loot.add(iid)
+    shop = set()
+    for loc in gd.world["locations"].values():
+        shop.update(loc.get("merchant_stock") or [])
+    unreachable = set(gd.ingredients) - pooled - loot - shop
+    assert not unreachable, f"無任何取得途徑的材料(非野採/非掉落/非商店):{sorted(unreachable)}"
 
 
 # --- 每個 forage_pool 引用的 pool id 皆存在(防孤兒)----------------------

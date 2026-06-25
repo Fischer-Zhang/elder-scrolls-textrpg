@@ -1404,6 +1404,20 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 
 ---
 
+### R94 · 野採稀有度功能化:偵查定值預算 + 原料擴展(承 R93)[re-sim] [save-safe]
+
+承 R93,使用者點名「依稀有度概念 + 偵查越高採稀有度越高數量越多(定值分配)」+ 擴展原料。三道拍板:**① 分配=自動隨機湧現**(零 UI)**② 範圍=全四批擴展 ③ 稀有度=浮動預算制**(讓低偵查有「非常小機會」採到高 cost rare)。
+
+- **機制(`systems/events.py`)**:廢 R93「draws+cap」雙旋鈕 → **浮動預算 budget + tier 成本**:`budget = _FORAGE_BASE_BUDGET(4) + scout//_FORAGE_BUDGET_PER_SCOUT(8) + rng.randint(0,_FORAGE_BUDGET_JITTER=2)`;`_FORAGE_TIER_COST={common1,uncommon3,rare6}`;在預算內加權反覆抽、扣成本,單品上限 `_FORAGE_MAX_QTY_PER_ITEM=3`,**防呆迴圈上限=池理論最大產出 `len(cand)*MAX_QTY+1`**(綁池大小·絕不靜默截斷·審查 nit)。「偵查高→大量低稀有 OR 少量高稀有」三件事(固定預算+異質成本+加權抽)的**代數後果**(零分支)。**實證**:scout0 得 rare≈2%(jitter=2 擦邊·snow 最密 4.2%)、scout200≈71%,件數 3.6→16。決定性走 rng;forage_pool 分支沿用 R93(採到才練)。
+- **內容(`ingredients.json` +18=51)**:**6 新可釀 kind(FAIL-pair·安全池)**:`fskill_{alteration,conjuration,illusion,acrobatics}`(補四個零 fortify 來源技能)+ `resist_poison/resist_disease`(**引擎 `entity_resist` 已讀·零邏輯**·combat poison DoT / disease 感染路徑;補低耐角色防禦)。**攻擊向降稀缺(R92 sim-gated)**:giants_toe(str/h2h)/hagraven_claw(destr/marksman)/slaughterfish_egg(sneak)/daedra_heart(destr)。**rare 招牌**:jarrin_root(純毒 DoT·走 R31 夾不碰偷襲)/crimson_nirnroot。降稀缺:intelligence 2→6、destruction 1→5 等。
+- **🔴 daedra_heart 特例(使用者點名「兼鍛造消耗·取得依舊打稀有怪」)**:原為 `items.json` 鍛造材料(魔性之心·value500·14 個 daedric forge 配方用)→ 本輪**兼煉金材料**(加 effects)但**保 value 500 + weight 1**(套利/重量不破·unified index ingredient 覆寫 misc)、**loot-only 不入野採池**(原 dremora0.2/malacath_chief0.4/dagon1.0/fused_archmage0.6 掉落不變=「打稀有怪」)。
+- **🔴 可達性(使用者質疑「高稀有有必要進商店嗎」→ 不加商店)**:soft 門檻已保可達(rare 低偵查~2%·高偵查爬升·從非不可達)→ 賣 rare 會稀釋稀有感。改正:**nirnroot 放 uncommon**(讓 alteration 不被 rare 變相 gate);**6 新 kind 各有「兩材皆 common/uncommon」可達對·無 rare-gating**;rare 招牌(crimson/giants_toe/hagraven_claw/jarrin_root)皆「額外來源/多效」無一是任何 kind 唯一來源。可達性 guard 改 `test_every_ingredient_is_reachable`(池∪loot∪shop·容 daedra_heart loot-only)。
+- **🔴 brew 邏輯零改(只 ADD 材料·未動既有 33 effects)**→ 確定性 brew-diff(`PYTHONHASHSEED=0`)證**既有 528 對零位移**;6 新 kind 各 clean「只共有它」對·**零 smithing/mysticism 產物**。`sim_assassin` **combat/formulas 未動→byte-identical**(solo 0%/精英 95.4%/4-bandit 60.6%);攻擊向新來源只改取得難度·不改單瓶上限(`potion_buff` 取最強非疊加·solo cap 絕對)→ R92 fortify-dosed solo 0%/精英 Δ0 不變。**零新存檔欄**。
+- **對抗審查(3 維·10 agent)**:7 發現·**0 blocker/major**(5 confirmed·1 minor+nit)→ 修 ① resist_disease 顯示「抗disease」→「抗疾病」(R01·`_RESIST_NAME`/`_RESIST_CN` 補 disease 鍵)② daedra_heart weight 副作用還原 1 ③ range(64)→綁池大小。`run_all` **94**(新 test_foraging 預算模型 + test_alchemy_buffs R94 三測)。
+- 🔴 **鐵律**:採集量唯一旋鈕 `events._FORAGE_*`(scout 軸·浮動 jitter 是低偵查 rare 唯一閘·動之屬平衡先問);加可釀增益用 **FAIL-pair + 確定性 brew-diff** 證零位移;**攻擊向新材料/新來源必跑 `sim_assassin`**;**smithing/mysticism 永不入池·daedra_heart 兼鍛造須保 value/weight**;forage 防呆上限綁 `len(cand)*MAX_QTY` 勿寫死;不碰 combat/formulas → sim byte-identical(仍跑確認)。**前瞻 R95(使用者已點名)**:**依正典重調全 51 材料稀有度 + 取得方式**(生物部位 troll_fat/giants_toe/vampire_dust 等 23 個移 creature loot·fire/void_salts 移 atronach·spriggan 產物移 spriggan·frost_mirriam/nightingale_feather 移 shop)。
+
+---
+
 ### R93 · 野外採集解耦:生態系材料池隨機抽取(動作/物品/數量三者解耦·偵查成長)[save-safe]
 
 承使用者「評估」兩問(野採是否固定組合 / 毒藥幾型)→ 拍板把採集動作/採到的物品/數量**三者解耦**:一次採集從「該生態系材料池」加權隨機抽**任意組合 + 數量(有上限)**,取代舊「寫死固定材料束、一次選一束」。三道方向使用者拍板:**① 池資料放新檔 `alchemical_ecology.json`**(專檔·可擴 tier/季節);**② 採集量隨 `scout`(偵查)技能成長**(跨技能 synergy·明確平衡軸·使用者選);**③ 範圍 = 轉換 9 forage + 把非 forage 材料納入野採池**。

@@ -601,5 +601,355 @@
         "magnitude": 5
       }
     ]
+  },
+  "nirnroot": {
+    "name": "奈恩根",
+    "value": 30,
+    "weight": 0.1,
+    "effects": [
+      {
+        "kind": "fskill_alteration",
+        "magnitude": 5
+      },
+      {
+        "kind": "restore_magicka",
+        "magnitude": 10
+      },
+      {
+        "kind": "damage_health",
+        "magnitude": 4
+      }
+    ]
+  },
+  "spriggan_sap": {
+    "name": "樹靈樹脂",
+    "value": 9,
+    "weight": 0.2,
+    "effects": [
+      {
+        "kind": "fskill_alteration",
+        "magnitude": 5
+      },
+      {
+        "kind": "restore_fatigue",
+        "magnitude": 8
+      },
+      {
+        "kind": "fattr_willpower",
+        "magnitude": 4
+      }
+    ]
+  },
+  "namiras_rot": {
+    "name": "娜米拉腐菌",
+    "value": 9,
+    "weight": 0.2,
+    "effects": [
+      {
+        "kind": "fskill_conjuration",
+        "magnitude": 5
+      },
+      {
+        "kind": "restore_magicka",
+        "magnitude": 8
+      },
+      {
+        "kind": "damage_health",
+        "magnitude": 4
+      }
+    ]
+  },
+  "taproot": {
+    "name": "主根",
+    "value": 9,
+    "weight": 0.2,
+    "effects": [
+      {
+        "kind": "fskill_conjuration",
+        "magnitude": 5
+      },
+      {
+        "kind": "restore_fatigue",
+        "magnitude": 8
+      },
+      {
+        "kind": "fattr_intelligence",
+        "magnitude": 4
+      }
+    ]
+  },
+  "mora_tapinella": {
+    "name": "莫拉香菇",
+    "value": 8,
+    "weight": 0.2,
+    "effects": [
+      {
+        "kind": "fskill_illusion",
+        "magnitude": 5
+      },
+      {
+        "kind": "restore_magicka",
+        "magnitude": 10
+      },
+      {
+        "kind": "damage_health",
+        "magnitude": 5
+      }
+    ]
+  },
+  "luna_moth_wing": {
+    "name": "月蛾翅",
+    "value": 8,
+    "weight": 0.1,
+    "effects": [
+      {
+        "kind": "fskill_illusion",
+        "magnitude": 5
+      },
+      {
+        "kind": "restore_fatigue",
+        "magnitude": 8
+      },
+      {
+        "kind": "fattr_personality",
+        "magnitude": 4
+      }
+    ]
+  },
+  "swamp_fungal_pod": {
+    "name": "沼菌孢囊",
+    "value": 4,
+    "weight": 0.2,
+    "effects": [
+      {
+        "kind": "fskill_acrobatics",
+        "magnitude": 5
+      },
+      {
+        "kind": "restore_fatigue",
+        "magnitude": 8
+      },
+      {
+        "kind": "damage_health",
+        "magnitude": 4
+      }
+    ]
+  },
+  "torchbug_thorax": {
+    "name": "火蟲胸甲",
+    "value": 4,
+    "weight": 0.1,
+    "effects": [
+      {
+        "kind": "fskill_acrobatics",
+        "magnitude": 5
+      },
+      {
+        "kind": "restore_magicka",
+        "magnitude": 8
+      },
+      {
+        "kind": "fattr_speed",
+        "magnitude": 4
+      }
+    ]
+  },
+  "mudcrab_chitin": {
+    "name": "泥蟹殼",
+    "value": 4,
+    "weight": 0.3,
+    "effects": [
+      {
+        "kind": "resist_poison",
+        "magnitude": 10
+      },
+      {
+        "kind": "restore_fatigue",
+        "magnitude": 8
+      },
+      {
+        "kind": "fattr_endurance",
+        "magnitude": 4
+      }
+    ]
+  },
+  "slaughterfish_scale": {
+    "name": "屠魚鱗",
+    "value": 4,
+    "weight": 0.2,
+    "effects": [
+      {
+        "kind": "resist_poison",
+        "magnitude": 10
+      },
+      {
+        "kind": "fskill_light_armor",
+        "magnitude": 5
+      },
+      {
+        "kind": "damage_health",
+        "magnitude": 4
+      }
+    ]
+  },
+  "hag_taper": {
+    "name": "巫蠟菌",
+    "value": 9,
+    "weight": 0.2,
+    "effects": [
+      {
+        "kind": "resist_disease",
+        "magnitude": 10
+      },
+      {
+        "kind": "restore_magicka",
+        "magnitude": 8
+      },
+      {
+        "kind": "fear",
+        "magnitude": 1
+      }
+    ]
+  },
+  "bittergreen_petal": {
+    "name": "苦綠花瓣",
+    "value": 9,
+    "weight": 0.1,
+    "effects": [
+      {
+        "kind": "resist_disease",
+        "magnitude": 10
+      },
+      {
+        "kind": "cure_disease",
+        "magnitude": 1
+      },
+      {
+        "kind": "fattr_luck",
+        "magnitude": 4
+      }
+    ]
+  },
+  "giants_toe": {
+    "name": "巨人趾",
+    "value": 35,
+    "weight": 0.5,
+    "effects": [
+      {
+        "kind": "fattr_strength",
+        "magnitude": 4
+      },
+      {
+        "kind": "fskill_hand_to_hand",
+        "magnitude": 5
+      },
+      {
+        "kind": "damage_health",
+        "magnitude": 6
+      }
+    ]
+  },
+  "hagraven_claw": {
+    "name": "鴉婆爪",
+    "value": 30,
+    "weight": 0.2,
+    "effects": [
+      {
+        "kind": "fskill_destruction",
+        "magnitude": 5
+      },
+      {
+        "kind": "fskill_marksman",
+        "magnitude": 5
+      },
+      {
+        "kind": "damage_health",
+        "magnitude": 6
+      }
+    ]
+  },
+  "slaughterfish_egg": {
+    "name": "屠魚卵",
+    "value": 4,
+    "weight": 0.1,
+    "effects": [
+      {
+        "kind": "fskill_sneak",
+        "magnitude": 5
+      },
+      {
+        "kind": "restore_fatigue",
+        "magnitude": 8
+      },
+      {
+        "kind": "damage_health",
+        "magnitude": 4
+      }
+    ]
+  },
+  "jarrin_root": {
+    "name": "賈林根",
+    "value": 40,
+    "weight": 0.1,
+    "effects": [
+      {
+        "kind": "damage_health",
+        "magnitude": 14
+      },
+      {
+        "kind": "damage_strength",
+        "magnitude": 20
+      },
+      {
+        "kind": "fear",
+        "magnitude": 1
+      }
+    ]
+  },
+  "crimson_nirnroot": {
+    "name": "緋紅奈恩根",
+    "value": 35,
+    "weight": 0.1,
+    "effects": [
+      {
+        "kind": "fskill_alteration",
+        "magnitude": 5
+      },
+      {
+        "kind": "resist_magic",
+        "magnitude": 10
+      },
+      {
+        "kind": "fattr_intelligence",
+        "magnitude": 4
+      },
+      {
+        "kind": "damage_health",
+        "magnitude": 8
+      }
+    ]
+  },
+  "daedra_heart": {
+    "name": "魔性之心",
+    "value": 500,
+    "weight": 1,
+    "effects": [
+      {
+        "kind": "heal",
+        "magnitude": 12
+      },
+      {
+        "kind": "restore_magicka",
+        "magnitude": 12
+      },
+      {
+        "kind": "fskill_destruction",
+        "magnitude": 5
+      },
+      {
+        "kind": "damage_health",
+        "magnitude": 8
+      }
+    ]
   }
 }
