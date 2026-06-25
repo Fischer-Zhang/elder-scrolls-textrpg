@@ -1,7 +1,10 @@
-"""R90 煉金增益軸補完 —— 餵飽 R30 限時增益藥引擎(8 新材料·resist 三元素 + 中性 fattr/fskill)。
+"""R90/R91 煉金增益軸補完 —— 餵飽 R30 限時增益藥引擎。
+R90:8 新材料(resist 三元素 + 中性 fattr/fskill)。R91:材料加厚至 4 效果 + 續填 9 種安全增益
+(fattr_speed·fskill mercantile/speechcraft/security/athletics/block/light_armor/heavy_armor/scout)。
 
-🔴 紅線守門:可釀增益池**絕不含** fattr_strength / fskill_{blade,blunt,marksman,hand_to_hand,sneak}
-(R30 鐵律:不灌水偷襲/武傷鏈·只靠資料缺席守 → 此測試把整個可釀池掃過鎖死)。
+🔴 紅線守門:可釀增益池**絕不含** fattr_strength / fskill_{blade,blunt,marksman,hand_to_hand,sneak,smithing}
+(R30 鐵律:不灌水偷襲/武傷鏈 —— 武器技能/sneak 放大 combat.py:477 sneak_mult 或 attack_damage;
+smithing 抬 temper cap → 永久過頂淬鍊 = 永久武傷;只靠資料缺席守 → 此測試把整個可釀池掃過鎖死)。
 """
 
 from tesrpg.gamedata import get_gamedata
@@ -10,9 +13,9 @@ from tesrpg.state import GameState, GameTime
 from tesrpg.systems import alchemy, inventory, magic
 from tesrpg.rng import RNG
 
-# 偷襲/武傷鏈 → 永不可釀(fortify 之會放大 combat.py:477 sneak_mult 或 attack_damage)
+# 偷襲/武傷鏈 → 永不可釀(fortify 之會放大 sneak_mult/attack_damage,或 smithing 過頂淬鍊永久武傷)
 _FORBIDDEN = {"fattr_strength", "fskill_blade", "fskill_blunt", "fskill_marksman",
-              "fskill_hand_to_hand", "fskill_sneak"}
+              "fskill_hand_to_hand", "fskill_sneak", "fskill_smithing"}
 
 
 def _reachable_buffs(gd):
@@ -56,6 +59,17 @@ def test_new_buff_axis_is_brewable():
             "fattr_luck", "fskill_restoration"}
     missing = want - reachable
     assert not missing, f"以下新增益仍不可釀:{missing}"
+
+
+def test_r91_thickened_buff_axis_is_brewable():
+    """R91 材料加厚續填的 9 種安全增益皆可釀(各有「只共有它」的一對·防 max-magnitude 遮蔽)。"""
+    gd = get_gamedata()
+    reachable = _reachable_buffs(gd)
+    want = {"fattr_speed", "fskill_mercantile", "fskill_speechcraft", "fskill_security",
+            "fskill_athletics", "fskill_block", "fskill_light_armor", "fskill_heavy_armor",
+            "fskill_scout"}
+    missing = want - reachable
+    assert not missing, f"以下 R91 新增益仍不可釀:{missing}"
 
 
 def test_existing_buffs_still_brewable_no_regression():

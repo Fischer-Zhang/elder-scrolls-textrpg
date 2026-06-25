@@ -26,6 +26,14 @@
       {
         "kind": "heal",
         "magnitude": 6
+      },
+      {
+        "kind": "fskill_mercantile",
+        "magnitude": 5
+      },
+      {
+        "kind": "fskill_speechcraft",
+        "magnitude": 5
       }
     ]
   },
@@ -60,6 +68,10 @@
       {
         "kind": "cure_disease",
         "magnitude": 1
+      },
+      {
+        "kind": "fskill_light_armor",
+        "magnitude": 5
       }
     ]
   },
@@ -98,6 +110,10 @@
       {
         "kind": "cure_disease",
         "magnitude": 1
+      },
+      {
+        "kind": "fskill_block",
+        "magnitude": 5
       }
     ]
   },
@@ -128,6 +144,14 @@
       {
         "kind": "fattr_willpower",
         "magnitude": 4
+      },
+      {
+        "kind": "fskill_heavy_armor",
+        "magnitude": 5
+      },
+      {
+        "kind": "fskill_scout",
+        "magnitude": 5
       }
     ]
   },
@@ -147,6 +171,10 @@
       {
         "kind": "fskill_alchemy",
         "magnitude": 5
+      },
+      {
+        "kind": "fattr_speed",
+        "magnitude": 4
       }
     ]
   },
@@ -223,6 +251,10 @@
       {
         "kind": "damage_strength",
         "magnitude": 20
+      },
+      {
+        "kind": "fskill_scout",
+        "magnitude": 5
       }
     ]
   },
@@ -238,6 +270,14 @@
       {
         "kind": "restore_fatigue",
         "magnitude": 8
+      },
+      {
+        "kind": "fskill_speechcraft",
+        "magnitude": 5
+      },
+      {
+        "kind": "fskill_athletics",
+        "magnitude": 5
       }
     ]
   },
@@ -252,6 +292,14 @@
       },
       {
         "kind": "fskill_alchemy",
+        "magnitude": 5
+      },
+      {
+        "kind": "fskill_mercantile",
+        "magnitude": 5
+      },
+      {
+        "kind": "fskill_security",
         "magnitude": 5
       }
     ]
@@ -310,8 +358,22 @@
     "value": 4,
     "weight": 0.1,
     "effects": [
-      { "kind": "resist_fire", "magnitude": 10 },
-      { "kind": "fattr_intelligence", "magnitude": 4 }
+      {
+        "kind": "resist_fire",
+        "magnitude": 10
+      },
+      {
+        "kind": "fattr_intelligence",
+        "magnitude": 4
+      },
+      {
+        "kind": "fattr_speed",
+        "magnitude": 4
+      },
+      {
+        "kind": "fskill_security",
+        "magnitude": 5
+      }
     ]
   },
   "fire_salts": {
@@ -319,8 +381,22 @@
     "value": 5,
     "weight": 0.2,
     "effects": [
-      { "kind": "resist_fire", "magnitude": 10 },
-      { "kind": "fattr_personality", "magnitude": 4 }
+      {
+        "kind": "resist_fire",
+        "magnitude": 10
+      },
+      {
+        "kind": "fattr_personality",
+        "magnitude": 4
+      },
+      {
+        "kind": "fskill_athletics",
+        "magnitude": 5
+      },
+      {
+        "kind": "fskill_block",
+        "magnitude": 5
+      }
     ]
   },
   "frost_mirriam": {
@@ -328,8 +404,22 @@
     "value": 4,
     "weight": 0.1,
     "effects": [
-      { "kind": "resist_frost", "magnitude": 10 },
-      { "kind": "fattr_endurance", "magnitude": 4 }
+      {
+        "kind": "resist_frost",
+        "magnitude": 10
+      },
+      {
+        "kind": "fattr_endurance",
+        "magnitude": 4
+      },
+      {
+        "kind": "fskill_light_armor",
+        "magnitude": 5
+      },
+      {
+        "kind": "fskill_heavy_armor",
+        "magnitude": 5
+      }
     ]
   },
   "snowberries": {
@@ -337,8 +427,14 @@
     "value": 3,
     "weight": 0.1,
     "effects": [
-      { "kind": "resist_frost", "magnitude": 10 },
-      { "kind": "fattr_luck", "magnitude": 4 }
+      {
+        "kind": "resist_frost",
+        "magnitude": 10
+      },
+      {
+        "kind": "fattr_luck",
+        "magnitude": 4
+      }
     ]
   },
   "void_salts": {
@@ -346,8 +442,14 @@
     "value": 6,
     "weight": 0.2,
     "effects": [
-      { "kind": "resist_shock", "magnitude": 10 },
-      { "kind": "fattr_intelligence", "magnitude": 4 }
+      {
+        "kind": "resist_shock",
+        "magnitude": 10
+      },
+      {
+        "kind": "fattr_intelligence",
+        "magnitude": 4
+      }
     ]
   },
   "pearl": {
@@ -355,8 +457,14 @@
     "value": 5,
     "weight": 0.1,
     "effects": [
-      { "kind": "resist_shock", "magnitude": 10 },
-      { "kind": "fattr_personality", "magnitude": 4 }
+      {
+        "kind": "resist_shock",
+        "magnitude": 10
+      },
+      {
+        "kind": "fattr_personality",
+        "magnitude": 4
+      }
     ]
   },
   "tundra_cotton": {
@@ -364,8 +472,14 @@
     "value": 2,
     "weight": 0.1,
     "effects": [
-      { "kind": "fattr_endurance", "magnitude": 4 },
-      { "kind": "fskill_restoration", "magnitude": 5 }
+      {
+        "kind": "fattr_endurance",
+        "magnitude": 4
+      },
+      {
+        "kind": "fskill_restoration",
+        "magnitude": 5
+      }
     ]
   },
   "juniper_berries": {
@@ -373,8 +487,14 @@
     "value": 3,
     "weight": 0.1,
     "effects": [
-      { "kind": "fattr_luck", "magnitude": 4 },
-      { "kind": "fskill_restoration", "magnitude": 5 }
+      {
+        "kind": "fattr_luck",
+        "magnitude": 4
+      },
+      {
+        "kind": "fskill_restoration",
+        "magnitude": 5
+      }
     ]
   }
 }

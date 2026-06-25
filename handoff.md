@@ -1404,6 +1404,22 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 
 ---
 
+### R91 · 煉金材料加厚 + 安全增益池續填(承 R90·使用者點名「先解決煉金深度」)[save-safe]
+
+R90 後使用者**暫停下一步選擇**、指出煉金深度不足(並抓到 R90 野採瑕疵「一次採集會採到全部」—— 我把新材料接進既有採集選項的 effects 致單採 6 樣;**已後修**:拆成各 forage 事件的獨立採集選項,一次採集只取一束 ~3 樣,過野外取得守門)。使用者拍板方向 = **材料加厚 + 續填增益池**(純資料、最低風險)。
+
+- **① 材料加厚**:11 個既有材料補到 **4 效果(ES 對標)**(原 18 個只 2 效果、7 個 3 效果、1 個 4 效果)。
+- **② 續填 9 種安全增益**:`fattr_speed` + `fskill_{mercantile,speechcraft,security,athletics,block,light_armor,heavy_armor,scout}`(可釀池 12→~21)。**FAIL-pair 法**:每個新 kind 放在「目前零共有效果」的一對材料上 → 每 kind 恰有一對「**只共有它**」(避 `max(buff_kinds, key=mag)` 把較弱 kind 永久遮蔽=實作初版的 collision;且不位移任何既有配方)。磁量 fattr 4 / fskill 5(對標既有)。
+- **取得零改**:加厚的是既有材料(本就在商店/野採),不新增材料 → 無 merchant/forage 改動。
+- **🔴 smithing 入紅線守門**:`fortify_smithing` → 抬 `effective_temper_cap` → 喝藥可把武器淬到**過頂**且**藥效退了淬鍊仍在** = **永久**免費武傷(比 strength 更狠、非限時取捨)→ `test_alchemy_buffs._FORBIDDEN` 加入 `fskill_smithing`。
+- **🔴 確定性回歸 diff**(crux):`PYTHONHASHSEED=0` 下 dump HEAD(worktree)vs 工作樹的**全 325 對 brew 結果**比對 → **恰 9 對 FAIL→buff·零既有 poison/cure/restore/buff 配方變動**。過程發現一個 **hash-seed nondeterminism 假陽性**(`charred_skeever_hide+wheat` 等磁量 heal/restore_fatigue 平局 → `max(set)` 依 str hash 序 → 跨行程結果不同)= **既有 latent 非確定性**(brew 等磁量平局),良性(釀一次即定、不影響存檔/replay),**記錄不修**(動它會改既有配方)。
+- **🔴 零新存檔欄** · **`sim_assassin` BYTE-IDENTICAL**(純資料·刺客不釀藥·隔離 worktree 證) · **零回歸**(只加效果·確定性 diff 鎖死)。
+- **對抗審查(2 維 finder〔safe-pool 分類 + forbidden 完整性〕+ 逐發現驗證·9 agent)**:7 發現·**0 defect** —— 9 kind 皆在偷襲/武傷/temper 鏈外;`fattr_speed` 只餵 extra-action **機率**非傷害幅度(R63 sim 已驗最壞 solo 0%);smithing 入禁正確;`acrobatics` 為 safe-by-omission(restealth 重置偷襲先機)→ 留 R92 sim pass 一併重分類。
+- **驗證**:`run_all` **93**(`test_alchemy_buffs` 擴:R91 9 kind 各可釀 + `fskill_smithing` 入禁);確定性 brew diff;`check.sh --smoke` 綠。
+- 🔴 **鐵律**:加可釀增益用 **FAIL-pair 法**(每 kind 一對「只共有它」防 max-magnitude 遮蔽)·加完跑**確定性 brew-outcome diff**(固定 `PYTHONHASHSEED`)證零既有位移;**安全池** = 不餵 `attack_damage`/`sneak_mult`/temper-cap 永久武傷者;brew 等磁量平局 `max()` 為既有非確定性(良性,勿無謂動)。**前瞻 R92(使用者已拍板)**:依 R30「放開→必過 sim」**開攻擊向 fortify**(力量/武器技能/潛行/毀滅 + 其餘學派)·新增 **fortify-dosed sim fixture** 驗 solo cap 仍 0% 秒殺 + 量精英/法師對王位移、必要時夾幅度/時長;**smithing 永久擋**(過頂為永久非限時)。
+
+---
+
 ### R90 · 煉金增益軸補完:餵飽 R30 限時增益藥引擎(純資料·8 新材料)[save-safe]
 
 重跑「下一步」評估(6 子系統 + 對抗驗證)排 #2、**風險最低**:R30 蓋了一套**通用限時增益藥引擎**(`synth.brew_buff_id`/`synthesize` 支援任意 `fattr_<屬性>`/`fskill_<技能>`/`resist_<元素>`·`potion_buff` 獨立層套進 `attr()/skill()/entity_resist()`·R32 逐步揭露),但**材料只餵得出 4 種可釀增益**(fattr_agility〔garlic+red_apple〕·fattr_willpower〔lavender+glow_dust〕·fskill_alchemy〔ash_yam+bone_meal〕·resist_magic〔monarch_wing+scrib_jelly〕)= 設計空間 ~35 種只填 11%。**單元素抗藥(resist_fire/frost/shock)端到端接好卻零材料攜帶 → 完全不可達**,正是補「法師對元素 boss 太脆」的關鍵(`potion_buff.potion_resist` → `magic.entity_resist` → `resist_multiplier`,combat-functional)。使用者拍板做這條。**純資料(R02)·引擎/synth/UI/R32 揭露/遷移全自動涵蓋任意 param·零邏輯改動**。
