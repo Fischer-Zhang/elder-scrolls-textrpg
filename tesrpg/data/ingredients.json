@@ -304,5 +304,77 @@
         "magnitude": 1
       }
     ]
+  },
+  "dragons_tongue": {
+    "name": "龍舌草",
+    "value": 4,
+    "weight": 0.1,
+    "effects": [
+      { "kind": "resist_fire", "magnitude": 10 },
+      { "kind": "fattr_intelligence", "magnitude": 4 }
+    ]
+  },
+  "fire_salts": {
+    "name": "火鹽",
+    "value": 5,
+    "weight": 0.2,
+    "effects": [
+      { "kind": "resist_fire", "magnitude": 10 },
+      { "kind": "fattr_personality", "magnitude": 4 }
+    ]
+  },
+  "frost_mirriam": {
+    "name": "霜薄荷",
+    "value": 4,
+    "weight": 0.1,
+    "effects": [
+      { "kind": "resist_frost", "magnitude": 10 },
+      { "kind": "fattr_endurance", "magnitude": 4 }
+    ]
+  },
+  "snowberries": {
+    "name": "雪莓",
+    "value": 3,
+    "weight": 0.1,
+    "effects": [
+      { "kind": "resist_frost", "magnitude": 10 },
+      { "kind": "fattr_luck", "magnitude": 4 }
+    ]
+  },
+  "void_salts": {
+    "name": "虛鹽",
+    "value": 6,
+    "weight": 0.2,
+    "effects": [
+      { "kind": "resist_shock", "magnitude": 10 },
+      { "kind": "fattr_intelligence", "magnitude": 4 }
+    ]
+  },
+  "pearl": {
+    "name": "珍珠",
+    "value": 5,
+    "weight": 0.1,
+    "effects": [
+      { "kind": "resist_shock", "magnitude": 10 },
+      { "kind": "fattr_personality", "magnitude": 4 }
+    ]
+  },
+  "tundra_cotton": {
+    "name": "苔原棉",
+    "value": 2,
+    "weight": 0.1,
+    "effects": [
+      { "kind": "fattr_endurance", "magnitude": 4 },
+      { "kind": "fskill_restoration", "magnitude": 5 }
+    ]
+  },
+  "juniper_berries": {
+    "name": "杜松子",
+    "value": 3,
+    "weight": 0.1,
+    "effects": [
+      { "kind": "fattr_luck", "magnitude": 4 },
+      { "kind": "fskill_restoration", "magnitude": 5 }
+    ]
   }
 }
