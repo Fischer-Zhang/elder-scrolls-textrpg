@@ -299,9 +299,12 @@
        "effects": [{"type": "item", "item": "wheat", "qty": 1},
                    {"type": "item", "item": "garlic", "qty": 1},
                    {"type": "item", "item": "red_apple", "qty": 1},
-                   {"type": "item", "item": "juniper_berries", "qty": 1},
                    {"type": "skill_xp", "skill": "alchemy", "amount": 0.5},
-                   {"type": "message", "text": "你摘了些麥穗、大蒜與紅蘋果,還有一串杜松子。"}]},
+                   {"type": "message", "text": "你摘了些麥穗、大蒜與紅蘋果。"}]},
+      {"text": "摘採灌叢野莓",
+       "effects": [{"type": "item", "item": "juniper_berries", "qty": 1},
+                   {"type": "skill_xp", "skill": "alchemy", "amount": 0.5},
+                   {"type": "message", "text": "你從田畔的矮灌叢摘下一串杜松子。"}]},
       {"text": "沒興趣", "effects": []}
     ]
   },
@@ -313,11 +316,14 @@
        "effects": [{"type": "item", "item": "blue_mountain_flower", "qty": 1},
                    {"type": "item", "item": "lavender", "qty": 1},
                    {"type": "item", "item": "monarch_wing", "qty": 1},
-                   {"type": "item", "item": "frost_mirriam", "qty": 1},
+                   {"type": "skill_xp", "skill": "alchemy", "amount": 0.5},
+                   {"type": "message", "text": "你採下了山藍花、薰衣草與一對帝王蝶翼。"}]},
+      {"text": "翻找霜地野物",
+       "effects": [{"type": "item", "item": "frost_mirriam", "qty": 1},
                    {"type": "item", "item": "snowberries", "qty": 1},
                    {"type": "item", "item": "tundra_cotton", "qty": 1},
                    {"type": "skill_xp", "skill": "alchemy", "amount": 0.5},
-                   {"type": "message", "text": "你採下了山藍花、薰衣草與一對帝王蝶翼,還有霜薄荷、雪莓與一把苔原棉。"}]},
+                   {"type": "message", "text": "你採下了霜薄荷、雪莓與一把苔原棉。"}]},
       {"text": "沒興趣", "effects": []}
     ]
   },
@@ -367,11 +373,14 @@
       {"text": "採集沙地藥草",
        "effects": [{"type": "item", "item": "canis_root", "qty": 1},
                    {"type": "item", "item": "ash_yam", "qty": 1},
-                   {"type": "item", "item": "dragons_tongue", "qty": 1},
+                   {"type": "skill_xp", "skill": "alchemy", "amount": 0.5},
+                   {"type": "message", "text": "你採下了犬根草與一顆灰薯。"}]},
+      {"text": "搜羅鹽灘與礁岩",
+       "effects": [{"type": "item", "item": "dragons_tongue", "qty": 1},
                    {"type": "item", "item": "fire_salts", "qty": 1},
                    {"type": "item", "item": "pearl", "qty": 1},
                    {"type": "skill_xp", "skill": "alchemy", "amount": 0.5},
-                   {"type": "message", "text": "你採下了犬根草與一顆灰薯,還掘得龍舌草、火鹽與一枚海珍珠。"}]},
+                   {"type": "message", "text": "你掘得龍舌草,又從鹽灘與礁岩拾得火鹽與一枚海珍珠。"}]},
       {"text": "沒興趣", "effects": []}
     ]
   },
@@ -393,7 +402,8 @@
     "title": "荒沼採藥",
     "text": "霧鎖的石南坡上,死亡鐘與薰衣草在濕冷的泥炭間悄然綻放,正是煉藥的好材料。",
     "options": [
-      {"text": "採集沼澤藥草", "effects": [{"type": "item", "item": "deathbell", "qty": 1}, {"type": "item", "item": "lavender", "qty": 1}, {"type": "item", "item": "void_salts", "qty": 1}, {"type": "skill_xp", "skill": "alchemy", "amount": 0.5}, {"type": "message", "text": "你採下了一束死亡鐘與薰衣草,礦脈縫隙裡還凝著幾粒虛鹽。"}]},
+      {"text": "採集沼澤藥草", "effects": [{"type": "item", "item": "deathbell", "qty": 1}, {"type": "item", "item": "lavender", "qty": 1}, {"type": "skill_xp", "skill": "alchemy", "amount": 0.5}, {"type": "message", "text": "你採下了一束死亡鐘與薰衣草。"}]},
+      {"text": "鑿取礦脈鹽晶", "effects": [{"type": "item", "item": "void_salts", "qty": 1}, {"type": "skill_xp", "skill": "alchemy", "amount": 0.5}, {"type": "message", "text": "你從礦脈縫隙鑿下幾粒泛紫的虛鹽。"}]},
       {"text": "沒興趣", "effects": []}
     ]
   },
