@@ -185,6 +185,25 @@ if __name__ == "__main__":
     flag = " ⚠temper_power 邊際壓垮(>10pp)" if (dr_notemper - dr_power) > 0.10 else ""
     print(f"  4 bandit 死亡率(淬鍊6)  無power {dr_notemper:.1%} → +temper_power {dr_power:.1%}(Δ{dr_power - dr_notemper:+.1%}){flag}")
 
+    print("\n== R92 fortify-dosed 覆核:攻擊向 fortify 藥(單瓶最強·potion_buff 取最強非疊加 R30)不破紅線 ==")
+    print("   依 R30『放開→必過 sim』:強化力量/武器/潛行藥開放可釀;同 kind+param 取最強非相加(apply_buff)")
+    print("   → 單瓶上限 strength~+15/skill~+19(含 fortify-alchemy 抬 brew factor);取 +20 為保守上界驗 solo 0% + 精英不增:")
+    def apex_dosed():
+        c = apex_max()
+        c.potion_attr_bonus = {"strength": 20}              # 單瓶最強~+15(含 fortify-alchemy 增 brew factor);取 +20 保守上界
+        c.potion_skill_bonus = {"sneak": 20, "blade": 20}   # 單瓶最強~+19;取 +20 保守上界
+        stats.recompute_max_resources(c, gd)
+        return c
+    for t in ["dremora_lord", "vampire_lord", "ancient_dragon", "mehrunes_dagon"]:   # solo 仍須 0%(SOLO_SNEAK cap 夾 fortify)
+        srate = oneshot(apex_dosed, t)
+        flag = " ⚠破紅線(應為 0%)" if srate > 0.0 else " ✓存活"
+        print(f"  solo {t:16} fortify-dosed 秒殺 {srate:5.1%}{flag}")
+    for t in ["dremora", "frost_troll"]:                    # 精英 oneshot hit-gated → fortify Δ≈0(傷害已 overkill)
+        base = oneshot(apex_max, t)
+        mod = oneshot(apex_dosed, t)
+        flag = " ⚠破2%" if (mod - base) > 0.02 else ""
+        print(f"  精英 {t:18} apex_max {base:5.1%} → fortify-dosed {mod:5.1%}(Δ{mod - base:+.1%}){flag}")
+
     print("\n== P4 反制覆核(契約②):群體規模 → 潛近/隱遁機率陡降(>3 敵大減)==")
     relent = lambda: assassin(sneak=100, acrobatics=100, dual=True,
                               mastery_choices={"sneak_75": "relentless_shadow"})

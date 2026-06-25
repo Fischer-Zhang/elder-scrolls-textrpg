@@ -1,10 +1,13 @@
-"""R90/R91 煉金增益軸補完 —— 餵飽 R30 限時增益藥引擎。
-R90:8 新材料(resist 三元素 + 中性 fattr/fskill)。R91:材料加厚至 4 效果 + 續填 9 種安全增益
-(fattr_speed·fskill mercantile/speechcraft/security/athletics/block/light_armor/heavy_armor/scout)。
+"""R90/R91/R92 煉金增益軸補完 —— 餵飽 R30 限時增益藥引擎。
+R90:8 新材料(resist 三元素 + 中性 fattr/fskill)。R91:材料加厚至 4 效果 + 9 種安全增益。
+R92:依 R30「放開→必過 sim」開**攻擊向 fortify**(力量/blade/blunt/marksman/hand_to_hand/sneak/destruction)
+—— sim 證 solo cap 仍夾(秒殺 0%)、精英 oneshot hit-gated 無增、達貢 offense 牆不破(見 sim_assassin
+fortify-dosed 場景 + sim_builds destruction 探針)。
 
-🔴 紅線守門:可釀增益池**絕不含** fattr_strength / fskill_{blade,blunt,marksman,hand_to_hand,sneak,smithing}
-(R30 鐵律:不灌水偷襲/武傷鏈 —— 武器技能/sneak 放大 combat.py:477 sneak_mult 或 attack_damage;
-smithing 抬 temper cap → 永久過頂淬鍊 = 永久武傷;只靠資料缺席守 → 此測試把整個可釀池掃過鎖死)。
+🔴 紅線守門(R92 收斂):可釀增益池絕不含 `fskill_smithing` / `fskill_mysticism` —— 兩者皆「**永久逃逸**」
+類:喝藥當下做工藝 → 產物**永久留存、藥退仍在**(smithing→過頂 temper 永久武傷;mysticism→過強附魔永久),
+連 SOLO_SNEAK cap 都繞不過。其餘攻擊向 fortify(strength/武器/sneak/destruction)為**限時**且 solo 受
+絕對 cap 夾 → 已 sim 驗放行(見 sim_assassin fortify-dosed 場景)。
 """
 
 from tesrpg.gamedata import get_gamedata
@@ -13,9 +16,10 @@ from tesrpg.state import GameState, GameTime
 from tesrpg.systems import alchemy, inventory, magic
 from tesrpg.rng import RNG
 
-# 偷襲/武傷鏈 → 永不可釀(fortify 之會放大 sneak_mult/attack_damage,或 smithing 過頂淬鍊永久武傷)
-_FORBIDDEN = {"fattr_strength", "fskill_blade", "fskill_blunt", "fskill_marksman",
-              "fskill_hand_to_hand", "fskill_sneak", "fskill_smithing"}
+# 🔴 永久逃逸 → 絕不可釀:喝藥做工藝 → 產物永久(限時藥也救不回)。
+#   smithing fortify → 過頂 temper 永久武傷;mysticism fortify → 過強附魔永久(enchant_magnitude 讀 mysticism)。
+# (其餘攻擊向 fortify〔strength/武器技能/sneak/destruction〕為限時 + solo cap 夾,R92 經 sim 驗放行。)
+_FORBIDDEN = {"fskill_smithing", "fskill_mysticism"}
 
 
 def _reachable_buffs(gd):
@@ -35,19 +39,29 @@ def _reachable_buffs(gd):
 
 
 def test_no_ingredient_carries_a_forbidden_buff_kind():
-    """資料不變式:任何材料都不帶禁忌 fortify 效果(可釀池的根源閘)。"""
+    """資料不變式:任何材料都不帶禁忌 fortify 效果(目前 = fskill_smithing 永久武傷)。"""
     gd = get_gamedata()
     for iid, d in gd.ingredients.items():
         for e in d["effects"]:
-            assert e["kind"] not in _FORBIDDEN, f"{iid} 帶禁忌 buff {e['kind']}(會灌水偷襲/武傷鏈)"
+            assert e["kind"] not in _FORBIDDEN, f"{iid} 帶禁忌 buff {e['kind']}(永久武傷·絕不可釀)"
 
 
-def test_brewable_pool_excludes_strength_weapon_sneak():
-    """🔴 紅線:整個可釀增益池不含 strength / 武器技能 / sneak。"""
+def test_brewable_pool_excludes_permanent_escape_kinds():
+    """🔴 紅線:可釀池絕不含「永久逃逸」kind(smithing→永久武傷·mysticism→永久附魔·連 solo cap 都繞不過)。"""
     gd = get_gamedata()
     reachable = _reachable_buffs(gd)
     leaked = reachable & _FORBIDDEN
     assert not leaked, f"可釀池洩漏禁忌增益:{leaked}"
+
+
+def test_r92_offensive_fortify_is_brewable():
+    """R92:攻擊向 fortify(力量/武器技能/潛行/毀滅)經 sim 驗後開放可釀。"""
+    gd = get_gamedata()
+    reachable = _reachable_buffs(gd)
+    want = {"fattr_strength", "fskill_blade", "fskill_blunt", "fskill_marksman",
+            "fskill_hand_to_hand", "fskill_sneak", "fskill_destruction"}
+    missing = want - reachable
+    assert not missing, f"以下 R92 攻擊向 fortify 仍不可釀:{missing}"
 
 
 def test_new_buff_axis_is_brewable():

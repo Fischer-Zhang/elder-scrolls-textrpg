@@ -496,5 +496,110 @@
         "magnitude": 5
       }
     ]
+  },
+  "troll_fat": {
+    "name": "巨魔脂",
+    "value": 4,
+    "weight": 0.1,
+    "effects": [
+      {
+        "kind": "fattr_strength",
+        "magnitude": 4
+      },
+      {
+        "kind": "fskill_blade",
+        "magnitude": 5
+      }
+    ]
+  },
+  "ogres_teeth": {
+    "name": "食人魔牙",
+    "value": 5,
+    "weight": 0.1,
+    "effects": [
+      {
+        "kind": "fattr_strength",
+        "magnitude": 4
+      },
+      {
+        "kind": "fskill_blunt",
+        "magnitude": 5
+      }
+    ]
+  },
+  "hawk_feather": {
+    "name": "鷹羽",
+    "value": 3,
+    "weight": 0.1,
+    "effects": [
+      {
+        "kind": "fskill_blade",
+        "magnitude": 5
+      },
+      {
+        "kind": "fskill_marksman",
+        "magnitude": 5
+      }
+    ]
+  },
+  "bear_claw": {
+    "name": "熊爪",
+    "value": 4,
+    "weight": 0.1,
+    "effects": [
+      {
+        "kind": "fskill_blunt",
+        "magnitude": 5
+      },
+      {
+        "kind": "fskill_hand_to_hand",
+        "magnitude": 5
+      }
+    ]
+  },
+  "nightingale_feather": {
+    "name": "夜鶯羽",
+    "value": 6,
+    "weight": 0.1,
+    "effects": [
+      {
+        "kind": "fskill_marksman",
+        "magnitude": 5
+      },
+      {
+        "kind": "fskill_sneak",
+        "magnitude": 5
+      }
+    ]
+  },
+  "brimstone": {
+    "name": "硫磺",
+    "value": 5,
+    "weight": 0.1,
+    "effects": [
+      {
+        "kind": "fskill_hand_to_hand",
+        "magnitude": 5
+      },
+      {
+        "kind": "fskill_destruction",
+        "magnitude": 5
+      }
+    ]
+  },
+  "shade_cap": {
+    "name": "影菇",
+    "value": 5,
+    "weight": 0.1,
+    "effects": [
+      {
+        "kind": "fskill_sneak",
+        "magnitude": 5
+      },
+      {
+        "kind": "fskill_destruction",
+        "magnitude": 5
+      }
+    ]
   }
 }

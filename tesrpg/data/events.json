@@ -252,6 +252,11 @@
                    {"type": "item", "item": "canis_root", "qty": 1},
                    {"type": "skill_xp", "skill": "alchemy", "amount": 0.5},
                    {"type": "message", "text": "你採下了灰薯、彈蟲凍與一截犬根。"}]},
+      {"text": "鑿掘火山岩穴",
+       "effects": [{"type": "item", "item": "brimstone", "qty": 1},
+                   {"type": "item", "item": "shade_cap", "qty": 1},
+                   {"type": "skill_xp", "skill": "alchemy", "amount": 0.5},
+                   {"type": "message", "text": "你從火山岩縫鑿得幾塊硫磺,陰影裡還採到一叢影菇。"}]},
       {"text": "沒興趣", "effects": []}
     ]
   },
@@ -324,6 +329,12 @@
                    {"type": "item", "item": "tundra_cotton", "qty": 1},
                    {"type": "skill_xp", "skill": "alchemy", "amount": 0.5},
                    {"type": "message", "text": "你採下了霜薄荷、雪莓與一把苔原棉。"}]},
+      {"text": "搜尋猛獸殘骸",
+       "effects": [{"type": "item", "item": "troll_fat", "qty": 1},
+                   {"type": "item", "item": "ogres_teeth", "qty": 1},
+                   {"type": "item", "item": "bear_claw", "qty": 1},
+                   {"type": "skill_xp", "skill": "alchemy", "amount": 0.5},
+                   {"type": "message", "text": "你從雪地裡的獸骸取得巨魔脂、食人魔牙與一副熊爪。"}]},
       {"text": "沒興趣", "effects": []}
     ]
   },
@@ -426,6 +437,7 @@
     "text": "螢光在濕熱的林蔭間明滅 —— 一叢開滿異花的灌木邊,帝王蝶翩然聚集,腐木上還浮著一層發光的鬼火塵。",
     "options": [
       {"text": "採集蝶翼與鬼火塵", "effects": [{"type": "item", "item": "monarch_wing", "qty": 1}, {"type": "item", "item": "glow_dust", "qty": 1}, {"type": "skill_xp", "skill": "alchemy", "amount": 0.5}, {"type": "message", "text": "你採下了一對帝王蝶翼與一撮鬼火塵。"}]},
+      {"text": "搜尋林間獵物", "effects": [{"type": "item", "item": "hawk_feather", "qty": 1}, {"type": "item", "item": "nightingale_feather", "qty": 1}, {"type": "skill_xp", "skill": "alchemy", "amount": 0.5}, {"type": "message", "text": "你在林間拾得一根鷹羽與一支夜鶯羽。"}]},
       {"text": "沒興趣", "effects": []}
     ]
   },
