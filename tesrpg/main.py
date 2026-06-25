@@ -1920,6 +1920,11 @@ def action_shop(state: GameState, gamedata: GameData) -> None:
 
 MAX_PARTY = party.MAX_PARTY              # 同時在隊上限(單一真實來源在 party.py)
 COMPANIONS_CIRCLE_RANK = lycanthropy.RITUAL_RANK_INDEX   # 戰友團「內圈」門檻(獸血儀式 + 召集盾袍兄弟)
+# R-smuggle:盜賊公會「斯庫瑪走私生意」(高階解鎖·只在艾爾斯維爾分舵=月糖源)。兩段 gate 讓階級梯有意義。
+SMUGGLE_PROVINCE = "艾爾斯維爾"           # 走私生意只在貓人故土的盜賊公會分舵(森查爾/科林斯)經營
+SMUGGLE_RANK_1 = 2                        # 拉拔手:解鎖走私生意(精煉 + 近程走私委託)
+SMUGGLE_RANK_2 = 4                        # 夜行者:解鎖長程大宗走私委託
+_SCOMM_MIN_RANK = {"scomm_riften": SMUGGLE_RANK_2, "scomm_wayrest": SMUGGLE_RANK_2}   # 長程委託需高階;其餘 = SMUGGLE_RANK_1
 
 # 八職功能性身份:戰士盾牆 / 騎士戰旗 為戰鬥動作的常數(技能門檻用 base_skill;暫態存 active_effects)
 SHIELD_WALL_BLOCK_GATE = 50     # 持盾 + 格擋達此 base 技能 → 可立盾牆
@@ -3752,6 +3757,10 @@ def action_guild_hall(state: GameState, gamedata: GameData, faction_id: str) -> 
                              and factions.rank_index(char, "companions") >= COMPANIONS_CIRCLE_RANK
                              and bool(_available_shield_siblings(char, gamedata))
                              and len(char.companions) < MAX_PARTY)
+        # R-smuggle:盜賊公會高階(只在艾爾斯維爾分舵=月糖源)解鎖斯庫瑪走私生意(精煉 + 走私委託)
+        smuggle_ok = (faction_id == "thieves_guild"
+                      and world.current_location(char, gamedata).get("province") == SMUGGLE_PROVINCE
+                      and factions.rank_index(char, "thieves_guild") >= SMUGGLE_RANK_1)
         if not factions.is_member(char, faction_id):
             reason = factions.join_block_reason(char, gamedata, faction_id)
             if reason is not None:                   # 門檻/對立/通緝 → 說明原因
@@ -3770,12 +3779,14 @@ def action_guild_hall(state: GameState, gamedata: GameData, faction_id: str) -> 
                 else:
                     ui.message(factions.advance_block_reason(char, gamedata, faction_id)
                                or "公會目前沒有你能接的委託。", style="grey70")
-                if not ritual_ok and not circle_recruit_ok:   # 無委託且無儀式/召集 → 離開
+                if not ritual_ok and not circle_recruit_ok and not smuggle_ok:   # 無委託且無儀式/召集/走私 → 離開
                     return
         if ritual_ok:
             opts.append(("beast_ritual", "🐺 獸血儀式（內圈戰友的祕密)"))
         if circle_recruit_ok:
             opts.append(("rally_sibling", "🛡 召集盾袍兄弟（免費 · 受隊伍上限)"))
+        if smuggle_ok:
+            opts.append(("smuggle", "🌙 斯庫瑪走私生意"))
         choice = ui.menu("公會事務", opts, allow_back=True)
         if choice is None:
             return
@@ -3790,6 +3801,8 @@ def action_guild_hall(state: GameState, gamedata: GameData, faction_id: str) -> 
             _beast_blood_ritual(state, gamedata)
         elif choice == "rally_sibling":
             _rally_shield_sibling(state, gamedata)
+        elif choice == "smuggle":
+            _skooma_smuggling(state, gamedata)
 
 
 def _beast_blood_ritual(state: GameState, gamedata: GameData) -> None:
@@ -3807,6 +3820,51 @@ def _beast_blood_ritual(state: GameState, gamedata: GameData) -> None:
         ui.message("某種力量排斥著這份契約 —— 你無法接受獸血。", style="yellow")
 
 
+def _skooma_smuggling(state: GameState, gamedata: GameData) -> None:
+    """R-smuggle:盜賊公會高階解鎖的斯庫瑪走私生意 —— 精煉月糖→斯庫瑪 + 跨省走私委託。
+    只在艾爾斯維爾分舵(月糖源)、thieves rank≥SMUGGLE_RANK_1 可達(由 action_guild_hall 閘)。
+    精煉刻意是嚴格 sink(見 alchemy 反套利不等式),利潤走固定報酬走私委託。"""
+    char = state.player
+    while True:
+        ms = inventory.count_item(char, "moon_sugar")
+        opts = [("refine", f"🌙 精煉斯庫瑪(月糖 ×{alchemy.SKOOMA_REFINE_COST} → 斯庫瑪 ×1;你有月糖 ×{ms})"),
+                ("contracts", "📦 走私委託(運月糖出省 · 固定酬勞 · 惡名加身)")]
+        choice = ui.menu("斯庫瑪走私生意", opts, allow_back=True)
+        if choice is None:
+            return
+        if choice == "refine":
+            res = alchemy.refine_skooma(char, gamedata)
+            if res["ok"]:
+                state.time.advance(res["hours"])
+            ui.message(res["message"], style="green" if res["ok"] else "grey70")
+            if res.get("tired"):
+                ui.message("熬煉時體力不濟,手腳發軟。", style="yellow")
+            ui.show_events(res.get("skill_events", []), gamedata)
+        elif choice == "contracts":
+            _smuggling_contracts(state, gamedata)
+
+
+def _smuggling_contracts(state: GameState, gamedata: GameData) -> None:
+    """走私委託:列出艾爾斯維爾被脈動聚光、且達階級門檻的 scomm_* 委託(複用 R79 board+pulse·與正規告示板分流)。"""
+    char = state.player
+    rank = factions.rank_index(char, "thieves_guild")
+    while True:
+        today = worldpulse.day_index(state)
+        avail = [q for q in quests.available_quests(char, gamedata, "board", province=SMUGGLE_PROVINCE, day=today)
+                 if q.startswith("scomm_") and rank >= _SCOMM_MIN_RANK.get(q, SMUGGLE_RANK_1)]
+        if not avail:
+            ui.message("眼下沒有走私的單子 —— 月糖商隊的窗口未開,或你的地位還搆不上長程大宗的貨。"
+                       "(走私委託隨『四方傳聞』的風向起落)", style="grey70")
+            return
+        opts = [(qid, f"{gamedata.quests[qid]['name']} — {quests.objective_text(char, gamedata, qid)}"
+                 f"(賞 {gamedata.quests[qid]['reward'].get('gold', 0)} 金·惡名 +{gamedata.quests[qid]['reward'].get('infamy', 0)})")
+                for qid in avail]
+        qid = ui.menu("走私委託", opts, allow_back=True)
+        if qid is None:
+            return
+        _accept_and_brief(state, gamedata, qid)
+
+
 def action_board(state: GameState, gamedata: GameData) -> None:
     char = state.player
     province = world.current_location(char, gamedata)["province"]
@@ -3817,7 +3875,7 @@ def action_board(state: GameState, gamedata: GameData) -> None:
         today = worldpulse.day_index(state)
         main = quests.available_quests(char, gamedata, "main")
         board = [q for q in quests.available_quests(char, gamedata, "board", province=province, day=today)
-                 if not q.startswith("ucomm_")]   # R84:地下委託(ucomm_)只在亡命徒藏身處接,不上正規告示板
+                 if not q.startswith(("ucomm_", "scomm_"))]   # R84 地下委託(ucomm_)走藏身處;R-smuggle 走私委託(scomm_)走盜賊公會走私生意:皆不上正規告示板
         avail = main + board
         if not avail:
             ui.message("告示板上沒有你還沒接的委託。", style="grey70")

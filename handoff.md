@@ -50,7 +50,7 @@
 
 #### 公會、任務與政治
 - **七大公會**:戰士/法師/盜賊 + 黑暗兄弟會 + 神話黎明 + 九神騎士團 + **戰友團**(白漫·狼人血脈歸宿,獸血儀式繫於其內圈)(技能門檻/福利/對立/分支壓軸)
-- **多階段任務引擎**;犯罪賞金 + 衛兵 + 謀殺;**通緝/亡命徒身份化(R84)**:雙軸(賞金=當下追殺·可清 / 惡名=終身地下身份)——**賞金獵人路途追殺**(tier 隨賞金·替換式遭遇·騎馬甩開)+ **亡命徒地下世界**(藏身處安全區/銷贓 fence/可重複地下委託/惡名分級稱號·codex 載);**吸血鬼化**(力量↔詛咒天平·夜視/戰鬥+社交魅惑/偽裝暗影套裝 R56)、**狼人化**(戰友團內圈獸血,獸形變身)、**斯庫瑪/月糖成癮**(亢奮↔戒斷天平,艾爾斯維爾)
+- **多階段任務引擎**;犯罪賞金 + 衛兵 + 謀殺;**通緝/亡命徒身份化(R84)**:雙軸(賞金=當下追殺·可清 / 惡名=終身地下身份)——**賞金獵人路途追殺**(tier 隨賞金·替換式遭遇·騎馬甩開)+ **亡命徒地下世界**(藏身處安全區/銷贓 fence/可重複地下委託/惡名分級稱號·codex 載);**吸血鬼化**(力量↔詛咒天平·夜視/戰鬥+社交魅惑/偽裝暗影套裝 R56)、**狼人化**(戰友團內圈獸血,獸形變身)、**斯庫瑪/月糖成癮**(亢奮↔戒斷天平,艾爾斯維爾)、**斯庫瑪走私生意(R88)**:整併入盜賊公會(非獨立幫派)—— 高階盜賊(rank≥2)在艾爾斯維爾分舵解鎖「斯庫瑪走私生意」(月糖精煉成斯庫瑪〔嚴格 sink〕+ 跨省走私委託〔運月糖出貓人故土·固定酬勞+惡名·途中賞金獵人風險〕),功能化盜賊公會冷階級梯、整併三層犯罪內容(盜賊公會=主幹 / R84 亡命徒層 / 斯庫瑪走私線)
 - **領主政治 / 城戰**:謁見 → 委託 → 武士冊封;圍城 + 破城 + 收稅 + 招兵買馬;**陣營動態大事件**
 
 #### 系統與打磨
@@ -1401,6 +1401,24 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 - **guards(僅 `tests/test_data_schema`)**:① 放寬 `_DLG_EFFECT_TYPES` = `{faction_standing} ∪ events 支援集`(否則 `blessing` heal 被既有 guard 誤殺);② role FK(`roles` 值 ∈ topics、`npc.role` ∈ roles keys);③ rumor FK(`rumor_quest` ∈ quests 且 source==rumor、`rumor_landmark` ∈ landmarks、`rumor_disposition` 0-100 int);④ **source:"rumor" 可達性**(每條由某 NPC `rumor_quest` 回指·防孤兒,擴 R80 guard);⑤ 線索目標 location **無 `visible` gate**(可接去不了)。新 `tests/test_rumor_clues.py`(role 話題出現/好感 gate·offered_rumor quest/landmark 兩路·rumor_disposition gate·blessing once·already-cleared 跳過·不漏告示板·action_talk 追問傳聞煙霧手動 patch UI)。
 - **🔴 sim_assassin BYTE-IDENTICAL**(隔離 worktree vs HEAD 證:純社交/內容·`sim_assassin.py` 只 import combat/magic/stats/inventory,不碰 dialogue/npcs/quests/landmarks·零碰 combat/formulas)。**零新存檔欄**(rumor 線索 → `char.quests`/`completed_quests`;rumor 地標 → `discovered_landmarks`;role `once` → `dialogue_done`;好感 → `npc_disposition`;新 NPC 欄 = gamedata 唯讀非存檔·舊存檔載入即相容無遷移)。**防刷**:追問傳聞一次性鎖、`blessing` once、線索 reward 只純量。`run_all` 84(新 `test_rumor_clues`)。
 - **🔴 鐵律**:加 role 純改 `dialogue.json`(roles map + topics·身份 flavor 為主·功能 effect 走 events 支援集 + `once` 防刷·不帶 skill_xp)+ `npcs.json` role 欄;加流言線索純改 `npcs.json`(rumor_quest/rumor_landmark/rumor_disposition)+ `quests.json`(`source:"rumor"`·僅 clear/reach·**目標無 visible gate**·NPC↔線索目標**須同省**);**新增 source:rumor 任務務必有 NPC rumor_quest 回指**(否則 reachability guard 攔=孤兒);追問傳聞兌現走既有 `_accept_and_brief`/`landmarks.discover`;純社交內容 → sim byte-identical 免跑(動 combat/formulas 才需)。**前瞻**:Phase D 可純資料把其餘 ~40 具名 rumor NPC 逐批接上 + 補 role 密度;若要更多功能 role 話題(商人折扣等)需新 effect + 評估碰 shop/存檔欄。
+
+---
+
+### R88 · 斯庫瑪走私生意:整併入盜賊公會(高階解鎖·月糖精煉 sink + 跨省走私委託)[save-safe]
+
+評估「下一步」(8 子系統 workflow + 對抗驗證)揪出**最淺的終端冷迴圈 = 斯庫瑪**(`skooma.py` 只是自我封閉的 `dose→high→withdrawal→cure` 開關·零陣營/製作/走私/身份)。使用者選方向=斯庫瑪地下世界、亢奮**維持戰鬥中性**(只給速度/敏捷/意志·不碰武傷/偷襲);**再點名整併**(問「盜賊公會能否接這系統」)→ 揪出更根本問題:**三層重疊卻不互通的犯罪內容**(盜賊公會 `sell_bonus` 折扣 / R84 無黨派亡命徒 `fence_bonus`+refuge+ucomm_ / 原擬獨立斯庫瑪幫派);鐵證 `crime.py FENCE_BONUS_BY_TIER` 註解「對標盜賊公會 0.40」=R84 當初刻意做成平行不互通。使用者拍板:**斯庫瑪走私併入盜賊公會**(覆蓋先前「獨立幫派」選擇)= 盜賊公會高階解鎖的招牌生意線 → 一石二鳥補活「盜賊公會冷階級梯」+「斯庫瑪淺」·**不增第四個犯罪 silo**。地利現成:盜賊公會**已在艾爾斯維爾設點**(senchal/corinthe)→ 月糖源天然在貓人故土·零新地點。
+
+- **`alchemy.refine_skooma`**(新函式·非 `brew` 雙材料合成):`SKOOMA_REFINE_COST=5` 月糖 → 1 斯庫瑪·`SKOOMA_REFINE_SKILL=20` 煉金門檻·付 `practice_cost`(練 alchemy)·**無產量階級加成**。`can_refine_skooma` 前置查。
+- **`main.action_guild_hall`**:thieves rank-gated「🌙 斯庫瑪走私生意」子選單 —— `smuggle_ok = faction=="thieves_guild" and current_location().get("province")=="艾爾斯維爾" and rank_index>=SMUGGLE_RANK_1(2)`(複用 companions `circle_recruit_ok` 旗標模式;**早退守衛 `if not ritual_ok and not circle_recruit_ok and not smuggle_ok: return`** → ranked thief 無晉升任務仍留選單)→ `_skooma_smuggling`(精煉 + 走私委託)·`_smuggling_contracts`(列 worldpulse 聚光 `scomm_`·`_SCOMM_MIN_RANK={riften,wayrest:SMUGGLE_RANK_2(4)}` 兩段 gate);`action_board` 排除 `scomm_`(同 `ucomm_`)。常數 `SMUGGLE_PROVINCE/RANK_1/RANK_2/_SCOMM_MIN_RANK` 放 `COMPANIONS_CIRCLE_RANK` 旁。
+- **4 `scomm_*` 走私委託**(`quests.json`):repeatable·source board·`provinces:["艾爾斯維爾"]`·**stages collect moon_sugar×N → reach 遠省 TG 城**(bravil/riften/wayrest/balmora·運出貓人故土·途中複用 R84 賞金獵人風險·**collect 階交貨即消耗** quests.py:241)·`reward⊆{gold,infamy}`(走私=惡名非聲望)。
+- **`pulse_elsweyr_smuggle`**(`world_pulse.json`):新脈動聚光 4 scomm_(修審查「pulse_elsweyr_skooma 只聚光 generic kills」旗標·`worldpulse.py` 零改)。
+
+- **🔴 反印鈔機(設計階對抗審查兩位獨立審計皆抓 BLOCKER → 已修)**:用真實「議價縮放」價格公式證初版的 `smuggle_cut` 售價 perk 與「精煉→賣」皆印鈔機(月糖 25 ↔ 斯庫瑪 120 的 4.8× 價差)→ 整併版**砍 perk**(thieves `sell_bonus` 不動·不加寬銷贓售價)、**精煉嚴格 sink**(反套利不等式 `SKOOMA_REFINE_COST×moon_sugar.value(25) ≥ skooma.value(120)` → 5×25=125≥120·而 `world.sell_price` 對兩物同乘 `(0.3+0.5d)(1+sell_bonus)` → 精煉/買進再賣在**任何議價/銷贓階皆非正 EV·即使月糖免費撿**〔月糖可由怪掉落/採集〕)、**走私窩不設一般銷贓**、**利潤只走固定報酬委託**、**套利回歸測試鎖門**。
+- **🔴 零新存檔欄**:會籍=`char.factions["thieves_guild"]`·成癮=`skooma_addiction`·委託=`char.quests`/`completed_quests`·脈動=`world_pulse_day`(皆既有)。**`sim_assassin` BYTE-IDENTICAL**(零碰 combat.py/formulas.py·走私全在 hub 子選單/委託·sim 走自有 `_round` 永不入公會大廳/game_loop·**隔離 worktree diff vs HEAD 空證**)。
+- **整併**:盜賊公會=組織犯罪主幹(走私=招牌高階動詞)·R84=無黨派亡命徒層·斯庫瑪=盜賊公會的艾爾斯維爾走私線 → 三層互通、不再各自為政。
+- **對抗審查(4 維 finder + 逐發現驗證·13 agent)**:9 發現·**3 確認皆 nit·0 defect** —— ① 精煉 +1 rounding 套利**不可達**(refiner 必 rank≥`SMUGGLE_RANK_1=2` → `sell_bonus≥0.14` 消除 rounding band;非會員開不了精煉 → 比設計宣稱「鎖更死」)② constraints 2-4 verified clean(無 combat 路徑/零存檔欄/閘邏輯正確)③ 修 1 cosmetic typo(柯林斯→科林斯=corinthe 正典名,world_pulse.json + main.py 註解)。
+- **驗證**:`run_all` **91**(新 `test_skooma_smuggling`:反套利不等式 + 滿階×各議價售價斷言/精煉 sink consume+train+gating/rank+省份閘〔drive action_guild_hall〕/scomm schema〔collect moon_sugar→reach 非艾省 TG 城·reward⊆{gold,infamy}〕/脈動+rank 過濾〔drive `_smuggling_contracts`〕);`sim_assassin` byte-identical;`check.sh --smoke` 綠。
+- 🔴 **鐵律**:加走私委託純改 `quests.json`(`scomm_` 前綴·collect moon_sugar→reach·reward⊆{gold,infamy})+ `world_pulse.json` 聚光;**精煉比例 N 守反套利不等式**(`N×moon_sugar.value ≥ skooma.value`·調必重跑 test 套利斷言);走私生意 rank/省份閘在 `action_guild_hall`(複用 circle_recruit 旗標·早退守衛須含 smuggle_ok);**絕不加寬銷贓售價**(任何「拉高 fence 售價的階級 perk」=印鈔機·審查已駁)。**前瞻**:戰士/法師公會的同類功能化(免材料淬鍊 / 奧術回充等)可作後續里程碑,沿用本輪「rank-gated 招牌動詞」模式。
 
 ---
 

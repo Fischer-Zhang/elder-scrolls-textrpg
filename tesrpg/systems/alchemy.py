@@ -16,6 +16,15 @@ from tesrpg.systems import inventory, progression
 
 BREW_FAIL_FACTOR = 0.5   # 沒煉成(無共通效果)只學到一半的 practice 成效
 
+# --- 斯庫瑪精煉(R-smuggle:盜賊公會走私生意的製藥)---------------------------
+# 月糖(原料)→ 斯庫瑪(成品)的「轉換」(非 brew 的雙材料合成)。**刻意是嚴格 sink**:
+# 🔴 反印鈔機鐵則 SKOOMA_REFINE_COST × moon_sugar.value ≥ skooma.value
+#   (5×25=125 ≥ 120)→ 精煉產出的「可售價值」恆 ≤ 投入月糖的可售價值,且買賣價對兩物
+#   同乘 (0.3+0.5d)(1+sell_bonus) 故此不等式在任何議價/銷贓階都成立 → 精煉永不勝過直接賣月糖,
+#   即使月糖是免費撿來的(月糖可由怪掉落/採集)。精煉只為了「自用施打(亢奮)」或備貨,絕非金幣泵。
+SKOOMA_REFINE_COST = 5     # 幾份月糖煉一瓶斯庫瑪(由上方反套利不等式定錨;調此值必重跑 test 套利斷言)
+SKOOMA_REFINE_SKILL = 20   # 精煉門檻(違禁製藥):煉金 base_skill 須達此
+
 RESTORATIVE = {"heal", "restore_magicka", "restore_fatigue"}
 # 有害效果(文件用;實際路由見 brew 的字串分支)。優先序:麻痺>懼意>遲緩>衰減>持續傷害。
 # 特殊毒型(fear/slow/damage_strength)需里程碑解鎖(R31),否則退回 damage_health DoT。
@@ -209,3 +218,29 @@ def brew(char: Character, gamedata: GameData, ing_a: str, ing_b: str, rng: RNG) 
     learn = {ing_a: sorted(shared), ing_b: sorted(shared)}
     return {"ok": True, "kind": result_kind, "message": f"你{verb}:{name}。",
             "item_id": item_id, "hours": hours, "tired": tired, "skill_events": events, "learn": learn}
+
+
+def can_refine_skooma(char: Character) -> tuple[bool, str]:
+    """是否可精煉斯庫瑪(月糖數量 + 煉金門檻);回 (ok, 不可的原因)。"""
+    if inventory.count_item(char, "moon_sugar") < SKOOMA_REFINE_COST:
+        return False, f"月糖不足 —— 精煉一瓶斯庫瑪需 {SKOOMA_REFINE_COST} 份月糖。"
+    if char.base_skill("alchemy") < SKOOMA_REFINE_SKILL:
+        return False, f"你的煉金造詣還不足以精煉斯庫瑪(需煉金 {SKOOMA_REFINE_SKILL})。"
+    return True, ""
+
+
+def refine_skooma(char: Character, gamedata: GameData) -> dict:
+    """精煉:`SKOOMA_REFINE_COST` 份月糖 → 1 瓶斯庫瑪(走私生意的製藥;練 alchemy)。
+    回傳 {"ok","message","hours","tired","skill_events"}。條件不足 → ok False、零成本(不扣料/不耗時)。
+
+    刻意是嚴格 sink(見模組頂端反套利不等式):精煉只為自用施打或備貨,不可作金幣泵。
+    """
+    ok, reason = can_refine_skooma(char)
+    if not ok:
+        return {"ok": False, "message": reason, "hours": 0, "tired": False, "skill_events": []}
+    inventory.remove_item(char, "moon_sugar", SKOOMA_REFINE_COST)
+    xp, hours, tired = progression.practice_cost(char, gamedata, "alchemy")
+    events = progression.use_skill(char, gamedata, "alchemy", xp)
+    inventory.add_item(char, "skooma", 1)
+    return {"ok": True, "message": f"你把 {SKOOMA_REFINE_COST} 份月糖熬煉成一瓶斯庫瑪。",
+            "hours": hours, "tired": tired, "skill_events": events}

@@ -89,6 +89,15 @@
     "spotlight_quests": ["comm_elsweyr_senche", "comm_elsweyr_tiger", "comm_elsweyr_hunt"],
     "news": "艾爾斯維爾月糖黑市猖獗、森奇巨虎下山,瑞門各城張貼平亂、獵虎與草原清剿委託。"
   },
+  "pulse_elsweyr_smuggle": {
+    "province": "艾爾斯維爾",
+    "weight": 2,
+    "cooldown_days": 14,
+    "active_window_days": 10,
+    "min_day": 12,
+    "spotlight_quests": ["scomm_bravil", "scomm_riften", "scomm_wayrest", "scomm_balmora"],
+    "news": "月糖商隊正趁雙月跑貨 —— 森查爾與科林斯的私梟管道大開,盜賊公會的內線在張羅一批批外運的月糖。(走私窗口)"
+  },
   "pulse_blackmarsh_floods": {
     "province": "黑沼澤",
     "weight": 2,
