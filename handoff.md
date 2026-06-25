@@ -49,7 +49,7 @@
 - **套裝加成**(同材質四件)、武器流派、飾品槽、法杖、法袍;**具名神器**(裝備耐久/修理已移除,見 R33)
 
 #### 公會、任務與政治
-- **七大公會**:戰士/法師/盜賊 + 黑暗兄弟會 + 神話黎明 + 九神騎士團 + **戰友團**(白漫·狼人血脈歸宿,獸血儀式繫於其內圈)(技能門檻/福利/對立/分支壓軸)
+- **七大公會**:戰士/法師/盜賊 + 黑暗兄弟會 + 神話黎明 + 九神騎士團 + **戰友團**(白漫·狼人血脈歸宿,獸血儀式繫於其內圈)(技能門檻/福利/對立/分支壓軸);**核心三公會階級服務功能化**(rank-gated 招牌動詞·非只折扣):盜賊=斯庫瑪走私生意(R88·艾爾斯維爾)、戰士=軍械庫淬鍊(R89·公會供料免材料)、法師=奧術回充+魔力補給(R89);黑兄(夜母潛行加成)/戰友團(內圈儀式+召盾袍)早有功能 perk
 - **多階段任務引擎**;犯罪賞金 + 衛兵 + 謀殺;**通緝/亡命徒身份化(R84)**:雙軸(賞金=當下追殺·可清 / 惡名=終身地下身份)——**賞金獵人路途追殺**(tier 隨賞金·替換式遭遇·騎馬甩開)+ **亡命徒地下世界**(藏身處安全區/銷贓 fence/可重複地下委託/惡名分級稱號·codex 載);**吸血鬼化**(力量↔詛咒天平·夜視/戰鬥+社交魅惑/偽裝暗影套裝 R56)、**狼人化**(戰友團內圈獸血,獸形變身)、**斯庫瑪/月糖成癮**(亢奮↔戒斷天平,艾爾斯維爾)、**斯庫瑪走私生意(R88)**:整併入盜賊公會(非獨立幫派)—— 高階盜賊(rank≥2)在艾爾斯維爾分舵解鎖「斯庫瑪走私生意」(月糖精煉成斯庫瑪〔嚴格 sink〕+ 跨省走私委託〔運月糖出貓人故土·固定酬勞+惡名·途中賞金獵人風險〕),功能化盜賊公會冷階級梯、整併三層犯罪內容(盜賊公會=主幹 / R84 亡命徒層 / 斯庫瑪走私線)
 - **領主政治 / 城戰**:謁見 → 委託 → 武士冊封;圍城 + 破城 + 收稅 + 招兵買馬;**陣營動態大事件**
 
@@ -1401,6 +1401,23 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 - **guards(僅 `tests/test_data_schema`)**:① 放寬 `_DLG_EFFECT_TYPES` = `{faction_standing} ∪ events 支援集`(否則 `blessing` heal 被既有 guard 誤殺);② role FK(`roles` 值 ∈ topics、`npc.role` ∈ roles keys);③ rumor FK(`rumor_quest` ∈ quests 且 source==rumor、`rumor_landmark` ∈ landmarks、`rumor_disposition` 0-100 int);④ **source:"rumor" 可達性**(每條由某 NPC `rumor_quest` 回指·防孤兒,擴 R80 guard);⑤ 線索目標 location **無 `visible` gate**(可接去不了)。新 `tests/test_rumor_clues.py`(role 話題出現/好感 gate·offered_rumor quest/landmark 兩路·rumor_disposition gate·blessing once·already-cleared 跳過·不漏告示板·action_talk 追問傳聞煙霧手動 patch UI)。
 - **🔴 sim_assassin BYTE-IDENTICAL**(隔離 worktree vs HEAD 證:純社交/內容·`sim_assassin.py` 只 import combat/magic/stats/inventory,不碰 dialogue/npcs/quests/landmarks·零碰 combat/formulas)。**零新存檔欄**(rumor 線索 → `char.quests`/`completed_quests`;rumor 地標 → `discovered_landmarks`;role `once` → `dialogue_done`;好感 → `npc_disposition`;新 NPC 欄 = gamedata 唯讀非存檔·舊存檔載入即相容無遷移)。**防刷**:追問傳聞一次性鎖、`blessing` once、線索 reward 只純量。`run_all` 84(新 `test_rumor_clues`)。
 - **🔴 鐵律**:加 role 純改 `dialogue.json`(roles map + topics·身份 flavor 為主·功能 effect 走 events 支援集 + `once` 防刷·不帶 skill_xp)+ `npcs.json` role 欄;加流言線索純改 `npcs.json`(rumor_quest/rumor_landmark/rumor_disposition)+ `quests.json`(`source:"rumor"`·僅 clear/reach·**目標無 visible gate**·NPC↔線索目標**須同省**);**新增 source:rumor 任務務必有 NPC rumor_quest 回指**(否則 reachability guard 攔=孤兒);追問傳聞兌現走既有 `_accept_and_brief`/`landmarks.discover`;純社交內容 → sim byte-identical 免跑(動 combat/formulas 才需)。**前瞻**:Phase D 可純資料把其餘 ~40 具名 rumor NPC 逐批接上 + 補 role 密度;若要更多功能 role 話題(商人折扣等)需新 effect + 評估碰 shop/存檔欄。
+
+---
+
+### R89 · 戰士/法師公會功能化:rank-gated 招牌動詞(承 R88·核心公會冷階級梯三部曲收尾)[save-safe]
+
+R88 讓**盜賊公會**拿到階級解鎖招牌動詞(斯庫瑪走私),但**戰士/法師公會仍冷**(爬階只換 flat % 折扣 `armory_discount`/`spell_discount`)。R88 前瞻 + 本 session survey #2 皆明列「戰士/法師公會同類功能化」;使用者「下一步」拍板走這條,**沿用 R88 已驗證、已在 code 的 `action_guild_hall` rank-gated 服務模式**(`smuggle_ok` 鏡像)。動詞先前 AskUserQuestion 已定案:戰士=軍械庫淬鍊、法師=奧術回充+魔力補給。範圍**只 fighters/mages**(thieves R88 已做·companions/dark_brotherhood 早有功能 perk 不碰);**比 R88 更小**——無新地點/陣營/任務/委託/脈動。
+
+- **戰士公會 — 軍械庫淬鍊**(`FORGE_RANK=2` 步兵):公會供料**免材料**淬鍊。新 `main._guild_armory_temper`(比照 `action_temper` 但**不查 location `armorer` 服務**〔公會自有鐵砧〕+ `guild_free=True`)。`smithing.temper(char,gd,item_id,rng=None,guild_free=False)` 新參數〔`free = guild_free or (rng…chance)`〕;**🔴 `smithing.can_temper(...,guild_free=False)` 跳過原料閘** —— 否則 `can_temper` 的「缺 X 錠」檢查會擋掉公會免費淬鍊(實作時抓到的真 bug,專測 `test_normal_temper_still_requires_and_consumes_ingot` 守正常路徑不被弱化)。**受 `effective_temper_cap` 夾**(每件有上限·無迴圈·temper 零材料產出 → 非印鈔機)。
+- **法師公會 — 奧術回充**(`ARCANE_RECHARGE_RANK=2` 魔導士)**+ 魔力補給**(`ARCANE_SUPPLY_RANK=3` 巫師):新 `main._arcane_services` 子選單。回充=免靈魂石把所有 `enchanting.chargeable_weapons`(擒魂/麻痺)充滿;抽新 **`enchanting.recharge_full(char,gd,wid)`**(設 `enchant_charges[wid]=cap`·回傳是否有變)+ **`charge_capacity(gd,wid)`**(`action_recharge_enchant` 的 `_cap` 改呼叫此·去重)。補給=補滿 `minor_magicka_potion`(value18)至 `MAGE_POTION_SUPPLY_N=3`(鏡像 R52 lair `supply`·**售賣套利嚴格弱於已上線的 R52 治療藥水 value40 補給先例**)。
+- **整合(`action_guild_hall`)**:加 `forge_ok`(fighters 會員+`rank≥FORGE_RANK`)/`arcane_ok`(mages 會員+`rank≥ARCANE_RECHARGE_RANK`)旗標(緊接 `smuggle_ok`)·**早退守衛擴為 `if not ritual_ok and not circle_recruit_ok and not smuggle_ok and not forge_ok and not arcane_ok: return`**(ranked 戰士/法師無晉升任務仍留選單)· 選項 forge/arcane_svc + dispatch。**不限省份**(一般公會服務·非 R88 Elsweyr 錨定)。常數放 `SMUGGLE_RANK_*` 旁。
+
+- **🔴 零新存檔欄**:服務按需觸發·以 `rank_index`(既有 `char.factions`)gate;淬鍊改 `weapon_temper`/`armor_temper`、回充改 `enchant_charges`、補給改 inventory(皆既有)。
+- **🔴 `sim_assassin` BYTE-IDENTICAL**(隔離 worktree diff vs HEAD 空證):`guild_free` 預設 False → `temper`/`can_temper` 既有路徑(含 rng 抽序短路)逐位元組同;零碰 `combat.py`/`formulas.py`;sim 是 dark_brotherhood 聆聽者(非 fighters/mages)、直接設 `weapon_temper`、走自有 `_round` 永不入公會大廳。
+- **反套利**:免費淬鍊受 `effective_temper_cap` 夾且 temper 零材料產出(drop+rebuy+重淬仍付物價+時間+體力·同既有「順手練技能」非金幣泵·且 `inventory.remove_item` 移除最後一件即清 temper 防賣後重買續淬)·回充由使用消耗·魔力補給有上限低值。
+- **對抗審查(3 維 finder + 逐發現驗證)**:2 發現·**1 確認皆 nit·0 defect** —— ① `_guild_armory_temper` 以 `if res["ok"]` 守 `advance(hours)`(`hours==0` 時 `advance(0)` no-op·與 `action_temper` 無條件 advance 等價)= 無害風格分歧;② 魔力補給 sell-faucet 經驗證**嚴格弱於 R52 先例** → real=false 駁回。5 紅線全 empirically 驗證(含「`guild_free` bypass 不洩漏到正常鐵匠路徑」)。
+- **驗證**:`run_all` **92**(新 `test_guild_services`:rank 閘顯隱〔drive `action_guild_hall`〕/免錠淬鍊+`weapon_temper`+1/正常淬鍊仍需且耗錠〔byte-safe〕/cap 夾/回充至滿只充能型/魔力補給有上限+rank 子閘);`sim_assassin` byte-identical;`check.sh --smoke` 綠。
+- 🔴 **鐵律**:加公會招牌服務沿用此模式 —— `action_guild_hall` 算 faction+rank 旗標(**早退守衛須含之**)+ 服務 helper;**`smithing.temper`/`can_temper` 的 `guild_free` 預設 False 不可動**(守 byte-identical);免費服務須有自然上界(temper cap / 充能消耗 / 補給上限)防套利;不限省份的一般服務 vs R88 Elsweyr 錨定走私=刻意分流。**前瞻**:核心三公會(thieves/fighters/mages)功能化告一段落;survey 其餘冷迴圈(誓福活化 / 煉金增益軸 / 傳奇重生)留作後續「下一步」。
 
 ---
 

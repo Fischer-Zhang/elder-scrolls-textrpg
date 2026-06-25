@@ -61,6 +61,20 @@ def chargeable_weapons(char: Character, gamedata: GameData) -> list[str]:
     return out
 
 
+def charge_capacity(gamedata: GameData, item_id: str) -> int:
+    """充能型附魔武器的電池容量(= enchant magnitude)。"""
+    return int(gamedata.item(item_id)["enchant"]["magnitude"])
+
+
+def recharge_full(char: Character, gamedata: GameData, item_id: str) -> bool:
+    """把該充能型武器回充至滿(免靈魂石;供 R89 法師公會奧術回充共用)。回傳是否有變(已滿則 False)。"""
+    cap = charge_capacity(gamedata, item_id)
+    if char.enchant_charges.get(item_id, cap) >= cap:
+        return False
+    char.enchant_charges[item_id] = cap
+    return True
+
+
 def enchantable_weapons(char: Character, gamedata: GameData) -> list[str]:
     out = []
     for s in char.inventory:

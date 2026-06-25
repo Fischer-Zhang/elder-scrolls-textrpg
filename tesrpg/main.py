@@ -1925,6 +1925,11 @@ SMUGGLE_PROVINCE = "艾爾斯維爾"           # 走私生意只在貓人故土�
 SMUGGLE_RANK_1 = 2                        # 拉拔手:解鎖走私生意(精煉 + 近程走私委託)
 SMUGGLE_RANK_2 = 4                        # 夜行者:解鎖長程大宗走私委託
 _SCOMM_MIN_RANK = {"scomm_riften": SMUGGLE_RANK_2, "scomm_wayrest": SMUGGLE_RANK_2}   # 長程委託需高階;其餘 = SMUGGLE_RANK_1
+# R89:戰士/法師公會「招牌動詞」rank-gated 服務(承 R88·功能化原本只有折扣的冷階級梯)。不限省份(一般公會服務)。
+FORGE_RANK = 2            # 戰士公會步兵:軍械庫淬鍊(公會供料·免材料)
+ARCANE_RECHARGE_RANK = 2  # 法師公會魔導士:奧術回充(免靈魂石回充充能型附魔武器)
+ARCANE_SUPPLY_RANK = 3    # 法師公會巫師:魔力補給(補滿魔力藥水)
+MAGE_POTION_SUPPLY_N = 3  # 魔力補給上限(低值 minor_magicka_potion·< R52 治療藥水補給先例 → 售賣套利可忽略)
 
 # 八職功能性身份:戰士盾牆 / 騎士戰旗 為戰鬥動作的常數(技能門檻用 base_skill;暫態存 active_effects)
 SHIELD_WALL_BLOCK_GATE = 50     # 持盾 + 格擋達此 base 技能 → 可立盾牆
@@ -3718,7 +3723,7 @@ def action_recharge_enchant(state: GameState, gamedata: GameData) -> None:
         return
 
     def _cap(iid):
-        return int(gamedata.item(iid)["enchant"]["magnitude"])
+        return enchanting.charge_capacity(gamedata, iid)
     wid = ui.menu("為哪把附魔武器充能?",
                   [(iid, f"{gamedata.item_name(iid)}(充能 {char.enchant_charges.get(iid, _cap(iid))}/{_cap(iid)})")
                    for iid in chargeable], allow_back=True)
@@ -3761,6 +3766,11 @@ def action_guild_hall(state: GameState, gamedata: GameData, faction_id: str) -> 
         smuggle_ok = (faction_id == "thieves_guild"
                       and world.current_location(char, gamedata).get("province") == SMUGGLE_PROVINCE
                       and factions.rank_index(char, "thieves_guild") >= SMUGGLE_RANK_1)
+        # R89:戰士公會軍械庫淬鍊(公會供料·免材料)/ 法師公會奧術服務(回充 + 魔力補給)
+        forge_ok = (faction_id == "fighters_guild"
+                    and factions.rank_index(char, "fighters_guild") >= FORGE_RANK)
+        arcane_ok = (faction_id == "mages_guild"
+                     and factions.rank_index(char, "mages_guild") >= ARCANE_RECHARGE_RANK)
         if not factions.is_member(char, faction_id):
             reason = factions.join_block_reason(char, gamedata, faction_id)
             if reason is not None:                   # 門檻/對立/通緝 → 說明原因
@@ -3779,7 +3789,8 @@ def action_guild_hall(state: GameState, gamedata: GameData, faction_id: str) -> 
                 else:
                     ui.message(factions.advance_block_reason(char, gamedata, faction_id)
                                or "公會目前沒有你能接的委託。", style="grey70")
-                if not ritual_ok and not circle_recruit_ok and not smuggle_ok:   # 無委託且無儀式/召集/走私 → 離開
+                if not ritual_ok and not circle_recruit_ok and not smuggle_ok \
+                        and not forge_ok and not arcane_ok:   # 無委託且無任何階級服務 → 離開
                     return
         if ritual_ok:
             opts.append(("beast_ritual", "🐺 獸血儀式（內圈戰友的祕密)"))
@@ -3787,6 +3798,10 @@ def action_guild_hall(state: GameState, gamedata: GameData, faction_id: str) -> 
             opts.append(("rally_sibling", "🛡 召集盾袍兄弟（免費 · 受隊伍上限)"))
         if smuggle_ok:
             opts.append(("smuggle", "🌙 斯庫瑪走私生意"))
+        if forge_ok:
+            opts.append(("forge", "⚒ 軍械庫淬鍊（公會供料 · 免材料)"))
+        if arcane_ok:
+            opts.append(("arcane_svc", "✨ 奧術服務（回充 / 魔力補給)"))
         choice = ui.menu("公會事務", opts, allow_back=True)
         if choice is None:
             return
@@ -3803,6 +3818,10 @@ def action_guild_hall(state: GameState, gamedata: GameData, faction_id: str) -> 
             _rally_shield_sibling(state, gamedata)
         elif choice == "smuggle":
             _skooma_smuggling(state, gamedata)
+        elif choice == "forge":
+            _guild_armory_temper(state, gamedata)
+        elif choice == "arcane_svc":
+            _arcane_services(state, gamedata)
 
 
 def _beast_blood_ritual(state: GameState, gamedata: GameData) -> None:
@@ -3863,6 +3882,72 @@ def _smuggling_contracts(state: GameState, gamedata: GameData) -> None:
         if qid is None:
             return
         _accept_and_brief(state, gamedata, qid)
+
+
+def _guild_armory_temper(state: GameState, gamedata: GameData) -> None:
+    """R89 戰士公會軍械庫:公會供料**免材料**淬鍊手持武器/穿戴護甲(rank-gated 由 action_guild_hall 閘)。
+    比照 action_temper 但不查 location armorer 服務(公會自有鐵砧)+ `guild_free=True`;仍受 `effective_temper_cap` 夾、耗時/體力。"""
+    char = state.player
+    while True:
+        cap = smithing.effective_temper_cap(char, gamedata)
+        ids = []
+        if char.weapon != "fists":
+            ids.append(char.weapon)
+        for slot in ("helmet", "cuirass", "gauntlets", "boots", "shield"):
+            iid = char.equipped.get(slot)
+            if iid:
+                ids.append(iid)
+        ids = [i for i in dict.fromkeys(ids) if smithing.is_temperable(gamedata, i)]
+        if not ids:
+            ui.message("沒有可淬鍊的裝備(手持武器或穿戴護甲須為可鍛材質)。", style="grey70")
+            return
+        opts = []
+        for iid in ids:
+            lvl = smithing.current_temper(char, gamedata, iid)
+            ok, _ = smithing.can_temper(char, gamedata, iid, guild_free=True)
+            opts.append((iid, f"{gamedata.item_name(iid)} +{lvl}/{cap}{'' if ok else ' ✗(已達上限)'}"))
+        iid = ui.menu(f"軍械庫淬鍊哪件?(公會供料免材料 · 鍛造 {char.skill('smithing')} 級 → 上限 +{cap})",
+                      opts, allow_back=True)
+        if iid is None:
+            return
+        res = smithing.temper(char, gamedata, iid, guild_free=True)
+        if res["ok"]:
+            state.time.advance(res["hours"])
+        ui.message(res["message"], style="green" if res["ok"] else "grey70")
+        if res.get("tired"):
+            ui.message("體力不濟,鍛打得馬虎。", style="yellow")
+        ui.show_events(res.get("skill_events", []), gamedata)
+
+
+def _arcane_services(state: GameState, gamedata: GameData) -> None:
+    """R89 法師公會奧術服務:免靈魂石回充充能型附魔武器(rank≥RECHARGE)+ 補給魔力藥水(rank≥SUPPLY)。"""
+    char = state.player
+    while True:
+        rank = factions.rank_index(char, "mages_guild")
+        opts = [("recharge", "✨ 奧術回充(免費充滿擒魂/麻痺附魔武器)")]
+        if rank >= ARCANE_SUPPLY_RANK:
+            have = inventory.count_item(char, "minor_magicka_potion")
+            opts.append(("supply", f"🔮 魔力補給(補次級魔力藥水至 {MAGE_POTION_SUPPLY_N};你有 {have})"))
+        choice = ui.menu("奧術服務", opts, allow_back=True)
+        if choice is None:
+            return
+        if choice == "recharge":
+            chargeable = enchanting.chargeable_weapons(char, gamedata)
+            recharged = [iid for iid in chargeable if enchanting.recharge_full(char, gamedata, iid)]
+            if recharged:
+                ui.message("公會奧術師為你的附魔武器重新灌注魔力 —— "
+                           + "、".join(gamedata.item_name(i) for i in recharged) + " 充能已滿。", style="bold green")
+            elif chargeable:
+                ui.message("你的充能型附魔武器都已是滿充能。", style="grey70")
+            else:
+                ui.message("你沒有充能型附魔武器(命中擒魂 / 麻痺)。", style="grey70")
+        elif choice == "supply":
+            got = 0
+            while inventory.count_item(char, "minor_magicka_potion") < MAGE_POTION_SUPPLY_N:
+                inventory.add_item(char, "minor_magicka_potion", 1)
+                got += 1
+            ui.message(f"公會替你備足了魔力藥水(次級魔力藥水 +{got},補至 {MAGE_POTION_SUPPLY_N} 瓶)。" if got
+                       else "你的魔力藥水已滿。", style="green")
 
 
 def action_board(state: GameState, gamedata: GameData) -> None:

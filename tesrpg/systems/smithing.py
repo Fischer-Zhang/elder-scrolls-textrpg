@@ -69,35 +69,39 @@ def is_temperable(gamedata: GameData, item_id: str) -> bool:
     return bool(d) and d.get("kind") in ("weapon", "armor") and required_ingot(gamedata, item_id) is not None
 
 
-def can_temper(char: Character, gamedata: GameData, item_id: str) -> tuple[bool, str]:
+def can_temper(char: Character, gamedata: GameData, item_id: str, guild_free: bool = False) -> tuple[bool, str]:
     if not is_temperable(gamedata, item_id):
         return (False, "此物品無法淬鍊。")
     cap = effective_temper_cap(char, gamedata)
     if current_temper(char, gamedata, item_id) >= cap:
         return (False, f"鍛造技能尚不足以再強化(目前上限 +{cap})。" if cap < TEMPER_MAX
                 else "已達淬鍊上限。")
-    ingot = required_ingot(gamedata, item_id)
-    if inventory.count_item(char, ingot) <= 0:
-        return (False, f"缺少 {gamedata.item_name(ingot)}。")
+    if not guild_free:                              # 公會供料(R89 軍械庫)免錠 → 跳過原料閘
+        ingot = required_ingot(gamedata, item_id)
+        if inventory.count_item(char, ingot) <= 0:
+            return (False, f"缺少 {gamedata.item_name(ingot)}。")
     return (True, "")
 
 
-def temper(char: Character, gamedata: GameData, item_id: str, rng=None) -> dict:
+def temper(char: Character, gamedata: GameData, item_id: str, rng=None, guild_free: bool = False) -> dict:
     """淬鍊一級。回傳 {ok, message, level?, hours, tired, skill_events, free?}。
-    條件不足 → ok False、零成本(不扣料/不耗時)。rng 提供時,里程碑「物盡其用」有機率不耗錠。"""
-    ok, reason = can_temper(char, gamedata, item_id)
+    條件不足 → ok False、零成本(不扣料/不耗時)。rng 提供時,里程碑「物盡其用」有機率不耗錠。
+    guild_free=True(R89 戰士公會軍械庫:公會供料)→ 跳過耗錠;預設 False → 既有行為逐位元組不變。"""
+    ok, reason = can_temper(char, gamedata, item_id, guild_free=guild_free)
     if not ok:
         return {"ok": False, "message": reason, "hours": 0, "tired": False, "skill_events": []}
     from tesrpg.systems import mastery
-    free = rng is not None and rng.chance(mastery.temper_free_chance(char, gamedata))
-    if not free:                                       # 「物盡其用」:有機率不消耗錠
+    free = guild_free or (rng is not None and rng.chance(mastery.temper_free_chance(char, gamedata)))
+    if not free:                                       # 「物盡其用」/ 公會供料:不消耗錠
         inventory.remove_item(char, required_ingot(gamedata, item_id), 1)
     store = char.weapon_temper if _is_weapon(gamedata, item_id) else char.armor_temper
     store[item_id] = store.get(item_id, 0) + 1
     xp, hours, tired = progression.practice_cost(char, gamedata, SKILL)
     events = progression.use_skill(char, gamedata, SKILL, xp)
     msg = f"你在鐵砧前反覆鍛打,將 {gamedata.item_name(item_id)} 淬鍊至 +{store[item_id]}。"
-    if free:
+    if guild_free:
+        msg += "(軍械庫供料:免耗錠)"
+    elif free:
         msg += "(物盡其用:這次未耗錠)"
     return {"ok": True, "level": store[item_id], "hours": hours, "tired": tired,
             "skill_events": events, "free": free, "message": msg}
