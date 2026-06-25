@@ -68,16 +68,25 @@ def test_forage_respects_budget():
                 assert q <= events._FORAGE_MAX_QTY_PER_ITEM
 
 
+def _rare_pool(gd):
+    """挑一個仍有 rare tier 的野採池(R95 正典化後多數 rare 移 loot;ashland/savanna 仍留 rare 植物)。"""
+    for pid, pool in gd.ecology["pools"].items():
+        if pool.get("rare"):
+            return pid
+    raise AssertionError("無任何含 rare 的野採池")
+
+
 # --- scout 成長同時放大「數量」與「稀有度」(R94 核心語意)-----------------
 def test_higher_scout_yields_more_and_rarer():
     gd = get_gamedata()
+    pid = _rare_pool(gd)
     def sample(scout, n=400):
         _, c = _char(scout=scout)
         items = rares = 0
         for s in range(n):
-            picks = events.forage_pool_draw(c, gd, "snow", RNG(s))
+            picks = events.forage_pool_draw(c, gd, pid, RNG(s))
             items += sum(q for _, q in picks)
-            rares += sum(q for i, q in picks if _tier_of(gd, "snow", i) == "rare")
+            rares += sum(q for i, q in picks if _tier_of(gd, pid, i) == "rare")
         return items, rares
     lo_items, lo_rare = sample(0)
     hi_items, hi_rare = sample(160)
@@ -88,11 +97,12 @@ def test_higher_scout_yields_more_and_rarer():
 # --- 浮動制:低偵查仍有「非常小機會」採到 rare(但確實很小)----------------
 def test_low_scout_rare_is_small_but_possible():
     gd = get_gamedata()
+    pid = _rare_pool(gd)
     _, c = _char(scout=0)
     n = 1000
     got_rare = sum(
         1 for s in range(n)
-        if any(_tier_of(gd, "snow", i) == "rare" for i, _ in events.forage_pool_draw(c, gd, "snow", RNG(s)))
+        if any(_tier_of(gd, pid, i) == "rare" for i, _ in events.forage_pool_draw(c, gd, pid, RNG(s)))
     )
     frac = got_rare / n
     assert 0 < frac < 0.10, f"低偵查 rare 機率應「小而非零」,實得 {frac:.1%}"

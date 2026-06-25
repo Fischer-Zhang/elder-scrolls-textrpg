@@ -1404,6 +1404,20 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 
 ---
 
+### R95 · 煉金材料正典化:生物部位移 creature loot + 2 新怪 + 野採池重建(承 R94)[re-sim] [save-safe]
+
+承使用者「依正典重新調整所有煉金材料稀有度與取得方式」。評估(workflow 4 agent 研究 51 材料 TES 正典 + 準確性審查)結論:**生物部位(脂/牙/爪/趾/鱗/卵/塵/心/鹽)正典上是 creature loot,非野採植物**。兩道拍板:① 生物部位 **loot-only(打怪取得·hunt-gated)** ② 無對應怪者**新增怪**。
+
+- **21 試劑移 creature loot**:troll_fat→troll、ogres_teeth→ogre、bear_claw→bear、giants_toe→frost_giant、hagraven_claw→hag_matriarch/moor_witch/glenmoril_witch、spriggan_sap+taproot→spriggan/matriarch、mudcrab_chitin→mudcrab、void_salts→storm_atronach、hawk_feather+nightingale_feather→harpy(加進既有怪 loot·率 0.4-0.6);spider_egg/vampire_dust/charred_skeever_hide/bone_meal/glow_dust/scrib_jelly 本有 loot(只移出野採池)。
+- **2 新怪(`bestiary.json`)**:`flame_atronach`(ashland·danger5·min8·火元素·對標 storm_atronach·掉 fire_salts)、`slaughterfish`(swamp·danger2·min3·水掠食·掉 slaughterfish_scale/egg/pearl 0.12)。經 `combat.random_encounter` biome 加權**自動進遭遇**(實測 flame 169/4000·slaughterfish 520/4000·同類 storm 188/4000)。
+- **野採池重建(`alchemical_ecology.json`)**:只留**植物/菌/昆蟲**(~29 材料)·每池 ≥2 common/≥4 total;canis_root 改溫帶(snow/heartland/border·正典裂谷)·frost_mirriam 留 snow(乾燥香草無對應怪=刻意例外)·jarrin_root 留 savanna rare(根=植物);**多數池 rare tier 變空**(rare 試劑多移 loot·R94 浮動預算 rare 機率主要落 ashland/savanna)。
+- **可達性(全保)**:全 51 材料皆有取得途徑(池∪loot∪shop);6 新 kind 中 **alteration/conjuration/resist_poison 變 loot-gated**(殺 spriggan/泥蟹/屠魚)·illusion/acrobatics/resist_disease 留野採;**元素抗 fire_salts/void_salts/pearl 既有 shop**(雪漫/落錐/帝都/sentinel·danger0·1 級可買→**不 level-gate**)+ 新怪 bonus loot。guard:`test_every_ingredient_is_reachable`(池∪loot∪shop)·`test_r95_new_kinds_reachable`(每 kind 有「兩材皆可取得」對)。
+- **🔴 brew effects 零改(只移取得端)→ 確定性 brew-diff 既有 528 對零位移**;`sim_assassin` combat/formulas 未碰→**byte-identical**(solo 0%/精英 Δ0);**R95 反而收緊野採可達攻擊向 fortify(17→2 對·生物部位移 loot)**=正典副利。**零新存檔欄**(新怪/loot/池皆 gamedata 唯讀)。
+- **對抗審查(3 維·15 agent)·12 發現·0 defect**(全 refuted/by_design):新怪數值健全(對標 storm/mudcrab)·resist 藥既有 shop 不 level-gate(駁「min8 gate」)·harpy 雙羽 by-design(potion_buff 取最強非疊加→量大不堆 buff)·spider_egg/vampire_dust collect 任務改 collect-from-loot(仍可達)。`run_all` **94**;BESTIARY.md 重生 **129 怪**。
+- 🔴 **鐵律**:**生物部位試劑走 creature loot(`bestiary` loot·非野採池)·植物/菌/昆蟲走野採**;加新怪守 R11(難度靠 min_level/danger 非 stat 縮放)/R12(biomes 自動進遭遇);每材料/每可釀 kind 須有取得途徑(池∪loot∪shop·**loot-gated 也算可達**);改 loot/池不碰 combat → sim byte-identical(仍跑確認);frost_mirriam(乾燥香草)無對應怪=野採例外。
+
+---
+
 ### R94 · 野採稀有度功能化:偵查定值預算 + 原料擴展(承 R93)[re-sim] [save-safe]
 
 承 R93,使用者點名「依稀有度概念 + 偵查越高採稀有度越高數量越多(定值分配)」+ 擴展原料。三道拍板:**① 分配=自動隨機湧現**(零 UI)**② 範圍=全四批擴展 ③ 稀有度=浮動預算制**(讓低偵查有「非常小機會」採到高 cost rare)。

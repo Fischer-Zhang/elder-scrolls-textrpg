@@ -1,22 +1,20 @@
 {
-  "_doc": "生態系 → 煉金材料池(R93)。野採事件的 forage_pool 效果引用 pool id,從該生態系池加權隨機抽取任意組合 + 數量(有上限)。tier(common/uncommon/rare)決定抽中權重,見 events._FORAGE_TIER_WEIGHTS;採集次數/總量上限隨 scout(偵查)技能成長,見 events.forage_pool_draw。新增可野採材料:把 id 放進對應生態系的某個 tier 即可(純資料,R02)。每個材料至少入一個池(test_foraging 守);改池不碰戰鬥 → sim 免疫。",
+  "_doc": "生態系 → 煉金材料池(R93 引擎·R95 正典化)。野採只含植物/菌/昆蟲;生物部位(脂/牙/爪/趾/鱗/卵/塵/心/鹽)依正典改由對應怪掉落(creature loot·見 bestiary),不入野採池。forage_pool 從池加權抽(偵查定值預算 R94);tier=common/uncommon/rare 決定抽中權重與成本。新增可野採植物:放進對應生態系 tier(R02);生物部位加 creature loot。每材料須有取得途徑(池∪loot∪shop·test_every_ingredient_is_reachable 守);改池/loot 不碰戰鬥→sim 免疫。",
   "pools": {
     "ashland": {
       "_name": "晨風火山灰田",
       "common": [
-        "ash_yam",
-        "scrib_jelly",
-        "canis_root"
+        "nightshade",
+        "imp_stool",
+        "ash_yam"
       ],
       "uncommon": [
-        "brimstone",
-        "shade_cap",
-        "imp_stool",
+        "dragons_tongue",
         "namiras_rot",
-        "taproot"
+        "shade_cap",
+        "brimstone"
       ],
       "rare": [
-        "charred_skeever_hide",
         "crimson_nirnroot"
       ]
     },
@@ -24,25 +22,18 @@
       "_name": "黑沼澤毒沼",
       "common": [
         "nightshade",
-        "imp_stool",
         "deathbell",
+        "imp_stool",
         "swamp_fungal_pod",
-        "mudcrab_chitin",
-        "slaughterfish_scale",
         "slaughterfish_egg"
       ],
       "uncommon": [
-        "bone_meal",
-        "vampire_dust",
-        "namiras_rot",
-        "taproot",
         "mora_tapinella",
+        "namiras_rot",
         "hag_taper",
-        "bittergreen_petal",
-        "nirnroot"
-      ],
-      "rare": [
-        "spider_egg"
+        "shade_cap",
+        "nirnroot",
+        "bittergreen_petal"
       ]
     },
     "heartland": {
@@ -51,101 +42,79 @@
         "wheat",
         "garlic",
         "red_apple",
+        "blue_mountain_flower",
+        "canis_root",
         "torchbug_thorax",
-        "slaughterfish_scale"
+        "monarch_wing"
       ],
       "uncommon": [
         "juniper_berries",
-        "blue_mountain_flower",
-        "luna_moth_wing"
+        "luna_moth_wing",
+        "slaughterfish_egg"
       ]
     },
     "snow": {
       "_name": "天際凍原",
       "common": [
-        "frost_mirriam",
-        "snowberries",
-        "tundra_cotton",
         "blue_mountain_flower",
-        "lavender"
+        "lavender",
+        "snowberries",
+        "juniper_berries",
+        "tundra_cotton",
+        "canis_root"
       ],
       "uncommon": [
-        "monarch_wing",
-        "troll_fat",
-        "ogres_teeth",
-        "bear_claw"
-      ],
-      "rare": [
-        "spider_egg",
-        "charred_skeever_hide",
-        "giants_toe",
-        "hagraven_claw"
+        "frost_mirriam",
+        "monarch_wing"
       ]
     },
     "desert": {
       "_name": "漢默法爾黃沙綠洲",
       "common": [
-        "dragons_tongue",
-        "fire_salts",
         "canis_root",
-        "mudcrab_chitin"
+        "dragons_tongue",
+        "ash_yam"
       ],
       "uncommon": [
-        "ash_yam",
-        "pearl"
-      ],
-      "rare": [
-        "bone_meal"
+        "nightshade",
+        "brimstone"
       ]
     },
     "moor": {
       "_name": "高岩荒沼",
       "common": [
         "lavender",
-        "deathbell",
-        "void_salts"
+        "deathbell"
       ],
       "uncommon": [
         "nightshade",
-        "vampire_dust",
-        "spriggan_sap",
         "mora_tapinella",
         "hag_taper"
-      ],
-      "rare": [
-        "giants_toe",
-        "hagraven_claw"
       ]
     },
     "jungle": {
       "_name": "瓦倫巨木林",
       "common": [
-        "monarch_wing",
-        "hawk_feather",
-        "nightingale_feather",
-        "torchbug_thorax"
+        "torchbug_thorax",
+        "monarch_wing"
       ],
       "uncommon": [
-        "glow_dust",
-        "scrib_jelly",
-        "spriggan_sap",
-        "luna_moth_wing",
+        "nightshade",
+        "mora_tapinella",
+        "nirnroot",
         "bittergreen_petal",
-        "nirnroot"
-      ],
-      "rare": [
-        "nightshade"
+        "luna_moth_wing"
       ]
     },
     "savanna": {
       "_name": "艾爾斯維爾糖楓草海",
       "common": [
-        "moon_sugar",
-        "glow_dust"
+        "torchbug_thorax",
+        "moon_sugar"
       ],
       "uncommon": [
-        "hawk_feather",
-        "nightshade"
+        "nightshade",
+        "luna_moth_wing"
       ],
       "rare": [
         "jarrin_root"
@@ -155,6 +124,7 @@
       "_name": "邊陲混生荒地",
       "common": [
         "blue_mountain_flower",
+        "canis_root",
         "nightshade"
       ],
       "uncommon": [

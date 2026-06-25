@@ -144,16 +144,27 @@ def _best_tier(gd):
     return best
 
 
-def test_r94_new_kinds_reachable_without_rare():
-    """🔴 R94:6 個新可釀 kind 各須有「兩材皆 common/uncommon」的配對(低偵查可湊·rare 純獎勵不 gate)。"""
+def _obtainable(gd):
+    """每材料是否有取得途徑:野採池 ∪ 怪掉落 ∪ 商店(R95:生物部位走 loot·植物走野採)。"""
+    out = set(_best_tier(gd))                                   # 在野採池
+    for c in gd.bestiary.values():                             # 怪掉落
+        for e in (c.get("loot") or []):
+            out.add(e if isinstance(e, str) else (e.get("item") or e.get("id")))
+    for loc in gd.world["locations"].values():                # 商店
+        out.update(loc.get("merchant_stock") or [])
+    return out
+
+
+def test_r95_new_kinds_reachable():
+    """🔴 R95:6 個新可釀 kind 各須有「兩材皆可取得」的配對(正典化後 alteration/conjuration/resist_poison
+    走 loot-gated〔殺 spriggan/泥蟹/屠魚〕·illusion/acrobatics/resist_disease 走野採;皆可達不孤兒)。"""
     gd = get_gamedata()
-    best = _best_tier(gd)
-    nonrare = lambda m: best.get(m) in ("common", "uncommon")
+    obtainable = _obtainable(gd)
     ings = sorted(gd.ingredients)
     reach = set()
     for i in range(len(ings)):
         for j in range(i + 1, len(ings)):
-            if not (nonrare(ings[i]) and nonrare(ings[j])):
+            if not (ings[i] in obtainable and ings[j] in obtainable):
                 continue
             c = build_character(gd, name="C", sex="male", race="breton", birthsign="mage", class_id="mage")
             c.skills["alchemy"] = 80
@@ -163,7 +174,7 @@ def test_r94_new_kinds_reachable_without_rare():
             if r.get("ok") and r.get("kind") == "buff":
                 reach.add(r["item_id"].split("|")[1])
     gated = _R94_NEW_KINDS - reach
-    assert not gated, f"以下新 kind 只能靠 rare 材料(被 scout 變相 gate):{gated}"
+    assert not gated, f"以下新 kind 無任何「兩材皆可取得」配對(孤兒):{gated}"
 
 
 def test_resist_poison_potion_applies_combat_functionally():

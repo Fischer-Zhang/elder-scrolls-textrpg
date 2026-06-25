@@ -49,7 +49,7 @@
       0,
       2
     ],
-    "loot": [],
+    "loot": [{"item": "mudcrab_chitin", "chance": 0.5}],
     "flavor": "硬殼泥蟹橫著逼近,雙鉗咔咔作響。"
   },
   "wolf": {
@@ -205,7 +205,8 @@
       {
         "item": "healing_potion",
         "chance": 0.15
-      }
+      },
+      {"item": "bear_claw", "chance": 0.5}
     ],
     "flavor": "一頭巨大的棕熊人立而起,咆哮震得林木簌簌。",
     "resist": {
@@ -666,7 +667,7 @@
     "danger": 5, "min_level": 6, "weight": 2,
     "resist": {"frost": 50},
     "loot_gold": [10, 30],
-    "loot": [{"item": "healing_potion", "chance": 0.35}, {"item": "wolf_pelt", "chance": 0.3}],
+    "loot": [{"item": "healing_potion", "chance": 0.35}, {"item": "wolf_pelt", "chance": 0.3}, {"item": "troll_fat", "chance": 0.5}],
     "flavor": "一頭三眼霜巨魔咆哮著撲來,傷口轉眼結霜癒合。"
   },
   "storm_atronach": {
@@ -682,7 +683,7 @@
     "danger": 5, "min_level": 8, "weight": 2,
     "resist": {"shock": 100, "fire": -25},
     "loot_gold": [0, 0],
-    "loot": [{"item": "filled_greater_soul_gem", "chance": 0.4}, {"item": "glow_dust", "chance": 0.5}],
+    "loot": [{"item": "filled_greater_soul_gem", "chance": 0.4}, {"item": "glow_dust", "chance": 0.5}, {"item": "void_salts", "chance": 0.5}],
     "flavor": "盤旋的岩塊間迸射雷弧,一尊雷暴元素轟然成形。"
   },
   "daedroth": {
@@ -1090,7 +1091,7 @@
     "danger": 5, "min_level": 14, "weight": 1, "solo": true,
     "resist": {"frost": 50},
     "loot_gold": [80, 180],
-    "loot": [{"item": "dwarven_cuirass", "chance": 0.25}, {"item": "healing_potion", "chance": 0.6}],
+    "loot": [{"item": "dwarven_cuirass", "chance": 0.25}, {"item": "healing_potion", "chance": 0.6}, {"item": "giants_toe", "chance": 0.5}],
     "flavor": "一尊霜巨人踏雪而來,每一步都震得山道顫動。"
   },
   "ancient_dragon": {
@@ -1220,7 +1221,7 @@
     "danger": 5, "min_level": 7, "weight": 2,
     "resist": {"poison": 75, "fire": -50},
     "loot_gold": [10, 30],
-    "loot": [{"item": "healing_potion", "chance": 0.35}, {"item": "imp_stool", "chance": 0.3}],
+    "loot": [{"item": "healing_potion", "chance": 0.35}, {"item": "imp_stool", "chance": 0.3}, {"item": "troll_fat", "chance": 0.5}],
     "flavor": "一頭覆滿藻苔的泥沼巨魔自爛泥中起身,撕裂的傷口轉眼便重新癒合。"
   },
   "wamasu": {
@@ -1779,7 +1780,7 @@
     "danger": 2, "min_level": 1, "weight": 5,
     "resist": {"magic": 25, "shock": -55},
     "loot_gold": [0, 5],
-    "loot": [{"item": "nightshade", "chance": 0.3}, {"item": "lavender", "chance": 0.25}],
+    "loot": [{"item": "nightshade", "chance": 0.3}, {"item": "lavender", "chance": 0.25}, {"item": "hagraven_claw", "chance": 0.4}],
     "flavor": "霧中亮起一簇篝火,一名披著苔綠斗篷的沼地女巫自石南叢後直起身,指尖凝起森寒的霜咒。"
   },
   "gargoyle": {
@@ -1811,7 +1812,7 @@
     "danger": 3, "min_level": 4, "weight": 5,
     "resist": {"shock": -30},
     "loot_gold": [2, 10],
-    "loot": [{"item": "monarch_wing", "chance": 0.3}, {"item": "glow_dust", "chance": 0.25}],
+    "loot": [{"item": "monarch_wing", "chance": 0.3}, {"item": "glow_dust", "chance": 0.25}, {"item": "hawk_feather", "chance": 0.5}, {"item": "nightingale_feather", "chance": 0.4}],
     "flavor": "霧裡傳來一聲淒厲的尖嘯,一頭半人半鴉的妖物收攏黑羽,自高處挾風俯衝而下。"
   },
   "barrow_sentinel": {
@@ -1851,7 +1852,7 @@
     "danger": 5, "min_level": 13, "weight": 1, "raw": true,
     "resist": {"frost": 60, "magic": 40, "shock": -65},
     "loot_gold": [70, 160],
-    "loot": [{"item": "ebony_cuirass", "chance": 0.3}, {"item": "filled_greater_soul_gem", "chance": 0.5}, {"item": "gold_ingot", "chance": 0.5}],
+    "loot": [{"item": "ebony_cuirass", "chance": 0.3}, {"item": "filled_greater_soul_gem", "chance": 0.5}, {"item": "gold_ingot", "chance": 0.5}, {"item": "hagraven_claw", "chance": 0.6}],
     "flavor": "巫窟深處的寒氣驟然凝結 —— 一名披著千年羽袍的魔女祭主自骸骨王座升起,凜冬的詛咒在她蒼白的指間盤旋成霜。"
   },
   "strangler_vine": {
@@ -1880,7 +1881,7 @@
     "danger": 3, "min_level": 3, "weight": 4,
     "resist": {"frost": 50, "poison": 50, "fire": -50},
     "loot_gold": [2, 12],
-    "loot": [{"item": "monarch_wing", "chance": 0.3}, {"item": "healing_potion", "chance": 0.2}],
+    "loot": [{"item": "healing_potion", "chance": 0.2}, {"item": "spriggan_sap", "chance": 0.5}, {"item": "taproot", "chance": 0.4}],
     "flavor": "苔綠的樹皮剝落,一具藤蔓與樹瘤交織的樹靈自巨木中走出,荊棘的指尖滴著綠約的毒。"
   },
   "jungle_imga": {"sentient": true, 
@@ -1936,7 +1937,7 @@
     "danger": 5, "min_level": 13, "weight": 1, "raw": true,
     "resist": {"frost": 60, "poison": 100, "fire": -55},
     "loot_gold": [70, 160],
-    "loot": [{"item": "glass_cuirass", "chance": 0.3}, {"item": "filled_greater_soul_gem", "chance": 0.5}, {"item": "gold_ingot", "chance": 0.5}],
+    "loot": [{"item": "glass_cuirass", "chance": 0.3}, {"item": "filled_greater_soul_gem", "chance": 0.5}, {"item": "gold_ingot", "chance": 0.5}, {"item": "spriggan_sap", "chance": 0.6}, {"item": "taproot", "chance": 0.5}],
     "flavor": "腐林的中心,一株千年遠古樹靈轟然挺起 —— 盤根錯節的軀體高過三人,萬千毒藤自它身上奔湧而出,絞向闖入聖林的活物。"
   },
   "sugar_vine": {
@@ -2129,7 +2130,7 @@
     ],
     "resist": {"magic": 25, "fire": 25},
     "loot_gold": [20, 60],
-    "loot": [{"item": "nightshade", "chance": 0.6}, {"item": "garlic", "chance": 0.4}, {"item": "healing_potion", "chance": 0.3}],
+    "loot": [{"item": "nightshade", "chance": 0.6}, {"item": "garlic", "chance": 0.4}, {"item": "healing_potion", "chance": 0.3}, {"item": "hagraven_claw", "chance": 0.5}],
     "flavor": "蓬髮糾結、羽爪生鱗的格倫魔女蜷在火堆旁低吟 —— 唯有她們的巫血,能洗去戰友體內的獸性。"
   },
   "mehrunes_dagon": {"name": "梅魯尼斯·達貢", "strength": 98, "agility": 50, "speed": 50, "max_health": 720, "armor_rating": 26, "attack": {"name": "湮滅四臂連斬", "damage": 44, "skill": 72, "element": "fire", "on_hit": {"status": "dot", "element": "fire", "magnitude": 8, "turns": 3, "chance": 0.6}}, "attacks": [{"name": "湮滅四臂連斬", "damage": 44, "skill": 72, "element": "fire", "weight": 2, "on_hit": {"status": "dot", "element": "fire", "magnitude": 8, "turns": 3, "chance": 0.6}}, {"name": "黑檀亂舞", "damage": 40, "skill": 72, "weight": 2}, {"name": "湮滅威壓", "damage": 20, "skill": 72, "weight": 1, "on_hit": {"status": "fear", "turns": 1, "chance": 0.3}}, {"name": "位面爆燃", "damage": 60, "skill": 74, "element": "fire", "weight": 1, "cooldown": 3, "when": {"hp_below": 0.5}}], "danger": 6, "min_level": 18, "weight": 1, "solo": true, "resist": {"fire": 85, "frost": 40, "shock": 40, "magic": 50, "poison": 100}, "loot_gold": [400, 800], "loot": [{"item": "daedra_heart", "chance": 1.0}, {"item": "dawnfang", "chance": 0.5}, {"item": "daedric_sword", "chance": 0.4}, {"item": "filled_greater_soul_gem", "chance": 0.6}], "flavor": "天色化為赤紅 —— 梅魯尼斯·達貢踏碎自己的祭壇而來,四臂各執一柄燃燒的黑檀刃,湮滅之君的怒火足以將位面燒成灰燼。"},
@@ -2141,7 +2142,7 @@
   "goblin": {"sentient": true, "biomes": ["heartland"], "name": "哥布林", "danger": 2, "min_level": 2, "weight": 4, "strength": 44, "agility": 46, "speed": 46, "max_health": 32, "armor_rating": 10, "attack": {"name": "粗製短刀", "damage": 9, "skill": 42}, "loot_gold": [2, 12], "loot": [{"item": "lockpick", "chance": 0.3}, {"item": "minor_healing_potion", "chance": 0.3}], "flavor": "一隻綠皮哥布林齜牙咧嘴,揮舞著鏽蝕的粗製短刀。"},
   "goblin_shaman": {"sentient": true, "spells": ["heal_other"], "biomes": ["heartland"], "name": "哥布林薩滿", "danger": 3, "min_level": 3, "weight": 2, "strength": 38, "agility": 48, "speed": 46, "max_health": 50, "armor_rating": 8, "attack": {"name": "電擊咒", "damage": 13, "skill": 56, "element": "shock", "on_hit": {"status": "dot", "element": "shock", "magnitude": 3, "turns": 2, "chance": 0.4}}, "attacks": [{"name": "電擊咒", "damage": 13, "skill": 56, "element": "shock", "weight": 2, "on_hit": {"status": "dot", "element": "shock", "magnitude": 3, "turns": 2, "chance": 0.4}}, {"name": "骨杖打擊", "damage": 12, "skill": 56, "weight": 2}, {"name": "懾心咒", "damage": 9, "skill": 56, "weight": 1, "on_hit": {"status": "fear", "turns": 1, "chance": 0.25}}], "resist": {"magic": 20}, "loot_gold": [3, 16], "loot": [{"item": "glow_dust", "chance": 0.4}, {"item": "imp_stool", "chance": 0.3}, {"item": "minor_magicka_potion", "chance": 0.3}], "flavor": "哥布林薩滿揮舞綴骨法杖,指尖躍動著粗野的電光。"},
   "mountain_lion": {"biomes": ["heartland"], "name": "山獅", "danger": 3, "min_level": 3, "weight": 3, "strength": 56, "agility": 56, "speed": 58, "max_health": 58, "armor_rating": 8, "attack": {"name": "撲擊利爪", "damage": 15, "skill": 54}, "attacks": [{"name": "撲擊利爪", "damage": 15, "skill": 54, "weight": 2}, {"name": "獠牙咬擊", "damage": 14, "skill": 54, "weight": 2}, {"name": "狂猛撲咬", "damage": 24, "skill": 56, "weight": 1, "cooldown": 3, "when": {"hp_below": 0.5}}], "loot_gold": [0, 8], "loot": [{"item": "wolf_pelt", "chance": 0.5}, {"item": "bone_meal", "chance": 0.2}], "flavor": "一頭科洛溫高地的山獅伏低身軀,金瞳鎖定了你。"},
-  "ogre": {"biomes": ["heartland"], "name": "奧格瑞姆", "danger": 4, "min_level": 5, "weight": 2, "strength": 74, "agility": 32, "speed": 36, "max_health": 92, "armor_rating": 14, "attack": {"name": "巨拳重砸", "damage": 18, "skill": 52}, "attacks": [{"name": "巨拳重砸", "damage": 18, "skill": 52, "weight": 2}, {"name": "橫掃猛擊", "damage": 16, "skill": 52, "weight": 2, "on_hit": {"status": "stagger", "turns": 1, "chance": 0.3}}, {"name": "狂怒猛砸", "damage": 28, "skill": 54, "weight": 1, "cooldown": 3, "when": {"hp_below": 0.5}}], "resist": {"frost": 25}, "loot_gold": [5, 22], "loot": [{"item": "healing_potion", "chance": 0.4}, {"item": "bone_meal", "chance": 0.5}], "flavor": "一尊兩人高的奧格瑞姆從岩後直起身,巨拳一晃就能碾碎人骨。"},
+  "ogre": {"biomes": ["heartland"], "name": "奧格瑞姆", "danger": 4, "min_level": 5, "weight": 2, "strength": 74, "agility": 32, "speed": 36, "max_health": 92, "armor_rating": 14, "attack": {"name": "巨拳重砸", "damage": 18, "skill": 52}, "attacks": [{"name": "巨拳重砸", "damage": 18, "skill": 52, "weight": 2}, {"name": "橫掃猛擊", "damage": 16, "skill": 52, "weight": 2, "on_hit": {"status": "stagger", "turns": 1, "chance": 0.3}}, {"name": "狂怒猛砸", "damage": 28, "skill": 54, "weight": 1, "cooldown": 3, "when": {"hp_below": 0.5}}], "resist": {"frost": 25}, "loot_gold": [5, 22], "loot": [{"item": "healing_potion", "chance": 0.4}, {"item": "bone_meal", "chance": 0.5}, {"item": "ogres_teeth", "chance": 0.5}], "flavor": "一尊兩人高的奧格瑞姆從岩後直起身,巨拳一晃就能碾碎人骨。"},
   "land_dreugh": {"biomes": ["heartland"], "name": "陸行德魯格", "danger": 5, "min_level": 8, "weight": 1, "strength": 76, "agility": 46, "speed": 44, "max_health": 200, "armor_rating": 22, "attack": {"name": "電爪重擊", "damage": 28, "skill": 64, "element": "shock", "on_hit": {"status": "dot", "element": "shock", "magnitude": 5, "turns": 2, "chance": 0.4}}, "attacks": [{"name": "電爪重擊", "damage": 28, "skill": 64, "element": "shock", "weight": 2, "on_hit": {"status": "dot", "element": "shock", "magnitude": 5, "turns": 2, "chance": 0.4}}, {"name": "巨螯夾擊", "damage": 26, "skill": 64, "weight": 2}, {"name": "巨螯橫掃", "damage": 22, "skill": 64, "weight": 2, "on_hit": {"status": "stagger", "turns": 1, "chance": 0.25}}, {"name": "雷霆爆發", "damage": 40, "skill": 66, "element": "shock", "weight": 1, "cooldown": 3}], "resist": {"shock": 50, "magic": 20}, "loot_gold": [20, 60], "loot": [{"item": "glow_dust", "chance": 0.5}, {"item": "ruby", "chance": 0.2}, {"item": "healing_potion", "chance": 0.5}], "flavor": "季節驅使陸行德魯格離水上岸——甲殼森然、巨螯間躍動著積蓄的雷荷。"},
   "snow_fox": {"biomes": ["snow"], "name": "雪原狐", "danger": 1, "min_level": 1, "weight": 5, "strength": 30, "agility": 58, "speed": 60, "max_health": 16, "armor_rating": 4, "attack": {"name": "撕咬", "damage": 5, "skill": 36}, "resist": {"frost": 25}, "loot_gold": [0, 3], "loot": [{"item": "charred_skeever_hide", "chance": 0.4}], "flavor": "一隻雪白的狐狸自雪丘後探頭,旋即露出尖牙。"},
   "ash_beetle": {"biomes": ["ashland"], "name": "灰燼甲蟲", "danger": 1, "min_level": 1, "weight": 5, "strength": 42, "agility": 28, "speed": 28, "max_health": 24, "armor_rating": 14, "attack": {"name": "甲殼撞擊", "damage": 7, "skill": 32}, "resist": {"fire": 50, "shock": -25}, "loot_gold": [0, 3], "loot": [{"item": "scrib_jelly", "chance": 0.4}, {"item": "glow_dust", "chance": 0.2}], "flavor": "一隻覆著火山灰殼的甲蟲笨重地爬近,殼上餘溫蒸騰。"},
@@ -2154,5 +2155,7 @@
   "fire_archmage": {"name": "烈焰完全體 · 焚心大法師", "strength": 50, "agility": 54, "speed": 54, "max_health": 200, "armor_rating": 12, "attack": {"name": "烈焰箭", "damage": 32, "skill": 66, "element": "fire", "on_hit": {"status": "dot", "element": "fire", "magnitude": 6, "turns": 3, "chance": 0.5}}, "attacks": [{"name": "烈焰箭", "damage": 32, "skill": 66, "element": "fire", "weight": 3, "on_hit": {"status": "dot", "element": "fire", "magnitude": 6, "turns": 3, "chance": 0.5}}, {"name": "炎爆衝擊", "damage": 30, "skill": 66, "element": "fire", "weight": 2, "on_hit": {"status": "stagger", "turns": 1, "chance": 0.3}}, {"name": "灼炎詛咒", "damage": 22, "skill": 66, "element": "fire", "weight": 2, "on_hit": {"status": "weaken", "magnitude": 0.25, "turns": 2, "chance": 0.35}}, {"name": "焚魂懾魄", "damage": 14, "skill": 66, "weight": 1, "on_hit": {"status": "fear", "turns": 1, "chance": 0.25}}, {"name": "焚世天罰", "damage": 56, "skill": 68, "element": "fire", "weight": 1, "cooldown": 3, "when": {"hp_below": 0.5}}], "danger": 5, "min_level": 17, "weight": 1, "solo": true, "resist": {"fire": 80, "frost": 15, "shock": 15, "magic": 32}, "loot_gold": [240, 440], "loot": [{"item": "filled_grand_soul_gem", "chance": 0.5}, {"item": "ebony_ingot", "chance": 0.4}], "flavor": "熔金色的法袍無火自燃 —— 一名將烈焰修煉至完全體的大法師懸浮於火湖之上,周身空氣扭曲成灼人的熱浪。牠不再吟唱,只要一念,世界便為之焚燒;以火攻牠無異於以薪助燃。"},
   "frost_archmage": {"name": "凜冬完全體 · 絕霜大法師", "strength": 48, "agility": 52, "speed": 52, "max_health": 200, "armor_rating": 12, "attack": {"name": "寒冰箭", "damage": 32, "skill": 66, "element": "frost", "on_hit": {"status": "dot", "element": "frost", "magnitude": 6, "turns": 3, "chance": 0.5}}, "attacks": [{"name": "寒冰箭", "damage": 32, "skill": 66, "element": "frost", "weight": 3, "on_hit": {"status": "dot", "element": "frost", "magnitude": 6, "turns": 3, "chance": 0.5}}, {"name": "凍骨之觸", "damage": 24, "skill": 66, "element": "frost", "weight": 2, "on_hit": {"status": "benumb", "magnitude": 0.3, "turns": 2, "chance": 0.4}}, {"name": "冰封詛咒", "damage": 22, "skill": 66, "element": "frost", "weight": 2, "on_hit": {"status": "weaken", "magnitude": 0.25, "turns": 2, "chance": 0.35}}, {"name": "懾魄寒風", "damage": 14, "skill": 66, "weight": 1, "on_hit": {"status": "fear", "turns": 1, "chance": 0.25}}, {"name": "絕對零度爆發", "damage": 54, "skill": 68, "element": "frost", "weight": 1, "cooldown": 3, "when": {"hp_below": 0.5}}], "danger": 5, "min_level": 17, "weight": 1, "solo": true, "resist": {"frost": 80, "fire": 15, "shock": 15, "magic": 32}, "loot_gold": [240, 440], "loot": [{"item": "filled_grand_soul_gem", "chance": 0.5}, {"item": "ebony_ingot", "chance": 0.4}], "flavor": "祭壇周身的空氣凝成永不消融的霜霧 —— 一名將寒冰修煉至完全體的大法師靜立其中,每一次呼吸都令世界更冷一分。牠以凍麻與遲鈍磨盡來犯者的銳氣;對牠施放冰霜,只會被牠盡數吸入。"},
   "shock_archmage": {"name": "雷霆完全體 · 轟雷大法師", "strength": 52, "agility": 54, "speed": 56, "max_health": 210, "armor_rating": 13, "attack": {"name": "雷電鞭", "damage": 33, "skill": 66, "element": "shock", "on_hit": {"status": "dot", "element": "shock", "magnitude": 6, "turns": 3, "chance": 0.5}}, "attacks": [{"name": "雷電鞭", "damage": 33, "skill": 66, "element": "shock", "weight": 3, "on_hit": {"status": "dot", "element": "shock", "magnitude": 6, "turns": 3, "chance": 0.5}}, {"name": "麻痺電場", "damage": 24, "skill": 66, "element": "shock", "weight": 2, "on_hit": {"status": "weaken", "magnitude": 0.25, "turns": 2, "chance": 0.35}}, {"name": "轟雷震懾", "damage": 28, "skill": 66, "element": "shock", "weight": 2, "on_hit": {"status": "stagger", "turns": 1, "chance": 0.3}}, {"name": "雷鳴懾魄", "damage": 14, "skill": 66, "weight": 1, "on_hit": {"status": "fear", "turns": 1, "chance": 0.25}}, {"name": "天雷終擊", "damage": 56, "skill": 68, "element": "shock", "weight": 1, "cooldown": 3, "when": {"hp_below": 0.5}}], "danger": 5, "min_level": 17, "weight": 1, "solo": true, "resist": {"shock": 80, "fire": 15, "frost": 15, "magic": 30}, "loot_gold": [240, 440], "loot": [{"item": "filled_grand_soul_gem", "chance": 0.5}, {"item": "ebony_ingot", "chance": 0.4}], "flavor": "雷弧自指尖不斷迸跳,空氣裡瀰漫著焦灼的臭氧 —— 一名將閃電修煉至完全體的大法師,每一擊都快得讓人來不及反應。牠的軀體本身即是導體,電光打在牠身上只會匯入牠的掌心。"},
-  "fused_archmage": {"name": "三元合體 · 元素大法師", "strength": 58, "agility": 54, "speed": 52, "max_health": 300, "armor_rating": 16, "attack": {"name": "烈焰亂擊", "damage": 36, "skill": 70, "element": "fire", "on_hit": {"status": "dot", "element": "fire", "magnitude": 7, "turns": 3, "chance": 0.5}}, "attacks": [{"name": "烈焰亂擊", "damage": 36, "skill": 70, "element": "fire", "weight": 2, "on_hit": {"status": "dot", "element": "fire", "magnitude": 7, "turns": 3, "chance": 0.5}}, {"name": "凜冬詛咒", "damage": 36, "skill": 70, "element": "frost", "weight": 2, "on_hit": {"status": "benumb", "magnitude": 0.3, "turns": 2, "chance": 0.4}}, {"name": "雷霆亂舞", "damage": 38, "skill": 70, "element": "shock", "weight": 2, "on_hit": {"status": "weaken", "magnitude": 0.25, "turns": 2, "chance": 0.35}}, {"name": "三元懾魄", "damage": 18, "skill": 70, "weight": 1, "on_hit": {"status": "fear", "turns": 1, "chance": 0.25}}, {"name": "三元歸一", "damage": 60, "skill": 72, "element": "fire", "weight": 1, "cooldown": 3, "when": {"hp_below": 0.5}}], "danger": 6, "min_level": 18, "weight": 1, "solo": true, "resist": {"fire": 70, "frost": 70, "shock": 70, "magic": 35}, "loot_gold": [400, 700], "loot": [{"item": "daedra_heart", "chance": 0.6}, {"item": "filled_grand_soul_gem", "chance": 0.6}, {"item": "ebony_ingot", "chance": 0.5}], "flavor": "三道色澤迥異的元素之力在一具軀體裡永無止息地相互撕咬 —— 火、冰、雷被一名瘋狂的大法師強行縫合進完全體。牠抗盡三系元素,任何單一真言都奈何不了牠;唯有超越元素本身的力量,才能終結這場狂暴的融合。"}
+  "fused_archmage": {"name": "三元合體 · 元素大法師", "strength": 58, "agility": 54, "speed": 52, "max_health": 300, "armor_rating": 16, "attack": {"name": "烈焰亂擊", "damage": 36, "skill": 70, "element": "fire", "on_hit": {"status": "dot", "element": "fire", "magnitude": 7, "turns": 3, "chance": 0.5}}, "attacks": [{"name": "烈焰亂擊", "damage": 36, "skill": 70, "element": "fire", "weight": 2, "on_hit": {"status": "dot", "element": "fire", "magnitude": 7, "turns": 3, "chance": 0.5}}, {"name": "凜冬詛咒", "damage": 36, "skill": 70, "element": "frost", "weight": 2, "on_hit": {"status": "benumb", "magnitude": 0.3, "turns": 2, "chance": 0.4}}, {"name": "雷霆亂舞", "damage": 38, "skill": 70, "element": "shock", "weight": 2, "on_hit": {"status": "weaken", "magnitude": 0.25, "turns": 2, "chance": 0.35}}, {"name": "三元懾魄", "damage": 18, "skill": 70, "weight": 1, "on_hit": {"status": "fear", "turns": 1, "chance": 0.25}}, {"name": "三元歸一", "damage": 60, "skill": 72, "element": "fire", "weight": 1, "cooldown": 3, "when": {"hp_below": 0.5}}], "danger": 6, "min_level": 18, "weight": 1, "solo": true, "resist": {"fire": 70, "frost": 70, "shock": 70, "magic": 35}, "loot_gold": [400, 700], "loot": [{"item": "daedra_heart", "chance": 0.6}, {"item": "filled_grand_soul_gem", "chance": 0.6}, {"item": "ebony_ingot", "chance": 0.5}], "flavor": "三道色澤迥異的元素之力在一具軀體裡永無止息地相互撕咬 —— 火、冰、雷被一名瘋狂的大法師強行縫合進完全體。牠抗盡三系元素,任何單一真言都奈何不了牠;唯有超越元素本身的力量,才能終結這場狂暴的融合。"},
+  "flame_atronach": {"name": "烈焰元素", "danger": 5, "min_level": 8, "weight": 2, "strength": 56, "agility": 44, "speed": 40, "max_health": 145, "armor_rating": 15, "attack": {"name": "烈焰噴吐", "damage": 24, "skill": 58, "element": "fire"}, "attacks": [{"name": "烈焰噴吐", "damage": 24, "skill": 58, "element": "fire", "weight": 2}, {"name": "熔岩拳", "damage": 21, "skill": 58, "weight": 2}, {"name": "烈焰爆發", "damage": 34, "skill": 60, "element": "fire", "cooldown": 3, "weight": 1}], "resist": {"fire": 100, "frost": -25}, "biomes": ["ashland"], "flavor": "翻騰的火舌間凝出一尊烈焰元素,熔岩自指縫滴落。", "loot_gold": [0, 0], "loot": [{"item": "filled_greater_soul_gem", "chance": 0.4}, {"item": "fire_salts", "chance": 0.5}]},
+  "slaughterfish": {"name": "屠魚", "danger": 2, "min_level": 3, "weight": 3, "strength": 38, "agility": 50, "speed": 55, "max_health": 30, "armor_rating": 10, "attack": {"name": "撕咬", "damage": 11, "skill": 48}, "attacks": [{"name": "撕咬", "damage": 11, "skill": 48, "weight": 2}, {"name": "群襲", "damage": 9, "skill": 50, "weight": 2}], "biomes": ["swamp"], "flavor": "渾濁的水面下一道銀影疾掠,屠魚成群亮出滿口尖牙撲咬。", "loot_gold": [0, 4], "loot": [{"item": "slaughterfish_scale", "chance": 0.6}, {"item": "slaughterfish_egg", "chance": 0.4}, {"item": "pearl", "chance": 0.12}]}
 }
