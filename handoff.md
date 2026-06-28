@@ -49,7 +49,7 @@
 - **套裝加成**(同材質四件)、武器流派、飾品槽、法杖、法袍;**具名神器**(裝備耐久/修理已移除,見 R33)
 
 #### 公會、任務與政治
-- **七大公會**:戰士/法師/盜賊 + 黑暗兄弟會 + 神話黎明 + 九神騎士團 + **戰友團**(白漫·狼人血脈歸宿,獸血儀式繫於其內圈)(技能門檻/福利/對立/分支壓軸);**核心三公會階級服務功能化**(rank-gated 招牌動詞·非只折扣):盜賊=斯庫瑪走私生意(R88·艾爾斯維爾)、戰士=軍械庫淬鍊(R89·公會供料免材料)、法師=奧術回充+魔力補給(R89);黑兄(夜母潛行加成)/戰友團(內圈儀式+召盾袍)早有功能 perk
+- **七大公會**:戰士/法師/盜賊 + 黑暗兄弟會 + 神話黎明 + 九神騎士團 + **戰友團**(白漫·狼人血脈歸宿,獸血儀式繫於其內圈)(技能門檻/福利/對立/分支壓軸);**核心三公會階級服務功能化**(rank-gated 招牌動詞·非只折扣):盜賊=斯庫瑪走私生意(R88·艾爾斯維爾)、戰士=軍械庫淬鍊(R89·公會供料免材料)、法師=奧術回充+魔力補給(R89);黑兄(夜母潛行加成)/戰友團(內圈儀式+召盾袍)早有功能 perk;**犯罪公會同志服務(R98)**:已揭露的犯罪同志(盜賊/黑兄/神話黎明)開放會員專屬服務 —— 便攜銷贓 fence / 接私活合約 / 禁術貨源,把 R97 隱蔽身分社交網功能化為「聯絡人=服務」(`secret_comrade` 閘·零存檔欄·sim byte-identical)
 - **多階段任務引擎**;犯罪賞金 + 衛兵 + 謀殺;**通緝/亡命徒身份化(R84)**:雙軸(賞金=當下追殺·可清 / 惡名=終身地下身份)——**賞金獵人路途追殺**(tier 隨賞金·替換式遭遇·騎馬甩開)+ **亡命徒地下世界**(藏身處安全區/銷贓 fence/可重複地下委託/惡名分級稱號·codex 載);**吸血鬼化**(力量↔詛咒天平·夜視/戰鬥+社交魅惑/偽裝暗影套裝 R56)、**狼人化**(戰友團內圈獸血,獸形變身)、**斯庫瑪/月糖成癮**(亢奮↔戒斷天平,艾爾斯維爾)、**斯庫瑪走私生意(R88)**:整併入盜賊公會(非獨立幫派)—— 高階盜賊(rank≥2)在艾爾斯維爾分舵解鎖「斯庫瑪走私生意」(月糖精煉成斯庫瑪〔嚴格 sink〕+ 跨省走私委託〔運月糖出貓人故土·固定酬勞+惡名·途中賞金獵人風險〕),功能化盜賊公會冷階級梯、整併三層犯罪內容(盜賊公會=主幹 / R84 亡命徒層 / 斯庫瑪走私線)
 - **領主政治 / 城戰**:謁見 → 委託 → 武士冊封;圍城 + 破城 + 收稅 + 招兵買馬;**陣營動態大事件**
 
@@ -1403,6 +1403,21 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 - **🔴 鐵律**:加 role 純改 `dialogue.json`(roles map + topics·身份 flavor 為主·功能 effect 走 events 支援集 + `once` 防刷·不帶 skill_xp)+ `npcs.json` role 欄;加流言線索純改 `npcs.json`(rumor_quest/rumor_landmark/rumor_disposition)+ `quests.json`(`source:"rumor"`·僅 clear/reach·**目標無 visible gate**·NPC↔線索目標**須同省**);**新增 source:rumor 任務務必有 NPC rumor_quest 回指**(否則 reachability guard 攔=孤兒);追問傳聞兌現走既有 `_accept_and_brief`/`landmarks.discover`;純社交內容 → sim byte-identical 免跑(動 combat/formulas 才需)。**前瞻**:Phase D 可純資料把其餘 ~40 具名 rumor NPC 逐批接上 + 補 role 密度;若要更多功能 role 話題(商人折扣等)需新 effect + 評估碰 shop/存檔欄。
 
 ---
+
+### R98 · 犯罪公會服務層:已揭露犯罪同志的會員專屬服務(承 R97)[save-safe]
+
+**評估**:R97 建好隱蔽身分社交圖(`secret_guild` + comrade 相認)後,揭露只多了情報話題(`guild_intel` 指向無獎勵 rumor)→ 同志網路**無機制回報**(R97 前瞻已明列「犯罪公會服務」)。使用者拍板此方向。
+**設計**:把 comrade 網路功能化 —— 從**已揭露的犯罪同志**處取得會員專屬服務(聯絡人=服務),全複用既有管線、純社交/服務層、刻意小。
+- **盜賊「找門路銷贓」** → 直接呼叫既有 `action_fence`(便攜版,不必跑藏身處·沿用內建防套利地板 `max(buy_price, fsell+1)`)。
+- **黑暗兄弟會「接私活」** → 新薄 `_comrade_contract`(複用既有 DB 公會合約池 `available_quests("guild", dark_brotherhood)`+`_active_db_quest`+`_accept_and_brief`+`action_contract`·**無雙重獎勵·無新 source**·🔴 刻意**不含聖所專屬的洗白/五戒** → 不偷渡可攜式賞金洗白·可戰死回 `"dead"` 經 action_talk 上拋)。
+- **神話黎明「禁術貨源」** → 新薄 `_comrade_supply`(buy-only·`_MYTHIC_SUPPLY` 廣義黑市稀材·price 走 `world.buy_price` 內建地板·🔴 排除 `world._LOOT_ONLY_MATERIALS`)。
+- **🔴 可見性閘(正確性核心)**:comrade 態度由**兩路徑**產生(犯罪 `secret_guild` 揭露+會員 / 公開 `guild` 相認)、`extra`/template 話題**不受 attitude 過濾** → 服務若不另設閘會在**揭露前**(att=friendly)或對**公開公會同志**洩漏。解法=新 dialogue 要求鍵 `secret_comrade:<guild>`(`meets_dialogue` 就地判:NPC.secret_guild==值 ∧ `is_member` ∧ `secret_guild_revealed`)。三話題各帶不同值 → 各只在**對應犯罪同志且已揭露**時現:無揭露前/公開公會/**跨公會**(多會籍玩家在盜賊同志處只見 fence)洩漏。
+- **掛載**:3 話題加進 `attitude_topics.comrade` 模板(req 自動篩到對的同志·**不需逐一編輯 9 個 secret_guild NPC**);`action_talk` 依 `td.action ∈ {fence,supply,contract}` 攔截派發(否則照走 `_resolve_dialogue_topic`·鏡像 R82 `pump` action 慣例;handler 留 main.py 因需 ui.menu 迴圈,dialogue.py 維持純邏輯)。
+- **🔴 防套利**:fence 沿用既有地板;supply 走 `world.buy_price` 地板;**跨服務**(盜賊+神話黎明雙會籍·二者非宿敵)自貨源買入再 fence 銷贓亦**永無正 EV**(商人買價加成 ~數倍 >> fence 加價 1.45×·專測 `test_no_cross_service_arbitrage_supply_to_fence` 守)。
+- **🔴 零新存檔欄**(閘=`char.factions`+R97 衍生揭露);**sim byte-identical**(未碰 combat/formulas·git diff 證·sim_assassin solo 0%/精英 95.4%/4-bandit 60.6% 同基線)。
+- **對抗審查 4 維(可見性/經濟/handler/不變式)→ 1 confirmed**(minor 測試覆蓋缺口:反套利測試用無會籍 char 未驗 `sell_bonus`)→ 補強為跨服務套利測試(subsume);0 blocker/major·logic 全 refuted。
+- **驗證**:run_all 96(新 `test_comrade_services`·`test_data_schema` 加 `secret_comrade` FK + `action ∈ _TOPIC_ACTIONS` 守)+ check.sh + 無頭煙霧(action_talk 三服務派發無 traceback)。
+🔴 加犯罪服務:話題加進 `attitude_topics.comrade` + `secret_comrade:<criminal_guild>` req + `action` 派發(handler 在 main.py·dialogue.py 維持純邏輯);供貨清單守 loot-only 排除 + buy>sell + 跨服務不獲利;DB 走既有合約池不開新 source。**前瞻**:臥底揭發/招募內線/反間任務(R97 另列)·犯罪公會大廳更多 rank-gated 服務·更多 secret_guild NPC。
 
 ### R97 · 公會社交網:隱蔽犯罪身分 + 同會相認 + 調查揭露 + 臥底(承 R96)[re-sim] [save-safe]
 

@@ -33,6 +33,8 @@ _EVENTS_EFFECT_TYPES = {"gold", "item", "skill_xp", "heal", "restore_magicka", "
                         "combat", "message"}
 # 對話 topic effect:dialogue._apply_topic_effects 攔 faction_standing、其餘委派 events.apply_effects(R81)
 _DLG_EFFECT_TYPES = {"faction_standing"} | _EVENTS_EFFECT_TYPES
+# 話題 action 派發(dialogue.resolve_topic pump / main.action_talk fence·supply·contract)
+_TOPIC_ACTIONS = {"pump", "fence", "supply", "contract"}
 _GREETING_ATTITUDES = {"comrade", "friendly", "neutral", "cold", "hostile", "vampire_seen"}
 _REL_KEYS = {"ally", "enemy", "neutral", "unaligned"}
 
@@ -134,9 +136,16 @@ def test_dialogue_foreign_keys():
             assert isinstance(sec, int) and 0 <= sec <= 100, f"npc {npc_id}: secret_secrecy {sec} 須 0-100 int"
 
     def _check_topic(where, t):
+        from tesrpg.systems import factions
         r = t.get("requires", {})
         if "is_member" in r:
             assert r["is_member"] in gd.factions, f"{where} is_member 指向不存在公會 {r['is_member']}"
+        if "secret_comrade" in r:   # R98:犯罪同志服務閘 → 須真實犯罪/隱蔽公會
+            sc = r["secret_comrade"]
+            assert sc in gd.factions and factions.is_criminal_guild(sc), \
+                f"{where} secret_comrade {sc} 非犯罪/隱蔽公會"
+        if "action" in t:           # 話題 action 須為已實作派發(R82 pump / R98 fence·supply·contract)
+            assert t["action"] in _TOPIC_ACTIONS, f"{where} action {t['action']} 未實作派發"
         for sk in (r.get("skill_min") or {}):
             assert sk in gd.skills, f"{where} skill_min 指向不存在技能 {sk}"
         for e in t.get("effects", []):

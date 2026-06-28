@@ -359,8 +359,17 @@ def meets_dialogue(char: Character, state, gamedata: GameData, req: dict | None,
             return False
     if req.get("partisan") and ctx["faction"] not in politics.CAUSES:
         return False     # 該城非黨派(neutral/無領主)→ 無大義可結交
+    if "secret_comrade" in req:
+        # R98:犯罪同志專屬服務閘 —— 該 NPC 的隱蔽身分須正是指定犯罪公會、你是其會員、且已揭露。
+        # comrade 態度也來自公開公會相認(secret_guild 為 None)→ 此閘擋掉公開同志與揭露前洩漏。
+        secret = gamedata.npcs[ctx["npc_id"]].get("secret_guild")
+        if not (secret == req["secret_comrade"]
+                and factions.is_member(char, secret)
+                and secret_guild_revealed(char, gamedata, ctx["npc_id"])):
+            return False
     base = {k: v for k, v in req.items()
-            if k not in ("min_disposition", "npc_relationship", "vampire_shunned", "bounty_min", "partisan")}
+            if k not in ("min_disposition", "npc_relationship", "vampire_shunned",
+                         "bounty_min", "partisan", "secret_comrade")}
     return events.meets(char, gamedata, _resolve_req(base, ctx))
 
 
@@ -373,6 +382,8 @@ def _topic_chips(td: dict) -> list[dict]:
         chips.append({"text": f"需好感 {req['min_disposition']}", "tone": "red"})
     if "is_member" in req:
         chips.append({"text": "同袍", "tone": "gold"})
+    if "secret_comrade" in req:
+        chips.append({"text": "內線", "tone": "gold"})
     if "skill_min" in req:
         chips.append({"text": "口才 " + str(max(req["skill_min"].values())), "tone": "cyan"})
     if "faction_standing_min" in req:

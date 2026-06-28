@@ -21,7 +21,7 @@
   },
 
   "attitude_topics": {
-    "comrade": ["guild_intel", "local_politics", "pledge_support", "buy_intel", "pump_for_info"],
+    "comrade": ["guild_intel", "local_politics", "pledge_support", "buy_intel", "pump_for_info", "crime_fence", "crime_contract", "crime_supply"],
     "friendly": ["local_politics", "pledge_support", "buy_intel", "pump_for_info"],
     "neutral": ["local_politics", "pump_for_info"],
     "cold": ["pump_for_info"],
@@ -47,6 +47,21 @@
         "enemy": "「同道?哼,先把你那身麻煩了結,再來談門路。」"
       },
       "text": "「同道中人,城裡城外的門路我最清楚。多向相熟的人追問『傳聞』,線索就在其中。」"
+    },
+    "crime_fence": {
+      "label": "(內線)找門路銷贓",
+      "requires": {"secret_comrade": "thieves_guild"},
+      "action": "fence"
+    },
+    "crime_contract": {
+      "label": "(內線)接一樁私活",
+      "requires": {"secret_comrade": "dark_brotherhood"},
+      "action": "contract"
+    },
+    "crime_supply": {
+      "label": "(內線)打聽禁術貨源",
+      "requires": {"secret_comrade": "mythic_dawn"},
+      "action": "supply"
     },
     "local_politics": {
       "label": "打聽本地時局",

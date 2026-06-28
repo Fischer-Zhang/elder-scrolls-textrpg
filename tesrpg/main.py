@@ -2271,6 +2271,13 @@ def _lair_kin_talk(state: GameState, gamedata: GameData, nid: str) -> None:
 # R84 亡命徒地下世界:銷贓 fence + 地下委託 + 藏身處(安全區)。is_outlaw 閘可見性;refuge 地點 danger1·非城鎮 → 天然安全區。
 _BLACK_MARKET = ["lockpick", "skooma", "moon_sugar", "nightshade"]   # 黑市常售(亡命徒窩點;防套利地板恆守)
 
+# R98 神話黎明同志「禁術貨源」可購清單:廣義黑市稀材(平時難買的試劑 + 靈魂石)。
+# 🔴 全為既有可購 id、刻意排除 world._LOOT_ONLY_MATERIALS(daedra_heart/dragon_scale);
+# 售價走 world.buy_price(內建 max(1,round,sell+1) 地板 → 買回再賣恆虧,金幣只出不進)。
+_MYTHIC_SUPPLY = ["vampire_dust", "void_salts", "deathbell", "nightshade",
+                  "crimson_nirnroot", "glow_dust",
+                  "empty_common_soul_gem", "empty_greater_soul_gem"]
+
 
 def action_fence(state: GameState, gamedata: GameData) -> None:
     """銷贓窩點:贓物/雜物以加價(fence_bonus·隨惡名分級)賣出 + 購入黑市貨。
@@ -2324,6 +2331,55 @@ def action_fence(state: GameState, gamedata: GameData) -> None:
                 char.gold -= price
                 inventory.add_item(char, iid, 1)
                 ui.message(f"購入 {gamedata.item_name(iid)},付 {price} 金。", style="green")
+
+
+def _comrade_supply(state: GameState, gamedata: GameData) -> None:
+    """R98 神話黎明同志「禁術貨源」:買入廣義黑市稀材(buy-only)。
+    price 走 world.buy_price 內建防套利地板(買回再賣恆虧),金幣只出不進。"""
+    char = state.player
+    while True:
+        opts = [(iid, f"{gamedata.item_name(iid)} — {world.buy_price(char, gamedata, iid)} 金")
+                for iid in _MYTHIC_SUPPLY]
+        iid = ui.menu(f"禁術貨源(你有 {char.gold} 金)", opts, allow_back=True)
+        if iid is None:
+            return
+        price = world.buy_price(char, gamedata, iid)
+        if char.gold < price:
+            ui.message("錢不夠。", style="yellow")
+            continue
+        char.gold -= price
+        inventory.add_item(char, iid, 1)
+        ui.message(f"購入 {gamedata.item_name(iid)},付 {price} 金。", style="green")
+
+
+def _comrade_contract(state: GameState, gamedata: GameData) -> str | None:
+    """R98 黑暗兄弟會同志「接私活」:就地領受/執行合約(複用聖所合約池,無雙重獎勵)。
+    刻意只開接取/執行(不含聖所專屬的洗白/五戒)→ 不把可攜式賞金洗白偷渡進來。回傳 'dead'|None。"""
+    char = state.player
+    _report_quests(state, gamedata)   # 先結算可能已交付的合約
+    while True:
+        active = _active_db_quest(state, gamedata)
+        opts: list = []
+        if active:
+            obj, _, _ = quests.current_objective(char, gamedata, active)
+            tname = gamedata.bestiary[obj["creature"]]["name"]
+            opts.append(("execute", f"執行合約 —— 行刺{tname}"))
+        else:
+            avail = quests.available_quests(char, gamedata, "guild", brotherhood.FACTION)
+            if avail:
+                opts.append(("accept", "接取新合約"))
+            else:
+                ui.message("「……眼下沒有見得了人的活計。靜候風聲。」", style="grey70")
+        choice = ui.menu("私活", opts, allow_back=True) if opts else None
+        if choice is None:
+            return None
+        if choice == "accept":
+            avail = quests.available_quests(char, gamedata, "guild", brotherhood.FACTION)
+            if avail:
+                _accept_and_brief(state, gamedata, avail[0])
+        elif choice == "execute":
+            if action_contract(state, gamedata, active) == "dead":
+                return "dead"
 
 
 def _underworld_contracts(state: GameState, gamedata: GameData) -> None:
@@ -4150,7 +4206,15 @@ def action_talk(state: GameState, gamedata: GameData) -> str | None:
         if choice.startswith("topic:"):
             tid = choice.split(":", 1)[1]
             td = dialogue._topic_def(gamedata, nid, tid)
-            if td:
+            act = td.get("action") if td else None
+            if act == "fence":                       # R98 盜賊同志:便攜銷贓門路
+                action_fence(state, gamedata)
+            elif act == "supply":                    # R98 神話黎明同志:禁術貨源
+                _comrade_supply(state, gamedata)
+            elif act == "contract":                  # R98 黑暗兄弟會同志:接私活(可能戰死)
+                if _comrade_contract(state, gamedata) == "dead":
+                    return "dead"
+            elif td:
                 _resolve_dialogue_topic(state, gamedata, nid, {"id": tid, **td}, ctx)
             att = dialogue.attitude(char, state, gamedata, nid, ctx)
         elif choice == "quest":
