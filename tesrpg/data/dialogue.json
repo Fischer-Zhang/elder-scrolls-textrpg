@@ -1,5 +1,8 @@
 {
   "greetings": {
+    "comrade": [
+      "「自己人。風聲緊,別在明面上多話 —— 有什麼要打聽的,我這兒門路清楚。」"
+    ],
     "friendly": [
       "「自己人 —— 坐,有話直說。{bloc_label}記得肯出力的人。」"
     ],
@@ -18,6 +21,7 @@
   },
 
   "attitude_topics": {
+    "comrade": ["guild_intel", "local_politics", "pledge_support", "buy_intel", "pump_for_info"],
     "friendly": ["local_politics", "pledge_support", "buy_intel", "pump_for_info"],
     "neutral": ["local_politics", "pump_for_info"],
     "cold": ["pump_for_info"],
@@ -34,6 +38,16 @@
   },
 
   "topics": {
+    "guild_intel": {
+      "label": "(同道)打聽自己人的門路",
+      "say_by_rel": {
+        "ally": "「自己人好辦事 —— 城裡哪些人能信、哪條道乾淨、近來誰在風頭上,我都門兒清。多向相熟的人追問『傳聞』,門路自會浮現。」",
+        "neutral": "「既是同道,我就直說 —— 這一帶的門路與避諱,你多留心地方上的『傳聞』便知。有要緊事,記得回來找我。」",
+        "unaligned": "「同道一場,提點你一句:消息要往對的人打聽。地方上的『傳聞』,值得你細聽。」",
+        "enemy": "「同道?哼,先把你那身麻煩了結,再來談門路。」"
+      },
+      "text": "「同道中人,城裡城外的門路我最清楚。多向相熟的人追問『傳聞』,線索就在其中。」"
+    },
     "local_politics": {
       "label": "打聽本地時局",
       "requires": {"min_disposition": 40},

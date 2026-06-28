@@ -133,6 +133,113 @@ def test_guild_enforcer_ambush_spawns_tier_scaled_foes():
     assert all(f.template_id == "guild_avenger" for f in foes)      # tier>=4 → avenger
 
 
+# =====================================================================
+# R97:隱蔽犯罪身分 + 同會相認 + 調查揭露 + 臥底
+# =====================================================================
+def _state(c):
+    return GameState(player=c, time=GameTime(), rng=RNG(1))
+
+
+def test_covert_criminal_hidden_until_revealed():
+    """犯罪公會 NPC(secret_guild)預設隱蔽:非會員/低好感 → 未揭露(普通 NPC·掩護)。"""
+    gd = get_gamedata()
+    nid = "riften_brynjolf"   # secret_guild=thieves_guild
+    c = build_character(gd, name="路", sex="male", race="nord", birthsign="warrior", class_id="warrior")
+    c.factions = {}
+    assert not dialogue.secret_guild_revealed(c, gd, nid)
+    assert dialogue.attitude(c, _state(c), gd, nid) != "comrade"
+
+
+def test_covert_does_not_snub_rival_before_reveal():
+    """🔴 掩護:隱蔽盜賊 NPC 對戰士(盜賊的宿敵)未揭露前**不公然敵視**(維持掩護)。"""
+    gd = get_gamedata()
+    c = build_character(gd, name="戰", sex="male", race="nord", birthsign="warrior", class_id="warrior")
+    c.factions = {"fighters_guild": 5}   # 戰士=盜賊宿敵,但盜賊 NPC 隱蔽 → 不該 hostile
+    assert dialogue.attitude(c, _state(c), gd, "riften_brynjolf") != "hostile"
+
+
+def test_fellow_secret_member_recognized():
+    """同(秘密)會相認:盜賊會員 → 隱蔽盜賊 NPC 自動揭露(同會自知)→ comrade。"""
+    gd = get_gamedata()
+    c = build_character(gd, name="賊", sex="male", race="nord", birthsign="warrior", class_id="warrior")
+    c.factions = {"thieves_guild": 3}
+    assert dialogue.secret_guild_revealed(c, gd, "riften_brynjolf")
+    assert dialogue.attitude(c, _state(c), gd, "riften_brynjolf") == "comrade"
+
+
+def test_high_disposition_reveals_secret():
+    """高好感(≥75)信任 → 得知其隱藏身分。"""
+    gd = get_gamedata()
+    c = build_character(gd, name="友", sex="male", race="nord", birthsign="warrior", class_id="warrior")
+    c.factions = {}
+    c.npc_disposition["riften_brynjolf"] = 100   # disposition 夾到 100 ≥ 75
+    assert dialogue.disposition(c, gd, "riften_brynjolf") >= dialogue.GUILD_REVEAL_DISPOSITION
+    assert dialogue.secret_guild_revealed(c, gd, "riften_brynjolf")
+
+
+def test_investigation_marker_reveals():
+    """調查成功(dialogue_done 標記)→ 永久揭露(零新存檔欄)。"""
+    gd = get_gamedata()
+    c = build_character(gd, name="探", sex="male", race="nord", birthsign="warrior", class_id="warrior")
+    c.factions = {}
+    assert not dialogue.secret_guild_revealed(c, gd, "riften_brynjolf")
+    c.dialogue_done.setdefault("riften_brynjolf", []).append(dialogue._GUILD_KNOWN)
+    assert dialogue.secret_guild_revealed(c, gd, "riften_brynjolf")
+
+
+def test_investigation_finds_nothing_on_ordinary_npc():
+    """調查融入套話·broad:一般 NPC(無 secret_guild)→ 查無所獲(None)。"""
+    gd = get_gamedata()
+    c = build_character(gd, name="探", sex="male", race="nord", birthsign="warrior", class_id="warrior")
+    c.skills["scout"] = 100
+    ordinary = next(nid for nid, n in gd.npcs.items()
+                    if not n.get("guild") and not n.get("secret_guild"))
+    assert all(dialogue._maybe_reveal_secret_guild(c, gd, ordinary, RNG(s)) is None for s in range(20))
+
+
+def test_investigation_can_reveal_with_skill():
+    """高偵查 → 套話探查可揭露隱蔽成員(難度隨 secret_secrecy)。"""
+    gd = get_gamedata()
+    c = build_character(gd, name="探", sex="male", race="nord", birthsign="warrior", class_id="warrior")
+    c.factions = {}
+    c.skills["scout"] = 100
+    c.attributes["personality"] = 60
+    hits = sum(1 for s in range(200)
+               if (c.dialogue_done.clear() or dialogue._maybe_reveal_secret_guild(c, gd, "riften_brynjolf", RNG(s))))
+    assert hits > 0
+
+
+def test_mole_maintains_cover_then_recognized():
+    """臥底(evermore_warden:掩護 fighters + 真實 thieves):
+    對 fighters 宿敵(db,非盜賊)→ 以掩護公會佯裝敵視;對盜賊(真實同會)→ comrade 相認。"""
+    gd = get_gamedata()
+    nid = "evermore_warden"
+    db = build_character(gd, name="刺", sex="male", race="nord", birthsign="warrior", class_id="warrior")
+    db.factions = {"dark_brotherhood": 3}   # db=fighters 宿敵·非盜賊 → 掩護敵視
+    assert dialogue.attitude(db, _state(db), gd, nid) == "hostile"
+    thief = build_character(gd, name="賊", sex="male", race="nord", birthsign="warrior", class_id="warrior")
+    thief.factions = {"thieves_guild": 3}   # 真實同會 → 揭露 + comrade
+    assert dialogue.secret_guild_revealed(thief, gd, nid)
+    assert dialogue.attitude(thief, _state(thief), gd, nid) == "comrade"
+
+
+def test_mole_reveal_preserves_cover_relationship():
+    """🔴 R97 審查修正:揭露臥底的秘密身分只「疊加情報」,不抹除既有掩護公會關係。
+    fighters 會員調查發現 warden 暗中是賊 → 仍維持 fighters 同袍(comrade);
+    db 宿敵調查看穿其盜賊秘密 → 仍以掩護 fighters 公然敵視(hostile)。"""
+    gd = get_gamedata()
+    nid = "evermore_warden"   # 掩護 fighters / 真實 thieves
+    fg = build_character(gd, name="戰", sex="male", race="nord", birthsign="warrior", class_id="warrior")
+    fg.factions = {"fighters_guild": 5}
+    assert dialogue.attitude(fg, _state(fg), gd, nid) == "comrade"          # 揭露前(掩護同袍)
+    fg.dialogue_done.setdefault(nid, []).append(dialogue._GUILD_KNOWN)      # 調查發現秘密
+    assert dialogue.attitude(fg, _state(fg), gd, nid) == "comrade"          # 仍維持掩護同袍(不降 neutral)
+    db = build_character(gd, name="刺", sex="male", race="nord", birthsign="warrior", class_id="warrior")
+    db.factions = {"dark_brotherhood": 3}
+    db.dialogue_done.setdefault(nid, []).append(dialogue._GUILD_KNOWN)      # 看穿臥底
+    assert dialogue.attitude(db, _state(db), gd, nid) == "hostile"          # 仍以掩護公會敵視(不化解)
+
+
 def run():
     for name, fn in sorted(globals().items()):
         if name.startswith("test_") and callable(fn):

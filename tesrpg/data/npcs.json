@@ -167,7 +167,8 @@
     "greeting": "天上鍛爐的火日夜不熄——要兵器還是要修甲,儘管開口。",
     "rumor": "西邊馬卡斯城的鋼鐵比我們的還硬,可那條山路凶險,獨行的我可不敢走。",
     "quest": null,
-    "role": "blacksmith"
+    "role": "blacksmith",
+    "guild": "companions"
   },
   "windhelm_galmar": {
     "name": "加爾瑪·石拳",
@@ -193,7 +194,9 @@
     "disposition": 45,
     "greeting": "金幣的香味把你也引來啦?在裂谷城,眼睛放亮點、錢包看緊點。",
     "rumor": "城西那片佛克瑞斯林是亡命之徒的好去處,從那兒繞道也能避開官道上的盤查。",
-    "quest": null
+    "quest": null,
+    "secret_guild": "thieves_guild",
+    "secret_secrecy": 45
   },
   "riften_maven": {
     "name": "瑪雯·黑荊棘",
@@ -201,7 +204,9 @@
     "disposition": 45,
     "greeting": "這城裏的每一桶蜜酒、每一筆交易,背後都有黑荊棘家的影子。",
     "rumor": "風盔城的烏弗瑞克想拉攏南方各領叛帝,可我做生意只認金幣,不認他的大旗。",
-    "quest": null
+    "quest": null,
+    "secret_guild": "thieves_guild",
+    "secret_secrecy": 65
   },
   "markarth_calcelmo": {
     "name": "卡塞莫",
@@ -209,7 +214,8 @@
     "disposition": 45,
     "greeting": "莫要碰那些矮人機關,陌生人——這座城的石頭比你想像的更古老、更危險。",
     "rumor": "山下的銀礦原是棄誓者的祖地,他們躲在峽谷裏伺機而動,夜裏出城可得當心。",
-    "quest": null
+    "quest": null,
+    "guild": "mages_guild"
   },
   "markarth_smith": {
     "name": "葛茲拉·巴戈",
@@ -245,7 +251,9 @@
     "greeting": "想在哈拉魯的城裡做點不見光的買賣?運河南岸找對人就行,別張揚。",
     "rumor": "灰燼荒原往黑光城那條道近來不太平,灰蹦蟲鬧得凶;你若要去奧德盧恩,跟我們的灰塵商隊走最穩。",
     "quest": null,
-    "role": "merchant"
+    "role": "merchant",
+    "secret_guild": "thieves_guild",
+    "secret_secrecy": 45
   },
   "balmora_fighter_eydis": {
     "name": "戰士公會 艾迪絲",
@@ -263,7 +271,8 @@
     "greeting": "蟹殼之下,雷多然以榮譽待客。守規矩,你在灰原便有立足之地。",
     "rumor": "龍喉峰那條道沒人敢走全程,連我們的斥候到了灰暴邊緣就折返——聽說峰頂盤著的東西,連魔族都繞道。",
     "quest": null,
-    "role": "guard"
+    "role": "guard",
+    "guild": "fighters_guild"
   },
   "ald_ruhn_caravaner_galtis": {
     "name": "灰塵商隊頭 高提斯",
@@ -350,7 +359,10 @@
     "greeting": "「議會書記室什麼卷宗都經我的手,旅人。可惜墨水寫不出個皇帝來。」",
     "rumor": "往北走帝國大道便到布魯瑪雪城,卡薇恩伯爵一人撐著北疆門戶,聽說連天際那邊的山道都得她費心提防。",
     "quest": null,
-    "role": "scholar"
+    "role": "scholar",
+    "guild": "mages_guild",
+    "secret_guild": "mythic_dawn",
+    "secret_secrecy": 65
   },
   "skingrad_vintner_pelagius": {
     "name": "佩拉吉烏斯·維諾",
@@ -632,7 +644,8 @@
     "greeting": "「布雷頓人的血裡流著抗魔的天賦,外鄉人 —— 火與冰在我們身上都得打個折。可你若想對付荒沼的石魔與女巫,光靠這些可不夠。」",
     "rumor": "石像鬼與沼地女巫皆畏雷:牠們的霜咒與石軀抵得住火與冰,卻擋不住一道雷霆 —— 匕落的法師舖正備著閃電咒,進荒沼前該去添一卷。",
     "quest": null,
-    "role": "scholar"
+    "role": "scholar",
+    "guild": "mages_guild"
   },
   "daggerfall_knight": {
     "name": "鐵衛隊長 加里克",
@@ -684,7 +697,10 @@
     "greeting": "「永恒城雖小,卻是高岩的東門閂。外鄉人,往東過了卡斯特廢村就是天際的地界 —— 銀血氏族與拒誓者,沒一個好惹的。」",
     "rumor": "東邊卡斯特廢村早被銀血氏族與拒誓者爭奪得十室九空;穿過那片霧坡,便是馬卡斯城的礦道了。",
     "quest": null,
-    "role": "guard"
+    "role": "guard",
+    "guild": "fighters_guild",
+    "secret_guild": "thieves_guild",
+    "secret_secrecy": 60
   },
   "evermore_hedgewitch": {
     "name": "隱居女巫 葛蕾妲",
@@ -811,7 +827,9 @@
     "greeting": "「進來吧,別讓暖簾的香氣跑了。第一口斯庫瑪,算我請客 —— 之後嘛,您就會自己回來了。」",
     "rumor": "斯庫瑪甜得像雙月的低語,可一旦上癮,身子就空了;托瓦爾的讀月祭司有古法可解,但得先替他取齊淨化的聖物。",
     "quest": null,
-    "role": "innkeeper"
+    "role": "innkeeper",
+    "secret_guild": "thieves_guild",
+    "secret_secrecy": 40
   },
   "torval_moonpriest": {
     "name": "讀月祭司 多·瓦薩",
@@ -858,7 +876,8 @@
     "location": "tava_oasis",
     "disposition": 47,
     "greeting": "「赤足踏沙,方知劍道在足下,不在手中。」努拉的目光掃過你的兵刃,「外鄉人,塔瓦的活水洗得淨塵土,洗不淨一柄沒有魂的劍。想學靈刃,先學沉默。」",
-    "rumor": "劍歌之道,謝海為刃、心魂為鋒。約凱沉沒之後,真能在掌心凝出靈刃的劍歌者十不存一;塔瓦的劍歌庭,是這門古術在沙海間僅存的香火。"
+    "rumor": "劍歌之道,謝海為刃、心魂為鋒。約凱沉沒之後,真能在掌心凝出靈刃的劍歌者十不存一;塔瓦的劍歌庭,是這門古術在沙海間僅存的香火。",
+    "guild": "fighters_guild"
   },
   "tava_oasis_caravaner": {
     "name": "商隊頭領 札希拉",
@@ -930,7 +949,9 @@
     "location": "alabaster_cane",
     "disposition": 52,
     "greeting": "「腳步放軟些,異鄉人。瑪瑟主血脈、瑟昆達主形貌——連你今夜是何模樣,都是雙月說了算。何不留下,陪我跳完這支兩月之舞?」",
-    "rumor": "「他們說托瓦爾的瑪恩,只在雙月與群星排成古老月相時才會降生。讀月者·銀鬃便是那樣誕生的——亂世裡,連瑞門的戰族酋長都得在雙月下向他屈膝呢。」"
+    "rumor": "「他們說托瓦爾的瑪恩,只在雙月與群星排成古老月相時才會降生。讀月者·銀鬃便是那樣誕生的——亂世裡,連瑞門的戰族酋長都得在雙月下向他屈膝呢。」",
+    "secret_guild": "dark_brotherhood",
+    "secret_secrecy": 65
   },
   "alabaster_cane_3": {
     "name": "糖路客·猞猁尾",
@@ -1571,5 +1592,23 @@
     "rumor": "綠影林深處的月嚎獸穴住著一支海爾辛獵群,唯承獸血者得以近身。",
     "quest": "recruit_pack_warrior",
     "quest_disposition": 50
+  },
+  "cheydinhal_quiet_patron": {
+    "name": "沉默的常客 維契亞",
+    "location": "cheydinhal",
+    "disposition": 42,
+    "greeting": "「切德納寇是個適合安靜過日子的好地方……只要你不多問。」",
+    "rumor": "夜裡別走城東那條巷,聽說有戶人家半夜總有人進出,卻從不見人出殯。",
+    "secret_guild": "dark_brotherhood",
+    "secret_secrecy": 70
+  },
+  "bravil_devout_stranger": {
+    "name": "虔誠的外鄉人 卡爾莫",
+    "location": "bravil",
+    "disposition": 40,
+    "greeting": "「黎明終將到來,朋友。你準備好迎接新紀元了嗎?……我是說,新的一天。」",
+    "rumor": "有人在城外的廢墟裡聚會,點著奇怪的火、誦著聽不懂的經 —— 我可什麼都沒看見。",
+    "secret_guild": "mythic_dawn",
+    "secret_secrecy": 70
   }
 }

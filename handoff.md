@@ -1404,6 +1404,21 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 
 ---
 
+### R97 · 公會社交網:隱蔽犯罪身分 + 同會相認 + 調查揭露 + 臥底(承 R96)[re-sim] [save-safe]
+
+承 R96「公會宿敵生態」;使用者連續拍板擴展:① 更多 guild NPC ② 犯罪公會(thieves/db/mythic_dawn)身分**隱蔽**,須三條件之一揭露 ③ 同會相認 + 情報 ④ **調查**也可揭露(融入套話·broad·使用者點名「全 NPC 還是只犯罪公會」→ 廣域防 meta-gaming) ⑤ **基礎臥底**。
+
+- **公會分類**:`factions.CRIMINAL_GUILDS={thieves_guild,dark_brotherhood,mythic_dawn}` + `is_criminal_guild`。NPC 標:**`guild`=公開/表面身分**(公開公會·或臥底掩護)·**`secret_guild`=隱藏犯罪身分**(隱蔽成員/臥底)。
+- **三路徑揭露(`dialogue.secret_guild_revealed`·🔴 零新存檔欄,衍生自 `char.factions`/`npc_disposition`/`dialogue_done`)**:① `is_member(secret)` 同會自知 ② `disposition≥GUILD_REVEAL_DISPOSITION=75` 高好感信任 ③ **調查**成功(`dialogue_done` 含 `_GUILD_KNOWN` 標記)。
+- **態度(`_guild_attitude`)**:**揭露 + 你正是秘密同會 → comrade 相認**(植入內線/同志);否則以**表面 `guild`** 處理(同公開會 comrade·公開公會公然敵視宿敵〔R96〕·**臥底以掩護公會行事=佯裝敵視自己真正的同志**)。**犯罪公會即使被你看穿仍不公然敵視**(掩護)。
+- **調查融入套話(R82 `_do_pump`)**:套話成功 → `_maybe_reveal_secret_guild`(scout/speechcraft 檢定 vs `secret_secrecy` 難度·夾 [0.05,0.85])→ 成功標 `_GUILD_KNOWN` + 訊息。**broad**(融入既有套話·一般人查無所獲·**選項本身不洩密 → 無 meta-gaming**;若只在犯罪 NPC 給打探選項,選項一出現就洩漏其身分)。
+- **同會相認 + 情報**:新 `comrade` attitude(`greetings.comrade` + `attitude_topics.comrade` **⊇ friendly + `guild_intel`**·審查前自修:comrade 須是 friendly 超集·不漏既有 pledge_support/buy_intel);`guild_intel` 話題=同道情報(指向 rumor·**無可剝削獎勵**·不重複 R88 銷贓/R89 服務)。
+- **內容**:**8 公開公會 NPC**(fighters/mages/companions/knights·同會相認)+**7 隱蔽犯罪**(brynjolf/maven 等盜賊〔正典 Thieves Guild〕·1 db·1 mythic_dawn·含 **2 新 NPC** `cheydinhal_quiet_patron`/`bravil_devout_stranger` 填無公開 NPC 的隱藏公會)+**2 臥底**(`evermore_warden`=fighters 掩護/thieves 真實·`imperial_city_scribe_aurelia`=mages 掩護/mythic_dawn 真實〔正典滲透〕)·`secret_secrecy` 40-70(臥底/高階藏更深)。
+- **🔴 不碰 `combat.py`/`formulas.py` → `sim_assassin` byte-identical**(純社交/對話)·**零新存檔欄**·**R96 通用 NPC-內容規則仍守**(`guild` 標〔含臥底掩護〕不攜一般任務)。**對抗審查 3 維·12 agent·9 發現·2 confirmed**:① minor **臥底揭露抹除掩護關係**(原 `return base` 漏掉 apparent 分支 → fighters 同袍/db 敵視被「發現秘密」無端化解;**改 fall-through 到 apparent**·只疊加情報不抹除掩護)② nit secret_secrecy 無 schema 驗 → 補 0-100 int guard;**logic 維度全 refuted**(三路徑/態度矩陣/掩護/comrade/調查 broad 皆驗正確)。`run_all` **95**。
+- 🔴 **鐵律**:公開公會用 `guild`·犯罪/隱蔽用 `secret_guild`(`test_data_schema` FK:secret_guild ∈ factions 且須犯罪公會·`secret_secrecy` 0-100 int);揭露三路徑純衍生(零存檔欄·`_GUILD_KNOWN` 復用 `dialogue_done`);**臥底揭露只疊加情報·不抹除掩護公會關係**(`_guild_attitude` 非秘密同會即 fall-through 到 apparent);調查融入套話(broad·選項不洩密);`comrade` ⊇ friendly;`guild` 標 NPC 不攜一般任務(R96 guard·含臥底掩護)。**前瞻**:臥底揭露進階劇情(揭發叛徒/招募內線/反間任務)、犯罪公會服務(銷贓/暗號)、更多 NPC 標。
+
+---
+
 ### R96 · 公會宿敵生態 Phase 1:派系敵意 + 對立後果(衍生·零存檔欄)[re-sim] [save-safe]
 
 承「派系生態活化」評估(9 公會原是孤立任務階梯 silo·`rivals` 只當入會硬鎖·對立零後果);使用者拍板**分兩期**:**Phase 1 宿敵後果(felt·本里程碑)** / **Phase 2 據點消長(territorial·下期)**。並就「勢力消長 HOW」收斂到**據點消長**方向(下期實作)。

@@ -33,7 +33,7 @@ _EVENTS_EFFECT_TYPES = {"gold", "item", "skill_xp", "heal", "restore_magicka", "
                         "combat", "message"}
 # 對話 topic effect:dialogue._apply_topic_effects 攔 faction_standing、其餘委派 events.apply_effects(R81)
 _DLG_EFFECT_TYPES = {"faction_standing"} | _EVENTS_EFFECT_TYPES
-_GREETING_ATTITUDES = {"friendly", "neutral", "cold", "hostile", "vampire_seen"}
+_GREETING_ATTITUDES = {"comrade", "friendly", "neutral", "cold", "hostile", "vampire_seen"}
 _REL_KEYS = {"ally", "enemy", "neutral", "unaligned"}
 
 
@@ -125,6 +125,13 @@ def test_dialogue_foreign_keys():
             assert npc["role"] in roles, f"npc {npc_id}: role {npc['role']} 不在 dialogue.roles"
         if npc.get("guild"):     # R96:公會歸屬標(驅動宿敵敵意態度)須指向真實公會
             assert npc["guild"] in gd.factions, f"npc {npc_id}: guild {npc['guild']} 非真實公會"
+        if npc.get("secret_guild"):   # R97:隱蔽(犯罪)身分標 → 須真實公會,且應為犯罪公會
+            from tesrpg.systems import factions
+            assert npc["secret_guild"] in gd.factions, f"npc {npc_id}: secret_guild {npc['secret_guild']} 非真實公會"
+            assert factions.is_criminal_guild(npc["secret_guild"]), \
+                f"npc {npc_id}: secret_guild {npc['secret_guild']} 非犯罪/隱蔽公會(公開公會用 guild 標)"
+            sec = npc.get("secret_secrecy", 50)   # 調查難度(0-100 int;鏡像 rumor_disposition 守門)
+            assert isinstance(sec, int) and 0 <= sec <= 100, f"npc {npc_id}: secret_secrecy {sec} 須 0-100 int"
 
     def _check_topic(where, t):
         r = t.get("requires", {})

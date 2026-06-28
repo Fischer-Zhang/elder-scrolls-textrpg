@@ -189,8 +189,13 @@ REPORT_BOUNTY = 40           # 看破吸血鬼報官 → 該省賞金
 PRY_DIFFICULTY = 45          # 套話檢定基準難度
 STANDING_CAP = 100           # 外交立場分夾限 [-CAP, CAP]
 
+# 公會宿敵生態(R97):犯罪/隱蔽身分揭露門檻 + 調查揭露的 dialogue_done 標記(零新存檔欄)
+GUILD_REVEAL_DISPOSITION = 75   # 高好感信任 → 得知其隱藏(犯罪)身分(秘密更深於一般任務門檻 60)
+_GUILD_KNOWN = "__guild_known__"  # dialogue_done[npc] 標記:已調查揭露該 NPC 的隱藏身分
+
 # 程式內 fallback(dialogue.json 缺漏時仍可運作;正式內容在 data/dialogue.json)
 DEFAULT_GREETINGS = {
+    "comrade": ["「自己人。風聲緊,長話短說 —— 有什麼要打聽的?」"],
     "friendly": ["「自己人 —— 有話直說。」"],
     "neutral": ["{greeting}"],
     "cold": ["「……有事快說。」"],
@@ -198,6 +203,7 @@ DEFAULT_GREETINGS = {
     "vampire_seen": ["「你那雙眼睛……來人啊!這裡有吸血鬼!」"],
 }
 DEFAULT_ATTITUDE_TOPICS = {
+    "comrade": ["guild_intel", "local_politics", "pledge_support", "buy_intel", "pump_for_info"],   # 同會相認 ⊇ friendly + 情報
     "friendly": ["local_politics", "pledge_support", "buy_intel", "pump_for_info"],
     "neutral": ["local_politics", "pump_for_info"],
     "cold": ["pump_for_info"],
@@ -255,10 +261,40 @@ def attitude(char: Character, state, gamedata: GameData, npc_id: str, ctx: dict 
         base = "friendly"
     else:
         base = "neutral"
-    # 公會宿敵敵意(R96):身屬其宿敵公會 → NPC 至少冷待、夠深則敵視(只升級不軟化)
-    guild = gamedata.npcs[npc_id].get("guild")
-    if guild:
-        h = factions.faction_hostility(char, gamedata, guild)
+    return _guild_attitude(char, gamedata, npc_id, base)
+
+
+def secret_guild_revealed(char: Character, gamedata: GameData, npc_id: str) -> bool:
+    """NPC 的隱藏(犯罪)身分 `secret_guild` 是否已對玩家揭露(R97·零新存檔欄,衍生自既有狀態):
+    ① 你是該秘密公會會員(同會自知) ② 高好感信任(disposition≥75) ③ 調查成功(dialogue_done 標記)。"""
+    secret = gamedata.npcs[npc_id].get("secret_guild")
+    if not secret:
+        return False
+    if factions.is_member(char, secret):
+        return True
+    if disposition(char, gamedata, npc_id) >= GUILD_REVEAL_DISPOSITION:
+        return True
+    return _GUILD_KNOWN in char.dialogue_done.get(npc_id, [])
+
+
+def _guild_attitude(char: Character, gamedata: GameData, npc_id: str, base: str) -> str:
+    """公會身分對態度的覆寫(R96 宿敵敵意 + R97 隱蔽身分/同會相認/臥底掩護):
+    - **隱藏身分已揭露** → 以真實身分主導:同(秘密)會 → comrade 相認(植入內線);否則維持 base
+      (犯罪公會即使被你看穿仍不公然敵視·知情走情報話題)。
+    - 否則以**表面身分 `guild`**(公開公會,或臥底的掩護)處理:同公會 → comrade;公開公會公然敵視
+      宿敵(臥底以掩護公會行事 → 會佯裝敵視自己真正的同志,維持掩護)。"""
+    npc = gamedata.npcs[npc_id]
+    secret = npc.get("secret_guild")
+    # 隱藏身分已揭露 + 你正是該秘密公會同會 → comrade 相認(植入內線/同志)。
+    if secret and factions.is_member(char, secret) and secret_guild_revealed(char, gamedata, npc_id):
+        return "comrade"
+    # 其餘(未揭露·或已揭露但你非秘密同會)→ 以**表面 guild**(公開公會,或臥底掩護)處理:
+    # 「另外發現他暗中是賊」只疊加情報,不抹除既有掩護公會的同袍/宿敵關係(臥底仍以掩護身分行事)。
+    apparent = npc.get("guild")
+    if apparent:
+        if factions.is_member(char, apparent):
+            return "comrade"
+        h = factions.faction_hostility(char, gamedata, apparent)
         if h >= 2:
             return "hostile"
         if h == 1 and base in ("friendly", "neutral"):
@@ -423,6 +459,23 @@ def pry_chance(char: Character) -> float:
 _PUMP_PAID = "__pump_paid__"      # dialogue_done[npc_id] 標記:該 NPC 的功能化秘密已兌現一次(防刷,零新存檔欄)
 
 
+def _maybe_reveal_secret_guild(char: Character, gamedata: GameData, npc_id: str, rng: RNG) -> str | None:
+    """R97 調查揭露:以偵查/口才探查 NPC 的隱藏(犯罪)身分 `secret_guild`。
+    一般人(無 secret_guild)→ None(查無所獲);已揭露 → None;否則技能檢定 vs `secret_secrecy`
+    (難度·臥底/高階藏得深),成功 → 標 `_GUILD_KNOWN`(永久揭露·零新存檔欄)+ 回報訊息。"""
+    secret = gamedata.npcs[npc_id].get("secret_guild")
+    if not secret or secret_guild_revealed(char, gamedata, npc_id):
+        return None
+    secrecy = gamedata.npcs[npc_id].get("secret_secrecy", 50)
+    skill = max(char.skill("scout"), char.skill("speechcraft"))
+    chance = max(0.05, min(0.85, 0.20 + (skill + char.attr("personality") - secrecy) * 0.005))
+    if not rng.chance(chance):
+        return None
+    char.dialogue_done.setdefault(npc_id, []).append(_GUILD_KNOWN)
+    gname = gamedata.factions.get(secret, {}).get("name", secret)
+    return f"言談間你察覺端倪 —— 此人竟與{gname}有牽連。"
+
+
 def _do_pump(state, gamedata: GameData, npc_id: str, topic: dict, ctx: dict, rng: RNG) -> dict:
     """旁敲側擊套話:付 speechcraft practice(體力+時間,非免費刷)。
     成功 → 揭露隱藏情報(topic/NPC `secret`);**功能化秘密**(dict 形)額外撬出可行動情報
@@ -445,6 +498,11 @@ def _do_pump(state, gamedata: GameData, npc_id: str, topic: dict, ctx: dict, rng
                 done.append(_PUMP_PAID)
         else:
             text = _interp(raw, char, gamedata, npc_id, ctx)
+        # R97 調查揭露:套話成功 → 順帶以偵查/口才探查隱藏(犯罪)身分(broad:一般人查無所獲、
+        # 隱蔽成員/臥底成功才揭露;難度隨 secret_secrecy)。融入套話 → 選項不洩密、無 meta-gaming。
+        reveal_msg = _maybe_reveal_secret_guild(char, gamedata, npc_id, rng)
+        if reveal_msg:
+            messages = messages + [reveal_msg]
         # 套話只給情報/藏寶(+練口才),不推進外交軸(外交立場走顯式的表態話題)
         return {"text": text, "ok": True, "hours": hours, "tired": tired,
                 "skill_events": skill_events, "messages": messages, "combat": combat, "subtopics": []}

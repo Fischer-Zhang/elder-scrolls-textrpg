@@ -16,6 +16,15 @@ from tesrpg.gamedata import GameData
 from tesrpg.models import Character
 
 
+# 犯罪/隱蔽公會(R97):成員身分是秘密,預設不公開 —— NPC 以 `secret_guild` 標(非 `guild`),
+# 揭露須會員 / 高好感 / 調查(見 dialogue.secret_guild_revealed)。公開公會走 `guild` 標。
+CRIMINAL_GUILDS = {"thieves_guild", "dark_brotherhood", "mythic_dawn"}
+
+
+def is_criminal_guild(faction_id: str) -> bool:
+    return faction_id in CRIMINAL_GUILDS
+
+
 def is_member(char: Character, faction_id: str) -> bool:
     return faction_id in char.factions
 
