@@ -1408,11 +1408,18 @@ def _travel_to(state: GameState, gamedata: GameData, dest: str) -> str | None:
     """前往指定地點(供旅行選單與 hub/地點卡的可點出口共用)。回傳 'dead' 或 None。"""
     res = world.travel(state.player, gamedata, dest, state.time, state.rng)
     foe = res["foe"]
-    # R84:被通緝者路途遭賞金獵人追殺 —— 觸發則「取代」本趟一般遭遇(一趟最多一場戰);騎馬降低被攔機率
+    # 路途伏擊:R84 賞金獵人(通緝)優先,否則 R96 宿敵公會打手;觸發則「取代」本趟一般遭遇
+    # (一趟最多一場戰);騎馬降低被攔機率。優先序 bounty > guild → 絕不雙觸。
+    evade = mounts.encounter_evade(state.player, gamedata)
     heat = crime.active_heat(state.player)
-    ambush = heat >= 1 and state.rng.chance(
-        min(0.75, _BOUNTY_HUNT_BASE_CHANCE + 0.12 * (heat - 1)) * (1 - mounts.encounter_evade(state.player, gamedata)))
-    if ambush:
+    bounty_ambush = heat >= 1 and state.rng.chance(
+        min(0.75, _BOUNTY_HUNT_BASE_CHANCE + 0.12 * (heat - 1)) * (1 - evade))
+    g_fid, g_tier, guild_ambush = None, 0, False
+    if not bounty_ambush:
+        g_fid, g_tier = factions.most_hostile_guild(state.player, gamedata)
+        guild_ambush = g_tier >= _GUILD_HOSTILITY_AMBUSH_MIN and state.rng.chance(
+            min(0.35, _GUILD_AMBUSH_BASE * g_tier) * (1 - evade))
+    if bounty_ambush or guild_ambush:
         foe = None
     if dest not in state.player.visited_locations:   # 已抵達(location_id 已更新)→ 先記足跡,
         state.player.visited_locations.append(dest)  # 即使途中埋伏致死也算到過此地
@@ -1422,8 +1429,11 @@ def _travel_to(state: GameState, gamedata: GameData, dest: str) -> str | None:
         ui.message(f"矯健的身手讓旅程縮短到 {res['hours']} 時(原需 {res['base_hours']} 時)。",
                    style="grey70")
     ui.show_events(res["skill_events"], gamedata)
-    if ambush:
+    if bounty_ambush:
         if _bounty_hunter_ambush(state, gamedata) == "dead":
+            return "dead"
+    elif guild_ambush:
+        if _guild_enforcer_ambush(state, gamedata, g_fid, g_tier) == "dead":
             return "dead"
     elif foe is not None:
         ui.message("途中遭遇了埋伏!", style="yellow")
@@ -4324,6 +4334,27 @@ def _bounty_hunter_ambush(state: GameState, gamedata: GameData) -> str | None:
     hunters = [combat.spawn_creature(gamedata, tid, state.rng) for _ in range(heat)]   # T1→1 / T2→2 / T3→3
     ui.message("一夥賞金獵人攔住了去路 —— 你的人頭,正高價懸賞。", style="bold red")
     if offer_battle(state, gamedata, hunters, surprise=True, mounted=True) == "dead":
+        return "dead"
+    return None
+
+
+# R96:公會宿敵打手路途伏擊(複用 R84 範式;優先序低於賞金獵人,見 _travel_to)
+_GUILD_AMBUSH_BASE = 0.10          # 每敵意 tier 的基礎被攔機率(×tier,夾 0.35);騎馬另乘 (1−規避)
+_GUILD_HOSTILITY_AMBUSH_MIN = 2    # 只「敵視」(tier≥2=在宿敵公會 rank≥1)才出鋼;tier1「冷待」止於對話態度
+
+
+def _guild_enforcer_ambush(state: GameState, gamedata: GameData, fid: str, tier: int) -> str | None:
+    """R96:鬧翻某公會宿敵 → 其打手途中伏擊(敵意 tier 越高越多越強)。回傳 'dead' 或 None。
+
+    敵意純衍生自 char.factions(身屬其宿敵公會),零存檔欄。**永久後果·by-design**:本作無退會
+    機制 → 加入一個公會即與其宿敵結怨一生(burn-your-bridges,加入公會的代價;與 R84 可清賞金不同)。
+    緩衝靠騎馬降頻 + offer_battle 偵查/潛行撤退;存活**不**加賞金/惡名(自衛,不雪上加霜)。"""
+    creature = "guild_avenger" if tier >= 4 else "guild_enforcer"
+    count = min(3, 1 + tier // 3)
+    foes = [combat.spawn_creature(gamedata, creature, state.rng) for _ in range(count)]
+    name = gamedata.factions[fid]["name"]
+    ui.message(f"{name}的打手堵住了去路 —— 你壞了他們的事,該來算這筆帳了。", style="bold red")
+    if offer_battle(state, gamedata, foes, surprise=True, mounted=True) == "dead":
         return "dead"
     return None
 

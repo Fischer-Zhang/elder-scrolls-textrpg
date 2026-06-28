@@ -1404,6 +1404,21 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 
 ---
 
+### R96 · 公會宿敵生態 Phase 1:派系敵意 + 對立後果(衍生·零存檔欄)[re-sim] [save-safe]
+
+承「派系生態活化」評估(9 公會原是孤立任務階梯 silo·`rivals` 只當入會硬鎖·對立零後果);使用者拍板**分兩期**:**Phase 1 宿敵後果(felt·本里程碑)** / **Phase 2 據點消長(territorial·下期)**。並就「勢力消長 HOW」收斂到**據點消長**方向(下期實作)。
+
+- **衍生敵意(`systems/factions.py`·純函式零存檔欄)**:`faction_hostility(char,gd,fid)` —— fid 視玩家為仇敵 ⟺ 玩家在 fid 的某 `rival` 公會有階級(tier = max `rank_index`+1);`is_member` 短路;+`is_hostile`/`most_hostile_guild`(`sorted` 決定性·O(9))。**設計前提**:rivals 入會互斥(`join_block_reason`)→ 不可能同時是某會與其宿敵會員 → 自洽。**零存檔欄**(衍生自既有 `char.factions`·舊存檔自動生效無遷移)。
+- **對立後果 A 對話態度**:`dialogue.attitude` 加 guild-hostility 分支(算完 base 後·**只升級不軟化**·vampire_seen 仍優先):NPC 帶 `guild` 標 + 玩家在其宿敵公會 → tier≥2 回 hostile / tier1 回 cold。
+- **對立後果 B 路途宿敵打手伏擊**:`main.py _travel_to` 改優先序階梯(**bounty>guild·絕不雙觸**·皆 `foe=None`·`_curse_manhunt` 抵城階段不撞);`_guild_enforcer_ambush`(鏡像 R84:spawn `min(3,1+tier//3)` 隻 `guild_enforcer`/`guild_avenger`〔tier≥4〕·`offer_battle` surprise+mounted·**存活不加賞金/惡名**=自衛)。bestiary +2 怪(`weight:0/min_level:99`=只伏擊 spawn)。頻率 `min(0.35, 0.10×tier)×(1−騎馬規避)`·只 tier≥2(在宿敵公會 rank≥1)出鋼。**🔴 永久後果 by-design**:本作無退會機制 → 加入一公會即與其宿敵結怨一生(burn-your-bridges·與 R84 可清賞金不同;緩衝靠騎馬降頻 + 偵查/潛行撤退·存活不雪上加霜)。
+- **對立後果 C 大廳拒服務**:**未改碼**——既有 `join_block_reason` rival 鎖已使宿敵公會大廳對你回絕。
+- **🔴 通用 NPC-公會內容規則(使用者點名「通用·可擴展·非限定某城」)**:**guild-標 NPC 只攜帶公會相關內容** —— 敵對 NPC 不發任務給你是**正確的**(宿敵敵意 → hostile → 不給任務),但若 guild NPC 攜帶**一般**任務/流言,身屬其宿敵者會被永久鎖死那段一般內容。故規則:guild NPC 不帶一般 rumor·其 npc-quest faction 須 ==guild。一般任務歸一般 NPC(marcus 的 chain_kvatch 是馬庫斯專屬一般任務→marcus/torvald 非公會 NPC·不標);只標**給無一般任務的公會成員 NPC**(brand 軍團老兵→fighters·gaius/sabine 安維爾→knights)。`test_guild_npcs_carry_only_guild_content` **通用 guard**(加新 guild NPC 自動把關)。
+- **主動破壞任務**:延 Phase 2(guild rank_quests 一階一晉升任務·插中段位移 `rank` 索引破存檔·append 又在 guildmaster 之上;配 Phase 2 `oust_rival` 領土 payoff 才有意義)。
+- **🔴 不碰 `combat.py`/`formulas.py` → `sim_assassin` byte-identical**(solo 0%/精英 Δ0·sim 不旅行/攀談·新怪 weight0 不在路徑);**零新存檔欄**。**對抗審查 3 維·19 agent·16 發現·9 confirmed** → 修 **2 major**(①永久後果 docstring 假稱「停掉宿敵公會即可規避」但無退會機制→改 by-design ②chain_kvatch 鎖死→通用規則只標合規 NPC)+ minor/nit(BESTIARY 重生·頻率 0.5→0.35 軟化〔疊 R84 過懲〕·import 提頂·伏擊管線補測)。`run_all` **95**(新 `test_faction_liveness`)·BESTIARY.md **131 怪**。
+- 🔴 **鐵律**:敵意純衍生自 `char.factions`(rivals 互斥保自洽)·零存檔欄;**guild-標 NPC 只攜帶公會相關內容**(一般任務歸一般 NPC·`test_guild_npcs_carry_only_guild_content` guard 通用把關·擴展新 guild NPC 必過);伏擊優先序 **bounty>guild·皆 foe=None**·走 `state.rng`;永久後果 by-design(無退會·緩衝靠騎馬/撤退·存活不加賞金);不碰 combat/formulas → sim byte-identical。**Phase 2(下期)**:據點消長(公會城足跡 base〔services 標〕+overlay〔新存檔欄〕·`oust_rival`/`establish` reward·**同城允多公會共存**·僅都市公會〔fighters/mages/thieves/db〕參與〔lawful 開放會所/criminal 隱藏據點〕·lair〔coven/werewolf〕+cult〔mythic_dawn〕+單會所〔knights/companions〕opt out·不碰 aiwar 數學)。
+
+---
+
 ### R95 · 煉金材料正典化:生物部位移 creature loot + 2 新怪 + 野採池重建(承 R94)[re-sim] [save-safe]
 
 承使用者「依正典重新調整所有煉金材料稀有度與取得方式」。評估(workflow 4 agent 研究 51 材料 TES 正典 + 準確性審查)結論:**生物部位(脂/牙/爪/趾/鱗/卵/塵/心/鹽)正典上是 creature loot,非野採植物**。兩道拍板:① 生物部位 **loot-only(打怪取得·hunt-gated)** ② 無對應怪者**新增怪**。

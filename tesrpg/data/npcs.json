@@ -139,7 +139,8 @@
     "disposition": 45,
     "greeting": "「歡迎來到安維爾,旅人。阿比西亞灣的風能吹散一切煩憂——除了碼頭上那些手腳不乾淨的。」",
     "rumor": "伯爵夫人的丈夫多年前一夜之間消失,至今生死未卜,碼頭的老水手都說那是椿怪事。",
-    "quest": null
+    "quest": null,
+    "guild": "knights_nine"
   },
   "sabine": {
     "name": "薩賓娜",
@@ -147,7 +148,8 @@
     "disposition": 45,
     "greeting": "「順著海岸路往東北走,過史金格拉德的葡萄園就到腹地了。」",
     "rumor": "東邊凱瓦奇遭了湮滅之門的劫難,逃難的人一波波湧進安維爾的碼頭,城裡都快住不下了。",
-    "quest": null
+    "quest": null,
+    "guild": "knights_nine"
   },
   "whiterun_steward": {
     "name": "普羅梵圖斯·阿文奇",
@@ -328,7 +330,8 @@
     "disposition": 50,
     "greeting": "「軍團的旗早就不南下了,可這道北門還得有人守。看你的眼神,不像來惹事的。」",
     "rumor": "順著帝國大道一路往南能直抵帝都,白金塔下如今全靠長老議會撐著,人心惶惶得很。",
-    "quest": null
+    "quest": null,
+    "guild": "fighters_guild"
   },
   "kvatch_arena_fighter_torvald": {
     "name": "托瓦爾·凱恩",

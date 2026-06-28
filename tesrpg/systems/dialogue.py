@@ -9,7 +9,7 @@ from tesrpg import formulas
 from tesrpg.gamedata import GameData
 from tesrpg.models import Character
 from tesrpg.rng import RNG
-from tesrpg.systems import events, mastery, politics, progression
+from tesrpg.systems import events, factions, mastery, politics, progression
 
 BRIBE_COST = 10
 TALK_DOWN_MAX = 120          # 可「說服衛兵」的最高賞金(大罪說不過去;對齊武士 ~100 量級)
@@ -248,12 +248,22 @@ def attitude(char: Character, state, gamedata: GameData, npc_id: str, ctx: dict 
         return "vampire_seen"
     rel = (ctx or talk_ctx(state, gamedata, npc_id))["relationship"]
     if rel == "enemy":
-        return "hostile"
-    if disposition(char, gamedata, npc_id) < 25:
-        return "cold"
-    if rel == "ally":
-        return "friendly"
-    return "neutral"
+        base = "hostile"
+    elif disposition(char, gamedata, npc_id) < 25:
+        base = "cold"
+    elif rel == "ally":
+        base = "friendly"
+    else:
+        base = "neutral"
+    # 公會宿敵敵意(R96):身屬其宿敵公會 → NPC 至少冷待、夠深則敵視(只升級不軟化)
+    guild = gamedata.npcs[npc_id].get("guild")
+    if guild:
+        h = factions.faction_hostility(char, gamedata, guild)
+        if h >= 2:
+            return "hostile"
+        if h == 1 and base in ("friendly", "neutral"):
+            return "cold"
+    return base
 
 
 # --- 文字插值 / 問候 ---------------------------------------------------

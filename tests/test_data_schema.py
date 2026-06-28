@@ -123,6 +123,8 @@ def test_dialogue_foreign_keys():
     for npc_id, npc in gd.npcs.items():
         if npc.get("role"):
             assert npc["role"] in roles, f"npc {npc_id}: role {npc['role']} 不在 dialogue.roles"
+        if npc.get("guild"):     # R96:公會歸屬標(驅動宿敵敵意態度)須指向真實公會
+            assert npc["guild"] in gd.factions, f"npc {npc_id}: guild {npc['guild']} 非真實公會"
 
     def _check_topic(where, t):
         r = t.get("requires", {})

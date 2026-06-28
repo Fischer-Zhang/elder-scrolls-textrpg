@@ -60,6 +60,31 @@ def joined_rivals(char: Character, gamedata: GameData, faction_id: str) -> list[
     return [r for r in rivals if r in char.factions]
 
 
+# --- 宿敵敵意(R96:純衍生自 char.factions,零存檔欄)----------------------
+# 公會 fid 視玩家為仇敵 ⟺ 玩家在 fid 的某個 rival 公會中有階級。rivals 入會互斥 →
+# 你永不可能同時是某會與其宿敵的會員,故此衍生自洽。tier 隨在宿敵公會的階級成長。
+def faction_hostility(char: Character, gamedata: GameData, faction_id: str) -> int:
+    """fid 對玩家的敵意 tier(0=無敵意);純衍生、零存檔欄。"""
+    if is_member(char, faction_id):     # 自己人;且互斥保證不會同時是其宿敵會員
+        return 0
+    rivals = gamedata.factions.get(faction_id, {}).get("rivals", [])
+    return max((rank_index(char, r) + 1 for r in rivals if is_member(char, r)), default=0)
+
+
+def is_hostile(char: Character, gamedata: GameData, faction_id: str) -> bool:
+    return faction_hostility(char, gamedata, faction_id) >= 1
+
+
+def most_hostile_guild(char: Character, gamedata: GameData) -> tuple[str | None, int]:
+    """敵意最高的公會(給路途宿敵伏擊挑「哪個公會派打手」);決定性走 sorted。"""
+    best_fid, best_tier = None, 0
+    for fid in sorted(gamedata.factions):
+        tier = faction_hostility(char, gamedata, fid)
+        if tier > best_tier:
+            best_fid, best_tier = fid, tier
+    return best_fid, best_tier
+
+
 # --- 入會 ---------------------------------------------------------------
 def join_block_reason(char: Character, gamedata: GameData, faction_id: str) -> str | None:
     """回傳「不能入會」的原因(繁中);可入會則 None。"""
