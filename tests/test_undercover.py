@@ -111,6 +111,14 @@ def test_pick_knower_is_existing_named_b_npc():
     assert k in gd.npcs and gd.npcs[k]["guild"] == "fighters_guild"
 
 
+def test_pick_knower_all_murdered_returns_none():
+    """🔴 邊界:B 公會具名 NPC 全被滅口 → pick_knower 回 None(_undercover_detection 安全早退·不崩)。"""
+    gd, c = _mk()
+    _infiltrate(gd, c)
+    c.murdered_npcs = [n for n, v in gd.npcs.items() if v.get("guild") == "fighters_guild"]
+    assert undercover.pick_knower(c, gd) is None
+
+
 def test_pick_knower_excludes_murdered_and_prefers_province():
     gd, c = _mk()
     _infiltrate(gd, c)

@@ -49,7 +49,7 @@
 - **套裝加成**(同材質四件)、武器流派、飾品槽、法杖、法袍;**具名神器**(裝備耐久/修理已移除,見 R33)
 
 #### 公會、任務與政治
-- **七大公會**:戰士/法師/盜賊 + 黑暗兄弟會 + 神話黎明 + 九神騎士團 + **戰友團**(白漫·狼人血脈歸宿,獸血儀式繫於其內圈)(技能門檻/福利/對立/分支壓軸);**核心三公會階級服務功能化**(rank-gated 招牌動詞·非只折扣):盜賊=斯庫瑪走私生意(R88·艾爾斯維爾)、戰士=軍械庫淬鍊(R89·公會供料免材料)、法師=奧術回充+魔力補給(R89);黑兄(夜母潛行加成)/戰友團(內圈儀式+召盾袍)早有功能 perk;**犯罪公會同志服務(R98)**:已揭露的犯罪同志(盜賊/黑兄/神話黎明)開放會員專屬服務 —— 便攜銷贓 fence / 接私活合約 / 禁術貨源,把 R97 隱蔽身分社交網功能化為「聯絡人=服務」(`secret_comrade` 閘·零存檔欄·sim byte-identical);**諜報反制迴圈(R99)**:臥底揭發(吹哨得聲望 / 大義滅親得惡名 → 臥底翻臉斷服務)+ 招募 covert 同志為內線(派發反間線索)+ 反間委託(獵敵方諜員·`cint_` rank-gated 大廳榜)+ 更多 mole/covert NPC(`mole_expose` 資格閘·零存檔欄·sim byte-identical)
+- **七大公會**:戰士/法師/盜賊 + 黑暗兄弟會 + 神話黎明 + 九神騎士團 + **戰友團**(白漫·狼人血脈歸宿,獸血儀式繫於其內圈)(技能門檻/福利/對立/分支壓軸);**核心三公會階級服務功能化**(rank-gated 招牌動詞·非只折扣):盜賊=斯庫瑪走私生意(R88·艾爾斯維爾)、戰士=軍械庫淬鍊(R89·公會供料免材料)、法師=奧術回充+魔力補給(R89);黑兄(夜母潛行加成)/戰友團(內圈儀式+召盾袍)早有功能 perk;**犯罪公會同志服務(R98)**:已揭露的犯罪同志(盜賊/黑兄/神話黎明)開放會員專屬服務 —— 便攜銷贓 fence / 接私活合約 / 禁術貨源,把 R97 隱蔽身分社交網功能化為「聯絡人=服務」(`secret_comrade` 閘·零存檔欄·sim byte-identical);**諜報反制迴圈(R99)**:臥底揭發(吹哨得聲望 / 大義滅親得惡名 → 臥底翻臉斷服務)+ 招募 covert 同志為內線(派發反間線索)+ 反間委託(獵敵方諜員·`cint_` rank-gated 大廳榜)+ 更多 mole/covert NPC(`mole_expose` 資格閘·零存檔欄·sim byte-identical);**玩家雙面間諜(R100)**:犯罪公會(A)大廳 rank-gated 接潛入任務 → 以掩護身分滲透其宿敵(B·thieves/db→戰士公會·神話黎明→九神),掩護↔價值觀漂移天平(替 B 賣力鞏固掩護卻生同情 vs 為我方破壞推進任務卻招疑);低掩護 → 現有具名 B NPC 起疑 → **限時追殺滅口**(限時決鬥)否則曝光;三結局(忠誠抽身留 A / 真正叛變棄 A 入 B / 曝光永久死局)(`systems/undercover.py` 仿詛咒模板·7 存檔欄·**零戰鬥面狀態→sim byte-identical**·cover 絕不入 factions 保 R96 互斥)
 - **多階段任務引擎**;犯罪賞金 + 衛兵 + 謀殺;**通緝/亡命徒身份化(R84)**:雙軸(賞金=當下追殺·可清 / 惡名=終身地下身份)——**賞金獵人路途追殺**(tier 隨賞金·替換式遭遇·騎馬甩開)+ **亡命徒地下世界**(藏身處安全區/銷贓 fence/可重複地下委託/惡名分級稱號·codex 載);**吸血鬼化**(力量↔詛咒天平·夜視/戰鬥+社交魅惑/偽裝暗影套裝 R56)、**狼人化**(戰友團內圈獸血,獸形變身)、**斯庫瑪/月糖成癮**(亢奮↔戒斷天平,艾爾斯維爾)、**斯庫瑪走私生意(R88)**:整併入盜賊公會(非獨立幫派)—— 高階盜賊(rank≥2)在艾爾斯維爾分舵解鎖「斯庫瑪走私生意」(月糖精煉成斯庫瑪〔嚴格 sink〕+ 跨省走私委託〔運月糖出貓人故土·固定酬勞+惡名·途中賞金獵人風險〕),功能化盜賊公會冷階級梯、整併三層犯罪內容(盜賊公會=主幹 / R84 亡命徒層 / 斯庫瑪走私線)
 - **領主政治 / 城戰**:謁見 → 委託 → 武士冊封;圍城 + 破城 + 收稅 + 招兵買馬;**陣營動態大事件**
 
@@ -1403,6 +1403,20 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 - **🔴 鐵律**:加 role 純改 `dialogue.json`(roles map + topics·身份 flavor 為主·功能 effect 走 events 支援集 + `once` 防刷·不帶 skill_xp)+ `npcs.json` role 欄;加流言線索純改 `npcs.json`(rumor_quest/rumor_landmark/rumor_disposition)+ `quests.json`(`source:"rumor"`·僅 clear/reach·**目標無 visible gate**·NPC↔線索目標**須同省**);**新增 source:rumor 任務務必有 NPC rumor_quest 回指**(否則 reachability guard 攔=孤兒);追問傳聞兌現走既有 `_accept_and_brief`/`landmarks.discover`;純社交內容 → sim byte-identical 免跑(動 combat/formulas 才需)。**前瞻**:Phase D 可純資料把其餘 ~40 具名 rumor NPC 逐批接上 + 補 role 密度;若要更多功能 role 話題(商人折扣等)需新 effect + 評估碰 shop/存檔欄。
 
 ---
+
+### R100 · 玩家雙面間諜系統:臥底生涯(掩護↔價值觀漂移·殺知情者滅口·真叛變)[save] [re-sim]
+
+**評估→拍板**:R96–R99 把「NPC 當臥底」做滿,但玩家自己無法當雙面人(`factions.join_block_reason` 宿敵互斥擋掉「掩護+真效忠」雙會籍)。使用者選**完整 Option C**(對標吸血鬼/狼人的一整套生涯系統),四拍板:① opt-in(只有接潛入任務才成臥底)② 價值觀衝突 → 可真叛變效忠 B(由忠誠漂移浮現)③ 曝光走**殺知情者滅口**(知情者=現有具名 B NPC·限時追殺+限時決鬥)④ 掩護期不給戰鬥 perk。**3 commit 分期·各驗證綠**。
+**架構**:新 `systems/undercover.py`(1:1 仿 skooma 詛咒模板)+ Character +7 `cover_*` 欄(guild/true_guild/secrecy/loyalty/last_day/knower/knower_deadline·`ensure_cover_fields` 遷移)。**🔴 零戰鬥面狀態**(無 `*_bonus`/`*_resist`·不碰 attr()/skill())+ **cover_guild 絕不寫進 char.factions**(保 R96 互斥·`perk_value(B)=0` 自動零戰鬥 perk)→ 全狀態在 `cover_guild==""` 時 no-op。
+- **掩護(2 行整合)**:`factions.faction_hostility` +1 行(`cover_guild==fid→0`·B 不敵視)、`dialogue._guild_attitude` +1 行(`cover_guild==apparent→comrade`·B NPC 認你為自己人);非戰鬥便利=相認+大廳出入。
+- **入局(P2)**:犯罪公會 A 大廳 rank-gated「🎭 間諜事務」(`INFILTRATE_PAIRS` thieves/db→fighters·mythic_dawn→knights·`INFILTRATE_RANK=2`·`can_infiltrate`)→ `infiltrate`。三犯罪大廳(action_guild_hall/action_sanctuary/_contract_hall)各掛入口(_contract_hall 閘 is_criminal_guild→九神排除)。
+- **漂移引擎(P2)**:repeatable `source:undercover` 差事(`requires_cover` 閘)·reward 僅 `cover_deltas{loyalty,secrecy}`(**無 gold→無 faucet**·`_REPEATABLE_REWARD_KEYS` 納入):取信於敵(+忠+密)vs 為我方破壞(−忠−密)= 要藏好就得替 B 賣力 → 漸生同情 = 價值觀衝突。
+- **殺知情者滅口(P1)**:`undercover.update`(game_loop·決定性)每日衰減 secrecy(ratchet)→ 歸零/逾期 → `expose`(清掩護·記 `cover_blown_<A>_<B>` 旗標·仍在 A → faction_hostility(B) 自動恢復敵視·零額外碼)。`main._undercover_detection`(抵城·rng)選**現有具名 B NPC**(`pick_knower` 優先省·排除 murdered·全滅口回 None 安全)為 `cover_knower`+期限;action_talk「🔪 滅口」→ `_undercover_silence` → **`run_battle(flee_after_rounds=KNOWER_DUEL_ROUNDS)`**:限時內擊殺→`silence_knower`(secrecy 回地板+infamy+npc murdered+掩護保住)/ 逾回合 `fled_enemy`→曝光。**🔴 `run_battle` 加 `flee_after_rounds:int|None=None`**(預設 None→既有 14 呼叫端逐位元組同·sim 用自有 `_round` 不經 run_battle)。
+- **結局(P3)**:`source:undercover` + `requires_cover`+`requires_loyalty` 閘(互斥):**忠誠抽身**(loyalty≤0→`clear_cover`+忠誠者誓福+留 A)、**真正叛變**(loyalty≥60→`defect` 棄 A 入 B〔rank0〕+叛變者誓福+惡名)。`clear_cover`/`defect`/`expose` 皆記了結旗標→`can_infiltrate` 阻同對重啟。4 誓福守 R45 紅線(無 strength/sneak/武器技能;agility/personality/heavy_armor/block/restoration/illusion/speechcraft 安全)。
+- **UI**:HUD/status/終端掩護徽記(掩護公會·密·忠·知情者警示)。
+- **🔴 對抗審查 3 維 28 agent → 0 blocker/major**(byte-identity/R96+存檔/曝光邊界全正向確認;2 refuted)→ 修 1 UX nit(識破訊息顯示「限 N 日內」非絕對日)+ 補 1 測(全滅口→pick_knower None)。
+- **驗證**:run_all 98(新 `test_undercover` 24 測:no-op/掩護抑制/零 perk/secrecy ratchet/曝光+B 復敵/知情者選定+全滅口 None/限時決鬥真跑 fled_enemy/漂移閾/叛變 flip/抽身/誓福紅線/run_battle 預設 None);**sim_assassin byte-identical**(combat/formulas 未碰·刺客 cover_guild==""·solo 0%)。
+🔴 加潛入對純改 `undercover.INFILTRATE_PAIRS`(A=犯罪公會·B=其宿敵)+ A 大廳掛入口;加漂移/結局純改 `quests.json`(source:undercover·requires_cover/requires_loyalty·cover_deltas/clear_cover/defect·誓福守 R45);cover_guild **絕不**入 factions;動 run_battle/undercover→必跑 sim_assassin(守 byte-identical)。**前瞻**:更多潛入對(他公會宿敵)·非戰鬥便利擴充(掩護期 B 服務)·反間任務與臥底身分連動。
 
 ### R99 · 公會諜報層:臥底揭發 + 招募內線 + 反間任務 + 大廳反間服務(承 R96–R98)[save-safe]
 

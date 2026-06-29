@@ -4477,8 +4477,9 @@ def _undercover_detection(state: GameState, gamedata: GameData) -> None:
     undercover.assign_knower(char, state, nid)
     name = gamedata.npcs[nid]["name"]
     where = gamedata.location(gamedata.npcs[nid]["location"])["name"]
+    days_left = max(0, char.cover_knower_deadline - state.time.absolute_hours() // 24)
     ui.message(f"⚠ {name}起了疑心 —— 他察覺你的身分不對勁,正打算通風報信。"
-               f"趕在他開口前讓他閉嘴(他人在{where};第 {char.cover_knower_deadline} 日前)。", style="bold red")
+               f"趕在他開口前讓他閉嘴(他人在{where};限 {days_left} 日內滅口,逾期即敗露)。", style="bold red")
 
 
 def _undercover_silence(state: GameState, gamedata: GameData, nid: str) -> str | None:
