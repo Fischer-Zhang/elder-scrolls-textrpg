@@ -357,6 +357,13 @@ def _has_deathmark(creature) -> bool:
                for e in getattr(creature, "active_effects", []))
 
 
+def _offbalance_active(attacker, gamedata: GameData) -> bool:
+    """徒手失衡是否啟用(R103):已解鎖里程碑(hand_to_hand≥25)且未穿重甲(輕裝武僧身份)。
+    🔴 僅由 resolve_attack 的玩家徒手路徑呼叫(wpn_skill_id=="hand_to_hand"·not beast)→ sim 持匕首不觸及。"""
+    return (mastery.has_offbalance_unlock(attacker, gamedata)
+            and not inventory.wears_heavy_armor(attacker, gamedata))
+
+
 def has_shield_wall(char) -> bool:
     """玩家是否處於戰士「盾牆」架勢(存 active_effects 的常駐 stance)。"""
     return any(e.get("kind") == "shield_wall" and e.get("turns", 0) > 0
@@ -563,7 +570,9 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
             dmg *= _great_shield_mitigation_factor(defender, gamedata)   # 雙手重盾被動物理減傷(乘性疊加,僅物理)
             # 徒手失衡 ramp:對已失衡之敵,(非偷襲)徒手傷害隨層數放大(讀本擊「前」層數=敵原已失衡)。
             # 🔴 not sneaking → 永不放大偷襲(守 R61 + solo 偷襲夾);徒手專屬+player+非獸形 → sim 持匕首 byte-identical。
-            if _is_player(attacker) and wpn_skill_id == "hand_to_hand" and not beast and not sneaking:
+            # R103:失衡須里程碑解鎖(hand_to_hand≥25)且未穿重甲;重甲/未解鎖時 stacks 恆 0,此處 ×1.0(冗餘但對稱明確)。
+            if (_is_player(attacker) and wpn_skill_id == "hand_to_hand" and not beast and not sneaking
+                    and _offbalance_active(attacker, gamedata)):
                 dmg *= formulas.offbalance_damage_multiplier(magic.offbalance_stacks(defender))
             # 武器附魔:額外元素傷害(無視護甲,受對方元素抗性)。獸形/重盾盾擊以非裝備武器戰鬥 → 無附魔
             if _is_player(attacker) and not beast and not great:
@@ -835,7 +844,9 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
         # 徒手「失衡」warfare:拳腳連擊堆疊敵失衡層 → 放大後續徒手傷害(疊加提升傷害·見上 ramp);跨門檻
         # 踉蹌(軟控·來源去重·不重置 ramp),滿頂罕見真擊倒(硬控·solo 機率抵抗 R44)+ 重置(防 lock-loop)。
         # 🔴 只玩家徒手(wpn_skill_id=="hand_to_hand")非獸形 → 匕首/法系/獸形/sim 永不觸發 → byte-identical。
-        if _is_player(attacker) and wpn_skill_id == "hand_to_hand" and not beast and is_alive(defender):
+        # R103:另須里程碑解鎖(hand_to_hand≥25)且未穿重甲(輕裝武僧)→ 重甲/未解鎖完全不累積失衡。
+        if (_is_player(attacker) and wpn_skill_id == "hand_to_hand" and not beast and is_alive(defender)
+                and _offbalance_active(attacker, gamedata)):
             stacks = magic.add_offbalance(defender, formulas.offbalance_stack_gain(
                 attacker.skill("hand_to_hand"), wmod.get("poise_rate", 0.0)))
             if stacks >= formulas.OFFBALANCE_MAX_STACKS \

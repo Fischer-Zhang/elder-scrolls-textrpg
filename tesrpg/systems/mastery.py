@@ -42,6 +42,7 @@ _IMPLEMENTED_KINDS = {
     # 盾擊踉蹌、淬鍊上限/省料、旅速、戰鬥省體。
     "weapon_mod", "block_riposte", "on_evade", "temper_cap_bonus", "temper_cost_free", "temper_power",
     "travel_factor_bonus", "fatigue_cost_bonus",
+    "offbalance_unlock",   # 徒手 25(R103):解鎖失衡累積(單一 perk 自動授予;gate 走 has_offbalance_unlock=門檻已達 + 非重甲)
     # P3 魔法系:法術調變(學派 power/cost/命中附狀態,吸收 spell_overload)、召喚調變、
     # 被動護甲、煉金/附魔增幅、塗毒次數、命中懼意、低血再生、商貿議價。
     "spell_mod", "summon_mod", "passive_armor", "potion_potency", "poison_charge_bonus",
@@ -413,6 +414,19 @@ def has_vanish(char, gamedata: GameData) -> bool:
     return any(char.base_skill(node["skill"]) >= node["threshold"]
                for node in _nodes(gamedata)
                if any(o.get("kind") == "vanish_unlock" for o in node.get("options", [])))
+
+
+def has_offbalance_unlock(char, gamedata: GameData) -> bool:
+    """徒手失衡解鎖(徒手 25 里程碑·R103):是否解鎖「失衡累積」。
+
+    單一 perk『自動授予』節點 → gate 以門檻已達(base_skill)判定(鏡像 has_vanish):達 25 即解鎖、
+    零遷移、舊存檔即時生效。實際是否累積另需「未穿重甲」(由 combat 端再閘 inventory.wears_heavy_armor)
+    —— 此函式只回『里程碑是否解鎖』,不看護甲。門檻只認 base_skill(鐵律)。"""
+    if not hasattr(char, "base_skill"):
+        return False
+    return any(char.base_skill(node["skill"]) >= node["threshold"]
+               for node in _nodes(gamedata)
+               if any(o.get("kind") == "offbalance_unlock" for o in node.get("options", [])))
 
 
 def has_vanish_relentless(char, gamedata: GameData) -> bool:

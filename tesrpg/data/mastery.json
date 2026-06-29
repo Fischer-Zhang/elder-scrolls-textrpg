@@ -1579,12 +1579,10 @@
     "threshold": 25,
     "options": [
       {
-        "opt_id": "fist_basics",
-        "name": "拳腳入門",
-        "kind": "weapon_mod",
-        "target": "hand_to_hand",
-        "power": 0.05,
-        "desc": "略通拳腳發勁,徒手傷害 +5%(與其他徒手流派相加)。"
+        "opt_id": "unburdened_stance",
+        "name": "輕身樁法",
+        "kind": "offbalance_unlock",
+        "desc": "拳腳入門:習得卸力樁法,徒手連擊開始累積對手『失衡』(越打越痛、伺機踉蹌/掀翻)。但唯有身手不被重甲束縛時方能施展 —— 穿戴任何重甲件則無法累積失衡。"
       }
     ]
   },

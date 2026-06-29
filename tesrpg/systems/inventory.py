@@ -397,6 +397,12 @@ def armor_worn_weight(char: Character, gamedata: GameData) -> float:
     return total
 
 
+def wears_heavy_armor(char: Character, gamedata: GameData) -> bool:
+    """是否穿戴任何重甲件(含重盾)。任一件 weight_class=='heavy' → True;全輕甲/無甲 → False。
+    供徒手失衡(R103:輕裝武僧才能累積失衡)等「輕裝才生效」的機制判定。"""
+    return any(gamedata.item(i).get("weight_class") == "heavy" for i in char.equipped.values())
+
+
 # --- 使用 ---------------------------------------------------------------
 def use_item(char: Character, gamedata: GameData, item_id: str, state=None) -> str | None:
     """使用消耗品(藥水)。回傳給玩家的訊息,不可用回傳 None。

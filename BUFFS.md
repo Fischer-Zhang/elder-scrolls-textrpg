@@ -139,8 +139,8 @@
 | 影刃·暗殺宗師 | 偷襲倍率 | mult_bonus 0.50→×1.5 | 🔴乘進 sneak_mult 鏈 |
 | 致命烙印 deathmark | 破甲+耗體 | pen +0.35、fatigue15、turns4、cd6 | 🔴僅 follow-up(`not sneaking` 閘);最終 pen 夾0.85 |
 | approach_bonus | 偷襲機率 | 各 0.10/0.10/0.12(相加最高0.22) | 只動搶開場頻率,夾[0.05,0.97] |
-| 武器流派 weapon_mod | 傷害/命中/破甲 | power(偷襲前套)blade0.12+0.08、徒手0.15+0.10+0.05;hit/pen/recoil/fatigue/poise_rate(擒拿手0.6 加速徒手失衡)/on_hit | 🔴power 偷襲倍率**之前**算但不吃倍率;同 target 相加、on_hit 取最後;poise_rate 僅 hand_to_hand 命中時讀 |
-| 徒手失衡 ramp offbalance | 徒手傷害遞增(敵側暫態·鏡像 conduct R75) | 每層 +4%·夾 OFFBALANCE_MAX_STACKS=8(+32%);徒手命中 +1+skill//50 層(×(1+poise_rate))·窗口 3 回合·**不入存檔 R03** | 🔴只玩家徒手(`wpn_skill_id=="hand_to_hand"·not beast`)讀寫·ramp 閘 `not sneaking`(不放大偷襲);門檻4踉蹌·滿頂8 機率0.25 真擊倒(走 apply_control·solo 機率抵抗)+重置 |
+| 武器流派 weapon_mod | 傷害/命中/破甲 | power(偷襲前套)blade0.12+0.08、徒手0.15+0.10(R103:25 節點 fist_basics +0.05 已移除→改授 offbalance_unlock);hit/pen/recoil/fatigue/poise_rate(擒拿手0.6 加速徒手失衡)/on_hit | 🔴power 偷襲倍率**之前**算但不吃倍率;同 target 相加、on_hit 取最後;poise_rate 僅 hand_to_hand 命中時讀 |
+| 徒手失衡 ramp offbalance | 徒手傷害遞增(敵側暫態·鏡像 conduct R75) | 每層 +4%·夾 OFFBALANCE_MAX_STACKS=8(+32%);徒手命中 +1+skill//50 層(×(1+poise_rate))·窗口 3 回合·**不入存檔 R03** | 🔴只玩家徒手(`wpn_skill_id=="hand_to_hand"·not beast`)讀寫·ramp 閘 `not sneaking`(不放大偷襲);門檻4踉蹌·滿頂8 機率0.25 真擊倒(走 apply_control·solo 機率抵抗)+重置;**R103 gated:須 hand_to_hand≥25 解鎖(offbalance_unlock 自動授予)且未穿重甲(`inventory.wears_heavy_armor`)→ 重甲/未解鎖完全不累積** |
 | armor_sneak_relief | 潛行 | relief 1.0(全免護甲噪音懲罰) | 單源;不放大倍率 |
 
 ### 法師/施法(🔴改施法常數 R10/R14 須跑 sim)

@@ -11,15 +11,17 @@ from tesrpg.creation import build_character
 from tesrpg.gamedata import get_gamedata
 from tesrpg.rng import RNG
 from tesrpg.state import GameState, GameTime
-from tesrpg.systems import combat, magic, mastery, progression, stats
+from tesrpg.systems import combat, inventory, magic, mastery, progression, stats
 
 
-def _monk(skill=100, race="khajiit", weapon="fists", grapple=False):
+def _monk(skill=100, race="khajiit", weapon="fists", grapple=False, armor=None):
     gd = get_gamedata()
     c = build_character(gd, name="僧", sex="m", race=race, birthsign="warrior", class_id="warrior")
     c.skills["hand_to_hand"] = skill
     c.attributes["strength"] = 100
     c.weapon = weapon
+    if armor:                                  # R103:輕甲/重甲 gate 測試用
+        inventory.add_item(c, armor, 1); inventory.equip_armor(c, gd, armor)
     if grapple:
         mastery.choose(c, gd, "hand_to_hand_50", "grapple")
     stats.recompute_max_resources(c, gd, restore_full=True)
@@ -57,6 +59,56 @@ def test_offbalance_not_built_by_blade():
     for i in range(12):
         combat.resolve_attack(c, foe, gd, RNG(i))
     assert magic.offbalance_stacks(foe) == 0
+
+
+# --- R103 gate:里程碑解鎖(hand_to_hand≥25)+ 未穿重甲 才累積失衡 --------
+def test_offbalance_requires_milestone_unlock():
+    """未達 25(里程碑未解鎖)→ 完全不累積失衡;達 25 → 解鎖累積。"""
+    gd, low = _monk(skill=10)
+    assert not mastery.has_offbalance_unlock(low, gd)
+    foe = _dummy(gd)
+    for i in range(6):
+        combat.resolve_attack(low, foe, gd, RNG(i))
+    assert magic.offbalance_stacks(foe) == 0
+    gd, ok = _monk(skill=25)
+    assert mastery.has_offbalance_unlock(ok, gd)
+    foe2 = _dummy(gd)
+    combat.resolve_attack(ok, foe2, gd, RNG(1))
+    assert magic.offbalance_stacks(foe2) > 0
+
+
+def test_offbalance_blocked_by_heavy_armor():
+    """穿任何重甲件 → 不累積失衡;全輕甲 → 照常累積(輕裝武僧身份)。"""
+    gd, heavy = _monk(skill=100, armor="iron_cuirass")        # 重甲
+    assert inventory.wears_heavy_armor(heavy, gd)
+    foe = _dummy(gd)
+    for i in range(6):
+        combat.resolve_attack(heavy, foe, gd, RNG(i))
+    assert magic.offbalance_stacks(foe) == 0
+    gd, light = _monk(skill=100, armor="leather_cuirass")     # 輕甲
+    assert not inventory.wears_heavy_armor(light, gd)
+    foe2 = _dummy(gd)
+    combat.resolve_attack(light, foe2, gd, RNG(1))
+    assert magic.offbalance_stacks(foe2) > 0
+
+
+def test_offbalance_ramp_gated_off_in_heavy_armor():
+    """重甲時失衡 ramp 不套用(即使敵已被預置失衡層)→ 傷害=無 ramp。"""
+    def _measure(armor, seed, seeded):
+        gd, c = _monk(skill=100, armor=armor)
+        foe = _dummy(gd)
+        if seeded:
+            magic.add_offbalance(foe, formulas.OFFBALANCE_MAX_STACKS)
+        return combat.resolve_attack(c, foe, gd, RNG(seed))["damage"]
+
+    for seed in range(15):
+        base = _measure("iron_cuirass", 900 + seed, False)     # 重甲·無 ramp 基準
+        ramp = _measure("iron_cuirass", 900 + seed, True)      # 重甲·有預置層 → 仍不吃 ramp
+        assert ramp == base
+    # 對照:輕甲時預置層確實放大
+    light_base = _measure("leather_cuirass", 950, False)
+    light_ramp = _measure("leather_cuirass", 950, True)
+    assert light_ramp >= light_base and (light_ramp > light_base or light_base == 0)
 
 
 def test_offbalance_gain_scales_with_skill():

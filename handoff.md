@@ -28,7 +28,7 @@
 
 #### 角色與成長
 - 10 種族 × 13 星座 × 8 職業/自訂;八屬性 + **22 技能** learn-by-doing;混合 Skyrim 式升級(等級 XP 池 → 三選一資源 + 屬性點);**種族身份化**(R61:戰系 6 族每日主動威能〔狂暴/腎上腺/馭獸/帝皇之聲/戰吼/祖靈〕走獨立第二威能槽 + 其餘 4 族持續被動〔虎人夜視利爪/亞龍癒膚/高精靈魔力/布萊頓龍皮〕);**星座身份化**(R83:5 冷星座功能化 —— 戰士戰意/法師魔力湧現/淑女恩典 = 每日主動威能,竊賊巧手〔潛行系練更快〕/駿馬疾行〔旅行更快〕= 持續被動)
-- **技能里程碑 v2 + 完整階梯**:全 22 技能各 **25/50/75/100 四節點(88 節點)**;**25=單一 perk 自動授予**(入門技,複用退化節點)、**50/75/100=達門檻二選一**永久銘刻 + 持久 fortify 加成層(skill/attr/resist)+ 功能槓桿(武器/法術控場、弓手牽制、盾擊宗師、閃身/閃避雙路線、重甲反震/盾反、逃命、解陷保底、盜賊行竊/地城賊眼預知、鍛造淬鍊威力、口才威嚇避戰/化解犯罪/戰陣號令、**徒手失衡疊層(R102:連擊累積敵失衡→ramp 放大徒手傷害+踉蹌/罕見真擊倒;擒拿手加速)**、頂點 capstone…);反 min-max、守刺客紅線(同源多節點 getter 必聚合不遮蔽;下限/floor 類 perk 的 floor 須高於門檻 base cap)
+- **技能里程碑 v2 + 完整階梯**:全 22 技能各 **25/50/75/100 四節點(88 節點)**;**25=單一 perk 自動授予**(入門技,複用退化節點)、**50/75/100=達門檻二選一**永久銘刻 + 持久 fortify 加成層(skill/attr/resist)+ 功能槓桿(武器/法術控場、弓手牽制、盾擊宗師、閃身/閃避雙路線、重甲反震/盾反、逃命、解陷保底、盜賊行竊/地城賊眼預知、鍛造淬鍊威力、口才威嚇避戰/化解犯罪/戰陣號令、**徒手失衡疊層(R102:連擊累積敵失衡→ramp 放大徒手傷害+踉蹌/罕見真擊倒;擒拿手加速;R103:須 25 解鎖 + 未穿重甲=輕裝武僧)**、頂點 capstone…);反 min-max、守刺客紅線(同源多節點 getter 必聚合不遮蔽;下限/floor 類 perk 的 floor 須高於門檻 base cap)
 - **八職功能性身份網格**:全 8 職各一招牌戰術 loop(功能性非數值)—— 戰士盾牆(減傷·嘲諷)/法師奧術連鎖/盜賊諜報偵搜/騎士戰旗/戰法師共鳴一擊+法力回擊(毀滅 50/75 兩節點,可兼得)/刺客致命烙印/治療師戰地搶救/弓手獵手偵察(6 mastery 二選一節點 + 2 戰鬥動作;以技能/裝備 gate、零新存檔欄、守刺客紅線)
 - **開局背景**(14 種,只給處境不給數值)+ **種子重玩性**;冒險/傳奇兩種死亡模式 + 一生傳奇總結評分
 
@@ -1402,6 +1402,17 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 - **guards(僅 `tests/test_data_schema`)**:① 放寬 `_DLG_EFFECT_TYPES` = `{faction_standing} ∪ events 支援集`(否則 `blessing` heal 被既有 guard 誤殺);② role FK(`roles` 值 ∈ topics、`npc.role` ∈ roles keys);③ rumor FK(`rumor_quest` ∈ quests 且 source==rumor、`rumor_landmark` ∈ landmarks、`rumor_disposition` 0-100 int);④ **source:"rumor" 可達性**(每條由某 NPC `rumor_quest` 回指·防孤兒,擴 R80 guard);⑤ 線索目標 location **無 `visible` gate**(可接去不了)。新 `tests/test_rumor_clues.py`(role 話題出現/好感 gate·offered_rumor quest/landmark 兩路·rumor_disposition gate·blessing once·already-cleared 跳過·不漏告示板·action_talk 追問傳聞煙霧手動 patch UI)。
 - **🔴 sim_assassin BYTE-IDENTICAL**(隔離 worktree vs HEAD 證:純社交/內容·`sim_assassin.py` 只 import combat/magic/stats/inventory,不碰 dialogue/npcs/quests/landmarks·零碰 combat/formulas)。**零新存檔欄**(rumor 線索 → `char.quests`/`completed_quests`;rumor 地標 → `discovered_landmarks`;role `once` → `dialogue_done`;好感 → `npc_disposition`;新 NPC 欄 = gamedata 唯讀非存檔·舊存檔載入即相容無遷移)。**防刷**:追問傳聞一次性鎖、`blessing` once、線索 reward 只純量。`run_all` 84(新 `test_rumor_clues`)。
 - **🔴 鐵律**:加 role 純改 `dialogue.json`(roles map + topics·身份 flavor 為主·功能 effect 走 events 支援集 + `once` 防刷·不帶 skill_xp)+ `npcs.json` role 欄;加流言線索純改 `npcs.json`(rumor_quest/rumor_landmark/rumor_disposition)+ `quests.json`(`source:"rumor"`·僅 clear/reach·**目標無 visible gate**·NPC↔線索目標**須同省**);**新增 source:rumor 任務務必有 NPC rumor_quest 回指**(否則 reachability guard 攔=孤兒);追問傳聞兌現走既有 `_accept_and_brief`/`landmarks.discover`;純社交內容 → sim byte-identical 免跑(動 combat/formulas 才需)。**前瞻**:Phase D 可純資料把其餘 ~40 具名 rumor NPC 逐批接上 + 補 role 密度;若要更多功能 role 話題(商人折扣等)需新 effect + 評估碰 shop/存檔欄。
+
+---
+
+### R103 · 徒手失衡 gated:里程碑解鎖(hand_to_hand 25)+ 輕裝武僧(不穿重甲)[re-sim] [save-safe]
+
+**承 R102·使用者點名**:R102 的失衡疊層是 **innate**(每個徒手命中都累積),且評估揭露兩軟點 ——(1)**重甲對徒手戰鬥零減益**(閃避只看雜技、揮擊耗體不看護甲、ramp/拳傷不看護甲 → 重甲武僧純賺 armor 零代價);(2)25 節點 `fist_basics` 只是 +5% 傷害冷填充。使用者拍板:失衡改為「**里程碑 25 解鎖 + 僅未穿重甲累積**」(沒解鎖不累積·穿重甲不累積)→ 一舉把 25 節點功能化 + 給「輕裝武僧」真機制取捨。
+**機制**:① 新 `inventory.wears_heavy_armor`(任一 equipped 件含盾 `weight_class=="heavy"` → True;飾品無 weight_class 不計·輕盾不擋)。② 新 mastery kind `offbalance_unlock`(R21 三步:`_IMPLEMENTED_KINDS` + `has_offbalance_unlock` getter **鏡像 has_vanish**〔`base_skill≥25` 門檻判定·自動授予·零遷移〕)。③ h2h_25 `fist_basics`(weapon_mod +5%)→ `unburdened_stance`(`offbalance_unlock`·無傷害)。④ combat 新 `_offbalance_active(attacker)=has_offbalance_unlock and not wears_heavy_armor`,**兩 hook 皆加閘**(疊層 hook 1 + ramp hook 2)→ 重甲/未解鎖完全不累積失衡(連帶踉蹌/擊倒全無·中途換重甲即停)。skills.json 文案修正。
+**🔴 守住**:**byte-identical**(helper 只在 hand_to_hand gate 內呼叫·短路順序 `wpn_skill_id=="hand_to_hand"` 在 `_offbalance_active` 前·sim 持匕首永不入·**隔離 worktree diff 證 sim_assassin 對 R102 逐位元組同**)·門檻只認 base_skill(鐵律)·獸形仍排除。**存檔**:opt_id `fist_basics→unburdened_stance` + kind 改 → `ensure_mastery_choices` 自動退舊選 pending + 舊 +5% weapon_mod 快取蒸發(**零新存檔欄**·無 fist_basics 殘留引用)。
+**平衡(sim_builds)**:**輕甲 monk 不變**(99/90/83/19·−5% fist_basics 移除可忽略·終王牆守)·**重甲 monk 失去失衡 → 進攻崩**(frost_giant 63%·fused_archmage 15%·古龍 3%·dagon 0%·**乾淨 dead 非 stalemate/timeout**:拳傷 4 無 ramp 殺不動硬王)→「徒手要靈活=穿輕甲」有真取捨,重甲武僧成反協同。
+**對抗審查 4 維(byte/gate-correctness/mastery-save/balance)·12 agent → 0 blocker/0 major**(8 findings→5 confirmed:4 nit〔byte-identity 對 R102 逐位元組同·gate 正確〔重盾擋/飾品+輕盾不擋·base_skill 門檻不被有效技能繞〕·save 遷移〔舊 fist_basics 退 pending+5% 蒸發〕全正向確認〕+ 1 minor〔BUFFS.md 徒手 weapon_mod 仍列已移除的 +0.05 → 已修為 0.15+0.10〕)·0 uncertain。run_all 100(test_offbalance +gate 測:未解鎖/重甲不累積·輕甲累積·重甲 ramp gated)·byte-identity worktree·check.sh 全綠。
+🔴 加「輕裝才生效」機制沿用 `inventory.wears_heavy_armor`;單一自動授予 unlock 走 `has_xxx`=`base_skill` 門檻判定(鏡像 has_vanish·非依已選);失衡兩 hook 同閘 `_offbalance_active`;改 25 節點 opt_id 走 `ensure_mastery_choices` 退 pending。**前瞻**:其他「輕裝才生效」徒手 perk 可複用 wears_heavy_armor;若要重甲武僧也可行,需另設計補償(平衡取捨·先問)。
 
 ---
 
