@@ -160,8 +160,17 @@ def expose(char: Character) -> dict:
     return ev
 
 
+def _mark_concluded(char: Character) -> None:
+    """記下「此 A→B 潛入已了結」旗標 → can_infiltrate 阻止同對重啟(任一結局皆一次性)。"""
+    flag = cover_blown_flag(char.cover_true_guild, char.cover_guild)
+    wf = getattr(char, "world_events_fired", None)
+    if isinstance(wf, list) and char.cover_guild and flag not in wf:
+        wf.append(flag)
+
+
 def clear_cover(char: Character) -> None:
-    """忠誠抽身收尾(extract 結局):乾淨退出臥底·留在 A·不記死局旗標。"""
+    """忠誠抽身收尾(extract 結局):乾淨退出臥底·留在 A·該對標記了結(不可再潛同對)。"""
+    _mark_concluded(char)
     _clear(char)
 
 
@@ -171,6 +180,7 @@ def defect(char: Character, gamedata: GameData) -> dict:
     from tesrpg.systems import factions
     a = char.cover_true_guild
     b = char.cover_guild
+    _mark_concluded(char)               # 標記該對了結(防日後重潛)
     char.factions.pop(a, None)          # 棄真實公會 A
     factions.join(char, b)              # B 由掩護轉真會籍(rank 0)
     ev = {"kind": "defected", "from": a, "to": b}

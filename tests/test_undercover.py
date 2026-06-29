@@ -253,6 +253,64 @@ def test_infiltrate_via_hall():
     assert undercover.on_mission(c) and c.cover_guild == "fighters_guild"
 
 
+# ---------------------------------------------------------------- P3 結局
+def test_extract_ending():
+    from tesrpg.systems import quests, boons
+    gd, c = _mk(thieves_guild=3)
+    _infiltrate(gd, c)
+    c.cover_loyalty = -10
+    av = quests.available_quests(c, gd, "undercover")
+    assert "ucov_fighters_extract" in av and "ucov_fighters_defect" not in av
+    quests.accept_quest(c, gd, "ucov_fighters_extract")
+    quests._complete(c, gd, "ucov_fighters_extract")
+    assert not undercover.on_mission(c)                  # 抽身
+    assert boons.has_boon(c, "fighters_loyalist") and "thieves_guild" in c.factions
+    assert not undercover.can_infiltrate(c, gd, "thieves_guild")   # 該對了結·不可重潛
+
+
+def test_defect_ending():
+    from tesrpg.systems import quests, boons
+    gd, c = _mk(thieves_guild=3)
+    _infiltrate(gd, c)
+    c.cover_loyalty = 70
+    av = quests.available_quests(c, gd, "undercover")
+    assert "ucov_fighters_defect" in av and "ucov_fighters_extract" not in av
+    quests.accept_quest(c, gd, "ucov_fighters_defect")
+    quests._complete(c, gd, "ucov_fighters_defect")
+    assert not undercover.on_mission(c)
+    assert "thieves_guild" not in c.factions and c.factions.get("fighters_guild") == 0
+    assert boons.has_boon(c, "fighters_defector")
+
+
+def test_ending_boons_respect_red_line():
+    """🔴 4 條叛變/忠誠誓福守 R45 紅線:無 strength/sneak/武器技能。"""
+    gd = get_gamedata()
+    forbidden_attr = {"strength"}
+    forbidden_skill = {"sneak", "blade", "blunt", "marksman", "hand_to_hand"}
+    for bid in ("fighters_loyalist", "fighters_defector", "knights_loyalist", "knights_defector"):
+        b = gd.boons[bid]
+        assert not (set(b.get("attr", {})) & forbidden_attr), f"{bid} 含禁屬性"
+        assert not (set(b.get("skill", {})) & forbidden_skill), f"{bid} 含禁技能"
+
+
+def test_real_run_battle_flee_after_rounds():
+    """🔴 run_battle flee_after_rounds:未在限時內擊殺 → fled_enemy(真實 run_battle·非 patch)。"""
+    from tesrpg.systems import combat
+    gd, c = _mk()
+    c.location_id = "riften"
+    st = _state(c)
+    foe = combat.spawn_creature(gd, "guild_enforcer", st.rng)
+    ochoose, omsg, oce = main._choose_combat_action, main.ui.message, main.ui.combat_event
+    main._choose_combat_action = lambda *a, **k: {"type": "block"}   # 玩家只格擋·不擊殺
+    main.ui.message = lambda *a, **k: None
+    main.ui.combat_event = lambda *a, **k: None
+    try:
+        res = main.run_battle(st, gd, foe, flee_after_rounds=2)       # 2 回合內未殺 → 第 3 回合脫逃
+    finally:
+        main._choose_combat_action, main.ui.message, main.ui.combat_event = ochoose, omsg, oce
+    assert res == "fled_enemy"
+
+
 def run():
     for name, fn in sorted(globals().items()):
         if name.startswith("test_") and callable(fn):

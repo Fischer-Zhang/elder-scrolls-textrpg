@@ -170,5 +170,30 @@
   "archmage_insight": {
     "name": "大法師通悟",
     "spell_power": 0.1
+  },
+  "fighters_loyalist": {
+    "name": "潛影歸來",
+    "attr": {"agility": 8, "personality": 6},
+    "skill": {"speechcraft": 8, "light_armor": 6},
+    "magicka": 0
+  },
+  "fighters_defector": {
+    "name": "鋼鐵新誓",
+    "attr": {"endurance": 8, "willpower": 6},
+    "skill": {"heavy_armor": 10, "block": 6},
+    "magicka": 0
+  },
+  "knights_loyalist": {
+    "name": "暗影歸來",
+    "attr": {"willpower": 8, "personality": 6},
+    "skill": {"speechcraft": 8, "illusion": 6},
+    "magicka": 10
+  },
+  "knights_defector": {
+    "name": "聖光受洗",
+    "attr": {"personality": 6, "willpower": 8},
+    "skill": {"restoration": 10, "block": 6},
+    "resist": {"magic": 10},
+    "magicka": 10
   }
 }
