@@ -561,6 +561,10 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
             dmg *= mastery.incoming_physical_factor(defender, gamedata)   # 里程碑「壁壘」:物理再減傷
             dmg *= _shield_wall_factor(defender)            # 戰士「盾牆」架勢:物理再減傷(僅物理,元素穿透)
             dmg *= _great_shield_mitigation_factor(defender, gamedata)   # 雙手重盾被動物理減傷(乘性疊加,僅物理)
+            # 徒手失衡 ramp:對已失衡之敵,(非偷襲)徒手傷害隨層數放大(讀本擊「前」層數=敵原已失衡)。
+            # 🔴 not sneaking → 永不放大偷襲(守 R61 + solo 偷襲夾);徒手專屬+player+非獸形 → sim 持匕首 byte-identical。
+            if _is_player(attacker) and wpn_skill_id == "hand_to_hand" and not beast and not sneaking:
+                dmg *= formulas.offbalance_damage_multiplier(magic.offbalance_stacks(defender))
             # 武器附魔:額外元素傷害(無視護甲,受對方元素抗性)。獸形/重盾盾擊以非裝備武器戰鬥 → 無附魔
             if _is_player(attacker) and not beast and not great:
                 ench = gamedata.item(attacker.weapon).get("enchant")
@@ -828,6 +832,21 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
             bs = formulas.archetype_builtin_status(archetype)
             if bs and bs["kind"] == "stagger" and rng.chance(bs.get("chance", 0.0)):
                 magic.apply_control(defender, "stagger", gamedata, rng, turns=bs.get("turns", 1))
+        # 徒手「失衡」warfare:拳腳連擊堆疊敵失衡層 → 放大後續徒手傷害(疊加提升傷害·見上 ramp);跨門檻
+        # 踉蹌(軟控·來源去重·不重置 ramp),滿頂罕見真擊倒(硬控·solo 機率抵抗 R44)+ 重置(防 lock-loop)。
+        # 🔴 只玩家徒手(wpn_skill_id=="hand_to_hand")非獸形 → 匕首/法系/獸形/sim 永不觸發 → byte-identical。
+        if _is_player(attacker) and wpn_skill_id == "hand_to_hand" and not beast and is_alive(defender):
+            stacks = magic.add_offbalance(defender, formulas.offbalance_stack_gain(
+                attacker.skill("hand_to_hand"), wmod.get("poise_rate", 0.0)))
+            if stacks >= formulas.OFFBALANCE_MAX_STACKS \
+                    and rng.chance(formulas.OFFBALANCE_KNOCKDOWN_CHANCE):   # 滿頂罕見真擊倒(掀翻在地)
+                magic.apply_control(defender, "paralyze", gamedata, rng, turns=1)   # R44:solo 機率抵抗 + 去重
+                # 🔴 刻意「無條件」重置(即使 paralyze 被 solo 抵抗/硬控去重未真施加):防 ramp 卡在 MAX
+                # 反覆擲 0.25 proc 趨近鎖定 solo boss(對抗審查確認此為守 anti-perma-lock 紅線的機制,
+                # 非 bug)。改成「只在 applied 才重置」會抬高 solo 失能率=平衡取捨→須先問 + 重跑 sim_builds。
+                magic.reset_offbalance(defender)
+            elif stacks >= formulas.OFFBALANCE_STAGGER_THRESHOLD:             # 門檻:踉蹌(來源去重·不重置 ramp)
+                magic.apply_control(defender, "stagger", gamedata, rng, turns=1, source="offbalance")
         if defender_blocking and _is_player(defender) and is_alive(attacker):
             rp = mastery.block_riposte(defender, gamedata)
             if rp.get("stagger_chance") and rng.chance(rp["stagger_chance"]):

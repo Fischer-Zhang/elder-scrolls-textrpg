@@ -791,13 +791,12 @@
         "desc": "點穴卸力:徒手命中時 30% 機率使敵下一擊削弱 12%。"
       },
       {
-        "opt_id": "grappler",
-        "name": "擒拿根基",
-        "kind": "skill_fortify",
-        "skill": {
-          "hand_to_hand": 8
-        },
-        "desc": "馬步紮實,徒手根基更穩(徒手技能 +8)。"
+        "opt_id": "grapple",
+        "name": "擒拿手",
+        "kind": "weapon_mod",
+        "target": "hand_to_hand",
+        "poise_rate": 0.6,
+        "desc": "擒拿手:徒手連擊累積失衡更快(失衡積累 +60%),更快削減敵勢、伺機將其掀翻在地。"
       }
     ]
   },

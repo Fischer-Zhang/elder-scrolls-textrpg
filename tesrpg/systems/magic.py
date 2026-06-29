@@ -626,6 +626,32 @@ def add_conduct(creature) -> None:
         creature.active_effects.append({"kind": "conduct", "stacks": 1, "turns": CONDUCT_TURNS})
 
 
+# 徒手「失衡 off-balance」warfare(落實 skills.json 招牌「耗損對手體力」):玩家徒手命中堆疊敵
+# 失衡層 → 層數放大後續徒手傷害(formulas.offbalance_damage_multiplier)+ 跨門檻踉蹌/滿頂真擊倒。
+# 鏡像 conduct:暫態 active_effects 疊層、刷新窗口、tick turns 歸零整組清(不入檔 R03)。
+# 🔴 只由 combat.resolve_attack 的玩家徒手路徑讀寫 → sim 持匕首 byte-identical。
+def offbalance_stacks(creature) -> int:
+    e = next((x for x in creature.active_effects if x.get("kind") == "offbalance" and x.get("turns", 0) > 0), None)
+    return e.get("stacks", 0) if e else 0
+
+
+def add_offbalance(creature, amount: int = 1) -> int:
+    """徒手命中 → 疊 amount 層失衡(夾 OFFBALANCE_MAX_STACKS)+ 刷新計時;無則新建。回傳新層數。"""
+    e = next((x for x in creature.active_effects if x.get("kind") == "offbalance" and x.get("turns", 0) > 0), None)
+    if e:
+        e["stacks"] = min(formulas.OFFBALANCE_MAX_STACKS, e.get("stacks", 0) + amount)
+        e["turns"] = formulas.OFFBALANCE_TURNS
+        return e["stacks"]
+    stacks = min(formulas.OFFBALANCE_MAX_STACKS, amount)
+    creature.active_effects.append({"kind": "offbalance", "stacks": stacks, "turns": formulas.OFFBALANCE_TURNS})
+    return stacks
+
+
+def reset_offbalance(creature) -> None:
+    """滿頂真擊倒 → 消耗(移除)失衡層,ramp 重建(防每擊重觸擊倒 lock-loop)。"""
+    creature.active_effects[:] = [e for e in creature.active_effects if e.get("kind") != "offbalance"]
+
+
 # 控場 kind 分類(R44:集中施加判定)
 _HARD_CONTROL = ("fear", "paralyze")     # 失能(經 is_incapacitated 跳過行動)→ 受抵抗/去重
 _CONTROL_KINDS = ("fear", "paralyze", "stagger", "slow", "weaken", "benumb")
@@ -796,6 +822,8 @@ def tick_effects(entity, gamedata=None) -> list[str]:
                 msgs.append(f"{name}自凍麻中回復了準頭。")
             elif e["kind"] == "conduct":
                 msgs.append(f"{name}身上的導電消退了。")
+            elif e["kind"] == "offbalance":
+                msgs.append(f"{name}穩住了重心。")
     return msgs
 
 

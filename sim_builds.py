@@ -96,6 +96,20 @@ def make_warrior_2h():
     return c
 
 
+def make_monk():
+    """徒手「失衡」流(R##):純拳腳,連擊堆疊敵失衡層 → ramp 放大徒手傷害 + 門檻踉蹌/滿頂罕見真擊倒。
+    無偷襲/無附魔/無淬鍊(徒手劣勢由 ramp + 里程碑補)→ 對標 warrior_1H/2H 的近戰下界。"""
+    c = build_character(gd, name="僧", sex="male", race="khajiit", birthsign="warrior", class_id="warrior")
+    c.skills.update(hand_to_hand=100, light_armor=100, acrobatics=100, athletics=75, block=50)
+    c.attributes.update(strength=100, agility=90, speed=80, endurance=100)
+    c.weapon = "fists"
+    _equip_set(c, "leather")     # 輕甲(失衡是徒手獨餵軸·與護甲無關;輕甲給閃避、貼 monk 身份)
+    _choices(c, {"hand_to_hand_100": "transcend_fist", "hand_to_hand_75": "iron_fists",
+                 "hand_to_hand_50": "grapple"})   # grapple = 失衡加速(poise_rate 0.6)
+    stats.recompute_max_resources(c, gd, restore_full=True)
+    return c
+
+
 _MAGE_DMG = ["thunderbolt", "incinerate", "absolute_zero", "ice_spike",   # 終極/高級(R74)
              "lightning_bolt", "fireball", "ignite", "frostbite", "sparks", "flames"]
 
@@ -161,7 +175,7 @@ def _make_element_mage(pool):
 
 
 BUILDS = {"assassin": make_assassin, "archer": make_archer, "warrior_1H": make_warrior_sword,
-          "warrior_2H": make_warrior_2h, "shield_reflect": make_shield_reflect,
+          "warrior_2H": make_warrior_2h, "monk": make_monk, "shield_reflect": make_shield_reflect,
           "mage_fire": _make_element_mage(_MAGE_ELEMENTS["mage_fire"]),
           "mage_frost": _make_element_mage(_MAGE_ELEMENTS["mage_frost"]),
           "mage_shock": _make_element_mage(_MAGE_ELEMENTS["mage_shock"]),
@@ -240,7 +254,8 @@ def _attack_act(c, boss, rng, st):
 
 
 _POLICY = {"assassin": _melee_sneak_act, "archer": _melee_sneak_act,
-           "warrior_1H": _attack_act, "warrior_2H": _attack_act, "shield_reflect": _attack_act,
+           "warrior_1H": _attack_act, "warrior_2H": _attack_act, "monk": _attack_act,
+           "shield_reflect": _attack_act,
            "mage_fire": _mage_act, "mage_frost": _mage_act, "mage_shock": _mage_act,
            "battlemage": _battlemage_act}
 
@@ -262,7 +277,9 @@ def fight(build_name, boss_id, seed, max_rounds=80):
             act(c, boss, rng, st)
         if not combat.is_alive(boss):
             return "win"
-        if not st["skip_boss"] and c.health > 0:  # boss 反擊(隱遁成功則撲空)
+        # boss 反擊(隱遁成功則撲空;麻痺/恐懼則跳過 = 鏡像 run_battle 敵階段 is_incapacitated 閘。
+        # 既有 build 皆不對 boss 施硬控 → 此分支對 assassin/warrior/mage byte-identical;只 monk 罕見真擊倒會觸)。
+        if not st["skip_boss"] and c.health > 0 and not magic.is_incapacitated(boss):
             combat.resolve_attack(boss, c, gd, rng, attack=combat.choose_attack(boss, rng, c))
         _regen(c)
         magic.tick_effects(c, gd)

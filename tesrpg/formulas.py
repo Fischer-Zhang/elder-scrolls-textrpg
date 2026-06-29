@@ -356,6 +356,29 @@ SOLO_SNEAK_DAMAGE_CAP_RATIO = 0.40
 # 衝鋒只在野外旅途/探索遭遇、且僅開場第一回合可用。調此值或衝鋒倍率務必重跑 sim_assassin.py。
 MOUNTED_CHARGE_DAMAGE_CAP_RATIO = 0.45
 
+# 徒手「失衡 off-balance」warfare(R##:落實 skills.json 招牌「耗損對手體力」死機制)。
+# 鏡像 R75 conduct 疊層:玩家徒手命中堆疊敵失衡層(暫態 active_effects·不入檔),層數放大
+# 後續徒手傷害(疊加提升傷害);跨門檻踉蹌、滿頂罕見真擊倒。🔴 只玩家徒手路徑讀寫 → sim 持
+# 匕首 byte-identical。調任一值(尤其 DMG_PER_STACK)務必跑 sim_builds.py(monk)守 solo 不被
+# trivialize、群戰守 R71。
+OFFBALANCE_BASE_STACK         = 1     # 每次徒手命中基礎疊層
+OFFBALANCE_STACK_PER_SKILL    = 50    # 每 50 hand_to_hand 多疊 1 層/擊(「更快削減 at higher level」)
+OFFBALANCE_TURNS              = 3     # 刷新窗口(鏡像 CONDUCT_TURNS;無徒手命中 3 回合 → 整組清)
+OFFBALANCE_MAX_STACKS         = 8     # ramp 上限(=滿頂·真擊倒只在此層數機率觸發)
+OFFBALANCE_STAGGER_THRESHOLD  = 4     # 軟控踉蹌門檻(常見·來源去重·不重置 ramp)
+OFFBALANCE_KNOCKDOWN_CHANCE   = 0.25  # 滿頂時每擊觸發真擊倒(硬控 paralyze)的機率 → 兩段「罕見」頂payoff;觸發即重置
+OFFBALANCE_DMG_PER_STACK      = 0.04  # 每層 +4% 徒手傷害(cap 8 → +32%);ramp 核心,sim 調
+
+
+def offbalance_stack_gain(skill: int, poise_rate: float = 0.0) -> int:
+    """單次徒手命中疊加的失衡層數(技能越高越快;擒拿手 poise_rate 再加速)。"""
+    return max(1, round((OFFBALANCE_BASE_STACK + skill // OFFBALANCE_STACK_PER_SKILL) * (1 + poise_rate)))
+
+
+def offbalance_damage_multiplier(stacks: int) -> float:
+    """徒手對已失衡之敵的傷害放大倍率(1 + 每層 0.04,夾 OFFBALANCE_MAX_STACKS 層)。徒手傷害路徑專讀。"""
+    return 1.0 + OFFBALANCE_DMG_PER_STACK * min(stacks, OFFBALANCE_MAX_STACKS)
+
 
 def night_mother_sneak_bonus(db_rank: int) -> float:
     """夜母祝福:黑暗兄弟會階級越高,潛殺越致命(乘進偷襲倍率)。
