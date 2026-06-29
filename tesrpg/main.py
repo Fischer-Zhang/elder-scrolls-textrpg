@@ -1935,6 +1935,7 @@ SMUGGLE_PROVINCE = "艾爾斯維爾"           # 走私生意只在貓人故土�
 SMUGGLE_RANK_1 = 2                        # 拉拔手:解鎖走私生意(精煉 + 近程走私委託)
 SMUGGLE_RANK_2 = 4                        # 夜行者:解鎖長程大宗走私委託
 _SCOMM_MIN_RANK = {"scomm_riften": SMUGGLE_RANK_2, "scomm_wayrest": SMUGGLE_RANK_2}   # 長程委託需高階;其餘 = SMUGGLE_RANK_1
+CINT_RANK = 2                             # R99 反間委託榜:犯罪公會高階(rank≥2)在大廳解鎖獵敵方諜員的反間契約
 # R89:戰士/法師公會「招牌動詞」rank-gated 服務(承 R88·功能化原本只有折扣的冷階級梯)。不限省份(一般公會服務)。
 FORGE_RANK = 2            # 戰士公會步兵:軍械庫淬鍊(公會供料·免材料)
 ARCANE_RECHARGE_RANK = 2  # 法師公會魔導士:奧術回充(免靈魂石回充充能型附魔武器)
@@ -2382,6 +2383,28 @@ def _comrade_contract(state: GameState, gamedata: GameData) -> str | None:
                 return "dead"
 
 
+def _counterintel_board(state: GameState, gamedata: GameData) -> None:
+    """R99 反間委託榜:列出本省被脈動聚光的 cint_* 反間契約(獵敵方諜員)。
+    犯罪公會 rank-gated 大廳服務(由各大廳閘 rank≥CINT_RANK);複用 R79 board+pulse,與正規告示板分流。"""
+    char = state.player
+    province = world.current_location(char, gamedata)["province"]
+    while True:
+        today = worldpulse.day_index(state)
+        avail = [q for q in quests.available_quests(char, gamedata, "board", province=province, day=today)
+                 if q.startswith("cint_")]
+        if not avail:
+            ui.message("眼下沒有反間的線報 —— 敵方諜員蟄伏未動,或風聲尚未傳到本地。"
+                       "(反間委託隨『四方傳聞』的風向起落)", style="grey70")
+            return
+        opts = [(qid, f"{gamedata.quests[qid]['name']} — {quests.objective_text(char, gamedata, qid)}"
+                 f"(賞 {gamedata.quests[qid]['reward'].get('gold', 0)} 金·聲望 +{gamedata.quests[qid]['reward'].get('fame', 0)})")
+                for qid in avail]
+        qid = ui.menu("反間委託榜", opts, allow_back=True)
+        if qid is None:
+            return
+        _accept_and_brief(state, gamedata, qid)
+
+
 def _underworld_contracts(state: GameState, gamedata: GameData) -> None:
     """地下委託:列出本省被聚光的 ucomm_* 可重複契約(複用 R79 board+pulse;與正規告示板分流)。"""
     char = state.player
@@ -2617,6 +2640,8 @@ def action_sanctuary(state: GameState, gamedata: GameData) -> str | None:
             owed = crime.bounty(char, province)
             cost = brotherhood.launder_cost(char, gamedata, owed)
             opts.append(("launder", f"洗白{province}的賞金({owed} → {cost} 金)"))
+        if factions.rank_index(char, brotherhood.FACTION) >= CINT_RANK:   # R99 高階反間委託榜
+            opts.append(("counterintel", "🕵 反間委託榜（獵敵方諜員)"))
         opts.append(("tenets", "重溫五戒"))
         choice = ui.menu("聖所", opts, allow_back=True)
         if choice is None:
@@ -2636,6 +2661,8 @@ def action_sanctuary(state: GameState, gamedata: GameData) -> str | None:
                            f"(花費 {r['paid']} 金)。", style="green")
             elif "owed" in r:
                 ui.message(f"洗白需 {r['owed']} 金,你付不起。", style="red")
+        elif choice == "counterintel":
+            _counterintel_board(state, gamedata)
         elif choice == "tenets":
             ui.message("黑暗兄弟會五戒:", style="bold magenta")
             for t in brotherhood.TENETS:
@@ -2748,6 +2775,9 @@ def _contract_hall(state: GameState, gamedata: GameData, faction_id: str, *,
             else:
                 ui.message(factions.advance_block_reason(char, gamedata, faction_id)
                            or no_quest_msg, style="grey70")
+        # R99:犯罪邪教高階(神話黎明)解鎖反間委託榜;九神騎士團非犯罪公會 → 不顯示
+        if factions.is_criminal_guild(faction_id) and factions.rank_index(char, faction_id) >= CINT_RANK:
+            opts.append(("counterintel", "🕵 反間委託榜（獵敵方諜員)"))
         opts.append(("verses", verses_label))
         choice = ui.menu(title, opts, allow_back=True)
         if choice is None:
@@ -2756,6 +2786,8 @@ def _contract_hall(state: GameState, gamedata: GameData, faction_id: str, *,
             avail = quests.available_quests(char, gamedata, "guild", faction_id)
             if avail:
                 _accept_and_brief(state, gamedata, avail[0])
+        elif choice == "counterintel":
+            _counterintel_board(state, gamedata)
         elif choice == "execute":
             died = action_contract(state, gamedata, active, stealth=stealth)
             if died == "dead":
@@ -3837,6 +3869,9 @@ def action_guild_hall(state: GameState, gamedata: GameData, faction_id: str) -> 
                     and factions.rank_index(char, "fighters_guild") >= FORGE_RANK)
         arcane_ok = (faction_id == "mages_guild"
                      and factions.rank_index(char, "mages_guild") >= ARCANE_RECHARGE_RANK)
+        # R99:犯罪公會高階(此處唯盜賊;黑兄/神話黎明各走自有大廳)解鎖反間委託榜
+        cint_ok = (factions.is_criminal_guild(faction_id)
+                   and factions.rank_index(char, faction_id) >= CINT_RANK)
         if not factions.is_member(char, faction_id):
             reason = factions.join_block_reason(char, gamedata, faction_id)
             if reason is not None:                   # 門檻/對立/通緝 → 說明原因
@@ -3856,7 +3891,7 @@ def action_guild_hall(state: GameState, gamedata: GameData, faction_id: str) -> 
                     ui.message(factions.advance_block_reason(char, gamedata, faction_id)
                                or "公會目前沒有你能接的委託。", style="grey70")
                 if not ritual_ok and not circle_recruit_ok and not smuggle_ok \
-                        and not forge_ok and not arcane_ok:   # 無委託且無任何階級服務 → 離開
+                        and not forge_ok and not arcane_ok and not cint_ok:   # 無委託且無任何階級服務 → 離開
                     return
         if ritual_ok:
             opts.append(("beast_ritual", "🐺 獸血儀式（內圈戰友的祕密)"))
@@ -3868,6 +3903,8 @@ def action_guild_hall(state: GameState, gamedata: GameData, faction_id: str) -> 
             opts.append(("forge", "⚒ 軍械庫淬鍊（公會供料 · 免材料)"))
         if arcane_ok:
             opts.append(("arcane_svc", "✨ 奧術服務（回充 / 魔力補給)"))
+        if cint_ok:
+            opts.append(("counterintel", "🕵 反間委託榜（獵敵方諜員)"))
         choice = ui.menu("公會事務", opts, allow_back=True)
         if choice is None:
             return
@@ -3888,6 +3925,8 @@ def action_guild_hall(state: GameState, gamedata: GameData, faction_id: str) -> 
             _guild_armory_temper(state, gamedata)
         elif choice == "arcane_svc":
             _arcane_services(state, gamedata)
+        elif choice == "counterintel":
+            _counterintel_board(state, gamedata)
 
 
 def _beast_blood_ritual(state: GameState, gamedata: GameData) -> None:
@@ -4026,7 +4065,7 @@ def action_board(state: GameState, gamedata: GameData) -> None:
         today = worldpulse.day_index(state)
         main = quests.available_quests(char, gamedata, "main")
         board = [q for q in quests.available_quests(char, gamedata, "board", province=province, day=today)
-                 if not q.startswith(("ucomm_", "scomm_"))]   # R84 地下委託(ucomm_)走藏身處;R-smuggle 走私委託(scomm_)走盜賊公會走私生意:皆不上正規告示板
+                 if not q.startswith(("ucomm_", "scomm_", "cint_"))]   # R84 地下委託(ucomm_)走藏身處;R-smuggle 走私委託(scomm_)走盜賊公會走私生意;R99 反間委託(cint_)走犯罪公會大廳 rank-gated:皆不上正規告示板
         avail = main + board
         if not avail:
             ui.message("告示板上沒有你還沒接的委託。", style="grey70")

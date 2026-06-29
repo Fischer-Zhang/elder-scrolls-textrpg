@@ -1610,5 +1610,74 @@
     "rumor": "有人在城外的廢墟裡聚會,點著奇怪的火、誦著聽不懂的經 —— 我可什麼都沒看見。",
     "secret_guild": "mythic_dawn",
     "secret_secrecy": 70
+  },
+  "markarth_silver_fence": {
+    "name": "銀街掮客 維拉尼",
+    "location": "markarth",
+    "disposition": 45,
+    "role": "merchant",
+    "greeting": "「銀血氏族當家的城,規矩多、暗門也多。要打點什麼,先把嘴閉緊。」",
+    "rumor": "城底矮人遺跡的深處,聽說有刀鋒的探子在繪製礦道圖 —— 那種人最好別讓他活著畫完。",
+    "secret_guild": "thieves_guild",
+    "secret_secrecy": 50
+  },
+  "sentinel_dock_smuggler": {
+    "name": "碼頭老鼠 札希德",
+    "location": "sentinel",
+    "disposition": 45,
+    "greeting": "「落日王廷的碼頭,什麼貨都進得來,什麼人都出得去 —— 看你出得起多少。」",
+    "rumor": "近來幾票貨被人吃了暗黑 —— 不是同行,是外來的變節盜賊在搶地盤。",
+    "secret_guild": "thieves_guild",
+    "secret_secrecy": 50
+  },
+  "anvil_quiet_widow": {
+    "name": "靜港寡婦 露西拉",
+    "location": "anvil",
+    "disposition": 45,
+    "greeting": "「黃金海岸的風,把太多秘密吹進這座小城。坐下喝杯茶吧 —— 別問太多。」",
+    "rumor": "有幾個帝國的探子在城外的燈塔附近探頭探腦,問東問西 —— 真該有人讓他們安靜下來。",
+    "secret_guild": "dark_brotherhood",
+    "secret_secrecy": 60
+  },
+  "vivec_canton_zealot": {
+    "name": "拱區低語者 達雷思",
+    "location": "vivec",
+    "disposition": 45,
+    "role": "priest",
+    "greeting": "「聖城的神壇下,信仰有許多種樣貌。哪一種是真的?……朋友,慎言。」",
+    "rumor": "刀鋒的眼線混進了朝聖的人群,記下每一張臉 —— 黎明的敵人,該被清點。",
+    "secret_guild": "mythic_dawn",
+    "secret_secrecy": 65
+  },
+  "gideon_marsh_devotee": {
+    "name": "沼澤信徒 維倫",
+    "location": "gideon",
+    "disposition": 45,
+    "greeting": "「黑沼澤的霧裡,藏得住人,也藏得住信念。新紀元的火種,在最濕的地方反而燒得最旺。」",
+    "rumor": "有變節的盜賊想把我們聚會的地點賣給官府 —— 這種背骨的,留不得。",
+    "secret_guild": "mythic_dawn",
+    "secret_secrecy": 65
+  },
+  "chorrol_fighters_steward": {
+    "name": "戰士公會管事 加柳斯",
+    "location": "chorrol",
+    "disposition": 45,
+    "role": "guard",
+    "guild": "fighters_guild",
+    "greeting": "「戰士公會科羅爾分舵,要接傭兵的活就上前一步,別擋著門。」",
+    "rumor": "公會帳上幾筆委託的金額對不上 —— 我盯著呢,遲早揪出那隻碩鼠。",
+    "secret_guild": "dark_brotherhood",
+    "secret_secrecy": 65
+  },
+  "winterhold_college_adept": {
+    "name": "魔法學院學徒 法雯",
+    "location": "winterhold",
+    "disposition": 45,
+    "role": "scholar",
+    "guild": "mages_guild",
+    "greeting": "「冬堡學院的風雪能凍住舌頭,卻凍不住好奇心。你想知道什麼?」",
+    "rumor": "學院的禁書庫近來少了幾卷東西,管理員卻矢口否認 —— 有人在掩蓋什麼。",
+    "secret_guild": "thieves_guild",
+    "secret_secrecy": 70
   }
 }

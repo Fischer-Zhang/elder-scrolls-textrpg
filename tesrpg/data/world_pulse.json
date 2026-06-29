@@ -14,7 +14,7 @@
     "cooldown_days": 14,
     "active_window_days": 10,
     "min_day": 12,
-    "spotlight_quests": ["ucomm_cyrodiil_silence", "ucomm_cyrodiil_turf"],
+    "spotlight_quests": ["ucomm_cyrodiil_silence", "ucomm_cyrodiil_turf", "cint_cyrodiil_blades"],
     "news": "帝都鼠道暗流湧動 —— 黑市掮客正高價尋人,辦幾樁見不得光的差事。亡命徒的窩點裡,委託悄悄上了牆。"
   },
   "pulse_skyrim_underworld": {
@@ -23,7 +23,7 @@
     "cooldown_days": 14,
     "active_window_days": 10,
     "min_day": 12,
-    "spotlight_quests": ["ucomm_skyrim_vendetta", "ucomm_skyrim_debt"],
+    "spotlight_quests": ["ucomm_skyrim_vendetta", "ucomm_skyrim_debt", "cint_skyrim_spies"],
     "news": "裂谷城的黑街蠢動,鼠道裡有人在散布見不得光的契約 —— 有血仇要結,有債要討。"
   },
   "pulse_hammerfell_underworld": {
@@ -32,7 +32,7 @@
     "cooldown_days": 14,
     "active_window_days": 10,
     "min_day": 12,
-    "spotlight_quests": ["ucomm_hammerfell_smuggle", "ucomm_hammerfell_purge"],
+    "spotlight_quests": ["ucomm_hammerfell_smuggle", "ucomm_hammerfell_purge", "cint_hammerfell_informers"],
     "news": "沙海亡命營傳出風聲 —— 走私隊被劫、有冤家要結,掮客在篝火邊張羅著幾樁買賣。"
   },
   "pulse_skyrim_wolves": {
@@ -50,7 +50,7 @@
     "cooldown_days": 10,
     "active_window_days": 8,
     "min_day": 5,
-    "spotlight_quests": ["comm_morrowind_ash", "comm_morrowind_daedra", "comm_morrowind_ashyam"],
+    "spotlight_quests": ["comm_morrowind_ash", "comm_morrowind_daedra", "comm_morrowind_ashyam", "cint_morrowind_agents"],
     "news": "晨風灰原蟲群異動、紅山裂隙湧出魔人,瓦登費爾的大家族與煉金師貼出多項懸賞與供應委託。"
   },
   "pulse_hammerfell_raiders": {
@@ -68,7 +68,7 @@
     "cooldown_days": 11,
     "active_window_days": 8,
     "min_day": 5,
-    "spotlight_quests": ["comm_highrock_witch", "comm_highrock_barrow", "comm_highrock_nightshade"],
+    "spotlight_quests": ["comm_highrock_witch", "comm_highrock_barrow", "comm_highrock_nightshade", "cint_highrock_moles"],
     "news": "高岩荒沼間女巫蹤跡再現、古墓鐵衛甦醒,匕落領主與威岩煉金師貼出剿巫、破墓與採集委託。"
   },
   "pulse_valenwood_stranglers": {
@@ -77,7 +77,7 @@
     "cooldown_days": 10,
     "active_window_days": 8,
     "min_day": 5,
-    "spotlight_quests": ["comm_valenwood_vine", "comm_valenwood_spider", "comm_valenwood_eggs"],
+    "spotlight_quests": ["comm_valenwood_vine", "comm_valenwood_spider", "comm_valenwood_eggs", "cint_valenwood_agents"],
     "news": "瓦倫森林綠徑絞殺藤瘋長、巨蛛織網捕人,法林斯提的獵手在沿線貼出清藤、獵蛛與取卵委託。"
   },
   "pulse_elsweyr_skooma": {
@@ -86,7 +86,7 @@
     "cooldown_days": 11,
     "active_window_days": 8,
     "min_day": 6,
-    "spotlight_quests": ["comm_elsweyr_senche", "comm_elsweyr_tiger", "comm_elsweyr_hunt"],
+    "spotlight_quests": ["comm_elsweyr_senche", "comm_elsweyr_tiger", "comm_elsweyr_hunt", "cint_elsweyr_spies"],
     "news": "艾爾斯維爾月糖黑市猖獗、森奇巨虎下山,瑞門各城張貼平亂、獵虎與草原清剿委託。"
   },
   "pulse_elsweyr_smuggle": {
@@ -104,7 +104,7 @@
     "cooldown_days": 11,
     "active_window_days": 8,
     "min_day": 5,
-    "spotlight_quests": ["comm_blackmarsh_lizard", "comm_blackmarsh_troll", "comm_blackmarsh_deathbell"],
+    "spotlight_quests": ["comm_blackmarsh_lizard", "comm_blackmarsh_troll", "comm_blackmarsh_deathbell", "cint_blackmarsh_informers"],
     "news": "黑沼澤濕地水漲,沼蜥侵村、泥沼巨魔潛伏,吉迪恩的告示板貼出獵蜥、獵魔與供應委託。"
   }
 }

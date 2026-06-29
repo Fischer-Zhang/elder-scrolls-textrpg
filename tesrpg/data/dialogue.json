@@ -159,6 +159,20 @@
         "unaligned": "「酒過三巡,什麼話都鬆動了。想聽地方上的傳聞?向相熟的人追問便是。」"
       },
       "text": "「酒館是消息的集散地。地方上的『傳聞』,多問幾個人,門道就出來了。」"
+    },
+    "expose_mole": {
+      "label": "🔍 揭發這名滲透者(向當局吹哨)",
+      "requires": {"mole_expose": "outsider"},
+      "once": true,
+      "effects": [{"type": "fame", "amount": 5}],
+      "text": "你把這名臥底的真實身分捅給了當局 —— 對方臉色驟變,掩護就此瓦解,與你徹底決裂。(揭發滲透者:聲望 +5)"
+    },
+    "betray_mole": {
+      "label": "🗡 出賣這名地下同志(大義滅親)",
+      "requires": {"mole_expose": "comrade"},
+      "once": true,
+      "effects": [{"type": "infamy", "amount": 2}],
+      "text": "你向外人吐露了這名地下同志的底細 —— 背骨者的惡名會在暗處流傳,對方再不會與你共事。(出賣同志:惡名 +2)"
     }
   },
 
@@ -167,8 +181,8 @@
     "balmora_armsdealer_neloth": {"secret": {"text": "「壓箱底的東西不上架。喏 —— 這幾根開鎖器,城裡買不到的貨,拿去。」", "effects": [{"type": "item", "item": "lockpick", "qty": 3}]}},
     "wayrest_merchant": {"secret": {"text": "「帳房的暗格……也罷,你我都是聰明人。這點分紅,當作封口費。」", "effects": [{"type": "gold", "amount": 70}]}},
     "sentinel_swordmaster": {"secret": {"text": "「退役時我藏了把好刀,本想留給徒弟 —— 可你眼裡有殺氣,更配得上它。」", "effects": [{"type": "item", "item": "steel_dagger", "qty": 1}]}},
-    "evermore_warden": {"secret": {"text": "「沒入庫的贓款,帳上一向不全。漏這麼一筆給你,衛所也查不出。」", "effects": [{"type": "gold", "amount": 55}]}},
-    "imperial_city_scribe_aurelia": {"secret": {"text": "「我抄錄舊賬時記下一筆無主的款項……既然你問起了,就當是還給有緣人。」", "effects": [{"type": "gold", "amount": 65}]}},
+    "evermore_warden": {"extra": ["expose_mole", "betray_mole"], "secret": {"text": "「沒入庫的贓款,帳上一向不全。漏這麼一筆給你,衛所也查不出。」", "effects": [{"type": "gold", "amount": 55}]}},
+    "imperial_city_scribe_aurelia": {"extra": ["expose_mole", "betray_mole"], "secret": {"text": "「我抄錄舊賬時記下一筆無主的款項……既然你問起了,就當是還給有緣人。」", "effects": [{"type": "gold", "amount": 65}]}},
     "blackrose_warden": {"secret": {"text": "「沒收的走私品堆在庫房落灰。這顆紅寶石登記在案外 —— 你懂的。」", "effects": [{"type": "item", "item": "ruby", "qty": 1}]}},
     "hegathe_mage": {"secret": {"text": "「私藏的魂石不便聲張……拿去吧,別問來路,也別讓學派的人知道。」", "effects": [{"type": "item", "item": "filled_common_soul_gem", "qty": 1}]}},
     "rimmen_warchief": {"secret": {"text": "「操演的犒賞,我向來剋扣一成入私囊。分你一點,只當沒這回事。」", "effects": [{"type": "gold", "amount": 50}]}},
@@ -289,6 +303,13 @@
           "text": "「霜鬃一族世代效忠紅寶石王座。風暴斗篷罵我們是帝國的走狗 —— 可秩序崩了,受苦的是百姓,不是領主。」"
         }
       }
-    }
+    },
+    "chorrol_fighters_steward": {"extra": ["expose_mole", "betray_mole"]},
+    "winterhold_college_adept": {"extra": ["expose_mole", "betray_mole"]},
+    "markarth_silver_fence": {"extra": ["recruit_informant"], "deep": {"recruit_informant": {"label": "🕯 招募為內線(銀街掮客)", "requires": {"secret_comrade": "thieves_guild"}, "once": true, "effects": [{"type": "start_quest", "quest": "cintlead_markarth"}], "text": "「自己人開口,我自然知無不言。城底礦道那兩名刀鋒探子,正把我們的門路畫成圖 —— 趕在他們交差前,讓圖和人一起消失。辦妥回來分紅。」"}}},
+    "sentinel_dock_smuggler": {"extra": ["recruit_informant"], "deep": {"recruit_informant": {"label": "🕯 招募為內線(碼頭老鼠)", "requires": {"secret_comrade": "thieves_guild"}, "once": true, "effects": [{"type": "start_quest", "quest": "cintlead_sentinel"}], "text": "「既是同道,我給你個准信:兩個變節的盜賊在搶我們地盤、還想招安官府。先下手為強,辦乾淨了好說話。」"}}},
+    "anvil_quiet_widow": {"extra": ["recruit_informant"], "deep": {"recruit_informant": {"label": "🕯 招募為內線(靜港寡婦)", "requires": {"secret_comrade": "dark_brotherhood"}, "once": true, "effects": [{"type": "start_quest", "quest": "cintlead_anvil"}], "text": "「家族的人,我自當以誠相待。燈塔邊那兩個帝國探子問得太多 —— 讓海風把他們的好奇心一起吹散吧。」"}}},
+    "vivec_canton_zealot": {"extra": ["recruit_informant"], "deep": {"recruit_informant": {"label": "🕯 招募為內線(拱區低語者)", "requires": {"secret_comrade": "mythic_dawn"}, "once": true, "effects": [{"type": "start_quest", "quest": "cintlead_vivec"}], "text": "「黎明的弟兄,我把眼線交予你:刀鋒的探子混在朝聖人群裡,記下我們每一張臉。清點他們 —— 在他們清點我們之前。」"}}},
+    "gideon_marsh_devotee": {"extra": ["recruit_informant"], "deep": {"recruit_informant": {"label": "🕯 招募為內線(沼澤信徒)", "requires": {"secret_comrade": "mythic_dawn"}, "once": true, "effects": [{"type": "start_quest", "quest": "cintlead_gideon"}], "text": "「同道一場,我就直說:兩個背骨的盜賊想把聚會地點賣給官府。讓沼澤吞了他們,連同那筆髒錢。」"}}}
   }
 }

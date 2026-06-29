@@ -285,6 +285,10 @@ def _guild_attitude(char: Character, gamedata: GameData, npc_id: str, base: str)
       宿敵(臥底以掩護公會行事 → 會佯裝敵視自己真正的同志,維持掩護)。"""
     npc = gamedata.npcs[npc_id]
     secret = npc.get("secret_guild")
+    # R99 臥底揭發:已被你揭發/出賣的臥底翻臉敵視(once-topic id 留在 dialogue_done)→
+    # hostile 使 topics_for 回 [] → 連同 R98 犯罪服務一併斷絕(揭發即決裂·防「揭完再交易」)。
+    if {"expose_mole", "betray_mole"} & set(char.dialogue_done.get(npc_id, [])):
+        return "hostile"
     # 隱藏身分已揭露 + 你正是該秘密公會同會 → comrade 相認(植入內線/同志)。
     if secret and factions.is_member(char, secret) and secret_guild_revealed(char, gamedata, npc_id):
         return "comrade"
@@ -367,9 +371,22 @@ def meets_dialogue(char: Character, state, gamedata: GameData, req: dict | None,
                 and factions.is_member(char, secret)
                 and secret_guild_revealed(char, gamedata, ctx["npc_id"])):
             return False
+    if "mole_expose" in req:
+        # R99 臥底揭發資格:該 NPC 須是臥底(掩護 guild + 真身 secret_guild)且真身已揭露。
+        # "outsider"=你非其真公會員(吹哨給當局,得聲望);"comrade"=你正是其真公會同志(大義滅親,得惡名)。
+        npc = gamedata.npcs[ctx["npc_id"]]
+        secret = npc.get("secret_guild")
+        if not (npc.get("guild") and secret
+                and secret_guild_revealed(char, gamedata, ctx["npc_id"])):
+            return False
+        is_own = factions.is_member(char, secret)
+        if req["mole_expose"] == "comrade" and not is_own:
+            return False
+        if req["mole_expose"] == "outsider" and is_own:
+            return False
     base = {k: v for k, v in req.items()
             if k not in ("min_disposition", "npc_relationship", "vampire_shunned",
-                         "bounty_min", "partisan", "secret_comrade")}
+                         "bounty_min", "partisan", "secret_comrade", "mole_expose")}
     return events.meets(char, gamedata, _resolve_req(base, ctx))
 
 

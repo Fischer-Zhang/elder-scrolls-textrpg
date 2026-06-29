@@ -146,6 +146,8 @@ def test_dialogue_foreign_keys():
                 f"{where} secret_comrade {sc} 非犯罪/隱蔽公會"
         if "action" in t:           # 話題 action 須為已實作派發(R82 pump / R98 fence·supply·contract)
             assert t["action"] in _TOPIC_ACTIONS, f"{where} action {t['action']} 未實作派發"
+        if "mole_expose" in r:      # R99 臥底揭發資格(meets_dialogue mole_expose 分支)
+            assert r["mole_expose"] in ("outsider", "comrade"), f"{where} mole_expose {r['mole_expose']} 非法"
         for sk in (r.get("skill_min") or {}):
             assert sk in gd.skills, f"{where} skill_min 指向不存在技能 {sk}"
         for e in t.get("effects", []):
@@ -334,9 +336,16 @@ def test_quest_givers_and_reachability():
         sec = npc.get("secret")
         if isinstance(sec, dict):
             secret_quests |= {e["quest"] for e in sec.get("effects", []) if e.get("type") == "start_quest"}
-    # ④ 可達性:source:npc(npc 欄∪事件∪招募∪秘藏);source:rumor(npc.rumor_quest 派發,防孤兒)
+    # R99 對話話題 start_quest 也是任務派發來源(招募內線 deep 話題 → 反間線索 cintlead_)
+    topic_quests = set()
+    _topic_defs = list(gd.dialogue.get("topics", {}).values())
+    for npc in gd.dialogue.get("npcs", {}).values():
+        _topic_defs += list((npc.get("deep") or {}).values())
+    for td in _topic_defs:
+        topic_quests |= {e["quest"] for e in td.get("effects", []) if e.get("type") == "start_quest"}
+    # ④ 可達性:source:npc(npc 欄∪事件∪招募∪秘藏∪對話話題);source:rumor(npc.rumor_quest 派發,防孤兒)
     recruit_quests = {c.get("recruit_quest") for c in gd.companions.values() if c.get("recruit_quest")}
-    reachable = npc_quests | event_quests | recruit_quests | secret_quests
+    reachable = npc_quests | event_quests | recruit_quests | secret_quests | topic_quests
     for qid, q in gd.quests.items():
         if q.get("source") == "npc" and qid not in reachable:
             bad.append(f"孤兒 npc 任務 {qid}:無 NPC/事件/招募 派發 → 永不可接")

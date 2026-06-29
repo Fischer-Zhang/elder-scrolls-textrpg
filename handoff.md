@@ -49,7 +49,7 @@
 - **套裝加成**(同材質四件)、武器流派、飾品槽、法杖、法袍;**具名神器**(裝備耐久/修理已移除,見 R33)
 
 #### 公會、任務與政治
-- **七大公會**:戰士/法師/盜賊 + 黑暗兄弟會 + 神話黎明 + 九神騎士團 + **戰友團**(白漫·狼人血脈歸宿,獸血儀式繫於其內圈)(技能門檻/福利/對立/分支壓軸);**核心三公會階級服務功能化**(rank-gated 招牌動詞·非只折扣):盜賊=斯庫瑪走私生意(R88·艾爾斯維爾)、戰士=軍械庫淬鍊(R89·公會供料免材料)、法師=奧術回充+魔力補給(R89);黑兄(夜母潛行加成)/戰友團(內圈儀式+召盾袍)早有功能 perk;**犯罪公會同志服務(R98)**:已揭露的犯罪同志(盜賊/黑兄/神話黎明)開放會員專屬服務 —— 便攜銷贓 fence / 接私活合約 / 禁術貨源,把 R97 隱蔽身分社交網功能化為「聯絡人=服務」(`secret_comrade` 閘·零存檔欄·sim byte-identical)
+- **七大公會**:戰士/法師/盜賊 + 黑暗兄弟會 + 神話黎明 + 九神騎士團 + **戰友團**(白漫·狼人血脈歸宿,獸血儀式繫於其內圈)(技能門檻/福利/對立/分支壓軸);**核心三公會階級服務功能化**(rank-gated 招牌動詞·非只折扣):盜賊=斯庫瑪走私生意(R88·艾爾斯維爾)、戰士=軍械庫淬鍊(R89·公會供料免材料)、法師=奧術回充+魔力補給(R89);黑兄(夜母潛行加成)/戰友團(內圈儀式+召盾袍)早有功能 perk;**犯罪公會同志服務(R98)**:已揭露的犯罪同志(盜賊/黑兄/神話黎明)開放會員專屬服務 —— 便攜銷贓 fence / 接私活合約 / 禁術貨源,把 R97 隱蔽身分社交網功能化為「聯絡人=服務」(`secret_comrade` 閘·零存檔欄·sim byte-identical);**諜報反制迴圈(R99)**:臥底揭發(吹哨得聲望 / 大義滅親得惡名 → 臥底翻臉斷服務)+ 招募 covert 同志為內線(派發反間線索)+ 反間委託(獵敵方諜員·`cint_` rank-gated 大廳榜)+ 更多 mole/covert NPC(`mole_expose` 資格閘·零存檔欄·sim byte-identical)
 - **多階段任務引擎**;犯罪賞金 + 衛兵 + 謀殺;**通緝/亡命徒身份化(R84)**:雙軸(賞金=當下追殺·可清 / 惡名=終身地下身份)——**賞金獵人路途追殺**(tier 隨賞金·替換式遭遇·騎馬甩開)+ **亡命徒地下世界**(藏身處安全區/銷贓 fence/可重複地下委託/惡名分級稱號·codex 載);**吸血鬼化**(力量↔詛咒天平·夜視/戰鬥+社交魅惑/偽裝暗影套裝 R56)、**狼人化**(戰友團內圈獸血,獸形變身)、**斯庫瑪/月糖成癮**(亢奮↔戒斷天平,艾爾斯維爾)、**斯庫瑪走私生意(R88)**:整併入盜賊公會(非獨立幫派)—— 高階盜賊(rank≥2)在艾爾斯維爾分舵解鎖「斯庫瑪走私生意」(月糖精煉成斯庫瑪〔嚴格 sink〕+ 跨省走私委託〔運月糖出貓人故土·固定酬勞+惡名·途中賞金獵人風險〕),功能化盜賊公會冷階級梯、整併三層犯罪內容(盜賊公會=主幹 / R84 亡命徒層 / 斯庫瑪走私線)
 - **領主政治 / 城戰**:謁見 → 委託 → 武士冊封;圍城 + 破城 + 收稅 + 招兵買馬;**陣營動態大事件**
 
@@ -1403,6 +1403,17 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 - **🔴 鐵律**:加 role 純改 `dialogue.json`(roles map + topics·身份 flavor 為主·功能 effect 走 events 支援集 + `once` 防刷·不帶 skill_xp)+ `npcs.json` role 欄;加流言線索純改 `npcs.json`(rumor_quest/rumor_landmark/rumor_disposition)+ `quests.json`(`source:"rumor"`·僅 clear/reach·**目標無 visible gate**·NPC↔線索目標**須同省**);**新增 source:rumor 任務務必有 NPC rumor_quest 回指**(否則 reachability guard 攔=孤兒);追問傳聞兌現走既有 `_accept_and_brief`/`landmarks.discover`;純社交內容 → sim byte-identical 免跑(動 combat/formulas 才需)。**前瞻**:Phase D 可純資料把其餘 ~40 具名 rumor NPC 逐批接上 + 補 role 密度;若要更多功能 role 話題(商人折扣等)需新 effect + 評估碰 shop/存檔欄。
 
 ---
+
+### R99 · 公會諜報層:臥底揭發 + 招募內線 + 反間任務 + 大廳反間服務(承 R96–R98)[save-safe]
+
+**評估**:R96 敵意 / R97 隱蔽身分+臥底 / R98 同志服務鋪好諜報舞台,但缺「反制」迴圈(臥底被認出後無事可做·`guild_intel` 只給無獎勵 rumor·無反間內容)。使用者點名三項、拍板皆取建議案。**角色二分**:Mole(掩護 guild + 真身 secret_guild)= 揭發目標;covert(僅 secret_guild)= 招募內線目標。幾乎全資料驅動、零新存檔欄、**sim byte-identical**(不碰 combat/formulas)。
+- **臥底揭發**(Part 1a):兩 sibling 共享話題 `expose_mole`(req `mole_expose:"outsider"`·fame+5·吹哨)/`betray_mole`(req `mole_expose:"comrade"`·infamy+2·大義滅親),`once:true`,掛各 mole 的 `extra`。新 `meets_dialogue` 鍵 **`mole_expose`**(NPC 須 guild+secret_guild ∧ `secret_guild_revealed`;outsider=非其真公會員·comrade=是)。**後果**:`_guild_attitude` 頂端加 ~3 行 —— `{expose_mole,betray_mole} ∩ dialogue_done[npc]` → 回 `hostile` → `topics_for` 回 `[]` → 連 R98 犯罪服務一併斷絕(揭發即決裂·`once` 防再揭·天然防「揭完再交易」)。
+- **招募內線**(Part 1b):各 covert 內線 NPC 的 `deep.recruit_informant`(req `secret_comrade:<guild>`·`once`·`effects:[{start_quest:cintlead_<id>}]`)+ `extra:[recruit_informant]` → 招募即得一條反間線索。**零新邏輯**(複用 start_quest/secret_comrade/once)。
+- **反間任務**(Part 2):8 條 `cint_*` 可重複反間榜(`source:board`·`repeatable`·`provinces`·`kill` blade_agent/rogue_thief·reward gold+fame)各省 `world_pulse` 聚光(elsweyr 放 skooma 脈動非 smuggle 脈動·守既有純度測試);5 條 `cintlead_*`(`source:npc` 一次性·經招募話題派發)。
+- **大廳反間服務**(Part 3·情報/反間軸):新 `_counterintel_board`(鏡像 `_underworld_contracts`)·`CINT_RANK=2` rank-gated 掛三犯罪大廳 —— thieves `action_guild_hall`(`cint_ok` 旗·早退守衛含之)·DB `action_sanctuary`(選項)·mythic_dawn 經 `_contract_hall`(閘 `is_criminal_guild` → **九神騎士團排除**)。`cint_` 加入 `action_board` 排除(只走大廳·不上公開告示板)。
+- **🔴 對抗審查(3 維 33 agent)→ 1 blocker confirmed**:`cint_` 漏修 `action_board` 排除 → 聚光時洩漏到公開告示板繞過階級閘 → **修**(`action_board` 排除加 `cint_`)+ 補 3 測(公開板排除/九神排除/招募需會員非僅揭露)。餘 26 findings 皆正向確認(gating/byte/save/不變式全對)。
+- **驗證**:run_all 97(新 `test_espionage` 15 測·`test_data_schema` 加 mole_expose 驗 + 對話話題 start_quest 可達性)+ check.sh + 無頭煙霧(揭發 fame+5 翻臉/出賣 infamy+2/招募得線索/大廳反間榜接取)+ sim_assassin byte-identical(git diff 證)。
+🔴 加臥底純改 `npcs.json`(guild+secret_guild·**不得帶 quest/rumor_quest**=R96 守則);加內線純改 `npcs.json`(僅 secret_guild)+`dialogue.json`(deep recruit start_quest);揭發資格走 `mole_expose` req·翻臉走 `_guild_attitude` 讀 dialogue_done;反間榜純改 `quests.json`(`cint_` repeatable kill·gold/fame/infamy)+`world_pulse` 聚光·**`cint_` 必入 `action_board` 排除**;大廳服務閘 `is_criminal_guild`+`CINT_RANK`(九神排除)。**前瞻**:臥底反向利用(假情報)·內線循環多線索(擴 offered_rumor)·更多 mole/covert NPC。
 
 ### R98 · 犯罪公會服務層:已揭露犯罪同志的會員專屬服務(承 R97)[save-safe]
 
