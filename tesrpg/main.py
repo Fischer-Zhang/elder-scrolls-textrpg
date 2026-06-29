@@ -2392,6 +2392,54 @@ def _comrade_contract(state: GameState, gamedata: GameData) -> str | None:
                 return "dead"
 
 
+def _undercover_missions(state: GameState, gamedata: GameData) -> str | None:
+    """R100 潛入任務榜:列出掩護期可接的滲透/破壞(向 A·降忠降密)與證明忠誠(向 B·升忠升密)
+    及結局(抽身/叛變)任務(source:undercover·requires_cover/requires_loyalty 閘)。回傳 'dead'|None。"""
+    char = state.player
+    while True:
+        avail = quests.available_quests(char, gamedata, "undercover")
+        if not avail:
+            ui.message("眼下沒有可接的潛入差事 —— 維持低調,靜待時機(忠誠或掩護的變化會帶來新選擇)。",
+                       style="grey70")
+            return None
+        opts = [(qid, f"{gamedata.quests[qid]['name']} — {quests.objective_text(char, gamedata, qid)}")
+                for qid in avail]
+        qid = ui.menu("潛入任務", opts, allow_back=True)
+        if qid is None:
+            return None
+        _accept_and_brief(state, gamedata, qid)
+
+
+def _undercover_hall(state: GameState, gamedata: GameData, true_guild: str) -> None:
+    """R100 間諜事務(真實公會 A 大廳的 rank-gated 入口):接受潛入任務(入局)或處理潛入差事。"""
+    char = state.player
+    b = undercover.INFILTRATE_PAIRS[true_guild]
+    bname = gamedata.factions[b]["name"]
+    while True:
+        opts = []
+        active = undercover.on_mission(char) and char.cover_true_guild == true_guild
+        if active:
+            opts.append(("missions", f"🎭 潛入差事(滲透破壞{bname} 或 取信於敵 · 結局)"))
+        elif undercover.can_infiltrate(char, gamedata, true_guild):
+            opts.append(("infiltrate", f"🎭 領受潛入任務 —— 滲透{bname}(取得掩護身分)"))
+        if not opts:
+            return
+        if active:
+            ui.message(f"【掩護狀態】滲透{bname}中 · 掩護完整度 {char.cover_secrecy}/100 · "
+                       f"忠誠 {char.cover_loyalty:+d}(負=忠於我方 / 正=傾向{bname})"
+                       + ("·⚠ 有人起疑,速去滅口" if char.cover_knower else ""), style="yellow")
+        choice = ui.menu("間諜事務", opts, allow_back=True)
+        if choice is None:
+            return
+        if choice == "infiltrate":
+            undercover.infiltrate(char, state, gamedata, true_guild=true_guild, cover_guild=b)
+            ui.message(f"你領命潛入{bname} —— 自此你有兩張面孔。替他們賣力可鞏固掩護(卻漸生同情);"
+                       f"為我方蒐證破壞則推進任務(卻降低掩護、招致疑心)。", style="bold yellow")
+        elif choice == "missions":
+            if _undercover_missions(state, gamedata) == "dead":
+                return
+
+
 def _counterintel_board(state: GameState, gamedata: GameData) -> None:
     """R99 反間委託榜:列出本省被脈動聚光的 cint_* 反間契約(獵敵方諜員)。
     犯罪公會 rank-gated 大廳服務(由各大廳閘 rank≥CINT_RANK);複用 R79 board+pulse,與正規告示板分流。"""
@@ -2651,6 +2699,8 @@ def action_sanctuary(state: GameState, gamedata: GameData) -> str | None:
             opts.append(("launder", f"洗白{province}的賞金({owed} → {cost} 金)"))
         if factions.rank_index(char, brotherhood.FACTION) >= CINT_RANK:   # R99 高階反間委託榜
             opts.append(("counterintel", "🕵 反間委託榜（獵敵方諜員)"))
+        if undercover.hall_has_business(char, gamedata, brotherhood.FACTION):   # R100 間諜事務
+            opts.append(("spy", "🎭 間諜事務（潛入宿敵)"))
         opts.append(("tenets", "重溫五戒"))
         choice = ui.menu("聖所", opts, allow_back=True)
         if choice is None:
@@ -2672,6 +2722,8 @@ def action_sanctuary(state: GameState, gamedata: GameData) -> str | None:
                 ui.message(f"洗白需 {r['owed']} 金,你付不起。", style="red")
         elif choice == "counterintel":
             _counterintel_board(state, gamedata)
+        elif choice == "spy":
+            _undercover_hall(state, gamedata, brotherhood.FACTION)
         elif choice == "tenets":
             ui.message("黑暗兄弟會五戒:", style="bold magenta")
             for t in brotherhood.TENETS:
@@ -2787,6 +2839,9 @@ def _contract_hall(state: GameState, gamedata: GameData, faction_id: str, *,
         # R99:犯罪邪教高階(神話黎明)解鎖反間委託榜;九神騎士團非犯罪公會 → 不顯示
         if factions.is_criminal_guild(faction_id) and factions.rank_index(char, faction_id) >= CINT_RANK:
             opts.append(("counterintel", "🕵 反間委託榜（獵敵方諜員)"))
+        # R100:神話黎明派你潛入九神騎士團 —— 間諜事務(knights 非 INFILTRATE_PAIRS → 不顯示)
+        if undercover.hall_has_business(char, gamedata, faction_id):
+            opts.append(("spy", "🎭 間諜事務（潛入宿敵)"))
         opts.append(("verses", verses_label))
         choice = ui.menu(title, opts, allow_back=True)
         if choice is None:
@@ -2797,6 +2852,8 @@ def _contract_hall(state: GameState, gamedata: GameData, faction_id: str, *,
                 _accept_and_brief(state, gamedata, avail[0])
         elif choice == "counterintel":
             _counterintel_board(state, gamedata)
+        elif choice == "spy":
+            _undercover_hall(state, gamedata, faction_id)
         elif choice == "execute":
             died = action_contract(state, gamedata, active, stealth=stealth)
             if died == "dead":
@@ -3881,6 +3938,8 @@ def action_guild_hall(state: GameState, gamedata: GameData, faction_id: str) -> 
         # R99:犯罪公會高階(此處唯盜賊;黑兄/神話黎明各走自有大廳)解鎖反間委託榜
         cint_ok = (factions.is_criminal_guild(faction_id)
                    and factions.rank_index(char, faction_id) >= CINT_RANK)
+        # R100:犯罪公會(A)派你潛入其宿敵(B)—— 間諜事務入口(入局 / 潛入差事)
+        spy_ok = undercover.hall_has_business(char, gamedata, faction_id)
         if not factions.is_member(char, faction_id):
             reason = factions.join_block_reason(char, gamedata, faction_id)
             if reason is not None:                   # 門檻/對立/通緝 → 說明原因
@@ -3900,7 +3959,7 @@ def action_guild_hall(state: GameState, gamedata: GameData, faction_id: str) -> 
                     ui.message(factions.advance_block_reason(char, gamedata, faction_id)
                                or "公會目前沒有你能接的委託。", style="grey70")
                 if not ritual_ok and not circle_recruit_ok and not smuggle_ok \
-                        and not forge_ok and not arcane_ok and not cint_ok:   # 無委託且無任何階級服務 → 離開
+                        and not forge_ok and not arcane_ok and not cint_ok and not spy_ok:   # 無委託且無任何階級服務 → 離開
                     return
         if ritual_ok:
             opts.append(("beast_ritual", "🐺 獸血儀式（內圈戰友的祕密)"))
@@ -3914,6 +3973,8 @@ def action_guild_hall(state: GameState, gamedata: GameData, faction_id: str) -> 
             opts.append(("arcane_svc", "✨ 奧術服務（回充 / 魔力補給)"))
         if cint_ok:
             opts.append(("counterintel", "🕵 反間委託榜（獵敵方諜員)"))
+        if spy_ok:
+            opts.append(("spy", "🎭 間諜事務（潛入宿敵)"))
         choice = ui.menu("公會事務", opts, allow_back=True)
         if choice is None:
             return
@@ -3936,6 +3997,8 @@ def action_guild_hall(state: GameState, gamedata: GameData, faction_id: str) -> 
             _arcane_services(state, gamedata)
         elif choice == "counterintel":
             _counterintel_board(state, gamedata)
+        elif choice == "spy":
+            _undercover_hall(state, gamedata, faction_id)
 
 
 def _beast_blood_ritual(state: GameState, gamedata: GameData) -> None:

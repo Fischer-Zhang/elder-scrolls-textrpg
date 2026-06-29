@@ -199,6 +199,60 @@ def test_run_battle_flee_param_default_none():
     assert sig.parameters["flee_after_rounds"].default is None   # 預設 None → 既有戰鬥逐位元組同
 
 
+# ---------------------------------------------------------------- P2 入局 + 漂移任務
+def test_can_infiltrate_gate():
+    gd, c = _mk(thieves_guild=undercover.INFILTRATE_RANK)
+    assert undercover.can_infiltrate(c, gd, "thieves_guild")       # 達階 → 可入局
+    c.factions = {"thieves_guild": undercover.INFILTRATE_RANK - 1}
+    assert not undercover.can_infiltrate(c, gd, "thieves_guild")   # 未達階
+    c.factions = {}                                                # 非會員
+    assert not undercover.can_infiltrate(c, gd, "thieves_guild")
+    c.factions = {"fighters_guild": 3}                            # 非犯罪公會(非 A)→ 無 INFILTRATE_PAIRS
+    assert not undercover.can_infiltrate(c, gd, "fighters_guild")
+    # 已曝光該對 → 永久死局,不可再潛
+    c.factions = {"thieves_guild": 3}
+    c.world_events_fired.append(undercover.cover_blown_flag("thieves_guild", "fighters_guild"))
+    assert not undercover.can_infiltrate(c, gd, "thieves_guild")
+
+
+def test_drift_quests_gated_by_cover():
+    from tesrpg.systems import quests
+    gd, c = _mk(thieves_guild=3)
+    assert quests.available_quests(c, gd, "undercover") == []      # 未臥底 → 無潛入任務
+    _infiltrate(gd, c)                                             # 掩護 fighters
+    av = quests.available_quests(c, gd, "undercover")
+    assert "ucov_fighters_prove" in av and "ucov_fighters_sabotage" in av
+    assert not any("knights" in q for q in av)                     # 他會潛入任務不洩漏
+
+
+def test_cover_deltas_applied_on_complete():
+    from tesrpg.systems import quests
+    gd, c = _mk(thieves_guild=3)
+    _infiltrate(gd, c)
+    quests.accept_quest(c, gd, "ucov_fighters_prove")
+    quests._complete(c, gd, "ucov_fighters_prove")
+    assert c.cover_loyalty == 20                                   # 取信於敵 → loyalty 升
+    quests.accept_quest(c, gd, "ucov_fighters_sabotage")
+    s0 = c.cover_secrecy
+    quests._complete(c, gd, "ucov_fighters_sabotage")
+    assert c.cover_loyalty == 0 and c.cover_secrecy == s0 - 15     # 破壞 → loyalty 降·secrecy 降
+
+
+def test_infiltrate_via_hall():
+    gd, c = _mk(thieves_guild=3)
+    c.location_id = "riften"
+    st = _state(c)
+    seq = iter(["infiltrate", None])
+    om, omsg = main.ui.menu, main.ui.message
+    main.ui.menu = lambda *a, **k: next(seq, None)
+    main.ui.message = lambda *a, **k: None
+    try:
+        main._undercover_hall(st, gd, "thieves_guild")
+    finally:
+        main.ui.menu, main.ui.message = om, omsg
+    assert undercover.on_mission(c) and c.cover_guild == "fighters_guild"
+
+
 def run():
     for name, fn in sorted(globals().items()):
         if name.startswith("test_") and callable(fn):

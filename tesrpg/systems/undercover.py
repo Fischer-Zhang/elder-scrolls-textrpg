@@ -39,6 +39,12 @@ DEFECT_MIN_SECRECY = 30      # 叛變需掩護尚存(否則只能曝光/抽身)
 
 SILENCE_INFAMY = 1           # 殺人滅口的惡名代價(諜報無賞金,惟此 infamy)
 
+# 入局:真實公會 A(犯罪公會)→ 派你潛入其非犯罪宿敵 B。核心三對(R100)。
+INFILTRATE_PAIRS = {"thieves_guild": "fighters_guild",
+                    "dark_brotherhood": "fighters_guild",
+                    "mythic_dawn": "knights_nine"}
+INFILTRATE_RANK = 2          # 真實公會須達此階(rank_index)才獲派潛入任務
+
 
 class _TimeState:
     """ensure 等情境下,以單一 GameTime 餵給只讀 `state.time` 的內部殼(仿 skooma._TimeState)。"""
@@ -85,6 +91,23 @@ def defection_unlocked(char: Character) -> bool:
 
 def cover_blown_flag(true_guild: str, cover_guild: str) -> str:
     return f"cover_blown_{true_guild}_{cover_guild}"
+
+
+def can_infiltrate(char: Character, gamedata: GameData, true_guild: str) -> bool:
+    """A 公會可否現在派你潛入其宿敵 B:會員達階 + 目前未在臥底 + 該對未曾曝光(永久死局)。"""
+    from tesrpg.systems import factions
+    b = INFILTRATE_PAIRS.get(true_guild)
+    if not b or on_mission(char):
+        return False
+    if factions.rank_index(char, true_guild) < INFILTRATE_RANK:
+        return False
+    return cover_blown_flag(true_guild, b) not in getattr(char, "world_events_fired", [])
+
+
+def hall_has_business(char: Character, gamedata: GameData, true_guild: str) -> bool:
+    """A 大廳是否該顯示「間諜事務」入口:可入局,或已在為此 A 執行的臥底任務中。"""
+    return can_infiltrate(char, gamedata, true_guild) or \
+        (on_mission(char) and getattr(char, "cover_true_guild", "") == true_guild)
 
 
 # ======================================================================

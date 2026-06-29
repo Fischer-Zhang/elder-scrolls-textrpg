@@ -20,11 +20,13 @@ _OBJECTIVE_TYPES = frozenset({"kill", "clear_dungeon", "reach", "collect"})
 _REWARD_KEYS = frozenset({
     "gold", "fame", "infamy", "items", "spells", "grant_boon",
     "world_flags", "eradicate_faction", "companion", "bond", "standing",
+    "cover_deltas", "clear_cover", "defect",   # R100 雙面間諜:漂移 / 抽身 / 叛變
 })
 # 可重複委託(repeatable:常態世界脈動聚光款)只准帶「可無限刷的安全純量獎勵」——
 # 絕不帶 items/spells/boons/companion(一次性/限定內容),否則可刷取限定法術/誓福/同伴
 # → 破壞稀缺性與反 min-max。由 schema 測試把關(test_data_schema)。
-_REPEATABLE_REWARD_KEYS = frozenset({"gold", "fame", "infamy"})
+# R100 cover_deltas:臥底忠誠/掩護漂移(非物質·僅臥底中生效·grind 即「過雙面人生」的 loop 本身)→ 准。
+_REPEATABLE_REWARD_KEYS = frozenset({"gold", "fame", "infamy", "cover_deltas"})
 
 
 # --- 進度記錄(由戰鬥/探索/旅行 hook 呼叫)-----------------------------
@@ -111,6 +113,17 @@ def available_quests(char: Character, gamedata: GameData, source: str,
         rf = q.get("requires_faction")
         if rf and char.factions.get(rf, -1) < q.get("requires_faction_rank", 0):
             continue
+        # R100 臥底 gate:潛入任務只在掩護該公會時現身(cover_guild 必等於 requires_cover)。
+        rc = q.get("requires_cover")
+        if rc and getattr(char, "cover_guild", "") != rc:
+            continue
+        rl = q.get("requires_loyalty")   # 忠誠閾(結局:抽身 max / 叛變 min)
+        if rl:
+            lo = getattr(char, "cover_loyalty", 0)
+            if "min" in rl and lo < rl["min"]:
+                continue
+            if "max" in rl and lo > rl["max"]:
+                continue
         # 前置任務 gate:需先完成某任務才開放(任務鏈)。
         rq = q.get("requires_quest")
         if rq and rq not in char.completed_quests:
@@ -286,6 +299,18 @@ def _complete(char: Character, gamedata: GameData, quest_id: str) -> dict:
     for flag in reward.get("world_flags", []):
         if flag not in char.world_events_fired:
             char.world_events_fired.append(flag)
+
+    # R100 雙面間諜:價值觀漂移(loyalty)/掩護(secrecy)+ 結局狀態變更(資料驅動;僅臥底中生效)。
+    cd = reward.get("cover_deltas")
+    if cd or reward.get("clear_cover") or reward.get("defect"):
+        from tesrpg.systems import undercover
+        if cd:
+            undercover.apply_cover_deltas(char, loyalty_delta=cd.get("loyalty", 0),
+                                          secrecy_delta=cd.get("secrecy", 0))
+        if reward.get("defect"):          # 真正叛變:棄 A 入 B(B 變真會籍)
+            undercover.defect(char, gamedata)
+        elif reward.get("clear_cover"):   # 忠誠抽身:乾淨退出臥底·留在 A
+            undercover.clear_cover(char)
 
     # 同伴角色化:招募任務末段授予具名同伴(資料驅動,鏡像 items)。有空位即入夥;
     # 滿員則僅「解鎖」(由 recruit_quest ∈ completed_quests 推導,稍後可在隊伍選單免費召集)→ 零新存檔欄。
