@@ -50,6 +50,7 @@
 
 #### 公會、任務與政治
 - **七大公會**:戰士/法師/盜賊 + 黑暗兄弟會 + 神話黎明 + 九神騎士團 + **戰友團**(白漫·狼人血脈歸宿,獸血儀式繫於其內圈)(技能門檻/福利/對立/分支壓軸);**核心三公會階級服務功能化**(rank-gated 招牌動詞·非只折扣):盜賊=斯庫瑪走私生意(R88·艾爾斯維爾)、戰士=軍械庫淬鍊(R89·公會供料免材料)、法師=奧術回充+魔力補給(R89);黑兄(夜母潛行加成)/戰友團(內圈儀式+召盾袍)早有功能 perk;**犯罪公會同志服務(R98)**:已揭露的犯罪同志(盜賊/黑兄/神話黎明)開放會員專屬服務 —— 便攜銷贓 fence / 接私活合約 / 禁術貨源,把 R97 隱蔽身分社交網功能化為「聯絡人=服務」(`secret_comrade` 閘·零存檔欄·sim byte-identical);**諜報反制迴圈(R99)**:臥底揭發(吹哨得聲望 / 大義滅親得惡名 → 臥底翻臉斷服務)+ 招募 covert 同志為內線(派發反間線索)+ 反間委託(獵敵方諜員·`cint_` rank-gated 大廳榜)+ 更多 mole/covert NPC(`mole_expose` 資格閘·零存檔欄·sim byte-identical);**玩家雙面間諜(R100)**:犯罪公會(A)大廳 rank-gated 接潛入任務 → 以掩護身分滲透其宿敵(B·thieves/db→戰士公會·神話黎明→九神),掩護↔價值觀漂移天平(替 B 賣力鞏固掩護卻生同情 vs 為我方破壞推進任務卻招疑);低掩護 → 現有具名 B NPC 起疑 → **限時追殺滅口**(限時決鬥)否則曝光;三結局(忠誠抽身留 A / 真正叛變棄 A 入 B / 曝光永久死局)(`systems/undercover.py` 仿詛咒模板·7 存檔欄·**零戰鬥面狀態→sim byte-identical**·cover 絕不入 factions 保 R96 互斥)
+- **名聲/惡名活的社交軸(R101)**:fame/infamy 不再只是傳奇分數 —— 名聲(英雄 renown)/惡名(社交畏懼)位移 NPC 態度(英雄受敬重熱絡·惡名平民冷待·夾 civil 不造敵意/同袍·公會 comrade 覆寫優先)+ 商人買價(名聲折扣/惡名加價·守反套利)+ 聲望稱號 + min_fame/min_infamy 對話/任務閘(`systems/renown.py` 純衍生·零存檔欄·tier-0 嚴格 no-op·與 crime 惡名軸 R84 正交不重複)。
 - **多階段任務引擎**;犯罪賞金 + 衛兵 + 謀殺;**通緝/亡命徒身份化(R84)**:雙軸(賞金=當下追殺·可清 / 惡名=終身地下身份)——**賞金獵人路途追殺**(tier 隨賞金·替換式遭遇·騎馬甩開)+ **亡命徒地下世界**(藏身處安全區/銷贓 fence/可重複地下委託/惡名分級稱號·codex 載);**吸血鬼化**(力量↔詛咒天平·夜視/戰鬥+社交魅惑/偽裝暗影套裝 R56)、**狼人化**(戰友團內圈獸血,獸形變身)、**斯庫瑪/月糖成癮**(亢奮↔戒斷天平,艾爾斯維爾)、**斯庫瑪走私生意(R88)**:整併入盜賊公會(非獨立幫派)—— 高階盜賊(rank≥2)在艾爾斯維爾分舵解鎖「斯庫瑪走私生意」(月糖精煉成斯庫瑪〔嚴格 sink〕+ 跨省走私委託〔運月糖出貓人故土·固定酬勞+惡名·途中賞金獵人風險〕),功能化盜賊公會冷階級梯、整併三層犯罪內容(盜賊公會=主幹 / R84 亡命徒層 / 斯庫瑪走私線)
 - **領主政治 / 城戰**:謁見 → 委託 → 武士冊封;圍城 + 破城 + 收稅 + 招兵買馬;**陣營動態大事件**
 
@@ -1403,6 +1404,18 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 - **🔴 鐵律**:加 role 純改 `dialogue.json`(roles map + topics·身份 flavor 為主·功能 effect 走 events 支援集 + `once` 防刷·不帶 skill_xp)+ `npcs.json` role 欄;加流言線索純改 `npcs.json`(rumor_quest/rumor_landmark/rumor_disposition)+ `quests.json`(`source:"rumor"`·僅 clear/reach·**目標無 visible gate**·NPC↔線索目標**須同省**);**新增 source:rumor 任務務必有 NPC rumor_quest 回指**(否則 reachability guard 攔=孤兒);追問傳聞兌現走既有 `_accept_and_brief`/`landmarks.discover`;純社交內容 → sim byte-identical 免跑(動 combat/formulas 才需)。**前瞻**:Phase D 可純資料把其餘 ~40 具名 rumor NPC 逐批接上 + 補 role 密度;若要更多功能 role 話題(商人折扣等)需新 effect + 評估碰 shop/存檔欄。
 
 ---
+
+### R101 · 名聲/惡名變活的社交軸(reputation lived axis)[save-safe]
+
+**評估→拍板**:`char.fame`/`char.infamy` 到處被寫入卻幾乎不被讀(名聲只在 `quests requires_fame` 當閘·對 NPC 態度/物價/稱號零作用;惡名「犯罪面」反由 crime R84 已活)。R96–R100 連做五輪公會/諜報線 → 換叢集。使用者兩拍板:① **名聲/惡名實際位移 NPC 態度** ② **社交 + 經濟(連商人議價)**。
+**架構**:新 `systems/renown.py`(純衍生·**零存檔欄**·讀 char.fame/infamy):`renown_tier`/`renown_title`(fame 50/150/350/700 → 無名…傳奇英雄)·`notoriety_social_tier`(infamy 20/60/150·社交面·**異於 crime.OUTLAW_THRESHOLDS**)·`attitude_shift`(civil 階梯 cold/neutral/friendly 內 `+fame_tier−infamy_tier` 夾限·**非 civil(hostile/comrade/vampire_seen)原樣·淨 delta 0 含 tier-0 → no-op**)·`price_factor`(名聲折扣−惡名加價·cap 各 0.12·tier-0=1.0)。
+- **接線(極小)**:`dialogue.attitude` 算 base 後、餵 `_guild_attitude` **前**插 `base=renown.attitude_shift`(公會 comrade/hostile 覆寫仍最終決定·一般 NPC 才顯聲望)→ 連動話題/服務/說服;`world.buy_price` 乘 `renown.price_factor`(**只買價·賣價不碰免 faucet**·在反套利地板 `max(round,sell+1)` 前·折扣不倒掛);`quests.available_quests` 加 `requires_infamy`(鏡像 requires_fame);UI `_status_view`+前端 renown 稱號 chip。
+- **閘幾乎免費**:`events.meets` **本已支援 min_fame/min_infamy** → dialogue 話題直接 `requires:{min_fame/min_infamy}` 即生效。
+- **內容**:`renown_praise`(min_fame50·NPC 仰慕)/`infamy_dread`(min_infamy20·平民忌憚)話題掛 attitude_topics 模板;3 板委託(fame_hero_errand 150·fame_legend_hunt 350·infamy_dirty_job 60·守 reward cap gold≤320/fame≤15)。
+- **🔴 守住**:**零新存檔欄**;**sim byte-identical**(不碰 combat/formulas·renown 只進 dialogue.attitude/buy_price/UI/閘·sim fixtures fame/infamy=0 → 全 no-op);**tier-0 嚴格 no-op**(fame=0∧infamy=0 → attitude 不位移·price ×1.0 浮點恆等 → 既有態度/物價/測試逐位元組同);**不重複 crime 惡名軸 R84**(outlaw/notoriety/fence/bounty/衛兵留 crime·renown 惡名只加社交冷待+買價加價·正交;惡名稱號沿用 crime.notoriety_title·renown 只新增名聲稱號);聲望**不**造 hostile/comrade(公會 `_guild_attitude` 仍最高優先·覆寫聲望位移);反套利地板恆守。
+- **對抗審查 3 維 17 agent → 0 blocker/major**(byte-identity/tier-0 no-op/態度不造敵意-同袍/反套利/不重複 crime 全正向確認·0 uncertain)→ 修 1 cosmetic(infamy_dread 補 ally say_by_rel·原 fallback 到 text 無誤)。
+- **驗證**:run_all 99(新 `test_renown`:tier-0 no-op/階梯稱號/態度暖冷夾限+非civil不動/price 折扣加價+反套利/dialogue 端到端+公會覆寫/閘)+ check.sh + sim_assassin byte-identical。
+🔴 加聲望效果純改 `renown.py` 旋鈕(階梯/折扣 cap/稱號)+ 資料(min_fame/min_infamy 話題·requires_fame/requires_infamy 任務);**tier-0 必為 no-op**(守相容);**只動買價不動賣價**(免 faucet);聲望位移夾 civil 不造 hostile/comrade(公會覆寫優先);**不碰 crime 惡名軸**(outlaw/bounty/衛兵)。**前瞻**:聲望解鎖領主謁見/旅店免費/NPC 饋贈·惡名招賞金獵人(與 crime active_heat 連動)·更多聲望/惡名 gated 內容。
 
 ### R100 · 玩家雙面間諜系統:臥底生涯(掩護↔價值觀漂移·殺知情者滅口·真叛變)[save] [re-sim]
 

@@ -21,10 +21,10 @@
   },
 
   "attitude_topics": {
-    "comrade": ["guild_intel", "local_politics", "pledge_support", "buy_intel", "pump_for_info", "crime_fence", "crime_contract", "crime_supply"],
-    "friendly": ["local_politics", "pledge_support", "buy_intel", "pump_for_info"],
-    "neutral": ["local_politics", "pump_for_info"],
-    "cold": ["pump_for_info"],
+    "comrade": ["guild_intel", "local_politics", "pledge_support", "buy_intel", "pump_for_info", "crime_fence", "crime_contract", "crime_supply", "renown_praise"],
+    "friendly": ["local_politics", "pledge_support", "buy_intel", "pump_for_info", "renown_praise"],
+    "neutral": ["local_politics", "pump_for_info", "renown_praise", "infamy_dread"],
+    "cold": ["pump_for_info", "infamy_dread"],
     "hostile": []
   },
 
@@ -159,6 +159,28 @@
         "unaligned": "「酒過三巡,什麼話都鬆動了。想聽地方上的傳聞?向相熟的人追問便是。」"
       },
       "text": "「酒館是消息的集散地。地方上的『傳聞』,多問幾個人,門道就出來了。」"
+    },
+    "renown_praise": {
+      "label": "(受人仰慕)聽聽旁人怎麼說你",
+      "requires": {"min_fame": 50},
+      "say_by_rel": {
+        "ally": "「是您!您的事蹟早傳遍各省 —— 能與您說上話,是我的榮幸。」",
+        "neutral": "「等等……您莫非就是那位大名鼎鼎的英雄?失敬失敬!」",
+        "unaligned": "「您的名號如雷貫耳。這一帶有您在,大夥兒都安心不少。」",
+        "enemy": "「就算名滿天下,在我這兒也吃不開。」"
+      },
+      "text": "「您的威名早已傳開 —— 能見到本人,真是三生有幸。」"
+    },
+    "infamy_dread": {
+      "label": "(對方面露忌憚)探其口風",
+      "requires": {"min_infamy": 20},
+      "say_by_rel": {
+        "ally": "「您的名聲……我是站您這邊的,可旁人怕得很。低調些,對你我都好。」",
+        "neutral": "「我……我不想惹麻煩。您要什麼儘管說,別為難我這小本生意的。」",
+        "unaligned": "「您的名聲……在下不敢多問。您走您的道,我當沒看見。」",
+        "enemy": "「惡名在外的傢伙,離我遠點。」"
+      },
+      "text": "「您那些事……街坊都在傳。我可什麼都沒說。」"
     },
     "expose_mole": {
       "label": "🔍 揭發這名滲透者(向當局吹哨)",

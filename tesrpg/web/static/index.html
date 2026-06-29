@@ -431,6 +431,7 @@
     if (d.vampire) chips += `<span class="chip red">🩸 ${esc(d.vampire)}吸血鬼</span>`;
     else if (d.infected) chips += `<span class="chip red">🦠 吸血熱潛伏</span>`;
     if (d.cover) chips += `<span class="chip gold">${esc(d.cover)}</span>`;
+    if (d.renown) chips += `<span class="chip gold">${esc(d.renown)}</span>`;
     if (d.fame) chips += `<span class="chip cyan">聲望 ${d.fame}</span>`;
     if (d.bounty) chips += `<span class="chip red">通緝 ${d.bounty}</span>`;
     return elFrom(

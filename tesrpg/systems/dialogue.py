@@ -261,6 +261,8 @@ def attitude(char: Character, state, gamedata: GameData, npc_id: str, ctx: dict 
         base = "friendly"
     else:
         base = "neutral"
+    from tesrpg.systems import renown
+    base = renown.attitude_shift(char, base)   # R101 聲望位移(civil 階梯內·tier-0 no-op);公會覆寫仍最終決定
     return _guild_attitude(char, gamedata, npc_id, base)
 
 

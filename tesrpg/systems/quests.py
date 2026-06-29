@@ -109,6 +109,8 @@ def available_quests(char: Character, gamedata: GameData, source: str,
             continue
         if q.get("requires_fame") and char.fame < q["requires_fame"]:
             continue
+        if q.get("requires_infamy") and char.infamy < q["requires_infamy"]:   # R101 惡名閘(對稱 requires_fame)
+            continue
         # 陣營身分 gate:需為某陣營會員(達指定階)才開放(如教徒頂點 md7 需 mythic_dawn 滿階)。
         rf = q.get("requires_faction")
         if rf and char.factions.get(rf, -1) < q.get("requires_faction_rank", 0):

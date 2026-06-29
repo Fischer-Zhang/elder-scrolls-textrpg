@@ -128,6 +128,9 @@ def buy_price(char: Character, gamedata: GameData, item_id: str) -> int:
     # 戰士公會「軍械庫之誼」:買武器/護甲(含盾/弓/法杖)享階級折扣
     if "damage" in item or "armor_rating" in item:
         price *= 1 - factions.armory_discount(char, gamedata)
+    # R101 聲望議價:名聲折扣 / 惡名加價(tier-0 → ×1.0 → 既有買價逐位元組同;只動買價·賣價不碰)
+    from tesrpg.systems import renown
+    price *= renown.price_factor(char)
     # 反套利鐵則:同物買價恆 > 賣價(極端議價 + 滿階軍械庫折扣下,折扣不得倒掛成金幣泵)
     return max(1, round(price), sell_price(char, gamedata, item_id) + 1)
 

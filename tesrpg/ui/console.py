@@ -58,6 +58,12 @@ def _allies_status(allies) -> list:
             if a.health > 0 and (getattr(a, "summon_turns", None) is None or a.summon_turns > 0)]
 
 
+def _renown_title(c) -> str | None:
+    """R101 名聲稱號(由 fame 衍生;tier0=無 → None)。惡名稱號另由 crime.notoriety_title。"""
+    from tesrpg.systems import renown
+    return renown.renown_title(c) or None
+
+
 def _cover_badge(c, gamedata=None) -> str | None:
     """R100 雙面間諜狀態徽記(掩護公會 · 密 secrecy · 忠 loyalty · 知情者警示);非臥底回 None。"""
     from tesrpg.systems import undercover
@@ -177,7 +183,7 @@ def _status_view(state: GameState) -> dict:
          "fp": [int(c.fatigue), int(c.max_fatigue)],
          "fame": c.fame, "bounty": sum(c.bounties.values()),
          "can_level": c.can_level_up(), "vampire": None, "infected": False,
-         "cover": _cover_badge(c)}
+         "cover": _cover_badge(c), "renown": _renown_title(c)}
     if getattr(c, "is_vampire", False):
         from tesrpg.systems import vampirism
         v["vampire"] = vampirism.STAGE_NAMES[min(3, max(0, c.vampire_stage))]
