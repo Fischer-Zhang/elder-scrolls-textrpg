@@ -58,6 +58,18 @@ def _allies_status(allies) -> list:
             if a.health > 0 and (getattr(a, "summon_turns", None) is None or a.summon_turns > 0)]
 
 
+def _cover_badge(c, gamedata=None) -> str | None:
+    """R100 雙面間諜狀態徽記(掩護公會 · 密 secrecy · 忠 loyalty · 知情者警示);非臥底回 None。"""
+    from tesrpg.systems import undercover
+    if not undercover.on_mission(c):
+        return None
+    b = (gamedata.factions.get(c.cover_guild, {}) or {}).get("name", c.cover_guild) if gamedata else c.cover_guild
+    s = f"🎭 臥底·掩護{b}·密{c.cover_secrecy}·忠{c.cover_loyalty:+d}"
+    if c.cover_knower:
+        s += "·⚠知情者"
+    return s
+
+
 def use_web_backend(backend, recording_console) -> None:
     global console, _web
     console = recording_console
@@ -87,7 +99,7 @@ def _hud_view():
          "mp": [int(c.magicka), int(c.max_magicka)],
          "fp": [int(c.fatigue), int(c.max_fatigue)],
          "gold": c.gold, "bounty": sum(c.bounties.values()),
-         "can_level": c.can_level_up(), "vampire": None,
+         "can_level": c.can_level_up(), "vampire": None, "cover": _cover_badge(c, _hud_gamedata),
          "party": _party_status(c, _hud_gamedata), "allies": _allies_status(_hud_allies)}
     if getattr(c, "is_vampire", False):
         from tesrpg.systems import vampirism
@@ -164,7 +176,8 @@ def _status_view(state: GameState) -> dict:
          "mp": [int(c.magicka), int(c.max_magicka)],
          "fp": [int(c.fatigue), int(c.max_fatigue)],
          "fame": c.fame, "bounty": sum(c.bounties.values()),
-         "can_level": c.can_level_up(), "vampire": None, "infected": False}
+         "can_level": c.can_level_up(), "vampire": None, "infected": False,
+         "cover": _cover_badge(c)}
     if getattr(c, "is_vampire", False):
         from tesrpg.systems import vampirism
         v["vampire"] = vampirism.STAGE_NAMES[min(3, max(0, c.vampire_stage))]
@@ -662,6 +675,9 @@ def status_line(state: GameState, gamedata: GameData | None = None, allies: list
         extra.append("[magenta]🌙 月糖之醉[/]")
     elif skooma.is_addicted(c):
         extra.append("[red]💀 斯庫瑪戒斷[/]")
+    _cb = _cover_badge(c, gamedata)                        # R100:雙面間諜掩護狀態徽記
+    if _cb:
+        extra.append(f"[bold yellow]{_cb}[/]")
     if getattr(c, "diseases", None):                       # R53:疾病標記(數量;名稱見染病/惡化播報)
         extra.append(f"[yellow]🩹 染病×{len(c.diseases)}[/]")
     if c.fame:

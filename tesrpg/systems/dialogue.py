@@ -296,6 +296,8 @@ def _guild_attitude(char: Character, gamedata: GameData, npc_id: str, base: str)
     # 「另外發現他暗中是賊」只疊加情報,不抹除既有掩護公會的同袍/宿敵關係(臥底仍以掩護身分行事)。
     apparent = npc.get("guild")
     if apparent:
+        if getattr(char, "cover_guild", "") == apparent:   # R100 臥底:掩護期 B 的 NPC 認你為自己人
+            return "comrade"
         if factions.is_member(char, apparent):
             return "comrade"
         h = factions.faction_hostility(char, gamedata, apparent)

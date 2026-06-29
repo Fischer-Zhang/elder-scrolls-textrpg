@@ -81,6 +81,16 @@ class Character:
     skooma_last_dose_hour: int = -1     # 上次用藥的絕對小時(-1=從未;戒斷強度由「距今」推導)
     skooma_attr_bonus: dict = field(default_factory=dict)    # attr_id -> +點數(high 增益 或 戒斷負值,二擇一)
     skooma_skill_bonus: dict = field(default_factory=dict)   # skill_id -> +點數(僅戒斷負值;high 不碰技能 → 避刺客紅線)
+    # 雙面間諜 / 臥底(R100;掩護身分 ↔ 價值觀漂移的天平,持久進存檔)。**零戰鬥面狀態** ——
+    # 不寫進 char.factions(保 R96 互斥)、無 *_bonus 層 → combat/formulas 讀值不變、sim byte-identical。
+    # 全狀態在 cover_guild=="" 時 no-op。詳見 systems/undercover.py。
+    cover_guild: str = ""               # 潛入中的掩護公會 B(""=無臥底·主 no-op 開關)
+    cover_true_guild: str = ""          # 派你潛入的真實公會 A(叛變時棄 A 入 B)
+    cover_secrecy: int = 0              # 0..100 掩護完整度(每日衰減;歸零/逾期 → 曝光)
+    cover_loyalty: int = 0             # −100(忠於 A)..+100(同情 B);價值觀漂移軸(驅動結局)
+    cover_last_day: int = 0            # 上次 secrecy 衰減的絕對日水位(ratchet·防重載重複衰減)
+    cover_knower: str = ""             # 已識破你的具名 B NPC id(""=無人盯上;殺之滅口 / 逾期曝光)
+    cover_knower_deadline: int = 0     # 知情者通風報信的絕對日期限(超過 = 曝光)
     # 限時增益藥水(R30;煉金產出的強化屬性/技能/抗元素藥水,絕對小時到期)。權威來源 = potion_buffs;
     # 三個 *_bonus/resist 是「由 potion_buffs 決定性推導的快取層」(同 skooma/mastery 模式:attr()/skill()/
     # 抗性疊加、成長/夾限只用 base_*、絕不寫 base)。每圈 potion_buff.update 清過期,詳見 systems/potion_buff.py。
@@ -289,6 +299,10 @@ class Character:
             "skooma_addiction": self.skooma_addiction, "skooma_high_until": self.skooma_high_until,
             "skooma_last_dose_hour": self.skooma_last_dose_hour,
             "skooma_attr_bonus": self.skooma_attr_bonus, "skooma_skill_bonus": self.skooma_skill_bonus,
+            "cover_guild": self.cover_guild, "cover_true_guild": self.cover_true_guild,
+            "cover_secrecy": self.cover_secrecy, "cover_loyalty": self.cover_loyalty,
+            "cover_last_day": self.cover_last_day, "cover_knower": self.cover_knower,
+            "cover_knower_deadline": self.cover_knower_deadline,
             "potion_buffs": self.potion_buffs, "potion_attr_bonus": self.potion_attr_bonus,
             "potion_skill_bonus": self.potion_skill_bonus, "potion_resist": self.potion_resist,
             "known_effects": self.known_effects,

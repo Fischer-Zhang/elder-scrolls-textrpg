@@ -74,6 +74,8 @@ def joined_rivals(char: Character, gamedata: GameData, faction_id: str) -> list[
 # 你永不可能同時是某會與其宿敵的會員,故此衍生自洽。tier 隨在宿敵公會的階級成長。
 def faction_hostility(char: Character, gamedata: GameData, faction_id: str) -> int:
     """fid 對玩家的敵意 tier(0=無敵意);純衍生、零存檔欄。"""
+    if getattr(char, "cover_guild", "") == faction_id:   # R100 臥底:掩護期 B 視你為自己人(不敵視)
+        return 0
     if is_member(char, faction_id):     # 自己人;且互斥保證不會同時是其宿敵會員
         return 0
     rivals = gamedata.factions.get(faction_id, {}).get("rivals", [])

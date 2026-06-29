@@ -15,7 +15,7 @@ from tesrpg.state import GameState
 from tesrpg.systems import (achievements, aiwar, alchemy, boons, brotherhood, combat, court, crafting, crime, dialogue, diseases, dungeon,
                             dungeoncrawl, enchanting, events, factions, housing, inventory, landmarks, legacy,
                             lycanthropy, magic, mastery, mounts, party, politics, potion_buff, powers,
-                            progression, quests, race_ability, skooma, smithing, stats, vampirism, warband, world, worldpulse, worldstate)
+                            progression, quests, race_ability, skooma, smithing, stats, undercover, vampirism, warband, world, worldpulse, worldstate)
 from tesrpg.ui import console as ui
 
 SAVE_PATH = Path.home() / ".tesrpg" / "save.json"
@@ -735,7 +735,7 @@ def _apply_companion_capstone_auras(char: Character, gamedata: GameData, roster:
 def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
                alerted: bool = False, prep_budget: int = 0, casualties: list | None = None,
                carry_allies: list | None = None, preserve_buffs: bool = False,
-               mounted: bool = False) -> str:
+               mounted: bool = False, flee_after_rounds: int | None = None) -> str:
     """團隊/多敵回合制戰鬥。階段制回合:玩家 → 同伴 → 敵人 → 結算。
 
     enemies:敵方 Creature 清單(也接受單一 Creature)。companions 未指定時用玩家隊伍。
@@ -812,6 +812,12 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
     round_no = 0
     while combat.is_alive(player) and alive_e():
         round_no += 1
+        # R100 限時決鬥(殺知情者):未在 flee_after_rounds 回合內擊殺 → 對方脫逃回報(預設 None 不影響任何既有戰鬥)。
+        if flee_after_rounds is not None and round_no > flee_after_rounds:
+            player.active_effects.clear()
+            state.time.advance(1)
+            tally_casualties()
+            return "fled_enemy"
         player._evade_counter_used = False        # 每回合重置 on_evade 反制額度(守群戰風險;鏡像 EVASION_BONUS_CAP)
         vanish_success = False        # 本回合是否成功隱遁(R71:成功 → 只重置偷襲;不再跳過敵人階段)
         # 怪物硬控(R43):恐懼/麻痺 → 玩家本回合無法行動 → 跳過選單與玩家階段(同伴/敵人照常,回合末 tick 解除)。
@@ -1460,6 +1466,9 @@ def _travel_to(state: GameState, gamedata: GameData, dest: str) -> str | None:
     if loc["type"] in ("city", "town"):
         if _curse_manhunt(state, gamedata) == "dead":
             return "dead"
+    # R100:臥底在城鎮被某 B NPC 起疑(低 secrecy → 機率識破 → 指派知情者 + 限時追殺)
+    if loc["type"] in ("city", "town"):
+        _undercover_detection(state, gamedata)
     return None
 
 
@@ -4238,6 +4247,8 @@ def action_talk(state: GameState, gamedata: GameData) -> str | None:
                       {"text": f"成功 +{dialogue.persuade_delta(char.skill('speechcraft'))} 好感", "tone": "green"},
                       {"text": f"耗 {sp['hours']}時·體力{sp['fatigue']}", "tone": "cyan"}]))
         opts.append(("bribe", f"賄賂({dialogue.BRIBE_COST} 金)"))
+        if char.cover_knower == nid:                  # R100:此人正是識破你的知情者 → 限時滅口
+            opts.append(("silence", "🔪 滅口(限時決鬥 —— 在他通風報信前了結他)"))
         opts.append(("murder", "🔪 暗殺此人"))
         choice = ui.menu("對話", opts, allow_back=True)
         if choice is None:
@@ -4283,6 +4294,10 @@ def action_talk(state: GameState, gamedata: GameData) -> str | None:
             r = dialogue.bribe(char, gamedata, nid)
             ui.message(r["message"], style="green" if r["ok"] else "red")
             att = dialogue.attitude(char, state, gamedata, nid, ctx)
+        elif choice == "silence":
+            if _undercover_silence(state, gamedata, nid) == "dead":
+                return "dead"
+            return None
         elif choice == "murder":
             return action_murder(state, gamedata, nid)
 
@@ -4381,6 +4396,49 @@ def guard_confrontation(state: GameState, gamedata: GameData) -> str | None:
 
 
 _BEAST_TOWN_MANHUNT_CHANCE = 0.85   # R50:獸形現於城中被衛兵圍捕的機率(主動入城=自找;高但非必中)
+_KNOWER_CREATURE = "guild_enforcer"   # R100:知情者決鬥用的戰鬥替身(複用 R96 公會打手 bestiary)
+
+
+def _undercover_detection(state: GameState, gamedata: GameData) -> None:
+    """R100:臥底在城鎮被某現有具名 B NPC 起疑(rng·低 secrecy → 高機率)→ 指派知情者 + 限時追殺視窗。
+    僅指派(不戰鬥);滅口走 action_talk 的「🔪 滅口」限時決鬥。"""
+    char = state.player
+    if not undercover.on_mission(char) or undercover.has_knower(char):
+        return
+    if not state.rng.chance(undercover.detection_chance(char)):
+        return
+    loc = world.current_location(char, gamedata)
+    nid = undercover.pick_knower(char, gamedata, province=loc.get("province"))
+    if not nid:
+        return
+    undercover.assign_knower(char, state, nid)
+    name = gamedata.npcs[nid]["name"]
+    where = gamedata.location(gamedata.npcs[nid]["location"])["name"]
+    ui.message(f"⚠ {name}起了疑心 —— 他察覺你的身分不對勁,正打算通風報信。"
+               f"趕在他開口前讓他閉嘴(他人在{where};第 {char.cover_knower_deadline} 日前)。", style="bold red")
+
+
+def _undercover_silence(state: GameState, gamedata: GameData, nid: str) -> str | None:
+    """R100 殺知情者滅口:限時決鬥(KNOWER_DUEL_ROUNDS 回合內擊殺)。
+    擊殺→掩護保住(secrecy 回地板+惡名);脫逃(逾回合)→曝光。回傳 'dead'|None。"""
+    char = state.player
+    name = gamedata.npcs[nid]["name"]
+    ui.message(f"你尾隨{name}至無人處 —— 必須在他喊出口前的電光石火間了結他。", style="magenta")
+    foe = combat.spawn_creature(gamedata, _KNOWER_CREATURE, state.rng)
+    foe.name = name
+    res = run_battle(state, gamedata, foe, flee_after_rounds=undercover.KNOWER_DUEL_ROUNDS)
+    if res == "dead":
+        return "dead"
+    if res == "victory":
+        char.murdered_npcs.append(nid)               # 知情者已死 → 自世界移除(pick_knower 亦排除)
+        undercover.silence_knower(char)
+        ui.message(f"{name}癱軟在你臂彎裡,情報隨他一同沉默 —— 掩護保住了,但你手上又添一條人命。",
+                   style="red")
+    else:                                            # fled_enemy:沒能在限時內了結 → 對方脫逃回報
+        ev = undercover.expose(char)
+        bname = gamedata.factions.get(ev["cover_guild"], {}).get("name", ev["cover_guild"])
+        ui.message(f"{name}掙脫你的手、奪路狂奔 —— 你的身分將傳遍{bname}。掩護就此瓦解。", style="bold red")
+    return None
 
 
 def _curse_manhunt(state: GameState, gamedata: GameData) -> str | None:
@@ -4572,6 +4630,13 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
                            style="bold red")
             elif ev["kind"] == "clean":
                 ui.message("你撐過了最深的渴求,身體漸漸清明 —— 月糖的枷鎖鬆開了。", style="green")
+
+        # 雙面間諜(R100):secrecy 衰減 + 逾期/歸零 → 掩護曝光(掛在斯庫瑪之後)
+        for ev in undercover.update(state, gamedata):
+            if ev["kind"] == "exposed":
+                bname = gamedata.factions.get(ev["cover_guild"], {}).get("name", ev["cover_guild"])
+                ui.message(f"風聲走漏 —— 你在{bname}的掩護身分敗露,潛入任務功虧一簣,自此與他們不共戴天。",
+                           style="bold red")
 
         # 疾病(R53):惡化 / DoT 扣血(掛在斯庫瑪之後)
         for ev in diseases.update(state, gamedata):

@@ -15,7 +15,8 @@
 from __future__ import annotations
 
 from tesrpg.systems import (aiwar, alchemy, boons, dagon_boon, diseases,
-                            inventory, lycanthropy, potion_buff, progression, skooma, worldpulse)
+                            inventory, lycanthropy, potion_buff, progression, skooma,
+                            undercover, worldpulse)
 
 
 def run_load_migrations(player, time, gamedata) -> None:
@@ -25,6 +26,7 @@ def run_load_migrations(player, time, gamedata) -> None:
     progression.ensure_all_skills(player, gamedata)              # 補上新增技能(scout 等)
     progression.ensure_mastery_choices(player, gamedata)         # 里程碑 v2:補欄/清陳舊選擇/重算 fortify
     skooma.ensure_skooma_fields(player, time, gamedata)          # 斯庫瑪:補欄 + 依當前時間重算亢奮/戒斷層
+    undercover.ensure_cover_fields(player, time, gamedata)        # 雙面間諜:補欄 + 夾限/水印自癒(零戰鬥層·R100)
     potion_buff.ensure_potion_fields(player, time, gamedata)     # 限時增益藥水:補欄 + 依當前時間剔除過期(R30)
     alchemy.ensure_known_effects(player, gamedata)               # 煉金效果揭露:補欄/防呆/清陳舊 ing_id(R32)
     lycanthropy.ensure_lycanthropy_fields(player, time, gamedata)  # 狼人:補欄 + 過期獸形自動變回 + 夾血
