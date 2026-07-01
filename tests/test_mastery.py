@@ -1068,9 +1068,8 @@ def test_magic_school_no_brainer_fix():
     assert abs(mastery.spell_power_bonus(c, gd, "alteration") - 0.10) < 1e-9   # 護盾增幅(原意志+4 → 真功能)
     mastery.choose(c, gd, "mysticism_50", "ward_focus")
     assert abs(mastery.spell_power_bonus(c, gd, "mysticism") - 0.10) < 1e-9    # 結界增幅
-    mastery.choose(c, gd, "conjuration_50", "warding_focus")
     mastery.choose(c, gd, "conjuration_75", "warding_summon")
-    assert mastery.passive_armor_bonus(c, gd) == 8 + 15                        # 護體召喚 50+75 相加不遮蔽
+    assert mastery.passive_armor_bonus(c, gd) == 15                            # R106:護體召喚(75)被動護甲(50 已改身份節點)
     for nid, oid in [("illusion_50", "dread_touch"), ("illusion_75", "cowardice"), ("illusion_100", "soul_dread")]:
         mastery.choose(c, gd, nid, oid)
     foh = mastery.fear_on_hit(c, gd)

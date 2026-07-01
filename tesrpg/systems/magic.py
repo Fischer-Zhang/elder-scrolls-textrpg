@@ -125,7 +125,8 @@ def _co_has_kind(entity, kind: str) -> bool:
                for x in getattr(entity, "active_effects", []))
 
 
-def _support_act(caster, spells, pool, gamedata, exclude_from_empower=(), power=1.0) -> dict | None:
+def _support_act(caster, spells, pool, gamedata, exclude_from_empower=(), power=1.0,
+                 cooldown=COMPANION_SUPPORT_COOLDOWN) -> dict | None:
     """陣營無關的支援施法決策(R86 同伴 / R87 敵方 共用 core)。`pool`=施法者這一側的成員(含 self)。
     回施放結果 dict(用本回合)或 None(→ 呼叫端走攻擊)。優先序:① 反應式治療(池中 HP 比 < 門檻)
     ② 主動式增益(目標缺該 buff)。冷卻中或無 spells → None。掃 active_effects 去重。
@@ -136,7 +137,7 @@ def _support_act(caster, spells, pool, gamedata, exclude_from_empower=(), power=
     res = (_support_try_heal(caster, spells, pool, gamedata, power)
            or _support_try_buff(caster, spells, pool, gamedata, exclude_from_empower, power))
     if res:
-        caster.active_effects.append({"kind": "support_cd", "turns": COMPANION_SUPPORT_COOLDOWN})
+        caster.active_effects.append({"kind": "support_cd", "turns": cooldown})
     return res
 
 
@@ -165,10 +166,13 @@ def summon_support_act(summon, player, allies, gamedata) -> dict | None:
     """R106 召喚物支援施法(如召喚治療精靈):spells 讀 **bestiary**[tid](召喚物是 bestiary 生物·非
     companions.json → 不能走 companion_support_act);pool=[player]+存活盟友(照顧英雄與其他召喚物);
     empower 排除玩家(rally 只益盟友);固定 power(不隨召喚主成長)。**只由 main.run_battle ally 階段呼叫**。"""
-    from tesrpg.systems import combat
+    from tesrpg.systems import combat, mastery
     spells = list(gamedata.bestiary.get(getattr(summon, "template_id", ""), {}).get("spells", []) or [])
     pool = [player] + [a for a in allies if combat.is_alive(a)]
-    return _support_act(summon, spells, pool, gamedata, exclude_from_empower=(player,), power=SUMMON_SUPPORT_POWER)
+    mod = mastery.summon_casting_mod(player, gamedata)   # R106 咒靈共鳴:法術召喚物施法更強更頻繁(無此里程碑 → 用預設 0.8/CD2)
+    return _support_act(summon, spells, pool, gamedata, exclude_from_empower=(player,),
+                        power=mod.get("power", SUMMON_SUPPORT_POWER),
+                        cooldown=mod.get("cooldown", COMPANION_SUPPORT_COOLDOWN))
 
 
 def _support_try_heal(caster, spells, pool, gamedata, power=1.0):
@@ -389,9 +393,11 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
         char.active_effects[:] = [e for e in char.active_effects if e.get("kind") != "bound_weapon"]
         # R106 束縛兵刃 archetype 差異化:存 archetype → combat 據此給原型身份(釘錘擊暈 stagger 等);
         # 仍走咒術技能傷害 + 元素(無視物理護甲)。無 archetype(舊 bound_sword)→ 行為不變。
+        # R106 束縛精通:多駐留 turn_bonus 回合(無里程碑 → +0 不變)。
+        bturns = eff["turns"] + mastery.bound_mastery_mod(char, gamedata).get("turn_bonus", 0)
         char.active_effects.append({"kind": "bound_weapon", "element": eff.get("element", "magic"),
-                                    "magnitude": mag, "turns": eff["turns"], "archetype": eff.get("archetype")})
-        msg = f"{sp['name']} —— 你手中凝出一柄束縛兵刃(基礎傷害 {mag},隨咒術精進,{eff['turns']} 回合)。"
+                                    "magnitude": mag, "turns": bturns, "archetype": eff.get("archetype")})
+        msg = f"{sp['name']} —— 你手中凝出一柄束縛兵刃(基礎傷害 {mag},隨咒術精進,{bturns} 回合)。"
 
     elif kind in ("charm", "invisibility", "feather", "detect_life"):   # R104 實用/幻術:限時自我增益(戰鬥外社交/潛行/探索)
         from tesrpg.systems import spellfx

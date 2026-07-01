@@ -201,6 +201,47 @@ def test_bound_greatsword_hits_harder_than_sword():
     assert _maxdmg("bound_greatsword") > _maxdmg("bound_sword"), "束縛巨劍(mag20)應比束縛長劍(mag14)痛"
 
 
+# --- R106 Phase B:conjuration 50 身份分岔(咒靈共鳴 / 束縛精通)--------------
+def test_bound_mastery_amps_damage_and_duration():
+    from tesrpg.systems import mastery
+
+    def _bound(pick):
+        _, cc = _summoner(80)
+        if pick:
+            mastery.choose(cc, get_gamedata(), "conjuration_50", pick)
+        cc.active_effects = []
+        magic.cast(cc, get_gamedata(), "bound_sword", RNG(1), state=None)
+        bw = [e for e in cc.active_effects if e["kind"] == "bound_weapon"][0]
+        best = 0
+        for s in range(40):
+            e = combat.spawn_creature(get_gamedata(), "bandit", RNG(s)); e.max_health = e.health = 9999
+            combat.resolve_attack(cc, e, get_gamedata(), RNG(s + 300)); best = max(best, 9999 - e.health)
+        return bw["turns"], best
+
+    t0, d0 = _bound(None)
+    t1, d1 = _bound("bound_mastery")
+    assert t1 == t0 + 2, "束縛精通 +2 回合時程"
+    assert d1 > d0, "束縛精通 +傷害"
+
+
+def test_summon_casting_boosts_support_power_and_cooldown():
+    from tesrpg.systems import mastery
+    gd, c = _summoner(100)
+    assert mastery.summon_casting_mod(c, gd) == {}   # 未選 → 預設
+    mastery.choose(c, gd, "conjuration_50", "summon_casting")
+    mod = mastery.summon_casting_mod(c, gd)
+    assert mod.get("power") == 1.0 and mod.get("cooldown") == 1
+
+
+def test_conjuration_50_redesign_retires_old_choice():
+    """R106:conjuration_50 改身份節點 → 舊 warding_focus/efficient_summon 選擇走 ensure 退 pending(零存檔欄)。"""
+    from tesrpg.systems import progression
+    gd, c = _summoner(100)
+    c.mastery_choices["conjuration_50"] = "warding_focus"   # 舊選(已移除)
+    progression.ensure_mastery_choices(c, gd)
+    assert "conjuration_50" not in c.mastery_choices, "舊 warding_focus 選擇應退 pending(可重選)"
+
+
 def run():
     for name, fn in sorted(globals().items()):
         if name.startswith("test_") and callable(fn):

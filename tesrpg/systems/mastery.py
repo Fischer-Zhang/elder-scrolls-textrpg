@@ -45,7 +45,7 @@ _IMPLEMENTED_KINDS = {
     "offbalance_unlock",   # 徒手 25(R103):解鎖失衡累積(單一 perk 自動授予;gate 走 has_offbalance_unlock=門檻已達 + 非重甲)
     # P3 魔法系:法術調變(學派 power/cost/命中附狀態,吸收 spell_overload)、召喚調變、
     # 被動護甲、煉金/附魔增幅、塗毒次數、命中懼意、低血再生、商貿議價。
-    "spell_mod", "summon_mod", "passive_armor", "potion_potency", "poison_charge_bonus",
+    "spell_mod", "summon_mod", "summon_casting", "bound_mastery", "passive_armor", "potion_potency", "poison_charge_bonus",
     "enchant_potency", "fear_on_hit", "regen_on_low", "merchant_bonus",
     "poison_unlock",   # 煉金深化(R31):解鎖特殊毒型家族(weaken/slow/fear)+ 毒效延長
 
@@ -292,6 +292,18 @@ def spell_on_hit(char, gamedata: GameData, school: str) -> dict | None:
 def summon_mod(char, gamedata: GameData) -> dict:
     """召喚調變:{extra?, hp_factor?(額外召喚物血量係數), hp_bonus?, turn_bonus?};無則 {}。"""
     e = _chosen_option_by_kind(char, gamedata, "summon_mod")
+    return e if e else {}
+
+
+def summon_casting_mod(char, gamedata: GameData) -> dict:
+    """R106「咒靈共鳴」(conjuration 50):法術召喚物支援施法強化 {power, cooldown};無則 {}。"""
+    e = _chosen_option_by_kind(char, gamedata, "summon_casting")
+    return e if e else {}
+
+
+def bound_mastery_mod(char, gamedata: GameData) -> dict:
+    """R106「束縛精通」(conjuration 50):束縛兵刃 {dmg_bonus, turn_bonus};無則 {}。"""
+    e = _chosen_option_by_kind(char, gamedata, "bound_mastery")
     return e if e else {}
 
 

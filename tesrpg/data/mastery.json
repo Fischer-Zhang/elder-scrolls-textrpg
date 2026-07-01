@@ -1428,19 +1428,20 @@
     "threshold": 50,
     "options": [
       {
-        "opt_id": "efficient_summon",
-        "name": "省魔召喚",
-        "kind": "spell_mod",
-        "school": "conjuration",
-        "cost_factor": 0.85,
-        "desc": "召喚漸熟:召喚/束縛/亡者復生施法省魔 15%(更頻繁可用)。"
+        "opt_id": "summon_casting",
+        "name": "咒靈共鳴",
+        "kind": "summon_casting",
+        "power": 1.0,
+        "cooldown": 1,
+        "desc": "與召喚物心靈共鳴:法術召喚物(如治療精靈)施法更強更頻繁(治療全額 · 冷卻 2→1)。"
       },
       {
-        "opt_id": "warding_focus",
-        "name": "護體召喚初窺",
-        "kind": "passive_armor",
-        "armor_bonus": 8,
-        "desc": "召喚靈光初凝環體護持(被動護甲 +8;與護體召喚〔75〕相加)。"
+        "opt_id": "bound_mastery",
+        "name": "束縛精通",
+        "kind": "bound_mastery",
+        "dmg_bonus": 0.15,
+        "turn_bonus": 2,
+        "desc": "束縛兵刃駕輕就熟:凝出的兵刃傷害 +15%、多駐留 2 回合。"
       }
     ]
   },

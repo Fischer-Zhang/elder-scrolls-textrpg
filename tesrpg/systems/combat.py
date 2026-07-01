@@ -261,7 +261,8 @@ def _weapon_profile(actor, gamedata: GameData, attack: dict | None = None):
         bw = next((e for e in actor.active_effects
                    if e.get("kind") == "bound_weapon" and e.get("turns", 0) > 0), None)
         if bw:   # 召喚「束縛兵刃」:取代裝備武器 → 固定傷害、用咒術技能、不吃淬鍊/附魔/塗毒/耐久(skill_id=None)
-            return bw["magnitude"], actor.skill("conjuration"), None
+            bmul = 1.0 + mastery.bound_mastery_mod(actor, gamedata).get("dmg_bonus", 0.0)   # R106 束縛精通:傷害 +%(無里程碑→×1)
+            return round(bw["magnitude"] * bmul), actor.skill("conjuration"), None
         gs = actor.equipped.get("shield")
         gsd = gamedata.item_or_none(gs) if gs else None
         if gsd and gsd.get("great_shield"):   # 雙手重盾占雙手 → 盾擊作戰(手持武器休眠);用 block 技、算物理、無附魔/塗毒/archetype
