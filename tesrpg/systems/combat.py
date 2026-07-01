@@ -91,13 +91,22 @@ def alive_list(combatants: list) -> list:
     return [c for c in combatants if is_alive(c)]
 
 
+TAUNT_AGGRO_CHANCE = 0.6   # R105 坦克召喚嘲諷:嘲諷中的召喚物吸引敵人火力的機率
+
+
 def pick_player_side_target(player: Character, allies: list, rng: RNG):
     """敵人選擇攻擊我方目標:偏好玩家(約 55%),其餘平分給存活同伴。
 
-    戰士「盾牆」嘲諷:玩家立盾牆時,把所有敵火力吸到坦身上(只護同袍 HP,不轉嫁傷害)。"""
+    戰士「盾牆」嘲諷:玩家立盾牆時,把所有敵火力吸到坦身上(只護同袍 HP,不轉嫁傷害)。
+    R105 坦克召喚「嘲諷」:場上有嘲諷中的盟友(魔人/魔靈伴)→ 機率把敵火力吸到它身上,掩護召喚主。"""
     living_allies = [a for a in allies if is_alive(a)]
     if has_shield_wall(player):          # 盾牆嘲諷:強制鎖定坦
         return player
+    # 🔴 無嘲諷者 → taunters 空 → and 短路不擲 rng → 逐位元組同(sim 無盟友/一般同伴無 taunt)
+    taunters = [a for a in living_allies
+                if any(e.get("kind") == "taunt" and e.get("turns", 0) > 0 for e in getattr(a, "active_effects", []))]
+    if taunters and rng.chance(TAUNT_AGGRO_CHANCE):
+        return rng.choice(taunters)
     if not living_allies or rng.chance(0.55):
         return player
     return rng.choice(living_allies)
@@ -532,6 +541,7 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
         if bound:   # 召喚「束縛兵刃」:法系近戰 → 走元素分支(無視護甲、吃元素抗性;元素分支不讀附魔/灌注 → 不雙吃)
             atk_element = bound.get("element", "magic")
         raw *= magic.weaken_factor(attacker)            # 耗弱:攻方傷害打折(玩家/怪皆適用 R43;無耗弱→×1 byte-identical)
+        raw *= getattr(attacker, "summon_power", 1.0)   # R105 召喚物傷害隨召喚主 conjuration 威力成長(非召喚者無此屬性 → ×1.0 byte-identical)
 
         if atk_element:
             # 元素攻擊:無視物理護甲,改吃元素抗性;巨魔像座可吸收為魔力
@@ -653,10 +663,12 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
             if mox:
                 attacker.magicka = attacker.magicka + mox
 
-        # 怪物攻擊的觸發狀態(中毒/凍傷/控場)→ 加到玩家身上(R43 放寬:不再只 dot,支援控場 kind)
+        # 怪物攻擊的觸發狀態(中毒/凍傷/控場)→ 加到防守方身上(R43 放寬:不再只 dot,支援控場 kind)
         # 防禦雙軌:① on_hit 整段在 `if hit:` 內 → 落空即連控帶傷全免(閃躲/格擋第一道);
         #          ② fear/paralyze 命中後再吃 resisted_mind(willpower)第二道;軟控命中即中。
-        if not _is_player(attacker) and _is_player(defender):
+        # R105:召喚物(summon_turns 標記)攻擊敵人時也施加自身 on_hit(元素被動:火灼燒/冰凍麻/雷踉蹌);
+        # 🔴 怪物→一般同伴仍不觸發(僅 summon 或 →玩家)→ 不改既有 monster→ally 行為·sim 無召喚故 byte-identical。
+        if not _is_player(attacker) and (_is_player(defender) or getattr(attacker, "summon_turns", None) is not None):
             oh = atk.get("on_hit")
             if oh and rng.chance(oh.get("chance", 1.0)):
                 st = oh["status"]
@@ -667,7 +679,6 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
                 # 控場 → 集中 helper(R44:玩家 willpower 抗硬控 + 去重,移入 apply_control)
                 elif magic.apply_control(defender, st, gamedata, rng,
                                          magnitude=oh.get("magnitude", 0.0), turns=oh["turns"]) == "applied":
-                    status_applied = st
                     status_applied = st
             # 疾病傳染(吸血鬼吸血熱 / 狼人狼人熱):命中機率 × 疾病抗性削弱(只標記,轉化由各系驅動)。
             # `infect_kind` 缺省 "vampire"(舊吸血鬼敵向後相容);跨詛咒互斥靠疾病免疫使 dmult=0 自然擋掉,

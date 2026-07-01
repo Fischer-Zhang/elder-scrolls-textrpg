@@ -489,13 +489,17 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
             ally = combat.spawn_creature(gamedata, eff["creature"], rng)
             boon = factions.conjure_boon(char, gamedata)   # 神話黎明:達貢之佑強化召喚物
             smod = mastery.summon_mod(char, gamedata)      # 里程碑:雙重召喚 / 束縛兵刃
-            # 力竭削弱召喚物 HP(只取體力因子、不取整個 power → 滿體 ×1.0 不動既有平衡;
-            # 與 heal/shield/damage 同步符合「施法力竭法效降」對稱意圖)
-            fat_pen = formulas.cast_fatigue_power_factor(fatigue_ratio)
-            hp_mult = (1 + boon) * (1 + smod.get("hp_bonus", 0.0)) * fat_pen
-            if hp_mult != 1.0:
-                ally.max_health = max(1, round(ally.max_health * hp_mult))
-                ally.health = ally.max_health
+            # R105 召喚師深化:召喚物強度(HP + 傷害)隨召喚主的 conjuration 威力成長。
+            # `power`(:245)已 = _power(conjuration)〔技能+法術威力+智力+奧術連鎖〕× 力竭因子 → 直接複用;
+            # 再乘 (1+達貢之佑)〔階級〕,夾 SUMMON_POWER_CAP 防 apex spell-power 暴衝(「初始弱」靠 bestiary 基礎下修)。
+            scale = min(formulas.SUMMON_POWER_CAP, power * (1 + boon))
+
+            def _empower_summon(cre, hp_factor=1.0):
+                cre.summon_power = scale                   # 傷害側乘子:resolve_attack 讀取(非召喚者無此屬性 → ×1.0 byte-identical)
+                cre.max_health = max(1, round(cre.max_health * scale * (1 + smod.get("hp_bonus", 0.0)) * hp_factor))
+                cre.health = cre.max_health
+
+            _empower_summon(ally)
             bonus_turns = int(boon * 3) + int(smod.get("turn_bonus", 0))
             ally.summon_turns = eff["turns"] + bonus_turns
             battle.setdefault("allies", []).append(ally)
@@ -503,8 +507,7 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
             if smod.get("extra"):     # 雙重召喚:額外多召一隻較弱的盟友
                 for _ in range(int(smod["extra"])):
                     ally2 = combat.spawn_creature(gamedata, eff["creature"], rng)
-                    ally2.max_health = max(1, round(ally2.max_health * smod.get("hp_factor", 0.6) * (1 + boon) * fat_pen))
-                    ally2.health = ally2.max_health
+                    _empower_summon(ally2, hp_factor=smod.get("hp_factor", 0.6))
                     ally2.summon_turns = ally.summon_turns
                     battle.setdefault("allies", []).append(ally2)
                 extra_msg = "(雙重召喚:多一隻較弱的盟友)"
@@ -868,6 +871,8 @@ def tick_effects(entity, gamedata=None) -> list[str]:
                 msgs.append(f"{name}身上的導電消退了。")
             elif e["kind"] == "offbalance":
                 msgs.append(f"{name}穩住了重心。")
+            elif e["kind"] == "taunt":
+                msgs.append(f"{name}的威懾漸漸散去,不再牽制敵人。")   # R105 坦克嘲諷過期
     return msgs
 
 

@@ -356,6 +356,11 @@ SOLO_SNEAK_DAMAGE_CAP_RATIO = 0.40
 # 衝鋒只在野外旅途/探索遭遇、且僅開場第一回合可用。調此值或衝鋒倍率務必重跑 sim_assassin.py。
 MOUNTED_CHARGE_DAMAGE_CAP_RATIO = 0.45
 
+# 召喚師深化(R105):召喚物 HP + 傷害隨召喚主的 conjuration 學派威力(_power:技能+法術威力+智力)
+# ×(1+達貢之佑)× 力竭 成長,夾此上限防 apex spell-power 堆疊暴衝(「初始弱」靠 bestiary 基礎下修)。
+# 召喚物傷害仍走 resolve_attack(非玩家路徑·不吃偷襲);調此值或召喚基礎務必重跑 sim_party.py。
+SUMMON_POWER_CAP = 2.0
+
 # 徒手「失衡 off-balance」warfare(R##:落實 skills.json 招牌「耗損對手體力」死機制)。
 # 鏡像 R75 conduct 疊層:玩家徒手命中堆疊敵失衡層(暫態 active_effects·不入檔),層數放大
 # 後續徒手傷害(疊加提升傷害);跨門檻踉蹌、滿頂罕見真擊倒。🔴 只玩家徒手路徑讀寫 → sim 持

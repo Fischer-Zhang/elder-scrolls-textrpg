@@ -1024,6 +1024,10 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
                 continue
             tgt = state.rng.choice(alive_e())
             a_atk = combat.choose_attack(a, state.rng, tgt)   # 同伴多攻擊模式(無曲目 → 後備單招,行為不變)
+            if a_atk.get("taunt"):   # R105 坦克召喚(魔人/魔靈伴)嘲諷 action:掛嘲諷態 → 敵人幾回合內機率改打它(pick_player_side_target)
+                a.active_effects.append({"kind": "taunt", "turns": a_atk.get("turns", 3)})
+                ui.message(f"{a.name}發出震懾的{a_atk.get('name', '嘲諷')},吸引了敵人的注意!", style="bold cyan")
+                continue
             ui.combat_event(combat.resolve_attack(a, tgt, gamedata, state.rng, attack=a_atk), gamedata)
             note_trap(tgt)
 

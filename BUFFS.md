@@ -187,7 +187,8 @@
 | 奧術灌注(flame/frost/storm_blade) | 傷害 | round(8×power)元素傷/命中;turns5 | 🔴多元素並掛逐一加;加在 solo 夾限**之前**;獸形/束縛不吃 |
 | 共鳴一擊 resonance | 傷害 | 半數實際法傷+引燃dot;turns2 | 🔴重施去重;偷襲不放大、solo受夾 |
 | 束縛兵刃 bound_weapon | 武器替換 | 基礎傷14(magic),不乘power;turns6 | 重施去重;取代裝備(不吃淬鍊/附魔/塗毒/副手) |
-| 召喚/復生 summon/allies | 召喚 | HP×0.85~1.15×(1+boon)×(1+hp_bonus)×力竭;reanimate額外×0.6 | 加入 battle["allies"](R08);受力竭削HP |
+| 召喚 summon(R105 成長)| 召喚物 HP+傷害 | **scale=min(SUMMON_POWER_CAP=2.0, _power(conjuration)×(1+boon))×力竭**;HP=基礎×0.85~1.15×scale×(1+hp_bonus)·傷害 raw×`summon_power`(=scale) | 🔴R105:召喚物**隨召喚主 conjuration 技能/法術威力/智力成長**(推翻舊「不吃_power」)·初始弱靠 bestiary 基礎·CAP 防暴衝·傷害走 resolve_attack **不吃玩家偷襲**·角色定位(魔人/魔靈伴坦克·火冰雷法師玻璃大砲)+ 元素 on_hit(火 dot/冰 benumb/雷 stagger)+ 坦克嘲諷(TAUNT_AGGRO 0.6);加入 battle["allies"](R08)|
+| 復生 reanimate | 召喚物 HP | 基礎×0.85~1.15×(1+boon)×(1+hp_bonus)×力竭×0.6 | 🔴**不設 summon_power**(傷害不縮放·刻意非本輪·與 R105 前逐位元組同);喚敵屍為限時盟 |
 | 凝神 restore_fatigue | 資源(瞬時) | +40體力,不乘power |
 | 奧術連鎖 cascade / 戰地搶救 triage / 法力回擊 | 見③ | — | 戰鬥邊界清空 |
 

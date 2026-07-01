@@ -123,7 +123,9 @@ def test_summon_boon_strengthens_ally():
     magic.cast(c, gd, "conjure_familiar", RNG(11), battle=battle1)
     ally1 = battle1["allies"][0]
 
-    assert ally1.max_health == round(ally0.max_health * 1.6)
+    # R105:召喚物 HP 現額外吃 _power(conjuration) 縮放(對 ally0/ally1 共通)→ 達貢之佑放大比值仍 ≈1.6(容雙重捨入)
+    assert ally1.max_health > ally0.max_health
+    assert abs(ally1.max_health / ally0.max_health - 1.6) < 0.08
     assert ally1.health == ally1.max_health
     assert ally1.max_health > base_hp                   # 確實放大
     assert ally1.summon_turns == 6 + int(0.6 * 3)        # +1 回合

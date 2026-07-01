@@ -1405,6 +1405,19 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 
 ---
 
+### R105 · 召喚師深化:召喚物角色定位 + 各自行動模式 + 元素被動 + 隨召喚主成長 [re-sim] [save-safe]
+
+**冷系統審計 → 使用者拍板深化召喚師;逐步釐清最終範圍**。死點:召喚物**零身份成長**(HP 不吃 conjuration 技能/`_power`,練 100 級與 25 級召的一樣強)+ 三元素 atronach **行動同質**。
+**① 角色定位 + 基礎再平衡(bestiary 純資料)**:魔人 `summoned_dremora`(HP52→70·甲18→24)/ 魔靈伴 `summoned_familiar`(HP20→30·甲4→12)= **坦克**;火/冰/雷 atronach = **法師玻璃大砲**(甲降至 5-6·元素傷升 ~20-22·大招 32-34)。
+**② 各自行動模式(R43 attacks 曲目·純資料·已接線)**:盟友階段本就 `combat.choose_attack(a,rng,tgt)`(main.py:1026)→ 召喚物直接吃曲目框架。每隻主題 moveset:法師 = 元素平擊(帶 on_hit)+ 熔岩/冰稜/電弧 + **蓄力元素大招**(cooldown);坦克 = 厚重近戰 + **嘲諷 action**。
+**③ 坦克嘲諷(新小機制)**:bestiary attacks 加 `{"taunt":true,"turns":N,"weight":1,"cooldown":3}`(魔靈伴「護主嗥吼」/魔人「湮滅怒吼」)→ main.py ally 階段 `if a_atk.get("taunt")` 掛 `{"kind":"taunt","turns":N}` active_effect 跳過攻擊 → `combat.pick_player_side_target`(既有 shield_wall 嘲諷旁)加「存活盟友有 taunt → `rng.chance(TAUNT_AGGRO_CHANCE=0.6)` 改打嘲諷者」。**🔴 無嘲諷者空清單短路不擲 rng → 逐位元組同**;經既有 ally `tick_effects` 過期。
+**④ 三元素 on_hit 被動(bestiary·純資料)**:火=`dot`(灼燒·fire)/冰=`benumb`(凍麻·R73)/雷=**`stagger`**(🔴 conduct 是 magic.cast 電系專用·on_hit 不支援)。**combat on_hit 條件放寬**:`if not _is_player(attacker) and (_is_player(defender) or getattr(attacker,"summon_turns",None) is not None)` → **召喚物攻擊敵人也施 on_hit**(surgical:怪物→一般同伴仍不觸發·只 summon 或 →玩家)。
+**⑤ 召喚物隨召喚主成長(碰 combat/formulas → 必跑 sim)**:magic.cast summon 分派 `scale = min(formulas.SUMMON_POWER_CAP=2.0, power×(1+達貢之佑))`(**`power` 已 = _power(conjuration)〔技能+法術威力+智力+奧術連鎖〕× 力竭** → 複用)套 HP(`hp_mult` 併入 scale)+ `ally.summon_power = scale`;`combat.resolve_attack` 在 `raw *= weaken_factor` 旁加 `raw *= getattr(attacker,"summon_power",1.0)`。**🔴 本輪刻意推翻舊「召喚 HP 不吃 _power」設計(使用者拍板)**;「初始弱」靠 bestiary 基礎;CAP 防 apex spell-power 暴衝。reanimate(復生敵屍)不設 summon_power(**刻意·非本輪·傷害不縮放與 R105 前逐位元組同**)。
+**🔴 sim_assassin BYTE-IDENTICAL**(隔離 worktree diff vs HEAD 證:刺客不召喚·無盟友 → summon 分派/summon_power 屬性缺〔×1.0〕/嘲諷無 taunter 短路/on_hit 對 enemy→player 不變/CAP 未用)。**🔴 sim_party 召喚師平衡(本輪重點)**:新 `make_summoner`(conj100/其他魔法25/法師裝)+ `fight_summoner`(元素感知召喚:坦克魔人吸火力 + 對系 atronach 玻璃大砲)→ **mid boss 97-100%·ancient_dragon 71%〔vs 頂級 shock 法師 89%〕·mehrunes_dagon 720HP 終王 0% 牆守·無 stalemate** = 召喚師 ≈ 頂級法師。`run_all` 102(新 `test_summoning`;`test_mythicdawn` 達貢之佑放大改比值斷言〔_power 縮放對 ally0/ally1 共通〕);BESTIARY.md 重生。**對抗審查 5 維 17 agent → 0 blocker/0 major**(reanimate 缺 summon_power 全 REFUTED〔非回歸·復生→敵 on_hit 不可達〕;修 2 nit:taunt 過期文案 + 移除 on_hit 分支既有重複賦值)。
+🔴 加召喚物角色/moveset 純改 `bestiary.json`(元素 on_hit ∈ dot/benumb/stagger·雷不可 conduct·坦克 taunt action 無 damage);召喚成長走 `SUMMON_POWER_CAP` + `power×(1+boon)`(調 CAP/基礎必跑 sim_party 守 conj100≈法師 + dagon 0%);嘲諷 aggro `TAUNT_AGGRO_CHANCE`;on_hit 放寬只認 summon_turns(不改 monster→ally);召喚物傷害走 resolve_attack 不吃玩家偷襲。**前瞻**:召喚物施法(R86/R87 框架·本輪未做)、玩家指揮盟友(本輪未做)、reanimate 也吃成長。
+
+---
+
 ### R104 · 實用/幻術魔法軸:讓魔法首次在戰鬥外有意義(魅惑/隱形/安撫/羽落/偵知)[save] [re-sim byte-identical]
 
 **冷系統審計(9 叢集 workflow · 對抗排序)→ 使用者拍板方向 = 實用/幻術魔法軸**。死迴圈:全 6 學派唯 `illusion`(自述「隱身/魅惑/狂亂」、練功 label「冥想演練隱身咒」)與 `alteration`(自述「護盾/開鎖/負重」)的**戰鬥外實用面全空**(advertised-but-undelivered)——戰鬥外施法只允許 `heal/restore_fatigue`,魔法對社交/潛行/脫戰/探索零貢獻。

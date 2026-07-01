@@ -138,6 +138,99 @@ def group_rates(enemy_ids, n=300, cast=True, focus_healer=True):
             sum(r == "dead" for r in res) / n)
 
 
+# ── R105 召喚師深化:專精召喚(conj100)vs solo boss(召喚物隨召喚主成長 + 坦克嘲諷)───────
+_ATRO_BY_ELEM = {"fire": "conjure_flame_atronach", "frost": "conjure_frost_atronach", "shock": "conjure_storm_atronach"}
+_SUM_NUKE = ["fireball", "flames"]
+
+
+def _living_allies(battle):
+    return [a for a in battle["allies"] if combat.is_alive(a) and (a.summon_turns is None or a.summon_turns > 0)]
+
+
+def _best_atronach(boss):
+    """對 boss 抗性最低的元素 atronach(鏡像 _mage_act 的『選最佳元素』智能;召喚師也會挑對系)。"""
+    el = min(("fire", "frost", "shock"),
+             key=lambda e: boss.resist.get(e, 0) if hasattr(boss, "resist") else 0)
+    return _ATRO_BY_ELEM[el]
+
+
+def _summoner_act(c, boss, rng, battle, st):
+    """召喚師策略:保 1 坦克魔人(嘲諷吸火力)+ 2 隻對系 atronach(玻璃大砲)→ 石肌 → 弱破壞術。"""
+    living = _living_allies(battle)
+    have_tank = any(a.template_id == "summoned_dremora" for a in living)
+    best_atro = _best_atronach(boss)
+    best_cre = gd.spells[best_atro]["effect"]["creature"]
+    n_atro = sum(1 for a in living if a.template_id == best_cre)
+    if len(living) < 3:
+        if not have_tank and magic.can_cast(c, gd, "conjure_dremora"):
+            magic.cast(c, gd, "conjure_dremora", rng, battle=battle)
+            return
+        if n_atro < 2 and magic.can_cast(c, gd, best_atro):
+            magic.cast(c, gd, best_atro, rng, battle=battle)
+            return
+    if not st.get("buffed") and magic.can_cast(c, gd, "stoneflesh"):
+        st["buffed"] = True
+        magic.cast(c, gd, "stoneflesh", rng)
+        return
+    if c.health < c.max_health * 0.4 and magic.can_cast(c, gd, "close_wounds"):
+        magic.cast(c, gd, "close_wounds", rng)
+        return
+    for sid in _SUM_NUKE:                              # 弱破壞術(destruction 25)
+        if magic.can_cast(c, gd, sid):
+            magic.cast(c, gd, sid, rng, target=boss, enemies=[boss], battle=battle)
+            return
+    sb._regen(c)                                      # 空藍 → 該回合等回魔
+
+
+def fight_summoner(boss_id, seed, max_rounds=80):
+    c = sb.make_summoner()
+    boss = combat.spawn_creature(gd, boss_id, RNG(seed * 9 + 1))
+    rng = RNG(seed)
+    battle = {"allies": []}
+    st = {"buffed": False}
+    for _ in range(max_rounds):
+        if not combat.is_alive(boss):
+            return "win"
+        if c.health <= 0:
+            return "dead"
+        if not magic.is_incapacitated(c):
+            _summoner_act(c, boss, rng, battle, st)
+        if not combat.is_alive(boss):
+            return "win"
+        for a in _living_allies(battle):              # 召喚物階段(鏡像 main.py ally phase + R105 嘲諷)
+            if not combat.is_alive(boss):
+                break
+            if magic.is_incapacitated(a):
+                continue
+            a_atk = combat.choose_attack(a, rng, boss)
+            if a_atk.get("taunt"):
+                a.active_effects.append({"kind": "taunt", "turns": a_atk.get("turns", 3)})
+                continue
+            combat.resolve_attack(a, boss, gd, rng, attack=a_atk)
+        if not combat.is_alive(boss):
+            return "win"
+        tgt = combat.pick_player_side_target(c, battle["allies"], rng)   # boss 反擊(嘲諷 aggro 生效)
+        combat.resolve_attack(boss, tgt, gd, rng, attack=combat.choose_attack(boss, rng, tgt))
+        for a in battle["allies"]:                    # 回合末:召喚時效 + tick
+            if a.summon_turns is not None:
+                a.summon_turns -= 1
+        battle["allies"][:] = _living_allies(battle)
+        sb._regen(c)
+        magic.tick_effects(c, gd)
+        for a in battle["allies"]:
+            if combat.is_alive(a):
+                magic.tick_effects(a, gd)
+        if combat.is_alive(boss):
+            magic.tick_effects(boss, gd)
+        stats.clamp_resources(c)
+    return "win" if not combat.is_alive(boss) else "timeout"
+
+
+def summoner_rates(boss_id, n=200):
+    res = [fight_summoner(boss_id, s) for s in range(n)]
+    return (sum(r == "win" for r in res) / n, sum(r == "timeout" for r in res) / n)
+
+
 if __name__ == "__main__":
     solo = [bid for bid, b in gd.bestiary.items() if b.get("solo")]
     solo.sort(key=lambda b: gd.bestiary[b].get("max_health", 0))
@@ -188,3 +281,16 @@ if __name__ == "__main__":
         print(f"-- {'+'.join(g)} (治療者={healer}) --")
         print(f"   施法·先點治療者 win {wF:4.0%}  | 施法·隨機目標 win {wN:4.0%}  | 純近戰 baseline win {wB:4.0%}"
               f"   逾時 {max(tF, tN, tB):3.0%}{sflag}")
+
+    # ── R105 召喚師深化:專精召喚(conj100)vs solo boss ──────────────────────────
+    print("\n== R105 召喚師深化:專精召喚(conj100·其他25·法師裝)vs solo boss(win / 逾時·n=200)==")
+    print("🔴 目標:召喚師 ≈ 頂級法師(對照 sim_builds mage:多數 90-96%·終王 dagon 0%)· 無 stalemate · 不 trivialize 終王\n")
+    solo = sorted([bid for bid, b in gd.bestiary.items() if b.get("solo")],
+                  key=lambda b: gd.bestiary[b].get("max_health", 0))
+    sample = solo[:2] + solo[len(solo) // 2 - 1: len(solo) // 2 + 1] + solo[-3:]
+    for bid in dict.fromkeys(sample):
+        b = gd.bestiary[bid]
+        w, t = summoner_rates(bid)
+        flag = "  ⚠STALE" if t > 0.05 else ""
+        print(f"  {bid:22} (HP {b.get('max_health'):3}·{b.get('attack', {}).get('element', 'phys'):5}) "
+              f"win {w:5.0%}  逾時 {t:4.0%}{flag}")
