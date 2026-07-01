@@ -63,8 +63,10 @@
 |---|---|---|---|---|
 | 亡者生命 undead_health | 真·亡者 max HP | +6/級·夾 NECRO_HEALTH_CAP=**30**(平坦) | [10,20,40,80,160] | magic.cast 召/復生真·亡者時平坦加值(疊亡者統御後);base 骷髏 32 HP → 極致 62 |
 | 亡者護甲 undead_armor | 減傷(護甲值) | +2/級·夾 NECRO_ARMOR_CAP=**10** | [10,20,40,80,160] | ★**唯一走 combat._armor_rating 而非 attr()** 的永久獨立層(同 passive_armor 相加·絕不寫 base·非資源不 recompute);offense-neutral |
-| 亡者軍團 undead_cap | 軍團上限 | 同場真·亡者上限 +1/級(base 3·max +2→5) | [100,**500**] | **破牆唯一槓桿**(base 3 守 dagon 0%·擴到 5 極致方 7.3% 破);magic.cast 讀 undead_field_cap |
+| 亡者軍團 undead_cap | 軍團上限 | 同場真·亡者上限 +1/級(base 3·max +2→5) | [100,**500**] | **破牆主槓桿**(base 3 守 dagon 0%·擴到 5 極致 40% 破);magic.cast 讀 undead_field_cap |
 | 喚魂精算 grave_thrift | token 折減 | 真·亡者召喚 token −1/級(floor 1·max 2) | [100,300] | 讀 necromancy.spend_cost(raise_thrall base 3→1) |
+
+**真·亡者隨 conjuration 縮放**(非升級·`necromancy.undead_conj_scale`):HP+傷害乘 `FLOOR 0.4 → 封頂 1.25`(線性隨 base_skill(conjuration)/100·初始更弱·conj100 1.25× 比舊版強)·再疊亡者統御(HP+30%/傷+20%)+ 亡者生命平坦加值。封頂 >1.0 讓高階極致死靈師可 40% 磨穿終王牆(使用者拍板)。
 
 ---
 

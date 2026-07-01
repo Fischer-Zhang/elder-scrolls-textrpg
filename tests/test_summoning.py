@@ -341,7 +341,7 @@ def test_reanimate_thrall_enhances_and_costs_token():
 
 
 def test_undead_mastery_boosts_only_true_undead():
-    from tesrpg.systems import mastery
+    from tesrpg.systems import mastery, necromancy
     gd, c = _summoner(100)
     mastery.choose(c, gd, "conjuration_100", "undead_dominion")
     c.soul_tokens = 9
@@ -349,13 +349,13 @@ def test_undead_mastery_boosts_only_true_undead():
     b1 = {"allies": []}
     magic.cast(c, gd, "raise_thrall", RNG(1), battle=b1)
     thrall = b1["allies"][0]
-    # 真·亡者:summon_power = 1 × (1+0.2)〔只吃亡者統御·刻意不吃 conjuration 縮放〕
-    assert abs(thrall.summon_power - 1.2) < 1e-9
+    # 真·亡者:summon_power = undead_conj_scale(conj100=1.25) × (1+dominion 0.2) = 1.5(較緩縮放 + 統御)
+    assert abs(thrall.summon_power - necromancy.undead_conj_scale(c) * 1.2) < 1e-9
     b2 = {"allies": []}
     magic.cast(c, gd, "conjure_flame_atronach", RNG(1), battle=b2)
     atro = b2["allies"][0]
-    assert not getattr(atro, "_undead", False), "元素召喚物非真·亡者"
-    assert atro.summon_power > 1.2, "atronach 仍吃 conjuration 縮放(未被 dominion 影響)"
+    assert not getattr(atro, "_undead", False), "元素召喚物非真·亡者(不吃 dominion / undead_conj_scale)"
+    assert atro.summon_power > 1.0 and atro.summon_power != thrall.summon_power, "atronach 走自身 full scale(異於亡者較緩縮放)"
 
 
 def test_soul_harvest_and_undead_mastery_getters():
@@ -428,6 +428,23 @@ def test_undead_armor_flows_into_combat_armor_rating():
     base = combat._armor_rating(c, gd)
     c.necro_upgrades = {"undead_armor": 3}   # 3 × step 2 = +6 護甲
     assert combat._armor_rating(c, gd) == base + 6
+
+
+def test_undead_scales_with_conjuration_curve():
+    from tesrpg.systems import necromancy
+    gd, c25 = _summoner(25)
+    _, c100 = _summoner(100)
+    for cc in (c25, c100):
+        cc.soul_tokens = 9
+        cc.spells.append("raise_thrall")
+    assert necromancy.undead_conj_scale(c100) == necromancy.UNDEAD_CONJ_SCALE_CAP == 1.25, "conj100 封頂 1.25"
+    assert necromancy.undead_conj_scale(c25) < necromancy.undead_conj_scale(c100), "初始更弱(較緩曲線)"
+    b25 = {"allies": []}
+    magic.cast(c25, gd, "raise_thrall", RNG(1), battle=b25)
+    b100 = {"allies": []}
+    magic.cast(c100, gd, "raise_thrall", RNG(1), battle=b100)
+    assert b25["allies"][0].max_health < b100["allies"][0].max_health, "conj25 骷髏 HP < conj100(同 RNG seed)"
+    assert b25["allies"][0].summon_power < b100["allies"][0].summon_power, "conj25 骷髏傷害乘子 < conj100"
 
 
 def test_undead_health_upgrade_flat_hp_to_true_undead():

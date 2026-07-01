@@ -31,6 +31,9 @@ NECRO_ARMOR_STEP = 2       # 亡者護甲每級 +N 護甲
 NECRO_ARMOR_CAP = 10       # 亡者護甲硬上限(offense-neutral;擴到極致靠陡增的升級費用 gated,非低夾)
 NECRO_HEALTH_STEP = 6      # 亡者生命每級 +N 真·亡者最大生命(平坦加值)
 NECRO_HEALTH_CAP = 30      # 亡者生命硬上限
+# 真·亡者隨 conjuration 縮放(較緩·初始更弱;數值使用者拍板):
+UNDEAD_CONJ_SCALE_FLOOR = 0.4   # base_skill(conjuration) 0 時的下限(初始更弱)
+UNDEAD_CONJ_SCALE_CAP = 1.25    # conj100 封頂(>1.0 → 高階亡者比舊版更強;會抬終王牆·使用者拍板)
 
 
 # --- 永久死靈升級讀取(讀 char.necro_upgrades;空 → 中性 → 刺客 byte-identical)----------
@@ -49,6 +52,16 @@ def undead_health_bonus(char: Character) -> int:
     """亡者生命永久平坦最大生命加值(套進 magic.cast 召/復生真·亡者;夾 NECRO_HEALTH_CAP)。"""
     lv = int(getattr(char, "necro_upgrades", {}).get("undead_health", 0))
     return min(NECRO_HEALTH_CAP, lv * NECRO_HEALTH_STEP)
+
+
+def undead_conj_scale(char) -> float:
+    """真·亡者(HP+傷害)隨 conjuration 技能的縮放乘子:較緩·初始更弱·封頂 UNDEAD_CONJ_SCALE_CAP。
+    線性 FLOOR..CAP 隨 base_skill(conjuration)/100(門檻只認 base)。"""
+    if not hasattr(char, "base_skill"):
+        return 1.0
+    conj = char.base_skill("conjuration")
+    return min(UNDEAD_CONJ_SCALE_CAP,
+               UNDEAD_CONJ_SCALE_FLOOR + (conj / 100.0) * (UNDEAD_CONJ_SCALE_CAP - UNDEAD_CONJ_SCALE_FLOOR))
 
 
 def thrift_discount(char: Character) -> int:
