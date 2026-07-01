@@ -31,9 +31,10 @@ NECRO_ARMOR_STEP = 2       # 亡者護甲每級 +N 護甲
 NECRO_ARMOR_CAP = 10       # 亡者護甲硬上限(offense-neutral;擴到極致靠陡增的升級費用 gated,非低夾)
 NECRO_HEALTH_STEP = 6      # 亡者生命每級 +N 真·亡者最大生命(平坦加值)
 NECRO_HEALTH_CAP = 30      # 亡者生命硬上限
-# 真·亡者隨 conjuration 縮放(較緩·初始更弱;數值使用者拍板):
-UNDEAD_CONJ_SCALE_FLOOR = 0.4   # base_skill(conjuration) 0 時的下限(初始更弱)
-UNDEAD_CONJ_SCALE_CAP = 1.25    # conj100 封頂(>1.0 → 高階亡者比舊版更強;會抬終王牆·使用者拍板)
+# 真·亡者分軸縮放(使用者拍板:**conjuration 技能 → 生命·法術威力 → 攻擊**):
+UNDEAD_CONJ_SCALE_FLOOR = 0.4   # 生命:base_skill(conjuration) 0 時的下限(初始更弱)
+UNDEAD_CONJ_SCALE_CAP = 1.25    # 生命:conj100 封頂(隨技能線性升)
+UNDEAD_ATK_SCALE_CAP = 2.0      # 攻擊:法術威力縮放上限(不含技能;智力威力 × 法袍/法杖/誓福)
 
 
 # --- 永久死靈升級讀取(讀 char.necro_upgrades;空 → 中性 → 刺客 byte-identical)----------
@@ -55,13 +56,27 @@ def undead_health_bonus(char: Character) -> int:
 
 
 def undead_conj_scale(char) -> float:
-    """真·亡者(HP+傷害)隨 conjuration 技能的縮放乘子:較緩·初始更弱·封頂 UNDEAD_CONJ_SCALE_CAP。
-    線性 FLOOR..CAP 隨 base_skill(conjuration)/100(門檻只認 base)。"""
+    """真·亡者**生命**隨 conjuration 技能的縮放乘子:較緩·初始更弱·封頂 UNDEAD_CONJ_SCALE_CAP。
+    線性 FLOOR..CAP 隨 base_skill(conjuration)/100(門檻只認 base)。**只餵生命,不餵攻擊**(使用者拍板分軸)。"""
     if not hasattr(char, "base_skill"):
         return 1.0
     conj = char.base_skill("conjuration")
     return min(UNDEAD_CONJ_SCALE_CAP,
                UNDEAD_CONJ_SCALE_FLOOR + (conj / 100.0) * (UNDEAD_CONJ_SCALE_CAP - UNDEAD_CONJ_SCALE_FLOOR))
+
+
+def undead_attack_scale(char, gamedata) -> float:
+    """真·亡者**攻擊**隨**法術威力**縮放:智力威力 × (法袍套裝 + 法杖焦點 + 誓福威力)·**刻意不含 conjuration 技能**
+    (技能只餵生命)·夾 UNDEAD_ATK_SCALE_CAP。使用者拍板分軸:技能→生命、法術威力→攻擊。"""
+    from tesrpg import formulas
+    from tesrpg.systems import inventory
+    if not hasattr(char, "attr"):
+        return 1.0
+    potency = formulas.intelligence_spell_potency(char.attr("intelligence"))   # 智力 → 法術威力(R63)
+    gear = (1.0 + inventory.set_spell_power_bonus(char, gamedata)              # 法袍套裝(R68)
+            + inventory.staff_spell_power(char, gamedata)                      # 法杖焦點(R77)
+            + getattr(char, "boon_spell_power", 0.0))                          # 誓福威力(R78b)
+    return min(UNDEAD_ATK_SCALE_CAP, potency * gear)
 
 
 def thrift_discount(char: Character) -> int:

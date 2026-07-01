@@ -66,7 +66,10 @@
 | 亡者軍團 undead_cap | 軍團上限 | 同場真·亡者上限 +1/級(base 3·max +2→5) | [100,**500**] | **破牆主槓桿**(base 3 守 dagon 0%·擴到 5 極致 40% 破);magic.cast 讀 undead_field_cap |
 | 喚魂精算 grave_thrift | token 折減 | 真·亡者召喚 token −1/級(floor 1·max 2) | [100,300] | 讀 necromancy.spend_cost(raise_thrall base 3→1) |
 
-**真·亡者隨 conjuration 縮放**(非升級·`necromancy.undead_conj_scale`):HP+傷害乘 `FLOOR 0.4 → 封頂 1.25`(線性隨 base_skill(conjuration)/100·初始更弱·conj100 1.25× 比舊版強)·再疊亡者統御(HP+30%/傷+20%)+ 亡者生命平坦加值。封頂 >1.0 讓高階極致死靈師可 40% 磨穿終王牆(使用者拍板)。
+**真·亡者分軸縮放**(非升級·使用者拍板 技能→生命·法術威力→攻擊):
+- **生命** `necromancy.undead_conj_scale`:乘 `FLOOR 0.4 → 封頂 1.25`(線性隨 **base_skill(conjuration)**/100·初始更弱)。
+- **攻擊** `necromancy.undead_attack_scale`:乘 `智力威力 × (法袍套裝 + 法杖焦點 + 誓福威力)`·**刻意不含 conjuration 技能**·夾 `UNDEAD_ATK_SCALE_CAP=2.0`(布衣 int100 ≈1.30·大法師袍 ≈1.49)。
+- 再疊亡者統御(HP+30%/傷+20%)+ 亡者生命平坦加值。**極致投入(滿升級+滿法師裝+conj100)可 ~67% 磨穿終王牆 = 極致付出的真實回報**(R63·使用者拍板);base/新手仍守 ~0%。
 
 ---
 

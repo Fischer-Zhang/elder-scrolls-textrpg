@@ -349,8 +349,8 @@ def test_undead_mastery_boosts_only_true_undead():
     b1 = {"allies": []}
     magic.cast(c, gd, "raise_thrall", RNG(1), battle=b1)
     thrall = b1["allies"][0]
-    # 真·亡者:summon_power = undead_conj_scale(conj100=1.25) × (1+dominion 0.2) = 1.5(較緩縮放 + 統御)
-    assert abs(thrall.summon_power - necromancy.undead_conj_scale(c) * 1.2) < 1e-9
+    # 真·亡者攻擊 = undead_attack_scale(法術威力) × (1+dominion 0.2)〔攻擊走法術威力·非技能〕
+    assert abs(thrall.summon_power - necromancy.undead_attack_scale(c, gd) * 1.2) < 1e-9
     b2 = {"allies": []}
     magic.cast(c, gd, "conjure_flame_atronach", RNG(1), battle=b2)
     atro = b2["allies"][0]
@@ -430,21 +430,33 @@ def test_undead_armor_flows_into_combat_armor_rating():
     assert combat._armor_rating(c, gd) == base + 6
 
 
-def test_undead_scales_with_conjuration_curve():
+def test_undead_split_skill_hp_spellpower_attack():
+    """使用者拍板分軸:conjuration 技能 → 亡者生命;法術威力 → 亡者攻擊(不含技能)。"""
     from tesrpg.systems import necromancy
     gd, c25 = _summoner(25)
     _, c100 = _summoner(100)
+    # 生命隨技能:conj25 < conj100(封頂 1.25)
+    assert necromancy.undead_conj_scale(c100) == necromancy.UNDEAD_CONJ_SCALE_CAP == 1.25
+    assert necromancy.undead_conj_scale(c25) < necromancy.undead_conj_scale(c100), "技能 → 生命(初始更弱)"
+    # 攻擊**不隨技能**(同 int/裝):conj25 攻擊縮放 == conj100
+    assert necromancy.undead_attack_scale(c25, gd) == necromancy.undead_attack_scale(c100, gd), "技能不影響攻擊"
+    # 攻擊**隨法術威力**(誓福 boon_spell_power)→ 上升,夾 CAP
+    before = necromancy.undead_attack_scale(c100, gd)
+    c100.boon_spell_power = 0.5
+    assert necromancy.undead_attack_scale(c100, gd) > before, "法術威力 → 攻擊上升"
+    c100.boon_spell_power = 99.0
+    assert necromancy.undead_attack_scale(c100, gd) == necromancy.UNDEAD_ATK_SCALE_CAP == 2.0, "夾攻擊上限"
+    c100.boon_spell_power = 0.0
+    # 整合:骷髏 HP 隨技能(conj25<conj100)·攻擊乘子相等(同法術威力)
     for cc in (c25, c100):
         cc.soul_tokens = 9
         cc.spells.append("raise_thrall")
-    assert necromancy.undead_conj_scale(c100) == necromancy.UNDEAD_CONJ_SCALE_CAP == 1.25, "conj100 封頂 1.25"
-    assert necromancy.undead_conj_scale(c25) < necromancy.undead_conj_scale(c100), "初始更弱(較緩曲線)"
     b25 = {"allies": []}
     magic.cast(c25, gd, "raise_thrall", RNG(1), battle=b25)
     b100 = {"allies": []}
     magic.cast(c100, gd, "raise_thrall", RNG(1), battle=b100)
-    assert b25["allies"][0].max_health < b100["allies"][0].max_health, "conj25 骷髏 HP < conj100(同 RNG seed)"
-    assert b25["allies"][0].summon_power < b100["allies"][0].summon_power, "conj25 骷髏傷害乘子 < conj100"
+    assert b25["allies"][0].max_health < b100["allies"][0].max_health, "技能 → 生命(conj25 HP < conj100)"
+    assert abs(b25["allies"][0].summon_power - b100["allies"][0].summon_power) < 1e-9, "技能不影響攻擊(乘子相等)"
 
 
 def test_undead_health_upgrade_flat_hp_to_true_undead():
