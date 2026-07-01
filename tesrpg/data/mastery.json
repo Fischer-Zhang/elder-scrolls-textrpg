@@ -1648,12 +1648,10 @@
     "threshold": 25,
     "options": [
       {
-        "opt_id": "conj_basics",
-        "name": "召喚入門",
-        "kind": "spell_mod",
-        "school": "conjuration",
-        "cost_factor": 0.92,
-        "desc": "粗通召喚法理:召喚術施法省魔 8%(與其他省魔相乘)。"
+        "opt_id": "death_attunement",
+        "name": "死靈感應",
+        "kind": "soul_economy",
+        "desc": "粗通召喚與死靈法理:解鎖靈魂 token 死靈經濟 —— 擊殺積魂、喚亡者軍團(raise_thrall)、強化復生、召喚重鎮死靈祭壇買永久升級。"
       }
     ]
   },

@@ -25,10 +25,12 @@ from tesrpg.gamedata import GameData
 from tesrpg.models import Character
 
 # --- 常數 -------------------------------------------------------------------
-TOKEN_MIN_CONJURATION = 25  # 死靈經濟限召喚系:base_skill(conjuration) 達此才積 token / 用死靈祭壇(非召喚者零漏出)
-BASE_UNDEAD_CAP = 3        # 同場真·亡者基礎上限(軍團升級每級 +1)
+# 死靈經濟解鎖走里程碑(召喚 25·mastery.has_soul_economy·取代舊 base≥25 code 閘·非召喚者零漏出)。
+BASE_UNDEAD_CAP = 3        # 同場真·亡者基礎上限(軍團升級每級 +1;base 3 守終王牆,擴到 5 方能磨穿=陡增費用 gated)
 NECRO_ARMOR_STEP = 2       # 亡者護甲每級 +N 護甲
-NECRO_ARMOR_CAP = 8        # 亡者護甲硬上限(下修:+15 讓滿編死靈師拖過 80 回合磨穿終王牆·sim 抓到)
+NECRO_ARMOR_CAP = 10       # 亡者護甲硬上限(offense-neutral;擴到極致靠陡增的升級費用 gated,非低夾)
+NECRO_HEALTH_STEP = 6      # 亡者生命每級 +N 真·亡者最大生命(平坦加值)
+NECRO_HEALTH_CAP = 30      # 亡者生命硬上限
 
 
 # --- 永久死靈升級讀取(讀 char.necro_upgrades;空 → 中性 → 刺客 byte-identical)----------
@@ -41,6 +43,12 @@ def undead_armor_bonus(char: Character) -> int:
     """亡者護甲永久全域護甲加成(獨立層,夾 NECRO_ARMOR_CAP;絕不寫 base)。"""
     lv = int(getattr(char, "necro_upgrades", {}).get("undead_armor", 0))
     return min(NECRO_ARMOR_CAP, lv * NECRO_ARMOR_STEP)
+
+
+def undead_health_bonus(char: Character) -> int:
+    """亡者生命永久平坦最大生命加值(套進 magic.cast 召/復生真·亡者;夾 NECRO_HEALTH_CAP)。"""
+    lv = int(getattr(char, "necro_upgrades", {}).get("undead_health", 0))
+    return min(NECRO_HEALTH_CAP, lv * NECRO_HEALTH_STEP)
 
 
 def thrift_discount(char: Character) -> int:
@@ -71,21 +79,26 @@ def upgrade_level(char: Character, upgrade_id: str) -> int:
     return int(getattr(char, "necro_upgrades", {}).get(upgrade_id, 0))
 
 
+def upgrade_max_level(cat: dict) -> int:
+    return len(cat["costs"])
+
+
 def buy_upgrade(char: Character, gamedata: GameData, upgrade_id: str) -> dict:
-    """花 soul_tokens 升一級永久死靈升級。回傳 {ok, message}。"""
+    """花 soul_tokens 升一級永久死靈升級(**每級費用陡增** costs[cur];使用者拍板:可推極致但難)。回傳 {ok, message}。"""
     cat = gamedata.necromancy.get(upgrade_id)
     if not cat:
         return {"ok": False, "message": "未知的死靈升級。"}
+    mx = upgrade_max_level(cat)
     cur = upgrade_level(char, upgrade_id)
-    if cur >= int(cat["max_level"]):
-        return {"ok": False, "message": f"{cat['name']}已臻極致(等級 {cur}/{cat['max_level']})。"}
-    cost = int(cat["cost_per_level"])
+    if cur >= mx:
+        return {"ok": False, "message": f"{cat['name']}已臻極致(等級 {cur}/{mx})。"}
+    cost = int(cat["costs"][cur])
     if getattr(char, "soul_tokens", 0) < cost:
         return {"ok": False, "message": f"靈魂 token 不足(需 {cost},餘 {getattr(char, 'soul_tokens', 0)})。"}
     char.soul_tokens -= cost
     char.necro_upgrades[upgrade_id] = cur + 1
     return {"ok": True,
-            "message": f"你以 {cost} 枚靈魂 token 精進了「{cat['name']}」(等級 {cur + 1}/{cat['max_level']},餘 {char.soul_tokens})。"}
+            "message": f"你以 {cost} 枚靈魂 token 精進了「{cat['name']}」(等級 {cur + 1}/{mx},餘 {char.soul_tokens})。"}
 
 
 # --- 戰後結算:擊殺給予 + 倖存真·亡者回收 -----------------------------------
@@ -93,7 +106,7 @@ def harvest_and_recover(player: Character, gamedata: GameData,
                         num_kills: int, allies: list) -> dict:
     """勝利結算:擊殺給 token(含「亡者收集」)+ 回收倖存真·亡者。回傳 {gained, recovered, message}。"""
     from tesrpg.systems import combat, mastery
-    if player.base_skill("conjuration") < TOKEN_MIN_CONJURATION:   # 死靈經濟限召喚系:非召喚者不積 token
+    if not mastery.has_soul_economy(player, gamedata):   # 死靈經濟里程碑未解鎖(召喚 25)→ 不積 token
         return {"gained": 0, "recovered": 0, "message": None}
     per_kill = 1 + mastery.soul_harvest_bonus(player, gamedata)
     gained = max(0, num_kills) * per_kill

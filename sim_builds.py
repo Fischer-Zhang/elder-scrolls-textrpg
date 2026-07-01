@@ -151,7 +151,15 @@ def make_necromancer():
     _equip_set(c, "archmage", pieces=("hood", "robe", "gloves", "slippers"))
     _choices(c, {"conjuration_100": "undead_dominion", "conjuration_75": "soul_harvest"})
     c.soul_tokens = 40   # 種子充足(隔離稀缺;實戰靠打怪+回收積累)
-    c.necro_upgrades = {"undead_armor": 5, "undead_cap": 2, "grave_thrift": 1}   # 完整體:滿護甲/軍團上限5/省魔(測終王牆最壞情況)
+    stats.recompute_max_resources(c, gd, restore_full=True)
+    return c
+
+
+def make_necromancer_maxed():
+    """極致死靈師(R106C):滿升級(護甲/軍團上限5/省魔)——需 ~1500 token 陡增花費(數百擊殺)才達。
+    使用者拍板:**可破終王牆但難以推疊到極致**;此 fixture 測「極致」上界(base 版守牆見 make_necromancer)。"""
+    c = make_necromancer()
+    c.necro_upgrades = {"undead_health": 5, "undead_armor": 5, "undead_cap": 2, "grave_thrift": 2}
     stats.recompute_max_resources(c, gd, restore_full=True)
     return c
 

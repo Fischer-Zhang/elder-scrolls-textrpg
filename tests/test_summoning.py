@@ -256,17 +256,22 @@ def test_soul_token_gain_per_kill_and_harvest():
     assert c.soul_tokens == 6, "亡者收集:3 kills × (1+1)"
 
 
-def test_no_token_gain_for_non_conjurer():
-    """死靈經濟限召喚系:base_skill(conjuration) < 25 的純戰士不積 token(防全 build 漏出)。"""
-    from tesrpg.systems import necromancy
+def test_soul_economy_unlocked_at_conjuration_25_milestone():
+    """死靈經濟解鎖走召喚 25 里程碑(取代省魔·has_soul_economy 鏡像 has_vanish):< 25 無解鎖 → 不積 token。"""
+    from tesrpg.systems import necromancy, mastery
     gd = get_gamedata()
+    # conjuration_25 節點現為 soul_economy(非 spell_mod 省魔)
+    node = next(n for n in gd.mastery if n["id"] == "conjuration_25")
+    assert node["options"][0]["kind"] == "soul_economy"
     w = build_character(gd, name="戰", sex="male", race="nord", birthsign="warrior", class_id="warrior")
-    w.skills["conjuration"] = 5
+    w.skills["conjuration"] = 24
+    assert not mastery.has_soul_economy(w, gd)
     w.soul_tokens = 0
     r = necromancy.harvest_and_recover(w, gd, 5, [])
     assert w.soul_tokens == 0 and r["gained"] == 0 and r["message"] is None
-    # 達門檻(25)即積
+    # 達門檻(25)→ 里程碑解鎖 → 積 token
     w.skills["conjuration"] = 25
+    assert mastery.has_soul_economy(w, gd)
     necromancy.harvest_and_recover(w, gd, 3, [])
     assert w.soul_tokens == 3
 
@@ -291,7 +296,7 @@ def test_raise_thrall_spawns_undead_and_spends_token():
     assert ev["ok"]
     ally = battle["allies"][0]
     assert getattr(ally, "_undead", False) and ally.summon_turns is not None
-    assert c.soul_tokens == 3, "5 − 2 token"
+    assert c.soul_tokens == 2, "5 − 3 token"
     # token 不足 → 退費失敗(token/magicka 皆不扣)
     c.soul_tokens = 1
     mk_before = c.magicka
@@ -332,7 +337,7 @@ def test_reanimate_thrall_enhances_and_costs_token():
     magic.cast(c, gd, "reanimate_thrall", RNG(1), battle=b2, corpses=[_corpse()])
     enh = b2["allies"][0]
     assert enh.max_health > base_hp, "強化復生 1.0x > base 0.6x"
-    assert c.soul_tokens == 4 and getattr(enh, "_undead", False)
+    assert c.soul_tokens == 3 and getattr(enh, "_undead", False)   # 5 − 2 token
 
 
 def test_undead_mastery_boosts_only_true_undead():
@@ -364,12 +369,14 @@ def test_soul_harvest_and_undead_mastery_getters():
     assert um["hp_bonus"] == 0.3 and um["dmg_bonus"] == 0.2
 
 
-def test_conjuration_75_100_redesign_retires_old_choices():
+def test_conjuration_redesign_retires_old_choices():
     from tesrpg.systems import progression
     gd, c = _summoner(100)
+    c.mastery_choices["conjuration_25"] = "conj_basics"      # 舊省魔(已改死靈解鎖)
     c.mastery_choices["conjuration_75"] = "warding_summon"   # 舊選(已移除)
     c.mastery_choices["conjuration_100"] = "twin_summon"     # 舊選(已移除)
     progression.ensure_mastery_choices(c, gd)
+    assert "conjuration_25" not in c.mastery_choices
     assert "conjuration_75" not in c.mastery_choices
     assert "conjuration_100" not in c.mastery_choices
 
@@ -385,20 +392,30 @@ def test_necromancy_spells_exist_and_reachable():
 
 
 # --- R106C 永久死靈升級選單(C2)-------------------------------------------
-def test_necromancy_permanent_upgrades_buy_and_cap():
+def test_necromancy_permanent_upgrades_escalating_and_cap():
     from tesrpg.systems import necromancy
     gd, c = _summoner(100)
-    c.soul_tokens = 20
+    c.soul_tokens = 2000
     c.necro_upgrades = {}
+    # 亡者護甲:陡增費用 [20,50,100,200,400]·每級 +3·滿 5 級夾 cap+15
+    costs = gd.necromancy["undead_armor"]["costs"]
+    assert costs == sorted(costs) and len(set(costs)) == len(costs), "費用漸增曲線(嚴格遞增)"
+    before = c.soul_tokens
     r = necromancy.buy_upgrade(c, gd, "undead_armor")
-    assert r["ok"] and necromancy.undead_armor_bonus(c) == 2 and c.soul_tokens == 17   # step 2
-    for _ in range(3):                       # 買滿 4 級 → 夾 NECRO_ARMOR_CAP(+8)
+    assert r["ok"] and necromancy.undead_armor_bonus(c) == 2 and c.soul_tokens == before - costs[0]   # +2/級
+    for _ in range(4):                       # 買滿 5 級 → 夾 NECRO_ARMOR_CAP(+10)
         necromancy.buy_upgrade(c, gd, "undead_armor")
-    assert necromancy.undead_armor_bonus(c) == necromancy.NECRO_ARMOR_CAP == 8
+    assert necromancy.undead_armor_bonus(c) == necromancy.NECRO_ARMOR_CAP == 10
     assert not necromancy.buy_upgrade(c, gd, "undead_armor")["ok"], "已滿級不可再買"
+    # 每種升級費用皆嚴格遞增曲線(使用者拍板:死靈經濟每一種升級花費都是漸增曲線)
+    for uid in ("undead_health", "undead_armor", "undead_cap", "grave_thrift"):
+        cc = gd.necromancy[uid]["costs"]
+        assert cc == sorted(cc) and all(b > a for a, b in zip(cc, cc[1:])), f"{uid} 費用非嚴格遞增"
+    # 亡者軍團:+1/級(base 3 → 5)
     base_cap = necromancy.undead_field_cap(c)
     necromancy.buy_upgrade(c, gd, "undead_cap")
     assert necromancy.undead_field_cap(c) == base_cap + 1
+    # token 不足 → 失敗
     c.soul_tokens = 0
     assert not necromancy.buy_upgrade(c, gd, "grave_thrift")["ok"], "token 不足不可買"
     assert necromancy.upgrade_level(c, "grave_thrift") == 0
@@ -413,13 +430,30 @@ def test_undead_armor_flows_into_combat_armor_rating():
     assert combat._armor_rating(c, gd) == base + 6
 
 
+def test_undead_health_upgrade_flat_hp_to_true_undead():
+    from tesrpg.systems import necromancy
+    gd, c = _summoner(100)
+    c.soul_tokens = 99
+    c.spells.append("raise_thrall")
+    c.necro_upgrades = {}
+    b0 = {"allies": []}
+    magic.cast(c, gd, "raise_thrall", RNG(1), battle=b0)
+    hp0 = b0["allies"][0].max_health
+    c.necro_upgrades = {"undead_health": 5}   # +30 平坦生命(+6/級)
+    assert necromancy.undead_health_bonus(c) == necromancy.NECRO_HEALTH_CAP == 30
+    b1 = {"allies": []}
+    magic.cast(c, gd, "raise_thrall", RNG(1), battle=b1)
+    assert b1["allies"][0].max_health == hp0 + 30, "亡者生命 +6/級 平坦加值(同 RNG seed 骷髏)"
+
+
 def test_grave_thrift_reduces_token_cost():
     from tesrpg.systems import necromancy
     gd, c = _summoner(100)
-    assert necromancy.spend_cost(c, 2) == 2
+    assert necromancy.spend_cost(c, 3) == 3   # raise_thrall base token_cost 3
     c.necro_upgrades = {"grave_thrift": 1}
-    assert necromancy.spend_cost(c, 2) == 1   # −1
-    assert necromancy.spend_cost(c, 1) == 1   # floor 1
+    assert necromancy.spend_cost(c, 3) == 2   # −1
+    c.necro_upgrades = {"grave_thrift": 2}
+    assert necromancy.spend_cost(c, 3) == 1   # −2 → floor 1
     assert necromancy.spend_cost(c, 0) == 0   # 無 token_cost 不折
 
 

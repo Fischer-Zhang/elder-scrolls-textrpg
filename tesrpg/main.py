@@ -4218,8 +4218,8 @@ def action_necromancy_altar(state: GameState, gamedata: GameData) -> None:
         opts = []
         for uid, cat in gamedata.necromancy.items():
             cur = necromancy.upgrade_level(char, uid)
-            mx = cat["max_level"]
-            tag = f"滿級 {cur}/{mx}" if cur >= mx else f"等級 {cur}/{mx}·{cat['cost_per_level']} token"
+            mx = necromancy.upgrade_max_level(cat)
+            tag = f"滿級 {cur}/{mx}" if cur >= mx else f"等級 {cur}/{mx}·下級 {cat['costs'][cur]} token"
             opts.append((uid, f"{cat['name']}({tag})— {cat['desc']}"))
         pick = ui.menu(f"死靈祭壇 —— 靈魂 token:{char.soul_tokens}", opts, allow_back=True)
         if pick is None:
@@ -5040,8 +5040,8 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
             mg_opts = [("spells", "學習法術"), ("mg_hall", "公會事務(入會 / 任務)")]
             if loc.get("arcane_trials"):                 # R-arcane:奧術試煉引路人(終極法術試煉發起點)
                 mg_opts.append(("arcane", "🔥 奧術試煉的引路人"))
-            if ("raise_thrall" in loc.get("spell_stock", [])       # R106C 召喚重鎮死靈祭壇(限召喚系:非召喚者不漏出)
-                    and player.base_skill("conjuration") >= necromancy.TOKEN_MIN_CONJURATION):
+            if ("raise_thrall" in loc.get("spell_stock", [])       # R106C 召喚重鎮死靈祭壇(限死靈經濟已解鎖·召喚 25 里程碑)
+                    and mastery.has_soul_economy(player, gamedata)):
                 mg_opts.append(("necro", "💀 死靈祭壇(靈魂 token 升級)"))
             if player.is_vampire:
                 mg_opts.append(("cure", "✦ 探詢血咒的解法"))

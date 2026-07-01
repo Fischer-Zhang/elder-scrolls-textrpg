@@ -266,8 +266,9 @@ def summoner_rates(boss_id, n=200):
     return (sum(r == "win" for r in res) / n, sum(r == "timeout" for r in res) / n)
 
 
-def necromancer_rates(boss_id, n=200):
-    res = [fight_summoner(boss_id, s, maker=sb.make_necromancer, act=_necromancer_act) for s in range(n)]
+def necromancer_rates(boss_id, n=200, maker=None):
+    mk = maker or sb.make_necromancer
+    res = [fight_summoner(boss_id, s, maker=mk, act=_necromancer_act) for s in range(n)]
     return (sum(r == "win" for r in res) / n, sum(r == "timeout" for r in res) / n)
 
 
@@ -335,13 +336,22 @@ if __name__ == "__main__":
         print(f"  {bid:22} (HP {b.get('max_health'):3}·{b.get('attack', {}).get('element', 'phys'):5}) "
               f"win {w:5.0%}  逾時 {t:4.0%}{flag}")
 
-    # ── R106C 死靈經濟:死靈師(亡者統御 + 亡者收集·種子充足 token)vs solo boss ────────
-    print("\n== R106C 死靈師:token 召骷髏奴僕(軍團上限夾)+ 亡者統御 vs solo boss(win / 逾時·n=200)==")
-    print("🔴 目標:死靈師 ≈ 頂級法師 · **mehrunes_dagon 720HP 終王 0% 牆**(即使 token 無限·軍團上限擋堆疊)"
-          " · 無 stalemate\n")
+    # ── R106C 死靈經濟:死靈師(base vs 極致滿升級)vs solo boss ─────────────────────
+    # 使用者拍板:**可破終王牆,但推疊到極致需陡增費用(~1500 token/數百擊殺)**。
+    # 🔴 紅線改為分層:base 死靈師(軍團上限 3)守 mehrunes_dagon 0% 牆;極致(軍團 5+滿護甲)方可磨穿(by-design)。
+    print("\n== R106C 死靈師 base(軍團上限 3·無永久升級)vs solo boss(win / 逾時·n=200)==")
+    print("🔴 目標:base 死靈師 ≈ 頂級法師 · **mehrunes_dagon 720HP 0% 牆守住**(未投入陡增升級)· 無 stalemate\n")
     for bid in dict.fromkeys(sample):
         b = gd.bestiary[bid]
         w, t = necromancer_rates(bid)
-        flag = "  ⚠STALE" if t > 0.05 else ("  🔴WALL-BREAK" if bid == "mehrunes_dagon" and w > 0 else "")
+        flag = "  ⚠STALE" if t > 0.05 else ("  🔴BASE-WALL-BREAK" if bid == "mehrunes_dagon" and w > 0 else "")
+        print(f"  {bid:22} (HP {b.get('max_health'):3}·{b.get('attack', {}).get('element', 'phys'):5}) "
+              f"win {w:5.0%}  逾時 {t:4.0%}{flag}")
+    print("\n== R106C 死靈師 極致滿升級(軍團上限 5·護甲+15·省魔)vs solo boss(win / 逾時·n=200)==")
+    print("by-design:極致投入(~1500 token 陡增費用)方能磨穿終王牆;此處只確認『無 stalemate』且破牆幅度有限\n")
+    for bid in dict.fromkeys(sample):
+        b = gd.bestiary[bid]
+        w, t = necromancer_rates(bid, maker=sb.make_necromancer_maxed)
+        flag = "  ⚠STALE" if t > 0.05 else ""
         print(f"  {bid:22} (HP {b.get('max_health'):3}·{b.get('attack', {}).get('element', 'phys'):5}) "
               f"win {w:5.0%}  逾時 {t:4.0%}{flag}")

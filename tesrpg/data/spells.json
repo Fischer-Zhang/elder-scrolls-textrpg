@@ -385,8 +385,8 @@
   "conjure_healer": {"name": "召喚治療精靈", "school": "conjuration", "cost": 30, "target": "self", "effect": {"kind": "summon", "creature": "summoned_healer", "turns": 6}},
   "conjure_terror": {"name": "召喚恐懼幽靈", "school": "conjuration", "cost": 40, "target": "self", "effect": {"kind": "summon", "creature": "summoned_terror", "turns": 6}},
   "reanimate_corpse": {"name": "亡者復生", "school": "conjuration", "cost": 40, "target": "self", "effect": {"kind": "reanimate", "turns": 5}},
-  "raise_thrall": {"name": "喚起亡者奴僕", "school": "conjuration", "cost": 20, "target": "self", "effect": {"kind": "summon", "creature": "reanimated_thrall", "turns": 6, "undead": true, "token_cost": 2}},
-  "reanimate_thrall": {"name": "亡者奴役", "school": "conjuration", "cost": 44, "target": "self", "effect": {"kind": "reanimate", "turns": 6, "hp_factor": 1.0, "turn_bonus": 1, "token_cost": 1}},
+  "raise_thrall": {"name": "喚起亡者奴僕", "school": "conjuration", "cost": 20, "target": "self", "effect": {"kind": "summon", "creature": "reanimated_thrall", "turns": 6, "undead": true, "token_cost": 3}},
+  "reanimate_thrall": {"name": "亡者奴役", "school": "conjuration", "cost": 44, "target": "self", "effect": {"kind": "reanimate", "turns": 6, "hp_factor": 1.0, "turn_bonus": 1, "token_cost": 2}},
 
   "ward": {"name": "結界", "school": "mysticism", "cost": 16, "target": "self", "effect": {"kind": "ward", "magnitude": 40, "turns": 5}},
   "greater_ward": {"name": "高等結界", "school": "mysticism", "cost": 34, "target": "self", "effect": {"kind": "ward", "magnitude": 90, "turns": 5}},

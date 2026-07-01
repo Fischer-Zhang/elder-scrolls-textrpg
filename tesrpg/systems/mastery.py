@@ -64,8 +64,8 @@ _IMPLEMENTED_KINDS = {
     "flee_bonus", "armor_reflect", "armor_stagger", "combat_regen", "trap_floor",
     # security 功能化(混合身份):盜賊行竊加成、地城賊眼窺探(布林解鎖)。
     "theft_skill", "dungeon_casing",
-    # R106C 死靈經濟:亡者收集(每擊殺多給 token)、亡者統御(真·亡者更強韌兇猛)。
-    "soul_harvest", "undead_mastery",
+    # R106C 死靈經濟:解鎖(召喚 25·取代省魔)、亡者收集(每擊殺多給 token)、亡者統御(真·亡者更強韌兇猛)。
+    "soul_economy", "soul_harvest", "undead_mastery",
 }
 
 
@@ -440,6 +440,18 @@ def has_vanish(char, gamedata: GameData) -> bool:
     return any(char.base_skill(node["skill"]) >= node["threshold"]
                for node in _nodes(gamedata)
                if any(o.get("kind") == "vanish_unlock" for o in node.get("options", [])))
+
+
+def has_soul_economy(char, gamedata: GameData) -> bool:
+    """死靈經濟解鎖(召喚 25 里程碑·R106C·取代舊省魔 conj_basics):是否解鎖靈魂 token 死靈經濟。
+
+    單一 perk『自動授予』節點 → gate 以門檻已達(base_skill)判定(鏡像 has_vanish):達 conjuration 25
+    即解鎖擊殺積魂/召亡者/死靈祭壇、零遷移、舊存檔即時生效。門檻只認 base_skill(鐵律)。"""
+    if not hasattr(char, "base_skill"):
+        return False
+    return any(char.base_skill(node["skill"]) >= node["threshold"]
+               for node in _nodes(gamedata)
+               if any(o.get("kind") == "soul_economy" for o in node.get("options", [])))
 
 
 def has_offbalance_unlock(char, gamedata: GameData) -> bool:

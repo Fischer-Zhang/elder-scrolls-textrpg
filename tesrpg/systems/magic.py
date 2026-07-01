@@ -530,10 +530,11 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
             def _empower_summon(cre, hp_factor=1.0):
                 if eff.get("undead"):
                     # 真·亡者(raise_thrall):token 買的樸素軀體 —— 刻意「數量/soak 而非 boss-killer」,
-                    # **不吃 conjuration 威力縮放**(否則 token 囤積 + 滿編 → 磨穿終王牆,sim 抓到)。只吃亡者統御。
+                    # **不吃 conjuration 威力縮放**(否則 token 囤積 + 滿編 → 磨穿終王牆,sim 抓到)。只吃亡者統御 + 永久亡者生命。
                     cre.summon_power = 1 + um.get("dmg_bonus", 0.0)
-                    cre.max_health = max(1, round(cre.max_health * (1 + smod.get("hp_bonus", 0.0))
-                                                  * (1 + um.get("hp_bonus", 0.0)) * hp_factor))
+                    cre.max_health = (max(1, round(cre.max_health * (1 + smod.get("hp_bonus", 0.0))
+                                                   * (1 + um.get("hp_bonus", 0.0)) * hp_factor))
+                                      + necromancy.undead_health_bonus(char))   # 亡者生命永久平坦加值
                     cre._undead = True   # 真·亡者旗(暫態,不入檔):戰後回收 / 軍團上限 / 亡者統御
                 else:
                     cre.summon_power = scale                   # 傷害側乘子:resolve_attack 讀取(非召喚者無此屬性 → ×1.0 byte-identical)
@@ -593,7 +594,7 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
         base_factor = eff.get("hp_factor", REANIMATE_HP_FACTOR)
         # 虛弱化的亡魂;仍吃 boon/hp_bonus/力竭(與召喚對稱)+ 亡者統御
         hp_mult = base_factor * (1 + boon) * (1 + smod.get("hp_bonus", 0.0)) * (1 + um.get("hp_bonus", 0.0)) * fat_pen
-        ally.max_health = max(1, round(ally.max_health * hp_mult))
+        ally.max_health = max(1, round(ally.max_health * hp_mult)) + necromancy.undead_health_bonus(char)   # 亡者生命永久平坦加值
         ally.health = ally.max_health
         ally.summon_power = 1.0 * (1 + um.get("dmg_bonus", 0.0))   # 復生亡者不吃 conjuration 傷害縮放(虛弱),只吃亡者統御
         ally.summon_turns = eff["turns"] + int(boon * 3) + int(smod.get("turn_bonus", 0)) + int(eff.get("turn_bonus", 0))

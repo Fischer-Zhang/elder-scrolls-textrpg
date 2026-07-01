@@ -58,12 +58,13 @@
 | `dagon_resist` | 抗性 | fire +60 | ★可抵銷吸血 T3 火弱點(−30→淨 +30,全層相加非取最) |
 | `dagon_magic_bonus` | 資源上限 | magicka +25(直接加 max_magicka) | 獨立於 intelligence 衍生 |
 
-### 死靈師永久升級(R106C;靈魂 token 買斷·`char.necro_upgrades`·限 base_skill(conjuration)≥25 取得)
-| 子層 | kind | 數值 | 備註 |
-|---|---|---|---|
-| 亡者護甲 undead_armor | 減傷(護甲值) | +2/級·夾 NECRO_ARMOR_CAP=**8** | ★**唯一走 combat._armor_rating 而非 attr()** 的永久獨立層(同 passive_armor 相加·絕不寫 base·非資源不 recompute);offense-neutral 故不破終王牆 |
-| 亡者軍團 undead_cap | 軍團上限 | 同場真·亡者上限 +1/級(base 3·max +2→5) | 非戰鬥數值;magic.cast summon/reanimate 讀 undead_field_cap |
-| 喚魂精算 grave_thrift | token 折減 | 真·亡者召喚 token −1(floor 1) | 讀 necromancy.spend_cost |
+### 死靈師永久升級(R106C;靈魂 token 買斷·`char.necro_upgrades`·**每種費用皆漸增曲線**·解鎖走 conjuration 25 里程碑 has_soul_economy·取代省魔)
+| 子層 | kind | 數值 | 費用曲線 | 備註 |
+|---|---|---|---|---|
+| 亡者生命 undead_health | 真·亡者 max HP | +6/級·夾 NECRO_HEALTH_CAP=**30**(平坦) | [10,20,40,80,160] | magic.cast 召/復生真·亡者時平坦加值(疊亡者統御後);base 骷髏 32 HP → 極致 62 |
+| 亡者護甲 undead_armor | 減傷(護甲值) | +2/級·夾 NECRO_ARMOR_CAP=**10** | [10,20,40,80,160] | ★**唯一走 combat._armor_rating 而非 attr()** 的永久獨立層(同 passive_armor 相加·絕不寫 base·非資源不 recompute);offense-neutral |
+| 亡者軍團 undead_cap | 軍團上限 | 同場真·亡者上限 +1/級(base 3·max +2→5) | [100,**500**] | **破牆唯一槓桿**(base 3 守 dagon 0%·擴到 5 極致方 7.3% 破);magic.cast 讀 undead_field_cap |
+| 喚魂精算 grave_thrift | token 折減 | 真·亡者召喚 token −1/級(floor 1·max 2) | [100,300] | 讀 necromancy.spend_cost(raise_thrall base 3→1) |
 
 ---
 

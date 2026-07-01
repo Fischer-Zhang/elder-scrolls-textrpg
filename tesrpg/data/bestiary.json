@@ -274,7 +274,7 @@
     "armor_rating": 8,
     "attack": {
       "name": "枯骨揮擊",
-      "damage": 5,
+      "damage": 10,
       "skill": 40
     },
     "loot_gold": [
@@ -282,7 +282,7 @@
       0
     ],
     "loot": [],
-    "flavor": "以靈魂 token 從虛空喚起的骷髏戰士,樸素卻不知疲倦地為死靈師擋刀揮擊(死靈經濟的軀體:買數量與 soak,非 boss-killer)。"
+    "flavor": "以靈魂 token 從虛空喚起的骷髏戰士,不知疲倦地為死靈師擋刀揮擊(死靈經濟的軀體:base 軍團上限 3 隻守終王牆;擴軍團到極致方能磨穿,但升級費用陡增)。"
   },
   "summoned_atronach": {
     "name": "火焰元素",
