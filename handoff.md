@@ -1405,6 +1405,16 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 
 ---
 
+### R106 · 召喚師深化 II:角色擴展 + 里程碑重設計 + 施法/指揮/死靈(分階段)[re-sim] [save-safe]
+
+承 R105·使用者拍板**全包大里程碑·分階段子提交**(貼「一次一里程碑」·降風險)。修 conjuration 兩冷點:里程碑 5/7 通用填充(省魔/被動護甲/技能 fortify)、角色只有坦克 + 法師玻璃大砲(缺支援/控場/死靈/束縛系)。
+
+**Phase A(角色擴展·✅已做)**:① **支援召喚** `summoned_healer`(bestiary `spells:["heal_other"]`)經新 `magic.summon_support_act`(讀 **bestiary** spells〔召喚物非 companions.json·不能走 companion_support_act〕·pool=[player]+盟友·固定 `SUMMON_SUPPORT_POWER=0.8`·複用 R86 `_support_act`)施治療;`main.py` ally 階段(:1021)依 `summon_turns is not None` 分流(召喚物→summon_support_act·**同伴 summon_turns=None→companion_support_act 逐位元組同**)。② **控場召喚** `summoned_terror`(on_hit fear 1回/0.25 + weaken 0.25/2回/0.4·走 R105 on_hit 管線·`apply_control` solo/去重·**不走施法**〔`_support_try_buff` 不含控場→on_hit 乾淨〕)。③ **束縛兵刃 archetype 差異化**:`magic.cast` bound_weapon 存 `archetype`·`combat.py:455` `archetype = bound.get("archetype") if bound else …` → bound_mace 得內建 stagger(:852·軟控)·bound_greatsword mag20(2H 高傷)·bound_axe(archetype axe·**pen 對元素束縛無意義·走元素分支 :541 略過物理 pen**)·bound_armor 複用 shield mag60;純加 spells + spell_stock(4 召喚重鎮 blacklight/vivec/sadrith_mora/imperial_city)。**全 innate**(不依里程碑)。**🔴 sim_assassin BYTE-IDENTICAL**(刺客不召喚/不束縛·無盟友→ally 階段不入·bound 分支不入·summon_support 不呼叫·隔離 worktree vs R105 c6d3c3e 證)+ `sim_party`(支援召喚師 mid boss 99-100%·古龍 65%·**mehrunes_dagon 720 終王 0% 牆守**·無 stalemate)。**對抗審查 4 維 4 agent → 0 findings**。run_all 102(test_summoning +4:support 施法/控場 on_hit/bound archetype stagger/2H 傷);BESTIARY.md 133 怪。
+**Phase B/C(待做)**:B = 里程碑重設計(3 死節點→**束縛精通**/**召喚軍師**〔指揮盟友·`_choose_ally_target` 複用 + `summon_command_target`〕/**咒靈共鳴**·twin 留·走 `ensure_mastery_choices` 退 pending)+ 指揮功能;C = 死靈深化(**亡者統御** conjuration 100·reanimate 吃 `summon_power` 成長 + 更強亡者·milestone gate·未選維持 R105 現狀)。
+🔴 加支援召喚純改 bestiary(`spells`)·走 summon_support_act(讀 bestiary·非 companions·power 0.8 固定);控場召喚走 on_hit(合法集 fear/weaken/…);束縛 archetype 走 bound active_effect `archetype`(**元素武器只 stagger 有意義·pen 略過**);新召喚法術入召喚重鎮 spell_stock·守可達;召喚物傷害不吃玩家偷襲·HP 受 SUMMON_POWER_CAP。
+
+---
+
 ### R105 · 召喚師深化:召喚物角色定位 + 各自行動模式 + 元素被動 + 隨召喚主成長 [re-sim] [save-safe]
 
 **冷系統審計 → 使用者拍板深化召喚師;逐步釐清最終範圍**。死點:召喚物**零身份成長**(HP 不吃 conjuration 技能/`_power`,練 100 級與 25 級召的一樣強)+ 三元素 atronach **行動同質**。

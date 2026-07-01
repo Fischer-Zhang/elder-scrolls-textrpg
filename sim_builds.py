@@ -132,7 +132,7 @@ def make_summoner():
     c = build_character(gd, name="召", sex="male", race="altmer", birthsign="mage", class_id="mage")
     c.skills.update(conjuration=100, destruction=25, restoration=25, alteration=25, mysticism=25, alchemy=25)
     c.attributes.update(intelligence=100, willpower=100, endurance=70)
-    c.spells = ["conjure_dremora", "conjure_flame_atronach", "conjure_frost_atronach",
+    c.spells = ["conjure_dremora", "conjure_healer", "conjure_flame_atronach", "conjure_frost_atronach",
                 "conjure_storm_atronach", "fireball", "flames", "close_wounds", "stoneflesh"]
     _equip_set(c, "archmage", pieces=("hood", "robe", "gloves", "slippers"))
     _choices(c, {"conjuration_100": "bound_blade"})   # 召喚物 HP +25%

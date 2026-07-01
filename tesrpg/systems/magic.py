@@ -158,6 +158,19 @@ def enemy_support_act(enemy, enemies, gamedata) -> dict | None:
     return _support_act(enemy, spells, pool, gamedata, power=ENEMY_SUPPORT_POWER)
 
 
+SUMMON_SUPPORT_POWER = 0.8   # R106 召喚物支援施法幅度(< 玩家 1.0·固定·不隨召喚主威力爆走)
+
+
+def summon_support_act(summon, player, allies, gamedata) -> dict | None:
+    """R106 召喚物支援施法(如召喚治療精靈):spells 讀 **bestiary**[tid](召喚物是 bestiary 生物·非
+    companions.json → 不能走 companion_support_act);pool=[player]+存活盟友(照顧英雄與其他召喚物);
+    empower 排除玩家(rally 只益盟友);固定 power(不隨召喚主成長)。**只由 main.run_battle ally 階段呼叫**。"""
+    from tesrpg.systems import combat
+    spells = list(gamedata.bestiary.get(getattr(summon, "template_id", ""), {}).get("spells", []) or [])
+    pool = [player] + [a for a in allies if combat.is_alive(a)]
+    return _support_act(summon, spells, pool, gamedata, exclude_from_empower=(player,), power=SUMMON_SUPPORT_POWER)
+
+
 def _support_try_heal(caster, spells, pool, gamedata, power=1.0):
     """反應式治療:池中最低 HP 比 < 門檻才施。regen(HoT)只在無人持有時施(不疊);否則直接治療。"""
     heals = [s for s in spells if gamedata.spells[s]["effect"]["kind"] in _COMPANION_HEAL_KINDS]
@@ -374,8 +387,10 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
         # (若此處再乘 power 會技能雙重縮放)。重施去重 → 不可疊成更強的刃。
         mag = eff["magnitude"]
         char.active_effects[:] = [e for e in char.active_effects if e.get("kind") != "bound_weapon"]
+        # R106 束縛兵刃 archetype 差異化:存 archetype → combat 據此給原型身份(釘錘擊暈 stagger 等);
+        # 仍走咒術技能傷害 + 元素(無視物理護甲)。無 archetype(舊 bound_sword)→ 行為不變。
         char.active_effects.append({"kind": "bound_weapon", "element": eff.get("element", "magic"),
-                                    "magnitude": mag, "turns": eff["turns"]})
+                                    "magnitude": mag, "turns": eff["turns"], "archetype": eff.get("archetype")})
         msg = f"{sp['name']} —— 你手中凝出一柄束縛兵刃(基礎傷害 {mag},隨咒術精進,{eff['turns']} 回合)。"
 
     elif kind in ("charm", "invisibility", "feather", "detect_life"):   # R104 實用/幻術:限時自我增益(戰鬥外社交/潛行/探索)

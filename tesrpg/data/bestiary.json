@@ -387,7 +387,61 @@
     "loot": [],
     "flavor": "一名魔界戰士魔人應召跨界而來,渾身燃著湮滅位面的怒火,為你而戰。"
   },
-  "city_guard": {"sentient": true, 
+  "summoned_healer": {
+    "name": "治療精靈",
+    "danger": 2,
+    "min_level": 99,
+    "weight": 0,
+    "strength": 35,
+    "agility": 45,
+    "speed": 48,
+    "max_health": 28,
+    "armor_rating": 8,
+    "spells": ["heal_other"],
+    "attack": {
+      "name": "療癒觸",
+      "damage": 6,
+      "skill": 40,
+      "element": "magic"
+    },
+    "attacks": [
+      {"name": "療癒觸", "damage": 6, "skill": 40, "element": "magic", "weight": 1}
+    ],
+    "loot_gold": [
+      0,
+      0
+    ],
+    "loot": [],
+    "flavor": "一頭由靈界召喚而來的治療精靈,輝光流轉,守護受傷的盟友(支援型:低攻·施治療術照顧全隊)。"
+  },
+  "summoned_terror": {
+    "name": "恐懼幽靈",
+    "danger": 3,
+    "min_level": 99,
+    "weight": 0,
+    "strength": 40,
+    "agility": 50,
+    "speed": 50,
+    "max_health": 32,
+    "armor_rating": 5,
+    "attack": {
+      "name": "怖靈之觸",
+      "damage": 12,
+      "skill": 46,
+      "element": "magic"
+    },
+    "attacks": [
+      {"name": "怖靈之觸", "damage": 12, "skill": 46, "element": "magic", "weight": 3, "on_hit": {"status": "fear", "turns": 1, "chance": 0.25}},
+      {"name": "噬魂哀嚎", "damage": 14, "skill": 46, "element": "magic", "weight": 1, "cooldown": 2, "on_hit": {"status": "weaken", "magnitude": 0.25, "turns": 2, "chance": 0.4}}
+    ],
+    "loot_gold": [
+      0,
+      0
+    ],
+    "loot": [],
+    "flavor": "一縷自恐懼之境召喚而來的幽魂,飄忽的觸手散播驚懼與虛弱(控場型:命中懾心/削弱敵勢)。"
+  },
+  "city_guard": {"sentient": true,
     "name": "城衛兵",
     "danger": 4,
     "min_level": 99,

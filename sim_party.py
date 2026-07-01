@@ -161,11 +161,15 @@ def _summoner_act(c, boss, rng, battle, st):
     best_atro = _best_atronach(boss)
     best_cre = gd.spells[best_atro]["effect"]["creature"]
     n_atro = sum(1 for a in living if a.template_id == best_cre)
+    have_healer = any(a.template_id == "summoned_healer" for a in living)
     if len(living) < 3:
         if not have_tank and magic.can_cast(c, gd, "conjure_dremora"):
             magic.cast(c, gd, "conjure_dremora", rng, battle=battle)
             return
-        if n_atro < 2 and magic.can_cast(c, gd, best_atro):
+        if not have_healer and magic.can_cast(c, gd, "conjure_healer"):   # R106 支援召喚:1 治療精靈
+            magic.cast(c, gd, "conjure_healer", rng, battle=battle)
+            return
+        if n_atro < 1 and magic.can_cast(c, gd, best_atro):
             magic.cast(c, gd, best_atro, rng, battle=battle)
             return
     if not st.get("buffed") and magic.can_cast(c, gd, "stoneflesh"):
@@ -197,10 +201,12 @@ def fight_summoner(boss_id, seed, max_rounds=80):
             _summoner_act(c, boss, rng, battle, st)
         if not combat.is_alive(boss):
             return "win"
-        for a in _living_allies(battle):              # 召喚物階段(鏡像 main.py ally phase + R105 嘲諷)
+        for a in _living_allies(battle):              # 召喚物階段(鏡像 main.py ally phase + R105 嘲諷 + R106 支援施法)
             if not combat.is_alive(boss):
                 break
             if magic.is_incapacitated(a):
+                continue
+            if magic.summon_support_act(a, c, _living_allies(battle), gd) is not None:   # R106 治療精靈施治療
                 continue
             a_atk = combat.choose_attack(a, rng, boss)
             if a_atk.get("taunt"):

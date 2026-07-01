@@ -188,7 +188,8 @@
 | 共鳴一擊 resonance | 傷害 | 半數實際法傷+引燃dot;turns2 | 🔴重施去重;偷襲不放大、solo受夾 |
 | 束縛兵刃 bound_weapon | 武器替換 | 基礎傷14(magic),不乘power;turns6 | 重施去重;取代裝備(不吃淬鍊/附魔/塗毒/副手) |
 | 召喚 summon(R105 成長)| 召喚物 HP+傷害 | **scale=min(SUMMON_POWER_CAP=2.0, _power(conjuration)×(1+boon))×力竭**;HP=基礎×0.85~1.15×scale×(1+hp_bonus)·傷害 raw×`summon_power`(=scale) | 🔴R105:召喚物**隨召喚主 conjuration 技能/法術威力/智力成長**(推翻舊「不吃_power」)·初始弱靠 bestiary 基礎·CAP 防暴衝·傷害走 resolve_attack **不吃玩家偷襲**·角色定位(魔人/魔靈伴坦克·火冰雷法師玻璃大砲)+ 元素 on_hit(火 dot/冰 benumb/雷 stagger)+ 坦克嘲諷(TAUNT_AGGRO 0.6);加入 battle["allies"](R08)|
-| 復生 reanimate | 召喚物 HP | 基礎×0.85~1.15×(1+boon)×(1+hp_bonus)×力竭×0.6 | 🔴**不設 summon_power**(傷害不縮放·刻意非本輪·與 R105 前逐位元組同);喚敵屍為限時盟 |
+| 復生 reanimate | 召喚物 HP | 基礎×0.85~1.15×(1+boon)×(1+hp_bonus)×力竭×0.6 | 🔴**不設 summon_power**(傷害不縮放·刻意·R106 Phase C「亡者統御」里程碑才吃成長);喚敵屍為限時盟 |
+| 召喚角色擴展(R106 Phase A)| 召喚物行為 | healer 施 heal_other(power 0.8)·terror on_hit fear/weaken·束縛兵刃 archetype | 支援召喚 `summoned_healer` 走 `magic.summon_support_act`(讀 bestiary spells·pool 含玩家·門檻 0.55/冷卻 2)治療全隊;控場召喚 `summoned_terror` on_hit(fear/weaken·apply_control solo/去重);**束縛兵刃 archetype 差異化**(bound active_effect `archetype`:釘錘 stagger·巨劍 mag20·斧 pen 對元素略過·甲=shield60);皆 innate·不吃玩家偷襲 |
 | 凝神 restore_fatigue | 資源(瞬時) | +40體力,不乘power |
 | 奧術連鎖 cascade / 戰地搶救 triage / 法力回擊 | 見③ | — | 戰鬥邊界清空 |
 

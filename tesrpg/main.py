@@ -1018,7 +1018,12 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
             if not combat.is_alive(a) or magic.is_incapacitated(a):
                 continue
             # R86 角色感知支援:輔助型同伴在受傷/缺 buff 時施治療/護盾/激勵(含照顧玩家),否則攻擊。
-            support = magic.companion_support_act(a, player, battle["allies"], gamedata)
+            # R106:召喚物(summon_turns 標記)走 summon_support_act(讀 bestiary spells·如治療精靈);
+            #       一般同伴走 companion_support_act(讀 companions.json)→ 既有同伴路徑逐位元組同。
+            if getattr(a, "summon_turns", None) is not None:
+                support = magic.summon_support_act(a, player, battle["allies"], gamedata)
+            else:
+                support = magic.companion_support_act(a, player, battle["allies"], gamedata)
             if support is not None:
                 ui.message(support["message"], style="green")
                 continue

@@ -452,7 +452,9 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
     offhand_ench = (gamedata.item(attacker.offhand).get("enchant")
                     if offhand_dmg and getattr(attacker, "offhand", "") else None)
     wdef = gamedata.item(attacker.weapon) if _is_player(attacker) and not beast and not bound and not great else None
-    archetype = wdef.get("archetype") if wdef else None
+    # R106 束縛兵刃 archetype 差異化:束縛以自身 archetype 取得原型身份(釘錘擊暈等·軟控只在下方 stagger 分支用;
+    # 破甲對元素束縛無意義走元素分支略過);舊 bound_sword 無 archetype → None → 行為不變。
+    archetype = (bound.get("archetype") if bound else (wdef.get("archetype") if wdef else None))
     speed = wdef.get("speed", formulas.WEAPON_SPEED_DEFAULT) if wdef else formulas.WEAPON_SPEED_DEFAULT
     fr = _fatigue_ratio(attacker)
     evasion = (formulas.dodge_evasion(defender.skill("acrobatics"))

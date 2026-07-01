@@ -130,6 +130,77 @@ def test_role_stat_profiles():
         assert b[tid]["armor_rating"] <= 8, f"{tid} 應為低甲玻璃大砲"
 
 
+# --- R106 Phase A:角色擴展(support/control/bound)------------------------
+def test_summon_support_casting_heals_ally():
+    """治療精靈(bestiary spells)走 summon_support_act 治療受傷盟友(讀 bestiary·非 companions.json)。"""
+    gd, c = _summoner(100)
+    healer = _summon(gd, c, spell="conjure_healer")
+    assert healer.template_id == "summoned_healer"
+    wounded = combat.spawn_creature(gd, "summoned_dremora", RNG(9))
+    wounded.summon_turns = 6
+    wounded.health = wounded.max_health // 3
+    before = wounded.health
+    res = magic.summon_support_act(healer, c.player if hasattr(c, "player") else c, [healer, wounded], gd)
+    assert res is not None, "治療精靈應施治療"
+    assert wounded.health > before, "受傷盟友應被治療"
+
+
+def test_control_summon_on_hit_fear_weaken():
+    gd = get_gamedata()
+    got = set()
+    for s in range(60):
+        t = combat.spawn_creature(gd, "summoned_terror", RNG(s)); t.summon_turns = 6
+        en = combat.spawn_creature(gd, "bandit", RNG(s + 11)); en.max_health = en.health = 999
+        combat.resolve_attack(t, en, gd, RNG(s + 71), attack=dict(t.attacks[0]))
+        combat.resolve_attack(t, en, gd, RNG(s + 81), attack=dict(t.attacks[1]))
+        got.update(x["kind"] for x in en.active_effects)
+    assert "fear" in got and "weaken" in got, "恐懼幽靈 on_hit 應施 fear + weaken"
+
+
+def test_bound_weapon_archetype_differentiation():
+    gd, c = _summoner(80)
+    p = c
+
+    def _cast_bound(spell):
+        p.active_effects = []
+        magic.cast(p, gd, spell, RNG(1), state=None)
+        return [e for e in p.active_effects if e.get("kind") == "bound_weapon"][0]
+
+    # bound_sword 無 archetype 控場;bound_mace 命中擊暈 stagger
+    assert _cast_bound("bound_sword").get("archetype") == "sword"
+    assert _cast_bound("bound_mace").get("archetype") == "mace"
+
+    def _stagger_rate(spell, n=60):
+        _cast_bound(spell)
+        hits = 0
+        for s in range(n):
+            e = combat.spawn_creature(gd, "bandit", RNG(s)); e.max_health = e.health = 9999
+            combat.resolve_attack(p, e, gd, RNG(s + 100))
+            if any(x["kind"] == "stagger" for x in e.active_effects):
+                hits += 1
+        return hits
+
+    assert _stagger_rate("bound_mace") > 0, "束縛釘錘應會擊暈(mace stagger)"
+    assert _stagger_rate("bound_sword") == 0, "束縛長劍不擊暈(sword 無內建 stagger)"
+
+
+def test_bound_greatsword_hits_harder_than_sword():
+    gd, c = _summoner(80)
+    p = c
+
+    def _maxdmg(spell):
+        p.active_effects = []
+        magic.cast(p, gd, spell, RNG(1), state=None)
+        best = 0
+        for s in range(40):
+            e = combat.spawn_creature(gd, "bandit", RNG(s)); e.max_health = e.health = 9999
+            combat.resolve_attack(p, e, gd, RNG(s + 200))
+            best = max(best, 9999 - e.health)
+        return best
+
+    assert _maxdmg("bound_greatsword") > _maxdmg("bound_sword"), "束縛巨劍(mag20)應比束縛長劍(mag14)痛"
+
+
 def run():
     for name, fn in sorted(globals().items()):
         if name.startswith("test_") and callable(fn):
