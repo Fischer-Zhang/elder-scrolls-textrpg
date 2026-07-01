@@ -8,7 +8,7 @@ build 構築 + per-build policy,額外鏡像 main.run_battle 的**同伴階段**
 回合末意志回魔 + tick_effects(全體)+ clamp。保真度邊界同 sim_builds(無走位/距離)。
 """
 from tesrpg.gamedata import get_gamedata
-from tesrpg.systems import combat, magic, stats
+from tesrpg.systems import combat, magic, necromancy, stats
 from tesrpg.rng import RNG
 import sim_builds as sb
 
@@ -186,8 +186,37 @@ def _summoner_act(c, boss, rng, battle, st):
     sb._regen(c)                                      # 空藍 → 該回合等回魔
 
 
-def fight_summoner(boss_id, seed, max_rounds=80):
-    c = sb.make_summoner()
+def _necromancer_act(c, boss, rng, battle, st):
+    """死靈師策略(R106C):生存優先(低血補血·一次石肌·1 治療精靈)→ 維持 ~3 隻真·亡者奴僕當 soak
+    (刻意不盲目填到軍團上限 → 免行動飢餓,反映真實操作)→ 弱破壞術。token 由 make_necromancer 種子
+    充足 → 隔離稀缺,測『滿升級 + 終王牆最壞情況』本身。"""
+    living = _living_allies(battle)
+    n_undead = sum(1 for a in living if getattr(a, "_undead", False))
+    have_healer = any(a.template_id == "summoned_healer" for a in living)
+    if c.health < c.max_health * 0.4 and magic.can_cast(c, gd, "close_wounds"):
+        magic.cast(c, gd, "close_wounds", rng)
+        return
+    if not st.get("buffed") and magic.can_cast(c, gd, "stoneflesh"):
+        st["buffed"] = True
+        magic.cast(c, gd, "stoneflesh", rng)
+        return
+    if not have_healer and magic.can_cast(c, gd, "conjure_healer"):
+        magic.cast(c, gd, "conjure_healer", rng, battle=battle)
+        return
+    target_thralls = necromancy.undead_field_cap(c)   # 誠實填滿已購軍團上限(貪婪最優·審查抓到「min(3,cap)」遮蔽終王牆破口)
+    if n_undead < target_thralls and getattr(c, "soul_tokens", 0) >= 1 and magic.can_cast(c, gd, "raise_thrall"):
+        magic.cast(c, gd, "raise_thrall", rng, battle=battle)
+        return
+    for sid in _SUM_NUKE:
+        if magic.can_cast(c, gd, sid):
+            magic.cast(c, gd, sid, rng, target=boss, enemies=[boss], battle=battle)
+            return
+    sb._regen(c)
+
+
+def fight_summoner(boss_id, seed, max_rounds=80, maker=None, act=None):
+    c = (maker or sb.make_summoner)()
+    act = act or _summoner_act
     boss = combat.spawn_creature(gd, boss_id, RNG(seed * 9 + 1))
     rng = RNG(seed)
     battle = {"allies": []}
@@ -198,7 +227,7 @@ def fight_summoner(boss_id, seed, max_rounds=80):
         if c.health <= 0:
             return "dead"
         if not magic.is_incapacitated(c):
-            _summoner_act(c, boss, rng, battle, st)
+            act(c, boss, rng, battle, st)
         if not combat.is_alive(boss):
             return "win"
         for a in _living_allies(battle):              # 召喚物階段(鏡像 main.py ally phase + R105 嘲諷 + R106 支援施法)
@@ -234,6 +263,11 @@ def fight_summoner(boss_id, seed, max_rounds=80):
 
 def summoner_rates(boss_id, n=200):
     res = [fight_summoner(boss_id, s) for s in range(n)]
+    return (sum(r == "win" for r in res) / n, sum(r == "timeout" for r in res) / n)
+
+
+def necromancer_rates(boss_id, n=200):
+    res = [fight_summoner(boss_id, s, maker=sb.make_necromancer, act=_necromancer_act) for s in range(n)]
     return (sum(r == "win" for r in res) / n, sum(r == "timeout" for r in res) / n)
 
 
@@ -298,5 +332,16 @@ if __name__ == "__main__":
         b = gd.bestiary[bid]
         w, t = summoner_rates(bid)
         flag = "  ⚠STALE" if t > 0.05 else ""
+        print(f"  {bid:22} (HP {b.get('max_health'):3}·{b.get('attack', {}).get('element', 'phys'):5}) "
+              f"win {w:5.0%}  逾時 {t:4.0%}{flag}")
+
+    # ── R106C 死靈經濟:死靈師(亡者統御 + 亡者收集·種子充足 token)vs solo boss ────────
+    print("\n== R106C 死靈師:token 召骷髏奴僕(軍團上限夾)+ 亡者統御 vs solo boss(win / 逾時·n=200)==")
+    print("🔴 目標:死靈師 ≈ 頂級法師 · **mehrunes_dagon 720HP 終王 0% 牆**(即使 token 無限·軍團上限擋堆疊)"
+          " · 無 stalemate\n")
+    for bid in dict.fromkeys(sample):
+        b = gd.bestiary[bid]
+        w, t = necromancer_rates(bid)
+        flag = "  ⚠STALE" if t > 0.05 else ("  🔴WALL-BREAK" if bid == "mehrunes_dagon" and w > 0 else "")
         print(f"  {bid:22} (HP {b.get('max_health'):3}·{b.get('attack', {}).get('element', 'phys'):5}) "
               f"win {w:5.0%}  逾時 {t:4.0%}{flag}")

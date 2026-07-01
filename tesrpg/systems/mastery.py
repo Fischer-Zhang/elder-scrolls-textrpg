@@ -64,6 +64,8 @@ _IMPLEMENTED_KINDS = {
     "flee_bonus", "armor_reflect", "armor_stagger", "combat_regen", "trap_floor",
     # security 功能化(混合身份):盜賊行竊加成、地城賊眼窺探(布林解鎖)。
     "theft_skill", "dungeon_casing",
+    # R106C 死靈經濟:亡者收集(每擊殺多給 token)、亡者統御(真·亡者更強韌兇猛)。
+    "soul_harvest", "undead_mastery",
 }
 
 
@@ -304,6 +306,18 @@ def summon_casting_mod(char, gamedata: GameData) -> dict:
 def bound_mastery_mod(char, gamedata: GameData) -> dict:
     """R106「束縛精通」(conjuration 50):束縛兵刃 {dmg_bonus, turn_bonus};無則 {}。"""
     e = _chosen_option_by_kind(char, gamedata, "bound_mastery")
+    return e if e else {}
+
+
+def soul_harvest_bonus(char, gamedata: GameData) -> int:
+    """R106C「亡者收集」(conjuration 75):每擊殺額外 +N 靈魂 token(SUM 聚合,防未來多源遮蔽)。"""
+    return int(sum(o.get("per_kill", 0)
+                   for o in _chosen_options_by_kind(char, gamedata, "soul_harvest")))
+
+
+def undead_mastery_mod(char, gamedata: GameData) -> dict:
+    """R106C「亡者統御」(conjuration 100):真·亡者戰力加成 {hp_bonus, dmg_bonus};無則 {}。"""
+    e = _chosen_option_by_kind(char, gamedata, "undead_mastery")
     return e if e else {}
 
 

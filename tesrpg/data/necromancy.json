@@ -1,0 +1,23 @@
+{
+  "undead_armor": {
+    "name": "亡者護甲",
+    "desc": "以亡魂之力凝成護甲罩體:永久全域護甲 +2/級(硬上限 +8)。",
+    "per_level": 2,
+    "max_level": 4,
+    "cost_per_level": 3
+  },
+  "undead_cap": {
+    "name": "亡者軍團",
+    "desc": "統御更龐大的亡者軍團:同場真·亡者上限 +1/級(基礎 3)。",
+    "per_level": 1,
+    "max_level": 2,
+    "cost_per_level": 4
+  },
+  "grave_thrift": {
+    "name": "喚魂精算",
+    "desc": "喚魂之術愈發嫻熟:召喚/奴役真·亡者的靈魂消耗 −1(最低 1)。",
+    "per_level": 1,
+    "max_level": 1,
+    "cost_per_level": 6
+  }
+}

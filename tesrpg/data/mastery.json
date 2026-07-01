@@ -218,20 +218,19 @@
     "threshold": 100,
     "options": [
       {
-        "opt_id": "twin_summon",
-        "name": "雙重召喚",
+        "opt_id": "lasting_summon",
+        "name": "持久召喚",
         "kind": "summon_mod",
-        "extra": 1,
-        "hp_factor": 0.6,
-        "desc": "召喚大師:每次召喚多喚出一隻較弱的盟友(血量六成)。"
+        "turn_bonus": 1,
+        "desc": "召喚大師:所有召喚物與復生亡者多駐留 1 回合。"
       },
       {
-        "opt_id": "bound_blade",
-        "name": "束縛兵刃",
-        "kind": "summon_mod",
-        "hp_bonus": 0.25,
-        "turn_bonus": 1,
-        "desc": "召喚大師:召喚物更強韌(血量 +25%,多駐留 1 回合)。"
+        "opt_id": "undead_dominion",
+        "name": "亡者統御",
+        "kind": "undead_mastery",
+        "hp_bonus": 0.3,
+        "dmg_bonus": 0.2,
+        "desc": "死靈統御:你召喚/復生的亡者更強韌兇猛(血量 +30%,傷害 +20%)。"
       }
     ]
   },
@@ -898,20 +897,19 @@
     "threshold": 75,
     "options": [
       {
-        "opt_id": "warding_summon",
-        "name": "護體召喚",
-        "kind": "passive_armor",
-        "armor_bonus": 15,
-        "desc": "召喚靈光環體:被動護甲 +15。"
+        "opt_id": "conj_efficiency",
+        "name": "召喚精算",
+        "kind": "spell_mod",
+        "school": "conjuration",
+        "cost_factor": 0.85,
+        "desc": "召喚法理爐火純青:召喚術施法省魔 15%(與其他省魔相乘)。"
       },
       {
-        "opt_id": "summoner_focus",
-        "name": "召喚精研",
-        "kind": "skill_fortify",
-        "skill": {
-          "conjuration": 8
-        },
-        "desc": "召喚精研,束縛/喚物更強更省魔(召喚技能 +8)。"
+        "opt_id": "soul_harvest",
+        "name": "亡者收集",
+        "kind": "soul_harvest",
+        "per_kill": 1,
+        "desc": "死靈精研:每次擊殺額外收割 +1 靈魂 token(死靈經濟)。"
       }
     ]
   },

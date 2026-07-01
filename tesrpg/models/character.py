@@ -167,6 +167,8 @@ class Character:
     quests: dict = field(default_factory=dict)            # quest_id -> {"progress":...}
     completed_quests: list = field(default_factory=list)
     kill_counts: dict = field(default_factory=dict)       # creature_tid -> 擊殺數
+    soul_tokens: int = 0                                   # R106C 死靈經濟:可花用的靈魂 token(打怪+1·戰後回收倖存亡者+1/隻)
+    necro_upgrades: dict = field(default_factory=dict)     # R106C 永久死靈升級 upgrade_id -> level(亡者護甲/軍團上限/喚魂精算…)
     cleared_dungeons: list = field(default_factory=list)
     bounties: dict = field(default_factory=dict)          # province -> 賞金
     npc_disposition: dict = field(default_factory=dict)   # npc_id -> 好感
@@ -334,7 +336,9 @@ class Character:
             "fame": self.fame, "infamy": self.infamy, "bounty": self.bounty,
             "disposition": self.disposition, "is_player": self.is_player,
             "quests": self.quests, "completed_quests": self.completed_quests,
-            "kill_counts": self.kill_counts, "cleared_dungeons": self.cleared_dungeons,
+            "kill_counts": self.kill_counts,
+            "soul_tokens": self.soul_tokens, "necro_upgrades": self.necro_upgrades,
+            "cleared_dungeons": self.cleared_dungeons,
             "bounties": self.bounties, "npc_disposition": self.npc_disposition,
             "persuaded_npcs": self.persuaded_npcs,
             "mastery_choices": self.mastery_choices,

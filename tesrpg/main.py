@@ -14,7 +14,7 @@ from tesrpg.rng import RNG, make_seed
 from tesrpg.state import GameState
 from tesrpg.systems import (achievements, aiwar, alchemy, boons, brotherhood, combat, court, crafting, crime, dialogue, diseases, dungeon,
                             dungeoncrawl, enchanting, events, factions, housing, inventory, landmarks, legacy,
-                            lycanthropy, magic, mastery, mounts, party, politics, potion_buff, powers,
+                            lycanthropy, magic, mastery, mounts, necromancy, party, politics, potion_buff, powers,
                             progression, quests, race_ability, skooma, smithing, spellfx, stats, undercover, vampirism, warband, world, worldpulse, worldstate)
 from tesrpg.ui import console as ui
 
@@ -1151,6 +1151,10 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
                 ui.message(msg, style="magenta")
         quests.record_kill(player, e.template_id)
     ui.loot_report(total, gamedata)
+    # R106C 死靈經濟:擊殺收割靈魂 token(含「亡者收集」)+ 回收倖存的真·亡者(只 victory 給予,封逃跑刷)
+    harvest = necromancy.harvest_and_recover(player, gamedata, len(enemies), battle["allies"])
+    if harvest["message"]:
+        ui.message(harvest["message"], style="magenta")
     _report_quests(state, gamedata)
     if getattr(player, "beast_form", False):    # 獸形勝利:吞噬獵物續時 + 回血(每場有上限,封無限獸形)
         dv = lycanthropy.devour(player, state, gamedata)
@@ -4207,6 +4211,23 @@ def action_shrine(state: GameState, gamedata: GameData) -> None:
     _accept_and_brief(state, gamedata, qid)
 
 
+def action_necromancy_altar(state: GameState, gamedata: GameData) -> None:
+    """死靈祭壇(R106C):在召喚重鎮花 soul_token 買永久死靈升級(亡者護甲 / 亡者軍團上限 / 喚魂精算)。"""
+    char = state.player
+    while True:
+        opts = []
+        for uid, cat in gamedata.necromancy.items():
+            cur = necromancy.upgrade_level(char, uid)
+            mx = cat["max_level"]
+            tag = f"滿級 {cur}/{mx}" if cur >= mx else f"等級 {cur}/{mx}·{cat['cost_per_level']} token"
+            opts.append((uid, f"{cat['name']}({tag})— {cat['desc']}"))
+        pick = ui.menu(f"死靈祭壇 —— 靈魂 token:{char.soul_tokens}", opts, allow_back=True)
+        if pick is None:
+            return
+        res = necromancy.buy_upgrade(char, gamedata, pick)
+        ui.message(res["message"], style="magenta" if res["ok"] else "grey70")
+
+
 def action_arcane_trials(state: GameState, gamedata: GameData) -> None:
     """奧術試煉的在地引路人(R-arcane):毀滅 base≥75 → 該地點對應的元素試煉。
 
@@ -5019,6 +5040,9 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
             mg_opts = [("spells", "學習法術"), ("mg_hall", "公會事務(入會 / 任務)")]
             if loc.get("arcane_trials"):                 # R-arcane:奧術試煉引路人(終極法術試煉發起點)
                 mg_opts.append(("arcane", "🔥 奧術試煉的引路人"))
+            if ("raise_thrall" in loc.get("spell_stock", [])       # R106C 召喚重鎮死靈祭壇(限召喚系:非召喚者不漏出)
+                    and player.base_skill("conjuration") >= necromancy.TOKEN_MIN_CONJURATION):
+                mg_opts.append(("necro", "💀 死靈祭壇(靈魂 token 升級)"))
             if player.is_vampire:
                 mg_opts.append(("cure", "✦ 探詢血咒的解法"))
             sub = ui.menu("法師公會", mg_opts, allow_back=True)
@@ -5028,6 +5052,8 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
                 action_guild_hall(state, gamedata, "mages_guild")
             elif sub == "arcane":
                 action_arcane_trials(state, gamedata)
+            elif sub == "necro":
+                action_necromancy_altar(state, gamedata)
             elif sub == "cure":
                 action_vampire_cure(state, gamedata)
         elif choice == "fg_hall":

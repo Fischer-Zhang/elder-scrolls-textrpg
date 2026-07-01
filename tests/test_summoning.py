@@ -242,6 +242,187 @@ def test_conjuration_50_redesign_retires_old_choice():
     assert "conjuration_50" not in c.mastery_choices, "舊 warding_focus 選擇應退 pending(可重選)"
 
 
+# --- R106C 靈魂 token 死靈經濟 --------------------------------------------
+def test_soul_token_gain_per_kill_and_harvest():
+    from tesrpg.systems import necromancy, mastery
+    gd, c = _summoner(100)
+    c.soul_tokens = 0
+    r = necromancy.harvest_and_recover(c, gd, 3, [])
+    assert c.soul_tokens == 3 and r["gained"] == 3 and r["recovered"] == 0
+    # 亡者收集 → 每擊殺額外 +1(共 ×2)
+    mastery.choose(c, gd, "conjuration_75", "soul_harvest")
+    c.soul_tokens = 0
+    necromancy.harvest_and_recover(c, gd, 3, [])
+    assert c.soul_tokens == 6, "亡者收集:3 kills × (1+1)"
+
+
+def test_no_token_gain_for_non_conjurer():
+    """死靈經濟限召喚系:base_skill(conjuration) < 25 的純戰士不積 token(防全 build 漏出)。"""
+    from tesrpg.systems import necromancy
+    gd = get_gamedata()
+    w = build_character(gd, name="戰", sex="male", race="nord", birthsign="warrior", class_id="warrior")
+    w.skills["conjuration"] = 5
+    w.soul_tokens = 0
+    r = necromancy.harvest_and_recover(w, gd, 5, [])
+    assert w.soul_tokens == 0 and r["gained"] == 0 and r["message"] is None
+    # 達門檻(25)即積
+    w.skills["conjuration"] = 25
+    necromancy.harvest_and_recover(w, gd, 3, [])
+    assert w.soul_tokens == 3
+
+
+def test_recover_only_surviving_true_undead():
+    from tesrpg.systems import necromancy
+    gd, c = _summoner(100)
+    c.soul_tokens = 0
+    alive = combat.spawn_creature(gd, "reanimated_thrall", RNG(1)); alive._undead = True
+    dead = combat.spawn_creature(gd, "reanimated_thrall", RNG(2)); dead._undead = True; dead.health = 0
+    atronach = combat.spawn_creature(gd, "summoned_atronach", RNG(3))   # 非亡者:無 _undead
+    r = necromancy.harvest_and_recover(c, gd, 0, [alive, dead, atronach])
+    assert r["recovered"] == 1 and c.soul_tokens == 1, "只回收倖存的真·亡者"
+
+
+def test_raise_thrall_spawns_undead_and_spends_token():
+    gd, c = _summoner(100)
+    c.soul_tokens = 5
+    c.spells.append("raise_thrall")
+    battle = {"allies": []}
+    ev = magic.cast(c, gd, "raise_thrall", RNG(1), battle=battle)
+    assert ev["ok"]
+    ally = battle["allies"][0]
+    assert getattr(ally, "_undead", False) and ally.summon_turns is not None
+    assert c.soul_tokens == 3, "5 − 2 token"
+    # token 不足 → 退費失敗(token/magicka 皆不扣)
+    c.soul_tokens = 1
+    mk_before = c.magicka
+    battle2 = {"allies": []}
+    ev2 = magic.cast(c, gd, "raise_thrall", RNG(2), battle=battle2)
+    assert not ev2["ok"] and len(battle2["allies"]) == 0
+    assert c.soul_tokens == 1 and c.magicka == mk_before
+
+
+def test_undead_field_cap_blocks_over_summon():
+    from tesrpg.systems import necromancy
+    gd, c = _summoner(100)
+    c.soul_tokens = 99
+    c.spells.append("raise_thrall")
+    battle = {"allies": []}
+    cap = necromancy.undead_field_cap(c)   # base 3
+    for _ in range(cap):
+        magic.cast(c, gd, "raise_thrall", RNG(1), battle=battle)
+    assert necromancy.undead_count(battle) == cap
+    ev = magic.cast(c, gd, "raise_thrall", RNG(2), battle=battle)   # 超過軍團上限
+    assert not ev["ok"] and necromancy.undead_count(battle) == cap
+
+
+def test_reanimate_thrall_enhances_and_costs_token():
+    gd, c = _summoner(100)
+    c.spells += ["reanimate_corpse", "reanimate_thrall"]
+
+    def _corpse():
+        e = combat.spawn_creature(gd, "bandit", RNG(5)); e.health = 0
+        return e
+
+    c.soul_tokens = 5
+    b1 = {"allies": []}
+    magic.cast(c, gd, "reanimate_corpse", RNG(1), battle=b1, corpses=[_corpse()])
+    base_hp = b1["allies"][0].max_health
+    assert c.soul_tokens == 5, "base 亡者復生不吃 token"
+    b2 = {"allies": []}
+    magic.cast(c, gd, "reanimate_thrall", RNG(1), battle=b2, corpses=[_corpse()])
+    enh = b2["allies"][0]
+    assert enh.max_health > base_hp, "強化復生 1.0x > base 0.6x"
+    assert c.soul_tokens == 4 and getattr(enh, "_undead", False)
+
+
+def test_undead_mastery_boosts_only_true_undead():
+    from tesrpg.systems import mastery
+    gd, c = _summoner(100)
+    mastery.choose(c, gd, "conjuration_100", "undead_dominion")
+    c.soul_tokens = 9
+    c.spells += ["raise_thrall", "conjure_flame_atronach"]
+    b1 = {"allies": []}
+    magic.cast(c, gd, "raise_thrall", RNG(1), battle=b1)
+    thrall = b1["allies"][0]
+    # 真·亡者:summon_power = 1 × (1+0.2)〔只吃亡者統御·刻意不吃 conjuration 縮放〕
+    assert abs(thrall.summon_power - 1.2) < 1e-9
+    b2 = {"allies": []}
+    magic.cast(c, gd, "conjure_flame_atronach", RNG(1), battle=b2)
+    atro = b2["allies"][0]
+    assert not getattr(atro, "_undead", False), "元素召喚物非真·亡者"
+    assert atro.summon_power > 1.2, "atronach 仍吃 conjuration 縮放(未被 dominion 影響)"
+
+
+def test_soul_harvest_and_undead_mastery_getters():
+    from tesrpg.systems import mastery
+    gd, c = _summoner(100)
+    assert mastery.soul_harvest_bonus(c, gd) == 0 and mastery.undead_mastery_mod(c, gd) == {}
+    mastery.choose(c, gd, "conjuration_75", "soul_harvest")
+    mastery.choose(c, gd, "conjuration_100", "undead_dominion")
+    assert mastery.soul_harvest_bonus(c, gd) == 1
+    um = mastery.undead_mastery_mod(c, gd)
+    assert um["hp_bonus"] == 0.3 and um["dmg_bonus"] == 0.2
+
+
+def test_conjuration_75_100_redesign_retires_old_choices():
+    from tesrpg.systems import progression
+    gd, c = _summoner(100)
+    c.mastery_choices["conjuration_75"] = "warding_summon"   # 舊選(已移除)
+    c.mastery_choices["conjuration_100"] = "twin_summon"     # 舊選(已移除)
+    progression.ensure_mastery_choices(c, gd)
+    assert "conjuration_75" not in c.mastery_choices
+    assert "conjuration_100" not in c.mastery_choices
+
+
+def test_necromancy_spells_exist_and_reachable():
+    gd, _ = _summoner(100)
+    for sid in ("raise_thrall", "reanimate_thrall"):
+        assert sid in gd.spells
+    assert "reanimated_thrall" in gd.bestiary
+    hubs = [lid for lid, l in gd.world["locations"].items()
+            if "raise_thrall" in l.get("spell_stock", [])]
+    assert len(hubs) >= 4, "召喚重鎮 spell_stock 應含 raise_thrall(可達)"
+
+
+# --- R106C 永久死靈升級選單(C2)-------------------------------------------
+def test_necromancy_permanent_upgrades_buy_and_cap():
+    from tesrpg.systems import necromancy
+    gd, c = _summoner(100)
+    c.soul_tokens = 20
+    c.necro_upgrades = {}
+    r = necromancy.buy_upgrade(c, gd, "undead_armor")
+    assert r["ok"] and necromancy.undead_armor_bonus(c) == 2 and c.soul_tokens == 17   # step 2
+    for _ in range(3):                       # 買滿 4 級 → 夾 NECRO_ARMOR_CAP(+8)
+        necromancy.buy_upgrade(c, gd, "undead_armor")
+    assert necromancy.undead_armor_bonus(c) == necromancy.NECRO_ARMOR_CAP == 8
+    assert not necromancy.buy_upgrade(c, gd, "undead_armor")["ok"], "已滿級不可再買"
+    base_cap = necromancy.undead_field_cap(c)
+    necromancy.buy_upgrade(c, gd, "undead_cap")
+    assert necromancy.undead_field_cap(c) == base_cap + 1
+    c.soul_tokens = 0
+    assert not necromancy.buy_upgrade(c, gd, "grave_thrift")["ok"], "token 不足不可買"
+    assert necromancy.upgrade_level(c, "grave_thrift") == 0
+
+
+def test_undead_armor_flows_into_combat_armor_rating():
+    from tesrpg.systems import necromancy
+    gd, c = _summoner(100)
+    c.necro_upgrades = {}
+    base = combat._armor_rating(c, gd)
+    c.necro_upgrades = {"undead_armor": 3}   # 3 × step 2 = +6 護甲
+    assert combat._armor_rating(c, gd) == base + 6
+
+
+def test_grave_thrift_reduces_token_cost():
+    from tesrpg.systems import necromancy
+    gd, c = _summoner(100)
+    assert necromancy.spend_cost(c, 2) == 2
+    c.necro_upgrades = {"grave_thrift": 1}
+    assert necromancy.spend_cost(c, 2) == 1   # −1
+    assert necromancy.spend_cost(c, 1) == 1   # floor 1
+    assert necromancy.spend_cost(c, 0) == 0   # 無 token_cost 不折
+
+
 def run():
     for name, fn in sorted(globals().items()):
         if name.startswith("test_") and callable(fn):

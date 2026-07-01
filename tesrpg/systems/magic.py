@@ -506,18 +506,38 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
             char.fatigue = fatigue_before
             return _fail(f"召喚失敗:未知的生物「{eff['creature']}」。")
         else:
-            from tesrpg.systems import combat
+            from tesrpg.systems import combat, necromancy
+            # R106C 死靈經濟:token 閘 + 亡者軍團上限(僅真·亡者〔undead〕受限;
+            # 既有召喚無 token_cost/undead → tc=0/不判上限 → 全跳過,byte-identical)。
+            tc = necromancy.spend_cost(char, eff.get("token_cost", 0))
+            if tc > getattr(char, "soul_tokens", 0):
+                char.magicka += cost
+                char.fatigue = fatigue_before
+                return _fail("靈魂 token 不足,無法喚起亡者。")
+            if eff.get("undead") and necromancy.undead_count(battle) >= necromancy.undead_field_cap(char):
+                char.magicka += cost
+                char.fatigue = fatigue_before
+                return _fail("你的亡者軍團已達上限,無法再喚起更多亡者。")
             ally = combat.spawn_creature(gamedata, eff["creature"], rng)
             boon = factions.conjure_boon(char, gamedata)   # 神話黎明:達貢之佑強化召喚物
-            smod = mastery.summon_mod(char, gamedata)      # 里程碑:雙重召喚 / 束縛兵刃
+            smod = mastery.summon_mod(char, gamedata)      # 里程碑:持久召喚(turn_bonus)
+            um = mastery.undead_mastery_mod(char, gamedata) if eff.get("undead") else {}   # R106C 亡者統御:真·亡者更強韌兇猛
             # R105 召喚師深化:召喚物強度(HP + 傷害)隨召喚主的 conjuration 威力成長。
             # `power`(:245)已 = _power(conjuration)〔技能+法術威力+智力+奧術連鎖〕× 力竭因子 → 直接複用;
             # 再乘 (1+達貢之佑)〔階級〕,夾 SUMMON_POWER_CAP 防 apex spell-power 暴衝(「初始弱」靠 bestiary 基礎下修)。
             scale = min(formulas.SUMMON_POWER_CAP, power * (1 + boon))
 
             def _empower_summon(cre, hp_factor=1.0):
-                cre.summon_power = scale                   # 傷害側乘子:resolve_attack 讀取(非召喚者無此屬性 → ×1.0 byte-identical)
-                cre.max_health = max(1, round(cre.max_health * scale * (1 + smod.get("hp_bonus", 0.0)) * hp_factor))
+                if eff.get("undead"):
+                    # 真·亡者(raise_thrall):token 買的樸素軀體 —— 刻意「數量/soak 而非 boss-killer」,
+                    # **不吃 conjuration 威力縮放**(否則 token 囤積 + 滿編 → 磨穿終王牆,sim 抓到)。只吃亡者統御。
+                    cre.summon_power = 1 + um.get("dmg_bonus", 0.0)
+                    cre.max_health = max(1, round(cre.max_health * (1 + smod.get("hp_bonus", 0.0))
+                                                  * (1 + um.get("hp_bonus", 0.0)) * hp_factor))
+                    cre._undead = True   # 真·亡者旗(暫態,不入檔):戰後回收 / 軍團上限 / 亡者統御
+                else:
+                    cre.summon_power = scale                   # 傷害側乘子:resolve_attack 讀取(非召喚者無此屬性 → ×1.0 byte-identical)
+                    cre.max_health = max(1, round(cre.max_health * scale * (1 + smod.get("hp_bonus", 0.0)) * hp_factor))
                 cre.health = cre.max_health
 
             _empower_summon(ally)
@@ -525,22 +545,25 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
             ally.summon_turns = eff["turns"] + bonus_turns
             battle.setdefault("allies", []).append(ally)
             extra_msg = ""
-            if smod.get("extra"):     # 雙重召喚:額外多召一隻較弱的盟友
+            if smod.get("extra"):     # 雙重召喚:額外多召一隻較弱的盟友(現無節點提供 extra,保留相容)
                 for _ in range(int(smod["extra"])):
                     ally2 = combat.spawn_creature(gamedata, eff["creature"], rng)
                     _empower_summon(ally2, hp_factor=smod.get("hp_factor", 0.6))
                     ally2.summon_turns = ally.summon_turns
                     battle.setdefault("allies", []).append(ally2)
                 extra_msg = "(雙重召喚:多一隻較弱的盟友)"
+            if tc > 0:
+                char.soul_tokens = getattr(char, "soul_tokens", 0) - tc
             blessed = "(達貢之佑加持)" if boon > 0 else ""
-            msg = f"你召喚出了{ally.name}{blessed}{extra_msg},它將為你而戰({ally.summon_turns} 回合)。"
+            token_msg = f"(靈魂 token −{tc},餘 {char.soul_tokens})" if tc > 0 else ""
+            msg = f"你召喚出了{ally.name}{blessed}{extra_msg}{token_msg},它將為你而戰({ally.summon_turns} 回合)。"
 
     elif kind == "reanimate":   # 召喚/死靈「亡者復生」:把一具非 solo 敵屍喚為限時盟友(復用召喚物生命週期)
         if battle is None:
             char.magicka += cost
             char.fatigue = fatigue_before
             return _fail("亡者復生需要在戰鬥中施放。")
-        from tesrpg.systems import combat
+        from tesrpg.systems import combat, necromancy
         corpse = next((e for e in (corpses or [])
                        if not combat.is_alive(e) and getattr(e, "template_id", None)
                        and e.template_id in gamedata.bestiary
@@ -550,18 +573,36 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
             char.magicka += cost
             char.fatigue = fatigue_before
             return _fail("周圍沒有可供復生的屍體。")
+        # R106C 死靈經濟:強化復生(reanimate_thrall)才吃 token;軍團上限計入(base 亡者復生無 token_cost → tc=0)
+        tc = necromancy.spend_cost(char, eff.get("token_cost", 0))
+        if tc > getattr(char, "soul_tokens", 0):
+            char.magicka += cost
+            char.fatigue = fatigue_before
+            return _fail("靈魂 token 不足,無法奴役此亡者。")
+        if necromancy.undead_count(battle) >= necromancy.undead_field_cap(char):
+            char.magicka += cost
+            char.fatigue = fatigue_before
+            return _fail("你的亡者軍團已達上限,無法再奴役更多亡者。")
         corpse._reanimated = True   # 同一具屍體不可反覆復生(封無限刷盟友)
         ally = combat.spawn_creature(gamedata, corpse.template_id, rng)
         boon = factions.conjure_boon(char, gamedata)
         smod = mastery.summon_mod(char, gamedata)   # 刻意不讀 smod['extra']:復生綁定單屍(見 _reanimated),雙重召喚不適用
+        um = mastery.undead_mastery_mod(char, gamedata)   # R106C 亡者統御:復生的亡者恆真·亡者
         fat_pen = formulas.cast_fatigue_power_factor(fatigue_ratio)
-        # REANIMATE_HP_FACTOR 收斂高 HP 精英(虛弱化的亡魂);仍吃 boon/hp_bonus/力竭(與召喚對稱)
-        hp_mult = REANIMATE_HP_FACTOR * (1 + boon) * (1 + smod.get("hp_bonus", 0.0)) * fat_pen
+        # base_factor:舊 spell 無 hp_factor 鍵 → REANIMATE_HP_FACTOR(0.6)逐位元組同;reanimate_thrall 帶 1.0 滿血
+        base_factor = eff.get("hp_factor", REANIMATE_HP_FACTOR)
+        # 虛弱化的亡魂;仍吃 boon/hp_bonus/力竭(與召喚對稱)+ 亡者統御
+        hp_mult = base_factor * (1 + boon) * (1 + smod.get("hp_bonus", 0.0)) * (1 + um.get("hp_bonus", 0.0)) * fat_pen
         ally.max_health = max(1, round(ally.max_health * hp_mult))
         ally.health = ally.max_health
-        ally.summon_turns = eff["turns"] + int(boon * 3) + int(smod.get("turn_bonus", 0))
+        ally.summon_power = 1.0 * (1 + um.get("dmg_bonus", 0.0))   # 復生亡者不吃 conjuration 傷害縮放(虛弱),只吃亡者統御
+        ally.summon_turns = eff["turns"] + int(boon * 3) + int(smod.get("turn_bonus", 0)) + int(eff.get("turn_bonus", 0))
+        ally._undead = True   # 復生產物恆真·亡者:戰後回收 / 軍團上限 / 亡者統御
         battle.setdefault("allies", []).append(ally)
-        msg = f"你以亡者復生喚起了{ally.name},它將為你而戰({ally.summon_turns} 回合)。"
+        if tc > 0:
+            char.soul_tokens = getattr(char, "soul_tokens", 0) - tc
+        token_msg = f"(靈魂 token −{tc},餘 {char.soul_tokens})" if tc > 0 else ""
+        msg = f"你以亡者復生喚起了{ally.name}{token_msg},它將為你而戰({ally.summon_turns} 回合)。"
 
     if triaged:           # 自我治療確實施放 → 消耗戰地搶救旗標(damage 等非治療術 triaged 必為 False)
         char.active_effects[:] = [e for e in char.active_effects if e.get("kind") != "triage_ready"]

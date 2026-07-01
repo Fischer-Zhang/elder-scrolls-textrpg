@@ -57,6 +57,7 @@ class GameData:
         self.achievements: list = _load("achievements.json")   # 成就(達門檻自動表彰;唯讀推導,見 systems/achievements.py)
         self.codex: dict = _load("codex.json")   # 遊戲內指南/圖鑑(唯讀 how-to 內容;R60,見 main.action_codex/ui.codex_panel)
         self.ecology: dict = _load("alchemical_ecology.json")   # 生態系 → 煉金材料池(野採 forage_pool 抽取;R93,見 systems/events.forage_pool_draw)
+        self.necromancy: dict = _load("necromancy.json")   # 永久死靈升級目錄(靈魂 token 買斷;R106C,見 systems/necromancy.buy_upgrade)
         self._misc: dict = _load("items.json")
 
         # 統一物品索引:武器/護甲/雜項/材料共用一份 {id: {**def, "kind": ...}}

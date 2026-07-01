@@ -308,7 +308,11 @@ def _armor_rating(actor, gamedata: GameData) -> int:
     # 被動護甲(石膚/靈體護壁=法系、撐架/柔革護持=物理 stance):里程碑 perk,無條件生效
     # (廣度 pass 加入物理 stance 後不再綁魔力;原「有魔力才生效」對物理 stance 不合理)。
     passive = mastery.passive_armor_bonus(actor, gamedata)
-    return base + passive + smithing.armor_temper_bonus(actor, gamedata) + magic.active_shield(actor)   # 淬鍊 + 變化系護盾疊加
+    # R106C 亡者護甲:花 soul_token 買的永久全域護甲(獨立層·夾 NECRO_ARMOR_CAP·絕不寫 base;
+    # necro_upgrades 空 → 0 → 刺客/非死靈師 byte-identical)
+    from tesrpg.systems import necromancy
+    return (base + passive + smithing.armor_temper_bonus(actor, gamedata) + magic.active_shield(actor)
+            + necromancy.undead_armor_bonus(actor))   # 淬鍊 + 變化系護盾 + 亡者護甲疊加
 
 
 def _player_armor_skill(actor, gamedata: GameData) -> str:

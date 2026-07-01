@@ -596,20 +596,14 @@ def test_destruction_impact_staggers_on_hit():
 
 
 def test_conjuration_summon_mods():
+    # R106C 里程碑改制:conjuration_100 = 持久召喚(通用 +1t)vs 亡者統御(真·亡者更強)
     gd, c = _char(conjuration=100)
-    mastery.choose(c, gd, "conjuration_100", "twin_summon")
-    assert mastery.summon_mod(c, gd).get("extra") == 1
-    summon_spell = next((sid for sid, sp in gd.spells.items()
-                         if sp.get("effect", {}).get("kind") == "summon"), None)
-    if summon_spell:
-        c.spells = [summon_spell]
-        c.magicka = c.max_magicka = 99999
-        battle = {}
-        magic.cast(c, gd, summon_spell, RNG(1), battle=battle)
-        assert len(battle.get("allies", [])) == 2          # 主 + 額外較弱盟友
+    mastery.choose(c, gd, "conjuration_100", "lasting_summon")
+    assert mastery.summon_mod(c, gd).get("turn_bonus") == 1
     gd2, c2 = _char(conjuration=100)
-    mastery.choose(c2, gd2, "conjuration_100", "bound_blade")
-    assert mastery.summon_mod(c2, gd2).get("hp_bonus") == 0.25
+    mastery.choose(c2, gd2, "conjuration_100", "undead_dominion")
+    um = mastery.undead_mastery_mod(c2, gd2)
+    assert um.get("hp_bonus") == 0.3 and um.get("dmg_bonus") == 0.2
 
 
 def test_alteration_stoneflesh_passive_armor():
@@ -1068,8 +1062,6 @@ def test_magic_school_no_brainer_fix():
     assert abs(mastery.spell_power_bonus(c, gd, "alteration") - 0.10) < 1e-9   # 護盾增幅(原意志+4 → 真功能)
     mastery.choose(c, gd, "mysticism_50", "ward_focus")
     assert abs(mastery.spell_power_bonus(c, gd, "mysticism") - 0.10) < 1e-9    # 結界增幅
-    mastery.choose(c, gd, "conjuration_75", "warding_summon")
-    assert mastery.passive_armor_bonus(c, gd) == 15                            # R106:護體召喚(75)被動護甲(50 已改身份節點)
     for nid, oid in [("illusion_50", "dread_touch"), ("illusion_75", "cowardice"), ("illusion_100", "soul_dread")]:
         mastery.choose(c, gd, nid, oid)
     foh = mastery.fear_on_hit(c, gd)

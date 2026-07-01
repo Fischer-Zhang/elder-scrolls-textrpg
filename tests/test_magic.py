@@ -511,7 +511,7 @@ def test_reanimate_no_double_raise_same_corpse():
     assert len(battle["allies"]) == 1
 
 
-def test_new_summons_spawn_and_inherit_twin_summon_mastery():
+def test_new_summons_spawn_and_lasting_summon_mastery():
     from tesrpg.systems import mastery
     gd, c = _caster()
     # 基礎召喚:conjure_familiar 在 _caster() setup 下可施放,召出帶計時的盟友且能攻擊敵人
@@ -525,16 +525,20 @@ def test_new_summons_spawn_and_inherit_twin_summon_mastery():
     combat.resolve_attack(fam_battle["allies"][0], fam_crab, gd, RNG(1))   # 召喚物攻擊敵人
     assert fam_crab.health <= fam_hp0
     c.spells += ["conjure_frost_atronach", "conjure_storm_atronach", "conjure_dremora"]
+    c.skills["conjuration"] = 100
     for sid in ("conjure_frost_atronach", "conjure_storm_atronach", "conjure_dremora"):
         battle = {"allies": []}
         ev = magic.cast(c, gd, sid, RNG(0), battle=battle, enemies=[])
         assert ev["ok"] and len(battle["allies"]) == 1 and battle["allies"][0].name
-    # 雙重召喚里程碑 → 新召喚物自動多召一隻(per-school summon_mod 繼承)
-    c.skills["conjuration"] = 100
-    mastery.choose(c, gd, "conjuration_100", "twin_summon")
+    # R106C 持久召喚里程碑 → 召喚物多駐留 1 回合(取代舊雙重召喚)
+    base = {"allies": []}
+    magic.cast(c, gd, "conjure_storm_atronach", RNG(0), battle=base, enemies=[])
+    base_turns = base["allies"][0].summon_turns
+    mastery.choose(c, gd, "conjuration_100", "lasting_summon")
     battle = {"allies": []}
     magic.cast(c, gd, "conjure_storm_atronach", RNG(0), battle=battle, enemies=[])
-    assert len(battle["allies"]) == 2
+    assert len(battle["allies"]) == 1
+    assert battle["allies"][0].summon_turns == base_turns + 1
 
 
 def test_mass_soul_trap_marks_all_living_enemies():

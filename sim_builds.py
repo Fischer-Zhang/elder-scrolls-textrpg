@@ -135,7 +135,23 @@ def make_summoner():
     c.spells = ["conjure_dremora", "conjure_healer", "conjure_flame_atronach", "conjure_frost_atronach",
                 "conjure_storm_atronach", "fireball", "flames", "close_wounds", "stoneflesh"]
     _equip_set(c, "archmage", pieces=("hood", "robe", "gloves", "slippers"))
-    _choices(c, {"conjuration_100": "bound_blade"})   # 召喚物 HP +25%
+    _choices(c, {"conjuration_100": "lasting_summon"})   # R106C 持久召喚:召喚物多駐留 1 回合
+    stats.recompute_max_resources(c, gd, restore_full=True)
+    return c
+
+
+def make_necromancer():
+    """死靈師(R106C):conjuration 100 + 亡者統御(真·亡者更強)/亡者收集·主力 = token 召的骷髏奴僕
+    (raise_thrall)+ 強化復生。種子充足 soul_tokens → 隔離『token 稀缺』,測『軍團上限 + 終王牆』本身
+    (即使 token 無限,同場真·亡者受 undead_field_cap 夾 → 不得堆軍團越過 dagon 720HP 牆)。"""
+    c = build_character(gd, name="靈", sex="male", race="altmer", birthsign="mage", class_id="mage")
+    c.skills.update(conjuration=100, destruction=25, restoration=25, alteration=25, mysticism=25, alchemy=25)
+    c.attributes.update(intelligence=100, willpower=100, endurance=70)
+    c.spells = ["raise_thrall", "reanimate_thrall", "conjure_healer", "fireball", "flames", "close_wounds", "stoneflesh"]
+    _equip_set(c, "archmage", pieces=("hood", "robe", "gloves", "slippers"))
+    _choices(c, {"conjuration_100": "undead_dominion", "conjuration_75": "soul_harvest"})
+    c.soul_tokens = 40   # 種子充足(隔離稀缺;實戰靠打怪+回收積累)
+    c.necro_upgrades = {"undead_armor": 5, "undead_cap": 2, "grave_thrift": 1}   # 完整體:滿護甲/軍團上限5/省魔(測終王牆最壞情況)
     stats.recompute_max_resources(c, gd, restore_full=True)
     return c
 

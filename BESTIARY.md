@@ -5,9 +5,9 @@
 
 ## 總覽
 
-- **133 隻怪** · danger 分布:d1×11 · d2×16 · d3×31 · d4×22 · d5×50 · d6×3
-- 野外可隨機遭遇 96 隻 · 腳本/任務/召喚專屬 37 隻
-- 多攻擊曲目(R43)109 隻 · 單一攻擊 24 隻 · SOLO 首領 31 隻 · 人形(可囚黑魂)41 隻
+- **134 隻怪** · danger 分布:d1×11 · d2×17 · d3×31 · d4×22 · d5×50 · d6×3
+- 野外可隨機遭遇 96 隻 · 腳本/任務/召喚專屬 38 隻
+- 多攻擊曲目(R43)109 隻 · 單一攻擊 25 隻 · SOLO 首領 31 隻 · 人形(可囚黑魂)41 隻
 
 ## 行為系統(怪物怎麼打)
 
@@ -26,12 +26,12 @@
 
 **⑥ 屬性用途**:力量→傷害 · 敏捷→命中/閃避 · 速度→先攻 · armor_rating→物理減傷 · max_health 生成時 ×0.85~1.15 抖動。
 
-## 缺攻擊曲目的 24 隻怪(R43 多樣化候選)
+## 缺攻擊曲目的 25 隻怪(R43 多樣化候選)
 
 > 這些怪仍是「每回合同一招」。R43 多攻擊模式可優先補在高 danger / 招牌怪上(加物理/元素交替、蓄力、控場)。
 
 - **d1**(11):野豬(`wild_boar`) · 灰燼甲蟲(`ash_beetle`) · 荒沼獵犬(`moor_hound`) · 叢林毒蛙(`jungle_toad`) · 泥蟹(`mudcrab`) · 草原胡狼(`savanna_jackal`) · 沼澤水蛭(`swamp_leech`) · 雪原狐(`snow_fox`) · 沙地響尾蛇(`sand_adder`) · 巨鼠(`giant_rat`) · 城鎮居民(`townsperson`)
-- **d2**(13):絞殺藤蔓(`strangler_vine`) · 糖晶藤(`sugar_vine`) · 沼地女巫(`moor_witch`) · 沼澤蜥蜴(`swamp_lizard`) · 霜咬蜘蛛(`frostbite_spider`) · 帝國亡魂(`imperial_ghost`) · 沙蠍(`sand_scorpion`) · 野狼(`wolf`) · 哥布林(`goblin`) · 崖行鳥(`cliff_racer`) · 灰蹦蟲(`ash_hopper`) · 阿利特(`alit`) · 先祖之靈(`ancestral_ghost`)
+- **d2**(14):絞殺藤蔓(`strangler_vine`) · 糖晶藤(`sugar_vine`) · 沼地女巫(`moor_witch`) · 沼澤蜥蜴(`swamp_lizard`) · 霜咬蜘蛛(`frostbite_spider`) · 帝國亡魂(`imperial_ghost`) · 沙蠍(`sand_scorpion`) · 野狼(`wolf`) · 哥布林(`goblin`) · 崖行鳥(`cliff_racer`) · 灰蹦蟲(`ash_hopper`) · 阿利特(`alit`) · 先祖之靈(`ancestral_ghost`) · 亡者奴僕(`reanimated_thrall`)
 
 ## 完整 roster(依 danger)
 
@@ -188,6 +188,11 @@
 #### 先祖之靈 `ancestral_ghost` 
 - danger 2 · L99 · HP 28 · 甲 6 · 力42/敏46/速46 · @通用 【腳本/召喚·不進野外池】
 - 攻擊:靈刃 傷12/技48
+- 掉落:金幣 0
+
+#### 亡者奴僕 `reanimated_thrall` 
+- danger 2 · L99 · HP 28 · 甲 8 · 力44/敏36/速36 · @通用 【腳本/召喚·不進野外池】
+- 攻擊:枯骨揮擊 傷5/技40
 - 掉落:金幣 0
 
 #### 治療精靈 `summoned_healer` ✦曲目
