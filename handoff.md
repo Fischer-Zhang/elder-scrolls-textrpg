@@ -1405,6 +1405,18 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 
 ---
 
+### R104 · 實用/幻術魔法軸:讓魔法首次在戰鬥外有意義(魅惑/隱形/安撫/羽落/偵知)[save] [re-sim byte-identical]
+
+**冷系統審計(9 叢集 workflow · 對抗排序)→ 使用者拍板方向 = 實用/幻術魔法軸**。死迴圈:全 6 學派唯 `illusion`(自述「隱身/魅惑/狂亂」、練功 label「冥想演練隱身咒」)與 `alteration`(自述「護盾/開鎖/負重」)的**戰鬥外實用面全空**(advertised-but-undelivered)——戰鬥外施法只允許 `heal/restore_fatigue`,魔法對社交/潛行/脫戰/探索零貢獻。
+**新增 6 道法術**(spells.json 純資料 + magic.cast 分派):**幻術** calm 安撫 / charm 魅惑術 / invisibility 隱形術;**變換** feather 羽落術 / detect_life 偵知生物。取得走 spell_stock(charm/feather 廣佈 25 城·calm/invisibility 集中 4 illusion 深化城·detect_life 4 alteration 深化城;無 level 欄·魔耗+技能為天然門檻)。
+**增益層(新 `systems/spellfx.py`·+1 存檔欄 `char.spell_effects`)**:charm/invisibility/feather/detect_life = 限時自我增益 `{kind,magnitude,expires_at}`(絕對小時),鏡像 potion_buff 但**更輕:無推導快取**——社交/負重/潛行加成由 helper on-the-fly 讀·**絕不寫 base**;`spellfx.update` 掛 game_loop(potion_buff 後)剔過期·`ensure_spell_effect_fields` 遷移(save_migrations 註冊)。calm 不在此層(敵方 active_effects 控場·走 apply_control)。
+**六接線點全複用既有聚合點**:① 社交(charm 逐面加成·使用者拍板)——persuade/pry `+0.12`·talk_down `+0.10`·barter(`_disposition_factor`)`+0.08`·steal_chance `+0.10` **且** 失風賞金 `×0.7`(dialogue/world/crime 各一行·比照 R56 吸血鬼 charm_social_bonus)。② 潛行(invisibility·**完整潛行工具**)——`world.travel` 遭遇率 `×0.4`·`run_battle` 入戰重獲偷襲先機(`opening`·入戰即破)·`guard_confrontation`/`_curse_manhunt` 隱形繞過。③ 脫戰(calm·**只對雜兵·solo boss 完全免疫·成功率隨敵數非線性遞減** `formulas.calm_chance` 1敵85%→4敵21%)——`magic.apply_control` 加 calm 分支(solo 直接 resisted·去重)·`is_incapacitated` 納入 `is_calm`·`_choose_combat_action` 全敵 calm → 「從容離去」免檢定脫戰。④ 探索——feather `inventory.max_weight +50`·detect_life `offer_battle` 揭露敵情 + `scouted` 先機(消耗一場)。⑤ `action_cast_self` 城鎮 usable 放行 4 self 實用 kind;`magic.cast` 加 `state=None` 參(3 呼叫端傳 state·供 spellfx 絕對時間)。⑥ `ui.spell_effect_summary` 補 5 kind 摘要。
+**🔴 紅線守住**:隱形重獲偷襲首擊仍受 `combat.resolve_attack` 的 `SOLO_SNEAK_DAMAGE_CAP_RATIO` 夾(不秒 solo boss·專測)·calm solo 完全免疫·charm/feather/social 皆 helper on-the-fly 不寫 base·**所有平衡數值使用者逐項拍板**(charm 逐面幅度/invisibility 遭遇×0.4/calm 曲線/魔耗時程/存檔欄取捨)。
+**🔴 sim_assassin BYTE-IDENTICAL**(隔離 worktree diff vs HEAD 證逐位元組同):刺客持匕首·不施法·`spell_effects=[]` → 新分支全 append-only 且 gate 在「已施法/持增益」→ sim 路徑不可達;charm/feather/invis helper 對空 spell_effects 恆回 0/1.0/False → 社交/物價/負重/遭遇/opening 逐位元組同。零 recompute(無快取層)。`run_all` 101(新 `test_utility_magic`:spellfx 施放/到期/往返/遷移·魅惑六面 + 過期歸零·隱形遭遇折減 + 破除 + solo 偷襲夾·安撫非線性曲線 + solo 免疫 + 失能 + 去重·羽落負重·偵知消耗)·check.sh --smoke 全綠。
+🔴 加實用/幻術法術純改 `spells.json`(kind ∈ 新 5 種)+ `world.json spell_stock` + `test_spell_schema._KINDS`;戰鬥外自我增益走 spellfx 層(絕對小時·絕不寫 base·helper on-the-fly);calm 走 apply_control(solo 完全免疫·非機率)+ formulas.calm_chance(人數非線性);隱形偷襲仍受 SOLO_SNEAK 夾;**改任一平衡數值(spellfx CHARM_*/INVIS_*/FEATHER_*·formulas CALM_*·法術魔耗時程)→ 必先問使用者**。**前瞻**:變換更多實用(水下呼吸/開鎖·使用者本輪選 detect_life 而非 openlock)·幻術戰鬥內施放隱形 re-arm(本輪暫不做)·魅惑進戰鬥凝視(比照 R56 vampire_charm)。
+
+---
+
 ### R103 · 徒手失衡 gated:里程碑解鎖(hand_to_hand 25)+ 輕裝武僧(不穿重甲)[re-sim] [save-safe]
 
 **承 R102·使用者點名**:R102 的失衡疊層是 **innate**(每個徒手命中都累積),且評估揭露兩軟點 ——(1)**重甲對徒手戰鬥零減益**(閃避只看雜技、揮擊耗體不看護甲、ramp/拳傷不看護甲 → 重甲武僧純賺 armor 零代價);(2)25 節點 `fist_basics` 只是 +5% 傷害冷填充。使用者拍板:失衡改為「**里程碑 25 解鎖 + 僅未穿重甲累積**」(沒解鎖不累積·穿重甲不累積)→ 一舉把 25 節點功能化 + 給「輕裝武僧」真機制取捨。

@@ -239,6 +239,8 @@
 | 魔力藥水(固定) | 續航回復 | minor 25 |
 | 自製藥水 brew(煉金) | 續航回復 | round((eff_a+eff_b)/2×factor);factor=(0.6+煉金/100)×(1+potion_potency);kind∈heal/restore_magicka/★restore_fatigue(僅煉金可得) |
 | ★限時增益藥水 brewb(煉金·R30) | **限時**強化(獨立層,非一次性) | 量=round((eff_a+eff_b)/2×factor),時長=round(2×factor) 小時;走獨立 `potion_attr_bonus/potion_skill_bonus/potion_resist` 層(聚合於 attr()/skill()/entity_resist(),**絕不寫 base**);kind:強化屬性 `fattr_*`/強化技能 `fskill_*`/抗元素 `resist_*`;**疊加=同(kind,param)取最強+取較晚到期,非相加**;**可釀池排除 strength+武器技能**(結構避刺客紅線,免 sim);每圈 `potion_buff.update` 清過期 |
+| ★實用/幻術魔法限時自我增益 `char.spell_effects`(R104·**戰鬥外**) | **限時**社交/潛行/探索(獨立層·**無推導快取**·helper on-the-fly·絕不寫 base) | `魅惑 charm`(6h·說服/套話+0.12·化解衛兵/賞金+0.10·議價+0.08·偷竊得手+0.10 且失風賞金×0.7)/`隱形 invisibility`(3h·**入戰重獲偷襲先機**〔首擊仍受 SOLO_SNEAK 夾·**不秒 solo**〕·旅途遭遇×0.4·繞城門盤查/圍捕·**入戰即破**)/`羽落 feather`(6h·負重+50)/`偵知 detect_life`(6h·下場遭遇揭敵情+scouted·消耗)。疊加=同 kind 取較晚到期;每圈 `spellfx.update` 清過期。**旋鈕**:`spellfx.CHARM_*/INVIS_ENCOUNTER_FACTOR/FEATHER_CARRY_BONUS`(改必先問使用者) |
+| ★安撫 calm(R104·illusion·戰鬥控場·非上表增益層) | 敵方失能(走 `is_incapacitated`) | 走 `magic.apply_control("calm")`(敵 active_effects{kind:calm,turns})·**成功率 `formulas.calm_chance` 隨敵數非線性遞減**(1敵85%→4敵21%·CALM_*)·**solo boss 完全免疫**(非機率)·去重防延長·全敵 calm→「從容離去」免檢定脫戰 |
 | 塗毒/毒藥(▼對敵) | 傷害/控場 | **五型**(R31):dot per_turn×(3+延長) / 麻痺 clamp(1+煉金//50,1..3) / **衰毒 weaken**(敵攻勢−10..35%) / **遲緩 slow**(先攻+命中−10..35%) / **懼毒 fear**(短暫失能 1..2 回);特殊毒型需里程碑解鎖(`poison_unlock`),否則退回 DoT;塗層 charges=poison_charges+里程碑,控制型(麻痺/懼)半量、遲緩−1;**麻痺/懼毒對 solo BOSS 免疫** |
 
 ---

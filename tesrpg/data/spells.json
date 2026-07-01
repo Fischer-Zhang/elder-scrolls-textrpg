@@ -363,10 +363,16 @@
   "heal_other": {"name": "援護術", "school": "restoration", "cost": 20, "target": "ally", "effect": {"kind": "heal", "magnitude": 50}},
   "healing_circle": {"name": "治療之環", "school": "restoration", "cost": 40, "target": "allies", "effect": {"kind": "heal", "magnitude": 30}},
   "ward_ally": {"name": "庇護術", "school": "alteration", "cost": 22, "target": "ally", "effect": {"kind": "shield", "magnitude": 40, "turns": 5}},
+  "feather": {"name": "羽落術", "school": "alteration", "cost": 22, "target": "self", "effect": {"kind": "feather", "hours": 6}},
+  "detect_life": {"name": "偵知生物", "school": "alteration", "cost": 20, "target": "self", "effect": {"kind": "detect_life", "hours": 6}},
   "regen_aura": {"name": "生機共鳴", "school": "restoration", "cost": 34, "target": "allies", "effect": {"kind": "apply_status", "status": {"status": "regen", "magnitude": 8, "turns": 4}}},
   "cure_disease": {"name": "淨疫術", "school": "restoration", "cost": 30, "target": "self", "effect": {"kind": "cure_disease"}},
 
   "rally": {"name": "號令", "school": "illusion", "cost": 30, "target": "allies", "effect": {"kind": "empower", "magnitude": 0.25, "turns": 4}},
+
+  "calm": {"name": "安撫", "school": "illusion", "cost": 28, "target": "all", "effect": {"kind": "calm", "turns": 2}},
+  "charm": {"name": "魅惑術", "school": "illusion", "cost": 25, "target": "self", "effect": {"kind": "charm", "hours": 6}},
+  "invisibility": {"name": "隱形術", "school": "illusion", "cost": 40, "target": "self", "effect": {"kind": "invisibility", "hours": 3}},
 
   "conjure_frost_atronach": {"name": "召喚冰霜元素", "school": "conjuration", "cost": 44, "target": "self", "effect": {"kind": "summon", "creature": "summoned_frost_atronach", "turns": 6}},
   "conjure_storm_atronach": {"name": "召喚雷暴元素", "school": "conjuration", "cost": 50, "target": "self", "effect": {"kind": "summon", "creature": "summoned_storm_atronach", "turns": 6}},

@@ -79,7 +79,7 @@ def travel(char: Character, gamedata: GameData, dest_id: str, time, rng: RNG) ->
     回傳 {"foe":遭遇 Creature 或 None, "hours":實際耗時, "base_hours":名目耗時,
           "skill_events":運動升點事件}。遭遇尚未開打 —— 由上層決定接戰/逃避。
     """
-    from tesrpg.systems import birthsign_ability, mastery, mounts, party, vampirism
+    from tesrpg.systems import birthsign_ability, mastery, mounts, party, spellfx, vampirism
     links = current_location(char, gamedata).get("links", {})
     base_hours = links[dest_id]
     travel_factor = max(0.5, formulas.athletics_travel_factor(char.skill("athletics"))
@@ -93,7 +93,8 @@ def travel(char: Character, gamedata: GameData, dest_id: str, time, rng: RNG) ->
     foe = None
     chance = (encounter_chance(dest.get("danger", 0), time.hour)
               * (1 - mounts.encounter_evade(char, gamedata))     # 獵馬規避路途埋伏
-              * (1 - vampirism.night_evade(char, time)))         # 吸血鬼夜視:夜間旅行更易避開埋伏(R56)
+              * (1 - vampirism.night_evade(char, time))          # 吸血鬼夜視:夜間旅行更易避開埋伏(R56)
+              * spellfx.invis_encounter_factor(char))            # R104 幻術隱形:大幅降低旅途遭遇(無隱形 → ×1.0 逐位元組同)
     if rng.chance(chance):
         foe = combat.random_encounter(gamedata, char.level, rng,
                                       max_danger=dest.get("danger", 1) + 1,
@@ -107,7 +108,9 @@ def travel(char: Character, gamedata: GameData, dest_id: str, time, rng: RNG) ->
 
 # --- 商店定價(受 交易 + 魅力 影響)-----------------------------------
 def _disposition_factor(char: Character, gamedata: GameData | None = None) -> float:
+    from tesrpg.systems import spellfx
     base = (char.skill("mercantile") + char.attr("personality") * 0.5) / 150.0
+    base += spellfx.charm_barter_bonus(char)       # R104 幻術魅惑術:議價更划算(無 charm → +0 → 既有物價逐位元組同)
     if gamedata is not None:                       # 里程碑「精算買賣/魅惑交易」議價加成 + 同伴忠誠頂點
         from tesrpg.systems import mastery, party
         base += mastery.merchant_bonus(char, gamedata)

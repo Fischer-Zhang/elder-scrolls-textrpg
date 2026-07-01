@@ -15,7 +15,7 @@ from tesrpg.state import GameState
 from tesrpg.systems import (achievements, aiwar, alchemy, boons, brotherhood, combat, court, crafting, crime, dialogue, diseases, dungeon,
                             dungeoncrawl, enchanting, events, factions, housing, inventory, landmarks, legacy,
                             lycanthropy, magic, mastery, mounts, party, politics, potion_buff, powers,
-                            progression, quests, race_ability, skooma, smithing, stats, undercover, vampirism, warband, world, worldpulse, worldstate)
+                            progression, quests, race_ability, skooma, smithing, spellfx, stats, undercover, vampirism, warband, world, worldpulse, worldstate)
 from tesrpg.ui import console as ui
 
 SAVE_PATH = Path.home() / ".tesrpg" / "save.json"
@@ -597,6 +597,10 @@ def _choose_combat_action(state: GameState, gamedata: GameData, enemies: list, a
             and any(combat.is_alive(e) and not combat._has_deathmark(e)
                     and not _on_deathmark_cd(e) for e in enemies)):
         opts.append(("deathmark", f"🔪 致命烙印（標記一敵 · 耗 {_dm.get('fatigue_cost', 15)} 體力)"))
+    # R104 幻術安撫:全體存活敵皆被安撫 → 從容脫戰(免逃跑檢定)
+    _alive_calm = [e for e in enemies if combat.is_alive(e)]
+    if _alive_calm and all(magic.is_calm(e) for e in _alive_calm):
+        opts.append(("leave", "🕊 從容離去（敵意已全平息 · 安然脫身)"))
     opts.append(("flee", "逃跑"))
     choice = ui.menu("你的回合", opts)
 
@@ -684,7 +688,7 @@ def _prep_phase(state: GameState, gamedata: GameData, enemies, battle: dict, bud
                           [(s, f"{gamedata.spells[s]['name']}（{magic.effective_cost(player, gamedata, s)} 魔力)")
                            for s in pool], allow_back=True)
             if sid is not None:
-                res = magic.cast(player, gamedata, sid, state.rng, battle=battle)
+                res = magic.cast(player, gamedata, sid, state.rng, battle=battle, state=state)
                 ui.message(res["message"], style="cyan")
                 ui.show_events(res.get("skill_events", []), gamedata)
                 cast_done.add(sid)
@@ -774,7 +778,12 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
         else:
             casualties.extend(cid for cid, cre in roster if not combat.is_alive(cre))
     trapped_kills: set[int] = set()
-    opening = not alerted   # 開場偷襲:首個攻擊吃潛行加成;若敵人已警覺(撤退失敗)則無
+    # R104 幻術隱形:入戰時若隱形 → 重獲開場偷襲先機(即使潛近失敗/被伏擊);入戰即消耗(一次偷襲)。
+    # 🔴 紅線:此偷襲首擊仍走 combat.resolve_attack 的 SOLO_SNEAK 夾 → 不秒 solo boss。無隱形 → 行為逐位元組同。
+    entered_invisible = spellfx.is_invisible(player)
+    if entered_invisible:
+        spellfx.break_invisibility(player)
+    opening = (not alerted) or entered_invisible   # 開場偷襲:首個攻擊吃潛行加成;若敵人已警覺(撤退失敗)則無(隱形可強行重獲)
     vanishes_done = 0  # 本場已成功隱遁次數(成功率遞減,防無限風箏)
     charm_used = False  # 本場是否已用吸血鬼「魅惑凝視」(每場一次;暫態,不入檔)
 
@@ -823,7 +832,7 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
         # 怪物硬控(R43):恐懼/麻痺 → 玩家本回合無法行動 → 跳過選單與玩家階段(同伴/敵人照常,回合末 tick 解除)。
         # 防禦雙軌第二道(命中後)已由 willpower resisted_mind 機率擋下;此處只結算「已成功上身」的硬控。
         if magic.is_incapacitated(player):
-            why = "恐懼" if magic.is_feared(player) else "麻痺"
+            why = "恐懼" if magic.is_feared(player) else ("麻痺" if magic.is_paralyzed(player) else "安撫")   # R104 三態(對稱;玩家實務上不會被 calm)
             ui.message(f"你因{why}而無法行動!", style="bold red")
             action = {"type": "incapacitated"}
             blocking = False
@@ -842,6 +851,12 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
                 tally_casualties()
                 return "fled"
             ui.message("逃跑失敗!", style="red")
+        elif action["type"] == "leave":   # R104 幻術安撫:全體被安撫 → 從容脫戰(免檢定;solo boss 免疫故此路不通)
+            ui.message("敵人皆已平息殺意、茫然佇立 —— 你不動聲色地退出戰場。", style="yellow")
+            player.active_effects.clear()
+            state.time.advance(1)
+            tally_casualties()
+            return "fled"
         elif action["type"] == "attack":
             tgt = action["target"]
             if combat.is_alive(tgt):
@@ -905,7 +920,7 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
         elif action["type"] == "cast":
             res = magic.cast(player, gamedata, action["spell_id"], state.rng,
                              target=action.get("target"), battle=battle, enemies=alive_e(),
-                             corpses=enemies, mounted=mounted)   # 亡者復生需見「完整」敵群(含已死屍體);存活清單仍走 enemies=alive_e()
+                             corpses=enemies, mounted=mounted, state=state)   # 亡者復生需見「完整」敵群(含已死屍體);存活清單仍走 enemies=alive_e()
             ui.message(res["message"], style="cyan")
             ui.show_events(res["skill_events"], gamedata)
         elif action["type"] == "power":
@@ -1019,7 +1034,7 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
             if not combat.is_alive(e):
                 continue
             if magic.is_incapacitated(e):
-                why = "恐懼" if magic.is_feared(e) else "麻痺"
+                why = "恐懼" if magic.is_feared(e) else ("麻痺" if magic.is_paralyzed(e) else "安撫")   # R104 三態:恐懼/麻痺/安撫
                 ui.message(f"{e.name}因{why}而無法行動。", style="blue")
                 continue
             # R87 敵方支援施法者:法系/祭司怪在隊友血低/缺 buff 時治療/護盾/號令其他敵人(換損該回合攻擊)。
@@ -1284,6 +1299,11 @@ def offer_battle(state: GameState, gamedata: GameData, enemies, ambush_chance: f
     if surprise:
         ui.message("猝不及防 —— 你已陷入埋伏,難以搶得先機!", style="bold red")
     scouted = False
+    if spellfx.is_detecting(char):   # R104 偵知生物:預先揭露敵情 + 給偵查先機(scouted),消耗一場
+        ui.message("偵知之術在你感官中亮起 —— 你早已看清對手的位置與虛實。", style="cyan")
+        _scout_report(state, gamedata, enemies)
+        scouted = True
+        spellfx.consume_detect(char)
     while True:
         apct = int(combat.stealth_approach_chance(char, enemies, gamedata, night, scouted, surprise) * 100)
         opts = [("fight", f"接戰（偷襲先機 {apct}%)")]
@@ -3467,7 +3487,8 @@ def action_cast_self(state: GameState, gamedata: GameData, battle: dict | None =
     else:
         usable = [s for s in char.spells
                   if gamedata.spells[s]["target"] == "self"
-                  and gamedata.spells[s]["effect"]["kind"] in ("heal", "restore_fatigue")]
+                  and gamedata.spells[s]["effect"]["kind"] in
+                  ("heal", "restore_fatigue", "charm", "invisibility", "feather", "detect_life")]   # R104 實用/幻術戰鬥外可施
     if not usable:
         ui.message("你沒有可施放的法術。", style="grey70")
         return
@@ -3479,7 +3500,7 @@ def action_cast_self(state: GameState, gamedata: GameData, battle: dict | None =
     if not magic.can_cast(char, gamedata, sid):
         ui.message("魔力不足。", style="red")
         return
-    res = magic.cast(char, gamedata, sid, state.rng, battle=battle)
+    res = magic.cast(char, gamedata, sid, state.rng, battle=battle, state=state)
     ui.message(res["message"], style="cyan")
     ui.show_events(res["skill_events"], gamedata)
 
@@ -4402,6 +4423,9 @@ def action_murder(state: GameState, gamedata: GameData, nid: str) -> str | None:
 def guard_confrontation(state: GameState, gamedata: GameData) -> str | None:
     char = state.player
     province = crime.province_of(char, gamedata)
+    if spellfx.is_invisible(char):   # R104 隱形:隱形時效內悄然穿過城門盤查(不消耗;3 小時窗自然收束)
+        ui.message("你隱於無形,悄無聲息地穿過了城門的盤查。", style="grey70")
+        return None
     # 武士特權:身為本省某城武士,小額賞金衛兵放行(大罪仍追緝)
     if court.is_thane_in_province(char, gamedata, province) \
             and crime.bounty(char, province) <= court.THANE_BOUNTY_FORGIVE:
@@ -4517,6 +4541,8 @@ def _curse_manhunt(state: GameState, gamedata: GameData) -> str | None:
     if loc["type"] not in ("city", "town"):
         return None
     province = crime.province_of(char, gamedata)
+    if spellfx.is_invisible(char):   # R104 隱形:未被識破圍捕(隱形時效內)
+        return None
     if lycanthropy.is_beast(char, state):
         if not state.rng.chance(_BEAST_TOWN_MANHUNT_CHANCE):
             return None
@@ -4714,6 +4740,11 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
         for ev in potion_buff.update(state, gamedata):
             if ev["kind"] == "expire":
                 ui.message("藥力散去 —— 你體內方才的增益逐漸消退。", style="grey70")
+
+        # 實用/幻術魔法(R104):限時自我增益(魅惑/隱形/羽落/偵知)到期 → 報「法術消退」(掛在藥水之後)
+        for ev in spellfx.update(state, gamedata):
+            if ev["kind"] == "spellfx_expire":
+                ui.message("法術的餘韻散去 —— 你身上的幻術/變換效果消退了。", style="grey70")
 
         # 狼人化:潛伏轉化 / 獸形過期變回(掛在斯庫瑪之後)
         for ev in lycanthropy.update(state, gamedata):

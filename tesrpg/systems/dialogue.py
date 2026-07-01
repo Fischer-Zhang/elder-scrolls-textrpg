@@ -49,10 +49,11 @@ def persuade_chance(char: Character, gamedata: GameData, npc_id: str) -> float:
     """說服成功率(唯讀,供 UI 預示;與 persuade 公式單一來源)。折服里程碑 → 1.0。"""
     if mastery.can_guaranteed_persuade(char, gamedata, npc_id):
         return 1.0
-    from tesrpg.systems import vampirism
+    from tesrpg.systems import spellfx, vampirism
     skill = char.skill("speechcraft")
     return formulas.persuade_curve(0.35 + (skill + char.attr("personality") - 50) * 0.005
-                                   + vampirism.charm_social_bonus(char))   # R63 漸進(舊夾 0.9→漸近 0.95);R56 吸血鬼魅惑
+                                   + vampirism.charm_social_bonus(char)      # R63 漸進(舊夾 0.9→漸近 0.95);R56 吸血鬼魅惑
+                                   + spellfx.charm_persuade_bonus(char))     # R104 幻術魅惑術
 
 
 def persuade(char: Character, gamedata: GameData, npc_id: str, rng: RNG) -> dict:
@@ -126,10 +127,11 @@ def offered_rumor(char: Character, gamedata: GameData, npc_id: str) -> dict | No
 def talk_down_chance(char: Character, bounty: int, gamedata: GameData = None) -> float:
     """以口才說退衛兵的成功率:吃口才+魅力,賞金越高越難。夾 0.05–0.80。
     里程碑「巧言脫罪」(talk_down_lever)抬高下限。"""
-    from tesrpg.systems import vampirism
+    from tesrpg.systems import spellfx, vampirism
     base = max(0.05, min(0.80,
                0.10 + (char.skill("speechcraft") + char.attr("personality") - 50) * 0.005 - bounty * 0.002
-               + vampirism.charm_social_bonus(char)))               # 吸血鬼社交魅惑(R56·沿用夾限)
+               + vampirism.charm_social_bonus(char)                  # 吸血鬼社交魅惑(R56·沿用夾限)
+               + spellfx.charm_talk_down_bonus(char)))               # R104 幻術魅惑術(化解衛兵/賞金)
     if gamedata is not None:
         from tesrpg.systems import mastery
         base = max(base, mastery.talk_down_mod(char, gamedata).get("floor", 0.0))
@@ -485,7 +487,9 @@ def _apply_topic_effects(state, gamedata: GameData, effects: list, ctx: dict) ->
 # --- 套話(speechcraft 第二用途)+ 報官 -------------------------------
 def pry_chance(char: Character) -> float:
     """套話成功率(唯讀,供 UI 預示)。"""
-    return max(0.1, min(0.9, 0.30 + (char.skill("speechcraft") + char.attr("personality") - PRY_DIFFICULTY) * 0.005))
+    from tesrpg.systems import spellfx
+    return max(0.1, min(0.9, 0.30 + (char.skill("speechcraft") + char.attr("personality") - PRY_DIFFICULTY) * 0.005
+                        + spellfx.charm_persuade_bonus(char)))   # R104 幻術魅惑術(套話)
 
 
 _PUMP_PAID = "__pump_paid__"      # dialogue_done[npc_id] 標記:該 NPC 的功能化秘密已兌現一次(防刷,零新存檔欄)

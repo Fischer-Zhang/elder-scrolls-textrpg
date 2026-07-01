@@ -660,6 +660,25 @@ def stealth_approach_chance(sneak: int, foe_agility: int, group_size: int,
     return max(0.05, min(0.97, chance))
 
 
+# --- 幻術「安撫 calm」成功率(R104:只對雜兵、solo boss 免疫;隨敵數非線性遞減)------
+# 鏡像入場潛行的人群/人海懲罰結構:單體高、大群陡降 → 安撫脫戰對零星敵可靠、對圍毆難。
+# 使用者拍板曲線(參考技能 illusion+personality−50≈60):1敵≈85%→2≈67%→3≈49%→4≈21%(隨技能上抬)。
+CALM_BASE = 0.55
+CALM_SKILL = 0.005        # 每點(illusion + personality − 50)
+CALM_CROWD = 0.18         # 每多一個敵人
+CALM_HORDE = 0.10         # >3 敵:每超出一個再額外遞減(非線性陡降)
+CALM_FLOOR = 0.05
+CALM_CEIL = 0.95
+
+
+def calm_chance(illusion: int, personality: int, group_size: int) -> float:
+    """幻術安撫的每敵成功率(隨敵數非線性遞減;夾 [0.05, 0.95])。solo boss 由 magic.apply_control 直接免疫。"""
+    chance = (CALM_BASE + (illusion + personality - 50) * CALM_SKILL
+              - max(0, group_size - 1) * CALM_CROWD
+              - max(0, group_size - 3) * CALM_HORDE)
+    return max(CALM_FLOOR, min(CALM_CEIL, chance))
+
+
 # --- 偵查掙得的開戰前備戰空間(scout → 準備動作數)--------------------------
 PREP_SCOUT_T1 = 20        # 偵查達此 → 備戰 1 個動作(對齊 _scout_report 第一道資訊牆)
 PREP_SCOUT_T2 = 50        # → 2 個動作(且解鎖「召喚」這類高價值準備)

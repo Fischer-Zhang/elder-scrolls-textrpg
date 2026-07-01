@@ -98,6 +98,10 @@ class Character:
     potion_attr_bonus: dict = field(default_factory=dict)     # attr_id -> +點數(推導快取)
     potion_skill_bonus: dict = field(default_factory=dict)    # skill_id -> +點數(推導快取)
     potion_resist: dict = field(default_factory=dict)         # element -> +百分比(推導快取)
+
+    # 實用/幻術魔法限時自我增益(R104;魅惑/隱形/羽落/偵知,絕對小時到期)。唯一權威、無推導快取:
+    # 社交/負重/潛行加成由 spellfx helper on-the-fly 讀;絕不寫 base。詳見 systems/spellfx.py。
+    spell_effects: list = field(default_factory=list)         # [{kind,magnitude,expires_at}](權威)
     # 煉金效果逐步揭露(R32):材料效果預設「???」,經嚐試/煉製/技能揭露。ing_id -> [已揭露 kind](JSON list)。
     # 純資訊層,不碰 brew 數學;通用於任何效果 kind(自動涵蓋 R30/R31 新效果)。詳見 systems/alchemy.py。
     known_effects: dict = field(default_factory=dict)
@@ -305,6 +309,7 @@ class Character:
             "cover_knower_deadline": self.cover_knower_deadline,
             "potion_buffs": self.potion_buffs, "potion_attr_bonus": self.potion_attr_bonus,
             "potion_skill_bonus": self.potion_skill_bonus, "potion_resist": self.potion_resist,
+            "spell_effects": self.spell_effects,
             "known_effects": self.known_effects,
             "is_werewolf": self.is_werewolf, "werewolf_infected_day": self.werewolf_infected_day,
             "beast_form": self.beast_form, "beast_form_until": self.beast_form_until,

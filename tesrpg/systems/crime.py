@@ -32,9 +32,10 @@ def clear_bounty(char: Character, province: str) -> None:
 # --- 行竊 ---------------------------------------------------------------
 def steal_chance(char: Character, gamedata: GameData) -> float:
     """得手機率:潛行 + 安全為主 + 里程碑「順手牽羊」加成(theft_skill)。夾 [0.05, 0.95]。"""
-    from tesrpg.systems import mastery
+    from tesrpg.systems import mastery, spellfx
     base = (0.25 + char.skill("sneak") * 0.005 + char.skill("security") * 0.003
-            + mastery.theft_bonus(char, gamedata).get("steal_bonus", 0.0))
+            + mastery.theft_bonus(char, gamedata).get("steal_bonus", 0.0)
+            + spellfx.charm_steal_bonus(char))   # R104 幻術魅惑術:降低偷竊風險(提高得手率)
     return max(0.05, min(0.95, base))
 
 
@@ -45,7 +46,7 @@ def steal_item(char: Character, gamedata: GameData, item_id: str, rng: RNG) -> d
     讓行竊不再繞過正規訓練的代價;且**得手才學到手藝**(被抓不給潛行 xp →
     杜絕「故意被抓刷潛行」)。
     """
-    from tesrpg.systems import inventory, mastery
+    from tesrpg.systems import inventory, mastery, spellfx
     province = province_of(char, gamedata)
     value = gamedata.item(item_id)["value"]
     xp, hours, tired = progression.practice_cost(char, gamedata, "sneak")
@@ -55,7 +56,7 @@ def steal_item(char: Character, gamedata: GameData, item_id: str, rng: RNG) -> d
         return {"ok": True, "caught": False, "bounty_added": 0,
                 "hours": hours, "tired": tired, "skill_events": events}
     bf = mastery.theft_bonus(char, gamedata).get("bounty_factor", 1.0)   # 「順手牽羊」失風賞金減免
-    fine = int(round(max(20, value * 2) * bf))
+    fine = int(round(max(20, value * 2) * bf * spellfx.charm_bounty_factor(char)))   # R104 幻術魅惑術:失風賞金 ×0.7
     add_bounty(char, province, fine)
     return {"ok": False, "caught": True, "bounty_added": fine,
             "hours": hours, "tired": tired, "skill_events": []}

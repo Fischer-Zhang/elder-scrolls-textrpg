@@ -66,7 +66,8 @@ def total_weight(char: Character, gamedata: GameData) -> float:
 def max_weight(char: Character, gamedata: GameData | None = None) -> int:
     """負重上限 = 力量×5 +(若現乘坐騎)鞍袋加成。鞍袋即時計算、非資源 → 不進
     recompute_max_resources、不寫 base;帶 gamedata 時才計入(無 gamedata 維持基底,向後相容)。"""
-    base = formulas.max_encumbrance(char.attr("strength"))
+    from tesrpg.systems import spellfx
+    base = formulas.max_encumbrance(char.attr("strength")) + spellfx.feather_bonus(char)   # R104 羽落術:限時 +負重(無 feather → +0 逐位元組同)
     if gamedata is not None:
         from tesrpg.systems import mounts
         base += mounts.saddlebag_bonus(char, gamedata)

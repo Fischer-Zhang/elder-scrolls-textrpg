@@ -211,7 +211,7 @@ def _support_cast(caster, spell_id, dests, gamedata, power=1.0) -> dict:
 
 def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
          target=None, battle: dict | None = None, enemies: list | None = None,
-         corpses: list | None = None, mounted: bool = False) -> dict:
+         corpses: list | None = None, mounted: bool = False, state=None) -> dict:
     """施放法術。回傳事件 dict:
        {"ok","message","damage","skill_events","killed": bool}
     target 為單體攻擊的敵方 Creature;enemies 為 AoE(全體)法術的「存活」敵群清單;
@@ -377,6 +377,36 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
         char.active_effects.append({"kind": "bound_weapon", "element": eff.get("element", "magic"),
                                     "magnitude": mag, "turns": eff["turns"]})
         msg = f"{sp['name']} —— 你手中凝出一柄束縛兵刃(基礎傷害 {mag},隨咒術精進,{eff['turns']} 回合)。"
+
+    elif kind in ("charm", "invisibility", "feather", "detect_life"):   # R104 實用/幻術:限時自我增益(戰鬥外社交/潛行/探索)
+        from tesrpg.systems import spellfx
+        hours = eff.get("hours", 4)
+        if state is not None:
+            spellfx.apply(char, state, kind, hours)
+        _flavor = {
+            "charm": "你周身縈起蠱惑的魅力,言語間更易取信於人。",
+            "invisibility": "你的身形融入空氣,隱沒於無形之中。",
+            "feather": "一股輕靈之力托起你的行囊,負擔霎時輕了許多。",
+            "detect_life": "生機在你感官中亮起 —— 你能預先察覺周遭潛伏的生靈。",
+        }
+        msg = f"{sp['name']} —— {_flavor.get(kind, '')}"
+
+    elif kind == "calm":   # R104 幻術安撫:對每個非 solo 敵人擲檢定(成功率隨敵數非線性遞減);全數安撫可從容脫戰
+        living = [e for e in (enemies or []) if e.health > 0]
+        if not living:
+            char.magicka += cost
+            char.fatigue = fatigue_before
+            return _fail("沒有可安撫的敵人。")
+        n = len(living)
+        calmed = []
+        for e in living:
+            if rng.chance(formulas.calm_chance(char.skill("illusion"), char.attr("personality"), n)):
+                if apply_control(e, "calm", gamedata, rng, turns=eff["turns"]) == "applied":
+                    calmed.append(e.name)
+        if calmed:
+            msg = f"{sp['name']} —— 你以幻術平息了{'、'.join(calmed)}的殺意,牠們茫然佇立、暫失戰意。"
+        else:
+            msg = f"{sp['name']} —— 但眼前的敵人殺意如鐵,未被安撫。"
 
     elif kind == "fear":
         if target is not None:
@@ -567,9 +597,14 @@ def slow_factor(creature) -> float:
     return max(0.0, min(0.6, mag))
 
 
+def is_calm(creature) -> bool:
+    """幻術安撫(R104):敵意被平息 → 本回合不行動(同 fear/paralyze 走 is_incapacitated 閘)。"""
+    return any(e["kind"] == "calm" and e["turns"] > 0 for e in creature.active_effects)
+
+
 def is_incapacitated(creature) -> bool:
-    """恐懼或麻痺 → 本回合無法行動。"""
-    return is_feared(creature) or is_paralyzed(creature)
+    """恐懼 / 麻痺 / 安撫 → 本回合無法行動。"""
+    return is_feared(creature) or is_paralyzed(creature) or is_calm(creature)
 
 
 def resisted_mind(entity, status: str, rng) -> bool:
@@ -654,7 +689,7 @@ def reset_offbalance(creature) -> None:
 
 # 控場 kind 分類(R44:集中施加判定)
 _HARD_CONTROL = ("fear", "paralyze")     # 失能(經 is_incapacitated 跳過行動)→ 受抵抗/去重
-_CONTROL_KINDS = ("fear", "paralyze", "stagger", "slow", "weaken", "benumb")
+_CONTROL_KINDS = ("fear", "paralyze", "stagger", "slow", "weaken", "benumb", "calm")
 
 
 def apply_control(target, kind, gamedata, rng, *, magnitude=0.0, turns=1, source=None) -> str:
@@ -668,6 +703,13 @@ def apply_control(target, kind, gamedata, rng, *, magnitude=0.0, turns=1, source
     一律照施(solo 無免疫)→ 收斂鈍器內建 stagger 與其餘 stagger 路徑的不一致。
     source:帶來源標(如元素 rider `ench_chill`)→ 同源去重(雙持不疊兩份)。
     dot/soul_trap/deathmark 等非控場不走此 helper。"""
+    if kind == "calm":   # R104 幻術安撫:solo boss 完全免疫(非機率)、去重防延長;成功率已由 calm_chance 群數閘,故此處不再 willpower 抗
+        if _is_solo(target, gamedata):
+            return "resisted"
+        if any(e.get("kind") == "calm" and e.get("turns", 0) > 0 for e in target.active_effects):
+            return "blocked"
+        target.active_effects.append({"kind": "calm", "turns": turns})
+        return "applied"
     hard = kind in _HARD_CONTROL
     if hard and any(e.get("kind") == kind and e.get("turns", 0) > 0 for e in target.active_effects):
         return "blocked"                                  # 去重:硬控不疊、不延長鎖定
@@ -820,6 +862,8 @@ def tick_effects(entity, gamedata=None) -> list[str]:
                 msgs.append(f"{name}重整了陣腳。")
             elif e["kind"] == "benumb":
                 msgs.append(f"{name}自凍麻中回復了準頭。")
+            elif e["kind"] == "calm":
+                msgs.append(f"{name}回過神來,敵意重新燃起。")
             elif e["kind"] == "conduct":
                 msgs.append(f"{name}身上的導電消退了。")
             elif e["kind"] == "offbalance":

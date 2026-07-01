@@ -1591,6 +1591,18 @@ def spell_effect_summary(gamedata: GameData, spell_id: str) -> str:
         return who + _st(e["status"])
     if k == "status_all":
         return f"全體{_st(e['status'])}"
+    # R104 實用/幻術魔法(戰鬥外)
+    if k == "calm":
+        return f"安撫敵人暫失戰意（{turns} 回合;敵越多越難、solo BOSS 免疫;全數安撫可從容脫戰)"
+    if k == "charm":
+        return f"魅惑:提升說服/套話/議價、降低偷竊風險（{e.get('hours', 0)} 小時)"
+    if k == "invisibility":
+        return f"隱形:重獲偷襲先機 + 降低旅途遭遇 + 繞過城門盤查（{e.get('hours', 0)} 小時;攻擊即破)"
+    if k == "feather":
+        from tesrpg.systems import spellfx
+        return f"羽落:負重上限 +{spellfx.FEATHER_CARRY_BONUS}（{e.get('hours', 0)} 小時)"
+    if k == "detect_life":
+        return f"偵知生物:預先揭露敵情並取得偵查先機（{e.get('hours', 0)} 小時)"
     return "效果"
 
 
