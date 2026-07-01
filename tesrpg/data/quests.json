@@ -1842,6 +1842,16 @@
     ],
     "reward": {"gold": 60, "fame": 3, "items": ["minor_magicka_potion"]}
   },
+  "origin_necromancer": {
+    "name": "招魂初課", "source": "origin", "turn_in": "auto",
+    "text": "公會不容招魂之道,你只能私下精進。先以召喚之僕試刀,採齊儀式所需的骨粉,再把筆記送往同道手中。",
+    "stages": [
+      {"objective": {"type": "kill", "creature": "ash_hopper", "count": 2}, "text": "讓你的魔靈伴撕碎 2 隻灰跳蟲,驗證召喚之術。"},
+      {"objective": {"type": "collect", "item": "bone_meal", "count": 2}, "text": "為招魂儀式採集 2 份骨粉。"},
+      {"objective": {"type": "reach", "location": "blacklight"}, "text": "把招魂筆記送往黑光城的同道。"}
+    ],
+    "reward": {"gold": 60, "fame": 3, "items": ["minor_magicka_potion"]}
+  },
   "origin_oathbound_paladin": {
     "name": "第一樁誓行", "source": "origin", "turn_in": "auto",
     "text": "你執劍盾、亦執聖光。在霧沼間討伐邪祟,以聖騎士之名立下你的第一樁誓行。",

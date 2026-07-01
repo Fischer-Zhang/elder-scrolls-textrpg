@@ -22,5 +22,14 @@
                  "desc": "守護生命、驅退病亡的白袍施法者。"},
   "archer":     {"name": "弓手", "spec": "combat",  "favored_attributes": ["agility", "strength"],
                  "major_skills": ["marksman", "blade", "light_armor", "sneak", "athletics", "block", "hand_to_hand"],
-                 "desc": "百步穿楊的遠程獵手。"}
+                 "desc": "百步穿楊的遠程獵手。"},
+  "conjurer":   {"name": "召喚師", "spec": "magic", "favored_attributes": ["intelligence", "willpower"],
+                 "major_skills": ["conjuration", "destruction", "alteration", "restoration", "mysticism", "alchemy", "light_armor"],
+                 "desc": "以元素精魄與束縛兵刃為戰的召喚法師。"},
+  "necromancer": {"name": "死靈法師", "spec": "magic", "favored_attributes": ["intelligence", "willpower"],
+                 "major_skills": ["conjuration", "mysticism", "sneak", "illusion", "destruction", "restoration", "alchemy"],
+                 "desc": "收割亡魂、驅役屍骸的暗影死靈師(起手即通死靈經濟,招牌喚起亡者奴僕)。"},
+  "scout":      {"name": "斥候", "spec": "stealth", "favored_attributes": ["agility", "endurance"],
+                 "major_skills": ["scout", "marksman", "sneak", "athletics", "light_armor", "security", "blade"],
+                 "desc": "精於偵查、遠射與潛行的荒野遊俠。"}
 }

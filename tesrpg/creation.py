@@ -221,8 +221,10 @@ _SPELL_FOR_SCHOOL = {
 }
 
 
-# 中庸職業的招牌法術(功能性區分):戰法師奧術灌注 / 治療師援護 / 騎士號令
-_CLASS_SIGNATURE_SPELL = {"battlemage": "flame_blade", "healer": "heal_other", "knight": "rally"}
+# 身份職業的招牌起手法術(功能性區分):戰法師奧術灌注 / 治療師援護 / 騎士號令 / 死靈法師喚起亡者奴僕
+# (R106C:necromancer 內建 raise_thrall·起手即知曉·惟需 3 soul_token〔打怪積〕方能施放,conjure_familiar 補 turn-1)
+_CLASS_SIGNATURE_SPELL = {"battlemage": "flame_blade", "healer": "heal_other", "knight": "rally",
+                          "necromancer": "raise_thrall"}
 
 
 def _starting_spells(majors: list[str], class_id: str = "") -> list[str]:

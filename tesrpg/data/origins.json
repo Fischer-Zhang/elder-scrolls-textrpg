@@ -170,7 +170,7 @@
     "weapon": "hunting_bow",
     "items": [["minor_healing_potion", 2]],
     "quest": "origin_wood_hunter",
-    "classes": ["archer"]
+    "classes": ["scout", "archer"]
   },
   "caravan_guard": {
     "name": "商隊護衛",
@@ -254,7 +254,7 @@
     "items": [["minor_healing_potion", 2]],
     "companions": ["ranger"],
     "quest": "origin_ranger_scout",
-    "classes": ["archer", "thief"]
+    "classes": ["scout", "archer", "thief"]
   },
   "khajiit_trader": {
     "name": "月糖商隊主",
@@ -286,7 +286,19 @@
     "spells": ["conjure_familiar"],
     "items": [["minor_magicka_potion", 2]],
     "quest": "origin_marsh_conjurer",
-    "classes": ["mage", "battlemage"]
+    "classes": ["conjurer", "mage", "battlemage"]
+  },
+  "apprentice_necromancer": {
+    "name": "招魂學徒",
+    "blurb": "你是晨風薩瑞斯·莫拉泰爾凡尼蕈塔下的招魂師——公會不容此道,你只能私下研習。魂石與骨粉為伴,死者亦可為你所驅。",
+    "location": "sadrith_mora",
+    "gold": 45,
+    "weapon": "magicka_staff",
+    "equip": ["cloth_robe", "cloth_hood"],
+    "spells": ["conjure_familiar", "soul_trap"],
+    "items": [["empty_petty_soul_gem", 2], ["minor_magicka_potion", 2]],
+    "quest": "origin_necromancer",
+    "classes": ["necromancer", "conjurer", "mage"]
   },
   "oathbound_paladin": {
     "name": "誓盟聖騎士",

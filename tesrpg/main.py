@@ -127,7 +127,7 @@ ORIGIN_CATEGORIES = [
                        "legion_veteran", "caravan_guard", "knight_aspirant",
                        "hist_warden", "oathbound_paladin", "desert_spellsword", "cloud_monk"]),
     ("✦ 法師 · 法術", ["mage_initiate", "temple_healer", "reach_witch",
-                       "marsh_conjurer", "tribunal_battlemage", "arcane_scholar", "marsh_healer"]),
+                       "marsh_conjurer", "apprentice_necromancer", "tribunal_battlemage", "arcane_scholar", "marsh_healer"]),
     ("🗡 潛行 · 弓手", ["dark_initiate", "guild_thief", "tomb_seeker", "dockside_stowaway",
                        "wood_hunter", "ranger_scout"]),
     ("🩸 特殊血脈", ["nightborn", "beast_blooded"]),
