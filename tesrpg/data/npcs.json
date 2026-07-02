@@ -1686,7 +1686,10 @@
     "disposition": 30,
     "greeting": "「銀街的買賣,不是你該打聽的。」",
     "combat_template": "blade_agent",
-    "combat_template_alerted": "blade_agent_alerted"
+    "combat_template_alerted": "blade_agent_alerted",
+    "hit_covert": true,
+    "covert_role": "暗中刺探的刀刃密探",
+    "hit_secrecy": 60
   },
   "cint_mark_b": {
     "name": "礦道探子·director",
@@ -1694,7 +1697,10 @@
     "disposition": 30,
     "greeting": "「走開,這裡沒你的事。」",
     "combat_template": "blade_agent",
-    "combat_template_alerted": "blade_agent_alerted"
+    "combat_template_alerted": "blade_agent_alerted",
+    "hit_covert": true,
+    "covert_role": "暗中刺探的刀刃密探",
+    "hit_secrecy": 60
   },
   "cint_sent_a": {
     "name": "碼頭內鬼·賈邁勒",
@@ -1702,7 +1708,10 @@
     "disposition": 30,
     "greeting": "「風大,少在這兒晃。」",
     "combat_template": "rogue_thief",
-    "combat_template_alerted": "rogue_thief_alerted"
+    "combat_template_alerted": "rogue_thief_alerted",
+    "hit_covert": true,
+    "covert_role": "出賣同夥的變節盜賊眼線",
+    "hit_secrecy": 60
   },
   "cint_sent_b": {
     "name": "碼頭內鬼·法拉",
@@ -1710,7 +1719,10 @@
     "disposition": 30,
     "greeting": "「貨的事別問我。」",
     "combat_template": "rogue_thief",
-    "combat_template_alerted": "rogue_thief_alerted"
+    "combat_template_alerted": "rogue_thief_alerted",
+    "hit_covert": true,
+    "covert_role": "出賣同夥的變節盜賊眼線",
+    "hit_secrecy": 60
   },
   "cint_anvil_a": {
     "name": "燈塔窺探者·塞維斯",
@@ -1718,7 +1730,10 @@
     "disposition": 30,
     "greeting": "「海風不錯,對吧?別多管閒事。」",
     "combat_template": "blade_agent",
-    "combat_template_alerted": "blade_agent_alerted"
+    "combat_template_alerted": "blade_agent_alerted",
+    "hit_covert": true,
+    "covert_role": "暗中刺探的刀刃密探",
+    "hit_secrecy": 60
   },
   "cint_anvil_b": {
     "name": "燈塔窺探者·蘿娜",
@@ -1726,7 +1741,10 @@
     "disposition": 30,
     "greeting": "「我只是看海的。」",
     "combat_template": "blade_agent",
-    "combat_template_alerted": "blade_agent_alerted"
+    "combat_template_alerted": "blade_agent_alerted",
+    "hit_covert": true,
+    "covert_role": "暗中刺探的刀刃密探",
+    "hit_secrecy": 60
   },
   "cint_vivec_a": {
     "name": "朝聖耳目·迪魯斯",
@@ -1734,7 +1752,10 @@
     "disposition": 30,
     "greeting": "「拱區的事,神明自有安排。」",
     "combat_template": "blade_agent",
-    "combat_template_alerted": "blade_agent_alerted"
+    "combat_template_alerted": "blade_agent_alerted",
+    "hit_covert": true,
+    "covert_role": "暗中刺探的刀刃密探",
+    "hit_secrecy": 60
   },
   "cint_vivec_b": {
     "name": "朝聖耳目·薇拉",
@@ -1742,7 +1763,10 @@
     "disposition": 30,
     "greeting": "「你問太多了,外鄉人。」",
     "combat_template": "blade_agent",
-    "combat_template_alerted": "blade_agent_alerted"
+    "combat_template_alerted": "blade_agent_alerted",
+    "hit_covert": true,
+    "covert_role": "暗中刺探的刀刃密探",
+    "hit_secrecy": 60
   },
   "cint_gideon_a": {
     "name": "沼澤告密者·葛羅格",
@@ -1750,7 +1774,10 @@
     "disposition": 30,
     "greeting": "「霧裡的事,別探聽。」",
     "combat_template": "rogue_thief",
-    "combat_template_alerted": "rogue_thief_alerted"
+    "combat_template_alerted": "rogue_thief_alerted",
+    "hit_covert": true,
+    "covert_role": "出賣同夥的變節盜賊眼線",
+    "hit_secrecy": 60
   },
   "cint_gideon_b": {
     "name": "沼澤告密者·希薩",
@@ -1758,7 +1785,10 @@
     "disposition": 30,
     "greeting": "「這片沼澤會吞了愛管閒事的人。」",
     "combat_template": "rogue_thief",
-    "combat_template_alerted": "rogue_thief_alerted"
+    "combat_template_alerted": "rogue_thief_alerted",
+    "hit_covert": true,
+    "covert_role": "出賣同夥的變節盜賊眼線",
+    "hit_secrecy": 60
   },
   "ucov_fg_a": {
     "name": "戰士公會眼線·蓋厄斯",
@@ -1766,7 +1796,10 @@
     "disposition": 30,
     "greeting": "「兄弟,最近風聲很緊。」",
     "combat_template": "rogue_thief",
-    "combat_template_alerted": "rogue_thief_alerted"
+    "combat_template_alerted": "rogue_thief_alerted",
+    "hit_covert": true,
+    "covert_role": "出賣同夥的變節盜賊眼線",
+    "hit_secrecy": 48
   },
   "ucov_fg_b": {
     "name": "戰士公會眼線·布蕾",
@@ -1774,7 +1807,10 @@
     "disposition": 30,
     "greeting": "「別把事情鬧大。」",
     "combat_template": "rogue_thief",
-    "combat_template_alerted": "rogue_thief_alerted"
+    "combat_template_alerted": "rogue_thief_alerted",
+    "hit_covert": true,
+    "covert_role": "出賣同夥的變節盜賊眼線",
+    "hit_secrecy": 48
   },
   "ucov_kn_a": {
     "name": "騎士團通報者·艾德加",
@@ -1782,7 +1818,10 @@
     "disposition": 30,
     "greeting": "「聖光之下,無所遁形。」",
     "combat_template": "rogue_thief",
-    "combat_template_alerted": "rogue_thief_alerted"
+    "combat_template_alerted": "rogue_thief_alerted",
+    "hit_covert": true,
+    "covert_role": "出賣同夥的變節盜賊眼線",
+    "hit_secrecy": 48
   },
   "ucov_kn_b": {
     "name": "騎士團通報者·瑪希",
@@ -1790,7 +1829,10 @@
     "disposition": 30,
     "greeting": "「你的來意,我看不透。」",
     "combat_template": "rogue_thief",
-    "combat_template_alerted": "rogue_thief_alerted"
+    "combat_template_alerted": "rogue_thief_alerted",
+    "hit_covert": true,
+    "covert_role": "出賣同夥的變節盜賊眼線",
+    "hit_secrecy": 48
   },
   "hit_dirty_a": {
     "name": "礙事的傢伙·柯林",
@@ -1798,7 +1840,10 @@
     "disposition": 30,
     "greeting": "「你看我幹嘛?」",
     "combat_template": "rogue_thief",
-    "combat_template_alerted": "rogue_thief_alerted"
+    "combat_template_alerted": "rogue_thief_alerted",
+    "hit_covert": true,
+    "covert_role": "出賣同夥的變節盜賊眼線",
+    "hit_secrecy": 48
   },
   "hit_dirty_b": {
     "name": "礙事的傢伙·薩姆",
@@ -1806,7 +1851,10 @@
     "disposition": 30,
     "greeting": "「走遠點。」",
     "combat_template": "rogue_thief",
-    "combat_template_alerted": "rogue_thief_alerted"
+    "combat_template_alerted": "rogue_thief_alerted",
+    "hit_covert": true,
+    "covert_role": "出賣同夥的變節盜賊眼線",
+    "hit_secrecy": 48
   },
   "db_greedy": {
     "name": "糧商·奧崔斯",
@@ -1820,7 +1868,10 @@
     "location": "riften",
     "disposition": 35,
     "greeting": "「我認得每張生面孔 —— 包括你。」",
-    "combat_template": "rogue_thief"
+    "combat_template": "rogue_thief",
+    "hit_covert": true,
+    "covert_role": "欠下血債的變節盜賊",
+    "hit_secrecy": 48
   },
   "db_knight": {
     "name": "落魄騎士·佛登",
@@ -1841,14 +1892,20 @@
     "location": "cheydinhal",
     "disposition": 35,
     "greeting": "「夜母的孩子?我早不信那套了。」",
-    "combat_template": "brotherhood_traitor"
+    "combat_template": "brotherhood_traitor",
+    "hit_covert": true,
+    "covert_role": "叛離聖所的兄弟會會員",
+    "hit_secrecy": 48
   },
   "db_speaker": {
     "name": "聖所代言人·亞蘭多",
     "location": "cheydinhal",
     "disposition": 35,
     "greeting": "「靜聆之廳的秘密,不容外洩。」",
-    "combat_template": "dark_speaker"
+    "combat_template": "dark_speaker",
+    "hit_covert": true,
+    "covert_role": "守著聖所秘辛的代言人",
+    "hit_secrecy": 48
   },
   "md_faithful": {
     "name": "九神信徒·瑪蕾",
@@ -1862,7 +1919,10 @@
     "location": "imperial_city",
     "disposition": 35,
     "greeting": "「帝國的眼睛,無所不在。」",
-    "combat_template": "blade_agent"
+    "combat_template": "blade_agent",
+    "hit_covert": true,
+    "covert_role": "潛入的帝國刀刃密探",
+    "hit_secrecy": 60
   },
   "md_paladin": {
     "name": "九神聖騎士·羅蘭",
@@ -1883,7 +1943,10 @@
     "location": "skingrad",
     "disposition": 35,
     "greeting": "「我已看穿達貢的謊言。」",
-    "combat_template": "mythic_apostate"
+    "combat_template": "mythic_apostate",
+    "hit_covert": true,
+    "covert_role": "背棄達貢的神話叛教者",
+    "hit_secrecy": 60
   },
   "md_dawnmentor": {
     "name": "黎明導師·厄奎斯",

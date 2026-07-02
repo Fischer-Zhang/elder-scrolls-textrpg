@@ -313,6 +313,44 @@ def test_premurder_allowed_completes_and_promotes():
     assert brotherhood.rank(c) == 1                # 允許 → 晉升(不軍鎖)
 
 
+# --- B2 潛伏揭發層 -----------------------------------------------------------
+def test_covert_targets_flagged_and_public_ones_not():
+    gd = get_gamedata()
+    covert = [k for k, v in gd.npcs.items() if v.get("hit_covert")]
+    assert len(covert) == 21                                    # 16 反間臥底 + 5 DB/md 潛伏者
+    for nid in covert:                                          # 潛伏目標須有 covert_role + hit_secrecy
+        assert gd.npcs[nid].get("covert_role") and gd.npcs[nid].get("hit_secrecy")
+    for nid in ("db_greedy", "db_champion", "md_faithful", "md_paladin", "md_highpriest"):
+        assert not gd.npcs[nid].get("hit_covert")               # 公開身分目標非潛伏
+
+
+def test_hit_target_revealed_by_accepting_quest():
+    from tesrpg.systems import dialogue
+    gd, c, st = _st()
+    assert not dialogue.hit_investigated(c, "md_blade")
+    assert not quests.is_active_hit_target(c, gd, "md_blade")   # 未接任務 → 未識破
+    quests.accept_quest(c, gd, "md2")                           # md2 目標 = md_blade
+    assert quests.is_active_hit_target(c, gd, "md_blade")       # 接了合約 → 即知目標(揭露途徑一)
+
+
+def test_investigate_reveals_covert_target():
+    from tesrpg.systems import dialogue
+    gd, c, st = _st()
+    c.skills["scout"] = 100                                     # 高偵查 → 高機率識破
+    revealed = False
+    for seed in range(30):
+        c.dialogue_done.pop("cint_mark_a", None)
+        msg = dialogue.investigate_hit_target(c, gd, "cint_mark_a", RNG(seed))
+        if msg:
+            revealed = True
+            assert dialogue.hit_investigated(c, "cint_mark_a")  # 標記已設(永久)
+            assert "刀刃密探" in msg
+            break
+    assert revealed, "高偵查竟從未調查成功"
+    # 非潛伏目標 → 調查回 None
+    assert dialogue.investigate_hit_target(c, gd, "db_greedy", RNG(1)) is None
+
+
 def run():
     try:
         for name in sorted(globals()):

@@ -4440,7 +4440,19 @@ def action_talk(state: GameState, gamedata: GameData) -> str | None:
         opts.append(("bribe", f"賄賂({dialogue.BRIBE_COST} 金)"))
         if char.cover_knower == nid:                  # R100:此人正是識破你的知情者 → 限時滅口
             opts.append(("silence", "🔪 滅口(限時決鬥 —— 在他通風報信前了結他)"))
-        opts.append(("murder", "🔪 暗殺此人"))
+        # R109 B2 潛伏揭發層:違法身分目標(hit_covert)—— 未識破前隱於市井(可探查),
+        # 識破後(接了合約 或 調查成功)出「揭發·動手 / 佯裝不知」。非潛伏目標走一般「暗殺此人」。
+        _covert = gamedata.npcs.get(nid, {}).get("hit_covert")
+        _known = _covert and (dialogue.hit_investigated(char, nid)
+                              or quests.is_active_hit_target(char, gamedata, nid))
+        if _covert and not _known:
+            opts.append(("investigate", "🔍 此人形跡可疑 —— 探查底細"))
+            opts.append(("murder", "🔪 暗殺此人"))     # 仍可貿然動手(但不知其為目標)
+        elif _known:
+            opts.append(("expose", "🔪 揭發身分,當場處決"))
+            opts.append(("feign", "佯裝不知,悄然退開"))
+        else:
+            opts.append(("murder", "🔪 暗殺此人"))
         choice = ui.menu("對話", opts, allow_back=True)
         if choice is None:
             return None
@@ -4489,8 +4501,17 @@ def action_talk(state: GameState, gamedata: GameData) -> str | None:
             if _undercover_silence(state, gamedata, nid) == "dead":
                 return "dead"
             return None
-        elif choice == "murder":
-            return action_murder(state, gamedata, nid)
+        elif choice == "murder" or choice == "expose":
+            return action_murder(state, gamedata, nid)   # expose=揭發身分動手(同暗殺路徑·授權則無罰)
+        elif choice == "investigate":                     # R109 B2:探查潛伏目標身分
+            r = dialogue.investigate_hit_target(char, gamedata, nid, state.rng)
+            xp, hours, _t = progression.practice_cost(char, gamedata, "scout")
+            state.time.advance(hours)
+            ui.show_events(progression.use_skill(char, gamedata, "scout", xp), gamedata)
+            ui.message(r or "你旁敲側擊了一番,卻看不出什麼破綻。", style="cyan" if r else "grey70")
+        elif choice == "feign":                           # R109 B2:佯裝不知(識破狀態永久保留·下次仍可揭發)
+            ui.message("你不動聲色地與他寒暄兩句,悄然退開 —— 他渾然不覺自己已被盯上。", style="grey70")
+            return None
 
 
 def action_murder(state: GameState, gamedata: GameData, nid: str) -> str | None:

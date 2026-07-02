@@ -222,6 +222,14 @@ def _active_assassinate_quests(char: Character, gamedata: GameData):
             yield qid, qstate, obj
 
 
+def is_active_hit_target(char: Character, gamedata: GameData, nid: str) -> bool:
+    """nid 是否為某進行中暗殺合約的(尚存)目標(R109 B2:接了合約=知道對方是誰 → 揭露潛伏身分)。"""
+    for _qid, _qs, obj in _active_assassinate_quests(char, gamedata):
+        if nid in _hit_targets(obj):
+            return True
+    return False
+
+
 def assassination_sanctioned(char: Character, gamedata: GameData, nid: str) -> bool:
     """nid 是否為某進行中「授權暗殺」任務(`sanctioned:true`,如反間肅清敵諜)的目標。
     授權目標的擊殺=除害無罰(不走謀殺目擊 roll);任務外殺同一人仍是謀殺(受罰)。"""

@@ -194,6 +194,30 @@ STANDING_CAP = 100           # 外交立場分夾限 [-CAP, CAP]
 # 公會宿敵生態(R97):犯罪/隱蔽身分揭露門檻 + 調查揭露的 dialogue_done 標記(零新存檔欄)
 GUILD_REVEAL_DISPOSITION = 75   # 高好感信任 → 得知其隱藏(犯罪)身分(秘密更深於一般任務門檻 60)
 _GUILD_KNOWN = "__guild_known__"  # dialogue_done[npc] 標記:已調查揭露該 NPC 的隱藏身分
+# R109 B2:潛伏暗殺目標(`hit_covert`)的「已識破」標記(零新存檔欄·衍生自 dialogue_done)。
+# 揭露兩途:接了以此人為目標的暗殺合約(quests.is_active_hit_target)/ 調查成功(標此)。
+_HIT_KNOWN = "__hit_known__"
+HIT_INVESTIGATE_BASE = 0.20     # 探查潛伏目標的基礎成功率(再加 (scout/口才+魅力−secrecy)×0.005)
+
+
+def hit_investigated(char: Character, npc_id: str) -> bool:
+    """是否已透過調查識破此潛伏目標(投鏡查探成功·永久標記)。"""
+    return _HIT_KNOWN in getattr(char, "dialogue_done", {}).get(npc_id, [])
+
+
+def investigate_hit_target(char: Character, gamedata: GameData, npc_id: str, rng: RNG) -> str | None:
+    """R109 B2 調查潛伏目標:以偵查/口才(+魅力)對抗 NPC `hit_secrecy` 檢定,成功則識破身分
+    (標 `_HIT_KNOWN`·永久·零新存檔欄)→ 之後 action_talk 出「揭發/佯裝不知」。非潛伏目標回 None。"""
+    npc = gamedata.npcs.get(npc_id, {})
+    if not npc.get("hit_covert") or hit_investigated(char, npc_id):
+        return None
+    secrecy = npc.get("hit_secrecy", 50)
+    skill = max(char.skill("scout"), char.skill("speechcraft"))
+    chance = max(0.05, min(0.85, HIT_INVESTIGATE_BASE + (skill + char.attr("personality") - secrecy) * 0.005))
+    if not rng.chance(chance):
+        return None
+    char.dialogue_done.setdefault(npc_id, []).append(_HIT_KNOWN)
+    return f"你不動聲色地留了心 —— 蛛絲馬跡兜攏起來:此人的真面目,是{npc.get('covert_role', '你要找的目標')}。"
 
 # 程式內 fallback(dialogue.json 缺漏時仍可運作;正式內容在 data/dialogue.json)
 DEFAULT_GREETINGS = {
