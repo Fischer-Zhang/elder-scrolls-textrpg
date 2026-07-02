@@ -159,18 +159,47 @@ def bless(char: Character, state, gamedata: GameData, god: str) -> dict:
 
 
 def update(state, gamedata: GameData) -> list[dict]:
-    """每圈掛在 game_loop(spellfx.update 之後):祝福到期則清槽重算 + 回事件供 UI 報「神恩散去」。"""
+    """每圈掛在 game_loop(spellfx.update 之後):
+    ① 祝福到期 → 清槽重算 + 回事件「神恩散去」;
+    ② 聖物戒律(R108)→ 破戒(惡名>1 / 吸血鬼 / 狼人)自動卸下聖物、邊緣(惡名==1)警告。"""
     char = state.player
+    events: list[dict] = []
     b = getattr(char, "divine_blessing", None)
     if not _valid(b):
         if b:   # 壞值靜默清掉(防呆)
             char.divine_blessing = {}
-        return []
-    if b["expires_at"] > state.time.absolute_hours():
-        return []
-    god = b["divine"]
-    recompute(char, state, gamedata)
-    return [{"kind": "blessing_expire", "god": god, "name": BLESSINGS[god]["name"]}]
+    elif b["expires_at"] <= state.time.absolute_hours():
+        god = b["divine"]
+        recompute(char, state, gamedata)
+        events.append({"kind": "blessing_expire", "god": god, "name": BLESSINGS[god]["name"]})
+    events += _relic_discipline(char, gamedata)
+    return events
+
+
+def _relic_discipline(char: Character, gamedata: GameData) -> list[dict]:
+    """聖物戒律檢查(R108):infamy 寫入散於多處無單一收口 → 每圈在此裁決。
+
+    破戒(virtue_violated)且身穿聖物 → 自動卸下(物品留背包)+ recompute(R05);
+    惡名恰在容忍線(==VIRTUE_INFAMY_LIMIT)→ session 一次性警告(暫態旗 `_virtue_warned`
+    不入檔,比照 R55 `_ach_seen`;惡名歸零即重置,可再次警告)。"""
+    from tesrpg.systems import inventory
+    events: list[dict] = []
+    wearing = inventory.wearing_virtue_locked(char, gamedata)
+    if wearing and inventory.virtue_violated(char):
+        inventory.shed_virtue_locked(char, gamedata)
+        stats.recompute_max_resources(char, gamedata)
+        from tesrpg.systems import lycanthropy, vampirism
+        reason = ("curse" if (vampirism.is_vampire(char) or lycanthropy.is_werewolf(char))
+                  else "infamy")
+        events.append({"kind": "relic_shed", "reason": reason})
+        return events
+    if wearing and getattr(char, "infamy", 0) == inventory.VIRTUE_INFAMY_LIMIT:
+        if not getattr(char, "_virtue_warned", False):
+            char._virtue_warned = True
+            events.append({"kind": "relic_warning"})
+    elif getattr(char, "infamy", 0) == 0:
+        char._virtue_warned = False
+    return events
 
 
 def ensure_divine_fields(char: Character, time, gamedata: GameData) -> None:

@@ -28,7 +28,9 @@ _REWARD_KEYS = frozenset({
 # → 破壞稀缺性與反 min-max。由 schema 測試把關(test_data_schema)。
 # R100 cover_deltas:臥底忠誠/掩護漂移(非物質·僅臥底中生效·grind 即「過雙面人生」的 loop 本身)→ 准。
 # R107 clear_infamy:朝聖可重複(再犯罪可再贖),歸零非累積 → 無限刷=無限洗白,代價=跨省長征+試煉 → 准。
-_REPEATABLE_REWARD_KEYS = frozenset({"gold", "fame", "infamy", "cover_deltas", "clear_infamy"})
+# R108 world_flags:寫入本身冪等去重(once-fire,見 _complete)→ repeatable 重複完成不重複發旗 → 准
+#(朝聖首完成授「pilgrim_vision」異象旗,開聖物線)。
+_REPEATABLE_REWARD_KEYS = frozenset({"gold", "fame", "infamy", "cover_deltas", "clear_infamy", "world_flags"})
 
 
 # --- 進度記錄(由戰鬥/探索/旅行 hook 呼叫)-----------------------------
@@ -305,9 +307,12 @@ def _complete(char: Character, gamedata: GameData, quest_id: str) -> dict:
     if eradicate:
         char.factions.pop(eradicate, None)
     # 世界旗標(劇情記憶 / NPC 反應 / 解鎖判定;once-fire 去重)。
+    # new_flags=本次「首次寫入」者(R108:repeatable 任務重複完成不重播旗標敘事,如朝聖異象)。
+    new_flags: list = []
     for flag in reward.get("world_flags", []):
         if flag not in char.world_events_fired:
             char.world_events_fired.append(flag)
+            new_flags.append(flag)
 
     # R100 雙面間諜:價值觀漂移(loyalty)/掩護(secrecy)+ 結局狀態變更(資料驅動;僅臥底中生效)。
     cd = reward.get("cover_deltas")
@@ -363,4 +368,4 @@ def _complete(char: Character, gamedata: GameData, quest_id: str) -> dict:
         char.completed_quests.append(quest_id)
     return {"type": "completed", "quest_id": quest_id, "name": q["name"],
             "reward": reward, "promoted": promoted, "stipend": stipend,
-            "standing_loc": standing_loc}
+            "standing_loc": standing_loc, "new_flags": new_flags}

@@ -1216,6 +1216,11 @@ def _report_quests(state: GameState, gamedata: GameData) -> None:
             ui.message(f"  ★ 你在{gamedata.factions[fac]['name']}晉升為「{rank}」!", style="bold magenta")
             if ev.get("stipend"):
                 ui.message(f"  ◈ 晉升俸祿 {ev['stipend']} 金", style="yellow")
+        # R108:朝聖首次走完 → 佩利納爾異象(只在旗標「首次寫入」時播,repeatable 重走不重播)
+        if "pilgrim_vision" in (ev.get("new_flags") or []):
+            ui.rule("異象")
+            ui.message("走完九神之路的那夜,夢裡有白金羽影與一柄斷劍 —— 一名披甲的亡靈向你俯身低語:"
+                       "「聖十字軍的遺物散落人間……去安維爾的小修道院,潔身者方見其路。」", style="bold cyan")
 
 
 # ======================================================================
@@ -1805,6 +1810,23 @@ def _equipped_slot_of(char: Character, item_id: str) -> str | None:
     return None
 
 
+def _equip_refusal_message(char: Character, gamedata: GameData, item_id: str) -> None:
+    """裝備失敗的專屬敘事(R108 聖物戒律 / R56 血裔專屬;其餘走通用)。"""
+    d = gamedata.item(item_id)
+    if inventory._virtue_locked(char, gamedata, item_id):
+        from tesrpg.systems import lycanthropy, vampirism
+        if vampirism.is_vampire(char) or lycanthropy.is_werewolf(char):
+            ui.message(f"{d['name']}的聖輝灼痛你的手 —— 眾神的聖物拒斥被詛咒的血脈,"
+                       "解除詛咒方能執持。", style="red")
+        else:
+            ui.message(f"{d['name']}在你手中黯淡沉重 —— 「懺悔你的罪行吧!」"
+                       "重走朝聖之路洗淨惡名,聖物方肯認你。", style="red")
+    elif inventory._vampire_locked(char, gamedata, item_id):
+        ui.message(f"{d['name']}唯有血裔方能駕馭。", style="red")
+    else:
+        ui.message(f"你無法裝備{d['name']}。", style="grey70")
+
+
 def _item_actions(state: GameState, gamedata: GameData, item_id: str) -> None:
     char = state.player
     d = gamedata.item(item_id)
@@ -1836,27 +1858,35 @@ def _item_actions(state: GameState, gamedata: GameData, item_id: str) -> None:
         ui.item_compare_panel(char, gamedata, item_id)
     act = ui.menu(d["name"], acts, allow_back=True)
     if act == "equip_w":
-        inventory.equip_weapon(char, gamedata, item_id)
-        stats.recompute_max_resources(char, gamedata)   # R05:雙手武器自動卸盾 → 沖掉盾的 fortify/resist 幽靈值
-        if inventory.is_two_handed(gamedata, item_id):
-            ui.message(f"你雙手握起了{d['name']},卸下了盾與副手。", style="green")
+        if not inventory.equip_weapon(char, gamedata, item_id):
+            _equip_refusal_message(char, gamedata, item_id)   # R108/R56:鎖裝拒絕(修「假成功」訊息)
         else:
-            ui.message(f"你握起了{d['name']}。", style="green")
+            stats.recompute_max_resources(char, gamedata)   # R05:雙手武器自動卸盾 → 沖掉盾的 fortify/resist 幽靈值
+            if inventory.is_two_handed(gamedata, item_id):
+                ui.message(f"你雙手握起了{d['name']},卸下了盾與副手。", style="green")
+            else:
+                ui.message(f"你握起了{d['name']}。", style="green")
     elif act == "equip_off":
-        inventory.equip_offhand(char, gamedata, item_id)
-        ui.message(f"你以副手握起了另一把{d['name']},擺出雙持架式 —— 傷害大增,但無法再格擋。",
-                   style="green")
+        if not inventory.equip_offhand(char, gamedata, item_id):
+            _equip_refusal_message(char, gamedata, item_id)
+        else:
+            ui.message(f"你以副手握起了另一把{d['name']},擺出雙持架式 —— 傷害大增,但無法再格擋。",
+                       style="green")
     elif act == "unequip_off":
         inventory.unequip_offhand(char)
         ui.message("你收起了副手匕首。", style="grey70")
     elif act == "equip_a":
-        inventory.equip_armor(char, gamedata, item_id)
-        stats.recompute_max_resources(char, gamedata)   # 套用護甲 fortify/套裝
-        ui.message(f"你穿上了{d['name']}。", style="green")
+        if not inventory.equip_armor(char, gamedata, item_id):
+            _equip_refusal_message(char, gamedata, item_id)
+        else:
+            stats.recompute_max_resources(char, gamedata)   # 套用護甲 fortify/套裝
+            ui.message(f"你穿上了{d['name']}。", style="green")
     elif act == "equip_j":
-        slot = inventory.equip_jewelry(char, gamedata, item_id)
-        stats.recompute_max_resources(char, gamedata)   # 套用飾品附魔
-        ui.message(f"你戴上了{d['name']}。", style="green")
+        if inventory.equip_jewelry(char, gamedata, item_id) is None:
+            _equip_refusal_message(char, gamedata, item_id)
+        else:
+            stats.recompute_max_resources(char, gamedata)   # 套用飾品附魔
+            ui.message(f"你戴上了{d['name']}。", style="green")
     elif act == "unequip":
         inventory.unequip(char, _equipped_slot_of(char, item_id))
         stats.recompute_max_resources(char, gamedata)   # 移除護甲/飾品加成
@@ -1954,7 +1984,8 @@ def action_shop(state: GameState, gamedata: GameData) -> None:
                         ui.message("背負不下,太重了。", style="red")
         else:
             while True:                          # 停留在賣貨清單 → 可連續賣多樣不同商品
-                sellable = [s for s in char.inventory if gamedata.item(s["id"])["value"] > 0]
+                sellable = [s for s in char.inventory
+                            if gamedata.item(s["id"])["value"] > 0 and not gamedata.item(s["id"]).get("no_sell")]   # R108:聖物不可賣(可存倉庫)
                 if not sellable:
                     ui.message("沒有可賣的東西。", style="grey70")
                     break
@@ -2348,7 +2379,8 @@ def action_fence(state: GameState, gamedata: GameData) -> None:
             return
         if choice == "sell":
             while True:
-                sellable = [s for s in char.inventory if gamedata.item(s["id"])["value"] > 0]
+                sellable = [s for s in char.inventory
+                            if gamedata.item(s["id"])["value"] > 0 and not gamedata.item(s["id"]).get("no_sell")]   # R108:聖物不可賣(可存倉庫)
                 if not sellable:
                     ui.message("沒有可銷的東西。", style="grey70")
                     break
@@ -2885,6 +2917,10 @@ def _contract_hall(state: GameState, gamedata: GameData, faction_id: str, *,
         # R100:神話黎明派你潛入九神騎士團 —— 間諜事務(knights 非 INFILTRATE_PAIRS → 不顯示)
         if undercover.hall_has_business(char, gamedata, faction_id):
             opts.append(("spy", "🎭 間諜事務（潛入宿敵)"))
+        # R108:聖物的召喚(九神騎士團限定)—— 走過朝聖(pilgrim_vision)的聖殿騎士(rank≥2)
+        # 方見佩利納爾的異象;available_quests 以 requires_event/faction_rank/quest 鏈把關。
+        if faction_id == "knights_nine" and quests.available_quests(char, gamedata, "relic"):
+            opts.append(("relic", "⚜ 聖物的召喚（佩利納爾的異象)"))
         opts.append(("verses", verses_label))
         choice = ui.menu(title, opts, allow_back=True)
         if choice is None:
@@ -2897,6 +2933,10 @@ def _contract_hall(state: GameState, gamedata: GameData, faction_id: str, *,
             _counterintel_board(state, gamedata)
         elif choice == "spy":
             _undercover_hall(state, gamedata, faction_id)
+        elif choice == "relic":
+            relics = quests.available_quests(char, gamedata, "relic")
+            if relics:
+                _accept_and_brief(state, gamedata, relics[0])
         elif choice == "execute":
             died = action_contract(state, gamedata, active, stealth=stealth)
             if died == "dead":
@@ -4833,10 +4873,20 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
             if ev["kind"] == "spellfx_expire":
                 ui.message("法術的餘韻散去 —— 你身上的幻術/變換效果消退了。", style="grey70")
 
-        # 九神祝福(R107):單槽限時祝福到期 → 清槽重算 + 報「神恩散去」(掛在 spellfx 之後)
+        # 九神祝福(R107)+ 聖物戒律(R108):祝福到期 / 破戒自動卸下 / 邊緣警告(掛在 spellfx 之後)
         for ev in divines.update(state, gamedata):
             if ev["kind"] == "blessing_expire":
                 ui.message(f"{ev['name']}的神恩餘暉散去 —— 祝福離你而去。", style="grey70")
+            elif ev["kind"] == "relic_shed":
+                if ev["reason"] == "curse":
+                    ui.message("聖輝驟然灼燙 —— 十字軍聖物拒斥你被詛咒的血脈,自你身上褪落。"
+                               "解除詛咒之前,它們不會再認你。", style="bold red")
+                else:
+                    ui.message("你的罪行玷污了聖物 —— 十字軍聖物黯然離你而去。"
+                               "重走朝聖之路洗淨惡名,方能再披聖裝。", style="bold red")
+            elif ev["kind"] == "relic_warning":
+                ui.message("「當心!眾神已記下你的罪行 —— 莫再沉淪,否則你將不配執持十字軍聖物。」",
+                           style="yellow")
 
         # 狼人化:潛伏轉化 / 獸形過期變回(掛在斯庫瑪之後)
         for ev in lycanthropy.update(state, gamedata):

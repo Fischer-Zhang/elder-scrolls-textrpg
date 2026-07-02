@@ -115,11 +115,36 @@ def _vampire_locked(char: Character, gamedata: GameData, item_id) -> bool:
     return not vampirism.is_vampire(char)
 
 
-def shed_vampire_locked(char: Character, gamedata: GameData) -> None:
-    """卸下所有 `requires_vampire` 裝備(失去吸血鬼身分時用,如治癒):物品留背包、僅脫下,
-    以免凡人之身仍吃到吸血鬼專屬套裝/附魔加成(R56)。"""
+VIRTUE_INFAMY_LIMIT = 1   # 正典 KotN:infamy≤1 可裝(容忍一次失足)、≥2 聖物棄你而去
+
+
+def virtue_violated(char: Character) -> bool:
+    """聖物戒律(R108·R56 的鏡像對:夜影要求「是」吸血鬼、聖物要求「無垢」):
+    惡名 > VIRTUE_INFAMY_LIMIT、或身負吸血鬼/狼人詛咒 → 違戒。
+    贖罪路各走各的:惡名 → 朝聖歸零(R107);詛咒 → 既有解咒任務。"""
+    from tesrpg.systems import lycanthropy, vampirism
+    return (getattr(char, "infamy", 0) > VIRTUE_INFAMY_LIMIT
+            or vampirism.is_vampire(char) or lycanthropy.is_werewolf(char))
+
+
+def _virtue_locked(char: Character, gamedata: GameData, item_id) -> bool:
+    """聖物裝備:違戒者不可裝(R108·資料欄 `requires_virtue`·向後相容預設無)。"""
+    if not (gamedata.item_or_none(item_id) or {}).get("requires_virtue"):
+        return False
+    return virtue_violated(char)
+
+
+def wearing_virtue_locked(char: Character, gamedata: GameData) -> bool:
+    """是否身穿任何聖物(供破戒檢查/警告)。"""
+    ids = [getattr(char, "weapon", ""), getattr(char, "offhand", "")] + \
+        list(getattr(char, "equipped", {}).values())
+    return any(iid and (gamedata.item_or_none(iid) or {}).get("requires_virtue") for iid in ids)
+
+
+def _shed_by_flag(char: Character, gamedata: GameData, flag: str) -> None:
+    """卸下所有帶指定資料旗標的裝備:物品留背包、僅脫下(共用骨架;呼叫端負責 recompute R05)。"""
     def _locked(iid):
-        return bool(iid and (gamedata.item_or_none(iid) or {}).get("requires_vampire"))
+        return bool(iid and (gamedata.item_or_none(iid) or {}).get(flag))
     if _locked(getattr(char, "weapon", "")):
         char.weapon = "fists"
     if _locked(getattr(char, "offhand", "")):
@@ -129,10 +154,22 @@ def shed_vampire_locked(char: Character, gamedata: GameData) -> None:
             char.equipped.pop(slot, None)
 
 
+def shed_vampire_locked(char: Character, gamedata: GameData) -> None:
+    """卸下所有 `requires_vampire` 裝備(失去吸血鬼身分時用,如治癒):物品留背包、僅脫下,
+    以免凡人之身仍吃到吸血鬼專屬套裝/附魔加成(R56)。"""
+    _shed_by_flag(char, gamedata, "requires_vampire")
+
+
+def shed_virtue_locked(char: Character, gamedata: GameData) -> None:
+    """卸下所有 `requires_virtue` 聖物(破戒時用:惡名≥2 / 染詛咒):物品留背包、僅脫下(R108)。"""
+    _shed_by_flag(char, gamedata, "requires_virtue")
+
+
 def equip_weapon(char: Character, gamedata: GameData, item_id: str) -> bool:
     if gamedata.item(item_id).get("kind") != "weapon":
         return False
-    if count_item(char, item_id) <= 0 or _vampire_locked(char, gamedata, item_id):
+    if (count_item(char, item_id) <= 0 or _vampire_locked(char, gamedata, item_id)
+            or _virtue_locked(char, gamedata, item_id)):
         return False
     char.weapon = item_id
     if is_two_handed(gamedata, item_id):    # 雙手握持 → 自動卸下盾與副手(沿用 remove_item 自動卸裝風格)
@@ -168,7 +205,8 @@ def equip_offhand(char: Character, gamedata: GameData, item_id: str) -> bool:
     if is_two_handed(gamedata, char.weapon):   # 主手雙手武器占雙手 → 無副手槽
         return False
     d = gamedata.item(item_id)
-    if d.get("kind") != "weapon" or d.get("archetype") != "dagger" or _vampire_locked(char, gamedata, item_id):
+    if (d.get("kind") != "weapon" or d.get("archetype") != "dagger"
+            or _vampire_locked(char, gamedata, item_id) or _virtue_locked(char, gamedata, item_id)):
         return False
     need = 2 if item_id == char.weapon else 1
     if count_item(char, item_id) < need:
@@ -183,7 +221,8 @@ def unequip_offhand(char: Character) -> None:
 
 def equip_armor(char: Character, gamedata: GameData, item_id: str) -> bool:
     d = gamedata.item(item_id)
-    if d.get("kind") != "armor" or count_item(char, item_id) <= 0 or _vampire_locked(char, gamedata, item_id):
+    if (d.get("kind") != "armor" or count_item(char, item_id) <= 0
+            or _vampire_locked(char, gamedata, item_id) or _virtue_locked(char, gamedata, item_id)):
         return False
     if d["slot"] == "shield" and is_two_handed(gamedata, char.weapon):   # 雙手武器在手 → 不能裝盾
         return False
@@ -209,7 +248,8 @@ def equip_jewelry(char: Character, gamedata: GameData, item_id: str) -> str | No
     回傳實際使用的槽位(供 UI),不可戴回傳 None。
     """
     d = gamedata.item(item_id)
-    if d.get("kind") != "jewelry" or count_item(char, item_id) <= 0 or _vampire_locked(char, gamedata, item_id):
+    if (d.get("kind") != "jewelry" or count_item(char, item_id) <= 0
+            or _vampire_locked(char, gamedata, item_id) or _virtue_locked(char, gamedata, item_id)):
         return None
     slot = d["slot"]
     if slot == "ring":

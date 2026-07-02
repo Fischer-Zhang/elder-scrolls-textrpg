@@ -266,5 +266,7 @@
 
   "ebony_mace":  {"name": "黑檀釘錘", "skill": "blunt", "damage": 21, "value": 560, "weight": 16, "archetype": "mace", "speed": 0.75},
 
-  "nightfang_dagger": {"name": "夜牙匕首", "skill": "blade", "damage": 14, "value": 1400, "weight": 3, "archetype": "dagger", "speed": 1.5, "requires_vampire": true, "enchant": {"kind": "weapon_status", "status": "vampiric", "magnitude": 50}}
+  "nightfang_dagger": {"name": "夜牙匕首", "skill": "blade", "damage": 14, "value": 1400, "weight": 3, "archetype": "dagger", "speed": 1.5, "requires_vampire": true, "enchant": {"kind": "weapon_status", "status": "vampiric", "magnitude": 50}},
+  "sword_of_the_crusader": {"name": "十字軍之劍", "skill": "blade", "damage": 26, "value": 2800, "weight": 13, "archetype": "sword", "speed": 1.1, "material": "crusader", "requires_virtue": true, "no_sell": true, "enchant": {"kind": "weapon_element", "element": "fire", "magnitude": 26}},
+  "mace_of_the_crusader": {"name": "正義之鎚", "skill": "blunt", "damage": 28, "value": 2800, "weight": 16, "archetype": "mace", "speed": 0.75, "material": "crusader", "requires_virtue": true, "no_sell": true, "enchant": {"kind": "weapon_status", "status": "absorb_magicka", "magnitude": 16}}
 }

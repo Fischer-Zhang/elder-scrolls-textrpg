@@ -117,5 +117,6 @@
       "magnitude": 20,
       "disguise": true
     }
-  }
+  },
+  "crusader": {"name": "十字軍套裝", "bonus": {"kind": "fortify_skill", "skill": "restoration", "magnitude": 20, "resist": {"magic": 12}}}
 }
