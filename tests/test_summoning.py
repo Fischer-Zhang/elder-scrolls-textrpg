@@ -332,12 +332,12 @@ def test_reanimate_thrall_enhances_and_costs_token():
     b1 = {"allies": []}
     magic.cast(c, gd, "reanimate_corpse", RNG(1), battle=b1, corpses=[_corpse()])
     base_hp = b1["allies"][0].max_health
-    assert c.soul_tokens == 5, "base 亡者復生不吃 token"
+    assert c.soul_tokens == 4, "base 亡者復生吃 1 token(R106C)"
     b2 = {"allies": []}
     magic.cast(c, gd, "reanimate_thrall", RNG(1), battle=b2, corpses=[_corpse()])
     enh = b2["allies"][0]
     assert enh.max_health > base_hp, "強化復生 1.0x > base 0.6x"
-    assert c.soul_tokens == 3 and getattr(enh, "_undead", False)   # 5 − 2 token
+    assert c.soul_tokens == 2 and getattr(enh, "_undead", False)   # 4 − 2 token
 
 
 def test_undead_mastery_boosts_only_true_undead():

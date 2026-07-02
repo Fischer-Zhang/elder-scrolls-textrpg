@@ -467,6 +467,7 @@ def test_dispel_clears_only_self_debuffs():
 def test_reanimate_raises_dead_nonsolo_enemy():
     gd, c = _caster()
     c.spells.append("reanimate_corpse")
+    c.soul_tokens = 5   # R106C:reanimate_corpse 現吃 1 token
     foe = combat.spawn_creature(gd, "mudcrab", RNG(0))
     foe.health = 0                              # 屍體
     battle = {"allies": []}
@@ -502,6 +503,7 @@ def test_reanimate_no_double_raise_same_corpse():
     gd, c = _caster()
     c.spells.append("reanimate_corpse")
     c.magicka = 9999
+    c.soul_tokens = 5   # R106C:reanimate_corpse 現吃 1 token
     foe = combat.spawn_creature(gd, "mudcrab", RNG(0))
     foe.health = 0
     battle = {"allies": []}
@@ -595,6 +597,7 @@ def test_reanimate_hp_is_weakened():
     """對抗審查收斂:亡者復生為虛弱亡魂(REANIMATE_HP_FACTOR)→ 不滿血復生高 HP 精英。"""
     gd, c = _caster()
     c.spells.append("reanimate_corpse")
+    c.soul_tokens = 5   # R106C:reanimate_corpse 現吃 1 token
     from tesrpg.systems import stats
     stats.recompute_max_resources(c, gd, restore_full=True)
     foe = combat.spawn_creature(gd, "bear", RNG(0))
