@@ -481,8 +481,10 @@ def test_grave_thrift_reduces_token_cost():
     assert necromancy.spend_cost(c, 3) == 3   # raise_thrall base token_cost 3
     c.necro_upgrades = {"grave_thrift": 1}
     assert necromancy.spend_cost(c, 3) == 2   # −1
+    assert necromancy.spend_cost(c, 1) == 0   # 復生(1)→ 精算 1 級即免費(可降至 0·使用者拍板)
     c.necro_upgrades = {"grave_thrift": 2}
-    assert necromancy.spend_cost(c, 3) == 1   # −2 → floor 1
+    assert necromancy.spend_cost(c, 3) == 1   # raise_thrall −2 → 1(仍 ≥1·守牆)
+    assert necromancy.spend_cost(c, 2) == 0   # 奴役(2)→ 精算滿級免費
     assert necromancy.spend_cost(c, 0) == 0   # 無 token_cost 不折
 
 

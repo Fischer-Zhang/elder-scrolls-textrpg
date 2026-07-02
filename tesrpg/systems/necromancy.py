@@ -96,10 +96,11 @@ def undead_count(battle: dict | None) -> int:
 
 # --- token 花費(真·亡者召喚/復生;吃喚魂精算折減)---------------------------
 def spend_cost(char: Character, base_cost: int) -> int:
-    """真·亡者召喚/復生的實際 token 花費 = 基礎 − 喚魂精算(當基礎 > 0 時 floor 1)。"""
+    """真·亡者召喚/復生的實際 token 花費 = 基礎 − 喚魂精算(**可降至 0**·使用者拍板)。
+    無 token_cost(base 0)回 0;精算滿級可讓便宜亡者(復生1/奴役2)完全免費,raise_thrall(3)仍 ≥1(守牆)。"""
     if base_cost <= 0:
         return 0
-    return max(1, base_cost - thrift_discount(char))
+    return max(0, base_cost - thrift_discount(char))
 
 
 # --- 永久死靈升級購買(靈魂 token 買斷·資料驅動目錄 gamedata.necromancy)-----------
