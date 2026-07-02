@@ -1419,8 +1419,12 @@ def action_explore(state: GameState, gamedata: GameData) -> str | None:
         ui.message("湖畔陰影裡走出幾名赤袍人 —— 神話黎明的信徒,正不動聲色地打量著你。", style="red")
         return offer_battle(state, gamedata, cultists, recruit="mythic_dawn", mounted=True)
     danger = world.current_location(player, gamedata).get("danger", 1)
-    enemies = combat.random_encounter_group(gamedata, player.level, state.rng, max_danger=danger + 1,
-                                            biome=world.current_location(player, gamedata).get("biome"))
+    hunt = quests.active_hunt_target(player, gamedata, player.location_id)   # R109:狩獵中的劇情敵目標
+    if hunt is not None and state.rng.chance(world.HUNT_ENCOUNTER_CHANCE):
+        enemies = [combat.spawn_creature(gamedata, hunt, state.rng)]         # 任務啟動 → 狩獵高機率遇到目標
+    else:
+        enemies = combat.random_encounter_group(gamedata, player.level, state.rng, max_danger=danger + 1,
+                                                biome=world.current_location(player, gamedata).get("biome"))
     return offer_battle(state, gamedata, enemies, mounted=True)   # 野外探索=騎乘語境(坐騎戰技生效)
 
 
@@ -4537,11 +4541,16 @@ def action_murder(state: GameState, gamedata: GameData, nid: str) -> str | None:
         ui.message(f"你收手退去,{name}僥倖逃過一劫。", style="grey70")
         return None
     if result == "victory":
-        res = brotherhood.record_murder(state, gamedata, nid)
+        witnessed = state.rng.chance(crime.murder_witness_chance(char, gamedata, night=night))   # R109 目擊制
+        res = brotherhood.record_murder(state, gamedata, nid, witnessed=witnessed)
         ui.rule("血債")
-        ui.message(f"{name}倒在血泊之中 —— 你成了殺人兇手。", style="bold red")
-        ui.message(f"消息驚動全城,{res['province']}懸起 {res['bounty']} 金的賞金,惡名加身。",
-                   style="yellow")
+        if witnessed:
+            ui.message(f"{name}倒在血泊之中 —— 你成了殺人兇手,有人目擊了這一幕。", style="bold red")
+            ui.message(f"消息驚動全城,{res['province']}懸起 {res['bounty']} 金的賞金,惡名加身。",
+                       style="yellow")
+        else:
+            ui.message(f"{name}無聲倒下,四下無人 —— 你抹去痕跡、悄然離去。血債已了,官府一無所知。",
+                       style="magenta")
         if not brotherhood.is_member(char):
             ui.message("……某雙眼睛,正從暗處注視著你的手藝。", style="magenta")
     return None

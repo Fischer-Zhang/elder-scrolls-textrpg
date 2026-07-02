@@ -16,7 +16,7 @@ from tesrpg.systems import factions, inventory, party
 STIPEND_PER_RANK = 40   # 晉升俸祿:每升一階,公會額外發 40×新階級 金
 
 # 任務目標/獎勵的「已實作」契約(單一真實來源:_objective_met 與 _complete 必須與此一致)
-_OBJECTIVE_TYPES = frozenset({"kill", "clear_dungeon", "reach", "collect"})
+_OBJECTIVE_TYPES = frozenset({"kill", "clear_dungeon", "reach", "collect", "assassinate"})
 _REWARD_KEYS = frozenset({
     "gold", "fame", "infamy", "items", "spells", "grant_boon",
     "world_flags", "eradicate_faction", "companion", "bond", "standing",
@@ -196,12 +196,43 @@ def _objective_met(char: Character, gamedata: GameData, obj: dict, base: int) ->
         return char.location_id == obj["location"]
     if t == "collect":
         return inventory.count_item(char, obj["item"]) >= obj["count"]
+    if t == "assassinate":   # R109:暗殺指定具名 NPC(達標=已在 murdered_npcs·置放 NPC 模型 Tier-1)
+        return obj["npc"] in getattr(char, "murdered_npcs", [])
     return False
 
 
 def objective_met(char: Character, gamedata: GameData, quest_id: str) -> bool:
     obj, _, _ = current_objective(char, gamedata, quest_id)
     return _objective_met(char, gamedata, obj, char.quests.get(quest_id, {}).get("base", 0))
+
+
+def active_hunt_target(char: Character, gamedata: GameData, loc_id: str) -> str | None:
+    """R109 任務條件式狩獵:若玩家有 active `kill` 任務,其目標是**平時不入野遇池的劇情敵**
+    (bestiary weight==0),且本地點在該任務的 `provinces`(或任務無省份限制)→ 回該 creature_tid,
+    供 world.travel/action_explore 在狩獵時高機率生成之(否則 None → 遭遇邏輯逐位元組不變)。
+
+    決定性:多個符合取排序最前。只認 weight==0 的劇情敵(一般野遇怪本就在池裡不需鉤子)。"""
+    prov = None
+    locs = (gamedata.world or {}).get("locations", {})
+    if loc_id in locs:
+        prov = locs[loc_id].get("province")
+    hits = []
+    for qid in char.quests:
+        q = gamedata.quests.get(qid)
+        if not q:
+            continue
+        obj, _, _ = current_objective(char, gamedata, qid)
+        if obj.get("type") != "kill":
+            continue
+        tid = obj.get("creature")
+        m = gamedata.bestiary.get(tid, {})
+        if m.get("weight", 0) != 0:          # 一般野遇怪不走鉤子(池裡本就抽得到)
+            continue
+        provs = q.get("provinces")
+        if provs and prov not in provs:      # 有省份限制且不符 → 此地不獵
+            continue
+        hits.append(tid)
+    return sorted(hits)[0] if hits else None
 
 
 def kill_progress(char: Character, gamedata: GameData, quest_id: str) -> tuple[int, int]:
@@ -228,6 +259,11 @@ def objective_text(char: Character, gamedata: GameData, quest_id: str) -> str:
     elif t == "collect":
         have = inventory.count_item(char, obj["item"])
         body = f"取得 {gamedata.item_name(obj['item'])} {have}/{obj['count']}"
+    elif t == "assassinate":   # R109:目標=具名 NPC(顯示其名 + 所在地供指路)
+        npc = gamedata.npcs.get(obj["npc"], {})
+        loc = gamedata.location(npc["location"])["name"] if npc.get("location") in (gamedata.world.get("locations", {}) if gamedata.world else {}) else "?"
+        done = "✔" if obj["npc"] in getattr(char, "murdered_npcs", []) else "✘"
+        body = f"暗殺 {npc.get('name', obj['npc'])}(在 {loc}){done}"
     else:
         body = ""
     return f"[{idx + 1}/{total}] {body}" if total > 1 else body

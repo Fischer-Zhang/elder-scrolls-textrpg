@@ -190,9 +190,8 @@ def test_crusader_set_bonus():
     assert c.equip_resist.get("magic", 0) >= sb["resist"]["magic"]   # 套裝抗性子鍵已併入
 
 
-# R108 對抗審查教訓:relic_vigil 初版引用 spawn-only 怪(necromancer_acolyte)→ 整條任務鏈死鎖。
-# 通用 guard:所有任務 kill 目標必須至少有一條真實生成路徑,防同類疏漏再犯。
-# 程式碼字面 spawn(main.py spawn_creature("..") 與各系統劇情戰)的白名單:
+# R108 通用 guard(R109 強化):任務戰鬥目標必須有真實可達路徑,防「引用打不到的目標」死鎖。
+# 程式碼字面 spawn 的白名單:
 _SPAWNED_BY_CODE = {
     "city_guard", "city_captain", "townsperson", "mythic_dawn_acolyte",   # 圍捕/盤查/事件
     "guild_enforcer", "guild_avenger",                                    # R96 宿敵打手 + R100 知情者替身
@@ -200,24 +199,14 @@ _SPAWNED_BY_CODE = {
     "imperial_soldier", "rebel_soldier",                                  # 城戰圍城兵
     "coven_patriarch", "dire_alpha",                                      # R52 巢穴頂階決鬥
 }
-# 🔴 既有潛在缺陷(R99/R100 起):rogue_thief/blade_agent 無任何生成路徑 → 這批任務目標打不到。
-# R108 審查掃描時發現、屬既有內容非本輪引入;修法(給生成路徑 or 大廳出獵 execute)待使用者拍板。
-# ⚠ 此清單只准縮小,不准加新條目 —— 新任務引用打不到的怪會被本測試攔下。
-_KNOWN_LATENT_UNREACHABLE = {
-    "ucomm_cyrodiil_silence", "ucomm_skyrim_vendetta", "ucomm_hammerfell_smuggle",
-    "cintlead_markarth", "cintlead_sentinel", "cintlead_anvil", "cintlead_vivec", "cintlead_gideon",
-    "cint_cyrodiil_blades", "cint_skyrim_spies", "cint_morrowind_agents", "cint_hammerfell_informers",
-    "cint_highrock_moles", "cint_valenwood_agents", "cint_elsweyr_spies", "cint_blackmarsh_informers",
-    "ucov_fighters_sabotage", "ucov_knights_sabotage", "ucov_fighters_extract",
-    "ucov_fighters_defect", "ucov_knights_extract", "ucov_knights_defect",
-    "infamy_dirty_job",
-}
+# R109:「任務條件式狩獵生成」(quests.active_hunt_target + world.travel/action_explore)讓**任何 active
+# kill 任務的劇情敵目標(weight==0)**在對省野外可獵 → 原 R99/R100 的 23 條 rogue_thief/blade_agent
+# 死鎖全數解除,`_KNOWN_LATENT_UNREACHABLE` 清空。此後 kill 目標只要在 bestiary 即可達(野遇池 or 狩獵鉤子)。
 
 
 def test_quest_kill_targets_are_reachable():
-    """所有任務 kill 目標須可達:野遇可抽 / 地城 monsters/boss / faction 合約出擊 /
-    events 生成 / 程式碼劇情戰;已知既有缺陷走 _KNOWN_LATENT_UNREACHABLE(只准縮小)。"""
-    import json as _json
+    """所有任務戰鬥目標須可達:kill → 野遇池 / 地城 / events / 程式碼 spawn / faction 合約 /
+    **R109 任務條件式狩獵鉤子(weight-0 劇情敵)**;assassinate → 目標為已置放且帶 combat_template 的具名 NPC。"""
     import re as _re
     gd = get_gamedata()
     dungeon_pool = set()
@@ -228,15 +217,16 @@ def test_quest_kill_targets_are_reachable():
     ev_raw = open("tesrpg/data/events.json", encoding="utf-8").read()
     event_creatures = set(_re.findall(r'"creature":\s*"([a-z_]+)"', ev_raw))
 
-    def reachable(tid, q):
+    def kill_reachable(tid, q):
         m = gd.bestiary.get(tid)
         if m is None:
             return False
         wild = m.get("weight", 0) > 0 and m.get("min_level", 0) < 99
-        return (wild or tid in dungeon_pool or tid in event_creatures
+        hunt = m.get("weight", 0) == 0            # R109:weight-0 劇情敵由任務條件式狩獵鉤子生成
+        return (wild or hunt or tid in dungeon_pool or tid in event_creatures
                 or tid in _SPAWNED_BY_CODE or bool(q.get("faction")))
 
-    bad = []
+    bad_kill, bad_assassinate = [], []
     for qid, q in gd.quests.items():
         objs = []
         for pool in [q] + q.get("branches", []):
@@ -244,12 +234,14 @@ def test_quest_kill_targets_are_reachable():
                 objs.append(pool["objective"])
             objs += [st["objective"] for st in pool.get("stages", [])]
         for o in objs:
-            if o.get("type") == "kill" and not reachable(o["creature"], q):
-                bad.append((qid, o["creature"]))
-    unexpected = [(qid, tid) for qid, tid in bad if qid not in _KNOWN_LATENT_UNREACHABLE]
-    assert not unexpected, f"任務 kill 目標無生成路徑(死鎖):{unexpected}"
-    fixed = _KNOWN_LATENT_UNREACHABLE - {qid for qid, _ in bad}
-    assert not fixed, f"這些任務已可達,請自 _KNOWN_LATENT_UNREACHABLE 移除:{fixed}"
+            if o.get("type") == "kill" and not kill_reachable(o["creature"], q):
+                bad_kill.append((qid, o["creature"]))
+            elif o.get("type") == "assassinate":   # R109:暗殺目標須為已置放 + 可戰鬥的具名 NPC
+                npc = gd.npcs.get(o["npc"])
+                if npc is None or not npc.get("combat_template"):
+                    bad_assassinate.append((qid, o["npc"]))
+    assert not bad_kill, f"kill 目標無生成路徑(死鎖):{bad_kill}"
+    assert not bad_assassinate, f"assassinate 目標未置放或缺 combat_template:{bad_assassinate}"
 
 
 def test_vision_message_only_on_first_pilgrimage():

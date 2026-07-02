@@ -12,9 +12,27 @@ from tesrpg.systems import progression, world
 
 JAIL_DAYS_PER_BOUNTY = 0.02   # 每點賞金折算坐牢時數的係數
 
+# R109 謀殺目擊/偵測:被撞見才吃賞金(潛殺乾淨無罰)。基礎目擊率依「城守密度」——
+# 大城衛兵密佈最難脫身、小鎮次之、野外幾無耳目;再由潛行(背後了結)、夜色掩護遞減。
+_MURDER_WITNESS_BASE = {"city": 0.75, "town": 0.55, "wilderness": 0.15, "dungeon": 0.10}
+_MURDER_WITNESS_DEFAULT = 0.55            # 未知地點型別的保守值
+MURDER_SNEAK_FACTOR = 0.006               # 每點潛行降低目擊率(sneak 100 → −0.60)
+MURDER_NIGHT_BONUS = 0.15                 # 夜間(夜色掩護)額外降低目擊率
+MURDER_WITNESS_FLOOR = 0.02               # 目擊率下限(再高明也可能倒楣被瞧見)
+MURDER_WITNESS_CEIL = 0.95                # 目擊率上限
+
 
 def province_of(char: Character, gamedata: GameData) -> str:
     return world.current_location(char, gamedata)["province"]
+
+
+def murder_witness_chance(char: Character, gamedata: GameData, *, night: bool) -> float:
+    """一樁謀殺被目擊(→ 追加賞金/惡名)的機率。城守密度(地點型別)為底,潛行+夜色遞減。
+    授權獵殺(反間/聖戰)不走此路 → 由呼叫端以 sanctioned 略過。"""
+    loc = world.current_location(char, gamedata)
+    base = _MURDER_WITNESS_BASE.get(loc.get("type"), _MURDER_WITNESS_DEFAULT)
+    chance = base - char.skill("sneak") * MURDER_SNEAK_FACTOR - (MURDER_NIGHT_BONUS if night else 0.0)
+    return max(MURDER_WITNESS_FLOOR, min(MURDER_WITNESS_CEIL, chance))
 
 
 def bounty(char: Character, province: str) -> int:

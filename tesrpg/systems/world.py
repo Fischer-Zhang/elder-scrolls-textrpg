@@ -96,7 +96,11 @@ def travel(char: Character, gamedata: GameData, dest_id: str, time, rng: RNG) ->
               * (1 - mounts.encounter_evade(char, gamedata))     # 獵馬規避路途埋伏
               * (1 - vampirism.night_evade(char, time))          # 吸血鬼夜視:夜間旅行更易避開埋伏(R56)
               * spellfx.invis_encounter_factor(char))            # R104 幻術隱形:大幅降低旅途遭遇(無隱形 → ×1.0 逐位元組同)
-    if rng.chance(chance):
+    from tesrpg.systems import quests
+    hunt = quests.active_hunt_target(char, gamedata, dest_id)    # R109:狩獵中的劇情敵目標(無則 None → 下方逐位元組不變)
+    if hunt is not None and rng.chance(HUNT_ENCOUNTER_CHANCE):
+        foe = combat.spawn_creature(gamedata, hunt, rng)         # 任務啟動 → 高機率在對省野外撞見目標
+    elif rng.chance(chance):
         foe = combat.random_encounter(gamedata, char.level, rng,
                                       max_danger=dest.get("danger", 1) + 1,
                                       biome=dest.get("biome"))
@@ -120,6 +124,7 @@ def _disposition_factor(char: Character, gamedata: GameData | None = None) -> fl
 
 
 LOCKPICK_OUTSIDER_MARKUP = 2.0   # 開鎖器是盜賊公會的營生:非會員(含敵對)買得到但被坑這麼多倍
+HUNT_ENCOUNTER_CHANCE = 0.6      # R109 任務條件式狩獵:接了以劇情敵為目標的 kill 任務時,在對省野外撞見目標的機率(高)
 
 
 def buy_price(char: Character, gamedata: GameData, item_id: str) -> int:

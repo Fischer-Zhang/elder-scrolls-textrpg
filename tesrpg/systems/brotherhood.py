@@ -77,21 +77,27 @@ def should_recruit(char: Character, gamedata: GameData) -> bool:
 # ======================================================================
 # 謀殺(血債來源)
 # ======================================================================
-def record_murder(state, gamedata: GameData, npc_id: str | None = None) -> dict:
-    """記下一樁謀殺:血債 +1、當地賞金 + 惡名;若指定 NPC 則將其從世上抹去。
+def record_murder(state, gamedata: GameData, npc_id: str | None = None, *,
+                  witnessed: bool = True) -> dict:
+    """記下一樁謀殺:血債 +1、抹去 NPC(必然);**賞金/惡名僅在被目擊時追加**(R109 目擊制,
+    `witnessed` 預設 True → 既有呼叫端逐位元組不變)。潛殺乾淨(未被目擊)仍計血債、DB 仍會注意
+    你的手藝,只是官府一無所知、不加賞金/惡名。
 
-    回傳 {"bounty","province"}。實際的擊殺戰鬥由上層(main.action_murder)跑。
+    回傳 {"bounty","province","witnessed"}。實際擊殺戰鬥由上層(main.action_murder)跑。
     """
     from tesrpg.systems import crime   # 區域 import 避免循環
 
     char = state.player
     char.murders += 1
-    char.infamy += MURDER_INFAMY
     province = crime.province_of(char, gamedata)
-    crime.add_bounty(char, province, MURDER_BOUNTY)
+    added = 0
+    if witnessed:
+        char.infamy += MURDER_INFAMY
+        crime.add_bounty(char, province, MURDER_BOUNTY)
+        added = MURDER_BOUNTY
     if npc_id and npc_id not in char.murdered_npcs:
         char.murdered_npcs.append(npc_id)
-    return {"bounty": MURDER_BOUNTY, "province": province}
+    return {"bounty": added, "province": province, "witnessed": witnessed}
 
 
 # ======================================================================
