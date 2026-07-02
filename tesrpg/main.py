@@ -2450,10 +2450,8 @@ def _comrade_contract(state: GameState, gamedata: GameData) -> str | None:
         active = _active_db_quest(state, gamedata)
         opts: list = []
         if active:
-            opt, hint = _contract_execute_opt(state, gamedata, active)
-            if opt:
-                opts.append(opt)
-            elif hint:
+            hint = _contract_hint(state, gamedata, active)   # R109 鐵律:不出擊·只指路
+            if hint:
                 ui.message(hint, style="magenta")
         else:
             avail = quests.available_quests(char, gamedata, "guild", brotherhood.FACTION)
@@ -2468,9 +2466,6 @@ def _comrade_contract(state: GameState, gamedata: GameData) -> str | None:
             avail = quests.available_quests(char, gamedata, "guild", brotherhood.FACTION)
             if avail:
                 _accept_and_brief(state, gamedata, avail[0])
-        elif choice == "execute":
-            if action_contract(state, gamedata, active) == "dead":
-                return "dead"
 
 
 def _undercover_missions(state: GameState, gamedata: GameData) -> str | None:
@@ -2745,21 +2740,29 @@ def _active_faction_quest(state: GameState, gamedata: GameData, faction_id: str)
     return None
 
 
-def _contract_execute_opt(state: GameState, gamedata: GameData, active: str):
-    """R109 公會合約進行中的大廳選項:kill 目標 → 回 ("execute", 標籤) 供大廳出擊生成;
-    assassinate 目標(DB/神話黎明轉城內置放 NPC)→ 回 (None, 指路文字) —— 不在大廳出擊,
-    須前往目標所在城市暗殺(action_murder·目擊制)。回 (opt_or_None, hint_or_None)。"""
+def _contract_hint(state: GameState, gamedata: GameData, active: str) -> str | None:
+    """R109 鐵律:公會合約**一律不在大廳出擊**,目標存在於世界裡、須親自前往了結。
+    回傳大廳顯示的「前往何處」指路文字(全數已了結則 None,待 _report_quests 結算):
+    - kill(怪物合約·db3/md3/kn 等)→ 在指定省(provinces)荒野狩獵;
+    - assassinate(DB/神話黎明置放 NPC)→ 前往目標潛伏的城市暗殺(目擊制)。"""
     char = state.player
+    q = gamedata.quests.get(active, {})
     obj, _, _ = quests.current_objective(char, gamedata, active)
     if obj.get("type") == "kill":
         tname = gamedata.bestiary[obj["creature"]]["name"]
-        return ("execute", f"執行合約 —— 行刺{tname}"), None
+        hl = q.get("hunt_location")
+        if hl and hl in (gamedata.world or {}).get("locations", {}):
+            where = gamedata.location(hl)["name"]            # 精確地點(唯一 villain)
+        else:
+            provs = q.get("provinces")
+            where = f"{'、'.join(provs)}的荒野" if provs else "荒野"
+        return f"合約目標「{tname}」出沒於{where} —— 循線親自前往狩獵了結。"
     tgts = [n for n in quests._hit_targets(obj) if n not in getattr(char, "murdered_npcs", [])]
     if not tgts:
-        return None, None   # 全數已了結,待 _report_quests 結算
+        return None   # 全數已了結,待 _report_quests 結算
     names = "、".join(gamedata.npcs[n]["name"] for n in tgts)
     locs = "、".join(sorted({gamedata.location(gamedata.npcs[n]["location"])["name"] for n in tgts}))
-    return None, f"待了結的合約目標:{names}(潛伏於 {locs})—— 前往該地取其性命。"
+    return f"待了結的合約目標:{names}(潛伏於 {locs})—— 前往該地取其性命。"
 
 
 def _active_db_quest(state: GameState, gamedata: GameData) -> str | None:
@@ -2783,10 +2786,8 @@ def action_sanctuary(state: GameState, gamedata: GameData) -> str | None:
         opts: list = []
         active = _active_db_quest(state, gamedata)
         if active:
-            opt, hint = _contract_execute_opt(state, gamedata, active)
-            if opt:
-                opts.append(opt)
-            elif hint:
+            hint = _contract_hint(state, gamedata, active)   # R109 鐵律:不出擊·只指路
+            if hint:
                 ui.message(hint, style="magenta")
         else:
             avail = quests.available_quests(char, gamedata, "guild", brotherhood.FACTION)
@@ -2809,10 +2810,6 @@ def action_sanctuary(state: GameState, gamedata: GameData) -> str | None:
             avail = quests.available_quests(char, gamedata, "guild", brotherhood.FACTION)
             if avail:
                 _accept_and_brief(state, gamedata, avail[0])
-        elif choice == "execute":
-            died = action_contract(state, gamedata, active)
-            if died == "dead":
-                return "dead"
         elif choice == "launder":
             r = brotherhood.launder_bounty(state, gamedata)
             if r["ok"]:
@@ -2830,52 +2827,9 @@ def action_sanctuary(state: GameState, gamedata: GameData) -> str | None:
                 ui.message(f"  {t}", style="white")
 
 
-def action_contract(state: GameState, gamedata: GameData, qid: str, *,
-                    stealth: bool = True) -> str | None:
-    """執行一張合約:暗殺(stealth=True:潛行先機 + 乾淨擊殺賞)或正面討伐
-    (stealth=False:聖戰開打,無潛行、無 clean_bonus、無偵查備戰)。回傳 'dead'|None。"""
-    char = state.player
-    rq = quests.resolved(char, gamedata, qid)
-    obj, _, _ = quests.current_objective(char, gamedata, qid)
-    target_id = obj["creature"]
-    tname = gamedata.bestiary[target_id]["name"]
-    prompt = (f"潛入目標所在,取「{tname}」的性命嗎?" if stealth
-              else f"正面迎敵,討伐「{tname}」嗎?")
-    if not ui.confirm(prompt):
-        return None
-
-    enemies = [combat.spawn_creature(gamedata, target_id, state.rng)]
-    for eid in rq.get("escort", []):
-        enemies.append(combat.spawn_creature(gamedata, eid, state.rng))
-
-    got_drop = False
-    pb = 0
-    if stealth:
-        night = state.time.hour < 6 or state.time.hour >= 21
-        got_drop = combat.try_stealth_approach(char, enemies, state.rng, gamedata, night, False, False)
-        if got_drop:
-            ui.message("你如影潛近,目標渾然未覺 —— 致命先機在握。", style="bold green")
-        else:
-            ui.message("你的接近驚動了目標,沒能搶到偷襲先機。", style="yellow")
-        pb = (formulas.prep_budget(char.skill("scout")) + mastery.prep_bonus(char, gamedata)) if got_drop else 0   # 合約暗殺也享偵查備戰
-    else:
-        ui.message("你舉起武器、堂堂正正迎敵 —— 以鋼鐵裁決。", style="bold cyan")
-
-    result = run_battle(state, gamedata, enemies, alerted=not got_drop, prep_budget=pb)
-    if result == "dead":
-        return "dead"
-    if result == "fled":
-        ui.message("你暫且退去 —— 合約仍懸而未決。" if stealth
-                   else "你暫且退下 —— 討伐尚未完成。", style="grey70")
-        return None
-    # 勝利:結算晉升;暗殺對「無人目擊的乾淨擊殺」額外發賞(正面討伐無此項)
-    _report_quests(state, gamedata)
-    if stealth and got_drop:
-        bonus = rq.get("clean_bonus", 0)
-        if bonus:
-            char.gold += bonus
-            ui.message(f"無人目擊、一擊致命 —— 額外賞你 {bonus} 金。", style="bold green")
-    return None
+# R109 鐵律:傳統「大廳出擊」(action_contract 就地生成合約目標)已移除 —— 公會合約目標一律存在於
+# 世界裡,須親自前往了結:唯一 villain 精確到 hunt_location(狩獵鉤子)、置放 NPC 走城內暗殺(assassinate)、
+# 泛用群獵走 provinces。大廳只以 _contract_hint 指路,不再生成敵人。
 
 
 # ======================================================================
@@ -2903,7 +2857,7 @@ def _contract_hall(state: GameState, gamedata: GameData, faction_id: str, *,
     """合約制公會大廳通用骨架:(可選)走入式入會 → 領受/執行委託 → 風味箴言。
     有傳 `join_prompt` 才提供走入入會(九神騎士團於安維爾正面招募);神話黎明改回史實後
     招募只在阿留斯湖遭遇(見 action_explore),故不傳 join_prompt → 對非會員不開門。
-    `stealth` 決定執行走暗殺(action_contract 預設)或正面討伐。回傳 'dead'|None。
+    R109 鐵律:合約目標不在大廳生成 —— active 合約僅以 _contract_hint 指路,玩家親自前往了結。回傳 'dead'|None。
     (黑暗兄弟會聖所另有洗白/五戒,維持自有 action_sanctuary。)"""
     char = state.player
     _report_quests(state, gamedata)   # 先結算可能已交付的委託
@@ -2926,13 +2880,9 @@ def _contract_hall(state: GameState, gamedata: GameData, faction_id: str, *,
         opts: list = []
         active = _active_faction_quest(state, gamedata, faction_id)
         if active:
-            obj, _, _ = quests.current_objective(char, gamedata, active)
-            if obj.get("type") == "kill":   # 傳統合約:大廳出擊生成(execute_label 帶 tname)
-                opts.append(("execute", execute_label.format(tname=gamedata.bestiary[obj["creature"]]["name"])))
-            else:                           # R109 assassinate:城內置放 NPC → 指路,不在大廳出擊
-                _, hint = _contract_execute_opt(state, gamedata, active)
-                if hint:
-                    ui.message(hint, style="magenta")
+            hint = _contract_hint(state, gamedata, active)   # R109 鐵律:公會合約一律不在大廳出擊·只指路
+            if hint:
+                ui.message(hint, style="magenta")
         else:
             avail = quests.available_quests(char, gamedata, "guild", faction_id)
             if avail:
@@ -2966,10 +2916,6 @@ def _contract_hall(state: GameState, gamedata: GameData, faction_id: str, *,
             relics = quests.available_quests(char, gamedata, "relic")
             if relics:
                 _accept_and_brief(state, gamedata, relics[0])
-        elif choice == "execute":
-            died = action_contract(state, gamedata, active, stealth=stealth)
-            if died == "dead":
-                return "dead"
         elif choice == "verses":
             ui.message(verses_intro, style=verses_style)
             for line in verses:
@@ -4403,7 +4349,12 @@ def _accept_and_brief(state: GameState, gamedata: GameData, qid: str) -> None:
     quests.accept_quest(state.player, gamedata, qid, branch)
     ui.message(brs[branch]["text"] if brs else q.get("text", ""), style="white")
     ui.message(f"已接取任務:{q['name']}", style="bold yellow")
-    _report_quests(state, gamedata)   # 可能當下即達標(如已持有上繳物)
+    # R109(使用者拍板「允許預先謀殺+補敘事」):暗殺合約若目標早已死在你手上 → 補一句免掃興
+    _obj = quests.current_objective(state.player, gamedata, qid)[0]
+    if _obj.get("type") == "assassinate" and any(
+            n in state.player.murdered_npcs for n in quests._hit_targets(_obj)):
+        ui.message("你想起這些人早已死在你手上 —— 這樁委託,等於已了。", style="magenta")
+    _report_quests(state, gamedata)   # 可能當下即達標(如已持有上繳物 / 目標早已伏誅)
 
 
 def action_quest_log(state: GameState, gamedata: GameData) -> None:

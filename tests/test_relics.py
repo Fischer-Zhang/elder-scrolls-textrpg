@@ -222,9 +222,11 @@ def test_quest_kill_targets_are_reachable():
         if m is None:
             return False
         wild = m.get("weight", 0) > 0 and m.get("min_level", 0) < 99
-        hunt = m.get("weight", 0) == 0            # R109:weight-0 劇情敵由任務條件式狩獵鉤子生成
-        return (wild or hunt or tid in dungeon_pool or tid in event_creatures
-                or tid in _SPAWNED_BY_CODE or bool(q.get("faction")))
+        # R109 鐵律:大廳出擊已移除 → weight-0 劇情敵**只**能由狩獵鉤子生成,
+        # 鉤子需任務明確定位(hunt_location 或 provinces),否則不可達(防 soft-lock)。
+        hunt = m.get("weight", 1) == 0 and (q.get("hunt_location") or q.get("provinces"))
+        return bool(wild or hunt or tid in dungeon_pool or tid in event_creatures
+                    or tid in _SPAWNED_BY_CODE)
 
     bad_kill, bad_assassinate = [], []
     for qid, q in gd.quests.items():
@@ -239,9 +241,10 @@ def test_quest_kill_targets_are_reachable():
             elif o.get("type") == "assassinate":   # R109:暗殺目標須為已置放 + 可戰鬥的具名 NPC(單 npc 或多 npcs)
                 for tnid in (o.get("npcs") or ([o["npc"]] if o.get("npc") else [])):
                     npc = gd.npcs.get(tnid)
-                    # combat_template 必存在於 bestiary;alerted(聞訊備戰·多目標才需)為選配,若填則須合法
-                    ok = npc and npc.get("combat_template") in gd.bestiary
-                    if ok and npc.get("combat_template_alerted"):
+                    # 目標須:置放於合法城市(npcs_at 靠 location 索引·拼錯即不可達)+ combat_template ∈ bestiary
+                    ok = (npc and npc.get("location") in gd.world["locations"]
+                          and npc.get("combat_template") in gd.bestiary)
+                    if ok and npc.get("combat_template_alerted"):   # alerted(多目標聞訊備戰)選配·若填須合法
                         ok = npc["combat_template_alerted"] in gd.bestiary
                     if not ok:
                         bad_assassinate.append((qid, tnid))

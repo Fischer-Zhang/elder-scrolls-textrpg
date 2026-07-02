@@ -225,8 +225,8 @@ def test_db_contract_is_field_assassination_witness_gated_and_promotes():
     assert obj["type"] == "assassinate" and obj["npcs"] == ["db_greedy"]
     assert not quests.assassination_sanctioned(c, gd, "db_greedy")     # DB=反派謀殺·走目擊(非授權)
     # 大廳:進行中 assassinate → 回指路 hint、不提供 execute
-    opt, hint = M._contract_execute_opt(st, gd, "db1")
-    assert opt is None and hint and "奧崔斯" in hint
+    hint = M._contract_hint(st, gd, "db1")           # 鐵律:大廳不出擊·只指路
+    assert hint and "奧崔斯" in hint
     # 前往目標城市暗殺 → 完成 + 晉升
     ui.message = lambda *a, **k: None
     ui.confirm = lambda *a, **k: True
@@ -260,6 +260,57 @@ def test_converted_faction_contracts_target_placed_npcs():
     for qid in ("db6", "md6"):
         for b in gd.quests[qid]["branches"]:
             assert b["objective"]["type"] == "assassinate"
+
+
+# --- 對抗審查修正回歸(R109 review)--------------------------------------------
+def test_hunt_hook_requires_location_spec():
+    """狩獵鉤子只在任務有 hunt_location 或 provinces 時觸發·且精確定位:
+    kn2(hunt_location=jerall_mountains)只在該地點刷、他處不刷;weight>0 目標(fg1 wolf)永不走鉤子。"""
+    gd, c, st = _st()
+    quests.accept_quest(c, gd, "kn2")   # kill necromancer_acolyte(weight0·hunt_location 傑拉山脈)
+    assert gd.quests["kn2"].get("hunt_location") == "jerall_mountains"
+    assert quests.active_hunt_target(c, gd, "jerall_mountains") == "necromancer_acolyte"  # 只在該地點
+    for other in ("imperial_road", "gold_coast", _wild_in(gd, "天際")):
+        assert quests.active_hunt_target(c, gd, other) is None                            # 他處不刷
+    c.quests.clear()
+    quests.accept_quest(c, gd, "fg1")   # kill wolf(weight>0·野遇池)→ 不走狩獵鉤子
+    assert quests.active_hunt_target(c, gd, _wild_in(gd, "天際")) is None
+
+
+def test_db3_md3_precise_hunt_location_not_hall_execute():
+    """使用者拍板:唯一 villain(db3/md3)精確到 hunt_location(非整省),大廳不出擊只指路(鐵律)。"""
+    import tesrpg.main as M
+    gd, c, st = _st()
+    assert gd.quests["db3"].get("hunt_location") == "colovian_highlands"
+    assert gd.quests["md3"].get("hunt_location") == "ashland_waste"
+    assert not gd.quests["db3"].get("provinces")   # 不再整省
+    quests.accept_quest(c, gd, "db3")
+    assert quests.active_hunt_target(c, gd, "colovian_highlands") == "reclusive_mage"   # 只在該地點
+    assert quests.active_hunt_target(c, gd, _wild_in(gd, "賽羅迪爾")) is None            # 同省其他地點不獵
+    hint = M._contract_hint(st, gd, "db3")
+    assert hint and "科洛溫高地" in hint             # 大廳指路到精確地點·不出擊
+
+
+def test_clean_bonus_removed_from_converted_contracts():
+    """審查修正:轉 assassinate / 野外狩獵的 DB/神話黎明合約不再帶死 clean_bonus(舊路徑不發放)。"""
+    gd = get_gamedata()
+    for qid in ("db1", "db2", "db4", "db5", "md1", "md2", "md4", "md5", "db3", "md3"):
+        assert "clean_bonus" not in gd.quests[qid], qid
+        for b in gd.quests[qid].get("branches", []):
+            assert "clean_bonus" not in b, qid
+
+
+def test_premurder_allowed_completes_and_promotes():
+    """使用者拍板:預先謀殺算數(不軍鎖階梯)。先殺 db_greedy → 接 db1 → 完成 + 晉升。"""
+    from tesrpg.systems import brotherhood, factions
+    gd, c, st = _st()
+    c.skills.update(sneak=80, blade=60)
+    factions.join(c, brotherhood.FACTION)
+    c.murdered_npcs.append("db_greedy")            # 接取前已了結目標
+    quests.accept_quest(c, gd, "db1")
+    evs = quests.check_completion(c, gd)
+    assert any(e["type"] == "completed" and e.get("promoted") for e in evs)
+    assert brotherhood.rank(c) == 1                # 允許 → 晉升(不軍鎖)
 
 
 def run():

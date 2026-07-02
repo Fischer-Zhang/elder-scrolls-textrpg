@@ -279,11 +279,19 @@ def active_hunt_target(char: Character, gamedata: GameData, loc_id: str) -> str 
             continue
         tid = obj.get("creature")
         m = gamedata.bestiary.get(tid, {})
-        if m.get("weight", 0) != 0:          # 一般野遇怪不走鉤子(池裡本就抽得到)
+        if m.get("weight", 1) != 0:          # 只認「顯式 weight==0」的劇情敵(與遭遇池預設 1 一致)
             continue
-        provs = q.get("provinces")
-        if provs and prov not in provs:      # 有省份限制且不符 → 此地不獵
-            continue
+        # R109 狩獵定位(使用者拍板):唯一 villain(墮落祭司等)精確到 `hunt_location`(單一地點);
+        # 泛用群獵(反間複數密探)用 `provinces`(整省荒野)。兩者皆須明確指定,否則不獵
+        # → 無定位的 faction 合約不會在全八省亂刷。
+        hl = q.get("hunt_location")
+        if hl is not None:
+            if loc_id != hl:
+                continue
+        else:
+            provs = q.get("provinces")
+            if not provs or prov not in provs:
+                continue
         hits.append(tid)
     return sorted(hits)[0] if hits else None
 
@@ -315,9 +323,10 @@ def objective_text(char: Character, gamedata: GameData, quest_id: str) -> str:
     elif t == "assassinate":   # R109:目標=具名 NPC(顯示名+所在地供指路;多目標逐一列狀態)
         murdered = getattr(char, "murdered_npcs", [])
         parts = []
+        locs = (gamedata.world or {}).get("locations", {})
         for nid in _hit_targets(obj):
             npc = gamedata.npcs.get(nid, {})
-            loc = gamedata.location(npc["location"])["name"] if npc.get("location") else "?"
+            loc = gamedata.location(npc["location"])["name"] if npc.get("location") in locs else "?"
             parts.append(f"{npc.get('name', nid)}(在 {loc}){'✔' if nid in murdered else '✘'}")
         body = "暗殺 " + "、".join(parts)
     else:
