@@ -21,12 +21,14 @@ _REWARD_KEYS = frozenset({
     "gold", "fame", "infamy", "items", "spells", "grant_boon",
     "world_flags", "eradicate_faction", "companion", "bond", "standing",
     "cover_deltas", "clear_cover", "defect",   # R100 雙面間諜:漂移 / 抽身 / 叛變
+    "clear_infamy",                            # R107 朝聖贖罪:惡名歸零(KotN 正典·唯一清除途徑)
 })
 # 可重複委託(repeatable:常態世界脈動聚光款)只准帶「可無限刷的安全純量獎勵」——
 # 絕不帶 items/spells/boons/companion(一次性/限定內容),否則可刷取限定法術/誓福/同伴
 # → 破壞稀缺性與反 min-max。由 schema 測試把關(test_data_schema)。
 # R100 cover_deltas:臥底忠誠/掩護漂移(非物質·僅臥底中生效·grind 即「過雙面人生」的 loop 本身)→ 准。
-_REPEATABLE_REWARD_KEYS = frozenset({"gold", "fame", "infamy", "cover_deltas"})
+# R107 clear_infamy:朝聖可重複(再犯罪可再贖),歸零非累積 → 無限刷=無限洗白,代價=跨省長征+試煉 → 准。
+_REPEATABLE_REWARD_KEYS = frozenset({"gold", "fame", "infamy", "cover_deltas", "clear_infamy"})
 
 
 # --- 進度記錄(由戰鬥/探索/旅行 hook 呼叫)-----------------------------
@@ -293,6 +295,11 @@ def _complete(char: Character, gamedata: GameData, quest_id: str) -> dict:
     elif gb and gb in getattr(gamedata, "boons", {}):
         from tesrpg.systems import boons
         boons.grant(char, gamedata, gb)
+    # R107 朝聖贖罪:惡名歸零(KotN 正典;R84「惡名終身」的刻意例外·使用者拍板)。
+    # 下游全隨之歸零:亡命徒階梯/銷贓加價/惡名稱號(crime)、社交冷待(renown)—— 皆純衍生層。
+    # 法律賞金 bounties **不清**(朝聖贖罪名、不贖法度;雙軸各走各的)。
+    if reward.get("clear_infamy"):
+        char.infamy = 0
     # 陣營滅亡(神話黎明被達貢獻祭殆盡):除籍 → 公會任務自動關閉、perk 消失。
     eradicate = reward.get("eradicate_faction")
     if eradicate:

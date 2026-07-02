@@ -79,14 +79,15 @@ def travel(char: Character, gamedata: GameData, dest_id: str, time, rng: RNG) ->
     回傳 {"foe":遭遇 Creature 或 None, "hours":實際耗時, "base_hours":名目耗時,
           "skill_events":運動升點事件}。遭遇尚未開打 —— 由上層決定接戰/逃避。
     """
-    from tesrpg.systems import birthsign_ability, mastery, mounts, party, spellfx, vampirism
+    from tesrpg.systems import birthsign_ability, divines, mastery, mounts, party, spellfx, vampirism
     links = current_location(char, gamedata).get("links", {})
     base_hours = links[dest_id]
     travel_factor = max(0.5, formulas.athletics_travel_factor(char.skill("athletics"))
                         - mastery.travel_factor_bonus(char, gamedata)
                         - party.passive_capstone_factor(char, gamedata, "travel")
                         - mounts.travel_factor_bonus(char, gamedata)
-                        - birthsign_ability.travel_factor_bonus(char, gamedata))   # 「長途健步」+ 同伴「識途」+ 坐騎 + 駿馬座疾行,夾 floor 0.5
+                        - birthsign_ability.travel_factor_bonus(char, gamedata)
+                        - divines.travel_factor_bonus(char, gamedata))   # 「長途健步」+ 同伴「識途」+ 坐騎 + 駿馬座疾行 + 凱娜瑞絲之佑(R107),夾 floor 0.5
     hours = max(1, round(base_hours * travel_factor))
     dest = gamedata.location(dest_id)
 
@@ -134,6 +135,9 @@ def buy_price(char: Character, gamedata: GameData, item_id: str) -> int:
     # R101 聲望議價:名聲折扣 / 惡名加價(tier-0 → ×1.0 → 既有買價逐位元組同;只動買價·賣價不碰)
     from tesrpg.systems import renown
     price *= renown.price_factor(char)
+    # R107 澤尼薩爾之佑:商賈之神的祝福享買價折扣(無祝福 → ×1.0 逐位元組同;只動買價·賣價不碰)
+    from tesrpg.systems import divines
+    price *= divines.buy_price_factor(char)
     # 反套利鐵則:同物買價恆 > 賣價(極端議價 + 滿階軍械庫折扣下,折扣不得倒掛成金幣泵)
     return max(1, round(price), sell_price(char, gamedata, item_id) + 1)
 

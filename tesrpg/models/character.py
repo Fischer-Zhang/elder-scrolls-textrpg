@@ -134,6 +134,12 @@ class Character:
     boon_resist: dict = field(default_factory=dict)          # element -> +百分比(推導快取)
     boon_magic_bonus: int = 0            # 額外魔力上限(走 stats.recompute_max_resources)
     boon_spell_power: float = 0.0        # 法術威力加成(誓福層·乘進 magic._power·推導快取;R78b 大法師通悟)
+    # 九神祝福(R107;Skyrim 排他單槽限時祝福 + Oblivion 德行閘)。divine_blessing 為唯一權威
+    # ({"divine","expires_at"} 絕對小時;{}=無;單槽 dict → 拜新壇即整包覆蓋);兩個快取由其推導。
+    # 與其餘加成層同模式:attr()/entity_resist() 疊加、絕不寫 base。詳見 systems/divines.py。
+    divine_blessing: dict = field(default_factory=dict)     # 權威(單槽)
+    divine_attr_bonus: dict = field(default_factory=dict)   # attr_id -> +點數(推導快取)
+    divine_resist: dict = field(default_factory=dict)       # element -> +百分比(推導快取)
     # 疾病(R53;普通病=被怪傳染的懲罰層,治癒前持續、可惡化/帶 DoT)。與斯庫瑪戒斷負層同模式:
     # diseases 為唯一權威(已染病 id + 染病絕對日);兩個 *_penalty 是「由 diseases + diseases.json 決定性推導的
     # 負值快取」,attr()/skill() 疊加、成長/夾限只用 base_*、絕不寫 base。吸血鬼/狼人疾病免疫天然不染。詳見 systems/diseases.py。
@@ -248,6 +254,7 @@ class Character:
                 + self.werewolf_attr_bonus.get(key, 0) + self.dagon_attr_bonus.get(key, 0)
                 + self.boon_attr_bonus.get(key, 0)
                 + self.potion_attr_bonus.get(key, 0)
+                + self.divine_attr_bonus.get(key, 0)       # R107:九神祝福(單槽限時;空 dict → +0)
                 + self.disease_attr_penalty.get(key, 0))   # R53:疾病負層(空 dict → 未染病者 +0)
 
     def skill(self, key: str) -> int:
@@ -326,6 +333,8 @@ class Character:
             "boons": self.boons, "boon_attr_bonus": self.boon_attr_bonus,
             "boon_skill_bonus": self.boon_skill_bonus, "boon_resist": self.boon_resist,
             "boon_magic_bonus": self.boon_magic_bonus, "boon_spell_power": self.boon_spell_power,
+            "divine_blessing": self.divine_blessing, "divine_attr_bonus": self.divine_attr_bonus,
+            "divine_resist": self.divine_resist,
             "diseases": self.diseases, "disease_attr_penalty": self.disease_attr_penalty,
             "disease_skill_penalty": self.disease_skill_penalty,
             "factions": self.factions,

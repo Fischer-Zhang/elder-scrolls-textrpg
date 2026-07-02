@@ -76,6 +76,13 @@ def _cover_badge(c, gamedata=None) -> str | None:
     return s
 
 
+def _blessing_badge(c) -> str | None:
+    """R107 九神祝福徽記(⛪ 某神之佑);無祝福回 None。時基剔除由 game_loop update 負責。"""
+    from tesrpg.systems import divines
+    label = divines.blessing_label(c)
+    return f"⛪ {label}" if label else None
+
+
 def use_web_backend(backend, recording_console) -> None:
     global console, _web
     console = recording_console
@@ -106,6 +113,7 @@ def _hud_view():
          "fp": [int(c.fatigue), int(c.max_fatigue)],
          "gold": c.gold, "bounty": sum(c.bounties.values()),
          "can_level": c.can_level_up(), "vampire": None, "cover": _cover_badge(c, _hud_gamedata),
+         "blessing": _blessing_badge(c),
          "party": _party_status(c, _hud_gamedata), "allies": _allies_status(_hud_allies)}
     if getattr(c, "is_vampire", False):
         from tesrpg.systems import vampirism
@@ -183,7 +191,8 @@ def _status_view(state: GameState) -> dict:
          "fp": [int(c.fatigue), int(c.max_fatigue)],
          "fame": c.fame, "bounty": sum(c.bounties.values()),
          "can_level": c.can_level_up(), "vampire": None, "infected": False,
-         "cover": _cover_badge(c), "renown": _renown_title(c)}
+         "cover": _cover_badge(c), "renown": _renown_title(c),
+         "blessing": _blessing_badge(c)}
     if getattr(c, "is_vampire", False):
         from tesrpg.systems import vampirism
         v["vampire"] = vampirism.STAGE_NAMES[min(3, max(0, c.vampire_stage))]
@@ -802,6 +811,13 @@ def _sheet_overview_extra(char: Character, gamedata: GameData) -> Text | None:
         nm = vampirism.STAGE_NAMES[min(3, max(0, char.vampire_stage))]
         extra.append("血脈  ", style="red")
         extra.append(f"吸血鬼 階級{char.vampire_stage}「{nm}」\n", style=PARCH)
+    _bl = _blessing_badge(char)                            # R107:九神祝福(單槽限時)
+    if _bl:
+        from tesrpg.systems import divines
+        b = char.divine_blessing
+        desc = divines.BLESSINGS.get(b.get("divine"), {}).get("desc", "")
+        extra.append("祝福  ", style=GOLD)
+        extra.append(f"{_bl}({desc})\n", style=PARCH)
     if char.active_effects:
         extra.append("效果  ", style=GOLD)
         extra.append("、".join(_effect_label(e) for e in char.active_effects), style=PARCH)
@@ -994,6 +1010,18 @@ def _shrine_index_rows(gamedata: GameData) -> list:
     return rows
 
 
+def _divine_index_rows(gamedata: GameData) -> list:
+    """動態『九神祭壇一覽』:掃 world 帶 divine 欄的地點 → 神名·祝福 + 地名(隨佈點自動更新,防陳舊)。"""
+    from tesrpg.systems import divines
+    rows = [_hd("九神祭壇一覽(隨世界更新)")]
+    for loc in (gamedata.world or {}).get("locations", {}).values():
+        god = loc.get("divine")
+        if god and god in divines.BLESSINGS:
+            bl = divines.BLESSINGS[god]
+            rows.append(_kv(f"{bl['name']}({bl['desc']})", loc.get("name", "?")))
+    return rows
+
+
 def _codex_rows(entry: dict, gamedata: GameData) -> list:
     """codex entry.sections → panel rows(h/p/kv/li → _hd/_kv/_ln);未知形狀靜默略過(防陳舊)。"""
     rows = []
@@ -1006,8 +1034,10 @@ def _codex_rows(entry: dict, gamedata: GameData) -> list:
             rows.append(_ln("• " + str(sec["li"]), sec.get("c") if sec.get("c") in _CODEX_TONES else None))
         elif "p" in sec:
             rows.append(_ln(str(sec["p"]), sec.get("c") if sec.get("c") in _CODEX_TONES else None))
-    if entry.get("dynamic") == "shrines":          # 唯一動態鉤子:curated 內容後追加神殿清單
+    if entry.get("dynamic") == "shrines":          # 動態鉤子:curated 內容後追加神殿清單
         rows += _shrine_index_rows(gamedata)
+    elif entry.get("dynamic") == "divines":        # R107:九神祭壇清單(掃 world divine 欄,防陳舊)
+        rows += _divine_index_rows(gamedata)
     return rows or [_ln("(本條目尚無內容)", "muted")]
 
 

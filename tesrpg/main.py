@@ -12,7 +12,7 @@ from tesrpg import creation, formulas
 from tesrpg.gamedata import GameData, get_gamedata
 from tesrpg.rng import RNG, make_seed
 from tesrpg.state import GameState
-from tesrpg.systems import (achievements, aiwar, alchemy, boons, brotherhood, combat, court, crafting, crime, dialogue, diseases, dungeon,
+from tesrpg.systems import (achievements, aiwar, alchemy, boons, brotherhood, combat, court, crafting, crime, dialogue, diseases, divines, dungeon,
                             dungeoncrawl, enchanting, events, factions, housing, inventory, landmarks, legacy,
                             lycanthropy, magic, mastery, mounts, necromancy, party, politics, potion_buff, powers,
                             progression, quests, race_ability, skooma, smithing, spellfx, stats, undercover, vampirism, warband, world, worldpulse, worldstate)
@@ -4221,6 +4221,53 @@ def action_shrine(state: GameState, gamedata: GameData) -> None:
     _accept_and_brief(state, gamedata, qid)
 
 
+def action_divine_altar(state: GameState, gamedata: GameData) -> None:
+    """九神祭壇(R107):祈禱受福(Skyrim 單槽限時祝福 + Oblivion 德行閘)+ 朝聖之路贖罪。
+
+    德行閘 = 惡名不高於名聲 且 本省無通緝賞金,否則神明拒賜福(並指引朝聖之路);
+    祈禱附帶淨疾(複用 diseases.purify,同神殿療者);祝福單槽 —— 拜新壇即覆蓋(divines.bless)。
+    朝聖之路(pilgrimage_nine·repeatable)任一祭壇可接,完成 → 惡名歸零(reward clear_infamy)。
+    """
+    char = state.player
+    loc = world.current_location(char, gamedata)
+    god = loc.get("divine")
+    if not god or god not in divines.BLESSINGS:
+        return
+    bl = divines.BLESSINGS[god]
+    while True:
+        opts = [("pray", f"祈禱受福 —— {bl['name']}之佑({bl['desc']}·{divines.BLESSING_HOURS} 時)")]
+        pq = divines.PILGRIMAGE_QID
+        if pq in gamedata.quests and pq not in char.quests:
+            opts.append(("pilgrimage", "🕯 踏上朝聖之路(巡禮九神·試煉贖罪 → 惡名歸零)"))
+        pick = ui.menu(f"{bl['name']}祭壇 —— {bl['title']}", opts, allow_back=True)
+        if pick is None:
+            return
+        if pick == "pray":
+            ok, reason = divines.can_bless(char, loc["province"])
+            if not ok:
+                if reason == "bounty":
+                    ui.message("祭壇的聖輝在你面前黯了下去 —— 此地的通緝令橫在你與神恩之間:"
+                               "先向法度贖清罪責,再來求神的寬恕。", style="red")
+                else:
+                    ui.message("祭壇的聖輝在你面前黯了下去 —— 「懺悔你的罪行吧,惡徒!」"
+                               "唯有踏上朝聖之路、巡禮九神通過試煉,方能洗淨惡名、重獲神恩。", style="red")
+                continue
+            # 祈禱附帶淨疾(Oblivion/Skyrim 正典:祭壇治癒疾病;免費,同神殿療者 R53)
+            if diseases.has_any(char) or vampirism.is_infected(char) or lycanthropy.is_infected(char):
+                res = diseases.purify(char, gamedata)
+                ui.message("聖輝滌過你的血脈 —— " + diseases.purify_message(res), style="green")
+            r = divines.bless(char, state, gamedata, god)
+            if r["replaced"]:
+                old = divines.BLESSINGS[r["replaced"]]["name"]
+                ui.message(f"{old}的祝福悄然退去 —— {bl['name']}的神恩降臨於你:{bl['desc']}"
+                           "(九神祝福同時只能領受一道)。", style="bold green")
+            else:
+                ui.message(f"{bl['name']}的神恩降臨於你 —— {bl['desc']}。", style="bold green")
+        elif pick == "pilgrimage":
+            _accept_and_brief(state, gamedata, pq)
+            return
+
+
 def action_necromancy_altar(state: GameState, gamedata: GameData) -> None:
     """死靈祭壇(R106C):在召喚重鎮花 soul_token 買永久死靈升級(亡者護甲 / 亡者軍團上限 / 喚魂精算)。"""
     char = state.player
@@ -4786,6 +4833,11 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
             if ev["kind"] == "spellfx_expire":
                 ui.message("法術的餘韻散去 —— 你身上的幻術/變換效果消退了。", style="grey70")
 
+        # 九神祝福(R107):單槽限時祝福到期 → 清槽重算 + 報「神恩散去」(掛在 spellfx 之後)
+        for ev in divines.update(state, gamedata):
+            if ev["kind"] == "blessing_expire":
+                ui.message(f"{ev['name']}的神恩餘暉散去 —— 祝福離你而去。", style="grey70")
+
         # 狼人化:潛伏轉化 / 獸形過期變回(掛在斯庫瑪之後)
         for ev in lycanthropy.update(state, gamedata):
             if ev["kind"] == "turn":
@@ -4883,6 +4935,9 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
         # 戴德拉神殿:在此地祭壇供奉祈願,接取該親王的試煉任務(R45;達門檻才現任務)。
         if loc.get("shrine"):
             adventure.append(("shrine", "🕯 供奉祈願"))
+        # 九神祭壇(R107):祈禱受福(單槽限時祝福·德行閘)+ 朝聖之路贖罪。
+        if loc.get("divine"):
+            adventure.append(("divine_altar", "⛪ 九神祭壇"))
         # R51:詛咒巢穴(吸血鬼隱穴 / 狼人巢穴)——唯對應詛咒者得入,凡人只見沉寂。
         if _player_is_lair_kin(player, loc):
             adventure.append(("lair", "🦇 進入血族地窖" if loc["lair"] == "vampire" else "🐺 進入獵群巢穴"))
@@ -5020,6 +5075,8 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
             died = action_explore(state, gamedata)
         elif choice == "shrine":
             action_shrine(state, gamedata)
+        elif choice == "divine_altar":
+            action_divine_altar(state, gamedata)
         elif choice == "lair":
             died = action_lair(state, gamedata)
         elif choice == "refuge":

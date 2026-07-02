@@ -336,7 +336,10 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
 
     elif kind == "heal":
         # 九神騎士團:聖光眷顧 —— 治療回復量隨階級放大(只對會員;乘在溢盾計算之前)
-        amt = round(eff["magnitude"] * power * (1 + factions.restoration_boon(char, gamedata)))
+        # R107 瑪拉之佑:治療法術加成(同槽相加;無祝福 → +0 逐位元組同;僅 heal kind,不碰 HoT/同伴 AI)
+        from tesrpg.systems import divines
+        amt = round(eff["magnitude"] * power
+                    * (1 + factions.restoration_boon(char, gamedata) + divines.heal_power_bonus(char)))
         before = char.health
         char.health = min(char.max_health, char.health + amt)
         msg = f"{sp['name']}回復了 {int(char.health - before)} 點生命。"
@@ -827,6 +830,8 @@ def entity_resist(entity, gamedata) -> dict:
         for elem, val in getattr(entity, "boon_resist", {}).items():   # 戴德拉誓福(R45;如晨昏之佑魔抗)
             merged[elem] = merged.get(elem, 0) + val
         for elem, val in getattr(entity, "potion_resist", {}).items():   # 限時抗元素藥水(R30)
+            merged[elem] = merged.get(elem, 0) + val
+        for elem, val in getattr(entity, "divine_resist", {}).items():   # 九神祝福(R107;阿爾凱之佑疾病抗)
             merged[elem] = merged.get(elem, 0) + val
         merged["magic"] = merged.get("magic", 0) + formulas.willpower_magic_resist(entity.attr("willpower"))  # R65 意志=精神壁壘
         return merged

@@ -12,7 +12,7 @@ from tesrpg import formulas
 from tesrpg.gamedata import GameData
 from tesrpg.models import Character, Creature
 from tesrpg.rng import RNG
-from tesrpg.systems import inventory, loot, magic, mastery, progression, race_ability, smithing, stats
+from tesrpg.systems import divines, inventory, loot, magic, mastery, progression, race_ability, smithing, stats
 
 
 # ======================================================================
@@ -516,6 +516,12 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
             roll = rng.roll(formulas.DAMAGE_ROLL_LO, formulas.DAMAGE_ROLL_HI)
         block_factor = (formulas.block_damage_factor(defender.skill("block"))
                         if defender_blocking else 1.0)
+        # R107 斯丹達爾之佑:格擋減傷加成(僅玩家防守側;無祝福 → _db=0 不進分支 = byte-identical;
+        # floor 防疊到近免傷。反傷流 raw/block_factor 讀同值 → 下游自動一致)
+        if defender_blocking and _is_player(defender):
+            _db = divines.block_bonus(defender)
+            if _db:
+                block_factor = max(divines.BLOCK_FLOOR, block_factor - _db)
         raw = formulas.attack_damage(wpn_dmg, wpn_skill, _strength(attacker),
                                      roll, block_factor)
         # 號令/戰旗等 empower 增益的攻擊者(同伴)傷害提升 —— **只對同伴施放 → 永不碰玩家偷襲紅線**
