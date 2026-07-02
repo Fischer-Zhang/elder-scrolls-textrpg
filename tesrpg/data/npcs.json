@@ -1902,10 +1902,7 @@
     "location": "cheydinhal",
     "disposition": 35,
     "greeting": "「靜聆之廳的秘密,不容外洩。」",
-    "combat_template": "dark_speaker",
-    "hit_covert": true,
-    "covert_role": "守著聖所秘辛的代言人",
-    "hit_secrecy": 48
+    "combat_template": "dark_speaker"
   },
   "md_faithful": {
     "name": "九神信徒·瑪蕾",

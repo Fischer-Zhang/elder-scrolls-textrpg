@@ -317,7 +317,7 @@ def test_premurder_allowed_completes_and_promotes():
 def test_covert_targets_flagged_and_public_ones_not():
     gd = get_gamedata()
     covert = [k for k, v in gd.npcs.items() if v.get("hit_covert")]
-    assert len(covert) == 21                                    # 16 反間臥底 + 5 DB/md 潛伏者
+    assert len(covert) == 20                                    # 16 反間臥底 + 4 DB/md 潛伏者(db_thief/db_traitor/md_blade/md_apostate·領袖公開)
     for nid in covert:                                          # 潛伏目標須有 covert_role + hit_secrecy
         assert gd.npcs[nid].get("covert_role") and gd.npcs[nid].get("hit_secrecy")
     for nid in ("db_greedy", "db_champion", "md_faithful", "md_paladin", "md_highpriest"):
