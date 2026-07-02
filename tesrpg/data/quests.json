@@ -708,9 +708,10 @@
     "rank": 0,
     "source": "guild",
     "objective": {
-      "type": "kill",
-      "creature": "greedy_merchant",
-      "count": 1
+      "type": "assassinate",
+      "npcs": [
+        "db_greedy"
+      ]
     },
     "reward": {
       "gold": 120
@@ -725,9 +726,10 @@
     "rank": 1,
     "source": "guild",
     "objective": {
-      "type": "kill",
-      "creature": "rogue_thief",
-      "count": 1
+      "type": "assassinate",
+      "npcs": [
+        "db_thief"
+      ]
     },
     "reward": {
       "gold": 180
@@ -759,9 +761,10 @@
     "rank": 3,
     "source": "guild",
     "objective": {
-      "type": "kill",
-      "creature": "disgraced_knight",
-      "count": 1
+      "type": "assassinate",
+      "npcs": [
+        "db_knight"
+      ]
     },
     "reward": {
       "gold": 350
@@ -779,9 +782,10 @@
     "rank": 4,
     "source": "guild",
     "objective": {
-      "type": "kill",
-      "creature": "arena_champion",
-      "count": 1
+      "type": "assassinate",
+      "npcs": [
+        "db_champion"
+      ]
     },
     "reward": {
       "gold": 500
@@ -1047,9 +1051,10 @@
         "label": "忠誠之路 —— 清除背叛者",
         "text": "一名會員背棄了五戒。以夜母之名,將他靜默 —— 證明你的忠誠。",
         "objective": {
-          "type": "kill",
-          "creature": "brotherhood_traitor",
-          "count": 1
+          "type": "assassinate",
+          "npcs": [
+            "db_traitor"
+          ]
         },
         "clean_bonus": 300,
         "reward": {
@@ -1065,9 +1070,10 @@
         "label": "淨化之路 —— 背叛聖所",
         "text": "你不願再受號令。趁夜潛入聖所,連代言人一併『淨化』—— 從此你只聽自己的夜母。",
         "objective": {
-          "type": "kill",
-          "creature": "dark_speaker",
-          "count": 1
+          "type": "assassinate",
+          "npcs": [
+            "db_speaker"
+          ]
         },
         "clean_bonus": 300,
         "reward": {
@@ -1087,9 +1093,10 @@
     "rank": 0,
     "source": "guild",
     "objective": {
-      "type": "kill",
-      "creature": "faithful_of_nine",
-      "count": 1
+      "type": "assassinate",
+      "npcs": [
+        "md_faithful"
+      ]
     },
     "reward": {
       "gold": 120
@@ -1104,9 +1111,10 @@
     "rank": 1,
     "source": "guild",
     "objective": {
-      "type": "kill",
-      "creature": "blade_agent",
-      "count": 1
+      "type": "assassinate",
+      "npcs": [
+        "md_blade"
+      ]
     },
     "reward": {
       "gold": 180
@@ -1138,9 +1146,10 @@
     "rank": 3,
     "source": "guild",
     "objective": {
-      "type": "kill",
-      "creature": "knight_paladin",
-      "count": 1
+      "type": "assassinate",
+      "npcs": [
+        "md_paladin"
+      ]
     },
     "reward": {
       "gold": 350
@@ -1158,9 +1167,10 @@
     "rank": 4,
     "source": "guild",
     "objective": {
-      "type": "kill",
-      "creature": "high_priest_of_nine",
-      "count": 1
+      "type": "assassinate",
+      "npcs": [
+        "md_highpriest"
+      ]
     },
     "reward": {
       "gold": 500
@@ -1181,9 +1191,10 @@
         "label": "忠誠之路 —— 清除叛教者",
         "text": "一名信徒對達貢的恩典生了疑。在他逃出聖堂、洩漏天機之前,以湮滅之名將他焚盡 —— 證明你的忠誠。",
         "objective": {
-          "type": "kill",
-          "creature": "mythic_apostate",
-          "count": 1
+          "type": "assassinate",
+          "npcs": [
+            "md_apostate"
+          ]
         },
         "clean_bonus": 300,
         "reward": {
@@ -1198,9 +1209,10 @@
         "label": "奪典之路 —— 自立為主",
         "text": "你不甘屈居人下。趁夜潛入內殿,殺了傳授你教義的導師、奪走《魔典》—— 從此神話黎明只奉你為尊。",
         "objective": {
-          "type": "kill",
-          "creature": "dawn_mentor",
-          "count": 1
+          "type": "assassinate",
+          "npcs": [
+            "md_dawnmentor"
+          ]
         },
         "clean_bonus": 300,
         "reward": {

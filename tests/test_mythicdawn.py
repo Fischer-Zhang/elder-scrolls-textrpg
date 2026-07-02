@@ -57,8 +57,8 @@ def test_contract_ladder_promotes_on_kill():
     assert quests.available_quests(c, gd, "guild", FACTION) == ["md1"]
     quests.accept_quest(c, gd, "md1")
     obj, _, _ = quests.current_objective(c, gd, "md1")
-    assert obj["creature"] == "faithful_of_nine"
-    quests.record_kill(c, "faithful_of_nine")
+    assert obj["type"] == "assassinate" and obj["npcs"] == ["md_faithful"]   # R109 城內置放 NPC 暗殺
+    c.murdered_npcs.append("md_faithful")
     evs = quests.check_completion(c, gd)
     assert any(e["type"] == "completed" and e.get("promoted") for e in evs)
     assert factions.rank_index(c, FACTION) == 1
@@ -74,10 +74,10 @@ def test_finale_branches_resolve_to_different_targets():
     c.factions[FACTION] = 5                             # 達貢之選:可接 md6
     assert "md6" in quests.available_quests(c, gd, "guild", FACTION)
     quests.accept_quest(c, gd, "md6", branch=0)
-    assert quests.current_objective(c, gd, "md6")[0]["creature"] == "mythic_apostate"
+    assert quests.current_objective(c, gd, "md6")[0]["npcs"] == ["md_apostate"]
     c.quests["md6"]["branch"] = 1
-    assert quests.current_objective(c, gd, "md6")[0]["creature"] == "dawn_mentor"
-    quests.record_kill(c, "dawn_mentor")
+    assert quests.current_objective(c, gd, "md6")[0]["npcs"] == ["md_dawnmentor"]
+    c.murdered_npcs.append("md_dawnmentor")             # R109 改暗殺置放 NPC
     quests.check_completion(c, gd)
     assert factions.rank_index(c, FACTION) == 6        # 曼卡的門徒
 
@@ -89,8 +89,12 @@ def test_contract_targets_exist_in_bestiary():
         branch_objs = ([b["objective"] for b in q["branches"]] if "branches" in q
                        else [q["objective"]])
         for obj in branch_objs:
-            assert obj["type"] == "kill"
-            assert obj["creature"] in gd.bestiary, f"{qid} 目標 {obj['creature']} 不在 bestiary"
+            if obj["type"] == "kill":                    # md3 怪物目標保留 kill(大廳出擊/野遇)
+                assert obj["creature"] in gd.bestiary, f"{qid} 目標 {obj['creature']} 不在 bestiary"
+            else:                                        # R109:humanoid 目標轉城內置放 NPC 暗殺
+                assert obj["type"] == "assassinate"
+                for nid in obj["npcs"]:
+                    assert gd.npcs.get(nid, {}).get("combat_template") in gd.bestiary, f"{qid} 目標 {nid} 未置放/無戰鬥模板"
 
 
 def test_escort_target_exists():

@@ -103,10 +103,10 @@ def test_contract_ladder_promotes_on_kill():
     avail = quests.available_quests(c, gd, "guild", FACTION)
     assert avail == ["db1"], avail                    # 只開放當前階級合約
     quests.accept_quest(c, gd, "db1")
-    # 模擬執行合約:擊殺目標 → check_completion 晉升
+    # R109:合約目標改為城內置放 NPC 暗殺(assassinate)→ 抹去該 NPC 即完成晉升
     obj, _, _ = quests.current_objective(c, gd, "db1")
-    assert obj["creature"] == "greedy_merchant"
-    quests.record_kill(c, "greedy_merchant")
+    assert obj["type"] == "assassinate" and obj["npcs"] == ["db_greedy"]
+    c.murdered_npcs.append("db_greedy")
     evs = quests.check_completion(c, gd)
     assert any(e["type"] == "completed" and e.get("promoted") for e in evs)
     assert brotherhood.rank(c) == 1
@@ -125,11 +125,11 @@ def test_finale_branches_resolve_to_different_targets():
     assert "db6" in quests.available_quests(c, gd, "guild", FACTION)
     # 忠誠之路 → 叛徒;淨化之路 → 代言人
     quests.accept_quest(c, gd, "db6", branch=0)
-    assert quests.current_objective(c, gd, "db6")[0]["creature"] == "brotherhood_traitor"
+    assert quests.current_objective(c, gd, "db6")[0]["npcs"] == ["db_traitor"]
     c.quests["db6"]["branch"] = 1
-    assert quests.current_objective(c, gd, "db6")[0]["creature"] == "dark_speaker"
-    # 兩條路線完成皆晉升為聆聽者(rank 6)
-    quests.record_kill(c, "dark_speaker")
+    assert quests.current_objective(c, gd, "db6")[0]["npcs"] == ["db_speaker"]
+    # 兩條路線完成皆晉升為聆聽者(rank 6);R109 改暗殺置放 NPC
+    c.murdered_npcs.append("db_speaker")
     quests.check_completion(c, gd)
     assert brotherhood.rank(c) == 6
 
@@ -141,8 +141,12 @@ def test_contract_targets_exist_in_bestiary():
         branch_objs = ([b["objective"] for b in q["branches"]] if "branches" in q
                        else [q["objective"]])
         for obj in branch_objs:
-            assert obj["type"] == "kill"
-            assert obj["creature"] in gd.bestiary, f"{qid} 目標 {obj['creature']} 不在 bestiary"
+            if obj["type"] == "kill":                    # db3 怪物目標保留 kill
+                assert obj["creature"] in gd.bestiary, f"{qid} 目標 {obj['creature']} 不在 bestiary"
+            else:                                        # R109:humanoid 目標轉城內置放 NPC 暗殺
+                assert obj["type"] == "assassinate"
+                for nid in obj["npcs"]:
+                    assert gd.npcs.get(nid, {}).get("combat_template") in gd.bestiary, f"{qid} 目標 {nid} 未置放/無戰鬥模板"
 
 
 # --- 開局 / 一生傳奇 / 存檔 -------------------------------------------

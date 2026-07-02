@@ -211,6 +211,57 @@ def test_converted_oneshots_target_placed_npcs():
     assert not gd.quests["ucov_fighters_extract"].get("sanctioned")
 
 
+def test_db_contract_is_field_assassination_witness_gated_and_promotes():
+    """R109 Phase C:DB 合約改城內置放 NPC 暗殺(非 sanctioned=走目擊制)+ 大廳不出擊只指路 +
+    完成仍晉升。stub run_battle 隔離戰鬥。"""
+    import tesrpg.main as M
+    from tesrpg.ui import console as ui
+    from tesrpg.systems import brotherhood, factions
+    gd, c, st = _st()
+    c.skills.update(sneak=80, blade=60)
+    factions.join(c, brotherhood.FACTION)
+    quests.accept_quest(c, gd, "db1")
+    obj, _, _ = quests.current_objective(c, gd, "db1")
+    assert obj["type"] == "assassinate" and obj["npcs"] == ["db_greedy"]
+    assert not quests.assassination_sanctioned(c, gd, "db_greedy")     # DB=反派謀殺·走目擊(非授權)
+    # 大廳:進行中 assassinate → 回指路 hint、不提供 execute
+    opt, hint = M._contract_execute_opt(st, gd, "db1")
+    assert opt is None and hint and "奧崔斯" in hint
+    # 前往目標城市暗殺 → 完成 + 晉升
+    ui.message = lambda *a, **k: None
+    ui.confirm = lambda *a, **k: True
+    ui.rule = lambda *a, **k: None
+    orig_rb, orig_sa = M.run_battle, M.combat.try_stealth_approach
+    M.run_battle = lambda *a, **k: "victory"
+    M.combat.try_stealth_approach = lambda *a, **k: True
+    try:
+        c.location_id = gd.npcs["db_greedy"]["location"]
+        M.action_murder(st, gd, "db_greedy")
+        assert "db_greedy" in c.murdered_npcs
+        assert "db1" in c.completed_quests and brotherhood.rank(c) == 1
+    finally:
+        M.run_battle, M.combat.try_stealth_approach = orig_rb, orig_sa
+    importlib_reload_ui()
+
+
+def test_converted_faction_contracts_target_placed_npcs():
+    gd = get_gamedata()
+    checks = {"db1": "db_greedy", "db2": "db_thief", "db4": "db_knight", "db5": "db_champion",
+              "md1": "md_faithful", "md2": "md_blade", "md4": "md_paladin", "md5": "md_highpriest"}
+    for qid, nid in checks.items():
+        obj = gd.quests[qid]["objective"]
+        assert obj["type"] == "assassinate" and obj["npcs"] == [nid], qid
+        assert gd.npcs[nid]["combat_template"] in gd.bestiary
+        assert not gd.quests[qid].get("sanctioned")      # DB/神話黎明=目擊制,非授權
+    # db3/md3 怪物目標保留 kill(大廳出擊/野遇)
+    assert gd.quests["db3"]["objective"]["type"] == "kill"
+    assert gd.quests["md3"]["objective"]["type"] == "kill"
+    # db6/md6 分支目標皆 assassinate 置放 NPC
+    for qid in ("db6", "md6"):
+        for b in gd.quests[qid]["branches"]:
+            assert b["objective"]["type"] == "assassinate"
+
+
 def run():
     try:
         for name in sorted(globals()):

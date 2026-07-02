@@ -239,7 +239,11 @@ def test_quest_kill_targets_are_reachable():
             elif o.get("type") == "assassinate":   # R109:暗殺目標須為已置放 + 可戰鬥的具名 NPC(單 npc 或多 npcs)
                 for tnid in (o.get("npcs") or ([o["npc"]] if o.get("npc") else [])):
                     npc = gd.npcs.get(tnid)
-                    if npc is None or not npc.get("combat_template"):
+                    # combat_template 必存在於 bestiary;alerted(聞訊備戰·多目標才需)為選配,若填則須合法
+                    ok = npc and npc.get("combat_template") in gd.bestiary
+                    if ok and npc.get("combat_template_alerted"):
+                        ok = npc["combat_template_alerted"] in gd.bestiary
+                    if not ok:
                         bad_assassinate.append((qid, tnid))
     assert not bad_kill, f"kill 目標無生成路徑(死鎖):{bad_kill}"
     assert not bad_assassinate, f"assassinate 目標未置放或缺 combat_template:{bad_assassinate}"

@@ -2450,9 +2450,11 @@ def _comrade_contract(state: GameState, gamedata: GameData) -> str | None:
         active = _active_db_quest(state, gamedata)
         opts: list = []
         if active:
-            obj, _, _ = quests.current_objective(char, gamedata, active)
-            tname = gamedata.bestiary[obj["creature"]]["name"]
-            opts.append(("execute", f"執行合約 —— 行刺{tname}"))
+            opt, hint = _contract_execute_opt(state, gamedata, active)
+            if opt:
+                opts.append(opt)
+            elif hint:
+                ui.message(hint, style="magenta")
         else:
             avail = quests.available_quests(char, gamedata, "guild", brotherhood.FACTION)
             if avail:
@@ -2743,6 +2745,23 @@ def _active_faction_quest(state: GameState, gamedata: GameData, faction_id: str)
     return None
 
 
+def _contract_execute_opt(state: GameState, gamedata: GameData, active: str):
+    """R109 公會合約進行中的大廳選項:kill 目標 → 回 ("execute", 標籤) 供大廳出擊生成;
+    assassinate 目標(DB/神話黎明轉城內置放 NPC)→ 回 (None, 指路文字) —— 不在大廳出擊,
+    須前往目標所在城市暗殺(action_murder·目擊制)。回 (opt_or_None, hint_or_None)。"""
+    char = state.player
+    obj, _, _ = quests.current_objective(char, gamedata, active)
+    if obj.get("type") == "kill":
+        tname = gamedata.bestiary[obj["creature"]]["name"]
+        return ("execute", f"執行合約 —— 行刺{tname}"), None
+    tgts = [n for n in quests._hit_targets(obj) if n not in getattr(char, "murdered_npcs", [])]
+    if not tgts:
+        return None, None   # 全數已了結,待 _report_quests 結算
+    names = "、".join(gamedata.npcs[n]["name"] for n in tgts)
+    locs = "、".join(sorted({gamedata.location(gamedata.npcs[n]["location"])["name"] for n in tgts}))
+    return None, f"待了結的合約目標:{names}(潛伏於 {locs})—— 前往該地取其性命。"
+
+
 def _active_db_quest(state: GameState, gamedata: GameData) -> str | None:
     """目前進行中的黑暗兄弟會合約 id(沒有則 None)。"""
     return _active_faction_quest(state, gamedata, brotherhood.FACTION)
@@ -2764,9 +2783,11 @@ def action_sanctuary(state: GameState, gamedata: GameData) -> str | None:
         opts: list = []
         active = _active_db_quest(state, gamedata)
         if active:
-            obj, _, _ = quests.current_objective(char, gamedata, active)
-            tname = gamedata.bestiary[obj["creature"]]["name"]
-            opts.append(("execute", f"執行合約 —— 行刺{tname}"))
+            opt, hint = _contract_execute_opt(state, gamedata, active)
+            if opt:
+                opts.append(opt)
+            elif hint:
+                ui.message(hint, style="magenta")
         else:
             avail = quests.available_quests(char, gamedata, "guild", brotherhood.FACTION)
             if avail:
@@ -2906,8 +2927,12 @@ def _contract_hall(state: GameState, gamedata: GameData, faction_id: str, *,
         active = _active_faction_quest(state, gamedata, faction_id)
         if active:
             obj, _, _ = quests.current_objective(char, gamedata, active)
-            tname = gamedata.bestiary[obj["creature"]]["name"]
-            opts.append(("execute", execute_label.format(tname=tname)))
+            if obj.get("type") == "kill":   # 傳統合約:大廳出擊生成(execute_label 帶 tname)
+                opts.append(("execute", execute_label.format(tname=gamedata.bestiary[obj["creature"]]["name"])))
+            else:                           # R109 assassinate:城內置放 NPC → 指路,不在大廳出擊
+                _, hint = _contract_execute_opt(state, gamedata, active)
+                if hint:
+                    ui.message(hint, style="magenta")
         else:
             avail = quests.available_quests(char, gamedata, "guild", faction_id)
             if avail:

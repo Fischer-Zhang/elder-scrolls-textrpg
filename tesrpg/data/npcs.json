@@ -1807,5 +1807,89 @@
     "greeting": "「走遠點。」",
     "combat_template": "rogue_thief",
     "combat_template_alerted": "rogue_thief_alerted"
+  },
+  "db_greedy": {
+    "name": "糧商·奧崔斯",
+    "location": "leyawiin",
+    "disposition": 35,
+    "greeting": "「買賣歸買賣,少在我店裡逗留。」",
+    "combat_template": "greedy_merchant"
+  },
+  "db_thief": {
+    "name": "變節盜賊·薩德里",
+    "location": "riften",
+    "disposition": 35,
+    "greeting": "「我認得每張生面孔 —— 包括你。」",
+    "combat_template": "rogue_thief"
+  },
+  "db_knight": {
+    "name": "落魄騎士·佛登",
+    "location": "chorrol",
+    "disposition": 35,
+    "greeting": "「昔日榮光?哼,與你無關。」",
+    "combat_template": "disgraced_knight"
+  },
+  "db_champion": {
+    "name": "競技場冠軍·葛拉修斯",
+    "location": "imperial_city",
+    "disposition": 35,
+    "greeting": "「想討教?先掂量自己幾斤重。」",
+    "combat_template": "arena_champion"
+  },
+  "db_traitor": {
+    "name": "叛變會員·薇希雅",
+    "location": "cheydinhal",
+    "disposition": 35,
+    "greeting": "「夜母的孩子?我早不信那套了。」",
+    "combat_template": "brotherhood_traitor"
+  },
+  "db_speaker": {
+    "name": "聖所代言人·亞蘭多",
+    "location": "cheydinhal",
+    "disposition": 35,
+    "greeting": "「靜聆之廳的秘密,不容外洩。」",
+    "combat_template": "dark_speaker"
+  },
+  "md_faithful": {
+    "name": "九神信徒·瑪蕾",
+    "location": "anvil",
+    "disposition": 35,
+    "greeting": "「願九聖庇佑你 —— 也看顧著你。」",
+    "combat_template": "faithful_of_nine"
+  },
+  "md_blade": {
+    "name": "刀刃密探·凱厄斯",
+    "location": "imperial_city",
+    "disposition": 35,
+    "greeting": "「帝國的眼睛,無所不在。」",
+    "combat_template": "blade_agent"
+  },
+  "md_paladin": {
+    "name": "九神聖騎士·羅蘭",
+    "location": "anvil",
+    "disposition": 35,
+    "greeting": "「聖光之下,邪祟無所遁形。」",
+    "combat_template": "knight_paladin"
+  },
+  "md_highpriest": {
+    "name": "九神大祭司·馬里索",
+    "location": "bruma",
+    "disposition": 35,
+    "greeting": "「異端終將受審判。」",
+    "combat_template": "high_priest_of_nine"
+  },
+  "md_apostate": {
+    "name": "神話叛教者·瓦倫廷",
+    "location": "skingrad",
+    "disposition": 35,
+    "greeting": "「我已看穿達貢的謊言。」",
+    "combat_template": "mythic_apostate"
+  },
+  "md_dawnmentor": {
+    "name": "黎明導師·厄奎斯",
+    "location": "imperial_city",
+    "disposition": 35,
+    "greeting": "「破曉將至,凡俗無從理解。」",
+    "combat_template": "dawn_mentor"
   }
 }
