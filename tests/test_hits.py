@@ -124,8 +124,98 @@ def test_record_murder_witnessed_vs_clean():
     assert "brand" in c.murdered_npcs and c.murders == 2
 
 
+# --- Phase B:置放 NPC 暗殺 / 多目標 / 授權 / 聞訊備戰 --------------------------
+def test_multi_target_assassinate_completes_when_all_dead():
+    gd, c, st = _st()
+    quests.accept_quest(c, gd, "cintlead_markarth")   # assassinate [cint_mark_a, cint_mark_b]
+    obj, _, _ = quests.current_objective(c, gd, "cintlead_markarth")
+    assert obj["type"] == "assassinate" and len(obj["npcs"]) == 2
+    c.murdered_npcs.append("cint_mark_a")
+    assert not quests._objective_met(c, gd, obj, 0)      # 只殺一名 → 未完成
+    c.murdered_npcs.append("cint_mark_b")
+    assert quests._objective_met(c, gd, obj, 0)          # 全殺 → 完成
+
+
+def test_sanctioned_only_for_counterintel():
+    gd, c, st = _st()
+    quests.accept_quest(c, gd, "cintlead_markarth")      # 反間=授權
+    quests.accept_quest(c, gd, "infamy_dirty_job")       # 黑名=謀殺(非授權)
+    assert quests.assassination_sanctioned(c, gd, "cint_mark_a") is True
+    assert quests.assassination_sanctioned(c, gd, "hit_dirty_a") is False
+    # 無 active 任務 → 非授權(任務外殺同一人仍是謀殺)
+    c.quests.clear()
+    assert quests.assassination_sanctioned(c, gd, "cint_mark_a") is False
+
+
+def test_survivor_alerted_after_one_day():
+    gd, c, st = _st()
+    quests.accept_quest(c, gd, "cintlead_markarth")
+    # 殺第一名 + 戳記首殺日
+    c.murdered_npcs.append("cint_mark_a")
+    quests.record_hit_day(c, gd, "cint_mark_a", today=10)
+    assert not quests.hit_target_alerted(c, gd, "cint_mark_b", today=10)   # 當天 → 尚未備戰
+    assert quests.hit_target_alerted(c, gd, "cint_mark_b", today=11)       # 逾 1 日 → 聞訊備戰
+    assert gd.bestiary["cint_mark_b" and "blade_agent_alerted"]["max_health"] > \
+        gd.bestiary["blade_agent"]["max_health"]                          # 強化模板更硬
+
+
+def test_action_murder_sanctioned_no_penalty(monkey=None):
+    """授權暗殺(反間目標)戰後零賞金 + 抹去 NPC + 任務完成(stub run_battle 隔離戰鬥 RNG)。"""
+    import tesrpg.main as M
+    from tesrpg.ui import console as ui
+    gd, c, st = _st()
+    ui.message = lambda *a, **k: None
+    ui.confirm = lambda *a, **k: True
+    ui.rule = lambda *a, **k: None
+    orig_rb, orig_sa = M.run_battle, M.combat.try_stealth_approach
+    M.run_battle = lambda *a, **k: "victory"
+    M.combat.try_stealth_approach = lambda *a, **k: True
+    try:
+        c.location_id = "markarth"
+        quests.accept_quest(c, gd, "cintlead_markarth")
+        M.action_murder(st, gd, "cint_mark_a")
+        assert crime.bounty(c, "天際") == 0 and c.infamy == 0    # 授權除敵諜 → 零賞金/零惡名
+        assert "cint_mark_a" in c.murdered_npcs
+        assert quests.record_hit_day.__name__            # 已戳記(同夥存活)
+        assert c.quests["cintlead_markarth"].get("hit_day") is not None
+        M.action_murder(st, gd, "cint_mark_b")           # 殺第二名 → 任務完成
+        assert "cintlead_markarth" not in c.quests and "cintlead_markarth" in c.completed_quests
+        assert crime.bounty(c, "天際") == 0               # 全程授權 → 仍零賞金
+    finally:
+        M.run_battle, M.combat.try_stealth_approach = orig_rb, orig_sa
+    importlib_reload_ui()
+
+
+def importlib_reload_ui():
+    import importlib
+    from tesrpg.ui import console as ui
+    importlib.reload(ui)
+
+
+def test_converted_oneshots_target_placed_npcs():
+    gd = get_gamedata()
+    oneshots = ["cintlead_markarth", "cintlead_sentinel", "cintlead_anvil", "cintlead_vivec",
+                "cintlead_gideon", "ucov_fighters_extract", "ucov_fighters_defect",
+                "ucov_knights_extract", "ucov_knights_defect", "infamy_dirty_job"]
+    for qid in oneshots:
+        obj = gd.quests[qid]["objective"]
+        assert obj["type"] == "assassinate", qid
+        for nid in obj["npcs"]:
+            npc = gd.npcs.get(nid)
+            assert npc and npc.get("combat_template"), (qid, nid)
+            assert npc["combat_template"] + "_alerted" in gd.bestiary or \
+                npc.get("combat_template_alerted") in gd.bestiary, (qid, nid)
+    # 反間=授權、地下/臥底=非授權
+    assert gd.quests["cintlead_markarth"].get("sanctioned") is True
+    assert not gd.quests["infamy_dirty_job"].get("sanctioned")
+    assert not gd.quests["ucov_fighters_extract"].get("sanctioned")
+
+
 def run():
-    for name in sorted(globals()):
-        if name.startswith("test_"):
-            globals()[name]()
-            print(f"  ✓ {name}")
+    try:
+        for name in sorted(globals()):
+            if name.startswith("test_"):
+                globals()[name]()
+                print(f"  ✓ {name}")
+    finally:
+        importlib_reload_ui()   # 還原被 patch 的 ui 原語,避免污染後續測試模組

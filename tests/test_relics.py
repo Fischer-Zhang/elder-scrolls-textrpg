@@ -236,10 +236,11 @@ def test_quest_kill_targets_are_reachable():
         for o in objs:
             if o.get("type") == "kill" and not kill_reachable(o["creature"], q):
                 bad_kill.append((qid, o["creature"]))
-            elif o.get("type") == "assassinate":   # R109:暗殺目標須為已置放 + 可戰鬥的具名 NPC
-                npc = gd.npcs.get(o["npc"])
-                if npc is None or not npc.get("combat_template"):
-                    bad_assassinate.append((qid, o["npc"]))
+            elif o.get("type") == "assassinate":   # R109:暗殺目標須為已置放 + 可戰鬥的具名 NPC(單 npc 或多 npcs)
+                for tnid in (o.get("npcs") or ([o["npc"]] if o.get("npc") else [])):
+                    npc = gd.npcs.get(tnid)
+                    if npc is None or not npc.get("combat_template"):
+                        bad_assassinate.append((qid, tnid))
     assert not bad_kill, f"kill 目標無生成路徑(死鎖):{bad_kill}"
     assert not bad_assassinate, f"assassinate 目標未置放或缺 combat_template:{bad_assassinate}"
 

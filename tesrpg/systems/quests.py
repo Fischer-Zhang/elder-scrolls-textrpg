@@ -196,14 +196,67 @@ def _objective_met(char: Character, gamedata: GameData, obj: dict, base: int) ->
         return char.location_id == obj["location"]
     if t == "collect":
         return inventory.count_item(char, obj["item"]) >= obj["count"]
-    if t == "assassinate":   # R109:暗殺指定具名 NPC(達標=已在 murdered_npcs·置放 NPC 模型 Tier-1)
-        return obj["npc"] in getattr(char, "murdered_npcs", [])
+    if t == "assassinate":   # R109:暗殺指定具名 NPC(單 `npc` 或多 `npcs`·達標=全部已在 murdered_npcs)
+        murdered = getattr(char, "murdered_npcs", [])
+        return all(n in murdered for n in _hit_targets(obj))
     return False
+
+
+def _hit_targets(obj: dict) -> list:
+    """assassinate objective 的目標 NPC 清單(支援單 `npc` 或多 `npcs`)。"""
+    return list(obj.get("npcs") or ([obj["npc"]] if obj.get("npc") else []))
 
 
 def objective_met(char: Character, gamedata: GameData, quest_id: str) -> bool:
     obj, _, _ = current_objective(char, gamedata, quest_id)
     return _objective_met(char, gamedata, obj, char.quests.get(quest_id, {}).get("base", 0))
+
+
+def _active_assassinate_quests(char: Character, gamedata: GameData):
+    """產生 (qid, quest_state, objective) for 每個進行中且當前階段為 assassinate 的任務。"""
+    for qid, qstate in char.quests.items():
+        if qid not in gamedata.quests:
+            continue
+        obj, _, _ = current_objective(char, gamedata, qid)
+        if obj.get("type") == "assassinate":
+            yield qid, qstate, obj
+
+
+def assassination_sanctioned(char: Character, gamedata: GameData, nid: str) -> bool:
+    """nid 是否為某進行中「授權暗殺」任務(`sanctioned:true`,如反間肅清敵諜)的目標。
+    授權目標的擊殺=除害無罰(不走謀殺目擊 roll);任務外殺同一人仍是謀殺(受罰)。"""
+    for qid, _qs, obj in _active_assassinate_quests(char, gamedata):
+        if nid in _hit_targets(obj) and gamedata.quests[qid].get("sanctioned"):
+            return True
+    return False
+
+
+def record_hit_day(char: Character, gamedata: GameData, nid: str, today: int) -> None:
+    """剛暗殺了 nid:若它屬某進行中 assassinate 任務且仍有同夥存活,戳記首殺日(quest state·
+    不新增存檔欄)→ 逾 1 日存活同夥聞訊備戰(hit_target_alerted 讀之)。"""
+    murdered = getattr(char, "murdered_npcs", [])
+    for qid, qstate, obj in _active_assassinate_quests(char, gamedata):
+        tg = _hit_targets(obj)
+        if nid in tg and qstate.get("hit_day") is None:
+            if any(t not in murdered for t in tg if t != nid):   # 尚有同夥存活
+                qstate["hit_day"] = today
+
+
+def hit_target_alerted(char: Character, gamedata: GameData, nid: str, today: int) -> bool:
+    """nid 是否為「同案同夥已死、且逾 1 日」的存活暗殺目標 → 聞訊備戰(改用強化戰鬥模板)。
+    使用者拍板:殺第一位後拖過 1 天,另一名會武裝自己。日期戳記於 `_advance`(quest state `hit_day`)。"""
+    murdered = getattr(char, "murdered_npcs", [])
+    if nid in murdered:
+        return False
+    for qid, qstate, obj in _active_assassinate_quests(char, gamedata):
+        tg = _hit_targets(obj)
+        if nid not in tg:
+            continue
+        hit_day = qstate.get("hit_day")
+        partner_dead = any(t in murdered for t in tg if t != nid)
+        if partner_dead and hit_day is not None and today - hit_day >= 1:
+            return True
+    return False
 
 
 def active_hunt_target(char: Character, gamedata: GameData, loc_id: str) -> str | None:
@@ -259,11 +312,14 @@ def objective_text(char: Character, gamedata: GameData, quest_id: str) -> str:
     elif t == "collect":
         have = inventory.count_item(char, obj["item"])
         body = f"取得 {gamedata.item_name(obj['item'])} {have}/{obj['count']}"
-    elif t == "assassinate":   # R109:目標=具名 NPC(顯示其名 + 所在地供指路)
-        npc = gamedata.npcs.get(obj["npc"], {})
-        loc = gamedata.location(npc["location"])["name"] if npc.get("location") in (gamedata.world.get("locations", {}) if gamedata.world else {}) else "?"
-        done = "✔" if obj["npc"] in getattr(char, "murdered_npcs", []) else "✘"
-        body = f"暗殺 {npc.get('name', obj['npc'])}(在 {loc}){done}"
+    elif t == "assassinate":   # R109:目標=具名 NPC(顯示名+所在地供指路;多目標逐一列狀態)
+        murdered = getattr(char, "murdered_npcs", [])
+        parts = []
+        for nid in _hit_targets(obj):
+            npc = gamedata.npcs.get(nid, {})
+            loc = gamedata.location(npc["location"])["name"] if npc.get("location") else "?"
+            parts.append(f"{npc.get('name', nid)}(在 {loc}){'✔' if nid in murdered else '✘'}")
+        body = "暗殺 " + "、".join(parts)
     else:
         body = ""
     return f"[{idx + 1}/{total}] {body}" if total > 1 else body

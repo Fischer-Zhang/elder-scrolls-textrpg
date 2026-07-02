@@ -4518,16 +4518,29 @@ def action_talk(state: GameState, gamedata: GameData) -> str | None:
 
 
 def action_murder(state: GameState, gamedata: GameData, nid: str) -> str | None:
-    """謀殺一名無辜城民:重罪(高額賞金 + 惡名),但血債會引來黑暗兄弟會的青睞。
-
-    回傳 'dead'(玩家在反抗中喪命)或 None。"""
+    """暗殺一名具名 NPC(R109):
+    - **授權暗殺**(反間肅清敵諜等·`quests.assassination_sanctioned`)→ 除害無罰(不走目擊)。
+    - **謀殺**(無辜者/任務外)→ 目擊制:潛殺乾淨無罰、被撞見吃賞金+惡名(R109 決定 #4)。
+    戰鬥對手用該 NPC 的 `combat_template`(缺則退回 townsperson);同案同夥已死逾 1 日的存活目標
+    改用強化模板 `combat_template_alerted`(聞訊備戰·使用者拍板)。回傳 'dead' 或 None。"""
     char = state.player
-    name = gamedata.npcs[nid]["name"]
-    ui.message("殺害手無寸鐵的無辜者是滔天重罪 —— 一旦動手,全城都會與你為敵。", style="red")
-    if not ui.confirm(f"當真要取「{name}」的性命嗎?"):
+    npc = gamedata.npcs[nid]
+    name = npc["name"]
+    today = state.time.absolute_hours() // 24
+    sanctioned = quests.assassination_sanctioned(char, gamedata, nid)
+    alerted = quests.hit_target_alerted(char, gamedata, nid, today)
+    if sanctioned:
+        prompt = f"了結目標「{name}」嗎?"
+    else:
+        ui.message("殺害手無寸鐵者是重罪 —— 若被目擊,全城都會與你為敵。", style="red")
+        prompt = f"當真要取「{name}」的性命嗎?"
+    if not ui.confirm(prompt):
         return None
-    # 偷襲先機:看你潛行(背後一刀);旁人遲早會察覺尖叫
-    victim = combat.spawn_creature(gamedata, "townsperson", state.rng)
+    tpl = npc.get("combat_template", "townsperson")
+    if alerted:
+        tpl = npc.get("combat_template_alerted", tpl)
+        ui.message(f"{name}早已聞得同夥橫死的風聲 —— 披甲執刃、嚴陣以待。", style="yellow")
+    victim = combat.spawn_creature(gamedata, tpl, state.rng)
     victim.name = name
     night = state.time.hour < 6 or state.time.hour >= 21
     got_drop = combat.try_stealth_approach(char, [victim], state.rng, gamedata, night, False, False)
@@ -4541,18 +4554,25 @@ def action_murder(state: GameState, gamedata: GameData, nid: str) -> str | None:
         ui.message(f"你收手退去,{name}僥倖逃過一劫。", style="grey70")
         return None
     if result == "victory":
-        witnessed = state.rng.chance(crime.murder_witness_chance(char, gamedata, night=night))   # R109 目擊制
-        res = brotherhood.record_murder(state, gamedata, nid, witnessed=witnessed)
-        ui.rule("血債")
-        if witnessed:
-            ui.message(f"{name}倒在血泊之中 —— 你成了殺人兇手,有人目擊了這一幕。", style="bold red")
-            ui.message(f"消息驚動全城,{res['province']}懸起 {res['bounty']} 金的賞金,惡名加身。",
-                       style="yellow")
+        if sanctioned:
+            # 授權除害:不計謀殺賞金/惡名;僅抹去 NPC + 記血債(供任務結算與 DB 注意手藝)
+            brotherhood.record_murder(state, gamedata, nid, witnessed=False)
+            ui.message(f"目標{name}悄然倒下 —— 一樁份內的差事,乾淨俐落。", style="magenta")
         else:
-            ui.message(f"{name}無聲倒下,四下無人 —— 你抹去痕跡、悄然離去。血債已了,官府一無所知。",
-                       style="magenta")
-        if not brotherhood.is_member(char):
-            ui.message("……某雙眼睛,正從暗處注視著你的手藝。", style="magenta")
+            witnessed = state.rng.chance(crime.murder_witness_chance(char, gamedata, night=night))   # R109 目擊制
+            res = brotherhood.record_murder(state, gamedata, nid, witnessed=witnessed)
+            ui.rule("血債")
+            if witnessed:
+                ui.message(f"{name}倒在血泊之中 —— 有人目擊了這一幕。", style="bold red")
+                ui.message(f"消息驚動全城,{res['province']}懸起 {res['bounty']} 金的賞金,惡名加身。",
+                           style="yellow")
+            else:
+                ui.message(f"{name}無聲倒下,四下無人 —— 你抹去痕跡、悄然離去。官府一無所知。",
+                           style="magenta")
+            if not brotherhood.is_member(char):
+                ui.message("……某雙眼睛,正從暗處注視著你的手藝。", style="magenta")
+        quests.record_hit_day(char, gamedata, nid, today)   # 同夥仍存活 → 戳記,逾 1 日對方備戰
+        _report_quests(state, gamedata)                     # 結算暗殺任務(全目標死 → 完成)
     return None
 
 
