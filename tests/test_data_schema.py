@@ -360,6 +360,25 @@ def test_quest_givers_and_reachability():
     assert not bad, "任務派發/可達性違規:" + "; ".join(bad)
 
 
+def test_houses_and_upgrades_schema():
+    """R110 家園:houses.json(tier 合法 + 地點真實 + biome 有生態池)與 house_upgrades.json
+    (name/price/desc 齊備)schema 守門。biome→池斷鏈=藥草園靜默停用,在資料層即攔。"""
+    from tesrpg.systems import housing
+    gd = get_gamedata()
+    locs = gd.world["locations"]
+    pools = gd.ecology.get("pools", {})
+    for lid, h in gd.houses.items():
+        assert lid in locs, f"houses.json 鍵 {lid} 非真實地點"
+        assert isinstance(h.get("price"), int) and h["price"] > 0, f"{lid} price 非正整數"
+        assert h.get("tier", 1) in housing.SLOTS_BY_TIER, f"{lid} tier 非法(須在 SLOTS_BY_TIER)"
+        assert h.get("name") and h.get("desc"), f"{lid} 缺 name/desc"
+        biome = locs[lid].get("biome")
+        assert biome in pools, f"{lid} biome {biome!r} 無對應生態池(藥草園會停用)"
+    for uid, u in gd.house_upgrades.items():
+        assert isinstance(u.get("price"), int) and u["price"] > 0, f"擴建 {uid} price 非正整數"
+        assert u.get("name") and u.get("desc"), f"擴建 {uid} 缺 name/desc"
+
+
 def run():
     for name, fn in sorted(globals().items()):
         if name.startswith("test_") and callable(fn):

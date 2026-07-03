@@ -29,6 +29,8 @@ _IMPLEMENTED_TYPES = {
     "pure_spec", "allegiance",
     # 後期內容(R55):親王誓福 / 詛咒陣營頂階 / 黑兄階級 / 疾病 / 充能魂石,皆複用既有 accessor
     "boons_count", "faction_rank", "disease_count", "soul_gems_filled",
+    # 家園(R110):置產數(只計仍合法的房產 id,鏡像 landmarks)
+    "houses_count",
 }
 
 # pure_spec 判定:主專精「絕對總和」與「領先次高的差距」雙門檻。初生角色因起始職業
@@ -85,6 +87,10 @@ def _eval(char, gamedata: GameData, cond: dict) -> bool:
         found = sum(1 for lid in getattr(char, "discovered_landmarks", [])
                     if lid in gamedata.landmarks)
         return found >= cond["count"]
+    if t == "houses_count":
+        # 置產數(R110):只計仍合法的房產 id(鏡像 landmarks 的防毀損過濾)
+        return sum(1 for lid in getattr(char, "houses_owned", []) or []
+                   if lid in gamedata.houses) >= cond["count"]
     if t == "provinces":
         locs = gamedata.world["locations"]
         provs = {locs[lid]["province"] for lid in getattr(char, "visited_locations", [])

@@ -73,6 +73,12 @@ def compute(state, gamedata: GameData, ending: str = "death") -> dict:
     thanes = len(char.thaneships)
     comrade_points = sum(party.bond_tier(char, cid) for cid in char.companions) * 20   # 並肩羈絆
     loyalty_arc_count = len(party.loyalty_arcs(char, gamedata))   # 完成的同伴專屬支線(忠誠弧)
+    # R110 家園:置產 + 擴建(此前零承認);只計仍合法的房產/擴建 id(防毀損存檔爆量)
+    houses_count = sum(1 for lid in char.houses_owned if lid in gamedata.houses)
+    upgrades_count = sum(1 for lid, ups in getattr(char, "house_upgrades", {}).items()
+                         if lid in gamedata.houses
+                         for u in (ups if isinstance(ups, list) else [])
+                         if u in gamedata.house_upgrades)
 
     score = (
         char.level * 120
@@ -92,6 +98,8 @@ def compute(state, gamedata: GameData, ending: str = "death") -> dict:
         + char.soldiers * 3          # 麾下常備軍
         + comrade_points             # 並肩同伴的羈絆
         + loyalty_arc_count * 40     # 同伴忠誠弧:每完成一條同伴專屬支線(身份印記,比照里程碑)
+        + houses_count * 60          # 安身立命:每處置辦的房產(R110)
+        + upgrades_count * 20        # 家業:每件添置的設施(R110)
     )
 
     return {
@@ -111,6 +119,7 @@ def compute(state, gamedata: GameData, ending: str = "death") -> dict:
         "addiction": skooma.legacy_label(char),       # 斯庫瑪/月糖成癮(否則 None)
         "dark_deeds": brotherhood.legacy_label(char, gamedata),   # 黑暗兄弟會/謀殺事蹟(否則 None)
         "dominion": dominion_label(char, gamedata, cities_held, thanes),  # 領地/統帥功業(否則 None)
+        "homestead": homestead_label(houses_count, upgrades_count),  # 家園置業(R110;否則 None)
         "comrade": party.legacy_label(char, gamedata),   # 最深羈絆的同伴(否則 None)
         "loyalty": party.loyalty_label(char, gamedata),   # 完成專屬支線的忠誠同伴名單(否則 None)
         "level": char.level,
@@ -144,6 +153,16 @@ def own_realm_title(cities_held: int) -> str:
         if cities_held >= thr:
             return title
     return "舉旗自立者"
+
+
+def homestead_label(houses_count: int, upgrades_count: int) -> str | None:
+    """家園置業總結(R110;無房 → None,結算省略此行)。"""
+    if not houses_count:
+        return None
+    parts = [f"置業 {houses_count} 處"]
+    if upgrades_count:
+        parts.append(f"設施 {upgrades_count} 件")
+    return " · ".join(parts)
 
 
 def dominion_label(char, gamedata: GameData, cities_held: int, thanes: int) -> str | None:

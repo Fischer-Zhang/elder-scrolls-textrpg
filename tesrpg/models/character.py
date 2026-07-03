@@ -239,6 +239,8 @@ class Character:
     # 房產 & 坐騎(家園與後勤;見 systems/housing.py、systems/mounts.py)。皆走 dataclass 預設向後相容。
     houses_owned: list = field(default_factory=list)      # 已購置房產的 loc_id(權威)
     house_stash: dict = field(default_factory=dict)       # loc_id -> [{"id","qty"}](家中倉庫;不計隨身負重)
+    house_upgrades: dict = field(default_factory=dict)    # loc_id -> [upgrade_id](已購擴建;權威;R110)
+    house_garden_at: dict = field(default_factory=dict)   # loc_id -> 下次可採收的絕對小時(tax_due_at 模式;R110)
     well_rested_until: int = 0                            # 「精神飽滿」到期絕對小時(0=無;最佳休息設;同 skooma_high_until 模式)
     well_rested: bool = False                             # 精神飽滿現行快取(loop 頂端依 until 刷新;use_skill 讀;同 beast_form 模式)
     mounts_owned: list = field(default_factory=list)      # 已擁有的坐騎 id
@@ -370,6 +372,7 @@ class Character:
             "soldiers": self.soldiers, "camp": self.camp,
             "wage_due_at": self.wage_due_at,
             "houses_owned": self.houses_owned, "house_stash": self.house_stash,
+            "house_upgrades": self.house_upgrades, "house_garden_at": self.house_garden_at,
             "well_rested_until": self.well_rested_until, "well_rested": self.well_rested,
             "mounts_owned": self.mounts_owned, "active_mount": self.active_mount,
             "companions": self.companions, "pending_companions": self.pending_companions,

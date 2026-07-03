@@ -295,9 +295,11 @@ def _combat_view(player: Character, allies: list, enemies: list) -> dict:
 
 def _legacy_view(s: dict) -> dict:
     origins = []   # 身世:出身/詛咒/血業/功業/精通
-    for key in ("origin", "condition", "lycanthropy", "addiction", "dark_deeds", "comrade", "loyalty", "dominion"):
+    for key in ("origin", "condition", "lycanthropy", "addiction", "dark_deeds", "comrade", "loyalty",
+                "dominion", "homestead"):
         label = {"origin": "出身", "condition": "詛咒", "lycanthropy": "獸血", "addiction": "癮疾",
-                 "dark_deeds": "血業", "comrade": "羈絆", "loyalty": "忠誠", "dominion": "功業"}[key]
+                 "dark_deeds": "血業", "comrade": "羈絆", "loyalty": "忠誠", "dominion": "功業",
+                 "homestead": "家業"}[key]
         if s.get(key):
             origins.append([label, str(s[key])])
     if s.get("masteries"):
@@ -1753,6 +1755,8 @@ def legacy_screen(s: dict) -> None:
         body.add_row("血業", str(s["dark_deeds"]))
     if s.get("dominion"):
         body.add_row("功業", str(s["dominion"]))
+    if s.get("homestead"):
+        body.add_row("家業", str(s["homestead"]))
     if s.get("masteries"):
         body.add_row("精通", "、".join(s["masteries"]))
     body.add_row("等級", str(s["level"]))

@@ -45,6 +45,7 @@
 - **九神騎士團聖物戒律(R108;KotN 正典 Umaril 弧)**:走過朝聖的聖殿騎士(rank≥2)獲佩利納爾異象 → 聖物任務鏈尋回**7 件十字軍聖物**(魔族之上檔位·套裝恢復/魔抗)→ 突入艾雷德古都蓋拉斯瑪拉塔誅殺不羽者烏瑪瑞爾(d5 solo boss)。**行為約束型神裝**:infamy≤1 才可裝、到 1 警告、≥2 或**染吸血鬼/狼人詛咒**即自動卸下鎖裝(物品留背包),贖罪各走各路(朝聖歸零 / 解咒)方能再披 —— 與 R107 朝聖形成完整「戒律↔贖罪」迴圈。聖物單一來源(任務 reward);零新存檔欄;sim byte-identical
 - **城鎮服務專精化(R29)**:訓練師依公會/lore 只教部分技能(戰士城練戰鬥/法師城練魔法/盜賊城練潛行)+ 11 招牌城**宗師指點**破一般訓練上限(馬卡斯鍛造/冬堡毀滅/裂谷開鎖…);法師公會**法術學派分省守護**(各省主賣一派深線 + 保底集 9 道,別派進階須跨省採購;`imperial_city` 通才例外)。給戰士/盜賊/法師各一張「該去哪精進/採購」的地圖;功能性差異、零存檔欄位
 - **格子地城探索**(`systems/dungeoncrawl.py`):15 地城程序化生成 n×n 格 × m 層,N/S/E/W 移動 + 樓梯下層 + 迷霧小地圖 + 格內怪/寶/陷阱;清末層 boss = 肅清,首領死亡自動解鎖寶藏(原子探索、零新存檔欄)。**視為戰鬥情境**:可一般行動(施法/背包/角色卡)、**預施增益/預召喚召喚物**(行動 1 格 = 1 回合逐回合衰減,經 carry_allies/preserve_buffs 帶進觸發戰鬥)、**偵查 perk 探明四鄰**(每探明新格得少量偵查 xp);持久狀態條一併顯示夥伴/召喚物
+- **家園基地化(R110)**:14 棟房產由同質空殼升級為可發展據點 —— **tier 三級**(小屋 2/宅邸 3/莊園 4 設施格位)+ **擴建目錄**(`house_upgrades.json`·嚴格金幣沉·鏡像 R106C 買斷模式):**藥草園**(每日採收本城 biome 生態池的**尋常**草藥·value cap 10 排除 moon_sugar/nirnroot/全 rare·固定預算不吃 scout·零 XP·無 banking → 各省置產收齊不同生態材料)/**舒適臥房**(精神飽滿 24→36h·只時長)/**在地商誼**(本省買價 −5%·反套利地板前);**legacy+成就首次承認置產**(+60/房 +20/設施·「家業」行·安家立業/廣廈四海)+ codex「家園與置產」;2 新存檔欄 + ensure 遷移;sim byte-identical(家用鍛爐=死值砍掉、管家駐紮=陷阱選項延後,見 §3 R110)
 
 #### 製作與裝備
 - **鍛造**(金屬四階 + 頂級魔族/龍鱗/龍祭司,稀有素材困難取得)、**裁縫**、**淬鍊強化**、**回爐熔解**(成品→部分材料,有損耗+練鍛造);**附魔**(武器:元素即時傷害 + **元素 DoT〔焚燒/凍緩/感電〕** + **命中吸取〔生命/魔力/體力〕** + 命中觸發吸血/再生 + **充能型麻痺·命中擒魂**;護甲:技能/抗性/資源;飾品:技能/屬性/抗性/資源)+ **靈魂石經濟**(空魂石→擒魂填充、大靈魂石 soul5、黑魂石囚人形魂、武器充能以魂石回充;見 R15/附魔深化)
@@ -1408,6 +1409,23 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 
 ---
 
+### R110 · 家園基地化:房產 tier + 擴建(藥草園/臥房/商誼)+ legacy/成就承認 [save] [re-sim byte-identical]
+
+三路獨立審計(前瞻 breadcrumb / 冷系統碼掃 / build-loop 缺口)收斂:**最冷系統=房產**(14 棟同質空殼,只有 name/price/desc;免費全回被 10 金旅店與免費巢穴壓制;`houses_owned` 不進 legacy/成就=花大錢遊戲從不承認)。三視角設計(reuse/depth/economy)+ 三份對抗審查先行,使用者四拍板:① **家用鍛爐砍掉**(審查證實 14 房產城全有 `armorer` 服務、煉金/附魔本就不限地點 → 死值;日後有無鍛造服務城鎮的房產再議)② **管家/同伴駐紮延後**(佔 MAX_PARTY 一格只換 ~10 金/日=陷阱選項 + 回溯累積/幽靈管家/圍城名冊繞過/雙掛 4 個 MAJOR;留待未來給非經濟價值再做)③ **tier 制 + 在地商誼做成第三個可購升級** ④ **藥草園冷卻 24h**。
+
+- **tier / 格位**:houses.json 每棟加 `tier`(1 小屋 3500 金 / 2 宅邸 4000–5000 / 3 莊園 8000=帝都),`housing.SLOTS_BY_TIER={1:2,2:3,3:4}` 決定設施格位 → T1 三選二取捨、莊園全裝(T3 空位=日後目錄擴充預留);缺/非法 tier 安全落 1。
+- **擴建目錄** `data/house_upgrades.json`(**鏡像 R106C necromancy.json「JSON 目錄→購買永久升級」模式**;`gamedata.house_upgrades` 載入):`garden` 藥草園 1200 / `bedroom` 舒適臥房 800 / `trade_pact` 在地商誼 1500。**嚴格金幣沉**:永不退款、重複購買擋、無轉售;`buy_upgrade`(呼叫端扣款,鏡像 `buy()`)閘=擁房+目錄內+未購+有空格位。
+- **藥草園**:採收池=房產所在城 `biome` → `alchemical_ecology` 池(14 城 biome↔池 1:1 已驗;無池→優雅停用);`events.forage_pool_draw` 加**嚴格 no-op 參數** `budget=None, value_cap=None`(預設路徑逐位元組同;🔴 **空候選 early-return 必須維持在任何 rng 消耗之前**=守既有 RNG 序);藥草園傳 `GARDEN_BUDGET=6` **固定預算不吃 scout**(自家後院·守 R93/R94 野採的偵查 niche)+ **`GARDEN_VALUE_CAP=10` 承重界**(排除 moon_sugar 25/nirnroot 30/全 rare → 殺印鈔機;R88 式**全池精確最大不變量測試** ≤40 raw value 鎖死未來資料改動;實測最壞 swamp 36 ≈ 頂配賣家 ≤59 金/日·一般 15–25 金);冷卻 24h **無 banking**(時間戳·錯過不累積);**購入即進冷卻**(防買完即刻採);**🔴 零技能 XP**(刻意防每日免費 XP 滴灌·專測鎖;野採事件才練 scout/alchemy)。
+- **舒適臥房**:`set_well_rested(char, now, hours=None)` 加預設參數(None→`WELL_RESTED_HOURS`)→ **巢穴/藏身處既有呼叫端逐位元組同**;在家安睡經 `rest_hours()` 給 `BEDROOM_WELL_RESTED_HOURS=36`(**只時長·倍率 `WELL_RESTED_XP_MULT` 不動**)。
+- **在地商誼**:`housing.province_discount`(當前省有「已購 trade_pact」自有房產 → 0.05·省內布林不疊加·無房→0.0=×1.0 恆等)乘進 `world.buy_price`,**插在反套利地板 `max(1, round, sell+1)` 之前** → 頂配疊加(議價滿+軍械庫滿階+高名聲+澤尼薩爾+商誼=0.586×value < 最高賣價 1.12×value)地板必咬住、買賣循環恆虧(構造性證明+全品項掃描測試);**只買價·賣價不碰**(R101/R107 模式)。
+- **legacy/成就承認**(原零承認):`legacy.compute` +60/房 +20/設施(只計仍合法 id)+ `homestead`「家業」label(置業 N 處 · 設施 M 件·比照 dominion·console 兩渲染點接線);成就新 cond type `houses_count`(`_IMPLEMENTED_TYPES` 登錄+防毀損過濾)+ 2 條(安家立業 1 房/廣廈四海 4 房);codex 新「家園與置產」分類。
+- **存檔(R03)**:2 新欄 `house_upgrades`(loc→[uid])/`house_garden_at`(loc→絕對小時)dataclass 預設 + to_dict;`housing.ensure_housing_fields`(save_migrations 一行註冊)冪等自癒=型別矯正+採收時間戳上夾 `now+CD`(治「永遠採不了」毀損檔);**未知 loc/upgrade id 保留不刪**(inert:不佔格位不生效,比照 house_stash 對毀損 id 的寬容 —— 刪除=回溯銷毀玩家金幣)。
+- **🔴 sim_assassin BYTE-IDENTICAL**(隔離 worktree 法定:未碰 combat/formulas;forage 預設路徑守 RNG 序;buy_price ×1.0 恆等;sim 不 import housing/world/events);`run_all` **106**(新 `test_homestead`:tier/格位/購買閘/action 扣款/冷卻/value cap/本城池/零 XP/**全池不變量**/臥房只延時/商誼省域+地板/存檔 roundtrip+自癒冪等+未知 id inert/legacy/成就);`test_data_schema` 新守門(houses tier 合法+biome 有池·upgrades schema)。
+- **對抗審查(4 維 8 agent·0 BLOCKER/0 MAJOR)→ confirmed 全處置**:① `ensure_housing_fields` 漏接 `OverflowError`(json.load 收 `Infinity` 字面量 → `int(inf)` 拋之非 Type/Value → 毀損檔永久無法載入)→ 加入 except tuple;② 未去重(毀損 `["garden","garden"]` 灌 legacy 分+卡格位)→ `dict.fromkeys` 保序去重;③ 順手型別自癒 `houses_owned`(R110 起 `province_discount` 於每次 buy_price 迭代它 → null 崩全定價);④ `_house_upgrade_menu` 改「成功才扣款」(REFUTED·WebBackend 服務端已驗答案不可達,仍消除潛在靜默沉金);⑤ codex 選單名修正(未置產者看到「房產仲介」非「我的房產」)。**Conscious accept**(不修·審查建議):藥草園材料→釀→銷贓 + 商誼小幅擴大既有 buy→fence 套利皆前置存在(商誼實測貢獻 ~0.06v 甚或 0·名聲折扣時地板已咬)、value cap 綁輸入非釀出(brew 值隨效果幅度非材料價·moon_sugar 精煉不等式不動)、修法會全域抬價=倒退(同 R84 先例)。補 4 回歸測試(inf 自癒/去重/houses_owned 型別/扣款失敗不沉金)。
+- **🔴 鐵律**:加房產純改 houses.json(**tier ∈ SLOTS_BY_TIER 且所在地 biome 須有生態池**,schema guard 攔);加擴建=house_upgrades.json + housing.py 效果掛點;藥草園旋鈕=`GARDEN_*`(**動 VALUE_CAP/BUDGET/冷卻→先問使用者**·全池不變量測試須續綠);商誼只動買價、恆在地板前;臥房只動時長;升級永不退款;`forage_pool_draw` 新參數預設 None 不可動(守野採 byte-identical)。**前瞻**:管家駐紮(非經濟價值再設計)、家用鍛爐(出現無鍛造服務城鎮的房產時)、更多設施種類(格位制已預留)。
+
+---
+
 ### R109 · 劇情敵 NPC 化:野外狩獵 + 城內暗殺 + 謀殺目擊制(鐵律:廢大廳出擊)[re-sim byte-identical] [save-safe]
 
 承 R108 審查揪出的既有死鎖(rogue_thief/blade_agent 兩隻「劇情敵」spawn-only 無生成路徑 → R99/R100/R101 的 23 條反間/地下/臥底任務 kill 目標永遠打不到);使用者選「把劇情敵設計為一般 NPC 投入世界」並多輪拍板。分階段提交(A 引擎→B 一次性情報→C DB/神話黎明→審查修正+鐵律)。
@@ -1866,7 +1884,7 @@ R88 讓**盜賊公會**拿到階級解鎖招牌動詞(斯庫瑪走私),但**戰�
 4. ✅ **體力對法師仍是死資源 —— 已做**(見 §1「法師體力資源對稱化」):施法耗體力(`magic.spell_fatigue_cost`)+ 低體力降法效(`formulas.cast_fatigue_power_factor` ×0.75)+ 法袍套裝省體(`cast_fatigue_factor` 0.80/0.65);純規則層、零存檔欄位、刺客紅線零位移。
 5. **半成品/微調**:創角問答推職業(DESIGN 標暫未做);更多事件/任務。(✅ 護甲附魔擴到技能/抗性、武器命中觸發 已做,見 §1「附魔系統擴展」。)
    - ✅ **戰法師體驗 —— 已做**(見 §1「八職功能性身份網格」):**法力回擊** + **spellblade 里程碑(共鳴一擊)** 皆已實作,且毀滅 50/75 互換後**可兼得**(雙 gish loop 成環);**戰法師套裝**評估後不做(本作無 armor→施法懲罰,輕甲套裝=陷阱裝)。
-6. (天花板更高、工程量大)主線劇情、坐騎/房產。(✅ 同伴持久 HP/羈絆 + **同伴角色化**〔具名招募/專屬支線/對話/忠誠弧頂點〕已做,見 §1)
+6. (天花板更高、工程量大)主線劇情、坐騎成長線(bond/veterancy;坐騎現為買斷即滿)。(✅ 同伴持久 HP/羈絆 + **同伴角色化**〔具名招募/專屬支線/對話/忠誠弧頂點〕已做,見 §1;✅ **房產已基地化**〔R110:tier/藥草園/臥房/商誼/legacy 承認〕,剩管家駐紮〔非經濟價值再設計〕與家用鍛爐〔待無鍛造城房產〕見 §3 R110 前瞻)
 
 > ✅ 已完成(近期):**附魔深化(武器命中效果 + 充能 + 靈魂石經濟)**(§1/R15:武器面從「即時元素+吸血/麻痺/再生」拓成有打法差異的命中效果目錄 —— **Phase 1** 元素 DoT〔焚燒/凍緩〔weaken〕/感電〔扣魔+stagger〕〕+ 命中吸取〔生命/魔力/體力,health 對 solo 受夾〕+ **充能模型**〔命中擒魂·麻痺全階可用但每觸發扣一格、魂石=電池容量、`action_recharge_enchant` 回充;新存檔欄 `enchant_charges`〕;**Phase 2** 靈魂石經濟〔擒魂改填手上**空魂石**、大靈魂石 soul5、**黑魂石**囚人形魂〔`bestiary sentient`+空黑魂石+法術擒魂+infamy〕、法師城供空魂石〕→ 縛魂術對上魂/大靈魂/黑魂/AoE 不可取代;**Phase 3 秘術節點刻意未做**〔樹滿+soul_siphon 已放大新效果,使用者拍板〕。擴 `enchws`〔5 段不變·向後相容·玩家專屬〕+ `magic.resolve_soul_capture` + 純資料 items/bestiary;零段數變動、一個存檔欄 R03 相容;**對抗審查(5 維 fan-out + 逐項對抗驗證)修 2 真 bug**〔凍緩/感電 rider 雙持/多擊 weaken·stagger 去重、`resolve_soul_capture` 過期法咒誤判 spell-trap → 加 `turns>0`〕+ **balance 紅線駁回**〔一武器一附魔 → 雙持至多 2 sustain,實際 ≤ 弱 solo boss 傷害;且本作接受 apex 無傷清 solo,紅線是「不秒殺」而非「不可耗血」,sim 0% 秒殺守;vampiric 無 solo 夾為既有 sim 背書設計、不動;absorb_health 已 ×0.5 solo 夾〕;`sim_assassin` 紅線守〔solo 0% 秒殺、麻痺 solo 免疫不動〕、`test_equipment`+5/`test_magic`+6 守)、**城鎮服務專精化**(§1/R29:城鎮差異化第一刀 —— 訓練師依公會/lore 專精〔戰士城戰鬥/法師城魔法/盜賊城潛行;由公會推導零撰寫,單系城免空選單〕+ 11 招牌城**宗師指點**破 `TRAINER_CAP=75`〔馬卡斯鍛造/冬堡毀滅/裂谷開鎖…〕+ 法師公會**法術學派分省守護**〔各省主賣一派 + 保底集 9 道,別派進階跨省採購,imperial_city 通才;順手補 6 空法術城、清 rimmen/torval 孤兒〕;`data/trainers.json` + `world.json spell_stock` + `world.trainer_*`/`action_trainer`;**零存檔欄位、不需 sim**;`test_world` 加 `test_trainer_specialization`/`test_spell_school_dispersal`)、**附魔系統擴展**(§1:護甲→技能/抗性〔encha 5 段+向後相容、複用飾品 kind〕+ 武器→命中觸發 吸血/麻痺/再生〔enchws,solo boss 免疫麻痺反鎖王〕;零存檔欄位、刺客紅線零位移;對抗審查 0 真 bug)、**法師體力資源對稱化**(§1/§6#4:施法耗體力 + 低體力降法效 + 法袍套裝省體;純規則層零存檔、刺客紅線零位移;對抗審查補 summon 漏接)、**斯庫瑪/月糖成癮 + 艾爾斯維爾省(第八省)**(§1:savanna 弱毒生態軸 + 賽↔艾↔瓦南方大環 + 仿吸血鬼的「亢奮↔戒斷」成癮天平〔亢奮不碰力量/潛行以守刺客紅線〕 + 淨糖解癮;對抗審查修「免費解癮」漏洞)、**世界拓樸改造**(走廊→有環圖,§1)、**種子開放給玩家**(原 §6.4 前置)、
 > **公會深度化**(§1:門檻 + 福利/俸祿 + 對立 + 分支)、**裝備系統擴展**(§1:套組/套裝 + 飾品/附魔 + 武器流派 + 法杖)、

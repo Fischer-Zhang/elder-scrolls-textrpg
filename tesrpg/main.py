@@ -2136,10 +2136,11 @@ def _buy_stable_spears(state: GameState, gamedata: GameData) -> None:
 
 
 # ======================================================================
-# 房產(收納倉庫 + 最佳休息 + 精神飽滿)
+# 房產(收納倉庫 + 最佳休息 + 精神飽滿 + 擴建;R110 家園基地化)
 # ======================================================================
 def action_house(state: GameState, gamedata: GameData) -> None:
-    """房產:未擁有 → 置產;已擁有 → 在家安睡(全回 + 精神飽滿)+ 收納倉庫存取。"""
+    """房產:未擁有 → 置產;已擁有 → 在家安睡(全回 + 精神飽滿)+ 採收藥草園 +
+    擴建居所 + 收納倉庫存取(R110:比照 action_lair 條件式選項)。"""
     char = state.player
     loc_id = char.location_id
     if not housing.owns(char, loc_id):
@@ -2148,6 +2149,9 @@ def action_house(state: GameState, gamedata: GameData) -> None:
             ui.message("此地沒有可置辦的房產。", style="grey70")
             return
         ui.message(h["desc"], style="grey70")
+        ui.message(f"規格:{housing.tier_name(gamedata, loc_id)}"
+                   f"(可添置 {housing.slots(gamedata, loc_id)} 格設施 —— 藥草園、臥房、商誼)",
+                   style="grey70")
         if char.gold < h["price"]:
             ui.message(f"「{h['name']}」售價 {h['price']} 金,你的金幣不足。", style="red")
             return
@@ -2159,22 +2163,76 @@ def action_house(state: GameState, gamedata: GameData) -> None:
         return
     h = gamedata.house_at(loc_id) or {}
     while True:
-        opts = [("rest", "在家安睡(免費全回 + 精神飽滿)"),
-                ("deposit", "存入倉庫(卸下負重)"), ("withdraw", "從倉庫取出")]
-        choice = ui.menu(h.get("name", "你的房產"), opts, allow_back=True)
+        now = state.time.absolute_hours()
+        used = len(housing.owned_upgrades(char, gamedata, loc_id))
+        title = (f"{h.get('name', '你的房產')}"
+                 f"({housing.tier_name(gamedata, loc_id)} · 設施 {used}/{housing.slots(gamedata, loc_id)})")
+        rest_label = "在家安睡(免費全回 + 精神飽滿)"
+        if housing.has_upgrade(char, gamedata, loc_id, "bedroom"):
+            rest_label = f"在家安睡(免費全回 + 精神飽滿 {housing.BEDROOM_WELL_RESTED_HOURS} 小時)"
+        opts = [("rest", rest_label)]
+        if housing.has_upgrade(char, gamedata, loc_id, "garden"):
+            wait = housing.garden_wait(char, loc_id, now)
+            opts.append(("harvest", "🌿 採收藥草園" if wait <= 0 else f"🌿 藥草園(還需 {wait} 小時)"))
+        if housing.available_upgrades(char, gamedata, loc_id):
+            free = housing.slots(gamedata, loc_id) - used
+            opts.append(("upgrade", f"🔨 擴建居所(空位 {free})"))
+        opts += [("deposit", "存入倉庫(卸下負重)"), ("withdraw", "從倉庫取出")]
+        choice = ui.menu(title, opts, allow_back=True)
         if choice is None:
             return
         if choice == "rest":
             char.health, char.magicka, char.fatigue = char.max_health, char.max_magicka, char.max_fatigue
             party.heal_full(char, gamedata)
-            housing.set_well_rested(char, state.time.absolute_hours())
+            housing.set_well_rested(char, state.time.absolute_hours(),
+                                    housing.rest_hours(char, gamedata, loc_id))
             state.time.advance(8)
             ui.message("你在自家床榻上安睡一夜 —— 氣力盡復,精神飽滿(此後一段時間技能成長加速)。",
                        style="bold green")
+        elif choice == "harvest":
+            picks = housing.harvest_garden(char, gamedata, loc_id, now, state.rng)
+            if picks is None:
+                ui.message("藥圃還未到採收的時候。", style="grey70")
+            elif not picks:
+                ui.message("這一季藥圃長得稀疏,沒什麼可採的。", style="grey70")
+            else:
+                for iid, qty in picks:
+                    ui.message(f"採得 {gamedata.item_name(iid)} ×{qty}。", style="green")
+        elif choice == "upgrade":
+            _house_upgrade_menu(state, gamedata, loc_id)
         elif choice == "deposit":
             _stash_transfer(state, gamedata, loc_id, deposit=True)
         elif choice == "withdraw":
             _stash_transfer(state, gamedata, loc_id, deposit=False)
+
+
+def _house_upgrade_menu(state: GameState, gamedata: GameData, loc_id: str) -> None:
+    """擴建居所:目錄選單 → 金幣檢查 → 確認 → 扣款 + housing.buy_upgrade(嚴格金幣沉,
+    永不退款;鏡像購房流程)。"""
+    char = state.player
+    while True:
+        avail = housing.available_upgrades(char, gamedata, loc_id)
+        if not avail:
+            ui.message("沒有可再添置的設施了。", style="grey70")
+            return
+        opts = []
+        for uid in avail:
+            u = gamedata.house_upgrades[uid]
+            opts.append((uid, f"{u.get('icon', '')} {u['name']}({u['price']} 金)—— {u['desc']}"))
+        pick = ui.menu("添置哪項設施?", opts, allow_back=True)
+        if pick is None:
+            return
+        u = gamedata.house_upgrades[pick]
+        if char.gold < u["price"]:
+            ui.message("金幣不足。", style="red")
+            continue
+        if not ui.confirm(f"以 {u['price']} 金添置「{u['name']}」嗎?"):
+            continue
+        # 成功才扣款(buy_upgrade 可能 False → 不靜默沉金;比購房嚴,因升級閘可失敗)
+        if not housing.buy_upgrade(char, gamedata, loc_id, pick, state.time.absolute_hours()):
+            continue
+        char.gold -= u["price"]
+        ui.message(f"「{u['name']}」落成 —— {u['desc']}", style="bold green")
 
 
 def _stash_transfer(state: GameState, gamedata: GameData, loc_id: str, deposit: bool) -> None:

@@ -41,6 +41,8 @@ class GameData:
         self.rulers: dict = _load("rulers.json")     # 各城統治者(湮滅期大空位、各城自治;城戰前置)
         self.houses: dict = {k: v for k, v in _load("houses.json").items()
                              if not k.startswith("_")}   # 可購置房產(key=location_id;見 systems/housing.py)
+        self.house_upgrades: dict = {k: v for k, v in _load("house_upgrades.json").items()
+                                     if not k.startswith("_")}   # 房產擴建目錄(R110;見 systems/housing.py)
         _mounts_data: dict = _load("mounts.json")    # 坐騎(分三類)+ 馬廄城 + 長槍販售(見 systems/mounts.py)
         self.mounts: dict = _mounts_data["mounts"]
         self.stable_cities: set = set(_mounts_data.get("stable_cities", []))

@@ -35,5 +35,7 @@
   {"id": "pestilent", "name": "百病纏身", "desc": "同時身染 3 種疾病。", "cond": {"type": "disease_count", "count": 3}},
   {"id": "soul_collector", "name": "魂石藏家", "desc": "囊中持有 5 顆充能魂石。", "cond": {"type": "soul_gems_filled", "count": 5}},
   {"id": "star_breaker", "name": "弒裂之手", "desc": "討伐墮法師馬林·瓦倫(阿祖拉黑星)。", "cond": {"type": "kill_boss", "creature": "malyn_varen"}},
-  {"id": "forbidden_bane", "name": "叩問禁知", "desc": "討伐亞波克里法求知者(赫麥尤斯·莫拉)。", "cond": {"type": "kill_boss", "creature": "apocrypha_seeker"}}
+  {"id": "forbidden_bane", "name": "叩問禁知", "desc": "討伐亞波克里法求知者(赫麥尤斯·莫拉)。", "cond": {"type": "kill_boss", "creature": "apocrypha_seeker"}},
+  {"id": "homeowner", "name": "安家立業", "desc": "購置第一處房產,從此浪跡有歸處。", "cond": {"type": "houses_count", "count": 1}},
+  {"id": "estate_lord", "name": "廣廈四海", "desc": "在各地購置 4 處房產。", "cond": {"type": "houses_count", "count": 4}}
 ]

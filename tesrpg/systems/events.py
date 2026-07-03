@@ -144,16 +144,26 @@ def _forage_budget(scout: int, rng: RNG) -> int:
     return _FORAGE_BASE_BUDGET + scout // _FORAGE_BUDGET_PER_SCOUT + rng.randint(0, _FORAGE_BUDGET_JITTER)
 
 
-def forage_pool_draw(char: Character, gamedata: GameData, pool_id: str, rng: RNG) -> list:
+def forage_pool_draw(char: Character, gamedata: GameData, pool_id: str, rng: RNG,
+                     budget: int | None = None, value_cap: int | None = None) -> list:
     """生態系材料池「定值預算」抽取:偵查決定浮動預算,稀有材料每件成本高;在預算內加權
-    反覆抽、扣成本 → 大量低稀有 OR 少量高稀有自然湧現。回傳 [(item_id, qty), ...]。"""
+    反覆抽、扣成本 → 大量低稀有 OR 少量高稀有自然湧現。回傳 [(item_id, qty), ...]。
+
+    R110 藥草園走嚴格 no-op 參數:`budget` 給定 → 用固定預算(跳過 scout 預算計算,
+    **含 jitter 的 rng.randint 一併不抽**);`value_cap` 給定 → 候選只留 value ≤ cap 的
+    尋常材料。兩者皆 None(野採預設)→ 與原路徑逐位元組同(🔴 空候選 early-return 必須
+    維持在任何 rng 消耗之前 —— 守既有 RNG 序)。"""
     pool = (gamedata.ecology.get("pools", {}) or {}).get(pool_id, {})
     # 候選 = {item_id: (weight, cost)};_ 前綴鍵(_name/_doc)非 list → 跳過
     cand: dict = {iid: (_FORAGE_TIER_WEIGHTS[tier], _FORAGE_TIER_COST[tier])
                   for tier in _FORAGE_TIER_WEIGHTS for iid in pool.get(tier, [])}
+    if value_cap is not None:   # 藥草園:只長尋常材料(未知/毀損 id 視為超價 → 排除)
+        cand = {iid: wc for iid, wc in cand.items()
+                if (gamedata.item_or_none(iid) or {}).get("value", value_cap + 1) <= value_cap}
     if not cand:
         return []
-    budget = _forage_budget(int(char.skill("scout")), rng)
+    if budget is None:
+        budget = _forage_budget(int(char.skill("scout")), rng)
     got: dict = {}
     spent = 0
     # 防呆迴圈上限 = 該池理論最大產出(每材料各 cap 件)+1 → 絕不靜默截斷,純終止保險

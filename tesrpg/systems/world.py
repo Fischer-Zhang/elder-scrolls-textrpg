@@ -143,6 +143,10 @@ def buy_price(char: Character, gamedata: GameData, item_id: str) -> int:
     # R107 澤尼薩爾之佑:商賈之神的祝福享買價折扣(無祝福 → ×1.0 逐位元組同;只動買價·賣價不碰)
     from tesrpg.systems import divines
     price *= divines.buy_price_factor(char)
+    # R110 在地商誼:本省有「已購在地商誼」的自有房產 → 買價折扣(無 → ×1.0 逐位元組同;
+    # 只動買價·賣價不碰;插在反套利地板之前 → 任何疊加皆不可能倒掛)
+    from tesrpg.systems import housing
+    price *= 1 - housing.province_discount(char, gamedata)
     # 反套利鐵則:同物買價恆 > 賣價(極端議價 + 滿階軍械庫折扣下,折扣不得倒掛成金幣泵)
     return max(1, round(price), sell_price(char, gamedata, item_id) + 1)
 
