@@ -155,6 +155,42 @@ def test_travel_hop_fought_via_battle_counter():
         world.encounter_chance, M.maybe_event, ui.message, ui.show_events = saved2
 
 
+def test_travel_hop_stops_on_guard_confrontation_even_if_no_battle():
+    """🔴 懲罰類:帶賞金進城被衛兵盤查,即使繳罰金/服刑(未開打)也讓本跳 'fought' →
+    長途停下,不繞過處罰。武士特權放行(未受罰)則不中斷。"""
+    from tesrpg.systems import crime
+    gd, c, st = _cs()
+    # 找一個相鄰城/鎮當終點(guard 只在城/鎮觸發)
+    dest = next((d for d in gd.world["locations"][c.location_id].get("links", {})
+                 if gd.world["locations"][d]["type"] in ("city", "town")), None)
+    assert dest, "起點應有相鄰城鎮(fixture 前提)"
+    prov = gd.world["locations"][dest]["province"]
+    crime.add_bounty(c, prov, 200)                            # 帶賞金 → 觸發盤查
+    saved = (world.encounter_chance, M.maybe_event, M.guard_confrontation, ui.message, ui.show_events)
+    world.encounter_chance = lambda d, h: 0.0
+    M.maybe_event = lambda *a, **k: None
+    M.guard_confrontation = lambda s, g: "confronted"        # 模擬「繳罰金過關」(未開打)
+    ui.message = ui.show_events = lambda *a, **k: None
+    try:
+        status = M._travel_hop(st, gd, dest)
+    finally:
+        (world.encounter_chance, M.maybe_event, M.guard_confrontation, ui.message, ui.show_events) = saved
+    assert status == "fought"                                # 被盤查處置 → 中斷長途
+    # 對照:武士特權放行(guard 回 None)→ 不中斷
+    c2 = build_character(gd, name="武", sex="male", race="nord", birthsign="warrior", class_id="warrior")
+    st2 = GameState(player=c2, time=GameTime(), rng=RNG(1))
+    crime.add_bounty(c2, prov, 200)
+    saved2 = (world.encounter_chance, M.maybe_event, M.guard_confrontation, ui.message, ui.show_events)
+    world.encounter_chance = lambda d, h: 0.0
+    M.maybe_event = lambda *a, **k: None
+    M.guard_confrontation = lambda s, g: None                # 武士放行
+    ui.message = ui.show_events = lambda *a, **k: None
+    try:
+        assert M._travel_hop(st2, gd, dest) == "clear"       # 未受罰 → 不中斷
+    finally:
+        (world.encounter_chance, M.maybe_event, M.guard_confrontation, ui.message, ui.show_events) = saved2
+
+
 def test_travel_route_dead_stops():
     gd, c, st = _cs()
     far, path = _far_city(gd, c)

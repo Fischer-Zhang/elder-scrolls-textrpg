@@ -1631,6 +1631,7 @@ def _travel_hop(state: GameState, gamedata: GameData, dest: str) -> str:
     任一,靠 run_battle 計數偵測 → 偵查/撤退/威嚇未交戰則不算)/ 'clear'(平安通過)。
     供 `_travel_to`(單跳)與 `_travel_route`(長途逐跳,遇戰中斷交還控制)共用。"""
     _b0 = getattr(state, "battles_fought", 0)   # R114D:本跳前的實戰數 → 末尾比對判「是否打過」
+    interrupted = False   # R114D:遇到「懲罰類」敵意遭遇(即使逃/繳/服刑未開打)也中斷長途,不繞過處罰
     res = world.travel(state.player, gamedata, dest, state.time, state.rng)
     foe = res["foe"]
     # 路途伏擊:R84 賞金獵人(通緝)優先,否則 R96 宿敵公會打手;觸發則「取代」本趟一般遭遇
@@ -1655,12 +1656,15 @@ def _travel_hop(state: GameState, gamedata: GameData, dest: str) -> str:
                    style="grey70")
     ui.show_events(res["skill_events"], gamedata)
     if bounty_ambush:
+        interrupted = True   # R84 賞金獵人=通緝的處罰:不論打贏/逃走都停下(不繞過被獵殺的壓力)
         if _bounty_hunter_ambush(state, gamedata) == "dead":
             return "dead"
     elif guild_ambush:
+        interrupted = True   # R96 公會打手=宿敵的處罰:同上
         if _guild_enforcer_ambush(state, gamedata, g_fid, g_tier) == "dead":
             return "dead"
     elif foe is not None:
+        # 隨機野獸/盜匪埋伏:非處罰 → 只在「真開打」才停(靠 run_battle 計數);逃/嚇退則續行,免逃隻狼就打斷旅程
         ui.message("途中遭遇了埋伏!", style="yellow")
         result = offer_battle(state, gamedata, foe, ambush_chance=0.4, surprise=True, mounted=True)   # 旅途=騎乘語境
         if result == "dead":
@@ -1677,19 +1681,22 @@ def _travel_hop(state: GameState, gamedata: GameData, dest: str) -> str:
     if loc["type"] in ("city", "town"):
         if maybe_event(state, gamedata, "arrive") == "dead":
             return "dead"
-    # 帶著賞金進城 → 衛兵盤查
+    # 帶著賞金進城 → 衛兵盤查(懲罰類:真被攔下盤問〔繳/服刑/反抗/說退〕即中斷長途,不繞過;隱形溜過不算)
     if loc["type"] in ("city", "town") and crime.bounty(state.player, loc["province"]) > 0:
-        if guard_confrontation(state, gamedata) == "dead":
+        gc = guard_confrontation(state, gamedata)
+        if gc == "dead":
             return "dead"
-    # R50:詛咒被識破 → 衛兵圍捕(高階吸血鬼被看破 / 獸形現於城中)
+        if gc == "confronted":
+            interrupted = True
+    # R50:詛咒被識破 → 衛兵圍捕(高階吸血鬼被看破 / 獸形現於城中)—— 圍捕開打由 run_battle 計數涵蓋
     if loc["type"] in ("city", "town"):
         if _curse_manhunt(state, gamedata) == "dead":
             return "dead"
     # R100:臥底在城鎮被某 B NPC 起疑(低 secrecy → 機率識破 → 指派知情者 + 限時追殺)
     if loc["type"] in ("city", "town"):
         _undercover_detection(state, gamedata)
-    # 本跳期間只要 run_battle 被呼叫過一次(埋伏/遭遇/衛兵/圍捕/事件戰鬥)→ 'fought'(長途據此停下)
-    return "fought" if getattr(state, "battles_fought", 0) > _b0 else "clear"
+    # 中斷判定:懲罰類敵意遭遇(interrupted)或本跳真打過一場(run_battle 計數增)→ 'fought'(長途據此停下)
+    return "fought" if (interrupted or getattr(state, "battles_fought", 0) > _b0) else "clear"
 
 
 def _travel_route(state: GameState, gamedata: GameData, dest_final: str) -> str | None:
@@ -4921,12 +4928,15 @@ def action_murder(state: GameState, gamedata: GameData, nid: str) -> str | None:
 
 
 def guard_confrontation(state: GameState, gamedata: GameData) -> str | None:
+    """城門衛兵盤查(帶賞金進城)。回 'dead'(反抗身亡)/ 'confronted'(真被攔下盤問並處置:
+    繳金/服刑/反抗/說退 → R114D 長途據此中斷·不繞過處罰)/ None(隱形溜過 或 武士特權放行:
+    未受懲罰,不中斷長途)。"""
     char = state.player
     province = crime.province_of(char, gamedata)
     if spellfx.is_invisible(char):   # R104 隱形:隱形時效內悄然穿過城門盤查(不消耗;3 小時窗自然收束)
         ui.message("你隱於無形,悄無聲息地穿過了城門的盤查。", style="grey70")
         return None
-    # 武士特權:身為本省某城武士,小額賞金衛兵放行(大罪仍追緝)
+    # 武士特權:身為本省某城武士,小額賞金衛兵放行(大罪仍追緝)—— 特權放行=未受罰,不中斷長途
     if court.is_thane_in_province(char, gamedata, province) \
             and crime.bounty(char, province) <= court.THANE_BOUNTY_FORGIVE:
         ui.message(f"「武士閣下!」衛兵認出你的身分,躬身讓道 —— {province}的小額賞金一筆勾銷。",
@@ -4978,8 +4988,8 @@ def guard_confrontation(state: GameState, gamedata: GameData) -> str | None:
                 return "dead"
             crime.add_bounty(char, province, 40)   # 拒捕罪加一等
             ui.message("你殺出重圍逃進巷弄 —— 但賞金又添了一筆,你仍是通緝犯。", style="red")
-            return None
-    return None
+            return "confronted"
+    return "confronted"
 
 
 _BEAST_TOWN_MANHUNT_CHANCE = 0.85   # R50:獸形現於城中被衛兵圍捕的機率(主動入城=自找;高但非必中)
