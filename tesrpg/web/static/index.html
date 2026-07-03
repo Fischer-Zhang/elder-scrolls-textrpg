@@ -1140,7 +1140,9 @@
           if (e.key === "Enter" || e.key === " ") { e.preventDefault(); submit(k); }
         });
         any = true;
-        if (optKey[k]) replace.push(k);
+        // R113:地城方向鍵(go:*)不接管按鈕 —— 格子可點之餘保留「往北/南…」標籤按鈕與其數字鍵
+        //(否則方向標籤整組消失、數字槽移給無標籤格子,鍵盤玩家無從對映)
+        if (optKey[k] && k.indexOf("go:") !== 0) replace.push(k);
       }
     });
     if (!any || !replace.length) return;
@@ -1161,6 +1163,7 @@
     }).concat(remaining);
   }
 
+  let curSpec = null;   // 當前 prompt spec(R113:方向鍵對映查此)
   function render(frame) {
     const prev = promptEl.querySelector("input.field");
     const prevVal = prev ? prev.value : null;
@@ -1172,17 +1175,34 @@
     if (stateBlocks.length) renderScreen(stateBlocks);   // 只在有新狀態時替換;純敘事幀保留前畫面
     const fresh = (frame.seq == null) || (frame.seq > journalSeq);
     if (fresh) { appendJournal(logBlocks, frame.resend); if (frame.seq != null) journalSeq = frame.seq; }   // 重連重送(seq≤)由 seq gate 擋;int 越界重送(resend)由內容簽名擋
-    curPid = frame.prompt_id; locked = false;
+    curPid = frame.prompt_id; locked = false; curSpec = frame.prompt;
     renderPrompt(frame.prompt);
     wireActionableRows(frame.prompt);
     if (samePrompt && prevVal != null) { const inp = promptEl.querySelector("input.field"); if (inp) inp.value = prevVal; }
-    if (!samePrompt) window.scrollTo(0, 0);
+    // R113 閱讀動線:帶新敘事的幀 → 選單置中(上瞥狀態、下瞥「本回合」皆可及;頁面塞得下時無感);
+    // 純狀態幀維持捲頂。修「每幀捲頂但敘事在頁底 → 每次行動都要往下捲」。
+    if (!samePrompt) {
+      if (fresh && logBlocks.length && document.documentElement.scrollHeight > window.innerHeight + 4) {
+        promptEl.scrollIntoView({ block: "center" });
+      } else {
+        window.scrollTo(0, 0);
+      }
+    }
   }
 
-  // 數字鍵快捷(<10 即時;>=10 緩衝多位數)
+  // 數字鍵快捷(<10 即時;>=10 緩衝多位數,R113:不可能再延伸時立即送出免 450ms 稅)
   let digitBuf = "", digitTimer = null;
   function clickIdx(i) { const b = flatButtons[i - 1]; if (b) b.click(); }
   function resolveBuf() { if (digitTimer) { clearTimeout(digitTimer); digitTimer = null; } const i = parseInt(digitBuf, 10); digitBuf = ""; if (i >= 1) clickIdx(i); }
+  // R113 地城方向鍵:當前 prompt 含 go:n/s/w/e 選項(選單鍵或 extra_keys)才吃方向鍵
+  const ARROW_DIR = { ArrowUp: "go:n", ArrowDown: "go:s", ArrowLeft: "go:w", ArrowRight: "go:e" };
+  function specHasKey(k) {
+    if (!curSpec) return false;
+    if ((curSpec.extra_keys || []).indexOf(k) >= 0) return true;
+    const opts = curSpec.type === "menu" ? (curSpec.options || [])
+      : curSpec.type === "grouped" ? curSpec.groups.reduce(function (a, g) { return a.concat(g.options); }, []) : [];
+    return opts.some(function (o) { return o.key === k; });
+  }
   document.addEventListener("keydown", function (e) {
     const tag = (document.activeElement && document.activeElement.tagName) || "";
     if (tag === "INPUT" || tag === "TEXTAREA") return;
@@ -1191,9 +1211,19 @@
       if (flatButtons.length < 10) { if (e.key === "0") { if (backButton) backButton.click(); } else clickIdx(parseInt(e.key, 10)); return; }
       if (e.key === "0" && !digitBuf) { if (backButton) backButton.click(); return; }   // 大選單(≥10):0(非多位數接續)= 返回(選項編號恆 1+,首位 0 必為返回)
       digitBuf += e.key; if (digitTimer) clearTimeout(digitTimer);
-      if (digitBuf.length >= String(flatButtons.length).length) resolveBuf(); else digitTimer = setTimeout(resolveBuf, 450);
+      // 已達位數上限 或 再接一位必超出總數(buf×10 > N)→ 立即送出;否則短緩衝等第二位
+      if (digitBuf.length >= String(flatButtons.length).length
+          || parseInt(digitBuf, 10) * 10 > flatButtons.length) resolveBuf();
+      else digitTimer = setTimeout(resolveBuf, 450);
     } else if (e.key === "Enter" && digitBuf) { e.preventDefault(); resolveBuf(); }
-    else if (e.key === "0" && backButton) { e.preventDefault(); backButton.click(); }
+    else if (ARROW_DIR[e.key] && (specHasKey("go:n") || specHasKey("go:s") || specHasKey("go:w") || specHasKey("go:e"))) {
+      // 地城情境(spec 含任一方向)→ 方向鍵一律接管:存在的方向=移動,邊界缺的方向=無動作
+      //(不 preventDefault 會變成「往北移動、往南捲頁」的不一致;非地城 spec 無 go:* → 方向鍵照常捲頁)
+      e.preventDefault();
+      const dk = ARROW_DIR[e.key];
+      if (specHasKey(dk) && !locked) submit(dk);
+    }
+    else if (e.key === "Escape" && backButton) { e.preventDefault(); backButton.click(); }   // Esc=返回(原 "0" 分支不可達之死碼移除)
   });
 
   function connect() {

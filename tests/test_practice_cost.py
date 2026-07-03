@@ -240,8 +240,9 @@ def test_smoke_talk_persuade_advances_time():
 
 
 def test_lockpick_loop_bounded_by_picks():
-    """撬鎖自動重試迴圈受**開鎖器數量**所限(失敗折斷),即便玩家一律選「再試」也不會無限刷:
-    用盡開鎖器即 no_pick 收手。終局必為「開鎖成功」或「開鎖器耗盡」二者之一。
+    """撬鎖自動重試迴圈受**開鎖器數量**所限(失敗折斷),即便玩家選「連試到開」(R113 選單
+    的 auto 路徑,免逐次確認)也不會無限刷:用盡開鎖器即 no_pick 收手。終局必為
+    「開鎖成功」或「開鎖器耗盡」二者之一。
     反向驗證:還原「失敗不折斷開鎖器」會讓本迴圈一路免費重試到偶然成功。
     """
     import tesrpg.main as M
@@ -250,7 +251,7 @@ def test_lockpick_loop_bounded_by_picks():
     state.player.inventory = [s for s in state.player.inventory if s["id"] != "lockpick"]
     inventory.add_item(state.player, "lockpick", 3)     # 精確 3 根
     gold0 = state.player.gold
-    restore = _patch_ui(_seq_menu(), _bounded_yes(50))  # 一律「再試」,不靠玩家放棄
+    restore = _patch_ui(_seq_menu("auto"), _bounded_yes(50))  # 失敗即選「連試到底」(R113 選單),不靠玩家放棄
     try:
         M._resolve_container(state, gd, {"locked": 99, "loot": [{"gold": [5, 5]}]}, "箱子")
     finally:

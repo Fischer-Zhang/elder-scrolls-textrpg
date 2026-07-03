@@ -71,6 +71,8 @@ def _run(gd, st, battle_result, navigate=True, cap=None):
         return None
     def menu(title, opts, allow_back=False):
         cap["last_opts"] = [o[0] for o in opts]
+        if title != "地城探索":       # R113:撬鎖連試等「子選單」→ 一律放棄/取首項,不得餵進導航位置模型
+            return None if allow_back else opts[0][0]
         if not navigate:
             return "leave"
         g = stash["g"]; z, x, y = stash["z"], stash["x"], stash["y"]

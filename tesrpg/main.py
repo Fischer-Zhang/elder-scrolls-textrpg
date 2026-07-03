@@ -460,19 +460,24 @@ def action_save(state: GameState) -> None:
 # ======================================================================
 # 戰鬥
 # ======================================================================
-def _choose_enemy_target(state: GameState, gamedata: GameData, enemies: list, allies: list):
-    """從存活敵人中選一個目標(僅一個時自動選)。"""
+def _choose_enemy_target(state: GameState, gamedata: GameData, enemies: list, allies: list,
+                         last=None):
+    """從存活敵人中選一個目標(僅一個時自動選)。R113:`last`=上次目標(存活則標「↻ 上次」);
+    可「返回」→ 回 None(呼叫端退回行動選單,誤按攻擊不再鎖死)。"""
     alive = [e for e in enemies if combat.is_alive(e)]
     if len(alive) == 1:
         return alive[0]
     if ui._web is not None:        # web:重新顯示戰場(blocks 每幀清空),讓敵方卡片可點選目標
         ui.combat_status_group(state.player, allies, enemies, gamedata)
-    opts = [(str(i), f"{e.name}（{int(e.health)}/{e.max_health})") for i, e in enumerate(alive)]
-    return alive[int(ui.menu("攻擊哪個目標?", opts))]
+    opts = [(str(i), f"{e.name}（{int(e.health)}/{e.max_health}){'　↻ 上次' if e is last else ''}")
+            for i, e in enumerate(alive)]
+    pick = ui.menu("攻擊哪個目標?", opts, allow_back=True)
+    return None if pick is None else alive[int(pick)]
 
 
 def _choose_ally_target(state: GameState, gamedata: GameData, allies: list):
-    """從存活同伴中選一個施放(無同伴回 None;僅一個時自動選)。供治療師援護法術。"""
+    """從存活同伴中選一個施放(無同伴回 None;僅一個時自動選)。供治療師援護法術。
+    ⚠ 回 None 有兩義(無同伴/返回)—— 呼叫端把 None 當「不施放」處理即可,語意相容。"""
     living = [a for a in allies if combat.is_alive(a)]
     if not living:
         return None
@@ -481,7 +486,8 @@ def _choose_ally_target(state: GameState, gamedata: GameData, allies: list):
     if ui._web is not None:
         ui.combat_status_group(state.player, allies, [], gamedata)
     opts = [(str(i), f"{a.name}（{int(a.health)}/{a.max_health})") for i, a in enumerate(living)]
-    return living[int(ui.menu("援護哪個同伴?", opts))]
+    pick = ui.menu("援護哪個同伴?", opts, allow_back=True)
+    return None if pick is None else living[int(pick)]
 
 
 def _has_standard(char) -> bool:
@@ -518,14 +524,52 @@ def _spell_token_suffix(char, gamedata: GameData, spell_id: str) -> str:
     return f" · 魂 {tc}{'(不足)' if getattr(char, 'soul_tokens', 0) < tc else ''}"
 
 
+def _repeat_option(player, gamedata: GameData, enemies: list, allies: list, mem) -> str | None:
+    """R113「↻ 再次」選項標籤:上次動作(attack/cast)當下仍可行才提供;否則 None。
+    目標死亡不擋(選了會重開目標選單;僅剩一敵時自動選之,標籤如實顯示其名);
+    cast 需仍 can_cast;援護型法術需仍有存活同伴(否則 repeat 置頂=一鍵保證浪費回合)。"""
+    last = (mem or {}).get("last")
+    if not last:
+        return None
+
+    def _enemy_where(prefix: str) -> str:
+        tgt = mem.get("target")
+        if tgt is not None and combat.is_alive(tgt):
+            return f"{prefix}{tgt.name}"
+        alive = [e for e in enemies if combat.is_alive(e)]
+        return f"{prefix}{alive[0].name}" if len(alive) == 1 else "（重選目標)"
+
+    if last["type"] == "attack":
+        return f"↻ 再攻{_enemy_where(':')}"
+    if last["type"] == "cast":
+        sid = last["spell_id"]
+        if sid not in player.spells or not magic.can_cast(player, gamedata, sid):
+            return None
+        name = gamedata.spells[sid]["name"]
+        tk = gamedata.spells[sid]["target"]
+        if tk == "enemy":
+            return f"↻ 再施:{name}{_enemy_where('→')}"
+        if tk == "ally" and not any(combat.is_alive(a) for a in allies):
+            return None   # 無存活同伴 → 援護必然落空,不給 repeat(手動路徑仍可選=舊語意)
+        return f"↻ 再施:{name}"
+    return None
+
+
 def _choose_combat_action(state: GameState, gamedata: GameData, enemies: list, allies: list,
                           vanish_used: int = 0, mounted: bool = False, first_round: bool = False,
-                          charm_used: bool = False):
+                          charm_used: bool = False, mem: dict | None = None):
     """回傳玩家本回合的行動 dict:{type, spell_id?, target?}。
 
     mounted/first_round:野外騎乘遭遇的第一回合 → 開放坐騎戰技(戰馬衝鋒 / 獵馬騎射)。
+    mem(R113 戰鬥記憶,run_battle 持有):{"last": 上次動作, "target": 上次敵目標, "ally": 上次援護對象}
+    → 選單頂「↻ 再次」一鍵重複、目標選單標「上次」;目標選單可返回(誤按不鎖死)。
     """
     player = state.player
+
+    def _back():   # 目標選單「返回」→ 退回行動選單(保留 vanish/charm 等場內狀態)
+        return _choose_combat_action(state, gamedata, enemies, allies, vanish_used,
+                                     mounted, first_round, charm_used, mem)
+
     # 每次進入(含子選單「返回」遞迴)都重顯戰場 → 動作選單恆見敵情(web 每幀清空重繪)。
     ui.combat_status_group(player, allies, enemies, gamedata)
     if getattr(player, "beast_form", False):     # 獸形:爪擊 /(達階)恫嚇之嚎 / 變回人形 / 逃跑
@@ -535,10 +579,16 @@ def _choose_combat_action(state: GameState, gamedata: GameData, enemies: list, a
         opts += [("revert", "變回人形"), ("flee", "逃跑")]
         choice = ui.menu("你的回合(獸形)", opts)
         if choice == "attack":
-            return {"type": "attack", "target": _choose_enemy_target(state, gamedata, enemies, allies)}
+            tgt = _choose_enemy_target(state, gamedata, enemies, allies, last=(mem or {}).get("target"))
+            if tgt is None:
+                return _back()
+            return {"type": "attack", "target": tgt}
         return {"type": choice}
     _gs = inventory.is_great_shield(gamedata, player.equipped.get("shield"))
     opts = [("attack", f"攻擊（{combat.effective_weapon_name(player, gamedata)}{' · 盾擊' if _gs else ''})")]
+    _rep = _repeat_option(player, gamedata, enemies, allies, mem)   # R113:一鍵重複上次動作(置頂)
+    if _rep is not None:
+        opts.insert(0, ("repeat", _rep))
     castable = [s for s in player.spells if magic.can_cast(player, gamedata, s)]
     if castable:
         opts.append(("cast", "施法"))
@@ -614,8 +664,38 @@ def _choose_combat_action(state: GameState, gamedata: GameData, enemies: list, a
     opts.append(("flee", "逃跑"))
     choice = ui.menu("你的回合", opts)
 
+    _last_tgt = (mem or {}).get("target")
+    if choice == "repeat":                       # R113:重放上次動作(目標死亡 → 重開目標選單)
+        last = mem["last"]
+        if last["type"] == "attack":
+            tgt = _last_tgt if (_last_tgt is not None and combat.is_alive(_last_tgt)) \
+                else _choose_enemy_target(state, gamedata, enemies, allies, last=_last_tgt)
+            if tgt is None:
+                return _back()
+            return {"type": "attack", "target": tgt}
+        sid = last["spell_id"]
+        tk = gamedata.spells[sid]["target"]
+        if tk == "enemy":
+            tgt = _last_tgt if (_last_tgt is not None and combat.is_alive(_last_tgt)) \
+                else _choose_enemy_target(state, gamedata, enemies, allies, last=_last_tgt)
+            if tgt is None:
+                return _back()
+        elif tk == "ally":
+            la = (mem or {}).get("ally")
+            # 🔴 `la in allies`:過期召喚物已被移出戰場但 health>0 —— 只驗 is_alive 會對「已離場者」
+            # 施放(耗魔耗回合零效果);back 接 _back()(鏡像手動路徑,取消不燒回合;審查 MAJOR)
+            tgt = la if (la is not None and la in allies and combat.is_alive(la)) \
+                else _choose_ally_target(state, gamedata, allies)
+            if tgt is None and any(combat.is_alive(a) for a in allies):
+                return _back()
+        else:
+            tgt = None
+        return {"type": "cast", "spell_id": sid, "target": tgt}
     if choice == "attack":
-        return {"type": "attack", "target": _choose_enemy_target(state, gamedata, enemies, allies)}
+        tgt = _choose_enemy_target(state, gamedata, enemies, allies, last=_last_tgt)
+        if tgt is None:
+            return _back()
+        return {"type": "attack", "target": tgt}
     if choice == "cast":
         if ui._web is not None:    # web:blocks 每幀清空 → 選法術時重顯戰場,免「敵狀態丟失」
             ui.combat_status_group(player, allies, enemies, gamedata)
@@ -625,28 +705,42 @@ def _choose_combat_action(state: GameState, gamedata: GameData, enemies: list, a
                       for s in castable]
         sid = ui.menu("施放哪道法術?", spell_opts, allow_back=True)
         if sid is None:
-            return _choose_combat_action(state, gamedata, enemies, allies, vanish_used,
-                                         mounted, first_round, charm_used)   # 補 charm_used:施法→返回重入不得重置「每場一次」魅惑
+            return _back()   # 施法→返回重入(保 charm_used 等場內狀態,「每場一次」不重置)
         tk = gamedata.spells[sid]["target"]
         if tk == "enemy":
-            target = _choose_enemy_target(state, gamedata, enemies, allies)
+            target = _choose_enemy_target(state, gamedata, enemies, allies, last=_last_tgt)
+            if target is None:
+                return _back()
         elif tk == "ally":                       # 治療師援護:選一個同伴施放
             target = _choose_ally_target(state, gamedata, allies)
+            if target is None and any(combat.is_alive(a) for a in allies):
+                return _back()   # 有同伴卻按「返回」= 取消(無同伴 None 照舊=不指定,保舊語意)
         else:
             target = None
         return {"type": "cast", "spell_id": sid, "target": target}
     if choice in ("aimed", "crippling", "skirmish", "deathmark", "charge", "skirmish_ride", "vampire_charm"):   # 皆先選敵方目標(散兵武技 / 刺客烙印 / 坐騎戰技 / 吸血鬼魅惑)
-        return {"type": choice, "target": _choose_enemy_target(state, gamedata, enemies, allies)}
+        tgt = _choose_enemy_target(state, gamedata, enemies, allies, last=_last_tgt)
+        if tgt is None:
+            return _back()
+        return {"type": choice, "target": tgt}
     if choice == "power":
         eff = powers.power_def(powers.power_id(player, gamedata))["effect"]
         needs_target = any(k in eff for k in ("paralyze", "poison", "drain"))
-        target = _choose_enemy_target(state, gamedata, enemies, allies) if needs_target else None
+        if needs_target:
+            target = _choose_enemy_target(state, gamedata, enemies, allies, last=_last_tgt)
+            if target is None:
+                return _back()
+        else:
+            target = None
         return {"type": "power", "target": target}
     if choice == "racial_power":
         rpid = powers.racial_power_id(player, gamedata)
         if powers.racial_needs_target(rpid):    # 單體控場:限定合類(野獸/人形)存活敵
             valid = powers.racial_combat_targets(rpid, enemies, gamedata)
-            return {"type": "racial_power", "target": _choose_enemy_target(state, gamedata, valid, allies)}
+            tgt = _choose_enemy_target(state, gamedata, valid, allies, last=_last_tgt)
+            if tgt is None:
+                return _back()
+            return {"type": "racial_power", "target": tgt}
         return {"type": "racial_power", "target": None}
     return {"type": choice}
 
@@ -796,6 +890,7 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
     opening = (not alerted) or entered_invisible   # 開場偷襲:首個攻擊吃潛行加成;若敵人已警覺(撤退失敗)則無(隱形可強行重獲)
     vanishes_done = 0  # 本場已成功隱遁次數(成功率遞減,防無限風箏)
     charm_used = False  # 本場是否已用吸血鬼「魅惑凝視」(每場一次;暫態,不入檔)
+    cmem: dict = {"last": None, "target": None, "ally": None}  # R113 戰鬥記憶(場內暫態):↻ 再次 / 目標標記
 
     # 獸形快取對齊:旅行/休息可能在「同一動作內」推進時間過了獸形時效又觸發戰鬥,
     # 而 combat 讀快取布林、game_loop 的 update 只在每圈頂端刷新 → 進戰前對齊,杜絕以過期獸形作戰。
@@ -848,8 +943,20 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
             blocking = False
         else:
             action = _choose_combat_action(state, gamedata, enemies, battle["allies"], vanishes_done,
-                                           mounted=mounted, first_round=(round_no == 1), charm_used=charm_used)
+                                           mounted=mounted, first_round=(round_no == 1), charm_used=charm_used,
+                                           mem=cmem)
             blocking = action["type"] == "block"
+            # R113 戰鬥記憶:attack/cast 可「↻ 再次」;任何帶敵目標的動作都更新目標記憶
+            if action["type"] == "attack":
+                cmem["last"] = {"type": "attack"}
+            elif action["type"] == "cast":
+                cmem["last"] = {"type": "cast", "spell_id": action["spell_id"]}
+            _t = action.get("target")
+            if _t is not None:
+                if _t in enemies:
+                    cmem["target"] = _t
+                elif _t in battle["allies"]:
+                    cmem["ally"] = _t
 
         # ---- 玩家階段 ----
         if action["type"] == "flee":
@@ -1539,6 +1646,7 @@ def _resolve_container(state: GameState, gamedata: GameData, container: dict, la
         ch = dungeon.effective_pick_lock_chance(state.player, gamedata, lock)
         if not ui.confirm(f"發現一個上鎖的{label}(鎖難度 {lock},成功率約 {int(ch*100)}%,開鎖器 ×{picks}),嘗試撬鎖?"):
             return
+        auto_pick = False                                # R113:失敗後可選「連試到底」免逐次確認
         while True:
             r = dungeon.pick_lock(state.player, gamedata, lock, state.rng)
             state.time.advance(r["hours"])               # 不耗時(hours 恆 0)
@@ -1555,8 +1663,17 @@ def _resolve_container(state: GameState, gamedata: GameData, container: dict, la
             if r["tired"]:
                 ui.message(f"撬鎖失敗{broke},你已精疲力竭 —— 得先歇口氣。", style="yellow")
                 return
-            if not ui.confirm(f"撬鎖失敗{broke}。再試一次?"):
+            if auto_pick:                                # R113 連試:免逐次確認,靠既有終止閘收斂
+                ui.message(f"撬鎖失敗{broke},你咬牙再上。", style="grey70")
+                continue
+            nxt = ui.menu(f"撬鎖失敗{broke}。",
+                          [("retry", "再試一次"),
+                           ("auto", f"連試到開（或開鎖器用盡/力竭;剩 ×{inventory.count_item(state.player, 'lockpick')})")],
+                          allow_back=True)
+            if nxt is None:
                 return
+            if nxt == "auto":
+                auto_pick = True
     spoils = dungeon.open_container(state.player, gamedata, container, state.rng)
     ui.message(f"你打開了{label}:", style="green")
     ui.loot_report(spoils, gamedata)
@@ -1748,6 +1865,9 @@ def action_dungeon(state: GameState, gamedata: GameData) -> str | None:
         opts.append(("leave", "離開地城"))
         choice = ui.menu("地城探索", opts)
         if choice is None or choice == "leave":
+            # R113:離開確認 —— 選項與方向鍵相鄰、位號隨鄰格數漂移,誤觸即失全部探索進度
+            if not ui.confirm("離開地城?（本次的地圖探索與清怪進度不會保留)"):
+                continue
             ui.message("你循來路退出了地城。", style="grey70")
             state.time.advance(1)
             return None
