@@ -1410,6 +1410,24 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 
 ---
 
+### R114C · 經濟 QoL 批次:賣貨/倉庫/連煉/連訓/直達旅店/城區連逛(UI/UX 審計 包C)[UI-flow] [re-sim byte-identical]
+
+承 UI/UX 審計四包,做**包 C 經濟 QoL**(高頻互動成本小改集合·純流程·零平衡零存檔)。
+
+- **賣貨/銷贓預設全部 + 高價單件確認**(cost#4):`action_shop`/`action_fence` 賣貨數量預設 `1→owned`(免手打數字);**僅有一件且 `value≥SELL_CONFIRM_VALUE=150`** 才彈 `ui.confirm`(防誤點賣掉精品·一般雜貨零摩擦)。
+- **倉庫全部存入/取出**(cost#8):`_stash_transfer` 加 `__all__` 選項(逐堆疊 deposit/withdraw·取出以負重為閘·滿則止該件續下件)。
+- **煉金再煉一鍋**(cost#5):`action_alchemy` 抽 `_brew_and_report(a,b)` 巢狀 helper·煉完 confirm-loop「↻ 再煉一鍋」(材料任一耗盡即止·R32 揭露/學會每鍋照報)。
+- **訓練師連買 +1**(cost#9a):`action_trainer` 訓完 confirm-loop「↻ 再訓練」(達 cap 或錢不足即止·免每級重選類別/技能)。
+- **練習再練上次**(cost#6):module global `_last_practice_skill`(**session 暫態·不入檔·跨載入 re-validate**:須 in gamedata.skills 且 base_skill<cap)→ 首選單出「↻ 再練 X」捷徑跳過 類別→技能兩層。
+- **丟棄/回爐高價確認**(cost#9b):`_item_actions` drop / `action_meltdown` 對 `value≥DESTROY_CONFIRM_VALUE=150` 彈確認(不可逆·廉價品零摩擦)。
+- **旅店直達過夜**(cost#3a):抽 `_inn_rest(state,gamedata)`·廣場加「🛏 宿一晚」直達(9 成情境只過夜)·`action_inn` 的 rest 改呼叫之。
+- **🔴 城區子選單停留連逛**(cost#3b·唯一結構改動):game_loop 加 `_stay_district`——城區服務辦完且**未死**(`not died`)→ 下圈直接回該區子選單(商店→淬鍊→回爐免回 hub 重進);按返回或該區這圈消失(獸形/被排斥)→ 清旗回 hub。**iteration 基數不變**(仍 1 dispatch/圈)→ hub-top 更新(worldpulse/reinfest/vampire…)頻率同 HEAD;`died=="dead"` 照常 end_run(_stay 只在 `not died` 設)。
+- **驗證**:`run_all` **110**(新 `test_econ_qol`:賣全部/高價堆疊預設1/高價拒賣保留/倉庫全存全取/直達過夜/再煉一鍋/連訓/練習記憶捷徑/丟棄高價確認×拒受/低價免確認/**城區連逛驅動 game_loop 證不 trap**);`test_m14._patch_ui` 加 stub `ui.confirm→True`;**sim byte-identical**(隔離 worktree·純選單流·零 rng 消耗·零碰 combat/formulas);煙霧驅 main() 過城區連逛。
+- **對抗審查(3 維 6 agent·0 BLOCKER/0 MAJOR)**:district-loop 全維判定 SAFE(不 trap·`died` 照傳·**額外一圈 top-of-loop 更新皆 day/watermark gated 且 worldpulse 是唯一上頂 rng draw 又日閘 → 選單迴圈不消耗 rng·決定性守住**);「stay-loop 零測試」誤報被**駁回**(drive 測試已覆蓋)。confirmed 全 NIT 處置:① 高價**堆疊**仍 Enter 傾銷 → 高價堆疊預設 1(雜貨仍全部);② `_last_practice_skill` 跨角殘留 → game_loop 進入重置;③ 再煉全形括號 → ASCII;④ 宿一晚「10金」空格 → 「10 金」;⑤ 練習測試清理入 try/finally。**Conscious accept**:訓練師 +1 label 跨多 base 級(equip bonus·pre-existing 非本輪);多量賣仍無 yes/no(有數字預設閘·by-design)。
+- 🔴 **鐵律**:`_stay_district` 只在 `not died` 設(死亡照常結算);`_last_practice_skill` 是 session 暫態 UI 捷徑·絕不入檔;賣/丟/熔高價確認門檻 `SELL_CONFIRM_VALUE`/`DESTROY_CONFIRM_VALUE`(調整=改常數·純安全閘不碰經濟);**刻意不含**吸血鬼進食去確認(cost#7·進食有被撞見風險·保留)。**審計餘包 D 長途旅行 + 「戰鬥中用藥水」設計題留後續。**
+
+---
+
 ### R114 · 資訊可見性:限時增益總覽 + HUD 狀態補齊 + 任務追蹤(UI/UX 審計 包B)[UI-only] [re-sim byte-identical]
 
 承 R113 的 UI/UX 審計四包,做**包 B 資訊可見性**(7 條發現 F1–F7·全純讀 view-model/前端·零存檔·零 combat)。

@@ -185,15 +185,17 @@ def _equipped_fortify_char(stat, mag):
 
 
 def _patch_ui(menu_fn):
-    """暫時替換 ui.menu/message/show_events,回傳還原用的 restore()。"""
+    """暫時替換 ui.menu/message/show_events/confirm,回傳還原用的 restore()。
+    confirm 預設回 True(R114C:高價丟棄/回爐加了確認 → 測試沿用「同意」語意)。"""
     from tesrpg.ui import console as ui
-    saved = (ui.menu, ui.message, ui.show_events)
+    saved = (ui.menu, ui.message, ui.show_events, ui.confirm)
     ui.menu = menu_fn
     ui.message = lambda *a, **k: None
     ui.show_events = lambda *a, **k: None
+    ui.confirm = lambda *a, **k: True
 
     def restore():
-        ui.menu, ui.message, ui.show_events = saved
+        ui.menu, ui.message, ui.show_events, ui.confirm = saved
     return restore
 
 

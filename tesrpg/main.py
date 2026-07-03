@@ -286,20 +286,36 @@ def _class_chips(c: dict) -> list[dict]:
 # ======================================================================
 # 行動
 # ======================================================================
+_last_practice_skill = None   # R114C:上次練的技能(session 暫態 UI 捷徑·不入檔·跨載入自癒=re-validate)
+
+
 def action_practice(state: GameState, gamedata: GameData) -> None:
-    spec = ui.menu("要練哪一類?", [
-        ("combat", "戰鬥技能"), ("magic", "魔法技能"), ("stealth", "潛行技能"),
-    ], allow_back=True)
-    if spec is None:
-        return
+    global _last_practice_skill
     char = state.player
-    opts = []
-    for sid in gamedata.skills_by_spec(spec):
-        s = gamedata.skills[sid]
-        opts.append((sid, f"{s['name']} (Lv {char.skill(sid)}) — {s['practice']['label']}"))
-    sid = ui.menu("練習哪項技能?", opts, allow_back=True)
+    sid = None
+    # R114C 再練上次:上次練的技能仍未滿級 → 一鍵直達時數(跳過 類別→技能 兩層純重複)
+    lp = _last_practice_skill
+    if lp in gamedata.skills and char.base_skill(lp) < formulas.SKILL_CAP:
+        pick = ui.menu("要練什麼?", [("__last__", f"↻ 再練 {gamedata.skill_name(lp)}(Lv {char.skill(lp)})"),
+                                     ("__pick__", "選其他技能")], allow_back=True)
+        if pick is None:
+            return
+        if pick == "__last__":
+            sid = lp
     if sid is None:
-        return
+        spec = ui.menu("要練哪一類?", [
+            ("combat", "戰鬥技能"), ("magic", "魔法技能"), ("stealth", "潛行技能"),
+        ], allow_back=True)
+        if spec is None:
+            return
+        opts = []
+        for _sid in gamedata.skills_by_spec(spec):
+            s = gamedata.skills[_sid]
+            opts.append((_sid, f"{s['name']} (Lv {char.skill(_sid)}) — {s['practice']['label']}"))
+        sid = ui.menu("練習哪項技能?", opts, allow_back=True)
+        if sid is None:
+            return
+    _last_practice_skill = sid           # 記住供下次一鍵重練(session 暫態·不入檔)
 
     pdef = gamedata.skills[sid]["practice"]
     if char.base_skill(sid) >= formulas.SKILL_CAP:
@@ -2048,6 +2064,9 @@ def _item_actions(state: GameState, gamedata: GameData, item_id: str) -> None:
         if res["addiction"] >= skooma.WITHDRAWAL_THRESHOLD:
             ui.message(f"……但你越來越離不開這抹甜了(成癮 {res['addiction']})。", style="red")
     elif act == "drop":
+        # R114C:高價品丟棄加確認(與「使用」相鄰易誤點;低價雜物零摩擦)
+        if d.get("value", 0) >= DESTROY_CONFIRM_VALUE and not ui.confirm(f"確定丟棄{d['name']}?丟了就沒了。"):
+            return
         inventory.remove_item(char, item_id, 1)
         # 丟棄最後一件會自動卸下;若是 fortify 護甲,須重算以移除其加成並夾限當前值
         stats.recompute_max_resources(char, gamedata)
@@ -2057,6 +2076,12 @@ def _item_actions(state: GameState, gamedata: GameData, item_id: str) -> None:
 # ======================================================================
 # 城鎮服務:商店 / 旅店 / 訓練師
 # ======================================================================
+# R114C 經濟 QoL:賣/銷「僅有一件」的高價品(value≥此)才彈確認,防誤點賣掉精品;一般雜貨零摩擦
+SELL_CONFIRM_VALUE = 150
+# 丟棄/回爐「精品」(value≥此)才彈確認(飾品/魂石/藥水低於此不擾);純安全閘,不影響經濟
+DESTROY_CONFIRM_VALUE = 150
+
+
 def action_shop(state: GameState, gamedata: GameData) -> None:
     char = state.player
     loc_id = char.location_id
@@ -2137,7 +2162,17 @@ def action_shop(state: GameState, gamedata: GameData) -> None:
                 if iid is None:
                     break
                 owned = inventory.count_item(char, iid)
-                qty = 1 if owned <= 1 else ui.ask_int(f"賣幾個?(共 {owned})", 1, 1, owned)
+                # R114C:預設賣「全部」(免手打數字);僅有一件的高價品加確認(防誤點賣掉精品)
+                if owned <= 1:
+                    if (gamedata.item(iid)["value"] >= SELL_CONFIRM_VALUE
+                            and not ui.confirm(f"賣出你僅有的{gamedata.item_name(iid)}"
+                                               f"(售 {world.sell_price(char, gamedata, iid)} 金)?")):
+                        continue
+                    qty = 1
+                else:
+                    # 高價品堆疊預設賣 1(防 Enter 誤傾銷精品堆);一般雜貨預設全部
+                    dflt = 1 if gamedata.item(iid)["value"] >= SELL_CONFIRM_VALUE else owned
+                    qty = ui.ask_int(f"賣幾個?(共 {owned})", dflt, 1, owned)
                 total = sold = 0
                 for _ in range(qty):
                     if inventory.count_item(char, iid) <= 0:
@@ -2183,6 +2218,20 @@ VAMPIRE_CHARM_TURNS = 2        # 魅惑凝視:被迷惑之敵恐懼不進攻的�
 TRIAGE_ALLY_HP_RATIO = 0.30     # 同伴生命低於此 → 觸發治療師「戰地搶救」武裝
 
 
+def _inn_rest(state: GameState, gamedata: GameData) -> None:
+    """過夜:10 金完全回復(玩家+同伴)+ 推進 8 時。R114C:hub 直達與旅店選單共用。"""
+    char = state.player
+    fee = 10
+    if char.gold < fee:
+        ui.message(f"住一晚要 {fee} 金,你付不起。", style="red")
+        return
+    char.gold -= fee
+    char.health, char.magicka, char.fatigue = char.max_health, char.max_magicka, char.max_fatigue
+    party.heal_full(char, gamedata)   # 同伴一併滿血(負傷盡復,可再上陣)
+    state.time.advance(8)
+    ui.message("一夜好眠,你與同伴皆氣力盡復。", style="green")
+
+
 def action_inn(state: GameState, gamedata: GameData) -> None:
     char = state.player
     while True:
@@ -2194,15 +2243,7 @@ def action_inn(state: GameState, gamedata: GameData) -> None:
         if choice is None:
             return
         if choice == "rest":
-            fee = 10
-            if char.gold < fee:
-                ui.message(f"住一晚要 {fee} 金,你付不起。", style="red")
-            else:
-                char.gold -= fee
-                char.health, char.magicka, char.fatigue = char.max_health, char.max_magicka, char.max_fatigue
-                party.heal_full(char, gamedata)   # 同伴一併滿血(負傷盡復,可再上陣)
-                state.time.advance(8)
-                ui.message("一夜好眠,你與同伴皆氣力盡復。", style="green")
+            _inn_rest(state, gamedata)
         elif choice == "hire":
             _hire_mercenary(state, gamedata)
         elif choice == "dismiss":
@@ -2386,10 +2427,24 @@ def _stash_transfer(state: GameState, gamedata: GameData, loc_id: str, deposit: 
         if not rows:
             ui.message("沒有可" + ("存入" if deposit else "取出") + "的物品。", style="grey70")
             return
-        opts = [(iid, f"{gamedata.item_name(iid)} ×{qty}") for iid, qty in rows]
+        # R114C:一鍵「全部存入/取出」(免逐件操作;取出以負重為閘,能背多少算多少)
+        opts = [("__all__", "⇊ 全部存入(非穿戴)" if deposit else "⇈ 全部取出(至負重上限)")]
+        opts += [(iid, f"{gamedata.item_name(iid)} ×{qty}") for iid, qty in rows]
         pick = ui.menu(title, opts, allow_back=True)
         if pick is None:
             return
+        if pick == "__all__":
+            moved = 0
+            for iid, qty in list(rows):
+                fn = housing.deposit if deposit else housing.withdraw
+                for _ in range(qty):
+                    if not fn(char, gamedata, loc_id, iid, 1):
+                        break                             # 取出撞負重上限 → 停該件,續下一件
+                    moved += 1
+            ui.message(f"{'存入' if deposit else '取出'} {moved} 件。"
+                       + ("" if deposit else "(負重滿則止)"),
+                       style="green" if moved else "grey70")
+            continue
         avail = dict(rows)[pick]
         n = 1 if avail == 1 else ui.ask_int(f"幾個?(上限 {avail})", default=avail, lo=1, hi=avail)
         if deposit:
@@ -2589,7 +2644,15 @@ def action_fence(state: GameState, gamedata: GameData) -> None:
                 if iid is None:
                     break
                 owned = inventory.count_item(char, iid)
-                qty = 1 if owned <= 1 else ui.ask_int(f"銷幾個?(共 {owned})", 1, 1, owned)
+                # R114C:預設銷「全部」;僅有一件的高價品加確認
+                if owned <= 1:
+                    if (gamedata.item(iid)["value"] >= SELL_CONFIRM_VALUE
+                            and not ui.confirm(f"銷出你僅有的{gamedata.item_name(iid)}(銷 {fsell(iid)} 金)?")):
+                        continue
+                    qty = 1
+                else:
+                    dflt = 1 if gamedata.item(iid)["value"] >= SELL_CONFIRM_VALUE else owned
+                    qty = ui.ask_int(f"銷幾個?(共 {owned})", dflt, 1, owned)
                 total = sold = 0
                 for _ in range(qty):
                     if inventory.count_item(char, iid) <= 0:
@@ -3344,6 +3407,13 @@ def action_trainer(state: GameState, gamedata: GameData) -> None:
         events = progression.use_skill(char, gamedata, sid, formulas.skill_threshold(char.skill(sid)))
         ui.message(f"訓練師指點了你的{gamedata.skill_name(sid)}。", style="green")
         ui.show_events(events, gamedata)
+        # R114C:連續 +1 免每級重選類別/技能(達 cap 或錢不足即止;確認式)
+        while char.skill(sid) < cap:
+            nc = world.train_cost(char.skill(sid))
+            if char.gold < nc or not ui.confirm(f"↻ 再訓練 {gamedata.skill_name(sid)}(+1,{nc} 金)?"):
+                break
+            char.gold -= nc
+            ui.show_events(progression.use_skill(char, gamedata, sid, formulas.skill_threshold(char.skill(sid))), gamedata)
 
 
 # ======================================================================
@@ -3845,20 +3915,29 @@ def action_alchemy(state: GameState, gamedata: GameData) -> None:
         b = ui.menu("選第二種材料", _ing_opts(exclude=a), allow_back=True)
         if b is None:
             continue
-        res = alchemy.brew(char, gamedata, a, b, state.rng)
-        state.time.advance(res["hours"])
-        ui.message(res["message"], style="green" if res["ok"] else "yellow")
-        if res["tired"]:
-            ui.message("體力不濟,煉製時心不在焉,成效減半。", style="yellow")
-        # R32:套用本次煉製揭露的共有效果 → 報新學會
-        learned = []
-        for iid, kinds in res.get("learn", {}).items():
-            for k in kinds:
-                if alchemy.reveal(char, gamedata, iid, k):
-                    learned.append(f"{gamedata.item_name(iid)}→{_EFFECT_CN.get(k, k)}")
-        if learned:
-            ui.message("這鍋讓你看清了材料的本性:" + "、".join(learned), style="bold cyan")
-        ui.show_events(res["skill_events"], gamedata)
+
+        def _brew_and_report(x, y):
+            r = alchemy.brew(char, gamedata, x, y, state.rng)
+            state.time.advance(r["hours"])
+            ui.message(r["message"], style="green" if r["ok"] else "yellow")
+            if r["tired"]:
+                ui.message("體力不濟,煉製時心不在焉,成效減半。", style="yellow")
+            learned = []                                   # R32:本次揭露的共有效果 → 報新學會
+            for iid, kinds in r.get("learn", {}).items():
+                for k in kinds:
+                    if alchemy.reveal(char, gamedata, iid, k):
+                        learned.append(f"{gamedata.item_name(iid)}→{_EFFECT_CN.get(k, k)}")
+            if learned:
+                ui.message("這鍋讓你看清了材料的本性:" + "、".join(learned), style="bold cyan")
+            ui.show_events(r["skill_events"], gamedata)
+            return r
+
+        _brew_and_report(a, b)
+        # R114C 再煉一鍋:同配方連煉免每鍋重選兩材料(材料耗盡即止;確認式,零意外)
+        while inventory.count_item(char, a) > 0 and inventory.count_item(char, b) > 0:
+            if not ui.confirm(f"↻ 再煉一鍋?({gamedata.item_name(a)} + {gamedata.item_name(b)})"):
+                break
+            _brew_and_report(a, b)
 
 
 def action_enchant(state: GameState, gamedata: GameData) -> None:
@@ -4088,6 +4167,10 @@ def action_meltdown(state: GameState, gamedata: GameData) -> None:
                       opts, allow_back=True)
         if iid is None:
             return
+        # R114C:高價品回爐加確認(熔解有損耗且不可逆;廉價品零摩擦)
+        if gamedata.item(iid).get("value", 0) >= DESTROY_CONFIRM_VALUE \
+                and not ui.confirm(f"確定回爐{gamedata.item_name(iid)}?熔解有損耗且不可逆。"):
+            continue
         res = smithing.meltdown(char, gamedata, iid)
         state.time.advance(res["hours"])
         ui.message(res["message"], style="green" if res["ok"] else "red")
@@ -5046,10 +5129,13 @@ def _try_discover(state: GameState, gamedata: GameData, loc_id: str) -> None:
 
 
 def game_loop(state: GameState, gamedata: GameData) -> None:
+    global _last_practice_skill
+    _last_practice_skill = None   # 每趟冒險起(含同進程換角/讀檔)重置練習捷徑,免跨角殘留(審查 NIT)
     last_hub_loc = None
     _ach_seen = achievements.seed_seen(state.player, gamedata)   # 成就首達通知:載入當下已達成 → 重載不重報(零存檔欄)
     _reinfest_seen: set = set()   # 地城重踞傳聞去重(R111;session 暫態,key=(地城,時間戳)→ 每輪滋擾至多一報)
     _garden_seen: set = set()     # 藥草園熟成提示去重(R114 F6;session 暫態,key=(房產,採收週期))
+    _stay_district = None         # R114C:上圈剛逛的城區 key → 這圈直接回該區子選單(連逛,免回 hub 頂重進)
     while True:
         # 吸血鬼狀態先結算(潛伏轉化 / 階級升降),再呈現本回合
         for ev in vampirism.update(state, gamedata):
@@ -5280,7 +5366,8 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
             owned = housing.owns(player, player.location_id)
             plaza.append(("house", "🏠 我的房產" if owned else "🏠 房產仲介(置產)"))
         if "inn" in services and not shunned:
-            plaza.append(("inn", "旅店(10金)"))
+            plaza.append(("inn_rest", "🛏 宿一晚(10 金,完全回復)"))   # R114C:過夜直達(9 成情境只過夜,免進旅店選單再退)
+            plaza.append(("inn", "旅店(雇用/解散傭兵)"))
         if "trainer" in services and not shunned:
             plaza.append(("trainer", "訓練師"))
         if "task_board" in services:
@@ -5342,16 +5429,27 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
         system = [("save", "存檔"), ("retire", "隱退江湖"), ("quit", "回主選單")]
         goto_keys = ["go:" + dest for dest, _h in world.travel_options(player, gamedata)]   # 地點卡出口可點旅行
 
-        choice = ui.grouped_menu("要做什麼?", [
-            ("冒險", adventure), ("城區", city_group),
-            ("製作", craft), ("人物", character), ("系統", system),
-        ], extra_keys=goto_keys, cta_keys=["levelup"])
-        # 選了某個城區 → 進入該區的子選單挑實際服務(返回則回到城區)
-        _dist = next((d for d in districts if d[0] == choice), None)
-        if _dist:
+        # R114C:上圈剛在某城區辦完事且未死 → 這圈直接回該區子選單(連逛,免回 hub 頂重進);
+        # 該區這圈已無服務(如變獸形/被排斥致市集消失)或按返回 → 回 hub 頂。
+        if _stay_district is not None:
+            _dist = next((d for d in districts if d[0] == _stay_district), None)
+            _stay_district = None
+            if _dist is None:
+                continue
             choice = ui.menu(_dist[1], _dist[2], allow_back=True)
             if choice is None:
                 continue
+        else:
+            choice = ui.grouped_menu("要做什麼?", [
+                ("冒險", adventure), ("城區", city_group),
+                ("製作", craft), ("人物", character), ("系統", system),
+            ], extra_keys=goto_keys, cta_keys=["levelup"])
+            # 選了某個城區 → 進入該區的子選單挑實際服務(返回則回到 hub)
+            _dist = next((d for d in districts if d[0] == choice), None)
+            if _dist:
+                choice = ui.menu(_dist[1], _dist[2], allow_back=True)
+                if choice is None:
+                    continue
         died = None
         if choice.startswith("go:"):                 # 地點卡出口直接旅行(web 可點 chip)
             died = _travel_to(state, gamedata, choice[3:])
@@ -5376,6 +5474,8 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
             action_shop(state, gamedata)
         elif choice == "inn":
             action_inn(state, gamedata)
+        elif choice == "inn_rest":
+            _inn_rest(state, gamedata)
         elif choice == "stable":
             action_stable(state, gamedata)
         elif choice == "house":
@@ -5483,6 +5583,10 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
                 if ui.confirm("離開前要存檔嗎?"):
                     action_save(state)
                 return
+
+        # R114C:剛辦完的是城區服務且未觸發死亡 → 記住該區,下圈直接回其子選單(連逛)
+        if _dist is not None and not died:
+            _stay_district = _dist[0]
 
         if died == "dead":
             end_run(state, gamedata, "death")
