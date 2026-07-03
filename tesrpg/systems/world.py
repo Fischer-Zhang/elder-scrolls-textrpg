@@ -64,6 +64,48 @@ def travel_options(char: Character, gamedata: GameData) -> list[tuple[str, int]]
     return [(d, h) for d, h in loc.get("links", {}).items() if is_visible(char, gamedata, d)]
 
 
+def route_to(char: Character, gamedata: GameData, dest_id: str) -> list[str]:
+    """R114D 長途旅行:BFS 最短(跳數)路徑,回 [下一跳, …, dest_id](含終點·不含起點);
+    已在該地或不可達 → []。**只經可見地點**(湮滅之門/神殿 gate 一致);純圖走、零 rng
+    → 決定性(links 為 JSON 插入序·BFS 逐層 → 等長路徑取穩定序)。"""
+    from collections import deque
+    if dest_id == char.location_id or not is_visible(char, gamedata, dest_id):
+        return []
+    locs = gamedata.world["locations"]
+    if dest_id not in locs:
+        return []
+    prev: dict = {char.location_id: None}
+    frontier = deque([char.location_id])
+    while frontier:
+        cur = frontier.popleft()
+        if cur == dest_id:
+            break
+        for d in locs[cur].get("links", {}):
+            if d in prev or not is_visible(char, gamedata, d):
+                continue
+            prev[d] = cur
+            frontier.append(d)
+    if dest_id not in prev:
+        return []
+    path: list[str] = []
+    n = dest_id
+    while n != char.location_id:
+        path.append(n)
+        n = prev[n]
+    path.reverse()
+    return path
+
+
+def route_hours(char: Character, gamedata: GameData, path: list[str]) -> int:
+    """路徑名目總時數(各跳 base_hours 和;不含運動/坐騎加速的估計值)。純讀。"""
+    locs = gamedata.world["locations"]
+    total, cur = 0, char.location_id
+    for hop in path:
+        total += (locs[cur].get("links", {}) or {}).get(hop, 0)
+        cur = hop
+    return total
+
+
 def encounter_chance(dest_danger: int, hour: int) -> float:
     if dest_danger <= 0:
         return 0.0

@@ -869,6 +869,9 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
     preserve_buffs:為 True 時不清玩家 active_effects(地城預施增益帶進本場;仍剝 cascade/過期)。
     """
     player = state.player
+    # R114D:每場實戰計數(session 暫態·不入檔)→ 長途旅行 `_travel_hop` 據此偵測「本跳是否真打了一場」
+    # (比「進了戰鬥分支」更準:偵查/潛行撤退/威嚇喝退未交戰則不計 → 不誤停行程)。單一計數點涵蓋所有戰鬥。
+    state.battles_fought = getattr(state, "battles_fought", 0) + 1
     if not isinstance(enemies, list):
         enemies = [enemies]
     # 上陣名單:略過已不存在的同伴;排除冊封坐鎮的總管(已離隊治理);**排除倒下/負傷者**(benched 至治療)。
@@ -1577,16 +1580,57 @@ def end_run(state: GameState, gamedata: GameData, ending: str) -> None:
 # 旅行
 # ======================================================================
 def action_travel(state: GameState, gamedata: GameData) -> str | None:
+    char = state.player
+    adj = {dest for dest, _h in world.travel_options(char, gamedata)}
     opts = [(dest, f"{gamedata.location(dest)['name']}（{h} 時)")
-            for dest, h in world.travel_options(state.player, gamedata)]
+            for dest, h in world.travel_options(char, gamedata)]
+    opts.append(("__far__", "🧭 長途前往(已到訪的城鎮 · 沿途自動趕路)"))
     dest = ui.menu("前往何處?", opts, allow_back=True)
     if dest is None:
         return None
+    if dest == "__far__":
+        return _action_long_travel(state, gamedata, adj)
     return _travel_to(state, gamedata, dest)
 
 
+def _action_long_travel(state: GameState, gamedata: GameData, adj: set) -> str | None:
+    """長途前往:列出已到訪、可達、非相鄰的城/鎮(相鄰者走一般選單即可),BFS 逐跳自動趕路。"""
+    char = state.player
+    locs = gamedata.world["locations"]
+    dests = []
+    for lid in char.visited_locations:
+        loc = locs.get(lid)
+        if (not loc or lid == char.location_id or lid in adj
+                or loc["type"] not in ("city", "town")
+                or not world.is_visible(char, gamedata, lid)):
+            continue
+        path = world.route_to(char, gamedata, lid)
+        if path:
+            dests.append((lid, loc, len(path), world.route_hours(char, gamedata, path)))
+    if not dests:
+        ui.message("目前沒有可長途前往的已到訪城鎮(近處請用一般旅行)。", style="grey70")
+        return None
+    dests.sort(key=lambda d: (d[1]["province"], d[2], d[1]["name"]))   # 決定性:省→跳數→名
+    opts = [(lid, f"{loc['province']} · {loc['name']}（{hops} 段 · 約 {hrs} 時)")
+            for lid, loc, hops, hrs in dests]
+    pick = ui.menu("長途前往何處?(沿途遇襲/變故會停下)", opts, allow_back=True)
+    if pick is None:
+        return None
+    return _travel_route(state, gamedata, pick)
+
+
 def _travel_to(state: GameState, gamedata: GameData, dest: str) -> str | None:
-    """前往指定地點(供旅行選單與 hub/地點卡的可點出口共用)。回傳 'dead' 或 None。"""
+    """前往相鄰地點一步(供旅行選單與 hub/地點卡的可點出口共用)。回傳 'dead' 或 None。
+    (R114D:對外契約不變;內部委派 `_travel_hop`,其 'fought' 對單跳等同 None。)"""
+    return "dead" if _travel_hop(state, gamedata, dest) == "dead" else None
+
+
+def _travel_hop(state: GameState, gamedata: GameData, dest: str) -> str:
+    """走一步到相鄰 `dest`(含途中埋伏/遭遇 + 抵達事件/衛兵/圍捕/奇遇)。
+    回 'dead'(身亡)/ 'fought'(本跳**真的打了一場**:埋伏/遭遇/衛兵盤查/詛咒圍捕/事件戰鬥
+    任一,靠 run_battle 計數偵測 → 偵查/撤退/威嚇未交戰則不算)/ 'clear'(平安通過)。
+    供 `_travel_to`(單跳)與 `_travel_route`(長途逐跳,遇戰中斷交還控制)共用。"""
+    _b0 = getattr(state, "battles_fought", 0)   # R114D:本跳前的實戰數 → 末尾比對判「是否打過」
     res = world.travel(state.player, gamedata, dest, state.time, state.rng)
     foe = res["foe"]
     # 路途伏擊:R84 賞金獵人(通緝)優先,否則 R96 宿敵公會打手;觸發則「取代」本趟一般遭遇
@@ -1644,6 +1688,28 @@ def _travel_to(state: GameState, gamedata: GameData, dest: str) -> str | None:
     # R100:臥底在城鎮被某 B NPC 起疑(低 secrecy → 機率識破 → 指派知情者 + 限時追殺)
     if loc["type"] in ("city", "town"):
         _undercover_detection(state, gamedata)
+    # 本跳期間只要 run_battle 被呼叫過一次(埋伏/遭遇/衛兵/圍捕/事件戰鬥)→ 'fought'(長途據此停下)
+    return "fought" if getattr(state, "battles_fought", 0) > _b0 else "clear"
+
+
+def _travel_route(state: GameState, gamedata: GameData, dest_final: str) -> str | None:
+    """R114D 長途旅行:BFS 逐跳自動前往 `dest_final`,途中埋伏/遭遇 **中斷行程**(停在該地、
+    交還控制,讓玩家歇息後再續);身亡則止。回 'dead' 或 None。"""
+    path = world.route_to(state.player, gamedata, dest_final)
+    if not path:
+        ui.message("你已在此地,或無路可通往那裡。", style="grey70")
+        return None
+    name = gamedata.location(dest_final)["name"]
+    if len(path) > 1:
+        ui.message(f"你循著長路啟程,取道 {len(path)} 段前往{name}……", style="grey70")
+    for hop in path:
+        status = _travel_hop(state, gamedata, hop)
+        if status == "dead":
+            return "dead"
+        if status == "fought" and hop != dest_final:   # 途中遇襲且未達終點 → 停下(可歇息後再續行)
+            ui.message(f"途中的變故打斷了行程,你在{gamedata.location(hop)['name']}停下腳步 ——"
+                       f" 歇息後可再啟程前往{name}。", style="yellow")
+            return None
     return None
 
 
