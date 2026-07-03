@@ -4992,7 +4992,7 @@ def action_character_sheet(state: GameState, gamedata: GameData) -> None:
         if choice == "resist":
             ui.sheet_resistances(char, gamedata)
         elif choice == "effects":
-            ui.sheet_effects(char, gamedata)
+            ui.sheet_effects(char, state, gamedata)
         elif choice == "factions":
             ui.sheet_factions(char, gamedata)
         elif choice == "mastery":
@@ -5049,6 +5049,7 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
     last_hub_loc = None
     _ach_seen = achievements.seed_seen(state.player, gamedata)   # 成就首達通知:載入當下已達成 → 重載不重報(零存檔欄)
     _reinfest_seen: set = set()   # 地城重踞傳聞去重(R111;session 暫態,key=(地城,時間戳)→ 每輪滋擾至多一報)
+    _garden_seen: set = set()     # 藥草園熟成提示去重(R114 F6;session 暫態,key=(房產,採收週期))
     while True:
         # 吸血鬼狀態先結算(潛伏轉化 / 階級升降),再呈現本回合
         for ev in vampirism.update(state, gamedata):
@@ -5141,6 +5142,10 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
         # 地城再滋擾傳聞(R111):本省已清地城被重踞 → 一次性播報(session 暫態去重,每輪至多一報)
         for msg in dungeon.reinfest_notices(state.player, gamedata, state.time.absolute_hours(), _reinfest_seen):
             ui.message(msg, style="cyan")
+        # 藥草園熟成提示(R114 F6):身處自有房產且藥圃成熟 → 一次性提示(免進房產選單才知)
+        _garden_msg = housing.garden_ready_notice(state.player, gamedata, state.time.absolute_hours(), _garden_seen)
+        if _garden_msg:
+            ui.message(_garden_msg, style="green")
 
         # 湮滅之門逐門開合:所在地若已不可見(如殺達貢、危機落幕後死亡之地崩合),拋回最近的城
         if not world.is_visible(state.player, gamedata, state.player.location_id):
@@ -5279,7 +5284,13 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
         if "trainer" in services and not shunned:
             plaza.append(("trainer", "訓練師"))
         if "task_board" in services:
-            plaza.append(("board", "告示板"))
+            # R114 F7:告示板標可接委託數(含主線/在地聚光),免投機進退查看
+            _bn = len(quests.available_quests(player, gamedata, "main")) + len(
+                [q for q in quests.available_quests(player, gamedata, "board",
+                                                    province=loc["province"], day=worldpulse.day_index(state),
+                                                    now=state.time.absolute_hours())
+                 if not q.startswith(("ucomm_", "scomm_", "cint_"))])
+            plaza.append(("board", f"告示板（{_bn}）" if _bn else "告示板"))
         if _living_npcs_at(state, gamedata) and not shunned:
             plaza.append(("talk", "與人攀談"))
         court: list = []     # 領主區:謁見領主(Phase 1);後續加委託/效忠/外交

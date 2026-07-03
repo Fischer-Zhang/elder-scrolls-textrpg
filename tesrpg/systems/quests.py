@@ -333,6 +333,18 @@ def kill_progress(char: Character, gamedata: GameData, quest_id: str) -> tuple[i
     return max(0, char.kill_counts.get(obj["creature"], 0) - base), obj["count"]
 
 
+def tracked_lines(char: Character, gamedata: GameData, limit: int = 2) -> list[str]:
+    """R114 資訊可見性:進行中任務的「名稱 — 當前目標」短行(供地點卡常駐追蹤,免每次開任務日誌)。
+    取前 `limit` 件(決定性 sorted);毀損/已移除 qid 跳過。純讀。"""
+    out = []
+    for qid in sorted(char.quests):
+        if qid in gamedata.quests and qid not in char.completed_quests:
+            out.append(f"{gamedata.quests[qid]['name']} — {objective_text(char, gamedata, qid)}")
+            if len(out) >= limit:
+                break
+    return out
+
+
 def objective_text(char: Character, gamedata: GameData, quest_id: str) -> str:
     obj, idx, total = current_objective(char, gamedata, quest_id)
     t = obj["type"]

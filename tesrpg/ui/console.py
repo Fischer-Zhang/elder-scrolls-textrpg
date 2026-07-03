@@ -76,11 +76,67 @@ def _cover_badge(c, gamedata=None) -> str | None:
     return s
 
 
-def _blessing_badge(c) -> str | None:
-    """R107 九神祝福徽記(⛪ 某神之佑);無祝福回 None。時基剔除由 game_loop update 負責。"""
+def _blessing_badge(c, now=None) -> str | None:
+    """R107 九神祝福徽記(⛪ 某神之佑·帶剩餘時數);無祝福回 None。時基剔除由 game_loop update 負責。
+    R114:傳 now(絕對小時)才顯「餘 N 時」(修 F1 半 bug:唯一呼叫點原不傳 now)。"""
     from tesrpg.systems import divines
-    label = divines.blessing_label(c)
+    label = divines.blessing_label(c, now)
     return f"⛪ {label}" if label else None
+
+
+# --- 增益與狀態(R114 資訊可見性:限時增益/持續狀態 單一資料源)---------------
+_SPELLFX_CN = {"charm": "魅惑術", "invisibility": "隱形術", "feather": "羽落術", "detect_life": "偵知生物"}
+
+
+def _timed_buffs(char: Character, now: int, gamedata: GameData, include_blessing: bool = True) -> list:
+    """當前限時增益 [{label, remain, cls}]:藥水(potion_buffs)/實用幻術(spell_effects)/
+    精神飽滿(well_rested)/(可選)九神祝福。remain=剩餘遊戲時(祝福 label 已內含 → None)。
+    純讀,零 char 變動;各系統的到期剔除由 game_loop 各自 update 負責。"""
+    from tesrpg.systems import potion_buff, spellfx, divines
+    out = []
+    for b in getattr(char, "potion_buffs", []) or []:
+        if potion_buff._valid(b) and b["expires_at"] > now:
+            out.append({"label": potion_buff._buff_label(b["kind"], b["param"], b["magnitude"], gamedata),
+                        "remain": b["expires_at"] - now, "cls": "good"})
+    for e in getattr(char, "spell_effects", []) or []:
+        if spellfx._valid(e) and e["expires_at"] > now:
+            out.append({"label": _SPELLFX_CN.get(e.get("kind"), str(e.get("kind"))),
+                        "remain": e["expires_at"] - now, "cls": "good"})
+    if getattr(char, "well_rested_until", 0) > now:
+        out.append({"label": "精神飽滿(技能成長加速)", "remain": char.well_rested_until - now, "cls": "good"})
+    if include_blessing:
+        b = getattr(char, "divine_blessing", None)
+        # blessing_label 不查到期(剔除交 game_loop update)→ 此處自行過濾未到期者,免顯示殘留祝福
+        if isinstance(b, dict) and isinstance(b.get("expires_at"), int) and b["expires_at"] > now:
+            bl = divines.blessing_label(char, now)
+            if bl:
+                out.append({"label": f"⛪ {bl}", "remain": None, "cls": "good"})
+    return out
+
+
+def _status_flags(char: Character, state, gamedata: GameData, include_disease: bool = True) -> list:
+    """持續狀態短標籤(詛咒潛伏/獸形/成癮/染病)—— 鏡像終端 status_line 的 extras,
+    但**排除已有專屬 HUD chip 者**(吸血鬼階段/掩護/祝福/通緝)。web-only 下這些原本全隱形。
+    `include_disease=False`:角色卡效果頁另列逐病明細 → 略去此處的「染病×N」計數避免重複。"""
+    from tesrpg.systems import skooma
+    out = []
+    if not getattr(char, "is_vampire", False) and getattr(char, "vampire_infected_day", -1) >= 0:
+        out.append("🦠 吸血熱潛伏")
+    if getattr(char, "beast_form", False):
+        out.append("🐺 獸形")
+    elif getattr(char, "is_werewolf", False):
+        out.append("🐺 狼人")
+    elif getattr(char, "werewolf_infected_day", -1) >= 0:
+        out.append("🌑 狼人熱潛伏")
+    if skooma.is_high(char, state):
+        out.append("🌙 月糖之醉")
+    elif skooma.is_addicted(char):
+        out.append("💀 斯庫瑪戒斷")
+    if include_disease:
+        n = len(getattr(char, "diseases", []) or [])
+        if n:
+            out.append(f"🩹 染病×{n}")
+    return out
 
 
 def use_web_backend(backend, recording_console) -> None:
@@ -107,13 +163,24 @@ def _hud_view():
     if _hud_state is None:
         return None
     c = _hud_state.player
+    now = _hud_state.time.absolute_hours()
+    # R114 資訊可見性:限時增益(藥水/幻術/飽滿·祝福另有專屬 chip 故排除)+ 持續狀態(詛咒/成癮/病)
+    buffs = _timed_buffs(c, now, _hud_gamedata, include_blessing=False) if _hud_gamedata else []
+    statuses = _status_flags(c, _hud_state, _hud_gamedata) if _hud_gamedata else []
+    w = mw = None
+    if _hud_gamedata is not None:
+        from tesrpg.systems import inventory
+        w, mw = inventory.total_weight(c, _hud_gamedata), inventory.max_weight(c, _hud_gamedata)
     v = {"name": c.name, "level": c.level, "time": _hud_state.time.label(),
          "hp": [int(c.health), int(c.max_health)],
          "mp": [int(c.magicka), int(c.max_magicka)],
          "fp": [int(c.fatigue), int(c.max_fatigue)],
          "gold": c.gold, "bounty": sum(c.bounties.values()),
          "can_level": c.can_level_up(), "vampire": None, "cover": _cover_badge(c, _hud_gamedata),
-         "blessing": _blessing_badge(c),
+         "blessing": _blessing_badge(c, now),
+         "buffs": [{"label": b["label"], "remain": b["remain"]} for b in buffs],
+         "statuses": statuses,
+         "encumbered": bool(w is not None and mw and w > mw * 0.9),   # ⚖ 將滿(>90%)
          "party": _party_status(c, _hud_gamedata), "allies": _allies_status(_hud_allies)}
     if getattr(c, "is_vampire", False):
         from tesrpg.systems import vampirism
@@ -202,12 +269,14 @@ def _status_view(state: GameState) -> dict:
 
 
 def _location_view(char: Character, gamedata: GameData, brief: bool = False) -> dict:
-    from tesrpg.systems import landmarks, politics, world
+    from tesrpg.systems import landmarks, politics, world, quests
     loc = gamedata.location(char.location_id)
     v = {"name": loc["name"], "province": loc["province"],
          "type": LOC_TYPE_NAME.get(loc["type"], loc["type"]), "danger": loc.get("danger", 0),
          "desc": loc["desc"], "landmark": None, "ruler": None,
-         "faction": None, "bloc": None, "exits": [], "brief": brief}
+         "faction": None, "bloc": None, "exits": [],
+         "tracked": quests.tracked_lines(char, gamedata) if not brief else [],   # R114 F3:常駐追蹤中任務
+         "brief": brief}
     lm = gamedata.landmark_at(char.location_id)
     if lm and landmarks.is_discovered(char, char.location_id):
         v["landmark"] = {"name": lm["name"], "revisit": lm.get("revisit")}
@@ -364,7 +433,7 @@ def _inventory_view(char: Character, gamedata: GameData) -> dict:
 
 
 def _shop_view(char: Character, gamedata: GameData, loc_id: str, qids: list) -> dict:
-    from tesrpg.systems import world
+    from tesrpg.systems import world, inventory
     items = []
     for iid in qids:
         d = gamedata.item(iid)
@@ -372,7 +441,9 @@ def _shop_view(char: Character, gamedata: GameData, loc_id: str, qids: list) -> 
         items.append({"key": iid,
                       "label": f"{d['name']} ×{world.stock_qty(char, loc_id, iid)} — {price} 金",
                       "kind": d["kind"], "afford": char.gold >= price})
-    return {"items": items, "gold": char.gold}
+    # R114 F4:買貨面板也顯負重(原只有背包/賣貨有 → 買到一半才撞「太重」)
+    w, mx = inventory.total_weight(char, gamedata), inventory.max_weight(char, gamedata)
+    return {"items": items, "gold": char.gold, "weight": float(w), "max": mx, "over": w > mx}
 
 
 def shop_panel(char: Character, gamedata: GameData, loc_id: str, qids: list) -> None:
@@ -557,10 +628,42 @@ def _territory_view(rows, gamedata, gold) -> dict:
     return {"rows": out, "gold": gold}
 
 
+def _quest_target_location_set(char: Character, gamedata: GameData) -> set:
+    """R114 F5:進行中任務的目標地點集合(reach/clear_dungeon/assassinate/kill-hunt/purge)。純讀。"""
+    from tesrpg.systems import quests
+    locs = gamedata.world["locations"]
+    dungeon_loc = {l.get("dungeon"): lid for lid, l in locs.items() if l.get("dungeon")}
+    npc_loc = gamedata.npcs
+    out = set()
+    for qid in char.quests:
+        if qid not in gamedata.quests or qid in char.completed_quests:
+            continue
+        obj, _, _ = quests.current_objective(char, gamedata, qid)
+        t = obj.get("type")
+        if t == "reach" and obj.get("location") in locs:
+            out.add(obj["location"])
+        elif t in ("clear_dungeon", "purge_dungeon") and obj.get("dungeon") in dungeon_loc:
+            out.add(dungeon_loc[obj["dungeon"]])
+        elif t == "assassinate":
+            for nid in quests._hit_targets(obj):
+                lc = (npc_loc.get(nid) or {}).get("location")
+                if lc in locs:
+                    out.add(lc)
+        elif t == "kill":
+            hl = gamedata.quests[qid].get("hunt_location")
+            if hl in locs:
+                out.add(hl)
+    return out
+
+
 def _map_view(char: Character, gamedata: GameData) -> dict:
-    from tesrpg.systems import landmarks, politics, world
+    from tesrpg.systems import landmarks, politics, world, dungeon
     locs = gamedata.world["locations"]
     vis = {lid for lid in locs if world.is_visible(char, gamedata, lid)}   # 隱藏地點不上圖
+    _quest_target_locs = _quest_target_location_set(char, gamedata)
+    now = _hud_state.time.absolute_hours() if _hud_state is not None else 0
+    _reinfest_locs = {lid for lid, l in locs.items()
+                      if l.get("dungeon") and dungeon.is_reinfested(char, gamedata, l["dungeon"], now)}
     by_prov: dict[str, list[str]] = {}
     order: list[str] = []
     for lid, loc in locs.items():
@@ -598,6 +701,8 @@ def _map_view(char: Character, gamedata: GameData) -> dict:
                                "type": loc["type"], "type_cn": LOC_TYPE_NAME.get(loc["type"], ""),
                                "here": here, "visited": visited, "danger": loc.get("danger", 0),
                                "province": prov, "faction": fac, "landmark": lm,
+                               "quest": lid in _quest_target_locs,   # R114 F5:任務目標地點
+                               "reinfested": lid in _reinfest_locs,   # R114 F5:重踞中可再掃地城
                                "svc": [_SVC_SHOW[s] for s in loc.get("services", []) if s in _SVC_SHOW]})
         provs.append({"name": prov, "nodes": nodes,
                       "visited": visited_n, "total": len(prov_ids)})
@@ -953,17 +1058,32 @@ def sheet_resistances(char: Character, gamedata: GameData) -> None:
     console.print(_panel(tbl, title="元素抗性(種族+裝備+血脈)"))
 
 
-def sheet_effects(char: Character, gamedata: GameData) -> None:
+def _effect_sheet_lines(char: Character, state: GameState, gamedata: GameData) -> list:
+    """角色卡「進行中效果」的完整清單(R114:限時增益 + 持續狀態 + 戰鬥內效果)。
+    回 [(text, cls)];cls ∈ good/bad/muted/None。空 → 單行提示。"""
+    now = state.time.absolute_hours()
+    lines = []
+    for b in _timed_buffs(char, now, gamedata, include_blessing=True):
+        suffix = f"(餘 {b['remain']} 時)" if b.get("remain") is not None else ""
+        lines.append((f"✨ {b['label']}{suffix}", "good"))
+    for s in _status_flags(char, state, gamedata, include_disease=False):   # 疾病改列逐病明細(下)避免重複計數
+        lines.append((s, "bad"))
+    from tesrpg.systems import diseases
+    for dl in diseases.active_labels(char, gamedata):   # F2:病名+症狀(原 active_labels 為死碼)
+        lines.append((f"🩹 {dl}", "bad"))
+    for e in getattr(char, "active_effects", []) or []:   # 戰鬥內護盾/再生/控場(入場即清)
+        lines.append((f"⚔ {_effect_label(e)}", None))
+    return lines or [("目前沒有進行中的效果。", "muted")]
+
+
+def sheet_effects(char: Character, state: GameState, gamedata: GameData) -> None:
+    lines = _effect_sheet_lines(char, state, gamedata)
     if _web is not None:
-        rows = ([_ln(f"• {_effect_label(e)}") for e in char.active_effects]
-                or [_ln("目前沒有進行中的效果。", "muted")])
-        _emit_panel("進行中效果", rows)
+        _emit_panel("進行中效果", [_ln(f"• {t}" if c != "muted" else t, c) for t, c in lines])
         return
     body = Text()
-    if not char.active_effects:
-        body.append("目前沒有進行中的效果。", style=INK)
-    for e in char.active_effects:
-        body.append(f"• {_effect_label(e)}\n", style=PARCH)
+    for t, c in lines:
+        body.append(f"• {t}\n" if c != "muted" else f"{t}\n", style=PARCH if c != "muted" else INK)
     console.print(_panel(body, title="進行中效果"))
 
 

@@ -1410,6 +1410,23 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 
 ---
 
+### R114 · 資訊可見性:限時增益總覽 + HUD 狀態補齊 + 任務追蹤(UI/UX 審計 包B)[UI-only] [re-sim byte-identical]
+
+承 R113 的 UI/UX 審計四包,做**包 B 資訊可見性**(7 條發現 F1–F7·全純讀 view-model/前端·零存檔·零 combat)。
+
+- **F1 限時增益全遊戲不可查(HIGH)**:喝下藥水/施幻術後**沒有任何面板列出**(`sheet_effects` 原只列戰鬥內 active_effects)。新 `console._timed_buffs(char, now, gamedata, include_blessing)` = 單一資料源,聚合 `potion_buffs`(_buff_label)/`spell_effects`(魅惑/隱形/羽落/偵知)/`well_rested`/九神祝福,各帶**剩餘遊戲時**(祝福 label 內含·且**自行過濾到期**——`blessing_label` 不查到期,剔除交 game_loop)。**修 F1 半 bug**:`_blessing_badge` 加 `now` 參數(原唯一呼叫點不傳 → HUD 永不顯「餘 N 時」)。
+- **F2 web HUD 與終端 status_line 不對等(HIGH)**:web-only 下疾病/成癮/獸形/潛伏全隱形。新 `console._status_flags(char, state, gamedata)` 鏡像 status_line extras(潛伏吸血/獸形/狼人/月糖之醉/戒斷/染病×N)但**排除已有專屬 chip 者**(吸血鬼階段/掩護/祝福/通緝);**接活死碼** `diseases.active_labels`(病名+症狀,原 grep 零引用)進角色卡效果清單。
+- **F1/F2 落點**:`_hud_view` 加 `buffs`(前端折成「✨ 增益×N」帶 title 明細·祝福另有專屬 chip 故排除)/`statuses`(紅 chip)/`encumbered`(負重>90% ⚖ 將滿);`sheet_effects` 簽名 +`state`,經 `_effect_sheet_lines` 顯示 限時增益 + 持續狀態 + 疾病 + 戰鬥內效果。
+- **F3 任務當前目標無常駐顯示(HIGH)**:`quests.tracked_lines(char, gamedata, limit=2)`(前 N 件進行中任務「名稱—目標」·決定性 sorted·毀損 qid 跳過)→ `_location_view` 加 `tracked`(brief 麵包屑不塞)→ 地點卡常駐「▶ 任務」行,免每次開任務日誌。
+- **F4 商店買貨看不到負重(MED)**:`_shop_view` 加 weight/max/over → 前端複用背包負重條 class(iw-lab/m-track/m-fill)。
+- **F5 地圖無任務/重踞標記(MED)**:`_map_view` node 加 `quest`(`_quest_target_location_set`:reach/clear/purge/assassinate/kill-hunt 目標地)/`reinfested`(`dungeon.is_reinfested`)→ 前端金環 ◎ / 紅角 ⚔ 角標 + tooltip + 圖例。
+- **F6 藥草園熟成無信號(MED-LOW)**:`housing.garden_ready_notice`(身處自有房產且藥圃熟 → 一次性提示·session seen 去重·比照 R111 reinfest)掛 game_loop。**F7 告示板無新委託計數(LOW)**:hub 標「告示板（N）」(複用 `available_quests` 同 action_board 過濾)。
+- **驗證**:`run_all` **109**(新 `test_infohud`:增益總覽帶剩時/blessing now-bug/狀態旗鏡像/疾病死碼接活/任務追蹤/商店負重〔含 over 正向〕/地圖旗〔reach 目標正向斷言〕/藥草園去重/HUD 組裝);node --check;**sim byte-identical**(隔離 worktree·純讀 view-model·零碰 combat/formulas);codex 同步。
+- **對抗審查(3 維 6 agent·0 BLOCKER/0 MAJOR)→ confirmed 全處置**:① 角色卡疾病顯示兩次(`_status_flags` 染病×N + `active_labels` 逐病明細)→ `_status_flags` 加 `include_disease` 參數·效果頁略去計數只留明細;② HUD `.h-chip.cyan` 無 CSS 規則(祝福/增益 chip 顯灰·pre-existing)→ 補 `.h-chip.cyan` 規則;③ 地圖節點同時任務+重踞只顯 ◎(三元遮蔽)→ 兩旗並存(金環頂右 ◎ / 紅角底右 ⚔ 不疊);④ 測試 F5/shop over 正向路徑未斷言(tautology)→ 補真任務目標入集合 + over=True 分支。**Conscious accept(NIT)**:board count 每 hub render 重算(非熱迴圈·單動作一次·parity 精確);float 負重長小數(pre-existing·同背包條);「潛伏」vs status_line「潛伏中」(HUD chip 刻意求短)。
+- 🔴 **鐵律**:增益/狀態顯示走 `_timed_buffs`/`_status_flags` 單一資料源(加新限時效果順手掛入);`blessing_label` 帶 now 才顯時數且需自查到期;HUD buffs 排除祝福(避免與專屬 chip 重複);純讀 view-model 零 char 變動 → sim byte-identical。**審計餘二包**(C 經濟 QoL/D 長途旅行)+「戰鬥中用藥水」設計題留後續。
+
+---
+
 ### R113 · 戰鬥/地城操作流:↻ 再次 + 目標記憶 + 方向鍵(UI/UX 便利性審計 包A)[UI-flow] [re-sim byte-identical]
 
 使用者「評估當前 UI/UX 便利性」→ 4 維審計(互動成本/資訊可見性/戰鬥地城迴圈/Web 手感)×逐項懷疑者驗證 = **39 條發現 0 駁回**,整理四包拍板先做**包 A 戰鬥/地城操作流**(最高頻迴圈;法師每回合 3 層選單、8 回合多敵戰 ≈24 鍵一半純重複)。

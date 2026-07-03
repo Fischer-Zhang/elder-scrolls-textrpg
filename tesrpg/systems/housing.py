@@ -113,6 +113,21 @@ def garden_wait(char: Character, loc_id: str, now: int) -> int:
     return max(0, int(getattr(char, "house_garden_at", {}).get(loc_id, 0)) - now)
 
 
+def garden_ready_notice(char: Character, gamedata: GameData, now: int, seen: set) -> str | None:
+    """R114 F6:玩家正身處「自有房產且藥草園已熟」的城 → 一次性提示(session 暫態 seen 去重,
+    key=(loc,採收週期)每輪至多一報,比照 R111 reinfest_notices/R55 成就通知)。純讀。"""
+    lid = getattr(char, "location_id", "")
+    if not owns(char, lid) or not has_upgrade(char, gamedata, lid, "garden"):
+        return None
+    if garden_wait(char, lid, now) > 0 or garden_pool_id(gamedata, lid) is None:
+        return None
+    key = (lid, int(getattr(char, "house_garden_at", {}).get(lid, 0)))
+    if key in seen:
+        return None
+    seen.add(key)
+    return f"🌿 你在{(gamedata.house_at(lid) or {}).get('name', '家')}的藥草園長成了,可以採收了。"
+
+
 def harvest_garden(char: Character, gamedata: GameData, loc_id: str, now: int, rng) -> list | None:
     """採收藥草園:無藥草園/未到時/無對應池 → None;否則抽取(固定預算 + value cap)→
     入背包、設下次採收時間,回 [(item_id, qty), ...]。🔴 零技能 XP(刻意;專測鎖)。"""

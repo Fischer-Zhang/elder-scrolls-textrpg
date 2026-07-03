@@ -34,7 +34,7 @@ def _render_all(gd, st):
     c = st.player
     ui.character_sheet(c, gd)
     ui.sheet_resistances(c, gd)
-    ui.sheet_effects(c, gd)
+    ui.sheet_effects(c, st, gd)
     ui.sheet_factions(c, gd)
     ui.sheet_masteries(c, gd)
     ui.sheet_power(c, st, gd)

@@ -63,6 +63,7 @@
   #hud .h-gold { color:var(--gold); }
   #hud .h-chip { font-size:11px; padding:1px 7px; border-radius:9px; border:1px solid var(--line); }
   #hud .h-chip.red { color:#e08b82; border-color:#5a2f2a; }
+  #hud .h-chip.cyan { color:#7fd0d8; border-color:#2f5157; }   /* R114:祝福/限時增益 chip(原無此規則→顯示為預設灰) */
   #hud .h-team-wrap { display:flex; flex-wrap:wrap; gap:3px 12px; flex-basis:100%; font-size:11px; }
   #hud .h-team { color:#7fb6c4; font-variant-numeric:tabular-nums; }
   #hud .h-team.summon { color:#c89bd6; }
@@ -247,6 +248,10 @@
   .mmark.border{color:#5fc6d8;}   /* 邊境=省界通道,專屬青色 */
   .mmark.wild{font-size:20px;}    /* 荒野原本 · 太小,放大成清楚的圓點 */
   .mmark.sel{text-shadow:0 0 8px var(--gold-soft);}
+  /* R114 F5:任務目標(金環)/ 重踞可再掃地城(紅角)標記 */
+  .mflag{position:absolute;right:-1px;font-size:10px;line-height:1;pointer-events:none;z-index:6;}
+  .mflag.q{top:-2px;color:var(--gold);text-shadow:0 0 4px var(--gold-soft);}
+  .mflag.r{bottom:-2px;color:#ee6f62;text-shadow:0 0 4px #000;}   /* 紅角置底右 → 與金環(頂右)可並存不疊 */
   .mlabel{position:absolute;top:100%;left:50%;transform:translateX(-50%);margin-top:1px;font-size:9px;line-height:1;white-space:nowrap;color:var(--ink);text-shadow:0 0 3px #000,0 0 2px #000,0 0 2px #000;display:none;pointer-events:none;}
   .mhour{position:absolute;transform:translate(-50%,-50%);font-size:9px;color:var(--gold);z-index:2;pointer-events:none;display:none;text-shadow:0 0 3px #000,0 0 2px #000,0 0 2px #000;}
   .mapstage.prov .mlabel,.mapstage.zoomed .mlabel{display:inline;}
@@ -470,6 +475,9 @@
       const flag = d.bloc ? `${esc(d.faction)}·${esc(d.bloc)}` : esc(d.faction || "");
       if (flag) lines += `<div class="loc-line"><span class="lab">🏴 旗號</span>${flag}</div>`;
     }
+    (d.tracked || []).forEach(function (t) {   // R114 F3:常駐追蹤中任務(免每次開任務日誌)
+      lines += `<div class="loc-line"><span class="lab">▶ 任務</span><span style="color:#7fd0d8">${esc(t)}</span></div>`;
+    });
     return elFrom(
       `<div class="card loc"><div class="card-head">📍 ${esc(d.name)}`
       + `<span class="dim">· ${esc(d.province)}（${esc(d.type)}）</span>${danger}</div>`
@@ -625,17 +633,21 @@
         } else if (n.type === "city" || n.type === "town") {
           lbl = `<span class="mlabel">${esc(n.name)}</span>`;
         }
-        const t = `${esc(n.name)}·${esc(n.type_cn)}${n.danger ? " ⚠" + n.danger : ""}`;
-        return `<div class="mmark ${cls}${dg}" data-id="${esc(n.id)}" style="left:${p[0]}%;top:${p[1]}%" title="${t}">${glyph}${lbl}</div>`;
+        // R114 F5:任務目標(金環)/ 重踞可再掃地城(紅角)角標 + tooltip 註記(可同時顯示)
+        const flag = (n.quest ? '<span class="mflag q">◎</span>' : "") + (n.reinfested ? '<span class="mflag r">⚔</span>' : "");
+        const t = `${esc(n.name)}·${esc(n.type_cn)}${n.danger ? " ⚠" + n.danger : ""}`
+          + (n.quest ? " · 🎯任務目標" : "") + (n.reinfested ? " · ⚔重踞可再掃" : "");
+        return `<div class="mmark ${cls}${dg}" data-id="${esc(n.id)}" style="left:${p[0]}%;top:${p[1]}%" title="${t}">${glyph}${flag}${lbl}</div>`;
       }).join("");
       zoom.innerHTML = svg + hours + marks;
     }
     function showInfo(info, n) {
-      if (!n) { info.innerHTML = '<span class="mi-hint">滾輪縮放 · 拖曳平移 · 點地點看設施;點上方行省可聚焦。</span>'; return; }
+      if (!n) { info.innerHTML = '<span class="mi-hint">滾輪縮放 · 拖曳平移 · 點地點看設施;點上方行省可聚焦。<span style="color:var(--gold)">◎</span>任務目標 <span style="color:#ee6f62">⚔</span>重踞可再掃。</span>'; return; }
       const here = n.here ? "★ " : "";
       const dg = n.danger ? ` <span class="chip red">⚠${n.danger}</span>` : "";
+      const flag = (n.quest ? ' <span class="chip gold">◎ 任務目標</span>' : "") + (n.reinfested ? ' <span class="chip red">⚔ 重踞可再掃</span>' : "");
       const svc = (n.svc && n.svc.length) ? `<span class="mi-svc">${esc(n.svc.join("、"))}</span>` : '<span class="mi-hint">(無特殊設施)</span>';
-      info.innerHTML = `${here}<b>${esc(n.name)}</b><span class="mi-type">·${esc(n.type_cn)}</span>${dg} ${svc}`;
+      info.innerHTML = `${here}<b>${esc(n.name)}</b><span class="mi-type">·${esc(n.type_cn)}</span>${dg}${flag} ${svc}`;
     }
     const btns = `<button class="mzb active" data-prov="">總覽</button>` +
       d.provinces.filter(function (p) { return p.name !== "邊境"; })   // 邊境不再獨立成檢視,改由各鄰省帶出
@@ -917,7 +929,14 @@
       return `<div class="inv-row${it.afford ? "" : " unaffordable"}" data-key="${esc(it.key)}">`
         + `<span class="ik ${esc(it.kind)}"></span>${esc(it.label)}</div>`;
     }).join("");
-    return elFrom(`<div class="card"><div class="card-head">🛒 商店</div><div class="inv">${rows}</div>`
+    let wbar = "";   // R114 F4:買貨也顯負重(複用背包負重條 class;原只有背包/賣貨有,買到一半才撞「太重」)
+    if (d.max != null) {
+      const wpct = d.max > 0 ? Math.max(0, Math.min(100, d.weight / d.max * 100)) : 0;
+      wbar = `<div class="inv-weight"><span class="iw-lab">負重</span>`
+        + `<div class="m-track"><div class="m-fill ${d.over ? "hp" : "fp"}" style="width:${wpct}%"></div></div>`
+        + `<span class="iw-val"${d.over ? ' style="color:#e08b82"' : ""}>${d.weight}/${d.max}${d.over ? " ⚠超載" : ""}</span></div>`;
+    }
+    return elFrom(`<div class="card"><div class="card-head">🛒 商店</div>${wbar}<div class="inv">${rows}</div>`
       + `<div class="inv-foot"><span></span><span class="gold">金幣 ${d.gold}</span></div></div>`);
   }
   function renderOrigins(d) {
@@ -1064,6 +1083,13 @@
     if (d.vampire) chips += `<span class="h-chip red">🩸 ${esc(d.vampire)}</span>`;
     if (d.cover) chips += `<span class="h-chip gold">${esc(d.cover)}</span>`;
     if (d.blessing) chips += `<span class="h-chip cyan">${esc(d.blessing)}</span>`;
+    // R114 資訊可見性:持續狀態(詛咒/成癮/病)紅 chip;限時增益折成一顆「✨增益×N」帶 title 明細
+    (d.statuses || []).forEach(function (s) { chips += `<span class="h-chip red">${esc(s)}</span>`; });
+    if ((d.buffs || []).length) {
+      const detail = d.buffs.map(function (b) { return b.label + (b.remain != null ? "(餘" + b.remain + "時)" : ""); }).join("、");
+      chips += `<span class="h-chip cyan" title="${esc(detail)}">✨ 增益×${d.buffs.length}</span>`;
+    }
+    if (d.encumbered) chips += `<span class="h-chip red">⚖ 負重將滿</span>`;
     if (d.bounty) chips += `<span class="h-chip red">通緝 ${d.bounty}</span>`;
     if (d.can_level) chips += `<span class="h-chip gold">★ 可升級</span>`;
     const team = (d.party || []).map(function (p) {
