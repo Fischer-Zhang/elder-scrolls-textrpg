@@ -8535,5 +8535,545 @@
       ]
     },
     "turn_in": "auto"
+  },
+  "dcomm_cedernoc_cave": {
+    "name": "清剿委託:切德納寇洞窟",
+    "faction": null,
+    "rank": null,
+    "source": "board",
+    "repeatable": true,
+    "provinces": [
+      "賽羅迪爾"
+    ],
+    "objective": {
+      "type": "purge_dungeon",
+      "dungeon": "cedernoc_cave"
+    },
+    "reward": {
+      "gold": 50,
+      "fame": 1
+    },
+    "turn_in": "auto",
+    "text": "告示:肅清過的切德納寇洞窟又鬧起了亡靈上湧,騷擾四鄰。掃蕩其頭目、奪回巢穴者,官府有賞。(常駐零工;僅在該地重遭盤踞時懸掛)"
+  },
+  "dcomm_fort_ontus": {
+    "name": "清剿委託:奧圖斯堡",
+    "faction": null,
+    "rank": null,
+    "source": "board",
+    "repeatable": true,
+    "provinces": [
+      "賽羅迪爾"
+    ],
+    "objective": {
+      "type": "purge_dungeon",
+      "dungeon": "fort_ontus"
+    },
+    "reward": {
+      "gold": 50,
+      "fame": 1
+    },
+    "turn_in": "auto",
+    "text": "告示:肅清過的奧圖斯堡又鬧起了哥布林部落,騷擾四鄰。掃蕩其頭目、奪回巢穴者,官府有賞。(常駐零工;僅在該地重遭盤踞時懸掛)"
+  },
+  "dcomm_vilverin": {
+    "name": "清剿委託:維爾凡林",
+    "faction": null,
+    "rank": null,
+    "source": "board",
+    "repeatable": true,
+    "provinces": [
+      "賽羅迪爾"
+    ],
+    "objective": {
+      "type": "purge_dungeon",
+      "dungeon": "vilverin"
+    },
+    "reward": {
+      "gold": 50,
+      "fame": 1
+    },
+    "turn_in": "auto",
+    "text": "告示:肅清過的維爾凡林又鬧起了盜匪回巢,騷擾四鄰。掃蕩其頭目、奪回巢穴者,官府有賞。(常駐零工;僅在該地重遭盤踞時懸掛)"
+  },
+  "dcomm_pale_pass_cave": {
+    "name": "清剿委託:白隘冰窟",
+    "faction": null,
+    "rank": null,
+    "source": "board",
+    "repeatable": true,
+    "provinces": [
+      "邊境"
+    ],
+    "objective": {
+      "type": "purge_dungeon",
+      "dungeon": "pale_pass_cave"
+    },
+    "reward": {
+      "gold": 40,
+      "fame": 1
+    },
+    "turn_in": "auto",
+    "text": "告示:肅清過的白隘冰窟又鬧起了雪地哥布林,騷擾四鄰。掃蕩其頭目、奪回巢穴者,官府有賞。(常駐零工;僅在該地重遭盤踞時懸掛)"
+  },
+  "dcomm_lostknife_cave": {
+    "name": "清剿委託:迷刀洞窟",
+    "faction": null,
+    "rank": null,
+    "source": "board",
+    "repeatable": true,
+    "provinces": [
+      "天際"
+    ],
+    "objective": {
+      "type": "purge_dungeon",
+      "dungeon": "lostknife_cave"
+    },
+    "reward": {
+      "gold": 50,
+      "fame": 1
+    },
+    "turn_in": "auto",
+    "text": "告示:肅清過的迷刀洞窟又鬧起了冰鬼縈繞,騷擾四鄰。掃蕩其頭目、奪回巢穴者,官府有賞。(常駐零工;僅在該地重遭盤踞時懸掛)"
+  },
+  "dcomm_frostwind_ruin": {
+    "name": "清剿委託:冰風廢墟",
+    "faction": null,
+    "rank": null,
+    "source": "board",
+    "repeatable": true,
+    "provinces": [
+      "天際"
+    ],
+    "objective": {
+      "type": "purge_dungeon",
+      "dungeon": "frostwind_ruin"
+    },
+    "reward": {
+      "gold": 65,
+      "fame": 1
+    },
+    "turn_in": "auto",
+    "text": "告示:肅清過的冰風廢墟又鬧起了死靈儀式,騷擾四鄰。掃蕩其頭目、奪回巢穴者,官府有賞。(常駐零工;僅在該地重遭盤踞時懸掛)"
+  },
+  "dcomm_forsworn_redoubt": {
+    "name": "清剿委託:拒誓者巢穴",
+    "faction": null,
+    "rank": null,
+    "source": "board",
+    "repeatable": true,
+    "provinces": [
+      "天際"
+    ],
+    "objective": {
+      "type": "purge_dungeon",
+      "dungeon": "forsworn_redoubt"
+    },
+    "reward": {
+      "gold": 65,
+      "fame": 1
+    },
+    "turn_in": "auto",
+    "text": "告示:肅清過的拒誓者巢穴又鬧起了野獸巢穴,騷擾四鄰。掃蕩其頭目、奪回巢穴者,官府有賞。(常駐零工;僅在該地重遭盤踞時懸掛)"
+  },
+  "dcomm_saarthal": {
+    "name": "清剿委託:薩爾薩斯",
+    "faction": null,
+    "rank": null,
+    "source": "board",
+    "repeatable": true,
+    "provinces": [
+      "天際"
+    ],
+    "objective": {
+      "type": "purge_dungeon",
+      "dungeon": "saarthal"
+    },
+    "reward": {
+      "gold": 85,
+      "fame": 2
+    },
+    "turn_in": "auto",
+    "text": "告示:肅清過的薩爾薩斯又鬧起了血族竊據,騷擾四鄰。掃蕩其頭目、奪回巢穴者,官府有賞。(常駐零工;僅在該地重遭盤踞時懸掛)"
+  },
+  "dcomm_kogoruhn": {
+    "name": "清剿委託:科戈魯恩",
+    "faction": null,
+    "rank": null,
+    "source": "board",
+    "repeatable": true,
+    "provinces": [
+      "晨風"
+    ],
+    "objective": {
+      "type": "purge_dungeon",
+      "dungeon": "kogoruhn"
+    },
+    "reward": {
+      "gold": 65,
+      "fame": 1
+    },
+    "turn_in": "auto",
+    "text": "告示:肅清過的科戈魯恩又鬧起了灰燼蟲群,騷擾四鄰。掃蕩其頭目、奪回巢穴者,官府有賞。(常駐零工;僅在該地重遭盤踞時懸掛)"
+  },
+  "dcomm_ashfall_barrow": {
+    "name": "清剿委託:灰燼墓塚",
+    "faction": null,
+    "rank": null,
+    "source": "board",
+    "repeatable": true,
+    "provinces": [
+      "晨風"
+    ],
+    "objective": {
+      "type": "purge_dungeon",
+      "dungeon": "ashfall_barrow"
+    },
+    "reward": {
+      "gold": 85,
+      "fame": 2
+    },
+    "turn_in": "auto",
+    "text": "告示:肅清過的灰燼墓塚又鬧起了元素亂流,騷擾四鄰。掃蕩其頭目、奪回巢穴者,官府有賞。(常駐零工;僅在該地重遭盤踞時懸掛)"
+  },
+  "dcomm_dragon_lair": {
+    "name": "清剿委託:龍喉巢穴",
+    "faction": null,
+    "rank": null,
+    "source": "board",
+    "repeatable": true,
+    "provinces": [
+      "晨風"
+    ],
+    "objective": {
+      "type": "purge_dungeon",
+      "dungeon": "dragon_lair"
+    },
+    "reward": {
+      "gold": 105,
+      "fame": 2
+    },
+    "turn_in": "auto",
+    "text": "告示:肅清過的龍喉巢穴又鬧起了霜巨人霸巢,騷擾四鄰。掃蕩其頭目、奪回巢穴者,官府有賞。(常駐零工;僅在該地重遭盤踞時懸掛)"
+  },
+  "dcomm_xanmeer": {
+    "name": "清剿委託:贊密爾沉廟",
+    "faction": null,
+    "rank": null,
+    "source": "board",
+    "repeatable": true,
+    "provinces": [
+      "黑沼澤"
+    ],
+    "objective": {
+      "type": "purge_dungeon",
+      "dungeon": "xanmeer"
+    },
+    "reward": {
+      "gold": 85,
+      "fame": 2
+    },
+    "turn_in": "auto",
+    "text": "告示:肅清過的贊密爾沉廟又鬧起了沼澤掠食者,騷擾四鄰。掃蕩其頭目、奪回巢穴者,官府有賞。(常駐零工;僅在該地重遭盤踞時懸掛)"
+  },
+  "dcomm_rootwater_grotto": {
+    "name": "清剿委託:根水沼窟",
+    "faction": null,
+    "rank": null,
+    "source": "board",
+    "repeatable": true,
+    "provinces": [
+      "黑沼澤"
+    ],
+    "objective": {
+      "type": "purge_dungeon",
+      "dungeon": "rootwater_grotto"
+    },
+    "reward": {
+      "gold": 65,
+      "fame": 1
+    },
+    "turn_in": "auto",
+    "text": "告示:肅清過的根水沼窟又鬧起了鱷群盤踞,騷擾四鄰。掃蕩其頭目、奪回巢穴者,官府有賞。(常駐零工;僅在該地重遭盤踞時懸掛)"
+  },
+  "dcomm_vunnar_xul": {
+    "name": "清剿委託:凡納·蘇爾沉廟",
+    "faction": null,
+    "rank": null,
+    "source": "board",
+    "repeatable": true,
+    "provinces": [
+      "黑沼澤"
+    ],
+    "objective": {
+      "type": "purge_dungeon",
+      "dungeon": "vunnar_xul"
+    },
+    "reward": {
+      "gold": 105,
+      "fame": 2
+    },
+    "turn_in": "auto",
+    "text": "告示:肅清過的凡納·蘇爾沉廟又鬧起了死靈進駐,騷擾四鄰。掃蕩其頭目、奪回巢穴者,官府有賞。(常駐零工;僅在該地重遭盤踞時懸掛)"
+  },
+  "dcomm_volenfell": {
+    "name": "清剿委託:沃倫菲爾",
+    "faction": null,
+    "rank": null,
+    "source": "board",
+    "repeatable": true,
+    "provinces": [
+      "漢默法爾"
+    ],
+    "objective": {
+      "type": "purge_dungeon",
+      "dungeon": "volenfell"
+    },
+    "reward": {
+      "gold": 85,
+      "fame": 2
+    },
+    "turn_in": "auto",
+    "text": "告示:肅清過的沃倫菲爾又鬧起了拾荒部落,騷擾四鄰。掃蕩其頭目、奪回巢穴者,官府有賞。(常駐零工;僅在該地重遭盤踞時懸掛)"
+  },
+  "dcomm_rourken_halls": {
+    "name": "清剿委託:羅肯廳堂",
+    "faction": null,
+    "rank": null,
+    "source": "board",
+    "repeatable": true,
+    "provinces": [
+      "漢默法爾"
+    ],
+    "objective": {
+      "type": "purge_dungeon",
+      "dungeon": "rourken_halls"
+    },
+    "reward": {
+      "gold": 65,
+      "fame": 1
+    },
+    "turn_in": "auto",
+    "text": "告示:肅清過的羅肯廳堂又鬧起了沙漠強盜,騷擾四鄰。掃蕩其頭目、奪回巢穴者,官府有賞。(常駐零工;僅在該地重遭盤踞時懸掛)"
+  },
+  "dcomm_ansei_tomb": {
+    "name": "清剿委託:劍聖之墓",
+    "faction": null,
+    "rank": null,
+    "source": "board",
+    "repeatable": true,
+    "provinces": [
+      "漢默法爾"
+    ],
+    "objective": {
+      "type": "purge_dungeon",
+      "dungeon": "ansei_tomb"
+    },
+    "reward": {
+      "gold": 105,
+      "fame": 2
+    },
+    "turn_in": "auto",
+    "text": "告示:肅清過的劍聖之墓又鬧起了深穴掠食者,騷擾四鄰。掃蕩其頭目、奪回巢穴者,官府有賞。(常駐零工;僅在該地重遭盤踞時懸掛)"
+  },
+  "dcomm_direnni_tower": {
+    "name": "清剿委託:戴尼瑞塔",
+    "faction": null,
+    "rank": null,
+    "source": "board",
+    "repeatable": true,
+    "provinces": [
+      "高岩"
+    ],
+    "objective": {
+      "type": "purge_dungeon",
+      "dungeon": "direnni_tower"
+    },
+    "reward": {
+      "gold": 85,
+      "fame": 2
+    },
+    "turn_in": "auto",
+    "text": "告示:肅清過的戴尼瑞塔又鬧起了女巫集會,騷擾四鄰。掃蕩其頭目、奪回巢穴者,官府有賞。(常駐零工;僅在該地重遭盤踞時懸掛)"
+  },
+  "dcomm_wendir": {
+    "name": "清剿委託:溫迪爾",
+    "faction": null,
+    "rank": null,
+    "source": "board",
+    "repeatable": true,
+    "provinces": [
+      "高岩"
+    ],
+    "objective": {
+      "type": "purge_dungeon",
+      "dungeon": "wendir"
+    },
+    "reward": {
+      "gold": 65,
+      "fame": 1
+    },
+    "turn_in": "auto",
+    "text": "告示:肅清過的溫迪爾又鬧起了盜賊窩點,騷擾四鄰。掃蕩其頭目、奪回巢穴者,官府有賞。(常駐零工;僅在該地重遭盤踞時懸掛)"
+  },
+  "dcomm_bangkorai_crypt": {
+    "name": "清剿委託:巴薩拉墓窖",
+    "faction": null,
+    "rank": null,
+    "source": "board",
+    "repeatable": true,
+    "provinces": [
+      "邊境"
+    ],
+    "objective": {
+      "type": "purge_dungeon",
+      "dungeon": "bangkorai_crypt"
+    },
+    "reward": {
+      "gold": 65,
+      "fame": 1
+    },
+    "turn_in": "auto",
+    "text": "告示:肅清過的巴薩拉墓窖又鬧起了亡靈復湧,騷擾四鄰。掃蕩其頭目、奪回巢穴者,官府有賞。(常駐零工;僅在該地重遭盤踞時懸掛)"
+  },
+  "dcomm_hag_rock": {
+    "name": "清剿委託:海妖岩巫窟",
+    "faction": null,
+    "rank": null,
+    "source": "board",
+    "repeatable": true,
+    "provinces": [
+      "高岩"
+    ],
+    "objective": {
+      "type": "purge_dungeon",
+      "dungeon": "hag_rock"
+    },
+    "reward": {
+      "gold": 85,
+      "fame": 2
+    },
+    "turn_in": "auto",
+    "text": "告示:肅清過的海妖岩巫窟又鬧起了巨魔盤踞,騷擾四鄰。掃蕩其頭目、奪回巢穴者,官府有賞。(常駐零工;僅在該地重遭盤踞時懸掛)"
+  },
+  "dcomm_spider_grove": {
+    "name": "清剿委託:絞藤蛛巢",
+    "faction": null,
+    "rank": null,
+    "source": "board",
+    "repeatable": true,
+    "provinces": [
+      "瓦倫森林"
+    ],
+    "objective": {
+      "type": "purge_dungeon",
+      "dungeon": "spider_grove"
+    },
+    "reward": {
+      "gold": 85,
+      "fame": 2
+    },
+    "turn_in": "auto",
+    "text": "告示:肅清過的絞藤蛛巢又鬧起了巨蛛回巢,騷擾四鄰。掃蕩其頭目、奪回巢穴者,官府有賞。(常駐零工;僅在該地重遭盤踞時懸掛)"
+  },
+  "dcomm_falinesti_roots": {
+    "name": "清剿委託:法林斯提根穴",
+    "faction": null,
+    "rank": null,
+    "source": "board",
+    "repeatable": true,
+    "provinces": [
+      "瓦倫森林"
+    ],
+    "objective": {
+      "type": "purge_dungeon",
+      "dungeon": "falinesti_roots"
+    },
+    "reward": {
+      "gold": 65,
+      "fame": 1
+    },
+    "turn_in": "auto",
+    "text": "告示:肅清過的法林斯提根穴又鬧起了逃兵匪幫,騷擾四鄰。掃蕩其頭目、奪回巢穴者,官府有賞。(常駐零工;僅在該地重遭盤踞時懸掛)"
+  },
+  "dcomm_vindisi": {
+    "name": "清剿委託:文迪西",
+    "faction": null,
+    "rank": null,
+    "source": "board",
+    "repeatable": true,
+    "provinces": [
+      "瓦倫森林"
+    ],
+    "objective": {
+      "type": "purge_dungeon",
+      "dungeon": "vindisi"
+    },
+    "reward": {
+      "gold": 85,
+      "fame": 2
+    },
+    "turn_in": "auto",
+    "text": "告示:肅清過的文迪西又鬧起了猿群竊據,騷擾四鄰。掃蕩其頭目、奪回巢穴者,官府有賞。(常駐零工;僅在該地重遭盤踞時懸掛)"
+  },
+  "dcomm_moonlit_cradle": {
+    "name": "清剿委託:月華搖籃",
+    "faction": null,
+    "rank": null,
+    "source": "board",
+    "repeatable": true,
+    "provinces": [
+      "艾爾斯維爾"
+    ],
+    "objective": {
+      "type": "purge_dungeon",
+      "dungeon": "moonlit_cradle"
+    },
+    "reward": {
+      "gold": 65,
+      "fame": 1
+    },
+    "turn_in": "auto",
+    "text": "告示:肅清過的月華搖籃又鬧起了糖癮獸群,騷擾四鄰。掃蕩其頭目、奪回巢穴者,官府有賞。(常駐零工;僅在該地重遭盤踞時懸掛)"
+  },
+  "dcomm_dark_moon_grotto": {
+    "name": "清剿委託:暗月窟",
+    "faction": null,
+    "rank": null,
+    "source": "board",
+    "repeatable": true,
+    "provinces": [
+      "艾爾斯維爾"
+    ],
+    "objective": {
+      "type": "purge_dungeon",
+      "dungeon": "dark_moon_grotto"
+    },
+    "reward": {
+      "gold": 85,
+      "fame": 2
+    },
+    "turn_in": "auto",
+    "text": "告示:肅清過的暗月窟又鬧起了暗影糾纏,騷擾四鄰。掃蕩其頭目、奪回巢穴者,官府有賞。(常駐零工;僅在該地重遭盤踞時懸掛)"
+  },
+  "dcomm_merryvale_ruin": {
+    "name": "清剿委託:梅里谷遺址",
+    "faction": null,
+    "rank": null,
+    "source": "board",
+    "repeatable": true,
+    "provinces": [
+      "艾爾斯維爾"
+    ],
+    "objective": {
+      "type": "purge_dungeon",
+      "dungeon": "merryvale_ruin"
+    },
+    "reward": {
+      "gold": 85,
+      "fame": 2
+    },
+    "turn_in": "auto",
+    "text": "告示:肅清過的梅里谷遺址又鬧起了骸骨衛隊,騷擾四鄰。掃蕩其頭目、奪回巢穴者,官府有賞。(常駐零工;僅在該地重遭盤踞時懸掛)"
   }
 }

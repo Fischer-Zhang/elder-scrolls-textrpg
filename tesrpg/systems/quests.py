@@ -16,7 +16,10 @@ from tesrpg.systems import factions, inventory, party
 STIPEND_PER_RANK = 40   # 晉升俸祿:每升一階,公會額外發 40×新階級 金
 
 # 任務目標/獎勵的「已實作」契約(單一真實來源:_objective_met 與 _complete 必須與此一致)
-_OBJECTIVE_TYPES = frozenset({"kill", "clear_dungeon", "reach", "collect", "assassinate"})
+# purge_dungeon(R111):掃蕩「重踞」的已清地城 —— 判定走 base 快照(接取時記下該地城的
+# 重踞時間戳;掃蕩把時間戳嚴格推進未來 → met=時間戳>base),不碰 cleared_dungeons(單調)
+# → 可 repeatable 而不觸 R79「clear_dungeon 即時達標=免費金」破口(天然閘=只在重踞期間現身)。
+_OBJECTIVE_TYPES = frozenset({"kill", "clear_dungeon", "reach", "collect", "assassinate", "purge_dungeon"})
 _REWARD_KEYS = frozenset({
     "gold", "fame", "infamy", "items", "spells", "grant_boon",
     "world_flags", "eradicate_faction", "companion", "bond", "standing",
@@ -100,7 +103,7 @@ def is_done(char: Character, quest_id: str) -> bool:
 
 def available_quests(char: Character, gamedata: GameData, source: str,
                      faction: str | None = None, province: str | None = None,
-                     day: int | None = None) -> list[str]:
+                     day: int | None = None, now: int | None = None) -> list[str]:
     out = []
     for qid, q in gamedata.quests.items():
         if q.get("source") != source or is_active(char, qid) or is_done(char, qid):
@@ -160,24 +163,39 @@ def available_quests(char: Character, gamedata: GameData, source: str,
                 continue
             # 常態世界脈動:可重複委託只在被 active 脈動「聚光」時現身於告示板(R-pulse)。
             # 需 province + day + 正被聚光,缺一即隱藏(不灰顯;防 province/day 缺漏時 ungated 洩漏)。
+            # R111 例外:purge_dungeon 清剿委託的天然閘=目標地城「正被重踞」(掃蕩即消失、
+            # 下輪重踞再現)—— 比脈動聚光更強的自然節流,不走 spotlight;需 now(絕對小時)。
             if q.get("repeatable"):
-                from tesrpg.systems import worldpulse
-                if province is None or day is None \
-                        or qid not in worldpulse.spotlighted_board_quests(char, gamedata, province, day):
-                    continue
+                obj0 = _stages(q)[0]["objective"] if (q.get("stages") or q.get("objective")) else {}
+                if obj0.get("type") == "purge_dungeon":
+                    from tesrpg.systems import dungeon
+                    if province is None or now is None \
+                            or not dungeon.is_reinfested(char, gamedata, obj0["dungeon"], now):
+                        continue
+                else:
+                    from tesrpg.systems import worldpulse
+                    if province is None or day is None \
+                            or qid not in worldpulse.spotlighted_board_quests(char, gamedata, province, day):
+                        continue
         out.append(qid)
     return out
 
 
-def _kill_base(char: Character, obj: dict) -> int:
-    """進入一個 kill 階段時,記下當下擊殺數作基準(避免回溯計入既往擊殺)。"""
-    return char.kill_counts.get(obj["creature"], 0) if obj["type"] == "kill" else 0
+def _objective_base(char: Character, obj: dict) -> int:
+    """進入一個階段時記下的「基準快照」:kill=當下擊殺數(避免回溯計入既往擊殺);
+    purge_dungeon=當下該地城的重踞時間戳(掃蕩會把時間戳嚴格推進未來 → met=戳>base,
+    無需時間存取、零新狀態)。其餘型別=0。"""
+    if obj["type"] == "kill":
+        return char.kill_counts.get(obj["creature"], 0)
+    if obj["type"] == "purge_dungeon":
+        return int(getattr(char, "dungeon_reinfest_at", {}).get(obj["dungeon"], 0))
+    return 0
 
 
 def accept_quest(char: Character, gamedata: GameData, quest_id: str, branch: int = 0) -> None:
     char.quests[quest_id] = {"stage": 0, "branch": branch}   # 先記分支,_resolved 才取得到
     obj = _stages(_resolved(char, gamedata, quest_id))[0]["objective"]
-    char.quests[quest_id]["base"] = _kill_base(char, obj)
+    char.quests[quest_id]["base"] = _objective_base(char, obj)
     # 叛離:接取帶 expel_faction 的任務即背棄該陣營(如接反達貢主線 → 逐出神話黎明,
     # conjure_boon perk 隨 rank=-1 消失)。對非會員無害(已是 -1)。
     expel = gamedata.quests[quest_id].get("expel_faction")
@@ -199,6 +217,8 @@ def _objective_met(char: Character, gamedata: GameData, obj: dict, base: int) ->
     if t == "assassinate":   # R109:暗殺指定具名 NPC(單 `npc` 或多 `npcs`·達標=全部已在 murdered_npcs)
         murdered = getattr(char, "murdered_npcs", [])
         return all(n in murdered for n in _hit_targets(obj))
+    if t == "purge_dungeon":   # R111:掃蕩重踞 —— 時間戳被 mark_purged 嚴格推進 → 戳 > 接取時快照
+        return int(getattr(char, "dungeon_reinfest_at", {}).get(obj["dungeon"], 0)) > base
     return False
 
 
@@ -337,6 +357,12 @@ def objective_text(char: Character, gamedata: GameData, quest_id: str) -> str:
             loc = gamedata.location(npc["location"])["name"] if npc.get("location") in locs else "?"
             parts.append(f"{npc.get('name', nid)}(在 {loc}){'✔' if nid in murdered else '✘'}")
         body = "暗殺 " + "、".join(parts)
+    elif t == "purge_dungeon":   # R111:掃蕩重踞(達標=時間戳已被掃蕩推進,同 _objective_met 口徑;
+        # 未接取(告示板預覽)恆 ✘ —— 否則 base 預設 0 而時間戳恆 >0 → 預覽全 ✔,鏡像 kill_progress 的守門)
+        base = char.quests.get(quest_id, {}).get("base", 0)
+        done = "✔" if (quest_id in char.quests
+                       and int(getattr(char, "dungeon_reinfest_at", {}).get(obj["dungeon"], 0)) > base) else "✘"
+        body = f"掃蕩重踞的{gamedata.dungeons[obj['dungeon']]['name']} {done}"
     else:
         body = ""
     return f"[{idx + 1}/{total}] {body}" if total > 1 else body
@@ -375,7 +401,7 @@ def _advance(char: Character, gamedata: GameData, quest_id: str) -> list[dict]:
 
         # 推進到下一階段(若為 kill 則重設基準;保留已選分支)
         nxt = stages[idx + 1]["objective"]
-        char.quests[quest_id] = {"stage": idx + 1, "base": _kill_base(char, nxt),
+        char.quests[quest_id] = {"stage": idx + 1, "base": _objective_base(char, nxt),
                                  "branch": char.quests[quest_id].get("branch", 0)}
         events.append({"type": "stage_advanced", "quest_id": quest_id, "name": q["name"],
                        "stage_text": stages[idx + 1].get("text", ""),

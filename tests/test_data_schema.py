@@ -360,6 +360,66 @@ def test_quest_givers_and_reachability():
     assert not bad, "任務派發/可達性違規:" + "; ".join(bad)
 
 
+def test_reinfest_blocks_and_purge_commissions():
+    """R111 地城再滋擾守門:① 變體區塊 schema/FK(monsters/boss ∈ bestiary、變體 boss ≠ 原 boss、
+    寶藏物品存在);② 主線門鏈與「特殊來源任務」指向的地城**絕不**帶 reinfest(quest-special 絕緣);
+    ③ dcomm 清剿委託:objective=purge_dungeon → 目標地城必有 reinfest 區塊(否則永不重踞=委託永不
+    現身)、必 repeatable、必帶 provinces(告示板在地閘)且為真實省份。"""
+    from tesrpg.systems import dungeon as dungeon_sys
+    gd = get_gamedata()
+    provinces = {l.get("province") for l in gd.world["locations"].values() if l.get("province")}
+    # ① 變體區塊 schema/FK
+    for did, spec in gd.dungeons.items():
+        rb = spec.get("reinfest")
+        if rb is None:
+            continue
+        assert rb.get("monsters") and all(m in gd.bestiary for m in rb["monsters"]), did
+        b = rb.get("boss") or {}
+        assert b.get("enemy") in gd.bestiary, did
+        assert b["enemy"] != spec["boss"]["enemy"], f"{did} 變體 boss 不得同原 boss(重踞要換血)"
+        for it in (b.get("treasure") or {}).get("loot", []):
+            if isinstance(it, str):
+                assert gd.item_or_none(it) is not None, f"{did} 變體寶藏 {it} 不存在"
+        assert dungeon_sys.dungeon_location_id(gd, did) is not None, f"{did} 無所在地點(孤兒)"
+    # ② quest-special 絕緣:main/daedric/arcane/relic 任務的 clear_dungeon 目標地城不得參與滋擾
+    special_dungeons = set()
+    for q in gd.quests.values():
+        if q.get("source") not in ("main", "daedric", "arcane", "relic"):
+            continue
+        objs = ([q.get("objective", {})] + [s.get("objective", {}) for s in q.get("stages", [])])
+        for b in q.get("branches", []):
+            objs += [b.get("objective", {})] + [s.get("objective", {}) for s in b.get("stages", [])]
+        special_dungeons |= {o["dungeon"] for o in objs if o.get("type") == "clear_dungeon"}
+    bad = [d for d in special_dungeons if (gd.dungeons.get(d) or {}).get("reinfest")]
+    assert not bad, f"主線/親王/試煉/聖物地城不得帶 reinfest:{bad}"
+    # ③ dcomm 委託完整性
+    for qid, q in gd.quests.items():
+        obj = q.get("objective", {})
+        if obj.get("type") != "purge_dungeon":
+            continue
+        assert q.get("repeatable"), f"{qid} purge_dungeon 委託須 repeatable"
+        assert (gd.dungeons.get(obj.get("dungeon")) or {}).get("reinfest"), \
+            f"{qid} 目標 {obj.get('dungeon')} 無 reinfest 區塊 → 永不重踞=委託永不現身"
+        provs = q.get("provinces")
+        assert provs and all(p in provinces for p in provs), f"{qid} provinces 缺漏/非真實省份"
+    # ④ 變體池怪 ∉ 「唯一 villain 獵殺任務」目標(hunt_location kill·R109):否則重踞地城成為
+    #    越位擊殺來源,免去獵殺長征即完成任務(審查抓到 necromancer_acolyte↔kn2 → 通用鎖死)
+    hunt_targets = set()
+    for q in gd.quests.values():
+        if not q.get("hunt_location"):
+            continue
+        objs2 = ([q.get("objective", {})] + [s.get("objective", {}) for s in q.get("stages", [])])
+        for b in q.get("branches", []):
+            objs2 += [b.get("objective", {})] + [s.get("objective", {}) for s in b.get("stages", [])]
+        hunt_targets |= {o["creature"] for o in objs2 if o.get("type") == "kill"}
+    for did, spec in gd.dungeons.items():
+        rb = spec.get("reinfest")
+        if rb is None:
+            continue
+        leak = (set(rb["monsters"]) | {rb["boss"]["enemy"]}) & hunt_targets
+        assert not leak, f"{did} 變體池含獵殺任務目標 {leak}(越位擊殺來源)"
+
+
 def test_houses_and_upgrades_schema():
     """R110 家園:houses.json(tier 合法 + 地點真實 + biome 有生態池)與 house_upgrades.json
     (name/price/desc 齊備)schema 守門。biome→池斷鏈=藥草園靜默停用,在資料層即攔。"""

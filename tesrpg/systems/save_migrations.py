@@ -15,8 +15,8 @@
 from __future__ import annotations
 
 from tesrpg.systems import (aiwar, alchemy, boons, dagon_boon, diseases, divines,
-                            housing, inventory, lycanthropy, potion_buff, progression,
-                            skooma, spellfx, undercover, worldpulse)
+                            dungeon, housing, inventory, lycanthropy, potion_buff,
+                            progression, skooma, spellfx, undercover, worldpulse)
 
 
 def run_load_migrations(player, time, gamedata) -> None:
@@ -38,3 +38,4 @@ def run_load_migrations(player, time, gamedata) -> None:
     aiwar.ensure_war_fields(player, time)                        # AI 戰爭:補欄 + war_tick_at 起算下個整週
     worldpulse.ensure_pulse_fields(player)                       # 常態世界脈動:補欄(world_pulse_day/pulse_eval_day)+ 防呆冪等
     housing.ensure_housing_fields(player, time.absolute_hours()) # 家園擴建:補欄 + 型別/採收時間戳自癒(R110)
+    dungeon.ensure_reinfest_fields(player, gamedata, time.absolute_hours())  # 地城再滋擾:補欄 + 舊檔回填一輪後滋擾(R111)

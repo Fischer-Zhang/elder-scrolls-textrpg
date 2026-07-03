@@ -51,14 +51,23 @@ def has_camp(char: Character) -> bool:
     return bool(char.camp)
 
 
-def can_make_camp(char: Character, gamedata: GameData, loc_id: str) -> bool:
-    """須為領主/首領,且當地可紮營:野外紮營 或 佔領已清空地城。"""
+def can_make_camp(char: Character, gamedata: GameData, loc_id: str, now: int | None = None) -> bool:
+    """須為領主/首領,且當地可紮營:野外紮營 或 佔領已清空地城。
+    R111:重踞中的地城須先掃蕩才可紮營(now=None 跳過此閘,向後相容既有呼叫端)——
+    否則「接清剿委託→就地紮營」會經 is_reinfested 的駐軍豁免免戰完成(審計預防);
+    反向:已紮營的地城由駐軍守著、不再滋擾(dungeon.is_reinfested 的 camp 豁免)。"""
     if not is_warlord(char, gamedata):
         return False
     loc = gamedata.location(loc_id)
     if loc["type"] == "wilderness":
         return True
-    return loc["type"] == "dungeon" and loc.get("dungeon") in char.cleared_dungeons
+    if not (loc["type"] == "dungeon" and loc.get("dungeon") in char.cleared_dungeons):
+        return False
+    if now is not None:
+        from tesrpg.systems import dungeon
+        if dungeon.is_reinfested(char, gamedata, loc["dungeon"], now):
+            return False
+    return True
 
 
 def make_camp(char: Character, loc_id: str) -> None:

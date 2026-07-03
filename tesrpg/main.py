@@ -1592,7 +1592,10 @@ def action_dungeon(state: GameState, gamedata: GameData) -> str | None:
     """
     player = state.player
     loc = world.current_location(player, gamedata)
-    spec = gamedata.dungeons[loc["dungeon"]]
+    # R111 再滋擾:已清地城隔時被新勢力重踞 → 用變體 spec(monsters/boss/loot 換血);
+    # 掃蕩重踞頭目得其自帶較小寶藏(首通大寶藏仍唯一)。cleared_dungeons 恆不動(單調)。
+    infested = dungeon.is_reinfested(player, gamedata, loc["dungeon"], state.time.absolute_hours())
+    spec = dungeon.effective_spec(gamedata, loc["dungeon"], infested)
     # 首次肅清才給保證戰利品(boss 寶藏 + 一般格寶箱)→ 反「重訪刷寶」:已清地城再衝,
     # 怪物/陷阱照常(戰鬥 XP/掉落是有風險的正常 grind),但寶箱與寶藏皆已被你搬空。
     first_clear = loc["dungeon"] not in player.cleared_dungeons
@@ -1602,8 +1605,12 @@ def action_dungeon(state: GameState, gamedata: GameData) -> str | None:
     resolved = [[[False] * n for _ in range(n)] for _ in range(m)]
     z = x = y = 0
     battle = {"allies": []}   # 戰鬥情境:預召喚物(transient,不入持久同伴;隨移動衰減)
-    ui.message(f"你踏入了{spec['name']}的幽暗深處……（{n}×{n} 格 · 共 {m} 層）", style="magenta")
-    if not first_clear:
+    ui.message(f"你踏入了{gamedata.dungeons[loc['dungeon']]['name']}的幽暗深處……（{n}×{n} 格 · 共 {m} 層）", style="magenta")
+    if infested:
+        rb = dungeon.reinfest_block(gamedata, loc["dungeon"]) or {}
+        ui.message(rb.get("desc") or "（你肅清過的此地,如今又被新的勢力盤踞 —— 掃蕩牠們的頭目,奪回被囤積的財貨。）",
+                   style="yellow")
+    elif not first_clear:
         ui.message("（你早已肅清此地 —— 首領寶藏已被你取走;一般寶箱與機關則隨歲月重新佈設,游蕩的新怪亦不少。）", style="grey70")
 
     def reveal_and_train(zz, xx, yy):
@@ -1708,10 +1715,20 @@ def action_dungeon(state: GameState, gamedata: GameData) -> str | None:
                     spoils = dungeon.open_container(player, gamedata, boss.get("treasure") or {}, state.rng)
                     ui.message("首領倒下,守護的寶藏應聲而開 ——", style="bold green")
                     ui.loot_report(spoils, gamedata)
+                elif infested:
+                    # R111 掃蕩重踞:變體頭目自帶「較小」寶藏(定義於 reinfest 區塊,絕無神器);
+                    # mark_purged 把重踞時間戳推進未來 → purge_dungeon 委託據此達標 + 排下一輪滋擾。
+                    spoils = dungeon.open_container(player, gamedata, boss.get("treasure") or {}, state.rng)
+                    ui.message("重踞的頭目倒下 —— 牠們囤積的財貨歸你了。", style="bold green")
+                    ui.loot_report(spoils, gamedata)
                 else:                                      # 重訪:首領照常重生再戰,但寶藏早已被你取走
                     ui.message("首領再度倒下,但守護的寶藏早已被你取走 —— 空空如也。", style="grey70")
                 ui.message(f"你肅清了{spec['name']}!", style="bold green")
                 quests.record_dungeon_clear(player, loc["dungeon"])
+                # R111:任何 boss 擊殺皆排下一輪滋擾(無 reinfest 區塊的特殊地城 no-op)——
+                # 無條件呼叫治「計時器爬行中到期」邊角(進場快照 not infested、爬行間到期、
+                # 殺完原 boss 一出門即刻重踞的怪異觀感);順帶語意自洽:剛掃過的地城,勢力要重新聚集。
+                dungeon.mark_purged(player, gamedata, loc["dungeon"], state.time.absolute_hours())
                 _report_quests(state, gamedata)
                 state.time.advance(1)
                 return None
@@ -3477,7 +3494,8 @@ def action_warband(state: GameState, gamedata: GameData) -> None:
         ui.message(f"【軍勢】親衛:{officers} | 士兵:{char.soldiers}/{warband.MAX_SOLDIERS} | "
                    f"營地:{camp_name}", style="gold1")
         opts = []
-        if warband.can_make_camp(char, gamedata, loc_id):
+        # R111:重踞中的地城須先掃蕩才可紮營(now 閘;防「接清剿委託→紮營免戰完成」)
+        if warband.can_make_camp(char, gamedata, loc_id, now=state.time.absolute_hours()):
             opts.append(("camp", "移營至此" if char.camp else "在此建立營地(野外/已肅清地城)"))
         if warband.has_camp(char):
             opts.append(("recruit", f"招募士兵({warband.SOLDIER_COST} 金/名)"))
@@ -4253,7 +4271,9 @@ def action_board(state: GameState, gamedata: GameData) -> None:
         # day 必用 worldpulse.day_index(開局後天數)= 與 world_pulse_day 同基準,否則 active 視窗永不命中。
         today = worldpulse.day_index(state)
         main = quests.available_quests(char, gamedata, "main")
-        board = [q for q in quests.available_quests(char, gamedata, "board", province=province, day=today)
+        # R111:now(絕對小時)供 purge_dungeon 清剿委託判定「目標地城正被重踞」(天然閘,不走脈動聚光)
+        board = [q for q in quests.available_quests(char, gamedata, "board", province=province, day=today,
+                                                    now=state.time.absolute_hours())
                  if not q.startswith(("ucomm_", "scomm_", "cint_"))]   # R84 地下委託(ucomm_)走藏身處;R-smuggle 走私委託(scomm_)走盜賊公會走私生意;R99 反間委託(cint_)走犯罪公會大廳 rank-gated:皆不上正規告示板
         avail = main + board
         if not avail:
@@ -4908,6 +4928,7 @@ def _try_discover(state: GameState, gamedata: GameData, loc_id: str) -> None:
 def game_loop(state: GameState, gamedata: GameData) -> None:
     last_hub_loc = None
     _ach_seen = achievements.seed_seen(state.player, gamedata)   # 成就首達通知:載入當下已達成 → 重載不重報(零存檔欄)
+    _reinfest_seen: set = set()   # 地城重踞傳聞去重(R111;session 暫態,key=(地城,時間戳)→ 每輪滋擾至多一報)
     while True:
         # 吸血鬼狀態先結算(潛伏轉化 / 階級升降),再呈現本回合
         for ev in vampirism.update(state, gamedata):
@@ -4997,6 +5018,9 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
         for ev in worldpulse.update(state, gamedata):
             ui.rule("四方傳聞")
             ui.message(ev["news"], style="cyan")
+        # 地城再滋擾傳聞(R111):本省已清地城被重踞 → 一次性播報(session 暫態去重,每輪至多一報)
+        for msg in dungeon.reinfest_notices(state.player, gamedata, state.time.absolute_hours(), _reinfest_seen):
+            ui.message(msg, style="cyan")
 
         # 湮滅之門逐門開合:所在地若已不可見(如殺達貢、危機落幕後死亡之地崩合),拋回最近的城
         if not world.is_visible(state.player, gamedata, state.player.location_id):

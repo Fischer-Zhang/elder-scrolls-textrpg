@@ -12,6 +12,16 @@
       "enemy": "bandit",
       "desc": "洞窟最深處的首領巢穴 —— 強盜頭目堵住了去路。",
       "treasure": { "loot": ["steel_sword", "healing_potion", "ruby", {"gold": [30, 60]}] }
+    },
+    "reinfest": {
+      "desc": "洞裡的匪屍未得安息 —— 白骨與怨靈在你肅清過的巢穴裡遊蕩,深處傳來枯骨刮地之聲。",
+      "rumor": "四方傳聞:肅清過的切德納寇洞窟又鬧起了亡靈上湧 —— 據說牠們的頭目囤了不少財貨。",
+      "monsters": ["skeleton", "imperial_ghost", "giant_rat"],
+      "boss": {
+        "enemy": "skeleton",
+        "desc": "首領巢穴裡,一具披著舊匪甲的骷髏緩緩轉身 —— 空洞的眼窩盯住了你。",
+        "treasure": { "loot": ["healing_potion", {"gold": [25, 50]}] }
+      }
     }
   },
   "frostwind_ruin": {
@@ -27,6 +37,16 @@
       "enemy": "skeleton",
       "desc": "廢墟核心的王座廳 —— 一具佩戴鋼甲的骷髏領主緩緩起身。",
       "treasure": { "loot": ["steel_cuirass", "healing_potion", "ruby", {"gold": [50, 100]}] }
+    },
+    "reinfest": {
+      "desc": "廢墟裡有了新的燭光 —— 死靈術士的學徒在你清空的王座廳重燃祭儀,喚起沉睡的屍鬼。",
+      "rumor": "四方傳聞:肅清過的冰風廢墟又鬧起了死靈儀式 —— 據說牠們的頭目囤了不少財貨。",
+      "monsters": ["skeleton", "draugr", "imperial_ghost"],
+      "boss": {
+        "enemy": "draugr",
+        "desc": "王座廳中,一具被喚醒的屍鬼領主拄劍而立,眼中燃著死靈術的幽藍。",
+        "treasure": { "loot": ["healing_potion", {"gold": [40, 70]}] }
+      }
     }
   },
   "ashfall_barrow": {
@@ -43,6 +63,16 @@
       "raw": true,
       "desc": "墓塚核心的湮滅祭壇 —— 一名強大的魔人領主擋在黑檀寶物前。",
       "treasure": { "loot": ["ebony_sword", "ebony_shield", "daedra_heart", "healing_potion", "ruby", {"gold": [80, 160]}] }
+    },
+    "reinfest": {
+      "desc": "魔人領主死後,墓塚的湮滅祭壇仍未閉合 —— 失控的元素精魄自裂隙湧出,在墓道裡遊蕩。",
+      "rumor": "四方傳聞:肅清過的灰燼墓塚又鬧起了元素亂流 —— 據說牠們的頭目囤了不少財貨。",
+      "monsters": ["flame_atronach", "storm_atronach", "ash_hopper"],
+      "boss": {
+        "enemy": "storm_atronach",
+        "desc": "祭壇上空雷光糾纏 —— 一尊風暴元素精魄凝聚成形,電弧劈啪作響。",
+        "treasure": { "loot": ["healing_potion", "ruby", {"gold": [60, 100]}] }
+      }
     }
   },
   "dragon_lair": {
@@ -59,6 +89,17 @@
       "raw": true,
       "desc": "巢穴頂端的熔岩天井 —— 一頭上古巨龍盤踞於成堆的黑檀寶藏之上,烈焰自齒間溢出。",
       "treasure": { "loot": ["ebony_sword", "dragon_scale", "skyburner", "daedric_staff", "dwarven_cuirass", "filled_greater_soul_gem", "healing_potion", "healing_potion", "ruby", {"gold": [300, 600]}] }
+    },
+    "reinfest": {
+      "desc": "巨龍隕落後,山巔的巢穴換了新主 —— 一頭霜巨人領著巨魔霸佔了這裡,骨堆疊得更高了。",
+      "rumor": "四方傳聞:肅清過的龍喉巢穴又鬧起了霜巨人霸巢 —— 據說牠們的頭目囤了不少財貨。",
+      "monsters": ["frost_troll", "bear", "ice_wraith"],
+      "boss": {
+        "enemy": "frost_giant",
+        "raw": true,
+        "desc": "龍骨之間,霜巨人拄著冰柱起身,每一步都震落岩上積雪。",
+        "treasure": { "loot": ["healing_potion", "ruby", {"gold": [80, 130]}] }
+      }
     }
   },
   "lostknife_cave": {
@@ -74,6 +115,16 @@
       "enemy": "bandit",
       "desc": "洞窟最深的盜匪營帳 —— 迷刀幫的頭目堵住了通往寶箱的去路。",
       "treasure": { "loot": ["steel_sword", "healing_potion", "ruby", {"gold": [35, 70]}] }
+    },
+    "reinfest": {
+      "desc": "洞窟比記憶中更冷 —— 匪幫死絕之後,寒霧凝成的冰鬼在無人的甬道裡盤旋。",
+      "rumor": "四方傳聞:肅清過的迷刀洞窟又鬧起了冰鬼縈繞 —— 據說牠們的頭目囤了不少財貨。",
+      "monsters": ["ice_wraith", "skeleton", "snow_fox"],
+      "boss": {
+        "enemy": "ice_wraith",
+        "desc": "最深處寒氣逼人 —— 一縷巨大的冰鬼自石縫中蜿蜒而出,空氣瞬間結霜。",
+        "treasure": { "loot": ["healing_potion", {"gold": [25, 50]}] }
+      }
     }
   },
   "xanmeer": {
@@ -90,6 +141,16 @@
       "raw": true,
       "desc": "沉廟廟心的雷光天井 —— 一頭上古雷蜥瓦瑪蘇盤踞在被遺忘的寶藏之上,鱗甲迸射著刺目的電弧。",
       "treasure": { "loot": ["glass_cuirass", "ebony_sword", "filled_greater_soul_gem", "healing_potion", "ruby", {"gold": [90, 180]}] }
+    },
+    "reinfest": {
+      "desc": "古廟的積水更深了 —— 沼澤的掠食者循著血腥氣遷入,石階上滿是拖行的黏痕。",
+      "rumor": "四方傳聞:肅清過的贊密爾沉廟又鬧起了沼澤掠食者 —— 據說牠們的頭目囤了不少財貨。",
+      "monsters": ["swamp_crocodile", "marsh_zombie", "slaughterfish"],
+      "boss": {
+        "enemy": "bog_troll",
+        "desc": "祭室水面翻湧 —— 一頭泥沼巨魔破水而出,腐水順著蘚苔淌下。",
+        "treasure": { "loot": ["healing_potion", "ruby", {"gold": [60, 100]}] }
+      }
     }
   },
   "volenfell": {
@@ -106,6 +167,16 @@
       "raw": true,
       "desc": "沃倫菲爾廟心的蒸汽天井 —— 一尊上古矮人百夫長盤踞在被遺忘的黃銅寶藏之上,胸甲縫隙噴吐著千年不熄的烈焰。",
       "treasure": { "loot": ["dwarven_cuirass", "dwarven_mace", "filled_greater_soul_gem", "healing_potion", "ruby", {"gold": [90, 180]}] }
+    },
+    "reinfest": {
+      "desc": "矮人城的銅管被撬得七零八落 —— 一支哥布林拾荒部落住了進來,還馴了頭食人魔看門。",
+      "rumor": "四方傳聞:肅清過的沃倫菲爾又鬧起了拾荒部落 —— 據說牠們的頭目囤了不少財貨。",
+      "monsters": ["goblin", "goblin_shaman", "giant_rat"],
+      "boss": {
+        "enemy": "ogre",
+        "desc": "大廳深處,被鎖鏈拴著的食人魔掙斷了鎖 —— 哥布林們尖叫著四散。",
+        "treasure": { "loot": ["healing_potion", "ruby", {"gold": [60, 100]}] }
+      }
     }
   },
   "hag_rock": {
@@ -122,6 +193,16 @@
       "raw": true,
       "desc": "巫窟最深的骸骨王座前 —— 海妖岩的魔女祭主自寒霧中升起,身後堆疊著歷代劫掠來的騎士甲冑與一籠籠被囚的靈魂。",
       "treasure": { "loot": ["ebony_cuirass", "ebony_shield", "filled_greater_soul_gem", "healing_potion", "ruby", {"gold": [80, 170]}] }
+    },
+    "reinfest": {
+      "desc": "鬼婆的巢穴換了住客 —— 一群巨魔循著屍臭搬進岩窟,亂石堵了半條路。",
+      "rumor": "四方傳聞:肅清過的海妖岩巫窟又鬧起了巨魔盤踞 —— 據說牠們的頭目囤了不少財貨。",
+      "monsters": ["frost_troll", "bear", "harpy"],
+      "boss": {
+        "enemy": "frost_troll",
+        "desc": "岩窟最深處,一頭三眼霜巨魔捶胸咆哮,震得碎石簌簌而落。",
+        "treasure": { "loot": ["healing_potion", "ruby", {"gold": [60, 100]}] }
+      }
     }
   },
   "spider_grove": {
@@ -138,6 +219,16 @@
       "raw": true,
       "desc": "腐林的中心 —— 一株千年遠古樹靈盤根於被綠約遺忘的祕藏之上,萬千毒藤自它身上奔湧,藤心深處還纏著歷代闖入者帶來的玻璃甲冑。",
       "treasure": { "loot": ["glass_cuirass", "glass_shield", "filled_greater_soul_gem", "healing_potion", "ruby", {"gold": [80, 170]}] }
+    },
+    "reinfest": {
+      "desc": "林間的新蛛網一層疊一層 —— 母蛛雖死,巨蛛群又循著舊巢的氣味聚了回來。",
+      "rumor": "四方傳聞:肅清過的絞藤蛛巢又鬧起了巨蛛回巢 —— 據說牠們的頭目囤了不少財貨。",
+      "monsters": ["giant_spider", "frostbite_spider", "strangler_vine"],
+      "boss": {
+        "enemy": "giant_spider",
+        "desc": "巢心的繭堆後,一頭比馬車還大的巨蛛垂絲而下。",
+        "treasure": { "loot": ["healing_potion", "ruby", {"gold": [60, 100]}] }
+      }
     }
   },
   "dark_moon_grotto": {
@@ -154,6 +245,16 @@
       "raw": true,
       "desc": "壇心的暗月之下 —— 一頭被千年月糖與暗潮共同腐化的巨大暗虎自糖蜜中升起,血肉早已半化為毒。它守著歷代走私客供奉的祕藏,藤心深處還纏著一柄被暗潮腐蝕的古老黑檀刃。",
       "treasure": { "loot": ["ebony_sword", "skooma", "filled_greater_soul_gem", "healing_potion", "ruby", {"gold": [80, 170]}] }
+    },
+    "reinfest": {
+      "desc": "暗月洞窟的陰影比記憶中更濃 —— 邪術士與蛛群在此聚集,月光照不進最深處。",
+      "rumor": "四方傳聞:肅清過的暗月窟又鬧起了暗影糾纏 —— 據說牠們的頭目囤了不少財貨。",
+      "monsters": ["alfiq_sorcerer", "giant_spider", "savanna_jackal"],
+      "boss": {
+        "enemy": "dro_mathra_shade",
+        "desc": "祭壇之上,一縷德羅-瑪斯拉之影自黑暗中凝形,低語著古老的詛咒。",
+        "treasure": { "loot": ["healing_potion", "ruby", {"gold": [60, 100]}] }
+      }
     }
   },
   "kvatch_gate": {"name": "凱瓦奇湮滅之門", "biome": "ashland", "danger": 5, "grid": 5, "layers": 3, "monsters": ["dremora", "daedric_champion", "corrupt_priest", "storm_atronach"], "loot": ["daedra_heart", "sigil_stone_fragment", "ebony_sword", "filled_greater_soul_gem", "ruby"], "loot_locked": [40, 52], "boss": {"enemy": "daedroth", "raw": true, "desc": "門核的烈焰天井 —— 一頭魔界巨蜥盤踞在封印石基座前,毒涎灼穿了腳下的黑檀地磚。", "treasure": {"loot": ["sigil_stone_fragment", "daedric_dagger", "daedra_heart", "ebony_cuirass", "filled_greater_soul_gem", "healing_potion", {"gold": [200, 400]}]}}},
@@ -161,8 +262,8 @@
   "dagon_shrine": {"name": "達貢的祭壇", "biome": "ashland", "danger": 6, "grid": 6, "layers": 3, "monsters": ["daedric_champion", "dawn_mentor", "daedroth", "defiled_crusader", "high_priest_of_nine"], "loot": ["daedra_heart", "daedric_sword", "filled_greater_soul_gem", "gold_ingot", "ruby"], "loot_locked": [52, 64], "boss": {"enemy": "dremora_lord", "raw": true, "desc": "曼卡內殿的禁書祭壇 —— 黎明最強的魔人領主與赤袍狂信者死守《魔典》,等你踏錯最後一步。", "treasure": {"loot": ["daedric_sword", "daedra_heart", "daedric_staff", "ebony_cuirass", "filled_greater_soul_gem", "filled_greater_soul_gem", "healing_potion", {"gold": [350, 600]}]}}},
   "the_deadlands": {"name": "死亡之地", "biome": "ashland", "danger": 6, "grid": 6, "layers": 4, "monsters": ["daedroth", "dremora_lord", "daedric_champion", "storm_atronach", "dawn_mentor"], "loot": ["daedra_heart", "daedric_sword", "daedric_war_axe", "daedric_battleaxe", "daedric_warhammer", "daedric_great_shield", "filled_greater_soul_gem", "gold_ingot"], "loot_locked": [54, 66], "boss": {"enemy": "mehrunes_dagon", "raw": true, "desc": "祭壇炸成齏粉 —— 四臂的湮滅之君踏著自己的火焰向你走來。天空是他的臉,腳下的位面為他顫抖。", "treasure": {"loot": ["dawnfang", "crusaders_aegis", "daedric_sword", "daedra_heart", "daedra_heart", "filled_greater_soul_gem", "filled_greater_soul_gem", "healing_potion", "healing_potion", {"gold": [600, 1200]}]}}},
   "dawn_sanctum": {"name": "神話黎明聖殿", "biome": "ashland", "danger": 6, "grid": 5, "layers": 3, "monsters": ["dawn_mentor", "daedric_champion", "daedroth", "mythic_apostate", "dremora"], "loot": ["daedra_heart", "daedric_dagger", "filled_greater_soul_gem", "gold_ingot", "ruby"], "loot_locked": [50, 62], "boss": {"enemy": "mehrunes_dagon_diminished", "raw": true, "desc": "獻祭之火吞沒了滿殿赤袍信徒 —— 你逆轉了召喚法陣,將半成的達貢化身困在崩塌的聖殿裡。神力潰散的湮滅之君,踉蹌著向唯一的活口走來。", "treasure": {"loot": ["mysterium_xarxes", "mehrunes_razor", "daedric_dagger", "daedra_heart", "filled_greater_soul_gem", "healing_potion", "healing_potion", {"gold": [400, 700]}]}}},
-  "saarthal": {"name": "薩爾薩斯", "biome": "snow", "danger": 4, "grid": 5, "layers": 3, "monsters": ["draugr", "skeleton", "frostbite_spider"], "loot": ["healing_potion", "elven_sword", "glass_dagger", "ruby", "filled_common_soul_gem"], "loot_locked": [24, 36], "boss": {"enemy": "barrow_sentinel", "raw": true, "desc": "薩爾薩斯最深處的首領 —— 冬堡之下最古老的諾德古塚,亡者守著上古之物。", "treasure": {"loot": ["glass_cuirass", "filled_greater_soul_gem", "gold_ring", {"gold": [120, 240]}]}}},
-  "forsworn_redoubt": {"name": "拒誓者巢穴", "biome": "snow", "danger": 3, "grid": 4, "layers": 2, "monsters": ["bandit", "skeleton", "moor_witch"], "loot": ["healing_potion", "steel_sword", "steel_shield", "ruby"], "loot_locked": [18, 27], "boss": {"enemy": "moor_witch", "desc": "拒誓者巢穴最深處的首領 —— 河灣地崖壁上的拒誓者要塞,女巫與叛民盤踞。", "treasure": {"loot": ["elven_sword", "healing_potion", "filled_common_soul_gem", {"gold": [60, 120]}]}}},
+  "saarthal": {"name": "薩爾薩斯", "biome": "snow", "danger": 4, "grid": 5, "layers": 3, "monsters": ["draugr", "skeleton", "frostbite_spider"], "loot": ["healing_potion", "elven_sword", "glass_dagger", "ruby", "filled_common_soul_gem"], "loot_locked": [24, 36], "boss": {"enemy": "barrow_sentinel", "raw": true, "desc": "薩爾薩斯最深處的首領 —— 冬堡之下最古老的諾德古塚,亡者守著上古之物。", "treasure": {"loot": ["glass_cuirass", "filled_greater_soul_gem", "gold_ring", {"gold": [120, 240]}]}}, "reinfest": {"desc": "古城的黑暗比以往更深 —— 一支血族把薩爾薩斯的地窖改成了巢穴,壁上掛著放乾的獵物。", "rumor": "四方傳聞:肅清過的薩爾薩斯又鬧起了血族竊據 —— 據說牠們的頭目囤了不少財貨。", "monsters": ["vampire_fledgling", "skeleton", "draugr"], "boss": {"enemy": "vampire_lord", "raw": true, "desc": "地窖王座上,一位吸血鬼領主放下手中的血杯:「送上門的熱血,真是體貼。」", "treasure": {"loot": ["healing_potion", "ruby", {"gold": [60, 100]}]}}}},
+  "forsworn_redoubt": {"name": "拒誓者巢穴", "biome": "snow", "danger": 3, "grid": 4, "layers": 2, "monsters": ["bandit", "skeleton", "moor_witch"], "loot": ["healing_potion", "steel_sword", "steel_shield", "ruby"], "loot_locked": [18, 27], "boss": {"enemy": "moor_witch", "desc": "拒誓者巢穴最深處的首領 —— 河灣地崖壁上的拒誓者要塞,女巫與叛民盤踞。", "treasure": {"loot": ["elven_sword", "healing_potion", "filled_common_soul_gem", {"gold": [60, 120]}]}}, "reinfest": {"desc": "棄誓者死絕後,山寨成了野獸的地盤 —— 岩壁上滿是熊爪抓痕,獸腥味濃重。", "rumor": "四方傳聞:肅清過的拒誓者巢穴又鬧起了野獸巢穴 —— 據說牠們的頭目囤了不少財貨。", "monsters": ["bear", "wolf", "mountain_lion"], "boss": {"enemy": "bear", "desc": "巢穴最深處,一頭傷痕累累的巨熊人立而起,護著滿地啃剩的骸骨。", "treasure": {"loot": ["healing_potion", {"gold": [40, 70]}]}}}},
   "ghostgate": {"name": "幽魂之門", "biome": "ashland", "danger": 5, "grid": 5, "layers": 3, "monsters": ["dremora", "daedric_champion", "ash_hopper", "storm_atronach"], "loot": ["healing_potion", "glass_dagger", "dwarven_cuirass", "ruby", "filled_greater_soul_gem"], "loot_locked": [40, 52], "boss": {"enemy": "daedroth", "raw": true, "desc": "幽魂之門最深處的首領 —— 環繞紅山的幽魂結界堡壘,魔族自烈焰中湧出。", "treasure": {"loot": ["ebony_sword", "dragon_scale", "filled_greater_soul_gem", {"gold": [200, 400]}]}}},
   "azura_defiled_shrine": {"name": "玷污的星辰祭壇", "biome": "ashland", "danger": 5, "grid": 5, "layers": 3, "monsters": ["skeleton", "draugr", "dro_mathra_shade", "will_o_wisp", "lich"], "loot": ["filled_greater_soul_gem", "filled_grand_soul_gem", "nightshade", "ruby", "empty_black_soul_gem"], "loot_locked": [38, 55], "boss": {"enemy": "malyn_varen", "raw": true, "desc": "祭壇核心的星核裂口 —— 阿祖拉之星懸於黑魂法陣之上,靈術師馬林·瓦倫藏身其中的囚魂自星核滲出,凍霧與亡魂在你周身盤旋。", "treasure": {"loot": ["filled_grand_soul_gem", "filled_grand_soul_gem", "nightshade", "ruby", "healing_potion", "healing_potion", {"gold": [200, 400]}]}}},
   "molag_vault": {"name": "玷污的血色密室", "biome": "ashland", "danger": 5, "grid": 5, "layers": 3, "monsters": ["vampire_fledgling", "skeleton", "dro_mathra_shade", "will_o_wisp", "vampire_lord"], "loot": ["filled_greater_soul_gem", "filled_grand_soul_gem", "empty_black_soul_gem", "ruby", "vampire_dust"], "loot_locked": [38, 55], "boss": {"enemy": "molag_bloodlord", "raw": true, "desc": "密室最深的鎖鏈祭壇 —— 奴役之主的血裔領主端坐於囚魂環繞的黑石王座,鎖鏈在他舉手間繃緊,亡魂的哀嚎化作他指尖的雷光。", "treasure": {"loot": ["filled_grand_soul_gem", "filled_grand_soul_gem", "ebony_sword", "ruby", "healing_potion", "healing_potion", {"gold": [250, 450]}]}}},
@@ -180,21 +281,21 @@
   "twilight_crypt": {"name": "暮光陵墓", "biome": "savanna", "danger": 5, "grid": 5, "layers": 3, "monsters": ["bandit", "skeleton", "will_o_wisp", "imperial_ghost", "giant_spider"], "loot": ["filled_greater_soul_gem", "filled_grand_soul_gem", "ruby", "glow_dust", "healing_potion"], "loot_locked": [38, 55], "boss": {"enemy": "twilight_sentinel", "raw": true, "desc": "陵墓深處的暮光祭壇 —— 諾克圖娜爾的『萬能之鑰』懸於永恆的微光之中,千年不眠的夜鶯哨衛自陰影裡浮現,身形在暮色間明滅不定,守著這柄能解開一切鎖的鑰匙。", "treasure": {"loot": ["filled_grand_soul_gem", "filled_grand_soul_gem", "glass_dagger", "ruby", "healing_potion", "healing_potion", {"gold": [220, 420]}]}}},
   "order_sanctum": {"name": "秩序聖殿", "biome": "desert", "danger": 5, "grid": 5, "layers": 3, "monsters": ["dwarven_spider", "dwarven_centurion", "gargoyle", "skeleton", "will_o_wisp"], "loot": ["filled_greater_soul_gem", "filled_grand_soul_gem", "ruby", "moonstone_ingot", "healing_potion"], "loot_locked": [38, 55], "boss": {"enemy": "knight_of_order", "raw": true, "desc": "一切稜角都精確到分毫的水晶殿堂 —— 賈格拉格的秩序聖殿,沒有陰影、沒有塵埃、沒有任何偶然。殿心的灰色祭壇上插著那柄移除一切變數的秩序之劍,守劍的秩序騎士如灰潮般迎面而來,每一步都落在同一道無可閃避的軌跡上。", "treasure": {"loot": ["filled_grand_soul_gem", "filled_grand_soul_gem", "ebony_sword", "ruby", "healing_potion", "healing_potion", {"gold": [240, 440]}]}}},
   "forbidden_archive": {"name": "禁忌書庫", "biome": "moor", "danger": 5, "grid": 5, "layers": 3, "monsters": ["reclusive_mage", "xarxes_necromancer", "gargoyle", "will_o_wisp", "skeleton"], "loot": ["filled_greater_soul_gem", "filled_grand_soul_gem", "ruby", "glow_dust", "healing_potion"], "loot_locked": [38, 55], "boss": {"enemy": "apocrypha_seeker", "raw": true, "desc": "層層書架沒入墨綠色霧氣的無盡迴廊 —— 通往赫麥尤斯·莫拉位面亞波克里法的門扉,空氣裡漂浮著低語與尚未寫成的字句。書庫盡頭的祭壇上,那卷會自行翻動的『無限祕典』散發著黑曜般的微光,沉溺真知的求知者自書頁間的陰影裡探出觸鬚,守著這部記載一切的禁書。", "treasure": {"loot": ["filled_grand_soul_gem", "filled_grand_soul_gem", "glass_dagger", "ruby", "healing_potion", "healing_potion", {"gold": [230, 430]}]}}},
-  "kogoruhn": {"name": "科戈魯恩", "biome": "ashland", "danger": 3, "grid": 4, "layers": 2, "monsters": ["ash_hopper", "skeleton", "dwarven_spider"], "loot": ["healing_potion", "steel_sword", "steel_shield", "ruby"], "loot_locked": [18, 27], "boss": {"enemy": "draugr", "desc": "科戈魯恩最深處的首領 —— 灰燼荒原下的丹莫先祖遺城,沉睡著家族的亡魂。", "treasure": {"loot": ["elven_sword", "healing_potion", "filled_common_soul_gem", {"gold": [60, 120]}]}}},
-  "direnni_tower": {"name": "戴尼瑞塔", "biome": "moor", "danger": 4, "grid": 5, "layers": 3, "monsters": ["gargoyle", "harpy", "skeleton", "reclusive_mage"], "loot": ["healing_potion", "elven_sword", "glass_dagger", "ruby", "filled_common_soul_gem"], "loot_locked": [24, 36], "boss": {"enemy": "lich", "raw": true, "desc": "戴尼瑞塔最深處的首領 —— 巴爾菲拉島上的上古精靈高塔,巫術氣息千年不散。", "treasure": {"loot": ["glass_cuirass", "filled_greater_soul_gem", "gold_ring", {"gold": [120, 240]}]}}},
-  "wendir": {"name": "溫迪爾", "biome": "moor", "danger": 3, "grid": 4, "layers": 2, "monsters": ["gargoyle", "harpy", "skeleton"], "loot": ["healing_potion", "steel_sword", "steel_shield", "ruby"], "loot_locked": [18, 27], "boss": {"enemy": "gargoyle", "desc": "溫迪爾最深處的首領 —— 格雷努布拉森林裡的艾雷德遺跡,石像鬼盤踞。", "treasure": {"loot": ["elven_sword", "healing_potion", "filled_common_soul_gem", {"gold": [60, 120]}]}}},
-  "rourken_halls": {"name": "羅肯廳堂", "biome": "desert", "danger": 3, "grid": 4, "layers": 2, "monsters": ["dwarven_spider", "sand_scorpion", "skeleton"], "loot": ["healing_potion", "steel_sword", "steel_shield", "ruby"], "loot_locked": [18, 27], "boss": {"enemy": "dwarven_spider", "desc": "羅肯廳堂最深處的首領 —— 阿利克沙漠深處的矮人氏族遺城,黃銅機關仍在低鳴。", "treasure": {"loot": ["elven_sword", "healing_potion", "filled_common_soul_gem", {"gold": [60, 120]}]}}},
-  "ansei_tomb": {"name": "劍聖之墓", "biome": "desert", "danger": 5, "grid": 5, "layers": 3, "monsters": ["skeleton", "barrow_sentinel", "draugr", "vampire_lord"], "loot": ["healing_potion", "glass_dagger", "dwarven_cuirass", "ruby", "filled_greater_soul_gem"], "loot_locked": [40, 52], "boss": {"enemy": "lich", "raw": true, "desc": "劍聖之墓最深處的首領 —— 約凱劍聖長眠的沙下墓城,守墓亡靈仍持彎刀。", "treasure": {"loot": ["ebony_sword", "dragon_scale", "filled_greater_soul_gem", {"gold": [200, 400]}]}}},
-  "falinesti_roots": {"name": "法林斯提根穴", "biome": "jungle", "danger": 3, "grid": 4, "layers": 2, "monsters": ["spriggan", "giant_spider", "jungle_imga"], "loot": ["healing_potion", "steel_sword", "steel_shield", "ruby"], "loot_locked": [18, 27], "boss": {"enemy": "spriggan", "desc": "法林斯提根穴最深處的首領 —— 行走之城的巨根穴洞,樹靈與巨蛛交織其間。", "treasure": {"loot": ["elven_sword", "healing_potion", "filled_common_soul_gem", {"gold": [60, 120]}]}}},
-  "vindisi": {"name": "文迪西", "biome": "jungle", "danger": 4, "grid": 5, "layers": 3, "monsters": ["spriggan", "giant_spider", "strangler_vine", "lamia"], "loot": ["healing_potion", "elven_sword", "glass_dagger", "ruby", "filled_common_soul_gem"], "loot_locked": [24, 36], "boss": {"enemy": "spriggan_matriarch", "raw": true, "desc": "文迪西最深處的首領 —— 叢林深處的艾雷德神廟廢墟,藤蔓與獸靈守護。", "treasure": {"loot": ["glass_cuirass", "filled_greater_soul_gem", "gold_ring", {"gold": [120, 240]}]}}},
-  "moonlit_cradle": {"name": "月華搖籃", "biome": "savanna", "danger": 3, "grid": 4, "layers": 2, "monsters": ["sugar_addled_senche", "alfiq_sorcerer", "skeleton"], "loot": ["healing_potion", "steel_sword", "steel_shield", "ruby"], "loot_locked": [18, 27], "boss": {"enemy": "senche_tiger", "desc": "月華搖籃最深處的首領 —— 騰瑪森林裡的貓人月之神殿地窖。", "treasure": {"loot": ["elven_sword", "healing_potion", "filled_common_soul_gem", {"gold": [60, 120]}]}}},
-  "merryvale_ruin": {"name": "梅里谷遺址", "biome": "savanna", "danger": 4, "grid": 5, "layers": 3, "monsters": ["alfiq_sorcerer", "sugar_vine", "dro_mathra_shade"], "loot": ["healing_potion", "elven_sword", "glass_dagger", "ruby", "filled_common_soul_gem"], "loot_locked": [24, 36], "boss": {"enemy": "dark_moon_senche", "raw": true, "desc": "梅里谷遺址最深處的首領 —— 佩萊泰恩雨林中的暗月教殘址,月糖瘴影瀰漫。", "treasure": {"loot": ["glass_cuirass", "filled_greater_soul_gem", "gold_ring", {"gold": [120, 240]}]}}},
-  "rootwater_grotto": {"name": "根水沼窟", "biome": "swamp", "danger": 3, "grid": 4, "layers": 2, "monsters": ["swamp_lizard", "marsh_zombie", "will_o_wisp"], "loot": ["healing_potion", "steel_sword", "steel_shield", "ruby"], "loot_locked": [18, 27], "boss": {"enemy": "marsh_zombie", "desc": "根水沼窟最深處的首領 —— 泥沼之下的希斯特水窟,腐臭與磷火交雜。", "treasure": {"loot": ["elven_sword", "healing_potion", "filled_common_soul_gem", {"gold": [60, 120]}]}}},
-  "vunnar_xul": {"name": "凡納·蘇爾沉廟", "biome": "swamp", "danger": 5, "grid": 5, "layers": 3, "monsters": ["swamp_lizard", "will_o_wisp", "bog_troll", "wamasu"], "loot": ["healing_potion", "glass_dagger", "dwarven_cuirass", "ruby", "filled_greater_soul_gem"], "loot_locked": [40, 52], "boss": {"enemy": "wamasu", "raw": true, "desc": "凡納·蘇爾沉廟最深處的首領 —— 深澤底的贊密爾沉沒巨廟,雷蜥盤踞於積水神殿。", "treasure": {"loot": ["ebony_sword", "dragon_scale", "filled_greater_soul_gem", {"gold": [200, 400]}]}}},
-  "fort_ontus": {"name": "奧圖斯堡", "biome": "heartland", "danger": 2, "grid": 4, "layers": 2, "monsters": ["bandit", "skeleton", "giant_rat"], "loot": ["minor_healing_potion", "healing_potion", "iron_cuirass", "ruby"], "loot_locked": [12, 18], "boss": {"enemy": "bandit", "desc": "奧圖斯堡最深處的首領 —— 大森林裡半傾的艾雷德古堡,如今淪為盜匪窩。", "treasure": {"loot": ["steel_sword", "healing_potion", "ruby", {"gold": [30, 60]}]}}},
-  "vilverin": {"name": "維爾凡林", "biome": "heartland", "danger": 2, "grid": 4, "layers": 2, "monsters": ["skeleton", "imperial_ghost", "giant_rat"], "loot": ["minor_healing_potion", "healing_potion", "iron_cuirass", "ruby"], "loot_locked": [12, 18], "boss": {"enemy": "skeleton", "desc": "維爾凡林最深處的首領 —— 尼本灣畔最知名的艾雷德地穴遺跡。", "treasure": {"loot": ["steel_sword", "healing_potion", "ruby", {"gold": [30, 60]}]}}},
-  "pale_pass_cave": {"name": "白隘冰窟", "biome": "snow", "danger": 1, "grid": 4, "layers": 2, "monsters": ["wolf", "giant_rat", "frostbite_spider"], "loot": ["minor_healing_potion", "leather_cuirass", "iron_dagger"], "loot_locked": [8, 14], "boss": {"enemy": "wolf", "desc": "白隘冰窟最深處的首領 —— 白隘山道旁的緩坡冰窟,新手練膽的去處。", "treasure": {"loot": ["steel_sword", "healing_potion", {"gold": [20, 40]}]}}},
-  "bangkorai_crypt": {"name": "巴薩拉墓窖", "biome": "snow", "danger": 3, "grid": 4, "layers": 2, "monsters": ["skeleton", "gargoyle", "draugr"], "loot": ["healing_potion", "steel_sword", "steel_shield", "ruby"], "loot_locked": [18, 27], "boss": {"enemy": "gargoyle", "desc": "巴薩拉墓窖最深處的首領 —— 巴薩拉守關下的古老墓窖,守關陣亡者長眠於此。", "treasure": {"loot": ["elven_sword", "healing_potion", "filled_common_soul_gem", {"gold": [60, 120]}]}}},
+  "kogoruhn": {"name": "科戈魯恩", "biome": "ashland", "danger": 3, "grid": 4, "layers": 2, "monsters": ["ash_hopper", "skeleton", "dwarven_spider"], "loot": ["healing_potion", "steel_sword", "steel_shield", "ruby"], "loot_locked": [18, 27], "boss": {"enemy": "draugr", "desc": "科戈魯恩最深處的首領 —— 灰燼荒原下的丹莫先祖遺城,沉睡著家族的亡魂。", "treasure": {"loot": ["elven_sword", "healing_potion", "filled_common_soul_gem", {"gold": [60, 120]}]}}, "reinfest": {"desc": "灰燼填平了你留下的足跡 —— 蟲群自地縫湧入這座空堡,啃食一切殘餘。", "rumor": "四方傳聞:肅清過的科戈魯恩又鬧起了灰燼蟲群 —— 據說牠們的頭目囤了不少財貨。", "monsters": ["ash_hopper", "ash_beetle", "nix_hound"], "boss": {"enemy": "kagouti", "desc": "堡壘核心,一頭雙角卡古地踏碎蟲殼衝來,灰塵滾滾。", "treasure": {"loot": ["healing_potion", {"gold": [40, 70]}]}}}},
+  "direnni_tower": {"name": "戴尼瑞塔", "biome": "moor", "danger": 4, "grid": 5, "layers": 3, "monsters": ["gargoyle", "harpy", "skeleton", "reclusive_mage"], "loot": ["healing_potion", "elven_sword", "glass_dagger", "ruby", "filled_common_soul_gem"], "loot_locked": [24, 36], "boss": {"enemy": "lich", "raw": true, "desc": "戴尼瑞塔最深處的首領 —— 巴爾菲拉島上的上古精靈高塔,巫術氣息千年不散。", "treasure": {"loot": ["glass_cuirass", "filled_greater_soul_gem", "gold_ring", {"gold": [120, 240]}]}}, "reinfest": {"desc": "塔中又亮起了幽光 —— 一個女巫集會遷入古塔,咒文的低語在螺旋階梯間迴盪。", "rumor": "四方傳聞:肅清過的戴尼瑞塔又鬧起了女巫集會 —— 據說牠們的頭目囤了不少財貨。", "monsters": ["moor_witch", "harpy", "imperial_ghost"], "boss": {"enemy": "hag_matriarch", "raw": true, "desc": "塔頂法陣中央,鬼婆之母緩緩轉身,枯爪間纏著半成形的咒術。", "treasure": {"loot": ["healing_potion", "ruby", {"gold": [60, 100]}]}}}},
+  "wendir": {"name": "溫迪爾", "biome": "moor", "danger": 3, "grid": 4, "layers": 2, "monsters": ["gargoyle", "harpy", "skeleton"], "loot": ["healing_potion", "steel_sword", "steel_shield", "ruby"], "loot_locked": [18, 27], "boss": {"enemy": "gargoyle", "desc": "溫迪爾最深處的首領 —— 格雷努布拉森林裡的艾雷德遺跡,石像鬼盤踞。", "treasure": {"loot": ["elven_sword", "healing_potion", "filled_common_soul_gem", {"gold": [60, 120]}]}}, "reinfest": {"desc": "廢墟的暗處堆起了贓箱 —— 一夥盜賊把溫迪爾當成了分贓的窩點。", "rumor": "四方傳聞:肅清過的溫迪爾又鬧起了盜賊窩點 —— 據說牠們的頭目囤了不少財貨。", "monsters": ["bandit", "wolf", "imperial_ghost"], "boss": {"enemy": "bandit", "desc": "地窖裡,盜賊頭目正清點贓物,見你進來,緩緩抽出了刀。", "treasure": {"loot": ["healing_potion", {"gold": [40, 70]}]}}}},
+  "rourken_halls": {"name": "羅肯廳堂", "biome": "desert", "danger": 3, "grid": 4, "layers": 2, "monsters": ["dwarven_spider", "sand_scorpion", "skeleton"], "loot": ["healing_potion", "steel_sword", "steel_shield", "ruby"], "loot_locked": [18, 27], "boss": {"enemy": "dwarven_spider", "desc": "羅肯廳堂最深處的首領 —— 阿利克沙漠深處的矮人氏族遺城,黃銅機關仍在低鳴。", "treasure": {"loot": ["elven_sword", "healing_potion", "filled_common_soul_gem", {"gold": [60, 120]}]}}, "reinfest": {"desc": "廊道裡有新的腳印與火把灰 —— 一夥沙漠強盜把矮人遺蹟當成了藏身處。", "rumor": "四方傳聞:肅清過的羅肯廳堂又鬧起了沙漠強盜 —— 據說牠們的頭目囤了不少財貨。", "monsters": ["bandit", "sand_adder", "sand_scorpion"], "boss": {"enemy": "bandit", "desc": "寶庫門前,強盜頭子橫刀攔路:「這座遺蹟,現在歸我們了。」", "treasure": {"loot": ["healing_potion", {"gold": [40, 70]}]}}}},
+  "ansei_tomb": {"name": "劍聖之墓", "biome": "desert", "danger": 5, "grid": 5, "layers": 3, "monsters": ["skeleton", "barrow_sentinel", "draugr", "vampire_lord"], "loot": ["healing_potion", "glass_dagger", "dwarven_cuirass", "ruby", "filled_greater_soul_gem"], "loot_locked": [40, 52], "boss": {"enemy": "lich", "raw": true, "desc": "劍聖之墓最深處的首領 —— 約凱劍聖長眠的沙下墓城,守墓亡靈仍持彎刀。", "treasure": {"loot": ["ebony_sword", "dragon_scale", "filled_greater_soul_gem", {"gold": [200, 400]}]}}, "reinfest": {"desc": "巫妖化灰之後,墓穴的深處傳來甲殼刮石之聲 —— 沙下的掠食者鑿穿了墓牆。", "rumor": "四方傳聞:肅清過的劍聖之墓又鬧起了深穴掠食者 —— 據說牠們的頭目囤了不少財貨。", "monsters": ["dune_ripper", "sand_scorpion", "lamia"], "boss": {"enemy": "land_dreugh", "raw": true, "desc": "主墓室的沙地隆起 —— 一頭陸行德魯格破沙而出,螯鉗開合作響。", "treasure": {"loot": ["healing_potion", "ruby", {"gold": [80, 130]}]}}}},
+  "falinesti_roots": {"name": "法林斯提根穴", "biome": "jungle", "danger": 3, "grid": 4, "layers": 2, "monsters": ["spriggan", "giant_spider", "jungle_imga"], "loot": ["healing_potion", "steel_sword", "steel_shield", "ruby"], "loot_locked": [18, 27], "boss": {"enemy": "spriggan", "desc": "法林斯提根穴最深處的首領 —— 行走之城的巨根穴洞,樹靈與巨蛛交織其間。", "treasure": {"loot": ["elven_sword", "healing_potion", "filled_common_soul_gem", {"gold": [60, 120]}]}}, "reinfest": {"desc": "遊城根系間紮起了新營帳 —— 一夥逃兵嘯聚為匪,劫掠往來商旅。", "rumor": "四方傳聞:肅清過的法林斯提根穴又鬧起了逃兵匪幫 —— 據說牠們的頭目囤了不少財貨。", "monsters": ["bandit", "wolf", "jungle_imga"], "boss": {"enemy": "bandit", "desc": "根系深處的營地裡,匪首披著褪色的軍袍起身:「別怪兄弟們不講道義。」", "treasure": {"loot": ["healing_potion", {"gold": [40, 70]}]}}}},
+  "vindisi": {"name": "文迪西", "biome": "jungle", "danger": 4, "grid": 5, "layers": 3, "monsters": ["spriggan", "giant_spider", "strangler_vine", "lamia"], "loot": ["healing_potion", "elven_sword", "glass_dagger", "ruby", "filled_common_soul_gem"], "loot_locked": [24, 36], "boss": {"enemy": "spriggan_matriarch", "raw": true, "desc": "文迪西最深處的首領 —— 叢林深處的艾雷德神廟廢墟,藤蔓與獸靈守護。", "treasure": {"loot": ["glass_cuirass", "filled_greater_soul_gem", "gold_ring", {"gold": [120, 240]}]}}, "reinfest": {"desc": "遺蹟的藤蔓間影影綽綽 —— 一群巨猿佔了廢墟,連叢林的獵手也被引來。", "rumor": "四方傳聞:肅清過的文迪西又鬧起了猿群竊據 —— 據說牠們的頭目囤了不少財貨。", "monsters": ["jungle_imga", "jungle_toad", "senche_tiger"], "boss": {"enemy": "senche_tiger", "desc": "神壇頂上,一頭猙獰的森奇巨虎壓低身子,尾尖緩緩擺動。", "treasure": {"loot": ["healing_potion", "ruby", {"gold": [60, 100]}]}}}},
+  "moonlit_cradle": {"name": "月華搖籃", "biome": "savanna", "danger": 3, "grid": 4, "layers": 2, "monsters": ["sugar_addled_senche", "alfiq_sorcerer", "skeleton"], "loot": ["healing_potion", "steel_sword", "steel_shield", "ruby"], "loot_locked": [18, 27], "boss": {"enemy": "senche_tiger", "desc": "月華搖籃最深處的首領 —— 騰瑪森林裡的貓人月之神殿地窖。", "treasure": {"loot": ["elven_sword", "healing_potion", "filled_common_soul_gem", {"gold": [60, 120]}]}}, "reinfest": {"desc": "月華搖籃又飄出甜膩的糖味 —— 糖癮發狂的野獸與趁亂的匪徒盤踞了這裡。", "rumor": "四方傳聞:肅清過的月華搖籃又鬧起了糖癮獸群 —— 據說牠們的頭目囤了不少財貨。", "monsters": ["sugar_addled_senche", "savanna_jackal", "bandit"], "boss": {"enemy": "sugar_addled_senche", "desc": "洞窟深處,一頭糖癮癲狂的森奇獸瞳孔渙散,涎水滴落 —— 牠已認不得獵物與同類。", "treasure": {"loot": ["healing_potion", {"gold": [40, 70]}]}}}},
+  "merryvale_ruin": {"name": "梅里谷遺址", "biome": "savanna", "danger": 4, "grid": 5, "layers": 3, "monsters": ["alfiq_sorcerer", "sugar_vine", "dro_mathra_shade"], "loot": ["healing_potion", "elven_sword", "glass_dagger", "ruby", "filled_common_soul_gem"], "loot_locked": [24, 36], "boss": {"enemy": "dark_moon_senche", "raw": true, "desc": "梅里谷遺址最深處的首領 —— 佩萊泰恩雨林中的暗月教殘址,月糖瘴影瀰漫。", "treasure": {"loot": ["glass_cuirass", "filled_greater_soul_gem", "gold_ring", {"gold": [120, 240]}]}}, "reinfest": {"desc": "糖谷遺蹟的石像又動了 —— 白骨列隊巡邏,彷彿有誰重啟了古老的守衛法陣。", "rumor": "四方傳聞:肅清過的梅里谷遺址又鬧起了骸骨衛隊 —— 據說牠們的頭目囤了不少財貨。", "monsters": ["skeleton", "alfiq_sorcerer", "imperial_ghost"], "boss": {"enemy": "gargoyle", "desc": "大殿中央,一尊石像獸崩開石殼展翼 —— 守衛法陣認定了你是入侵者。", "treasure": {"loot": ["healing_potion", "ruby", {"gold": [60, 100]}]}}}},
+  "rootwater_grotto": {"name": "根水沼窟", "biome": "swamp", "danger": 3, "grid": 4, "layers": 2, "monsters": ["swamp_lizard", "marsh_zombie", "will_o_wisp"], "loot": ["healing_potion", "steel_sword", "steel_shield", "ruby"], "loot_locked": [18, 27], "boss": {"enemy": "marsh_zombie", "desc": "根水沼窟最深處的首領 —— 泥沼之下的希斯特水窟,腐臭與磷火交雜。", "treasure": {"loot": ["elven_sword", "healing_potion", "filled_common_soul_gem", {"gold": [60, 120]}]}}, "reinfest": {"desc": "根水洞窟成了鱷群的產卵地 —— 淺灘上一排排眼睛在水面下靜靜盯著你。", "rumor": "四方傳聞:肅清過的根水沼窟又鬧起了鱷群盤踞 —— 據說牠們的頭目囤了不少財貨。", "monsters": ["swamp_crocodile", "swamp_leech", "slaughterfish"], "boss": {"enemy": "swamp_crocodile", "desc": "最深的水潭裡,一頭巨鱷猛然躍出,顎骨咬碎了半根石筍。", "treasure": {"loot": ["healing_potion", {"gold": [40, 70]}]}}}},
+  "vunnar_xul": {"name": "凡納·蘇爾沉廟", "biome": "swamp", "danger": 5, "grid": 5, "layers": 3, "monsters": ["swamp_lizard", "will_o_wisp", "bog_troll", "wamasu"], "loot": ["healing_potion", "glass_dagger", "dwarven_cuirass", "ruby", "filled_greater_soul_gem"], "loot_locked": [40, 52], "boss": {"enemy": "wamasu", "raw": true, "desc": "凡納·蘇爾沉廟最深處的首領 —— 深澤底的贊密爾沉沒巨廟,雷蜥盤踞於積水神殿。", "treasure": {"loot": ["ebony_sword", "dragon_scale", "filled_greater_soul_gem", {"gold": [200, 400]}]}}, "reinfest": {"desc": "廢城的死寂被打破 —— 一名死靈法師相中了這座空城,屍僕在斷牆間搬運屍料。", "rumor": "四方傳聞:肅清過的凡納·蘇爾沉廟又鬧起了死靈進駐 —— 據說牠們的頭目囤了不少財貨。", "monsters": ["marsh_zombie", "will_o_wisp", "skeleton"], "boss": {"enemy": "lich", "raw": true, "desc": "王座之上,一具巫妖緩緩抬首,言語像枯葉摩擦:「又一具上好的材料,自己走了進來。」", "treasure": {"loot": ["healing_potion", "ruby", {"gold": [80, 130]}]}}}},
+  "fort_ontus": {"name": "奧圖斯堡", "biome": "heartland", "danger": 2, "grid": 4, "layers": 2, "monsters": ["bandit", "skeleton", "giant_rat"], "loot": ["minor_healing_potion", "healing_potion", "iron_cuirass", "ruby"], "loot_locked": [12, 18], "boss": {"enemy": "bandit", "desc": "奧圖斯堡最深處的首領 —— 大森林裡半傾的艾雷德古堡,如今淪為盜匪窩。", "treasure": {"loot": ["steel_sword", "healing_potion", "ruby", {"gold": [30, 60]}]}}, "reinfest": {"desc": "空了的要塞被一支哥布林部落搬了進來 —— 粗陋的圖騰插滿走道,腐肉味撲鼻。", "rumor": "四方傳聞:肅清過的奧圖斯堡又鬧起了哥布林部落 —— 據說牠們的頭目囤了不少財貨。", "monsters": ["goblin", "giant_rat", "wolf"], "boss": {"enemy": "goblin_shaman", "desc": "戰旗廳裡,哥布林薩滿舉起骨杖尖嘯,部落的嘍囉聞聲聚攏。", "treasure": {"loot": ["healing_potion", {"gold": [25, 50]}]}}}},
+  "vilverin": {"name": "維爾凡林", "biome": "heartland", "danger": 2, "grid": 4, "layers": 2, "monsters": ["skeleton", "imperial_ghost", "giant_rat"], "loot": ["minor_healing_potion", "healing_potion", "iron_cuirass", "ruby"], "loot_locked": [12, 18], "boss": {"enemy": "skeleton", "desc": "維爾凡林最深處的首領 —— 尼本灣畔最知名的艾雷德地穴遺跡。", "treasure": {"loot": ["steel_sword", "healing_potion", "ruby", {"gold": [30, 60]}]}}, "reinfest": {"desc": "遺跡裡又燃起了篝火 —— 一夥盜匪把你清空的營地當成了新窩,贓物堆了半屋。", "rumor": "四方傳聞:肅清過的維爾凡林又鬧起了盜匪回巢 —— 據說牠們的頭目囤了不少財貨。", "monsters": ["bandit", "wolf", "giant_rat"], "boss": {"enemy": "bandit", "desc": "首領室裡,盜匪頭子拍案而起:「就是你斷了我們的財路?」", "treasure": {"loot": ["healing_potion", {"gold": [25, 50]}]}}}},
+  "pale_pass_cave": {"name": "白隘冰窟", "biome": "snow", "danger": 1, "grid": 4, "layers": 2, "monsters": ["wolf", "giant_rat", "frostbite_spider"], "loot": ["minor_healing_potion", "leather_cuirass", "iron_dagger"], "loot_locked": [8, 14], "boss": {"enemy": "wolf", "desc": "白隘冰窟最深處的首領 —— 白隘山道旁的緩坡冰窟,新手練膽的去處。", "treasure": {"loot": ["steel_sword", "healing_potion", {"gold": [20, 40]}]}}, "reinfest": {"desc": "雪洞裡多了新的爪印與骨堆 —— 一小撮雪地哥布林循著隘口遷了進來。", "rumor": "四方傳聞:肅清過的白隘冰窟又鬧起了雪地哥布林 —— 據說牠們的頭目囤了不少財貨。", "monsters": ["goblin", "snow_fox", "wolf"], "boss": {"enemy": "goblin", "desc": "洞窟深處,哥布林頭目揮著鏽刀嘶叫,催促同伴圍上來。", "treasure": {"loot": ["minor_healing_potion", {"gold": [15, 30]}]}}}},
+  "bangkorai_crypt": {"name": "巴薩拉墓窖", "biome": "snow", "danger": 3, "grid": 4, "layers": 2, "monsters": ["skeleton", "gargoyle", "draugr"], "loot": ["healing_potion", "steel_sword", "steel_shield", "ruby"], "loot_locked": [18, 27], "boss": {"enemy": "gargoyle", "desc": "巴薩拉墓窖最深處的首領 —— 巴薩拉守關下的古老墓窖,守關陣亡者長眠於此。", "treasure": {"loot": ["elven_sword", "healing_potion", "filled_common_soul_gem", {"gold": [60, 120]}]}}, "reinfest": {"desc": "邊境的亡者不得安寧 —— 墓室的封印再度鬆動,白骨在甬道裡重新列隊。", "rumor": "四方傳聞:肅清過的巴薩拉墓窖又鬧起了亡靈復湧 —— 據說牠們的頭目囤了不少財貨。", "monsters": ["skeleton", "imperial_ghost", "draugr"], "boss": {"enemy": "barrow_sentinel", "raw": true, "desc": "主墓室中,一尊古墓哨衛自石棺旁立起,鏽劍指向來人。", "treasure": {"loot": ["healing_potion", {"gold": [40, 70]}]}}}},
   "pyre_sanctum": {"name": "焚心聖所", "biome": "ashland", "danger": 5, "grid": 5, "layers": 3, "monsters": ["dremora", "storm_atronach", "ash_beetle", "daedroth"], "loot": ["filled_greater_soul_gem", "filled_grand_soul_gem", "ruby", "ebony_ingot", "healing_potion"], "loot_locked": [38, 55], "boss": {"enemy": "fire_archmage", "raw": true, "desc": "聖所核心的熔岩天井 —— 焚心大法師懸於沸騰的火湖之上,牠完全體的烈焰將四壁黑檀燒得透紅。以火攻牠形同助燃,你得另尋他法。", "treasure": {"loot": ["flame_staff", "ebony_ingot", "filled_grand_soul_gem", "healing_potion", "ruby", {"gold": [300, 600]}]}}},
   "rime_sanctum": {"name": "凜冬聖所", "biome": "snow", "danger": 5, "grid": 5, "layers": 3, "monsters": ["ice_wraith", "frost_troll", "frostbite_spider", "draugr"], "loot": ["filled_greater_soul_gem", "filled_grand_soul_gem", "ruby", "ebony_ingot", "healing_potion"], "loot_locked": [38, 55], "boss": {"enemy": "frost_archmage", "raw": true, "desc": "聖所深處的冰封大廳 —— 絕霜大法師立於永不消融的霜霧中央,凍麻與遲鈍自牠周身擴散。冰霜對牠毫無作用,反被牠盡數吸納。", "treasure": {"loot": ["frost_staff", "ebony_ingot", "filled_grand_soul_gem", "healing_potion", "ruby", {"gold": [300, 600]}]}}},
   "tempest_sanctum": {"name": "雷霆聖所", "biome": "swamp", "danger": 5, "grid": 5, "layers": 3, "monsters": ["wamasu", "will_o_wisp", "storm_atronach", "marsh_zombie"], "loot": ["filled_greater_soul_gem", "filled_grand_soul_gem", "ruby", "glow_dust", "healing_potion"], "loot_locked": [38, 55], "boss": {"enemy": "shock_archmage", "raw": true, "desc": "聖所頂端的雷暴穹頂 —— 轟雷大法師在不息的電弧間移形換位,快得讓人措手不及。電擊打在牠身上只會匯入牠的掌心。", "treasure": {"loot": ["storm_staff", "ebony_ingot", "filled_grand_soul_gem", "healing_potion", "ruby", {"gold": [300, 600]}]}}},

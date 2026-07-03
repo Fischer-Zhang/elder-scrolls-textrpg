@@ -176,6 +176,10 @@ class Character:
     soul_tokens: int = 0                                   # R106C 死靈經濟:可花用的靈魂 token(打怪+1·戰後回收倖存亡者+1/隻)
     necro_upgrades: dict = field(default_factory=dict)     # R106C 永久死靈升級 upgrade_id -> level(亡者護甲/軍團上限/喚魂精算…)
     cleared_dungeons: list = field(default_factory=list)
+    # 地城再滋擾(R111):已清地城的下次「重踞」絕對小時(dungeon_id → hours;缺=不滋擾)。
+    # 🔴 cleared_dungeons 恆單調不減(主線門鏈/98 條 clear_dungeon 任務/成就/legacy 皆依賴);
+    # 重踞是平行的衍生狀態(dungeon.is_reinfested),絕不從 cleared_dungeons 移除。
+    dungeon_reinfest_at: dict = field(default_factory=dict)
     bounties: dict = field(default_factory=dict)          # province -> 賞金
     npc_disposition: dict = field(default_factory=dict)   # npc_id -> 好感
 
@@ -350,6 +354,7 @@ class Character:
             "kill_counts": self.kill_counts,
             "soul_tokens": self.soul_tokens, "necro_upgrades": self.necro_upgrades,
             "cleared_dungeons": self.cleared_dungeons,
+            "dungeon_reinfest_at": self.dungeon_reinfest_at,
             "bounties": self.bounties, "npc_disposition": self.npc_disposition,
             "persuaded_npcs": self.persuaded_npcs,
             "mastery_choices": self.mastery_choices,
