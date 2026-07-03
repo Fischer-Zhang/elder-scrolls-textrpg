@@ -371,7 +371,7 @@
   .logline{padding:1px 4px;color:var(--ink);font-size:14px;line-height:1.5;}
   .logline span{white-space:pre-wrap;}
   .logline + .logline{margin-top:-5px;}
-  /* 故事日誌(常駐捲動敘事:戰鬥/事件/拾取等不再一行動就被清掉) */
+  /* 故事日誌(R112 雙區:上「本回合」=最新行動&後果緊貼輸入區零捲動;下「故事日誌」=順時序歷史) */
   #log{ display:none; flex-direction:column; margin-top:12px; overflow:hidden;
     border:1px solid var(--gold-soft); border-radius:11px;
     background:linear-gradient(#13100a,#0e0b07); box-shadow:var(--shadow); }
@@ -379,6 +379,12 @@
     letter-spacing:.12em; padding:8px 14px 7px; border-bottom:1px solid var(--line);
     display:flex; align-items:center; gap:8px; }
   #log .j-head::after{ content:""; flex:1; height:1px; background:linear-gradient(to right,var(--gold-soft),transparent); }
+  #log .j-head.j-hist{ border-top:1px solid var(--line); }
+  #log .jlatest{ padding:8px 12px 10px; background:linear-gradient(#161209,#13100a); }
+  /* 歷史區(標題+捲動體)在首回合退役前整組隱藏(#log.has-hist 由 JS 掛上) */
+  #log .j-hist, #log .jbody{ display:none; }
+  #log.has-hist .j-hist{ display:flex; }
+  #log.has-hist .jbody{ display:block; }
   #log .jbody{ overflow-y:auto; max-height:clamp(150px,34vh,380px); padding:8px 12px 10px;
     scrollbar-width:thin; scrollbar-color:var(--gold-dim) transparent; -webkit-overflow-scrolling:touch; }
   #log .jbody::-webkit-scrollbar{ width:7px; } #log .jbody::-webkit-scrollbar-thumb{ background:var(--gold-dim); border-radius:4px; }
@@ -1077,28 +1083,41 @@
       + (team ? `<span class="h-team-wrap">${team}</span>` : "");
   }
 
-  // --- 故事日誌(常駐捲動敘事)-----------------------------------------
-  function journalBody() {
+  // --- 故事日誌(R112 雙區:上「本回合」+ 下「故事日誌」歷史;空回合上區 sticky)-------
+  function journalZones() {
+    // R112 雙區:上「本回合」(aria-live 朗讀新敘事)+ 下「故事日誌」(順時序歷史;首回合退役前隱藏)
     if (!logEl.firstChild) {
-      logEl.innerHTML = '<div class="j-head">📜 故事日誌</div>'
-        + '<div class="jbody" aria-live="polite" aria-label="故事日誌"></div>';
+      logEl.innerHTML = '<div class="j-head">⚔ 本回合</div>'
+        + '<div class="jlatest" aria-live="polite" aria-label="本回合"></div>'
+        + '<div class="j-head j-hist">📜 故事日誌</div>'
+        + '<div class="jbody" aria-label="故事日誌"></div>';
       logEl.style.display = "flex";
     }
-    return logEl.querySelector(".jbody");
+    return { latest: logEl.querySelector(".jlatest"), body: logEl.querySelector(".jbody") };
   }
   function appendJournal(logBlocks, isResend) {
     if (!logBlocks.length) return;
     const sig = logBlocks.map(function (b) { return b.html; }).join("");
     if (isResend && sig === lastLogSig) return;            // 同內容重送(int 越界重提示)→ 不重覆記
     lastLogSig = sig;
-    const body = journalBody();
-    if (body.children.length) { const sep = document.createElement("div"); sep.className = "jturn"; body.appendChild(sep); }
-    logBlocks.forEach(function (b) {
-      const d = document.createElement("div"); d.className = "logline jentry"; d.innerHTML = b.html; body.appendChild(d);
+    const z = journalZones();
+    if (z.latest.children.length) {                        // 上一回合退役 → 移入歷史區尾端(維持順時序)
+      // 錨定守衛:使用者本來就在歷史底部才跟捲;往上捲讀舊文時不拽動(修 R58 硬拽回底 bug)
+      const atBottom = z.body.scrollHeight - z.body.scrollTop - z.body.clientHeight < 8;
+      if (z.body.children.length) { const sep = document.createElement("div"); sep.className = "jturn"; z.body.appendChild(sep); }
+      while (z.latest.firstChild) {
+        const n = z.latest.firstChild;
+        if (n.classList) n.classList.remove("jentry");     // 退役不重播進場動畫
+        z.body.appendChild(n);
+      }
+      while (z.body.children.length > 240) z.body.removeChild(z.body.firstChild);   // 上限滾動
+      while (z.body.firstChild && z.body.firstChild.classList.contains("jturn")) z.body.removeChild(z.body.firstChild);
+      logEl.classList.add("has-hist");
+      if (atBottom) z.body.scrollTop = z.body.scrollHeight;
+    }
+    logBlocks.forEach(function (b) {                       // 本回合區:最新敘事(緊貼輸入區,零捲動)
+      const d = document.createElement("div"); d.className = "logline jentry"; d.innerHTML = b.html; z.latest.appendChild(d);
     });
-    while (body.children.length > 240) body.removeChild(body.firstChild);   // 上限滾動
-    while (body.firstChild && body.firstChild.classList.contains("jturn")) body.removeChild(body.firstChild);
-    body.scrollTop = body.scrollHeight;        // 自動捲到最新一行
   }
 
   // 可點內容列:view 列若帶 data-key 且該 key 是當前 prompt 的合法選項(含 extra_keys)→ 列可點。

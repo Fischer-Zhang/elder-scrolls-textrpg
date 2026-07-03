@@ -60,7 +60,7 @@
 - **領主政治 / 城戰**:謁見 → 委託 → 武士冊封;圍城 + 破城 + 收稅 + 招兵買馬;**陣營動態大事件**
 
 #### 系統與打磨
-- **事件引擎**、**成就系統**(37 成就含後期軸〔誓福/血族頂階/疾病/魂石〕+ 首達通知 + 結算/角色卡檢視,R55)、**反 min-max 經濟**(practice 成本)、**Web 版**(原生渲染、可點互動、常駐故事日誌〔R58·**置於輸入框下方**避免推擠輸入〕、里程碑手風琴 R59、遊戲內指南/圖鑑 R60、**背包體驗**〔負重條 + 種類分組 + 品質色階 common/uncommon/rare/legendary〔由 value 推導〕+ **換裝對比**〔選可換裝武器/護甲時呈現 vs 當前裝備的傷害/護甲增減〕〕)
+- **事件引擎**、**成就系統**(37 成就含後期軸〔誓福/血族頂階/疾病/魂石〕+ 首達通知 + 結算/角色卡檢視,R55)、**反 min-max 經濟**(practice 成本)、**Web 版**(原生渲染、可點互動、常駐故事日誌〔R58·**置於輸入框下方**避免推擠輸入;R112 雙區:上「本回合」=最新行動&後果緊貼輸入區零捲動·下「故事日誌」=順時序歷史+捲動錨定守衛〕、里程碑手風琴 R59、遊戲內指南/圖鑑 R60、**背包體驗**〔負重條 + 種類分組 + 品質色階 common/uncommon/rare/legendary〔由 value 推導〕+ **換裝對比**〔選可換裝武器/護甲時呈現 vs 當前裝備的傷害/護甲增減〕〕)
 - **湮滅危機尾聲(R85)**:主線高潮(弒達貢)後不再敘事死路 —— 依**雙結局分流**的傳奇收尾任務線(英雄 `epilogue_hero`「救世之後」受諸省擁戴 vs 叛徒 `epilogue_apostate`「使徒餘影」挾達貢殘力被畏懼拉攏;`requires_event:oblivion_crisis_ended`+`requires_quest` 互斥分流·`reach` 階·純敘事),完成授**傳奇誓福**(`kvatch_hero`/`dagon_apostate`·守 R45 紅線)並敘事橋接既有「大空位內戰」第二幕。純 JSON·零新存檔欄·byte-identical。
 - **常態世界脈動(R79)**:主線後世界不再永久靜默 —— `systems/worldpulse.py` 每圈頂端(worldstate 後)決定性廣播在地新聞「四方傳聞」(盜匪/商隊/獸患…分散八省·每日至多一筆·低機率·冷卻),部分新聞**聚光激增**某省的**可重複委託**(`comm_*`·`repeatable:true`·只在 active window 期間浮現於告示板·**固定低額** gold/fame)→「看新聞→決定回應→去探索」常態 loop,治後期任務泉枯竭。零碰 combat(sim byte-identical);2 新存檔欄(world_pulse_day/pulse_eval_day)。
 - **任務生態活化(R80)**:回應「太少太泛用」—— **三條派發管線**讓世界活起來:① 告示板可重複委託(R79)擴為 **24 個四型別在地委託**(kill 雜怪/精英 + collect 採集供應 + collect→reach 供應運送 + kill+kill 多階段·綁各省 lore·脈動每省聚光 3 個);② **城鎮 NPC 一次性任務**(12 個 NPC 補 `quest` 欄·`dialogue.offered_quest` 好感 gate);③ **野外遊蕩 NPC 遭遇**(8 個 `events.json` 隨機遭遇·province 在地化·`start_quest` 接一次性任務)。**全純資料·零產品邏輯**(唯一 Python=tests guard)·sim byte-identical·零新存檔欄。加委託改 `quests.json`、加 NPC 任務改 `npcs.json`+`quests.json`、加野外遭遇改 `events.json`+`quests.json`
@@ -1407,6 +1407,17 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 - **guards(僅 `tests/test_data_schema`)**:① 放寬 `_DLG_EFFECT_TYPES` = `{faction_standing} ∪ events 支援集`(否則 `blessing` heal 被既有 guard 誤殺);② role FK(`roles` 值 ∈ topics、`npc.role` ∈ roles keys);③ rumor FK(`rumor_quest` ∈ quests 且 source==rumor、`rumor_landmark` ∈ landmarks、`rumor_disposition` 0-100 int);④ **source:"rumor" 可達性**(每條由某 NPC `rumor_quest` 回指·防孤兒,擴 R80 guard);⑤ 線索目標 location **無 `visible` gate**(可接去不了)。新 `tests/test_rumor_clues.py`(role 話題出現/好感 gate·offered_rumor quest/landmark 兩路·rumor_disposition gate·blessing once·already-cleared 跳過·不漏告示板·action_talk 追問傳聞煙霧手動 patch UI)。
 - **🔴 sim_assassin BYTE-IDENTICAL**(隔離 worktree vs HEAD 證:純社交/內容·`sim_assassin.py` 只 import combat/magic/stats/inventory,不碰 dialogue/npcs/quests/landmarks·零碰 combat/formulas)。**零新存檔欄**(rumor 線索 → `char.quests`/`completed_quests`;rumor 地標 → `discovered_landmarks`;role `once` → `dialogue_done`;好感 → `npc_disposition`;新 NPC 欄 = gamedata 唯讀非存檔·舊存檔載入即相容無遷移)。**防刷**:追問傳聞一次性鎖、`blessing` once、線索 reward 只純量。`run_all` 84(新 `test_rumor_clues`)。
 - **🔴 鐵律**:加 role 純改 `dialogue.json`(roles map + topics·身份 flavor 為主·功能 effect 走 events 支援集 + `once` 防刷·不帶 skill_xp)+ `npcs.json` role 欄;加流言線索純改 `npcs.json`(rumor_quest/rumor_landmark/rumor_disposition)+ `quests.json`(`source:"rumor"`·僅 clear/reach·**目標無 visible gate**·NPC↔線索目標**須同省**);**新增 source:rumor 任務務必有 NPC rumor_quest 回指**(否則 reachability guard 攔=孤兒);追問傳聞兌現走既有 `_accept_and_brief`/`landmarks.discover`;純社交內容 → sim byte-identical 免跑(動 combat/formulas 才需)。**前瞻**:Phase D 可純資料把其餘 ~40 具名 rumor NPC 逐批接上 + 補 role 密度;若要更多功能 role 話題(商人折扣等)需新 effect + 評估碰 shop/存檔欄。
+
+---
+
+### R112 · 故事日誌雙區化:上「本回合」+ 下「順時序歷史」(UI 評估拍板)[UI-only]
+
+使用者問「日誌由下往上更新是否較符合 UX」→ 評估:最新在頂的**視線鄰近性**優勢真實(日誌在輸入區下方,現制最新內容在內捲盒**底緣**、緊貼輸入區的反而是舊文),但代價=跨回合故事**倒敘**(傷「故事日誌」定位);且現制有真 bug:**無條件 `scrollTop=scrollHeight` → 往上捲讀舊文被硬拽回底**。使用者拍板**雙區設計**(比翻轉方向更優):**上「⚔ 本回合」= 只收最新行動&後果**(緊貼輸入區零捲動、`aria-live` 朗讀、無內捲自然展開)/ **下「📜 故事日誌」= 順時序歷史**(34vh 內捲、cap 240、`.jturn` 回合分隔)。
+
+- **機制(純前端 `index.html`;零 Python/零存檔)**:`journalBody()`→`journalZones()`(建雙區 DOM;歷史區含標題在首回合退役前整組隱藏 `#log.has-hist` 閘);`appendJournal` 改「**退役制**」—— 新敘事幀到:上區現有內容**整回合移入歷史區尾端**(維持順時序;移動時剝 `.jentry` 防重播進場動畫;前插 `.jturn` 分隔)→ 新敘事填上區。**空回合(純選單導航)上區 sticky 保留**(不清空=「最近的行動&後果」語意)。R58 去重雙保險(seq gate + resend 簽名)不動、發生在分區之前。
+- **順帶修 R58 拉回 bug**:歷史區退役時加**捲動錨定守衛**(`atBottom<8px` 才跟捲)—— 使用者往上捲讀舊文時不再被拽回底部。
+- **取捨(評估已明列)**:兩區交界時序不連續(歷史尾=上上回合)→ 由兩區明確視覺身份(標題/框線/上區加亮底色)中和;跨回合連讀完整故事仍在歷史區由上而下。
+- **驗證**:`node --check` JS 合法 + **迷你 DOM mock 功能測試**(退役順序/sticky/resend 去重/240 上限+無前導分隔/錨定不拽動 全過)+ `run_all` 107(未碰 Python)+ codex `core_loop` 故事日誌條同步。🔴 鐵律沿 R58:狀態走 view(`#screen` 替換)/敘事走 log(入日誌);改日誌呈現動 `render`/`appendJournal`/`journalZones`/`#log` CSS(`.jlatest`/`.j-hist`/`has-hist`)。
 
 ---
 
