@@ -1447,6 +1447,22 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 
 - **🔴 鐵律**:加新神純改 `boons.json`(**按原典神格設計加成·破 R45 紅線先問使用者,絕不擅換**)+ `bestiary.json`(d5 solo raw·控場 chance≤0.30/turns≤1·R43 曲目·**絕不 conduct**)+ `dungeons.json`(clear_dungeon 目標)+ `world.json`(R28 **手填** pos/links·雙向·同省·degree≥2·帶 `dungeon` 鍵·別走 geo_rebuild)+ `quests.json`(`source:"divine"`·`divine` 欄·`requires_level`·線性 stages·`grant_boon`);`action_divine_altar` 試煉鉤子已通用(篩 `divine`==本神 + `can_bless` 德行閘)**免改**;誓福走通用 `boon_*` 層(絕不寫 base)。**已覆蓋**:阿卡托什「時龍之契」、塔洛斯「人皇之佑」、阿爾凱「輪迴之佑」、朱利安諾斯「睿智之佑」、斯丹達爾「慈憫之佑」、澤尼薩爾「豐饒之佑」、凱娜瑞絲「天穹之佑」、瑪拉「慈愛之佑」、蒂貝拉「美之佑」。**🎉 九神全數完成(9/9)**〔末位蒂貝拉使用者拍板取安全域讀法 personality/speechcraft/illusion·非 Skyrim 單手武器·守紅線;`test_all_nine_divines_have_a_trial` 完成守衛。日後可純資料補分支/多讀法·或加 `divine_favor` 虔誠計量〕。**前瞻**:走完九神;可選加 `divine_favor` 虔誠計量(需 +1 存檔欄·本輪刻意不做保 byte-identical);每神試煉可加分支(需拍板)。
 
+### R115 附帶 · 戴德拉誓福原典稽核(承同一「按原典」鐵令)[byte-identical]
+
+16-agent workflow 逐一對照 UESP 稽核既有 **18 個戴德拉誓福(R45-R49)**是否符原典 → **9 個高度符原典、9 個單點可收緊、0 個破紅線**(各親王的武器/潛行招牌面皆由**神器分支**承載,誓福只表達紅線內的職掌半面)。使用者拍板套「**A 組乾淨修正**」(7 個·**純資料 byte-identical·無平衡影響**):
+
+| 親王 | 改動 | 原典依據 |
+|---|---|---|
+| 莫拉格巴爾 | resist shock→**frost** | 寒港是冰冷領域(非電) |
+| 海爾辛 | resist frost→**poison** | 救主之皮招牌抗毒/魔(非冰) |
+| 克拉維克斯 | resist magic→**mercantile** | 面具=議價/買賣(魔抗無原典出處) |
+| 謝歐格拉斯 | int 6→**luck 6** | 混沌/隨機=幸運(瓦巴賈克本質) |
+| 諾克圖娜爾 | speed 6+resist magic→**luck 6+illusion 10** | 幸運之親王 + 夜鶯影之幻術(兩招牌皆缺) |
+| 賈格拉格 | scout 12→**mysticism 12** | 秩序/邏輯/演繹=感知分析學派 |
+| 赫麥尤斯 力量徑 | willpower 6→**smithing 10** | Oghma「Might」途招牌鍛造(willpower 屬法系途) |
+
+**B 組**(馬拉凱斯 poison/disease→magic·魔抗涵蓋全元素=平衡取捨需 sim)、**C 組**(瓦瑪納 destruction→illusion·推翻 R45#11 元素法師 build 覆蓋 + 與梅赫拉重疊)**使用者暫不套**。改 `boons.json` 7 條 + `test_daedric` 3 個 test 斷言(scout→mysticism / int→luck / speed→luck+illusion,並補諾克圖娜爾 illusion 驗證);**sim_assassin byte-identical**(隔離 HEAD worktree 證·誓福 fixtures boons=[]·未碰 combat/formulas);零新存檔欄(只改誓福值·`apply_to_character` 載入即重算·舊存檔自動生效)。🔴 加/改誓福一律按 TES 原典神格·破紅線先問使用者;**改魔抗值另屬平衡取捨需 sim**(故 B 組馬拉凱斯暫緩)。
+
 ### R114D · 長途旅行:BFS 沿路自動趕路(UI/UX 審計 包D·收尾)[UI-flow] [re-sim byte-identical]
 
 承 UI/UX 審計四包,做**包 D 長途旅行**(cost#2 HIGH·跨省 5-10 跳每跳 hub 重繪+選一次的痛點·純流程零平衡零存檔)。

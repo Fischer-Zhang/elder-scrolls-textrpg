@@ -1069,12 +1069,12 @@ def test_sheogorath_serve_branch_grants_wabbajack_not_boon():
 
 
 def test_sheogorath_defy_branch_grants_boon_not_wabbajack():
-    """守心之路 → 永久誓福 瘋癲之佑(willpower+8/intelligence+6/alteration+12/magicka+20)、不得神器。"""
+    """守心之路 → 永久誓福 瘋癲之佑(willpower+8/luck+6/alteration+12/magicka+20)、不得神器。"""
     gd, c = _gd_char(level=18)
-    w0, i0, al0, mg0 = c.attr("willpower"), c.attr("intelligence"), c.skill("alteration"), c.max_magicka
+    w0, lk0, al0, mg0 = c.attr("willpower"), c.attr("luck"), c.skill("alteration"), c.max_magicka
     _complete_sheogorath(gd, c, 1)
     assert boons.has_boon(c, "sheogorath_madness")
-    assert c.attr("willpower") == w0 + 8 and c.attr("intelligence") == i0 + 6
+    assert c.attr("willpower") == w0 + 8 and c.attr("luck") == lk0 + 6
     assert c.skill("alteration") == al0 + 12
     assert c.max_magicka >= mg0 + 20
     assert c.base_attr("willpower") == w0          # 🔴 不寫 base
@@ -1217,13 +1217,13 @@ def test_skeleton_key_still_perfect_lockpick_after_rehome():
 
 
 def test_nocturnal_guard_branch_grants_boon_not_key():
-    """守鑰之路 → 永久誓福 夜影之佑(agility+8/speed+6/security+12)、不得神器。"""
+    """守鑰之路 → 永久誓福 夜影之佑(agility+8/luck+6/security+12/illusion+10)、不得神器。"""
     gd, c = _gd_char(level=18)
-    a0, sp0, se0 = c.attr("agility"), c.attr("speed"), c.skill("security")
+    a0, lk0, se0, il0 = c.attr("agility"), c.attr("luck"), c.skill("security"), c.skill("illusion")
     _complete_nocturnal(gd, c, 1)
     assert boons.has_boon(c, "nocturnal_shadow")
-    assert c.attr("agility") == a0 + 8 and c.attr("speed") == sp0 + 6
-    assert c.skill("security") == se0 + 12
+    assert c.attr("agility") == a0 + 8 and c.attr("luck") == lk0 + 6
+    assert c.skill("security") == se0 + 12 and c.skill("illusion") == il0 + 10
     assert c.base_attr("agility") == a0          # 🔴 不寫 base
     assert inventory.count_item(c, "skeleton_key") == 0
     assert "nocturnal_nightingale" in c.world_events_fired
@@ -1333,13 +1333,13 @@ def test_jyggalag_sword_no_oneshot_solo():
 
 
 def test_jyggalag_defy_branch_grants_boon_not_sword():
-    """抗序之路 → 永久誓福 秩序之佑(intelligence+8/willpower+6/scout+12/magicka+10)、不得神器。"""
+    """抗序之路 → 永久誓福 秩序之佑(intelligence+8/willpower+6/mysticism+12/magicka+10)、不得神器。"""
     gd, c = _gd_char(level=18)
-    i0, w0, sc0, mg0 = c.attr("intelligence"), c.attr("willpower"), c.skill("scout"), c.max_magicka
+    i0, w0, sc0, mg0 = c.attr("intelligence"), c.attr("willpower"), c.skill("mysticism"), c.max_magicka
     _complete_jyggalag(gd, c, 1)
     assert boons.has_boon(c, "jyggalag_order")
     assert c.attr("intelligence") == i0 + 8 and c.attr("willpower") == w0 + 6
-    assert c.skill("scout") == sc0 + 12
+    assert c.skill("mysticism") == sc0 + 12
     assert c.max_magicka >= mg0 + 10
     assert c.base_attr("intelligence") == i0          # 🔴 不寫 base
     assert inventory.count_item(c, "sword_of_jyggalag") == 0

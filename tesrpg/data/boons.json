@@ -24,14 +24,14 @@
     "name": "不屈之心",
     "attr": {"willpower": 10, "endurance": 6},
     "skill": {"restoration": 8},
-    "resist": {"shock": 15},
+    "resist": {"frost": 15},
     "magicka": 0
   },
   "hircine_blessing": {
     "name": "獵者之佑",
     "attr": {"agility": 10, "speed": 6},
     "skill": {"light_armor": 8},
-    "resist": {"frost": 15},
+    "resist": {"poison": 15},
     "magicka": 0
   },
   "boethiah_resolve": {
@@ -44,8 +44,7 @@
   "clavicus_silver_tongue": {
     "name": "言靈之佑",
     "attr": {"personality": 12},
-    "skill": {"speechcraft": 12},
-    "resist": {"magic": 10},
+    "skill": {"speechcraft": 12, "mercantile": 10},
     "magicka": 0
   },
   "peryite_ward": {
@@ -99,29 +98,28 @@
   },
   "sheogorath_madness": {
     "name": "瘋癲之佑",
-    "attr": {"willpower": 8, "intelligence": 6},
+    "attr": {"willpower": 8, "luck": 6},
     "skill": {"alteration": 12},
     "resist": {"magic": 15},
     "magicka": 20
   },
   "nocturnal_shadow": {
     "name": "夜影之佑",
-    "attr": {"agility": 8, "speed": 6},
-    "skill": {"security": 12},
-    "resist": {"magic": 10},
+    "attr": {"agility": 8, "luck": 6},
+    "skill": {"security": 12, "illusion": 10},
     "magicka": 0
   },
   "jyggalag_order": {
     "name": "秩序之佑",
     "attr": {"intelligence": 8, "willpower": 6},
-    "skill": {"scout": 12},
+    "skill": {"mysticism": 12},
     "resist": {"magic": 15},
     "magicka": 10
   },
   "hermaeus_might": {
     "name": "真知·力量之書",
-    "attr": {"endurance": 10, "willpower": 6},
-    "skill": {"heavy_armor": 10, "block": 8},
+    "attr": {"endurance": 10},
+    "skill": {"heavy_armor": 10, "block": 8, "smithing": 10},
     "resist": {"fire": 15},
     "magicka": 0
   },
