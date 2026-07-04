@@ -201,5 +201,11 @@
     "attr": {"endurance": 10, "willpower": 6},
     "resist": {"magic": 15},
     "magicka": 20
+  },
+  "talos_might": {
+    "name": "人皇之佑",
+    "attr": {"strength": 10, "endurance": 6},
+    "skill": {"heavy_armor": 10},
+    "resist": {"magic": 10}
   }
 }

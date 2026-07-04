@@ -9104,5 +9104,34 @@
       "grant_boon": "akatosh_covenant",
       "world_flags": ["akatosh_covenant_earned"]
     }
+  },
+  "talos_trial": {
+    "name": "人皇的試煉",
+    "faction": null,
+    "rank": null,
+    "source": "divine",
+    "divine": "talos",
+    "requires_level": 15,
+    "text": "你在布魯瑪的塔洛斯祭壇前俯首,人皇之神的低語如戰鼓在你胸中擂響 —— 傑拉山道的高處,一名曾對祂起誓守護隘口的戰王背棄了誓言,據著舊帝國戍堡勒索過往的商旅與朝聖者。上山去,以榮譽的鋼鐵折斷這叛誓者的傲慢、替人皇之神重整山道的秩序 —— 祂將以一縷人皇之力回報於你。",
+    "stages": [
+      {
+        "objective": {"type": "collect", "item": "minor_healing_potion", "count": 2},
+        "text": "備妥兩瓶療傷之物、如整裝出征的戰士,在塔洛斯祭壇前立下誓言。"
+      },
+      {
+        "objective": {"type": "reach", "location": "jerall_warhold"},
+        "text": "頂著傑拉山脈的風雪上行,直抵叛誓匪王據守的舊戍堡。"
+      },
+      {
+        "objective": {"type": "clear_dungeon", "dungeon": "jerall_warhold"},
+        "text": "攻入山寨核心,以榮譽的鋼鐵折斷叛誓戰王的傲慢,替人皇之神重整山道的秩序。"
+      }
+    ],
+    "reward": {
+      "gold": 600,
+      "fame": 30,
+      "grant_boon": "talos_might",
+      "world_flags": ["talos_might_earned"]
+    }
   }
 }

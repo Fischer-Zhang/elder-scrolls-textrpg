@@ -311,6 +311,35 @@ def test_divine_boons_respect_red_lines():
     assert checked >= 1, "未偵測到任何 source='divine' 授誓福任務(接線斷?)"
 
 
+def test_all_divine_trials_content_integrity():
+    """所有神之選民試煉(source=divine 且帶 `divine` 欄)的內容完整性 —— 未來加新神自動被此把關:
+    divine∈BLESSINGS·有 requires_level 閘·grant_boon∈boons·有 clear_dungeon boss 階·
+    地城∈dungeons+world·boss 為 solo·怪皆存在·硬控 chance≤0.30/fear·paralyze turns≤1(R43/R44)。"""
+    gd = get_gamedata()
+    trials = [(qid, q) for qid, q in gd.quests.items()
+              if q.get("source") == "divine" and q.get("divine")]
+    assert trials, "無任何神之選民試煉(接線斷?)"
+    for qid, q in trials:
+        assert q["divine"] in divines.BLESSINGS, f"{qid} divine 指向未知神:{q['divine']}"
+        assert q.get("requires_level"), f"{qid} 缺 requires_level 閘"
+        assert q["reward"].get("grant_boon") in gd.boons, f"{qid} grant_boon 未登錄"
+        dids = [s["objective"]["dungeon"] for s in q.get("stages", [])
+                if s.get("objective", {}).get("type") == "clear_dungeon"]
+        assert dids, f"{qid} 無 clear_dungeon 階(試煉須有 boss 戰)"
+        for did in dids:
+            assert did in gd.dungeons and did in gd.world["locations"], f"{qid} 地城 {did} 缺席"
+            boss = gd.dungeons[did]["boss"]["enemy"]
+            assert gd.bestiary[boss].get("solo") is True, f"{did} boss {boss} 非 solo"
+            for atk in gd.bestiary[boss].get("attacks", []):
+                oh = atk.get("on_hit") or {}
+                if oh.get("status") in ("paralyze", "fear", "stagger"):
+                    assert oh.get("chance", 1.0) <= 0.30, (boss, atk)
+                    if oh.get("status") in ("paralyze", "fear"):
+                        assert oh.get("turns", 1) <= 1, (boss, atk)
+            for m in gd.dungeons[did]["monsters"]:
+                assert m in gd.bestiary, (did, m)
+
+
 def run():
     for name in sorted(globals()):
         if name.startswith("test_"):
