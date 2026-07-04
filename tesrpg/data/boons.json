@@ -195,5 +195,11 @@
     "skill": {"restoration": 10, "block": 6},
     "resist": {"magic": 10},
     "magicka": 10
+  },
+  "akatosh_covenant": {
+    "name": "時龍之契",
+    "attr": {"endurance": 10, "willpower": 6},
+    "resist": {"magic": 15},
+    "magicka": 20
   }
 }

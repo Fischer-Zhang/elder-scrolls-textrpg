@@ -4608,6 +4608,14 @@ def action_divine_altar(state: GameState, gamedata: GameData) -> None:
         pq = divines.PILGRIMAGE_QID
         if pq in gamedata.quests and pq not in char.quests:
             opts.append(("pilgrimage", "🕯 踏上朝聖之路(巡禮九神·試煉贖罪 → 惡名歸零)"))
+        # 神之選民試煉(R115):德行無虧的信徒 + 達等級 → 該神深線試煉,結局授永久神性誓福。
+        # 比照 action_shrine 的戴德拉列法:available_quests 依 requires_level 把關,再篩 divine==本神;
+        # 德行閘(can_bless)確保只有無愧於神者能受召(有惡名/本省賞金者先去朝聖贖罪)。
+        if divines.can_bless(char, loc["province"])[0]:
+            for qid in quests.available_quests(char, gamedata, "divine"):
+                if gamedata.quests[qid].get("divine") == god:
+                    opts.append((f"trial:{qid}", f"⚔ {gamedata.quests[qid]['name']} —— "
+                                 f"{quests.objective_text(char, gamedata, qid)}"))
         pick = ui.menu(f"{bl['name']}祭壇 —— {bl['title']}", opts, allow_back=True)
         if pick is None:
             return
@@ -4634,6 +4642,9 @@ def action_divine_altar(state: GameState, gamedata: GameData) -> None:
                 ui.message(f"{bl['name']}的神恩降臨於你 —— {bl['desc']}。", style="bold green")
         elif pick == "pilgrimage":
             _accept_and_brief(state, gamedata, pq)
+            return
+        elif pick.startswith("trial:"):
+            _accept_and_brief(state, gamedata, pick.split(":", 1)[1])
             return
 
 

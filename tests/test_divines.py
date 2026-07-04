@@ -12,7 +12,7 @@ from tesrpg.gamedata import get_gamedata
 from tesrpg.models import Character
 from tesrpg.rng import RNG
 from tesrpg.state import GameState, GameTime
-from tesrpg.systems import combat, crime, divines, inventory, magic, quests, renown, world
+from tesrpg.systems import boons, combat, crime, divines, inventory, magic, quests, renown, world
 
 
 def _state(seed=1, hour=12):
@@ -244,6 +244,71 @@ def test_world_divine_fields_are_legal_and_complete():
             assert god not in placed, f"{god} 佈點重複:{placed[god]} 與 {lid}"
             placed[god] = lid
     assert set(placed) == set(divines.BLESSINGS), f"九神祭壇缺席:{set(divines.BLESSINGS) - set(placed)}"
+
+
+# --- R115 九神深線:神之選民試煉 + 永久神性誓福(首位 阿卡托什) ---------------
+_WEAPON_SKILLS = {"blade", "blunt", "marksman", "hand_to_hand"}   # 破偷襲/武傷鏈的技能(R45 紅線)
+
+
+def test_akatosh_trial_level_gate_and_content():
+    """時龍的召選:requires_level 15 閘 + divine 分流 + boss/地城/節點 FK + 控場節制(R43/R44)。"""
+    gd, c, st = _state()
+    c.level = 10
+    assert "akatosh_trial" not in quests.available_quests(c, gd, "divine")   # 等級不足不現
+    c.level = 15
+    assert "akatosh_trial" in quests.available_quests(c, gd, "divine")
+    assert gd.quests["akatosh_trial"]["divine"] == "akatosh"                 # 祭壇分流鍵
+    assert "akatosh_covenant" in gd.boons
+    assert "kvatch_undercroft" in gd.dungeons and "kvatch_undercroft" in gd.world["locations"]
+    boss = gd.dungeons["kvatch_undercroft"]["boss"]["enemy"]
+    assert boss == "time_forsaken" and gd.bestiary[boss].get("solo") is True
+    for atk in gd.bestiary[boss].get("attacks", []):                         # 硬控 ≤0.30、fear/paralyze turns≤1
+        oh = atk.get("on_hit") or {}
+        if oh.get("status") in ("paralyze", "fear", "stagger"):
+            assert oh.get("chance", 1.0) <= 0.30, atk
+            if oh.get("status") in ("paralyze", "fear"):
+                assert oh.get("turns", 1) <= 1, atk
+    for m in gd.dungeons["kvatch_undercroft"]["monsters"]:                   # 地城怪皆存在
+        assert m in gd.bestiary, m
+    assert gd.world["locations"]["kvatch"].get("divine") == "akatosh"        # 祭壇節點對映
+
+
+def test_akatosh_trial_grants_covenant_boon_end_to_end():
+    """接取 → 獻祭(collect)+ 清地窟 → reward.grant_boon 授永久誓福(端到端)。"""
+    gd, c, st = _state()
+    c.level = 15
+    end0 = c.attr("endurance")
+    quests.accept_quest(c, gd, "akatosh_trial", 0)
+    inventory.add_item(c, "minor_magicka_potion", 2)
+    c.location_id = "kvatch_undercroft"
+    quests.record_dungeon_clear(c, "kvatch_undercroft")
+    quests.check_completion(c, gd)
+    assert "akatosh_trial" in c.completed_quests
+    assert boons.has_boon(c, "akatosh_covenant")
+    assert c.attr("endurance") == end0 + 10          # 誓福 attr 疊上有效值(不寫 base)
+    assert "akatosh_covenant_earned" in c.world_events_fired
+    # 接取後不再列於祭壇可接清單(避免重複接)
+    assert "akatosh_trial" not in quests.available_quests(c, gd, "divine")
+
+
+def test_divine_boons_respect_red_lines():
+    """守整條九神深線的 R45 紅線:任何 source='divine' 任務授予的誓福皆不得餵 sneak/武器技能、
+    strength 不得超過達貢上限 → 未來加新神的誓福自動被此測試把關(不必逐神補測)。"""
+    gd = get_gamedata()
+    checked = 0
+    for qid, q in gd.quests.items():
+        if q.get("source") != "divine":
+            continue
+        gb = q.get("reward", {}).get("grant_boon")
+        if not gb:
+            continue
+        checked += 1
+        spec = gd.boons[gb]
+        sk = set(spec.get("skill", {}))
+        assert "sneak" not in sk, f"{gb} 誓福餵 sneak(破紅線)"
+        assert not (_WEAPON_SKILLS & sk), f"{gb} 誓福餵武器技能(破紅線):{_WEAPON_SKILLS & sk}"
+        assert spec.get("attr", {}).get("strength", 0) <= 18, f"{gb} strength 超過達貢上限"
+    assert checked >= 1, "未偵測到任何 source='divine' 授誓福任務(接線斷?)"
 
 
 def run():

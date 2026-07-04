@@ -9075,5 +9075,34 @@
     },
     "turn_in": "auto",
     "text": "告示:肅清過的梅里谷遺址又鬧起了骸骨衛隊,騷擾四鄰。掃蕩其頭目、奪回巢穴者,官府有賞。(常駐零工;僅在該地重遭盤踞時懸掛)"
+  },
+  "akatosh_trial": {
+    "name": "時龍的召選",
+    "faction": null,
+    "rank": null,
+    "source": "divine",
+    "divine": "akatosh",
+    "requires_level": 15,
+    "text": "你在凱瓦奇的阿卡托什祭壇前俯首,焚毀的大禮拜堂殘垣間,時龍的低語自你血脈深處響起 —— 聖殿的地窟裡有一縷背棄了生死律令的陰影盤踞不去:牠曾是這座禮拜堂的祭司,卻以禁術截停了自己的死亡,自此不生不死,蔑視著掌管始終的神。將牠交還給牠背棄的死亡、重新聖化這座聖殿 —— 時龍之神將以一縷永恆之力回報於你。",
+    "stages": [
+      {
+        "objective": {"type": "collect", "item": "minor_magicka_potion", "count": 2},
+        "text": "備妥兩瓶魔力藥劑作為奉獻,在阿卡托什祭壇前叩問時龍的指引。"
+      },
+      {
+        "objective": {"type": "reach", "location": "kvatch_undercroft"},
+        "text": "循時龍的低語,步下焚毀禮拜堂底下的聖殿地窟。"
+      },
+      {
+        "objective": {"type": "clear_dungeon", "dungeon": "kvatch_undercroft"},
+        "text": "深入地窟核心,擊碎時之背棄者截停的最後一刻,將牠交還給死亡、重新聖化這座聖殿。"
+      }
+    ],
+    "reward": {
+      "gold": 600,
+      "fame": 30,
+      "grant_boon": "akatosh_covenant",
+      "world_flags": ["akatosh_covenant_earned"]
+    }
   }
 }
