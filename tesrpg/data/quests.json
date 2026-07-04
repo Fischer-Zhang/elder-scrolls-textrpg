@@ -9220,5 +9220,34 @@
       "grant_boon": "stendarr_mercy",
       "world_flags": ["stendarr_mercy_earned"]
     }
+  },
+  "zenithar_trial": {
+    "name": "豐饒的試煉",
+    "faction": null,
+    "rank": null,
+    "source": "divine",
+    "divine": "zenithar",
+    "requires_level": 15,
+    "text": "你在雷雅維因的澤尼薩爾祭壇前俯首,勞動之神的低語如秤桿落定的一聲輕響 —— 尼本河汊道深處的一座匪窟裡,一名貪婪成性的前商人把秤桿換成了鐵鏈,勒索過往商隊、奴役還不出債的苦工,嘲笑著『勞有所得』的信條。去為那些苦工討回公道、了結那貪婪暴君 —— 澤尼薩爾將以一縷豐饒之力回報於你。",
+    "stages": [
+      {
+        "objective": {"type": "collect", "item": "minor_healing_potion", "count": 2},
+        "text": "備妥兩瓶療傷之物作為誠實的什一之獻,在澤尼薩爾祭壇前立誓守護勞動的酬勞。"
+      },
+      {
+        "objective": {"type": "reach", "location": "niben_bandit_hold"},
+        "text": "沿尼本河的汊道潛行,尋到那座勒索商旅的河匪窟。"
+      },
+      {
+        "objective": {"type": "clear_dungeon", "dungeon": "niben_bandit_hold"},
+        "text": "攻入匪窟核心,了結貪婪暴君、砸開苦工的鎖鏈,替勞動之神討回被奪走的公道。"
+      }
+    ],
+    "reward": {
+      "gold": 600,
+      "fame": 30,
+      "grant_boon": "zenithar_fortune",
+      "world_flags": ["zenithar_fortune_earned"]
+    }
   }
 }

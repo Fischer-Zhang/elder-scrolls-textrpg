@@ -226,5 +226,11 @@
     "attr": {"endurance": 10, "willpower": 6},
     "skill": {"block": 8, "restoration": 8},
     "resist": {"magic": 10}
+  },
+  "zenithar_fortune": {
+    "name": "豐饒之佑",
+    "attr": {"personality": 8, "luck": 8},
+    "skill": {"mercantile": 12},
+    "resist": {"magic": 10}
   }
 }
