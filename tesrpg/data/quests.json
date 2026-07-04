@@ -9162,5 +9162,34 @@
       "grant_boon": "arkay_ward",
       "world_flags": ["arkay_ward_earned"]
     }
+  },
+  "julianos_trial": {
+    "name": "睿智的試煉",
+    "faction": null,
+    "rank": null,
+    "source": "divine",
+    "divine": "julianos",
+    "requires_level": 15,
+    "text": "你在史金格拉德的朱利安諾斯祭壇前俯首,睿智之神的低語如清澈的邏輯在你腦海裡展開 —— 城郊葡萄園深處的祕典閣裡,一名鑽研過深的學者棄了理性與節制,擁抱不受拘束的混沌之力,將整座祕閣燒成了瘋狂的煉獄。上塔去,以清明的心智了結那份瘋狂、替睿智之神重整秩序 —— 祂將以一縷睿智之力回報於你。",
+    "stages": [
+      {
+        "objective": {"type": "collect", "item": "minor_magicka_potion", "count": 2},
+        "text": "備妥兩瓶魔力藥劑作為對智慧的敬奉,在朱利安諾斯祭壇前靜心思辨。"
+      },
+      {
+        "objective": {"type": "reach", "location": "skingrad_athenaeum"},
+        "text": "穿過葡萄園的暮色,登上城郊那座燒著無主火光的祕典閣。"
+      },
+      {
+        "objective": {"type": "clear_dungeon", "dungeon": "skingrad_athenaeum"},
+        "text": "登上祕閣頂層,以清明的心智了結叛智巫師的瘋狂,替睿智之神重整崩解的秩序。"
+      }
+    ],
+    "reward": {
+      "gold": 600,
+      "fame": 30,
+      "grant_boon": "julianos_wisdom",
+      "world_flags": ["julianos_wisdom_earned"]
+    }
   }
 }

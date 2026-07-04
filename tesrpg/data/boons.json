@@ -213,5 +213,12 @@
     "attr": {"endurance": 10, "willpower": 6},
     "skill": {"restoration": 10},
     "resist": {"disease": 25}
+  },
+  "julianos_wisdom": {
+    "name": "睿智之佑",
+    "attr": {"intelligence": 10, "willpower": 6},
+    "skill": {"mysticism": 10},
+    "resist": {"magic": 10},
+    "magicka": 20
   }
 }
