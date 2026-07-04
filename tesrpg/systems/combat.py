@@ -417,7 +417,9 @@ def _player_counter_damage(player, gamedata: GameData, rng: RNG) -> float:
     """玩家反擊基礎傷害(輕甲「迴身反打」/盾牌「完美格擋」):以當前武器一記普通攻擊估算,
     不吃偷襲倍率/流派加成 → 純基礎反擊,不觸碰 solo 紅線。"""
     wpn_dmg, wpn_skill, _ = _weapon_profile(player, gamedata)
-    return formulas.attack_damage(wpn_dmg, wpn_skill, _strength(player), rng.roll(0.85, 1.15), 1.0)
+    _lo = formulas.DAMAGE_ROLL_LO + formulas.luck_damage_floor(player.attr("luck"))   # 幸運抬下界(luck≤40 → 0.85 = byte-identical)
+    return formulas.attack_damage(wpn_dmg, wpn_skill, _strength(player),
+                                  rng.roll(_lo, formulas.DAMAGE_ROLL_HI), 1.0)
 
 
 def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
@@ -513,7 +515,10 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
                 and (gamedata.item(attacker.weapon).get("enchant") or {}).get("kind") == "order"):
             roll = formulas.DAMAGE_ROLL_HI
         else:
-            roll = rng.roll(formulas.DAMAGE_ROLL_LO, formulas.DAMAGE_ROLL_HI)
+            _lo = formulas.DAMAGE_ROLL_LO
+            if _is_player(attacker):   # 幸運「天命」抬傷害骰下界(少壞骰·上界不動;luck≤40 → +0 → rng 序不變 = byte-identical)
+                _lo += formulas.luck_damage_floor(attacker.attr("luck"))
+            roll = rng.roll(_lo, formulas.DAMAGE_ROLL_HI)
         block_factor = (formulas.block_damage_factor(defender.skill("block"))
                         if defender_blocking else 1.0)
         # R107 斯丹達爾之佑:格擋減傷加成(僅玩家防守側;無祝福 → _db=0 不進分支 = byte-identical;
@@ -818,6 +823,21 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
                         if _wab_r < _wab_acc:
                             _wab_effect = _eid
                             break
+                    # 幸運偏轉混沌(R116):抽到回火(自傷/治敵)時,以幸運 save 機率改抽好效果。
+                    # 🔴 luck≤40 → save=0 → `and` 短路不擲 rng → byte-identical;沙盒專屬法杖·刺客不持 → sim 不觸此區。
+                    if _wab_effect in ("backfire_self", "backfire_enemy"):
+                        _wsave = formulas.luck_wabbajack_save(attacker.attr("luck"))
+                        if _wsave > 0 and rng.chance(_wsave):
+                            _good = [(w, e) for w, e in formulas.WABBAJACK_TABLE
+                                     if e not in ("backfire_self", "backfire_enemy")]
+                            _gr = rng.roll(0, sum(w for w, _ in _good))
+                            _ga = 0.0
+                            _wab_effect = _good[-1][1]
+                            for _w, _e in _good:
+                                _ga += _w
+                                if _gr < _ga:
+                                    _wab_effect = _e
+                                    break
                     if _wab_effect == "burst" and is_alive(defender):
                         # 隨機元素爆發:複用 weapon_element 數學(吃抗性)·非偷襲傷·solo 另受夾
                         _wab_elem = rng.choice(("fire", "frost", "shock"))

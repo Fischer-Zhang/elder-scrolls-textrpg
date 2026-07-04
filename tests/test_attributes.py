@@ -47,6 +47,27 @@ def test_factors_neutral_at_base():
     assert formulas.luck_fortune(250) > formulas.luck_fortune(200)
 
 
+# --- 幸運進戰鬥(R116):傷害骰下界抬升 + 瓦巴賈克回火化險(皆 base-40 中性 → byte-identical)---
+def test_luck_damage_floor_r116():
+    b = formulas.BASE_ATTRIBUTE
+    assert formulas.luck_damage_floor(b) == 0.0 and formulas.luck_damage_floor(b - 10) == 0.0   # ≤40 中性 → rng 序不變
+    assert 0 < formulas.luck_damage_floor(100) < formulas.LUCK_DAMAGE_FLOOR_ASYMPTOTE            # >40 抬升、嚴格 <上限
+    assert (formulas.LUCK_DAMAGE_FLOOR_ASYMPTOTE - 0.01
+            < formulas.luck_damage_floor(999) <= formulas.LUCK_DAMAGE_FLOOR_ASYMPTOTE)           # 漸近上限
+    assert formulas.luck_damage_floor(250) > formulas.luck_damage_floor(200)                     # 過 200 仍有邊際
+    # 🔴 上界永不動:下界至多 0.85+0.10=0.95 < HI 1.15 → 恆留變異、不抬單擊天花板(精英秒殺門檻不變)
+    assert formulas.DAMAGE_ROLL_LO + formulas.luck_damage_floor(999) < formulas.DAMAGE_ROLL_HI
+
+
+def test_luck_wabbajack_save_r116():
+    b = formulas.BASE_ATTRIBUTE
+    assert formulas.luck_wabbajack_save(b) == 0.0 and formulas.luck_wabbajack_save(b - 10) == 0.0  # ≤40 中性(byte-identical)
+    assert 0 < formulas.luck_wabbajack_save(100) < formulas.LUCK_WAB_SAVE_ASYMPTOTE
+    assert (formulas.LUCK_WAB_SAVE_ASYMPTOTE - 0.02
+            < formulas.luck_wabbajack_save(999) <= formulas.LUCK_WAB_SAVE_ASYMPTOTE)              # 漸近 0.40
+    assert formulas.luck_wabbajack_save(250) > formulas.luck_wabbajack_save(150)
+
+
 # --- 幸運:戰利豐厚 -----------------------------------------------------
 def test_luck_loot_factor_in_resolve():
     # 高倍率:低機率必掉 + 金幣放大(確定性)

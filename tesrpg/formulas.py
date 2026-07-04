@@ -135,6 +135,16 @@ LUCK_FORTUNE_PER = 0.0017         # 命運加性(撬鎖/逃跑/事件):每點幸
 LUCK_FORTUNE_KNEE = 0.20          # 舊夾 → 漸進拐點
 LUCK_FORTUNE_ASYMPTOTE = 0.30     # 趨近、永不抵達
 LUCK_FORTUNE_WIDTH = 0.15
+# 幸運進戰鬥(R116):天命=①傷害骰下界抬升(少壞骰·不抬單擊天花板)②瓦巴賈克回火化險。
+# 皆 base-40 中性(luck≤40 → 0)→ 低幸運 build 與 sim_assassin(fixture luck=40)逐位元組不變。
+LUCK_DAMAGE_FLOOR_PER = 0.0017    # 傷害骰下界抬升:每點幸運(>40)
+LUCK_DAMAGE_FLOOR_KNEE = 0.07     # 舊夾 → 漸進拐點
+LUCK_DAMAGE_FLOOR_ASYMPTOTE = 0.10  # 下界最多抬 +0.10(roll 下界趨近 0.95·永留 0.20 變異、上界 HI=1.15 永不動)
+LUCK_DAMAGE_FLOOR_WIDTH = 0.05
+LUCK_WAB_SAVE_PER = 0.005         # 瓦巴賈克回火「化險為夷」機率:每點幸運(>40)
+LUCK_WAB_SAVE_KNEE = 0.30         # 舊夾 → 漸進拐點
+LUCK_WAB_SAVE_ASYMPTOTE = 0.40    # 回火 save 漸近上限(高幸運 ~40% 改抽好效果)
+LUCK_WAB_SAVE_WIDTH = 0.10
 
 # --- 屬性第二段效果(R63):主效果封頂後仍給新收益 ---------------------------
 # 意志/敏捷/速度:皆「閾值以下中性(0 或 ×1.0)→ 過閾漸近至 cap」,base-40 與 sim(刺客相關屬性皆 ≤閾)零位移。
@@ -194,6 +204,21 @@ def luck_fortune(luck: int) -> float:
     """命運加性微調(撬鎖/逃跑/事件擲骰):40 → 0(中性);過舊夾 0.20 漸近 0.30(R63)。"""
     raw = max(0.0, (luck - BASE_ATTRIBUTE) * LUCK_FORTUNE_PER)
     return _soft_ceiling(raw, LUCK_FORTUNE_KNEE, LUCK_FORTUNE_WIDTH, LUCK_FORTUNE_ASYMPTOTE)
+
+
+def luck_damage_floor(luck: int) -> float:
+    """幸運 → 玩家傷害骰**下界**抬升(天命=少壞骰/更可靠·R116):40 → 0(中性·roll 仍 0.85-1.15);
+    投資幸運 >40 → 下界上抬(漸近 +0.10 → roll 0.95-1.15),**上界 HI=1.15 不動 → 不抬單擊天花板、
+    精英秒殺門檻不變**;骰在偷襲倍率與 solo 夾之前 → solo 秒殺仍受絕對夾(不破紅線)。"""
+    raw = max(0.0, (luck - BASE_ATTRIBUTE) * LUCK_DAMAGE_FLOOR_PER)
+    return _soft_ceiling(raw, LUCK_DAMAGE_FLOOR_KNEE, LUCK_DAMAGE_FLOOR_WIDTH, LUCK_DAMAGE_FLOOR_ASYMPTOTE)
+
+
+def luck_wabbajack_save(luck: int) -> float:
+    """幸運 → 瓦巴賈克回火「化險為夷」機率(天命偏轉混沌·R116):40 → 0(中性·byte-identical);
+    投資幸運 >40 → 抽到回火(自傷/治敵)時有此機率改抽好效果(漸近 0.40)。玩家專屬法杖·不碰刺客。"""
+    raw = max(0.0, (luck - BASE_ATTRIBUTE) * LUCK_WAB_SAVE_PER)
+    return _soft_ceiling(raw, LUCK_WAB_SAVE_KNEE, LUCK_WAB_SAVE_WIDTH, LUCK_WAB_SAVE_ASYMPTOTE)
 
 
 # --- 屬性第二段效果函式(R63):皆「閾以下中性 → 過閾漸近 cap」(_soft_cap knee=0) -------

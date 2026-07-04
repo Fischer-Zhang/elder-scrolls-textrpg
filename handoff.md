@@ -1410,6 +1410,16 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 
 ---
 
+### R116 · 幸運功能化:傷害骰下界抬升 + 瓦巴賈克回火化險(天命影響數值浮動與隨機效果)[re-sim]
+
+**評估**(使用者點名「幸運如何影響數值浮動與隨機效果(瓦巴賈克)」):幸運目前只碰**戰利**(`luck_loot_factor`)+**命運加性**(`luck_fortune`·撬鎖/逃跑/事件擲骰),**完全不碰**①傷害骰浮動(`combat.py:516 rng.roll(0.85,1.15)` 純均勻·唯秩序之劍 R48 覆寫成永遠取 HI)②瓦巴賈克隨機效果(`WABBAJACK_TABLE` 純加權均勻抽選·回火 16% 是 R46 刻意的自平衡)。剛把謝歐格拉斯(混沌)/諾克圖娜爾(幸運之親王)改成給 luck → 讓幸運偏轉隨機正是其 payoff。使用者拍板:**兩者都做·傷害只抬下界·破紅線只提醒由使用者定奪**。
+
+**① 傷害骰下界抬升(天命=少壞骰/更可靠)**:新 `formulas.luck_damage_floor(luck)`(base-40 中性·`_soft_ceiling` 漸近 +0.10)→ combat 兩處**玩家側**傷害骰把 LO 由 0.85 抬到 `0.85+floor`(luck70→0.90·luck150→0.947):`resolve_attack`(:516 主骰·`_is_player` gate)+ `_player_counter_damage`(:420 反擊)。**🔴 上界 HI=1.15 永不動 → 不抬單擊天花板、精英秒殺門檻不變**;骰在偷襲倍率與 solo 夾之前 → solo 秒殺仍受絕對夾。怪物 LO 恆 0.85。
+
+**② 瓦巴賈克回火化險(天命偏轉混沌)**:新 `formulas.luck_wabbajack_save(luck)`(base-40 中性·漸近 0.40)→ combat 瓦巴賈克抽選後,若抽中回火(自傷/治敵)則以此機率改抽好效果(luck150 回火 15.8%→~9.5%)。**🔴 短路守衛** `_wsave > 0 and rng.chance(_wsave)`(luck≤40 不擲 rng);玩家專屬法杖·刺客不持 → sim 不觸。動 R46「回火=自平衡」但受控(高幸運至多 −40% 回火·burst 仍受 solo 夾·神器仍非嚴格最優)。
+
+**🔴 皆 base-40 中性**(`luck≤40 → 兩 getter 回 0 → rng 序不變`):**sim_assassin BYTE-IDENTICAL**(隔離 HEAD worktree 逐位元組證·fixture luck=40 → **solo 秒殺 oneshot 紅線恆 0% 不動**——真正的秒殺紅線由此守)。**sim_builds `make_assassin`(luck=60·刻意完全體 build)**測 floor-lift 的**可靠性回報**(全程勝率非 oneshot):滿血達貢(720·fire)勝率 **27%**、削弱達貢(380)**97%**——floor-lift 只增傷可靠性 → 勝率**單調不降**(數學保證·上界不動)、27% 遠未 trivialize 720-HP 終王牆。零新存檔欄。`run_all` 111(test_attributes +2:`luck_damage_floor`/`luck_wabbajack_save` 中性+漸近+**上界不動**驗證)。🔴 改 `LUCK_DAMAGE_FLOOR_*`/`LUCK_WAB_SAVE_*` → 跑 sim_assassin(守 luck≤40 byte-identical)+sim_builds(守 solo 0%);下界抬升**永不觸 HI**(恆留變異·不抬天花板);瓦巴賈克 save 走短路守衛(luck≤40 不擲 rng)。**前瞻**:幸運可再擴(命中骰/元素爆發偏轉/其餘隨機效果)·但每處動 combat 皆須 sim + base-40 中性。
+
 ### R115 · 九神深線:神之選民試煉 + 永久神性誓福(首位 阿卡托什)[re-sim byte-identical] [save-safe]
 
 **評估**:冷迴圈 workflow(10 survey → 對抗式 verify → synth)揪出九神軸為最大結構性不對稱 —— `quests.json` 僅 **1** 條 `source:"divine"`(pilgrimage_nine·且只服務贖罪的罪人)vs 16 條 daedric;`boons.json` **0** 條神性永久誓福 vs 17 條親王誓福;崇拜完全無狀態(48h 臨時祝福 lvl1=lvl30)。handoff §1/§3 R107 前瞻早明列「每神深線留後續」。使用者於選項中拍板此方向。
