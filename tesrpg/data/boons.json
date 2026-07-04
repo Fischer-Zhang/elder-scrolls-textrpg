@@ -220,5 +220,11 @@
     "skill": {"mysticism": 10},
     "resist": {"magic": 10},
     "magicka": 20
+  },
+  "stendarr_mercy": {
+    "name": "慈憫之佑",
+    "attr": {"endurance": 10, "willpower": 6},
+    "skill": {"block": 8, "restoration": 8},
+    "resist": {"magic": 10}
   }
 }

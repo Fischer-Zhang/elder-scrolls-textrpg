@@ -9191,5 +9191,34 @@
       "grant_boon": "julianos_wisdom",
       "world_flags": ["julianos_wisdom_earned"]
     }
+  },
+  "stendarr_trial": {
+    "name": "慈憫的試煉",
+    "faction": null,
+    "rank": null,
+    "source": "divine",
+    "divine": "stendarr",
+    "requires_level": 15,
+    "text": "你在切若爾的斯丹達爾祭壇前俯首,慈憫之神的低語如撫過傷口的手掌 —— 城郊大森林邊緣殘存的一道湮滅裂隙裡,一頭以苦痛為食的戴德拉正將落單的旅人與朝聖者拖入黑暗,要以無盡的折磨證明慈悲的無力。持盾上前,為孤苦者堵上那道傷口、了結那折磨者 —— 斯丹達爾將以一縷慈憫之力回報於你。",
+    "stages": [
+      {
+        "objective": {"type": "collect", "item": "minor_healing_potion", "count": 2},
+        "text": "備妥兩瓶療傷之物,作為施予受難者的仁慈,在斯丹達爾祭壇前立誓守護弱者。"
+      },
+      {
+        "objective": {"type": "reach", "location": "chorrol_daedric_rift"},
+        "text": "循著森林邊緣的火光,尋到那道殘存的湮滅裂隙。"
+      },
+      {
+        "objective": {"type": "clear_dungeon", "dungeon": "chorrol_daedric_rift"},
+        "text": "深入裂隙核心,以慈悲者的堅盾了結折磨者戴德拉,將那些受難的靈魂救出黑暗。"
+      }
+    ],
+    "reward": {
+      "gold": 600,
+      "fame": 30,
+      "grant_boon": "stendarr_mercy",
+      "world_flags": ["stendarr_mercy_earned"]
+    }
   }
 }
