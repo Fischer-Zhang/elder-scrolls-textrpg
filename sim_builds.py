@@ -125,6 +125,18 @@ def make_mage():
     return c
 
 
+def make_arcanist():
+    """秘術非元素魔法傷害法師(R119):mysticism 100 主攻,只放 magic 傷害線(arcane_bolt/blast/nova)。
+    驗『一致性/破抗』身份 —— 傷害只吃通用 magic 抗性(永不被單一元素抗性歸零),但 mag 低於毀滅同階
+    + 達貢 magic50 → 達貢 720 offense 牆仍守;對 fused/元素大法師(毀滅全被牆死)可靠可勝、非 trivial。"""
+    c = make_mage()
+    c.spells = ["arcane_blast", "arcane_nova", "arcane_bolt", "close_wounds", "heal", "stoneflesh"]
+    c._dmg_pool = ["arcane_blast", "arcane_nova", "arcane_bolt"]
+    _choices(c, {"mysticism_75": "arcane_focus", "mysticism_50": "ward_focus"})
+    stats.recompute_max_resources(c, gd, restore_full=True)
+    return c
+
+
 def make_summoner():
     """專精召喚(R105):conjuration 100·其他魔法 25·屬性/裝備比照頂級法師(int/will 100·大法師袍)。
     主力 = 召喚物(坦克魔人吸火力 + 元素 atronach 玻璃大砲),吃 conjuration 威力(_power)成長;
@@ -218,6 +230,7 @@ BUILDS = {"assassin": make_assassin, "archer": make_archer, "warrior_1H": make_w
           "mage_fire": _make_element_mage(_MAGE_ELEMENTS["mage_fire"]),
           "mage_frost": _make_element_mage(_MAGE_ELEMENTS["mage_frost"]),
           "mage_shock": _make_element_mage(_MAGE_ELEMENTS["mage_shock"]),
+          "arcanist": make_arcanist,
           "battlemage": make_battlemage}
 
 # --- per-build 戰鬥 policy ----------------------------------------------
@@ -296,6 +309,7 @@ _POLICY = {"assassin": _melee_sneak_act, "archer": _melee_sneak_act,
            "warrior_1H": _attack_act, "warrior_2H": _attack_act, "monk": _attack_act,
            "shield_reflect": _attack_act,
            "mage_fire": _mage_act, "mage_frost": _mage_act, "mage_shock": _mage_act,
+           "arcanist": _mage_act,
            "battlemage": _battlemage_act}
 
 

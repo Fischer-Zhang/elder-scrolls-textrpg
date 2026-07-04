@@ -33,7 +33,7 @@
 - **開局背景**(14 種,只給處境不給數值)+ **種子重玩性**;冒險/傳奇兩種死亡模式 + 一生傳奇總結評分
 
 #### 戰鬥與魔法
-- 回合制**多敵 + 團隊戰鬥**(召喚物/傭兵同伴);**同伴角色化**(9 具名同伴:持久 HP/羈絆 + 具名招募任務 + 羈絆階解鎖的專屬支線 + 就地對話 + 完成支線的忠誠弧頂點〔戰術盟友光環/被動非戰鬥槓桿;盟友限定守刺客紅線〕;復用 `companion_bond` 當忠誠軸,零新存檔欄;**R86 同伴戰鬥施法**:輔助型同伴角色感知主動支援 —— 法系治療〔含治療玩家〕/盾衛護盾/領袖激勵,門檻+冷卻+固定威力「輔助但不破關」〔sim_party 驗施法邊際 +0~8%·無 stalemate〕;**R87 敵方支援施法者**:法系/祭司怪〔女巫/薩滿/祭司/死靈〕對稱地在隊友血低時治療/護盾其他敵人 → 群戰「先點掉治療者」戰術〔幅度因子 0.35 威脅但可破解·無 stalemate·敵 empower 反效果故只 heal/shield〕);**六大學派 + AoE**(召喚/秘術補完至各 7 法術,與毀滅/復原/變換同列;**召喚**=元素元身/魔人 + 束縛兵刃〔法系近戰〕+ 亡者復生〔屍起為盟〕、**秘術**=法術結界〔吸法術傷·吸魔變體〕+ 驅散 + 群體擒魂);元素抗性/弱點、狀態效果、出生星座每日之力
+- 回合制**多敵 + 團隊戰鬥**(召喚物/傭兵同伴);**同伴角色化**(9 具名同伴:持久 HP/羈絆 + 具名招募任務 + 羈絆階解鎖的專屬支線 + 就地對話 + 完成支線的忠誠弧頂點〔戰術盟友光環/被動非戰鬥槓桿;盟友限定守刺客紅線〕;復用 `companion_bond` 當忠誠軸,零新存檔欄;**R86 同伴戰鬥施法**:輔助型同伴角色感知主動支援 —— 法系治療〔含治療玩家〕/盾衛護盾/領袖激勵,門檻+冷卻+固定威力「輔助但不破關」〔sim_party 驗施法邊際 +0~8%·無 stalemate〕;**R87 敵方支援施法者**:法系/祭司怪〔女巫/薩滿/祭司/死靈〕對稱地在隊友血低時治療/護盾其他敵人 → 群戰「先點掉治療者」戰術〔幅度因子 0.35 威脅但可破解·無 stalemate·敵 empower 反效果故只 heal/shield〕);**六大學派 + AoE**(召喚/秘術補完至各 7 法術,與毀滅/復原/變換同列;**召喚**=元素元身/魔人 + 束縛兵刃〔法系近戰〕+ 亡者復生〔屍起為盟〕、**秘術**=法術結界〔吸法術傷·吸魔變體〕+ 驅散 + 群體擒魂 + **非元素魔法傷害〔R119:飛彈/轟擊/星爆·一律穩定 `magic` 傷害·不被單元素抗歸零·只吃通用魔抗 → 破抗答案〕**);元素抗性/弱點、狀態效果、出生星座每日之力
 - **三系資源對稱**:施法也耗體力、力竭降法效(`cast_fatigue_*`),**法袍套裝**省體施法(法師的對應裝甲)
 - **煉金毒藥 + 武器塗毒**;**毒劑深化(Phase 2 / R31)**:五毒型(DoT/麻痺 + 衰毒/遲緩/懼毒,特殊型需里程碑解鎖;solo BOSS 對控制型免疫);**煉金限時增益藥水(深化 Phase 1 / R30·材料 R90-R92 餵飽)**:強化屬性/技能 + 抗元素**限時**藥劑(走獨立 `potion_*` 層、絕不寫 base、**同 kind+param 取最強非疊加**);**可釀池 4→~28 種**:R90 補 resist_fire/frost/shock 單元素抗(補法師對元素 boss)+ 中性屬性/restoration;R91 材料加厚至 4 效果 + 9 種安全增益;**R92 開攻擊向 fortify**(力量/武器技能/潛行/毀滅·依 R30「放開→必過 sim」·新 fortify-dosed sim 場景驗 solo cap 仍夾·**smithing 永久擋**〔過頂 temper 永久武傷〕);**效果逐步揭露(Phase 3 / R32)**:材料效果預設 `???`,經嚐試/煉製/技能揭露(純資訊層,不碰 brew 數學);**疾病可釀(R54)**:療疾材料(大蒜/焦皮鼠革/吸血鬼塵 `cure_disease`)→ 釀療疾藥水(統一淨化,同神殿/法術/`cure_disease_potion`);**潛行刺客系**:偷襲先機、暗殺殘響、雙持、**隱遁再襲(潛行 25 里程碑「隱遁之術」;連環踏影對單體仍遞減、反 solo boss 風箏)**、戰前偵查;武器流派(潛襲/破甲/速度)
 
@@ -1409,6 +1409,22 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 - **🔴 鐵律**:加 role 純改 `dialogue.json`(roles map + topics·身份 flavor 為主·功能 effect 走 events 支援集 + `once` 防刷·不帶 skill_xp)+ `npcs.json` role 欄;加流言線索純改 `npcs.json`(rumor_quest/rumor_landmark/rumor_disposition)+ `quests.json`(`source:"rumor"`·僅 clear/reach·**目標無 visible gate**·NPC↔線索目標**須同省**);**新增 source:rumor 任務務必有 NPC rumor_quest 回指**(否則 reachability guard 攔=孤兒);追問傳聞兌現走既有 `_accept_and_brief`/`landmarks.discover`;純社交內容 → sim byte-identical 免跑(動 combat/formulas 才需)。**前瞻**:Phase D 可純資料把其餘 ~40 具名 rumor NPC 逐批接上 + 補 role 密度;若要更多功能 role 話題(商人折扣等)需新 effect + 評估碰 shop/存檔欄。
 
 ---
+
+### R119 · 秘術功能化:非元素魔法傷害法術線(consistency 破抗身份)+ 里程碑支撐 [re-sim byte-identical]
+
+**評估**(承 R118 法術學派冷→暖·使用者選最後缺口 秘術):秘術(神秘學)是**唯一無戰鬥身份的魔法學派** —— 法術最少(7 道 vs 召喚15/毀滅14/變化11)·只 3 道結界隨威力縮放·里程碑 4/7 冷數值填充(`spectral_ward`/`spectral_aegis` 兩 passive_armor 15 且**敘述-程式不符**〔宣稱魔力閘·實無〕)·正典招牌(靈魂/傳送/探測/吸收/反射)大多未交付·實際 payload 只是「附魔的技能值」。**使用者三度拍板收斂**:①(否決反射/秘防)→ **非元素魔法傷害**·② **純傷害線 + 里程碑**(招牌狀態/頂點「之後再改」)·③ **傷害數值須低於毀滅三系**(可靠性稅)。
+
+**身份**:毀滅=「配對」學派(選對元素超有效/選錯被牆死);秘術=「一致性」學派 —— 一律穩定 `magic` 傷害·永不 ×0 也永不 ×2·只吃較稀有/較低的**通用 `magic` 抗性**。**破抗答案**:當 boss 堆單元素抗把毀滅牆死·秘術照樣穩定輸出。
+
+**近乎純資料(幾乎零程式)**:傷害分支已預設 `element="magic"`(magic.py:297 單體·476 AoE)·`resist_multiplier`(formulas.py:753)`magic ∉ MAGIC_ELEMENTS` → 只吃 `resist["magic"]`(不吃單元素抗)·訊息已印「魔法傷害」→ **新傷害法術填 `element:"magic"` 即成**(schema `_ELEMENT_KINDS` 要求顯式 element·`_ELEMENTS` 已含 magic)。
+
+**Part 1 · 3 法術**(`spells.json`·全 `element:"magic"`·mag 嚴格低於毀滅同階·純傷害無 status rider〔毀滅同階多帶元素 DoT/控 → 秘術更低 mag + 無附帶 = 平衡〕):秘術飛彈 `arcane_bolt`(damage·mag11/cost15·<flames14/sparks15)· 奧術轟擊 `arcane_blast`(damage·mag24/cost34·<fireball/ice_spike30)· 秘力星爆 `arcane_nova`(damage_all·mag13/cost42·<frost_nova16)。**佈點**(`world.json spell_stock`·R29):arcane_bolt 進全 25 法師城基礎帶(秘術終有隨處基礎攻擊)· blast/nova 進進階帶 imperial_city/senchal/dune(艾爾斯維爾守秘術)。
+
+**Part 2 · 里程碑功能化**(`mastery.json`):myst_75 冷節點 `spectral_ward`(passive_armor 15·敘述-程式不符)→ **`arcane_focus`**(spell_mod·mysticism·power_bonus 0.15·複用既有 kind·**零程式**)·縮放秘術(較低)傷害輸出·保留對面 `arcane_cascade`(通用施法 tempo)= 真取捨·順帶解決該節點敘述不符。opt_id 改 → `ensure_mastery_choices` 退 pending(零存檔欄·驗:legacy `spectral_ward` 選擇 → 掉 pending·`soul_siphon` 保留)。myst_50 `ward_focus`(power 0.1)現也自動縮放新傷害(_power 通用·秘術傷害有 50+75 兩成長節點·SUM 0.25 對標毀滅;順帶修 ward_focus desc「唯一增幅來源」已被 arcane_focus 證偽)。**myst_100 `spectral_aegis` 本輪不動**(使用者「之後再改」·頂點留待)。
+
+**🔴 平衡 · sim_builds 新 `make_arcanist` fixture**(mysticism100·arcane 池·ward_focus+arcane_focus):**達貢 720 offense 牆穩守** = arcanist **0% vs mehrunes_dagon**(mag 低 + 只吃 magic50·脆皮法師磨完前先死·**magnus 杖最壞投資仍 0%**)· **利基獨一** = vs `fused_archmage`(三元素各70→毀滅全 ×0 牆死·magic35)arcanist **95%**·火/冰/雷大法師(對己元素 ×0)98-99% = **唯一能傷這些 boss 的施法者**· **非 trivialize** = umaril 62%·ancient_dragon 73%·knight_of_order 86%·且對高魔抗 boss 因 mag 低而略遜元素法師(可靠性稅可見)。**🔴 sim_assassin BYTE-IDENTICAL**(隔離 HEAD worktree 逐位元組空 diff:未碰 combat/formulas·刺客不施法·新法術/spell_stock/mastery 不在刺客路徑;`staff_element_flat(magic)=0`·conduct 僅 shock → 秘術無 flat/ramp 放大)。
+
+零新存檔欄·`run_all` 111(schema/reachability 自動涵蓋·test_mastery passive_armor 斷言僅引 spectral_aegis〔未動〕→ 免改)。**對抗審查(4 維 fan-out → 逐項對抗驗證·7 agent)**:**0 correctness/balance/紅線/reachability 缺陷**·2 confirmed 皆文字陳舊(ward_focus desc「唯一增幅來源」·BUFFS.md spell_mod 表 `mysticism0.10`→`0.10+0.15`)已修。🔴 加秘術傷害純改 `spells.json`(element:"magic"·mag < 毀滅同階·純傷害)+ `world.json spell_stock`(R29·reachability);里程碑功能化純改 `mastery.json`(spell_mod 已白名單·opt_id 改走 ensure_mastery_choices);動法術數值 → 跑 sim_builds(守達貢牆·不 trivialize)+ sim_assassin(byte-identical)。**明確延後**:招牌狀態(秘蝕破抗 ramp / 汲取 drain)· myst_100 頂點 `spectral_aegis` 重設計 · 秘術終極法術(R78 式試煉)。
 
 ### R118 · 變化系功能化:負重控場線 + 破盾反震(石膚反擊)[re-sim byte-identical]
 

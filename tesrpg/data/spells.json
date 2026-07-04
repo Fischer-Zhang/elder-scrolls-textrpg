@@ -394,5 +394,9 @@
   "greater_ward": {"name": "高等結界", "school": "mysticism", "cost": 34, "target": "self", "effect": {"kind": "ward", "magnitude": 90, "turns": 5}},
   "spell_absorb_ward": {"name": "吸魔結界", "school": "mysticism", "cost": 46, "target": "self", "effect": {"kind": "ward", "magnitude": 70, "turns": 5, "absorb": 0.5}},
   "dispel": {"name": "驅散", "school": "mysticism", "cost": 22, "target": "self", "effect": {"kind": "dispel"}},
-  "mass_soul_trap": {"name": "群體擒魂", "school": "mysticism", "cost": 44, "target": "all", "effect": {"kind": "status_all", "status": {"status": "soul_trap", "turns": 4}}}
+  "mass_soul_trap": {"name": "群體擒魂", "school": "mysticism", "cost": 44, "target": "all", "effect": {"kind": "status_all", "status": {"status": "soul_trap", "turns": 4}}},
+
+  "arcane_bolt": {"name": "秘術飛彈", "school": "mysticism", "cost": 15, "target": "enemy", "effect": {"kind": "damage", "element": "magic", "magnitude": 11}},
+  "arcane_blast": {"name": "奧術轟擊", "school": "mysticism", "cost": 34, "target": "enemy", "effect": {"kind": "damage", "element": "magic", "magnitude": 24}},
+  "arcane_nova": {"name": "秘力星爆", "school": "mysticism", "cost": 42, "target": "all", "effect": {"kind": "damage_all", "element": "magic", "magnitude": 13}}
 }

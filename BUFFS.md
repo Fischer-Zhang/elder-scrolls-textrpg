@@ -159,7 +159,7 @@
 ### 法師/施法(🔴改施法常數 R10/R14 須跑 sim)
 | perk | kind | 數值 |
 |---|---|---|
-| 過載/各省魔/凝練 spell_mod+overload | 傷害/續航/護盾 | power+:destruction0.20/alteration0.15+0.10/restoration0.20/mysticism0.10(相加,吃 _power → 傷害·護盾·結界);cost:0.92/0.85/過載1.30(相乘);impact stagger0.35 |
+| 過載/各省魔/凝練 spell_mod+overload | 傷害/續航/護盾 | power+:destruction0.20/alteration0.15+0.10/restoration0.20/mysticism0.10+0.15(相加,吃 _power → 傷害·護盾·結界);cost:0.92/0.85/過載1.30(相乘);impact stagger0.35 |
 | 奧術連鎖 cascade | 傷害/續航 | power+8%/層、省體×(1−0.12/層,夾≥0.4)、max_depth2(最高+16%/省24%);停手即散 |
 | 共鳴一擊 resonance | 傷害 | 🔴transfer0.5(下一近戰灌半數法力作元素傷)+dot4×3;加在 solo 夾限之前 |
 | 法力回擊 mana_on_hit | 資源回復 | 近戰命中 +4 魔力 |

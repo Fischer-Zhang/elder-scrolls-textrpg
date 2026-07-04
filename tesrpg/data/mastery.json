@@ -534,11 +534,12 @@
         "desc": "法師心流:連續施法漸入佳境 —— 每連一發,下一道法術威力 +8%、施法省體 12%(最多疊 2 層,停手即散)。"
       },
       {
-        "opt_id": "spectral_ward",
-        "name": "靈體護壁",
-        "kind": "passive_armor",
-        "armor_bonus": 15,
-        "desc": "祕法宗師:只要尚有魔力,靈光便護體於外(被動護甲 +15)。"
+        "opt_id": "arcane_focus",
+        "name": "奧術專精",
+        "kind": "spell_mod",
+        "school": "mysticism",
+        "power_bonus": 0.15,
+        "desc": "祕法宗師:秘術法術威力 +15%(強化秘術飛彈/奧術轟擊/秘力星爆等非元素魔法傷害,亦增結界威力)。"
       }
     ]
   },
@@ -1510,7 +1511,7 @@
         "kind": "spell_mod",
         "school": "mysticism",
         "power_bonus": 0.1,
-        "desc": "秘術凝練:結界吸收量 +10%(吃 _power → 結界更厚實;秘術系唯一增幅來源)。"
+        "desc": "秘術凝練:秘術法術威力 +10%(吃 _power → 結界更厚實、非元素魔法傷害更高;可與奧術專精疊加)。"
       }
     ]
   },
