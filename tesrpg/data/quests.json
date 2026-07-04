@@ -9133,5 +9133,34 @@
       "grant_boon": "talos_might",
       "world_flags": ["talos_might_earned"]
     }
+  },
+  "arkay_trial": {
+    "name": "生死的試煉",
+    "faction": null,
+    "rank": null,
+    "source": "divine",
+    "divine": "arkay",
+    "requires_level": 15,
+    "text": "你在切迪納的阿爾凱祭壇前俯首,生死之神的低語自你耳畔的燭火裡浮起 —— 城郊的古墓窖被掘墓者自內撬開,一名死靈王將安息的亡者從輪迴裡強拽回來、綁作軍隊,褻瀆著阿爾凱掌管的生死秩序。下墓去,終結那褻瀆者、讓被擾動的亡魂重歸塵土 —— 阿爾凱將以一縷輪迴之力回報於你。",
+    "stages": [
+      {
+        "objective": {"type": "collect", "item": "lavender", "count": 2},
+        "text": "採集兩束薰衣草作為安魂的供物,在阿爾凱祭壇前為亡者祝禱。"
+      },
+      {
+        "objective": {"type": "reach", "location": "cheydinhal_ossuary"},
+        "text": "循著亡者的低語,步下切迪納城郊的阿爾凱墓窖。"
+      },
+      {
+        "objective": {"type": "clear_dungeon", "dungeon": "cheydinhal_ossuary"},
+        "text": "深入殮室核心,終結掘墓死靈王,讓被強拽回來的亡魂重歸生死的輪迴。"
+      }
+    ],
+    "reward": {
+      "gold": 600,
+      "fame": 30,
+      "grant_boon": "arkay_ward",
+      "world_flags": ["arkay_ward_earned"]
+    }
   }
 }

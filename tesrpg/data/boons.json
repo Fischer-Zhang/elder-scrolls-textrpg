@@ -207,5 +207,11 @@
     "attr": {"strength": 10, "endurance": 6},
     "skill": {"heavy_armor": 10},
     "resist": {"magic": 10}
+  },
+  "arkay_ward": {
+    "name": "輪迴之佑",
+    "attr": {"endurance": 10, "willpower": 6},
+    "skill": {"restoration": 10},
+    "resist": {"disease": 25}
   }
 }
