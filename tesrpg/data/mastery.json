@@ -1190,11 +1190,11 @@
         "desc": "變化登峰:護盾/變形術法效力 +15%(與術法增幅相加)。"
       },
       {
-        "opt_id": "mage_flesh",
-        "name": "魔皮",
-        "kind": "passive_armor",
-        "armor_bonus": 14,
-        "desc": "變化登峰:肌膚常駐石化魔甲(被動護甲 +14,與石膚相加)。"
+        "opt_id": "warding_recoil",
+        "name": "石膚反擊",
+        "kind": "shield_recoil",
+        "chance": 0.3,
+        "desc": "變化登峰:護膚盾(橡木/石/鐵膚)作用中被物理擊中時,30% 機率震開攻方(踉蹌);把被動護盾接上主動反噬。"
       }
     ]
   },

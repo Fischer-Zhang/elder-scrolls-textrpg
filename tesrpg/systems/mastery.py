@@ -62,6 +62,7 @@ _IMPLEMENTED_KINDS = {
     "cascade", "resonant_strike", "mana_on_hit", "triage_heal", "recon_reveal_floor", "bow_technique", "deathmark",
     # 廣度 pass:運動逃跑加成、重甲反傷、安全解陷保底。
     "flee_bonus", "armor_reflect", "armor_stagger", "combat_regen", "trap_floor",
+    "shield_recoil",   # 變化 100(R118):作用中護膚盾時被物理擊中→機率震開攻方(接被動 flesh 為主動反噬)
     # security 功能化(混合身份):盜賊行竊加成、地城賊眼窺探(布林解鎖)。
     "theft_skill", "dungeon_casing",
     # R106C 死靈經濟:解鎖(召喚 25·取代省魔)、亡者收集(每擊殺多給 token)、亡者統御(真·亡者更強韌兇猛)。
@@ -336,6 +337,12 @@ def potion_potency(char, gamedata: GameData) -> float:
 def armor_stagger(char, gamedata: GameData) -> float:
     """重壓:被近戰物理擊中時,震開攻擊者(使其踉蹌)的機率(0 = 無)。"""
     return _param(char, gamedata, "armor_stagger", "chance", 0.0)
+
+
+def shield_recoil(char, gamedata: GameData) -> float:
+    """變化「破盾反震/石膚反擊」(R118):**作用中護膚盾**期間被物理擊中 → 震開攻方(踉蹌)的機率
+    (0 = 無;呼叫端另 gate `magic.active_shield(defender)>0`)。把被動 flesh 護盾接上主動反噬。"""
+    return _param(char, gamedata, "shield_recoil", "chance", 0.0)
 
 
 def combat_regen(char, gamedata: GameData) -> int:

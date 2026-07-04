@@ -343,7 +343,9 @@ DODGE_EVASION_SCALE = 0.0025   # 雜技閃避係數(acrobatics 100 → 敵人命
 
 # --- 暗殺殘響(偷襲命中但沒秒殺 → alpha strike 仍留下實質後果)------------
 STAGGER_HIT_PENALTY = 0.30   # 陣腳大亂的單位攻擊命中減成(命中-0.30,給刺客喘息窗)
-SLOW_HIT_PENALTY = 0.15      # 遲緩毒(R31):中毒遲緩單位命中減成(較踉蹌輕,因另降先攻)
+SLOW_HIT_PENALTY = 0.15      # 遲緩(R31)命中減成**地板**;R118 改 magnitude 縮放(見 slow_hit_penalty),≤0.3 slow 恆等此值
+SLOW_HIT_PENALTY_CAP = 0.30  # 縮放上限(高 magnitude 負重術)
+SLOW_HIT_PENALTY_PER = 0.5   # 每點 slow_factor → 命中減成係數(0.3×0.5=0.15=地板;負重 0.40→0.20)
 SNEAK_BLEED_BASE = 2         # 撕裂傷每回合基礎傷害
 SNEAK_BLEED_PER_SNEAK = 25   # 每 25 點潛行 → 撕裂傷 +1
 SNEAK_BLEED_PER_ALCHEMY = 40  # 每 40 點煉金 → 撕裂傷 +1(刺客主修,learn-by-doing)
@@ -362,6 +364,13 @@ def sneak_bleed_magnitude(sneak_skill: int, alchemy_skill: int) -> int:
     """撕裂傷每回合傷害,隨潛行與煉金成長(技巧驅動而非無腦數值)。"""
     return (SNEAK_BLEED_BASE + sneak_skill // SNEAK_BLEED_PER_SNEAK
             + alchemy_skill // SNEAK_BLEED_PER_ALCHEMY)
+
+
+def slow_hit_penalty(slow_factor: float) -> float:
+    """遲緩/負重命中減成(R118):由 slow_factor(遲緩比例)magnitude 縮放,夾 [地板, 上限]。
+    🔴 校準:slow_factor ≤ 0.3 → 恆等舊 flat 0.15(既有毒/蛛網/蔓藤 slow byte-identical);
+    唯變化「負重術」(0.40)逾地板 → −0.20 命中,讓高 magnitude 對戰況真有感。"""
+    return min(SLOW_HIT_PENALTY_CAP, max(SLOW_HIT_PENALTY, slow_factor * SLOW_HIT_PENALTY_PER))
 
 
 def sneak_attack_multiplier(sneak_skill: int) -> float:

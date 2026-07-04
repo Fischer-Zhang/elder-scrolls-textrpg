@@ -1410,6 +1410,21 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 
 ---
 
+### R118 · 變化系功能化:負重控場線 + 破盾反震(石膚反擊)[re-sim byte-identical]
+
+**評估**(承法術學派冷→暖評估·使用者選深化最冷的變化):變化 Alteration = 六大 magic **唯一 100% 純數值里程碑樹**(4 節點全 spell_mod/passive_armor·從不觸發功能 kind)+ 9 法術無一傷敵 + 戰鬥只「套盾」一動作。使用者拍板:**只 burden/slow**(不加 paralyze·distinct)·**同時參考正典**·**負重須對戰況有利**·**完整兩部分**。
+
+**正典對照**:變化技能描述 `skills.json:10` 已明列「負重」;Burden→slow = Oblivion/Morrowind Alteration(feather 的敵方對位)· Paralyze = Skyrim/Morrowind Alteration〔但本作 `mass_paralysis` 在 illusion·本輪不動避重疊〕· 護膚反震 = Oblivion/Morrowind Fire/Frost/Shock Shield「傷近戰攻擊者」的現代化。
+
+**Part 1 · 負重控場(純資料 + 小 formulas)**:
+- 新 `burden` 負重術(單體·`apply_status` slow mag0.40/4t·cost22)+ `mass_burden` 群體負重(`status_all` slow mag0.30/3t·cost44)。走既有 `magic.cast→apply_control`(軟控·**無 solo 免疫 → 可靠減 boss 命中**;對比幻術硬控被 solo 機率抵抗)= 變化 = 抗 boss 減益 + 群體控速(配 flesh 護盾 + Part 2 反震 = 龜久+反噬)。
+- **🔴 負重對戰況有利(使用者點名)**:slow 命中懲罰由 flat 0.15 改 **magnitude 縮放** `formulas.slow_hit_penalty(sf)=min(0.30,max(0.15,sf×0.5))`(combat.py:486 讀)→ **負重 0.40 → 敵命中 −0.20**(舊 flat 只 −0.15 且 magnitude 空轉)。**byte-identical 校準**:既有 slow(蛛網/蔓藤/毒 ≤0.3)→ 0.3×0.5=0.15=舊值不變;唯負重逾地板才 −0.20。
+- 佈點:`world.json spell_stock` imperial_city + 漢默法爾變化三城 sentinel/hegathe/lainlyn(R29)。`test_spell_schema _STATUSES` 補 `slow`(1 行)。
+
+**Part 2 · 破盾反震(石膚反擊)**:alteration_100 弱邊 `mage_flesh`(passive_armor 14·與 mysticism/block 冗餘疊加)→ 新 kind **`shield_recoil`**「石膚反擊」(R21 三步:`_IMPLEMENTED_KINDS`+getter〔鏡像 `armor_stagger`〕+ combat.py:672 反傷區 callsite)。**作用中護膚盾**(`magic.active_shield(defender)>0`)被物理擊中 → 30% 震開攻方(`apply_control("stagger",turns=2)`·軟控·非遞迴)。把被動 flesh 接上主動反噬 =「不可破且反噬的護膚法師」·與 Part 1 負重共構「物理操縱防禦控者」。opt_id `mage_flesh`→`warding_recoil` → `ensure_mastery_choices` 退 pending(零存檔欄)。100 節點成「純威力 `pure_form` vs 反震 `warding_recoil`」真取捨。
+
+**🔴 sim_assassin BYTE-IDENTICAL**(隔離 HEAD worktree 逐位元組:刺客不施法/不 slow·slow 縮放 ≤0.3 恆等·shield_recoil gate `active_shield` + alteration mastery → 刺客皆無 → getter 0 短路不擲 rng)。變化**零 damage kind → 天然不破 dagon 720 offense 牆**(sim_builds:mage 不施負重/無 warding_recoil → 勝率不動)。零新存檔欄·`run_all` 111(test_utility_magic +2〔負重端到端·slow 縮放〕· test_mastery +1〔shield_recoil〕· 改 test_capstone passive_armor 去 mage_flesh 14)。🔴 加變化控場純改 `spells.json`(apply_status/status_all slow)+ `world.json spell_stock`;負重命中懲罰走 `slow_hit_penalty`(≤0.3 恆等·勿動地板破 byte-identical);反震走 `shield_recoil`(gate `active_shield`·`apply_control` 非遞迴);動 combat/formulas → 跑 sim。**前瞻**:變化戰外正典(telekinesis/light/water-walking)· 其餘冷學派深化(秘術反射結界 / 幻術 frenzy·見法術學派評估)。
+
 ### R117 · 敵方反傷:秩序騎士「灰潮的反噬」(物理反傷·懲罰爆發/秒殺)[re-sim]
 
 **評估**(使用者點名「將秩序騎士加上反傷系統」):R42 反傷是**玩家專屬**(玩家受物理擊中→荊棘/重甲/盾反回彈·非遞迴·物理限定)·**無怪物反傷**。給秩序騎士反傷=新的**敵方反傷**能力,主題完美 —— 牠「每一斬都落在同一個無可閃避的軌跡上」「把一切碾成整齊劃一」= 你施加的必然反噬於你,且與其**秩序之劍**(零傷害變異)同構「消滅變異/必然」。使用者四拍板:**只反物理**(火法師=剋星穿透不反·對稱 R42 元素 boss 免疫)·**基數取 raw**(完整物理輸出·**含偷襲倍率·pre solo-cap** → 懲罰玻璃大砲/秒殺者最重)·**可致死**(比照 R42 玩家反傷可反殺)·磁量拍板 real threat。

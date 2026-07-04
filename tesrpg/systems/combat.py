@@ -482,8 +482,8 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
         chance = max(0.05, min(0.95, chance + formulas.AIMED_SHOT_HIT))
     if magic.is_staggered(attacker):   # 暗殺殘響:陣腳大亂的單位本回合更難命中
         chance = max(0.05, chance - formulas.STAGGER_HIT_PENALTY)
-    if magic.is_slowed(attacker):      # 遲緩毒(R31):遲鈍 → 命中下降(疊踉蹌則更低,各自夾 0.05)
-        chance = max(0.05, chance - formulas.SLOW_HIT_PENALTY)
+    if magic.is_slowed(attacker):      # 遲緩毒/負重(R31/R118):遲鈍 → 命中下降(magnitude 縮放·疊踉蹌各自夾 0.05)
+        chance = max(0.05, chance - formulas.slow_hit_penalty(magic.slow_factor(attacker)))
     if (benumb := magic.benumb_hit_penalty(attacker)):   # 凍麻(冰系法術控場):純減命中(magnitude 驅動,各自夾 0.05)
         chance = max(0.05, chance - benumb)
     if sneaking:
@@ -669,6 +669,11 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
             if st and is_alive(attacker) and rng.chance(st):
                 # turns:2 → 撐過本回合末 tick,於攻擊者「下一次出手」時仍踉蹌生效(防守側反制的正確時序)
                 magic.apply_control(attacker, "stagger", gamedata, rng, turns=2)   # R44:集中 helper
+            # 變化「破盾反震/石膚反擊」(R118):有作用中護膚盾時被物理擊中 → 機率震開攻方。
+            # 🔴 gate `active_shield>0`(須維持 flesh)+ 短路(sr==0 或無盾 → 不擲 rng → 刺客/無此里程碑 byte-identical)。
+            sr = mastery.shield_recoil(defender, gamedata)
+            if sr and magic.active_shield(defender) > 0 and is_alive(attacker) and rng.chance(sr):
+                magic.apply_control(attacker, "stagger", gamedata, rng, turns=2)
 
         # 敵方反傷(R117):防守方為帶 `reflect` 的怪(如秩序騎士「灰潮的反噬」)→ 玩家物理擊中時,其
         # **完整物理輸出** base=raw/block_factor(**含偷襲倍率·pre solo-cap** → 懲罰爆發/秒殺者最重)按 reflect 比例回噬玩家。

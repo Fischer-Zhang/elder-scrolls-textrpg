@@ -1079,13 +1079,13 @@ def test_magic_school_no_brainer_fix():
 
 
 def test_capstone_apex_fix():
-    """🅒 頂點 apex 化:6 capstone 弱 stat 邊 → 二 apex(passive_armor×3 相加 / potion_potency 聚合 / combat_regen / 重壓 stagger)。"""
+    """🅒 頂點 apex 化:capstone 弱 stat 邊 → apex(passive_armor 跨技能相加〔R118:變化 mage_flesh 已改功能 shield_recoil,剩 2 源〕 / potion_potency 聚合 / combat_regen / 重壓 stagger)。"""
     from tesrpg.rng import RNG
     gd, c = _char(hand_to_hand=100, alteration=100, mysticism=100, alchemy=100, restoration=100, heavy_armor=100)
     mastery.choose(c, gd, "hand_to_hand_100", "iron_shirt")
-    mastery.choose(c, gd, "alteration_100", "mage_flesh")
     mastery.choose(c, gd, "mysticism_100", "spectral_aegis")
-    assert mastery.passive_armor_bonus(c, gd) == 12 + 14 + 15          # 跨技能 passive_armor 相加不遮蔽
+    # R118:變化 mage_flesh(passive_armor 14)已改功能 kind shield_recoil → 此處剩 iron_shirt + spectral_aegis 兩源
+    assert mastery.passive_armor_bonus(c, gd) == 12 + 15               # 跨技能 passive_armor 相加不遮蔽
     mastery.choose(c, gd, "alchemy_75", "concentrated"); mastery.choose(c, gd, "alchemy_100", "panacea")
     assert abs(mastery.potion_potency(c, gd) - 0.35) < 1e-9            # 0.20+0.15 聚合(原單源)
     mastery.choose(c, gd, "restoration_100", "everflow")
@@ -1253,6 +1253,32 @@ def test_shipped_attr_fortify_node_flows_to_resources():
     assert c.attr("endurance") == base_end + 5
     assert c.base_attr("endurance") == base_end                # base 不動(鐵律)
     assert c.max_fatigue > base_fat                            # 耐力 → 體力上限提升
+
+
+def test_shield_recoil_r118():
+    """變化 100「石膚反擊」(R118·新 kind shield_recoil):作用中護膚盾被物理擊中→機率震開攻方;
+    無盾/非變化 → 0(短路·byte-identical);opt_id `mage_flesh`→`warding_recoil` 退場。"""
+    gd, c = _char(alteration=100)
+    mastery.choose(c, gd, "alteration_100", "warding_recoil")
+    assert abs(mastery.shield_recoil(c, gd) - 0.3) < 1e-9
+    opts = {o["opt_id"] for n in mastery._nodes(gd) if n["id"] == "alteration_100" for o in n["options"]}
+    assert "warding_recoil" in opts and "mage_flesh" not in opts   # 舊數值 opt 已退場
+    c.is_player = True
+
+    def staggers(has_shield, seeds):
+        got = 0
+        for s in seeds:
+            c.active_effects = [{"kind": "shield", "magnitude": 40, "turns": 5}] if has_shield else []
+            c.health = c.max_health = 99999
+            foe = combat.spawn_creature(gd, "bandit", RNG(s)); foe.health = foe.max_health = 99999
+            combat.resolve_attack(foe, c, gd, RNG(s))   # 敵打玩家
+            if any(e["kind"] == "stagger" for e in foe.active_effects):
+                got += 1
+        return got
+    assert staggers(False, range(40)) == 0     # 無盾 → 從不觸發(gate active_shield>0)
+    assert staggers(True, range(60)) > 0       # 有盾 → 能觸發
+    a = build_character(gd, name="A", sex="male", race="khajiit", birthsign="shadow", class_id="assassin")
+    assert mastery.shield_recoil(a, gd) == 0.0   # 非變化 build → getter 0(短路·byte-identical)
 
 
 def run():

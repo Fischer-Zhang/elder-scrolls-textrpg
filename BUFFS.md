@@ -144,7 +144,7 @@
 | skill_fortify | 技能 | +6~+10(*_75多+8、*_100 +10) |
 | attr_fortify | 屬性 | +4~+6(*_100如 iron_body str+5、tireless speed+6) |
 | resist_fortify | 抗性 | magic +10~+15、disease +25~+30 |
-| passive_armor | 減傷 | 多源相加 4~20(石膚20、銅皮鐵骨18、靈光護壁15、魔皮14、鐵布衫12…;總減傷夾 85% 硬頂+遞減,不趨近免疫) |
+| passive_armor | 減傷 | 多源相加 4~20(石膚20、銅皮鐵骨18、靈光護壁15、鐵布衫12…;總減傷夾 85% 硬頂+遞減,不趨近免疫)〔R118:變化魔皮 14 已改功能 shield_recoil〕 |
 
 ### 偷襲/刺客鏈(🔴詳見第④紅線小節)
 | perk | kind | 數值 | 疊加 |
@@ -176,6 +176,7 @@
 | 溢盾 overheal_ward | 減傷 | 溢治60%轉盾、cap=生命×0.5、turns4(R21夾cap) |
 | 反傷流(R42:armor_reflect / block_reflect / **thorns 荊棘附魔**) | 反傷 | 受物理近戰擊中 → 反彈**「攻方完整物理輸出(連格擋前)= raw/block_factor」**(★R42 解耦護甲/盾牆/重盾/格擋,龜也反得動)× 比例:重甲反震 0.06(被動)+ 盾反 0.10(耗體 10·力竭不計)+ 荊棘附魔(盔/胸/手/靴/盾·1%/靈魂階·max 25%)→ max **0.41 of raw**。物理限定(元素穿透不反=反傷流剋星)、player-only(無環)、**不夾**(物理敵 raw 上限小 → 永不一擊反殺) |
 | 重壓 armor_stagger | 防守控場 | 受近戰物理擊中 22% 震開攻擊者(stagger turns:2 → 撐過回合末 tick,對敵下次出手生效) |
+| 石膚反擊 shield_recoil(變化 100·R118) | 防守控場 | **作用中護膚盾**(`magic.active_shield>0`·橡木/石/鐵膚)時受近戰物理擊中 30% 震開攻方(stagger·`apply_control` 非遞迴);把被動 flesh 接上主動反噬。搭負重(敵 −20% 命中·見法術)=「物理操縱防禦控者」 |
 | 雙手重盾被動減傷 great_shield mitigation(R41) | 減傷 | 裝雙手重盾(`great_shield`)→ 受物理 ×(1−mitigation)(iron→daedric 5~8%·crusaders_ward 10%);套 `_shield_wall_factor` **後**乘性疊加、僅物理、獸形不套;重盾占雙手·普攻走盾擊(`bash_damage`·練 block) |
 | 生生不息 combat_regen | 續航 | 戰鬥中每回合末自癒 8(is_alive 守 → 不復活本回合被擊殺者) |
 | 身輕如燕 evasion_bonus | 命中(扣敵命中) | 多源相加 0.02~0.05,★硬夾 EVASION_BONUS_CAP=0.15 |

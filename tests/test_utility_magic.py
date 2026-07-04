@@ -183,6 +183,30 @@ def test_detect_life_is_consumed():
     assert not spellfx.is_detecting(c)
 
 
+# --- 變化「負重」控場(R118)---------------------------------------------
+def test_burden_slows_enemy_and_penalizes_hit_r118():
+    """負重術:施放→敵 slow(magnitude 0.4)→命中 −0.20(對戰況有利=敵少命中);軟控對 solo boss 亦生效(無免疫)。"""
+    gd, c, st = _state()
+    c.spells = list(c.spells) + ["burden", "mass_burden"]
+    c.skills["alteration"] = 60
+    foe = combat.spawn_creature(gd, "bandit", RNG(1))
+    _cast(gd, c, st, "burden", target=foe)
+    assert magic.is_slowed(foe) and abs(magic.slow_factor(foe) - 0.4) < 1e-9
+    assert abs(formulas.slow_hit_penalty(magic.slow_factor(foe)) - 0.20) < 1e-9   # 負重 −20% 命中
+    boss = combat.spawn_creature(gd, "knight_of_order", RNG(2))
+    _cast(gd, c, st, "burden", target=boss)
+    assert magic.is_slowed(boss)                                                  # 軟控無 solo 免疫
+    assert gd.spells["burden"]["school"] == "alteration" and gd.spells["mass_burden"]["school"] == "alteration"
+
+
+def test_slow_hit_penalty_scaling_r118():
+    """slow 命中懲罰 magnitude 縮放:≤0.3 恆等舊 flat 0.15(既有 slow byte-identical)·負重 0.4→0.20·夾 cap 0.30。"""
+    f = formulas.slow_hit_penalty
+    assert f(0.0) == 0.15 and f(0.1) == 0.15 and f(0.2) == 0.15 and f(0.3) == 0.15   # 地板=既有恆等(byte-identical)
+    assert abs(f(0.4) - 0.20) < 1e-9 and abs(f(0.5) - 0.25) < 1e-9
+    assert f(0.6) == 0.30 and f(1.0) == 0.30                                          # cap
+
+
 def run():
     for name, fn in sorted(globals().items()):
         if name.startswith("test_") and callable(fn):
