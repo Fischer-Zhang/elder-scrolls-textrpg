@@ -315,6 +315,51 @@ def test_reflect_r42_raw_decoupled_thorns_redlines():
     assert max(reflects) < 30
 
 
+def test_enemy_reflect_r117_knight_of_order():
+    """R117 敵方反傷:秩序騎士 reflect=0.15 → 玩家物理擊中吃 raw×0.15 回噬;reflect=0 的怪不反
+    (byte-identical 短路);可致死;非遞迴(玩家自身 thorns 不對反傷再觸發 → 無 A→B→A 環·反傷只算一次)。"""
+    from tesrpg.systems import inventory, stats
+    import tesrpg.synth as synth
+    gd, c = _warrior()
+    c.is_player = True
+    c.skills.update(blade=100)
+    c.attributes["strength"] = 100
+    c.weapon = "steel_sword"
+    stats.recompute_max_resources(c, gd, restore_full=True)
+    # 欄位流:knight 0.15、既有怪 0(spawn_creature/spawn_boss 皆帶)
+    assert combat.spawn_creature(gd, "knight_of_order", RNG(1)).reflect == 0.25
+    assert combat.spawn_creature(gd, "bandit", RNG(1)).reflect == 0.0
+
+    def taken(foe_id, seed):
+        foe = combat.spawn_creature(gd, foe_id, RNG(seed)); foe.health = foe.max_health = 99999
+        c.health = c.max_health                          # 滿血(玩家真實 max·避免 clamp 干擾量測)
+        hp0 = c.health
+        combat.resolve_attack(c, foe, gd, RNG(seed))     # 玩家打怪 → 可能吃反傷
+        return hp0 - c.health
+
+    # 物理擊中秩序騎士 → 玩家吃反傷 > 0(raw×0.15·含武器/力量/偷襲倍率)
+    assert max(taken("knight_of_order", s) for s in range(20)) > 0
+    # reflect=0 的怪(強盜)→ 玩家零反傷(反傷區短路 → 既有戰鬥 byte-identical 路徑)
+    assert all(taken("bandit", s) == 0 for s in range(15))
+
+    # 可致死:玩家 1 血 + 反傷 → HP 歸 0(_set_hp clamp 0)
+    c.health = 1
+    kn = combat.spawn_creature(gd, "knight_of_order", RNG(7)); kn.health = kn.max_health = 99999
+    combat.resolve_attack(c, kn, gd, RNG(7))
+    assert c.health == 0
+
+    # 非遞迴:玩家穿荊棘甲(自身 thorns>0)擊中騎士 → 正常完成、只吃一次騎士反傷、不無限迴圈
+    tid = synth.enchant_armor_id("daedric_cuirass", "thorns", "", 5)
+    inventory.add_item(c, tid, 1); inventory.equip_armor(c, gd, tid)
+    stats.recompute_max_resources(c, gd, restore_full=True)
+    assert inventory.thorns_reflect(c, gd) > 0
+    c.health = c.max_health
+    hp0 = c.health
+    kn2 = combat.spawn_creature(gd, "knight_of_order", RNG(9)); kn2.health = kn2.max_health = 99999
+    combat.resolve_attack(c, kn2, gd, RNG(9))
+    assert 0 < c.health < hp0     # 吃了騎士反傷一次(單 _set_hp·無環·未把玩家的 thorns 反射回自己)
+
+
 def run():
     for name, fn in sorted(globals().items()):
         if name.startswith("test_") and callable(fn):

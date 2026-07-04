@@ -1138,6 +1138,7 @@
     ],
     "danger": 5, "min_level": 17, "weight": 1, "solo": true,
     "resist": {"magic": 30, "frost": 20, "shock": 20},
+    "reflect": 0.25,
     "loot_gold": [240, 440],
     "loot": [{"item": "filled_grand_soul_gem", "chance": 0.5}, {"item": "moonstone_ingot", "chance": 0.4}],
     "flavor": "水晶鎧甲一塊塊接合成人形 —— 賈格拉格的秩序騎士,動作精準得毫無一絲多餘,每一斬都落在同一個無可閃避的軌跡上。牠不憤怒、不恐懼、也不退讓,只如灰色潮汐般,把一切混亂與生機碾成整齊劃一的塵埃。"

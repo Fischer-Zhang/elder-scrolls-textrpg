@@ -26,6 +26,7 @@ class Creature:
     flavor: str = ""
     danger: int = 1                                  # 用於推導靈魂等級
     resist: dict = field(default_factory=dict)       # {element/"magic"/"poison": 百分比}
+    reflect: float = 0.0                             # 物理反傷比例(R117):玩家物理擊中→其完整物理輸出×此回噬玩家(如秩序騎士)
     active_effects: list = field(default_factory=list)  # [{"kind","turns",...}]
     summon_turns: int | None = None                  # 召喚物剩餘回合(None=同伴/非召喚)
 

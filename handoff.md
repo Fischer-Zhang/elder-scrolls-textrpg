@@ -1410,6 +1410,14 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 
 ---
 
+### R117 · 敵方反傷:秩序騎士「灰潮的反噬」(物理反傷·懲罰爆發/秒殺)[re-sim]
+
+**評估**(使用者點名「將秩序騎士加上反傷系統」):R42 反傷是**玩家專屬**(玩家受物理擊中→荊棘/重甲/盾反回彈·非遞迴·物理限定)·**無怪物反傷**。給秩序騎士反傷=新的**敵方反傷**能力,主題完美 —— 牠「每一斬都落在同一個無可閃避的軌跡上」「把一切碾成整齊劃一」= 你施加的必然反噬於你,且與其**秩序之劍**(零傷害變異)同構「消滅變異/必然」。使用者四拍板:**只反物理**(火法師=剋星穿透不反·對稱 R42 元素 boss 免疫)·**基數取 raw**(完整物理輸出·**含偷襲倍率·pre solo-cap** → 懲罰玻璃大砲/秒殺者最重)·**可致死**(比照 R42 玩家反傷可反殺)·磁量拍板 real threat。
+
+**機制**:新 `Creature.reflect` 欄(資料驅動·R43 式·`spawn_creature`/`spawn_boss` 皆帶·**戰鬥暫態零存檔遷移**)+ combat.py 平行反傷區(鏡像 R42 玩家反傷,緊接其後):`if _is_player(attacker) and not atk_element and dmg_done>0 and defender.reflect` → `_set_hp(玩家, hp − round(raw/block_factor × reflect))`。**🔴 直接扣血非遞迴**(不觸發玩家自身 thorns → 無 A→B→A 環)·**reflect==0 的怪(全既有)短路不動 → byte-identical**。`knight_of_order.reflect = 0.25`(唯一使用者)。
+
+**🔴 平衡(sim_builds 全 build vs 秩序騎士·磁量由 0.15→0.25 拍板 real threat)**:reflect **只懲罰物理·尤其爆發** —— **刺客 67% · 弓 78% · 武僧 92% · 戰士 1H/2H 100%(高血吸收 chip)· 法師/戰法 100%(施法穿透·物理限定)· 盾反 100%**。玻璃大砲刺客受創最重(自身巨 raw 反噬·由 ~95%→67%)·遞減至坦戰/法師無感;**無 build 被 wall**(最低 67% 仍可玩)。**sim_assassin BYTE-IDENTICAL**(反傷區 gated on `reflect>0`·全 sim boss reflect=0·且**不擲 rng**·只改玩家 HP 不動 boss 死亡/solo 夾 → oneshot 率不變)。零新存檔欄。`run_all` 111(test_combat +`test_enemy_reflect_r117`:欄位流/物理反傷 raw 級/reflect0 不反/可致死/非遞迴)。BESTIARY 重生。🔴 加敵方反傷純改 bestiary `reflect` 欄(物理限定·raw 基數·可致死);調 knight `reflect` 磁量→跑 `sim_builds`(守不 wall 任何 build·爆發受創最重);反傷走 `_set_hp` 直接扣血(**非遞迴·勿改成 resolve_attack 遞迴否則爆環**)。**前瞻**:其他「懲罰肉搏」boss 可複用 `reflect` 欄;元素反傷變體需另設元素紅線(比照 R42 元素 boss 免疫)。
+
 ### R116 · 幸運功能化:傷害骰下界抬升 + 瓦巴賈克回火化險(天命影響數值浮動與隨機效果)[re-sim]
 
 **評估**(使用者點名「幸運如何影響數值浮動與隨機效果(瓦巴賈克)」):幸運目前只碰**戰利**(`luck_loot_factor`)+**命運加性**(`luck_fortune`·撬鎖/逃跑/事件擲骰),**完全不碰**①傷害骰浮動(`combat.py:516 rng.roll(0.85,1.15)` 純均勻·唯秩序之劍 R48 覆寫成永遠取 HI)②瓦巴賈克隨機效果(`WABBAJACK_TABLE` 純加權均勻抽選·回火 16% 是 R46 刻意的自平衡)。剛把謝歐格拉斯(混沌)/諾克圖娜爾(幸運之親王)改成給 luck → 讓幸運偏轉隨機正是其 payoff。使用者拍板:**兩者都做·傷害只抬下界·破紅線只提醒由使用者定奪**。

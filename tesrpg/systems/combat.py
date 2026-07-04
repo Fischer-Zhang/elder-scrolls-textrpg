@@ -29,6 +29,7 @@ def spawn_creature(gamedata: GameData, template_id: str, rng: RNG) -> Creature:
         loot_gold=list(t["loot_gold"]),
         loot_table=list(t.get("loot", [])), flavor=t.get("flavor", ""),
         danger=t.get("danger", 1), resist=dict(t.get("resist", {})),
+        reflect=t.get("reflect", 0.0),
     )
 
 
@@ -668,6 +669,16 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
             if st and is_alive(attacker) and rng.chance(st):
                 # turns:2 → 撐過本回合末 tick,於攻擊者「下一次出手」時仍踉蹌生效(防守側反制的正確時序)
                 magic.apply_control(attacker, "stagger", gamedata, rng, turns=2)   # R44:集中 helper
+
+        # 敵方反傷(R117):防守方為帶 `reflect` 的怪(如秩序騎士「灰潮的反噬」)→ 玩家物理擊中時,其
+        # **完整物理輸出** base=raw/block_factor(**含偷襲倍率·pre solo-cap** → 懲罰爆發/秒殺者最重)按 reflect 比例回噬玩家。
+        # 🔴 物理限定(元素/火法師=剋星穿透不反·對稱 R42 元素 boss 反傷免疫)+ 直接扣血非遞迴(不觸發玩家自身 thorns → 無 A→B→A 環)
+        #    + 可致死(_set_hp clamp 0);reflect==0 的怪(全既有怪)→ 短路不動 = byte-identical。
+        if _is_player(attacker) and not atk_element and dmg_done > 0:
+            _refl = getattr(defender, "reflect", 0.0)
+            if _refl:
+                _rbase = raw / block_factor if block_factor else raw
+                _set_hp(attacker, _get_hp(attacker) - int(round(_rbase * _refl)))
 
         # 法杖等「命中回復施術者資源」(D:on_hit_self)→ 由後面的 clamp_resources 夾限
         if _is_player(attacker) and wdef and wdef.get("on_hit_self"):
