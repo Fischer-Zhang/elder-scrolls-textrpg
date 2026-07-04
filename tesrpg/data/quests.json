@@ -9278,5 +9278,34 @@
       "grant_boon": "kynareth_grace",
       "world_flags": ["kynareth_grace_earned"]
     }
+  },
+  "mara_trial": {
+    "name": "慈愛的試煉",
+    "faction": null,
+    "rank": null,
+    "source": "divine",
+    "divine": "mara",
+    "requires_level": 15,
+    "text": "你在布拉維爾的瑪拉祭壇前俯首,慈愛之母的低語如母親的手掌撫過你的髮 —— 城下沉水的地窟裡,一城窮苦人家無人聞問的悲慟凝成了一縷哀影,將牠嘗過的絕望原封不動地還給每一個還懂得愛的活人。下墓去,以慈悲了結那哀影、讓那些被遺忘的哀傷歸於安息 —— 瑪拉將以一縷慈愛之力回報於你。",
+    "stages": [
+      {
+        "objective": {"type": "collect", "item": "minor_healing_potion", "count": 2},
+        "text": "備妥兩瓶療傷之物作為施予窮苦者的慈悲,在瑪拉祭壇前為亡者與生者祝禱。"
+      },
+      {
+        "objective": {"type": "reach", "location": "bravil_drowned_crypt"},
+        "text": "循著城下傳來的低泣,步入布拉維爾沉水的地窟。"
+      },
+      {
+        "objective": {"type": "clear_dungeon", "dungeon": "bravil_drowned_crypt"},
+        "text": "深入積水的殮室核心,以慈悲了結哀慟之影,讓一城被遺忘的哀傷歸於安息。"
+      }
+    ],
+    "reward": {
+      "gold": 600,
+      "fame": 30,
+      "grant_boon": "mara_love",
+      "world_flags": ["mara_love_earned"]
+    }
   }
 }

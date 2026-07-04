@@ -238,5 +238,11 @@
     "attr": {"agility": 10, "speed": 6},
     "skill": {"athletics": 10},
     "resist": {"shock": 15}
+  },
+  "mara_love": {
+    "name": "慈愛之佑",
+    "attr": {"personality": 10, "willpower": 6},
+    "skill": {"restoration": 12},
+    "resist": {"magic": 10}
   }
 }
