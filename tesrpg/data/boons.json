@@ -232,5 +232,11 @@
     "attr": {"personality": 8, "luck": 8},
     "skill": {"mercantile": 12},
     "resist": {"magic": 10}
+  },
+  "kynareth_grace": {
+    "name": "天穹之佑",
+    "attr": {"agility": 10, "speed": 6},
+    "skill": {"athletics": 10},
+    "resist": {"shock": 15}
   }
 }

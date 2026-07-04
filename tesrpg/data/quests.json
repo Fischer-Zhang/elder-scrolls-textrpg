@@ -9249,5 +9249,34 @@
       "grant_boon": "zenithar_fortune",
       "world_flags": ["zenithar_fortune_earned"]
     }
+  },
+  "kynareth_trial": {
+    "name": "天穹的試煉",
+    "faction": null,
+    "rank": null,
+    "source": "divine",
+    "divine": "kynareth",
+    "requires_level": 15,
+    "text": "你在大森林小徑的凱娜瑞絲野祠前俯首,天穹之神的低語隨風掠過樹梢 —— 森林深處一株千年的心木染上了無名的枯萎,它的守護林靈已被扭曲成絞殺活物的怪物,連風都不再願意穿過那片枯死的樹冠。前去了結那株心木的痛苦、讓生機與清風重歸聖林 —— 凱娜瑞絲將以一縷天穹之力回報於你。",
+    "stages": [
+      {
+        "objective": {"type": "collect", "item": "blue_mountain_flower", "count": 2},
+        "text": "採集兩朵藍山花作為對生機的敬奉,在凱娜瑞絲野祠前聆聽風的指引。"
+      },
+      {
+        "objective": {"type": "reach", "location": "blighted_grove"},
+        "text": "循著漸漸止息的風聲,深入大森林那片枯死的聖林。"
+      },
+      {
+        "objective": {"type": "clear_dungeon", "dungeon": "blighted_grove"},
+        "text": "尋到聖林深處那株染病的心木,了結枯萎林母的痛苦,讓生機與清風重歸樹冠。"
+      }
+    ],
+    "reward": {
+      "gold": 600,
+      "fame": 30,
+      "grant_boon": "kynareth_grace",
+      "world_flags": ["kynareth_grace_earned"]
+    }
   }
 }
