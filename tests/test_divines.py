@@ -340,6 +340,19 @@ def test_all_divine_trials_content_integrity():
                 assert m in gd.bestiary, (did, m)
 
 
+def test_all_nine_divines_have_a_trial():
+    """R115 完成守衛:九神各恰有一條神之選民試煉(source=divine 帶 divine 欄)且各授一道登錄誓福。"""
+    gd = get_gamedata()
+    trials = {}
+    for qid, q in gd.quests.items():
+        if q.get("source") == "divine" and q.get("divine"):
+            trials.setdefault(q["divine"], []).append(qid)
+    assert set(trials) == set(divines.BLESSINGS), f"缺試煉的神:{set(divines.BLESSINGS) - set(trials)}"
+    for god, qs in trials.items():
+        assert len(qs) == 1, f"{god} 有多條試煉:{qs}"
+        assert gd.quests[qs[0]]["reward"].get("grant_boon") in gd.boons, f"{god} 誓福未登錄"
+
+
 def run():
     for name in sorted(globals()):
         if name.startswith("test_"):

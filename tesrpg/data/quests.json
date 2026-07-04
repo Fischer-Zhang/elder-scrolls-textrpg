@@ -9307,5 +9307,34 @@
       "grant_boon": "mara_love",
       "world_flags": ["mara_love_earned"]
     }
+  },
+  "dibella_trial": {
+    "name": "美的試煉",
+    "faction": null,
+    "rank": null,
+    "source": "divine",
+    "divine": "dibella",
+    "requires_level": 15,
+    "text": "你在安維爾的蒂貝拉祭壇前俯首,美與愛之女神的低語如一縷海風拂過 —— 黃金海岸的礁岩間,一頭海妖盜用了女神的容顏,以蠱惑的歌聲把過往的水手與尋美的藝匠誘入海底綺夢,只為飽餐他們的痴迷。那不是愛,是把美當成了誘餌的貪婪。前去斬斷那場虛妄、讓沉溺者得以安息 —— 蒂貝拉將以一縷美之力回報於你。",
+    "stages": [
+      {
+        "objective": {"type": "collect", "item": "ruby", "count": 1},
+        "text": "備妥一枚紅寶石作為對美的敬奉,在蒂貝拉祭壇前獻上。"
+      },
+      {
+        "objective": {"type": "reach", "location": "abecean_grotto"},
+        "text": "沿黃金海岸的礁岸而行,尋到那座傳出綺夢歌聲的海蝕洞。"
+      },
+      {
+        "objective": {"type": "clear_dungeon", "dungeon": "abecean_grotto"},
+        "text": "深入海蝕洞的礁潭核心,斬斷蠱惑海妖織就的虛妄綺夢,讓沉溺於假美的靈魂得以安息。"
+      }
+    ],
+    "reward": {
+      "gold": 600,
+      "fame": 30,
+      "grant_boon": "dibella_grace",
+      "world_flags": ["dibella_grace_earned"]
+    }
   }
 }

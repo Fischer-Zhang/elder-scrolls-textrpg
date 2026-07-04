@@ -244,5 +244,11 @@
     "attr": {"personality": 10, "willpower": 6},
     "skill": {"restoration": 12},
     "resist": {"magic": 10}
+  },
+  "dibella_grace": {
+    "name": "美之佑",
+    "attr": {"personality": 10, "willpower": 6},
+    "skill": {"speechcraft": 8, "illusion": 8},
+    "resist": {"magic": 10}
   }
 }
