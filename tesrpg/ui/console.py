@@ -85,7 +85,8 @@ def _blessing_badge(c, now=None) -> str | None:
 
 
 # --- 增益與狀態(R114 資訊可見性:限時增益/持續狀態 單一資料源)---------------
-_SPELLFX_CN = {"charm": "魅惑術", "invisibility": "隱形術", "feather": "羽落術", "detect_life": "偵知生物"}
+_SPELLFX_CN = {"charm": "魅惑術", "invisibility": "隱形術", "feather": "羽落術", "detect_life": "偵知生物",
+               "arcane_sight": "靈識術", "telekinesis": "念力術"}
 
 
 def _timed_buffs(char: Character, now: int, gamedata: GameData, include_blessing: bool = True) -> list:
@@ -1755,6 +1756,10 @@ def spell_effect_summary(gamedata: GameData, spell_id: str) -> str:
         return f"羽落:負重上限 +{spellfx.FEATHER_CARRY_BONUS}（{e.get('hours', 0)} 小時)"
     if k == "detect_life":
         return f"偵知生物:預先揭露敵情並取得偵查先機（{e.get('hours', 0)} 小時)"
+    if k == "arcane_sight":
+        return f"靈識:地城探索時揭露四鄰通路與機關（{e.get('hours', 0)} 小時)"
+    if k == "telekinesis":
+        return f"念力:地城中隔空撥開陷阱機關、毫髮無傷（{e.get('hours', 0)} 小時)"
     return "效果"
 
 

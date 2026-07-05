@@ -408,7 +408,7 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
                                     "magnitude": mag, "turns": bturns, "archetype": eff.get("archetype")})
         msg = f"{sp['name']} —— 你手中凝出一柄束縛兵刃(基礎傷害 {mag},隨咒術精進,{bturns} 回合)。"
 
-    elif kind in ("charm", "invisibility", "feather", "detect_life"):   # R104 實用/幻術:限時自我增益(戰鬥外社交/潛行/探索)
+    elif kind in ("charm", "invisibility", "feather", "detect_life", "arcane_sight", "telekinesis"):   # R104 實用/幻術 + R121 秘術實用:限時自我增益(戰鬥外社交/潛行/探索/地城)
         from tesrpg.systems import spellfx
         hours = eff.get("hours", 4)
         if state is not None:
@@ -418,6 +418,8 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
             "invisibility": "你的身形融入空氣,隱沒於無形之中。",
             "feather": "一股輕靈之力托起你的行囊,負擔霎時輕了許多。",
             "detect_life": "生機在你感官中亮起 —— 你能預先察覺周遭潛伏的生靈。",
+            "arcane_sight": "奧術之光在你識界中鋪展 —— 地城的通路與機關在心眼中漸次浮現。",   # R121 靈識
+            "telekinesis": "一股無形念力纏繞指尖 —— 你已能隔空撥動遠處的機栝與封印。",         # R121 念力
         }
         msg = f"{sp['name']} —— {_flavor.get(kind, '')}"
 

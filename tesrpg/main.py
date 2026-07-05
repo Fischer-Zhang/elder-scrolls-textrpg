@@ -1773,6 +1773,10 @@ def _resolve_trap(state: GameState, gamedata: GameData, trap: dict) -> None:
     避陷/觸發皆鍛鍊 security(learn-by-doing:避陷=用技能 full xp,觸發=從失誤學 少量 xp)。"""
     char = state.player
     base_xp = gamedata.skills["security"]["practice"]["xp"]
+    if spellfx.is_telekinetic(char):   # R121 念力術:隔空撥開機關,毫髮無傷(仍鍛鍊 security)
+        ui.message("你以念力隔空撥開了機關的機栝,毫髮無傷地越了過去。", style="green")
+        ui.show_events(progression.use_skill(char, gamedata, "security", base_xp), gamedata)
+        return
     dodge = min(0.9, 0.30 + (char.attr("agility") - 40) * 0.01 + char.skill("security") * 0.003
                 + formulas.luck_fortune(char.attr("luck")))
     dodge = max(dodge, mastery.trap_floor(char, gamedata))   # 里程碑「機關通曉」:避陷保底
@@ -1822,7 +1826,7 @@ def action_dungeon(state: GameState, gamedata: GameData) -> str | None:
     def reveal_and_train(zz, xx, yy):
         """標記 (xx,yy) 及(有偵查 perk 時)四鄰為已探;每「新探明」格授少量偵查 xp(已探不重複給)。"""
         cells = [(xx, yy)]
-        if mastery.has_recon_perk(player, gamedata):
+        if mastery.has_recon_perk(player, gamedata) or spellfx.is_sensing(player):   # R121 靈識術:暫時性揭四鄰
             cells += [(nx, ny) for _k, _l, nx, ny in dungeoncrawl.neighbors(grid, xx, yy)]
         newly = 0
         for cx, cy in cells:
@@ -3865,7 +3869,8 @@ def action_cast_self(state: GameState, gamedata: GameData, battle: dict | None =
         usable = [s for s in char.spells
                   if gamedata.spells[s]["target"] == "self"
                   and gamedata.spells[s]["effect"]["kind"] in
-                  ("heal", "restore_fatigue", "charm", "invisibility", "feather", "detect_life")]   # R104 實用/幻術戰鬥外可施
+                  ("heal", "restore_fatigue", "charm", "invisibility", "feather", "detect_life",
+                   "arcane_sight", "telekinesis")]   # R104 實用/幻術 + R121 秘術實用 戰鬥外可施
     if not usable:
         ui.message("你沒有可施放的法術。", style="grey70")
         return

@@ -16,7 +16,8 @@ from tesrpg.systems import combat, crime, dialogue, inventory, magic, spellfx, w
 def _state(seed=1, hour=12):
     gd = get_gamedata()
     c = build_character(gd, name="U", sex="male", race="breton", birthsign="mage", class_id="mage")
-    c.spells = list(c.spells) + ["charm", "invisibility", "feather", "calm", "detect_life"]
+    c.spells = list(c.spells) + ["charm", "invisibility", "feather", "calm", "detect_life",
+                                 "arcane_sight", "telekinesis"]
     c.magicka = c.max_magicka = 300
     c.fatigue = c.max_fatigue = 200
     st = GameState(player=c, rng=RNG(seed), time=GameTime(hour=hour))
@@ -25,6 +26,24 @@ def _state(seed=1, hour=12):
 
 def _cast(gd, c, st, sid, **kw):
     return magic.cast(c, gd, sid, st.rng, state=st, **kw)
+
+
+# --- R121 秘術實用:靈識 / 念力 -------------------------------------------
+def test_arcane_sight_and_telekinesis_apply_and_expire():
+    gd, c, st = _state()
+    # 靈識術:限時「感測」→ 地城探索揭四鄰(is_sensing)
+    _cast(gd, c, st, "arcane_sight")
+    assert spellfx.is_sensing(c) and not spellfx.is_telekinetic(c)
+    # 念力術:限時「隔空化解機關」(is_telekinetic)
+    _cast(gd, c, st, "telekinesis")
+    assert spellfx.is_telekinetic(c) and spellfx.is_sensing(c)
+    # 未施法時皆 False(短路 → 非使用者零成本)
+    _, c2, _ = _state()
+    assert not spellfx.is_sensing(c2) and not spellfx.is_telekinetic(c2)
+    # 過期 → update 剔除
+    st.time.advance(7)
+    spellfx.update(st, gd)
+    assert not spellfx.is_sensing(c) and not spellfx.is_telekinetic(c)
 
 
 # --- spellfx 限時層 --------------------------------------------------------

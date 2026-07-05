@@ -100,6 +100,17 @@ def consume_detect(char: Character) -> None:
     _drop(char, "detect_life")
 
 
+# --- 秘術靈識 arcane_sight / 念力 telekinesis(R121:地城探索/機關)-----------
+def is_sensing(char: Character) -> bool:
+    """靈識術作用中:地城探索時揭露四鄰(暫時性奧術偵測;Phase B:亦揭露法術封印)。"""
+    return _has(char, "arcane_sight")
+
+
+def is_telekinetic(char: Character) -> bool:
+    """念力術作用中:地城中隔空化解陷阱機關(Phase B:亦可撥動遠處封印機栝)。"""
+    return _has(char, "telekinesis")
+
+
 # --- 施放 / 每圈 update / 存檔遷移 ------------------------------------------
 def apply(char: Character, state, kind: str, hours: int, magnitude: float = 1.0) -> None:
     """施放實用法術 → 記/刷新一筆限時自我增益(同 kind 取較晚到期 + 取最強量值;不主動推進時間)。"""
