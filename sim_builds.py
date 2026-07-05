@@ -130,8 +130,8 @@ def make_arcanist():
     驗『一致性/破抗』身份 —— 傷害只吃通用 magic 抗性(永不被單一元素抗性歸零),但 mag 低於毀滅同階
     + 達貢 magic50 → 達貢 720 offense 牆仍守;對 fused/元素大法師(毀滅全被牆死)可靠可勝、非 trivial。"""
     c = make_mage()
-    c.spells = ["arcane_blast", "arcane_nova", "arcane_bolt", "close_wounds", "heal", "stoneflesh"]
-    c._dmg_pool = ["arcane_blast", "arcane_nova", "arcane_bolt"]
+    c.spells = ["arcane_annihilation", "arcane_blast", "arcane_nova", "arcane_bolt", "close_wounds", "heal", "stoneflesh"]
+    c._dmg_pool = ["arcane_annihilation", "arcane_blast", "arcane_nova", "arcane_bolt"]   # R121 終極湮識(mag42+加深秘蝕)入池
     _choices(c, {"mysticism_75": "arcane_focus", "mysticism_50": "ward_focus",
                  "mysticism_100": "arcane_erosion"})   # R120 秘蝕頂點:削魔抗·輔助所有傷害魔法
     stats.recompute_max_resources(c, gd, restore_full=True)

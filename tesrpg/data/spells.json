@@ -399,6 +399,7 @@
   "arcane_bolt": {"name": "秘術飛彈", "school": "mysticism", "cost": 15, "target": "enemy", "effect": {"kind": "damage", "element": "magic", "magnitude": 11}},
   "arcane_blast": {"name": "奧術轟擊", "school": "mysticism", "cost": 34, "target": "enemy", "effect": {"kind": "damage", "element": "magic", "magnitude": 24}},
   "arcane_nova": {"name": "秘力星爆", "school": "mysticism", "cost": 42, "target": "all", "effect": {"kind": "damage_all", "element": "magic", "magnitude": 13}},
+  "arcane_annihilation": {"name": "湮識", "school": "mysticism", "cost": 66, "target": "enemy", "effect": {"kind": "damage", "element": "magic", "magnitude": 42, "deepen_erosion": true}},
 
   "scry": {"name": "靈視術", "school": "mysticism", "cost": 10, "target": "self", "effect": {"kind": "scry", "radius": 0}},
   "arcane_sight": {"name": "靈識術", "school": "mysticism", "cost": 20, "target": "self", "effect": {"kind": "scry", "radius": 1}},

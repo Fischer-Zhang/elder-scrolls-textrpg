@@ -312,6 +312,8 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
             add_conduct(target)
         if eroding and not killed:                     # R120 每次傷害法術 +1 層秘蝕(削魔抗,任何傷害元素皆疊·輔助全體傷害魔法)
             add_erosion(target)
+        if eff.get("deepen_erosion") and not killed:   # R121 湮識(秘術終極):命中永久提升該敵秘蝕上限(本場·單敵)→ 秘蝕可蝕更深
+            target._deep_erosion = True
         msg = f"{sp['name']}命中{target.name},造成 {dmg} 點魔法傷害{_resist_tag(mult)}!"
         if kind == "damage_status" and not killed:
             st = eff["status"]
@@ -760,6 +762,7 @@ def add_conduct(creature) -> None:
 # 🔴 磁量使用者拍板 3/層·夾 5 層 = −15 魔抗;達貢 fire85 恆牆火系·720HP + 削抗後絕對傷害仍小 → 必 sim 守牆。
 EROSION_RESIST_PER_STACK = 3
 EROSION_MAX_STACKS = 5
+EROSION_DEEP_MAX_STACKS = 10   # R121 湮識(秘術終極)命中 → 永久提升該敵秘蝕上限(−30·單敵·本場戰鬥·暫態旗標)
 EROSION_TURNS = 3
 
 
@@ -768,16 +771,22 @@ def erosion_stacks(creature) -> int:
     return e.get("stacks", 0) if e else 0
 
 
+def erosion_max_stacks(creature) -> int:
+    """該敵秘蝕層上限:被 湮識 標記(`_deep_erosion`·暫態·本場戰鬥)者用加深上限,否則預設(R121)。"""
+    return EROSION_DEEP_MAX_STACKS if getattr(creature, "_deep_erosion", False) else EROSION_MAX_STACKS
+
+
 def erosion_resist_reduction(creature) -> int:
-    """秘蝕層對應的魔法抗性削減點數(夾 EROSION_MAX_STACKS 層 × 每層;破抗=降魔抗,cast 端 floored ≥0)。"""
+    """秘蝕層對應的魔法抗性削減點數(每層 × 層數;層數已於 add_erosion 夾上限;破抗=降魔抗,cast 端 floored ≥0)。"""
     return EROSION_RESIST_PER_STACK * erosion_stacks(creature)
 
 
 def add_erosion(creature) -> None:
-    """秘術命中 → 疊一層秘蝕(夾 EROSION_MAX_STACKS)+ 刷新計時;無則新建。"""
+    """秘術命中 → 疊一層秘蝕(夾 erosion_max_stacks:湮識加深者 10 否則 5)+ 刷新計時;無則新建。"""
+    cap = erosion_max_stacks(creature)
     e = next((x for x in creature.active_effects if x.get("kind") == "erosion" and x.get("turns", 0) > 0), None)
     if e:
-        e["stacks"] = min(EROSION_MAX_STACKS, e.get("stacks", 0) + 1)
+        e["stacks"] = min(cap, e.get("stacks", 0) + 1)
         e["turns"] = EROSION_TURNS
     else:
         creature.active_effects.append({"kind": "erosion", "stacks": 1, "turns": EROSION_TURNS})

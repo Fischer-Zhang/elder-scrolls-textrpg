@@ -7565,6 +7565,59 @@
       }
     ]
   },
+  "trial_soul": {
+    "name": "織魂試煉",
+    "faction": null,
+    "rank": null,
+    "source": "arcane",
+    "arcane_site": "soul",
+    "requires_level": 18,
+    "requires_skill": {
+      "mysticism": 75
+    },
+    "text": "織魂的引路人遞給你一枚幽藍的魂石符印:「湮識真言不予空有天賦者。純粹的魔法無法征服魔法的化身 —— 你得以心智與鋼鐵勝過牠,方配得上湮識之名。循魂術的足跡,踏遍蕈林深處的織魂聖殿。」",
+    "stages": [
+      {
+        "objective": {
+          "type": "reach",
+          "location": "vivec"
+        },
+        "text": "先往凡登費爾的聖城維威克,在丹莫的神殿階梯間沉澱心神、整備你的秘法。"
+      },
+      {
+        "objective": {
+          "type": "collect",
+          "item": "glow_dust",
+          "count": 3
+        },
+        "text": "採集三份幽光魂塵,作為與織魂法陣共鳴之引。"
+      },
+      {
+        "objective": {
+          "type": "reach",
+          "location": "soul_sanctum"
+        },
+        "text": "東返薩瑞斯·莫拉,深入蕈林中的織魂聖殿 —— 每一層都懸著躁動的念力球,以念力破之,否則反噬將纏上你。"
+      },
+      {
+        "objective": {
+          "type": "clear_dungeon",
+          "dungeon": "soul_sanctum"
+        },
+        "text": "以元素與鋼鐵擊敗秘識完全體 —— 純魔法對牠徒勞。奪下牠的湮識真言。"
+      }
+    ],
+    "reward": {
+      "gold": 800,
+      "fame": 35,
+      "spells": [
+        "arcane_annihilation"
+      ],
+      "world_flags": [
+        "mastery_soul"
+      ]
+    }
+  },
   "trial_fire": {
     "name": "烈焰精通試煉",
     "faction": null,

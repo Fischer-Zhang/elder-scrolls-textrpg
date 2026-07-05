@@ -33,7 +33,7 @@
 - **開局背景**(14 種,只給處境不給數值)+ **種子重玩性**;冒險/傳奇兩種死亡模式 + 一生傳奇總結評分
 
 #### 戰鬥與魔法
-- 回合制**多敵 + 團隊戰鬥**(召喚物/傭兵同伴);**同伴角色化**(9 具名同伴:持久 HP/羈絆 + 具名招募任務 + 羈絆階解鎖的專屬支線 + 就地對話 + 完成支線的忠誠弧頂點〔戰術盟友光環/被動非戰鬥槓桿;盟友限定守刺客紅線〕;復用 `companion_bond` 當忠誠軸,零新存檔欄;**R86 同伴戰鬥施法**:輔助型同伴角色感知主動支援 —— 法系治療〔含治療玩家〕/盾衛護盾/領袖激勵,門檻+冷卻+固定威力「輔助但不破關」〔sim_party 驗施法邊際 +0~8%·無 stalemate〕;**R87 敵方支援施法者**:法系/祭司怪〔女巫/薩滿/祭司/死靈〕對稱地在隊友血低時治療/護盾其他敵人 → 群戰「先點掉治療者」戰術〔幅度因子 0.35 威脅但可破解·無 stalemate·敵 empower 反效果故只 heal/shield〕);**六大學派 + AoE**(召喚/秘術補完至各 7 法術,與毀滅/復原/變換同列;**召喚**=元素元身/魔人 + 束縛兵刃〔法系近戰〕+ 亡者復生〔屍起為盟〕、**秘術**=法術結界〔吸法術傷·吸魔變體〕+ 驅散 + 群體擒魂 + **非元素魔法傷害〔R119:飛彈/轟擊/星爆·一律穩定 `magic` 傷害·不被單元素抗歸零·只吃通用魔抗 → 破抗答案〕**);元素抗性/弱點、狀態效果、出生星座每日之力
+- 回合制**多敵 + 團隊戰鬥**(召喚物/傭兵同伴);**同伴角色化**(9 具名同伴:持久 HP/羈絆 + 具名招募任務 + 羈絆階解鎖的專屬支線 + 就地對話 + 完成支線的忠誠弧頂點〔戰術盟友光環/被動非戰鬥槓桿;盟友限定守刺客紅線〕;復用 `companion_bond` 當忠誠軸,零新存檔欄;**R86 同伴戰鬥施法**:輔助型同伴角色感知主動支援 —— 法系治療〔含治療玩家〕/盾衛護盾/領袖激勵,門檻+冷卻+固定威力「輔助但不破關」〔sim_party 驗施法邊際 +0~8%·無 stalemate〕;**R87 敵方支援施法者**:法系/祭司怪〔女巫/薩滿/祭司/死靈〕對稱地在隊友血低時治療/護盾其他敵人 → 群戰「先點掉治療者」戰術〔幅度因子 0.35 威脅但可破解·無 stalemate·敵 empower 反效果故只 heal/shield〕);**六大學派 + AoE**(召喚/秘術補完至各 7 法術,與毀滅/復原/變換同列;**召喚**=元素元身/魔人 + 束縛兵刃〔法系近戰〕+ 亡者復生〔屍起為盟〕、**秘術**=法術結界〔吸法術傷·吸魔變體〕+ 驅散 + 群體擒魂 + **非元素魔法傷害〔R119:飛彈/轟擊/星爆·一律穩定 `magic` 傷害·不被單元素抗歸零·只吃通用魔抗 → 破抗答案〕· 秘蝕破抗頂點〔R120:傷害法術命中削敵魔抗·輔助全傷害魔法〕· 非戰鬥實用法術 + 湮識終極試煉〔R121:靈視/靈識遠格揭露·念力·念力球解謎地城·抗魔法師 boss·終極魔法核彈加深秘蝕〕**);元素抗性/弱點、狀態效果、出生星座每日之力
 - **三系資源對稱**:施法也耗體力、力竭降法效(`cast_fatigue_*`),**法袍套裝**省體施法(法師的對應裝甲)
 - **煉金毒藥 + 武器塗毒**;**毒劑深化(Phase 2 / R31)**:五毒型(DoT/麻痺 + 衰毒/遲緩/懼毒,特殊型需里程碑解鎖;solo BOSS 對控制型免疫);**煉金限時增益藥水(深化 Phase 1 / R30·材料 R90-R92 餵飽)**:強化屬性/技能 + 抗元素**限時**藥劑(走獨立 `potion_*` 層、絕不寫 base、**同 kind+param 取最強非疊加**);**可釀池 4→~28 種**:R90 補 resist_fire/frost/shock 單元素抗(補法師對元素 boss)+ 中性屬性/restoration;R91 材料加厚至 4 效果 + 9 種安全增益;**R92 開攻擊向 fortify**(力量/武器技能/潛行/毀滅·依 R30「放開→必過 sim」·新 fortify-dosed sim 場景驗 solo cap 仍夾·**smithing 永久擋**〔過頂 temper 永久武傷〕);**效果逐步揭露(Phase 3 / R32)**:材料效果預設 `???`,經嚐試/煉製/技能揭露(純資訊層,不碰 brew 數學);**疾病可釀(R54)**:療疾材料(大蒜/焦皮鼠革/吸血鬼塵 `cure_disease`)→ 釀療疾藥水(統一淨化,同神殿/法術/`cure_disease_potion`);**潛行刺客系**:偷襲先機、暗殺殘響、雙持、**隱遁再襲(潛行 25 里程碑「隱遁之術」;連環踏影對單體仍遞減、反 solo boss 風箏)**、戰前偵查;武器流派(潛襲/破甲/速度)
 
@@ -1409,6 +1409,18 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 - **🔴 鐵律**:加 role 純改 `dialogue.json`(roles map + topics·身份 flavor 為主·功能 effect 走 events 支援集 + `once` 防刷·不帶 skill_xp)+ `npcs.json` role 欄;加流言線索純改 `npcs.json`(rumor_quest/rumor_landmark/rumor_disposition)+ `quests.json`(`source:"rumor"`·僅 clear/reach·**目標無 visible gate**·NPC↔線索目標**須同省**);**新增 source:rumor 任務務必有 NPC rumor_quest 回指**(否則 reachability guard 攔=孤兒);追問傳聞兌現走既有 `_accept_and_brief`/`landmarks.discover`;純社交內容 → sim byte-identical 免跑(動 combat/formulas 才需)。**前瞻**:Phase D 可純資料把其餘 ~40 具名 rumor NPC 逐批接上 + 補 role 密度;若要更多功能 role 話題(商人折扣等)需新 effect + 評估碰 shop/存檔欄。
 
 ---
+
+### R121 · 秘術終極試煉:非戰鬥實用法術 + 念力球解謎 + 湮識(魔法核彈 + 加深秘蝕)[re-sim] [save-safe](三 phase 分提交)
+
+**承 R119/R120 秘術深化·使用者多輪拍板收斂**:補秘術正典非戰鬥實用法術 + R78 式終極試煉(mysticism 75 閘·薩瑞斯·莫拉 Telvanni 城發起)+ 念力球解謎關卡 + 終極法術「湮識」。分 A→B→C 各自提交。
+
+**Phase A(2f7f6b1)· 秘術非戰鬥實用法術**:靈視術 `scry`(低階·單格)+ 靈識術 `arcane_sight`(中階·中心+四鄰)= 地城中對**任一遠格**主動揭露(「🔮 靈識揭露」動作·`_dungeon_scry` cell picker·耗魔·鍛鍊 mysticism·**與偵查 25 recon 互補**:recon 揭近身四鄰、scry 揭遠格規劃路線 → 解鎖 recon 後仍有用)· 念力術 `telekinesis`(限時 spellfx·地城中隔空化解陷阱)。走 R104 spellfx + action_cast_self·佈點秘術城·scry 排除出**所有**施法選單(含戰鬥·**對抗審查抓到戰鬥 cast 選單漏排除**→補 `_choose_combat_action` filter)。
+
+**Phase B(3ae53bf)· 念力球解謎機制**:dungeons.json opt-in `orbs:true` → 每層懸念力球;念力術破之(`_dungeon_orb_break`·耗魔·鍊 mysticism)· 未破離層(下樓)/決戰前 → `_apply_orb_curse`:隨機大減一項**非秘術**技能(−`_ORB_CURSE=40`·夾≥0·優先有點數·不重複)· 反噬走暫態 `char._dungeon_curse` 負層(`skill()` 讀·**不入檔**·唯一呼叫端清+進場重置·防滲出)· **resolution-gate 不切連通圖**(守 test_generate_all_valid)· 零新存檔欄· 靈視/靈識揭球位置、念力破球免患(三道實用法術各有用)。
+
+**Phase C· 終極 + 試煉組裝**:終極 `arcane_annihilation`「湮識」(damage·element magic·mag42·cost66·`deepen_erosion`)命中 → `target._deep_erosion`(暫態旗標) → 秘蝕上限 5→10(`EROSION_DEEP_MAX_STACKS`·−15→−30·本場單敵)· 唯試煉獎勵取得(不入商店)· boss `arch_mystic`(秘識完全體·**resist magic 75**·solo·raw·HP215·純魔法徒勞→以元素/鋼鐵勝之·鏡像元素大法師)· 地城 `soul_sanctum`(織魂聖殿·ashland·`orbs:true`→用上念力球·raw boss·無 reinfest)· world node(晨風·pos[39,11]·雙向 sadrith_mora+ashland_waste·R28)· sadrith_mora 掛 `arcane_trials:"soul"`· 任務 `trial_soul`(source arcane·mysticism 75·reach vivec→collect glow_dust→reach soul_sanctum→clear→reward 湮識)· `action_arcane_trials` fallback 加 mysticism 訊息。
+
+**🔴 平衡(sim_builds)**:**達貢 720 offense 牆守 = arcanist(含湮識+深蝕)1% vs mehrunes_dagon**(mag 低+只吃 magic·深蝕至 magic20 仍 ×0.8·脆皮先死)· 終極獎勵有感(古龍 77→89%·umaril 70→90%·fused 97→99%)· 不 trivialize。**🔴 sim_assassin BYTE-IDENTICAL**(隔離 worktree·刺客不施法·無 `_deep_erosion`·erosion gated·curse None→`skill()`+0)。零新存檔欄(湮識=reward.spells·秘蝕上限=暫態旗標·反噬=暫態負層·地城 explored/orb 皆暫態)· run_all 112(test_utility_magic/新 test_orb_curse/test_arcane_trials 擴)。**對抗審查(4 維·5 agent)**:1 confirmed minor(scry 漏排除出戰鬥 cast 選單→誤選退還但耗回合)已修·餘 balance/紅線/byte/save/topology/reachability 皆清。🔴 加秘術實用法術走 spellfx(限時)/scry 動作(地城揭露·排除**所有**cast 選單);念力球純 `orbs` 資料+暫態反噬(不入檔·唯一呼叫端清);湮識深蝕走 `_deep_erosion` 暫態旗標(`erosion_max_stacks` 讀·per-spawn 無滲出);終極只 reward.spells;boss resist magic≥70;orbs 地城用念力球;動 `EROSION_DEEP`/湮識/boss→sim_builds(守達貢牆)+sim_assassin(byte-identical)。**秘術線 R119→R120→R121 告一段落**(傷害身份·破抗頂點·實用法術+終極試煉)。
 
 ### R120 · 秘術頂點功能化:秘蝕(arcane erosion)—— 破抗輔助頂點(削魔抗·輔助所有傷害魔法)[re-sim byte-identical]
 

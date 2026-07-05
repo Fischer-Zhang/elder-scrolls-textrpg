@@ -605,7 +605,8 @@ def _choose_combat_action(state: GameState, gamedata: GameData, enemies: list, a
     _rep = _repeat_option(player, gamedata, enemies, allies, mem)   # R113:一鍵重複上次動作(置頂)
     if _rep is not None:
         opts.insert(0, ("repeat", _rep))
-    castable = [s for s in player.spells if magic.can_cast(player, gamedata, s)]
+    castable = [s for s in player.spells if magic.can_cast(player, gamedata, s)
+                and gamedata.spells[s]["effect"]["kind"] != "scry"]   # R121 靈視/靈識僅地城揭露·排除出戰鬥施法選單(否則誤選即退還但耗掉回合)
     if castable:
         opts.append(("cast", "施法"))
     if powers.usable_in(player, state, gamedata, "combat"):
@@ -4792,7 +4793,10 @@ def action_arcane_trials(state: GameState, gamedata: GameData) -> None:
     avail = [qid for qid in quests.available_quests(char, gamedata, "arcane")
              if gamedata.quests[qid].get("arcane_site") == site]
     if not avail:
-        if char.base_skill("destruction") < 75:
+        if site == "soul" and char.base_skill("mysticism") < 75:   # R121 秘術試煉閘 mysticism 75(非 destruction)
+            ui.message("織魂的引路人瞥了你一眼,搖頭:「你的秘法造詣尚不足以承載湮識真言 —— "
+                       "回去再研習神秘之道,至少登堂入室(秘術 75)方談得上試煉。」", style="grey70")
+        elif site != "soul" and char.base_skill("destruction") < 75:
             ui.message("引路人瞥了你一眼,搖頭:「你的破壞之術還沒到能承受終極奧義的境界 —— "
                        "回去再淬煉,毀滅之道至少要登堂入室(75)才談得上試煉。」", style="grey70")
         elif site == "fused":
