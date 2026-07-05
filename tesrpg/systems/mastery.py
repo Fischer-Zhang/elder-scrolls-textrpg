@@ -67,6 +67,8 @@ _IMPLEMENTED_KINDS = {
     "theft_skill", "dungeon_casing",
     # R106C 死靈經濟:解鎖(召喚 25·取代省魔)、亡者收集(每擊殺多給 token)、亡者統御(真·亡者更強韌兇猛)。
     "soul_economy", "soul_harvest", "undead_mastery",
+    # R120 秘術頂點:秘蝕(布林解鎖)—— 傷害法術削目標魔抗、輔助所有傷害魔法。
+    "arcane_erosion",
 }
 
 
@@ -642,6 +644,13 @@ def has_dungeon_casing(char, gamedata: GameData) -> bool:
     布林解鎖型 → 刻意不落 lock_floor 的 MAX 聚合軸,永不被同軸更強來源二元遮蔽(R35 安全);
     與 scout has_recon_perk(揭四鄰任意 type)互補不重複。"""
     return _chosen_option_by_kind(char, gamedata, "dungeon_casing") is not None
+
+
+def has_arcane_erosion(char, gamedata: GameData) -> bool:
+    """秘蝕(mysticism_100·R120):持頂點者的傷害法術命中疊「秘蝕」層 → 削目標通用魔抗
+    (magic.EROSION_*),因火/冰/雷亦吃 magic 抗 → 輔助所有傷害魔法。布林解鎖型(R35 安全,同
+    has_dungeon_casing/has_rally)→ 非頂點者恆 False → magic.cast 短路不施加 → sim byte-identical。"""
+    return _chosen_option_by_kind(char, gamedata, "arcane_erosion") is not None
 
 
 def overheal_ward(char, gamedata: GameData) -> dict | None:

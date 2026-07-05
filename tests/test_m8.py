@@ -8,7 +8,7 @@ from tesrpg.creation import build_character
 from tesrpg.gamedata import get_gamedata
 from tesrpg.rng import RNG
 from tesrpg.state import GameState, GameTime
-from tesrpg.systems import combat, dungeon, magic, powers
+from tesrpg.systems import combat, dungeon, magic, mastery, powers
 
 
 def _mage():
@@ -115,6 +115,48 @@ def test_conduct_stacks_amplifies_shock_and_clears():
     for _ in range(3):
         magic.tick_effects(foe, gd)
     assert magic.conduct_stacks(foe) == 0
+
+
+def test_arcane_erosion_shreds_magic_resist_for_all_damage_magic():
+    """R120 秘蝕(mysticism_100 頂點):持頂點者的**任何傷害法術**命中疊「秘蝕」→ 削目標通用魔抗
+    (3/層·夾 5=−15·floored≥0);因火/冰/雷亦吃 magic 抗 → **輔助所有傷害魔法**;3 回合無傷害法術則清零;
+    非頂點者不施加(byte-identical)。"""
+    gd, c = _mage()
+    c.max_magicka = c.magicka = 10**6
+    c.skills["mysticism"] = 100
+    mastery.choose(c, gd, "mysticism_100", "arcane_erosion")
+    assert mastery.has_arcane_erosion(c, gd)
+    foe = combat.spawn_creature(gd, "dremora_lord", RNG(1))   # fire75 + magic30
+    foe.health = foe.max_health = 10**6
+    for i in range(1, 6):
+        magic.cast(c, gd, "arcane_bolt", RNG(i), target=foe)
+        assert magic.erosion_stacks(foe) == i                 # 每擊 +1 層
+    for i in range(10):
+        magic.cast(c, gd, "arcane_bolt", RNG(i + 99), target=foe)
+    assert magic.erosion_stacks(foe) == 5                      # 夾 5 層
+    assert magic.erosion_resist_reduction(foe) == 15          # 3×5
+
+    # 輔助「所有」傷害魔法:fireball(fire·亦吃 magic 抗)在秘蝕滿層時解牆(dremora fire75+magic30:
+    # 無秘蝕 fireball ×0 全牆;−15 魔抗 → fire75+magic15=90 → ×0.10 解牆 → 破抗輔助火系)
+    def _fire_dmg(n_stacks):
+        gd3, cc = _mage(); cc.max_magicka = cc.magicka = 10**6; cc.skills["mysticism"] = 100
+        mastery.choose(cc, gd3, "mysticism_100", "arcane_erosion")
+        f = combat.spawn_creature(gd3, "dremora_lord", RNG(5)); f.health = f.max_health = 10**6
+        for _ in range(n_stacks):
+            magic.add_erosion(f)
+        return magic.cast(cc, gd3, "fireball", RNG(7), target=f)["damage"]
+    assert _fire_dmg(0) == 0 and _fire_dmg(5) > 0             # 破抗解火系牆 → 輔助所有傷害魔法
+
+    # 非頂點者:不疊秘蝕(短路 → byte-identical)
+    gd2, c2 = _mage(); c2.max_magicka = c2.magicka = 10**6
+    foe2 = combat.spawn_creature(gd2, "dremora_lord", RNG(1)); foe2.health = foe2.max_health = 10**6
+    magic.cast(c2, gd2, "arcane_bolt", RNG(1), target=foe2)
+    assert magic.erosion_stacks(foe2) == 0
+
+    # 3 回合無傷害法術 → 整組清零
+    for _ in range(3):
+        magic.tick_effects(foe, gd)
+    assert magic.erosion_stacks(foe) == 0
 
 
 # --- 狀態效果 -----------------------------------------------------------

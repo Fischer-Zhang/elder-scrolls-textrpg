@@ -144,7 +144,7 @@
 | skill_fortify | 技能 | +6~+10(*_75多+8、*_100 +10) |
 | attr_fortify | 屬性 | +4~+6(*_100如 iron_body str+5、tireless speed+6) |
 | resist_fortify | 抗性 | magic +10~+15、disease +25~+30 |
-| passive_armor | 減傷 | 多源相加 4~20(石膚20、銅皮鐵骨18、靈光護壁15、鐵布衫12…;總減傷夾 85% 硬頂+遞減,不趨近免疫)〔R118:變化魔皮 14 已改功能 shield_recoil〕 |
+| passive_armor | 減傷 | 多源相加 4~20(石膚20、銅皮鐵骨18、鐵布衫12…;總減傷夾 85% 硬頂+遞減,不趨近免疫)〔R118:變化魔皮14→shield_recoil·R120:靈光護壁 spectral_aegis→arcane_erosion 秘蝕(破抗 debuff·非護甲)〕 |
 
 ### 偷襲/刺客鏈(🔴詳見第④紅線小節)
 | perk | kind | 數值 | 疊加 |
@@ -154,6 +154,7 @@
 | approach_bonus | 偷襲機率 | 各 0.10/0.10/0.12(相加最高0.22) | 只動搶開場頻率,夾[0.05,0.97] |
 | 武器流派 weapon_mod | 傷害/命中/破甲 | power(偷襲前套)blade0.12+0.08、徒手0.15+0.10(R103:25 節點 fist_basics +0.05 已移除→改授 offbalance_unlock);hit/pen/recoil/fatigue/poise_rate(擒拿手0.6 加速徒手失衡)/on_hit | 🔴power 偷襲倍率**之前**算但不吃倍率;同 target 相加、on_hit 取最後;poise_rate 僅 hand_to_hand 命中時讀 |
 | 徒手失衡 ramp offbalance | 徒手傷害遞增(敵側暫態·鏡像 conduct R75) | 每層 +4%·夾 OFFBALANCE_MAX_STACKS=8(+32%);徒手命中 +1+skill//50 層(×(1+poise_rate))·窗口 3 回合·**不入存檔 R03** | 🔴只玩家徒手(`wpn_skill_id=="hand_to_hand"·not beast`)讀寫·ramp 閘 `not sneaking`(不放大偷襲);門檻4踉蹌·滿頂8 機率0.25 真擊倒(走 apply_control·solo 機率抵抗)+重置;**R103 gated:須 hand_to_hand≥25 解鎖(offbalance_unlock 自動授予)且未穿重甲(`inventory.wears_heavy_armor`)→ 重甲/未解鎖完全不累積** |
+| 秘蝕 erosion(破抗)| 削目標通用魔抗(敵側暫態·鏡像 conduct R75·削抗非增傷) | 每層 −EROSION_RESIST_PER_STACK=3 點 magic 抗·夾 EROSION_MAX_STACKS=5(−15)·floored≥0(只蝕既有抗性不製造弱點);傷害法術命中 +1 層·窗口 EROSION_TURNS=3·**不入存檔 R03** | 🔴僅 `mastery.has_arcane_erosion`(mysticism_100 秘蝕頂點)持有者的**任何傷害法術**施加+受益;因火/冰/雷亦吃 magic 抗 → **輔助所有傷害魔法**(非僅秘術 magic 系);`{**resist}` 複製不 mutate boss·非頂點者短路→sim byte-identical;達貢 fire85 恆牆·−15 削抗不破 720 offense 牆(sim 全 0%) |
 | armor_sneak_relief | 潛行 | relief 1.0(全免護甲噪音懲罰) | 單源;不放大倍率 |
 
 ### 法師/施法(🔴改施法常數 R10/R14 須跑 sim)

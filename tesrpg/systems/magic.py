@@ -295,7 +295,11 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
             char.fatigue = fatigue_before
             return _fail("沒有施法目標。")
         element = eff.get("element", "magic")
-        mult = formulas.resist_multiplier(entity_resist(target, gamedata), element)
+        resist = entity_resist(target, gamedata)
+        eroding = mastery.has_arcane_erosion(char, gamedata)   # R120 秘蝕頂點:削目標魔抗 → 輔助「所有」傷害魔法(火/冰/雷亦吃 magic 抗)
+        if eroding and erosion_stacks(target):
+            resist = {**resist, "magic": max(0, resist.get("magic", 0) - erosion_resist_reduction(target))}   # 破抗:降魔抗·floored≥0
+        mult = formulas.resist_multiplier(resist, element)
         dmg = _scaled_damage(eff["magnitude"] * power * rng.roll(0.9, 1.1), mult)
         if element == "shock":                         # 感電易傷(R75):依目標導電層放大電傷(抗性後)
             dmg = max(1, int(round(dmg * conduct_damage_multiplier(target))))
@@ -306,6 +310,8 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
         killed = target.health <= 0
         if element == "shock" and not killed:          # 每次電擊 +1 層導電(夾 10·刷新 3 回合)
             add_conduct(target)
+        if eroding and not killed:                     # R120 每次傷害法術 +1 層秘蝕(削魔抗,任何傷害元素皆疊·輔助全體傷害魔法)
+            add_erosion(target)
         msg = f"{sp['name']}命中{target.name},造成 {dmg} 點魔法傷害{_resist_tag(mult)}!"
         if kind == "damage_status" and not killed:
             st = eff["status"]
@@ -474,10 +480,14 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
             char.fatigue = fatigue_before
             return _fail("沒有可及的敵人。")
         element = eff.get("element", "magic")
+        eroding = mastery.has_arcane_erosion(char, gamedata)   # R120 秘蝕頂點:削目標魔抗 → 輔助「所有」傷害魔法
         parts = []
         for e in living:
             if kind != "status_all":            # 含傷害的 AoE
-                mult = formulas.resist_multiplier(entity_resist(e, gamedata), element)
+                resist = entity_resist(e, gamedata)
+                if eroding and erosion_stacks(e):
+                    resist = {**resist, "magic": max(0, resist.get("magic", 0) - erosion_resist_reduction(e))}   # 破抗:降魔抗·floored≥0
+                mult = formulas.resist_multiplier(resist, element)
                 dmg = _scaled_damage(eff["magnitude"] * power * rng.roll(0.9, 1.1), mult)
                 if element == "shock":          # 感電易傷(R75):每敵各依自身導電層放大電傷
                     dmg = max(1, int(round(dmg * conduct_damage_multiplier(e))))
@@ -486,8 +496,11 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
                 e.health = max(0, e.health - dmg)
                 loss = before - e.health        # 實際扣血(避免溢殺灌水)
                 damage += loss
-                if e.health > 0:                # 每敵各 +1 層導電
-                    add_conduct(e)
+                if e.health > 0:                # 每敵各 +1 層(電=導電〔R75·shock 閘=對齊單體〕·秘蝕=R120 頂點·任何傷害元素)
+                    if element == "shock":
+                        add_conduct(e)
+                    if eroding:
+                        add_erosion(e)
                 parts.append(f"{e.name} {loss}{_resist_tag(mult)}")
             if kind in ("status_all", "damage_status_all") and e.health > 0:
                 st = eff["status"]
@@ -732,6 +745,38 @@ def add_conduct(creature) -> None:
         creature.active_effects.append({"kind": "conduct", "stacks": 1, "turns": CONDUCT_TURNS})
 
 
+# 秘蝕(R120 秘術破抗「輔助」頂點·capstone-gated):持頂點者的**任何傷害法術**命中 → 目標疊「秘蝕
+# erosion」層,每層**削減目標 EROSION_RESIST_PER_STACK 點通用魔法抗性**(夾 EROSION_MAX_STACKS 層 = −15·
+# **floored ≥0:只蝕穿既有抗性、不製造弱點**)。因火/冰/雷(MAGIC_ELEMENTS)亦吃 magic 抗 → 削 magic 抗
+# **輔助所有傷害魔法**(非僅秘術 magic 系),破抗=降魔抗、非直接增傷。每次命中刷新 EROSION_TURNS,3 回
+# 合內無新傷害法術則整組清零(靠 tick turns 歸零)。**僅 mastery.has_arcane_erosion 頂點者施加·純法術
+# 傷害路徑**(combat 武器/非頂點者不讀 → sim byte-identical;鏡像 conduct 疊層結構但削抗而非增傷)。
+# 🔴 磁量使用者拍板 3/層·夾 5 層 = −15 魔抗;達貢 fire85 恆牆火系·720HP + 削抗後絕對傷害仍小 → 必 sim 守牆。
+EROSION_RESIST_PER_STACK = 3
+EROSION_MAX_STACKS = 5
+EROSION_TURNS = 3
+
+
+def erosion_stacks(creature) -> int:
+    e = next((x for x in creature.active_effects if x.get("kind") == "erosion" and x.get("turns", 0) > 0), None)
+    return e.get("stacks", 0) if e else 0
+
+
+def erosion_resist_reduction(creature) -> int:
+    """秘蝕層對應的魔法抗性削減點數(夾 EROSION_MAX_STACKS 層 × 每層;破抗=降魔抗,cast 端 floored ≥0)。"""
+    return EROSION_RESIST_PER_STACK * erosion_stacks(creature)
+
+
+def add_erosion(creature) -> None:
+    """秘術命中 → 疊一層秘蝕(夾 EROSION_MAX_STACKS)+ 刷新計時;無則新建。"""
+    e = next((x for x in creature.active_effects if x.get("kind") == "erosion" and x.get("turns", 0) > 0), None)
+    if e:
+        e["stacks"] = min(EROSION_MAX_STACKS, e.get("stacks", 0) + 1)
+        e["turns"] = EROSION_TURNS
+    else:
+        creature.active_effects.append({"kind": "erosion", "stacks": 1, "turns": EROSION_TURNS})
+
+
 # 徒手「失衡 off-balance」warfare(落實 skills.json 招牌「耗損對手體力」):玩家徒手命中堆疊敵
 # 失衡層 → 層數放大後續徒手傷害(formulas.offbalance_damage_multiplier)+ 跨門檻踉蹌/滿頂真擊倒。
 # 鏡像 conduct:暫態 active_effects 疊層、刷新窗口、tick turns 歸零整組清(不入檔 R03)。
@@ -939,6 +984,8 @@ def tick_effects(entity, gamedata=None) -> list[str]:
                 msgs.append(f"{name}回過神來,敵意重新燃起。")
             elif e["kind"] == "conduct":
                 msgs.append(f"{name}身上的導電消退了。")
+            elif e["kind"] == "erosion":
+                msgs.append(f"{name}身上的秘蝕褪去,魔法抗性回復如常。")   # R120 秘蝕過期
             elif e["kind"] == "offbalance":
                 msgs.append(f"{name}穩住了重心。")
             elif e["kind"] == "taunt":

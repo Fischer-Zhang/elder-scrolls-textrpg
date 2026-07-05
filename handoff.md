@@ -1410,6 +1410,16 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 
 ---
 
+### R120 · 秘術頂點功能化:秘蝕(arcane erosion)—— 破抗輔助頂點(削魔抗·輔助所有傷害魔法)[re-sim byte-identical]
+
+**承 R119 秘術非元素傷害身份·使用者評估「靈光護壁改秘蝕系統」→ 多輪拍板收斂**:①(否決反射/增傷)→ **降敵人魔抗(破抗)非增傷**·② **輔助所有傷害魔法**(非僅秘術 magic 系·因火/冰/雷 `MAGIC_ELEMENTS` 亦吃通用 magic 抗)·③ 純攻頂點(移除 +15 被動護甲·對標 R118/R119 冷→功能)·④ 磁量 **3 點/層·夾 5 層 = −15 魔抗**(使用者拍板)。
+
+**身份**:秘術「破抗答案」的主動引擎 + **輔助向頂點**。myst_100 冷 `spectral_aegis`(passive_armor 15·敘述-程式不符)→ `arcane_erosion`「秘蝕」(布林解鎖·純攻)vs `soul_siphon`(附魔身份)真二選一。持頂點者的**任何**傷害法術命中都削 magic 抗 → **輔助整個傷害魔法軍火庫**(戰法師/多學派法師最愛),非僅秘術自身。
+
+**機制(R75 conduct 模板·削抗非增傷)**:新 status kind `erosion`(暫態·不入檔 R03)+ `magic.EROSION_RESIST_PER_STACK=3`/`EROSION_MAX_STACKS=5`/`EROSION_TURNS=3` + helper `erosion_stacks`/`erosion_resist_reduction`/`add_erosion`(鏡像 conduct)。**cast 兩傷害分支**(damage/damage_all):持頂點者(`mastery.has_arcane_erosion`)任何傷害法術命中 → 以 `{**resist, "magic": max(0, magic − 3×層)}` **複製** resist(🔴 不 mutate boss 活 dict·proof 證 dagon resist 施法後仍 50)計傷 + `add_erosion`(任何傷害元素皆疊);**floored ≥0**(只蝕既有抗性·不製造弱點)。新 kind 三步(R21):`_IMPLEMENTED_KINDS` + `has_arcane_erosion` 布林 getter(鏡像 has_dungeon_casing·R35 安全·非頂點者恆 False 短路)+ mastery.json 節點。**順帶修** AoE `add_conduct` 由無條件改 shock-gated(對齊單體分支·免非電系 AoE 疊死導電層;審查疑「非本輪」→ 驗證後駁回=實為 R75 latent 不一致修正·byte-identical)。
+
+**🔴 平衡(sim_builds·必守達貢牆)**:**達貢 720 offense 牆穩守 = arcanist + 秘蝕火/冰/雷法師全 0%**(fire85 恆牆火系·−15 削抗後 frost/shock 對達貢 ×0.25 絕對傷害仍小·脆皮法師先死);**不解元素大法師牆**(fire80 恆牆 fire 法師·即使 −15);**輔助幅度小=弱於毀滅**(古龍 shock 90→92%·arcanist niche fused 95→97%·umaril 62→70%·古龍 73→77%)。arcanist 仍唯一破 fused/大法師。**🔴 sim_assassin BYTE-IDENTICAL**(隔離 HEAD worktree 空 diff·刺客不施法·has_arcane_erosion 短路·非頂點 eroding False → resist 不動 → mult 逐位元組同)。零新存檔欄(erosion 暫態·opt_id 改走 `ensure_mastery_choices` 退 pending)。run_all 111(test_m8 +秘蝕〔疊層/削抗/輔助火系解牆/清零/非頂點不施加〕·test_mastery 2 斷言更新去 spectral_aegis)。**對抗審查(4 維 fan-out·7 agent)**:**0 correctness/balance/紅線/byte-identity/save 缺陷**·2 confirmed 皆文字陳舊(節點 desc 磁量 −1/−5→−3/−15〔改磁量時漏更新〕·BUFFS/build.md 靈光護壁 passive_armor 陳舊)已修·AoE conduct-gate 疑慮驗證後駁回。🔴 加秘術破抗走 `arcane_erosion`(布林·削 magic 抗·floored≥0·resist 必 `{**resist}` 複製**不 mutate** boss);benefits 所有傷害魔法靠 magic-resist 共用軸(火/冰/雷亦吃);純攻頂點無殘留防禦;動 `EROSION_*` 磁量 → sim_builds(守達貢全 0%)+ sim_assassin(byte-identical)。**延後**:秘術終極法術(R78 式試煉)。
+
 ### R119 · 秘術功能化:非元素魔法傷害法術線(consistency 破抗身份)+ 里程碑支撐 [re-sim byte-identical]
 
 **評估**(承 R118 法術學派冷→暖·使用者選最後缺口 秘術):秘術(神秘學)是**唯一無戰鬥身份的魔法學派** —— 法術最少(7 道 vs 召喚15/毀滅14/變化11)·只 3 道結界隨威力縮放·里程碑 4/7 冷數值填充(`spectral_ward`/`spectral_aegis` 兩 passive_armor 15 且**敘述-程式不符**〔宣稱魔力閘·實無〕)·正典招牌(靈魂/傳送/探測/吸收/反射)大多未交付·實際 payload 只是「附魔的技能值」。**使用者三度拍板收斂**:①(否決反射/秘防)→ **非元素魔法傷害**·② **純傷害線 + 里程碑**(招牌狀態/頂點「之後再改」)·③ **傷害數值須低於毀滅三系**(可靠性稅)。

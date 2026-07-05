@@ -225,8 +225,8 @@ effective_cost = base × (1 − min(0.4, 學派技能/250)) × Π spell_cost_fac
 | 階 | A | B |
 |---|---|---|
 | 50 | 省魔秘法(cost ×0.85) | 結界凝練(結界吸收 power +0.10) |
-| 75 | ★奧術連鎖(連發 +8% power·−12% 體/層·疊 2 層) | 靈體護壁(被動護甲 +15) |
-| 100 | 靈魂虹吸(★附魔強度 ×1.20·放大全自附魔) | 靈光護壁(被動護甲 +15·與 75 相加) |
+| 75 | ★奧術連鎖(連發 +8% power·−12% 體/層·疊 2 層) | 奧術專精(秘術法術威力 +15%·強化傷害/結界〔R119〕) |
+| 100 | 靈魂虹吸(★附魔強度 ×1.20·放大全自附魔) | ★秘蝕(破抗·傷害法術命中削目標魔抗 −3/層·夾 −15·輔助全傷害魔法〔R120〕) |
 
 **副軸流派(選一條當骨幹)**
 - **純輸出毀滅**:阿爾特默/丹莫 + dest 全取(凝神聚法→省魔催動→過載 power+0.20)+ 元素弱點種族/星座 + 力竭管控(滿體才打滿威力)。
@@ -287,7 +287,7 @@ effective_cost = base × (1 − min(0.4, 學派技能/250)) × Π spell_cost_fac
 | **種族(建檔寫 base)** | 諾德 str/end+10·blade+5·**blunt+10**·heavy_armor+5·block+5·frost 抗 50 / 獸人 str/end+10·will+5·blunt+10·**heavy_armor+10(全種族最高)**·block+5·magic 抗 25(★重甲鈍器向最佳) / 紅衛 str/end+10·agi+5·**blade+10**·blunt+5·heavy_armor+5·疾/毒抗 75(刀劍向最佳);帝國人 blade/blunt/heavy_armor+5·per+10(均衡) | `races.json`;技能起始與屬性皆併 base,非獨立層;block 起始諾德=獸人=+5(非獸人獨高) |
 | **星座(建檔寫 base)** | ★**戰士座** str+5·end+5(無代價,純戰士最佳)/ 領主座 end+5+每日自療 60(▼火抗−25)/ 淑女座 per+10·end+5 | `birthsigns.json` |
 | **陣營** | ⚠ **皆非直接戰力**:戰士公會 `armory_discount`(買武/甲 cap 0.35)·戰友團 `merc_discount`(雇傭兵 cap 0.5)·九神騎士團 `restoration_boon`(治療縮放)→ 經濟/治療層,**對輸出/減傷零加成** | `factions.json:11,156,185`;戰力來自種族/星座/里程碑/裝備層 |
-| **里程碑:被動護甲**(多源 SUM,無 MAX 遮蔽) | heavy_armor_25 重甲入門+6 · heavy_armor_100 銅皮鐵骨+18 · block_25 持盾入門+5 · block_75 撐架穩步+10 · block_100 銅牆鐵壁+12;另跨樹石膚/靈體護壁等 | `mastery.py:297-300` SUM 相加進 armor_rating;**總減傷仍夾 85% 硬頂、不趨近免疫** |
+| **里程碑:被動護甲**(多源 SUM,無 MAX 遮蔽) | heavy_armor_25 重甲入門+6 · heavy_armor_100 銅皮鐵骨+18 · block_25 持盾入門+5 · block_75 撐架穩步+10 · block_100 銅牆鐵壁+12;另跨樹石膚等 | `mastery.py:297-300` SUM 相加進 armor_rating;**總減傷仍夾 85% 硬頂、不趨近免疫** |
 | **里程碑:重甲減傷/反控** | heavy_armor_75 **壁壘**(物理 ×0.85·▼代價攻擊耗體 ×1.2)vs 巍然不動(magic 抗+10);heavy_armor_50 **重甲反震**(反彈 12%·無耗體)vs 百戰不染(disease+25);heavy_armor_100 銅皮鐵骨(+18)vs **重壓**(被擊 22% 震開·stagger turns 2) | `mastery.json:46/278/387/389`;壁壘僅物理、元素穿透 |
 | **戰鬥動作:盾牆架勢**(非里程碑) | 立陣:物理受傷 **×0.70**(`SHIELD_WALL_MITIGATION=0.30`,僅物理、元素穿透)+ **嘲諷**(鎖敵火力到坦);門檻=持盾 + base block≥50;每回合上繳 6 體力(歸 0 落陣) | `main.py:1727-1730`;`combat.py:286-290,445,98`;與壁壘/盾反獨立疊乘 |
 | **里程碑:屬性 fortify** | enduring(athletics_75 end+5)·mighty_arm(blunt_75 str+4·屬鈍器分支取捨)·swift_blade(blade_75 agi+4·屬刀劍取捨) | 走 mastery_attr 層 SUM,絕不寫回 base |

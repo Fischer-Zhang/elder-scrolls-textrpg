@@ -132,7 +132,8 @@ def make_arcanist():
     c = make_mage()
     c.spells = ["arcane_blast", "arcane_nova", "arcane_bolt", "close_wounds", "heal", "stoneflesh"]
     c._dmg_pool = ["arcane_blast", "arcane_nova", "arcane_bolt"]
-    _choices(c, {"mysticism_75": "arcane_focus", "mysticism_50": "ward_focus"})
+    _choices(c, {"mysticism_75": "arcane_focus", "mysticism_50": "ward_focus",
+                 "mysticism_100": "arcane_erosion"})   # R120 秘蝕頂點:削魔抗·輔助所有傷害魔法
     stats.recompute_max_resources(c, gd, restore_full=True)
     return c
 

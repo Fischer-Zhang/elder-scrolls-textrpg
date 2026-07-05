@@ -640,13 +640,14 @@ def test_alchemy_potion_potency_and_poison_unlocks():
     assert gd2.item(r["item_id"])["poison"]["status"] == "weaken"
 
 
-def test_mysticism_enchant_potency_and_absorb():
+def test_mysticism_capstones():
     gd, c = _char(mysticism=100)
     mastery.choose(c, gd, "mysticism_100", "soul_siphon")
     assert mastery.enchant_potency(c, gd) == 0.20
     gd2, c2 = _char(mysticism=100)
-    mastery.choose(c2, gd2, "mysticism_100", "spectral_aegis")
-    assert mastery.passive_armor_bonus(c2, gd2) == 15     # 靈光護壁(原 spell_absorb 抗性 → 改被動護甲 apex)
+    mastery.choose(c2, gd2, "mysticism_100", "arcane_erosion")   # R120 秘蝕頂點(取代靈光護壁 passive_armor)
+    assert mastery.has_arcane_erosion(c2, gd2)
+    assert mastery.passive_armor_bonus(c2, gd2) == 0             # 秘蝕純攻 ramp·不再給被動護甲
 
 
 def test_illusion_fear_on_hit_and_merchant():
@@ -1083,9 +1084,8 @@ def test_capstone_apex_fix():
     from tesrpg.rng import RNG
     gd, c = _char(hand_to_hand=100, alteration=100, mysticism=100, alchemy=100, restoration=100, heavy_armor=100)
     mastery.choose(c, gd, "hand_to_hand_100", "iron_shirt")
-    mastery.choose(c, gd, "mysticism_100", "spectral_aegis")
-    # R118:變化 mage_flesh(passive_armor 14)已改功能 kind shield_recoil → 此處剩 iron_shirt + spectral_aegis 兩源
-    assert mastery.passive_armor_bonus(c, gd) == 12 + 15               # 跨技能 passive_armor 相加不遮蔽
+    # R118 mage_flesh→shield_recoil · R120 spectral_aegis→arcane_erosion(秘蝕·純攻)→ passive_armor 僅剩 iron_shirt(跨技能相加不遮蔽見 test_passive_armor_stacks_across_skills)
+    assert mastery.passive_armor_bonus(c, gd) == 12
     mastery.choose(c, gd, "alchemy_75", "concentrated"); mastery.choose(c, gd, "alchemy_100", "panacea")
     assert abs(mastery.potion_potency(c, gd) - 0.35) < 1e-9            # 0.20+0.15 聚合(原單源)
     mastery.choose(c, gd, "restoration_100", "everflow")
