@@ -742,10 +742,11 @@ def prep_budget(scout_skill: int) -> int:
 # --- 抗性與元素 ---------------------------------------------------------
 MAGIC_ELEMENTS = ("fire", "frost", "shock")   # 受「magic」總抗性影響的學派元素
 
-# R122 聖騎士:聖光(holy)傷害對不死系放大(正典 Sun Damage 雙倍剋不死)。
-# 聖光法術走 element="magic"(繞火/冰/雷抗,只吃 magic 抗)+ 低基礎 magnitude(對生者=弱泛用法術),
-# 對不死系乘此倍率 → 專精殺器。🔴 達貢=戴德拉非不死 → 聖光對他弱且可被 magic 抗牆 → 終王牆自然成立。
-HOLY_UNDEAD_MULT = 2.0
+# R123 聖騎士反死靈改制:治療能量對不死是烈焰(正典 —— 治療 = 生命能量,療活物、焚亡者)。
+# 治療法術(minor_heal/heal/close_wounds·smite_undead)指向不死敵 → 造傷 = 回復量 × 此係數 × 威力(element magic)。
+# 取 0.5 對齊原聖光線強度(close_wounds 95×0.5×威力 ≈ 原 sun_flare)。🔴 只對不死;對活物治療法術零傷害
+# → 恢復系對活人零遠程輸出(靠近戰);達貢=非不死 → 治療對他完全無傷 → 終王牆最硬(聖騎士對達貢零魔法輸出)。
+HEAL_SMITE_FACTOR = 0.5
 
 
 def resist_multiplier(resist: dict, element: str) -> float:

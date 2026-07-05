@@ -33,7 +33,7 @@
 - **開局背景**(14 種,只給處境不給數值)+ **種子重玩性**;冒險/傳奇兩種死亡模式 + 一生傳奇總結評分
 
 #### 戰鬥與魔法
-- 回合制**多敵 + 團隊戰鬥**(召喚物/傭兵同伴);**同伴角色化**(9 具名同伴:持久 HP/羈絆 + 具名招募任務 + 羈絆階解鎖的專屬支線 + 就地對話 + 完成支線的忠誠弧頂點〔戰術盟友光環/被動非戰鬥槓桿;盟友限定守刺客紅線〕;復用 `companion_bond` 當忠誠軸,零新存檔欄;**R86 同伴戰鬥施法**:輔助型同伴角色感知主動支援 —— 法系治療〔含治療玩家〕/盾衛護盾/領袖激勵,門檻+冷卻+固定威力「輔助但不破關」〔sim_party 驗施法邊際 +0~8%·無 stalemate〕;**R87 敵方支援施法者**:法系/祭司怪〔女巫/薩滿/祭司/死靈〕對稱地在隊友血低時治療/護盾其他敵人 → 群戰「先點掉治療者」戰術〔幅度因子 0.35 威脅但可破解·無 stalemate·敵 empower 反效果故只 heal/shield〕);**六大學派 + AoE**(召喚/秘術補完至各 7 法術,與毀滅/復原/變換同列;**召喚**=元素元身/魔人 + 束縛兵刃〔法系近戰〕+ 亡者復生〔屍起為盟〕、**秘術**=法術結界〔吸法術傷·吸魔變體〕+ 驅散 + 群體擒魂 + **非元素魔法傷害〔R119:飛彈/轟擊/星爆·一律穩定 `magic` 傷害·不被單元素抗歸零·只吃通用魔抗 → 破抗答案〕· 秘蝕破抗頂點〔R120:傷害法術命中削敵魔抗·輔助全傷害魔法〕· 非戰鬥實用法術 + 湮識終極試煉〔R121:靈視/靈識遠格揭露·念力·念力球解謎地城·抗魔法師 boss·終極魔法核彈加深秘蝕〕**、**復原**=治療/再生/淨疫 + **聖騎士〔R122 完整弧:①反死靈聖光〔element magic·holy 旗標·低基礎 mag〕對 17 隻不死系 ×2·驅散亡者·對生者弱泛用 → 不死剋星專精;②守護庇佑=聖化領域減傷 aura〔物理+元素·gated 玩家·非秘術吸收池〕+ 里程碑聖光攻擊(holy_zeal)vs 守護(sacred_bulwark 聖化 0.30)身份;③終極破曉聖裁〔單體巨傷·經聖光試煉·高岩不朽陵墓·不朽之王 HP300 undead boss·復原 75 閘〕—— 六大學派全有身份〕**);元素抗性/弱點、狀態效果、出生星座每日之力
+- 回合制**多敵 + 團隊戰鬥**(召喚物/傭兵同伴);**同伴角色化**(9 具名同伴:持久 HP/羈絆 + 具名招募任務 + 羈絆階解鎖的專屬支線 + 就地對話 + 完成支線的忠誠弧頂點〔戰術盟友光環/被動非戰鬥槓桿;盟友限定守刺客紅線〕;復用 `companion_bond` 當忠誠軸,零新存檔欄;**R86 同伴戰鬥施法**:輔助型同伴角色感知主動支援 —— 法系治療〔含治療玩家〕/盾衛護盾/領袖激勵,門檻+冷卻+固定威力「輔助但不破關」〔sim_party 驗施法邊際 +0~8%·無 stalemate〕;**R87 敵方支援施法者**:法系/祭司怪〔女巫/薩滿/祭司/死靈〕對稱地在隊友血低時治療/護盾其他敵人 → 群戰「先點掉治療者」戰術〔幅度因子 0.35 威脅但可破解·無 stalemate·敵 empower 反效果故只 heal/shield〕);**六大學派 + AoE**(召喚/秘術補完至各 7 法術,與毀滅/復原/變換同列;**召喚**=元素元身/魔人 + 束縛兵刃〔法系近戰〕+ 亡者復生〔屍起為盟〕、**秘術**=法術結界〔吸法術傷·吸魔變體〕+ 驅散 + 群體擒魂 + **非元素魔法傷害〔R119:飛彈/轟擊/星爆·一律穩定 `magic` 傷害·不被單元素抗歸零·只吃通用魔抗 → 破抗答案〕· 秘蝕破抗頂點〔R120:傷害法術命中削敵魔抗·輔助全傷害魔法〕· 非戰鬥實用法術 + 湮識終極試煉〔R121:靈視/靈識遠格揭露·念力·念力球解謎地城·抗魔法師 boss·終極魔法核彈加深秘蝕〕**、**復原**=治療/再生/淨疫 + **聖騎士〔R122+R123:①反死靈=**治療傷害不死**〔R123 改制·治療 minor_heal/heal/close_wounds〔smite_undead〕指向不死敵造傷=回復量×0.5×威力·**對活物零傷害**〕+ 驅散亡者〔turn_undead〕→ 生命能量療活物焚亡者的正典專精;②守護庇佑=聖化領域減傷 aura〔物理+元素·gated 玩家〕+ 里程碑聖光攻擊(holy_zeal)vs 守護(sacred_bulwark)身份;③終極**破曉之光**〔radiant·治全隊+焚全體不死·經聖光試煉·高岩不朽陵墓·不朽之王 HP300 undead boss·復原 75 閘〕—— 恢復系對活人零魔法輸出=最正典專精·六大學派全有身份〕**);元素抗性/弱點、狀態效果、出生星座每日之力
 - **三系資源對稱**:施法也耗體力、力竭降法效(`cast_fatigue_*`),**法袍套裝**省體施法(法師的對應裝甲)
 - **煉金毒藥 + 武器塗毒**;**毒劑深化(Phase 2 / R31)**:五毒型(DoT/麻痺 + 衰毒/遲緩/懼毒,特殊型需里程碑解鎖;solo BOSS 對控制型免疫);**煉金限時增益藥水(深化 Phase 1 / R30·材料 R90-R92 餵飽)**:強化屬性/技能 + 抗元素**限時**藥劑(走獨立 `potion_*` 層、絕不寫 base、**同 kind+param 取最強非疊加**);**可釀池 4→~28 種**:R90 補 resist_fire/frost/shock 單元素抗(補法師對元素 boss)+ 中性屬性/restoration;R91 材料加厚至 4 效果 + 9 種安全增益;**R92 開攻擊向 fortify**(力量/武器技能/潛行/毀滅·依 R30「放開→必過 sim」·新 fortify-dosed sim 場景驗 solo cap 仍夾·**smithing 永久擋**〔過頂 temper 永久武傷〕);**效果逐步揭露(Phase 3 / R32)**:材料效果預設 `???`,經嚐試/煉製/技能揭露(純資訊層,不碰 brew 數學);**疾病可釀(R54)**:療疾材料(大蒜/焦皮鼠革/吸血鬼塵 `cure_disease`)→ 釀療疾藥水(統一淨化,同神殿/法術/`cure_disease_potion`);**潛行刺客系**:偷襲先機、暗殺殘響、雙持、**隱遁再襲(潛行 25 里程碑「隱遁之術」;連環踏影對單體仍遞減、反 solo boss 風箏)**、戰前偵查;武器流派(潛襲/破甲/速度)
 
@@ -1409,6 +1409,22 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 - **🔴 鐵律**:加 role 純改 `dialogue.json`(roles map + topics·身份 flavor 為主·功能 effect 走 events 支援集 + `once` 防刷·不帶 skill_xp)+ `npcs.json` role 欄;加流言線索純改 `npcs.json`(rumor_quest/rumor_landmark/rumor_disposition)+ `quests.json`(`source:"rumor"`·僅 clear/reach·**目標無 visible gate**·NPC↔線索目標**須同省**);**新增 source:rumor 任務務必有 NPC rumor_quest 回指**(否則 reachability guard 攔=孤兒);追問傳聞兌現走既有 `_accept_and_brief`/`landmarks.discover`;純社交內容 → sim byte-identical 免跑(動 combat/formulas 才需)。**前瞻**:Phase D 可純資料把其餘 ~40 具名 rumor NPC 逐批接上 + 補 role 密度;若要更多功能 role 話題(商人折扣等)需新 effect + 評估碰 shop/存檔欄。
 
 ---
+
+### R123 · 恢復系反死靈改制:治療傷害不死(取代 R122 聖光攻擊線)[re-sim byte-identical] [save-safe]
+
+**承 R122 收官後使用者評估**:「不做聖光攻擊,而是治療可以對不死產生傷害」。評估揪出這是**反死靈最正典的機制**(治療=生命能量·療活物焚亡者)且**更優雅**(收斂整個學派·現有 7 治療自動成反死靈軍火庫·零冗餘攻擊法術);平衡數學已對上(治療值 ×0.5 ≈ 原聖光線)。使用者拍板改制。**復用 R122 全部基建**(_is_undead·17 undead·turn_undead·consecration·試煉/boss/地城/里程碑)→ 只換「傷害交付方式」。
+
+**機制(magic.py + formulas.py + main.py·🔴 未碰 combat.py)**:
+- **治療傷害不死(smite)**:`minor_heal`/`heal`/`close_wounds` 加 `smite_undead:true`;magic.cast heal 分支頂 `elif kind=="heal" and sp.get("smite_undead") and target is not None and _is_undead(target)` → 造傷 = magnitude × 威力 × `formulas.HEAL_SMITE_FACTOR`(0.5·element magic 吃 magic 抗)·設 damage/killed。**否則走原自療分支不變**(overheal_ward/restoration_boon/瑪拉加成全保)。🔴 **只對不死**;對活物治療零傷害 → **恢復系對活人零遠程輸出**(靠近戰)。
+- **破曉之光 `dawn_judgment`(id 保留·名/kind 改·radiant 終極)**:新 kind `radiant`(heal 55·mag 38·cost 66·target all)→ 治 char+存活盟友(heal×威力)+ 灼燒全體不死(mag×威力·element magic)·活物毫髮無傷·enemies/battle 可 None(戰外只治己)。
+- **targeting(main.py)**:施 smite 治療且場上有不死敵 → 選單「🩹治療自己 / ☀️灼燒不死」→ smite 選不死目標·否則 target None 自療。**↻ 再施(R113)保留 smite 目標**(對抗審查 minor:原重放退化成自療·現讀 `last["target"]`·目標已死則重選不死)。
+- **移除**:holy_bolt/sun_flare(冗餘)+ 兩處 holy 傷害乘子(damage/AoE 路徑·turn_undead 的 holy **控場**閘保留)+ `HOLY_UNDEAD_MULT` 常數(→`HEAL_SMITE_FACTOR`);world spell_stock 清 holy_bolt/sun_flare;console spell_effect_summary 加 radiant + heal 註 smite;schema `_KINDS += radiant`。
+
+**🔴 sim_assassin BYTE-IDENTICAL**(隔離 HEAD worktree 空 diff·**未碰 combat.py**·formulas 只換刺客未用的常數·刺客不施法;main.py 選單流不在 sim 路徑)。**🔴 sim_builds make_paladin(smite/radiant·`_paladin_act` 對不死 smite/radiant·對活物平砍)**:**不死 boss 100%**(deathless_king/vampire_lord/malyn_varen·showcase)·**非不死 boss 0%**(dagon/古龍——恢復系對活人零魔攻·**達貢牆最硬**·純施法 fixture 無近戰投入)。整個 smite targeting 流程煙霧驗過(選單→smite→84 傷)。run_all 113(test_paladin 改寫:smite/radiant/自療/活物免疫/repeat-smite/turn_undead/consecration/trial)。零新存檔欄(smite_undead=spell 資料·radiant=kind·無 Character 欄)。codex/BUFFS 更新·trial 文字 破曉聖裁→破曉之光。**對抗審查 4 維 8 agent:0 blocker/major·2 confirmed(repeat-smite 退化自療 minor + docs 未寫 nit)已修**。
+
+**🔴 設計取捨(使用者知情拍板)**:恢復系從此**對活人零魔法遠程輸出**(治療只療活物·smite 只焚不死)=更正典、更收斂的專精,但純施法聖騎士 vs 活人靠近戰(melee build)。達貢牆因此最硬(聖騎士對非不死終王零魔法輸出)。
+
+🔴 加反死靈傷害走 smite(治療 smite_undead·只傷不死·factor 0.5)或 radiant(治+焚);**治療永不傷活物**(_is_undead 閘·勿放開);動 `HEAL_SMITE_FACTOR`/radiant/heal mag → sim_builds(不死不 trivialize·守達貢牆)+sim_assassin(byte-identical·未碰 combat)。turn_undead 的 holy 控場閘、consecration 皆 R122 不變。**下方 R122 各 Phase 為歷史紀錄:聖光攻擊線 holy_bolt/sun_flare/HOLY_UNDEAD_MULT 已被本輪取代;守護(consecration)/里程碑/試煉/17 undead 仍現行。**
 
 ### R122 · 恢復系功能化:聖騎士(反死靈聖光 + 守護庇佑)完整弧 — Phase A [re-sim] [save-safe](三 phase 分提交,承進行中)
 

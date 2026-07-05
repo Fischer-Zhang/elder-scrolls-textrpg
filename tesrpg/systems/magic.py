@@ -301,8 +301,6 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
             resist = {**resist, "magic": max(0, resist.get("magic", 0) - erosion_resist_reduction(target))}   # 破抗:降魔抗·floored≥0
         mult = formulas.resist_multiplier(resist, element)
         dmg = _scaled_damage(eff["magnitude"] * power * rng.roll(0.9, 1.1), mult)
-        if eff.get("holy") and _is_undead(target, gamedata):   # R122 聖光剋不死:對不死系傷害放大(正典 Sun Damage)
-            dmg = int(round(dmg * formulas.HOLY_UNDEAD_MULT))
         if element == "shock":                         # 感電易傷(R75):依目標導電層放大電傷(抗性後)
             dmg = max(1, int(round(dmg * conduct_damage_multiplier(target))))
         dmg += round(inventory.staff_element_flat(char, gamedata, element) * mult)   # R77 持杖同系直擊加傷(吃抗性)
@@ -347,6 +345,17 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
                                         "dot_turns": rs.get("dot_turns", 3), "turns": 2})
             msg += " 法力在你的兵刃上共鳴,蓄勢待發。"
 
+    elif kind == "heal" and sp.get("smite_undead") and target is not None and _is_undead(target, gamedata):
+        # R123 聖騎士:治療能量對不死是烈焰 —— 指向不死敵的治療法術造傷(而非療癒),element magic(吃 magic 抗)。
+        # 🔴 只對不死(targeting 只讓 smite 治療指向不死敵);對活物治療法術永遠零傷害 → 恢復系對活人零遠程輸出。
+        mult = formulas.resist_multiplier(entity_resist(target, gamedata), "magic")
+        dmg = _scaled_damage(eff["magnitude"] * power * formulas.HEAL_SMITE_FACTOR, mult)
+        before = target.health
+        target.health = max(0, target.health - dmg)
+        damage = before - target.health
+        killed = target.health <= 0
+        msg = f"{sp['name']}的聖光灼燒{target.name},造成 {dmg} 點傷害{_resist_tag(mult)}!"
+
     elif kind == "heal":
         # 九神騎士團:聖光眷顧 —— 治療回復量隨階級放大(只對會員;乘在溢盾計算之前)
         # R107 瑪拉之佑:治療法術加成(同槽相加;無祝福 → +0 逐位元組同;僅 heal kind,不碰 HoT/同伴 AI)
@@ -371,6 +380,30 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
                     char.active_effects.append({"kind": "shield", "magnitude": mag,
                                                 "turns": ward["turns"], "source": "overheal_ward"})
                     msg += f" 滿溢的聖光凝成護盾(護甲 +{mag},{ward['turns']} 回合)。"
+
+    elif kind == "radiant":   # R123 破曉之光(終極):治全隊 + 灼燒全體不死(生命燒盡死亡的極致;皆吃威力)
+        heal_amt = round(eff.get("heal", 0) * power)
+        healed = []
+        for d in [char] + ([a for a in battle.get("allies", []) if a.health > 0] if battle else []):
+            b = d.health
+            d.health = min(getattr(d, "max_health", b), d.health + heal_amt)
+            if d.health > b:
+                healed.append("你" if d is char else d.name)
+        parts = []
+        for e in [x for x in (enemies or []) if x.health > 0 and _is_undead(x, gamedata)]:
+            mult = formulas.resist_multiplier(entity_resist(e, gamedata), "magic")
+            dmg = _scaled_damage(eff["magnitude"] * power, mult)
+            b = e.health
+            e.health = max(0, e.health - dmg)
+            damage += b - e.health
+            parts.append(f"{e.name} {b - e.health}{_resist_tag(mult)}")
+        seg = []
+        if parts:
+            seg.append("聖光焚盡 " + "、".join(parts))
+        if healed:
+            seg.append("、".join(healed) + "沐光回復")
+        msg = f"{sp['name']} —— 破曉的光輝普照全場!" + ("　" + ";".join(seg) + "。" if seg else "")
+        stats.clamp_resources(char)
 
     elif kind == "restore_fatigue":
         before = char.fatigue
@@ -511,8 +544,6 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
                     resist = {**resist, "magic": max(0, resist.get("magic", 0) - erosion_resist_reduction(e))}   # 破抗:降魔抗·floored≥0
                 mult = formulas.resist_multiplier(resist, element)
                 dmg = _scaled_damage(eff["magnitude"] * power * rng.roll(0.9, 1.1), mult)
-                if eff.get("holy") and _is_undead(e, gamedata):   # R122 聖光剋不死:每敵各判(對不死系放大)
-                    dmg = int(round(dmg * formulas.HOLY_UNDEAD_MULT))
                 if element == "shock":          # 感電易傷(R75):每敵各依自身導電層放大電傷
                     dmg = max(1, int(round(dmg * conduct_damage_multiplier(e))))
                 dmg += round(inventory.staff_element_flat(char, gamedata, element) * mult)   # R77 持杖同系直擊加傷

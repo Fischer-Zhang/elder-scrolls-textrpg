@@ -53,6 +53,7 @@
     "school": "restoration",
     "cost": 12,
     "target": "self",
+    "smite_undead": true,
     "effect": {
       "kind": "heal",
       "magnitude": 25
@@ -63,6 +64,7 @@
     "school": "restoration",
     "cost": 26,
     "target": "self",
+    "smite_undead": true,
     "effect": {
       "kind": "heal",
       "magnitude": 55
@@ -73,6 +75,7 @@
     "school": "restoration",
     "cost": 44,
     "target": "self",
+    "smite_undead": true,
     "effect": {
       "kind": "heal",
       "magnitude": 95
@@ -370,11 +373,9 @@
   "regen_aura": {"name": "生機共鳴", "school": "restoration", "cost": 34, "target": "allies", "effect": {"kind": "apply_status", "status": {"status": "regen", "magnitude": 8, "turns": 4}}},
   "cure_disease": {"name": "淨疫術", "school": "restoration", "cost": 30, "target": "self", "effect": {"kind": "cure_disease"}},
 
-  "holy_bolt": {"name": "聖光箭", "school": "restoration", "cost": 16, "target": "enemy", "effect": {"kind": "damage", "element": "magic", "magnitude": 12, "holy": true}},
-  "sun_flare": {"name": "烈陽灼", "school": "restoration", "cost": 34, "target": "enemy", "effect": {"kind": "damage_status", "element": "magic", "magnitude": 26, "holy": true, "status": {"status": "fear", "turns": 2}}},
   "turn_undead": {"name": "驅散亡者", "school": "restoration", "cost": 30, "target": "all", "effect": {"kind": "status_all", "holy": true, "status": {"status": "fear", "turns": 2}}},
   "consecration": {"name": "聖化領域", "school": "restoration", "cost": 30, "target": "self", "effect": {"kind": "apply_status", "status": {"status": "consecration", "magnitude": 0.2, "turns": 3}}},
-  "dawn_judgment": {"name": "破曉聖裁", "school": "restoration", "cost": 66, "target": "enemy", "effect": {"kind": "damage", "element": "magic", "magnitude": 42, "holy": true}},
+  "dawn_judgment": {"name": "破曉之光", "school": "restoration", "cost": 66, "target": "all", "effect": {"kind": "radiant", "heal": 55, "magnitude": 38}},
 
   "rally": {"name": "號令", "school": "illusion", "cost": 30, "target": "allies", "effect": {"kind": "empower", "magnitude": 0.25, "turns": 4}},
 

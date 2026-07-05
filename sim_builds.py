@@ -139,17 +139,15 @@ def make_arcanist():
 
 
 def make_paladin():
-    """聖騎士(R122):restoration 100 主攻聖光線(holy_bolt/sun_flare)—— 對不死系 ×HOLY_UNDEAD_MULT、
-    對生者=弱泛用 magic 傷害(低基礎)。驗『不死剋星專精』身份:對不死 solo boss 強、對非不死 boss 弱、
-    🔴 達貢(戴德拉非不死·magic50)720 offense 牆自然成立(聖光對他弱且吃 magic 抗 → 不破)。
-    Phase A 為純施法(守護/近戰半身在 Phase B)。"""
+    """聖騎士(R123 反死靈改制):restoration 100·反死靈=**治療傷害不死**(smite:治療法術指向不死敵造傷)+
+    **破曉之光**(radiant 終極:治全隊 + 灼燒全體不死)。🔴 恢復系對活人**零魔法輸出** → 此純施法 fixture
+    vs 非不死 boss 幾乎全 0%(實際 build 靠近戰打活人;此處只測『魔法反死靈身份 + 達貢牆』)。vs 不死 boss
+    = showcase。達貢=非不死 → 聖騎士對他零魔法輸出 → **達貢牆最硬 0%**。"""
     c = build_character(gd, name="聖", sex="male", race="altmer", birthsign="mage", class_id="mage")
     c.skills.update(restoration=100, alteration=75, destruction=25, mysticism=25, conjuration=25, alchemy=25)
     c.attributes.update(intelligence=100, willpower=100, endurance=70)
-    c.spells = ["dawn_judgment", "sun_flare", "holy_bolt", "turn_undead", "consecration", "close_wounds", "heal", "stoneflesh"]
-    c._dmg_pool = ["dawn_judgment", "sun_flare", "holy_bolt"]   # 聖光傷害線含終極破曉聖裁(_mage_act 選較高 mag 者·實際傷害走 magic.cast 含 ×undead)
+    c.spells = ["dawn_judgment", "close_wounds", "heal", "minor_heal", "turn_undead", "consecration", "stoneflesh"]
     _equip_set(c, "archmage", pieces=("hood", "robe", "gloves", "slippers"))
-    # 上界 fixture:聖光攻擊(holy_zeal 50)+ 守護頂點(sacred_bulwark 75·聖化 0.20→0.30)+ 聖療登峰(divine_grace 100)
     _choices(c, {"restoration_50": "holy_zeal", "restoration_75": "sacred_bulwark", "restoration_100": "divine_grace"})
     stats.recompute_max_resources(c, gd, restore_full=True)
     return c
@@ -286,12 +284,21 @@ def _mage_act(c, boss, rng, st):
 
 
 def _paladin_act(c, boss, rng, st):
-    # R122 聖騎士:維持聖化領域(減傷 aura)→ 再走法師鏈(石肌/低血治療/聖光攻擊)。
-    # 🔴 消耗魔力維持減傷+治療 → 對達貢牆的關鍵限制=魔力耗盡(不會無限不死),由 sim 驗。
+    # R123 聖騎士反死靈:維持聖化領域 → 低血自療 → 對不死 smite/radiant、對活物只能平砍(恢復系無魔法攻活物)。
     if not any(e.get("kind") == "consecration" and e.get("turns", 0) > 0 for e in c.active_effects) \
             and magic.can_cast(c, gd, "consecration"):
         magic.cast(c, gd, "consecration", rng); return
-    _mage_act(c, boss, rng, st)
+    if c.health < c.max_health * 0.35:                       # 低血自療(target=None → 自療,非 smite)
+        for h in ("close_wounds", "heal"):
+            if magic.can_cast(c, gd, h):
+                magic.cast(c, gd, h, rng); return
+    if magic._is_undead(boss, gd):                           # 對不死:終極破曉之光(治+焚)優先,否則 smite
+        if magic.can_cast(c, gd, "dawn_judgment"):
+            magic.cast(c, gd, "dawn_judgment", rng, enemies=[boss], battle={"allies": []}); return
+        for s in ("close_wounds", "heal", "minor_heal"):
+            if magic.can_cast(c, gd, s):
+                magic.cast(c, gd, s, rng, target=boss, enemies=[boss]); return   # 治療指向不死 → 灼燒
+    combat.player_attack_cost(c, gd); combat.resolve_attack(c, boss, gd, rng)   # 對活物:恢復系無魔攻 → 平砍
 
 
 _BM_DMG = ["lightning_bolt", "fireball", "flames"]

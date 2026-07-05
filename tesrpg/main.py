@@ -691,6 +691,18 @@ def _choose_combat_action(state: GameState, gamedata: GameData, enemies: list, a
                 return _back()
             return {"type": "attack", "target": tgt}
         sid = last["spell_id"]
+        # R123 聖騎士:上次是「治療灼燒不死」(smite)→ 重放須保留不死目標(否則靜態 target=self 退化成自療,審查修)
+        if gamedata.spells[sid].get("smite_undead"):
+            lt = last.get("target")
+            if lt is not None and combat.is_alive(lt):          # 上次灼燒的不死仍在 → 續灼同一目標
+                return {"type": "cast", "spell_id": sid, "target": lt}
+            undead = [e for e in enemies if combat.is_alive(e) and magic._is_undead(e, gamedata)]
+            if lt is not None and undead:                        # 上次 smite 但目標已伏誅 → 重選其他不死
+                tgt = _choose_enemy_target(state, gamedata, undead, allies, last=_last_tgt)
+                if tgt is None:
+                    return _back()
+                return {"type": "cast", "spell_id": sid, "target": tgt}
+            return {"type": "cast", "spell_id": sid, "target": None}   # 上次是自療(lt None)或已無不死 → 自療
         tk = gamedata.spells[sid]["target"]
         if tk == "enemy":
             tgt = _last_tgt if (_last_tgt is not None and combat.is_alive(_last_tgt)) \
@@ -723,6 +735,20 @@ def _choose_combat_action(state: GameState, gamedata: GameData, enemies: list, a
         sid = ui.menu("施放哪道法術?", spell_opts, allow_back=True)
         if sid is None:
             return _back()   # 施法→返回重入(保 charm_used 等場內狀態,「每場一次」不重置)
+        # R123 聖騎士:治療能量可灼燒不死 —— 場上有不死敵時,治療法術可選「治己」或「灼燒不死」
+        if gamedata.spells[sid].get("smite_undead"):
+            undead = [e for e in enemies if combat.is_alive(e) and magic._is_undead(e, gamedata)]
+            if undead:
+                mode = ui.menu(gamedata.spells[sid]["name"],
+                               [("heal", "🩹 治療自己"), ("smite", "☀️ 灼燒不死")], allow_back=True)
+                if mode is None:
+                    return _back()
+                if mode == "smite":
+                    target = _choose_enemy_target(state, gamedata, undead, allies, last=_last_tgt)
+                    if target is None:
+                        return _back()
+                    return {"type": "cast", "spell_id": sid, "target": target}
+            return {"type": "cast", "spell_id": sid, "target": None}   # 無不死或選治己 → 自療
         tk = gamedata.spells[sid]["target"]
         if tk == "enemy":
             target = _choose_enemy_target(state, gamedata, enemies, allies, last=_last_tgt)
@@ -4817,7 +4843,7 @@ def action_arcane_trials(state: GameState, gamedata: GameData) -> None:
 
 
 def action_holy_trials(state: GameState, gamedata: GameData) -> None:
-    """聖光試煉的在地引路人(R122 聖騎士·Phase C):復原 base≥75 → 破曉聖裁終極試煉。
+    """聖光試煉的在地引路人(R122 聖騎士·Phase C):復原 base≥75 → 破曉之光終極試煉。
 
     比照 action_arcane_trials(平行 site,使用者拍板):地點 `holy_trials` 標籤配對任務 `holy_site`,
     列可接者 → 複用 _accept_and_brief。門檻(requires_skill/level)由 available_quests 把關。
@@ -4831,7 +4857,7 @@ def action_holy_trials(state: GameState, gamedata: GameData) -> None:
              if gamedata.quests[qid].get("holy_site") == site]
     if not avail:
         if char.base_skill("restoration") < 75:   # R122 聖光試煉閘 restoration 75(真本事·非臨時加成)
-            ui.message("破曉的引路人端詳你片刻,搖頭:「你的復原造詣尚不足以承載破曉聖裁 —— "
+            ui.message("破曉的引路人端詳你片刻,搖頭:「你的復原造詣尚不足以承載破曉之光 —— "
                        "回去精進聖法,至少登堂入室(復原 75)方談得上試煉。」", style="grey70")
         elif "trial_dawn" in char.completed_quests:   # 已完成:如實道賀(區隔 in-progress/歷練未足,審查修)
             ui.message("引路人微微頷首:「破曉的試煉你已了結 —— 願聖光長伴你的道途。」", style="grey70")
@@ -4839,7 +4865,7 @@ def action_holy_trials(state: GameState, gamedata: GameData) -> None:
             ui.message("引路人凝視著你:「破曉的試煉尚未為你顯現 —— 或你已在途中未竟,或聲名歷練仍淺(需等級 18)。」",
                        style="grey70")
         return
-    ui.message("一名眼瞳映著晨曦微光的引路人打量著你:「破曉聖裁不予未經試煉的信徒 —— "
+    ui.message("一名眼瞳映著晨曦微光的引路人打量著你:「破曉之光不予未經試煉的信徒 —— "
                "先以真正的聖光穿透永夜、將不朽的邪祟燒回塵土,真言才會降臨於你。」", style="cyan")
     opts = [(qid, f"{gamedata.quests[qid]['name']} — {quests.objective_text(char, gamedata, qid)}")
             for qid in avail]

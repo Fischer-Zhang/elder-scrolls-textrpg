@@ -162,7 +162,7 @@
 | perk | kind | 數值 |
 |---|---|---|
 | 過載/各省魔/凝練 spell_mod+overload | 傷害/續航/護盾 | power+:destruction0.20/alteration0.15+0.10/restoration0.20+0.10〔divine_grace+holy_zeal·R122〕/mysticism0.10+0.15(相加,吃 _power → 傷害·護盾·結界·聖光);cost:0.92/0.85/過載1.30(相乘);impact stagger0.35 |
-| 聖騎士聖光 holy(R122·恢復) | 傷害/專精 | 聖光法術 element magic(繞火/冰/雷抗·只吃 magic 抗)+ holy 旗標 → 對不死系 ×`HOLY_UNDEAD_MULT`=2.0;驅散亡者只對不死;低基礎 mag=對生者弱泛用。終極破曉聖裁(mag42)經聖光試煉取得 |
+| 聖騎士反死靈 smite/radiant(R123·恢復) | 傷害/專精 | **治療傷害不死**:minor_heal/heal/close_wounds〔smite_undead〕指向不死敵造傷=回復量×`HEAL_SMITE_FACTOR`=0.5×威力(element magic·吃 magic 抗);**對活物零傷害**(恢復系對活人零遠程輸出→靠近戰)。驅散亡者(turn_undead·holy 控場只對不死)。終極 **破曉之光**(radiant·治全隊 heal55×威力 + 灼燒全體不死 mag38×威力·經聖光試煉取得) |
 | 聖化領域 consecration(R122·恢復) | 減傷守護 | 自身限時光環·來襲傷害(物理+元素)×(1−mag)·mag 0.20(+聖化壁壘 sacred_bulwark 0.10=0.30)·turns3·gated 玩家·刷新非疊加 |
 | 奧術連鎖 cascade | 傷害/續航 | power+8%/層、省體×(1−0.12/層,夾≥0.4)、max_depth2(最高+16%/省24%);停手即散 |
 | 共鳴一擊 resonance | 傷害 | 🔴transfer0.5(下一近戰灌半數法力作元素傷)+dot4×3;加在 solo 夾限之前 |

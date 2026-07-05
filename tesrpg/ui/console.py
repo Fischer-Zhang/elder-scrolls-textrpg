@@ -1710,7 +1710,10 @@ def spell_effect_summary(gamedata: GameData, spell_id: str) -> str:
     if k == "damage_status_all":
         return f"全體{elem}傷害 {mag} + {_st(e['status'])}"
     if k == "heal":
-        return f"{ally_p}治療{ally_who} +{mag}"
+        base = f"{ally_p}治療{ally_who} +{mag}"
+        return base + "(對不死敵灼燒)" if sp.get("smite_undead") else base   # R123 治療傷害不死
+    if k == "radiant":   # R123 破曉之光:治全隊 + 灼燒全體不死
+        return f"治全隊 +{e.get('heal', 0)}・全體不死聖光傷害 {mag}"
     if k == "shield":
         return f"{ally_who}護盾 +{mag}（{turns} 回合)"
     if k == "weapon_imbue":   # 戰法師奧術灌注
