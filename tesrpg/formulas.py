@@ -742,6 +742,11 @@ def prep_budget(scout_skill: int) -> int:
 # --- 抗性與元素 ---------------------------------------------------------
 MAGIC_ELEMENTS = ("fire", "frost", "shock")   # 受「magic」總抗性影響的學派元素
 
+# R122 聖騎士:聖光(holy)傷害對不死系放大(正典 Sun Damage 雙倍剋不死)。
+# 聖光法術走 element="magic"(繞火/冰/雷抗,只吃 magic 抗)+ 低基礎 magnitude(對生者=弱泛用法術),
+# 對不死系乘此倍率 → 專精殺器。🔴 達貢=戴德拉非不死 → 聖光對他弱且可被 magic 抗牆 → 終王牆自然成立。
+HOLY_UNDEAD_MULT = 2.0
+
 
 def resist_multiplier(resist: dict, element: str) -> float:
     """元素傷害的傷害係數。

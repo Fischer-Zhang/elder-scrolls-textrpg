@@ -138,6 +138,22 @@ def make_arcanist():
     return c
 
 
+def make_paladin():
+    """聖騎士(R122):restoration 100 主攻聖光線(holy_bolt/sun_flare)—— 對不死系 ×HOLY_UNDEAD_MULT、
+    對生者=弱泛用 magic 傷害(低基礎)。驗『不死剋星專精』身份:對不死 solo boss 強、對非不死 boss 弱、
+    🔴 達貢(戴德拉非不死·magic50)720 offense 牆自然成立(聖光對他弱且吃 magic 抗 → 不破)。
+    Phase A 為純施法(守護/近戰半身在 Phase B)。"""
+    c = build_character(gd, name="聖", sex="male", race="altmer", birthsign="mage", class_id="mage")
+    c.skills.update(restoration=100, alteration=75, destruction=25, mysticism=25, conjuration=25, alchemy=25)
+    c.attributes.update(intelligence=100, willpower=100, endurance=70)
+    c.spells = ["sun_flare", "holy_bolt", "turn_undead", "close_wounds", "heal", "stoneflesh"]
+    c._dmg_pool = ["sun_flare", "holy_bolt"]   # 聖光傷害線(_mage_act 選較高 mag 者;實際傷害走 magic.cast 含 ×undead)
+    _equip_set(c, "archmage", pieces=("hood", "robe", "gloves", "slippers"))
+    _choices(c, {"restoration_100": "divine_grace"})   # 聖療登峰:restoration 法術威力 +20%(縮放聖光)
+    stats.recompute_max_resources(c, gd, restore_full=True)
+    return c
+
+
 def make_summoner():
     """專精召喚(R105):conjuration 100·其他魔法 25·屬性/裝備比照頂級法師(int/will 100·大法師袍)。
     主力 = 召喚物(坦克魔人吸火力 + 元素 atronach 玻璃大砲),吃 conjuration 威力(_power)成長;
@@ -232,6 +248,7 @@ BUILDS = {"assassin": make_assassin, "archer": make_archer, "warrior_1H": make_w
           "mage_frost": _make_element_mage(_MAGE_ELEMENTS["mage_frost"]),
           "mage_shock": _make_element_mage(_MAGE_ELEMENTS["mage_shock"]),
           "arcanist": make_arcanist,
+          "paladin": make_paladin,
           "battlemage": make_battlemage}
 
 # --- per-build 戰鬥 policy ----------------------------------------------
@@ -311,6 +328,7 @@ _POLICY = {"assassin": _melee_sneak_act, "archer": _melee_sneak_act,
            "shield_reflect": _attack_act,
            "mage_fire": _mage_act, "mage_frost": _mage_act, "mage_shock": _mage_act,
            "arcanist": _mage_act,
+           "paladin": _mage_act,
            "battlemage": _battlemage_act}
 
 

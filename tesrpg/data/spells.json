@@ -370,6 +370,10 @@
   "regen_aura": {"name": "生機共鳴", "school": "restoration", "cost": 34, "target": "allies", "effect": {"kind": "apply_status", "status": {"status": "regen", "magnitude": 8, "turns": 4}}},
   "cure_disease": {"name": "淨疫術", "school": "restoration", "cost": 30, "target": "self", "effect": {"kind": "cure_disease"}},
 
+  "holy_bolt": {"name": "聖光箭", "school": "restoration", "cost": 16, "target": "enemy", "effect": {"kind": "damage", "element": "magic", "magnitude": 12, "holy": true}},
+  "sun_flare": {"name": "烈陽灼", "school": "restoration", "cost": 34, "target": "enemy", "effect": {"kind": "damage_status", "element": "magic", "magnitude": 26, "holy": true, "status": {"status": "fear", "turns": 2}}},
+  "turn_undead": {"name": "驅散亡者", "school": "restoration", "cost": 30, "target": "all", "effect": {"kind": "status_all", "holy": true, "status": {"status": "fear", "turns": 2}}},
+
   "rally": {"name": "號令", "school": "illusion", "cost": 30, "target": "allies", "effect": {"kind": "empower", "magnitude": 0.25, "turns": 4}},
 
   "calm": {"name": "安撫", "school": "illusion", "cost": 28, "target": "all", "effect": {"kind": "calm", "turns": 2}},

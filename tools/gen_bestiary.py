@@ -77,6 +77,8 @@ def flags(k, v):
         f.append("raw·已調校")
     if v.get("sentient"):
         f.append("人形")
+    if v.get("undead"):
+        f.append("不死")   # R122 聖光(holy)剋不死:受聖光傷害放大、可被驅散亡者驅散
     if v.get("weight", 1) == 0:
         f.append("腳本/召喚·不進野外池")
     return ("【" + " · ".join(f) + "】") if f else ""
@@ -128,7 +130,8 @@ def main():
     out.append(f"- 野外可隨機遭遇 {sum(1 for v in BEAST.values() if v.get('weight', 1) > 0)} 隻 · "
                f"腳本/任務/召喚專屬 {sum(1 for v in BEAST.values() if v.get('weight', 1) == 0)} 隻")
     out.append(f"- 多攻擊曲目(R43){len(with_rep)} 隻 · 單一攻擊 {total - len(with_rep)} 隻 · "
-               f"SOLO 首領 {len(solo)} 隻 · 人形(可囚黑魂){sum(1 for v in BEAST.values() if v.get('sentient'))} 隻\n")
+               f"SOLO 首領 {len(solo)} 隻 · 人形(可囚黑魂){sum(1 for v in BEAST.values() if v.get('sentient'))} 隻 · "
+               f"不死(聖光剋之){sum(1 for v in BEAST.values() if v.get('undead'))} 隻\n")
     out.append(BEHAVIOR)
 
     # 缺曲目名單

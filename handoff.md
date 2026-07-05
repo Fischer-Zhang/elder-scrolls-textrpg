@@ -33,7 +33,7 @@
 - **開局背景**(14 種,只給處境不給數值)+ **種子重玩性**;冒險/傳奇兩種死亡模式 + 一生傳奇總結評分
 
 #### 戰鬥與魔法
-- 回合制**多敵 + 團隊戰鬥**(召喚物/傭兵同伴);**同伴角色化**(9 具名同伴:持久 HP/羈絆 + 具名招募任務 + 羈絆階解鎖的專屬支線 + 就地對話 + 完成支線的忠誠弧頂點〔戰術盟友光環/被動非戰鬥槓桿;盟友限定守刺客紅線〕;復用 `companion_bond` 當忠誠軸,零新存檔欄;**R86 同伴戰鬥施法**:輔助型同伴角色感知主動支援 —— 法系治療〔含治療玩家〕/盾衛護盾/領袖激勵,門檻+冷卻+固定威力「輔助但不破關」〔sim_party 驗施法邊際 +0~8%·無 stalemate〕;**R87 敵方支援施法者**:法系/祭司怪〔女巫/薩滿/祭司/死靈〕對稱地在隊友血低時治療/護盾其他敵人 → 群戰「先點掉治療者」戰術〔幅度因子 0.35 威脅但可破解·無 stalemate·敵 empower 反效果故只 heal/shield〕);**六大學派 + AoE**(召喚/秘術補完至各 7 法術,與毀滅/復原/變換同列;**召喚**=元素元身/魔人 + 束縛兵刃〔法系近戰〕+ 亡者復生〔屍起為盟〕、**秘術**=法術結界〔吸法術傷·吸魔變體〕+ 驅散 + 群體擒魂 + **非元素魔法傷害〔R119:飛彈/轟擊/星爆·一律穩定 `magic` 傷害·不被單元素抗歸零·只吃通用魔抗 → 破抗答案〕· 秘蝕破抗頂點〔R120:傷害法術命中削敵魔抗·輔助全傷害魔法〕· 非戰鬥實用法術 + 湮識終極試煉〔R121:靈視/靈識遠格揭露·念力·念力球解謎地城·抗魔法師 boss·終極魔法核彈加深秘蝕〕**);元素抗性/弱點、狀態效果、出生星座每日之力
+- 回合制**多敵 + 團隊戰鬥**(召喚物/傭兵同伴);**同伴角色化**(9 具名同伴:持久 HP/羈絆 + 具名招募任務 + 羈絆階解鎖的專屬支線 + 就地對話 + 完成支線的忠誠弧頂點〔戰術盟友光環/被動非戰鬥槓桿;盟友限定守刺客紅線〕;復用 `companion_bond` 當忠誠軸,零新存檔欄;**R86 同伴戰鬥施法**:輔助型同伴角色感知主動支援 —— 法系治療〔含治療玩家〕/盾衛護盾/領袖激勵,門檻+冷卻+固定威力「輔助但不破關」〔sim_party 驗施法邊際 +0~8%·無 stalemate〕;**R87 敵方支援施法者**:法系/祭司怪〔女巫/薩滿/祭司/死靈〕對稱地在隊友血低時治療/護盾其他敵人 → 群戰「先點掉治療者」戰術〔幅度因子 0.35 威脅但可破解·無 stalemate·敵 empower 反效果故只 heal/shield〕);**六大學派 + AoE**(召喚/秘術補完至各 7 法術,與毀滅/復原/變換同列;**召喚**=元素元身/魔人 + 束縛兵刃〔法系近戰〕+ 亡者復生〔屍起為盟〕、**秘術**=法術結界〔吸法術傷·吸魔變體〕+ 驅散 + 群體擒魂 + **非元素魔法傷害〔R119:飛彈/轟擊/星爆·一律穩定 `magic` 傷害·不被單元素抗歸零·只吃通用魔抗 → 破抗答案〕· 秘蝕破抗頂點〔R120:傷害法術命中削敵魔抗·輔助全傷害魔法〕· 非戰鬥實用法術 + 湮識終極試煉〔R121:靈視/靈識遠格揭露·念力·念力球解謎地城·抗魔法師 boss·終極魔法核彈加深秘蝕〕**、**復原**=治療/再生/淨疫 + **聖騎士反死靈〔R122 Phase A:聖光〔element magic·holy 旗標·低基礎 mag〕對 17 隻不死系 ×2·驅散亡者·對生者弱泛用 → 不死剋星專精;守護庇佑半身/里程碑重設計/終極試煉 Phase B/C 待做〕**);元素抗性/弱點、狀態效果、出生星座每日之力
 - **三系資源對稱**:施法也耗體力、力竭降法效(`cast_fatigue_*`),**法袍套裝**省體施法(法師的對應裝甲)
 - **煉金毒藥 + 武器塗毒**;**毒劑深化(Phase 2 / R31)**:五毒型(DoT/麻痺 + 衰毒/遲緩/懼毒,特殊型需里程碑解鎖;solo BOSS 對控制型免疫);**煉金限時增益藥水(深化 Phase 1 / R30·材料 R90-R92 餵飽)**:強化屬性/技能 + 抗元素**限時**藥劑(走獨立 `potion_*` 層、絕不寫 base、**同 kind+param 取最強非疊加**);**可釀池 4→~28 種**:R90 補 resist_fire/frost/shock 單元素抗(補法師對元素 boss)+ 中性屬性/restoration;R91 材料加厚至 4 效果 + 9 種安全增益;**R92 開攻擊向 fortify**(力量/武器技能/潛行/毀滅·依 R30「放開→必過 sim」·新 fortify-dosed sim 場景驗 solo cap 仍夾·**smithing 永久擋**〔過頂 temper 永久武傷〕);**效果逐步揭露(Phase 3 / R32)**:材料效果預設 `???`,經嚐試/煉製/技能揭露(純資訊層,不碰 brew 數學);**疾病可釀(R54)**:療疾材料(大蒜/焦皮鼠革/吸血鬼塵 `cure_disease`)→ 釀療疾藥水(統一淨化,同神殿/法術/`cure_disease_potion`);**潛行刺客系**:偷襲先機、暗殺殘響、雙持、**隱遁再襲(潛行 25 里程碑「隱遁之術」;連環踏影對單體仍遞減、反 solo boss 風箏)**、戰前偵查;武器流派(潛襲/破甲/速度)
 
@@ -1409,6 +1409,22 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 - **🔴 鐵律**:加 role 純改 `dialogue.json`(roles map + topics·身份 flavor 為主·功能 effect 走 events 支援集 + `once` 防刷·不帶 skill_xp)+ `npcs.json` role 欄;加流言線索純改 `npcs.json`(rumor_quest/rumor_landmark/rumor_disposition)+ `quests.json`(`source:"rumor"`·僅 clear/reach·**目標無 visible gate**·NPC↔線索目標**須同省**);**新增 source:rumor 任務務必有 NPC rumor_quest 回指**(否則 reachability guard 攔=孤兒);追問傳聞兌現走既有 `_accept_and_brief`/`landmarks.discover`;純社交內容 → sim byte-identical 免跑(動 combat/formulas 才需)。**前瞻**:Phase D 可純資料把其餘 ~40 具名 rumor NPC 逐批接上 + 補 role 密度;若要更多功能 role 話題(商人折扣等)需新 effect + 評估碰 shop/存檔欄。
 
 ---
+
+### R122 · 恢復系功能化:聖騎士(反死靈聖光 + 守護庇佑)完整弧 — Phase A [re-sim] [save-safe](三 phase 分提交,承進行中)
+
+**冷系統評估**:restoration 是六大魔法學派**唯一無戰鬥身份者** —— 8 法術全 heal/regen/cure,里程碑 4 節點一維「治得更好」,正典招牌 Turn Undead / Sun Damage / Bane of the Undead 全未交付(連 ward 都在秘術)。使用者三度拍板:系統=**恢復系**·身份=**聖騎士混合**〔反死靈聖光攻擊 + 守護庇佑〕·範圍=**完整弧**(比照秘術 R119-121 分階段 A→B→C)。補完「六大學派全有戰鬥身份」最後一塊。
+
+**Phase A · 聖光反死靈核心**(碰 magic.py + formulas.py + 資料):
+- **聖光機制**:聖光走 `element:"magic"`(繞火/冰/雷抗·只吃 magic 抗·比照秘術 R119)+ **新 `holy:true` effect 旗標** → 對不死系 ×`HOLY_UNDEAD_MULT`(formulas.py·2.0·正典 Sun Damage 雙倍剋不死)。**對生者無顯式懲罰**·靠**低基礎 magnitude** 實現「弱泛用 vs 強剋不死」專精(免懲罰分支/邊角)。
+- **新 helper** `magic._is_undead(cre,gd)`:讀 bestiary `undead` 旗標 OR R106 復生屍體暫態 `_undead`(死靈師從敵屍復生的亡者也算不死→一致)·鏡像 `magic._is_solo`。
+- **傷害/控場 hook**:單體 damage(magic.py:303 後)+ AoE damage(:504 後)各加聖光-剋-不死乘子(gated `eff.get("holy")`);聖光控場(turn_undead fear)只落不死系 —— damage_status 單體(:319 後)+ status_all AoE(:523 後)各加 undead 閘(`continue` 為 `for e in living` 迴圈末·安全);turn_undead **訊息三態**(`repelled`/`undead_present`→驅散成功/不死抵抗/場上無不死·**對抗審查修**:原只看 repelled 空→對 solo 不死 R44 抵抗〔65%〕或 dedup 誤報「無不死」)。
+- **3 法術**(spells.json·school restoration·element magic·holy·低 mag):聖光箭 holy_bolt(damage mag12 cost16)·烈陽灼 sun_flare(damage_status mag26 cost34·對不死附 fear repel)·驅散亡者 turn_undead(status_all fear·undead-only·cost30)·佈點 world.json spell_stock 7 恢復系城(gideon/imperial_city/helstrom/daggerfall/wayrest/jehanna/archon·reachability 守)。
+- **17 隻 undead 旗標**(bestiary.json R02):skeleton·draugr·barrow_sentinel·marsh_zombie·lich·imperial_ghost·ancestral_ghost·grief_shade·dro_mathra_shade·reanimated_thrall·vampire_fledgling·vampire_lord·vampire_patriarch·coven_patriarch·molag_bloodlord·time_forsaken·malyn_varen。**排除**(審查驗過無偽陽性/漏):活人死靈術士(grave_tyrant/meridia_defiler/necromancer_acolyte/xarxes_necromancer)·構造(gargoyle)·元素(ice_wraith/will_o_wisp)·戴德拉召喚(summoned_terror)·受詛活人(wish_eaten_sorcerer)·活人(carrion_priest/hag_matriarch)。`gen_bestiary.py` 加【不死】tag + 總覽計數。
+- **里程碑不動**:既有 restoration `spell_mod`(resto_basics/divine_grace +20%)已自動縮放聖光(聖光=restoration school·走 `_power(restoration)`)。
+
+**🔴 sim_assassin BYTE-IDENTICAL**(隔離 HEAD worktree 兩次空 diff·刺客不施法·holy 分支全 gated 於 `eff.get("holy")`→無其他法術帶 holy→非 holy 路徑逐位元組同·未碰 combat.py)。**🔴 sim_builds 新 make_paladin**(restoration 100 純聖光施法·上界 fixture):**達貢牆守 0%**(達貢=戴德拉非不死·magic50→聖光弱且吃 magic 抗·天然成立)· paladin ≤ arcanist 各處(hard living tail 明顯較弱:ancient_dragon 74% vs 89%·umaril 65% vs 88% = 「聖光弱剋生者」在 DPS race 顯現)· mid 非不死 boss ~95-100%(caster 常態·非新 trivialize)· **不死剋星身份差異待 Phase C 高血不死 boss showcase**(mid 低血不死人人 100% 看不出 ×2)。零新存檔欄(holy=effect 鍵·undead=bestiary 鍵·皆非 Character 欄)· run_all 112(schema/reachability 自動涵蓋)。**對抗審查(4 維·8 agent)**:0 blocker/major·byte-identity/content-accuracy〔17 roster 精確〕/紅線(聖光控場只落不死+走 apply_control solo 抵抗·達貢牆)/schema/reach/save 全清·1 confirmed minor(turn_undead 訊息誤報「無不死」)已修。
+
+🔴 加聖光傷害法術純改 spells.json(element:"magic"·holy:true·低 mag<毀滅同階)+ world spell_stock;聖光控場只落不死(undead 閘·走 apply_control R44);動 `HOLY_UNDEAD_MULT`/聖光 mag/undead roster → sim_builds(守達貢牆·不 trivialize)+ sim_assassin(byte-identical)。**Phase B**(待做)=守護庇佑(聖化領域減傷 aura·全隊 regen/shield 光環·淨化 cleanse)+ 里程碑聖騎士重設計(聖光攻擊 vs 守護二選一)+ 頂點 apex;**Phase C**(待做)=終極聖光法術 + 試煉(高血不死 boss·地城·任務·mirror R121)。
 
 ### R121 · 秘術終極試煉:非戰鬥實用法術 + 念力球解謎 + 湮識(魔法核彈 + 加深秘蝕)[re-sim] [save-safe](三 phase 分提交)
 

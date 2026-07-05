@@ -301,6 +301,8 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
             resist = {**resist, "magic": max(0, resist.get("magic", 0) - erosion_resist_reduction(target))}   # 破抗:降魔抗·floored≥0
         mult = formulas.resist_multiplier(resist, element)
         dmg = _scaled_damage(eff["magnitude"] * power * rng.roll(0.9, 1.1), mult)
+        if eff.get("holy") and _is_undead(target, gamedata):   # R122 聖光剋不死:對不死系傷害放大(正典 Sun Damage)
+            dmg = int(round(dmg * formulas.HOLY_UNDEAD_MULT))
         if element == "shock":                         # 感電易傷(R75):依目標導電層放大電傷(抗性後)
             dmg = max(1, int(round(dmg * conduct_damage_multiplier(target))))
         dmg += round(inventory.staff_element_flat(char, gamedata, element) * mult)   # R77 持杖同系直擊加傷(吃抗性)
@@ -318,8 +320,11 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
         if kind == "damage_status" and not killed:
             st = eff["status"]
             if st.get("status") in _CONTROL_KINDS:   # 控場走集中 helper(R44:閉合潛在缺口,fear/paralyze 受 solo 管)
-                if apply_control(target, st["status"], gamedata, rng,
-                                 magnitude=st.get("magnitude", 0.0), turns=st["turns"]) == "applied":
+                # R122 聖光驅散只對不死系:holy 法術的控場對活人無效(靈魂灼傷驅不動活人)
+                if eff.get("holy") and not _is_undead(target, gamedata):
+                    pass
+                elif apply_control(target, st["status"], gamedata, rng,
+                                   magnitude=st.get("magnitude", 0.0), turns=st["turns"]) == "applied":
                     msg += f" {target.name}{_status_verb(st)}!"
             else:
                 target.active_effects.append(make_status_effect(_scaled_status(st, power)))   # R76 DoT 吃威力
@@ -490,6 +495,8 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
         element = eff.get("element", "magic")
         eroding = mastery.has_arcane_erosion(char, gamedata)   # R120 秘蝕頂點:削目標魔抗 → 輔助「所有」傷害魔法
         parts = []
+        repelled = []          # R122 聖光驅散(turn_undead):實際被驅散的不死系名(供訊息如實呈現)
+        undead_present = False  # 場上是否有不死系(區隔「無不死」vs「有不死但抵抗/已懼」→ 訊息不誤導)
         for e in living:
             if kind != "status_all":            # 含傷害的 AoE
                 resist = entity_resist(e, gamedata)
@@ -497,6 +504,8 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
                     resist = {**resist, "magic": max(0, resist.get("magic", 0) - erosion_resist_reduction(e))}   # 破抗:降魔抗·floored≥0
                 mult = formulas.resist_multiplier(resist, element)
                 dmg = _scaled_damage(eff["magnitude"] * power * rng.roll(0.9, 1.1), mult)
+                if eff.get("holy") and _is_undead(e, gamedata):   # R122 聖光剋不死:每敵各判(對不死系放大)
+                    dmg = int(round(dmg * formulas.HOLY_UNDEAD_MULT))
                 if element == "shock":          # 感電易傷(R75):每敵各依自身導電層放大電傷
                     dmg = max(1, int(round(dmg * conduct_damage_multiplier(e))))
                 dmg += round(inventory.staff_element_flat(char, gamedata, element) * mult)   # R77 持杖同系直擊加傷
@@ -513,12 +522,26 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
             if kind in ("status_all", "damage_status_all") and e.health > 0:
                 st = eff["status"]
                 if st.get("status") in _CONTROL_KINDS:   # 控場走集中 helper(R44:fear/paralyze 受 solo 機率減免)
-                    apply_control(e, st["status"], gamedata, rng,
-                                  magnitude=st.get("magnitude", 0.0), turns=st["turns"])
+                    # R122 聖光驅散(turn_undead)只對不死系:holy 群體控場對活人無效
+                    if eff.get("holy") and not _is_undead(e, gamedata):
+                        continue
+                    if eff.get("holy"):
+                        undead_present = True   # 不死系在場(不論驅散成功/被抵抗/已懼 → 訊息可區隔)
+                    if apply_control(e, st["status"], gamedata, rng,
+                                     magnitude=st.get("magnitude", 0.0), turns=st["turns"]) == "applied":
+                        repelled.append(e.name)
                 else:                                    # dot/soul_trap 等照常(各敵獨立 dict,R17)
                     e.active_effects.append(make_status_effect(_scaled_status(st, power)))   # R76 DoT 吃威力
         if kind == "status_all":
-            msg = f"{sp['name']} —— 全體敵人{_status_verb(eff['status'])}!"
+            if eff.get("holy"):   # R122 驅散亡者:如實呈現三態(驅散成功 / 不死抵抗 / 場上無不死)
+                if repelled:
+                    msg = f"{sp['name']} —— 聖光乍現,{'、'.join(repelled)}倉皇退避!"
+                elif undead_present:
+                    msg = f"{sp['name']} —— 聖光灼過不死之軀,但牠們的意志未被驅散。"
+                else:
+                    msg = f"{sp['name']} —— 但眼前沒有可驅散的不死之物,聖光徒然閃耀。"
+            else:
+                msg = f"{sp['name']} —— 全體敵人{_status_verb(eff['status'])}!"
         else:
             msg = f"{sp['name']}席捲全場 —— " + "、".join(parts) + "!"
 
@@ -662,6 +685,15 @@ def _is_solo(creature, gamedata: GameData) -> bool:
     """BOSS 級(bestiary `solo`)→ 對控制型(fear/paralyze)免疫(R31;與 combat._is_solo 一致)。"""
     tid = getattr(creature, "template_id", None)
     return bool(tid and gamedata.bestiary.get(tid, {}).get("solo"))
+
+
+def _is_undead(creature, gamedata: GameData) -> bool:
+    """不死系(R122 聖騎士):bestiary `undead` 旗標,或 R106 復生屍體的暫態 `_undead` 旗標
+    (讓死靈師從敵屍復生的亡者也算不死 → 聖光/驅散一致對待)。聖光傷害對其放大、驅散只對其生效。"""
+    if getattr(creature, "_undead", False):
+        return True
+    tid = getattr(creature, "template_id", None)
+    return bool(tid and gamedata.bestiary.get(tid, {}).get("undead"))
 
 
 def is_feared(creature) -> bool:
