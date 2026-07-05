@@ -1837,6 +1837,45 @@ def _dungeon_scry(state: GameState, gamedata: GameData, grid: dict, z: int, expl
     ui.message(f"{gamedata.spells[sid]['name']} —— 奧術之光探入遠方,{newly} 格幽暗自你心眼中浮現。", style="cyan")
 
 
+_ORB_CURSE = 40   # R121 念力球反噬:隨機非秘術技能大減幅度(暫態·地城限·夾不低於 0)
+
+
+def _dungeon_orb_break(state: GameState, gamedata: GameData) -> bool:
+    """R121 念力破球:以念力術破除本層懸浮的念力球 → 免反噬。需會念力術 + 足夠魔力;耗魔、鍛鍊 mysticism。"""
+    player = state.player
+    if "telekinesis" not in player.spells:
+        ui.message("那顆念力球懸浮於半空、非血肉所能觸及 —— 你需要念力之法(念力術)方能破除。", style="grey70")
+        return False
+    if not magic.can_cast(player, gamedata, "telekinesis"):
+        ui.message("你的魔力不足以驅動念力術。", style="red")
+        return False
+    player.magicka -= magic.effective_cost(player, gamedata, "telekinesis")
+    ui.show_events(progression.use_skill(player, gamedata, "mysticism",
+                                         gamedata.skills["mysticism"]["practice"]["xp"]), gamedata)
+    ui.message("你以念力扣住那顆躁動的念力球,將其力量緩緩導引消散 —— 反噬之危已解。", style="cyan")
+    return True
+
+
+def _apply_orb_curse(state: GameState, gamedata: GameData) -> None:
+    """R121 念力球未破 → 反噬:隨機挑一項**非秘術**技能大減(暫態 `_dungeon_curse` 負層·僅地城限·離場即清)。
+    優先挑玩家有點數的技能(確保有感)、已反噬者不重複;效果大(−_ORB_CURSE·夾不使技能低於 0)。決定性走 state.rng+sorted。"""
+    player = state.player
+    curse = getattr(player, "_dungeon_curse", None)
+    if curse is None:
+        curse = player._dungeon_curse = {}
+    pool = sorted(sid for sid in gamedata.skills
+                  if sid != "mysticism" and sid not in curse and player.base_skill(sid) > 0)
+    if not pool:   # 退路:任何非秘術、未反噬技能(玩家幾無其他技能點的極端情形)
+        pool = sorted(sid for sid in gamedata.skills if sid != "mysticism" and sid not in curse)
+    if not pool:
+        return
+    sid = pool[state.rng.randint(0, len(pool) - 1)]
+    pen = min(player.base_skill(sid), _ORB_CURSE)   # 夾:反噬本身不使技能低於 0
+    curse[sid] = -pen
+    ui.message(f"未破的念力球在你身後炸開 —— 一股躁動的反噬湧入四肢百骸,你的【{gamedata.skills[sid]['name']}】"
+               f"驟然遲鈍了(−{pen},直到你走出地城)。", style="red")
+
+
 def action_dungeon(state: GameState, gamedata: GameData) -> str | None:
     """格子探索地城 —— **視為戰鬥情境**的自足子迴圈(維持盟友清單 + 回合制效果計時)。
 
@@ -1860,6 +1899,9 @@ def action_dungeon(state: GameState, gamedata: GameData) -> str | None:
     resolved = [[[False] * n for _ in range(n)] for _ in range(m)]
     z = x = y = 0
     battle = {"allies": []}   # 戰鬥情境:預召喚物(transient,不入持久同伴;隨移動衰減)
+    has_orbs = bool(spec.get("orbs"))   # R121 念力球:每層懸一顆·念力術破之,否則下樓/決戰時反噬(隨機非秘術技能大減·暫態)
+    orb_broken = [False] * m
+    player._dungeon_curse = {}          # 暫態反噬層(離場於呼叫端清·不入檔;byte-identical:非 orb 地城恆空)
     ui.message(f"你踏入了{gamedata.dungeons[loc['dungeon']]['name']}的幽暗深處……（{n}×{n} 格 · 共 {m} 層）", style="magenta")
     if infested:
         rb = dungeon.reinfest_block(gamedata, loc["dungeon"]) or {}
@@ -1913,8 +1955,14 @@ def action_dungeon(state: GameState, gamedata: GameData) -> str | None:
         battle["allies"][:] = [a for a in battle["allies"]
                                if combat.is_alive(a) and (a.summon_turns is None or a.summon_turns > 0)]
 
+    def announce_orb(zz):
+        """R121 念力球:提示本層懸浮之球(未破則離層/決戰時反噬)。"""
+        if has_orbs and not orb_broken[zz]:
+            ui.message("本層深處懸浮著一顆躁動的念力球 —— 以念力術破之,否則離開此層時將遭反噬(隨機大減一項非秘術技能,直到你走出地城)。", style="magenta")
+
     reveal_and_train(z, x, y)   # 進場格(不耗回合)
     case_layer(z)               # 賊眼·窺探:進場層即揭該層陷阱/寶箱
+    announce_orb(z)
 
     while True:
         cell = dungeoncrawl.cell_at(grid, z, x, y)
@@ -1951,6 +1999,8 @@ def action_dungeon(state: GameState, gamedata: GameData) -> str | None:
                     player.magicka //= 3
                     player.fatigue //= 3
                     ui.message("逆轉召喚法陣的反噬撕裂你的血肉與心神 —— 你氣力僅存三分,但半成的達貢化身同樣虛弱。", style="yellow")
+                if has_orbs and not orb_broken[z]:   # R121 決戰前未破本層念力球 → 反噬(隨機非秘術技能大減)
+                    _apply_orb_curse(state, gamedata)
                 if boss.get("raw"):   # 已是 elite 的首領以原始強度登場(避免 spawn_boss 再 ×1.6 疊加)
                     foe = combat.spawn_creature(gamedata, boss["enemy"], state.rng)
                     foe.name = f"{spec['name']}首領"
@@ -1996,6 +2046,8 @@ def action_dungeon(state: GameState, gamedata: GameData) -> str | None:
             opts.append(("cast", "施法(預施/預召喚)"))
         if any(gamedata.spells[s]["effect"].get("kind") == "scry" for s in player.spells):   # R121 靈視/靈識:對遠格主動揭露
             opts.append(("scry", "🔮 靈識揭露"))
+        if has_orbs and not orb_broken[z]:                 # R121 念力球:念力術破之免反噬
+            opts.append(("orb", "🌀 念力破球"))
         opts.append(("inventory", "背包"))
         opts.append(("sheet", "角色卡"))
         if player.can_level_up():                          # 地城內也能升級(達門檻即可,免回城)
@@ -2015,6 +2067,9 @@ def action_dungeon(state: GameState, gamedata: GameData) -> str | None:
             action_cast_self(state, gamedata, battle=battle)
         elif choice == "scry":                             # R121 靈視/靈識:自由行動(不耗回合)· 對遠格主動揭露
             _dungeon_scry(state, gamedata, grid, z, explored)
+        elif choice == "orb":                              # R121 念力破球:自由行動(不耗回合)· 念力術破本層念力球免反噬
+            if _dungeon_orb_break(state, gamedata):
+                orb_broken[z] = True
         elif choice == "levelup":                          # 自由行動(不耗回合):安全點主動升級
             action_level_up(state, gamedata)
         elif choice == "inventory":
@@ -2022,11 +2077,14 @@ def action_dungeon(state: GameState, gamedata: GameData) -> str | None:
         elif choice == "sheet":
             action_character_sheet(state, gamedata)
         elif choice == "descend":
+            if has_orbs and not orb_broken[z]:             # R121 未破本層念力球 → 下樓時反噬(隨機非秘術技能大減)
+                _apply_orb_curse(state, gamedata)
             z += 1
             x = y = 0
             ui.message(f"你拾級而下,來到第 {z + 1}/{m} 層。", style="magenta")
             reveal_and_train(z, x, y)
             case_layer(z)                                  # 賊眼·窺探:新層即揭陷阱/寶箱
+            announce_orb(z)                                # R121 新層念力球提示
             if tick_turn():                                # 移動=1 回合(增益/召喚衰減 + DoT 結算)
                 return "dead"
         elif choice.startswith("go:"):
@@ -5598,6 +5656,7 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
             ui.world_map(player, gamedata)
         elif choice == "dungeon":
             died = action_dungeon(state, gamedata)
+            state.player._dungeon_curse = {}         # R121 念力球反噬僅地城限:離場即清(暫態·不入檔·防滲出;唯一呼叫端)
             ui.status_line(state, gamedata)          # 出地城即重設 HUD(清掉召喚物列,免里程碑選擇彈窗殘留)
         elif choice == "explore":
             died = action_explore(state, gamedata)

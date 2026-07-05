@@ -264,13 +264,15 @@ class Character:
                 + self.disease_attr_penalty.get(key, 0))   # R53:疾病負層(空 dict → 未染病者 +0)
 
     def skill(self, key: str) -> int:
+        curse = getattr(self, "_dungeon_curse", None)   # R121 念力球反噬:暫態負層(僅地城中設,離場即清,不入檔;None → +0 byte-identical)
         return (self.skills.get(key, 0)
                 + self.equip_skill_bonus.get(key, 0) + self.vampire_skill_bonus.get(key, 0)
                 + self.mastery_skill_bonus.get(key, 0) + self.skooma_skill_bonus.get(key, 0)
                 + self.werewolf_skill_bonus.get(key, 0) + self.dagon_skill_bonus.get(key, 0)
                 + self.boon_skill_bonus.get(key, 0)
                 + self.potion_skill_bonus.get(key, 0)
-                + self.disease_skill_penalty.get(key, 0))   # R53:疾病負層(空 dict → 未染病者 +0)
+                + self.disease_skill_penalty.get(key, 0)   # R53:疾病負層(空 dict → 未染病者 +0)
+                + (curse.get(key, 0) if curse else 0))
 
     def base_attr(self, key: str) -> int:
         """不含裝備加成的原始屬性(供成長/夾限用)。"""
