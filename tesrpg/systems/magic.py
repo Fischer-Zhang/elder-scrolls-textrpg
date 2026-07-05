@@ -476,7 +476,14 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
                 apply_control(dest, st["status"], gamedata, rng,
                               magnitude=st.get("magnitude", 0.0), turns=st["turns"])
             else:                                                          # 自身/盟友增益、dot 照舊
-                dest.active_effects.append(make_status_effect(_scaled_status(st, power)))   # R76 DoT/HoT 吃威力
+                st2 = _scaled_status(st, power)                             # R76 DoT/HoT 吃威力
+                if st2.get("status") == "consecration":                    # R122 聖化領域
+                    cb = mastery.consecration_bonus(char, gamedata)         # 聖化壁壘:守護頂點加大減傷幅度
+                    if cb:
+                        st2 = {**st2, "magnitude": round(st2.get("magnitude", 0.0) + cb, 3)}
+                    # 刷新非疊加:重施覆蓋舊光環(避免兩道並存→舊者到期誤報「黯淡」+ 減傷不疊加,審查 nit)
+                    dest.active_effects[:] = [e for e in dest.active_effects if e.get("kind") != "consecration"]
+                dest.active_effects.append(make_status_effect(st2))
             who = "你" if dest is char else dest.name
             msg = f"{sp['name']} —— {who}{_status_verb(st)}。"
 
@@ -974,6 +981,8 @@ def _status_verb(status: dict) -> str:
         return f"獲得再生({status['turns']} 回合)"
     if k == "benumb":
         return f"被凍麻,命中下降({status['turns']} 回合)"
+    if k == "consecration":
+        return f"被聖光庇佑,來襲傷害減免({status['turns']} 回合)"
     return "受到法術影響"
 
 
@@ -1031,6 +1040,8 @@ def tick_effects(entity, gamedata=None) -> list[str]:
                 msgs.append(f"{name}回過神來,敵意重新燃起。")
             elif e["kind"] == "conduct":
                 msgs.append(f"{name}身上的導電消退了。")
+            elif e["kind"] == "consecration":
+                msgs.append("聖化領域的光輝黯淡下來。")
             elif e["kind"] == "erosion":
                 msgs.append(f"{name}身上的秘蝕褪去,魔法抗性回復如常。")   # R120 秘蝕過期
             elif e["kind"] == "offbalance":

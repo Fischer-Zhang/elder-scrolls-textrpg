@@ -392,6 +392,16 @@ def _shield_wall_factor(defender) -> float:
     return (1.0 - e.get("mitigation", 0.0)) if e else 1.0
 
 
+def _consecration_factor(defender) -> float:
+    """R122 聖騎士「聖化領域」:作用中的聖化光環 → 來襲傷害(物理+元素)乘性減免(<1.0 = 更耐打)。
+    僅玩家(自我庇佑);非玩家/無光環 → 1.0(byte-identical:刺客/怪永不持此增益)。"""
+    if not _is_player(defender):
+        return 1.0
+    e = next((e for e in getattr(defender, "active_effects", [])
+              if e.get("kind") == "consecration" and e.get("turns", 0) > 0), None)
+    return (1.0 - e.get("magnitude", 0.0)) if e else 1.0
+
+
 def _great_shield_mitigation_factor(defender, gamedata: GameData) -> float:
     """雙手重盾被動物理減傷倍率(<1.0 = 更耐打);非重盾/獸形 → 1.0。讀裝備盾的 `mitigation` 欄。"""
     if not _is_player(defender) or _is_beast(defender):
@@ -633,6 +643,10 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
                                                         "turns": ie.get("dot_turns", 3)})
                         attacker.active_effects.remove(ie)
                         break
+
+        # R122 聖騎士「聖化領域」:玩家的聖化光環對來襲傷害(物理+元素皆已匯入 dmg)乘性減免。
+        # 置於物理/元素分支之後 → 兩路皆減;gated _is_player(defender) → 刺客/怪永不持此增益 → byte-identical。
+        dmg *= _consecration_factor(defender)
 
         # solo BOSS 反一刀:偷襲開場單擊夾在生命上限的固定比例 → 絕不一刀秒 boss
         # (apex 仍可隱遁循環無傷清,但須多刀;精英/小遭遇不受影響)。

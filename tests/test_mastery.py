@@ -668,22 +668,16 @@ def test_illusion_fear_on_hit_and_merchant():
     assert got >= 1
 
 
-def test_restoration_steadfast_regen_on_low():
+def test_restoration_sacred_bulwark_boosts_consecration():
+    # R122 聖騎士:聖化壁壘(復原 75 守護頂點)→ 施放聖化領域時減傷幅度 0.20→0.30
     gd, c = _char(restoration=75)
-    mastery.choose(c, gd, "restoration_75", "steadfast")
-    foe = combat.spawn_creature(gd, "bandit", RNG(1))
-    foe.attack["damage"] = 4
-    foe.attack["skill"] = 100
-    c.max_health = 100
-    triggered = False
-    for s in range(40):
-        c.active_effects = [e for e in c.active_effects if e.get("source") != "steadfast"]
-        c.health = 20                                      # < 25% → 應觸發
-        combat.resolve_attack(foe, c, gd, RNG(s))
-        if any(e.get("source") == "steadfast" and e["kind"] == "regen" for e in c.active_effects):
-            triggered = True
-            break
-    assert triggered
+    assert mastery.consecration_bonus(c, gd) == 0.0
+    mastery.choose(c, gd, "restoration_75", "sacred_bulwark")
+    assert mastery.consecration_bonus(c, gd) == 0.1
+    c.magicka = 999
+    magic.cast(c, gd, "consecration", RNG(1))
+    e = next(x for x in c.active_effects if x.get("kind") == "consecration")
+    assert abs(e["magnitude"] - 0.30) < 1e-9    # 0.20(法術)+ 0.10(里程碑)
 
 
 # --- P4:潛行系內容 + 群體規模反制 -------------------------------------

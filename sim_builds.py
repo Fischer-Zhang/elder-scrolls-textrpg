@@ -15,7 +15,7 @@ raw·只 ±15% HP 變異·不縮放),回合制直到一方死或逾時。每回�
 """
 from tesrpg.gamedata import get_gamedata
 from tesrpg.creation import build_character
-from tesrpg.systems import combat, magic, stats, inventory, mastery
+from tesrpg.systems import combat, magic, stats, inventory, mastery, race_ability
 from tesrpg.synth import enchant_armor_id
 from tesrpg import formulas
 from tesrpg.rng import RNG
@@ -146,10 +146,11 @@ def make_paladin():
     c = build_character(gd, name="聖", sex="male", race="altmer", birthsign="mage", class_id="mage")
     c.skills.update(restoration=100, alteration=75, destruction=25, mysticism=25, conjuration=25, alchemy=25)
     c.attributes.update(intelligence=100, willpower=100, endurance=70)
-    c.spells = ["sun_flare", "holy_bolt", "turn_undead", "close_wounds", "heal", "stoneflesh"]
+    c.spells = ["sun_flare", "holy_bolt", "turn_undead", "consecration", "close_wounds", "heal", "stoneflesh"]
     c._dmg_pool = ["sun_flare", "holy_bolt"]   # 聖光傷害線(_mage_act 選較高 mag 者;實際傷害走 magic.cast 含 ×undead)
     _equip_set(c, "archmage", pieces=("hood", "robe", "gloves", "slippers"))
-    _choices(c, {"restoration_100": "divine_grace"})   # 聖療登峰:restoration 法術威力 +20%(縮放聖光)
+    # 上界 fixture:聖光攻擊(holy_zeal 50)+ 守護頂點(sacred_bulwark 75·聖化 0.20→0.30)+ 聖療登峰(divine_grace 100)
+    _choices(c, {"restoration_50": "holy_zeal", "restoration_75": "sacred_bulwark", "restoration_100": "divine_grace"})
     stats.recompute_max_resources(c, gd, restore_full=True)
     return c
 
@@ -254,6 +255,7 @@ BUILDS = {"assassin": make_assassin, "archer": make_archer, "warrior_1H": make_w
 # --- per-build 戰鬥 policy ----------------------------------------------
 def _regen(c):
     mr = formulas.magicka_regen_combat(c.attr("willpower"))
+    mr *= race_ability.magicka_regen_factor(c, gd)   # R61 高精靈 ×1.5(對齊 main.py:1214;修審查:sim 原漏此因子低估 5 個 Altmer 法師 fixture 魔力)
     if mr and c.birthsign != "atronach" and c.magicka < c.max_magicka:
         c.magicka = min(c.max_magicka, c.magicka + mr)
 
@@ -281,6 +283,15 @@ def _mage_act(c, boss, rng, st):
         magic.cast(c, gd, best, rng, target=boss, enemies=[boss], battle={"allies": []})
     else:                                   # 空藍 → 杖近戰(微傷)
         combat.player_attack_cost(c, gd); combat.resolve_attack(c, boss, gd, rng)
+
+
+def _paladin_act(c, boss, rng, st):
+    # R122 聖騎士:維持聖化領域(減傷 aura)→ 再走法師鏈(石肌/低血治療/聖光攻擊)。
+    # 🔴 消耗魔力維持減傷+治療 → 對達貢牆的關鍵限制=魔力耗盡(不會無限不死),由 sim 驗。
+    if not any(e.get("kind") == "consecration" and e.get("turns", 0) > 0 for e in c.active_effects) \
+            and magic.can_cast(c, gd, "consecration"):
+        magic.cast(c, gd, "consecration", rng); return
+    _mage_act(c, boss, rng, st)
 
 
 _BM_DMG = ["lightning_bolt", "fireball", "flames"]
@@ -328,7 +339,7 @@ _POLICY = {"assassin": _melee_sneak_act, "archer": _melee_sneak_act,
            "shield_reflect": _attack_act,
            "mage_fire": _mage_act, "mage_frost": _mage_act, "mage_shock": _mage_act,
            "arcanist": _mage_act,
-           "paladin": _mage_act,
+           "paladin": _paladin_act,
            "battlemage": _battlemage_act}
 
 

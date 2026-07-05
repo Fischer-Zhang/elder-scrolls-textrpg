@@ -63,6 +63,7 @@ _IMPLEMENTED_KINDS = {
     # 廣度 pass:運動逃跑加成、重甲反傷、安全解陷保底。
     "flee_bonus", "armor_reflect", "armor_stagger", "combat_regen", "trap_floor",
     "shield_recoil",   # 變化 100(R118):作用中護膚盾時被物理擊中→機率震開攻方(接被動 flesh 為主動反噬)
+    "consecration_boost",   # 復原 75(R122 聖騎士):聖化領域減傷幅度 +(施法時加在 magnitude 上·守護頂點)
     # security 功能化(混合身份):盜賊行竊加成、地城賊眼窺探(布林解鎖)。
     "theft_skill", "dungeon_casing",
     # R106C 死靈經濟:解鎖(召喚 25·取代省魔)、亡者收集(每擊殺多給 token)、亡者統御(真·亡者更強韌兇猛)。
@@ -254,6 +255,13 @@ def incoming_physical_factor(char, gamedata: GameData) -> float:
     """壁壘:受物理攻擊的減傷倍率(<1.0 = 更耐打);非物理(元素)不適用。"""
     e = _chosen_option_by_kind(char, gamedata, "bulwark")
     return e["factor"] if e else 1.0
+
+
+def consecration_bonus(char, gamedata: GameData) -> float:
+    """R122 聖騎士「聖化壁壘」(復原 75 守護頂點):施放聖化領域時額外的減傷幅度加成
+    (加在法術 magnitude 上;無此里程碑 → 0.0)。"""
+    e = _chosen_option_by_kind(char, gamedata, "consecration_boost")
+    return e.get("bonus", 0.0) if e else 0.0
 
 
 def attack_fatigue_factor(char, gamedata: GameData) -> float:

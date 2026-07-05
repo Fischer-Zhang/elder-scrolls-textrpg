@@ -249,13 +249,11 @@
         "desc": "復原宗師:治療超出生命上限的部分化為臨時護盾(60% 轉化,上限為生命上限一半,4 回合)。"
       },
       {
-        "opt_id": "steadfast",
-        "name": "不屈祝禱",
-        "kind": "regen_on_low",
-        "threshold": 0.25,
-        "regen": 4,
-        "turns": 3,
-        "desc": "命懸一線時(生命低於 25%)聖光自湧,持續再生 4/回合,共 3 回合。"
+        "opt_id": "sacred_bulwark",
+        "name": "聖化壁壘",
+        "kind": "consecration_boost",
+        "bonus": 0.1,
+        "desc": "守護的極致:聖化領域的減傷幅度 +10%(20%→30%),化身戰場上不動的聖盾。守護路線。"
       }
     ]
   },
@@ -598,13 +596,12 @@
         "desc": "戰地醫者本能:當同袍生命垂危(<30%),你下一道治療/援護術近乎免費施放(魔力 15%、體力 25%)。"
       },
       {
-        "opt_id": "cleanse",
-        "name": "潔淨之軀",
-        "kind": "resist_fortify",
-        "resist": {
-          "disease": 30
-        },
-        "desc": "白袍的庇佑:長伴病榻而百毒不侵(疾病抗性 +30%)。"
+        "opt_id": "holy_zeal",
+        "name": "聖光專注",
+        "kind": "spell_mod",
+        "school": "restoration",
+        "power_bonus": 0.1,
+        "desc": "聖戰士的虔誠:復原系法術威力 +10%(治療更盛、聖光傷害更烈)。聖光攻擊路線。"
       }
     ]
   },
