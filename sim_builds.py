@@ -146,8 +146,8 @@ def make_paladin():
     c = build_character(gd, name="聖", sex="male", race="altmer", birthsign="mage", class_id="mage")
     c.skills.update(restoration=100, alteration=75, destruction=25, mysticism=25, conjuration=25, alchemy=25)
     c.attributes.update(intelligence=100, willpower=100, endurance=70)
-    c.spells = ["sun_flare", "holy_bolt", "turn_undead", "consecration", "close_wounds", "heal", "stoneflesh"]
-    c._dmg_pool = ["sun_flare", "holy_bolt"]   # 聖光傷害線(_mage_act 選較高 mag 者;實際傷害走 magic.cast 含 ×undead)
+    c.spells = ["dawn_judgment", "sun_flare", "holy_bolt", "turn_undead", "consecration", "close_wounds", "heal", "stoneflesh"]
+    c._dmg_pool = ["dawn_judgment", "sun_flare", "holy_bolt"]   # 聖光傷害線含終極破曉聖裁(_mage_act 選較高 mag 者·實際傷害走 magic.cast 含 ×undead)
     _equip_set(c, "archmage", pieces=("hood", "robe", "gloves", "slippers"))
     # 上界 fixture:聖光攻擊(holy_zeal 50)+ 守護頂點(sacred_bulwark 75·聖化 0.20→0.30)+ 聖療登峰(divine_grace 100)
     _choices(c, {"restoration_50": "holy_zeal", "restoration_75": "sacred_bulwark", "restoration_100": "divine_grace"})

@@ -4816,6 +4816,39 @@ def action_arcane_trials(state: GameState, gamedata: GameData) -> None:
     _accept_and_brief(state, gamedata, qid)
 
 
+def action_holy_trials(state: GameState, gamedata: GameData) -> None:
+    """聖光試煉的在地引路人(R122 聖騎士·Phase C):復原 base≥75 → 破曉聖裁終極試煉。
+
+    比照 action_arcane_trials(平行 site,使用者拍板):地點 `holy_trials` 標籤配對任務 `holy_site`,
+    列可接者 → 複用 _accept_and_brief。門檻(requires_skill/level)由 available_quests 把關。
+    """
+    char = state.player
+    loc = world.current_location(char, gamedata)
+    site = loc.get("holy_trials")
+    if not site:
+        return
+    avail = [qid for qid in quests.available_quests(char, gamedata, "holy")
+             if gamedata.quests[qid].get("holy_site") == site]
+    if not avail:
+        if char.base_skill("restoration") < 75:   # R122 聖光試煉閘 restoration 75(真本事·非臨時加成)
+            ui.message("破曉的引路人端詳你片刻,搖頭:「你的復原造詣尚不足以承載破曉聖裁 —— "
+                       "回去精進聖法,至少登堂入室(復原 75)方談得上試煉。」", style="grey70")
+        elif "trial_dawn" in char.completed_quests:   # 已完成:如實道賀(區隔 in-progress/歷練未足,審查修)
+            ui.message("引路人微微頷首:「破曉的試煉你已了結 —— 願聖光長伴你的道途。」", style="grey70")
+        else:   # 尚在途中,或聖法已足但歷練未達(requires_level 18)
+            ui.message("引路人凝視著你:「破曉的試煉尚未為你顯現 —— 或你已在途中未竟,或聲名歷練仍淺(需等級 18)。」",
+                       style="grey70")
+        return
+    ui.message("一名眼瞳映著晨曦微光的引路人打量著你:「破曉聖裁不予未經試煉的信徒 —— "
+               "先以真正的聖光穿透永夜、將不朽的邪祟燒回塵土,真言才會降臨於你。」", style="cyan")
+    opts = [(qid, f"{gamedata.quests[qid]['name']} — {quests.objective_text(char, gamedata, qid)}")
+            for qid in avail]
+    qid = ui.menu("破曉試煉的引路人", opts, allow_back=True)
+    if qid is None:
+        return
+    _accept_and_brief(state, gamedata, qid)
+
+
 def _accept_and_brief(state: GameState, gamedata: GameData, qid: str) -> None:
     q = gamedata.quests[qid]
     branch = 0
@@ -5700,6 +5733,8 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
             mg_opts = [("spells", "學習法術"), ("mg_hall", "公會事務(入會 / 任務)")]
             if loc.get("arcane_trials"):                 # R-arcane:奧術試煉引路人(終極法術試煉發起點)
                 mg_opts.append(("arcane", "🔥 奧術試煉的引路人"))
+            if loc.get("holy_trials"):                   # R122 聖騎士:破曉試煉引路人(終極聖光試煉發起點)
+                mg_opts.append(("holy", "☀️ 破曉試煉的引路人"))
             if ("raise_thrall" in loc.get("spell_stock", [])       # R106C 召喚重鎮死靈祭壇(限死靈經濟已解鎖·召喚 25 里程碑)
                     and mastery.has_soul_economy(player, gamedata)):
                 mg_opts.append(("necro", "💀 死靈祭壇(靈魂 token 升級)"))
@@ -5712,6 +5747,8 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
                 action_guild_hall(state, gamedata, "mages_guild")
             elif sub == "arcane":
                 action_arcane_trials(state, gamedata)
+            elif sub == "holy":
+                action_holy_trials(state, gamedata)
             elif sub == "necro":
                 action_necromancy_altar(state, gamedata)
             elif sub == "cure":

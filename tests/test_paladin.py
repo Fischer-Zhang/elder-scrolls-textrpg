@@ -119,6 +119,63 @@ def test_sacred_bulwark_boosts_consecration_magnitude():
     assert abs(e["magnitude"] - 0.30) < 1e-9   # 0.20 + 0.10 里程碑
 
 
+# --- Phase C:終極聖光 + 破曉試煉 -------------------------------------
+def test_deathless_king_is_undead_and_high_hp():
+    gd = get_gamedata()
+    b = gd.bestiary["deathless_king"]
+    assert b.get("undead") is True and b.get("solo") is True   # 不死 → 聖光 ×2·solo → R44 控場減免
+    assert b["max_health"] >= 300                              # 高血 capstone boss
+    # 控場節制:硬控 fear ≤0.30/turns1
+    for atk in b.get("attacks", []):
+        oh = atk.get("on_hit", {})
+        if oh.get("status") in ("fear", "paralyze"):
+            assert oh.get("chance", 1) <= 0.30 and oh.get("turns", 1) <= 1
+
+
+def test_dawn_judgment_doubles_vs_undead():
+    import tesrpg.formulas as F
+    gd, c = _paladin()
+    c.spells.append("dawn_judgment")
+    undead = combat.spawn_creature(gd, "skeleton", RNG(3)); undead.resist = {}; undead.health = undead.max_health = 99999
+    living = combat.spawn_creature(gd, "wolf", RNG(3)); living.resist = {}; living.health = living.max_health = 99999
+    def hit(t):
+        before = t.health
+        magic.cast(_paladin()[1], gd, "dawn_judgment", RNG(5), target=t, enemies=[t])
+        return before - t.health
+    du, dl = hit(undead), hit(living)
+    assert du > dl and abs(du / dl - F.HOLY_UNDEAD_MULT) < 0.25
+
+
+def test_dawn_trial_gated_by_restoration_75_and_level():
+    from tesrpg.systems import quests
+    gd = get_gamedata()
+
+    def holy_avail(resto, level):
+        c = build_character(gd, name="P", sex="male", race="altmer", birthsign="mage", class_id="mage")
+        c.skills["restoration"] = resto; c.level = level
+        return [q for q in quests.available_quests(c, gd, "holy") if gd.quests[q].get("holy_site") == "dawn"]
+
+    assert "trial_dawn" in holy_avail(75, 18)      # 達標
+    assert holy_avail(74, 18) == []                # 復原不足
+    assert holy_avail(75, 17) == []                # 等級不足
+
+
+def test_dawn_trial_rewards_ultimate_spell_only_via_trial():
+    from tesrpg.systems import quests
+    gd = get_gamedata()
+    # dawn_judgment 不在任何商店 spell_stock(唯試煉獎勵)
+    for loc in gd.world["locations"].values():
+        assert "dawn_judgment" not in loc.get("spell_stock", [])
+    assert gd.quests["trial_dawn"]["reward"]["spells"] == ["dawn_judgment"]
+    # 完成試煉 → 授予 dawn_judgment
+    c = build_character(gd, name="P", sex="male", race="altmer", birthsign="mage", class_id="mage")
+    c.skills["restoration"] = 75; c.level = 18
+    quests.accept_quest(c, gd, "trial_dawn", 0)
+    c.quests["trial_dawn"] = len(gd.quests["trial_dawn"]["stages"])
+    quests._complete(c, gd, "trial_dawn")
+    assert "dawn_judgment" in c.spells
+
+
 def run():
     for name, fn in sorted(globals().items()):
         if name.startswith("test_") and callable(fn):

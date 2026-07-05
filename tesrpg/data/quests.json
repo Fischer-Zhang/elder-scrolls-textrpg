@@ -7565,6 +7565,59 @@
       }
     ]
   },
+    "trial_dawn": {
+      "name": "破曉試煉",
+      "faction": null,
+      "rank": null,
+      "source": "holy",
+      "holy_site": "dawn",
+      "requires_level": 18,
+      "requires_skill": {
+        "restoration": 75
+      },
+      "text": "破曉的引路人將一枚黯淡的日輪聖徽按進你掌心:「破曉聖裁不予未經試煉的信徒。蝕光巫妖掐熄了亡者歸途的破曉之光 —— 你得循聖徽的微光,踏遍高岩的荒沼,以真正的聖光將牠燒回塵土,真言方會在你手中重燃。」",
+      "stages": [
+        {
+          "objective": {
+            "type": "reach",
+            "location": "wayrest"
+          },
+          "text": "先往高岩東境的威岩,在破曉神殿的階前沉澱心神、整備你的聖法。"
+        },
+        {
+          "objective": {
+            "type": "collect",
+            "item": "moonstone_ingot",
+            "count": 2
+          },
+          "text": "採集兩錠月長石 —— 唯有純淨的聖銀能承載破曉的餘燼、與日輪聖徽共鳴。"
+        },
+        {
+          "objective": {
+            "type": "reach",
+            "location": "deathless_crypt"
+          },
+          "text": "西返格雷努布拉海岸,深入霧靄中的不朽陵墓 —— 永夜的寒氣自石棺間滲出。"
+        },
+        {
+          "objective": {
+            "type": "clear_dungeon",
+            "dungeon": "deathless_crypt"
+          },
+          "text": "以聖光穿透永夜,將蝕光巫妖燒回它早該安息的塵土。奪回破曉聖裁的真言。"
+        }
+      ],
+      "reward": {
+        "gold": 800,
+        "fame": 35,
+        "spells": [
+          "dawn_judgment"
+        ],
+        "world_flags": [
+          "mastery_dawn"
+        ]
+      }
+    },
   "trial_soul": {
     "name": "織魂試煉",
     "faction": null,
