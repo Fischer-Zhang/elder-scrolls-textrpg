@@ -1792,6 +1792,51 @@ def _resolve_trap(state: GameState, gamedata: GameData, trap: dict) -> None:
         ui.show_events(progression.use_skill(char, gamedata, "security", base_xp * formulas.SECURITY_FAIL_XP_FRAC), gamedata)
 
 
+def _dungeon_scry(state: GameState, gamedata: GameData, grid: dict, z: int, explored: list) -> None:
+    """R121 靈視/靈識:對地城當前層任一未探格主動施展揭露(靈視術=單格·靈識術=中心+四鄰)。
+    與偵查 25 里程碑互補 —— recon 移動時揭四鄰(近身),scry 主動揭遠格(規劃路線·探明樓梯/首領/機關);
+    免耗回合、耗魔力、鍛鍊 mysticism。（Phase B:靈識亦用於揭露法術封印。)"""
+    player = state.player
+    n = grid["n"]
+    known = [s for s in player.spells if gamedata.spells[s]["effect"].get("kind") == "scry"]
+    if not known:
+        return
+    targets = [(tx, ty) for ty in range(n) for tx in range(n) if not explored[z][ty][tx]]
+    if not targets:
+        ui.message("此層已無未探之處可供靈視。", style="grey70")
+        return
+    afford = [s for s in known if magic.can_cast(player, gamedata, s)]
+    if not afford:
+        ui.message("魔力不足以施展靈視之法。", style="red")
+        return
+    if len(afford) == 1:
+        sid = afford[0]
+    else:
+        sid = ui.menu("施展哪道靈視之法?", [
+            (s, f"{gamedata.spells[s]['name']}（{magic.effective_cost(player, gamedata, s)} 魔力 · "
+                f"{'中心 + 四鄰' if gamedata.spells[s]['effect'].get('radius') else '單格'})") for s in afford],
+            allow_back=True)
+        if sid is None:
+            return
+    topts = [(f"{tx}_{ty}", f"未探格（第 {ty + 1} 排 · 第 {tx + 1} 格)") for tx, ty in targets]
+    tkey = ui.menu("靈視哪一格?", topts, allow_back=True)
+    if tkey is None:
+        return
+    tx, ty = (int(v) for v in tkey.split("_"))
+    player.magicka -= magic.effective_cost(player, gamedata, sid)
+    cells = [(tx, ty)]
+    if gamedata.spells[sid]["effect"].get("radius"):
+        cells += [(nx, ny) for _k, _l, nx, ny in dungeoncrawl.neighbors(grid, tx, ty)]
+    newly = 0
+    for cx, cy in cells:
+        if not explored[z][cy][cx]:
+            explored[z][cy][cx] = True
+            newly += 1
+    ui.show_events(progression.use_skill(player, gamedata, "mysticism",
+                                         gamedata.skills["mysticism"]["practice"]["xp"]), gamedata)
+    ui.message(f"{gamedata.spells[sid]['name']} —— 奧術之光探入遠方,{newly} 格幽暗自你心眼中浮現。", style="cyan")
+
+
 def action_dungeon(state: GameState, gamedata: GameData) -> str | None:
     """格子探索地城 —— **視為戰鬥情境**的自足子迴圈(維持盟友清單 + 回合制效果計時)。
 
@@ -1826,7 +1871,7 @@ def action_dungeon(state: GameState, gamedata: GameData) -> str | None:
     def reveal_and_train(zz, xx, yy):
         """標記 (xx,yy) 及(有偵查 perk 時)四鄰為已探;每「新探明」格授少量偵查 xp(已探不重複給)。"""
         cells = [(xx, yy)]
-        if mastery.has_recon_perk(player, gamedata) or spellfx.is_sensing(player):   # R121 靈識術:暫時性揭四鄰
+        if mastery.has_recon_perk(player, gamedata):   # 偵查 25 里程碑:移動時揭四鄰(靈視/靈識 scry 則對遠格主動揭露,互補)
             cells += [(nx, ny) for _k, _l, nx, ny in dungeoncrawl.neighbors(grid, xx, yy)]
         newly = 0
         for cx, cy in cells:
@@ -1946,9 +1991,11 @@ def action_dungeon(state: GameState, gamedata: GameData) -> str | None:
         ui.status_line(state, gamedata, allies=battle["allies"])   # 持久狀態條:英雄 + 夥伴 + 召喚物
         ui.dungeon_grid(grid, z, x, y, explored, resolved)  # 小地圖 + 當前格(偵查揭示鄰格內容)
         opts = [("go:" + key, f"往{label}") for key, label, _nx, _ny in dungeoncrawl.neighbors(grid, x, y)]
-        if any(gamedata.spells[s]["target"] == "self" and gamedata.spells[s]["effect"]["kind"] != "reanimate"
-               for s in player.spells):    # 僅當有可在地城施放的 self 法術才列 cast(免空選單)
+        if any(gamedata.spells[s]["target"] == "self" and gamedata.spells[s]["effect"]["kind"] not in ("reanimate", "scry")
+               for s in player.spells):    # 僅當有可在地城施放的 self 法術才列 cast(免空選單;scry 另列)
             opts.append(("cast", "施法(預施/預召喚)"))
+        if any(gamedata.spells[s]["effect"].get("kind") == "scry" for s in player.spells):   # R121 靈視/靈識:對遠格主動揭露
+            opts.append(("scry", "🔮 靈識揭露"))
         opts.append(("inventory", "背包"))
         opts.append(("sheet", "角色卡"))
         if player.can_level_up():                          # 地城內也能升級(達門檻即可,免回城)
@@ -1966,6 +2013,8 @@ def action_dungeon(state: GameState, gamedata: GameData) -> str | None:
             return None
         if choice == "cast":                               # 自由行動(不耗回合)
             action_cast_self(state, gamedata, battle=battle)
+        elif choice == "scry":                             # R121 靈視/靈識:自由行動(不耗回合)· 對遠格主動揭露
+            _dungeon_scry(state, gamedata, grid, z, explored)
         elif choice == "levelup":                          # 自由行動(不耗回合):安全點主動升級
             action_level_up(state, gamedata)
         elif choice == "inventory":
@@ -3861,16 +3910,16 @@ def action_cast_self(state: GameState, gamedata: GameData, battle: dict | None =
     battle 非 None(地城戰鬥情境):放寬為「所有 self-target、非 reanimate」法術 —— 含召喚與
     各式自我增益(預施/預召喚);召喚物加入 battle["allies"]。battle 為 None(城鎮):僅 heal/restore。"""
     char = state.player
-    if battle is not None:   # 地城戰鬥情境:可預施增益 + 預召喚(reanimate 需屍體 → 地城無,排除)
+    if battle is not None:   # 地城戰鬥情境:可預施增益 + 預召喚(reanimate 需屍體 → 地城無,排除;scry 走「靈識揭露」動作)
         usable = [s for s in char.spells
                   if gamedata.spells[s]["target"] == "self"
-                  and gamedata.spells[s]["effect"]["kind"] != "reanimate"]
+                  and gamedata.spells[s]["effect"]["kind"] not in ("reanimate", "scry")]
     else:
         usable = [s for s in char.spells
                   if gamedata.spells[s]["target"] == "self"
                   and gamedata.spells[s]["effect"]["kind"] in
                   ("heal", "restore_fatigue", "charm", "invisibility", "feather", "detect_life",
-                   "arcane_sight", "telekinesis")]   # R104 實用/幻術 + R121 秘術實用 戰鬥外可施
+                   "telekinesis")]   # R104 實用/幻術 + R121 念力 戰鬥外可施(靈視/靈識走地城揭露動作)
     if not usable:
         ui.message("你沒有可施放的法術。", style="grey70")
         return

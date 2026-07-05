@@ -17,7 +17,7 @@ def _state(seed=1, hour=12):
     gd = get_gamedata()
     c = build_character(gd, name="U", sex="male", race="breton", birthsign="mage", class_id="mage")
     c.spells = list(c.spells) + ["charm", "invisibility", "feather", "calm", "detect_life",
-                                 "arcane_sight", "telekinesis"]
+                                 "scry", "arcane_sight", "telekinesis"]
     c.magicka = c.max_magicka = 300
     c.fatigue = c.max_fatigue = 200
     st = GameState(player=c, rng=RNG(seed), time=GameTime(hour=hour))
@@ -28,22 +28,21 @@ def _cast(gd, c, st, sid, **kw):
     return magic.cast(c, gd, sid, st.rng, state=st, **kw)
 
 
-# --- R121 秘術實用:靈識 / 念力 -------------------------------------------
-def test_arcane_sight_and_telekinesis_apply_and_expire():
+# --- R121 秘術實用:念力(限時層)/ 靈視·靈識(地城 targeted 揭露·非限時層)---------
+def test_telekinesis_buff_and_scry_not_a_timed_buff():
     gd, c, st = _state()
-    # 靈識術:限時「感測」→ 地城探索揭四鄰(is_sensing)
-    _cast(gd, c, st, "arcane_sight")
-    assert spellfx.is_sensing(c) and not spellfx.is_telekinetic(c)
-    # 念力術:限時「隔空化解機關」(is_telekinetic)
+    # 念力術:限時「隔空化解機關」spellfx 增益
     _cast(gd, c, st, "telekinesis")
-    assert spellfx.is_telekinetic(c) and spellfx.is_sensing(c)
-    # 未施法時皆 False(短路 → 非使用者零成本)
+    assert spellfx.is_telekinetic(c)
     _, c2, _ = _state()
-    assert not spellfx.is_sensing(c2) and not spellfx.is_telekinetic(c2)
-    # 過期 → update 剔除
-    st.time.advance(7)
-    spellfx.update(st, gd)
-    assert not spellfx.is_sensing(c) and not spellfx.is_telekinetic(c)
+    assert not spellfx.is_telekinetic(c2)          # 未施法 → False(短路,非使用者零成本)
+    # 靈視/靈識(scry)非限時層 —— 走地城 targeted 揭露動作;誤經一般施法即退還、不記 spell_effects
+    before = len(c.spell_effects)
+    r = magic.cast(c, gd, "arcane_sight", st.rng, state=st)
+    assert not r["ok"] and len(c.spell_effects) == before
+    # 到期:念力消退
+    st.time.advance(7); spellfx.update(st, gd)
+    assert not spellfx.is_telekinetic(c)
 
 
 # --- spellfx 限時層 --------------------------------------------------------

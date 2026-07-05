@@ -18,7 +18,7 @@ _KINDS = {
     "damage_all", "damage_status_all", "status_all", "summon", "reanimate", "empower",
     "cure_disease",
     "calm", "charm", "invisibility", "feather", "detect_life",   # R104 實用/幻術魔法
-    "arcane_sight", "telekinesis",   # R121 秘術實用(靈識/念力·地城探索)
+    "scry", "telekinesis",   # R121 秘術實用(靈視/靈識揭露·念力·地城)
 }
 _ELEMENT_KINDS = {"damage", "damage_status", "damage_all", "damage_status_all", "weapon_imbue", "bound_weapon"}
 _ALL_KINDS = {"damage_all", "damage_status_all", "status_all"}
