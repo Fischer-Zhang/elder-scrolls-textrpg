@@ -1410,6 +1410,16 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 
 ---
 
+### R126 · 戰鬥中喝藥:回合制用藥(近戰/潛行終獲中場續戰)[re-sim] [save-safe]
+
+**承 UI/UX audit Theme 5**(使用者拍板:耗一回合 + 全消耗品 + 無硬上限·sim 驗)。缺口:戰鬥回合選單無「用藥」,唯一窗口是戰前 `_prep_phase`;`inventory.use_item` 早支援 heal/restore/cure/fortify 卻碰不到 → **法系有中場續戰(治療術),戰士/弓手/刺客沒有**,一疊治療藥水在硬仗是死重。
+
+**機制(只碰 main.py 選單·未碰 combat/formulas/magic)**:`_choose_combat_action` 加「🧪 用藥(耗一回合)」選項(持有 potion 時)→ picker → `{"type":"item","item_id"}`;`run_battle` 玩家階段加 item 分支 → `inventory.use_item`(治療/魔力/體力/淨疾/限時強化全支援)· **耗一回合=不攻擊**(敵階段照跑·主要平衡閘)。cmem repeat 不記 item(只 attack/cast)。
+
+**🔴 sim 驗(使用者拍板「無硬上限·sim 驗·真破再加閘」)**:sim_builds 加**用藥 fidelity**(`_MELEE_POT_BUILDS` 近戰/潛行 fixture 帶 8 healing_potion·`_drink_if_low` HP<40% 喝·耗一回合)。結果:**🔴 法系 offense 牆完整守住**(火/雷法師 0%·arcanist 10%·聖騎士 0% vs 達貢·即使帶 8 治療+8 魔力藥 —— 純法系永遠 out-DPS 不了 720+元素抗)。**近戰 vs 達貢軟化**:戰士 14→66%·雙手 46→89%·武僧 18→51%·刺客 28→49%·弓 34→55%(8 瓶≈+400 HP 續戰)——**但在既有「吸血鬼附魔可closeable 68-98%」設計範圍內**(記憶 [[warrior-solo-boss-already-strong]]),非新破口·只是平行(較便宜)路。**sim_assassin 紅線守**(solo 偷襲秒殺 0%·main.py 選單改不在 sim 路徑→oneshot 不變)。治療藥水**固定回 50 不放大**(煉金不釀治療)→ 自限。run_all 114·對抗審查待補。零新存檔欄。
+
+**🔴 使用者拍板**:接受近戰軟化(可接受)+ **另評估「增加 BOSS 強度」**(以更強 boss 補償·而非削藥·見下輪)。🔴 加藥類走 use_item(既有);用藥耗一回合(唯一平衡閘·勿改免費);法系牆靠 offense(藥給續戰非輸出→純法系恆守);近戰硬 boss 軟化 by-design 在既有裝備範圍;調藥/加閘→sim_builds(近戰 vs 達貢)+ 守法系牆。
+
 ### R125 · UI/UX 打磨批次:導航/自動趕路 + 戰鬥可讀性 + 新手清晰(Theme 1+3+4)[byte-identical] [save-safe]
 
 **承使用者評估「UI/UX 改善」**:5 維 audit workflow(27 發現→6 主題·全 code-verified)揪出 R113-R114 四包之後的剩餘缺口。使用者拍板做**零平衡三主題打磨批**。**零 combat/formulas/magic 數學 → sim 天然不受影響·零新存檔欄·前端 index.html 未動**。

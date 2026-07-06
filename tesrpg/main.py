@@ -680,6 +680,9 @@ def _choose_combat_action(state: GameState, gamedata: GameData, enemies: list, a
     _alive_calm = [e for e in enemies if combat.is_alive(e)]
     if _alive_calm and all(magic.is_calm(e) for e in _alive_calm):
         opts.append(("leave", "🕊 從容離去（敵意已全平息 · 安然脫身)"))
+    # R126 戰鬥中用藥(耗一回合):持有消耗品時提供 —— 治療/續資源/淨疾/限時強化(use_item 全支援)
+    if any(gamedata.item(s["id"]).get("kind") == "potion" for s in player.inventory):
+        opts.append(("item", "🧪 用藥（喝下藥水 · 耗一回合)"))
     opts.append(("flee", "逃跑"))
     choice = ui.menu("你的回合", opts)
 
@@ -787,6 +790,15 @@ def _choose_combat_action(state: GameState, gamedata: GameData, enemies: list, a
                 return _back()
             return {"type": "racial_power", "target": tgt}
         return {"type": "racial_power", "target": None}
+    if choice == "item":   # R126 戰鬥中用藥:選一瓶消耗品(執行走 run_battle 的 item 分支,耗一回合)
+        potions = list(dict.fromkeys(
+            s["id"] for s in player.inventory if gamedata.item(s["id"]).get("kind") == "potion"))
+        pid = ui.menu("喝哪瓶藥水?(耗一回合)",
+                      [(p, f"{gamedata.item_name(p)} ×{inventory.count_item(player, p)}") for p in potions],
+                      allow_back=True) if potions else None
+        if pid is None:
+            return _back()
+        return {"type": "item", "item_id": pid}
     return {"type": choice}
 
 
@@ -1088,6 +1100,8 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
                              corpses=enemies, mounted=mounted, state=state)   # 亡者復生需見「完整」敵群(含已死屍體);存活清單仍走 enemies=alive_e()
             ui.message(res["message"], style="cyan")
             ui.show_events(res["skill_events"], gamedata)
+        elif action["type"] == "item":   # R126 戰鬥中用藥(耗一回合;use_item 支援治療/續資源/淨疾/限時強化)
+            ui.message(inventory.use_item(player, gamedata, action["item_id"], state) or "你飲下藥水。", style="green")
         elif action["type"] == "power":
             pres = powers.use(player, state, gamedata, target=action.get("target"))
             for m in pres["messages"]:

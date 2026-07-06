@@ -323,10 +323,25 @@ def _battlemage_act(c, boss, rng, st):
     combat.player_attack_cost(c, gd); combat.resolve_attack(c, boss, gd, rng)
 
 
+# R126 戰鬥中用藥模型(fidelity):近戰/潛行 build 帶治療藥水,低血喝(耗一回合=不攻擊)。
+# 反映遊戲新現實(近戰終於有中場續戰)→ 平衡工具不再低估近戰硬 boss 存活。法系另有治療術不靠藥。
+_MELEE_POT_BUILDS = {"warrior_1H", "warrior_2H", "monk", "assassin", "archer", "shield_reflect"}
+_COMBAT_POTIONS = 8   # 帶去硬仗的治療藥水疊(healing_potion·回50·固定不放大)
+
+
+def _drink_if_low(c):
+    if c.health < c.max_health * 0.40 and inventory.count_item(c, "healing_potion") > 0:
+        inventory.use_item(c, gd, "healing_potion")   # 耗一回合(不攻擊),鏡像 run_battle item 分支
+        return True
+    return False
+
+
 def _melee_sneak_act(c, boss, rng, st):
-    """刺客/弓手:低血隱遁(重置偷襲),否則偷襲/攻擊。
+    """刺客/弓手:低血喝藥(R126)→ 低血隱遁(重置偷襲),否則偷襲/攻擊。
     弓手不再每發都 aimed(原 bug:aimed 是偶發特殊動作非常駐 buff → 高估弓手);此處走純武器攻擊
     + 偷襲 + 隱遁(保守基準;偶發 aimed 蓄力會再添爆發,刻意不模型化以免高估)。"""
+    if _drink_if_low(c):
+        st["skip_boss"] = False; return
     if c.health < c.max_health * 0.45 and combat.can_vanish(c, gd) \
             and combat.try_vanish(c, 1, st["vanish"], rng, gd):
         # 保真:隱遁耗體力 + R71 隱遁不再無敵(對任何敵都不跳過攻擊)→ 純重置偷襲、照常挨打
@@ -338,6 +353,8 @@ def _melee_sneak_act(c, boss, rng, st):
 
 
 def _attack_act(c, boss, rng, st):
+    if _drink_if_low(c):   # R126 戰鬥中用藥(耗一回合)
+        return
     combat.player_attack_cost(c, gd); combat.resolve_attack(c, boss, gd, rng)
 
 
@@ -352,6 +369,8 @@ _POLICY = {"assassin": _melee_sneak_act, "archer": _melee_sneak_act,
 
 def fight(build_name, boss_id, seed, max_rounds=80):
     c = BUILDS[build_name]()
+    if build_name in _MELEE_POT_BUILDS:                 # R126:近戰/潛行帶治療藥水疊(中場續戰)
+        inventory.add_item(c, "healing_potion", _COMBAT_POTIONS)
     boss = combat.spawn_creature(gd, boss_id, RNG(seed * 9 + 1))
     rng = RNG(seed)
     act = _POLICY[build_name]
