@@ -1145,6 +1145,15 @@ def _divine_index_rows(gamedata: GameData) -> list:
     return rows
 
 
+def _trial_index_rows(gamedata: GameData) -> list:
+    """R124 動態『終極真言試煉一覽』:秘術/聖光終極法術的試煉發起地點 + 技能閘(戴德拉/九神見各自條目)。"""
+    from tesrpg.systems import trials
+    rows = [_hd("終極真言試煉一覽(隨世界更新)")]
+    for fam, where, gate, qname in trials.index_sites(gamedata):
+        rows.append(_kv(f"{qname}（{fam}）", f"{where}·門檻 {gate}"))
+    return rows
+
+
 def _codex_rows(entry: dict, gamedata: GameData) -> list:
     """codex entry.sections → panel rows(h/p/kv/li → _hd/_kv/_ln);未知形狀靜默略過(防陳舊)。"""
     rows = []
@@ -1161,6 +1170,8 @@ def _codex_rows(entry: dict, gamedata: GameData) -> list:
         rows += _shrine_index_rows(gamedata)
     elif entry.get("dynamic") == "divines":        # R107:九神祭壇清單(掃 world divine 欄,防陳舊)
         rows += _divine_index_rows(gamedata)
+    elif entry.get("dynamic") == "trials":         # R124:終極真言試煉一覽(秘術/聖光·掃 quests,防陳舊)
+        rows += _trial_index_rows(gamedata)
     return rows or [_ln("(本條目尚無內容)", "muted")]
 
 

@@ -15,7 +15,7 @@ from tesrpg.state import GameState
 from tesrpg.systems import (achievements, aiwar, alchemy, boons, brotherhood, combat, court, crafting, crime, dialogue, diseases, divines, dungeon,
                             dungeoncrawl, enchanting, events, factions, housing, inventory, landmarks, legacy,
                             lycanthropy, magic, mastery, mounts, necromancy, party, politics, potion_buff, powers,
-                            progression, quests, race_ability, skooma, smithing, spellfx, stats, undercover, vampirism, warband, world, worldpulse, worldstate)
+                            progression, quests, race_ability, skooma, smithing, spellfx, stats, trials, undercover, vampirism, warband, world, worldpulse, worldstate)
 from tesrpg.ui import console as ui
 
 SAVE_PATH = Path.home() / ".tesrpg" / "save.json"
@@ -4969,7 +4969,7 @@ def action_talk(state: GameState, gamedata: GameData) -> str | None:
             opts.append(("quest", f"接受委託:{gamedata.quests[offered]['name']}"))
         rumor = dialogue.offered_rumor(char, gamedata, nid)   # R81:追問傳聞 → 線索任務 / 即時指路
         if rumor and att != "hostile":
-            tag = "線索" if rumor["kind"] == "quest" else "指路"
+            tag = {"quest": "線索", "trial": "試煉"}.get(rumor["kind"], "指路")
             opts.append(("rumor", f"追問傳聞·{tag}:「{npc.get('rumor', '')[:16]}…」"))
         pc = int(dialogue.persuade_chance(char, gamedata, nid) * 100)
         sp = gamedata.skills["speechcraft"]["practice"]   # 唯讀靜態價碼;勿呼叫 practice_cost(會扣體力)
@@ -5017,12 +5017,16 @@ def action_talk(state: GameState, gamedata: GameData) -> str | None:
             if rumor["kind"] == "quest":
                 _accept_and_brief(state, gamedata, rumor["id"])
                 return None
-            res = landmarks.discover(state, gamedata, rumor["id"])   # 即時揭露同省地標 + 小獎勵
-            ui.message("對方壓低聲音,給你指了條道。", style="grey70")
-            if res:
-                ui.landmark_discovery(res)
+            if rumor["kind"] == "trial":                     # R124:NPC 指向試煉地點(一次性·flavor 指路)
+                ui.message("對方壓低聲音,給你指了條道:" + trials.site_pointer(gamedata, rumor["id"]), style="cyan")
+                char.dialogue_done.setdefault(nid, []).append(dialogue._TRIAL_HEARD)
             else:
-                ui.message("那地方你早已知曉了。", style="grey70")
+                res = landmarks.discover(state, gamedata, rumor["id"])   # 即時揭露同省地標 + 小獎勵
+                ui.message("對方壓低聲音,給你指了條道。", style="grey70")
+                if res:
+                    ui.landmark_discovery(res)
+                else:
+                    ui.message("那地方你早已知曉了。", style="grey70")
             att = dialogue.attitude(char, state, gamedata, nid, ctx)
         elif choice == "persuade":
             r = dialogue.persuade(char, gamedata, nid, state.rng)
@@ -5395,6 +5399,7 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
     _last_practice_skill = None   # 每趟冒險起(含同進程換角/讀檔)重置練習捷徑,免跨角殘留(審查 NIT)
     last_hub_loc = None
     _ach_seen = achievements.seed_seen(state.player, gamedata)   # 成就首達通知:載入當下已達成 → 重載不重報(零存檔欄)
+    _trial_hinted = trials.seed_hinted(state.player, gamedata)   # R124 試煉門檻觸發指引:載入當下已夠格 → 不重報(零存檔欄)
     _reinfest_seen: set = set()   # 地城重踞傳聞去重(R111;session 暫態,key=(地城,時間戳)→ 每輪滋擾至多一報)
     _garden_seen: set = set()     # 藥草園熟成提示去重(R114 F6;session 暫態,key=(房產,採收週期))
     _stay_district = None         # R114C:上圈剛逛的城區 key → 這圈直接回該區子選單(連逛,免回 hub 頂重進)
@@ -5543,6 +5548,11 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
         for ev in achievements.update(state, gamedata, _ach_seen):
             ui.rule("榮譽印記")
             ui.message(f"★ 成就達成:「{ev['name']}」—— {ev['desc']}", style="bold yellow")
+
+        # R124 試煉門檻觸發指引:本圈新夠格的試煉族 → 一次性指路(去重靠 session 暫態 _trial_hinted)
+        for ev in trials.update(state, gamedata, _trial_hinted):
+            ui.rule("傳聞")
+            ui.message(f"◈ {ev}", style="cyan")
 
         ui.rule()
         ui.status_line(state, gamedata)

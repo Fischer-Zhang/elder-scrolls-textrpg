@@ -120,7 +120,13 @@ def offered_rumor(char: Character, gamedata: GameData, npc_id: str) -> dict | No
         from tesrpg.systems import landmarks
         if not landmarks.is_discovered(char, loc):
             return {"kind": "landmark", "id": loc}
+    tl = npc.get("rumor_trial")   # R124:NPC 指向試煉地點(神殿/祭壇/引路人)·一次性(dialogue_done 去重·零存檔欄)
+    if tl and _TRIAL_HEARD not in char.dialogue_done.get(npc_id, []):
+        return {"kind": "trial", "id": tl}
     return None
+
+
+_TRIAL_HEARD = "__trial_heard__"   # R124 試煉指路一次性標記(存 char.dialogue_done[npc]·衍生零存檔欄)
 
 
 # --- 拓展用途①:說服衛兵減免賞金(犯罪/社交;對位武士特權,走技能)----------

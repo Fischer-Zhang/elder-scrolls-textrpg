@@ -1410,6 +1410,17 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 
 ---
 
+### R124 · 試煉指引:門檻觸發提示 + NPC 流言指向 + codex 索引(三層·純衍生)[byte-identical] [save-safe]
+
+**承使用者評估**「流言系統對試煉任務(九神/魔神/終極技能)的揭露或指引作用」。評估揪出:流言(R81 `offered_rumor`)只指向傳說地城(rumor_quest·42 NPC 全 source `"rumor"`),**從不指向 33+ 試煉**(戴德拉 16/九神 10/秘術 5/聖光 1/聖物 2);試煉全靠「走到對的地點 + 達技能/等級閘」被動觸發 → 玩家常「夠格卻不知試煉存在」。**最反諷:最深、最有回報的內容最難被發現**。既有地基(arcane_trials_rumor 事件 + codex shrine/divine 動態索引)沒推廣到全體。使用者拍板**綜合三層**。
+
+**新 `systems/trials.py`(純衍生·讀 quests/world/char·零存檔欄)**:`FAMILIES` 登錄(daedric→shrine·divine→divine·arcane→arcane_site·holy→holy_site);`eligible_families` 複用 `quests.available_quests(source)`(已濾 requires_skill/level/fame/faction/event + active/done)+ **要求有明確發起地點**(`location_for_trial` 以 quest site 欄配 world tag·排除無 site 的九神朝聖 pilgrimage_nine → 神性提示在 god-trial〔L15〕才觸發,非開局)。
+- **① 門檻觸發提示**(main.py game_loop·鏡像 R55 achievements):`seed_hinted`(載入當下已夠格 → 種入·不重報)+ `update`(本圈新夠格族 → 一次性「◈ 傳聞」指路·去重靠 **session 暫態** `_trial_hinted`·**每族至多一報**)。掛在 achievements.update 旁(安全互動點)。
+- **② NPC 流言指向**(dialogue + 6 NPC):`offered_rumor` 在 quest/landmark 後加 `rumor_trial`(NPC 指向試煉地點 → `{kind:"trial",id:loc}`·一次性去重走既有 `char.dialogue_done` + `_TRIAL_HEARD` 標記·零存檔欄);main.py rumor 兌現分支印 `trials.site_pointer`(依地點 tag 生成指引)。6 個主題 NPC(法師→秘術/聖光·祭司→戴德拉/九神)加 `rumor_trial`+`rumor_disposition:30`+試煉 teaser。
+- **③ codex 索引**(console + codex.json):`_trial_index_rows` + `dynamic:"trials"`(掛 magic_schools)→「終極真言試煉一覽」(秘術+聖光·地點+技能閘·戴德拉/九神已有各自 shrine/divine 索引)。
+
+**🔴 零 combat/formulas/magic 改動 → sim_assassin 天然不受影響**(不在 sim 路徑)。**零新存檔欄**(提示走 session 暫態·NPC 一次性走既有 dialogue_done·NPC 欄=gamedata 唯讀·舊檔安全)。run_all 114(新 test_trials:門檻夠格/一次性去重/新手無誤報/NPC 指向/site_pointer 全 tag/codex 索引 + schema 守衛 rumor_trial 目標合法帶試煉 tag)。**對抗審查 2 維**。🔴 加試煉族純改 `trials.FAMILIES`(source→tag→site 欄);門檻提示走 session 暫態 `_trial_hinted`(鏡像 achievements·零存檔欄·每族一報);NPC 指路純改 npcs.json `rumor_trial`(合法試煉地點·test 守)+ dialogue_done 一次性;codex 索引走 `dynamic:"trials"`。**前瞻**:relic(聖物·knights 大廳 gate)未納門檻提示(需 pilgrim_vision 事件+入會)·可另補。
+
 ### R123 · 恢復系反死靈改制:治療傷害不死(取代 R122 聖光攻擊線)[re-sim byte-identical] [save-safe]
 
 **承 R122 收官後使用者評估**:「不做聖光攻擊,而是治療可以對不死產生傷害」。評估揪出這是**反死靈最正典的機制**(治療=生命能量·療活物焚亡者)且**更優雅**(收斂整個學派·現有 7 治療自動成反死靈軍火庫·零冗餘攻擊法術);平衡數學已對上(治療值 ×0.5 ≈ 原聖光線)。使用者拍板改制。**復用 R122 全部基建**(_is_undead·17 undead·turn_undead·consecration·試煉/boss/地城/里程碑)→ 只換「傷害交付方式」。
