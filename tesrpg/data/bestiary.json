@@ -428,70 +428,9 @@
       "fire": -25
     }
   },
-  "dremora": {
-    "biomes": ["ashland"],
-    "name": "魔人",
-    "danger": 5,
-    "min_level": 3,
-    "weight": 2,
-    "strength": 60,
-    "agility": 50,
-    "speed": 45,
-    "max_health": 75,
-    "armor_rating": 24,
-    "attack": {
-      "name": "黑檀巨劍",
-      "damage": 20,
-      "skill": 60,
-      "element": "fire"
-    },
-    "attacks": [
-      {"name": "黑檀巨劍", "damage": 20, "skill": 60, "element": "fire", "weight": 2},
-      {"name": "巨刃橫掃", "damage": 18, "skill": 60, "weight": 2},
-      {"name": "湮滅怒斬", "damage": 30, "skill": 62, "element": "fire", "weight": 1, "cooldown": 3}
-    ],
-    "loot_gold": [
-      20,
-      50
-    ],
-    "loot": [
-      {
-        "item": "ebony_sword",
-        "chance": 0.25
-      },
-      {
-        "item": "daedra_heart",
-        "chance": 0.2
-      },
-      {
-        "item": "healing_potion",
-        "chance": 0.4
-      }
-    ],
-    "flavor": "一名魔界戰士魔人現身,渾身燃著湮滅位面的怒火。",
-    "resist": {
-      "fire": 60,
-      "magic": 20
-    }
-  },
+  "dremora": {"biomes": ["ashland"], "name": "魔人", "danger": 5, "min_level": 3, "weight": 2, "strength": 60, "agility": 50, "speed": 45, "max_health": 75, "armor_rating": 24, "attack": {"name": "黑檀巨劍", "damage": 20, "skill": 60, "element": "fire"}, "attacks": [{"name": "黑檀巨劍", "damage": 20, "skill": 60, "element": "fire", "weight": 2}, {"name": "巨刃橫掃", "damage": 18, "skill": 60, "weight": 2}, {"name": "湮滅怒斬", "damage": 30, "skill": 62, "element": "fire", "weight": 1, "cooldown": 3}], "loot_gold": [20, 50], "loot": [{"item": "ebony_sword", "chance": 0.25}, {"item": "daedra_heart", "chance": 0.2}, {"item": "healing_potion", "chance": 0.4}], "flavor": "一名魔界戰士魔人現身,渾身燃著湮滅位面的怒火。", "resist": {"physical": 10, "fire": 60, "magic": 20}},
   "ice_wraith": {"biomes": ["snow"], "name": "冰魂", "danger": 3, "min_level": 2, "weight": 3, "strength": 40, "agility": 55, "speed": 55, "max_health": 30, "armor_rating": 8, "attack": {"name": "霜噬", "damage": 11, "skill": 45, "element": "frost", "on_hit": {"status": "dot", "element": "frost", "magnitude": 2, "turns": 2, "chance": 0.4}}, "attacks": [{"name": "霜噬", "damage": 11, "skill": 45, "element": "frost", "weight": 2, "on_hit": {"status": "dot", "element": "frost", "magnitude": 2, "turns": 2, "chance": 0.4}}, {"name": "冰棱穿刺", "damage": 10, "skill": 48, "weight": 2}], "resist": {"physical": 12, "frost": 100, "fire": -50}, "loot_gold": [3, 10], "loot": [{"item": "glow_dust", "chance": 0.3}], "flavor": "一道盤旋的冰魂呼嘯而至,所過之處凝結成霜。"},
-  "frost_troll": {
-    "biomes": ["snow"],
-    "name": "霜巨魔", "strength": 58, "agility": 38, "speed": 45,
-    "max_health": 135, "armor_rating": 8,
-    "attack": {"name": "雙爪猛擊", "damage": 22, "skill": 55, "element": "frost"},
-    "attacks": [
-      {"name": "雙爪猛擊", "damage": 22, "skill": 55, "element": "frost", "weight": 2},
-      {"name": "巨臂橫掃", "damage": 20, "skill": 55, "weight": 2,
-       "on_hit": {"status": "stagger", "turns": 1, "chance": 0.25}},
-      {"name": "狂怒撕咬", "damage": 32, "skill": 58, "weight": 1, "cooldown": 3, "when": {"hp_below": 0.5}}
-    ],
-    "danger": 5, "min_level": 6, "weight": 2,
-    "resist": {"frost": 50},
-    "loot_gold": [10, 30],
-    "loot": [{"item": "healing_potion", "chance": 0.35}, {"item": "wolf_pelt", "chance": 0.3}, {"item": "troll_fat", "chance": 0.5}],
-    "flavor": "一頭三眼霜巨魔咆哮著撲來,傷口轉眼結霜癒合。"
-  },
+  "frost_troll": {"biomes": ["snow"], "name": "霜巨魔", "strength": 58, "agility": 38, "speed": 45, "max_health": 135, "armor_rating": 8, "attack": {"name": "雙爪猛擊", "damage": 22, "skill": 55, "element": "frost"}, "attacks": [{"name": "雙爪猛擊", "damage": 22, "skill": 55, "element": "frost", "weight": 2}, {"name": "巨臂橫掃", "damage": 20, "skill": 55, "weight": 2, "on_hit": {"status": "stagger", "turns": 1, "chance": 0.25}}, {"name": "狂怒撕咬", "damage": 32, "skill": 58, "weight": 1, "cooldown": 3, "when": {"hp_below": 0.5}}], "danger": 5, "min_level": 6, "weight": 2, "resist": {"physical": 20, "frost": 50}, "loot_gold": [10, 30], "loot": [{"item": "healing_potion", "chance": 0.35}, {"item": "wolf_pelt", "chance": 0.3}, {"item": "troll_fat", "chance": 0.5}], "flavor": "一頭三眼霜巨魔咆哮著撲來,傷口轉眼結霜癒合。"},
   "storm_atronach": {"biomes": ["ashland"], "name": "雷暴元素", "strength": 58, "agility": 42, "speed": 40, "max_health": 150, "armor_rating": 16, "attack": {"name": "雷殛", "damage": 24, "skill": 58, "element": "shock"}, "attacks": [{"name": "雷殛", "damage": 24, "skill": 58, "element": "shock", "weight": 2}, {"name": "岩拳轟擊", "damage": 21, "skill": 58, "weight": 2}, {"name": "雷暴釋放", "damage": 34, "skill": 60, "element": "shock", "weight": 1, "cooldown": 3}], "danger": 5, "min_level": 8, "weight": 2, "resist": {"physical": 28, "shock": 100, "fire": -25}, "loot_gold": [0, 0], "loot": [{"item": "filled_greater_soul_gem", "chance": 0.4}, {"item": "glow_dust", "chance": 0.5}, {"item": "void_salts", "chance": 0.5}], "flavor": "盤旋的岩塊間迸射雷弧,一尊雷暴元素轟然成形。"},
   "daedroth": {"biomes": ["ashland"], "name": "魔蜥", "strength": 68, "agility": 45, "speed": 45, "max_health": 178, "armor_rating": 16, "attack": {"name": "巨顎撕咬", "damage": 26, "skill": 58, "element": "poison", "on_hit": {"status": "dot", "element": "poison", "magnitude": 4, "turns": 3, "chance": 0.5}}, "attacks": [{"name": "巨顎撕咬", "damage": 26, "skill": 58, "element": "poison", "weight": 2, "on_hit": {"status": "dot", "element": "poison", "magnitude": 4, "turns": 3, "chance": 0.5}}, {"name": "尾鞭橫掃", "damage": 24, "skill": 58, "weight": 2, "on_hit": {"status": "stagger", "turns": 1, "chance": 0.25}}, {"name": "吞噬猛咬", "damage": 36, "skill": 60, "weight": 1, "cooldown": 3}], "danger": 5, "min_level": 9, "weight": 2, "resist": {"physical": 10, "fire": 50, "poison": 75}, "loot_gold": [20, 60], "loot": [{"item": "ebony_sword", "chance": 0.15}, {"item": "healing_potion", "chance": 0.45}], "flavor": "一頭魔界巨蜥踏地而來,毒涎自利齒滴落灼地。"},
   "lich": {

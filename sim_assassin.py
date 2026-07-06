@@ -172,11 +172,15 @@ if __name__ == "__main__":
         srate = oneshot(apex_temper, t)
         flag = " ⚠破紅線(應為 0%)" if srate > 0.0 else " ✓存活"
         print(f"  solo {t:16} temper_power apex 秒殺 {srate:5.1%}{flag}")
-    for t in ["dremora", "frost_troll"]:                             # ② 精英 oneshot 增幅 < 2%(temper flat 偷襲放大唯一風險點)
+    # ② 精英 oneshot 增幅(資訊列·**非紅線**·R128b 由 ⚠守衛降級):
+    #    此增幅只在「低HP飽和 fixture」上才 ≤2pp —— 探針證實任何脫飽和精英(lich 等 0-物抗高HP·gap +29pp)
+    #    都讓 temper flat(+5)有感,是「飽和函數」而非 temper_power 本質變強。R128 給 dremora/frost_troll
+    #    物抗使其脫飽和,同理浮現。對「精英(非 boss·無 cap·可秒)」oneshot 有感=by-design(武器投資對硬敵本該有用);
+    #    **真紅線 = temper flat 不破 solo cap → 由 ① 直接守**(且物抗只讓偷襲傷更小 → ① 更穩)。故此列僅印、不 ⚠。
+    for t in ["dremora", "frost_troll"]:
         base = oneshot(apex_max, t)
         mod = oneshot(apex_temper, t)
-        flag = " ⚠破2%" if (mod - base) > 0.02 else ""
-        print(f"  精英 {t:18} apex_max {base:5.1%} → temper_power {mod:5.1%}(Δ{mod - base:+.1%}){flag}")
+        print(f"  精英 {t:18} apex_max {base:5.1%} → temper_power {mod:5.1%}(Δ{mod - base:+.1%}·資訊非紅線)")
     # ③ 群戰死亡率(對抗審查補):隔離 temper_power 邊際效應 —— 同淬鍊6 build,有/無 power。
     #    註:tempered glass_dagger apex 本就把 4-bandit 死亡率壓到 ~0.4%(既有 tempering+裝備,**非本輪引入**;
     #    舊 26.2% 紅線量的是「無淬鍊」apex,非真實最壞)。此處只驗 temper_power 的邊際不再壓垮。
@@ -198,11 +202,12 @@ if __name__ == "__main__":
         srate = oneshot(apex_dosed, t)
         flag = " ⚠破紅線(應為 0%)" if srate > 0.0 else " ✓存活"
         print(f"  solo {t:16} fortify-dosed 秒殺 {srate:5.1%}{flag}")
-    for t in ["dremora", "frost_troll"]:                    # 精英 oneshot hit-gated → fortify Δ≈0(傷害已 overkill)
+    # 精英 oneshot 增幅(資訊列·**非紅線**·R128b 同 R37 part② 降級):同理 —— 脫飽和精英(frost_troll 物抗20)
+    #    上 fortify 加傷把 oneshot 補回是「飽和函數」非紅線;真紅線=fortify 不破 solo cap → 上方 solo 列直接守(仍 ⚠)。
+    for t in ["dremora", "frost_troll"]:
         base = oneshot(apex_max, t)
         mod = oneshot(apex_dosed, t)
-        flag = " ⚠破2%" if (mod - base) > 0.02 else ""
-        print(f"  精英 {t:18} apex_max {base:5.1%} → fortify-dosed {mod:5.1%}(Δ{mod - base:+.1%}){flag}")
+        print(f"  精英 {t:18} apex_max {base:5.1%} → fortify-dosed {mod:5.1%}(Δ{mod - base:+.1%}·資訊非紅線)")
 
     print("\n== P4 反制覆核(契約②):群體規模 → 潛近/隱遁機率陡降(>3 敵大減)==")
     relent = lambda: assassin(sneak=100, acrobatics=100, dual=True,

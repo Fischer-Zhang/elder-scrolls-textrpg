@@ -179,9 +179,13 @@ def test_monster_physical_resist_by_category_r128():
     # 幽體(凡兵穿體)/構造(石金)/元素(元素之軀):高物抗
     for cid in ["will_o_wisp", "imperial_ghost", "grief_shade", "gargoyle", "dwarven_centurion", "storm_atronach"]:
         assert phys(cid) >= 25, f"{cid}(幽體/構造/元素)應有高物抗"
-    # 骨系/血肉/sim 群戰紅線怪:0(骨易碎、凡兵有效;bandit/wolf/skeleton 守群戰 R71 + dremora/frost_troll 守 sim)
-    for cid in ["skeleton", "draugr", "lich", "bandit", "wolf", "bear", "dremora", "frost_troll", "vampire_lord"]:
-        assert phys(cid) == 0, f"{cid}(骨/肉/sim 常見怪)須為 0"
+    # 骨系/血肉/**群戰紅線怪**:0(骨易碎、凡兵有效;bandit/wolf/skeleton 是 sim_assassin 群戰 fixture·守 R71 須恆 0)
+    for cid in ["skeleton", "draugr", "lich", "bandit", "wolf", "bear", "vampire_lord"]:
+        assert phys(cid) == 0, f"{cid}(骨/肉/群戰紅線怪)須為 0"
+    # R128b:base dremora/frost_troll 改與變體一致(物種一致性)。R37/R92 精英 oneshot 增幅檢查已降為資訊列
+    # (飽和假象·非紅線);真紅線=temper/fortify 不破 solo cap,不受影響(sim_assassin part① 全 0%)。
+    assert phys("dremora") == 10, "base dremora 對齊 dremora_lord=10"
+    assert phys("frost_troll") == 20, "base frost_troll 對齊 bog_troll/frost_giant=20"
     # 召喚物(幽體/元素)也得物抗(R128 強化召喚師·sim_party 驗不 trivialize)
     assert phys("ancestral_ghost") >= 40 and phys("summoned_storm_atronach") >= 25
     # 真身仍最高(位面化身特例)
