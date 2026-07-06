@@ -934,8 +934,8 @@ def has_soul_trap(creature) -> bool:
     return any(e["kind"] == "soul_trap" and e["turns"] > 0 for e in creature.active_effects)
 
 
-_ELEMENT_CN = {"fire": "火焰", "frost": "冰霜", "shock": "雷電", "poison": "毒素",
-               "magic": "魔法", "bleed": "撕裂"}
+_ELEMENT_CN = {"physical": "物理", "fire": "火焰", "frost": "冰霜", "shock": "雷電", "poison": "毒素",
+               "magic": "魔法", "disease": "疾病", "bleed": "撕裂"}   # R127:+物理(順帶補既有 disease 缺口·recon 顯示 R01)
 
 
 def entity_resist(entity, gamedata) -> dict:

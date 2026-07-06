@@ -458,7 +458,7 @@ def test_sheet_subview_models():
         assert chosen and all(len(nd["options"]) == 1 and "foregone" in nd for nd in chosen)
         ui.sheet_resistances(c, gd)
         b = backend.blocks[-1]
-        assert b["name"] == "resistances" and len(b["data"]["rows"]) == 6
+        assert b["name"] == "resistances" and len(b["data"]["rows"]) == 7   # R127:+物理抗性
         assert all(isinstance(r["value"], int) for r in b["data"]["rows"])
         ui.sheet_spellbook(c, gd)
         b = backend.blocks[-1]

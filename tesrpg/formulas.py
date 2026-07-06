@@ -547,6 +547,9 @@ def block_damage_factor(block_skill: int) -> float:
     return BLOCK_DAMAGE_FACTOR_LOW + (BLOCK_DAMAGE_FACTOR_HIGH - BLOCK_DAMAGE_FACTOR_LOW) * t
 
 
+PLAYER_PHYSICAL_RESIST_CAP = 25   # R127 玩家物理抗性上限(%):附魔/藥可堆但夾此值 → 守 R71 群戰須具真實風險(boss 物抗不受此夾)
+
+
 def damage_after_armor(damage: float, armor_rating: int, armor_pen: float = 0.0) -> float:
     """護甲減傷:遞減收益,最多擋 85%,至少造成 1 點。
 

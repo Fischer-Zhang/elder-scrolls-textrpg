@@ -301,6 +301,10 @@
       {
         "kind": "fskill_security",
         "magnitude": 5
+      },
+      {
+        "kind": "resist_physical",
+        "magnitude": 10
       }
     ]
   },
@@ -509,6 +513,10 @@
       {
         "kind": "fskill_blade",
         "magnitude": 5
+      },
+      {
+        "kind": "resist_physical",
+        "magnitude": 10
       }
     ]
   },
@@ -554,6 +562,10 @@
       {
         "kind": "fskill_hand_to_hand",
         "magnitude": 5
+      },
+      {
+        "kind": "resist_physical",
+        "magnitude": 10
       }
     ]
   },

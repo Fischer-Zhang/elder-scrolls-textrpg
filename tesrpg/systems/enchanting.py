@@ -14,7 +14,7 @@ from tesrpg.systems import inventory, progression
 
 ELEMENTS = ["fire", "frost", "shock"]
 FORTIFY_STATS = ["health", "magicka", "fatigue"]   # 護甲附魔可強化的最大資源
-RESIST_ELEMENTS = ["fire", "frost", "shock", "poison", "magic"]   # 飾品可抗的元素
+RESIST_ELEMENTS = ["fire", "frost", "shock", "poison", "magic", "physical"]   # 飾品可抗的元素(R127:physical=物理抗性)
 
 # R66:resist 附魔再平衡 —— ① 魂石階非線性(soul^0.7,大魂≈微魂×3.1 而非 ×5)→ 軟化高階堆疊、
 # 救活低階魂石經濟;② 魔抗(universal·減火/霜/電)基數低、單元素 = 魔抗×2(魔抗每點覆蓋三系故每件給少)。
@@ -112,7 +112,8 @@ def _resist_magnitude(slot: str, param: str | None, soul: int, mysticism_skill: 
     (除以 1.5 使 soul1·myst100 = 錨點;myst75≈×0.83、myst50≈×0.67。)"""
     base = (0.5 + mysticism_skill / 100.0) / 1.5
     magic = max(1, round(RESIST_MAGIC_ANCHOR[slot] * soul ** RESIST_SOUL_EXP * base))
-    return magic if param == "magic" else magic * 2
+    # R127 物理抗性:走保守「魔抗」低階(不 ×2)—— 物理已有護甲一層,物抗是**額外** pen-免疫層,故給少不給多。
+    return magic if param in ("magic", "physical") else magic * 2
 
 
 def jewelry_magnitude(kind: str, soul: int, mysticism_skill: int, param: str | None = None) -> int:

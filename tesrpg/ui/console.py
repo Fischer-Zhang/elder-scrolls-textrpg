@@ -838,9 +838,9 @@ def status_line(state: GameState, gamedata: GameData | None = None, allies: list
 
 
 # --- 角色卡 -------------------------------------------------------------
-_RESIST_CN = {"fire": "火焰", "frost": "冰霜", "shock": "雷電", "magic": "魔法",
+_RESIST_CN = {"physical": "物理", "fire": "火焰", "frost": "冰霜", "shock": "雷電", "magic": "魔法",
               "poison": "毒素", "disease": "疾病", "bleed": "撕裂"}
-_RES_ELEMS = ("fire", "frost", "shock", "magic", "poison", "disease")
+_RES_ELEMS = ("physical", "fire", "frost", "shock", "magic", "poison", "disease")
 _SLOT_CN = {"helmet": "頭盔", "cuirass": "胸甲", "gauntlets": "護手", "boots": "靴",
             "shield": "盾", "amulet": "項鍊", "ring1": "戒指一", "ring2": "戒指二"}
 

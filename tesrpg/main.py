@@ -234,7 +234,7 @@ def _pick_distinct(options: list[tuple[str, str]], count: int, label: str) -> li
 
 
 # --- 創角 build chips:把種族/星座/職業的數值加成做成選單上的視覺小標 -------------
-_RESIST_CN_MAIN = {"fire": "火焰", "frost": "冰霜", "shock": "雷電",
+_RESIST_CN_MAIN = {"physical": "物理", "fire": "火焰", "frost": "冰霜", "shock": "雷電",
                    "magic": "魔法", "poison": "毒素", "disease": "疾病"}
 
 
@@ -4122,14 +4122,14 @@ def action_alchemy(state: GameState, gamedata: GameData) -> None:
         newly = [(iid, k) for iid in ings for k in alchemy.passive_reveal(char, gamedata, iid)]
         if newly:
             ui.message("憑著煉金學識,你一眼看出了:" +
-                       "、".join(f"{gamedata.item_name(i)}的{_EFFECT_CN.get(k, k)}" for i, k in newly),
+                       "、".join(f"{gamedata.item_name(i)}的{_effect_cn(k)}" for i, k in newly),
                        style="cyan")
 
         def _effect_label(iid):
             parts = []
             for e in alchemy.ingredient_effects(gamedata, iid):
                 if alchemy.is_known(char, iid, e["kind"]):
-                    parts.append(f"{_EFFECT_CN.get(e['kind'], e['kind'])}{e['magnitude']}")
+                    parts.append(f"{_effect_cn(e['kind'])}{e['magnitude']}")
                 else:
                     parts.append("???")           # R32:未揭露的效果隱藏
             return "、".join(parts)
@@ -4162,7 +4162,7 @@ def action_alchemy(state: GameState, gamedata: GameData) -> None:
                 state.time.advance(1)
             ui.message(r["message"], style="green" if r["revealed"] else "grey70")
             if r["revealed"]:
-                ui.message(f"你記住了:{gamedata.item_name(tid)} → {_EFFECT_CN.get(r['revealed'], r['revealed'])}。",
+                ui.message(f"你記住了:{gamedata.item_name(tid)} → {_effect_cn(r['revealed'])}。",
                            style="bold cyan")
             continue
 
@@ -4188,7 +4188,7 @@ def action_alchemy(state: GameState, gamedata: GameData) -> None:
             for iid, kinds in r.get("learn", {}).items():
                 for k in kinds:
                     if alchemy.reveal(char, gamedata, iid, k):
-                        learned.append(f"{gamedata.item_name(iid)}→{_EFFECT_CN.get(k, k)}")
+                        learned.append(f"{gamedata.item_name(iid)}→{_effect_cn(k)}")
             if learned:
                 ui.message("這鍋讓你看清了材料的本性:" + "、".join(learned), style="bold cyan")
             ui.show_events(r["skill_events"], gamedata)
@@ -4450,6 +4450,16 @@ _EFFECT_CN = {"heal": "回血", "restore_magicka": "回魔", "restore_fatigue": 
               "damage_strength": "弱攻", "slow": "遲緩", "fear": "懼意",
               # 疾病可釀(R54):療疾類
               "cure_disease": "療疾"}
+
+
+def _effect_cn(kind: str) -> str:
+    """煉金效果 kind → 中文標籤。resist_<元素> 走參數化(抗<元素>;R127 含 physical=抗物理,
+    順帶修 resist_fire/frost/… 原顯示 raw 的缺口);其餘查 _EFFECT_CN,未知回原 key。"""
+    if kind in _EFFECT_CN:
+        return _EFFECT_CN[kind]
+    if kind.startswith("resist_"):
+        return "抗" + _RESIST_CN_MAIN.get(kind[len("resist_"):], kind[len("resist_"):])
+    return kind
 
 
 def action_coat_weapon(state: GameState, gamedata: GameData) -> None:
@@ -4887,15 +4897,24 @@ def action_arcane_trials(state: GameState, gamedata: GameData) -> None:
     avail = [qid for qid in quests.available_quests(char, gamedata, "arcane")
              if gamedata.quests[qid].get("arcane_site") == site]
     if not avail:
-        if site == "soul" and char.base_skill("mysticism") < 75:   # R121 秘術試煉閘 mysticism 75(非 destruction)
+        if site == "true_dagon" and "oblivion_crisis_ended" not in char.world_events_fired:   # R127 真身試煉閘:湮滅危機須先落幕
+            ui.message("引路人凝視裂隙殘光,搖頭:「達貢的化身尚未伏誅、湮滅危機未平 —— "
+                       "先了結那場浩劫,真身的裂隙才會為你顯現。」", style="grey70")
+        elif site == "true_dagon" and char.base_skill("mysticism") < 75:
+            ui.message("引路人打量你:「撕開位面之軀非蠻力可為 —— 你的秘法造詣尚淺,"
+                       "神秘之道至少登堂入室(秘術 75)方談得上這一戰。」", style="grey70")
+        elif site == "soul" and char.base_skill("mysticism") < 75:   # R121 秘術試煉閘 mysticism 75(非 destruction)
             ui.message("織魂的引路人瞥了你一眼,搖頭:「你的秘法造詣尚不足以承載湮識真言 —— "
                        "回去再研習神秘之道,至少登堂入室(秘術 75)方談得上試煉。」", style="grey70")
-        elif site != "soul" and char.base_skill("destruction") < 75:
+        elif site not in ("soul", "true_dagon") and char.base_skill("destruction") < 75:
             ui.message("引路人瞥了你一眼,搖頭:「你的破壞之術還沒到能承受終極奧義的境界 —— "
                        "回去再淬煉,毀滅之道至少要登堂入室(75)才談得上試煉。」", style="grey70")
         elif site == "fused":
             ui.message("引路人凝視著你:「三系真言尚未在你身上齊聚 —— 先走遍各省、集齊火冰雷的試煉,"
                        "融合的試煉方會在此顯現。」", style="grey70")
+        elif site == "true_dagon" and "trial_true_dagon" not in char.completed_quests:   # R127:危機平+秘術75 但等級未達 22 → 不誤報「已了結」
+            ui.message("引路人端詳你:「秘法已至,但你的歷練尚淺 —— 撕開位面之軀的試煉,"
+                       "得等你更深地見過這世界(等級 22)方會顯現。」", style="grey70")
         else:
             ui.message("引路人微微頷首:「此地的試煉你已了結 —— 其餘真言,得往別省的法師公會尋訪。」",
                        style="grey70")

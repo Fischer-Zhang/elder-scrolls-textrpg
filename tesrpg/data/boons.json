@@ -248,5 +248,12 @@
     "attr": {"personality": 10, "willpower": 6},
     "skill": {"speechcraft": 8, "illusion": 8},
     "resist": {"magic": 10}
+  },
+  "sundered_arcanist": {
+    "name": "裂界之悟",
+    "attr": {"intelligence": 8, "willpower": 6},
+    "skill": {"mysticism": 12},
+    "resist": {"physical": 10, "magic": 10},
+    "magicka": 20
   }
 }

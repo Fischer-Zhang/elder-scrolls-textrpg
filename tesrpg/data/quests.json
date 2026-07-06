@@ -7618,6 +7618,24 @@
         ]
       }
     },
+  "trial_true_dagon": {
+    "name": "真身試煉",
+    "faction": null,
+    "rank": null,
+    "source": "arcane",
+    "arcane_site": "true_dagon",
+    "requires_event": "oblivion_crisis_ended",
+    "requires_level": 22,
+    "requires_skill": {"mysticism": 75},
+    "text": "帝都法師公會的引路人指尖縈繞著一縷不散的赤光:「湮滅危機雖平,達貢的祭壇下卻留了道癒合不了的裂隙。凡人以為屠了化身便是了結,但化身不過是祂投向凡塵的一根手指 —— 裂隙深處,是祂在自己領域的真身。那具軀體由湮滅位面本身織成,護甲與元素在祂身上如隔重紗;唯有你的秘術,能解構位面之理、撕開那層甲。這一戰,是給真正窺見神秘之道盡頭者的試煉。」",
+    "stages": [
+      {"objective": {"type": "reach", "location": "imperial_city"}, "text": "先回帝都的法師公會,在星辰廳沉澱心神、以秘術之眼校準與裂隙的共鳴。"},
+      {"objective": {"type": "collect", "item": "glow_dust", "count": 2}, "text": "採集兩份幽光魂塵 —— 穿越位面裂隙、不被湮滅烈焰吞噬,需以奧術之光為引。"},
+      {"objective": {"type": "reach", "location": "deadlands_rift"}, "text": "東行至賽羅迪爾焦土上的湮滅殘隙,踏入那道通往達貢領域核心的裂縫。"},
+      {"objective": {"type": "clear_dungeon", "dungeon": "dagon_true_arena"}, "text": "在湮滅之心擊敗達貢真身 —— 護甲與元素對祂的位面之軀徒勞;以秘蝕削去祂的抗性,用解構位面的秘術撕開那具本源之軀。"}
+    ],
+    "reward": {"gold": 1200, "fame": 50, "grant_boon": "sundered_arcanist"}
+  },
   "trial_soul": {
     "name": "織魂試煉",
     "faction": null,

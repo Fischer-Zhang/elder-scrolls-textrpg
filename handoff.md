@@ -1410,6 +1410,28 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 
 ---
 
+### R127 · 物理抗性正規化 + 達貢真身(秘術對決·pen-免疫物理牆)[re-sim] [save]
+
+**承 R126「另評估增加 BOSS 強度」**。使用者連續評估護甲(取得/免傷曲線)與閃避(取得/成長)機制**皆拍板不改**(護甲=pen-可穿的物理層·閃避=R69/R71 刻意早鎖 0.35),再拍板為「達貢真身·秘術對決」引入**「物理抗性」正規抗性類型**(一般化開發過程一度採的 bespoke `planar_ward` 旗標)+ 附魔/煉金同步 + 玩家 cap 選「中等 25%」。
+
+**評估**:物理是六大傷害類型中**唯一無抗性軸**者(fire/frost/shock/magic/poison/disease 皆有 `resist`·物理只有護甲)。護甲**天生 pen-可穿**:2H 斧破甲流(daedric_battleaxe axe archetype 0.30 + sunder 0.15 = **0.45**)對護甲 300 只剩 **62% 減傷** → sim 證護甲 300 讓 warrior_2H 反超秘術(57%)。故秘術對決需一道 **pen 免疫**的物理牆。
+
+**核心機制(combat.py 物理分支·:611-614)**:`phys_r = entity_resist(defender).get("physical",0); if _is_player(defender): phys_r=min(PLAYER_PHYSICAL_RESIST_CAP,phys_r); dmg *= resist_multiplier({"physical":phys_r},"physical")`。physical ∉ `MAGIC_ELEMENTS` → 只吃 `resist["physical"]`、不加 magic 抗;**抗性層非護甲層 → pen 完全無法穿透**(封破甲流繞牆·planar_ward 做不到的優雅補完)。`formulas.PLAYER_PHYSICAL_RESIST_CAP=25`(**玩家夾·boss 不夾**)。`estimate_sneak_damage` 同套物抗(一致性·既有怪 ×1.0)。
+
+**真身 boss** `mehrunes_dagon_true`(bestiary·resist `physical:60/magic:52/fire85/frost75/shock75/poison+disease100`·solo·HP380·armor55·**元素攻擊曲目**〔位面烈焰/霜嘯/威壓·封 shield_reflect 物理反傷 cheese——sim 證物理攻擊 → SR 97-98% cheese、元素攻擊 → SR 0%〕·僅 `dagon_true_arena` 地城)。sim_builds:**秘術 70% 最優**·近戰硬拼(2H 6-13%·assn/arch 15-24%)·法系/聖騎/元素 0% 牆·SR 27%。
+
+**玩家來源**:① 附魔 `resist_physical`(`enchanting.RESIST_ELEMENTS` + `_resist_magnitude` param physical **走魔抗低階不 ×2** —— 物理已有護甲一層,物抗是額外 pen-免疫層,保守·甲6/飾9)。② 煉金 brew(`troll_fat`/`bear_claw`/`bone_meal` 三兩兩相配 = **FAIL-set**:三者現兩兩零共享效果 → 加 `resist_physical` 後只共享它·**確定性 brew-diff 證恰 3 新對、零既有配方位移**)。③ 誓福 `sundered_arcanist`(任務獎)含 physical 10。三源皆流經既有 `equip_resist`/`potion_resist`/`boon_resist` → `entity_resist` → 玩家夾 25。**顯示**:`console._RESIST_CN`/`_RES_ELEMS`、`synth._RESIST_NAME`、`main._RESIST_CN_MAIN`/`_effect_cn`、`magic._ELEMENT_CN` **5 個 map** 加 physical(**順帶修 resist_fire/frost/disease 原顯示 raw 的既有缺口**)。
+
+**🔴 玩家 cap 平衡(使用者拍板中等 25%·知情接受)**:物抗對玩家是強力防禦軸(疊護甲),元素抗無「群戰風險」紅線但物抗直擊 R71。實測 apex 潛行(輕甲低護甲=R71 最壞情形)滿物抗:4-bandit 死亡 **60%→25%**、2b2w **41%→12%** = **軟化 R71 但仍存真實風險**(1/4 死非 trivialize)。cap 選項〔15/25/40〕連同死亡率後果呈給使用者 → 選 25。`test_player_cap_keeps_group_risk_real_r71`(用 sim_assassin apex+rate)守 4-bandit ≥15% 不再惡化。
+
+**交付**:`deadlands_rift` node(湮滅殘隙·visible `after_event:oblivion_crisis_ended` 危機後現身·pos[26,11]·links cheydinhal+bravil 雙向·R28 degree2 省內)+ skingrad `arcane_trials:"true_dagon"` 發起點 + quest `trial_true_dagon`(source arcane·`requires_event:oblivion_crisis_ended`+mysticism75+level22·階 reach imperial_city→collect glow_dust×2→reach deadlands_rift→clear dagon_true_arena·reward `grant_boon:sundered_arcanist`)+ boon `sundered_arcanist`(裂界之悟·int8/will6/mysticism12/**physical**10+magic10/magicka20·**守 R45 紅線**無 strength/sneak/武器技)+ achievement `sundered_lord`。`action_arcane_trials` 加 true_dagon gate 訊息(危機未平/mysticism<75/level<22 各自明確·不誤報「已了結」)。
+
+**🔴 sim_assassin BYTE-IDENTICAL**(隔離 HEAD worktree 三度覆驗:物抗 hook `phys_r=0 → resist_multiplier 回精確 1.0 → ×1.0`·刺客/既有怪/未附魔玩家皆無 physical key·estimate 同理·非 sim 路徑)。**零新存檔欄**(物抗全走既有 equip/potion/boon_resist·誓福走 char.boons)。run_all 115(新 `test_physical_resist` 10 測)·BESTIARY 149·check.sh --smoke 綠。
+
+**對抗審查(5 維 11 agent)→ 0 blocker/major·4 confirmed 全 minor/nit,已修**:① recon `magic._ELEMENT_CN` 漏 physical/disease → 真身偵查顯示生英文 key(R01)→ 補;② `estimate_sneak_damage` 漏套物抗 → 偷襲估傷高估 2.6×(64→21)→ 補;③ `action_arcane_trials` true_dagon level<22 落 else 誤報「已了結」→ 補 gate 訊息;④ combat.py comment 誇大「守 R71」(實為軟化)→ 改「軟化仍存·使用者拍板」+ 補 R71-guard 測。2 refuted。
+
+**🔴 鐵則**:加物理抗性用 `resist.physical`(pen-免疫·**玩家夾 25 勿放·boss 不夾**);附魔物抗走魔抗低階(不 ×2·物理已有護甲);煉金新 kind 用 FAIL-set + 確定性 brew-diff 證零位移;誓福物抗守 R45 紅線;**動 cap/物抗數值 → 必跑 sim_builds(守秘術最優/近戰硬拼)+ `test_player_cap_keeps_group_risk_real_r71`(守 R71 ≥15%)**;新 resist kind 須補齊 5 個顯示 map(console/synth/main×2/magic);真身 boss 用元素攻擊(封 shield_reflect cheese)。
+
 ### R126 · 戰鬥中喝藥:回合制用藥(近戰/潛行終獲中場續戰)[re-sim] [save-safe]
 
 **承 UI/UX audit Theme 5**(使用者拍板:耗一回合 + 全消耗品 + 無硬上限·sim 驗)。缺口:戰鬥回合選單無「用藥」,唯一窗口是戰前 `_prep_phase`;`inventory.use_item` 早支援 heal/restore/cure/fortify 卻碰不到 → **法系有中場續戰(治療術),戰士/弓手/刺客沒有**,一疊治療藥水在硬仗是死重。

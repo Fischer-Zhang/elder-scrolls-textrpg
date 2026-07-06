@@ -604,6 +604,15 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
             pen = min(0.85, formulas.archetype_armor_pen(archetype) + wmod.get("pen", 0)
                       + (formulas.AIMED_SHOT_PEN if aimed else 0.0) + dm_pen)   # 鈍器破甲 + 里程碑穿甲 + 瞄準射 + 烙印
             dmg = formulas.damage_after_armor(raw, _armor_rating(defender, gamedata), pen)
+            # R127 物理抗性:護甲之外的乘性物理減傷層,**pen 完全無法穿透**(抗性層非護甲層 → 封 2H 破甲流繞牆)。
+            # 補完抗性系統(物理原是唯一無抗性軸的傷害類型)。玩家側夾 PLAYER_PHYSICAL_RESIST_CAP=25(附魔/藥/誓福
+            # 堆滿仍夾)。⚠ 此夾**軟化**但不消除 R71「群戰須具真實風險」:apex 潛行滿物抗時 4-bandit 死亡 ~60%→~25%、
+            # 2b2w ~41%→~12%(使用者拍板「中等 cap 25%」知情接受;sim_assassin `physical_resist_cap` 場景守此數不再惡化)。
+            # boss 的高物抗不受此夾(_is_player gate)。🔴 無物抗實體(既有怪 + 未附魔玩家)→ phys_r=0 → ×1.0 → byte-identical。
+            phys_r = magic.entity_resist(defender, gamedata).get("physical", 0)
+            if _is_player(defender):
+                phys_r = min(formulas.PLAYER_PHYSICAL_RESIST_CAP, phys_r)
+            dmg *= formulas.resist_multiplier({"physical": phys_r}, "physical")
             dmg *= mastery.incoming_physical_factor(defender, gamedata)   # 里程碑「壁壘」:物理再減傷
             dmg *= _shield_wall_factor(defender)            # 戰士「盾牆」架勢:物理再減傷(僅物理,元素穿透)
             dmg *= _great_shield_mitigation_factor(defender, gamedata)   # 雙手重盾被動物理減傷(乘性疊加,僅物理)
@@ -1144,6 +1153,7 @@ def estimate_sneak_damage(player: Character, gamedata: GameData, creature: Creat
         raw += formulas.attack_damage(offhand_dmg, wpn_skill, _strength(player), 1.0)
     pen = min(0.85, formulas.archetype_armor_pen(archetype) + wm.get("pen", 0))
     est = formulas.damage_after_armor(raw, creature.armor_rating, pen)
+    est *= formulas.resist_multiplier(magic.entity_resist(creature, gamedata), "physical")  # R127 物理抗性(與 resolve_attack 一致;既有怪無物抗 → ×1.0 不變)
     if _is_solo(creature, gamedata):    # 與 resolve_attack 一致:solo boss 偷襲單擊夾限
         est = min(est, (getattr(creature, "max_health", 0) or creature.health)
                   * formulas.SOLO_SNEAK_DAMAGE_CAP_RATIO)

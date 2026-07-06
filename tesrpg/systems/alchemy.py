@@ -48,7 +48,8 @@ def ingredient_effects(gamedata: GameData, ing_id: str) -> list[dict]:
 TASTE_FATIGUE = 2   # 嚐一口的微體力代價(由呼叫端扣;便宜,絕不勸退早期玩家)
 _TASTE_HINT = {"heal": "暖意", "restore_magicka": "靈光", "restore_fatigue": "提神的甘",
                "damage_health": "灼痛", "paralyze": "麻木", "fear": "莫名的悸慄",
-               "slow": "遲滯的沉重", "damage_strength": "酸軟無力", "cure_disease": "滌淨的清涼"}
+               "slow": "遲滯的沉重", "damage_strength": "酸軟無力", "cure_disease": "滌淨的清涼",
+               "resist_physical": "堅實的厚重"}
 
 
 def known_kinds(char: Character, ing_id: str) -> list[str]:

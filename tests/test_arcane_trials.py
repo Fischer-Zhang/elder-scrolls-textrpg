@@ -131,7 +131,7 @@ def test_fused_capstone_boss_valid():
 
 # --- 分散發起點:地點 arcane_trials 標籤配對任務 arcane_site(各省法師城) ----------
 _SITES = {"fire": "blacklight", "frost": "winterhold", "shock": "gideon", "fused": "imperial_city",
-          "soul": "sadrith_mora"}   # R121 秘術試煉:泰爾凡尼法師城
+          "soul": "sadrith_mora", "true_dagon": "skingrad"}   # R121 秘術試煉;R127 真身試煉(史金格拉德)
 
 
 def test_arcane_site_tags_pair_quest_and_location():
@@ -142,6 +142,7 @@ def test_arcane_site_tags_pair_quest_and_location():
     assert gd.quests["trial_shock"]["arcane_site"] == "shock"
     assert gd.quests["trial_fused"]["arcane_site"] == "fused"
     assert gd.quests["trial_soul"]["arcane_site"] == "soul"
+    assert gd.quests["trial_true_dagon"]["arcane_site"] == "true_dagon"   # R127 真身試煉
     for site, city in _SITES.items():
         assert w[city].get("arcane_trials") == site, f"{city} 應掛 arcane_trials={site}"
         assert "mages_guild" in w[city].get("services", []), f"{city} 需有法師公會發起點"
