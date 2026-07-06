@@ -345,15 +345,26 @@ def tracked_lines(char: Character, gamedata: GameData, limit: int = 2) -> list[s
     return out
 
 
+def _dungeon_where(gamedata: GameData, dungeon_id: str) -> str:
+    """R125:地城所在省份提示(供任務目標指路;找不到 world 節點→空)。"""
+    for loc in (gamedata.world or {}).get("locations", {}).values():
+        if loc.get("dungeon") == dungeon_id and loc.get("province"):
+            return f"(在{loc['province']})"
+    return ""
+
+
 def objective_text(char: Character, gamedata: GameData, quest_id: str) -> str:
     obj, idx, total = current_objective(char, gamedata, quest_id)
     t = obj["type"]
     if t == "kill":
         got, need = kill_progress(char, gamedata, quest_id)
-        body = f"擊殺 {gamedata.bestiary[obj['creature']]['name']} {got}/{need}"
+        hl = gamedata.quests[quest_id].get("hunt_location")   # R125:狩獵型指路(唯一定位地)
+        where = (f"(在{gamedata.location(hl)['province']})"
+                 if hl and hl in (gamedata.world or {}).get("locations", {}) else "")
+        body = f"擊殺 {gamedata.bestiary[obj['creature']]['name']}{where} {got}/{need}"
     elif t == "clear_dungeon":
         done = "✔" if obj["dungeon"] in char.cleared_dungeons else "✘"
-        body = f"肅清 {gamedata.dungeons[obj['dungeon']]['name']} {done}"
+        body = f"肅清 {gamedata.dungeons[obj['dungeon']]['name']}{_dungeon_where(gamedata, obj['dungeon'])} {done}"
     elif t == "reach":
         done = "✔" if char.location_id == obj["location"] else "✘"
         body = f"抵達 {gamedata.location(obj['location'])['name']} {done}"
@@ -374,7 +385,7 @@ def objective_text(char: Character, gamedata: GameData, quest_id: str) -> str:
         base = char.quests.get(quest_id, {}).get("base", 0)
         done = "✔" if (quest_id in char.quests
                        and int(getattr(char, "dungeon_reinfest_at", {}).get(obj["dungeon"], 0)) > base) else "✘"
-        body = f"掃蕩重踞的{gamedata.dungeons[obj['dungeon']]['name']} {done}"
+        body = f"掃蕩重踞的{gamedata.dungeons[obj['dungeon']]['name']}{_dungeon_where(gamedata, obj['dungeon'])} {done}"
     else:
         body = ""
     return f"[{idx + 1}/{total}] {body}" if total > 1 else body

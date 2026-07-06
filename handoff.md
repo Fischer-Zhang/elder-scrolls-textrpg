@@ -1410,6 +1410,16 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 
 ---
 
+### R125 · UI/UX 打磨批次:導航/自動趕路 + 戰鬥可讀性 + 新手清晰(Theme 1+3+4)[byte-identical] [save-safe]
+
+**承使用者評估「UI/UX 改善」**:5 維 audit workflow(27 發現→6 主題·全 code-verified)揪出 R113-R114 四包之後的剩餘缺口。使用者拍板做**零平衡三主題打磨批**。**零 combat/formulas/magic 數學 → sim 天然不受影響·零新存檔欄·前端 index.html 未動**。
+
+- **Theme 1 導航 & 自動趕路(main.py + quests.py)**:①**長途趕路過去到不了任務目標地城/未訪點**(最痛)——`_action_long_travel` broaden 候選 = 已訪城/鎮 ∪ **進行中任務目標地**(`ui._quest_target_location_set`·含地城/未訪·◎ 排最前);引擎 `world.route_to`(BFS·只經 is_visible·R114D)早支援,過去純被 UI filter 擋(walkability by construction·親驗 route 到 dungeon 節點每跳可走)。②新 `_action_goal_travel` + action_travel 加「🎯 前往任務目標(自動趕路)」捷徑(單一直達·多個列選)+ 一般/長途旅行選單標 ◎。③`quests.objective_text` clear/purge_dungeon/kill 補「(在<省>)」(`_dungeon_where` 掃 world·kill 用 hunt_location)。
+- **Theme 3 戰鬥可讀性(console.py·純顯示)**:①`_STATUS_TAG` 8→27 kind 全中文化(slow緩/benumb凍麻/conduct導電/erosion蝕抗/offbalance失衡/deathmark烙印/consecration聖化/empower鼓舞/berserk狂暴/bound束縛/imbue灌注/resonance共鳴/戰旗/號令/盾牆/**ride_evasion疾避/taunt嘲諷**〔審查補〕)+ `_BUFF_KINDS` 補增益綠 + `_HIDDEN_TAG_KINDS`(support_cd/deathmark_cd/atk_cooldown/triage_ready/prep_used 隱藏)+ `_STANCE_MAINTAINED=99`(常駐光環不顯回合數);`_status_tags`(終端)+`_status_tags_list`(web)雙修·**保 `{s,good}` view-model 形狀(前端零改)**。②施法選單 `_st()` rider 補 stagger/weaken/slow/benumb/calm/consecration → 招牌 rider 不再空泛「狀態」。
+- **Theme 4 新手清晰(main.py·純字串)**:①`action_shrine` no-trial 分支比照 arcane/holy 給門檻提示(在途中→「已在你肩上」/未達→「待你等級 X」/已完成→「已了結」·**審查修:原對進行中誤報已了結**);②`_create_custom_class` 印專精(+`SPEC_SKILL_XP_MULT`% XP)/偏好屬性(+`FAVORED_ATTR_BONUS`)效果;③新遊戲開局角色卡後一次性指南入口提示。
+
+**驗證**:run_all 114 + check.sh --smoke(存讀往返)綠·unit 驗(標籤中文化/隱藏內部/objective 省份/神殿三態/route 到 dungeon walkability)。**對抗審查 2 維 4 agent:0 blocker/major·2 confirmed(神殿進行中誤報 minor + ride_evasion/taunt 漏標 nit)已修**。🔴 導航走 `_quest_target_location_set`(◎)+ broaden long-travel(route_to 只經 is_visible);戰鬥標籤走 `_STATUS_TAG`/`_BUFF_KINDS`/`_HIDDEN_TAG_KINDS`(**保 {s,good} 形狀·前端零改**·turns≥99 不顯數);神殿門檻比照 arcane/holy 且區隔進行中/完成。**延後(audit 較低優先)**:map 點擊旅行(#7)·map 開啟聚焦「你在這」(#10)·服務/訓練師目錄(#11)·創角確認頁 chip(#26)·**戰鬥用藥(Theme 5·需拍板平衡+sim)**·**手機/無障礙(Theme 6·觸控地圖縮放/aria-live)**。
+
 ### R124 · 試煉指引:門檻觸發提示 + NPC 流言指向 + codex 索引(三層·純衍生)[byte-identical] [save-safe]
 
 **承使用者評估**「流言系統對試煉任務(九神/魔神/終極技能)的揭露或指引作用」。評估揪出:流言(R81 `offered_rumor`)只指向傳說地城(rumor_quest·42 NPC 全 source `"rumor"`),**從不指向 33+ 試煉**(戴德拉 16/九神 10/秘術 5/聖光 1/聖物 2);試煉全靠「走到對的地點 + 達技能/等級閘」被動觸發 → 玩家常「夠格卻不知試煉存在」。**最反諷:最深、最有回報的內容最難被發現**。既有地基(arcane_trials_rumor 事件 + codex shrine/divine 動態索引)沒推廣到全體。使用者拍板**綜合三層**。

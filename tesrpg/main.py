@@ -210,8 +210,10 @@ def _quick_character(gamedata: GameData, rng: RNG):
 
 
 def _create_custom_class(gamedata: GameData) -> dict:
+    # R125:講明兩個 build 槓桿的實際效果(過去只有主修有說明,專精/偏好屬性效果隱形)
+    ui.message(f"專精:該系技能練得更快(learn-by-doing +{int((formulas.SPEC_SKILL_XP_MULT - 1) * 100)}% XP)。", style="grey70")
     spec = ui.menu("專精", [(s, formulas.SPEC_NAMES[s]) for s in ("combat", "magic", "stealth")])
-    ui.message("挑選 2 個偏好屬性:")
+    ui.message(f"挑選 2 個偏好屬性(創角時各 +{formulas.FAVORED_ATTR_BONUS}):")
     favored = _pick_distinct(
         [(a, formulas.ATTRIBUTE_NAMES[a]) for a in formulas.ATTRIBUTES], 2, "偏好屬性")
     ui.message("挑選 7 個主修技能(升點給 ×1.5 等級經驗、起始較高):")
@@ -1608,38 +1610,72 @@ def end_run(state: GameState, gamedata: GameData, ending: str) -> None:
 # ======================================================================
 def action_travel(state: GameState, gamedata: GameData) -> str | None:
     char = state.player
-    adj = {dest for dest, _h in world.travel_options(char, gamedata)}
-    opts = [(dest, f"{gamedata.location(dest)['name']}（{h} 時)")
-            for dest, h in world.travel_options(char, gamedata)]
-    opts.append(("__far__", "🧭 長途前往(已到訪的城鎮 · 沿途自動趕路)"))
+    topts = world.travel_options(char, gamedata)
+    adj = {dest for dest, _h in topts}
+    targets = ui._quest_target_location_set(char, gamedata)   # R125:進行中任務目標地(指路 ◎)
+    opts = [(dest, f"{'◎ ' if dest in targets else ''}{gamedata.location(dest)['name']}"
+                   f"（{h} 時{' · 任務' if dest in targets else ''})")
+            for dest, h in topts]
+    # R125 導航:前往任務目標捷徑(有可達的非相鄰任務目標時)——引擎 BFS 已就緒,只是過去 UI 不讓走
+    goal = [t for t in targets if t != char.location_id and t not in adj and world.route_to(char, gamedata, t)]
+    if goal:
+        opts.append(("__goal__", "🎯 前往任務目標(自動趕路)"))
+    opts.append(("__far__", "🧭 長途前往(城鎮/任務目標 · 沿途自動趕路)"))
     dest = ui.menu("前往何處?", opts, allow_back=True)
     if dest is None:
         return None
+    if dest == "__goal__":
+        return _action_goal_travel(state, gamedata, goal)
     if dest == "__far__":
         return _action_long_travel(state, gamedata, adj)
     return _travel_to(state, gamedata, dest)
 
 
-def _action_long_travel(state: GameState, gamedata: GameData, adj: set) -> str | None:
-    """長途前往:列出已到訪、可達、非相鄰的城/鎮(相鄰者走一般選單即可),BFS 逐跳自動趕路。"""
+def _action_goal_travel(state: GameState, gamedata: GameData, targets: list) -> str | None:
+    """R125 🎯 前往任務目標:單一目標直接趕路,多個則列選(BFS 逐跳自動趕路)。"""
     char = state.player
     locs = gamedata.world["locations"]
+    entries = []
+    for t in targets:
+        loc, path = locs.get(t), world.route_to(char, gamedata, t)
+        if loc and path:
+            entries.append((t, loc, len(path), world.route_hours(char, gamedata, path)))
+    if not entries:
+        ui.message("目前沒有可趕路前往的任務目標。", style="grey70")
+        return None
+    entries.sort(key=lambda d: (d[2], d[1]["province"], d[1]["name"]))   # 近→省→名
+    if len(entries) == 1:
+        return _travel_route(state, gamedata, entries[0][0])
+    opts = [(t, f"◎ {loc['province']} · {loc['name']}（{hops} 段 · 約 {hrs} 時)")
+            for t, loc, hops, hrs in entries]
+    pick = ui.menu("前往哪個任務目標?(沿途遇襲/變故會停下)", opts, allow_back=True)
+    return _travel_route(state, gamedata, pick) if pick else None
+
+
+def _action_long_travel(state: GameState, gamedata: GameData, adj: set) -> str | None:
+    """長途前往:列出可達、非相鄰的目的地 —— 已到訪城/鎮 + 進行中任務目標地(含地城/未訪點·◎),
+    BFS 逐跳自動趕路(引擎 route_to 只經可見地點,已測)。"""
+    char = state.player
+    locs = gamedata.world["locations"]
+    targets = ui._quest_target_location_set(char, gamedata)
+    cand = {lid for lid in char.visited_locations
+            if (l := locs.get(lid)) and l["type"] in ("city", "town")} | set(targets)
     dests = []
-    for lid in char.visited_locations:
+    for lid in cand:
         loc = locs.get(lid)
-        if (not loc or lid == char.location_id or lid in adj
-                or loc["type"] not in ("city", "town")
-                or not world.is_visible(char, gamedata, lid)):
+        if not loc or lid == char.location_id or lid in adj or not world.is_visible(char, gamedata, lid):
             continue
         path = world.route_to(char, gamedata, lid)
         if path:
-            dests.append((lid, loc, len(path), world.route_hours(char, gamedata, path)))
+            dests.append((lid, loc, len(path), world.route_hours(char, gamedata, path), lid in targets))
     if not dests:
-        ui.message("目前沒有可長途前往的已到訪城鎮(近處請用一般旅行)。", style="grey70")
+        ui.message("目前沒有可長途前往之處(近處請用一般旅行)。", style="grey70")
         return None
-    dests.sort(key=lambda d: (d[1]["province"], d[2], d[1]["name"]))   # 決定性:省→跳數→名
-    opts = [(lid, f"{loc['province']} · {loc['name']}（{hops} 段 · 約 {hrs} 時)")
-            for lid, loc, hops, hrs in dests]
+    # 決定性:任務目標優先(◎)→省→跳數→名
+    dests.sort(key=lambda d: (not d[4], d[1]["province"], d[2], d[1]["name"]))
+    opts = [(lid, f"{'◎ ' if tgt else ''}{loc['province']} · {loc['name']}"
+                  f"（{hops} 段 · 約 {hrs} 時{' · 任務' if tgt else ''})")
+            for lid, loc, hops, hrs, tgt in dests]
     pick = ui.menu("長途前往何處?(沿途遇襲/變故會停下)", opts, allow_back=True)
     if pick is None:
         return None
@@ -4719,7 +4755,25 @@ def action_shrine(state: GameState, gamedata: GameData) -> None:
     avail = [qid for qid in quests.available_quests(char, gamedata, "daedric")
              if gamedata.quests[qid].get("shrine") == prince]
     if not avail:
-        ui.message("你在祭壇前俯首祈願,神殿一片寂靜 —— 此刻無人應你之聲。", style="grey70")
+        # R125:給門檻提示(比照 arcane/holy 試煉)—— 區隔 在途中/已了結/門檻未達,而非空泛沉默(審查修:原對進行中誤報「已了結」)
+        pq = [(qid, v) for qid, v in gamedata.quests.items()
+              if v.get("source") == "daedric" and v.get("shrine") == prince]
+        if any(qid in char.quests and qid not in char.completed_quests for qid, _ in pq):
+            ui.message("你在祭壇前俯首祈願 —— 親王的試煉已在你肩上,去了結它。", style="grey70")
+            return
+        pending = next((v for qid, v in pq if qid not in char.completed_quests and qid not in char.quests), None)
+        need = []
+        if pending:
+            if pending.get("requires_level") and char.level < pending["requires_level"]:
+                need.append(f"等級 {pending['requires_level']}")
+            if pending.get("requires_fame") and char.fame < pending["requires_fame"]:
+                need.append(f"聲名 {pending['requires_fame']}")
+        if pending is None:
+            ui.message("你在祭壇前俯首祈願 —— 這位親王的試煉,你已了結。", style="grey70")
+        elif need:
+            ui.message(f"你在祭壇前俯首祈願,親王的低語掠過心頭:「時候未到 —— 待你{'、'.join(need)},再來尋我。」", style="grey70")
+        else:
+            ui.message("你在祭壇前俯首祈願,神殿一片寂靜 —— 此刻無人應你之聲。", style="grey70")
         return
     opts = [(qid, f"{gamedata.quests[qid]['name']} — {quests.objective_text(char, gamedata, qid)}")
             for qid in avail]
@@ -5898,6 +5952,9 @@ def main() -> None:
             state = GameState(player=char, rng=RNG(seed), game_mode=mode)
             ui.character_sheet(char, gamedata)
             ui.message(f"世界種子:{seed}（記下它,即可重玩同一個世界與命運)", style="grey70")
+            # R125:新手指引 —— 這是個深沙盒(做什麼練什麼、22 技能、六大魔法),把指南入口講給第一次玩的人
+            ui.message("💡 上手提示:做什麼就練什麼(learn-by-doing)。人物選單裡的「指南/圖鑑 📖」"
+                       "有各系統的玩法說明 —— 迷路或不確定下一步時,回城翻它。", style="cyan")
             _intro_quest_briefing(state, gamedata)   # 起手任務首入提示(我為何在這)
 
         game_loop(state, gamedata)

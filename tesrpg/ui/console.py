@@ -334,11 +334,12 @@ def _sheet_view(char: Character, gamedata: GameData) -> dict:
 def _status_tags_list(entity) -> list:
     out = []
     for e in entity.active_effects:
-        if e.get("turns", 0) <= 0:
+        if e.get("turns", 0) <= 0 or e["kind"] in _HIDDEN_TAG_KINDS:   # R125:略過純內部記帳標記
             continue
         kind = e["kind"]
         good = True if kind in _BUFF_KINDS else (False if kind in _STATUS_TAG else None)
-        out.append({"s": f"{_STATUS_TAG.get(kind, kind)}{e['turns']}", "good": good})
+        tnum = "" if e["turns"] >= _STANCE_MAINTAINED else str(e["turns"])   # 常駐光環不顯回合數
+        out.append({"s": f"{_STATUS_TAG.get(kind, kind)}{tnum}", "good": good})
     return out
 
 
@@ -1710,7 +1711,10 @@ def spell_effect_summary(gamedata: GameData, spell_id: str) -> str:
         t = st.get("turns", 0)
         return {"dot": f"{el}持續傷害 {m}/回合×{t}", "regen": f"再生 +{m}/回合×{t}",
                 "paralyze": f"麻痺 {t} 回合", "fear": f"恐懼 {t} 回合",
-                "soul_trap": f"擒魂 {t} 回合"}.get(s, "狀態")
+                "soul_trap": f"擒魂 {t} 回合", "stagger": f"踉蹌 {t} 回合",
+                "weaken": f"耗弱 {int(m * 100)}%·{t} 回合", "slow": f"遲緩 {t} 回合",
+                "benumb": f"凍麻(降命中){t} 回合", "calm": f"安撫 {t} 回合",
+                "consecration": f"聖化減傷 {int(m * 100)}%·{t} 回合"}.get(s, "狀態")
 
     if k == "damage":
         return f"{elem}傷害 {mag}"
@@ -1998,17 +2002,34 @@ def combat_status(player: Character, creature, gamedata: GameData) -> None:
     console.print(grid)
 
 
-_STATUS_TAG = {"shield": "盾", "dot": "蝕", "fear": "懼", "paralyze": "痺",
-               "weaken": "弱", "soul_trap": "魂", "regen": "生", "stagger": "踉"}
-_BUFF_KINDS = {"shield", "regen"}   # 增益(綠);其餘 _STATUS_TAG 條目=減益(紅);未知=中性
+# R125 戰鬥狀態標籤中文化:補齊近期內容的招牌狀態(slow/benumb/conduct/erosion/失衡/烙印/聖化/戰旗…),
+# 免生英文+回合數洩到卡片上。減益(紅)在前、增益(綠)在後。
+_STATUS_TAG = {
+    # 減益(紅)
+    "dot": "蝕", "fear": "懼", "paralyze": "痺", "weaken": "弱", "soul_trap": "魂",
+    "stagger": "踉", "slow": "緩", "benumb": "凍麻", "conduct": "導電", "erosion": "蝕抗",
+    "calm": "安撫", "offbalance": "失衡", "deathmark": "烙印",
+    # 增益(綠)
+    "shield": "盾", "regen": "生", "ward": "結界", "consecration": "聖化", "empower": "鼓舞",
+    "berserk_buff": "狂暴", "bound_weapon": "束縛", "weapon_imbue": "灌注", "resonance": "共鳴",
+    "cascade": "連鎖", "battle_standard": "戰旗", "rally_banner": "號令", "shield_wall": "盾牆",
+    "ride_evasion": "疾避", "taunt": "嘲諷",   # R125 審查補:坐騎閃避(玩家)/召喚物嘲諷(拉仇恨)
+}
+_BUFF_KINDS = {"shield", "regen", "ward", "consecration", "empower", "berserk_buff",   # 增益(綠)
+               "bound_weapon", "weapon_imbue", "resonance", "cascade",
+               "battle_standard", "rally_banner", "shield_wall", "ride_evasion", "taunt"}
+# 純內部記帳/冷卻標記 —— 不顯示於戰鬥卡片(避免 deathmark_cd/support_cd/atk_cooldown 等洩漏)
+_HIDDEN_TAG_KINDS = {"support_cd", "deathmark_cd", "atk_cooldown", "triage_ready", "prep_used"}
+_STANCE_MAINTAINED = 99   # 常駐光環維持中的 turns 哨兵 → 不顯示回合數
 
 
 def _status_tags(entity) -> str:
     tags = []
     for e in entity.active_effects:
-        if e.get("turns", 0) <= 0:
+        if e.get("turns", 0) <= 0 or e["kind"] in _HIDDEN_TAG_KINDS:
             continue
-        tags.append(f"{_STATUS_TAG.get(e['kind'], e['kind'])}{e['turns']}")
+        tnum = "" if e["turns"] >= _STANCE_MAINTAINED else str(e["turns"])
+        tags.append(f"{_STATUS_TAG.get(e['kind'], e['kind'])}{tnum}")
     return " ".join(tags)
 
 
