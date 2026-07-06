@@ -1410,6 +1410,22 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 
 ---
 
+### R128 · 全怪物物理抗性:按適合程度填入 41 怪(幽體/構造/元素/厚甲/魔神)[re-sim] [content]
+
+**承 R127**(物理抗性正規化後)。使用者:「評估,將所有怪物按適合程度填入物理抗性」→ 拍板**全範圍**(含 sim 紅線怪)+ **玩家召喚物也給**(強化召喚師)。
+
+**評估**(workflow 5 agent 分類 149 怪 + sim 探針):物理抗性正典適合度**恰與 sim 安全性對齊** —— 三個最貼正典的類別(幽體/構造/元素)全是非-sim 怪。分類 rubric:**ethereal 幽體**(凡兵穿體=ES 最強物抗案例·40-50)/**construct 構造**(石金軀·30-40)/**atronach 元素**(元素之軀·25-28)/**tough_beast 厚甲獸**(厚皮鱗甲·15-25)/**daedra 魔神**(異界血肉·8-10)/**bone_undead 骨系**+**flesh_normal 血肉**(骨易碎、凡兵有效·**0**)。
+
+**套用 41 隻**(33 敵 + 8 召喚·bestiary `resist.physical`)。敵人:幽體 will_o_wisp/imperial_ghost/grief_shade/dro_mathra_shade/malyn_varen/twilight_sentinel(45-50)· 構造 dwarven_centurion 40/gargoyle+knight_of_order 35/dwarven_spider 30 · 元素 storm/flame_atronach 25-28 · 厚甲 ancient_dragon 25/wamasu 22/frost_giant+bog_troll 20/minotaur+ogre+land_dreugh 18/swamp_crocodile 15 · 魔神 daedroth/dremora_lord/mehrunes_dagon/apocrypha_seeker/umaril 10、mehrunes_dagon_diminished 5、madness_avatar 等 8 · 其他 ice_wraith 12/blighted_matron 10。召喚物(強化召喚師):ancestral_ghost/summoned_healer/summoned_terror 45/summoned_familiar 40/summoned_storm 28/summoned_(frost_)atronach 25/summoned_dremora 10。
+
+**🔴 sim_assassin BYTE-IDENTICAL(意外之喜·非預期需 re-sim 卻零位移)**:assassin 對 tough solo boss(dremora_lord/ancient_dragon/frost_giant/wamasu/mehrunes_dagon)只量**偷襲秒殺率**,本就被 `SOLO_SNEAK_DAMAGE_CAP_RATIO` 夾至 0% → 加物抗只讓(已夾至 0% 的)偷襲傷更小 → **輸出仍 0.0% 逐位元組同**;群戰用 bandit/wolf/skeleton 全 0 物抗。**🔴 硬約束**:**base `dremora` & `frost_troll` 必須維持 `phys=0`** —— 牠們是 sim_assassin 的**精英 oneshot fixture**(`solo=None` 非夾·oneshot 率是有意義非零 float·sim_assassin.py:107/122/144/175/201),phys>0 會移動印出數字→破 byte-identical。**solo 變體(solo=True·已夾 0%)才得以拿物抗**;日後勿以「同物種一致性」把 base dremora/frost_troll 設非零(會靜默破 sim)。
+
+**平衡(sim_builds·意圖溫和 nerf)**:物抗是「只砍物理、放過魔法/元素附魔」的乾淨手術刀 —— tough boss 物理 build 掉幾 pp + TTK +68-88%、純法系零位移;ancient_dragon(物抗25)物理 92%(法 89-90%);**主線終王 mehrunes_dagon(物抗10)warrior 66→52%**(仍 [[warrior-solo-boss-already-strong]] vampiric-enchant closeable)。**sim_party**:召喚物變耐但傷害不變 → **召喚師 vs dagon 仍 0% 牆守**、無 stalemate(死靈師 base dagon 0% 亦守)。
+
+**對抗審查(3 維 18 agent)→ 0 blocker/major·1 nit(即上述 base dremora/frost_troll 需記載約束·已記本條)·14 refuted**(幽體強物抗=正典 by-design、厚甲獸韌性、低階敵可帶附魔破、knight_of_order 物抗+反傷雙硬=主題契合無破口 —— 皆駁回)。run_all 115(新 `test_monster_physical_resist_by_category_r128`)·BESTIARY 149。**零新存檔欄**(純 bestiary resist 資料)。
+
+**🔴 鐵則**:加怪物物抗按類別 rubric(幽體/構造/元素高·骨/肉 0);**base dremora & frost_troll 永守 phys=0**(sim 精英 fixture);solo boss 物抗自由(已夾 0% oneshot);召喚物物抗=強化召喚師→跑 sim_party 守 dagon 牆;動 tough boss/常見敵物抗→sim_builds(物理不過牆)+ `test_monster_physical_resist_by_category_r128`。
+
 ### R127 · 物理抗性正規化 + 達貢真身(秘術對決·pen-免疫物理牆)[re-sim] [save]
 
 **承 R126「另評估增加 BOSS 強度」**。使用者連續評估護甲(取得/免傷曲線)與閃避(取得/成長)機制**皆拍板不改**(護甲=pen-可穿的物理層·閃避=R69/R71 刻意早鎖 0.35),再拍板為「達貢真身·秘術對決」引入**「物理抗性」正規抗性類型**(一般化開發過程一度採的 bespoke `planar_ward` 旗標)+ 附魔/煉金同步 + 玩家 cap 選「中等 25%」。

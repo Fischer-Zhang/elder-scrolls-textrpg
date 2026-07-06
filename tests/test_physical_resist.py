@@ -171,6 +171,23 @@ def test_resist_labels_parametric():
     assert M._effect_cn("resist_disease") == "抗疾病"
 
 
+def test_monster_physical_resist_by_category_r128():
+    """R128:物理抗性按類別填入 149 怪 —— 幽體/構造/元素高、骨系/血肉/sim 群戰常見怪 0(守 byte-identical + R71)。"""
+    gd = get_gamedata()
+    def phys(cid):
+        return (gd.bestiary[cid].get("resist") or {}).get("physical", 0)
+    # 幽體(凡兵穿體)/構造(石金)/元素(元素之軀):高物抗
+    for cid in ["will_o_wisp", "imperial_ghost", "grief_shade", "gargoyle", "dwarven_centurion", "storm_atronach"]:
+        assert phys(cid) >= 25, f"{cid}(幽體/構造/元素)應有高物抗"
+    # 骨系/血肉/sim 群戰紅線怪:0(骨易碎、凡兵有效;bandit/wolf/skeleton 守群戰 R71 + dremora/frost_troll 守 sim)
+    for cid in ["skeleton", "draugr", "lich", "bandit", "wolf", "bear", "dremora", "frost_troll", "vampire_lord"]:
+        assert phys(cid) == 0, f"{cid}(骨/肉/sim 常見怪)須為 0"
+    # 召喚物(幽體/元素)也得物抗(R128 強化召喚師·sim_party 驗不 trivialize)
+    assert phys("ancestral_ghost") >= 40 and phys("summoned_storm_atronach") >= 25
+    # 真身仍最高(位面化身特例)
+    assert phys("mehrunes_dagon_true") == 60
+
+
 def run():
     for name, fn in sorted(globals().items()):
         if name.startswith("test_") and callable(fn):
