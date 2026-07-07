@@ -70,22 +70,44 @@ def random_encounter_group(gamedata: GameData, player_level: int, rng: RNG,
 
 
 def spawn_companion(gamedata: GameData, companion_id: str, rng: RNG,
-                    current_hp: int | None = None, max_health_bonus: int = 0) -> Creature:
+                    current_hp: int | None = None, max_health_bonus: int = 0,
+                    char=None) -> Creature:
     """把雇用的同伴生成為我方戰鬥單位。
 
     current_hp:持久 HP(同伴系統深化;None=滿血登場,向後相容);max_health_bonus:羈絆耐久加成。
+    char(同伴深化 Tier 2):提供時,以「屬性+技能+裝備」經共用玩家公式**生成時烘焙**戰力(裝備=戰利品 sink)+
+    掛武器附魔載體(完全比照玩家);**char=None → 走既有模板路徑逐位元組不變**(現有 3-/5-arg 呼叫全不動)。
     """
     t = gamedata.companions[companion_id]
-    mx = t["max_health"] + max_health_bonus
+    attack = dict(t["attack"])
+    armor = t["armor_rating"]
+    resist = dict(t.get("resist", {}))
+    hp_bonus = max_health_bonus
+    gear_weapon = None
+    if char is not None:
+        from tesrpg.systems import party
+        dmg, wskill, gear_weapon = party.derived_weapon(char, gamedata, companion_id)
+        attack["damage"], attack["skill"] = dmg, wskill
+        if gear_weapon is not None:      # 裝上實體武器 → 基礎傷改物理(模板固有元素移除;武器自身元素附魔走附魔派發)
+            attack.pop("element", None)
+        armor, ar_resist = party.derived_armor(char, gamedata, companion_id, armor)
+        for el, v in ar_resist.items():                 # 護甲抗元素附魔烘焙進 resist
+            resist[el] = resist.get(el, 0) + v
+    mx = t["max_health"] + hp_bonus
     hp = mx if current_hp is None else max(0, min(int(current_hp), mx))
-    return Creature(
+    cre = Creature(
         template_id=companion_id, name=t["name"],
         strength=t["strength"], agility=t["agility"], speed=t["speed"],
-        max_health=mx, health=hp, armor_rating=t["armor_rating"],
-        attack=dict(t["attack"]), loot_gold=[0, 0], loot_table=[],
-        flavor=t.get("blurb", ""), danger=0, resist=dict(t.get("resist", {})),
+        max_health=mx, health=hp, armor_rating=armor,
+        attack=attack, loot_gold=[0, 0], loot_table=[],
+        flavor=t.get("blurb", ""), danger=0, resist=resist,
         summon_turns=None,
     )
+    if gear_weapon is not None:   # 附魔完全比照玩家:掛武器附魔載體 + 共享玩家充能池(武器是玩家的·借入同伴槽)
+        cre._gear_weapon = gear_weapon
+        cre.offhand = ""
+        cre.enchant_charges = char.enchant_charges
+    return cre
 
 
 def alive_list(combatants: list) -> list:
@@ -305,7 +327,7 @@ def _armor_rating(actor, gamedata: GameData) -> int:
         base = formulas.player_armor_rating(actor.skill("heavy_armor"), actor.skill("light_armor"))
     else:
         skill = actor.skill("heavy_armor" if wc == "heavy" else "light_armor")
-        base = round(worn * (0.5 + skill / 100.0))
+        base = formulas.worn_armor_base(worn, skill)
     # 被動護甲(石膚/靈體護壁=法系、撐架/柔革護持=物理 stance):里程碑 perk,無條件生效
     # (廣度 pass 加入物理 stance 後不再綁魔力;原「有魔力才生效」對物理 stance 不合理)。
     passive = mastery.passive_armor_bonus(actor, gamedata)
@@ -431,6 +453,19 @@ def _player_counter_damage(player, gamedata: GameData, rng: RNG) -> float:
     _lo = formulas.DAMAGE_ROLL_LO + formulas.luck_damage_floor(player.attr("luck"))   # 幸運抬下界(luck≤40 → 0.85 = byte-identical)
     return formulas.attack_damage(wpn_dmg, wpn_skill, _strength(player),
                                   rng.roll(_lo, formulas.DAMAGE_ROLL_HI), 1.0)
+
+
+def _gear_weapon_id(attacker):
+    """攻擊者當前武器 id:玩家=裝備武器;同伴=生成時掛的 `_gear_weapon`;一般怪=None。"""
+    return attacker.weapon if _is_player(attacker) else getattr(attacker, "_gear_weapon", None)
+
+
+def _gear_weapon_item(attacker, gamedata: GameData):
+    """攻擊者武器的 item dict(供附魔派發);無武器(一般怪/無裝同伴)→ None。
+    🔴 玩家路徑回 `gamedata.item(attacker.weapon)`(玩家恆有武器 → 非 None)→ 附魔 gate 由 `_is_player(attacker)`
+    改「(...) is not None」對玩家逐位元組同、對一般怪回 None 同 `_is_player`=False,對帶裝同伴新納入。"""
+    wid = _gear_weapon_id(attacker)
+    return gamedata.item(wid) if wid else None
 
 
 def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
@@ -622,9 +657,10 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
             if (_is_player(attacker) and wpn_skill_id == "hand_to_hand" and not beast and not sneaking
                     and _offbalance_active(attacker, gamedata)):
                 dmg *= formulas.offbalance_damage_multiplier(magic.offbalance_stacks(defender))
-            # 武器附魔:額外元素傷害(無視護甲,受對方元素抗性)。獸形/重盾盾擊以非裝備武器戰鬥 → 無附魔
-            if _is_player(attacker) and not beast and not great:
-                ench = gamedata.item(attacker.weapon).get("enchant")
+            # 武器附魔:額外元素傷害(無視護甲,受對方元素抗性)。獸形/重盾盾擊以非裝備武器戰鬥 → 無附魔。
+            # 同伴深化:gate 由 `_is_player` 改讀 `_gear_weapon_item`(玩家 byte-identical·帶裝同伴納入·一般怪 None 略過)。
+            if not beast and not great and (_ewi := _gear_weapon_item(attacker, gamedata)) is not None:
+                ench = _ewi.get("enchant")
                 # 嗜血怒擊 berserk:依攻方已損生命比例提傷(滿血=×1 → 開場偷襲不放大);
                 # 乘在物理 dmg、於 solo 偷襲/衝鋒夾限之前 → solo boss 仍受夾、守紅線。
                 if ench and ench.get("kind") == "berserk":
@@ -778,11 +814,12 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
 
         # 武器命中觸發附魔(weapon_status:吸血/麻痺/再生)—— 玩家專屬,與元素/毒/里程碑各自獨立、不重複套。
         # 獸形/束縛兵刃/雙手重盾盾擊以非裝備武器戰鬥 → 無裝備武器附魔
-        if _is_player(attacker) and not beast and not bound and not great:
+        # 同伴深化:gate 由 `_is_player` 改讀 `_gear_weapon_item`(玩家 byte-identical·帶裝同伴完全比照玩家附魔·一般怪 None 略過)。
+        if not beast and not bound and not great and (_swi := _gear_weapon_item(attacker, gamedata)) is not None:
             # 主手 + 副手(雙持)的命中觸發附魔:副手以 OFFHAND_DAMAGE_FACTOR 權重疊加。
             # 吸血累計成總比例後一次回血;再生以 source 去重(主手優先);麻痺各自獨立擲一次(binary 不打折,solo 仍免疫)。
             heal_frac = 0.0
-            for hench, w, wid in ((gamedata.item(attacker.weapon).get("enchant"), 1.0, attacker.weapon),
+            for hench, w, wid in ((_swi.get("enchant"), 1.0, _gear_weapon_id(attacker)),
                                   (offhand_ench, formulas.OFFHAND_DAMAGE_FACTOR, attacker.offhand)):
                 if not (hench and hench.get("kind") == "weapon_status"
                         and rng.chance(hench.get("chance", 1.0))):
@@ -865,7 +902,8 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
                     # 幸運偏轉混沌(R116):抽到回火(自傷/治敵)時,以幸運 save 機率改抽好效果。
                     # 🔴 luck≤40 → save=0 → `and` 短路不擲 rng → byte-identical;沙盒專屬法杖·刺客不持 → sim 不觸此區。
                     if _wab_effect in ("backfire_self", "backfire_enemy"):
-                        _wsave = formulas.luck_wabbajack_save(attacker.attr("luck"))
+                        # 幸運 save 是玩家天命(同伴無 .attr → 0·不 reroll·回火照發=自平衡);玩家 byte-identical。
+                        _wsave = formulas.luck_wabbajack_save(attacker.attr("luck")) if _is_player(attacker) else 0.0
                         if _wsave > 0 and rng.chance(_wsave):
                             _good = [(w, e) for w, e in formulas.WABBAJACK_TABLE
                                      if e not in ("backfire_self", "backfire_enemy")]

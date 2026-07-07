@@ -12,6 +12,7 @@
 
 from __future__ import annotations
 
+from tesrpg import formulas
 from tesrpg.gamedata import GameData
 from tesrpg.models import Character
 
@@ -121,7 +122,12 @@ def heal_full(char: Character, gamedata: GameData) -> None:
 
 
 def forget(char: Character, cid: str) -> None:
-    """同伴離隊(解散/陣亡)→ 清其持久狀態,避免殘留污染。"""
+    """同伴永久離隊(解散泛用傭兵/陣亡)→ 清其持久狀態,避免殘留污染;穿戴裝備退回背包(不遺失)。"""
+    from tesrpg.systems import inventory
+    for iid in list(char.companion_gear.get(cid, {}).values()):
+        inventory.add_item(char, iid, 1)
+    char.companion_gear.pop(cid, None)
+    char.companion_build.pop(cid, None)
     char.companion_hp.pop(cid, None)
     char.companion_bond.pop(cid, None)
 
@@ -210,3 +216,213 @@ def loyalty_label(char: Character, gamedata: GameData) -> str | None:
     names = [gamedata.companions.get(cid, {}).get("name", cid)
              for cid in loyalty_arcs(char, gamedata)]
     return "、".join(names) if names else None
+
+
+# ======================================================================
+# 同伴深化(Tier 2 類玩家):屬性 + 技能 + 裝備 → 生成時導出戰力
+# ======================================================================
+# 🔴 平衡紅線:單一同伴孤立軸(排除玩家)vs 滿血達貢須 ~0%。sim 實測「武器技能 ≤80 恆 0%(連 vampiric)」→
+# 設計師值 ≤ COMPANION_WEAPON_SKILL_CAP;此處再防禦夾一次(即使 JSON 打錯亦守牆)。武器傷不設天花板(內容自然
+# 夾 ~48 < 破牆點);護甲比照玩家自然導出不夾(達貢火繞甲·非紅線)。詳見 handoff §3 本輪 R##。
+COMPANION_WEAPON_SKILL_CAP = 80
+
+
+def companion_skill(gamedata: GameData, cid: str, skill_id: str) -> int:
+    """同伴某技能值(companions.json `skills` 唯讀模板;缺→退回模板 attack.skill)。夾 ≤ CAP 守牆。"""
+    t = gamedata.companions.get(cid, {})
+    skills = t.get("skills", {})
+    val = skills.get(skill_id, t.get("attack", {}).get("skill", 0))
+    return max(0, min(COMPANION_WEAPON_SKILL_CAP, int(val)))
+
+
+def _gear_item(char: Character, gamedata: GameData, cid: str, slot: str, kind: str):
+    """該同伴某槽穿戴物的 item dict(kind 相符才回;否則 None)。"""
+    iid = char.companion_gear.get(cid, {}).get(slot)
+    d = gamedata.item_or_none(iid) if iid else None
+    return (iid, d) if d and d.get("kind") == kind else (None, None)
+
+
+def derived_weapon(char: Character, gamedata: GameData, cid: str) -> tuple:
+    """回 (傷害, 武器技能, 武器item_id|None):
+    裝上武器 → (裝備傷 + flat 淬鍊, 同伴該武器技能, wid);無裝 → (模板 attack.damage, 模板 attack.skill, None)。"""
+    from tesrpg.systems import smithing
+    t = gamedata.companions[cid]
+    wid, wd = _gear_item(char, gamedata, cid, "weapon", "weapon")
+    if not wd:
+        return t["attack"]["damage"], t["attack"]["skill"], None
+    temper = char.weapon_temper.get(wid, 0) * smithing.TEMPER_WEAPON_PER    # flat 淬鍊(不吃玩家 temper_power 里程碑)
+    dmg = wd["damage"] + temper
+    skill = companion_skill(gamedata, cid, wd.get("skill", "blade"))
+    return dmg, skill, wid
+
+
+def derived_armor(char: Character, gamedata: GameData, cid: str, template_armor: int) -> tuple:
+    """回 (護甲值, 抗性dict):裝上護甲 → 經護甲技能導出(比照玩家 worn_armor_base)+ flat 淬鍊 + 抗元素附魔;
+    無裝 → (模板 armor_rating, {})。護甲不設上限(比照玩家·達貢火繞甲非紅線)。"""
+    from tesrpg.systems import smithing
+    aid, ad = _gear_item(char, gamedata, cid, "armor", "armor")
+    if not ad:
+        return template_armor, {}
+    worn = ad.get("armor_rating", 0)
+    temper = char.armor_temper.get(aid, 0) * smithing.TEMPER_ARMOR_PER
+    wc = ad.get("weight_class")
+    askill = companion_skill(gamedata, cid, "heavy_armor" if wc == "heavy" else "light_armor")
+    armor = formulas.worn_armor_base(worn, askill) + temper
+    resist: dict = {}
+    ench = ad.get("enchant")     # 護甲附魔平價:抗元素烘焙(fortify_skill/attribute/thorns 後補·見 handoff)
+    if ench and ench.get("kind") == "resist_element":
+        resist[ench["element"]] = resist.get(ench["element"], 0) + int(ench.get("magnitude", 0))
+    return armor, resist
+
+
+# --- 裝備槽(戰利品 sink):裝 / 卸 -----------------------------------------
+def _slot_for_item(gamedata: GameData, item_id: str) -> str | None:
+    d = gamedata.item_or_none(item_id)
+    k = d.get("kind") if d else None
+    return "weapon" if k == "weapon" else ("armor" if k == "armor" else None)
+
+
+def equippable_for(char: Character, gamedata: GameData, slot: str) -> list:
+    """背包中可裝到同伴某槽的物(weapon/armor)——供 UX 選單。回 [item_id]。"""
+    want = "weapon" if slot == "weapon" else "armor"
+    seen, out = set(), []
+    for s in char.inventory:
+        if s["id"] in seen:
+            continue
+        seen.add(s["id"])
+        if _slot_for_item(gamedata, s["id"]) == want:
+            out.append(s["id"])
+    return out
+
+
+def equip_gear(char: Character, gamedata: GameData, cid: str, item_id: str) -> bool:
+    """把背包中一件武器/護甲裝到同伴(移出背包 = 戰利品 sink;保留淬鍊)。舊裝退回背包。"""
+    from tesrpg.systems import inventory
+    slot = _slot_for_item(gamedata, item_id)
+    if slot is None or inventory.count_item(char, item_id) <= 0:
+        return False
+    old = char.companion_gear.get(cid, {}).get(slot)
+    if old:
+        inventory.add_item(char, old, 1)
+    inventory.remove_item(char, item_id, 1, keep_temper=True)   # 移轉非銷毀 → 不清淬鍊
+    char.companion_gear.setdefault(cid, {})[slot] = item_id
+    return True
+
+
+def unequip_gear(char: Character, gamedata: GameData, cid: str, slot: str) -> bool:
+    """卸下同伴某槽裝備 → 退回背包。"""
+    from tesrpg.systems import inventory
+    iid = char.companion_gear.get(cid, {}).get(slot)
+    if not iid:
+        return False
+    inventory.add_item(char, iid, 1)
+    del char.companion_gear[cid][slot]
+    if not char.companion_gear[cid]:
+        del char.companion_gear[cid]
+    return True
+
+
+def preview_gear_stat(char: Character, gamedata: GameData, cid: str, item_id: str) -> tuple | None:
+    """換裝對比(純函式·不變更 gear):回 (數值標籤, 目前導出值, 裝上後導出值);非武器/護甲 → None。"""
+    from tesrpg.systems import smithing
+    d = gamedata.item_or_none(item_id)
+    t = gamedata.companions.get(cid, {})
+    if not d:
+        return None
+    if d.get("kind") == "weapon":
+        cur, _, _ = derived_weapon(char, gamedata, cid)
+        new = d.get("damage", 0) + char.weapon_temper.get(item_id, 0) * smithing.TEMPER_WEAPON_PER
+        return ("傷害", cur, new)
+    if d.get("kind") == "armor":
+        cur, _ = derived_armor(char, gamedata, cid, t.get("armor_rating", 0))
+        wc = d.get("weight_class")
+        askill = companion_skill(gamedata, cid, "heavy_armor" if wc == "heavy" else "light_armor")
+        new = formulas.worn_armor_base(d.get("armor_rating", 0), askill) \
+            + char.armor_temper.get(item_id, 0) * smithing.TEMPER_ARMOR_PER
+        return ("護甲值", cur, new)
+    return None
+
+
+# --- 戰術傾向(羈絆階解鎖·永久·功能性非數值)-----------------------------
+TACTICS = {
+    "vanguard":   {"label": "陷陣(均衡)", "desc": "隨機交戰,無特殊傾向。",             "tactic": None},
+    "bulwark":    {"label": "鎮守(扛線)", "desc": "自立盾陣吸引敵火,掩護你與脆弱同袍。", "tactic": "taunt"},
+    "skirmisher": {"label": "游擊(集火)", "desc": "優先擊殺最脆弱的敵人(先點治療者)。", "tactic": "focus"},
+}
+BUILD_GATE_DEFAULT = 1   # 預設達羈絆階「同袍」解鎖戰術傾向
+
+
+def build_gate(gamedata: GameData, cid: str) -> int:
+    return int(gamedata.companions.get(cid, {}).get("build_gate", BUILD_GATE_DEFAULT))
+
+
+def allowed_builds(gamedata: GameData, cid: str) -> list:
+    """該同伴可選的戰術傾向 id(companions.json `builds` 白名單;預設全部)。"""
+    bs = gamedata.companions.get(cid, {}).get("builds")
+    if isinstance(bs, list) and bs:
+        return [b for b in bs if b in TACTICS]
+    return list(TACTICS)
+
+
+def chosen_build(char: Character, cid: str) -> str | None:
+    return char.companion_build.get(cid)
+
+
+def build_offerable(char: Character, gamedata: GameData, cid: str) -> bool:
+    """戰術傾向可選:羈絆達門檻、尚未選定、有可選項。"""
+    return (chosen_build(char, cid) is None
+            and bond_tier(char, cid) >= build_gate(gamedata, cid)
+            and bool(allowed_builds(gamedata, cid)))
+
+
+def choose_build(char: Character, gamedata: GameData, cid: str, build_id: str) -> bool:
+    """選定戰術傾向(永久·拒改選·比照 mastery.choose)。"""
+    if build_id not in allowed_builds(gamedata, cid) or cid in char.companion_build:
+        return False
+    char.companion_build[cid] = build_id
+    return True
+
+
+def companion_tactic(char: Character, gamedata: GameData, cid: str) -> str | None:
+    """該同伴的戰術行為 kind("taunt"/"focus"/None);未選或 vanguard → None。"""
+    return TACTICS.get(char.companion_build.get(cid, ""), {}).get("tactic")
+
+
+def build_label(char: Character, cid: str) -> str | None:
+    bid = char.companion_build.get(cid)
+    return TACTICS[bid]["label"] if bid in TACTICS else None
+
+
+# --- 存檔遷移(R03:coerce + 防呆剔陳舊;不遺失裝備)------------------------
+def ensure_companion_gear(char: Character, gamedata: GameData) -> None:
+    from tesrpg.systems import inventory
+    g = getattr(char, "companion_gear", None)
+    if not isinstance(g, dict):
+        char.companion_gear = {}
+        return
+    for cid in list(g.keys()):
+        slots = g[cid]
+        if not isinstance(slots, dict) or cid not in gamedata.companions:
+            if isinstance(slots, dict):                 # 無效同伴 → 裝備退回背包不遺失
+                for iid in slots.values():
+                    if gamedata.item_or_none(iid):
+                        inventory.add_item(char, iid, 1)
+            del g[cid]
+            continue
+        for slot in list(slots.keys()):
+            if slot not in ("weapon", "armor") or _slot_for_item(gamedata, slots[slot]) != slot:
+                iid = slots.pop(slot)                   # 陳舊/型別不符 → 退回背包
+                if gamedata.item_or_none(iid):
+                    inventory.add_item(char, iid, 1)
+        if not slots:
+            del g[cid]
+
+
+def ensure_companion_build(char: Character, gamedata: GameData) -> None:
+    b = getattr(char, "companion_build", None)
+    if not isinstance(b, dict):
+        char.companion_build = {}
+        return
+    for cid in list(b.keys()):
+        if cid not in gamedata.companions or b[cid] not in TACTICS:
+            del b[cid]

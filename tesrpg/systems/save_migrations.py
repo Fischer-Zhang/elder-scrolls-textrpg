@@ -15,7 +15,7 @@
 from __future__ import annotations
 
 from tesrpg.systems import (aiwar, alchemy, boons, dagon_boon, diseases, divines,
-                            dungeon, housing, inventory, lycanthropy, potion_buff,
+                            dungeon, housing, inventory, lycanthropy, party, potion_buff,
                             progression, skooma, spellfx, undercover, worldpulse)
 
 
@@ -39,3 +39,5 @@ def run_load_migrations(player, time, gamedata) -> None:
     worldpulse.ensure_pulse_fields(player)                       # 常態世界脈動:補欄(world_pulse_day/pulse_eval_day)+ 防呆冪等
     housing.ensure_housing_fields(player, time.absolute_hours()) # 家園擴建:補欄 + 型別/採收時間戳自癒(R110)
     dungeon.ensure_reinfest_fields(player, gamedata, time.absolute_hours())  # 地城再滋擾:補欄 + 舊檔回填一輪後滋擾(R111)
+    party.ensure_companion_gear(player, gamedata)               # 同伴裝備:補欄 + 剔陳舊(退回背包不遺失)/型別自癒
+    party.ensure_companion_build(player, gamedata)              # 同伴戰術傾向:補欄 + 剔陳舊 cid/build_id

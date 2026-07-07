@@ -195,6 +195,11 @@ class Character:
     # dataclass 預設 {} → 舊存檔向後相容(未記錄者視為滿血/零羈絆)。詳見 systems/party.py。
     companion_hp: dict = field(default_factory=dict)
     companion_bond: dict = field(default_factory=dict)
+    # 同伴深化(Tier 2 類玩家):裝上同伴的裝備 {cid:{"weapon":item_id,"armor":item_id}}(物移出背包、只存此槽=戰利品 sink)+
+    # 戰術傾向 {cid:build_id}(羈絆階解鎖·永久)。技能為 companions.json 唯讀模板(非存檔欄);充能復用 enchant_charges。
+    # dataclass 預設 {} → 舊存檔向後相容;遷移/防呆見 systems/party.py ensure_companion_gear/build。
+    companion_gear: dict = field(default_factory=dict)
+    companion_build: dict = field(default_factory=dict)
 
     # M8:出生星座能力(每日一次)冷卻 + 塔之鑰開鎖充能
     power_last_day: dict = field(default_factory=dict)    # power_id -> 上次使用的絕對日
@@ -384,6 +389,7 @@ class Character:
             "mounts_owned": self.mounts_owned, "active_mount": self.active_mount,
             "companions": self.companions, "pending_companions": self.pending_companions,
             "companion_hp": self.companion_hp, "companion_bond": self.companion_bond,
+            "companion_gear": self.companion_gear, "companion_build": self.companion_build,
         }
 
     @classmethod

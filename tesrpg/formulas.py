@@ -599,6 +599,15 @@ def player_armor_rating(heavy_armor_skill: int, light_armor_skill: int) -> int:
     return max(heavy_armor_skill, light_armor_skill) // 4
 
 
+def worn_armor_base(worn_rating: int, armor_skill: int) -> int:
+    """穿戴護甲值經護甲技能卸力(玩家/同伴共用·純函式):round(worn × (0.5 + skill/100))。
+
+    抽自 combat._armor_rating 的玩家分支(同序同 round → 玩家路徑逐位元組同);
+    同伴深化(Tier 2)在生成時以同一函式導出「屬性+技能+裝備」護甲值,不再是凍結模板數。
+    """
+    return round(worn_rating * (0.5 + armor_skill / 100.0))
+
+
 FLEE_FLOOR = 0.10
 FLEE_KNEE = 0.90              # 舊上夾 → 漸進拐點(R63)
 FLEE_WIDTH = 0.30            # 緩肩寬度(獨立於 ceiling-knee → 過 200 速度仍緩漲)

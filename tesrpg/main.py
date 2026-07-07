@@ -926,7 +926,8 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
     # 持久 HP:以 spawn_hp 帶入(夾上限);羈絆 → 該同伴 max_health 加成。
     roster = [(cid, combat.spawn_companion(gamedata, cid, state.rng,
                                            current_hp=party.spawn_hp(player, gamedata, cid),
-                                           max_health_bonus=party.bond_hp_bonus(player, cid)))
+                                           max_health_bonus=party.bond_hp_bonus(player, cid),
+                                           char=player))   # 同伴深化:屬性+技能+裝備 → 生成時導出戰力 + 附魔平價
               for cid in field_ids]
     battle = {"allies": [cre for _, cre in roster]}
     if carry_allies:   # 地城預召喚物併入戰列(不在 roster → record_after_battle 不回寫持久同伴)
@@ -1206,7 +1207,18 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
             if support is not None:
                 ui.message(support["message"], style="green")
                 continue
-            tgt = state.rng.choice(alive_e())
+            # 同伴戰術傾向(羈絆階解鎖·功能性·複用既有 taunt/目標選擇·零新戰鬥數值·召喚物不適用):
+            #   鎮守 bulwark=自施嘲諷吸火護同袍;游擊 skirmisher=集火最低血敵(先點治療者)。
+            #   未選/vanguard → None → 隨機目標(= 既有行為·sim 不設 build → byte-identical)。
+            tactic = (party.companion_tactic(player, gamedata, a.template_id)
+                      if getattr(a, "summon_turns", None) is None else None)
+            if tactic == "bulwark" and not any(ef.get("kind") == "taunt" and ef.get("turns", 0) > 0
+                                               for ef in a.active_effects):
+                a.active_effects.append({"kind": "taunt", "turns": 2})
+                ui.message(f"{a.name}穩住陣腳、吸引敵人火力,護住同袍。", style="bold cyan")
+                continue
+            tgt = (min(alive_e(), key=lambda e: e.health) if tactic == "skirmisher"
+                   else state.rng.choice(alive_e()))
             a_atk = combat.choose_attack(a, state.rng, tgt)   # 同伴多攻擊模式(無曲目 → 後備單招,行為不變)
             if a_atk.get("taunt"):   # R105 坦克召喚(魔人/魔靈伴)嘲諷 action:掛嘲諷態 → 敵人幾回合內機率改打它(pick_player_side_target)
                 a.active_effects.append({"kind": "taunt", "turns": a_atk.get("turns", 3)})
@@ -3591,8 +3603,76 @@ def _talk_companion(state: GameState, gamedata: GameData) -> None:
             _accept_and_brief(state, gamedata, qid)
 
 
+def _equip_companion_gear(state: GameState, gamedata: GameData, cid: str, slot: str) -> None:
+    """為同伴裝上背包中的一件武器/護甲(戰利品 sink;呈現導出戰力對比)。"""
+    char = state.player
+    items = party.equippable_for(char, gamedata, slot)
+    label = "武器" if slot == "weapon" else "護甲"
+    if not items:
+        ui.message(f"背包裡沒有可裝的{label}。", style="grey70")
+        return
+    nm = gamedata.companions.get(cid, {}).get("name", cid)
+    pick = ui.menu(f"為 {nm} 裝上哪件{label}?",
+                   [(iid, ui.item_label(gamedata, char, iid)) for iid in items], allow_back=True)
+    if pick is None:
+        return
+    prev = party.preview_gear_stat(char, gamedata, cid, pick)
+    if prev:
+        lbl, cur, new = prev
+        arrow = "↑" if new > cur else ("↓" if new < cur else "＝")
+        ui.message(f"換裝對比 · {lbl}:{cur} → {new} {arrow}", style="cyan")
+    if ui.menu(f"確定把{gamedata.item(pick)['name']}交給{nm}?", [("yes", "裝上")], allow_back=True) != "yes":
+        return
+    if party.equip_gear(char, gamedata, cid, pick):
+        ui.message(f"你把{gamedata.item(pick)['name']}交給了{nm}。", style="green")
+
+
+def _choose_companion_build(state: GameState, gamedata: GameData, cid: str) -> None:
+    """為同伴定下戰術傾向(永久·功能性)。"""
+    char = state.player
+    nm = gamedata.companions.get(cid, {}).get("name", cid)
+    opts = [(b, f"{party.TACTICS[b]['label']} —— {party.TACTICS[b]['desc']}")
+            for b in party.allowed_builds(gamedata, cid)]
+    pick = ui.menu(f"為 {nm} 定下戰術傾向(永久,無法更改):", opts, allow_back=True)
+    if pick is None:
+        return
+    if party.choose_build(char, gamedata, cid, pick):
+        ui.message(f"{nm} 從此以「{party.TACTICS[pick]['label']}」之姿並肩作戰。", style="green")
+
+
+def _manage_companion(state: GameState, gamedata: GameData) -> None:
+    """檢視/裝備/設定一名同伴:裝備武器護甲(戰力=屬性+技能+裝備)、選戰術傾向。"""
+    char = state.player
+    cid = ui.menu("管理哪位同伴?",
+                  [(c, gamedata.companions.get(c, {}).get("name", c)) for c in char.companions],
+                  allow_back=True)
+    if cid is None:
+        return
+    while True:
+        ui.companion_manage_panel(char, gamedata, cid)
+        gear = char.companion_gear.get(cid, {})
+        acts = [("equip_w", "裝備武器"), ("equip_a", "穿戴護甲")]
+        if gear.get("weapon"):
+            acts.append(("unequip_w", "卸下武器"))
+        if gear.get("armor"):
+            acts.append(("unequip_a", "卸下護甲"))
+        if party.build_offerable(char, gamedata, cid):
+            acts.append(("build", "選擇戰術傾向"))
+        act = ui.menu(gamedata.companions.get(cid, {}).get("name", cid), acts, allow_back=True)
+        if act is None:
+            return
+        if act in ("equip_w", "equip_a"):
+            _equip_companion_gear(state, gamedata, cid, "weapon" if act == "equip_w" else "armor")
+        elif act == "unequip_w" and party.unequip_gear(char, gamedata, cid, "weapon"):
+            ui.message("你卸下了同伴的武器,收回背包。", style="grey70")
+        elif act == "unequip_a" and party.unequip_gear(char, gamedata, cid, "armor"):
+            ui.message("你卸下了同伴的護甲,收回背包。", style="grey70")
+        elif act == "build":
+            _choose_companion_build(state, gamedata, cid)
+
+
 def action_party(state: GameState, gamedata: GameData) -> None:
-    """隊伍管理:檢視同伴 HP/羈絆/負傷、與同伴交談(專屬支線)、召集待命具名同伴、就地解散(不限旅店)。"""
+    """隊伍管理:檢視/裝備同伴、與同伴交談(專屬支線)、召集待命具名同伴、就地解散(不限旅店)。"""
     char = state.player
     while True:
         summonable = party.summonable(char, gamedata)
@@ -3602,6 +3682,7 @@ def action_party(state: GameState, gamedata: GameData) -> None:
         ui.party_panel(char, gamedata)
         opts = []
         if char.companions:
+            opts.append(("manage", "檢視 / 裝備同伴 🛡"))
             opts.append(("talk", "與同伴交談"))
         if summonable and len(char.companions) < MAX_PARTY:
             opts.append(("summon", f"召集同伴歸隊({len(summonable)} 人待命)"))
@@ -3610,7 +3691,9 @@ def action_party(state: GameState, gamedata: GameData) -> None:
         choice = ui.menu("隊伍", opts, allow_back=True)
         if choice is None:
             return
-        if choice == "talk":
+        if choice == "manage":
+            _manage_companion(state, gamedata)
+        elif choice == "talk":
             _talk_companion(state, gamedata)
         elif choice == "summon":
             _summon_named_companion(state, gamedata)

@@ -3,6 +3,7 @@
     "name": "斯特倫", "cost": 200,
     "strength": 58, "agility": 45, "speed": 45, "max_health": 78, "armor_rating": 22,
     "attack": {"name": "傭兵之劍", "damage": 14, "skill": 52},
+    "skills": {"blade": 55, "blunt": 50, "heavy_armor": 48, "light_armor": 45},
     "blurb": "久經沙場的諾德劍客斯特倫,收錢辦事、可靠耐打 —— 嘴上說只認金幣,並肩久了卻比誰都護著你。",
     "dialogue": [
       "「先說好,我收的是酬金,不是交情。劍給你,命你自己顧好。」",
@@ -18,6 +19,7 @@
     "name": "葛蕾塔", "cost": 240,
     "strength": 50, "agility": 38, "speed": 38, "max_health": 100, "armor_rating": 28,
     "attack": {"name": "盾擊", "damage": 11, "skill": 48},
+    "skills": {"blade": 50, "blunt": 55, "block": 60, "heavy_armor": 60, "light_armor": 42},
     "spells": ["ward_ally"],
     "blurb": "以重盾聞名的女戰士葛蕾塔,血厚甲硬,替你扛下傷害 —— 沉默如山,卻把同袍護在身後。",
     "dialogue": [
@@ -34,6 +36,7 @@
     "name": "薇拉妮", "cost": 260,
     "strength": 40, "agility": 46, "speed": 50, "max_health": 50, "armor_rating": 8,
     "attack": {"name": "火焰飛彈", "damage": 15, "skill": 56, "element": "fire"},
+    "skills": {"blade": 45, "marksman": 45, "destruction": 60, "light_armor": 50},
     "spells": ["heal_other"],
     "blurb": "流浪的火系術士薇拉妮,輸出兇猛但體質脆弱,攻擊無視護甲 —— 也藏著一手不外傳的生機之術。",
     "dialogue": [
@@ -50,6 +53,7 @@
     "name": "基蘭", "cost": 230,
     "strength": 44, "agility": 58, "speed": 52, "max_health": 64, "armor_rating": 14,
     "attack": {"name": "獵弓", "damage": 16, "skill": 58},
+    "skills": {"marksman": 62, "blade": 50, "light_armor": 55},
     "blurb": "百步穿楊的弓手基蘭,從後排穩定收割 —— 走遍泰姆瑞爾的荒徑,沒有他找不到的近路。",
     "dialogue": [
       "「我認得路、也認得獵物。指個方向,箭自會送到。」",
@@ -65,12 +69,14 @@
     "name": "軍團士兵", "cost": 0, "troop": true,
     "strength": 46, "agility": 40, "speed": 40, "max_health": 55, "armor_rating": 18,
     "attack": {"name": "制式長劍", "damage": 11, "skill": 45},
+    "skills": {"blade": 45, "heavy_armor": 45, "light_armor": 42},
     "blurb": "你麾下的尋常士兵 —— 個別不強,但成群結隊便是攻城的肉牆與洪流。"
   },
   "veteran": {
     "name": "老兵隊長", "cost": 400, "warlord": true,
     "strength": 62, "agility": 50, "speed": 44, "max_health": 96, "armor_rating": 28,
     "attack": {"name": "戰錘", "damage": 18, "skill": 62},
+    "skills": {"blunt": 70, "blade": 60, "heavy_armor": 65, "light_armor": 46},
     "spells": ["rally"],
     "blurb": "身經百戰的隊長,唯有立足一方的領袖請得動 —— 帶兵嚴整,能在亂軍中穩住陣腳。"
   },
@@ -78,6 +84,7 @@
     "name": "法卡斯", "cost": 0, "circle": true,
     "strength": 64, "agility": 46, "speed": 42, "max_health": 104, "armor_rating": 30,
     "attack": {"name": "雙手巨劍", "damage": 18, "skill": 60},
+    "skills": {"blade": 70, "blunt": 66, "heavy_armor": 72, "light_armor": 46},
     "blurb": "戰友團圈內的巨漢,沉默寡言卻是最可靠的盾袍兄弟 —— 巨劍開山、重甲擋災,與你並肩便是一堵移動的城牆。",
     "dialogue": [
       "「跟緊我。我擋前頭,你放手去打。」",
@@ -93,6 +100,7 @@
     "name": "艾拉·女獵手", "cost": 0, "circle": true,
     "strength": 50, "agility": 60, "speed": 56, "max_health": 78, "armor_rating": 18,
     "attack": {"name": "獵手長弓", "damage": 17, "skill": 62},
+    "skills": {"marksman": 74, "blade": 56, "light_armor": 66},
     "blurb": "戰友團圈內的女獵手,獸血在她體內奔流 —— 箭無虛發、行如疾風,是追獵的化身與最忠誠的盾袍。",
     "dialogue": [
       "「跟上,別拖慢狩獵。我的箭只認獵物。」",
@@ -108,6 +116,7 @@
     "name": "德雷拉斯", "cost": 0, "recruit_quest": "recruit_drelas",
     "strength": 38, "agility": 48, "speed": 50, "max_health": 54, "armor_rating": 8,
     "attack": {"name": "冰焰術", "damage": 16, "skill": 58, "element": "frost"},
+    "skills": {"blade": 45, "destruction": 62, "light_armor": 52},
     "spells": ["regen_aura", "heal_other"],
     "blurb": "晨風的丹莫秘法者德雷拉斯,自我放逐於灰燼荒原 —— 法術精深卻體質孱弱,尋找失落的秘法手稿以證清白。",
     "dialogue": [
@@ -124,6 +133,7 @@
     "name": "賈拉卡爾", "cost": 0, "recruit_quest": "recruit_jarakal",
     "strength": 46, "agility": 60, "speed": 58, "max_health": 62, "armor_rating": 12,
     "attack": {"name": "雙短刀", "damage": 16, "skill": 60},
+    "skills": {"blade": 66, "marksman": 56, "light_armor": 62},
     "blurb": "艾爾斯維爾的虎人浪客賈拉卡爾,昔日斯庫瑪走私的快手 —— 身手矯捷、長於議價,洗心革面後願隨可信之人闖蕩。",
     "dialogue": [
       "「賈拉卡爾的爪子很快,眼睛更尖。你出得起,這雙手就是你的。」",
@@ -139,6 +149,7 @@
     "name": "拉希德", "cost": 0, "recruit_quest": "recruit_rashid",
     "strength": 60, "agility": 50, "speed": 46, "max_health": 98, "armor_rating": 28,
     "attack": {"name": "彎刀", "damage": 18, "skill": 62},
+    "skills": {"blade": 74, "blunt": 60, "heavy_armor": 66, "light_armor": 50},
     "blurb": "漢默法爾的紅衛劍歌者拉希德,蒙冤被逐的劍術大師 —— 一柄彎刀承載家族榮辱,願為還清白者效死。",
     "dialogue": [
       "「劍歌者拉希德,謝你還我一線清白。這柄彎刀,暫聽你號令。」",
@@ -154,6 +165,7 @@
     "name": "血僕妮拉", "cost": 0, "recruit_quest": "recruit_blood_thrall",
     "strength": 52, "agility": 56, "speed": 54, "max_health": 80, "armor_rating": 16,
     "attack": {"name": "吸血爪擊", "damage": 16, "skill": 60},
+    "skills": {"hand_to_hand": 66, "blade": 60, "light_armor": 62},
     "blurb": "血族族長賜下的年輕血僕妮拉 —— 動作快得像一道暗影,獠牙永遠飢渴。她視你為同類兄姊,以爪牙與不死之軀替你斷後。",
     "dialogue": [
       "「族長說你是自己人。那我這條不死的命,就先記在你名下了。」",
@@ -166,6 +178,7 @@
     "name": "同窩戰士庫爾", "cost": 0, "recruit_quest": "recruit_pack_warrior",
     "strength": 60, "agility": 50, "speed": 56, "max_health": 92, "armor_rating": 14,
     "attack": {"name": "獸爪撕咬", "damage": 18, "skill": 60},
+    "skills": {"hand_to_hand": 70, "blade": 56, "heavy_armor": 52, "light_armor": 56},
     "blurb": "月嚎獵群裡認你為同窩的壯狼庫爾 —— 半人半獸、力大如熊,血月之夜嚎聲最烈。他以利爪與厚毛替你扛下最兇的敵人。",
     "dialogue": [
       "「頭狼認了你,獵群便認了你。庫爾的爪子,從此為你而張。」",

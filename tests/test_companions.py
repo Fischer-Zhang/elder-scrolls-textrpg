@@ -239,6 +239,19 @@ def test_circle_sibling_dismiss_retains_persistent_hp():
     assert c.companion_bond.get("sellsword") == 18    # 羈絆保留(玩家要求:再雇仍記得並肩交情)
 
 
+def test_companion_skills_within_cap():
+    """同伴深化(Tier 2):所有 skills 值皆整數且 ≤ COMPANION_WEAPON_SKILL_CAP(守單同伴孤立牆紅線)。"""
+    from tesrpg.systems import party
+    gd = get_gamedata()
+    for cid, t in gd.companions.items():
+        for sid, val in t.get("skills", {}).items():
+            assert isinstance(val, int) and 0 <= val <= party.COMPANION_WEAPON_SKILL_CAP, \
+                f"{cid}.{sid}={val} 超出 [0,{party.COMPANION_WEAPON_SKILL_CAP}]"
+        for b in t.get("builds", []):
+            assert b in party.TACTICS, f"{cid} builds 含未知傾向 {b}"
+        assert int(t.get("build_gate", 1)) >= 1
+
+
 def run():
     for name, fn in sorted(globals().items()):
         if name.startswith("test_") and callable(fn):

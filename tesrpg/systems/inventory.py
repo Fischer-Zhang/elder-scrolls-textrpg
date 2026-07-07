@@ -32,7 +32,15 @@ def count_item(char: Character, item_id: str) -> int:
     return sum(s["qty"] for s in char.inventory if s["id"] == item_id)
 
 
-def remove_item(char: Character, item_id: str, qty: int = 1) -> bool:
+def _worn_by_companion(char: Character, item_id: str) -> bool:
+    """該 id 是否仍穿戴在某同伴身上(companion_gear 各槽)。無 companion_gear → False(舊檔/刺客 byte-identical)。"""
+    return any(item_id in slots.values()
+               for slots in getattr(char, "companion_gear", {}).values() if isinstance(slots, dict))
+
+
+def remove_item(char: Character, item_id: str, qty: int = 1, keep_temper: bool = False) -> bool:
+    """keep_temper=True(裝到同伴的移轉):跳過最後份清淬鍊(物件搬到同伴槽非銷毀 → 保留投資)。
+    預設 False → 既有行為逐位元組不變(且同伴仍穿戴一份時亦不誤清 → companion_gear 空即 no-op)。"""
     for stack in char.inventory:
         if stack["id"] == item_id:
             if stack["qty"] < qty:
@@ -48,9 +56,11 @@ def remove_item(char: Character, item_id: str, qty: int = 1) -> bool:
                 for slot, wid in list(char.equipped.items()):
                     if wid == item_id:
                         del char.equipped[slot]
-                # 最後一件離開背包 → 清掉該 id 的淬鍊紀錄(賣/丟即失去淬鍊投資,杜絕「賣後重買免費續淬」)
-                char.weapon_temper.pop(item_id, None)
-                char.armor_temper.pop(item_id, None)
+                # 最後一件離開背包 → 清該 id 淬鍊紀錄(賣/丟即失去投資);但移轉到同伴(keep_temper)
+                # 或同伴仍穿戴一份時保留(否則毀掉同伴穿戴份的淬鍊)。companion_gear 空 → 條件退化 = byte-identical。
+                if not keep_temper and not _worn_by_companion(char, item_id):
+                    char.weapon_temper.pop(item_id, None)
+                    char.armor_temper.pop(item_id, None)
             # 雙持一致性:同型雙持丟到剩 1 把(stack 未清空)→ 副手失效,清掉殘留
             if char.offhand == item_id and count_item(char, item_id) < (2 if char.weapon == item_id else 1):
                 char.offhand = ""

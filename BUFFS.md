@@ -211,6 +211,8 @@
 | 召喚角色擴展(R106 Phase A)| 召喚物行為 | healer 施 heal_other(power 0.8)·terror on_hit fear/weaken·束縛兵刃 archetype | 支援召喚 `summoned_healer` 走 `magic.summon_support_act`(讀 bestiary spells·pool 含玩家·門檻 0.55/冷卻 2)治療全隊;控場召喚 `summoned_terror` on_hit(fear/weaken·apply_control solo/去重);**束縛兵刃 archetype 差異化**(bound active_effect `archetype`:釘錘 stagger·巨劍 mag20·斧 pen 對元素略過·甲=shield60);皆 innate·不吃玩家偷襲 |
 | 凝神 restore_fatigue | 資源(瞬時) | +40體力,不乘power |
 | 奧術連鎖 cascade / 戰地搶救 triage / 法力回擊 | 見③ | — | 戰鬥邊界清空 |
+| **同伴戰力(Tier 2 類玩家)** | 生成時導出 | 傷=`attack_damage(裝備傷+flat淬鍊, 同伴武器技能≤80, 同伴力量)`·甲=`worn_armor_base(裝備甲, 同伴護甲技能)`+flat淬鍊 | 🔴走**共用玩家公式**·生成時烘焙進 Creature(非新戰鬥軸);無裝→模板數(byte-identical)·武器傷不設天花板(技能≤80 為紅線閘·守單同伴孤立牆)·**附魔完全比照玩家**(`_gear_weapon_item` 派發·charges 共用玩家池);裝上裝備移出背包(sink) |
+| **同伴戰術傾向**(功能性·非數值)| 目標/仇恨 | bulwark→自施 taunt(吸火)·skirmisher→集火最低血敵·vanguard→隨機 | 羈絆階解鎖·永久(`companion_build`)·**零新戰鬥數值**(複用既有 taunt/目標選擇)·召喚物不適用 |
 
 ### 永久/隨階級(公會福利,取最強 _best_perk)
 | 福利 | kind | 數值 |

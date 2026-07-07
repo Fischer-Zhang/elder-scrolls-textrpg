@@ -1582,6 +1582,37 @@ def party_panel(char: Character, gamedata: GameData) -> None:
     console.print(_panel(body, title="隊伍"))
 
 
+def companion_manage_panel(char: Character, gamedata: GameData, cid: str) -> None:
+    """同伴管理面板:由「屬性+技能+裝備」導出的戰力 + 穿戴裝備 + 戰術傾向 + 羈絆(同伴深化 Tier 2)。"""
+    from tesrpg.systems import party
+    t = gamedata.companions.get(cid, {})
+    nm = t.get("name", cid)
+    dmg, wskill, wid = party.derived_weapon(char, gamedata, cid)
+    armor, _ = party.derived_armor(char, gamedata, cid, t.get("armor_rating", 0))
+    cur, mx = party.current_hp(char, gamedata, cid), party.max_hp(char, gamedata, cid)
+    wname = gamedata.item(wid)["name"] if wid else f"{t.get('attack', {}).get('name', '自備武器')}(自備)"
+    aid = char.companion_gear.get(cid, {}).get("armor")
+    aname = f"{gamedata.item(aid)['name']}" if aid else "自備護甲"
+    tactic = party.build_label(char, cid) or ("可選定" if party.build_offerable(char, gamedata, cid) else "未定")
+    data = [("生命", f"{cur}/{mx}"),
+            ("武器", f"{wname} · 傷 {dmg} · 技 {wskill}"),
+            ("護甲", f"{aname} · 護甲值 {armor}"),
+            ("戰術傾向", tactic),
+            ("羈絆", party.bond_name(char, cid))]
+    note = "裝備武器/護甲即依同伴屬性/技能導出戰力(裝上的裝備移出背包·可卸下收回);達羈絆門檻可定下戰術傾向。"
+    if _web is not None:
+        rows = [_kv(k, v) for k, v in data]
+        rows.append(_ln(note, "faint"))
+        _emit_panel(f"同伴 · {nm}", rows)
+        return
+    body = Text()
+    for k, v in data:
+        body.append(f"{k}：", style=GOLD)
+        body.append(f"{v}\n", style=PARCH)
+    body.append(note, style=FAINT)
+    console.print(_panel(body, title=f"同伴 · {nm}"))
+
+
 def companion_talk(name: str, line: str, bond: str) -> None:
     """同伴對話:名 + 依羈絆階的台詞(就地交談,非分支對話樹)。"""
     if _web is not None:

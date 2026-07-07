@@ -8,7 +8,7 @@ build 構築 + per-build policy,額外鏡像 main.run_battle 的**同伴階段**
 回合末意志回魔 + tick_effects(全體)+ clamp。保真度邊界同 sim_builds(無走位/距離)。
 """
 from tesrpg.gamedata import get_gamedata
-from tesrpg.systems import combat, magic, necromancy, stats
+from tesrpg.systems import combat, magic, necromancy, party, stats
 from tesrpg.rng import RNG
 import sim_builds as sb
 
@@ -272,6 +272,59 @@ def necromancer_rates(boss_id, n=200, maker=None):
     return (sum(r == "win" for r in res) / n, sum(r == "timeout" for r in res) / n)
 
 
+# ── 同伴深化(Tier 2):🔴 單一同伴孤立軸(排除玩家)vs 滿血達貢 ────────────────────
+# 使用者拍板紅線:一隻滿裝+附魔同伴**單獨**(玩家零輸出零承傷)須打不穿終王(~0%)。
+# sim:排除玩家,只讓同伴↔達貢對打。同伴死太快(~4-7 回合)→ 磨不動 720 HP。
+def _commander_shell():
+    """指揮官 shell Character:只提供 companion_gear/temper/enchant_charges 給 spawn_companion(本身不參戰)。"""
+    from tesrpg.creation import build_character
+    return build_character(gd, name="cmdr", sex="male", race="nord", birthsign="warrior", class_id="warrior")
+
+
+def fight_solo_companion(cid, seed, weapon=None, armor=None, temper=0, max_rounds=80):
+    """單一同伴 1v1 vs 滿血達貢·**排除玩家**(玩家零輸出零承傷)。回 (結果, 存活回合)。"""
+    from tesrpg.systems import inventory
+    c = _commander_shell()
+    c.companions = [cid]
+    for iid in (weapon, armor):
+        if iid:
+            inventory.add_item(c, iid, 1)
+            (c.weapon_temper if gd.item(iid).get("kind") == "weapon" else c.armor_temper)[iid] = temper
+            party.equip_gear(c, gd, cid, iid)
+    boss = combat.spawn_creature(gd, "mehrunes_dagon", RNG(seed * 9 + 1))
+    comp = combat.spawn_companion(gd, cid, RNG(seed * 7 + 1), char=c)
+    rng = RNG(seed)
+    for r in range(max_rounds):
+        if not combat.is_alive(boss):
+            return ("win", r)
+        if not combat.is_alive(comp):
+            return ("dead", r)
+        combat.resolve_attack(comp, boss, gd, rng, attack=combat.choose_attack(comp, rng, boss))   # 同伴攻(玩家零輸出)
+        if not combat.is_alive(boss):
+            return ("win", r)
+        combat.resolve_attack(boss, comp, gd, rng, attack=combat.choose_attack(boss, rng, comp))    # boss 全打同伴
+        magic.tick_effects(comp, gd)
+        if combat.is_alive(boss):
+            magic.tick_effects(boss, gd)
+    return ("timeout", max_rounds)
+
+
+def solo_companion_rates(cid, n=40, weapon=None, armor=None, temper=0, inject_ench=None):
+    """單同伴孤立 vs 達貢:n 場 →(win率, 平均存活回合)。inject_ench=暫時注入 weapon 的附魔 dict(sim-only·還原)。"""
+    restore = None
+    if weapon and inject_ench is not None:
+        it = gd.item(weapon)
+        restore = (weapon, it.get("enchant"))
+        it["enchant"] = inject_ench
+    try:
+        res = [fight_solo_companion(cid, s, weapon=weapon, armor=armor, temper=temper) for s in range(n)]
+    finally:
+        if restore:
+            wid, old = restore
+            gd.item(wid)["enchant"] = old if old is not None else gd.item(wid).pop("enchant", None)
+    return sum(1 for r, _ in res if r == "win") / n, sum(rd for _, rd in res) / n
+
+
 if __name__ == "__main__":
     solo = [bid for bid, b in gd.bestiary.items() if b.get("solo")]
     solo.sort(key=lambda b: gd.bestiary[b].get("max_health", 0))
@@ -355,3 +408,22 @@ if __name__ == "__main__":
         flag = "  ⚠STALE" if t > 0.05 else ""
         print(f"  {bid:22} (HP {b.get('max_health'):3}·{b.get('attack', {}).get('element', 'phys'):5}) "
               f"win {w:5.0%}  逾時 {t:4.0%}{flag}")
+
+    # ── 同伴深化(Tier 2):🔴 單一同伴孤立軸 vs 滿血達貢(win / 平均存活回合·n=40)───────────
+    print("\n== 同伴深化:🔴 單一同伴孤立(排除玩家)vs 達貢 720(win / 存活回合·n=40)==")
+    print("🔴 紅線:一隻滿裝+附魔同伴**單獨**打不穿終王(win≈0%·>5% 印 WALL-BREAK)。技能≤80·武器傷不設天花板\n")
+    _VAMP = {"kind": "weapon_status", "status": "vampiric", "magnitude": 50}
+    cases = [
+        ("farkas 無裝(對照)", "farkas", None, None, 0, None),
+        ("farkas + daedric_sword+5", "farkas", "daedric_sword", "daedric_cuirass", 5, None),
+        ("farkas + daedric_sword+5 +吸血", "farkas", "daedric_sword", "daedric_cuirass", 5, _VAMP),
+        ("farkas + volendrung+5 (2H最強)", "farkas", "volendrung", "daedric_cuirass", 5, None),
+        ("farkas + volendrung+5 +吸血", "farkas", "volendrung", "daedric_cuirass", 5, _VAMP),
+        ("rashid + daedric_sword+5 +吸血", "rashid", "daedric_sword", "daedric_cuirass", 5, _VAMP),
+    ]
+    for label, cid, wpn, arm, tmp, ench in cases:
+        if cid not in gd.companions or (wpn and gd.item_or_none(wpn) is None):
+            continue
+        w, avg = solo_companion_rates(cid, weapon=wpn, armor=arm, temper=tmp, inject_ench=ench)
+        flag = "  🔴WALL-BREAK" if w > 0.05 else ""
+        print(f"  {label:34} win {w:5.0%}  存活 {avg:4.1f} 回合{flag}")
