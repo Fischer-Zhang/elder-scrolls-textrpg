@@ -1410,6 +1410,22 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 
 ---
 
+### R130 · 同伴收尾:血僕/同窩戰士專屬支線+忠誠頂點(補齊平齊)+ fortify_skill 護甲平價 [re-sim] [content]
+
+**承 R129**(評估 workflow 3 agent 評三個 backlog:同伴弧=do-now·護甲平價=partial·formations=drop〔與 R129 傾向重複+無走位模型不合〕)。使用者拍板做**同伴收尾**。
+
+**Part A · blood_thrall/pack_warrior 專屬支線+頂點(純資料)**:R129 後這兩隻詛咒招募同伴(companions.json)仍缺 `personal_quest`/`capstone`(vs 9 具名同伴皆有)→ `arc_offerable` 恆 False、`_talk_companion` 從不給「傾聽心事」、`active_capstone` 恆 None。補:companions.json 各加 `personal_quest`/`personal_quest_gate:2`/`capstone`(**血僕 ally_regen「血源滋養」·同窩戰士 ally_shield「獸軀護壁」**·kind 白名單已容);quests.json 加 2 條 `source:"companion"` 弧(**R52 血族↔獵群宿仇對稱**:血僕 kill werewolf×3→reach bloodmoor_crypt·同窩戰士 kill vampire_fledgling×3→reach moonhowl_den·reward `bond:{cid:15}`+gold+infamy/fame·turn_in auto)。**引擎全現成零改**(arc_offerable/arc_done/active_capstone/_apply_companion_capstone_auras/reward.bond 皆既有)·**零新存檔欄**(推導自 completed_quests/bond)。kill 目標 werewolf/vampire_fledgling 皆 weight>0 通用池可刷。
+
+**Part B · fortify_skill 護甲平價(小邏輯)**:`party.companion_skill(gd,cid,skill_id,char=None)` 加 char 參數 → 提供時掃同伴穿戴裝備的 `fortify_skill` 附魔加向該技能·**SUM 一律夾 ≤COMPANION_WEAPON_SKILL_CAP=80**(fortify 只推向 80 永不過→守單同伴孤立牆)。3 callsite(derived_weapon/derived_armor/preview_gear_stat)傳 char。**char=None(顯示後備)或無 fortify 裝 → 逐位元組同 R129**。fortify_attribute(僅 1 德行鎖聖物 +6 力)/thorns(碰 combat 防守端·對元素 boss 無用)**評估後 drop/defer**。
+
+**🔴 紅線發現(擴 sim 守衛揪出·[[byte-identical-vacuous-for-new-player-layer]] 教訓)**:R129 的 `sim_party.fight_solo_companion` **未套用忠誠頂點** → 「單同伴牆」對頂點層是**空話**。本輪擴守衛套頂點後揭露:**`ally_regen` 頂點(+6血/回)讓滿裝+arc 完成的單一同伴熬穿達貢(100%·~22 回)**——且**既有 drelas/hedge_mage(亦 ally_regen)早在 R129 後即如此**(gear slots × regen 頂點潛在破口·非本輪新增·只是本輪才量到)。`ally_empower`/`ally_shield` 安全(0%)。**使用者拍板:接受=極致投入回報**(arc 完成+頂裝的 regen 同伴能單刷達貢·且真實 play 玩家恆在場·同伴從不真正單挑;單同伴牆是「排除玩家」的 sim 抽象測原始戰力軸)。→ blood_thrall 保留 ally_regen;**單同伴牆紅線精修為:核心牆(無頂點/非 regen 頂點/fortify)~0%·arc 完成 ally_regen 頂點刻意放行**(sim 印「接受例外」不 flag WALL-BREAK)。
+
+**驗證**:核心牆 sim(farkas/pack_warrior/rashid 滿裝+吸血+盾/號令頂點·fortify-blunt 護甲夾80)全 **0%**;regen-arc 例外 100%(接受)。**sim_assassin BYTE-IDENTICAL**(未碰 combat/formulas·companion_skill 加 char=None 預設對既有呼叫恆等·刺客不生成同伴)。`run_all` **117**(test_companion_arcs +弧完成頂點·test_companion_gear +fortify 夾限)。
+
+**🔴 鐵律**:加同伴弧純改 companions.json(personal_quest/gate/capstone·kind∈白名單)+ quests.json(`source:"companion"`·kill 目標須 weight>0·reach 目標有效·reward.bond)·零新存檔欄;**capstone kind 須紅線安全**——`ally_regen` 頂點會讓滿裝 arc 同伴單刷達貢(使用者接受=極致回報·非破口)·新增 regen 頂點前知會;fortify_skill 平價走 `companion_skill(...,char)` 且 **SUM 夾 ≤80**(守牆·勿放);動同伴 sim 守衛須套頂點(否則牆空話)。**前瞻**:護甲 fortify_attribute/thorns 平價(低值)·formations 已 drop。
+
+---
+
 ### R129 · 同伴深化:同伴變「類玩家角色」(屬性+技能+裝備驅動戰力)+ 裝備槽戰利品 sink + 戰術傾向 [re-sim byte-identical] [save]
 
 **評估**(冷系統審計 3 路 Explore fan-out):同伴/隊伍是招牌系統卻只有 stub 地板——同伴是**凍結 JSON 數值體**(`spawn_companion` 逐欄讀模板),隨玩家成長被超車、無裝備槽、無角色深度;連帶製作冗餘(打造品==撿拾品)。使用者多輪拍板收斂:**把同伴做成類玩家角色**——戰力由**屬性+技能+裝備**驅動(與玩家同軸);裝備槽同時消化多餘/撿來裝備(戰利品 sink)。

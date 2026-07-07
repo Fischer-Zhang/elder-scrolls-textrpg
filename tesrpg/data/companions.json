@@ -172,7 +172,10 @@
       "「……並肩獵了幾回,我漸漸明白族長為何看重你。你不只是強,你還護著我。」",
       "「血是濃的,可你我之間的,比血更濃。往哪去,妮拉的獠牙替你開路。」",
       "「生死早與我無關 —— 但你的生死,我認。永遠跟著你。」"
-    ]
+    ],
+    "personal_quest": "arc_blood_thrall", "personal_quest_gate": 2,
+    "capstone": {"kind": "ally_regen", "magnitude": 6, "label": "血源滋養",
+                 "desc": "以不死血脈的生機反哺戰列 —— 全隊同伴每回合回復生命(只作用盟友)。"}
   },
   "pack_warrior": {
     "name": "同窩戰士庫爾", "cost": 0, "recruit_quest": "recruit_pack_warrior",
@@ -185,6 +188,9 @@
       "「……你獵得乾淨俐落,像條真正的狼。這趟,值得同窩。」",
       "「血月在上 —— 你我同窩,生死同狩。哪裡有敵,庫爾先撲上去。」",
       "「人言獸性難馴,可你馴的不是我的獸性,是我的心。同狩至死。」"
-    ]
+    ],
+    "personal_quest": "arc_pack_warrior", "personal_quest_gate": 2,
+    "capstone": {"kind": "ally_shield", "magnitude": 10, "label": "獸軀護壁",
+                 "desc": "以厚毛獸軀為同袍擋災 —— 全隊同伴護甲提升(只作用盟友)。"}
   }
 }

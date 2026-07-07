@@ -281,8 +281,13 @@ def _commander_shell():
     return build_character(gd, name="cmdr", sex="male", race="nord", birthsign="warrior", class_id="warrior")
 
 
-def fight_solo_companion(cid, seed, weapon=None, armor=None, temper=0, max_rounds=80):
-    """單一同伴 1v1 vs 滿血達貢·**排除玩家**(玩家零輸出零承傷)。回 (結果, 存活回合)。"""
+_CAP_AURA = {"ally_empower": "empower", "ally_shield": "shield", "ally_regen": "regen"}
+
+
+def fight_solo_companion(cid, seed, weapon=None, armor=None, temper=0, capstone=False, max_rounds=80):
+    """單一同伴 1v1 vs 滿血達貢·**排除玩家**(玩家零輸出零承傷)。回 (結果, 存活回合)。
+    capstone=True → 假定弧完成,每回合套用該同伴忠誠頂點光環(鏡像 main._apply_companion_capstone_auras·
+    單同伴=自套)→ **honestly 驗證頂點加成不破牆**(否則守衛不觸頂點=byte-identical 空話)。"""
     from tesrpg.systems import inventory
     c = _commander_shell()
     c.companions = [cid]
@@ -291,6 +296,10 @@ def fight_solo_companion(cid, seed, weapon=None, armor=None, temper=0, max_round
             inventory.add_item(c, iid, 1)
             (c.weapon_temper if gd.item(iid).get("kind") == "weapon" else c.armor_temper)[iid] = temper
             party.equip_gear(c, gd, cid, iid)
+    if capstone:
+        pq = gd.companions[cid].get("personal_quest")
+        if pq:
+            c.completed_quests.append(pq)               # → arc_done → active_capstone 生效
     boss = combat.spawn_creature(gd, "mehrunes_dagon", RNG(seed * 9 + 1))
     comp = combat.spawn_companion(gd, cid, RNG(seed * 7 + 1), char=c)
     rng = RNG(seed)
@@ -299,6 +308,12 @@ def fight_solo_companion(cid, seed, weapon=None, armor=None, temper=0, max_round
             return ("win", r)
         if not combat.is_alive(comp):
             return ("dead", r)
+        if capstone:                                    # 回合頂套忠誠頂點光環(單同伴自套·turns1 刷新)
+            cap = party.active_capstone(c, gd, cid)
+            k = _CAP_AURA.get(cap.get("kind")) if cap else None
+            if k:
+                comp.active_effects[:] = [e for e in comp.active_effects if e.get("source") != "cap"]
+                comp.active_effects.append({"kind": k, "magnitude": cap.get("magnitude", 0), "turns": 1, "source": "cap"})
         combat.resolve_attack(comp, boss, gd, rng, attack=combat.choose_attack(comp, rng, boss))   # 同伴攻(玩家零輸出)
         if not combat.is_alive(boss):
             return ("win", r)
@@ -309,7 +324,7 @@ def fight_solo_companion(cid, seed, weapon=None, armor=None, temper=0, max_round
     return ("timeout", max_rounds)
 
 
-def solo_companion_rates(cid, n=40, weapon=None, armor=None, temper=0, inject_ench=None):
+def solo_companion_rates(cid, n=40, weapon=None, armor=None, temper=0, inject_ench=None, capstone=False):
     """單同伴孤立 vs 達貢:n 場 →(win率, 平均存活回合)。inject_ench=暫時注入 weapon 的附魔 dict(sim-only·還原)。"""
     restore = None
     if weapon and inject_ench is not None:
@@ -317,7 +332,8 @@ def solo_companion_rates(cid, n=40, weapon=None, armor=None, temper=0, inject_en
         restore = (weapon, it.get("enchant"))
         it["enchant"] = inject_ench
     try:
-        res = [fight_solo_companion(cid, s, weapon=weapon, armor=armor, temper=temper) for s in range(n)]
+        res = [fight_solo_companion(cid, s, weapon=weapon, armor=armor, temper=temper, capstone=capstone)
+               for s in range(n)]
     finally:
         if restore:
             wid, old = restore
@@ -411,19 +427,37 @@ if __name__ == "__main__":
 
     # ── 同伴深化(Tier 2):🔴 單一同伴孤立軸 vs 滿血達貢(win / 平均存活回合·n=40)───────────
     print("\n== 同伴深化:🔴 單一同伴孤立(排除玩家)vs 達貢 720(win / 存活回合·n=40)==")
-    print("🔴 紅線:一隻滿裝+附魔同伴**單獨**打不穿終王(win≈0%·>5% 印 WALL-BREAK)。技能≤80·武器傷不設天花板\n")
+    print("🔴 核心紅線:一隻滿裝+附魔同伴**單獨**打不穿終王(win≈0%·>5% 印 WALL-BREAK)。技能≤80·武器傷不設天花板")
+    print("  (例外:arc 完成的 ally_regen 忠誠頂點同伴刻意放行=極致投入回報·使用者拍板·見下)\n")
     _VAMP = {"kind": "weapon_status", "status": "vampiric", "magnitude": 50}
+    # 核心牆(無頂點 / 非 regen 頂點 / fortify)—— 全須 ~0%
     cases = [
-        ("farkas 無裝(對照)", "farkas", None, None, 0, None),
-        ("farkas + daedric_sword+5", "farkas", "daedric_sword", "daedric_cuirass", 5, None),
-        ("farkas + daedric_sword+5 +吸血", "farkas", "daedric_sword", "daedric_cuirass", 5, _VAMP),
-        ("farkas + volendrung+5 (2H最強)", "farkas", "volendrung", "daedric_cuirass", 5, None),
-        ("farkas + volendrung+5 +吸血", "farkas", "volendrung", "daedric_cuirass", 5, _VAMP),
-        ("rashid + daedric_sword+5 +吸血", "rashid", "daedric_sword", "daedric_cuirass", 5, _VAMP),
+        ("farkas 無裝(對照)", "farkas", None, None, 0, None, False),
+        ("farkas + volendrung+5 +吸血", "farkas", "volendrung", "daedric_cuirass", 5, _VAMP, False),
+        ("farkas + volendrung+5 +吸血 +盾頂點", "farkas", "volendrung", "daedric_cuirass", 5, _VAMP, True),
+        ("pack_warrior + volendrung+5 +吸血 +盾頂點", "pack_warrior", "volendrung", "daedric_cuirass", 5, _VAMP, True),
+        ("rashid + volendrung+5 +吸血 +號令頂點", "rashid", "volendrung", "daedric_cuirass", 5, _VAMP, True),
     ]
-    for label, cid, wpn, arm, tmp, ench in cases:
+    for label, cid, wpn, arm, tmp, ench, cap in cases:
         if cid not in gd.companions or (wpn and gd.item_or_none(wpn) is None):
             continue
-        w, avg = solo_companion_rates(cid, weapon=wpn, armor=arm, temper=tmp, inject_ench=ench)
+        w, avg = solo_companion_rates(cid, weapon=wpn, armor=arm, temper=tmp, inject_ench=ench, capstone=cap)
         flag = "  🔴WALL-BREAK" if w > 0.05 else ""
-        print(f"  {label:34} win {w:5.0%}  存活 {avg:4.1f} 回合{flag}")
+        print(f"  {label:40} win {w:5.0%}  存活 {avg:4.1f} 回合{flag}")
+    # 可接受例外:ally_regen 頂點 + arc 完成 → 極致投入可單刷(使用者拍板·非 break)
+    print("  -- 可接受例外(極致投入=回報·使用者拍板)--")
+    for cid in ("blood_thrall", "drelas"):
+        if cid not in gd.companions:
+            continue
+        w, avg = solo_companion_rates(cid, weapon="volendrung", armor="daedric_cuirass", temper=5,
+                                      inject_ench=_VAMP, capstone=True)
+        print(f"  {cid + ' + 滿裝+吸血 +血源(regen)頂點':40} win {w:5.0%}  存活 {avg:4.1f} 回合  (接受)")
+    # fortify_skill 平價:武器技能 fortify 一律夾 ≤80 → 進攻軸恆有界(牆守)
+    fort = {"kind": "fortify_skill", "skill": "blunt", "magnitude": 20}
+    it = gd.item("daedric_cuirass"); _old = it.get("enchant"); it["enchant"] = fort
+    try:
+        w, avg = solo_companion_rates("farkas", weapon="volendrung", armor="daedric_cuirass", temper=5, inject_ench=None)
+    finally:
+        it["enchant"] = _old if _old is not None else it.pop("enchant", None)
+    flag = "  🔴WALL-BREAK" if w > 0.05 else ""
+    print(f"  {'farkas + volendrung+5 + fortify-blunt+20 護甲(技能夾80)':40} win {w:5.0%}  存活 {avg:4.1f} 回合{flag}")

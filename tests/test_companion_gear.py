@@ -129,6 +129,29 @@ def test_weapon_enchant_parity_fires():
             it["enchant"] = old
 
 
+def test_fortify_skill_parity_clamped():
+    """護甲 fortify_skill 附魔平價:加向技能 CAP·但 SUM 一律夾 ≤80(守單同伴孤立牆)。char=None → 無平價。"""
+    gd, c = _char(("rashid",))
+    aid = "daedric_cuirass"
+    it = gd.item(aid)
+    old = it.get("enchant")
+    it["enchant"] = {"kind": "fortify_skill", "skill": "blade", "magnitude": 20}
+    try:
+        # 無 char → 純模板(rashid blade 74)
+        assert party.companion_skill(gd, "rashid", "blade") == 74
+        inventory.add_item(c, aid, 1)
+        party.equip_gear(c, gd, "rashid", aid)
+        # char + fortify blade +20 → 74+20=94 夾 → 80(守牆)
+        assert party.companion_skill(gd, "rashid", "blade", c) == party.COMPANION_WEAPON_SKILL_CAP
+        # 不匹配的技能不受影響
+        assert party.companion_skill(gd, "rashid", "marksman", c) == party.companion_skill(gd, "rashid", "marksman")
+    finally:
+        if old is None:
+            it.pop("enchant", None)
+        else:
+            it["enchant"] = old
+
+
 def test_single_companion_wall_holds():
     """🔴 紅線:單一同伴(排除玩家)滿裝+吸血 vs 達貢 = 0%(快查 n=12)。"""
     import sim_party as sp

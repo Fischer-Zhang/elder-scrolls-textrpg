@@ -2248,6 +2248,70 @@
     "turn_in": "auto",
     "text": "「與獵群同狩一場,斯卡爾便許你一名同窩戰士 —— 血月之下,同窩共死。」"
   },
+  "arc_blood_thrall": {
+    "name": "妮拉的血誓",
+    "faction": null,
+    "rank": null,
+    "source": "companion",
+    "stages": [
+      {
+        "objective": {
+          "type": "kill",
+          "creature": "werewolf",
+          "count": 3
+        },
+        "text": "月嚎獵群又獵殺了血族的同胞 —— 妮拉的獠牙為宿仇而顫。陪她獵下三頭狼人,替血族血債血償。"
+      },
+      {
+        "objective": {
+          "type": "reach",
+          "location": "bloodmoor_crypt"
+        },
+        "text": "與妮拉回到血沼地窖,把狼群的血獻於族長座前。"
+      }
+    ],
+    "reward": {
+      "gold": 220,
+      "infamy": 4,
+      "bond": {
+        "blood_thrall": 15
+      }
+    },
+    "turn_in": "auto",
+    "text": "妮拉罕見地垂下獠牙:「族長收留了我,你護著我 —— 可月嚎的狼群還在獵殺我的血親。陪我了斷這筆血債,我這條不死的命,便徹底是你的了。」"
+  },
+  "arc_pack_warrior": {
+    "name": "庫爾的同窩債",
+    "faction": null,
+    "rank": null,
+    "source": "companion",
+    "stages": [
+      {
+        "objective": {
+          "type": "kill",
+          "creature": "vampire_fledgling",
+          "count": 3
+        },
+        "text": "血族的雛血又在夜裡叼走了獵群的幼崽 —— 庫爾的獸血為之沸騰。陪他獵下三名吸血雛血,替同窩討回公道。"
+      },
+      {
+        "objective": {
+          "type": "reach",
+          "location": "moonhowl_den"
+        },
+        "text": "與庫爾帶著血族的氣味回到月嚎獸穴,向頭狼與獵群覆命。"
+      }
+    ],
+    "reward": {
+      "gold": 220,
+      "fame": 12,
+      "bond": {
+        "pack_warrior": 15
+      }
+    },
+    "turn_in": "auto",
+    "text": "庫爾低吼著撕開衣領,露出舊疤:「血族的雛血叼走了我同窩的幼崽。頭狼認了你,你便是獵群的一員 —— 陪我獵回這筆同窩債,血月之下,同窩共死。」"
+  },
   "recruit_drelas": {
     "name": "灰燼裡的丹莫",
     "faction": null,

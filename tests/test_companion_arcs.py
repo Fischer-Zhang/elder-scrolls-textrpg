@@ -120,6 +120,23 @@ def test_personal_quest_completion_jumps_bond_and_unlocks_capstone():
     assert c.companion_bond["rashid"] == party.BOND_MAX   # 夾 BOND_MAX
 
 
+def test_curse_companion_arcs_complete_and_unlock_capstone():
+    """R129 收尾:血僕妮拉/同窩戰士庫爾補齊專屬支線 + 忠誠頂點(與 9 具名同伴平齊)。"""
+    gd, c, st = _setup(cids=["blood_thrall", "pack_warrior"])
+    for cid, kind in (("blood_thrall", "ally_regen"), ("pack_warrior", "ally_shield")):
+        t = gd.companions[cid]
+        qid = t["personal_quest"]
+        assert gd.quests[qid]["source"] == "companion" and party.active_capstone(c, gd, cid) is None
+        # 血仇 kill 目標須可野外刷出(被動 kill_counts 追蹤得到)
+        killspec = gd.quests[qid]["stages"][0]["objective"]
+        assert gd.bestiary[killspec["creature"]]["weight"] > 0
+        _drive_quest(c, gd, qid)
+        assert party.arc_done(c, gd, cid)
+        cap = party.active_capstone(c, gd, cid)
+        assert cap and cap["kind"] == kind and cap.get("label")
+        assert c.companion_bond[cid] >= 15                    # reward.bond 躍升
+
+
 # --- 忠誠頂點:戰術型盟友限定、被動型在隊才生效 -------------------------
 def test_tactical_capstone_is_ally_only():
     gd, c, st = _setup(cids=["sellsword", "ranger"])

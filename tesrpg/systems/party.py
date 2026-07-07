@@ -227,12 +227,18 @@ def loyalty_label(char: Character, gamedata: GameData) -> str | None:
 COMPANION_WEAPON_SKILL_CAP = 80
 
 
-def companion_skill(gamedata: GameData, cid: str, skill_id: str) -> int:
-    """同伴某技能值(companions.json `skills` 唯讀模板;缺→退回模板 attack.skill)。夾 ≤ CAP 守牆。"""
+def companion_skill(gamedata: GameData, cid: str, skill_id: str, char: Character | None = None) -> int:
+    """同伴某技能值(companions.json `skills` 唯讀模板;缺→退回模板 attack.skill)。
+    char 提供時,加上其穿戴裝備的 `fortify_skill` 附魔平價(完全比照玩家);**SUM 一律夾 ≤ CAP 守單同伴孤立牆**
+    (fortify 只把技能推向 80、永不過 → char=None〔顯示後備〕或無 fortify 裝 → 逐位元組同)。"""
     t = gamedata.companions.get(cid, {})
-    skills = t.get("skills", {})
-    val = skills.get(skill_id, t.get("attack", {}).get("skill", 0))
-    return max(0, min(COMPANION_WEAPON_SKILL_CAP, int(val)))
+    val = int(t.get("skills", {}).get(skill_id, t.get("attack", {}).get("skill", 0)))
+    if char is not None:
+        for iid in char.companion_gear.get(cid, {}).values():
+            ench = (gamedata.item_or_none(iid) or {}).get("enchant")
+            if ench and ench.get("kind") == "fortify_skill" and ench.get("skill") == skill_id:
+                val += int(ench.get("magnitude", 0))
+    return max(0, min(COMPANION_WEAPON_SKILL_CAP, val))
 
 
 def _gear_item(char: Character, gamedata: GameData, cid: str, slot: str, kind: str):
@@ -252,7 +258,7 @@ def derived_weapon(char: Character, gamedata: GameData, cid: str) -> tuple:
         return t["attack"]["damage"], t["attack"]["skill"], None
     temper = char.weapon_temper.get(wid, 0) * smithing.TEMPER_WEAPON_PER    # flat 淬鍊(不吃玩家 temper_power 里程碑)
     dmg = wd["damage"] + temper
-    skill = companion_skill(gamedata, cid, wd.get("skill", "blade"))
+    skill = companion_skill(gamedata, cid, wd.get("skill", "blade"), char)
     return dmg, skill, wid
 
 
@@ -266,7 +272,7 @@ def derived_armor(char: Character, gamedata: GameData, cid: str, template_armor:
     worn = ad.get("armor_rating", 0)
     temper = char.armor_temper.get(aid, 0) * smithing.TEMPER_ARMOR_PER
     wc = ad.get("weight_class")
-    askill = companion_skill(gamedata, cid, "heavy_armor" if wc == "heavy" else "light_armor")
+    askill = companion_skill(gamedata, cid, "heavy_armor" if wc == "heavy" else "light_armor", char)
     armor = formulas.worn_armor_base(worn, askill) + temper
     resist: dict = {}
     ench = ad.get("enchant")     # 護甲附魔平價:抗元素烘焙(fortify_skill/attribute/thorns 後補·見 handoff)
@@ -336,7 +342,7 @@ def preview_gear_stat(char: Character, gamedata: GameData, cid: str, item_id: st
     if d.get("kind") == "armor":
         cur, _ = derived_armor(char, gamedata, cid, t.get("armor_rating", 0))
         wc = d.get("weight_class")
-        askill = companion_skill(gamedata, cid, "heavy_armor" if wc == "heavy" else "light_armor")
+        askill = companion_skill(gamedata, cid, "heavy_armor" if wc == "heavy" else "light_armor", char)
         new = formulas.worn_armor_base(d.get("armor_rating", 0), askill) \
             + char.armor_temper.get(item_id, 0) * smithing.TEMPER_ARMOR_PER
         return ("護甲值", cur, new)
