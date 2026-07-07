@@ -81,7 +81,7 @@
 | fortify_skill | 技能 | 飾品×2.0→8→12;護甲×1.5→6→9 | enchj/encha | 聚合相加→skills;餵 char.skill() 不回門檻(R21) |
 | fortify_attribute | 屬性 | ★僅飾品×1.2→5→7 | enchj | 聚合相加;護甲刻意排除 attr |
 | fortify_resource | 資源上限 | 飾品×3.0→12→18;護甲版 armor_fortify→13→19 | enchj/encha | 護甲版額外經 armor_fortify_totals 餵 recompute;進有效上限(R05) |
-| resist_element | 抗性 | **R66 soul^0.7 非線性**·大魂飾 單元素~18/魔抗~9(護甲 12/6)·**魔抗=單元素÷2**(每點覆蓋火/霜/電);myst75 ×0.83·myst50 ×0.67·+potency ×1.2 | enchj/encha | 聚合相加;100%=免疫,負值=弱點放大(最高2×) |
+| resist_element | 抗性 | **R66 soul^0.7 非線性**·大魂飾 單元素~18/魔抗~9(護甲 12/6)·**魔抗=單元素÷2**(每點覆蓋火/霜/電);myst75 ×0.83·myst50 ×0.67·+potency ×1.2 | enchj/encha | 附魔聚合相加(equip_resist);**R131 最終元素傷害=元素層×魔抗層〔`(1−元素抗/100)×(1−magic/100)`·相乘不相加→疊過100不再歸零〕**;**單層**100%=完全免疫,負值=弱點放大(最高2×) |
 | resist **physical**(R127) | 抗性 | 護甲之外的乘性物理減傷·**pen 完全無法穿透**(抗性層非護甲層)。走**魔抗低階不 ×2**(物理已有護甲·保守):大魂 甲6/飾9;藥 brew(troll_fat/bear_claw/bone_meal)~16;誓福 sundered_arcanist 10 | enchj/encha·潛時藥·boon | 聚合相加,但**玩家側夾 `PLAYER_PHYSICAL_RESIST_CAP=25`**(守 R71 群戰風險;boss〔真身 60〕不夾) |
 | weapon_element | 傷害 | ×3.0→13→19;fire/frost/shock | enchw | 🔴**無視物理護甲**、吃元素抗;加在偷襲夾限**之前** |
 | weapon vampiric | 續航回復 | ★傷害×0.30 回血(雙持 0.48);**enchant.magnitude(%)可覆寫**(悲傷之刃 50);命中必觸發 | enchws | 主+副(×0.6)累計一次回血;夾本擊 dmg 內 |

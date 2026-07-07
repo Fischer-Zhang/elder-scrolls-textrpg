@@ -1265,7 +1265,7 @@
        "on_hit": {"status": "fear", "turns": 1, "chance": 0.25}}
     ],
     "danger": 5, "min_level": 13, "weight": 1, "raw": true,
-    "resist": {"frost": 60, "magic": 40, "shock": -65},
+    "resist": {"frost": 60, "magic": 40, "shock": -85},
     "loot_gold": [70, 160],
     "loot": [{"item": "ebony_cuirass", "chance": 0.3}, {"item": "filled_greater_soul_gem", "chance": 0.5}, {"item": "gold_ingot", "chance": 0.5}, {"item": "hagraven_claw", "chance": 0.6}],
     "flavor": "巫窟深處的寒氣驟然凝結 —— 一名披著千年羽袍的魔女祭主自骸骨王座升起,凜冬的詛咒在她蒼白的指間盤旋成霜。"

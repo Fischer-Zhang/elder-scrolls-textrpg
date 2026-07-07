@@ -762,12 +762,17 @@ HEAL_SMITE_FACTOR = 0.5
 
 
 def resist_multiplier(resist: dict, element: str) -> float:
-    """元素傷害的傷害係數。
+    """元素傷害的傷害係數(R131 分兩段:元素抗性層 × 通用魔抗層,**相乘不相加**)。
 
-    元素抗性 + (若為魔法元素)通用 magic 抗性 → 越高傷害越低;
-    負值代表弱點(傷害放大)。範圍夾限在 [0, 2.0](可完全免疫到雙倍弱點)。
+    火/冰/雷 = 元素層(1−元素抗/100)× 魔抗層(1−magic/100),各層夾 ≥0(單層抗性 ≥100 → 該層 0 → 完全免疫;
+    保留「專職單元素抗性 build 的免疫回報」)。**兩層相乘 → 元素抗+魔抗永不『疊過 100 硬歸零』**——高抗
+    boss(達貢火85+魔50=舊 0)現讓元素法師仍打得動(0.15×0.50=0.075),修「元素法師撞高抗 boss 傷害歸零」硬牆。
+    negative 抗性 = 弱點(該層 >1 放大);非魔法元素(poison/disease)不吃 magic 層。範圍夾 [0, 2.0]。
+    🔴 元素抗=0 時 元素層=1 → 與舊加法 `1−magic/100` 恆等(刺客/低抗實體 byte-identical)。
     """
     r = (resist or {}).get(element, 0)
     if element in MAGIC_ELEMENTS:
-        r += (resist or {}).get("magic", 0)
+        elem_layer = max(0.0, 1.0 - r / 100.0)
+        magic_layer = max(0.0, 1.0 - (resist or {}).get("magic", 0) / 100.0)
+        return min(2.0, elem_layer * magic_layer)
     return max(0.0, min(2.0, 1.0 - r / 100.0))

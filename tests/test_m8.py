@@ -136,8 +136,8 @@ def test_arcane_erosion_shreds_magic_resist_for_all_damage_magic():
     assert magic.erosion_stacks(foe) == 5                      # 夾 5 層
     assert magic.erosion_resist_reduction(foe) == 15          # 3×5
 
-    # 輔助「所有」傷害魔法:fireball(fire·亦吃 magic 抗)在秘蝕滿層時解牆(dremora fire75+magic30:
-    # 無秘蝕 fireball ×0 全牆;−15 魔抗 → fire75+magic15=90 → ×0.10 解牆 → 破抗輔助火系)
+    # 輔助「所有」傷害魔法:fireball(fire·亦吃 magic 抗)秘蝕削魔抗 → 火傷提升(dremora fire75+magic30:
+    # R131 分兩段 fire 恆非零〔0.25×0.70=0.175〕;−15 魔抗 → magic15 → 0.25×0.85=0.213 更高 → 破抗輔助火系)
     def _fire_dmg(n_stacks):
         gd3, cc = _mage(); cc.max_magicka = cc.magicka = 10**6; cc.skills["mysticism"] = 100
         mastery.choose(cc, gd3, "mysticism_100", "arcane_erosion")
@@ -145,7 +145,7 @@ def test_arcane_erosion_shreds_magic_resist_for_all_damage_magic():
         for _ in range(n_stacks):
             magic.add_erosion(f)
         return magic.cast(cc, gd3, "fireball", RNG(7), target=f)["damage"]
-    assert _fire_dmg(0) == 0 and _fire_dmg(5) > 0             # 破抗解火系牆 → 輔助所有傷害魔法
+    assert _fire_dmg(5) > _fire_dmg(0) > 0                    # 秘蝕削魔抗 → 火傷提升(R131 分兩段:火恆非零)
 
     # 非頂點者:不疊秘蝕(短路 → byte-identical)
     gd2, c2 = _mage(); c2.max_magicka = c2.magicka = 10**6
