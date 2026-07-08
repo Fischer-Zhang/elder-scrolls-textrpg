@@ -104,13 +104,13 @@ def test_player_physical_resist_capped():
 
 
 def test_boss_physical_resist_uncapped():
-    """boss(非玩家)物抗不受 PLAYER cap → 真身 60 全額生效。"""
+    """boss(非玩家)物抗不受 PLAYER cap → 真身 70 全額生效。"""
     gd = get_gamedata()
     b = gd.bestiary["mehrunes_dagon_true"]
-    assert b["resist"]["physical"] == 60 and b["resist"]["magic"] == 52 and b.get("solo")
-    # 60 > cap25,但怪不夾 → resist_multiplier 全額
+    assert b["resist"]["physical"] == 70 and b["resist"]["magic"] == 52 and b.get("solo")
+    # 70 > cap25,但怪不夾 → resist_multiplier 全額
     cr = combat.spawn_creature(gd, "mehrunes_dagon_true", RNG(0))
-    assert formulas.resist_multiplier(magic.entity_resist(cr, gd), "physical") == 0.40
+    assert abs(formulas.resist_multiplier(magic.entity_resist(cr, gd), "physical") - 0.30) < 1e-9
 
 
 # ---------- 玩家來源:附魔 + 煉金 ----------
@@ -189,10 +189,10 @@ def test_monster_physical_resist_by_category_r128():
     # 召喚物(幽體/元素)也得物抗(R128 強化召喚師·sim_party 驗不 trivialize)
     assert phys("ancestral_ghost") >= 40 and phys("summoned_storm_atronach") >= 25
     # 真身仍最高(位面化身特例)
-    assert phys("mehrunes_dagon_true") == 60
-    # R133:主線/削弱達貢也高物抗(位面之君抗物理·比照真身·刻意破 R128「魔神 8-10」rubric =
-    # 終王「物理不獨大」;真身 60 > 化身 50 > 削弱 50)。melee 仍可為(w2H ~55%)、秘術不受影響。
-    assert phys("mehrunes_dagon") == 50 and phys("mehrunes_dagon_diminished") == 50
+    assert phys("mehrunes_dagon_true") == 70
+    # R133:主線/削弱達貢也高物抗(位面之君抗物理·刻意破 R128「魔神 8-10」rubric = 終王「物理不獨大」;
+    # 三達貢一致階梯 真身 70 > 化身 50 > 削弱 30〔削弱形每條抗性皆 < 化身·真身最堅〕)。
+    assert phys("mehrunes_dagon") == 50 and phys("mehrunes_dagon_diminished") == 30
 
 
 def run():
