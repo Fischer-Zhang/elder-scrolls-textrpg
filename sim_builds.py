@@ -139,16 +139,20 @@ def make_arcanist():
 
 
 def make_paladin():
-    """聖騎士(R123 反死靈改制):restoration 100·反死靈=**治療傷害不死**(smite:治療法術指向不死敵造傷)+
-    **破曉之光**(radiant 終極:治全隊 + 灼燒全體不死)。🔴 恢復系對活人**零魔法輸出** → 此純施法 fixture
-    vs 非不死 boss 幾乎全 0%(實際 build 靠近戰打活人;此處只測『魔法反死靈身份 + 達貢牆』)。vs 不死 boss
-    = showcase。達貢=非不死 → 聖騎士對他零魔法輸出 → **達貢牆最硬 0%**。"""
-    c = build_character(gd, name="聖", sex="male", race="altmer", birthsign="mage", class_id="mage")
-    c.skills.update(restoration=100, alteration=75, destruction=25, mysticism=25, conjuration=25, alchemy=25)
-    c.attributes.update(intelligence=100, willpower=100, endurance=70)
+    """R132+ 現實派聖騎士(十字軍):恢復系對活人**零魔法輸出** → 真實 paladin 靠**近戰**打活人
+    (daedric_sword+重甲+盾·knight 職業 str 主),restoration 100 保留聖光身份(smite 不死/自療/聖化領域)。
+    int 僅 40(→restoration 威力 ×1.0 仍有效但魔力受限=真實十字軍);vs 活人 ≈ 戰士 tier,vs 不死更強(smite)。
+    這取代舊「純施法」fixture(vs 活人恆 0% 是 fixture 失真,非真實弱 build)。"""
+    c = build_character(gd, name="聖", sex="male", race="nord", birthsign="lady", class_id="knight")
+    c.skills.update(blade=100, heavy_armor=100, block=100, restoration=100, alteration=75, athletics=75)
+    c.attributes.update(strength=90, endurance=100, willpower=80, intelligence=40)
+    c.weapon = "daedric_sword"; inventory.add_item(c, "daedric_sword", 1)
+    c.weapon_temper = {"daedric_sword": 6}
     c.spells = ["dawn_judgment", "close_wounds", "heal", "minor_heal", "turn_undead", "consecration", "stoneflesh"]
-    _equip_set(c, "archmage", pieces=("hood", "robe", "gloves", "slippers"))
-    _choices(c, {"restoration_50": "holy_zeal", "restoration_75": "sacred_bulwark", "restoration_100": "divine_grace"})
+    _equip_set(c, "daedric")
+    inventory.add_item(c, "daedric_shield", 1); inventory.equip_armor(c, gd, "daedric_shield")
+    _choices(c, {"restoration_50": "holy_zeal", "restoration_75": "sacred_bulwark", "restoration_100": "divine_grace",
+                 "blade_100": "savage", "heavy_armor_100": "ironhide", "block_100": "perfect_block"})
     stats.recompute_max_resources(c, gd, restore_full=True)
     return c
 
@@ -249,6 +253,41 @@ BUILDS = {"assassin": make_assassin, "archer": make_archer, "warrior_1H": make_w
           "arcanist": make_arcanist,
           "paladin": make_paladin,
           "battlemage": make_battlemage}
+
+# --- 現實派「完全體」:learn-by-doing 附帶技能(見 memory「combat-sim-must-model-complete-realistic-builds」)---
+# 把核心技能練到 100 的過程中(數百場戰鬥),角色被打會練護甲、閃過會練雜技、旅行練運動、自療練恢復。
+# 值取自進程數學中位估計(progression workflow A2:被攻擊者附帶 acro ~45、法袍 light_armor ~60、
+# athletics ~45、恢復 ~40)。核心已含者不覆蓋(取 max)。monk 已核心含 acro/light/athletics/block。
+_INCIDENTAL = {
+    "assassin":       {"athletics": 45},
+    "archer":         {"athletics": 45, "blade": 40},
+    "warrior_1H":     {"acrobatics": 45},
+    "warrior_2H":     {"acrobatics": 45},
+    "shield_reflect": {"acrobatics": 45},
+    "mage_fire":      {"light_armor": 60, "acrobatics": 45, "athletics": 45},
+    "mage_frost":     {"light_armor": 60, "acrobatics": 45, "athletics": 45},
+    "mage_shock":     {"light_armor": 60, "acrobatics": 45, "athletics": 45},
+    "arcanist":       {"light_armor": 60, "acrobatics": 45, "athletics": 45},
+    "paladin":        {"acrobatics": 45},   # 現實派十字軍穿重甲(heavy_armor 核心)→ 附帶只補閃避
+    "battlemage":     {"acrobatics": 45, "athletics": 45, "restoration": 45},
+}
+_ARMOR_TEMPER_BUILDS = {"warrior_1H", "warrior_2H", "shield_reflect", "battlemage", "paladin"}
+
+
+def _apply_realistic(name, c):
+    """在核心構築上疊加 learn-by-doing 會練到的附帶技能 + 護甲淬鍊平價(裝備)。"""
+    for sk, val in _INCIDENTAL.get(name, {}).items():
+        c.skills[sk] = max(c.skills.get(sk, 0), val)
+    if name in _ARMOR_TEMPER_BUILDS:                     # 護甲淬鍊(與已模型化的武器淬鍊平價)
+        for iid in c.equipped.values():
+            if iid and (gd.item(iid) or {}).get("armor_rating"):
+                c.armor_temper[iid] = 6
+    stats.recompute_max_resources(c, gd, restore_full=True)
+    return c
+
+
+BUILDS = {name: (lambda mk=mk, nm=name: _apply_realistic(nm, mk()))
+          for name, mk in BUILDS.items()}
 
 # --- per-build 戰鬥 policy ----------------------------------------------
 def _regen(c):
