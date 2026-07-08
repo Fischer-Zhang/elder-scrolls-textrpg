@@ -136,7 +136,7 @@ def test_second_stage_neutral_below_knee():
     f = formulas
     assert f.intelligence_spell_potency(50) == 1.0 and f.intelligence_spell_potency(40) == 1.0   # R67:智力 knee 降至 50
     assert f.willpower_cost_factor(115) == 1.0 and f.willpower_cost_factor(40) == 1.0
-    assert f.agility_evasion(100) == 0.0 and f.agility_evasion(55) == 0.0       # 命中夾不動
+    assert f.agility_evasion(30) == 0.0 and f.agility_evasion(20) == 0.0        # R132:敏捷通用反射門檻 30 以下中性
     assert f.speed_extra_action_chance(100) == 0.0 and f.speed_extra_action_chance(50) == 0.0
 
 

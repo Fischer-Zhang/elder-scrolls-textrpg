@@ -1410,6 +1410,26 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 
 ---
 
+### R132 · 閃避來源重構:雜技+敏捷雙主軸「單一投入遞減」+ 敏捷通用反射(接受更耐打·放寬 R71) [re-sim]
+
+**承使用者連續評估**(各 build 單人強度 → 潛行傷害算法 → 閃避來源)後點名:**「將主要來源改成雜技、敏捷,單一投入遞減」**+ 兩道拍板(敏捷=**通用反射〔人人適用〕**+ **接受更耐打〔明確放寬 R71〕**;里程碑閃避=**做成有感的額外加成**)。
+
+**根因(上輪評估揪出)**:舊閃避 = 雜技 dodge(`acro×0.0025` 線性·**自身無 cap**)為唯一實質來源;敏捷二段(R63)只 >100 才給、agi200 才 0.086〔近裝飾〕;9 個里程碑閃避對雜技 build 邊際 <0.07〔幾乎重複〕;遞減全靠**全域 R69 sum-soft-cap** 兜底。
+
+**改動(`formulas.py` 單檔)**:① 雜技 `dodge_evasion` 線性 → 單一投入遞減 `_soft_cap(acro,0,0.00295,0.26)`〔acro100 0.25→**0.176**·漸近 0.26·自我封頂〕。② 敏捷 `agility_evasion` 由「>100 二段」→ **通用反射**〔knee 100→**30**·per 0.0015→0.0022·cap 0.12→**0.15**〕→ agi65 **0.06**/agi100 **0.096**〔戰士/法師也獲少量閃避·刻意〕。③ 移除全域 R69 sum-soft-diminish(`EVASION_DIMINISH_*`)→ 遞減下放至「每來源自身」→ 總量只需一道硬夾 **`EVASION_TOTAL_CAP=0.42`**〔給里程碑線性相加「有感」空間·不再被全域遞減吞·閃避 build acro+agi≈0.27 → 里程碑 0.15 幾近全額生效〕。里程碑 `evasion_bonus` 值/cap 0.15 **不動**(「有感」由結構改達成)。
+
+**效果(sim_builds base→本輪)**:近戰/潛行/混合硬 boss **+10~18pp**〔warrior_1H 達貢 53→71、monk 40→58、assassin 44→61、assassin true_dagon 25→40〕;apex5 均 assassin 70.4→**78.2**、warrior_2H 78.2→**82.6**、archer 71.2→77.6、monk 65.8→72.8、shield 76→79.2、battlemage 47.4→50.8;**純法系(mage_fire/frost/shock/arcanist/paladin)~不動**〔agi40 不閃 + 硬 boss 是輸出牆非生存牆〕。群戰死亡(R71·刻意放寬):apex **4-bandit 60.6→48.6%、2熊2狼 40.8→30.3%**。
+
+**🔴 硬紅線守住**:solo 一擊秒殺**全 0%**、R63 追擊 0%(閃避與偷襲傷正交·結構+sim 皆守);無 build trivialize(最硬 720 達貢最高 warrior_2H 89%·仍非必勝)。
+
+**⚠ 已知取捨(使用者知情拍板)**:① **買賣不均**——buff 只惠有 agi/acro 可閃的 build(近戰/潛行/混合)→ **拉大近戰 vs 純法系差距**(法系 agi40 不閃 + 硬 boss 輸出牆·零受益·法系本就 apex 最弱一 tier);② 「接受更耐打」= **明確放寬 R71「潛行群戰脆弱」**(4-bandit 死亡降 12pp)。
+
+`run_all` **117**(test_attributes second-stage neutral 改門檻 30;test_combat `test_evasion_diminishing_returns_r69`→`test_evasion_sources_r132` 改測硬夾模型;test_mastery `evasion_bonus` 相對斷言不變)。
+
+**🔴 鐵律**:閃避二主軸 = **雜技 + 敏捷各自單一投入遞減**(自我封頂·勿回線性);敏捷 = **通用反射**(knee 30·人人適用·刻意惠及戰士/法師);里程碑閃避**線性相加**·總量硬夾 `EVASION_TOTAL_CAP=0.42`(唯一總量旋鈕);solo 一擊秒殺與閃避正交(恆 0%);**動任一閃避常數(`DODGE_EVASION_SLOPE/CEIL`·`AGILITY_EVASION_*`·`EVASION_TOTAL_CAP`)→ 必跑 `sim_assassin`(群戰死亡)+ `sim_builds`(硬 boss 生存·近戰 vs 法系差距)**。前瞻:若近戰 vs 法系差距過大 → 補純法系一個與敏捷無關的生存工具(使用者已知選項)。
+
+---
+
 ### R131 · 元素抗性算法改分兩段(元素層×魔抗層):修「元素+魔抗疊過100歸零」硬牆 → 元素法師可通關 [re-sim byte-identical]
 
 **承使用者多輪點名「法師+坦克可通關·物理不獨大」**(先評估強化 boss 難度〔AoE 反傷脆皮法師·棄〕→ 再評估加物抗降元素抗〔物抗反傷 mage 隊·棄〕→ 使用者一語中的:**「不該讓 boss 魔法抗性+元素抗性>100」**)。

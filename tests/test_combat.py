@@ -97,16 +97,19 @@ def test_acrobatics_dodge_reduces_hit_chance():
     assert formulas.dodge_evasion(100) > formulas.dodge_evasion(40) > formulas.dodge_evasion(0) == 0
 
 
-def test_evasion_diminishing_returns_r69():
-    """R69:閃避效益遞減 —— ≤knee 線性、過 knee 漸近、疊滿封頂(防把命中壓到 5% 地板)。"""
+def test_evasion_sources_r132():
+    """R132:雜技/敏捷各自單一投入遞減(自我封頂)+ 總量硬夾 EVASION_TOTAL_CAP。"""
     f = formulas
-    base = f.hit_chance(80, 50, 100, 1.0)                            # 無閃避
-    low = base - f.hit_chance(80, 50, 100, 1.0, defender_evasion=0.15)   # =knee → 線性全扣
-    high = base - f.hit_chance(80, 50, 100, 1.0, defender_evasion=0.45)  # 疊滿 → 遞減
-    huge = base - f.hit_chance(80, 50, 100, 1.0, defender_evasion=2.0)   # 極端 → 封頂
-    assert abs(low - 0.15) < 1e-9                  # knee 以下原值
-    assert 0.15 < high < 0.45                      # 過 knee:仍有增益但 < 線性
-    assert huge <= f.EVASION_DIMINISH_CEIL + 1e-9  # 封頂於 ceiling,再多也無用
+    # 各來源單一投入遞減:漸近自身 cap、永不抵達、單調遞增
+    assert f.dodge_evasion(100) < f.dodge_evasion(200) < f.DODGE_EVASION_CEIL
+    assert 0 < f.agility_evasion(65) < f.agility_evasion(100) < f.AGILITY_EVASION_CAP
+    assert f.agility_evasion(30) == 0.0                              # 通用反射門檻 30 以下中性
+    # 總量:≤cap 線性全扣、過 cap 硬夾封頂
+    base = f.hit_chance(80, 50, 50, 1.0)                             # 無閃避(agi 差=0)
+    lin  = base - f.hit_chance(80, 50, 50, 1.0, defender_evasion=0.30)   # < cap → 線性全扣
+    capd = base - f.hit_chance(80, 50, 50, 1.0, defender_evasion=2.0)    # 極端 → 硬夾
+    assert abs(lin - 0.30) < 1e-9
+    assert abs(capd - f.EVASION_TOTAL_CAP) < 1e-9
 
 
 def test_acrobatics_trains_on_dodge():

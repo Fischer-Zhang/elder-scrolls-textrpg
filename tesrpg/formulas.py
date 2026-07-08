@@ -159,9 +159,9 @@ WILLPOWER_COST_CAP = 0.15         # 法術省魔漸近上限(-15%;與技能折�
 WILLPOWER_MAGIC_RESIST_KNEE = 40  # 意志=精神壁壘(R65):此值以下 0 魔抗(中性·sim 不位移)
 WILLPOWER_MAGIC_RESIST_PER = 0.38  # 每點意志(>40)
 WILLPOWER_MAGIC_RESIST_CAP = 25   # 魔抗漸近上限(點數·減 fire/frost/shock,R14;effective 200+ 趨近)
-AGILITY_EVASION_KNEE = 100        # 敏捷 → 閃避:此值以下 0(命中夾 0.95 不動 → sim 紅線不破)
-AGILITY_EVASION_PER = 0.0015      # 每點敏捷(>knee)
-AGILITY_EVASION_CAP = 0.12        # 閃避漸近上限(+12%;命中下夾 0.05 仍在 → 永不無敵、群戰仍危險)
+AGILITY_EVASION_KNEE = 30         # 敏捷=通用反射(R132):此門檻以上開始給閃避(人人適用,非只 >100 專職 build)
+AGILITY_EVASION_PER = 0.0022      # 每點敏捷(>knee)的單一投入斜率
+AGILITY_EVASION_CAP = 0.15        # 敏捷閃避漸近上限(單一投入遞減;agi65≈0.06、agi100≈0.096、漸近 0.15)
 SPEED_EXTRA_ACTION_KNEE = 100     # 速度 → 追擊:此值以下 0
 SPEED_EXTRA_ACTION_PER = 0.003    # 每點速度(>knee)
 SPEED_EXTRA_ACTION_CAP = 0.30     # 追擊機率漸近上限(30%;追擊=普通擊·非偷襲·耗體力 → 不破 solo 秒殺紅線)
@@ -248,7 +248,8 @@ def willpower_magic_resist(willpower: int) -> int:
 
 
 def agility_evasion(agility: int) -> float:
-    """敏捷 → 閃避加成(命中夾不動,改給防禦):≤100 → 0;過 100 漸近 +0.12(過 200 仍漲)。"""
+    """敏捷 → 閃避(R132 通用反射·單一投入遞減):過門檻 30 起給,agi65≈0.06、agi100≈0.096、漸近 0.15。
+    與雜技並列為兩大主閃避軸(各自遞減);敏捷是通用屬性 → 戰士/法師也獲少量閃避(刻意·換取「人人略耐打」)。"""
     over = max(0, agility - AGILITY_EVASION_KNEE)
     return _soft_cap(over, 0, AGILITY_EVASION_PER, AGILITY_EVASION_CAP)
 
@@ -339,7 +340,8 @@ SECURITY_FAIL_XP_FRAC = 0.3      # 撬鎖/解陷阱「失敗」給的 security x
 SNEAK_MULT_SOFT_SLOPE = 0.0277   # 初始斜率(解 100→+2.0、200→+3.0)
 SNEAK_MULT_SOFT_CEIL = 4.0       # 加成漸近上限(總偷襲基倍漸近 ×5)
 SNEAK_ATTACK_HIT_FLOOR = 0.90  # 偷襲命中率下限(伏擊不察之敵,極少落空)
-DODGE_EVASION_SCALE = 0.0025   # 雜技閃避係數(acrobatics 100 → 敵人命中 −0.25)
+DODGE_EVASION_SLOPE = 0.00295  # 雜技閃避(R132 單一投入遞減)初始斜率
+DODGE_EVASION_CEIL = 0.26      # 雜技閃避漸近上限(acro100≈0.176、acro200≈0.233、漸近 0.26)
 
 # --- 暗殺殘響(偷襲命中但沒秒殺 → alpha strike 仍留下實質後果)------------
 STAGGER_HIT_PENALTY = 0.30   # 陣腳大亂的單位攻擊命中減成(命中-0.30,給刺客喘息窗)
@@ -448,8 +450,9 @@ def armor_sneak_mult_factor(armor_weight: float, relief: float = 0.0) -> float:
 
 
 def dodge_evasion(acrobatics_skill: int) -> float:
-    """雜技帶來的閃避量(直接從敵人命中率扣除):acrobatics 40→0.10、100→0.25。"""
-    return acrobatics_skill * DODGE_EVASION_SCALE
+    """雜技帶來的閃避量(R132 單一投入遞減):acro50≈0.113、acro100≈0.176、漸近 0.26。
+    改前為線性 acro×0.0025(無自身 cap,靠全域遞減兜底);改後自我封頂 → 與敏捷並列兩大主軸。"""
+    return _soft_cap(acrobatics_skill, 0, DODGE_EVASION_SLOPE, DODGE_EVASION_CEIL)
 
 
 ATHLETICS_TRAVEL_SCALE = 0.004   # 運動旅行加速係數
@@ -489,12 +492,13 @@ def cast_fatigue_power_factor(fatigue_ratio: float) -> float:
 BLOCK_HIT_PENALTY = 0.15        # 對方格擋時攻擊命中率的基礎扣減
 EMPOWER_STACK_RATIO = 0.7       # 盟友增傷(empower)多源遞減疊加比率:最強×1 + 次強×0.7 + 第三×0.49…(上限 1/(1−r)≈3.33×最強;防暴衝又獎勵指揮官疊旗)
 
-# R69 閃避效益遞減:總 evasion(雜技 dodge_evasion + 里程碑 + 敏捷)在從命中扣除「之前」過此曲線。
-# ≤knee 線性不動(一般 build 無感);過 knee 漸近 ceiling → 疊滿也封頂、無法把命中壓到 5% 地板。
-# 修主破口:dodge_evasion(acro×0.0025)本身無 cap,acro100=0.25 已可線性疊到地板。
-EVASION_DIMINISH_KNEE = 0.15
-EVASION_DIMINISH_SLOPE = 1.0
-EVASION_DIMINISH_CEIL = 0.35
+# R132 閃避總量硬夾:雜技/敏捷各自「單一投入遞減」(dodge_evasion/agility_evasion 各自漸近自身 cap)後,
+# 總 evasion(雜技 + 敏捷 + 里程碑 + 騎射)相加,再硬夾此上限才從命中扣除。
+# 取代 R69 全域 soft-diminish:遞減已移到「每個來源自身」→ 此處只需一道總量安全夾。
+# 夾 0.42 給里程碑閃避「有感」空間(線性相加不再被全域遞減吞;閃避 build acro+agi≈0.27 → 里程碑 0.15 幾近全額生效)。
+# 🔴 這是刻意放寬 R71 群戰紅線(使用者拍板「通用反射+接受更耐打」):apex 4-bandit 死亡 60.6%→~49%。
+#    調此值 → 必跑 sim_assassin(群戰死亡)+ sim_builds(硬 boss 生存),且 solo 一擊秒殺紅線與閃避正交(恆 0%)。
+EVASION_TOTAL_CAP = 0.42
 HIT_CHANCE_FLOOR = 0.03   # 命中下限(R71:0.05→0.03·提高閃避上限·配「隱遁不再無敵」純靠 evasion)
 HIT_CHANCE_CEIL = 0.95    # 命中上限
 
@@ -511,8 +515,8 @@ def hit_chance(atk_skill: int, atk_agility: int, def_agility: int,
     chance -= (1.0 - max(0.0, min(1.0, attacker_fatigue_ratio))) * 0.25
     if defender_blocking:
         chance -= block_penalty
-    # 閃避(僅玩家防守時)效益遞減(R69):總量過 _soft_cap → 疊滿封頂,防線性壓到命中地板
-    chance -= _soft_cap(defender_evasion, EVASION_DIMINISH_KNEE, EVASION_DIMINISH_SLOPE, EVASION_DIMINISH_CEIL)
+    # 閃避(僅玩家防守時):各來源已「單一投入遞減」(R132)→ 此處總量硬夾 EVASION_TOTAL_CAP 才扣命中
+    chance -= min(EVASION_TOTAL_CAP, defender_evasion)
     return max(HIT_CHANCE_FLOOR, min(HIT_CHANCE_CEIL, chance))
 
 
