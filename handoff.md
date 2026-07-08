@@ -1410,6 +1410,22 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 
 ---
 
+### R133 · 達貢化身/削弱形加物理抗性 50(「物理不獨大」終王·真身維持 60) [re-sim] [content]
+
+**承使用者連續評估**(各 build 單人強度 → 潛行傷害算法 → 閃避來源 → 現實派 fixture → 元素法師弱勢診斷 → 主線終王物理獨大)拍板:給主線 `mehrunes_dagon`(720)+ 削弱形 `mehrunes_dagon_diminished`(380)各加物理抗性 **50**,真身 `mehrunes_dagon_true` 維持 **60**。
+
+**診斷依據(前一輪)**:純元素法師弱=**怪物抗性太高**(隔離實驗:歸零 boss 抗性 → 每格 0→76-100%·+5×HP 修不動硬牆;**非原始傷害**〔零抗每記 115-125·6 記殺 720〕·**非生存**);而物理側相反=**melee 碾壓主線終王**(realistic w2H 94/w1H 87/shdR 88 vs arcanist 18/mages 0)= 使用者點名的「物理獨大」。
+
+**機制**:物理抗性 pen-免疫(R127)只砍**物理輸出**、**完全不碰魔法傷害** → 加物抗 = 削 melee、arcanist/元素法師**恆不變** → 精準壓「物理獨大」。50 為使用者從削melee曲線(10/25/40/55/70)拍板值(40 仍領先·55 開始反轉成純秘術牆·50=平權甜蜜點)。
+
+**效果(sim_builds realistic→R133·主線達貢720)**:melee 全砍 **−44~52pp**(w1H 87→35·w2H 94→46·monk 58→12·shdR 88→44·assn 61→30·arch 59→27);**arcanist 18→18〔magic 傷不受影響〕·元素法師 0→0〔fire85 牆〕·battlemage 71→49〔混合·magic 部分保留〕·paladin 14→0**。apex5 均 melee −6~10、魔法系 ±0 → 主線終王**「無單一路線碾壓」**(頂 ~46-49%);**削弱形 380HP 仍 ~100%**(grindable·守「削弱結局=易」);**三達貢差異化**(真身 60 > 化身 50 = 削弱 50·靠 stat block/元素抗差異)。
+
+**🔴 紅線守**:偷襲秒殺 **全 0%**(SOLO_SNEAK cap 主導·物抗只讓偷襲傷更小·sim_assassin 驗)。刻意破 R128「魔神 8-10」rubric = **位面之君抗物理特例**(比照真身;flavor 補「湮滅之軀令凡鐵如隔重紗」)。**不幫元素法師**(仍 fire85 牆·使用者「不修」);與 R127 true_dagon 物理牆角色靠攏(三達貢皆抗物理·主題一致)。sim 排除吸血鬼附魔 → 實戰 melee 上界更高(逃生門仍在)。
+
+`run_all` **117**(test_physical_resist +2 assert:主線/削弱=50·真身=60)。BESTIARY 149(flavor 更新·重生)。🔴 加終王物理抗性純改 bestiary `resist.physical`;melee 削幅由物抗值定(50=頂~46);**動 → 跑 sim_builds(melee 不歸零·魔法系不受影響)+ sim_assassin(秒殺恆 0%)**;三達貢物抗差異化維持(60/50/50);物理抗性 pen-免疫勿與護甲混淆。
+
+---
+
 ### R132 · 閃避來源重構:雜技+敏捷雙主軸「單一投入遞減」+ 敏捷通用反射(接受更耐打·放寬 R71) [re-sim]
 
 **承使用者連續評估**(各 build 單人強度 → 潛行傷害算法 → 閃避來源)後點名:**「將主要來源改成雜技、敏捷,單一投入遞減」**+ 兩道拍板(敏捷=**通用反射〔人人適用〕**+ **接受更耐打〔明確放寬 R71〕**;里程碑閃避=**做成有感的額外加成**)。
@@ -1498,13 +1514,13 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 
 **評估**(workflow 5 agent 分類 149 怪 + sim 探針):物理抗性正典適合度**恰與 sim 安全性對齊** —— 三個最貼正典的類別(幽體/構造/元素)全是非-sim 怪。分類 rubric:**ethereal 幽體**(凡兵穿體=ES 最強物抗案例·40-50)/**construct 構造**(石金軀·30-40)/**atronach 元素**(元素之軀·25-28)/**tough_beast 厚甲獸**(厚皮鱗甲·15-25)/**daedra 魔神**(異界血肉·8-10)/**bone_undead 骨系**+**flesh_normal 血肉**(骨易碎、凡兵有效·**0**)。
 
-**套用 41 隻**(33 敵 + 8 召喚·bestiary `resist.physical`)。敵人:幽體 will_o_wisp/imperial_ghost/grief_shade/dro_mathra_shade/malyn_varen/twilight_sentinel(45-50)· 構造 dwarven_centurion 40/gargoyle+knight_of_order 35/dwarven_spider 30 · 元素 storm/flame_atronach 25-28 · 厚甲 ancient_dragon 25/wamasu 22/frost_giant+bog_troll 20/minotaur+ogre+land_dreugh 18/swamp_crocodile 15 · 魔神 daedroth/dremora_lord/mehrunes_dagon/apocrypha_seeker/umaril 10、mehrunes_dagon_diminished 5、madness_avatar 等 8 · 其他 ice_wraith 12/blighted_matron 10。召喚物(強化召喚師):ancestral_ghost/summoned_healer/summoned_terror 45/summoned_familiar 40/summoned_storm 28/summoned_(frost_)atronach 25/summoned_dremora 10。
+**套用 41 隻**(33 敵 + 8 召喚·bestiary `resist.physical`)。敵人:幽體 will_o_wisp/imperial_ghost/grief_shade/dro_mathra_shade/malyn_varen/twilight_sentinel(45-50)· 構造 dwarven_centurion 40/gargoyle+knight_of_order 35/dwarven_spider 30 · 元素 storm/flame_atronach 25-28 · 厚甲 ancient_dragon 25/wamasu 22/frost_giant+bog_troll 20/minotaur+ogre+land_dreugh 18/swamp_crocodile 15 · 魔神 daedroth/dremora_lord/mehrunes_dagon/apocrypha_seeker/umaril 10、mehrunes_dagon_diminished 5〔⚠R133:主線 mehrunes_dagon + 削弱 diminished 皆→50·位面之君抗物理特例〕、madness_avatar 等 8 · 其他 ice_wraith 12/blighted_matron 10。召喚物(強化召喚師):ancestral_ghost/summoned_healer/summoned_terror 45/summoned_familiar 40/summoned_storm 28/summoned_(frost_)atronach 25/summoned_dremora 10。
 
 **sim_assassin(R128 原態 byte-identical·R128b 改一致值後有意調整)**:assassin 對 tough solo boss(dremora_lord/ancient_dragon/frost_giant/wamasu/mehrunes_dagon)只量**偷襲秒殺率**,本就被 `SOLO_SNEAK_DAMAGE_CAP_RATIO` 夾至 0% → 物抗只讓已夾 0% 的偷襲傷更小 → 輸出仍 0%;群戰用 bandit/wolf/skeleton 全 0 物抗(**群戰 R71 紅線怪永守 phys=0**)。
 
 **🔴 R128b · 物種一致(使用者:物種一致性必做)**:base `dremora`→**10**(對齊 dremora_lord/summoned_dremora)、base `frost_troll`→**20**(對齊 bog_troll/frost_giant)。原 R128 留 0,因牠們是 sim_assassin 的**精英 oneshot fixture**(`solo=None` 非夾)。給物抗使其脫「低HP飽和」→ R37 part②/R92 fortify 的「精英 oneshot 增幅 ≤2pp」檢查觸發。**探針證實這是「飽和假象」非紅線**:任何 0-物抗高HP精英(lich HP175 gap **+29pp**、hag_matriarch +22pp、spriggan_matriarch +27pp)都讓 temper flat/fortify 有感——**是飽和函數,非物抗特有、非 temper_power 本質變強**;且低HP飽和精英只有 dremora/frost_troll(無乾淨替代 fixture)。故 R37 part②/R92 fortify 的**精英 oneshot 增幅檢查降為「資訊列」**(印數字·不 ⚠)。**真紅線 = temper/fortify flat(進偷襲倍率前)不破 solo cap → 由 sim part①(solo boss temper_power/fortify 秒殺 = 0%)直接守·且物抗只讓偷襲傷更小 → part① 更穩**;群戰 R71(part③·bandit/wolf 物抗0)不受影響。sim 全綠無 ⚠。
 
-**平衡(sim_builds·意圖溫和 nerf)**:物抗是「只砍物理、放過魔法/元素附魔」的乾淨手術刀 —— tough boss 物理 build 掉幾 pp + TTK +68-88%、純法系零位移;ancient_dragon(物抗25)物理 92%(法 89-90%);**主線終王 mehrunes_dagon(物抗10)warrior 66→52%**(仍 [[warrior-solo-boss-already-strong]] vampiric-enchant closeable)。**sim_party**:召喚物變耐但傷害不變 → **召喚師 vs dagon 仍 0% 牆守**、無 stalemate(死靈師 base dagon 0% 亦守)。
+**平衡(sim_builds·意圖溫和 nerf)**:物抗是「只砍物理、放過魔法/元素附魔」的乾淨手術刀 —— tough boss 物理 build 掉幾 pp + TTK +68-88%、純法系零位移;ancient_dragon(物抗25)物理 92%(法 89-90%);**主線終王 mehrunes_dagon(物抗10〔⚠R133 後→50〕)warrior 66→52%**(仍 [[warrior-solo-boss-already-strong]] vampiric-enchant closeable)。**sim_party**:召喚物變耐但傷害不變 → **召喚師 vs dagon 仍 0% 牆守**、無 stalemate(死靈師 base dagon 0% 亦守)。
 
 **對抗審查(3 維 18 agent)→ 0 blocker/major·1 nit(即上述 base dremora/frost_troll 需記載約束·已記本條)·14 refuted**(幽體強物抗=正典 by-design、厚甲獸韌性、低階敵可帶附魔破、knight_of_order 物抗+反傷雙硬=主題契合無破口 —— 皆駁回)。run_all 115(新 `test_monster_physical_resist_by_category_r128`)·BESTIARY 149。**零新存檔欄**(純 bestiary resist 資料)。
 

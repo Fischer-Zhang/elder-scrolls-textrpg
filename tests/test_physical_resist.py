@@ -190,6 +190,9 @@ def test_monster_physical_resist_by_category_r128():
     assert phys("ancestral_ghost") >= 40 and phys("summoned_storm_atronach") >= 25
     # 真身仍最高(位面化身特例)
     assert phys("mehrunes_dagon_true") == 60
+    # R133:主線/削弱達貢也高物抗(位面之君抗物理·比照真身·刻意破 R128「魔神 8-10」rubric =
+    # 終王「物理不獨大」;真身 60 > 化身 50 > 削弱 50)。melee 仍可為(w2H ~55%)、秘術不受影響。
+    assert phys("mehrunes_dagon") == 50 and phys("mehrunes_dagon_diminished") == 50
 
 
 def run():
