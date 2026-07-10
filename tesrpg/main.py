@@ -1227,6 +1227,9 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
             ui.combat_event(combat.resolve_attack(a, tgt, gamedata, state.rng, attack=a_atk), gamedata)
             note_trap(tgt)
 
+        # R134 殺王=爪牙潰散(玩家/同伴階段擊殺召主 → 爪牙不再行動,即刻潰散)
+        if combat.scatter_orphan_summons(enemies, gamedata):
+            ui.message("失去召主的爪牙化作餘燼,潰散於風中。", style="magenta")
         # ---- 敵人階段(各自挑我方一個目標)----R71:隱遁不再無敵 → 敵人照常攻擊(隱遁只重置偷襲,防禦純靠 evasion)----
         for e in enemies:
             if not combat.is_alive(player):
@@ -1242,9 +1245,15 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
             if support is not None:
                 ui.message(support["message"], style="cyan")
                 continue
+            # R134 BOSS 召喚爪牙:冷卻到 + 場上無存活爪牙 + 未達總量 → 召喚(換損該回合攻擊=自限;
+            # 被恐懼/麻痺已在上方 incapacitated 閘擋下 → 硬控自然停召)。爪牙本回合即參戰(list 迭代會走到)。
+            summon_msg = combat.try_boss_summon(e, enemies, gamedata, state.rng)
+            if summon_msg is not None:
+                ui.message(summon_msg, style="bold magenta")
+                continue
             tgt = combat.pick_player_side_target(player, battle["allies"], state.rng)
             blk = blocking if tgt is player else False
-            e_atk = combat.choose_attack(e, state.rng, tgt)   # 怪物多攻擊模式:選招(加權/血量階段/蓄力冷卻)
+            e_atk = combat.choose_enemy_attack(e, state.rng, tgt)   # 怪物多攻擊模式選招(R134:嘲諷招對敵方退回基礎單招)
             ev = combat.resolve_attack(e, tgt, gamedata, state.rng, defender_blocking=blk, attack=e_atk)
             ui.combat_event(ev, gamedata)
             if ev.get("infected"):    # 疾病傳染:依種類分派到吸血鬼 / 狼人狀態機
@@ -1319,6 +1328,10 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
                 a.summon_turns -= 1
         battle["allies"] = [a for a in battle["allies"]
                             if combat.is_alive(a) and (a.summon_turns is None or a.summon_turns > 0)]
+        # R134 殺王=爪牙潰散:召主在本回合(敵階段反傷/回合末 DoT 等)死亡 → 存活爪牙即刻潰散
+        # (自 enemies 移除 → 不進勝利結算 = 無戰利品/擒魂/擊殺計數;while 條件隨之收束戰鬥)。
+        if combat.scatter_orphan_summons(enemies, gamedata):
+            ui.message("失去召主的爪牙化作餘燼,潰散於風中。", style="magenta")
 
     player.active_effects.clear()
     state.time.advance(1)
@@ -1333,6 +1346,8 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
         ui.message(f"你擊敗了所有敵人({len(enemies)} 名)!", style="bold green")
     total = {"gold": 0, "items": []}
     for e in enemies:
+        if getattr(e, "summoned", False):
+            continue    # R134 爪牙三重排除(使用者定案):魔力構造無屍可掠 —— 無戰利品、不擒魂、不計擊殺
         r = combat.grant_loot(player, e, gamedata, state.rng)
         total["gold"] += r["gold"]
         total["items"] += r["items"]
@@ -1343,7 +1358,9 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
         quests.record_kill(player, e.template_id)
     ui.loot_report(total, gamedata)
     # R106C 死靈經濟:擊殺收割靈魂 token(含「亡者收集」)+ 回收倖存的真·亡者(只 victory 給予,封逃跑刷)
-    harvest = necromancy.harvest_and_recover(player, gamedata, len(enemies), battle["allies"])
+    # R134:召喚爪牙不計 token(比照三重排除 —— 否則召喚王變 token 泵)
+    harvest = necromancy.harvest_and_recover(
+        player, gamedata, sum(1 for e in enemies if not getattr(e, "summoned", False)), battle["allies"])
     if harvest["message"]:
         ui.message(harvest["message"], style="magenta")
     _report_quests(state, gamedata)

@@ -230,7 +230,7 @@ def make_shield_reflect():
 # 法師三系專精(各鎖單一元素 → 火 DoT / 冰凍麻控場 / 電感電 ramp 三身份分明;取代單一 greedy 法師)。
 # 政策 `_mage_act` 讀 char._dmg_pool(缺省回 _MAGE_DMG)→ 各元素法師只挑自系最佳法術。
 _MAGE_ELEMENTS = {
-    "mage_fire":  ["incinerate", "fireball", "ignite", "flames"],
+    "mage_fire":  ["incinerate", "fireball", "ignite", "flames", "fire_storm"],   # R134 修 fixture 漏列 AoE(1v1 EV 選不到 → 行為不變;爪牙成群時 AoE 分支用)
     "mage_frost": ["absolute_zero", "ice_spike", "frostbite", "frost_nova"],
     "mage_shock": ["thunderbolt", "lightning_bolt", "sparks", "chain_lightning"],
 }
@@ -306,7 +306,13 @@ def _mage_act(c, boss, rng, st):
         for h in ("close_wounds", "heal"):
             if magic.can_cast(c, gd, h):
                 magic.cast(c, gd, h, rng); return
-    # 選對 boss 最佳元素的可負擔傷害法術(magnitude×(1−resist));專精法師只挑自系池(_dmg_pool)
+    enemies_list = st.get("enemies") or [boss]           # R134:含召喚爪牙(單王=[boss] 行為不變)
+    # R134 爪牙成群(≥3 敵)→ 優先 AoE 清場(法師的群戰身份;1v1 恆跳過 → byte-identical)
+    if len([e for e in enemies_list if combat.is_alive(e)]) >= 3:
+        for sid in getattr(c, "_dmg_pool", _MAGE_DMG):
+            if "all" in gd.spells[sid]["effect"].get("kind", "") and magic.can_cast(c, gd, sid):
+                magic.cast(c, gd, sid, rng, target=boss, enemies=enemies_list, battle={"allies": []}); return
+    # 選對目標最佳元素的可負擔傷害法術(magnitude×(1−resist));專精法師只挑自系池(_dmg_pool)
     best, best_ev = None, -1
     for sid in getattr(c, "_dmg_pool", _MAGE_DMG):
         if not magic.can_cast(c, gd, sid):
@@ -317,7 +323,7 @@ def _mage_act(c, boss, rng, st):
         if ev > best_ev:
             best, best_ev = sid, ev
     if best:
-        magic.cast(c, gd, best, rng, target=boss, enemies=[boss], battle={"allies": []})
+        magic.cast(c, gd, best, rng, target=boss, enemies=enemies_list, battle={"allies": []})
     else:                                   # 空藍 → 杖近戰(微傷)
         combat.player_attack_cost(c, gd); combat.resolve_attack(c, boss, gd, rng)
 
@@ -332,11 +338,12 @@ def _paladin_act(c, boss, rng, st):
             if magic.can_cast(c, gd, h):
                 magic.cast(c, gd, h, rng); return
     if magic._is_undead(boss, gd):                           # 對不死:終極破曉之光(治+焚)優先,否則 smite
+        enemies_list = st.get("enemies") or [boss]           # R134:radiant 灼燒全體不死(含爪牙;單王行為不變)
         if magic.can_cast(c, gd, "dawn_judgment"):
-            magic.cast(c, gd, "dawn_judgment", rng, enemies=[boss], battle={"allies": []}); return
+            magic.cast(c, gd, "dawn_judgment", rng, enemies=enemies_list, battle={"allies": []}); return
         for s in ("close_wounds", "heal", "minor_heal"):
             if magic.can_cast(c, gd, s):
-                magic.cast(c, gd, s, rng, target=boss, enemies=[boss]); return   # 治療指向不死 → 灼燒
+                magic.cast(c, gd, s, rng, target=boss, enemies=enemies_list); return   # 治療指向不死 → 灼燒
     combat.player_attack_cost(c, gd); combat.resolve_attack(c, boss, gd, rng)   # 對活物:恢復系無魔攻 → 平砍
 
 
@@ -411,28 +418,37 @@ def fight(build_name, boss_id, seed, max_rounds=80):
     if build_name in _MELEE_POT_BUILDS:                 # R126:近戰/潛行帶治療藥水疊(中場續戰)
         inventory.add_item(c, "healing_potion", _COMBAT_POTIONS)
     boss = combat.spawn_creature(gd, boss_id, RNG(seed * 9 + 1))
+    foes = [boss]                                       # R134:boss+召喚爪牙(無召喚譜的王恆 [boss] → byte-identical)
     rng = RNG(seed)
     act = _POLICY[build_name]
     st = {"opening": True, "vanish": 0, "aimed": build_name == "archer", "skip_boss": False}
     for _ in range(max_rounds):
         if not combat.is_alive(boss):
-            return "win"
+            return "win"                                # R134 殺王=爪牙潰散 → 殺王即勝(對齊 run_battle scatter)
         if c.health <= 0:
             return "dead"
         c._evade_counter_used = False
         st["skip_boss"] = False
+        alive = [e for e in foes if combat.is_alive(e)]
+        st["enemies"] = alive                           # 供法系 policy 的 AoE 目標清單(單王=[boss] 行為不變)
+        tgt = min(alive, key=lambda e: e.health)        # 集火最低血=先清爪牙(單王時 tgt=boss,行為不變)
         if not magic.is_incapacitated(c):        # 麻痺/恐懼 → 跳過玩家行動
-            act(c, boss, rng, st)
+            act(c, tgt, rng, st)
         if not combat.is_alive(boss):
             return "win"
-        # boss 反擊(隱遁成功則撲空;麻痺/恐懼則跳過 = 鏡像 run_battle 敵階段 is_incapacitated 閘。
-        # 既有 build 皆不對 boss 施硬控 → 此分支對 assassin/warrior/mage byte-identical;只 monk 罕見真擊倒會觸)。
+        # boss 召喚或反擊(R134 try_boss_summon=單一決策點·無譜在任何 rng 消耗前回 None → byte-identical;
+        # 隱遁成功則撲空;麻痺/恐懼則跳過 = 鏡像 run_battle 敵階段 is_incapacitated 閘)。
         if not st["skip_boss"] and c.health > 0 and not magic.is_incapacitated(boss):
-            combat.resolve_attack(boss, c, gd, rng, attack=combat.choose_attack(boss, rng, c))
+            if combat.try_boss_summon(boss, foes, gd, rng) is None:
+                combat.resolve_attack(boss, c, gd, rng, attack=combat.choose_attack(boss, rng, c))
+        for a in foes[1:]:                              # R134 爪牙攻擊(嘲諷招對敵方退回基礎單招)
+            if combat.is_alive(a) and c.health > 0 and not magic.is_incapacitated(a):
+                combat.resolve_attack(a, c, gd, rng, attack=combat.choose_enemy_attack(a, rng, c))
         _regen(c)
         magic.tick_effects(c, gd)
-        if combat.is_alive(boss):
-            magic.tick_effects(boss, gd)
+        for e in foes:
+            if combat.is_alive(e):
+                magic.tick_effects(e, gd)
         stats.clamp_resources(c)
     return "win" if not combat.is_alive(boss) else "timeout"
 

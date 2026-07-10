@@ -655,7 +655,8 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
                        if not combat.is_alive(e) and getattr(e, "template_id", None)
                        and e.template_id in gamedata.bestiary
                        and not gamedata.bestiary[e.template_id].get("solo")
-                       and not getattr(e, "_reanimated", False)), None)
+                       and not getattr(e, "_reanimated", False)
+                       and not getattr(e, "summoned", False)), None)   # R134:BOSS 召喚爪牙=魔力構造無屍可掠(封 reanimate→token 回收側門·對齊三重排除)
         if corpse is None:
             char.magicka += cost
             char.fatigue = fatigue_before

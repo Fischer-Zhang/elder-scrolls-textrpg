@@ -1410,6 +1410,24 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 
 ---
 
+### R134 · BOSS 召喚爪牙:18 王名冊 + 殺王潰散 + 爪牙三重排除(戰利品/擒魂/擊殺計數) [re-sim] [content]
+
+**承「特色化」評估鏈**(solo-collapse 必要性 → 召喚機制 probe → 名冊質量逐對驗證 → 單人/隊伍框架對照)使用者四定案:**① 名冊 14 組接受 ② 終王 mehrunes_dagon(720)配 2×dremora 循環召喚(冷卻3·總量6=最多三波·知情接受單人 melee 崩)③ 爪牙擒魂+擊殺計數+戰利品三重排除 ④ 三組自系元素牆納入**。
+
+**引擎(combat.py + main.py·非純 JSON)**:bestiary 可選 **`summon` 譜** `{"id","wave","cap","cooldown"}`;**`combat.try_boss_summon`=唯一決策點**(main.run_battle 與 sim_builds 共用防漂移):冷卻到+場上無存活爪牙+未達**終身總量 cap** → 生成 wave 隻(標 `summoned=True` 戰鬥暫態)append 進 enemies(**本回合即參戰**)、**耗掉 boss 該回合攻擊**(mode A 自限);無譜在任何 rng 消耗前回 None(byte-identical 基石)。`combat.choose_enemy_attack`=敵方選招 taunt fallback(玩家召喚模板〔summoned_dremora/familiar〕帶 R105 嘲諷招無 damage 鍵 → 敵方使用退回基礎單招)。**殺王=爪牙潰散** `combat.scatter_orphan_summons`(召主死 → 存活爪牙自 enemies 移除·敵階段前+回合末兩檢查點;⚠ 無歸屬追蹤=依賴「召主皆 solo·一場一召主」不變式,schema 測試守)。boss 被恐懼/麻痺 → incapacitated 閘自然停召。
+
+**三重排除+第四側門**:勝利結算 `for e in enemies` 對 `summoned` 一個 `continue` 蓋三項(grant_loot/擒魂 resolve_soul_capture/record_kill → 下游 kill 任務/成就/worldstate 全斷);死靈 token `harvest_and_recover` 改餵過濾後 kill 數;**審查揪出第四條資源路**:reanimate 屍體過濾器不認 `summoned` → 復生爪牙屍體可回收 token(喚魂精算下 0 費)→ **補一行排除**(魔力構造無屍可掠·對齊裁決)。XP(learn-by-doing 打爪牙)刻意保留(有界 ≤cap·裁決未禁)。**零新存檔欄**(summoned/_summon_cd/_summon_total 皆戰鬥暫態·R03)。
+
+**名冊(18 王·全 probe 驗證)**:中高階 14 組(grave_tyrant/time_forsaken+skeleton、malyn_varen+復生僕從、meridia_defiler/deathless_king+draugr〔king cap4〕、coven_patriarch/molag_bloodlord+新血〔cap4·冰法對吸血鬼=正典剋制〕、dream_devourer/arch_mystic+幽影、mephala_webspinner+巨蛛〔1/3〕、wish_eaten+召喚魔人〔1/2〕、blighted_matron+沼蛭、plague_renegade+瘟疫鼠、fused_archmage+冰元素〔cap4〕)+ **三組自系元素牆**(fire/frost/shock_archmage+同系 atronach → 自系法師 99/54/53%→**0/2/0%**=牆完成·其他 build 全不動)+ **終王 dagon+dremora 2/6**。新模板 `summoned_flame_atronach`(鏡像 frost/storm·fire 100)。**質量鐵則**:輕爪牙(28-48HP)於 210HP 王=純 TTK 稅(勝率 ≤7pp·melee 3→8-10 回合·AoE 法師 2.4→3 幾乎免稅=法師清場峰值首次在 boss 戰內變現);**爪牙抗性軸=法師第二配對考驗**(抗50→該系 −15~22pp·cap4 收斂;**免疫100 鎖死該系,禁用**——wisp 電免疫曾把 mSho 打到 0% 已換 ghost——自系牆除外);中質量(70-90HP)單召低 cap;d4 早期王(vampire_lord/werewolf_alpha)不配(逃跑機率保護·schema 測試守)。
+
+**🔴 平衡(sim_builds 正典)**:名冊王勝率全維持(grave 100%·coven mFro 88%·deathless 99-100%·fused 自系 0/3%);**終王 720 單人全 build 崩至 0-8%**(assn4/arch8/w2H2/w1H0/btlm0/arcn0——比首輪 probe 的 melee 1-7% 更硬·**使用者兩見數據後知情拍板**=主線終王實質重定義為**隊伍/吸血附魔向**終局戰〔隊伍+2素體同伴 vs +dremora:10-34%·R133 單人校準被此覆蓋〕);⚠ sim 潛行 vanish 硬編 n_alive=1 → 潛行對召喚王略樂觀(審查記載)。**🔴 sim_assassin BYTE-IDENTICAL**(隔離 HEAD worktree 法定·oneshot=單次 resolve_attack 不經召喚);**非召喚王 sim_builds byte-identical**(審查員 800 場 HEAD worktree 實測逐位元組同;fire pool 補 `fire_storm` 亦 1v1-inert〔fireball 嚴格支配〕)。
+
+**對抗審查 3 維(引擎/濫用/資料)→ 0 blocker/0 major**:修 1 minor(reanimate 側門)+1 test nit(補「確殺爪牙」斷言防空洞化)+BESTIARY 重生(150);記載 nits:召主死於敵階段中(反傷)→ 爪牙該回合仍動一輪(end-of-round 語意)、勝利訊息 N 計入已死爪牙(cosmetic)、taunt 冷卻標記白推(無害)、**爪牙 infect 保留=by-design 主題壓力**(新血咬/瘟疫鼠病)。`run_all` **118**(新 test_boss_summon 8 測:schema/單元/嘲諷/潰散/雙整合)。
+
+**🔴 鐵律**:加召喚王純改 bestiary `summon` 譜(召主須 solo+danger≥5·爪牙非 solo·wave≤cap≤6·**免疫玩家某系的爪牙禁用**除非刻意自系牆·d4 早期王永不配);召喚一律走 `try_boss_summon`(單一決策點·勿在 main/sim 各寫);爪牙結算=勝利迴圈 `summoned` continue+harvest 過濾+reanimate 排除(**四處全守**·加新 per-kill 資源須同步排除);殺王潰散依賴「一場一召主」不變式(破之先加 ownership);**配爪牙的王必跑 sim_builds 專測·動 combat/main → sim_assassin byte-identical**;正典輕量湮滅爪牙 scamp 不存在(日後要更輕達貢爪牙可補)。前瞻:gen_bestiary 加【召喚】tag、第二波「增援」變體(頭狼喚狼/軍閥喚兵)、瘋神隨機爪牙。
+
+---
+
 ### R133 · 達貢化身/削弱形加物理抗性 50(「物理不獨大」終王·真身維持 60) [re-sim] [content]
 
 **承使用者連續評估**(各 build 單人強度 → 潛行傷害算法 → 閃避來源 → 現實派 fixture → 元素法師弱勢診斷 → 主線終王物理獨大)拍板:主線 `mehrunes_dagon`(720)物抗加至 **50**、削弱形 `mehrunes_dagon_diminished`(380)加至 **30**(削弱形每條抗性皆 < 化身·一致下修),真身 `mehrunes_dagon_true` 加至 **70**(位面之君本體最堅)。

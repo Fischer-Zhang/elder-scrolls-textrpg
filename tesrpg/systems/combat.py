@@ -205,6 +205,64 @@ def choose_attack(creature, rng: RNG, target=None) -> dict:
     return chosen
 
 
+def choose_enemy_attack(creature, rng: RNG, target=None) -> dict:
+    """敵方選招:同 choose_attack,但「嘲諷」招對敵方無意義(那是玩家召喚坦克的 R105 拉仇恨招,
+    只有 run_battle 的**盟友**階段會解讀)→ 抽到即退回基礎單招。R134 起敵方可能使用玩家召喚模板
+    (summoned_* 被 boss 召為爪牙),故需此防呆;無 taunt 招的怪 → 與 choose_attack 逐位元組同。"""
+    atk = choose_attack(creature, rng, target)
+    if atk and atk.get("taunt"):
+        return creature.attack
+    return atk
+
+
+def try_boss_summon(boss, enemies: list, gamedata: GameData, rng: RNG) -> str | None:
+    """R134 BOSS 召喚爪牙 —— **唯一決策點**(main.run_battle 與 sim_builds 共用,防語意漂移)。
+
+    bestiary 可選 `summon` 譜:{"id": 爪牙模板, "wave": 每波隻數, "cap": 全場總量上限, "cooldown": 冷卻回合}。
+    條件:冷卻到 + 場上無存活爪牙 + 未達總量 → 生成 wave 隻(標 `summoned=True`)append 進 enemies、
+    回訊息(呼叫端以此**耗掉 boss 本回合攻擊** = mode A 自限);否則回 None(照常攻擊)。
+    🔴 爪牙三重排除(使用者定案):擒魂 / 擊殺計數 / 戰利品 —— 由 run_battle 勝利結算讀 `summoned` 旗標。
+    🔴 殺王=爪牙潰散(呼叫端 scatter);計數器 `_summon_cd/_summon_total` 為戰鬥暫態(不入檔,R03)。
+    無 `summon` 譜 → 在任何 rng 消耗**之前**回 None → 既有怪 byte-identical。"""
+    spec = gamedata.bestiary.get(getattr(boss, "template_id", ""), {}).get("summon")
+    if not spec:
+        return None
+    cd = getattr(boss, "_summon_cd", 0)
+    boss._summon_cd = cd - 1
+    total = getattr(boss, "_summon_total", 0)
+    cap = int(spec.get("cap", 6))
+    if cd > 0 or total >= cap:
+        return None
+    if any(getattr(e, "summoned", False) and is_alive(e) for e in enemies):
+        return None                       # 場上仍有存活爪牙 → 不重召(打完一波才有下一波)
+    wave = min(int(spec.get("wave", 2)), cap - total)
+    adds = []
+    for i in range(wave):
+        cre = spawn_creature(gamedata, spec["id"], rng)
+        cre.summoned = True               # 戰鬥暫態旗標:勝利結算三重排除 + 潰散判定
+        adds.append(cre)
+    enemies.extend(adds)                  # 本回合即參戰(敵人階段迭代會走到)
+    boss._summon_total = total + wave
+    boss._summon_cd = int(spec.get("cooldown", 3))
+    names = "、".join(a.name for a in adds)
+    return f"{boss.name}撕開一道裂隙,喚出了{names}!"
+
+
+def scatter_orphan_summons(enemies: list, gamedata: GameData) -> bool:
+    """R134 殺王=爪牙潰散:任一「有召喚譜的召主」死亡 → 其存活爪牙即刻潰散(自 enemies 移除,
+    不進勝利結算 → 天然無戰利品/擒魂/擊殺計數)。無召主死亡或無存活爪牙 → False(無事)。
+    ⚠ 無歸屬追蹤(潰散「全部」summoned):現行不變式=召主皆 solo(schema 測試守)→ 一場恰一名召主。
+    若未來允許非 solo 召主 / 一場多召主,須加 ownership 標記,否則會誤散他人爪牙。"""
+    summoner_dead = any(not is_alive(e) and gamedata.bestiary.get(e.template_id, {}).get("summon")
+                        for e in enemies)
+    if not summoner_dead:
+        return False
+    orphans = [e for e in enemies if getattr(e, "summoned", False) and is_alive(e)]
+    for o in orphans:
+        enemies.remove(o)
+    return bool(orphans)
+
+
 def random_encounter(gamedata: GameData, player_level: int, rng: RNG,
                      max_danger: int | None = None, biome: str | None = None) -> Creature:
     """依玩家等級加權抽一隻敵人(危險度越高越罕見);max_danger 限制最高危險度;
