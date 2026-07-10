@@ -840,7 +840,8 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
             attacker.health = max(1, attacker.health - int(round(dmg_done * wmod["recoil"])))
 
         # 里程碑「重甲反震/重壓 + 格擋盾反」:玩家受物理擊中 → 反彈傷害 + 機率震開攻擊者(只物理;攻擊者可被反殺)
-        if _is_player(defender) and not atk_element and dmg_done > 0:
+        # R145 現實邏輯:`ranged` 攻擊(弩矢/投石)無身體接觸 → 反傷/反震全套不觸發(荊棘反彈不了 30 呎外的弩手)。
+        if _is_player(defender) and not atk_element and dmg_done > 0 and not (atk or {}).get("ranged"):
             # 反傷流(R42):吃「攻方完整物理輸出(連格擋前)」= raw / block_factor → 解耦護甲/盾牆/重盾/格擋,
             # 讓龜也能反出有意義的傷。物理限定(元素穿透不反)+ player-only(直接扣血、非遞迴 → 無 A→B→A 環)。
             # 來源相加:重甲反震 0.06 + 荊棘附魔(盔/胸/手/靴/盾·1%/靈魂階)+ 盾反 0.10(耗體 10、力竭則不計)。
@@ -1114,6 +1115,7 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
         # 🔴 僅**物理**來襲觸發(鏡像 R42 荊棘 not atk_element):盾身接觸才有反擊,火焰吐息等元素
         # 攻擊不觸發 → 元素攻擊仍是反擊/反傷流的天然反制。🔴 姿態不套用於獸形(利爪無盾·鏡像重盾)。
         if (_is_player(defender) and is_alive(attacker) and not atk_element
+                and not (atk or {}).get("ranged")   # R145:隔空盾擊不了弩手
                 and (defender_blocking or (has_guard_stance(defender) and defender.fatigue > 0
                                            and not _is_beast(defender)))):
             rp = mastery.block_riposte(defender, gamedata)
@@ -1192,7 +1194,9 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
             defender._evade_counter_used = True
             if oe.get("restamina"):
                 defender.fatigue = min(defender.max_fatigue, defender.fatigue + oe["restamina"])
-            if oe.get("counter_frac") and is_alive(attacker) and rng.chance(oe.get("counter_chance", 0.0)):
+            if (oe.get("counter_frac") and is_alive(attacker)
+                    and not (atk or {}).get("element") and not (atk or {}).get("ranged")   # R145:閃過龍息/弩矢搆不到人 → 無反擊(回氣照舊;落空分支 atk_element 未綁定 → 直讀 atk)
+                    and rng.chance(oe.get("counter_chance", 0.0))):
                 # R137 審查修:閃身反打同為物理反擊 → 吃攻擊者物抗(同盾反擊·守 R127/R133 pen-免疫牆;
                 # 物抗 0 之敵 ×1.0 行為不變)
                 _cd = _player_counter_damage(defender, gamedata, rng) * oe["counter_frac"]

@@ -1677,7 +1677,8 @@
      "status": "paralyze",
      "turns": 1,
      "chance": 0.25
-    }
+    },
+    "element": "magic"
    },
    {
     "name": "星辰湮滅",
@@ -1782,7 +1783,8 @@
      "status": "fear",
      "turns": 1,
      "chance": 0.3
-    }
+    },
+    "element": "magic"
    },
    {
     "name": "奴役雷暴",
@@ -2523,7 +2525,8 @@
      "status": "fear",
      "turns": 1,
      "chance": 0.25
-    }
+    },
+    "element": "magic"
    },
    {
     "name": "斷頭怒擊",
@@ -3575,7 +3578,8 @@
      "status": "fear",
      "turns": 1,
      "chance": 0.25
-    }
+    },
+    "element": "magic"
    }
   ],
   "resist": {
@@ -4143,14 +4147,16 @@
   "attack": {
    "name": "弩矢攢射",
    "damage": 12,
-   "skill": 50
+   "skill": 50,
+   "ranged": true
   },
   "attacks": [
    {
     "name": "弩矢攢射",
     "damage": 12,
     "skill": 50,
-    "weight": 3
+    "weight": 3,
+    "ranged": true
    },
    {
     "name": "短劍突刺",
@@ -4209,14 +4215,16 @@
   "attack": {
    "name": "鋼弩重矢",
    "damage": 15,
-   "skill": 54
+   "skill": 54,
+   "ranged": true
   },
   "attacks": [
    {
     "name": "鋼弩重矢",
     "damage": 15,
     "skill": 54,
-    "weight": 3
+    "weight": 3,
+    "ranged": true
    },
    {
     "name": "獵刀斬擊",
@@ -4278,14 +4286,16 @@
   "attack": {
    "name": "精準弩擊",
    "damage": 18,
-   "skill": 58
+   "skill": 58,
+   "ranged": true
   },
   "attacks": [
    {
     "name": "精準弩擊",
     "damage": 18,
     "skill": 58,
-    "weight": 3
+    "weight": 3,
+    "ranged": true
    },
    {
     "name": "雙刃連斬",
@@ -5534,7 +5544,8 @@
      "status": "fear",
      "turns": 1,
      "chance": 0.25
-    }
+    },
+    "element": "magic"
    }
   ],
   "danger": 5,
@@ -6023,7 +6034,8 @@
      "status": "fear",
      "turns": 1,
      "chance": 0.25
-    }
+    },
+    "element": "magic"
    }
   ],
   "danger": 4,
@@ -6547,7 +6559,8 @@
      "magnitude": 0.25,
      "turns": 2,
      "chance": 0.3
-    }
+    },
+    "element": "magic"
    },
    {
     "name": "懾魂尖嘯",
@@ -6558,7 +6571,8 @@
      "status": "fear",
      "turns": 1,
      "chance": 0.25
-    }
+    },
+    "element": "magic"
    }
   ],
   "danger": 5,
@@ -6747,7 +6761,8 @@
     "name": "投擲碎石",
     "damage": 13,
     "skill": 54,
-    "weight": 2
+    "weight": 2,
+    "ranged": true
    },
    {
     "name": "狂暴猛捶",
@@ -7075,7 +7090,8 @@
      "status": "fear",
      "turns": 1,
      "chance": 0.25
-    }
+    },
+    "element": "magic"
    }
   ],
   "danger": 3,
@@ -7310,7 +7326,8 @@
      "status": "fear",
      "turns": 1,
      "chance": 0.25
-    }
+    },
+    "element": "magic"
    }
   ],
   "danger": 4,
@@ -7615,7 +7632,8 @@
     "name": "銀箭射擊",
     "damage": 12,
     "skill": 52,
-    "weight": 2
+    "weight": 2,
+    "ranged": true
    },
    {
     "name": "獵殺連擊",
@@ -7706,7 +7724,8 @@
      "status": "fear",
      "turns": 1,
      "chance": 0.25
-    }
+    },
+    "element": "magic"
    }
   ],
   "resist": {
@@ -8200,7 +8219,8 @@
      "status": "fear",
      "turns": 1,
      "chance": 0.25
-    }
+    },
+    "element": "magic"
    },
    {
     "name": "血潮傾覆",
@@ -8471,7 +8491,8 @@
      "status": "fear",
      "turns": 1,
      "chance": 0.25
-    }
+    },
+    "element": "magic"
    }
   ],
   "resist": {
@@ -10293,7 +10314,8 @@
      "status": "stagger",
      "turns": 1,
      "chance": 0.3
-    }
+    },
+    "element": "magic"
    },
    {
     "name": "亡者低鳴",
