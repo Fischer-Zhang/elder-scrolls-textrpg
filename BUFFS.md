@@ -180,7 +180,7 @@
 | 不屈祝禱 steadfast | 續航回復 | 血<25%→regen4×3(共12) |
 | 溢盾 overheal_ward | 減傷 | 溢治60%轉盾、cap=生命×0.5、turns4(R21夾cap) |
 | 反傷流(R42:armor_reflect / block_reflect / **thorns 荊棘附魔**) | 反傷 | 受物理近戰擊中 → 反彈**「攻方完整物理輸出(連格擋前)= raw/block_factor」**(★R42 解耦護甲/盾牆/重盾/格擋,龜也反得動)× 比例:重甲反震 0.06(被動)+ 盾反 0.10(耗體 10·力竭不計)+ 荊棘附魔(盔/胸/手/靴/盾·1%/靈魂階·max 25%)→ max **0.41 of raw**。物理限定(元素穿透不反=反傷流剋星)、player-only(無環)、**不夾**(物理敵 raw 上限小 → 永不一擊反殺) |
-| 格擋姿態/重盾掩體(R137/R138·戰鬥 stance·`guard_stance` active_effect 不入檔) | 姿態 | 立/收各耗一回合;姿態中攻擊 ×`GUARD_STANCE_DAMAGE_TAX 0.75`(damage_factor 車道·偷襲夾不變)、來襲卸力 `0.38×block/100`+斯丹達爾之佑 0.10(物理全額·元素折半·總夾 0.60)、被**物理**命中觸發 block 反擊樹(反擊傷套物抗)+ block XP;**R138 持雙手重盾**:元素卸力改走 `0.70×block/100` 專屬車道(block100 → 元素只受 30%)+ **掩體回氣** +2 體力/回(🔴 <攻擊成本 ~4.2 → 邊打邊回不可能;力竭也回=脫困非永動);`fatigue>0` 閘整組(回氣除外) |
+| 格擋姿態/重盾掩體(R137/R138·戰鬥 stance·`guard_stance` active_effect 不入檔) | 姿態 | 立/收各耗一回合;姿態中攻擊 ×`GUARD_STANCE_DAMAGE_TAX 0.75`(damage_factor 車道·偷襲夾不變)、來襲卸力 `0.38×block/100`+斯丹達爾之佑 0.10(物理全額·元素折半·總夾 0.60)、被**物理**命中觸發 block 反擊樹(反擊傷套物抗)+ block XP;**R138/R138b 持雙手重盾**:元素卸力係數 0.5→**0.70**(乘在姿態卸力上·block100 → 物理卸 38%/元素卸 ~26.6%·**元素恆 ≤ 物理**〔使用者鐵令「格擋不可能防元素比物理多」〕)+ **掩體回氣** +2 體力/回(🔴 <攻擊成本 ~4.2 → 邊打邊回不可能;力竭也回=脫困非永動);`fatigue>0` 閘整組(回氣除外) |
 | 重壓 armor_stagger | 防守控場 | 受近戰物理擊中 22% 震開攻擊者(stagger turns:2 → 撐過回合末 tick,對敵下次出手生效) |
 | 石膚反擊 shield_recoil(變化 100·R118) | 防守控場 | **作用中護膚盾**(`magic.active_shield>0`·橡木/石/鐵膚)時受近戰物理擊中 30% 震開攻方(stagger·`apply_control` 非遞迴);把被動 flesh 接上主動反噬。搭負重(敵 −20% 命中·見法術)=「物理操縱防禦控者」 |
 | 雙手重盾被動減傷 great_shield mitigation(R41) | 減傷 | 裝雙手重盾(`great_shield`)→ 受物理 ×(1−mitigation)(iron→daedric 5~8%·crusaders_ward 10%);套 `_shield_wall_factor` **後**乘性疊加、僅物理、獸形不套;重盾占雙手·普攻走盾擊(`bash_damage`·練 block) |

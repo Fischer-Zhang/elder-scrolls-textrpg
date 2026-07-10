@@ -146,20 +146,25 @@ def _gs_tank():
 
 
 def test_great_shield_elemental_guard_r138():
-    """R138 重盾掩體元素車道:姿態+重盾 → 元素只受 ~30%(0.70×block/100);
-    一般盾維持元素折半;gamedata=None(舊呼叫端)→ 一律非重盾路徑(back-compat)。"""
+    """R138b 重盾掩體元素卸力(使用者鐵令「格擋不可能防元素比物理多」):元素=姿態卸力×0.70
+    (一般盾 ×0.5);**元素卸力恆 ≤ 物理**;gamedata=None(舊呼叫端)→ 一律非重盾路徑(back-compat)。"""
     c = _gs_tank()
     c.active_effects.append({"kind": "guard_stance", "turns": 99})
-    f_gs = combat._guard_stance_factor(c, "fire", gd)
-    assert abs(f_gs - (1.0 - formulas.GREAT_SHIELD_ELEMENTAL_GUARD)) < 1e-9   # block100 → ×0.30
-    assert combat._guard_stance_factor(c, None, gd) < 1.0                     # 物理照走原車道
-    c.skills["block"] = 50                                                    # 元素卸力隨 block 縮放
-    assert abs(combat._guard_stance_factor(c, "fire", gd) - (1.0 - 0.35)) < 1e-9
+    m_full = formulas.GUARD_STANCE_MITIGATION                                 # block100 → 物理卸 38%
+    f_elem = combat._guard_stance_factor(c, "fire", gd)
+    f_phys = combat._guard_stance_factor(c, None, gd)
+    assert abs(f_elem - (1.0 - m_full * formulas.GREAT_SHIELD_ELEMENTAL_FACTOR)) < 1e-9   # 元素卸 26.6%
+    assert abs(f_phys - (1.0 - m_full)) < 1e-9
+    assert f_elem > f_phys                                                    # 🔴 現實邏輯:元素卸力 < 物理(因子更接近 1)
+    c.skills["block"] = 50                                                    # 隨 block 縮放
+    assert abs(combat._guard_stance_factor(c, "fire", gd)
+               - (1.0 - m_full * 0.5 * formulas.GREAT_SHIELD_ELEMENTAL_FACTOR)) < 1e-9
     c.skills["block"] = 100
     w = _warrior()                                                            # 一般盾:元素折半不變
     w.active_effects.append({"kind": "guard_stance", "turns": 99})
     m = formulas.GUARD_STANCE_MITIGATION * formulas.GUARD_STANCE_ELEMENTAL_FACTOR
     assert abs(combat._guard_stance_factor(w, "fire", gd) - (1.0 - m)) < 1e-9
+    assert combat._guard_stance_factor(c, "fire", gd) < combat._guard_stance_factor(w, "fire", gd)  # 重盾元素仍優於一般盾
     assert abs(combat._guard_stance_factor(c, "fire") - combat._guard_stance_factor(w, "fire")) < 1e-9  # 無 gamedata → 非重盾路徑
 
 

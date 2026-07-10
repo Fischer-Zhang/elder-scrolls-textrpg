@@ -628,8 +628,9 @@ def _choose_combat_action(state: GameState, gamedata: GameData, enemies: list, a
         if combat.has_guard_stance(player):
             opts.append(("guard", "收起格擋姿態（恢復全力攻擊)"))   # R137:取代整回合格擋動作(純減傷·不碰命中)
         elif inventory.is_great_shield(gamedata, player.equipped.get("shield")):
-            _gpct = int(formulas.GREAT_SHIELD_ELEMENTAL_GUARD * min(1.0, player.skill("block") / 100.0) * 100)
-            opts.append(("guard", f"重盾掩體（攻擊變緩 · 卸力減傷 · 元素-{_gpct}% · 回氣+{formulas.GREAT_SHIELD_BUNKER_FATIGUE}/回)"))   # R138 可見性:持重盾時姿態效果直接標在選項上
+            _m = formulas.GUARD_STANCE_MITIGATION * min(1.0, player.skill("block") / 100.0)
+            _gpct = int(_m * formulas.GREAT_SHIELD_ELEMENTAL_FACTOR * 100)   # R138b:元素=卸力×0.7(恆≤物理)
+            opts.append(("guard", f"重盾掩體（攻擊變緩 · 卸力-{int(_m * 100)}% · 元素-{_gpct}% · 回氣+{formulas.GREAT_SHIELD_BUNKER_FATIGUE}/回)"))   # R138 可見性:持重盾時姿態效果直接標在選項上
         else:
             opts.append(("guard", "格擋姿態（攻擊變緩 · 舉盾卸力減傷)"))
     vcap = combat.vanish_cap(player, gamedata)
