@@ -108,7 +108,7 @@ def heal_power_bonus(char: Character) -> float:
 
 
 def block_bonus(char: Character) -> float:
-    """斯丹達爾:格擋減傷加成(combat 端 `_is_player` + `if _db:` 雙 gate)。"""
+    """斯丹達爾:格擋姿態卸力加成(R137 遷入 combat `_guard_stance_factor`;原手動格擋車道已移除)。"""
     return _active_blessing(char).get("block_bonus", 0.0)
 
 

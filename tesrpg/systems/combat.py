@@ -472,6 +472,29 @@ def has_shield_wall(char) -> bool:
                for e in getattr(char, "active_effects", []))
 
 
+def has_guard_stance(char) -> bool:
+    """R137 玩家是否處於「格擋姿態」(常駐 stance·取代整回合格擋動作):姿態中攻擊傷害
+    ×GUARD_STANCE_DAMAGE_TAX,來襲物理傷害吃**純減傷**(_guard_stance_factor·乘性·不碰命中),
+    被命中即可觸發 block 反擊樹與 block XP。🔴 刻意不給攻方命中懲罰 → 敵照常打中 →
+    荊棘反傷流可常駐姿態(使用者拍板:姿態不得產生落空)。"""
+    return any(e.get("kind") == "guard_stance" and e.get("turns", 0) > 0
+               for e in getattr(char, "active_effects", []))
+
+
+def _guard_stance_factor(defender, atk_element=None) -> float:
+    """R137 格擋姿態「舉盾卸力」減傷倍率(<1.0=更耐打):乘性·隨 block 技能縮放、力竭整組暫停。
+    物理全額卸力;**元素折半**(盾面卸得開刀劍、卸不全火焰 → 元素仍是盾系的相對剋星,
+    且守終王包絡〔R134 拍板 720 達貢單人 0-8%〕不被生存堆疊突破)。非玩家/非姿態 → 1.0(byte-identical)。"""
+    if not (_is_player(defender) and has_guard_stance(defender) and defender.fatigue > 0
+            and not _is_beast(defender)):    # 審查修:獸形無盾 → 姿態卸力不套(鏡像重盾 _is_beast 閘)
+        return 1.0
+    m = formulas.GUARD_STANCE_MITIGATION * min(1.0, defender.skill("block") / 100.0)
+    m += divines.block_bonus(defender)   # R107 斯丹達爾之佑:原掛手動格擋(R137 移除)→ 遷入姿態卸力(+0.10)
+    if atk_element:
+        m *= formulas.GUARD_STANCE_ELEMENTAL_FACTOR
+    return 1.0 - min(0.60, m)            # 防呆總夾(祝福/未來源疊加也不至近免傷)
+
+
 def _shield_wall_factor(defender) -> float:
     """盾牆物理減傷倍率(<1.0 = 更耐打);非盾牆 → 1.0。"""
     e = next((e for e in getattr(defender, "active_effects", [])
@@ -768,6 +791,9 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
         # R122 聖騎士「聖化領域」:玩家的聖化光環對來襲傷害(物理+元素皆已匯入 dmg)乘性減免。
         # 置於物理/元素分支之後 → 兩路皆減;gated _is_player(defender) → 刺客/怪永不持此增益 → byte-identical。
         dmg *= _consecration_factor(defender)
+        # R137 格擋姿態「舉盾卸力」:同聖化車道位置(物理+元素皆減),但**元素折半**
+        # (盾卸不全火焰 → 元素仍剋盾系·守終王包絡;反擊樹另行物理限定守 R127 牆)。
+        dmg *= _guard_stance_factor(defender, atk_element)
 
         # solo BOSS 反一刀:偷襲開場單擊夾在生命上限的固定比例 → 絕不一刀秒 boss
         # (apex 仍可隱遁循環無傷清,但須多刀;精英/小遭遇不受影響)。
@@ -1055,7 +1081,12 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
                 magic.reset_offbalance(defender)
             elif stacks >= formulas.OFFBALANCE_STAGGER_THRESHOLD:             # 門檻:踉蹌(來源去重·不重置 ramp)
                 magic.apply_control(defender, "stagger", gamedata, rng, turns=1, source="offbalance")
-        if defender_blocking and _is_player(defender) and is_alive(attacker):
+        # R137:反擊樹觸發=手動格擋(defender_blocking·外部呼叫端仍可傳)**或**格擋姿態中被命中。
+        # 🔴 僅**物理**來襲觸發(鏡像 R42 荊棘 not atk_element):盾身接觸才有反擊,火焰吐息等元素
+        # 攻擊不觸發 → 元素攻擊仍是反擊/反傷流的天然反制。🔴 姿態不套用於獸形(利爪無盾·鏡像重盾)。
+        if (_is_player(defender) and is_alive(attacker) and not atk_element
+                and (defender_blocking or (has_guard_stance(defender) and defender.fatigue > 0
+                                           and not _is_beast(defender)))):
             rp = mastery.block_riposte(defender, gamedata)
             if rp.get("stagger_chance") and rng.chance(rp["stagger_chance"]):
                 # turns:2 → 防守側(敵階段)施加的踉蹌須撐過回合末 tick,才在敵下次出手時生效(修既有 shield_bash 死時序)
@@ -1064,8 +1095,11 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
                     magic.apply_control(attacker, "weaken", gamedata, rng,
                                         magnitude=rp["weaken"], turns=rp.get("weaken_turns", 2))
                 if rp.get("counter"):         # 盾威·完美格擋:盾擊反傷(基礎武器傷的一部分)
-                    _set_hp(attacker, _get_hp(attacker)
-                            - int(round(_player_counter_damage(defender, gamedata, rng) * rp["counter"])))
+                    # 🔴 R137 審查修:反擊=物理傷,**吃攻擊者物抗**(resist_multiplier·pen-免疫車道)——
+                    # 否則直接扣血繞過 R127/R133 物理牆(實測 720 達貢 2%→12% 全由此洩;套抗後回包絡)。
+                    cdmg = _player_counter_damage(defender, gamedata, rng) * rp["counter"]
+                    cdmg *= formulas.resist_multiplier(magic.entity_resist(attacker, gamedata), "physical")
+                    _set_hp(attacker, _get_hp(attacker) - int(round(cdmg)))
         # 里程碑「懾心術/懾意/懾魂」:玩家武器命中施加懼意(illusion 控場)→ 集中 helper(R44:solo 機率減免)
         if _is_player(attacker) and is_alive(defender):
             foh = mastery.fear_on_hit(attacker, gamedata)
@@ -1111,7 +1145,7 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
             skill_events += progression.use_skill(defender, gamedata,
                                                   _player_armor_skill(defender, gamedata),
                                                   formulas.COMBAT_ARMOR_XP)
-            if defender_blocking:
+            if defender_blocking or has_guard_stance(defender):   # R137:姿態中被命中也練 block(learn-by-doing)
                 skill_events += progression.use_skill(defender, gamedata, "block",
                                                       formulas.COMBAT_BLOCK_XP)
         if _is_player(attacker):           # 只夾限玩家資源;怪物 hp 已由 _set_hp 夾限
@@ -1129,8 +1163,11 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
             if oe.get("restamina"):
                 defender.fatigue = min(defender.max_fatigue, defender.fatigue + oe["restamina"])
             if oe.get("counter_frac") and is_alive(attacker) and rng.chance(oe.get("counter_chance", 0.0)):
-                _set_hp(attacker, _get_hp(attacker)
-                        - int(round(_player_counter_damage(defender, gamedata, rng) * oe["counter_frac"])))
+                # R137 審查修:閃身反打同為物理反擊 → 吃攻擊者物抗(同盾反擊·守 R127/R133 pen-免疫牆;
+                # 物抗 0 之敵 ×1.0 行為不變)
+                _cd = _player_counter_damage(defender, gamedata, rng) * oe["counter_frac"]
+                _cd *= formulas.resist_multiplier(magic.entity_resist(attacker, gamedata), "physical")
+                _set_hp(attacker, _get_hp(attacker) - int(round(_cd)))
                 if oe.get("counter_stagger"):
                     magic.apply_control(attacker, "stagger", gamedata, rng, turns=1)   # R44:集中 helper
 

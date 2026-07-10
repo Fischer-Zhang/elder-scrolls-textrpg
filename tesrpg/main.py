@@ -625,7 +625,8 @@ def _choose_combat_action(state: GameState, gamedata: GameData, enemies: list, a
             opts.append(("racial_power", f"🐾 種族之力（{powers.racial_def(rpid)['name']})"))
     if (not inventory.is_dual_wielding(player, gamedata)
             and not inventory.is_two_handed(gamedata, player.weapon)):   # 雙持/雙手武器占雙手 → 不能格擋
-        opts.append(("block", "格擋"))
+        opts.append(("guard", "收起格擋姿態（恢復全力攻擊)" if combat.has_guard_stance(player)
+                     else "格擋姿態（攻擊變緩 · 舉盾卸力減傷)"))   # R137:取代整回合格擋動作(純減傷·不碰命中)
     vcap = combat.vanish_cap(player, gamedata)
     if combat.can_vanish(player, gamedata) and vanish_used < vcap:
         n_alive = len([e for e in enemies if combat.is_alive(e)])
@@ -983,6 +984,14 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
         if not combat.is_alive(e) and magic.has_soul_trap(e):
             trapped_kills.add(id(e))
 
+    def _df():
+        """R137 格擋姿態攻擊稅:姿態中玩家一切攻擊傷害 ×GUARD_STANCE_DAMAGE_TAX(獸形無姿態);
+        走 damage_factor 車道(在偷襲倍率之前縮)→ solo 夾/紅線結構不變。非姿態 → 1.0(byte-identical)。
+        力竭(fatigue 0)→ 姿態整組暫停(稅與減傷/反擊對稱·皆由 fatigue>0 閘)。"""
+        return (formulas.GUARD_STANCE_DAMAGE_TAX
+                if combat.has_guard_stance(player) and player.fatigue > 0
+                and not getattr(player, "beast_form", False) else 1.0)
+
     def _rapid_extra_arrow(tgt, prev_ev):
         """R136 連珠箭(marksman_100):持弓**命中後**機率追加一箭(prev_ev 落空不觸發·對齊描述)。
         追加箭=普通射擊(🔴 sneak_attack=False → 不碰 SOLO_SNEAK 夾,鏡像 R63 追擊)、免額外耗體。
@@ -995,7 +1004,7 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
         if xs and state.rng.chance(xs):
             ui.message("你指間連珠,順勢追加一箭!", style="cyan")
             ui.combat_event(combat.resolve_attack(player, tgt, gamedata, state.rng,
-                                                  sneak_attack=False), gamedata)
+                                                  sneak_attack=False, damage_factor=_df()), gamedata)
 
     # 忠誠弧頂點(戰術型):開場即套盟友限定光環,使第一回合的同伴也受惠(後續逐回合於回合末刷新)
     _apply_companion_capstone_auras(player, gamedata, roster, battle["allies"])
@@ -1017,12 +1026,10 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
             why = "恐懼" if magic.is_feared(player) else ("麻痺" if magic.is_paralyzed(player) else "安撫")   # R104 三態(對稱;玩家實務上不會被 calm)
             ui.message(f"你因{why}而無法行動!", style="bold red")
             action = {"type": "incapacitated"}
-            blocking = False
         else:
             action = _choose_combat_action(state, gamedata, enemies, battle["allies"], vanishes_done,
                                            mounted=mounted, first_round=(round_no == 1), charm_used=charm_used,
                                            mem=cmem)
-            blocking = action["type"] == "block"
             # R113 戰鬥記憶:attack/cast 可「↻ 再次」;任何帶敵目標的動作都更新目標記憶
             if action["type"] == "attack":
                 cmem["last"] = {"type": "attack"}
@@ -1058,7 +1065,8 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
                 # 🔴 紅線:獸形攻擊永不吃偷襲倍率(變身破壞潛行)→ solo boss 夾限不被觸碰。
                 # 即使帶著殘留獸形入場 + 潛近成功(opening=True),此 guard 也使首爪不偷襲。
                 sneak = opening and not getattr(player, "beast_form", False)
-                _atk_ev = combat.resolve_attack(player, tgt, gamedata, state.rng, sneak_attack=sneak)
+                _atk_ev = combat.resolve_attack(player, tgt, gamedata, state.rng, sneak_attack=sneak,
+                                                damage_factor=_df())
                 ui.combat_event(_atk_ev, gamedata)
                 # R63 速度第二段:過 100 漸近 30% 機率追擊一記。追擊強制 sneak_attack=False
                 # → 普通擊(不碰 SOLO_SNEAK 夾;首擊已耗 opening),耗體力自限,不破 solo 秒殺紅線。
@@ -1067,7 +1075,7 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
                     combat.player_attack_cost(player, gamedata)
                     ui.message("你身形如電,順勢追擊!", style="cyan")
                     ui.combat_event(combat.resolve_attack(player, tgt, gamedata, state.rng,
-                                                          sneak_attack=False), gamedata)
+                                                          sneak_attack=False, damage_factor=_df()), gamedata)
                 _rapid_extra_arrow(tgt, _atk_ev)   # R136 連珠箭(命中後才觸發;非弓手 0 機率不擲 rng)
         elif action["type"] in ("aimed", "crippling", "skirmish"):   # 弓手散兵武技
             tgt = action["target"]
@@ -1078,7 +1086,8 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
                 sneak = opening and not getattr(player, "beast_form", False)
                 _tech_ev = combat.resolve_attack(player, tgt, gamedata, state.rng,
                                                  sneak_attack=sneak,
-                                                 aimed=(action["type"] == "aimed"))
+                                                 aimed=(action["type"] == "aimed"),
+                                                 damage_factor=_df())
                 ui.combat_event(_tech_ev, gamedata)
                 if action["type"] == "crippling" and combat.is_alive(tgt):
                     magic.apply_control(tgt, "weaken", gamedata, state.rng,   # R44:集中 helper
@@ -1103,7 +1112,7 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
                 if combat.is_alive(e) and combat.is_alive(player):
                     ui.combat_event(combat.resolve_attack(player, e, gamedata, state.rng,
                                                           sneak_attack=False,
-                                                          damage_factor=formulas.VOLLEY_DAMAGE_FACTOR),
+                                                          damage_factor=formulas.VOLLEY_DAMAGE_FACTOR * _df()),
                                     gamedata)
         elif action["type"] == "charge":   # 坐騎「衝鋒」(開場;近戰/長槍;不走偷襲倍率,受 solo 夾限)
             tgt = action["target"]
@@ -1168,9 +1177,13 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
                     ui.message(f"你以血族魅力凝視{tgt.name} —— 牠目光渙散、心神被攝,不敢進攻。", style="bold magenta")
                 else:
                     ui.message(f"你施展魅惑凝視,但{tgt.name}意志如鐵,掙脫了你的蠱惑。", style="grey70")
-        elif action["type"] == "block":
-            combat.player_block_cost(player)
-            ui.message("你舉盾戒備,準備擋下來襲。", style="grey70")
+        elif action["type"] == "guard":           # R137 格擋姿態:立/收(常駐 stance·取代整回合格擋動作)
+            if combat.has_guard_stance(player):
+                player.active_effects[:] = [e for e in player.active_effects if e.get("kind") != "guard_stance"]
+                ui.message("你收起格擋姿態,全力搶攻。", style="grey70")
+            else:
+                player.active_effects.append({"kind": "guard_stance", "turns": 99})
+                ui.message("你側身舉盾入架 —— 攻勢放緩,盾面隨時準備接下來襲。", style="bold cyan")
         elif action["type"] == "wall":            # 戰士:立/撤盾牆架勢(常駐 stance)
             if combat.has_shield_wall(player):
                 player.active_effects[:] = [e for e in player.active_effects if e.get("kind") != "shield_wall"]
@@ -1282,9 +1295,10 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
                 ui.message(summon_msg, style="bold magenta")
                 continue
             tgt = combat.pick_player_side_target(player, battle["allies"], state.rng)
-            blk = blocking if tgt is player else False
+            # R137 格擋姿態=純減傷:resolve_attack 內自動套 _guard_stance_factor(不碰命中 →
+            # 荊棘/反擊樹「被命中即觸發」照常發動)→ 此處不需任何格擋旗標/rng。
             e_atk = combat.choose_enemy_attack(e, state.rng, tgt)   # 怪物多攻擊模式選招(R134:嘲諷招對敵方退回基礎單招)
-            ev = combat.resolve_attack(e, tgt, gamedata, state.rng, defender_blocking=blk, attack=e_atk)
+            ev = combat.resolve_attack(e, tgt, gamedata, state.rng, attack=e_atk)
             ui.combat_event(ev, gamedata)
             if ev.get("infected"):    # 疾病傳染:依種類分派到吸血鬼 / 狼人狀態機
                 kind = ev.get("infect_kind", "vampire")
@@ -1325,6 +1339,9 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
                 trapped_kills.add(id(e))
         # ---- 八職常駐 stance 的回合末維護(盾牆/戰旗/戰地搶救;暫態存 active_effects,戰鬥邊界清)----
         living_allies = [a for a in battle["allies"] if combat.is_alive(a)]
+        # R137 格擋姿態**無回合上繳**(代價=攻擊稅 25%;調參實證:上繳 4/回合誘發力竭螺旋
+        # 〔自身命中 −25% 懲罰〕+ 落架重立死迴圈 → sim 全滅 0%,故姿態成本只走攻擊稅;
+        # 力竭時姿態效果〔減傷/反擊/稅〕由 fatigue>0 閘整組暫停,體力恢復自動續)。
         if combat.has_shield_wall(player):       # 戰士「盾牆」:上繳體力(歸 0 落陣)+ 護同袍護甲光環
             player.fatigue = max(0, player.fatigue - SHIELD_WALL_UPKEEP)
             if player.fatigue <= 0:

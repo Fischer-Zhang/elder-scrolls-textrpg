@@ -408,7 +408,14 @@ def _melee_sneak_act(c, boss, rng, st):
 def _attack_act(c, boss, rng, st):
     if _drink_if_low(c):   # R126 戰鬥中用藥(耗一回合)
         return
-    combat.player_attack_cost(c, gd); combat.resolve_attack(c, boss, gd, rng)
+    # R137 格擋姿態(w1H/shield_reflect·st["use_stance"] 由 fight() 依 build 設):立姿態耗一回合,
+    # 之後攻擊 ×TAX、來襲吃姿態卸力(resolve_attack 內自動套)。非盾 build 無旗標 → 行為不變。
+    if st.get("use_stance") and not combat.has_guard_stance(c):
+        c.active_effects.append({"kind": "guard_stance", "turns": 99}); return
+    combat.player_attack_cost(c, gd)
+    combat.resolve_attack(c, boss, gd, rng,
+                          damage_factor=(formulas.GUARD_STANCE_DAMAGE_TAX
+                                         if combat.has_guard_stance(c) and c.fatigue > 0 else 1.0))
 
 
 _POLICY = {"assassin": _melee_sneak_act, "archer": _melee_sneak_act,
@@ -420,6 +427,12 @@ _POLICY = {"assassin": _melee_sneak_act, "archer": _melee_sneak_act,
            "battlemage": _battlemage_act}
 
 
+_STANCE_BUILDS = {"warrior_1H"}   # R137 格擋姿態 canonical policy。
+# shield_reflect:設計上**相容**常駐姿態(不減命中 → 荊棘照觸發=使用者要求),但實測其續戰
+# 姿態 17% < 不姿態 35%(輸出稅拖慢殺速 → 藥水經濟惡化)→ 理性 canonical policy 不常駐;
+# 玩家仍可自選(對重物理 boss 情境有利)。
+
+
 def fight(build_name, boss_id, seed, max_rounds=80):
     c = BUILDS[build_name]()
     if build_name in _MELEE_POT_BUILDS:                 # R126:近戰/潛行帶治療藥水疊(中場續戰)
@@ -428,7 +441,8 @@ def fight(build_name, boss_id, seed, max_rounds=80):
     foes = [boss]                                       # R134:boss+召喚爪牙(無召喚譜的王恆 [boss] → byte-identical)
     rng = RNG(seed)
     act = _POLICY[build_name]
-    st = {"opening": True, "vanish": 0, "aimed": build_name == "archer", "skip_boss": False}
+    st = {"opening": True, "vanish": 0, "aimed": build_name == "archer", "skip_boss": False,
+          "use_stance": build_name in _STANCE_BUILDS}   # R137
     for _ in range(max_rounds):
         if not combat.is_alive(boss):
             return "win"                                # R134 殺王=爪牙潰散 → 殺王即勝(對齊 run_battle scatter)
@@ -445,12 +459,14 @@ def fight(build_name, boss_id, seed, max_rounds=80):
             return "win"
         # boss 召喚或反擊(R134 try_boss_summon=單一決策點·無譜在任何 rng 消耗前回 None → byte-identical;
         # 隱遁成功則撲空;麻痺/恐懼則跳過 = 鏡像 run_battle 敵階段 is_incapacitated 閘)。
+        # R137 姿態=純減傷:在 resolve_attack 內自動套(_guard_stance_factor)→ 敵方側零改動。
         if not st["skip_boss"] and c.health > 0 and not magic.is_incapacitated(boss):
             if combat.try_boss_summon(boss, foes, gd, rng) is None:
                 combat.resolve_attack(boss, c, gd, rng, attack=combat.choose_attack(boss, rng, c))
         for a in foes[1:]:                              # R134 爪牙攻擊(嘲諷招對敵方退回基礎單招)
             if combat.is_alive(a) and c.health > 0 and not magic.is_incapacitated(a):
                 combat.resolve_attack(a, c, gd, rng, attack=combat.choose_enemy_attack(a, rng, c))
+        # R137 格擋姿態無回合上繳(代價=攻擊稅·鏡像 run_battle)
         _regen(c)
         magic.tick_effects(c, gd)
         for e in foes:

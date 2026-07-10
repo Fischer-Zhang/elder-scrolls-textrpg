@@ -309,7 +309,7 @@ def test_real_run_battle_flee_after_rounds():
     st = _state(c)
     foe = combat.spawn_creature(gd, "guild_enforcer", st.rng)
     ochoose, omsg, oce = main._choose_combat_action, main.ui.message, main.ui.combat_event
-    main._choose_combat_action = lambda *a, **k: {"type": "block"}   # 玩家只格擋·不擊殺
+    main._choose_combat_action = lambda *a, **k: {"type": "guard"}   # 玩家只切換姿態·不擊殺(R137:block 動作已移除)
     main.ui.message = lambda *a, **k: None
     main.ui.combat_event = lambda *a, **k: None
     try:

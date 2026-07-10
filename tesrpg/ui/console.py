@@ -2045,10 +2045,11 @@ _STATUS_TAG = {
     "berserk_buff": "狂暴", "bound_weapon": "束縛", "weapon_imbue": "灌注", "resonance": "共鳴",
     "cascade": "連鎖", "battle_standard": "戰旗", "rally_banner": "號令", "shield_wall": "盾牆",
     "ride_evasion": "疾避", "taunt": "嘲諷",   # R125 審查補:坐騎閃避(玩家)/召喚物嘲諷(拉仇恨)
+    "guard_stance": "格擋姿態",   # R137:攻擊變緩·舉盾卸力減傷(常駐)
 }
 _BUFF_KINDS = {"shield", "regen", "ward", "consecration", "empower", "berserk_buff",   # 增益(綠)
                "bound_weapon", "weapon_imbue", "resonance", "cascade",
-               "battle_standard", "rally_banner", "shield_wall", "ride_evasion", "taunt"}
+               "battle_standard", "rally_banner", "shield_wall", "ride_evasion", "taunt", "guard_stance"}
 # 純內部記帳/冷卻標記 —— 不顯示於戰鬥卡片(避免 deathmark_cd/support_cd/atk_cooldown 等洩漏)
 _HIDDEN_TAG_KINDS = {"support_cd", "deathmark_cd", "atk_cooldown", "triage_ready", "prep_used"}
 _STANCE_MAINTAINED = 99   # 常駐光環維持中的 turns 哨兵 → 不顯示回合數
