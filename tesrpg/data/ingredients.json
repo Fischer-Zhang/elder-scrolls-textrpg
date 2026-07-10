@@ -1,967 +1,955 @@
 {
-  "wheat": {
-    "name": "小麥",
-    "value": 1,
-    "weight": 0.1,
-    "effects": [
-      {
-        "kind": "heal",
-        "magnitude": 8
-      },
-      {
-        "kind": "restore_fatigue",
-        "magnitude": 6
-      }
-    ]
-  },
-  "blue_mountain_flower": {
-    "name": "藍山花",
-    "value": 2,
-    "weight": 0.1,
-    "effects": [
-      {
-        "kind": "restore_magicka",
-        "magnitude": 10
-      },
-      {
-        "kind": "heal",
-        "magnitude": 6
-      },
-      {
-        "kind": "fskill_mercantile",
-        "magnitude": 5
-      },
-      {
-        "kind": "fskill_speechcraft",
-        "magnitude": 5
-      }
-    ]
-  },
-  "lavender": {
-    "name": "薰衣草",
-    "value": 2,
-    "weight": 0.1,
-    "effects": [
-      {
-        "kind": "restore_magicka",
-        "magnitude": 8
-      },
-      {
-        "kind": "fattr_willpower",
-        "magnitude": 4
-      }
-    ]
-  },
-  "garlic": {
-    "name": "大蒜",
-    "value": 1,
-    "weight": 0.1,
-    "effects": [
-      {
-        "kind": "restore_fatigue",
-        "magnitude": 10
-      },
-      {
-        "kind": "fattr_agility",
-        "magnitude": 4
-      },
-      {
-        "kind": "cure_disease",
-        "magnitude": 1
-      },
-      {
-        "kind": "fskill_light_armor",
-        "magnitude": 5
-      }
-    ]
-  },
-  "monarch_wing": {
-    "name": "帝王蝶翅",
-    "value": 3,
-    "weight": 0.1,
-    "effects": [
-      {
-        "kind": "heal",
-        "magnitude": 7
-      },
-      {
-        "kind": "restore_magicka",
-        "magnitude": 6
-      },
-      {
-        "kind": "resist_magic",
-        "magnitude": 8
-      }
-    ]
-  },
-  "charred_skeever_hide": {
-    "name": "焦皮鼠革",
-    "value": 2,
-    "weight": 0.2,
-    "effects": [
-      {
-        "kind": "heal",
-        "magnitude": 6
-      },
-      {
-        "kind": "restore_fatigue",
-        "magnitude": 8
-      },
-      {
-        "kind": "cure_disease",
-        "magnitude": 1
-      },
-      {
-        "kind": "fskill_block",
-        "magnitude": 5
-      }
-    ]
-  },
-  "red_apple": {
-    "name": "紅蘋果",
-    "value": 1,
-    "weight": 0.2,
-    "effects": [
-      {
-        "kind": "restore_fatigue",
-        "magnitude": 9
-      },
-      {
-        "kind": "fattr_agility",
-        "magnitude": 3
-      }
-    ]
-  },
-  "glow_dust": {
-    "name": "螢光粉",
-    "value": 5,
-    "weight": 0.1,
-    "effects": [
-      {
-        "kind": "restore_magicka",
-        "magnitude": 14
-      },
-      {
-        "kind": "fattr_willpower",
-        "magnitude": 4
-      },
-      {
-        "kind": "fskill_heavy_armor",
-        "magnitude": 5
-      },
-      {
-        "kind": "fskill_scout",
-        "magnitude": 5
-      }
-    ]
-  },
-  "ash_yam": {
-    "name": "灰燼薯",
-    "value": 3,
-    "weight": 0.2,
-    "effects": [
-      {
-        "kind": "restore_fatigue",
-        "magnitude": 12
-      },
-      {
-        "kind": "heal",
-        "magnitude": 7
-      },
-      {
-        "kind": "fskill_alchemy",
-        "magnitude": 5
-      },
-      {
-        "kind": "fattr_speed",
-        "magnitude": 4
-      }
-    ]
-  },
-  "scrib_jelly": {
-    "name": "史克利伯凍",
-    "value": 4,
-    "weight": 0.2,
-    "effects": [
-      {
-        "kind": "restore_magicka",
-        "magnitude": 12
-      },
-      {
-        "kind": "heal",
-        "magnitude": 8
-      },
-      {
-        "kind": "resist_magic",
-        "magnitude": 8
-      }
-    ]
-  },
-  "nightshade": {
-    "name": "龍葵",
-    "value": 6,
-    "weight": 0.1,
-    "effects": [
-      {
-        "kind": "damage_health",
-        "magnitude": 7
-      },
-      {
-        "kind": "paralyze",
-        "magnitude": 1
-      }
-    ]
-  },
-  "deathbell": {
-    "name": "死亡鐘",
-    "value": 6,
-    "weight": 0.1,
-    "effects": [
-      {
-        "kind": "damage_health",
-        "magnitude": 9
-      },
-      {
-        "kind": "damage_strength",
-        "magnitude": 20
-      },
-      {
-        "kind": "slow",
-        "magnitude": 25
-      },
-      {
-        "kind": "fear",
-        "magnitude": 1
-      }
-    ]
-  },
-  "imp_stool": {
-    "name": "魔菌",
-    "value": 5,
-    "weight": 0.1,
-    "effects": [
-      {
-        "kind": "damage_health",
-        "magnitude": 6
-      },
-      {
-        "kind": "paralyze",
-        "magnitude": 1
-      },
-      {
-        "kind": "damage_strength",
-        "magnitude": 20
-      },
-      {
-        "kind": "fskill_scout",
-        "magnitude": 5
-      }
-    ]
-  },
-  "canis_root": {
-    "name": "犬根草",
-    "value": 4,
-    "weight": 0.1,
-    "effects": [
-      {
-        "kind": "paralyze",
-        "magnitude": 1
-      },
-      {
-        "kind": "restore_fatigue",
-        "magnitude": 8
-      },
-      {
-        "kind": "fskill_speechcraft",
-        "magnitude": 5
-      },
-      {
-        "kind": "fskill_athletics",
-        "magnitude": 5
-      }
-    ]
-  },
-  "bone_meal": {
-    "name": "骨粉",
-    "value": 4,
-    "weight": 0.5,
-    "effects": [
-      {
-        "kind": "restore_fatigue",
-        "magnitude": 6
-      },
-      {
-        "kind": "fskill_alchemy",
-        "magnitude": 5
-      },
-      {
-        "kind": "fskill_mercantile",
-        "magnitude": 5
-      },
-      {
-        "kind": "fskill_security",
-        "magnitude": 5
-      },
-      {
-        "kind": "resist_physical",
-        "magnitude": 10
-      }
-    ]
-  },
-  "moon_sugar": {
-    "name": "月糖",
-    "value": 25,
-    "weight": 0.1,
-    "effects": [
-      {
-        "kind": "restore_fatigue",
-        "magnitude": 12
-      },
-      {
-        "kind": "restore_magicka",
-        "magnitude": 10
-      }
-    ]
-  },
-  "spider_egg": {
-    "name": "霜蛛卵",
-    "value": 5,
-    "weight": 0.2,
-    "effects": [
-      {
-        "kind": "damage_health",
-        "magnitude": 6
-      },
-      {
-        "kind": "slow",
-        "magnitude": 25
-      }
-    ]
-  },
-  "vampire_dust": {
-    "name": "吸血鬼塵",
-    "value": 7,
-    "weight": 0.1,
-    "effects": [
-      {
-        "kind": "damage_health",
-        "magnitude": 6
-      },
-      {
-        "kind": "fear",
-        "magnitude": 1
-      },
-      {
-        "kind": "cure_disease",
-        "magnitude": 1
-      }
-    ]
-  },
-  "dragons_tongue": {
-    "name": "龍舌草",
-    "value": 4,
-    "weight": 0.1,
-    "effects": [
-      {
-        "kind": "resist_fire",
-        "magnitude": 10
-      },
-      {
-        "kind": "fattr_intelligence",
-        "magnitude": 4
-      },
-      {
-        "kind": "fattr_speed",
-        "magnitude": 4
-      },
-      {
-        "kind": "fskill_security",
-        "magnitude": 5
-      }
-    ]
-  },
-  "fire_salts": {
-    "name": "火鹽",
-    "value": 5,
-    "weight": 0.2,
-    "effects": [
-      {
-        "kind": "resist_fire",
-        "magnitude": 10
-      },
-      {
-        "kind": "fattr_personality",
-        "magnitude": 4
-      },
-      {
-        "kind": "fskill_athletics",
-        "magnitude": 5
-      },
-      {
-        "kind": "fskill_block",
-        "magnitude": 5
-      }
-    ]
-  },
-  "frost_mirriam": {
-    "name": "霜薄荷",
-    "value": 4,
-    "weight": 0.1,
-    "effects": [
-      {
-        "kind": "resist_frost",
-        "magnitude": 10
-      },
-      {
-        "kind": "fattr_endurance",
-        "magnitude": 4
-      },
-      {
-        "kind": "fskill_light_armor",
-        "magnitude": 5
-      },
-      {
-        "kind": "fskill_heavy_armor",
-        "magnitude": 5
-      }
-    ]
-  },
-  "snowberries": {
-    "name": "雪莓",
-    "value": 3,
-    "weight": 0.1,
-    "effects": [
-      {
-        "kind": "resist_frost",
-        "magnitude": 10
-      },
-      {
-        "kind": "fattr_luck",
-        "magnitude": 4
-      }
-    ]
-  },
-  "void_salts": {
-    "name": "虛鹽",
-    "value": 6,
-    "weight": 0.2,
-    "effects": [
-      {
-        "kind": "resist_shock",
-        "magnitude": 10
-      },
-      {
-        "kind": "fattr_intelligence",
-        "magnitude": 4
-      }
-    ]
-  },
-  "pearl": {
-    "name": "珍珠",
-    "value": 5,
-    "weight": 0.1,
-    "effects": [
-      {
-        "kind": "resist_shock",
-        "magnitude": 10
-      },
-      {
-        "kind": "fattr_personality",
-        "magnitude": 4
-      }
-    ]
-  },
-  "tundra_cotton": {
-    "name": "苔原棉",
-    "value": 2,
-    "weight": 0.1,
-    "effects": [
-      {
-        "kind": "fattr_endurance",
-        "magnitude": 4
-      },
-      {
-        "kind": "fskill_restoration",
-        "magnitude": 5
-      }
-    ]
-  },
-  "juniper_berries": {
-    "name": "杜松子",
-    "value": 3,
-    "weight": 0.1,
-    "effects": [
-      {
-        "kind": "fattr_luck",
-        "magnitude": 4
-      },
-      {
-        "kind": "fskill_restoration",
-        "magnitude": 5
-      }
-    ]
-  },
-  "troll_fat": {
-    "name": "巨魔脂",
-    "value": 4,
-    "weight": 0.1,
-    "effects": [
-      {
-        "kind": "fattr_strength",
-        "magnitude": 4
-      },
-      {
-        "kind": "fskill_blade",
-        "magnitude": 5
-      },
-      {
-        "kind": "resist_physical",
-        "magnitude": 10
-      }
-    ]
-  },
-  "ogres_teeth": {
-    "name": "食人魔牙",
-    "value": 5,
-    "weight": 0.1,
-    "effects": [
-      {
-        "kind": "fattr_strength",
-        "magnitude": 4
-      },
-      {
-        "kind": "fskill_blunt",
-        "magnitude": 5
-      }
-    ]
-  },
-  "hawk_feather": {
-    "name": "鷹羽",
-    "value": 3,
-    "weight": 0.1,
-    "effects": [
-      {
-        "kind": "fskill_blade",
-        "magnitude": 5
-      },
-      {
-        "kind": "fskill_marksman",
-        "magnitude": 5
-      }
-    ]
-  },
-  "bear_claw": {
-    "name": "熊爪",
-    "value": 4,
-    "weight": 0.1,
-    "effects": [
-      {
-        "kind": "fskill_blunt",
-        "magnitude": 5
-      },
-      {
-        "kind": "fskill_hand_to_hand",
-        "magnitude": 5
-      },
-      {
-        "kind": "resist_physical",
-        "magnitude": 10
-      }
-    ]
-  },
-  "nightingale_feather": {
-    "name": "夜鶯羽",
-    "value": 6,
-    "weight": 0.1,
-    "effects": [
-      {
-        "kind": "fskill_marksman",
-        "magnitude": 5
-      },
-      {
-        "kind": "fskill_sneak",
-        "magnitude": 5
-      }
-    ]
-  },
-  "brimstone": {
-    "name": "硫磺",
-    "value": 5,
-    "weight": 0.1,
-    "effects": [
-      {
-        "kind": "fskill_hand_to_hand",
-        "magnitude": 5
-      },
-      {
-        "kind": "fskill_destruction",
-        "magnitude": 5
-      }
-    ]
-  },
-  "shade_cap": {
-    "name": "影菇",
-    "value": 5,
-    "weight": 0.1,
-    "effects": [
-      {
-        "kind": "fskill_sneak",
-        "magnitude": 5
-      },
-      {
-        "kind": "fskill_destruction",
-        "magnitude": 5
-      }
-    ]
-  },
-  "nirnroot": {
-    "name": "奈恩根",
-    "value": 30,
-    "weight": 0.1,
-    "effects": [
-      {
-        "kind": "fskill_alteration",
-        "magnitude": 5
-      },
-      {
-        "kind": "restore_magicka",
-        "magnitude": 10
-      },
-      {
-        "kind": "damage_health",
-        "magnitude": 4
-      }
-    ]
-  },
-  "spriggan_sap": {
-    "name": "樹靈樹脂",
-    "value": 9,
-    "weight": 0.2,
-    "effects": [
-      {
-        "kind": "fskill_alteration",
-        "magnitude": 5
-      },
-      {
-        "kind": "restore_fatigue",
-        "magnitude": 8
-      },
-      {
-        "kind": "fattr_willpower",
-        "magnitude": 4
-      }
-    ]
-  },
-  "namiras_rot": {
-    "name": "娜米拉腐菌",
-    "value": 9,
-    "weight": 0.2,
-    "effects": [
-      {
-        "kind": "fskill_conjuration",
-        "magnitude": 5
-      },
-      {
-        "kind": "restore_magicka",
-        "magnitude": 8
-      },
-      {
-        "kind": "damage_health",
-        "magnitude": 4
-      }
-    ]
-  },
-  "taproot": {
-    "name": "主根",
-    "value": 9,
-    "weight": 0.2,
-    "effects": [
-      {
-        "kind": "fskill_conjuration",
-        "magnitude": 5
-      },
-      {
-        "kind": "restore_fatigue",
-        "magnitude": 8
-      },
-      {
-        "kind": "fattr_intelligence",
-        "magnitude": 4
-      }
-    ]
-  },
-  "mora_tapinella": {
-    "name": "莫拉香菇",
-    "value": 8,
-    "weight": 0.2,
-    "effects": [
-      {
-        "kind": "fskill_illusion",
-        "magnitude": 5
-      },
-      {
-        "kind": "restore_magicka",
-        "magnitude": 10
-      },
-      {
-        "kind": "damage_health",
-        "magnitude": 5
-      }
-    ]
-  },
-  "luna_moth_wing": {
-    "name": "月蛾翅",
-    "value": 8,
-    "weight": 0.1,
-    "effects": [
-      {
-        "kind": "fskill_illusion",
-        "magnitude": 5
-      },
-      {
-        "kind": "restore_fatigue",
-        "magnitude": 8
-      },
-      {
-        "kind": "fattr_personality",
-        "magnitude": 4
-      }
-    ]
-  },
-  "swamp_fungal_pod": {
-    "name": "沼菌孢囊",
-    "value": 4,
-    "weight": 0.2,
-    "effects": [
-      {
-        "kind": "fskill_acrobatics",
-        "magnitude": 5
-      },
-      {
-        "kind": "restore_fatigue",
-        "magnitude": 8
-      },
-      {
-        "kind": "damage_health",
-        "magnitude": 4
-      }
-    ]
-  },
-  "torchbug_thorax": {
-    "name": "火蟲胸甲",
-    "value": 4,
-    "weight": 0.1,
-    "effects": [
-      {
-        "kind": "fskill_acrobatics",
-        "magnitude": 5
-      },
-      {
-        "kind": "restore_magicka",
-        "magnitude": 8
-      },
-      {
-        "kind": "fattr_speed",
-        "magnitude": 4
-      }
-    ]
-  },
-  "mudcrab_chitin": {
-    "name": "泥蟹殼",
-    "value": 4,
-    "weight": 0.3,
-    "effects": [
-      {
-        "kind": "resist_poison",
-        "magnitude": 10
-      },
-      {
-        "kind": "restore_fatigue",
-        "magnitude": 8
-      },
-      {
-        "kind": "fattr_endurance",
-        "magnitude": 4
-      }
-    ]
-  },
-  "slaughterfish_scale": {
-    "name": "屠魚鱗",
-    "value": 4,
-    "weight": 0.2,
-    "effects": [
-      {
-        "kind": "resist_poison",
-        "magnitude": 10
-      },
-      {
-        "kind": "fskill_light_armor",
-        "magnitude": 5
-      },
-      {
-        "kind": "damage_health",
-        "magnitude": 4
-      }
-    ]
-  },
-  "hag_taper": {
-    "name": "巫蠟菌",
-    "value": 9,
-    "weight": 0.2,
-    "effects": [
-      {
-        "kind": "resist_disease",
-        "magnitude": 10
-      },
-      {
-        "kind": "restore_magicka",
-        "magnitude": 8
-      },
-      {
-        "kind": "fear",
-        "magnitude": 1
-      }
-    ]
-  },
-  "bittergreen_petal": {
-    "name": "苦綠花瓣",
-    "value": 9,
-    "weight": 0.1,
-    "effects": [
-      {
-        "kind": "resist_disease",
-        "magnitude": 10
-      },
-      {
-        "kind": "cure_disease",
-        "magnitude": 1
-      },
-      {
-        "kind": "fattr_luck",
-        "magnitude": 4
-      }
-    ]
-  },
-  "giants_toe": {
-    "name": "巨人趾",
-    "value": 35,
-    "weight": 0.5,
-    "effects": [
-      {
-        "kind": "fattr_strength",
-        "magnitude": 4
-      },
-      {
-        "kind": "fskill_hand_to_hand",
-        "magnitude": 5
-      },
-      {
-        "kind": "damage_health",
-        "magnitude": 6
-      }
-    ]
-  },
-  "hagraven_claw": {
-    "name": "鴉婆爪",
-    "value": 30,
-    "weight": 0.2,
-    "effects": [
-      {
-        "kind": "fskill_destruction",
-        "magnitude": 5
-      },
-      {
-        "kind": "fskill_marksman",
-        "magnitude": 5
-      },
-      {
-        "kind": "damage_health",
-        "magnitude": 6
-      }
-    ]
-  },
-  "slaughterfish_egg": {
-    "name": "屠魚卵",
-    "value": 4,
-    "weight": 0.1,
-    "effects": [
-      {
-        "kind": "fskill_sneak",
-        "magnitude": 5
-      },
-      {
-        "kind": "restore_fatigue",
-        "magnitude": 8
-      },
-      {
-        "kind": "damage_health",
-        "magnitude": 4
-      }
-    ]
-  },
-  "jarrin_root": {
-    "name": "賈林根",
-    "value": 40,
-    "weight": 0.1,
-    "effects": [
-      {
-        "kind": "damage_health",
-        "magnitude": 14
-      },
-      {
-        "kind": "damage_strength",
-        "magnitude": 20
-      },
-      {
-        "kind": "fear",
-        "magnitude": 1
-      }
-    ]
-  },
-  "crimson_nirnroot": {
-    "name": "緋紅奈恩根",
-    "value": 35,
-    "weight": 0.1,
-    "effects": [
-      {
-        "kind": "fskill_alteration",
-        "magnitude": 5
-      },
-      {
-        "kind": "resist_magic",
-        "magnitude": 10
-      },
-      {
-        "kind": "fattr_intelligence",
-        "magnitude": 4
-      },
-      {
-        "kind": "damage_health",
-        "magnitude": 8
-      }
-    ]
-  },
-  "daedra_heart": {
-    "name": "魔性之心",
-    "value": 500,
-    "weight": 1,
-    "effects": [
-      {
-        "kind": "heal",
-        "magnitude": 12
-      },
-      {
-        "kind": "restore_magicka",
-        "magnitude": 12
-      },
-      {
-        "kind": "fskill_destruction",
-        "magnitude": 5
-      },
-      {
-        "kind": "damage_health",
-        "magnitude": 8
-      }
-    ]
-  }
+ "wheat": {
+  "name": "小麥",
+  "value": 1,
+  "weight": 0.1,
+  "effects": [
+   {
+    "kind": "heal",
+    "magnitude": 8
+   },
+   {
+    "kind": "restore_fatigue",
+    "magnitude": 6
+   }
+  ]
+ },
+ "blue_mountain_flower": {
+  "name": "藍山花",
+  "value": 2,
+  "weight": 0.1,
+  "effects": [
+   {
+    "kind": "restore_magicka",
+    "magnitude": 10
+   },
+   {
+    "kind": "heal",
+    "magnitude": 6
+   }
+  ]
+ },
+ "lavender": {
+  "name": "薰衣草",
+  "value": 2,
+  "weight": 0.1,
+  "effects": [
+   {
+    "kind": "restore_magicka",
+    "magnitude": 8
+   },
+   {
+    "kind": "fattr_willpower",
+    "magnitude": 4
+   }
+  ]
+ },
+ "garlic": {
+  "name": "大蒜",
+  "value": 1,
+  "weight": 0.1,
+  "effects": [
+   {
+    "kind": "restore_fatigue",
+    "magnitude": 10
+   },
+   {
+    "kind": "fattr_agility",
+    "magnitude": 4
+   },
+   {
+    "kind": "cure_disease",
+    "magnitude": 1
+   }
+  ]
+ },
+ "monarch_wing": {
+  "name": "帝王蝶翅",
+  "value": 3,
+  "weight": 0.1,
+  "effects": [
+   {
+    "kind": "heal",
+    "magnitude": 7
+   },
+   {
+    "kind": "restore_magicka",
+    "magnitude": 6
+   },
+   {
+    "kind": "resist_magic",
+    "magnitude": 8
+   },
+   {
+    "kind": "fskill_speechcraft",
+    "magnitude": 5
+   }
+  ]
+ },
+ "charred_skeever_hide": {
+  "name": "焦皮鼠革",
+  "value": 2,
+  "weight": 0.2,
+  "effects": [
+   {
+    "kind": "heal",
+    "magnitude": 6
+   },
+   {
+    "kind": "restore_fatigue",
+    "magnitude": 8
+   },
+   {
+    "kind": "cure_disease",
+    "magnitude": 1
+   },
+   {
+    "kind": "fskill_light_armor",
+    "magnitude": 5
+   }
+  ]
+ },
+ "red_apple": {
+  "name": "紅蘋果",
+  "value": 1,
+  "weight": 0.2,
+  "effects": [
+   {
+    "kind": "restore_fatigue",
+    "magnitude": 9
+   },
+   {
+    "kind": "fattr_agility",
+    "magnitude": 3
+   }
+  ]
+ },
+ "glow_dust": {
+  "name": "螢光粉",
+  "value": 5,
+  "weight": 0.1,
+  "effects": [
+   {
+    "kind": "restore_magicka",
+    "magnitude": 14
+   },
+   {
+    "kind": "fattr_willpower",
+    "magnitude": 4
+   },
+   {
+    "kind": "fskill_scout",
+    "magnitude": 5
+   }
+  ]
+ },
+ "ash_yam": {
+  "name": "灰燼薯",
+  "value": 3,
+  "weight": 0.2,
+  "effects": [
+   {
+    "kind": "restore_fatigue",
+    "magnitude": 12
+   },
+   {
+    "kind": "heal",
+    "magnitude": 7
+   },
+   {
+    "kind": "fskill_alchemy",
+    "magnitude": 5
+   },
+   {
+    "kind": "fattr_intelligence",
+    "magnitude": 4
+   }
+  ]
+ },
+ "scrib_jelly": {
+  "name": "史克利伯凍",
+  "value": 4,
+  "weight": 0.2,
+  "effects": [
+   {
+    "kind": "restore_magicka",
+    "magnitude": 12
+   },
+   {
+    "kind": "heal",
+    "magnitude": 8
+   },
+   {
+    "kind": "resist_magic",
+    "magnitude": 8
+   }
+  ]
+ },
+ "nightshade": {
+  "name": "龍葵",
+  "value": 6,
+  "weight": 0.1,
+  "effects": [
+   {
+    "kind": "damage_health",
+    "magnitude": 7
+   },
+   {
+    "kind": "paralyze",
+    "magnitude": 1
+   }
+  ]
+ },
+ "deathbell": {
+  "name": "死亡鐘",
+  "value": 6,
+  "weight": 0.1,
+  "effects": [
+   {
+    "kind": "damage_health",
+    "magnitude": 9
+   },
+   {
+    "kind": "damage_strength",
+    "magnitude": 20
+   },
+   {
+    "kind": "slow",
+    "magnitude": 25
+   },
+   {
+    "kind": "fear",
+    "magnitude": 1
+   }
+  ]
+ },
+ "imp_stool": {
+  "name": "魔菌",
+  "value": 5,
+  "weight": 0.1,
+  "effects": [
+   {
+    "kind": "damage_health",
+    "magnitude": 6
+   },
+   {
+    "kind": "paralyze",
+    "magnitude": 1
+   },
+   {
+    "kind": "damage_strength",
+    "magnitude": 20
+   }
+  ]
+ },
+ "canis_root": {
+  "name": "犬根草",
+  "value": 4,
+  "weight": 0.1,
+  "effects": [
+   {
+    "kind": "paralyze",
+    "magnitude": 1
+   },
+   {
+    "kind": "restore_fatigue",
+    "magnitude": 8
+   },
+   {
+    "kind": "fskill_athletics",
+    "magnitude": 5
+   }
+  ]
+ },
+ "bone_meal": {
+  "name": "骨粉",
+  "value": 4,
+  "weight": 0.5,
+  "effects": [
+   {
+    "kind": "restore_fatigue",
+    "magnitude": 6
+   },
+   {
+    "kind": "fskill_conjuration",
+    "magnitude": 5
+   },
+   {
+    "kind": "resist_physical",
+    "magnitude": 10
+   },
+   {
+    "kind": "fskill_heavy_armor",
+    "magnitude": 5
+   }
+  ]
+ },
+ "moon_sugar": {
+  "name": "月糖",
+  "value": 25,
+  "weight": 0.1,
+  "effects": [
+   {
+    "kind": "restore_fatigue",
+    "magnitude": 12
+   },
+   {
+    "kind": "restore_magicka",
+    "magnitude": 10
+   },
+   {
+    "kind": "fskill_mercantile",
+    "magnitude": 5
+   }
+  ]
+ },
+ "spider_egg": {
+  "name": "霜蛛卵",
+  "value": 5,
+  "weight": 0.2,
+  "effects": [
+   {
+    "kind": "damage_health",
+    "magnitude": 6
+   },
+   {
+    "kind": "slow",
+    "magnitude": 25
+   }
+  ]
+ },
+ "vampire_dust": {
+  "name": "吸血鬼塵",
+  "value": 7,
+  "weight": 0.1,
+  "effects": [
+   {
+    "kind": "damage_health",
+    "magnitude": 6
+   },
+   {
+    "kind": "fear",
+    "magnitude": 1
+   },
+   {
+    "kind": "cure_disease",
+    "magnitude": 1
+   }
+  ]
+ },
+ "dragons_tongue": {
+  "name": "龍舌草",
+  "value": 4,
+  "weight": 0.1,
+  "effects": [
+   {
+    "kind": "resist_fire",
+    "magnitude": 10
+   },
+   {
+    "kind": "fattr_intelligence",
+    "magnitude": 4
+   },
+   {
+    "kind": "fattr_speed",
+    "magnitude": 4
+   }
+  ]
+ },
+ "fire_salts": {
+  "name": "火鹽",
+  "value": 5,
+  "weight": 0.2,
+  "effects": [
+   {
+    "kind": "resist_fire",
+    "magnitude": 10
+   },
+   {
+    "kind": "restore_magicka",
+    "magnitude": 8
+   }
+  ]
+ },
+ "frost_mirriam": {
+  "name": "霜薄荷",
+  "value": 4,
+  "weight": 0.1,
+  "effects": [
+   {
+    "kind": "resist_frost",
+    "magnitude": 10
+   },
+   {
+    "kind": "fattr_endurance",
+    "magnitude": 4
+   }
+  ]
+ },
+ "snowberries": {
+  "name": "雪莓",
+  "value": 3,
+  "weight": 0.1,
+  "effects": [
+   {
+    "kind": "resist_frost",
+    "magnitude": 10
+   },
+   {
+    "kind": "fattr_luck",
+    "magnitude": 4
+   }
+  ]
+ },
+ "void_salts": {
+  "name": "虛鹽",
+  "value": 6,
+  "weight": 0.2,
+  "effects": [
+   {
+    "kind": "resist_shock",
+    "magnitude": 10
+   },
+   {
+    "kind": "fattr_intelligence",
+    "magnitude": 4
+   }
+  ]
+ },
+ "pearl": {
+  "name": "珍珠",
+  "value": 5,
+  "weight": 0.1,
+  "effects": [
+   {
+    "kind": "resist_shock",
+    "magnitude": 10
+   },
+   {
+    "kind": "fattr_personality",
+    "magnitude": 4
+   },
+   {
+    "kind": "fskill_block",
+    "magnitude": 5
+   },
+   {
+    "kind": "fskill_mercantile",
+    "magnitude": 5
+   }
+  ]
+ },
+ "tundra_cotton": {
+  "name": "苔原棉",
+  "value": 2,
+  "weight": 0.1,
+  "effects": [
+   {
+    "kind": "fattr_endurance",
+    "magnitude": 4
+   },
+   {
+    "kind": "fskill_restoration",
+    "magnitude": 5
+   }
+  ]
+ },
+ "juniper_berries": {
+  "name": "杜松子",
+  "value": 3,
+  "weight": 0.1,
+  "effects": [
+   {
+    "kind": "fattr_luck",
+    "magnitude": 4
+   },
+   {
+    "kind": "fskill_restoration",
+    "magnitude": 5
+   }
+  ]
+ },
+ "troll_fat": {
+  "name": "巨魔脂",
+  "value": 4,
+  "weight": 0.1,
+  "effects": [
+   {
+    "kind": "fattr_strength",
+    "magnitude": 4
+   },
+   {
+    "kind": "fskill_blade",
+    "magnitude": 5
+   },
+   {
+    "kind": "fskill_heavy_armor",
+    "magnitude": 5
+   }
+  ]
+ },
+ "ogres_teeth": {
+  "name": "食人魔牙",
+  "value": 5,
+  "weight": 0.1,
+  "effects": [
+   {
+    "kind": "fattr_strength",
+    "magnitude": 4
+   },
+   {
+    "kind": "fskill_blunt",
+    "magnitude": 5
+   }
+  ]
+ },
+ "hawk_feather": {
+  "name": "鷹羽",
+  "value": 3,
+  "weight": 0.1,
+  "effects": [
+   {
+    "kind": "fskill_blade",
+    "magnitude": 5
+   },
+   {
+    "kind": "fskill_marksman",
+    "magnitude": 5
+   },
+   {
+    "kind": "fskill_scout",
+    "magnitude": 5
+   },
+   {
+    "kind": "fskill_acrobatics",
+    "magnitude": 5
+   }
+  ]
+ },
+ "bear_claw": {
+  "name": "熊爪",
+  "value": 4,
+  "weight": 0.1,
+  "effects": [
+   {
+    "kind": "fskill_blunt",
+    "magnitude": 5
+   },
+   {
+    "kind": "fskill_hand_to_hand",
+    "magnitude": 5
+   }
+  ]
+ },
+ "nightingale_feather": {
+  "name": "夜鶯羽",
+  "value": 6,
+  "weight": 0.1,
+  "effects": [
+   {
+    "kind": "fskill_marksman",
+    "magnitude": 5
+   },
+   {
+    "kind": "fskill_sneak",
+    "magnitude": 5
+   },
+   {
+    "kind": "fskill_security",
+    "magnitude": 5
+   }
+  ]
+ },
+ "brimstone": {
+  "name": "硫磺",
+  "value": 5,
+  "weight": 0.1,
+  "effects": [
+   {
+    "kind": "fskill_destruction",
+    "magnitude": 5
+   },
+   {
+    "kind": "resist_fire",
+    "magnitude": 10
+   }
+  ]
+ },
+ "shade_cap": {
+  "name": "影菇",
+  "value": 5,
+  "weight": 0.1,
+  "effects": [
+   {
+    "kind": "fskill_sneak",
+    "magnitude": 5
+   },
+   {
+    "kind": "fskill_destruction",
+    "magnitude": 5
+   }
+  ]
+ },
+ "nirnroot": {
+  "name": "奈恩根",
+  "value": 30,
+  "weight": 0.1,
+  "effects": [
+   {
+    "kind": "fskill_alteration",
+    "magnitude": 5
+   },
+   {
+    "kind": "restore_magicka",
+    "magnitude": 10
+   },
+   {
+    "kind": "damage_health",
+    "magnitude": 4
+   },
+   {
+    "kind": "fskill_alchemy",
+    "magnitude": 5
+   }
+  ]
+ },
+ "spriggan_sap": {
+  "name": "樹靈樹脂",
+  "value": 9,
+  "weight": 0.2,
+  "effects": [
+   {
+    "kind": "fskill_alteration",
+    "magnitude": 5
+   },
+   {
+    "kind": "restore_fatigue",
+    "magnitude": 8
+   },
+   {
+    "kind": "fattr_willpower",
+    "magnitude": 4
+   }
+  ]
+ },
+ "namiras_rot": {
+  "name": "娜米拉腐菌",
+  "value": 9,
+  "weight": 0.2,
+  "effects": [
+   {
+    "kind": "fskill_conjuration",
+    "magnitude": 5
+   },
+   {
+    "kind": "restore_magicka",
+    "magnitude": 8
+   },
+   {
+    "kind": "damage_health",
+    "magnitude": 4
+   }
+  ]
+ },
+ "taproot": {
+  "name": "主根",
+  "value": 9,
+  "weight": 0.2,
+  "effects": [
+   {
+    "kind": "fskill_conjuration",
+    "magnitude": 5
+   },
+   {
+    "kind": "restore_fatigue",
+    "magnitude": 8
+   },
+   {
+    "kind": "fattr_intelligence",
+    "magnitude": 4
+   }
+  ]
+ },
+ "mora_tapinella": {
+  "name": "莫拉香菇",
+  "value": 8,
+  "weight": 0.2,
+  "effects": [
+   {
+    "kind": "fskill_illusion",
+    "magnitude": 5
+   },
+   {
+    "kind": "restore_magicka",
+    "magnitude": 10
+   },
+   {
+    "kind": "damage_health",
+    "magnitude": 5
+   }
+  ]
+ },
+ "luna_moth_wing": {
+  "name": "月蛾翅",
+  "value": 8,
+  "weight": 0.1,
+  "effects": [
+   {
+    "kind": "fskill_illusion",
+    "magnitude": 5
+   },
+   {
+    "kind": "restore_fatigue",
+    "magnitude": 8
+   },
+   {
+    "kind": "fattr_personality",
+    "magnitude": 4
+   },
+   {
+    "kind": "fskill_speechcraft",
+    "magnitude": 5
+   }
+  ]
+ },
+ "swamp_fungal_pod": {
+  "name": "沼菌孢囊",
+  "value": 4,
+  "weight": 0.2,
+  "effects": [
+   {
+    "kind": "restore_fatigue",
+    "magnitude": 8
+   },
+   {
+    "kind": "damage_health",
+    "magnitude": 4
+   }
+  ]
+ },
+ "torchbug_thorax": {
+  "name": "火蟲胸甲",
+  "value": 4,
+  "weight": 0.1,
+  "effects": [
+   {
+    "kind": "fskill_acrobatics",
+    "magnitude": 5
+   },
+   {
+    "kind": "restore_magicka",
+    "magnitude": 8
+   },
+   {
+    "kind": "fattr_speed",
+    "magnitude": 4
+   },
+   {
+    "kind": "fskill_security",
+    "magnitude": 5
+   }
+  ]
+ },
+ "mudcrab_chitin": {
+  "name": "泥蟹殼",
+  "value": 4,
+  "weight": 0.3,
+  "effects": [
+   {
+    "kind": "resist_poison",
+    "magnitude": 10
+   },
+   {
+    "kind": "fattr_endurance",
+    "magnitude": 4
+   },
+   {
+    "kind": "fskill_block",
+    "magnitude": 5
+   },
+   {
+    "kind": "resist_physical",
+    "magnitude": 10
+   }
+  ]
+ },
+ "slaughterfish_scale": {
+  "name": "屠魚鱗",
+  "value": 4,
+  "weight": 0.2,
+  "effects": [
+   {
+    "kind": "resist_poison",
+    "magnitude": 10
+   },
+   {
+    "kind": "fskill_light_armor",
+    "magnitude": 5
+   },
+   {
+    "kind": "damage_health",
+    "magnitude": 4
+   }
+  ]
+ },
+ "hag_taper": {
+  "name": "巫蠟菌",
+  "value": 9,
+  "weight": 0.2,
+  "effects": [
+   {
+    "kind": "resist_disease",
+    "magnitude": 10
+   },
+   {
+    "kind": "restore_magicka",
+    "magnitude": 8
+   },
+   {
+    "kind": "fear",
+    "magnitude": 1
+   }
+  ]
+ },
+ "bittergreen_petal": {
+  "name": "苦綠花瓣",
+  "value": 9,
+  "weight": 0.1,
+  "effects": [
+   {
+    "kind": "resist_disease",
+    "magnitude": 10
+   },
+   {
+    "kind": "cure_disease",
+    "magnitude": 1
+   },
+   {
+    "kind": "fattr_luck",
+    "magnitude": 4
+   },
+   {
+    "kind": "damage_health",
+    "magnitude": 4
+   }
+  ]
+ },
+ "giants_toe": {
+  "name": "巨人趾",
+  "value": 35,
+  "weight": 0.5,
+  "effects": [
+   {
+    "kind": "fattr_strength",
+    "magnitude": 4
+   },
+   {
+    "kind": "fskill_hand_to_hand",
+    "magnitude": 5
+   },
+   {
+    "kind": "damage_health",
+    "magnitude": 6
+   }
+  ]
+ },
+ "hagraven_claw": {
+  "name": "鴉婆爪",
+  "value": 30,
+  "weight": 0.2,
+  "effects": [
+   {
+    "kind": "fskill_destruction",
+    "magnitude": 5
+   },
+   {
+    "kind": "fskill_marksman",
+    "magnitude": 5
+   },
+   {
+    "kind": "damage_health",
+    "magnitude": 6
+   }
+  ]
+ },
+ "slaughterfish_egg": {
+  "name": "屠魚卵",
+  "value": 4,
+  "weight": 0.1,
+  "effects": [
+   {
+    "kind": "fskill_athletics",
+    "magnitude": 5
+   },
+   {
+    "kind": "damage_health",
+    "magnitude": 4
+   }
+  ]
+ },
+ "jarrin_root": {
+  "name": "賈林根",
+  "value": 40,
+  "weight": 0.1,
+  "effects": [
+   {
+    "kind": "damage_health",
+    "magnitude": 14
+   },
+   {
+    "kind": "damage_strength",
+    "magnitude": 20
+   },
+   {
+    "kind": "fear",
+    "magnitude": 1
+   }
+  ]
+ },
+ "crimson_nirnroot": {
+  "name": "緋紅奈恩根",
+  "value": 35,
+  "weight": 0.1,
+  "effects": [
+   {
+    "kind": "fskill_alteration",
+    "magnitude": 5
+   },
+   {
+    "kind": "resist_magic",
+    "magnitude": 10
+   },
+   {
+    "kind": "fattr_intelligence",
+    "magnitude": 4
+   },
+   {
+    "kind": "damage_health",
+    "magnitude": 8
+   }
+  ]
+ },
+ "daedra_heart": {
+  "name": "魔性之心",
+  "value": 500,
+  "weight": 1,
+  "effects": [
+   {
+    "kind": "heal",
+    "magnitude": 12
+   },
+   {
+    "kind": "restore_magicka",
+    "magnitude": 12
+   },
+   {
+    "kind": "fskill_destruction",
+    "magnitude": 5
+   },
+   {
+    "kind": "damage_health",
+    "magnitude": 8
+   }
+  ]
+ }
 }

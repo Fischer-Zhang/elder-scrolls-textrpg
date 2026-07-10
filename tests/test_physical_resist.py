@@ -134,9 +134,10 @@ def test_physical_resist_enchant_conservative_and_flows():
 
 
 def test_physical_resist_brew_fail_set():
-    """troll_fat/bear_claw/bone_meal 三兩兩相配 → resist_physical 藥(FAIL-set,不擾既有配方)。"""
+    """resist_physical 可釀對(R143 現實邏輯重指派:硬殼/骨=物抗載體,軟脂/爪不再攜帶):
+    bone_meal+mudcrab_chitin(骨粉+蟹殼)→ resist_physical 藥(共有僅它,不擾既有配方)。"""
     gd = get_gamedata()
-    for a, b in [("troll_fat", "bear_claw"), ("troll_fat", "bone_meal"), ("bear_claw", "bone_meal")]:
+    for a, b in [("bone_meal", "mudcrab_chitin")]:
         c = build_character(gd, name="釀", sex="male", race="imperial", birthsign="mage", class_id="mage")
         c.skills["alchemy"] = 100
         c.known_effects = {a: ["resist_physical"], b: ["resist_physical"]}

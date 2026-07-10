@@ -38,8 +38,8 @@ def test_brew_fortify_attribute():
 
 def test_brew_fortify_skill():
     gd, c, st = _state()
-    inventory.add_item(c, "ash_yam", 1); inventory.add_item(c, "bone_meal", 1)
-    r = alchemy.brew(c, gd, "ash_yam", "bone_meal", RNG(0))
+    inventory.add_item(c, "ash_yam", 1); inventory.add_item(c, "nirnroot", 1)   # R143:骨粉改死靈主題 → 煉金對=灰燼薯+奈恩根(煉金師招牌)
+    r = alchemy.brew(c, gd, "ash_yam", "nirnroot", RNG(0))
     assert r["ok"] and r["kind"] == "buff"
     eff = gd.item(r["item_id"])["effect"]
     assert eff["type"] == "fortify_skill" and eff["skill"] == "alchemy"
