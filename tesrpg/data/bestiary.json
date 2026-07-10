@@ -154,7 +154,8 @@
   "resist": {
    "frost": 50,
    "poison": 100
-  }
+  },
+  "mindless": true
  },
  "bandit": {
   "sentient": true,
@@ -384,7 +385,8 @@
   "resist": {
    "frost": 50,
    "poison": 100
-  }
+  },
+  "mindless": true
  },
  "summoned_atronach": {
   "name": "火焰元素",
@@ -444,7 +446,8 @@
    "fire": 100,
    "frost": -25,
    "poison": 100
-  }
+  },
+  "mindless": true
  },
  "summoned_frost_atronach": {
   "name": "冰霜元素",
@@ -503,7 +506,8 @@
    0
   ],
   "loot": [],
-  "flavor": "一尊由寒冰凝成的元素巨人,踏步生霜,聽命於召喚者。"
+  "flavor": "一尊由寒冰凝成的元素巨人,踏步生霜,聽命於召喚者。",
+  "mindless": true
  },
  "summoned_flame_atronach": {
   "name": "烈焰元素",
@@ -563,7 +567,8 @@
    0
   ],
   "loot": [],
-  "flavor": "一尊由熔焰凝成的元素舞者,足尖生火,聽命於召喚者。"
+  "flavor": "一尊由熔焰凝成的元素舞者,足尖生火,聽命於召喚者。",
+  "mindless": true
  },
  "summoned_storm_atronach": {
   "name": "雷暴元素",
@@ -621,7 +626,8 @@
    0
   ],
   "loot": [],
-  "flavor": "盤旋的岩塊間迸射雷弧,一尊雷暴元素聽召而成形,為你而戰。"
+  "flavor": "盤旋的岩塊間迸射雷弧,一尊雷暴元素聽召而成形,為你而戰。",
+  "mindless": true
  },
  "summoned_dremora": {
   "name": "召喚魔人",
@@ -1444,7 +1450,8 @@
     "chance": 0.5
    }
   ],
-  "flavor": "盤旋的岩塊間迸射雷弧,一尊雷暴元素轟然成形。"
+  "flavor": "盤旋的岩塊間迸射雷弧,一尊雷暴元素轟然成形。",
+  "mindless": true
  },
  "daedroth": {
   "biomes": [
@@ -3195,7 +3202,8 @@
     "chance": 0.4
    }
   ],
-  "flavor": "水晶鎧甲一塊塊接合成人形 —— 賈格拉格的秩序騎士,動作精準得毫無一絲多餘,每一斬都落在同一個無可閃避的軌跡上。牠不憤怒、不恐懼、也不退讓,只如灰色潮汐般,把一切混亂與生機碾成整齊劃一的塵埃。"
+  "flavor": "水晶鎧甲一塊塊接合成人形 —— 賈格拉格的秩序騎士,動作精準得毫無一絲多餘,每一斬都落在同一個無可閃避的軌跡上。牠不憤怒、不恐懼、也不退讓,只如灰色潮汐般,把一切混亂與生機碾成整齊劃一的塵埃。",
+  "mindless": true
  },
  "dremora_lord": {
   "biomes": [
@@ -3718,7 +3726,8 @@
     "chance": 0.2
    }
   ],
-  "flavor": "沼泥中爬起一具腐爛的屍體,瘟疫的惡臭隨它每一步翻湧而出。"
+  "flavor": "沼泥中爬起一具腐爛的屍體,瘟疫的惡臭隨它每一步翻湧而出。",
+  "mindless": true
  },
  "will_o_wisp": {
   "biomes": [
@@ -3801,7 +3810,8 @@
     "chance": 0.15
    }
   ],
-  "flavor": "一團幽幽飄盪的沼澤鬼火逼近,光芒下藏著噬人的電弧。"
+  "flavor": "一團幽幽飄盪的沼澤鬼火逼近,光芒下藏著噬人的電弧。",
+  "mindless": true
  },
  "bog_troll": {
   "biomes": [
@@ -6101,7 +6111,8 @@
     "chance": 0.25
    }
   ],
-  "flavor": "沙下的黃銅機關甦醒,一具八足蒸汽蜘蛛奔竄而出,關節迸射著上古的電弧。"
+  "flavor": "沙下的黃銅機關甦醒,一具八足蒸汽蜘蛛奔竄而出,關節迸射著上古的電弧。",
+  "mindless": true
  },
  "dwarven_centurion": {
   "biomes": [
@@ -6200,7 +6211,8 @@
     "chance": 0.5
    }
   ],
-  "flavor": "沃倫菲爾廟心的蒸汽驟然轟鳴 —— 一尊三人高的矮人百夫長嘎然立起,黃銅巨錘掃過,千年的烈焰自胸甲縫隙噴湧而出。"
+  "flavor": "沃倫菲爾廟心的蒸汽驟然轟鳴 —— 一尊三人高的矮人百夫長嘎然立起,黃銅巨錘掃過,千年的烈焰自胸甲縫隙噴湧而出。",
+  "mindless": true
  },
  "moor_witch": {
   "sentient": true,
@@ -6325,7 +6337,8 @@
     "chance": 0.2
    }
   ],
-  "flavor": "斷垣上一尊風化的石像驟然睜眼,石翼鏗然張開 —— 灰岩的軀殼撲下,爪上還凝著沼澤的寒霜。"
+  "flavor": "斷垣上一尊風化的石像驟然睜眼,石翼鏗然張開 —— 灰岩的軀殼撲下,爪上還凝著沼澤的寒霜。",
+  "mindless": true
  },
  "harpy": {
   "biomes": [
@@ -6474,7 +6487,8 @@
     "chance": 0.25
    }
   ],
-  "flavor": "巨石巫圈的古墓中,一具披著鏽蝕板甲的鐵衛拖劍而起,空洞的盔縫裡滲著幽藍的寒光。"
+  "flavor": "巨石巫圈的古墓中,一具披著鏽蝕板甲的鐵衛拖劍而起,空洞的盔縫裡滲著幽藍的寒光。",
+  "mindless": true
  },
  "hag_matriarch": {
   "sentient": true,
@@ -9818,7 +9832,8 @@
     "item": "fire_salts",
     "chance": 0.5
    }
-  ]
+  ],
+  "mindless": true
  },
  "slaughterfish": {
   "name": "屠魚",

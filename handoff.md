@@ -1412,6 +1412,18 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 
 ---
 
+### R140 · 現實邏輯審計批次 2:心智控場豁免(嚇不動白骨與傀儡) [re-sim] [content]
+
+**承 R139 審計批次**(使用者確認範圍:群 3+5+6+7+8 全修·**群 4 遠程旗標不動**)。批次 2 = 群 3:恐懼/安撫/馭獸對**無心智者**照樣生效的違例(骷髏會被嚇得發抖·秩序騎士 flavor 明寫「不知恐懼」卻 35% 可懼·木精靈對蒸汽傀儡講森林語也能馭獸)。
+
+**機制**:① bestiary 加 **`mindless: true`** 旗標 ×15(skeleton/reanimated_thrall/marsh_zombie/barrow_sentinel/gargoyle/dwarven_spider/dwarven_centurion/knight_of_order/will_o_wisp/flame·storm_atronach/summoned_atronach×4;**draugr/巫妖/幽靈刻意保留心智**=有意志的亡者仍可懼)。② `magic._is_mindless(cre,gd)`(鏡像 `_is_undead`·含 R106 復生屍體暫態 `_undead`=行屍無心智·玩家永遠有心智)。③ **`apply_control` 心智閘**(R44 單一決策點收口):`kind ∈ (fear, calm)` 且 mindless → 回 `resisted`(**在任何 rng 之前 → 非 mindless 目標 byte-identical**);新 `divine=True` 參數=**聖光驅散旁路**(turn_undead 呼叫端帶入·神聖斥退作用於不死本質而非心智,骷髏照樣被驅散=TES 原典);paralyze/stagger/slow/weaken/benumb 為物理性控場**不受影響**(震得動骨架、凍得住傀儡)。④ `powers._control_class_ok` beast 類=活體野獸(排除 undead/mindless)→ 林語馭獸/戰吼類別閘修正。⑤ gen_bestiary 加【無心智】tag,BESTIARY 重生。
+
+**🔴 驗證**:`run_all` **120**(新 `test_mindless_control` 5 測:懼/撫無效·物理控場照施·有心智者仍可懼·divine 旁路·馭獸類別);**sim_assassin BYTE-IDENTICAL**(隔離 worktree·sim 無對怪恐懼投入·閘在 rng 前);sim_party 無殭局。零新存檔欄(mindless=gamedata 唯讀)。**知情代價**:恐懼/幻術 build 對 15 隻無心智怪失去心控軸(物理控場仍在)= 現實邏輯>平衡。
+
+**🔴 鐵律**:恐懼/安撫永不作用於 mindless(閘在 `apply_control` 單點·聖光 `divine=True` 唯一旁路);加白骨/傀儡/機關/元素類新怪必標 `mindless`(有意志的亡者如 draugr/lich 不標);馭獸 beast 類=活體(排 undead/mindless);批次 3(公式 gate)/批次 4(裝備)/批次 5(煉金主題)/批次 6(世界行為)接續。
+
+---
+
 ### R139 · 現實邏輯審計批次 1:毒/元素抗性 rubric(無血肉之軀不可被下毒) [re-sim] [content]
 
 **承鐵律零號總則入憲後的 16-agent 全面審計**(78 發現 → 對抗驗證 67 confirmed;使用者拍板分三批修、群 7/8〔煉金主題/世界行為〕不動)。**批次 1 = 抗性斷層 22 隻**(bestiary 純資料 + 1 行 vampirism + 測試豁免):

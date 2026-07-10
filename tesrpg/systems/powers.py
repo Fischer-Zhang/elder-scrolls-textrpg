@@ -196,12 +196,15 @@ def racial_needs_target(pid: str) -> bool:
 
 
 def _control_class_ok(target, gamedata: GameData, target_class) -> bool:
-    """敵方類別閘:beast=非 sentient(野獸/構裝);humanoid=sentient(人形);all/None=不限。"""
+    """敵方類別閘:beast=活體野獸(非 sentient 且非不死/無心智);humanoid=sentient(人形);all/None=不限。
+    R140 現實邏輯:對蒸汽傀儡/白骨/石像講森林語馭獸嚇不退 → beast 類排除 undead/mindless。"""
     if target_class in (None, "all"):
         return True
-    sentient = bool((getattr(gamedata, "bestiary", {}) or {})
-                    .get(getattr(target, "template_id", ""), {}).get("sentient"))
-    return sentient if target_class == "humanoid" else not sentient
+    tpl = (getattr(gamedata, "bestiary", {}) or {}).get(getattr(target, "template_id", ""), {})
+    sentient = bool(tpl.get("sentient"))
+    if target_class == "humanoid":
+        return sentient
+    return not sentient and not tpl.get("undead") and not tpl.get("mindless")
 
 
 def racial_combat_targets(pid: str, enemies: list, gamedata: GameData) -> list:

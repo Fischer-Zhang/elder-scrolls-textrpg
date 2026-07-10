@@ -566,7 +566,8 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
                     if eff.get("holy"):
                         undead_present = True   # 不死系在場(不論驅散成功/被抵抗/已懼 → 訊息可區隔)
                     if apply_control(e, st["status"], gamedata, rng,
-                                     magnitude=st.get("magnitude", 0.0), turns=st["turns"]) == "applied":
+                                     magnitude=st.get("magnitude", 0.0), turns=st["turns"],
+                                     divine=bool(eff.get("holy"))) == "applied":   # R140:聖光驅散旁路心智閘
                         repelled.append(e.name)
                 else:                                    # dot/soul_trap 等照常(各敵獨立 dict,R17)
                     e.active_effects.append(make_status_effect(_scaled_status(st, power)))   # R76 DoT 吃威力
@@ -735,6 +736,16 @@ def _is_undead(creature, gamedata: GameData) -> bool:
     return bool(tid and gamedata.bestiary.get(tid, {}).get("undead"))
 
 
+def _is_mindless(creature, gamedata: GameData) -> bool:
+    """無心智者(R140 現實邏輯):bestiary `mindless` 旗標(白骨/殭屍/傀儡/機關/元素/水晶騎士),
+    或 R106 復生屍體暫態 `_undead`(復生的行屍=無心智)。恐懼/安撫等心智控場對其無效
+    (聖光驅散 divine 旁路除外);玩家永遠有心智(無 template_id → False)。"""
+    if getattr(creature, "_undead", False):
+        return True
+    tid = getattr(creature, "template_id", None)
+    return bool(tid and gamedata.bestiary.get(tid, {}).get("mindless"))
+
+
 def is_feared(creature) -> bool:
     return any(e["kind"] == "fear" and e["turns"] > 0 for e in creature.active_effects)
 
@@ -894,7 +905,7 @@ _HARD_CONTROL = ("fear", "paralyze")     # 失能(經 is_incapacitated 跳過行
 _CONTROL_KINDS = ("fear", "paralyze", "stagger", "slow", "weaken", "benumb", "calm")
 
 
-def apply_control(target, kind, gamedata, rng, *, magnitude=0.0, turns=1, source=None) -> str:
+def apply_control(target, kind, gamedata, rng, *, magnitude=0.0, turns=1, source=None, divine=False) -> str:
     """集中施加「控場 debuff」到 target,統一 solo/willpower 抵抗與去重(R44 單一決策點)。回傳:
       'applied'  —— 實際施加
       'resisted' —— 被抵抗(玩家意志 resisted_mind / solo BOSS 機率減免)
@@ -904,7 +915,12 @@ def apply_control(target, kind, gamedata, rng, *, magnitude=0.0, turns=1, source
     `SOLO_CONTROL_RESIST_CHANCE` 機率抗(取代舊「完全免疫」);軟控(stagger/slow/weaken)
     一律照施(solo 無免疫)→ 收斂鈍器內建 stagger 與其餘 stagger 路徑的不一致。
     source:帶來源標(如元素 rider `ench_chill`)→ 同源去重(雙持不疊兩份)。
-    dot/soul_trap/deathmark 等非控場不走此 helper。"""
+    dot/soul_trap/deathmark 等非控場不走此 helper。
+    R140 心智閘:恐懼/安撫=心智控場 → 無心智者(_is_mindless:白骨/傀儡/元素…)不受(回 'resisted'·
+    不擲 rng → 非 mindless 目標 byte-identical);`divine=True`(聖光驅散 turn_undead)旁路
+    —— 神聖斥退作用於不死本質而非心智,骷髏照樣被驅散(TES 原典)。"""
+    if kind in ("fear", "calm") and not divine and _is_mindless(target, gamedata):
+        return "resisted"                                 # 無心智,嚇不動也安撫不了(R140)
     if kind == "calm":   # R104 幻術安撫:solo boss 完全免疫(非機率)、去重防延長;成功率已由 calm_chance 群數閘,故此處不再 willpower 抗
         if _is_solo(target, gamedata):
             return "resisted"

@@ -79,6 +79,8 @@ def flags(k, v):
         f.append("人形")
     if v.get("undead"):
         f.append("不死")   # R122 聖光(holy)剋不死:受聖光傷害放大、可被驅散亡者驅散
+    if v.get("mindless"):
+        f.append("無心智")   # R140 現實邏輯:恐懼/安撫/馭獸無效(聖光驅散除外)
     if v.get("summon"):    # R134/R135 BOSS 召喚爪牙:標明召什麼(固定 id 或隨機表)·wave/總量
         sp = v["summon"]
         what = "/".join(sp["ids"]) + "隨機" if sp.get("ids") else sp["id"]
