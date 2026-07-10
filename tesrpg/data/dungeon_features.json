@@ -1,0 +1,64 @@
+{
+  "_doc": "R146 地城特色格模板池(第三互動格);dungeons.json 以 features:[id] opt-in 引用。三 kind:lore=環境敘事、shrine=風險回報抉擇(限時增益+代價·安全池)、puzzle=技能檢定謎題。文字放模板可跨地城複用。",
+
+  "lore_soul_weave": {
+    "kind": "lore",
+    "style": "cyan",
+    "text": "牆面浮雕記述著織魂者的祕辛 —— 他們曾以活人的靈魂為梭,織就不滅的護甲……字句到此戛然而止,只餘一道深深的抓痕劃過石壁。"
+  },
+  "lore_dwemer_ledger": {
+    "kind": "lore",
+    "style": "cyan",
+    "text": "一塊蒙塵的矮人石板嵌在地上,鏨刻的符文你只識得零星幾個:『……齒輪不倦、火不熄……我等終將離去,唯機關長鳴。』署名處早已鏽蝕難辨。"
+  },
+
+  "shrine_endurance_font": {
+    "kind": "shrine",
+    "text": "一泓赤色的泉眼在祭壇上緩緩搏動,像是某種活物的心臟。",
+    "prompt": "血色之泉 —— 你要?",
+    "offers": [
+      {"key": "drink", "label": "飲下泉水(強化耐力,但血脈灼痛)",
+       "buff": {"kind": "fortify_attribute", "param": "endurance", "magnitude": 12, "hours": 6},
+       "gain_text": "赤泉入喉,筋骨如燃鋼般堅韌 —— 強化耐力 +12(限時)。",
+       "risk": {"type": "damage", "amount": [8, 16], "text": "……代價是血脈灼痛,你受了 {dmg} 點傷害。"}},
+      {"key": "attune", "label": "以心神共鳴(強化復原,但心神短暫遲鈍)",
+       "buff": {"kind": "fortify_skill", "param": "restoration", "magnitude": 15, "hours": 6},
+       "gain_text": "治癒之光在指尖凝聚 —— 強化復原 +15(限時)。",
+       "risk": {"type": "curse", "skill": "alteration", "magnitude": 20, "text": "……但共鳴的餘波令你的【變化】一時遲鈍(直到你走出地城)。"}}
+    ]
+  },
+  "shrine_warded_brazier": {
+    "kind": "shrine",
+    "text": "一座冷焰銅爐無風自燃,爐口的符文邀你將手探入火中。",
+    "prompt": "護焰銅爐 —— 你要?",
+    "offers": [
+      {"key": "temper", "label": "淬煉意志(強化意志,但被冷焰反噬)",
+       "buff": {"kind": "fortify_attribute", "param": "willpower", "magnitude": 12, "hours": 6},
+       "gain_text": "冷焰淬過心神,你的意志如磐 —— 強化意志 +12(限時)。",
+       "risk": {"type": "damage", "amount": [6, 14], "text": "……冷焰卻反噬指尖,你受了 {dmg} 點傷害。"}},
+      {"key": "ward", "label": "汲取焰中的護息(抗火,但護甲技短暫生疏)",
+       "buff": {"kind": "resist_element", "param": "fire", "magnitude": 25, "hours": 6},
+       "gain_text": "一層溫熱的護息裹住全身 —— 抗火焰 +25%(限時)。",
+       "risk": {"type": "curse", "skill": "heavy_armor", "magnitude": 20, "text": "……但焰息灼過皮甲的記憶,你的【重甲】一時生疏(直到你走出地城)。"}}
+    ]
+  },
+
+  "puzzle_ward_lock": {
+    "kind": "puzzle",
+    "check": "alteration",
+    "difficulty": 55,
+    "text": "一道旋轉的魔法封印攔住去路,符文隨你的靠近而明滅。",
+    "success_text": "你讀通了符文的節律,封印無聲散開 —— 後方藏著一份供品。",
+    "reward": {"loot": ["filled_grand_soul_gem", {"item": "ruby", "chance": 0.5}, {"gold": [40, 90]}]},
+    "penalty": {"type": "damage", "amount": [6, 12], "text": "符文炸開一道奧術反噬 —— 你受了 {dmg} 點傷害。"}
+  },
+  "puzzle_rusted_mechanism": {
+    "kind": "puzzle",
+    "check": "security",
+    "difficulty": 45,
+    "text": "一組鏽蝕的矮人拉桿嵌在牆上,錯落的齒輪等著正確的次序。",
+    "success_text": "你摸清了齒輪的咬合,拉桿咔噠歸位 —— 暗格滑開,露出積藏的財貨。",
+    "reward": {"loot": [{"item": "glow_dust", "chance": 0.6}, {"item": "ebony_ingot", "chance": 0.35}, {"gold": [30, 70]}]},
+    "penalty": {"type": "damage", "amount": [5, 10], "text": "齒輪猛地回彈,一根鏽釘刺中了你 —— 受了 {dmg} 點傷害。"}
+  }
+}

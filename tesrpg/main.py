@@ -1960,6 +1960,83 @@ def _resolve_trap(state: GameState, gamedata: GameData, trap: dict) -> None:
         ui.show_events(progression.use_skill(char, gamedata, "security", base_xp * formulas.SECURITY_FAIL_XP_FRAC), gamedata)
 
 
+# ---- R146 地城第三互動格:祭壇(風險回報)/碑文(環境敘事)/機關(技能檢定) ----------
+def _apply_feature_risk(state: GameState, gamedata: GameData, risk: dict) -> None:
+    """特色格風險:直接扣血(比照 _resolve_trap)或暫態技能詛咒(_dungeon_curse·負層·離場即清·R121)。
+    curse 只減不加 → 對任意技能安全(不可能餵出偷襲/武器增益)。"""
+    char = state.player
+    if risk.get("type") == "damage":
+        lo, hi = risk["amount"]
+        dmg = state.rng.randint(lo, hi)
+        char.health = max(0, char.health - dmg)
+        ui.message(risk.get("text", "你受了 {dmg} 點傷害。").replace("{dmg}", str(dmg)), style="red")
+    elif risk.get("type") == "curse":
+        curse = getattr(char, "_dungeon_curse", None)
+        if curse is None:
+            curse = char._dungeon_curse = {}
+        sid = risk["skill"]
+        pen = min(char.base_skill(sid), risk.get("magnitude", 20))   # 夾:不使技能低於 0
+        curse[sid] = curse.get(sid, 0) - pen
+        ui.message(risk.get("text", f"你的【{gamedata.skills[sid]['name']}】一時遲鈍(−{pen})。"), style="red")
+
+
+def _resolve_shrine(state: GameState, gamedata: GameData, feat: dict) -> None:
+    """祭壇=風險/回報抉擇:ui.menu 擇一 offer → potion_buff 限時增益(安全池)+ 風險結算。
+    返回(不擇)=不驚動它離開(原子探索:離場即棄)。"""
+    char = state.player
+    ui.message(feat.get("text", ""), style="magenta")
+    offers = feat.get("offers") or []
+    choice = ui.menu(feat.get("prompt", "祭壇前,你要?"),
+                     [(o["key"], o["label"]) for o in offers], allow_back=True)
+    if choice is None:
+        ui.message("你決定不去驚動它,轉身離開。", style="grey70")
+        return
+    off = next(o for o in offers if o["key"] == choice)
+    b = off["buff"]
+    label = potion_buff.apply_buff(char, state, gamedata,
+                                   b["kind"], b["param"], b["magnitude"], b["hours"])
+    ui.message(off.get("gain_text", f"一股力量湧入 —— {label}(限時)。"), style="green")
+    if off.get("risk"):
+        _apply_feature_risk(state, gamedata, off["risk"])
+
+
+def _resolve_puzzle(state: GameState, gamedata: GameData, feat: dict) -> None:
+    """機關=技能檢定(比照 _resolve_trap):成功→ open_container 式獎勵 + full xp;失敗→ 風險 + 少量 xp。"""
+    char = state.player
+    ui.message(feat.get("text", ""), style="cyan")
+    sid = feat["check"]
+    attr_id = gamedata.skills[sid]["attr"]
+    base_xp = gamedata.skills[sid]["practice"]["xp"]
+    diff = feat.get("difficulty", 50)
+    chance = min(0.95, max(0.05,
+                 0.30 + (char.attr(attr_id) - 40) * 0.008 + char.skill(sid) * 0.004
+                 + formulas.luck_fortune(char.attr("luck")) - diff * 0.006))
+    if state.rng.chance(chance):
+        ui.message(feat.get("success_text", "機關順利解開。"), style="green")
+        spoils = dungeon.open_container(char, gamedata,
+                                        {"loot": (feat.get("reward") or {}).get("loot", [])}, state.rng)
+        ui.loot_report(spoils, gamedata)   # open_container 已入袋
+        ui.show_events(progression.use_skill(char, gamedata, sid, base_xp), gamedata)
+    else:
+        _apply_feature_risk(state, gamedata, feat.get("penalty") or {"type": "damage", "amount": [4, 8]})
+        if combat.is_alive(char):   # 致死不給 xp(鏡像 _resolve_trap)
+            ui.show_events(progression.use_skill(char, gamedata, sid, base_xp * formulas.SECURITY_FAIL_XP_FRAC), gamedata)
+
+
+def _resolve_feature(state: GameState, gamedata: GameData, feature_id: str) -> None:
+    """R146 第三互動格:依 kind(lore/shrine/puzzle)分派。致傷後由呼叫端檢 is_alive(比照 _resolve_trap)。"""
+    feat = gamedata.dungeon_features.get(feature_id)
+    if not feat:   # 防呆:陳舊/壞 id 靜默略過(R03)
+        return
+    kind = feat.get("kind")
+    if kind == "lore":
+        ui.message(feat.get("text", ""), style=feat.get("style", "cyan"))
+    elif kind == "shrine":
+        _resolve_shrine(state, gamedata, feat)
+    elif kind == "puzzle":
+        _resolve_puzzle(state, gamedata, feat)
+
+
 def _dungeon_scry(state: GameState, gamedata: GameData, grid: dict, z: int, explored: list) -> None:
     """R121 靈視/靈識:對地城當前層任一未探格主動施展揭露(靈視術=單格·靈識術=中心+四鄰)。
     與偵查 25 里程碑互補 —— recon 移動時揭四鄰(近身),scry 主動揭遠格(規劃路線·探明樓梯/首領/機關);
@@ -2155,6 +2232,10 @@ def action_dungeon(state: GameState, gamedata: GameData) -> str | None:
             elif t == dungeoncrawl.TRAP:
                 _resolve_trap(state, gamedata, cell["trap"])
                 if not combat.is_alive(player):
+                    return "dead"
+            elif t == dungeoncrawl.FEATURE:   # R146 第三互動格:祭壇/碑文/機關(進格自動觸發)
+                _resolve_feature(state, gamedata, cell["feature"])
+                if not combat.is_alive(player):   # 祭壇/機關風險可致傷(比照 TRAP)
                     return "dead"
             elif t == dungeoncrawl.BOSS:
                 boss = grid["boss"]

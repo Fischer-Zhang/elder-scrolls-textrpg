@@ -2394,8 +2394,8 @@ def territory_panel(rows: list[dict], gamedata: GameData, gold: int) -> None:
 
 
 _DUNGEON_ICON = {"stairs": "↓", "boss": "✦", "entrance": "◊"}   # 結構格:已探即恆顯
-_DUNGEON_CONTENT_ICON = {"monster": "!", "container": "$", "trap": "^"}  # 內容格:已探「未結算」才顯(偵查揭示用)
-_DUNGEON_LEGEND = "@你  ✦首領  ↓樓梯  ◊入口  !敵  $寶  ^阱  ·已探  ?未探"
+_DUNGEON_CONTENT_ICON = {"monster": "!", "container": "$", "trap": "^", "feature": "✧"}  # 內容格:已探「未結算」才顯(偵查揭示用;R146 特色格 ✧)
+_DUNGEON_LEGEND = "@你  ✦首領  ↓樓梯  ◊入口  !敵  $寶  ^阱  ✧祕  ·已探  ?未探"
 
 
 def dungeon_grid(grid: dict, z: int, cx: int, cy: int, explored: list, resolved: list | None = None) -> None:

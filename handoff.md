@@ -1412,6 +1412,27 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 
 ---
 
+### R146 · 地城互動深化:第三種互動格 FEATURE(祭壇/碑文/機關) [content]
+
+**承「下一步」8-agent 盤點**(#4 地城互動深化=最大探索缺口:66 座地城除怪池/主題換皮外機制全同質·進一格只遇怪/寶箱/陷阱)。plan-mode 三 Explore + 一 Plan 代理·使用者五拍板(三 kind 全做·祭壇=賭博手感〔增益+代價〕·回報只限時增益守 byte-identical·進格自動觸發·**特色格可重複跟隨地城重生**〔釐清:地城是 roguelike 風味程序生成·原子探索離場即棄·零存檔·非 run-based〕)。
+
+**架構=占格特色格**(新 cell type `FEATURE`·與 MONSTER/CONTAINER/TRAP 同層級·非層級旗標)。**開放格模型使占格零連通風險**。資料驅動 opt-in:只有 dungeons.json 宣告 `"features":[id,...]` 的地城才生成(比照 orbs 只在 soul_sanctum)·**既有 66 座 `spec.get("features")` falsy → generate 整段 skip → 不消耗任何 rng → byte-identical**。三 kind 全走既有效果層·**絕不碰 combat/formulas/character**。
+
+- **新 catalog `data/dungeon_features.json`**(模板池·id→定義·文字放模板可跨地城複用)+ `gamedata.dungeon_features`(_load)。三 kind:`lore`(碑文=純 `ui.message` 敘事)/`shrine`(祭壇=`ui.menu` 賭博抉擇·每 offer 給限時增益+索代價)/`puzzle`(機關=技能檢定→獎勵/後果)。
+- **`dungeoncrawl.py`**:`FEATURE="feature"` 常數 + generate 佈格(trap 後·`feat_pool=spec.get("features")`·`rest[used]` 取洗牌後下一未用格放 1 格/層·決定性·不撞 entrance/stairs/boss·小地城格位耗盡則 0 格)。
+- **`main.py`**:dispatch elif(進格自動觸發·致傷檢 is_alive 比照 TRAP)+ `_resolve_feature`/`_resolve_shrine`/`_resolve_puzzle`/`_apply_feature_risk`。復用 `potion_buff.apply_buff`(限時增益)/`dungeon.open_container`(機關獎勵)/`ui.menu`+`loot_report`+`message`/`progression.use_skill`+`formulas.luck_fortune`(檢定 xp·鏡像 `_resolve_trap`)/暫態負層 `char._dungeon_curse`(R121·不入 to_dict·離場 line 5999 清)。
+- **`console.py`**:minimap `_DUNGEON_CONTENT_ICON` 加 `feature:"✧"`·legend 補「✧祕」。
+- **`dungeons.json`**:3 座示範 wire(soul_sanctum=碑文+法術封印機關·volenfell=矮人石板+拉桿機關·ashfall_barrow=血色之泉+護焰銅爐)·定點 Edit 免全檔重排。
+- **`codex.json`**:世界探索篇加特色格說明。
+
+**🔴 shrine 安全池(平衡紅線·guard 強制·守 byte-identical)**:`buff` 只落 `fortify_attribute`(param 排除 strength)/`fortify_skill`(排除 blade/blunt/hand_to_hand/marksman/sneak)/`resist_element`(任意)·magnitude ≤ 單瓶上界(attr15/skill19/resist30·鏡像 boons.py + sim fortify-dosed 包絡)。同層 max 合併不超界。風險走傷害(比照 trap)或暫態技能詛咒(_dungeon_curse 負層·只減不加·對任意技能安全)。**永久回報 boons.grant 保留給未來手擺格·v1 不用**(需用時知會+過 sim)。
+
+**驗證**:`run_all` **125**(新 test_dungeon_features:catalog FK/schema·🔴 shrine 安全池·generate 佈格+對照組永不生成·三 kind resolve 煙霧·零新存檔欄);**sim_assassin BYTE-IDENTICAL**(隔離 worktree·generate features-gate·未碰 combat/formulas·sim 從不 crawl 地城);`check.sh --smoke` 綠;功能煙霧(每層恰 1 特色格·minimap 無 crash)。**零新存檔欄**(FEATURE=local grid 原子探索·限時增益走 potion_buffs 自動過期·暫態 curse 走 _dungeon_curse)。
+
+**🔴 鐵律**:加特色格純改 dungeon_features.json(kind∈lore/shrine/puzzle)+ dungeons.json `features:[id]` opt-in;shrine 增益守安全池(排除 strength/武器技能/sneak·≤單瓶上界·guard 自動把關)·風險走傷害/暫態 curse;特色格隨地城重生可重複(零存檔·勿加一次性持久旗標);boss/stairs/entrance 不被覆蓋;**擴永久回報(boons)須知會使用者+過 sim**。前瞻:case_layer 賊眼揭特色格(現只揭陷阱/鎖)·per-地城文字覆寫(loot 式多型)·更多 kind(傳送門/獻祭)。
+
+---
+
 ### R145 · 現實邏輯審計批次 7(群 4·方案 C):板甲擋不住凝視·荊棘反彈不了弩矢 [re-sim] [content]
 
 **承群 4 深入分析**(三方案探針:完全體+中期全 100%→100% = **純現實感修正零平衡代價**;使用者拍板 **方案 C 精準組合**·戰吼=物理採建議):

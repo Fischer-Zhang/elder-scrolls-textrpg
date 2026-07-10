@@ -21,6 +21,7 @@ CONTAINER = "container"
 TRAP = "trap"
 STAIRS = "stairs"
 BOSS = "boss"
+FEATURE = "feature"   # R146 第三互動格:祭壇/碑文/機關(opt-in;spec["features"] 池抽入·cell["feature"]=模板 id)
 
 # 每層內容密度(套用於非特殊格;餘為空)。調平衡改這三個常數。
 # 開放格 → 玩家自行路由(只結算「踏入」的格)→ 衝 boss 遭遇少、全清遭遇多(風險/回報探索)。
@@ -71,6 +72,12 @@ def generate(spec: dict, gamedata: GameData, rng: RNG) -> dict:
                                          "loot": items + [{"gold": [gold, gold * 2]}]}}
         for (x, y) in rest[n_mon + n_con:n_mon + n_con + n_trap]:
             cells[y][x] = {"type": TRAP, "trap": {"damage": [danger * 2, danger * 4]}}
+        feat_pool = spec.get("features")   # R146 opt-in:未宣告 → falsy → 整段 skip → 既有地城 byte-identical
+        if feat_pool:
+            used = n_mon + n_con + n_trap
+            if used < len(rest):           # mon/con/trap 之後仍有非特殊格 → 放 1 格/層(小地城格位耗盡則 0 格,不 crash)
+                fx, fy = rest[used]        # 取洗牌後下一個未用格(決定性·不撞 entrance/stairs/boss/怪/寶/陷阱)
+                cells[fy][fx] = {"type": FEATURE, "feature": rng.choice(feat_pool)}
         layers.append(cells)
     return {"name": spec["name"], "n": n, "m": m, "layers": layers, "boss": spec["boss"]}
 
