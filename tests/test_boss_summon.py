@@ -35,7 +35,9 @@ gd = get_gamedata()
 
 # ---------- schema lint ----------
 def test_summon_spec_schema():
-    """summon 譜:爪牙存在且非 solo;召主是 solo 高危王;wave/cap/cooldown 合法;d4 早期王不配。"""
+    """summon 譜:爪牙存在且非 solo;召主是 solo 高危王;wave/cap/cooldown 合法;d4 早期王不配;
+    R135 隨機表(ids)加「反樂透牆」:表內任一爪牙不得對玩家四大魔法元素帶 ≥100 免疫
+    (固定 id 譜可帶=刻意自系牆;隨機表帶=1/N 機率鎖死某系法師的 feels-bad 樂透,禁用)。"""
     n = 0
     for bid, b in gd.bestiary.items():
         spec = b.get("summon")
@@ -44,12 +46,22 @@ def test_summon_spec_schema():
         n += 1
         assert b.get("solo"), f"{bid}:召主須為 solo boss"
         assert b.get("danger", 0) >= 5, f"{bid}:召主須 danger≥5(d4 早期王不配·保逃跑機率)"
-        add = gd.bestiary.get(spec["id"])
-        assert add is not None, f"{bid}:爪牙 {spec['id']} 不存在"
-        assert not add.get("solo"), f"{bid}:爪牙不得為 solo"
+        assert ("id" in spec) != ("ids" in spec), f"{bid}:id / ids 恰取其一"
+        assert spec.get("ids") or "id" in spec, f"{bid}:ids 不得為空表"
+        tids = spec.get("ids") or [spec["id"]]
+        for tid in tids:
+            add = gd.bestiary.get(tid)
+            assert add is not None, f"{bid}:爪牙 {tid} 不存在"
+            assert not add.get("solo"), f"{bid}:爪牙不得為 solo"
+            if "ids" in spec:   # 反樂透牆(僅隨機表)
+                worst = max((add.get("resist") or {}).get(el, 0) for el in ("fire", "frost", "shock", "magic"))
+                assert worst < 100, f"{bid}:隨機表爪牙 {tid} 對魔法元素免疫 → 樂透牆,禁用"
         assert 1 <= int(spec.get("wave", 2)) <= int(spec.get("cap", 6)) <= 6, f"{bid}:wave/cap 越界"
         assert int(spec.get("cooldown", 3)) >= 1, f"{bid}:cooldown 須 ≥1"
-    assert n >= 18, f"名冊應有 ≥18 王配譜(現 {n})"
+        if "msg" in spec:
+            assert "{names}" in spec["msg"], f"{bid}:msg 模板須含 {{names}}"
+            spec["msg"].format(name="x", names="y")   # 模板必須可安全 format(壞括號在測試期炸,非戰鬥中)
+    assert n >= 24, f"名冊應有 ≥24 王配譜(現 {n})"
     # d4 早期王明確不配(vampire_lord/werewolf_alpha·中期玩家逃跑機率保護)
     for bid in ("vampire_lord", "werewolf_alpha"):
         assert not gd.bestiary[bid].get("summon"), f"{bid}(d4 早期王)不得配召喚"
@@ -86,6 +98,32 @@ def test_try_boss_summon_none_for_non_summoner():
     enemies = [wolf]
     assert combat.try_boss_summon(wolf, enemies, gd, RNG(2)) is None
     assert len(enemies) == 1
+
+
+def test_reinforcement_msg_template():
+    """R135 增援風味:spec 可選 msg 模板(狼嚎/號角 ≠ 位面裂隙);未帶 msg → R134 原句。"""
+    alpha = combat.spawn_creature(gd, "dire_alpha", RNG(1))
+    enemies = [alpha]
+    msg = combat.try_boss_summon(alpha, enemies, gd, RNG(2))
+    assert "長嗥" in msg and "裂隙" not in msg          # 頭狼用自訂訊息
+    tyrant = combat.spawn_creature(gd, "grave_tyrant", RNG(1))
+    enemies2 = [tyrant]
+    msg2 = combat.try_boss_summon(tyrant, enemies2, gd, RNG(2))
+    assert "撕開一道裂隙" in msg2                       # 無 msg → 預設句逐字保留
+
+
+def test_random_minion_table_madness_avatar():
+    """R135 瘋神混沌:ids 隨機表 —— 每隻獨立抽、全部標 summoned、模板必在表內;多 seed 應出現多樣性。"""
+    table = set(gd.bestiary["madness_avatar"]["summon"]["ids"])
+    seen = set()
+    for s in range(30):
+        boss = combat.spawn_creature(gd, "madness_avatar", RNG(1))
+        enemies = [boss]
+        assert combat.try_boss_summon(boss, enemies, gd, RNG(s * 13 + 5))
+        for a in enemies[1:]:
+            assert getattr(a, "summoned", False) and a.template_id in table
+            seen.add(a.template_id)
+    assert len(seen) >= 3                                # 30 場抽樣應覆蓋表內多數(混沌成立)
 
 
 # ---------- 嘲諷招 fallback(玩家召喚模板被敵方使用)----------

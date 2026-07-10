@@ -236,16 +236,18 @@ def try_boss_summon(boss, enemies: list, gamedata: GameData, rng: RNG) -> str | 
     if any(getattr(e, "summoned", False) and is_alive(e) for e in enemies):
         return None                       # 場上仍有存活爪牙 → 不重召(打完一波才有下一波)
     wave = min(int(spec.get("wave", 2)), cap - total)
+    ids = spec.get("ids")                 # R135 隨機爪牙表(瘋神混沌):每隻獨立抽;僅 ids 分支耗 rng → 固定 id 譜 byte-identical
     adds = []
     for i in range(wave):
-        cre = spawn_creature(gamedata, spec["id"], rng)
+        cre = spawn_creature(gamedata, rng.choice(ids) if ids else spec["id"], rng)
         cre.summoned = True               # 戰鬥暫態旗標:勝利結算三重排除 + 潰散判定
         adds.append(cre)
     enemies.extend(adds)                  # 本回合即參戰(敵人階段迭代會走到)
     boss._summon_total = total + wave
     boss._summon_cd = int(spec.get("cooldown", 3))
     names = "、".join(a.name for a in adds)
-    return f"{boss.name}撕開一道裂隙,喚出了{names}!"
+    # R135 可選 msg 模板(增援風味:狼嚎/號角 ≠ 位面裂隙);預設=R134 原句 → 既有 18 譜逐字不變
+    return spec.get("msg", "{name}撕開一道裂隙,喚出了{names}!").format(name=boss.name, names=names)
 
 
 def scatter_orphan_summons(enemies: list, gamedata: GameData) -> bool:

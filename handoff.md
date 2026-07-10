@@ -1410,6 +1410,18 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 
 ---
 
+### R135 · 召喚爪牙擴充:增援變體 5 王 + 瘋神隨機爪牙表 + BESTIARY【召喚】tag(+重大裁決:配爪牙王=帶隊向) [re-sim] [content]
+
+**使用者拍板三項合一**(①增援 ②瘋神隨機 ③文件 tag)。**① 增援變體(非法系王呼喚同類)**:`summon` 譜加可選 **`msg` 模板**(`{name}`/`{names}`·狼嚎/號角 ≠ 位面裂隙;**預設=R134 原句逐字** → 既有 18 譜 byte-identical,審查程式化證明)——5 王:dire_alpha/blood_moon_beast+wolf 2/6、oathbreaker_warlord/avarice_tyrant+bandit 2/6、malacath_outcast_chief+bandit 2/**4**(probe 全過:完全體勝率 ≤2pp·TTK 分化)。**② 瘋神隨機爪牙**:譜支援 **`ids` 隨機表**(每隻獨立 `rng.choice`·**僅 ids 分支耗 rng** → 固定 id 譜 byte-identical);madness_avatar+`[skeleton,wolf,giant_rat,imperial_ghost]` 2/6;**反樂透牆 lint**:隨機表爪牙對四大魔法元素(fire/frost/shock/magic)**禁 ≥100 免疫**(固定 id 可=刻意自系牆;隨機表=1/N 鎖死某系法師的樂透,禁)——刻意不蓋 poison/physical(記載)。**③ gen_bestiary**:flags 加「召喚:xx×wave(總cap)」tag + 修 BEHAVIOR 陳舊句「不召喚」→ R87/R134 現況。
+
+**🔴 重大發現+裁決(審查員點名→實測)**:名冊王多為試煉/決鬥/進度王(L15-18 gate)——**質量閘原只在完全體層驗過**;適齡單人(強中期戰士:80技·鋼板+黑檀劍·8藥)實測**斷崖**:grave_tyrant 97→35%·coven_patriarch 99→8%·arch_mystic 93→2%·malacath 74→3%·oathbreaker 100→13%(根因:完全體秒爪牙每波 1-2 回合,中期清一波 4-6 回合 × 三波=磨死);**帶 2 素體同伴(盾衛+治療)→ 97-100% 全回滿**。→ **使用者拍板 a:配爪牙王=帶隊向內容**(單人適齡撞牆 by-design·帶隊完全正常·硬核可練完全體再 solo;溯及 R134 全名冊·與終王「隊伍向」方向一致)。
+
+**審查(1 agent 對 R134 增量)0 blocker/major**:修 empty-ids lint 防呆 + msg 模板 format-safety lint(壞括號測試期炸非戰鬥中);nits 記載(tag 印英文 id=文件慣例·anti-lottery 範圍=四魔法元素刻意)。`run_all` **118**(test_boss_summon 12 測)·**sim_assassin BYTE-IDENTICAL**(隔離 worktree·msg/ids 皆不觸固定譜 rng 流)·6 新王 sim_builds 完全體 98-100%·BESTIARY 150 重生。
+
+**🔴 鐵律(疊加 R134)**:增援=同一 `summon` 譜(純資料+`msg`);隨機表用 `ids`(反樂透牆 lint 守·表不得空);**新召喚王質量閘須雙層驗:完全體(≤7pp)+ 適齡中期**(除非明知帶隊向=現裁決預設);msg 模板須含 `{names}` 且 format-safe(lint 守);配爪牙王=帶隊向為既定裁決,要回頭做「單人試煉可行」須降波(cap=wave)或血量閘並先問。
+
+---
+
 ### R134 · BOSS 召喚爪牙:18 王名冊 + 殺王潰散 + 爪牙三重排除(戰利品/擒魂/擊殺計數) [re-sim] [content]
 
 **承「特色化」評估鏈**(solo-collapse 必要性 → 召喚機制 probe → 名冊質量逐對驗證 → 單人/隊伍框架對照)使用者四定案:**① 名冊 14 組接受 ② 終王 mehrunes_dagon(720)配 2×dremora 循環召喚(冷卻3·總量6=最多三波·知情接受單人 melee 崩)③ 爪牙擒魂+擊殺計數+戰利品三重排除 ④ 三組自系元素牆納入**。
