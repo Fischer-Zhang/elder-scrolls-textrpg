@@ -84,6 +84,7 @@ def test_block_reflect_returns_damage_and_costs_fatigue():
     assert mastery.block_hit_penalty(c, gd) == formulas.BLOCK_HIT_PENALTY  # 盾陣已移除 → 格擋基礎懲罰仍預設
     mastery.choose(c, gd, "block_50", "shieldwall")
     assert mastery.block_reflect(c, gd) == {"reflect": 0.10, "fatigue": 10}
+    inventory.add_item(c, "steel_shield", 1); inventory.equip_armor(c, gd, "steel_shield")   # R141:盾反要真的持盾
     c.health = c.max_health = 9999; c.weapon = "fists"                     # 排除被秒;徒手(不附元素)
     foe = combat.spawn_creature(gd, "bandit", RNG(1)); foe.attack["skill"] = 90; foe.attack["damage"] = 20
     hp0 = foe.health
@@ -942,6 +943,8 @@ def test_batch1_same_source_aggregation_no_shadow():
     assert mastery.poison_unlocks(c, gd) == {"weaken", "fear"}          # 多節點 union 不遮蔽(R31)
     mastery.choose(c, gd, "heavy_armor_100", "ironhide"); mastery.choose(c, gd, "block_75", "bracing")
     mastery.choose(c, gd, "block_100", "iron_bastion")
+    inventory.add_item(c, "steel_cuirass", 1); inventory.equip_armor(c, gd, "steel_cuirass")
+    inventory.add_item(c, "steel_shield", 1); inventory.equip_armor(c, gd, "steel_shield")   # R141:重甲/盾系被動護甲需真的穿甲持盾
     assert mastery.passive_armor_bonus(c, gd) == 18 + 10 + 12          # 跨技能相加(heavy+block 三節點;R35 後輕甲弱邊已改閃避)
     mastery.choose(c, gd, "restoration_100", "divine_grace")
     assert mastery.spell_power_bonus(c, gd, "restoration") == 0.20     # 治療登峰流入 _power
@@ -1087,6 +1090,7 @@ def test_capstone_apex_fix():
     # 重壓:被近戰物理擊中 → 震開攻擊者;turns:2 須撐過回合末 tick,才在敵「下次出手」生效(非死時序)
     from tesrpg.systems import magic
     mastery.choose(c, gd, "heavy_armor_100", "crushing_bulk")
+    inventory.add_item(c, "steel_cuirass", 1); inventory.equip_armor(c, gd, "steel_cuirass")   # R141:重壓要真的穿著重甲
     c.weapon = "steel_sword"; c.health = c.max_health = 500
     landed = 0
     for i in range(120):
@@ -1136,6 +1140,8 @@ def test_armor_reflect_damages_attacker():
     gd, c = _char(heavy_armor=50)
     mastery.choose(c, gd, "heavy_armor_50", "armor_reflect")
     assert mastery.armor_reflect(c, gd) == 0.06            # R42:吃 raw 後重定 0.12→0.06
+    inventory.add_item(c, "steel_cuirass", 1)
+    inventory.equip_armor(c, gd, "steel_cuirass")          # R141:重甲反震要真的穿著重甲(裸身不反震)
     c.health = c.max_health = 9999
     foe = combat.spawn_creature(gd, "bear", RNG(0)); foe.health = foe.max_health = 9999
     reflected = False
@@ -1229,7 +1235,10 @@ def test_same_source_masking_fixed_spell_poison_evasion_passive():
     gd4, c4 = _char(block=100)
     mastery.choose(c4, gd4, "block_75", "bracing")
     mastery.choose(c4, gd4, "block_100", "iron_bastion")
+    inventory.add_item(c4, "steel_shield", 1); inventory.equip_armor(c4, gd4, "steel_shield")   # R141:撐架要真的持盾
     assert mastery.passive_armor_bonus(c4, gd4) == 22
+    c4.equipped.pop("shield", None)
+    assert mastery.passive_armor_bonus(c4, gd4) == 0   # R141:放下盾 → 盾系撐架護甲消失(裸身沒有鑄鐵堡壘)
 
 
 def test_illusion_mind_mastery_reduces_cost():

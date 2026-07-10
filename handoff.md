@@ -1412,6 +1412,21 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 
 ---
 
+### R141 · 現實邏輯審計批次 3:戰鬥公式裝備前提 gate(裸身沒有可反震的厚甲) [re-sim]
+
+**批次 3 = 群 5 六條公式方向性違例**(perk 只掛技能樹、不查裝備;力竭只罰攻不罰防;盾擊耗體看休眠武器):
+
+- **盾反需持盾**:`block_reflect` 反震加 `equipped["shield"]` gate(無盾的人不再「以盾卸力反震」)。**重甲反震/重壓需穿重甲**:反傷區 `armor_reflect`/`armor_stagger` gate `inventory.wears_heavy_armor`(裸身/布袍沒有可反震的厚甲)。
+- **輕甲系 perk 穿重甲不生效**:新 `mastery._chosen_options_with_tree` + `_armor_tree_active`(light_armor 樹=未穿任何重甲件·heavy_armor 樹=至少一件重甲·block 樹=持盾·其餘樹恆 True),套進 `evasion_bonus`/`on_evade`/`passive_armor_bonus`(柔革閃身/身如鬼魅/撐架穩步/銅牆鐵壁等按樹過濾;石膚/護體召喚等魔法系來源不受影響)。
+- **力竭也罰防端**:`resolve_attack` 防守方 `fatigue<=0 → evasion×0.5`(腿軟閃不動;原力竭只罰攻/施法)。**裸身不練護甲**:被擊 XP gate `dominant_weight_class is not None`(沒有甲可習)。**重盾盾擊耗體以盾自身計**:`player_attack_cost` 持重盾 → 用盾的 `speed 0.85`(armor.json 6 面重盾新增欄)而非休眠武器速度(28 重塔盾不再比匕首省力)。
+- **測試 fixture 連帶修正 ×4**(test_mastery:反震/重壓/撐架/聚合測試補穿甲持盾 —— 正是 R141 抓的「fixture 沒穿甲卻反震」)。
+
+**🔴 驗證**:`run_all` **121**(新 `test_formula_gates_r141` 5 測:輕甲 perk 重甲失效/盾系被動需盾/裸身零護甲 XP/力竭被打中更多/盾擊耗體>匕首);**sim_assassin BYTE-IDENTICAL**(隔離 worktree·刺客場景短不觸力竭防端·apex 裸身護甲 XP 原本就不進戰鬥數學);**canonical 零漂移**(w1H gauntlet 86.5/720 9.5/真身 9.0 ≈ 釘值噪聲;assassin 真身 19%/monk 古龍 94% 與 HEAD 基線逐位一致 —— 力竭防端在 canonical 場景 inert,為真實遊玩的邊角而設)。零新存檔欄。
+
+**🔴 鐵律**:護甲/持盾系 perk 一律走 `_armor_tree_active`(加新 light/heavy/block 樹 perk 自動吃 gate);力竭防端 ×0.5 動之必跑 sim(長戰觸發);盾擊速度住 armor.json `speed` 欄。批次 4(裝備數據)/5(煉金主題)/6(世界行為)接續。
+
+---
+
 ### R140 · 現實邏輯審計批次 2:心智控場豁免(嚇不動白骨與傀儡) [re-sim] [content]
 
 **承 R139 審計批次**(使用者確認範圍:群 3+5+6+7+8 全修·**群 4 遠程旗標不動**)。批次 2 = 群 3:恐懼/安撫/馭獸對**無心智者**照樣生效的違例(骷髏會被嚇得發抖·秩序騎士 flavor 明寫「不知恐懼」卻 35% 可懼·木精靈對蒸汽傀儡講森林語也能馭獸)。

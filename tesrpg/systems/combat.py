@@ -626,6 +626,8 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
                + mastery.evasion_bonus(defender, gamedata)
                + formulas.agility_evasion(_agility(defender))   # R63 敏捷第二段:過 100 漸近 +0.12(命中下夾 0.05 仍在)
                + _ride_evasion(defender)) if _is_player(defender) else 0.0   # 騎射閃避:聚合相加,不遮蔽
+    if evasion and defender.fatigue <= 0:
+        evasion *= 0.5   # R141 現實邏輯:力竭懲罰也打防端 —— 腿軟閃不動(原只罰攻/施法)
     block_pen = mastery.block_hit_penalty(defender, gamedata) if defender_blocking else formulas.BLOCK_HIT_PENALTY
     chance = formulas.hit_chance(wpn_skill, _agility(attacker), _agility(defender),
                                  fr, defender_blocking, defender_evasion=evasion,
@@ -841,15 +843,17 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
             # 讓龜也能反出有意義的傷。物理限定(元素穿透不反)+ player-only(直接扣血、非遞迴 → 無 A→B→A 環)。
             # 來源相加:重甲反震 0.06 + 荊棘附魔(盔/胸/手/靴/盾·1%/靈魂階)+ 盾反 0.10(耗體 10、力竭則不計)。
             base = raw / block_factor if block_factor else raw
-            ratio = (mastery.armor_reflect(defender, gamedata)
+            # R141 現實邏輯 gate:重甲反震/重壓要真的穿著重甲、盾反要真的持盾(裸身沒有可反震的厚甲)。
+            _heavy = inventory.wears_heavy_armor(defender, gamedata)
+            ratio = ((mastery.armor_reflect(defender, gamedata) if _heavy else 0.0)
                      + inventory.thorns_reflect(defender, gamedata))
             br = mastery.block_reflect(defender, gamedata)
-            if br and defender.fatigue >= br["fatigue"]:
+            if br and defender.equipped.get("shield") and defender.fatigue >= br["fatigue"]:
                 defender.fatigue = max(0, defender.fatigue - br["fatigue"])
                 ratio += br["reflect"]
             if ratio:
                 _set_hp(attacker, _get_hp(attacker) - int(round(base * ratio)))
-            st = mastery.armor_stagger(defender, gamedata)
+            st = mastery.armor_stagger(defender, gamedata) if _heavy else 0.0
             if st and is_alive(attacker) and rng.chance(st):
                 # turns:2 → 撐過本回合末 tick,於攻擊者「下一次出手」時仍踉蹌生效(防守側反制的正確時序)
                 magic.apply_control(attacker, "stagger", gamedata, rng, turns=2)   # R44:集中 helper
@@ -1165,9 +1169,10 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
             skill_events += progression.use_skill(attacker, gamedata, "sneak",
                                                   formulas.COMBAT_SNEAK_XP)
         if _is_player(defender):
-            skill_events += progression.use_skill(defender, gamedata,
-                                                  _player_armor_skill(defender, gamedata),
-                                                  formulas.COMBAT_ARMOR_XP)
+            if inventory.dominant_weight_class(defender, gamedata) is not None:   # R141:裸身被打不練護甲(沒有甲可習)
+                skill_events += progression.use_skill(defender, gamedata,
+                                                      _player_armor_skill(defender, gamedata),
+                                                      formulas.COMBAT_ARMOR_XP)
             if defender_blocking or has_guard_stance(defender):   # R137:姿態中被命中也練 block(learn-by-doing)
                 skill_events += progression.use_skill(defender, gamedata, "block",
                                                       formulas.COMBAT_BLOCK_XP)
@@ -1212,6 +1217,10 @@ def player_attack_cost(player: Character, gamedata: GameData | None = None) -> N
     if gamedata is not None:
         wid = "beast_claws" if getattr(player, "beast_form", False) else player.weapon
         speed = gamedata.item(wid).get("speed", formulas.WEAPON_SPEED_DEFAULT)
+        gs = player.equipped.get("shield") if not getattr(player, "beast_form", False) else None
+        gsd = gamedata.item_or_none(gs) if gs else None
+        if gsd and gsd.get("great_shield"):
+            speed = gsd.get("speed", 0.85)   # R141 現實邏輯:盾擊耗體以重盾自身(慢重)計,非休眠中的手持武器
     cost = (formulas.ATTACK_FATIGUE_COST
             * formulas.fatigue_cost_factor(player.skill("athletics"))
             * formulas.weapon_attack_fatigue_factor(speed))

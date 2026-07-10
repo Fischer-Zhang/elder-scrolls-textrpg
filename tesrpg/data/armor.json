@@ -1,354 +1,870 @@
 {
-  "leather_helmet": {
-    "name": "皮盔",
-    "slot": "helmet",
-    "weight_class": "light",
-    "armor_rating": 3,
-    "value": 12,
-    "weight": 2,
-    "material": "leather"
+ "leather_helmet": {
+  "name": "皮盔",
+  "slot": "helmet",
+  "weight_class": "light",
+  "armor_rating": 3,
+  "value": 12,
+  "weight": 2,
+  "material": "leather"
+ },
+ "leather_cuirass": {
+  "name": "皮甲",
+  "slot": "cuirass",
+  "weight_class": "light",
+  "armor_rating": 7,
+  "value": 40,
+  "weight": 5,
+  "material": "leather"
+ },
+ "leather_bracers": {
+  "name": "皮護腕",
+  "slot": "gauntlets",
+  "weight_class": "light",
+  "armor_rating": 2,
+  "value": 10,
+  "weight": 2,
+  "material": "leather"
+ },
+ "leather_boots": {
+  "name": "皮靴",
+  "slot": "boots",
+  "weight_class": "light",
+  "armor_rating": 2,
+  "value": 10,
+  "weight": 2,
+  "material": "leather"
+ },
+ "iron_helmet": {
+  "name": "鐵盔",
+  "slot": "helmet",
+  "weight_class": "heavy",
+  "armor_rating": 5,
+  "value": 20,
+  "weight": 4,
+  "material": "iron"
+ },
+ "iron_cuirass": {
+  "name": "鐵胸甲",
+  "slot": "cuirass",
+  "weight_class": "heavy",
+  "armor_rating": 11,
+  "value": 70,
+  "weight": 12,
+  "material": "iron"
+ },
+ "iron_gauntlets": {
+  "name": "鐵護手",
+  "slot": "gauntlets",
+  "weight_class": "heavy",
+  "armor_rating": 3,
+  "value": 15,
+  "weight": 5,
+  "material": "iron"
+ },
+ "iron_boots": {
+  "name": "鐵靴",
+  "slot": "boots",
+  "weight_class": "heavy",
+  "armor_rating": 4,
+  "value": 20,
+  "weight": 6,
+  "material": "iron"
+ },
+ "wooden_shield": {
+  "name": "木盾",
+  "slot": "shield",
+  "weight_class": "light",
+  "armor_rating": 4,
+  "value": 25,
+  "weight": 6
+ },
+ "iron_shield": {
+  "name": "鐵盾",
+  "slot": "shield",
+  "weight_class": "heavy",
+  "armor_rating": 7,
+  "value": 45,
+  "weight": 12,
+  "material": "iron"
+ },
+ "steel_cuirass": {
+  "name": "鋼胸甲",
+  "slot": "cuirass",
+  "weight_class": "heavy",
+  "armor_rating": 15,
+  "value": 150,
+  "weight": 14,
+  "material": "steel"
+ },
+ "steel_helmet": {
+  "name": "鋼盔",
+  "slot": "helmet",
+  "weight_class": "heavy",
+  "armor_rating": 7,
+  "value": 55,
+  "weight": 5,
+  "material": "steel"
+ },
+ "elven_helmet": {
+  "name": "精靈盔",
+  "slot": "helmet",
+  "weight_class": "light",
+  "armor_rating": 9,
+  "value": 110,
+  "weight": 3,
+  "material": "elven"
+ },
+ "elven_cuirass": {
+  "name": "精靈胸甲",
+  "slot": "cuirass",
+  "weight_class": "light",
+  "armor_rating": 18,
+  "value": 340,
+  "weight": 6,
+  "material": "elven"
+ },
+ "dwarven_cuirass": {
+  "name": "矮人胸甲",
+  "slot": "cuirass",
+  "weight_class": "heavy",
+  "armor_rating": 22,
+  "value": 400,
+  "weight": 15,
+  "material": "dwarven"
+ },
+ "ebony_shield": {
+  "name": "黑檀盾",
+  "slot": "shield",
+  "weight_class": "heavy",
+  "armor_rating": 10,
+  "value": 260,
+  "weight": 13,
+  "material": "ebony"
+ },
+ "steel_gauntlets": {
+  "name": "鋼護手",
+  "slot": "gauntlets",
+  "weight_class": "heavy",
+  "armor_rating": 5,
+  "value": 60,
+  "weight": 6,
+  "material": "steel"
+ },
+ "steel_boots": {
+  "name": "鋼靴",
+  "slot": "boots",
+  "weight_class": "heavy",
+  "armor_rating": 6,
+  "value": 65,
+  "weight": 6,
+  "material": "steel"
+ },
+ "steel_shield": {
+  "name": "鋼盾",
+  "slot": "shield",
+  "weight_class": "heavy",
+  "armor_rating": 9,
+  "value": 90,
+  "weight": 13,
+  "material": "steel"
+ },
+ "elven_gauntlets": {
+  "name": "精靈護手",
+  "slot": "gauntlets",
+  "weight_class": "light",
+  "armor_rating": 5,
+  "value": 100,
+  "weight": 3,
+  "material": "elven"
+ },
+ "elven_boots": {
+  "name": "精靈靴",
+  "slot": "boots",
+  "weight_class": "light",
+  "armor_rating": 5,
+  "value": 100,
+  "weight": 3,
+  "material": "elven"
+ },
+ "dwarven_helmet": {
+  "name": "矮人盔",
+  "slot": "helmet",
+  "weight_class": "heavy",
+  "armor_rating": 11,
+  "value": 180,
+  "weight": 6,
+  "material": "dwarven"
+ },
+ "dwarven_gauntlets": {
+  "name": "矮人護手",
+  "slot": "gauntlets",
+  "weight_class": "heavy",
+  "armor_rating": 6,
+  "value": 120,
+  "weight": 6,
+  "material": "dwarven"
+ },
+ "dwarven_boots": {
+  "name": "矮人靴",
+  "slot": "boots",
+  "weight_class": "heavy",
+  "armor_rating": 7,
+  "value": 130,
+  "weight": 7,
+  "material": "dwarven"
+ },
+ "dwarven_shield": {
+  "name": "矮人盾",
+  "slot": "shield",
+  "weight_class": "heavy",
+  "armor_rating": 11,
+  "value": 260,
+  "weight": 14,
+  "material": "dwarven"
+ },
+ "ebony_helmet": {
+  "name": "黑檀盔",
+  "slot": "helmet",
+  "weight_class": "heavy",
+  "armor_rating": 13,
+  "value": 400,
+  "weight": 6,
+  "material": "ebony"
+ },
+ "ebony_cuirass": {
+  "name": "黑檀胸甲",
+  "slot": "cuirass",
+  "weight_class": "heavy",
+  "armor_rating": 26,
+  "value": 700,
+  "weight": 16,
+  "material": "ebony"
+ },
+ "ebony_gauntlets": {
+  "name": "黑檀護手",
+  "slot": "gauntlets",
+  "weight_class": "heavy",
+  "armor_rating": 8,
+  "value": 300,
+  "weight": 7,
+  "material": "ebony"
+ },
+ "ebony_boots": {
+  "name": "黑檀靴",
+  "slot": "boots",
+  "weight_class": "heavy",
+  "armor_rating": 9,
+  "value": 340,
+  "weight": 8,
+  "material": "ebony"
+ },
+ "glass_helmet": {
+  "name": "玻璃盔",
+  "slot": "helmet",
+  "weight_class": "light",
+  "armor_rating": 11,
+  "value": 140,
+  "weight": 3,
+  "material": "glass"
+ },
+ "glass_cuirass": {
+  "name": "玻璃胸甲",
+  "slot": "cuirass",
+  "weight_class": "light",
+  "armor_rating": 20,
+  "value": 400,
+  "weight": 6,
+  "material": "glass"
+ },
+ "glass_gauntlets": {
+  "name": "玻璃護手",
+  "slot": "gauntlets",
+  "weight_class": "light",
+  "armor_rating": 5,
+  "value": 110,
+  "weight": 2,
+  "material": "glass"
+ },
+ "glass_boots": {
+  "name": "玻璃靴",
+  "slot": "boots",
+  "weight_class": "light",
+  "armor_rating": 5,
+  "value": 110,
+  "weight": 2,
+  "material": "glass"
+ },
+ "glass_shield": {
+  "name": "玻璃盾",
+  "slot": "shield",
+  "weight_class": "light",
+  "armor_rating": 8,
+  "value": 200,
+  "weight": 6,
+  "material": "glass"
+ },
+ "cloth_hood": {
+  "name": "學徒兜帽",
+  "slot": "helmet",
+  "weight_class": "light",
+  "armor_rating": 0,
+  "value": 35,
+  "weight": 1,
+  "material": "cloth",
+  "enchant": {
+   "kind": "fortify_skill",
+   "skill": "destruction",
+   "magnitude": 6
+  }
+ },
+ "cloth_robe": {
+  "name": "學徒法袍",
+  "slot": "cuirass",
+  "weight_class": "light",
+  "armor_rating": 1,
+  "value": 55,
+  "weight": 2,
+  "material": "cloth",
+  "enchant": {
+   "kind": "armor_fortify",
+   "stat": "magicka",
+   "magnitude": 15
+  }
+ },
+ "cloth_gloves": {
+  "name": "學徒手套",
+  "slot": "gauntlets",
+  "weight_class": "light",
+  "armor_rating": 0,
+  "value": 30,
+  "weight": 1,
+  "material": "cloth",
+  "enchant": {
+   "kind": "fortify_skill",
+   "skill": "alteration",
+   "magnitude": 6
+  }
+ },
+ "cloth_slippers": {
+  "name": "學徒便鞋",
+  "slot": "boots",
+  "weight_class": "light",
+  "armor_rating": 0,
+  "value": 30,
+  "weight": 1,
+  "material": "cloth",
+  "enchant": {
+   "kind": "armor_fortify",
+   "stat": "magicka",
+   "magnitude": 10
+  }
+ },
+ "archmage_hood": {
+  "name": "大法師兜帽",
+  "slot": "helmet",
+  "weight_class": "light",
+  "armor_rating": 1,
+  "value": 220,
+  "weight": 1,
+  "material": "archmage",
+  "enchant": {
+   "kind": "fortify_skill",
+   "skill": "destruction",
+   "magnitude": 10
+  }
+ },
+ "archmage_robe": {
+  "name": "大法師法袍",
+  "slot": "cuirass",
+  "weight_class": "light",
+  "armor_rating": 2,
+  "value": 400,
+  "weight": 2,
+  "material": "archmage",
+  "enchant": {
+   "kind": "armor_fortify",
+   "stat": "magicka",
+   "magnitude": 25
+  }
+ },
+ "archmage_gloves": {
+  "name": "大法師手套",
+  "slot": "gauntlets",
+  "weight_class": "light",
+  "armor_rating": 1,
+  "value": 200,
+  "weight": 1,
+  "material": "archmage",
+  "enchant": {
+   "kind": "fortify_skill",
+   "skill": "alteration",
+   "magnitude": 10
+  }
+ },
+ "archmage_slippers": {
+  "name": "大法師便鞋",
+  "slot": "boots",
+  "weight_class": "light",
+  "armor_rating": 1,
+  "value": 200,
+  "weight": 1,
+  "material": "archmage",
+  "enchant": {
+   "kind": "armor_fortify",
+   "stat": "magicka",
+   "magnitude": 15
+  }
+ },
+ "daedric_helmet": {
+  "name": "魔族盔",
+  "slot": "helmet",
+  "weight_class": "heavy",
+  "armor_rating": 17,
+  "value": 600,
+  "weight": 7,
+  "material": "daedric"
+ },
+ "daedric_cuirass": {
+  "name": "魔族胸甲",
+  "slot": "cuirass",
+  "weight_class": "heavy",
+  "armor_rating": 30,
+  "value": 1200,
+  "weight": 18,
+  "material": "daedric"
+ },
+ "daedric_gauntlets": {
+  "name": "魔族護手",
+  "slot": "gauntlets",
+  "weight_class": "heavy",
+  "armor_rating": 12,
+  "value": 500,
+  "weight": 9,
+  "material": "daedric"
+ },
+ "daedric_boots": {
+  "name": "魔族靴",
+  "slot": "boots",
+  "weight_class": "heavy",
+  "armor_rating": 13,
+  "value": 500,
+  "weight": 9,
+  "material": "daedric"
+ },
+ "daedric_shield": {
+  "name": "魔族盾",
+  "slot": "shield",
+  "weight_class": "heavy",
+  "armor_rating": 15,
+  "value": 500,
+  "weight": 16,
+  "material": "daedric"
+ },
+ "dragonscale_helmet": {
+  "name": "龍鱗盔",
+  "slot": "helmet",
+  "weight_class": "light",
+  "armor_rating": 14,
+  "value": 550,
+  "weight": 3,
+  "material": "dragonscale"
+ },
+ "dragonscale_cuirass": {
+  "name": "龍鱗甲",
+  "slot": "cuirass",
+  "weight_class": "light",
+  "armor_rating": 24,
+  "value": 1000,
+  "weight": 9,
+  "material": "dragonscale"
+ },
+ "dragonscale_gauntlets": {
+  "name": "龍鱗護手",
+  "slot": "gauntlets",
+  "weight_class": "light",
+  "armor_rating": 10,
+  "value": 450,
+  "weight": 3,
+  "material": "dragonscale"
+ },
+ "dragonscale_boots": {
+  "name": "龍鱗靴",
+  "slot": "boots",
+  "weight_class": "light",
+  "armor_rating": 11,
+  "value": 450,
+  "weight": 3,
+  "material": "dragonscale"
+ },
+ "dragonscale_shield": {
+  "name": "龍鱗盾",
+  "slot": "shield",
+  "weight_class": "light",
+  "armor_rating": 13,
+  "value": 450,
+  "weight": 9,
+  "material": "dragonscale"
+ },
+ "dragonpriest_hood": {
+  "name": "龍祭司兜帽",
+  "slot": "helmet",
+  "weight_class": "light",
+  "armor_rating": 3,
+  "value": 350,
+  "weight": 1,
+  "material": "dragonpriest",
+  "enchant": {
+   "kind": "fortify_skill",
+   "skill": "destruction",
+   "magnitude": 20
+  }
+ },
+ "dragonpriest_robe": {
+  "name": "龍祭司法袍",
+  "slot": "cuirass",
+  "weight_class": "light",
+  "armor_rating": 4,
+  "value": 450,
+  "weight": 2,
+  "material": "dragonpriest",
+  "enchant": {
+   "kind": "armor_fortify",
+   "stat": "magicka",
+   "magnitude": 40
+  }
+ },
+ "dragonpriest_gloves": {
+  "name": "龍祭司手套",
+  "slot": "gauntlets",
+  "weight_class": "light",
+  "armor_rating": 3,
+  "value": 300,
+  "weight": 1,
+  "material": "dragonpriest",
+  "enchant": {
+   "kind": "armor_fortify",
+   "stat": "magicka",
+   "magnitude": 25
+  }
+ },
+ "dragonpriest_slippers": {
+  "name": "龍祭司便鞋",
+  "slot": "boots",
+  "weight_class": "light",
+  "armor_rating": 3,
+  "value": 300,
+  "weight": 1,
+  "material": "dragonpriest",
+  "enchant": {
+   "kind": "armor_fortify",
+   "stat": "magicka",
+   "magnitude": 25
+  }
+ },
+ "crusaders_aegis": {
+  "name": "十字軍護心",
+  "slot": "cuirass",
+  "weight_class": "heavy",
+  "armor_rating": 32,
+  "value": 2500,
+  "weight": 17,
+  "enchant": {
+   "kind": "resist_element",
+   "element": "fire",
+   "magnitude": 50
+  }
+ },
+ "crusaders_ward": {
+  "name": "十字軍聖盾",
+  "slot": "shield",
+  "weight_class": "heavy",
+  "armor_rating": 24,
+  "value": 2000,
+  "weight": 16,
+  "great_shield": true,
+  "two_handed": true,
+  "bash_damage": 12,
+  "mitigation": 0.1,
+  "enchant": {
+   "kind": "resist_element",
+   "element": "magic",
+   "magnitude": 30
   },
-  "leather_cuirass": {
-    "name": "皮甲",
-    "slot": "cuirass",
-    "weight_class": "light",
-    "armor_rating": 7,
-    "value": 40,
-    "weight": 5,
-    "material": "leather"
-  },
-  "leather_bracers": {
-    "name": "皮護腕",
-    "slot": "gauntlets",
-    "weight_class": "light",
-    "armor_rating": 2,
-    "value": 10,
-    "weight": 2,
-    "material": "leather"
-  },
-  "leather_boots": {
-    "name": "皮靴",
-    "slot": "boots",
-    "weight_class": "light",
-    "armor_rating": 2,
-    "value": 10,
-    "weight": 2,
-    "material": "leather"
-  },
-  "iron_helmet": {
-    "name": "鐵盔",
-    "slot": "helmet",
-    "weight_class": "heavy",
-    "armor_rating": 5,
-    "value": 20,
-    "weight": 4,
-    "material": "iron"
-  },
-  "iron_cuirass": {
-    "name": "鐵胸甲",
-    "slot": "cuirass",
-    "weight_class": "heavy",
-    "armor_rating": 11,
-    "value": 70,
-    "weight": 12,
-    "material": "iron"
-  },
-  "iron_gauntlets": {
-    "name": "鐵護手",
-    "slot": "gauntlets",
-    "weight_class": "heavy",
-    "armor_rating": 3,
-    "value": 15,
-    "weight": 5,
-    "material": "iron"
-  },
-  "iron_boots": {
-    "name": "鐵靴",
-    "slot": "boots",
-    "weight_class": "heavy",
-    "armor_rating": 4,
-    "value": 20,
-    "weight": 6,
-    "material": "iron"
-  },
-  "wooden_shield": {
-    "name": "木盾",
-    "slot": "shield",
-    "weight_class": "light",
-    "armor_rating": 4,
-    "value": 25,
-    "weight": 6
-  },
-  "iron_shield": {
-    "name": "鐵盾",
-    "slot": "shield",
-    "weight_class": "heavy",
-    "armor_rating": 7,
-    "value": 45,
-    "weight": 12,
-    "material": "iron"
-  },
-  "steel_cuirass": {
-    "name": "鋼胸甲",
-    "slot": "cuirass",
-    "weight_class": "heavy",
-    "armor_rating": 15,
-    "value": 150,
-    "weight": 14,
-    "material": "steel"
-  },
-  "steel_helmet": {
-    "name": "鋼盔",
-    "slot": "helmet",
-    "weight_class": "heavy",
-    "armor_rating": 7,
-    "value": 55,
-    "weight": 5,
-    "material": "steel"
-  },
-  "elven_helmet": {
-    "name": "精靈盔",
-    "slot": "helmet",
-    "weight_class": "light",
-    "armor_rating": 9,
-    "value": 110,
-    "weight": 3,
-    "material": "elven"
-  },
-  "elven_cuirass": {
-    "name": "精靈胸甲",
-    "slot": "cuirass",
-    "weight_class": "light",
-    "armor_rating": 18,
-    "value": 340,
-    "weight": 6,
-    "material": "elven"
-  },
-  "dwarven_cuirass": {
-    "name": "矮人胸甲",
-    "slot": "cuirass",
-    "weight_class": "heavy",
-    "armor_rating": 22,
-    "value": 400,
-    "weight": 15,
-    "material": "dwarven"
-  },
-  "ebony_shield": {
-    "name": "黑檀盾",
-    "slot": "shield",
-    "weight_class": "heavy",
-    "armor_rating": 10,
-    "value": 260,
-    "weight": 13,
-    "material": "ebony"
-  },
-  "steel_gauntlets": {
-    "name": "鋼護手",
-    "slot": "gauntlets",
-    "weight_class": "heavy",
-    "armor_rating": 5,
-    "value": 60,
-    "weight": 6,
-    "material": "steel"
-  },
-  "steel_boots": {
-    "name": "鋼靴",
-    "slot": "boots",
-    "weight_class": "heavy",
-    "armor_rating": 6,
-    "value": 65,
-    "weight": 6,
-    "material": "steel"
-  },
-  "steel_shield": {
-    "name": "鋼盾",
-    "slot": "shield",
-    "weight_class": "heavy",
-    "armor_rating": 9,
-    "value": 90,
-    "weight": 13,
-    "material": "steel"
-  },
-  "elven_gauntlets": {
-    "name": "精靈護手",
-    "slot": "gauntlets",
-    "weight_class": "light",
-    "armor_rating": 5,
-    "value": 100,
-    "weight": 3,
-    "material": "elven"
-  },
-  "elven_boots": {
-    "name": "精靈靴",
-    "slot": "boots",
-    "weight_class": "light",
-    "armor_rating": 5,
-    "value": 100,
-    "weight": 3,
-    "material": "elven"
-  },
-  "dwarven_helmet": {
-    "name": "矮人盔",
-    "slot": "helmet",
-    "weight_class": "heavy",
-    "armor_rating": 11,
-    "value": 180,
-    "weight": 6,
-    "material": "dwarven"
-  },
-  "dwarven_gauntlets": {
-    "name": "矮人護手",
-    "slot": "gauntlets",
-    "weight_class": "heavy",
-    "armor_rating": 6,
-    "value": 120,
-    "weight": 6,
-    "material": "dwarven"
-  },
-  "dwarven_boots": {
-    "name": "矮人靴",
-    "slot": "boots",
-    "weight_class": "heavy",
-    "armor_rating": 7,
-    "value": 130,
-    "weight": 7,
-    "material": "dwarven"
-  },
-  "dwarven_shield": {
-    "name": "矮人盾",
-    "slot": "shield",
-    "weight_class": "heavy",
-    "armor_rating": 11,
-    "value": 260,
-    "weight": 14,
-    "material": "dwarven"
-  },
-  "ebony_helmet": {
-    "name": "黑檀盔",
-    "slot": "helmet",
-    "weight_class": "heavy",
-    "armor_rating": 13,
-    "value": 400,
-    "weight": 6,
-    "material": "ebony"
-  },
-  "ebony_cuirass": {
-    "name": "黑檀胸甲",
-    "slot": "cuirass",
-    "weight_class": "heavy",
-    "armor_rating": 26,
-    "value": 700,
-    "weight": 16,
-    "material": "ebony"
-  },
-  "ebony_gauntlets": {
-    "name": "黑檀護手",
-    "slot": "gauntlets",
-    "weight_class": "heavy",
-    "armor_rating": 8,
-    "value": 300,
-    "weight": 7,
-    "material": "ebony"
-  },
-  "ebony_boots": {
-    "name": "黑檀靴",
-    "slot": "boots",
-    "weight_class": "heavy",
-    "armor_rating": 9,
-    "value": 340,
-    "weight": 8,
-    "material": "ebony"
-  },
-  "glass_helmet": {
-    "name": "玻璃盔",
-    "slot": "helmet",
-    "weight_class": "light",
-    "armor_rating": 11,
-    "value": 140,
-    "weight": 3,
-    "material": "glass"
-  },
-  "glass_cuirass": {
-    "name": "玻璃胸甲",
-    "slot": "cuirass",
-    "weight_class": "light",
-    "armor_rating": 20,
-    "value": 400,
-    "weight": 6,
-    "material": "glass"
-  },
-  "glass_gauntlets": {
-    "name": "玻璃護手",
-    "slot": "gauntlets",
-    "weight_class": "light",
-    "armor_rating": 5,
-    "value": 110,
-    "weight": 2,
-    "material": "glass"
-  },
-  "glass_boots": {
-    "name": "玻璃靴",
-    "slot": "boots",
-    "weight_class": "light",
-    "armor_rating": 5,
-    "value": 110,
-    "weight": 2,
-    "material": "glass"
-  },
-  "glass_shield": {
-    "name": "玻璃盾",
-    "slot": "shield",
-    "weight_class": "light",
-    "armor_rating": 8,
-    "value": 200,
-    "weight": 6,
-    "material": "glass"
-  },
-  "cloth_hood":     {"name": "學徒兜帽", "slot": "helmet",   "weight_class": "light", "armor_rating": 0, "value": 35, "weight": 1, "material": "cloth", "enchant": {"kind": "fortify_skill", "skill": "destruction", "magnitude": 6}},
-  "cloth_robe":     {"name": "學徒法袍", "slot": "cuirass",  "weight_class": "light", "armor_rating": 1, "value": 55, "weight": 2, "material": "cloth", "enchant": {"kind": "armor_fortify", "stat": "magicka", "magnitude": 15}},
-  "cloth_gloves":   {"name": "學徒手套", "slot": "gauntlets","weight_class": "light", "armor_rating": 0, "value": 30, "weight": 1, "material": "cloth", "enchant": {"kind": "fortify_skill", "skill": "alteration", "magnitude": 6}},
-  "cloth_slippers": {"name": "學徒便鞋", "slot": "boots",    "weight_class": "light", "armor_rating": 0, "value": 30, "weight": 1, "material": "cloth", "enchant": {"kind": "armor_fortify", "stat": "magicka", "magnitude": 10}},
-  "archmage_hood":     {"name": "大法師兜帽", "slot": "helmet",   "weight_class": "light", "armor_rating": 1, "value": 220, "weight": 1, "material": "archmage", "enchant": {"kind": "fortify_skill", "skill": "destruction", "magnitude": 10}},
-  "archmage_robe":     {"name": "大法師法袍", "slot": "cuirass",  "weight_class": "light", "armor_rating": 2, "value": 400, "weight": 2, "material": "archmage", "enchant": {"kind": "armor_fortify", "stat": "magicka", "magnitude": 25}},
-  "archmage_gloves":   {"name": "大法師手套", "slot": "gauntlets","weight_class": "light", "armor_rating": 1, "value": 200, "weight": 1, "material": "archmage", "enchant": {"kind": "fortify_skill", "skill": "alteration", "magnitude": 10}},
-  "archmage_slippers": {"name": "大法師便鞋", "slot": "boots",    "weight_class": "light", "armor_rating": 1, "value": 200, "weight": 1, "material": "archmage", "enchant": {"kind": "armor_fortify", "stat": "magicka", "magnitude": 15}},
-
-  "daedric_helmet":    {"name": "魔族盔",   "slot": "helmet",   "weight_class": "heavy", "armor_rating": 17, "value": 600,  "weight": 7,  "material": "daedric"},
-  "daedric_cuirass":   {"name": "魔族胸甲", "slot": "cuirass",  "weight_class": "heavy", "armor_rating": 30, "value": 1200, "weight": 18, "material": "daedric"},
-  "daedric_gauntlets": {"name": "魔族護手", "slot": "gauntlets","weight_class": "heavy", "armor_rating": 12, "value": 500,  "weight": 9,  "material": "daedric"},
-  "daedric_boots":     {"name": "魔族靴",   "slot": "boots",    "weight_class": "heavy", "armor_rating": 13, "value": 500,  "weight": 9,  "material": "daedric"},
-  "daedric_shield":    {"name": "魔族盾",   "slot": "shield",   "weight_class": "heavy", "armor_rating": 15, "value": 500,  "weight": 16, "material": "daedric"},
-
-  "dragonscale_helmet":    {"name": "龍鱗盔",   "slot": "helmet",   "weight_class": "light", "armor_rating": 14, "value": 550,  "weight": 3, "material": "dragonscale"},
-  "dragonscale_cuirass":   {"name": "龍鱗甲",   "slot": "cuirass",  "weight_class": "light", "armor_rating": 24, "value": 1000, "weight": 9, "material": "dragonscale"},
-  "dragonscale_gauntlets": {"name": "龍鱗護手", "slot": "gauntlets","weight_class": "light", "armor_rating": 10, "value": 450,  "weight": 3, "material": "dragonscale"},
-  "dragonscale_boots":     {"name": "龍鱗靴",   "slot": "boots",    "weight_class": "light", "armor_rating": 11, "value": 450,  "weight": 3, "material": "dragonscale"},
-  "dragonscale_shield":    {"name": "龍鱗盾",   "slot": "shield",   "weight_class": "light", "armor_rating": 13, "value": 450,  "weight": 9, "material": "dragonscale"},
-
-  "dragonpriest_hood":     {"name": "龍祭司兜帽", "slot": "helmet",   "weight_class": "light", "armor_rating": 3, "value": 350, "weight": 1, "material": "dragonpriest", "enchant": {"kind": "fortify_skill", "skill": "destruction", "magnitude": 20}},
-  "dragonpriest_robe":     {"name": "龍祭司法袍", "slot": "cuirass",  "weight_class": "light", "armor_rating": 4, "value": 450, "weight": 2, "material": "dragonpriest", "enchant": {"kind": "armor_fortify", "stat": "magicka", "magnitude": 40}},
-  "dragonpriest_gloves":   {"name": "龍祭司手套", "slot": "gauntlets","weight_class": "light", "armor_rating": 3, "value": 300, "weight": 1, "material": "dragonpriest", "enchant": {"kind": "armor_fortify", "stat": "magicka", "magnitude": 25}},
-  "dragonpriest_slippers": {"name": "龍祭司便鞋", "slot": "boots",    "weight_class": "light", "armor_rating": 3, "value": 300, "weight": 1, "material": "dragonpriest", "enchant": {"kind": "armor_fortify", "stat": "magicka", "magnitude": 25}},
-  "crusaders_aegis": {"name": "十字軍護心", "slot": "cuirass", "weight_class": "heavy", "armor_rating": 32, "value": 2500, "weight": 17, "enchant": {"kind": "resist_element", "element": "fire", "magnitude": 50}},
-  "crusaders_ward": {"name": "十字軍聖盾", "slot": "shield", "weight_class": "heavy", "armor_rating": 24, "value": 2000, "weight": 16, "great_shield": true, "two_handed": true, "bash_damage": 12, "mitigation": 0.10, "enchant": {"kind": "resist_element", "element": "magic", "magnitude": 30}},
-  "saviors_hide": {"name": "救主之皮", "slot": "cuirass", "weight_class": "light", "armor_rating": 22, "value": 2000, "weight": 6, "enchant": {"kind": "resist_element", "element": "magic", "magnitude": 50}},
-  "ebony_mail": {"name": "烏木甲", "slot": "cuirass", "weight_class": "heavy", "armor_rating": 28, "value": 2200, "weight": 16, "enchant": {"kind": "thorns", "magnitude": 8}},
-  "masque_of_clavicus_vile": {"name": "克拉維克斯·瓦爾面具", "slot": "helmet", "weight_class": "light", "armor_rating": 12, "value": 2300, "weight": 3, "enchant": {"kind": "fortify_skill", "skill": "speechcraft", "magnitude": 25}},
-  "gray_fox_mask": {"name": "灰狐面具", "slot": "helmet", "weight_class": "light", "armor_rating": 12, "value": 2200, "weight": 2, "enchant": {"kind": "talk_down_cap", "cap_bonus": 120, "floor": 0.25}},
-  "spellbreaker": {"name": "靈破者", "slot": "shield", "weight_class": "heavy", "armor_rating": 20, "value": 2300, "weight": 12, "enchant": {"kind": "resist_element", "element": "magic", "magnitude": 45}},
-  "iron_great_shield":    {"name": "鐵重盾",   "slot": "shield", "weight_class": "heavy", "armor_rating": 12, "value": 80,   "weight": 20, "material": "iron",    "great_shield": true, "two_handed": true, "bash_damage": 6,  "mitigation": 0.05},
-  "steel_great_shield":   {"name": "鋼重盾",   "slot": "shield", "weight_class": "heavy", "armor_rating": 16, "value": 200,  "weight": 22, "material": "steel",   "great_shield": true, "two_handed": true, "bash_damage": 8,  "mitigation": 0.06},
-  "dwarven_great_shield": {"name": "矮人重盾", "slot": "shield", "weight_class": "heavy", "armor_rating": 20, "value": 430,  "weight": 24, "material": "dwarven", "great_shield": true, "two_handed": true, "bash_damage": 9,  "mitigation": 0.07},
-  "ebony_great_shield":   {"name": "黑檀重盾", "slot": "shield", "weight_class": "heavy", "armor_rating": 24, "value": 780,  "weight": 26, "material": "ebony",   "great_shield": true, "two_handed": true, "bash_damage": 10, "mitigation": 0.08},
-  "daedric_great_shield": {"name": "魔族重盾", "slot": "shield", "weight_class": "heavy", "armor_rating": 26, "value": 1050, "weight": 28, "material": "daedric", "great_shield": true, "two_handed": true, "bash_damage": 11, "mitigation": 0.08},
-
-  "nightshade_hood":     {"name": "夜影兜帽", "slot": "helmet",    "weight_class": "light", "armor_rating": 11, "value": 600,  "weight": 2, "material": "nightshade", "requires_vampire": true, "enchant": {"kind": "fortify_skill", "skill": "sneak",    "magnitude": 10}},
-  "nightshade_cuirass":  {"name": "夜影胸甲", "slot": "cuirass",   "weight_class": "light", "armor_rating": 20, "value": 1400, "weight": 5, "material": "nightshade", "requires_vampire": true, "enchant": {"kind": "fortify_skill", "skill": "illusion",  "magnitude": 12}},
-  "nightshade_gloves":   {"name": "夜影手套", "slot": "gauntlets", "weight_class": "light", "armor_rating": 5,  "value": 500,  "weight": 1, "material": "nightshade", "requires_vampire": true, "enchant": {"kind": "fortify_skill", "skill": "sneak",    "magnitude": 8}},
-  "nightshade_boots":    {"name": "夜影長靴", "slot": "boots",     "weight_class": "light", "armor_rating": 5,  "value": 500,  "weight": 2, "material": "nightshade", "requires_vampire": true, "enchant": {"kind": "fortify_skill", "skill": "sneak",    "magnitude": 10}},
-  "crusader_helm": {"name": "十字軍聖盔", "slot": "helmet", "weight_class": "heavy", "armor_rating": 18, "value": 1500, "weight": 6, "material": "crusader", "requires_virtue": true, "no_sell": true, "enchant": {"kind": "fortify_attribute", "attr": "personality", "magnitude": 8}},
-  "crusader_cuirass": {"name": "十字軍聖鎧", "slot": "cuirass", "weight_class": "heavy", "armor_rating": 32, "value": 2400, "weight": 15, "material": "crusader", "requires_virtue": true, "no_sell": true, "enchant": {"kind": "resist_element", "element": "magic", "magnitude": 10}},
-  "crusader_gauntlets": {"name": "十字軍聖護手", "slot": "gauntlets", "weight_class": "heavy", "armor_rating": 13, "value": 1200, "weight": 6, "material": "crusader", "requires_virtue": true, "no_sell": true, "enchant": {"kind": "fortify_attribute", "attr": "strength", "magnitude": 6}},
-  "crusader_boots": {"name": "十字軍聖靴", "slot": "boots", "weight_class": "heavy", "armor_rating": 14, "value": 1200, "weight": 5, "material": "crusader", "requires_virtue": true, "no_sell": true, "enchant": {"kind": "fortify_attribute", "attr": "endurance", "magnitude": 6}},
-  "crusader_shield": {"name": "十字軍聖盾", "slot": "shield", "weight_class": "heavy", "armor_rating": 16, "value": 1500, "weight": 12, "material": "crusader", "requires_virtue": true, "no_sell": true, "enchant": {"kind": "resist_element", "element": "magic", "magnitude": 12}}
+  "speed": 0.85
+ },
+ "saviors_hide": {
+  "name": "救主之皮",
+  "slot": "cuirass",
+  "weight_class": "light",
+  "armor_rating": 22,
+  "value": 2000,
+  "weight": 6,
+  "enchant": {
+   "kind": "resist_element",
+   "element": "magic",
+   "magnitude": 50
+  }
+ },
+ "ebony_mail": {
+  "name": "烏木甲",
+  "slot": "cuirass",
+  "weight_class": "heavy",
+  "armor_rating": 28,
+  "value": 2200,
+  "weight": 16,
+  "enchant": {
+   "kind": "thorns",
+   "magnitude": 8
+  }
+ },
+ "masque_of_clavicus_vile": {
+  "name": "克拉維克斯·瓦爾面具",
+  "slot": "helmet",
+  "weight_class": "light",
+  "armor_rating": 12,
+  "value": 2300,
+  "weight": 3,
+  "enchant": {
+   "kind": "fortify_skill",
+   "skill": "speechcraft",
+   "magnitude": 25
+  }
+ },
+ "gray_fox_mask": {
+  "name": "灰狐面具",
+  "slot": "helmet",
+  "weight_class": "light",
+  "armor_rating": 12,
+  "value": 2200,
+  "weight": 2,
+  "enchant": {
+   "kind": "talk_down_cap",
+   "cap_bonus": 120,
+   "floor": 0.25
+  }
+ },
+ "spellbreaker": {
+  "name": "靈破者",
+  "slot": "shield",
+  "weight_class": "heavy",
+  "armor_rating": 20,
+  "value": 2300,
+  "weight": 12,
+  "enchant": {
+   "kind": "resist_element",
+   "element": "magic",
+   "magnitude": 45
+  }
+ },
+ "iron_great_shield": {
+  "name": "鐵重盾",
+  "slot": "shield",
+  "weight_class": "heavy",
+  "armor_rating": 12,
+  "value": 80,
+  "weight": 20,
+  "material": "iron",
+  "great_shield": true,
+  "two_handed": true,
+  "bash_damage": 6,
+  "mitigation": 0.05,
+  "speed": 0.85
+ },
+ "steel_great_shield": {
+  "name": "鋼重盾",
+  "slot": "shield",
+  "weight_class": "heavy",
+  "armor_rating": 16,
+  "value": 200,
+  "weight": 22,
+  "material": "steel",
+  "great_shield": true,
+  "two_handed": true,
+  "bash_damage": 8,
+  "mitigation": 0.06,
+  "speed": 0.85
+ },
+ "dwarven_great_shield": {
+  "name": "矮人重盾",
+  "slot": "shield",
+  "weight_class": "heavy",
+  "armor_rating": 20,
+  "value": 430,
+  "weight": 24,
+  "material": "dwarven",
+  "great_shield": true,
+  "two_handed": true,
+  "bash_damage": 9,
+  "mitigation": 0.07,
+  "speed": 0.85
+ },
+ "ebony_great_shield": {
+  "name": "黑檀重盾",
+  "slot": "shield",
+  "weight_class": "heavy",
+  "armor_rating": 24,
+  "value": 780,
+  "weight": 26,
+  "material": "ebony",
+  "great_shield": true,
+  "two_handed": true,
+  "bash_damage": 10,
+  "mitigation": 0.08,
+  "speed": 0.85
+ },
+ "daedric_great_shield": {
+  "name": "魔族重盾",
+  "slot": "shield",
+  "weight_class": "heavy",
+  "armor_rating": 26,
+  "value": 1050,
+  "weight": 28,
+  "material": "daedric",
+  "great_shield": true,
+  "two_handed": true,
+  "bash_damage": 11,
+  "mitigation": 0.08,
+  "speed": 0.85
+ },
+ "nightshade_hood": {
+  "name": "夜影兜帽",
+  "slot": "helmet",
+  "weight_class": "light",
+  "armor_rating": 11,
+  "value": 600,
+  "weight": 2,
+  "material": "nightshade",
+  "requires_vampire": true,
+  "enchant": {
+   "kind": "fortify_skill",
+   "skill": "sneak",
+   "magnitude": 10
+  }
+ },
+ "nightshade_cuirass": {
+  "name": "夜影胸甲",
+  "slot": "cuirass",
+  "weight_class": "light",
+  "armor_rating": 20,
+  "value": 1400,
+  "weight": 5,
+  "material": "nightshade",
+  "requires_vampire": true,
+  "enchant": {
+   "kind": "fortify_skill",
+   "skill": "illusion",
+   "magnitude": 12
+  }
+ },
+ "nightshade_gloves": {
+  "name": "夜影手套",
+  "slot": "gauntlets",
+  "weight_class": "light",
+  "armor_rating": 5,
+  "value": 500,
+  "weight": 1,
+  "material": "nightshade",
+  "requires_vampire": true,
+  "enchant": {
+   "kind": "fortify_skill",
+   "skill": "sneak",
+   "magnitude": 8
+  }
+ },
+ "nightshade_boots": {
+  "name": "夜影長靴",
+  "slot": "boots",
+  "weight_class": "light",
+  "armor_rating": 5,
+  "value": 500,
+  "weight": 2,
+  "material": "nightshade",
+  "requires_vampire": true,
+  "enchant": {
+   "kind": "fortify_skill",
+   "skill": "sneak",
+   "magnitude": 10
+  }
+ },
+ "crusader_helm": {
+  "name": "十字軍聖盔",
+  "slot": "helmet",
+  "weight_class": "heavy",
+  "armor_rating": 18,
+  "value": 1500,
+  "weight": 6,
+  "material": "crusader",
+  "requires_virtue": true,
+  "no_sell": true,
+  "enchant": {
+   "kind": "fortify_attribute",
+   "attr": "personality",
+   "magnitude": 8
+  }
+ },
+ "crusader_cuirass": {
+  "name": "十字軍聖鎧",
+  "slot": "cuirass",
+  "weight_class": "heavy",
+  "armor_rating": 32,
+  "value": 2400,
+  "weight": 15,
+  "material": "crusader",
+  "requires_virtue": true,
+  "no_sell": true,
+  "enchant": {
+   "kind": "resist_element",
+   "element": "magic",
+   "magnitude": 10
+  }
+ },
+ "crusader_gauntlets": {
+  "name": "十字軍聖護手",
+  "slot": "gauntlets",
+  "weight_class": "heavy",
+  "armor_rating": 13,
+  "value": 1200,
+  "weight": 6,
+  "material": "crusader",
+  "requires_virtue": true,
+  "no_sell": true,
+  "enchant": {
+   "kind": "fortify_attribute",
+   "attr": "strength",
+   "magnitude": 6
+  }
+ },
+ "crusader_boots": {
+  "name": "十字軍聖靴",
+  "slot": "boots",
+  "weight_class": "heavy",
+  "armor_rating": 14,
+  "value": 1200,
+  "weight": 5,
+  "material": "crusader",
+  "requires_virtue": true,
+  "no_sell": true,
+  "enchant": {
+   "kind": "fortify_attribute",
+   "attr": "endurance",
+   "magnitude": 6
+  }
+ },
+ "crusader_shield": {
+  "name": "十字軍聖盾",
+  "slot": "shield",
+  "weight_class": "heavy",
+  "armor_rating": 16,
+  "value": 1500,
+  "weight": 12,
+  "material": "crusader",
+  "requires_virtue": true,
+  "no_sell": true,
+  "enchant": {
+   "kind": "resist_element",
+   "element": "magic",
+   "magnitude": 12
+  }
+ }
 }

@@ -137,6 +137,38 @@ def _chosen_options_by_kind(char, gamedata: GameData, kind: str) -> list:
     return out
 
 
+def _chosen_options_with_tree(char, gamedata: GameData, kind: str) -> list:
+    """同 _chosen_options_by_kind,但連同來源技能樹回傳 [(tree_skill, opt), ...]
+    (R141:輕甲/重甲/盾系 perk 需真的穿著對應裝備才生效 → 呼叫端按樹過濾)。"""
+    if not hasattr(char, "base_skill"):
+        return []
+    choices = getattr(char, "mastery_choices", {}) or {}
+    out = []
+    for node in _nodes(gamedata):
+        if not _node_reached(char, node):
+            continue
+        oid = choices.get(node["id"])
+        if oid is None:
+            continue
+        opt = next((o for o in node["options"] if o.get("opt_id") == oid), None)
+        if opt and opt.get("kind") == kind:
+            out.append((node.get("skill", ""), opt))
+    return out
+
+
+def _armor_tree_active(char, gamedata: GameData, tree: str) -> bool:
+    """R141 現實邏輯:護甲/持盾系 perk 的裝備前提 —— light_armor 樹=未穿任何重甲件、
+    heavy_armor 樹=至少一件重甲、block 樹=持盾;其餘樹(雜技/變化/召喚…)恆 True。"""
+    from tesrpg.systems import inventory
+    if tree == "light_armor":
+        return not inventory.wears_heavy_armor(char, gamedata)
+    if tree == "heavy_armor":
+        return inventory.wears_heavy_armor(char, gamedata)
+    if tree == "block":
+        return bool(getattr(char, "equipped", {}).get("shield"))
+    return True
+
+
 def _chosen_option_by_kind(char, gamedata: GameData, kind: str) -> dict | None:
     """已達門檻、玩家『已選』、且為該 kind 的 option(取第一個);未選 → None(回中性,絕不崩)。
 
@@ -333,9 +365,12 @@ def undead_mastery_mod(char, gamedata: GameData) -> dict:
 
 
 def passive_armor_bonus(char, gamedata: GameData) -> int:
-    """被動護甲加值(0 = 無)。多來源(石膚/靈體護壁/撐架/護體召喚/柔革護持)相加,不遮蔽。"""
+    """被動護甲加值(0 = 無)。多來源(石膚/靈體護壁/撐架/護體召喚/柔革護持)相加,不遮蔽。
+    R141 現實邏輯:護甲/持盾系來源需真的穿著對應裝備(裸身沒有「撐架如鑄鐵堡壘」的盾;
+    魔法系來源如石膚/護體召喚不受影響)。"""
     return int(sum(o.get("armor_bonus", 0)
-                   for o in _chosen_options_by_kind(char, gamedata, "passive_armor")))
+                   for tree, o in _chosen_options_with_tree(char, gamedata, "passive_armor")
+                   if _armor_tree_active(char, gamedata, tree)))
 
 
 def potion_potency(char, gamedata: GameData) -> float:
@@ -414,15 +449,18 @@ FEAR_ON_HIT_CHANCE_CAP = 0.30   # 懾心術 fear_on_hit(illusion 50/75/100)多�
 
 
 def evasion_bonus(char, gamedata: GameData) -> float:
-    """身輕如燕/翻滾卸勁/疾風:額外閃避(直接從敵命中率扣;多來源 acrobatics/athletics/light_armor 相加,夾 EVASION_BONUS_CAP)。"""
+    """身輕如燕/翻滾卸勁/疾風:額外閃避(直接從敵命中率扣;多來源 acrobatics/athletics/light_armor 相加,夾 EVASION_BONUS_CAP)。
+    R141 現實邏輯:light_armor 樹的閃避 perk(柔革閃身/身如鬼魅)穿著重甲不生效(雜技/運動樹不受影響)。"""
     return min(EVASION_BONUS_CAP, sum(o.get("evasion_bonus", 0.0)
-               for o in _chosen_options_by_kind(char, gamedata, "evasion_bonus")))
+               for tree, o in _chosen_options_with_tree(char, gamedata, "evasion_bonus")
+               if _armor_tree_active(char, gamedata, tree)))
 
 
 def on_evade(char, gamedata: GameData) -> dict:
     """迴身反打/風暴之舞/凌空奇襲:成功閃避敵近戰時的反制。多節點聚合(反擊機率/比例取最、
     踉蹌任一、回體相加夾 ON_EVADE_RESTAMINA_CAP),空 = 無。"""
-    opts = _chosen_options_by_kind(char, gamedata, "on_evade")
+    opts = [o for tree, o in _chosen_options_with_tree(char, gamedata, "on_evade")
+            if _armor_tree_active(char, gamedata, tree)]   # R141:輕甲樹閃身反打穿重甲不生效
     if not opts:
         return {}
     return {
