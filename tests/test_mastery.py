@@ -850,7 +850,7 @@ def test_security_theft_and_casing():
     assert crime.steal_chance(c, gd) <= 0.95                          # 高技能+perk 仍不破 cap
     # 失風賞金減半:強制必被抓(patch steal_chance→0),比較有/無 perk 的 bounty_added
     real_sc = crime.steal_chance
-    crime.steal_chance = lambda ch, gd_: 0.0
+    crime.steal_chance = lambda ch, gd_, item_id=None: 0.0   # R144:簽名加 item_id(重量因子)
     try:
         gd, c0 = _char()
         r0 = crime.steal_item(c0, gd, "iron_sword", RNG(0))

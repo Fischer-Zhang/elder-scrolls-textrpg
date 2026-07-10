@@ -1412,6 +1412,22 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 
 ---
 
+### R144 · 現實邏輯審計批次 6:世界/行為邏輯(達貢不在路上散步·巨狼真的沒穿甲) [re-sim] [content]
+
+**批次 6 = 群 8 收官**(現實邏輯審計六批完結;群 4 遠程旗標按使用者裁定不動):
+
+- **具名劇情王退出隨機遭遇池 ×37**(含三形達貢/umaril/四大法王/17 親王 boss/試煉王):`weight:0`(spawn-only·R84 慣例);**物種精英白名單 7 隻保留遊蕩**(dremora_lord/frost_giant/ancient_dragon/vampire_lord/wamasu/dark_moon_senche/werewolf_alpha=非具名個體·路遇合理);guard 測試掃全 solo 自動把關。
+- **獸形真的脫裝(curse-2 major)**:單一接縫 `stats.recompute_equipment` —— beast_form → 裝備 skills/attrs/resist/fortify 全空(護甲早有 BEAST_ARMOR 早退;transform/revert 皆過 recompute → 自動切換);`inventory.thorns_reflect`(巨狼無甲佈荊棘)/`active_set_bonus`(穿不出夜影偽裝)/三個 `equip_*`(爪不能穿脫)各加 beast gate。
+- **獸形服務閘(seam-08)**:施法(戰鬥選單+地城預施+`action_cast_self`=爪不能結印)、撬鎖(捏不住開鎖器)、煉金/鍛造/淬鍊/公會大廳/告示板 各加獸形拒用訊息。
+- **遭遇率取兩端較險**(world-2):`travel` 遭遇率由「只看目的地」→ `max(起點, 終點)` 危險度(走出龍喉峰不再 0 遭遇)。**棲地束縛**(eco-3):bestiary `habitat_bound` 旗標(slaughterfish/flame·storm_atronach/ice_wraith)→ `_biome_weight` 離鄉權重=0(魚不游沙漠·元素不漫步雪原);離鄉遊蕩 ×0.25 規則對一般獸不變。
+- **行竊吃贓物重量**(crime-1):`steal_chance(char, gd, item_id=None)` 重量扣減 0.015/重·夾 0.35(順走 23 重戰斧 ≠ 摸走戒指;None=舊呼叫端 byte-identical)。**斯庫瑪**(curse-3/4):亢奮去 willpower(嗑藥不強心智·R20 紅線續守)·服用去 health 30(提神不治外傷·fatigue 80 保留)。**事件生態**(event-1):`wild_beast`(霜咬蜘蛛)加 `provinces:[天際]`·`highwayman` 文案去「松林」改生態中立。**石膚 desc** 對齊代碼(seam-09;撐架雙手劍問題已由 R141 修)。
+
+**驗證**:`run_all` **123**(新 `test_world_logic_r144` 6 測:劇情王退池 guard/獸形脫裝+穿脫鎖/行竊重量/棲地束縛/遭遇方向/斯庫瑪);**sim_assassin BYTE-IDENTICAL**(sim 不旅行/不行竊/非狼人·boss 直接生成不吃 weight);`check.sh --smoke` 全通過;BESTIARY 重生。零新存檔欄。**🎉 現實邏輯審計 R139–R144 六批完結**(67 confirmed 中群 1-3/5-8 全修·群 4 遠程旗標使用者裁定保留)。
+
+**🔴 鐵律**:solo 具名王必 `weight:0`(物種精英白名單在 test_world_logic_r144·加新王自動把關);獸形裝備壓制住 `recompute_equipment` 單一接縫(新裝備層自動被蓋·直讀裝備的 getter 須自帶 beast gate);水生/位面怪標 `habitat_bound`;steal_chance 帶 item_id。
+
+---
+
 ### R143 · 現實邏輯審計批次 5:煉金材料主題重指派(火鹽不再教你格擋) [content]
 
 **批次 5 = 群 7 十一條主題錯位**(R90/R91 FAIL-pair 方法論優先防碰撞、犧牲主題的技術債):**26 材料效果重指派**,全部改為主題正確的載體,同時**保住每個可釀 kind 的「唯一共有」乾淨配對**(R90 不變式):

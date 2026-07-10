@@ -609,7 +609,7 @@ def _choose_combat_action(state: GameState, gamedata: GameData, enemies: list, a
         opts.insert(0, ("repeat", _rep))
     castable = [s for s in player.spells if magic.can_cast(player, gamedata, s)
                 and gamedata.spells[s]["effect"]["kind"] != "scry"]   # R121 靈視/靈識僅地城揭露·排除出戰鬥施法選單(否則誤選即退還但耗掉回合)
-    if castable:
+    if castable and not player.beast_form:   # R144 現實邏輯:巨狼之爪無法結印施法
         opts.append(("cast", "施法"))
     if powers.usable_in(player, state, gamedata, "combat"):
         pid = powers.power_id(player, gamedata)
@@ -1893,6 +1893,9 @@ def _resolve_container(state: GameState, gamedata: GameData, container: dict, la
         return
     lock = container.get("locked", 0)
     if lock > 0:
+        if state.player.beast_form:   # R144 現實邏輯:巨狼之爪捏不住開鎖器
+            ui.message("巨狼的利爪捏不住細巧的開鎖器 —— 這鎖只能留給人形的你。", style="grey70")
+            return
         picks = inventory.count_item(state.player, "lockpick")
         if picks <= 0 and not state.player.tower_key_charge and not dungeon.has_skeleton_key(state.player, gamedata):
             ui.message(f"這個{label}上了鎖,而你沒有開鎖器 —— 撬不開(城鎮可買開鎖器)。", style="grey70")
@@ -2207,7 +2210,7 @@ def action_dungeon(state: GameState, gamedata: GameData) -> str | None:
         ui.dungeon_grid(grid, z, x, y, explored, resolved)  # 小地圖 + 當前格(偵查揭示鄰格內容)
         opts = [("go:" + key, f"往{label}") for key, label, _nx, _ny in dungeoncrawl.neighbors(grid, x, y)]
         if any(gamedata.spells[s]["target"] == "self" and gamedata.spells[s]["effect"]["kind"] not in ("reanimate", "scry")
-               for s in player.spells):    # 僅當有可在地城施放的 self 法術才列 cast(免空選單;scry 另列)
+               for s in player.spells) and not player.beast_form:    # 僅當有可施的 self 法術才列 cast;獸形不可結印(R144)
             opts.append(("cast", "施法(預施/預召喚)"))
         if any(gamedata.spells[s]["effect"].get("kind") == "scry" for s in player.spells):   # R121 靈視/靈識:對遠格主動揭露
             opts.append(("scry", "🔮 靈識揭露"))
@@ -4204,6 +4207,9 @@ def action_cast_self(state: GameState, gamedata: GameData, battle: dict | None =
     battle 非 None(地城戰鬥情境):放寬為「所有 self-target、非 reanimate」法術 —— 含召喚與
     各式自我增益(預施/預召喚);召喚物加入 battle["allies"]。battle 為 None(城鎮):僅 heal/restore。"""
     char = state.player
+    if char.beast_form:   # R144 現實邏輯:巨狼之爪無法結印施法
+        ui.message("巨狼的利爪結不出法印 —— 先變回人形。", style="yellow")
+        return
     if battle is not None:   # 地城戰鬥情境:可預施增益 + 預召喚(reanimate 需屍體 → 地城無,排除;scry 走「靈識揭露」動作)
         usable = [s for s in char.spells
                   if gamedata.spells[s]["target"] == "self"
@@ -4270,6 +4276,9 @@ def action_spell_vendor(state: GameState, gamedata: GameData) -> None:
 
 
 def action_alchemy(state: GameState, gamedata: GameData) -> None:
+    if state.player.beast_form:   # R144 現實邏輯:獸形無法使用精細服務
+        ui.message("巨狼的利爪擺弄不了蒸餾器與藥瓶。", style="yellow")
+        return
     char = state.player
     while True:                                       # 可連續煉製/嚐試,返回才離開
         ings = [s["id"] for s in char.inventory if gamedata.item(s["id"]).get("kind") == "ingredient"]
@@ -4473,6 +4482,9 @@ def action_enchant(state: GameState, gamedata: GameData) -> None:
 def action_craft(state: GameState, gamedata: GameData) -> None:
     """製革/加工:把獸皮等原料依配方做成裝備(需鐵匠/製革處)。
     兩層選單:第一層選材質系列,點進去後才列該系列要做的裝備。"""
+    if state.player.beast_form:   # R144 現實邏輯:獸形無法使用精細服務
+        ui.message("巨狼的利爪握不住鍛鎚。", style="yellow")
+        return
     char = state.player
     loc = world.current_location(char, gamedata)
     station = "smith" if "armorer" in loc.get("services", []) else None
@@ -4525,6 +4537,9 @@ def _craft_series(state: GameState, gamedata: GameData, mat: str, rids: list) ->
 
 def action_temper(state: GameState, gamedata: GameData) -> None:
     """淬鍊強化:在鐵匠處消耗對應材質的錠,把手持武器/穿戴護甲永久淬鍊一級(練鍛造)。"""
+    if state.player.beast_form:   # R144 現實邏輯:獸形無法使用精細服務
+        ui.message("巨狼的利爪握不住鍛鎚。", style="yellow")
+        return
     char = state.player
     loc = world.current_location(char, gamedata)
     if "armorer" not in loc.get("services", []):
@@ -4683,6 +4698,9 @@ def action_recharge_enchant(state: GameState, gamedata: GameData) -> None:
 # 公會、任務、犯罪、對話
 # ======================================================================
 def action_guild_hall(state: GameState, gamedata: GameData, faction_id: str) -> None:
+    if state.player.beast_form:   # R144:獸形進不了公會大廳(人們尖叫逃散)
+        ui.message("你這副模樣踏進大廳,只會換來一片尖叫與拔劍聲。", style="yellow")
+        return
     char = state.player
     f = gamedata.factions[faction_id]
     while True:                                      # 留在公會可連續處理(入會→接任務),返回才離開
@@ -4897,6 +4915,9 @@ def _arcane_services(state: GameState, gamedata: GameData) -> None:
 
 
 def action_board(state: GameState, gamedata: GameData) -> None:
+    if state.player.beast_form:   # R144 現實邏輯:獸形無法使用精細服務
+        ui.message("獸形之軀看不懂告示,人們只會尖叫逃散。", style="yellow")
+        return
     char = state.player
     province = world.current_location(char, gamedata)["province"]
     while True:                                       # 留在告示板可連續接多個委託,返回才離開

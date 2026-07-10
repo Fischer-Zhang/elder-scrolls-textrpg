@@ -1,1003 +1,2655 @@
 {
-  "highwayman": {
-    "weight": 5, "trigger": {"contexts": ["travel"]},
-    "title": "攔路強盜", "text": "一名強盜從路旁松林閃出,擋住去路:「留下五十金,饒你一命。」",
-    "options": [
-      {"text": "乖乖付過路費", "requirements": {"gold_min": 50},
-       "effects": [{"type": "gold", "amount": -50}, {"type": "message", "text": "你掏出金幣,強盜冷笑著放行。"}]},
-      {"text": "出言威嚇(口才)",
-       "check": {"skill": "speechcraft", "difficulty": 40,
-                 "success": {"text": "你不動聲色地報出幾個名號,強盜臉色一變,悻悻退去。",
-                             "effects": [{"type": "fame", "amount": 4}]},
-                 "failure": {"text": "強盜被你激怒,拔刀撲來!",
-                             "effects": [{"type": "combat", "creature": "bandit"}]}}},
-      {"text": "拔劍相向", "effects": [{"type": "combat", "creature": "bandit"}]}
-    ]
+ "highwayman": {
+  "weight": 5,
+  "trigger": {
+   "contexts": [
+    "travel"
+   ]
   },
-  "injured_traveler": {
-    "weight": 4, "trigger": {"contexts": ["travel"]},
-    "title": "路旁傷者", "text": "一名旅人倒在路邊呻吟,腿上有道深可見骨的傷口。",
-    "options": [
-      {"text": "用治療藥水救他", "requirements": {"item": "minor_healing_potion"},
-       "effects": [{"type": "item", "item": "minor_healing_potion", "qty": -1},
-                   {"type": "gold", "amount": 35}, {"type": "fame", "amount": 5},
-                   {"type": "message", "text": "傷者感激涕零,塞給你一袋金幣作謝。"}]},
-      {"text": "施捨幾枚金幣", "requirements": {"gold_min": 10},
-       "effects": [{"type": "gold", "amount": -10}, {"type": "fame", "amount": 3},
-                   {"type": "message", "text": "你留下些錢,傷者連聲道謝。"}]},
-      {"text": "搜刮他的財物", "effects": [{"type": "gold", "amount": 25}, {"type": "infamy", "amount": 5},
-                   {"type": "bounty", "amount": 40},
-                   {"type": "message", "text": "你翻走了傷者的錢袋 —— 遠處似乎有人看見了。"}]},
-      {"text": "視而不見地走開", "effects": [{"type": "message", "text": "你別過頭,加快了腳步。"}]}
-    ]
-  },
-  "wandering_scholar": {
-    "weight": 3, "trigger": {"contexts": ["travel"]},
-    "title": "雲遊學者", "text": "一位披著藍袍的法師坐在路邊石上,願意以見聞換取交流。",
-    "options": [
-      {"text": "付費聆聽奧秘(智慧之談)", "requirements": {"gold_min": 40},
-       "effects": [{"type": "gold", "amount": -40},
-                   {"type": "skill_xp", "skill": "mysticism", "amount": 3.0},
-                   {"type": "message", "text": "你聽他講述靈魂與位面之理,獲益良多。"}]},
-      {"text": "以你的見識交換(口才)",
-       "check": {"skill": "speechcraft", "difficulty": 35,
-                 "success": {"text": "你侃侃而談,學者大為讚賞,傾囊相授。",
-                             "effects": [{"type": "skill_xp", "skill": "alteration", "amount": 2.0}]},
-                 "failure": {"text": "你言不及義,學者搖頭轉開了視線。", "effects": []}}},
-      {"text": "婉拒後離開", "effects": []}
-    ]
-  },
-  "wayshrine": {
-    "weight": 3, "trigger": {"contexts": ["travel", "explore"]},
-    "title": "八聖路碑", "text": "路旁立著一座風化的八聖神碑,隱隱透出溫暖的光。",
-    "options": [
-      {"text": "虔誠祈禱", "effects": [{"type": "heal", "amount": "full"},
-                   {"type": "restore_magicka", "amount": "full"},
-                   {"type": "message", "text": "聖光洗去你的傷痛與疲憊。"}]},
-      {"text": "捐獻香火", "requirements": {"gold_min": 10},
-       "effects": [{"type": "gold", "amount": -10}, {"type": "fame", "amount": 3},
-                   {"type": "heal", "amount": "full"},
-                   {"type": "message", "text": "你留下香火錢,神碑回以祝福。"}]},
-      {"text": "路過不理", "effects": []}
-    ]
-  },
-  "merchant_caravan": {
-    "weight": 3, "trigger": {"contexts": ["travel"]},
-    "title": "行商隊", "text": "一支商隊在路旁紮營歇腳,商人朝你揮手招攬。",
-    "options": [
-      {"text": "購買補給", "requirements": {"gold_min": 30},
-       "effects": [{"type": "gold", "amount": -30}, {"type": "item", "item": "healing_potion", "qty": 1},
-                   {"type": "message", "text": "你換得一瓶治療藥水。"}]},
-      {"text": "打聽道上見聞", "requirements": {"quest_available": "job_bandit"},
-       "effects": [{"type": "start_quest", "quest": "job_bandit"},
-                   {"type": "skill_xp", "skill": "speechcraft", "amount": 0.5}]},
-      {"text": "繼續趕路", "effects": []}
-    ]
-  },
-  "camp_ambush": {
-    "weight": 4, "trigger": {"contexts": ["rest"], "location_types": ["wilderness", "dungeon"]},
-    "title": "營地襲擊", "text": "半夜你被低吼驚醒 —— 一頭野狼循著火光摸了過來!",
-    "options": [
-      {"text": "起身迎戰", "effects": [{"type": "combat", "creature": "wolf"}]},
-      {"text": "悄悄遁入暗處(潛行)",
-       "check": {"skill": "sneak", "difficulty": 35,
-                 "success": {"text": "你屏息潛入陰影,野狼悻悻離去。", "effects": []},
-                 "failure": {"text": "枯枝在腳下一響,野狼撲了上來!",
-                             "effects": [{"type": "combat", "creature": "wolf"}]}}}
-    ]
-  },
-  "thief_in_night": {
-    "weight": 3, "trigger": {"contexts": ["rest"]},
-    "title": "夜半竊手", "text": "睡夢中,一隻手悄悄探向你的錢袋……",
-    "options": [
-      {"text": "猛然驚醒、反擒其手(安全)",
-       "check": {"skill": "security", "difficulty": 40,
-                 "success": {"text": "你一把扣住竊賊手腕,反倒摸走了他的錢囊!",
-                             "effects": [{"type": "gold", "amount": 18},
-                                         {"type": "skill_xp", "skill": "security", "amount": 0.6}]},
-                 "failure": {"text": "你醒得太遲,竊賊已沒入夜色。",
-                             "effects": [{"type": "gold", "amount": -25}]}}},
-      {"text": "繼續沉睡", "effects": [{"type": "gold", "amount": -25},
-                   {"type": "message", "text": "天明時你發現錢袋輕了不少。"}]}
-    ]
-  },
-  "campfire_companion": {
-    "weight": 3, "trigger": {"contexts": ["rest"], "location_types": ["wilderness"]},
-    "title": "同火夜談", "text": "一名旅人前來分享你的營火,聊起道聽途說的傳聞。",
-    "options": [
-      {"text": "交換旅途見聞", "effects": [{"type": "fame", "amount": 3},
-                   {"type": "skill_xp", "skill": "speechcraft", "amount": 0.6}]},
-      {"text": "打探古墓寶藏(委託)", "requirements": {"quest_available": "event_relic"},
-       "effects": [{"type": "start_quest", "quest": "event_relic"}]},
-      {"text": "早早就寢", "effects": [{"type": "restore_fatigue", "amount": "full"}]}
-    ]
-  },
-  "herb_patch": {
-    "weight": 4, "trigger": {"contexts": ["explore"]},
-    "title": "野生藥草", "text": "一叢沾著晨露的煉金材料在岩縫間搖曳。",
-    "options": [
-      {"text": "細心採集", "effects": [{"type": "item", "item": "blue_mountain_flower", "qty": 1},
-                   {"type": "item", "item": "lavender", "qty": 1},
-                   {"type": "item", "item": "monarch_wing", "qty": 1},
-                   {"type": "skill_xp", "skill": "alchemy", "amount": 0.5},
-                   {"type": "message", "text": "你採下了幾株藥草,還撈到一隻歇腳的帝王蝶。"}]},
-      {"text": "沒興趣", "effects": []}
-    ]
-  },
-  "ancient_ruin": {
-    "weight": 4, "trigger": {"contexts": ["explore"]},
-    "title": "半埋的遺跡", "text": "風沙下露出一截古老石階,深處幽暗,似有機關。",
-    "options": [
-      {"text": "謹慎探入(安全)",
-       "check": {"skill": "security", "difficulty": 30,
-                 "success": {"text": "你避開了暗藏的陷阱,在石室裡尋得寶物。",
-                             "effects": [{"type": "item", "item": "ruby", "qty": 1},
-                                         {"type": "gold", "amount": 20}]},
-                 "failure": {"text": "喀噠 —— 一支毒鏢從牆縫射出!",
-                             "effects": [{"type": "damage", "amount": 14}]}}},
-      {"text": "不入險地", "effects": []}
-    ]
-  },
-  "trapped_chest": {
-    "weight": 3, "trigger": {"contexts": ["explore"]},
-    "title": "可疑的箱子", "text": "草叢裡藏著一只老舊木箱,鎖孔旁有焦黑的痕跡。",
-    "options": [
-      {"text": "仔細拆解機關後開啟", "requirements": {"skill_min": {"security": 30}},
-       "effects": [{"type": "item", "item": "minor_magicka_potion", "qty": 1},
-                   {"type": "gold", "amount": 25},
-                   {"type": "skill_xp", "skill": "security", "amount": 0.6},
-                   {"type": "message", "text": "你穩穩拆掉了陷阱,取出箱中之物。"}]},
-      {"text": "直接撬開(安全)",
-       "check": {"skill": "security", "difficulty": 35,
-                 "success": {"text": "運氣不錯,鎖應聲而開。",
-                             "effects": [{"type": "gold", "amount": 25}]},
-                 "failure": {"text": "轟!箱裡的符文炸開。",
-                             "effects": [{"type": "damage", "amount": 12}]}}},
-      {"text": "放著別碰", "effects": []}
-    ]
-  },
-  "wild_beast": {
-    "weight": 4, "trigger": {"contexts": ["explore"]},
-    "title": "草叢異動", "text": "灌木叢中傳來窸窣聲,一對泛光的眼睛盯上了你。",
-    "options": [
-      {"text": "搶先出手", "effects": [{"type": "combat", "creature": "frostbite_spider"}]},
-      {"text": "緩緩後退(潛行)",
-       "check": {"skill": "sneak", "difficulty": 30,
-                 "success": {"text": "你輕手輕腳地退開,那東西沒有追來。", "effects": []},
-                 "failure": {"text": "你踩斷了枯枝,牠撲了上來!",
-                             "effects": [{"type": "combat", "creature": "frostbite_spider"}]}}}
-    ]
-  },
-  "town_crier": {
-    "weight": 4, "trigger": {"contexts": ["arrive"], "location_types": ["city", "town"]},
-    "title": "街頭佈告", "text": "城鎮廣場上,佈告員高聲宣讀一樁懸賞。",
-    "options": [
-      {"text": "接下這樁懸賞", "requirements": {"quest_available": "job_draugr"},
-       "effects": [{"type": "start_quest", "quest": "job_draugr"}]},
-      {"text": "聽過便罷", "effects": [{"type": "skill_xp", "skill": "speechcraft", "amount": 0.3}]}
-    ]
-  },
-  "festival": {
-    "weight": 3, "trigger": {"contexts": ["arrive"], "location_types": ["city", "town"]},
-    "title": "市集慶典", "text": "城裡正逢節慶,街上人聲鼎沸、酒香四溢。",
-    "options": [
-      {"text": "與民同樂", "requirements": {"gold_min": 5},
-       "effects": [{"type": "gold", "amount": -5}, {"type": "fame", "amount": 5},
-                   {"type": "restore_fatigue", "amount": "full"},
-                   {"type": "message", "text": "你在歡騰中暢飲一番,神清氣爽。"}]},
-      {"text": "趁亂行竊(潛行)",
-       "check": {"skill": "sneak", "difficulty": 40,
-                 "success": {"text": "人群正好掩護,你的手悄悄滑進幾個錢袋。",
-                             "effects": [{"type": "gold", "amount": 30},
-                                         {"type": "skill_xp", "skill": "sneak", "amount": 0.6}]},
-                 "failure": {"text": "「抓賊啊!」 —— 你被當場識破。",
-                             "effects": [{"type": "bounty", "amount": 50}, {"type": "infamy", "amount": 5}]}}},
-      {"text": "靜靜離開", "effects": []}
-    ]
-  },
-  "street_urchin": {
-    "weight": 3, "trigger": {"contexts": ["arrive"], "location_types": ["city", "town"]},
-    "title": "市井扒手", "text": "一個衣衫襤褸的孩子撞了你一下,轉身就要鑽進巷子。",
-    "options": [
-      {"text": "一把抓住他的手(安全)",
-       "check": {"skill": "security", "difficulty": 35,
-                 "success": {"text": "你扣住小扒手的腕子,要回了被摸走的錢。",
-                             "effects": [{"type": "skill_xp", "skill": "security", "amount": 0.4}]},
-                 "failure": {"text": "孩子滑溜得很,眨眼就沒了蹤影。",
-                             "effects": [{"type": "gold", "amount": -10}]}}},
-      {"text": "由他去吧", "effects": [{"type": "gold", "amount": -10}]}
-    ]
-  },
-  "skyrim_blizzard": {
-    "weight": 4, "trigger": {"contexts": ["travel", "explore"], "provinces": ["天際"]},
-    "title": "暴風雪", "text": "天際的風雪驟然轉急,白茫茫一片中連路都看不清。",
-    "options": [
-      {"text": "頂風硬闖(運動)",
-       "check": {"skill": "athletics", "difficulty": 35,
-                 "success": {"text": "你裹緊衣物、踏雪而行,總算穿了過去。",
-                             "effects": [{"type": "skill_xp", "skill": "athletics", "amount": 0.6}]},
-                 "failure": {"text": "刺骨寒風凍得你直打哆嗦。",
-                             "effects": [{"type": "damage", "amount": 6}]}}},
-      {"text": "找處岩壁避風", "effects": [{"type": "message", "text": "你蜷在背風處,等風雪稍歇才再上路。"}]}
-    ]
-  },
-  "skyrim_predator": {
-    "weight": 3, "trigger": {"contexts": ["explore"], "provinces": ["天際"], "location_types": ["wilderness"]},
-    "title": "雪地裡的低嘯", "text": "雪幕之後,一道泛著寒光的身影盤旋逼近 —— 是冰魂。",
-    "options": [
-      {"text": "拔劍迎敵", "effects": [{"type": "combat", "creature": "ice_wraith"}]},
-      {"text": "悄悄繞開(潛行)",
-       "check": {"skill": "sneak", "difficulty": 35,
-                 "success": {"text": "你借著風雪掩護,悄然退開。", "effects": []},
-                 "failure": {"text": "牠嗅到了你的氣息,呼嘯而至!",
-                             "effects": [{"type": "combat", "creature": "ice_wraith"}]}}}
-    ]
-  },
-  "morrowind_ashstorm": {
-    "weight": 4, "trigger": {"contexts": ["travel", "explore"], "provinces": ["晨風"]},
-    "title": "灰燼風暴", "text": "紅山吹來的灰燼風暴遮天蔽日,火山灰刮得皮膚生疼。",
-    "options": [
-      {"text": "拉起頭巾趕路", "effects": [{"type": "damage", "amount": 5},
-                                  {"type": "message", "text": "你頂著灰暴前行,嗆了一肺的火山灰。"}]},
-      {"text": "就地掩蔽等風停", "effects": [{"type": "message", "text": "你躲進岩屋背風處,直到天色重新泛紅。"}]}
-    ]
-  },
-  "morrowind_forage": {
-    "weight": 3, "trigger": {"contexts": ["explore"], "provinces": ["晨風"]},
-    "title": "火山灰田", "text": "灰燼覆蓋的田壟間,冒出幾叢火山特有的菌菇與作物,岩縫陰影裡還藏著些別的東西。",
-    "options": [
-      {"text": "細心採集這片火山灰地", "effects": [{"type": "forage_pool", "pool": "ashland"}]},
-      {"text": "沒興趣", "effects": []}
-    ]
-  },
-  "blackmarsh_hist": {
-    "weight": 4, "trigger": {"contexts": ["travel", "rest"], "provinces": ["黑沼澤"]},
-    "title": "希斯特低語", "text": "沼霧深處,一株希斯特神樹的根鬚滲出微光的樹液,空氣裡浮動著古老的低語。",
-    "options": [
-      {"text": "靜心聆聽樹語",
-       "effects": [{"type": "heal", "amount": "full"},
-                   {"type": "restore_magicka", "amount": "full"},
-                   {"type": "message", "text": "希斯特的低語撫平了你的傷與疲憊,心神為之一清。"}]},
-      {"text": "敬而遠之", "effects": [{"type": "message", "text": "你避開那株神樹,不願招惹沼澤的古神。"}]}
-    ]
-  },
-  "blackmarsh_predator": {
-    "weight": 3, "trigger": {"contexts": ["explore"], "provinces": ["黑沼澤"], "location_types": ["wilderness"]},
-    "title": "沼澤裡的幽光", "text": "爛泥水面浮起一團飄忽的幽光,引著你越走越深 —— 是鬼火。",
-    "options": [
-      {"text": "識破陷阱、搶先出手", "effects": [{"type": "combat", "creature": "will_o_wisp"}]},
-      {"text": "循原路退回(潛行)",
-       "check": {"skill": "sneak", "difficulty": 40,
-                 "success": {"text": "你看穿幽光的誘引,悄悄退出泥潭。", "effects": []},
-                 "failure": {"text": "你陷進爛泥,幽光趁機撲來!",
-                             "effects": [{"type": "combat", "creature": "will_o_wisp"}]}}}
-    ]
-  },
-  "blackmarsh_forage": {
-    "weight": 3, "trigger": {"contexts": ["explore"], "provinces": ["黑沼澤"]},
-    "title": "沼澤毒草", "text": "陰濕的水窪邊,毒茄參與傘菌在腐葉間悄然生長,泥水深處還沉著些不知名的東西。",
-    "options": [
-      {"text": "小心採集這片毒沼", "effects": [{"type": "forage_pool", "pool": "swamp"}]},
-      {"text": "沒興趣", "effects": []}
-    ]
-  },
-  "cyrodiil_forage": {
-    "weight": 3, "trigger": {"contexts": ["explore"], "provinces": ["賽羅迪爾"]},
-    "title": "帝國農田", "text": "帝都近郊的農田與果園間,麥穗、蒜株與紅蘋果正當時節,田畔矮灌叢上還結著野莓。",
-    "options": [
-      {"text": "在農田與灌叢間採集", "effects": [{"type": "forage_pool", "pool": "heartland"}]},
-      {"text": "沒興趣", "effects": []}
-    ]
-  },
-  "skyrim_forage": {
-    "weight": 3, "trigger": {"contexts": ["explore"], "provinces": ["天際"]},
-    "title": "凍原採集", "text": "雪線下的背風坡上,幾叢耐寒的香草頂著霜開了花;不遠處的雪地裡還散著猛獸啃剩的殘骸。",
-    "options": [
-      {"text": "在凍原上四處搜採", "effects": [{"type": "forage_pool", "pool": "snow"}]},
-      {"text": "沒興趣", "effects": []}
-    ]
-  },
-  "border_forage": {
-    "weight": 3, "trigger": {"contexts": ["explore"], "provinces": ["邊境"]},
-    "title": "邊陲野採", "text": "無人管轄的邊境荒地上,各方草藥在亂石與沼氣間混雜叢生。",
-    "options": [
-      {"text": "在混生荒地上採集", "effects": [{"type": "forage_pool", "pool": "border"}]},
-      {"text": "沒興趣", "effects": []}
-    ]
-  },
-  "cyrodiil_patrol": {
-    "weight": 3, "trigger": {"contexts": ["travel"], "provinces": ["賽羅迪爾"]},
-    "title": "帝國巡邏隊", "text": "一隊帝國軍團士兵沿著帝國大道走來,長官打量了你一眼。",
-    "options": [
-      {"text": "頷首致意", "effects": [{"type": "message", "text": "「路上小心,公民。」士兵們列隊而過。"}]},
-      {"text": "打聽路況(口才)",
-       "check": {"skill": "speechcraft", "difficulty": 25,
-                 "success": {"text": "長官多說了幾句,點出前方哪段路近來不太平。",
-                             "effects": [{"type": "skill_xp", "skill": "speechcraft", "amount": 0.4}]},
-                 "failure": {"text": "「無可奉告。」長官板著臉走開了。", "effects": []}}}
-    ]
-  },
-  "cyrodiil_ayleid_ruin": {
-    "weight": 3, "trigger": {"contexts": ["explore"], "provinces": ["賽羅迪爾"], "location_types": ["wilderness"]},
-    "title": "埃雷德殘墟", "text": "帝國大道旁的松林間,半埋著一截發著微光的埃雷德古代石柱,殘垣後似有寒氣浮動。",
-    "options": [
-      {"text": "上前探查(偵查)",
-       "check": {"skill": "scout", "difficulty": 30,
-                 "success": {"text": "你看出殘墟的門道,在碎石下摸到一枚古錢與發光塵。",
-                             "effects": [{"type": "item", "item": "glow_dust", "qty": 1},
-                                         {"type": "gold", "amount": 20},
-                                         {"type": "skill_xp", "skill": "scout", "amount": 0.5}]},
-                 "failure": {"text": "你驚動了棲身殘墟的帝國亡魂!",
-                             "effects": [{"type": "combat", "creature": "imperial_ghost"}]}}},
-      {"text": "繞道而行", "effects": [{"type": "message", "text": "你不願招惹古老的埃雷德亡靈,繞了過去。"}]}
-    ]
-  },
-  "hammerfell_forage": {
-    "weight": 3, "trigger": {"contexts": ["explore"], "provinces": ["漢默法爾"]},
-    "title": "綠洲採集", "text": "沙丘背風處的一小片綠洲邊,沙地藥草與耐旱的根莖在棕櫚蔭下悄然生長,鹽灘與礁岩間還散著別的東西。",
-    "options": [
-      {"text": "在綠洲與鹽灘間搜採", "effects": [{"type": "forage_pool", "pool": "desert"}]},
-      {"text": "沒興趣", "effects": []}
-    ]
-  },
-  "hammerfell_predator": {
-    "weight": 3,
-    "trigger": {"contexts": ["explore"], "provinces": ["漢默法爾"], "location_types": ["wilderness"]},
-    "title": "沙下的震顫", "text": "腳下的黃沙忽然震動起來 —— 一頭沙嘯獸正循著熱息逼近。",
-    "options": [
-      {"text": "搶在牠破沙前出手", "effects": [{"type": "combat", "creature": "dune_ripper"}]},
-      {"text": "屏息潛伏、悄然繞行(潛行)",
-       "check": {"skill": "sneak", "difficulty": 40,
-                 "success": {"text": "你壓低身形,任那掠食獸自沙下掠過。", "effects": []},
-                 "failure": {"text": "沙礫滑落驚動了牠,沙嘯獸破沙而出!", "effects": [{"type": "combat", "creature": "dune_ripper"}]}}}
-    ]
-  },
-  "highrock_forage": {
-    "weight": 3,
-    "trigger": {"contexts": ["explore"], "provinces": ["高岩"]},
-    "title": "荒沼採藥",
-    "text": "霧鎖的石南坡上,死亡鐘與薰衣草在濕冷的泥炭間悄然綻放,礦脈縫隙裡還泛著紫晶的微光。",
-    "options": [
-      {"text": "在荒沼與礦脈間採集", "effects": [{"type": "forage_pool", "pool": "moor"}]},
-      {"text": "沒興趣", "effects": []}
-    ]
-  },
-  "highrock_predator": {
-    "weight": 3,
-    "trigger": {"contexts": ["explore"], "provinces": ["高岩"], "location_types": ["wilderness"]},
-    "title": "霧中的石影", "text": "濃霧深處傳來石塊摩擦的悶響 —— 一尊石像鬼自斷垣後直起身,石翼鏗然張開。",
-    "options": [
-      {"text": "搶在牠撲下前出手", "effects": [{"type": "combat", "creature": "gargoyle"}]},
-      {"text": "屏息潛伏、繞開霧影(潛行)",
-       "check": {"skill": "sneak", "difficulty": 42,
-                 "success": {"text": "你貼著石南匍匐而過,任那石影在霧裡重新沉睡。", "effects": []},
-                 "failure": {"text": "腳下碎石一響,石像鬼睜眼撲下!", "effects": [{"type": "combat", "creature": "gargoyle"}]}}}
-    ]
-  },
-  "jungle_forage": {
-    "weight": 3,
-    "trigger": {"contexts": ["explore"], "provinces": ["瓦倫森林"]},
-    "title": "巨木林採集",
-    "text": "螢光在濕熱的林蔭間明滅 —— 一叢開滿異花的灌木邊,帝王蝶翩然聚集,腐木上浮著發光的鬼火塵,林間還不時掠過鳥影。",
-    "options": [
-      {"text": "在巨木林間採集", "effects": [{"type": "forage_pool", "pool": "jungle"}]},
-      {"text": "沒興趣", "effects": []}
-    ]
-  },
-  "jungle_predator": {
-    "weight": 3,
-    "trigger": {"contexts": ["explore"], "provinces": ["瓦倫森林"], "location_types": ["wilderness"]},
-    "title": "林蔭中的綠影", "text": "苔綠的樹皮無聲剝落 —— 一具藤蔓交織的樹靈自巨木中走出,荊棘的指尖滴著綠約的毒。",
-    "options": [
-      {"text": "搶在牠纏上來前出手", "effects": [{"type": "combat", "creature": "spriggan"}]},
-      {"text": "屏息潛伏、繞開綠影(潛行)",
-       "check": {"skill": "sneak", "difficulty": 42,
-                 "success": {"text": "你貼著樹根匍匐而過,任那樹靈在綠蔭裡重新沉入巨木。", "effects": []},
-                 "failure": {"text": "踩斷的枯枝驚動了牠,樹靈的毒藤猛然纏來!", "effects": [{"type": "combat", "creature": "spriggan"}]}}}
-    ]
-  },
-  "savanna_sugar_harvest": {
-    "weight": 3,
-    "trigger": {"contexts": ["explore"], "provinces": ["艾爾斯維爾"]},
-    "title": "糖楓林採集", "text": "騰瑪林的糖楓在烈日下滲出黏稠的汁液,結成一串串天然的月糖晶;腐木上還浮著一層發光的鬼火塵,草海間不時有鳥影掠過。",
-    "options": [
-      {"text": "在糖楓草海間採集", "effects": [{"type": "forage_pool", "pool": "savanna"}]},
-      {"text": "不碰那甜膩的東西", "effects": []}
-    ]
-  },
-  "savanna_predator": {
-    "weight": 3,
-    "trigger": {"contexts": ["explore"], "provinces": ["艾爾斯維爾"], "location_types": ["wilderness"]},
-    "title": "草海中的金影", "text": "金黃的草浪無聲分開 —— 一頭如戰馬高大的森奇巨虎踏出,糖蜜浸透的利爪間滴著毒,雙眼鎖定了你。",
-    "options": [
-      {"text": "搶在牠撲上來前出手", "effects": [{"type": "combat", "creature": "senche_tiger"}]},
-      {"text": "屏息潛伏、繞開金影(潛行)",
-       "check": {"skill": "sneak", "difficulty": 44,
-                 "success": {"text": "你貼著草浪匍匐而過,任那巨虎在草海裡重新沉入潛伏。", "effects": []},
-                 "failure": {"text": "踩斷的枯草驚動了牠,森奇巨虎的毒爪猛然撲來!", "effects": [{"type": "combat", "creature": "senche_tiger"}]}}}
-    ]
-  },
-  "discarded_lockpick": {
-    "weight": 2,
-    "trigger": {"contexts": ["explore", "travel"], "location_types": ["wilderness", "dungeon"]},
-    "title": "前人的遺留",
-    "text": "路旁一具早已風乾的旅人骸骨蜷在亂石間,腰側的破皮囊裡露出幾根還算堪用的開鎖器。",
-    "options": [
-      {"text": "收下開鎖器", "effects": [{"type": "item", "item": "lockpick", "qty": 2}, {"type": "message", "text": "你拾起了 2 根開鎖器。"}]},
-      {"text": "讓逝者安息,不取", "effects": []}
-    ]
-  },
-  "hammerfell_sword_singer": {
-    "weight": 3,
-    "trigger": {
-      "contexts": ["travel", "explore"],
-      "provinces": ["漢默法爾"]
+  "title": "攔路強盜",
+  "text": "一名強盜從路旁的陰影中閃出,擋住去路:「留下五十金,饒你一命。」",
+  "options": [
+   {
+    "text": "乖乖付過路費",
+    "requirements": {
+     "gold_min": 50
     },
-    "title": "沙丘上的劍歌者",
-    "text": "黃沙的脊線上,一名赤膊的紅衛人盤膝而坐,赤足陷在滾燙的沙裡。他不持鋼鐵,卻在掌心凝起一道泛著幽光的靈刃 —— 那是劍歌者以心魂鑄成的謝海。他睜眼望向你:「外鄉人,劍道無捷徑。你想看看真正的刃,還是只想趕路?」",
-    "options": [
-      {
-        "text": "請他指點刀法(刀劍)",
-        "check": {
-          "skill": "blade",
-          "difficulty": 35,
-          "success": {
-            "text": "你依他的口訣調勻呼吸、沉肩墜肘,一式劈下竟與沙風同調。劍歌者頷首:「約凱的血,終究認得約凱的劍。」",
-            "effects": [
-              {
-                "type": "skill_xp",
-                "skill": "blade",
-                "amount": 0.8
-              },
-              {
-                "type": "message",
-                "text": "你領會了一絲靈刃古術的皮毛。"
-              }
-            ]
-          },
-          "failure": {
-            "text": "你揮劍如劈柴,靈刃在你眼前驟然潰散。劍歌者搖頭:「心未靜,刃便鈍。回去再悟。」",
-            "effects": [
-              {
-                "type": "skill_xp",
-                "skill": "blade",
-                "amount": 0.2
-              }
-            ]
-          }
-        }
-      },
-      {
-        "text": "奉上敬意(贈 25 金)",
-        "requirements": {
-          "gold_min": 25
-        },
-        "effects": [
-          {
-            "type": "gold",
-            "amount": -25
-          },
-          {
-            "type": "fame",
-            "amount": 2
-          },
-          {
-            "type": "message",
-            "text": "劍歌者收下金幣,以靈刃在沙上為你劃下一道祝福的劍痕。「願塔瓦的風,送你穿過沙海。」"
-          }
-        ]
-      },
-      {
-        "text": "不打擾,繼續趕路",
-        "effects": [
-          {
-            "type": "message",
-            "text": "你向他抱拳致意,留他獨自與黃沙、與心中的劍對坐。"
-          }
-        ]
-      }
+    "effects": [
+     {
+      "type": "gold",
+      "amount": -50
+     },
+     {
+      "type": "message",
+      "text": "你掏出金幣,強盜冷笑著放行。"
+     }
     ]
+   },
+   {
+    "text": "出言威嚇(口才)",
+    "check": {
+     "skill": "speechcraft",
+     "difficulty": 40,
+     "success": {
+      "text": "你不動聲色地報出幾個名號,強盜臉色一變,悻悻退去。",
+      "effects": [
+       {
+        "type": "fame",
+        "amount": 4
+       }
+      ]
+     },
+     "failure": {
+      "text": "強盜被你激怒,拔刀撲來!",
+      "effects": [
+       {
+        "type": "combat",
+        "creature": "bandit"
+       }
+      ]
+     }
+    }
+   },
+   {
+    "text": "拔劍相向",
+    "effects": [
+     {
+      "type": "combat",
+      "creature": "bandit"
+     }
+    ]
+   }
+  ]
+ },
+ "injured_traveler": {
+  "weight": 4,
+  "trigger": {
+   "contexts": [
+    "travel"
+   ]
   },
-  "hammerfell_crowns_forebears_feud": {
-    "weight": 2,
-    "trigger": {
-      "contexts": ["travel"],
-      "provinces": ["漢默法爾"]
+  "title": "路旁傷者",
+  "text": "一名旅人倒在路邊呻吟,腿上有道深可見骨的傷口。",
+  "options": [
+   {
+    "text": "用治療藥水救他",
+    "requirements": {
+     "item": "minor_healing_potion"
     },
-    "title": "綠洲畔的口角",
-    "text": "綠洲水井旁,一名王冠派的森塔巡騎與一名先鋒派的蓋蘭商隊頭領吵得不可開交 —— 一個罵對方向帝國卑躬屈膝,一個譏對方抱著沉沒的約庫達古制不放。水井邊的人群屏息圍觀,手都按上了彎刀。",
-    "options": [
-      {
-        "text": "出言調停(口才)",
-        "check": {
-          "skill": "speechcraft",
-          "difficulty": 40,
-          "success": {
-            "text": "你提醒兩人:沙海不分王冠先鋒,塔瓦的活水養活的是所有約凱後裔。兩人悻悻收刀,圍觀者向你投來讚許的目光。",
-            "effects": [
-              {
-                "type": "skill_xp",
-                "skill": "speechcraft",
-                "amount": 0.6
-              },
-              {
-                "type": "fame",
-                "amount": 3
-              }
-            ]
-          },
-          "failure": {
-            "text": "你話沒說完,兩派人馬已嫌你多管閒事,一齊把你推搡開,差點挨上一拳。",
-            "effects": [
-              {
-                "type": "message",
-                "text": "你灰頭土臉地退到一旁,任他們繼續爭執。"
-              }
-            ]
-          }
-        }
-      },
-      {
-        "text": "袖手旁觀,看個熱鬧",
-        "effects": [
-          {
-            "type": "message",
-            "text": "你倚在棕櫚樹下,看兩派人罵到口乾舌燥,最終各自摔袖而去,終究沒見血。"
-          }
-        ]
-      }
+    "effects": [
+     {
+      "type": "item",
+      "item": "minor_healing_potion",
+      "qty": -1
+     },
+     {
+      "type": "gold",
+      "amount": 35
+     },
+     {
+      "type": "fame",
+      "amount": 5
+     },
+     {
+      "type": "message",
+      "text": "傷者感激涕零,塞給你一袋金幣作謝。"
+     }
     ]
-  },
-  "high_rock_witch_coven": {
-    "weight": 3,
-    "trigger": {
-      "contexts": ["travel"],
-      "provinces": ["高岩"]
+   },
+   {
+    "text": "施捨幾枚金幣",
+    "requirements": {
+     "gold_min": 10
     },
-    "title": "迷霧中的篝火",
-    "text": "荒原的霧靄裡浮起一圈青藍火光,幾名披斗篷的格倫莫利女巫圍著大鍋低吟。她們抬眼望向你,鍋中翻騰著不知名的東西——是要繞道,還是探個究竟?",
-    "options": [
-      {
-        "text": "悄悄潛近,偷聽她們的盤算",
-        "check": {
-          "skill": "sneak",
-          "difficulty": 30,
-          "success": {
-            "text": "你伏在石楠叢後,聽她們議定下一處下蠱的村莊——這情報在坎洛恩公爵那兒值幾枚金幣。你悄然退去,順手摸走一袋遺落的草藥。",
-            "effects": [
-              {
-                "type": "item",
-                "item": "nightshade",
-                "qty": 2
-              },
-              {
-                "type": "gold",
-                "amount": 40
-              }
-            ]
-          },
-          "failure": {
-            "text": "一根枯枝在你腳下脆響。女巫們驟然轉身,尖嘯著朝你撲來!",
-            "effects": [
-              {
-                "type": "combat",
-                "creature": "moor_witch"
-              }
-            ]
-          }
-        }
-      },
-      {
-        "text": "亮出武器,驅散這巫團",
-        "effects": [
-          {
-            "type": "combat",
-            "creature": "moor_witch"
-          }
-        ]
-      },
-      {
-        "text": "繞開霧中的火光,趕路要緊",
-        "effects": [
-          {
-            "type": "message",
-            "text": "你壓低兜帽,從荒原邊緣繞行。身後的青藍火光漸漸沒入霧裡,女巫的低吟猶在風中縈繞。"
-          }
-        ]
-      }
+    "effects": [
+     {
+      "type": "gold",
+      "amount": -10
+     },
+     {
+      "type": "fame",
+      "amount": 3
+     },
+     {
+      "type": "message",
+      "text": "你留下些錢,傷者連聲道謝。"
+     }
     ]
+   },
+   {
+    "text": "搜刮他的財物",
+    "effects": [
+     {
+      "type": "gold",
+      "amount": 25
+     },
+     {
+      "type": "infamy",
+      "amount": 5
+     },
+     {
+      "type": "bounty",
+      "amount": 40
+     },
+     {
+      "type": "message",
+      "text": "你翻走了傷者的錢袋 —— 遠處似乎有人看見了。"
+     }
+    ]
+   },
+   {
+    "text": "視而不見地走開",
+    "effects": [
+     {
+      "type": "message",
+      "text": "你別過頭,加快了腳步。"
+     }
+    ]
+   }
+  ]
+ },
+ "wandering_scholar": {
+  "weight": 3,
+  "trigger": {
+   "contexts": [
+    "travel"
+   ]
   },
-  "high_rock_feuding_heralds": {
-    "weight": 2,
-    "trigger": {
-      "contexts": ["explore"],
-      "provinces": ["高岩"]
+  "title": "雲遊學者",
+  "text": "一位披著藍袍的法師坐在路邊石上,願意以見聞換取交流。",
+  "options": [
+   {
+    "text": "付費聆聽奧秘(智慧之談)",
+    "requirements": {
+     "gold_min": 40
     },
-    "title": "世仇的傳令官",
-    "text": "兩名分屬匕落與坎洛恩的傳令官在岔路上狹路相逢,為了一面褪色的狼徽戰旗爭得面紅耳赤,眼看就要拔劍。一名認出你像是個外鄉劍客,高聲喚你來評理。",
-    "options": [
-      {
-        "text": "以言辭斡旋,勸兩家息怒",
-        "check": {
-          "skill": "speechcraft",
-          "difficulty": 35,
-          "success": {
-            "text": "你引古老的盟誓與灣岸的舊例,將百年世仇說成兩家共禦山中獸人的同氣。傳令官們悻悻收劍,各塞給你一筆酬謝。",
-            "effects": [
-              {
-                "type": "gold",
-                "amount": 80
-              },
-              {
-                "type": "fame",
-                "amount": 3
-              }
-            ]
-          },
-          "failure": {
-            "text": "你一句話戳中了狼徽世家的舊恨,兩名傳令官反倒同仇敵愾,罵你多管閒事,揚長而去——只留你獨自在風裡。",
-            "effects": [
-              {
-                "type": "message",
-                "text": "高岩諸王的世仇深似海,豈是一個外鄉人三言兩語能解。"
-              }
-            ]
-          }
-        }
-      },
-      {
-        "text": "假稱是坎洛恩公爵的人,替狼徽撐腰",
-        "effects": [
-          {
-            "type": "fame",
-            "amount": 2
-          },
-          {
-            "type": "infamy",
-            "amount": 1
-          },
-          {
-            "type": "message",
-            "text": "匕落的傳令官冷哼一聲拂袖而去;坎洛恩那名卻拱手稱謝,記下了你這張臉。"
-          }
-        ]
-      },
-      {
-        "text": "對這群王的爭吵置之不理",
-        "effects": [
-          {
-            "type": "message",
-            "text": "你聳聳肩,任他們去吵。割據諸王的恩怨，與一個流亡者何干。"
-          }
-        ]
-      }
+    "effects": [
+     {
+      "type": "gold",
+      "amount": -40
+     },
+     {
+      "type": "skill_xp",
+      "skill": "mysticism",
+      "amount": 3.0
+     },
+     {
+      "type": "message",
+      "text": "你聽他講述靈魂與位面之理,獲益良多。"
+     }
     ]
+   },
+   {
+    "text": "以你的見識交換(口才)",
+    "check": {
+     "skill": "speechcraft",
+     "difficulty": 35,
+     "success": {
+      "text": "你侃侃而談,學者大為讚賞,傾囊相授。",
+      "effects": [
+       {
+        "type": "skill_xp",
+        "skill": "alteration",
+        "amount": 2.0
+       }
+      ]
+     },
+     "failure": {
+      "text": "你言不及義,學者搖頭轉開了視線。",
+      "effects": []
+     }
+    }
+   },
+   {
+    "text": "婉拒後離開",
+    "effects": []
+   }
+  ]
+ },
+ "wayshrine": {
+  "weight": 3,
+  "trigger": {
+   "contexts": [
+    "travel",
+    "explore"
+   ]
   },
-  "valenwood_green_pact_feast": {
-    "weight": 3,
-    "trigger": {
-      "contexts": ["travel"],
-      "provinces": ["瓦倫森林"]
+  "title": "八聖路碑",
+  "text": "路旁立著一座風化的八聖神碑,隱隱透出溫暖的光。",
+  "options": [
+   {
+    "text": "虔誠祈禱",
+    "effects": [
+     {
+      "type": "heal",
+      "amount": "full"
+     },
+     {
+      "type": "restore_magicka",
+      "amount": "full"
+     },
+     {
+      "type": "message",
+      "text": "聖光洗去你的傷痛與疲憊。"
+     }
+    ]
+   },
+   {
+    "text": "捐獻香火",
+    "requirements": {
+     "gold_min": 10
     },
-    "title": "綠約食敵儀",
-    "text": "一隊波斯莫獵手攔住去路,圍著火塘分食方才獵殺的強盜 —— 綠約戒律不許他們傷草木為食,凡所殺之敵皆須食盡。獵長將一塊血淋淋的肉舉向你:『循伊弗雷的法,與我們共食此敵,還是你嫌綠約之民的桌不潔?』",
-    "options": [
-      {
-        "text": "依綠約共食,以示敬意",
-        "check": {
-          "skill": "speechcraft",
-          "difficulty": 35,
-          "success": {
-            "text": "你按下噁心,如儀嚥下。獵手們齊聲低吟伊弗雷之名,認你為林中同行之人,贈你獵物毛皮為記。",
-            "effects": [
-              {
-                "type": "fame",
-                "amount": 4
-              },
-              {
-                "type": "item",
-                "item": "wolf_pelt",
-                "qty": 2
-              }
-            ]
-          },
-          "failure": {
-            "text": "你乾嘔出聲,觸怒了火塘邊的獵族。他們罵你是壞了戒律的外邦人,啐了一口便沒入林影。",
-            "effects": [
-              {
-                "type": "infamy",
-                "amount": 2
-              }
-            ]
-          }
-        }
-      },
-      {
-        "text": "婉拒,但奉上酬金致歉",
-        "requirements": {
-          "gold_min": 40
-        },
-        "effects": [
-          {
-            "type": "gold",
-            "amount": -40
-          },
-          {
-            "type": "message",
-            "text": "獵長收下銀幣,未再相逼:『外邦人不識綠約,銀幣也算一份敬。』獵族讓開了路。"
-          }
-        ]
-      },
-      {
-        "text": "斥其茹毛飲血,拔劍相向",
-        "effects": [
-          {
-            "type": "infamy",
-            "amount": 3
-          },
-          {
-            "type": "combat",
-            "creature": "jungle_imga"
-          }
-        ]
-      }
+    "effects": [
+     {
+      "type": "gold",
+      "amount": -10
+     },
+     {
+      "type": "fame",
+      "amount": 3
+     },
+     {
+      "type": "heal",
+      "amount": "full"
+     },
+     {
+      "type": "message",
+      "text": "你留下香火錢,神碑回以祝福。"
+     }
     ]
+   },
+   {
+    "text": "路過不理",
+    "effects": []
+   }
+  ]
+ },
+ "merchant_caravan": {
+  "weight": 3,
+  "trigger": {
+   "contexts": [
+    "travel"
+   ]
   },
-  "valenwood_walking_city": {
-    "weight": 2,
-    "trigger": {
-      "contexts": ["explore"],
-      "provinces": ["瓦倫森林"]
+  "title": "行商隊",
+  "text": "一支商隊在路旁紮營歇腳,商人朝你揮手招攬。",
+  "options": [
+   {
+    "text": "購買補給",
+    "requirements": {
+     "gold_min": 30
     },
-    "title": "行走王城的足音",
-    "text": "腳下的大地驟然震顫,千年葛拉特巨橡正拔根遷徙 —— 隨季節而行的法林斯提王城正從林海深處踏過。樹根掀開的腐土間,露出一截被覆埋已久、鑲著月長石的綠約古匣。",
-    "options": [
-      {
-        "text": "趁巨根抬起的瞬間竄入取匣",
-        "check": {
-          "skill": "acrobatics",
-          "difficulty": 40,
-          "success": {
-            "text": "你踩著翻湧的樹根騰挪而過,在巨橡再度落地前奪出古匣,內藏綠約獵族的陳年儲備。",
-            "effects": [
-              {
-                "type": "item",
-                "item": "moonstone_ingot",
-                "qty": 1
-              },
-              {
-                "type": "gold",
-                "amount": 90
-              }
-            ]
-          },
-          "failure": {
-            "text": "你誤判了巨根的節奏,被掀飛的腐土與藤蔓狠狠拍落,狼狽滾出震塌的窪地。",
-            "effects": [
-              {
-                "type": "message",
-                "text": "你撞在虬結的樹瘤上,悶哼著爬起,空手而歸。"
-              }
-            ]
-          }
-        }
-      },
-      {
-        "text": "退開,目送王城踏入林海",
-        "effects": [
-          {
-            "type": "message",
-            "text": "你伏低身子，看那株承載整座王城的巨橡緩緩遠去，足音如雷漸隱於翠幕。能親見行走的法林斯提，已是綠約之地少有的奇遇。"
-          },
-          {
-            "type": "fame",
-            "amount": 1
-          }
-        ]
-      }
+    "effects": [
+     {
+      "type": "gold",
+      "amount": -30
+     },
+     {
+      "type": "item",
+      "item": "healing_potion",
+      "qty": 1
+     },
+     {
+      "type": "message",
+      "text": "你換得一瓶治療藥水。"
+     }
     ]
-  },
-  "elsweyr_two_moons_dance": {
-    "weight": 3,
-    "trigger": {
-      "contexts": ["travel"],
-      "provinces": ["艾爾斯維爾"]
+   },
+   {
+    "text": "打聽道上見聞",
+    "requirements": {
+     "quest_available": "job_bandit"
     },
-    "title": "兩月之舞",
-    "text": "瑪瑟與瑟昆達同懸天心,糖田鎮的卡傑特舞者在月光下擺尾起舞,糖蜜的甜香混著斯庫瑪的青煙在涼亭間流轉。一名銀鈴繞腕的舞姬向你伸出爪,邀你共赴雙月之舞。",
-    "options": [
-      {
-        "text": "依雙月的節律共舞(雜技)",
-        "check": {
-          "skill": "acrobatics",
-          "difficulty": 35,
-          "success": {
-            "text": "你踩準了瑪瑟與瑟昆達交錯的拍子,舞姬笑著為你戴上糖晶串成的環。圍觀的虎人為這名異鄉客喝采。",
-            "effects": [
-              {
-                "type": "fame",
-                "amount": 3
-              },
-              {
-                "type": "skill_xp",
-                "skill": "acrobatics",
-                "amount": 0.6
-              }
-            ]
-          },
-          "failure": {
-            "text": "你踩亂了雙月的拍子,絆翻了涼亭的糖盤。舞者們掩嘴而笑,你只得訕訕退場。",
-            "effects": [
-              {
-                "type": "message",
-                "text": "兩月之舞講究與雙月共息,異鄉人的腳步終究太僵。"
-              }
-            ]
-          }
-        }
-      },
-      {
-        "text": "掏銀幣換一管月糖菸(花 30 金)",
-        "requirements": {
-          "gold_min": 30
-        },
-        "effects": [
-          {
-            "type": "gold",
-            "amount": -30
-          },
-          {
-            "type": "item",
-            "item": "moon_sugar",
-            "qty": 1
-          },
-          {
-            "type": "message",
-            "text": "舞姬遞來一小袋月糖,甜香裡你也染上了幾分佩萊泰恩的慵懶。"
-          }
-        ]
-      },
-      {
-        "text": "婉謝,趕你的路",
-        "effects": [
-          {
-            "type": "message",
-            "text": "你向舞者頷首致意,迎著雙月繼續前行。身後的糖香與鈴聲漸漸淡去。"
-          }
-        ]
-      }
+    "effects": [
+     {
+      "type": "start_quest",
+      "quest": "job_bandit"
+     },
+     {
+      "type": "skill_xp",
+      "skill": "speechcraft",
+      "amount": 0.5
+     }
     ]
+   },
+   {
+    "text": "繼續趕路",
+    "effects": []
+   }
+  ]
+ },
+ "camp_ambush": {
+  "weight": 4,
+  "trigger": {
+   "contexts": [
+    "rest"
+   ],
+   "location_types": [
+    "wilderness",
+    "dungeon"
+   ]
   },
-  "elsweyr_dro_mathra_whisper": {
-    "weight": 2,
-    "trigger": {
-      "contexts": ["explore"],
-      "provinces": ["艾爾斯維爾"]
+  "title": "營地襲擊",
+  "text": "半夜你被低吼驚醒 —— 一頭野狼循著火光摸了過來!",
+  "options": [
+   {
+    "text": "起身迎戰",
+    "effects": [
+     {
+      "type": "combat",
+      "creature": "wolf"
+     }
+    ]
+   },
+   {
+    "text": "悄悄遁入暗處(潛行)",
+    "check": {
+     "skill": "sneak",
+     "difficulty": 35,
+     "success": {
+      "text": "你屏息潛入陰影,野狼悻悻離去。",
+      "effects": []
+     },
+     "failure": {
+      "text": "枯枝在腳下一響,野狼撲了上來!",
+      "effects": [
+       {
+        "type": "combat",
+        "creature": "wolf"
+       }
+      ]
+     }
+    }
+   }
+  ]
+ },
+ "thief_in_night": {
+  "weight": 3,
+  "trigger": {
+   "contexts": [
+    "rest"
+   ]
+  },
+  "title": "夜半竊手",
+  "text": "睡夢中,一隻手悄悄探向你的錢袋……",
+  "options": [
+   {
+    "text": "猛然驚醒、反擒其手(安全)",
+    "check": {
+     "skill": "security",
+     "difficulty": 40,
+     "success": {
+      "text": "你一把扣住竊賊手腕,反倒摸走了他的錢囊!",
+      "effects": [
+       {
+        "type": "gold",
+        "amount": 18
+       },
+       {
+        "type": "skill_xp",
+        "skill": "security",
+        "amount": 0.6
+       }
+      ]
+     },
+     "failure": {
+      "text": "你醒得太遲,竊賊已沒入夜色。",
+      "effects": [
+       {
+        "type": "gold",
+        "amount": -25
+       }
+      ]
+     }
+    }
+   },
+   {
+    "text": "繼續沉睡",
+    "effects": [
+     {
+      "type": "gold",
+      "amount": -25
+     },
+     {
+      "type": "message",
+      "text": "天明時你發現錢袋輕了不少。"
+     }
+    ]
+   }
+  ]
+ },
+ "campfire_companion": {
+  "weight": 3,
+  "trigger": {
+   "contexts": [
+    "rest"
+   ],
+   "location_types": [
+    "wilderness"
+   ]
+  },
+  "title": "同火夜談",
+  "text": "一名旅人前來分享你的營火,聊起道聽途說的傳聞。",
+  "options": [
+   {
+    "text": "交換旅途見聞",
+    "effects": [
+     {
+      "type": "fame",
+      "amount": 3
+     },
+     {
+      "type": "skill_xp",
+      "skill": "speechcraft",
+      "amount": 0.6
+     }
+    ]
+   },
+   {
+    "text": "打探古墓寶藏(委託)",
+    "requirements": {
+     "quest_available": "event_relic"
     },
-    "title": "瑟拉斯·瑪斯拉的低語",
-    "text": "草原的乾風忽然轉冷,雙月被烏雲遮去半輪。蔗田陰影裡,一道被詛咒的瑟拉斯·瑪斯拉殘影緩緩凝形,空洞的眼窩低語著要奪走你的月之經緯。",
-    "options": [
-      {
-        "text": "斬碎這道被詛咒的暗影",
-        "effects": [
-          {
-            "type": "combat",
-            "creature": "dro_mathra_shade"
-          }
-        ]
-      },
-      {
-        "text": "默誦迦哈傑月之經緯驅散它(秘法)",
-        "check": {
-          "skill": "mysticism",
-          "difficulty": 45,
-          "success": {
-            "text": "你默誦起讀月者的真言,雙月的光暈重新刺破烏雲。暗影發出一聲嘶鳴,化作糖灰散入風中。",
-            "effects": [
-              {
-                "type": "skill_xp",
-                "skill": "mysticism",
-                "amount": 0.8
-              },
-              {
-                "type": "fame",
-                "amount": 2
-              }
-            ]
-          },
-          "failure": {
-            "text": "你誦錯了經緯的次第,暗影趁隙撲上,冰冷的爪掠過你的胸膛才悻悻退去。",
-            "effects": [
-              {
-                "type": "damage",
-                "amount": 8
-              }
-            ]
-          }
-        }
-      }
+    "effects": [
+     {
+      "type": "start_quest",
+      "quest": "event_relic"
+     }
     ]
+   },
+   {
+    "text": "早早就寢",
+    "effects": [
+     {
+      "type": "restore_fatigue",
+      "amount": "full"
+     }
+    ]
+   }
+  ]
+ },
+ "herb_patch": {
+  "weight": 4,
+  "trigger": {
+   "contexts": [
+    "explore"
+   ]
   },
-  "arcane_trials_rumor": {
-    "weight": 3,
-    "trigger": {"contexts": ["travel", "rest"], "require": {"skill_min": {"destruction": 75}}},
-    "title": "毀滅大師的傳聞",
-    "text": "篝火旁,一名風塵僕僕的旅法師壓低聲音:「你周身的破壞法力已經燙手了 —— 可你知道嗎?『焚世』『天雷』『絕對零度』這三道終極真言,早已不在任何法師塔出售。三系完全體的試煉散落在各省的法師公會:晨風的黑光城求烈焰、天際的冬堡學院求寒冰、黑沼澤的吉迪恩求雷霆,各有一位『奧術試煉的引路人』在等夠格的毀滅大師。三系皆成之後,帝都還有最後一道試煉。」",
-    "options": [
-      {"text": "記下這些線索 —— 各省法師公會", "effects": [{"type": "message", "text": "你將三座法師公會的名字銘記於心 —— 黑光城、冬堡、吉迪恩,而盡頭在帝都。"}]},
-      {"text": "當作耳邊風", "effects": [{"type": "message", "text": "你聳聳肩,繼續趕路。"}]}
+  "title": "野生藥草",
+  "text": "一叢沾著晨露的煉金材料在岩縫間搖曳。",
+  "options": [
+   {
+    "text": "細心採集",
+    "effects": [
+     {
+      "type": "item",
+      "item": "blue_mountain_flower",
+      "qty": 1
+     },
+     {
+      "type": "item",
+      "item": "lavender",
+      "qty": 1
+     },
+     {
+      "type": "item",
+      "item": "monarch_wing",
+      "qty": 1
+     },
+     {
+      "type": "skill_xp",
+      "skill": "alchemy",
+      "amount": 0.5
+     },
+     {
+      "type": "message",
+      "text": "你採下了幾株藥草,還撈到一隻歇腳的帝王蝶。"
+     }
     ]
+   },
+   {
+    "text": "沒興趣",
+    "effects": []
+   }
+  ]
+ },
+ "ancient_ruin": {
+  "weight": 4,
+  "trigger": {
+   "contexts": [
+    "explore"
+   ]
   },
-  "wild_skyrim_hunter": {
-    "weight": 3, "trigger": {"contexts": ["travel", "explore"], "location_types": ["wilderness"], "provinces": ["天際"]},
-    "title": "雪原傷獵人", "text": "一名諾德獵人拄著獵弓蹣跚而來,小腿纏著滲血的布條:「冰魂……成群結隊,把我的營地都凍住了。」",
-    "options": [
-      {"text": "接下狩冰魂的委託", "requirements": {"quest_available": "wq_skyrim_hunter"}, "effects": [{"type": "start_quest", "quest": "wq_skyrim_hunter"}, {"type": "message", "text": "獵人感激地指出冰魂遊蕩的隘口。"}]},
-      {"text": "替他包紮傷口", "requirements": {"item": "minor_healing_potion"}, "effects": [{"type": "item", "item": "minor_healing_potion", "qty": -1}, {"type": "fame", "amount": 4}, {"type": "message", "text": "獵人千恩萬謝,塞給你一把碎金。"}, {"type": "gold", "amount": 20}]},
-      {"text": "祝他好運後離開", "effects": [{"type": "message", "text": "你點點頭,繼續趕路。"}]}
-    ]
+  "title": "半埋的遺跡",
+  "text": "風沙下露出一截古老石階,深處幽暗,似有機關。",
+  "options": [
+   {
+    "text": "謹慎探入(安全)",
+    "check": {
+     "skill": "security",
+     "difficulty": 30,
+     "success": {
+      "text": "你避開了暗藏的陷阱,在石室裡尋得寶物。",
+      "effects": [
+       {
+        "type": "item",
+        "item": "ruby",
+        "qty": 1
+       },
+       {
+        "type": "gold",
+        "amount": 20
+       }
+      ]
+     },
+     "failure": {
+      "text": "喀噠 —— 一支毒鏢從牆縫射出!",
+      "effects": [
+       {
+        "type": "damage",
+        "amount": 14
+       }
+      ]
+     }
+    }
+   },
+   {
+    "text": "不入險地",
+    "effects": []
+   }
+  ]
+ },
+ "trapped_chest": {
+  "weight": 3,
+  "trigger": {
+   "contexts": [
+    "explore"
+   ]
   },
-  "wild_morrowind_ashman": {
-    "weight": 3, "trigger": {"contexts": ["travel", "explore"], "location_types": ["wilderness"], "provinces": ["晨風"]},
-    "title": "灰原拾荒人", "text": "一個蒙著灰巾的丹莫從灰燼中直起身:「崖行鳥又來搶我撿的菌貨了……外鄉人,你那武器看著管用。」",
-    "options": [
-      {"text": "接下驅鳥的委託", "requirements": {"quest_available": "wq_morrowind_ashman"}, "effects": [{"type": "start_quest", "quest": "wq_morrowind_ashman"}, {"type": "message", "text": "拾荒人比劃著崖行鳥盤旋的方向。"}]},
-      {"text": "打聽灰原見聞", "effects": [{"type": "fame", "amount": 2}, {"type": "skill_xp", "skill": "speechcraft", "amount": 0.4}]},
-      {"text": "繼續趕路", "effects": []}
+  "title": "可疑的箱子",
+  "text": "草叢裡藏著一只老舊木箱,鎖孔旁有焦黑的痕跡。",
+  "options": [
+   {
+    "text": "仔細拆解機關後開啟",
+    "requirements": {
+     "skill_min": {
+      "security": 30
+     }
+    },
+    "effects": [
+     {
+      "type": "item",
+      "item": "minor_magicka_potion",
+      "qty": 1
+     },
+     {
+      "type": "gold",
+      "amount": 25
+     },
+     {
+      "type": "skill_xp",
+      "skill": "security",
+      "amount": 0.6
+     },
+     {
+      "type": "message",
+      "text": "你穩穩拆掉了陷阱,取出箱中之物。"
+     }
     ]
+   },
+   {
+    "text": "直接撬開(安全)",
+    "check": {
+     "skill": "security",
+     "difficulty": 35,
+     "success": {
+      "text": "運氣不錯,鎖應聲而開。",
+      "effects": [
+       {
+        "type": "gold",
+        "amount": 25
+       }
+      ]
+     },
+     "failure": {
+      "text": "轟!箱裡的符文炸開。",
+      "effects": [
+       {
+        "type": "damage",
+        "amount": 12
+       }
+      ]
+     }
+    }
+   },
+   {
+    "text": "放著別碰",
+    "effects": []
+   }
+  ]
+ },
+ "wild_beast": {
+  "weight": 4,
+  "trigger": {
+   "contexts": [
+    "explore"
+   ]
   },
-  "wild_hammerfell_courier": {
-    "weight": 3, "trigger": {"contexts": ["travel", "explore"], "location_types": ["wilderness"], "provinces": ["漢默法爾"]},
-    "title": "沙路信使", "text": "一名紅衛信使勒住駱駝,神色焦急:「前頭商道有盜匪設卡,我的急件遞不過去。壯士可願替我清道?」",
-    "options": [
-      {"text": "接下清道的委託", "requirements": {"quest_available": "wq_hammerfell_courier"}, "effects": [{"type": "start_quest", "quest": "wq_hammerfell_courier"}, {"type": "message", "text": "信使道明盜匪盤踞的位置。"}]},
-      {"text": "打聽沙海消息", "effects": [{"type": "fame", "amount": 2}, {"type": "skill_xp", "skill": "speechcraft", "amount": 0.4}]},
-      {"text": "繼續趕路", "effects": []}
+  "title": "草叢異動",
+  "text": "灌木叢中傳來窸窣聲,一對泛光的眼睛盯上了你。",
+  "options": [
+   {
+    "text": "搶先出手",
+    "effects": [
+     {
+      "type": "combat",
+      "creature": "frostbite_spider"
+     }
     ]
+   },
+   {
+    "text": "緩緩後退(潛行)",
+    "check": {
+     "skill": "sneak",
+     "difficulty": 30,
+     "success": {
+      "text": "你輕手輕腳地退開,那東西沒有追來。",
+      "effects": []
+     },
+     "failure": {
+      "text": "你踩斷了枯枝,牠撲了上來!",
+      "effects": [
+       {
+        "type": "combat",
+        "creature": "frostbite_spider"
+       }
+      ]
+     }
+    }
+   }
+  ],
+  "provinces": [
+   "天際"
+  ]
+ },
+ "town_crier": {
+  "weight": 4,
+  "trigger": {
+   "contexts": [
+    "arrive"
+   ],
+   "location_types": [
+    "city",
+    "town"
+   ]
   },
-  "wild_highrock_refugee": {
-    "weight": 3, "trigger": {"contexts": ["travel", "explore"], "location_types": ["wilderness"], "provinces": ["高岩"]},
-    "title": "荒沼難民", "text": "幾個衣衫襤褸的布萊頓村民縮在岩後:「鴉妖……牠們從崖上俯衝下來抓人,我們不敢回村。」",
-    "options": [
-      {"text": "接下驅鴉妖的委託", "requirements": {"quest_available": "wq_highrock_refugee"}, "effects": [{"type": "start_quest", "quest": "wq_highrock_refugee"}, {"type": "message", "text": "村民指出鴉妖築巢的崖壁。"}]},
-      {"text": "分些乾糧給他們", "requirements": {"gold_min": 10}, "effects": [{"type": "gold", "amount": -10}, {"type": "fame", "amount": 3}, {"type": "message", "text": "難民們連聲道謝。"}]},
-      {"text": "繼續趕路", "effects": []}
+  "title": "街頭佈告",
+  "text": "城鎮廣場上,佈告員高聲宣讀一樁懸賞。",
+  "options": [
+   {
+    "text": "接下這樁懸賞",
+    "requirements": {
+     "quest_available": "job_draugr"
+    },
+    "effects": [
+     {
+      "type": "start_quest",
+      "quest": "job_draugr"
+     }
     ]
+   },
+   {
+    "text": "聽過便罷",
+    "effects": [
+     {
+      "type": "skill_xp",
+      "skill": "speechcraft",
+      "amount": 0.3
+     }
+    ]
+   }
+  ]
+ },
+ "festival": {
+  "weight": 3,
+  "trigger": {
+   "contexts": [
+    "arrive"
+   ],
+   "location_types": [
+    "city",
+    "town"
+   ]
   },
-  "wild_valenwood_forager": {
-    "weight": 3, "trigger": {"contexts": ["explore", "rest"], "location_types": ["wilderness"], "provinces": ["瓦倫森林"]},
-    "title": "綠約採集人", "text": "一名波斯莫攀在巨木枝幹間招手:「採藥要帝王蝶翅,可崖行鳥和樹靈把蝶群嚇散了。替我收些回來,我以綠徑之名謝你。」",
-    "options": [
-      {"text": "接下採蝶翅的委託", "requirements": {"quest_available": "wq_valenwood_forager"}, "effects": [{"type": "start_quest", "quest": "wq_valenwood_forager"}, {"type": "message", "text": "採集人告訴你蝶群常聚的林間空地。"}]},
-      {"text": "交換林中見聞", "effects": [{"type": "fame", "amount": 2}, {"type": "skill_xp", "skill": "speechcraft", "amount": 0.4}]},
-      {"text": "繼續趕路", "effects": []}
+  "title": "市集慶典",
+  "text": "城裡正逢節慶,街上人聲鼎沸、酒香四溢。",
+  "options": [
+   {
+    "text": "與民同樂",
+    "requirements": {
+     "gold_min": 5
+    },
+    "effects": [
+     {
+      "type": "gold",
+      "amount": -5
+     },
+     {
+      "type": "fame",
+      "amount": 5
+     },
+     {
+      "type": "restore_fatigue",
+      "amount": "full"
+     },
+     {
+      "type": "message",
+      "text": "你在歡騰中暢飲一番,神清氣爽。"
+     }
     ]
+   },
+   {
+    "text": "趁亂行竊(潛行)",
+    "check": {
+     "skill": "sneak",
+     "difficulty": 40,
+     "success": {
+      "text": "人群正好掩護,你的手悄悄滑進幾個錢袋。",
+      "effects": [
+       {
+        "type": "gold",
+        "amount": 30
+       },
+       {
+        "type": "skill_xp",
+        "skill": "sneak",
+        "amount": 0.6
+       }
+      ]
+     },
+     "failure": {
+      "text": "「抓賊啊!」 —— 你被當場識破。",
+      "effects": [
+       {
+        "type": "bounty",
+        "amount": 50
+       },
+       {
+        "type": "infamy",
+        "amount": 5
+       }
+      ]
+     }
+    }
+   },
+   {
+    "text": "靜靜離開",
+    "effects": []
+   }
+  ]
+ },
+ "street_urchin": {
+  "weight": 3,
+  "trigger": {
+   "contexts": [
+    "arrive"
+   ],
+   "location_types": [
+    "city",
+    "town"
+   ]
   },
-  "wild_elsweyr_trader": {
-    "weight": 3, "trigger": {"contexts": ["travel", "explore"], "location_types": ["wilderness"], "provinces": ["艾爾斯維爾"]},
-    "title": "貓商護衛", "text": "一隊卡基特商旅停在路旁,領隊甩著尾巴:「草原胡狼成群盯上我們的貨了。這位朋友,願不願賺點月糖路費?」",
-    "options": [
-      {"text": "接下護商的委託", "requirements": {"quest_available": "wq_elsweyr_trader"}, "effects": [{"type": "start_quest", "quest": "wq_elsweyr_trader"}, {"type": "message", "text": "領隊指向胡狼群潛伏的草叢。"}]},
-      {"text": "打聽月糖門路", "effects": [{"type": "fame", "amount": 2}, {"type": "skill_xp", "skill": "speechcraft", "amount": 0.4}]},
-      {"text": "繼續趕路", "effects": []}
+  "title": "市井扒手",
+  "text": "一個衣衫襤褸的孩子撞了你一下,轉身就要鑽進巷子。",
+  "options": [
+   {
+    "text": "一把抓住他的手(安全)",
+    "check": {
+     "skill": "security",
+     "difficulty": 35,
+     "success": {
+      "text": "你扣住小扒手的腕子,要回了被摸走的錢。",
+      "effects": [
+       {
+        "type": "skill_xp",
+        "skill": "security",
+        "amount": 0.4
+       }
+      ]
+     },
+     "failure": {
+      "text": "孩子滑溜得很,眨眼就沒了蹤影。",
+      "effects": [
+       {
+        "type": "gold",
+        "amount": -10
+       }
+      ]
+     }
+    }
+   },
+   {
+    "text": "由他去吧",
+    "effects": [
+     {
+      "type": "gold",
+      "amount": -10
+     }
     ]
+   }
+  ]
+ },
+ "skyrim_blizzard": {
+  "weight": 4,
+  "trigger": {
+   "contexts": [
+    "travel",
+    "explore"
+   ],
+   "provinces": [
+    "天際"
+   ]
   },
-  "wild_blackmarsh_runner": {
-    "weight": 3, "trigger": {"contexts": ["travel", "explore"], "location_types": ["wilderness"], "provinces": ["黑沼澤"]},
-    "title": "沼澤信使", "text": "一名亞龍人信使從蘆葦間鑽出,鱗片沾滿泥漿:「沼徑被巨鱷霸佔,我的口信送不到聚落。族人會記得你的恩。」",
-    "options": [
-      {"text": "接下獵鱷的委託", "requirements": {"quest_available": "wq_blackmarsh_runner"}, "effects": [{"type": "start_quest", "quest": "wq_blackmarsh_runner"}, {"type": "message", "text": "信使以希斯特之名指出巨鱷盤踞的水道。"}]},
-      {"text": "交換沼澤傳聞", "effects": [{"type": "fame", "amount": 2}, {"type": "skill_xp", "skill": "speechcraft", "amount": 0.4}]},
-      {"text": "繼續趕路", "effects": []}
+  "title": "暴風雪",
+  "text": "天際的風雪驟然轉急,白茫茫一片中連路都看不清。",
+  "options": [
+   {
+    "text": "頂風硬闖(運動)",
+    "check": {
+     "skill": "athletics",
+     "difficulty": 35,
+     "success": {
+      "text": "你裹緊衣物、踏雪而行,總算穿了過去。",
+      "effects": [
+       {
+        "type": "skill_xp",
+        "skill": "athletics",
+        "amount": 0.6
+       }
+      ]
+     },
+     "failure": {
+      "text": "刺骨寒風凍得你直打哆嗦。",
+      "effects": [
+       {
+        "type": "damage",
+        "amount": 6
+       }
+      ]
+     }
+    }
+   },
+   {
+    "text": "找處岩壁避風",
+    "effects": [
+     {
+      "type": "message",
+      "text": "你蜷在背風處,等風雪稍歇才再上路。"
+     }
     ]
+   }
+  ]
+ },
+ "skyrim_predator": {
+  "weight": 3,
+  "trigger": {
+   "contexts": [
+    "explore"
+   ],
+   "provinces": [
+    "天際"
+   ],
+   "location_types": [
+    "wilderness"
+   ]
   },
-  "wild_cyrodiil_courier": {
-    "weight": 3, "trigger": {"contexts": ["travel", "explore"], "location_types": ["wilderness"], "provinces": ["賽羅迪爾"]},
-    "title": "帝國信使", "text": "一名帝國軍團信使勒馬而立:「腹地洞窟的哥布林又出來劫道了,軍團騰不出人。公民,可願替帝國清剿?」",
-    "options": [
-      {"text": "接下剿哥布林的委託", "requirements": {"quest_available": "wq_cyrodiil_courier"}, "effects": [{"type": "start_quest", "quest": "wq_cyrodiil_courier"}, {"type": "message", "text": "信使在地圖上圈出哥布林的巢穴。"}]},
-      {"text": "打聽帝都近況", "effects": [{"type": "fame", "amount": 2}, {"type": "skill_xp", "skill": "speechcraft", "amount": 0.4}]},
-      {"text": "繼續趕路", "effects": []}
+  "title": "雪地裡的低嘯",
+  "text": "雪幕之後,一道泛著寒光的身影盤旋逼近 —— 是冰魂。",
+  "options": [
+   {
+    "text": "拔劍迎敵",
+    "effects": [
+     {
+      "type": "combat",
+      "creature": "ice_wraith"
+     }
     ]
-  }
+   },
+   {
+    "text": "悄悄繞開(潛行)",
+    "check": {
+     "skill": "sneak",
+     "difficulty": 35,
+     "success": {
+      "text": "你借著風雪掩護,悄然退開。",
+      "effects": []
+     },
+     "failure": {
+      "text": "牠嗅到了你的氣息,呼嘯而至!",
+      "effects": [
+       {
+        "type": "combat",
+        "creature": "ice_wraith"
+       }
+      ]
+     }
+    }
+   }
+  ]
+ },
+ "morrowind_ashstorm": {
+  "weight": 4,
+  "trigger": {
+   "contexts": [
+    "travel",
+    "explore"
+   ],
+   "provinces": [
+    "晨風"
+   ]
+  },
+  "title": "灰燼風暴",
+  "text": "紅山吹來的灰燼風暴遮天蔽日,火山灰刮得皮膚生疼。",
+  "options": [
+   {
+    "text": "拉起頭巾趕路",
+    "effects": [
+     {
+      "type": "damage",
+      "amount": 5
+     },
+     {
+      "type": "message",
+      "text": "你頂著灰暴前行,嗆了一肺的火山灰。"
+     }
+    ]
+   },
+   {
+    "text": "就地掩蔽等風停",
+    "effects": [
+     {
+      "type": "message",
+      "text": "你躲進岩屋背風處,直到天色重新泛紅。"
+     }
+    ]
+   }
+  ]
+ },
+ "morrowind_forage": {
+  "weight": 3,
+  "trigger": {
+   "contexts": [
+    "explore"
+   ],
+   "provinces": [
+    "晨風"
+   ]
+  },
+  "title": "火山灰田",
+  "text": "灰燼覆蓋的田壟間,冒出幾叢火山特有的菌菇與作物,岩縫陰影裡還藏著些別的東西。",
+  "options": [
+   {
+    "text": "細心採集這片火山灰地",
+    "effects": [
+     {
+      "type": "forage_pool",
+      "pool": "ashland"
+     }
+    ]
+   },
+   {
+    "text": "沒興趣",
+    "effects": []
+   }
+  ]
+ },
+ "blackmarsh_hist": {
+  "weight": 4,
+  "trigger": {
+   "contexts": [
+    "travel",
+    "rest"
+   ],
+   "provinces": [
+    "黑沼澤"
+   ]
+  },
+  "title": "希斯特低語",
+  "text": "沼霧深處,一株希斯特神樹的根鬚滲出微光的樹液,空氣裡浮動著古老的低語。",
+  "options": [
+   {
+    "text": "靜心聆聽樹語",
+    "effects": [
+     {
+      "type": "heal",
+      "amount": "full"
+     },
+     {
+      "type": "restore_magicka",
+      "amount": "full"
+     },
+     {
+      "type": "message",
+      "text": "希斯特的低語撫平了你的傷與疲憊,心神為之一清。"
+     }
+    ]
+   },
+   {
+    "text": "敬而遠之",
+    "effects": [
+     {
+      "type": "message",
+      "text": "你避開那株神樹,不願招惹沼澤的古神。"
+     }
+    ]
+   }
+  ]
+ },
+ "blackmarsh_predator": {
+  "weight": 3,
+  "trigger": {
+   "contexts": [
+    "explore"
+   ],
+   "provinces": [
+    "黑沼澤"
+   ],
+   "location_types": [
+    "wilderness"
+   ]
+  },
+  "title": "沼澤裡的幽光",
+  "text": "爛泥水面浮起一團飄忽的幽光,引著你越走越深 —— 是鬼火。",
+  "options": [
+   {
+    "text": "識破陷阱、搶先出手",
+    "effects": [
+     {
+      "type": "combat",
+      "creature": "will_o_wisp"
+     }
+    ]
+   },
+   {
+    "text": "循原路退回(潛行)",
+    "check": {
+     "skill": "sneak",
+     "difficulty": 40,
+     "success": {
+      "text": "你看穿幽光的誘引,悄悄退出泥潭。",
+      "effects": []
+     },
+     "failure": {
+      "text": "你陷進爛泥,幽光趁機撲來!",
+      "effects": [
+       {
+        "type": "combat",
+        "creature": "will_o_wisp"
+       }
+      ]
+     }
+    }
+   }
+  ]
+ },
+ "blackmarsh_forage": {
+  "weight": 3,
+  "trigger": {
+   "contexts": [
+    "explore"
+   ],
+   "provinces": [
+    "黑沼澤"
+   ]
+  },
+  "title": "沼澤毒草",
+  "text": "陰濕的水窪邊,毒茄參與傘菌在腐葉間悄然生長,泥水深處還沉著些不知名的東西。",
+  "options": [
+   {
+    "text": "小心採集這片毒沼",
+    "effects": [
+     {
+      "type": "forage_pool",
+      "pool": "swamp"
+     }
+    ]
+   },
+   {
+    "text": "沒興趣",
+    "effects": []
+   }
+  ]
+ },
+ "cyrodiil_forage": {
+  "weight": 3,
+  "trigger": {
+   "contexts": [
+    "explore"
+   ],
+   "provinces": [
+    "賽羅迪爾"
+   ]
+  },
+  "title": "帝國農田",
+  "text": "帝都近郊的農田與果園間,麥穗、蒜株與紅蘋果正當時節,田畔矮灌叢上還結著野莓。",
+  "options": [
+   {
+    "text": "在農田與灌叢間採集",
+    "effects": [
+     {
+      "type": "forage_pool",
+      "pool": "heartland"
+     }
+    ]
+   },
+   {
+    "text": "沒興趣",
+    "effects": []
+   }
+  ]
+ },
+ "skyrim_forage": {
+  "weight": 3,
+  "trigger": {
+   "contexts": [
+    "explore"
+   ],
+   "provinces": [
+    "天際"
+   ]
+  },
+  "title": "凍原採集",
+  "text": "雪線下的背風坡上,幾叢耐寒的香草頂著霜開了花;不遠處的雪地裡還散著猛獸啃剩的殘骸。",
+  "options": [
+   {
+    "text": "在凍原上四處搜採",
+    "effects": [
+     {
+      "type": "forage_pool",
+      "pool": "snow"
+     }
+    ]
+   },
+   {
+    "text": "沒興趣",
+    "effects": []
+   }
+  ]
+ },
+ "border_forage": {
+  "weight": 3,
+  "trigger": {
+   "contexts": [
+    "explore"
+   ],
+   "provinces": [
+    "邊境"
+   ]
+  },
+  "title": "邊陲野採",
+  "text": "無人管轄的邊境荒地上,各方草藥在亂石與沼氣間混雜叢生。",
+  "options": [
+   {
+    "text": "在混生荒地上採集",
+    "effects": [
+     {
+      "type": "forage_pool",
+      "pool": "border"
+     }
+    ]
+   },
+   {
+    "text": "沒興趣",
+    "effects": []
+   }
+  ]
+ },
+ "cyrodiil_patrol": {
+  "weight": 3,
+  "trigger": {
+   "contexts": [
+    "travel"
+   ],
+   "provinces": [
+    "賽羅迪爾"
+   ]
+  },
+  "title": "帝國巡邏隊",
+  "text": "一隊帝國軍團士兵沿著帝國大道走來,長官打量了你一眼。",
+  "options": [
+   {
+    "text": "頷首致意",
+    "effects": [
+     {
+      "type": "message",
+      "text": "「路上小心,公民。」士兵們列隊而過。"
+     }
+    ]
+   },
+   {
+    "text": "打聽路況(口才)",
+    "check": {
+     "skill": "speechcraft",
+     "difficulty": 25,
+     "success": {
+      "text": "長官多說了幾句,點出前方哪段路近來不太平。",
+      "effects": [
+       {
+        "type": "skill_xp",
+        "skill": "speechcraft",
+        "amount": 0.4
+       }
+      ]
+     },
+     "failure": {
+      "text": "「無可奉告。」長官板著臉走開了。",
+      "effects": []
+     }
+    }
+   }
+  ]
+ },
+ "cyrodiil_ayleid_ruin": {
+  "weight": 3,
+  "trigger": {
+   "contexts": [
+    "explore"
+   ],
+   "provinces": [
+    "賽羅迪爾"
+   ],
+   "location_types": [
+    "wilderness"
+   ]
+  },
+  "title": "埃雷德殘墟",
+  "text": "帝國大道旁的松林間,半埋著一截發著微光的埃雷德古代石柱,殘垣後似有寒氣浮動。",
+  "options": [
+   {
+    "text": "上前探查(偵查)",
+    "check": {
+     "skill": "scout",
+     "difficulty": 30,
+     "success": {
+      "text": "你看出殘墟的門道,在碎石下摸到一枚古錢與發光塵。",
+      "effects": [
+       {
+        "type": "item",
+        "item": "glow_dust",
+        "qty": 1
+       },
+       {
+        "type": "gold",
+        "amount": 20
+       },
+       {
+        "type": "skill_xp",
+        "skill": "scout",
+        "amount": 0.5
+       }
+      ]
+     },
+     "failure": {
+      "text": "你驚動了棲身殘墟的帝國亡魂!",
+      "effects": [
+       {
+        "type": "combat",
+        "creature": "imperial_ghost"
+       }
+      ]
+     }
+    }
+   },
+   {
+    "text": "繞道而行",
+    "effects": [
+     {
+      "type": "message",
+      "text": "你不願招惹古老的埃雷德亡靈,繞了過去。"
+     }
+    ]
+   }
+  ]
+ },
+ "hammerfell_forage": {
+  "weight": 3,
+  "trigger": {
+   "contexts": [
+    "explore"
+   ],
+   "provinces": [
+    "漢默法爾"
+   ]
+  },
+  "title": "綠洲採集",
+  "text": "沙丘背風處的一小片綠洲邊,沙地藥草與耐旱的根莖在棕櫚蔭下悄然生長,鹽灘與礁岩間還散著別的東西。",
+  "options": [
+   {
+    "text": "在綠洲與鹽灘間搜採",
+    "effects": [
+     {
+      "type": "forage_pool",
+      "pool": "desert"
+     }
+    ]
+   },
+   {
+    "text": "沒興趣",
+    "effects": []
+   }
+  ]
+ },
+ "hammerfell_predator": {
+  "weight": 3,
+  "trigger": {
+   "contexts": [
+    "explore"
+   ],
+   "provinces": [
+    "漢默法爾"
+   ],
+   "location_types": [
+    "wilderness"
+   ]
+  },
+  "title": "沙下的震顫",
+  "text": "腳下的黃沙忽然震動起來 —— 一頭沙嘯獸正循著熱息逼近。",
+  "options": [
+   {
+    "text": "搶在牠破沙前出手",
+    "effects": [
+     {
+      "type": "combat",
+      "creature": "dune_ripper"
+     }
+    ]
+   },
+   {
+    "text": "屏息潛伏、悄然繞行(潛行)",
+    "check": {
+     "skill": "sneak",
+     "difficulty": 40,
+     "success": {
+      "text": "你壓低身形,任那掠食獸自沙下掠過。",
+      "effects": []
+     },
+     "failure": {
+      "text": "沙礫滑落驚動了牠,沙嘯獸破沙而出!",
+      "effects": [
+       {
+        "type": "combat",
+        "creature": "dune_ripper"
+       }
+      ]
+     }
+    }
+   }
+  ]
+ },
+ "highrock_forage": {
+  "weight": 3,
+  "trigger": {
+   "contexts": [
+    "explore"
+   ],
+   "provinces": [
+    "高岩"
+   ]
+  },
+  "title": "荒沼採藥",
+  "text": "霧鎖的石南坡上,死亡鐘與薰衣草在濕冷的泥炭間悄然綻放,礦脈縫隙裡還泛著紫晶的微光。",
+  "options": [
+   {
+    "text": "在荒沼與礦脈間採集",
+    "effects": [
+     {
+      "type": "forage_pool",
+      "pool": "moor"
+     }
+    ]
+   },
+   {
+    "text": "沒興趣",
+    "effects": []
+   }
+  ]
+ },
+ "highrock_predator": {
+  "weight": 3,
+  "trigger": {
+   "contexts": [
+    "explore"
+   ],
+   "provinces": [
+    "高岩"
+   ],
+   "location_types": [
+    "wilderness"
+   ]
+  },
+  "title": "霧中的石影",
+  "text": "濃霧深處傳來石塊摩擦的悶響 —— 一尊石像鬼自斷垣後直起身,石翼鏗然張開。",
+  "options": [
+   {
+    "text": "搶在牠撲下前出手",
+    "effects": [
+     {
+      "type": "combat",
+      "creature": "gargoyle"
+     }
+    ]
+   },
+   {
+    "text": "屏息潛伏、繞開霧影(潛行)",
+    "check": {
+     "skill": "sneak",
+     "difficulty": 42,
+     "success": {
+      "text": "你貼著石南匍匐而過,任那石影在霧裡重新沉睡。",
+      "effects": []
+     },
+     "failure": {
+      "text": "腳下碎石一響,石像鬼睜眼撲下!",
+      "effects": [
+       {
+        "type": "combat",
+        "creature": "gargoyle"
+       }
+      ]
+     }
+    }
+   }
+  ]
+ },
+ "jungle_forage": {
+  "weight": 3,
+  "trigger": {
+   "contexts": [
+    "explore"
+   ],
+   "provinces": [
+    "瓦倫森林"
+   ]
+  },
+  "title": "巨木林採集",
+  "text": "螢光在濕熱的林蔭間明滅 —— 一叢開滿異花的灌木邊,帝王蝶翩然聚集,腐木上浮著發光的鬼火塵,林間還不時掠過鳥影。",
+  "options": [
+   {
+    "text": "在巨木林間採集",
+    "effects": [
+     {
+      "type": "forage_pool",
+      "pool": "jungle"
+     }
+    ]
+   },
+   {
+    "text": "沒興趣",
+    "effects": []
+   }
+  ]
+ },
+ "jungle_predator": {
+  "weight": 3,
+  "trigger": {
+   "contexts": [
+    "explore"
+   ],
+   "provinces": [
+    "瓦倫森林"
+   ],
+   "location_types": [
+    "wilderness"
+   ]
+  },
+  "title": "林蔭中的綠影",
+  "text": "苔綠的樹皮無聲剝落 —— 一具藤蔓交織的樹靈自巨木中走出,荊棘的指尖滴著綠約的毒。",
+  "options": [
+   {
+    "text": "搶在牠纏上來前出手",
+    "effects": [
+     {
+      "type": "combat",
+      "creature": "spriggan"
+     }
+    ]
+   },
+   {
+    "text": "屏息潛伏、繞開綠影(潛行)",
+    "check": {
+     "skill": "sneak",
+     "difficulty": 42,
+     "success": {
+      "text": "你貼著樹根匍匐而過,任那樹靈在綠蔭裡重新沉入巨木。",
+      "effects": []
+     },
+     "failure": {
+      "text": "踩斷的枯枝驚動了牠,樹靈的毒藤猛然纏來!",
+      "effects": [
+       {
+        "type": "combat",
+        "creature": "spriggan"
+       }
+      ]
+     }
+    }
+   }
+  ]
+ },
+ "savanna_sugar_harvest": {
+  "weight": 3,
+  "trigger": {
+   "contexts": [
+    "explore"
+   ],
+   "provinces": [
+    "艾爾斯維爾"
+   ]
+  },
+  "title": "糖楓林採集",
+  "text": "騰瑪林的糖楓在烈日下滲出黏稠的汁液,結成一串串天然的月糖晶;腐木上還浮著一層發光的鬼火塵,草海間不時有鳥影掠過。",
+  "options": [
+   {
+    "text": "在糖楓草海間採集",
+    "effects": [
+     {
+      "type": "forage_pool",
+      "pool": "savanna"
+     }
+    ]
+   },
+   {
+    "text": "不碰那甜膩的東西",
+    "effects": []
+   }
+  ]
+ },
+ "savanna_predator": {
+  "weight": 3,
+  "trigger": {
+   "contexts": [
+    "explore"
+   ],
+   "provinces": [
+    "艾爾斯維爾"
+   ],
+   "location_types": [
+    "wilderness"
+   ]
+  },
+  "title": "草海中的金影",
+  "text": "金黃的草浪無聲分開 —— 一頭如戰馬高大的森奇巨虎踏出,糖蜜浸透的利爪間滴著毒,雙眼鎖定了你。",
+  "options": [
+   {
+    "text": "搶在牠撲上來前出手",
+    "effects": [
+     {
+      "type": "combat",
+      "creature": "senche_tiger"
+     }
+    ]
+   },
+   {
+    "text": "屏息潛伏、繞開金影(潛行)",
+    "check": {
+     "skill": "sneak",
+     "difficulty": 44,
+     "success": {
+      "text": "你貼著草浪匍匐而過,任那巨虎在草海裡重新沉入潛伏。",
+      "effects": []
+     },
+     "failure": {
+      "text": "踩斷的枯草驚動了牠,森奇巨虎的毒爪猛然撲來!",
+      "effects": [
+       {
+        "type": "combat",
+        "creature": "senche_tiger"
+       }
+      ]
+     }
+    }
+   }
+  ]
+ },
+ "discarded_lockpick": {
+  "weight": 2,
+  "trigger": {
+   "contexts": [
+    "explore",
+    "travel"
+   ],
+   "location_types": [
+    "wilderness",
+    "dungeon"
+   ]
+  },
+  "title": "前人的遺留",
+  "text": "路旁一具早已風乾的旅人骸骨蜷在亂石間,腰側的破皮囊裡露出幾根還算堪用的開鎖器。",
+  "options": [
+   {
+    "text": "收下開鎖器",
+    "effects": [
+     {
+      "type": "item",
+      "item": "lockpick",
+      "qty": 2
+     },
+     {
+      "type": "message",
+      "text": "你拾起了 2 根開鎖器。"
+     }
+    ]
+   },
+   {
+    "text": "讓逝者安息,不取",
+    "effects": []
+   }
+  ]
+ },
+ "hammerfell_sword_singer": {
+  "weight": 3,
+  "trigger": {
+   "contexts": [
+    "travel",
+    "explore"
+   ],
+   "provinces": [
+    "漢默法爾"
+   ]
+  },
+  "title": "沙丘上的劍歌者",
+  "text": "黃沙的脊線上,一名赤膊的紅衛人盤膝而坐,赤足陷在滾燙的沙裡。他不持鋼鐵,卻在掌心凝起一道泛著幽光的靈刃 —— 那是劍歌者以心魂鑄成的謝海。他睜眼望向你:「外鄉人,劍道無捷徑。你想看看真正的刃,還是只想趕路?」",
+  "options": [
+   {
+    "text": "請他指點刀法(刀劍)",
+    "check": {
+     "skill": "blade",
+     "difficulty": 35,
+     "success": {
+      "text": "你依他的口訣調勻呼吸、沉肩墜肘,一式劈下竟與沙風同調。劍歌者頷首:「約凱的血,終究認得約凱的劍。」",
+      "effects": [
+       {
+        "type": "skill_xp",
+        "skill": "blade",
+        "amount": 0.8
+       },
+       {
+        "type": "message",
+        "text": "你領會了一絲靈刃古術的皮毛。"
+       }
+      ]
+     },
+     "failure": {
+      "text": "你揮劍如劈柴,靈刃在你眼前驟然潰散。劍歌者搖頭:「心未靜,刃便鈍。回去再悟。」",
+      "effects": [
+       {
+        "type": "skill_xp",
+        "skill": "blade",
+        "amount": 0.2
+       }
+      ]
+     }
+    }
+   },
+   {
+    "text": "奉上敬意(贈 25 金)",
+    "requirements": {
+     "gold_min": 25
+    },
+    "effects": [
+     {
+      "type": "gold",
+      "amount": -25
+     },
+     {
+      "type": "fame",
+      "amount": 2
+     },
+     {
+      "type": "message",
+      "text": "劍歌者收下金幣,以靈刃在沙上為你劃下一道祝福的劍痕。「願塔瓦的風,送你穿過沙海。」"
+     }
+    ]
+   },
+   {
+    "text": "不打擾,繼續趕路",
+    "effects": [
+     {
+      "type": "message",
+      "text": "你向他抱拳致意,留他獨自與黃沙、與心中的劍對坐。"
+     }
+    ]
+   }
+  ]
+ },
+ "hammerfell_crowns_forebears_feud": {
+  "weight": 2,
+  "trigger": {
+   "contexts": [
+    "travel"
+   ],
+   "provinces": [
+    "漢默法爾"
+   ]
+  },
+  "title": "綠洲畔的口角",
+  "text": "綠洲水井旁,一名王冠派的森塔巡騎與一名先鋒派的蓋蘭商隊頭領吵得不可開交 —— 一個罵對方向帝國卑躬屈膝,一個譏對方抱著沉沒的約庫達古制不放。水井邊的人群屏息圍觀,手都按上了彎刀。",
+  "options": [
+   {
+    "text": "出言調停(口才)",
+    "check": {
+     "skill": "speechcraft",
+     "difficulty": 40,
+     "success": {
+      "text": "你提醒兩人:沙海不分王冠先鋒,塔瓦的活水養活的是所有約凱後裔。兩人悻悻收刀,圍觀者向你投來讚許的目光。",
+      "effects": [
+       {
+        "type": "skill_xp",
+        "skill": "speechcraft",
+        "amount": 0.6
+       },
+       {
+        "type": "fame",
+        "amount": 3
+       }
+      ]
+     },
+     "failure": {
+      "text": "你話沒說完,兩派人馬已嫌你多管閒事,一齊把你推搡開,差點挨上一拳。",
+      "effects": [
+       {
+        "type": "message",
+        "text": "你灰頭土臉地退到一旁,任他們繼續爭執。"
+       }
+      ]
+     }
+    }
+   },
+   {
+    "text": "袖手旁觀,看個熱鬧",
+    "effects": [
+     {
+      "type": "message",
+      "text": "你倚在棕櫚樹下,看兩派人罵到口乾舌燥,最終各自摔袖而去,終究沒見血。"
+     }
+    ]
+   }
+  ]
+ },
+ "high_rock_witch_coven": {
+  "weight": 3,
+  "trigger": {
+   "contexts": [
+    "travel"
+   ],
+   "provinces": [
+    "高岩"
+   ]
+  },
+  "title": "迷霧中的篝火",
+  "text": "荒原的霧靄裡浮起一圈青藍火光,幾名披斗篷的格倫莫利女巫圍著大鍋低吟。她們抬眼望向你,鍋中翻騰著不知名的東西——是要繞道,還是探個究竟?",
+  "options": [
+   {
+    "text": "悄悄潛近,偷聽她們的盤算",
+    "check": {
+     "skill": "sneak",
+     "difficulty": 30,
+     "success": {
+      "text": "你伏在石楠叢後,聽她們議定下一處下蠱的村莊——這情報在坎洛恩公爵那兒值幾枚金幣。你悄然退去,順手摸走一袋遺落的草藥。",
+      "effects": [
+       {
+        "type": "item",
+        "item": "nightshade",
+        "qty": 2
+       },
+       {
+        "type": "gold",
+        "amount": 40
+       }
+      ]
+     },
+     "failure": {
+      "text": "一根枯枝在你腳下脆響。女巫們驟然轉身,尖嘯著朝你撲來!",
+      "effects": [
+       {
+        "type": "combat",
+        "creature": "moor_witch"
+       }
+      ]
+     }
+    }
+   },
+   {
+    "text": "亮出武器,驅散這巫團",
+    "effects": [
+     {
+      "type": "combat",
+      "creature": "moor_witch"
+     }
+    ]
+   },
+   {
+    "text": "繞開霧中的火光,趕路要緊",
+    "effects": [
+     {
+      "type": "message",
+      "text": "你壓低兜帽,從荒原邊緣繞行。身後的青藍火光漸漸沒入霧裡,女巫的低吟猶在風中縈繞。"
+     }
+    ]
+   }
+  ]
+ },
+ "high_rock_feuding_heralds": {
+  "weight": 2,
+  "trigger": {
+   "contexts": [
+    "explore"
+   ],
+   "provinces": [
+    "高岩"
+   ]
+  },
+  "title": "世仇的傳令官",
+  "text": "兩名分屬匕落與坎洛恩的傳令官在岔路上狹路相逢,為了一面褪色的狼徽戰旗爭得面紅耳赤,眼看就要拔劍。一名認出你像是個外鄉劍客,高聲喚你來評理。",
+  "options": [
+   {
+    "text": "以言辭斡旋,勸兩家息怒",
+    "check": {
+     "skill": "speechcraft",
+     "difficulty": 35,
+     "success": {
+      "text": "你引古老的盟誓與灣岸的舊例,將百年世仇說成兩家共禦山中獸人的同氣。傳令官們悻悻收劍,各塞給你一筆酬謝。",
+      "effects": [
+       {
+        "type": "gold",
+        "amount": 80
+       },
+       {
+        "type": "fame",
+        "amount": 3
+       }
+      ]
+     },
+     "failure": {
+      "text": "你一句話戳中了狼徽世家的舊恨,兩名傳令官反倒同仇敵愾,罵你多管閒事,揚長而去——只留你獨自在風裡。",
+      "effects": [
+       {
+        "type": "message",
+        "text": "高岩諸王的世仇深似海,豈是一個外鄉人三言兩語能解。"
+       }
+      ]
+     }
+    }
+   },
+   {
+    "text": "假稱是坎洛恩公爵的人,替狼徽撐腰",
+    "effects": [
+     {
+      "type": "fame",
+      "amount": 2
+     },
+     {
+      "type": "infamy",
+      "amount": 1
+     },
+     {
+      "type": "message",
+      "text": "匕落的傳令官冷哼一聲拂袖而去;坎洛恩那名卻拱手稱謝,記下了你這張臉。"
+     }
+    ]
+   },
+   {
+    "text": "對這群王的爭吵置之不理",
+    "effects": [
+     {
+      "type": "message",
+      "text": "你聳聳肩,任他們去吵。割據諸王的恩怨，與一個流亡者何干。"
+     }
+    ]
+   }
+  ]
+ },
+ "valenwood_green_pact_feast": {
+  "weight": 3,
+  "trigger": {
+   "contexts": [
+    "travel"
+   ],
+   "provinces": [
+    "瓦倫森林"
+   ]
+  },
+  "title": "綠約食敵儀",
+  "text": "一隊波斯莫獵手攔住去路,圍著火塘分食方才獵殺的強盜 —— 綠約戒律不許他們傷草木為食,凡所殺之敵皆須食盡。獵長將一塊血淋淋的肉舉向你:『循伊弗雷的法,與我們共食此敵,還是你嫌綠約之民的桌不潔?』",
+  "options": [
+   {
+    "text": "依綠約共食,以示敬意",
+    "check": {
+     "skill": "speechcraft",
+     "difficulty": 35,
+     "success": {
+      "text": "你按下噁心,如儀嚥下。獵手們齊聲低吟伊弗雷之名,認你為林中同行之人,贈你獵物毛皮為記。",
+      "effects": [
+       {
+        "type": "fame",
+        "amount": 4
+       },
+       {
+        "type": "item",
+        "item": "wolf_pelt",
+        "qty": 2
+       }
+      ]
+     },
+     "failure": {
+      "text": "你乾嘔出聲,觸怒了火塘邊的獵族。他們罵你是壞了戒律的外邦人,啐了一口便沒入林影。",
+      "effects": [
+       {
+        "type": "infamy",
+        "amount": 2
+       }
+      ]
+     }
+    }
+   },
+   {
+    "text": "婉拒,但奉上酬金致歉",
+    "requirements": {
+     "gold_min": 40
+    },
+    "effects": [
+     {
+      "type": "gold",
+      "amount": -40
+     },
+     {
+      "type": "message",
+      "text": "獵長收下銀幣,未再相逼:『外邦人不識綠約,銀幣也算一份敬。』獵族讓開了路。"
+     }
+    ]
+   },
+   {
+    "text": "斥其茹毛飲血,拔劍相向",
+    "effects": [
+     {
+      "type": "infamy",
+      "amount": 3
+     },
+     {
+      "type": "combat",
+      "creature": "jungle_imga"
+     }
+    ]
+   }
+  ]
+ },
+ "valenwood_walking_city": {
+  "weight": 2,
+  "trigger": {
+   "contexts": [
+    "explore"
+   ],
+   "provinces": [
+    "瓦倫森林"
+   ]
+  },
+  "title": "行走王城的足音",
+  "text": "腳下的大地驟然震顫,千年葛拉特巨橡正拔根遷徙 —— 隨季節而行的法林斯提王城正從林海深處踏過。樹根掀開的腐土間,露出一截被覆埋已久、鑲著月長石的綠約古匣。",
+  "options": [
+   {
+    "text": "趁巨根抬起的瞬間竄入取匣",
+    "check": {
+     "skill": "acrobatics",
+     "difficulty": 40,
+     "success": {
+      "text": "你踩著翻湧的樹根騰挪而過,在巨橡再度落地前奪出古匣,內藏綠約獵族的陳年儲備。",
+      "effects": [
+       {
+        "type": "item",
+        "item": "moonstone_ingot",
+        "qty": 1
+       },
+       {
+        "type": "gold",
+        "amount": 90
+       }
+      ]
+     },
+     "failure": {
+      "text": "你誤判了巨根的節奏,被掀飛的腐土與藤蔓狠狠拍落,狼狽滾出震塌的窪地。",
+      "effects": [
+       {
+        "type": "message",
+        "text": "你撞在虬結的樹瘤上,悶哼著爬起,空手而歸。"
+       }
+      ]
+     }
+    }
+   },
+   {
+    "text": "退開,目送王城踏入林海",
+    "effects": [
+     {
+      "type": "message",
+      "text": "你伏低身子，看那株承載整座王城的巨橡緩緩遠去，足音如雷漸隱於翠幕。能親見行走的法林斯提，已是綠約之地少有的奇遇。"
+     },
+     {
+      "type": "fame",
+      "amount": 1
+     }
+    ]
+   }
+  ]
+ },
+ "elsweyr_two_moons_dance": {
+  "weight": 3,
+  "trigger": {
+   "contexts": [
+    "travel"
+   ],
+   "provinces": [
+    "艾爾斯維爾"
+   ]
+  },
+  "title": "兩月之舞",
+  "text": "瑪瑟與瑟昆達同懸天心,糖田鎮的卡傑特舞者在月光下擺尾起舞,糖蜜的甜香混著斯庫瑪的青煙在涼亭間流轉。一名銀鈴繞腕的舞姬向你伸出爪,邀你共赴雙月之舞。",
+  "options": [
+   {
+    "text": "依雙月的節律共舞(雜技)",
+    "check": {
+     "skill": "acrobatics",
+     "difficulty": 35,
+     "success": {
+      "text": "你踩準了瑪瑟與瑟昆達交錯的拍子,舞姬笑著為你戴上糖晶串成的環。圍觀的虎人為這名異鄉客喝采。",
+      "effects": [
+       {
+        "type": "fame",
+        "amount": 3
+       },
+       {
+        "type": "skill_xp",
+        "skill": "acrobatics",
+        "amount": 0.6
+       }
+      ]
+     },
+     "failure": {
+      "text": "你踩亂了雙月的拍子,絆翻了涼亭的糖盤。舞者們掩嘴而笑,你只得訕訕退場。",
+      "effects": [
+       {
+        "type": "message",
+        "text": "兩月之舞講究與雙月共息,異鄉人的腳步終究太僵。"
+       }
+      ]
+     }
+    }
+   },
+   {
+    "text": "掏銀幣換一管月糖菸(花 30 金)",
+    "requirements": {
+     "gold_min": 30
+    },
+    "effects": [
+     {
+      "type": "gold",
+      "amount": -30
+     },
+     {
+      "type": "item",
+      "item": "moon_sugar",
+      "qty": 1
+     },
+     {
+      "type": "message",
+      "text": "舞姬遞來一小袋月糖,甜香裡你也染上了幾分佩萊泰恩的慵懶。"
+     }
+    ]
+   },
+   {
+    "text": "婉謝,趕你的路",
+    "effects": [
+     {
+      "type": "message",
+      "text": "你向舞者頷首致意,迎著雙月繼續前行。身後的糖香與鈴聲漸漸淡去。"
+     }
+    ]
+   }
+  ]
+ },
+ "elsweyr_dro_mathra_whisper": {
+  "weight": 2,
+  "trigger": {
+   "contexts": [
+    "explore"
+   ],
+   "provinces": [
+    "艾爾斯維爾"
+   ]
+  },
+  "title": "瑟拉斯·瑪斯拉的低語",
+  "text": "草原的乾風忽然轉冷,雙月被烏雲遮去半輪。蔗田陰影裡,一道被詛咒的瑟拉斯·瑪斯拉殘影緩緩凝形,空洞的眼窩低語著要奪走你的月之經緯。",
+  "options": [
+   {
+    "text": "斬碎這道被詛咒的暗影",
+    "effects": [
+     {
+      "type": "combat",
+      "creature": "dro_mathra_shade"
+     }
+    ]
+   },
+   {
+    "text": "默誦迦哈傑月之經緯驅散它(秘法)",
+    "check": {
+     "skill": "mysticism",
+     "difficulty": 45,
+     "success": {
+      "text": "你默誦起讀月者的真言,雙月的光暈重新刺破烏雲。暗影發出一聲嘶鳴,化作糖灰散入風中。",
+      "effects": [
+       {
+        "type": "skill_xp",
+        "skill": "mysticism",
+        "amount": 0.8
+       },
+       {
+        "type": "fame",
+        "amount": 2
+       }
+      ]
+     },
+     "failure": {
+      "text": "你誦錯了經緯的次第,暗影趁隙撲上,冰冷的爪掠過你的胸膛才悻悻退去。",
+      "effects": [
+       {
+        "type": "damage",
+        "amount": 8
+       }
+      ]
+     }
+    }
+   }
+  ]
+ },
+ "arcane_trials_rumor": {
+  "weight": 3,
+  "trigger": {
+   "contexts": [
+    "travel",
+    "rest"
+   ],
+   "require": {
+    "skill_min": {
+     "destruction": 75
+    }
+   }
+  },
+  "title": "毀滅大師的傳聞",
+  "text": "篝火旁,一名風塵僕僕的旅法師壓低聲音:「你周身的破壞法力已經燙手了 —— 可你知道嗎?『焚世』『天雷』『絕對零度』這三道終極真言,早已不在任何法師塔出售。三系完全體的試煉散落在各省的法師公會:晨風的黑光城求烈焰、天際的冬堡學院求寒冰、黑沼澤的吉迪恩求雷霆,各有一位『奧術試煉的引路人』在等夠格的毀滅大師。三系皆成之後,帝都還有最後一道試煉。」",
+  "options": [
+   {
+    "text": "記下這些線索 —— 各省法師公會",
+    "effects": [
+     {
+      "type": "message",
+      "text": "你將三座法師公會的名字銘記於心 —— 黑光城、冬堡、吉迪恩,而盡頭在帝都。"
+     }
+    ]
+   },
+   {
+    "text": "當作耳邊風",
+    "effects": [
+     {
+      "type": "message",
+      "text": "你聳聳肩,繼續趕路。"
+     }
+    ]
+   }
+  ]
+ },
+ "wild_skyrim_hunter": {
+  "weight": 3,
+  "trigger": {
+   "contexts": [
+    "travel",
+    "explore"
+   ],
+   "location_types": [
+    "wilderness"
+   ],
+   "provinces": [
+    "天際"
+   ]
+  },
+  "title": "雪原傷獵人",
+  "text": "一名諾德獵人拄著獵弓蹣跚而來,小腿纏著滲血的布條:「冰魂……成群結隊,把我的營地都凍住了。」",
+  "options": [
+   {
+    "text": "接下狩冰魂的委託",
+    "requirements": {
+     "quest_available": "wq_skyrim_hunter"
+    },
+    "effects": [
+     {
+      "type": "start_quest",
+      "quest": "wq_skyrim_hunter"
+     },
+     {
+      "type": "message",
+      "text": "獵人感激地指出冰魂遊蕩的隘口。"
+     }
+    ]
+   },
+   {
+    "text": "替他包紮傷口",
+    "requirements": {
+     "item": "minor_healing_potion"
+    },
+    "effects": [
+     {
+      "type": "item",
+      "item": "minor_healing_potion",
+      "qty": -1
+     },
+     {
+      "type": "fame",
+      "amount": 4
+     },
+     {
+      "type": "message",
+      "text": "獵人千恩萬謝,塞給你一把碎金。"
+     },
+     {
+      "type": "gold",
+      "amount": 20
+     }
+    ]
+   },
+   {
+    "text": "祝他好運後離開",
+    "effects": [
+     {
+      "type": "message",
+      "text": "你點點頭,繼續趕路。"
+     }
+    ]
+   }
+  ]
+ },
+ "wild_morrowind_ashman": {
+  "weight": 3,
+  "trigger": {
+   "contexts": [
+    "travel",
+    "explore"
+   ],
+   "location_types": [
+    "wilderness"
+   ],
+   "provinces": [
+    "晨風"
+   ]
+  },
+  "title": "灰原拾荒人",
+  "text": "一個蒙著灰巾的丹莫從灰燼中直起身:「崖行鳥又來搶我撿的菌貨了……外鄉人,你那武器看著管用。」",
+  "options": [
+   {
+    "text": "接下驅鳥的委託",
+    "requirements": {
+     "quest_available": "wq_morrowind_ashman"
+    },
+    "effects": [
+     {
+      "type": "start_quest",
+      "quest": "wq_morrowind_ashman"
+     },
+     {
+      "type": "message",
+      "text": "拾荒人比劃著崖行鳥盤旋的方向。"
+     }
+    ]
+   },
+   {
+    "text": "打聽灰原見聞",
+    "effects": [
+     {
+      "type": "fame",
+      "amount": 2
+     },
+     {
+      "type": "skill_xp",
+      "skill": "speechcraft",
+      "amount": 0.4
+     }
+    ]
+   },
+   {
+    "text": "繼續趕路",
+    "effects": []
+   }
+  ]
+ },
+ "wild_hammerfell_courier": {
+  "weight": 3,
+  "trigger": {
+   "contexts": [
+    "travel",
+    "explore"
+   ],
+   "location_types": [
+    "wilderness"
+   ],
+   "provinces": [
+    "漢默法爾"
+   ]
+  },
+  "title": "沙路信使",
+  "text": "一名紅衛信使勒住駱駝,神色焦急:「前頭商道有盜匪設卡,我的急件遞不過去。壯士可願替我清道?」",
+  "options": [
+   {
+    "text": "接下清道的委託",
+    "requirements": {
+     "quest_available": "wq_hammerfell_courier"
+    },
+    "effects": [
+     {
+      "type": "start_quest",
+      "quest": "wq_hammerfell_courier"
+     },
+     {
+      "type": "message",
+      "text": "信使道明盜匪盤踞的位置。"
+     }
+    ]
+   },
+   {
+    "text": "打聽沙海消息",
+    "effects": [
+     {
+      "type": "fame",
+      "amount": 2
+     },
+     {
+      "type": "skill_xp",
+      "skill": "speechcraft",
+      "amount": 0.4
+     }
+    ]
+   },
+   {
+    "text": "繼續趕路",
+    "effects": []
+   }
+  ]
+ },
+ "wild_highrock_refugee": {
+  "weight": 3,
+  "trigger": {
+   "contexts": [
+    "travel",
+    "explore"
+   ],
+   "location_types": [
+    "wilderness"
+   ],
+   "provinces": [
+    "高岩"
+   ]
+  },
+  "title": "荒沼難民",
+  "text": "幾個衣衫襤褸的布萊頓村民縮在岩後:「鴉妖……牠們從崖上俯衝下來抓人,我們不敢回村。」",
+  "options": [
+   {
+    "text": "接下驅鴉妖的委託",
+    "requirements": {
+     "quest_available": "wq_highrock_refugee"
+    },
+    "effects": [
+     {
+      "type": "start_quest",
+      "quest": "wq_highrock_refugee"
+     },
+     {
+      "type": "message",
+      "text": "村民指出鴉妖築巢的崖壁。"
+     }
+    ]
+   },
+   {
+    "text": "分些乾糧給他們",
+    "requirements": {
+     "gold_min": 10
+    },
+    "effects": [
+     {
+      "type": "gold",
+      "amount": -10
+     },
+     {
+      "type": "fame",
+      "amount": 3
+     },
+     {
+      "type": "message",
+      "text": "難民們連聲道謝。"
+     }
+    ]
+   },
+   {
+    "text": "繼續趕路",
+    "effects": []
+   }
+  ]
+ },
+ "wild_valenwood_forager": {
+  "weight": 3,
+  "trigger": {
+   "contexts": [
+    "explore",
+    "rest"
+   ],
+   "location_types": [
+    "wilderness"
+   ],
+   "provinces": [
+    "瓦倫森林"
+   ]
+  },
+  "title": "綠約採集人",
+  "text": "一名波斯莫攀在巨木枝幹間招手:「採藥要帝王蝶翅,可崖行鳥和樹靈把蝶群嚇散了。替我收些回來,我以綠徑之名謝你。」",
+  "options": [
+   {
+    "text": "接下採蝶翅的委託",
+    "requirements": {
+     "quest_available": "wq_valenwood_forager"
+    },
+    "effects": [
+     {
+      "type": "start_quest",
+      "quest": "wq_valenwood_forager"
+     },
+     {
+      "type": "message",
+      "text": "採集人告訴你蝶群常聚的林間空地。"
+     }
+    ]
+   },
+   {
+    "text": "交換林中見聞",
+    "effects": [
+     {
+      "type": "fame",
+      "amount": 2
+     },
+     {
+      "type": "skill_xp",
+      "skill": "speechcraft",
+      "amount": 0.4
+     }
+    ]
+   },
+   {
+    "text": "繼續趕路",
+    "effects": []
+   }
+  ]
+ },
+ "wild_elsweyr_trader": {
+  "weight": 3,
+  "trigger": {
+   "contexts": [
+    "travel",
+    "explore"
+   ],
+   "location_types": [
+    "wilderness"
+   ],
+   "provinces": [
+    "艾爾斯維爾"
+   ]
+  },
+  "title": "貓商護衛",
+  "text": "一隊卡基特商旅停在路旁,領隊甩著尾巴:「草原胡狼成群盯上我們的貨了。這位朋友,願不願賺點月糖路費?」",
+  "options": [
+   {
+    "text": "接下護商的委託",
+    "requirements": {
+     "quest_available": "wq_elsweyr_trader"
+    },
+    "effects": [
+     {
+      "type": "start_quest",
+      "quest": "wq_elsweyr_trader"
+     },
+     {
+      "type": "message",
+      "text": "領隊指向胡狼群潛伏的草叢。"
+     }
+    ]
+   },
+   {
+    "text": "打聽月糖門路",
+    "effects": [
+     {
+      "type": "fame",
+      "amount": 2
+     },
+     {
+      "type": "skill_xp",
+      "skill": "speechcraft",
+      "amount": 0.4
+     }
+    ]
+   },
+   {
+    "text": "繼續趕路",
+    "effects": []
+   }
+  ]
+ },
+ "wild_blackmarsh_runner": {
+  "weight": 3,
+  "trigger": {
+   "contexts": [
+    "travel",
+    "explore"
+   ],
+   "location_types": [
+    "wilderness"
+   ],
+   "provinces": [
+    "黑沼澤"
+   ]
+  },
+  "title": "沼澤信使",
+  "text": "一名亞龍人信使從蘆葦間鑽出,鱗片沾滿泥漿:「沼徑被巨鱷霸佔,我的口信送不到聚落。族人會記得你的恩。」",
+  "options": [
+   {
+    "text": "接下獵鱷的委託",
+    "requirements": {
+     "quest_available": "wq_blackmarsh_runner"
+    },
+    "effects": [
+     {
+      "type": "start_quest",
+      "quest": "wq_blackmarsh_runner"
+     },
+     {
+      "type": "message",
+      "text": "信使以希斯特之名指出巨鱷盤踞的水道。"
+     }
+    ]
+   },
+   {
+    "text": "交換沼澤傳聞",
+    "effects": [
+     {
+      "type": "fame",
+      "amount": 2
+     },
+     {
+      "type": "skill_xp",
+      "skill": "speechcraft",
+      "amount": 0.4
+     }
+    ]
+   },
+   {
+    "text": "繼續趕路",
+    "effects": []
+   }
+  ]
+ },
+ "wild_cyrodiil_courier": {
+  "weight": 3,
+  "trigger": {
+   "contexts": [
+    "travel",
+    "explore"
+   ],
+   "location_types": [
+    "wilderness"
+   ],
+   "provinces": [
+    "賽羅迪爾"
+   ]
+  },
+  "title": "帝國信使",
+  "text": "一名帝國軍團信使勒馬而立:「腹地洞窟的哥布林又出來劫道了,軍團騰不出人。公民,可願替帝國清剿?」",
+  "options": [
+   {
+    "text": "接下剿哥布林的委託",
+    "requirements": {
+     "quest_available": "wq_cyrodiil_courier"
+    },
+    "effects": [
+     {
+      "type": "start_quest",
+      "quest": "wq_cyrodiil_courier"
+     },
+     {
+      "type": "message",
+      "text": "信使在地圖上圈出哥布林的巢穴。"
+     }
+    ]
+   },
+   {
+    "text": "打聽帝都近況",
+    "effects": [
+     {
+      "type": "fame",
+      "amount": 2
+     },
+     {
+      "type": "skill_xp",
+      "skill": "speechcraft",
+      "amount": 0.4
+     }
+    ]
+   },
+   {
+    "text": "繼續趕路",
+    "effects": []
+   }
+  ]
+ }
 }

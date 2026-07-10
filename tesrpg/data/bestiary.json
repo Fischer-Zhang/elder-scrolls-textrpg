@@ -1308,7 +1308,8 @@
     "chance": 0.3
    }
   ],
-  "flavor": "一道盤旋的冰魂呼嘯而至,所過之處凝結成霜。"
+  "flavor": "一道盤旋的冰魂呼嘯而至,所過之處凝結成霜。",
+  "habitat_bound": true
  },
  "frost_troll": {
   "biomes": [
@@ -1451,7 +1452,8 @@
    }
   ],
   "flavor": "盤旋的岩塊間迸射雷弧,一尊雷暴元素轟然成形。",
-  "mindless": true
+  "mindless": true,
+  "habitat_bound": true
  },
  "daedroth": {
   "biomes": [
@@ -1691,7 +1693,7 @@
   ],
   "danger": 5,
   "min_level": 15,
-  "weight": 1,
+  "weight": 0,
   "solo": true,
   "resist": {
    "physical": 50,
@@ -1796,7 +1798,7 @@
   ],
   "danger": 5,
   "min_level": 16,
-  "weight": 1,
+  "weight": 0,
   "solo": true,
   "resist": {
    "frost": 40,
@@ -1899,7 +1901,7 @@
   ],
   "danger": 5,
   "min_level": 16,
-  "weight": 1,
+  "weight": 0,
   "solo": true,
   "resist": {
    "frost": 30,
@@ -1998,7 +2000,7 @@
   ],
   "danger": 5,
   "min_level": 16,
-  "weight": 1,
+  "weight": 0,
   "solo": true,
   "resist": {
    "magic": 25,
@@ -2106,7 +2108,7 @@
   ],
   "danger": 5,
   "min_level": 16,
-  "weight": 1,
+  "weight": 0,
   "solo": true,
   "resist": {
    "magic": 35,
@@ -2214,7 +2216,7 @@
   ],
   "danger": 5,
   "min_level": 16,
-  "weight": 1,
+  "weight": 0,
   "solo": true,
   "resist": {
    "poison": 70,
@@ -2326,7 +2328,7 @@
   ],
   "danger": 5,
   "min_level": 16,
-  "weight": 1,
+  "weight": 0,
   "solo": true,
   "resist": {
    "poison": 60,
@@ -2429,7 +2431,7 @@
   ],
   "danger": 5,
   "min_level": 16,
-  "weight": 1,
+  "weight": 0,
   "solo": true,
   "resist": {
    "physical": 8,
@@ -2536,7 +2538,7 @@
   ],
   "danger": 5,
   "min_level": 17,
-  "weight": 1,
+  "weight": 0,
   "solo": true,
   "resist": {
    "magic": 20,
@@ -2644,7 +2646,7 @@
   ],
   "danger": 5,
   "min_level": 17,
-  "weight": 1,
+  "weight": 0,
   "solo": true,
   "resist": {
    "magic": 35,
@@ -2752,7 +2754,7 @@
   ],
   "danger": 5,
   "min_level": 17,
-  "weight": 1,
+  "weight": 0,
   "solo": true,
   "resist": {
    "physical": 8,
@@ -2858,7 +2860,7 @@
   ],
   "danger": 5,
   "min_level": 17,
-  "weight": 1,
+  "weight": 0,
   "solo": true,
   "resist": {
    "poison": 40,
@@ -2973,7 +2975,7 @@
   ],
   "danger": 5,
   "min_level": 17,
-  "weight": 1,
+  "weight": 0,
   "solo": true,
   "resist": {
    "physical": 8,
@@ -3078,7 +3080,7 @@
   ],
   "danger": 5,
   "min_level": 17,
-  "weight": 1,
+  "weight": 0,
   "solo": true,
   "resist": {
    "physical": 45,
@@ -3178,7 +3180,7 @@
   ],
   "danger": 5,
   "min_level": 17,
-  "weight": 1,
+  "weight": 0,
   "solo": true,
   "resist": {
    "physical": 35,
@@ -7821,7 +7823,7 @@
   ],
   "danger": 6,
   "min_level": 22,
-  "weight": 1,
+  "weight": 0,
   "solo": true,
   "resist": {
    "physical": 70,
@@ -7924,7 +7926,7 @@
   ],
   "danger": 6,
   "min_level": 18,
-  "weight": 1,
+  "weight": 0,
   "solo": true,
   "resist": {
    "physical": 50,
@@ -8013,7 +8015,7 @@
   ],
   "danger": 6,
   "min_level": 16,
-  "weight": 1,
+  "weight": 0,
   "solo": true,
   "resist": {
    "physical": 30,
@@ -8113,7 +8115,7 @@
   ],
   "danger": 5,
   "min_level": 17,
-  "weight": 1,
+  "weight": 0,
   "solo": true,
   "resist": {
    "physical": 10,
@@ -8213,7 +8215,7 @@
   ],
   "danger": 5,
   "min_level": 17,
-  "weight": 1,
+  "weight": 0,
   "solo": true,
   "resist": {
    "frost": 40,
@@ -8314,7 +8316,7 @@
   ],
   "danger": 5,
   "min_level": 17,
-  "weight": 1,
+  "weight": 0,
   "solo": true,
   "resist": {
    "poison": 50,
@@ -9173,7 +9175,7 @@
   ],
   "danger": 5,
   "min_level": 18,
-  "weight": 1,
+  "weight": 0,
   "solo": true,
   "resist": {
    "magic": 75,
@@ -9280,7 +9282,7 @@
   ],
   "danger": 5,
   "min_level": 18,
-  "weight": 1,
+  "weight": 0,
   "solo": true,
   "resist": {
    "magic": 30,
@@ -9395,7 +9397,7 @@
   ],
   "danger": 5,
   "min_level": 17,
-  "weight": 1,
+  "weight": 0,
   "solo": true,
   "resist": {
    "fire": 80,
@@ -9511,7 +9513,7 @@
   ],
   "danger": 5,
   "min_level": 17,
-  "weight": 1,
+  "weight": 0,
   "solo": true,
   "resist": {
    "frost": 80,
@@ -9626,7 +9628,7 @@
   ],
   "danger": 5,
   "min_level": 17,
-  "weight": 1,
+  "weight": 0,
   "solo": true,
   "resist": {
    "shock": 80,
@@ -9742,7 +9744,7 @@
   ],
   "danger": 6,
   "min_level": 18,
-  "weight": 1,
+  "weight": 0,
   "solo": true,
   "resist": {
    "fire": 70,
@@ -9833,7 +9835,8 @@
     "chance": 0.5
    }
   ],
-  "mindless": true
+  "mindless": true,
+  "habitat_bound": true
  },
  "slaughterfish": {
   "name": "屠魚",
@@ -9885,7 +9888,8 @@
     "item": "pearl",
     "chance": 0.12
    }
-  ]
+  ],
+  "habitat_bound": true
  },
  "guild_enforcer": {
   "name": "公會打手",
@@ -10076,7 +10080,7 @@
   ],
   "danger": 5,
   "min_level": 18,
-  "weight": 1,
+  "weight": 0,
   "solo": true,
   "resist": {
    "physical": 10,
@@ -10316,7 +10320,7 @@
   ],
   "danger": 5,
   "min_level": 15,
-  "weight": 1,
+  "weight": 0,
   "solo": true,
   "resist": {
    "magic": 25,
@@ -10414,7 +10418,7 @@
   ],
   "danger": 5,
   "min_level": 15,
-  "weight": 1,
+  "weight": 0,
   "solo": true,
   "resist": {
    "frost": 25,
@@ -10513,7 +10517,7 @@
   ],
   "danger": 5,
   "min_level": 15,
-  "weight": 1,
+  "weight": 0,
   "solo": true,
   "resist": {
    "magic": 25,
@@ -10607,7 +10611,7 @@
   ],
   "danger": 5,
   "min_level": 15,
-  "weight": 1,
+  "weight": 0,
   "solo": true,
   "resist": {
    "magic": 20,
@@ -10700,7 +10704,7 @@
   ],
   "danger": 5,
   "min_level": 15,
-  "weight": 1,
+  "weight": 0,
   "solo": true,
   "resist": {
    "physical": 8,
@@ -10804,7 +10808,7 @@
   ],
   "danger": 5,
   "min_level": 15,
-  "weight": 1,
+  "weight": 0,
   "solo": true,
   "resist": {
    "poison": 30,
@@ -10901,7 +10905,7 @@
   ],
   "danger": 5,
   "min_level": 15,
-  "weight": 1,
+  "weight": 0,
   "solo": true,
   "resist": {
    "physical": 10,
@@ -10998,7 +11002,7 @@
   ],
   "danger": 5,
   "min_level": 15,
-  "weight": 1,
+  "weight": 0,
   "solo": true,
   "resist": {
    "physical": 45,
@@ -11091,7 +11095,7 @@
   ],
   "danger": 5,
   "min_level": 15,
-  "weight": 1,
+  "weight": 0,
   "solo": true,
   "resist": {
    "magic": 25,

@@ -28,7 +28,12 @@ def recompute_equipment(char: Character, gamedata) -> dict:
     recompute_max_resources 讀 char.attr() 之前先跑,fortify_attribute 才會流進衍生值。
     """
     from tesrpg.systems import inventory   # 區域 import:避免 inventory→stats 循環
-    bonuses = inventory.equipment_bonuses(char, gamedata)
+    if getattr(char, "beast_form", False):
+        # R144 現實邏輯:獸形宣稱「脫去整套裝備」(護甲早以 BEAST_ARMOR 取代)→ 附魔屬性/技能/
+        # 抗性/fortify 也一併壓制(巨狼不戴戒指);transform/revert 皆過 recompute → 自動切換。
+        bonuses = {"skills": {}, "attrs": {}, "resist": {}, "resources": {}}
+    else:
+        bonuses = inventory.equipment_bonuses(char, gamedata)
     char.equip_skill_bonus = bonuses["skills"]
     char.equip_attr_bonus = bonuses["attrs"]
     char.equip_resist = bonuses["resist"]

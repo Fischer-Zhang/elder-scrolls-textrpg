@@ -106,6 +106,8 @@ def is_great_shield(gamedata: GameData, item_id) -> bool:
 
 def thorns_reflect(char: Character, gamedata: GameData) -> float:
     """荊棘附魔反傷比例(R42):盔/胸/手/靴/盾各可附一條,magnitude=反傷%(靈魂石階 1~5),聚合相加後 /100。"""
+    if getattr(char, "beast_form", False):
+        return 0.0   # R144 現實邏輯:獸形無甲可佈荊棘
     total = 0
     for slot in ARMOR_SLOTS:
         iid = char.equipped.get(slot)
@@ -176,6 +178,8 @@ def shed_virtue_locked(char: Character, gamedata: GameData) -> None:
 
 
 def equip_weapon(char: Character, gamedata: GameData, item_id: str) -> bool:
+    if getattr(char, "beast_form", False):
+        return False   # R144:巨狼之爪無法穿脫裝備
     if gamedata.item(item_id).get("kind") != "weapon":
         return False
     if (count_item(char, item_id) <= 0 or _vampire_locked(char, gamedata, item_id)
@@ -212,6 +216,8 @@ def dual_wield_bonus_damage(char: Character, gamedata: GameData) -> float:
 
 def equip_offhand(char: Character, gamedata: GameData, item_id: str) -> bool:
     """以副手裝備一把匕首(僅匕首可雙持)。同型與主手需持有 2 把。"""
+    if getattr(char, "beast_form", False):
+        return False   # R144:巨狼之爪無法穿脫裝備
     if is_two_handed(gamedata, char.weapon):   # 主手雙手武器占雙手 → 無副手槽
         return False
     d = gamedata.item(item_id)
@@ -230,6 +236,8 @@ def unequip_offhand(char: Character) -> None:
 
 
 def equip_armor(char: Character, gamedata: GameData, item_id: str) -> bool:
+    if getattr(char, "beast_form", False):
+        return False   # R144:巨狼之爪無法穿脫裝備
     d = gamedata.item(item_id)
     if (d.get("kind") != "armor" or count_item(char, item_id) <= 0
             or _vampire_locked(char, gamedata, item_id) or _virtue_locked(char, gamedata, item_id)):
@@ -311,6 +319,8 @@ def set_progress(char: Character, gamedata: GameData) -> tuple:
 
 def active_set_bonus(char: Character, gamedata: GameData) -> dict | None:
     """穿戴 helmet/cuirass/gauntlets/boots 四件同材質 → 回傳該套裝 bonus(否則 None)。"""
+    if getattr(char, "beast_form", False):
+        return None   # R144 現實邏輯:獸形套裝加成失效(巨狼穿不出夜影偽裝)
     mats = []
     for slot in SET_SLOTS:
         iid = char.equipped.get(slot)

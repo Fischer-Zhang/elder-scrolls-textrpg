@@ -134,7 +134,8 @@ def travel(char: Character, gamedata: GameData, dest_id: str, time, rng: RNG) ->
     dest = gamedata.location(dest_id)
 
     foe = None
-    chance = (encounter_chance(dest.get("danger", 0), time.hour)
+    _org_danger = current_location(char, gamedata).get("danger", 0)
+    chance = (encounter_chance(max(dest.get("danger", 0), _org_danger), time.hour)   # R144:走出龍喉峰不比走進去安全(取兩端較險)
               * (1 - mounts.encounter_evade(char, gamedata))     # 獵馬規避路途埋伏
               * (1 - vampirism.night_evade(char, time))          # 吸血鬼夜視:夜間旅行更易避開埋伏(R56)
               * spellfx.invis_encounter_factor(char))            # R104 幻術隱形:大幅降低旅途遭遇(無隱形 → ×1.0 逐位元組同)

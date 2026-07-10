@@ -46,6 +46,8 @@ def _biome_weight(template: dict, biome: str | None) -> float:
     biomes = template.get("biomes")
     if not biome or not biomes:
         return base
+    if biome not in biomes and template.get("habitat_bound"):
+        return 0.0   # R144 現實邏輯:物理上離不開棲地的怪(水生魚/位面元素)永不「離鄉遊蕩」
     return base * (BIOME_MATCH_WEIGHT if biome in biomes else BIOME_MISMATCH_WEIGHT)
 
 

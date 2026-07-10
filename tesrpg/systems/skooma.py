@@ -35,9 +35,9 @@ CLEAN_DECAY_DAYS = 2          # 清醒滿幾日 → 成癮 -1(ride-it-out 戒掉
 
 # --- 亢奮增益(刻意只給 速度/敏捷/意志 + 資源回復:不碰 strength→不放大武傷/偷襲)----
 MOON_SUGAR_HIGH_ATTR = {"speed": 5, "agility": 5}
-SKOOMA_HIGH_ATTR = {"speed": 8, "agility": 8, "willpower": 8}
+SKOOMA_HIGH_ATTR = {"speed": 8, "agility": 8}   # R144 現實邏輯:嗑藥不會心智更強(去 willpower·守 R20 不碰 strength/sneak/武傷)
 MOON_SUGAR_RESTORE = {"fatigue": 40}
-SKOOMA_RESTORE = {"fatigue": 80, "health": 30}
+SKOOMA_RESTORE = {"fatigue": 80}   # R144 現實邏輯:興奮劑提神不治外傷(去 health 30)
 
 # --- 戒斷懲罰(每階 × 各屬性;step = (成癮-門檻+1)+距上次用藥天數,夾 MAX_STEPS)-----
 WITHDRAWAL_ATTR_PER_STEP = {"strength": -3, "willpower": -3, "agility": -3, "endurance": -3}

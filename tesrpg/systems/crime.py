@@ -48,12 +48,16 @@ def clear_bounty(char: Character, province: str) -> None:
 
 
 # --- 行竊 ---------------------------------------------------------------
-def steal_chance(char: Character, gamedata: GameData) -> float:
-    """得手機率:潛行 + 安全為主 + 里程碑「順手牽羊」加成(theft_skill)。夾 [0.05, 0.95]。"""
+def steal_chance(char: Character, gamedata: GameData, item_id: str | None = None) -> float:
+    """得手機率:潛行 + 安全為主 + 里程碑「順手牽羊」加成(theft_skill)。夾 [0.05, 0.95]。
+    R144 現實邏輯:贓物越大越重越難藏(順走雙手戰斧 ≠ 摸走戒指)—— 帶 item_id 時
+    依重量扣減(0.015/重·夾 0.35);item_id=None(舊呼叫端)→ 原公式 byte-identical。"""
     from tesrpg.systems import mastery, spellfx
     base = (0.25 + char.skill("sneak") * 0.005 + char.skill("security") * 0.003
             + mastery.theft_bonus(char, gamedata).get("steal_bonus", 0.0)
             + spellfx.charm_steal_bonus(char))   # R104 幻術魅惑術:降低偷竊風險(提高得手率)
+    if item_id is not None:
+        base -= min(0.35, (gamedata.item(item_id).get("weight", 0) or 0) * 0.015)
     return max(0.05, min(0.95, base))
 
 
@@ -68,7 +72,7 @@ def steal_item(char: Character, gamedata: GameData, item_id: str, rng: RNG) -> d
     province = province_of(char, gamedata)
     value = gamedata.item(item_id)["value"]
     xp, hours, tired = progression.practice_cost(char, gamedata, "sneak")
-    if rng.chance(steal_chance(char, gamedata)):
+    if rng.chance(steal_chance(char, gamedata, item_id)):
         inventory.add_item(char, item_id, 1)
         events = progression.use_skill(char, gamedata, "sneak", xp)
         return {"ok": True, "caught": False, "bounty_added": 0,
