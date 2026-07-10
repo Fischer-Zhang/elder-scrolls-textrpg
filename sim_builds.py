@@ -227,6 +227,25 @@ def make_shield_reflect():
     return c
 
 
+def make_great_shield():
+    """雙手重盾坦(R138 掩體):魔族重盾接管攻擊(盾擊 11·block 技·手持武器休眠)+ 荊棘 daedric 4 件
+    + 重盾荊棘 —— 完全體=「站著讓打」:姿態常駐(元素掩體 0.70×block + 掩體回氣 +2)+ 反傷磨死來犯者。
+    輸出墊底(盾擊≈劍 1/3)→ 拚的是耗不是殺;終王 720 靠 offense 牆天然守(啃不動)。"""
+    c = build_character(gd, name="重盾", sex="male", race="orsimer", birthsign="warrior", class_id="warrior")
+    c.skills.update(block=100, heavy_armor=100, smithing=100, athletics=75)
+    c.attributes.update(strength=85, endurance=100, agility=60)
+    c.weapon = "iron_dagger"   # 休眠(重盾接管攻擊)
+    for slot in ("helmet", "cuirass", "gauntlets", "boots"):
+        iid = enchant_armor_id(f"daedric_{slot}", "thorns", "x", 5)
+        inventory.add_item(c, iid, 1); inventory.equip_armor(c, gd, iid)
+    sid = enchant_armor_id("daedric_great_shield", "thorns", "x", 5)
+    inventory.add_item(c, sid, 1); inventory.equip_armor(c, gd, sid)
+    _choices(c, {"block_50": "shield_bash", "block_75": "shield_break", "block_100": "perfect_block",
+                 "heavy_armor_50": "armor_reflect", "heavy_armor_100": "ironhide", "smithing_75": "master_temper"})
+    stats.recompute_max_resources(c, gd, restore_full=True)
+    return c
+
+
 # 法師三系專精(各鎖單一元素 → 火 DoT / 冰凍麻控場 / 電感電 ramp 三身份分明;取代單一 greedy 法師)。
 # 政策 `_mage_act` 讀 char._dmg_pool(缺省回 _MAGE_DMG)→ 各元素法師只挑自系最佳法術。
 _MAGE_ELEMENTS = {
@@ -247,6 +266,7 @@ def _make_element_mage(pool):
 
 BUILDS = {"assassin": make_assassin, "archer": make_archer, "warrior_1H": make_warrior_sword,
           "warrior_2H": make_warrior_2h, "monk": make_monk, "shield_reflect": make_shield_reflect,
+          "great_shield": make_great_shield,
           "mage_fire": _make_element_mage(_MAGE_ELEMENTS["mage_fire"]),
           "mage_frost": _make_element_mage(_MAGE_ELEMENTS["mage_frost"]),
           "mage_shock": _make_element_mage(_MAGE_ELEMENTS["mage_shock"]),
@@ -264,6 +284,7 @@ _INCIDENTAL = {
     "warrior_1H":     {"acrobatics": 45},
     "warrior_2H":     {"acrobatics": 45},
     "shield_reflect": {"acrobatics": 45},
+    "great_shield":   {"acrobatics": 45},
     "mage_fire":      {"light_armor": 60, "acrobatics": 45, "athletics": 45},
     "mage_frost":     {"light_armor": 60, "acrobatics": 45, "athletics": 45},
     "mage_shock":     {"light_armor": 60, "acrobatics": 45, "athletics": 45},
@@ -271,7 +292,7 @@ _INCIDENTAL = {
     "paladin":        {"acrobatics": 45},   # 現實派十字軍穿重甲(heavy_armor 核心)→ 附帶只補閃避
     "battlemage":     {"acrobatics": 45, "athletics": 45, "restoration": 45},
 }
-_ARMOR_TEMPER_BUILDS = {"warrior_1H", "warrior_2H", "shield_reflect", "battlemage", "paladin"}
+_ARMOR_TEMPER_BUILDS = {"warrior_1H", "warrior_2H", "shield_reflect", "great_shield", "battlemage", "paladin"}
 
 
 def _apply_realistic(name, c):
@@ -295,6 +316,9 @@ def _regen(c):
     mr *= race_ability.magicka_regen_factor(c, gd)   # R61 高精靈 ×1.5(對齊 main.py:1214;修審查:sim 原漏此因子低估 5 個 Altmer 法師 fixture 魔力)
     if mr and c.birthsign != "atronach" and c.magicka < c.max_magicka:
         c.magicka = min(c.max_magicka, c.magicka + mr)
+    br = combat.bunker_fatigue_regen(c, gd)   # R138 重盾掩體回氣(對齊 main.py 回合末;非重盾/非姿態 → 0 = byte-identical)
+    if br and c.fatigue < c.max_fatigue:
+        c.fatigue = min(c.max_fatigue, c.fatigue + br)
 
 
 def _mage_act(c, boss, rng, st):
@@ -371,7 +395,7 @@ def _battlemage_act(c, boss, rng, st):
 
 # R126 戰鬥中用藥模型(fidelity):近戰/潛行 build 帶治療藥水,低血喝(耗一回合=不攻擊)。
 # 反映遊戲新現實(近戰終於有中場續戰)→ 平衡工具不再低估近戰硬 boss 存活。法系另有治療術不靠藥。
-_MELEE_POT_BUILDS = {"warrior_1H", "warrior_2H", "monk", "assassin", "archer", "shield_reflect"}
+_MELEE_POT_BUILDS = {"warrior_1H", "warrior_2H", "monk", "assassin", "archer", "shield_reflect", "great_shield"}
 _COMBAT_POTIONS = 8   # 帶去硬仗的治療藥水疊(healing_potion·回50·固定不放大)
 
 
@@ -420,14 +444,14 @@ def _attack_act(c, boss, rng, st):
 
 _POLICY = {"assassin": _melee_sneak_act, "archer": _melee_sneak_act,
            "warrior_1H": _attack_act, "warrior_2H": _attack_act, "monk": _attack_act,
-           "shield_reflect": _attack_act,
+           "shield_reflect": _attack_act, "great_shield": _attack_act,
            "mage_fire": _mage_act, "mage_frost": _mage_act, "mage_shock": _mage_act,
            "arcanist": _mage_act,
            "paladin": _paladin_act,
            "battlemage": _battlemage_act}
 
 
-_STANCE_BUILDS = {"warrior_1H"}   # R137 格擋姿態 canonical policy。
+_STANCE_BUILDS = {"warrior_1H", "great_shield"}   # R137/R138 格擋姿態 canonical policy(重盾=掩體常駐)。
 # shield_reflect:設計上**相容**常駐姿態(不減命中 → 荊棘照觸發=使用者要求),但實測其續戰
 # 姿態 17% < 不姿態 35%(輸出稅拖慢殺速 → 藥水經濟惡化)→ 理性 canonical policy 不常駐;
 # 玩家仍可自選(對重物理 boss 情境有利)。

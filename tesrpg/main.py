@@ -625,8 +625,13 @@ def _choose_combat_action(state: GameState, gamedata: GameData, enemies: list, a
             opts.append(("racial_power", f"🐾 種族之力（{powers.racial_def(rpid)['name']})"))
     if (not inventory.is_dual_wielding(player, gamedata)
             and not inventory.is_two_handed(gamedata, player.weapon)):   # 雙持/雙手武器占雙手 → 不能格擋
-        opts.append(("guard", "收起格擋姿態（恢復全力攻擊)" if combat.has_guard_stance(player)
-                     else "格擋姿態（攻擊變緩 · 舉盾卸力減傷)"))   # R137:取代整回合格擋動作(純減傷·不碰命中)
+        if combat.has_guard_stance(player):
+            opts.append(("guard", "收起格擋姿態（恢復全力攻擊)"))   # R137:取代整回合格擋動作(純減傷·不碰命中)
+        elif inventory.is_great_shield(gamedata, player.equipped.get("shield")):
+            _gpct = int(formulas.GREAT_SHIELD_ELEMENTAL_GUARD * min(1.0, player.skill("block") / 100.0) * 100)
+            opts.append(("guard", f"重盾掩體（攻擊變緩 · 卸力減傷 · 元素-{_gpct}% · 回氣+{formulas.GREAT_SHIELD_BUNKER_FATIGUE}/回)"))   # R138 可見性:持重盾時姿態效果直接標在選項上
+        else:
+            opts.append(("guard", "格擋姿態（攻擊變緩 · 舉盾卸力減傷)"))
     vcap = combat.vanish_cap(player, gamedata)
     if combat.can_vanish(player, gamedata) and vanish_used < vcap:
         n_alive = len([e for e in enemies if combat.is_alive(e)])
@@ -1183,7 +1188,10 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
                 ui.message("你收起格擋姿態,全力搶攻。", style="grey70")
             else:
                 player.active_effects.append({"kind": "guard_stance", "turns": 99})
-                ui.message("你側身舉盾入架 —— 攻勢放緩,盾面隨時準備接下來襲。", style="bold cyan")
+                if inventory.is_great_shield(gamedata, player.equipped.get("shield")):   # R138 可見性:重盾掩體效果立架即告知
+                    ui.message("你架穩重盾掩體 —— 攻勢放緩;盾面連烈焰亦能卸開(元素大減),盾後喘息緩緩回氣。", style="bold cyan")
+                else:
+                    ui.message("你側身舉盾入架 —— 攻勢放緩,盾面隨時準備接下來襲。", style="bold cyan")
         elif action["type"] == "wall":            # 戰士:立/撤盾牆架勢(常駐 stance)
             if combat.has_shield_wall(player):
                 player.active_effects[:] = [e for e in player.active_effects if e.get("kind") != "shield_wall"]
@@ -1326,6 +1334,9 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
         hregen = mastery.combat_regen(player, gamedata)   # 里程碑「生生不息」:戰鬥中每回合自癒
         if hregen and combat.is_alive(player) and player.health < player.max_health:   # is_alive:不得回血復活本回合被擊殺的玩家(對齊 auto_resolve)
             player.health = min(player.max_health, player.health + hregen)
+        bregen = combat.bunker_fatigue_regen(player, gamedata)   # R138 重盾「掩體回氣」(單一決策點;力竭也回=脫困非永動)
+        if bregen and combat.is_alive(player) and player.fatigue < player.max_fatigue:
+            player.fatigue = min(player.max_fatigue, player.fatigue + bregen)
         pre_trap = {id(e): magic.has_soul_trap(e) for e in enemies if combat.is_alive(e)}
         ui.combat_tick(magic.tick_effects(player, gamedata))
         for a in battle["allies"]:

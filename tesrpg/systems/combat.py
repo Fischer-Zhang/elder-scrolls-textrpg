@@ -481,18 +481,42 @@ def has_guard_stance(char) -> bool:
                for e in getattr(char, "active_effects", []))
 
 
-def _guard_stance_factor(defender, atk_element=None) -> float:
+def _wields_great_shield(char, gamedata: GameData) -> bool:
+    """是否裝備雙手重盾(None-safe;非玩家 equipped 缺欄 → False)。"""
+    sh = getattr(char, "equipped", {}).get("shield")
+    sd = gamedata.item_or_none(sh) if sh else None
+    return bool(sd and sd.get("great_shield"))
+
+
+def _guard_stance_factor(defender, atk_element=None, gamedata=None) -> float:
     """R137 格擋姿態「舉盾卸力」減傷倍率(<1.0=更耐打):乘性·隨 block 技能縮放、力竭整組暫停。
     物理全額卸力;**元素折半**(盾面卸得開刀劍、卸不全火焰 → 元素仍是盾系的相對剋星,
-    且守終王包絡〔R134 拍板 720 達貢單人 0-8%〕不被生存堆疊突破)。非玩家/非姿態 → 1.0(byte-identical)。"""
+    且守終王包絡〔R134 拍板 720 達貢單人 0-8%〕不被生存堆疊突破)。非玩家/非姿態 → 1.0(byte-identical)。
+    R138 重盾「掩體」例外:持雙手重盾時元素改走獨立卸力車道 0.70×block/100(block100 → 元素只受
+    30%;使用者拍板=重盾放棄整隻武器手的防禦端補償)。gamedata=None(舊呼叫端/測試)→ 一律非重盾路徑。"""
     if not (_is_player(defender) and has_guard_stance(defender) and defender.fatigue > 0
             and not _is_beast(defender)):    # 審查修:獸形無盾 → 姿態卸力不套(鏡像重盾 _is_beast 閘)
         return 1.0
-    m = formulas.GUARD_STANCE_MITIGATION * min(1.0, defender.skill("block") / 100.0)
+    bs = min(1.0, defender.skill("block") / 100.0)
+    if atk_element and gamedata is not None and _wields_great_shield(defender, gamedata):
+        # R138 重盾掩體元素車道:0.70×block/100 + 斯丹達爾之佑,夾在 0.70(「只受30%」上限)。
+        m = formulas.GREAT_SHIELD_ELEMENTAL_GUARD * bs + divines.block_bonus(defender)
+        return 1.0 - min(formulas.GREAT_SHIELD_ELEMENTAL_GUARD, m)
+    m = formulas.GUARD_STANCE_MITIGATION * bs
     m += divines.block_bonus(defender)   # R107 斯丹達爾之佑:原掛手動格擋(R137 移除)→ 遷入姿態卸力(+0.10)
     if atk_element:
         m *= formulas.GUARD_STANCE_ELEMENTAL_FACTOR
     return 1.0 - min(0.60, m)            # 防呆總夾(祝福/未來源疊加也不至近免傷)
+
+
+def bunker_fatigue_regen(char, gamedata: GameData) -> int:
+    """R138 重盾「掩體回氣」:格擋姿態+持重盾 → 每回合應回體力量(單一決策點,main 與 sim 共用)。
+    🔴 刻意不 gate fatigue>0 —— 力竭時盾後喘息正是脫困路;+2 < 攻擊成本 ~4.2 → 邊打邊回不可能,
+    力竭煞車(姿態效果暫停)仍咬合;站樁不打可持續回=零輸出雕像,自費時間非永動。非重盾/非姿態/獸形 → 0。"""
+    if (_is_player(char) and has_guard_stance(char) and not _is_beast(char)
+            and _wields_great_shield(char, gamedata)):
+        return formulas.GREAT_SHIELD_BUNKER_FATIGUE
+    return 0
 
 
 def _shield_wall_factor(defender) -> float:
@@ -793,7 +817,8 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
         dmg *= _consecration_factor(defender)
         # R137 格擋姿態「舉盾卸力」:同聖化車道位置(物理+元素皆減),但**元素折半**
         # (盾卸不全火焰 → 元素仍剋盾系·守終王包絡;反擊樹另行物理限定守 R127 牆)。
-        dmg *= _guard_stance_factor(defender, atk_element)
+        # R138:持雙手重盾時元素改走 0.70×block 掩體車道(見 _guard_stance_factor)。
+        dmg *= _guard_stance_factor(defender, atk_element, gamedata)
 
         # solo BOSS 反一刀:偷襲開場單擊夾在生命上限的固定比例 → 絕不一刀秒 boss
         # (apex 仍可隱遁循環無傷清,但須多刀;精英/小遭遇不受影響)。

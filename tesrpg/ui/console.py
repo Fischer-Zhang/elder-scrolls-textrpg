@@ -1986,8 +1986,11 @@ def weapon_line(char: Character, gamedata: GameData) -> str:
     gs = char.equipped.get("shield")
     if inventory.is_great_shield(gamedata, gs):    # 雙手重盾:以盾擊作戰(手持武器休眠)
         sd = gamedata.item(gs)
+        from tesrpg import formulas as _f   # R138 可見性:重盾掩體特性(元素卸力隨格擋技能·回氣)直接標在武器行
+        _gpct = int(_f.GREAT_SHIELD_ELEMENTAL_GUARD * min(1.0, char.skill("block") / 100.0) * 100)
         return (f"{sd['name']}（盾擊 傷害 {sd.get('bash_damage', 0)} · "
-                f"{gamedata.skill_name('block')} {char.skill('block')}·雙手重盾)")
+                f"{gamedata.skill_name('block')} {char.skill('block')} · 卸力 {int(sd.get('mitigation', 0) * 100)}% · "
+                f"掩體姿態:元素-{_gpct}%·回氣+{_f.GREAT_SHIELD_BUNKER_FATIGUE}/回·雙手重盾)")
     wp = gamedata.item_or_none(char.weapon)
     if wp is None:                       # 毀損/未知武器 id → 顯示原 id,不崩潰(防毀損存檔)
         return f"{char.weapon}(未知武器)"

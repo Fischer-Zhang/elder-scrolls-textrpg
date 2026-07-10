@@ -188,6 +188,13 @@ VOLLEY_DAMAGE_FACTOR = 0.6    # R136 箭雨:齊射覆蓋全體,每箭傷害係�
 GUARD_STANCE_DAMAGE_TAX = 0.75    # 姿態中攻擊傷害係數(走 damage_factor 車道·在偷襲倍率前 → solo 夾不變)
 GUARD_STANCE_MITIGATION = 0.38    # 姿態卸力上限(block100 全額·隨 block/100 縮放)
 GUARD_STANCE_ELEMENTAL_FACTOR = 0.5   # 元素來襲卸力折扣(盾卸不全火焰;動之=平衡取捨·必跑 sim)
+# R138 重盾「掩體」(使用者拍板:重盾攻擊手段少 → 防禦端補償;兩者皆僅 姿態中+持重盾 生效):
+# ① 元素卸力改走獨立車道 0.70×block/100(block100 → 元素只受 30%;非重盾維持上面的元素折半)。
+# ② 掩體回氣每回合 +2 體力:🔴 2 < 攻擊成本 ~4.2(雜技75)→ 邊打邊回不可能=力竭煞車仍咬合;
+#    刻意不 gate fatigue>0(力竭時掩體喘息正是脫困路);站樁不打可無限回=零輸出雕像,自費時間。
+# sim 釘住(重盾+荊棘完全體):gauntlet 93%·火法王 100%·720 達貢 0.7%·真身 32.5%·無殭局·w1H 零位移。
+GREAT_SHIELD_ELEMENTAL_GUARD = 0.70   # 重盾姿態元素卸力上限(×block/100·「只受30%」)
+GREAT_SHIELD_BUNKER_FATIGUE = 2       # 重盾姿態掩體回氣(每回合體力;必 < 攻擊成本)
 
 
 def magicka_regen_combat(willpower: int) -> int:

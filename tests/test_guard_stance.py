@@ -134,6 +134,52 @@ def test_stance_sneak_solo_cap_red_line():
     assert worst <= cap
 
 
+def _gs_tank():
+    """R138 重盾坦:魔族重盾(盾擊接管攻擊)+ 姿態常駐。"""
+    c = build_character(gd, name="重盾", sex="m", race="orsimer", birthsign="warrior", class_id="warrior")
+    c.skills.update(block=100, heavy_armor=90)
+    c.attributes.update(strength=90, endurance=100)
+    inventory.add_item(c, "daedric_great_shield", 1)
+    inventory.equip_armor(c, gd, "daedric_great_shield")
+    stats.recompute_max_resources(c, gd, restore_full=True)
+    return c
+
+
+def test_great_shield_elemental_guard_r138():
+    """R138 重盾掩體元素車道:姿態+重盾 → 元素只受 ~30%(0.70×block/100);
+    一般盾維持元素折半;gamedata=None(舊呼叫端)→ 一律非重盾路徑(back-compat)。"""
+    c = _gs_tank()
+    c.active_effects.append({"kind": "guard_stance", "turns": 99})
+    f_gs = combat._guard_stance_factor(c, "fire", gd)
+    assert abs(f_gs - (1.0 - formulas.GREAT_SHIELD_ELEMENTAL_GUARD)) < 1e-9   # block100 → ×0.30
+    assert combat._guard_stance_factor(c, None, gd) < 1.0                     # 物理照走原車道
+    c.skills["block"] = 50                                                    # 元素卸力隨 block 縮放
+    assert abs(combat._guard_stance_factor(c, "fire", gd) - (1.0 - 0.35)) < 1e-9
+    c.skills["block"] = 100
+    w = _warrior()                                                            # 一般盾:元素折半不變
+    w.active_effects.append({"kind": "guard_stance", "turns": 99})
+    m = formulas.GUARD_STANCE_MITIGATION * formulas.GUARD_STANCE_ELEMENTAL_FACTOR
+    assert abs(combat._guard_stance_factor(w, "fire", gd) - (1.0 - m)) < 1e-9
+    assert abs(combat._guard_stance_factor(c, "fire") - combat._guard_stance_factor(w, "fire")) < 1e-9  # 無 gamedata → 非重盾路徑
+
+
+def test_bunker_fatigue_regen_r138():
+    """R138 掩體回氣:姿態+重盾 → +2/回;一般盾/未立姿態 → 0;🔴 力竭(fatigue 0)仍回=脫困非死鎖;
+    回氣 < 攻擊成本(雜技 75 ≈4.2)→ 邊打邊回不可能(無限姿態否決的數學根據)。"""
+    c = _gs_tank()
+    assert combat.bunker_fatigue_regen(c, gd) == 0                            # 未立姿態
+    c.active_effects.append({"kind": "guard_stance", "turns": 99})
+    assert combat.bunker_fatigue_regen(c, gd) == formulas.GREAT_SHIELD_BUNKER_FATIGUE
+    c.fatigue = 0
+    assert combat.bunker_fatigue_regen(c, gd) == formulas.GREAT_SHIELD_BUNKER_FATIGUE   # 力竭也回(脫困)
+    w = _warrior()
+    w.active_effects.append({"kind": "guard_stance", "turns": 99})
+    assert combat.bunker_fatigue_regen(w, gd) == 0                            # 一般盾無回氣
+    atk_cost = formulas.ATTACK_FATIGUE_COST * formulas.fatigue_cost_factor(75) \
+        * formulas.weapon_attack_fatigue_factor(1.0)
+    assert formulas.GREAT_SHIELD_BUNKER_FATIGUE < atk_cost                    # 🔴 邊打邊回不可能
+
+
 def run():
     for name, fn in sorted(globals().items()):
         if name.startswith("test_") and callable(fn):
