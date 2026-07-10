@@ -34,6 +34,7 @@ PYTHONPATH=. python3 sim_assassin.py      # 平衡回歸模擬(改戰鬥常數�
 
 ## 鐵律總則(跨領域紅線,全文)
 
+- **現實邏輯優先於平衡**(R138b 使用者鐵令):機制的字面數值關係不得違反物理/主題直覺(如盾防元素>防物理、布甲>鐵甲、火燒治癒);**即使端到端數學能自圓、平衡實測更好看,違反直覺的設計一律推翻或先問使用者**——平衡在現實邏輯的框架內調,不得反過來(先例:重盾元素卸力恆≤物理,知情接受 gauntlet 100→0% 回落;同族:R45/R115 誓福按原典)。
 - **成長/夾限只用 `base_skill()/base_attr()`**;裝備/吸血鬼/斯庫瑪/狼人/里程碑/**達貢之力**加成走獨立疊加層,**絕不寫回 base**。
 - **任何改動 `char.equipped`(穿/卸/丟/賣)後必 `stats.recompute_max_resources(char, gamedata)`**(務必帶 gamedata,否則 fortify 視為 0)。
 - **改任何戰鬥/施法/刺客/附魔常數 → 必跑 `sim_assassin.py`**,守 `SOLO_SNEAK_DAMAGE_CAP_RATIO`(偷襲不秒 solo boss)、群體規模反制、**fear/paralyze solo boss 機率減免**(`SOLO_CONTROL_RESIST_CHANCE`;R44 改為機率抵抗,非完全免疫)等紅線。
