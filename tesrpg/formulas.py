@@ -174,6 +174,7 @@ AIMED_SHOT_PEN = 0.25          # 瞄準射:額外破甲
 AIMED_SHOT_POWER = 0.40       # 瞄準射:強擊補傷(不吃偷襲倍率、受 solo 夾限,守紅線)
 CRIPPLING_WEAKEN = 0.40       # 牽制射:目標攻擊削弱比例
 CRIPPLING_TURNS = 3
+VOLLEY_DAMAGE_FACTOR = 0.6    # R136 箭雨:齊射覆蓋全體,每箭傷害係數(倍耗體;🔴 永不吃偷襲倍率 → 守紅線)
 
 
 def magicka_regen_combat(willpower: int) -> int:

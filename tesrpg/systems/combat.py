@@ -323,6 +323,11 @@ def _is_beast(actor) -> bool:
     return _is_player(actor) and getattr(actor, "beast_form", False)
 
 
+# R136 獵手之眼:「陷入頹勢」認定的控場狀態集(衰/踉/緩/凍麻/懼/麻痺;刻意不含 dot →
+# 元素附魔/塗毒不可自我點燃 +20%,須真控場 → 與牽制射/踉蹌餘響成套的「壓制→處決」)
+_EXPLOIT_KINDS = ("weaken", "stagger", "slow", "benumb", "fear", "paralyze")
+
+
 def _self_empower(actor) -> float:
     """玩家「獸人狂暴/紅衛腎上腺」自身增傷(R61)。加在 power_bonus → 在偷襲倍率之後相加 →
     不餵偷襲爆發(守紅線),且整體流進 dmg → solo 偷襲夾仍夾。非玩家/無 buff → 0.0(sim byte-identical)。"""
@@ -531,12 +536,14 @@ def _gear_weapon_item(attacker, gamedata: GameData):
 def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
                    defender_blocking: bool = False, sneak_attack: bool = False,
                    aimed: bool = False, mounted_charge: bool = False,
-                   charge_spec: dict | None = None, attack: dict | None = None) -> dict:
+                   charge_spec: dict | None = None, attack: dict | None = None,
+                   damage_factor: float = 1.0) -> dict:
     """attacker 攻擊 defender,套用傷害、發放玩家技能 xp。回傳事件 dict。
 
     sneak_attack:玩家開場偷襲(不察之敵)→ 傷害依潛行加倍、命中下限拉高、鍛鍊潛行。
     mounted_charge:坐騎「衝鋒」戰技(開場、僅野外遭遇)→ 長槍×高倍率 / 其他近戰追加坐騎踐踏;
     **絕不走 sneak_mult**(charge_spec 來自 mounts.charge_spec),對 solo boss 受獨立夾限。
+    damage_factor(R136 箭雨):基礎武器傷害係數(<1=較弱的一箭);預設 1.0 → byte-identical。
 
     事件:{"attacker","defender","hit":bool,"damage":int,"blocked":bool,
            "skill_events":[...], "defender_dead":bool, "sneak":倍率|None}
@@ -635,6 +642,9 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
                 block_factor = max(divines.BLOCK_FLOOR, block_factor - _db)
         raw = formulas.attack_damage(wpn_dmg, wpn_skill, _strength(attacker),
                                      roll, block_factor)
+        raw *= damage_factor    # R136 箭雨:齊射每箭較弱(預設 1.0 → byte-identical)。⚠ 只縮武器傷車道
+        # (raw 及其衍生 power_bonus/exploit);附魔 weapon_element / 灌注 / 共鳴的 flat 加傷在後段、不縮 →
+        # 附魔弓箭雨對每個目標仍送全額元素傷(審查 F2 記載·非偷襲車道無紅線·量測留待群戰 sim 場景)。
         # 號令/戰旗等 empower 增益的攻擊者(同伴)傷害提升 —— **只對同伴施放 → 永不碰玩家偷襲紅線**
         # 多源**遞減疊加曲線**(降序:最強×1 + 次強×0.7 + 第三×0.49…):戰旗+號令可同時生效又不暴衝
         # (上限 ≈3.33×最強;單道時等同舊行為 = 不變 → solo/單光環 byte-identical)。
@@ -646,6 +656,12 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
                 raw *= (1 + emp)
         # 里程碑武器威力 + 弓手「瞄準射」:補傷「不吃偷襲倍率」(同副手補刀模式,守紅線;仍受 solo 夾限)
         power_bonus = raw * (wmod.get("power", 0.0) + (formulas.AIMED_SHOT_POWER if aimed else 0.0))
+        # R136 獵手之眼(marksman_100):目標陷入頹勢(控場狀態)→ 乘勢補傷(同 power_bonus 車道守紅線;
+        # 非弓手/未選 exploit=0 → 不掃 → byte-identical)
+        if wmod.get("exploit"):
+            if any(e.get("kind") in _EXPLOIT_KINDS and e.get("turns", 0) > 0
+                   for e in getattr(defender, "active_effects", [])):
+                power_bonus += raw * wmod["exploit"]
         _se = _self_empower(attacker)   # 種族「狂暴/腎上腺」自身增傷(R61):同 power_bonus 模式,偷襲倍率後加 → 守紅線
         if _se:
             power_bonus += raw * _se

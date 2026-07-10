@@ -1410,6 +1410,22 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 
 ---
 
+### R136 · 弓手里程碑重造:75 箭雨(AoE)+ 100 雙側救活(連珠箭/獵手之眼) [re-sim]
+
+**承弓手全手段評估**(P0-P4 量化:工具全冷、非力量缺——全開弓手 true_dagon 88% 全場最強;75/100 節點結構問題)**使用者兩度點名**:75 疾矢(+4% 命中死填充)→ **箭雨(60% AoE)**;**100 兩側都救活**(穿甲箭 pen 被 R127 pen-免疫終局廢、穩準狠 +7% 平淡)。
+
+**① 箭雨 volley(marksman_75·bow_technique)**:主動齊射**全體**存活敵,每箭 `VOLLEY_DAMAGE_FACTOR=0.6` 傷害、倍攻擊耗體、**🔴 永不吃偷襲倍率**(呼叫端硬寫 sneak=False);選單僅 ≥2 存活敵時顯示(單敵無意義);cmem「↻再次」只記 attack/cast → 不可重複繞過。引擎:`resolve_attack` 加 **`damage_factor=1.0` 參數**(唯 volley 呼叫端傳 0.6;預設 1.0 → 全既有呼叫 byte-identical)。75 = 瞄準射(單體核彈)vs 箭雨(AoE)真二選一——**弓手成唯一有 AoE 的物理職業**(接上 R134-135 爪牙時代)。⚠ damage_factor 只縮武器傷車道:附魔 weapon_element/灌注 flat 加傷不縮 → 附魔弓箭雨對每目標全額元素傷(審查 F2 記載·非偷襲車道無紅線·群戰量測留待)。
+
+**② 連珠箭 rapid_shot(marksman_100·取代 penetrator)**:`weapon_mod` 合併鍵加 `extra_shot 0.2`——持弓**命中後** 20% 追加一箭(審查 F1:原落空也觸發與描述矛盾 → 補 hit-gate·main+sim 鏡像);追加箭=普通擊 sneak=False(鏡像 R63 追擊車道)、免額外耗體;attack/aimed/crippling 後可觸發(散兵/箭雨不觸發·不遞迴)。**③ 獵手之眼 hunters_eye(marksman_100·取代 steady_aim)**:`weapon_mod` 加 `exploit 0.2`——目標帶控場狀態(`_EXPLOIT_KINDS`=衰/踉/緩/凍麻/懼/麻痺·**刻意不含 dot**)→ 弓傷 +20% 走 **power_bonus 車道**(偷襲倍率後相加·solo 夾前 → 紅線結構性守住);「先壓制(牽制射/踉蹌餘響)再處決」身份,對比連珠箭的無條件手速。
+
+**🔴 紅線/驗證**:三處全走安全車道(volley sneak=False·extra sneak=False·exploit power_bonus)+ 150-seed solo 夾測試;**sim_assassin BYTE-IDENTICAL**(隔離 worktree×2 驗·assassin 無 marksman 里程碑 → xs=0 不擲 rng·archetype 檢查在 weapon_mod 前);sim_builds archer fixture penetrator→rapid_shot → **正典矩陣 ~零位移**(95.7→95.8 均·主價值在主動戰技=玩法層,正典 greedy 政策不用);舊存檔三 opt_id 汰換走 `ensure_mastery_choices` 退 pending(progression.py:61)。`run_all` **118**(test_hybrids +3:volley 係數/解鎖、rapid 聚合/target 限定、exploit 條件/dot 不觸發/solo 夾)。BUFFS/build.md 同步。
+
+**審查(1 agent)0 blocker/major·修 F1(hit-gate)+F2(註解)**;記載:**F3 chill 附魔弓可讓獵手之眼近常駐**(chill rider 無充能耗·weaken 軟控 solo 照吃 → +20% 條件被裝備繞過;幅度有界 <瞄準 +40%·sim 排除自附魔·**留使用者知悉**,要收緊=chill rider 改吃充能或 exploit 排除 weaken 來源=附魔,先問);nits:三連發上界(攻擊+速度追擊+連珠=3 箭·有界不遞迴)、bound-weapon 持弓觸發 extra(R40 既有 latent)、volley XP N×0.5(自限)。
+
+**🔴 鐵律**:volley/追加箭**永為普通擊**(sneak=False 勿放);`damage_factor` 預設 1.0 勿動(byte-identity 基石);exploit 走 power_bonus 車道·`_EXPLOIT_KINDS` 不含 dot(自我點燃防線);weapon_mod 新參數記得加合併鍵(mastery.py);動三值(0.6/0.2/0.2)→ 跑 sim_assassin(byte-identical)+sim_builds;弓手主動戰技的正典低估已知(P0 vs P4)→ 平衡結論引用時必附玩法層數據。前瞻:弓神器真空(全遊戲 9 弓皆白板)、sim policy 建模主動戰技。
+
+---
+
 ### R135 · 召喚爪牙擴充:增援變體 5 王 + 瘋神隨機爪牙表 + BESTIARY【召喚】tag(+重大裁決:配爪牙王=帶隊向) [re-sim] [content]
 
 **使用者拍板三項合一**(①增援 ②瘋神隨機 ③文件 tag)。**① 增援變體(非法系王呼喚同類)**:`summon` 譜加可選 **`msg` 模板**(`{name}`/`{names}`·狼嚎/號角 ≠ 位面裂隙;**預設=R134 原句逐字** → 既有 18 譜 byte-identical,審查程式化證明)——5 王:dire_alpha/blood_moon_beast+wolf 2/6、oathbreaker_warlord/avarice_tyrant+bandit 2/6、malacath_outcast_chief+bandit 2/**4**(probe 全過:完全體勝率 ≤2pp·TTK 分化)。**② 瘋神隨機爪牙**:譜支援 **`ids` 隨機表**(每隻獨立 `rng.choice`·**僅 ids 分支耗 rng** → 固定 id 譜 byte-identical);madness_avatar+`[skeleton,wolf,giant_rat,imperial_ghost]` 2/6;**反樂透牆 lint**:隨機表爪牙對四大魔法元素(fire/frost/shock/magic)**禁 ≥100 免疫**(固定 id 可=刻意自系牆;隨機表=1/N 鎖死某系法師的樂透,禁)——刻意不蓋 poison/physical(記載)。**③ gen_bestiary**:flags 加「召喚:xx×wave(總cap)」tag + 修 BEHAVIOR 陳舊句「不召喚」→ R87/R134 現況。

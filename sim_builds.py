@@ -63,8 +63,8 @@ def make_archer():
     c.weapon_temper = {"daedric_bow": 6}
     c.factions["dark_brotherhood"] = 6
     _equip_set(c, "glass")
-    _choices(c, {"marksman_100": "penetrator", "marksman_75": "aimed_shot", "marksman_50": "skirmish_shot",
-                 "sneak_100": "shadowblade", "sneak_75": "relentless_shadow", "acrobatics_75": "evasion"})
+    _choices(c, {"marksman_100": "rapid_shot", "marksman_75": "aimed_shot", "marksman_50": "skirmish_shot",
+                 "sneak_100": "shadowblade", "sneak_75": "relentless_shadow", "acrobatics_75": "evasion"})   # R136:penetrator(pen 已被終局物抗廢)→ 連珠箭
     stats.recompute_max_resources(c, gd, restore_full=True)
     return c
 
@@ -394,8 +394,15 @@ def _melee_sneak_act(c, boss, rng, st):
         st["vanish"] += 1; combat.player_vanish_cost(c); st["opening"] = True
         st["skip_boss"] = False; return
     combat.player_attack_cost(c, gd)
-    combat.resolve_attack(c, boss, gd, rng, sneak_attack=st["opening"])
+    _ev = combat.resolve_attack(c, boss, gd, rng, sneak_attack=st["opening"])
     st["opening"] = False
+    # R136 連珠箭(marksman_100 rapid_shot):持弓**命中後**機率追加一箭(普通擊 sneak=False·鏡像 main.py)。
+    # 🔴 assassin 無 marksman 里程碑 → xs=0 → 不擲 rng → byte-identical。
+    if _ev.get("hit") and combat.is_alive(boss):
+        xs = mastery.weapon_mod(c, gd, "marksman").get("extra_shot", 0.0) \
+            if gd.item(c.weapon).get("archetype") == "bow" else 0.0
+        if xs and rng.chance(xs):
+            combat.resolve_attack(c, boss, gd, rng, sneak_attack=False)
 
 
 def _attack_act(c, boss, rng, st):

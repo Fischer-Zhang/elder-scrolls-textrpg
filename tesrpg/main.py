@@ -643,6 +643,8 @@ def _choose_combat_action(state: GameState, gamedata: GameData, enemies: list, a
             opts.append(("crippling", "牽制射（削弱目標攻勢)"))
         if mastery.has_bow_technique(player, gamedata, "skirmish") and vanish_used < vcap:
             opts.append(("skirmish", "散兵走位（射一箭後遁走)"))
+        if mastery.has_bow_technique(player, gamedata, "volley") and sum(1 for e in enemies if combat.is_alive(e)) >= 2:
+            opts.append(("volley", "箭雨（齊射全體 60% 傷害 · 倍耗體)"))   # R136:單敵時無意義 → 不顯示
     # 坐騎戰技(僅野外騎乘遭遇的第一回合;戰馬+近戰=衝鋒、獵馬+弓=騎射)
     if mounted and first_round and mounts.can_charge(player, gamedata, True):
         opts.append(("charge", "🐎 衝鋒（坐騎開場突擊 · 長槍藉馬勢洞穿)"))
@@ -981,6 +983,20 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
         if not combat.is_alive(e) and magic.has_soul_trap(e):
             trapped_kills.add(id(e))
 
+    def _rapid_extra_arrow(tgt, prev_ev):
+        """R136 連珠箭(marksman_100):持弓**命中後**機率追加一箭(prev_ev 落空不觸發·對齊描述)。
+        追加箭=普通射擊(🔴 sneak_attack=False → 不碰 SOLO_SNEAK 夾,鏡像 R63 追擊)、免額外耗體。
+        非弓手/無里程碑 → 機率 0 → 不擲 rng。"""
+        if not (prev_ev.get("hit") and combat.is_alive(tgt)
+                and gamedata.item(player.weapon).get("archetype") == "bow"
+                and not getattr(player, "beast_form", False)):
+            return
+        xs = mastery.weapon_mod(player, gamedata, "marksman").get("extra_shot", 0.0)
+        if xs and state.rng.chance(xs):
+            ui.message("你指間連珠,順勢追加一箭!", style="cyan")
+            ui.combat_event(combat.resolve_attack(player, tgt, gamedata, state.rng,
+                                                  sneak_attack=False), gamedata)
+
     # 忠誠弧頂點(戰術型):開場即套盟友限定光環,使第一回合的同伴也受惠(後續逐回合於回合末刷新)
     _apply_companion_capstone_auras(player, gamedata, roster, battle["allies"])
 
@@ -1042,8 +1058,8 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
                 # 🔴 紅線:獸形攻擊永不吃偷襲倍率(變身破壞潛行)→ solo boss 夾限不被觸碰。
                 # 即使帶著殘留獸形入場 + 潛近成功(opening=True),此 guard 也使首爪不偷襲。
                 sneak = opening and not getattr(player, "beast_form", False)
-                ui.combat_event(combat.resolve_attack(player, tgt, gamedata, state.rng,
-                                                      sneak_attack=sneak), gamedata)
+                _atk_ev = combat.resolve_attack(player, tgt, gamedata, state.rng, sneak_attack=sneak)
+                ui.combat_event(_atk_ev, gamedata)
                 # R63 速度第二段:過 100 漸近 30% 機率追擊一記。追擊強制 sneak_attack=False
                 # → 普通擊(不碰 SOLO_SNEAK 夾;首擊已耗 opening),耗體力自限,不破 solo 秒殺紅線。
                 if combat.is_alive(tgt) and state.rng.chance(
@@ -1052,6 +1068,7 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
                     ui.message("你身形如電,順勢追擊!", style="cyan")
                     ui.combat_event(combat.resolve_attack(player, tgt, gamedata, state.rng,
                                                           sneak_attack=False), gamedata)
+                _rapid_extra_arrow(tgt, _atk_ev)   # R136 連珠箭(命中後才觸發;非弓手 0 機率不擲 rng)
         elif action["type"] in ("aimed", "crippling", "skirmish"):   # 弓手散兵武技
             tgt = action["target"]
             if combat.is_alive(tgt):
@@ -1059,9 +1076,10 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
                 if action["type"] == "aimed":
                     combat.player_attack_cost(player, gamedata)       # 瞄準蓄力:額外耗體
                 sneak = opening and not getattr(player, "beast_form", False)
-                ui.combat_event(combat.resolve_attack(player, tgt, gamedata, state.rng,
-                                                      sneak_attack=sneak,
-                                                      aimed=(action["type"] == "aimed")), gamedata)
+                _tech_ev = combat.resolve_attack(player, tgt, gamedata, state.rng,
+                                                 sneak_attack=sneak,
+                                                 aimed=(action["type"] == "aimed"))
+                ui.combat_event(_tech_ev, gamedata)
                 if action["type"] == "crippling" and combat.is_alive(tgt):
                     magic.apply_control(tgt, "weaken", gamedata, state.rng,   # R44:集中 helper
                                         magnitude=formulas.CRIPPLING_WEAKEN, turns=formulas.CRIPPLING_TURNS)
@@ -1075,6 +1093,18 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
                         ui.message("你射出一箭,旋即翻身遁走 —— 重獲偷襲先機。", style="bold magenta")
                     else:
                         ui.message("你射後欲走,卻被敵人緊咬不放。", style="grey70")
+                if action["type"] in ("aimed", "crippling"):
+                    _rapid_extra_arrow(tgt, _tech_ev)   # R136 連珠箭:單體射擊技命中後也可觸發(散兵/箭雨不觸發)
+        elif action["type"] == "volley":   # R136 箭雨:齊射全體(每箭 60% 傷害·倍耗體·🔴 永不吃偷襲倍率)
+            combat.player_attack_cost(player, gamedata)
+            combat.player_attack_cost(player, gamedata)       # 倍耗體(同瞄準射蓄力)
+            ui.message("你張弓連珠,一輪箭雨傾瀉而下!", style="bold cyan")
+            for e in list(alive_e()):
+                if combat.is_alive(e) and combat.is_alive(player):
+                    ui.combat_event(combat.resolve_attack(player, e, gamedata, state.rng,
+                                                          sneak_attack=False,
+                                                          damage_factor=formulas.VOLLEY_DAMAGE_FACTOR),
+                                    gamedata)
         elif action["type"] == "charge":   # 坐騎「衝鋒」(開場;近戰/長槍;不走偷襲倍率,受 solo 夾限)
             tgt = action["target"]
             if combat.is_alive(tgt):

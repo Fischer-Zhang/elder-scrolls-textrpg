@@ -686,6 +686,9 @@ def weapon_mod(char, gamedata: GameData, wpn_skill_id: str | None) -> dict:
     參數:hit(命中+)/power(傷害×(1+power),在偷襲倍率之前套)/pen(破甲+)/
          recoil(自損=造成傷害×recoil,不致死)/fatigue(一擊額外耗體)/
          poise_rate(徒手失衡積累×(1+poise_rate),僅 hand_to_hand 命中時由 combat 讀)/
+         extra_shot(R136 連珠箭:弓命中後追加一箭的機率;追加箭=普通射擊 sneak=False,main/sim 動作層讀)/
+         exploit(R136 獵手之眼:目標帶控場狀態〔衰/踉/緩/凍麻/懼/麻痺〕→ 補傷 raw×exploit,
+                 走 power_bonus 車道=偷襲倍率後相加·受 solo 夾 → 守紅線;combat 讀)/
          on_hit_status({kind:stagger|weaken, chance, magnitude?, turns?})。
     """
     if not wpn_skill_id or not hasattr(char, "base_skill"):
@@ -696,7 +699,7 @@ def weapon_mod(char, gamedata: GameData, wpn_skill_id: str | None) -> dict:
     for opt in _chosen_options_by_kind(char, gamedata, "weapon_mod"):
         if opt.get("target") != wpn_skill_id:
             continue
-        for k in ("hit", "power", "pen", "fatigue", "recoil", "poise_rate"):
+        for k in ("hit", "power", "pen", "fatigue", "recoil", "poise_rate", "extra_shot", "exploit"):
             if k in opt:
                 merged[k] = merged.get(k, 0) + opt[k]
         if "on_hit_status" in opt:

@@ -144,6 +144,69 @@ def test_aimed_shot_stronger_but_capped():
     assert worst <= cap
 
 
+def test_volley_damage_factor_and_gating_r136():
+    """R136 箭雨:damage_factor 0.6 → 每箭顯著弱於全力一箭(預設 1.0 = 行為不變);
+    marksman_75 選 volley_shot → has_bow_technique('volley') 解鎖(與 aimed 真二選一)。"""
+    gd, c = _melee(blade=0, weapon="hunting_bow")
+    c.skills["marksman"] = 80
+    def shot(factor, seed):
+        _, m = _melee(blade=0, weapon="hunting_bow"); m.skills["marksman"] = 80
+        foe = combat.spawn_creature(gd, "bandit", RNG(seed)); foe.health = 999; foe.max_health = 999
+        return combat.resolve_attack(m, foe, gd, RNG(seed), damage_factor=factor)["damage"]
+    full = sum(shot(1.0, s) for s in range(80))
+    weak = sum(shot(formulas.VOLLEY_DAMAGE_FACTOR, s) for s in range(80))
+    assert weak < full * 0.75                                # 0.6 係數確實生效(命中/骰同序 → 直接可比)
+    # 解鎖走 bow_technique(75 節點:瞄準 vs 箭雨 真二選一)
+    gd2, m2 = _melee(blade=0, weapon="hunting_bow")
+    m2.skills["marksman"] = 80
+    from tesrpg.systems import mastery as M
+    M.choose(m2, gd2, "marksman_75", "volley_shot")
+    assert M.has_bow_technique(m2, gd2, "volley") and not M.has_bow_technique(m2, gd2, "aimed")
+
+
+def test_rapid_shot_extra_shot_param_r136():
+    """R136 連珠箭(marksman_100 取代已死的 penetrator):weapon_mod 聚合出 extra_shot 0.2;
+    非弓手/未選 → 0(main/sim 依此不擲 rng → 紅線/byte-identity 基石)。"""
+    gd, c = _melee(blade=0, weapon="hunting_bow")
+    c.skills["marksman"] = 100
+    from tesrpg.systems import mastery as M
+    assert M.weapon_mod(c, gd, "marksman").get("extra_shot", 0.0) == 0.0   # 未選 → 0
+    M.choose(c, gd, "marksman_100", "rapid_shot")
+    assert M.weapon_mod(c, gd, "marksman").get("extra_shot") == 0.2
+    assert M.weapon_mod(c, gd, "blade").get("extra_shot", 0.0) == 0.0     # target 限 marksman
+
+
+def test_hunters_eye_exploit_conditional_r136():
+    """R136 獵手之眼(marksman_100 另一側取代平淡的 steady_aim):目標帶控場狀態 → 弓傷 +20%;
+    無控場 → 無加成;dot 刻意不觸發(附魔/塗毒不可自我點燃);偷襲對 solo 仍受夾。"""
+    from tesrpg.systems import mastery as M
+    def dmg(status_kind, seed, choose=True):
+        gd2, m = _melee(blade=0, weapon="hunting_bow"); m.skills["marksman"] = 100
+        if choose:
+            M.choose(m, gd2, "marksman_100", "hunters_eye")
+        foe = combat.spawn_creature(gd2, "bandit", RNG(seed)); foe.health = 999; foe.max_health = 999
+        if status_kind:
+            foe.active_effects.append({"kind": status_kind, "magnitude": 0.3, "turns": 2})
+        return combat.resolve_attack(m, foe, gd2, RNG(seed))["damage"]
+    base = sum(dmg(None, s) for s in range(80))
+    exploited = sum(dmg("weaken", s) for s in range(80))
+    dotted = sum(dmg("dot", s) for s in range(80))
+    assert exploited > base * 1.1                      # 控場中 → 有感加成
+    assert dotted == base                              # dot 不觸發(同骰序 → 應相等)
+    # 偷襲 + exploit 對 solo 仍受夾(power_bonus 車道在夾前)
+    gd3, c = _melee(blade=0, weapon="hunting_bow"); c.skills["marksman"] = 100
+    M.choose(c, gd3, "marksman_100", "hunters_eye")
+    boss = combat.spawn_creature(gd3, "ancient_dragon", RNG(1))
+    boss.active_effects.append({"kind": "weaken", "magnitude": 0.3, "turns": 3})
+    cap = boss.max_health * formulas.SOLO_SNEAK_DAMAGE_CAP_RATIO
+    worst = 0
+    for s in range(150):
+        combat._set_hp(boss, boss.max_health)
+        boss.active_effects[:] = [{"kind": "weaken", "magnitude": 0.3, "turns": 3}]
+        worst = max(worst, combat.resolve_attack(c, boss, gd3, RNG(s), sneak_attack=True)["damage"])
+    assert worst <= cap
+
+
 def test_class_signature_spells():
     gd = get_gamedata()
     for cid, sig in (("battlemage", "flame_blade"), ("healer", "heal_other"), ("knight", "rally")):

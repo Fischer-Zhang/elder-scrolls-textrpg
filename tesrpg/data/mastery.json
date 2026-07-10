@@ -374,21 +374,20 @@
     "threshold": 100,
     "options": [
       {
-        "opt_id": "steady_aim",
-        "name": "穩準狠",
+        "opt_id": "hunters_eye",
+        "name": "獵手之眼",
         "kind": "weapon_mod",
         "target": "marksman",
-        "hit": 0.07,
-        "desc": "射術大師:箭無虛發,弓弩攻擊命中 +7%(命中,非傷害)。"
+        "exploit": 0.2,
+        "desc": "乘勢而擊:對陷入頹勢的目標(衰弱/踉蹌/遲緩/凍麻/恐懼/麻痺)弓弩傷害 +20% —— 先壓制、再處決的射手之道(補傷不吃偷襲倍率·受 solo 夾限)。"
       },
       {
-        "opt_id": "penetrator",
-        "name": "穿甲箭",
+        "opt_id": "rapid_shot",
+        "name": "連珠箭",
         "kind": "weapon_mod",
         "target": "marksman",
-        "pen": 0.15,
-        "fatigue": 4,
-        "desc": "穿甲箭頭:弓弩額外無視 15% 護甲 —— 代價是強弓難開,每箭多耗 4 體力。"
+        "extra_shot": 0.2,
+        "desc": "連珠疾射:弓弩命中後 20% 機率追加一箭(追加箭為普通射擊·不吃偷襲倍率·不受額外體力)。"
       }
     ]
   },
@@ -1379,12 +1378,11 @@
     "threshold": 75,
     "options": [
       {
-        "opt_id": "swift_shot",
-        "name": "疾矢",
-        "kind": "weapon_mod",
-        "target": "marksman",
-        "hit": 0.04,
-        "desc": "箭術漸精:弓弩命中 +4%(與其他射術流派相加)。"
+        "opt_id": "volley_shot",
+        "name": "箭雨",
+        "kind": "bow_technique",
+        "technique": "volley",
+        "desc": "漫天箭雨:一輪齊射覆蓋所有敵人,每箭 60% 傷害(倍耗體;齊射倉促、永不吃偷襲倍率)。"
       },
       {
         "opt_id": "aimed_shot",
