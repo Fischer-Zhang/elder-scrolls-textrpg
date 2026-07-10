@@ -195,6 +195,30 @@ def test_monster_physical_resist_by_category_r128():
     assert phys("mehrunes_dagon") == 50 and phys("mehrunes_dagon_diminished") == 30
 
 
+def test_monster_poison_resist_rubric_r139():
+    """R139 現實邏輯:無血肉/無代謝之軀不可被下毒 —— 不死系毒抗 ≥50(吸血鬼家族 50·白骨/幽魂 100)、
+    構造體/元素生物 100、魔族 ≥75(對齊 daedroth);元素生物自系 100 免疫;霜巨魔/巨人補火弱(TES 招牌)。"""
+    gd = get_gamedata()
+    def res(cid, k):
+        return (gd.bestiary[cid].get("resist") or {}).get(k, 0)
+    for cid, c in gd.bestiary.items():
+        if c.get("undead"):
+            assert res(cid, "poison") >= 50, f"{cid} 不死系毒抗須 ≥50(現 {res(cid,'poison')})"
+    for cid in ["skeleton", "draugr", "lich", "reanimated_thrall", "dro_mathra_shade", "time_forsaken",
+                "ancestral_ghost", "grief_shade", "twilight_sentinel", "deathless_king",
+                "gargoyle", "knight_of_order", "dwarven_spider", "dwarven_centurion",
+                "flame_atronach", "storm_atronach", "summoned_atronach",
+                "summoned_flame_atronach", "summoned_frost_atronach", "summoned_storm_atronach"]:
+        assert res(cid, "poison") == 100, f"{cid}(骨/幽/構造/元素)毒免疫(現 {res(cid,'poison')})"
+    for cid in ["dremora", "dremora_lord", "summoned_dremora", "daedroth"]:
+        assert res(cid, "poison") >= 75, f"{cid} 魔族毒抗 ≥75"
+    # 元素生物自系免疫 + 火弱直覺
+    assert res("summoned_frost_atronach", "frost") == 100 and res("summoned_atronach", "fire") == 100
+    assert res("frost_troll", "fire") <= -50 and res("frost_giant", "fire") <= -25
+    assert res("dwarven_spider", "frost") > 0 and res("dwarven_centurion", "frost") > 0   # 機關獸抗霜非弱霜
+    assert res("vampire_patriarch", "fire") < 0   # 吸血鬼家族全員弱火(TES 原典)
+
+
 def run():
     for name, fn in sorted(globals().items()):
         if name.startswith("test_") and callable(fn):

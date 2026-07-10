@@ -99,8 +99,11 @@ def test_highrock_signature_creatures_weak_to_shock():
     #                 故 shock 負值須夠負以蓋過 magic 正值,招牌怪才真弱電。
     #  jungle/fire ── 瓦倫森林=以烈焰焚林。fire ∈ MAGIC_ELEMENTS 會疊 magic 鍵,故招牌怪刻意不帶 magic 鍵。
     #  savanna/poison ── 艾爾斯維爾=練塗毒/煉金刺客。poison ∉ MAGIC_ELEMENTS,不疊 magic 鍵,負值即直接放大傷害。
+    #  🔴 R139 現實邏輯豁免:不死系(undead:true)無血肉代謝 → 不吃生態弱性軸(dro_mathra_shade
+    #     曾被此測試鎖成「弱毒 -45 且以毒攻擊的幽魂」= 鐵律零號總則違例;豁免後改 poison:100)。
     for biome, element in [("moor", "shock"), ("jungle", "fire"), ("savanna", "poison")]:
-        cids = [cid for cid, c in gd.bestiary.items() if biome in c.get("biomes", [])]
+        cids = [cid for cid, c in gd.bestiary.items()
+                if biome in c.get("biomes", []) and not c.get("undead")]
         assert len(cids) >= 5, f"{biome} 招牌怪太少:{cids}"
         for cid in cids:
             m = formulas.resist_multiplier(gd.bestiary[cid].get("resist", {}), element)

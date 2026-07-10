@@ -139,11 +139,13 @@ def is_disguised(char: Character, gamedata: GameData) -> bool:
 def _bonuses(stg: int) -> tuple[dict, dict, dict]:
     attr = {k: v * stg for k, v in STAGE_ATTR.items() if v * stg}
     skill = {k: v * stg for k, v in STAGE_SKILL.items() if v * stg}
-    # 抗性:各階皆免疫疾病;耐霜隨階成長、抗火隨階轉為弱點(負值=傷害放大)
+    # 抗性:各階皆免疫疾病;耐霜/耐毒隨階成長、抗火隨階轉為弱點(負值=傷害放大)。
+    # R139 補毒抗:不死血肉不該比 NPC 吸血鬼(新血 poison:50)還怕毒 → 15×階(滿階 60)。
     resist = {"disease": 100}
     if stg:
         resist["frost"] = 10 * stg
         resist["fire"] = -10 * stg
+        resist["poison"] = 15 * stg
     return attr, skill, resist
 
 

@@ -1412,6 +1412,22 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 
 ---
 
+### R139 · 現實邏輯審計批次 1:毒/元素抗性 rubric(無血肉之軀不可被下毒) [re-sim] [content]
+
+**承鐵律零號總則入憲後的 16-agent 全面審計**(78 發現 → 對抗驗證 67 confirmed;使用者拍板分三批修、群 7/8〔煉金主題/世界行為〕不動)。**批次 1 = 抗性斷層 22 隻**(bestiary 純資料 + 1 行 vampirism + 測試豁免):
+
+- **不死系毒抗補齊(≥50·白骨/幽魂 100)**:dro_mathra_shade **-45→100**(曾「以毒為身卻弱毒最深」·被 test_detailing savanna 弱性軸鎖死 → **軸測試豁免 undead:true**〔生態弱性軸=血肉代謝概念·不死不吃〕)、time_forsaken 0→100、reanimated_thrall {}→{frost:50, poison:100}(鏡像野生 skeleton·physical 0 守 R128 骨系)、ancestral_ghost/grief_shade/twilight_sentinel →100、deathless_king 60→100、vampire_patriarch 補全檔唯一缺席的 **fire:-25**(TES 吸血鬼弱火)+ frost 30→50 對齊家族。
+- **構造/元素毒免疫**:gargoyle/knight_of_order +poison:100(石頭/水晶不可被下毒·對齊矮人機關);atronach 全家族(敵方+召喚模板)+poison:100;**summoned_atronach(玩家「火焰元素」)fire 0→100 + frost:-25**(活火曾被火燒滿傷);summoned_frost_atronach frost 75→**100**(自系免疫對齊火/雷)。
+- **魔族毒抗**:dremora/dremora_lord/summoned_dremora +poison:75(對齊 daedroth·原自相矛盾)。
+- **元素直覺**:frost_troll +fire:**-50**(TES 巨魔弱火招牌·鏡像 bog_troll)、frost_giant +fire:-25;dwarven_spider/centurion frost **-25→+25**(機關獸抗霜·Skyrim 原典·沙漠冷血模板洩漏);sugar_vine/blighted_matron +fire:-50(植物/心木弱火);dark_moon_senche frost 60→25(暖地大貓不再比霜巨人抗凍)。
+- **玩家吸血鬼**(vampirism.py 一行):`resist["poison"]=15×stg`(滿階 60·不死血肉不再比 NPC 新血〔50〕怕毒)。
+
+**🔴 驗證**:`run_all` 119(新 `test_monster_poison_resist_rubric_r139` 守全 rubric + 掃全部 undead:true ≥50);**sim_assassin BYTE-IDENTICAL**(隔離 worktree·sim 零毒投入·火弱對物理匕首 inert);**sim_party 全牆守**(召喚師/base 死靈師 vs 達貢 0%·極致 10% 有界·無殭局 —— 召喚 atronach 抗性變動的法定檢查);BESTIARY.md 重生。零新存檔欄。
+
+**🔴 鐵律**:加不死/構造/元素怪必配毒抗(undead ≥50·白骨幽魂構造元素 100·魔族 ≥75·guard 測試自動把關);生態弱性軸(moor/jungle/savanna)**永久豁免 undead**;元素生物自系 100 免疫+對立弱點;動召喚模板抗性 → 跑 sim_party。批次 2(心智控場豁免+遠程旗標)/批次 3(公式 gate+裝備)接續。
+
+---
+
 ### R138 · 重盾「掩體」:元素卸力專屬車道 + 掩體回氣(重盾攻擊手段少的防禦端補償·遊戲內可見) [re-sim]
 
 **承 R137 後「雙手重盾種類與數值」評估**(首次實測揭露重盾被 w1H 嚴格支配:贏的場全員 100%、分化場全墊底 —— gauntlet 0%〔全戰死於消耗尾段〕·火法王 2%〔元素旁路整組防禦〕;根因三子因=護甲飽和〔AR178→195 僅 +2.1pp〕/元素旁路/防禦不產資源)+「防禦端換不到東西如何解決」探針(A 元素卸力/B 回血回氣/C 兩者;**B 原型 +6 體力 ≥ 攻擊成本 4.2 遭使用者質疑「是否無限格擋姿態」→ 數學證實成立**·衍生 B'/B''/B''' 變體全測)。**使用者定案**:**掩體回氣=體力 +2/回**(<攻擊成本 → 邊打邊回不可能·無限問題自解)+ **重盾元素卸力 70%(只受 30%)** + **機制必須遊戲內可見**。
