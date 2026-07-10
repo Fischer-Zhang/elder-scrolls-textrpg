@@ -130,7 +130,7 @@
 | 骷髏鑰匙 skeleton_key | 技能+效用 | security +20 + 撬鎖必成/不耗開鎖器(amulet;★**Nocturnal 暮光聖陵**神器,竊鑰分支;R47 換手自盜賊公會) |
 | 灰狐面具 gray_fox_mask | 效用(R47) | `talk_down_cap`:衛兵說退**賞金上限 +120**(120→240,疊 silver_pardon 320)+ 成功率下限 0.25(helmet;★**盜賊公會掌門**·提高可協商罰金) |
 | 悲傷之刃 blade_of_woe | 續航 | vampiric 吸血 50%;dmg16 dagger(★黑暗兄弟會掌門) |
-| 十字軍聖盾 crusaders_ward | 抗性 | resist magic +30%;armor 16(heavy shield;★九神騎士團掌門) |
+| 十字軍聖壁 crusaders_ward | 抗性 | resist magic +30%;armor 24(R41 轉雙手重盾;★九神騎士團掌門;R142 更名與 R108 聖物 crusader_shield「十字軍聖盾」區隔) |
 | 維蘇拉德 wuuthrad | 傷害 | berserk 最高 +30%(依已損生命);dmg23 war_axe(★戰友團掌門) |
 | 瓦巴賈克 wabbajack | 混沌(R46) | weapon_status `"wabbajack"`:命中**隨機六效果**〔元素爆發 solo 夾0.5 / 隨機控場走 `apply_control` / 回自身資源 / weaken0.20 / 回火自傷 max(1) / 回火治敵〕·回火 16% 自平衡(永不嚴格最優)·**玩家不可鍛造**·dmg10 staff(★瘋神謝歐格拉斯神器) |
 | 秩序之劍 sword_of_jyggalag | 秩序(R48) | enchant `order`:**移除傷害變異**(傷害 roll 永遠取最大 `DAMAGE_ROLL_HI`=1.15·≈平均 +15% + 零隨機)·**反 Wabbajack**·always-max 在 solo 偷襲夾之前+sword 偷襲×1.0→永不秒殺 solo·dmg26 1H sword(★秩序之主賈格拉格神器) |

@@ -137,8 +137,8 @@
   "name": "黑檀盾",
   "slot": "shield",
   "weight_class": "heavy",
-  "armor_rating": 10,
-  "value": 260,
+  "armor_rating": 13,
+  "value": 400,
   "weight": 13,
   "material": "ebony"
  },
@@ -576,7 +576,7 @@
   }
  },
  "crusaders_ward": {
-  "name": "十字軍聖盾",
+  "name": "十字軍聖壁",
   "slot": "shield",
   "weight_class": "heavy",
   "armor_rating": 24,

@@ -1,272 +1,795 @@
 {
-  "fists": {
-    "name": "徒手",
-    "skill": "hand_to_hand",
-    "damage": 4,
-    "value": 0,
-    "weight": 0,
-    "archetype": "hand_to_hand",
-    "speed": 1.2
+ "fists": {
+  "name": "徒手",
+  "skill": "hand_to_hand",
+  "damage": 4,
+  "value": 0,
+  "weight": 0,
+  "archetype": "hand_to_hand",
+  "speed": 1.2
+ },
+ "iron_dagger": {
+  "name": "鐵匕首",
+  "skill": "blade",
+  "damage": 7,
+  "value": 8,
+  "weight": 3,
+  "archetype": "dagger",
+  "speed": 1.4
+ },
+ "iron_sword": {
+  "name": "鐵長劍",
+  "skill": "blade",
+  "damage": 10,
+  "value": 25,
+  "weight": 9,
+  "archetype": "sword",
+  "speed": 1.0
+ },
+ "iron_mace": {
+  "name": "鐵釘錘",
+  "skill": "blunt",
+  "damage": 11,
+  "value": 30,
+  "weight": 12,
+  "archetype": "mace",
+  "speed": 0.75
+ },
+ "iron_war_axe": {
+  "name": "鐵短斧",
+  "skill": "blunt",
+  "damage": 12,
+  "value": 35,
+  "weight": 13,
+  "archetype": "axe",
+  "speed": 0.75
+ },
+ "steel_war_axe": {
+  "name": "鋼短斧",
+  "skill": "blunt",
+  "damage": 13,
+  "value": 110,
+  "weight": 14,
+  "archetype": "axe",
+  "speed": 0.78
+ },
+ "dwarven_war_axe": {
+  "name": "矮人短斧",
+  "skill": "blunt",
+  "damage": 16,
+  "value": 310,
+  "weight": 15,
+  "archetype": "axe",
+  "speed": 0.8
+ },
+ "hunting_bow": {
+  "name": "獵弓",
+  "skill": "marksman",
+  "damage": 9,
+  "value": 30,
+  "weight": 7,
+  "archetype": "bow",
+  "speed": 0.9
+ },
+ "steel_dagger": {
+  "name": "鋼匕首",
+  "skill": "blade",
+  "damage": 9,
+  "value": 30,
+  "weight": 4,
+  "archetype": "dagger",
+  "speed": 1.4
+ },
+ "steel_sword": {
+  "name": "鋼長劍",
+  "skill": "blade",
+  "damage": 13,
+  "value": 90,
+  "weight": 11,
+  "archetype": "sword",
+  "speed": 1.0
+ },
+ "steel_mace": {
+  "name": "鋼釘錘",
+  "skill": "blunt",
+  "damage": 15,
+  "value": 110,
+  "weight": 14,
+  "archetype": "mace",
+  "speed": 0.75
+ },
+ "long_bow": {
+  "name": "長弓",
+  "skill": "marksman",
+  "damage": 12,
+  "value": 100,
+  "weight": 9,
+  "archetype": "bow",
+  "speed": 0.9
+ },
+ "glass_dagger": {
+  "name": "玻璃匕首",
+  "skill": "blade",
+  "damage": 12,
+  "value": 150,
+  "weight": 4,
+  "archetype": "dagger",
+  "speed": 1.4
+ },
+ "elven_sword": {
+  "name": "精靈長劍",
+  "skill": "blade",
+  "damage": 16,
+  "value": 280,
+  "weight": 11,
+  "archetype": "sword",
+  "speed": 1.0
+ },
+ "ebony_sword": {
+  "name": "黑檀長劍",
+  "skill": "blade",
+  "damage": 19,
+  "value": 720,
+  "weight": 13,
+  "archetype": "sword",
+  "speed": 1.0
+ },
+ "dwarven_mace": {
+  "name": "矮人釘錘",
+  "skill": "blunt",
+  "damage": 18,
+  "value": 310,
+  "weight": 15,
+  "archetype": "mace",
+  "speed": 0.75
+ },
+ "elven_bow": {
+  "name": "精靈弓",
+  "skill": "marksman",
+  "damage": 15,
+  "value": 270,
+  "weight": 9,
+  "archetype": "bow",
+  "speed": 0.9
+ },
+ "flame_staff": {
+  "name": "烈焰法杖",
+  "skill": "destruction",
+  "damage": 6,
+  "value": 260,
+  "weight": 8,
+  "archetype": "staff",
+  "speed": 1.0,
+  "enchant": {
+   "kind": "weapon_element",
+   "element": "fire",
+   "magnitude": 12
+  }
+ },
+ "frost_staff": {
+  "name": "冰霜法杖",
+  "skill": "destruction",
+  "damage": 6,
+  "value": 260,
+  "weight": 8,
+  "archetype": "staff",
+  "speed": 1.0,
+  "enchant": {
+   "kind": "weapon_element",
+   "element": "frost",
+   "magnitude": 12
+  }
+ },
+ "storm_staff": {
+  "name": "雷暴法杖",
+  "skill": "destruction",
+  "damage": 6,
+  "value": 300,
+  "weight": 8,
+  "archetype": "staff",
+  "speed": 1.0,
+  "enchant": {
+   "kind": "weapon_element",
+   "element": "shock",
+   "magnitude": 14
+  }
+ },
+ "magicka_staff": {
+  "name": "法力法杖",
+  "skill": "mysticism",
+  "damage": 5,
+  "value": 320,
+  "weight": 7,
+  "archetype": "staff",
+  "speed": 1.0,
+  "on_hit_self": {
+   "stat": "magicka",
+   "magnitude": 8
   },
-  "iron_dagger": {
-    "name": "鐵匕首",
-    "skill": "blade",
-    "damage": 7,
-    "value": 8,
-    "weight": 3,
-    "archetype": "dagger",
-    "speed": 1.4
+  "spell_focus": {
+   "power": 0.1
+  }
+ },
+ "iron_spear": {
+  "name": "鐵長槍",
+  "skill": "blade",
+  "damage": 11,
+  "value": 35,
+  "weight": 11,
+  "archetype": "spear",
+  "speed": 0.9
+ },
+ "steel_spear": {
+  "name": "鋼長槍",
+  "skill": "blade",
+  "damage": 14,
+  "value": 95,
+  "weight": 13,
+  "archetype": "spear",
+  "speed": 0.9
+ },
+ "elven_spear": {
+  "name": "精靈長槍",
+  "skill": "blade",
+  "damage": 17,
+  "value": 200,
+  "weight": 13,
+  "archetype": "spear",
+  "speed": 0.9
+ },
+ "glass_spear": {
+  "name": "玻璃長槍",
+  "skill": "blade",
+  "damage": 19,
+  "value": 210,
+  "weight": 9,
+  "archetype": "spear",
+  "speed": 0.95
+ },
+ "ebony_spear": {
+  "name": "黑檀長槍",
+  "skill": "blade",
+  "damage": 21,
+  "value": 760,
+  "weight": 15,
+  "archetype": "spear",
+  "speed": 0.9
+ },
+ "daedric_dagger": {
+  "name": "魔族匕首",
+  "skill": "blade",
+  "damage": 14,
+  "value": 500,
+  "weight": 5,
+  "archetype": "dagger",
+  "speed": 1.4,
+  "material": "daedric"
+ },
+ "daedric_sword": {
+  "name": "魔族長劍",
+  "skill": "blade",
+  "damage": 22,
+  "value": 900,
+  "weight": 14,
+  "archetype": "sword",
+  "speed": 1.0,
+  "material": "daedric"
+ },
+ "daedric_mace": {
+  "name": "魔族釘錘",
+  "skill": "blunt",
+  "damage": 23,
+  "value": 850,
+  "weight": 16,
+  "archetype": "mace",
+  "speed": 0.75,
+  "material": "daedric"
+ },
+ "daedric_war_axe": {
+  "name": "魔族短斧",
+  "skill": "blunt",
+  "damage": 22,
+  "value": 800,
+  "weight": 16,
+  "archetype": "axe",
+  "speed": 0.85,
+  "material": "daedric"
+ },
+ "iron_warhammer": {
+  "name": "鐵戰錘",
+  "skill": "blunt",
+  "damage": 16,
+  "value": 60,
+  "weight": 22,
+  "archetype": "mace",
+  "speed": 0.6,
+  "two_handed": true
+ },
+ "steel_warhammer": {
+  "name": "鋼戰錘",
+  "skill": "blunt",
+  "damage": 22,
+  "value": 200,
+  "weight": 24,
+  "archetype": "mace",
+  "speed": 0.6,
+  "two_handed": true
+ },
+ "dwarven_warhammer": {
+  "name": "矮人戰錘",
+  "skill": "blunt",
+  "damage": 26,
+  "value": 430,
+  "weight": 26,
+  "archetype": "mace",
+  "speed": 0.6,
+  "two_handed": true
+ },
+ "ebony_warhammer": {
+  "name": "黑檀戰錘",
+  "skill": "blunt",
+  "damage": 30,
+  "value": 790,
+  "weight": 28,
+  "archetype": "mace",
+  "speed": 0.58,
+  "two_handed": true
+ },
+ "daedric_warhammer": {
+  "name": "魔族戰錘",
+  "skill": "blunt",
+  "damage": 34,
+  "value": 1050,
+  "weight": 30,
+  "archetype": "mace",
+  "speed": 0.55,
+  "two_handed": true,
+  "material": "daedric"
+ },
+ "iron_battleaxe": {
+  "name": "鐵戰斧",
+  "skill": "blunt",
+  "damage": 15,
+  "value": 60,
+  "weight": 20,
+  "archetype": "axe",
+  "speed": 0.65,
+  "two_handed": true
+ },
+ "steel_battleaxe": {
+  "name": "鋼戰斧",
+  "skill": "blunt",
+  "damage": 20,
+  "value": 200,
+  "weight": 22,
+  "archetype": "axe",
+  "speed": 0.65,
+  "two_handed": true
+ },
+ "dwarven_battleaxe": {
+  "name": "矮人戰斧",
+  "skill": "blunt",
+  "damage": 24,
+  "value": 430,
+  "weight": 23,
+  "archetype": "axe",
+  "speed": 0.65,
+  "two_handed": true
+ },
+ "ebony_battleaxe": {
+  "name": "黑檀戰斧",
+  "skill": "blunt",
+  "damage": 28,
+  "value": 790,
+  "weight": 25,
+  "archetype": "axe",
+  "speed": 0.62,
+  "two_handed": true
+ },
+ "daedric_battleaxe": {
+  "name": "魔族戰斧",
+  "skill": "blunt",
+  "damage": 32,
+  "value": 1050,
+  "weight": 26,
+  "archetype": "axe",
+  "speed": 0.6,
+  "two_handed": true,
+  "material": "daedric"
+ },
+ "daedric_bow": {
+  "name": "魔族弓",
+  "skill": "marksman",
+  "damage": 19,
+  "value": 800,
+  "weight": 12,
+  "archetype": "bow",
+  "speed": 0.9,
+  "material": "daedric"
+ },
+ "daedric_spear": {
+  "name": "魔族長槍",
+  "skill": "blade",
+  "damage": 24,
+  "value": 880,
+  "weight": 16,
+  "archetype": "spear",
+  "speed": 0.9,
+  "material": "daedric"
+ },
+ "daedric_staff": {
+  "name": "魔族法杖",
+  "skill": "destruction",
+  "damage": 9,
+  "value": 600,
+  "weight": 7,
+  "archetype": "staff",
+  "speed": 1.0,
+  "enchant": {
+   "kind": "weapon_element",
+   "element": "shock",
+   "magnitude": 22
+  }
+ },
+ "mehrunes_razor": {
+  "name": "魔銳茲之刃",
+  "skill": "blade",
+  "damage": 16,
+  "value": 2000,
+  "weight": 4,
+  "archetype": "dagger",
+  "speed": 1.5,
+  "material": "daedric",
+  "enchant": {
+   "kind": "weapon_element",
+   "element": "shock",
+   "magnitude": 25
+  }
+ },
+ "beast_claws": {
+  "name": "獸爪",
+  "skill": "hand_to_hand",
+  "damage": 16,
+  "value": 0,
+  "weight": 0,
+  "archetype": "hand_to_hand",
+  "speed": 1.3
+ },
+ "dawnfang": {
+  "name": "黎明之牙",
+  "skill": "blade",
+  "damage": 24,
+  "value": 2200,
+  "weight": 13,
+  "archetype": "sword",
+  "speed": 1.1,
+  "enchant": {
+   "kind": "weapon_element",
+   "element": "fire",
+   "magnitude": 28
+  }
+ },
+ "skyburner": {
+  "name": "焚天劍",
+  "skill": "blade",
+  "damage": 23,
+  "value": 2000,
+  "weight": 16,
+  "archetype": "sword",
+  "speed": 1.0,
+  "enchant": {
+   "kind": "weapon_element",
+   "element": "fire",
+   "magnitude": 26
+  }
+ },
+ "valor_blade": {
+  "name": "百戰勳刃",
+  "skill": "blade",
+  "damage": 22,
+  "value": 1900,
+  "weight": 14,
+  "archetype": "sword",
+  "speed": 1.0,
+  "enchant": {
+   "kind": "weapon_status",
+   "status": "regen",
+   "magnitude": 3,
+   "turns": 3
+  }
+ },
+ "staff_of_magnus": {
+  "name": "馬格努斯之杖",
+  "skill": "destruction",
+  "damage": 11,
+  "value": 2000,
+  "weight": 7,
+  "archetype": "staff",
+  "speed": 1.0,
+  "enchant": {
+   "kind": "weapon_element",
+   "element": "shock",
+   "magnitude": 26
   },
-  "iron_sword": {
-    "name": "鐵長劍",
-    "skill": "blade",
-    "damage": 10,
-    "value": 25,
-    "weight": 9,
-    "archetype": "sword",
-    "speed": 1.0
-  },
-  "iron_mace": {
-    "name": "鐵釘錘",
-    "skill": "blunt",
-    "damage": 11,
-    "value": 30,
-    "weight": 12,
-    "archetype": "mace",
-    "speed": 0.75
-  },
-  "iron_war_axe": {
-    "name": "鐵短斧",
-    "skill": "blunt",
-    "damage": 12,
-    "value": 35,
-    "weight": 13,
-    "archetype": "axe",
-    "speed": 0.75
-  },
-  "steel_war_axe": {
-    "name": "鋼短斧",
-    "skill": "blunt",
-    "damage": 13,
-    "value": 110,
-    "weight": 14,
-    "archetype": "axe",
-    "speed": 0.78
-  },
-  "dwarven_war_axe": {
-    "name": "矮人短斧",
-    "skill": "blunt",
-    "damage": 16,
-    "value": 310,
-    "weight": 15,
-    "archetype": "axe",
-    "speed": 0.80
-  },
-  "hunting_bow": {
-    "name": "獵弓",
-    "skill": "marksman",
-    "damage": 9,
-    "value": 30,
-    "weight": 7,
-    "archetype": "bow",
-    "speed": 0.9
-  },
-  "steel_dagger": {
-    "name": "鋼匕首",
-    "skill": "blade",
-    "damage": 9,
-    "value": 30,
-    "weight": 4,
-    "archetype": "dagger",
-    "speed": 1.4
-  },
-  "steel_sword": {
-    "name": "鋼長劍",
-    "skill": "blade",
-    "damage": 13,
-    "value": 90,
-    "weight": 11,
-    "archetype": "sword",
-    "speed": 1.0
-  },
-  "steel_mace": {
-    "name": "鋼釘錘",
-    "skill": "blunt",
-    "damage": 15,
-    "value": 110,
-    "weight": 14,
-    "archetype": "mace",
-    "speed": 0.75
-  },
-  "long_bow": {
-    "name": "長弓",
-    "skill": "marksman",
-    "damage": 12,
-    "value": 100,
-    "weight": 9,
-    "archetype": "bow",
-    "speed": 0.9
-  },
-  "glass_dagger": {
-    "name": "玻璃匕首",
-    "skill": "blade",
-    "damage": 12,
-    "value": 150,
-    "weight": 4,
-    "archetype": "dagger",
-    "speed": 1.4
-  },
-  "elven_sword": {
-    "name": "精靈長劍",
-    "skill": "blade",
-    "damage": 16,
-    "value": 280,
-    "weight": 11,
-    "archetype": "sword",
-    "speed": 1.0
-  },
-  "ebony_sword": {
-    "name": "黑檀長劍",
-    "skill": "blade",
-    "damage": 19,
-    "value": 720,
-    "weight": 13,
-    "archetype": "sword",
-    "speed": 1.0
-  },
-  "dwarven_mace": {
-    "name": "矮人釘錘",
-    "skill": "blunt",
-    "damage": 18,
-    "value": 310,
-    "weight": 15,
-    "archetype": "mace",
-    "speed": 0.75
-  },
-  "elven_bow": {
-    "name": "精靈弓",
-    "skill": "marksman",
-    "damage": 15,
-    "value": 270,
-    "weight": 9,
-    "archetype": "bow",
-    "speed": 0.9
-  },
-  "flame_staff": {
-    "name": "烈焰法杖",
-    "skill": "destruction",
-    "damage": 6,
-    "value": 260,
-    "weight": 8,
-    "archetype": "staff",
-    "speed": 1.0,
-    "enchant": {
-      "kind": "weapon_element",
-      "element": "fire",
-      "magnitude": 12
-    }
-  },
-  "frost_staff": {
-    "name": "冰霜法杖",
-    "skill": "destruction",
-    "damage": 6,
-    "value": 260,
-    "weight": 8,
-    "archetype": "staff",
-    "speed": 1.0,
-    "enchant": {
-      "kind": "weapon_element",
-      "element": "frost",
-      "magnitude": 12
-    }
-  },
-  "storm_staff": {
-    "name": "雷暴法杖",
-    "skill": "destruction",
-    "damage": 6,
-    "value": 300,
-    "weight": 8,
-    "archetype": "staff",
-    "speed": 1.0,
-    "enchant": {
-      "kind": "weapon_element",
-      "element": "shock",
-      "magnitude": 14
-    }
-  },
-  "magicka_staff": {
-    "name": "法力法杖",
-    "skill": "mysticism",
-    "damage": 5,
-    "value": 320,
-    "weight": 7,
-    "archetype": "staff",
-    "speed": 1.0,
-    "on_hit_self": {
-      "stat": "magicka",
-      "magnitude": 8
-    },
-    "spell_focus": {
-      "power": 0.1
-    }
-  },
-
-  "iron_spear":    {"name": "鐵長槍",   "skill": "blade", "damage": 11, "value": 35,  "weight": 11, "archetype": "spear", "speed": 0.9},
-  "steel_spear":   {"name": "鋼長槍",   "skill": "blade", "damage": 14, "value": 95,  "weight": 13, "archetype": "spear", "speed": 0.9},
-  "elven_spear":   {"name": "精靈長槍", "skill": "blade", "damage": 17, "value": 280, "weight": 13, "archetype": "spear", "speed": 0.9},
-  "glass_spear":   {"name": "玻璃長槍", "skill": "blade", "damage": 19, "value": 210, "weight": 9,  "archetype": "spear", "speed": 0.95},
-  "ebony_spear":   {"name": "黑檀長槍", "skill": "blade", "damage": 21, "value": 760, "weight": 15, "archetype": "spear", "speed": 0.9},
-
-  "daedric_dagger":  {"name": "魔族匕首", "skill": "blade",   "damage": 14, "value": 500, "weight": 5,  "archetype": "dagger", "speed": 1.4,  "material": "daedric"},
-  "daedric_sword":   {"name": "魔族長劍", "skill": "blade",   "damage": 22, "value": 900, "weight": 14, "archetype": "sword",  "speed": 1.0,  "material": "daedric"},
-  "daedric_mace":    {"name": "魔族釘錘", "skill": "blunt",   "damage": 23, "value": 850, "weight": 16, "archetype": "mace",   "speed": 0.75, "material": "daedric"},
-  "daedric_war_axe": {"name": "魔族短斧", "skill": "blunt",   "damage": 22, "value": 800, "weight": 14, "archetype": "axe",    "speed": 0.85, "material": "daedric"},
-  "iron_warhammer":     {"name": "鐵戰錘",   "skill": "blunt", "damage": 16, "value": 60,   "weight": 22, "archetype": "mace", "speed": 0.60, "two_handed": true},
-  "steel_warhammer":    {"name": "鋼戰錘",   "skill": "blunt", "damage": 22, "value": 200,  "weight": 24, "archetype": "mace", "speed": 0.60, "two_handed": true},
-  "dwarven_warhammer":  {"name": "矮人戰錘", "skill": "blunt", "damage": 26, "value": 430,  "weight": 26, "archetype": "mace", "speed": 0.60, "two_handed": true},
-  "ebony_warhammer":    {"name": "黑檀戰錘", "skill": "blunt", "damage": 30, "value": 790,  "weight": 28, "archetype": "mace", "speed": 0.58, "two_handed": true},
-  "daedric_warhammer":  {"name": "魔族戰錘", "skill": "blunt", "damage": 34, "value": 1050, "weight": 30, "archetype": "mace", "speed": 0.55, "two_handed": true, "material": "daedric"},
-  "iron_battleaxe":     {"name": "鐵戰斧",   "skill": "blunt", "damage": 15, "value": 60,   "weight": 20, "archetype": "axe",  "speed": 0.65, "two_handed": true},
-  "steel_battleaxe":    {"name": "鋼戰斧",   "skill": "blunt", "damage": 20, "value": 200,  "weight": 22, "archetype": "axe",  "speed": 0.65, "two_handed": true},
-  "dwarven_battleaxe":  {"name": "矮人戰斧", "skill": "blunt", "damage": 24, "value": 430,  "weight": 23, "archetype": "axe",  "speed": 0.65, "two_handed": true},
-  "ebony_battleaxe":    {"name": "黑檀戰斧", "skill": "blunt", "damage": 28, "value": 790,  "weight": 25, "archetype": "axe",  "speed": 0.62, "two_handed": true},
-  "daedric_battleaxe":  {"name": "魔族戰斧", "skill": "blunt", "damage": 32, "value": 1050, "weight": 26, "archetype": "axe",  "speed": 0.60, "two_handed": true, "material": "daedric"},
-  "daedric_bow":     {"name": "魔族弓",   "skill": "marksman","damage": 19, "value": 800, "weight": 10, "archetype": "bow",    "speed": 0.9,  "material": "daedric"},
-  "daedric_spear":   {"name": "魔族長槍", "skill": "blade",   "damage": 24, "value": 880, "weight": 16, "archetype": "spear",  "speed": 0.9,  "material": "daedric"},
-
-  "daedric_staff": {"name": "魔族法杖", "skill": "destruction", "damage": 9, "value": 600, "weight": 7, "archetype": "staff", "speed": 1.0, "enchant": {"kind": "weapon_element", "element": "shock", "magnitude": 22}},
-
-  "mehrunes_razor": {"name": "魔銳茲之刃", "skill": "blade", "damage": 16, "value": 2000, "weight": 4, "archetype": "dagger", "speed": 1.5, "material": "daedric", "enchant": {"kind": "weapon_element", "element": "shock", "magnitude": 25}},
-  "beast_claws": {"name": "獸爪", "skill": "hand_to_hand", "damage": 16, "value": 0, "weight": 0, "archetype": "hand_to_hand", "speed": 1.3},
-  "dawnfang": {"name": "黎明之牙", "skill": "blade", "damage": 24, "value": 2200, "weight": 13, "archetype": "sword", "speed": 1.1, "enchant": {"kind": "weapon_element", "element": "fire", "magnitude": 28}},
-  "skyburner": {"name": "焚天劍", "skill": "blade", "damage": 23, "value": 2000, "weight": 16, "archetype": "sword", "speed": 1.0, "enchant": {"kind": "weapon_element", "element": "fire", "magnitude": 26}},
-
-  "valor_blade":     {"name": "百戰勳刃",   "skill": "blade", "damage": 22, "value": 1900, "weight": 14, "archetype": "sword",   "speed": 1.0, "enchant": {"kind": "weapon_status", "status": "regen",    "magnitude": 3, "turns": 3}},
-  "staff_of_magnus": {"name": "馬格努斯之杖", "skill": "destruction", "damage": 11, "value": 2000, "weight": 7, "archetype": "staff", "speed": 1.0, "enchant": {"kind": "weapon_element", "element": "shock", "magnitude": 26}, "spell_focus": {"power": 0.2, "flat": 20, "elements": ["fire", "frost", "shock"]}},
-  "blade_of_woe":    {"name": "悲傷之刃",   "skill": "blade", "damage": 16, "value": 2000, "weight": 4,  "archetype": "dagger",  "speed": 1.5, "enchant": {"kind": "weapon_status", "status": "vampiric", "magnitude": 50}},
-  "wuuthrad":        {"name": "維蘇拉德",   "skill": "blunt", "damage": 32, "value": 2000, "weight": 26, "archetype": "axe", "speed": 0.65, "two_handed": true, "enchant": {"kind": "berserk", "magnitude": 30}},
-  "mace_of_molag_bal": {"name": "莫拉格巴爾之鎚", "skill": "blunt", "damage": 26, "value": 2100, "weight": 18, "archetype": "mace", "speed": 0.7, "material": "daedric", "enchant": {"kind": "weapon_status", "status": "absorb_health", "magnitude": 10}},
-  "ebony_blade": {"name": "黑檀刃", "skill": "blade", "damage": 24, "value": 2300, "weight": 12, "archetype": "sword", "speed": 1.1, "enchant": {"kind": "weapon_status", "status": "vampiric", "magnitude": 50}},
-  "sanguine_rose": {"name": "桑格玖完之薔薇", "skill": "conjuration", "damage": 7, "value": 2300, "weight": 7, "archetype": "staff", "speed": 1.0, "on_hit_self": {"stat": "magicka", "magnitude": 12}},
-  "volendrung": {"name": "沃倫鎚", "skill": "blunt", "damage": 38, "value": 2400, "weight": 32, "archetype": "mace", "speed": 0.55, "two_handed": true, "enchant": {"kind": "weapon_status", "status": "absorb_fatigue", "magnitude": 15}},
-  "dawnbreaker": {"name": "破曉者", "skill": "blade", "damage": 24, "value": 2400, "weight": 14, "archetype": "sword", "speed": 1.1, "enchant": {"kind": "weapon_status", "status": "burn", "element": "fire", "magnitude": 10, "turns": 3}},
-  "sword_of_jyggalag": {"name": "秩序之劍", "skill": "blade", "damage": 26, "value": 2400, "weight": 14, "archetype": "sword", "speed": 1.0, "enchant": {"kind": "order"}},
-  "skull_of_corruption": {"name": "腐敗之顱", "skill": "destruction", "damage": 11, "value": 2400, "weight": 7, "archetype": "staff", "speed": 1.0, "enchant": {"kind": "weapon_element", "element": "shock", "magnitude": 32}},
-  "wabbajack": {"name": "瓦巴賈克", "skill": "destruction", "damage": 10, "value": 2400, "weight": 7, "archetype": "staff", "speed": 1.0, "enchant": {"kind": "weapon_status", "status": "wabbajack", "chance": 1.0}},
-
-  "iron_bow":    {"name": "鐵弓",   "skill": "marksman", "damage": 12, "value": 50,  "weight": 10, "archetype": "bow", "speed": 0.9},
-  "steel_bow":   {"name": "鋼弓",   "skill": "marksman", "damage": 13, "value": 130, "weight": 10, "archetype": "bow", "speed": 0.9},
-  "dwarven_bow": {"name": "矮人弓", "skill": "marksman", "damage": 16, "value": 290, "weight": 11, "archetype": "bow", "speed": 0.9},
-  "glass_bow":   {"name": "玻璃弓", "skill": "marksman", "damage": 17, "value": 300, "weight": 8,  "archetype": "bow", "speed": 0.9},
-  "ebony_bow":   {"name": "黑檀弓", "skill": "marksman", "damage": 18, "value": 560, "weight": 11, "archetype": "bow", "speed": 0.9},
-
-  "elven_dagger":   {"name": "精靈匕首", "skill": "blade", "damage": 10, "value": 110, "weight": 3, "archetype": "dagger", "speed": 1.4},
-  "dwarven_dagger": {"name": "矮人匕首", "skill": "blade", "damage": 11, "value": 140, "weight": 4, "archetype": "dagger", "speed": 1.4},
-  "ebony_dagger":   {"name": "黑檀匕首", "skill": "blade", "damage": 13, "value": 170, "weight": 4, "archetype": "dagger", "speed": 1.4},
-
-  "ebony_mace":  {"name": "黑檀釘錘", "skill": "blunt", "damage": 21, "value": 560, "weight": 16, "archetype": "mace", "speed": 0.75},
-
-  "nightfang_dagger": {"name": "夜牙匕首", "skill": "blade", "damage": 14, "value": 1400, "weight": 3, "archetype": "dagger", "speed": 1.5, "requires_vampire": true, "enchant": {"kind": "weapon_status", "status": "vampiric", "magnitude": 50}},
-  "sword_of_the_crusader": {"name": "十字軍之劍", "skill": "blade", "damage": 26, "value": 2800, "weight": 13, "archetype": "sword", "speed": 1.1, "material": "crusader", "requires_virtue": true, "no_sell": true, "enchant": {"kind": "weapon_element", "element": "fire", "magnitude": 26}},
-  "mace_of_the_crusader": {"name": "正義之鎚", "skill": "blunt", "damage": 28, "value": 2800, "weight": 16, "archetype": "mace", "speed": 0.75, "material": "crusader", "requires_virtue": true, "no_sell": true, "enchant": {"kind": "weapon_status", "status": "absorb_magicka", "magnitude": 16}}
+  "spell_focus": {
+   "power": 0.2,
+   "flat": 20,
+   "elements": [
+    "fire",
+    "frost",
+    "shock"
+   ]
+  }
+ },
+ "blade_of_woe": {
+  "name": "悲傷之刃",
+  "skill": "blade",
+  "damage": 16,
+  "value": 2000,
+  "weight": 4,
+  "archetype": "dagger",
+  "speed": 1.5,
+  "enchant": {
+   "kind": "weapon_status",
+   "status": "vampiric",
+   "magnitude": 50
+  }
+ },
+ "wuuthrad": {
+  "name": "維蘇拉德",
+  "skill": "blunt",
+  "damage": 32,
+  "value": 2000,
+  "weight": 26,
+  "archetype": "axe",
+  "speed": 0.65,
+  "two_handed": true,
+  "enchant": {
+   "kind": "berserk",
+   "magnitude": 30
+  }
+ },
+ "mace_of_molag_bal": {
+  "name": "莫拉格巴爾之鎚",
+  "skill": "blunt",
+  "damage": 26,
+  "value": 2100,
+  "weight": 18,
+  "archetype": "mace",
+  "speed": 0.7,
+  "material": "daedric",
+  "enchant": {
+   "kind": "weapon_status",
+   "status": "absorb_health",
+   "magnitude": 10
+  }
+ },
+ "ebony_blade": {
+  "name": "黑檀刃",
+  "skill": "blade",
+  "damage": 24,
+  "value": 2300,
+  "weight": 12,
+  "archetype": "sword",
+  "speed": 1.1,
+  "enchant": {
+   "kind": "weapon_status",
+   "status": "vampiric",
+   "magnitude": 50
+  }
+ },
+ "sanguine_rose": {
+  "name": "桑格玖完之薔薇",
+  "skill": "conjuration",
+  "damage": 7,
+  "value": 2300,
+  "weight": 7,
+  "archetype": "staff",
+  "speed": 1.0,
+  "on_hit_self": {
+   "stat": "magicka",
+   "magnitude": 12
+  }
+ },
+ "volendrung": {
+  "name": "沃倫鎚",
+  "skill": "blunt",
+  "damage": 38,
+  "value": 2400,
+  "weight": 32,
+  "archetype": "mace",
+  "speed": 0.55,
+  "two_handed": true,
+  "enchant": {
+   "kind": "weapon_status",
+   "status": "absorb_fatigue",
+   "magnitude": 15
+  }
+ },
+ "dawnbreaker": {
+  "name": "破曉者",
+  "skill": "blade",
+  "damage": 24,
+  "value": 2400,
+  "weight": 14,
+  "archetype": "sword",
+  "speed": 1.1,
+  "enchant": {
+   "kind": "weapon_status",
+   "status": "burn",
+   "element": "fire",
+   "magnitude": 10,
+   "turns": 3
+  }
+ },
+ "sword_of_jyggalag": {
+  "name": "秩序之劍",
+  "skill": "blade",
+  "damage": 26,
+  "value": 2400,
+  "weight": 14,
+  "archetype": "sword",
+  "speed": 1.0,
+  "enchant": {
+   "kind": "order"
+  }
+ },
+ "skull_of_corruption": {
+  "name": "腐敗之顱",
+  "skill": "destruction",
+  "damage": 11,
+  "value": 2400,
+  "weight": 7,
+  "archetype": "staff",
+  "speed": 1.0,
+  "enchant": {
+   "kind": "weapon_element",
+   "element": "shock",
+   "magnitude": 32
+  }
+ },
+ "wabbajack": {
+  "name": "瓦巴賈克",
+  "skill": "destruction",
+  "damage": 10,
+  "value": 2400,
+  "weight": 7,
+  "archetype": "staff",
+  "speed": 1.0,
+  "enchant": {
+   "kind": "weapon_status",
+   "status": "wabbajack",
+   "chance": 1.0
+  }
+ },
+ "iron_bow": {
+  "name": "鐵弓",
+  "skill": "marksman",
+  "damage": 12,
+  "value": 50,
+  "weight": 10,
+  "archetype": "bow",
+  "speed": 0.9
+ },
+ "steel_bow": {
+  "name": "鋼弓",
+  "skill": "marksman",
+  "damage": 13,
+  "value": 130,
+  "weight": 10,
+  "archetype": "bow",
+  "speed": 0.9
+ },
+ "dwarven_bow": {
+  "name": "矮人弓",
+  "skill": "marksman",
+  "damage": 16,
+  "value": 290,
+  "weight": 11,
+  "archetype": "bow",
+  "speed": 0.9
+ },
+ "glass_bow": {
+  "name": "玻璃弓",
+  "skill": "marksman",
+  "damage": 17,
+  "value": 300,
+  "weight": 8,
+  "archetype": "bow",
+  "speed": 0.9
+ },
+ "ebony_bow": {
+  "name": "黑檀弓",
+  "skill": "marksman",
+  "damage": 18,
+  "value": 560,
+  "weight": 11,
+  "archetype": "bow",
+  "speed": 0.9
+ },
+ "elven_dagger": {
+  "name": "精靈匕首",
+  "skill": "blade",
+  "damage": 10,
+  "value": 110,
+  "weight": 3,
+  "archetype": "dagger",
+  "speed": 1.4
+ },
+ "dwarven_dagger": {
+  "name": "矮人匕首",
+  "skill": "blade",
+  "damage": 11,
+  "value": 140,
+  "weight": 4,
+  "archetype": "dagger",
+  "speed": 1.4
+ },
+ "ebony_dagger": {
+  "name": "黑檀匕首",
+  "skill": "blade",
+  "damage": 13,
+  "value": 170,
+  "weight": 4,
+  "archetype": "dagger",
+  "speed": 1.4
+ },
+ "ebony_mace": {
+  "name": "黑檀釘錘",
+  "skill": "blunt",
+  "damage": 21,
+  "value": 560,
+  "weight": 16,
+  "archetype": "mace",
+  "speed": 0.75
+ },
+ "nightfang_dagger": {
+  "name": "夜牙匕首",
+  "skill": "blade",
+  "damage": 14,
+  "value": 1400,
+  "weight": 3,
+  "archetype": "dagger",
+  "speed": 1.5,
+  "requires_vampire": true,
+  "enchant": {
+   "kind": "weapon_status",
+   "status": "vampiric",
+   "magnitude": 50
+  }
+ },
+ "sword_of_the_crusader": {
+  "name": "十字軍之劍",
+  "skill": "blade",
+  "damage": 26,
+  "value": 2800,
+  "weight": 13,
+  "archetype": "sword",
+  "speed": 1.1,
+  "material": "crusader",
+  "requires_virtue": true,
+  "no_sell": true,
+  "enchant": {
+   "kind": "weapon_element",
+   "element": "fire",
+   "magnitude": 26
+  }
+ },
+ "mace_of_the_crusader": {
+  "name": "正義之鎚",
+  "skill": "blunt",
+  "damage": 28,
+  "value": 2800,
+  "weight": 16,
+  "archetype": "mace",
+  "speed": 0.75,
+  "material": "crusader",
+  "requires_virtue": true,
+  "no_sell": true,
+  "enchant": {
+   "kind": "weapon_status",
+   "status": "absorb_magicka",
+   "magnitude": 16
+  }
+ }
 }
