@@ -21,7 +21,7 @@ _TONES = {"muted", "faint", "green", "red", "cyan", "gold", "magenta", "yellow"}
 _EXPECTED_IDS = {
     "core_loop", "races_signs", "skills_mastery", "combat_control", "magic_schools", "alchemy_poison",
     "enchant_soulgem", "factions_guilds", "curse_vampire", "curse_werewolf",
-    "disease_temple", "crime_bounty", "world_explore", "realm_warband",
+    "disease_temple", "crime_bounty", "world_explore", "realm_warband", "services_directory",
 }
 
 
@@ -98,6 +98,51 @@ def test_codex_panel_renders_all_entries():
     finally:
         ui._web = None
         ui.console = Console()
+
+
+def test_services_directory_r159():
+    """R159 服務/宗師目錄:動態鉤子掃 world/trainers/spell_stock → 反查表齊備、隱藏設施不入目錄。"""
+    gd = get_gamedata()
+    e = gd.codex["services_directory"]
+    assert e.get("dynamic") == "services"
+    rows = ui._codex_rows(e, gd)
+    heads = [r["s"] for r in rows if r["t"] == "head"]
+    assert any("公會大廳" in h for h in heads) and any("宗師" in h for h in heads)
+    kv = {r["k"]: r["v"] for r in rows if r["t"] == "kv"}
+    # 稀有大廳逐一列名(≤6);大公會摘要成「N 城」;名稱=factions.json 正典名
+    assert "戰友團" in kv and "白漫城" in kv["戰友團"]
+    assert "九神騎士團" in kv and "安維爾" in kv["九神騎士團"]
+    assert "法師公會" in kv and "城" in kv["法師公會"]
+    # 宗師一覽:trainers.json 每位 master 一列(掛在可見地點者),對上技能中文名;上限讀 formulas 常數
+    from tesrpg import formulas
+    assert any(str(formulas.TRAINER_CAP) in h for h in heads if "宗師" in h)
+    masters = [(lid, td["master"]) for lid, td in gd.trainers.items()
+               if isinstance(td, dict) and td.get("master")
+               and not gd.world["locations"].get(lid, {}).get("visible")]
+    for lid, m in masters:
+        sk_name = gd.skills[m["skill"]]["name"]
+        assert f"{sk_name}宗師" in kv, f"缺宗師列:{lid}/{m['skill']}"
+        assert gd.world["locations"][lid]["name"] in kv[f"{sk_name}宗師"]
+    # 法師公會學派佈局:六學派全出列 + 帝都通才;derive 自 spell_stock(防陳舊)
+    for cn in ("毀滅", "復原", "變化", "召喚", "幻術", "神秘"):
+        assert cn in kv, f"缺學派列:{cn}"
+    assert "通才(六學派)" in kv and "帝都" in kv["通才(六學派)"]
+    # 隱藏設施(visible 閘)不得入目錄:精確釘 dawn_sanctum 本體(勿用泛字樣,防偽陽性)
+    joined = "".join(f"{r.get('k', '')}{r.get('v', '')}{r.get('s', '')}" for r in rows)
+    assert "神話黎明" not in joined
+    assert gd.world["locations"]["dawn_sanctum"]["name"] not in joined
+    # 🔴 R29 機器可讀不變式 + 無靜默掉隊:每座可見 spell_stock 城 → 守一門學派 / 通才 / 僅基礎,
+    #    且城名必出現在學派段(資料漂移把專精城打掉時亮紅燈,而非目錄靜默毀表)
+    stocks = {lid: set(gd.world["locations"][lid]["spell_stock"])
+              for lid, l in gd.world["locations"].items()
+              if l.get("spell_stock") and not l.get("visible")}
+    base = set.intersection(*stocks.values())
+    school_txt = "".join(f"{r.get('k', '')}{r.get('v', '')}" for r in rows if r["t"] == "kv")
+    for lid, st in stocks.items():
+        schools = {gd.spells[s]["school"] for s in (st - base) if s in gd.spells}
+        assert len(schools) <= 1 or schools >= set(ui._SCHOOL_CN), \
+            f"{lid} 學派佈局違反 R29(守一門或通才):{sorted(schools)}"
+        assert gd.world["locations"][lid]["name"] in school_txt, f"{lid} 自學派表靜默消失"
 
 
 def test_codex_panel_terminal_fallback():

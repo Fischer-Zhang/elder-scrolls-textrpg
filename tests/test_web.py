@@ -367,6 +367,30 @@ def test_view_model_shapes():
     assert "傷害" in kv and "手持" in kv["傷害"] and "+" in kv["傷害"]   # 顯示與當前手持的增減
 
 
+def test_map_svc_all_includes_guild_halls_r159():
+    """R159 修 R153 回歸:svc_all 原缺公會鍵且前端 svc_all 非空即優先 → 戰友團/九神騎士團被永久遮蔽。
+    現 svc_all=公會全名領頭 + 通用服務全名;svc(公會清單)須為 svc_all 前綴。"""
+    from tesrpg.creation import build_character
+    from tesrpg.gamedata import get_gamedata
+    gd = get_gamedata()
+    c = build_character(gd, name="測", sex="male", race="nord", birthsign="warrior", class_id="warrior")
+    nodes = {n["id"]: n for n in ui._map_view(c, gd)["grid"]["nodes"]}
+    assert "戰友團" in nodes["whiterun"]["svc_all"], "戰友團大廳不得再被遮蔽(R153 回歸)"
+    assert "九神騎士團" in nodes["anvil"]["svc_all"]
+    assert "旅店" in nodes["whiterun"]["svc_all"] and "告示板" in nodes["whiterun"]["svc_all"]
+    for n in nodes.values():   # 公會領頭:svc ⊆ svc_all 且為前綴(前端 svc_all 優先 → svc 資訊不再丟失)
+        assert n["svc_all"][:len(n["svc"])] == n["svc"], n["id"]
+    # 🔴 詞彙守衛(R153 回歸的成因=鍵集漂移):world services 值集必 ⊆ 公會表 ∪ 通用表 →
+    #    未來新 service 鍵漏登記 CN 表時在資料編輯當下亮紅燈,而非又一次靜默遮蔽
+    vocab = {s for l in gd.world["locations"].values() for s in l.get("services", [])}
+    known = set(ui._GUILD_HALL_CN) | set(ui._SVC_FULL)
+    assert vocab <= known, f"未登記 CN 名的 service 鍵:{vocab - known}"
+    # 公會大廳名稱=factions.json 正典名(防顯示名漂移,如 R159 修正的 聖騎士團→九神騎士團)
+    for fid, cn in ui._GUILD_HALL_CN.items():
+        canon = (gd.factions.get(fid) or {}).get("name")
+        assert canon == cn, f"{fid} 顯示名 {cn} ≠ factions.json 正典名 {canon}"
+
+
 def test_action_map_route_dispatch():
     """互動地圖:面板 route:<lid> → action_map 走 _travel_route(dest);__back__ → 乾淨返回。"""
     import types

@@ -649,6 +649,17 @@ def _quest_target_location_set(char: Character, gamedata: GameData) -> set:
     return out
 
 
+# 公會大廳全名(地圖節點面板 + codex 服務目錄共用)。鍵集須涵蓋 world.json services 的公會值、
+# 名稱須與 factions.json 的正典名一致 —— 兩者皆由 test_web 詞彙守衛鎖住(R153 回歸的成因即鍵集漂移)。
+_GUILD_HALL_CN = {"mages_guild": "法師公會", "fighters_guild": "戰士公會", "thieves_guild": "盜賊公會",
+                  "dark_brotherhood": "黑暗兄弟會", "companions": "戰友團",
+                  "knights_nine": "九神騎士團", "mythic_dawn": "神話黎明"}
+
+# 地圖節點面板通用服務全名(svc_all 用;單字碼 _SERVICE_CN 留給終端 fallback 的密集列表)
+_SVC_FULL = {"inn": "旅店", "merchant": "商人", "trainer": "訓練師",
+             "armorer": "鐵匠", "task_board": "告示板"}
+
+
 def _map_view(char: Character, gamedata: GameData, reach: dict | None = None) -> dict:
     from tesrpg.systems import landmarks, politics, world, dungeon
     reach = reach or {}   # {lid:(hops,hours)} 可達性;空 → 各 node hops/hours 皆 None(唯讀,back-compat)
@@ -665,10 +676,6 @@ def _map_view(char: Character, gamedata: GameData, reach: dict | None = None) ->
         if loc["province"] not in order:
             order.append(loc["province"])
     _FAC = {"imperial": "帝", "independent": "獨", "neutral": "中", "daedric": "湮", "own": "己"}
-    # 地圖 marker 點擊只顯示「特色設施」(公會/陣營),通用的宿/商/訓/鐵/板不列(出口靠連線辨認)
-    _SVC_SHOW = {"mages_guild": "法師公會", "fighters_guild": "戰士公會", "thieves_guild": "盜賊公會",
-                 "dark_brotherhood": "黑暗兄弟會", "companions": "戰友團",
-                 "knights_nine": "聖騎士團", "mythic_dawn": "神話黎明"}
     gm = gamedata.world.get("map", {"cols": 40, "rows": 24})
     grid_nodes = []          # 扁平節點清單(供 web 相對位置地圖:總覽 + 行省放大,皆用 pos)
     provs = []
@@ -700,8 +707,12 @@ def _map_view(char: Character, gamedata: GameData, reach: dict | None = None) ->
                                "reinfested": lid in _reinfest_locs,   # R114 F5:重踞中可再掃地城
                                "hops": _r[0] if _r else None,         # 互動:N 段
                                "hours": _r[1] if _r else None,        # 互動:約 M 時
-                               "svc": [_SVC_SHOW[s] for s in loc.get("services", []) if s in _SVC_SHOW],
-                               "svc_all": [_SERVICE_CN[s] for s in loc.get("services", []) if s in _SERVICE_CN]})
+                               "svc": [_GUILD_HALL_CN[s] for s in loc.get("services", []) if s in _GUILD_HALL_CN],
+                               # ⚠ 修 R153 回歸:svc_all 原只取 _SERVICE_CN(缺 戰友團/聖騎士團/黑暗兄弟會 鍵),
+                               #   而前端 svc_all 非空即優先於 svc → 公會大廳被永久遮蔽;
+                               #   現改公會全名領頭 + 通用服務全名(面板脈絡下全名比單字碼可讀)。
+                               "svc_all": ([_GUILD_HALL_CN[s] for s in loc.get("services", []) if s in _GUILD_HALL_CN]
+                                           + [_SVC_FULL[s] for s in loc.get("services", []) if s in _SVC_FULL])})
         provs.append({"name": prov, "nodes": nodes,
                       "visited": visited_n, "total": len(prov_ids)})
     seen_e: set = set()      # 無向去重的連線(供地圖畫路徑 + 標時長)
@@ -1176,6 +1187,62 @@ def _races_signs_index_rows(gamedata: GameData) -> list:
     return rows
 
 
+def _services_index_rows(gamedata: GameData) -> list:
+    """動態『城鎮服務/宗師目錄』:掃 world services + trainers 宗師 + spell_stock 推導學派佈局
+    (R29 城鎮專精化的遊戲內反查表;隨資料自動更新,防陳舊)。唯讀推導、零存檔;
+    只列無 visible 閘的地點(隱藏設施如神話黎明聖殿不入目錄)。"""
+    locs = (gamedata.world or {}).get("locations", {})
+    open_locs = {lid: l for lid, l in locs.items() if not l.get("visible")}   # 隱藏地點不入目錄
+    rows = [_hd("服務覆蓋速覽(隨世界更新)")]
+    rows.append(_kv("通用服務", "·".join(
+        f"{cn} {sum(1 for l in open_locs.values() if s in l.get('services', []))} 城"
+        for s, cn in _SVC_FULL.items())))
+    rows.append(_hd("公會大廳一覽"))
+    for gid, cn in _GUILD_HALL_CN.items():
+        halls = [l for l in open_locs.values() if gid in l.get("services", [])]
+        if not halls:
+            continue
+        if len(halls) > 6:      # 大公會遍地開花 → 摘要;稀有大廳才逐一列名
+            rows.append(_kv(cn, f"{len(halls)} 城·遍佈 {len({l.get('province', '') for l in halls})} 省"))
+        else:
+            rows.append(_kv(cn, "、".join(f"{l['name']}({l.get('province', '')})" for l in halls)))
+    rows.append(_hd(f"宗師指點一覽(可破一般上限 {formulas.TRAINER_CAP})"))
+    for lid, td in (gamedata.trainers or {}).items():
+        m = (td or {}).get("master")
+        loc = locs.get(lid)
+        if not m or not loc or loc.get("visible"):
+            continue
+        sk_name = (gamedata.skills.get(m.get("skill")) or {}).get("name", m.get("skill", "?"))
+        rows.append(_kv(f"{sk_name}宗師",
+                        f"{loc['name']}({loc.get('province', '')})·可指點至 {m.get('cap', formulas.SKILL_CAP)}"))
+    rows.append(_hd("法師公會進階學派(基礎法術各公會皆備)"))
+    stocks = {lid: set(locs[lid].get("spell_stock") or []) for lid in open_locs if locs[lid].get("spell_stock")}
+    if stocks:
+        base = set.intersection(*stocks.values())          # 保底集=全公會共有的基礎法術
+        by_school: dict[str, dict[str, list[str]]] = {}    # school → province → [city]
+        general: list[str] = []
+        base_only: list[str] = []
+        for lid, st in stocks.items():
+            loc = locs[lid]
+            schools = sorted({(gamedata.spells.get(sid) or {}).get("school", "") for sid in (st - base)} - {""})
+            if set(schools) >= set(_SCHOOL_CN):            # 六學派齊備 → 通才(帝都);4-5 派城落各學派列
+                general.append(f"{loc['name']}({loc.get('province', '')})")
+            elif not schools:                              # 只賣保底集 → 顯式列出(不靜默消失,防資料漂移誤判)
+                base_only.append(loc["name"])
+            else:
+                for sc in schools:
+                    by_school.setdefault(sc, {}).setdefault(loc.get("province", ""), []).append(loc["name"])
+        for sc in list(_SCHOOL_CN) + sorted(set(by_school) - set(_SCHOOL_CN)):   # 未知學派鍵退原名(防陳舊)
+            if sc in by_school:
+                rows.append(_kv(_SCHOOL_CN.get(sc, sc),
+                                "·".join(f"{p}:{'、'.join(ns)}" for p, ns in by_school[sc].items())))
+        if general:
+            rows.append(_kv("通才(六學派)", "、".join(general)))
+        if base_only:
+            rows.append(_kv("僅基礎法術", "、".join(base_only)))
+    return rows
+
+
 def _codex_rows(entry: dict, gamedata: GameData) -> list:
     """codex entry.sections → panel rows(h/p/kv/li → _hd/_kv/_ln);未知形狀靜默略過(防陳舊)。"""
     rows = []
@@ -1196,6 +1263,8 @@ def _codex_rows(entry: dict, gamedata: GameData) -> list:
         rows += _trial_index_rows(gamedata)
     elif entry.get("dynamic") == "races_signs":    # 新手清晰度:種族/星座速查(掃 gamedata,防陳舊)
         rows += _races_signs_index_rows(gamedata)
+    elif entry.get("dynamic") == "services":       # R159:城鎮服務/宗師目錄(掃 world/trainers/spell_stock,防陳舊)
+        rows += _services_index_rows(gamedata)
     return rows or [_ln("(本條目尚無內容)", "muted")]
 
 
