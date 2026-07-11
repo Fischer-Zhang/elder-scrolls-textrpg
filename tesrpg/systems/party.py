@@ -394,6 +394,24 @@ def companion_tactic(char: Character, gamedata: GameData, cid: str) -> str | Non
     return TACTICS.get(char.companion_build.get(cid, ""), {}).get("tactic")
 
 
+_SUPPORT_SPELLS = ("heal_other", "ward_ally", "regen_aura")   # R87 支援施法者的招牌 spells
+
+
+def is_support_caster(creature, gamedata: GameData) -> bool:
+    """該敵是否為支援施法者(R87:bestiary 帶治療/護盾/再生 spells)→ 游擊優先擊殺(先點治療者)。"""
+    spells = gamedata.bestiary.get(getattr(creature, "template_id", ""), {}).get("spells") or []
+    return any(s in _SUPPORT_SPELLS for s in spells)
+
+
+def focus_target(enemies: list, gamedata: GameData):
+    """游擊(skirmisher·tactic="focus")目標選擇:**先點治療者**(R87 敵方支援施法者)、
+    其次最低血(脆弱者)。決定性(min 取最低血·同血取先);enemies 空 → None。"""
+    if not enemies:
+        return None
+    healers = [e for e in enemies if is_support_caster(e, gamedata)]
+    return min(healers or enemies, key=lambda e: e.health)
+
+
 def build_label(char: Character, cid: str) -> str | None:
     bid = char.companion_build.get(cid)
     return TACTICS[bid]["label"] if bid in TACTICS else None

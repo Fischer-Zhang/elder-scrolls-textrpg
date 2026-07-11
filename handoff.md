@@ -1412,6 +1412,20 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 
 ---
 
+### R150 · 修 R129 同伴戰術傾向:消費端 build-id 誤比對(招牌功能死機制)+ 游擊先點治療者 [save-safe]
+
+**承「下一步」survey(#2·唯一確認的真 bug)**:R129 讓玩家在同伴管理選單做 bond-gated 的永久戰術抉擇(鎮守/游擊/陷陣),但**在唯一該生效處(團隊戰鬥)零效果**。根因:`party.companion_tactic` 回 **tactic-kind**(`"taunt"`/`"focus"`/`None`),而 `main.py` ally 階段(1280/1285)比對的是 **build id**(`"bulwark"`/`"skirmisher"`)→ 恆 False → 鎮守自施嘲諷從不觸發、游擊集火退回 `state.rng.choice` 隨機。舊 `test_companion_build` **只驗 getter、未驗消費** → bug 從未被抓。
+
+**修**:main.py 兩處比對改成 `companion_tactic` 實際回傳的 `"taunt"`/`"focus"`;順帶**兌現 game desc「先點治療者」**:游擊改用新 `party.focus_target(enemies, gamedata)` —— 優先擊殺 R87 敵方支援施法者(`party.is_support_caster` 讀 bestiary `spells` ∈ {heal_other,ward_ally,regen_aura}),其次最低血(決定性 `min` by health);enemies 空 → None。
+
+**🔴 byte-identical / 零風險**:未碰 combat/formulas 數學;**sim 從不設 `companion_build`** → tactic 恆 None → 走既有 `state.rng.choice` → `sim_assassin` **BYTE-IDENTICAL**(隔離 worktree vs R149 逐位元組同);召喚物(`summon_turns` 非 None)tactic 恆 None 不受影響;零新存檔欄。
+
+**驗證**:`run_all` **127**(新 `test_companion_tactics`:focus_target 先點治療者/最低血/空·**run_battle 消費端整合**〔鎮守真嘲諷·游擊真先集火治療者〕)。**🔴 非空測逐分支獨立驗**:revert 鎮守分支 → 鎮守測 FAIL(無嘲諷訊息);revert 游擊分支 → 游擊測 FAIL(`hits[0]=='bandit'`)。**流程教訓(對抗審查 2 維抓到 1 confirmed)**:初版游擊測用 RNG(5) + 雙敵等血 → **空測**(buggy 隨機退路在該 seed 恰好首擊命中治療者 → buggy/fixed 皆過);且 `run()` 字母序先跑鎮守、FAIL 即中止 → 遮蔽游擊空測。修:RNG(5)→RNG(1)(buggy 隨機首擊打雜兵)+ 治療者血高於雜兵(證 support-priority 非最低血 tiebreak)+ **逐分支獨立 revert 驗**(勿只靠 `run()` 序)。
+
+**🔴 鐵律**:`companion_tactic` 回 **tactic-kind**(taunt/focus)非 build id → 消費端務必比對 tactic-kind;加新戰術傾向須同步 main.py 消費分支 + **消費端整合測**(getter-only 測會漏抓死機制);游擊目標走 `party.focus_target`(先點治療者·决定性);新增 support-caster 型敵人自動被 focus 優先(讀 bestiary spells)。
+
+---
+
 ### R149 · 元素刃三術招牌狀態:焰刃引燃 / 霜刃凍麻 / 雷刃踉蹌 [re-sim]
 
 **承「下一步」survey(#6)**:`spells.json` 的 flame_blade/frost_blade/storm_blade 三術結構完全相同、只差 `element`,皆 `weapon_imbue` magnitude 8/turns 5 純 flat;`combat.py` 讀 weapon_imbue 只加元素傷害、無任何 rider → 對比同引擎 destruction frostbite 帶 benumb、incinerate 帶 burn DoT、R75 電系帶 conduct,三刃是「自我重複填充」,選哪一系刃無實質差異=零選擇深度。

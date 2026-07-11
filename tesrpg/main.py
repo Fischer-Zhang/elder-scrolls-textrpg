@@ -1273,16 +1273,19 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
                 ui.message(support["message"], style="green")
                 continue
             # 同伴戰術傾向(羈絆階解鎖·功能性·複用既有 taunt/目標選擇·零新戰鬥數值·召喚物不適用):
-            #   鎮守 bulwark=自施嘲諷吸火護同袍;游擊 skirmisher=集火最低血敵(先點治療者)。
+            #   鎮守 bulwark → tactic="taunt"=自施嘲諷吸火護同袍;
+            #   游擊 skirmisher → tactic="focus"=集火最脆弱敵(先點治療者·party.focus_target)。
             #   未選/vanguard → None → 隨機目標(= 既有行為·sim 不設 build → byte-identical)。
+            #   🔴 R129 修:companion_tactic 回 tactic-kind("taunt"/"focus"),非 build id;
+            #     原比對 "bulwark"/"skirmisher" 恆 False → 兩傾向從未生效(招牌功能死機制)。
             tactic = (party.companion_tactic(player, gamedata, a.template_id)
                       if getattr(a, "summon_turns", None) is None else None)
-            if tactic == "bulwark" and not any(ef.get("kind") == "taunt" and ef.get("turns", 0) > 0
-                                               for ef in a.active_effects):
+            if tactic == "taunt" and not any(ef.get("kind") == "taunt" and ef.get("turns", 0) > 0
+                                             for ef in a.active_effects):
                 a.active_effects.append({"kind": "taunt", "turns": 2})
                 ui.message(f"{a.name}穩住陣腳、吸引敵人火力,護住同袍。", style="bold cyan")
                 continue
-            tgt = (min(alive_e(), key=lambda e: e.health) if tactic == "skirmisher"
+            tgt = (party.focus_target(alive_e(), gamedata) if tactic == "focus"
                    else state.rng.choice(alive_e()))
             a_atk = combat.choose_attack(a, state.rng, tgt)   # 同伴多攻擊模式(無曲目 → 後備單招,行為不變)
             if a_atk.get("taunt"):   # R105 坦克召喚(魔人/魔靈伴)嘲諷 action:掛嘲諷態 → 敵人幾回合內機率改打它(pick_player_side_target)
