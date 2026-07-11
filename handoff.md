@@ -1412,6 +1412,23 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 
 ---
 
+### R157 · 設定面板:字級 / 深色主題變體 / 減動態 / 操作說明(純前端·localStorage)
+
+**承「全面評估 UI/UX」審計 critic 缺口 #3(文字遊戲卻零設定·尤缺字級)**:過去無任何設定面板(主題僅跟 OS `prefers-color-scheme`·app 本就深色專屬)。使用者拍板**深色變體**(非完整淺色主題)。**🔴 純前端·唯一改 `index.html`·零 Python·零後端/存檔·client-only localStorage → sim/run_all 天然不受影響·R27 web chrome 不碰終端退路。**
+- **⚙ 設定 overlay**(masthead #status 內按鈕 → `.set-overlay` dialog):**字級**(小/標準/大/特大)·**主題**(經典金/高對比〔更亮墨+強邊框·對應審計 WCAG-AA 發現〕/羊皮紙〔暖褐深色〕)·**動態效果**(開/關)·**操作說明**(數字/0·Esc/Enter/方向鍵/點觸)。選項即時套用 + 存 `localStorage("tesrpg_settings")`。
+- **字級**:`<style>` 內所有 font-size 包成 `calc(<orig>*var(--fs-scale,1))`(80 px + 4 clamp + 2 JS inline·**預設 fallback 1 → 逐位元組同**);`:root[data-fs=sm/lg/xl]` 給 .9/1.14/1.3;`input.field` 以 `max(16px,…)` 保底(免 iOS Safari 聚焦縮放·審查修)。**純文字縮放·不動版面 → 無溢出**(異於 zoom)。
+- **主題**:`:root[data-theme=contrast/parchment]` 純覆寫調色盤變數(零元件改動);body 徑向漸層三停 var 化 `--bg-glow/mid/deep`(:root 預設=原硬編 hex → **byte-identical**),讓羊皮紙可染背景。**經典=無 attr=預設**。
+- **減動態**:`:root[data-motion=off] *{animation/transition/scroll-behavior:none !important}`(手動關·不只跟 OS)。
+- **無閃爍**:`<head>` IIFE loader 首屏前套 data-attr(審查 nit 修:IIFE 免洩全域);body `initSettings` IIFE 建 overlay + 持久化。
+
+**🔴 對抗審查 4 維 16-agent → 0 blocker/major·10 confirmed 全 minor/nit 全修**:焦點困(aria-modal 無 focus trap→Tab 逃到背景遊戲鈕·Enter/Space 觸發真動作)→ **`#app.inert=true`**(關閉時先解再還焦點·+ Tab-wrap handler 後備)+ 遊戲 keydown 加 `settingsOpen()` 讓位;重繪丟焦點→重繪後還焦點同顆;選中態僅視覺→加 `aria-pressed`;背景可捲→開時鎖 `documentElement.overflow` + `.set-overlay overscroll-behavior:contain`;iOS 聚焦縮放→input 16px 保底;overlay 底 padding 補 `env(safe-area-inset-bottom)`;head 全域洩漏→IIFE。2 refuted(⚙ 按鈕非「像素同」=功能本體·主題只染變數=by-design)。
+
+**驗證**:`node --check` 雙 script 塊·DOM-mock 持久化→套 attr 邏輯 9 例 + 畸形 localStorage 安全 + **無全域洩漏**·伺服器 serves(HTTP 200·gear/overlay/inert)·`run_all` **129**(未碰 Python·純前端)。零新存檔欄(偏好只在瀏覽器 localStorage)。
+
+**🔴 鐵律**:設定純前端·唯一改 `index.html`·client-only localStorage(不寫後端/存檔);字級走 `--fs-scale` 乘 font-size(預設 1=byte-identical·不用 zoom 免版面溢出·input 16px 保底);主題純 `:root[data-theme]` 覆寫變數(body 漸層 var 化預設=原 hex)+ **深色變體**(不做完整淺色·使用者拍板);overlay 須 `#app.inert` 困焦 + 開時鎖背景捲動 + 選中態 aria-pressed;首屏無閃爍靠 `<head>` IIFE loader;純前端 → sim/run_all 天然不受影響。**前瞻**:完整淺色主題(需重調漸層/陰影·使用者本輪不做)· backlog 剩 C 無障礙深化(overlay 已示範 inert/aria)· F 服務目錄· G 存檔槽位/多角色。
+
+---
+
 ### R156 · 戰鬥/日誌可讀性:戰鬥流水帳與敘事分離 + 選單分桶 + 屍體/本回合收束
 
 **承「全面評估 UI/UX」審計 Rank 4(high/medium)**:最高頻迴圈的可讀性 —— ① 戰鬥逐擊流水帳與敘事同款式 log block,幾場戰鬥後就淹沒 240 上限的**永久故事日誌**(玩家回捲要看的敘事被「X命中Y造成N傷害」洗掉);② 回合動作選單滿配後 12–18 項扁平牆(`grouped_menu` 已存在卻沒用);③ 本回合區無高度上限(寬 AoE 回合把輸入區推出畫面);④ 群戰/召喚波屍體逐列 strikethrough 洗版。**純 UI/呈現·零碰 combat/formulas/magic 數學·零新存檔欄·sim byte-identical。**
