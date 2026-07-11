@@ -952,9 +952,9 @@ def test_batch1_same_source_aggregation_no_shadow():
 
 def test_batch1_evasion_bonus_capped():
     """雜技/運動/輕甲三源閃避相加夾 EVASION_BONUS_CAP(對抗審查:0.24 會 trivialize 群戰)。"""
-    gd, c = _char(acrobatics=100, athletics=100, scout=100)
+    gd, c = _char(acrobatics=100, light_armor=100, scout=100)   # R147:athletics 閃避已改調息 → 改用輕甲閃避源
     for nid, oid in [("acrobatics_50", "tumbler"), ("acrobatics_75", "evasion"),
-                     ("athletics_100", "windstep"), ("scout_75", "preempt")]:
+                     ("light_armor_50", "lithe_evasion"), ("scout_75", "preempt")]:
         mastery.choose(c, gd, nid, oid)
     raw = 0.04 + 0.05 + 0.05 + 0.04                         # 0.18 未夾
     assert raw > mastery.EVASION_BONUS_CAP
@@ -1127,11 +1127,9 @@ def test_batch2_gapfills_present_and_aggregate():
     assert abs(mastery.weapon_mod(c, gd, "blade").get("power", 0) - (0.08 + 0.12)) < 1e-9
 
 
-def test_flee_bonus_getter_and_try_flee():
+def test_try_flee_runs():
+    # R147:逃跑加成里程碑(escape_artist/flee_bonus)已移除;try_flee 仍正常運作(不崩)。
     gd, c = _char(athletics=75)
-    assert mastery.flee_bonus(c, gd) == 0.0
-    mastery.choose(c, gd, "athletics_75", "escape_artist")
-    assert mastery.flee_bonus(c, gd) == 0.15
     foe = combat.spawn_creature(gd, "mudcrab", RNG(0))
     combat.try_flee(c, foe, RNG(0), gd)                          # 帶 gamedata 不崩
 
@@ -1249,13 +1247,13 @@ def test_illusion_mind_mastery_reduces_cost():
 
 
 def test_shipped_attr_fortify_node_flows_to_resources():
-    gd, c = _char(athletics=75)
-    base_end = c.attr("endurance")
+    gd, c = _char(blunt=75)                                     # R147:athletics enduring 已改調息 → 改驗 blunt 力量節點
+    base_str = c.attr("strength")
     base_fat = c.max_fatigue
-    mastery.choose(c, gd, "athletics_75", "enduring")           # attr endurance +5(choose 內已重算)
-    assert c.attr("endurance") == base_end + 5
-    assert c.base_attr("endurance") == base_end                # base 不動(鐵律)
-    assert c.max_fatigue > base_fat                            # 耐力 → 體力上限提升
+    mastery.choose(c, gd, "blunt_75", "mighty_arm")            # attr strength +4(choose 內已重算)
+    assert c.attr("strength") == base_str + 4
+    assert c.base_attr("strength") == base_str                 # base 不動(鐵律)
+    assert c.max_fatigue > base_fat                            # 力量 → 體力上限提升(str+wil+agi+end)
 
 
 def test_shield_recoil_r118():

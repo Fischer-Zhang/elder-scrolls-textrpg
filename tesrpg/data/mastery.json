@@ -13,10 +13,10 @@
    },
    {
     "opt_id": "second_wind",
-    "name": "不竭之軀",
+    "name": "節氣",
     "kind": "fatigue_cost_bonus",
     "bonus": 0.1,
-    "desc": "氣力悠長:戰鬥揮擊更省力(攻擊耗體 −10%)。"
+    "desc": "運勁有節、不虛耗:戰鬥揮擊更省力(攻擊耗體 −10%;節流流,少需調息)。"
    }
   ]
  },
@@ -671,20 +671,18 @@
   "threshold": 75,
   "options": [
    {
-    "opt_id": "escape_artist",
-    "name": "逃命好手",
-    "kind": "flee_bonus",
-    "bonus": 0.15,
-    "desc": "腳程與機變過人:脫離戰鬥的成功率 +15%。"
+    "opt_id": "deep_breath",
+    "name": "深息",
+    "kind": "rest_bonus",
+    "rest_bonus": 12,
+    "desc": "深沉綿長的吐納:戰中「調息」時多回復 12 點體力(開源流,喘一口氣頂更久)。"
    },
    {
-    "opt_id": "enduring",
-    "name": "不竭之軀",
-    "kind": "attr_fortify",
-    "attr": {
-     "endurance": 5
-    },
-    "desc": "長年磨練的底子(耐力 +5 → 生命/體力上限隨之提升)。"
+    "opt_id": "sparing",
+    "name": "省勁",
+    "kind": "fatigue_cost_bonus",
+    "bonus": 0.12,
+    "desc": "巧勁不虛發:戰鬥揮擊更省力(攻擊耗體再 −12%;節流流,與節氣相加)。"
    }
   ]
  },
@@ -1046,20 +1044,18 @@
   "threshold": 100,
   "options": [
    {
-    "opt_id": "windstep",
-    "name": "疾風身法",
-    "kind": "evasion_bonus",
-    "evasion_bonus": 0.05,
-    "desc": "運動登峰:步法飄忽如風,敵人命中你的機率再 −5%(多源相加)。"
+    "opt_id": "tidal_breath",
+    "name": "二次呼吸",
+    "kind": "rest_bonus",
+    "rest_bonus": 16,
+    "desc": "運動登峰:一口氣如潮湧,戰中「調息」時多回復 16 點體力(開源頂點,與深息相加)。"
    },
    {
-    "opt_id": "tireless",
-    "name": "不竭極致",
-    "kind": "attr_fortify",
-    "attr": {
-     "speed": 6
-    },
-    "desc": "腳程與爆發過人(速度 +6 → 出手順序/逃脫/命中提升)。"
+    "opt_id": "frugal",
+    "name": "無盡之軀",
+    "kind": "fatigue_cost_bonus",
+    "bonus": 0.12,
+    "desc": "力出如泉、綿綿不絕:戰鬥揮擊更省力(攻擊耗體再 −12%;節流頂點,與節氣/省勁相加夾上限)。"
    }
   ]
  },
@@ -1515,11 +1511,11 @@
   "threshold": 25,
   "options": [
    {
-    "opt_id": "light_step",
-    "name": "健步輕身",
-    "kind": "evasion_bonus",
-    "evasion_bonus": 0.02,
-    "desc": "步法漸輕,挪移更俐落,敵人命中你的機率 −2%(多源相加,夾總上限)。"
+    "opt_id": "steady_breath",
+    "name": "勻息",
+    "kind": "rest_bonus",
+    "rest_bonus": 8,
+    "desc": "略通吐納調息之法:戰中「調息」(耗一回合喘息回體·自動解除架式)時多回復 8 點體力。"
    }
   ]
  },

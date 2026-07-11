@@ -500,6 +500,16 @@ def fatigue_cost_factor(athletics_skill: int) -> float:
     return max(0.6, 1.0 - athletics_skill * ATHLETICS_FATIGUE_SCALE)
 
 
+# R147 運動「調息」:戰中花一回合喘息換回體(主動動作·耗一回合=不攻擊·自動解除姿態 → 結構性防無限)。
+REST_FATIGUE_BASE = 15            # 調息基礎回體(人人可用)
+REST_FATIGUE_PER_SKILL = 0.15    # 每點運動額外回體(learn-by-doing·運動 100 → +15)
+
+
+def rest_fatigue_amount(athletics_skill: int) -> int:
+    """調息回體量:base + 運動縮放(里程碑 rest_bonus 由呼叫端另加)。零輸出 → 傷害不變·上限只是 tempo 取捨。"""
+    return int(REST_FATIGUE_BASE + max(0, athletics_skill) * REST_FATIGUE_PER_SKILL)
+
+
 # --- 施法體力(法師三系資源對稱:施法也耗體力、力竭則法效降)---------------
 CAST_FATIGUE_BASE = 3              # 固定底耗(低於近戰 6:便宜法術不該比揮劍更累)
 CAST_FATIGUE_PER_MAGICKA = 0.15   # 隨有效魔耗線性 → 大法術/過載更累

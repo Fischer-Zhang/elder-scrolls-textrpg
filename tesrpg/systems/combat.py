@@ -1254,7 +1254,7 @@ def try_flee(player: Character, creature: Creature, rng: RNG, gamedata: GameData
     chance = formulas.flee_chance(_speed(player), _agility(player), _speed(creature))
     chance = min(0.95, chance + formulas.luck_fortune(player.attr("luck")))   # 幸運「時來運轉」
     if gamedata is not None:                          # 里程碑「逃命好手」(運動):逃跑率加成
-        chance = min(0.95, chance + mastery.flee_bonus(player, gamedata))
+        chance = min(0.95, chance)   # R147:逃跑加成里程碑(escape_artist)已移除
     return rng.chance(chance)
 
 

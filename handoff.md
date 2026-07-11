@@ -1412,6 +1412,22 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 
 ---
 
+### R147 · 運動樹身份化:「調息」續戰(耗一回合換回體·主動招牌招式) [re-sim]
+
+**承「下一步」盤點**(#6 運動樹身份化):athletics 是 7 棵 `spec:combat` 樹中**唯一**零主動戰鬥招式者(連姊妹速度技 acrobatics 都有 on_evade)—— R34-R43 冷技能功能化最後漏網。里程碑問題:零招式、「不竭之軀」母題重複三次、75 escape_artist 軟 no-brainer、25/100 閃避與 acrobatics/R132 冗餘。
+
+**設計歷程(使用者主導·關鍵轉折)**:定向「體力續行·不碰傷害層」→ 初版**被動每回合回體**被使用者點名兩破口:① 回體 +6 > 攻擊成本 ~4.2 → 破 R137/R138b「回氣必<攻擊成本」→ 無限格擋姿態/盾牆;② 更根本 —— 揮擊永不疲累違反耐力主題現實直覺,且「安不安全」是使用者的平衡取捨、非我可擅斷(我一度越界擅斷+未經同意動手 → 還原 mastery.py 重來)。使用者遂改向**「用動作換回體」**:恢復必須付代價(空過一回/解除姿態),讓恢復與攻擊/持姿態互斥 → **結構性杜絕所有無限**。**五拍板**:主動「調息」動作(非被動)·人人可用·運動強化回復量·**調息自動解除姿態**·純加法不碰力竭懸崖。
+
+**機制**:新戰鬥動作**「調息」**(鏡像 R126 用藥「耗一回合」·`_choose_combat_action` 選單 gate `fatigue<max` + `run_battle` `action["type"]=="rest"` handler):回體 = `formulas.rest_fatigue_amount(athletics)`〔base 15 + 技能×0.15〕+ `mastery.rest_bonus`〔開源里程碑 SUM〕;**🔴 自動移除 guard_stance/shield_wall**(不能持盾架式喘息)= 防無限姿態關鍵閘;耗一回合=不攻擊=唯一成本閘。**樹重造 4 節點**(開源調息 vs 節流省體·零 stat-dump):25 勻息(rest_bonus 8)·50 長途健步 vs 節氣(fatigue_cost −0.10·**second_wind opt_id 留·僅改名修「不竭」重複**)·75 深息(rest_bonus 12)vs 省勁(−0.12)·100 二次呼吸(rest_bonus 16)vs 無盡之軀(−0.12)。新 kind `rest_bonus`(3 步·SUM getter);`fatigue_cost_bonus` 改 SUM+`FATIGUE_COST_BONUS_CAP 0.35`(R35 防 first-wins 遮蔽·單源==原值 byte-identical);**flee_bonus 隨 escape_artist 移除**(白名單/getter/combat.try_flee 項全清·孤兒化);opt_id 汰換走 `ensure_mastery_choices` 通用防呆(athletics 各節點獨立·**不需 RELOCATED**)。
+
+**🔴 結構性零無限(非靠 cap)**:調息⇔攻擊互斥(耗一回合)+ 調息自動解除姿態 → 攻擊仍淨流失體力、姿態 fatigue 煞車皆天然守;每回合調息=零輸出雕像(R138 哲學)贏不了、還挨敵傷 → 自限。**不碰傷害層** → solo 秒殺 cap/終王牆/群戰死亡結構不變。
+
+**驗證**:`run_all` **126**(新 test_athletics_r147:回復量縮放/rest_bonus SUM/**🔴 調息解除姿態+盾牆**/夾 max/fatigue_cost SUM+cap/舊 opt_id 退 pending);**sim_assassin BYTE-IDENTICAL**(隔離 worktree·調息是 main 選單動作·sim 政策不走選單/不調息·assassin 不選 athletics 節點·fatigue_cost 單源 SUM==原值·flee 不在 sim 路徑);**gauntlet probe**:athletics 投資 18→20%·**調息在 apex gauntlet 加 0**(戰士死於傷害非力竭·調息非約束→不 trivialize)·720 達貢 8.5% 結構不變。零新存檔欄(調息=暫態動作·rest_bonus/economy 由 mastery_choices 決定性推導)。
+
+**🔴 鐵律**:調息=主動動作(耗一回合換回體·`rest_fatigue_amount`+`rest_bonus`)·**必自動解除 guard_stance/shield_wall**(防無限姿態·勿拆);續戰走「動作換回體」非被動回體(被動回體≥攻擊成本=破 R138b);rest_bonus/fatigue_cost_bonus 皆 SUM-capped(R35);動調息磁量→跑 gauntlet probe 守有界(零輸出→傷害不變·offense 牆結構守)。前瞻:調息附帶清一個 debuff(需知會)·同伴調息。
+
+---
+
 ### R146 · 地城互動深化:第三種互動格 FEATURE(祭壇/碑文/機關) [content]
 
 **承「下一步」8-agent 盤點**(#4 地城互動深化=最大探索缺口:66 座地城除怪池/主題換皮外機制全同質·進一格只遇怪/寶箱/陷阱)。plan-mode 三 Explore + 一 Plan 代理·使用者五拍板(三 kind 全做·祭壇=賭博手感〔增益+代價〕·回報只限時增益守 byte-identical·進格自動觸發·**特色格可重複跟隨地城重生**〔釐清:地城是 roguelike 風味程序生成·原子探索離場即棄·零存檔·非 run-based〕)。

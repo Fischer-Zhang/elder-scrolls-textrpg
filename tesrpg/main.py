@@ -692,6 +692,10 @@ def _choose_combat_action(state: GameState, gamedata: GameData, enemies: list, a
     # R126 戰鬥中用藥(耗一回合):持有消耗品時提供 —— 治療/續資源/淨疾/限時強化(use_item 全支援)
     if any(gamedata.item(s["id"]).get("kind") == "potion" for s in player.inventory):
         opts.append(("item", "🧪 用藥（喝下藥水 · 耗一回合)"))
+    # R147 運動「調息」(耗一回合換回體·自動解除姿態):體力未滿時提供;運動越高、選開源里程碑回越多
+    if player.fatigue < player.max_fatigue:
+        _rest_amt = formulas.rest_fatigue_amount(player.skill("athletics")) + mastery.rest_bonus(player, gamedata)
+        opts.append(("rest", f"😮‍💨 調息（喘息回體 ~{_rest_amt} · 耗一回合 · 解除架式)"))
     opts.append(("flee", "逃跑"))
     choice = ui.menu("你的回合", opts)
 
@@ -1148,6 +1152,15 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
             ui.show_events(res["skill_events"], gamedata)
         elif action["type"] == "item":   # R126 戰鬥中用藥(耗一回合;use_item 支援治療/續資源/淨疾/限時強化)
             ui.message(inventory.use_item(player, gamedata, action["item_id"], state) or "你飲下藥水。", style="green")
+        elif action["type"] == "rest":   # R147 運動「調息」:耗一回合換回體(不攻擊=唯一成本閘)
+            recovered = formulas.rest_fatigue_amount(player.skill("athletics")) + mastery.rest_bonus(player, gamedata)
+            # 🔴 自動解除姿態/盾牆(不能持盾架式喘息)→ 恢復與持姿態互斥 → 姿態 fatigue 煞車天然守(防無限姿態)
+            dropped = any(e.get("kind") in ("guard_stance", "shield_wall") for e in player.active_effects)
+            player.active_effects[:] = [e for e in player.active_effects
+                                        if e.get("kind") not in ("guard_stance", "shield_wall")]
+            player.fatigue = min(player.max_fatigue, player.fatigue + recovered)
+            _rest_msg = "你穩住呼吸、卸下架式,喘了口氣" if dropped else "你穩住呼吸,喘了口氣"
+            ui.message(f"{_rest_msg} —— 回復 {recovered} 點體力。", style="green")
         elif action["type"] == "power":
             pres = powers.use(player, state, gamedata, target=action.get("target"))
             for m in pres["messages"]:

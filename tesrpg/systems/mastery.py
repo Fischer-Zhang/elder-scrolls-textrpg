@@ -61,7 +61,9 @@ _IMPLEMENTED_KINDS = {
     # (warrior 盾牆 / knight 戰旗 為戰鬥動作,非里程碑 kind;弓手散兵戰技 bow_technique 同屬戰鬥動作但走里程碑解鎖。)
     "cascade", "resonant_strike", "mana_on_hit", "triage_heal", "recon_reveal_floor", "bow_technique", "deathmark",
     # 廣度 pass:運動逃跑加成、重甲反傷、安全解陷保底。
-    "flee_bonus", "armor_reflect", "armor_stagger", "combat_regen", "trap_floor",
+    "armor_reflect", "armor_stagger", "combat_regen", "trap_floor",   # R147:flee_bonus 隨 escape_artist 移除(逃跑加成孤兒化)
+    "rest_bonus",   # R147 運動「調息」開源:主動調息(耗一回合換回體·自動解除姿態)回復量加成(SUM)
+
     "shield_recoil",   # 變化 100(R118):作用中護膚盾時被物理擊中→機率震開攻方(接被動 flesh 為主動反噬)
     "consecration_boost",   # 復原 75(R122 聖騎士):聖化領域減傷幅度 +(施法時加在 magnitude 上·守護頂點)
     # security 功能化(混合身份):盜賊行竊加成、地城賊眼窺探(布林解鎖)。
@@ -778,11 +780,6 @@ def temper_power(char, gamedata: GameData) -> float:
 
 
 # --- 廣度 pass 新 getter(皆單源:只一個技能授予 → 無需聚合)--------------------
-def flee_bonus(char, gamedata: GameData) -> float:
-    """逃命好手:逃跑成功率加成(0 = 無)。"""
-    return _param(char, gamedata, "flee_bonus", "bonus", 0.0)
-
-
 def armor_reflect(char, gamedata: GameData) -> float:
     """重甲反震:被近戰物理擊中時,反彈此比例傷害給攻擊者(0 = 無)。"""
     return _param(char, gamedata, "armor_reflect", "reflect", 0.0)
@@ -798,6 +795,16 @@ def travel_factor_bonus(char, gamedata: GameData) -> float:
     return _param(char, gamedata, "travel_factor_bonus", "bonus", 0.0)
 
 
+FATIGUE_COST_BONUS_CAP = 0.35   # R147 節流省體多節點相加上限(防三節點疊到動作近乎免費)
+
 def fatigue_cost_bonus(char, gamedata: GameData) -> float:
-    """不竭之軀:戰鬥攻擊耗體額外 ×(1−bonus)。"""
-    return _param(char, gamedata, "fatigue_cost_bonus", "bonus", 0.0)
+    """運動「節流」:戰鬥攻擊耗體額外 ×(1−bonus)。R147 改多源相加(運動 50/75/100 三節點可疊)、
+    夾 FATIGUE_COST_BONUS_CAP(R35 防 first-wins 遮蔽 → 弱邊不製造隱形 no-brainer;單源時 SUM==原值 byte-identical)。"""
+    return min(FATIGUE_COST_BONUS_CAP,
+               sum(o.get("bonus", 0.0) for o in _chosen_options_by_kind(char, gamedata, "fatigue_cost_bonus")))
+
+
+def rest_bonus(char, gamedata: GameData) -> int:
+    """R147 運動「調息·開源」:主動調息(耗一回合換回體)的里程碑回復量加成(0 = 無)。
+    多節點相加(25 地基 + 75/100 開源);base 回體量在 formulas.rest_fatigue_amount(運動技能)。"""
+    return int(sum(o.get("rest_bonus", 0) for o in _chosen_options_by_kind(char, gamedata, "rest_bonus")))
