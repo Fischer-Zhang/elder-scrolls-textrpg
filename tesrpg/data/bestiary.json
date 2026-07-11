@@ -10043,6 +10043,260 @@
    }
   ]
  },
+ "coven_enforcer": {
+  "name": "血族夜刃",
+  "danger": 3,
+  "min_level": 99,
+  "weight": 0,
+  "sentient": true,
+  "undead": true,
+  "strength": 48,
+  "agility": 52,
+  "speed": 50,
+  "max_health": 46,
+  "armor_rating": 14,
+  "attack": {
+   "name": "獠牙撕咬",
+   "damage": 12,
+   "skill": 52
+  },
+  "attacks": [
+   {
+    "name": "獠牙撕咬",
+    "damage": 12,
+    "skill": 52,
+    "weight": 3
+   },
+   {
+    "name": "夜影利爪",
+    "damage": 11,
+    "skill": 52,
+    "weight": 2
+   },
+   {
+    "name": "汲血一擊",
+    "damage": 10,
+    "skill": 52,
+    "cooldown": 3,
+    "on_hit": {
+     "chance": 0.3,
+     "status": "weaken",
+     "magnitude": 0.15,
+     "turns": 2
+    },
+    "weight": 1
+   }
+  ],
+  "resist": {
+   "frost": 50,
+   "poison": 50,
+   "fire": -25
+  },
+  "flavor": "血族循著獸血的腥味追來:「獸性之徒 —— 千年前你們背棄了夜的契約,今夜就在此清算。」",
+  "loot_gold": [
+   20,
+   50
+  ],
+  "loot": [
+   {
+    "item": "vampire_dust",
+    "chance": 0.45
+   },
+   {
+    "item": "minor_healing_potion",
+    "chance": 0.25
+   },
+   {
+    "item": "silver_ring",
+    "chance": 0.15
+   }
+  ]
+ },
+ "coven_avenger": {
+  "name": "血族夜爵",
+  "danger": 4,
+  "min_level": 99,
+  "weight": 0,
+  "sentient": true,
+  "undead": true,
+  "strength": 52,
+  "agility": 54,
+  "speed": 52,
+  "max_health": 62,
+  "armor_rating": 18,
+  "attack": {
+   "name": "血刃斬擊",
+   "damage": 15,
+   "skill": 56
+  },
+  "attacks": [
+   {
+    "name": "血刃斬擊",
+    "damage": 15,
+    "skill": 56,
+    "weight": 3
+   },
+   {
+    "name": "致命撕咬",
+    "damage": 14,
+    "skill": 56,
+    "weight": 2
+   },
+   {
+    "name": "懾魂凝視",
+    "damage": 6,
+    "skill": 56,
+    "element": "magic",
+    "cooldown": 3,
+    "on_hit": {
+     "chance": 0.25,
+     "status": "fear",
+     "turns": 1
+    },
+    "weight": 1
+   }
+  ],
+  "resist": {
+   "frost": 60,
+   "poison": 50,
+   "fire": -25
+  },
+  "flavor": "血族的夜爵翩然落地,雙目如血:「讓我看看,獸血在絕望時是什麼滋味。」",
+  "loot_gold": [
+   40,
+   90
+  ],
+  "loot": [
+   {
+    "item": "vampire_dust",
+    "chance": 0.5
+   },
+   {
+    "item": "healing_potion",
+    "chance": 0.4
+   },
+   {
+    "item": "filled_lesser_soul_gem",
+    "chance": 0.15
+   }
+  ]
+ },
+ "pack_enforcer": {
+  "name": "獵群狼衛",
+  "danger": 3,
+  "min_level": 99,
+  "weight": 0,
+  "sentient": true,
+  "strength": 54,
+  "agility": 50,
+  "speed": 54,
+  "max_health": 48,
+  "armor_rating": 10,
+  "attack": {
+   "name": "獠牙撕咬",
+   "damage": 12,
+   "skill": 52
+  },
+  "attacks": [
+   {
+    "name": "獠牙撕咬",
+    "damage": 12,
+    "skill": 52,
+    "weight": 3
+   },
+   {
+    "name": "利爪連抓",
+    "damage": 11,
+    "skill": 52,
+    "weight": 2
+   },
+   {
+    "name": "撲擊壓制",
+    "damage": 10,
+    "skill": 52,
+    "cooldown": 3,
+    "on_hit": {
+     "chance": 0.3,
+     "status": "stagger",
+     "turns": 1
+    },
+    "weight": 1
+   }
+  ],
+  "flavor": "獵群的狼衛低伏咆哮:「冷血的死物 —— 你踏進了獸血的獵場,今夜就是你的葬身之地。」",
+  "loot_gold": [
+   20,
+   50
+  ],
+  "loot": [
+   {
+    "item": "wolf_pelt",
+    "chance": 0.45
+   },
+   {
+    "item": "minor_healing_potion",
+    "chance": 0.25
+   }
+  ]
+ },
+ "pack_avenger": {
+  "name": "獵群血牙",
+  "danger": 4,
+  "min_level": 99,
+  "weight": 0,
+  "sentient": true,
+  "strength": 58,
+  "agility": 52,
+  "speed": 56,
+  "max_health": 62,
+  "armor_rating": 12,
+  "attack": {
+   "name": "巨顎撕咬",
+   "damage": 15,
+   "skill": 56
+  },
+  "attacks": [
+   {
+    "name": "巨顎撕咬",
+    "damage": 15,
+    "skill": 56,
+    "weight": 3
+   },
+   {
+    "name": "裂甲抓擊",
+    "damage": 14,
+    "skill": 56,
+    "weight": 2
+   },
+   {
+    "name": "血月猛撲",
+    "damage": 12,
+    "skill": 56,
+    "cooldown": 3,
+    "on_hit": {
+     "chance": 0.3,
+     "status": "stagger",
+     "turns": 1
+    },
+    "weight": 1
+   }
+  ],
+  "flavor": "獵群的血牙循著你的氣味撲出,獸血宿仇在牠眼中燃燒:「血族的殘渣,連一滴血都髒。」",
+  "loot_gold": [
+   40,
+   90
+  ],
+  "loot": [
+   {
+    "item": "wolf_pelt",
+    "chance": 0.5
+   },
+   {
+    "item": "healing_potion",
+    "chance": 0.4
+   }
+  ]
+ },
  "umaril_the_unfeathered": {
   "name": "不羽者烏瑪瑞爾",
   "strength": 72,

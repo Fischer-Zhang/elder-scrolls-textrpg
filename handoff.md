@@ -1412,6 +1412,24 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 
 ---
 
+### R148 · 血族↔獵群宿仇接進 R96 敵意引擎(選邊詛咒血脈的世界後果) [content]
+
+**承「下一步」survey(#5)**:8-agent 冷系統盤點揪出 R52/R57 已把血族(coven_vampire)vs 獵群(werewolf_pack)的「千年宿敵」敘事寫滿(coven「血脈宿仇」/pack「獸血宿仇」任務反覆申明),但 `factions.json` 兩派 `rivals=[]` → R96 敵意引擎(`faction_hostility`→路途伏擊/對話冷待/入會互斥,全由 rivals 驅動)對「選了哪一邊詛咒」**機制上完全未接** = 一條死敘事。
+
+**評估(先解 ⚠ opt-out 疑慮)**:候選帶「需確認 R96 curse opt-out 是否刻意」。查證:R96 的 opt-out(「lair〔coven/werewolf〕+cult opt out」)**僅指 Phase 2 據點消長**(territorial footprint·明列「下期」),**不涉 Phase 1 敵意**;空 rivals = 尚未接線,非刻意 Phase-1 邊界。**吸血鬼↔狼人互斥**(`vampirism.py:70`/`lycanthropy.py:260` 互擋第二詛咒)→ 玩家永只能屬 coven/pack 之一 → `faction_hostility` 全自洽、rivals 入會互斥冗餘但無害;且無 NPC 標 coven/pack `guild` → 對話 hostility 分支不誤觸,**有效效果=路途伏擊**。
+
+**核心(近純資料·零存檔欄)**:`coven_vampire↔werewolf_pack` 互列 rivals → R96 `faction_hostility`(純衍生自 `char.factions`·對舊存檔自動生效)立刻生效。**membership-gated + rank ramp**:`faction_hostility` 只在玩家*加入*宿敵詛咒公會時 >0;路途伏擊再經 `_GUILD_HOSTILITY_AMBUSH_MIN=2` 閘 → **rank 1+ 才出動**(rank-0 僅對話冷待)= 深化承諾(R52 入會)才招來真敵人,契合「選邊 → 世界後果」;`bounty>guild` 優先序不雙觸、騎馬降頻、存活不加賞金(自衛),與 R50 城內圍捕分屬路途/抵城不同觸發點,無衝突。
+
+**主題化打手**(避免「獵群派人類公會打手」違和·貼 R139–R145 主題稽核):`main._guild_enforcer_ambush` 改讀 per-faction `enforcer_creature`/`avenger_creature`/`ambush_msg` 覆寫(**無欄 → fallback 通用 guild_enforcer/guild_avenger → 既有 4 公會〔戰士/盜賊/黑兄/神話黎明〕逐位元組同**;tier>=4→avenger)。4 隻新 spawn-only(weight0/min_level99)主題怪:coven_enforcer/coven_avenger(**吸血鬼·undead·R139 frost/poison 抗+fire 弱**)、pack_enforcer/pack_avenger(**狼人·beast**),戰力≈通用打手(hp46/62·傷 12/15)→ 伏擊難度不偏移;宿仇專屬 `ambush_msg`(血族派夜刃獵獸血/獵群派狼衛獵冷血)。
+
+**🔴 對抗審查(4 維 fan-out→逐項驗證)→ 0 blocker/major·1 confirmed minor**:coven_avenger「懾魂凝視」(凝視/心智攻擊·on_hit fear)漏標 `element:"magic"` → 破 R145「板甲擋不住凝視/荊棘反彈不了凝視」(荊棘重甲狼人可把心智攻擊當物理反彈/減傷);修=加 `element:"magic"`(比照姊妹凝視 攝魂凝視/魅惑凝視)+ 補「懾魂凝視」入 `test_ranged_logic_r145._PSYCHIC` 守衛(原硬編名單漏之 → run_all 全綠掩蓋)。其餘 3 維(互動邊界/平衡主題/byte-save)0 findings。
+
+**驗證**:`run_all` **126**(test_faction_liveness 改 test_no_rival_guilds_never_hostile〔移除 coven/pack〕+ 新 test_curse_blood_feud_wiring/test_curse_ambush_spawns_themed_enforcers);**sim_assassin BYTE-IDENTICAL**(未碰 combat.py/formulas.py·刺客非 coven/pack 會員·不觸伏擊·不生成新怪·sim 在 R132 baseline 48.6%/30.3%);BESTIARY.md 重生(154 怪)·**零新存檔欄**(敵意純衍生 char.factions·主題打手/伏擊白皆 gamedata 唯讀)。
+
+**🔴 鐵律**:加公會宿仇純改 `factions.json` rivals(**須對稱雙向**);主題打手走 `enforcer_creature`/`avenger_creature`/`ambush_msg` 三欄(**無欄=通用 fallback·勿破既有公會 byte-identical**);新凝視/心智/尖嘯攻擊**必標 `element:"magic"`(R145)**+ 入 `test_ranged_logic_r145._PSYCHIC` 守衛;敵意 membership-gated(勿改成「純詛咒者即被獵殺」→ 會誤傷未入會的詛咒玩家)。**前瞻**:R96 Phase 2 據點消長(公會城足跡·coven/pack lair opt out 仍成立);主題打手曲目可深化(蓄力大招/召喚同類)。
+
+---
+
 ### R147 · 運動樹身份化:「調息」續戰(耗一回合換回體·主動招牌招式) [re-sim]
 
 **承「下一步」盤點**(#6 運動樹身份化):athletics 是 7 棵 `spec:combat` 樹中**唯一**零主動戰鬥招式者(連姊妹速度技 acrobatics 都有 on_evade)—— R34-R43 冷技能功能化最後漏網。里程碑問題:零招式、「不竭之軀」母題重複三次、75 escape_artist 軟 no-brainer、25/100 閃避與 acrobatics/R132 冗餘。

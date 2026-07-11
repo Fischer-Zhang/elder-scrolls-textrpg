@@ -5660,12 +5660,20 @@ def _guild_enforcer_ambush(state: GameState, gamedata: GameData, fid: str, tier:
 
     敵意純衍生自 char.factions(身屬其宿敵公會),零存檔欄。**永久後果·by-design**:本作無退會
     機制 → 加入一個公會即與其宿敵結怨一生(burn-your-bridges,加入公會的代價;與 R84 可清賞金不同)。
-    緩衝靠騎馬降頻 + offer_battle 偵查/潛行撤退;存活**不**加賞金/惡名(自衛,不雪上加霜)。"""
-    creature = "guild_avenger" if tier >= 4 else "guild_enforcer"
+    緩衝靠騎馬降頻 + offer_battle 偵查/潛行撤退;存活**不**加賞金/惡名(自衛,不雪上加霜)。
+
+    R148:公會可選 `enforcer_creature`/`avenger_creature` 覆寫打手種類(血族↔獵群宿仇 → 派吸血鬼/狼人
+    而非通用打手),`ambush_msg` 覆寫伏擊白;無覆寫則沿用通用 guild_enforcer/guild_avenger →
+    既有公會(戰士/盜賊/黑兄/神話黎明)逐位元組同。"""
+    f = gamedata.factions[fid]
+    if tier >= 4:
+        creature = f.get("avenger_creature") or f.get("enforcer_creature") or "guild_avenger"
+    else:
+        creature = f.get("enforcer_creature") or "guild_enforcer"
     count = min(3, 1 + tier // 3)
     foes = [combat.spawn_creature(gamedata, creature, state.rng) for _ in range(count)]
-    name = gamedata.factions[fid]["name"]
-    ui.message(f"{name}的打手堵住了去路 —— 你壞了他們的事,該來算這筆帳了。", style="bold red")
+    msg = f.get("ambush_msg") or f"{f['name']}的打手堵住了去路 —— 你壞了他們的事,該來算這筆帳了。"
+    ui.message(msg, style="bold red")
     if offer_battle(state, gamedata, foes, surprise=True, mounted=True) == "dead":
         return "dead"
     return None

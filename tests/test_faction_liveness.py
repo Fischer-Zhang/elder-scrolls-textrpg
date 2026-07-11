@@ -49,11 +49,50 @@ def test_hostility_tier_scales_with_rank():
 
 
 def test_no_rival_guilds_never_hostile():
-    # mages/companions/coven/werewolf 無 rivals → 對任何人皆不敵視
+    # mages/companions 無 rivals → 對任何人皆不敵視
     gd, c = _char(fighters_guild=6, thieves_guild=0)   # 多公會(忽略互斥,純測敵意)
-    for g in ("mages_guild", "companions", "coven_vampire", "werewolf_pack"):
+    for g in ("mages_guild", "companions"):
         assert not gd.factions[g].get("rivals"), g
         assert factions.faction_hostility(c, gd, g) == 0, g
+
+
+def test_curse_blood_feud_wiring():
+    """R148:血族↔獵群宿仇接進 R96 敵意引擎 —— 對稱、membership-gated、派主題打手(非通用)。"""
+    gd = get_gamedata()
+    # 雙向 rivals 資料
+    assert gd.factions["coven_vampire"]["rivals"] == ["werewolf_pack"]
+    assert gd.factions["werewolf_pack"]["rivals"] == ["coven_vampire"]
+    # 入獵群 → 血族視你為仇敵(且對稱);tier 隨階級
+    _, wolf = _char(werewolf_pack=2)
+    assert factions.faction_hostility(wolf, gd, "coven_vampire") == 3   # rank2 +1
+    assert factions.most_hostile_guild(wolf, gd) == ("coven_vampire", 3)
+    _, vamp = _char(coven_vampire=4)
+    assert factions.faction_hostility(vamp, gd, "werewolf_pack") == 5   # rank4 +1
+    # 🔴 membership-gated:純詛咒者(未入詛咒公會)不被獵殺 → 敵意 0
+    _, plain = _char()
+    assert factions.faction_hostility(plain, gd, "coven_vampire") == 0
+    assert factions.faction_hostility(plain, gd, "werewolf_pack") == 0
+
+
+def test_curse_ambush_spawns_themed_enforcers():
+    """R148:血族/獵群伏擊派主題打手(吸血鬼/狼人),非通用 guild_enforcer;tier>=4→avenger。"""
+    import tesrpg.main as M
+    from tesrpg.ui import console as ui
+    gd, c = _char()
+    st = GameState(player=c, time=GameTime(), rng=RNG(1))
+    saved_ob, saved_msg = M.offer_battle, ui.message
+    cap = {}
+    ui.message = lambda *a, **k: None
+    M.offer_battle = lambda state, g, foes, **k: cap.update(foes=foes)
+    try:
+        M._guild_enforcer_ambush(st, gd, "coven_vampire", 2)    # tier<4 → enforcer
+        assert all(f.template_id == "coven_enforcer" for f in cap["foes"]), cap["foes"]
+        M._guild_enforcer_ambush(st, gd, "werewolf_pack", 5)    # tier>=4 → avenger
+        assert all(f.template_id == "pack_avenger" for f in cap["foes"]), cap["foes"]
+        M._guild_enforcer_ambush(st, gd, "fighters_guild", 5)   # 既有公會不受影響 → 通用打手
+        assert all(f.template_id == "guild_avenger" for f in cap["foes"]), cap["foes"]
+    finally:
+        M.offer_battle, ui.message = saved_ob, saved_msg
 
 
 def test_zero_save_field_pure_derivation():
