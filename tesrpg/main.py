@@ -1308,18 +1308,30 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
                 why = "恐懼" if magic.is_feared(e) else ("麻痺" if magic.is_paralyzed(e) else "安撫")   # R104 三態:恐懼/麻痺/安撫
                 ui.message(f"{e.name}因{why}而無法行動。", style="blue")
                 continue
-            # R87 敵方支援施法者:法系/祭司怪在隊友血低/缺 buff 時治療/護盾/號令其他敵人(換損該回合攻擊)。
-            support = magic.enemy_support_act(e, enemies, gamedata)
-            if support is not None:
-                ui.message(support["message"], style="cyan")
-                continue
-            # R134 BOSS 召喚爪牙:冷卻到 + 場上無存活爪牙 + 未達總量 → 召喚(換損該回合攻擊=自限;
-            # 被恐懼/麻痺已在上方 incapacitated 閘擋下 → 硬控自然停召)。爪牙本回合即參戰(list 迭代會走到)。
-            summon_msg = combat.try_boss_summon(e, enemies, gamedata, state.rng)
-            if summon_msg is not None:
-                ui.message(summon_msg, style="bold magenta")
-                continue
-            tgt = combat.pick_player_side_target(player, battle["allies"], state.rng)
+            # R152 幻術狂亂:心智被劫持 → **完全劫持**(不施法/不召喚),改攻隨機另一隻同類敵人(借刀殺人)。
+            # 🔴 置於 support/summon 之前 → 狂亂的祭司/召主不會先治療/召喚才被劫持(否則反噬機制語意)。
+            # 🔴 is_frenzied 純掃 active_effects(零 rng);**非狂亂敵走 else → support→summon→pick 順序/rng 與改前逐位元組同**
+            #    (sim 各跑自有迴圈不觸此,雙重 byte-identical)。
+            if magic.is_frenzied(e):
+                kin = [o for o in enemies if o is not e and combat.is_alive(o)]
+                if not kin:                                        # 孤身無同類 → 空轉(自限·≈ paralyze 跳過;不破終王牆)
+                    ui.message(f"{e.name}在狂亂中揮向虛空,徒然一擊。", style="blue")
+                    continue                                        # 🔴 rng.choice([]) 會 IndexError → 必守空表
+                tgt = state.rng.choice(kin)
+                ui.message(f"{e.name}在狂亂中將攻勢轉向了同伴!", style="magenta")
+            else:
+                # R87 敵方支援施法者:法系/祭司怪在隊友血低/缺 buff 時治療/護盾/號令其他敵人(換損該回合攻擊)。
+                support = magic.enemy_support_act(e, enemies, gamedata)
+                if support is not None:
+                    ui.message(support["message"], style="cyan")
+                    continue
+                # R134 BOSS 召喚爪牙:冷卻到 + 場上無存活爪牙 + 未達總量 → 召喚(換損該回合攻擊=自限;
+                # 被恐懼/麻痺已在上方 incapacitated 閘擋下 → 硬控自然停召)。爪牙本回合即參戰(list 迭代會走到)。
+                summon_msg = combat.try_boss_summon(e, enemies, gamedata, state.rng)
+                if summon_msg is not None:
+                    ui.message(summon_msg, style="bold magenta")
+                    continue
+                tgt = combat.pick_player_side_target(player, battle["allies"], state.rng)
             # R137 格擋姿態=純減傷:resolve_attack 內自動套 _guard_stance_factor(不碰命中 →
             # 荊棘/反擊樹「被命中即觸發」照常發動)→ 此處不需任何格擋旗標/rng。
             e_atk = combat.choose_enemy_attack(e, state.rng, tgt)   # 怪物多攻擊模式選招(R134:嘲諷招對敵方退回基礎單招)

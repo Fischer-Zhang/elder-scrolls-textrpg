@@ -382,6 +382,8 @@
   "calm": {"name": "安撫", "school": "illusion", "cost": 28, "target": "all", "effect": {"kind": "calm", "turns": 2}},
   "charm": {"name": "魅惑術", "school": "illusion", "cost": 25, "target": "self", "effect": {"kind": "charm", "hours": 6}},
   "invisibility": {"name": "隱形術", "school": "illusion", "cost": 40, "target": "self", "effect": {"kind": "invisibility", "hours": 3}},
+  "frenzy": {"name": "狂亂術", "school": "illusion", "cost": 26, "target": "enemy", "effect": {"kind": "apply_status", "status": {"status": "frenzied", "turns": 2}}},
+  "mass_frenzy": {"name": "群體狂亂", "school": "illusion", "cost": 54, "target": "all", "effect": {"kind": "status_all", "status": {"status": "frenzied", "turns": 2}}},
 
   "conjure_frost_atronach": {"name": "召喚冰霜元素", "school": "conjuration", "cost": 44, "target": "self", "effect": {"kind": "summon", "creature": "summoned_frost_atronach", "turns": 6}},
   "conjure_storm_atronach": {"name": "召喚雷暴元素", "school": "conjuration", "cost": 50, "target": "self", "effect": {"kind": "summon", "creature": "summoned_storm_atronach", "turns": 6}},

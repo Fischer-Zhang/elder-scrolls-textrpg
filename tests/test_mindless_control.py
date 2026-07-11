@@ -13,6 +13,7 @@ def test_fear_and_calm_blocked_on_mindless():
         e = combat.spawn_creature(gd, cid, RNG(1))
         assert magic.apply_control(e, "fear", gd, RNG(2)) == "resisted", cid
         assert magic.apply_control(e, "calm", gd, RNG(3)) == "resisted", cid
+        assert magic.apply_control(e, "frenzied", gd, RNG(4)) == "resisted", cid   # R152 狂亂=心智控場,劫持不了無心智者
         assert not e.active_effects, cid
 
 

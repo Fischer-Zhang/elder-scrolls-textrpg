@@ -2043,7 +2043,7 @@ _STATUS_TAG = {
     # 減益(紅)
     "dot": "蝕", "fear": "懼", "paralyze": "痺", "weaken": "弱", "soul_trap": "魂",
     "stagger": "踉", "slow": "緩", "benumb": "凍麻", "conduct": "導電", "erosion": "蝕抗",
-    "calm": "安撫", "offbalance": "失衡", "deathmark": "烙印",
+    "calm": "安撫", "frenzied": "狂亂", "offbalance": "失衡", "deathmark": "烙印",
     # 增益(綠)
     "shield": "盾", "regen": "生", "ward": "結界", "consecration": "聖化", "empower": "鼓舞",
     "berserk_buff": "狂暴", "bound_weapon": "束縛", "weapon_imbue": "灌注", "resonance": "共鳴",

@@ -1412,6 +1412,29 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 
 ---
 
+### R152 · 幻術「狂亂」frenzy:借刀殺人的攻擊向控場(illusion 招牌未交付) [re-sim]
+
+**承「下一步」survey(#3)**:`skills.json` illusion 自述「操弄心智:隱身、魅惑、**狂亂**」+ mechanic「恐懼/麻痺/**狂亂**等」,但全 repo grep `frenzy|狂亂` **只命中怪物招名 flavor(如「狂亂撕咬」)、機制整條缺席** —— combat 敵人從不互毆,所有控場只能「使敵跳過行動」(fear/paralyze/calm),沒有「令敵反打己方」。這是六大魔法學派身份化(R119–R122)後 illusion 最大的 advertised-but-undelivered 空洞(R118/R104 前瞻明列)。R31「不做 frenzy」是**毒劑脈絡**(毒對 flat-stat 怪降力量無效)—— 靠**重定向 targeting** 的幻術版完全不受此限。
+
+**新控場 kind `frenzied` = 心智劫持**(hard control·鏡像 fear:solo 機率抵抗 + 去重 + **無心智免疫 R140**),但**不 incapacitate** —— 被狂亂的敵**仍行動**,只是攻擊隨機另一隻**存活同類敵人**(借刀殺人);孤身無同類 → 本回合空轉(自限·≈ paralyze 跳過 → **天然不破終王牆**)。給 illusion 獨有的攻擊向群戰身份(與 fear 逼跳過/calm 脫戰正交)。
+
+**實作(benumb R73「新控場 kind 三步」)**:
+- `magic.py`:`_CONTROL_KINDS`+`_HARD_CONTROL`(:909)加 `frenzied`(cast 的 apply_status/status_all 自動路由 apply_control·**零 cast 分支**);無心智閘 tuple(:927)加 `frenzied`;新 `is_frenzied()` helper;`_status_verb`+`tick_effects` 過期文案。**不動** `is_incapacitated`(狂亂者仍行動)/ **不動** `resisted_mind`(對敵/非 fear-paralyze 恆 False → frenzy 對敵零 willpower 抗·只受 solo 抵抗)。
+- `main.py` 敵方階段(:1322):`if magic.is_frenzied(e):` 選隨機同類 `kin=[o for o in enemies if o is not e and is_alive(o)]`;**空 kin → continue(空轉·🔴 守 `rng.choice([])` IndexError)**;非狂亂走既有 `pick_player_side_target`。
+- `console.py` `_STATUS_TAG`+`frenzied:狂亂`;`spells.json` `frenzy`(cost 26·enemy·apply_status)+`mass_frenzy`(cost 54·all·status_all·R17 每敵獨立);`world.json` spell_stock 加進 4 illusion 城(imperial_city + falinesti + haven + elden_root)。
+
+**🔴 敵 vs 敵純傷害**:`resolve_attack(frenzied_enemy, other_enemy)` 全 `_is_player`-gated → 純物理/元素傷害,**無 on_hit 控場/附魔/反傷**(on_hit gate `defender is player or attacker has summon_turns` → 敵打敵不觸發)、無 A→B→A 環;狂亂互毆的擊殺=召喚爪牙照 R134 三重排除、殺召主照 `scatter_orphan_summons` 潰散。
+
+**🔴 平衡 / byte-identical**:frenzy **不給玩家任何傷害**(純重定向)→ 不碰 solo 偷襲夾/dagon 720 牆;solo 空轉在 paralyze 包絡內。**sim_assassin BYTE-IDENTICAL**(隔離 worktree vs HEAD 逐位元組同 —— 刺客不施法無 frenzied 敵;且 `sim_assassin`/`sim_builds` 各跑自有 `_round` 迴圈硬鎖玩家、不跑 main.py 敵方階段 → 雙重保證);非狂亂敵 `is_frenzied` False 短路在 rng 前 → 既有戰鬥零 rng 位移。**免 re-sim 平衡**(CC-on-enemy·群戰價值 by-design·鏡像 R43/R44 CC;`mass_frenzy` cost 54 為唯一旋鈕)。零新存檔欄(`frenzied`=active_effects 暫態·R03)。
+
+**驗證**:`run_all` **128**(新 `test_frenzy` 7 測:cast 施加/**整合敵方階段重定向〔非空測·逐分支 revert→FAIL 已驗〕**/孤身空轉守空表/mass R17 獨立/**cast 路由守 solo 機率抵抗 + mindless 免疫**/**狂亂祭司完全劫持**;test_solo_control/test_mindless_control 擴 frenzied);端到端煙霧(玩家施 mass_frenzy → 3 敵互毆·無 crash);sim_assassin **byte-identical**(隔離 worktree)。
+
+**🔴 對抗審查(4 維 7-agent)→ 0 blocker·1 major + 2 minor confirmed 全修**:① **major**:cast() 的 `_CONTROL_KINDS` 路由(solo 抵抗/mindless 免疫)無測守 —— 我的 cast 測用非 solo/非 mindless bandit(兩路同果)、solo/mindless 測直呼 apply_control 繞過 cast → 若日後 frenzied 掉出 `_CONTROL_KINDS` 會靜默出貨紅線回歸(實測命中率 0.29→1.0 而四模組照樣綠)→ **補 cast-path solo/mindless 守衛測**;② **minor**:狂亂**祭司/召主**原在 support/summon **之後**才判 frenzy → 會先治療/召喚才被劫持(反噬語意)→ **frenzy 移到 support/summon 之前(完全劫持)**+ 守衛測(狂亂期間不被詢問支援);③ **minor**:單體 `apply_status` 控場丟棄 `apply_control` 回傳 → 對免疫/抵抗目標印假成功(既有 burden=軟控恆 applied 未暴露·frenzy 首個硬控暴露)→ **讀回傳條件化訊息**(對齊 AoE 路徑·burden byte-identical)。
+
+**🔴 鐵律**:狂亂=hard 控場(solo 機率抵抗 + 去重 + 無心智免疫)但**不入 is_incapacitated**;敵方階段重定向**必守空 kin(rng.choice([]) 會崩)**;敵 vs 敵傷害靠 `_is_player`-gate 天然無副作用(勿在 on_hit 放寬到敵打敵);frenzy 不給玩家傷害 → 不破 solo/終王;`is_frenzied` 短路在 rng 前保 byte-identical;動 cost/turns → `mass_frenzy` 群戰為唯一旋鈕(免 re-sim·CC-on-enemy)。**前瞻**:frenzy 可掛 illusion 里程碑強化(時程/免疫穿透);若群戰過強再調 cost/turns。
+
+---
+
 ### R151 · 地城 FEATURE 內容擴充:模板 6→26 + 鋪進 26 座泛用地城(依 biome 分味·依 danger 分 loot 階) [content]
 
 **承「下一步」survey(#6)**:R146 蓋好「第三互動格 FEATURE」引擎(碑文 lore / 祭壇 shrine 限時增益 / 機關 puzzle 技能檢定)卻**只有 3/66 座地城宣告 `features`** → 其餘 63 座探索永遠只有遇怪/寶箱/陷阱,95% 機制同質(最大探索缺口)。本輪把已建引擎變現。**使用者拍板:純 v1 內容(不做念力球/永久誓福)+ 全部 26 座泛用地城。**

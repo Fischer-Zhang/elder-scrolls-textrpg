@@ -511,8 +511,11 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
         if dest is not None:
             st = eff["status"]
             if dest is not char and st.get("status") in _CONTROL_KINDS:   # 對敵控場走 helper(R44:閉合潛在缺口)
-                apply_control(dest, st["status"], gamedata, rng,
-                              magnitude=st.get("magnitude", 0.0), turns=st["turns"])
+                # 🔴 讀回傳:被抵抗/免疫/去重時不印假成功(對齊 status_all 路徑;burden=slow 軟控恆 applied → byte-identical)。
+                res = apply_control(dest, st["status"], gamedata, rng,
+                                    magnitude=st.get("magnitude", 0.0), turns=st["turns"])
+                msg = (f"{sp['name']} —— {dest.name}{_status_verb(st)}。" if res == "applied"
+                       else f"{sp['name']} —— 但{dest.name}的心神未被撼動,抵抗了控制。")
             else:                                                          # 自身/盟友增益、dot 照舊
                 st2 = _scaled_status(st, power)                             # R76 DoT/HoT 吃威力
                 if st2.get("status") == "consecration":                    # R122 聖化領域
@@ -522,8 +525,8 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
                     # 刷新非疊加:重施覆蓋舊光環(避免兩道並存→舊者到期誤報「黯淡」+ 減傷不疊加,審查 nit)
                     dest.active_effects[:] = [e for e in dest.active_effects if e.get("kind") != "consecration"]
                 dest.active_effects.append(make_status_effect(st2))
-            who = "你" if dest is char else dest.name
-            msg = f"{sp['name']} —— {who}{_status_verb(st)}。"
+                who = "你" if dest is char else dest.name
+                msg = f"{sp['name']} —— {who}{_status_verb(st)}。"
 
     elif kind == "dispel":   # 秘術「驅散」:淨化自身的不良控場/侵蝕效果(不動護盾/再生等增益)
         removed = [e for e in char.active_effects if e.get("kind") in _DISPELLABLE]
@@ -781,6 +784,13 @@ def is_calm(creature) -> bool:
     return any(e["kind"] == "calm" and e["turns"] > 0 for e in creature.active_effects)
 
 
+def is_frenzied(creature) -> bool:
+    """幻術狂亂(R152):心智被劫持 → **仍行動**,但攻擊隨機另一隻同類敵人(借刀殺人)。
+    刻意不入 is_incapacitated —— 狂亂者的重定向由 main.py 敵方階段讀此旗處理;
+    孤身無同類 → 空轉(自限,見 main._run_battle 敵方階段)。"""
+    return any(e["kind"] == "frenzied" and e["turns"] > 0 for e in creature.active_effects)
+
+
 def is_incapacitated(creature) -> bool:
     """恐懼 / 麻痺 / 安撫 → 本回合無法行動。"""
     return is_feared(creature) or is_paralyzed(creature) or is_calm(creature)
@@ -906,8 +916,10 @@ def reset_offbalance(creature) -> None:
 
 
 # 控場 kind 分類(R44:集中施加判定)
-_HARD_CONTROL = ("fear", "paralyze")     # 失能(經 is_incapacitated 跳過行動)→ 受抵抗/去重
-_CONTROL_KINDS = ("fear", "paralyze", "stagger", "slow", "weaken", "benumb", "calm")
+# 硬控=受 solo 機率抵抗 + 去重。fear/paralyze 失能跳過(is_incapacitated);
+# frenzied(R152 狂亂)是心智劫持,受同樣抵抗/去重,但**仍行動**只是攻向同類 → 刻意不入 is_incapacitated。
+_HARD_CONTROL = ("fear", "paralyze", "frenzied")
+_CONTROL_KINDS = ("fear", "paralyze", "stagger", "slow", "weaken", "benumb", "calm", "frenzied")
 
 
 def apply_control(target, kind, gamedata, rng, *, magnitude=0.0, turns=1, source=None, divine=False) -> str:
@@ -924,8 +936,8 @@ def apply_control(target, kind, gamedata, rng, *, magnitude=0.0, turns=1, source
     R140 心智閘:恐懼/安撫=心智控場 → 無心智者(_is_mindless:白骨/傀儡/元素…)不受(回 'resisted'·
     不擲 rng → 非 mindless 目標 byte-identical);`divine=True`(聖光驅散 turn_undead)旁路
     —— 神聖斥退作用於不死本質而非心智,骷髏照樣被驅散(TES 原典)。"""
-    if kind in ("fear", "calm") and not divine and _is_mindless(target, gamedata):
-        return "resisted"                                 # 無心智,嚇不動也安撫不了(R140)
+    if kind in ("fear", "calm", "frenzied") and not divine and _is_mindless(target, gamedata):
+        return "resisted"                                 # 無心智,嚇不動、安撫不了、也劫持不了(R140:狂亂=心智控場)
     if kind == "calm":   # R104 幻術安撫:solo boss 完全免疫(非機率)、去重防延長;成功率已由 calm_chance 群數閘,故此處不再 willpower 抗
         if _is_solo(target, gamedata):
             return "resisted"
@@ -1038,6 +1050,8 @@ def _status_verb(status: dict) -> str:
         return f"獲得再生({status['turns']} 回合)"
     if k == "benumb":
         return f"被凍麻,命中下降({status['turns']} 回合)"
+    if k == "frenzied":
+        return f"陷入狂亂,將獠牙轉向同類({status['turns']} 回合)"
     if k == "consecration":
         return f"被聖光庇佑,來襲傷害減免({status['turns']} 回合)"
     return "受到法術影響"
@@ -1095,6 +1109,8 @@ def tick_effects(entity, gamedata=None) -> list[str]:
                 msgs.append(f"{name}自凍麻中回復了準頭。")
             elif e["kind"] == "calm":
                 msgs.append(f"{name}回過神來,敵意重新燃起。")
+            elif e["kind"] == "frenzied":
+                msgs.append(f"{name}自狂亂中清醒,認清了眼前的敵人。")
             elif e["kind"] == "conduct":
                 msgs.append(f"{name}身上的導電消退了。")
             elif e["kind"] == "consecration":

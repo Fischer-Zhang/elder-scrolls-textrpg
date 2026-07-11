@@ -36,7 +36,7 @@ def test_hard_control_solo_probabilistic_rate():
     gd = _gd()
     boss = _solo_boss(gd)
     expect = 1 - formulas.SOLO_CONTROL_RESIST_CHANCE
-    for kind in ("fear", "paralyze"):
+    for kind in ("fear", "paralyze", "frenzied"):   # R152 狂亂=硬控,solo 同受機率減免
         applied, n = 0, 2000
         for s in range(n):
             boss.active_effects = []
@@ -47,9 +47,9 @@ def test_hard_control_solo_probabilistic_rate():
 
 
 def test_nonsolo_enemy_full_control():
-    """非 solo 敵人:fear/paralyze 100% 生效(無抵抗)。"""
+    """非 solo 敵人:fear/paralyze/frenzied 100% 生效(無抵抗)。"""
     gd = _gd()
-    for kind in ("fear", "paralyze"):
+    for kind in ("fear", "paralyze", "frenzied"):   # R152 狂亂納入硬控
         for s in range(50):
             wolf = combat.spawn_creature(gd, "wolf", RNG(s))
             assert magic.apply_control(wolf, kind, gd, RNG(s), turns=2) == "applied"
