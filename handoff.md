@@ -1412,6 +1412,28 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 
 ---
 
+### R153 · 互動世界地圖:面板內點擊旅行 + 我的位置聚焦 + 手機縮放/滾動陷阱修復
+
+**承「全面評估專案改進尤其 UI/UX」**:多代理審計(8 維 fan-out·51 findings→8 主題·10 agent·0 error)去重確認 UI 已高度打磨(R113/R114/R125 摘掉多數低垂果實),但**世界地圖仍是純唯讀展示**——R114D 明列延後的旗艦缺口(延後主因=「marker 點擊 vs 拖曳/showInfo vs data-key submit」三方衝突)。使用者拍板本輪做此方向。
+
+**現況**:地圖 marker 帶 `data-id`(非 `data-key`),`pointerup` 只 `showInfo` 選取、**從不提交旅行**(旅行是另條 `action_travel`/`_travel_route` menu 流);地圖經 hub「世界地圖」以唯讀 view 顯示、之後不接 prompt;手機**根本無法縮放**(只 `wheel` 事件、pan 又 gated `scale>1`)+`touch-action:none` = **滾動陷阱**;開圖停在「总覽」無「我的位置」。
+
+**解衝突(乾淨)**:把「前往」按鈕放進 `.mapinfo` 面板(**pan surface 之外的兄弟元素**)→ marker 維持只選取/拖曳,旅行由面板按鈕觸發、永不搶事件;marker **不掛 `data-key`**(否則 `wireActionableRows` 會讓上百節點搶數字鍵槽)→ 面板按鈕直接 `submit('route:'+lid)`。地圖動作由「唯讀 view」升級為**互動 grouped prompt**:emit map view 後以 `grouped_menu` 顯示、`extra_keys` 涵蓋所有可達 `route:<lid>`(**只有 `grouped` 型別 `_validate` 認 extra_keys,`menu` 不認**——已驗 `backend.py:119-127`);面板按鈕 submit 的 `route:<lid>` 因此通過驗證 → dispatch `_travel_route`。
+
+**實作**:
+- `world.routes_from(char,gd) → {lid:(hops,hours)}`:一次 BFS 回所有可見可達(非當前地)地點的段數/名目時數(複用 `is_visible`+`route_to`/`route_hours` 語意·純圖走零 rng·決定性;比對逐點各跑一次 route_to 攤成 O(V+E) 單趟)。
+- `console._map_view(char,gd,reach=None)` / `world_map(...,reach=None)`:每 grid node 加 `hops`/`hours`(reach 中取值·否則 None·當前地 None)+ `svc_all`(全 `_SERVICE_CN` 服務供 showInfo);**`reach=None` → 全 None → 逐位元組同今日唯讀 view**(back-compat);終端 fallback 分支**不動**(R27·忽略 reach)。
+- `main.action_map(state,gd) → str|None`:迴圈 `routes_from` → emit map view(帶 reach) → `grouped_menu`(extra_keys=`route:<lids>` + `__list__` 清單退路 + `__back__`);`route:` → `_travel_route`(R114D 逐跳趕路·單跳亦正確)·`__list__` → 複用既有 `action_travel`(鍵盤/無障礙退路)·抵達/途中遇襲中斷後迴圈以新位置重繪。hub dispatch 改 `died = action_map(state, gamedata)`(既有 `died=="dead"` 收尾直接涵蓋)。
+- `index.html renderMap`(純前端):`showInfo` 對可達 node(`hops!=null`)加真 `<button class="mi-go">前往(N段·約M時)</button>`→`submit('route:'+id)`(面板內·零拖曳衝突·真 `<button>` 惠鍵盤/Enter);`◎我的位置`按鈕 + 開圖聚焦當前行省(`draw(zoom,hereProv)`);`＋/－`縮放鈕(reuse wheel 數學·stage 中心錨)+ **雙指 pinch**(pointers Map 追蹤·tap/pan/pinch 分流:tap=選取 marker·單指=平移·雙指=縮放);`applyT` 內 `stage.style.touchAction = scale>1?"none":"pan-y"`(scale 1 單指捲頁=**解滾動陷阱**·放大吃 pan)。province 聚焦 handler 縮至 `.mzb[data-prov]`(排除 ＋/－ 控制鈕)。
+
+**🔴 byte-identical / 紅線**:未碰 `combat.py`/`formulas.py`/`magic.py`;`route:` 只是 `_travel_route`(R114D 既有)的另一入口·旅途 rng 與清單旅行等同(R114D 已立此等價);`sim_assassin` **byte-identical**(對齊 R132 documented baseline·未觸戰鬥路徑);**零新存檔欄**(`route:` 暫態輸入·map 中繼 `hops`/`hours` 唯讀衍生每次即算);**R27 web-only**(`world_map` 終端 fallback 保留·`reach` 預設 None 使該分支與所有既有呼叫 byte-identical·不引入終端 stdin);markers 拖曳守衛(`tap` 移動閾值)不誤選·R114 F5 ◎任務目標/⚔重踞角標保留。
+
+**驗證**:`run_all` **128**(`test_web` 擴 `_map_view` hops/hours/svc_all + `routes_from` 對齊 route_to/route_hours + 新 `test_action_map_route_dispatch`〔patch grouped_menu 回 route:<相鄰>→_travel_route(dest)、__back__→乾淨返回〕);`node --check` JS 合法;**真 WebBackend e2e**(hub→map→grouped prompt 帶 **199 route: extra_keys**·樣本 node hops/hours int·`__back__` 回 hub);伺服器 boot HTTP 200 · serves `mi-go`/`◎我的位置`;`sim_assassin` byte-identical。
+
+**🔴 鐵律**:地圖點擊旅行走 `.mapinfo` **面板按鈕 `submit('route:'+lid)`**(marker 不掛 data-key·避免上百節點搶數字鍵);互動地圖**必用 grouped prompt**(menu 型別不認 extra_keys);`reach=None` 保 back-compat(唯讀路徑逐位元組同);終端 fallback(R27)不刪·`reach` 預設 None;`routes_from` 一次 BFS 語意對齊 route_to/route_hours;動 UI 導航 → sim 天然不受影響(未碰 combat/formulas)。**前瞻(評估 backlog)**:A 角色卡資訊補完(誓福/疾病/附魔充能/魂石 review+修 renown 死視圖·ROI 最高)· C 無障礙打底(焦點/role/aria/觸控目標)· D 戰鬥/日誌可讀性· E 新手清晰度· F 導航打磨(服務目錄)· G 存檔槽位/多角色+自動存檔· H 設定面板(字級/主題·localStorage)。
+
+---
+
 ### R152 · 幻術「狂亂」frenzy:借刀殺人的攻擊向控場(illusion 招牌未交付) [re-sim]
 
 **承「下一步」survey(#3)**:`skills.json` illusion 自述「操弄心智:隱身、魅惑、**狂亂**」+ mechanic「恐懼/麻痺/**狂亂**等」,但全 repo grep `frenzy|狂亂` **只命中怪物招名 flavor(如「狂亂撕咬」)、機制整條缺席** —— combat 敵人從不互毆,所有控場只能「使敵跳過行動」(fear/paralyze/calm),沒有「令敵反打己方」。這是六大魔法學派身份化(R119–R122)後 illusion 最大的 advertised-but-undelivered 空洞(R118/R104 前瞻明列)。R31「不做 frenzy」是**毒劑脈絡**(毒對 flat-stat 怪降力量無效)—— 靠**重定向 targeting** 的幻術版完全不受此限。

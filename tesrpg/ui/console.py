@@ -658,8 +658,9 @@ def _quest_target_location_set(char: Character, gamedata: GameData) -> set:
     return out
 
 
-def _map_view(char: Character, gamedata: GameData) -> dict:
+def _map_view(char: Character, gamedata: GameData, reach: dict | None = None) -> dict:
     from tesrpg.systems import landmarks, politics, world, dungeon
+    reach = reach or {}   # {lid:(hops,hours)} 可達性;空 → 各 node hops/hours 皆 None(唯讀,back-compat)
     locs = gamedata.world["locations"]
     vis = {lid for lid in locs if world.is_visible(char, gamedata, lid)}   # 隱藏地點不上圖
     _quest_target_locs = _quest_target_location_set(char, gamedata)
@@ -699,13 +700,17 @@ def _map_view(char: Character, gamedata: GameData) -> dict:
                           "danger": loc.get("danger", 0), "faction": fac, "landmark": lm,
                           "services": [_SERVICE_CN[s] for s in loc.get("services", []) if s in _SERVICE_CN],
                           "exits": [{"name": locs[d]["name"], "hours": h} for d, h in loc.get("links", {}).items() if d in vis]})
+            _r = reach.get(lid)   # 互動地圖:可達則 (hops, hours),否則 None(當前地/不可達=None)
             grid_nodes.append({"id": lid, "name": loc["name"], "pos": loc.get("pos", [0, 0]),
                                "type": loc["type"], "type_cn": LOC_TYPE_NAME.get(loc["type"], ""),
                                "here": here, "visited": visited, "danger": loc.get("danger", 0),
                                "province": prov, "faction": fac, "landmark": lm,
                                "quest": lid in _quest_target_locs,   # R114 F5:任務目標地點
                                "reinfested": lid in _reinfest_locs,   # R114 F5:重踞中可再掃地城
-                               "svc": [_SVC_SHOW[s] for s in loc.get("services", []) if s in _SVC_SHOW]})
+                               "hops": _r[0] if _r else None,         # 互動:N 段
+                               "hours": _r[1] if _r else None,        # 互動:約 M 時
+                               "svc": [_SVC_SHOW[s] for s in loc.get("services", []) if s in _SVC_SHOW],
+                               "svc_all": [_SERVICE_CN[s] for s in loc.get("services", []) if s in _SERVICE_CN]})
         provs.append({"name": prov, "nodes": nodes,
                       "visited": visited_n, "total": len(prov_ids)})
     seen_e: set = set()      # 無向去重的連線(供地圖畫路徑 + 標時長)
@@ -2548,10 +2553,12 @@ _SERVICE_CN = {"inn": "宿", "merchant": "商", "trainer": "訓", "mages_guild":
 _MAP_ICON = {"city": "◆", "town": "◇", "dungeon": "✦", "wilderness": "·"}
 
 
-def world_map(char: Character, gamedata: GameData) -> None:
-    """資料驅動的 Tamriel 地圖:依行省分組,標出當前位置、危險度、服務與出口。"""
+def world_map(char: Character, gamedata: GameData, reach: dict | None = None) -> None:
+    """資料驅動的 Tamriel 地圖:依行省分組,標出當前位置、危險度、服務與出口。
+    `reach`(world.routes_from 結果 {lid:(hops,hours)})供 web 互動地圖標「N 段·約 M 時」並開放
+    面板內點擊前往;None=純唯讀(back-compat,終端 fallback 一律忽略)。"""
     if _web is not None:
-        _emit_view("map", _map_view(char, gamedata))
+        _emit_view("map", _map_view(char, gamedata, reach))
         return
     locs = gamedata.world["locations"]
     by_prov: dict[str, list[str]] = {}

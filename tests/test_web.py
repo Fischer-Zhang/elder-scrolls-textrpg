@@ -318,6 +318,25 @@ def test_view_model_shapes():
     for e in g["edges"]:
         assert e["a"] in ids and e["b"] in ids, f"edge 指向不存在節點:{e}"
         assert isinstance(e["h"], int) and e["h"] >= 1
+    # --- 互動地圖(reach):預設 reach=None → 每 node hops/hours 皆 None(back-compat,逐位元組同唯讀) ---
+    for n in g["nodes"]:
+        assert n["hops"] is None and n["hours"] is None
+        assert isinstance(n["svc_all"], list)
+    # world.routes_from:一次 BFS,不含當前地,只含可見可達點;hops/hours 對齊 route_to/route_hours
+    reach = _world.routes_from(c, gd)
+    assert reach and c.location_id not in reach
+    for lid, hh in list(reach.items())[:8]:
+        hops, hours = hh
+        assert hops >= 1 and hours >= 1 and _world.is_visible(c, gd, lid)
+        assert len(_world.route_to(c, gd, lid)) == hops
+        assert _world.route_hours(c, gd, _world.route_to(c, gd, lid)) == hours
+    assert any(h == 1 for h, _ in reach.values())          # 開局應有相鄰(1 段)可達點
+    # 傳入 reach → 可達 node 帶 hops/hours(對齊 reach);當前地=None
+    mv2 = ui._map_view(c, gd, reach)
+    nodes2 = {n["id"]: n for n in mv2["grid"]["nodes"]}
+    assert nodes2[c.location_id]["hops"] is None           # 當前地無前往按鈕
+    for lid in reach:
+        assert nodes2[lid]["hops"] == reach[lid][0] and nodes2[lid]["hours"] == reach[lid][1]
 
     # --- 背包(R-inv):items 帶 kind+tier;weight/max/over 齊;品質階由價值推導 ---
     from tesrpg.systems import inventory as _inv
@@ -344,6 +363,33 @@ def test_view_model_shapes():
     assert cap["title"] == "換裝對比"
     kv = {r["k"]: r["v"] for r in cap["rows"] if r.get("t") == "kv"}
     assert "傷害" in kv and "手持" in kv["傷害"] and "+" in kv["傷害"]   # 顯示與當前手持的增減
+
+
+def test_action_map_route_dispatch():
+    """互動地圖:面板 route:<lid> → action_map 走 _travel_route(dest);__back__ → 乾淨返回。"""
+    import types
+    from tesrpg.creation import build_character
+    from tesrpg.gamedata import get_gamedata
+    from tesrpg.systems import world
+    import tesrpg.main as main
+
+    gd = get_gamedata()
+    c = build_character(gd, name="測", sex="male", race="imperial", birthsign="warrior", class_id="warrior")
+    st = types.SimpleNamespace(player=c)
+    reach = world.routes_from(c, gd)
+    adj = next(lid for lid, (h, _h) in reach.items() if h == 1)
+
+    calls, seq = [], iter(["route:" + adj, "__back__"])
+    orig_wm, orig_gm, orig_tr = ui.world_map, ui.grouped_menu, main._travel_route
+    ui.world_map = lambda *a, **k: None                              # 免 web backend(不 emit)
+    ui.grouped_menu = lambda *a, **k: next(seq)                      # 先點面板前往,再返回
+    main._travel_route = lambda state, gamedata, dest: (calls.append(dest), None)[1]
+    try:
+        r = main.action_map(st, gd)
+    finally:
+        ui.world_map, ui.grouped_menu, main._travel_route = orig_wm, orig_gm, orig_tr
+    assert calls == [adj]          # route:<相鄰> → _travel_route(相鄰 lid)
+    assert r is None               # __back__ → 乾淨返回
 
 
 def test_combat_target_key_parity():

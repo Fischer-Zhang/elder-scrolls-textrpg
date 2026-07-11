@@ -1761,6 +1761,30 @@ def action_travel(state: GameState, gamedata: GameData) -> str | None:
     return _travel_to(state, gamedata, dest)
 
 
+def action_map(state: GameState, gamedata: GameData) -> str | None:
+    """互動世界地圖:emit 帶可達性中繼的地圖 → 面板內點地點可直接前往(route:<lid>),
+    或走清單退路(鍵盤/無法點地圖時)。回 'dead'(身亡)/ None。
+
+    marker 只選取看設施(維持 showInfo/拖曳);旅行由 `.mapinfo` 面板按鈕觸發 → submit 'route:<lid>'
+    → 走 `_travel_route`(R114D BFS 逐跳趕路,單跳亦正確)。抵達/途中遇襲中斷後迴圈以新位置重繪。"""
+    while True:
+        reach = world.routes_from(state.player, gamedata)      # 一次 BFS:{lid:(hops,hours)}
+        ui.world_map(state.player, gamedata, reach)            # emit map view(帶旅行中繼)
+        extra = ["route:" + lid for lid in reach]              # 面板前往按鈕的合法 key(grouped extra_keys)
+        groups = [("", [("__list__", "📋 從清單前往(鍵盤模式)"), ("__back__", "← 返回")])]
+        choice = ui.grouped_menu("世界地圖 —— 點地點看設施,可直接前往", groups, extra_keys=extra)
+        if choice == "__back__":
+            return None
+        if choice == "__list__":                               # 清單退路(鍵盤/無障礙):複用既有旅行選單
+            if action_travel(state, gamedata) == "dead":
+                return "dead"
+            continue
+        if choice.startswith("route:"):
+            if _travel_route(state, gamedata, choice[len("route:"):]) == "dead":
+                return "dead"
+            # 抵達 / 途中遇襲中斷 → 迴圈以當前(可能中途)位置重繪地圖,可歇息再續
+
+
 def _action_goal_travel(state: GameState, gamedata: GameData, targets: list) -> str | None:
     """R125 🎯 前往任務目標:單一目標直接趕路,多個則列選(BFS 逐跳自動趕路)。"""
     char = state.player
@@ -6110,7 +6134,7 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
         if choice.startswith("go:"):                 # 地點卡出口直接旅行(web 可點 chip)
             died = _travel_to(state, gamedata, choice[3:])
         elif choice == "map":
-            ui.world_map(player, gamedata)
+            died = action_map(state, gamedata)
         elif choice == "dungeon":
             died = action_dungeon(state, gamedata)
             state.player._dungeon_curse = {}         # R121 念力球反噬僅地城限:離場即清(暫態·不入檔·防滲出;唯一呼叫端)

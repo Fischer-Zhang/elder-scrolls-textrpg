@@ -106,6 +106,41 @@ def route_hours(char: Character, gamedata: GameData, path: list[str]) -> int:
     return total
 
 
+def routes_from(char: Character, gamedata: GameData) -> dict[str, tuple[int, int]]:
+    """一次 BFS 回 {lid: (hops, hours)} —— 從當前地可達的所有可見地點(不含當前地)。
+    等同對每個目的地各跑一次 `route_to`+`route_hours`,但攤成 O(V+E) 單趟(供互動地圖批量標
+    「N 段·約 M 時」)。純圖走、零 rng、決定性(links 為 JSON 插入序、BFS 逐層 → 等長路徑穩定序;
+    hops/hours 語意與 route_to/route_hours 一致)。"""
+    from collections import deque
+    locs = gamedata.world["locations"]
+    start = char.location_id
+    prev: dict = {start: None}
+    frontier = deque([start])
+    while frontier:
+        cur = frontier.popleft()
+        for d in locs[cur].get("links", {}):
+            if d in prev or not is_visible(char, gamedata, d):
+                continue
+            prev[d] = cur
+            frontier.append(d)
+    out: dict[str, tuple[int, int]] = {}
+    for lid in prev:
+        if lid == start:
+            continue
+        path: list[str] = []           # 回溯 → hops
+        n = lid
+        while n != start:
+            path.append(n)
+            n = prev[n]
+        path.reverse()
+        hours, cur = 0, start          # 沿路徑各跳 base 時數(同 route_hours)
+        for hop in path:
+            hours += (locs[cur].get("links", {}) or {}).get(hop, 0)
+            cur = hop
+        out[lid] = (len(path), hours)
+    return out
+
+
 def encounter_chance(dest_danger: int, hour: int) -> float:
     if dest_danger <= 0:
         return 0.0

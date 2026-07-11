@@ -235,7 +235,7 @@
   .mzbar{display:flex;flex-wrap:wrap;gap:5px;margin:8px 0 4px;}
   .mzb{font-size:11.5px;padding:2px 9px;background:var(--raise);border:1px solid var(--line);border-radius:11px;color:var(--ink);cursor:pointer;}
   .mzb.active{border-color:var(--gold);color:var(--gold);}
-  .mapstage{position:relative;width:100%;max-width:600px;margin:6px auto 2px;background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:8px;overflow:hidden;cursor:grab;touch-action:none;}
+  .mapstage{position:relative;width:100%;max-width:600px;margin:6px auto 2px;background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:8px;overflow:hidden;cursor:grab;touch-action:pan-y;}
   .mapstage.grabbing{cursor:grabbing;}
   .mapzoom{position:absolute;inset:0;width:100%;height:100%;transform-origin:0 0;}
   .mapedges{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1;}
@@ -260,6 +260,13 @@
   .mapinfo{min-height:20px;margin:8px 2px 0;font-size:13px;color:var(--ink);}
   .mapinfo .mi-type{color:var(--muted);font-size:12px;} .mapinfo .mi-svc{color:var(--gold);margin-left:6px;}
   .mapinfo .mi-hint{color:var(--faint);font-size:12px;}
+  /* 面板內「前往」按鈕(pan surface 之外 → 點擊旅行零拖曳衝突) */
+  .mapinfo .mi-go{margin-left:8px;vertical-align:middle;font-size:12px;font-weight:700;padding:3px 12px;cursor:pointer;
+    color:#1a1206;background:linear-gradient(#e8cb78,#caa64e);border:none;border-radius:8px;font-family:var(--sans);
+    transition:filter .12s, transform .1s;}
+  .mapinfo .mi-go:hover{filter:brightness(1.08);transform:translateY(-1px);} .mapinfo .mi-go:active{transform:translateY(0);}
+  .mapinfo .mi-go:focus-visible{outline:2px solid var(--gold);outline-offset:2px;}
+  .mzb.ctl{font-weight:700;min-width:2.4em;text-align:center;}
   /* 地城格子 */
   .dgrid{display:grid;gap:5px;margin:12px 0 4px;max-width:340px;}
   .dgcell{aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:17px;
@@ -579,6 +586,7 @@
   function renderMap(d) {
     // 相對位置地圖:依 pos 座標繪製(連線=相鄰路徑);滑鼠滾輪縮放 + 拖曳平移;放大/行省檢視顯示地名與路徑時長;點 marker 看設施
     const g = d.grid || { cols: 40, rows: 24, nodes: [], edges: [] };
+    const TOUCH = !!(window.matchMedia && window.matchMedia("(hover: none)").matches);
     const ICON = { city: "◆", town: "◇", dungeon: "✦", wilderness: "•" };
     const byId = {}; g.nodes.forEach(function (n) { byId[n.id] = n; });
     // 每個邊境節點通往的「對面省」集合(供行省檢視標 →目的省)
@@ -642,23 +650,40 @@
       zoom.innerHTML = svg + hours + marks;
     }
     function showInfo(info, n) {
-      if (!n) { info.innerHTML = '<span class="mi-hint">滾輪縮放 · 拖曳平移 · 點地點看設施;點上方行省可聚焦。<span style="color:var(--gold)">◎</span>任務目標 <span style="color:#ee6f62">⚔</span>重踞可再掃。</span>'; return; }
+      if (!n) {
+        const nav = TOUCH ? "單指捲頁 · ＋/－ 或雙指縮放" : "滾輪縮放 · 拖曳平移";
+        info.innerHTML = `<span class="mi-hint">${nav} · 點地點看設施/前往;點上方行省可聚焦。<span style="color:var(--gold)">◎</span>任務目標 <span style="color:#ee6f62">⚔</span>重踞可再掃。</span>`;
+        return;
+      }
       const here = n.here ? "★ " : "";
       const dg = n.danger ? ` <span class="chip red">⚠${n.danger}</span>` : "";
       const flag = (n.quest ? ' <span class="chip gold">◎ 任務目標</span>' : "") + (n.reinfested ? ' <span class="chip red">⚔ 重踞可再掃</span>' : "");
-      const svc = (n.svc && n.svc.length) ? `<span class="mi-svc">${esc(n.svc.join("、"))}</span>` : '<span class="mi-hint">(無特殊設施)</span>';
-      info.innerHTML = `${here}<b>${esc(n.name)}</b><span class="mi-type">·${esc(n.type_cn)}</span>${dg}${flag} ${svc}`;
+      const svcList = (n.svc_all && n.svc_all.length) ? n.svc_all : (n.svc || []);
+      const svc = svcList.length ? `<span class="mi-svc">${esc(svcList.join("、"))}</span>` : '<span class="mi-hint">(無特殊設施)</span>';
+      // 面板內前往按鈕:可達(hops!=null)且非當前地才顯;在 .mapinfo(pan surface 之外)→ 零拖曳/選取衝突
+      const go = (n.hops != null)
+        ? ` <button class="mi-go" type="button">前往（${n.hops} 段 · 約 ${n.hours} 時）</button>`
+        : (n.here ? ' <span class="mi-hint">(你在此)</span>' : ' <span class="mi-hint">(暫無路可通)</span>');
+      info.innerHTML = `${here}<b>${esc(n.name)}</b><span class="mi-type">·${esc(n.type_cn)}</span>${dg}${flag} ${svc}${go}`;
+      const b = info.querySelector(".mi-go");
+      if (b) b.addEventListener("click", function () { submit("route:" + n.id); });
     }
-    const btns = `<button class="mzb active" data-prov="">總覽</button>` +
+    const hereNode = g.nodes.filter(function (n) { return n.here; })[0];   // 開圖聚焦當前行省(「我的位置」)
+    const hereProv = hereNode ? hereNode.province : "";
+    const meBtn = hereProv ? `<button class="mzb active" data-prov="${esc(hereProv)}">◎我的位置</button>` : "";
+    const btns = meBtn + `<button class="mzb${hereProv ? "" : " active"}" data-prov="">總覽</button>` +
       d.provinces.filter(function (p) { return p.name !== "邊境"; })   // 邊境不再獨立成檢視,改由各鄰省帶出
         .map(function (p) { return `<button class="mzb" data-prov="${esc(p.name)}">${esc(p.name)}</button>`; }).join("");
+    const ctlBtns = `<button class="mzb ctl" data-zoom="in" title="放大" aria-label="放大">＋</button>`
+      + `<button class="mzb ctl" data-zoom="out" title="縮小" aria-label="縮小">－</button>`;
     const el = elFrom(`<div class="card"><div class="card-head">🗺 世界地圖</div>` +
-      `<div class="mzbar">${btns}</div>` +
+      `<div class="mzbar">${btns}${ctlBtns}</div>` +
       `<div class="mapstage" style="aspect-ratio:${g.cols}/${g.rows}"><div class="mapzoom"></div></div>` +
       `<div class="mapinfo"></div>` +
-      `<div class="maplegend">★所在 ◆城 ◇鎮 ✦地城 •荒野 <span style="color:#5fc6d8">◈通道</span> · <span style="color:#5fc6d8">青線=跨省路徑</span> · 黃→紅=危險度 · 滾輪縮放、拖曳平移</div></div>`);
+      `<div class="maplegend">★所在 ◆城 ◇鎮 ✦地城 •荒野 <span style="color:#5fc6d8">◈通道</span> · <span style="color:#5fc6d8">青線=跨省路徑</span> · 黃→紅=危險度 · 點地點看設施→前往 · ＋/－ 或滾輪縮放</div></div>`);
     const stage = el.querySelector(".mapstage"), zoom = el.querySelector(".mapzoom"), info = el.querySelector(".mapinfo");
-    let scale = 1, tx = 0, ty = 0, drag = null, moved = false;
+    let scale = 1, tx = 0, ty = 0, drag = null, pinch = null, tap = null;
+    const pts = new Map();   // 追蹤中的指標(單指=拖曳/點選,雙指=pinch)
     function clampPan() {
       const w = stage.clientWidth || 600, h = stage.clientHeight || 360;
       tx = Math.max(Math.min(0, w - w * scale), Math.min(0, tx));
@@ -667,44 +692,72 @@
     function applyT() {
       zoom.style.transform = `translate(${tx}px,${ty}px) scale(${scale})`;
       stage.classList.toggle("zoomed", scale >= 2.2);
+      stage.style.touchAction = scale > 1 ? "none" : "pan-y";   // 未放大→單指捲頁(解手機滾動陷阱);放大→吃 pan
     }
-    draw(zoom, ""); showInfo(info, null); applyT();
-    stage.addEventListener("wheel", function (ev) {
-      ev.preventDefault();
-      const r = stage.getBoundingClientRect(), cx = ev.clientX - r.left, cy = ev.clientY - r.top;
-      const ns = Math.max(1, Math.min(7, scale * (ev.deltaY < 0 ? 1.2 : 1 / 1.2)));
+    function zoomTo(ns, cx, cy) {   // 以 (cx,cy)=stage 內座標為錨縮放到 ns(1..7),≤1 歸位
+      ns = Math.max(1, Math.min(7, ns));
       tx = cx - (cx - tx) * ns / scale; ty = cy - (cy - ty) * ns / scale; scale = ns;
       if (scale <= 1.001) { scale = 1; tx = 0; ty = 0; }
       clampPan(); applyT();
+    }
+    function pdist(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
+    draw(zoom, hereProv); showInfo(info, null); stage.classList.toggle("prov", !!hereProv); applyT();
+    stage.addEventListener("wheel", function (ev) {
+      ev.preventDefault();
+      const r = stage.getBoundingClientRect();
+      zoomTo(scale * (ev.deltaY < 0 ? 1.2 : 1 / 1.2), ev.clientX - r.left, ev.clientY - r.top);
     }, { passive: false });
     stage.addEventListener("pointerdown", function (ev) {
-      moved = false;
-      if (scale <= 1) return;
-      try { stage.setPointerCapture(ev.pointerId); } catch (e) { }
-      drag = { x: ev.clientX, y: ev.clientY, tx: tx, ty: ty }; stage.classList.add("grabbing");
+      pts.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+      if (pts.size === 1) {
+        tap = { id: ev.pointerId, x: ev.clientX, y: ev.clientY };   // 潛在點選(移動超閾值即取消)
+        if (scale > 1) { try { stage.setPointerCapture(ev.pointerId); } catch (e) { } drag = { x: ev.clientX, y: ev.clientY, tx: tx, ty: ty }; stage.classList.add("grabbing"); }
+      } else if (pts.size === 2) {   // 第二指落下 → 起 pinch,取消拖曳/點選
+        tap = null; drag = null; stage.classList.remove("grabbing");
+        const v = Array.from(pts.values()); pinch = { d0: pdist(v[0], v[1]) || 1, s0: scale };
+      }
     });
     stage.addEventListener("pointermove", function (ev) {
-      if (!drag) return;
-      if (Math.abs(ev.clientX - drag.x) + Math.abs(ev.clientY - drag.y) > 3) moved = true;
-      tx = drag.tx + (ev.clientX - drag.x); ty = drag.ty + (ev.clientY - drag.y); clampPan(); applyT();
+      if (!pts.has(ev.pointerId)) return;
+      pts.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+      if (tap && ev.pointerId === tap.id && Math.abs(ev.clientX - tap.x) + Math.abs(ev.clientY - tap.y) > 3) tap = null;
+      if (pinch && pts.size >= 2) {
+        const v = Array.from(pts.values()), r = stage.getBoundingClientRect();
+        zoomTo(pinch.s0 * pdist(v[0], v[1]) / pinch.d0, (v[0].x + v[1].x) / 2 - r.left, (v[0].y + v[1].y) / 2 - r.top);
+        return;
+      }
+      if (drag) { tx = drag.tx + (ev.clientX - drag.x); ty = drag.ty + (ev.clientY - drag.y); clampPan(); applyT(); }
     });
+    function endPointer(ev) {
+      pts.delete(ev.pointerId);
+      if (pts.size < 2) pinch = null;
+      if (drag && pts.size === 0) { drag = null; stage.classList.remove("grabbing"); try { stage.releasePointerCapture(ev.pointerId); } catch (e) { } }
+    }
     stage.addEventListener("pointerup", function (ev) {
-      if (drag) { drag = null; stage.classList.remove("grabbing"); try { stage.releasePointerCapture(ev.pointerId); } catch (e) { } }
-      if (moved) { moved = false; return; }
+      const wasTap = tap && ev.pointerId === tap.id;   // 單指未移動 → 選取 marker(顯設施/前往按鈕)
+      endPointer(ev);
+      if (!wasTap) return;
+      tap = null;
       const t = document.elementFromPoint(ev.clientX, ev.clientY);
       const m = t && t.closest ? t.closest(".mmark") : null;
       if (!m) return;
       zoom.querySelectorAll(".mmark.sel").forEach(function (x) { x.classList.remove("sel"); });
       m.classList.add("sel"); showInfo(info, byId[m.dataset.id]);
     });
-    el.querySelectorAll(".mzb").forEach(function (btn) {
+    stage.addEventListener("pointercancel", endPointer);
+    el.querySelectorAll(".mzb[data-prov]").forEach(function (btn) {   // 行省聚焦(排除 ＋/－ 控制鈕)
       btn.addEventListener("click", function () {
-        el.querySelectorAll(".mzb").forEach(function (x) { x.classList.remove("active"); });
+        el.querySelectorAll(".mzb[data-prov]").forEach(function (x) { x.classList.remove("active"); });
         btn.classList.add("active");
         const prov = btn.dataset.prov;
         stage.classList.toggle("prov", !!prov);
         scale = 1; tx = 0; ty = 0;
         draw(zoom, prov); applyT(); showInfo(info, null);
+      });
+    });
+    el.querySelectorAll(".mzb.ctl").forEach(function (btn) {   // ＋/－ 縮放(手機無滾輪也能縮放),以 stage 中心為錨
+      btn.addEventListener("click", function () {
+        zoomTo(scale * (btn.dataset.zoom === "in" ? 1.4 : 1 / 1.4), stage.clientWidth / 2, stage.clientHeight / 2);
       });
     });
     return el;
