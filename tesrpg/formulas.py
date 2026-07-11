@@ -501,7 +501,8 @@ def fatigue_cost_factor(athletics_skill: int) -> float:
 
 
 # R147 運動「調息」:戰中花一回合喘息換回體(主動動作·耗一回合=不攻擊·自動解除姿態 → 結構性防無限)。
-REST_FATIGUE_BASE = 15            # 調息基礎回體(人人可用)
+# base 刻意低(續戰=運動投資的回報·非人人白給):非運動者只回 8·運動 100 → 23·+開源里程碑 → 59。
+REST_FATIGUE_BASE = 8            # 調息基礎回體(人人可用·刻意低)
 REST_FATIGUE_PER_SKILL = 0.15    # 每點運動額外回體(learn-by-doing·運動 100 → +15)
 
 
