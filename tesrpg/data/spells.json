@@ -359,9 +359,9 @@
     }
   },
 
-  "flame_blade": {"name": "焰刃術", "school": "alteration", "cost": 18, "target": "self", "effect": {"kind": "weapon_imbue", "element": "fire", "magnitude": 8, "turns": 5}},
-  "frost_blade": {"name": "霜刃術", "school": "alteration", "cost": 18, "target": "self", "effect": {"kind": "weapon_imbue", "element": "frost", "magnitude": 8, "turns": 5}},
-  "storm_blade": {"name": "雷刃術", "school": "alteration", "cost": 20, "target": "self", "effect": {"kind": "weapon_imbue", "element": "shock", "magnitude": 8, "turns": 5}},
+  "flame_blade": {"name": "焰刃術", "school": "alteration", "cost": 18, "target": "self", "effect": {"kind": "weapon_imbue", "element": "fire", "magnitude": 8, "turns": 5, "rider": {"status": "dot", "magnitude": 4, "turns": 3}}},
+  "frost_blade": {"name": "霜刃術", "school": "alteration", "cost": 18, "target": "self", "effect": {"kind": "weapon_imbue", "element": "frost", "magnitude": 8, "turns": 5, "rider": {"status": "benumb", "magnitude": 0.15, "turns": 2}}},
+  "storm_blade": {"name": "雷刃術", "school": "alteration", "cost": 20, "target": "self", "effect": {"kind": "weapon_imbue", "element": "shock", "magnitude": 8, "turns": 5, "rider": {"status": "stagger", "turns": 1, "chance": 0.3}}},
 
   "heal_other": {"name": "援護術", "school": "restoration", "cost": 20, "target": "ally", "effect": {"kind": "heal", "magnitude": 50}},
   "healing_circle": {"name": "治療之環", "school": "restoration", "cost": 40, "target": "allies", "effect": {"kind": "heal", "magnitude": 30}},

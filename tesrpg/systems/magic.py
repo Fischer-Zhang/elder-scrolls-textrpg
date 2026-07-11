@@ -431,9 +431,14 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
 
     elif kind == "weapon_imbue":   # 戰法師「奧術灌注」:自我增益 → 近戰加元素傷害(比照附魔,戰鬥內讀取)
         mag = round(eff["magnitude"] * power)
-        char.active_effects.append({"kind": "weapon_imbue", "element": eff["element"],
-                                    "magnitude": mag, "turns": eff["turns"]})
-        msg = f"{sp['name']} —— 你的兵刃纏上了{_ELEMENT_CN.get(eff['element'], '')}之力(每擊 +{mag},{eff['turns']} 回合)。"
+        entry = {"kind": "weapon_imbue", "element": eff["element"], "magnitude": mag, "turns": eff["turns"]}
+        # R149 元素刃招牌狀態:焰刃引燃(DoT)/霜刃凍麻(benumb)/雷刃踉蹌(stagger)—— rider 隨自我增益
+        # 帶入 active_effect,命中時由 combat 施加(見 combat._apply_imbue_rider),給「選哪一系刃」戰術身份。
+        if eff.get("rider"):
+            entry["rider"] = eff["rider"]
+        char.active_effects.append(entry)
+        rider_cn = _IMBUE_RIDER_CN.get((eff.get("rider") or {}).get("status"), "")
+        msg = f"{sp['name']} —— 你的兵刃纏上了{_ELEMENT_CN.get(eff['element'], '')}之力(每擊 +{mag}{rider_cn},{eff['turns']} 回合)。"
 
     elif kind == "bound_weapon":   # 召喚「束縛兵刃」:凝出法系近戰武器,取代裝備武器(無視物理護甲、可空手)
         # 存「基礎傷害」不乘 power:傷害在 combat._weapon_profile→attack_damage 隨咒術技能/力量縮放一次
@@ -953,6 +958,10 @@ def has_soul_trap(creature) -> bool:
 
 _ELEMENT_CN = {"physical": "物理", "fire": "火焰", "frost": "冰霜", "shock": "雷電", "poison": "毒素",
                "magic": "魔法", "disease": "疾病", "bleed": "撕裂"}   # R127:+物理(順帶補既有 disease 缺口·recon 顯示 R01)
+
+# R149 元素刃招牌狀態 rider 的施法文案(焰刃引燃/霜刃凍麻/雷刃踉蹌)
+_IMBUE_RIDER_CN = {"dot": "·命中引燃", "benumb": "·命中凍麻", "stagger": "·命中踉蹌",
+                   "weaken": "·命中削弱", "slow": "·命中遲緩"}
 
 
 def entity_resist(entity, gamedata) -> dict:

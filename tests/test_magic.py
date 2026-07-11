@@ -346,6 +346,65 @@ def test_bound_weapon_arms_unarmed_and_bypasses_armor():
     assert dealt >= 10                    # 束縛兵刃無視 80 護甲 → 顯著傷害
 
 
+# --- R149 元素刃招牌狀態 rider(焰刃引燃 DoT / 霜刃凍麻 benumb / 雷刃踉蹌 stagger)---------
+def _battlemage_with_blade(gd, sid):
+    c = build_character(gd, name="戰法", sex="male", race="altmer", birthsign="mage", class_id="battlemage")
+    c.skills["blade"] = 60
+    c.magicka = c.max_magicka = 200
+    c.spells = list(c.spells) + [sid]
+    magic.cast(c, gd, sid, RNG(0))
+    assert any(e.get("kind") == "weapon_imbue" and e.get("rider") for e in c.active_effects)
+    return c
+
+
+def test_flame_blade_applies_burn_dot_rider():
+    """焰刃:命中掛 fire burn DoT(source imbue_dot);多次命中刷新取 max → 恆單一,不無限疊爆。"""
+    gd = get_gamedata()
+    c = _battlemage_with_blade(gd, "flame_blade")
+    foe = combat.spawn_creature(gd, "bandit", RNG(1)); foe.max_health = foe.health = 500
+    for s in range(12):
+        combat.resolve_attack(c, foe, gd, RNG(s))
+    dots = [e for e in foe.active_effects if e.get("source") == "imbue_dot"]
+    assert len(dots) == 1 and dots[0]["element"] == "fire" and dots[0]["magnitude"] >= 1
+
+
+def test_frost_blade_applies_benumb_rider():
+    """霜刃:命中掛 benumb(凍麻)→ 敵命中被扣(減命中軟控)。"""
+    gd = get_gamedata()
+    c = _battlemage_with_blade(gd, "frost_blade")
+    foe = combat.spawn_creature(gd, "bandit", RNG(1)); foe.max_health = foe.health = 500
+    for s in range(12):
+        combat.resolve_attack(c, foe, gd, RNG(s))
+    assert magic.benumb_hit_penalty(foe) > 0
+    assert any(e.get("kind") == "benumb" for e in foe.active_effects)
+
+
+def test_storm_blade_applies_stagger_rider():
+    """雷刃:命中機率(0.3)掛 stagger(踉蹌)—— 多次命中內至少觀察到一次。"""
+    gd = get_gamedata()
+    c = _battlemage_with_blade(gd, "storm_blade")
+    foe = combat.spawn_creature(gd, "bandit", RNG(1)); foe.max_health = foe.health = 5000
+    seen = False
+    for s in range(60):
+        combat.resolve_attack(c, foe, gd, RNG(s))
+        if magic.is_staggered(foe):
+            seen = True; break
+    assert seen
+
+
+def test_elemental_blade_rider_does_not_break_solo_cap():
+    """🔴 rider 非 burst:焰刃對 solo boss 開場偷襲單擊仍受 SOLO_SNEAK 夾(imbue 傷害在夾之前·DoT 另計)。"""
+    import tesrpg.formulas as F
+    gd = get_gamedata()
+    c = _battlemage_with_blade(gd, "flame_blade")
+    c.skills["blade"] = 100
+    boss = combat.spawn_boss(gd, "mehrunes_dagon", RNG(1))
+    hp0 = boss.health
+    combat.resolve_attack(c, boss, gd, RNG(1), sneak_attack=True)
+    cap = boss.max_health * F.SOLO_SNEAK_DAMAGE_CAP_RATIO
+    assert hp0 - boss.health <= cap + 1
+
+
 def test_bound_weapon_ignores_weapon_imbue_no_double_dip():
     """束縛兵刃走元素分支,不讀物理分支的 weapon_imbue 加成 → 零雙吃(加不加灌注傷害相同)。"""
     def dmg(with_imbue):

@@ -1412,6 +1412,25 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 
 ---
 
+### R149 · 元素刃三術招牌狀態:焰刃引燃 / 霜刃凍麻 / 雷刃踉蹌 [re-sim]
+
+**承「下一步」survey(#6)**:`spells.json` 的 flame_blade/frost_blade/storm_blade 三術結構完全相同、只差 `element`,皆 `weapon_imbue` magnitude 8/turns 5 純 flat;`combat.py` 讀 weapon_imbue 只加元素傷害、無任何 rider → 對比同引擎 destruction frostbite 帶 benumb、incinerate 帶 burn DoT、R75 電系帶 conduct,三刃是「自我重複填充」,選哪一系刃無實質差異=零選擇深度。
+
+**機制(純資料 + combat 小改·複用既有 kind〔dot/benumb/stagger〕無需 R21 三步)**:三刃各掛其元素招牌 rider,給戰法師「選哪一系刃」的戰術身份:
+- **焰刃 = 引燃**:命中掛 fire burn DoT(magnitude 4/turns 3)= 傷害流,吃火抗(火抗 boss → ~0)。
+- **霜刃 = 凍麻**:命中掛 benumb(magnitude 0.15/turns 2·R73 冰系招牌軟控)= 減敵命中的生存流(刻意有別於霜附魔的 weaken)。
+- **雷刃 = 踉蹌**:命中機率(0.3)掛 stagger(turns 1)= 減敵命中,節制不成 lock(conduct 是 magic.cast 專用·武器路徑不可用 → 用 stagger)。
+
+**實作**:`spells.json` effect 加 `rider` 子鍵;`magic.py` weapon_imbue 構造 copy rider 進 active_effect(+ 施法文案 `_IMBUE_RIDER_CN`);`combat.py` weapon_imbue 命中迴圈呼叫新 `_apply_imbue_rider`(DoT 同源 `imbue_dot` 刷新取 max·**免疊爆**;控場走 `magic.apply_control`〔R44:soft 控同源去重·`benumb_hit_penalty` 取 max 非 sum → 不疊到 -60%〕)。
+
+**🔴 紅線守(rider 非 burst)**:rider 與 solo 偷襲夾之前的傷害無關(DoT/控場非 burst)→ 不碰 solo 偷襲夾(專測:焰刃 imbue 對 dagon 開場偷襲單擊仍夾至 10 << 410)、不碰終王輸出牆(probe:戰法師持焰刃 vs dagon 720 = 0/20·fire85 resist → DoT 歸零·benumb/stagger 零傷);soft 控(benumb/stagger)對 solo 無免疫(R44)但**僅減命中非 lock**;複用既有 kind → 零新存檔欄(rider 隨 active_effect·不入檔 R03)。
+
+**驗證**:`run_all` **126**(test_magic +5:三刃各施 rider·DoT 刷新非疊·solo 夾守);**sim_assassin BYTE-IDENTICAL**(隔離 worktree vs R148 逐位元組同 —— 刺客不施法 → weapon_imbue 迴圈永不執行 → rider path 不可達);**sim_builds byte-identical**(`_battlemage_act` 只 nuke/melee 不施刃 → 行為不變);對抗審查 4 維 fan-out → **0 findings**。
+
+**🔴 鐵律**:元素刃 rider 純改 `spells.json`(effect.rider·status ∈ {dot,benumb,stagger,weaken,slow})+ `combat._apply_imbue_rider`;DoT 走同源 `imbue_dot` 刷新取 max、控場走 `apply_control`(R44 同源去重·**非 burst**);rider 施加**勿放進 burst 路徑**(不碰 solo 夾 / 終王牆);動 rider magnitude/chance → 跑 sim_assassin(守 byte-identical)+ 終王 probe(守牆)。**前瞻**:元素刃 rider magnitude 可由 alteration 里程碑強化;其餘 weapon_imbue-style 自我增益同型可擴。
+
+---
+
 ### R148 · 血族↔獵群宿仇接進 R96 敵意引擎(選邊詛咒血脈的世界後果) [content]
 
 **承「下一步」survey(#5)**:8-agent 冷系統盤點揪出 R52/R57 已把血族(coven_vampire)vs 獵群(werewolf_pack)的「千年宿敵」敘事寫滿(coven「血脈宿仇」/pack「獸血宿仇」任務反覆申明),但 `factions.json` 兩派 `rivals=[]` → R96 敵意引擎(`faction_hostility`→路途伏擊/對話冷待/入會互斥,全由 rivals 驅動)對「選了哪一邊詛咒」**機制上完全未接** = 一條死敘事。

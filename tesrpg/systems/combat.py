@@ -449,6 +449,31 @@ def _apply_dot_capped(target, eff) -> None:
     target.active_effects.append(eff)
 
 
+def _apply_imbue_rider(defender, element, rider, gamedata, rng) -> None:
+    """R149 元素刃招牌狀態:焰刃引燃(fire→burn DoT)/霜刃凍麻(frost→benumb 減命中)/
+    雷刃踉蹌(shock→stagger)。命中時掛載,給戰法師「選哪一系刃」的戰術身份。
+    比照附魔 rider 慣例:DoT 同源(imbue_dot)刷新取 max(免疊爆);控場走 apply_control(R44:
+    solo 機率抵抗 + 同源去重防多刃疊),soft 控無 solo 免疫。rider 非 burst → 不碰 solo 偷襲夾。"""
+    status = rider.get("status")
+    if status == "dot":
+        mag = max(1, int(rider.get("magnitude", 1)))
+        turns = rider.get("turns", formulas.WEAPON_DOT_TURNS)
+        existing = next((e for e in defender.active_effects
+                         if e.get("kind") == "dot" and e.get("source") == "imbue_dot"
+                         and e.get("element") == element), None)
+        if existing:
+            existing["turns"] = max(existing.get("turns", 0), turns)
+            existing["magnitude"] = max(existing.get("magnitude", 0), mag)
+        else:
+            defender.active_effects.append({"kind": "dot", "element": element, "magnitude": mag,
+                                            "turns": turns, "source": "imbue_dot"})
+    elif status in ("benumb", "stagger", "weaken", "slow"):
+        if rng.chance(rider.get("chance", 1.0)):
+            magic.apply_control(defender, status, gamedata, rng,
+                                magnitude=rider.get("magnitude", 0.0),
+                                turns=rider.get("turns", 1), source=f"imbue_{element}")
+
+
 def _is_solo(creature, gamedata: GameData) -> bool:
     """該防守單位是否為 BOSS 級(bestiary `solo`)→ 適用「偷襲開場一擊不可致死」夾限。"""
     tid = getattr(creature, "template_id", None)
@@ -803,6 +828,11 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
                     if ie.get("kind") == "weapon_imbue" and ie.get("turns", 0) > 0:
                         em = formulas.resist_multiplier(magic.entity_resist(defender, gamedata), ie["element"])
                         dmg += magic._scaled_damage(ie["magnitude"], em)
+                        # R149 元素刃招牌狀態:焰刃引燃(DoT)/霜刃凍麻(benumb)/雷刃踉蹌(stagger)——
+                        # 給「選哪一系刃」的戰術身份;比照附魔 rider(同源去重、控場走 apply_control R44)。
+                        # rider 非 burst(DoT 吃抗性/控場零傷)→ 不碰 solo 偷襲夾與終王輸出牆。
+                        if ie.get("rider"):
+                            _apply_imbue_rider(defender, ie["element"], ie["rider"], gamedata, rng)
                 # 戰法師「共鳴一擊」:消耗 resonance → 加元素傷 + 引燃同系 DoT(同位置,夾限前;單次用後移除)
                 for ie in list(attacker.active_effects):
                     if ie.get("kind") == "resonance" and ie.get("turns", 0) > 0:
