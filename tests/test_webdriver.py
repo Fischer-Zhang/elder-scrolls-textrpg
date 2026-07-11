@@ -81,6 +81,7 @@ def _drive(max_prompts: int = 150, frame_timeout: float = 5.0):
                 break
     finally:
         ui.console, ui._web, ui._hud_state, ui._hud_gamedata, ui._hud_allies = saved
+        gmain._onset_hinted = None   # daemon thread 停在 game_loop 內(_onset_hinted=set())→ 復位免洩漏到後續模組(R155)
     return steps, reached_game, err.get("tb")
 
 

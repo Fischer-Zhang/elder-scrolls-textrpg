@@ -1412,6 +1412,23 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 
 ---
 
+### R155 · 新手清晰度批次:預設職業機制說明 + 創角衍生數值預覽 + 系統開場指路 + 種族/星座圖鑑
+
+**承「全面評估 UI/UX」審計 Rank 5(high/small)**:R125/R124 建了新手指引範式但只補了冷門路徑 —— **預設(★推薦)職業路徑**(多數人走的)從不說明專精/偏好/主修(R125 自承只補了自訂分支);創角做永久抉擇時**圖鑑不可開**且總覽只列名字(無衍生數值);詛咒/里程碑/煉金等深系統首次登場只有 flavor、無玩法指路。**純 UI/內容·零碰 combat/formulas/magic·零新存檔欄。**
+- **E1 預設職業說明**:新 `_explain_build_levers()`(專精 +20% 熟練·★偏好 +5·主修 7)在 `_choose_class` 開頭印(對照選單卡 chip·**含預設路徑**);`_create_custom_class` 移除重複的解釋列(改由此統一,避免自訂路徑雙重說明)。
+- **E2 創角開場指引**:`create_character` 頂端一句話講明「選擇卡 chip = 加成(屬性/技能/抗性/魔力/天賦·職業另有專精·★偏好·主修)、做什麼練什麼、開局後可查指南」。
+- **E3 衍生數值預覽**:`_creation_review` 確認前用**丟棄 rng** 建預覽角色(`build_character` 純函式 R33·不觸真 rng)並渲 `ui.character_sheet` → 看到實際血/魔/體/屬性/技能再拍板;`try/except` 保預覽純加值不擋創角。
+- **E4/E5 系統開場指路**:新 session 暫態 `_onset_hinted`(set|None·**None=game_loop 外→ `_hint_once` no-op**·`main()` finally 復位)+ 4 掛點一次性灰字指南指路:詛咒感染(→『詛咒:吸血鬼/狼人』)· 首次里程碑二選一(→『技能與里程碑』)· 首次煉金(→『煉金、毒藥與效果揭露』)· 首場戰鬥(回合制/選目標/↻ 再攻·再施 重複)。
+- **E6 種族/星座圖鑑**:codex.json 新 `races_signs` 章(order 15·`dynamic:"races_signs"`)+ `console._races_signs_index_rows`(掃 gamedata 列各族招牌能力 + 各星座特性·防陳舊);導語**元素弱點歸出生星座非種族**(種族多帶抗性)。
+
+**🔴 sim byte-identical**(未碰戰鬥·`run_battle` 首戰指路是 rng 前一個 gated ui.message·`_onset_hinted` 在 sim/game_loop 外恆 None → no-op;sim 各自 `_round`/`fight` 迴圈不呼叫 `main.run_battle`)·**零新存檔欄**(`_onset_hinted` 為模組全域非 char 欄)·R27 終端 fallback 全保留。
+
+**驗證**:`run_all` **129**(新 `test_onboarding`〔`_hint_once` no-op/去重·`_explain_build_levers` 3 槓桿·`_creation_review` 預覽+例外不擋〕·`test_codex` +races_signs·`test_web` +main() finally 復位不變式·`test_econ_qol`/`test_webdriver` 補 `_onset_hinted` 還原)·full-creation e2e(逐步創角過預覽)·`node --check`·**對抗審查 4 維 15-agent → 0 blocker/major·9 confirmed 全 minor/nit 全修**(`_onset_hinted` 未於 game_loop 退出復位=破不變式+跨測試洩漏· races_signs 導語謊稱種族弱火〔實際零種族弱點·暗精靈抗火〕· 詛咒/煉金指南章名不符· 專精 XP int() 截斷 19%〔應 round 20%〕· 戰鬥提示引用不存在標籤「↻ 再次」+誇大重複範圍· 創角導語 chip 窄化· 自訂路徑雙重說明)·2 refuted(E3 `except` 保護=by-design· onset 提示 session-scoped 重載重報=by-design 同 `_ach_seen`)。
+
+**🔴 鐵律**:新手指路走 `_hint_once`(session 暫態·**game_loop 外恆 None→no-op**·`main()` finally 復位·直呼 game_loop 的測試須還原 `_onset_hinted`);指南指路的**章名須與 codex title 精確一致**(詛咒:吸血鬼/狼人·煉金、毒藥與效果揭露·技能與里程碑);顯示數值用 `round` 非 `int`(避浮點截斷);創角預覽走 `build_character`(純函式·丟棄 rng·`try/except` 不擋創角);codex 速查用 `dynamic` 鉤子(防陳舊)·**元素弱點歸星座非種族**;純 UI/內容 → sim 天然不受影響。**前瞻 backlog**:C 無障礙打底· D 戰鬥/日誌可讀性· F 服務目錄· G 存檔槽位/多角色· H 設定面板(字級/主題)。
+
+---
+
 ### R154 · 角色卡資訊補完:誓福/疾病/附魔充能/魂 token review + 修 renown 死視圖
 
 **承「全面評估 UI/UX」審計 Rank 1(最高 ROI·high/small)**:多代理審計揪出最大**資訊可見性**缺口 —— `console.py` 對 boons **零引用**,而 39 道永久誓福(17 親王 + 9 神性 + 詛咒/收尾)是最大**終局回報層**卻在 web 完全看不到(打完十幾個親王試煉卻無從得知手上持有哪些誓福);疾病只在 status_line 剩一行「染病×N」;充能型附魔耗盡無提示;死靈師魂 token 只在祭壇可見;**R101 renown 稱號因 `_status_view` 死碼從不顯示**(web `status_line` 直接回 HUD、status 卡從不發送 → `_status_view`/`renderStatus` 皆死碼)。

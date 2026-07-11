@@ -289,6 +289,7 @@ def test_district_stay_reenters_without_hub():
     ui.menu = _menu
     ui.confirm = lambda *a, **k: True
     reached = {}
+    _saved_onset = M._onset_hinted   # game_loop 直呼會 arm _onset_hinted;還原免洩漏到後續模組(R155)
     try:
         M.game_loop(st, gd)
     except _Stop:
@@ -296,6 +297,7 @@ def test_district_stay_reenters_without_hub():
     finally:
         (ui.grouped_menu, ui.menu, ui.confirm, ui.message, ui.rule, ui.status_line,
          ui.location_panel, ui.show_events) = saved
+        M._onset_hinted = _saved_onset
     # 廣場子選單被進入兩次(首次過夜 + stay 再入才返回),而 grouped_menu 於這兩圈間「不」被重呼
     assert plaza_calls[0] == 2, f"stay 應讓廣場子選單再入一次(實際 {plaza_calls[0]})"
     assert reached.get("stop"), "返回後應回 hub(grouped_menu 再被呼叫→_Stop)"

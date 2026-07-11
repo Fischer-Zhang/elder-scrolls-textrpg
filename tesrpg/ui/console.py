@@ -1160,6 +1160,17 @@ def _trial_index_rows(gamedata: GameData) -> list:
     return rows
 
 
+def _races_signs_index_rows(gamedata: GameData) -> list:
+    """動態『種族 / 星座速查』:掃 gamedata 列各族招牌能力 + 各星座特性(隨資料更新,防陳舊)。"""
+    rows = [_hd("十大種族(創角一次性加成 + 招牌能力)")]
+    for r in (gamedata.races or {}).values():
+        rows.append(_kv(r.get("name", "?"), r.get("ability", "")))
+    rows.append(_hd("出生星座(被動天賦 / 每日異能)"))
+    for s in (gamedata.birthsigns or {}).values():
+        rows.append(_kv(s.get("name", "?"), s.get("note", "")))
+    return rows
+
+
 def _codex_rows(entry: dict, gamedata: GameData) -> list:
     """codex entry.sections → panel rows(h/p/kv/li → _hd/_kv/_ln);未知形狀靜默略過(防陳舊)。"""
     rows = []
@@ -1178,6 +1189,8 @@ def _codex_rows(entry: dict, gamedata: GameData) -> list:
         rows += _divine_index_rows(gamedata)
     elif entry.get("dynamic") == "trials":         # R124:終極真言試煉一覽(秘術/聖光·掃 quests,防陳舊)
         rows += _trial_index_rows(gamedata)
+    elif entry.get("dynamic") == "races_signs":    # 新手清晰度:種族/星座速查(掃 gamedata,防陳舊)
+        rows += _races_signs_index_rows(gamedata)
     return rows or [_ln("(本條目尚無內容)", "muted")]
 
 

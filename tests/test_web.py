@@ -723,6 +723,7 @@ def test_web_session_restartable_after_game_over():
             assert res["exc"] is None, (game, repr(res["exc"]))
             assert res["returned"], (game, "main() 未乾淨返回 → _run_game 迴圈無法重啟")
             assert res["mainmenu"] >= 2, (game, res)   # 開局主選單 + 隱退後主選單(內建可重開)
+            assert M._onset_hinted is None, "R155:main() 乾淨返回後 finally 須把 _onset_hinted 復位為 None(game_loop 外=no-op)"
             backend.flush_final("")                    # 模擬 _run_game 兩局之間的 end 哨兵
             try:
                 backend.outbound.get(timeout=1)        # 抽掉 end 幀,免污染下一局驅動

@@ -26,6 +26,9 @@ SAVE_PATH = Path.home() / ".tesrpg" / "save.json"
 # ======================================================================
 def create_character(gamedata: GameData, rng: RNG):
     ui.rule("創建角色")
+    # 新手清晰度:一句話講明選單怎麼讀 + 指南何在(創角時 codex 尚不可開,故就地點一句)
+    ui.message("每張選擇卡上的小標(chip)= 該選項給的加成(屬性、技能、抗性、魔力、天賦/威能,職業另有專精·★偏好·主修)。"
+               "技能靠使用成長(做什麼練什麼);開局後可在『人物 → 指南/圖鑑 📖』隨時查閱各系統玩法。", style="grey70")
     if ui.confirm("快速開始(隨機種族/職業)?"):
         return _quick_character(gamedata, rng)
 
@@ -104,7 +107,16 @@ def _pick_sign(gamedata: GameData, allow_back: bool = False) -> str | None:
 
 
 def _creation_review(gamedata: GameData, sex, race, sign, origin_id, class_id, custom, name) -> str:
-    """創角總覽:列出目前選擇,可逐項改;回傳 'confirm' 或要改的欄位 key(改完回到總覽)。"""
+    """創角總覽:先預覽這套選擇的實際角色卡,再列出可逐項改;回傳 'confirm' 或要改的欄位 key。"""
+    # 新手清晰度:確認前先看到衍生數值(屬性/技能/血魔體)。build_character 是純函式(R33:零存檔、
+    # 零遊戲時間、任何重建無損)→ 用獨立丟棄 rng 建預覽,不觸真正的 rng(確認時才以真 rng 生成)。
+    try:
+        preview = creation.build_character(
+            gamedata, name=name, sex=sex, race=race, birthsign=sign,
+            class_id=class_id, custom_class=custom, origin_id=origin_id, rng=RNG(1))
+        ui.character_sheet(preview, gamedata)
+    except Exception:
+        pass   # 預覽純加值:任何邊角問題都不該擋住創角(確認時的真正生成才是權威)
     rn = gamedata.races[race]["name"]
     sn = gamedata.birthsigns[sign]["name"]
     on = gamedata.origins.get(origin_id, {}).get("name", origin_id)
@@ -156,12 +168,23 @@ def _choose_origin(gamedata: GameData, allow_back: bool = False) -> str | None:
             return pick
 
 
+def _explain_build_levers() -> None:
+    """新手清晰度:講明三個 build 槓桿的實際效果(對照選單卡上的 chip:專精·/★偏好/主修N)。
+    過去只有自訂職業分支有說明,預設(★推薦)職業的槓桿效果對新手隱形(R125 只補了自訂分支)。"""
+    ui.message(f"專精 —— 該系(戰/法/潛)技能練得更快(做什麼練什麼 +{round((formulas.SPEC_SKILL_XP_MULT - 1) * 100)}% 熟練)。",
+               style="grey70")
+    ui.message(f"★偏好屬性 —— 創角時各 +{formulas.FAVORED_ATTR_BONUS}(共 2 個)。", style="grey70")
+    ui.message("主修技能 —— 升點給更多等級經驗、起始較高(共 7 個);技能靠使用成長,做得多的自然變強。",
+               style="grey70")
+
+
 def _choose_class(gamedata: GameData, origin_id: str, allow_back: bool = False) -> str | None:
     """選職業:把契合所選出身的職業標★推薦並排到最前(不過濾、不強制——自由組合保留)。
 
     出身的 `classes` 欄(origins.json,選用)是純 UI 推薦清單:只排序/標記,不碰屬性/技能(守 R18)。
     出身沒列推薦(處境型開局,適配任何職業)時 → 不排序、不標★、標題回「職業」。
     """
+    _explain_build_levers()   # 講明選單卡上「專精·/★偏好/主修N」三個 chip 的實際效果(含預設職業路徑)
     odef = gamedata.origins.get(origin_id, {})
     rec = set(odef.get("classes", []))
     ordered = sorted(gamedata.classes.items(), key=lambda kv: kv[0] not in rec)  # 推薦在前(穩定)
@@ -210,13 +233,10 @@ def _quick_character(gamedata: GameData, rng: RNG):
 
 
 def _create_custom_class(gamedata: GameData) -> dict:
-    # R125:講明兩個 build 槓桿的實際效果(過去只有主修有說明,專精/偏好屬性效果隱形)
-    ui.message(f"專精:該系技能練得更快(learn-by-doing +{int((formulas.SPEC_SKILL_XP_MULT - 1) * 100)}% XP)。", style="grey70")
+    # 三個 build 槓桿的效果已由 _choose_class 的 _explain_build_levers 講明(選單標題含 N/N 計數)→ 此處不重述。
     spec = ui.menu("專精", [(s, formulas.SPEC_NAMES[s]) for s in ("combat", "magic", "stealth")])
-    ui.message(f"挑選 2 個偏好屬性(創角時各 +{formulas.FAVORED_ATTR_BONUS}):")
     favored = _pick_distinct(
         [(a, formulas.ATTRIBUTE_NAMES[a]) for a in formulas.ATTRIBUTES], 2, "偏好屬性")
-    ui.message("挑選 7 個主修技能(升點給 ×1.5 等級經驗、起始較高):")
     skill_opts = [(sid, f"{s['name']}（{formulas.SPEC_NAMES[s['spec']]}）")
                   for sid, s in gamedata.skills.items()]
     majors = _pick_distinct(skill_opts, 7, "主修技能")
@@ -289,6 +309,19 @@ def _class_chips(c: dict) -> list[dict]:
 # 行動
 # ======================================================================
 _last_practice_skill = None   # R114C:上次練的技能(session 暫態 UI 捷徑·不入檔·跨載入自癒=re-validate)
+
+# 新手清晰度「系統開場指路」:某系統首次登場時指一次遊戲內指南(session 暫態·零存檔)。
+# None = 未啟用(→ _hint_once 為 no-op):只有 game_loop 內才 set(),使測試/sim 直呼 run_battle 等不噴提示。
+_onset_hinted: set | None = None
+
+
+def _hint_once(key: str, msg: str) -> None:
+    """某系統首次開場的一次性指路(僅 game_loop 內啟用·去重·灰字·不入檔)。"""
+    global _onset_hinted
+    if _onset_hinted is None or key in _onset_hinted:
+        return
+    _onset_hinted.add(key)
+    ui.message(msg, style="grey70")
 
 
 def action_practice(state: GameState, gamedata: GameData) -> None:
@@ -413,6 +446,8 @@ def _prompt_mastery_choice(state: GameState, gamedata: GameData, node: dict) -> 
         ui.message(f"✦ 技能里程碑「{opts[0]['name']}」確立!", style="bold magenta")
         return True
     sk = gamedata.skill_name(node["skill"])
+    _hint_once("mastery", "（技能練到門檻會解鎖「里程碑」二選一,永久強化該技能的玩法方向;"
+               "完整說明見『人物 → 指南/圖鑑 📖 → 技能與里程碑』。)")
     ui.rule(f"技能里程碑 · {sk} {node['threshold']}")
     menu_opts = [(o["opt_id"], f"{o['name']}　{o['desc']}") for o in opts]
     choice = ui.menu("你已臻宗師之境 —— 擇一銘刻你的道(此選擇永久):", menu_opts, allow_back=True)
@@ -926,6 +961,8 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
     # R114D:每場實戰計數(session 暫態·不入檔)→ 長途旅行 `_travel_hop` 據此偵測「本跳是否真打了一場」
     # (比「進了戰鬥分支」更準:偵查/潛行撤退/威嚇喝退未交戰則不計 → 不誤停行程)。單一計數點涵蓋所有戰鬥。
     state.battles_fought = getattr(state, "battles_fought", 0) + 1
+    _hint_once("combat", "戰鬥是回合制:每回合可攻擊、施法、用藥、使用戰技或逃跑;面對多敵時先選目標。"
+               "攻擊或施法後,選單頂會出現一鍵重複(↻ 再攻／↻ 再施)快速重打上一擊。")
     if not isinstance(enemies, list):
         enemies = [enemies]
     # 上陣名單:略過已不存在的同伴;排除冊封坐鎮的總管(已離隊治理);**排除倒下/負傷者**(benched 至治療)。
@@ -1342,9 +1379,13 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
                 if kind == "lycanthropy" and lycanthropy.infect(player, state):
                     ui.message("利爪撕開你的皮肉 —— 傷口深處傳來灼燒的悸動。你染上了某種野性的熱症……",
                                style="bold red")
+                    _hint_once("curse_werewolf", "（潛伏數日後將轉化。想了解狼人的力量與代價、或如何在轉化前根治?"
+                               "查『人物 → 指南/圖鑑 📖 → 詛咒:狼人』。)")
                 elif kind == "vampire" and vampirism.infect(player, state):
                     ui.message("獠牙刺入你的頸側 —— 傷口隱隱發燙。你染上了某種不祥的熱症……",
                                style="bold red")
+                    _hint_once("curse_vampire", "（潛伏數日後將轉化。想了解吸血鬼的力量與代價、或如何在轉化前根治?"
+                               "查『人物 → 指南/圖鑑 📖 → 詛咒:吸血鬼』。)")
                 elif kind == "disease" and diseases.contract(player, state, gamedata, ev.get("disease_id")):
                     _spec = gamedata.diseases.get(ev.get("disease_id"), {})
                     ui.message(f"傷口紅腫發熱、隱隱作痛 —— 你染上了「{_spec.get('name', '某種疾病')}」。"
@@ -4480,6 +4521,8 @@ def action_alchemy(state: GameState, gamedata: GameData) -> None:
             continue
 
         def _brew_and_report(x, y):
+            _hint_once("alchemy", "（煉金靠試出材料的「共有效果」:兩種材料同時帶某效果,調出的藥就帶該效果;"
+                       "嚐一口或釀成功會揭露材料效果。詳見『人物 → 指南/圖鑑 📖 → 煉金、毒藥與效果揭露』。)")
             r = alchemy.brew(char, gamedata, x, y, state.rng)
             state.time.advance(r["hours"])
             ui.message(r["message"], style="green" if r["ok"] else "yellow")
@@ -5811,8 +5854,9 @@ def _try_discover(state: GameState, gamedata: GameData, loc_id: str) -> None:
 
 
 def game_loop(state: GameState, gamedata: GameData) -> None:
-    global _last_practice_skill
+    global _last_practice_skill, _onset_hinted
     _last_practice_skill = None   # 每趟冒險起(含同進程換角/讀檔)重置練習捷徑,免跨角殘留(審查 NIT)
+    _onset_hinted = set()         # 啟用「系統開場指路」+ 每趟冒險重置(同進程換角/讀檔重新指路一次)
     last_hub_loc = None
     _ach_seen = achievements.seed_seen(state.player, gamedata)   # 成就首達通知:載入當下已達成 → 重載不重報(零存檔欄)
     _trial_hinted = trials.seed_hinted(state.player, gamedata)   # R124 試煉門檻觸發指引:載入當下已夠格 → 不重報(零存檔欄)
@@ -6287,6 +6331,7 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
 
 
 def main() -> None:
+    global _onset_hinted
     gamedata = get_gamedata()
     ui.banner()
 
@@ -6319,7 +6364,10 @@ def main() -> None:
                        "有各系統的玩法說明 —— 迷路或不確定下一步時,回城翻它。", style="cyan")
             _intro_quest_briefing(state, gamedata)   # 起手任務首入提示(我為何在這)
 
-        game_loop(state, gamedata)
+        try:
+            game_loop(state, gamedata)
+        finally:
+            _onset_hinted = None   # 本趟冒險結束(死亡/隱退/離開/例外)→ 復位;維持「game_loop 外=None → _hint_once no-op」不變式
 
 
 if __name__ == "__main__":

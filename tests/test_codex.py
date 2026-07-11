@@ -19,7 +19,7 @@ from tesrpg.web.backend import WebBackend
 _TONES = {"muted", "faint", "green", "red", "cyan", "gold", "magenta", "yellow"}
 # v1 應有的分類 id(刪類/打錯 id 會被這條測到)
 _EXPECTED_IDS = {
-    "core_loop", "skills_mastery", "combat_control", "magic_schools", "alchemy_poison",
+    "core_loop", "races_signs", "skills_mastery", "combat_control", "magic_schools", "alchemy_poison",
     "enchant_soulgem", "factions_guilds", "curse_vampire", "curse_werewolf",
     "disease_temple", "crime_bounty", "world_explore", "realm_warband",
 }
@@ -87,6 +87,14 @@ def test_codex_panel_renders_all_entries():
         assert any(r["t"] == "head" and "神殿一覽" in r["s"] for r in rows)
         shrine_locs = [loc for loc in gd.world["locations"].values() if loc.get("shrine")]
         assert len([r for r in rows if r["t"] == "kv"]) >= len(shrine_locs) >= 1
+        # 動態鉤子:races_signs 追加『十大種族』+『出生星座』速查 → 每族/每星座各一列(隨資料更新,防陳舊)
+        ui.codex_panel(gd.codex["races_signs"], gd)
+        rows = be.blocks[-1]["data"]["rows"]
+        assert any(r["t"] == "head" and "種族" in r["s"] for r in rows)
+        kvs = [r for r in rows if r["t"] == "kv"]
+        assert len(kvs) == len(gd.races) + len(gd.birthsigns)
+        rk = {r["k"] for r in kvs}
+        assert all(r["name"] in rk for r in gd.races.values()), "每個種族都應有一列"
     finally:
         ui._web = None
         ui.console = Console()
