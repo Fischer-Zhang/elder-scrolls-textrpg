@@ -42,11 +42,19 @@ def _pick(spec: dict):
 
 
 def _drive(max_prompts: int = 150, frame_timeout: float = 5.0):
+    import tempfile
+    from pathlib import Path
     import tesrpg.main as gmain
+    from tesrpg.systems import saves
 
     backend = WebBackend()
     saved = (ui.console, ui._web, ui._hud_state, ui._hud_gamedata, ui._hud_allies)
     ui.use_web_backend(backend, make_recording_console())
+    # G:驅動 main() 建新角會寫槽位存檔 → 隔離到暫存目錄,免污染真實 ~/.tesrpg/saves
+    _tmp = tempfile.TemporaryDirectory()
+    _saved_saves = (saves.SAVES_DIR, saves.LEGACY_PATH)
+    saves.SAVES_DIR = Path(_tmp.name) / "saves"
+    saves.LEGACY_PATH = Path(_tmp.name) / "save.json"
     err: dict = {}
 
     def _run():
@@ -82,6 +90,9 @@ def _drive(max_prompts: int = 150, frame_timeout: float = 5.0):
     finally:
         ui.console, ui._web, ui._hud_state, ui._hud_gamedata, ui._hud_allies = saved
         gmain._onset_hinted = None   # daemon thread 停在 game_loop 內(_onset_hinted=set())→ 復位免洩漏到後續模組(R155)
+        gmain._active_save = None    # G:main() 建新角設了活槽路徑(指向暫存)→ 復位免洩漏死路徑
+        saves.SAVES_DIR, saves.LEGACY_PATH = _saved_saves
+        _tmp.cleanup()
     return steps, reached_game, err.get("tb")
 
 

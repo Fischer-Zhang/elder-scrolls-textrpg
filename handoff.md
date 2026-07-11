@@ -1412,6 +1412,22 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 
 ---
 
+### R158 · 存檔槽位 / 多角色:角色名冊主選單 + 遷移 + 原子寫 + 隱退存檔
+
+**承「全面評估 UI/UX」審計 critic 缺口 #1(最大結構性缺口)**:過去單一 `~/.tesrpg/save.json`,「新遊戲」直接覆蓋、無法同時養兩個角色(10 種族×13 星座×4 職業本為重玩打造卻存不了第二個)。**🔴 存讀檔格式完全不變(R03 save-compat)——不加任何 Character/存檔欄·`from_dict` 本就忽略未知鍵·sim byte-identical(未碰 combat/formulas);時間戳用檔案 mtime。**
+- **新 `systems/saves.py`(純持久化工具·無 ui)**:`~/.tesrpg/saves/slotN.json`(N=1..`MAX_SLOTS=8`)。`slot_path`/`used_slots`/`next_free_slot`/`slot_meta(n,gd)`〔輕量讀 name/level/province/mode/day/mtime·**毀損/缺檔安全**〕/`roster`/`delete_slot`/`migrate_legacy`。`SAVES_DIR`/`LEGACY_PATH` 模組全域(測試覆寫暫存目錄免污染真 home)。
+- **`main.py`**:移除 `SAVE_PATH` 常數 → 新 `_active_save`(當前這趟寫入的槽路徑)。`action_save`/隱退寫 `_active_save`;`end_run` 傳奇死亡抹**自己**的槽(permadeath)、冒險死亡保留、**隱退存最終狀態**(名冊/繼續反映隱退點)。`main()` 啟動 `migrate_legacy()` 一次 → **角色名冊主選單**(▶ 繼續每角色 / ＋新角色進**空槽不覆蓋** / 🗑刪除〔確認〕/ 離開);新角配 `next_free` 槽 + **初次即存檔**(名冊立即可見·免未存即失)。helper `_rel_time`/`_slot_label`/`_create_new_game`/`_delete_save_flow`。
+- **向後相容**:舊單一 `save.json` 首次啟動搬成 `slot1.json`(既有玩家存檔自動入名冊·冪等·不覆蓋既有 slot1)。
+- **`state.py` `GameState.save` 原子化**(審查修·資料安全):寫 `.tmp` 再 `replace` 覆蓋 → 寫入中斷(斷電/ENOSPC/kill)舊有效存檔完好、不毀角色唯一存檔。格式不變·roundtrip 同。
+
+**🔴 對抗審查 4 維 14-agent → 0 blocker/major·7 confirmed(2 minor + 5 nit)全修**:①`GameState.save` 非原子→中斷毀存檔(→ .tmp+replace 原子寫)②`migrate_legacy` mkdir 在 try 外→權限失敗崩啟動(→ 納入 try)③ rename 失敗靜默孤兒舊檔(→ 跨 fs 複製後刪 fallback)④**隱退保留舊槽·名冊「繼續」載到上次手動存檔非隱退態**(→ 隱退存最終狀態)⑤滿槽「＋新角色」仍可選只彈回(→ 滿槽不顯)⑥ 跨 fs rename 孤兒(同③fallback)⑦ 兩 main()-驅動測試未還原 `_active_save`(→ finally 復位)。2 refuted(`_slot_label` KeyError/`next_free` None 皆無可達錯誤·仍加防呆 guard)。
+
+**驗證**:`run_all` **130**(新 `test_saves` 8 測:空/滿/next_free/meta/roster/**毀損安全**/遷移〔含不覆蓋既有〕/**隱退存檔 + 傳奇死抹自己槽不動別人 + 冒險死保留**/刪除確認/取消)·test_web session + test_webdriver **隔離 `saves.SAVES_DIR` 到暫存**(零真 home 污染·guard 驗)·`check.sh --smoke` 清理加 `rm -rf ~/.tesrpg/saves`·端到端(名冊繼續 + 刪除)·`sim_assassin` byte-identical。**零新存檔欄**(槽=檔案路徑·時間戳=mtime)。
+
+**🔴 鐵律**:存讀檔格式不變(R03·不加欄·mtime 當時間戳);槽位走 `saves.py`(SAVES_DIR/LEGACY_PATH 模組全域·測試須覆寫暫存);`GameState.save` 原子寫(.tmp+replace·勿回直寫);新角進 `next_free` 空槽**絕不覆蓋**;傳奇死抹**`_active_save`(當前角)**、冒險死保留、隱退存最終態;`migrate_legacy` 冪等不覆蓋既有 slot1·mkdir/rename 皆納 try·跨 fs copy fallback;**驅動 main() 的測試須隔離 SAVES_DIR + 復位 `_active_save`**;純持久化/UI → sim 天然不受影響。**前瞻**:自動存檔(critic #2·hub 返回/戰後·目前仍手動存)· 存檔改名 · backlog 剩 C 無障礙深化 · F 服務目錄。
+
+---
+
 ### R157 · 設定面板:字級 / 深色主題變體 / 減動態 / 操作說明(純前端·localStorage)
 
 **承「全面評估 UI/UX」審計 critic 缺口 #3(文字遊戲卻零設定·尤缺字級)**:過去無任何設定面板(主題僅跟 OS `prefers-color-scheme`·app 本就深色專屬)。使用者拍板**深色變體**(非完整淺色主題)。**🔴 純前端·唯一改 `index.html`·零 Python·零後端/存檔·client-only localStorage → sim/run_all 天然不受影響·R27 web chrome 不碰終端退路。**

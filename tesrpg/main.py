@@ -15,10 +15,10 @@ from tesrpg.state import GameState
 from tesrpg.systems import (achievements, aiwar, alchemy, boons, brotherhood, combat, court, crafting, crime, dialogue, diseases, divines, dungeon,
                             dungeoncrawl, enchanting, events, factions, housing, inventory, landmarks, legacy,
                             lycanthropy, magic, mastery, mounts, necromancy, party, politics, potion_buff, powers,
-                            progression, quests, race_ability, skooma, smithing, spellfx, stats, trials, undercover, vampirism, warband, world, worldpulse, worldstate)
+                            progression, quests, race_ability, saves, skooma, smithing, spellfx, stats, trials, undercover, vampirism, warband, world, worldpulse, worldstate)
 from tesrpg.ui import console as ui
 
-SAVE_PATH = Path.home() / ".tesrpg" / "save.json"
+_active_save: Path | None = None   # G:當前這趟遊戲寫入的槽位存檔路徑(主選單 繼續/新角色 時設定;None=尚未開局)
 
 
 # ======================================================================
@@ -506,8 +506,11 @@ def action_level_up(state: GameState, gamedata: GameData) -> None:
 
 
 def action_save(state: GameState) -> None:
-    state.save(SAVE_PATH)
-    ui.message(f"已存檔 → {SAVE_PATH}", style="green")
+    if _active_save is None:
+        ui.message("尚無存檔槽位(請從主選單開始一趟冒險)。", style="grey70")
+        return
+    state.save(_active_save)
+    ui.message("已存檔。", style="green")
 
 
 # ======================================================================
@@ -1802,11 +1805,14 @@ def end_run(state: GameState, gamedata: GameData, ending: str) -> None:
 
     ui.legacy_screen(legacy.compute(state, gamedata, ending=ending))
 
+    if ending == "retire" and _active_save is not None:
+        state.save(_active_save)   # G:隱退保存最終狀態 → 名冊/繼續反映實際隱退點(非上次手動存檔·審查修)
     if state.game_mode == GameState.LEGEND and ending == "death":
-        SAVE_PATH.unlink(missing_ok=True)   # 傳奇模式只在「死亡」時永久抹除存檔(隱退保留)
+        if _active_save is not None:
+            _active_save.unlink(missing_ok=True)   # 傳奇模式死亡:永久抹除該角色槽位(隱退保留)
         ui.message("【傳奇模式】此生已成定局,存檔已封存。", style="magenta")
-    elif ending == "death" and state.game_mode == GameState.ADVENTURE and SAVE_PATH.exists():
-        ui.message("(冒險模式:可從主選單『讀取存檔』回到上次存檔點。)", style="grey70")
+    elif ending == "death" and state.game_mode == GameState.ADVENTURE and _active_save is not None and _active_save.exists():
+        ui.message("(冒險模式:可從主選單選此角色,回到上次存檔點。)", style="grey70")
 
 
 # ======================================================================
@@ -6363,39 +6369,108 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
             return
 
 
+def _rel_time(mtime: float) -> str:
+    """存檔「上次遊玩」相對時間(名冊顯示用;純顯示·非遊戲狀態)。"""
+    import time as _t
+    if not mtime:
+        return "—"
+    d = _t.time() - mtime
+    if d < 0:
+        return "剛剛"
+    if d < 60:
+        return "剛剛"
+    if d < 3600:
+        return f"{int(d // 60)} 分鐘前"
+    if d < 86400:
+        return f"{int(d // 3600)} 小時前"
+    if d < 86400 * 30:
+        return f"{int(d // 86400)} 天前"
+    return _t.strftime("%Y-%m-%d", _t.localtime(mtime))
+
+
+def _slot_label(m: dict) -> str:
+    if m.get("corrupt"):
+        return f"⚠ 槽 {m['slot']} · (毀損存檔 —— 可刪除)"
+    day = f" · 第{m['day']}日" if m.get("day") else ""
+    return (f"▶ {m['name']} · Lv.{m['level']} · {m['province']} · {m['mode_cn']}"
+            f"{day} · {_rel_time(m['mtime'])}")
+
+
+def _create_new_game(gamedata: GameData):
+    """新角色:選模式 / 世界種子 / 建角 → GameState;不動槽位(呼叫端配槽 + 初次存檔)。"""
+    mode = ui.menu("選擇遊戲模式", [
+        ("adventure", "冒險模式 —— 死亡可讀檔重來,適合悠閒探索"),
+        ("legend", "傳奇模式 —— 永久死亡(roguelike),一條命定生死"),
+    ])
+    seed = make_seed(ui.ask_text("世界種子(留空=隨機;可輸入數字或任意文字)", default=""))
+    char = create_character(gamedata, RNG(seed))
+    state = GameState(player=char, rng=RNG(seed), game_mode=mode)
+    ui.character_sheet(char, gamedata)
+    ui.message(f"世界種子:{seed}（記下它,即可重玩同一個世界與命運)", style="grey70")
+    # R125 新手指引:深沙盒(做什麼練什麼、22 技能、六大魔法),把指南入口講給第一次玩的人
+    ui.message("💡 上手提示:做什麼就練什麼(learn-by-doing)。人物選單裡的「指南/圖鑑 📖」"
+               "有各系統的玩法說明 —— 迷路或不確定下一步時,回城翻它。", style="cyan")
+    return state
+
+
+def _delete_save_flow(roster: list) -> None:
+    """刪除存檔:列名冊挑一個 → 確認(不可復原)→ 刪。"""
+    opts = [(f"del:{m['slot']}",
+             f"槽 {m['slot']} · " + ("(毀損存檔)" if m.get("corrupt") else f"{m['name']} Lv.{m['level']}"))
+            for m in roster]
+    pick = ui.menu("刪除哪個存檔?(不可復原)", opts, allow_back=True)
+    if pick is None:
+        return
+    n = int(pick.split(":")[1])
+    m = next((x for x in roster if x["slot"] == n), {})
+    who = "" if m.get("corrupt") else f"「{m.get('name', '')}」"
+    if ui.confirm(f"確定永久刪除槽 {n} {who}?此操作不可復原。"):
+        saves.delete_slot(n)
+        ui.message(f"已刪除槽 {n}。", style="grey70")
+
+
 def main() -> None:
-    global _onset_hinted
+    global _onset_hinted, _active_save
     gamedata = get_gamedata()
     ui.banner()
+    saves.migrate_legacy()        # 一次性:舊單一 save.json → 槽位1(既有玩家存檔自動入名冊)
 
     while True:   # 主選單迴圈:一趟冒險(死亡/隱退/離開)結束後回到這裡
-        ui.clear_hud()        # web:回到主選單時清掉前一局殘留的常駐 HUD(死亡重開/離開重啟皆然)
-        opts = [("new", "新遊戲")]
-        if SAVE_PATH.exists():
-            opts.append(("load", "讀取存檔"))
+        ui.clear_hud()            # web:回到主選單時清掉前一局殘留的常駐 HUD
+        roster = saves.roster(gamedata)
+        full = saves.next_free_slot() is None
+        opts = [(f"slot:{m['slot']}", _slot_label(m)) for m in roster]
+        if not full:
+            opts.append(("new", "＋ 新角色"))          # 滿槽時不顯(免選了才彈回;審查 nit)
+        if roster:
+            opts.append(("delete", "🗑 刪除存檔(騰出空槽)" if full else "🗑 刪除存檔"))
         opts.append(("quit", "離開遊戲"))
-        choice = ui.menu("主選單", opts)
+        choice = ui.menu("主選單 —— 角色名冊", opts)
 
         if choice == "quit":
             ui.message("再會,旅人。", style="yellow")
             return
-        if choice == "load":
-            state = GameState.load(SAVE_PATH)
+        if choice == "delete":
+            _delete_save_flow(roster)
+            continue
+        if choice.startswith("slot:"):                # 繼續某角色
+            n = int(choice.split(":")[1])
+            try:
+                state = GameState.load(saves.slot_path(n))
+            except Exception:
+                ui.message("這個存檔無法讀取(可能已毀損)。可用『刪除存檔』移除它。", style="red")
+                continue
+            _active_save = saves.slot_path(n)
             ui.message(f"歡迎回來,{state.player.name}。", style="green")
-        else:
-            mode = ui.menu("選擇遊戲模式", [
-                ("adventure", "冒險模式 —— 死亡可讀檔重來,適合悠閒探索"),
-                ("legend", "傳奇模式 —— 永久死亡(roguelike),一條命定生死"),
-            ])
-            seed = make_seed(ui.ask_text("世界種子(留空=隨機;可輸入數字或任意文字)", default=""))
-            char = create_character(gamedata, RNG(seed))
-            state = GameState(player=char, rng=RNG(seed), game_mode=mode)
-            ui.character_sheet(char, gamedata)
-            ui.message(f"世界種子:{seed}（記下它,即可重玩同一個世界與命運)", style="grey70")
-            # R125:新手指引 —— 這是個深沙盒(做什麼練什麼、22 技能、六大魔法),把指南入口講給第一次玩的人
-            ui.message("💡 上手提示:做什麼就練什麼(learn-by-doing)。人物選單裡的「指南/圖鑑 📖」"
-                       "有各系統的玩法說明 —— 迷路或不確定下一步時,回城翻它。", style="cyan")
-            _intro_quest_briefing(state, gamedata)   # 起手任務首入提示(我為何在這)
+        else:                                          # new:建新角色進空槽(不覆蓋既有)
+            n = saves.next_free_slot()
+            if n is None:                              # 防呆(滿槽時「新角色」已不顯,理論上不達)
+                ui.message("存檔槽位已滿 —— 請先刪除一個角色再建新角。", style="yellow")
+                continue
+            state = _create_new_game(gamedata)
+            _active_save = saves.slot_path(n)
+            state.save(_active_save)                   # 初次存檔 → 名冊立即可見·免未存即遺失新角
+            _intro_quest_briefing(state, gamedata)     # 起手任務首入提示(我為何在這)
 
         try:
             game_loop(state, gamedata)

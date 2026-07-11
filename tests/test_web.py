@@ -754,7 +754,7 @@ def _drive_one_game(backend):
         if typ == "confirm":
             ans = True                    # 快速開始 / 隱退確認 一律是
         elif typ == "menu":
-            if title == "主選單":
+            if title.startswith("主選單"):   # G:標題改「主選單 —— 角色名冊」
                 mm += 1; ans = "quit" if mm >= 2 else "new"
             elif title == "選擇遊戲模式":
                 ans = "adventure"
@@ -784,11 +784,13 @@ def test_web_session_restartable_after_game_over():
     import tempfile
     from pathlib import Path
     from tesrpg import main as M
+    from tesrpg.systems import saves
     backend = WebBackend()
     ui.use_web_backend(backend, _rec())
-    saved_path = M.SAVE_PATH
-    M.SAVE_PATH = Path(tempfile.gettempdir()) / "tesrpg_test_nosave.json"
-    M.SAVE_PATH.unlink(missing_ok=True)
+    tmp = tempfile.TemporaryDirectory()
+    saved = (saves.SAVES_DIR, saves.LEGACY_PATH)   # G:槽位隔離到暫存目錄,免污染真實 ~/.tesrpg
+    saves.SAVES_DIR = Path(tmp.name) / "saves"
+    saves.LEGACY_PATH = Path(tmp.name) / "save.json"
     try:
         for game in range(2):                          # 跑兩局:第二局仍能開到主選單 = 可重開
             res = _drive_one_game(backend)
@@ -801,9 +803,11 @@ def test_web_session_restartable_after_game_over():
                 backend.outbound.get(timeout=1)        # 抽掉 end 幀,免污染下一局驅動
             except Exception:
                 pass
+        assert saves.used_slots(), "隱退後角色應留在名冊(槽位存檔)"   # G:新增名冊不變式
     finally:
-        M.SAVE_PATH = saved_path
-        (Path(tempfile.gettempdir()) / "tesrpg_test_nosave.json").unlink(missing_ok=True)
+        saves.SAVES_DIR, saves.LEGACY_PATH = saved
+        M._active_save = None   # G:main() 驅動設了活槽 → 復位免洩漏死路徑到後續模組
+        tmp.cleanup()
         _restore()
 
 

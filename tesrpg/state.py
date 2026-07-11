@@ -130,10 +130,14 @@ class GameState:
         return gs
 
     def save(self, path: str | Path) -> None:
+        # 原子寫入:先寫 .tmp 再 replace 覆蓋 → 寫入中途被中斷(斷電/ENOSPC/kill)時,
+        # 舊的有效存檔完好存活(只有 .tmp 可能殘缺),不會毀掉角色的唯一存檔(G 審查修)。
         path = Path(path)
         path.parent.mkdir(parents=True, exist_ok=True)
-        with open(path, "w", encoding="utf-8") as f:
+        tmp = path.with_name(path.name + ".tmp")
+        with open(tmp, "w", encoding="utf-8") as f:
             json.dump(self.to_dict(), f, ensure_ascii=False, indent=2)
+        tmp.replace(path)   # 同檔案系統原子替換
 
     @classmethod
     def load(cls, path: str | Path) -> "GameState":
