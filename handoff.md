@@ -1412,6 +1412,26 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 
 ---
 
+### R151 · 地城 FEATURE 內容擴充:模板 6→26 + 鋪進 26 座泛用地城(依 biome 分味·依 danger 分 loot 階) [content]
+
+**承「下一步」survey(#6)**:R146 蓋好「第三互動格 FEATURE」引擎(碑文 lore / 祭壇 shrine 限時增益 / 機關 puzzle 技能檢定)卻**只有 3/66 座地城宣告 `features`** → 其餘 63 座探索永遠只有遇怪/寶箱/陷阱,95% 機制同質(最大探索缺口)。本輪把已建引擎變現。**使用者拍板:純 v1 內容(不做念力球/永久誓福)+ 全部 26 座泛用地城。**
+
+**純改 JSON、零碰 combat/formulas/引擎、零新存檔欄、免 re-sim**(shrine 安全池=平衡紅線·由 `test_dungeon_features.py` 靜態強制)。
+
+- **20 個新模板**(池 6→26·`dungeon_features.json`):8 biome lore(諾德霜龍/丹莫火符/希斯特樹脂/約庫達劍碑/上古精靈天石/波斯莫綠約/虎人雙月/枯骨日誌)+ 6 shrine(補齊安全池:frost/poison+disease/shock+magic 抗 + agility/speed/luck + block/illusion/light_armor,risk 走 damage 或暫態 curse)+ 6 puzzle(新檢定 alchemy/scout/illusion/mysticism + security/alteration·low/mid/high loot 階)。
+- **26 座泛用地城**(27 座有 `reinfest` 中除 `cedernoc_cave` 負控制組)加 `features:[…]`,升級既有 featured 的 ashfall_barrow/volenfell(只加不刪);特殊/首領地城(39 座無 reinfest)不鋪,soul_sanctum 不動。
+- **對映規則**:biome lore + biome shrine + **danger 階 puzzle**(d1-2 只 low〔cracked_coffer 40/alchemists_lock 44〕·d3-4 只 mid〔rusted 45/hidden 48/phantom 52/ward 55〕·d5 只 high〔soul 58/sealed 62〕);∵ 每層 `rng.choice(pool)` → 池內每 puzzle 都須階配。檢定技能貼主題(矮人址 security·女巫址 illusion·魔法古址 alteration)。
+
+**🔴 安全紅線(新模板守·`test_dungeon_features.py`)**:shrine buff ∈ {fortify_attribute(除 strength ≤15)/fortify_skill(除 blade/blunt/hand_to_hand/marksman/sneak·亦避 smithing/mysticism ≤19)/resist_element(≤30)}·hours>0;risk=damage(0<lo≤hi)或暫態 curse(任意技能·只減不加·離場即清);puzzle check/loot item 真實 FK。**cedernoc_cave 永不鋪**(負控制組)·ashfall_barrow 維持 featured(硬編測)。
+
+**內容準確性對抗審查(3 維 11-agent)→ 0 blocker/major·8 findings 全 minor/nit(lore↔正典契合)已修**:① 中和 `lore_ayleid_glyph`/`shrine_stormcairn`「艾雷德」→「上古精靈」(同時服 Cyrodiil Ayleid + High Rock Direnni 上古精靈遺跡);② 腹地雙 Ayleid 遺跡(fort_ontus/vilverin)lore imperial→ayleid(imperial_relief 無正典歸屬 → 移除);③ rourken_halls(矮人)lore yokudan→dwemer;④ bangkorai_crypt(邊境雷德蓋德/布萊頓)lore frost→yokudan;⑤ hag_rock(雷契女巫·非精靈)lore ayleid→lost_expedition;⑥ 叢林波斯莫地城(spider_grove/falinesti/vindisi)新增 `shrine_greenpact`(綠約·agility/light_armor 安全池)取代虎人 shrine_moonwell(moonwell 留 3 座草原);⑦ tier 單調:alchemists_lock 46→44(<mid rusted 45)。
+
+**驗證**:`run_all` **127**(`test_dungeon_features` +2 R151:泛用全鋪+cedernoc 空、puzzle 階配 danger;既有 schema/safe-pool/FK/control/connectivity 續綠);20 新模板逐一 resolve 無 crash 煙霧;**免 re-sim**(純內容·未碰 combat/formulas·dungeons 資料不在 sim 路徑 → byte-identical)。零新存檔欄(FEATURE=暫態格·增益走 potion_buffs 自動過期·curse 走暫態 `_dungeon_curse`)。
+
+**🔴 鐵律**:加特色格純改 `dungeon_features.json`(kind∈lore/shrine/puzzle·shrine 守安全池)+ `dungeons.json` `features:[id]` opt-in;puzzle 階配 danger(low/mid/high 勿錯放·由 `test_r151_puzzle_tier_matches_danger` 守);lore↔地城正典契合(biome 只是分類·文本須貼該地城族群);shrine-per-biome 非強制但文化錯置(如虎人月井配波斯莫)算 minor;cedernoc_cave 永不鋪;隨地城重生可重複(勿加持久旗標)。**前瞻**:念力球普及(R121 orbs·非法師陷阱取捨·需先問)、永久誓福祭壇(需 sim)、特殊地城 lore-only 氛圍格。
+
+---
+
 ### R150 · 修 R129 同伴戰術傾向:消費端 build-id 誤比對(招牌功能死機制)+ 游擊先點治療者 [save-safe]
 
 **承「下一步」survey(#2·唯一確認的真 bug)**:R129 讓玩家在同伴管理選單做 bond-gated 的永久戰術抉擇(鎮守/游擊/陷陣),但**在唯一該生效處(團隊戰鬥)零效果**。根因:`party.companion_tactic` 回 **tactic-kind**(`"taunt"`/`"focus"`/`None`),而 `main.py` ally 階段(1280/1285)比對的是 **build id**(`"bulwark"`/`"skirmisher"`)→ 恆 False → 鎮守自施嘲諷從不觸發、游擊集火退回 `state.rng.choice` 隨機。舊 `test_companion_build` **只驗 getter、未驗消費** → bug 從未被抓。

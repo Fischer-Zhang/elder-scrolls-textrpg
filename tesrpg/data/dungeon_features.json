@@ -11,6 +11,46 @@
     "style": "cyan",
     "text": "一塊蒙塵的矮人石板嵌在地上,鏨刻的符文你只識得零星幾個:『……齒輪不倦、火不熄……我等終將離去,唯機關長鳴。』署名處早已鏽蝕難辨。"
   },
+  "lore_frost_carving": {
+    "kind": "lore",
+    "style": "cyan",
+    "text": "一整面冰壁被古諾德人鑿成浮雕:身披熊皮的戰士高舉戰斧,迎向盤旋的霜龍。凝望愈久,冰層深處彷彿仍迴盪著垂死的龍吼與勝者的長歌 —— 而雕匠的名字,早已凍進更深的藍暗裡。"
+  },
+  "lore_ash_runes": {
+    "kind": "lore",
+    "style": "cyan",
+    "text": "一列以黑燼填縫的丹莫符文沿熔岩石壁蜿蜒:『……先祖之火不熄,神諭之城不朽……待紅山再度醒轉,吾等自灰中歸來。』末尾的符文被熾熱扭曲,像是被誰倉皇抹去。"
+  },
+  "lore_hist_bark": {
+    "kind": "lore",
+    "style": "cyan",
+    "text": "一株半沒入黑水的希斯特古樹,樹皮上滲出琥珀色的樹脂,凝成一行行阿爾貢語的紋路。你雖不解其意,肌膚卻莫名記起某段從未經歷的記憶 —— 溫熱、擁擠、無數共享的夢。"
+  },
+  "lore_yokudan_stele": {
+    "kind": "lore",
+    "style": "cyan",
+    "text": "一方風蝕的約庫達石碑斜插在沙中,劍形的雷德蓋德古文尚可辨讀:『劍即心,心即劍。凡不能執己之魂為刃者,不配長眠於此。』碑腳堆著數柄早已鏽成薄片的殘劍,像是後來者失敗的證明。"
+  },
+  "lore_ayleid_glyph": {
+    "kind": "lore",
+    "style": "cyan",
+    "text": "崩塌的上古精靈拱頂上鑲著一枚熄滅的天石,冷白的古精靈符文繞其環刻:『向星辰俯首者,得永晝;背棄光者,墜入無星之夜。』天石早已被人撬走,只餘一圈焦黑的空槽,與一地無人收殮的白骨。"
+  },
+  "lore_vine_glyph": {
+    "kind": "lore",
+    "style": "cyan",
+    "text": "糾纏的藤蔓在活生生的樹幹上結成一面綠色符文,隨呼吸般的樹脈明滅。這是波斯莫的綠色誓約 —— 不折生木、不食草葉。符文邊緣有一道斧痕,樹幹正緩緩滲出殷紅的汁液,彷彿整座林子都記得那次背誓。"
+  },
+  "lore_khajiit_tale": {
+    "kind": "lore",
+    "style": "cyan",
+    "text": "一幅以彩沙與骨珠拼成的虎人壁畫在幽光下泛亮:傳說阿佐拉將雙月贈予虎人,好讓她的孩子在沙海中永不迷途。壁畫盡頭,一隻虎人正抬爪指月 —— 而牠腳邊的沙,已被無數同樣仰望過的旅人磨得發亮。"
+  },
+  "lore_lost_expedition": {
+    "kind": "lore",
+    "style": "cyan",
+    "text": "一具倚牆而坐的枯骨懷裡攥著半頁染血的日誌:『……第三個人昨夜也沒了。門在身後合上,火把只剩兩支。若有人讀到這裡 —— 別再往下走,那不是回聲。』字跡在此處被一道長長的劃痕拖進黑暗。"
+  },
 
   "shrine_endurance_font": {
     "kind": "shrine",
@@ -42,6 +82,96 @@
        "risk": {"type": "curse", "skill": "heavy_armor", "magnitude": 20, "text": "……但焰息灼過皮甲的記憶,你的【重甲】一時生疏(直到你走出地城)。"}}
     ]
   },
+  "shrine_frost_font": {
+    "kind": "shrine",
+    "text": "一泓凍結卻仍在低語的霜泉嵌在冰龕中,水面浮著一層永不融化的薄冰。",
+    "prompt": "霜語之泉 —— 你要?",
+    "offers": [
+      {"key": "drink", "label": "掬飲霜泉(抗霜,但寒氣噬骨)",
+       "buff": {"kind": "resist_element", "param": "frost", "magnitude": 25, "hours": 6},
+       "gain_text": "刺骨的清冽自喉頭漫向四肢,一層霜甲護住周身 —— 抗霜寒 +25%(限時)。",
+       "risk": {"type": "damage", "amount": [7, 15], "text": "……但寒氣深噬骨髓,你受了 {dmg} 點傷害。"}},
+      {"key": "quicken", "label": "以霜清神(強化敏捷,但筋骨僵冷)",
+       "buff": {"kind": "fortify_attribute", "param": "agility", "magnitude": 12, "hours": 6},
+       "gain_text": "凜冽激得神思一凜,身手也隨之輕靈 —— 強化敏捷 +12(限時)。",
+       "risk": {"type": "curse", "skill": "athletics", "magnitude": 20, "text": "……但寒意鎖住筋骨,你的【運動】一時遲滯(直到你走出地城)。"}}
+    ]
+  },
+  "shrine_hist_root": {
+    "kind": "shrine",
+    "text": "一條盤虯的希斯特氣根垂入祭池,滲出的琥珀樹脂在水面暈開一圈圈微光。",
+    "prompt": "希斯特之根 —— 你要?",
+    "offers": [
+      {"key": "sap", "label": "飲下樹脂(抗毒,但腸胃翻攪)",
+       "buff": {"kind": "resist_element", "param": "poison", "magnitude": 25, "hours": 6},
+       "gain_text": "苦澀的樹脂在血中化作一道防線 —— 抗毒素 +25%(限時)。",
+       "risk": {"type": "damage", "amount": [6, 13], "text": "……但生澀的樹脂灼過臟腑,你受了 {dmg} 點傷害。"}},
+      {"key": "commune", "label": "與根共夢(抗疾病,但心神迷離)",
+       "buff": {"kind": "resist_element", "param": "disease", "magnitude": 25, "hours": 6},
+       "gain_text": "無數陌生的夢流過腦海,替你濾去了腐濁 —— 抗疾病 +25%(限時)。",
+       "risk": {"type": "curse", "skill": "illusion", "magnitude": 20, "text": "……但殘留的夢境攪亂了你的心相,【幻術】一時失準(直到你走出地城)。"}}
+    ]
+  },
+  "shrine_stormcairn": {
+    "kind": "shrine",
+    "text": "一座上古精靈石塚頂端懸浮著半枚碎裂的天石,殘餘的雷光在石縫間無聲跳竄。",
+    "prompt": "殘輝石塚 —— 你要?",
+    "offers": [
+      {"key": "ground", "label": "引雷入體(抗電,但被餘電灼傷)",
+       "buff": {"kind": "resist_element", "param": "shock", "magnitude": 25, "hours": 6},
+       "gain_text": "一道細電竄遍全身,反倒替你築起一層抗電的屏障 —— 抗電擊 +25%(限時)。",
+       "risk": {"type": "damage", "amount": [7, 14], "text": "……但殘電不受駕馭,反噬得你受了 {dmg} 點傷害。"}},
+      {"key": "ward", "label": "汲取星輝(抗魔法,但奧術之感遲鈍)",
+       "buff": {"kind": "resist_element", "param": "magic", "magnitude": 20, "hours": 6},
+       "gain_text": "冷白的星輝裹住心神,魔法的鋒芒難以近身 —— 抗魔法 +20%(限時)。",
+       "risk": {"type": "curse", "skill": "destruction", "magnitude": 20, "text": "……但星輝壓抑了你體內的法流,【毀滅】一時滯澀(直到你走出地城)。"}}
+    ]
+  },
+  "shrine_ancestor_cairn": {
+    "kind": "shrine",
+    "text": "一座壘石祭壇上供著一柄折斷的古劍,劍格處刻著早已無人記得的先祖之名。",
+    "prompt": "先祖石壇 —— 你要?",
+    "offers": [
+      {"key": "swift", "label": "承先祖疾風(強化速度,但氣血翻湧)",
+       "buff": {"kind": "fortify_attribute", "param": "speed", "magnitude": 12, "hours": 6},
+       "gain_text": "一股疾風似的力道貫入雙腿,步履頓時如飛 —— 強化速度 +12(限時)。",
+       "risk": {"type": "curse", "skill": "heavy_armor", "magnitude": 20, "text": "……但先祖之靈嫌你負重過甚,【重甲】一時生疏(直到你走出地城)。"}},
+      {"key": "shield", "label": "立盾誓(強化格擋,但劍靈試煉其軀)",
+       "buff": {"kind": "fortify_skill", "param": "block", "magnitude": 15, "hours": 6},
+       "gain_text": "先祖的持盾之姿浮現眼前,你的臂膀憶起了卸力之道 —— 強化格擋 +15(限時)。",
+       "risk": {"type": "damage", "amount": [6, 14], "text": "……但劍靈以一擊試煉你的決意,你受了 {dmg} 點傷害。"}}
+    ]
+  },
+  "shrine_moonwell": {
+    "kind": "shrine",
+    "text": "一泓映著雙月的靜水嵌在祭壇中央,即便身處地底,水面仍浮著兩輪清冷的月影。",
+    "prompt": "雙月之井 —— 你要?",
+    "offers": [
+      {"key": "bless", "label": "承月之眷(強化幸運,但月影索取代價)",
+       "buff": {"kind": "fortify_attribute", "param": "luck", "magnitude": 12, "hours": 6},
+       "gain_text": "兩輪月光在心口交會,一股說不清的順遂縈繞周身 —— 強化幸運 +12(限時)。",
+       "risk": {"type": "curse", "skill": "mercantile", "magnitude": 20, "text": "……但月神向來公道,你的【交易】直覺一時蒙塵(直到你走出地城)。"}},
+      {"key": "veil", "label": "披月之紗(強化幻術,但被月華短暫奪明)",
+       "buff": {"kind": "fortify_skill", "param": "illusion", "magnitude": 15, "hours": 6},
+       "gain_text": "月色化作一襲薄紗覆上心相,幻法愈發如臂使指 —— 強化幻術 +15(限時)。",
+       "risk": {"type": "damage", "amount": [5, 12], "text": "……但奪目的月華灼傷了雙眼,你受了 {dmg} 點傷害。"}}
+    ]
+  },
+  "shrine_greenpact": {
+    "kind": "shrine",
+    "text": "一株活生生的樹靈自石縫探出枝椏,翠色樹脂凝成供台,空氣裡浮動著綠約的低語。",
+    "prompt": "綠約樹龕 —— 你要?",
+    "offers": [
+      {"key": "commune", "label": "與樹靈共息(強化敏捷,但藤鉤劃身)",
+       "buff": {"kind": "fortify_attribute", "param": "agility", "magnitude": 12, "hours": 6},
+       "gain_text": "林間律動貫入四肢,身手輕捷如鹿 —— 強化敏捷 +12(限時)。",
+       "risk": {"type": "damage", "amount": [6, 13], "text": "……但樹靈藤蔓倒鉤劃過皮肉,你受了 {dmg} 點傷害。"}},
+      {"key": "pact", "label": "立綠約誓(強化輕甲,但林語纏心)",
+       "buff": {"kind": "fortify_skill", "param": "light_armor", "magnitude": 15, "hours": 6},
+       "gain_text": "獸皮與葉甲的記憶在身上復甦 —— 強化輕甲 +15(限時)。",
+       "risk": {"type": "curse", "skill": "illusion", "magnitude": 20, "text": "……但綠約的低語擾亂心相,【幻術】一時失準(直到你走出地城)。"}}
+    ]
+  },
 
   "puzzle_ward_lock": {
     "kind": "puzzle",
@@ -60,5 +190,59 @@
     "success_text": "你摸清了齒輪的咬合,拉桿咔噠歸位 —— 暗格滑開,露出積藏的財貨。",
     "reward": {"loot": [{"item": "glow_dust", "chance": 0.6}, {"item": "ebony_ingot", "chance": 0.35}, {"gold": [30, 70]}]},
     "penalty": {"type": "damage", "amount": [5, 10], "text": "齒輪猛地回彈,一根鏽釘刺中了你 —— 受了 {dmg} 點傷害。"}
+  },
+  "puzzle_cracked_coffer": {
+    "kind": "puzzle",
+    "check": "security",
+    "difficulty": 40,
+    "text": "一口鏽鎖的舊木箱塞在坍石之間,鎖芯雖然簡陋,卻也卡得死緊。",
+    "success_text": "撥片輕巧一挑,鏽鎖應聲彈開 —— 箱裡是前人來不及取走的細軟。",
+    "reward": {"loot": ["lockpick", {"item": "minor_healing_potion", "chance": 0.6}, {"item": "filled_lesser_soul_gem", "chance": 0.4}, {"gold": [15, 45]}]},
+    "penalty": {"type": "damage", "amount": [4, 9], "text": "鏽鎖暗藏的針刺猛地彈出,扎了你一下 —— 受了 {dmg} 點傷害。"}
+  },
+  "puzzle_alchemists_lock": {
+    "kind": "puzzle",
+    "check": "alchemy",
+    "difficulty": 44,
+    "text": "一具密封的煉金櫃以三只色彩各異的蒸餾瓶為鎖,唯有調對配比,櫃門才會開啟。",
+    "success_text": "你辨出了三瓶試劑的相剋之性,依序旋開 —— 櫃內飄出一縷藥香,藏著前人的存貨。",
+    "reward": {"loot": [{"item": "healing_potion", "chance": 0.5}, {"item": "glow_dust", "chance": 0.6}, {"item": "dragons_tongue", "chance": 0.5}, {"gold": [20, 55]}]},
+    "penalty": {"type": "damage", "amount": [5, 11], "text": "配比一錯,櫃中噴出一團嗆人的毒霧 —— 你受了 {dmg} 點傷害。"}
+  },
+  "puzzle_hidden_cache": {
+    "kind": "puzzle",
+    "check": "scout",
+    "difficulty": 48,
+    "text": "這面牆的石縫排列得過於工整 —— 你直覺牆後藏著什麼,只待看出破綻。",
+    "success_text": "你循著一道幾不可察的氣流按下鬆動的磚石,暗格應手滑開,露出一批積藏。",
+    "reward": {"loot": [{"item": "ruby", "chance": 0.5}, {"item": "moonstone_ingot", "chance": 0.45}, {"item": "filled_common_soul_gem", "chance": 0.4}, {"gold": [30, 70]}]},
+    "penalty": {"type": "curse", "skill": "scout", "magnitude": 20, "text": "你久盯暗處看得眼花,一時【偵查】的直覺也鈍了(直到你走出地城)。"}
+  },
+  "puzzle_phantom_gate": {
+    "kind": "puzzle",
+    "check": "illusion",
+    "difficulty": 52,
+    "text": "一道虛實難辨的幻門橫亙前路,門後的景象隨你眨眼而扭曲流轉。",
+    "success_text": "你看穿了幻術的破綻,一步踏過那道根本不存在的門 —— 門後供龕上擺著實實在在的財貨。",
+    "reward": {"loot": [{"item": "glow_dust", "chance": 0.6}, {"item": "ruby", "chance": 0.45}, {"item": "moonstone_ingot", "chance": 0.4}, {"gold": [30, 75]}]},
+    "penalty": {"type": "curse", "skill": "illusion", "magnitude": 20, "text": "幻術反噬心神,你的【幻術】一時紊亂(直到你走出地城)。"}
+  },
+  "puzzle_soul_conduit": {
+    "kind": "puzzle",
+    "check": "mysticism",
+    "difficulty": 58,
+    "text": "一組靈魂導管在祭壇上明滅流轉,幾枚魂石懸浮其間,等待有人接續斷裂的法陣。",
+    "success_text": "你續上了法陣的最後一環,靈流轟然貫通 —— 導管盡頭的供品應聲落入掌心。",
+    "reward": {"loot": ["filled_grand_soul_gem", {"item": "filled_greater_soul_gem", "chance": 0.6}, {"item": "ebony_ingot", "chance": 0.4}, {"gold": [60, 120]}]},
+    "penalty": {"type": "curse", "skill": "mysticism", "magnitude": 20, "text": "斷裂的靈流猛地回灌,你的【神秘】一時滯塞(直到你走出地城)。"}
+  },
+  "puzzle_sealed_reliquary": {
+    "kind": "puzzle",
+    "check": "alteration",
+    "difficulty": 62,
+    "text": "一座層層符印封鎖的聖物匣懸於祭壇上方,每一道封印都以更古老的變化咒疊壓著前一道。",
+    "success_text": "你逐層讀通了封印的疊壓之序,符印如花瓣般次第綻開 —— 聖物匣無聲落下。",
+    "reward": {"loot": ["filled_grand_soul_gem", {"item": "ebony_ingot", "chance": 0.5}, {"item": "dragon_scale", "chance": 0.3}, {"gold": [70, 140]}]},
+    "penalty": {"type": "damage", "amount": [10, 20], "text": "最後一道封印在你指下炸開一記奧術爆閃 —— 你受了 {dmg} 點傷害。"}
   }
 }

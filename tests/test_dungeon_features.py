@@ -88,6 +88,39 @@ def test_dungeons_features_ref_valid():
     assert seen >= 3, "應至少 wire 幾座示範地城"
 
 
+# --- 1b. R151 內容擴充:泛用地城全鋪 + puzzle 階配 danger + 對照組仍空 --------
+_LOW_PUZZLES = {"puzzle_cracked_coffer", "puzzle_alchemists_lock"}     # danger 1-2
+_HIGH_PUZZLES = {"puzzle_soul_conduit", "puzzle_sealed_reliquary"}     # danger 5
+
+
+def test_r151_generic_dungeons_all_featured():
+    """R151:泛用探索地城(帶 reinfest)除對照組 cedernoc_cave 外皆宣告 features;cedernoc 仍空。"""
+    missing = []
+    for did, d in gd.dungeons.items():
+        if not d.get("reinfest"):
+            continue                                   # 特殊/首領地城不在此輪
+        if did == "cedernoc_cave":
+            assert not d.get("features"), "cedernoc_cave 須維持無 features(負控制組)"
+            continue
+        if not d.get("features"):
+            missing.append(did)
+    assert not missing, f"泛用地城未鋪 features:{missing}"
+
+
+def test_r151_puzzle_tier_matches_danger():
+    """R151:低階 puzzle 不得出現在 danger>2 地城、高階 puzzle 不得出現在 danger<5 地城
+    (∵ 每層 rng.choice(pool) → 池內每 id 都可能被抽中,故必須全池階配)。"""
+    bad = []
+    for did, d in gd.dungeons.items():
+        dg = d.get("danger", 0)
+        for fid in d.get("features", []):
+            if fid in _LOW_PUZZLES and dg > 2:
+                bad.append((did, dg, fid, "low-puzzle-in-high-danger"))
+            if fid in _HIGH_PUZZLES and dg < 5:
+                bad.append((did, dg, fid, "high-puzzle-in-low-danger"))
+    assert not bad, f"puzzle 階配錯誤:{bad}"
+
+
 # --- 2. 🔴 shrine 安全池(平衡紅線·免-re-sim)------------------------------
 def test_shrine_safe_pool_r146():
     for fid, f in gd.dungeon_features.items():
