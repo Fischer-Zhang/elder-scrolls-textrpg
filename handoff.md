@@ -1412,6 +1412,22 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 
 ---
 
+### R156 · 戰鬥/日誌可讀性:戰鬥流水帳與敘事分離 + 選單分桶 + 屍體/本回合收束
+
+**承「全面評估 UI/UX」審計 Rank 4(high/medium)**:最高頻迴圈的可讀性 —— ① 戰鬥逐擊流水帳與敘事同款式 log block,幾場戰鬥後就淹沒 240 上限的**永久故事日誌**(玩家回捲要看的敘事被「X命中Y造成N傷害」洗掉);② 回合動作選單滿配後 12–18 項扁平牆(`grouped_menu` 已存在卻沒用);③ 本回合區無高度上限(寬 AoE 回合把輸入區推出畫面);④ 群戰/召喚波屍體逐列 strikethrough 洗版。**純 UI/呈現·零碰 combat/formulas/magic 數學·零新存檔欄·sim byte-identical。**
+- **D1 流水帳↔敘事分離**:`backend.add_log` 加 `ephemeral` 旗(**只 True 才加鍵 → 一般敘事幀逐位元組不變**);`console._emit_log/_emit_or_print/message` 串 `ephemeral`;逐回合戰鬥流水帳標 ephemeral —— `combat_event`/`combat_tick`/`ally_event`/`active_effects_line`(近戰逐擊),**+ 審查 MAJOR 修:施法傷害/戰技/威能/援護等 37 條 `run_battle` 逐回合 `ui.message` 改走新 `_cmsg`(=ephemeral)**〔否則法師逐回合「造成 N 魔法傷害」仍淹沒日誌·melee 已清、caster 未清=不對稱〕;**保留敘事**(感染/傷兵退場/逃脫成功/用藥/調息/變回人形/戰利品/升級/show_events 進度)。`index.html appendJournal` 退役時**丟棄** `.eph` 條目(不進永久 jbody)、僅有敘事才寫回合分隔(整回合皆流水帳→不留孤兒分隔)。
+- **D3 本回合區高度上限**:`.jlatest` 加 `max-height:clamp(120,30vh,300)` + `overflow-y`;滿溢時捲到最新(寬 AoE 回合不再把輸入區頂出畫面)。
+- **D4 屍體收束**:`_combat_view` 存活敵先列(0-based key 對齊 `_choose_enemy_target`)、已倒下集中末尾:≤2 具逐列、**>2 具收束成單列 `☠ 已倒下 ×N`**;`renderCombat` 渲收束列。
+- **D2 動作選單分桶**:`_COMBAT_BUCKETS`/`_grouped_combat_menu(opts)` 把扁平動作分「攻擊 / 威能·戰技 / 架式 / 應變 / 脫戰」〔審查 nit:桶名由「法術·威能」改「威能·戰技」涵蓋非法術的號令/烙印〕;`repeat` 在攻擊桶首=編號 1(守 R113 一鍵重複)。**🔴 分桶純 web 呈現**:`ui._web is None`(終端/測試)→ 退回扁平 `ui.menu`(回同 key、同契約)→ **既有 ~14 個 combat 測試零改**;grouped_menu/menu 都回同 key → **巨大 dispatch 鏈完全不變**。
+
+**🔴 sim byte-identical**(未碰 combat/formulas/magic 數學·`_combat_view`/`_choose_combat_action`/emit 皆呈現層·sim 走自有 `_round` 不經選單;solo 秒殺 0.0%)·**零新存檔欄**(ephemeral=session 暫態·collapsed=view 衍生)·R27 終端 fallback 全保留(`_grouped_combat_menu` 的 `ui._web is None` 分支 + console rich 退路)。
+
+**驗證**:`run_all` **129**(新 `test_combat_readability_d_batch_r156`:D1 combat_event/`_cmsg` ephemeral·敘事非·D4 收束+key 對齊·D2 web 分桶/非 web 扁平)·`node --check` JS·**對抗審查 4 維 14-agent → 0 blocker·1 major + 2 nit 全修**(**major:D1 漏標施法/戰技逐回合流水帳→法師仍淹沒**·nit:`_combat_view` 死變數 `down`·桶名「法術」誤導非法術招式)·4 refuted(D4 2→3 收束=by-design·show_events 進度敘事該留·D3 捲尾=標準 live-log·vanish 歸「應變」=回合經濟分類合理)。
+
+**🔴 鐵律**:戰鬥逐回合流水帳走 `_cmsg`(=`ui.message(...,ephemeral=True)`)或 combat_event/tick/ally/active_effects(皆 ephemeral)→ 不入永久故事日誌;**保留敘事**(感染/傷兵/逃脫成功/用藥/升級/戰利品/進度)非 ephemeral;`add_log` 只 True 才加 `ephemeral` 鍵(敘事幀 byte-identical);戰鬥動作分桶純 web(`ui._web is None` 退扁平 ui.menu·守既有測試)·grouped/flat 皆回同 key→dispatch 不變·repeat 攻擊桶首守 R113;屍體 >2 收束、存活敵 key 對齊 `_choose_enemy_target`;純呈現→sim 天然不受影響。**前瞻 backlog**:C 無障礙打底· F 服務目錄· G 存檔槽位/多角色· H 設定面板(字級/主題)。
+
+---
+
 ### R155 · 新手清晰度批次:預設職業機制說明 + 創角衍生數值預覽 + 系統開場指路 + 種族/星座圖鑑
 
 **承「全面評估 UI/UX」審計 Rank 5(high/small)**:R125/R124 建了新手指引範式但只補了冷門路徑 —— **預設(★推薦)職業路徑**(多數人走的)從不說明專精/偏好/主修(R125 自承只補了自訂分支);創角做永久抉擇時**圖鑑不可開**且總覽只列名字(無衍生數值);詛咒/里程碑/煉金等深系統首次登場只有 flavor、無玩法指路。**純 UI/內容·零碰 combat/formulas/magic·零新存檔欄。**

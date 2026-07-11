@@ -393,7 +393,10 @@
     display:flex; align-items:center; gap:8px; }
   #log .j-head::after{ content:""; flex:1; height:1px; background:linear-gradient(to right,var(--gold-soft),transparent); }
   #log .j-head.j-hist{ border-top:1px solid var(--line); }
-  #log .jlatest{ padding:8px 12px 10px; background:linear-gradient(#161209,#13100a); }
+  #log .jlatest{ padding:8px 12px 10px; background:linear-gradient(#161209,#13100a);
+    max-height:clamp(120px,30vh,300px); overflow-y:auto;   /* D3:寬 AoE 回合流水帳過多時內捲,不再把輸入區推出畫面 */
+    scrollbar-width:thin; scrollbar-color:var(--gold-dim) transparent; -webkit-overflow-scrolling:touch; }
+  #log .jlatest::-webkit-scrollbar{ width:7px; } #log .jlatest::-webkit-scrollbar-thumb{ background:var(--gold-dim); border-radius:4px; }
   /* 歷史區(標題+捲動體)在首回合退役前整組隱藏(#log.has-hist 由 JS 掛上) */
   #log .j-hist, #log .jbody{ display:none; }
   #log.has-hist .j-hist{ display:flex; }
@@ -523,7 +526,7 @@
   }
   function renderCombat(d) {
     function row(c, kind) {
-      if (c.down) return `<div class="cbt down">${esc(c.name)}（已倒下)</div>`;
+      if (c.down) return `<div class="cbt down">${c.collapsed ? "☠ " + esc(c.name) : esc(c.name) + "（已倒下)"}</div>`;
       const idx = c.idx != null ? `<span class="cidx">${c.idx}.</span> ` : "";
       const tags = (c.tags || []).map(function (t) {
         const cls = t.good === true ? "ct buff" : (t.good === false ? "ct debuff" : "ct");
@@ -1170,20 +1173,28 @@
     if (z.latest.children.length) {                        // 上一回合退役 → 移入歷史區尾端(維持順時序)
       // 錨定守衛:使用者本來就在歷史底部才跟捲;往上捲讀舊文時不拽動(修 R58 硬拽回底 bug)
       const atBottom = z.body.scrollHeight - z.body.scrollTop - z.body.clientHeight < 8;
-      if (z.body.children.length) { const sep = document.createElement("div"); sep.className = "jturn"; z.body.appendChild(sep); }
+      const keep = [];                                     // D1:非流水帳(敘事)才進永久故事日誌;戰鬥流水帳(.eph)丟棄
       while (z.latest.firstChild) {
-        const n = z.latest.firstChild;
+        const n = z.latest.firstChild; z.latest.removeChild(n);
+        if (n.classList && n.classList.contains("eph")) continue;   // 戰鬥流水帳不入永久故事日誌
         if (n.classList) n.classList.remove("jentry");     // 退役不重播進場動畫
-        z.body.appendChild(n);
+        keep.push(n);
       }
-      while (z.body.children.length > 240) z.body.removeChild(z.body.firstChild);   // 上限滾動
-      while (z.body.firstChild && z.body.firstChild.classList.contains("jturn")) z.body.removeChild(z.body.firstChild);
-      logEl.classList.add("has-hist");
-      if (atBottom) z.body.scrollTop = z.body.scrollHeight;
+      if (keep.length) {                                   // 有敘事才退役(整回合都是流水帳 → 不留空白分隔)
+        if (z.body.children.length) { const sep = document.createElement("div"); sep.className = "jturn"; z.body.appendChild(sep); }
+        keep.forEach(function (n) { z.body.appendChild(n); });
+        while (z.body.children.length > 240) z.body.removeChild(z.body.firstChild);   // 上限滾動
+        while (z.body.firstChild && z.body.firstChild.classList.contains("jturn")) z.body.removeChild(z.body.firstChild);
+        logEl.classList.add("has-hist");
+        if (atBottom) z.body.scrollTop = z.body.scrollHeight;
+      }
     }
-    logBlocks.forEach(function (b) {                       // 本回合區:最新敘事(緊貼輸入區,零捲動)
-      const d = document.createElement("div"); d.className = "logline jentry"; d.innerHTML = b.html; z.latest.appendChild(d);
+    logBlocks.forEach(function (b) {                       // 本回合區:最新敘事 + 戰鬥流水帳(.eph → 退役時丟棄)
+      const d = document.createElement("div");
+      d.className = "logline jentry" + (b.ephemeral ? " eph" : "");
+      d.innerHTML = b.html; z.latest.appendChild(d);
     });
+    if (z.latest.scrollHeight - z.latest.clientHeight > 4) z.latest.scrollTop = z.latest.scrollHeight;   // D3:本回合區滿溢時捲到最新
   }
 
   // 可點內容列:view 列若帶 data-key 且該 key 是當前 prompt 的合法選項(含 extra_keys)→ 列可點。

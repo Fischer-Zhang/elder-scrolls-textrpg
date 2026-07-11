@@ -38,11 +38,17 @@ class WebBackend:
             self.blocks.append({"kind": "html", "html": pending_html})
         self.blocks.append({"kind": "view", "name": name, "data": data})
 
-    def add_log(self, pending_html: str, log_html: str) -> None:
-        """log/flavor 行:rich 標記轉成的彩色 HTML span,客戶端以無框文字行渲染(非等寬截圖)。"""
+    def add_log(self, pending_html: str, log_html: str, ephemeral: bool = False) -> None:
+        """log/flavor 行:rich 標記轉成的彩色 HTML span,客戶端以無框文字行渲染(非等寬截圖)。
+
+        ephemeral=True(D1:戰鬥流水帳)→ 標記此行只在「本回合」區顯示,退役時**不**進永久故事日誌
+        (否則逐擊傷害會淹沒玩家回捲要看的敘事)。只在 True 時加鍵 → 一般敘事幀逐位元組不變。"""
         if pending_html.strip():
             self.blocks.append({"kind": "html", "html": pending_html})
-        self.blocks.append({"kind": "log", "html": log_html})
+        blk = {"kind": "log", "html": log_html}
+        if ephemeral:
+            blk["ephemeral"] = True
+        self.blocks.append(blk)
 
     def clear_block(self, pending_html: str = "") -> None:
         """送出一個『清空 #screen』狀態塊(clear kind):前端會 renderScreen→innerHTML 清空但不附任何面板。

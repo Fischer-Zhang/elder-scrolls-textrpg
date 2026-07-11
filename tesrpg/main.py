@@ -608,6 +608,34 @@ def _repeat_option(player, gamedata: GameData, enemies: list, allies: list, mem)
     return None
 
 
+# D2:戰鬥動作分桶(scannable);grouped_menu 連續編號、回同 key → 下方 dispatch 完全不變。
+_COMBAT_BUCKETS = {
+    "repeat": "攻擊", "attack": "攻擊", "aimed": "攻擊", "crippling": "攻擊",
+    "skirmish": "攻擊", "volley": "攻擊", "charge": "攻擊", "skirmish_ride": "攻擊",
+    "cast": "威能·戰技", "power": "威能·戰技", "racial_power": "威能·戰技",
+    "standard": "威能·戰技", "rally": "威能·戰技", "vampire_charm": "威能·戰技", "deathmark": "威能·戰技",
+    "guard": "架式", "wall": "架式",
+    "vanish": "應變", "item": "應變", "rest": "應變",
+    "leave": "脫戰", "flee": "脫戰",
+}
+_COMBAT_BUCKET_ORDER = ["攻擊", "威能·戰技", "架式", "應變", "脫戰"]
+
+
+def _grouped_combat_menu(opts: list) -> str:
+    """把扁平的戰鬥動作選單依類別分桶顯示(可掃視);未知 key 落「其他」桶(防呆)。
+    grouped_menu 連續編號 + 回選中 key → 呼叫端 dispatch 完全不變(repeat 在「攻擊」桶首=編號 1,守 R113 置頂)。
+    **分桶純 web 呈現**:無 web backend(終端/測試)退回扁平 `ui.menu`(回同 key、同契約)→ 既有 combat 測試零改。"""
+    if ui._web is None:
+        return ui.menu("你的回合", opts)
+    buckets: dict[str, list] = {}
+    for k, lbl in opts:
+        buckets.setdefault(_COMBAT_BUCKETS.get(k, "其他"), []).append((k, lbl))
+    groups = [(g, buckets[g]) for g in _COMBAT_BUCKET_ORDER if buckets.get(g)]
+    if buckets.get("其他"):
+        groups.append(("其他", buckets["其他"]))
+    return ui.grouped_menu("你的回合", groups)
+
+
 def _choose_combat_action(state: GameState, gamedata: GameData, enemies: list, allies: list,
                           vanish_used: int = 0, mounted: bool = False, first_round: bool = False,
                           charm_used: bool = False, mem: dict | None = None):
@@ -732,7 +760,7 @@ def _choose_combat_action(state: GameState, gamedata: GameData, enemies: list, a
         _rest_amt = formulas.rest_fatigue_amount(player.skill("athletics")) + mastery.rest_bonus(player, gamedata)
         opts.append(("rest", f"😮‍💨 調息（喘息回體 ~{_rest_amt} · 耗一回合 · 解除架式)"))
     opts.append(("flee", "逃跑"))
-    choice = ui.menu("你的回合", opts)
+    choice = _grouped_combat_menu(opts)   # D2:扁平動作分桶(回同 key → 下方 dispatch 不變)
 
     _last_tgt = (mem or {}).get("target")
     if choice == "repeat":                       # R113:重放上次動作(目標死亡 → 重開目標選單)
@@ -1049,7 +1077,7 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
             return
         xs = mastery.weapon_mod(player, gamedata, "marksman").get("extra_shot", 0.0)
         if xs and state.rng.chance(xs):
-            ui.message("你指間連珠,順勢追加一箭!", style="cyan")
+            _cmsg("你指間連珠,順勢追加一箭!", style="cyan")
             ui.combat_event(combat.resolve_attack(player, tgt, gamedata, state.rng,
                                                   sneak_attack=False, damage_factor=_df()), gamedata)
 
@@ -1071,7 +1099,7 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
         # 防禦雙軌第二道(命中後)已由 willpower resisted_mind 機率擋下;此處只結算「已成功上身」的硬控。
         if magic.is_incapacitated(player):
             why = "恐懼" if magic.is_feared(player) else ("麻痺" if magic.is_paralyzed(player) else "安撫")   # R104 三態(對稱;玩家實務上不會被 calm)
-            ui.message(f"你因{why}而無法行動!", style="bold red")
+            _cmsg(f"你因{why}而無法行動!", style="bold red")
             action = {"type": "incapacitated"}
         else:
             action = _choose_combat_action(state, gamedata, enemies, battle["allies"], vanishes_done,
@@ -1098,7 +1126,7 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
                 state.time.advance(1)
                 tally_casualties()
                 return "fled"
-            ui.message("逃跑失敗!", style="red")
+            _cmsg("逃跑失敗!", style="red")
         elif action["type"] == "leave":   # R104 幻術安撫:全體被安撫 → 從容脫戰(免檢定;solo boss 免疫故此路不通)
             ui.message("敵人皆已平息殺意、茫然佇立 —— 你不動聲色地退出戰場。", style="yellow")
             player.active_effects.clear()
@@ -1120,7 +1148,7 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
                 if combat.is_alive(tgt) and state.rng.chance(
                         formulas.speed_extra_action_chance(player.attr("speed"))):
                     combat.player_attack_cost(player, gamedata)
-                    ui.message("你身形如電,順勢追擊!", style="cyan")
+                    _cmsg("你身形如電,順勢追擊!", style="cyan")
                     ui.combat_event(combat.resolve_attack(player, tgt, gamedata, state.rng,
                                                           sneak_attack=False, damage_factor=_df()), gamedata)
                 _rapid_extra_arrow(tgt, _atk_ev)   # R136 連珠箭(命中後才觸發;非弓手 0 機率不擲 rng)
@@ -1139,22 +1167,22 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
                 if action["type"] == "crippling" and combat.is_alive(tgt):
                     magic.apply_control(tgt, "weaken", gamedata, state.rng,   # R44:集中 helper
                                         magnitude=formulas.CRIPPLING_WEAKEN, turns=formulas.CRIPPLING_TURNS)
-                    ui.message(f"{tgt.name}被牽制射壓制,攻勢一時削弱。", style="cyan")
+                    _cmsg(f"{tgt.name}被牽制射壓制,攻勢一時削弱。", style="cyan")
                 if action["type"] == "skirmish":   # 射後遁走:複用既有 vanish 三道煞車(防無限風箏)
                     combat.player_vanish_cost(player)
                     attempt = vanishes_done
                     vanishes_done += 1
                     if combat.try_vanish(player, len(alive_e()), attempt, state.rng, gamedata):
                         vanish_success = True
-                        ui.message("你射出一箭,旋即翻身遁走 —— 重獲偷襲先機。", style="bold magenta")
+                        _cmsg("你射出一箭,旋即翻身遁走 —— 重獲偷襲先機。", style="bold magenta")
                     else:
-                        ui.message("你射後欲走,卻被敵人緊咬不放。", style="grey70")
+                        _cmsg("你射後欲走,卻被敵人緊咬不放。", style="grey70")
                 if action["type"] in ("aimed", "crippling"):
                     _rapid_extra_arrow(tgt, _tech_ev)   # R136 連珠箭:單體射擊技命中後也可觸發(散兵/箭雨不觸發)
         elif action["type"] == "volley":   # R136 箭雨:齊射全體(每箭 60% 傷害·倍耗體·🔴 永不吃偷襲倍率)
             combat.player_attack_cost(player, gamedata)
             combat.player_attack_cost(player, gamedata)       # 倍耗體(同瞄準射蓄力)
-            ui.message("你張弓連珠,一輪箭雨傾瀉而下!", style="bold cyan")
+            _cmsg("你張弓連珠,一輪箭雨傾瀉而下!", style="bold cyan")
             for e in list(alive_e()):
                 if combat.is_alive(e) and combat.is_alive(player):
                     ui.combat_event(combat.resolve_attack(player, e, gamedata, state.rng,
@@ -1165,7 +1193,7 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
             tgt = action["target"]
             if combat.is_alive(tgt):
                 combat.player_attack_cost(player, gamedata)
-                ui.message("你策馬挺進,藉馬勢猛然衝鋒!", style="bold yellow")
+                _cmsg("你策馬挺進,藉馬勢猛然衝鋒!", style="bold yellow")
                 ui.combat_event(combat.resolve_attack(player, tgt, gamedata, state.rng,
                                                       mounted_charge=True,
                                                       charge_spec=mounts.charge_spec(player, gamedata)), gamedata)
@@ -1176,7 +1204,7 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
                 player.active_effects.append({"kind": "ride_evasion",
                                               "evasion": spec.get("amount", 0.0),
                                               "turns": spec.get("turns", 1)})
-                ui.message("你策馬繞射 —— 馬背的機動讓你大幅更難被擊中。", style="bold cyan")
+                _cmsg("你策馬繞射 —— 馬背的機動讓你大幅更難被擊中。", style="bold cyan")
                 combat.player_attack_cost(player, gamedata)
                 sneak = opening and not getattr(player, "beast_form", False)
                 ui.combat_event(combat.resolve_attack(player, tgt, gamedata, state.rng,
@@ -1185,7 +1213,7 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
             res = magic.cast(player, gamedata, action["spell_id"], state.rng,
                              target=action.get("target"), battle=battle, enemies=alive_e(),
                              corpses=enemies, mounted=mounted, state=state)   # 亡者復生需見「完整」敵群(含已死屍體);存活清單仍走 enemies=alive_e()
-            ui.message(res["message"], style="cyan")
+            _cmsg(res["message"], style="cyan")
             ui.show_events(res["skill_events"], gamedata)
         elif action["type"] == "item":   # R126 戰鬥中用藥(耗一回合;use_item 支援治療/續資源/淨疾/限時強化)
             ui.message(inventory.use_item(player, gamedata, action["item_id"], state) or "你飲下藥水。", style="green")
@@ -1201,7 +1229,7 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
         elif action["type"] == "power":
             pres = powers.use(player, state, gamedata, target=action.get("target"))
             for m in pres["messages"]:
-                ui.message(m, style="bold magenta")
+                _cmsg(m, style="bold magenta")
             if pres["escape"]:
                 player.active_effects.clear()
                 state.time.advance(1)
@@ -1211,17 +1239,17 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
             rres = powers.racial_use(player, state, gamedata, target=action.get("target"),
                                      battle=battle, enemies=alive_e())
             for m in rres["messages"]:
-                ui.message(m, style="bold magenta")
+                _cmsg(m, style="bold magenta")
         elif action["type"] == "revert":          # 狼人:主動變回人形(力竭代價)
             lycanthropy.revert(player, state, gamedata)
             ui.message("你壓下狂暴,重歸人形 —— 筋疲力盡。", style="magenta")
         elif action["type"] == "howl":            # 狼人(達階):恫嚇之嚎 → 使敵恐懼
             res = lycanthropy.howl(player, state, gamedata, alive_e())
             if res["affected"]:
-                ui.message(f"你仰天發出撕裂夜空的狼嚎 —— {res['affected']} 名敵人膽寒退縮!",
+                _cmsg(f"你仰天發出撕裂夜空的狼嚎 —— {res['affected']} 名敵人膽寒退縮!",
                            style="bold magenta")
             else:
-                ui.message("你發出震懾的狼嚎,但眼前的強敵毫不退縮。", style="grey70")
+                _cmsg("你發出震懾的狼嚎,但眼前的強敵毫不退縮。", style="grey70")
         elif action["type"] == "vampire_charm":   # 吸血鬼:魅惑凝視 → 迷惑一敵使其恐懼不進攻(每場一次;R56)
             tgt = action["target"]
             if combat.is_alive(tgt):
@@ -1230,36 +1258,36 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
                 res = magic.apply_control(tgt, "fear", gamedata, state.rng,   # R44:走集中 helper(solo BOSS 機率抵抗 + 去重)
                                           turns=VAMPIRE_CHARM_TURNS, source="vampire_charm")
                 if res == "applied":
-                    ui.message(f"你以血族魅力凝視{tgt.name} —— 牠目光渙散、心神被攝,不敢進攻。", style="bold magenta")
+                    _cmsg(f"你以血族魅力凝視{tgt.name} —— 牠目光渙散、心神被攝,不敢進攻。", style="bold magenta")
                 else:
-                    ui.message(f"你施展魅惑凝視,但{tgt.name}意志如鐵,掙脫了你的蠱惑。", style="grey70")
+                    _cmsg(f"你施展魅惑凝視,但{tgt.name}意志如鐵,掙脫了你的蠱惑。", style="grey70")
         elif action["type"] == "guard":           # R137 格擋姿態:立/收(常駐 stance·取代整回合格擋動作)
             if combat.has_guard_stance(player):
                 player.active_effects[:] = [e for e in player.active_effects if e.get("kind") != "guard_stance"]
-                ui.message("你收起格擋姿態,全力搶攻。", style="grey70")
+                _cmsg("你收起格擋姿態,全力搶攻。", style="grey70")
             else:
                 player.active_effects.append({"kind": "guard_stance", "turns": 99})
                 if inventory.is_great_shield(gamedata, player.equipped.get("shield")):   # R138 可見性:重盾掩體效果立架即告知
-                    ui.message("你架穩重盾掩體 —— 攻勢放緩;盾面連烈焰亦能卸開(元素大減),盾後喘息緩緩回氣。", style="bold cyan")
+                    _cmsg("你架穩重盾掩體 —— 攻勢放緩;盾面連烈焰亦能卸開(元素大減),盾後喘息緩緩回氣。", style="bold cyan")
                 else:
-                    ui.message("你側身舉盾入架 —— 攻勢放緩,盾面隨時準備接下來襲。", style="bold cyan")
+                    _cmsg("你側身舉盾入架 —— 攻勢放緩,盾面隨時準備接下來襲。", style="bold cyan")
         elif action["type"] == "wall":            # 戰士:立/撤盾牆架勢(常駐 stance)
             if combat.has_shield_wall(player):
                 player.active_effects[:] = [e for e in player.active_effects if e.get("kind") != "shield_wall"]
-                ui.message("你卸下盾牆,恢復機動。", style="grey70")
+                _cmsg("你卸下盾牆,恢復機動。", style="grey70")
             else:
                 player.active_effects.append({"kind": "shield_wall",
                                               "mitigation": SHIELD_WALL_MITIGATION, "turns": 99})
-                ui.message("你舉盾結陣 —— 化身移動堡壘,敵火力盡向你而來。", style="bold cyan")
+                _cmsg("你舉盾結陣 —— 化身移動堡壘,敵火力盡向你而來。", style="bold cyan")
         elif action["type"] == "standard":        # 騎士:立戰旗(增傷光環 + 自身護甲,常駐)
             player.magicka = max(0, player.magicka - STANDARD_COST_MAGICKA)
             player.fatigue = max(0, player.fatigue - STANDARD_COST_FATIGUE)
             player.active_effects.append({"kind": "battle_standard", "turns": 99})
-            ui.message("你將戰旗插上戰場 —— 旗影所及,同袍士氣大振、敵膽皆寒。", style="bold cyan")
+            _cmsg("你將戰旗插上戰場 —— 旗影所及,同袍士氣大振、敵膽皆寒。", style="bold cyan")
         elif action["type"] == "rally":           # 口才:立戰陣號令(增傷光環,常駐;純耗體,鼓舞他人)
             player.fatigue = max(0, player.fatigue - RALLY_FATIGUE)
             player.active_effects.append({"kind": "rally_banner", "turns": 99})
-            ui.message("你振臂高呼、鼓舞士氣 —— 號令所及,同袍鬥志昂揚、攻勢如潮。", style="bold cyan")
+            _cmsg("你振臂高呼、鼓舞士氣 —— 號令所及,同袍鬥志昂揚、攻勢如潮。", style="bold cyan")
         elif action["type"] == "deathmark":       # 刺客:標記一敵(後續近戰破甲;開場偷襲不受惠)
             tgt = action["target"]
             dm = mastery.deathmark(player, gamedata)
@@ -1267,10 +1295,10 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
                 player.fatigue = max(0, player.fatigue - dm.get("fatigue_cost", 15))
                 tgt.active_effects.append({"kind": "deathmark", "turns": dm.get("turns", 4)})
                 tgt.active_effects.append({"kind": "deathmark_cd", "turns": dm.get("cooldown", 3)})
-                ui.message(f"你以殺意鎖定{tgt.name},烙下無形的致命標記 —— 後續每擊直取要害。",
+                _cmsg(f"你以殺意鎖定{tgt.name},烙下無形的致命標記 —— 後續每擊直取要害。",
                            style="bold magenta")
             else:
-                ui.message("此刻無法標記該目標。", style="grey70")
+                _cmsg("此刻無法標記該目標。", style="grey70")
         elif action["type"] == "vanish":
             combat.player_vanish_cost(player)        # 隱遁耗大量體力(連續隱遁會耗竭)
             attempt_used = vanishes_done
@@ -1281,10 +1309,10 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
                                                      formulas.COMBAT_SNEAK_XP), gamedata)
                 ui.show_events(progression.use_skill(player, gamedata, "acrobatics",
                                                      formulas.COMBAT_DODGE_XP), gamedata)
-                ui.message("你遁回陰影,重獲偷襲先機 —— 但敵人並未被甩脫,下一擊將再度致命。",
+                _cmsg("你遁回陰影,重獲偷襲先機 —— 但敵人並未被甩脫,下一擊將再度致命。",
                            style="bold magenta")
             else:
-                ui.message("隱遁失敗!你的身形仍暴露在敵人眼前。", style="red")
+                _cmsg("隱遁失敗!你的身形仍暴露在敵人眼前。", style="red")
 
         # 隱遁成功 → 重新點亮偷襲(下一次攻擊再吃 sneak 倍率);其餘行動後敵人已警覺
         opening = vanish_success
@@ -1307,7 +1335,7 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
             else:
                 support = magic.companion_support_act(a, player, battle["allies"], gamedata)
             if support is not None:
-                ui.message(support["message"], style="green")
+                _cmsg(support["message"], style="green")
                 continue
             # 同伴戰術傾向(羈絆階解鎖·功能性·複用既有 taunt/目標選擇·零新戰鬥數值·召喚物不適用):
             #   鎮守 bulwark → tactic="taunt"=自施嘲諷吸火護同袍;
@@ -1320,21 +1348,21 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
             if tactic == "taunt" and not any(ef.get("kind") == "taunt" and ef.get("turns", 0) > 0
                                              for ef in a.active_effects):
                 a.active_effects.append({"kind": "taunt", "turns": 2})
-                ui.message(f"{a.name}穩住陣腳、吸引敵人火力,護住同袍。", style="bold cyan")
+                _cmsg(f"{a.name}穩住陣腳、吸引敵人火力,護住同袍。", style="bold cyan")
                 continue
             tgt = (party.focus_target(alive_e(), gamedata) if tactic == "focus"
                    else state.rng.choice(alive_e()))
             a_atk = combat.choose_attack(a, state.rng, tgt)   # 同伴多攻擊模式(無曲目 → 後備單招,行為不變)
             if a_atk.get("taunt"):   # R105 坦克召喚(魔人/魔靈伴)嘲諷 action:掛嘲諷態 → 敵人幾回合內機率改打它(pick_player_side_target)
                 a.active_effects.append({"kind": "taunt", "turns": a_atk.get("turns", 3)})
-                ui.message(f"{a.name}發出震懾的{a_atk.get('name', '嘲諷')},吸引了敵人的注意!", style="bold cyan")
+                _cmsg(f"{a.name}發出震懾的{a_atk.get('name', '嘲諷')},吸引了敵人的注意!", style="bold cyan")
                 continue
             ui.combat_event(combat.resolve_attack(a, tgt, gamedata, state.rng, attack=a_atk), gamedata)
             note_trap(tgt)
 
         # R134 殺王=爪牙潰散(玩家/同伴階段擊殺召主 → 爪牙不再行動,即刻潰散)
         if combat.scatter_orphan_summons(enemies, gamedata):
-            ui.message("失去召主的爪牙化作餘燼,潰散於風中。", style="magenta")
+            _cmsg("失去召主的爪牙化作餘燼,潰散於風中。", style="magenta")
         # ---- 敵人階段(各自挑我方一個目標)----R71:隱遁不再無敵 → 敵人照常攻擊(隱遁只重置偷襲,防禦純靠 evasion)----
         for e in enemies:
             if not combat.is_alive(player):
@@ -1343,7 +1371,7 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
                 continue
             if magic.is_incapacitated(e):
                 why = "恐懼" if magic.is_feared(e) else ("麻痺" if magic.is_paralyzed(e) else "安撫")   # R104 三態:恐懼/麻痺/安撫
-                ui.message(f"{e.name}因{why}而無法行動。", style="blue")
+                _cmsg(f"{e.name}因{why}而無法行動。", style="blue")
                 continue
             # R152 幻術狂亂:心智被劫持 → **完全劫持**(不施法/不召喚),改攻隨機另一隻同類敵人(借刀殺人)。
             # 🔴 置於 support/summon 之前 → 狂亂的祭司/召主不會先治療/召喚才被劫持(否則反噬機制語意)。
@@ -1352,21 +1380,21 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
             if magic.is_frenzied(e):
                 kin = [o for o in enemies if o is not e and combat.is_alive(o)]
                 if not kin:                                        # 孤身無同類 → 空轉(自限·≈ paralyze 跳過;不破終王牆)
-                    ui.message(f"{e.name}在狂亂中揮向虛空,徒然一擊。", style="blue")
+                    _cmsg(f"{e.name}在狂亂中揮向虛空,徒然一擊。", style="blue")
                     continue                                        # 🔴 rng.choice([]) 會 IndexError → 必守空表
                 tgt = state.rng.choice(kin)
-                ui.message(f"{e.name}在狂亂中將攻勢轉向了同伴!", style="magenta")
+                _cmsg(f"{e.name}在狂亂中將攻勢轉向了同伴!", style="magenta")
             else:
                 # R87 敵方支援施法者:法系/祭司怪在隊友血低/缺 buff 時治療/護盾/號令其他敵人(換損該回合攻擊)。
                 support = magic.enemy_support_act(e, enemies, gamedata)
                 if support is not None:
-                    ui.message(support["message"], style="cyan")
+                    _cmsg(support["message"], style="cyan")
                     continue
                 # R134 BOSS 召喚爪牙:冷卻到 + 場上無存活爪牙 + 未達總量 → 召喚(換損該回合攻擊=自限;
                 # 被恐懼/麻痺已在上方 incapacitated 閘擋下 → 硬控自然停召)。爪牙本回合即參戰(list 迭代會走到)。
                 summon_msg = combat.try_boss_summon(e, enemies, gamedata, state.rng)
                 if summon_msg is not None:
-                    ui.message(summon_msg, style="bold magenta")
+                    _cmsg(summon_msg, style="bold magenta")
                     continue
                 tgt = combat.pick_player_side_target(player, battle["allies"], state.rng)
             # R137 格擋姿態=純減傷:resolve_attack 內自動套 _guard_stance_factor(不碰命中 →
@@ -1501,6 +1529,11 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
         ui.message(f"並肩奮戰,你與{nm}的情誼更深了 —— 羈絆提升至「{tier_name}」。", style="bold cyan")
     tally_casualties()
     return "victory"
+
+
+def _cmsg(text: str, style: str = "white") -> None:
+    """戰鬥逐回合流水帳訊息(D1:標 ephemeral → 只顯本回合區,不入永久故事日誌;與 combat_event 一致)。"""
+    ui.message(text, style=style, ephemeral=True)
 
 
 def _report_quests(state: GameState, gamedata: GameData) -> None:

@@ -415,6 +415,78 @@ def test_combat_target_key_parity():
     assert [str(i) for i in range(len(alive))] == [k for k, _ in keyed]
 
 
+def test_combat_readability_d_batch_r156():
+    """R156 戰鬥/日誌可讀性:D1 戰鬥流水帳 ephemeral · D4 屍體收束 · D2 動作選單分桶(web)/扁平(非 web)。"""
+    from tesrpg.gamedata import get_gamedata
+    from tesrpg.creation import build_character
+    from tesrpg.state import GameState, GameTime
+    from tesrpg.rng import RNG
+    from tesrpg.systems import combat
+    from tesrpg import main as M
+    gd = get_gamedata()
+    c = build_character(gd, name="測", sex="male", race="nord", birthsign="warrior", class_id="warrior")
+
+    def _mk(hp):
+        e = combat.spawn_creature(gd, "bandit", RNG(1)); e.health = hp; return e
+
+    # D4:>2 已倒下 → 收束成單列 collapsed;≤2 逐列;存活敵帶對齊 key
+    mv = ui._combat_view(c, [], [_mk(20), _mk(0), _mk(0), _mk(0)])
+    alive = [f for f in mv["enemies"] if not f.get("down")]
+    downs = [f for f in mv["enemies"] if f.get("down")]
+    assert [f["key"] for f in alive] == ["0"]
+    assert len(downs) == 1 and downs[0].get("collapsed") is True and "×3" in downs[0]["name"]
+    mv2 = ui._combat_view(c, [], [_mk(20), _mk(0), _mk(0)])
+    assert sum(1 for f in mv2["enemies"] if f.get("down")) == 2
+    assert not any(f.get("collapsed") for f in mv2["enemies"])   # ≤2 具不收束
+
+    be = WebBackend()
+    ui.use_web_backend(be, _rec())
+    try:
+        # D1:逐擊流水帳 log block 帶 ephemeral;敘事(戰利品)不帶(→ 退役時進永久故事日誌)
+        ui.combat_event({"attacker": "你", "defender": "強盜", "hit": True, "blocked": False,
+                         "damage": 9, "skill_events": []}, gd)
+        logs = [b for b in be.blocks if b["kind"] == "log"]
+        assert logs and all(b.get("ephemeral") is True for b in logs)
+        # 審查 MAJOR 修:施法/戰技逐回合流水帳走 _cmsg → 同樣 ephemeral(否則法師仍淹沒故事日誌)
+        be.blocks = []
+        M._cmsg("你的火球命中強盜,造成 24 點魔法傷害!", style="cyan")
+        assert [b.get("ephemeral") for b in be.blocks if b["kind"] == "log"] == [True]
+        be.blocks = []
+        ui.loot_report({"gold": 5, "items": []}, gd)
+        assert all("ephemeral" not in b for b in be.blocks if b["kind"] == "log")   # 敘事(戰利品)入永久日誌
+
+        # D2(web):動作選單走 grouped(分桶),回同 key;repeat/攻擊置頂;無「其他」桶(所有 key 已分桶)
+        state = GameState(player=c, time=GameTime(), rng=RNG(1))
+        grp = {}
+        og, ocsg = ui.grouped_menu, ui.combat_status_group
+        ui.combat_status_group = lambda *a, **k: None
+        ui.grouped_menu = lambda title, groups, extra_keys=None, cta_keys=None: (
+            grp.update(title=title, groups=[(g, [k for k, _ in o]) for g, o in groups]) or "flee")
+        try:
+            act = M._choose_combat_action(state, gd, [_mk(20)], [])
+        finally:
+            ui.grouped_menu, ui.combat_status_group = og, ocsg
+        assert act["type"] == "flee"
+        assert grp["title"] == "你的回合"
+        assert grp["groups"][0][0] == "攻擊" and grp["groups"][0][1][0] == "attack"   # 攻擊桶置頂
+        assert "其他" not in [g for g, _ in grp["groups"]]                            # 所有動作皆有分桶
+        assert "法術·威能" not in [g for g, _ in grp["groups"]]                       # 桶名改 spell-agnostic(涵蓋 rally/deathmark)
+    finally:
+        _restore()
+
+    # D2(非 web):無 backend → 退回扁平 ui.menu(回同 key)→ 既有 combat 測試零改
+    seen = {}
+    om, ocsg = ui.menu, ui.combat_status_group
+    ui.combat_status_group = lambda *a, **k: None
+    ui.menu = lambda title, options, allow_back=False: (seen.update(title=title, flat=True) or "flee")
+    try:
+        state2 = GameState(player=c, time=GameTime(), rng=RNG(1))
+        act2 = M._choose_combat_action(state2, gd, [_mk(20)], [])
+    finally:
+        ui.menu, ui.combat_status_group = om, ocsg
+    assert act2["type"] == "flee" and seen.get("flat") and seen["title"] == "你的回合"
+
+
 def test_combat_target_reemit_web():
     """web 選敵目標的端到端:該 prompt 幀重發 combat view(敵人卡帶 key),選單鍵對齊卡 key,
     選 "1" 回傳第二隻存活敵人。釘住「blocks 每幀清空 → 須重發才可點卡」的設計。"""

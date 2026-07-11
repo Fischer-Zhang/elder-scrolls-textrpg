@@ -18,7 +18,7 @@ def _aoe_menu(title, options, allow_back=False):
     return keys[0]
 
 
-ui.menu = _aoe_menu
+ui.menu = _aoe_menu   # D2:戰鬥動作分桶純 web 呈現;此測試無 web backend → _grouped_combat_menu 退回扁平 ui.menu
 
 import tesrpg.main as main                       # noqa: E402
 from tesrpg.creation import build_character        # noqa: E402

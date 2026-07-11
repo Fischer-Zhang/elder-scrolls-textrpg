@@ -229,10 +229,11 @@ def _markup_html(markup: str) -> str:
     return _fmt_console.export_html(inline_styles=True, code_format="{code}", clear=True).strip()
 
 
-def _emit_log(markup: str) -> None:
-    """web 模式:一行 log/flavor → log block(無框彩色文字行)。"""
+def _emit_log(markup: str, ephemeral: bool = False) -> None:
+    """web 模式:一行 log/flavor → log block(無框彩色文字行)。
+    ephemeral=True(戰鬥流水帳)→ 只顯於「本回合」區、退役時不入永久故事日誌(D1)。"""
     pending = console.export_html(inline_styles=True, code_format="{code}", clear=True)
-    _web.add_log(pending, _markup_html(markup))
+    _web.add_log(pending, _markup_html(markup), ephemeral)
 
 
 # 通用原生面板列(供角色卡 sheet_* 子檢視)
@@ -338,14 +339,18 @@ def _combatant(ent, idx=None, down=False) -> dict:
 
 
 def _combat_view(player: Character, allies: list, enemies: list) -> dict:
+    # 存活敵人先列(帶 0-based key 對齊 _choose_enemy_target 目標選單);已倒下者集中到末尾:
+    # ≤2 具照列(strikethrough),>2 具收束成單列「☠ 已倒下 ×N」(D4:召喚波/群戰屍體不再洗版)。
     foes, n = [], 0
     for e in enemies:
         if e.health > 0:
             n += 1
-            # key=0-based 存活索引,對齊 main._choose_enemy_target 的目標選單鍵 → 卡片可點選目標
             foes.append({**_combatant(e, idx=n), "key": str(n - 1)})
-        else:
-            foes.append(_combatant(e, down=True))
+    down_list = [e for e in enemies if e.health <= 0]
+    if len(down_list) <= 2:
+        foes += [_combatant(e, down=True) for e in down_list]
+    else:
+        foes.append({"name": f"已倒下 ×{len(down_list)}", "down": True, "collapsed": True})
     return {"me": _combatant(player), "has_fp": True,
             "allies": [_combatant(a) for a in allies if a.health > 0], "enemies": foes}
 
@@ -2013,9 +2018,11 @@ def show_events(events: list[dict], gamedata: GameData) -> None:
             console.print("  " + m)
 
 
-def message(text: str, style: str = "white") -> None:
+def message(text: str, style: str = "white", ephemeral: bool = False) -> None:
+    """ephemeral=True(戰鬥逐回合流水帳:施法傷害/戰技/威能/援護等)→ 只顯本回合區、不入永久
+    故事日誌(D1;與 combat_event 一致)。預設 False → 所有非戰鬥呼叫與終端路徑逐位元組不變。"""
     if _web is not None:
-        _emit_log(f"[{style}]{text}[/]")
+        _emit_log(f"[{style}]{text}[/]", ephemeral)
         return
     console.print(f"  [{style}]{text}[/]")
 
@@ -2360,9 +2367,9 @@ def item_compare_panel(char: Character, gamedata: GameData, item_id: str) -> Non
         console.print(_panel("\n".join(lines), title=f"換裝對比 — {d['name']}"))
 
 
-def _emit_or_print(markup: str) -> None:
+def _emit_or_print(markup: str, ephemeral: bool = False) -> None:
     if _web is not None:
-        _emit_log(markup)
+        _emit_log(markup, ephemeral)
     else:
         console.print("  " + markup)
 
@@ -2627,18 +2634,18 @@ def combat_event(ev: dict, gamedata: GameData) -> None:
         stat, amt = ev["self_restored"]
         lines.append(f"[cyan]法杖將生機回流,{_STAT_CN.get(stat, stat)} +{amt}。[/]")
     for m in lines:
-        _emit_or_print(m)
+        _emit_or_print(m, ephemeral=True)   # D1:逐擊流水帳只顯本回合區,不淹沒永久故事日誌
     show_events(ev.get("skill_events", []), gamedata)
 
 
 def combat_tick(messages: list) -> None:
     for m in messages:
-        _emit_or_print(f"[magenta]{m}[/]")
+        _emit_or_print(f"[magenta]{m}[/]", ephemeral=True)   # D1:DoT/狀態計時流水帳(本回合區)
 
 
 def ally_event(ev: dict) -> None:
     _emit_or_print(f"[magenta]{ev['name']}[/] 撲向敵人,造成 [bold red]{ev['damage']}[/] 傷害"
-                   if ev["hit"] else f"[grey62]{ev['name']} 的攻擊落空了。[/]")
+                   if ev["hit"] else f"[grey62]{ev['name']} 的攻擊落空了。[/]", ephemeral=True)   # D1
 
 
 def active_effects_line(player: Character, creature) -> None:
@@ -2657,7 +2664,7 @@ def active_effects_line(player: Character, creature) -> None:
         elif e["kind"] == "soul_trap":
             tags.append(f"[magenta]{creature.name}·擒魂{e['turns']}[/]")
     if tags:
-        _emit_or_print("狀態:" + "  ".join(tags))
+        _emit_or_print("狀態:" + "  ".join(tags), ephemeral=True)   # D1:場上狀態摘要(本回合區)
 
 
 def rule(title: str = "") -> None:

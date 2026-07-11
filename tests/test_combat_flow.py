@@ -26,7 +26,8 @@ def _setup(n_enemies=2, spells=("flames",)):
 
 
 def _drive(seq, fn):
-    """patch ui.menu/combat_status_group 以 key 序列驅動;回傳 (結果, 每次選單的 (title, keys))。"""
+    """patch ui.menu/combat_status_group 以 key 序列驅動;回傳 (結果, 每次選單的 (title, keys))。
+    (D2:戰鬥動作分桶純 web 呈現;無 web backend 時 `_grouped_combat_menu` 退回扁平 ui.menu → 此驅動不變。)"""
     seen = []
     q = list(seq)
     saved = (ui.menu, ui.combat_status_group)
