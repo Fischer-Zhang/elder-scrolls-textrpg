@@ -5734,6 +5734,8 @@ def action_character_sheet(state: GameState, gamedata: GameData) -> None:
             opts.append(("power", "星座之力"))
         opts.append(("bounty", "聲望與通緝"))
         opts.append(("equip", "穿戴與套裝"))
+        if any(b in gamedata.boons for b in (char.boons or [])) or getattr(char, "dagon_boon", False):
+            opts.append(("boons", "永久誓福"))          # R45/R107/R115 戴德拉/九神誓福 + 達貢之力(閘對齊面板:排除陳舊 id)
         if char.spells:
             opts.append(("spellbook", "法術書"))
         if vampirism.is_vampire(char):
@@ -5742,6 +5744,8 @@ def action_character_sheet(state: GameState, gamedata: GameData) -> None:
             opts.append(("werewolf", "狼人狀態"))
         if skooma.has_touched_sugar(char):
             opts.append(("skooma", "斯庫瑪/月糖狀態"))
+        if any(d.get("id") in gamedata.diseases for d in (char.diseases or [])):
+            opts.append(("diseases", "疾病"))            # R53 普通病(惡化/DoT/懲罰;閘對齊面板:排除陳舊 id)
         opts += [("skill", "技能詳情"), ("resheet", "重看角色卡")]
         choice = ui.menu("角色資訊(檢視)", opts, allow_back=True)
         if choice is None:
@@ -5770,6 +5774,10 @@ def action_character_sheet(state: GameState, gamedata: GameData) -> None:
             ui.sheet_lycanthropy(char, state, gamedata)
         elif choice == "skooma":
             ui.sheet_skooma(char, state, gamedata)
+        elif choice == "boons":
+            ui.sheet_boons(char, gamedata)
+        elif choice == "diseases":
+            ui.sheet_diseases(char, state, gamedata)
         elif choice == "skill":
             sk = ui.menu("檢視哪個技能?",
                          [(sid, f"{gamedata.skill_name(sid)} {char.skill(sid)}")

@@ -69,6 +69,7 @@
   #hud .h-team.summon { color:#c89bd6; }
   #hud .h-team.down { color:#a8584f; }
   #hud .h-chip.gold { color:var(--gold); border-color:var(--gold-soft); }
+  #hud .h-chip.mag { color:var(--mag); border-color:#4a2f52; }   /* R106 靈魂 token chip */
 
   /* 畫面:原生 block 串(view 元件 / html 退路)垂直堆疊 */
   #screen { display:flex; flex-direction:column; gap:12px; margin-top:6px; }
@@ -444,23 +445,7 @@
   }
 
   // --- view 元件 -------------------------------------------------------
-  function renderStatus(d) {
-    let chips = "";
-    if (d.vampire) chips += `<span class="chip red">🩸 ${esc(d.vampire)}吸血鬼</span>`;
-    else if (d.infected) chips += `<span class="chip red">🦠 吸血熱潛伏</span>`;
-    if (d.cover) chips += `<span class="chip gold">${esc(d.cover)}</span>`;
-    if (d.blessing) chips += `<span class="chip cyan">${esc(d.blessing)}</span>`;
-    if (d.renown) chips += `<span class="chip gold">${esc(d.renown)}</span>`;
-    if (d.fame) chips += `<span class="chip cyan">聲望 ${d.fame}</span>`;
-    if (d.bounty) chips += `<span class="chip red">通緝 ${d.bounty}</span>`;
-    return elFrom(
-      `<div class="vstatus"><div class="vs-line">`
-      + `<span class="vs-name">❖ ${esc(d.name)}</span><span class="vs-lv">Lv.${d.level}</span>`
-      + `<span class="vs-time">◷ ${esc(d.time)}</span>${chips}</div>`
-      + metersBlock(d)
-      + (d.can_level ? `<div class="vs-levelup">★ 可以升級了!</div>` : "")
-      + `</div>`);
-  }
+  // (舊 renderStatus「status 卡」已移除:web 從不發送 status block,即時狀態改由常駐 HUD renderHud 顯示。)
   function renderLocation(d) {
     const danger = d.danger ? `<span class="chip red">⚠ 危險度 ${d.danger}</span>` : "";
     let exitsHtml = "";
@@ -1007,7 +992,7 @@
     return elFrom(`<div class="card"><div class="card-head">🧭 開局背景一覽(各自帶起手任務)</div><div class="inv">${cards}</div></div>`);
   }
   const VIEWS = {
-    status: renderStatus, location: renderLocation, sheet: renderSheet, divider: renderDivider,
+    location: renderLocation, sheet: renderSheet, divider: renderDivider,
     combat: renderCombat, inventory: renderInventory, map: renderMap, guild: renderGuild,
     quests: renderQuests, npc: renderNpc, court: renderCourt, territory: renderTerritory,
     dungeon_grid: renderDungeonGrid, encounter: renderEncounter, event: renderEvent, discovery: renderDiscovery,
@@ -1136,6 +1121,8 @@
     if (d.vampire) chips += `<span class="h-chip red">🩸 ${esc(d.vampire)}</span>`;
     if (d.cover) chips += `<span class="h-chip gold">${esc(d.cover)}</span>`;
     if (d.blessing) chips += `<span class="h-chip cyan">${esc(d.blessing)}</span>`;
+    if (d.renown) chips += `<span class="h-chip gold">${esc(d.renown)}</span>`;   // R101 名聲稱號(live)
+    if (d.souls) chips += `<span class="h-chip mag">魂 ${d.souls}</span>`;         // R106 死靈師靈魂 token
     // R114 資訊可見性:持續狀態(詛咒/成癮/病)紅 chip;限時增益折成一顆「✨增益×N」帶 title 明細
     (d.statuses || []).forEach(function (s) { chips += `<span class="h-chip red">${esc(s)}</span>`; });
     if ((d.buffs || []).length) {

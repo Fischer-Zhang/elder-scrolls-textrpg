@@ -1412,6 +1412,23 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 
 ---
 
+### R154 · 角色卡資訊補完:誓福/疾病/附魔充能/魂 token review + 修 renown 死視圖
+
+**承「全面評估 UI/UX」審計 Rank 1(最高 ROI·high/small)**:多代理審計揪出最大**資訊可見性**缺口 —— `console.py` 對 boons **零引用**,而 39 道永久誓福(17 親王 + 9 神性 + 詛咒/收尾)是最大**終局回報層**卻在 web 完全看不到(打完十幾個親王試煉卻無從得知手上持有哪些誓福);疾病只在 status_line 剩一行「染病×N」;充能型附魔耗盡無提示;死靈師魂 token 只在祭壇可見;**R101 renown 稱號因 `_status_view` 死碼從不顯示**(web `status_line` 直接回 HUD、status 卡從不發送 → `_status_view`/`renderStatus` 皆死碼)。
+
+**純唯讀 view-model(鏡像既有 `sheet_vampirism`/`sheet_lycanthropy` 範式)+ 刪確認死碼;零碰 combat/formulas/magic·零新存檔欄·唯讀不 mutate char/state(不呼叫 apply_to_character/recompute)。**
+- `console.py`:新 `sheet_boons`(`char.boons ∩ gamedata.boons` + `dagon_boon`·`_boon_bonus_parts` 譯 attr/skill/resist/magicka/spell_power)+ `sheet_diseases`(`diseases._worsen_step` 算**當前有效懲罰 base+worsen×step** / 下次惡化倒數 / DoT·per-disease 逐病即算〔權威快取 `disease_*_penalty` 是跨病聚合單 dict·無法拆逐病〕);`_charge_suffix`(閘 `char.enchant_charges` 成員·耗盡加⚠·**防毀損存檔:`item_or_none` + `enchant.magnitude` 缺任一回空**〔審查 confirmed 修:避 charge_capacity KeyError〕)接進 `weapon_line` + `sheet_equipment` 副手;`_hud_view` 加 `renown`(稱號)/`souls`(魂 token);**刪 `_status_view` 死碼**(web 從不發 status 卡·即時狀態全走 HUD)。
+- `main.py`:`action_character_sheet` 條件式加「永久誓福」/「疾病」選單 + dispatch(inline `getattr` 免新 import;**閘用登錄表交集 `any(b in gamedata.boons ...)` 對齊面板過濾**〔審查 confirmed 修:只剩陳舊 id 時不再顯空面板〕)。
+- `index.html`:`renderHud` 加 `renown`(金)+ `souls`(紫)chip + `.h-chip.mag`;**刪 `renderStatus` + VIEWS `status:` 條目**(死碼)。
+
+**🔴 sim byte-identical**(未碰戰鬥·唯讀 view-model;`sim_assassin` solo 秒殺 0.0% + 群戰 baseline 不變)·**零新存檔欄**·**R27** 終端 fallback 全保留(只刪確認死碼:`_status_view`/`renderStatus` 全域零其他引用〔grep tesrpg+tests〕)。
+
+**驗證**:`run_all` **128**(新 `test_sheet_boons_diseases_charges_and_hud_r154`:誓福空/持有+達貢·疾病惡化階 base+worsen×step·充能 N/cap+耗盡+無 magnitude 守·HUD renown/souls key)·`node --check` JS 合法·**對抗審查 4 維 9-agent → 0 blocker/major·3 confirmed 全 nit 全修**(`_charge_suffix` magnitude KeyError〔防毀損存檔〕· boons/diseases 選單閘 vs 面板過濾不一致 ×2〔陳舊 id 空面板〕)·2 refuted(`_restore` HUD 全域清=無影響仍修 hygiene· sheet_diseases 即時重算=by-design 正確,per-disease 需即算)。
+
+**🔴 鐵律**:角色卡新 review 走 `_emit_panel`(鏡像 `sheet_vampirism`)·**唯讀不 mutate char/state**(不呼叫 apply_to_character/recompute);充能讀數閘 `char.enchant_charges` 成員 + `enchant.magnitude` 存在;誓福/疾病顯示**有效值**(疾病含惡化階);選單入口閘對齊面板登錄表過濾(排除陳舊 id);刪死碼前 grep 全域(tesrpg+tests)零引用;純唯讀 view-model → sim 天然不受影響。**前瞻 backlog**:C 無障礙打底· D 戰鬥/日誌可讀性· E 新手清晰度· F 服務目錄· G 存檔槽位/多角色· H 設定面板。
+
+---
+
 ### R153 · 互動世界地圖:面板內點擊旅行 + 我的位置聚焦 + 手機縮放/滾動陷阱修復
 
 **承「全面評估專案改進尤其 UI/UX」**:多代理審計(8 維 fan-out·51 findings→8 主題·10 agent·0 error)去重確認 UI 已高度打磨(R113/R114/R125 摘掉多數低垂果實),但**世界地圖仍是純唯讀展示**——R114D 明列延後的旗艦缺口(延後主因=「marker 點擊 vs 拖曳/showInfo vs data-key submit」三方衝突)。使用者拍板本輪做此方向。

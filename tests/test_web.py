@@ -28,6 +28,8 @@ def _restore():
     ui._web = None
     ui.console = Console()
     ui._hud_state = None
+    ui._hud_gamedata = None    # 一併清 HUD 全域(比照 clear_hud)→ 不把共享 gamedata 洩漏到後續模組
+    ui._hud_allies = None
 
 
 def _drive_multi(backend, call, answers):
@@ -512,6 +514,75 @@ def test_sheet_subview_models():
         for s in b["data"]["schools"]:
             assert s["spells"] and all(sp["cost"] >= 0 and sp["effect"] for sp in s["spells"])
     finally:
+        _restore()
+
+
+def test_sheet_boons_diseases_charges_and_hud_r154():
+    """R154 角色卡資訊補完:誓福/疾病 review 面板 + 附魔充能讀數 + HUD renown/魂 chip。"""
+    from tesrpg.gamedata import get_gamedata
+    from tesrpg.creation import build_character
+    from tesrpg.state import GameState, GameTime
+    from tesrpg.rng import RNG
+    from tesrpg.systems import boons, dagon_boon, diseases, inventory
+    gd = get_gamedata()
+    c = build_character(gd, name="測", sex="male", race="dunmer", birthsign="mage", class_id="mage")
+    st = GameState(player=c, time=GameTime(), rng=RNG(1))
+    backend = WebBackend()
+    ui.use_web_backend(backend, _rec())
+    try:
+        # --- 誓福:空 → panel muted;授予 azura + kvatch_hero + 達貢 → 每道一個 head + 加成 line ---
+        ui.sheet_boons(c, gd)
+        b = backend.blocks[-1]
+        assert b["name"] == "panel" and b["data"]["title"] == "永久誓福"
+        assert any(r["t"] == "line" and "尚未" in r["s"] for r in b["data"]["rows"])
+        boons.grant(c, gd, "azura"); boons.grant(c, gd, "kvatch_hero"); dagon_boon.grant(c, gd)
+        ui.sheet_boons(c, gd)
+        rows = backend.blocks[-1]["data"]["rows"]
+        heads = [r["s"] for r in rows if r["t"] == "head"]
+        assert "達貢之力 —— 主線慘勝" in heads and "晨昏之佑" in heads and "救世主之譽" in heads
+        # 每個 head 後緊跟一個加成 line(非空)
+        for i, r in enumerate(rows):
+            if r["t"] == "head":
+                assert rows[i + 1]["t"] == "line" and rows[i + 1]["s"]
+        assert any("共 3 道" in r["s"] for r in rows if r["t"] == "line")
+
+        # --- 疾病:空 → muted;染 rockjoint 過 7 日 → 懲罰含惡化階、惡化=已達最重 ---
+        ui.sheet_diseases(c, st, gd)
+        assert any("沒有染上" in r["s"] for r in backend.blocks[-1]["data"]["rows"] if r["t"] == "line")
+        diseases.contract(c, st, gd, "rockjoint")
+        st2 = GameState(player=c, time=GameTime(day=8), rng=RNG(1))   # 約 7 日後(惡化 3 階·封頂)
+        ui.sheet_diseases(c, st2, gd)
+        kv = {r["k"]: r["v"] for r in backend.blocks[-1]["data"]["rows"] if r["t"] == "kv"}
+        assert "力量-22" in kv["懲罰"]          # base -10 + worsen -4×3
+        assert "已達最重" in kv["惡化"]
+
+        # --- HUD:_hud_view 帶 renown(稱號)+ souls(魂 token) key(在動裝備前查,免污染負重計算)---
+        c.fame = 400; c.soul_tokens = 7
+        ui._hud_state, ui._hud_gamedata = st, gd
+        hv = ui._hud_view()
+        assert "renown" in hv and "souls" in hv and hv["souls"] == 7
+        assert hv["renown"]   # fame 400 → 有稱號(tier>0)
+
+        # --- 附魔充能:充能型武器顯 ·充能 N/cap(耗盡加⚠);一般武器無此標 ---
+        # gd 為共享快取 → 末尾務必 pop 掉臨時物品,且 pop 前不再讀 char 背包(已 unequip 還原)。
+        fake = "r154_charged_sword"
+        gd.items[fake] = {"name": "噬魂劍", "kind": "weapon", "skill": "blade", "archetype": "sword",
+                          "damage": 10, "weight": 10, "value": 50, "enchant": {"kind": "soul_trap", "magnitude": 5}}
+        inventory.add_item(c, fake, 1); inventory.equip_weapon(c, gd, fake)
+        c.enchant_charges[fake] = 3
+        assert "·充能 3/5" in ui._plain(ui.weapon_line(c, gd))
+        c.enchant_charges[fake] = 0
+        assert "·充能 0/5⚠耗盡" in ui._plain(ui.weapon_line(c, gd))
+        assert ui._charge_suffix(c, gd, "iron_sword") == ""   # 一般武器無充能標
+        # 防毀損存檔:充能記錄殘留但物品附魔無 magnitude → 不 KeyError,回空(審查 confirmed nit 修)
+        broke = "r154_broken_ench"
+        gd.items[broke] = {"name": "殘魔劍", "kind": "weapon", "skill": "blade", "damage": 5,
+                           "weight": 5, "value": 10, "enchant": {"kind": "soul_trap"}}   # 無 magnitude
+        c.enchant_charges[broke] = 2
+        assert ui._charge_suffix(c, gd, broke) == ""
+    finally:
+        gd.items.pop("r154_charged_sword", None)   # 還原共享 gamedata(即使斷言失敗)
+        gd.items.pop("r154_broken_ench", None)
         _restore()
 
 

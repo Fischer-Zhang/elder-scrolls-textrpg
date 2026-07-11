@@ -179,6 +179,8 @@ def _hud_view():
          "gold": c.gold, "bounty": sum(c.bounties.values()),
          "can_level": c.can_level_up(), "vampire": None, "cover": _cover_badge(c, _hud_gamedata),
          "blessing": _blessing_badge(c, now),
+         "renown": _renown_title(c),               # R101 名聲稱號(live·原僅在死 _status_view 從不上 web)
+         "souls": getattr(c, "soul_tokens", 0),    # R106 死靈師靈魂 token(>0 才顯 chip;非死靈師恆 0)
          "buffs": [{"label": b["label"], "remain": b["remain"]} for b in buffs],
          "statuses": statuses,
          "encumbered": bool(w is not None and mw and w > mw * 0.9),   # ⚖ 將滿(>90%)
@@ -251,24 +253,8 @@ def _emit_panel(title: str, rows: list) -> None:
 
 
 # --- web view-models(原生 HTML 渲染用;與終端渲染函式同源資料,客戶端畫成元件)-----
-def _status_view(state: GameState) -> dict:
-    c = state.player
-    v = {"name": c.name, "level": c.level, "time": state.time.label(),
-         "hp": [int(c.health), int(c.max_health)],
-         "mp": [int(c.magicka), int(c.max_magicka)],
-         "fp": [int(c.fatigue), int(c.max_fatigue)],
-         "fame": c.fame, "bounty": sum(c.bounties.values()),
-         "can_level": c.can_level_up(), "vampire": None, "infected": False,
-         "cover": _cover_badge(c), "renown": _renown_title(c),
-         "blessing": _blessing_badge(c)}
-    if getattr(c, "is_vampire", False):
-        from tesrpg.systems import vampirism
-        v["vampire"] = vampirism.STAGE_NAMES[min(3, max(0, c.vampire_stage))]
-    elif getattr(c, "vampire_infected_day", -1) >= 0:
-        v["infected"] = True
-    return v
-
-
+# (R101 名聲稱號/血脈/掩護/祝福等即時狀態改由常駐 HUD `_hud_view` 顯示;
+#  舊 `_status_view`「status 卡」在 web 從不發送〔status_line 直接回 HUD〕→ 已移除死碼。)
 def _location_view(char: Character, gamedata: GameData, brief: bool = False) -> dict:
     from tesrpg.systems import landmarks, politics, world, quests
     loc = gamedata.location(char.location_id)
@@ -911,6 +897,20 @@ def _ench_suffix(gamedata: GameData, item_id: str) -> str:
     return f" ·{d}" if d else ""
 
 
+def _charge_suffix(char: Character, gamedata: GameData, item_id: str) -> str:
+    """充能型附魔武器的剩餘充能小標(『·充能 N/cap』;耗盡加⚠;非充能型→空)。
+    只有充能型附魔(擒魂/麻痺)會進 `char.enchant_charges`,故以其為閘 → 一般裝備恆回空。"""
+    cur = (getattr(char, "enchant_charges", None) or {}).get(item_id)
+    if cur is None:
+        return ""
+    it = gamedata.item_or_none(item_id)
+    if not it or not (it.get("enchant") or {}).get("magnitude"):
+        return ""                       # 防毀損存檔:充能記錄殘留但物品已無附魔/無電池容量(避 charge_capacity KeyError)
+    from tesrpg.systems import enchanting
+    cap = enchanting.charge_capacity(gamedata, item_id)
+    return f" ·充能 {cur}/{cap}" + ("⚠耗盡" if cur <= 0 else "")
+
+
 def _sheet_overview_extra(char: Character, gamedata: GameData) -> Text | None:
     """overview 底部的精簡狀態塊(公會/血脈/進行中效果);全為 state-independent。"""
     from tesrpg.systems import factions
@@ -1405,7 +1405,8 @@ def sheet_equipment(char: Character, gamedata: GameData) -> None:
     if _web is not None:
         rows = [_kv("武器", _plain(weapon_line(char, gamedata)))]
         if char.offhand:
-            rows.append(_kv("副手", gamedata.item_name(char.offhand)))
+            rows.append(_kv("副手", gamedata.item_name(char.offhand)
+                            + _ench_suffix(gamedata, char.offhand) + _charge_suffix(char, gamedata, char.offhand)))
         for slot in ("helmet", "cuirass", "gauntlets", "boots", "shield", "amulet", "ring1", "ring2"):
             iid = char.equipped.get(slot)
             if iid:
@@ -1431,7 +1432,9 @@ def sheet_equipment(char: Character, gamedata: GameData) -> None:
     body.append(weapon_line(char, gamedata) + "\n", style=PARCH)
     if char.offhand:
         body.append("副手  ", style=GOLD)
-        body.append(gamedata.item_name(char.offhand) + "\n", style=PARCH)
+        body.append(gamedata.item_name(char.offhand)
+                    + _ench_suffix(gamedata, char.offhand) + _charge_suffix(char, gamedata, char.offhand)
+                    + "\n", style=PARCH)
     for slot in ("helmet", "cuirass", "gauntlets", "boots", "shield", "amulet", "ring1", "ring2"):
         iid = char.equipped.get(slot)
         if iid:
@@ -1628,6 +1631,125 @@ def companion_talk(name: str, line: str, bond: str) -> None:
     body.append(f"「{line}」\n", style="italic " + PARCH)
     body.append(f"（羈絆「{bond}」)", style=FAINT)
     console.print(_panel(body, title="交談", style="green"))
+
+
+def _boon_bonus_parts(attr, skill, resist, magicka, spell_power, gamedata: GameData) -> list:
+    """把誓福/達貢層的加成 dict 譯成人話小段(供角色卡顯示實際數值)。"""
+    parts = []
+    for k, v in (attr or {}).items():
+        parts.append(f"{_tr_bonus('attrs', k, gamedata)}{v:+d}")
+    for k, v in (skill or {}).items():
+        parts.append(f"{_tr_bonus('skills', k, gamedata)}{v:+d}")
+    for k, v in (resist or {}).items():
+        parts.append(f"{_tr_bonus('resist', k, gamedata)}抗{v:+d}%")
+    if magicka:
+        parts.append(f"魔力上限 +{int(magicka)}")
+    if spell_power:
+        parts.append(f"法術威力 +{int(round(spell_power * 100))}%")
+    return parts
+
+
+def sheet_boons(char: Character, gamedata: GameData) -> None:
+    """R45/R107/R115 永久誓福總覽:戴德拉親王 + 九神 + 詛咒/收尾誓福(`char.boons`)+ 達貢之力(主線慘勝)。
+    唯讀;各為獨立疊加層,絕不寫回基礎值(此處只讀 boons.json 登錄表 + dagon_* 快取)。"""
+    from tesrpg.systems import dagon_boon
+    reg = getattr(gamedata, "boons", {}) or {}
+    held = [(bid, reg[bid]) for bid in (getattr(char, "boons", None) or []) if bid in reg]
+    dagon = dagon_boon.has_boon(char)
+    total = len(held) + (1 if dagon else 0)
+
+    def _parts(spec):
+        return _boon_bonus_parts(spec.get("attr", {}), spec.get("skill", {}), spec.get("resist", {}),
+                                 spec.get("magicka", 0), spec.get("spell_power", 0.0), gamedata)
+
+    if _web is not None:
+        if not total:
+            _emit_panel("永久誓福", [_ln("你尚未獲得任何戴德拉親王或九神的永久誓福。", "muted"),
+                                    _ln("(完成親王神殿試煉 / 九神選民試煉可得)", "faint")])
+            return
+        rows: list = []
+        if dagon:
+            rows.append(_hd("達貢之力 —— 主線慘勝"))
+            rows.append(_ln("、".join(_boon_bonus_parts(char.dagon_attr_bonus, char.dagon_skill_bonus,
+                            char.dagon_resist, char.dagon_magic_bonus, 0.0, gamedata)) or "(無數值)", "cyan"))
+        for _bid, spec in held:
+            rows.append(_hd(spec.get("name", _bid)))
+            rows.append(_ln("、".join(_parts(spec)) or "(無數值)", "cyan"))
+        rows.append(_ln(f"共 {total} 道永久誓福(各為獨立疊加層,絕不寫回基礎值)", "faint"))
+        _emit_panel("永久誓福", rows)
+        return
+    body = Text()
+    if not total:
+        body.append("你尚未獲得任何戴德拉親王或九神的永久誓福。", style=INK)
+    else:
+        if dagon:
+            body.append("達貢之力 —— 主線慘勝\n", style="bold gold1")
+            body.append("　" + ("、".join(_boon_bonus_parts(char.dagon_attr_bonus, char.dagon_skill_bonus,
+                        char.dagon_resist, char.dagon_magic_bonus, 0.0, gamedata)) or "(無數值)") + "\n", style=PARCH)
+        for _bid, spec in held:
+            body.append(f"{spec.get('name', _bid)}\n", style="bold gold1")
+            body.append("　" + ("、".join(_parts(spec)) or "(無數值)") + "\n", style=PARCH)
+        body.append(f"共 {total} 道永久誓福(各為獨立疊加層,絕不寫回基礎值)", style=FAINT)
+    console.print(_panel(body, title="永久誓福"))
+
+
+def sheet_diseases(char: Character, state: GameState, gamedata: GameData) -> None:
+    """R53 疾病總覽:名稱/症狀 + 當前懲罰(含惡化階)+ 下次惡化 + 流行病 DoT。唯讀。"""
+    from tesrpg.systems import diseases
+    reg = getattr(gamedata, "diseases", {}) or {}
+    now = state.time.absolute_hours()
+    active = [d for d in (getattr(char, "diseases", None) or []) if d.get("id") in reg]
+
+    def _fields(d):
+        spec = reg[d["id"]]
+        at = d.get("at", now)
+        step = diseases._worsen_step(spec, at, now)
+        w = spec.get("worsen") or {}
+        pen = []
+        for k, v in spec.get("attr", {}).items():
+            pen.append(f"{_tr_bonus('attrs', k, gamedata)}{v + w.get('attr', {}).get(k, 0) * step:+d}")
+        for k, v in spec.get("skill", {}).items():
+            pen.append(f"{_tr_bonus('skills', k, gamedata)}{v + w.get('skill', {}).get(k, 0) * step:+d}")
+        if not w:
+            worsen = "不惡化"
+        elif step >= w.get("max_steps", 0):
+            worsen = f"已達最重(第 {step} 階)"
+        else:
+            days_to_next = (step + 1) * max(1, w.get("per_days", 1)) - max(0, (now - at) // 24)
+            worsen = f"第 {step} 階 · 約 {max(0, days_to_next)} 日後加重"
+        dot = spec.get("dot")
+        dot_txt = f"每 {dot.get('per_hours', 6)} 時 -{dot.get('magnitude', 0)} 血" if dot else None
+        return spec["name"], spec.get("symptom", ""), "、".join(pen) or "(無)", worsen, dot_txt
+
+    if _web is not None:
+        if not active:
+            _emit_panel("疾病", [_ln("你目前沒有染上任何疾病。", "muted")])
+            return
+        rows = []
+        for d in active:
+            name, symptom, pen, worsen, dot = _fields(d)
+            rows.append(_hd(name))
+            if symptom:
+                rows.append(_ln(symptom, "faint"))
+            rows.append(_kv("懲罰", pen))
+            rows.append(_kv("惡化", worsen))
+            if dot:
+                rows.append(_kv("流行病", dot))
+        rows.append(_ln("治癒:療疾藥水 / 神殿祈禱 / 淨疫術(恢復系)", "faint"))
+        _emit_panel("疾病", rows)
+        return
+    body = Text()
+    if not active:
+        body.append("你目前沒有染上任何疾病。", style=INK)
+    else:
+        for d in active:
+            name, symptom, pen, worsen, dot = _fields(d)
+            body.append(f"{name}\n", style="bold yellow")
+            if symptom:
+                body.append(f"　{symptom}\n", style=FAINT)
+            body.append(f"　懲罰 {pen}　惡化 {worsen}" + (f"　流行病 {dot}" if dot else "") + "\n", style=PARCH)
+        body.append("治癒:療疾藥水 / 神殿祈禱 / 淨疫術(恢復系)", style=FAINT)
+    console.print(_panel(body, title="疾病"))
 
 
 def sheet_skooma(char: Character, state: GameState, gamedata: GameData) -> None:
@@ -2017,7 +2139,8 @@ def weapon_line(char: Character, gamedata: GameData) -> str:
     dmg_tag = f"傷害 {dmg} · " if char.weapon != "fists" else ""
     return (f"{wp['name']}（{dmg_tag}{gamedata.skill_name(wp['skill'])} {char.skill(wp['skill'])}"
             f"{arch_tag})" + _temper_suffix(char, char.weapon)
-            + _ench_suffix(gamedata, char.weapon) + poison + dual)
+            + _ench_suffix(gamedata, char.weapon) + _charge_suffix(char, gamedata, char.weapon)
+            + poison + dual)
 
 
 def combat_intro(creature, player: Character, gamedata: GameData) -> None:
