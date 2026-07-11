@@ -160,11 +160,11 @@ def test_boons_count():
 
 def test_faction_rank():
     gd, c = _char()
-    c.factions["coven_vampire"] = 2
-    assert "blood_matron" not in _ids(gd, c)                                   # 未達頂階
     c.factions["coven_vampire"] = 3
-    assert "blood_matron" in _ids(gd, c)
-    c.factions["werewolf_pack"] = 3
+    assert "blood_matron" not in _ids(gd, c)                                   # 血裔(index 3)未達頂階
+    c.factions["coven_vampire"] = 5
+    assert "blood_matron" in _ids(gd, c)                                       # 血主(index 5,R160 修)
+    c.factions["werewolf_pack"] = 5
     assert "alpha_wolf" in _ids(gd, c)
     c.factions["dark_brotherhood"] = 3
     assert "silencer" not in _ids(gd, c)                                       # rank 4 才是沉默者
@@ -209,13 +209,95 @@ def test_prince_boss_kills():
 
 
 def test_new_types_implemented():
-    for t in ("boons_count", "faction_rank", "disease_count", "soul_gems_filled"):
+    for t in ("boons_count", "faction_rank", "disease_count", "soul_gems_filled",
+              "boons_source", "loyalty_arcs", "world_event"):
         assert t in achievements._IMPLEMENTED_TYPES
     # 新成就全通過 _defs 過濾(非靜默消失)
     gd = get_gamedata()
     ids = {a["id"] for a in achievements._defs(gd)}
-    for aid in ("prince_favored", "blood_matron", "afflicted", "soul_collector", "star_breaker"):
+    for aid in ("prince_favored", "blood_matron", "afflicted", "soul_collector", "star_breaker",
+                "divine_pilgrim", "divine_chosen", "crisis_ender", "loyal_bond"):
         assert aid in ids
+
+
+# --- R160 名人堂批次:誓福按來源 / 忠誠弧 / 修 curse-rank 回歸 ------------
+def test_boons_source_divine_and_daedric():
+    """boons_source:按來源集齊(divine all / count·daedric count),來源集由 boons.json source 派生。"""
+    from tesrpg.systems import boons as boonsys
+    gd, c = _char()
+    divine = [bid for bid, b in gd.boons.items() if b.get("source") == "divine"]
+    daedric = [bid for bid, b in gd.boons.items() if b.get("source") == "daedric"]
+    assert len(divine) == 9, f"divine 誓福應恰 9(對應九神試煉):{len(divine)}"
+    assert len(daedric) >= 15, f"daedric 誓福應 ≥15(15 親王 + 3 莫拉書):{len(daedric)}"
+    assert "divine_pilgrim" not in _ids(gd, c)
+    for bid in divine[:3]:
+        boonsys.grant(c, gd, bid)
+    assert "divine_pilgrim" in _ids(gd, c) and "divine_chosen" not in _ids(gd, c)   # 3 → pilgrim,未全
+    for bid in divine[3:]:
+        boonsys.grant(c, gd, bid)
+    assert "divine_chosen" in _ids(gd, c)                                            # 全 9 → all
+    # daedric count 門檻(prince_favored 8 / prince_chosen 15;retarget 自 boons_count → 名符其實)
+    gd2, c2 = _char()
+    for bid in daedric[:8]:
+        boonsys.grant(c2, gd2, bid)
+    assert "prince_favored" in _ids(gd2, c2) and "prince_chosen" not in _ids(gd2, c2)
+
+
+def test_boons_source_ignores_other_categories():
+    """divine 成就不被非 divine 誓福(guild/undercover/…)滿足 → source 篩選正確。"""
+    from tesrpg.systems import boons as boonsys
+    gd, c = _char()
+    non_divine = [bid for bid, b in gd.boons.items() if b.get("source") != "divine"][:5]
+    for bid in non_divine:
+        boonsys.grant(c, gd, bid)
+    assert "divine_pilgrim" not in _ids(gd, c)   # 5 個非 divine 誓福 ≠ 3 divine
+
+
+def test_loyalty_arcs_achievement_is_monotonic():
+    """loyalty_arcs:數 completed_quests 內的同伴 personal_quest(曾完成即算,遣散不失效 → 成就單調)。"""
+    gd, c = _char()
+    assert "loyal_bond" not in _ids(gd, c)                     # 無完成任何弧 → 0
+    cand = next((cid for cid, cd in gd.companions.items()
+                 if isinstance(cd, dict) and cd.get("personal_quest")), None)
+    assert cand is not None, "資料應有具名弧同伴"
+    c.completed_quests = [gd.companions[cand]["personal_quest"]]
+    c.companions = []                                          # 🔴 同伴已遣散 → 仍應保有成就(單調)
+    assert "loyal_bond" in _ids(gd, c)
+
+
+def test_world_event_crisis_ender_both_endings():
+    """crisis_ender 走 world_event(oblivion_crisis_ended)→ 雙結局(救世/墮落)皆設此旗 → 兩通路公平。"""
+    gd, c = _char()
+    assert "crisis_ender" not in _ids(gd, c)
+    c.world_events_fired = ["oblivion_crisis_ended"]           # 兩條主線結局皆設此旗(quests.json:4051/4091)
+    assert "crisis_ender" in _ids(gd, c)
+
+
+def test_curse_rank_top_requires_rank_5_r160():
+    """修 R57 回歸:血主/頭狼在頂階 index 5(非 3);rank 3(血裔/月牙)不再誤授頂階成就。"""
+    gd, c = _char()
+    for fid, aid in (("coven_vampire", "blood_matron"), ("werewolf_pack", "alpha_wolf")):
+        top = len(gd.factions[fid]["ranks"]) - 1
+        assert top == 5, f"{fid} 頂階 index 應為 5:{top}"
+        c.factions[fid] = 3
+        assert aid not in _ids(gd, c), f"rank 3 不應授 {aid}(R57 回歸修復)"
+        c.factions[fid] = 5
+        assert aid in _ids(gd, c)
+        del c.factions[fid]
+
+
+def test_all_boons_have_valid_source_r160():
+    """boons.json 每筆誓福皆有合法 source(自我文件化 + 讓 boons_source 成就防陳舊);
+    boons_source 成就引用的 source 須真實存在於註冊表(否則永不可達)。"""
+    gd = get_gamedata()
+    valid = {"divine", "daedric", "guild", "undercover", "main", "arcane"}
+    for bid, b in gd.boons.items():
+        assert b.get("source") in valid, f"誓福 {bid} 缺合法 source:{b.get('source')}"
+    for a in gd.achievements:
+        if a["cond"]["type"] == "boons_source":
+            src = a["cond"]["source"]
+            assert any(b.get("source") == src for b in gd.boons.values()), \
+                f"成就 {a['id']} 的 source={src} 無任何誓福 → 永不可達"
 
 
 # --- R55 首達通知(零存檔欄,session 暫態去重)----------------------------
@@ -261,6 +343,13 @@ def test_shipped_ids_are_legal():
             assert a["cond"]["cause"] in {"imperial", "independent", "own"}
         if t == "pure_spec":
             assert a["cond"]["spec"] in {"combat", "magic", "stealth"}
+        if t == "boons_source":
+            assert any(b.get("source") == a["cond"]["source"] for b in gd.boons.values()), a["cond"]["source"]
+            assert a["cond"].get("all") or isinstance(a["cond"].get("count"), int)
+        if t == "loyalty_arcs":
+            assert isinstance(a["cond"]["count"], int) and a["cond"]["count"] >= 1
+        if t == "world_event":
+            assert isinstance(a["cond"]["event"], str) and a["cond"]["event"]
     ids = [a["id"] for a in gd.achievements]
     assert len(ids) == len(set(ids)), "成就 id 重複"
 

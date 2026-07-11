@@ -15,18 +15,19 @@ from tesrpg.creation import build_character
 from tesrpg.gamedata import get_gamedata
 from tesrpg.rng import RNG
 from tesrpg.state import GameState
-from tesrpg.systems import saves
+from tesrpg.systems import hall, saves
 
 
 def _env():
-    """回 (tempdir_obj, restore_fn);把 saves 目錄指向暫存。"""
+    """回 (tempdir_obj, restore_fn);把 saves + 名人堂目錄指向暫存(免污染真實 ~/.tesrpg)。"""
     td = tempfile.TemporaryDirectory()
-    orig = (saves.SAVES_DIR, saves.LEGACY_PATH)
+    orig = (saves.SAVES_DIR, saves.LEGACY_PATH, hall.HALL_PATH)
     saves.SAVES_DIR = Path(td.name) / "saves"
     saves.LEGACY_PATH = Path(td.name) / "save.json"
+    hall.HALL_PATH = Path(td.name) / "hall.json"   # R160:end_run 終局會寫名人堂 → 同樣隔離
 
     def restore():
-        saves.SAVES_DIR, saves.LEGACY_PATH = orig
+        saves.SAVES_DIR, saves.LEGACY_PATH, hall.HALL_PATH = orig
         td.cleanup()
     return td, restore
 

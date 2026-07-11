@@ -1,6 +1,7 @@
 {
   "azura": {
     "name": "晨昏之佑",
+    "source": "daedric",
     "attr": {"willpower": 8, "intelligence": 6},
     "skill": {"mysticism": 10},
     "resist": {"magic": 20},
@@ -8,6 +9,7 @@
   },
   "kvatch_hero": {
     "name": "救世主之譽",
+    "source": "main",
     "attr": {"personality": 10, "endurance": 6},
     "skill": {"restoration": 10, "speechcraft": 8},
     "resist": {"magic": 10},
@@ -15,6 +17,7 @@
   },
   "dagon_apostate": {
     "name": "使徒之影",
+    "source": "main",
     "attr": {"willpower": 8, "personality": 6},
     "skill": {"illusion": 10, "mysticism": 8},
     "resist": {"magic": 10},
@@ -22,6 +25,7 @@
   },
   "molag_defiance": {
     "name": "不屈之心",
+    "source": "daedric",
     "attr": {"willpower": 10, "endurance": 6},
     "skill": {"restoration": 8},
     "resist": {"frost": 15},
@@ -29,6 +33,7 @@
   },
   "hircine_blessing": {
     "name": "獵者之佑",
+    "source": "daedric",
     "attr": {"agility": 10, "speed": 6},
     "skill": {"light_armor": 8},
     "resist": {"poison": 15},
@@ -36,6 +41,7 @@
   },
   "boethiah_resolve": {
     "name": "弒逆之志",
+    "source": "daedric",
     "attr": {"endurance": 10, "agility": 6},
     "skill": {"heavy_armor": 10},
     "resist": {"poison": 15},
@@ -43,12 +49,14 @@
   },
   "clavicus_silver_tongue": {
     "name": "言靈之佑",
+    "source": "daedric",
     "attr": {"personality": 12},
     "skill": {"speechcraft": 12, "mercantile": 10},
     "magicka": 0
   },
   "peryite_ward": {
     "name": "守序之佑",
+    "source": "daedric",
     "attr": {"endurance": 10, "willpower": 6},
     "skill": {"block": 10},
     "resist": {"magic": 12, "disease": 25},
@@ -56,6 +64,7 @@
   },
   "mephala_shadow": {
     "name": "蛛影之佑",
+    "source": "daedric",
     "attr": {"agility": 10, "willpower": 6},
     "skill": {"illusion": 10},
     "resist": {"magic": 10},
@@ -63,6 +72,7 @@
   },
   "sanguine_revel": {
     "name": "歡愉之佑",
+    "source": "daedric",
     "attr": {"willpower": 8, "personality": 6},
     "skill": {"conjuration": 12},
     "resist": {"poison": 15},
@@ -70,6 +80,7 @@
   },
   "malacath_might": {
     "name": "棄絕者之力",
+    "source": "daedric",
     "attr": {"strength": 10, "endurance": 8},
     "skill": {"smithing": 10},
     "resist": {"poison": 10, "disease": 15},
@@ -77,6 +88,7 @@
   },
   "meridia_light": {
     "name": "光之佑",
+    "source": "daedric",
     "attr": {"personality": 8, "willpower": 6},
     "skill": {"restoration": 10, "light_armor": 6},
     "resist": {"fire": 20, "magic": 10},
@@ -84,6 +96,7 @@
   },
   "vaermina_nightmare": {
     "name": "夢魘之佑",
+    "source": "daedric",
     "attr": {"intelligence": 8, "willpower": 6},
     "skill": {"destruction": 10},
     "resist": {"shock": 15, "magic": 10},
@@ -91,6 +104,7 @@
   },
   "namira_decay": {
     "name": "腐朽之佑",
+    "source": "daedric",
     "attr": {"agility": 8, "endurance": 6},
     "skill": {"alchemy": 12},
     "resist": {"poison": 20, "disease": 15},
@@ -98,6 +112,7 @@
   },
   "sheogorath_madness": {
     "name": "瘋癲之佑",
+    "source": "daedric",
     "attr": {"willpower": 8, "luck": 6},
     "skill": {"alteration": 12},
     "resist": {"magic": 15},
@@ -105,12 +120,14 @@
   },
   "nocturnal_shadow": {
     "name": "夜影之佑",
+    "source": "daedric",
     "attr": {"agility": 8, "luck": 6},
     "skill": {"security": 12, "illusion": 10},
     "magicka": 0
   },
   "jyggalag_order": {
     "name": "秩序之佑",
+    "source": "daedric",
     "attr": {"intelligence": 8, "willpower": 6},
     "skill": {"mysticism": 12},
     "resist": {"magic": 15},
@@ -118,6 +135,7 @@
   },
   "hermaeus_might": {
     "name": "真知·力量之書",
+    "source": "daedric",
     "attr": {"endurance": 10},
     "skill": {"heavy_armor": 10, "block": 8, "smithing": 10},
     "resist": {"fire": 15},
@@ -125,6 +143,7 @@
   },
   "hermaeus_shadow": {
     "name": "真知·暗影之書",
+    "source": "daedric",
     "attr": {"agility": 10, "speed": 6},
     "skill": {"acrobatics": 10, "light_armor": 8},
     "resist": {"poison": 15},
@@ -132,6 +151,7 @@
   },
   "hermaeus_magic": {
     "name": "真知·魔法之書",
+    "source": "daedric",
     "attr": {"intelligence": 10, "willpower": 6},
     "skill": {"destruction": 8, "mysticism": 8},
     "resist": {"magic": 15},
@@ -139,6 +159,7 @@
   },
   "coven_usurper": {
     "name": "血主之威",
+    "source": "guild",
     "attr": {"willpower": 10, "endurance": 6},
     "skill": {"restoration": 8},
     "resist": {"magic": 15},
@@ -146,6 +167,7 @@
   },
   "coven_heir": {
     "name": "血裔之佑",
+    "source": "guild",
     "attr": {"personality": 8, "willpower": 6},
     "skill": {"illusion": 8},
     "resist": {"magic": 10},
@@ -153,6 +175,7 @@
   },
   "pack_usurper": {
     "name": "頭狼之威",
+    "source": "guild",
     "attr": {"strength": 8, "endurance": 8},
     "skill": {"athletics": 8},
     "resist": {"frost": 15},
@@ -160,6 +183,7 @@
   },
   "pack_heir": {
     "name": "獵群之佑",
+    "source": "guild",
     "attr": {"endurance": 10, "willpower": 6},
     "skill": {"athletics": 8},
     "resist": {"frost": 10, "disease": 15},
@@ -167,28 +191,33 @@
   },
   "archmage_insight": {
     "name": "大法師通悟",
+    "source": "guild",
     "spell_power": 0.1
   },
   "fighters_loyalist": {
     "name": "潛影歸來",
+    "source": "undercover",
     "attr": {"agility": 8, "personality": 6},
     "skill": {"speechcraft": 8, "light_armor": 6},
     "magicka": 0
   },
   "fighters_defector": {
     "name": "鋼鐵新誓",
+    "source": "undercover",
     "attr": {"endurance": 8, "willpower": 6},
     "skill": {"heavy_armor": 10, "block": 6},
     "magicka": 0
   },
   "knights_loyalist": {
     "name": "暗影歸來",
+    "source": "undercover",
     "attr": {"willpower": 8, "personality": 6},
     "skill": {"speechcraft": 8, "illusion": 6},
     "magicka": 10
   },
   "knights_defector": {
     "name": "聖光受洗",
+    "source": "undercover",
     "attr": {"personality": 6, "willpower": 8},
     "skill": {"restoration": 10, "block": 6},
     "resist": {"magic": 10},
@@ -196,24 +225,28 @@
   },
   "akatosh_covenant": {
     "name": "時龍之契",
+    "source": "divine",
     "attr": {"endurance": 10, "willpower": 6},
     "resist": {"magic": 15},
     "magicka": 20
   },
   "talos_might": {
     "name": "人皇之佑",
+    "source": "divine",
     "attr": {"strength": 10, "endurance": 6},
     "skill": {"heavy_armor": 10},
     "resist": {"magic": 10}
   },
   "arkay_ward": {
     "name": "輪迴之佑",
+    "source": "divine",
     "attr": {"endurance": 10, "willpower": 6},
     "skill": {"restoration": 10},
     "resist": {"disease": 25}
   },
   "julianos_wisdom": {
     "name": "睿智之佑",
+    "source": "divine",
     "attr": {"intelligence": 10, "willpower": 6},
     "skill": {"mysticism": 10},
     "resist": {"magic": 10},
@@ -221,36 +254,42 @@
   },
   "stendarr_mercy": {
     "name": "慈憫之佑",
+    "source": "divine",
     "attr": {"endurance": 10, "willpower": 6},
     "skill": {"block": 8, "restoration": 8},
     "resist": {"magic": 10}
   },
   "zenithar_fortune": {
     "name": "豐饒之佑",
+    "source": "divine",
     "attr": {"personality": 8, "luck": 8},
     "skill": {"mercantile": 12},
     "resist": {"magic": 10}
   },
   "kynareth_grace": {
     "name": "天穹之佑",
+    "source": "divine",
     "attr": {"agility": 10, "speed": 6},
     "skill": {"athletics": 10},
     "resist": {"shock": 15}
   },
   "mara_love": {
     "name": "慈愛之佑",
+    "source": "divine",
     "attr": {"personality": 10, "willpower": 6},
     "skill": {"restoration": 12},
     "resist": {"magic": 10}
   },
   "dibella_grace": {
     "name": "美之佑",
+    "source": "divine",
     "attr": {"personality": 10, "willpower": 6},
     "skill": {"speechcraft": 8, "illusion": 8},
     "resist": {"magic": 10}
   },
   "sundered_arcanist": {
     "name": "裂界之悟",
+    "source": "arcane",
     "attr": {"intelligence": 8, "willpower": 6},
     "skill": {"mysticism": 12},
     "resist": {"physical": 10, "magic": 10},

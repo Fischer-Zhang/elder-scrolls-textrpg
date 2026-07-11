@@ -2182,6 +2182,43 @@ def legacy_screen(s: dict) -> None:
         title=head, box_=HERO, padding=(1, 4), width=58)))
 
 
+def _hall_rows(entries: list) -> list:
+    """名人堂 → panel rows(依傳奇分數排名);空 → 提示句。純顯示、零副作用。"""
+    from tesrpg.systems import hall
+    if not entries:
+        return [_ln("名人堂尚無往昔英雄 —— 走完一生(隱退,或傳奇模式殞落)即會在此留名。", "muted")]
+    rows = [_hd("名人堂 · 往昔英雄(依傳奇分數)")]
+    for i, e in enumerate(entries, 1):
+        tag = f"{hall.mode_cn(e.get('mode', 'adventure'))}·{hall.ending_cn(e.get('ending', 'death'))}"
+        rows.append(_kv(f"#{i} {e.get('name', '?')}",
+                        f"{e.get('title', '')}　{e.get('score', 0)} 分"))
+        rows.append(_ln(f"    {e.get('race', '')}·{e.get('class', '')}·{e.get('playstyle', '')}"
+                        f"｜Lv{e.get('level', 1)}·在世 {e.get('years', 0)} 年 {e.get('days', 0)} 天·{tag}"
+                        + (f"·成就 {e.get('achievements', 0)}/{e['achievements_total']}"
+                           if e.get("achievements_total") else ""), "faint"))
+        if e.get("feats"):
+            rows.append(_ln("    " + "　".join(str(f) for f in e["feats"][:4]), "muted"))
+    return rows
+
+
+def hall_screen(entries: list) -> None:
+    """名人堂畫面(web:原生 panel view;終端:rich fallback)。唯讀、零副作用(比照 codex_panel)。"""
+    rows = _hall_rows(entries)
+    if _web is not None:
+        _emit_panel("🏛 名人堂 · 往昔英雄", rows)
+        return
+    body = Text()                                  # 終端 fallback(R27;web-only 下不執行)
+    for r in rows:
+        if r["t"] == "head":
+            body.append(r["s"] + "\n", style=f"bold {GOLD}")
+        elif r["t"] == "kv":
+            body.append(f"{r['k']}：", style=PARCH)
+            body.append(f"{r['v']}\n", style=INK)
+        else:
+            body.append(r["s"] + "\n", style=INK)
+    console.print(Panel(body, title="🏛 名人堂 · 往昔英雄", border_style=GOLD, box=box.ROUNDED))
+
+
 # --- 戰鬥 ---------------------------------------------------------------
 def _temper_suffix(char: Character, item_id: str) -> str:
     """已淬鍊裝備的「·淬+N」小標(武器行/角色卡穿戴行顯示;未淬鍊或舊存檔→空)。"""

@@ -26,10 +26,10 @@
   {"id": "beast_blood", "name": "獸血詛咒", "desc": "成為狼人一族。", "cond": {"type": "lycanthropy"}},
   {"id": "moonlit_hunter", "name": "月下獵手", "desc": "獸形中吞噬 25 名獵物。", "cond": {"type": "werewolf_feeds", "count": 25}},
   {"id": "magnate", "name": "富甲一方", "desc": "積攢 50000 枚金幣。", "cond": {"type": "gold", "amount": 50000}},
-  {"id": "prince_favored", "name": "親王所眷", "desc": "集滿 8 位戴德拉親王的誓福。", "cond": {"type": "boons_count", "count": 8}},
-  {"id": "prince_chosen", "name": "湮滅寵兒", "desc": "集滿 15 位戴德拉親王的誓福。", "cond": {"type": "boons_count", "count": 15}},
-  {"id": "blood_matron", "name": "血主臨朝", "desc": "登上血族夜會的頂階「血主」。", "cond": {"type": "faction_rank", "faction": "coven_vampire", "rank": 3}},
-  {"id": "alpha_wolf", "name": "群狼之首", "desc": "登上獵群的頂階「頭狼」。", "cond": {"type": "faction_rank", "faction": "werewolf_pack", "rank": 3}},
+  {"id": "prince_favored", "name": "親王所眷", "desc": "集滿 8 位戴德拉親王的誓福。", "cond": {"type": "boons_source", "source": "daedric", "count": 8}},
+  {"id": "prince_chosen", "name": "湮滅寵兒", "desc": "集滿 15 位戴德拉親王的誓福。", "cond": {"type": "boons_source", "source": "daedric", "count": 15}},
+  {"id": "blood_matron", "name": "血主臨朝", "desc": "登上血族夜會的頂階「血主」。", "cond": {"type": "faction_rank", "faction": "coven_vampire", "rank": 5}},
+  {"id": "alpha_wolf", "name": "群狼之首", "desc": "登上獵群的頂階「頭狼」。", "cond": {"type": "faction_rank", "faction": "werewolf_pack", "rank": 5}},
   {"id": "silencer", "name": "沉默者", "desc": "晉升為黑暗兄弟會的沉默者。", "cond": {"type": "faction_rank", "faction": "dark_brotherhood", "rank": 4}},
   {"id": "afflicted", "name": "染恙之軀", "desc": "身染一種疾病而不治。", "cond": {"type": "disease_count", "count": 1}},
   {"id": "pestilent", "name": "百病纏身", "desc": "同時身染 3 種疾病。", "cond": {"type": "disease_count", "count": 3}},
@@ -38,5 +38,11 @@
   {"id": "forbidden_bane", "name": "叩問禁知", "desc": "討伐亞波克里法求知者(赫麥尤斯·莫拉)。", "cond": {"type": "kill_boss", "creature": "apocrypha_seeker"}},
   {"id": "homeowner", "name": "安家立業", "desc": "購置第一處房產,從此浪跡有歸處。", "cond": {"type": "houses_count", "count": 1}},
   {"id": "estate_lord", "name": "廣廈四海", "desc": "在各地購置 4 處房產。", "cond": {"type": "houses_count", "count": 4}},
-  {"id": "sundered_lord", "name": "撕裂位面", "desc": "在湮滅殘隙深處,以秘術撕開達貢真身的位面之軀。", "cond": {"type": "kill_boss", "creature": "mehrunes_dagon_true"}}
+  {"id": "sundered_lord", "name": "撕裂位面", "desc": "在湮滅殘隙深處,以秘術撕開達貢真身的位面之軀。", "cond": {"type": "kill_boss", "creature": "mehrunes_dagon_true"}},
+  {"id": "divine_pilgrim", "name": "虔敬信徒", "desc": "完成三位九神的選民試煉,受其永久誓福。", "cond": {"type": "boons_source", "source": "divine", "count": 3}},
+  {"id": "divine_chosen", "name": "九神眷選", "desc": "集齊全部九神的選民誓福。", "cond": {"type": "boons_source", "source": "divine", "all": true}},
+  {"id": "crisis_ender", "name": "危機終結者", "desc": "擊敗梅魯尼斯·達貢,終結湮滅危機(救世或墮落,皆算了結)。", "cond": {"type": "world_event", "event": "oblivion_crisis_ended"}},
+  {"id": "umaril_slayer", "name": "不羽者的剋星", "desc": "討伐不羽者烏瑪瑞爾,重光九神騎士團的榮耀。", "cond": {"type": "kill_boss", "creature": "umaril_the_unfeathered"}},
+  {"id": "archmage_transcendent", "name": "淩越大法師", "desc": "於秘術終極試煉擊敗三元合體的元素大法師。", "cond": {"type": "kill_boss", "creature": "fused_archmage"}},
+  {"id": "loyal_bond", "name": "肝膽相照", "desc": "完成一位同伴的專屬忠誠支線。", "cond": {"type": "loyalty_arcs", "count": 1}}
 ]

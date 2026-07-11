@@ -22,7 +22,7 @@ for arg in "$@"; do
 done
 
 SAVE="$HOME/.tesrpg/save.json"
-cleanup() { if [ "$RUN_SMOKE" = 1 ]; then rm -f "$SAVE"; rm -rf "$HOME/.tesrpg/saves" && echo "🧹 已清存檔 $SAVE + saves/"; fi; }
+cleanup() { if [ "$RUN_SMOKE" = 1 ]; then rm -f "$SAVE" "$HOME/.tesrpg/hall.json"; rm -rf "$HOME/.tesrpg/saves" && echo "🧹 已清存檔 $SAVE + saves/ + hall.json"; fi; }
 trap cleanup EXIT
 
 step() { echo; echo "▶ $*"; }

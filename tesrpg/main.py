@@ -13,7 +13,7 @@ from tesrpg.gamedata import GameData, get_gamedata
 from tesrpg.rng import RNG, make_seed
 from tesrpg.state import GameState
 from tesrpg.systems import (achievements, aiwar, alchemy, boons, brotherhood, combat, court, crafting, crime, dialogue, diseases, divines, dungeon,
-                            dungeoncrawl, enchanting, events, factions, housing, inventory, landmarks, legacy,
+                            dungeoncrawl, enchanting, events, factions, hall, housing, inventory, landmarks, legacy,
                             lycanthropy, magic, mastery, mounts, necromancy, party, politics, potion_buff, powers,
                             progression, quests, race_ability, saves, skooma, smithing, spellfx, stats, trials, undercover, vampirism, warband, world, worldpulse, worldstate)
 from tesrpg.ui import console as ui
@@ -1803,7 +1803,13 @@ def end_run(state: GameState, gamedata: GameData, ending: str) -> None:
         ui.rule("隱退")
         ui.message(f"{c.name} 卸下行囊,從此歸隱山林。", style="yellow")
 
-    ui.legacy_screen(legacy.compute(state, gamedata, ending=ending))
+    s = legacy.compute(state, gamedata, ending=ending)
+    ui.legacy_screen(s)
+
+    # 名人堂(R160):走完一生(隱退,或傳奇模式殞落)即留名 —— 尤其傳奇死亡下方會抹除槽位,
+    # 名人堂讓被永久抹除的英雄仍留傳於世。冒險陣亡=回上次存檔續命(非終局)→ 不留名,避免重複記錄。
+    if hall.is_terminal(ending, state.game_mode):
+        hall.record(s, state.game_mode)
 
     if ending == "retire" and _active_save is not None:
         state.save(_active_save)   # G:隱退保存最終狀態 → 名冊/繼續反映實際隱退點(非上次手動存檔·審查修)
@@ -6444,6 +6450,8 @@ def main() -> None:
             opts.append(("new", "＋ 新角色"))          # 滿槽時不顯(免選了才彈回;審查 nit)
         if roster:
             opts.append(("delete", "🗑 刪除存檔(騰出空槽)" if full else "🗑 刪除存檔"))
+        if hall.has_entries():
+            opts.append(("hall", "🏛 名人堂 · 往昔英雄"))   # R160:走完一生的角色留名(依傳奇分數)
         opts.append(("quit", "離開遊戲"))
         choice = ui.menu("主選單 —— 角色名冊", opts)
 
@@ -6452,6 +6460,10 @@ def main() -> None:
             return
         if choice == "delete":
             _delete_save_flow(roster)
+            continue
+        if choice == "hall":
+            ui.hall_screen(hall.load_entries())
+            ui.menu("名人堂", [("__back__", "返回主選單")])   # 唯讀面板 → 一鍵返回(比照 codex 面板流)
             continue
         if choice.startswith("slot:"):                # 繼續某角色
             n = int(choice.split(":")[1])

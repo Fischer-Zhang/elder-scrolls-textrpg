@@ -808,13 +808,15 @@ def test_web_session_restartable_after_game_over():
     import tempfile
     from pathlib import Path
     from tesrpg import main as M
-    from tesrpg.systems import saves
+    from tesrpg.systems import saves, hall
     backend = WebBackend()
     ui.use_web_backend(backend, _rec())
     tmp = tempfile.TemporaryDirectory()
     saved = (saves.SAVES_DIR, saves.LEGACY_PATH)   # G:槽位隔離到暫存目錄,免污染真實 ~/.tesrpg
+    saved_hall = hall.HALL_PATH                     # R160:隱退=終局 → end_run 會寫名人堂,同樣隔離
     saves.SAVES_DIR = Path(tmp.name) / "saves"
     saves.LEGACY_PATH = Path(tmp.name) / "save.json"
+    hall.HALL_PATH = Path(tmp.name) / "hall.json"
     try:
         for game in range(2):                          # 跑兩局:第二局仍能開到主選單 = 可重開
             res = _drive_one_game(backend)
@@ -830,6 +832,7 @@ def test_web_session_restartable_after_game_over():
         assert saves.used_slots(), "隱退後角色應留在名冊(槽位存檔)"   # G:新增名冊不變式
     finally:
         saves.SAVES_DIR, saves.LEGACY_PATH = saved
+        hall.HALL_PATH = saved_hall
         M._active_save = None   # G:main() 驅動設了活槽 → 復位免洩漏死路徑到後續模組
         tmp.cleanup()
         _restore()

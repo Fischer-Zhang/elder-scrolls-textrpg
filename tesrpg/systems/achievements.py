@@ -31,6 +31,8 @@ _IMPLEMENTED_TYPES = {
     "boons_count", "faction_rank", "disease_count", "soul_gems_filled",
     # 家園(R110):置產數(只計仍合法的房產 id,鏡像 landmarks)
     "houses_count",
+    # 名人堂批次(R160):按來源集齊誓福 / 完成同伴忠誠弧 / 觸發世界大事件(如結束湮滅危機)
+    "boons_source", "loyalty_arcs", "world_event",
 }
 
 # pure_spec 判定:主專精「絕對總和」與「領先次高的差距」雙門檻。初生角色因起始職業
@@ -117,6 +119,23 @@ def _eval(char, gamedata: GameData, cond: dict) -> bool:
 
     if t == "boons_count":
         return len(getattr(char, "boons", []) or []) >= cond["count"]   # 親王誓福收集(R45)
+    if t == "boons_source":
+        # 按來源(divine/daedric/…)集齊誓福(R160)。來源集由 boons.json 的 `source` 欄即時派生
+        # → 隨新增誓福自動更新(防陳舊,鏡像 R159 服務目錄)。`all` → 該來源全收齊;否則達 count。
+        ids = {bid for bid, b in (gamedata.boons or {}).items() if b.get("source") == cond["source"]}
+        have = ids & set(getattr(char, "boons", []) or [])
+        if cond.get("all"):
+            return bool(ids) and ids <= set(getattr(char, "boons", []) or [])
+        return len(have) >= cond.get("count", 1)
+    if t == "loyalty_arcs":
+        # 已完成的同伴專屬支線(忠誠弧)數量(R129)。**單調**:數 completed_quests 內的 personal_quest
+        # (曾完成即算,遣散同伴不會失效)—— 異於 legacy/party.loyalty_arcs 的「當前在隊」快照(成就宜單調)。
+        done = set(getattr(char, "completed_quests", []) or [])
+        return sum(1 for cd in (gamedata.companions or {}).values()
+                   if isinstance(cd, dict) and cd.get("personal_quest") in done) >= cond["count"]
+    if t == "world_event":
+        # 觸發過某世界大事件(如結束湮滅危機;雙結局皆設 oblivion_crisis_ended → 對兩條主線通路皆公平)
+        return cond["event"] in (getattr(char, "world_events_fired", []) or [])
     if t == "disease_count":
         return len(diseases.active_ids(char)) >= cond["count"]          # 同時患病數(R53)
     if t == "soul_gems_filled":
