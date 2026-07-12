@@ -20,7 +20,7 @@
   "mercantile":   {"name": "交易",     "spec": "stealth", "attr": "personality",  "desc": "買賣議價,壓低買價抬高賣價。",       "mechanic": "等級越高,買東西更便宜、賣東西更值錢(議價更有利)。", "practice": {"label": "在市集與商販討價還價", "xp": 0.55, "fatigue": 4, "hours": 1}},
   "security":     {"name": "安全",     "spec": "stealth", "attr": "agility",      "desc": "撬鎖與解除陷阱。",                   "mechanic": "等級越高,撬鎖成功率越高(對高難度鎖更有把握);精通解鎖撬鎖名家。", "practice": {"label": "用撥片反覆練習撬鎖", "xp": 0.60, "fatigue": 5, "hours": 1}},
   "sneak":        {"name": "潛行",     "spec": "stealth", "attr": "agility",      "desc": "悄無聲息地移動與偷襲。",             "mechanic": "等級越高:偷襲傷害倍率越高、接戰前潛近得手機率越高,潛行命中下限也更高。", "practice": {"label": "潛步繞過值夜守衛", "xp": 0.55, "fatigue": 5, "hours": 1}},
-  "scout":        {"name": "偵查",     "spec": "stealth", "attr": "agility",      "desc": "觀察敵情、估算威脅與弱點,戰前先一步看清局勢。", "mechanic": "等級越高,戰前看清越多敵情(血量/危險度→偷襲估傷→抗性弱點),並換得更多開戰前備戰動作。", "practice": {"label": "潛伏暗處觀察哨點動靜", "xp": 0.55, "fatigue": 4, "hours": 1}},
+  "scout":        {"name": "偵查",     "spec": "stealth", "attr": "agility",      "desc": "觀察敵情、估算威脅與弱點,戰前先一步看清局勢。", "mechanic": "等級越高,戰前看清越多敵情(生命/危險度→偷襲估傷→抗性弱點),並換得更多開戰前備戰動作。", "practice": {"label": "潛伏暗處觀察哨點動靜", "xp": 0.55, "fatigue": 4, "hours": 1}},
   "speechcraft":  {"name": "口才",     "spec": "stealth", "attr": "personality",  "desc": "說服、威嚇、提升他人好感。",         "mechanic": "等級越高:說服成功率與好感增益越高(高口才勝過賄賂)、可說服衛兵減免小額賞金、可威嚇喝退弱小盜匪避戰;精通解鎖辯舌折服。", "practice": {"label": "在酒館練習說服話術", "xp": 0.55, "fatigue": 4, "hours": 1}},
   "smithing":     {"name": "鍛造",     "spec": "combat",  "attr": "endurance",    "desc": "在鐵砧與織機前打造、裁製與淬鍊裝備。", "mechanic": "等級越高:解鎖更高階的鍛造/裁縫配方(技能門檻),且裝備淬鍊強化的上限越高(每 20 級 +1 級,上限 5)。", "practice": {"label": "在鐵砧前鍛打一爐", "xp": 0.55, "fatigue": 8, "hours": 1}}
 }

@@ -1642,7 +1642,7 @@ def _group_name(enemies: list) -> str:
 
 
 def _scout_report(state: GameState, gamedata: GameData, enemies: list) -> None:
-    """偵查敵情:依偵查技能逐級揭露情報(數量→血量/危險度→偷襲估傷→抗性弱點),並練偵查。"""
+    """偵查敵情:依偵查技能逐級揭露情報(數量→生命/危險度→偷襲估傷→抗性弱點),並練偵查。"""
     char = state.player
     # 弓手「獵手偵察」里程碑:無 scout 技能也視同偵查 50(獵人之眼);取兩者高者
     sk = max(char.skill("scout"), mastery.recon_scout_floor(char, gamedata))
@@ -1652,7 +1652,7 @@ def _scout_report(state: GameState, gamedata: GameData, enemies: list) -> None:
                    "(偵查越高,看得越清楚)", style="grey70")
     else:
         for e in enemies:
-            parts = [e.name, f"HP {int(e.health)}/{e.max_health}", f"危險度 {e.danger}"]
+            parts = [e.name, f"生命 {int(e.health)}/{e.max_health}", f"危險度 {e.danger}"]
             if sk >= 50:
                 est = combat.estimate_sneak_damage(char, gamedata, e)
                 verdict = ("可一擊斃命" if est >= e.health
@@ -4842,7 +4842,7 @@ _EFFECT_CN = {"heal": "回血", "restore_magicka": "回魔", "restore_fatigue": 
               "fattr_willpower": "強意志", "fattr_agility": "強敏捷",
               "fskill_alchemy": "精煉金", "resist_magic": "抗魔法",
               # 毒劑深化(R31):特殊有害效果
-              "damage_strength": "弱攻", "slow": "遲緩", "fear": "懼意",
+              "damage_strength": "弱攻", "slow": "遲緩", "fear": "恐懼",
               # 疾病可釀(R54):療疾類
               "cure_disease": "療疾"}
 

@@ -24,11 +24,11 @@ from tesrpg import formulas
 SEP = "|"
 
 _EFFECT_NAME = {"heal": "治療", "restore_magicka": "法力", "restore_fatigue": "體力"}
-_ELEMENT_NAME = {"fire": "烈焰", "frost": "冰霜", "shock": "雷電"}
+_ELEMENT_NAME = {"fire": "火焰", "frost": "冰霜", "shock": "雷電"}
 _STAT_NAME = {"health": "生命", "magicka": "法力", "fatigue": "體力"}
 _ATTR_NAME = {"strength": "力量", "intelligence": "智力", "willpower": "意志", "agility": "敏捷",
               "speed": "速度", "endurance": "耐力", "personality": "魅力", "luck": "幸運"}
-_RESIST_NAME = {"fire": "烈焰", "frost": "冰霜", "shock": "雷電", "poison": "毒素", "disease": "疾病", "magic": "魔法", "physical": "物理"}
+_RESIST_NAME = {"fire": "火焰", "frost": "冰霜", "shock": "雷電", "poison": "毒素", "disease": "疾病", "magic": "魔法", "physical": "物理"}
 
 
 def is_synth(item_id: str) -> bool:

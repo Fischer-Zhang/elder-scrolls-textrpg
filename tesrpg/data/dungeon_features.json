@@ -89,7 +89,7 @@
     "offers": [
       {"key": "drink", "label": "掬飲霜泉(抗霜,但寒氣噬骨)",
        "buff": {"kind": "resist_element", "param": "frost", "magnitude": 25, "hours": 6},
-       "gain_text": "刺骨的清冽自喉頭漫向四肢,一層霜甲護住周身 —— 抗霜寒 +25%(限時)。",
+       "gain_text": "刺骨的清冽自喉頭漫向四肢,一層霜甲護住周身 —— 抗冰霜 +25%(限時)。",
        "risk": {"type": "damage", "amount": [7, 15], "text": "……但寒氣深噬骨髓,你受了 {dmg} 點傷害。"}},
       {"key": "quicken", "label": "以霜清神(強化敏捷,但筋骨僵冷)",
        "buff": {"kind": "fortify_attribute", "param": "agility", "magnitude": 12, "hours": 6},
@@ -119,7 +119,7 @@
     "offers": [
       {"key": "ground", "label": "引雷入體(抗電,但被餘電灼傷)",
        "buff": {"kind": "resist_element", "param": "shock", "magnitude": 25, "hours": 6},
-       "gain_text": "一道細電竄遍全身,反倒替你築起一層抗電的屏障 —— 抗電擊 +25%(限時)。",
+       "gain_text": "一道細電竄遍全身,反倒替你築起一層抗電的屏障 —— 抗雷電 +25%(限時)。",
        "risk": {"type": "damage", "amount": [7, 14], "text": "……但殘電不受駕馭,反噬得你受了 {dmg} 點傷害。"}},
       {"key": "ward", "label": "汲取星輝(抗魔法,但奧術之感遲鈍)",
        "buff": {"kind": "resist_element", "param": "magic", "magnitude": 20, "hours": 6},
