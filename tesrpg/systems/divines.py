@@ -35,7 +35,7 @@ BLESSINGS = {
     "arkay":    {"name": "阿爾凱", "title": "生死輪迴之神", "resist": {"disease": 30},
                  "desc": "疾病抗性 +30%"},
     "dibella":  {"name": "蒂貝拉", "title": "美與愛之女神", "attr": {"personality": 10},
-                 "desc": "個性 +10"},
+                 "desc": "魅力 +10"},
     "julianos": {"name": "朱利安諾斯", "title": "智慧與魔法之神", "attr": {"intelligence": 10},
                  "desc": "智力 +10"},
     "kynareth": {"name": "凱娜瑞絲", "title": "天穹與旅人之女神", "travel_bonus": 0.10,
