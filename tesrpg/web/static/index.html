@@ -123,6 +123,10 @@
   .loc-desc { margin:9px 0 2px; color:var(--ink); }
   .loc-line { margin-top:7px; color:var(--ink); }
   .loc-line .lab { color:var(--gold-dim); margin-right:6px; }
+  .loc-svcs { margin-top:8px; display:flex; flex-wrap:wrap; gap:5px 6px; align-items:center; }
+  .loc-svcs .lab { color:var(--gold-dim); margin-right:2px; }
+  .loc-svc { font-size:calc(11.5px*var(--fs-scale,1)); padding:2px 9px; border-radius:11px;
+    border:1px solid var(--line); background:#15110a; color:var(--ink); white-space:nowrap; }
   .loc-exits { margin-top:10px; display:flex; flex-wrap:wrap; gap:7px; align-items:center; }
   .loc-exits .lab { color:var(--gold-dim); }
   .ex { font-size:calc(12.5px*var(--fs-scale,1)); padding:3px 10px; border-radius:8px; border:1px solid var(--line);
@@ -527,6 +531,11 @@
     (d.tracked || []).forEach(function (t) {   // R114 F3:常駐追蹤中任務(免每次開任務日誌)
       lines += `<div class="loc-line"><span class="lab">▶ 任務</span><span style="color:#7fd0d8">${esc(t)}</span></div>`;
     });
+    if (d.services && d.services.length) {     // R160b 就地易讀性:本地設施(公會/服務/馬廄/房產·帶專精)
+      lines += `<div class="loc-svcs"><span class="lab">🏪 設施</span>`
+        + d.services.map(function (s) { return `<span class="loc-svc">${esc(s)}</span>`; }).join("")
+        + `</div>`;
+    }
     return elFrom(
       `<div class="card loc"><div class="card-head">📍 ${esc(d.name)}`
       + `<span class="dim">· ${esc(d.province)}（${esc(d.type)}）</span>${danger}</div>`

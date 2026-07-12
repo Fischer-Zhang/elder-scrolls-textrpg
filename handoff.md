@@ -1412,6 +1412,20 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 
 ---
 
+### R160b · 服務可發現性 II:馬廄/房產進反查通道 + 地點卡就地易讀性(城鎮專精現場可見)
+
+**承「評估 服務可發現性」survey(5 維 26 findings → 6 選項)使用者拍板 1+2**:R159 立了服務反查骨幹,但 **馬廄(14 城)與房產(14 城)不在 world.json 的 `services` vocab** → 完全落在所有反查通道之外(只有站進城才看得到);且 **`_location_view`(每圈渲染的地點卡)根本沒有 services 欄** → 荒謬地,地圖點節點比人在現場還清楚。**🔴 純 UI/唯讀衍生 · 零存檔欄 · 未碰 combat/formulas/magic → sim byte-identical。**
+
+**① 馬廄/房產進三通道**(皆由 `gamedata.has_stable`/`house_at` O(1) accessor 衍生·非 service key):`_map_view` grid_node `svc_all` 尾附 馬廄/房產(點節點面板顯示)+ codex 目錄新「馬廄與房產」section(馬廄一行列全城·房產逐城帶宅名/等級/價)+ 地點卡(見②)。**② 就地易讀性**:`_location_view` 新增 `services` 欄 = 新 helper `_town_facility_chips`(公會大廳 + 通用服務 + 馬廄/房產·**brief 麵包屑省算**),前端 `renderLocation` 新增「🏪 設施」chips 行(`.loc-svcs`/`.loc-svc` CSS·fs-scale·主題安全)。**🔴 關鍵加值**:chips 標 **R29 城鎮專精** —— 訓練師標宗師技(`訓練師（重甲宗師）`)、法師公會標進階學派(`法師公會（毀滅系）`/`法師公會（通才）`)→ 讓 R29 專精首次在**現場**(而非只在地圖/目錄)可見。新 helper `_city_advanced_schools`(directory + 地點卡共用·base 可傳入省重掃)抽出 R159 內聯學派衍生(**byte-identical 全 25 城驗**)。
+
+**驗證**:`run_all` **131**(test_web +`test_map_and_location_surface_stables_houses_r160b`·test_codex +`test_services_directory_stables_houses_r160b`)·e2e(WebBackend 地點卡 services block + 目錄 panel render)·`_city_advanced_schools` byte-identical(directory 學派表零漂移)·JS `node --check`·sim byte-identical(未碰 combat/formulas)。零新存檔欄。
+
+**🔴 對抗審查 3 維 8-agent → 0 blocker/major·5 nit(3 修·2 by-design)**:①helper 傳 base 時仍重掃全城 dict(O(N·M)·byte-identical 但退化)→ 傳 base 則只讀本城 stock 免全掃(復 O(N));②`.loc-svc` 用未定義 CSS token `--parch`(無 fallback·退化繼承 `--ink` 仍可讀)→ 改 `--ink`(對齊姊妹 `.ex` chip);③專精標註全形開括號配半形收括號 `（…)` → 平衡全形 `（…）`(順帶 future-proof 多學派文法 `系` per-school)。**接受 by-design**:多學派標註分支對現有資料不可達(R29 非首都=單一學派·已修文法備用);地圖 svc_all 只列 馬廄/房產(不標宗師/學派)而地點卡標全 = 刻意(地圖=速覽·地點卡=細節)。
+
+**🔴 鐵律**:馬廄/房產走 `has_stable`/`house_at` accessor 衍生(非 services vocab·不破 R159 詞彙守衛);地點卡專精標註走 `_town_facility_chips`(訓練師 master·法師公會 `_city_advanced_schools`);學派衍生單一來源 `_city_advanced_schools`(directory 傳 base 免重掃·勿讓兩處漂移);brief 麵包屑不算 services;新前端 chip 用已定義 CSS token(勿引未定義 `--parch`);中文標註括號用平衡全形。**前瞻**:服務可發現性 backlog 剩 —— 目錄可行動化(discover→navigate·含 R114D「長途只列已訪城」放開拍板)、地圖服務標記/篩選、「何處有售」商品/材料反查、零散站點 codex 批次。
+
+---
+
 ### R160 · 名人堂 / 往昔英雄 + 成就補完(誓福按來源 / 試煉 boss / 忠誠弧 · 修 curse-rank 回歸)
 
 **承「後續可做」survey(6 維 66 findings → 9 選項)使用者拍板 #4**:R158 開了存檔槽位,但傳奇模式死亡直接抹除槽位(英雄永久消失)、`legacy.compute` 結算後即丟棄、成就只 40 條;缺跨局的持久回饋飛輪。**🔴 純 UI/持久化 · 零存檔格式變更(hall.json 為獨立檔·不加任何 Character/GameState 欄)· 未碰 combat/formulas/magic → sim byte-identical。**

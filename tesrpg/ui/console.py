@@ -264,6 +264,9 @@ def _location_view(char: Character, gamedata: GameData, brief: bool = False) -> 
          "desc": loc["desc"], "landmark": None, "ruler": None,
          "faction": None, "bloc": None, "exits": [],
          "tracked": quests.tracked_lines(char, gamedata) if not brief else [],   # R114 F3:常駐追蹤中任務
+         # R160b 就地易讀性:本地設施 chips(公會/服務/馬廄/房產·訓練師標宗師技·法師公會標學派)——
+         #   此前地點卡無服務欄,站在城裡竟比地圖點節點還不清楚;麵包屑(brief)不重畫故省略。
+         "services": _town_facility_chips(gamedata, char.location_id) if not brief else [],
          "brief": brief}
     lm = gamedata.landmark_at(char.location_id)
     if lm and landmarks.is_discovered(char, char.location_id):
@@ -711,8 +714,11 @@ def _map_view(char: Character, gamedata: GameData, reach: dict | None = None) ->
                                # ⚠ 修 R153 回歸:svc_all 原只取 _SERVICE_CN(缺 戰友團/聖騎士團/黑暗兄弟會 鍵),
                                #   而前端 svc_all 非空即優先於 svc → 公會大廳被永久遮蔽;
                                #   現改公會全名領頭 + 通用服務全名(面板脈絡下全名比單字碼可讀)。
+                               # 馬廄/房產不在 services vocab(R160b)→ 由 accessor 衍生補入,免地圖漏顯
                                "svc_all": ([_GUILD_HALL_CN[s] for s in loc.get("services", []) if s in _GUILD_HALL_CN]
-                                           + [_SVC_FULL[s] for s in loc.get("services", []) if s in _SVC_FULL])})
+                                           + [_SVC_FULL[s] for s in loc.get("services", []) if s in _SVC_FULL]
+                                           + (["馬廄"] if gamedata.has_stable(lid) else [])
+                                           + (["房產"] if gamedata.house_at(lid) else []))})
         provs.append({"name": prov, "nodes": nodes,
                       "visited": visited_n, "total": len(prov_ids)})
     seen_e: set = set()      # 無向去重的連線(供地圖畫路徑 + 標時長)
@@ -1187,10 +1193,60 @@ def _races_signs_index_rows(gamedata: GameData) -> list:
     return rows
 
 
+def _city_advanced_schools(gamedata: GameData, loc_id: str, base: set | None = None) -> list:
+    """該城法師公會的進階學派 id 清單(= spell_stock − 全公會保底集 的法術學派;R159)。
+    `base`(全 spell_stock 城交集)可預算好傳入 → 只讀本城 stock(directory 逐城呼叫免重掃);
+    None → 就地掃全城算 base(地點卡單次呼叫)。無 spell_stock / 隱藏設施 → []。"""
+    locs = gamedata.world["locations"]
+    loc = locs.get(loc_id, {})
+    st = set(loc.get("spell_stock") or [])
+    if not st or loc.get("visible"):
+        return []
+    if base is None:      # 就地算保底集(全 spell_stock 城交集);base 已傳則免全掃
+        stocks = [set(l.get("spell_stock") or []) for l in locs.values()
+                  if l.get("spell_stock") and not l.get("visible")]
+        base = set.intersection(*stocks) if stocks else set()
+    return sorted({(gamedata.spells.get(s) or {}).get("school", "") for s in (st - base)} - {""})
+
+
+def _town_facility_chips(gamedata: GameData, loc_id: str) -> list:
+    """地點卡『本地設施』chips(R160b):公會大廳 + 通用服務 + 馬廄/房產;訓練師標宗師技、
+    法師公會標進階學派 —— 讓 R29 城鎮專精在現場(而非只在地圖/目錄)可見。純唯讀衍生。"""
+    svcs = gamedata.world["locations"].get(loc_id, {}).get("services", [])
+    chips = []
+    for gid, cn in _GUILD_HALL_CN.items():
+        if gid not in svcs:
+            continue
+        if gid == "mages_guild":
+            schools = _city_advanced_schools(gamedata, loc_id)
+            if set(schools) >= set(_SCHOOL_CN):
+                chips.append("法師公會（通才）")
+            elif schools:
+                chips.append("法師公會（" + "、".join(_SCHOOL_CN.get(sc, sc) + "系" for sc in schools) + "）")
+            else:
+                chips.append(cn)
+        else:
+            chips.append(cn)
+    for s, cn in _SVC_FULL.items():
+        if s not in svcs:
+            continue
+        if s == "trainer":
+            m = (gamedata.trainer_data(loc_id) or {}).get("master")
+            sk = (gamedata.skills.get(m.get("skill")) or {}).get("name", "") if m else ""
+            chips.append(f"訓練師（{sk}宗師）" if sk else "訓練師")
+        else:
+            chips.append(cn)
+    if gamedata.has_stable(loc_id):
+        chips.append("馬廄")
+    if gamedata.house_at(loc_id):
+        chips.append("房產")
+    return chips
+
+
 def _services_index_rows(gamedata: GameData) -> list:
     """動態『城鎮服務/宗師目錄』:掃 world services + trainers 宗師 + spell_stock 推導學派佈局
-    (R29 城鎮專精化的遊戲內反查表;隨資料自動更新,防陳舊)。唯讀推導、零存檔;
-    只列無 visible 閘的地點(隱藏設施如神話黎明聖殿不入目錄)。"""
+    + 馬廄/房產(R160b:兩者不在 services vocab,補入反查)(R29 城鎮專精化的遊戲內反查表;
+    隨資料自動更新,防陳舊)。唯讀推導、零存檔;只列無 visible 閘的地點(隱藏設施不入目錄)。"""
     locs = (gamedata.world or {}).get("locations", {})
     open_locs = {lid: l for lid, l in locs.items() if not l.get("visible")}   # 隱藏地點不入目錄
     rows = [_hd("服務覆蓋速覽(隨世界更新)")]
@@ -1224,7 +1280,7 @@ def _services_index_rows(gamedata: GameData) -> list:
         base_only: list[str] = []
         for lid, st in stocks.items():
             loc = locs[lid]
-            schools = sorted({(gamedata.spells.get(sid) or {}).get("school", "") for sid in (st - base)} - {""})
+            schools = _city_advanced_schools(gamedata, lid, base)   # 共用衍生(地點卡亦用),防兩處漂移
             if set(schools) >= set(_SCHOOL_CN):            # 六學派齊備 → 通才(帝都);4-5 派城落各學派列
                 general.append(f"{loc['name']}({loc.get('province', '')})")
             elif not schools:                              # 只賣保底集 → 顯式列出(不靜默消失,防資料漂移誤判)
@@ -1240,6 +1296,18 @@ def _services_index_rows(gamedata: GameData) -> list:
             rows.append(_kv("通才(六學派)", "、".join(general)))
         if base_only:
             rows.append(_kv("僅基礎法術", "、".join(base_only)))
+    # 馬廄/房產(R160b:皆不在 services vocab → 此前只能站進城才看得到;此處補反查)
+    rows.append(_hd("馬廄與房產"))
+    stables = [loc["name"] + f"({loc.get('province', '')})"
+               for lid, loc in open_locs.items() if gamedata.has_stable(lid)]
+    rows.append(_kv("馬廄(售坐騎/長槍)", "、".join(stables) if stables else "—"))
+    houses = []
+    for lid, loc in open_locs.items():
+        h = gamedata.house_at(lid)
+        if h:
+            houses.append(f"{loc['name']}·{h.get('name', '房產')}(第 {h.get('tier', 1)} 級·{h.get('price', 0)} 金)")
+    for h in houses:                                       # 房產逐城一列(帶宅名/等級/價)
+        rows.append(_kv("房產", h))
     return rows
 
 

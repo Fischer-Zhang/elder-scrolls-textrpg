@@ -145,6 +145,29 @@ def test_services_directory_r159():
         assert gd.world["locations"][lid]["name"] in school_txt, f"{lid} 自學派表靜默消失"
 
 
+def test_services_directory_stables_houses_r160b():
+    """R160b:馬廄/房產(不在 services vocab)補入目錄反查——馬廄一行列全城,房產逐城帶宅名/等級/價。"""
+    gd = get_gamedata()
+    rows = ui._codex_rows(gd.codex["services_directory"], gd)
+    heads = [r["s"] for r in rows if r["t"] == "head"]
+    assert any("馬廄與房產" in h for h in heads)
+    kv = [(r["k"], r["v"]) for r in rows if r["t"] == "kv"]
+    # 馬廄:單行列全部馬廄城(名)
+    stable_row = next(v for k, v in kv if k.startswith("馬廄"))
+    for lid in gd.world["locations"]:
+        if gd.has_stable(lid) and not gd.world["locations"][lid].get("visible"):
+            assert gd.world["locations"][lid]["name"] in stable_row, lid
+    # 房產:逐城一列(帶宅名/等級/價),每座有售房產的城皆列出
+    house_rows = [v for k, v in kv if k == "房產"]
+    house_cities = [lid for lid in gd.world["locations"]
+                    if gd.house_at(lid) and not gd.world["locations"][lid].get("visible")]
+    assert len(house_rows) == len(house_cities)
+    joined = "".join(house_rows)
+    for lid in house_cities:
+        assert gd.world["locations"][lid]["name"] in joined
+        assert gd.house_at(lid)["name"] in joined            # 宅名亦現
+
+
 def test_codex_panel_terminal_fallback():
     """終端 fallback(_web=None)渲染每個分類無例外(R27 退路保留,web-only 下不執行)。"""
     gd = get_gamedata()

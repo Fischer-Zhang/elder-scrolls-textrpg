@@ -391,6 +391,46 @@ def test_map_svc_all_includes_guild_halls_r159():
         assert canon == cn, f"{fid} 顯示名 {cn} ≠ factions.json 正典名 {canon}"
 
 
+def test_map_and_location_surface_stables_houses_r160b():
+    """R160b:馬廄/房產不在 services vocab → 補入地圖 svc_all + 地點卡 services + 目錄;
+    地點卡並標 R29 專精(訓練師宗師技·法師公會學派)——就地正查,補地圖之外的『站在城裡』易讀性。"""
+    from tesrpg.creation import build_character
+    from tesrpg.gamedata import get_gamedata
+    gd = get_gamedata()
+    c = build_character(gd, name="測", sex="male", race="nord", birthsign="warrior", class_id="warrior")
+    stable_cities = [lid for lid in gd.world["locations"] if gd.has_stable(lid)]
+    house_cities = [lid for lid in gd.world["locations"] if gd.house_at(lid)]
+    assert stable_cities and house_cities
+    # --- 地圖 svc_all:馬廄/房產 依 accessor 衍生(非 services vocab)---
+    nodes = {n["id"]: n for n in ui._map_view(c, gd)["grid"]["nodes"]}
+    for lid in stable_cities:
+        if lid in nodes:
+            assert "馬廄" in nodes[lid]["svc_all"], lid
+    for lid in house_cities:
+        if lid in nodes:
+            assert "房產" in nodes[lid]["svc_all"], lid
+    # 非馬廄城不誤標
+    non_stable = next(lid for lid in nodes if not gd.has_stable(lid))
+    assert "馬廄" not in nodes[non_stable]["svc_all"]
+    # --- 地點卡 services chips:公會/服務/馬廄/房產 + 專精標註 ---
+    c.location_id = "whiterun"                       # 戰友團 + 法師公會(毀滅) + 重甲宗師 + 馬廄 + 房產
+    v = ui._location_view(c, gd)
+    svc = v["services"]
+    assert "戰友團" in svc and "馬廄" in svc and "房產" in svc
+    assert any(s.startswith("法師公會（") and "毀滅" in s for s in svc), svc   # 法師公會標學派
+    assert any(s.startswith("訓練師（") and "宗師" in s for s in svc), svc      # 訓練師標宗師技
+    c.location_id = "imperial_city"                  # 通才法師公會
+    assert any("通才" in s for s in ui._location_view(c, gd)["services"])
+    # brief 麵包屑不重畫 → services 空(省算)
+    assert ui._location_view(c, gd, brief=True)["services"] == []
+    # 非設施城(地城)無服務不崩、chips 為空
+    dungeon_lid = next((lid for lid, l in gd.world["locations"].items()
+                        if l.get("type") == "dungeon" and not l.get("services")), None)
+    if dungeon_lid:
+        c.location_id = dungeon_lid
+        assert ui._location_view(c, gd)["services"] == []
+
+
 def test_action_map_route_dispatch():
     """互動地圖:面板 route:<lid> → action_map 走 _travel_route(dest);__back__ → 乾淨返回。"""
     import types
