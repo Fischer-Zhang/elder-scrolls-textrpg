@@ -2761,7 +2761,7 @@ _ELEM_CN = {"fire": "火焰", "frost": "冰霜", "shock": "雷電", "poison": "�
 _STAT_CN = {"health": "生命", "magicka": "法力", "fatigue": "體力"}
 # 怪物控場命中(R43):status_applied 為 kind(非元素)→ 對應敘事
 _CC_CN = {"stagger": "陣腳大亂(下一擊更難命中)", "slow": "步伐遲滯(先攻與命中下降)",
-          "weaken": "氣力被削(攻勢轉弱)", "fear": "心生恐懼(本回合無法行動)",
+          "weaken": "體力被削(攻勢轉弱)", "fear": "心生恐懼(本回合無法行動)",
           "paralyze": "僵立當場(麻痺)"}
 _ARCHETYPE_CN = {"dagger": "匕首", "sword": "劍", "blunt": "鈍器", "bow": "弓",
                  "staff": "法杖", "hand_to_hand": "徒手",

@@ -30,7 +30,7 @@ POWERS = {
                          "desc": "法力如泉湧現,瞬間補滿法力。"},
     "ladys_grace":      {"name": "淑女恩典", "contexts": ["combat", "utility"],
                          "effect": {"heal": 70, "restore_fatigue": True, "cure": True},
-                         "desc": "重整旗鼓:回復 70 點生命與全部氣力,並淨化身上的持續傷害。"},
+                         "desc": "重整旗鼓:回復 70 點生命與全部體力,並淨化身上的持續傷害。"},
     "invisibility":     {"name": "陰影遁形", "contexts": ["combat"],
                          "effect": {"escape": True}, "desc": "遁入陰影,必定脫離戰鬥。"},
     "tower_key":        {"name": "塔之鑰", "contexts": ["utility"],
@@ -103,9 +103,9 @@ def use(char: Character, state, gamedata: GameData, target=None) -> dict:
         before = char.magicka
         char.magicka = char.max_magicka
         messages.append(f"{pdef['name']}補滿了法力(+{int(char.magicka - before)})。")
-    if eff.get("restore_fatigue"):   # 淑女座恩典:回滿氣力
+    if eff.get("restore_fatigue"):   # 淑女座恩典:回滿體力
         char.fatigue = char.max_fatigue
-        messages.append("你氣力全復、精神抖擻。")
+        messages.append("你體力全復、精神抖擻。")
     if eff.get("cure"):
         removed = [e for e in char.active_effects if e["kind"] == "dot"]
         char.active_effects = [e for e in char.active_effects if e["kind"] != "dot"]
@@ -244,7 +244,7 @@ def racial_use(char: Character, state, gamedata: GameData, target=None,
             messages.append(f"傷處迅速癒合,回復了 {int(char.health - before)} 點生命。")
     if eff.get("restore_fatigue"):
         char.fatigue = char.max_fatigue
-        messages.append("你氣力全復、精神抖擻。")
+        messages.append("你體力全復、精神抖擻。")
     if "control" in eff:
         tcls = eff.get("target_class")
         if tcls == "all":

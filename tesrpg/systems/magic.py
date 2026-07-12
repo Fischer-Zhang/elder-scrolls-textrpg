@@ -1102,7 +1102,7 @@ def tick_effects(entity, gamedata=None) -> list[str]:
             elif e["kind"] == "slow":
                 msgs.append(f"{name}體內的遲緩毒素消退。")
             elif e["kind"] == "weaken":
-                msgs.append(f"{name}的攻勢恢復了氣力。")
+                msgs.append(f"{name}的攻勢恢復了體力。")
             elif e["kind"] == "stagger":
                 msgs.append(f"{name}重整了陣腳。")
             elif e["kind"] == "benumb":
