@@ -37,7 +37,7 @@
 | `werewolf_resist` | 抗性 | disease +100(人形也保留) | 人形 afflicted 唯一加成;免疫=不被吸血感染 |
 | **結構性權衡** | — | 獸形**脫去整套裝備/附魔/淬鍊/法術/格擋** | 用獸力換掉 equip_* 全部層;revert 力竭 −30 體力 |
 
-> tier≥2 解鎖恫嚇之嚎(HOWL_FATIGUE=25,FEAR 2 回合,solo boss 免疫);獸爪額外傷 _TIER_CLAW=[0,1,2,3,4]。
+> tier≥2 解鎖恫嚇之嚎(HOWL_FATIGUE=25,FEAR 2 回合,solo boss 高機率抵抗(R44));獸爪額外傷 _TIER_CLAW=[0,1,2,3,4]。
 
 ### 斯庫瑪 / 月糖(限時亢奮;★刻意不碰 strength/sneak/武傷以避刺客紅線)
 | 子層 | kind | 數值 | scope |
@@ -85,7 +85,7 @@
 | resist **physical**(R127) | 抗性 | 護甲之外的乘性物理減傷·**pen 完全無法穿透**(抗性層非護甲層)。走**魔抗低階不 ×2**(物理已有護甲·保守):大魂 甲6/飾9;藥 brew(troll_fat/bear_claw/bone_meal)~16;誓福 sundered_arcanist 10 | enchj/encha·潛時藥·boon | 聚合相加,但**玩家側夾 `PLAYER_PHYSICAL_RESIST_CAP=25`**(守 R71 群戰風險;boss〔真身 60〕不夾) |
 | weapon_element | 傷害 | ×3.0→13→19;fire/frost/shock | enchw | 🔴**無視物理護甲**、吃元素抗;加在偷襲夾限**之前** |
 | weapon vampiric | 續航回復 | ★傷害×0.30 回血(雙持 0.48);**enchant.magnitude(%)可覆寫**(悲傷之刃 50);命中必觸發 | enchws | 主+副(×0.6)累計一次回血;夾本擊 dmg 內 |
-| weapon paralyze | 控場(★充能) | proc 10%、turns=1;**mag=充能容量**=round(soul×5×(0.6+myst/100))→ soul4·myst50≈22 | enchws | 🔴**solo boss 免疫**(R15);觸發扣一格、歸零不觸發;舊式 mag=0=legacy 無限 |
+| weapon paralyze | 控場(★充能) | proc 10%、turns=1;**mag=充能容量**=round(soul×5×(0.6+myst/100))→ soul4·myst50≈22 | enchws | 🔴**solo boss 高機率抵抗**(R44·原 R15 免疫);觸發扣一格、歸零不觸發;舊式 mag=0=legacy 無限 |
 | weapon regen | 續航回復 | ×1.5→7、turns=3 HoT(副手×0.6) | enchws | source 去重(主手優先,命中刷新不疊) |
 | weapon DoT(burn/chill/jolt) | 持續傷+異常 | 每回合×1.2→5→8(fire/frost/shock);turns=3、吃元素抗;rider:chill→weaken15%·2t、jolt→扣魔8+stagger20% | enchws | 掛 dot 經 tick_effects;命中刷新取 max(免疊爆);與 enchw 即時並存 |
 | weapon absorb(health/magicka/fatigue) | 吸取續航 | 命中回攻擊者×1.5→7→10;absorb_health 另扣目標(**solo boss ×0.5 夾**) | enchws | 玩家專屬;夾資源上限;health 杜絕無限回血泵 |
@@ -188,7 +188,7 @@
 | 生生不息 combat_regen | 續航 | 戰鬥中每回合末自癒 8(is_alive 守 → 不復活本回合被擊殺者) |
 | 身輕如燕 evasion_bonus | 命中(扣敵命中) | 多源相加 0.02~0.05,★硬夾 EVASION_BONUS_CAP=0.15 |
 | 盾陣/盾擊踉蹌 | 減傷/控場 | block_hit_penalty0.25;riposte stagger0.35 |
-| 懾意/懾心術/懾魂 fear_on_hit | 控場 | illusion 50/75/100:命中懼意,chance 相加夾30%、turns 取最(最長3);出手觸發(每回合一次);**solo BOSS 免疫** |
+| 懾意/懾心術/懾魂 fear_on_hit | 控場 | illusion 50/75/100:命中懼意,chance 相加夾30%、turns 取最(最長3);出手觸發(每回合一次);**solo BOSS 高機率抵抗**(R44) |
 | 不竭之軀 fatigue_cost_bonus | 續航 | 攻擊耗體×0.90 |
 
 ### 經濟/探索/社交(非戰鬥;多源取最高或相加)
@@ -270,7 +270,7 @@
 | ★實用/幻術魔法限時自我增益 `char.spell_effects`(R104·**戰鬥外**) | **限時**社交/潛行/探索(獨立層·**無推導快取**·helper on-the-fly·絕不寫 base) | `魅惑 charm`(6h·說服/套話+0.12·化解衛兵/賞金+0.10·議價+0.08·偷竊得手+0.10 且失風賞金×0.7)/`隱形 invisibility`(3h·**入戰重獲偷襲先機**〔首擊仍受 SOLO_SNEAK 夾·**不秒 solo**〕·旅途遭遇×0.4·繞城門盤查/圍捕·**入戰即破**)/`羽落 feather`(6h·負重+50)/`偵知 detect_life`(6h·下場遭遇揭敵情+scouted·消耗)。疊加=同 kind 取較晚到期;每圈 `spellfx.update` 清過期。**旋鈕**:`spellfx.CHARM_*/INVIS_ENCOUNTER_FACTOR/FEATHER_CARRY_BONUS`(改必先問使用者) |
 | ★九神祝福 `char.divine_blessing`(R107·**排他單槽限時**·非藥水=祭壇祈禱) | **限時**單神祝福(獨立層·attr/resist 走推導快取·功能面 getter on-the-fly·絕不寫 base) | **同時只能持有一位神的祝福,拜新壇即整包覆蓋**(單槽 dict 結構性保證);時長 `divines.BLESSING_HOURS=48`;祈禱附帶淨疾(diseases.purify);**德行閘**=惡名不高於名聲且本省無賞金,否則拒賜福。九神:阿卡托什 速度+10/蒂貝拉 個性+10/朱利安諾斯 智力+10/塔洛斯 力量+10(皆 `divine_attr_bonus`·recompute 資源)·阿爾凱 疾病抗+30(`divine_resist`)·凱娜瑞絲 旅行減項−0.10(travel 鏈·floor 0.5)·瑪拉 cast 治療+15%(與騎士團 restoration_boon 相加)·斯丹達爾 格擋姿態卸力+0.10(R137 遷入 `_guard_stance_factor`·原掛手動格擋已移除·總夾 0.60)·澤尼薩爾 買價×0.90(只買價·反套利地板恆守)。每圈 `divines.update` 清過期。**旋鈕**:`divines.BLESSINGS/BLESSING_HOURS/BLOCK_FLOOR`(改必先問使用者;塔洛斯力量有 R92 sim 先例·sim fixture 空槽 → byte-identical)。**R115 神之選民深線**:各神祭壇另接一條**永久誓福**試煉(專屬 d5 boss+地城·結局授永久誓福·走通用 `boon_*` 層〔非限時·比照戴德拉誓福〕·**依各神神格按原典賜加成、守 R45 紅線無 sneak/武器技**)—— 阿卡托什「時龍之契」end+10/will+6/魔抗+15/magicka+20·塔洛斯「人皇之佑」str+10/end+6/heavy_armor+10/魔抗+10·阿爾凱「輪迴之佑」end+10/will+6/restoration+10/抗疫+25·朱利安諾斯「睿智之佑」int+10/will+6/mysticism+10/魔抗+10/magicka+20·斯丹達爾「慈憫之佑」end+10/will+6/block+8/restoration+8/魔抗+10·澤尼薩爾「豐饒之佑」per+8/luck+8/mercantile+12/魔抗+10·凱娜瑞絲「天穹之佑」agi+10/speed+6/athletics+10/電抗+15·瑪拉「慈愛之佑」per+10/will+6/restoration+12/魔抗+10·蒂貝拉「美之佑」per+10/will+6/speechcraft+8/illusion+8/魔抗+10 |
 | ★安撫 calm(R104·illusion·戰鬥控場·非上表增益層) | 敵方失能(走 `is_incapacitated`) | 走 `magic.apply_control("calm")`(敵 active_effects{kind:calm,turns})·**成功率 `formulas.calm_chance` 隨敵數非線性遞減**(1敵85%→4敵21%·CALM_*)·**solo boss 完全免疫**(非機率)·去重防延長·全敵 calm→「從容離去」免檢定脫戰 |
-| 塗毒/毒藥(▼對敵) | 傷害/控場 | **五型**(R31):dot per_turn×(3+延長) / 麻痺 clamp(1+煉金//50,1..3) / **衰毒 weaken**(敵攻勢−10..35%) / **遲緩 slow**(先攻+命中−10..35%) / **懼毒 fear**(短暫失能 1..2 回);特殊毒型需里程碑解鎖(`poison_unlock`),否則退回 DoT;塗層 charges=poison_charges+里程碑,控制型(麻痺/懼)半量、遲緩−1;**麻痺/懼毒對 solo BOSS 免疫** |
+| 塗毒/毒藥(▼對敵) | 傷害/控場 | **五型**(R31):dot per_turn×(3+延長) / 麻痺 clamp(1+煉金//50,1..3) / **衰毒 weaken**(敵攻勢−10..35%) / **遲緩 slow**(先攻+命中−10..35%) / **懼毒 fear**(短暫失能 1..2 回);特殊毒型需里程碑解鎖(`poison_unlock`),否則退回 DoT;塗層 charges=poison_charges+里程碑,控制型(麻痺/懼)半量、遲緩−1;**麻痺/懼毒對 solo BOSS 高機率抵抗**(R44) |
 
 ---
 
@@ -309,7 +309,7 @@ weapon_element 附魔、奧術灌注 weapon_imbue、共鳴一擊 resonance、武
 | debuff | kind | 數值 | 聚合 |
 |---|---|---|---|
 | 挫志 weaken(demoralize/衝擊餘波) | 削敵傷害 | demoralize ×0.6(4回);只乘怪 | 取最強(min,夾≥0.1),可dispel |
-| 陣腳大亂 stagger | 降敵命中 | −0.30 命中(impact 35%觸發;**釘錘/戰錘 archetype 命中 20% 內建**·R41·`_ARCHETYPE_BUILTIN_STATUS`·solo boss 免疫) | binary,覆寫turns,可dispel |
+| 陣腳大亂 stagger | 降敵命中 | −0.30 命中(impact 35%觸發;**釘錘/戰錘 archetype 命中 20% 內建**·R41·`_ARCHETYPE_BUILTIN_STATUS`·R44 後軟控不免 solo·boss 照吃) | binary,覆寫turns,可dispel |
 | 持續傷 dot(ignite/poison_cloud/frost_nova/bleed) | 持續傷 | ignite 8+6×3、poison_cloud 6×4、frost_nova 16+4×2、bleed×3 | 各一條獨立;AoE每敵獨立dict(R17) |
 | 麻痺 paralyze(mass/附魔) | 失能 | 群麻2回、附魔1回;is_incapacitated | 🔴solo免疫(R15);AoE獨立dict |
 | 恐懼 fear(fear/rout/懾心) | 失能 | 2回不敢進攻 | 玩家可意志抵抗;可dispel;**solo BOSS 全路徑免疫(R31:法術/塗毒/里程碑)** |

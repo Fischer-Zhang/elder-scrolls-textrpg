@@ -60,7 +60,7 @@ _TIER_DURATION = [BEAST_DURATION_HOURS, 3, 4, 4, 5]    # 獸形持續(小時)
 _TIER_MAXFEEDS = [MAX_FEEDS_PER_FORM, 5, 6, 7, 8]      # 每場吞噬續時上限
 
 # 恫嚇之嚎(達 HOWL_TIER 解鎖的獸形專屬戰技):嚎叫使敵恐懼。耗體力(無新存檔欄),
-# 🔴 solo boss 免疫(比照武器麻痺/偷襲夾限的反鎖王紅線,杜絕嚎叫永控 boss)。
+# 🔴 solo boss 高機率抵抗(R44 機率減免·比照武器麻痺的反鎖王紅線,杜絕嚎叫永控 boss)。
 HOWL_TIER = 2
 HOWL_FATIGUE = 25
 HOWL_FEAR_TURNS = 2

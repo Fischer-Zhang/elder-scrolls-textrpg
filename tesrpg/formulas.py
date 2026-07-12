@@ -314,7 +314,7 @@ BLOCK_FATIGUE_COST = 4
 VANISH_FATIGUE_COST = 18     # 隱遁翻滾耗體力(高;連續隱遁會耗竭 → 後續攻擊命中下降)
 # 武器命中觸發附魔(weapon_status)
 WEAPON_VAMPIRIC_FRACTION = 0.30   # 吸血:回血 = 造成傷害 × 此比例(夾實傷、夾血上限;每擊觸發故不可大)。武器可用 enchant.magnitude(%)覆寫(如悲傷之刃 50)。
-WEAPON_PARALYZE_PROC = 0.10       # 武器麻痺觸發機率(1 回合、不重複套;solo BOSS 免疫 → 反鎖王作弊)
+WEAPON_PARALYZE_PROC = 0.10       # 武器麻痺觸發機率(1 回合、不重複套;solo BOSS 高機率抵抗 R44 → 反鎖王)
 # 武器命中效果擴充(R29-附魔深化):DoT(burn/chill/jolt)+ 元素 rider、命中吸取、充能(soul_trap/paralyze)
 WEAPON_DOT_FACTOR = 1.2           # 元素 DoT 每回合傷害係數(低於即時 enchw 的 3.0,因保證多回合)
 WEAPON_DOT_TURNS = 3              # 元素 DoT 持續回合(命中刷新取 max)
