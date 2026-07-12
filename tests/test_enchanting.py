@@ -33,7 +33,7 @@ def test_resist_magnitude_r66_nonlinear_and_magic_split():
 
 def test_enchant_magnitude_monotonic_in_soul_and_mysticism():
     assert enchanting.enchant_magnitude(5, 50) > enchanting.enchant_magnitude(1, 50)   # 魂石階越高越強
-    assert enchanting.enchant_magnitude(3, 100) > enchanting.enchant_magnitude(3, 0)    # 秘術越高越強
+    assert enchanting.enchant_magnitude(3, 100) > enchanting.enchant_magnitude(3, 0)    # 神秘越高越強
     assert enchanting.enchant_magnitude(1, 0) >= 1                                       # 至少 1
 
 

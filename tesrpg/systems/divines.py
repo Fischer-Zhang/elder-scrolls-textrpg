@@ -2,7 +2,7 @@
 
 正典模型(3E 433;UESP 考據):
   - **Skyrim 排他單槽祝福**:同時只能持有一位神的祝福,拜新壇即整包覆蓋、祈禱附帶淨疾。
-  - **Oblivion 德行閘**:惡名高於名聲、或本省有通緝賞金 → 神明拒賜福(「懺悔你的罪行吧,惡徒!」)。
+  - **Oblivion 德行閘**:惡名高於聲望、或本省有通緝賞金 → 神明拒賜福(「懺悔你的罪行吧,惡徒!」)。
   - **KotN 朝聖贖罪**:走「朝聖之路」試煉任務(quests.json `pilgrimage_nine`)→ 惡名歸零
     (全遊戲唯一 infamy 清除途徑;刻意反轉 R84「惡名終身」—— 使用者拍板的例外)。
 
@@ -116,9 +116,9 @@ def block_bonus(char: Character) -> float:
 # 德行閘(Oblivion 正典)
 # ======================================================================
 def can_bless(char: Character, province: str) -> tuple[bool, str]:
-    """名聲須不低於惡名、且本省無通緝賞金,神明才肯賜福。回 (ok, 拒因 ""|"bounty"|"infamy")。
+    """聲望須不低於惡名、且本省無通緝賞金,神明才肯賜福。回 (ok, 拒因 ""|"bounty"|"infamy")。
 
-    新角 fame=infamy=0 → 放行(正典是「惡名超過名聲」才拒,非要求先有名聲)。
+    新角 fame=infamy=0 → 放行(正典是「惡名超過聲望」才拒,非要求先有聲望)。
     他省賞金不擋(各省法度各管各的;infamy 是全域道德軸才全域擋)。
     """
     from tesrpg.systems import crime   # 區域 import:避免 divines→crime→world→combat 頂層鏈
@@ -134,7 +134,7 @@ def can_bless(char: Character, province: str) -> tuple[bool, str]:
 # ======================================================================
 def recompute(char: Character, state, gamedata: GameData) -> None:
     """剔除過期/壞值 → 由現持祝福重建 attr/resist 快取 → 重算衍生資源上限(R05:
-    智力→魔力、力量→體力皆 live,必帶 gamedata)。"""
+    智力→法力、力量→體力皆 live,必帶 gamedata)。"""
     now = state.time.absolute_hours()
     b = getattr(char, "divine_blessing", None)
     if not _valid(b) or b["expires_at"] <= now:

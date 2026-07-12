@@ -1,6 +1,6 @@
 """靈魂 token 死靈經濟(Soul Token Necromancy Economy)—— R106 Phase C。
 
-召喚師的一條**可管理的持久資源迴圈**,把「每次施法花魔力」的一次性投入,升級成一條
+召喚師的一條**可管理的持久資源迴圈**,把「每次施法花法力」的一次性投入,升級成一條
 跨戰鬥經營的靈魂經濟:
 
   打怪 → 積 `soul_tokens`(每擊殺 +1,里程碑「亡者收集」再 +1)
@@ -13,7 +13,7 @@
 
 **「只真·亡者」(使用者拍板)**:只有 token 召的骷髏奴僕(`raise_thrall`)與 `reanimate` 復生的
 屍體帶 `_undead` 暫態旗 → 參與回收、受「亡者統御」戰力加成、計入軍團上限。元素/魔人維持
-純魔力經濟,不碰 token。
+純法力經濟,不碰 token。
 
 **紅線**:`soul_tokens`/`necro_upgrades` 是持久欄但**絕不進 attr()/skill()/formulas**;死靈加成只
 在 `magic.cast` spawn 時併入召喚物(不碰 `resolve_attack`);永久護甲走 `_armor_rating` 獨立加法

@@ -1,6 +1,6 @@
 """衍生數值的重算與夾限。
 
-R63:生命/魔力/體力上限皆由『當前 effective 屬性』直接推得(endurance/int/attr-sum),屬性一變就重算。
+R63:生命/法力/體力上限皆由『當前 effective 屬性』直接推得(endurance/int/attr-sum),屬性一變就重算。
 有效上限 = 屬性公式 + `resource_levels`(R64 前升級三選一累積·**舊存檔遺留·不再新增**)+ 穿戴護甲 armor_fortify(需 gamedata)。
 `base_max_health` 已冗餘(R63)·僅為舊存檔相容保留·絕不寫入。
 """
@@ -82,8 +82,8 @@ def recompute_max_resources(char: Character, gamedata=None,
                        + getattr(char, "werewolf_health_bonus", 0))
     char.max_magicka = (formulas.max_magicka(char.attr("intelligence"), char.magicka_bonus)
                         + res.get("magicka", 0) + fort.get("magicka", 0)
-                        + getattr(char, "dagon_magic_bonus", 0)   # 達貢之力:永久魔力上限
-                        + getattr(char, "boon_magic_bonus", 0))   # 戴德拉誓福:永久魔力上限(R45)
+                        + getattr(char, "dagon_magic_bonus", 0)   # 達貢之力:永久法力上限
+                        + getattr(char, "boon_magic_bonus", 0))   # 戴德拉誓福:永久法力上限(R45)
     char.max_fatigue = (formulas.max_fatigue(
         char.attr("strength"), char.attr("willpower"),
         char.attr("agility"), char.attr("endurance"),

@@ -4,7 +4,7 @@
   使用技能 → 累積該技能 xp → 滿門檻則 +1 點
          → 該次升點餵給「等級 XP 池」level_xp(所有技能都計入,主修 ×1.5)
   level_xp 達 levelup_xp_threshold(level) → 可升級
-         → 升級時玩家:① 生命/魔力/體力三選一 ② 自由分配屬性點(無倍率)
+         → 升級時玩家:① 生命/法力/體力三選一 ② 自由分配屬性點(無倍率)
   技能成長本身完全沿用 learn-by-doing;只有「升級觸發與給予」改為 RPG 點數制。
 """
 
@@ -143,7 +143,7 @@ def apply_level_up(char: Character, gamedata: GameData,
     """套用升級:分配屬性點 + 回滿三資源。回傳結算摘要供 UI。
 
     attribute_points: {attr: 點數};總和上限 LEVELUP_ATTRIBUTE_POINTS,逐屬夾 ATTRIBUTE_CAP。
-    R64:移除資源三選一 → 資源純屬性驅動(endurance→生命·int→魔力·str/wil/agi/end→體力);
+    R64:移除資源三選一 → 資源純屬性驅動(endurance→生命·int→法力·str/wil/agi/end→體力);
     `resource_levels`(舊存檔累積)仍由 recompute 讀,只是不再新增。
     """
     ensure_level_xp(char)

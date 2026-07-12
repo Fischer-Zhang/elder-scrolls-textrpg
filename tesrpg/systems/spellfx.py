@@ -100,7 +100,7 @@ def consume_detect(char: Character) -> None:
     _drop(char, "detect_life")
 
 
-# --- 秘術念力 telekinesis(R121:地城機關;靈視/靈識 scry 改走地城 targeted 揭露動作,非限時層)---
+# --- 神秘念力 telekinesis(R121:地城機關;靈視/靈識 scry 改走地城 targeted 揭露動作,非限時層)---
 def is_telekinetic(char: Character) -> bool:
     """念力術作用中:地城中隔空化解陷阱機關(Phase B:亦可撥動遠處封印機栝)。"""
     return _has(char, "telekinesis")

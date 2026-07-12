@@ -35,7 +35,7 @@ class Character:
     level_progress: int = 0
     level_skillups: dict[str, int] = field(default_factory=dict)
 
-    magicka_bonus: int = 0          # 種族+星座的固定魔力加成
+    magicka_bonus: int = 0          # 種族+星座的固定法力加成
 
     base_max_health: int = 0        # 生命上限基底(創建耐力×2;不含護甲 fortify、不隨耐力逐級長)
     # 升級三選一累積的資源加成 {"health":x,"magicka":y,"fatigue":z}
@@ -118,21 +118,21 @@ class Character:
     werewolf_resist: dict = field(default_factory=dict)       # element -> +百分比(疾病免疫)
     werewolf_health_bonus: int = 0       # 獸形額外生命上限(走 stats.recompute_max_resources)
     # 達貢之力(湮滅危機教徒結局的慘勝獎賞;竊得達貢殘力的永久增益)。走獨立 dagon_* 層,
-    # 與裝備/吸血鬼/狼人加成同模式:attr()/skill()/抗性/魔力 疊加、成長/夾限只用 base_*。詳見 systems/dagon_boon.py。
+    # 與裝備/吸血鬼/狼人加成同模式:attr()/skill()/抗性/法力 疊加、成長/夾限只用 base_*。詳見 systems/dagon_boon.py。
     dagon_boon: bool = False              # 是否已竊得達貢之力(持久身分;一次性永久)
     dagon_attr_bonus: dict = field(default_factory=dict)    # attr_id -> +點數
     dagon_skill_bonus: dict = field(default_factory=dict)   # skill_id -> +點數(毀滅/咒術)
     dagon_resist: dict = field(default_factory=dict)        # element -> +百分比(烈焰之主 → 火抗)
-    dagon_magic_bonus: int = 0           # 額外魔力上限(走 stats.recompute_max_resources)
+    dagon_magic_bonus: int = 0           # 額外法力上限(走 stats.recompute_max_resources)
     # 戴德拉誓福(R45;戴德拉親王神殿任務的永久回報,可同時持有多位親王的誓福 → 後期收集軸)。
     # 達貢誓福(主線慘勝)刻意維持獨立 dagon_* 層不動;此層為通用資料驅動誓福(boons.json 登錄表)。
-    # 與裝備/吸血鬼/狼人/達貢層同模式:attr()/skill()/抗性/魔力 疊加、成長/夾限只用 base_*、絕不寫 base。
+    # 與裝備/吸血鬼/狼人/達貢層同模式:attr()/skill()/抗性/法力 疊加、成長/夾限只用 base_*、絕不寫 base。
     # boons 為唯一權威(持有的 boon id);四個 *_bonus/resist 是「由 boons + JSON 決定性推導的快取層」。詳見 systems/boons.py。
     boons: list = field(default_factory=list)                # 持有的誓福 id(權威)
     boon_attr_bonus: dict = field(default_factory=dict)      # attr_id -> +點數(推導快取)
     boon_skill_bonus: dict = field(default_factory=dict)     # skill_id -> +點數(推導快取)
     boon_resist: dict = field(default_factory=dict)          # element -> +百分比(推導快取)
-    boon_magic_bonus: int = 0            # 額外魔力上限(走 stats.recompute_max_resources)
+    boon_magic_bonus: int = 0            # 額外法力上限(走 stats.recompute_max_resources)
     boon_spell_power: float = 0.0        # 法術威力加成(誓福層·乘進 magic._power·推導快取;R78b 大法師通悟)
     # 九神祝福(R107;Skyrim 排他單槽限時祝福 + Oblivion 德行閘)。divine_blessing 為唯一權威
     # ({"divine","expires_at"} 絕對小時;{}=無;單槽 dict → 拜新壇即整包覆蓋);兩個快取由其推導。

@@ -1,7 +1,7 @@
-"""R101 名聲/惡名活的社交軸回歸測試。
+"""R101 聲望/惡名活的社交軸回歸測試。
 
 涵蓋:① tier-0 嚴格 no-op(byte-identical 之本:fame=0∧infamy=0 → 態度不位移·price 1.0·買價同基線)
-② renown 階梯/稱號 ③ attitude_shift(名聲暖、惡名冷·夾 civil·hostile/comrade/vampire_seen 不動)
+② renown 階梯/稱號 ③ attitude_shift(聲望暖、惡名冷·夾 civil·hostile/comrade/vampire_seen 不動)
 ④ price_factor(折扣/加價·cap·反套利地板恆守)⑤ dialogue.attitude 端到端 + 公會 comrade 覆寫不破
 ⑥ 閘(min_fame/min_infamy 話題·requires_infamy 任務)。
 
@@ -87,7 +87,7 @@ def test_attitude_shift_net_delta_cancels():
 # ---------------------------------------------------------------- price_factor
 def test_price_factor_discount_markup_caps():
     gd, c = _mk(fame=700)
-    assert renown.price_factor(c) == 1.0 - renown.PRICE_DISCOUNT_CAP   # 滿名聲折扣 cap
+    assert renown.price_factor(c) == 1.0 - renown.PRICE_DISCOUNT_CAP   # 滿聲望折扣 cap
     gd, c2 = _mk(infamy=150)
     assert renown.price_factor(c2) == 1.0 + min(renown.PRICE_MARKUP_CAP,
                                                 3 * renown.PRICE_INFAMY_MARKUP_PER_TIER)
@@ -100,7 +100,7 @@ def test_buy_price_discount_markup_and_anti_arbitrage():
     b0 = world.buy_price(base, gd, iid)
     bf = world.buy_price(famous, gd, iid)
     bi = world.buy_price(notorious, gd, iid)
-    assert bf < b0 < bi                                        # 名聲折扣 < 基線 < 惡名加價
+    assert bf < b0 < bi                                        # 聲望折扣 < 基線 < 惡名加價
     assert bf > world.sell_price(famous, gd, iid)              # 反套利:買恆 > 賣
 
 

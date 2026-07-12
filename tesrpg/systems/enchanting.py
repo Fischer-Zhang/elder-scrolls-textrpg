@@ -30,7 +30,7 @@ ARMOR_KINDS = [("res", "強化最大資源"), ("skill", "強化技能"), ("resis
 # 武器命中觸發附魔型別(供 UI 分家族;見 main.action_enchant)
 WEAPON_DOT_KINDS = [("burn", "焚燒(火 · 持續傷)"), ("chill", "凍緩(霜 · 持續傷+減敵)"),
                     ("jolt", "感電(電 · 持續傷+燒魔)")]
-WEAPON_ABSORB_KINDS = [("absorb_health", "吸取生命"), ("absorb_magicka", "吸取魔力"),
+WEAPON_ABSORB_KINDS = [("absorb_health", "吸取生命"), ("absorb_magicka", "吸取法力"),
                        ("absorb_fatigue", "吸取體力")]
 WEAPON_TRIGGER_KINDS = [("vampiric", "吸血"), ("regen", "再生"),
                         ("paralyze", "麻痺(充能)"), ("soul_trap", "命中擒魂(充能)")]

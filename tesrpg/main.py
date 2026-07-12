@@ -27,7 +27,7 @@ _active_save: Path | None = None   # G:當前這趟遊戲寫入的槽位存檔�
 def create_character(gamedata: GameData, rng: RNG):
     ui.rule("創建角色")
     # 新手清晰度:一句話講明選單怎麼讀 + 指南何在(創角時 codex 尚不可開,故就地點一句)
-    ui.message("每張選擇卡上的小標(chip)= 該選項給的加成(屬性、技能、抗性、魔力、天賦/威能,職業另有專精·★偏好·主修)。"
+    ui.message("每張選擇卡上的小標(chip)= 該選項給的加成(屬性、技能、抗性、法力、天賦/威能,職業另有專精·★偏好·主修)。"
                "技能靠使用成長(做什麼練什麼);開局後可在『人物 → 指南/圖鑑 📖』隨時查閱各系統玩法。", style="grey70")
     if ui.confirm("快速開始(隨機種族/職業)?"):
         return _quick_character(gamedata, rng)
@@ -272,7 +272,7 @@ def _attr_chips(attr_mods: dict) -> list[dict]:
 def _race_chips(gamedata: GameData, r: dict) -> list[dict]:
     chips = _attr_chips(r.get("attr_mods", {}))
     if r.get("magicka_bonus"):
-        chips.append({"text": f"魔力+{r['magicka_bonus']}", "tone": "gold"})
+        chips.append({"text": f"法力+{r['magicka_bonus']}", "tone": "gold"})
     for sid, v in r.get("skill_bonuses", {}).items():
         if v:
             chips.append({"text": f"{gamedata.skill_name(sid)}+{v}", "tone": "cyan"})
@@ -291,7 +291,7 @@ def _race_chips(gamedata: GameData, r: dict) -> list[dict]:
 def _sign_chips(s: dict) -> list[dict]:
     chips = _attr_chips(s.get("attr_mods", {}))
     if s.get("magicka_bonus"):
-        chips.append({"text": f"魔力+{s['magicka_bonus']}", "tone": "gold"})
+        chips.append({"text": f"法力+{s['magicka_bonus']}", "tone": "gold"})
     if s.get("powers"):
         chips.append({"text": f"異能×{len(s['powers'])}", "tone": "mag"})
     return chips
@@ -405,7 +405,7 @@ def action_rest(state: GameState, gamedata: GameData) -> str | None:
     state.time.advance(hours)
     ui.message(f"你休息了 {hours} 小時,神清氣爽。")
     if no_magicka_regen:
-        ui.message("（巨魔像座:魔力不會自然回復,需靠吸收魔法補充。)", style="grey70")
+        ui.message("（巨魔像座:法力不會自然回復,需靠吸收魔法補充。)", style="grey70")
 
     _maybe_db_recruit(state, gamedata)   # 血債在身者,夜母使者入夢招募
 
@@ -475,7 +475,7 @@ def action_level_up(state: GameState, gamedata: GameData) -> None:
     ui.rule(f"升級 → Lv {char.level + 1}")
 
     # 自由分配屬性點(逐點挑屬性,clamp 100;選到已滿的不耗點,重挑)。
-    # R64:資源已純屬性驅動(endurance→生命·int→魔力·str/wil/agi/end→體力)→ 無資源三選一,屬性點 4→5。
+    # R64:資源已純屬性驅動(endurance→生命·int→法力·str/wil/agi/end→體力)→ 無資源三選一,屬性點 4→5。
     points = formulas.LEVELUP_ATTRIBUTE_POINTS
     alloc: dict[str, int] = {}
 
@@ -572,7 +572,7 @@ def _triage_armed(char) -> bool:
 
 def _spell_token_suffix(char, gamedata: GameData, spell_id: str) -> str:
     """R106C 施法選單:召喚/復生法術的靈魂 token 花費後綴(非 token 法術回空字串;不足標『不足』)。
-    can_cast 只看魔力不看 token → 選單需另外標示,否則 token 法術看似可選卻在施法時被 token 閘擋。"""
+    can_cast 只看法力不看 token → 選單需另外標示,否則 token 法術看似可選卻在施法時被 token 閘擋。"""
     base = gamedata.spells[spell_id].get("effect", {}).get("token_cost", 0)
     if base <= 0:
         return ""
@@ -813,7 +813,7 @@ def _choose_combat_action(state: GameState, gamedata: GameData, enemies: list, a
         if ui._web is not None:    # web:blocks 每幀清空 → 選法術時重顯戰場,免「敵狀態丟失」
             ui.combat_status_group(player, allies, enemies, gamedata)
         spell_opts = [(s, f"{gamedata.spells[s]['name']}"
-                       f"（{magic.effective_cost(player, gamedata, s)} 魔力{_spell_token_suffix(player, gamedata, s)}) · "
+                       f"（{magic.effective_cost(player, gamedata, s)} 法力{_spell_token_suffix(player, gamedata, s)}) · "
                        f"{ui.spell_effect_summary(gamedata, s)}")
                       for s in castable]
         sid = ui.menu("施放哪道法術?", spell_opts, allow_back=True)
@@ -925,7 +925,7 @@ def _prep_phase(state: GameState, gamedata: GameData, enemies, battle: dict, bud
         if choice in ("buff", "summon"):
             pool = buffs if choice == "buff" else summons
             sid = ui.menu("施放哪道法術?",
-                          [(s, f"{gamedata.spells[s]['name']}（{magic.effective_cost(player, gamedata, s)} 魔力{_spell_token_suffix(player, gamedata, s)})")
+                          [(s, f"{gamedata.spells[s]['name']}（{magic.effective_cost(player, gamedata, s)} 法力{_spell_token_suffix(player, gamedata, s)})")
                            for s in pool], allow_back=True)
             if sid is not None:
                 res = magic.cast(player, gamedata, sid, state.rng, battle=battle, state=state)
@@ -1506,7 +1506,7 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
     total = {"gold": 0, "items": []}
     for e in enemies:
         if getattr(e, "summoned", False):
-            continue    # R134 爪牙三重排除(使用者定案):魔力構造無屍可掠 —— 無戰利品、不擒魂、不計擊殺
+            continue    # R134 爪牙三重排除(使用者定案):法力構造無屍可掠 —— 無戰利品、不擒魂、不計擊殺
         r = combat.grant_loot(player, e, gamedata, state.rng)
         total["gold"] += r["gold"]
         total["items"] += r["items"]
@@ -2178,7 +2178,7 @@ def _resolve_feature(state: GameState, gamedata: GameData, feature_id: str) -> N
 def _dungeon_scry(state: GameState, gamedata: GameData, grid: dict, z: int, explored: list) -> None:
     """R121 靈視/靈識:對地城當前層任一未探格主動施展揭露(靈視術=單格·靈識術=中心+四鄰)。
     與偵查 25 里程碑互補 —— recon 移動時揭四鄰(近身),scry 主動揭遠格(規劃路線·探明樓梯/首領/機關);
-    免耗回合、耗魔力、鍛鍊 mysticism。（Phase B:靈識亦用於揭露法術封印。)"""
+    免耗回合、耗法力、鍛鍊 mysticism。（Phase B:靈識亦用於揭露法術封印。)"""
     player = state.player
     n = grid["n"]
     known = [s for s in player.spells if gamedata.spells[s]["effect"].get("kind") == "scry"]
@@ -2190,13 +2190,13 @@ def _dungeon_scry(state: GameState, gamedata: GameData, grid: dict, z: int, expl
         return
     afford = [s for s in known if magic.can_cast(player, gamedata, s)]
     if not afford:
-        ui.message("魔力不足以施展靈視之法。", style="red")
+        ui.message("法力不足以施展靈視之法。", style="red")
         return
     if len(afford) == 1:
         sid = afford[0]
     else:
         sid = ui.menu("施展哪道靈視之法?", [
-            (s, f"{gamedata.spells[s]['name']}（{magic.effective_cost(player, gamedata, s)} 魔力 · "
+            (s, f"{gamedata.spells[s]['name']}（{magic.effective_cost(player, gamedata, s)} 法力 · "
                 f"{'中心 + 四鄰' if gamedata.spells[s]['effect'].get('radius') else '單格'})") for s in afford],
             allow_back=True)
         if sid is None:
@@ -2220,17 +2220,17 @@ def _dungeon_scry(state: GameState, gamedata: GameData, grid: dict, z: int, expl
     ui.message(f"{gamedata.spells[sid]['name']} —— 奧術之光探入遠方,{newly} 格幽暗自你心眼中浮現。", style="cyan")
 
 
-_ORB_CURSE = 40   # R121 念力球反噬:隨機非秘術技能大減幅度(暫態·地城限·夾不低於 0)
+_ORB_CURSE = 40   # R121 念力球反噬:隨機非神秘技能大減幅度(暫態·地城限·夾不低於 0)
 
 
 def _dungeon_orb_break(state: GameState, gamedata: GameData) -> bool:
-    """R121 念力破球:以念力術破除本層懸浮的念力球 → 免反噬。需會念力術 + 足夠魔力;耗魔、鍛鍊 mysticism。"""
+    """R121 念力破球:以念力術破除本層懸浮的念力球 → 免反噬。需會念力術 + 足夠法力;耗魔、鍛鍊 mysticism。"""
     player = state.player
     if "telekinesis" not in player.spells:
         ui.message("那顆念力球懸浮於半空、非血肉所能觸及 —— 你需要念力之法(念力術)方能破除。", style="grey70")
         return False
     if not magic.can_cast(player, gamedata, "telekinesis"):
-        ui.message("你的魔力不足以驅動念力術。", style="red")
+        ui.message("你的法力不足以驅動念力術。", style="red")
         return False
     player.magicka -= magic.effective_cost(player, gamedata, "telekinesis")
     ui.show_events(progression.use_skill(player, gamedata, "mysticism",
@@ -2240,7 +2240,7 @@ def _dungeon_orb_break(state: GameState, gamedata: GameData) -> bool:
 
 
 def _apply_orb_curse(state: GameState, gamedata: GameData) -> None:
-    """R121 念力球未破 → 反噬:隨機挑一項**非秘術**技能大減(暫態 `_dungeon_curse` 負層·僅地城限·離場即清)。
+    """R121 念力球未破 → 反噬:隨機挑一項**非神秘**技能大減(暫態 `_dungeon_curse` 負層·僅地城限·離場即清)。
     優先挑玩家有點數的技能(確保有感)、已反噬者不重複;效果大(−_ORB_CURSE·夾不使技能低於 0)。決定性走 state.rng+sorted。"""
     player = state.player
     curse = getattr(player, "_dungeon_curse", None)
@@ -2248,7 +2248,7 @@ def _apply_orb_curse(state: GameState, gamedata: GameData) -> None:
         curse = player._dungeon_curse = {}
     pool = sorted(sid for sid in gamedata.skills
                   if sid != "mysticism" and sid not in curse and player.base_skill(sid) > 0)
-    if not pool:   # 退路:任何非秘術、未反噬技能(玩家幾無其他技能點的極端情形)
+    if not pool:   # 退路:任何非神秘、未反噬技能(玩家幾無其他技能點的極端情形)
         pool = sorted(sid for sid in gamedata.skills if sid != "mysticism" and sid not in curse)
     if not pool:
         return
@@ -2282,7 +2282,7 @@ def action_dungeon(state: GameState, gamedata: GameData) -> str | None:
     resolved = [[[False] * n for _ in range(n)] for _ in range(m)]
     z = x = y = 0
     battle = {"allies": []}   # 戰鬥情境:預召喚物(transient,不入持久同伴;隨移動衰減)
-    has_orbs = bool(spec.get("orbs"))   # R121 念力球:每層懸一顆·念力術破之,否則下樓/決戰時反噬(隨機非秘術技能大減·暫態)
+    has_orbs = bool(spec.get("orbs"))   # R121 念力球:每層懸一顆·念力術破之,否則下樓/決戰時反噬(隨機非神秘技能大減·暫態)
     orb_broken = [False] * m
     player._dungeon_curse = {}          # 暫態反噬層(離場於呼叫端清·不入檔;byte-identical:非 orb 地城恆空)
     ui.message(f"你踏入了{gamedata.dungeons[loc['dungeon']]['name']}的幽暗深處……（{n}×{n} 格 · 共 {m} 層）", style="magenta")
@@ -2341,7 +2341,7 @@ def action_dungeon(state: GameState, gamedata: GameData) -> str | None:
     def announce_orb(zz):
         """R121 念力球:提示本層懸浮之球(未破則離層/決戰時反噬)。"""
         if has_orbs and not orb_broken[zz]:
-            ui.message("本層深處懸浮著一顆躁動的念力球 —— 以念力術破之,否則離開此層時將遭反噬(隨機大減一項非秘術技能,直到你走出地城)。", style="magenta")
+            ui.message("本層深處懸浮著一顆躁動的念力球 —— 以念力術破之,否則離開此層時將遭反噬(隨機大減一項非神秘技能,直到你走出地城)。", style="magenta")
 
     reveal_and_train(z, x, y)   # 進場格(不耗回合)
     case_layer(z)               # 賊眼·窺探:進場層即揭該層陷阱/寶箱
@@ -2380,13 +2380,13 @@ def action_dungeon(state: GameState, gamedata: GameData) -> str | None:
                 if boss.get("desc"):
                     ui.message(boss["desc"], style="magenta")
                 # 教徒終局「逆轉法陣的反噬」:玩家入場即被抽乾(雙方削弱 —— 削弱版達貢由 bestiary 變體承載)。
-                # 血量夾 ≥1(不致死);魔力/體力砍至三分。重訪照樣反噬(死亡之地位面本就不穩)。
+                # 血量夾 ≥1(不致死);法力/體力砍至三分。重訪照樣反噬(死亡之地位面本就不穩)。
                 if loc.get("dungeon") == "dawn_sanctum":
                     player.health = max(1, player.health // 3)
                     player.magicka //= 3
                     player.fatigue //= 3
                     ui.message("逆轉召喚法陣的反噬撕裂你的血肉與心神 —— 你氣力僅存三分,但半成的達貢化身同樣虛弱。", style="yellow")
-                if has_orbs and not orb_broken[z]:   # R121 決戰前未破本層念力球 → 反噬(隨機非秘術技能大減)
+                if has_orbs and not orb_broken[z]:   # R121 決戰前未破本層念力球 → 反噬(隨機非神秘技能大減)
                     _apply_orb_curse(state, gamedata)
                 if boss.get("raw"):   # 已是 elite 的首領以原始強度登場(避免 spawn_boss 再 ×1.6 疊加)
                     foe = combat.spawn_creature(gamedata, boss["enemy"], state.rng)
@@ -2464,7 +2464,7 @@ def action_dungeon(state: GameState, gamedata: GameData) -> str | None:
         elif choice == "sheet":
             action_character_sheet(state, gamedata)
         elif choice == "descend":
-            if has_orbs and not orb_broken[z]:             # R121 未破本層念力球 → 下樓時反噬(隨機非秘術技能大減)
+            if has_orbs and not orb_broken[z]:             # R121 未破本層念力球 → 下樓時反噬(隨機非神秘技能大減)
                 _apply_orb_curse(state, gamedata)
             z += 1
             x = y = 0
@@ -2628,7 +2628,7 @@ def _item_actions(state: GameState, gamedata: GameData, item_id: str) -> None:
         res = skooma.dose(state, gamedata, strong=(item_id == "skooma"))
         inventory.remove_item(char, item_id, 1)
         state.time.advance(1)
-        cn = {"fatigue": "體力", "health": "生命", "magicka": "魔力"}
+        cn = {"fatigue": "體力", "health": "生命", "magicka": "法力"}
         bits = "、".join(f"{cn[k]} +{v}" for k, v in res["restored"].items() if v)
         ui.message(f"你服下了{d['name']} —— 一陣暖流竄遍全身,反射與耐力陡然亢奮({res['hours']} 小時)"
                    + (f";{bits}。" if bits else "。"), style="magenta")
@@ -2769,8 +2769,8 @@ CINT_RANK = 2                             # R99 反間委託榜:犯罪公會高�
 # R89:戰士/法師公會「招牌動詞」rank-gated 服務(承 R88·功能化原本只有折扣的冷階級梯)。不限省份(一般公會服務)。
 FORGE_RANK = 2            # 戰士公會步兵:軍械庫淬鍊(公會供料·免材料)
 ARCANE_RECHARGE_RANK = 2  # 法師公會魔導士:奧術回充(免靈魂石回充充能型附魔武器)
-ARCANE_SUPPLY_RANK = 3    # 法師公會巫師:魔力補給(補滿魔力藥水)
-MAGE_POTION_SUPPLY_N = 3  # 魔力補給上限(低值 minor_magicka_potion·< R52 治療藥水補給先例 → 售賣套利可忽略)
+ARCANE_SUPPLY_RANK = 3    # 法師公會巫師:法力補給(補滿法力藥水)
+MAGE_POTION_SUPPLY_N = 3  # 法力補給上限(低值 minor_magicka_potion·< R52 治療藥水補給先例 → 售賣套利可忽略)
 
 # 八職功能性身份:戰士盾牆 / 騎士戰旗 為戰鬥動作的常數(技能門檻用 base_skill;暫態存 active_effects)
 SHIELD_WALL_BLOCK_GATE = 50     # 持盾 + 格擋達此 base 技能 → 可立盾牆
@@ -2780,7 +2780,7 @@ SHIELD_WALL_UPKEEP = 6          # 盾牆每回合體力上繳(歸 0 自動落陣
 STANDARD_ILLUSION_GATE = 50     # 幻術達此 base 技能 → 可立戰旗(騎士專屬軸)
 STANDARD_EMPOWER_BASE = 0.20    # 戰旗對同伴的基礎增傷(隨幻術 power 縮放)
 STANDARD_SELF_ARMOR = 6         # 戰旗給騎士自身的護甲(單挑也值得立)
-STANDARD_COST_MAGICKA = 15      # 立旗魔力代價
+STANDARD_COST_MAGICKA = 15      # 立旗法力代價
 STANDARD_COST_FATIGUE = 10      # 立旗體力代價
 RALLY_EMPOWER = 0.15            # 口才「戰陣號令」對同伴的增傷(固定,不吃 power;嚴格 < 戰旗 0.20 上界)
 RALLY_FATIGUE = 12             # 立號令體力代價(純耗體不耗魔;口才宗師以聲喝振士氣)
@@ -4304,7 +4304,7 @@ def _siege_assault(state: GameState, gamedata: GameData, loc_id: str, city: str)
             ui.message("你且戰且退 —— 城未下,但已破的城防仍在,改日可再攻。", style="yellow")
             return None
         if not last and not ui.confirm(
-                f"第 {wave} 波已破(尚餘 {waves - wave} 波)。傷勢、體力、魔力皆不予恢復 —— 繼續總攻?"):
+                f"第 {wave} 波已破(尚餘 {waves - wave} 波)。傷勢、體力、法力皆不予恢復 —— 繼續總攻?"):
             ui.message("你暫且鳴金收兵 —— 已破的城防仍在,養精蓄銳後可再戰。", style="yellow")
             return None
     politics.conquer(char, gamedata, loc_id, now=state.time.absolute_hours())
@@ -4442,13 +4442,13 @@ def action_cast_self(state: GameState, gamedata: GameData, battle: dict | None =
     if not usable:
         ui.message("你沒有可施放的法術。", style="grey70")
         return
-    opts = [(s, f"{gamedata.spells[s]['name']}（{magic.effective_cost(char, gamedata, s)} 魔力{_spell_token_suffix(char, gamedata, s)})"
+    opts = [(s, f"{gamedata.spells[s]['name']}（{magic.effective_cost(char, gamedata, s)} 法力{_spell_token_suffix(char, gamedata, s)})"
              f" · {ui.spell_effect_summary(gamedata, s)}") for s in usable]
-    sid = ui.menu(f"施放哪道法術?(魔力 {int(char.magicka)}/{char.max_magicka})", opts, allow_back=True)
+    sid = ui.menu(f"施放哪道法術?(法力 {int(char.magicka)}/{char.max_magicka})", opts, allow_back=True)
     if sid is None:
         return
     if not magic.can_cast(char, gamedata, sid):
-        ui.message("魔力不足。", style="red")
+        ui.message("法力不足。", style="red")
         return
     res = magic.cast(char, gamedata, sid, state.rng, battle=battle, state=state)
     ui.message(res["message"], style="cyan")
@@ -4630,7 +4630,7 @@ def action_enchant(state: GameState, gamedata: GameData) -> None:
             fam = ui.menu("附魔效果?", [
                 ("element", "元素傷害(即時)"),
                 ("dot", "元素持續(DoT + 異常)"),
-                ("absorb", "命中吸取(生命 / 魔力 / 體力)"),
+                ("absorb", "命中吸取(生命 / 法力 / 體力)"),
                 ("trigger", "命中觸發(吸血 / 再生 / 麻痺 · 擒魂 · 充能)"),
             ], allow_back=True)
             if fam is None:
@@ -4665,7 +4665,7 @@ def action_enchant(state: GameState, gamedata: GameData) -> None:
                     aparam_opts = [("fire", "烈焰"), ("frost", "冰霜"), ("shock", "雷電"),
                                    ("poison", "毒素"), ("magic", "魔法")]
                 else:  # res
-                    aparam_opts = [("health", "生命"), ("magicka", "魔力"), ("fatigue", "體力")]
+                    aparam_opts = [("health", "生命"), ("magicka", "法力"), ("fatigue", "體力")]
                 aparam = ui.menu("強化哪一項?", aparam_opts, allow_back=True)
                 if aparam is None:
                     return
@@ -4687,7 +4687,7 @@ def action_enchant(state: GameState, gamedata: GameData) -> None:
                               [("fire", "烈焰"), ("frost", "冰霜"), ("shock", "雷電"),
                                ("poison", "毒素"), ("magic", "魔法")]]
             else:  # res
-                param_opts = [("health", "生命"), ("magicka", "魔力"), ("fatigue", "體力")]
+                param_opts = [("health", "生命"), ("magicka", "法力"), ("fatigue", "體力")]
             param = ui.menu("強化哪一項?", param_opts, allow_back=True)
             if param is None:
                 return
@@ -4696,7 +4696,7 @@ def action_enchant(state: GameState, gamedata: GameData) -> None:
         state.time.advance(res["hours"])
         ui.message(res["message"], style="bold green" if res["ok"] else "red")
         if res["tired"]:
-            ui.message("精神耗弱,難以將靈魂束入符文,成效減半。", style="yellow")
+            ui.message("精神衰弱,難以將靈魂束入符文,成效減半。", style="yellow")
         ui.show_events(res["skill_events"], gamedata)
 
 
@@ -4938,7 +4938,7 @@ def action_guild_hall(state: GameState, gamedata: GameData, faction_id: str) -> 
         smuggle_ok = (faction_id == "thieves_guild"
                       and world.current_location(char, gamedata).get("province") == SMUGGLE_PROVINCE
                       and factions.rank_index(char, "thieves_guild") >= SMUGGLE_RANK_1)
-        # R89:戰士公會軍械庫淬鍊(公會供料·免材料)/ 法師公會奧術服務(回充 + 魔力補給)
+        # R89:戰士公會軍械庫淬鍊(公會供料·免材料)/ 法師公會奧術服務(回充 + 法力補給)
         forge_ok = (faction_id == "fighters_guild"
                     and factions.rank_index(char, "fighters_guild") >= FORGE_RANK)
         arcane_ok = (faction_id == "mages_guild"
@@ -4978,7 +4978,7 @@ def action_guild_hall(state: GameState, gamedata: GameData, faction_id: str) -> 
         if forge_ok:
             opts.append(("forge", "⚒ 軍械庫淬鍊（公會供料 · 免材料)"))
         if arcane_ok:
-            opts.append(("arcane_svc", "✨ 奧術服務（回充 / 魔力補給)"))
+            opts.append(("arcane_svc", "✨ 奧術服務（回充 / 法力補給)"))
         if cint_ok:
             opts.append(("counterintel", "🕵 反間委託榜（獵敵方諜員)"))
         if spy_ok:
@@ -5105,14 +5105,14 @@ def _guild_armory_temper(state: GameState, gamedata: GameData) -> None:
 
 
 def _arcane_services(state: GameState, gamedata: GameData) -> None:
-    """R89 法師公會奧術服務:免靈魂石回充充能型附魔武器(rank≥RECHARGE)+ 補給魔力藥水(rank≥SUPPLY)。"""
+    """R89 法師公會奧術服務:免靈魂石回充充能型附魔武器(rank≥RECHARGE)+ 補給法力藥水(rank≥SUPPLY)。"""
     char = state.player
     while True:
         rank = factions.rank_index(char, "mages_guild")
         opts = [("recharge", "✨ 奧術回充(免費充滿擒魂/麻痺附魔武器)")]
         if rank >= ARCANE_SUPPLY_RANK:
             have = inventory.count_item(char, "minor_magicka_potion")
-            opts.append(("supply", f"🔮 魔力補給(補次級魔力藥水至 {MAGE_POTION_SUPPLY_N};你有 {have})"))
+            opts.append(("supply", f"🔮 法力補給(補次級法力藥水至 {MAGE_POTION_SUPPLY_N};你有 {have})"))
         choice = ui.menu("奧術服務", opts, allow_back=True)
         if choice is None:
             return
@@ -5120,7 +5120,7 @@ def _arcane_services(state: GameState, gamedata: GameData) -> None:
             chargeable = enchanting.chargeable_weapons(char, gamedata)
             recharged = [iid for iid in chargeable if enchanting.recharge_full(char, gamedata, iid)]
             if recharged:
-                ui.message("公會奧術師為你的附魔武器重新灌注魔力 —— "
+                ui.message("公會奧術師為你的附魔武器重新灌注法力 —— "
                            + "、".join(gamedata.item_name(i) for i in recharged) + " 充能已滿。", style="bold green")
             elif chargeable:
                 ui.message("你的充能型附魔武器都已是滿充能。", style="grey70")
@@ -5131,8 +5131,8 @@ def _arcane_services(state: GameState, gamedata: GameData) -> None:
             while inventory.count_item(char, "minor_magicka_potion") < MAGE_POTION_SUPPLY_N:
                 inventory.add_item(char, "minor_magicka_potion", 1)
                 got += 1
-            ui.message(f"公會替你備足了魔力藥水(次級魔力藥水 +{got},補至 {MAGE_POTION_SUPPLY_N} 瓶)。" if got
-                       else "你的魔力藥水已滿。", style="green")
+            ui.message(f"公會替你備足了法力藥水(次級法力藥水 +{got},補至 {MAGE_POTION_SUPPLY_N} 瓶)。" if got
+                       else "你的法力藥水已滿。", style="green")
 
 
 def action_board(state: GameState, gamedata: GameData) -> None:
@@ -5211,7 +5211,7 @@ def action_shrine(state: GameState, gamedata: GameData) -> None:
 def action_divine_altar(state: GameState, gamedata: GameData) -> None:
     """九神祭壇(R107):祈禱受福(Skyrim 單槽限時祝福 + Oblivion 德行閘)+ 朝聖之路贖罪。
 
-    德行閘 = 惡名不高於名聲 且 本省無通緝賞金,否則神明拒賜福(並指引朝聖之路);
+    德行閘 = 惡名不高於聲望 且 本省無通緝賞金,否則神明拒賜福(並指引朝聖之路);
     祈禱附帶淨疾(複用 diseases.purify,同神殿療者);祝福單槽 —— 拜新壇即覆蓋(divines.bless)。
     朝聖之路(pilgrimage_nine·repeatable)任一祭壇可接,完成 → 惡名歸零(reward clear_infamy)。
     """
@@ -5303,17 +5303,17 @@ def action_arcane_trials(state: GameState, gamedata: GameData) -> None:
                        "先了結那場浩劫,真身的裂隙才會為你顯現。」", style="grey70")
         elif site == "true_dagon" and char.base_skill("mysticism") < 75:
             ui.message("引路人打量你:「撕開位面之軀非蠻力可為 —— 你的秘法造詣尚淺,"
-                       "神秘之道至少登堂入室(秘術 75)方談得上這一戰。」", style="grey70")
-        elif site == "soul" and char.base_skill("mysticism") < 75:   # R121 秘術試煉閘 mysticism 75(非 destruction)
+                       "神秘之道至少登堂入室(神秘 75)方談得上這一戰。」", style="grey70")
+        elif site == "soul" and char.base_skill("mysticism") < 75:   # R121 神秘試煉閘 mysticism 75(非 destruction)
             ui.message("織魂的引路人瞥了你一眼,搖頭:「你的秘法造詣尚不足以承載湮識真言 —— "
-                       "回去再研習神秘之道,至少登堂入室(秘術 75)方談得上試煉。」", style="grey70")
+                       "回去再研習神秘之道,至少登堂入室(神秘 75)方談得上試煉。」", style="grey70")
         elif site not in ("soul", "true_dagon") and char.base_skill("destruction") < 75:
-            ui.message("引路人瞥了你一眼,搖頭:「你的破壞之術還沒到能承受終極奧義的境界 —— "
+            ui.message("引路人瞥了你一眼,搖頭:「你的毀滅之術還沒到能承受終極奧義的境界 —— "
                        "回去再淬煉,毀滅之道至少要登堂入室(75)才談得上試煉。」", style="grey70")
         elif site == "fused":
             ui.message("引路人凝視著你:「三系真言尚未在你身上齊聚 —— 先走遍各省、集齊火冰雷的試煉,"
                        "融合的試煉方會在此顯現。」", style="grey70")
-        elif site == "true_dagon" and "trial_true_dagon" not in char.completed_quests:   # R127:危機平+秘術75 但等級未達 22 → 不誤報「已了結」
+        elif site == "true_dagon" and "trial_true_dagon" not in char.completed_quests:   # R127:危機平+神秘75 但等級未達 22 → 不誤報「已了結」
             ui.message("引路人端詳你:「秘法已至,但你的歷練尚淺 —— 撕開位面之軀的試煉,"
                        "得等你更深地見過這世界(等級 22)方會顯現。」", style="grey70")
         else:
@@ -5331,7 +5331,7 @@ def action_arcane_trials(state: GameState, gamedata: GameData) -> None:
 
 
 def action_holy_trials(state: GameState, gamedata: GameData) -> None:
-    """聖光試煉的在地引路人(R122 聖騎士·Phase C):復原 base≥75 → 破曉之光終極試煉。
+    """聖光試煉的在地引路人(R122 聖騎士·Phase C):恢復 base≥75 → 破曉之光終極試煉。
 
     比照 action_arcane_trials(平行 site,使用者拍板):地點 `holy_trials` 標籤配對任務 `holy_site`,
     列可接者 → 複用 _accept_and_brief。門檻(requires_skill/level)由 available_quests 把關。
@@ -5345,8 +5345,8 @@ def action_holy_trials(state: GameState, gamedata: GameData) -> None:
              if gamedata.quests[qid].get("holy_site") == site]
     if not avail:
         if char.base_skill("restoration") < 75:   # R122 聖光試煉閘 restoration 75(真本事·非臨時加成)
-            ui.message("破曉的引路人端詳你片刻,搖頭:「你的復原造詣尚不足以承載破曉之光 —— "
-                       "回去精進聖法,至少登堂入室(復原 75)方談得上試煉。」", style="grey70")
+            ui.message("破曉的引路人端詳你片刻,搖頭:「你的恢復造詣尚不足以承載破曉之光 —— "
+                       "回去精進聖法,至少登堂入室(恢復 75)方談得上試煉。」", style="grey70")
         elif "trial_dawn" in char.completed_quests:   # 已完成:如實道賀(區隔 in-progress/歷練未足,審查修)
             ui.message("引路人微微頷首:「破曉的試煉你已了結 —— 願聖光長伴你的道途。」", style="grey70")
         else:   # 尚在途中,或聖法已足但歷練未達(requires_level 18)
@@ -6420,17 +6420,17 @@ def _create_new_game(gamedata: GameData):
 
 
 def _delete_save_flow(roster: list) -> None:
-    """刪除存檔:列名冊挑一個 → 確認(不可復原)→ 刪。"""
+    """刪除存檔:列名冊挑一個 → 確認(不可恢復)→ 刪。"""
     opts = [(f"del:{m['slot']}",
              f"槽 {m['slot']} · " + ("(毀損存檔)" if m.get("corrupt") else f"{m['name']} Lv.{m['level']}"))
             for m in roster]
-    pick = ui.menu("刪除哪個存檔?(不可復原)", opts, allow_back=True)
+    pick = ui.menu("刪除哪個存檔?(不可恢復)", opts, allow_back=True)
     if pick is None:
         return
     n = int(pick.split(":")[1])
     m = next((x for x in roster if x["slot"] == n), {})
     who = "" if m.get("corrupt") else f"「{m.get('name', '')}」"
-    if ui.confirm(f"確定永久刪除槽 {n} {who}?此操作不可復原。"):
+    if ui.confirm(f"確定永久刪除槽 {n} {who}?此操作不可恢復。"):
         saves.delete_slot(n)
         ui.message(f"已刪除槽 {n}。", style="grey70")
 

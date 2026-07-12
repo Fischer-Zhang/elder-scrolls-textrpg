@@ -424,7 +424,7 @@ def worn_armor_rating(char: Character, gamedata: GameData) -> int:
 def armor_fortify_totals(char: Character, gamedata: GameData) -> dict[str, int]:
     """穿戴護甲上的 armor_fortify 附魔加總 → {stat: 總強化值}。
 
-    供 stats.recompute_max_resources 把「穿上時強化生命/魔力/體力」套進有效上限。
+    供 stats.recompute_max_resources 把「穿上時強化生命/法力/體力」套進有效上限。
     fortify 不受耐久折損影響(附魔效果 ≠ 物理護甲值)。
     """
     totals: dict[str, int] = {}
@@ -494,7 +494,7 @@ def use_item(char: Character, gamedata: GameData, item_id: str, state=None) -> s
         before = char.magicka
         char.magicka = min(char.max_magicka, char.magicka + eff["magnitude"])
         gained = int(char.magicka - before)
-        msg = f"飲下{d['name']},回復 {gained} 點魔力。"
+        msg = f"飲下{d['name']},回復 {gained} 點法力。"
     elif eff["type"] == "restore_fatigue":
         before = char.fatigue
         char.fatigue = min(char.max_fatigue, char.fatigue + eff["magnitude"])

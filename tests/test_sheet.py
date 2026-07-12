@@ -196,7 +196,7 @@ def test_enchant_and_artifact_effects_visible():
     gd, st = _char(); c = st.player
     assert ui._enchant_desc(gd, "mehrunes_razor") == "雷電傷+25"    # 武器元素附魔
     assert ui._enchant_desc(gd, "hircine_ring") == "可隨意獸化"      # 旗標型神器效果可見
-    assert ui._enchant_desc(gd, "archmage_robe") == "魔力上限+25"    # 護甲附魔
+    assert ui._enchant_desc(gd, "archmage_robe") == "法力上限+25"    # 護甲附魔
     assert ui._enchant_desc(gd, "steel_sword") == ""               # 無附魔 → 不顯示
     inventory.add_item(c, "mehrunes_razor", 1); inventory.equip_weapon(c, gd, "mehrunes_razor")
     assert "雷電傷+25" in ui.weapon_line(c, gd)                      # 武器附魔在武器行可見

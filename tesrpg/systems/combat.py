@@ -396,7 +396,7 @@ def _armor_rating(actor, gamedata: GameData) -> int:
         skill = actor.skill("heavy_armor" if wc == "heavy" else "light_armor")
         base = formulas.worn_armor_base(worn, skill)
     # 被動護甲(石膚/靈體護壁=法系、撐架/柔革護持=物理 stance):里程碑 perk,無條件生效
-    # (廣度 pass 加入物理 stance 後不再綁魔力;原「有魔力才生效」對物理 stance 不合理)。
+    # (廣度 pass 加入物理 stance 後不再綁法力;原「有法力才生效」對物理 stance 不合理)。
     passive = mastery.passive_armor_bonus(actor, gamedata)
     # R106C 亡者護甲:花 soul_token 買的永久全域護甲(獨立層·夾 NECRO_ARMOR_CAP·絕不寫 base;
     # necro_upgrades 空 → 0 → 刺客/非死靈師 byte-identical)
@@ -754,11 +754,11 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
         atk_element = atk.get("element") if atk else None
         if bound:   # 召喚「束縛兵刃」:法系近戰 → 走元素分支(無視護甲、吃元素抗性;元素分支不讀附魔/灌注 → 不雙吃)
             atk_element = bound.get("element", "magic")
-        raw *= magic.weaken_factor(attacker)            # 耗弱:攻方傷害打折(玩家/怪皆適用 R43;無耗弱→×1 byte-identical)
+        raw *= magic.weaken_factor(attacker)            # 衰弱:攻方傷害打折(玩家/怪皆適用 R43;無衰弱→×1 byte-identical)
         raw *= getattr(attacker, "summon_power", 1.0)   # R105 召喚物傷害隨召喚主 conjuration 威力成長(非召喚者無此屬性 → ×1.0 byte-identical)
 
         if atk_element:
-            # 元素攻擊:無視物理護甲,改吃元素抗性;巨魔像座可吸收為魔力
+            # 元素攻擊:無視物理護甲,改吃元素抗性;巨魔像座可吸收為法力
             if _is_player(defender) and defender.birthsign == "atronach" and rng.chance(0.5):
                 gain = int(round(raw))
                 defender.magicka = min(defender.max_magicka, defender.magicka + gain)
@@ -767,7 +767,7 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
             elif (_is_player(defender)
                   and (_ds := race_ability.dragonskin_chance(defender, gamedata)) > 0
                   and rng.chance(_ds)):
-                # 布萊頓龍皮(R61):來襲元素/魔法吸收為魔力(比照巨魔像座)。
+                # 布萊頓龍皮(R61):來襲元素/魔法吸收為法力(比照巨魔像座)。
                 # 🔴 非布萊頓 _ds=0 → `> 0` 短路 → 永不擲 rng → sim(虎人)byte-identical。
                 gain = int(round(raw))
                 defender.magicka = min(defender.max_magicka, defender.magicka + gain)
@@ -776,7 +776,7 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
             else:
                 mult = formulas.resist_multiplier(magic.entity_resist(defender, gamedata), atk_element)
                 dmg = magic._scaled_damage(raw, mult)
-                if _is_player(defender):   # 秘術「結界」:先吃法術/元素傷,吸魔結界按吸收量回魔(可耗盡池)
+                if _is_player(defender):   # 神秘「結界」:先吃法術/元素傷,吸魔結界按吸收量回魔(可耗盡池)
                     dmg, refunded = magic.consume_ward(defender, dmg)
                     if refunded:
                         defender.magicka = min(defender.max_magicka, defender.magicka + refunded)
@@ -912,7 +912,7 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
             setattr(attacker, ohs["stat"], getattr(attacker, ohs["stat"]) + ohs["magnitude"])
             self_restored = (ohs["stat"], ohs["magnitude"])
         # 戰法師「法力回擊」:近戰命中回魔(純資源、零傷害 → 零紅線;clamp_resources 夾上限)。
-        # 不沿用 self_restored(那是法杖專屬敘事「法杖將生機回流」)→ 無杖揮劍回魔時不誤報法杖;魔力條自會上升。
+        # 不沿用 self_restored(那是法杖專屬敘事「法杖將生機回流」)→ 無杖揮劍回魔時不誤報法杖;法力條自會上升。
         if _is_player(attacker) and not beast:
             mox = mastery.mana_on_hit(attacker, gamedata)
             if mox:

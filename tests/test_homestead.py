@@ -209,7 +209,7 @@ def test_trade_pact_discount_scoping():
 
 
 def test_trade_pact_maxed_stack_floor_holds():
-    """頂配疊加(議價滿 + 戰士軍械庫滿階 + 高名聲 + 在地商誼)下,全品項買價恆 > 賣價
+    """頂配疊加(議價滿 + 戰士軍械庫滿階 + 高聲望 + 在地商誼)下,全品項買價恆 > 賣價
     (反套利地板構造性成立;R110 折扣插在地板之前)。"""
     gd, c = _char()
     c.location_id = "whiterun"

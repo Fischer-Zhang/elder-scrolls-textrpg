@@ -10,7 +10,7 @@
 新戴德拉親王誓福一律走此層 + `data/boons.json` 登錄表(由 `reward.grant_boon` 授予,quests._complete 派發)。
 
 校準守則(紅線):每個誓福比照達貢 —— **絕不寫 sneak/任何武器技能**(不餵偷襲倍率)、strength 類 ≤ 達貢 +18,
-只加 屬性/抗性/非武器技能/魔力 → solo BOSS 偷襲夾與群體反制不受影響,`sim_assassin` byte-identical。
+只加 屬性/抗性/非武器技能/法力 → solo BOSS 偷襲夾與群體反制不受影響,`sim_assassin` byte-identical。
 """
 from __future__ import annotations
 
@@ -52,7 +52,7 @@ def apply_to_character(char: Character, gamedata: GameData) -> None:
     char.boon_resist = resist
     char.boon_magic_bonus = magicka
     char.boon_spell_power = spell_power
-    # attr()/max_magicka 已含 boon_* → 重算讓屬性流進衍生資源、魔力流進 max_magicka。
+    # attr()/max_magicka 已含 boon_* → 重算讓屬性流進衍生資源、法力流進 max_magicka。
     stats.recompute_max_resources(char, gamedata)
 
 

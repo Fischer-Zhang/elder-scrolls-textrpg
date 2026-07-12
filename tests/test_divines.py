@@ -82,10 +82,10 @@ def test_virtue_gate_quadrants():
     assert ok                                     # 新角 fame=infamy=0 → 放行
     c.infamy = 5
     ok, reason = divines.can_bless(c, "賽羅迪爾")
-    assert not ok and reason == "infamy"          # 惡名超過名聲 → 拒
+    assert not ok and reason == "infamy"          # 惡名超過聲望 → 拒
     c.fame = 6
     ok, _ = divines.can_bless(c, "賽羅迪爾")
-    assert ok                                     # 名聲壓過惡名 → 放行
+    assert ok                                     # 聲望壓過惡名 → 放行
     crime.add_bounty(c, "賽羅迪爾", 40)
     ok, reason = divines.can_bless(c, "賽羅迪爾")
     assert not ok and reason == "bounty"          # 本省賞金 → 拒
@@ -110,7 +110,7 @@ def test_julianos_intelligence_feeds_magicka():
     assert c.attr("intelligence") == 10 + sum((
         c.attributes.get("intelligence", 0), c.equip_attr_bonus.get("intelligence", 0),
         c.boon_attr_bonus.get("intelligence", 0)))
-    assert c.max_magicka > m0                     # 智力 → 魔力上限(recompute)
+    assert c.max_magicka > m0                     # 智力 → 法力上限(recompute)
 
 
 def test_arkay_disease_resist_in_entity_resist():
@@ -135,7 +135,7 @@ def test_zenithar_discount_and_floor_holds():
     p1 = world.buy_price(c, gd, "steel_dagger")
     assert p1 < p0                                # 商賈之神的折扣
     # 反套利地板恆守:疊滿議價/聲望/祝福,買價仍嚴格 > 賣價(全品項抽查)
-    c.fame = 400                                  # R101 名聲折扣也疊上
+    c.fame = 400                                  # R101 聲望折扣也疊上
     for iid in ("steel_dagger", "minor_healing_potion", "lockpick"):
         assert world.buy_price(c, gd, iid) > world.sell_price(c, gd, iid)
 
@@ -207,7 +207,7 @@ def test_pilgrimage_clears_infamy_and_derived_layers():
     # 衍生層同步歸零 = 刻意設計(R84「惡名終身」的使用者拍板例外)
     assert crime.outlaw_standing(c) == 0 and crime.fence_bonus(c) == 0.0
     assert renown.notoriety_social_tier(c) == 0
-    assert c.fame == 2                                      # 不動名聲
+    assert c.fame == 2                                      # 不動聲望
     # ⚠ 成就為 live accessor:惡名成就在歸零後會回到未達成顯示(接受;見 R107)
 
 

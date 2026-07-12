@@ -290,7 +290,7 @@ def test_save_load_preserves_equip_bonus():
 
 
 def test_top_tier_set_bonuses():
-    """頂級三套裝:魔族 +60 生命(重)/ 龍鱗 +25 火抗(輕)/ 龍祭司 +110 魔力套 + 每件附魔(布)。"""
+    """頂級三套裝:魔族 +60 生命(重)/ 龍鱗 +25 火抗(輕)/ 龍祭司 +110 法力套 + 每件附魔(布)。"""
     gd, c = _char()
     base_h = c.max_health
     _wear_set(c, gd, "daedric")
@@ -306,7 +306,7 @@ def test_top_tier_set_bonuses():
 
     gd, c = _char()
     base_m = c.max_magicka
-    _wear_set(c, gd, "dragonpriest")           # 套裝 110 + 三件 magicka 附魔 90(兜帽改 +20 毀滅,不再加魔力)
+    _wear_set(c, gd, "dragonpriest")           # 套裝 110 + 三件 magicka 附魔 90(兜帽改 +20 毀滅,不再加法力)
     assert c.max_magicka == base_m + 200
 
 
@@ -322,7 +322,7 @@ def test_armor_worn_weight_sums_armor_excludes_jewelry():
     _wear_set(c2, gd2, "daedric")
     assert inventory.armor_worn_weight(c2, gd2) == 43       # 魔族四件 7+18+9+9(踩重甲倍率折扣)
 
-    # 布甲玻璃大砲(併自 test_smithing.test_cloth_set_glass_cannon):四件同材質給魔力套裝、
+    # 布甲玻璃大砲(併自 test_smithing.test_cloth_set_glass_cannon):四件同材質給法力套裝、
     # 但近乎零護甲 —— worn_armor_rating<=1 是布甲套裝獨有性質,他處無覆蓋
     gd, c = _char()
     base_cloth_m = c.max_magicka
@@ -331,7 +331,7 @@ def test_armor_worn_weight_sums_armor_excludes_jewelry():
         c.equipped[slot] = iid
     assert inventory.active_set_bonus(c, gd)["stat"] == "magicka"
     stats.recompute_max_resources(c, gd)
-    assert c.max_magicka == base_cloth_m + 25 + 40           # 法袍+便鞋魔力(15+10)+ 套裝 40(兜帽互換後改 +6 毀滅)
+    assert c.max_magicka == base_cloth_m + 25 + 40           # 法袍+便鞋法力(15+10)+ 套裝 40(兜帽互換後改 +6 毀滅)
     assert inventory.worn_armor_rating(c, gd) <= 1           # 玻璃大砲:近乎零護甲
 
 
@@ -382,7 +382,7 @@ def test_weapon_soultrap_charge_deplete_and_recharge_gate():
 
 
 def test_weapon_absorb_restores_caster_resource():
-    """命中吸取魔力:回攻擊者魔力(夾上限)。"""
+    """命中吸取法力:回攻擊者法力(夾上限)。"""
     gd, c = _char()
     c.skills["mysticism"] = 50
     iid, mag, _ = _ws_weapon(gd, "absorb_magicka")

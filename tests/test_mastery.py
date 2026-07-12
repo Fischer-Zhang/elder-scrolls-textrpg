@@ -615,8 +615,8 @@ def test_alteration_stoneflesh_passive_armor():
     a_with = combat._armor_rating(c, gd)
     c.magicka = 0
     a_without = combat._armor_rating(c, gd)
-    assert a_with == a_without                            # 被動護甲改無條件(對抗審查:物理 stance 不綁魔力)
-    assert a_without >= 20                                # 魔力 0 仍含 +20
+    assert a_with == a_without                            # 被動護甲改無條件(對抗審查:物理 stance 不綁法力)
+    assert a_without >= 20                                # 法力 0 仍含 +20
 
 
 def test_alchemy_potion_potency_and_poison_unlocks():
@@ -670,7 +670,7 @@ def test_illusion_fear_on_hit_and_merchant():
 
 
 def test_restoration_sacred_bulwark_boosts_consecration():
-    # R122 聖騎士:聖化壁壘(復原 75 守護頂點)→ 施放聖化領域時減傷幅度 0.20→0.30
+    # R122 聖騎士:聖化壁壘(恢復 75 守護頂點)→ 施放聖化領域時減傷幅度 0.20→0.30
     gd, c = _char(restoration=75)
     assert mastery.consecration_bonus(c, gd) == 0.0
     mastery.choose(c, gd, "restoration_75", "sacred_bulwark")

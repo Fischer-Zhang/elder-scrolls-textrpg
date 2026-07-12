@@ -11,7 +11,7 @@ ui.console = Console(file=io.StringIO(), force_terminal=True, width=100)
 
 def _aoe_menu(title, options, allow_back=False):
     keys = [k for k, _ in options]
-    if "你的回合" in title:                 # 沒魔力時退回攻擊
+    if "你的回合" in title:                 # 沒法力時退回攻擊
         return "cast" if "cast" in keys else "attack"
     if "施放哪道法術" in title:
         return "fire_storm" if "fire_storm" in keys else keys[0]
@@ -112,7 +112,7 @@ def test_cast_failure_schema_consistent():
 
 def test_aoe_costs_magicka_and_gated():
     gd, c = _mage(magicka=10)
-    assert not magic.can_cast(c, gd, "fire_storm")     # 魔力不足
+    assert not magic.can_cast(c, gd, "fire_storm")     # 法力不足
     r = magic.cast(c, gd, "fire_storm", RNG(0),
                    enemies=[combat.spawn_creature(gd, "wolf", RNG(0))])
     assert not r["ok"]

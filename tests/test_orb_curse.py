@@ -1,4 +1,4 @@
-"""R121 念力球反噬機制:_apply_orb_curse 隨機大減**非秘術**技能(暫態 _dungeon_curse·地城限·離場即清)+
+"""R121 念力球反噬機制:_apply_orb_curse 隨機大減**非神秘**技能(暫態 _dungeon_curse·地城限·離場即清)+
 _dungeon_orb_break(念力術破球免反噬)。skill() 讀暫態負層、清空即恢復(不入檔·非地城者 None→+0 byte-identical)。"""
 from tesrpg.gamedata import get_gamedata
 from tesrpg.creation import build_character
@@ -39,7 +39,7 @@ def test_orb_curse_hits_random_nonmysticism_skill_no_repeat():
     try:
         c._dungeon_curse = {}
         main._apply_orb_curse(st, gd)
-        assert c._dungeon_curse and "mysticism" not in c._dungeon_curse   # 秘術永不反噬
+        assert c._dungeon_curse and "mysticism" not in c._dungeon_curse   # 神秘永不反噬
         sid, pen = next(iter(c._dungeon_curse.items()))
         assert pen < 0 and c.base_skill(sid) > 0                          # 挑有點數技能·大減
         assert c.skill(sid) == c.base_skill(sid) + pen                    # skill() 反映反噬
@@ -58,10 +58,10 @@ def test_orb_break_requires_telekinesis_and_magicka():
         assert main._dungeon_orb_break(st, gd) is False          # 無念力術 → 破不了
         c.spells.append("telekinesis"); c.magicka = c.max_magicka = 300
         before = c.magicka
-        assert main._dungeon_orb_break(st, gd) is True           # 會念力術 + 魔力 → 破除
+        assert main._dungeon_orb_break(st, gd) is True           # 會念力術 + 法力 → 破除
         assert c.magicka < before                                # 耗魔
         c.magicka = 0
-        assert main._dungeon_orb_break(st, gd) is False          # 魔力不足 → 破不了
+        assert main._dungeon_orb_break(st, gd) is False          # 法力不足 → 破不了
     finally:
         main.ui.message, main.ui.show_events = om, os
 

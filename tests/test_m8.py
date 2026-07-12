@@ -97,7 +97,7 @@ def test_staff_spell_focus_r77():
 def test_conduct_stacks_amplifies_shock_and_clears():
     """R75 感電易傷:電系法術每命中疊一層導電(夾10·+3%/層·只放大電傷);3 回合無電擊清零。"""
     gd, c = _mage()
-    c.max_magicka = c.magicka = 10**6             # 大魔力池 → 連續電擊不 OOM(純測疊層)
+    c.max_magicka = c.magicka = 10**6             # 大法力池 → 連續電擊不 OOM(純測疊層)
     foe = combat.spawn_creature(gd, "frost_troll", RNG(1))
     foe.health = foe.max_health = 10**6           # 高血 → 永不被秒,純測疊層
     for i in range(1, 6):

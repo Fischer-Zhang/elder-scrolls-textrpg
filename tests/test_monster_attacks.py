@@ -3,7 +3,7 @@
 涵蓋:
   - choose_attack:無曲目後備、加權、`when` 血量階段閘、`cooldown` 蓄力冷卻、spawn_boss 縮放曲目。
   - on_hit 控場:stagger/slow/weaken/fear/paralyze 命中套用;硬控去重;willpower 抗硬控;落空不上控(雙軌第一道)。
-  - weaken 對稱:被耗弱的玩家攻擊傷害下降(修先前 player-only 漏洞)。
+  - weaken 對稱:被衰弱的玩家攻擊傷害下降(修先前 player-only 漏洞)。
   - 玩家硬控門:麻痺/恐懼 → run_battle 該回合跳過玩家行動。
   - 事件 attack_name;back-compat 怪(無曲目)選招 === 單招(守 sim byte-identical 假設)。
 """
@@ -196,7 +196,7 @@ def test_miss_applies_no_cc():
 
 
 # ----------------------------------------------------------------------
-# weaken 對稱(被耗弱的玩家傷害下降)
+# weaken 對稱(被衰弱的玩家傷害下降)
 # ----------------------------------------------------------------------
 def test_weaken_reduces_player_damage_symmetric():
     gd = _gd()
@@ -211,11 +211,11 @@ def test_weaken_reduces_player_damage_symmetric():
             break
     else:
         raise AssertionError("找不到玩家命中樣本")
-    # 未耗弱
+    # 未衰弱
     a1 = _player()
     f1 = combat.spawn_creature(gd, target_id, RNG(99))
     d_normal = combat.resolve_attack(a1, f1, gd, RNG(seed))["damage"]
-    # 耗弱 0.5(同種子同 roll)→ 應明顯較低(證明 weaken_factor 現對玩家也生效)
+    # 衰弱 0.5(同種子同 roll)→ 應明顯較低(證明 weaken_factor 現對玩家也生效)
     a2 = _player()
     a2.active_effects = [{"kind": "weaken", "magnitude": 0.5, "turns": 2}]
     f2 = combat.spawn_creature(gd, target_id, RNG(99))

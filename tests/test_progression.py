@@ -90,7 +90,7 @@ def test_apply_level_up_allocates_attributes():
     assert c.level_xp == xp0 - thresh           # 保留溢出
     assert c.health == c.max_health and c.fatigue == c.max_fatigue   # 升級回滿
 
-    # 魔力分支:智力 +4 → 魔力上限 +8(×2);無資源三選一加量(R64)
+    # 法力分支:智力 +4 → 法力上限 +8(×2);無資源三選一加量(R64)
     gd2, c2 = _fresh_warrior()
     _level_to_ready(gd2, c2)
     mp0 = c2.max_magicka

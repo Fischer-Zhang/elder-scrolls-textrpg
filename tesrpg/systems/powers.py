@@ -1,7 +1,7 @@
 """出生星座的招牌能力(每日一次)。
 
 把 data/birthsigns.json 裡原本只是死資料的 `powers` 接成實際可用的能力:
-戰士/法師/竊賊等三大守護星沒有主動能力(只給屬性/魔力);其餘星座各有一招。
+戰士/法師/竊賊等三大守護星沒有主動能力(只給屬性/法力);其餘星座各有一招。
 冷卻以「遊戲日」為單位(同一天只能用一次)。
 """
 
@@ -21,13 +21,13 @@ POWERS = {
     "serpent_curse":    {"name": "蛇之詛咒", "contexts": ["combat"],
                          "effect": {"poison": {"magnitude": 8, "turns": 4}, "heal": 25},
                          "desc": "對敵人下毒(每回合 8 點,4 回合),並汲取 25 點生命。"},
-    # 三大守護星(原本只給屬性/魔力,零主動能力)各補一招(R61 種族威能同構;冷卻共用 power_last_day):
+    # 三大守護星(原本只給屬性/法力,零主動能力)各補一招(R61 種族威能同構;冷卻共用 power_last_day):
     "warrior_fury":     {"name": "戰意奔湧", "contexts": ["combat"],
                          "effect": {"self_empower": 0.20, "empower_turns": 3},
                          "desc": "戰意奔湧,攻勢凌厲 3 回合(增傷 20%)。"},
-    "magicka_surge":    {"name": "魔力湧現", "contexts": ["combat", "utility"],
+    "magicka_surge":    {"name": "法力湧現", "contexts": ["combat", "utility"],
                          "effect": {"restore_magicka": True},
-                         "desc": "魔力如泉湧現,瞬間補滿法力。"},
+                         "desc": "法力如泉湧現,瞬間補滿法力。"},
     "ladys_grace":      {"name": "淑女恩典", "contexts": ["combat", "utility"],
                          "effect": {"heal": 70, "restore_fatigue": True, "cure": True},
                          "desc": "重整旗鼓:回復 70 點生命與全部氣力,並淨化身上的持續傷害。"},
@@ -36,7 +36,7 @@ POWERS = {
     "tower_key":        {"name": "塔之鑰", "contexts": ["utility"],
                          "effect": {"unlock_charge": True}, "desc": "下一次撬鎖必定成功。"},
     "spell_absorption": {"name": "巨魔像吸收", "contexts": ["passive"],
-                         "effect": {}, "desc": "(被動)有機率將來襲的元素魔法吸收為魔力。"},
+                         "effect": {}, "desc": "(被動)有機率將來襲的元素魔法吸收為法力。"},
     # 吸血鬼專屬(轉化後取代出生星座之力):每日一次的汲血擁抱
     "vampiric_drain":   {"name": "汲血擁抱", "contexts": ["combat"],
                          "effect": {"drain": 40}, "desc": "撕咬汲取敵人 40 點生命為己用。"},
@@ -99,7 +99,7 @@ def use(char: Character, state, gamedata: GameData, target=None) -> dict:
         before = char.health
         char.health = min(char.max_health, char.health + eff["heal"])
         messages.append(f"{pdef['name']}回復了 {int(char.health - before)} 點生命。")
-    if eff.get("restore_magicka"):   # 法師座魔力湧現:補滿法力
+    if eff.get("restore_magicka"):   # 法師座法力湧現:補滿法力
         before = char.magicka
         char.magicka = char.max_magicka
         messages.append(f"{pdef['name']}補滿了法力(+{int(char.magicka - before)})。")

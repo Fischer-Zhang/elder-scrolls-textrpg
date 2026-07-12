@@ -61,9 +61,9 @@
        "buff": {"kind": "fortify_attribute", "param": "endurance", "magnitude": 12, "hours": 6},
        "gain_text": "赤泉入喉,筋骨如燃鋼般堅韌 —— 強化耐力 +12(限時)。",
        "risk": {"type": "damage", "amount": [8, 16], "text": "……代價是血脈灼痛,你受了 {dmg} 點傷害。"}},
-      {"key": "attune", "label": "以心神共鳴(強化復原,但心神短暫遲鈍)",
+      {"key": "attune", "label": "以心神共鳴(強化恢復,但心神短暫遲鈍)",
        "buff": {"kind": "fortify_skill", "param": "restoration", "magnitude": 15, "hours": 6},
-       "gain_text": "治癒之光在指尖凝聚 —— 強化復原 +15(限時)。",
+       "gain_text": "治癒之光在指尖凝聚 —— 強化恢復 +15(限時)。",
        "risk": {"type": "curse", "skill": "alteration", "magnitude": 20, "text": "……但共鳴的餘波令你的【變化】一時遲鈍(直到你走出地城)。"}}
     ]
   },

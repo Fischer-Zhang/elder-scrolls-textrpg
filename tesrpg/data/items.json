@@ -1,7 +1,7 @@
 {
   "minor_healing_potion": {"name": "次級治療藥水", "kind": "potion", "effect": {"type": "heal", "magnitude": 25}, "value": 15, "weight": 0.5},
   "healing_potion":       {"name": "治療藥水", "kind": "potion", "effect": {"type": "heal", "magnitude": 50}, "value": 40, "weight": 0.5},
-  "minor_magicka_potion": {"name": "次級魔力藥水", "kind": "potion", "effect": {"type": "restore_magicka", "magnitude": 25}, "value": 18, "weight": 0.5},
+  "minor_magicka_potion": {"name": "次級法力藥水", "kind": "potion", "effect": {"type": "restore_magicka", "magnitude": 25}, "value": 18, "weight": 0.5},
   "cure_disease_potion": {"name": "治療疾病藥水", "kind": "potion", "effect": {"type": "cure_disease"}, "value": 30, "weight": 0.5},
   "ruby":        {"name": "紅寶石", "kind": "misc", "value": 50,  "weight": 0.1},
   "gold_ingot":  {"name": "金錠", "kind": "misc", "value": 100, "weight": 1},
@@ -46,7 +46,7 @@
   "oghma_infinium": {"name": "無限祕典", "kind": "book", "value": 0, "weight": 1, "effect": {"type": "grant_choice", "paths": [
     {"boon": "hermaeus_might",  "label": "力量之徑 —— 鍛體禦敵:耐力·重甲·格擋·鍛造(火焰抗性)"},
     {"boon": "hermaeus_shadow", "label": "暗影之徑 —— 身輕如影:敏捷·速度·雜技·輕甲(毒素抗性)"},
-    {"boon": "hermaeus_magic",  "label": "魔法之徑 —— 真知禁咒:智力·意志·破壞·秘術·魔力(魔法抗性)"}
+    {"boon": "hermaeus_magic",  "label": "魔法之徑 —— 真知禁咒:智力·意志·毀滅·神秘·法力(魔法抗性)"}
   ]}},
   "bloodkin_amulet": {"name": "血親護符", "kind": "jewelry", "slot": "amulet", "value": 800, "weight": 0.3, "requires_vampire": true, "enchant": {"kind": "fortify_attribute", "attr": "personality", "magnitude": 10}}
 }

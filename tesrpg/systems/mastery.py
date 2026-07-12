@@ -65,12 +65,12 @@ _IMPLEMENTED_KINDS = {
     "rest_bonus",   # R147 運動「調息」開源:主動調息(耗一回合換回體·自動解除姿態)回復量加成(SUM)
 
     "shield_recoil",   # 變化 100(R118):作用中護膚盾時被物理擊中→機率震開攻方(接被動 flesh 為主動反噬)
-    "consecration_boost",   # 復原 75(R122 聖騎士):聖化領域減傷幅度 +(施法時加在 magnitude 上·守護頂點)
+    "consecration_boost",   # 恢復 75(R122 聖騎士):聖化領域減傷幅度 +(施法時加在 magnitude 上·守護頂點)
     # security 功能化(混合身份):盜賊行竊加成、地城賊眼窺探(布林解鎖)。
     "theft_skill", "dungeon_casing",
     # R106C 死靈經濟:解鎖(召喚 25·取代省魔)、亡者收集(每擊殺多給 token)、亡者統御(真·亡者更強韌兇猛)。
     "soul_economy", "soul_harvest", "undead_mastery",
-    # R120 秘術頂點:秘蝕(布林解鎖)—— 傷害法術削目標魔抗、輔助所有傷害魔法。
+    # R120 神秘頂點:秘蝕(布林解鎖)—— 傷害法術削目標魔抗、輔助所有傷害魔法。
     "arcane_erosion",
 }
 
@@ -292,7 +292,7 @@ def incoming_physical_factor(char, gamedata: GameData) -> float:
 
 
 def consecration_bonus(char, gamedata: GameData) -> float:
-    """R122 聖騎士「聖化壁壘」(復原 75 守護頂點):施放聖化領域時額外的減傷幅度加成
+    """R122 聖騎士「聖化壁壘」(恢復 75 守護頂點):施放聖化領域時額外的減傷幅度加成
     (加在法術 magnitude 上;無此里程碑 → 0.0)。"""
     e = _chosen_option_by_kind(char, gamedata, "consecration_boost")
     return e.get("bonus", 0.0) if e else 0.0
@@ -319,7 +319,7 @@ def spell_power_bonus(char, gamedata: GameData, school: str) -> float:
 
 
 def spell_cost_factor(char, gamedata: GameData, school: str) -> float:
-    """同源代價:對應學派的魔力消耗倍率(多來源相乘;>1.0 = 更耗魔、<1.0 = 省魔)。"""
+    """同源代價:對應學派的法力消耗倍率(多來源相乘;>1.0 = 更耗魔、<1.0 = 省魔)。"""
     f = 1.0
     for o in _chosen_spell_options(char, gamedata, school):
         if "cost_factor" in o:
@@ -606,7 +606,7 @@ def resonant_strike(char, gamedata: GameData) -> dict | None:
 
 
 def mana_on_hit(char, gamedata: GameData) -> int:
-    """戰法師「法力回擊」:玩家近戰命中回復的魔力點數(0 = 無此里程碑)。"""
+    """戰法師「法力回擊」:玩家近戰命中回復的法力點數(0 = 無此里程碑)。"""
     return int(_param(char, gamedata, "mana_on_hit", "magnitude", 0))
 
 

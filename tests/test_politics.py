@@ -71,7 +71,7 @@ def test_op_deplete_and_costs():
     r = politics.resolve_op(c, gd, "windhelm", "parley", RNG(1))       # 無資源成本、非風險
     assert r["ok"] and r["deplete"] > 0
     assert politics.garrison_of(c, gd, "windhelm") == seed - r["deplete"]
-    # bombard 耗魔力、bribe 耗金
+    # bombard 耗法力、bribe 耗金
     c.skills["destruction"] = 60; c.magicka = 100
     politics.resolve_op(c, gd, "windhelm", "bombard", RNG(1))
     assert c.magicka == 100 - politics.SIEGE_OP_BY_ID["bombard"]["cost"]["magicka"]

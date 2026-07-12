@@ -58,7 +58,7 @@ def test_multiple_boons_sum():
         boons.grant(c, gd, "azura")
         boons.grant(c, gd, "_test_boon")
         assert c.attr("willpower") == w0 + 8 + 3              # 屬性相加
-        assert c.boon_magic_bonus == 20 + 5                  # 固定魔力上限相加
+        assert c.boon_magic_bonus == 20 + 5                  # 固定法力上限相加
         assert c.max_magicka >= mg0 + 25                     # (另含智力 +6 的公式貢獻)
     finally:
         gd.boons.pop("_test_boon", None)
@@ -649,7 +649,7 @@ def test_sanguine_sober_branch_grants_boon_not_rose():
     assert boons.has_boon(c, "sanguine_revel")
     assert c.skill("conjuration") == cj0 + 12
     assert c.base_skill("conjuration") == cj0          # 🔴 不寫 base
-    assert c.max_magicka >= mg0 + 15                   # 召喚續航(固定魔力上限 +15)
+    assert c.max_magicka >= mg0 + 15                   # 召喚續航(固定法力上限 +15)
     assert inventory.count_item(c, "sanguine_rose") == 0
     assert "sanguine_declined" in c.world_events_fired
 
@@ -920,7 +920,7 @@ def test_vaermina_defy_branch_grants_boon_not_skull():
     assert boons.has_boon(c, "vaermina_nightmare")
     assert c.attr("intelligence") == i0 + 8 and c.attr("willpower") == w0 + 6
     assert c.skill("destruction") == ds0 + 10
-    assert c.max_magicka >= mg0 + 20                   # 法師續航(固定魔力上限 +20)
+    assert c.max_magicka >= mg0 + 20                   # 法師續航(固定法力上限 +20)
     assert c.base_attr("intelligence") == i0          # 🔴 不寫 base
     assert inventory.count_item(c, "skull_of_corruption") == 0
     assert "vaermina_defied" in c.world_events_fired

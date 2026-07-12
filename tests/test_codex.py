@@ -124,7 +124,7 @@ def test_services_directory_r159():
         assert f"{sk_name}宗師" in kv, f"缺宗師列:{lid}/{m['skill']}"
         assert gd.world["locations"][lid]["name"] in kv[f"{sk_name}宗師"]
     # 法師公會學派佈局:六學派全出列 + 帝都通才;derive 自 spell_stock(防陳舊)
-    for cn in ("毀滅", "復原", "變化", "召喚", "幻術", "神秘"):
+    for cn in ("毀滅", "恢復", "變化", "召喚", "幻術", "神秘"):
         assert cn in kv, f"缺學派列:{cn}"
     assert "通才(六學派)" in kv and "帝都" in kv["通才(六學派)"]
     # 隱藏設施(visible 閘)不得入目錄:精確釘 dawn_sanctum 本體(勿用泛字樣,防偽陽性)

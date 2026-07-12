@@ -59,7 +59,7 @@ def _allies_status(allies) -> list:
 
 
 def _renown_title(c) -> str | None:
-    """R101 名聲稱號(由 fame 衍生;tier0=無 → None)。惡名稱號另由 crime.notoriety_title。"""
+    """R101 聲望稱號(由 fame 衍生;tier0=無 → None)。惡名稱號另由 crime.notoriety_title。"""
     from tesrpg.systems import renown
     return renown.renown_title(c) or None
 
@@ -179,7 +179,7 @@ def _hud_view():
          "gold": c.gold, "bounty": sum(c.bounties.values()),
          "can_level": c.can_level_up(), "vampire": None, "cover": _cover_badge(c, _hud_gamedata),
          "blessing": _blessing_badge(c, now),
-         "renown": _renown_title(c),               # R101 名聲稱號(live·原僅在死 _status_view 從不上 web)
+         "renown": _renown_title(c),               # R101 聲望稱號(live·原僅在死 _status_view 從不上 web)
          "souls": getattr(c, "soul_tokens", 0),    # R106 死靈師靈魂 token(>0 才顯 chip;非死靈師恆 0)
          "buffs": [{"label": b["label"], "remain": b["remain"]} for b in buffs],
          "statuses": statuses,
@@ -254,7 +254,7 @@ def _emit_panel(title: str, rows: list) -> None:
 
 
 # --- web view-models(原生 HTML 渲染用;與終端渲染函式同源資料,客戶端畫成元件)-----
-# (R101 名聲稱號/血脈/掩護/祝福等即時狀態改由常駐 HUD `_hud_view` 顯示;
+# (R101 聲望稱號/血脈/掩護/祝福等即時狀態改由常駐 HUD `_hud_view` 顯示;
 #  舊 `_status_view`「status 卡」在 web 從不發送〔status_line 直接回 HUD〕→ 已移除死碼。)
 def _location_view(char: Character, gamedata: GameData, brief: bool = False) -> dict:
     from tesrpg.systems import landmarks, politics, world, quests
@@ -824,7 +824,7 @@ def status_line(state: GameState, gamedata: GameData | None = None, allies: list
         extra.append(f"[red]通緝 {total_bounty}[/]")
     console.print(t)
     rsrc = (("生命", c.health, c.max_health, "red"),
-            ("魔力", c.magicka, c.max_magicka, "cyan"),
+            ("法力", c.magicka, c.max_magicka, "cyan"),
             ("體力", c.fatigue, c.max_fatigue, "green"))
     if console.width >= 84:   # 寬終端:血條
         grid = Table.grid(padding=(0, 2))
@@ -870,13 +870,13 @@ def _effect_label(e: dict) -> str:
     elem = _RESIST_CN.get(e.get("element"), "")
     names = {"shield": f"護盾 +{mag}", "regen": f"再生 +{mag}/回合",
              "dot": f"{elem}侵蝕 {mag}/回合", "fear": "恐懼", "paralyze": "麻痺",
-             "weaken": "耗弱", "stagger": "踉蹌", "soul_trap": "擒魂",
+             "weaken": "衰弱", "stagger": "踉蹌", "soul_trap": "擒魂",
              "berserk_buff": f"狂暴 +{int(mag * 100)}%傷"}
     base = names.get(k, k or "效果")
     return f"{base}（{turns} 回合)" if turns else base
 
 
-_WSTATUS_CN = {"vampiric": "吸血", "paralyze": "麻痺", "fear": "恐懼", "regen": "再生", "weaken": "耗弱"}
+_WSTATUS_CN = {"vampiric": "吸血", "paralyze": "麻痺", "fear": "恐懼", "regen": "再生", "weaken": "衰弱"}
 
 
 def _enchant_desc(gamedata: GameData, item_id: str) -> str:
@@ -981,7 +981,7 @@ def character_sheet(char: Character, gamedata: GameData) -> None:
     # 資源
     res = Table.grid(padding=(0, 2))
     res.add_row(Text("生命", style="red"), _bar(char.health, char.max_health, "red"))
-    res.add_row(Text("魔力", style="cyan"), _bar(char.magicka, char.max_magicka, "cyan"))
+    res.add_row(Text("法力", style="cyan"), _bar(char.magicka, char.max_magicka, "cyan"))
     res.add_row(Text("體力", style="green"), _bar(char.fatigue, char.max_fatigue, "green"))
     res.add_row(Text("負重", style=GOLD),
                 Text(f"上限 {formulas.max_encumbrance(char.attr('strength'))}", style=INK))
@@ -1174,7 +1174,7 @@ def _divine_index_rows(gamedata: GameData) -> list:
 
 
 def _trial_index_rows(gamedata: GameData) -> list:
-    """R124 動態『終極真言試煉一覽』:秘術/聖光終極法術的試煉發起地點 + 技能閘(戴德拉/九神見各自條目)。"""
+    """R124 動態『終極真言試煉一覽』:神秘/聖光終極法術的試煉發起地點 + 技能閘(戴德拉/九神見各自條目)。"""
     from tesrpg.systems import trials
     rows = [_hd("終極真言試煉一覽(隨世界更新)")]
     for fam, where, gate, qname in trials.index_sites(gamedata):
@@ -1327,7 +1327,7 @@ def _codex_rows(entry: dict, gamedata: GameData) -> list:
         rows += _shrine_index_rows(gamedata)
     elif entry.get("dynamic") == "divines":        # R107:九神祭壇清單(掃 world divine 欄,防陳舊)
         rows += _divine_index_rows(gamedata)
-    elif entry.get("dynamic") == "trials":         # R124:終極真言試煉一覽(秘術/聖光·掃 quests,防陳舊)
+    elif entry.get("dynamic") == "trials":         # R124:終極真言試煉一覽(神秘/聖光·掃 quests,防陳舊)
         rows += _trial_index_rows(gamedata)
     elif entry.get("dynamic") == "races_signs":    # 新手清晰度:種族/星座速查(掃 gamedata,防陳舊)
         rows += _races_signs_index_rows(gamedata)
@@ -1534,11 +1534,11 @@ def _tr_bonus(category: str, key: str, gamedata: GameData) -> str:
         return formulas.ATTRIBUTE_NAMES.get(key, key)
     if category == "resist":
         return _RESIST_CN.get(key, key)
-    return {"health": "生命", "magicka": "魔力", "fatigue": "體力"}.get(key, key)
+    return {"health": "生命", "magicka": "法力", "fatigue": "體力"}.get(key, key)
 
 
 def _describe_set_bonus(b: dict | None, gamedata: GameData) -> str:
-    """把套裝 bonus dict 譯成人話(供角色卡顯示實際效果,如「魔力上限 +40、施法省力 20%」)。"""
+    """把套裝 bonus dict 譯成人話(供角色卡顯示實際效果,如「法力上限 +40、施法省力 20%」)。"""
     if not b:
         return ""
     k = b.get("kind"); mag = int(b.get("magnitude", 0)); parts = []
@@ -1798,7 +1798,7 @@ def _boon_bonus_parts(attr, skill, resist, magicka, spell_power, gamedata: GameD
     for k, v in (resist or {}).items():
         parts.append(f"{_tr_bonus('resist', k, gamedata)}抗{v:+d}%")
     if magicka:
-        parts.append(f"魔力上限 +{int(magicka)}")
+        parts.append(f"法力上限 +{int(magicka)}")
     if spell_power:
         parts.append(f"法術威力 +{int(round(spell_power * 100))}%")
     return parts
@@ -1995,7 +1995,7 @@ def sheet_skill_detail(char: Character, gamedata: GameData, skill_id: str) -> No
     console.print(_panel(body, title="技能詳情"))
 
 
-_SCHOOL_CN = {"destruction": "毀滅", "restoration": "復原", "alteration": "變化",
+_SCHOOL_CN = {"destruction": "毀滅", "restoration": "恢復", "alteration": "變化",
               "conjuration": "召喚", "illusion": "幻術", "mysticism": "神秘"}
 
 
@@ -2025,7 +2025,7 @@ def spell_effect_summary(gamedata: GameData, spell_id: str) -> str:
         return {"dot": f"{el}持續傷害 {m}/回合×{t}", "regen": f"再生 +{m}/回合×{t}",
                 "paralyze": f"麻痺 {t} 回合", "fear": f"恐懼 {t} 回合",
                 "soul_trap": f"擒魂 {t} 回合", "stagger": f"踉蹌 {t} 回合",
-                "weaken": f"耗弱 {int(m * 100)}%·{t} 回合", "slow": f"遲緩 {t} 回合",
+                "weaken": f"衰弱 {int(m * 100)}%·{t} 回合", "slow": f"遲緩 {t} 回合",
                 "benumb": f"凍麻(降命中){t} 回合", "calm": f"安撫 {t} 回合",
                 "consecration": f"聖化減傷 {int(m * 100)}%·{t} 回合"}.get(s, "狀態")
 
@@ -2061,10 +2061,10 @@ def spell_effect_summary(gamedata: GameData, spell_id: str) -> str:
         return f"召喚 {cn}（{turns} 回合)"
     if k == "bound_weapon":   # 召喚束縛兵刃
         return f"束縛兵刃:傷害 {mag},無視護甲（{turns} 回合)"
-    if k == "ward":           # 秘術結界
+    if k == "ward":           # 神秘結界
         ab = "・吸魔" if e.get("absorb") else ""
         return f"結界:吸收法術傷害 {mag}{ab}（{turns} 回合)"
-    if k == "dispel":         # 秘術驅散
+    if k == "dispel":         # 神秘驅散
         return "驅散自身的恐懼/麻痺/侵蝕等不良效果"
     if k == "cure_disease":   # R53 淨疫術
         return "淨化自身的疾病 + 吸血/狼人潛伏期(不解已轉化詛咒)"
@@ -2128,7 +2128,7 @@ def sheet_spellbook(char: Character, gamedata: GameData) -> None:
         for sid in ids:
             sp = gamedata.spells[sid]
             body.append(f"  {sp['name']}", style=PARCH)
-            body.append(f"（{magic.effective_cost(char, gamedata, sid)} 魔力)", style=INK)
+            body.append(f"（{magic.effective_cost(char, gamedata, sid)} 法力)", style=INK)
             body.append(f"  {spell_effect_summary(gamedata, sid)}\n", style=FAINT)
     console.print(_panel(body, title="法術書"))
 
@@ -2758,7 +2758,7 @@ def dungeon_grid(grid: dict, z: int, cx: int, cy: int, explored: list, resolved:
 
 
 _ELEM_CN = {"fire": "火焰", "frost": "冰霜", "shock": "雷電", "poison": "毒素", "magic": "魔法", "bleed": "撕裂"}
-_STAT_CN = {"health": "生命", "magicka": "魔力", "fatigue": "體力"}
+_STAT_CN = {"health": "生命", "magicka": "法力", "fatigue": "體力"}
 # 怪物控場命中(R43):status_applied 為 kind(非元素)→ 對應敘事
 _CC_CN = {"stagger": "陣腳大亂(下一擊更難命中)", "slow": "步伐遲滯(先攻與命中下降)",
           "weaken": "氣力被削(攻勢轉弱)", "fear": "心生恐懼(本回合無法行動)",
@@ -2772,7 +2772,7 @@ def combat_event(ev: dict, gamedata: GameData) -> None:
     lines = []
     mv = f"使出【{ev['attack_name']}】" if ev.get("attack_name") else ""   # 怪物選定招名(玩家=空)
     if ev.get("absorbed"):
-        lines.append(f"[bold cyan]{ev['defender']} 吸收了來襲的魔法,化為魔力![/]")
+        lines.append(f"[bold cyan]{ev['defender']} 吸收了來襲的魔法,化為法力![/]")
     elif ev["hit"]:
         blk = "(被格擋)" if ev["blocked"] else ""
         if ev.get("sneak"):
@@ -2834,7 +2834,7 @@ def active_effects_line(player: Character, creature) -> None:
         if e["kind"] == "fear":
             tags.append(f"[blue]{creature.name}·恐懼{e['turns']}[/]")
         elif e["kind"] == "weaken":
-            tags.append(f"[blue]{creature.name}·耗弱{e['turns']}[/]")
+            tags.append(f"[blue]{creature.name}·衰弱{e['turns']}[/]")
         elif e["kind"] == "soul_trap":
             tags.append(f"[magenta]{creature.name}·擒魂{e['turns']}[/]")
     if tags:

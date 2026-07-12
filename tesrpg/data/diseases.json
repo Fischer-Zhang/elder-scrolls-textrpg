@@ -13,12 +13,12 @@
   },
   "brain_rot": {
     "name": "腦腐",
-    "symptom": "思緒昏沉、意志渙散 —— 智力與意志下降(魔力受損)。",
+    "symptom": "思緒昏沉、意志渙散 —— 智力與意志下降(法力受損)。",
     "attr": {"intelligence": -8, "willpower": -6}
   },
   "witbane": {
     "name": "萎魔症",
-    "symptom": "魔力如沙漏般流失 —— 智力下降,且日漸加重。",
+    "symptom": "法力如沙漏般流失 —— 智力下降,且日漸加重。",
     "attr": {"intelligence": -10},
     "worsen": {"per_days": 3, "max_steps": 2, "attr": {"intelligence": -3}}
   },

@@ -23,9 +23,9 @@ from tesrpg import formulas
 
 SEP = "|"
 
-_EFFECT_NAME = {"heal": "治療", "restore_magicka": "魔力", "restore_fatigue": "體力"}
+_EFFECT_NAME = {"heal": "治療", "restore_magicka": "法力", "restore_fatigue": "體力"}
 _ELEMENT_NAME = {"fire": "烈焰", "frost": "冰霜", "shock": "雷電"}
-_STAT_NAME = {"health": "生命", "magicka": "魔力", "fatigue": "體力"}
+_STAT_NAME = {"health": "生命", "magicka": "法力", "fatigue": "體力"}
 _ATTR_NAME = {"strength": "力量", "intelligence": "智力", "willpower": "意志", "agility": "敏捷",
               "speed": "速度", "endurance": "耐力", "personality": "魅力", "luck": "幸運"}
 _RESIST_NAME = {"fire": "烈焰", "frost": "冰霜", "shock": "雷電", "poison": "毒素", "disease": "疾病", "magic": "魔法", "physical": "物理"}
@@ -100,7 +100,7 @@ def _armor_enchant(kind: str, param: str, mag: int, gamedata) -> tuple[dict, str
 _WEAPON_STATUS_NAME = {"vampiric": "吸血", "paralyze": "麻痺", "regen": "再生"}
 _DOT_ELEMENT = {"burn": "fire", "chill": "frost", "jolt": "shock"}
 _DOT_NAME = {"burn": "焚燒", "chill": "凍緩", "jolt": "感電"}
-_ABSORB_NAME = {"absorb_health": "吸取生命", "absorb_magicka": "吸取魔力", "absorb_fatigue": "吸取體力"}
+_ABSORB_NAME = {"absorb_health": "吸取生命", "absorb_magicka": "吸取法力", "absorb_fatigue": "吸取體力"}
 
 
 def _weapon_status_enchant(status: str, mag: int, turns: int) -> tuple[dict, str]:

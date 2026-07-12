@@ -25,7 +25,7 @@ def test_thresholds_open_families():
     fam = trials.eligible_families(c, gd)
     assert "daedric" in fam and "divine" in fam        # L15 開戴德拉/九神
     gd, c2 = _mage(resto=75, level=18)
-    assert "holy" in trials.eligible_families(c2, gd)   # 復原 75 開破曉
+    assert "holy" in trials.eligible_families(c2, gd)   # 恢復 75 開破曉
     gd, c3 = _mage(dest=75, level=18)
     assert "arcane" in trials.eligible_families(c3, gd)  # 毀滅 75 開奧術
 
@@ -73,7 +73,7 @@ def test_index_lists_ultimate_trials():
     gd = get_gamedata()
     rows = trials.index_sites(gd)
     fams = {fam for fam, _, _, _ in rows}
-    assert fams == {"奧術試煉", "破曉試煉"}              # 秘術 + 聖光終極(戴德拉/九神有各自索引)
+    assert fams == {"奧術試煉", "破曉試煉"}              # 神秘 + 聖光終極(戴德拉/九神有各自索引)
     assert any("匕落" in where for _, where, _, _ in rows)   # 破曉試煉在匕落
 
 

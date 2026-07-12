@@ -34,7 +34,7 @@ def test_cascade_getters_scale_and_cap_and_neutral():
     c = _char("mage", mysticism=80, destruction=90)
     assert mastery.cascade_power(c, gd) == 0.0 and mastery.cascade_fatigue_factor(c, gd) == 1.0  # 未選=中性
     mastery.choose(c, gd, "mysticism_75", "arcane_cascade")
-    # 依層數的確定性加成(避開魔力/體力四捨五入)
+    # 依層數的確定性加成(避開法力/體力四捨五入)
     c.active_effects[:] = [{"kind": "cascade", "magnitude": 1, "turns": 3}]
     assert abs(mastery.cascade_power(c, gd) - 0.08) < 1e-9
     assert abs(mastery.cascade_fatigue_factor(c, gd) - 0.88) < 1e-9
@@ -42,7 +42,7 @@ def test_cascade_getters_scale_and_cap_and_neutral():
     assert abs(mastery.cascade_power(c, gd) - 0.16) < 1e-9
     assert abs(mastery.cascade_fatigue_factor(c, gd) - 0.76) < 1e-9
     # 併入 bump 遞增+cap 面(獨立 setup:另建帶 flames 的 char,走真正 magic.cast 驅動 _cascade_depth,
-    # 不重用上段以避開魔力/體力四捨五入稀釋 getter 數值斷言)
+    # 不重用上段以避開法力/體力四捨五入稀釋 getter 數值斷言)
     c2 = _char("mage", mysticism=80, destruction=80)
     c2.spells = list(c2.spells) + ["flames"]
     mastery.choose(c2, gd, "mysticism_75", "arcane_cascade")
@@ -215,7 +215,7 @@ def test_triage_discounts_heal_and_consumes():
     spent = before - c.magicka
     assert spent < full_cost                                     # 折扣施法
     assert not any(e["kind"] == "triage_ready" for e in c.active_effects)  # 消耗旗標
-    # 第二道恢復原價
+    # 第二道恢恢復價
     before2 = c.magicka
     magic.cast(c, gd, ally_spell, RNG(1), target=hurt, battle=battle)
     assert before2 - c.magicka >= full_cost - 1

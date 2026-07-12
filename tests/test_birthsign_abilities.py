@@ -51,7 +51,7 @@ def test_warrior_fury_stacks_with_orc_berserk_bounded():
     assert abs(combat._self_empower(c) - 0.40) < 1e-9    # 上界 0.40(只兩個 berserk 源,有界)
 
 
-# --- 法師座:魔力湧現(補滿法力) -------------------------------------------
+# --- 法師座:法力湧現(補滿法力) -------------------------------------------
 def test_mage_surge_restores_magicka():
     gd, c = _mk("mage")
     st = _st(c)

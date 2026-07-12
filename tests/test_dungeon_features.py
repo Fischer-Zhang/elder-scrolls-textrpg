@@ -189,7 +189,7 @@ def test_resolve_shrine_grants_safe_buff_and_risk():
         main._resolve_feature(st, gd, "shrine_endurance_font")
         assert any(b["param"] == "endurance" for b in c.potion_buffs)   # 安全池增益入 potion_buffs
         assert c.health < hp0 and c.health >= 0                          # damage 風險扣血不為負
-        # 選第二個 offer(attune=復原+curse)
+        # 選第二個 offer(attune=恢復+curse)
         main.ui.menu = lambda title, opts, **k: opts[1][0]
         c2, st2 = _p()
         main._resolve_feature(st2, gd, "shrine_endurance_font")

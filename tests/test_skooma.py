@@ -106,7 +106,7 @@ def test_cure_quest_flow_and_repeatable():
     skooma.cure(c, gd)                                      # = action_skooma_cure 的核心
     assert c.skooma_addiction == 0                          # 併自 test_cure:成癮計數歸零
     assert c.skooma_attr_bonus == {} and c.skooma_skill_bonus == {}  # absorb: 雙層清空
-    assert c.attr("strength") == base_str                   # absorb: 戒斷層復原
+    assert c.attr("strength") == base_str                   # absorb: 戒斷層恢復
     c.completed_quests.remove(qid)
     assert not skooma.is_addicted(c) and not quests.is_done(c, qid)   # 可重複求解
 

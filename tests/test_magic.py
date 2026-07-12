@@ -160,7 +160,7 @@ def _caster(skill=50):
 
 def test_cast_costs_fatigue():
     gd, c = _caster()
-    # 體力消耗隨魔力成本縮放(大法術 > 小法術)— 唯讀斷言,不耗 fatigue
+    # 體力消耗隨法力成本縮放(大法術 > 小法術)— 唯讀斷言,不耗 fatigue
     assert magic.spell_fatigue_cost(c, gd, "fire_storm") > magic.spell_fatigue_cost(c, gd, "flames")
     # 運動降施法體力消耗(與近戰共用)— 只動 athletics/讀取,不耗 fatigue
     c.skills["athletics"] = 0
@@ -325,7 +325,7 @@ def test_spell_control_reduced_on_solo_boss():
         assert 0 < controlled < 200, (sp, controlled)   # 機率減免:既會中也會抗
 
 
-# --- 法術學派補完:召喚(束縛兵刃/亡者復生/新召喚)+ 秘術(結界/驅散/群體擒魂)-------
+# --- 法術學派補完:召喚(束縛兵刃/亡者復生/新召喚)+ 神秘(結界/驅散/群體擒魂)-------
 def test_bound_weapon_arms_unarmed_and_bypasses_armor():
     """束縛兵刃:空手法師也能近戰,且走元素分支 → 無視物理護甲。"""
     gd, c = _caster()
@@ -669,7 +669,7 @@ def test_reanimate_hp_is_weakened():
 
 
 def test_birthsign_resist_weakness():
-    """出生星座弱點機制:學徒座 +魔力但受魔法/元素傷害↑(法師<學徒 修復);法師座無弱點;領主座對火脆弱。"""
+    """出生星座弱點機制:學徒座 +法力但受魔法/元素傷害↑(法師<學徒 修復);法師座無弱點;領主座對火脆弱。"""
     from tesrpg import formulas
     gd = get_gamedata()
 
@@ -687,7 +687,7 @@ def test_birthsign_resist_weakness():
     assert mult(mage, "magic") == mult(warrior, "magic")
     # 領主座對火比無弱點者脆弱(flavor 終於有機制)
     assert mult(lord, "fire") > mult(warrior, "fire")
-    # 風險換報酬:學徒魔力上限明顯高於法師(否則「法師<學徒」又回來了)
+    # 風險換報酬:學徒法力上限明顯高於法師(否則「法師<學徒」又回來了)
     assert app.max_magicka > mage.max_magicka
 
 

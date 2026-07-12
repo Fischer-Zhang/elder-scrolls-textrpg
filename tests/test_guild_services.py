@@ -1,6 +1,6 @@
 """R89 戰士/法師公會功能化 —— rank-gated 招牌動詞(承 R88·複用 action_guild_hall 服務模式)。
 
-戰士=軍械庫淬鍊(公會供料·免材料·受 temper cap 夾)、法師=奧術回充(免靈魂石)+ 魔力補給(有上限)。
+戰士=軍械庫淬鍊(公會供料·免材料·受 temper cap 夾)、法師=奧術回充(免靈魂石)+ 法力補給(有上限)。
 🔴 byte-safe:smithing.temper(guild_free=False) 預設行為不變;不碰 combat/formulas。
 """
 
@@ -80,7 +80,7 @@ def test_guild_temper_bounded_by_cap():
     assert c.weapon_temper["iron_sword"] == cap
 
 
-# ---------------------------------------------------------------- 法師:奧術回充 + 魔力補給
+# ---------------------------------------------------------------- 法師:奧術回充 + 法力補給
 def test_arcane_rank_gate():
     gd, st = _state(race="high_elf", birthsign="mage", class_id="mage")
     c = st.player
@@ -106,7 +106,7 @@ def test_recharge_full_refills_charge_weapon_only():
 
 
 def test_magicka_supply_bounded():
-    """魔力補給:補滿至 N 後不再增加(有上限·非無限);rank>=ARCANE_SUPPLY_RANK 才出現。"""
+    """法力補給:補滿至 N 後不再增加(有上限·非無限);rank>=ARCANE_SUPPLY_RANK 才出現。"""
     gd, st = _state(race="high_elf", birthsign="mage", class_id="mage")
     c = st.player
     c.factions["mages_guild"] = main.ARCANE_SUPPLY_RANK

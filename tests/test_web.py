@@ -261,7 +261,7 @@ def test_hud_includes_party_and_allies():
 
 
 def test_view_model_shapes():
-    """本輪 UI 改版的 view-model 形狀回歸:戰鬥魔力/狀態標分色、傳奇分段、地圖省份進度。"""
+    """本輪 UI 改版的 view-model 形狀回歸:戰鬥法力/狀態標分色、傳奇分段、地圖省份進度。"""
     from tesrpg.gamedata import get_gamedata
     from tesrpg.creation import build_character
     from tesrpg.state import GameState, GameTime
@@ -281,7 +281,7 @@ def test_view_model_shapes():
     tags = {t["s"][0]: t["good"] for t in cv["me"]["tags"]}   # 以首字(盾/蝕)為鍵
     assert tags.get("盾") is True and tags.get("蝕") is False
     assert all(isinstance(t, dict) and "s" in t and "good" in t for t in cv["me"]["tags"])
-    assert cv["enemies"][0]["mp"] == [0, 0]                   # 怪物無魔力 → JS 以 mp[1] 假值隱藏
+    assert cv["enemies"][0]["mp"] == [0, 0]                   # 怪物無法力 → JS 以 mp[1] 假值隱藏
     assert cv["enemies"][0]["key"] == "0" and cv["enemies"][0]["idx"] == 1   # 卡顯 "1." 但 key=0(0-based 目標鍵)
     assert "key" not in cv["me"]                              # 玩家卡無 key(不可被當目標點選)
     c.active_effects = []

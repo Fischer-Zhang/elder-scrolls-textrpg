@@ -1,4 +1,4 @@
-"""R124 試煉指引:讓 33+ 深層試煉(戴德拉神殿 / 九神祭壇 / 秘術·聖光終極真言)可被發現。
+"""R124 試煉指引:讓 33+ 深層試煉(戴德拉神殿 / 九神祭壇 / 神秘·聖光終極真言)可被發現。
 
 問題:試煉全靠「走到對的地點 + 達技能/等級閘」被動觸發,流言系統只指向傳說地城(rumor_quest),
 從不指向試煉 → 玩家常「夠格卻不知試煉存在」。本模組是三層指引的共用衍生層:
@@ -79,8 +79,8 @@ def update(state, gamedata: GameData, hinted: set) -> list:
 _SITE_POINTER = {
     "shrine":        "{name}({prov})一帶立著一座戴德拉神殿 —— 供奉那位親王,或有試煉與神器等著夠格者。",
     "divine":        "{name}({prov})有座九神的祭壇 —— 虔誠而無愧者,可在此求得神性試煉與一道永久誓福。",
-    "arcane_trials": "{name}({prov})的法師公會有位『奧術試煉的引路人』,只授予夠格的破壞或神秘大師 —— 終極真言不在任何法師塔出售。",
-    "holy_trials":   "{name}({prov})的法師公會有位『破曉試煉的引路人』,傳說中的破曉之光,只予歷經試煉的復原大師。",
+    "arcane_trials": "{name}({prov})的法師公會有位『奧術試煉的引路人』,只授予夠格的毀滅或神秘大師 —— 終極真言不在任何法師塔出售。",
+    "holy_trials":   "{name}({prov})的法師公會有位『破曉試煉的引路人』,傳說中的破曉之光,只予歷經試煉的恢復大師。",
 }
 
 
@@ -95,7 +95,7 @@ def site_pointer(gamedata: GameData, location_id: str) -> str:
 
 # ── ③ codex 索引資料(console._trial_index_rows 用)────────────────────────────
 def index_sites(gamedata: GameData) -> list:
-    """終極真言試煉一覽(秘術 + 聖光;戴德拉/九神已有各自 codex 索引)→ [(族名, 地名·省, 技能閘)]。"""
+    """終極真言試煉一覽(神秘 + 聖光;戴德拉/九神已有各自 codex 索引)→ [(族名, 地名·省, 技能閘)]。"""
     rows = []
     for src in ("arcane", "holy"):
         tag = _TAG_BY_SOURCE[src]

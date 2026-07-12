@@ -98,8 +98,8 @@ def test_corruption_and_missing_are_safe():
         hall.HALL_PATH.write_text('[{"name":"壞","score":null},{"name":"好","score":9}]', encoding="utf-8")
         ents = hall.load_entries()
         assert [e["name"] for e in ents] == ["好", "壞"]      # null score 視為 0,排最後,不崩
-        hall.record(_legacy("復原", 100), "adventure")       # 毀損後仍可寫入
-        assert "復原" in [e["name"] for e in hall.load_entries()]
+        hall.record(_legacy("恢復", 100), "adventure")       # 毀損後仍可寫入
+        assert "恢復" in [e["name"] for e in hall.load_entries()]
     finally:
         restore()
 

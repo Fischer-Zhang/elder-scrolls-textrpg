@@ -25,7 +25,7 @@ MAJOR_SKILL_XP_MULT = 1.5    # 主修技能升點給的等級經驗倍率(保留
 SPEC_SKILL_XP_MULT = 1.2     # 職業專精同系技能的技能 XP 加速(跑時 learn-by-doing 身份;非專精=×1)
 LEVELUP_ATTRIBUTE_POINTS = 5  # 每級可自由分配的屬性點(R64:4→5,吸收原「資源三選一」價值;資源改全屬性驅動)
 # R64:移除升級資源三選一(R63 後三資源皆屬性驅動 → 三選一變對稱 no-brainer)。
-# 資源改純靠屬性(endurance→生命·int→魔力·str/wil/agi/end→體力)+ 創角/裝備。
+# 資源改純靠屬性(endurance→生命·int→法力·str/wil/agi/end→體力)+ 創角/裝備。
 # `char.resource_levels` 仍由 stats 讀(舊存檔已累積的加成續生效),只是不再新增。
 
 ATTRIBUTES = [
@@ -42,7 +42,7 @@ ATTRIBUTE_NAMES = {
 # 每屬性的機制作用(供升級分配/角色卡顯示,讓玩家知道每點的意義)
 ATTRIBUTE_FUNCTION = {
     "strength": "近戰傷害·負重·體力",
-    "intelligence": "魔力上限",
+    "intelligence": "法力上限",
     "willpower": "施法續航(回魔)·抗恐懼麻痺·體力",
     "agility": "命中/閃避·體力",
     "speed": "先攻·逃跑·旅行加速",
@@ -77,7 +77,7 @@ def endurance_health(endurance: int) -> int:
 
 
 def max_magicka(intelligence: int, magicka_bonus: int) -> int:
-    """魔力上限 = 智力×2 + 種族/星座固定加成。"""
+    """法力上限 = 智力×2 + 種族/星座固定加成。"""
     return intelligence * 2 + magicka_bonus
 
 
@@ -117,7 +117,7 @@ def _soft_ceiling(value: float, knee: float, width: float, ceiling: float) -> fl
 # R63:抗控/休息回魔/戰利/命運的舊硬上限改漸進(knee=舊 CAP → 趨近 ASYMPTOTE);
 #      戰鬥每回合回魔維持整數硬頂(意志過此靠 cost-reduction + 休息回魔續航)。
 MAGICKA_REGEN_COMBAT_PER = 15     # 每 N 點意志(>40)→ 戰鬥每回合 +1 回魔
-MAGICKA_REGEN_COMBAT_CAP = 5      # 整數硬頂(per-turn 被動回魔;不漸進,避免分數魔力)
+MAGICKA_REGEN_COMBAT_CAP = 5      # 整數硬頂(per-turn 被動回魔;不漸進,避免分數法力)
 MAGICKA_REGEN_REST_PER = 0.0167   # 休息回魔倍率:每點意志(>40)
 MAGICKA_REGEN_REST_KNEE = 2.5     # 舊夾 → 漸進拐點
 MAGICKA_REGEN_REST_ASYMPTOTE = 3.2  # 趨近、永不抵達
@@ -319,14 +319,14 @@ WEAPON_PARALYZE_PROC = 0.10       # 武器麻痺觸發機率(1 回合、不重�
 WEAPON_DOT_FACTOR = 1.2           # 元素 DoT 每回合傷害係數(低於即時 enchw 的 3.0,因保證多回合)
 WEAPON_DOT_TURNS = 3              # 元素 DoT 持續回合(命中刷新取 max)
 WEAPON_CHILL_WEAKEN = 0.15        # 霜 DoT「凍緩」rider:敵輸出 ×(1-此值),2 回合
-WEAPON_JOLT_MAGICKA = 8           # 電 DoT「感電」rider:每觸發扣目標魔力
+WEAPON_JOLT_MAGICKA = 8           # 電 DoT「感電」rider:每觸發扣目標法力
 WEAPON_JOLT_STAGGER = 0.20        # 電 DoT「感電」rider:踉蹌機率
-WEAPON_ABSORB_FACTOR = 1.5        # 命中吸取(生命/魔力/體力)每擊回攻擊者量的係數
+WEAPON_ABSORB_FACTOR = 1.5        # 命中吸取(生命/法力/體力)每擊回攻擊者量的係數
 WEAPON_ABSORB_SOLO_FACTOR = 0.5   # 吸取生命對 solo BOSS 受夾(杜絕無限回血泵;比照偷襲夾限精神)
 # Wabbajack(瘋神謝歐格拉斯神器)命中隨機混沌效果(R46)——常數放此讓紅線一眼可見
 WABBAJACK_ELEMENT_BURST = 14      # 隨機元素爆發:命中後追加傷(吃元素抗性;非偷襲傷,solo 另受夾)
 WABBAJACK_BURST_SOLO_FACTOR = 0.5 # solo BOSS 爆發受夾(鏡像 WEAPON_ABSORB_SOLO_FACTOR 紅線)
-WABBAJACK_SELF_RESTORE = 12       # 回施術者資源(生命/魔力/體力之一,clamp max)
+WABBAJACK_SELF_RESTORE = 12       # 回施術者資源(生命/法力/體力之一,clamp max)
 WABBAJACK_WEAKEN_MAG = 0.20       # 軟控 weaken 幅度(≤0.30 內容紀律)
 WABBAJACK_BACKFIRE_SELF = 8       # 回火:自傷(max(1,…) 永不致死)
 WABBAJACK_BACKFIRE_TARGET_HEAL = 6  # 回火:小幅治敵(自限 → 瘋神不可靠,神器永不嚴格最優)

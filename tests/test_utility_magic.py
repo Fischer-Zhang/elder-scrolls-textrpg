@@ -28,7 +28,7 @@ def _cast(gd, c, st, sid, **kw):
     return magic.cast(c, gd, sid, st.rng, state=st, **kw)
 
 
-# --- R121 秘術實用:念力(限時層)/ 靈視·靈識(地城 targeted 揭露·非限時層)---------
+# --- R121 神秘實用:念力(限時層)/ 靈視·靈識(地城 targeted 揭露·非限時層)---------
 def test_telekinesis_buff_and_scry_not_a_timed_buff():
     gd, c, st = _state()
     # 念力術:限時「隔空化解機關」spellfx 增益

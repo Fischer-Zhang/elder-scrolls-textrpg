@@ -14,7 +14,7 @@ _TRIALS = {
     "trial_fire": ("fire_archmage", "pyre_sanctum", "fire", "incinerate"),
     "trial_frost": ("frost_archmage", "rime_sanctum", "frost", "absolute_zero"),
     "trial_shock": ("shock_archmage", "tempest_sanctum", "shock", "thunderbolt"),
-    "trial_soul": ("arch_mystic", "soul_sanctum", "magic", "arcane_annihilation"),   # R121 秘術終極試煉:抗魔法師 boss(resist magic≥70)· 湮識真言
+    "trial_soul": ("arch_mystic", "soul_sanctum", "magic", "arcane_annihilation"),   # R121 神秘終極試煉:抗魔法師 boss(resist magic≥70)· 湮識真言
 }
 
 
@@ -131,7 +131,7 @@ def test_fused_capstone_boss_valid():
 
 # --- 分散發起點:地點 arcane_trials 標籤配對任務 arcane_site(各省法師城) ----------
 _SITES = {"fire": "blacklight", "frost": "winterhold", "shock": "gideon", "fused": "imperial_city",
-          "soul": "sadrith_mora", "true_dagon": "skingrad"}   # R121 秘術試煉;R127 真身試煉(史金格拉德)
+          "soul": "sadrith_mora", "true_dagon": "skingrad"}   # R121 神秘試煉;R127 真身試煉(史金格拉德)
 
 
 def test_arcane_site_tags_pair_quest_and_location():

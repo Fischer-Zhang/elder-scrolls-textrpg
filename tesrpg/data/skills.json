@@ -7,12 +7,12 @@
   "heavy_armor":  {"name": "重甲",     "spec": "combat",  "attr": "endurance",    "desc": "鋼鐵、黑檀等重型護甲的承受。",       "mechanic": "等級越高,穿重甲提供的有效護甲值越高(減免物理傷害);精通解鎖壁壘。", "practice": {"label": "穿著全身板甲行軍", "xp": 0.55, "fatigue": 10, "hours": 1}},
 
   "alchemy":      {"name": "煉金",     "spec": "magic",   "attr": "intelligence", "desc": "調配藥水與毒劑,辨識材料效果。",     "mechanic": "等級越高,調製藥水/毒藥效力越強、毒藥持續更久,武器塗毒可用次數也更多。", "practice": {"label": "在煉金台上試煉藥劑", "xp": 0.55, "fatigue": 5, "hours": 1}},
-  "alteration":   {"name": "變化",     "spec": "magic",   "attr": "willpower",    "desc": "改變物理法則:護盾、開鎖、負重。",   "mechanic": "等級越高,變化系法術(護盾等)威力越強、魔力消耗越低。", "practice": {"label": "演練護盾與開鎖咒文", "xp": 0.55, "fatigue": 6, "hours": 1}},
-  "conjuration":  {"name": "召喚",     "spec": "magic",   "attr": "intelligence", "desc": "召喚魔族與束縛靈體武裝。",           "mechanic": "等級越高,召喚物與束縛武器的威力越強、魔力消耗越低。", "practice": {"label": "演練召喚束縛武器", "xp": 0.55, "fatigue": 6, "hours": 1}},
-  "destruction":  {"name": "毀滅",     "spec": "magic",   "attr": "willpower",    "desc": "火、霜、電與各種傷害系魔法。",       "mechanic": "等級越高,傷害系法術威力越強、魔力消耗越低;精通解鎖過載。", "practice": {"label": "朝靶子轟出火球", "xp": 0.60, "fatigue": 6, "hours": 1}},
-  "illusion":     {"name": "幻術",     "spec": "magic",   "attr": "personality",  "desc": "操弄心智:隱身、魅惑、狂亂。",       "mechanic": "等級越高,心智法術(恐懼/麻痺/狂亂等)更易生效、威力更強、更省魔力。", "practice": {"label": "冥想演練隱身咒", "xp": 0.55, "fatigue": 5, "hours": 1}},
-  "mysticism":    {"name": "神秘",     "spec": "magic",   "attr": "intelligence", "desc": "靈魂、傳送、探測等奧秘魔法。",       "mechanic": "等級越高,擒魂與附魔的靈魂利用效率越好(附魔強度更高)、更省魔力。", "practice": {"label": "研讀靈魂擒拿咒", "xp": 0.55, "fatigue": 5, "hours": 1}},
-  "restoration":  {"name": "復原",     "spec": "magic",   "attr": "willpower",    "desc": "治療、回復屬性、抵禦疾病。",         "mechanic": "等級越高,治療與回復法術的回復量越高、魔力消耗越低;精通解鎖聖光溢盾。", "practice": {"label": "施放治療術自我調理", "xp": 0.55, "fatigue": 5, "hours": 1}},
+  "alteration":   {"name": "變化",     "spec": "magic",   "attr": "willpower",    "desc": "改變物理法則:護盾、開鎖、負重。",   "mechanic": "等級越高,變化系法術(護盾等)威力越強、法力消耗越低。", "practice": {"label": "演練護盾與開鎖咒文", "xp": 0.55, "fatigue": 6, "hours": 1}},
+  "conjuration":  {"name": "召喚",     "spec": "magic",   "attr": "intelligence", "desc": "召喚魔族與束縛靈體武裝。",           "mechanic": "等級越高,召喚物與束縛武器的威力越強、法力消耗越低。", "practice": {"label": "演練召喚束縛武器", "xp": 0.55, "fatigue": 6, "hours": 1}},
+  "destruction":  {"name": "毀滅",     "spec": "magic",   "attr": "willpower",    "desc": "火、霜、電與各種傷害系魔法。",       "mechanic": "等級越高,傷害系法術威力越強、法力消耗越低;精通解鎖過載。", "practice": {"label": "朝靶子轟出火球", "xp": 0.60, "fatigue": 6, "hours": 1}},
+  "illusion":     {"name": "幻術",     "spec": "magic",   "attr": "personality",  "desc": "操弄心智:隱身、魅惑、狂亂。",       "mechanic": "等級越高,心智法術(恐懼/麻痺/狂亂等)更易生效、威力更強、更省法力。", "practice": {"label": "冥想演練隱身咒", "xp": 0.55, "fatigue": 5, "hours": 1}},
+  "mysticism":    {"name": "神秘",     "spec": "magic",   "attr": "intelligence", "desc": "靈魂、傳送、探測等奧秘魔法。",       "mechanic": "等級越高,擒魂與附魔的靈魂利用效率越好(附魔強度更高)、更省法力。", "practice": {"label": "研讀靈魂擒拿咒", "xp": 0.55, "fatigue": 5, "hours": 1}},
+  "restoration":  {"name": "恢復",     "spec": "magic",   "attr": "willpower",    "desc": "治療、回復屬性、抵禦疾病。",         "mechanic": "等級越高,治療與回復法術的回復量越高、法力消耗越低;精通解鎖聖光溢盾。", "practice": {"label": "施放治療術自我調理", "xp": 0.55, "fatigue": 5, "hours": 1}},
 
   "acrobatics":   {"name": "雜技",     "spec": "stealth", "attr": "speed",        "desc": "跳躍、翻滾、卸力落地。",             "mechanic": "等級越高,閃避來襲的機率越高(降低敵人命中);也提升戰鬥中重新隱遁的成功率。", "practice": {"label": "在屋脊間練習跳躍翻滾", "xp": 0.55, "fatigue": 8, "hours": 1}},
   "light_armor":  {"name": "輕甲",     "spec": "stealth", "attr": "speed",        "desc": "皮甲、鎖鏈、精靈甲等輕型護甲。",     "mechanic": "等級越高,穿輕甲提供的有效護甲值越高(減免物理傷害)。", "practice": {"label": "穿著皮甲做敏捷操練", "xp": 0.55, "fatigue": 7, "hours": 1}},

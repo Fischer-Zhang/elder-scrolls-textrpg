@@ -64,7 +64,7 @@ def test_ally_spell_needs_battle_and_living_ally():
     gd, c = _melee(); c.spells.append("healing_circle")
     mp0, fp0 = c.magicka, c.fatigue
     assert not magic.cast(c, gd, "heal_other", RNG(1), target=None, battle=None)["ok"]   # 戰外不可
-    assert c.magicka == mp0 and c.fatigue == fp0             # 戰外失敗:魔力+體力皆退還
+    assert c.magicka == mp0 and c.fatigue == fp0             # 戰外失敗:法力+體力皆退還
     mp1, fp1 = c.magicka, c.fatigue
     assert not magic.cast(c, gd, "healing_circle", RNG(1), battle={"allies": []})["ok"]   # 無同伴
     assert c.magicka == mp1 and c.fatigue == fp1             # 無同伴失敗:退魔也退體(不對稱資源損失修正)

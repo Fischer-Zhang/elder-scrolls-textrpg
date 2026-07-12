@@ -2,7 +2,7 @@
 
 設計與 combat 一致:純規則函式回傳事件;互動呈現在 main/ui。
 施法會 learn-by-doing 鍛鍊對應學派技能;技能越高 → 費用越低、效果越強。
-主動效果(護盾/恐懼/耗弱/擒魂/召喚)以回合為單位,在戰鬥迴圈逐回合 tick。
+主動效果(護盾/恐懼/衰弱/擒魂/召喚)以回合為單位,在戰鬥迴圈逐回合 tick。
 """
 
 from __future__ import annotations
@@ -23,7 +23,7 @@ SOUL_GEM_BY_DANGER = {
 _EMPTY_BY_TIER = {1: "empty_petty_soul_gem", 2: "empty_lesser_soul_gem", 3: "empty_common_soul_gem",
                   4: "empty_greater_soul_gem", 5: "empty_grand_soul_gem"}
 BLACK_SOUL_INFAMY = 2                                 # 囚禁有靈之魂=黑暗之舉,小幅惡名
-# 秘術「驅散」可淨化的不良效果(只清控場/侵蝕,不動護盾/再生/結界/灌注等增益)
+# 神秘「驅散」可淨化的不良效果(只清控場/侵蝕,不動護盾/再生/結界/灌注等增益)
 _DISPELLABLE = ("fear", "paralyze", "dot", "weaken", "stagger", "slow")
 # 亡者復生:起出的屍體是「虛弱化的亡魂」→ 以原 HP 的此比例復生(避免滿血復生高 HP 精英遠超召喚物階)
 REANIMATE_HP_FACTOR = 0.6
@@ -35,7 +35,7 @@ def _fail(message: str) -> dict:
 
 
 def effective_cost(char: Character, gamedata: GameData, spell_id: str) -> int:
-    """技能越高,魔力消耗越低(最多打到原價的 60%);里程碑「過載」會抬高該學派魔耗。"""
+    """技能越高,法力消耗越低(最多打到原價的 60%);里程碑「過載」會抬高該學派魔耗。"""
     sp = gamedata.spells[spell_id]
     skill = char.skill(sp["school"])
     cost = sp["cost"] * (1.0 - min(0.4, skill / 250.0))
@@ -245,7 +245,7 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
     if triaged:           # 折扣成本(旗標延到「治療確實施放」才消耗 → 失敗退費時不白費 buff)
         cost = max(0, round(cost * triage_opt.get("magicka_factor", 0.15)))
     if char.magicka < cost:
-        return _fail("魔力不足。")
+        return _fail("法力不足。")
 
     char.magicka -= cost
     # 施法消耗體力(法師三系資源對稱;玩家專用——敵人/召喚走 combat.resolve_attack 不經此)。
@@ -291,7 +291,7 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
 
     if kind in ("damage", "damage_status"):
         if target is None:
-            char.magicka += cost  # 無目標,退還(魔力 + 體力)
+            char.magicka += cost  # 無目標,退還(法力 + 體力)
             char.fatigue = fatigue_before
             return _fail("沒有施法目標。")
         element = eff.get("element", "magic")
@@ -312,7 +312,7 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
             add_conduct(target)
         if eroding and not killed:                     # R120 每次傷害法術 +1 層秘蝕(削魔抗,任何傷害元素皆疊·輔助全體傷害魔法)
             add_erosion(target)
-        if eff.get("deepen_erosion") and not killed:   # R121 湮識(秘術終極):命中永久提升該敵秘蝕上限(本場·單敵)→ 秘蝕可蝕更深
+        if eff.get("deepen_erosion") and not killed:   # R121 湮識(神秘終極):命中永久提升該敵秘蝕上限(本場·單敵)→ 秘蝕可蝕更深
             target._deep_erosion = True
         msg = f"{sp['name']}命中{target.name},造成 {dmg} 點魔法傷害{_resist_tag(mult)}!"
         if kind == "damage_status" and not killed:
@@ -419,7 +419,7 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
         char.active_effects.append({"kind": "shield", "magnitude": mag, "turns": eff["turns"]})
         msg = f"{sp['name']}在你身上凝成護盾(護甲 +{mag},{eff['turns']} 回合)。"
 
-    elif kind == "ward":   # 秘術「結界」:吸收來襲法術/元素傷害的可耗盡池(吸魔變體按吸收量回魔)
+    elif kind == "ward":   # 神秘「結界」:吸收來襲法術/元素傷害的可耗盡池(吸魔變體按吸收量回魔)
         mag = round(eff["magnitude"] * power)
         char.active_effects[:] = [e for e in char.active_effects if e.get("kind") != "ward"]  # 重施去重 → 不疊無敵
         entry = {"kind": "ward", "magnitude": mag, "turns": eff["turns"]}
@@ -528,7 +528,7 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
                 who = "你" if dest is char else dest.name
                 msg = f"{sp['name']} —— {who}{_status_verb(st)}。"
 
-    elif kind == "dispel":   # 秘術「驅散」:淨化自身的不良控場/侵蝕效果(不動護盾/再生等增益)
+    elif kind == "dispel":   # 神秘「驅散」:淨化自身的不良控場/侵蝕效果(不動護盾/再生等增益)
         removed = [e for e in char.active_effects if e.get("kind") in _DISPELLABLE]
         char.active_effects[:] = [e for e in char.active_effects if e.get("kind") not in _DISPELLABLE]
         msg = (f"{sp['name']} —— 你驅散了身上的 {len(removed)} 道不良效果。" if removed
@@ -665,7 +665,7 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
                        and e.template_id in gamedata.bestiary
                        and not gamedata.bestiary[e.template_id].get("solo")
                        and not getattr(e, "_reanimated", False)
-                       and not getattr(e, "summoned", False)), None)   # R134:BOSS 召喚爪牙=魔力構造無屍可掠(封 reanimate→token 回收側門·對齊三重排除)
+                       and not getattr(e, "summoned", False)), None)   # R134:BOSS 召喚爪牙=法力構造無屍可掠(封 reanimate→token 回收側門·對齊三重排除)
         if corpse is None:
             char.magicka += cost
             char.fatigue = fatigue_before
@@ -717,7 +717,7 @@ def active_shield(char: Character) -> int:
 
 
 def consume_ward(char, dmg: float) -> tuple[float, int]:
-    """秘術結界:吸收來襲法術/元素傷害。扣減 ward magnitude(耗盡即失效),回傳
+    """神秘結界:吸收來襲法術/元素傷害。扣減 ward magnitude(耗盡即失效),回傳
     (剩餘傷害, 吸魔回魔量)。cast 端已重施去重 → 至多一道,取第一道未耗盡者。
     吸魔結界(absorb)按實際吸收量比例回魔;一般結界回魔 0。"""
     for e in char.active_effects:
@@ -806,7 +806,7 @@ def resisted_mind(entity, status: str, rng) -> bool:
 
 
 def weaken_factor(creature) -> float:
-    """回傳攻擊傷害應乘上的係數(多個耗弱取最強)。"""
+    """回傳攻擊傷害應乘上的係數(多個衰弱取最強)。"""
     factor = 1.0
     for e in creature.active_effects:
         if e["kind"] == "weaken" and e["turns"] > 0:
@@ -850,16 +850,16 @@ def add_conduct(creature) -> None:
         creature.active_effects.append({"kind": "conduct", "stacks": 1, "turns": CONDUCT_TURNS})
 
 
-# 秘蝕(R120 秘術破抗「輔助」頂點·capstone-gated):持頂點者的**任何傷害法術**命中 → 目標疊「秘蝕
+# 秘蝕(R120 神秘破抗「輔助」頂點·capstone-gated):持頂點者的**任何傷害法術**命中 → 目標疊「秘蝕
 # erosion」層,每層**削減目標 EROSION_RESIST_PER_STACK 點通用魔法抗性**(夾 EROSION_MAX_STACKS 層 = −15·
 # **floored ≥0:只蝕穿既有抗性、不製造弱點**)。因火/冰/雷(MAGIC_ELEMENTS)亦吃 magic 抗 → 削 magic 抗
-# **輔助所有傷害魔法**(非僅秘術 magic 系),破抗=降魔抗、非直接增傷。每次命中刷新 EROSION_TURNS,3 回
+# **輔助所有傷害魔法**(非僅神秘 magic 系),破抗=降魔抗、非直接增傷。每次命中刷新 EROSION_TURNS,3 回
 # 合內無新傷害法術則整組清零(靠 tick turns 歸零)。**僅 mastery.has_arcane_erosion 頂點者施加·純法術
 # 傷害路徑**(combat 武器/非頂點者不讀 → sim byte-identical;鏡像 conduct 疊層結構但削抗而非增傷)。
 # 🔴 磁量使用者拍板 3/層·夾 5 層 = −15 魔抗;達貢 fire85 恆牆火系·720HP + 削抗後絕對傷害仍小 → 必 sim 守牆。
 EROSION_RESIST_PER_STACK = 3
 EROSION_MAX_STACKS = 5
-EROSION_DEEP_MAX_STACKS = 10   # R121 湮識(秘術終極)命中 → 永久提升該敵秘蝕上限(−30·單敵·本場戰鬥·暫態旗標)
+EROSION_DEEP_MAX_STACKS = 10   # R121 湮識(神秘終極)命中 → 永久提升該敵秘蝕上限(−30·單敵·本場戰鬥·暫態旗標)
 EROSION_TURNS = 3
 
 
@@ -879,7 +879,7 @@ def erosion_resist_reduction(creature) -> int:
 
 
 def add_erosion(creature) -> None:
-    """秘術命中 → 疊一層秘蝕(夾 erosion_max_stacks:湮識加深者 10 否則 5)+ 刷新計時;無則新建。"""
+    """神秘命中 → 疊一層秘蝕(夾 erosion_max_stacks:湮識加深者 10 否則 5)+ 刷新計時;無則新建。"""
     cap = erosion_max_stacks(creature)
     e = next((x for x in creature.active_effects if x.get("kind") == "erosion" and x.get("turns", 0) > 0), None)
     if e:
