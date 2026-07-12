@@ -283,6 +283,26 @@
   .mapinfo .mi-go:hover{filter:brightness(1.08);transform:translateY(-1px);} .mapinfo .mi-go:active{transform:translateY(0);}
   .mapinfo .mi-go:focus-visible{outline:2px solid var(--gold);outline-offset:2px;}
   .mzb.ctl{font-weight:700;min-width:2.4em;text-align:center;}
+  /* R160c 地圖服務標記/篩選 */
+  .msvcbar{display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin:0 0 4px;}
+  .msvcbar .lab{color:var(--gold-dim);font-size:calc(11.5px*var(--fs-scale,1));margin-right:2px;}
+  .mzb.svc{padding:3px 10px;min-height:max(24px,calc(26px*var(--fs-scale,1)));min-width:1.8em;text-align:center;}   /* 觸控目標不低於 WCAG 24px(小字級亦然) */
+  .msvc-sep{width:1px;align-self:stretch;background:var(--line);margin:2px 3px;}
+  .msvc-find{margin:2px 2px 0;font-size:calc(12.5px*var(--fs-scale,1));color:var(--ink);}
+  .msvc-find .msf-lab{color:var(--gold);font-weight:700;}
+  .msvc-find .mi-hint{color:var(--faint);}   /* .mi-hint 原僅 scoped 於 .mapinfo → 在 .msvc-find 補淡化 */
+  .msvc-find .msf-go{margin-left:8px;vertical-align:middle;font-size:calc(12px*var(--fs-scale,1));font-weight:700;
+    padding:3px 12px;cursor:pointer;border-radius:9px;border:1px solid var(--gold-soft);background:var(--raise);color:var(--gold);}
+  .msvc-find .msf-go:hover{filter:brightness(1.08);} .msvc-find .msf-go:focus-visible{outline:2px solid var(--gold);outline-offset:2px;}
+  /* 公會徽(縮放/行省檢視才顯,復用 .mlabel 的 .prov/.zoomed gate;公會篩選時匹配城在總覽亦強制顯) */
+  .mpip{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);margin-bottom:2px;
+    font-size:calc(8.5px*var(--fs-scale,1));line-height:1;color:var(--gold);text-shadow:0 0 3px #000,0 0 2px #000;
+    white-space:nowrap;display:none;pointer-events:none;z-index:4;}
+  .mapstage.prov .mpip,.mapstage.zoomed .mpip{display:inline-block;}
+  .mapzoom.filtering .mmark{opacity:.22;}
+  .mapzoom.filtering .mmark.here{opacity:.9;}
+  .mapzoom.filtering .mmark.svcmatch{opacity:1;color:var(--gold);text-shadow:0 0 8px var(--gold-soft),0 0 3px var(--gold);z-index:6;}
+  .mapzoom.gfilter .mmark.svcmatch .mpip{display:inline-block;}   /* 只公會篩選才強制顯公會徽(常見服務篩選不顯無關公會徽) */
   /* 地城格子 */
   .dgrid{display:grid;gap:5px;margin:12px 0 4px;max-width:340px;}
   .dgcell{aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:calc(17px*var(--fs-scale,1));
@@ -640,6 +660,12 @@
     const TOUCH = !!(window.matchMedia && window.matchMedia("(hover: none)").matches);
     const ICON = { city: "◆", town: "◇", dungeon: "✦", wilderness: "•" };
     const byId = {}; g.nodes.forEach(function (n) { byId[n.id] = n; });
+    // R160c 服務篩選/公會徽:單字縮寫 + 固定優先序(公會→訓/鐵→馬廄/房產→旅/商/告示);
+    //   GUILDS = 差異軸(每城皆有旅/商 → 不入公會徽,只入篩選)。皆由 payload 的 svc/svc_all 衍生。
+    const SVC_ABBR = { "法師公會": "法", "戰士公會": "戰", "盜賊公會": "盜", "黑暗兄弟會": "黑", "戰友團": "友", "九神騎士團": "騎", "神話黎明": "黎", "訓練師": "訓", "鐵匠": "鐵", "馬廄": "廄", "房產": "宅", "旅店": "宿", "商人": "商", "告示板": "板" };
+    const SVC_ORDER = ["法師公會", "戰士公會", "盜賊公會", "黑暗兄弟會", "戰友團", "九神騎士團", "神話黎明", "訓練師", "鐵匠", "馬廄", "房產", "旅店", "商人", "告示板"];
+    const IS_GUILD = { "法師公會": 1, "戰士公會": 1, "盜賊公會": 1, "黑暗兄弟會": 1, "戰友團": 1, "九神騎士團": 1, "神話黎明": 1 };
+    let activeSvc = "";
     // 每個邊境節點通往的「對面省」集合(供行省檢視標 →目的省)
     const borderTo = {};
     (g.edges || []).forEach(function (e) {
@@ -694,11 +720,37 @@
         }
         // R114 F5:任務目標(金環)/ 重踞可再掃地城(紅角)角標 + tooltip 註記(可同時顯示)
         const flag = (n.quest ? '<span class="mflag q">◎</span>' : "") + (n.reinfested ? '<span class="mflag r">⚔</span>' : "");
+        // 公會徽(R160c):該城公會大廳單字(svc=公會全名清單);縮放/行省檢視才顯,標出差異軸的公會分布
+        const pip = (n.svc && n.svc.length)
+          ? `<span class="mpip">${n.svc.map(function (s) { return SVC_ABBR[s] || ""; }).join("")}</span>` : "";
         const t = `${esc(n.name)}·${esc(n.type_cn)}${n.danger ? " ⚠" + n.danger : ""}`
           + (n.quest ? " · 🎯任務目標" : "") + (n.reinfested ? " · ⚔重踞可再掃" : "");
-        return `<div class="mmark ${cls}${dg}" data-id="${esc(n.id)}" style="left:${p[0]}%;top:${p[1]}%" title="${t}">${glyph}${flag}${lbl}</div>`;
+        return `<div class="mmark ${cls}${dg}" data-id="${esc(n.id)}" style="left:${p[0]}%;top:${p[1]}%" title="${t}">${glyph}${flag}${pip}${lbl}</div>`;
       }).join("");
       zoom.innerHTML = svg + hours + marks;
+      applyMatch();   // R160c:重繪後(切省/縮放)在新標記上重套當前服務篩選高亮
+    }
+    function applyMatch() {   // 依 activeSvc 高亮匹配城(金光)、暗化其餘;★你在此豁免。純 class 切換,任何檢視皆作用
+      zoom.classList.toggle("filtering", !!activeSvc);
+      zoom.classList.toggle("gfilter", !!activeSvc && !!IS_GUILD[activeSvc]);   // 只公會篩選才強制顯公會徽(否則常見服務篩選會顯無關公會徽)
+      zoom.querySelectorAll(".mmark").forEach(function (m) {
+        const n = byId[m.dataset.id];
+        m.classList.toggle("svcmatch", !!activeSvc && !!n && (n.svc_all || []).indexOf(activeSvc) >= 0);
+      });
+    }
+    function updateFind() {   // 篩選說明(aria-live):全圖幾處 + 最近可達城(hops 排序)+ 前往按鈕(走既有 route:)
+      const find = el.querySelector(".msvc-find");
+      if (!find) return;
+      if (!activeSvc) { find.innerHTML = ""; return; }
+      const matches = g.nodes.filter(function (n) { return (n.svc_all || []).indexOf(activeSvc) >= 0; });
+      const reach = matches.filter(function (n) { return n.hops != null; }).sort(function (a, b) { return a.hops - b.hops; });
+      let s = `<span class="msf-lab">🔎 ${esc(activeSvc)}</span> · 全圖 ${matches.length} 處`;
+      if (matches.some(function (n) { return n.here; })) s += ` · <span style="color:var(--green)">你所在地即有</span>`;
+      else if (reach.length) s += ` · 最近 ${esc(reach[0].name)}（${reach[0].hops} 段 · 約 ${reach[0].hours} 時）<button class="msf-go" type="button">前往</button>`;
+      else s += ` · <span class="mi-hint">(暫無可達)</span>`;
+      find.innerHTML = s;
+      const go = find.querySelector(".msf-go");
+      if (go) go.addEventListener("click", function () { submit("route:" + reach[0].id); });
     }
     function showInfo(info, n) {
       if (!n) {
@@ -727,8 +779,18 @@
         .map(function (p) { return `<button class="mzb" data-prov="${esc(p.name)}">${esc(p.name)}</button>`; }).join("");
     const ctlBtns = `<button class="mzb ctl" data-zoom="in" title="放大" aria-label="放大">＋</button>`
       + `<button class="mzb ctl" data-zoom="out" title="縮小" aria-label="縮小">－</button>`;
+    // R160c 服務篩選 chip 列:由 payload 全體 svc_all 動態衍生(隨探索自動增長),固定優先序;公會↔常見服務間加分隔
+    const svcPresent = {};
+    g.nodes.forEach(function (n) { (n.svc_all || []).forEach(function (s) { svcPresent[s] = 1; }); });
+    const svcKeys = SVC_ORDER.filter(function (s) { return svcPresent[s]; });   // 命名區別於 showInfo 內的 per-node svcList
+    let svcChips = `<span class="lab">服務</span><button class="mzb svc active" data-svc="" aria-pressed="true">全部</button>`;
+    svcKeys.forEach(function (s, i) {
+      if (i > 0 && IS_GUILD[svcKeys[i - 1]] && !IS_GUILD[s]) svcChips += `<span class="msvc-sep"></span>`;   // 公會→常見服務分隔
+      svcChips += `<button class="mzb svc" data-svc="${esc(s)}" aria-pressed="false" aria-label="${esc(s)}" title="${esc(s)}">${SVC_ABBR[s] || esc(s)}</button>`;
+    });
     const el = elFrom(`<div class="card"><div class="card-head">🗺 世界地圖</div>` +
       `<div class="mzbar">${btns}${ctlBtns}</div>` +
+      (svcKeys.length ? `<div class="msvcbar" role="group" aria-label="依服務篩選地點">${svcChips}</div><div class="msvc-find" aria-live="polite"></div>` : "") +
       `<div class="mapstage" style="aspect-ratio:${g.cols}/${g.rows}"><div class="mapzoom"></div></div>` +
       `<div class="mapinfo"></div>` +
       `<div class="maplegend">★所在 ◆城 ◇鎮 ✦地城 •荒野 <span style="color:#5fc6d8">◈通道</span> · <span style="color:#5fc6d8">青線=跨省路徑</span> · 黃→紅=危險度 · 點地點看設施→前往 · ＋/－ 或滾輪縮放</div></div>`);
@@ -809,6 +871,16 @@
     el.querySelectorAll(".mzb.ctl").forEach(function (btn) {   // ＋/－ 縮放(手機無滾輪也能縮放),以 stage 中心為錨
       btn.addEventListener("click", function () {
         zoomTo(scale * (btn.dataset.zoom === "in" ? 1.4 : 1 / 1.4), stage.clientWidth / 2, stage.clientHeight / 2);
+      });
+    });
+    el.querySelectorAll(".mzb.svc").forEach(function (btn) {   // R160c 服務篩選 chip(單選;再點同項或『全部』=清除);在 pan surface 外
+      btn.addEventListener("click", function () {
+        activeSvc = (btn.dataset.svc === activeSvc) ? "" : btn.dataset.svc;   // 再點當前選項=切回『全部』(清除)
+        el.querySelectorAll(".mzb.svc").forEach(function (x) {
+          const on = x.dataset.svc === activeSvc;
+          x.classList.toggle("active", on); x.setAttribute("aria-pressed", on ? "true" : "false");
+        });
+        applyMatch(); updateFind();
       });
     });
     return el;

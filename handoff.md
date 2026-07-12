@@ -1412,6 +1412,20 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 
 ---
 
+### R160c · 服務可發現性 III:世界地圖服務標記/篩選(公會徽 + 篩選高亮 + 最近 X 導航)
+
+**承「評估 地圖服務標記/篩選」設計面板(3 方案 filter-first/always-badges/hybrid → judge 評分)使用者拍板 S2**(篩選核心 + 縮放才顯公會徽):地圖是主要旅行規劃面,但服務全藏在逐一點擊 65 個同字符 marker 後 —— 無徽記、無篩選、無「最近 X」。**🔴 純前端(唯一改 `index.html` renderMap)·零後端/存檔/combat·payload 已備(svc/svc_all/hops·R159/R160b)零新欄 → sim byte-identical·前端 JS 不由 run_all 執行(node --check + DOM-mock + 契約斷言驗)。**
+
+**① 篩選 chip 列**(`.msvcbar`·pan surface 外·`role="group"`):由全體 `svc_all` **動態衍生**(隨探索增長·神話黎明等 visible 閘地點自動排除)·固定優先序(公會→訓/鐵→馬廄/房產→旅/商/告示)·單字縮寫(法/戰/盜/…)·公會↔常見服務分隔·**單選(radio 式·再點同項或『全部』=清除)**·`aria-pressed`·**無 `data-key`**(不搶數字鍵)。**② 高亮 + 最近 X**:選一項 → `applyMatch` 對匹配城加 `.svcmatch`(金光)、`.mapzoom.filtering` 暗化其餘(opacity .22·★你在此豁免)·`updateFind` 重建 `.msvc-find`(**aria-live**)「🔎 X · 全圖 N 處 · 最近 <城>(N 段·約 M 時)[前往]」(nearest=matches∩hops≠null 依 hops 排序 [0]·**你所在地即有**分支先於最近·[前往] 走既有 `route:` 管線)。**③ 公會徽 pip**(`.mpip`·每城 `n.svc` 公會單字·**復用既有 `.mlabel` 的 `.prov/.zoomed` gate** → 總覽純淨、聚焦省份才現;`.gfilter`〔只公會篩選〕時匹配城總覽亦強制顯)。`draw()` 尾呼 `applyMatch()` → 切省重繪自動重套篩選。
+
+**驗證**:`node --check` + **renderMap 過 DOM shim 無 runtime 拋錯**(TDZ/undefined 全清) + **篩選/最近 X 邏輯對真實 payload 驗**(13 chips·nearest hops 排序·bruma pip=法盜黑) + test_web 契約斷言(markup/CSS/gfilter/觸控目標)。`run_all` **131**(未碰 Python·純前端)·sim byte-identical。零新存檔欄。
+
+**🔴 對抗審查 3 維 15-agent → 0 blocker/major·12 nit(8 修·3 by-design)**:①公會徽強制顯原 gated 於 `.filtering`(常見服務篩選會顯無關公會徽)→ 新 `.gfilter` 只公會篩選才顯;②`.mi-hint` 原 scoped 於 `.mapinfo` → `.msvc-find` 補淡化;③公會徽 margin-bottom 1→2px 減與 ◎/⚔ 角標重疊;④chip 觸控目標 `max(24px,…)` 守 WCAG;⑤`.msvcbar` 加 `role=group aria-label`;⑥再點同項 toggle-off(修「comment 稱清除但碼未清」);⑦renderMap 級 `svcList`→`svcKeys`(避與 showInfo 內同名 shadow);⑧修 test 空洞 fs-scale 斷言。**接受 by-design**:篩選高亮限當前檢視、最近 X 說明全域(切總覽看全部亮點);公會徽在預設省檢視即顯(總覽才純淨=刻意);單字 chip 靠首次點選 caption 顯全名 + aria-label(觸控可讀)。
+
+**🔴 鐵律**:地圖服務標記/篩選純前端 renderMap(payload 已備·勿加後端欄);篩選控件在 pan surface 外(`.msvcbar`/`.msvc-find` 為 `.mapstage` 兄弟·勿移入)·chip 無 `data-key`;公會徽復用 `.prov/.zoomed` gate(總覽純淨)·強制顯走 `.gfilter`(只公會篩選);最近 X 走 `hops` 排序·前往走既有 `route:`;新 CSS 用已定義 token(--gold/--faint/--line…·無 --parch)+ fs-scale·觸控目標守 24px;前端改動走 node --check + DOM-mock + test_web 契約斷言(run_all 不執行 JS)。**服務可發現性 backlog 剩**:目錄可行動化(discover→navigate·R114D「長途只列已訪城」放開拍板)、「何處有售」商品/材料反查、零散站點 codex 批次。
+
+---
+
 ### R160b · 服務可發現性 II:馬廄/房產進反查通道 + 地點卡就地易讀性(城鎮專精現場可見)
 
 **承「評估 服務可發現性」survey(5 維 26 findings → 6 選項)使用者拍板 1+2**:R159 立了服務反查骨幹,但 **馬廄(14 城)與房產(14 城)不在 world.json 的 `services` vocab** → 完全落在所有反查通道之外(只有站進城才看得到);且 **`_location_view`(每圈渲染的地點卡)根本沒有 services 欄** → 荒謬地,地圖點節點比人在現場還清楚。**🔴 純 UI/唯讀衍生 · 零存檔欄 · 未碰 combat/formulas/magic → sim byte-identical。**

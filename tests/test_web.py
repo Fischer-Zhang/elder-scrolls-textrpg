@@ -903,6 +903,39 @@ def test_card_grid_for_chip_menus():
     assert "o.chips && o.chips.length" in html                   # 偵測訊號 = 選項帶 chips
 
 
+def test_map_service_filter_and_pips_r160c():
+    """R160c 地圖服務標記/篩選:前端契約 —— 篩選 chip 列 + 公會徽 pip + 高亮/暗化/最近X 邏輯存在,
+    且 payload 已備(svc/svc_all/hops)零後端改動。純字串契約(前端 JS 不由 run_all 執行)。"""
+    static = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                          "tesrpg", "web", "static", "index.html")
+    with open(static, encoding="utf-8") as f:
+        html = f.read()
+    # 篩選 chip 列(動態衍生自 svc_all·單選)+ 說明(aria-live)在 pan surface 外
+    assert '<div class="msvcbar"' in html and 'class="msvc-find" aria-live="polite"' in html
+    assert 'class="mzb svc"' in html and 'data-svc=' in html and 'aria-pressed=' in html
+    assert "SVC_ORDER" in html and "IS_GUILD" in html and "SVC_ABBR" in html   # 固定序 + 公會軸 + 縮寫
+    # 公會徽 pip(縮放/行省檢視才顯,復用 .prov/.zoomed gate;篩選時匹配城強制顯)
+    assert 'class="mpip"' in html
+    assert ".mapstage.prov .mpip,.mapstage.zoomed .mpip{display:inline-block;}" in html
+    # 高亮/暗化:filtering 暗化非匹配、★你在此豁免、匹配金光
+    assert ".mapzoom.filtering .mmark{opacity:.22;}" in html
+    assert ".mapzoom.filtering .mmark.here{opacity:.9;}" in html
+    assert ".mapzoom.filtering .mmark.svcmatch{" in html
+    # applyMatch(重繪後重套)+ updateFind(最近X·hops 排序·前往走既有 route:)
+    assert "function applyMatch()" in html and "applyMatch();" in html   # draw 尾呼叫
+    assert "function updateFind()" in html and 'submit("route:" + reach[0].id)' in html
+    assert "n.hops != null" in html and ".sort(" in html                 # 最近=可達且 hops 最小
+    # fs-scale + 主題安全 + WCAG 觸控目標:新控件確實用 fs-scale,且觸控目標有 24px 地板
+    assert ".msvcbar .lab{color:var(--gold-dim);font-size:calc(11.5px*var(--fs-scale,1))" in html
+    assert "min-height:max(24px,calc(26px*var(--fs-scale,1)))" in html   # chip 觸控目標不低於 WCAG 24px
+    assert ".msvc-find .mi-hint{color:var(--faint);}" in html            # 淡化提示在 .msvc-find 亦生效(非只 .mapinfo)
+    assert 'role="group"' in html and 'aria-label="依服務篩選地點"' in html   # 篩選 chip 列曝光為具名群組(AT)
+    # 公會徽強制顯只在公會篩選(gfilter);常見服務篩選不顯無關公會徽
+    assert ".mapzoom.gfilter .mmark.svcmatch .mpip{display:inline-block;}" in html
+    assert 'zoom.classList.toggle("gfilter"' in html
+    assert 'data-key' not in html.split('class="mzb svc"')[0][-200:]     # svc chip 不掛 data-key(不搶數字鍵)
+
+
 def test_back_key_works_on_large_menus():
     """選單審查修:≥10 項選單按 0 也要觸發返回(原本被多位數字緩衝吞掉 → 頁尾承諾的 0=返回 失效)。"""
     static = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
