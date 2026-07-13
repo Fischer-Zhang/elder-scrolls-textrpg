@@ -624,15 +624,41 @@ _COMBAT_BUCKETS = {
 _COMBAT_BUCKET_ORDER = ["攻擊", "威能·戰技", "架式", "應變", "脫戰"]
 
 
+_COMBAT_CHIP_DIGITS = set("0123456789０１２３４５６７８９%∞")   # R162:視為「決策數字」的字元(阿拉伯/全形數字/百分比/無限)
+
+
+def _split_combat_label(label: str):
+    """R162 戰鬥動作標籤瘦身:「動作詞（備註)」→ (動作詞, 決策數字 chips, 完整原標籤 note)。
+    含數字/%/∞ 的備註段=決策數字 → 併成一顆 chip 留在按鈕上(桌面/手機都看得到);
+    純文字風味段 → 只進 note(前端掛 hover title + aria-label;note=完整原標籤故不失真)。
+    無括號標籤(施法/逃跑/↻ 再攻:X)→ 原樣當動作詞、無 chip、無 note。全形/半形括號皆可拆。"""
+    lefts = [i for i in (label.find("（"), label.find("(")) if i >= 0]
+    if not lefts or not (label.endswith(")") or label.endswith("）")):
+        return label, [], ""
+    verb = label[:min(lefts)].strip()
+    inner = label[min(lefts) + 1:-1]
+    segs = [s.strip() for s in inner.replace("，", "·").replace(",", "·").split("·") if s.strip()]
+    nums = ["".join(s.split()) for s in segs if any(ch in _COMBAT_CHIP_DIGITS for ch in s)]
+    chips = [{"text": "·".join(nums)}] if nums else []
+    return verb, chips, label
+
+
 def _grouped_combat_menu(opts: list) -> str:
     """把扁平的戰鬥動作選單依類別分桶顯示(可掃視);未知 key 落「其他」桶(防呆)。
     grouped_menu 連續編號 + 回選中 key → 呼叫端 dispatch 完全不變(repeat 在「攻擊」桶首=編號 1,守 R113 置頂)。
-    **分桶純 web 呈現**:無 web backend(終端/測試)退回扁平 `ui.menu`(回同 key、同契約)→ 既有 combat 測試零改。"""
+    **分桶純 web 呈現**:無 web backend(終端/測試)退回扁平 `ui.menu`(回同 key、原樣完整標籤)→ 既有 combat 測試零改。
+    web 端每項標籤經 `_split_combat_label` 拆成動作詞 + 決策數字 chip + hover 備註(R162)。"""
     if ui._web is None:
         return ui.menu("你的回合", opts)
     buckets: dict[str, list] = {}
     for k, lbl in opts:
-        buckets.setdefault(_COMBAT_BUCKETS.get(k, "其他"), []).append((k, lbl))
+        verb, chips, note = _split_combat_label(lbl)
+        meta = {}
+        if chips:
+            meta["chips"] = chips
+        if note:
+            meta["note"] = note
+        buckets.setdefault(_COMBAT_BUCKETS.get(k, "其他"), []).append((k, verb, meta) if meta else (k, verb))
     groups = [(g, buckets[g]) for g in _COMBAT_BUCKET_ORDER if buckets.get(g)]
     if buckets.get("其他"):
         groups.append(("其他", buckets["其他"]))

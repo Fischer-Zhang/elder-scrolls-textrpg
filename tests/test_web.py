@@ -524,8 +524,8 @@ def test_combat_readability_d_batch_r156():
         grp = {}
         og, ocsg = ui.grouped_menu, ui.combat_status_group
         ui.combat_status_group = lambda *a, **k: None
-        ui.grouped_menu = lambda title, groups, extra_keys=None, cta_keys=None: (
-            grp.update(title=title, groups=[(g, [k for k, _ in o]) for g, o in groups]) or "flee")
+        ui.grouped_menu = lambda title, groups, extra_keys=None, cta_keys=None: (   # R162:option 可為 (k,label) 或 (k,label,meta) → 取 t[0]
+            grp.update(title=title, groups=[(g, [t[0] for t in o]) for g, o in groups]) or "flee")
         try:
             act = M._choose_combat_action(state, gd, [_mk(20)], [])
         finally:
@@ -549,6 +549,54 @@ def test_combat_readability_d_batch_r156():
     finally:
         ui.menu, ui.combat_status_group = om, ocsg
     assert act2["type"] == "flee" and seen.get("flat") and seen["title"] == "你的回合"
+
+
+def test_combat_label_split_chip_hover_r162():
+    """R162:戰鬥標籤拆「動作詞 / 決策數字 chips / 完整備註 note」——含數字段進 chip、純風味不進 chip。"""
+    from tesrpg import main as M
+    # 無括號 → 原樣動作詞,無 chip/note
+    assert M._split_combat_label("施法") == ("施法", [], "")
+    assert M._split_combat_label("↻ 再攻:糖晶藤") == ("↻ 再攻:糖晶藤", [], "")
+    # 純風味 → 動作詞 + note(=完整原標籤),無 chip;全形/半形括號皆拆
+    assert M._split_combat_label("攻擊（鐵長劍)") == ("攻擊", [], "攻擊（鐵長劍)")
+    verb, chips, note = M._split_combat_label("星座之力(瑪拉祝福)")
+    assert verb == "星座之力" and chips == [] and note == "星座之力(瑪拉祝福)"
+    # 混合 → 只有含數字的段進 chip;風味段不進 chip(但完整備註在 note 供 hover)
+    verb, chips, note = M._split_combat_label("隱遁再襲（重獲偷襲·不閃避·成功率 70%,剩 3 次)")
+    assert verb == "隱遁再襲"
+    assert chips and "70%" in chips[0]["text"] and "剩3次" in chips[0]["text"]
+    assert "重獲偷襲" not in chips[0]["text"] and "不閃避" not in chips[0]["text"]
+    assert note == "隱遁再襲（重獲偷襲·不閃避·成功率 70%,剩 3 次)"
+    assert M._split_combat_label("🔪 致命烙印（標記一敵 · 耗 15 體力)")[1][0]["text"] == "耗15體力"
+    # 🔴 守恆:每個含數字的段(去空白後)都必須出現在 chip,否則決策數字被漏到只剩 hover
+    for lbl in ("隱遁再襲（重獲偷襲·不閃避·成功率 70%,剩 3 次)",
+                "重盾掩體（攻擊變緩 · 卸力-38% · 元素-26% · 回氣+2/回)",
+                "箭雨（齊射全體 60% 傷害 · 倍耗體)"):
+        _, chips, _ = M._split_combat_label(lbl)
+        inner = lbl[lbl.find("（") + 1:-1]
+        for seg in inner.replace("，", "·").replace(",", "·").split("·"):
+            if any(ch in "0123456789%" for ch in seg):
+                assert "".join(seg.split()) in chips[0]["text"], f"數字段 {seg!r} 漏出 chip"
+
+
+def test_grouped_menu_carries_chips_and_note_r162():
+    """R162:真 console.grouped_menu 把 (key,label,meta) 的 chips/note 帶進 spec;
+    (key,label) 2-tuple 不帶額外鍵 → 與改動前 byte-identical(地圖/hub/開局 grouped 不受影響)。"""
+    captured = {}
+    o_wp, o_web = ui._web_prompt, ui._web
+    ui._web_prompt = lambda spec: (captured.update(spec) or "x")
+    ui._web = object()                     # 非 None → grouped_menu 不 raise
+    try:
+        ui.grouped_menu("你的回合", [("攻擊", [
+            ("vanish", "隱遁再襲", {"chips": [{"text": "70%·剩3"}], "note": "隱遁再襲（…70%,剩3)"}),
+            ("cast", "施法"),
+        ])])
+    finally:
+        ui._web_prompt, ui._web = o_wp, o_web
+    opts = captured["groups"][0]["options"]
+    assert opts[0]["label"] == "隱遁再襲" and opts[0]["chips"] == [{"text": "70%·剩3"}]
+    assert opts[0]["note"] == "隱遁再襲（…70%,剩3)"
+    assert opts[1]["label"] == "施法" and "chips" not in opts[1] and "note" not in opts[1]
 
 
 def test_combat_target_reemit_web():

@@ -2858,7 +2858,15 @@ def grouped_menu(title: str, groups: list, extra_keys: list | None = None,
     """
     if _web is None:
         raise RuntimeError("ui.grouped_menu 需要 web backend(終端版已移除;測試請 patch ui.grouped_menu)")
-    g = [{"header": header, "options": [{"key": k, "label": _plain(lbl)} for k, lbl in opts]}
+    def _gopt(t):
+        o = {"key": t[0], "label": _plain(t[1])}
+        if len(t) > 2 and t[2]:                       # (key, label, meta):meta 可帶 chips/note(R162 戰鬥選單決策數字 chip + hover 備註);2-tuple 不帶額外鍵 → byte-identical
+            if t[2].get("chips"):
+                o["chips"] = t[2]["chips"]
+            if t[2].get("note"):
+                o["note"] = _plain(t[2]["note"])
+        return o
+    g = [{"header": header, "options": [_gopt(t) for t in opts]}
          for header, opts in groups if opts]
     return _web_prompt({"type": "grouped", "title": title or "", "groups": g,
                         "extra_keys": list(extra_keys or []),
