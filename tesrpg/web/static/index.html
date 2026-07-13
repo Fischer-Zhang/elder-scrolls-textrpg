@@ -179,6 +179,9 @@
      auto-fill 保留空軌 → 單張卡維持單欄寬;minmax 230px 對齊原 flex-basis,欄數不變。動作/確認選單仍走 flex。 */
   .btns.cardgrid { display:grid; grid-template-columns:repeat(auto-fill, minmax(230px, 1fr)); align-items:stretch; }
   .btns.cardgrid button.opt { flex:none; }
+  /* 戰鬥動作選單(R162):同治「flex grow 之疾」,但按鈕只佔「內容寬」(flex:0 0 auto)→ 短標籤=小按鈕、
+     不再撐滿整排;並排 + 自動換行 → 寬度不浪費、列數變少。不縮字/不縮 padding/不藏資訊,唯戰鬥選單套此。 */
+  .btns.combat-flow button.opt { flex:0 0 auto; max-width:100%; }
   button.opt { flex:1 1 230px; min-height:50px; padding:12px 15px; cursor:pointer; text-align:left; font-size:calc(15px*var(--fs-scale,1));
     font-family:var(--sans); color:var(--ink); background:linear-gradient(#191409,#130f08); border:1px solid var(--line);
     border-radius:9px; transition:transform .1s ease, border-color .12s, background .12s, box-shadow .12s; }
@@ -1209,15 +1212,21 @@
         g.options.forEach(function (o) { if (cta[o.key]) { const b = mkButton(o.label, o.key, null); b.classList.add("cta"); ctaBox.appendChild(b); } });
       });
       if (ctaBox.children.length) promptEl.appendChild(ctaBox);
+      // 戰鬥動作選單=唯一含 flee/leave key 的 grouped 選單 → 收成無表頭、內容寬的一片(不撐滿整排);其餘 grouped 照原分組表頭
+      const flow = spec.groups.some(function (g) { return g.options.some(function (o) { return o.key === "flee" || o.key === "leave"; }); });
+      let flowBox = null;
+      if (flow) { flowBox = document.createElement("div"); flowBox.className = "btns combat-flow"; }
       let i = 0;
       spec.groups.forEach(function (g) {
         const vis = g.options.filter(function (o) { return !cta[o.key]; });
         if (!vis.length) return;
-        if (g.header) { const h = document.createElement("div"); h.className = "ghead"; h.textContent = g.header; promptEl.appendChild(h); }
-        const box = document.createElement("div"); box.className = "btns";
+        if (!flow && g.header) { const h = document.createElement("div"); h.className = "ghead"; h.textContent = g.header; promptEl.appendChild(h); }
+        let box = flowBox;
+        if (!flow) { box = document.createElement("div"); box.className = "btns"; }
         vis.forEach(function (o) { i += 1; const b = mkButton(o.label, o.key, i); flatButtons.push(b); box.appendChild(b); });
-        promptEl.appendChild(box);
+        if (!flow) promptEl.appendChild(box);
       });
+      if (flow) promptEl.appendChild(flowBox);
     } else if (t === "confirm") {
       if (spec.prompt) { const h = document.createElement("div"); h.className = "ptitle"; h.textContent = spec.prompt; promptEl.appendChild(h); }
       const box = document.createElement("div"); box.className = "btns";
