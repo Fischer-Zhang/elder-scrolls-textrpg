@@ -568,15 +568,37 @@ def test_combat_label_split_chip_hover_r162():
     assert "重獲偷襲" not in chips[0]["text"] and "不閃避" not in chips[0]["text"]
     assert note == "隱遁再襲（重獲偷襲·不閃避·成功率 70%,剩 3 次)"
     assert M._split_combat_label("🔪 致命烙印（標記一敵 · 耗 15 體力)")[1][0]["text"] == "耗15體力"
-    # 🔴 守恆:每個含數字的段(去空白後)都必須出現在 chip,否則決策數字被漏到只剩 hover
-    for lbl in ("隱遁再襲（重獲偷襲·不閃避·成功率 70%,剩 3 次)",
-                "重盾掩體（攻擊變緩 · 卸力-38% · 元素-26% · 回氣+2/回)",
-                "箭雨（齊射全體 60% 傷害 · 倍耗體)"):
-        _, chips, _ = M._split_combat_label(lbl)
-        inner = lbl[lbl.find("（") + 1:-1]
-        for seg in inner.replace("，", "·").replace(",", "·").split("·"):
-            if any(ch in "0123456789%" for ch in seg):
-                assert "".join(seg.split()) in chips[0]["text"], f"數字段 {seg!r} 漏出 chip"
+    # 🔴 守恆(全選單清單,非抽樣):對每個真實戰鬥標籤 —— 動作詞非空、有括號者 note=完整原標籤、
+    # 無括號者原樣透傳、且每個含數字/%/∞ 的備註段(去空白後)都必進 chip(否則決策數字漏到只剩 hover)。
+    # 這鎖住整個標籤面:未來新增/改標籤若把決策數字漏到 hover-only 會被此測攔下(對抗審查補強)。
+    inventory = [
+        "施法", "逃跑", "撤下盾牆", "↻ 再攻:糖晶藤", "↻ 再攻（重選目標)",
+        "↻ 再施:秘術飛彈→糖晶藤", "↻ 再施:秘術飛彈（重選目標)",
+        "攻擊（鐵長劍)", "攻擊（鐵長劍 · 盾擊)", "🐾 種族之力（祖靈守護)",
+        "🐺 獸化變身（化身嗜血巨狼)", "收起格擋姿態（恢復全力攻擊)", "格擋姿態（攻擊變緩 · 舉盾卸力減傷)",
+        "瞄準射（蓄力強擊 · 額外耗體)", "牽制射（削弱目標攻勢)", "散兵走位（射一箭後遁走)",
+        "🐎 衝鋒（坐騎開場突擊 · 長槍藉馬勢洞穿)", "🏹 騎射（馬背放箭 · 大幅提升閃避)",
+        "🛡 立盾牆（減傷·嘲諷·護同袍 · 每回合耗體)", "🚩 立戰旗（鼓舞全隊增傷 · 耗魔體)",
+        "📣 號令（鼓舞全隊增傷 · 耗體)", "🕊 從容離去（敵意已全平息 · 安然脫身)",
+        "星座之力(瑪拉祝福)", "吸血之力(夜之領主)",
+        "隱遁再襲（重獲偷襲·不閃避·成功率 70%,剩 3 次)", "隱遁再襲（重獲偷襲·不閃避·成功率 100%,剩 ∞ 次)",
+        "重盾掩體（攻擊變緩 · 卸力-38% · 元素-26% · 回氣+2/回)", "箭雨（齊射全體 60% 傷害 · 倍耗體)",
+        "🩸 魅惑凝視（迷惑一敵 · 使其恐懼不進攻 · 耗 15 體力)", "🔪 致命烙印（標記一敵 · 耗 15 體力)",
+        "🧪 用藥（喝下藥水 · 耗一回合)", "😮‍💨 調息（喘息回體 ~12 · 耗一回合 · 解除架式)",
+    ]
+    digits = "0123456789０１２３４５６７８９%∞"
+    for lbl in inventory:
+        verb, chips, note = M._split_combat_label(lbl)
+        assert verb.strip(), f"動作詞不得為空:{lbl!r}"
+        lo = [i for i in (lbl.find("（"), lbl.find("(")) if i >= 0]
+        if lo and (lbl.endswith(")") or lbl.endswith("）")):
+            assert note == lbl, f"note 應=完整原標籤:{lbl!r} -> {note!r}"
+            chip_text = chips[0]["text"] if chips else ""
+            for seg in lbl[min(lo) + 1:-1].replace("，", "·").replace(",", "·").split("·"):
+                if any(ch in digits for ch in seg):
+                    assert "".join(seg.split()) in chip_text, f"決策數字段 {seg!r} 漏出 chip({lbl!r})"
+        else:
+            assert (verb, chips, note) == (lbl, [], ""), f"無括號應原樣透傳:{lbl!r} -> {(verb, chips, note)}"
 
 
 def test_grouped_menu_carries_chips_and_note_r162():
