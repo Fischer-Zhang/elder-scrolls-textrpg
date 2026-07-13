@@ -202,14 +202,6 @@
   #foot { text-align:center; color:var(--faint); font-size:calc(11px*var(--fs-scale,1)); margin-top:22px; letter-spacing:.04em; }
   .locked { opacity:.45; pointer-events:none; }
   @media (hover:none) { button.opt:hover { transform:none; box-shadow:none; } }
-  /* 戰鬥動作選單密排(R162):唯一含 flee/leave 的 grouped 選單套 #prompt.combat-dense(由 renderPrompt 掛)
-     → 縮小標題/分組表頭/按鈕,讓「戰況卡 + 選單」擠得進一屏;不藏任何資訊(全標籤照顯)。
-     只縮這一情境,hub/地圖/開局的 grouped 選單不受影響;font-size 仍一律 ×--fs-scale(R157)。 */
-  #prompt.combat-dense .ptitle{ margin:0 2px 6px; font-size:calc(15px*var(--fs-scale,1)); }
-  #prompt.combat-dense .ghead{ margin:8px 2px 4px; font-size:calc(11px*var(--fs-scale,1)); }
-  #prompt.combat-dense .btns{ gap:6px; }
-  #prompt.combat-dense button.opt{ min-height:34px; padding:7px 11px; font-size:calc(13.5px*var(--fs-scale,1)); line-height:1.35; border-radius:7px; }
-  #prompt.combat-dense button.opt .num{ min-width:1.1em; margin-right:6px; }
 
   /* 戰鬥 */
   .m-fill.hp{background:linear-gradient(90deg,#7a2e29,var(--red));}
@@ -416,7 +408,6 @@
     .btns{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
     .btns button.opt{ flex:none; width:auto; }
     .btns button.back, .btns button.opt.cta{ grid-column:1 / -1; }
-    #prompt.combat-dense button.opt{ min-height:40px; }   /* 觸控目標:密排在手機回抬到 40px(桌面 34px 為指標裝置);≥24px WCAG */
   }
   /* 可點內容列 */
   .tappable{ cursor:pointer; border-radius:7px; transition:background .1s, border-color .1s; }
@@ -1195,7 +1186,7 @@
     return b;
   }
   function renderPrompt(spec) {
-    promptEl.innerHTML = ""; promptEl.classList.remove("locked", "combat-dense");   // combat-dense 每幀重判(否則密排洩到下個非戰鬥選單,鏡像 R59 死 class 教訓)
+    promptEl.innerHTML = ""; promptEl.classList.remove("locked");
     flatButtons = []; backButton = null;
     if (!spec) return;
     const t = spec.type;
@@ -1213,9 +1204,6 @@
       if (spec.allow_back) { const b = mkButton("返回", null, 0); b.classList.add("back"); backButton = b; promptEl.appendChild(b); }
     } else if (t === "grouped") {
       const cta = {}; (spec.cta_keys || []).forEach(function (k) { cta[k] = true; });
-      // 戰鬥動作選單=唯一含 flee/leave key 的 grouped 選單 → 掛 combat-dense 密排(地圖/hub/開局不含此 key,不受影響)
-      if (spec.groups.some(function (g) { return g.options.some(function (o) { return o.key === "flee" || o.key === "leave"; }); }))
-        promptEl.classList.add("combat-dense");
       const ctaBox = document.createElement("div"); ctaBox.className = "btns";   // CTA(如升級)置頂、金框、不佔數字鍵
       spec.groups.forEach(function (g) {
         g.options.forEach(function (o) { if (cta[o.key]) { const b = mkButton(o.label, o.key, null); b.classList.add("cta"); ctaBox.appendChild(b); } });
