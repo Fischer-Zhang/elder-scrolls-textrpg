@@ -180,11 +180,25 @@
      auto-fill 保留空軌 → 單張卡維持單欄寬;minmax 230px 對齊原 flex-basis,欄數不變。動作/確認選單仍走 flex。 */
   .btns.cardgrid { display:grid; grid-template-columns:repeat(auto-fill, minmax(230px, 1fr)); align-items:stretch; }
   .btns.cardgrid button.opt { flex:none; }
-  /* 戰鬥動作選單(R162):同治「flex grow 之疾」,但按鈕只佔「內容寬」(flex:0 0 auto)→ 短標籤=小按鈕、
-     不再撐滿整排;並排 + 自動換行 → 寬度不浪費、列數變少。不縮字/不縮 padding/不藏資訊,唯戰鬥選單套此。 */
+  /* 戰鬥動作選單(R162):按鈕只佔內容寬；R165 將完整效果移到獨立資訊按鈕，避免備註撐長主操作。 */
   .btns.combat-flow button.opt { flex:0 0 auto; max-width:100%; }
-  /* R164:動作效果 chip 內聯在動作詞右側；數值與定性效果都直接可見，不依賴 hover。 */
-  .btns.combat-flow .opt-chips { display:inline-flex; margin:0 0 0 8px; vertical-align:middle; }
+  .combat-action{display:inline-flex;align-items:stretch;max-width:100%;min-width:0;}
+  .combat-action button.opt{border-radius:9px 0 0 9px;border-right:0;}
+  .combat-action button.opt:hover,.combat-action button.opt:active{transform:none;box-shadow:none;}
+  button.combat-info{flex:0 0 42px;width:42px;min-height:50px;padding:0;cursor:pointer;color:var(--gold-dim);
+    background:linear-gradient(#171209,#110e08);border:1px solid var(--line);border-radius:0 9px 9px 0;
+    font-family:var(--sans);font-size:calc(15px*var(--fs-scale,1));font-weight:700;transition:border-color .12s,background .12s,color .12s;}
+  button.combat-info:hover,button.combat-info[aria-expanded="true"]{color:var(--gold);border-color:var(--gold-soft);background:#21190d;}
+  button.combat-info:focus-visible{position:relative;z-index:1;outline:2px solid var(--gold);outline-offset:2px;}
+  .combat-info-mark{display:inline-grid;place-items:center;width:18px;height:18px;border:1px solid currentColor;border-radius:50%;
+    font-family:var(--serif);font-size:12px;line-height:1;}
+  .combat-note-popover{position:fixed;z-index:30;max-width:min(420px,calc(100vw - 24px));padding:11px 38px 11px 13px;
+    color:var(--ink);background:var(--raise);border:1px solid var(--gold-soft);border-radius:7px;box-shadow:var(--shadow);
+    font-size:calc(13px*var(--fs-scale,1));overflow-wrap:anywhere;}
+  button.combat-note-close{position:absolute;top:4px;right:4px;width:30px;height:30px;padding:0;cursor:pointer;color:var(--muted);
+    background:transparent;border:0;border-radius:5px;font-size:20px;line-height:1;}
+  button.combat-note-close:hover{color:var(--gold);background:rgba(214,178,92,.08);}
+  button.combat-note-close:focus-visible{outline:2px solid var(--gold);outline-offset:0;}
   button.opt { flex:0 0 auto; max-width:100%; min-height:50px; padding:12px 15px; cursor:pointer; text-align:left; font-size:calc(15px*var(--fs-scale,1));   /* R162:內容寬(非 flex-grow 撐滿整排)→ 短標籤=小按鈕、並排換行·全 .btns 動作選單一致;views(商店/背包)與 .cardgrid(選卡)另有渲染不受影響·button.back 仍 flex-basis:100% 全寬 */
     font-family:var(--sans); color:var(--ink); background:linear-gradient(#191409,#130f08); border:1px solid var(--line);
     border-radius:9px; transition:transform .1s ease, border-color .12s, background .12s, box-shadow .12s; }
@@ -1205,8 +1219,62 @@
     b.addEventListener("click", function () { submit(value); });
     return b;
   }
+
+  let combatNoteEl = null, combatNoteTrigger = null;
+  function combatNoteText(o) {
+    if (o.note) return o.note;
+    const detail = (o.chips || []).map(function (c) { return c.text; }).filter(Boolean).join(" · ");
+    return detail ? o.label + "：" + detail : "";
+  }
+  function closeCombatNote(returnFocus) {
+    const trigger = combatNoteTrigger;
+    if (trigger) {
+      trigger.setAttribute("aria-expanded", "false");
+      trigger.removeAttribute("aria-describedby");
+    }
+    if (combatNoteEl) combatNoteEl.remove();
+    combatNoteEl = null; combatNoteTrigger = null;
+    if (returnFocus && trigger && trigger.isConnected) trigger.focus();
+  }
+  function positionCombatNote() {
+    if (!combatNoteEl || !combatNoteTrigger) return;
+    const gap = 8, edge = 12, anchor = combatNoteTrigger.getBoundingClientRect();
+    const note = combatNoteEl.getBoundingClientRect();
+    let left = Math.min(anchor.right - note.width, innerWidth - note.width - edge);
+    left = Math.max(edge, left);
+    let top = anchor.bottom + gap;
+    if (top + note.height > innerHeight - edge) top = anchor.top - note.height - gap;
+    top = Math.max(edge, Math.min(top, innerHeight - note.height - edge));
+    combatNoteEl.style.left = left + "px"; combatNoteEl.style.top = top + "px";
+  }
+  function toggleCombatNote(trigger, label, detail) {
+    if (combatNoteTrigger === trigger) { closeCombatNote(true); return; }
+    closeCombatNote(false);
+    const note = document.createElement("div");
+    note.id = "combat-action-note"; note.className = "combat-note-popover";
+    note.setAttribute("role", "note"); note.setAttribute("aria-live", "polite");
+    const text = document.createElement("div"); text.textContent = detail; note.appendChild(text);
+    const close = document.createElement("button"); close.type = "button"; close.className = "combat-note-close";
+    close.setAttribute("aria-label", "關閉" + label + "資訊"); close.textContent = "×";
+    close.addEventListener("click", function () { closeCombatNote(true); }); note.appendChild(close);
+    document.body.appendChild(note); combatNoteEl = note; combatNoteTrigger = trigger;
+    trigger.setAttribute("aria-expanded", "true"); trigger.setAttribute("aria-describedby", note.id);
+    positionCombatNote();
+  }
+  function wrapCombatButton(button, o) {
+    const detail = combatNoteText(o);
+    if (!detail) return button;
+    const wrap = document.createElement("div"); wrap.className = "combat-action"; wrap.appendChild(button);
+    const info = document.createElement("button"); info.type = "button"; info.className = "combat-info";
+    info.title = "查看" + o.label + "資訊"; info.setAttribute("aria-label", info.title);
+    info.setAttribute("aria-expanded", "false"); info.setAttribute("aria-controls", "combat-action-note");
+    const mark = document.createElement("span"); mark.className = "combat-info-mark";
+    mark.setAttribute("aria-hidden", "true"); mark.textContent = "i"; info.appendChild(mark);
+    info.addEventListener("click", function () { toggleCombatNote(info, o.label, detail); });
+    wrap.appendChild(info); return wrap;
+  }
   function renderPrompt(spec) {
-    promptEl.innerHTML = ""; promptEl.classList.remove("locked");
+    closeCombatNote(false); promptEl.innerHTML = ""; promptEl.classList.remove("locked");
     flatButtons = []; backButton = null;
     if (!spec) return;
     const t = spec.type;
@@ -1240,13 +1308,13 @@
         if (!flow && g.header) { const h = document.createElement("div"); h.className = "ghead"; h.textContent = g.header; promptEl.appendChild(h); }
         let box = flowBox;
         if (!flow) { box = document.createElement("div"); box.className = "btns"; }
-        vis.forEach(function (o) { i += 1; const b = mkButton(o.label, o.key, i, o.chips);
+        vis.forEach(function (o) { i += 1; const b = mkButton(o.label, o.key, i, flow ? null : o.chips);
           if (flow) {
             b.dataset.group = g.header || "其他";
-            b.setAttribute("aria-label", (g.header ? g.header + "：" : "") + i + " " + (o.note || o.label));
+            b.setAttribute("aria-label", (g.header ? g.header + "：" : "") + i + " " + o.label);
           } else if (o.note) { b.title = o.note; b.setAttribute("aria-label", i + " " + o.note); }
-          if (o.note) b.title = o.note;
-          flatButtons.push(b); box.appendChild(b); });
+          if (!flow && o.note) b.title = o.note;
+          flatButtons.push(b); box.appendChild(flow ? wrapCombatButton(b, o) : b); });
         if (!flow) promptEl.appendChild(box);
       });
       if (flow) promptEl.appendChild(flowBox);
@@ -1480,6 +1548,7 @@
     const nativeEnter = tag === "BUTTON" || tag === "A" || tag === "SELECT" || (active && active.isContentEditable);
     if (tag === "INPUT" || tag === "TEXTAREA") return;
     if (settingsOpen()) return;   // H 設定面板開啟時,遊戲快捷鍵讓位(數字/方向/Esc 交給設定層)
+    if (e.key === "Escape" && combatNoteEl) { e.preventDefault(); closeCombatNote(true); return; }
     if (e.key >= "0" && e.key <= "9") {
       e.preventDefault();
       if (flatButtons.length < 10) { if (e.key === "0") { if (backButton) backButton.click(); } else clickIdx(parseInt(e.key, 10)); return; }
@@ -1502,6 +1571,11 @@
     }
     else if (e.key === "Escape" && backButton) { e.preventDefault(); backButton.click(); }   // Esc=返回(原 "0" 分支不可達之死碼移除)
   });
+  document.addEventListener("pointerdown", function (e) {
+    if (combatNoteEl && !combatNoteEl.contains(e.target) && !combatNoteTrigger.contains(e.target)) closeCombatNote(false);
+  });
+  window.addEventListener("resize", function () { if (combatNoteEl) positionCombatNote(); });
+  window.addEventListener("scroll", function () { if (combatNoteEl) closeCombatNote(false); }, true);
 
   // --- H 設定面板(純前端·localStorage·零後端/存檔;字級/主題/減動態 + 操作說明)-------
   let _setOverlay = null;

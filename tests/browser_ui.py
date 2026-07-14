@@ -365,9 +365,17 @@ class BrowserRegression(unittest.TestCase):
         )
 
         vanish = self.page.locator(".combat-flow button.opt").filter(has_text="隱遁再襲")
-        self.assertIn("70%·剩3次", vanish.inner_text())
-        self.assertIn("不閃避", vanish.inner_text())
-        self.assertIn("不閃避", vanish.get_attribute("title"))
+        self.assertIn("隱遁再襲", vanish.inner_text())
+        self.assertNotIn("70%", vanish.inner_text())
+        self.assertNotIn("不閃避", vanish.inner_text())
+        self.assertIsNone(vanish.get_attribute("title"))
+        vanish.locator("xpath=..").locator("button.combat-info").click()
+        note = self.page.locator("#combat-action-note")
+        self.assertIn("70%", note.inner_text())
+        self.assertIn("不閃避", note.inner_text())
+        self.assertEqual(vanish.locator("xpath=..").locator("button.combat-info").get_attribute("aria-expanded"), "true")
+        self.page.keyboard.press("Escape")
+        self.assertEqual(note.count(), 0)
 
         self.page.locator(".combat-flow button.opt").evaluate_all(
             "els => els.find(e => e._key === 'attack').click()"
@@ -403,19 +411,25 @@ class BrowserRegression(unittest.TestCase):
 
         buttons = self.page.locator(".combat-flow button.opt")
         self.assertEqual(buttons.count(), 14)
-        self.assertEqual(buttons.locator(".opt-chips").count(), 11)
+        self.assertEqual(buttons.locator(".opt-chips").count(), 0)
+        self.assertEqual(self.page.locator(".combat-flow button.combat-info").count(), 12)
         groups = buttons.evaluate_all("els => [...new Set(els.map(e => e.dataset.group))]")
         self.assertEqual(groups, ["攻擊", "威能·戰技", "架式", "應變", "脫戰"])
         self.assertEqual(buttons.nth(4).get_attribute("data-group"), "威能·戰技")
         self.assertIn("威能·戰技", buttons.nth(4).get_attribute("aria-label"))
-        self.assertIn("攻擊變緩", buttons.filter(has_text="重盾掩體").inner_text())
-        self.assertIn("不閃避", buttons.filter(has_text="隱遁再襲").inner_text())
-        self.assertIn("護同袍", buttons.filter(has_text="盾牆").inner_text())
-        self.assertIn("耗1回合", buttons.filter(has_text="用藥").inner_text())
+        self.assertNotIn("攻擊變緩", buttons.filter(has_text="重盾掩體").inner_text())
+        guard_info = buttons.filter(has_text="重盾掩體").locator("xpath=..").locator("button.combat-info")
+        guard_info.click()
+        self.assertIn("攻擊變緩", self.page.locator("#combat-action-note").inner_text())
+        self.assertIn("卸力-38%", self.page.locator("#combat-action-note").inner_text())
+        with self.assertRaises(queue.Empty, msg="資訊按鈕誤送出戰鬥動作"):
+            self.server.answer(timeout=0.2)
+        self.page.locator(".combat-note-close").click()
+        guard_info.evaluate("el => el.blur()")
         rows = buttons.evaluate_all(
             "els => [...new Set(els.map(e => Math.round(e.getBoundingClientRect().y)))]"
         )
-        self.assertLessEqual(len(rows), 5, "可見效果加入後，14 個動作仍應維持緊湊配置")
+        self.assertLessEqual(len(rows), 5, "獨立資訊按鈕加入後，14 個動作仍應維持緊湊配置")
         self.assertTrue(
             self.page.evaluate("document.documentElement.scrollWidth <= document.documentElement.clientWidth"),
             "密集動作選單出現水平溢出",
