@@ -512,13 +512,14 @@
   <div id="turnlog"></div>
   <div id="prompt"></div>
   <div id="log"></div>
-  <footer id="foot">數字鍵 1–9 快速選擇 · 0 返回 · Enter 確認</footer>
+  <footer id="foot">連線後顯示快捷操作</footer>
 </div>
 <script>
 (function () {
   const screenEl = document.getElementById("screen");
   const logEl = document.getElementById("log");
   const promptEl = document.getElementById("prompt");
+  const footEl = document.getElementById("foot");
   const dot = document.getElementById("dot");
   const conn = document.getElementById("conn");
   let curPid = null, locked = false, flatButtons = [], backButton = null;
@@ -1176,6 +1177,7 @@
   // --- 輸入 ------------------------------------------------------------
   function submit(value) {
     if (locked || curPid === null) return;
+    resetDigitBuf();
     locked = true; promptEl.classList.add("locked");
     fetch("/input", { method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ prompt_id: curPid, value: value }),
@@ -1393,8 +1395,28 @@
     }).concat(remaining);
   }
 
+  function repeatButton() {
+    return flatButtons.find(function (b) { return b._key === "repeat"; });
+  }
+  function renderShortcutHelp(spec) {
+    if (!spec) { footEl.textContent = "等待下一步…"; return; }
+    if (spec.type === "end") { footEl.textContent = "遊戲結束"; return; }
+    if (spec.type === "int" || spec.type === "text") { footEl.textContent = "Enter 確認"; return; }
+    const parts = [];
+    if (flatButtons.length) {
+      parts.push(flatButtons.length < 10
+        ? "數字鍵 1–" + flatButtons.length + " 快速選擇"
+        : "數字鍵 1–" + flatButtons.length + "（多位數）");
+    }
+    if (flatButtons.length >= 10) parts.push("Enter 確認");
+    if (repeatButton()) parts.push("Enter 再次");
+    if (backButton) parts.push("0 / Esc 返回");
+    footEl.textContent = parts.join(" · ") || "選擇下一步";
+  }
+
   let curSpec = null;   // 當前 prompt spec(R113:方向鍵對映查此)
   function render(frame) {
+    resetDigitBuf();   // 新幀可能改變選項順序；未完成的多位數不可套用到新畫面
     const prev = promptEl.querySelector("input.field");
     const prevVal = prev ? prev.value : null;
     const samePrompt = (curPid !== null && frame.prompt_id === curPid);
@@ -1417,6 +1439,7 @@
     curPid = frame.prompt_id; locked = false; curSpec = frame.prompt;
     renderPrompt(frame.prompt);
     wireActionableRows(frame.prompt);
+    renderShortcutHelp(frame.prompt);
     if (samePrompt && prevVal != null) { const inp = promptEl.querySelector("input.field"); if (inp) inp.value = prevVal; }
     // R162 閱讀動線:行動後聚焦「資訊區」——捲回頁頂(HUD + #screen 敵我/狀態),不再置中動作選單。
     // R113 曾置中選單(讓下方「本回合」也搆得到),但那把資訊區頂出畫面;R162 選單已短 → 資訊區 + 選單 +
@@ -1428,8 +1451,12 @@
 
   // 數字鍵快捷(<10 即時;>=10 緩衝多位數,R113:不可能再延伸時立即送出免 450ms 稅)
   let digitBuf = "", digitTimer = null;
+  function resetDigitBuf() {
+    if (digitTimer) clearTimeout(digitTimer);
+    digitTimer = null; digitBuf = "";
+  }
   function clickIdx(i) { const b = flatButtons[i - 1]; if (b) b.click(); }
-  function resolveBuf() { if (digitTimer) { clearTimeout(digitTimer); digitTimer = null; } const i = parseInt(digitBuf, 10); digitBuf = ""; if (i >= 1) clickIdx(i); }
+  function resolveBuf() { const i = parseInt(digitBuf, 10); resetDigitBuf(); if (i >= 1) clickIdx(i); }
   // R113 地城方向鍵:當前 prompt 含 go:n/s/w/e 選項(選單鍵或 extra_keys)才吃方向鍵
   const ARROW_DIR = { ArrowUp: "go:n", ArrowDown: "go:s", ArrowLeft: "go:w", ArrowRight: "go:e" };
   function specHasKey(k) {
@@ -1453,6 +1480,9 @@
           || parseInt(digitBuf, 10) * 10 > flatButtons.length) resolveBuf();
       else digitTimer = setTimeout(resolveBuf, 450);
     } else if (e.key === "Enter" && digitBuf) { e.preventDefault(); resolveBuf(); }
+    else if (e.key === "Enter" && tag !== "BUTTON" && repeatButton() && !locked) {
+      e.preventDefault(); repeatButton().click();   // 按鈕有焦點時保留原生 Enter，避免「再次」搶走焦點動作
+    }
     else if (ARROW_DIR[e.key] && (specHasKey("go:n") || specHasKey("go:s") || specHasKey("go:w") || specHasKey("go:e"))) {
       // 地城情境(spec 含任一方向)→ 方向鍵一律接管:存在的方向=移動,邊界缺的方向=無動作
       //(不 preventDefault 會變成「往北移動、往南捲頁」的不一致;非地城 spec 無 go:* → 方向鍵照常捲頁)
@@ -1482,8 +1512,8 @@
       { key: "theme", label: "主題", def: "classic", opts: [["classic", "經典金"], ["contrast", "高對比"], ["parchment", "羊皮紙"]] },
       { key: "motion", label: "動態效果", def: "on", opts: [["on", "開"], ["off", "關"]] },
     ];
-    const HELP = [["數字鍵 1–9", "選擇對應選項(大選單支援多位數)"], ["0 / Esc", "返回上一層"],
-      ["Enter", "確認輸入 / 送出多位數字"], ["方向鍵", "地城中移動(↑ ↓ ← →)"],
+    const HELP = [["數字鍵", "依畫面編號選擇(10 以上支援多位數)"], ["0 / Esc", "返回上一層"],
+      ["Enter", "確認輸入 / 送出多位數 / 戰鬥再次行動"], ["方向鍵", "地城中移動(↑ ↓ ← →)"],
       ["點按 / 觸控", "卡片、列、地圖地點皆可直接點選"]];
     const overlay = document.createElement("div");
     _setOverlay = overlay;

@@ -126,6 +126,61 @@ def _combat_prompt() -> dict:
     }
 
 
+def _dense_combat_prompt() -> dict:
+    return {
+        "type": "grouped",
+        "title": "你的回合",
+        "groups": [
+            {
+                "header": "攻擊",
+                "options": [
+                    {"key": "repeat", "label": "↻ 再攻:寒霜蜘蛛"},
+                    {"key": "attack", "label": "攻擊", "note": "攻擊（鋼長劍 · 盾擊)"},
+                    {"key": "cast", "label": "施法", "note": "施法（選擇法術)"},
+                ],
+            },
+            {
+                "header": "戰技",
+                "options": [
+                    {"key": "power", "label": "龍吼:不卸之力"},
+                    {"key": "racial_power", "label": "先祖之怒"},
+                    {"key": "aimed", "label": "瞄準強擊"},
+                    {"key": "volley", "label": "箭雨"},
+                ],
+            },
+            {
+                "header": "架式",
+                "options": [
+                    {
+                        "key": "guard",
+                        "label": "重盾掩體",
+                        "chips": [{"text": "卸力-38%·元素-26%·回氣+2/回"}],
+                        "note": "重盾掩體（攻擊變緩 · 卸力-38% · 元素-26% · 回氣+2/回)",
+                    },
+                    {"key": "wall", "label": "盾牆", "note": "盾牆（嘲諷 · 保護同伴)"},
+                ],
+            },
+            {
+                "header": "應變",
+                "options": [
+                    {
+                        "key": "vanish",
+                        "label": "隱遁再襲",
+                        "chips": [{"text": "70%·剩3次"}],
+                        "note": "隱遁再襲（重獲偷襲·不閃避·成功率 70%,剩 3 次)",
+                    },
+                    {"key": "deathmark", "label": "死亡標記"},
+                    {"key": "item", "label": "🧪 用藥", "note": "🧪 用藥（喝下藥水 · 耗一回合)"},
+                    {"key": "rest", "label": "喘息", "note": "喘息（回復體力 · 耗一回合)"},
+                ],
+            },
+            {"header": "脫戰", "options": [{"key": "flee", "label": "逃跑"}]},
+        ],
+        "extra_keys": [],
+        "cta_keys": [],
+    }
+
+
 def _map_data() -> dict:
     def node(node_id, name, x, y, province, *, here=False, guild=None, services=(), hops=None, hours=None):
         svc = [guild] if guild else []
@@ -312,6 +367,65 @@ class BrowserRegression(unittest.TestCase):
         self.page.locator("#turnlog").filter(has_text="第二回合").wait_for()
         self.page.wait_for_function("window.scrollY === 0")
         self.assertIn("61/120", self.page.locator(".cbt.foe").first.inner_text())
+
+    def test_dense_action_menu_shortcuts_and_pending_input(self) -> None:
+        prompt = _dense_combat_prompt()
+        self.server.emit(
+            blocks=[
+                {"kind": "view", "name": "combat", "data": _combat_data()},
+                {"kind": "log", "html": "<span>巨魔正準備下一次猛擊。</span>", "ephemeral": True},
+            ],
+            prompt=prompt,
+            hud=_hud(),
+        )
+        self._open(".combat-flow")
+
+        buttons = self.page.locator(".combat-flow button.opt")
+        self.assertEqual(buttons.count(), 14)
+        rows = buttons.evaluate_all(
+            "els => [...new Set(els.map(e => Math.round(e.getBoundingClientRect().y)))]"
+        )
+        self.assertEqual(len(rows), 3, "14 個動作應維持可掃讀的三列配置")
+        self.assertTrue(
+            self.page.evaluate("document.documentElement.scrollWidth <= document.documentElement.clientWidth"),
+            "密集動作選單出現水平溢出",
+        )
+        help_text = self.page.locator("#foot").inner_text()
+        self.assertIn("1–14", help_text)
+        self.assertIn("Enter 確認", help_text)
+        self.assertIn("Enter 再次", help_text)
+        self.assertNotIn("1–9", help_text)
+
+        self.page.keyboard.press("Enter")
+        self.assertEqual(self.server.answer(), "repeat", "常用的再次行動不應承受多位數等待")
+
+        self.server.emit(blocks=[], prompt=prompt, hud=_hud())
+        self.page.wait_for_function("!document.querySelector('#prompt').classList.contains('locked')")
+        self.page.keyboard.press("1")
+        self.page.keyboard.press("0")
+        self.assertEqual(self.server.answer(), "vanish", "第 10 項的多位數快捷鍵失效")
+
+        self.server.emit(blocks=[], prompt=prompt, hud=_hud())
+        self.page.wait_for_function("!document.querySelector('#prompt').classList.contains('locked')")
+        self.page.keyboard.press("1")
+        buttons.evaluate_all("els => els.find(e => e._key === 'attack').click()")
+        self.assertEqual(self.server.answer(), "attack")
+
+        self.server.emit(blocks=[], prompt=prompt, hud=_hud())
+        self.page.wait_for_function("!document.querySelector('#prompt').classList.contains('locked')")
+        with self.assertRaises(queue.Empty, msg="滑鼠送出後殘留的數字緩衝跨回合誤觸"):
+            self.server.answer(timeout=0.6)
+
+        buttons.evaluate_all("els => els.find(e => e._key === 'attack').focus()")
+        self.page.keyboard.press("Enter")
+        self.assertEqual(self.server.answer(), "attack", "焦點按鈕的原生 Enter 被全域『再次』搶走")
+
+        self.server.emit(blocks=[], prompt=prompt, hud=_hud())
+        self.page.wait_for_function("!document.querySelector('#prompt').classList.contains('locked')")
+        self.page.keyboard.press("1")
+        self.server.emit(blocks=[], prompt=prompt, hud=_hud())
+        with self.assertRaises(queue.Empty, msg="新畫面沿用了舊畫面的未完成數字快捷鍵"):
+            self.server.answer(timeout=0.6)
 
     def test_settings_persist_and_trap_focus(self) -> None:
         self.server.emit(
