@@ -419,6 +419,17 @@ class BrowserRegression(unittest.TestCase):
             self.page.evaluate("document.documentElement.scrollWidth <= document.documentElement.clientWidth"),
             "密集動作選單出現水平溢出",
         )
+        combat_geometry = self.page.locator(".combat").evaluate(
+            """el => {
+              const r=el.getBoundingClientRect(), sides=[...el.querySelectorAll('.cside')].map(x=>x.getBoundingClientRect());
+              return {display:getComputedStyle(el).display,height:r.height,left:sides[0].left,right:sides[1].left};
+            }"""
+        )
+        self.assertEqual(combat_geometry["display"], "grid")
+        self.assertLess(combat_geometry["height"], 240, "桌面戰況仍以垂直重複佔用過多首屏")
+        self.assertLess(combat_geometry["left"], combat_geometry["right"], "敵我兩欄未左右分列")
+        last_action_bottom = buttons.last.evaluate("el => el.getBoundingClientRect().bottom")
+        self.assertLessEqual(last_action_bottom, 800, "1280×800 首屏未完整容納密集動作選單")
         help_text = self.page.locator("#foot").inner_text()
         self.assertIn("1–14", help_text)
         self.assertIn("Enter 確認", help_text)
@@ -455,6 +466,56 @@ class BrowserRegression(unittest.TestCase):
         self.server.emit(blocks=[], prompt=prompt, hud=_hud())
         with self.assertRaises(queue.Empty, msg="新畫面沿用了舊畫面的未完成數字快捷鍵"):
             self.server.answer(timeout=0.6)
+
+    def test_desktop_combat_geometry_at_1024_and_large_text(self) -> None:
+        self.server.emit(
+            blocks=[
+                {"kind": "view", "name": "combat", "data": _combat_data()},
+                {"kind": "log", "html": "<span>寒風掠過交戰雙方。</span>", "ephemeral": True},
+            ],
+            prompt=_dense_combat_prompt(),
+            hud=_hud(),
+        )
+        self._open(".combat-flow")
+        self.page.set_viewport_size({"width": 1024, "height": 768})
+
+        def assert_no_horizontal_overflow(message: str) -> None:
+            self.assertTrue(
+                self.page.evaluate("document.documentElement.scrollWidth <= document.documentElement.clientWidth"),
+                message,
+            )
+
+        assert_no_horizontal_overflow("1024×768 桌面戰況或動作選單水平溢出")
+        sides = self.page.locator(".combat .cside").evaluate_all(
+            "els => els.map(e => { const r=e.getBoundingClientRect(); return {left:r.left,right:r.right,top:r.top}; })"
+        )
+        self.assertEqual(len(sides), 2)
+        self.assertLess(sides[0]["right"], sides[1]["left"], "1024px 寬度下敵我欄互相重疊")
+        self.assertAlmostEqual(sides[0]["top"], sides[1]["top"], delta=1)
+        self.assertLessEqual(
+            self.page.locator(".combat-flow button.opt").last.evaluate("el => el.getBoundingClientRect().bottom"),
+            768,
+            "1024×768 首屏未容納完整動作選單",
+        )
+
+        self.page.set_viewport_size({"width": 800, "height": 900})
+        assert_no_horizontal_overflow("800px 最窄桌面斷點出現水平溢出")
+        edge_sides = self.page.locator(".combat .cside").evaluate_all(
+            "els => els.map(e => { const r=e.getBoundingClientRect(); return {left:r.left,right:r.right}; })"
+        )
+        self.assertEqual(self.page.locator(".combat").evaluate("el => getComputedStyle(el).display"), "grid")
+        self.assertLess(edge_sides[0]["right"], edge_sides[1]["left"], "最窄桌面斷點的敵我欄互相重疊")
+
+        self.page.set_viewport_size({"width": 1024, "height": 768})
+        self.page.locator("html").evaluate("el => el.setAttribute('data-fs', 'xl')")
+        assert_no_horizontal_overflow("特大字級造成桌面水平溢出")
+        self.assertEqual(self.page.locator(".combat").evaluate("el => getComputedStyle(el).display"), "grid")
+        self.assertTrue(
+            self.page.locator(".combat-flow button.opt").evaluate_all(
+                "els => els.every(e => e.scrollWidth <= e.clientWidth && e.getBoundingClientRect().right <= innerWidth)"
+            ),
+            "特大字級的動作文字或按鈕超出容器",
+        )
 
     def test_settings_persist_and_trap_focus(self) -> None:
         self.server.emit(

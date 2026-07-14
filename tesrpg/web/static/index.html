@@ -217,6 +217,10 @@
   .m-fill.fp{background:linear-gradient(90deg,#365a30,var(--green));}
   .combat .cside{display:flex;flex-direction:column;gap:8px;}
   .vs{text-align:center;color:var(--red);font-weight:700;letter-spacing:.18em;margin:11px 0;font-size:calc(13px*var(--fs-scale,1));}
+  @media (min-width:761px){
+    .combat{display:grid;grid-template-columns:minmax(0,1fr) max-content minmax(0,1fr);align-items:start;gap:14px;}
+    .combat .vs{align-self:center;margin:0;}
+  }
   .cbt{padding:8px 11px;border:1px solid var(--line);border-radius:9px;background:#100d08;}
   .cbt.foe{border-color:#3a2622;} .cbt.down{color:var(--faint);text-decoration:line-through;}
   .cname{font-weight:600;margin-bottom:5px;} .cidx{color:var(--gold);font-weight:700;}

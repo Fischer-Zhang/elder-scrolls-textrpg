@@ -87,7 +87,7 @@
 | M14 | **護甲附魔**(`armor_fortify`:穿戴強化生命/魔力/體力,`base_max_health` 基底層 + 向後相容遷移) |
 | M15 | **升級系統改版**(混合 Skyrim 式:技能 learn-by-doing 餵「等級 XP 池」→ 升級給三選一資源 + 屬性點自由分配;移除 Oblivion 倍率 → 消滅 min-max 與耐力時機陷阱) |
 | M16 | **潛行系戰鬥化**:`sneak`→開場偷襲(依潛行加傷、命中下限、戰鬥中可練)、`acrobatics`→閃避(降敵命中、閃避時成長) |
-| UI  | 介面改版:強化視覺識別(金色框線/雙線英雄面板)、hub 選單多欄收斂 + 合併重複入口 + 精簡標籤 |
+| UI  | 介面改版:強化視覺識別、hub 選單收斂、戰鬥動作效果直接可見 + 動態快捷提示、桌面敵我雙欄戰況 |
 
 **M16 後續(數輪 ultracode-off 直作,技能健檢 → 三系平衡 → 內容難度)**:
 - **運動 athletics 雙用途**:旅行加速(`athletics_travel_factor`)+ 降低戰鬥體力消耗(`fatigue_cost_factor`)——原為死技能。
@@ -1415,6 +1415,14 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 ### R163 · Playwright 真瀏覽器桌面 UI 回歸硬閘門
 
 承 UI/UX 評估點名「缺少真瀏覽器回歸測試」:新增獨立 `tests/browser_ui.py`(不混入 stdlib-only `tests/test_*.py` 自動探索),用 production `_make_handler` 啟本機 HTTP/SSE、直接供應正式 `tesrpg/web/static/index.html`,再注入決定性 frame 讓 Playwright/Chromium 實際執行 CSS/JS/DOM 與 `/input`;不啟完整遊戲、不碰真存檔。三個桌面情境:①戰鬥 HUD + screen/turnlog/prompt/log 順序、內容寬按鈕幾何/零水平溢出、chip/note、實際 submit、下一幀捲頂;②設定 dialog/inert/焦點、字級/高對比/減動態 localStorage 持久化;③世界地圖服務篩選高亮/所在地豁免/最近 X/route submit。`check.sh` 在 `run_all` 後無條件跑,缺依賴或 Chromium 啟不來即硬失敗並印安裝指令,**不可靜默 skip**。`playwright>=1.60` 納 `.[dev]`+`uv.lock`;runtime 依賴不變。🔴 後續前端 UI 改動除單元/字串契約外,須更新並跑這套真瀏覽器回歸。
+
+---
+
+### R164 · 桌面戰鬥動作選單可用性 + 首屏密度
+
+承 R162/R163 實機評估。① **快捷鍵正確性**:頁尾依真實選項數、返回與再次動態顯示；10+ 項支援完整編號 + Enter 確認，空白 Enter 直接再次；每次 submit/新 frame 清數字緩衝，避免滑鼠插隊或跨回合幽靈輸入；按鈕有焦點時保留原生 Enter。② **決策資訊可見**:`_combat_option` 提供精簡 chip，武器、額外耗體、不閃避、嘲諷/護同袍、耗回合與精確資源成本不再只藏 title；`_split_combat_label` 對未精簡的新動作採完整括號效果後備；CLI fallback 還原完整原標籤。無表頭 flow 用細分隔線保留類別邊界，ARIA label 帶類別。③ **桌面資訊密度**:`min-width:761px` 戰況改敵我雙欄 grid，窄螢幕仍沿用直向；1280×800 壓力案例戰況 394→213px、14 動作末端 738px、快捷提示 777px，未縮字或刪資訊。
+
+**驗證**:真 Chromium 回歸涵蓋 14 動作多位數/再次/焦點/跨 frame 競態、1280×800 首屏、1024×768、800px 最窄桌面斷點、特大字級與零水平溢出。**🔴 未碰 combat/formulas/存檔；維護動作選單須守：效果可見、CLI 完整、焦點 Enter 不被全域快捷搶走、桌面幾何走 `tests/browser_ui.py`。**
 
 ---
 
