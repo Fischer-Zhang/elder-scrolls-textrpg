@@ -102,7 +102,7 @@ def _combat_prompt() -> dict:
                     {
                         "key": "guard",
                         "label": "重盾掩體",
-                        "chips": [{"text": "卸力-38%·元素-26%·回氣+2/回"}],
+                        "chips": [{"text": "攻擊變緩·卸力-38%·元素-26%·回氣+2/回"}],
                         "note": "重盾掩體（攻擊變緩 · 卸力-38% · 元素-26% · 回氣+2/回)",
                     }
                 ],
@@ -113,7 +113,7 @@ def _combat_prompt() -> dict:
                     {
                         "key": "vanish",
                         "label": "隱遁再襲",
-                        "chips": [{"text": "70%·剩3次"}],
+                        "chips": [{"text": "偷襲·不閃避·70%·剩3次"}],
                         "note": "隱遁再襲（重獲偷襲·不閃避·成功率 70%,剩 3 次)",
                     },
                     {"key": "item", "label": "🧪 用藥", "note": "🧪 用藥（喝下藥水 · 耗一回合)"},
@@ -135,17 +135,22 @@ def _dense_combat_prompt() -> dict:
                 "header": "攻擊",
                 "options": [
                     {"key": "repeat", "label": "↻ 再攻:寒霜蜘蛛"},
-                    {"key": "attack", "label": "攻擊", "note": "攻擊（鋼長劍 · 盾擊)"},
-                    {"key": "cast", "label": "施法", "note": "施法（選擇法術)"},
+                    {
+                        "key": "attack",
+                        "label": "攻擊",
+                        "chips": [{"text": "鋼長劍·盾擊"}],
+                        "note": "攻擊（鋼長劍 · 盾擊)",
+                    },
+                    {"key": "aimed", "label": "瞄準射", "chips": [{"text": "強擊·額外耗體"}]},
+                    {"key": "volley", "label": "箭雨", "chips": [{"text": "全體60%·倍耗體"}]},
                 ],
             },
             {
-                "header": "戰技",
+                "header": "威能·戰技",
                 "options": [
-                    {"key": "power", "label": "龍吼:不卸之力"},
-                    {"key": "racial_power", "label": "先祖之怒"},
-                    {"key": "aimed", "label": "瞄準強擊"},
-                    {"key": "volley", "label": "箭雨"},
+                    {"key": "cast", "label": "施法", "note": "施法（選擇法術)"},
+                    {"key": "power", "label": "星座之力", "chips": [{"text": "龍吼:不卸之力"}]},
+                    {"key": "racial_power", "label": "種族之力", "chips": [{"text": "先祖之怒"}]},
                 ],
             },
             {
@@ -154,10 +159,15 @@ def _dense_combat_prompt() -> dict:
                     {
                         "key": "guard",
                         "label": "重盾掩體",
-                        "chips": [{"text": "卸力-38%·元素-26%·回氣+2/回"}],
+                        "chips": [{"text": "攻擊變緩·卸力-38%·元素-26%·回氣+2/回"}],
                         "note": "重盾掩體（攻擊變緩 · 卸力-38% · 元素-26% · 回氣+2/回)",
                     },
-                    {"key": "wall", "label": "盾牆", "note": "盾牆（嘲諷 · 保護同伴)"},
+                    {
+                        "key": "wall",
+                        "label": "盾牆",
+                        "chips": [{"text": "減傷·嘲諷·護同袍·每回合耗6體"}],
+                        "note": "盾牆（減傷 · 嘲諷 · 保護同伴 · 每回合耗 6 體力)",
+                    },
                 ],
             },
             {
@@ -166,12 +176,22 @@ def _dense_combat_prompt() -> dict:
                     {
                         "key": "vanish",
                         "label": "隱遁再襲",
-                        "chips": [{"text": "70%·剩3次"}],
+                        "chips": [{"text": "偷襲·不閃避·70%·剩3次"}],
                         "note": "隱遁再襲（重獲偷襲·不閃避·成功率 70%,剩 3 次)",
                     },
-                    {"key": "deathmark", "label": "死亡標記"},
-                    {"key": "item", "label": "🧪 用藥", "note": "🧪 用藥（喝下藥水 · 耗一回合)"},
-                    {"key": "rest", "label": "喘息", "note": "喘息（回復體力 · 耗一回合)"},
+                    {"key": "deathmark", "label": "死亡標記", "chips": [{"text": "標記一敵·耗15體"}]},
+                    {
+                        "key": "item",
+                        "label": "🧪 用藥",
+                        "chips": [{"text": "喝藥·耗1回合"}],
+                        "note": "🧪 用藥（喝下藥水 · 耗一回合)",
+                    },
+                    {
+                        "key": "rest",
+                        "label": "喘息",
+                        "chips": [{"text": "回體~18·耗1回合·解架式"}],
+                        "note": "喘息（回復體力 · 耗一回合 · 解除架式)",
+                    },
                 ],
             },
             {"header": "脫戰", "options": [{"key": "flee", "label": "逃跑"}]},
@@ -346,6 +366,7 @@ class BrowserRegression(unittest.TestCase):
 
         vanish = self.page.locator(".combat-flow button.opt").filter(has_text="隱遁再襲")
         self.assertIn("70%·剩3次", vanish.inner_text())
+        self.assertIn("不閃避", vanish.inner_text())
         self.assertIn("不閃避", vanish.get_attribute("title"))
 
         self.page.locator(".combat-flow button.opt").evaluate_all(
@@ -382,10 +403,18 @@ class BrowserRegression(unittest.TestCase):
 
         buttons = self.page.locator(".combat-flow button.opt")
         self.assertEqual(buttons.count(), 14)
+        self.assertEqual(buttons.locator(".opt-chips").count(), 11)
+        self.assertEqual(self.page.locator(".combat-flow button.group-start").count(), 4)
+        self.assertEqual(buttons.nth(4).get_attribute("data-group"), "威能·戰技")
+        self.assertIn("威能·戰技", buttons.nth(4).get_attribute("aria-label"))
+        self.assertIn("攻擊變緩", buttons.filter(has_text="重盾掩體").inner_text())
+        self.assertIn("不閃避", buttons.filter(has_text="隱遁再襲").inner_text())
+        self.assertIn("護同袍", buttons.filter(has_text="盾牆").inner_text())
+        self.assertIn("耗1回合", buttons.filter(has_text="用藥").inner_text())
         rows = buttons.evaluate_all(
             "els => [...new Set(els.map(e => Math.round(e.getBoundingClientRect().y)))]"
         )
-        self.assertEqual(len(rows), 3, "14 個動作應維持可掃讀的三列配置")
+        self.assertLessEqual(len(rows), 5, "可見效果加入後，14 個動作仍應維持緊湊配置")
         self.assertTrue(
             self.page.evaluate("document.documentElement.scrollWidth <= document.documentElement.clientWidth"),
             "密集動作選單出現水平溢出",

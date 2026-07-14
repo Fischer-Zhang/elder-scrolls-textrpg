@@ -551,26 +551,25 @@ def test_combat_readability_d_batch_r156():
     assert act2["type"] == "flee" and seen.get("flat") and seen["title"] == "你的回合"
 
 
-def test_combat_label_split_chip_hover_r162():
-    """R162:戰鬥標籤拆「動作詞 / 決策數字 chips / 完整備註 note」——含數字段進 chip、純風味不進 chip。"""
+def test_combat_label_split_visible_effects_r164():
+    """R164:戰鬥標籤拆「動作詞 / 可見效果 chips / 完整備註 note」——定性與數值效果都不能只藏 hover。"""
     from tesrpg import main as M
     # 無括號 → 原樣動作詞,無 chip/note
     assert M._split_combat_label("施法") == ("施法", [], "")
     assert M._split_combat_label("↻ 再攻:糖晶藤") == ("↻ 再攻:糖晶藤", [], "")
-    # 純風味 → 動作詞 + note(=完整原標籤),無 chip;全形/半形括號皆拆
-    assert M._split_combat_label("攻擊（鐵長劍)") == ("攻擊", [], "攻擊（鐵長劍)")
+    # 括號內容一律可見；全形/半形括號皆拆
+    assert M._split_combat_label("攻擊（鐵長劍)") == ("攻擊", [{"text": "鐵長劍"}], "攻擊（鐵長劍)")
     verb, chips, note = M._split_combat_label("星座之力(瑪拉祝福)")
-    assert verb == "星座之力" and chips == [] and note == "星座之力(瑪拉祝福)"
-    # 混合 → 只有含數字的段進 chip;風味段不進 chip(但完整備註在 note 供 hover)
+    assert verb == "星座之力" and chips == [{"text": "瑪拉祝福"}] and note == "星座之力(瑪拉祝福)"
+    # 混合效果 → 定性風險與數字一起顯示
     verb, chips, note = M._split_combat_label("隱遁再襲（重獲偷襲·不閃避·成功率 70%,剩 3 次)")
     assert verb == "隱遁再襲"
-    assert chips and "70%" in chips[0]["text"] and "剩3次" in chips[0]["text"]
-    assert "重獲偷襲" not in chips[0]["text"] and "不閃避" not in chips[0]["text"]
+    assert chips[0]["text"] == "重獲偷襲·不閃避·成功率70%·剩3次"
     assert note == "隱遁再襲（重獲偷襲·不閃避·成功率 70%,剩 3 次)"
-    assert M._split_combat_label("🔪 致命烙印（標記一敵 · 耗 15 體力)")[1][0]["text"] == "耗15體力"
+    assert M._split_combat_label("🔪 致命烙印（標記一敵 · 耗 15 體力)")[1][0]["text"] == "標記一敵·耗15體力"
     # 🔴 守恆(全選單清單,非抽樣):對每個真實戰鬥標籤 —— 動作詞非空、有括號者 note=完整原標籤、
-    # 無括號者原樣透傳、且每個含數字/%/∞ 的備註段(去空白後)都必進 chip(否則決策數字漏到只剩 hover)。
-    # 這鎖住整個標籤面:未來新增/改標籤若把決策數字漏到 hover-only 會被此測攔下(對抗審查補強)。
+    # 無括號者原樣透傳、且每一個備註段(去空白後)都必進 chip。
+    # 這鎖住整個標籤面:未來新增/改標籤若漏用精簡 helper，完整效果仍不會退回 hover-only。
     inventory = [
         "施法", "逃跑", "撤下盾牆", "↻ 再攻:糖晶藤", "↻ 再攻（重選目標)",
         "↻ 再施:秘術飛彈→糖晶藤", "↻ 再施:秘術飛彈（重選目標)",
@@ -586,7 +585,6 @@ def test_combat_label_split_chip_hover_r162():
         "🩸 魅惑凝視（迷惑一敵 · 使其恐懼不進攻 · 耗 15 體力)", "🔪 致命烙印（標記一敵 · 耗 15 體力)",
         "🧪 用藥（喝下藥水 · 耗一回合)", "😮‍💨 調息（喘息回體 ~12 · 耗一回合 · 解除架式)",
     ]
-    digits = "0123456789０１２３４５６７８９%∞"
     for lbl in inventory:
         verb, chips, note = M._split_combat_label(lbl)
         assert verb.strip(), f"動作詞不得為空:{lbl!r}"
@@ -595,10 +593,43 @@ def test_combat_label_split_chip_hover_r162():
             assert note == lbl, f"note 應=完整原標籤:{lbl!r} -> {note!r}"
             chip_text = chips[0]["text"] if chips else ""
             for seg in lbl[min(lo) + 1:-1].replace("，", "·").replace(",", "·").split("·"):
-                if any(ch in digits for ch in seg):
-                    assert "".join(seg.split()) in chip_text, f"決策數字段 {seg!r} 漏出 chip({lbl!r})"
+                assert "".join(seg.split()) in chip_text, f"效果片段 {seg!r} 漏出 chip({lbl!r})"
         else:
             assert (verb, chips, note) == (lbl, [], ""), f"無括號應原樣透傳:{lbl!r} -> {(verb, chips, note)}"
+
+
+def test_combat_option_compacts_web_but_preserves_terminal_label_r164():
+    """R164:Web 摘要可精簡，但 CLI fallback 必須拿回完整原始說明。"""
+    from tesrpg import main as M
+
+    full = "🛡 立盾牆（減傷·嘲諷·護同袍 · 每回合耗體)"
+    option = M._combat_option("wall", full, "減傷·嘲諷·護同袍·每回合耗6體")
+    assert option[1] == "🛡 立盾牆"
+    assert option[2]["chips"] == [{"text": "減傷·嘲諷·護同袍·每回合耗6體"}]
+    assert option[2]["note"] == full
+
+    seen = {}
+    old_menu, old_web = ui.menu, ui._web
+    ui._web = None
+    ui.menu = lambda title, options, allow_back=False: (seen.update(options=options) or "wall")
+    try:
+        assert M._grouped_combat_menu([option]) == "wall"
+    finally:
+        ui.menu, ui._web = old_menu, old_web
+    assert seen["options"] == [("wall", full)]
+
+    captured = {}
+    old_grouped, old_web = ui.grouped_menu, ui._web
+    ui._web = object()
+    ui.grouped_menu = lambda title, groups: (captured.update(groups=groups) or "guard")
+    try:
+        raw = "格擋姿態（攻擊變緩 · 舉盾卸力減傷)"
+        assert M._grouped_combat_menu([("guard", raw)]) == "guard"
+    finally:
+        ui.grouped_menu, ui._web = old_grouped, old_web
+    fallback = captured["groups"][0][1][0]
+    assert fallback[2]["chips"] == [{"text": "攻擊變緩·舉盾卸力減傷"}]
+    assert fallback[2]["note"] == raw
 
 
 def test_grouped_menu_carries_chips_and_note_r162():

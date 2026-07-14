@@ -624,13 +624,9 @@ _COMBAT_BUCKETS = {
 _COMBAT_BUCKET_ORDER = ["攻擊", "威能·戰技", "架式", "應變", "脫戰"]
 
 
-_COMBAT_CHIP_DIGITS = set("0123456789０１２３４５６７８９%∞")   # R162:視為「決策數字」的字元(阿拉伯/全形數字/百分比/無限)
-
-
 def _split_combat_label(label: str):
-    """R162 戰鬥動作標籤瘦身:「動作詞（備註)」→ (動作詞, 決策數字 chips, 完整原標籤 note)。
-    含數字/%/∞ 的備註段=決策數字 → 併成一顆 chip 留在按鈕上(桌面/手機都看得到);
-    純文字風味段 → 只進 note(前端掛 hover title + aria-label;note=完整原標籤故不失真)。
+    """R164 戰鬥動作標籤拆解:「動作詞（效果)」→ (動作詞, 可見效果 chip, 完整原標籤 note)。
+    括號內每一段都會進 chip；「不閃避/攻擊變緩/護同袍」和數值同樣是決策資訊，不能只藏在 hover。
     無括號標籤(施法/逃跑/↻ 再攻:X)→ 原樣當動作詞、無 chip、無 note。全形/半形括號皆可拆。"""
     lefts = [i for i in (label.find("（"), label.find("(")) if i >= 0]
     if not lefts or not (label.endswith(")") or label.endswith("）")):
@@ -638,26 +634,44 @@ def _split_combat_label(label: str):
     verb = label[:min(lefts)].strip()
     inner = label[min(lefts) + 1:-1]
     segs = [s.strip() for s in inner.replace("，", "·").replace(",", "·").split("·") if s.strip()]
-    nums = ["".join(s.split()) for s in segs if any(ch in _COMBAT_CHIP_DIGITS for ch in s)]
-    chips = [{"text": "·".join(nums)}] if nums else []
+    details = ["".join(s.split()) for s in segs]
+    chips = [{"text": "·".join(details)}] if details else []
     return verb, chips, label
+
+
+def _combat_option(key: str, label: str, visible_detail: str | None = None):
+    """建立 Web 可掃讀、終端仍可還原完整標籤的戰鬥選項。"""
+    verb, chips, note = _split_combat_label(label)
+    if visible_detail is not None:
+        chips = [{"text": visible_detail.strip()}] if visible_detail.strip() else []
+    meta = {}
+    if chips:
+        meta["chips"] = chips
+    if note:
+        meta["note"] = note
+    return (key, verb, meta) if meta else (key, verb)
 
 
 def _grouped_combat_menu(opts: list) -> str:
     """把扁平的戰鬥動作選單依類別分桶顯示(可掃視);未知 key 落「其他」桶(防呆)。
     grouped_menu 連續編號 + 回選中 key → 呼叫端 dispatch 完全不變(repeat 在「攻擊」桶首=編號 1,守 R113 置頂)。
     **分桶純 web 呈現**:無 web backend(終端/測試)退回扁平 `ui.menu`(回同 key、原樣完整標籤)→ 既有 combat 測試零改。
-    web 端每項標籤經 `_split_combat_label` 拆成動作詞 + 決策數字 chip + hover 備註(R162)。"""
+    2-tuple 舊選項自動拆出完整可見效果；3-tuple 已由 `_combat_option` 提供精簡效果與完整 note。"""
     if ui._web is None:
-        return ui.menu("你的回合", opts)
+        flat = [(o[0], o[2].get("note", o[1])) if len(o) > 2 else (o[0], o[1]) for o in opts]
+        return ui.menu("你的回合", flat)
     buckets: dict[str, list] = {}
-    for k, lbl in opts:
-        verb, chips, note = _split_combat_label(lbl)
-        meta = {}
-        if chips:
-            meta["chips"] = chips
-        if note:
-            meta["note"] = note
+    for opt in opts:
+        k, lbl = opt[0], opt[1]
+        if len(opt) > 2:
+            verb, meta = lbl, dict(opt[2])
+        else:
+            verb, chips, note = _split_combat_label(lbl)
+            meta = {}
+            if chips:
+                meta["chips"] = chips
+            if note:
+                meta["note"] = note
         buckets.setdefault(_COMBAT_BUCKETS.get(k, "其他"), []).append((k, verb, meta) if meta else (k, verb))
     groups = [(g, buckets[g]) for g in _COMBAT_BUCKET_ORDER if buckets.get(g)]
     if buckets.get("其他"):
@@ -695,7 +709,9 @@ def _choose_combat_action(state: GameState, gamedata: GameData, enemies: list, a
             return {"type": "attack", "target": tgt}
         return {"type": choice}
     _gs = inventory.is_great_shield(gamedata, player.equipped.get("shield"))
-    opts = [("attack", f"攻擊（{combat.effective_weapon_name(player, gamedata)}{' · 盾擊' if _gs else ''})")]
+    _weapon_name = combat.effective_weapon_name(player, gamedata)
+    _attack_detail = _weapon_name + ("·盾擊" if _gs else "")
+    opts = [_combat_option("attack", f"攻擊（{_weapon_name}{' · 盾擊' if _gs else ''})", _attack_detail)]
     _rep = _repeat_option(player, gamedata, enemies, allies, mem)   # R113:一鍵重複上次動作(置頂)
     if _rep is not None:
         opts.insert(0, ("repeat", _rep))
@@ -706,49 +722,53 @@ def _choose_combat_action(state: GameState, gamedata: GameData, enemies: list, a
     if powers.usable_in(player, state, gamedata, "combat"):
         pid = powers.power_id(player, gamedata)
         if pid == "beast_form":
-            opts.append(("power", "🐺 獸化變身（化身嗜血巨狼)"))
+            opts.append(_combat_option("power", "🐺 獸化變身（化身嗜血巨狼)", "嗜血巨狼"))
         else:
             plabel = "吸血之力" if player.is_vampire else "星座之力"
-            opts.append(("power", f"{plabel}({powers.power_def(pid)['name']})"))
+            _power_name = powers.power_def(pid)["name"]
+            opts.append(_combat_option("power", f"{plabel}({_power_name})", _power_name))
     # 種族之力(R61):與星座威能槽不相交的第二槽 —— 戰系種族每日一招。控場威能須有合類存活敵才提供。
     if powers.racial_available(player, state, gamedata, "combat"):
         rpid = powers.racial_power_id(player, gamedata)
         if "control" not in powers.racial_def(rpid)["effect"] or powers.racial_combat_targets(rpid, enemies, gamedata):
-            opts.append(("racial_power", f"🐾 種族之力（{powers.racial_def(rpid)['name']})"))
+            _racial_name = powers.racial_def(rpid)["name"]
+            opts.append(_combat_option("racial_power", f"🐾 種族之力（{_racial_name})", _racial_name))
     if (not inventory.is_dual_wielding(player, gamedata)
             and not inventory.is_two_handed(gamedata, player.weapon)):   # 雙持/雙手武器占雙手 → 不能格擋
         if combat.has_guard_stance(player):
-            opts.append(("guard", "收起格擋姿態（恢復全力攻擊)"))   # R137:取代整回合格擋動作(純減傷·不碰命中)
+            opts.append(_combat_option("guard", "收起格擋姿態（恢復全力攻擊)", "恢復全力攻擊"))   # R137:取代整回合格擋動作(純減傷·不碰命中)
         elif inventory.is_great_shield(gamedata, player.equipped.get("shield")):
             _m = formulas.GUARD_STANCE_MITIGATION * min(1.0, player.skill("block") / 100.0)
             _gpct = int(_m * formulas.GREAT_SHIELD_ELEMENTAL_FACTOR * 100)   # R138b:元素=卸力×0.7(恆≤物理)
-            opts.append(("guard", f"重盾掩體（攻擊變緩 · 卸力-{int(_m * 100)}% · 元素-{_gpct}% · 回氣+{formulas.GREAT_SHIELD_BUNKER_FATIGUE}/回)"))   # R138 可見性:持重盾時姿態效果直接標在選項上
+            _guard_detail = f"攻擊變緩·卸力-{int(_m * 100)}%·元素-{_gpct}%·回氣+{formulas.GREAT_SHIELD_BUNKER_FATIGUE}/回"
+            opts.append(_combat_option("guard", f"重盾掩體（攻擊變緩 · 卸力-{int(_m * 100)}% · 元素-{_gpct}% · 回氣+{formulas.GREAT_SHIELD_BUNKER_FATIGUE}/回)", _guard_detail))   # R138 可見性:持重盾時姿態效果直接標在選項上
         else:
-            opts.append(("guard", "格擋姿態（攻擊變緩 · 舉盾卸力減傷)"))
+            opts.append(_combat_option("guard", "格擋姿態（攻擊變緩 · 舉盾卸力減傷)", "攻擊變緩·舉盾卸力"))
     vcap = combat.vanish_cap(player, gamedata)
     if combat.can_vanish(player, gamedata) and vanish_used < vcap:
         n_alive = len([e for e in enemies if combat.is_alive(e)])
         pct = int(combat.vanish_chance(player, n_alive, vanish_used, gamedata) * 100)
         left = "∞" if vcap >= 99 else (vcap - vanish_used)
         # R71:隱遁不再閃避(敵照常攻擊)→ 純重獲偷襲先機;標籤如實說明
-        opts.append(("vanish", f"隱遁再襲（重獲偷襲·不閃避·成功率 {pct}%,剩 {left} 次)"))
+        opts.append(_combat_option("vanish", f"隱遁再襲（重獲偷襲·不閃避·成功率 {pct}%,剩 {left} 次)",
+                                   f"偷襲·不閃避·{pct}%·剩{left}次"))
     # 弓手「散兵」武技:持弓 + 選了對應 marksman 里程碑才開放(瞄準射 75 / 牽制射 50 / 散兵走位 50)
     # —— 不再「裝備弓即免費全給」;散兵走位選了即可用(解鎖自帶,不再要 sneak 隱遁),仍受每場 vanish 次數上限。
     if (gamedata.item(player.weapon).get("archetype") == "bow"
             and not getattr(player, "beast_form", False)):
         if mastery.has_bow_technique(player, gamedata, "aimed"):
-            opts.append(("aimed", "瞄準射（蓄力強擊 · 額外耗體)"))
+            opts.append(_combat_option("aimed", "瞄準射（蓄力強擊 · 額外耗體)", "強擊·額外耗體"))
         if mastery.has_bow_technique(player, gamedata, "crippling"):
-            opts.append(("crippling", "牽制射（削弱目標攻勢)"))
+            opts.append(_combat_option("crippling", "牽制射（削弱目標攻勢)", "削弱攻勢"))
         if mastery.has_bow_technique(player, gamedata, "skirmish") and vanish_used < vcap:
-            opts.append(("skirmish", "散兵走位（射一箭後遁走)"))
+            opts.append(_combat_option("skirmish", "散兵走位（射一箭後遁走)", "射後遁走"))
         if mastery.has_bow_technique(player, gamedata, "volley") and sum(1 for e in enemies if combat.is_alive(e)) >= 2:
-            opts.append(("volley", "箭雨（齊射全體 60% 傷害 · 倍耗體)"))   # R136:單敵時無意義 → 不顯示
+            opts.append(_combat_option("volley", "箭雨（齊射全體 60% 傷害 · 倍耗體)", "全體60%·倍耗體"))   # R136:單敵時無意義 → 不顯示
     # 坐騎戰技(僅野外騎乘遭遇的第一回合;戰馬+近戰=衝鋒、獵馬+弓=騎射)
     if mounted and first_round and mounts.can_charge(player, gamedata, True):
-        opts.append(("charge", "🐎 衝鋒（坐騎開場突擊 · 長槍藉馬勢洞穿)"))
+        opts.append(_combat_option("charge", "🐎 衝鋒（坐騎開場突擊 · 長槍藉馬勢洞穿)", "開場突擊·長槍加成"))
     if mounted and first_round and mounts.can_skirmish_ride(player, gamedata, True):
-        opts.append(("skirmish_ride", "🏹 騎射（馬背放箭 · 大幅提升閃避)"))
+        opts.append(_combat_option("skirmish_ride", "🏹 騎射（馬背放箭 · 大幅提升閃避)", "馬背放箭·閃避↑"))
     # 戰士「盾牆」:持盾 + 格擋達門檻 → 立/撤防禦架勢(前向減傷 + 嘲諷 + 護同袍 · 耗體力)
     if (player.equipped.get("shield") and player.base_skill("block") >= SHIELD_WALL_BLOCK_GATE
             and not inventory.is_dual_wielding(player, gamedata)
@@ -756,38 +776,44 @@ def _choose_combat_action(state: GameState, gamedata: GameData, enemies: list, a
         if combat.has_shield_wall(player):
             opts.append(("wall", "撤下盾牆"))
         elif player.fatigue > SHIELD_WALL_UPKEEP:   # 須有體力維持 → 體力耗盡後不可免費再立(盾牆是有限防禦資源,堵 fatigue-0 永久免費坦)
-            opts.append(("wall", "🛡 立盾牆（減傷·嘲諷·護同袍 · 每回合耗體)"))
+            opts.append(_combat_option("wall", "🛡 立盾牆（減傷·嘲諷·護同袍 · 每回合耗體)",
+                                       f"減傷·嘲諷·護同袍·每回合耗{SHIELD_WALL_UPKEEP}體"))
     # 騎士「戰旗」:幻術達門檻 → 立戰旗(全隊不需重施的增傷光環 + 自身護甲);已立則不重複
     if (player.base_skill("illusion") >= STANDARD_ILLUSION_GATE and not _has_standard(player)
             and player.magicka >= STANDARD_COST_MAGICKA):
-        opts.append(("standard", "🚩 立戰旗（鼓舞全隊增傷 · 耗魔體)"))
+        opts.append(_combat_option("standard", "🚩 立戰旗（鼓舞全隊增傷 · 耗魔體)",
+                                   f"全隊增傷·耗{STANDARD_COST_MAGICKA}魔/{STANDARD_COST_FATIGUE}體"))
     # 口才「戰陣號令」:選了里程碑 + 體力足 → 立號令(全隊增傷光環;純耗體不耗魔);已立則不重複
     if (mastery.has_rally(player, gamedata) and not _has_rally(player)
             and player.fatigue >= RALLY_FATIGUE):
-        opts.append(("rally", "📣 號令（鼓舞全隊增傷 · 耗體)"))
+        opts.append(_combat_option("rally", "📣 號令（鼓舞全隊增傷 · 耗體)", f"全隊增傷·耗{RALLY_FATIGUE}體"))
     # 吸血鬼「魅惑凝視」:轉化後 + 體力足 + 本場未用 → 迷惑一敵使其恐懼不進攻(每場一次;R56)
     if (vampirism.is_vampire(player) and not charm_used
             and player.fatigue >= VAMPIRE_CHARM_FATIGUE
             and any(combat.is_alive(e) for e in enemies)):
-        opts.append(("vampire_charm", f"🩸 魅惑凝視（迷惑一敵 · 使其恐懼不進攻 · 耗 {VAMPIRE_CHARM_FATIGUE} 體力)"))
+        opts.append(_combat_option("vampire_charm", f"🩸 魅惑凝視（迷惑一敵 · 使其恐懼不進攻 · 耗 {VAMPIRE_CHARM_FATIGUE} 體力)",
+                                   f"恐懼一敵·耗{VAMPIRE_CHARM_FATIGUE}體"))
     # 刺客「致命烙印」:選了里程碑 + 潛行達門檻 + 體力足 → 標記一敵(後續近戰破甲)
     _dm = mastery.deathmark(player, gamedata)
     if (_dm and player.base_skill("sneak") >= _dm.get("sneak_gate", 50)
             and player.fatigue >= _dm.get("fatigue_cost", 15)
             and any(combat.is_alive(e) and not combat._has_deathmark(e)
                     and not _on_deathmark_cd(e) for e in enemies)):
-        opts.append(("deathmark", f"🔪 致命烙印（標記一敵 · 耗 {_dm.get('fatigue_cost', 15)} 體力)"))
+        _deathmark_cost = _dm.get("fatigue_cost", 15)
+        opts.append(_combat_option("deathmark", f"🔪 致命烙印（標記一敵 · 耗 {_deathmark_cost} 體力)",
+                                   f"標記一敵·耗{_deathmark_cost}體"))
     # R104 幻術安撫:全體存活敵皆被安撫 → 從容脫戰(免逃跑檢定)
     _alive_calm = [e for e in enemies if combat.is_alive(e)]
     if _alive_calm and all(magic.is_calm(e) for e in _alive_calm):
-        opts.append(("leave", "🕊 從容離去（敵意已全平息 · 安然脫身)"))
+        opts.append(_combat_option("leave", "🕊 從容離去（敵意已全平息 · 安然脫身)", "安全脫戰"))
     # R126 戰鬥中用藥(耗一回合):持有消耗品時提供 —— 治療/續資源/淨疾/限時強化(use_item 全支援)
     if any(gamedata.item(s["id"]).get("kind") == "potion" for s in player.inventory):
-        opts.append(("item", "🧪 用藥（喝下藥水 · 耗一回合)"))
+        opts.append(_combat_option("item", "🧪 用藥（喝下藥水 · 耗一回合)", "喝藥·耗1回合"))
     # R147 運動「調息」(耗一回合換回體·自動解除姿態):體力未滿時提供;運動越高、選開源里程碑回越多
     if player.fatigue < player.max_fatigue:
         _rest_amt = formulas.rest_fatigue_amount(player.skill("athletics")) + mastery.rest_bonus(player, gamedata)
-        opts.append(("rest", f"😮‍💨 調息（喘息回體 ~{_rest_amt} · 耗一回合 · 解除架式)"))
+        opts.append(_combat_option("rest", f"😮‍💨 調息（喘息回體 ~{_rest_amt} · 耗一回合 · 解除架式)",
+                                   f"回體~{_rest_amt}·耗1回合·解架式"))
     opts.append(("flee", "逃跑"))
     choice = _grouped_combat_menu(opts)   # D2:扁平動作分桶(回同 key → 下方 dispatch 不變)
 
