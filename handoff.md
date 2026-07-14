@@ -371,6 +371,7 @@
 - **幀協定 = 有序 `blocks` 串**:`view`(原生:`{name,data}`,客戶端依 name 畫元件)/ `log`(rich 標記→彩色文字行,`_markup_html`)/ `html`(退路,export_html;**正常遊玩已用不到**)。`console.py` 每個渲染函式頂端加 `if _web: _emit_view(name, {…}); return`(同源資料萃成 view-model);輸入轉結構化 spec → 原生按鈕/輸入框 + 數字鍵。
 - **全面原生(零 html 退路,實測一輪 0 fallback)**:status/location/sheet/combat(HP+體力條/編號敵人/狀態標)/inventory/map(行省清單)/legacy/guild/quests/npc/court/territory/room/event/discovery/divider/log + **10 個 `sheet_*` 子檢視走通用 `panel` view**。`index.html` 為每種 view 寫原生元件 + CSS(暗色金線卷軸主題、計量條、卡片、chips、RWD `env(safe-area)`)。**CJK 框線對齊問題消失**(不再畫框線)、**手機全友善**(響應式單欄、無橫捲)。
 - **骨幹必修(對抗審查實證)**:`export_html` 加 `code_format` 防整份 `<!DOCTYPE>` 洩漏;SSE 斷線重連重送 `last_frame` + generation id 退殭屍 handler;`submit()` 鎖內原子防雙擊幽靈作答;Content-Length 夾限;前端多位數數字鍵/重連保留輸入值/空整數不誤送 0/送出失敗解鎖。launcher `server.py:launch()`(遊戲 thread `try: main() finally: flush_final()`、未捕捉例外渲染進畫面)。
+- **R166 Web 互動可靠性與精準無障礙**:前端以 `pending/connected/synced` 單一狀態控制 `aria-busy`、`#screen/#prompt.inert`、spinner、快捷鍵與所有 submit 入口；HTTP 200 不解鎖，須等 `seq+prompt_id` 前進，409 關舊 EventSource 重同步，網路/8 秒逾時顯示「未收到送出確認，請重試」。獨立 `role=status` 文字狀態列在遊戲異常時 fixed 留在 viewport、HUD 下移，設定鈕不鎖；焦點依 action key 回同控制，消失則回新 prompt，保留畫面的舊 `data-key`/地圖 route 控制會依新 spec 撤監聽或 disabled；OS/手動減動態皆停 animation/transition/smooth scroll。純前端+測試，後端原子 submit 協定不變。
 - **服務選單迴圈(UX 修正,動 `main.py`)**:9 個原本「選一次即跳回主畫面」的服務動作(告示板/公會/訓練師/法術舖/煉金/附魔/修理/製作/領主區)改成**迴圈**(每圈重算可選項、返回才離開),與早就迴圈的商店/背包一致 → **可連續選**(入會→立刻接晉升任務、連接多張委託等);攻城仍為終局單次。
 - **視覺驗證(用 WSL 直驅 Windows Chrome headless 對靜態快照截圖,Read 圖親眼確認)**:hub/角色卡/戰鬥/世界地圖/傳奇/通用面板,桌面 + 390px 手機皆過。
 - **驗證**:39 測試模組全綠(`test_web`:5 原語 round-trip / 雙擊擋 / 越界整數重詢 / flush_final / code_format / view block 斷言;順手修 `test_politics` 固定-mock 無限加強駐軍)+ 無頭 queue 全鏈(create→hub→各 sheet 子檢視→地圖→背包→隱退→**傳奇結算**→quit;**0 html fallback** 證明全原生)+ live HTTP/SSE 煙霧(串流/POST/重連重送/stale→409/惡意非物件 POST→乾淨 409)+ web 模式迴圈實測(公會入會後留在公會)+ **對抗審查 Workflow(C-lite 骨幹,4 維 11 發現→4 low 已修)**。
@@ -1423,6 +1424,20 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 承 R162/R163 實機評估。① **快捷鍵正確性**:頁尾依真實選項數、返回與再次動態顯示；10+ 項支援完整編號 + Enter 確認，空白 Enter 直接再次；每次 submit/新 frame 清數字緩衝，避免滑鼠插隊或跨回合幽靈輸入；原生可互動元素有焦點時保留自己的 Enter。② **決策資訊可見**:`_combat_option` 提供精簡 chip，武器、額外耗體、不閃避、嘲諷/護同袍、耗回合與精確資源成本不再只藏 title；`_split_combat_label` 對未精簡的新動作採完整括號效果後備；CLI fallback 還原完整原標籤。**此規則取代 R162「數字段進 chip、定性效果可只放 hover」的舊規則。**無表頭 flow 維持緊湊連續排列、不另加視覺分隔，`data-group` 與 ARIA label 保留類別語意。③ **桌面資訊密度**:`min-width:761px` 戰況改敵我雙欄 grid，窄螢幕仍沿用直向；1280×800 壓力案例戰況 394→213px、14 動作末端 738px、快捷提示 777px，未縮字或刪資訊。
 
 **驗證**:真 Chromium 回歸涵蓋 14 動作多位數/再次/焦點/跨 frame 競態、1280×800 首屏、1024×768、800px 最窄桌面斷點、特大字級與零水平溢出。**🔴 未碰 combat/formulas/存檔；維護動作選單須守：效果可見、CLI 完整、焦點 Enter 不被全域快捷搶走、桌面幾何走 `tests/browser_ui.py`。**
+
+---
+
+### R166 · Web 互動可靠性與精準無障礙
+
+以「可操作→處理中→新畫面／可重試／重連恢復」為唯一互動契約。`applyInteractionState()` 由 `pending`、`connected`、`synced` 決定 prompt `aria-busy`、screen/prompt `inert`、處理中控制項 spinner、快捷鍵與 submit 是否可用；設定按鈕刻意在鎖外。`submit()` 檢查 `response.ok` 並用 8 秒 AbortController；200 只代表接受，必須等新 SSE 幀同時越過提交時 `seq/prompt_id` 才清 pending。409 清本次 pending、保留 sync floor、重建 EventSource；舊 `last_frame` 不得越過 sync floor。傳輸失敗顯示「未收到送出確認，請重試」；若回應遺失但後端其實接受，後續新幀會清 uncertain notice 並恢復焦點。
+
+連線狀態由 masthead 移成獨立 `role="status" aria-live="polite" aria-atomic="true"`；遊戲中正常即收起，處理中／重連／同步失敗以文字顯示，長頁捲動時 fixed 留在 viewport 且 sticky HUD 下移，不能只靠紅框。SSE parse/render 失敗先顯示錯誤，250ms 後確實重建 EventSource；一般舊幀可恢復，但 pending/409 sync floor 存在時不可誤解鎖。
+
+焦點在送出前記 action key；新 prompt 同 key 回到原生按鈕、CTA、返回、動態 row 或合法地圖控制，key 消失則聚焦 `.ptitle/#prompt`，皆 `preventScroll` 保 R162 捲頂；文字/數字輸入維持自動聚焦。每次 prompt 先撤銷舊 `data-key` listener/tabindex 再依新 spec 重綁；地圖 `data-action-key` 按鈕同步 disabled 且 submit 前二次 `specHasKey` gate，防保留舊 screen 將 route 字串送入 confirm。R165 資訊 popover 與設定 dialog 返回焦點不重寫。
+
+OS `prefers-reduced-motion:reduce` 與手動 `data-motion=off` 同時關閉所有 animation、transition、smooth scrolling；spinner 仍保留靜態圓環。真 Chromium 回歸覆蓋成功 pending、重複阻擋、409、請求中斷/已接受但回應遺失/逾時、原生 EventSource 自動重連、壞 SSE、409×壞幀交錯、焦點同 key/fallback/CTA/back、失效 row/地圖按鈕、OS/手動減動態、1280×800 與 390×844 長頁幾何，並保留 R164/R165 案例。
+
+**對抗審查**:三路獨立審查 + 主迴圈覆核，確認並修正 response-loss notice、同步例外永久鎖死、409×壞幀短暫解鎖、舊 data-key 焦點/送出、長頁狀態列離屏、舊/新建地圖 route 控制、CTA/back 焦點 registry，以及離線/減動態/靜態契約的測試假綠。**🔴 鐵律**:HTTP 200 不解鎖；pending 只由更新 `seq+prompt_id` 結束；409/重連舊幀不得越 sync floor；所有 screen submit key 必在目前 spec 合法且失效控制須 disabled/撤監聽；異常狀態必有 viewport 內文字，不能只靠顏色；前端互動改動必跑 `tests/browser_ui.py`。
 
 ---
 
@@ -2774,7 +2789,7 @@ R88 讓**盜賊公會**拿到階級解鎖招牌動詞(斯庫瑪走私),但**戰�
 
 ## 6. 下一步候選(依槓桿排序)
 
-> **Web UI/UX 候選**(R58「改善 UI/UX」評估盤點;UI 已近乎全原生,以下為剩餘真缺口,皆 UI-only/低風險):① ✅ **敘事捲動歷史已做**(R58 故事日誌);② ✅ **遊戲內說明/圖鑑已做**(R60 codex:`data/codex.json` 13 質化分類 + 動態神殿一覽,人物組「指南/圖鑑」hub action);③ **無障礙/動效打磨**(全頁 `aria-live`、`prefers-reduced-motion`〔R58 已起頭〕、圖示按鈕語意標籤、處理中 spinner、焦點管理);④ **QoL/設定**(字級切換、多存檔槽 UI)。
+> **Web UI/UX 候選**(R58「改善 UI/UX」評估盤點;UI 已近乎全原生):① ✅ **敘事捲動歷史已做**(R58 故事日誌);② ✅ **遊戲內說明/圖鑑已做**(R60);③ ✅ **互動可靠性/精準無障礙已做**(R166:pending/重試/重連、焦點、狀態列、完整減動態);④ ✅ **QoL/設定與多存檔槽已做**(R157/R158)。
 
 0. **城戰/領主區路線(已立藍圖,Oblivion+Skyrim 參考,逐 Phase 推進)** —— ✅ **Phase 1 已做**(見 §1「領主區 Phase 1」:第 4 城區 `領主區 👑` + 謁見領主,讓 21 城主活起來)。藍圖:
    - ✅ **Phase 2 已做**(見 §1「領主區 Phase 2」):領主委託(source `ruler`)→ `city_standing` → 達 `THANE_STANDING` 受封武士;特權=該省賞金寬待 + 侍從 + 信物。新 Character 欄 `city_standing`/`thaneships`。

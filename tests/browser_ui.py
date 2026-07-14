@@ -487,6 +487,431 @@ class BrowserRegression(unittest.TestCase):
         with self.assertRaises(queue.Empty, msg="新畫面沿用了舊畫面的未完成數字快捷鍵"):
             self.server.answer(timeout=0.6)
 
+    def test_interaction_state_pending_focus_and_fallback(self) -> None:
+        first = self.server.emit(
+            blocks=[{"kind": "view", "name": "combat", "data": _combat_data()}],
+            prompt=_combat_prompt(),
+            hud=_hud(),
+        )
+        self._open(".combat-flow")
+        requests = []
+        self.page.on("request", lambda req: requests.append(req.url) if req.url.endswith("/input") else None)
+        attack = self.page.locator(".combat-flow button.opt").filter(has_text="攻擊").last
+        attack.click()
+        self.assertEqual(self.server.answer(), "attack")
+
+        prompt = self.page.locator("#prompt")
+        self.assertEqual(prompt.get_attribute("aria-busy"), "true")
+        self.assertTrue(prompt.evaluate("el => el.inert"))
+        self.assertTrue(self.page.locator("#screen").evaluate("el => el.inert"))
+        self.assertEqual(self.page.locator(".pending-spinner").count(), 1)
+        self.assertIn("處理中", self.page.get_by_role("status").inner_text())
+        attack.evaluate("el => el.click()")
+        self.page.wait_for_timeout(100)
+        self.assertEqual(len(requests), 1, "pending 期間仍送出了重複 /input")
+
+        next_frame = self.server.emit(
+            blocks=[{"kind": "view", "name": "combat", "data": _combat_data(enemy_hp=72)}],
+            prompt=_combat_prompt(),
+            hud=_hud(),
+        )
+        self.assertGreater(next_frame["seq"], first["seq"])
+        self.page.wait_for_function("document.querySelector('#prompt').getAttribute('aria-busy') === 'false'")
+        self.assertFalse(prompt.evaluate("el => el.inert"))
+        self.assertEqual(self.page.locator(".pending-spinner").count(), 0)
+        self.assertEqual(self.page.evaluate("document.activeElement._key"), "attack")
+        self.assertEqual(self.page.evaluate("window.scrollY"), 0)
+
+        focused = self.page.locator(".combat-flow button.opt").filter(has_text="攻擊").last
+        focused.click()
+        self.assertEqual(self.server.answer(), "attack")
+        self.server.emit(
+            blocks=[],
+            prompt={
+                "type": "menu",
+                "title": "戰鬥結束",
+                "options": [{"key": "continue", "label": "繼續"}],
+                "allow_back": False,
+            },
+            hud=_hud(),
+        )
+        self.page.get_by_text("戰鬥結束", exact=True).wait_for()
+        self.assertEqual(self.page.evaluate("document.activeElement.className"), "ptitle")
+
+    def test_http_409_resyncs_without_unlocking_stale_frame(self) -> None:
+        frame = self.server.emit(
+            blocks=[{"kind": "view", "name": "combat", "data": _combat_data()}],
+            prompt=_combat_prompt(),
+            hud=_hud(),
+        )
+        self._open(".combat-flow")
+        self.assertTrue(self.server.backend.submit(frame["prompt_id"], "already-accepted"))
+
+        self.page.locator(".combat-flow button.opt").filter(has_text="攻擊").last.click()
+        status = self.page.get_by_role("status")
+        status.filter(has_text="畫面同步中").wait_for()
+        self.assertEqual(self.page.locator("#prompt").get_attribute("aria-busy"), "false")
+        self.assertTrue(self.page.locator("#prompt").evaluate("el => el.inert"))
+        self.page.wait_for_timeout(150)
+        self.assertTrue(self.page.locator("#prompt").evaluate("el => el.inert"), "重送舊 last_frame 誤解鎖")
+
+        self.server.emit(blocks=[], prompt=_combat_prompt(), hud=_hud())
+        self.page.wait_for_function("!document.querySelector('#prompt').inert")
+        self.assertEqual(self.page.evaluate("document.activeElement._key"), "attack")
+
+    def test_preserved_screen_rows_are_unwired_before_focus_fallback(self) -> None:
+        self.server.emit(
+            blocks=[{
+                "kind": "view",
+                "name": "inventory",
+                "data": {
+                    "items": [{"key": "old", "label": "舊物品", "kind": "misc", "tier": "common"}],
+                    "weight": 1,
+                    "max": 100,
+                    "over": False,
+                    "gold": 10,
+                },
+            }],
+            prompt={
+                "type": "menu",
+                "title": "舊動作",
+                "options": [{"key": "old", "label": "使用舊物品"}],
+                "allow_back": False,
+            },
+            hud=_hud(),
+        )
+        self._open('.inv-row[data-key="old"]')
+        old_row = self.page.locator('.inv-row[data-key="old"]')
+        old_row.click()
+        self.assertEqual(self.server.answer(), "old")
+
+        self.server.emit(
+            blocks=[],
+            prompt={
+                "type": "menu",
+                "title": "新動作",
+                "options": [{"key": "new", "label": "執行新動作"}],
+                "allow_back": False,
+            },
+            hud=_hud(),
+        )
+        self.page.get_by_text("新動作", exact=True).wait_for()
+        self.assertEqual(self.page.evaluate("document.activeElement.className"), "ptitle")
+        self.assertNotIn("tappable", old_row.get_attribute("class"))
+        self.assertIsNone(old_row.get_attribute("tabindex"))
+        self.page.keyboard.press("Enter")
+        with self.assertRaises(queue.Empty, msg="已失效的舊 data-key 列仍向新 prompt 送值"):
+            self.server.answer(timeout=0.3)
+
+    def test_focus_restores_persistent_cta_and_back_buttons(self) -> None:
+        cta_prompt = {
+            "type": "grouped",
+            "title": "角色選單",
+            "groups": [{
+                "header": "系統",
+                "options": [
+                    {"key": "levelup", "label": "升級"},
+                    {"key": "sheet", "label": "角色卡"},
+                ],
+            }],
+            "extra_keys": [],
+            "cta_keys": ["levelup"],
+        }
+        self.server.emit(blocks=[], prompt=cta_prompt, hud=_hud())
+        self._open("button.cta")
+        self.page.locator("button.cta").click()
+        self.assertEqual(self.server.answer(), "levelup")
+        self.server.emit(blocks=[], prompt=cta_prompt, hud=_hud())
+        self.page.wait_for_function("document.activeElement && document.activeElement._key === 'levelup'")
+
+        back_prompt = {
+            "type": "menu",
+            "title": "子選單",
+            "options": [{"key": "inspect", "label": "查看"}],
+            "allow_back": True,
+        }
+        self.server.emit(blocks=[], prompt=back_prompt, hud=_hud())
+        back = self.page.locator("button.back")
+        back.wait_for()
+        back.click()
+        self.assertIsNone(self.server.answer())
+        self.server.emit(blocks=[], prompt=back_prompt, hud=_hud())
+        self.page.wait_for_function("document.activeElement && document.activeElement._key === null")
+        self.assertIn("back", self.page.evaluate("document.activeElement.className"))
+
+    def test_input_network_failure_and_timeout_are_retryable(self) -> None:
+        self.server.emit(
+            blocks=[{"kind": "view", "name": "combat", "data": _combat_data()}],
+            prompt=_combat_prompt(),
+            hud=_hud(),
+        )
+        self._open(".combat-flow")
+        attack = self.page.locator(".combat-flow button.opt").filter(has_text="攻擊").last
+
+        self.page.route("**/input", lambda route: route.abort("failed"), times=1)
+        attack.click()
+        self.page.get_by_role("status").filter(has_text="未收到送出確認").wait_for()
+        self.assertFalse(self.page.locator("#prompt").evaluate("el => el.inert"))
+        self.assertEqual(self.page.locator(".pending-spinner").count(), 0)
+        attack.click()
+        self.assertEqual(self.server.answer(), "attack", "網路失敗解除後不能重試")
+        self.server.emit(blocks=[], prompt=_combat_prompt(), hud=_hud())
+        self.page.wait_for_function("!document.querySelector('#prompt').inert")
+
+        def accept_then_drop_response(route) -> None:
+            route.fetch()   # 正式 /input 已由後端接受，但不把 200 回應交給頁面。
+            route.abort("failed")
+
+        self.page.route("**/input", accept_then_drop_response, times=1)
+        self.page.locator(".combat-flow button.opt").filter(has_text="攻擊").last.click()
+        self.assertEqual(self.server.answer(), "attack", "故障注入沒有先讓後端接受輸入")
+        self.page.get_by_role("status").filter(has_text="未收到送出確認").wait_for()
+        self.server.emit(blocks=[], prompt=_combat_prompt(), hud=_hud())
+        self.page.wait_for_function("document.querySelector('#status').dataset.state === 'ok'")
+        self.assertEqual(self.page.evaluate("document.activeElement._key"), "attack")
+
+        self.page.clock.install()
+        self.page.evaluate(
+            """() => {
+              window.__tesRealFetch = window.fetch;
+              window.fetch = function (url, options) {
+                if (String(url).endsWith('/input')) {
+                  return new Promise(function (_, reject) {
+                    options.signal.addEventListener('abort', function () {
+                      reject(new DOMException('Aborted', 'AbortError'));
+                    }, {once:true});
+                  });
+                }
+                return window.__tesRealFetch(url, options);
+              };
+            }"""
+        )
+        self.page.locator(".combat-flow button.opt").filter(has_text="攻擊").last.click()
+        self.assertEqual(self.page.locator("#prompt").get_attribute("aria-busy"), "true")
+        self.page.clock.fast_forward(8100)
+        self.page.get_by_role("status").filter(has_text="未收到送出確認").wait_for()
+        self.assertFalse(self.page.locator("#prompt").evaluate("el => el.inert"))
+        self.page.evaluate("window.fetch = window.__tesRealFetch; delete window.__tesRealFetch")
+        self.page.locator(".combat-flow button.opt").filter(has_text="攻擊").last.click()
+        self.assertEqual(self.server.answer(), "attack", "逾時解除後不能重試")
+
+    def test_offline_status_inert_reconnect_and_geometry(self) -> None:
+        self.page.add_init_script(
+            """window.__NativeEventSource = window.EventSource;
+            window.__eventSourceCount = 0;
+            window.__eventSourceOpenCount = 0;
+            window.EventSource = class extends window.__NativeEventSource {
+              constructor(url, options) {
+                super(url, options);
+                window.__eventSourceCount += 1;
+                this.addEventListener('open', function () { window.__eventSourceOpenCount += 1; });
+                window.__testEventSource = this;
+              }
+            };"""
+        )
+        self.server.emit(
+            blocks=[{"kind": "view", "name": "combat", "data": _combat_data()}]
+            + [
+                {"kind": "log", "html": f"<span>長頁斷線測試紀錄 {i:02d}</span>"}
+                for i in range(24)
+            ],
+            prompt=_combat_prompt(),
+            hud=_hud(),
+        )
+        self._open(".combat-flow")
+        status = self.page.get_by_role("status")
+
+        self.page.route("**/events", lambda route: route.abort("failed"), times=1)
+        self.page.route(
+            "**/input",
+            lambda route: route.fulfill(status=409, content_type="application/json", body='{"accepted":false}'),
+            times=1,
+        )
+        self.page.locator(".combat-flow button.opt").filter(has_text="攻擊").last.click()
+        self.page.wait_for_function("window.__eventSourceCount >= 2")
+        status.filter(has_text="重新連線中").wait_for(timeout=10_000)
+        self.assertNotEqual(self.page.evaluate("window.__testEventSource.readyState"), 1)
+        self.assertTrue(status.is_visible())
+        self.assertTrue(self.page.locator("#prompt").evaluate("el => el.inert"))
+        self.assertFalse(self.page.locator("#gear").evaluate("el => el.inert"), "斷線時設定按鈕不應被鎖")
+
+        def assert_status_geometry() -> None:
+            boxes = self.page.evaluate(
+                """() => {
+                  const s=document.querySelector('#status').getBoundingClientRect();
+                  const g=document.querySelector('#gear').getBoundingClientRect();
+                  const h=document.querySelector('#hud').getBoundingClientRect();
+                  return {s:{l:s.left,r:s.right,t:s.top,b:s.bottom},g:{l:g.left,r:g.right,t:g.top,b:g.bottom},
+                    h:{l:h.left,r:h.right,t:h.top,b:h.bottom},vh:innerHeight,
+                    overflow:document.documentElement.scrollWidth > document.documentElement.clientWidth};
+                }"""
+            )
+            gear_overlap = not (
+                boxes["s"]["r"] <= boxes["g"]["l"]
+                or boxes["g"]["r"] <= boxes["s"]["l"]
+                or boxes["s"]["b"] <= boxes["g"]["t"]
+                or boxes["g"]["b"] <= boxes["s"]["t"]
+            )
+            hud_overlap = not (boxes["s"]["b"] <= boxes["h"]["t"] or boxes["h"]["b"] <= boxes["s"]["t"])
+            self.assertFalse(gear_overlap, "連線狀態列與設定按鈕重疊")
+            self.assertFalse(hud_overlap, "連線狀態列與 sticky HUD 重疊")
+            self.assertFalse(boxes["overflow"], "連線狀態列造成水平溢出")
+            self.assertGreaterEqual(boxes["s"]["t"], 0, "連線狀態列捲出 viewport 上緣")
+            self.assertLessEqual(boxes["s"]["b"], boxes["vh"], "連線狀態列超出 viewport 下緣")
+
+        assert_status_geometry()
+        self.page.set_viewport_size({"width": 390, "height": 844})
+        self.page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+        self.assertGreater(self.page.evaluate("window.scrollY"), 0)
+        assert_status_geometry()
+
+        self.server.emit(blocks=[], prompt=_combat_prompt(), hud=_hud())
+        self.page.wait_for_function("window.__eventSourceOpenCount >= 2", timeout=10_000)
+        self.page.wait_for_function("!document.querySelector('#prompt').inert", timeout=10_000)
+        status_el = self.page.locator("#status")
+        self.assertEqual(status_el.get_attribute("data-state"), "ok")
+        self.assertFalse(status_el.is_visible(), "遊戲中已同步狀態列應收起")
+
+    def test_preserved_map_action_is_disabled_for_new_prompt(self) -> None:
+        self.server.emit(
+            blocks=[{"kind": "view", "name": "map", "data": _map_data()}],
+            prompt={
+                "type": "grouped",
+                "title": "世界地圖",
+                "groups": [{"header": "操作", "options": [{"key": "back", "label": "返回"}]}],
+                "extra_keys": ["route:winterhold"],
+                "cta_keys": [],
+            },
+            hud=_hud(),
+        )
+        self._open(".mapstage")
+        self.page.get_by_role("button", name="法師公會", exact=True).click()
+        old_go = self.page.locator(".msvc-find .msf-go")
+        old_go.click()
+        self.assertEqual(self.server.answer(), "route:winterhold")
+
+        self.server.emit(
+            blocks=[],
+            prompt={"type": "confirm", "prompt": "接受途中事件？"},
+            hud=_hud(),
+        )
+        self.page.get_by_text("接受途中事件？", exact=True).wait_for()
+        self.assertTrue(old_go.is_disabled())
+        self.assertEqual(self.page.evaluate("document.activeElement.className"), "ptitle")
+        old_go.evaluate("el => el.click()")
+        with self.assertRaises(queue.Empty, msg="失效的舊地圖前往按鈕向 confirm 送入 route 字串"):
+            self.server.answer(timeout=0.3)
+        self.page.get_by_role("button", name="盜賊公會", exact=True).click()
+        new_go = self.page.locator(".msvc-find .msf-go")
+        self.assertTrue(new_go.is_disabled(), "新建的地圖前往按鈕未立即反映目前 prompt 不允許 route")
+
+    def test_bad_sse_message_restarts_and_recovers_last_frame(self) -> None:
+        self.page.add_init_script(
+            """window.__NativeEventSource = window.EventSource;
+            window.__eventSourceCount = 0;
+            window.EventSource = class extends window.__NativeEventSource {
+              constructor(url, options) {
+                super(url, options);
+                window.__eventSourceCount += 1;
+                window.__testEventSource = this;
+              }
+            };"""
+        )
+        self.server.emit(
+            blocks=[{"kind": "view", "name": "combat", "data": _combat_data()}],
+            prompt=_combat_prompt(),
+            hud=_hud(),
+        )
+        self._open(".combat-flow")
+        self.page.evaluate(
+            "window.__testEventSource.dispatchEvent(new MessageEvent('message', {data:'{broken'}))"
+        )
+        self.page.get_by_role("status").filter(has_text="畫面同步失敗").wait_for()
+        self.assertTrue(self.page.locator("#prompt").evaluate("el => el.inert"))
+        self.page.wait_for_function("window.__eventSourceCount >= 2")
+        self.page.wait_for_function("!document.querySelector('#prompt').inert")
+        self.assertEqual(self.page.locator("#status").get_attribute("data-state"), "ok")
+
+    def test_sync_failure_cannot_bypass_409_sync_floor(self) -> None:
+        self.page.add_init_script(
+            """window.__NativeEventSource = window.EventSource;
+            window.__eventSourceCount = 0;
+            window.EventSource = class extends window.__NativeEventSource {
+              constructor(url, options) {
+                super(url, options);
+                window.__eventSourceCount += 1;
+                window.__testEventSource = this;
+              }
+            };"""
+        )
+        frame = self.server.emit(
+            blocks=[{"kind": "view", "name": "combat", "data": _combat_data()}],
+            prompt=_combat_prompt(),
+            hud=_hud(),
+        )
+        self._open(".combat-flow")
+        self.page.route(
+            "**/input",
+            lambda route: route.fulfill(status=409, content_type="application/json", body='{"accepted":false}'),
+            times=1,
+        )
+        self.page.locator(".combat-flow button.opt").filter(has_text="攻擊").last.click()
+        self.page.wait_for_function("window.__eventSourceCount >= 2")
+        self.page.wait_for_function("document.querySelector('#prompt').inert")
+        self.page.evaluate(
+            """frame => {
+              const es = window.__testEventSource;
+              es.dispatchEvent(new MessageEvent('message', {data:'{broken'}));
+              es.dispatchEvent(new MessageEvent('message', {data:JSON.stringify(frame)}));
+            }""",
+            frame,
+        )
+        self.page.wait_for_timeout(100)
+        self.assertTrue(
+            self.page.locator("#prompt").evaluate("el => el.inert"),
+            "同步失敗後的舊 last_frame 越過 409 syncFloor 誤解鎖",
+        )
+        self.page.wait_for_function("window.__eventSourceCount >= 3")
+        self.server.emit(blocks=[], prompt=_combat_prompt(), hud=_hud())
+        self.page.wait_for_function("!document.querySelector('#prompt').inert")
+
+    def test_reduced_motion_os_and_setting_cover_transitions_and_spinner(self) -> None:
+        self.server.emit(
+            blocks=[{"kind": "view", "name": "combat", "data": _combat_data()}],
+            prompt=_combat_prompt(),
+            hud=_hud(),
+        )
+        self.page.emulate_media(reduced_motion="reduce")
+        self._open(".combat-flow")
+        attack = self.page.locator(".combat-flow button.opt").filter(has_text="攻擊").last
+        attack.click()
+        self.assertEqual(self.server.answer(), "attack")
+        spinner = self.page.locator(".pending-spinner")
+        self.assertEqual(spinner.evaluate("el => getComputedStyle(el).animationName"), "none")
+        self.assertEqual(attack.evaluate("el => getComputedStyle(el).transitionDuration"), "0s")
+        self.assertEqual(self.page.locator(".combat .m-fill").first.evaluate("el => getComputedStyle(el).transitionDuration"), "0s")
+        self.assertEqual(self.page.locator("html").evaluate("el => getComputedStyle(el).scrollBehavior"), "auto")
+        self.server.emit(blocks=[], prompt=_combat_prompt(), hud=_hud())
+        self.page.wait_for_function("!document.querySelector('#prompt').inert")
+
+        self.page.emulate_media(reduced_motion="no-preference")
+        self.assertNotEqual(
+            self.page.locator(".combat .m-fill").first.evaluate("el => getComputedStyle(el).transitionDuration"),
+            "0s",
+            "no-preference/動態開啟時的計量條基線本來就沒有 transition，測試無法防回歸",
+        )
+        self.page.locator("#gear").click()
+        self.page.get_by_role("button", name="關", exact=True).click()
+        self.page.keyboard.press("Escape")
+        manual_attack = self.page.locator(".combat-flow button.opt").filter(has_text="攻擊").last
+        manual_attack.click()
+        self.assertEqual(self.server.answer(), "attack")
+        manual_spinner = self.page.locator(".pending-spinner")
+        self.assertEqual(manual_spinner.evaluate("el => getComputedStyle(el).animationName"), "none")
+        self.assertEqual(manual_attack.evaluate("el => getComputedStyle(el).transitionDuration"), "0s")
+        self.assertEqual(self.page.locator(".combat .m-fill").first.evaluate("el => getComputedStyle(el).transitionDuration"), "0s")
+        self.assertEqual(self.page.locator("html").evaluate("el => getComputedStyle(el).scrollBehavior"), "auto")
+
     def test_desktop_combat_geometry_breakpoints_and_large_text(self) -> None:
         self.server.emit(
             blocks=[

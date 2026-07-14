@@ -42,16 +42,24 @@
             calc(34px + env(safe-area-inset-bottom)) calc(12px + env(safe-area-inset-left)); }
 
   #masthead { padding:10px 2px 8px; background:linear-gradient(var(--bg0) 64%, transparent); text-align:center; }
-  body.playing #masthead{ display:none; }   /* R162:進遊戲(HUD 顯示)→ 隱藏標題列;⚙ 固定右上角仍可用·斷線改由 HUD 紅框示 */
+  body.playing #masthead{ display:none; }
   .brand { font-family:var(--serif); font-weight:700; color:var(--gold);
     font-size:calc(clamp(21px,5.6vw,30px)*var(--fs-scale,1)); letter-spacing:.22em; padding-left:.22em;
     text-shadow:0 0 18px rgba(214,178,92,.28); }
   .orn { color:var(--gold-dim); font-size:calc(12px*var(--fs-scale,1)); letter-spacing:.32em; margin-top:2px; }
-  #status { display:flex; gap:7px; align-items:center; justify-content:center; margin-top:6px;
-    font-size:calc(11.5px*var(--fs-scale,1)); color:var(--faint); }
+  #status { display:flex; width:fit-content; max-width:calc(100% - 44px); gap:7px; align-items:center; justify-content:center;
+    margin:6px auto; padding:4px 10px; border:1px solid transparent; border-radius:7px;
+    font-size:calc(11.5px*var(--fs-scale,1)); color:var(--faint); overflow-wrap:anywhere; }
+  body.playing #status.ok{ display:none; }
+  body.playing #status:not(.ok){ position:fixed; z-index:9; top:calc(6px + env(safe-area-inset-top));
+    left:calc(50% - 18px); transform:translateX(-50%); width:max-content; max-width:calc(100vw - 76px); margin:0; }
+  body.playing.has-interaction-status #hud{ top:calc(40px + env(safe-area-inset-top)); }
+  #status.busy{ color:var(--gold); border-color:var(--gold-soft); background:#171209; }
+  #status.warn,#status.error{ color:#f0b1aa; border-color:#6b3832; background:#1b100e; }
   #dot { width:8px; height:8px; border-radius:50%; background:#5b8f54; box-shadow:0 0 7px #5b8f54;
     transition:background .2s, box-shadow .2s; }
   #dot.off { background:#a8584f; box-shadow:0 0 7px #a8584f; }
+  #status.busy #dot{ background:var(--gold-dim); box-shadow:0 0 7px var(--gold-dim); }
   /* 常駐生命 HUD(sticky,跨所有子畫面) */
   #hud { position:sticky; top:0; z-index:7; display:none; flex-wrap:wrap; align-items:center; gap:6px 12px;
     padding:7px calc(42px + env(safe-area-inset-right)) 7px calc(10px + env(safe-area-inset-left));   /* 右緣留位給固定 ⚙,不遮 HUD 右端(時間/chip) */
@@ -221,6 +229,11 @@
   .end { font-family:var(--serif); color:var(--gold); font-weight:700; font-size:calc(17px*var(--fs-scale,1)); padding:14px 2px; letter-spacing:.04em; }
   #foot { text-align:center; color:var(--faint); font-size:calc(11px*var(--fs-scale,1)); margin-top:22px; letter-spacing:.04em; }
   .locked { opacity:.45; pointer-events:none; }
+  .pending-control{ position:relative; }
+  .pending-spinner{ display:inline-block; flex:none; width:15px; height:15px; margin-left:8px; vertical-align:-2px;
+    border:2px solid currentColor; border-right-color:transparent; border-radius:50%; animation:pending-spin .75s linear infinite; }
+  @keyframes pending-spin{ to{ transform:rotate(360deg); } }
+  #prompt:focus-visible,.ptitle:focus-visible{ outline:2px solid var(--gold); outline-offset:3px; }
   @media (hover:none) { button.opt:hover { transform:none; box-shadow:none; } }
 
   /* 戰鬥 */
@@ -467,9 +480,13 @@
   #log .jbody::-webkit-scrollbar{ width:7px; } #log .jbody::-webkit-scrollbar-thumb{ background:var(--gold-dim); border-radius:4px; }
   #log .jturn{ height:1px; margin:9px 4px; background:linear-gradient(to right,transparent,var(--line),transparent); }
   .jentry{ animation:settle .18s ease; }
-  @media (prefers-reduced-motion:reduce){ #screen > *, .jentry { animation:none; } }
-  /* H 設定:減動態(不只跟 OS,可在設定面板手動關) */
-  :root[data-motion="off"] *{ animation:none !important; transition:none !important; scroll-behavior:auto !important; }
+  @media (prefers-reduced-motion:reduce){
+    *,*::before,*::after{ animation:none !important; transition:none !important; scroll-behavior:auto !important; }
+  }
+  /* H 設定:手動減動態與 OS 偏好使用同一完整契約；spinner 仍保留靜態圓環。 */
+  :root[data-motion="off"] *,:root[data-motion="off"] *::before,:root[data-motion="off"] *::after{
+    animation:none !important; transition:none !important; scroll-behavior:auto !important;
+  }
 
   /* H 設定:⚙ 按鈕 + 設定覆蓋層(純前端·localStorage·零後端) */
   /* ⚙ 固定右上角小按鈕(R162:進遊戲隱藏標題列後仍可用);right 貼齊內容右緣(寬螢幕)、窄螢幕退到 10px */
@@ -522,13 +539,15 @@
   <header id="masthead">
     <div class="brand">流 亡 者</div>
     <div class="orn">⚔ ◈ ✦ ◈ ⚔</div>
-    <div id="status"><span id="dot" class="off"></span><span id="conn">連線中…</span></div>
   </header>
   <button id="gear" type="button" title="設定" aria-label="設定">⚙</button>
+  <div id="status" class="warn" role="status" aria-live="polite" aria-atomic="true">
+    <span id="dot" class="off" aria-hidden="true"></span><span id="conn">連線中…</span>
+  </div>
   <div id="hud"></div>
   <div id="screen"></div>
   <div id="turnlog"></div>
-  <div id="prompt"></div>
+  <div id="prompt" tabindex="-1" role="region" aria-label="可用動作" aria-busy="false"></div>
   <div id="log"></div>
   <footer id="foot">連線後顯示快捷操作</footer>
 </div>
@@ -538,9 +557,15 @@
   const logEl = document.getElementById("log");
   const promptEl = document.getElementById("prompt");
   const footEl = document.getElementById("foot");
+  const statusEl = document.getElementById("status");
   const dot = document.getElementById("dot");
   const conn = document.getElementById("conn");
-  let curPid = null, locked = false, flatButtons = [], backButton = null;
+  const INPUT_TIMEOUT_MS = 8000;
+  let curPid = null, locked = true, flatButtons = [], backButton = null;
+  let connected = false, synced = false, pending = null, uncertainSubmission = null, syncFloor = null, syncFocusKey;
+  let syncFailure = false;
+  let interactionNotice = "", interactionNoticeKind = "error", lastFrameSeq = -1;
+  let eventSource = null, eventGeneration = 0;
   let journalSeq = -1, lastLogSig = "";   // 故事日誌:seq 去重(斷線重連)+ 內容簽名去重(僅對 backend resend 幀,防 int 越界重送重記)
 
   function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) {
@@ -783,7 +808,11 @@
       else s += ` · <span class="mi-hint">(暫無可達)</span>`;
       find.innerHTML = s;
       const go = find.querySelector(".msf-go");
-      if (go) go.addEventListener("click", function () { submit("route:" + reach[0].id); });
+      if (go) {
+        const routeKey = "route:" + reach[0].id; go.dataset.actionKey = routeKey;
+        go.disabled = !specHasKey(routeKey);
+        go.addEventListener("click", function () { submitScreenAction(routeKey, go); });
+      }
     }
     function showInfo(info, n) {
       if (!n) {
@@ -802,7 +831,11 @@
         : (n.here ? ' <span class="mi-hint">(你在此)</span>' : ' <span class="mi-hint">(暫無路可通)</span>');
       info.innerHTML = `${here}<b>${esc(n.name)}</b><span class="mi-type">·${esc(n.type_cn)}</span>${dg}${flag} ${svc}${go}`;
       const b = info.querySelector(".mi-go");
-      if (b) b.addEventListener("click", function () { submit("route:" + n.id); });
+      if (b) {
+        const routeKey = "route:" + n.id; b.dataset.actionKey = routeKey;
+        b.disabled = !specHasKey(routeKey);
+        b.addEventListener("click", function () { submitScreenAction(routeKey, b); });
+      }
     }
     const hereNode = g.nodes.filter(function (n) { return n.here; })[0];   // 開圖聚焦當前行省(「我的位置」)
     const hereProv = hereNode ? hereNode.province : "";
@@ -1193,13 +1226,103 @@
   }
 
   // --- 輸入 ------------------------------------------------------------
-  function submit(value) {
+  function actionControlForKey(key) {
+    const direct = Array.from(screenEl.querySelectorAll("[data-action-key]")).find(function (el) {
+      return !el.disabled && String(el.dataset.actionKey) === String(key);
+    });
+    if (direct) return direct;
+    const row = Array.from(screenEl.querySelectorAll("[data-key]")).find(function (el) {
+      return el._wired && String(el.getAttribute("data-key")) === String(key);
+    });
+    if (row) return row;
+    const promptButton = Array.from(promptEl.querySelectorAll("button")).find(function (b) {
+      return !b.disabled && b._key === key;
+    });
+    if (promptButton) return promptButton;
+    const button = flatButtons.find(function (b) { return b._key === key; });
+    return button ? (button._el || button) : null;
+  }
+  function clearPendingVisual() {
+    document.querySelectorAll(".pending-control").forEach(function (el) {
+      el.classList.remove("pending-control"); el.removeAttribute("aria-busy");
+      el.querySelectorAll(":scope > .pending-spinner").forEach(function (s) { s.remove(); });
+    });
+  }
+  function applyInteractionState() {
+    const blocked = !!pending || !connected || !synced;
+    locked = blocked;
+    promptEl.classList.toggle("locked", blocked);
+    promptEl.setAttribute("aria-busy", pending ? "true" : "false");
+    screenEl.inert = blocked; promptEl.inert = blocked;
+    clearPendingVisual();
+    if (pending && pending.control && pending.control.isConnected) {
+      pending.control.classList.add("pending-control"); pending.control.setAttribute("aria-busy", "true");
+      const spin = document.createElement("span"); spin.className = "pending-spinner";
+      spin.setAttribute("aria-hidden", "true"); pending.control.appendChild(spin);
+    }
+
+    let text = "已連線", kind = "ok";
+    if (syncFailure) {
+      text = interactionNotice || "畫面同步失敗，正在重試"; kind = "error";
+    } else if (!connected) {
+      text = (lastFrameSeq >= 0 || syncFloor || pending) ? "重新連線中…" : "連線中…"; kind = "warn";
+    } else if (!synced) {
+      text = "畫面同步中…"; kind = "busy";
+    } else if (pending) {
+      text = "處理中…"; kind = "busy";
+    } else if (interactionNotice) {
+      text = interactionNotice; kind = interactionNoticeKind;
+    }
+    statusEl.className = kind; statusEl.dataset.state = kind;
+    conn.textContent = text; dot.classList.toggle("off", kind === "warn" || kind === "error");
+    hudEl.classList.toggle("off", !connected || !synced);
+    document.body.classList.toggle("has-interaction-status", kind !== "ok");
+  }
+  function clearPending(request) {
+    if (!request || pending !== request) return;
+    if (request.timer) clearTimeout(request.timer);
+    pending = null; clearPendingVisual();
+  }
+  function focusWithoutScroll(el) {
+    if (!el || !el.isConnected) return;
+    try { el.focus({ preventScroll: true }); } catch (_) { el.focus(); }
+  }
+  function submit(value, source, focusKey) {
     if (locked || curPid === null) return;
     resetDigitBuf();
-    locked = true; promptEl.classList.add("locked");
-    fetch("/input", { method: "POST", headers: { "Content-Type": "application/json" },
+    closeCombatNote(false);
+    const request = { seq: lastFrameSeq, promptId: curPid, key: focusKey,
+      restoreFocus: focusKey !== undefined, control: source || null, timer: null };
+    pending = request; uncertainSubmission = null; syncFailure = false; interactionNotice = ""; applyInteractionState();
+    const controller = new AbortController();
+    request.timer = setTimeout(function () { controller.abort(); }, INPUT_TIMEOUT_MS);
+    fetch("/input", { method: "POST", headers: { "Content-Type": "application/json" }, signal: controller.signal,
       body: JSON.stringify({ prompt_id: curPid, value: value }),
-    }).catch(function () { locked = false; promptEl.classList.remove("locked"); });
+    }).then(function (response) {
+      if (request.timer) { clearTimeout(request.timer); request.timer = null; }
+      if (pending !== request) return;
+      if (response.status === 409) {
+        clearPending(request);
+        syncFloor = { seq: request.seq, promptId: request.promptId };
+        syncFocusKey = request.restoreFocus ? request.key : undefined;
+        synced = false; interactionNotice = ""; restartEventStream(); return;
+      }
+      if (!response.ok) throw new Error("input HTTP " + response.status);
+      // HTTP 200 只表示後端接受輸入；維持 pending，直到 SSE 推進到新的 seq/prompt_id。
+    }).catch(function () {
+      if (request.timer) { clearTimeout(request.timer); request.timer = null; }
+      if (pending !== request) return;
+      clearPending(request);
+      uncertainSubmission = { seq: request.seq, promptId: request.promptId,
+        key: request.key, restoreFocus: request.restoreFocus };
+      interactionNotice = "未收到送出確認，請重試"; interactionNoticeKind = "error";
+      applyInteractionState();
+      if (request.control && request.control.isConnected) focusWithoutScroll(request.control);
+    });
+  }
+  function submitScreenAction(key, control) {
+    if (!specHasKey(key)) return;
+    submit(key, control, key);
   }
   function mkButton(label, value, idx, chips) {
     const b = document.createElement("button");
@@ -1216,7 +1339,7 @@
       });
       b.appendChild(cc);
     }
-    b.addEventListener("click", function () { submit(value); });
+    b.addEventListener("click", function () { submit(value, b, value); });
     return b;
   }
 
@@ -1273,8 +1396,12 @@
     info.addEventListener("click", function () { toggleCombatNote(info, o.label, detail); });
     wrap.appendChild(info); return wrap;
   }
+  function addPromptTitle(text) {
+    const h = document.createElement("div"); h.className = "ptitle"; h.tabIndex = -1;
+    h.textContent = text; promptEl.appendChild(h); return h;
+  }
   function renderPrompt(spec) {
-    closeCombatNote(false); promptEl.innerHTML = ""; promptEl.classList.remove("locked");
+    closeCombatNote(false); promptEl.innerHTML = "";
     flatButtons = []; backButton = null;
     if (!spec) return;
     const t = spec.type;
@@ -1282,7 +1409,7 @@
       const e = document.createElement("div"); e.className = "end";
       e.textContent = "（遊戲結束 —— 重新整理頁面可再啟一局)"; promptEl.appendChild(e); curPid = null; return;
     }
-    if (spec.title) { const h = document.createElement("div"); h.className = "ptitle"; h.textContent = spec.title; promptEl.appendChild(h); }
+    if (spec.title) addPromptTitle(spec.title);
     if (t === "menu") {
       const box = document.createElement("div"); box.className = "btns";
       // 帶屬性 chips 的選卡選單(種族/星座/職業/開局)→ 等寬 grid,避免孤卡撐滿整排
@@ -1319,13 +1446,13 @@
       });
       if (flow) promptEl.appendChild(flowBox);
     } else if (t === "confirm") {
-      if (spec.prompt) { const h = document.createElement("div"); h.className = "ptitle"; h.textContent = spec.prompt; promptEl.appendChild(h); }
+      if (spec.prompt) addPromptTitle(spec.prompt);
       const box = document.createElement("div"); box.className = "btns";
       const y = mkButton("是", true, 1), n = mkButton("否", false, 2);
       y.classList.add("yes"); n.classList.add("no"); flatButtons.push(y, n); box.appendChild(y); box.appendChild(n);
       promptEl.appendChild(box);
     } else if (t === "int" || t === "text") {
-      if (spec.prompt) { const h = document.createElement("div"); h.className = "ptitle"; h.textContent = spec.prompt; promptEl.appendChild(h); }
+      if (spec.prompt) addPromptTitle(spec.prompt);
       const row = document.createElement("div"); row.className = "row";
       const inp = document.createElement("input"); inp.className = "field";
       if (t === "int") { inp.type = "number"; inp.inputMode = "numeric";
@@ -1333,11 +1460,11 @@
       } else { inp.type = "text"; if (spec.default != null) inp.value = spec.default; }
       const go = document.createElement("button"); go.className = "go"; go.textContent = "確定";
       function send() {
-        if (t !== "int") { submit(inp.value); return; }
+        if (t !== "int") { submit(inp.value, go); return; }
         const raw = inp.value.trim(); let n;
         if (raw === "") { if (spec.default == null) { inp.focus(); return; } n = Number(spec.default); }
         else { n = Number(raw); if (!Number.isFinite(n)) { inp.focus(); return; } }
-        submit(n);
+        submit(n, go);
       }
       go.addEventListener("click", send);
       inp.addEventListener("keydown", function (e) { if (e.key === "Enter") send(); });
@@ -1432,21 +1559,32 @@
   //  - 對應到某個選單按鈕的(optKey):移除重複按鈕,該列接管其數字鍵槽(如背包物品)。
   //  - 屬 extra_keys 的(無對應按鈕):只可點/觸控,不佔數字鍵(如地點出口,hub 按鈕數字維持原樣)。
   function wireActionableRows(spec) {
+    screenEl.querySelectorAll("[data-action-key]").forEach(function (el) { el.disabled = true; });
+    screenEl.querySelectorAll("[data-key]").forEach(function (el) {
+      if (el._actionClick) el.removeEventListener("click", el._actionClick);
+      if (el._actionKeydown) el.removeEventListener("keydown", el._actionKeydown);
+      el._actionClick = null; el._actionKeydown = null; el._wired = false;
+      el.classList.remove("tappable"); el.removeAttribute("tabindex");
+    });
     if (!spec || (spec.type !== "menu" && spec.type !== "grouped")) return;
     const opts = spec.type === "menu" ? (spec.options || [])
       : spec.groups.reduce(function (a, g) { return a.concat(g.options); }, []);
     const optKey = {}; opts.forEach(function (o) { optKey[o.key] = true; });
     const extra = {}; (spec.extra_keys || []).forEach(function (k) { extra[k] = true; });
+    screenEl.querySelectorAll("[data-action-key]").forEach(function (el) {
+      const k = el.dataset.actionKey; el.disabled = !(optKey[k] || extra[k]);
+    });
     const replace = [];           // 取代選單按鈕的列(可用數字鍵)
     let any = false;
     screenEl.querySelectorAll("[data-key]").forEach(function (el) {
       const k = el.getAttribute("data-key");
       if ((optKey[k] || extra[k]) && !el._wired) {
         el._wired = true; el.classList.add("tappable"); el.setAttribute("tabindex", "0");
-        el.addEventListener("click", function () { submit(k); });
-        el.addEventListener("keydown", function (e) {
-          if (e.key === "Enter" || e.key === " ") { e.preventDefault(); submit(k); }
-        });
+        el._actionClick = function () { submit(k, el, k); };
+        el._actionKeydown = function (e) {
+          if (e.key === "Enter" || e.key === " ") { e.preventDefault(); submit(k, el, k); }
+        };
+        el.addEventListener("click", el._actionClick); el.addEventListener("keydown", el._actionKeydown);
         any = true;
         // R113:地城方向鍵(go:*)不接管按鈕 —— 格子可點之餘保留「往北/南…」標籤按鈕與其數字鍵
         //(否則方向標籤整組消失、數字槽移給無標籤格子,鍵盤玩家無從對映)
@@ -1467,7 +1605,8 @@
       }
     });
     flatButtons = replace.map(function (k) {     // 數字鍵:取代列在前,其餘按鈕在後
-      return { click: function () { if (!locked) submit(k); } };
+      const el = Array.from(screenEl.querySelectorAll("[data-key]")).find(function (x) { return x.getAttribute("data-key") === k; });
+      return { _key: k, _el: el, click: function () { if (!locked) submit(k, el, k); } };
     }).concat(remaining);
   }
 
@@ -1491,7 +1630,12 @@
   }
 
   let curSpec = null;   // 當前 prompt spec(R113:方向鍵對映查此)
-  function render(frame) {
+  function restoreActionFocus(key, requested, spec) {
+    if (!requested || !spec || spec.type === "int" || spec.type === "text") return;
+    const target = actionControlForKey(key) || promptEl.querySelector(".ptitle") || promptEl;
+    focusWithoutScroll(target);
+  }
+  function render(frame, restoreKey, restoreRequested) {
     resetDigitBuf();   // 新幀可能改變選項順序；未完成的多位數不可套用到新畫面
     const prev = promptEl.querySelector("input.field");
     const prevVal = prev ? prev.value : null;
@@ -1512,7 +1656,7 @@
       appendJournal(narrative, frame.resend);              // 只把持久敘事歸檔
       if (frame.seq != null) journalSeq = frame.seq;
     }   // 重連重送(seq≤)由 seq gate 擋;int 越界重送(resend)由內容簽名擋
-    curPid = frame.prompt_id; locked = false; curSpec = frame.prompt;
+    curPid = frame.prompt_id; curSpec = frame.prompt;
     renderPrompt(frame.prompt);
     wireActionableRows(frame.prompt);
     renderShortcutHelp(frame.prompt);
@@ -1523,6 +1667,43 @@
     if (!samePrompt) {
       window.scrollTo(0, 0);
     }
+    if (pending && pending.restoreFocus) pending.control = actionControlForKey(pending.key);
+    applyInteractionState();
+    restoreActionFocus(restoreKey, restoreRequested, frame.prompt);
+  }
+  function frameAdvanced(frame, floor) {
+    return !!floor && frame.seq != null && frame.seq > floor.seq && frame.prompt_id !== floor.promptId;
+  }
+  function handleFrame(frame) {
+    let restoreKey, restoreRequested = false;
+    if (pending && frameAdvanced(frame, pending)) {
+      const request = pending;
+      restoreKey = request.key; restoreRequested = request.restoreFocus;
+      clearPending(request); interactionNotice = ""; synced = true;
+    }
+    if (!pending && uncertainSubmission && frameAdvanced(frame, uncertainSubmission)) {
+      restoreKey = uncertainSubmission.key; restoreRequested = uncertainSubmission.restoreFocus;
+      uncertainSubmission = null; interactionNotice = "";
+    }
+    if (syncFloor && frameAdvanced(frame, syncFloor)) {
+      syncFloor = null; synced = true; interactionNotice = "";
+      if (!restoreRequested && syncFocusKey !== undefined) {
+        restoreKey = syncFocusKey; restoreRequested = true;
+      }
+      syncFocusKey = undefined;
+    } else if (!pending && !syncFloor) {
+      synced = true;   // 一般重連可接受同一 last_frame；只有 pending/409 必須等待更新幀。
+    }
+    if (frame.seq != null && frame.seq <= lastFrameSeq) {
+      if (syncFailure) {
+        syncFailure = false; interactionNotice = "";
+        if (!pending && !syncFloor) synced = true;
+      }
+      applyInteractionState(); return;
+    }
+    syncFailure = false; interactionNotice = "";
+    render(frame, restoreKey, restoreRequested);
+    if (frame.seq != null) lastFrameSeq = frame.seq;
   }
 
   // 數字鍵快捷(<10 即時;>=10 緩衝多位數,R113:不可能再延伸時立即送出免 450ms 稅)
@@ -1567,7 +1748,7 @@
       //(不 preventDefault 會變成「往北移動、往南捲頁」的不一致;非地城 spec 無 go:* → 方向鍵照常捲頁)
       e.preventDefault();
       const dk = ARROW_DIR[e.key];
-      if (specHasKey(dk) && !locked) submit(dk);
+      if (specHasKey(dk) && !locked) submit(dk, actionControlForKey(dk), dk);
     }
     else if (e.key === "Escape" && backButton) { e.preventDefault(); backButton.click(); }   // Esc=返回(原 "0" 分支不可達之死碼移除)
   });
@@ -1657,13 +1838,30 @@
     }, true);
   })();
 
-  function connect() {
-    const es = new EventSource("/events");
-    es.onopen = function () { dot.classList.remove("off"); hudEl.classList.remove("off"); conn.textContent = "已連線"; };
-    es.onerror = function () { dot.classList.add("off"); hudEl.classList.add("off"); conn.textContent = "重新連線中…"; };
-    es.onmessage = function (ev) { try { render(JSON.parse(ev.data)); } catch (_) {} };
+  function restartEventStream() {
+    const generation = ++eventGeneration;
+    if (eventSource) { eventSource.close(); eventSource = null; }
+    connected = false; synced = false; applyInteractionState();
+    const es = new EventSource("/events"); eventSource = es;
+    es.onopen = function () {
+      if (generation !== eventGeneration) return;
+      connected = true; applyInteractionState();
+    };
+    es.onerror = function () {
+      if (generation !== eventGeneration) return;
+      connected = false; synced = false; applyInteractionState();
+    };
+    es.onmessage = function (ev) {
+      if (generation !== eventGeneration) return;
+      try { handleFrame(JSON.parse(ev.data)); }
+      catch (_) {
+        synced = false; syncFailure = true; interactionNotice = "畫面同步失敗，正在重試"; interactionNoticeKind = "error";
+        applyInteractionState();
+        setTimeout(function () { if (generation === eventGeneration) restartEventStream(); }, 250);
+      }
+    };
   }
-  connect();
+  restartEventStream();
 })();
 </script>
 </body>

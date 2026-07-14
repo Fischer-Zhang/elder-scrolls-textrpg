@@ -1024,7 +1024,9 @@ def test_map_service_filter_and_pips_r160c():
     assert ".mapzoom.filtering .mmark.svcmatch{" in html
     # applyMatch(重繪後重套)+ updateFind(最近X·hops 排序·前往走既有 route:)
     assert "function applyMatch()" in html and "applyMatch();" in html   # draw 尾呼叫
-    assert "function updateFind()" in html and 'submit("route:" + reach[0].id)' in html
+    assert "function updateFind()" in html
+    assert "go.dataset.actionKey = routeKey" in html and "submitScreenAction(routeKey, go)" in html
+    assert "function submitScreenAction(key, control)" in html and "if (!specHasKey(key)) return" in html
     assert "n.hops != null" in html and ".sort(" in html                 # 最近=可達且 hops 最小
     # fs-scale + 主題安全 + WCAG 觸控目標:新控件確實用 fs-scale,且觸控目標有 24px 地板
     assert ".msvcbar .lab{color:var(--gold-dim);font-size:calc(11.5px*var(--fs-scale,1))" in html
