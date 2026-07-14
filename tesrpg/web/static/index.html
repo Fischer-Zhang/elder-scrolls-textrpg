@@ -42,6 +42,7 @@
             calc(34px + env(safe-area-inset-bottom)) calc(12px + env(safe-area-inset-left)); }
 
   #masthead { padding:10px 2px 8px; background:linear-gradient(var(--bg0) 64%, transparent); text-align:center; }
+  body.playing #masthead{ display:none; }   /* R162:進遊戲(HUD 顯示)→ 隱藏標題列;⚙ 固定右上角仍可用·斷線改由 HUD 紅框示 */
   .brand { font-family:var(--serif); font-weight:700; color:var(--gold);
     font-size:calc(clamp(21px,5.6vw,30px)*var(--fs-scale,1)); letter-spacing:.22em; padding-left:.22em;
     text-shadow:0 0 18px rgba(214,178,92,.28); }
@@ -53,7 +54,7 @@
   #dot.off { background:#a8584f; box-shadow:0 0 7px #a8584f; }
   /* 常駐生命 HUD(sticky,跨所有子畫面) */
   #hud { position:sticky; top:0; z-index:7; display:none; flex-wrap:wrap; align-items:center; gap:6px 12px;
-    padding:7px calc(10px + env(safe-area-inset-right)) 7px calc(10px + env(safe-area-inset-left));
+    padding:7px calc(42px + env(safe-area-inset-right)) 7px calc(10px + env(safe-area-inset-left));   /* 右緣留位給固定 ⚙,不遮 HUD 右端(時間/chip) */
     background:linear-gradient(#100d08,#0c0a07); border-bottom:1px solid var(--gold-soft);
     box-shadow:0 5px 14px rgba(0,0,0,.45); font-size:calc(12.5px*var(--fs-scale,1)); transition:border-color .2s; }
   #hud.off { border-bottom-color:#a8584f; }
@@ -453,9 +454,13 @@
   :root[data-motion="off"] *{ animation:none !important; transition:none !important; scroll-behavior:auto !important; }
 
   /* H 設定:⚙ 按鈕 + 設定覆蓋層(純前端·localStorage·零後端) */
-  #gear{ background:none; border:none; color:var(--gold-dim); cursor:pointer; font-size:calc(15px*var(--fs-scale,1));
-    padding:2px 6px; line-height:1; border-radius:7px; transition:color .12s, background .12s; }
-  #gear:hover{ color:var(--gold); background:rgba(214,178,92,.1); }
+  /* ⚙ 固定右上角小按鈕(R162:進遊戲隱藏標題列後仍可用);right 貼齊內容右緣(寬螢幕)、窄螢幕退到 10px */
+  #gear{ position:fixed; top:6px; right:max(10px, calc((100vw - 880px)/2 + 8px)); z-index:8;   /* 高於 HUD(7)、低於設定覆蓋層(.set-overlay 50)→ 開設定時 ⚙ 藏在覆蓋層下 */
+    width:30px; height:30px; display:flex; align-items:center; justify-content:center;
+    background:rgba(20,16,9,.72); border:1px solid var(--line); border-radius:8px;
+    color:var(--gold-dim); cursor:pointer; font-size:calc(15px*var(--fs-scale,1)); line-height:1;
+    -webkit-backdrop-filter:blur(3px); backdrop-filter:blur(3px); transition:color .12s, background .12s, border-color .12s; }
+  #gear:hover{ color:var(--gold); background:rgba(34,26,13,.88); border-color:var(--gold-soft); }
   #gear:focus-visible{ outline:2px solid var(--gold); outline-offset:2px; }
   .set-overlay{ position:fixed; inset:0; z-index:50; display:none; align-items:flex-start; justify-content:center;
     background:rgba(6,5,4,.72); overflow-y:auto; overscroll-behavior:contain; -webkit-overflow-scrolling:touch;
@@ -499,8 +504,9 @@
   <header id="masthead">
     <div class="brand">流 亡 者</div>
     <div class="orn">⚔ ◈ ✦ ◈ ⚔</div>
-    <div id="status"><span id="dot" class="off"></span><span id="conn">連線中…</span><button id="gear" type="button" title="設定" aria-label="設定">⚙</button></div>
+    <div id="status"><span id="dot" class="off"></span><span id="conn">連線中…</span></div>
   </header>
+  <button id="gear" type="button" title="設定" aria-label="設定">⚙</button>
   <div id="hud"></div>
   <div id="screen"></div>
   <div id="turnlog"></div>
@@ -1269,8 +1275,9 @@
     return `<span class="t"><span class="f ${cls}" style="width:${p}%"></span></span><span class="v">${cur}/${max}</span>`;
   }
   function renderHud(d) {
-    if (!d) { hudEl.style.display = "none"; hudEl.innerHTML = ""; return; }
+    if (!d) { hudEl.style.display = "none"; hudEl.innerHTML = ""; document.body.classList.remove("playing"); return; }   // 回主選單 → 顯示標題列
     hudEl.style.display = "flex";
+    document.body.classList.add("playing");   // 進遊戲 → 隱藏標題列(見 body.playing #masthead)
     let chips = "";
     if (d.vampire) chips += `<span class="h-chip red">🩸 ${esc(d.vampire)}</span>`;
     if (d.cover) chips += `<span class="h-chip gold">${esc(d.cover)}</span>`;
