@@ -424,7 +424,18 @@
   .logline{padding:1px 4px;color:var(--ink);font-size:calc(14px*var(--fs-scale,1));line-height:1.5;}
   .logline span{white-space:pre-wrap;}
   .logline + .logline{margin-top:-5px;}
-  /* 故事日誌(R112 雙區:上「本回合」=最新行動&後果緊貼輸入區零捲動;下「故事日誌」=順時序歷史) */
+  /* R162:本回合(戰鬥流水帳 ephemeral)搬進資訊區 —— #turnlog 在戰況卡正下方,每幀替換·max-height 內捲(不擠選單);
+     故事日誌 #log 只留持久敘事(戰利品/升級/發現…)的順時序歷史。 */
+  #turnlog{ display:none; flex-direction:column; margin-top:10px; overflow:hidden;
+    border:1px solid var(--line); border-radius:11px; background:linear-gradient(#161209,#110d07); }
+  #turnlog.on{ display:flex; }
+  #turnlog .tl-head{ font-family:var(--serif); color:var(--gold-dim); font-weight:700; font-size:calc(12.5px*var(--fs-scale,1));
+    letter-spacing:.12em; padding:7px 13px 6px; border-bottom:1px solid var(--line); display:flex; align-items:center; gap:8px; }
+  #turnlog .tl-head::after{ content:""; flex:1; height:1px; background:linear-gradient(to right,var(--gold-soft),transparent); }
+  #turnlog .tlbody{ padding:8px 12px 10px; max-height:clamp(110px,26vh,260px); overflow-y:auto;
+    scrollbar-width:thin; scrollbar-color:var(--gold-dim) transparent; -webkit-overflow-scrolling:touch; }
+  #turnlog .tlbody::-webkit-scrollbar{ width:7px; } #turnlog .tlbody::-webkit-scrollbar-thumb{ background:var(--gold-dim); border-radius:4px; }
+  /* 故事日誌:持久敘事的順時序歷史(有內容才由 journalZones 建立並顯示) */
   #log{ display:none; flex-direction:column; margin-top:12px; overflow:hidden;
     border:1px solid var(--gold-soft); border-radius:11px;
     background:linear-gradient(#13100a,#0e0b07); box-shadow:var(--shadow); }
@@ -432,21 +443,12 @@
     letter-spacing:.12em; padding:8px 14px 7px; border-bottom:1px solid var(--line);
     display:flex; align-items:center; gap:8px; }
   #log .j-head::after{ content:""; flex:1; height:1px; background:linear-gradient(to right,var(--gold-soft),transparent); }
-  #log .j-head.j-hist{ border-top:1px solid var(--line); }
-  #log .jlatest{ padding:8px 12px 10px; background:linear-gradient(#161209,#13100a);
-    max-height:clamp(120px,30vh,300px); overflow-y:auto;   /* D3:寬 AoE 回合流水帳過多時內捲,不再把輸入區推出畫面 */
-    scrollbar-width:thin; scrollbar-color:var(--gold-dim) transparent; -webkit-overflow-scrolling:touch; }
-  #log .jlatest::-webkit-scrollbar{ width:7px; } #log .jlatest::-webkit-scrollbar-thumb{ background:var(--gold-dim); border-radius:4px; }
-  /* 歷史區(標題+捲動體)在首回合退役前整組隱藏(#log.has-hist 由 JS 掛上) */
-  #log .j-hist, #log .jbody{ display:none; }
-  #log.has-hist .j-hist{ display:flex; }
-  #log.has-hist .jbody{ display:block; }
   #log .jbody{ overflow-y:auto; max-height:clamp(150px,34vh,380px); padding:8px 12px 10px;
     scrollbar-width:thin; scrollbar-color:var(--gold-dim) transparent; -webkit-overflow-scrolling:touch; }
   #log .jbody::-webkit-scrollbar{ width:7px; } #log .jbody::-webkit-scrollbar-thumb{ background:var(--gold-dim); border-radius:4px; }
   #log .jturn{ height:1px; margin:9px 4px; background:linear-gradient(to right,transparent,var(--line),transparent); }
-  #log .jentry{ animation:settle .18s ease; }
-  @media (prefers-reduced-motion:reduce){ #screen > *, #log .jentry { animation:none; } }
+  .jentry{ animation:settle .18s ease; }
+  @media (prefers-reduced-motion:reduce){ #screen > *, .jentry { animation:none; } }
   /* H 設定:減動態(不只跟 OS,可在設定面板手動關) */
   :root[data-motion="off"] *{ animation:none !important; transition:none !important; scroll-behavior:auto !important; }
 
@@ -501,6 +503,7 @@
   </header>
   <div id="hud"></div>
   <div id="screen"></div>
+  <div id="turnlog"></div>
   <div id="prompt"></div>
   <div id="log"></div>
   <footer id="foot">數字鍵 1–9 快速選擇 · 0 返回 · Enter 確認</footer>
@@ -1300,49 +1303,44 @@
       + (team ? `<span class="h-team-wrap">${team}</span>` : "");
   }
 
-  // --- 故事日誌(R112 雙區:上「本回合」+ 下「故事日誌」歷史;空回合上區 sticky)-------
-  function journalZones() {
-    // R112 雙區:上「本回合」(aria-live 朗讀新敘事)+ 下「故事日誌」(順時序歷史;首回合退役前隱藏)
+  // --- 本回合(#turnlog·資訊區)+ 故事日誌(#log·持久歷史)----------------------------
+  // R162:ephemeral 戰鬥流水帳 → #turnlog(戰況卡下方·每幀替換,生命週期同 #screen);
+  // 持久敘事(戰利品/升級/發現…)→ #log 故事日誌(append 歸檔)。取代 R112/R156 的 #log 雙區。
+  const turnlogEl = document.getElementById("turnlog");
+  function renderTurnlog(ephem) {                          // 本回合:每幀以當前 ephemeral 流水帳整組替換
+    turnlogEl.innerHTML = '<div class="tl-head">⚔ 本回合</div>'
+      + '<div class="tlbody" aria-live="polite" aria-label="本回合"></div>';
+    const body = turnlogEl.querySelector(".tlbody");
+    ephem.forEach(function (b) {
+      const d = document.createElement("div"); d.className = "logline jentry";
+      d.innerHTML = b.html; body.appendChild(d);
+    });
+    turnlogEl.classList.add("on");
+    if (body.scrollHeight - body.clientHeight > 4) body.scrollTop = body.scrollHeight;   // 滿溢內捲到最新
+  }
+  function clearTurnlog() { turnlogEl.innerHTML = ""; turnlogEl.classList.remove("on"); }
+  function journalZones() {                                // 故事日誌:持久敘事的順時序歷史(有內容才建立並顯示)
     if (!logEl.firstChild) {
-      logEl.innerHTML = '<div class="j-head">⚔ 本回合</div>'
-        + '<div class="jlatest" aria-live="polite" aria-label="本回合"></div>'
-        + '<div class="j-head j-hist">📜 故事日誌</div>'
-        + '<div class="jbody" aria-label="故事日誌"></div>';
+      logEl.innerHTML = '<div class="j-head">📜 故事日誌</div><div class="jbody" aria-label="故事日誌"></div>';
       logEl.style.display = "flex";
     }
-    return { latest: logEl.querySelector(".jlatest"), body: logEl.querySelector(".jbody") };
+    return { body: logEl.querySelector(".jbody") };
   }
-  function appendJournal(logBlocks, isResend) {
-    if (!logBlocks.length) return;
-    const sig = logBlocks.map(function (b) { return b.html; }).join("");
+  function appendJournal(narrative, isResend) {            // 只收持久敘事(非 ephemeral)→ 直接歸檔到歷史
+    if (!narrative.length) return;
+    const sig = narrative.map(function (b) { return b.html; }).join("");
     if (isResend && sig === lastLogSig) return;            // 同內容重送(int 越界重提示)→ 不重覆記
     lastLogSig = sig;
     const z = journalZones();
-    if (z.latest.children.length) {                        // 上一回合退役 → 移入歷史區尾端(維持順時序)
-      // 錨定守衛:使用者本來就在歷史底部才跟捲;往上捲讀舊文時不拽動(修 R58 硬拽回底 bug)
-      const atBottom = z.body.scrollHeight - z.body.scrollTop - z.body.clientHeight < 8;
-      const keep = [];                                     // D1:非流水帳(敘事)才進永久故事日誌;戰鬥流水帳(.eph)丟棄
-      while (z.latest.firstChild) {
-        const n = z.latest.firstChild; z.latest.removeChild(n);
-        if (n.classList && n.classList.contains("eph")) continue;   // 戰鬥流水帳不入永久故事日誌
-        if (n.classList) n.classList.remove("jentry");     // 退役不重播進場動畫
-        keep.push(n);
-      }
-      if (keep.length) {                                   // 有敘事才退役(整回合都是流水帳 → 不留空白分隔)
-        if (z.body.children.length) { const sep = document.createElement("div"); sep.className = "jturn"; z.body.appendChild(sep); }
-        keep.forEach(function (n) { z.body.appendChild(n); });
-        while (z.body.children.length > 240) z.body.removeChild(z.body.firstChild);   // 上限滾動
-        while (z.body.firstChild && z.body.firstChild.classList.contains("jturn")) z.body.removeChild(z.body.firstChild);
-        logEl.classList.add("has-hist");
-        if (atBottom) z.body.scrollTop = z.body.scrollHeight;
-      }
-    }
-    logBlocks.forEach(function (b) {                       // 本回合區:最新敘事 + 戰鬥流水帳(.eph → 退役時丟棄)
-      const d = document.createElement("div");
-      d.className = "logline jentry" + (b.ephemeral ? " eph" : "");
-      d.innerHTML = b.html; z.latest.appendChild(d);
+    const atBottom = z.body.scrollHeight - z.body.scrollTop - z.body.clientHeight < 8;   // 錨定守衛:在底才跟捲,往上讀舊文不拽動
+    if (z.body.children.length) { const sep = document.createElement("div"); sep.className = "jturn"; z.body.appendChild(sep); }   // 分隔每幀
+    narrative.forEach(function (b) {
+      const d = document.createElement("div"); d.className = "logline jentry";
+      d.innerHTML = b.html; z.body.appendChild(d);
     });
-    if (z.latest.scrollHeight - z.latest.clientHeight > 4) z.latest.scrollTop = z.latest.scrollHeight;   // D3:本回合區滿溢時捲到最新
+    while (z.body.children.length > 240) z.body.removeChild(z.body.firstChild);          // 上限滾動
+    while (z.body.firstChild && z.body.firstChild.classList && z.body.firstChild.classList.contains("jturn")) z.body.removeChild(z.body.firstChild);
+    if (atBottom) z.body.scrollTop = z.body.scrollHeight;
   }
 
   // 可點內容列:view 列若帶 data-key 且該 key 是當前 prompt 的合法選項(含 extra_keys)→ 列可點。
@@ -1396,10 +1394,19 @@
     const blocks = frame.blocks || [];
     const stateBlocks = blocks.filter(function (b) { return b.kind === "view" || b.kind === "html" || b.kind === "clear"; });
     const logBlocks = blocks.filter(function (b) { return b.kind === "log"; });
+    const ephem = logBlocks.filter(function (b) { return b.ephemeral; });        // R162:本回合流水帳 → 資訊區 #turnlog
+    const narrative = logBlocks.filter(function (b) { return !b.ephemeral; });   // 持久敘事 → 故事日誌 #log
     renderHud(frame.hud);
-    if (stateBlocks.length) renderScreen(stateBlocks);   // 只在有新狀態時替換;純敘事幀保留前畫面
+    if (stateBlocks.length) {
+      renderScreen(stateBlocks);   // 只在有新狀態時替換;純敘事幀保留前畫面
+      if (!stateBlocks.some(function (b) { return b.kind === "view" && b.name === "combat"; })) clearTurnlog();   // 切到非戰鬥畫面 → 清殘留本回合;戰鬥畫面(含選目標重繪)保留
+    }
     const fresh = (frame.seq == null) || (frame.seq > journalSeq);
-    if (fresh) { appendJournal(logBlocks, frame.resend); if (frame.seq != null) journalSeq = frame.seq; }   // 重連重送(seq≤)由 seq gate 擋;int 越界重送(resend)由內容簽名擋
+    if (fresh) {
+      if (ephem.length) renderTurnlog(ephem);              // 有本回合流水帳才替換(否則保留上一回合,鏡像舊 jlatest)
+      appendJournal(narrative, frame.resend);              // 只把持久敘事歸檔
+      if (frame.seq != null) journalSeq = frame.seq;
+    }   // 重連重送(seq≤)由 seq gate 擋;int 越界重送(resend)由內容簽名擋
     curPid = frame.prompt_id; locked = false; curSpec = frame.prompt;
     renderPrompt(frame.prompt);
     wireActionableRows(frame.prompt);
