@@ -184,7 +184,7 @@
   .btns.combat-flow button.opt { flex:0 0 auto; max-width:100%; }
   /* R162:決策數字 chip 內聯在動作詞右側(不佔下一行、按鈕維持單列);風味備註走 hover title,不上按鈕。 */
   .btns.combat-flow .opt-chips { display:inline-flex; margin:0 0 0 8px; vertical-align:middle; }
-  button.opt { flex:1 1 230px; min-height:50px; padding:12px 15px; cursor:pointer; text-align:left; font-size:calc(15px*var(--fs-scale,1));
+  button.opt { flex:0 0 auto; max-width:100%; min-height:50px; padding:12px 15px; cursor:pointer; text-align:left; font-size:calc(15px*var(--fs-scale,1));   /* R162:內容寬(非 flex-grow 撐滿整排)→ 短標籤=小按鈕、並排換行·全 .btns 動作選單一致;views(商店/背包)與 .cardgrid(選卡)另有渲染不受影響·button.back 仍 flex-basis:100% 全寬 */
     font-family:var(--sans); color:var(--ink); background:linear-gradient(#191409,#130f08); border:1px solid var(--line);
     border-radius:9px; transition:transform .1s ease, border-color .12s, background .12s, box-shadow .12s; }
   button.opt:hover { border-color:var(--gold-soft); background:linear-gradient(#221a0d,#181208);
