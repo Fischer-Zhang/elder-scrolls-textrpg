@@ -67,5 +67,16 @@ python3 -m tesrpg.web      # 啟動後用瀏覽器開 http://127.0.0.1:8080
 ## 測試
 
 ```bash
-python3 tests/run_all.py     # 測試模組數見執行輸出結尾,不需 pytest
+python3 tests/run_all.py       # 純 Python 單元/流程測試;模組數見輸出結尾
+python3 tests/browser_ui.py    # Chromium 桌面 UI 回歸
+bash check.sh                  # 兩套測試皆跑;提交前標準入口
 ```
+
+瀏覽器回歸需要開發依賴與 Chromium。首次設定:
+
+```bash
+python3 -m pip install -e '.[dev]'
+python3 -m playwright install --with-deps chromium
+```
+
+遊戲執行環境仍只有 `rich`；Playwright 僅供開發測試使用。

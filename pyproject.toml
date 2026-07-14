@@ -8,7 +8,10 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=7.0"]
+dev = [
+    "playwright>=1.60",
+    "pytest>=7.0",
+]
 
 [project.scripts]
 tesrpg = "tesrpg.main:main"

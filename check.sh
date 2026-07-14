@@ -38,6 +38,11 @@ echo "✓ 編譯通過"
 step "tests/run_all.py"
 PYTHONPATH=. python3 tests/run_all.py || fail "測試未全綠"
 
+# 2b) 真瀏覽器回歸:正式 index.html + HTTP/SSE + Chromium,驗桌面版面與互動。
+# Playwright/Chromium 是 dev 依賴;缺少時硬失敗並由 tests/browser_ui.py 印安裝指令,不可靜默 skip。
+step "Playwright 桌面瀏覽器回歸"
+PYTHONPATH=. python3 tests/browser_ui.py || fail "真瀏覽器回歸失敗"
+
 # 3) 平衡模擬:--sim,或 git diff(含未暫存)動到 formulas.py / combat.py 就自動跑
 if [ "$RUN_SIM" = 0 ] && git diff --name-only HEAD 2>/dev/null \
      | grep -qE 'tesrpg/formulas\.py|tesrpg/systems/combat\.py'; then

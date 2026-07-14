@@ -12,9 +12,9 @@
 
 - **工作目錄**:`/home/fischer/SLG`
 - **GitHub**:`git@github.com:Fischer-Zhang/elder-scrolls-textrpg.git`(分支 `main`,SSH 已認證為 Fischer-Zhang)
-- **Python 3.12**;`rich` 由**系統套件**提供(`python3-rich`)—— ⚠️ **本機沒有 `pip`、沒有 `pytest`、sudo 需密碼**。
+- **Python 3.12**;遊戲 runtime 只有 `rich`;dev 測試另需 Playwright + Chromium(`python3 -m playwright install --with-deps chromium`)。
 - **執行遊戲**:`python3 -m tesrpg.web`(本機 Web 版,瀏覽器開 `http://127.0.0.1:8080`;**唯一進入點 —— 已 Web-only,終端版已移除**)
-- **跑測試**:`python3 tests/run_all.py`(不需 pytest;**全綠**;模組數見結尾「全部通過 (N 個測試模組)」,別在文件硬寫數字)/ 一鍵 `bash check.sh`(編譯 → 測試 → 條件式 sim)
+- **跑測試**:`python3 tests/run_all.py`(純 Python 單元/流程)+`python3 tests/browser_ui.py`(真 Chromium 桌面 UI)/ 一鍵 `bash check.sh`(編譯 → 兩套測試 → 條件式 sim)
 - **編譯檢查**:`python3 -m py_compile tesrpg/**/*.py tesrpg/*.py tests/*.py`
 - 存檔在 `~/.tesrpg/save.json`(在 repo 外;測試/煙霧測試後記得 `rm -f ~/.tesrpg/save.json`)
 
@@ -1412,6 +1412,12 @@ R50 讓城鎮對詛咒者變危險;使用者選後續=**詛咒巢穴與同類**(
 
 ---
 
+### R163 · Playwright 真瀏覽器桌面 UI 回歸硬閘門
+
+承 UI/UX 評估點名「缺少真瀏覽器回歸測試」:新增獨立 `tests/browser_ui.py`(不混入 stdlib-only `tests/test_*.py` 自動探索),用 production `_make_handler` 啟本機 HTTP/SSE、直接供應正式 `tesrpg/web/static/index.html`,再注入決定性 frame 讓 Playwright/Chromium 實際執行 CSS/JS/DOM 與 `/input`;不啟完整遊戲、不碰真存檔。三個桌面情境:①戰鬥 HUD + screen/turnlog/prompt/log 順序、內容寬按鈕幾何/零水平溢出、chip/note、實際 submit、下一幀捲頂;②設定 dialog/inert/焦點、字級/高對比/減動態 localStorage 持久化;③世界地圖服務篩選高亮/所在地豁免/最近 X/route submit。`check.sh` 在 `run_all` 後無條件跑,缺依賴或 Chromium 啟不來即硬失敗並印安裝指令,**不可靜默 skip**。`playwright>=1.60` 納 `.[dev]`+`uv.lock`;runtime 依賴不變。🔴 後續前端 UI 改動除單元/字串契約外,須更新並跑這套真瀏覽器回歸。
+
+---
+
 ### R160c · 服務可發現性 III:世界地圖服務標記/篩選(公會徽 + 篩選高亮 + 最近 X 導航)
 
 **承「評估 地圖服務標記/篩選」設計面板(3 方案 filter-first/always-badges/hybrid → judge 評分)使用者拍板 S2**(篩選核心 + 縮放才顯公會徽):地圖是主要旅行規劃面,但服務全藏在逐一點擊 65 個同字符 marker 後 —— 無徽記、無篩選、無「最近 X」。**🔴 純前端(唯一改 `index.html` renderMap)·零後端/存檔/combat·payload 已備(svc/svc_all/hops·R159/R160b)零新欄 → sim byte-identical·前端 JS 不由 run_all 執行(node --check + DOM-mock + 契約斷言驗)。**
@@ -2731,11 +2737,12 @@ R88 讓**盜賊公會**拿到階級解鎖招牌動詞(斯庫瑪走私),但**戰�
 > 完整五階段流程(評估 → 決定方向 → 實作 → 驗證 → 文件 + 提交)見 `CLAUDE.md`「開發流程」;以下是「驗證」段的細節。**驗證綠後依 R22 自動 `commit` & `push origin main`。**
 
 1. **實作**(資料 + systems + main/ui)。
-2. **單元測試**:新增 `tests/test_*.py`(用 `assert`,可直接 `python3` 跑;登錄進 `tests/run_all.py`)。
-3. **平衡模擬**:Bash 一行式跑 `combat.auto_resolve` / 手寫迴圈,印勝率/回合數。
-4. **無頭煙霧測試**:用 `WebBackend` + `make_recording_console()` 自動作答驅動 `main()`(或直接 patch `ui.menu`/`Console(file=StringIO())`),實跑建角/`run_battle`/action,抓 traceback。
-5. **對抗式審查(Workflow 工具)**:多維度 fan-out 審查 → 每個發現由獨立懷疑者**對抗式驗證** → 只回報「能真實重現」的 bug。
-6. **覆核 + 修正**:**逐一覆核審查結果**(會有誤報、也會有「會引入新 bug 的錯誤修法」—— 已擋下 2 次);套用確認的修正 + 補回歸測試;重跑全套。
+2. **單元測試**:新增 `tests/test_*.py`(用 `assert`,由 `tests/run_all.py` 自動探索)。
+3. **真瀏覽器 UI 回歸**:前端改動更新 `tests/browser_ui.py`,跑 production HTML + HTTP/SSE + Chromium;不可用字串斷言取代。
+4. **平衡模擬**:Bash 一行式跑 `combat.auto_resolve` / 手寫迴圈,印勝率/回合數。
+5. **無頭煙霧測試**:用 `WebBackend` + `make_recording_console()` 自動作答驅動 `main()`(或直接 patch `ui.menu`/`Console(file=StringIO())`),實跑建角/`run_battle`/action,抓 traceback。
+6. **對抗式審查(Workflow 工具)**:多維度 fan-out 審查 → 每個發現由獨立懷疑者**對抗式驗證** → 只回報「能真實重現」的 bug。
+7. **覆核 + 修正**:**逐一覆核審查結果**(會有誤報、也會有「會引入新 bug 的錯誤修法」—— 已擋下 2 次);套用確認的修正 + 補回歸測試;重跑全套。
 
 > 戰績:二十二輪審查累計修掉 **~37 個真 bug**(含同伴角色化的 orphan 羈絆破口/護盾消散訊息洪流/招牌獎勵靜默;隱遁里程碑化的單一 perk 播報措辭誤導;補階梯 pass 的 armorer repair_floor 死 perk×2 + 自驗閃避三源 trivialize 群戰加夾限;**使用者點出偵查 recon 里程碑死 perk → 重設為情報→戰力**)、擋下 **2 個錯誤修法**、自補 1 次審查覆蓋缺口、自抓數個測試基建坑。
 > 陣營 Phase C-lite 輪:4 維×3 視角,16 發現→0 真 bug(全為正向驗證:紅線/三層/決定性/存檔/玩家免疫/失城浮回皆確認正確)。Phase A/B 因 agent 額度上限以自審代審查(純資料/加性低風險),C-lite 額度恢復後補跑完整對抗審查、零真 bug。
@@ -2832,7 +2839,7 @@ R88 讓**盜賊公會**拿到階級解鎖招牌動詞(斯庫瑪走私),但**戰�
 - ✅ **同伴持久 HP/負傷/羈絆 + 角色化已做**(見 §1「同伴系統深化」+「同伴角色化」):HP 跨戰持久、倒下→負傷 benched(休息康復)、並肩獲勝累積羈絆;**具名招募任務 + 羈絆階解鎖的專屬支線 + 就地對話 + 完成支線的忠誠弧頂點(戰術盟友光環/被動非戰鬥槓桿)**。攻城永久死(既有)+ 冒險模式正常戰鬥不永久死(刻意寬容)。**剩餘**:冒險模式以外的永久死選項、坐騎、同伴間互動/吃醋、開局起手同伴任務鉤子。
 - `mass_paralysis` 等純 CC 法術單用不會贏(無傷害),是 combo 工具,符合設計。
 - **🔴 既有潛在缺陷(R108 審查掃出·待修)**:`rogue_thief`/`blade_agent` 無任何生成路徑(spawn-only 且無人 spawn)→ R99/R100/R101 的 23 條反間/地下/臥底任務 kill 目標打不到(接了永遠完不成)。guard `tests/test_relics._KNOWN_LATENT_UNREACHABLE` 已鎖住防新內容再犯;修法(給兩怪生成路徑 or 犯罪大廳「出獵」execute 比照 action_contract)留下一輪、使用者已拍板。
-- 沒有 CI;測試靠手動 `python3 tests/run_all.py`。可考慮加 GitHub Actions 跑它。
+- 沒有 CI;提交前靠 `bash check.sh` 同時硬跑純 Python 與 Chromium 回歸。可再加 GitHub Actions 自動執行。
 - **測試基建瘦身(2026-06)**:`run_all.py` 改**自動探索** `tests/test_*.py`(刪原「import 清單 + modules 清單」雙清單 footgun);所有模組 `run()` 統一 `sorted(globals())` 自動跑 `test_*`(新測**無需登錄**;轉換時揪出 1 個原本靜默漏跑的 `test_mastery.test_dedup_nobrainer_wave`)。修 `test_web._drive_one_game` 競態(最終答 quit 後盲等永不到來的幀吃滿 `timeout=5`×2 局)→ `timeout=0.5`+`is_alive()` 判結束 → 套件 **11.9s→3.0s(4×)**。純動 `tests/`、零產品碼 → `sim_assassin` byte-identical。
 - **品質精煉(2026-06,承健康分析)**:① **base-write 紅線靜態守門** `test_redline_base.py`:AST 掃 `tesrpg/**/*.py`,斷言對 base 儲存(`char.skills`/`attributes`/`base_max_health`)的寫入只在白名單 `{creation, progression, stats}` 發生 → 把「絕不寫 base、加成走疊加層」這條**最高紅線從人工守變機器守**(零執行期開銷,附反向驗證證 scanner 有效);② 補 3 個薄專屬測試 `test_crime`/`test_enchanting`/`test_inventory`(原僅整合測試覆蓋)。**刻意不做** main.py dispatch dict 化(161 elif god-module 大重構·純美觀·回歸風險高)。純動 `tests/`、零產品碼 → `sim_assassin` byte-identical;`run_all` 71→**75**(自動探索 +4)。
 - **測試基建補強(2026-06,承外部測試分析)**:① **`test_web.py` 是唯一退出「`globals()` 自動收集」慣例的模組**(手寫 16 行 `run()` 清單)→ 改為自動收集(保留 `reload(ui)` 頭還原真輸入原語 + `_restore()` 尾清 `ui._web`)→ **全模組統一自動收集,補上「新增 `test_` 忘了加進清單→靜默漏跑」最後一個破口**;② 新 **`test_data_schema.py`** 集中守 `trainers`/`armor_sets`/`birthsigns`/`world_events`/`dialogue` 的 schema + **交叉引用**(每個外鍵須指向真實存在物 → 打錯 id/斷鏈在資料層即攔,免成靜默死內容)。**自我維護優先**:交叉引用對照活 `gamedata`(照既有形狀加內容免動測試);少數 enum 白名單對照 `inventory`/`worldstate` dispatch(加全新種類才需更新=登錄提醒)。**變異測試證有牙**(7/7 故意壞外鍵全被抓、還原全綠);現行資料零違規。**校準特例**(避免誤判):跳過 `_doc` meta 鍵、`world_events.trigger.requires` 可引外部旗標(`oblivion_crisis_ended`)故不斷言、`dialogue` faction 可為政治集團(`imperial`/`independent`)或 `@npc` 佔位符故不斷言。純動 `tests/`、零產品碼 → `sim_assassin` byte-identical;`run_all` 78→**79**。**外部分析校正**:該分析把 migration 列為最大缺口屬**高估**(35 檔 to_dict/from_dict 往返 + `test_state` 舊存檔遷移測試已守)→ 真缺口是資料 schema;pytest/平行化建議對本專案(無 pip/pytest、順序執行)**moot**,刻意未採。
