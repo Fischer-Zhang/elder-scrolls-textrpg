@@ -1404,14 +1404,11 @@
     renderPrompt(frame.prompt);
     wireActionableRows(frame.prompt);
     if (samePrompt && prevVal != null) { const inp = promptEl.querySelector("input.field"); if (inp) inp.value = prevVal; }
-    // R113 閱讀動線:帶新敘事的幀 → 選單置中(上瞥狀態、下瞥「本回合」皆可及;頁面塞得下時無感);
-    // 純狀態幀維持捲頂。修「每幀捲頂但敘事在頁底 → 每次行動都要往下捲」。
+    // R162 閱讀動線:行動後聚焦「資訊區」——捲回頁頂(HUD + #screen 敵我/狀態),不再置中動作選單。
+    // R113 曾置中選單(讓下方「本回合」也搆得到),但那把資訊區頂出畫面;R162 選單已短 → 資訊區 + 選單 +
+    // 本回合可同屏,故改回捲頂讓「行動完第一眼看到敵我」(故事日誌歷史落摺線下,回看再往下捲)。
     if (!samePrompt) {
-      if (fresh && logBlocks.length && document.documentElement.scrollHeight > window.innerHeight + 4) {
-        promptEl.scrollIntoView({ block: "center" });
-      } else {
-        window.scrollTo(0, 0);
-      }
+      window.scrollTo(0, 0);
     }
   }
 
