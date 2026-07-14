@@ -430,6 +430,11 @@ class BrowserRegression(unittest.TestCase):
         self.assertLess(combat_geometry["left"], combat_geometry["right"], "敵我兩欄未左右分列")
         last_action_bottom = buttons.last.evaluate("el => el.getBoundingClientRect().bottom")
         self.assertLessEqual(last_action_bottom, 800, "1280×800 首屏未完整容納密集動作選單")
+        self.assertLessEqual(
+            self.page.locator("#foot").evaluate("el => el.getBoundingClientRect().bottom"),
+            800,
+            "1280×800 首屏未完整容納動作快捷提示",
+        )
         help_text = self.page.locator("#foot").inner_text()
         self.assertIn("1–14", help_text)
         self.assertIn("Enter 確認", help_text)
@@ -467,7 +472,7 @@ class BrowserRegression(unittest.TestCase):
         with self.assertRaises(queue.Empty, msg="新畫面沿用了舊畫面的未完成數字快捷鍵"):
             self.server.answer(timeout=0.6)
 
-    def test_desktop_combat_geometry_at_1024_and_large_text(self) -> None:
+    def test_desktop_combat_geometry_breakpoints_and_large_text(self) -> None:
         self.server.emit(
             blocks=[
                 {"kind": "view", "name": "combat", "data": _combat_data()},
@@ -506,15 +511,14 @@ class BrowserRegression(unittest.TestCase):
         self.assertEqual(self.page.locator(".combat").evaluate("el => getComputedStyle(el).display"), "grid")
         self.assertLess(edge_sides[0]["right"], edge_sides[1]["left"], "最窄桌面斷點的敵我欄互相重疊")
 
-        self.page.set_viewport_size({"width": 1024, "height": 768})
         self.page.locator("html").evaluate("el => el.setAttribute('data-fs', 'xl')")
-        assert_no_horizontal_overflow("特大字級造成桌面水平溢出")
+        assert_no_horizontal_overflow("800px 最窄桌面搭配特大字級造成水平溢出")
         self.assertEqual(self.page.locator(".combat").evaluate("el => getComputedStyle(el).display"), "grid")
         self.assertTrue(
             self.page.locator(".combat-flow button.opt").evaluate_all(
                 "els => els.every(e => e.scrollWidth <= e.clientWidth && e.getBoundingClientRect().right <= innerWidth)"
             ),
-            "特大字級的動作文字或按鈕超出容器",
+            "最窄桌面的特大字級動作文字或按鈕超出容器",
         )
 
     def test_settings_persist_and_trap_focus(self) -> None:

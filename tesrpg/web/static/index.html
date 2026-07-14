@@ -1479,7 +1479,9 @@
     return opts.some(function (o) { return o.key === k; });
   }
   document.addEventListener("keydown", function (e) {
-    const tag = (document.activeElement && document.activeElement.tagName) || "";
+    const active = document.activeElement;
+    const tag = (active && active.tagName) || "";
+    const nativeEnter = tag === "BUTTON" || tag === "A" || tag === "SELECT" || (active && active.isContentEditable);
     if (tag === "INPUT" || tag === "TEXTAREA") return;
     if (settingsOpen()) return;   // H 設定面板開啟時,遊戲快捷鍵讓位(數字/方向/Esc 交給設定層)
     if (e.key >= "0" && e.key <= "9") {
@@ -1492,8 +1494,8 @@
           || parseInt(digitBuf, 10) * 10 > flatButtons.length) resolveBuf();
       else digitTimer = setTimeout(resolveBuf, 450);
     } else if (e.key === "Enter" && digitBuf) { e.preventDefault(); resolveBuf(); }
-    else if (e.key === "Enter" && tag !== "BUTTON" && repeatButton() && !locked) {
-      e.preventDefault(); repeatButton().click();   // 按鈕有焦點時保留原生 Enter，避免「再次」搶走焦點動作
+    else if (e.key === "Enter" && !nativeEnter && repeatButton() && !locked) {
+      e.preventDefault(); repeatButton().click();   // 原生控制項有焦點時保留 Enter，避免「再次」搶走焦點動作
     }
     else if (ARROW_DIR[e.key] && (specHasKey("go:n") || specHasKey("go:s") || specHasKey("go:w") || specHasKey("go:e"))) {
       // 地城情境(spec 含任一方向)→ 方向鍵一律接管:存在的方向=移動,邊界缺的方向=無動作
