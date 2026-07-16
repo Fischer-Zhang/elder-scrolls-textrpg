@@ -1271,7 +1271,7 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
             _cmsg(res["message"], style="cyan")
             ui.show_events(res["skill_events"], gamedata)
         elif action["type"] == "item":   # R126 戰鬥中用藥(耗一回合;use_item 支援治療/續資源/淨疾/限時強化)
-            ui.message(inventory.use_item(player, gamedata, action["item_id"], state) or "你飲下藥水。", style="green")
+            _cmsg(inventory.use_item(player, gamedata, action["item_id"], state) or "你飲下藥水。", style="green")   # R167 方向1:戰鬥動作走本回合(不污染永久故事日誌)
         elif action["type"] == "rest":   # R147 運動「調息」:耗一回合換回體(不攻擊=唯一成本閘)
             recovered = formulas.rest_fatigue_amount(player.skill("athletics")) + mastery.rest_bonus(player, gamedata)
             # 🔴 自動解除姿態/盾牆(不能持盾架式喘息)→ 恢復與持姿態互斥 → 姿態 fatigue 煞車天然守(防無限姿態)
@@ -1280,7 +1280,7 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
                                         if e.get("kind") not in ("guard_stance", "shield_wall")]
             player.fatigue = min(player.max_fatigue, player.fatigue + recovered)
             _rest_msg = "你穩住呼吸、卸下架式,喘了口氣" if dropped else "你穩住呼吸,喘了口氣"
-            ui.message(f"{_rest_msg} —— 回復 {recovered} 點體力。", style="green")
+            _cmsg(f"{_rest_msg} —— 回復 {recovered} 點體力。", style="green")   # R167 方向1:調息=戰鬥動作走本回合
         elif action["type"] == "power":
             pres = powers.use(player, state, gamedata, target=action.get("target"))
             for m in pres["messages"]:
@@ -1297,7 +1297,7 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
                 _cmsg(m, style="bold magenta")
         elif action["type"] == "revert":          # 狼人:主動變回人形(力竭代價)
             lycanthropy.revert(player, state, gamedata)
-            ui.message("你壓下狂暴,重歸人形 —— 筋疲力盡。", style="magenta")
+            _cmsg("你壓下狂暴,重歸人形 —— 筋疲力盡。", style="magenta")   # R167 方向1:變身=戰鬥動作走本回合
         elif action["type"] == "howl":            # 狼人(達階):恫嚇之嚎 → 使敵恐懼
             res = lycanthropy.howl(player, state, gamedata, alive_e())
             if res["affected"]:
@@ -1510,7 +1510,7 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
             player.fatigue = max(0, player.fatigue - SHIELD_WALL_UPKEEP)
             if player.fatigue <= 0:
                 player.active_effects[:] = [e for e in player.active_effects if e.get("kind") != "shield_wall"]
-                ui.message("你力竭難支,盾牆隨之鬆動落下。", style="yellow")
+                _cmsg("你力竭難支,盾牆隨之鬆動落下。", style="yellow")   # R167 方向1:回合末戰鬥狀態走本回合(對齊立盾)
             else:
                 for a in living_allies:
                     a.active_effects[:] = [e for e in a.active_effects if e.get("source") != "shield_wall_aura"]
@@ -1531,7 +1531,7 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
         if mastery.triage(player, gamedata) and not _triage_armed(player):   # 治療師「戰地搶救」:同伴瀕死 → 武裝折扣急救
             if any(a.health < a.max_health * TRIAGE_ALLY_HP_RATIO for a in living_allies):
                 player.active_effects.append({"kind": "triage_ready", "turns": 2})
-                ui.message("同袍命懸一線 —— 你的戰地醫者本能瞬間繃緊,下一道治療近乎免費。", style="bold green")
+                _cmsg("同袍命懸一線 —— 你的戰地醫者本能瞬間繃緊,下一道治療近乎免費。", style="bold green")   # R167 方向1:回合末戰鬥狀態走本回合
         _apply_companion_capstone_auras(player, gamedata, roster, battle["allies"])   # 忠誠弧頂點:逐回合刷新盟友光環
         # 召喚物計時、移除陣亡/到期的同伴
         for a in battle["allies"]:
@@ -1542,7 +1542,7 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
         # R134 殺王=爪牙潰散:召主在本回合(敵階段反傷/回合末 DoT 等)死亡 → 存活爪牙即刻潰散
         # (自 enemies 移除 → 不進勝利結算 = 無戰利品/擒魂/擊殺計數;while 條件隨之收束戰鬥)。
         if combat.scatter_orphan_summons(enemies, gamedata):
-            ui.message("失去召主的爪牙化作餘燼,潰散於風中。", style="magenta")
+            _cmsg("失去召主的爪牙化作餘燼,潰散於風中。", style="magenta")   # R167 方向1:統一分類(對齊玩家/同伴階段的 _cmsg)
 
     player.active_effects.clear()
     state.time.advance(1)

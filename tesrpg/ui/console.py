@@ -2817,30 +2817,6 @@ def combat_tick(messages: list) -> None:
         _emit_or_print(f"[magenta]{m}[/]", ephemeral=True)   # D1:DoT/狀態計時流水帳(本回合區)
 
 
-def ally_event(ev: dict) -> None:
-    _emit_or_print(f"[magenta]{ev['name']}[/] 撲向敵人,造成 [bold red]{ev['damage']}[/] 傷害"
-                   if ev["hit"] else f"[grey62]{ev['name']} 的攻擊落空了。[/]", ephemeral=True)   # D1
-
-
-def active_effects_line(player: Character, creature) -> None:
-    tags = []
-    from tesrpg.systems import magic
-    sh = magic.active_shield(player)
-    if sh:
-        tags.append(f"[cyan]護盾+{sh}[/]")
-    for e in creature.active_effects:
-        if e["turns"] <= 0:
-            continue
-        if e["kind"] == "fear":
-            tags.append(f"[blue]{creature.name}·恐懼{e['turns']}[/]")
-        elif e["kind"] == "weaken":
-            tags.append(f"[blue]{creature.name}·衰弱{e['turns']}[/]")
-        elif e["kind"] == "soul_trap":
-            tags.append(f"[magenta]{creature.name}·擒魂{e['turns']}[/]")
-    if tags:
-        _emit_or_print("狀態:" + "  ".join(tags), ephemeral=True)   # D1:場上狀態摘要(本回合區)
-
-
 def rule(title: str = "") -> None:
     if _web is not None:
         _emit_view("divider", {"title": title})

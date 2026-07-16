@@ -1652,8 +1652,11 @@
     }
     const fresh = (frame.seq == null) || (frame.seq > journalSeq);
     if (fresh) {
-      if (ephem.length) renderTurnlog(ephem);              // 有本回合流水帳才替換(否則保留上一回合,鏡像舊 jlatest)
-      appendJournal(narrative, frame.resend);              // 只把持久敘事歸檔
+      // R167 方向2「鏡入本回合」:有戰鬥流水帳(ephem)的幀 → 本回合 = 逐擊機制 + 該幀即時後果/戰果(敘事)
+      //  → 這回合的傷害、技能升、擊殺、戰利品同框顯示於選單上方(#log 仍完整歸檔敘事·唯一真相來源)。
+      //  無 ephem(純敘事/導航幀)→ 保留上一回合本回合、敘事只入日誌(非戰鬥幀不污染本回合)。
+      if (ephem.length) renderTurnlog(ephem.concat(narrative));
+      appendJournal(narrative, frame.resend);              // 故事日誌:完整持久敘事歸檔
       if (frame.seq != null) journalSeq = frame.seq;
     }   // 重連重送(seq≤)由 seq gate 擋;int 越界重送(resend)由內容簽名擋
     curPid = frame.prompt_id; curSpec = frame.prompt;

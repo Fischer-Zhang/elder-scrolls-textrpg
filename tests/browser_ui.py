@@ -397,6 +397,38 @@ class BrowserRegression(unittest.TestCase):
         self.page.wait_for_function("window.scrollY === 0")
         self.assertIn("61/120", self.page.locator(".cbt.foe").first.inner_text())
 
+    def test_turnlog_narrative_mirror_r167(self) -> None:
+        """R167 方向2:戰鬥幀的敘事(戰果)鏡入本回合(選單上方一眼可見);純敘事(非戰鬥)幀不污染本回合。"""
+        self.server.emit(
+            blocks=[
+                {"kind": "view", "name": "combat", "data": _combat_data()},
+                {"kind": "log", "html": "<span>你揮出致命一擊,強盜倒下。</span>", "ephemeral": True},
+                {"kind": "log", "html": "<span>你擊敗了強盜!獲得 50 金幣、拾得生鏽短劍。</span>"},
+            ],
+            prompt=_combat_prompt(),
+            hud=_hud(),
+        )
+        self._open(".combat-flow")
+        turnlog = self.page.locator("#turnlog").evaluate("el => el.textContent")
+        self.assertIn("致命一擊", turnlog)                                      # 逐擊機制仍在本回合
+        self.assertIn("擊敗了強盜", turnlog)                                    # 戰果鏡入本回合(方向2)
+        self.assertIn("擊敗了強盜", self.page.locator("#log").inner_text())      # 且完整歸檔故事日誌
+
+        # 純敘事·非戰鬥幀(無 ephem)→ 敘事只入日誌,本回合被清、不含新敘事
+        self.server.emit(
+            blocks=[
+                {"kind": "html", "html": "<div>你回到了城鎮。</div>"},
+                {"kind": "log", "html": "<span>你在旅店睡了一晚,精神飽滿。</span>"},
+            ],
+            prompt={"type": "menu", "title": "城鎮", "options": [{"key": "1", "label": "繼續"}],
+                    "extra_keys": [], "cta_keys": []},
+            hud=_hud(),
+        )
+        self.page.locator("#log").filter(has_text="旅店睡了一晚").wait_for()
+        turnlog2 = self.page.locator("#turnlog").evaluate("el => el.textContent")
+        self.assertNotIn("旅店睡了一晚", turnlog2)                              # 敘事不污染本回合
+        self.assertNotIn("擊敗了強盜", turnlog2)                                # 切非戰鬥畫面 → 上一戰報已清
+
     def test_dense_action_menu_shortcuts_and_pending_input(self) -> None:
         prompt = _dense_combat_prompt()
         self.server.emit(
