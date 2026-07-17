@@ -2134,10 +2134,14 @@ def sheet_spellbook(char: Character, gamedata: GameData) -> None:
 
 
 # --- 事件訊息 -----------------------------------------------------------
-def show_events(events: list[dict], gamedata: GameData) -> None:
+def show_events(events: list[dict], gamedata: GameData, combat: bool = False) -> None:
+    """combat=True(戰鬥回合內的技能升)→ skill_up 走 ephemeral(顯本回合、不灌永久故事日誌·R167 #6);
+    ★可升級/✦里程碑待選 仍非 ephemeral(要玩家後續行動的通知,須持久)。非戰鬥呼叫預設 False → 逐位元組不變。"""
     for ev in events:
+        eph = False
         if ev["type"] == "skill_up":
             m = f"[bold green]↑ {gamedata.skill_name(ev['skill'])} 提升到 {ev['level']}![/]"
+            eph = combat     # R167:戰鬥中每擊技能升只進本回合(避免逐幀灌爆永久故事日誌);非戰鬥升級仍持久
         elif ev["type"] == "level_ready":
             m = "[bold yellow]★ 你感到脫胎換骨 —— 可以升級了!（選單選「升級」）[/]"
         elif ev["type"] == "mastery_choice_ready":
@@ -2150,7 +2154,7 @@ def show_events(events: list[dict], gamedata: GameData) -> None:
         else:
             continue
         if _web is not None:
-            _emit_log(m)
+            _emit_log(m, eph)
         else:
             console.print("  " + m)
 
@@ -2809,7 +2813,7 @@ def combat_event(ev: dict, gamedata: GameData) -> None:
         lines.append(f"[cyan]法杖將生機回流,{_STAT_CN.get(stat, stat)} +{amt}。[/]")
     for m in lines:
         _emit_or_print(m, ephemeral=True)   # D1:逐擊流水帳只顯本回合區,不淹沒永久故事日誌
-    show_events(ev.get("skill_events", []), gamedata)
+    show_events(ev.get("skill_events", []), gamedata, combat=True)   # R167 #6:戰鬥中技能升只進本回合
 
 
 def combat_tick(messages: list) -> None:

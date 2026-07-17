@@ -551,6 +551,33 @@ def test_combat_readability_d_batch_r156():
     assert act2["type"] == "flee" and seen.get("flat") and seen["title"] == "你的回合"
 
 
+def test_show_events_combat_ephemeral_r167():
+    """R167 #6:戰鬥中 skill_up 走 ephemeral(只進本回合、不灌永久故事日誌);
+    ★可升級/✦里程碑待選 仍持久(要玩家後續行動);非戰鬥 skill_up 仍持久(煉金/撬鎖等升級留日誌)。"""
+    from tesrpg.gamedata import get_gamedata
+    gd = get_gamedata()
+    be = WebBackend()
+    ui.use_web_backend(be, _rec())
+    try:
+        # 戰鬥中:skill_up → ephemeral(本回合)
+        be.blocks = []
+        ui.show_events([{"type": "skill_up", "skill": "blade", "level": 26}], gd, combat=True)
+        logs = [b for b in be.blocks if b["kind"] == "log"]
+        assert logs and all(b.get("ephemeral") is True for b in logs)
+        # 戰鬥中:★可升級 / ✦里程碑 → 非 ephemeral(持久·要玩家後續行動)
+        be.blocks = []
+        ui.show_events([{"type": "level_ready"},
+                        {"type": "mastery_choice_ready", "skill": "blade", "threshold": 50, "single": False}],
+                       gd, combat=True)
+        assert be.blocks and all("ephemeral" not in b for b in be.blocks if b["kind"] == "log")
+        # 非戰鬥(預設 combat=False):skill_up 仍持久(逐位元組不變·煉金/撬鎖等升級留故事日誌)
+        be.blocks = []
+        ui.show_events([{"type": "skill_up", "skill": "alchemy", "level": 40}], gd)
+        assert be.blocks and all("ephemeral" not in b for b in be.blocks if b["kind"] == "log")
+    finally:
+        _restore()
+
+
 def test_combat_label_split_visible_effects_r164():
     """R164:戰鬥標籤拆「動作詞 / 可見效果 chips / 完整備註 note」——定性與數值效果都不能只藏 hover。"""
     from tesrpg import main as M

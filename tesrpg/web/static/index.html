@@ -1520,7 +1520,7 @@
   // 持久敘事(戰利品/升級/發現…)→ #log 故事日誌(append 歸檔)。取代 R112/R156 的 #log 雙區。
   const turnlogEl = document.getElementById("turnlog");
   function renderTurnlog(ephem) {                          // 本回合:每幀以當前 ephemeral 流水帳整組替換
-    turnlogEl.innerHTML = '<div class="tl-head">⚔ 本回合</div>'
+    turnlogEl.innerHTML = '<div class="tl-head">⚔ 戰報</div>'
       + '<div class="tlbody" aria-live="polite" aria-label="本回合"></div>';
     const body = turnlogEl.querySelector(".tlbody");
     ephem.forEach(function (b) {

@@ -410,6 +410,7 @@ class BrowserRegression(unittest.TestCase):
         )
         self._open(".combat-flow")
         turnlog = self.page.locator("#turnlog").evaluate("el => el.textContent")
+        self.assertIn("戰報", turnlog)                                          # R167:標題改「⚔ 戰報」(避時序宣稱)
         self.assertIn("致命一擊", turnlog)                                      # 逐擊機制仍在本回合
         self.assertIn("擊敗了強盜", turnlog)                                    # 戰果鏡入本回合(方向2)
         self.assertIn("擊敗了強盜", self.page.locator("#log").inner_text())      # 且完整歸檔故事日誌

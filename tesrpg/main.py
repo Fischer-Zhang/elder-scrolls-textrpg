@@ -1269,7 +1269,7 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
                              target=action.get("target"), battle=battle, enemies=alive_e(),
                              corpses=enemies, mounted=mounted, state=state)   # 亡者復生需見「完整」敵群(含已死屍體);存活清單仍走 enemies=alive_e()
             _cmsg(res["message"], style="cyan")
-            ui.show_events(res["skill_events"], gamedata)
+            ui.show_events(res["skill_events"], gamedata, combat=True)   # R167 #6:戰鬥中施法技能升只進本回合
         elif action["type"] == "item":   # R126 戰鬥中用藥(耗一回合;use_item 支援治療/續資源/淨疾/限時強化)
             _cmsg(inventory.use_item(player, gamedata, action["item_id"], state) or "你飲下藥水。", style="green")   # R167 方向1:戰鬥動作走本回合(不污染永久故事日誌)
         elif action["type"] == "rest":   # R147 運動「調息」:耗一回合換回體(不攻擊=唯一成本閘)
@@ -1361,9 +1361,9 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
             if combat.try_vanish(player, len(alive_e()), attempt_used, state.rng, gamedata):
                 vanish_success = True
                 ui.show_events(progression.use_skill(player, gamedata, "sneak",
-                                                     formulas.COMBAT_SNEAK_XP), gamedata)
+                                                     formulas.COMBAT_SNEAK_XP), gamedata, combat=True)   # R167 #6
                 ui.show_events(progression.use_skill(player, gamedata, "acrobatics",
-                                                     formulas.COMBAT_DODGE_XP), gamedata)
+                                                     formulas.COMBAT_DODGE_XP), gamedata, combat=True)   # R167 #6
                 _cmsg("你遁回陰影,重獲偷襲先機 —— 但敵人並未被甩脫,下一擊將再度致命。",
                            style="bold magenta")
             else:
@@ -2401,7 +2401,15 @@ def action_dungeon(state: GameState, gamedata: GameData) -> str | None:
 
     while True:
         cell = dungeoncrawl.cell_at(grid, z, x, y)
-        if not resolved[z][y][x]:                          # 首次進入該格 → 結算內容
+        fresh_cell = not resolved[z][y][x]
+        # R167 未解3:進格先重畫小地圖(@ 已移到新格)再結算 → 撬鎖/機關的確認選單顯示新格而非舊格。
+        # 戰鬥格例外(combat 接管 #screen,先畫會與戰況卡疊 render)→ 改由戰後重畫(見下)。
+        # 一格至多一次 dungeon_grid:結算若彈出提示則被該幀消耗、無提示則與探索選單同幀,皆不重疊。
+        combat_cell = fresh_cell and cell["type"] in (dungeoncrawl.MONSTER, dungeoncrawl.BOSS)
+        if not combat_cell:
+            ui.status_line(state, gamedata, allies=battle["allies"])
+            ui.dungeon_grid(grid, z, x, y, explored, resolved)
+        if fresh_cell:                                     # 首次進入該格 → 結算內容
             resolved[z][y][x] = True
             t = cell["type"]
             if t == dungeoncrawl.MONSTER:
@@ -2477,8 +2485,9 @@ def action_dungeon(state: GameState, gamedata: GameData) -> str | None:
                 state.time.advance(1)
                 return None
 
-        ui.status_line(state, gamedata, allies=battle["allies"])   # 持久狀態條:英雄 + 夥伴 + 召喚物
-        ui.dungeon_grid(grid, z, x, y, explored, resolved)  # 小地圖 + 當前格(偵查揭示鄰格內容)
+        if combat_cell:                                    # R167 未解3:戰後 #screen 停在戰況卡 → 重畫小地圖供探索選單
+            ui.status_line(state, gamedata, allies=battle["allies"])   # 持久狀態條:英雄 + 夥伴 + 召喚物
+            ui.dungeon_grid(grid, z, x, y, explored, resolved)  # 小地圖 + 當前格(偵查揭示鄰格內容)
         opts = [("go:" + key, f"往{label}") for key, label, _nx, _ny in dungeoncrawl.neighbors(grid, x, y)]
         if any(gamedata.spells[s]["target"] == "self" and gamedata.spells[s]["effect"]["kind"] not in ("reanimate", "scry")
                for s in player.spells) and not player.beast_form:    # 僅當有可施的 self 法術才列 cast;獸形不可結印(R144)
