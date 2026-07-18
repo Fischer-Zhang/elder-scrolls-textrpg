@@ -242,6 +242,27 @@ def _map_data() -> dict:
     }
 
 
+def _sheet_data() -> dict:
+    """角色卡 fixture(照 console._sheet_view 形狀;三專精技能數對齊真實 7/7/8)。"""
+    def sk(name, level, major=False):
+        return {"name": name, "level": level, "major": major}
+    return {
+        "name": "Quintilius", "race": "高精靈", "sex": "男", "sign": "法師座", "cls": "法師",
+        "spec": "魔法", "level": 1, "level_xp": [0, 12],
+        "hp": [60, 60], "mp": [270, 270], "fp": [155, 155],
+        "encumbrance": 150, "gold": 50, "weapon": "鐵長劍（傷害 10·刀劍 5·劍）",
+        "resist": "魔法+5%　疾病+75%", "fame": 0, "infamy": 0, "bounty": 0,
+        "attrs": [{"name": "力量", "value": 30, "favored": False},
+                  {"name": "智力", "value": 60, "favored": True}],
+        "spec_names": {"combat": "戰鬥", "magic": "魔法", "stealth": "潛行"},
+        "skills": {
+            "combat": [sk(n, 5) for n in ("運動", "刀劍", "格擋", "鈍器", "徒手", "重甲", "鍛造")],
+            "magic": [sk(n, 35, True) for n in ("煉金", "變化", "召喚", "毀滅", "幻術", "神秘", "恢復")],
+            "stealth": [sk(n, 5) for n in ("雜技", "輕甲", "射術", "交易", "安全", "潛行", "偵查", "口才")],
+        },
+    }
+
+
 class _FixtureServer:
     def __init__(self) -> None:
         self.backend = WebBackend()
@@ -429,6 +450,40 @@ class BrowserRegression(unittest.TestCase):
         turnlog2 = self.page.locator("#turnlog").evaluate("el => el.textContent")
         self.assertNotIn("旅店睡了一晚", turnlog2)                              # 敘事不污染本回合
         self.assertNotIn("擊敗了強盜", turnlog2)                                # 切非戰鬥畫面 → 上一戰報已清
+
+    def test_sheet_skill_columns_stay_vertical_r169(self) -> None:
+        """R169:角色卡三技能欄各自單欄縱列(桌面寬)。R164 的裸 .combat 戰況雙欄選擇器
+        曾誤傷 .skcol.combat(戰鬥技能被拉成 3 欄 grid 散版);收斂為 .card.combat 後此測雙向守:
+        技能欄恆縱列 + 戰況卡桌面仍雙欄 grid(scope 收斂不得反傷 R164)。"""
+        self.server.emit(
+            blocks=[{"kind": "view", "name": "sheet", "data": _sheet_data()}],
+            prompt={"type": "menu", "title": "角色資訊", "options": [{"key": "__back__", "label": "返回"}],
+                    "extra_keys": [], "cta_keys": []},
+            hud=_hud(),
+        )
+        self._open(".skills")
+        cols = self.page.evaluate("""() =>
+          [...document.querySelectorAll('.skills .skcol')].map(col => {
+            const items = [...col.querySelectorAll('.sk')].map(sk => sk.getBoundingClientRect());
+            return {cls: col.className, n: items.length,
+                    xs: new Set(items.map(r => Math.round(r.x))).size,
+                    ys: new Set(items.map(r => Math.round(r.y))).size};
+          })""")
+        self.assertEqual(len(cols), 3)
+        for col in cols:
+            self.assertGreater(col["n"], 0, col["cls"])
+            self.assertEqual(col["xs"], 1, f"{col['cls']} 技能未同 x 對齊(散版)")
+            self.assertEqual(col["ys"], col["n"], f"{col['cls']} 同一列出現多個技能(散版)")
+
+        # 對照組:戰況卡在桌面寬(1280≥761)仍須是敵我雙欄 grid
+        self.server.emit(
+            blocks=[{"kind": "view", "name": "combat", "data": _combat_data()}],
+            prompt=_combat_prompt(), hud=_hud(),
+        )
+        self.page.locator(".card.combat").wait_for(state="visible")
+        self.assertEqual(
+            self.page.evaluate("() => getComputedStyle(document.querySelector('.card.combat')).display"),
+            "grid")
 
     def test_dense_action_menu_shortcuts_and_pending_input(self) -> None:
         prompt = _dense_combat_prompt()
