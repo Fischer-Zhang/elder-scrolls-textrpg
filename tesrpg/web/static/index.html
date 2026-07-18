@@ -980,7 +980,7 @@
       }).join("");
       return `<div class="sec-title">${esc(g.title)}</div>${qs}`;
     }).join("");
-    return elFrom(`<div class="card"><div class="card-head">📜 任務日誌</div>${body}${d.completed ? `<div class="faint" style="margin-top:10px">已完成 ${d.completed} 件委託。</div>` : ""}</div>`);
+    return elFrom(`<div class="card"><div class="card-head">📜 任務日誌</div>${body}${d.completed ? `<div class="faint" style="margin-top:10px">已完成 ${d.completed} 項任務。</div>` : ""}</div>`);
   }
   function renderNpc(d) {
     const hearts = '<span style="color:var(--red)">' + "♥".repeat(d.hearts) + '</span><span style="color:#3a3631">' + "·".repeat(10 - d.hearts) + '</span>';

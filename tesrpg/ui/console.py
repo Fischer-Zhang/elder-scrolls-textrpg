@@ -466,12 +466,27 @@ def _guild_view(char: Character, gamedata: GameData, faction_id: str) -> dict:
     return v
 
 
-_QUEST_GROUPS = [("origin", "🧭 起手任務"), ("guild", "⚜ 公會"), ("other", "📜 委託")]
+_QUEST_GROUPS = [("main", "🌋 湮滅危機"), ("origin", "🧭 起手任務"), ("guild", "⚜ 公會"),
+                 ("trial", "🕯 試煉"), ("companion", "🤝 同伴"), ("other", "📜 委託")]
+
+# R168:source 顯式查表(17 種全登錄;relic=騎士團聖物線、undercover=公會間諜生涯 → 併公會;
+# 四種神祇/大師試煉合一桶;ruler 任務名自帶「領主委託:」前綴、rumor/cure 為指路短工 → 留委託)。
+_QUEST_SOURCE_BUCKET = {
+    "main": "main", "origin": "origin",
+    "guild": "guild", "relic": "guild", "undercover": "guild",
+    "daedric": "trial", "divine": "trial", "arcane": "trial", "holy": "trial",
+    "companion": "companion",
+    "board": "other", "npc": "other", "ruler": "other", "rumor": "other",
+    "vampire_cure": "other", "skooma_cure": "other", "werewolf_cure": "other",
+}
 
 
 def _quest_group(q: dict) -> str:
-    if q.get("source") == "origin":
-        return "origin"
+    """三層判別:source 查表 → faction 後備(未登錄新 source 掛陣營者歸公會)→ 委託兜底。
+    任何任務必落桶;source 優先於 faction,未來 daedric 等來源補掛 faction 也不會誤入公會桶。"""
+    bucket = _QUEST_SOURCE_BUCKET.get(q.get("source"))
+    if bucket:
+        return bucket
     return "guild" if q.get("faction") else "other"
 
 
@@ -2624,7 +2639,7 @@ def quest_log(char: Character, gamedata: GameData) -> None:
             parts.append(t)
         console.print(_panel(Group(*parts), title="📜 任務日誌"))
     if char.completed_quests:
-        console.print(f"  [{FAINT}]已完成 {len(char.completed_quests)} 件委託。[/]")
+        console.print(f"  [{FAINT}]已完成 {len(char.completed_quests)} 項任務。[/]")
 
 
 def npc_panel(npc: dict, disposition: int, greeting: str | None = None) -> None:
