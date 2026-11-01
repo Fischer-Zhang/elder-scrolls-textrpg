@@ -4,7 +4,7 @@ allowed-tools: Bash(bash check.sh:*), Bash(git status), Bash(git log:*), Bash(gi
 ---
 執行「換 session 前同步」(對應 CLAUDE.md 換 session 前檢查表):
 
-1. 跑 `bash check.sh --smoke`(完整驗證:編譯 → 全測試 → 條件式 sim → save/load 煙霧 → 自動清存檔)。**紅燈就停下,先修再說。**
+1. 跑 `bash check.sh --smoke`(完整驗證:編譯 → 全測試 → 條件式 sim → save/load 煙霧,煙霧只寫暫存目錄,不碰玩家存檔)。**紅燈就停下,先修再說。**
 2. 跑 `git status` 與 `git log --oneline -5`,讓我看未提交的工作與近期里程碑。
 3. 逐項核對換 session 檢查表,逐條標 ✅/❌:
    - 全部測試全綠

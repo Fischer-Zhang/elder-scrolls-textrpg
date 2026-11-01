@@ -19,7 +19,7 @@ PYTHONPATH=. python3 sim_assassin.py      # 平衡回歸模擬(改戰鬥常數�
 ```
 - Python 3.12;遊戲 runtime 的 `rich` 可由系統套件提供(`python3-rich`);dev 工具走 `.[dev]`。sudo 需密碼、無 `jq`(寫 hook 要用 `python3` 解析 stdin)。
 - 真瀏覽器測試是 dev-only:安裝 `.[dev]` 後執行 `python3 -m playwright install --with-deps chromium`;遊戲 runtime 仍只有 `rich`。
-- 存檔在 `~/.tesrpg/save.json`(repo 外;煙霧測試/實跑後記得清)。
+- 存檔在 `~/.tesrpg/saves/slotN.json`,名人堂在 `~/.tesrpg/hall.json`(repo 外的真實資料;測試與 `check.sh`,含 `--smoke`,都不碰)。
 
 ## 開發流程(每個里程碑走完五階段;⚠ 一次只推一個里程碑)
 
@@ -230,7 +230,7 @@ PYTHONPATH=. python3 sim_assassin.py      # 平衡回歸模擬(改戰鬥常數�
 - [ ] `python3 tests/browser_ui.py` 真 Chromium 桌面 UI 回歸全綠(不可 skip)
 - [ ] 觸戰鬥/施法/刺客/附魔常數 → `PYTHONPATH=. python3 sim_assassin.py`(或 `./check.sh --sim`)
 - [ ] 編譯檢查通過(`check.sh` 已含完整 `py_compile`)
-- [ ] 若跑過煙霧/實跑 → `rm -f ~/.tesrpg/save.json`(`check.sh --smoke` 會自動清)
+- [ ] `~/.tesrpg/` 是真實存檔:`check.sh`(含 `--smoke`)不碰,也不要用腳本清
 - [ ] 改了規則/數量/現況 → 同步 `handoff.md`(§3 鐵律 R## / §1 現況)
 - [ ] commit 訊息末加 `Co-Authored-By:` 行 → `git push origin main`
 
@@ -238,7 +238,7 @@ PYTHONPATH=. python3 sim_assassin.py      # 平衡回歸模擬(改戰鬥常數�
 
 ## 自動化(`.claude/` 已配置)
 
-- `check.sh` — 單指令驗證鏈(完整 `py_compile` → `run_all.py` → Playwright/Chromium 桌面 UI 硬閘門 → 偵測到改 `formulas.py`/`combat.py` 或 `--sim` 才跑 sim 並標出 `⚠` 行 → `--smoke` 才跑煙霧並 trap 清存檔)。
+- `check.sh` — 單指令驗證鏈(完整 `py_compile` → `run_all.py` → Playwright/Chromium 桌面 UI 硬閘門 → 偵測到改 `formulas.py`/`combat.py` 或 `--sim` 才跑 sim 並標出 `⚠` 行 → `--smoke` 才跑煙霧,只寫暫存目錄,不碰玩家存檔)。
 - `/check` slash-command = `bash check.sh`;`/sync` = 跑 `check.sh --smoke` + 印換 session 檢查表 + 提示更新 handoff.md。
 - `.claude/settings.json` 已預許可唯讀測試/sim/git 指令(減少權限詢問)。`git commit`/`push` **不**預許可(刻意保留可見),但依本專案慣例驗證綠後仍自動執行(見上「自動提交閘門」/ handoff §3 R22)。
 

@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# 一鍵驗證鏈 — 流亡者 (tesrpg)。對應 CLAUDE.md「提交前檢查表」/「開發節奏」。
+# 一鍵驗證鏈 — 流亡者 (tesrpg)。對應 CLAUDE.md「自動提交閘門」。
 # 用法:
 #   bash check.sh            # 編譯 → 全測試;若 git diff 動到戰鬥常數則自動跑平衡模擬
 #   bash check.sh --sim      # 強制跑 sim_assassin.py(平衡回歸)
-#   bash check.sh --smoke    # 額外跑無頭煙霧(save/load 往返,唯一會寫存檔)→ 結束自動清存檔
+#   bash check.sh --smoke    # 額外跑無頭煙霧(save/load 往返,只寫暫存目錄,不碰玩家存檔)
 #   bash check.sh --sim --smoke
-# 非零退出 = 有步驟未過。無 pip/pytest/jq 環境;只靠 python3 + git。
+# 非零退出 = 有步驟未過。需要 python3 + git;真瀏覽器回歸另需 Playwright dev 依賴。
 set -uo pipefail
 
 cd "$(dirname "${BASH_SOURCE[0]}")"          # 切到 repo 根,任何 cwd 都能跑
@@ -21,8 +21,8 @@ for arg in "$@"; do
   esac
 done
 
-SAVE="$HOME/.tesrpg/save.json"
-cleanup() { if [ "$RUN_SMOKE" = 1 ]; then rm -f "$SAVE" "$HOME/.tesrpg/hall.json"; rm -rf "$HOME/.tesrpg/saves" && echo "🧹 已清存檔 $SAVE + saves/ + hall.json"; fi; }
+SMOKE_DIR=""
+cleanup() { if [ -n "$SMOKE_DIR" ]; then rm -rf "$SMOKE_DIR"; fi; }
 trap cleanup EXIT
 
 step() { echo; echo "▶ $*"; }
@@ -80,10 +80,11 @@ if [ "$RUN_WAR_SIM" = 1 ]; then
   fi
 fi
 
-# 4) 無頭煙霧(可選;build_character → GameState → save/load 往返,唯一寫存檔的步驟)
+# 4) 無頭煙霧(可選;build_character → GameState → save/load 往返,只寫暫存目錄,不碰玩家存檔)
 if [ "$RUN_SMOKE" = 1 ]; then
-  step "無頭煙霧(save/load 往返)"
-  PYTHONPATH=. python3 - "$SAVE" <<'PY' || fail "煙霧失敗"
+  step "無頭煙霧(save/load 往返,暫存目錄)"
+  SMOKE_DIR="$(mktemp -d)" || fail "無法建立暫存目錄"
+  PYTHONPATH=. python3 - "$SMOKE_DIR/save.json" <<'PY' || fail "煙霧失敗"
 import os, sys
 from pathlib import Path
 from tesrpg.gamedata import get_gamedata

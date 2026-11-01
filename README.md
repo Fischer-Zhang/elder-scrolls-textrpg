@@ -15,7 +15,7 @@ Debian/Ubuntu:`sudo apt install python3-rich`,或 `pip install rich`。
 python3 -m tesrpg.web      # 啟動後用瀏覽器開 http://127.0.0.1:8080
 ```
 
-存檔在 `~/.tesrpg/save.json`。
+存檔在 `~/.tesrpg/saves/`(每個角色一個槽位),名人堂在 `~/.tesrpg/hall.json`。
 
 ---
 
