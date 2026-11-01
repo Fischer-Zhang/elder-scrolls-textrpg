@@ -4,9 +4,18 @@
 helper 壞掉時才不會空轉假綠(同 test_redline_base)。
 """
 
+import importlib.util
+import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+
+
+def _load_tool(rel: str, name: str):
+    spec = importlib.util.spec_from_file_location(name, ROOT / rel)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
 
 
 def _check_sh_violations(text: str) -> list[str]:
@@ -28,6 +37,33 @@ def test_check_sh_never_touches_player_saves():
 def test_check_sh_guard_catches_fakes():
     for fake in ('SAVE="$HOME/.tesrpg/save.json"; mktemp -d', 'rm -rf "$HOME/saves"; mktemp -d', "echo ok"):
         assert _check_sh_violations(fake), fake
+
+
+def test_run_all_discovers_real_modules():
+    names = _load_tool("tests/run_all.py", "_run_all_guard").discover()
+    assert "test_repo_guard" in names and len(names) >= 100, len(names)
+
+
+def _assert_exits(fn, needle: str) -> None:
+    try:
+        fn()
+    except SystemExit as e:
+        assert needle in str(e), e
+    else:
+        raise AssertionError(f"應中止:{needle}")
+
+
+def test_run_all_refuses_empty_or_nested_discovery():
+    mod = _load_tool("tests/run_all.py", "_run_all_guard")
+    with tempfile.TemporaryDirectory() as d:
+        root = Path(d)
+        mod.TESTS_DIR = root
+        _assert_exits(mod.discover, "0 個")
+        (root / "test_a.py").write_text("")
+        assert mod.discover() == ["test_a"]
+        (root / "sub").mkdir()
+        (root / "sub" / "test_b.py").write_text("")
+        _assert_exits(mod.discover, "子目錄")
 
 
 def run():

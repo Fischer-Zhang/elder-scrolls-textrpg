@@ -16,8 +16,18 @@ sys.path.insert(0, str(TESTS_DIR))           # 讓 test_* 模組可被 import_mo
 
 
 def discover() -> list[str]:
-    """tests/ 下所有 test_*.py 的模組名(決定性 sorted;m12<m13 等 import-time patch 相對序不變)。"""
-    return sorted(p.stem for p in TESTS_DIR.glob("test_*.py") if p.stem != "run_all")
+    """tests/ 下所有 test_*.py 的模組名(決定性 sorted)。
+
+    探索到 0 個、或子目錄裡有 test_*.py 都直接中止:兩者都會讓全套假綠(glob 不遞迴)。
+    承重的是 main() 的「import 後立刻 run」(部分模組在 import 時 patch ui),不是字母序。
+    """
+    nested = [p for p in TESTS_DIR.rglob("test_*.py") if p.parent != TESTS_DIR]
+    if nested:
+        raise SystemExit(f"✗ 子目錄的測試不會被探索:{[str(p) for p in nested[:3]]}(tests/ 必須平鋪)")
+    names = sorted(p.stem for p in TESTS_DIR.glob("test_*.py"))
+    if not names:
+        raise SystemExit("✗ 探索到 0 個測試模組(防假綠)")
+    return names
 
 
 def main() -> None:
