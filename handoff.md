@@ -2868,6 +2868,22 @@ R88 讓**盜賊公會**拿到階級解鎖招牌動詞(斯庫瑪走私),但**戰�
 
 **修 R164 回歸:角色卡戰鬥技能欄散版(裸 `.combat` 選擇器洩漏)**(使用者回報排版跑掉;真 `_sheet_view`+Chromium 幾何 dump 重現)。根因=R164 戰況雙欄 `@media(min-width:761px){.combat{display:grid;...}}` 裸選擇器同時命中角色卡 `<div class="skcol combat">` → 桌面寬技能欄被 grid 自動放置成 3×3 散版(x=229/339/396);<761px 不觸發→手機正常桌面壞;當時 Chromium 套件無角色卡情境漏攔。**修=三處 `.combat`→`.card.combat`**(戰況卡 root)·純 CSS 零 Python 零存檔→sim 不受影響。browser_ui **17**(+`test_sheet_skill_columns_stay_vertical_r169`:三 skcol 每列一項+同 x 對齊〔壞版 xs=3 必紅非空測〕+對照組守 `.card.combat` 桌面仍 grid)。🔴 view 專屬 CSS 選擇器須錨 view root(`.card.combat`)·勿用裸語義 class(combat/magic/stealth 亦是 skcol 專精 class)·新 class 先 grep 撞名
 
+### R171 · 子代理分工:scout(Haiku 唯讀檢索)/ counsel(Opus 唯讀顧問)+ 作業指南 ops.md
+
+- **落地(使用者拍板 B;顧問形態 a、界線照建議)**:
+  - `.claude/agents/scout.md`:`model: claude-haiku-5-5`、`tools: Read, Grep, Glob`、`disallowedTools` 含 Bash/Write/Edit/NotebookEdit/Agent、`omitClaudeMd: true`、`maxTurns: 15`;本文帶 repo 地圖與輸出契約(每結論附 路徑:行號、找不到回 NOT FOUND、不判斷)。
+  - `.claude/agents/counsel.md`:`model: claude-opus-5-5`、`effort: high`、工具與禁用同 scout、`omitClaudeMd: true`、`maxTurns: 10`;本文帶專案紅線速查與六段輸出格式(最強反例→風險→建議→信心→會改變結論的證據→需使用者拍板的點)。
+  - 根目錄 `ops.md`:角色分工、何時用哪個代理、scout 規範(並行 ≤3、按問題切、數量題主對話重算)、counsel 簡報模板(給證據不給結論)、升級 Opus 觸發與上限(每里程碑 ≤2,第 3 次須使用者同意)、子代理 git 紅線、4e 對抗審查預設、量測回報。
+  - 顧問採簡報型 Opus 子代理,**不開 `/advisor`**:伺服器端顧問每次讀整段主對話,成本隨對話增長,且 Opus 5.5 的建議對 client 加密、無法稽核。
+- **CLAUDE.md**:新增「協作分工」段(11 行)+ 索引列 R171;開發流程 4e 改為「預設單一 Sonnet 審查子代理(worktree 內),多維 fan-out(Workflow)需使用者明說或 ultracode」,與 Workflow 工具須使用者明示同意的規定一致。
+- **🔴 紅線**:scout/counsel 的唯讀完全靠工具白名單(本里程碑不做 hook 守衛)→ `tests/test_agents.py` 鎖住白名單、`omitClaudeMd`、模型等級與 ops.md/CLAUDE 段落,改 agent 檔必跑;子代理不得在共享工作樹改 git 狀態(R45)。
+- **現場驗證**(2026-11,`claude -p` + `--settings` 暫存 hook 記錄,不動 repo 設定):
+  - scout:PostToolUse(Agent) 回 `resolvedModel: claude-haiku-5-5`(主對話未傳 model,由 frontmatter 決定);以背景模式啟動(`status: async_launched`,此時 `tool_response` 不帶 token 數);子代理內的 Grep/Read 呼叫帶 `agent_type: scout`。整段 Haiku input(含 cache)約 3.2 萬 token、約 4 次請求,符合不載入 CLAUDE.md 的預期。
+  - counsel:`resolvedModel: claude-opus-5-5`,Opus input(含 cache)約 1.2 萬 token、output 1,284;先用 Read 驗證簡報,當場指出簡報「事實與證據:無」與 CLAUDE.md:59、ops.md:29 不符。
+  - 為 hook 里程碑探路:SubagentStop 的 command hook 回 `decision: "block"`,擋下缺「已核對」標記的 scout 報告;scout 被迫重讀檔案並補上,第二次 `stop_hook_active: true` 放行 → **用 hook 強制子代理輸出契約可行**。本版自訂代理的報告在 `last_assistant_message`(未走 `SubagentHandback`;若改走 handback,攔截點改為 PreToolUse(SubagentHandback) 的 `tool_input.message`)。
+  - ⚠ 在本 repo 用 `claude -p` 時 CLI 警告「工作區未受信任,忽略 `.claude/settings.json` 的 permissions.allow」;專案層 hook 是否同樣被略過,hook 里程碑須先確認。
+- **未做(下一里程碑,細節由使用者定)**:hook 層——代理檢查(每輪 Opus/Haiku 觸發自問,附 hook 量到的實際派遣與查找次數)、子代理 Bash 守衛、Agent 路由、用量帳本。
+
 ## 4. 開發節奏(ultracode 開著 → 每個功能都這樣做)
 
 > 完整五階段流程(評估 → 決定方向 → 實作 → 驗證 → 文件 + 提交)見 `CLAUDE.md`「開發流程」;以下是「驗證」段的細節。**驗證綠後依 R22 自動 `commit` & `push origin main`。**
@@ -2892,6 +2908,10 @@ R88 讓**盜賊公會**拿到階級解鎖招牌動詞(斯庫瑪走私),但**戰�
 > 重點教訓:**互動式 `run_battle` 測試會全域 patch `ui.menu`,模組間會互相汙染**(test_m13 因此踩雷)—— 需要時在測試內自行重設 `ui.menu`。
 
 ---
+
+### 代理使用紀錄(ops.md §8)
+
+- R171:scout 1、counsel 1(皆為現場驗證用);審查模式:無(文件與子代理設定,未改遊戲碼)。
 
 ## 5. 設計定案(DESIGN.md §7)
 

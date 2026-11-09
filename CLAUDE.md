@@ -31,7 +31,7 @@ PYTHONPATH=. python3 sim_assassin.py      # 平衡回歸模擬(改戰鬥常數�
    - b. 真瀏覽器回歸 `tests/browser_ui.py`:Chromium 走正式 `index.html`+HTTP/SSE+`/input`,驗桌面版面/互動/持久化;**不可缺依賴就 skip**
    - c. 平衡模擬:改戰鬥常數跑 `sim_assassin.py`,勝率/回合數不退化
    - d. 無頭煙霧:WebBackend 自動作答驅動 `main()`(或 patch `ui.menu`/`Console(file=StringIO())`)抓 traceback
-   - e. 對抗審查(Workflow):多維 fan-out → 獨立懷疑者**對抗式驗證**,只留能真實重現的
+   - e. 對抗審查:預設單一 Sonnet 審查子代理(worktree 內);多維 fan-out(Workflow)需使用者明說或 ultracode,見 ops.md §7 → 獨立懷疑者**對抗式驗證**,只留能真實重現的
    - f. 覆核+修正:逐一覆核(有誤報、也有「會引入新 bug 的錯誤修法」)→ 補回歸測試 → 重跑全套
 5. **修改文件 + 提交推送**:同步 `handoff.md`(§1 現況 / §3 鐵律 R##)與必要的 `CLAUDE.md` → **驗證綠即自動 `git commit` & `git push origin main`(本專案慣例,見 handoff §3 R22;不需明說。紅燈則不提交、先修)**。
 
@@ -46,6 +46,17 @@ PYTHONPATH=. python3 sim_assassin.py      # 平衡回歸模擬(改戰鬥常數�
 - **存檔向後相容**:新技能 → `progression.ensure_all_skills`;新里程碑欄 → `ensure_mastery_choices`;新欄位 → dataclass 預設值(`from_dict` 走 `cls(**d)`)。
 - **內容優先純改 `data/*.json`**(地點/怪/物品/法術/任務/事件/開局/里程碑),不動邏輯。
 - **數量別盲信**:文件中的技能/地點/測試數是快照;有疑義以 `run_all.py` 輸出、`len(gamedata.skills)`、JSON 為準並順手更新。
+
+## 協作分工(子代理;細則見 ops.md)
+
+| 角色 | 做 | 不做 |
+|---|---|---|
+| 主對話(Sonnet) | 寫碼、測試、審查、提交、彙整建議 | 設計方向與平衡取捨(問使用者) |
+| scout(Haiku,`.claude/agents/scout.md`) | 唯讀檢索,每結論附 路徑:行號 | 判斷、審查、解讀架構 |
+| counsel(Opus,`.claude/agents/counsel.md`) | 看簡報後給反例、風險、建議、信心 | 拍板、改檔 |
+
+- 🔴 Opus 只給建議、不拍板;counsel 每里程碑至多 2 次。
+- 🔴 scout 並行 ≤3、按問題切;子代理不得在共享工作樹改 git 狀態(stash/checkout/restore/reset --hard/clean),需隔離用 worktree。
 
 ## 子系統鐵律索引(本體見 handoff §3 `R##`;標籤:`re-sim`=重跑 sim、`recompute`、`migrate`=ensure_*、`save`=存檔相容)
 
@@ -224,6 +235,7 @@ PYTHONPATH=. python3 sim_assassin.py      # 平衡回歸模擬(改戰鬥常數�
 | R68 | 法袍三階套裝再平衡:新增「法術威力」set-bonus 機制 + 魔抗分級；🔴 sim_assassin byte-identical(刺客穿皮甲非法袍·永不施法→_power… | re-sim |
 | R67 | 智力法術威力大改:int100=+30%(50→100 線性)+ >100 才 softcap(總漸近 +45%)；🔴 sim_assassin byte-identical(虎人 int≤50 且永不施法→公式零呼… | re-sim |
 | R66 | resist 附魔再平衡:soul^0.7 非線性 + 魔抗/單元素分流(承魔抗免疫評估)；🔴 sim_assassin byte-identical(刺客無 resist 附魔·隔離 wor… | save |
+| R171 | 子代理分工:scout(Haiku 唯讀檢索)/ counsel(Opus 唯讀顧問,每里程碑 ≤2)+ 作業指南 ops.md;共享工作樹禁改 git 狀態 | |
 
 ## 自動提交閘門 / 換 session 前檢查表
 
