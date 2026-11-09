@@ -236,7 +236,7 @@
 |---|---|
 | 戰士 | str+5 耐+5 ‖ 法師 int+5 magicka+50 ‖ 竊賊 敏+5 速+5 幸+5 ‖ 淑女 魅+10 耐+5 ‖ 駿馬 速+10 |
 | 領主 | 耐+5、**火抗−25▼**、每日 heal 60 ‖ 學徒 int+5 magicka+100、**magic抗−50▼** ‖ 巨魔像 magicka+150、被動 spell_absorption(魔力不自然回復▼) |
-| 儀式 | 魅+5、每日 heal80+清dot ‖ 戀人 敏+10、每日麻痺3回(solo免疫) ‖ 陰影 每日必定脫戰 ‖ 塔 幸+5、每日下次撬鎖必成 ‖ 蛇 每日對敵毒8×4+汲25HP |
+| 儀式 | 魅+5、每日 heal80+清dot ‖ 戀人 敏+10、每日麻痺3回(solo 65% 機率抵抗,R44) ‖ 陰影 每日必定脫戰 ‖ 塔 幸+5、每日下次撬鎖必成 ‖ 蛇 每日對敵毒8×4+汲25HP |
 
 ### 種族(屬性/技能/抗性各自相加;★argonian 毒抗100=免疫)
 高精靈(int/will+10、magicka+100、毀滅+10…、疾抗75)、木精靈(敏/速+10、弓+10、疾/毒抗75)、暗精靈(速+10、毀滅+10、火抗75)、諾德(力/耐+10、鈍+10、霜抗50)、帝國(魅+10、辯/商+10)、布萊頓(int/will+10、復原+10、magicka+50、magic抗25〔R65 下修〕)、紅衛(力/耐+10、刃+10、疾/毒抗75)、獸人(力/耐+10、鈍/重甲+10、magic抗25)、亞龍(速+10、安全+10、★毒抗100/疾抗75)、虎人(敏+10、徒手+10)。
@@ -296,10 +296,10 @@ weapon_element 附魔、奧術灌注 weapon_imbue、共鳴一擊 resonance、武
 ### 結構性免疫紅線
 - **獸形 sneak_attack=False**(main.run_battle 守門)→ 狼人 +str 巨幅近戰不碰偷襲倍率;
 - **斯庫瑪/月糖/達貢之力**刻意不碰 strength/sneak/武傷倍率(R20)——但 str 仍經 attack_damage 放近戰**基礎傷**(與吸血同性質,非偷襲倍率);
-- **麻痺 + 懼毒**(武器附魔/法術/塗毒):solo boss 完全免疫(R15/R31,防反鎖王;R31 補上塗毒命中路徑原缺的 solo gate);
+- **麻痺 + 懼毒**(武器附魔/法術/塗毒):solo boss 65% 機率抵抗(R44·原 R15/R31 完全免疫,防反鎖王;R31 補上塗毒命中路徑原缺的 solo gate);
 - approach_bonus/prep_bonus 只動「搶開場頻率」,不放大倍率。
 
-> 改任一上述常數 → **必跑 `PYTHONPATH=. python3 sim_assassin.py`**(守偷襲不秒 solo boss、群體反制、麻痺免疫紅線)。
+> 改任一上述常數 → **必跑 `PYTHONPATH=. python3 sim_assassin.py`**(守偷襲不秒 solo boss、群體反制、麻痺 solo 機率抵抗紅線)。
 
 ---
 
@@ -311,8 +311,8 @@ weapon_element 附魔、奧術灌注 weapon_imbue、共鳴一擊 resonance、武
 | 挫志 weaken(demoralize/衝擊餘波) | 削敵傷害 | demoralize ×0.6(4回);只乘怪 | 取最強(min,夾≥0.1),可dispel |
 | 陣腳大亂 stagger | 降敵命中 | −0.30 命中(impact 35%觸發;**釘錘/戰錘 archetype 命中 20% 內建**·R41·`_ARCHETYPE_BUILTIN_STATUS`·R44 後軟控不免 solo·boss 照吃) | binary,覆寫turns,可dispel |
 | 持續傷 dot(ignite/poison_cloud/frost_nova/bleed) | 持續傷 | ignite 8+6×3、poison_cloud 6×4、frost_nova 16+4×2、bleed×3 | 各一條獨立;AoE每敵獨立dict(R17) |
-| 麻痺 paralyze(mass/附魔) | 失能 | 群麻2回、附魔1回;is_incapacitated | 🔴solo免疫(R15);AoE獨立dict |
-| 恐懼 fear(fear/rout/懾心) | 失能 | 2回不敢進攻 | 玩家可意志抵抗;可dispel;**solo BOSS 全路徑免疫(R31:法術/塗毒/里程碑)** |
+| 麻痺 paralyze(mass/附魔) | 失能 | 群麻2回、附魔1回;is_incapacitated | 🔴solo 65% 機率抵抗(R44·原 R15 免疫);AoE獨立dict |
+| 恐懼 fear(fear/rout/懾心) | 失能 | 2回不敢進攻 | 玩家可意志抵抗;可dispel;**solo BOSS 65% 機率抵抗(R44·原 R31 全路徑免疫:法術/塗毒/里程碑)** |
 | 擒魂 soul_trap(單/群) | 標記 | 4回;擊殺給對應充能靈魂石 | 不在 _DISPELLABLE |
 
 ### 對玩家自身懲罰(身分/星座代價)
@@ -342,4 +342,4 @@ weapon_element 附魔、奧術灌注 weapon_imbue、共鳴一擊 resonance、武
 - 吸血 T3 再疊 str/speed/will+15、sneak/illusion+15、frost+30(但 fire−30 弱點,可被達貢 fire+60 抵成淨+30);
 - 狼人變身則**整套裝備層被換成獸力**(str+42/血+160/獸甲4)——是換層不是加層。
 
-**偷襲倍率上限**仍由三道煞車鎖死:無論疊多少元素/破甲/基礎傷,solo boss 開場單擊**永遠夾在生命上限 40%**,>3 敵潛匿大減,麻痺對 solo 免疫——畢業也打不破。
+**偷襲倍率上限**仍由三道煞車鎖死:無論疊多少元素/破甲/基礎傷,solo boss 開場單擊**永遠夾在生命上限 40%**,>3 敵潛匿大減,麻痺對 solo 為 65% 機率抵抗(R44)——畢業也打不破。

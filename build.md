@@ -5,6 +5,7 @@
 > Single source of truth 仍是程式碼(`tesrpg/formulas.py`、`tesrpg/systems/*.py`)與資料(`tesrpg/data/*.json`);**數值有疑義以常數 / JSON / `run_all.py` 為準並順手更新本檔**。
 > 紅線本體見 [handoff.md](handoff.md) §3(R07/R11/R15/R20/R21/R25)、增益總目錄見 [BUFFS.md](BUFFS.md)、設計理念見 [DESIGN.md](DESIGN.md)。
 > 末次盤點:2026-06-18(潛行刺客 / 潛行弓手 / 純法師 / 純戰士四條縱切;**R41 雙手握法系統後**)。四段經多代理對抗審查核對(gather→verify→draft→critic)。**⚠ R41 變更**:鈍器 archetype 分流(釘錘 mace=控制 stagger / 斧 axe=破甲 0.30)、新增雙手武器(戰錘/戰斧·極攻)與雙手重盾(盾擊+被動減傷·極防)兩種握法、維蘇拉德轉 2H 戰斧(現吃破甲)、十字軍聖盾轉重盾——**舊版「本作無雙手機制」之審查結論已由 R41 取代**(現有 `two_handed`/`great_shield` 旗 + 三閘)。其餘核對:護甲淬鍊 int(Σ) ≈+30、skill_mult 不夾上限、可釀池僅 resist_magic、soul_trap 非 solo 免疫。
+> ⚠ **快照警示(R173)**:本檔為 **2026-06-18(R41 後)** 的盤點,**R42–R172 的改動未重盤**;數值一律以常數 / JSON / `run_all.py` 為準;行內 `檔名.py:行號` 引用(35 處)可能已漂移。**已知並已改正**:R44 solo 控場——fear/paralyze/frenzied 對 solo BOSS 為 65% 機率抵抗(`SOLO_CONTROL_RESIST_CHANCE`,取代完全免疫),stagger/slow/weaken 軟控照施,calm 仍 solo 完全免疫;其餘論述(尤其「solo 只能靠傷害硬扛」類推論)未重驗。全面重盤另開里程碑。
 
 ---
 
@@ -33,7 +34,7 @@
 ### 0c · 三道煞車(`sim_assassin.py` 守的紅線,任何疊滿都打不破)
 1. **`SOLO_SNEAK_DAMAGE_CAP_RATIO=0.40`** — solo boss 開場單擊夾在其生命上限 40%(偷襲秒不掉王);
 2. **群體規模反制** — >3 敵潛匿 / 隱遁機率陡降(`RESTEALTH_HORDE_PENALTY=0.40`);
-3. **麻痺 / 懼毒對 solo boss 全路徑免疫**(R15/R31;防反鎖王)。
+3. **麻痺 / 懼毒對 solo boss 65% 機率抵抗**(R44·原 R15/R31 完全免疫;防反鎖王)。
 > 「加在 dmg、於 solo 夾**之前**」的層(元素附魔 / 武器流派 power / 塗毒 DoT)→ 偷襲**不放大**、solo 仍受夾。
 
 ---
@@ -53,13 +54,13 @@
 | **身分:達貢之力** | str+18(放匕首基礎傷)、magicka+25、fire+60 | ★純永久無懲罰,與吸血並存 |
 | **身分:斯庫瑪/月糖** | 斯庫瑪 speed/agility/**willpower**+8;月糖 speed/agility+5 | ★**不碰 sneak/str/武傷**(R20)→ 只命中/閃避/先攻 |
 | ~~狼人~~ | ✗ 獸形脫整套裝備 + `sneak_attack=False` | 刺客不適用 |
-| **裝備:雙匕首附魔** | 元素傷 +17~24(grand soul·myst50→100,無視物理甲、夾前;靈魂虹吸後 ~29)/ DoT / vampiric 回血(雙持 0.48)/ paralyze·soul_trap | **paralyze** solo 免疫;**soul_trap 對 solo 照常**(僅去重+充能) |
+| **裝備:雙匕首附魔** | 元素傷 +17~24(grand soul·myst50→100,無視物理甲、夾前;靈魂虹吸後 ~29)/ DoT / vampiric 回血(雙持 0.48)/ paralyze·soul_trap | **paralyze** solo 65% 機率抵抗(R44);**soul_trap 對 solo 照常**(僅去重+充能) |
 | **裝備:fortify 飾品(3 槽)** | `fortify_skill` blade ≈12(myst75)~15(myst100·grand soul,靈魂虹吸後 ~18)、agility +5~7、resource +12~19 | 餵 skill()/attr() 不回門檻(R21) |
 | **裝備:★輕甲套裝** | 皮革→**sneak+15** / 玻璃→**acrobatics+15** | 且 W≤18 偷襲折扣 ×1.0 不打折 |
 | **裝備:淬鍊** | 主匕 +10 傷(基礎上限;smithing 鋒銳 apex `temper_power` → +15) | ⚠ 雙持**副手淬鍊不套偷襲倍率**(R37 Finding,既有行為) |
 | **裝備:神器** | 悲傷之刃(vampiric 50%)、魔銳茲之刃(shock+25)、骷髏鑰匙(security+20·撬鎖必成) | 悲傷之刃 `blade_of_woe`=黑兄掌門 |
 | **種族/星座** | 紅衛(刃+10·力耐+10)、虎人(敏+10·潛行/徒手+)、亞龍(速+10·敏+5·★毒免疫)、暗精靈(速+10·火抗75);竊賊座 / **陰影座**(每日必脫戰)/ 蛇座(每日對敵毒) | |
-| **★塗毒(R31 五型)** | ★★★ 偷襲+毒一起爆;武器塗**單一毒層**(主副手共用一份·命中即耗一格,非各塗),charges=poison_charges+里程碑 | 麻痺/懼 solo 免疫,主打群兵 |
+| **★塗毒(R31 五型)** | ★★★ 偷襲+毒一起爆;武器塗**單一毒層**(主副手共用一份·命中即耗一格,非各塗),charges=poison_charges+里程碑 | 麻痺/懼 solo 65% 機率抵抗(R44),主打群兵 |
 | **限時藥水** | fortify **agility**、resist_magic(★無火/霜/雷抗藥) | ⚠ blade 等武器技能藥**無材料可釀**;可釀池僅 `fattr_agility`/`fattr_willpower`/`resist_magic`/`fskill_alchemy` |
 | **公會/通用** | ★黑暗兄弟會(夜母 ×1.18·洗白賞金);blade_25 +2%命中、sneak_25 隱遁、scout 備戰 prep、精神飽滿 xp×1.25 | |
 
@@ -108,13 +109,13 @@
 | **身分:吸血鬼 T3** | sneak+15(+illusion+15)、str/speed/will+15、frost+30 | 火−30 可被達貢抵 |
 | **身分:斯庫瑪/月糖** | 斯庫瑪 speed/agility/willpower+8;月糖 speed/agility+5 | ★不碰 sneak/str/武傷 → 只命中/閃避/先攻 |
 | ~~狼人~~ | ✗ 脫裝備、無偷襲 | 弓手不適用 |
-| **裝備:弓附魔** | 元素傷火/霜/雷 +17~24(grand soul·myst50→100,無視物理甲、夾前;靈魂虹吸後 ~29)/ DoT / vampiric | **paralyze** solo 免疫;**soul_trap 對 solo 照常**(僅去重+充能);弓無 berserk(維蘇拉德 R41 為 2H 戰斧·archetype axe) |
+| **裝備:弓附魔** | 元素傷火/霜/雷 +17~24(grand soul·myst50→100,無視物理甲、夾前;靈魂虹吸後 ~29)/ DoT / vampiric | **paralyze** solo 65% 機率抵抗(R44);**soul_trap 對 solo 照常**(僅去重+充能);弓無 berserk(維蘇拉德 R41 為 2H 戰斧·archetype axe) |
 | **裝備:fortify 飾品** | `fortify_skill` marksman ≈12~15、agility +5~7、resource +12~19 | 餵 skill()/attr() 不回門檻(R21) |
 | **裝備:★輕甲套裝** | 皮革→**sneak+15** / 玻璃→**acrobatics+15** | 不破潛行 |
 | **裝備:淬鍊** | 弓 +10 傷(基礎上限;smithing apex `temper_power` → +15) | |
 | ⚠ **神器** | **全遊戲無專屬弓神器**(神器皆 sword/dagger/axe/staff/shield/amulet) | 靠自附魔元素弓 + fortify marksman 飾品補 |
 | **種族/星座** | ★**木精靈**(弓+10·敏/速+10·疾毒抗75);紅衛/暗精靈;竊賊座 / 駿馬座 / **陰影座** / 蛇座 | |
-| **★塗毒(R31)** | ★★ 箭上毒命中即觸發,配遠程+偷襲極強;麻痺/懼 solo 免疫 | |
+| **★塗毒(R31)** | ★★ 箭上毒命中即觸發,配遠程+偷襲極強;麻痺/懼 solo 65% 機率抵抗(R44) | |
 | **限時藥水** | fortify **agility**、resist_magic(無元素抗藥) | ⚠ marksman 無材料可釀;可釀池僅 `fattr_agility`/`fattr_willpower`/`resist_magic`/`fskill_alchemy` |
 | **坐騎/通用** | ★**獵馬**(騎射閃避0.15×3·規避遭遇0.35);marksman_25 +2%命中、sneak_25 隱遁、scout 備戰 prep、精神飽滿 | |
 
@@ -139,13 +140,13 @@
 ```
 開場偷襲乘子 ≈ ×4.0(sneak100) × 1.3(弓) × 1.18(聆聽者) × 1.5(影刃) × 1.0(輕甲) ≈ ×9.2
 ```
-🔴 同三道煞車鎖死:solo boss 開場夾 40%、>3 敵反制、麻痺免疫 → 打王靠隱遁循環多箭。
+🔴 同三道煞車鎖死:solo boss 開場夾 40%、>3 敵反制、麻痺 solo 機率抵抗(R44) → 打王靠隱遁循環多箭。
 
 ---
 
 ## ③ 純法師(施法 · 六系)
 
-> 與潛行流**完全不同的天花板邏輯**:法師傷害**不走偷襲倍率鏈**(不觸 `SOLO_SNEAK_DAMAGE_CAP_RATIO`),而是受 **magicka 池容量**(智力決定)、**控制法術對 solo boss 全免疫**、與**力竭法效折減**三道天花板所限。「畢業」靠把六系技能買到上限 + 疊魔力池 + 法袍省體續航。`狼人不相容`(獸形脫整套裝備、無法施法,與法師核心衝突)。
+> 與潛行流**完全不同的天花板邏輯**:法師傷害**不走偷襲倍率鏈**(不觸 `SOLO_SNEAK_DAMAGE_CAP_RATIO`),而是受 **magicka 池容量**(智力決定)、**控制法術對 solo boss 65% 機率抵抗(R44)**、與**力竭法效折減**三道天花板所限。「畢業」靠把六系技能買到上限 + 疊魔力池 + 法袍省體續航。`狼人不相容`(獸形脫整套裝備、無法施法,與法師核心衝突)。
 
 ### 根:吃哪些數值
 法師五圍:**magicka 池=智力**(`formulas.max_magicka(int, magicka_bonus) = int×2 + magicka_bonus`,`formulas.py:58-60`;遊戲生效上限再加升級 res + 裝備 fortify + 達貢層,`stats.py:75-77`)**+ R63 智力第二段=法術威力**(`intelligence_spell_potency`:int>100 漸近 +25%·乘進 `magic._power`);**回魔/抗控/施法續航=意志**(戰鬥每回合回魔〔整數頂 5〕、休息回魔倍率〔R63 漸近 3.2〕、抗恐懼/麻痺〔R63 漸近 0.90〕)**+ R63 意志第二段=省魔**(`willpower_cost_factor`:wil>115 漸近 −15%·乘進 `effective_cost`·`max(1)` 地板);**法術威力基底 / 魔耗=各「學派技能」**(六系各自獨立)。**R63:智力/意志高屬性過 200 仍漸進有意義(趨近永不抵達)。**
@@ -191,7 +192,7 @@ effective_cost = base × (1 − min(0.4, 學派技能/250)) × Π spell_cost_fac
 |---|---|---|
 | 50 | 凝神聚法(int+4·抬魔池) | 共鳴一擊(戰法師:傷害咒後下一近戰灌半法傷+DoT,`magic.py:188-197`) |
 | 75 | 省魔催動(毀滅 cost ×0.85) | 法力回擊(近戰命中回魔 +4) |
-| 100 | ★過載(power +0.20·**▼cost ×1.30**·連帶更耗體) | 衝擊餘波(命中 35% 踉蹌·**solo 免疫**) |
+| 100 | ★過載(power +0.20·**▼cost ×1.30**·連帶更耗體) | 衝擊餘波(命中 35% 踉蹌·軟控 solo 照吃(R44)) |
 
 **alteration 樹(護盾/戰法師之刃)**
 | 階 | A | B |
@@ -217,7 +218,7 @@ effective_cost = base × (1 − min(0.4, 學派技能/250)) × Π spell_cost_fac
 **illusion 樹(控場·懾心)**
 | 階 | A | B |
 |---|---|---|
-| 50 | 省魔幻術(cost ×0.85) | 懾意初窺(命中 10% 施懼·**solo 免疫**) |
+| 50 | 省魔幻術(cost ×0.85) | 懾意初窺(命中 10% 施懼·**solo 65% 機率抵抗**(R44)) |
 | 75 | 魅惑交易(議價 +0.12) | 懾心術(命中 20% 施懼) |
 | 100 | 操心駕輕(cost ×0.85) | 懾魂奪魄(命中 15%·三源 chance SUM 夾 0.30) |
 
@@ -233,7 +234,7 @@ effective_cost = base × (1 − min(0.4, 學派技能/250)) × Π spell_cost_fac
 - **召喚流**:conj 精研+雙重召喚/束縛兵刃 + 達貢之佑(神話黎明會員 summon HP×(1+0.1×階 cap 0.6))+ 護體召喚自護;前排靠召喚物,法師遠抽。
 - **戰法師武器灌注**:alteration 灌注 flame/frost/storm_blade + 共鳴一擊(dest_50)+ 法力回擊回魔;近戰每擊吃元素傷(★加在 solo 夾**之前**、偷襲不放大)。
 - **治療輔助**:resto 戰地搶救+溢盾/生生不息 + 聖光眷顧(九神騎士團 heal×(1+0.07×階 cap 0.35))+ 結界硬扛;隊友/召喚物續航。
-- **控場幻術·秘術結界**:illusion 懾心/懾魂(命中施懼)+ 秘術 ward/spell_absorb 吸法術 + 奧術連鎖連發增幅;⚠ 懼/麻痺對 solo boss **全免疫**,控場只對群兵有效。
+- **控場幻術·秘術結界**:illusion 懾心/懾魂(命中施懼)+ 秘術 ward/spell_absorb 吸法術 + 奧術連鎖連發增幅;⚠ 懼/麻痺對 solo boss 為 **65% 機率抵抗**(R44),控場主要對群兵有效。
 
 ### C · 完全體疊滿 + 天花板
 **阿爾特默 · 巨魔像座 · 大法師法袍套(magicka+70·施法 ×0.65)· 達貢之力 · 六系里程碑各取一支**:
@@ -244,11 +245,11 @@ effective_cost = base × (1 − min(0.4, 學派技能/250)) × Π spell_cost_fac
 施法體力 ≈ … × 0.65(法袍)× cascade_fatigue(≤−24%)   ← 法袍只折體力、不折魔耗
 ```
 🔴 **三道天花板(與刺客/弓手紅線「不同源」)**：
-1. **控制法術對 solo boss 全路徑免疫**(`magic.py:258,307`,`_is_solo` 守 fear/rout/mass_paralysis;impact stagger 同免疫)→ 對單體 BOSS **只能靠傷害 + weaken 削弱 + 護盾/結界硬扛**,不能反鎖王(同 R31/R34 紅線,但路徑在法術側)。
+1. **控制法術對 solo boss 65% 機率抵抗**(R44 起走 `magic.apply_control`,取代原 `magic.py:258,307` 的 `_is_solo` 完全免疫;stagger 屬軟控,solo 照吃)⚠ 以下推論為 R44 前的結論,待重盤→ 對單體 BOSS **只能靠傷害 + weaken 削弱 + 護盾/結界硬扛**,不能反鎖王(同 R31/R34 紅線,但路徑在法術側)。
 2. **magicka 池硬限**:傷害**不走偷襲倍率**(不觸 `SOLO_SNEAK_DAMAGE_CAP_RATIO` 40% 夾),但每道法術扣魔→池見底即啞火;★巨魔像 `atronach` **▼代價:魔力不自然回復**(休息與戰鬥兩條回魔路徑皆 gate 掉,`main.py:267,906`)→ 只能靠法術吸收 / 喝藥補魔;想保回魔則改學徒(▼magic 抗−50)或法師/布萊頓座。
 3. **力竭法效折減**(`cast_fatigue_power_factor`,`formulas.py:288-294`):滿體 ×1.0、空體 ×0.75,統一削 damage/heal/shield/ward/imbue/summon HP → 法師需先回體才打滿威力。
 
-→ **法師上限不靠「乘子爆發」而靠「池深 + 續航 + 廣譜威力」**;與潛行流共享「打 solo boss 畢業也鎖死」的結論,但鎖的是**控制免疫 + 魔力池**,而非偷襲 40% 夾。
+→ **法師上限不靠「乘子爆發」而靠「池深 + 續航 + 廣譜威力」**;與潛行流共享「打 solo boss 畢業也鎖死」的結論,但鎖的是**控制(R44 起為 65% 機率抵抗)+ 魔力池**,而非偷襲 40% 夾。
 
 ---
 
@@ -316,7 +317,7 @@ effective_cost = base × (1 − min(0.4, 學派技能/250)) × Π spell_cost_fac
 | 50 | 碎骨重擊(命中 25% 機率 weaken 敵 10%/2 回) | 沉勁揮擊(傷+10%·▼self recoil 4%) |
 | 75 | 碎骨之力(破甲 pen+0.08) | 巨力臂(strength+4·放近戰傷/負重/體力) |
 | 100 | 破甲重錘(破甲 pen+0.15) | 震盪一擊(命中 30% 機率 weaken 敵 15%/1 回) |
-> ★**archetype 分流(R41)**:`axe`(短斧/戰斧)= 破甲流 `archetype_armor_pen=0.30`(`formulas.py:356`)→ 對高甲穩定,milestone 破甲可疊 0.30+0.03+0.08+0.15=**0.56**(夾 0.85);`mace`(釘錘/戰錘)= 控制流 **內建命中 20% 擊暈 stagger**(`_ARCHETYPE_BUILTIN_STATUS`·`not _is_solo` 免疫)、無破甲。**skill 皆 `blunt`**(一條鈍器線涵蓋全部錘斧;tree 破甲 perks 利好斧、weaken perks 利好錘)。
+> ★**archetype 分流(R41)**:`axe`(短斧/戰斧)= 破甲流 `archetype_armor_pen=0.30`(`formulas.py:356`)→ 對高甲穩定,milestone 破甲可疊 0.30+0.03+0.08+0.15=**0.56**(夾 0.85);`mace`(釘錘/戰錘)= 控制流 **內建命中 20% 擊暈 stagger**(`_ARCHETYPE_BUILTIN_STATUS`;R44 起 stagger 軟控 solo 照吃,已移除原 mace-only 的 `not _is_solo` 免疫)、無破甲。**skill 皆 `blunt`**(一條鈍器線涵蓋全部錘斧;tree 破甲 perks 利好斧、weaken perks 利好錘)。
 > **1H 鈍器**:釘錘 iron 11/steel 15/dwarven 18/daedric 23(控制·spd 0.75);短斧 iron 12/steel 13/dwarven 16/daedric 22(破甲·略快 spd 0.75~0.85)。
 > **2H 鈍器(極攻握法·`two_handed` → 放棄盾/副手/格擋)**:戰錘 warhammer(mace·控制)iron 16…daedric 34;戰斧 battleaxe(axe·破甲)iron 15…daedric 32;傷比同階 1H **+45~55%**、速更慢(0.55~0.65)、最耗體。
 > ⚠ **維蘇拉德 wuuthrad**(R41 轉 **2H 戰斧**·dmg32·archetype **axe**·enchant **berserk** mag30):berserk 依攻方已損生命比例提傷封頂 +30%(滿血 ×1.0·瀕死 ×1.30·乘物理於 solo 夾前·全遊戲僅此一把);現 archetype=axe → **破甲 0.30 + berserk 兼得**(舊 war_axe 不吃破甲已修)。**但轉 2H 後不可帶盾**(放棄盾反)→ 純 2H 極攻 berserk 流。戰友團掌門武器。
@@ -349,7 +350,7 @@ effective_cost = base × (1 − min(0.4, 學派技能/250)) × Π spell_cost_fac
 1. **85% 護甲硬夾**(`damage_after_armor:350` `reduction = min(0.85, eff/(eff+100))`)→ passive_armor/淬鍊/套裝堆滿亦至少造成 1 傷,**永不趨近免疫**;反過來戰士自己再硬也擋不滿 85%。
 2. **體力經濟**=戰士主要天花板:盾牆 6/回合上繳、格擋 4/次、盾反 6/次、壁壘攻擊耗體 ×1.2 → 力竭即攻防雙弱(restore_fatigue 藥/運動省體是續航命脈)。
 3. **不靠偷襲爆發、靠持續輸出 + 坦度**:戰士攻擊 `sneaking=False` → **不觸 40% 開場夾**,對 solo boss **無單擊軟上限**(可正面長線磨),但也沒有「一刀繞夾」的爆發捷徑——天花板是 DPS × 護甲遞減 × 體力續航。
-4. **狼人換層取捨**:獸形 str 42/血+160 看似誘人,但脫掉整套重甲/盾/附魔/淬鍊/格擋/盾牆 → 對重甲盾反 bruiser 是**放棄全部裝備坦度換野獸血量**,結構衝突;且 tier≥2 恫嚇之嚎對 solo boss 免疫。
+4. **狼人換層取捨**:獸形 str 42/血+160 看似誘人,但脫掉整套重甲/盾/附魔/淬鍊/格擋/盾牆 → 對重甲盾反 bruiser 是**放棄全部裝備坦度換野獸血量**,結構衝突;且 tier≥2 恫嚇之嚎對 solo boss 為機率抵抗(R44)。
 5. **吸血代價(四重)**:階級3 fire−30(需達貢 fire+60 抵成淨 +30)+ 日照灼傷 1.5/h/階 + 階級≥2 被商家拒往(需進食)+ 出生星座每日之力被 `vampiric_drain` 取代(領主座自療失效)→ 對前排長線磨的 bruiser 是持續負擔。
 
 → **戰士上限不靠「乘子爆發」而靠「持續 DPS + 護甲遞減扛 + 體力續航」**;與潛行流共享「打 solo boss 也得長線磨」的結論,但鎖的是**護甲 85% 夾 + 體力經濟**,而非偷襲 40% 夾。
@@ -365,7 +366,7 @@ effective_cost = base × (1 − min(0.4, 學派技能/250)) × Π spell_cost_fac
 | 距離/風險 | 近戰、要潛近貼身、不能格擋、最脆 | 遠程、安全、可風箏 |
 | 公會/神器 | ★黑暗兄弟會掌門武器(悲傷之刃 `blade_of_woe` / 魔銳茲之刃) | 黑兄亦可入(gate 含 marksman·夜母 ×1.18 對弓生效)、**無弓專屬神器** |
 | 開場偷襲乘子(疊滿) | ≈ ×11.3 | ≈ ×9.2 |
-| 紅線 | **同源**:solo boss 40% 夾 / >3 敵反制 / 麻痺免疫 | 同左 |
+| 紅線 | **同源**:solo boss 40% 夾 / >3 敵反制 / 麻痺 solo 機率抵抗(R44) | 同左 |
 
 → **刺客上限更高但更脆更吃站位;弓手安全穩定、上限略低。** 兩者天花板同由三道煞車鎖死,畢業也秒不掉 solo boss。
 

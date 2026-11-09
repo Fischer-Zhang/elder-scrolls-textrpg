@@ -1,7 +1,7 @@
 # Handoff — 流亡者 (tesrpg)
 
 上古卷軸風格的**技能驅動沙盒文字 RPG**(**瀏覽器 Web 版**;Python 後端,`rich` 把畫面渲成 HTML)。單一英雄:做什麼練什麼、
-跨四省(賽羅迪爾/天際/晨風/黑沼澤,世界已閉合成大環)探索鑽地城、戰士/法師/盜賊三系玩法,直到陣亡或隱退結算一生傳奇。
+跨八省(+邊境;世界已閉合成大環)探索鑽地城、戰士/法師/盜賊三系玩法,直到陣亡或隱退結算一生傳奇。
 > ⚠ **已 Web-only**:終端機版(`python3 -m tesrpg`)已移除;`tesrpg/ui/console.py` 為 Web 的渲染/輸入接層(`_*_view` view-model + rich→HTML 退路 + `_web_prompt`),5 個輸入原語無 web backend 時直接 raise(測試照舊 patch `ui.*`)。
 
 > 給接手的 session:這份文件是「立刻能接著做」的地圖。先讀「現況」「怎麼跑」「開發節奏」三節即可上手。
@@ -15,8 +15,8 @@
 - **Python 3.12**;遊戲 runtime 只有 `rich`;dev 測試另需 Playwright + Chromium(`python3 -m playwright install --with-deps chromium`)。
 - **執行遊戲**:`python3 -m tesrpg.web`(本機 Web 版,瀏覽器開 `http://127.0.0.1:8080`;**唯一進入點 —— 已 Web-only,終端版已移除**)
 - **跑測試**:`python3 tests/run_all.py`(純 Python 單元/流程)+`python3 tests/browser_ui.py`(真 Chromium 桌面 UI)/ 一鍵 `bash check.sh`(編譯 → 兩套測試 → 條件式 sim)
-- **編譯檢查**:`python3 -m py_compile tesrpg/**/*.py tesrpg/*.py tests/*.py`
-- 存檔在 `~/.tesrpg/save.json`(在 repo 外;測試/煙霧測試後記得 `rm -f ~/.tesrpg/save.json`)
+- **編譯檢查**:`shopt -s globstar; python3 -m py_compile tesrpg/**/*.py tesrpg/*.py tests/*.py .claude/hooks/*.py`(完整形;`bash check.sh` 已含)
+- 存檔在 `~/.tesrpg/saves/slotN.json`、名人堂在 `~/.tesrpg/hall.json`(repo 外的真實資料;測試與 `check.sh`〔含 `--smoke`〕都不碰,**勿手動清**;舊單一 `save.json` 於首次啟動搬成 `slot1.json`,見 R158)
 
 ---
 
@@ -27,10 +27,10 @@
 ### 系統現況總覽(依系統分類)
 
 #### 角色與成長
-- 10 種族 × 13 星座 × 8 職業/自訂;八屬性 + **22 技能** learn-by-doing;混合 Skyrim 式升級(等級 XP 池 → 三選一資源 + 屬性點);**種族身份化**(R61:戰系 6 族每日主動威能〔狂暴/腎上腺/馭獸/帝皇之聲/戰吼/祖靈〕走獨立第二威能槽 + 其餘 4 族持續被動〔虎人夜視利爪/亞龍癒膚/高精靈魔力/布萊頓龍皮〕);**星座身份化**(R83:5 冷星座功能化 —— 戰士戰意/法師魔力湧現/淑女恩典 = 每日主動威能,竊賊巧手〔潛行系練更快〕/駿馬疾行〔旅行更快〕= 持續被動)
+- 10 種族 × 13 星座 × 11 職業/自訂;八屬性 + **22 技能** learn-by-doing;混合 Skyrim 式升級(等級 XP 池 → 屬性點;資源全由屬性驅動,R64 已移除三選一資源);**種族身份化**(R61:戰系 6 族每日主動威能〔狂暴/腎上腺/馭獸/帝皇之聲/戰吼/祖靈〕走獨立第二威能槽 + 其餘 4 族持續被動〔虎人夜視利爪/亞龍癒膚/高精靈魔力/布萊頓龍皮〕);**星座身份化**(R83:5 冷星座功能化 —— 戰士戰意/法師魔力湧現/淑女恩典 = 每日主動威能,竊賊巧手〔潛行系練更快〕/駿馬疾行〔旅行更快〕= 持續被動)
 - **技能里程碑 v2 + 完整階梯**:全 22 技能各 **25/50/75/100 四節點(88 節點)**;**25=單一 perk 自動授予**(入門技,複用退化節點)、**50/75/100=達門檻二選一**永久銘刻 + 持久 fortify 加成層(skill/attr/resist)+ 功能槓桿(武器/法術控場、弓手牽制、盾擊宗師、閃身/閃避雙路線、重甲反震/盾反、逃命、解陷保底、盜賊行竊/地城賊眼預知、鍛造淬鍊威力、口才威嚇避戰/化解犯罪/戰陣號令、**徒手失衡疊層(R102:連擊累積敵失衡→ramp 放大徒手傷害+踉蹌/罕見真擊倒;擒拿手加速;R103:須 25 解鎖 + 未穿重甲=輕裝武僧)**、頂點 capstone…);反 min-max、守刺客紅線(同源多節點 getter 必聚合不遮蔽;下限/floor 類 perk 的 floor 須高於門檻 base cap)
 - **八職功能性身份網格**:全 8 職各一招牌戰術 loop(功能性非數值)—— 戰士盾牆(減傷·嘲諷)/法師奧術連鎖/盜賊諜報偵搜/騎士戰旗/戰法師共鳴一擊+法力回擊(毀滅 50/75 兩節點,可兼得)/刺客致命烙印/治療師戰地搶救/弓手獵手偵察(6 mastery 二選一節點 + 2 戰鬥動作;以技能/裝備 gate、零新存檔欄、守刺客紅線)
-- **開局背景**(14 種,只給處境不給數值)+ **種子重玩性**;冒險/傳奇兩種死亡模式 + 一生傳奇總結評分
+- **開局背景**(35 種,只給處境不給數值)+ **種子重玩性**;冒險/傳奇兩種死亡模式 + 一生傳奇總結評分
 
 #### 戰鬥與魔法
 - 回合制**多敵 + 團隊戰鬥**(召喚物/傭兵同伴);**同伴角色化**(9 具名同伴:持久 HP/羈絆 + 具名招募任務 + 羈絆階解鎖的專屬支線 + 就地對話 + 完成支線的忠誠弧頂點〔戰術盟友光環/被動非戰鬥槓桿;盟友限定守刺客紅線〕;復用 `companion_bond` 當忠誠軸,零新存檔欄;**R86 同伴戰鬥施法**:輔助型同伴角色感知主動支援 —— 法系治療〔含治療玩家〕/盾衛護盾/領袖激勵,門檻+冷卻+固定威力「輔助但不破關」〔sim_party 驗施法邊際 +0~8%·無 stalemate〕;**R87 敵方支援施法者**:法系/祭司怪〔女巫/薩滿/祭司/死靈〕對稱地在隊友血低時治療/護盾其他敵人 → 群戰「先點掉治療者」戰術〔幅度因子 0.35 威脅但可破解·無 stalemate·敵 empower 反效果故只 heal/shield〕;**R129 同伴類玩家化(Tier 2)**:同伴戰力由**屬性+技能+裝備**經**共用玩家公式**生成時導出(非凍結模板)——可為同伴**裝備武器護甲**(多餘/撿來裝備的下游 sink·移出背包·淬鍊/附魔**完全比照玩家**·`_gear_weapon_item` 派發)、依羈絆階定**戰術傾向**〔鎮守吸火/游擊集火/陷陣均衡〕;投入越多養成越強(指揮官軍·極致=回報)·**武器技能夾 ≤80** 守「單一同伴孤立軸 vs 達貢 ~0%」紅線·無裝走模板→byte-identical〕);**六大學派 + AoE**(召喚/秘術補完至各 7 法術,與毀滅/復原/變換同列;**召喚**=元素元身/魔人 + 束縛兵刃〔法系近戰〕+ 亡者復生〔屍起為盟〕、**秘術**=法術結界〔吸法術傷·吸魔變體〕+ 驅散 + 群體擒魂 + **非元素魔法傷害〔R119:飛彈/轟擊/星爆·一律穩定 `magic` 傷害·不被單元素抗歸零·只吃通用魔抗 → 破抗答案〕· 秘蝕破抗頂點〔R120:傷害法術命中削敵魔抗·輔助全傷害魔法〕· 非戰鬥實用法術 + 湮識終極試煉〔R121:靈視/靈識遠格揭露·念力·念力球解謎地城·抗魔法師 boss·終極魔法核彈加深秘蝕〕**、**復原**=治療/再生/淨疫 + **聖騎士〔R122+R123:①反死靈=**治療傷害不死**〔R123 改制·治療 minor_heal/heal/close_wounds〔smite_undead〕指向不死敵造傷=回復量×0.5×威力·**對活物零傷害**〕+ 驅散亡者〔turn_undead〕→ 生命能量療活物焚亡者的正典專精;②守護庇佑=聖化領域減傷 aura〔物理+元素·gated 玩家〕+ 里程碑聖光攻擊(holy_zeal)vs 守護(sacred_bulwark)身份;③終極**破曉之光**〔radiant·治全隊+焚全體不死·經聖光試煉·高岩不朽陵墓·不朽之王 HP300 undead boss·復原 75 閘〕—— 恢復系對活人零魔法輸出=最正典專精·六大學派全有身份〕**);元素抗性/弱點、狀態效果、出生星座每日之力
@@ -38,7 +38,7 @@
 - **煉金毒藥 + 武器塗毒**;**毒劑深化(Phase 2 / R31)**:五毒型(DoT/麻痺 + 衰毒/遲緩/懼毒,特殊型需里程碑解鎖;solo BOSS 對控制型免疫);**煉金限時增益藥水(深化 Phase 1 / R30·材料 R90-R92 餵飽)**:強化屬性/技能 + 抗元素**限時**藥劑(走獨立 `potion_*` 層、絕不寫 base、**同 kind+param 取最強非疊加**);**可釀池 4→~28 種**:R90 補 resist_fire/frost/shock 單元素抗(補法師對元素 boss)+ 中性屬性/restoration;R91 材料加厚至 4 效果 + 9 種安全增益;**R92 開攻擊向 fortify**(力量/武器技能/潛行/毀滅·依 R30「放開→必過 sim」·新 fortify-dosed sim 場景驗 solo cap 仍夾·**smithing 永久擋**〔過頂 temper 永久武傷〕);**效果逐步揭露(Phase 3 / R32)**:材料效果預設 `???`,經嚐試/煉製/技能揭露(純資訊層,不碰 brew 數學);**疾病可釀(R54)**:療疾材料(大蒜/焦皮鼠革/吸血鬼塵 `cure_disease`)→ 釀療疾藥水(統一淨化,同神殿/法術/`cure_disease_potion`);**潛行刺客系**:偷襲先機、暗殺殘響、雙持、**隱遁再襲(潛行 25 里程碑「隱遁之術」;連環踏影對單體仍遞減、反 solo boss 風箏)**、戰前偵查;武器流派(潛襲/破甲/速度)
 
 #### 世界與探索
-- **八省 ~168 地點 / 48 城 + 17 鎮 + 70 野區 + 33 地城**(含海爾根 Helgen=白隘北口、賽→天門戶)(每省 5–9 城 + 多個正典分區野區〔黃金海岸/苦岸/裂石郡/收割者三月…〕做城際過場;邊境戍堡為省際接縫)+ **`pos[col,row]` 與 `links` 皆依正典 TES 地理**(頂層 `world["map"]` 40×24);旅行/晝夜/危險度(數字為快照,以 JSON/測試為準)+ **長途旅行(R114D)**:「🧭 長途前往」選已到訪城鎮 → BFS 沿路自動逐跳趕路(途中遇襲/變故停下交還控制·`world.route_to` 決定性零 rng)
+- **八省 ~207 地點 / 48 城 + 17 鎮 + 76 野區 + 66 地城**(含海爾根 Helgen=白隘北口、賽→天門戶)(每省 5–9 城 + 多個正典分區野區〔黃金海岸/苦岸/裂石郡/收割者三月…〕做城際過場;邊境戍堡為省際接縫)+ **`pos[col,row]` 與 `links` 皆依正典 TES 地理**(頂層 `world["map"]` 40×24);旅行/晝夜/危險度(數字為快照,以 JSON/測試為準)+ **長途旅行(R114D)**:「🧭 長途前往」選已到訪城鎮 → BFS 沿路自動逐跳趕路(途中遇襲/變故停下交還控制·`world.route_to` 決定性零 rng)
 - **生態遭遇**(biome 加權,八生態含 savanna 弱毒)、**省份風味事件**、**具名地標**首發現、各城**考據統治者**;終局 solo BOSS
 - **後期內容:戴德拉親王神殿線(R45;一次一位親王、任務做深)**:野外/城鎮祭壇「供奉祈願」接親王試煉 → 深線結局得**永久誓福**(通用 `boons` 層 data-driven,可同時持有多位親王 → 封頂角色的後期收集軸)或**神器**(分支道德抉擇)。已做 16 位(**八省神殿全到齊**;前 12 純 JSON,第 13 位 Sheogorath 起加新機制;**17 親王全集完成 = 16 戴德拉神殿 + 達貢主線**):**阿祖拉「黑星」**(晨風海岸·法師)、**莫拉格巴爾「恐怖之屋」**(晨風莫拉格瑪·戰士近戰·吸生命鈍器)、**海爾辛「血月狩獵」**(瓦倫森林·遊俠/輕甲·救主之皮)、**波耶西亞「陰謀者試煉」**(天際佛克瑞斯·重甲/反傷·烏木甲〔荊棘反傷〕)、**克拉維克斯·瓦爾「言靈之犬」**(高岩風暴港·**社交/口才軸**·克拉維克斯面具)、**佩雷丽特「唯一的解藥」**(黑沼澤影沼·**盾/防魔軸**·靈破者〔1H 盾·魔抗 45〕)、**梅赫拉「低語之門」**(賽羅迪爾黑木·**暗影/魂刃軸**·黑檀刃〔sword·vampiric〕)、**桑格玖完「永不散場的醉宴」**(艾爾斯維爾瑞門荒漠·**召喚師軸**·桑格玖完之薔薇〔staff·命中回魔·召喚續航〕vs 歡愉之佑誓福〔conjuration〕)、**馬拉凱斯「棄絕者的詛咒」**(漢默法爾龍尾峰·**雙手武器軸 R41**·純物理 boss·沃倫鎚〔two_handed mace·absorb_fatigue·2H 續航〕vs 棄絕者之力誓福〔strength/smithing/endurance〕)、**梅瑞迪雅「破曉之燈」**(賽羅迪爾黃金海岸·**恢復/聖光 paladin 軸**·冰霜死靈法師 boss·破曉者〔blade sword·火焰 burn DoT·剋亡靈〕vs 光之佑誓福〔restoration/light_armor/personality〕)、**瓦瑪納「甦醒的夢魘」**(天際蒼原凍原·**純元素破壞法系軸**·電擊夢魘術士 boss·腐敗之顱〔staff·destruction·shock〕vs 夢魘之佑誓福〔destruction/intelligence/magicka〕)、**娜米拉「饕餮之宴」**(瓦倫森林馬拉巴爾陶·**煉金/毒藥匠軸**·物理/毒食人 boss·娜米拉之戒〔jewelry ring·fortify alchemy 25〕vs 腐朽之佑誓福〔alchemy/agility/抗毒疫〕)、**謝歐格拉斯「癲狂之心」**(黑沼澤希斯特聖林·**瘋神/混沌·R46 新機制**·混雜元素 boss·瓦巴賈克〔staff·命中隨機混沌效果〕vs 瘋癲之佑誓福〔alteration〕**補最後一個未覆蓋魔法學派**)、**諾克圖娜爾「暮光聖陵」**(艾爾斯維爾騰瑪林·**盜賊/security 軸·R47**·暗影遊俠 boss·骷髏鑰〔換手自盜賊公會 tg5·暮光神器·撬鎖必成〕vs 夜影之佑誓福〔security/agility〕;**盜賊公會 tg5 改發灰狐面具**〔helmet·`talk_down_cap`·提高可協商罰金〕)、**賈格拉格「灰潮的試煉」**(漢默法爾巴薩拉谷·**秩序/偵查軸·R48 新機制**·水晶秩序騎士 boss·秩序之劍〔sword·order 移除傷害變異=反 Wabbajack〕vs 秩序之佑誓福〔scout/intelligence〕)、**赫麥尤斯·莫拉「禁忌的真知」**(高岩裂石郡·**知識/三徑選路·R49 新機制·末位**·亞波克里法求知者 boss·無限祕典 Oghma〔book·一次性·讀後三選一永久誓福·書消耗〕→ 力量/暗影/魔法之徑〔hermaeus_might/shadow/magic·純多徑無抗拒〕);各配新 d5 solo boss/地城,**八省全到齊**、覆蓋 法/戰近/遊俠/重甲反傷/社交/盾防/暗影魂刃/召喚師/雙手武器/恢復聖光/元素破壞/煉金毒藥/瘋神混沌/盜賊 security/秩序偵查/**知識三徑** build,每位翻轉道德軸(事奉↔違逆 ⇄ 神器↔誓福;末位 Mora 為純三徑選路)。誓福守刺客紅線(無 sneak/武傷·魂刃用 sword 非 dagger·destruction/conjuration/alteration 魔法學派·security/scout 非武器·沃倫鎚 blunt/破曉者+秩序之劍 sword/腐敗之顱+瓦巴賈克 staff/娜米拉之戒+骷髏鑰 jewelry/灰狐面具 helmet 皆非 dagger/bow 零偷襲·alchemy 不餵偷襲·誓福 strength≤達貢+18)→ sim byte-identical;**第 13 位起加新機制**(Wabbajack 混沌 R46·灰狐面具 talk_down_cap R47·秩序之劍 order 移除傷害變異 R48·**Oghma 無限祕典三徑書 R49**·皆與 sim 隔離);**17 親王神殿線全集完成**(末位 Hermaeus Mora·R49)
 - **九神信仰(R107;戴德拉線的聖光對位)**:賽羅迪爾**一城一神**九神祭壇(正典佈點;凱娜瑞絲=大森林野祠·帝都=朝聖終點)→ 祈禱受**排他單槽限時祝福**(Skyrim 式:同時只一道·拜新壇即覆蓋·48h·附帶淨疾;九神各一條功能身份:速度/個性/智力/力量 +10·疾病抗+30·旅行加速·治療+15%·格擋+10%·買價−10%)+ **德行閘**(Oblivion 式:惡名高於名聲或本省有賞金 → 神明拒賜福)+ **朝聖之路贖罪**(repeatable 13 階試煉任務:供品/九祭壇巡禮/正義·淨亡雙 kill 試煉 → **惡名歸零**=全遊戲唯一 infamy 清除途徑·R84「惡名終身」的使用者拍板例外;法律賞金不清)。`systems/divines.py` + Character 3 欄;sim byte-identical。**每神深線已啟(R115·R45 cadence 一神一里程碑)**:德行無虧的信徒在祭壇受召踏上該神試煉(專屬 d5 boss+地城)→ **永久神性誓福**(按原典神格設計·守 R45 紅線;**阿卡托什「時龍之契」**、**塔洛斯「人皇之佑」**、**阿爾凱「輪迴之佑」**、**朱利安諾斯「睿智之佑」**、**斯丹達爾「慈憫之佑」**、**澤尼薩爾「豐饒之佑」**、**凱娜瑞絲「天穹之佑」**、**瑪拉「慈愛之佑」**、**蒂貝拉「美之佑」**已做 —— **🎉 九神全數完成(9/9)**;末位蒂貝拉使用者拍板取安全域讀法〔personality/speechcraft/illusion·非 Skyrim 單手武器·守紅線〕);騎士團聖物已做(R108)
@@ -254,13 +254,13 @@
 - **接點**:城市選單第 4 區 `領主區 👑`(僅 city/town、有領主、非吸血鬼社交封鎖時出現)→ `action_court` 謁見。`ui.court_panel` 顯示考據背景(blurb)、種族、駐軍兵力、時局(大空位·各城自治);`_court_reception` 依 fame/infamy 給 4 級接待語氣(Oblivion 風:無名/揚名/惡名/例行)。
 - **零新狀態**(純顯示;謁見不耗時、無交易)。**加領主互動沿用此入口**:Phase 2+ 在 `court` district list / `action_court` 內加選項。
 - **驗證**:30 測試模組全綠(新增 `test_court`:接待分級/謁見顯示城主/無領主安全)。
-- **藍圖(見 §6「城戰/領主區路線」,已立為正式分層)**:Phase 2 領主委託 + 武士冊封(Thaneship);Phase 3 政治/選邊(`politics.json`);Phase 4 攻城戰(複用 `combat` 群戰)。
+- **藍圖(原 §6「城戰/領主區路線」,已全數完成,R173 自 §6 移除)**:Phase 2 領主委託 + 武士冊封(Thaneship);Phase 3 政治/選邊(`politics.json`);Phase 4 攻城戰(複用 `combat` 群戰)。
 
 **領主區(宮廷)Phase 2:領主委託 + 武士冊封(Thaneship)**:領主從「能謁見」進到「能差遣、能效忠」。
 - **領主委託**:走既有任務引擎,`source:"ruler"`(不漏進告示板/公會);`rulers.json` 的 `quests:[...]` 列各領主委託線(依序開放,有進行中則先做完);`quests._complete` 對 ruler 委託**反查領主目錄**把 `reward.standing` 記進 `city_standing[該城]`(完成事件加 `standing_loc`,`_report_quests` 印「城邦功勳 +N」)。
 - **武士冊封(Thaneship)**:`systems/court.py` —— `city_standing` 達 `THANE_STANDING(3)` → 受封武士(記 `char.thaneships`)。`make_thane` **冪等**(重複受封不重發信物/侍從,防刷);授**信物**(`rulers.thane_gift`)+ **侍從 housecarl**(`rulers.housecarl`,複用 companions,受 `MAX_PARTY` 限,滿則婉拒)。
 - **武士特權**:`guard_confrontation` 開頭 —— 身為**該省**某城武士且賞金 `≤ THANE_BOUNTY_FORGIVE(100)` → 衛兵放行 + 清賞金(大罪 >100 仍追緝;審查評為有界特權、非漏洞:偷竊已耗體力+時間、商店有限)。
-- **新 Character 欄**`city_standing`/`thaneships`(dataclass 預設、進 to_dict、向後相容);`ui.court_panel` 加顯示功勳/武士身分。**MVP 內容**:布魯瑪 2 委託(殺6狼+1、清切德納寇+2 → 滿 3 受封;信物精靈劍、侍從盾女)。**加領主委託純改 rulers.json `quests` + quests.json(`source:ruler`+`reward.standing`);加侍從/信物純改 rulers.json**。✅ 其餘城已由 `court.generate_ruler_commissions` 程序化補齊(見 §6 #0「全城武士化」),故 33 城主全可受封;重點城(帝都/白漫/維威克)另有手寫考據委託覆寫。
+- **新 Character 欄**`city_standing`/`thaneships`(dataclass 預設、進 to_dict、向後相容);`ui.court_panel` 加顯示功勳/武士身分。**MVP 內容**:布魯瑪 2 委託(殺6狼+1、清切德納寇+2 → 滿 3 受封;信物精靈劍、侍從盾女)。**加領主委託純改 rulers.json `quests` + quests.json(`source:ruler`+`reward.standing`);加侍從/信物純改 rulers.json**。✅ 其餘城已由 `court.generate_ruler_commissions` 程序化補齊(見 `court.generate_ruler_commissions` docstring),故 33 城主全可受封;重點城(帝都/白漫/維威克)另有手寫考據委託覆寫。
 - **驗證**:30 測試模組全綠(`test_court` 擴充:委託依序開放+完成累積功勳/武士冊封信物+侍從+冪等/賞金寬待/存檔向後相容)+ 端到端煙霧(經真實 `action_court` 選單:接委託→完成→受封→賞金寬待)+ 對抗審查(修掉自身 2 低severity:功勳無畫面回饋、make_thane 信物非冪等)。
 
 **城戰(Phase 3+4 合併:政治立場 + 選邊 + 攻城戰)(使用者拍板:城為單位、各城主自有立場;Phase 3 直接併進 Phase 4)**:領主區從「能差遣」升到「能征伐」—— 完整的城邦戰爭迴圈。核心在 `systems/politics.py`。
@@ -273,7 +273,7 @@
 - **新 Character 欄**`allegiance`/`city_faction`/`garrison_current`/`siege_ops`(皆 dataclass 預設、進 to_dict、向後相容、懶初始化)。
 - **防 farm**:圍城方略 once-each(不可重複)、強攻單場(無波次可分段刷)、方略耗資源為淨流出、強攻 fled 不發戰利 → 杜絕重刷(初版波次模型曾被審查抓到「清波→逃→重刷」MAJOR,改混合制後結構性根治)。
 - **驗證**:31 測試模組全綠(`test_politics`:立場跨省混合/關係/選邊/僅敵可攻/方略技能門檻+once-each/扣資源/風險型失敗仍計次/強攻單調+夾限/conquer 清 ops/攻城煙霧 方略→強攻 勝-死-逃/存檔向後相容)+ 平衡 sim + 端到端煙霧(經 action_court:宣誓→7 技能方略軟化→強攻破城)+ 對抗審查(無真 bug、farm 已封堵;順手修 gold 夾 0、刪死碼 base_garrison)。
-- **後續(藍圖 §6 #0;此里程碑刻意未做)**:佔領後收稅(週期金幣,複用補貨時間鉤子)/ 駐軍隨時間重建 / 自走 AI 陣營戰爭 / 攻下後可安插自己為領主 / 公會與大義綁定 / 武士所在城翻給敵方時 Thane 特權暫停。**加城/改立場純改 rulers.json**。
+- **後續(原藍圖 §6 #0〔R173 已移除〕;此里程碑刻意未做)**:佔領後收稅(週期金幣,複用補貨時間鉤子)/ 駐軍隨時間重建 / 自走 AI 陣營戰爭 / 攻下後可安插自己為領主 / 公會與大義綁定 / 武士所在城翻給敵方時 Thane 特權暫停。**加城/改立場純改 rulers.json**。
 
 **城戰精修:波次強攻(β)+ 佔領治理(A3 自任領主/冊封總管)+ 旗號 token(B1)(使用者拍板 4 點回報 → 評估解法 → β/A3+B1)**:玩家點出四個名實不符 ——「30 兵打贏上百兵城不真實」「守軍削了沒區別」「打下城只能加駐軍」「領主沒變、立場翻了但對話內容沒翻」。根因:強攻被夾在 2–8 敵(`assault_force` clamp),守軍數與戰鬥脫鉤;且 court/對話 token 讀靜態 rulers.json、無一條讀 `city_faction`。
 - **β 波次強攻(`_siege_assault` 重寫)**:守軍折算成 `politics.assault_waves(remaining)=ceil(殘存/WAVE_GARRISON=50)` 波(至少 1),**每波一場 `run_battle`**(`WAVE_GUARDS=4` 守兵,**末波加守將 boss**),**波間不恢復**傷勢/體力/魔力(消耗戰)、傷亡每波 `apply_casualties` 永久折損、可鳴金收兵。**每破一波 `deplete_garrison(WAVE_GARRISON)` 永久削守軍** → 中途退兵保留戰果、改日波數更少;削弱(方略/大軍壓境)直接砍波數 → 上百守軍非少數人可硬吞(治 #1#2)。**移除 `assault_force`**。防 farm:每波永久削守軍 → farm 受守軍總量上限封頂(g/50 波即破城)、且永久傷亡為代價,非無限。
@@ -494,7 +494,7 @@
 **商店/經濟打磨 + 全城武士化(使用者實機回饋逐項修)**:
 - **開鎖器=盜賊公會的營生**:從原本散落各城一般商店,改為**只在有 `thieves_guild` 服務的城販售**(8 城/7 省;漢默法爾無公會→靠野外);`world.buy_price` 對非會員加價(`LOCKPICK_OUTSIDER_MARKUP=2.0`,敵對買得到但較貴);**野外可隨機撿到**(強盜掉落 0.35 + 探索事件 `discarded_lockpick`)。`test_world.test_lockpick_is_thieves_guild_good` 守門。
 - **商店批量 + 連購**:`action_shop` 買/賣加數量提示(複用 `ui.ask_int`,上限由 庫存·金幣·負重 / 持有量 夾;單件略過);買/賣改**內層迴圈停留在清單**,可連續買賣多樣不同商品,退一層才回模式選單。
-- **全城武士化**:見 §6 #0「全城武士化」—— `court.generate_ruler_commissions` 程序化讓 33 城全可受封 + 重點城(帝都/白漫/維威克)手寫考據委託。
+- **全城武士化**:見 `court.generate_ruler_commissions` docstring—— `court.generate_ruler_commissions` 程序化讓 33 城全可受封 + 重點城(帝都/白漫/維威克)手寫考據委託。
 
 **狼人化 / 獸形(里程碑級;吸血鬼的對位機制;評估 pre-mortem→直作→對抗審查修 4 真 bug)**:第二條 power↔curse 天平,但**刻意與吸血鬼互補而非複製** —— 吸血鬼=被動飢渴階級詛咒;狼人=**主動限時「獸形 Beast Form」變身**(化為猛獸:利爪 + 巨量生命/體力/速度,但**脫去整套裝備、無法施法/用物/格擋**;吞噬獵物續時、變回有力竭代價)。兩者**互斥**(皆屬疾病)。核心全在 `systems/lycanthropy.py`(仿 vampirism + skooma 計時)。先跑**設計 pre-mortem workflow**(5 維 41 發現,逐一覆核確認 ~15 真缺口、擋下 1 誤報的錯誤修法),再實作。
 - **狀態機**:Character +10 欄(`is_werewolf`/`werewolf_infected_day`/**`beast_form` 快取布林**/`beast_form_until` 計時/`beast_feeds`/`werewolf_total_feeds`/`werewolf_attr/skill/resist`/`werewolf_health_bonus`,dataclass 預設向後相容、進 to_dict)。`attr()/skill()/magic.entity_resist` 疊第 5 層、`base_*` 不動(鐵律)。`update` 掛 game_loop(vampirism→skooma**之後**)驅動 潛伏轉化 / 獸形過期變回(力竭 + 夾血)。**`beast_form` 快取布林**=combat 讀取的單一真實來源(`resolve_attack` 無 state 參數);與 `beast_form_until` 由 transform/revert/update/ensure/**`sync_beast_form`** 同步維護。
@@ -636,9 +636,7 @@
 - **BUG2 神器/附魔效果看不到**:效果其實有套用(combat 讀武器 `enchant`、`equipment_bonuses` 讀護甲/飾品 `enchant`、`lycanthropy` 讀 `hircine` 旗),但顯示層沒露。修:新 `console._enchant_desc`/`_ench_suffix`(描述 weapon_element/weapon_status/fortify_skill/attr/armor_fortify/resist_element + `hircine` 旗;**synth 自製附魔略過**〔名稱已內嵌效果,免重複〕;**缺鍵全防崩**)→ 於 `weapon_line`(武器附魔)、`sheet_equipment` 每件穿戴(web+終端)、`item_label`(取代籠統「已附魔」)顯示。神器效果一律可見(魔銳茲之刃 `·雷電傷+25`、獵者之戒 `·可隨意獸化`)。
 - **驗證**:**57 測試模組全綠**(`test_party` 加總管離隊/召回回隊/解散清指派;`test_sheet` 加 `_enchant_desc`+武器行+背包神器可見)+ 煙霧(冊封→離隊→召回;synth 不重複;缺鍵不崩)+ 零 sim。**改總管出戰判定動 `party.fieldable`;改附魔顯示動 `_enchant_desc`(單源)**。
 
-**內容量**:10 種族 / 13 星座 / 8 職業 / **23 技能(+偵查 scout、+鍛造 smithing)** / **25 武器(4 法杖 + 6 長槍)** / **42 護甲(7 材質整套 + 法師布甲學徒/大法師 2 階 8 件)** / **43 法術(六學派各 ≥5、召喚/秘術補完至各 7;5 AoE + 8 中庸支援 + 束縛兵刃/亡者復生/法術結界/驅散/群體擒魂)** /
-**15 煉金材料(全部可野外採集/獵取)+ 7 鍛造材料(鐵/鋼/月長石/矮人/綠玉/黑檀錠 + 布匹)** / **5 飾品(含具名神器獵者之戒)** / **鍛造系統(鍛造技能 + 45 配方〔皮甲/鐵鋼+精靈/矮人/玻璃/黑檀金屬/法袍〕+ skill_req 分級 + 全階裝備淬鍊強化)** / **80 生物(7 高階 elite + 2 吸血鬼 + 2 狼人〔含 alpha solo〕 + 5 黑沼澤 + 5 漢默法爾沙漠〔含矮人百夫長 boss〕 + 5 高岩霧沼〔含海妖岩魔女 boss〕 + 5 瓦倫雨林〔含遠古樹靈 boss〕 + 6 艾爾斯維爾草原弱毒〔含暗月暗虎 solo boss〕 + 8 黑兄目標 + 7 神話黎明目標 + 6 九神聖戰目標 + 2 戰友團〔銀手/格倫魔女,天際野生可遇〕 + 2 heartland + 4 晨風灰原生態〔崖行鳥/阿利特/尼克斯獵犬/卡古地,解晨風委託只能輪替灰蹦蟲〕;45 隻帶 biome 生態標籤)** / **9 具名同伴(角色化:4 具名化傭兵斯特倫/葛蕾塔/薇拉妮/基蘭 + 2 圈內盾袍兄弟法卡斯/艾拉 + 3 招募具名德雷拉斯/賈拉卡爾/拉希德;各有 4 階對話 + 專屬支線 + 忠誠弧頂點)+ footman/veteran(士兵/將領)** / **68 地點(有環圖+生態 biome〔heartland/snow/ashland/swamp/desert/moor/jungle/savanna〕,世界閉成五大環〔黑沼澤南環 + 漢默法爾西環 + 高岩西北環 + 瓦倫森林西南環 + 艾爾斯維爾南環〕;賽8/天9/晨8/黑7/漢6/高6/瓦6/艾6/邊12,共 25 城+12 鎮)** / **15 地城(程序化 n×n × m 層格子探索:移動/分層/樓梯/迷霧/首領死亡自動解鎖寶藏;含湮滅危機 5 座 danger5-6 終局地城)** / **主線弧:湮滅危機(達貢;雙路線/雙結局)** / **任務(3 分支壓軸 + 解咒×3〔血咒/淨糖/獸血〕 + 6 黑兄合約 + 6 神話黎明合約 + 6 九神聖戰合約 + 14 在地任務含 2 任務鏈 + 屠龍 + 漢默法爾 3 + 高岩 3 + 瓦倫 3 + 艾爾斯維爾 3 + 4 新鎮各 2 領主委託 8 + 24 空城在地指路任務 18(npc-source) + 戰友團 6〔含內圈引渡多階 + 嗣血/淨血壓軸〕 + 同伴 3 招募〔德雷拉斯/賈拉卡爾/拉希德〕+ 9 同伴專屬支線〔忠誠弧〕+ 24 開局起手任務線〔每開局一條 2–3 階段,source=origin,創角自動接取〕)** / **7 公會(+神話黎明/九神騎士團 大事件解鎖 + 戰友團〔白漫·一般公會流·狼人血脈歸宿〕)** / **34 開局背景(24 既有 + 10 新〔綠約遊俠/月糖商隊主/希斯特守林者/沼澤招魂者/誓盟聖騎士/沙漠法刃武者/神諭團戰法師/雙月武僧/奧術博識者/沼澤巫醫;補弓手·商人·召喚師·聖騎士·法刃·戰法師·武僧·學者 8 構築缺口 + 黑沼澤 0→3 等省份;各帶起手任務 + 創角資訊面板)** / **178 NPC(每座非邊境城/鎮全覆蓋〔城 3 / 鎮 2,無空城〕,角色多樣、greeting + rumor 指路;含 24 空城補滿 71 NPC + ~30 名掛在地委託/指路任務 + 3 招募具名同伴家鄉)** / **44 事件(含 28 省份限定;含艾爾斯維爾糖楓採集/草海掠食 + 外緣四省文化事件〔劍歌者/女巫結社/綠盟祭/雙月之舞〕)** / **吸血鬼化系統** / **狼人化系統(主動限時獸形變身,吸血鬼的對位;與吸血鬼互斥)** / **斯庫瑪成癮系統(亢奮↔戒斷天平)** / **黑暗兄弟會系統** / **技能里程碑系統(全 23 技能各 25/50/75/100 完整階梯、92 節點;25=單一 perk 自動授予、50/75/100=二選一)** / **37 城主(各城自治)** / **24 具名地標(各省招牌/邊境發現,首次抵達一次性獎勵)**。
-程式:**34 個 `systems` 模組**(+housing〔房產:倉庫/最佳休息/精神飽滿〕+mounts〔坐騎三類:旅行/鞍袋/衝鋒·騎射·法駒法術〕 +aiwar〔AI 陣營自走戰爭〕 +vampirism +brotherhood +mastery +crafting +court +politics +warband +landmarks +achievements +smithing〔淬鍊強化〕+skooma〔斯庫瑪成癮〕+lycanthropy〔狼人化〕+party〔同伴深化〕+dungeoncrawl〔格子地城生成〕)+ models/ui/synth 等,共約 49 個 `.py` + `sim_assassin.py`/`sim_worldwar.py`(平衡回歸);**29 個 `data/*.json`**(+houses.json〔房產〕+mounts.json〔坐騎+馬廄城+長槍販售〕+mastery.json +recipes.json +landmarks.json +achievements.json +dialogue.json〔條件式對話樹〕;黑兄/細化省分/城戰立場/招兵兵種/漢默法爾/高岩/瓦倫森林/法袍+鍛造材料/**狼人/獵者之戒/戰友團〔第7公會〕/八職功能身份/長槍〔archetype=spear〕**全靠改既有檔);**56 測試模組**(+test_mastery +test_practice_cost +test_shop +test_crafting +test_court +test_politics +test_warband +test_worldstate +test_mythicdawn +test_knights +test_landmarks +test_polish +test_sheet +test_web +test_achievements +test_smithing +test_dungeon +test_speechcraft +test_skooma +test_lycanthropy +test_party +test_attributes +test_hybrids +test_companions +test_class_identity +test_spell_schema +test_companion_arcs +test_dialogue_tree +test_aiwar +test_housing +test_mounts +test_origin_quests)(共 **57 測試模組**)。**新增 `tesrpg/web/` 套件(本機 Web 版,純 stdlib、零 pip;`python3 -m tesrpg.web`)**。 / **成就系統(24 條,唯讀推導、結算+即時角色卡)**。 / **四中庸職業功能性區分(戰法師奧術灌注 / 治療師戰地援護 / 騎士號令 / 弓手散兵武技;純改 `magic.py`+`combat.py`+`spells.json`+`world.json`+`creation.py`,零新系統模組/零新存檔欄)**。 / **八職功能性身份網格(全 8 職各一招牌戰術 loop:mage 奧術連鎖 / battlemage 共鳴一擊+法力回擊〔毀滅 50/75 互換後可兼得〕 / thief 諜報偵搜 / archer 獵手偵察 / warrior 盾牆 / knight 戰旗 / healer 戰地搶救 / assassin 致命烙印;6 mastery 二選一節點 + 2 戰鬥動作;純改 `mastery.py/json`+`magic.py`+`combat.py`+`main.py`,零新系統模組/零新存檔欄;sim byte-identical)**。 / **戰友團(第 7 公會;白漫·一般公會流;獸血儀式由戰士公會移籍至內圈〔`lycanthropy.RITUAL_RANK_INDEX`〕;`merc_discount` perk + circle 盾袍兄弟;純改 factions/world/quests/bestiary/companions/origins JSON + `factions.py`/`lycanthropy.py`/`main.py` 小面 wiring,零新系統模組/零新存檔欄)**。 / **地城格子探索(程序化 n×n × m 層;新 `dungeoncrawl.py` 生成器 + `action_dungeon` 改寫為 crawl 子迴圈 + `dungeon_grid` 雙端渲染;dungeons.json 改參數化 spec;首領死亡自動解鎖寶藏;原子探索零新存檔欄;sim byte-identical)**。 / **法術學派補完(召喚/秘術各補至 7 法術:束縛兵刃〔法系近戰,完全取代裝備武器〕/ 亡者復生 / 法術結界〔吸魔變體〕/ 驅散 / 群體擒魂 + 冰雷元素/魔人召喚;`magic.py` 4 新 effect kind + `combat.py` 束縛兵刃/ward 掛鉤,純改 spells/bestiary/world JSON;零新系統模組/零新存檔欄;sim byte-identical)**。 / **地城視為戰鬥情境(一般行動施法/背包/角色卡 + 預施增益/預召喚召喚物〔行動 1 格=1 回合衰減,`run_battle` carry_allies/preserve_buffs 帶入〕+ 偵查 perk 探明四鄰〔每探明新格練偵查〕+ 狀態條/HUD 顯示夥伴/召喚物 + 施法後敵狀態即時補繪;純改 `main.py`/`console.py`/web + `mastery.has_recon_perk`/`formulas` 常數,零新系統模組/零新存檔欄;sim byte-identical)**。 / **技能里程碑廣度 pass(17 薄技能各 +1 功能節點 → 全 23 技能 ≥2 節點、47 節點;13 純 JSON 複用功能 kind + attr_fortify 首用 + 4 新 kind〔combat_repair/flee_bonus/armor_reflect/trap_floor〕+ weapon_mod 合併/repair_floor MAX;對抗審查修系統性「同源多節點遮蔽」〔spell_mod/passive_armor/poison/evasion getter 全改聚合〕+ illusion 死碼修 + passive_armor 解魔力閘;純改 mastery.json + `mastery.py` getter + 3 處呼叫端,零新系統模組/零新存檔欄;sim 紅線守)**。 / **同伴角色化(具名同伴 + 招募任務 + 專屬支線 + 對話 + 忠誠弧頂點:複用 `companion_bond` 當忠誠軸、`reward.companion`/`reward.bond` 資料驅動授予、`action_party` 交談/召集、戰術頂點走盟友限定光環〔empower `not _is_player`〕、被動頂點走 barter/travel;6 既有同伴角色化 + 3 新招募具名;純改 `party.py`/`quests.py`/`main.py`/`world.py`/`legacy.py`/`console.py` + companions/npcs/quests JSON,零新系統模組/零新存檔欄;sim 紅線守、對抗審查修 orphan 羈絆破口)**。
+**內容量與模組清單**:數字隨內容增長,以 `tesrpg/data/*.json`(如 `len(gamedata.skills)`)、`tesrpg/systems/*.py`(各模組檔頭 docstring)與 `python3 tests/run_all.py` 結尾輸出為準;§2 是架構地圖(非完整清單)。
 
 ---
 
@@ -856,7 +854,7 @@ tesrpg/
 - 🔴 **神話黎明非政治大義(已移除 daedric 大義/陣營,使用者拍板)**:`daedric` 曾兼任「可宣誓大義」(`politics.CAUSES`/`pledgeable_causes`/`EXPANSIONIST_CAUSES`)與 aiwar 第三陣營(危機期 kvatch/bravil/leyawiin 易幟 daedric + `_daedric_resurgence` 韌性)。**整個移除**:神話黎明=末世密教,與帝國/獨立/自立的王座之爭**正交** —— 只走**公會入會(阿留斯湖招募)+ 主線弧 + 危機新聞**,玩家**不可宣誓**、城池**不易幟**、aiwar **不佔城**。`world_events` 的 `kvatch_falls`/`deadlands_breach` 去 `faction_flip→daedric`(保留 news + 觸發旗標 → 地城可見/招募/主線照常);`EXPANSIONIST_CAUSES={"own"}`、`AGGRESSOR_ORDER=["imperial","independent"]`。守:`test_daedric_not_a_pledgeable_cause`、`test_aggressors_only_imperial_independent`、`test_daedric_unlock_after_kvatch`(改為「永不可宣誓」)。**改政治大義/aiwar 必跑 `sim_worldwar`**(已驗收斂不破、選邊有感)。
 - 新內容純 JSON:5 座 danger5-6 地城(`the_deadlands` 4 層最深)、達貢 2 變體、5 世界事件、**賽羅迪爾補正史九城**(+Bravil/Chorrol/Leyawiin + 3 領主)。回歸見 `test_oblivion.py`。
   - 🔴 **結局神器分流(使用者拍板,各結局獨佔;`test_ending_artifact_split` 守)**:**正道**=`crusaders_aegis`(十字軍護心·火抗50)+ `dawnfang`(黎明之牙·火劍 —— 接 `main_oblivion` reward + `the_deadlands` 寶藏 + `mehrunes_dagon` bestiary 0.5,完整繼承原 razor 的三處槽位);**教徒**=`mysterium_xarxes`(魔典·強化咒術)+ `mehrunes_razor`(魔銳茲之刃·電匕 —— 接 `md7` reward + `dawn_sanctum` 寶藏,沿 mysterium 慣例**不入 bestiary**)+ 達貢之力永久層。`sigil_stone_fragment` 走前三道門寶藏。✅ `mehrunes_razor` 已從 `dragon_lair`(龍喉巢穴)首領寶藏移除 → 換上**專屬龍系神器 `skyburner`(焚天劍·龍骨火劍·傷23/火26/value2000)**,單一來源(僅龍巢首領寶藏、**不入 bestiary → 不可刷、全遊戲唯一**;龍巢無 `until_event` gate 可重入,故神器只放首殺保底的 boss.treasure);razor 現純教徒結局獨佔。神器數 4→5。`test_dragon_lair_unique_trophy` 守。
-- 🔴 **湮滅之門逐門可見性**:5 地城帶 `visible` 欄(`world.is_visible` 對 `world_events_fired`/`cleared_dungeons`/`factions` 做 AND);開局全隱、`kvatch_falls` 開第一道、清掉就閉、下一道開、`oblivion_crisis_ended` 全消;dawn_sanctum=`after_faction mythic_dawn`。過濾於 `travel_options`/`_location_view` 出口/`_map_view`(grid/edges/計數);所在地變不可見 → game_loop 頂端 `world.relocate_target`(BFS 最近可見城)拋回。改 `visible` 改 `geo_rebuild.py` 的 VISIBLE。
+- 🔴 **湮滅之門逐門可見性**:5 地城帶 `visible` 欄(`world.is_visible` 對 `world_events_fired`/`cleared_dungeons`/`factions` 做 AND);開局全隱、`kvatch_falls` 開第一道、清掉就閉、下一道開、`oblivion_crisis_ended` 全消;dawn_sanctum=`after_faction mythic_dawn`。過濾於 `travel_options`/`_location_view` 出口/`_map_view`(grid/edges/計數);所在地變不可見 → game_loop 頂端 `world.relocate_target`(BFS 最近可見城)拋回。改 `visible` 直接改 `world.json` 該節點的 `visible` 欄(`geo_rebuild.py` 已於 R173 刪除)。
 - 🔴 **神話黎明=遭遇式招募(改回史實)**:服務從 kvatch 移到 **`dawn_sanctum` 神殿**(入會後 `after_faction` 才可見可達);招募點=新野區 **`lake_arrius_caverns` 阿留斯湖洞窟**(切迪納東北)——在當地 `action_explore`(`kvatch_falls` 後、非會員、可入會)有 50% 遇 **2× `mythic_dawn_acolyte`(赤袍信徒,輕量招募者 danger3/HP50/dmg13)**,走 `offer_battle(recruit="mythic_dawn")`:口才 `dialogue.recruit_persuade` 成功 → 確認加入(`factions.join`)→ 神殿解鎖;失敗/婉拒 → 開打。🔴 **招募遭遇務必用輕量 `mythic_dawn_acolyte`,不可用終局 `mythic_apostate`(HP140/danger5/min_level99,dawn_sanctum 守衛)** —— kvatch_falls 第 3 天即可觸發,低階新手在 danger-3 湖畔撞 2 隻終局精英=過強(`test_recruitment_uses_lightweight_acolyte` 守)。線索:`kvatch_falls` news + 切迪納祭司 rumor 指向阿留斯湖。**合約大廳 `_contract_hall` 走入式入會改為 opt-in(只在有傳 `join_prompt` 時提供,如九神騎士團於安維爾正面招募);`action_mythic_dawn` 不傳 join_prompt → 對非會員不開門(神殿服務本就 after_faction-gated、非會員無從抵達,此守門為自我文件化+防未來誤把服務接到非 gated 地點)。🔴 勿替神話黎明重引入走入式入會,招募只走阿留斯湖遭遇。**
 
 ### R27 · Web-only(終端版已移除)
@@ -871,7 +869,7 @@ tesrpg/
 - **每個地點必帶 `pos:[col,row]`**(`world["map"]={cols:40,rows:24}`);座標與 `links` **皆依正典上古卷軸地理**(查 UESP/ESO):各省城市相對位置落在地理 bounding box、省內連線=lore 道路鄰接、跨省只經邊境(真實省界)、旅行時數由格距離推導。`pos` 不入存檔。`test_world` 守:pos 全員存在/界內/唯一 + link 空間局部性(對角線 55%)。
 - **拓樸鐵律(`test_world` 守)**:① 除湮滅之門/終局地城白名單(`dragon_lair/kvatch_gate/bravil_gate/the_deadlands/dawn_sanctum`)外,每點 degree≥2;② **跨省連線只經邊境**(邊境節點=省際接縫,**已無歷史直連豁免**;`kvatch↔dragon_bridge`、`leyawiin↔gideon` 已改走 pale_pass/niben_marsh);③ 每真實省的省內子圖連通;④ 城/鎮 danger=0、荒野 1–5、地城≥1、每省有低危(≤2)入口。重排座標/連線後跑 `sim_worldwar`(改動 city 鄰接影響 AI 戰爭)。
 - **加新城/鎮**:world.json `type:city/town`+`danger:0` + rulers.json 一筆(`race∈races`、`garrison>0`、`bloc/bloc_label`、`stance∈{imperial,independent,neutral}`);新 bloc 只是字串(politics 動態讀,免登錄)。**加新地城**:dungeons.json 一筆 + quests.json 一條 `clear_dungeon`/`reach` 委託(`test_polish` 守);board 委託金幣≤`max(320,danger*100)`、聲望≤`max(15,danger*5)`(`test_detailing` 守)。新城改變 AI 戰爭盤面 → **大量加城後跑 `sim_worldwar`**(守 R24)。
-- **內容生成工具**:`tools/build_expansion.py`+`expand_world.py`(產/併入新地點四檔);`tools/geo_rebuild.py`(**依 UESP lore 重建全圖 pos+links**:省內 GEO 鄰接表 + BORDER_LINKS 省際接縫〔每 seam 只接真正鄰接的兩省門戶城〕+ NEW_REGIONS 分區野區 + 海爾根 town〔賽→天白隘門戶,連 rulers.json〕 + 距離推導時數;auto-fix **只連同省最近**〔杜絕跨 seam 亂湊〕,重發 world.json 單行條目)。改地理改 GEO/BORDER_LINKS 再跑。
+- **內容生成工具**:`tools/build_expansion.py`+`expand_world.py`(產/併入新地點四檔);`tools/geo_rebuild.py`(**依 UESP lore 重建全圖 pos+links**:省內 GEO 鄰接表 + BORDER_LINKS 省際接縫〔每 seam 只接真正鄰接的兩省門戶城〕+ NEW_REGIONS 分區野區 + 海爾根 town〔賽→天白隘門戶,連 rulers.json〕 + 距離推導時數;auto-fix **只連同省最近**〔杜絕跨 seam 亂湊〕,重發 world.json 單行條目)。改地理改 GEO/BORDER_LINKS 再跑。〔R173:這三支一次性工具已刪除(重跑會清掉近期手加的節點);現行作法=手填 pos/links 並守 `test_world`,見 R28 與後續各 R## 鐵律;原碼見 git 歷史〕
 - **邊境地圖呈現(Web)**:`renderMap` **不再有「邊境」獨立按鈕**;行省檢視 = 該省節點 + **邊接該省的邊境節點**(出省口;`draw()` 用 `g.edges` 判 `province==="邊境"` 且邊接本省)。邊境節點仍在總覽圖。
 - **相對位置地圖(Web)**:`_map_view` 發 `grid:{cols,rows,nodes:[{id,name,pos,type,here,visited,danger,province,svc,...}],edges:[{a,b,h}]}`(`svc`=特色設施〔公會/陣營〕、通用宿商訓鐵板不列;`edges`=無向去重連線+時數)。`index.html` `renderMap` 依 pos 絕對定位 marker 畫**總覽圖**(north 朝上、★所在、危險度上色、SVG 連線=相鄰路徑),頂端行省鈕**純前端放大**該省 bbox(`drawStage`,放大才標連線時長),**點 marker → `.mapinfo` 顯示該地特色設施**;出口靠連線辨認。**滑鼠滾輪縮放(zoom-to-cursor)+ 拖曳平移**(`.mapzoom` transform;pointer capture 無 window listener 洩漏);放大(scale≥2.2)或行省檢視才顯示地名+路徑時長(CSS `.zoomed/.prov` 控制)。已移除冗長明細列表。`test_web` 守 grid 形狀 + edges 合法。
 
@@ -2918,6 +2916,13 @@ R88 讓**盜賊公會**拿到階級解鎖招牌動詞(斯庫瑪走私),但**戰�
   - 待使用者定:`SendMessage` 續問既有 counsel 是否算一次(算 → 第二批把它加進 matcher,須先實測 PostToolUse 對延遲載入工具是否觸發)。
   - 數字正確後升格 `settings.json`(O5)並補「接線與 ops.md §13 一致」測試。第二批(counsel 第 3 次先問、切 Opus 提醒)須先 `-p` 實測相關事件與 auto 模式下 `ask` 的行為。
 
+### R173 · 開發檔案整理 第 1 層:只改已證實過期的事實 + 已完成清單 [docs-only]
+- **起因與流程**:使用者「規劃如何整理開發檔案,我來拍板」(承 11/1「整理 = 清掉被淘汰的資料,不搬走、不整份凍結」)。Haiku scout ×4(§1 前/後半區塊地圖、§3 取代宣告、四份參考文件)+ 主對話機械檢查(backtick 內路徑/識別字對全碼 token 集、R## 對帳、腳本靜態漂移、BESTIARY 重生比對、`git log --numstat` 各節寫入量)→ 使用者拍板四題(範圍=只做第 1 層;build.md=加快照警示+修已證實矛盾;腳本=只刪 3 個生成器;CLAUDE.md 表=維持只補 R22)→ **逐條清單 A1–A9、B1–B7 經使用者簽核才動手** → 單一 Sonnet 唯讀審查(17 條發現,逐條覆核後採用 15 條、駁回 1 條〔開局選單過濾已被「先出身再推薦職業」的設計取代〕、另 1 條半對半錯〔BUFFS L40 其實已改〕)→ `check.sh` 全綠(135 模組 + 17 真瀏覽器)。
+- **做了什麼**:A = BESTIARY 重生(差 1 行)/CLAUDE.md 補 R22 列/handoff §0 存檔路徑與編譯指令、開頭省數、§5 技能數與主線註記、§1 三處快照(職業 11/開局 35/地點 ~207)/BUFFS 5 行 + build.md 12 行對齊 R44(fear/paralyze/frenzied 對 solo BOSS 65% 機率抵抗、stagger/slow/weaken 軟控照施、**calm 仍 solo 完全免疫**)+ build.md 快照警示/DESIGN.md 6 處。B = §6 改寫為「未做清單」(21.8 KB → 3.6 KB)、§8 換 2 行、§4「戰績」敘事刪(保留教訓)、§7 R108 待修缺陷刪(已解)、§1 末「內容量/程式」快照刪、刪 `tools/` 3 個一次性世界生成器(+其 `.gitignore`)、刪空目錄 `.agents/` `.codex/`。handoff 936 KB / 3051 行 → 912 KB / 2999 行(含本節)。
+- **審查補漏(清單外,屬已簽核範圍「修已證實矛盾」的漏網)**:BUFFS L302、build.md L149/L320/L353 同類 R44「免疫」殘留;§1 L30 的「三選一資源」(R64 已移除);§5 與 DESIGN §7 的「預設 8 種職業」(現 11)。**我的初版 §6 有數處不實,審查抓出後更正**:①「謀殺後即時衛兵圍捕」原判已做(錯,`action_murder` 被目擊只加賞金+惡名)→ 補回待辦;② 高岩/瓦倫森林已各有 3/2 個開局(只缺具名風味)、開局最多給 2 件護甲(非單件);③ 贊密爾沉廟已在環上(移除該節點後 helstrom↔vunnar_xul 仍連通)→ 刪;④ `test_detailing` 只有一個共用 valid-biome set(原文「兩個」本就過時);⑤ 邊境有 4 個戍堡 town 且皆有城主(只有「0 NPC」仍真);⑥「階級設施權限」三核心公會已由 R88/R89 做。**兩條只存在於被刪「已完成」清單裡的使用者裁決**(附魔 Phase 3 秘術節點刻意未做;平衡紅線是「不秒殺」非「不可耗血」、vampiric 無 solo 夾為 sim 背書設計)搬回 §6;handoff 內 4 處「見 §6 #0…」改指 `court.generate_ruler_commissions` docstring 或標註已移除。
+- 🔴 **鐵律**:① **§1「里程碑歷程」231 KB / 82 段,其中 72 段(188 KB)沒引用任何 R##**,不得以「§3 已涵蓋」為由壓縮——可能是政治/招兵/陣營等系統唯一的文字紀錄;要動須逐段比對(第 3 層)。② **刪文件內容前必先逐條列清單(行號/原文/為何過期/程式證據/建議)給使用者簽核**(11/1 搬 handoff、本輪皆然);不得以「還能跑」或「體積大」為刪除理由。③ **判「過期」只認程式/資料證據**:路徑與識別字存在性、`len(gamedata.…)`、JSON 計數、常數;scout(Haiku)結論只當線索,數字由主對話用腳本重算;**判「已做」尤其要查實作而非只搜關鍵詞**(本輪初版靠關鍵詞比對誤判 2 項)。④ **刪「已完成」條目前先查它夾帶的規則/裁決與被指向的錨點**:已完成清單的長括號裡常嵌使用者裁決,別處的「見 §6 …」會因此懸空——刪前跑「原段 backtick 詞在刪後全文是否仍可搜到」與「全檔指向該節的引用」。⑤ 文件內寫死 `檔名.py:行號` 會悄悄漂移(build.md 35 處、handoff 39 處,未逐條驗)→ 新文件優先寫函式/常數名。⑥ `build.md` 是 2026-06-18(R41 後)快照,R42+ 未重盤,檔頭已警示;`BUFFS.md` 7/13 修過一次仍漏 5 處,本輪再抓 1 處 → R44 類「機制語意改變」須全文 grep 舊措辭(「免疫」)且不可只看被截斷的輸出。
+- **前瞻(各自獨立里程碑,本輪未做)**:第 2 層 = §3 約 26 節含「取代/移除」宣告的舊規則(例:R122 聖光攻擊線已被 R123 取代,R122 節與 CLAUDE.md 列卻仍照舊;R112/R156 被 R162;R162 被 R164;R40 弓手舊 perk 被 R136),須與 CLAUDE.md 對應列「兩處一起改」;第 3 層 = §1 里程碑敘事逐段比對(已知 §1 內自相矛盾:L322/L324 仍寫「攻下自任領主」未做,實作於 `_governing_ruler`);build.md 全面重盤;選配:`check.sh` 的 py_compile 擴及 `sim_*.py`/`tools/`/`eval_*.py`(目前未涵蓋)、`tests/test_docs_fresh.py`(只守 CLAUDE/BUFFS/build/DESIGN/ops 的死路徑/死識別字);殘留未動:`git worktree prune`(尚登記 1 筆已不存在的 `wt129`)、空目錄 `.claude/worktrees/`。
+
 ## 4. 開發節奏(ultracode 開著 → 每個功能都這樣做)
 
 > 完整五階段流程(評估 → 決定方向 → 實作 → 驗證 → 文件 + 提交)見 `CLAUDE.md`「開發流程」;以下是「驗證」段的細節。**驗證綠後依 R22 自動 `commit` & `push origin main`。**
@@ -2930,16 +2935,7 @@ R88 讓**盜賊公會**拿到階級解鎖招牌動詞(斯庫瑪走私),但**戰�
 6. **對抗式審查(Workflow 工具)**:多維度 fan-out 審查 → 每個發現由獨立懷疑者**對抗式驗證** → 只回報「能真實重現」的 bug。
 7. **覆核 + 修正**:**逐一覆核審查結果**(會有誤報、也會有「會引入新 bug 的錯誤修法」—— 已擋下 2 次);套用確認的修正 + 補回歸測試;重跑全套。
 
-> 戰績:二十二輪審查累計修掉 **~37 個真 bug**(含同伴角色化的 orphan 羈絆破口/護盾消散訊息洪流/招牌獎勵靜默;隱遁里程碑化的單一 perk 播報措辭誤導;補階梯 pass 的 armorer repair_floor 死 perk×2 + 自驗閃避三源 trivialize 群戰加夾限;**使用者點出偵查 recon 里程碑死 perk → 重設為情報→戰力**)、擋下 **2 個錯誤修法**、自補 1 次審查覆蓋缺口、自抓數個測試基建坑。
-> 陣營 Phase C-lite 輪:4 維×3 視角,16 發現→0 真 bug(全為正向驗證:紅線/三層/決定性/存檔/玩家免疫/失城浮回皆確認正確)。Phase A/B 因 agent 額度上限以自審代審查(純資料/加性低風險),C-lite 額度恢復後補跑完整對抗審查、零真 bug。
-> 城戰階段三輪:6 維 fan-out × 每發現 3 視角驗證,19 發現→1 確認(18 駁回多為正向確認/既定設計)。唯一確認=**既有** robustness 缺口(`legacy.compute` 取 `factions[fid]` 未防缺 id → 毀損存檔結算 KeyError),順手以 `.get` 修 + 回歸測試。評估階段的對抗審查更**預先攔下**設計級紅線(稅基誤用 `held_cities` 會白送 2190+/週)→ 落地即正確。
-> 城戰階段四輪(規劃走 plan-mode:Explore×2 調查 → Plan agent 設計 → 核定):5 維 fan-out × 3 視角,**2 發現→0 真 bug**(皆既定設計/正向確認)—— 一次過,印證「先規劃 + 守鐵律」能把缺陷擋在落地前。
-> 招兵買馬階段二輪:7 維 fan-out × 每發現 3 視角對抗驗證,13 發現→4 確認;逐一覆核後**判 3 個為誤報**(遣散洗寬限=無此入口且經濟自殺、apply 不重置週期=下一圈已收斂、存讀檔暴扣=遊戲時間凍結於存檔)、**只修 1 個真 bug**(apply_casualties 回報實際扣減而非陣亡計數)+ 補回歸防線。教訓:對抗驗證者可能以「直接改記憶體狀態」重現出非遊戲路徑的偽漏洞 → 覆核務必確認**重現走的是真實遊戲入口**。
-> Mastery 輪:對抗審查抓到**自身引入的 3 問題**(溢盾 cap 可疊破到 2.06×血上限 / `active_effects` 戰外洩漏進下一場 / `kind` 白名單沉默失效)+ 順手抓到**既有飾品實戰崩潰**(戴飾品被物理擊 `KeyError`,已補回歸測試)。
-> M14 輪:抓到會**寫入存檔的數值回歸** —— 丟棄/出售「穿戴中的 fortify 護甲」未重算,加成永久殘留(出售還倒賺金幣)。
-> M15 輪(升級改版):抓到 3 個 —— ①(major)`ensure_level_xp` 未在**載入路徑**觸發 → 可升級的舊存檔升級入口被隱藏;
-> ②(minor)`apply_level_up` 屬性點以「請求量」而非「實際套用量」計帳 → 觸頂吞點;③ 三處 UI 文案仍稱「只有主修計入升級」。均已修 + 補回歸測試(且反向驗證測試能抓到)。
-> 重點教訓:**互動式 `run_battle` 測試會全域 patch `ui.menu`,模組間會互相汙染**(test_m13 因此踩雷)—— 需要時在測試內自行重設 `ui.menu`。
+> 重點教訓:**互動式 `run_battle` 測試會全域 patch `ui.menu`,模組間會互相汙染**(test_m13 因此踩雷)—— 需要時在測試內自行重設 `ui.menu`。 **另一條**:對抗驗證者可能以「直接改記憶體狀態」重現出非遊戲路徑的偽漏洞 → 覆核務必確認**重現走的是真實遊戲入口**(招兵買馬階段二輪:13 發現判 3 個誤報)。
 
 ---
 
@@ -2949,80 +2945,38 @@ R88 讓**盜賊公會**拿到階級解鎖招牌動詞(斯庫瑪走私),但**戰�
 - R171 續(四原則客製版):scout 0、counsel 0;審查模式:無(文件與測試,未改遊戲碼)。代理檢查|Opus:無(O1–O4 皆否)|Haiku:讀量小、皆為已知小檔 → 自己讀|counsel 0/2。
 - R171 續2(O5 + hook 前置查證):scout 0;Explore(Haiku)1(診斷,在 Agent map);counsel 1/2(`--agent` 獨立 process,不在 Agent map);審查模式:無。代理檢查|Opus:O5 符合(hook 設計)→ counsel 已派|Haiku:外部文件頁多份已由 WebFetch 摘要 → 自己讀|counsel 1/2。
 - R172(hook 第一批):scout 0;general-purpose(Sonnet)審查 1(單一、未 fan-out;約 26.6 萬 token、50 次工具呼叫);counsel 0/2(O5 設計審查那 1 次已計在 R171 續2)。代理檢查|Opus:O5 符合(hook 全域機制)→ 設計已由 counsel 審過,實作未再派|Haiku:讀而未改極少、皆為已知小檔 → 自己讀|counsel 0/2。
+- R173(開發檔案整理 第 1 層):scout 4(Haiku:§1 前/後半區塊地圖、§3 取代宣告、四份參考文件;約 46 萬 token);counsel 0/2;審查模式:單一 Sonnet(唯讀;約 36 萬 token、129 次工具呼叫;17 條發現覆核後採 15、駁回 1、半對半錯 1)。代理檢查|Opus:無(O1–O5 皆否:純文件)|Haiku:handoff §4–§8 約 140 行我先自己讀了(違反 H2,被使用者指出後補派 scout)|counsel 0/2。
 
 ## 5. 設計定案(DESIGN.md §7)
 
-死亡規則=**兩種模式**(冒險可讀檔 / 傳奇 roguelike 永久死亡);職業=8 預設+自訂;起始省=賽羅迪爾·布魯瑪;
-**純沙盒**(無主線);時間以「小時」推進(12 月×30 天);技能=Oblivion 的 21 套 **+ 自訂 `scout`(偵查)/`smithing`(鍛造)**(經使用者拍板突破原設計;**現為 23**,以 `len(gamedata.skills)` 為準);一生評分公式在 `systems/legacy.py`。
+死亡規則=**兩種模式**(冒險可讀檔 / 傳奇 roguelike 永久死亡);職業=預設+自訂(原設計 8 種預設,現 11 種);起始省=賽羅迪爾·布魯瑪;
+**純沙盒**(無強制主線;R26 起有可選的湮滅危機主線);時間以「小時」推進(12 月×30 天);技能=Oblivion 的 21 套 **+ 自訂 `scout`(偵查)/`smithing`(鍛造)**(經使用者拍板突破原設計;**現為 22**,以 `len(gamedata.skills)` 為準);一生評分公式在 `systems/legacy.py`。
 
 ---
 
 ## 6. 下一步候選(依槓桿排序)
 
-> **Web UI/UX 候選**(R58「改善 UI/UX」評估盤點;UI 已近乎全原生):① ✅ **敘事捲動歷史已做**(R58 故事日誌);② ✅ **遊戲內說明/圖鑑已做**(R60);③ ✅ **互動可靠性/精準無障礙已做**(R166:pending/重試/重連、焦點、狀態列、完整減動態);④ ✅ **QoL/設定與多存檔槽已做**(R157/R158)。
+> R173 整理:原 §6 的已完成條目(✅/刪除線/「已完成(近期)」清單)已移除——完成紀錄見 §1「里程碑歷程」、§3 各 R## 與 `git log`。以下只列**查無實作**或**待驗證**的候選;**動工前先依 §3 / 程式 / 資料核對是否已被後續里程碑做掉**(原 §6 長期滯後)。開新功能務必沿用「§4 開發節奏」:實作 → 測試 → 平衡 → 煙霧 →(ultracode 開時)對抗式審查 → 覆核修正。
 
-0. **城戰/領主區路線(已立藍圖,Oblivion+Skyrim 參考,逐 Phase 推進)** —— ✅ **Phase 1 已做**(見 §1「領主區 Phase 1」:第 4 城區 `領主區 👑` + 謁見領主,讓 21 城主活起來)。藍圖:
-   - ✅ **Phase 2 已做**(見 §1「領主區 Phase 2」):領主委託(source `ruler`)→ `city_standing` → 達 `THANE_STANDING` 受封武士;特權=該省賞金寬待 + 侍從 + 信物。新 Character 欄 `city_standing`/`thaneships`。
-   - ✅ **全城武士化已做**(使用者:每個城都要能成為武士):`court.generate_ruler_commissions(gamedata)` 於 `get_gamedata` 載入後就地為**每座無手寫委託的有領主城/鎮**程序化生成 2 委託(肅清在地生態怪 +1 / 清剿省內最低危險地城 +2 → 滿 3)+ 預設信物(`_PROVINCE_GIFT`)/侍從(`_HOUSECARLS`),登錄進 `gamedata.quests`;**決定性、冪等、存讀檔穩定**(qid `ruler_auto_<loc>_N` 每次載入重建相同)。手寫委託(`rulers.json` 已有 `quests`)保留並覆寫:**重點城已手寫考據委託**=布魯瑪 + 帝都/白漫/維威克(共 4 城)。**加重點城考據委託純改 rulers.json `quests`+`thane_gift`+`housecarl` + quests.json;調程序化內容改 `court._province_objectives`/`_PROVINCE_GIFT`/`_HOUSECARLS`**。33 城主全可受封(`test_court` 守門)。
-     - 🔴 **反「一批解決整省」(使用者回報委託過於重複,如天際全是打蜘蛛+同一地城)**:`_province_objectives` 回傳每省**生態怪清單 + 地城清單**(非單一);`generate_ruler_commissions` 按**省內序位 `i`** 輪替:`cr=creatures[i%nc]`、q2 `dungeon=dlist[i%nd]`,且 q1 **型別輪替**(`i%3`:0=肅清獵殺 / 1=懸賞較兇怪〔`creatures[(nc-1-i//3)%nc]`〕/ 2=採辦藥材)。採集料由新 `court._province_forage(gd)` **掃 events.json 採集事件**(`explore` context + `provinces` + 給 item 的選項)推導 → 無採集事件的省(艾爾斯維爾)該 slot 退回獵殺。效果:打一批怪/清一地城只解到對應那幾城,而非整省;仍各達 `THANE_STANDING`、**決定性冪等**(sorted+穩定 qid)。`test_province_commissions_are_varied` 守(同省 ≥3 q1 標的 / ≥2 地城 / kill+collect 型別)。
-   - ✅ **Phase 3+4 已做(合併,混合戰鬥制)**(見 §1「城戰」):**城為單位、各城主自有立場**(rulers.json `stance`,使用者拍板);選邊(`allegiance`)→ 對敵城**圍城方略**(7 個技能門檻作戰選項,潛行/社交/工具/魔法系都有攻城用途,削守軍)+**輕量化強攻**(單場 `combat`)→ 破城翻轉 `city_faction`。平衡 sim 背書(小城可強攻、大城須廣技能佈局)。`systems/politics.py`。
-   - **後續(此里程碑刻意未做)**:佔領後收稅(週期金幣)、駐軍隨時間重建、自走 AI 陣營戰爭、攻下可安插自己為領主、公會與大義綁定、武士所在城翻敵時 Thane 特權暫停。
-   - **鐵律**:政治可變狀態寫 `politics.json`/Character(預設值向後相容),地理永遠在 world.json;加領主對話/委託/陣營儘量純改 JSON;每 Phase 走完整 §4 節奏。
-   - ✅ **招兵買馬 階段一已做**(見 §1「招兵買馬 階段一」):`systems/warband.py` —— 領主/首領門檻 + 營地(野外/佔領清空地城)+ 兩級軍制(親衛 companions / 士兵 soldiers)+ 招募 + 攻城整合(大軍壓境 op + 實戰援軍)。城戰的金幣/領袖路線成立(純戰士帶軍可取城)。
-   - ✅ **招兵買馬 階段二已做**(見 §1「招兵買馬 階段二」):軍餉(`tick_upkeep` 週期金幣沉/付不出逃兵)+ 永久傷亡(`run_battle` casualties out-param → `apply_casualties` 名冊扣減,攻城陣亡不復生)+ 親衛複合來源(`warlord:true` 將領 veteran,唯營地可招)。把軍隊從「零成本永久常駐」修成「須維持、會折損」的資源。
-   - ✅ **城戰階段三已做**(見 §1「城戰階段三」):佔領收稅(按居民數量)− 駐軍維護費(`politics.tick_tax`,鏡像軍餉鉤子)+ 輕量叛亂計時(駐軍流失→民心浮動稅斷→潰散則城叛,可 `reinforce_garrison` 回防)+ legacy 補回報債(城/武士/兵計分)。收支閉環成立。🔴 紅線:稅基用 `held_tax_cities` 非 `held_cities`。
-   - ✅ **城戰階段四已做**(見 §1「城戰階段四」):領地全局總覽(`action_territory`,遠程回防)+ 駐軍自動緩慢重建(`GARRISON_REGEN_PER`,僅安定、淨 −4、不破叛亂)+ Thane 翻敵特權暫停(可逆)。零新存檔欄位。
-     **🚧 後續(階段五/未做)**:AI 陣營自走戰爭(活的政治地圖,大型需 sim)+ 攻下自任領主 + 公會與大義綁定。
-1. **內容難度第二階段 / 實機微調**:elite 已上但只在 danger≥4 野外 + 龍喉巢穴/灰燼墓塚出現;可加更多終局區、把 elite 接進更多地城首領池、跑過後微調 elite 數值(魔人領主/巨龍仍偏硬,模擬是 no-heal 下限)。
-2. **新省份擴充**(高價值/低風險,純資料):地圖 UI 與群戰都已能撐;加 `world.json` 地點 + `dungeons.json` + `bestiary` 生物 + `rulers.json` 城主即可。
-   ⭐ 世界已**閉合成大環**(見 §1「地圖擴展:黑沼澤」——黑沼澤已把賽羅迪爾↔晨風接成環)。再加新省請沿用該模式:**雙向連通、最好再閉一個環**(別接成走廊尾巴);新城/鎮**務必同步加 `rulers.json` 城主**(否則 `test_world` 紅);新地城首領是 elite 就加 `"raw": true`;**新地點記得加 `biome`、主題新怪加 `biomes`**(見 §1「細化省分」,讓生態遭遇分流);新省可加 `trigger.provinces` 風味事件 + `provinces` 在地懸賞;**新地點記得加 `biome`、主題新怪加 `biomes`,新 biome 要補 `test_detailing` 兩個 valid-biome set**。✅ **漢默法爾已做**(西環/desert/抗火弱霜)、✅ **高岩已做**(西北環/moor/抗魔抗霜弱電)、✅ **瓦倫森林已做**(§1「瓦倫森林 Valenwood」西南環/雨林 jungle/**抗霜抗毒弱火**/5 雨林怪/絞藤蛛巢/玻璃整甲掉落)。**元素軸**:火剋×3(snow/swamp/瓦倫)、霜剋×2(ashland/desert)、電剋×1(高岩)、✅ **毒剋×1(艾爾斯維爾草原,首個弱毒省 → 回饋塗毒/煉金刺客)**;**剩餘可候選**:落錘外島羣、史科威爾(若再開省,毒/火/霜/電軸均已用,可循「全新機制」路線如斯庫瑪)。✅ **艾爾斯維爾已做**(§1「斯庫瑪/月糖成癮系統 + 艾爾斯維爾省」:savanna 弱毒/南方大環 + 仿吸血鬼的斯庫瑪成癮機制)。
-   ✅ **細化省分已做**(見 §1):生態遭遇表(biome)、告示板按省過濾、天際/晨風補密度、四省 NPC/在地任務/風味事件;**再進一步**亦做了 heartland 招牌生態怪、2 條在地任務鏈、NPC rumor 指路/補齊委託。
-   後續評估過、可再做(依槓桿):~~**商店法術分散**(海芬古/黑光城法術重疊、鎮級無法術 → 各省守一學派強制跨省採購)~~ ✅ **已做**(見 §1「城鎮服務專精化」/ R29:各省守護學派 + 保底集 9 道 + imperial_city 通才;順手補 6 空法術城、清 rimmen/torval 孤兒)、~~具名地標與發現~~ ✅ **已做**(見 §1「區域細化:具名地標與發現系統」—— 專用 landmarks.json + game_loop hook,首次抵達一次性發現,邊境 4 節點全有)、**地區氣候機械效果**(非染病版,低槓桿)。**邊境刻意不補 NPC**(全荒野、無城主模型 → 已以地標填內容)。
-3. **成就系統**(重玩性,種子已開放):✅ **核心已做**(R55:首達通知〔game_loop 冒泡·零存檔欄·session 暫態去重〕+ 27→37 成就補後期軸〔親王誓福/血族·獵群頂階/黑兄中階/疾病/魂石/親王 boss〕,複用既有 accessor;結算/角色卡/web 顯示原已完整)。**剩餘可再加**:需新追蹤欄位的「挑戰型」成就(無傷清地城 / 純法系通關 / 黑兄五戒;各需新存檔欄 + combat/quest 鉤子,R55 刻意 out-of-scope 守零風險);成就達成計分/徽章/種子成就表分享。每日/分享種子的前置(種子輸入)已完成。
-4. ✅ **體力對法師仍是死資源 —— 已做**(見 §1「法師體力資源對稱化」):施法耗體力(`magic.spell_fatigue_cost`)+ 低體力降法效(`formulas.cast_fatigue_power_factor` ×0.75)+ 法袍套裝省體(`cast_fatigue_factor` 0.80/0.65);純規則層、零存檔欄位、刺客紅線零位移。
-5. **半成品/微調**:創角問答推職業(DESIGN 標暫未做);更多事件/任務。(✅ 護甲附魔擴到技能/抗性、武器命中觸發 已做,見 §1「附魔系統擴展」。)
-   - ✅ **戰法師體驗 —— 已做**(見 §1「八職功能性身份網格」):**法力回擊** + **spellblade 里程碑(共鳴一擊)** 皆已實作,且毀滅 50/75 互換後**可兼得**(雙 gish loop 成環);**戰法師套裝**評估後不做(本作無 armor→施法懲罰,輕甲套裝=陷阱裝)。
-6. (天花板更高、工程量大)主線劇情、坐騎成長線(bond/veterancy;坐騎現為買斷即滿)。(✅ 同伴持久 HP/羈絆 + **同伴角色化**〔具名招募/專屬支線/對話/忠誠弧頂點〕已做,見 §1;✅ **房產已基地化**〔R110:tier/藥草園/臥房/商誼/legacy 承認〕,剩管家駐紮〔非經濟價值再設計〕與家用鍛爐〔待無鍛造城房產〕見 §3 R110 前瞻)
+**查無實作**(程式 / 資料 / handoff §1·§3 全文未見對應)
+- **新省份擴充**(高價值/低風險,純資料):落錘外島羣、史科威爾。加 `world.json` 地點 + `dungeons.json` + `bestiary` 生物 + `rulers.json` 城主即可;元素軸(火剋×3、霜剋×2、電剋×1、毒剋×1)均已用,若再開省可循「全新機制」路線(如斯庫瑪)。**新增省份 checklist**:雙向連通、最好再閉一個環(別接成走廊尾巴);新城/鎮務必同步加 `rulers.json` 城主(否則 `test_world` 紅);新地城首領是 elite 加 `"raw": true`;新地點加 `biome`、主題新怪加 `biomes`,新 biome 要補 `test_detailing` 的 valid-biome set(`tests/test_detailing.py` 內共用的 `valid`);可加 `trigger.provinces` 風味事件 + `provinces` 在地懸賞。
+- **開局背景**:兩省已各有開局(高岩 3、瓦倫森林 2),尚缺具名風味——高岩「布雷頓獵巫人/匕落出身」、瓦倫森林「波斯莫綠約獵手/海文海商」(純改 `origins.json`,低槓桿);`armor` 起手整套裝(`SET_SLOTS` 四件;現有開局最多給 2 件護甲)。
+- **其餘可入會組織**:丹莫大族 / 三聯神殿 / 影鱗 / 刀刃 / 黑蠕蟲(各自獨立一輪;現有 9 個組織見 `factions.json`)。
+- **公會**:更多分支壓軸 / 公會委託告示;階級設施權限(盜賊/戰士/法師三核心公會已由 R88/R89 做,其餘組織未做)。
+- **黑暗兄弟會**:夜母「祕密之死」隨機合約(超出 6 階後的無限委託)/ 違反五戒的懲處(殺同袍→被追殺)/ 聖所升級與密探同伴 / 具名導師(露西恩式)對話包裝 / 謀殺後即時衛兵圍捕(R109 已有目擊制——被目擊吃賞金+惡名——但無即時圍捕)。
+- **成就**:需新存檔欄的挑戰型(無傷清地城 / 純法系通關 / 黑兄五戒;各需新欄位 + combat/quest 鉤子);達成計分 / 徽章 / 種子成就表分享。
+- **創角問答推職業**(DESIGN 標暫未做)。
+- **坐騎成長線**(bond / veterancy;坐騎現為買斷即滿);**房產**管家駐紮、家用鍛爐(見 §3 R110 前瞻)。
+- **附魔**:雙重附魔(最高摩擦軸,留待)、秘術里程碑騰位後的附魔專屬節點。
+- **吸血鬼解咒任務**的具名 NPC / 對話包裝。
+- **地區氣候機械效果**(非染病版,低槓桿)。
 
-> ✅ 已完成(近期):**附魔深化(武器命中效果 + 充能 + 靈魂石經濟)**(§1/R15:武器面從「即時元素+吸血/麻痺/再生」拓成有打法差異的命中效果目錄 —— **Phase 1** 元素 DoT〔焚燒/凍緩〔weaken〕/感電〔扣魔+stagger〕〕+ 命中吸取〔生命/魔力/體力,health 對 solo 受夾〕+ **充能模型**〔命中擒魂·麻痺全階可用但每觸發扣一格、魂石=電池容量、`action_recharge_enchant` 回充;新存檔欄 `enchant_charges`〕;**Phase 2** 靈魂石經濟〔擒魂改填手上**空魂石**、大靈魂石 soul5、**黑魂石**囚人形魂〔`bestiary sentient`+空黑魂石+法術擒魂+infamy〕、法師城供空魂石〕→ 縛魂術對上魂/大靈魂/黑魂/AoE 不可取代;**Phase 3 秘術節點刻意未做**〔樹滿+soul_siphon 已放大新效果,使用者拍板〕。擴 `enchws`〔5 段不變·向後相容·玩家專屬〕+ `magic.resolve_soul_capture` + 純資料 items/bestiary;零段數變動、一個存檔欄 R03 相容;**對抗審查(5 維 fan-out + 逐項對抗驗證)修 2 真 bug**〔凍緩/感電 rider 雙持/多擊 weaken·stagger 去重、`resolve_soul_capture` 過期法咒誤判 spell-trap → 加 `turns>0`〕+ **balance 紅線駁回**〔一武器一附魔 → 雙持至多 2 sustain,實際 ≤ 弱 solo boss 傷害;且本作接受 apex 無傷清 solo,紅線是「不秒殺」而非「不可耗血」,sim 0% 秒殺守;vampiric 無 solo 夾為既有 sim 背書設計、不動;absorb_health 已 ×0.5 solo 夾〕;`sim_assassin` 紅線守〔solo 0% 秒殺、麻痺 solo 免疫不動〕、`test_equipment`+5/`test_magic`+6 守)、**城鎮服務專精化**(§1/R29:城鎮差異化第一刀 —— 訓練師依公會/lore 專精〔戰士城戰鬥/法師城魔法/盜賊城潛行;由公會推導零撰寫,單系城免空選單〕+ 11 招牌城**宗師指點**破 `TRAINER_CAP=75`〔馬卡斯鍛造/冬堡毀滅/裂谷開鎖…〕+ 法師公會**法術學派分省守護**〔各省主賣一派 + 保底集 9 道,別派進階跨省採購,imperial_city 通才;順手補 6 空法術城、清 rimmen/torval 孤兒〕;`data/trainers.json` + `world.json spell_stock` + `world.trainer_*`/`action_trainer`;**零存檔欄位、不需 sim**;`test_world` 加 `test_trainer_specialization`/`test_spell_school_dispersal`)、**附魔系統擴展**(§1:護甲→技能/抗性〔encha 5 段+向後相容、複用飾品 kind〕+ 武器→命中觸發 吸血/麻痺/再生〔enchws,solo boss 免疫麻痺反鎖王〕;零存檔欄位、刺客紅線零位移;對抗審查 0 真 bug)、**法師體力資源對稱化**(§1/§6#4:施法耗體力 + 低體力降法效 + 法袍套裝省體;純規則層零存檔、刺客紅線零位移;對抗審查補 summon 漏接)、**斯庫瑪/月糖成癮 + 艾爾斯維爾省(第八省)**(§1:savanna 弱毒生態軸 + 賽↔艾↔瓦南方大環 + 仿吸血鬼的「亢奮↔戒斷」成癮天平〔亢奮不碰力量/潛行以守刺客紅線〕 + 淨糖解癮;對抗審查修「免費解癮」漏洞)、**世界拓樸改造**(走廊→有環圖,§1)、**種子開放給玩家**(原 §6.4 前置)、
-> **公會深度化**(§1:門檻 + 福利/俸祿 + 對立 + 分支)、**裝備系統擴展**(§1:套組/套裝 + 飾品/附魔 + 武器流派 + 法杖)、
-> **開局背景「不一樣的人生」MVP**(§1:6 開局,資料驅動 `apply_origin`,零存檔風險)、
-> **吸血鬼化系統**(§1:A 狀態機 + B 戰鬥身分 + C 陽光/社交詛咒 + D 解咒任務 + E 夜之裔開局,**五層全做**)、
-> **地圖擴展「黑沼澤閉合世界大環」**(§1:7 新地點/5 新怪/1 沉廟/2 城主,世界鏈→大環,純資料四檔)、
-> **黑暗兄弟會(里程碑)**(§1:血債招募 + 6 合約晉升階梯 + 五戒/淨化分支 + 夜母祝福 + 暗殺者開局;第 4 公會,刺客流派的歸宿)、
-> **細化省分**(§1:生態遭遇表 biome + 告示板按省過濾 + 天際/晨風補密度 + 四省 NPC/在地任務/風味事件;活化原本全域共享的 province 維度,地點 20→23)、
-> **再進一步細化**(§1:heartland 招牌生態怪 + 2 條在地任務鏈 + NPC rumor 指路/補齊委託;對抗審查修掉 minotaur 危險度)、
-> **城市補全**(§1:按 TES 正史補 13 標誌城市 + 21 城主 + 26 NPC,各省 1 城→多城;地點 23→36,城市設計 workflow + 整合 + 對抗審查)、
-> **NPC 增補**(四省平行補 25 名 NPC → 每城 3/每鎮 2、總 59 名,角色多樣 + rumor 指路;純資料 npcs.json)、
-> **空城補滿 + 晨風生態**(承委託多樣化審計:24 座非邊境城原 0 NPC〔「城市補全」那波只加 world/rulers 未加 npcs〕→ 8 省並行 workflow 補 71 NPC〔城3/鎮2 全覆蓋,rumor 指路在地地城/鄰城/生態怪〕+ 18 條 npc-source 在地指路任務 + 5 城補至標準;另補 4 隻晨風 ashland 正典生態怪〔崖行鳥/阿利特/尼克斯獵犬/卡古地,生態池 1→5〕→ 晨風委託可輪替、野遇多樣。整合後對抗審查:0 空城、0 跨省張冠李戴、目標全合法;`test_detailing` 加覆蓋率+晨風池守門;NPC 102→178)、
-> **新城功能補平**(承空城審計:新城有 inn/merchant/task_board 卻缺公會/訓練師/馬廄/房產、商店薄 → 補平功能。**lore 精選補公會**:20 座 guildless type=city 各 +1 契合公會〔fighters+8/mages+6/thieves+6;thieves 9→15、fighters 15→23、mages 19→25;companions 維持白漫獨有、towns 不補〕——加公會=純 `services` 標籤,會籍/任務全域共用零新內容。**+trainer** 補 7 缺城〔各省大城皆可練技〕。**stable/house** 各 +5 新樞紐〔獨孤城/艾爾登根/科林斯/奧西尼姆/塔尼斯〕。**商店補厚**:薄城補省份/公會在地貨〔法師城加魂石/法杖、盜賊城加 lockpick/ruby、戰士城加武具〕。純資料 world/mounts/houses;line-based 改 world.json 保格式;`test_world` 加 `test_city_services_and_shop_integrity` 守〔每 city 有公會+trainer、商品 id 全合法、stable/house 城存在、無重複 service〕;0 無公會城/0 無效 id)、
-> **城內分區 + 簡化選單**(城鎮服務拆成 市集區🛒/公會區⚜/廣場🏛 三個可進入子選單,頂層只剩「城區」三入口;群名簡化 製作/人物;野外/地城自動無城區)、
-> **偵查→開戰前備戰空間**(潛近成功+未被伏擊時,依偵查技能換得 1/2/3 個備戰動作:施增益/召喚(鎖 scout≥50)/喝藥/塗毒;順解召喚開場佔回合痛點)、
-> **格擋接上技能縮放**(技能健檢抓到格擋等級空轉 → `block_damage_factor` ×0.9→×0.4)、
-> **技能里程碑 Skill Mastery P1**(§1:6 條被動達門檻 50/75/100 自動解鎖,反 min-max;含對抗審查覆核修正;P2/P3 路線已拍板)、
-> **飾品實戰崩潰修正**(§1:戴飾品被物理擊 `KeyError`,既有 bug)、
-> **反 min-max 補洞:說服/撬鎖/行竊接上 practice 成本**(§1)、
-> **反 min-max 補洞二:煉金/附魔/修理接上 practice 成本**(§1:製作/維護系同型零成本刷技能,全堵)、
-> **Skyrim 式商店庫存**(§1:有限數量+定時補貨+補貨變化,堵煉金套利無限金幣)、
-> **煉金材料採集全覆蓋 + 製作系統**(§1:15 材料全可野外採/獵;第一個泛用配方加工 recipes.json,獸皮→皮甲)、
-> **領主區 Phase 1**(§1:第 4 城區 👑 謁見領主,讓 21 城主活起來;§6 #0 立攻城戰分層藍圖)、
-> **領主區 Phase 2**(§1:領主委託 source `ruler` → 城邦功勳 → 武士冊封 Thaneship;特權=該省賞金寬待+侍從+信物;布魯瑪 2 委託為 MVP 範例)、
-> **城戰 Phase 3+4 合併(混合戰鬥制)**(§1:城為單位立場 + 宣誓效忠 + **圍城方略 7 技能作戰 + 輕量強攻** → 破城易幟;平衡 sim 背書;對抗審查確認 farm 已結構性根治)、
-> **招兵買馬 階段一**(§1:領主/首領門檻 + 營地 + 兩級軍制(親衛/士兵)+ 招募 + 攻城整合(大軍壓境 + 實戰援軍);城戰金幣/領袖路線)、
-> **招兵買馬 階段二**(§1:軍餉週期金幣沉/付不出逃兵 + 攻城永久傷亡(run_battle casualties 回報 → 名冊扣減)+ 親衛複合來源(warlord 將領 veteran);把軍隊修成須維持、會折損的資源)、
-> **城戰階段三**(§1:佔領後收稅(按居民數量)− 駐軍維護費 + 輕量叛亂計時(駐軍流失/民心浮動/城叛/回防)+ legacy 補城戰回報債;招兵軍餉「出」↔ 佔領收稅「進」收支閉環;🔴 紅線=稅基只認 held_tax_cities;經評估 workflow 定案 T0)、
-> **城戰階段四**(§1:領地全局總覽(遠程回防,免逐城進 court)+ 駐軍自動緩慢重建(僅安定、淨 −4/期、不破叛亂計時)+ Thane 翻敵特權暫停(可逆);零新存檔欄位;規劃 workflow 設計、plan-mode 核定)。
->
-> 地圖後續可再加:黑沼澤**起手任務鉤子 / 開局背景**(亞龍人沼澤出身,純改 quests/origins JSON);再開一省續閉環(✅ 漢默法爾/高岩/瓦倫森林/艾爾斯維爾已做,西環/西北環/西南環/南環);高岩**開局背景**(布雷頓獵巫人/匕落出身)或瓦倫森林開局(波斯莫綠約獵手/海文海商,純改 origins JSON);贊密爾沉廟可加後門讓它變環上節點。
-> 公會後續可再加:更多分支壓軸 / 階級設施權限 / 公會委託告示。(✅ 暗殺者公會=黑暗兄弟會已做、✅ **戰友團〔第 7 公會,白漫·狼人血脈歸宿,獸血儀式移籍內圈〕已做**,見 §1)。Phase D ③+ 其餘可入會組織(丹莫大族/三聯神殿/影鱗/刀刃/黑蠕蟲)仍各自獨立一輪。
-> 黑兄後續可再加:夜母「祕密之死」隨機合約(超出 6 階後的無限委託)/ 違反五戒的懲處(殺同袍→被追殺)/ 聖所升級與密探同伴 / 謀殺後即時衛兵圍捕(目前靠賞金+城門盤查)/ 具名導師(露西恩式)對話包裝。
-> 裝備後續可再加:獨特/具名裝備(套裝外的具名神器)、~~附魔護甲擴展到技能/抗性~~ ✅ **已做**、~~武器附魔可帶狀態(吸血/麻痺)~~ ✅ **已做**、~~回復型附魔(per-turn regen)~~ ✅ **已做**(見 §1「附魔系統擴展」:護甲 skill/resist + 武器 vampiric/paralyze/regen,solo boss 免疫麻痺)。~~武器附魔帶元素 DoT~~ ✅ **已做**(見 §1/R15「附魔深化」:武器命中 DoT〔焚燒/凍緩/感電,帶 rider〕+ 命中吸取 + 充能型擒魂/麻痺 + 靈魂石經濟〔空魂石填充/大·黑魂石〕,Phase 1+2;**Phase 3 秘術節點刻意未做** —— 秘術樹已滿〔嚴格二選一〕且 soul_siphon 已自動放大新效果)。可再加:**附魔可疊雙效(雙重附魔)**(最高摩擦軸,留待)、秘術里程碑騰位後的附魔專屬節點。
-> 開局後續可再加(✅ 已加 6 個:戰友團/盜賊公會/阿利克爾劍客/海難倖存者/神殿治療者/獸人放逐者,共 14 開局):開局附帶**起手任務鉤子**(MVP 刻意未做)、`armor` 起手整套裝(目前開局只給單件護甲/飾品/法杖)、開局選單依職業/種族過濾推薦。
-> 吸血鬼後續可再加:~~夜視/魅惑等更多吸血鬼能力、吸血鬼專屬裝備~~ ✅ **已做**(R56:夜視〔夜間潛近/迴避〕+ 戰鬥魅惑凝視〔fear〕+ 社交魅惑〔persuade/talk_down〕+ 夜影暗影套裝〔偽裝入城·requires_vampire〕)、~~巢穴~~ ✅ **已做**(R51:血沼地窖隱穴 —— 安心進食/休息/密窖 + 血族族長招募血僕)、~~狼人(同套狀態機另一支)~~ ✅ **已做**(見 §1「狼人化 / 獸形」)、~~NPC 識破後衛兵敵對(目前只社交封鎖)~~ ✅ **已做**(R50)、解咒任務的具名 NPC/對話包裝。
-> 狼人後續可再加:~~餵食進程樹~~ ✅ **已做**(§1「狼人深化」:5 階獸血進程)、~~希爾辛神器(獵者之戒)~~ ✅ **已做**、~~howl 咆哮恐懼 power~~ ✅ **已做**(恫嚇之嚎,solo 免疫)、~~野外主動變身(目前限戰鬥語境)~~ ✅ **已做**(R50)、~~獸形在城衛兵實戰圍捕(目前 shunning-light)~~ ✅ **已做**(R50)、~~月相影響變身~~ ✅ **已做**(R50:滿月免冷卻+時程加成)、~~狼人專屬巢穴/同類 NPC~~ ✅ **已做**(R51)、~~巢穴升級/血族階級政治~~ ✅ **已做**(R52:獵群階級梯〔客狼→頭狼〕+ 獸血之盛 perk + 弒位/繼承頂階);**剩餘**:吸血鬼夜視/魅惑/專屬裝備。
-> 技能里程碑後續可再加(**P2/P3,路線已拍板**):P2 持久 `mastery_*_bonus` 加成層(吸血鬼模式)+ 更多真權衡戰鬥型(**逐條 sim 背書 + 非 boss 精英秒殺率覆核**);P3 純改 JSON 補三系密度(優先 marksman/light_armor 等冷門技,避免 sneak 過載);可另評估『達門檻二選一』能動性(引入最佳化空間=支柱級取捨,需使用者拍板)。
+**待驗證**(是否已被後續里程碑涵蓋不確定;動工前先核對)
+- 公會與大義綁定(城戰後續):「大義」系統存在,但公會↔大義綁定是否做過不確定(R96 派系敵意可能已涵蓋)。
 
-> ⚠️ 開新功能務必沿用「§4 開發節奏」:實作 → 測試 → 平衡 → 煙霧 →(ultracode 開時)對抗式審查 → 覆核修正。
+**設計註記**:邊境(18 節點:12 野外、4 戍堡 town〔皆有城主〕、2 地城)目前 0 NPC——當初刻意不補,以地標填內容。
+
+**附魔裁決**(自原「已完成」清單的附魔深化條目搬回;使用者拍板):**Phase 3 秘術節點刻意未做**〔樹滿+soul_siphon 已放大新效果,使用者拍板〕;**balance 紅線駁回**〔一武器一附魔 → 雙持至多 2 sustain,實際 ≤ 弱 solo boss 傷害;且本作接受 apex 無傷清 solo,紅線是「不秒殺」而非「不可耗血」,sim 0% 秒殺守;vampiric 無 solo 夾為既有 sim 背書設計、不動;absorb_health 已 ×0.5 solo 夾〕。
 
 ---
 
@@ -3031,7 +2985,6 @@ R88 讓**盜賊公會**拿到階級解鎖招牌動詞(斯庫瑪走私),但**戰�
 - `run_battle` 沒有回合上限(互動式靠玩家逃跑當出口;若要寫純自動模擬請用 `combat.auto_resolve`,它有 `max_rounds`)。
 - ✅ **同伴持久 HP/負傷/羈絆 + 角色化已做**(見 §1「同伴系統深化」+「同伴角色化」):HP 跨戰持久、倒下→負傷 benched(休息康復)、並肩獲勝累積羈絆;**具名招募任務 + 羈絆階解鎖的專屬支線 + 就地對話 + 完成支線的忠誠弧頂點(戰術盟友光環/被動非戰鬥槓桿)**。攻城永久死(既有)+ 冒險模式正常戰鬥不永久死(刻意寬容)。**剩餘**:冒險模式以外的永久死選項、坐騎、同伴間互動/吃醋、開局起手同伴任務鉤子。
 - `mass_paralysis` 等純 CC 法術單用不會贏(無傷害),是 combo 工具,符合設計。
-- **🔴 既有潛在缺陷(R108 審查掃出·待修)**:`rogue_thief`/`blade_agent` 無任何生成路徑(spawn-only 且無人 spawn)→ R99/R100/R101 的 23 條反間/地下/臥底任務 kill 目標打不到(接了永遠完不成)。guard `tests/test_relics._KNOWN_LATENT_UNREACHABLE` 已鎖住防新內容再犯;修法(給兩怪生成路徑 or 犯罪大廳「出獵」execute 比照 action_contract)留下一輪、使用者已拍板。
 - 沒有 CI;提交前靠 `bash check.sh` 同時硬跑純 Python 與 Chromium 回歸。可再加 GitHub Actions 自動執行。
 - **測試基建瘦身(2026-06)**:`run_all.py` 改**自動探索** `tests/test_*.py`(刪原「import 清單 + modules 清單」雙清單 footgun);所有模組 `run()` 統一 `sorted(globals())` 自動跑 `test_*`(新測**無需登錄**;轉換時揪出 1 個原本靜默漏跑的 `test_mastery.test_dedup_nobrainer_wave`)。修 `test_web._drive_one_game` 競態(最終答 quit 後盲等永不到來的幀吃滿 `timeout=5`×2 局)→ `timeout=0.5`+`is_alive()` 判結束 → 套件 **11.9s→3.0s(4×)**。純動 `tests/`、零產品碼 → `sim_assassin` byte-identical。
 - **品質精煉(2026-06,承健康分析)**:① **base-write 紅線靜態守門** `test_redline_base.py`:AST 掃 `tesrpg/**/*.py`,斷言對 base 儲存(`char.skills`/`attributes`/`base_max_health`)的寫入只在白名單 `{creation, progression, stats}` 發生 → 把「絕不寫 base、加成走疊加層」這條**最高紅線從人工守變機器守**(零執行期開銷,附反向驗證證 scanner 有效);② 補 3 個薄專屬測試 `test_crime`/`test_enchanting`/`test_inventory`(原僅整合測試覆蓋)。**刻意不做** main.py dispatch dict 化(161 elif god-module 大重構·純美觀·回歸風險高)。純動 `tests/`、零產品碼 → `sim_assassin` byte-identical;`run_all` 71→**75**(自動探索 +4)。
@@ -3042,10 +2995,5 @@ R88 讓**盜賊公會**拿到階級解鎖招牌動詞(斯庫瑪走私),但**戰�
 
 ## 8. Git 狀態
 
-- 已 init(`main`)、`.gitignore` 排除 `__pycache__`/存檔;均已推上 GitHub。近期 commit(新→舊):
-  - `04ab28f` 終局內容:龍喉巢穴地城 + elite 接首領 → `cc6686f` 內容難度:elite + 群戰 + BOSS 單獨 →
-    `6bd9d6a` 格擋體力 + 運動降耗 → `5ed464a` 運動旅行加速 → `da33db8` M16 潛行系戰鬥化 →
-    `6472732` M15 升級改版 → `4678a72` M14 護甲附魔 → `67726c6` UI 改版 → `52cf9ca` 初始。
-- 日後更新:`git add -A && git commit -m "..." && git push`(commit 訊息結尾請加
-  `Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>`)。
+- 分支 `main`,直推 GitHub(SSH 已認證);近況以 `git log` 為準。提交慣例見 §3 R22(驗證綠 → 自動 commit & push;commit 訊息末加 `Co-Authored-By:` 行,模型名依當次 session 指示)。
 - 本 `handoff.md` **已納入版控**(每完成一輪請順手更新並 commit,讓下個 session 不踩空)。

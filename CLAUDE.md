@@ -85,6 +85,7 @@ PYTHONPATH=. python3 sim_assassin.py      # 平衡回歸模擬(改戰鬥常數�
 | R19 | vampirism.update 每圈頂端 | migrate, recompute |
 | R20 | skooma.update 在 vampirism 後 | re-sim, migrate |
 | R21 | 門檻只認 base_skill() | re-sim, migrate |
+| R22 | 提交慣例:驗證全綠即自動 commit & push 到 main(不需明說;紅燈不提交先修);commit 訊息繁中 + Co-Authored-By |  |
 | R23 | 對話條件複用 events.meets(無 state 鍵就地加、需 state 走 meets_dialogue) | save |
 | R24 | AI 戰爭 aiwar.update 在 worldstate 後/tick_tax 前 | re-sim, save |
 | R25 | 房產 house_stash 不計負重(存穿戴擋免漏 recompute) | re-sim, recompute, save |
@@ -237,6 +238,7 @@ PYTHONPATH=. python3 sim_assassin.py      # 平衡回歸模擬(改戰鬥常數�
 | R66 | resist 附魔再平衡:soul^0.7 非線性 + 魔抗/單元素分流(承魔抗免疫評估)；🔴 sim_assassin byte-identical(刺客無 resist 附魔·隔離 wor… | save |
 | R171 | 四原則分工:scout(Haiku 唯讀檢索/長文摘要)/ counsel(Opus 唯讀顧問,紅線區設計取捨才找,每里程碑 ≤2)+ 作業指南 ops.md;共享工作樹禁改 git 狀態 | |
 | R172 | 代理使用帳本 hook:PostToolUse 記帳(主對話=agent_type 空)+ Stop 補「代理檢查」實測數字(同輪最多一次);hook 永不擋人、exit 0;里程碑=R## | |
+| R173 | 開發檔案整理第 1 層:只改程式證實過期的事實+已完成清單;刪前逐條清單經使用者簽核;§1 敘事 72 段無 R## 對應,不得當重複砍;build.md 為 6/18 快照 | |
 
 ## 自動提交閘門 / 換 session 前檢查表
 
