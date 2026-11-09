@@ -53,7 +53,7 @@ PYTHONPATH=. python3 sim_assassin.py      # 平衡回歸模擬(改戰鬥常數�
 |---|---|---|
 | 主對話(Sonnet) | 引導流程、寫碼、測試、審查、提交、彙整各代理結果 | 設計方向與平衡取捨(問使用者) |
 | scout(Haiku,`.claude/agents/scout.md`) | 大量閱讀(讀而不改 >~1000 行或 ≥5 檔)、檢索、摘要;附 路徑:行號 | 判斷、審查、解讀架構 |
-| counsel(Opus,`.claude/agents/counsel.md`) | 紅線區設計取捨、全專案收斂點、驗證反常、推翻鐵律時,給反例/風險/建議 | 拍板、改檔 |
+| counsel(Opus,`.claude/agents/counsel.md`) | 紅線區設計取捨、全專案收斂點、驗證反常、推翻鐵律、全域機制(hook/settings)時,給反例/風險/建議 | 拍板、改檔 |
 
 - 🔴 Opus 只給建議、不拍板;counsel 每里程碑至多 2 次、簡報 ≤150 行、不開 `/advisor`;有實作的輪次結尾寫一行「代理檢查」。
 - 🔴 scout 並行 ≤3、按問題切;子代理不得在共享工作樹改 git 狀態(stash/checkout/restore/reset --hard/clean),需隔離用 worktree。

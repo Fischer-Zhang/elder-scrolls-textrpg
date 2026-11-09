@@ -2887,7 +2887,12 @@ R88 讓**盜賊公會**拿到階級解鎖招牌動詞(斯庫瑪走私),但**戰�
   - scout 擴充為「檢索 + 長文摘要」:摘要題附 路徑:行號 與逐字短引文(≤30 字)。CLAUDE.md 協作分工段改寫,行數不變。
   - **更正**:提案時 H2 把「git 歷史」列給 scout,但 scout 無 Bash(本里程碑不做 hook 守衛,不能給)→ 改為主對話自己跑 git log。
   - **未現場驗證**:scout 摘要契約(逐字短引文)尚未實測;hook 里程碑做 citation verifier 時一併驗。
-- **未做(下一里程碑 hook,設計已定)**:每輪代理檢查(格式與時機見 ops.md §7;收尾缺該行 → hook 回饋量到的讀量、是否動到紅線區、counsel 次數,同輪最多補一次)、帳本(讀取量按輪計、counsel 次數按里程碑計,提交時歸零)、切到 Opus 的提醒、counsel 第 3 次派遣改問使用者;實作前須先確認「工作區未受信任」是否會略過專案層 hook,並補 tests/test_hooks.py 與現場實測。
+- **前置查證(使用者同意診斷 hook、定 O5=X)**:
+  - 互動 session(VS Code)中途新建 `.claude/settings.local.json` 的 PreToolUse/PostToolUse hook 立即生效;`~/.claude.json` 的 `hasTrustDialogAccepted=false` 卻照跑,與文件(互動 session 擋所有 settings 檔 hook)不符,原因不明 → 未動 `~/.claude.json`。`-p` 一律視為已信任;專案子代理 frontmatter hook 須資料夾本身已信任。診斷 hook 已還原。
+  - 量到的事實:同輪內 `prompt_id` 一致;`Read` 的 `tool_response.file.numLines/totalLines` 可得;`Bash` 的 `tool_response` 無 exit code;**子代理內的工具呼叫也觸發同一組 hook,`agent_type` 非 null(例:Explore)且 `prompt_id` 與主對話相同 → 帳本必須以 `agent_type==null` 篩主對話**;Stop 回 `additionalContext` 在同一輪內讓模型補上要求的行,第二次 Stop 的 `stop_hook_active` 為 true(`-p` + Haiku 實測);互動 session 中途新增的 agent 檔不載入(回 `Agent type 'counsel' not found`),需重開 session。
+- **counsel 審查(O5;`claude --agent counsel` 獨立 process,不在 Agent map;Opus 6 輪、輸入含快取約 9.3 萬、輸出約 8.8 千 token)**:建議 A 瘦身版為第一批 — PostToolUse(Read|Edit|Write|Agent) 記帳(含 agent_type/agent_id,主對話只取 `agent_type==null`)、Stop 檢查(`stop_hook_active` 短路,以「本 prompt_id 已提醒」標記保證同輪最多補一次)、腳本整段 try/except(出錯寫錯誤記錄並以一次 additionalContext 告知,不設 `onFailure:"block"`);先放 `settings.local.json` 試跑,數字正確再移進 `settings.json`;第二批(counsel 第 3 次先問、切 Opus 提醒)須先 `-p` 實測相關事件與 auto 模式下的 ask。偵測 hook 沒載入:`/sync` 印帳本最後一筆時間。HEAD 雜湊歸零有誤判(多次提交的里程碑、pull/rebase/amend/切分支、worktree),改用 `git log -1 --format=%ct main` 之後的 counsel 記錄(無狀態);測試的帳本路徑須可用環境變數替換,不碰真實資料。
+- **待使用者拍板(hook 里程碑)**:① 一個里程碑分多次提交時,counsel 上限怎麼算(跟著放寬 / 以 handoff 的 R## 變更界定 / 手動標記);② Bash、Grep 算不算「讀」(第一批建議只算 Read 的 numLines);③ 試跑放 `settings.local.json`(建議)還是直接提交 `settings.json`;④ hook 內部錯誤每個 session 提示一次,還是完全靜默只寫記錄。
+- **未驗證**:`prompt_id` 跨輪與 `/compact` 後是否改變(決定能否省掉 UserPromptSubmit 標記,第一批試跑時觀察);Stop 的 `additionalContext` 在互動 session 的行為;`PostModelSwitch`、`ask` 在 auto 模式下的行為。
 
 ## 4. 開發節奏(ultracode 開著 → 每個功能都這樣做)
 
@@ -2918,6 +2923,7 @@ R88 讓**盜賊公會**拿到階級解鎖招牌動詞(斯庫瑪走私),但**戰�
 
 - R171:scout 1、counsel 1(皆為現場驗證用);審查模式:無(文件與子代理設定,未改遊戲碼)。
 - R171 續(四原則客製版):scout 0、counsel 0;審查模式:無(文件與測試,未改遊戲碼)。代理檢查|Opus:無(O1–O4 皆否)|Haiku:讀量小、皆為已知小檔 → 自己讀|counsel 0/2。
+- R171 續2(O5 + hook 前置查證):scout 0;Explore(Haiku)1(診斷,在 Agent map);counsel 1/2(`--agent` 獨立 process,不在 Agent map);審查模式:無。代理檢查|Opus:O5 符合(hook 設計)→ counsel 已派|Haiku:外部文件頁多份已由 WebFetch 摘要 → 自己讀|counsel 1/2。
 
 ## 5. 設計定案(DESIGN.md §7)
 

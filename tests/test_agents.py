@@ -79,11 +79,12 @@ def test_ops_guide_and_claude_section_present():
     assert os.path.exists(ops_path), "缺作業指南 ops.md"
     ops = open(ops_path, encoding="utf-8").read()
     for needle in ("共享工作樹", "每里程碑", "簡報模板", "升級 Opus", "scout", "counsel",
-                   "讀量門檻", "代理檢查", "/advisor"):
+                   "讀量門檻", "代理檢查", "/advisor", "O5 全域機制"):
         assert needle in ops, f"ops.md 缺關鍵段落或詞:{needle}"
     claude = open(os.path.join(ROOT, "CLAUDE.md"), encoding="utf-8").read()
     assert "## 協作分工" in claude, "CLAUDE.md 缺『協作分工』段"
     assert "ops.md" in claude, "CLAUDE.md 須指向 ops.md"
+    assert "全域機制" in claude, "CLAUDE.md 協作分工須列出 O5 全域機制"
 
 
 def test_agent_bodies_keep_contracts():

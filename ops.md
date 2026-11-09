@@ -26,7 +26,7 @@
 | 階段 | 誰做 |
 |---|---|
 | 1 評估 | 大量閱讀派 scout(可並行);Sonnet 收結論、做推理 |
-| 2 決定方向 | 符合 §4 的 O1–O4 才找 counsel;設計方向與平衡取捨由使用者拍板 |
+| 2 決定方向 | 符合 §4 的 O1–O5 才找 counsel;設計方向與平衡取捨由使用者拍板 |
 | 3 實作 | Sonnet |
 | 4 驗證 | Sonnet 跑 check.sh;4e 審查見 §9;出現 O3 才找 counsel |
 | 5 文件與提交 | Sonnet |
@@ -65,6 +65,7 @@ scout 沒有 Bash,讀不了 git 歷史。`git log` 之類由主對話自己跑,�
 - **O2 全專案共用的收斂點:** `magic.apply_control`、`resolve_attack`、`stats.recompute_max_resources`、`ensure_*` 遷移;或一個設計同時跨三個以上 systems 模組。
 - **O3 驗證違反預期,自查一輪後仍解釋不了:** 預期 byte-identical 的 sim 出現位移、同一測試修兩次仍紅、真瀏覽器回歸定位不了。
 - **O4 推翻既有 R## 鐵律,或審查結論的真偽有爭議:** R39 就出現過審查誤報,審查結論要先驗證再採納。
+- **O5 全域機制:** 新增或修改會留下來的 hook、permissions、settings(影響所有後續 session,失效又不易察覺)。當場還原的診斷不算。
 
 **不找 Opus:** 純 JSON 內容(R02)、文件同步、根因明確的單檔 bug、機械重構、寫測試、跑驗證、提交。平衡數值與設計方向直接問使用者,不讓 counsel 代答。
 
@@ -89,12 +90,13 @@ scout 沒有 Bash,讀不了 git 歷史。`git log` 之類由主對話自己跑,�
 - 不開 `/advisor`:伺服器端顧問每次讀整段主對話(實測:輸入就是整段 transcript),成本隨對話增長;Opus 5.5 的建議對 client 加密,無法稽核。
 - 主對話只在需要和使用者多輪討論設計時才切到 Opus,最好在新 session 或 `/compact` 之後;定案就切回 Sonnet。切換當下,Opus 要以自己的價格把整段對話重新寫入快取,之後每輪也重讀整段對話。
 - 不需要 Opus 的任務(§4「不找 Opus」清單)一律留在 Sonnet。
+- 實測一次實質審查(hook 設計,簡報 63 行):Opus 6 輪、輸入(含快取)約 9.3 萬、輸出約 8.8 千 token。counsel 會用 Read 驗證簡報,並逐輪重讀上下文,所以簡報小不等於總量小。要壓低:簡報附足證據、註明哪些事實已驗證不必再讀,並可調低 counsel.md 的 `effort` 或 `maxTurns`。
 
 ## 7. 每輪代理檢查
 
 有實作的輪次(改過檔、讀過 5 個以上的檔,或派過代理),回覆結尾寫一行:
 
-`代理檢查|Opus:無(O1–O4 皆否)|Haiku:讀而未改 3 檔約 600 行 → 自己讀|counsel 0/2`
+`代理檢查|Opus:無(O1–O5 皆否)|Haiku:讀而未改 3 檔約 600 行 → 自己讀|counsel 0/2`
 
 - 問答輪不檢查。
 - Opus 欄:列出符合的 O 條件,或「無」。
@@ -119,11 +121,12 @@ scout 沒有 Bash,讀不了 git 歷史。`git log` 之類由主對話自己跑,�
 - 每里程碑在 handoff §4 記一行:本輪 scout 次數、counsel 次數、審查模式(單一或 fan-out)。
 - 子代理成本以 token 計(各模型的 input、output、cache),不以美元。美元數字是牌價換算,不是帳單。
 - 背景啟動(`status: async_launched`)的子代理,PostToolUse 只回 `resolvedModel`,不回 token 數。要量 token,看 `claude -p --output-format json` 的 `modelUsage`。
+- Agent map 只列本 session 以 Agent 工具派出的子代理。`claude -p` 與 `claude --agent` 是獨立 process,不會出現在 map 裡;它們的用量以輸出 JSON 的 `modelUsage` 為準,並記入 handoff §4 的使用紀錄。
 
 ## 11. 變更本指南
 
 - 換模型:改 `.claude/agents/*.md` 的 `model` 行,跑 `tests/test_agents.py` 與 §12 的現場驗證。
-- 改分工、O1–O4 或 H1–H3:同步 CLAUDE.md「協作分工」段與 handoff R171。
+- 改分工、O1–O5 或 H1–H3:同步 CLAUDE.md「協作分工」段與 handoff R171。
 
 ## 12. 現場驗證(改 agent 檔後)
 
@@ -136,3 +139,5 @@ scout 沒有 Bash,讀不了 git 歷史。`git log` 之類由主對話自己跑,�
 
 - 指令尾端加 `< /dev/null`,避免 CLI 等 3 秒 stdin。
 - 在本 repo 用 `-p` 時,CLI 會因工作區未受信任而忽略 `.claude/settings.json` 的 `permissions.allow`。這不影響子代理載入。
+- 互動 session 中途新增或修改的 agent 檔不會被載入。實測:同一 session 內呼叫新建的 counsel,回 `Agent type 'counsel' not found`。要重開 session 才會載入;`claude -p` 與 `claude --agent <名稱>` 每次都是新 process,馬上可用。
+- 在 session 重開前要找 counsel:`claude --agent counsel -p "<簡報>" --max-budget-usd N --output-format json --no-session-persistence < /dev/null`。主執行緒直接以 counsel 的模型、工具與本文執行,不經 Sonnet 轉述;但這是獨立 process,不在 Agent map(見 §10)。
