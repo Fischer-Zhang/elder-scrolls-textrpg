@@ -2871,7 +2871,7 @@ R88 讓**盜賊公會**拿到階級解鎖招牌動詞(斯庫瑪走私),但**戰�
 ### R171 · 子代理分工:scout(Haiku 唯讀檢索)/ counsel(Opus 唯讀顧問)+ 作業指南 ops.md
 
 - **落地(使用者拍板 B;顧問形態 a、界線照建議)**:
-  - `.claude/agents/scout.md`:`model: claude-haiku-5-5`、`tools: Read, Grep, Glob`、`disallowedTools` 含 Bash/Write/Edit/NotebookEdit/Agent、`omitClaudeMd: true`、`maxTurns: 15`;本文帶 repo 地圖與輸出契約(每結論附 路徑:行號、找不到回 NOT FOUND、不判斷)。
+  - `.claude/agents/scout.md`:`model: claude-haiku-5-5`、`tools: Read, Grep, Glob`、`disallowedTools` 含 Bash/Write/Edit/NotebookEdit/Agent、`omitClaudeMd: true`、`maxTurns: 20`(B 初版 15,四原則版改 20);本文帶 repo 地圖與輸出契約(每結論附 路徑:行號、找不到回 NOT FOUND、不判斷)。
   - `.claude/agents/counsel.md`:`model: claude-opus-5-5`、`effort: high`、工具與禁用同 scout、`omitClaudeMd: true`、`maxTurns: 10`;本文帶專案紅線速查與六段輸出格式(最強反例→風險→建議→信心→會改變結論的證據→需使用者拍板的點)。
   - 根目錄 `ops.md`:角色分工、何時用哪個代理、scout 規範(並行 ≤3、按問題切、數量題主對話重算)、counsel 簡報模板(給證據不給結論)、升級 Opus 觸發與上限(每里程碑 ≤2,第 3 次須使用者同意)、子代理 git 紅線、4e 對抗審查預設、量測回報。
   - 顧問採簡報型 Opus 子代理,**不開 `/advisor`**:伺服器端顧問每次讀整段主對話,成本隨對話增長,且 Opus 5.5 的建議對 client 加密、無法稽核。
@@ -2882,7 +2882,12 @@ R88 讓**盜賊公會**拿到階級解鎖招牌動詞(斯庫瑪走私),但**戰�
   - counsel:`resolvedModel: claude-opus-5-5`,Opus input(含 cache)約 1.2 萬 token、output 1,284;先用 Read 驗證簡報,當場指出簡報「事實與證據:無」與 CLAUDE.md:59、ops.md:29 不符。
   - 為 hook 里程碑探路:SubagentStop 的 command hook 回 `decision: "block"`,擋下缺「已核對」標記的 scout 報告;scout 被迫重讀檔案並補上,第二次 `stop_hook_active: true` 放行 → **用 hook 強制子代理輸出契約可行**。本版自訂代理的報告在 `last_assistant_message`(未走 `SubagentHandback`;若改走 handback,攔截點改為 PreToolUse(SubagentHandback) 的 `tool_input.message`)。
   - ⚠ 在本 repo 用 `claude -p` 時 CLI 警告「工作區未受信任,忽略 `.claude/settings.json` 的 permissions.allow」;專案層 hook 是否同樣被略過,hook 里程碑須先確認。
-- **未做(下一里程碑,細節由使用者定)**:hook 層——代理檢查(每輪 Opus/Haiku 觸發自問,附 hook 量到的實際派遣與查找次數)、子代理 Bash 守衛、Agent 路由、用量帳本。
+- **續(四原則客製版;使用者定:Opus 顧問 / Haiku 探索大文本 / Sonnet 主導 / 省 Opus 上下文)**:
+  - ops.md 改寫:O1–O4 升級 Opus 觸發(紅線區設計取捨、全專案收斂點、驗證反常、推翻鐵律或審查爭議;紅線區以路徑列出)、H1–H3 讀量門檻(讀而不改 >~1000 行或 ≥5 檔派 scout)與本專案大文本清單、省 Opus 上下文規則(counsel 簡報 ≤150 行、不開 `/advisor`、切 Opus 只在多輪設計討論)、§7 每輪「代理檢查」一行。章節重排:4e 對抗審查 §7→§9、量測 §8→§10。
+  - scout 擴充為「檢索 + 長文摘要」:摘要題附 路徑:行號 與逐字短引文(≤30 字)。CLAUDE.md 協作分工段改寫,行數不變。
+  - **更正**:提案時 H2 把「git 歷史」列給 scout,但 scout 無 Bash(本里程碑不做 hook 守衛,不能給)→ 改為主對話自己跑 git log。
+  - **未現場驗證**:scout 摘要契約(逐字短引文)尚未實測;hook 里程碑做 citation verifier 時一併驗。
+- **未做(下一里程碑 hook,設計已定)**:每輪代理檢查(格式與時機見 ops.md §7;收尾缺該行 → hook 回饋量到的讀量、是否動到紅線區、counsel 次數,同輪最多補一次)、帳本(讀取量按輪計、counsel 次數按里程碑計,提交時歸零)、切到 Opus 的提醒、counsel 第 3 次派遣改問使用者;實作前須先確認「工作區未受信任」是否會略過專案層 hook,並補 tests/test_hooks.py 與現場實測。
 
 ## 4. 開發節奏(ultracode 開著 → 每個功能都這樣做)
 
@@ -2909,9 +2914,10 @@ R88 讓**盜賊公會**拿到階級解鎖招牌動詞(斯庫瑪走私),但**戰�
 
 ---
 
-### 代理使用紀錄(ops.md §8)
+### 代理使用紀錄(ops.md §10)
 
 - R171:scout 1、counsel 1(皆為現場驗證用);審查模式:無(文件與子代理設定,未改遊戲碼)。
+- R171 續(四原則客製版):scout 0、counsel 0;審查模式:無(文件與測試,未改遊戲碼)。代理檢查|Opus:無(O1–O4 皆否)|Haiku:讀量小、皆為已知小檔 → 自己讀|counsel 0/2。
 
 ## 5. 設計定案(DESIGN.md §7)
 

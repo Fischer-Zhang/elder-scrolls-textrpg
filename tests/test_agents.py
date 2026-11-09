@@ -35,6 +35,13 @@ def _frontmatter(name):
     return fields
 
 
+def _body(name):
+    text = open(os.path.join(AGENTS_DIR, name + ".md"), encoding="utf-8").read()
+    m = re.match(r"^---\n(.*?)\n---\n", text, re.S)
+    assert m, f"{name}.md 缺 frontmatter"
+    return text[m.end():]
+
+
 def test_agent_frontmatter_required_fields():
     for name in ROLES:
         fm = _frontmatter(name)
@@ -71,11 +78,22 @@ def test_ops_guide_and_claude_section_present():
     ops_path = os.path.join(ROOT, "ops.md")
     assert os.path.exists(ops_path), "缺作業指南 ops.md"
     ops = open(ops_path, encoding="utf-8").read()
-    for needle in ("共享工作樹", "每里程碑", "簡報模板", "升級 Opus", "scout", "counsel"):
+    for needle in ("共享工作樹", "每里程碑", "簡報模板", "升級 Opus", "scout", "counsel",
+                   "讀量門檻", "代理檢查", "/advisor"):
         assert needle in ops, f"ops.md 缺關鍵段落或詞:{needle}"
     claude = open(os.path.join(ROOT, "CLAUDE.md"), encoding="utf-8").read()
     assert "## 協作分工" in claude, "CLAUDE.md 缺『協作分工』段"
     assert "ops.md" in claude, "CLAUDE.md 須指向 ops.md"
+
+
+def test_agent_bodies_keep_contracts():
+    # scout 的輸出契約(引文、NOT FOUND、摘要題逐字短引文、不判斷)與 counsel 的角色邊界不可被改掉
+    scout = _body("scout")
+    for needle in ("路徑:行號", "NOT FOUND", "短引文", "不判斷"):
+        assert needle in scout, f"scout.md 本文缺契約關鍵詞:{needle}"
+    counsel = _body("counsel")
+    for needle in ("最強反例", "拍板", "紅線"):
+        assert needle in counsel, f"counsel.md 本文缺關鍵詞:{needle}"
 
 
 def run():
