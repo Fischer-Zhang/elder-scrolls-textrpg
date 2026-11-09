@@ -2891,8 +2891,32 @@ R88 讓**盜賊公會**拿到階級解鎖招牌動詞(斯庫瑪走私),但**戰�
   - 互動 session(VS Code)中途新建 `.claude/settings.local.json` 的 PreToolUse/PostToolUse hook 立即生效;`~/.claude.json` 的 `hasTrustDialogAccepted=false` 卻照跑,與文件(互動 session 擋所有 settings 檔 hook)不符,原因不明 → 未動 `~/.claude.json`。`-p` 一律視為已信任;專案子代理 frontmatter hook 須資料夾本身已信任。診斷 hook 已還原。
   - 量到的事實:同輪內 `prompt_id` 一致;`Read` 的 `tool_response.file.numLines/totalLines` 可得;`Bash` 的 `tool_response` 無 exit code;**子代理內的工具呼叫也觸發同一組 hook,`agent_type` 非 null(例:Explore)且 `prompt_id` 與主對話相同 → 帳本必須以 `agent_type==null` 篩主對話**;Stop 回 `additionalContext` 在同一輪內讓模型補上要求的行,第二次 Stop 的 `stop_hook_active` 為 true(`-p` + Haiku 實測);互動 session 中途新增的 agent 檔不載入(回 `Agent type 'counsel' not found`),需重開 session。
 - **counsel 審查(O5;`claude --agent counsel` 獨立 process,不在 Agent map;Opus 6 輪、輸入含快取約 9.3 萬、輸出約 8.8 千 token)**:建議 A 瘦身版為第一批 — PostToolUse(Read|Edit|Write|Agent) 記帳(含 agent_type/agent_id,主對話只取 `agent_type==null`)、Stop 檢查(`stop_hook_active` 短路,以「本 prompt_id 已提醒」標記保證同輪最多補一次)、腳本整段 try/except(出錯寫錯誤記錄並以一次 additionalContext 告知,不設 `onFailure:"block"`);先放 `settings.local.json` 試跑,數字正確再移進 `settings.json`;第二批(counsel 第 3 次先問、切 Opus 提醒)須先 `-p` 實測相關事件與 auto 模式下的 ask。偵測 hook 沒載入:`/sync` 印帳本最後一筆時間。HEAD 雜湊歸零有誤判(多次提交的里程碑、pull/rebase/amend/切分支、worktree),改用 `git log -1 --format=%ct main` 之後的 counsel 記錄(無狀態);測試的帳本路徑須可用環境變數替換,不碰真實資料。
-- **待使用者拍板(hook 里程碑)**:① 一個里程碑分多次提交時,counsel 上限怎麼算(跟著放寬 / 以 handoff 的 R## 變更界定 / 手動標記);② Bash、Grep 算不算「讀」(第一批建議只算 Read 的 numLines);③ 試跑放 `settings.local.json`(建議)還是直接提交 `settings.json`;④ hook 內部錯誤每個 session 提示一次,還是完全靜默只寫記錄。
+- **待使用者拍板(hook 里程碑)**:① 一個里程碑分多次提交時,counsel 上限怎麼算(跟著放寬 / 以 handoff 的 R## 變更界定 / 手動標記);② Bash、Grep 算不算「讀」(第一批建議只算 Read 的 numLines);③ 試跑放 `settings.local.json`(建議)還是直接提交 `settings.json`;④ hook 內部錯誤每個 session 提示一次,還是完全靜默只寫記錄。(→ 已於 R172 照建議拍板,見下節)
 - **未驗證**:`prompt_id` 跨輪與 `/compact` 後是否改變(決定能否省掉 UserPromptSubmit 標記,第一批試跑時觀察);Stop 的 `additionalContext` 在互動 session 的行為;`PostModelSwitch`、`ask` 在 auto 模式下的行為。
+
+### R172 · 代理使用帳本 hook:PostToolUse 記帳 + Stop 補「代理檢查」實測數字(R171 的下一里程碑,第一批)
+
+- **落地(使用者對 counsel 建議「照建議」拍板四點;counsel 設計審查 1/2 已於 R171 續2 完成,實作期間未再派)**:
+  - `.claude/hooks/ops_ledger.py`(stdlib only,單檔):`post`(PostToolUse `Read|Edit|Write|Agent`:記路徑、Read 的 `numLines`、Agent 的 `subagent_type` 與 `resolvedModel`)、`prompt`(UserPromptSubmit:記輪界標記)、`stop`(Stop:實作輪缺「代理檢查」行 → `decision: block` 附實測數字,模型同輪補一行)、`status`(給人看,`/sync` 用)。
+  - 帳本 `.claude/ledger/ops.jsonl`(gitignore;環境變數 `SLG_OPS_LEDGER` 可替換,測試一律用它)。只記 metadata,不存檔案內容、prompt、工具輸出。
+  - `tests/test_ops_hook.py`:以子程序餵合成 payload(帳本一律指向暫存檔)驗記帳/輪界/Stop 提醒同輪最多一次/軟失敗/並發寫入;以合成 git repo 驗里程碑窗;函式層驗 reason 格式與 counsel 兩個數字、帳本壞行/殘行/毒記錄;並解析 ops.md §13 的接線 JSON。
+  - ops.md:§4 上限改以 R## 界定、§7 改為 hook 補數字、§10/§11 補條目、新增 §13(運作、接線 JSON、試跑升格流程、已知限制)。`.claude/commands/sync.md` 加 2b 步(印帳本狀態,偵測「hook 沒載入」)。`check.sh` 與 CLAUDE.md 的 py_compile 納入 `.claude/hooks/*.py`。
+- **使用者拍板四點**:① 里程碑 = 提交訊息開頭的 R##(字尾字母算不同里程碑、同 R## 多次提交算同一個、無 R## 的提交略過;時間取 `main` 的 author date,抗 rebase/amend;無狀態、不存雜湊);② 只算 Read 的 numLines(Bash/Grep 不算);③ 試跑放 `settings.local.json`;④ hook 內部錯誤每個 session 通知一次。
+- **🔴 紅線**:
+  - hook 永不阻擋:腳本永遠 exit 0;接線命令尾端 `|| exit 1`。實測 `python3` 找不到腳本時 exit 2(未包裝),而 Stop hook 的 exit 2 = 擋下結束並把 stderr 餵給模型,腳本被刪或切到沒有它的分支、settings 還在時可能無限續跑;包裝後降為 exit 1(非阻擋、看得見)。
+  - 主對話統計只取 `agent_type` 為空的記錄(子代理內的呼叫也觸發同一組 hook)。
+  - 同輪最多提醒一次:`stop_hook_active` 放行 + 帳本 `Reminded` 標記雙保險。
+  - 帳本不存內容;測試絕不碰真帳本。
+- **對抗審查(4e;單一 Sonnet 子代理,共享工作樹唯讀、帳本指向暫存;約 26.6 萬 token、50 次工具呼叫;含 1500 次隨機型別模糊)**:無「高」嚴重度、無會擋人或輸出非法 JSON 的 bug(壞 JSON/NaN/非 UTF-8/20MB 訊息/LANG=C 下 post·prompt·stop 全 exit 0、stdout 空或合法 JSON;64 行程×200KB 並發無交錯)。7 個真問題 + 一組測試空轉,**逐一覆核重現**後處置:
+  - 屬實已修(各補回歸測試):① `splitlines()` 也在 U+2028/U+2029/U+0085 斷行 → 一筆記錄被劈成兩段壞 JSON、整筆消失、`status` 還誤報「hook 沒載入」(改只在 `\n` 斷行);② 檔尾殘行讓下一筆黏成兩筆壞記錄(寫入前看檔尾、不是換行就先補;帳本改 0600);③ `CHECK_LINE_RE` 的 `\s` 含換行 → 10 萬換行約 9.7 秒二次方回溯,逼近 hook timeout(改 `[ \t\u3000\xa0…]`,0.04 秒);④ `tool_use_id`/`path` 型別不對的毒記錄讓之後所有統計 TypeError、永遠不提醒(寫入端只收字串、讀入端壞型別當缺值);⑤a `is_counsel` 不看 `model` 覆寫(同步回應沒帶 resolvedModel 時漏算;`fork` 忽略覆寫故排除);⑦ 專案經符號連結進入時,repo 內改檔被判在 repo 外(兩種根都認)。
+  - 設計層級,我的處置:⑥ Stop payload 沒有 `last_assistant_message` 時會每個實作輪都 block 一次 → 審查建議「改讀 transcript 或放行」,採**放行**(`skip_no_msg` + `status` 警告),不擅自讀 transcript(格式相依,且尚未驗證真的需要)。⑤b matcher 不含 `SendMessage` → 用它續問 counsel(又一輪 Opus)不入帳:**列為已知缺口,是否算一次 counsel 待使用者定**,不擅改 matcher 範圍。
+  - 自己找到的小缺陷(突變分析):`load_records` 的「丟首行」多餘(被截斷的首行本是壞 JSON,解析即略過),且截點剛好在行首時會誤丟一整筆完整記錄 → 移除並補邊界測試。
+  - 測試空轉(審查以突變證實):`test_sessions_do_not_leak` 拿掉 sid 過濾仍綠(改成交錯 + 同 pid);reason 的 counsel 欄與兩數字分支、`_fmt_edited`、`status` 窗內統計、`fail_soft` 的 prompt 事件名、HEAD 後備、壞行略過與尾端截斷、各 session 通知一次、兄弟目錄前綴都沒被釘住 → 全補。21 個突變逐一在暫存副本還原,**各由預期的測試單獨抓到**(教訓同 [[integration-test-vacuity-from-random-fallback]]:綠不等於有偵測力,審查與自己都要做突變)。
+- **現況 / 未做**:
+  - ⚠ **接線尚未啟用**:auto mode 分類器(Self-Modification)擋下對 `.claude/settings.local.json` 的寫入,未用旁路繞過。啟用前 hook 完全不會執行,**試跑尚未開始**。待使用者自行建立該檔(內容見 ops.md §13)或明確授權後再寫。
+  - 試跑要確認的未驗證項:`prompt_id` 跨輪、`/compact` 後是否改變;Stop payload 有無 `prompt_id`、`last_assistant_message`(StopCheck 已記 `keys`、`has_msg`;沒有後者則提醒整套停用、`status` 警告,屆時改做讀 `transcript_path` 後備);`decision: block` 在互動 session(VS Code)的表現。
+  - 待使用者定:`SendMessage` 續問既有 counsel 是否算一次(算 → 第二批把它加進 matcher,須先實測 PostToolUse 對延遲載入工具是否觸發)。
+  - 數字正確後升格 `settings.json`(O5)並補「接線與 ops.md §13 一致」測試。第二批(counsel 第 3 次先問、切 Opus 提醒)須先 `-p` 實測相關事件與 auto 模式下 `ask` 的行為。
 
 ## 4. 開發節奏(ultracode 開著 → 每個功能都這樣做)
 
@@ -2924,6 +2948,7 @@ R88 讓**盜賊公會**拿到階級解鎖招牌動詞(斯庫瑪走私),但**戰�
 - R171:scout 1、counsel 1(皆為現場驗證用);審查模式:無(文件與子代理設定,未改遊戲碼)。
 - R171 續(四原則客製版):scout 0、counsel 0;審查模式:無(文件與測試,未改遊戲碼)。代理檢查|Opus:無(O1–O4 皆否)|Haiku:讀量小、皆為已知小檔 → 自己讀|counsel 0/2。
 - R171 續2(O5 + hook 前置查證):scout 0;Explore(Haiku)1(診斷,在 Agent map);counsel 1/2(`--agent` 獨立 process,不在 Agent map);審查模式:無。代理檢查|Opus:O5 符合(hook 設計)→ counsel 已派|Haiku:外部文件頁多份已由 WebFetch 摘要 → 自己讀|counsel 1/2。
+- R172(hook 第一批):scout 0;general-purpose(Sonnet)審查 1(單一、未 fan-out;約 26.6 萬 token、50 次工具呼叫);counsel 0/2(O5 設計審查那 1 次已計在 R171 續2)。代理檢查|Opus:O5 符合(hook 全域機制)→ 設計已由 counsel 審過,實作未再派|Haiku:讀而未改極少、皆為已知小檔 → 自己讀|counsel 0/2。
 
 ## 5. 設計定案(DESIGN.md §7)
 

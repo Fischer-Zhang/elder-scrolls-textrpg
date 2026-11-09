@@ -14,7 +14,7 @@ python3 -m tesrpg.web                     # Web 版(唯一進入點)→ http://1
 python3 tests/run_all.py                  # 全綠;模組數見結尾「全部通過 (N 個測試模組)」(別在文件硬寫數字)
 python3 tests/browser_ui.py               # Playwright/Chromium 桌面 UI 真瀏覽器回歸
 bash check.sh                             # ★ 一鍵驗證:編譯 → 單元/流程 → 真瀏覽器 → 條件式 sim
-shopt -s globstar; python3 -m py_compile tesrpg/**/*.py tesrpg/*.py tests/*.py   # 純編譯檢查(完整形;少了 tesrpg/*.py 會漏掉 main/state/formulas 等頂層模組)
+shopt -s globstar; python3 -m py_compile tesrpg/**/*.py tesrpg/*.py tests/*.py .claude/hooks/*.py   # 純編譯檢查(完整形;少了 tesrpg/*.py 會漏掉 main/state/formulas 等頂層模組)
 PYTHONPATH=. python3 sim_assassin.py      # 平衡回歸模擬(改戰鬥常數後必跑)
 ```
 - Python 3.12;遊戲 runtime 的 `rich` 可由系統套件提供(`python3-rich`);dev 工具走 `.[dev]`。sudo 需密碼、無 `jq`(寫 hook 要用 `python3` 解析 stdin)。
@@ -236,6 +236,7 @@ PYTHONPATH=. python3 sim_assassin.py      # 平衡回歸模擬(改戰鬥常數�
 | R67 | 智力法術威力大改:int100=+30%(50→100 線性)+ >100 才 softcap(總漸近 +45%)；🔴 sim_assassin byte-identical(虎人 int≤50 且永不施法→公式零呼… | re-sim |
 | R66 | resist 附魔再平衡:soul^0.7 非線性 + 魔抗/單元素分流(承魔抗免疫評估)；🔴 sim_assassin byte-identical(刺客無 resist 附魔·隔離 wor… | save |
 | R171 | 四原則分工:scout(Haiku 唯讀檢索/長文摘要)/ counsel(Opus 唯讀顧問,紅線區設計取捨才找,每里程碑 ≤2)+ 作業指南 ops.md;共享工作樹禁改 git 狀態 | |
+| R172 | 代理使用帳本 hook:PostToolUse 記帳(主對話=agent_type 空)+ Stop 補「代理檢查」實測數字(同輪最多一次);hook 永不擋人、exit 0;里程碑=R## | |
 
 ## 自動提交閘門 / 換 session 前檢查表
 
@@ -254,6 +255,7 @@ PYTHONPATH=. python3 sim_assassin.py      # 平衡回歸模擬(改戰鬥常數�
 
 - `check.sh` — 單指令驗證鏈(完整 `py_compile` → `run_all.py` → Playwright/Chromium 桌面 UI 硬閘門 → 偵測到改 `formulas.py`/`combat.py` 或 `--sim` 才跑 sim 並標出 `⚠` 行 → `--smoke` 才跑煙霧,只寫暫存目錄,不碰玩家存檔)。
 - `/check` slash-command = `bash check.sh`;`/sync` = 跑 `check.sh --smoke` + 印換 session 檢查表 + 提示更新 handoff.md。
+- `.claude/hooks/ops_ledger.py` — 代理使用帳本 + Stop 補「代理檢查」數字(R172,設計與接線 JSON 見 ops.md §13);試跑階段接在 gitignore 的 `settings.local.json`,數字驗證後才升格 `settings.json`。帳本 `.claude/ledger/`(gitignore)。
 - `.claude/settings.json` 已預許可唯讀測試/sim/git 指令(減少權限詢問)。`git commit`/`push` **不**預許可(刻意保留可見),但依本專案慣例驗證綠後仍自動執行(見上「自動提交閘門」/ handoff §3 R22)。
 
 ## 架構 / 重要檔案

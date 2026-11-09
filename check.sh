@@ -31,7 +31,7 @@ fail() { echo "✗ $*"; exit 1; }
 # 1) 編譯檢查(完整 glob:含頂層模組 tesrpg/*.py 與 tests/*.py,缺了會漏掉 main/state/formulas)
 step "py_compile(完整)"
 shopt -s globstar
-python3 -m py_compile tesrpg/**/*.py tesrpg/*.py tests/*.py || fail "編譯失敗"
+python3 -m py_compile tesrpg/**/*.py tesrpg/*.py tests/*.py .claude/hooks/*.py || fail "編譯失敗"
 echo "✓ 編譯通過"
 
 # 2) 全測試(硬閘門;模組數由 run_all.py 結尾自報)

@@ -22,4 +22,5 @@ saves/
 # Claude Code 執行期產物(鎖檔/本地設定,不應進版控)
 .claude/scheduled_tasks.lock
 .claude/settings.local.json
+.claude/ledger/
 test_audit.md

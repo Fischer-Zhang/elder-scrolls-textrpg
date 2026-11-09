@@ -1,7 +1,7 @@
 # 作業指南:四原則與子代理分工(ops)
 
 > 憲法(紅線、五階段流程)在 `CLAUDE.md`。本檔把四條原則落成可執行的規則:誰做什麼、何時派 Haiku、何時升級 Opus、怎麼省 Opus 的上下文。
-> 落地紀錄見 handoff.md R171。改這裡的規則時,同步 CLAUDE.md「協作分工」段與 R171。
+> 落地紀錄見 handoff.md R171、R172。改這裡的規則時,同步 CLAUDE.md「協作分工」段與 R171。
 
 ## 0. 四原則
 
@@ -69,7 +69,7 @@ scout 沒有 Bash,讀不了 git 歷史。`git log` 之類由主對話自己跑,�
 
 **不找 Opus:** 純 JSON 內容(R02)、文件同步、根因明確的單檔 bug、機械重構、寫測試、跑驗證、提交。平衡數值與設計方向直接問使用者,不讓 counsel 代答。
 
-**上限:** 每里程碑(兩次提交之間)counsel 最多 2 次。第 3 次要先在對話裡寫一句理由,經使用者同意才呼叫。
+**上限:** 每里程碑 counsel 最多 2 次。里程碑以提交訊息開頭的 R## 界定:同一個 R## 的多次提交(`R171`、`R171 續`、`R171 續2`)算同一個里程碑;字尾字母算不同里程碑(`R114C` ≠ `R114`);沒有 R## 前綴的提交略過。第 3 次要先在對話裡寫一句理由,經使用者同意才呼叫。
 
 ## 5. counsel 簡報模板
 
@@ -102,7 +102,8 @@ scout 沒有 Bash,讀不了 git 歷史。`git log` 之類由主對話自己跑,�
 - Opus 欄:列出符合的 O 條件,或「無」。
 - Haiku 欄:本輪讀而未改的檔數與行數、派了幾次 scout;超過 H1 門檻卻自己讀的,寫出理由。
 - counsel 欄:本里程碑已派次數 / 上限 2。
-- 目前由主對話自己寫。之後會由 hook 補上實際量到的數字(見 handoff R171 的下一里程碑)。
+- 數字由 hook 實測(R172,見 §13):實作輪缺這一行時,Stop hook 回報改檔數、讀而未改的檔數與行數、本輪派代理次數、counsel 次數,主對話同輪補上(每輪最多一次)。O1–O5 的判斷仍由主對話寫。
+- counsel 欄 hook 給兩個數字:以 R## 界定的本里程碑累計,以及自最近提交後的累計。新里程碑尚未提交時以後者為準;延續舊里程碑時以前者為準。
 
 ## 8. 子代理與 git 紅線
 
@@ -121,12 +122,14 @@ scout 沒有 Bash,讀不了 git 歷史。`git log` 之類由主對話自己跑,�
 - 每里程碑在 handoff §4 記一行:本輪 scout 次數、counsel 次數、審查模式(單一或 fan-out)。
 - 子代理成本以 token 計(各模型的 input、output、cache),不以美元。美元數字是牌價換算,不是帳單。
 - 背景啟動(`status: async_launched`)的子代理,PostToolUse 只回 `resolvedModel`,不回 token 數。要量 token,看 `claude -p --output-format json` 的 `modelUsage`。
+- 帳本(R172,§13):`.claude/ledger/ops.jsonl` 記 Read/Edit/Write/Agent 呼叫(含子代理內的,以 `agent_type` 區分)。看摘要:`python3 .claude/hooks/ops_ledger.py status`。同上條,`claude -p` / `--agent` 獨立 process 不在內。
 - Agent map 只列本 session 以 Agent 工具派出的子代理。`claude -p` 與 `claude --agent` 是獨立 process,不會出現在 map 裡;它們的用量以輸出 JSON 的 `modelUsage` 為準,並記入 handoff §4 的使用紀錄。
 
 ## 11. 變更本指南
 
 - 換模型:改 `.claude/agents/*.md` 的 `model` 行,跑 `tests/test_agents.py` 與 §12 的現場驗證。
 - 改分工、O1–O5 或 H1–H3:同步 CLAUDE.md「協作分工」段與 handoff R171。
+- 改 `.claude/hooks/ops_ledger.py`:跑 `python3 tests/test_ops_hook.py`(含 §13 接線 JSON 的驗證)。改接線(settings*.json 的 hooks 區塊)屬 O5。
 
 ## 12. 現場驗證(改 agent 檔後)
 
@@ -141,3 +144,75 @@ scout 沒有 Bash,讀不了 git 歷史。`git log` 之類由主對話自己跑,�
 - 在本 repo 用 `-p` 時,CLI 會因工作區未受信任而忽略 `.claude/settings.json` 的 `permissions.allow`。這不影響子代理載入。
 - 互動 session 中途新增或修改的 agent 檔不會被載入。實測:同一 session 內呼叫新建的 counsel,回 `Agent type 'counsel' not found`。要重開 session 才會載入;`claude -p` 與 `claude --agent <名稱>` 每次都是新 process,馬上可用。
 - 在 session 重開前要找 counsel:`claude --agent counsel -p "<簡報>" --max-budget-usd N --output-format json --no-session-persistence < /dev/null`。主執行緒直接以 counsel 的模型、工具與本文執行,不經 Sonnet 轉述;但這是獨立 process,不在 Agent map(見 §10)。
+
+## 13. hook 帳本與「代理檢查」補數字(R172)
+
+PostToolUse 記帳,Stop 補「代理檢查」的實測數字。腳本 `.claude/hooks/ops_ledger.py`(只用 stdlib),測試 `tests/test_ops_hook.py`。
+
+### 運作
+
+| 事件 | 子命令 | 做什麼 |
+|---|---|---|
+| PostToolUse(`Read\|Edit\|Write\|Agent`) | `post` | 記一筆:路徑、Read 的 `numLines`、Agent 的 `subagent_type`、`model` 覆寫、解析後模型與派工標籤(`description` 前 60 字);不存檔案內容與 prompt |
+| UserPromptSubmit | `prompt` | 記「新一輪開始」標記 |
+| Stop | `stop` | 實作輪缺「代理檢查」行 → 回 `decision: block` 加實測數字,模型同輪補一行 |
+
+- **主對話與子代理**:子代理內的呼叫也會觸發同一組 hook,`agent_type` 非空(2026-11 實測)。帳本兩者都記,統計只取 `agent_type` 為空的記錄,子代理的讀量不會算到主對話頭上。
+- **實作輪**(對應 §7):本輪主對話改過 repo 內的檔(`Edit`/`Write`;記憶檔、暫存檔不算),或讀過 ≥5 個不同檔,或派過代理。問答輪不提醒。
+- **一輪**:同 session、最後一個 UserPromptSubmit 標記之後;兩邊都有 `prompt_id` 時須相同。
+- **同輪最多提醒一次**:`stop_hook_active` 為真就放行,並在帳本記 `Reminded`;同輪已有 `Reminded` 也放行。模型已寫「代理檢查」行(行首,容許 markdown 前綴)就不提醒。
+- **看不到最後訊息就放行**:Stop payload 沒有字串型的 `last_assistant_message` 時,hook 無從判斷模型是否已寫那行,一律放行(StopCheck 記 `skip_no_msg`),`status` 會警告。後備方案是讀 `transcript_path`,試跑確認需要再做。
+- **只算 Read**(使用者拍板):Bash、Grep 不算「讀」;`sed -i` 與 Bash 內的改檔量不到。
+- **counsel 計數**:`Agent` 的 `subagent_type=counsel`,或實際用到 Opus 者(解析後模型優先;同步回應沒帶時看派工的 `model` 覆寫,`fork` 忽略覆寫);以 `tool_use_id` 去重。里程碑是提交訊息開頭的 R##(§4);時間取 `main` 上的 author date(rebase、amend 不改它),沒有 `main` 就退 HEAD;沒有 git 歷史就從帳本頭算。
+- **內部錯誤**:一律 exit 0、不阻擋。寫帳本 `Error` 記錄,每個 session 只通知一次(PostToolUse、UserPromptSubmit 走 `additionalContext` 加 `systemMessage`;Stop 只走 `systemMessage`,不續跑)。不設 `onFailure: block`。
+- **啟動失敗**:接線命令尾端是 `|| exit 1`。`python3` 找不到腳本時 exit code 是 2,而 Stop hook 的 exit 2 會擋下結束並把 stderr 餵給模型;腳本被刪、或切到沒有它的分支而 settings 還在時,可能無限續跑。降成 exit 1 就是看得見、不擋人。
+- **帳本**:預設 `<repo>/.claude/ledger/ops.jsonl`(gitignore,權限 0600)。只在 `\n` 斷行(U+2028 等不當換行);檔尾被截斷時,下次寫入先補換行,殘行只害到自己;`path`、`tuid` 型別不對的記錄當缺值。環境變數 `SLG_OPS_LEDGER` 可替換路徑,測試一律用它,不碰真帳本。`python3 .claude/hooks/ops_ledger.py status` 印摘要,`/sync` 會跑它:最後一筆的時間要接近本 session 最近一次讀寫,很舊或是空的,就是 hook 沒載入。
+
+### 接線(試跑放 `.claude/settings.local.json`,已 gitignore)
+
+```json
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Read|Edit|Write|Agent",
+        "hooks": [
+          { "type": "command", "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/ops_ledger.py\" post || exit 1", "timeout": 10 }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          { "type": "command", "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/ops_ledger.py\" prompt || exit 1", "timeout": 10 }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          { "type": "command", "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/ops_ledger.py\" stop || exit 1", "timeout": 10 }
+        ]
+      }
+    ]
+  }
+}
+```
+
+要在 `/sync` 與日常免詢問地看摘要,另在同一檔加 `"permissions": {"allow": ["Bash(python3 .claude/hooks/ops_ledger.py status)"]}`。
+
+### 試跑,再升格到 settings.json
+
+- 試跑期放 `settings.local.json`,只影響本機。每個實作輪檢查:StopCheck 的數字和你的印象一致(改檔數、讀而未改行數、counsel 次數)、`Error` 為 0、提醒確實只補一次。
+- 試跑要順手確認的未驗證項:(a) `prompt_id` 跨輪、`/compact` 後是否改變;(b) Stop 事件的 payload 有沒有 `prompt_id` 和 `last_assistant_message`(StopCheck 已記 `keys`、`has_msg`;沒有後者時提醒整套停用,`status` 會警告);(c) `decision: block` 在互動 session(VS Code)的實際表現。
+- 數字正確後,把同一份 JSON 搬進 `.claude/settings.json`(O5:全域機制,影響所有後續 session),並補一條測試,斷言 settings.json 的接線與本節 JSON 一致。
+
+### 已知限制
+
+- Bash、Grep 不計入讀量;`sed -i` 改檔量不到。
+- `claude -p`、`claude --agent counsel` 是獨立 process,不經 Agent 工具,不在帳本(§10)。新 session 載入 agent 檔後,走 Agent 工具即可。
+- 帳本只讀尾端 4 MB。
+- `SendMessage` 續用既有 counsel 子代理(又一輪 Opus)不入帳:matcher 不含它。是否算一次 counsel 待使用者定;若算,第二批把 `SendMessage` 加進 matcher 並記收件者(須先實測 PostToolUse 對這個延遲載入的工具是否觸發)。
+- 兩個同時的 Stop 行程(check-then-act 無鎖)只有在重複接線時才會雙雙提醒;第二次 Stop 有 `stop_hook_active`,不成迴圈。
+- repo 外的改檔(含 `~/.claude/settings.json`)不算實作輪。
+- 第二批(未做):counsel 第 3 次先問、切 Opus 提醒。須先用 `-p` 實測相關事件是否存在,以及 auto 模式下 `ask` 的行為。

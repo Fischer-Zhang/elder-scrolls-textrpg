@@ -1,11 +1,12 @@
 ---
 description: 換 session 前同步儀式:完整驗證 + 檢查表 + 提示更新 handoff.md
-allowed-tools: Bash(bash check.sh:*), Bash(git status), Bash(git log:*), Bash(git diff:*)
+allowed-tools: Bash(bash check.sh:*), Bash(git status), Bash(git log:*), Bash(git diff:*), Bash(python3 .claude/hooks/ops_ledger.py status)
 ---
 執行「換 session 前同步」(對應 CLAUDE.md 換 session 前檢查表):
 
 1. 跑 `bash check.sh --smoke`(完整驗證:編譯 → 全測試 → 條件式 sim → save/load 煙霧,煙霧只寫暫存目錄,不碰玩家存檔)。**紅燈就停下,先修再說。**
 2. 跑 `git status` 與 `git log --oneline -5`,讓我看未提交的工作與近期里程碑。
+2b. 跑 `python3 .claude/hooks/ops_ledger.py status`(代理使用帳本,ops.md §13)並原樣貼出。「最後一筆」的時間應接近本 session 最近一次 Read/Edit/Write/Agent;**很舊或帳本是空的 = hook 沒載入**,請明講(檢查 settings 的 hooks 區塊),別當沒事。也貼出本里程碑 counsel 次數與「內部錯誤」筆數。
 3. 逐項核對換 session 檢查表,逐條標 ✅/❌:
    - 全部測試全綠
    - sim 穩(無新 `⚠`,或 `⚠` 已人眼確認屬既定強項)
