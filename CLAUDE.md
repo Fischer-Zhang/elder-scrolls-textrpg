@@ -51,11 +51,11 @@ PYTHONPATH=. python3 sim_assassin.py      # 平衡回歸模擬(改戰鬥常數�
 
 | 角色 | 做 | 不做 |
 |---|---|---|
-| 主對話(Sonnet) | 引導流程、寫碼、測試、審查、提交、彙整各代理結果 | 設計方向與平衡取捨(問使用者) |
-| scout(Haiku,`.claude/agents/scout.md`) | 大量閱讀(讀而不改 >~1000 行或 ≥5 檔)、檢索、摘要;附 路徑:行號 | 判斷、審查、解讀架構 |
+| 主對話(Sonnet) | 引導流程、寫碼、測試、審查、提交、彙整各代理結果 | 設計方向與平衡取捨(問使用者);自讀大文本內文(handoff.md/大型 JSON/BESTIARY.md)——唯一例外是我即將編輯的那一段 |
+| scout(Haiku,`.claude/agents/scout.md`) | 大量閱讀(讀而不改 >~1000 行或 ≥5 檔)、大文本內文一律由它讀、檢索、摘要;附 路徑:行號 | 判斷、審查、解讀架構 |
 | counsel(Opus,`.claude/agents/counsel.md`) | 紅線區設計取捨、全專案收斂點、驗證反常、推翻鐵律、全域機制(hook/settings)時,給反例/風險/建議 | 拍板、改檔 |
 
-- 🔴 Opus 只給建議、不拍板;counsel 每里程碑至多 2 次、簡報 ≤150 行、不開 `/advisor`;有實作的輪次結尾寫一行「代理檢查」。
+- 🔴 Opus 只給建議、不拍板;counsel 每里程碑至多 2 次、簡報 ≤150 行、不開 `/advisor`;有實作的輪次結尾寫一行「代理檢查」(自讀過大文本者加「大文本自讀:N 節」欄,見 ops.md §7/§13)。
 - 🔴 scout 並行 ≤3、按問題切;子代理不得在共享工作樹改 git 狀態(stash/checkout/restore/reset --hard/clean),需隔離用 worktree。
 
 ## 子系統鐵律索引(本體見 handoff §3 `R##`;標籤:`re-sim`=重跑 sim、`recompute`、`migrate`=ensure_*、`save`=存檔相容)
@@ -240,6 +240,7 @@ PYTHONPATH=. python3 sim_assassin.py      # 平衡回歸模擬(改戰鬥常數�
 | R172 | 代理使用帳本 hook:PostToolUse 記帳(主對話=agent_type 空)+ Stop 補「代理檢查」實測數字(同輪最多一次);hook 永不擋人、exit 0;里程碑=R## | |
 | R173 | 開發檔案整理第 1 層:只改程式證實過期的事實+已完成清單;刪前逐條清單經使用者簽核;§1 敘事 72 段無 R## 對應,不得當重複砍;build.md 為 6/18 快照 | |
 | R174 | 整理第 2 層:被取代規則一律「刪除線+註記」不刪文字;取代宣告多為取代者自述,真過期僅 8 組;新增「取代」須在被取代處加反向註記 | |
+| R175 | 主對話自讀大文本偵測(ops.md H2 硬規則落地):hook 量 Bash/Grep/Read 的中文長行字數(150 提醒/600 警報)+ H2/H3 收窄為「即將編輯的那一段」;🔴 只記數字不記內文·永不擋人·子代理不計 | |
 
 ## 自動提交閘門 / 換 session 前檢查表
 
@@ -258,7 +259,7 @@ PYTHONPATH=. python3 sim_assassin.py      # 平衡回歸模擬(改戰鬥常數�
 
 - `check.sh` — 單指令驗證鏈(完整 `py_compile` → `run_all.py` → Playwright/Chromium 桌面 UI 硬閘門 → 偵測到改 `formulas.py`/`combat.py` 或 `--sim` 才跑 sim 並標出 `⚠` 行 → `--smoke` 才跑煙霧,只寫暫存目錄,不碰玩家存檔)。
 - `/check` slash-command = `bash check.sh`;`/sync` = 跑 `check.sh --smoke` + 印換 session 檢查表 + 提示更新 handoff.md。
-- `.claude/hooks/ops_ledger.py` — 代理使用帳本 + Stop 補「代理檢查」數字(R172,設計與接線 JSON 見 ops.md §13);試跑階段接在 gitignore 的 `settings.local.json`,數字驗證後才升格 `settings.json`。帳本 `.claude/ledger/`(gitignore)。
+- `.claude/hooks/ops_ledger.py` — 代理使用帳本 + Stop 補「代理檢查」數字(R172,設計與接線 JSON 見 ops.md §13);試跑階段接在 gitignore 的 `settings.local.json`,數字驗證後才升格 `settings.json`。帳本 `.claude/ledger/`(gitignore)。R175 加主對話自讀大文本偵測(Bash/Grep/Read 的中文長行字數;`SLG_OPS_BIGDOC=off` 關閉);接線由 `python3 .claude/hooks/ops_ledger.py wiring` 產生,使用者自行寫入 settings。
 - `.claude/settings.json` 已預許可唯讀測試/sim/git 指令(減少權限詢問)。`git commit`/`push` **不**預許可(刻意保留可見),但依本專案慣例驗證綠後仍自動執行(見上「自動提交閘門」/ handoff §3 R22)。
 
 ## 架構 / 重要檔案
