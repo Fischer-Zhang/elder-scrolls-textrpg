@@ -190,14 +190,14 @@ PYTHONPATH=. python3 sim_assassin.py      # 平衡回歸模擬(改戰鬥常數�
 | R125 | UI/UX 打磨批次:導航/自動趕路 + 戰鬥可讀性 + 新手清晰(Theme 1+3+4)；🔴 導航走 _quest_target_location_set+broaden long-trav… | save-safe |
 | R124 | 試煉指引:門檻觸發提示 + NPC 流言指向 + codex 索引(三層·純衍生)；🔴 零 combat/formulas/magic → sim 天然不受影響·零新存檔欄(sessi… | save-safe |
 | R123 | 恢復系反死靈改制:治療傷害不死(取代 R122 聖光攻擊線)；🔴 只對不死·對活物治療零傷害 → 恢復系對活人零遠程輸出(靠近戰) | re-sim, save-safe |
-| R122 | 恢復系功能化:聖騎士(反死靈聖光 + 守護庇佑)完整弧 — Phase A:聖光反死靈核心；🔴 sim_assassin BYTE-IDENTICAL(隔離 HEAD worktree 空 d… | re-sim, save-safe |
+| R122 | 恢復系功能化:聖騎士(反死靈聖光 + 守護庇佑)完整弧 — Phase A:聖光反死靈核心〔聖光攻擊線已被 R123 取代〕；🔴 sim_assassin BYTE-IDENTICAL(隔離 HEAD worktree 空 d… | re-sim, save-safe |
 | R121 | 秘術終極試煉:非戰鬥實用法術 + 念力球解謎 + 湮識(魔法核彈 + 加深秘蝕)；🔴 sim_builds 守達貢牆:arcanist(含湮識+深蝕)1% vs mehrunes_d… | re-sim |
 | R120 | 秘術頂點功能化:秘蝕(arcane erosion)—— 破抗輔助頂點(削魔抗·輔助所有傷害魔法)；🔴 不 mutate boss·proof 證 dagon 施法後 resist 仍 50)計傷+a… | re-sim |
 | R119 | 秘術功能化:非元素魔法傷害法術線(consistency 破抗身份)+ 里程碑支撐；🔴 sim_builds 新 make_arcanist:達貢 720 offense 牆守(arc… | re-sim |
 | R114C | 經濟 QoL 批次:賣貨/倉庫/連煉/連訓/直達旅店/城區連逛(UI/UX 審計 包C)；🔴 城區連逛(唯一結構改動):game_loop _stay_district——城區服務辦完且 n… |  |
 | R114 | 資訊可見性:限時增益總覽 + HUD 狀態補齊 + 任務追蹤(UI/UX 審計 包B)；🔴 增益/狀態走 _timed_buffs/_status_flags 單一資料源 |  |
 | R113 | 戰鬥/地城操作流:↻ 再次 + 目標記憶 + 方向鍵(UI/UX 審計 包A)；🔴 cmem 絕不入檔 | re-sim |
-| R112 | 故事日誌雙區化:上「本回合」+ 下「順時序歷史」；🔴 改日誌呈現動 render/appendJournal/journalZones/#log CS… |  |
+| R112 | 故事日誌雙區化:上「本回合」+ 下「順時序歷史」〔已被 R162 續 IV 取代:本回合改進 #turnlog〕；🔴 改日誌呈現動 render/appendJournal/journalZones/#log CS… |  |
 | R111 | 地城再滋擾:重踞變體 + 清剿委託(地城重返迴圈)；🔴 第一鐵律:cleared_dungeons 恆單調不減(主線門鏈 after/until_cle… | re-sim, save |
 | R110 | 家園基地化:房產 tier + 擴建(藥草園/臥房/商誼)+ legacy/成就承認；🔴 空候選 early-return 恆在 rng 消耗前)·固定預算 6 不吃 scout(守 R… | save |
 | R109 | 劇情敵 NPC 化:野外狩獵 + 城內暗殺 + 謀殺目擊制(鐵律廢大廳出擊)；🔴 鐵律:action_contract(大廳出擊生成)整個移除·合約目標一律在世界裡·大廳只 _c… | re-sim, save |
@@ -239,6 +239,7 @@ PYTHONPATH=. python3 sim_assassin.py      # 平衡回歸模擬(改戰鬥常數�
 | R171 | 四原則分工:scout(Haiku 唯讀檢索/長文摘要)/ counsel(Opus 唯讀顧問,紅線區設計取捨才找,每里程碑 ≤2)+ 作業指南 ops.md;共享工作樹禁改 git 狀態 | |
 | R172 | 代理使用帳本 hook:PostToolUse 記帳(主對話=agent_type 空)+ Stop 補「代理檢查」實測數字(同輪最多一次);hook 永不擋人、exit 0;里程碑=R## | |
 | R173 | 開發檔案整理第 1 層:只改程式證實過期的事實+已完成清單;刪前逐條清單經使用者簽核;§1 敘事 72 段無 R## 對應,不得當重複砍;build.md 為 6/18 快照 | |
+| R174 | 整理第 2 層:被取代規則一律「刪除線+註記」不刪文字;取代宣告多為取代者自述,真過期僅 8 組;新增「取代」須在被取代處加反向註記 | |
 
 ## 自動提交閘門 / 換 session 前檢查表
 
