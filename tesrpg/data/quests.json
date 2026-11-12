@@ -9524,5 +9524,100 @@
       "grant_boon": "dibella_grace",
       "world_flags": ["dibella_grace_earned"]
     }
+  },
+  "job_crystal_tower": {
+    "name": "懸賞:水晶塔",
+    "faction": null,
+    "rank": null,
+    "source": "board",
+    "provinces": [
+      "夏暮群島"
+    ],
+    "objective": {
+      "type": "clear_dungeon",
+      "dungeon": "crystal_tower"
+    },
+    "reward": {
+      "gold": 500,
+      "fame": 25
+    },
+    "turn_in": "auto",
+    "text": "阿林諾爾王廷與智者學院聯合懸賞:北端的水晶塔被不明的黏滑生物佔據。清剿塔內,終結斯洛德祭司長的圖謀。"
+  },
+  "job_cey_tarn_keep": {
+    "name": "懸賞:瑟伊-塔恩要塞",
+    "faction": null,
+    "rank": null,
+    "source": "board",
+    "provinces": [
+      "夏暮群島"
+    ],
+    "objective": {
+      "type": "clear_dungeon",
+      "dungeon": "cey_tarn_keep"
+    },
+    "reward": {
+      "gold": 280,
+      "fame": 14
+    },
+    "turn_in": "auto",
+    "text": "阿林諾爾告示板懸賞:海精靈突襲者攻佔了西南海岸的瑟伊-塔恩要塞。奪回要塞、擒殺劫掠船長。"
+  },
+  "job_eldbur_ruins": {
+    "name": "懸賞:艾爾德布廢墟",
+    "faction": null,
+    "rank": null,
+    "source": "board",
+    "provinces": [
+      "夏暮群島"
+    ],
+    "objective": {
+      "type": "clear_dungeon",
+      "dungeon": "eldbur_ruins"
+    },
+    "reward": {
+      "gold": 280,
+      "fame": 14
+    },
+    "turn_in": "auto",
+    "text": "初堡告示板懸賞:東北廢墟潮濕的水窖裡盤踞著不速之客,威脅山路商旅。清掃廢墟,確保商路平安。"
+  },
+  "job_sil_var_woad": {
+    "name": "懸賞:辛爾瓦伍德",
+    "faction": null,
+    "rank": null,
+    "source": "board",
+    "provinces": [
+      "夏暮群島"
+    ],
+    "objective": {
+      "type": "clear_dungeon",
+      "dungeon": "sil_var_woad"
+    },
+    "reward": {
+      "gold": 400,
+      "fame": 20
+    },
+    "turn_in": "auto",
+    "text": "希默琳告示板懸賞:東南濕谷的深海洞穴被亞格拉築巢,漁夫無法靠岸。請清剿巢穴。"
+  },
+  "job_dusk_keep": {
+    "name": "懸賞:暮色塔",
+    "faction": null,
+    "rank": null,
+    "source": "board",
+    "provinces": [
+      "夏暮群島"
+    ],
+    "objective": {
+      "type": "clear_dungeon",
+      "dungeon": "dusk_keep"
+    },
+    "reward": {
+      "gold": 400,
+      "fame": 20
+    },
+    "turn_in": "auto",
+    "text": "日堡告示板懸賞:暮色塔下的海蝕洞盤踞巨蛇與贓物。清剿塔底,終結蛇皮巨獸。"
   }
 }

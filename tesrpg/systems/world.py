@@ -252,7 +252,7 @@ _COMMON_MATERIALS = ("iron_ingot", "steel_ingot", "bolt_of_cloth", "wolf_pelt") 
 _HIGH_MATERIALS = ("moonstone_ingot", "dwarven_ingot", "malachite_ingot", "ebony_ingot")  # 高級材料:大城
 # 大城 = 各省首府(高級材料採買點;每省一座 → 區域內買得到頂材,不必跨圖)。調整供給點純改此集合。
 MAJOR_CITIES = frozenset({"imperial_city", "markarth", "blacklight", "gideon",
-                          "sentinel", "daggerfall", "falinesti", "rimmen"})
+                          "sentinel", "daggerfall", "falinesti", "rimmen", "alinor"})
 
 
 def _crafting_material_ids(gamedata: GameData) -> set:

@@ -1,7 +1,7 @@
 # CLAUDE.md — 流亡者 (tesrpg) 開發憲法
 
 上古卷軸風格的**技能驅動沙盒文字 RPG**(**瀏覽器 Web 版**;Python 後端,`rich` 把畫面渲成 HTML)。
-單一英雄、learn-by-doing(做什麼練什麼)、跨八省探索鑽地城。
+單一英雄、learn-by-doing(做什麼練什麼)、跨九省探索鑽地城。
 > ⚠ **本專案已 Web-only**:終端機版(`python3 -m tesrpg`)已移除;`tesrpg/ui/console.py` 現為 Web 的渲染/輸入接層(rich→HTML view-model + `_web_prompt`),5 個輸入原語在無 web backend 時直接 raise。
 
 > **本檔是給 Claude 的開發憲法**:每次改動都適用的節奏 + 跨領域紅線 + 提交檢查表 + 子系統鐵律「索引」。
@@ -241,6 +241,7 @@ PYTHONPATH=. python3 sim_assassin.py      # 平衡回歸模擬(改戰鬥常數�
 | R173 | 開發檔案整理第 1 層:只改程式證實過期的事實+已完成清單;刪前逐條清單經使用者簽核;§1 敘事 72 段無 R## 對應,不得當重複砍;build.md 為 6/18 快照 | |
 | R174 | 整理第 2 層:被取代規則一律「刪除線+註記」不刪文字;取代宣告多為取代者自述,真過期僅 8 組;新增「取代」須在被取代處加反向註記 | |
 | R175 | 主對話自讀大文本偵測(ops.md H2 硬規則落地):hook 量 Bash/Grep/Read 的中文長行字數(150 提醒/600 警報)+ H2/H3 收窄為「即將編輯的那一段」;🔴 只記數字不記內文·永不擋人·子代理不計 | |
+| R176 | 夏暮群島(第九省)Phase 1:20 節點 + 海路邊境(僅接瓦倫森林)+ isle 生態(招牌怪全弱電)+ 守護學派毀滅/神秘拆城;🔴 加省必配 MAJOR_CITIES 首府·NPC 城≥3/鎮≥2·跨省只經邊境·頭目 weight0⇒solo·擴格只平移 pos(Phase 2 待做) | re-sim, save-safe, content |
 
 ## 自動提交閘門 / 換 session 前檢查表
 

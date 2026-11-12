@@ -46,6 +46,7 @@ def test_biome_steers_encounters_without_emptying_pool():
     moor, desert = biome_set("moor"), biome_set("desert")
     jungle, swamp_b = biome_set("jungle"), biome_set("swamp")
     savanna = biome_set("savanna")
+    isle = biome_set("isle")
     heartland = biome_set("heartland")
 
     def sample(biome, seed_base, n=600, lvl=20, danger=5):
@@ -62,6 +63,7 @@ def test_biome_steers_encounters_without_emptying_pool():
         ("moor", moor, desert, 7000),
         ("jungle", jungle, swamp_b, 9000),
         ("savanna", savanna, jungle, 11000),
+        ("isle", isle, jungle, 13000),
     ]
     for biome, local, foreign, seed_base in cases:
         t = sample(biome, seed_base)
@@ -79,7 +81,7 @@ def test_biome_steers_encounters_without_emptying_pool():
 
 def test_every_location_has_biome():
     gd, _ = _char()
-    valid = {"heartland", "snow", "ashland", "swamp", "desert", "moor", "jungle", "savanna"}
+    valid = {"heartland", "snow", "ashland", "swamp", "desert", "moor", "jungle", "savanna", "isle"}
     for lid, loc in gd.world["locations"].items():
         assert loc.get("biome") in valid, f"{lid} biome 非法:{loc.get('biome')}"
     # absorb test_creature_biomes_are_valid:bestiary 每隻怪的 biomes 全合法(共用同一 valid 集合)
@@ -99,9 +101,11 @@ def test_highrock_signature_creatures_weak_to_shock():
     #                 故 shock 負值須夠負以蓋過 magic 正值,招牌怪才真弱電。
     #  jungle/fire ── 瓦倫森林=以烈焰焚林。fire ∈ MAGIC_ELEMENTS 會疊 magic 鍵,故招牌怪刻意不帶 magic 鍵。
     #  savanna/poison ── 艾爾斯維爾=練塗毒/煉金刺客。poison ∉ MAGIC_ELEMENTS,不疊 magic 鍵,負值即直接放大傷害。
+    #  isle/shock ── 夏暮群島(R176)=海洋生物導電(R138b 現實邏輯)。shock ∈ MAGIC_ELEMENTS 會疊 magic 鍵,
+    #                故招牌怪刻意不帶 magic 鍵;現存電剋僅 moor 一系,群島補成第二個電系剋星生態。
     #  🔴 R139 現實邏輯豁免:不死系(undead:true)無血肉代謝 → 不吃生態弱性軸(dro_mathra_shade
     #     曾被此測試鎖成「弱毒 -45 且以毒攻擊的幽魂」= 鐵律零號總則違例;豁免後改 poison:100)。
-    for biome, element in [("moor", "shock"), ("jungle", "fire"), ("savanna", "poison")]:
+    for biome, element in [("moor", "shock"), ("jungle", "fire"), ("savanna", "poison"), ("isle", "shock")]:
         cids = [cid for cid, c in gd.bestiary.items()
                 if biome in c.get("biomes", []) and not c.get("undead")]
         assert len(cids) >= 5, f"{biome} 招牌怪太少:{cids}"

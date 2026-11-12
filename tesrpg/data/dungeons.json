@@ -314,5 +314,205 @@
   "niben_bandit_hold": {"name": "尼本河匪窟", "biome": "swamp", "danger": 5, "grid": 5, "layers": 3, "monsters": ["bandit", "mudcrab", "giant_spider", "swamp_leech", "jungle_toad"], "loot": ["filled_greater_soul_gem", "filled_grand_soul_gem", "ruby", "healing_potion", "ebony_ingot"], "loot_locked": [40, 58], "boss": {"enemy": "avarice_tyrant", "raw": true, "desc": "匪窟最深的贓貨窖藏 —— 成堆劫掠來的商貨與生鏽的鎖鏈之間,貪婪暴君坐在金幣壘成的椅子上,苦工的呻吟自陰影裡傳來。他慢條斯理地擦拭淬毒的短刃,抬眼打量你身上還能榨出多少油水。", "treasure": {"loot": ["filled_grand_soul_gem", "filled_grand_soul_gem", "ruby", "gold_amulet", "healing_potion", {"gold": [320, 560]}]}}},
   "blighted_grove": {"name": "枯萎的聖林", "biome": "heartland", "danger": 5, "grid": 5, "layers": 3, "monsters": ["spriggan", "giant_spider", "jungle_toad", "will_o_wisp", "bog_troll"], "loot": ["filled_greater_soul_gem", "filled_grand_soul_gem", "ruby", "healing_potion", "ebony_ingot"], "loot_locked": [40, 58], "boss": {"enemy": "blighted_matron", "raw": true, "desc": "聖林最深處那株千年的心木 —— 樹皮龜裂剝落,滲著黑膿般的枯萎;枯萎的林母自扭曲的枝幹間探出身來,蝕根在腐土下蠕動,孢子的甜腥氣息瀰漫。將這株心木的痛苦了結,讓風重新穿過樹冠。", "treasure": {"loot": ["filled_grand_soul_gem", "filled_grand_soul_gem", "ruby", "healing_potion", "healing_potion", {"gold": [200, 400]}]}}},
   "bravil_drowned_crypt": {"name": "布拉維爾沉水地窟", "biome": "swamp", "danger": 5, "grid": 5, "layers": 3, "monsters": ["will_o_wisp", "dro_mathra_shade", "marsh_zombie", "ice_wraith", "skeleton"], "loot": ["filled_greater_soul_gem", "filled_grand_soul_gem", "ruby", "healing_potion", "ebony_ingot"], "loot_locked": [40, 58], "boss": {"enemy": "grief_shade", "raw": true, "desc": "地窟最深的積水殮室 —— 半沉的棺槨在黑水裡漂浮,牆上刻滿了無人記得的名字。哀慟之影自水面凝形而起,把一城被遺忘的悲傷化作徹骨的寒意朝你壓來。讓這些哀傷歸於安息。", "treasure": {"loot": ["filled_grand_soul_gem", "filled_grand_soul_gem", "ruby", "healing_potion", "healing_potion", {"gold": [200, 400]}]}}},
-  "abecean_grotto": {"name": "阿比西亞海妖窟", "biome": "heartland", "danger": 5, "grid": 5, "layers": 3, "monsters": ["slaughterfish", "mudcrab", "will_o_wisp", "marsh_zombie", "harpy"], "loot": ["filled_greater_soul_gem", "filled_grand_soul_gem", "ruby", "healing_potion", "ebony_ingot"], "loot_locked": [40, 58], "boss": {"enemy": "beguiling_siren", "raw": true, "desc": "海蝕洞最深的礁潭 —— 潭水映著詭異的粼光,沉在水底的是一具具還帶著微笑的溺者。蠱惑海妖自水霧中浮現,以蒂貝拉的容顏對你唱起綺夢的歌。斬斷這場虛妄,讓那些沉溺者得以安息。", "treasure": {"loot": ["filled_grand_soul_gem", "filled_grand_soul_gem", "ruby", "gold_amulet", "healing_potion", {"gold": [200, 400]}]}}}
+  "abecean_grotto": {"name": "阿比西亞海妖窟", "biome": "heartland", "danger": 5, "grid": 5, "layers": 3, "monsters": ["slaughterfish", "mudcrab", "will_o_wisp", "marsh_zombie", "harpy"], "loot": ["filled_greater_soul_gem", "filled_grand_soul_gem", "ruby", "healing_potion", "ebony_ingot"], "loot_locked": [40, 58], "boss": {"enemy": "beguiling_siren", "raw": true, "desc": "海蝕洞最深的礁潭 —— 潭水映著詭異的粼光,沉在水底的是一具具還帶著微笑的溺者。蠱惑海妖自水霧中浮現,以蒂貝拉的容顏對你唱起綺夢的歌。斬斷這場虛妄,讓那些沉溺者得以安息。", "treasure": {"loot": ["filled_grand_soul_gem", "filled_grand_soul_gem", "ruby", "gold_amulet", "healing_potion", {"gold": [200, 400]}]}}},
+  "crystal_tower": {
+    "name": "水晶塔",
+    "biome": "isle",
+    "danger": 5,
+    "grid": 5,
+    "layers": 3,
+    "monsters": [
+      "sea_sload",
+      "yaghra",
+      "maormer_raider"
+    ],
+    "loot": [
+      "filled_greater_soul_gem",
+      "filled_grand_soul_gem",
+      "ruby",
+      "glass_cuirass"
+    ],
+    "loot_locked": [
+      40,
+      58
+    ],
+    "boss": {
+      "enemy": "sload_prelate",
+      "raw": true,
+      "desc": "塔心最高的一層,水晶柱折射出破碎的光 —— 斯洛德祭司長盤踞在智者們遺留的奧秘之上,黏滑的觸掌拂過每一根晶柱。擊退牠,讓塔重新沉回寧靜。",
+      "treasure": {
+        "loot": [
+          "filled_grand_soul_gem",
+          "filled_greater_soul_gem",
+          "ruby",
+          "glass_shield",
+          "healing_potion",
+          {
+            "gold": [
+              160,
+              340
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "cey_tarn_keep": {
+    "name": "瑟伊-塔恩要塞",
+    "biome": "isle",
+    "danger": 3,
+    "grid": 5,
+    "layers": 3,
+    "monsters": [
+      "maormer_raider",
+      "sea_serpent"
+    ],
+    "loot": [
+      "filled_lesser_soul_gem",
+      "silver_ring",
+      "healing_potion",
+      "gold_ring"
+    ],
+    "loot_locked": [
+      14,
+      24
+    ],
+    "boss": {
+      "enemy": "maormer_captain",
+      "desc": "要塞最高的瞭望廳,海精靈的劫掠船長把戰利品堆在舊王座前,彎刀斜倚在石桌邊。斬下他的頭,讓海岸的哨火重新亮起。",
+      "treasure": {
+        "loot": [
+          "healing_potion",
+          "gold_ring",
+          "ruby",
+          {
+            "gold": [
+              70,
+              150
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "eldbur_ruins": {
+    "name": "艾爾德布廢墟",
+    "biome": "isle",
+    "danger": 3,
+    "grid": 5,
+    "layers": 3,
+    "monsters": [
+      "sea_sload",
+      "sea_serpent"
+    ],
+    "loot": [
+      "filled_lesser_soul_gem",
+      "pearl",
+      "healing_potion",
+      "silver_amulet"
+    ],
+    "loot_locked": [
+      14,
+      24
+    ],
+    "boss": {
+      "enemy": "sea_sload",
+      "desc": "廢墟最深處的水窖積著齊膝的黑水,牆上的古老符文在水光裡明滅 —— 一頭年老的斯洛德盤在石階上,像在守著什麼比命更重要的東西。",
+      "treasure": {
+        "loot": [
+          "filled_lesser_soul_gem",
+          "pearl",
+          "healing_potion",
+          {
+            "gold": [
+              60,
+              130
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "sil_var_woad": {
+    "name": "辛爾瓦伍德",
+    "biome": "isle",
+    "danger": 4,
+    "grid": 5,
+    "layers": 3,
+    "monsters": [
+      "yaghra",
+      "sea_serpent",
+      "sea_sload"
+    ],
+    "loot": [
+      "filled_lesser_soul_gem",
+      "filled_greater_soul_gem",
+      "pearl",
+      "ruby"
+    ],
+    "loot_locked": [
+      24,
+      36
+    ],
+    "boss": {
+      "enemy": "yaghra",
+      "desc": "洞穴盡頭的深潭裡,亞格拉的巨影緩緩升起,觸腕上掛著不知多少船難者留下的碎片。牠守著的,是整整一個巢穴的珍珠與寶石。",
+      "treasure": {
+        "loot": [
+          "filled_greater_soul_gem",
+          "pearl",
+          "ruby",
+          "healing_potion",
+          {
+            "gold": [
+              80,
+              170
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "dusk_keep": {
+    "name": "暮色塔",
+    "biome": "isle",
+    "danger": 4,
+    "grid": 5,
+    "layers": 3,
+    "monsters": [
+      "sea_serpent",
+      "maormer_raider",
+      "yaghra"
+    ],
+    "loot": [
+      "filled_greater_soul_gem",
+      "pearl",
+      "ruby",
+      "gold_amulet"
+    ],
+    "loot_locked": [
+      24,
+      36
+    ],
+    "boss": {
+      "enemy": "snakeskin_leviathan",
+      "raw": true,
+      "desc": "塔底的海蝕洞積著黑水,海精靈偷運來的贓物堆在洞壁的石棚上 —— 水面忽然翻起巨浪,蛇皮巨獸盤起滿佈濕鱗的身軀,擋在贓物與你之間。",
+      "treasure": {
+        "loot": [
+          "filled_greater_soul_gem",
+          "pearl",
+          "ruby",
+          "gold_amulet",
+          "healing_potion",
+          {
+            "gold": [
+              100,
+              200
+            ]
+          }
+        ]
+      }
+    }
+  }
 }

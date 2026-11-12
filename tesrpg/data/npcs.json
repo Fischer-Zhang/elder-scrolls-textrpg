@@ -1963,5 +1963,155 @@
     "disposition": 35,
     "greeting": "「破曉將至,凡俗無從理解。」",
     "combat_template": "dawn_mentor"
+  },
+  "alinor_aide": {
+    "name": "王廷侍從 瑟爾溫",
+    "location": "alinor",
+    "disposition": 38,
+    "greeting": "「王廷不接見無名之輩。不過……既然你能平安渡海而來,或許有些本事。有話快說。」",
+    "rumor": "「近年海精靈的帆影越來越近,西南的瑟伊-塔恩要塞已落入他們手中 —— 王廷想收復,卻不願多派精銳。」",
+    "quest": null
+  },
+  "alinor_battlemage": {
+    "name": "宮廷戰法師 艾蘭妮",
+    "location": "alinor",
+    "disposition": 44,
+    "greeting": "「毀滅之術講求精準與節制,不是亂扔火球。你若想學,先學會別燒到自己。」",
+    "rumor": "「海裡的東西 —— 海蛇、亞格拉、斯洛德 —— 皮厚耐寒,卻都怕雷電。海水導電,一道閃電勝過十支箭;去之前,先在法師公會備好雷咒。」",
+    "quest": null
+  },
+  "alinor_merchant": {
+    "name": "港埠商人 伊爾梵",
+    "location": "alinor",
+    "disposition": 48,
+    "greeting": "「諸島的甲冑與秘藥,件件都是上品。價錢嘛……也是上品。」",
+    "rumor": "「大陸來的商船最近少了,聽說海峽上不太平,不是巨蛇就是海盜。」",
+    "quest": null,
+    "role": "merchant"
+  },
+  "lillandril_scribe": {
+    "name": "學院書記 凱爾蘭",
+    "location": "lillandril",
+    "disposition": 46,
+    "greeting": "「安靜,這裡是智者學院。有疑問請登記,三個月後回覆。」",
+    "rumor": "「北端的水晶塔近來不對勁 —— 塔基有人看見黏滑的影子出沒。院長下令,沒有手諭誰也不准靠近。」",
+    "quest": null,
+    "role": "scholar"
+  },
+  "lillandril_mentor": {
+    "name": "院生導師 艾斯瑞爾",
+    "location": "lillandril",
+    "disposition": 44,
+    "greeting": "「奧秘不是拿來炫耀的。你想學什麼 —— 解咒、看穿謊言,還是讓自己的魔力不被奪走?」",
+    "rumor": "「神秘之術的精髓在『洞察』而非『力量』。真正的智者,看一眼就知道對手的弱點在哪。」",
+    "quest": null
+  },
+  "lillandril_archivist": {
+    "name": "藏書管理員 塔瑞恩",
+    "location": "lillandril",
+    "disposition": 50,
+    "greeting": "「禁書區?不開放。……除非你有首席智者的簽名。」",
+    "rumor": "「舊照明學院的廢墟裡還留著些殘卷,可惜那地方夜裡不乾淨,沒人敢去收。」",
+    "quest": null,
+    "role": "scholar"
+  },
+  "firsthold_veteran": {
+    "name": "老衛兵 瓦蘭迪爾",
+    "location": "firsthold",
+    "disposition": 42,
+    "greeting": "「我在這道海牆上站了四十年。你想知道什麼?海面上的動靜,我比誰都清楚。」",
+    "rumor": "「海精靈的突襲者專挑退潮的夜裡摸上岸 —— 他們的鉤矛會把人拖進水裡,別被纏住。」",
+    "quest": null
+  },
+  "firsthold_harbormaster": {
+    "name": "稅務官 美瑞安",
+    "location": "firsthold",
+    "disposition": 40,
+    "greeting": "「入港稅,每人兩枚金幣。……是的,哪怕你是英雄。」",
+    "rumor": "「奧里頓海峽的船班時有時無。要渡海去大陸,最好跟著商隊的護航艦走。」",
+    "quest": null,
+    "role": "merchant"
+  },
+  "firsthold_sailor": {
+    "name": "老水手 歐尼亞",
+    "location": "firsthold",
+    "disposition": 52,
+    "greeting": "「年輕人,海不是用來看的,是用來敬畏的。你見過蛇皮巨獸嗎?我見過一次,就夠了。」",
+    "rumor": "「東南岸暮色塔底下盤著一頭蛇皮巨獸 —— 海蛇與海精靈詭術的怪異混合。據說牠守著海盜們私藏的贓物。」",
+    "quest": null
+  },
+  "skywatch_lookout": {
+    "name": "天守瞭望者 艾拉米爾",
+    "location": "skywatch",
+    "disposition": 46,
+    "greeting": "「從這座塔頂,我能看到半個奧里頓。你要是想找人,先問我。」",
+    "rumor": "「南航道那邊最近有巨蛇出沒,商船請傭兵護航才敢走。」",
+    "quest": null
+  },
+  "skywatch_priest": {
+    "name": "神殿祭司 芙妮絲",
+    "location": "skywatch",
+    "disposition": 48,
+    "greeting": "「願光輝庇佑你,旅人。夏暮的光,是眾神最後的偏愛。」",
+    "rumor": "「別小看海裡的東西 —— 斯洛德的祭司長會用腐蝕黏液,沾上就難洗。隨身帶些解毒藥。」",
+    "quest": null,
+    "role": "priest"
+  },
+  "skywatch_smuggler": {
+    "name": "走私掮客 洛恩",
+    "location": "skywatch",
+    "disposition": 40,
+    "greeting": "「小聲點。你想買什麼?我這兒沒有『不能問』的東西,只有『不方便說』的價格。」",
+    "rumor": "「海精靈的劫掠船長盤據在西南的瑟伊-塔恩要塞,帶頭的人貪得很,聽說藏了不少寶。」",
+    "quest": null,
+    "role": "merchant"
+  },
+  "shimmerene_fisher": {
+    "name": "漁夫 泰迪爾",
+    "location": "shimmerene",
+    "disposition": 50,
+    "greeting": "「今天海水太靜了……靜得讓人發毛。你要出海?我勸你別。」",
+    "rumor": "「近來撈上來的魚鱗都帶著奇怪的藍光,老人說是深海的東西在往岸邊遷。」",
+    "quest": null
+  },
+  "shimmerene_shipwright": {
+    "name": "船匠 瑟琳",
+    "location": "shimmerene",
+    "disposition": 46,
+    "greeting": "「這條船是我親手造的。說它不怕風浪?那是騙人的,但至少不怕你。」",
+    "rumor": "「東南的辛爾瓦伍德谷地底下通深海,亞格拉在那築了巢 —— 漁夫們寧可繞遠路。」",
+    "quest": null
+  },
+  "sunhold_watch": {
+    "name": "海岸守望者 阿瑪倫",
+    "location": "sunhold",
+    "disposition": 44,
+    "greeting": "「南岸的礁灘最不好守。每個月總有一兩次,海上的東西想爬上來。」",
+    "rumor": "「想對付海邊的東西,記住這個:雷電。牠們的皮擋得住寒、擋不住電。」",
+    "quest": null
+  },
+  "sunhold_diver": {
+    "name": "採珠人 伊蘭薇",
+    "location": "sunhold",
+    "disposition": 52,
+    "greeting": "「我潛過三十年的海。珍珠?有,但深水裡有東西在看著我們。」",
+    "rumor": "「海底的珍珠常是亞格拉巢穴旁的『戰利品』 —— 想要,就得先打贏牠。」",
+    "quest": null
+  },
+  "cloudrest_hermit": {
+    "name": "山頂隱士 瑞蘭",
+    "location": "cloudrest",
+    "disposition": 54,
+    "greeting": "「高處的空氣稀薄,頭腦才清醒。山下的紛爭,到這裡只剩一縷風聲。」",
+    "rumor": "「伊頓尼爾山麓的碎岩小徑不穩,雨後尤其危險;從雲棲下山,先看天色再走。」",
+    "quest": null
+  },
+  "cloudrest_stargazer": {
+    "name": "觀星者 艾瑟妮",
+    "location": "cloudrest",
+    "disposition": 50,
+    "greeting": "「今晚星象不太對。我記下了,但大概沒人想聽。」",
+    "rumor": "「水晶塔的光近來忽明忽暗,從這裡看得最清楚。老人說,那是塔在『呼吸』。」",
+    "quest": null
   }
 }

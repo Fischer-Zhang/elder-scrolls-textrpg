@@ -2651,5 +2651,80 @@
     "effects": []
    }
   ]
+ },
+ "isle_forage": {
+  "weight": 3,
+  "trigger": {
+   "contexts": [
+    "explore"
+   ],
+   "provinces": [
+    "夏暮群島"
+   ]
+  },
+  "title": "花果採集",
+  "text": "海風送來花果的甜香;灌木叢間垂著熟透的果子,帝王蝶在果香間翩翩起落。",
+  "options": [
+   {
+    "text": "在花果叢間採集",
+    "effects": [
+     {
+      "type": "forage_pool",
+      "pool": "isle"
+     }
+    ]
+   },
+   {
+    "text": "沒興趣",
+    "effects": []
+   }
+  ]
+ },
+ "isle_raider_ambush": {
+  "weight": 3,
+  "trigger": {
+   "contexts": [
+    "explore"
+   ],
+   "provinces": [
+    "夏暮群島"
+   ],
+   "location_types": [
+    "wilderness"
+   ]
+  },
+  "title": "岩影間的伏擊",
+  "text": "岩石的陰影裡,一道修長的身影無聲逼近 —— 海精靈突襲者循著你的足跡摸了過來,鉤矛的尖端在日光下一閃。",
+  "options": [
+   {
+    "text": "搶在他出手前迎上去",
+    "effects": [
+     {
+      "type": "combat",
+      "creature": "maormer_raider"
+     }
+    ]
+   },
+   {
+    "text": "屏息繞開、避其鋒芒(潛行)",
+    "check": {
+     "skill": "sneak",
+     "difficulty": 42,
+     "success": {
+      "text": "你貼著岩壁無聲退開,那道身影在亂石間失去了你的足跡。",
+      "effects": []
+     },
+     "failure": {
+      "text": "碎石的聲響暴露了你,突襲者低喝一聲撲了上來!",
+      "effects": [
+       {
+        "type": "combat",
+        "creature": "maormer_raider"
+       }
+      ]
+     }
+    }
+   }
+  ]
  }
 }

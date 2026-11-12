@@ -11393,5 +11393,548 @@
    }
   ],
   "flavor": "她以蠱惑的歌聲盜用了蒂貝拉的美,在阿比西亞的礁岩間為過往的水手與尋美的藝匠織起一場又一場虛妄的綺夢 —— 直到他們甘願沉入海底,只為再多看她一眼。那不是愛,是把美當成了誘餌的貪婪。"
+ },
+ "maormer_raider": {
+  "biomes": [
+   "isle"
+  ],
+  "name": "海精靈突襲者",
+  "strength": 48,
+  "agility": 50,
+  "speed": 46,
+  "max_health": 46,
+  "armor_rating": 14,
+  "attack": {
+   "name": "彎刀劈砍",
+   "damage": 11,
+   "skill": 44
+  },
+  "attacks": [
+   {
+    "name": "彎刀劈砍",
+    "damage": 11,
+    "skill": 44,
+    "weight": 3
+   },
+   {
+    "name": "鉤矛突刺",
+    "damage": 13,
+    "skill": 44,
+    "weight": 2,
+    "on_hit": {
+     "status": "slow",
+     "magnitude": 0.25,
+     "turns": 2,
+     "chance": 0.25
+    }
+   },
+   {
+    "name": "投擲標矛",
+    "damage": 10,
+    "skill": 44,
+    "weight": 1,
+    "ranged": true
+   }
+  ],
+  "danger": 2,
+  "min_level": 2,
+  "weight": 4,
+  "resist": {
+   "shock": -20
+  },
+  "loot_gold": [
+   4,
+   14
+  ],
+  "loot": [
+   {
+    "item": "minor_healing_potion",
+    "chance": 0.2
+   },
+   {
+    "item": "lockpick",
+    "chance": 0.2
+   },
+   {
+    "item": "silver_ring",
+    "chance": 0.1
+   }
+  ],
+  "flavor": "退潮的暗夜裡,一道修長的身影翻過礁岩 —— 膚色蒼青的海精靈突襲者握著彎刀與鉤矛,眼裡只有你腰間的錢袋。"
+ },
+ "sea_serpent": {
+  "biomes": [
+   "isle"
+  ],
+  "name": "海蛇",
+  "strength": 58,
+  "agility": 54,
+  "speed": 56,
+  "max_health": 72,
+  "armor_rating": 10,
+  "attack": {
+   "name": "毒牙噬咬",
+   "damage": 15,
+   "skill": 50,
+   "element": "poison",
+   "on_hit": {
+    "status": "dot",
+    "element": "poison",
+    "magnitude": 3,
+    "turns": 2,
+    "chance": 0.4
+   }
+  },
+  "attacks": [
+   {
+    "name": "毒牙噬咬",
+    "damage": 15,
+    "skill": 50,
+    "element": "poison",
+    "weight": 3,
+    "on_hit": {
+     "status": "dot",
+     "element": "poison",
+     "magnitude": 3,
+     "turns": 2,
+     "chance": 0.4
+    }
+   },
+   {
+    "name": "蛇身纏絞",
+    "damage": 13,
+    "skill": 50,
+    "weight": 2,
+    "on_hit": {
+     "status": "slow",
+     "magnitude": 0.3,
+     "turns": 2,
+     "chance": 0.3
+    }
+   }
+  ],
+  "danger": 3,
+  "min_level": 4,
+  "weight": 3,
+  "habitat_bound": true,
+  "resist": {
+   "physical": 10,
+   "frost": 50,
+   "shock": -40
+  },
+  "loot_gold": [
+   2,
+   10
+  ],
+  "loot": [
+   {
+    "item": "pearl",
+    "chance": 0.15
+   },
+   {
+    "item": "minor_healing_potion",
+    "chance": 0.1
+   }
+  ],
+  "flavor": "水面下一道長影倏地逼近,海蛇昂起碗口粗的蛇身,毒牙間垂著透明的涎。"
+ },
+ "sea_sload": {
+  "biomes": [
+   "isle"
+  ],
+  "name": "海洋斯洛德",
+  "strength": 44,
+  "agility": 42,
+  "speed": 40,
+  "max_health": 62,
+  "armor_rating": 8,
+  "attack": {
+   "name": "腐蝕黏液",
+   "damage": 12,
+   "skill": 48,
+   "element": "poison",
+   "on_hit": {
+    "status": "dot",
+    "element": "poison",
+    "magnitude": 2,
+    "turns": 3,
+    "chance": 0.35
+   }
+  },
+  "attacks": [
+   {
+    "name": "腐蝕黏液",
+    "damage": 12,
+    "skill": 48,
+    "element": "poison",
+    "weight": 2,
+    "ranged": true,
+    "on_hit": {
+     "status": "dot",
+     "element": "poison",
+     "magnitude": 2,
+     "turns": 3,
+     "chance": 0.35
+    }
+   },
+   {
+    "name": "吸附觸掌",
+    "damage": 14,
+    "skill": 48,
+    "weight": 2,
+    "on_hit": {
+     "status": "slow",
+     "magnitude": 0.25,
+     "turns": 2,
+     "chance": 0.3
+    }
+   }
+  ],
+  "danger": 3,
+  "min_level": 4,
+  "weight": 3,
+  "habitat_bound": true,
+  "resist": {
+   "poison": 50,
+   "frost": 25,
+   "shock": -30
+  },
+  "loot_gold": [
+   3,
+   12
+  ],
+  "loot": [
+   {
+    "item": "filled_lesser_soul_gem",
+    "chance": 0.25
+   },
+   {
+    "item": "pearl",
+    "chance": 0.1
+   },
+   {
+    "item": "healing_potion",
+    "chance": 0.1
+   }
+  ],
+  "flavor": "黏滑的身影自潮濕的石縫裡淌出 —— 海洋斯洛德無聲地挪動,滴落的黏液在地上嘶嘶冒煙。"
+ },
+ "yaghra": {
+  "biomes": [
+   "isle"
+  ],
+  "name": "亞格拉",
+  "strength": 68,
+  "agility": 46,
+  "speed": 40,
+  "max_health": 102,
+  "armor_rating": 14,
+  "attack": {
+   "name": "觸腕重擊",
+   "damage": 20,
+   "skill": 54
+  },
+  "attacks": [
+   {
+    "name": "觸腕重擊",
+    "damage": 20,
+    "skill": 54,
+    "weight": 3
+   },
+   {
+    "name": "深海絞纏",
+    "damage": 16,
+    "skill": 54,
+    "weight": 2,
+    "on_hit": {
+     "status": "slow",
+     "magnitude": 0.3,
+     "turns": 2,
+     "chance": 0.35
+    }
+   },
+   {
+    "name": "潮湧猛撞",
+    "damage": 26,
+    "skill": 56,
+    "weight": 1,
+    "cooldown": 3
+   }
+  ],
+  "danger": 4,
+  "min_level": 7,
+  "weight": 2,
+  "habitat_bound": true,
+  "resist": {
+   "physical": 15,
+   "frost": 40,
+   "poison": 25,
+   "shock": -35
+  },
+  "loot_gold": [
+   6,
+   18
+  ],
+  "loot": [
+   {
+    "item": "pearl",
+    "chance": 0.3
+   },
+   {
+    "item": "filled_lesser_soul_gem",
+    "chance": 0.2
+   }
+  ],
+  "flavor": "深水裡湧起一團巨影,亞格拉的觸腕拍打著礁岩,每一隻吸盤都比人頭還大。"
+ },
+ "maormer_captain": {
+  "biomes": [
+   "isle"
+  ],
+  "name": "海精靈劫掠船長",
+  "strength": 62,
+  "agility": 56,
+  "speed": 52,
+  "max_health": 96,
+  "armor_rating": 22,
+  "attack": {
+   "name": "彎刀猛斬",
+   "damage": 18,
+   "skill": 52
+  },
+  "attacks": [
+   {
+    "name": "彎刀猛斬",
+    "damage": 18,
+    "skill": 52,
+    "weight": 3
+   },
+   {
+    "name": "盾牌猛撞",
+    "damage": 14,
+    "skill": 52,
+    "weight": 2,
+    "on_hit": {
+     "status": "stagger",
+     "turns": 1,
+     "chance": 0.3
+    }
+   },
+   {
+    "name": "號令突擊",
+    "damage": 22,
+    "skill": 54,
+    "weight": 1,
+    "cooldown": 3
+   }
+  ],
+  "danger": 3,
+  "min_level": 5,
+  "weight": 0,
+  "solo": true,
+  "resist": {
+   "shock": -25
+  },
+  "loot_gold": [
+   20,
+   50
+  ],
+  "loot": [
+   {
+    "item": "healing_potion",
+    "chance": 0.3
+   },
+   {
+    "item": "gold_ring",
+    "chance": 0.25
+   },
+   {
+    "item": "elven_sword",
+    "chance": 0.1
+   }
+  ],
+  "flavor": "他披著濕透的鯊皮甲,彎刀斜指:「這片海岸,從今天起歸我們。」"
+ },
+ "snakeskin_leviathan": {
+  "biomes": [
+   "isle"
+  ],
+  "name": "蛇皮巨獸",
+  "strength": 82,
+  "agility": 58,
+  "speed": 56,
+  "max_health": 205,
+  "armor_rating": 22,
+  "attack": {
+   "name": "巨口噬咬",
+   "damage": 28,
+   "skill": 60,
+   "element": "poison",
+   "on_hit": {
+    "status": "dot",
+    "element": "poison",
+    "magnitude": 4,
+    "turns": 2,
+    "chance": 0.4
+   }
+  },
+  "attacks": [
+   {
+    "name": "巨口噬咬",
+    "damage": 28,
+    "skill": 60,
+    "element": "poison",
+    "weight": 3,
+    "on_hit": {
+     "status": "dot",
+     "element": "poison",
+     "magnitude": 4,
+     "turns": 2,
+     "chance": 0.4
+    }
+   },
+   {
+    "name": "蛇尾橫掃",
+    "damage": 24,
+    "skill": 60,
+    "weight": 2,
+    "on_hit": {
+     "status": "stagger",
+     "turns": 1,
+     "chance": 0.3
+    }
+   },
+   {
+    "name": "濕鱗纏縛",
+    "damage": 20,
+    "skill": 60,
+    "weight": 2,
+    "on_hit": {
+     "status": "slow",
+     "magnitude": 0.3,
+     "turns": 2,
+     "chance": 0.35
+    }
+   }
+  ],
+  "danger": 5,
+  "min_level": 12,
+  "weight": 0,
+  "solo": true,
+  "raw": true,
+  "resist": {
+   "physical": 20,
+   "frost": 50,
+   "poison": 50,
+   "shock": -35
+  },
+  "loot_gold": [
+   40,
+   90
+  ],
+  "loot": [
+   {
+    "item": "pearl",
+    "chance": 0.5
+   },
+   {
+    "item": "filled_greater_soul_gem",
+    "chance": 0.3
+   },
+   {
+    "item": "ruby",
+    "chance": 0.2
+   }
+  ],
+  "flavor": "海蛇的鱗與海精靈的詭術在牠身上扭成一體,蛇皮巨獸拖著濕淋淋的長尾自洞中盤起,每一次呼吸都帶著鹹腥的毒霧。"
+ },
+ "sload_prelate": {
+  "biomes": [
+   "isle"
+  ],
+  "name": "斯洛德祭司長",
+  "strength": 66,
+  "agility": 50,
+  "speed": 46,
+  "max_health": 215,
+  "armor_rating": 14,
+  "attack": {
+   "name": "腐蝕黏液",
+   "damage": 26,
+   "skill": 62,
+   "element": "poison",
+   "on_hit": {
+    "status": "dot",
+    "element": "poison",
+    "magnitude": 4,
+    "turns": 3,
+    "chance": 0.4
+   }
+  },
+  "attacks": [
+   {
+    "name": "腐蝕黏液",
+    "damage": 26,
+    "skill": 62,
+    "element": "poison",
+    "weight": 3,
+    "ranged": true,
+    "on_hit": {
+     "status": "dot",
+     "element": "poison",
+     "magnitude": 4,
+     "turns": 3,
+     "chance": 0.4
+    }
+   },
+   {
+    "name": "觸掌猛擊",
+    "damage": 28,
+    "skill": 62,
+    "weight": 2
+   },
+   {
+    "name": "深海詛咒",
+    "damage": 22,
+    "skill": 62,
+    "element": "frost",
+    "weight": 2,
+    "on_hit": {
+     "status": "weaken",
+     "magnitude": 0.25,
+     "turns": 2,
+     "chance": 0.35
+    }
+   }
+  ],
+  "danger": 5,
+  "min_level": 14,
+  "weight": 0,
+  "solo": true,
+  "raw": true,
+  "resist": {
+   "poison": 75,
+   "frost": 40,
+   "shock": -40
+  },
+  "loot_gold": [
+   40,
+   100
+  ],
+  "loot": [
+   {
+    "item": "filled_greater_soul_gem",
+    "chance": 0.5
+   },
+   {
+    "item": "ruby",
+    "chance": 0.3
+   },
+   {
+    "item": "glass_dagger",
+    "chance": 0.15
+   }
+  ],
+  "flavor": "斯洛德祭司長自晶柱間緩緩直起身,黏滑的觸掌拂過水晶,留下一道道腐蝕的痕跡。"
  }
 }

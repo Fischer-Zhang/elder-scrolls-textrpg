@@ -120,6 +120,19 @@
         "jarrin_root"
       ]
     },
+    "isle": {
+      "_name": "夏暮群島花果海岸",
+      "common": [
+        "lavender",
+        "red_apple",
+        "monarch_wing"
+      ],
+      "uncommon": [
+        "luna_moth_wing",
+        "nirnroot",
+        "bittergreen_petal"
+      ]
+    },
     "border": {
       "_name": "邊陲混生荒地",
       "common": [
