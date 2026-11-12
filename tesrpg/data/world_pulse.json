@@ -106,5 +106,23 @@
     "min_day": 5,
     "spotlight_quests": ["comm_blackmarsh_lizard", "comm_blackmarsh_troll", "comm_blackmarsh_deathbell", "cint_blackmarsh_informers"],
     "news": "黑沼澤濕地水漲,沼蜥侵村、泥沼巨魔潛伏,吉迪恩的告示板貼出獵蜥、獵魔與供應委託。"
+  },
+  "pulse_summerset_searaid": {
+    "province": "夏暮群島",
+    "weight": 2,
+    "cooldown_days": 11,
+    "active_window_days": 8,
+    "min_day": 5,
+    "spotlight_quests": ["comm_summerset_raider", "comm_summerset_serpent", "comm_summerset_pearl"],
+    "news": "夏暮沿岸烽火頻傳 —— 海精靈的蛇艏船趁夜襲岸、巨蛇尾隨而至,阿林諾爾王廷與各港的告示板貼滿了剿寇、獵蛇與收珠委託。"
+  },
+  "pulse_summerset_deepstir": {
+    "province": "夏暮群島",
+    "weight": 2,
+    "cooldown_days": 11,
+    "active_window_days": 8,
+    "min_day": 6,
+    "spotlight_quests": ["comm_summerset_sload", "comm_summerset_yaghra", "comm_summerset_moth"],
+    "news": "夏暮近海的深水有了動靜 —— 斯洛德的黏影貼著礁岸蠕行、亞格拉成群上灘,智者學院與南岸守望在告示板貼出獵殺與供應委託。"
   }
 }

@@ -244,5 +244,31 @@
     "success_text": "你逐層讀通了封印的疊壓之序,符印如花瓣般次第綻開 —— 聖物匣無聲落下。",
     "reward": {"loot": ["filled_grand_soul_gem", {"item": "ebony_ingot", "chance": 0.5}, {"item": "dragon_scale", "chance": 0.3}, {"gold": [70, 140]}]},
     "penalty": {"type": "damage", "amount": [10, 20], "text": "最後一道封印在你指下炸開一記奧術爆閃 —— 你受了 {dmg} 點傷害。"}
+  },
+  "lore_isle_tidemark": {
+    "kind": "lore",
+    "style": "cyan",
+    "text": "潮線以上的石壁刻著上古精靈的古文,記述先民如何以光與歌驅退自深海爬上岸的東西;潮線以下的字跡早被黏液與藤壺覆沒,只剩幾道不屬於任何精靈之手的抓痕。"
+  },
+  "lore_maormer_logbook": {
+    "kind": "lore",
+    "style": "cyan",
+    "text": "牆角釘著一張泡爛的航海誌,以海精靈的蛇形字寫成。你只認得出反覆出現的潮汐記號,與頁邊一行歪斜的通用文:『退潮三刻,哨火未亮 —— 就是今晚。』"
+  },
+
+  "shrine_tidal_prism": {
+    "kind": "shrine",
+    "text": "一座上古精靈的稜晶立在殘壇上,不知何處透來的光穿過它,在牆上析出七色的潮紋。",
+    "prompt": "潮光稜晶 —— 你要?",
+    "offers": [
+      {"key": "attune", "label": "凝神觀照(強化智力,但稜光灼目)",
+       "buff": {"kind": "fortify_attribute", "param": "intelligence", "magnitude": 12, "hours": 6},
+       "gain_text": "稜光在腦海裡理出清晰的紋路,思緒澄澈如鏡 —— 強化智力 +12(限時)。",
+       "risk": {"type": "damage", "amount": [7, 14], "text": "……代價是稜光灼目刺腦,你受了 {dmg} 點傷害。"}},
+      {"key": "cleanse", "label": "引潮紋淨身(抗毒,但元素流向紊亂)",
+       "buff": {"kind": "resist_element", "param": "poison", "magnitude": 25, "hours": 6},
+       "gain_text": "七色潮紋覆上肌膚,像一層洗不掉的清水 —— 抗毒素 +25%(限時)。",
+       "risk": {"type": "curse", "skill": "destruction", "magnitude": 20, "text": "……但潮紋擾亂了你指尖的元素流向,【毀滅】一時失準(直到你走出地城)。"}}
+    ]
   }
 }

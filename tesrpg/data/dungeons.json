@@ -393,7 +393,37 @@
           }
         ]
       }
-    }
+    },
+    "reinfest": {
+      "desc": "要塞的哨火才亮起幾天,又有蛇艏船趁霧靠岸 —— 新一批海精靈突襲者翻過殘垛,把馴養的海蛇放進了地窖的蓄水池。",
+      "rumor": "四方傳聞:肅清過的瑟伊-塔恩要塞又鬧起了海精靈回巢 —— 據說牠們的頭目囤了不少財貨。",
+      "monsters": [
+        "maormer_raider",
+        "sea_serpent",
+        "mudcrab"
+      ],
+      "boss": {
+        "enemy": "sea_serpent",
+        "desc": "地窖的蓄水池黑水翻湧 —— 一頭被海精靈以詭術馴服的海蛇自池底昂起,鱗上還烙著蛇艏船的徽記。",
+        "treasure": {
+          "loot": [
+            "healing_potion",
+            {
+              "gold": [
+                40,
+                70
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "features": [
+      "lore_maormer_logbook",
+      "shrine_tidal_prism",
+      "puzzle_rusted_mechanism",
+      "puzzle_hidden_cache"
+    ]
   },
   "eldbur_ruins": {
     "name": "艾爾德布廢墟",
@@ -431,7 +461,37 @@
           }
         ]
       }
-    }
+    },
+    "reinfest": {
+      "desc": "斯洛德一走,暗渠另一頭就來了新客 —— 一隊海精靈循著水道摸進廢墟,撬起每一塊刻著符文的石板找窖藏。",
+      "rumor": "四方傳聞:肅清過的艾爾德布廢墟又鬧起了海精靈盜掘 —— 據說牠們的頭目囤了不少財貨。",
+      "monsters": [
+        "maormer_raider",
+        "mudcrab",
+        "giant_rat"
+      ],
+      "boss": {
+        "enemy": "maormer_captain",
+        "desc": "水窖的石階上架著撬棍與提燈,海精靈的劫掠船長正蹲在一塊鬆動的符文石前 —— 聽見腳步聲,他頭也不回地抽出了彎刀。",
+        "treasure": {
+          "loot": [
+            "healing_potion",
+            {
+              "gold": [
+                40,
+                70
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "features": [
+      "lore_isle_tidemark",
+      "shrine_tidal_prism",
+      "puzzle_ward_lock",
+      "puzzle_hidden_cache"
+    ]
   },
   "sil_var_woad": {
     "name": "辛爾瓦伍德",
@@ -471,7 +531,38 @@
           }
         ]
       }
-    }
+    },
+    "reinfest": {
+      "desc": "亞格拉的巢空了,深潭卻沒有空太久 —— 斯洛德順著海溝游了進來,以腐術驅使殘存的海蛇,把濕谷變成了牠的養殖場。",
+      "rumor": "四方傳聞:肅清過的辛爾瓦伍德又鬧起了斯洛德佔巢 —— 據說牠們的頭目囤了不少財貨。",
+      "monsters": [
+        "sea_sload",
+        "sea_serpent",
+        "mudcrab"
+      ],
+      "boss": {
+        "enemy": "sea_sload",
+        "desc": "深潭邊堆著排列整齊的骨骸,一頭肥碩的斯洛德端坐其間,正以黏滑的觸掌逐一清點 —— 牠抬起眼,像在估量你值幾塊骨頭。",
+        "treasure": {
+          "loot": [
+            "healing_potion",
+            "ruby",
+            {
+              "gold": [
+                60,
+                100
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "features": [
+      "lore_isle_tidemark",
+      "shrine_tidal_prism",
+      "puzzle_phantom_gate",
+      "puzzle_hidden_cache"
+    ]
   },
   "dusk_keep": {
     "name": "暮色塔",
@@ -513,6 +604,37 @@
           }
         ]
       }
-    }
+    },
+    "reinfest": {
+      "desc": "蛇皮巨獸的屍骸沉在海蝕洞底,血腥味順著潮水漫了出去 —— 亞格拉循味而來,在贓物的殘堆間築起了新巢。",
+      "rumor": "四方傳聞:肅清過的暮色塔又鬧起了亞格拉築巢 —— 據說牠們的頭目囤了不少財貨。",
+      "monsters": [
+        "sea_serpent",
+        "mudcrab",
+        "yaghra"
+      ],
+      "boss": {
+        "enemy": "yaghra",
+        "desc": "洞底的黑水裡升起一團濕亮的巨影,觸腕上還纏著蛇皮巨獸的碎鱗 —— 這頭亞格拉吃飽了,卻不打算讓出巢穴。",
+        "treasure": {
+          "loot": [
+            "healing_potion",
+            "ruby",
+            {
+              "gold": [
+                60,
+                100
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "features": [
+      "lore_maormer_logbook",
+      "shrine_tidal_prism",
+      "puzzle_ward_lock",
+      "puzzle_hidden_cache"
+    ]
   }
 }

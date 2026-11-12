@@ -332,6 +332,9 @@
     "sentinel_dock_smuggler": {"extra": ["recruit_informant"], "deep": {"recruit_informant": {"label": "🕯 招募為內線(碼頭老鼠)", "requires": {"secret_comrade": "thieves_guild"}, "once": true, "effects": [{"type": "start_quest", "quest": "cintlead_sentinel"}], "text": "「既是同道,我給你個准信:兩個變節的盜賊在搶我們地盤、還想招安官府。先下手為強,辦乾淨了好說話。」"}}},
     "anvil_quiet_widow": {"extra": ["recruit_informant"], "deep": {"recruit_informant": {"label": "🕯 招募為內線(靜港寡婦)", "requires": {"secret_comrade": "dark_brotherhood"}, "once": true, "effects": [{"type": "start_quest", "quest": "cintlead_anvil"}], "text": "「家族的人,我自當以誠相待。燈塔邊那兩個帝國探子問得太多 —— 讓海風把他們的好奇心一起吹散吧。」"}}},
     "vivec_canton_zealot": {"extra": ["recruit_informant"], "deep": {"recruit_informant": {"label": "🕯 招募為內線(拱區低語者)", "requires": {"secret_comrade": "mythic_dawn"}, "once": true, "effects": [{"type": "start_quest", "quest": "cintlead_vivec"}], "text": "「黎明的弟兄,我把眼線交予你:刀鋒的探子混在朝聖人群裡,記下我們每一張臉。清點他們 —— 在他們清點我們之前。」"}}},
-    "gideon_marsh_devotee": {"extra": ["recruit_informant"], "deep": {"recruit_informant": {"label": "🕯 招募為內線(沼澤信徒)", "requires": {"secret_comrade": "mythic_dawn"}, "once": true, "effects": [{"type": "start_quest", "quest": "cintlead_gideon"}], "text": "「同道一場,我就直說:兩個背骨的盜賊想把聚會地點賣給官府。讓沼澤吞了他們,連同那筆髒錢。」"}}}
+    "gideon_marsh_devotee": {"extra": ["recruit_informant"], "deep": {"recruit_informant": {"label": "🕯 招募為內線(沼澤信徒)", "requires": {"secret_comrade": "mythic_dawn"}, "once": true, "effects": [{"type": "start_quest", "quest": "cintlead_gideon"}], "text": "「同道一場,我就直說:兩個背骨的盜賊想把聚會地點賣給官府。讓沼澤吞了他們,連同那筆髒錢。」"}}},
+    "skywatch_smuggler": {"secret": {"text": "「……行,看在你嘴夠嚴的份上。上一趟沒出清的『工具』還剩幾根 —— 拿去,別說是我給的。」", "effects": [{"type": "item", "item": "lockpick", "qty": 3}]}},
+    "firsthold_harbormaster": {"secret": {"text": "「入港稅的帳,每季總有幾枚對不上。……你沒看見我開這個抽屜,我也沒看見你拿了什麼。」", "effects": [{"type": "gold", "amount": 65}]}},
+    "lillandril_scribe": {"secret": {"text": "「登記簿的夾頁裡有一則沒歸檔的批註:艾爾德布廢墟水窖的古符文後,封著一處上古精靈先民的窖藏。院裡沒人肯去 —— 那裡現在有不乾淨的東西守著。」", "effects": [{"type": "start_quest", "quest": "secret_eldbur"}]}}
   }
 }

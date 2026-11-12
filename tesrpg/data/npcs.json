@@ -1986,8 +1986,9 @@
     "disposition": 48,
     "greeting": "「諸島的甲冑與秘藥,件件都是上品。價錢嘛……也是上品。」",
     "rumor": "「大陸來的商船最近少了,聽說海峽上不太平,不是巨蛇就是海盜。」",
-    "quest": null,
-    "role": "merchant"
+    "quest": "favor_alinor",
+    "role": "merchant",
+    "quest_disposition": 55
   },
   "lillandril_scribe": {
     "name": "學院書記 凱爾蘭",
@@ -2011,9 +2012,12 @@
     "location": "lillandril",
     "disposition": 50,
     "greeting": "「禁書區?不開放。……除非你有首席智者的簽名。」",
-    "rumor": "「舊照明學院的廢墟裡還留著些殘卷,可惜那地方夜裡不乾淨,沒人敢去收。」",
-    "quest": null,
-    "role": "scholar"
+    "rumor": "「舊照明學院的廢墟裡還留著些殘卷,可惜那地方夜裡不乾淨,沒人敢去收 —— 後山坳裡還有座供奉瘋神的舊殿呢。」",
+    "quest": "favor_lillandril",
+    "role": "scholar",
+    "quest_disposition": 55,
+    "rumor_landmark": "illumination_academy",
+    "rumor_disposition": 30
   },
   "firsthold_veteran": {
     "name": "老衛兵 瓦蘭迪爾",
@@ -2021,7 +2025,8 @@
     "disposition": 42,
     "greeting": "「我在這道海牆上站了四十年。你想知道什麼?海面上的動靜,我比誰都清楚。」",
     "rumor": "「海精靈的突襲者專挑退潮的夜裡摸上岸 —— 他們的鉤矛會把人拖進水裡,別被纏住。」",
-    "quest": null
+    "quest": "favor_firsthold",
+    "quest_disposition": 55
   },
   "firsthold_harbormaster": {
     "name": "稅務官 美瑞安",
@@ -2038,7 +2043,9 @@
     "disposition": 52,
     "greeting": "「年輕人,海不是用來看的,是用來敬畏的。你見過蛇皮巨獸嗎?我見過一次,就夠了。」",
     "rumor": "「東南岸暮色塔底下盤著一頭蛇皮巨獸 —— 海蛇與海精靈詭術的怪異混合。據說牠守著海盜們私藏的贓物。」",
-    "quest": null
+    "quest": null,
+    "rumor_quest": "rumor_dusk_keep",
+    "rumor_disposition": 45
   },
   "skywatch_lookout": {
     "name": "天守瞭望者 艾拉米爾",
@@ -2054,8 +2061,9 @@
     "disposition": 48,
     "greeting": "「願光輝庇佑你,旅人。夏暮的光,是眾神最後的偏愛。」",
     "rumor": "「別小看海裡的東西 —— 斯洛德的祭司長會用腐蝕黏液,沾上就難洗。隨身帶些解毒藥。」",
-    "quest": null,
-    "role": "priest"
+    "quest": "favor_skywatch",
+    "role": "priest",
+    "quest_disposition": 55
   },
   "skywatch_smuggler": {
     "name": "走私掮客 洛恩",
@@ -2072,7 +2080,8 @@
     "disposition": 50,
     "greeting": "「今天海水太靜了……靜得讓人發毛。你要出海?我勸你別。」",
     "rumor": "「近來撈上來的魚鱗都帶著奇怪的藍光,老人說是深海的東西在往岸邊遷。」",
-    "quest": null
+    "quest": "favor_shimmerene",
+    "quest_disposition": 55
   },
   "shimmerene_shipwright": {
     "name": "船匠 瑟琳",
@@ -2096,15 +2105,18 @@
     "disposition": 52,
     "greeting": "「我潛過三十年的海。珍珠?有,但深水裡有東西在看著我們。」",
     "rumor": "「海底的珍珠常是亞格拉巢穴旁的『戰利品』 —— 想要,就得先打贏牠。」",
-    "quest": null
+    "quest": "favor_sunhold",
+    "quest_disposition": 55
   },
   "cloudrest_hermit": {
     "name": "山頂隱士 瑞蘭",
     "location": "cloudrest",
     "disposition": 54,
     "greeting": "「高處的空氣稀薄,頭腦才清醒。山下的紛爭,到這裡只剩一縷風聲。」",
-    "rumor": "「伊頓尼爾山麓的碎岩小徑不穩,雨後尤其危險;從雲棲下山,先看天色再走。」",
-    "quest": null
+    "rumor": "「伊頓尼爾山麓的碎岩小徑不穩,雨後尤其危險。山腹有道石窟,盡頭嵌著一座光之女神的古殿 —— 入夜會透出微光,別把它當成鬼火。」",
+    "quest": null,
+    "rumor_landmark": "eton_nir",
+    "rumor_disposition": 30
   },
   "cloudrest_stargazer": {
     "name": "觀星者 艾瑟妮",
@@ -2112,6 +2124,9 @@
     "disposition": 50,
     "greeting": "「今晚星象不太對。我記下了,但大概沒人想聽。」",
     "rumor": "「水晶塔的光近來忽明忽暗,從這裡看得最清楚。老人說,那是塔在『呼吸』。」",
-    "quest": null
+    "quest": "favor_cloudrest",
+    "quest_disposition": 55,
+    "rumor_quest": "rumor_crystal_tower",
+    "rumor_disposition": 45
   }
 }

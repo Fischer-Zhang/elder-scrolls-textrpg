@@ -9619,5 +9619,543 @@
     },
     "turn_in": "auto",
     "text": "日堡告示板懸賞:暮色塔下的海蝕洞盤踞巨蛇與贓物。清剿塔底,終結蛇皮巨獸。"
+  },
+  "comm_summerset_raider": {
+    "name": "群島懸賞:剿海寇",
+    "faction": null,
+    "rank": null,
+    "source": "board",
+    "repeatable": true,
+    "objective": {
+      "type": "kill",
+      "creature": "maormer_raider",
+      "count": 3
+    },
+    "reward": {
+      "gold": 60,
+      "fame": 2
+    },
+    "turn_in": "auto",
+    "text": "海精靈的突襲者趁夜襲岸,沿海各港高懸賞金 —— 擊殺 3 名突襲者即可領賞。(常駐零工,賞金從薄)"
+  },
+  "comm_summerset_serpent": {
+    "name": "群島懸賞:航道巨蛇",
+    "faction": null,
+    "rank": null,
+    "source": "board",
+    "repeatable": true,
+    "objective": {
+      "type": "kill",
+      "creature": "sea_serpent",
+      "count": 1
+    },
+    "reward": {
+      "gold": 80,
+      "fame": 3
+    },
+    "turn_in": "auto",
+    "text": "一頭海蛇盤踞近岸航道,掀翻了兩條漁船。阿林諾爾的港務司出賞獵殺。(精英懸賞,只一頭但兇悍)"
+  },
+  "comm_summerset_pearl": {
+    "name": "群島供應:王廷珍珠",
+    "faction": null,
+    "rank": null,
+    "source": "board",
+    "repeatable": true,
+    "stages": [
+      {
+        "objective": {
+          "type": "collect",
+          "item": "pearl",
+          "count": 1
+        },
+        "text": "從海裡的東西身上取得 1 顆珍珠。"
+      },
+      {
+        "objective": {
+          "type": "reach",
+          "location": "alinor"
+        },
+        "text": "把珍珠送到阿林諾爾的王廷珠寶匠手中。"
+      }
+    ],
+    "reward": {
+      "gold": 60,
+      "fame": 2
+    },
+    "turn_in": "auto",
+    "text": "王廷的珠寶匠缺珍珠 —— 採珠人不敢下水,只好懸賞。帶 1 顆珍珠到阿林諾爾即可領賞。(供應運送)"
+  },
+  "comm_summerset_sload": {
+    "name": "群島懸賞:礁岸黏影",
+    "faction": null,
+    "rank": null,
+    "source": "board",
+    "repeatable": true,
+    "objective": {
+      "type": "kill",
+      "creature": "sea_sload",
+      "count": 2
+    },
+    "reward": {
+      "gold": 85,
+      "fame": 3
+    },
+    "turn_in": "auto",
+    "text": "斯洛德的黏影貼著礁岸蠕行,所經之處魚蝦翻肚。南岸守望懸賞獵殺 2 頭。(精英懸賞,兩頭都不好對付)"
+  },
+  "comm_summerset_yaghra": {
+    "name": "群島懸賞:上灘的亞格拉",
+    "faction": null,
+    "rank": null,
+    "source": "board",
+    "repeatable": true,
+    "objective": {
+      "type": "kill",
+      "creature": "yaghra",
+      "count": 1
+    },
+    "reward": {
+      "gold": 100,
+      "fame": 3
+    },
+    "turn_in": "auto",
+    "text": "一頭亞格拉爬上了礁灘,拖走了曬網的漁具與一頭驢。南岸守望出賞獵殺。(精英懸賞,只一頭但兇悍)"
+  },
+  "comm_summerset_moth": {
+    "name": "群島供應:學院月蛾翅",
+    "faction": null,
+    "rank": null,
+    "source": "board",
+    "repeatable": true,
+    "stages": [
+      {
+        "objective": {
+          "type": "collect",
+          "item": "luna_moth_wing",
+          "count": 3
+        },
+        "text": "在群島採集或收購 3 片月蛾翅。"
+      },
+      {
+        "objective": {
+          "type": "reach",
+          "location": "lillandril"
+        },
+        "text": "把月蛾翅送到里蘭德里的智者學院。"
+      }
+    ],
+    "reward": {
+      "gold": 75,
+      "fame": 2
+    },
+    "turn_in": "auto",
+    "text": "智者學院的煉金課缺月蛾翅。湊齊 3 片送到里蘭德里即可領賞。(供應運送)"
+  },
+  "dcomm_cey_tarn_keep": {
+    "name": "清剿委託:瑟伊-塔恩要塞",
+    "faction": null,
+    "rank": null,
+    "source": "board",
+    "repeatable": true,
+    "provinces": [
+      "夏暮群島"
+    ],
+    "objective": {
+      "type": "purge_dungeon",
+      "dungeon": "cey_tarn_keep"
+    },
+    "reward": {
+      "gold": 65,
+      "fame": 1
+    },
+    "turn_in": "auto",
+    "text": "告示:收復過的瑟伊-塔恩要塞又被海精靈摸了回去,襲擾沿岸。掃蕩其頭目、奪回要塞者,官府有賞。(常駐零工;僅在該地重遭盤踞時懸掛)"
+  },
+  "dcomm_eldbur_ruins": {
+    "name": "清剿委託:艾爾德布廢墟",
+    "faction": null,
+    "rank": null,
+    "source": "board",
+    "repeatable": true,
+    "provinces": [
+      "夏暮群島"
+    ],
+    "objective": {
+      "type": "purge_dungeon",
+      "dungeon": "eldbur_ruins"
+    },
+    "reward": {
+      "gold": 65,
+      "fame": 1
+    },
+    "turn_in": "auto",
+    "text": "告示:肅清過的艾爾德布廢墟又有人循暗渠摸了進去,盜掘先民的窖藏。掃蕩其頭目、奪回廢墟者,官府有賞。(常駐零工;僅在該地重遭盤踞時懸掛)"
+  },
+  "dcomm_sil_var_woad": {
+    "name": "清剿委託:辛爾瓦伍德",
+    "faction": null,
+    "rank": null,
+    "source": "board",
+    "repeatable": true,
+    "provinces": [
+      "夏暮群島"
+    ],
+    "objective": {
+      "type": "purge_dungeon",
+      "dungeon": "sil_var_woad"
+    },
+    "reward": {
+      "gold": 85,
+      "fame": 2
+    },
+    "turn_in": "auto",
+    "text": "告示:肅清過的辛爾瓦伍德濕谷又被深海的東西佔了去,漁夫不敢靠岸。掃蕩其頭目、奪回巢穴者,官府有賞。(常駐零工;僅在該地重遭盤踞時懸掛)"
+  },
+  "dcomm_dusk_keep": {
+    "name": "清剿委託:暮色塔",
+    "faction": null,
+    "rank": null,
+    "source": "board",
+    "repeatable": true,
+    "provinces": [
+      "夏暮群島"
+    ],
+    "objective": {
+      "type": "purge_dungeon",
+      "dungeon": "dusk_keep"
+    },
+    "reward": {
+      "gold": 85,
+      "fame": 2
+    },
+    "turn_in": "auto",
+    "text": "告示:肅清過的暮色塔底又有東西築了巢,血腥味順著潮水漫上岸。掃蕩其頭目、奪回塔底者,官府有賞。(常駐零工;僅在該地重遭盤踞時懸掛)"
+  },
+  "favor_alinor": {
+    "name": "委託:清掉航道巨蛇",
+    "faction": null,
+    "rank": null,
+    "source": "npc",
+    "objective": {
+      "type": "kill",
+      "creature": "sea_serpent",
+      "count": 2
+    },
+    "reward": {
+      "gold": 130,
+      "fame": 4
+    },
+    "turn_in": "auto",
+    "text": "阿林諾爾的港埠商人伊爾梵的貨船不敢出港:「海峽上盤著巨蛇。替我除掉 2 頭,下一船的利潤分你一份。」(群島野外可尋)"
+  },
+  "favor_lillandril": {
+    "name": "委託:舊學院的殘卷",
+    "faction": null,
+    "rank": null,
+    "source": "npc",
+    "stages": [
+      {
+        "objective": {
+          "type": "reach",
+          "location": "illumination_academy"
+        },
+        "text": "前往里蘭德里外的舊照明學院廢墟,到藏卷室收回殘卷。"
+      },
+      {
+        "objective": {
+          "type": "reach",
+          "location": "lillandril"
+        },
+        "text": "把殘卷帶回里蘭德里的智者學院,交給塔瑞恩。"
+      }
+    ],
+    "reward": {
+      "gold": 90,
+      "fame": 3,
+      "items": [
+        "minor_magicka_potion"
+      ]
+    },
+    "turn_in": "auto",
+    "text": "藏書管理員塔瑞恩惦記著舊照明學院廢墟裡沒人敢收的殘卷:「那地方夜裡不乾淨。你若肯走一趟,學院不會虧待你。」"
+  },
+  "favor_firsthold": {
+    "name": "委託:退潮夜的鉤矛",
+    "faction": null,
+    "rank": null,
+    "source": "npc",
+    "objective": {
+      "type": "kill",
+      "creature": "maormer_raider",
+      "count": 3
+    },
+    "reward": {
+      "gold": 120,
+      "fame": 4
+    },
+    "turn_in": "auto",
+    "text": "初堡的老衛兵瓦蘭迪爾要你替他守一次他守不動的岸:「海精靈的突襲者專挑退潮的夜裡摸上來。殺 3 個,讓他們知道這道海牆還有人站著。」(群島野外可尋)"
+  },
+  "favor_skywatch": {
+    "name": "委託:祈光的螢粉",
+    "faction": null,
+    "rank": null,
+    "source": "npc",
+    "objective": {
+      "type": "collect",
+      "item": "glow_dust",
+      "count": 3
+    },
+    "reward": {
+      "gold": 110,
+      "fame": 3
+    },
+    "turn_in": "auto",
+    "text": "天空守望的祭司芙妮絲要為出海的人點祈光燈,請你帶回 3 份螢光粉(阿林諾爾與里蘭德里的商店有售)。"
+  },
+  "favor_shimmerene": {
+    "name": "委託:魚鱗上的藍光",
+    "faction": null,
+    "rank": null,
+    "source": "npc",
+    "objective": {
+      "type": "kill",
+      "creature": "sea_sload",
+      "count": 2
+    },
+    "reward": {
+      "gold": 130,
+      "fame": 4
+    },
+    "turn_in": "auto",
+    "text": "希默琳的漁夫泰迪爾撈上來的魚都帶著怪異的藍光:「是深海的黏東西在往岸邊遷。替我除掉 2 頭斯洛德,不然這片海沒法討生活了。」(群島野外可尋)"
+  },
+  "favor_sunhold": {
+    "name": "委託:珠床上的巨影",
+    "faction": null,
+    "rank": null,
+    "source": "npc",
+    "objective": {
+      "type": "kill",
+      "creature": "yaghra",
+      "count": 1
+    },
+    "reward": {
+      "gold": 160,
+      "fame": 5
+    },
+    "turn_in": "auto",
+    "text": "日堡的採珠人伊蘭薇三十年來頭一回不敢下水:「珠床上盤著一頭亞格拉。打贏牠,我把這一季的份子分你。」(亞格拉兇悍,量力而為;群島野外可尋)"
+  },
+  "favor_cloudrest": {
+    "name": "委託:替我看一眼塔光",
+    "faction": null,
+    "rank": null,
+    "source": "npc",
+    "objective": {
+      "type": "reach",
+      "location": "crystal_tower"
+    },
+    "reward": {
+      "gold": 100,
+      "fame": 3
+    },
+    "turn_in": "auto",
+    "text": "雲棲的觀星者艾瑟妮請你到水晶塔下走一趟:「塔光忽明忽暗,從山頂看不出緣由。你不必進去 —— 站在塔基替我記下它明滅的次數就好。」"
+  },
+  "wq_summerset_courier": {
+    "name": "委託:王廷驛使的託付",
+    "faction": null,
+    "rank": null,
+    "source": "npc",
+    "stages": [
+      {
+        "objective": {
+          "type": "kill",
+          "creature": "maormer_raider",
+          "count": 2
+        },
+        "text": "除掉尾隨驛使的 2 名海精靈突襲者。"
+      },
+      {
+        "objective": {
+          "type": "reach",
+          "location": "cloudrest"
+        },
+        "text": "把蠟封的信送到雲棲。"
+      }
+    ],
+    "reward": {
+      "gold": 120,
+      "fame": 4
+    },
+    "turn_in": "auto",
+    "text": "受傷的王廷驛使請你代他走完這一程:先除掉尾隨的海精靈突襲者,再把蠟封的信送上雲棲。"
+  },
+  "secret_eldbur": {
+    "name": "秘藏:艾爾德布的先民窖",
+    "faction": null,
+    "rank": null,
+    "source": "npc",
+    "objective": {
+      "type": "clear_dungeon",
+      "dungeon": "eldbur_ruins"
+    },
+    "reward": {
+      "gold": 150,
+      "fame": 5,
+      "items": [
+        "ruby"
+      ]
+    },
+    "turn_in": "auto",
+    "text": "學院書記透露的秘藏:艾爾德布廢墟水窖的古符文後,封著一處上古精靈先民的窖藏 —— 那裡現在有不乾淨的東西守著。"
+  },
+  "rumor_dusk_keep": {
+    "name": "線索:暮色塔的蛇皮巨獸",
+    "faction": null,
+    "rank": null,
+    "source": "rumor",
+    "provinces": [
+      "夏暮群島"
+    ],
+    "objective": {
+      "type": "clear_dungeon",
+      "dungeon": "dusk_keep"
+    },
+    "reward": {
+      "gold": 160,
+      "fame": 6
+    },
+    "turn_in": "auto",
+    "text": "老水手說起暮色塔底那頭蛇皮巨獸 —— 海蛇與海精靈詭術的怪異混合,守著海盜們私藏的贓物。也許值得親自去會會牠。"
+  },
+  "rumor_crystal_tower": {
+    "name": "線索:水晶塔的呼吸",
+    "faction": null,
+    "rank": null,
+    "source": "rumor",
+    "provinces": [
+      "夏暮群島"
+    ],
+    "objective": {
+      "type": "clear_dungeon",
+      "dungeon": "crystal_tower"
+    },
+    "reward": {
+      "gold": 180,
+      "fame": 7
+    },
+    "turn_in": "auto",
+    "text": "觀星者說水晶塔的光近來忽明忽暗,像是塔在「呼吸」。有什麼東西正在動智者們留下的奧秘 —— 有本事的人,或許該進去看個究竟。"
+  },
+  "origin_sapiarch_auditor": {
+    "name": "注疏與墨",
+    "source": "origin",
+    "turn_in": "auto",
+    "text": "旁聽生沒有席位,只有做不完的雜役。先清掉曬書場的泥蟹、採齊抄經用的墨料,再把謄好的注疏送往王都。",
+    "stages": [
+      {
+        "objective": {
+          "type": "kill",
+          "creature": "mudcrab",
+          "count": 2
+        },
+        "text": "礁岸的泥蟹爬進了學院的曬書場 —— 趕走 2 隻。"
+      },
+      {
+        "objective": {
+          "type": "collect",
+          "item": "lavender",
+          "count": 2
+        },
+        "text": "為抄經的墨採 2 束薰衣草。"
+      },
+      {
+        "objective": {
+          "type": "reach",
+          "location": "alinor"
+        },
+        "text": "把謄好的注疏送到阿林諾爾的法師公會。"
+      }
+    ],
+    "reward": {
+      "gold": 60,
+      "fame": 3,
+      "items": [
+        "minor_magicka_potion"
+      ]
+    }
+  },
+  "origin_sunhold_marine": {
+    "name": "牆還在",
+    "source": "origin",
+    "turn_in": "auto",
+    "text": "帝統斷絕的消息傳到南岸,守望官只交代了三件事:清礁灘、清糧倉,然後把海防報告送上王都。",
+    "stages": [
+      {
+        "objective": {
+          "type": "kill",
+          "creature": "mudcrab",
+          "count": 2
+        },
+        "text": "礁灘上的泥蟹啃壞了哨樁 —— 清掉 2 隻。"
+      },
+      {
+        "objective": {
+          "type": "kill",
+          "creature": "giant_rat",
+          "count": 2
+        },
+        "text": "糧倉裡的巨鼠比海精靈更會偷 —— 再清掉 2 隻。"
+      },
+      {
+        "objective": {
+          "type": "reach",
+          "location": "alinor"
+        },
+        "text": "帶著南岸的海防報告,前往阿林諾爾遞交王廷。"
+      }
+    ],
+    "reward": {
+      "gold": 55,
+      "fame": 3
+    }
+  },
+  "origin_skywatch_runner": {
+    "name": "不過問的貨",
+    "source": "origin",
+    "turn_in": "auto",
+    "text": "掮客洛恩從不解釋,只交代差事:清倉庫、清藏貨點,然後把一只油布包送到初堡。貨是什麼,你從不過問。",
+    "stages": [
+      {
+        "objective": {
+          "type": "kill",
+          "creature": "giant_rat",
+          "count": 2
+        },
+        "text": "碼頭倉庫的巨鼠咬壞了貨箱 —— 先清掉 2 隻。"
+      },
+      {
+        "objective": {
+          "type": "kill",
+          "creature": "mudcrab",
+          "count": 2
+        },
+        "text": "灘頭的藏貨點被泥蟹佔了,再清掉 2 隻。"
+      },
+      {
+        "objective": {
+          "type": "reach",
+          "location": "firsthold"
+        },
+        "text": "把油布包送到初堡稅關的後門。"
+      }
+    ],
+    "reward": {
+      "gold": 50,
+      "fame": 2
+    }
   }
 }

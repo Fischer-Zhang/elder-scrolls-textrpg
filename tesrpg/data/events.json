@@ -2726,5 +2726,323 @@
     }
    }
   ]
+ },
+ "wild_summerset_courier": {
+  "weight": 3,
+  "trigger": {
+   "contexts": [
+    "travel",
+    "explore"
+   ],
+   "location_types": [
+    "wilderness"
+   ],
+   "provinces": [
+    "夏暮群島"
+   ]
+  },
+  "title": "王廷驛使",
+  "text": "路旁的石椅上癱坐著一名披白袍的高精靈驛使,肩頭的箭傷草草紮著:「護衛都折在海精靈手裡了,他們還跟著我。這封信得送上雲棲 —— 我走不動了,你替我走完,王廷記你一筆。」",
+  "options": [
+   {
+    "text": "接下驛使的託付",
+    "requirements": {
+     "quest_available": "wq_summerset_courier"
+    },
+    "effects": [
+     {
+      "type": "start_quest",
+      "quest": "wq_summerset_courier"
+     },
+     {
+      "type": "message",
+      "text": "驛使把蠟封的信交到你手裡,指了指突襲者尾隨而來的方向。"
+     }
+    ]
+   },
+   {
+    "text": "替他重新包紮,交換消息",
+    "effects": [
+     {
+      "type": "fame",
+      "amount": 2
+     },
+     {
+      "type": "skill_xp",
+      "skill": "speechcraft",
+      "amount": 0.4
+     }
+    ]
+   },
+   {
+    "text": "繼續趕路",
+    "effects": []
+   }
+  ]
+ },
+ "summerset_justiciar_check": {
+  "weight": 3,
+  "trigger": {
+   "contexts": [
+    "travel"
+   ],
+   "location_types": [
+    "wilderness",
+    "city",
+    "town"
+   ],
+   "provinces": [
+    "夏暮群島"
+   ]
+  },
+  "title": "司法官的盤查",
+  "text": "路口設著一道白石關卡。兩名神聖檢察院的司法官攔下你,金甲在日光下亮得刺眼。其中一人翻開名冊,頭也不抬:「外邦人。來意、落腳處、擔保人 —— 依序說。」",
+  "options": [
+   {
+    "text": "不卑不亢,據實以答(口才)",
+    "check": {
+     "skill": "speechcraft",
+     "difficulty": 38,
+     "success": {
+      "text": "你答得滴水不漏,還順口引了一句阿林諾爾的待客古訓。司法官終於抬眼看了你一下,在名冊上蓋了印。",
+      "effects": [
+       {
+        "type": "fame",
+        "amount": 2
+       },
+       {
+        "type": "skill_xp",
+        "skill": "speechcraft",
+        "amount": 0.6
+       }
+      ]
+     },
+     "failure": {
+      "text": "你的回答在他聽來處處是破綻。「滯留規費,十五金。下一個。」",
+      "effects": [
+       {
+        "type": "gold",
+        "amount": -15
+       },
+       {
+        "type": "skill_xp",
+        "skill": "speechcraft",
+        "amount": 0.2
+       }
+      ]
+     }
+    }
+   },
+   {
+    "text": "遞上一點「規費」(付 30 金)",
+    "requirements": {
+     "gold_min": 30
+    },
+    "effects": [
+     {
+      "type": "gold",
+      "amount": -30
+     },
+     {
+      "type": "message",
+      "text": "金幣無聲地滑進名冊的夾頁。司法官闔上冊子:「文件齊全。放行。」"
+     }
+    ]
+   },
+   {
+    "text": "趁他們低頭時繞過關卡(潛行)",
+    "check": {
+     "skill": "sneak",
+     "difficulty": 42,
+     "success": {
+      "text": "你貼著關卡後的樹籬一寸寸挪過去,金甲的反光始終沒有轉向你。",
+      "effects": [
+       {
+        "type": "skill_xp",
+        "skill": "sneak",
+        "amount": 0.6
+       }
+      ]
+     },
+     "failure": {
+      "text": "「站住。」一隻戴著金甲手套的手按上你的肩頭。「規避盤查 —— 記上一筆。」",
+      "effects": [
+       {
+        "type": "bounty",
+        "amount": 20
+       }
+      ]
+     }
+    }
+   }
+  ]
+ },
+ "summerset_gryphon_shadow": {
+  "weight": 3,
+  "trigger": {
+   "contexts": [
+    "travel",
+    "explore"
+   ],
+   "location_types": [
+    "wilderness"
+   ],
+   "provinces": [
+    "夏暮群島"
+   ]
+  },
+  "title": "獅鷲掠空",
+  "text": "一道巨大的影子掠過地面。你抬頭 —— 一頭獅鷲正自伊頓尼爾的方向盤旋而下,利爪間還掛著半截獵物。牠側過頭,琥珀色的眼睛定定地看著你。",
+  "options": [
+   {
+    "text": "緩緩退進岩隙,別驚動牠(潛行)",
+    "check": {
+     "skill": "sneak",
+     "difficulty": 40,
+     "success": {
+      "text": "你貼著岩壁一寸寸退開。獅鷲失了興趣,振翅拉高遠去,只留下一陣捲起塵土的風。",
+      "effects": [
+       {
+        "type": "skill_xp",
+        "skill": "sneak",
+        "amount": 0.6
+       }
+      ]
+     },
+     "failure": {
+      "text": "碎石滾落的聲響讓牠猛然俯衝 —— 利爪擦過你的肩頭,牠才悻悻拉高飛走。",
+      "effects": [
+       {
+        "type": "damage",
+        "amount": 9
+       }
+      ]
+     }
+    }
+   },
+   {
+    "text": "拔腿衝向樹林(運動)",
+    "check": {
+     "skill": "athletics",
+     "difficulty": 38,
+     "success": {
+      "text": "你搶在牠收翼之前衝進林蔭。枝葉間漏下的影子盤旋了兩圈,終於遠去。",
+      "effects": [
+       {
+        "type": "skill_xp",
+        "skill": "athletics",
+        "amount": 0.6
+       }
+      ]
+     },
+     "failure": {
+      "text": "你跑不過一對翅膀。獅鷲掠過頭頂時一爪掃來,把你掀翻在地,隨即拉高飛走。",
+      "effects": [
+       {
+        "type": "damage",
+        "amount": 8
+       }
+      ]
+     }
+    }
+   },
+   {
+    "text": "站定不動,迎著牠的目光",
+    "effects": [
+     {
+      "type": "message",
+      "text": "高精靈說,獅鷲只敬不逃的人。牠盯了你許久,長唳一聲,振翅飛回了山巔。"
+     }
+    ]
+   }
+  ]
+ },
+ "summerset_the_beautiful": {
+  "weight": 2,
+  "trigger": {
+   "contexts": [
+    "travel"
+   ],
+   "location_types": [
+    "wilderness",
+    "city",
+    "town"
+   ],
+   "provinces": [
+    "夏暮群島"
+   ]
+  },
+  "title": "「美麗者」的鑿痕",
+  "text": "路旁一尊先祖石像前圍著幾名年輕的高精靈,有人掄錘、有人放哨 —— 石像的臉已被鑿去半邊。帶頭的轉身看見你,笑得毫無愧色:「外邦人,來得正好。你說說看:一個只會回頭看的民族,配擁有未來嗎?」",
+  "options": [
+   {
+    "text": "勸他們放下錘子(口才)",
+    "check": {
+     "skill": "speechcraft",
+     "difficulty": 42,
+     "success": {
+      "text": "你沒有替石像辯護,只問他們打算拿什麼填上那張臉。帶頭的青年愣了半晌,錘子垂了下來。聞聲趕到的司法官聽完經過,默默塞給你一袋酬金。",
+      "effects": [
+       {
+        "type": "gold",
+        "amount": 70
+       },
+       {
+        "type": "fame",
+        "amount": 3
+       }
+      ]
+     },
+     "failure": {
+      "text": "「說得像個收了王廷錢的人。」他們哄笑著散進林子,只留下一地碎石。",
+      "effects": [
+       {
+        "type": "message",
+        "text": "石像的半張臉,再也拼不回去了。"
+       }
+      ]
+     }
+    }
+   },
+   {
+    "text": "上前奪下錘子",
+    "effects": [
+     {
+      "type": "damage",
+      "amount": 6
+     },
+     {
+      "type": "fame",
+      "amount": 2
+     },
+     {
+      "type": "message",
+      "text": "你奪錘時肩上挨了一記,那群青年罵罵咧咧地散了。石像只剩半張臉,但至少還立著。"
+     }
+    ]
+   },
+   {
+    "text": "接過錘子,替他們補上一鑿",
+    "effects": [
+     {
+      "type": "infamy",
+      "amount": 2
+     },
+     {
+      "type": "message",
+      "text": "石屑濺上你的手背。帶頭的青年拍了拍你的肩:「美麗者會記得你。」—— 王廷的名冊,大概也會。"
+     }
+    ]
+   },
+   {
+    "text": "這不干外邦人的事,繞道而行",
+    "effects": [
+     {
+      "type": "message",
+      "text": "你從石像的另一側走過。錘聲在身後又響了起來。"
+     }
+    ]
+   }
+  ]
  }
 }

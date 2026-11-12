@@ -12,6 +12,7 @@
   "vivec":         {"master": {"skill": "alchemy",     "cap": 100}},
   "imperial_city": {"master": {"skill": "mysticism",   "cap": 100}},
   "daggerfall":    {"master": {"skill": "alteration",  "cap": 100}},
+  "alinor":        {"master": {"skill": "illusion",    "cap": 100}},
 
   "solitude":      {"skills": ["combat", "speechcraft"]}
 }

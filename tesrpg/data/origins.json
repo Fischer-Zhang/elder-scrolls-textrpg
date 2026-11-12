@@ -367,5 +367,38 @@
     "items": [["minor_magicka_potion", 2], ["healing_potion", 1], ["scrib_jelly", 1]],
     "quest": "origin_marsh_healer",
     "classes": ["healer", "mage"]
+  },
+  "sapiarch_auditor": {
+    "name": "智者學院的旁聽生",
+    "blurb": "你是里蘭德里智者學院的旁聽生 —— 沒有席位、沒有導師,只有一支借來的法杖與抄不完的注疏。學院不問出身,只問你背得出幾段古文。",
+    "location": "lillandril",
+    "gold": 50,
+    "faction": {"mages_guild": 0},
+    "weapon": "magicka_staff",
+    "spells": ["arcane_bolt"],
+    "items": [["minor_magicka_potion", 2]],
+    "quest": "origin_sapiarch_auditor",
+    "classes": ["mage", "battlemage"]
+  },
+  "sunhold_marine": {
+    "name": "日堡的海防哨兵",
+    "blurb": "你是日堡海牆上的哨兵,守著群島最南的礁灘。帝統斷絕的消息傳來那天,守望官只說了一句:牆還在,就繼續站。",
+    "location": "sunhold",
+    "gold": 45,
+    "weapon": "steel_sword",
+    "equip": ["leather_cuirass", "iron_shield"],
+    "items": [["minor_healing_potion", 2]],
+    "quest": "origin_sunhold_marine",
+    "classes": ["warrior", "knight"]
+  },
+  "skywatch_runner": {
+    "name": "天空守望的跑腿",
+    "blurb": "你替天空守望碼頭的掮客跑腿送貨,認得每一條後巷、每一個肯收錢閉嘴的守望員。貨是什麼,你從不過問。",
+    "location": "skywatch",
+    "gold": 20,
+    "weapon": "iron_dagger",
+    "items": [["lockpick", 3], ["minor_healing_potion", 1]],
+    "quest": "origin_skywatch_runner",
+    "classes": ["thief", "assassin"]
   }
 }
