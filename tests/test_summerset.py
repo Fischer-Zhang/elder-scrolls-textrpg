@@ -6,13 +6,14 @@
 import json
 import re
 from collections import Counter
+from types import SimpleNamespace
 
 from tesrpg import formulas
 from tesrpg.creation import build_character
 from tesrpg.gamedata import get_gamedata
 from tesrpg.rng import RNG
 from tesrpg.state import GameState, GameTime
-from tesrpg.systems import (combat, dialogue, dungeon, events, housing, inventory, landmarks, quests, world,
+from tesrpg.systems import (combat, court, dialogue, dungeon, events, housing, inventory, landmarks, quests, world,
                             worldpulse)
 
 PROV = "夏暮群島"
@@ -651,6 +652,47 @@ def test_r178_kings_haven_pass_is_avuumas_dungeon():
     assert job["reward"] == gd.quests["job_dusk_keep"]["reward"]
     assert dc["objective"] == {"type": "purge_dungeon", "dungeon": GRYPHON_PASS}
     assert dc["provinces"] == [PROV] and dc["repeatable"] and dc["reward"] == gd.quests["dcomm_dusk_keep"]["reward"]
+
+
+# ═══ R179 獅鷲收尾:委託任務排除獅鷲 + 阿芙瑪加心智攻擊(使用者拍板)═══════════════════════════════════
+def test_r179_gryphons_are_never_commission_targets():
+    """正典:高精靈敬重獅鷲 → 領主不懸賞獵殺。`no_bounty` 把牠擋在領主程序委託素材池外,
+    靜態任務(告示板/NPC/脈動)與載入時寫入的領主委託也都不得以牠為獵殺目標。"""
+    gd, L = _gd()
+    banned = {cid for cid, c in gd.bestiary.items() if c.get("no_bounty")}
+    assert banned == {"gryphon"}
+    creatures, dungeons_ = court._province_objectives(gd)[PROV]
+    assert "gryphon" not in creatures and "yaghra" in creatures     # 同級的亞格拉照常可懸賞(旗標只排獅鷲)
+    assert GRYPHON_PASS in [d for d, _name in dungeons_]            # 巢穴本身仍可被懸賞清剿(頭目傷人)
+    # 反證:擋下牠的是旗標本身(拿掉旗標就會進池)——不改動共用的 gamedata
+    bare = {k: v for k, v in gd.bestiary["gryphon"].items() if k != "no_bounty"}
+    probe = SimpleNamespace(world=gd.world, bestiary={**gd.bestiary, "gryphon": bare})
+    assert "gryphon" in court._province_objectives(probe)[PROV][0]
+    def every_objective(q):                                         # 主線 + 所有分支(24 個任務有 branches)
+        for part in [q] + list(q.get("branches", [])):
+            yield from _objectives(part)
+    assert any(o.get("type") == "kill" for q in gd.quests.values() for b in q.get("branches", []) for o in _objectives(b))
+    kills = [(qid, o["creature"]) for qid, q in gd.quests.items() for o in every_objective(q) if o.get("type") == "kill"]
+    assert any(qid.startswith("ruler_auto_") for qid, _ in kills)   # 領主程序委託確實在掃描範圍內
+    assert not [k for k in kills if k[1] in banned]
+
+
+def test_r179_avuuma_mixes_physical_and_mind_attacks():
+    """使用者點名:阿芙瑪加精神類攻擊(原本純物理,板甲/重盾擋得太輕鬆)。
+    R145:心智攻擊標 element magic、非投射;R43/R44:恐懼=硬控,機率 ≤0.30、1 回合。"""
+    gd, L = _gd()
+    wild, boss = gd.bestiary["gryphon"], gd.bestiary["avuuma_whirlwind"]
+    mind = [a for a in boss["attacks"] if a.get("element") == "magic"]
+    phys = [a for a in boss["attacks"] if "element" not in a]
+    assert len(mind) == 1 and len(phys) == 3
+    screech = mind[0]
+    assert screech["on_hit"] == {"status": "fear", "turns": 1, "chance": 0.25} and not screech.get("ranged")
+    assert min(a["damage"] for a in phys) <= screech["damage"] <= max(a["damage"] for a in phys)
+    assert boss["attacks"][-1].get("cooldown") and "cooldown" not in screech    # 冷卻大招殿後;長唳是常規招
+    claw = boss["attacks"][0]
+    assert screech["weight"] == 2 < claw["weight"] and screech["skill"] == claw["skill"]   # 主招仍是利爪;命中不特別準
+    assert all("element" not in a for a in wild["attacks"])                     # 野生同類仍是純物理
+    assert "magic" not in boss.get("resist", {})                                # R176②:isle 怪不帶 magic 鍵
 
 
 def run():

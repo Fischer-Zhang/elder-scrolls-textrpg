@@ -36,6 +36,7 @@ def _province_objectives(gamedata: GameData) -> dict:
         biomes = {l.get("biome") for l in w.values() if l["province"] == p}
         cands = [(cid, c.get("danger", 1), c.get("min_level", 1)) for cid, c in gamedata.bestiary.items()
                  if set(c.get("biomes", [])) & biomes and not c.get("solo")
+                 and not c.get("no_bounty")        # R179:受敬重/不宜懸賞的生物(獅鷲)不入委託素材池
                  and c.get("min_level", 1) <= 8 and c.get("danger", 1) <= 4]
         cands.sort(key=lambda x: (x[1], x[2], x[0]))
         creatures = [c[0] for c in cands] or ["wolf"]

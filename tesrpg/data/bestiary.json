@@ -11982,6 +11982,7 @@
   "min_level": 7,
   "weight": 2,
   "habitat_bound": true,
+  "no_bounty": true,
   "resist": {
    "shock": -30
   },
@@ -12037,6 +12038,18 @@
     }
    },
    {
+    "name": "懾魂長唳",
+    "damage": 26,
+    "skill": 62,
+    "element": "magic",
+    "weight": 2,
+    "on_hit": {
+     "status": "fear",
+     "turns": 1,
+     "chance": 0.25
+    }
+   },
+   {
     "name": "俯衝掠擊",
     "damage": 34,
     "skill": 64,
@@ -12075,6 +12088,6 @@
     "chance": 0.25
    }
   ],
-  "flavor": "滿地碎骨的巨巢裡,一對遮天的翅膀緩緩張開 —— 島民世代喚作「旋風」的巨獅鷲昂首長唳,隘口的風隨之倒捲。"
+  "flavor": "滿地碎骨的巨巢裡,一對遮天的翅膀緩緩張開 —— 島民世代喚作「旋風」的巨獅鷲昂首長唳,那一聲直刺心神,隘口的風隨之倒捲。"
  }
 }
