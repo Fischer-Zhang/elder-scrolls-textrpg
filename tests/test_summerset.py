@@ -46,7 +46,8 @@ def test_summerset_is_the_ninth_province_with_20_nodes():
     assert PROV in provinces and len(provinces) == 9
     nodes = _nodes(L)
     assert len(nodes) == 20
-    assert Counter(l["type"] for l in nodes.values()) == {"city": 4, "town": 3, "wilderness": 8, "dungeon": 5}
+    # R178:國王避風隘由野外原地改為地城(使用者拍板)→ 節點總數不變,野外 8→7、地城 5→6
+    assert Counter(l["type"] for l in nodes.values()) == {"city": 4, "town": 3, "wilderness": 7, "dungeon": 6}
     # 全省統一 isle(使用者拍板 B;與其餘八省「一省一生態」先例一致,領主懸賞素材池只含在地怪)
     assert {l["biome"] for l in nodes.values()} == {"isle"}
     # 網格已為群島騰出西側:所有座標界內且不同格(通用測試亦守,此處鎖「確實擴格」)
@@ -123,18 +124,18 @@ def test_summerset_every_settlement_has_an_altmer_ruler_and_enough_npcs():
 def test_isle_biome_roster_is_shock_weak_and_bosses_are_unique_spawns():
     gd, L = _gd()
     isle = {cid: c for cid, c in gd.bestiary.items() if "isle" in c.get("biomes", [])}
-    assert len(isle) == 7
+    assert len(isle) == 9                                              # R178:+獅鷲、+「旋風」阿芙瑪
     for cid, c in isle.items():
         assert not c.get("undead"), cid
         assert "magic" not in c.get("resist", {}), cid                 # shock∈MAGIC_ELEMENTS 會疊 magic 鍵
         assert formulas.resist_multiplier(c.get("resist", {}), "shock") > 1.0, cid
         assert len(c.get("attacks", [])) >= 2, cid                     # 有曲目(BESTIARY 不標「缺曲目」)
-    for cid in ("maormer_captain", "snakeskin_leviathan", "sload_prelate"):
+    for cid in ("maormer_captain", "snakeskin_leviathan", "sload_prelate", "avuuma_whirlwind"):
         assert gd.bestiary[cid]["weight"] == 0                         # 地城專屬頭目,不入隨機遭遇
         # 慣例:weight 0 的具名地城頭目一律 solo(既有 35/38)——帶偷襲傷害夾與控場機率抗(R44 紅線),
         # 並被領主懸賞素材池排除(court._province_objectives 只排 solo,不看 weight)
         assert gd.bestiary[cid].get("solo") is True, cid
-    for cid in ("snakeskin_leviathan", "sload_prelate"):
+    for cid in ("snakeskin_leviathan", "sload_prelate", "avuuma_whirlwind"):
         assert gd.bestiary[cid].get("raw") is True
     # R144 現實邏輯:水生怪離不開棲地,永不離鄉遊蕩(他鄉權重 0);人形海精靈可遠征劫掠,不綁棲地
     for cid in ("sea_serpent", "yaghra", "sea_sload"):
@@ -208,6 +209,7 @@ PROVINCE_EVENTS = ["isle_forage", "isle_raider_ambush", "summerset_gryphon_shado
 PULSES = ("pulse_summerset_searaid", "pulse_summerset_deepstir")
 ORIGINS = ("sapiarch_auditor", "sunhold_marine", "skywatch_runner")
 LANDMARKS = {"illumination_academy", "eton_nir", "alinor", "auridon_coast"}
+GRYPHON_PASS = "kings_haven_pass"                # R178:原地改地城的國王避風隘(「旋風」阿芙瑪的巢)
 
 
 def _state(**kw):
@@ -252,6 +254,7 @@ def _local_quest_ids(gd, L):
     ids |= {"wq_summerset_courier", "secret_eldbur"}
     ids |= {sq for pid in PULSES for sq in gd.world_pulse[pid]["spotlight_quests"]}
     ids |= {f"dcomm_{did}" for did in REINFEST}
+    ids |= {f"job_{GRYPHON_PASS}", f"dcomm_{GRYPHON_PASS}"}          # R178
     ids |= {gd.origins[oid]["quest"] for oid in ORIGINS}
     return ids
 
@@ -468,8 +471,11 @@ def test_r177_roadside_events_do_not_fire_at_dungeon_nodes():
     for eid in roadside:
         assert "dungeon" not in gd.events[eid]["trigger"]["location_types"], eid
     assert not roadside & set(events.eligible_events(st, gd, "travel"))
-    st.player.location_id = "kings_haven_pass"
+    st.player.location_id = "veyond_wyte"
     assert roadside <= set(events.eligible_events(st, gd, "travel"))
+    # R178:國王避風隘改地城後,同樣不再有路邊場景(也不再有野外限定的獅鷲掠空)
+    st.player.location_id = "kings_haven_pass"
+    assert not (roadside | {"summerset_gryphon_shadow"}) & set(events.eligible_events(st, gd, "travel"))
 
 
 def test_r177_forage_event_share_not_diluted_below_other_provinces():
@@ -532,6 +538,119 @@ def test_r177_quest_text_matches_objective():
                 assert L[o["dungeon"]]["name"] in text, f"{qid}: 文字沒提到 {L[o['dungeon']]['name']}"
         if qid in giver:
             assert giver[qid] in q["text"], f"{qid}: 文字沒提到派發者 {giver[qid]}"
+
+
+# ═══ R178 獅鷲:野怪 + 「旋風」阿芙瑪 + 國王避風隘原地改地城 + 獅鷲掠空加險 ═══════════════════════════
+# 正典(UESP Lore:Gryphon / Online:Avuuma the Whirlwind / Online:King's Haven Pass):獅鷲是群島的大型肉食
+# 飛行掠食者;阿芙瑪是國王避風隘地城的頭目,窩在滿地碎骨的巢裡;隘內住著裂珊哥布林部落。
+# 名字出自第二紀元,遊戲在第三紀元末 → 寫成「島民世代相傳的名號」,不寫成同一隻。
+_COASTAL = r"潮|白沙|貝殼|礁|海灘|沙灘|浪|海風|海岸|港|漁|船"       # 山隘/內陸不該出現的海邊意象
+_WOODLAND = r"樹林|林蔭|枝葉|林間"                                 # 海灘節點不該出現的林地意象
+_CONTROL_HARD = {"stagger", "paralyze", "fear"}
+
+
+def test_r178_gryphon_event_every_option_carries_risk():
+    """使用者點名:提高失敗傷害;「站定不動」不得再零風險(原為純訊息,壓過另兩個有風險的選項)。"""
+    gd, st = _state(location_id="eton_nir")
+    ev = gd.events["summerset_gryphon_shadow"]
+    assert ev["trigger"]["location_types"] == ["wilderness"]
+    checks = [o["check"] for o in ev["options"]]                    # 三個選項都要過檢定
+    assert [c["skill"] for c in checks] == ["sneak", "athletics", "speechcraft"]
+    dmg = [next(e["amount"] for e in c["failure"]["effects"] if e["type"] == "damage") for c in checks]
+    # 事件裡的一爪 ≈ 牠在戰鬥裡的一擊(事件傷害不吃護甲 → 下限取最輕招式的八成,上限不超過最重一招)
+    hits = [a["damage"] for a in gd.bestiary["gryphon"]["attacks"]]
+    assert all(0.8 * min(hits) <= d <= max(hits) for d in dmg), dmg
+    # 站定不動=風險與回報皆最高:檢定最難、失敗最痛,成功才有名聲
+    stand = checks[2]
+    assert dmg[2] == max(dmg) and stand["difficulty"] == max(c["difficulty"] for c in checks)
+    assert stand["success"]["effects"] == [{"type": "fame", "amount": 2},
+                                           {"type": "skill_xp", "skill": "speechcraft", "amount": 0.8}]
+    assert all("fame" not in {e["type"] for e in c["success"]["effects"]} for c in checks[:2])
+    # 新手沒有穩贏的選項(審查實測 110 種種族×職業:最佳選項成功率 17–47%)
+    assert max(events.check_chance(st.player, c) for c in checks) < 0.5
+    assert "summerset_gryphon_shadow" in events.eligible_events(st, gd, "travel")
+    # 全省野外皆可觸發(海灘到山麓)→ 文字須地形中性(R177②;原「衝向樹林」在海灘不通)
+    assert not re.search(_COASTAL + "|" + _WOODLAND, json.dumps(ev, ensure_ascii=False))
+
+
+def test_r178_wild_gryphon_is_a_mountain_predator_that_stays_home():
+    gd, L = _gd()
+    g = gd.bestiary["gryphon"]
+    assert (g["danger"], g["min_level"]) == (4, 7) and g["weight"] > 0 and not g.get("solo")
+    assert g.get("habitat_bound") is True                           # 群島特有種:不離鄉遊蕩
+    assert combat._biome_weight(g, "jungle") == 0.0 and combat._biome_weight(g, "isle") > 0
+    assert "physical" not in g.get("resist", {})                    # R128:羽毛血肉,凡兵有效
+    # 野外「探索」只在山區遇得到:max_danger(=地點 danger+1)構得著 danger 4 的野外節點只有兩處(正典棲地)。
+    # 「旅途」遭遇另算:走進任何 danger ≥3 的群島節點(含南岸地城)都可能抽到 —— 全省統一 isle、
+    # 引擎無地形篩選(同 R176 海蛇會出現在山麓;handoff §6 的 P4)。獅鷲會飛,正典在西南雷倫希爾一帶也有巢。
+    wild = {lid for lid, l in _nodes(L).items() if l["type"] == "wilderness" and l["danger"] + 1 >= g["danger"]}
+    assert wild == {"eton_nir", "veyond_wyte"}
+
+    def seen(lid, level, n=400):                                    # 引擎口徑實抽
+        rng = RNG(11)
+        return {combat.random_encounter(gd, level, rng, L[lid]["danger"] + 1, "isle").template_id for _ in range(n)}
+
+    assert "gryphon" in seen("eton_nir", 10) and "gryphon" in seen("veyond_wyte", 7)
+    assert "gryphon" not in seen("rellenthil", 30) and "gryphon" not in seen("eton_nir", 6)
+    assert "avuuma_whirlwind" not in seen("eton_nir", 30) | seen(GRYPHON_PASS, 30)      # 具名頭目不遊蕩
+
+
+def test_r178_kings_haven_pass_is_avuumas_dungeon():
+    gd, L = _gd()
+    node, spec = L[GRYPHON_PASS], gd.dungeons[GRYPHON_PASS]
+    assert node["type"] == "dungeon" and node["dungeon"] == GRYPHON_PASS and node["danger"] == spec["danger"] == 4
+    # 原地改、不搬家:座標與山道連線不動,雲棲往東岸仍經此隘
+    assert node["pos"] == [6, 17] and node["links"] == {"eton_nir": 1, "veyond_wyte": 1}
+    assert "veyond_wyte" in _reach(L, "eton_nir", banned=("eldbur_ruins", "firsthold", "eastern_pass"))
+    wild, boss = gd.bestiary["gryphon"], gd.bestiary[spec["boss"]["enemy"]]
+    assert spec["boss"]["enemy"] == "avuuma_whirlwind" and spec["boss"]["raw"] is True
+    assert boss["solo"] is True and boss["weight"] == 0 and boss["danger"] == 5
+    assert boss["min_level"] > wild["min_level"] and boss["max_health"] > 2 * wild["max_health"]
+    assert min(a["damage"] for a in boss["attacks"]) > min(a["damage"] for a in wild["attacks"])
+    assert spec["boss"].get("named") is True and boss["name"] == "「旋風」阿芙瑪"      # 以本名登場
+    peers = [gd.bestiary[c]["max_health"] for c in ("snakeskin_leviathan", "sload_prelate")]
+    assert min(peers) <= boss["max_health"] <= max(peers)                              # 群島 danger 5 頭目帶
+    for c in (wild, boss):
+        first = {k: v for k, v in c["attacks"][0].items() if k != "weight"}
+        assert c["attack"] == first, c["name"]                                         # 單招=曲目首招
+        for a in c["attacks"]:                                                         # R43 控場紀律
+            oh = a.get("on_hit")
+            if oh:
+                hard = oh["status"] in _CONTROL_HARD
+                assert oh["chance"] <= (0.30 if hard else 0.35) and oh["turns"] <= (1 if hard else 2), a["name"]
+                assert oh.get("magnitude", 0) <= 0.3, a["name"]
+    gust = next(a for a in boss["attacks"] if a["name"] == "旋風振翼")
+    assert gust.get("ranged") is True and "element" not in gust     # R145:狂風非接觸 → 不吃荊棘/盾反
+    # 正典:裂珊哥布林 + 獅鷲;雜兵不越階
+    assert {"goblin", "gryphon"} <= set(spec["monsters"])
+    rb = spec["reinfest"]
+    assert rb["boss"]["enemy"] == "gryphon"                         # 空巢引來新的獅鷲(名號世代相傳)
+    assert "raw" not in rb["boss"] and "named" not in rb["boss"]    # 走 spawn_boss 強化;還沒有名號
+    tier = gd.dungeons["dusk_keep"]                                 # 同為 danger 4:規模與經濟一致
+    assert all(spec[k] == tier[k] for k in ("grid", "layers", "loot_locked"))
+    gold = lambda b: next(x["gold"] for x in b["treasure"]["loot"] if isinstance(x, dict))
+    assert gold(spec["boss"]) == gold(tier["boss"]) and gold(rb["boss"]) == gold(tier["reinfest"]["boss"])
+    for cid in spec["monsters"] + rb["monsters"] + [rb["boss"]["enemy"]]:
+        assert gd.bestiary[cid].get("danger", 1) <= spec["danger"], f"{cid} 越階"
+    eff = dungeon.effective_spec(gd, GRYPHON_PASS, infested=True)
+    assert (eff["monsters"], eff["boss"]["enemy"]) == (rb["monsters"], "gryphon")
+    assert dungeon.effective_spec(gd, GRYPHON_PASS, infested=False)["boss"] == spec["boss"]
+    kinds = Counter(gd.dungeon_features[f]["kind"] for f in spec["features"])
+    assert kinds == {"lore": 1, "shrine": 1, "puzzle": 2}
+    # 山隘不放「潮光稜晶」,整座地城文字不帶海邊意象;祭壇的抗電選項貼在地威脅(隘底的哥布林薩滿放電)
+    assert "shrine_tidal_prism" not in spec["features"]
+    texts = [spec, node["desc"]] + [gd.dungeon_features[f] for f in spec["features"]]
+    assert not re.search(_COASTAL, json.dumps(texts, ensure_ascii=False))
+    shrine = next(f for f in spec["features"] if gd.dungeon_features[f]["kind"] == "shrine")
+    offers = {o["buff"]["param"] for o in gd.dungeon_features[shrine]["offers"]}
+    threats = {a.get("element") for cid in spec["monsters"] for a in gd.bestiary[cid].get("attacks", [])}
+    assert "shock" in offers & threats
+    # 告示板懸賞 + 重踞清剿:報酬比照同為 danger 4 的暮色塔
+    job, dc = gd.quests[f"job_{GRYPHON_PASS}"], gd.quests[f"dcomm_{GRYPHON_PASS}"]
+    assert job["objective"] == {"type": "clear_dungeon", "dungeon": GRYPHON_PASS} and job["provinces"] == [PROV]
+    assert job["reward"] == gd.quests["job_dusk_keep"]["reward"]
+    assert dc["objective"] == {"type": "purge_dungeon", "dungeon": GRYPHON_PASS}
+    assert dc["provinces"] == [PROV] and dc["repeatable"] and dc["reward"] == gd.quests["dcomm_dusk_keep"]["reward"]
 
 
 def run():

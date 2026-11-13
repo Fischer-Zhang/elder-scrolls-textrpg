@@ -10157,5 +10157,44 @@
       "gold": 50,
       "fame": 2
     }
+  },
+  "job_kings_haven_pass": {
+    "name": "懸賞:國王避風隘",
+    "faction": null,
+    "rank": null,
+    "source": "board",
+    "provinces": [
+      "夏暮群島"
+    ],
+    "objective": {
+      "type": "clear_dungeon",
+      "dungeon": "kings_haven_pass"
+    },
+    "reward": {
+      "gold": 400,
+      "fame": 20
+    },
+    "turn_in": "auto",
+    "text": "雲棲告示板懸賞:國王避風隘的山道不太平 —— 裂珊哥布林盤踞隘底洞窟,隘頂的巨獅鷲「旋風」阿芙瑪專叼落單的馱獸與旅人。肅清隘口,還雲棲往東岸的山道一個清靜。"
+  },
+  "dcomm_kings_haven_pass": {
+    "name": "清剿委託:國王避風隘",
+    "faction": null,
+    "rank": null,
+    "source": "board",
+    "repeatable": true,
+    "provinces": [
+      "夏暮群島"
+    ],
+    "objective": {
+      "type": "purge_dungeon",
+      "dungeon": "kings_haven_pass"
+    },
+    "reward": {
+      "gold": 85,
+      "fame": 2
+    },
+    "turn_in": "auto",
+    "text": "告示:肅清過的國王避風隘又不平靜 —— 空下來的巨巢引來了新的獅鷲,哥布林也摸回了洞窟。掃蕩其頭目、肅清隘口者,官府有賞。(常駐零工;僅在該地重遭盤踞時懸掛)"
   }
 }

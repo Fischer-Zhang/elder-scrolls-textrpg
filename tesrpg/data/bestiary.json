@@ -11936,5 +11936,145 @@
    }
   ],
   "flavor": "斯洛德祭司長自晶柱間緩緩直起身,黏滑的觸掌拂過水晶,留下一道道腐蝕的痕跡。"
+ },
+ "gryphon": {
+  "biomes": [
+   "isle"
+  ],
+  "name": "獅鷲",
+  "strength": 66,
+  "agility": 60,
+  "speed": 62,
+  "max_health": 96,
+  "armor_rating": 10,
+  "attack": {
+   "name": "利爪撲擊",
+   "damage": 19,
+   "skill": 56
+  },
+  "attacks": [
+   {
+    "name": "利爪撲擊",
+    "damage": 19,
+    "skill": 56,
+    "weight": 3
+   },
+   {
+    "name": "鋒喙啄擊",
+    "damage": 17,
+    "skill": 56,
+    "weight": 2
+   },
+   {
+    "name": "俯衝掠擊",
+    "damage": 26,
+    "skill": 58,
+    "weight": 1,
+    "cooldown": 3,
+    "on_hit": {
+     "status": "stagger",
+     "turns": 1,
+     "chance": 0.25
+    }
+   }
+  ],
+  "danger": 4,
+  "min_level": 7,
+  "weight": 2,
+  "habitat_bound": true,
+  "resist": {
+   "shock": -30
+  },
+  "loot_gold": [
+   4,
+   14
+  ],
+  "loot": [
+   {
+    "item": "hawk_feather",
+    "chance": 0.5
+   },
+   {
+    "item": "filled_lesser_soul_gem",
+    "chance": 0.2
+   }
+  ],
+  "flavor": "一道比帆還寬的影子自山巔壓下 —— 鷹首獅身的獅鷲收攏雙翼,利爪間還掛著上一頭獵物的殘骸。"
+ },
+ "avuuma_whirlwind": {
+  "biomes": [
+   "isle"
+  ],
+  "name": "「旋風」阿芙瑪",
+  "strength": 80,
+  "agility": 66,
+  "speed": 66,
+  "max_health": 210,
+  "armor_rating": 14,
+  "attack": {
+   "name": "裂骨利爪",
+   "damage": 28,
+   "skill": 62
+  },
+  "attacks": [
+   {
+    "name": "裂骨利爪",
+    "damage": 28,
+    "skill": 62,
+    "weight": 3
+   },
+   {
+    "name": "旋風振翼",
+    "damage": 22,
+    "skill": 62,
+    "weight": 2,
+    "ranged": true,
+    "on_hit": {
+     "status": "slow",
+     "magnitude": 0.3,
+     "turns": 2,
+     "chance": 0.35
+    }
+   },
+   {
+    "name": "俯衝掠擊",
+    "damage": 34,
+    "skill": 64,
+    "weight": 1,
+    "cooldown": 3,
+    "on_hit": {
+     "status": "stagger",
+     "turns": 1,
+     "chance": 0.3
+    }
+   }
+  ],
+  "danger": 5,
+  "min_level": 12,
+  "weight": 0,
+  "solo": true,
+  "raw": true,
+  "resist": {
+   "shock": -35
+  },
+  "loot_gold": [
+   40,
+   90
+  ],
+  "loot": [
+   {
+    "item": "hawk_feather",
+    "chance": 0.6
+   },
+   {
+    "item": "filled_greater_soul_gem",
+    "chance": 0.4
+   },
+   {
+    "item": "ruby",
+    "chance": 0.25
+   }
+  ],
+  "flavor": "滿地碎骨的巨巢裡,一對遮天的翅膀緩緩張開 —— 島民世代喚作「旋風」的巨獅鷲昂首長唳,隘口的風隨之倒捲。"
  }
 }

@@ -2450,11 +2450,14 @@ def action_dungeon(state: GameState, gamedata: GameData) -> str | None:
                     ui.message("逆轉召喚法陣的反噬撕裂你的血肉與心神 —— 你氣力僅存三分,但半成的達貢化身同樣虛弱。", style="yellow")
                 if has_orbs and not orb_broken[z]:   # R121 決戰前未破本層念力球 → 反噬(隨機非神秘技能大減)
                     _apply_orb_curse(state, gamedata)
+                # R178:具名頭目(boss.named)以圖鑑本名登場;未帶者維持「地城名+首領」(既有地城逐位元組不變)
+                boss_name = None if boss.get("named") else f"{spec['name']}首領"
                 if boss.get("raw"):   # 已是 elite 的首領以原始強度登場(避免 spawn_boss 再 ×1.6 疊加)
                     foe = combat.spawn_creature(gamedata, boss["enemy"], state.rng)
-                    foe.name = f"{spec['name']}首領"
+                    if boss_name:
+                        foe.name = boss_name
                 else:
-                    foe = combat.spawn_boss(gamedata, boss["enemy"], state.rng, name=f"{spec['name']}首領")
+                    foe = combat.spawn_boss(gamedata, boss["enemy"], state.rng, name=boss_name)
                 res = run_battle(state, gamedata, foe,
                                  carry_allies=battle["allies"], preserve_buffs=True)
                 sync_allies()

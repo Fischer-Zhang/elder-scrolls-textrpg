@@ -636,5 +636,78 @@
       "puzzle_ward_lock",
       "puzzle_hidden_cache"
     ]
+  },
+  "kings_haven_pass": {
+    "name": "國王避風隘",
+    "biome": "isle",
+    "danger": 4,
+    "grid": 5,
+    "layers": 3,
+    "monsters": [
+      "goblin",
+      "goblin_shaman",
+      "gryphon"
+    ],
+    "loot": [
+      "filled_greater_soul_gem",
+      "ruby",
+      "gold_amulet",
+      "silver_ring"
+    ],
+    "loot_locked": [
+      24,
+      36
+    ],
+    "boss": {
+      "enemy": "avuuma_whirlwind",
+      "raw": true,
+      "named": true,
+      "desc": "洞窟盡頭豁然見天 —— 隘頂的斷崖上是一座以整棵枯樹與獸骨堆成的巨巢,碎骨鋪了滿地。巢中的巨獅鷲緩緩起身,雙翼一張,崖上的風便全數倒向了你:這就是島民世代喚作「旋風」的阿芙瑪。",
+      "treasure": {
+        "loot": [
+          "filled_greater_soul_gem",
+          "ruby",
+          "gold_amulet",
+          "healing_potion",
+          {
+            "gold": [
+              100,
+              200
+            ]
+          }
+        ]
+      }
+    },
+    "reinfest": {
+      "desc": "「旋風」的巨巢空了沒多久,崖上又傳來了長唳 —— 一頭年輕的獅鷲佔了空巢,裂珊哥布林也摸回了隘底的洞窟。",
+      "rumor": "四方傳聞:肅清過的國王避風隘又有獅鷲佔了空巢 —— 據說巢裡還留著上一任主人叼回來的財貨。",
+      "monsters": [
+        "goblin",
+        "goblin_shaman",
+        "giant_rat"
+      ],
+      "boss": {
+        "enemy": "gryphon",
+        "desc": "碎骨巢裡多了新鮮的羽毛。佔巢的年輕獅鷲壓低了頭,喉間滾著低鳴 —— 牠還沒有名號,但顯然打算在這裡掙一個。",
+        "treasure": {
+          "loot": [
+            "healing_potion",
+            "ruby",
+            {
+              "gold": [
+                60,
+                100
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "features": [
+      "lore_kings_haven_marker",
+      "shrine_stormcairn",
+      "puzzle_ward_lock",
+      "puzzle_hidden_cache"
+    ]
   }
 }

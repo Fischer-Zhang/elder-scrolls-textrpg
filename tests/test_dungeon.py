@@ -11,6 +11,7 @@ from tesrpg.gamedata import get_gamedata
 from tesrpg.rng import RNG
 from tesrpg.state import GameState, GameTime
 from tesrpg.systems import dungeoncrawl as DC
+from tesrpg.systems import stats
 from tesrpg.ui import console as ui
 import tesrpg.main as M
 
@@ -302,6 +303,31 @@ def test_skeleton_key_perfect_lockpick():
     r = dungeon.pick_lock(c, gd, 80, st.rng)                            # 無開鎖器仍成功
     assert r["success"] and r.get("skeleton_key") and not r["no_pick"]
     assert c.base_skill("security") == sec0                             # 不給 xp(非親手習得)
+
+
+def test_named_boss_enters_under_its_own_name_r178():
+    """R178:地城頭目帶 `named` → 以圖鑑本名登場;未帶者維持「地城名+首領」。
+    重踞變體不繼承 named(佔巢的新頭目還沒有名號)。"""
+    def boss_names(dloc):
+        gd, c, st = _char(dloc)
+        c.attributes["endurance"] = 300                     # 撐過沿途陷阱(只觀測頭目登場名)
+        stats.recompute_max_resources(c, gd, restore_full=True)
+        seen = []
+
+        def result(foes):
+            if not isinstance(foes, list):
+                seen.append(foes.name)
+            return "victory"
+        assert _run(gd, st, result) != "dead"
+        return gd, seen
+
+    gd, seen = boss_names("kings_haven_pass")
+    assert seen == [gd.bestiary["avuuma_whirlwind"]["name"]] == ["「旋風」阿芙瑪"]
+    gd, seen = boss_names("dusk_keep")                      # 同為 raw 頭目但未具名 → 原行為
+    assert seen == ["暮色塔首領"]
+    named = [d for d, s in gd.dungeons.items() if s["boss"].get("named")]
+    assert named == ["kings_haven_pass"]                    # 目前唯一具名登場的頭目
+    assert "named" not in gd.dungeons["kings_haven_pass"]["reinfest"]["boss"]
 
 
 def run():
