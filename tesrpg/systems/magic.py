@@ -77,14 +77,14 @@ def known_spells(char: Character) -> list[str]:
 
 
 # 中庸·盟友指向(治療師援護 / 騎士號令):heal/shield/apply_status/empower 套用到同伴 Creature。
-def _apply_to_allies(kind: str, eff: dict, power: float, dests: list) -> list[str]:
+def _apply_to_allies(kind: str, eff: dict, power: float, dests: list, shield_turns_bonus: int = 0) -> list[str]:
     names = []
     for d in dests:
         if kind == "heal":
             d.health = min(d.max_health, d.health + round(eff["magnitude"] * power))
         elif kind == "shield":
             d.active_effects.append({"kind": "shield", "magnitude": round(eff["magnitude"] * power),
-                                     "turns": eff["turns"]})
+                                     "turns": eff["turns"] + shield_turns_bonus})
         elif kind == "apply_status":
             d.active_effects.append(make_status_effect(_scaled_status(eff["status"], power)))   # R76 HoT/DoT 吃威力
         elif kind == "empower":
@@ -111,6 +111,11 @@ def _ally_verb(kind: str) -> str:
 COMPANION_HEAL_THRESHOLD = 0.55   # 池中(含玩家)HP 比最低者低於此 → 反應式治療
 COMPANION_SUPPORT_COOLDOWN = 2    # 任一支援後的冷卻回合(active_effects support_cd;tick_effects 遞減)
 ENEMY_SUPPORT_POWER = 0.35        # R87 敵方支援幅度因子(<1:同伴維持 1.0·敵治療不全補小血量怪 → 威脅但可破解;sim 調校)
+# R181 buff 照字面(使用者拍板:buff 在「持有者的對手回合」結束 −1):防守型 buff(護盾)的價值在涵蓋**對手的 N 個階段**。
+# 玩家/同伴在己方階段施法 → 回合末 tick(=敵人階段結束)恰涵蓋敵人 N 個階段 ✓ 不補;怪物在敵人階段施法 →
+# 回合末 tick 先扣 1,只剩 N−1 個玩家階段 → 敵方施護盾 +1。再生(HoT)回復次數本來就是 N 次、號令增傷看持有者自己
+# 出手數(對手時鐘下同為 N−1)→ 兩者換時鐘後不變,故**只補護盾**,不補 regen/empower(補了會多一次回復/多一擊增傷)。
+ENEMY_SHIELD_TURNS_BONUS = 1
 _COMPANION_HEAL_KINDS = ("heal", "apply_status")   # 反應式(直接治療 / HoT)
 _COMPANION_BUFF_KINDS = ("shield", "empower")      # 主動式(護盾 / 激勵)
 
@@ -126,7 +131,7 @@ def _co_has_kind(entity, kind: str) -> bool:
 
 
 def _support_act(caster, spells, pool, gamedata, exclude_from_empower=(), power=1.0,
-                 cooldown=COMPANION_SUPPORT_COOLDOWN) -> dict | None:
+                 cooldown=COMPANION_SUPPORT_COOLDOWN, shield_turns_bonus=0) -> dict | None:
     """陣營無關的支援施法決策(R86 同伴 / R87 敵方 共用 core)。`pool`=施法者這一側的成員(含 self)。
     回施放結果 dict(用本回合)或 None(→ 呼叫端走攻擊)。優先序:① 反應式治療(池中 HP 比 < 門檻)
     ② 主動式增益(目標缺該 buff)。冷卻中或無 spells → None。掃 active_effects 去重。
@@ -135,7 +140,8 @@ def _support_act(caster, spells, pool, gamedata, exclude_from_empower=(), power=
     if not spells or _co_has_kind(caster, "support_cd"):
         return None
     res = (_support_try_heal(caster, spells, pool, gamedata, power)
-           or _support_try_buff(caster, spells, pool, gamedata, exclude_from_empower, power))
+           or _support_try_buff(caster, spells, pool, gamedata, exclude_from_empower, power,
+                                shield_turns_bonus))
     if res:
         caster.active_effects.append({"kind": "support_cd", "turns": cooldown})
     return res
@@ -156,7 +162,8 @@ def enemy_support_act(enemy, enemies, gamedata) -> dict | None:
     from tesrpg.systems import combat
     spells = list(gamedata.bestiary.get(getattr(enemy, "template_id", ""), {}).get("spells", []) or [])
     pool = [e for e in enemies if combat.is_alive(e)]     # 含 self(self 必活)
-    return _support_act(enemy, spells, pool, gamedata, power=ENEMY_SUPPORT_POWER)
+    return _support_act(enemy, spells, pool, gamedata, power=ENEMY_SUPPORT_POWER,
+                        shield_turns_bonus=ENEMY_SHIELD_TURNS_BONUS)   # R181 敵方護盾 +1(見常數註解)
 
 
 SUMMON_SUPPORT_POWER = 0.8   # R106 召喚物支援施法幅度(< 玩家 1.0·固定·不隨召喚主威力爆走)
@@ -200,7 +207,8 @@ def _support_try_heal(caster, spells, pool, gamedata, power=1.0):
     return None
 
 
-def _support_try_buff(caster, spells, pool, gamedata, exclude_from_empower=(), power=1.0):
+def _support_try_buff(caster, spells, pool, gamedata, exclude_from_empower=(), power=1.0,
+                      shield_turns_bonus=0):
     """主動式增益:目標缺該 buff 才施(與既有 buff/capstone 光環去重)。
     shield 護池中最脆且無盾者;empower 套缺激勵者(排除 `exclude_from_empower`,如同伴側的玩家)。"""
     from tesrpg.systems import combat
@@ -209,7 +217,8 @@ def _support_try_buff(caster, spells, pool, gamedata, exclude_from_empower=(), p
         if kind == "shield":
             cand = [e for e in pool if e.health > 0 and not _co_has_kind(e, "shield")]
             if cand:
-                return _support_cast(caster, s, [min(cand, key=_co_hp_ratio)], gamedata, power)
+                return _support_cast(caster, s, [min(cand, key=_co_hp_ratio)], gamedata, power,
+                                     shield_turns_bonus)
         elif kind == "empower":
             troops = [a for a in pool if all(a is not x for x in exclude_from_empower)
                       and combat.is_alive(a) and not _co_has_kind(a, "empower")]
@@ -218,10 +227,10 @@ def _support_try_buff(caster, spells, pool, gamedata, exclude_from_empower=(), p
     return None
 
 
-def _support_cast(caster, spell_id, dests, gamedata, power=1.0) -> dict:
+def _support_cast(caster, spell_id, dests, gamedata, power=1.0, shield_turns_bonus=0) -> dict:
     """套用支援法術到 dests(power 幅度因子;複用 `_apply_to_allies`)。回 UI 結果。"""
     sp = gamedata.spells[spell_id]
-    names = _apply_to_allies(sp["effect"]["kind"], sp["effect"], power, dests)
+    names = _apply_to_allies(sp["effect"]["kind"], sp["effect"], power, dests, shield_turns_bonus)
     return {"ok": True, "spell": spell_id,
             "message": f"{caster.name}施展「{sp['name']}」 —— {'、'.join(names)}{_ally_verb(sp['effect']['kind'])}。"}
 

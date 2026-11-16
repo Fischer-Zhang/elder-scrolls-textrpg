@@ -246,6 +246,7 @@ PYTHONPATH=. python3 sim_assassin.py      # 平衡回歸模擬(改戰鬥常數�
 | R178 | 獅鷲:野怪 danger 4 + 具名頭目「旋風」阿芙瑪 + 國王避風隘原地改地城 + 獅鷲掠空三選項皆檢定;🔴 具名頭目登場須標 boss.named·加在地非 solo 怪會洗牌該省領主委託·野外改地城先量過路風險 | re-sim, save-safe, content |
 | R179 | 獅鷲收尾:no_bounty 把獅鷲擋在委託素材池外 + 阿芙瑪加心智攻擊「懾魂長唳」(magic·恐懼);🔴 不宜懸賞的生物標 no_bounty·怪物 1 回合硬控對玩家實際不生效(既有引擎時序,待決) | re-sim, save-safe, content |
 | R180 | 自動趕路避險:角色存路線偏好三檔(不限/避開地城/避開高危 danger≥4),只過濾途中節點;🔴 起點終點豁免·到不了就明說絕不改走·入口共用 route_to/routes_from·預設 off 逐位元組不變 | save |
+| R181 | 回合照字面(`turns:N`=持有者 N 個行動):怪物 on_hit 控場對玩家 +1、敵方護盾 +1、閃身反打踉蹌 t1→t2;🔴 dot/召喚物不補·同種硬控連損 ≤1·sim_assassin 看不到此維度須看 sim_builds | re-sim |
 
 ## 自動提交閘門 / 換 session 前檢查表
 

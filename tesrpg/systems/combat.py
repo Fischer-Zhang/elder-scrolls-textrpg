@@ -932,8 +932,13 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
                                                  "magnitude": oh["magnitude"], "turns": oh["turns"]})
                     status_applied = oh.get("element")
                 # 控場 → 集中 helper(R44:玩家 willpower 抗硬控 + 去重,移入 apply_control)
+                # R181 回合照字面:`turns: N` = 持有者的 N 個行動。怪物在敵人階段施加,回合末 tick 就 −1,
+                # 玩家不會在下次行動前見到 → t1 恐懼/麻痺/踉蹌永遠不生效、t2 衰弱/遲緩/凍麻只剩 1 回合。
+                # 故對**玩家**施加時 +1(施加端補償,去重照擋 → 連續損失上限 1;dot 逐回合結算不補)。
+                # 召喚物→敵人在同伴階段施加(玩家階段之後、敵人階段之前)→ 回合末 tick 後仍完整 N 回合,不補。
                 elif magic.apply_control(defender, st, gamedata, rng,
-                                         magnitude=oh.get("magnitude", 0.0), turns=oh["turns"]) == "applied":
+                                         magnitude=oh.get("magnitude", 0.0),
+                                         turns=oh["turns"] + (1 if _is_player(defender) else 0)) == "applied":
                     status_applied = st
             # 疾病傳染(吸血鬼吸血熱 / 狼人狼人熱):命中機率 × 疾病抗性削弱(只標記,轉化由各系驅動)。
             # `infect_kind` 缺省 "vampire"(舊吸血鬼敵向後相容);跨詛咒互斥靠疾病免疫使 dmult=0 自然擋掉,
@@ -1233,7 +1238,9 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
                 _cd *= formulas.resist_multiplier(magic.entity_resist(attacker, gamedata), "physical")
                 _set_hp(attacker, _get_hp(attacker) - int(round(_cd)))
                 if oe.get("counter_stagger"):
-                    magic.apply_control(attacker, "stagger", gamedata, rng, turns=1)   # R44:集中 helper
+                    # R181:turns:2 → 敵人階段對怪物施加的踉蹌須撐過回合末 tick,才在該怪「下一次出手」時生效
+                    # (原 turns:1 實測施加 388 次、怪物下一擊讀到 0 次 = 死機制;與上方盾擊/荊棘同款時序修法)
+                    magic.apply_control(attacker, "stagger", gamedata, rng, turns=2)   # R44:集中 helper
 
     return {
         "attacker": _name(attacker), "defender": _name(defender),
