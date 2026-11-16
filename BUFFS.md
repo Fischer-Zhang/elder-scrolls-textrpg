@@ -321,7 +321,7 @@ weapon_element 附魔、奧術灌注 weapon_imbue、共鳴一擊 resonance、武
 |---|---|---|
 | 怪物 on_hit 對**玩家**施控場(fear/paralyze/stagger/weaken/slow/benumb) | `combat.py` on_hit 分支 `turns+1`(dot 不補:逐回合結算;召喚物→敵人不補) | t1 恐懼/麻痺=損失 1 個玩家行動;t1 踉蹌=1 個玩家行動命中 −0.30;t2 衰弱/遲緩/凍麻=2 個玩家行動。同種硬控去重 → **同種**連續損失上限 1(跨種可串連,現資料不可達) |
 | 敵方支援施**護盾**(R87) | `ENEMY_SHIELD_TURNS_BONUS=1` | 護盾涵蓋對手 N 個階段;再生(回復次數本來 N 次)與號令(看自己出手數)換時鐘不變,**刻意不補** |
-| 防守側反制:敵人階段對怪物施加(持有者=怪物自己的階段) | 資料用 `turns:2` 撐過 tick | 盾擊/荊棘 stagger、閃身反打 counter_stagger(R181 由 1 改 2;原為死機制)=怪物下一擊;同族未修:`block_riposte weaken_turns:2` 實際只衰弱 1 次出手(見 handoff §6) |
+| 防守側反制:敵人階段對怪物施加(持有者=怪物自己的階段) | stagger 資料用 `turns:2` 撐過 tick(=怪物下一擊);**盾擊破勢 weaken 在施加處 `weaken_turns+1`**(R182;資料 `weaken_turns:N` = 怪物 N 次出手) | 盾擊/荊棘 stagger、閃身反打 counter_stagger(R181 由 1 改 2;原為死機制)=怪物下一擊;盾擊破勢 weaken 0.15 × 2 次出手(R182 由 1 次修為 2 次) |
 
 ### 對玩家自身懲罰(身分/星座代價)
 吸血鬼火弱點(−10/階)、陽光灼傷、學徒座 magic−50、領主座 火−25、巨魔像魔力不回、斯庫瑪戒斷(屬性 −18/煉金 −18)、壁壘攻擊耗體×1.20、過載 cost×1.30、武器流派 recoil 自損、瞄準射蓄力/箭雨齊射 雙倍攻擊耗體。

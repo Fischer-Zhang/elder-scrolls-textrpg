@@ -1158,8 +1158,11 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
                 # turns:2 → 防守側(敵階段)施加的踉蹌須撐過回合末 tick,才在敵下次出手時生效(修既有 shield_bash 死時序)
                 magic.apply_control(attacker, "stagger", gamedata, rng, turns=2)
                 if rp.get("weaken"):          # 盾擊破勢:反擊同時削弱敵下擊
+                    # R182 回合照字面:`weaken_turns: N` = 怪物的 N 次出手。此處在**怪物自己的階段**施加,
+                    # 回合末 tick 先 −1 → 資料寫 2 實際只衰弱 1 次出手(R181 前瞻同族缺陷)→ +1 補償。
+                    # (上方 stagger 的 turns:2 本意就是「下一擊」= 1 次出手,已正確,不動。)
                     magic.apply_control(attacker, "weaken", gamedata, rng,
-                                        magnitude=rp["weaken"], turns=rp.get("weaken_turns", 2))
+                                        magnitude=rp["weaken"], turns=rp.get("weaken_turns", 2) + 1)
                 if rp.get("counter"):         # 盾威·完美格擋:盾擊反傷(基礎武器傷的一部分)
                     # 🔴 R137 審查修:反擊=物理傷,**吃攻擊者物抗**(resist_multiplier·pen-免疫車道)——
                     # 否則直接扣血繞過 R127/R133 物理牆(實測 720 達貢 2%→12% 全由此洩;套抗後回包絡)。

@@ -231,6 +231,35 @@ def test_counter_stagger_actually_staggers_the_next_enemy_attack():
     assert cnt["consumed"] >= cnt["applied"] - 1, f"反打踉蹌應在怪物下一擊生效(applied/consumed={cnt})"
 
 
+# ----------------------------------------------------------------------
+# R182:盾擊破勢 `weaken_turns: 2` = 怪物的 2 次出手(同族缺陷:在怪物自己階段施加 → 原只剩 1 次)
+# ----------------------------------------------------------------------
+def test_shield_break_weaken_lasts_literal_monster_attacks_r182():
+    gd = _gd()
+    p = _player()
+    foe = _foe({"name": "撲擊", "damage": 2, "skill": 100})
+    orig = mastery.block_riposte
+    try:
+        mastery.block_riposte = lambda d, g: {"stagger_chance": 1.0, "weaken": 0.15,
+                                              "weaken_turns": 2, "counter": 0.0}
+        for s in range(300):                       # 怪物須「命中格擋中的玩家」才觸發盾反
+            foe.active_effects[:] = []
+            combat.resolve_attack(foe, p, gd, RNG(2000 + s), attack=foe.attack, defender_blocking=True)
+            if any(e["kind"] == "weaken" for e in foe.active_effects):
+                break
+        else:
+            raise AssertionError("300 次攻擊都沒觸發盾擊破勢")
+    finally:
+        mastery.block_riposte = orig
+    weakened = staggered = 0
+    for _ in range(8):                             # 回合末 tick 後,怪物的下一次出手是否仍受影響
+        magic.tick_effects(foe, gd)
+        weakened += magic.weaken_factor(foe) < 1.0
+        staggered += magic.is_staggered(foe)
+    assert weakened == 2, f"weaken_turns:2 應衰弱怪物恰好 2 次出手(實得 {weakened};修前為 1)"
+    assert staggered == 1, f"盾擊踉蹌本意=下一擊=1 次出手,不得被連帶延長(實得 {staggered})"
+
+
 def run():
     for name, fn in sorted(globals().items()):
         if name.startswith("test_") and callable(fn):
