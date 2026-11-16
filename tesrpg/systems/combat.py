@@ -1225,11 +1225,12 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
     elif _is_player(defender):             # 敵人攻擊落空 + 防守方是玩家 → 成功閃避 → 鍛鍊雜技
         skill_events += progression.use_skill(defender, gamedata, "acrobatics",
                                               formulas.COMBAT_DODGE_XP)
-        # 輕甲「迴身反打/風暴之舞」+ 雜技「凌空奇襲」:閃過敵攻即反制(只對敵;**每回合至多一次** →
-        # 反制傷害/回體不隨敵數線性放大,鏡像 EVASION_BONUS_CAP 守『群戰須具真實風險』。回合額度由 run_battle/auto_resolve 重置)
+        # 輕甲「迴身反打/風暴之舞」+ 雜技「凌空奇襲」:閃過敵攻即反制(只對敵)。
+        # R183(使用者拍板,取代 R34「每回合至多一次」):**每次**閃過都各自判定——回體力每次給、反擊每次各擲一次機率
+        # (效果文本來就寫「每次閃過敵攻即回復」);N 隻怪同回合攻擊 → 最多 N 次反擊/N 個踉蹌。
+        # 反擊仍限物理近戰:元素(龍息/法術/凝視)與標 ranged 的攻擊閃過無反擊(R145,回體力照給)。
         oe = mastery.on_evade(defender, gamedata)
-        if oe and not _is_player(attacker) and not getattr(defender, "_evade_counter_used", False):
-            defender._evade_counter_used = True
+        if oe and not _is_player(attacker):
             if oe.get("restamina"):
                 defender.fatigue = min(defender.max_fatigue, defender.fatigue + oe["restamina"])
             if (oe.get("counter_frac") and is_alive(attacker)
@@ -1406,7 +1407,6 @@ def auto_resolve(player: Character, creature: Creature, gamedata: GameData,
     rounds = 0
     while is_alive(player) and is_alive(creature) and rounds < max_rounds:
         rounds += 1
-        player._evade_counter_used = False        # 每回合重置 on_evade 反制額度
         for actor in initiative_order(player, creature):
             if not (is_alive(player) and is_alive(creature)):
                 break

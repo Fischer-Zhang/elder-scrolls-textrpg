@@ -99,7 +99,6 @@ def test_on_evade_no_counter_vs_breath_or_bolt():
         n = 0
         for s in range(200):
             c = _dodger()
-            c._evade_counter_used = False
             foe = combat.spawn_creature(gd, "ancient_dragon", RNG(2)); foe.health = foe.max_health = 9999
             hp0 = foe.health
             ev = combat.resolve_attack(foe, c, gd, RNG(s), attack=dict(attack))

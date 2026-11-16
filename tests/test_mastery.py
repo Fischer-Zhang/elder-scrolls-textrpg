@@ -1024,7 +1024,7 @@ def test_dedup_nobrainer_wave():
 
 
 def test_cold_skill_combat_paths():
-    """檔A 戰鬥路徑回歸(對抗審查抓到的真 bug):牽制箭 slow 帶 magnitude 不崩 initiative;on_evade 反制每回合至多一次。"""
+    """檔A 戰鬥路徑回歸(對抗審查抓到的真 bug):牽制箭 slow 帶 magnitude 不崩 initiative;on_evade 反制每次閃過各自判定(R183)。"""
     from tesrpg.rng import RNG
     from tesrpg.systems import combat
     # (1) slow 狀態必帶 magnitude → initiative_order→_speed→slow_factor 不崩(原 harrying_shot 回歸;
@@ -1035,21 +1035,24 @@ def test_cold_skill_combat_paths():
     foe.active_effects.append({"kind": "slow", "magnitude": 0.20, "turns": 99})
     c.active_effects.append({"kind": "slow", "magnitude": 0.20, "turns": 99})
     combat.auto_resolve(c, foe, gd, RNG(2), max_rounds=60)     # 不得拋例外(slow magnitude 讀取)
-    # (2) on_evade 反制每回合至多一次:同一回合內(flag 未重置)連續多次敵攻落空只反制一次 → 不隨敵數線性放大
+    # (2) on_evade 反制**每次閃過各自判定**(R183 使用者拍板,取代 R34「每回合至多一次」):
+    #     連續多次敵攻落空 → 每次各擲一次反擊機率(storm_dance 0.6)→ 反擊次數隨閃過次數放大,且不超過閃過次數
     gd, p = _char(light_armor=100, acrobatics=100, blade=100); p.weapon = "steel_sword"
     p.health = p.max_health = 600; p.fatigue = 50
     mastery.choose(p, gd, "light_armor_100", "storm_dance")    # counter 0.6/0.6
     e = combat.spawn_creature(gd, "bandit", RNG(3)); e.health = e.max_health = 99999
-    p._evade_counter_used = False
-    counters = 0
-    for i in range(40):                                        # 模擬「同一回合」40 次敵攻(不重置 flag)
+    counters = dodges = 0
+    for i in range(40):                                        # 同一「回合」40 次敵攻(無任何額度重置)
         if not combat.is_alive(p):
             break
         hp0 = e.health
-        combat.resolve_attack(e, p, gd, RNG(8000 + i))
+        ev = combat.resolve_attack(e, p, gd, RNG(8000 + i))
+        if not ev["hit"]:
+            dodges += 1
         if e.health < hp0:
             counters += 1
-    assert counters <= 1, f"同回合 on_evade 反制應 ≤1,實得 {counters}"
+    assert dodges >= 4, f"測試設定應產生足夠閃過(dodges={dodges})"
+    assert 2 <= counters <= dodges, f"每次閃過各自判定:反擊應 ≥2 且 ≤ 閃過次數(counters={counters}, dodges={dodges})"
 
 
 def test_magic_school_no_brainer_fix():

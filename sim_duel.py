@@ -97,7 +97,6 @@ def duel(nameA, nameB, seed, a_first, ambush=False, max_rounds=60):
             c, opp = b[k], b[ok]
             if c.health <= 0 or opp.health <= 0 or hidden[ok]:
                 continue                      # 對手已死/已隱遁 → 我這回合不出手
-            c._evade_counter_used = False
             st[k]["skip"] = False
             if not magic.is_incapacitated(c):
                 POLICY[nm[k]](c, opp, rng, st[k])

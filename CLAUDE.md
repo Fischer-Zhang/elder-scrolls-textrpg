@@ -96,7 +96,7 @@ PYTHONPATH=. python3 sim_assassin.py      # 平衡回歸模擬(改戰鬥常數�
 | R30 | 煉金限時增益藥水:brew 出強化屬性/技能/抗元素限時藥(synth brewb) | recompute, save |
 | R31 | 毒劑深化:五毒型(DoT/麻痺基礎 + 衰毒 weaken·遲緩 slow〔唯一新 combat kind:降 _speed+命… | re-sim, save |
 | R32 | 煉金效果逐步揭露:材料效果預設 ???,三源揭露(嚐一口 taste 決定性消耗 / 煉製成功 brew 回 learn 鍵由呼… | save |
-| R34 | 技能里程碑深化:冷技能身份化(檔A)；🔴 on_evade 每回合至多一次(_evade_counter_used,回合頂重置)防反制隨敵… | re-sim, save |
+| R34 | 技能里程碑深化:冷技能身份化(檔A)；~~🔴 on_evade 每回合至多一次(_evade_counter_used,回合頂重置)防反制隨敵…~~〔R183 取代〕 | re-sim, save |
 | R33 | 裝備耐久/修理整套移除 | re-sim, save |
 | R35 | 技能里程碑深化:去冗餘/修 no-brainer 波次；🔴 對抗審查自我糾錯:初版 whirl_riposte(on_evade-counter)換軸重演隱… | re-sim, save |
 | R36 | security 功能化 + 核心 loop 修復(混合身份:地城入侵+盜賊) | save |
@@ -248,6 +248,7 @@ PYTHONPATH=. python3 sim_assassin.py      # 平衡回歸模擬(改戰鬥常數�
 | R180 | 自動趕路避險:角色存路線偏好三檔(不限/避開地城/避開高危 danger≥4),只過濾途中節點;🔴 起點終點豁免·到不了就明說絕不改走·入口共用 route_to/routes_from·預設 off 逐位元組不變 | save |
 | R181 | 回合照字面(`turns:N`=持有者 N 個行動):怪物 on_hit 控場對玩家 +1、敵方護盾 +1、閃身反打踉蹌 t1→t2;🔴 dot/召喚物不補·同種硬控連損 ≤1·sim_assassin 看不到此維度須看 sim_builds | re-sim |
 | R182 | 盾擊破勢衰弱照字面:`weaken_turns` = 怪物 N 次出手(施加處 +1;原只 1 次);🔴 stagger 的 turns:2 本意=1 次出手不動·持續型要 N 次出手在施加處 +1 | re-sim |
+| R183 | 閃身反打每次閃過各自判定(取代 R34 每回合一次):反擊機率與回體力每次各算;反擊仍限物理近戰(元素/遠程不反擊·R145);🔴 N 怪同回合最多 N 次反擊/踉蹌·輕甲閃避 build 不在 sim_builds 矩陣 | re-sim |
 
 ## 自動提交閘門 / 換 session 前檢查表
 

@@ -37,7 +37,6 @@ def fight(build_name, boss_id, companions, seed, max_rounds=80, cast=True):
             return "win"
         if c.health <= 0:
             return "dead"
-        c._evade_counter_used = False
         st["skip_boss"] = False
         if not magic.is_incapacitated(c):                      # 玩家行動
             act(c, boss, rng, st)
@@ -48,7 +47,6 @@ def fight(build_name, boss_id, companions, seed, max_rounds=80, cast=True):
                 break
             if not combat.is_alive(a) or magic.is_incapacitated(a):
                 continue
-            a._evade_counter_used = False
             if cast and magic.companion_support_act(a, c, allies, gd) is not None:
                 continue                                       # 用本回合支援
             combat.resolve_attack(a, boss, gd, rng, attack=combat.choose_attack(a, rng, boss))
@@ -109,7 +107,6 @@ def fight_group(enemy_ids, seed, max_rounds=60, cast=True, focus_healer=True):
             return "win"
         if c.health <= 0:
             return "dead"
-        c._evade_counter_used = False
         tgt = pick()                                           # 玩家攻擊選定目標(focus healer = 破解)
         if tgt is not None and not magic.is_incapacitated(c):
             combat.player_attack_cost(c, gd)

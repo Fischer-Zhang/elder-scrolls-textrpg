@@ -1150,7 +1150,6 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
             state.time.advance(1)
             tally_casualties()
             return "fled_enemy"
-        player._evade_counter_used = False        # 每回合重置 on_evade 反制額度(守群戰風險;鏡像 EVASION_BONUS_CAP)
         vanish_success = False        # 本回合是否成功隱遁(R71:成功 → 只重置偷襲;不再跳過敵人階段)
         # 怪物硬控(R43):恐懼/麻痺 → 玩家本回合無法行動 → 跳過選單與玩家階段(同伴/敵人照常,回合末 tick 解除)。
         # 防禦雙軌第二道(命中後)已由 willpower resisted_mind 機率擋下;此處只結算「已成功上身」的硬控。

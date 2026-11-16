@@ -472,7 +472,6 @@ def fight(build_name, boss_id, seed, max_rounds=80):
             return "win"                                # R134 殺王=爪牙潰散 → 殺王即勝(對齊 run_battle scatter)
         if c.health <= 0:
             return "dead"
-        c._evade_counter_used = False
         st["skip_boss"] = False
         alive = [e for e in foes if combat.is_alive(e)]
         st["enemies"] = alive                           # 供法系 policy 的 AoE 目標清單(單王=[boss] 行為不變)

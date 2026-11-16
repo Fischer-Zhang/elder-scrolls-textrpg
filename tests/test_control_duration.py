@@ -220,7 +220,6 @@ def test_counter_stagger_actually_staggers_the_next_enemy_attack():
         magic.is_staggered, magic.apply_control = stag, apply
         rng = RNG(11)
         for _ in range(400):
-            p._evade_counter_used = False
             combat.resolve_attack(foe, p, gd, rng, attack=foe.attack)   # 敵人階段:怪物出手 → 玩家閃過 → 反打
             magic.tick_effects(p, gd)
             magic.tick_effects(foe, gd)           # 回合末 tick
@@ -258,6 +257,85 @@ def test_shield_break_weaken_lasts_literal_monster_attacks_r182():
         staggered += magic.is_staggered(foe)
     assert weakened == 2, f"weaken_turns:2 應衰弱怪物恰好 2 次出手(實得 {weakened};修前為 1)"
     assert staggered == 1, f"盾擊踉蹌本意=下一擊=1 次出手,不得被連帶延長(實得 {staggered})"
+
+
+# ----------------------------------------------------------------------
+# R183:閃身反打**每次閃過各自判定**(使用者拍板,取代 R34「每回合至多一次」)
+# ----------------------------------------------------------------------
+def _patched_on_evade(oe):
+    orig = mastery.on_evade
+    mastery.on_evade = lambda d, g: dict(oe)
+    return orig
+
+
+def test_counter_rolls_on_every_dodge_r183():
+    gd = _gd()
+    p = _player()
+    foe = _foe({"name": "撲擊", "damage": 2, "skill": 100})
+    orig = _patched_on_evade({"counter_chance": 1.0, "counter_frac": 0.6, "counter_stagger": False, "restamina": 0})
+    try:
+        rng = RNG(11)
+        dodges = 0
+        for _ in range(400):                       # 同一「回合」連續攻擊,無任何額度重置
+            foe.health = foe.max_health
+            ev = combat.resolve_attack(foe, p, gd, rng, attack=foe.attack)
+            countered = foe.health < foe.max_health
+            if not ev["hit"]:
+                dodges += 1
+                assert countered, "每次閃過物理近戰攻擊都應各自反擊(counter_chance=1.0);修前同回合只有第一次"
+            else:
+                assert not countered, "被命中時不得反擊"
+    finally:
+        mastery.on_evade = orig
+    assert dodges >= 5, f"測試設定應產生足夠閃過(dodges={dodges})"
+
+
+def test_restamina_on_every_dodge_r183():
+    gd = _gd()
+    p = _player()
+    p.fatigue = 20
+    foe = _foe({"name": "撲擊", "damage": 2, "skill": 100})
+    orig = _patched_on_evade({"restamina": 8, "counter_chance": 0.0, "counter_frac": 0.0, "counter_stagger": False})
+    try:
+        rng, dodges = RNG(21), 0
+        for _ in range(400):
+            before = p.fatigue
+            ev = combat.resolve_attack(foe, p, gd, rng, attack=foe.attack)
+            if not ev["hit"]:
+                dodges += 1
+                assert p.fatigue == before + 8, f"每次閃過都應回 8 體力(第 {dodges} 次:{before}→{p.fatigue})"
+            else:
+                assert p.fatigue == before, "被命中不回體力"
+            if dodges >= 5:                        # 只驗前 5 次(避免技能升級重算上限造成夾限)
+                break
+    finally:
+        mastery.on_evade = orig
+    assert dodges >= 5
+
+
+def test_elemental_dodge_still_gives_stamina_but_no_counter_r183():
+    """界線維持 R145:元素/遠程攻擊閃過無反擊(含踉蹌),回體力照給(但現在是每次)。"""
+    gd = _gd()
+    p = _player()
+    p.fatigue = 20
+    foe = _foe({"name": "火球", "damage": 2, "skill": 100, "element": "fire"})
+    orig = _patched_on_evade({"restamina": 8, "counter_chance": 1.0, "counter_frac": 0.6, "counter_stagger": True})
+    try:
+        rng, dodges = RNG(31), 0
+        for _ in range(600):
+            foe.health = foe.max_health
+            before = p.fatigue
+            ev = combat.resolve_attack(foe, p, gd, rng, attack=foe.attack)
+            if not ev["hit"]:
+                dodges += 1
+                assert foe.health == foe.max_health, "元素攻擊閃過不得反擊"
+                assert not magic.is_staggered(foe), "元素攻擊閃過不得施加踉蹌"
+                assert p.fatigue == before + 8, "元素攻擊閃過仍每次回體力"
+            if dodges >= 5:
+                break
+    finally:
+        mastery.on_evade = orig
+    assert dodges >= 5
 
 
 def run():
