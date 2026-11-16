@@ -678,9 +678,11 @@ _SVC_FULL = {"inn": "旅店", "merchant": "商人", "trainer": "訓練師",
              "armorer": "鐵匠", "task_board": "告示板"}
 
 
-def _map_view(char: Character, gamedata: GameData, reach: dict | None = None) -> dict:
+def _map_view(char: Character, gamedata: GameData, reach: dict | None = None,
+              blocked: set | None = None) -> dict:
     from tesrpg.systems import landmarks, politics, world, dungeon
     reach = reach or {}   # {lid:(hops,hours)} 可達性;空 → 各 node hops/hours 皆 None(唯讀,back-compat)
+    blocked = blocked or set()   # R180:只因路線偏好而到不了的地點(前端標「避險設定下無路可通」)
     locs = gamedata.world["locations"]
     vis = {lid for lid in locs if world.is_visible(char, gamedata, lid)}   # 隱藏地點不上圖
     _quest_target_locs = _quest_target_location_set(char, gamedata)
@@ -725,6 +727,7 @@ def _map_view(char: Character, gamedata: GameData, reach: dict | None = None) ->
                                "reinfested": lid in _reinfest_locs,   # R114 F5:重踞中可再掃地城
                                "hops": _r[0] if _r else None,         # 互動:N 段
                                "hours": _r[1] if _r else None,        # 互動:約 M 時
+                               "blocked": lid in blocked,             # R180:被路線偏好擋下
                                "svc": [_GUILD_HALL_CN[s] for s in loc.get("services", []) if s in _GUILD_HALL_CN],
                                # ⚠ 修 R153 回歸:svc_all 原只取 _SERVICE_CN(缺 戰友團/聖騎士團/黑暗兄弟會 鍵),
                                #   而前端 svc_all 非空即優先於 svc → 公會大廳被永久遮蔽;
@@ -2873,12 +2876,13 @@ _SERVICE_CN = {"inn": "宿", "merchant": "商", "trainer": "訓", "mages_guild":
 _MAP_ICON = {"city": "◆", "town": "◇", "dungeon": "✦", "wilderness": "·"}
 
 
-def world_map(char: Character, gamedata: GameData, reach: dict | None = None) -> None:
+def world_map(char: Character, gamedata: GameData, reach: dict | None = None,
+              blocked: set | None = None) -> None:
     """資料驅動的 Tamriel 地圖:依行省分組,標出當前位置、危險度、服務與出口。
     `reach`(world.routes_from 結果 {lid:(hops,hours)})供 web 互動地圖標「N 段·約 M 時」並開放
     面板內點擊前往;None=純唯讀(back-compat,終端 fallback 一律忽略)。"""
     if _web is not None:
-        _emit_view("map", _map_view(char, gamedata, reach))
+        _emit_view("map", _map_view(char, gamedata, reach, blocked))
         return
     locs = gamedata.world["locations"]
     by_prov: dict[str, list[str]] = {}

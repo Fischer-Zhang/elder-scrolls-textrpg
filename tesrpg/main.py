@@ -1878,27 +1878,50 @@ def end_run(state: GameState, gamedata: GameData, ending: str) -> None:
 # ======================================================================
 # 旅行
 # ======================================================================
+ROUTE_BLOCKED_NOTE = "避險設定下無路可通"                  # R180:清單/提示共用字樣(前端地圖同字)
+
+
+def _route_caution_option(char) -> tuple[str, str]:
+    """R180 旅行選單/地圖共用的「路線偏好」切換項。"""
+    return ("__caution__", f"🛡 路線偏好:{world.ROUTE_CAUTION_LABEL[world.route_caution(char)]}(切換)")
+
+
+def _cycle_route_caution(char) -> None:
+    tier = world.cycle_route_caution(char)
+    label = world.ROUTE_CAUTION_LABEL[tier]
+    tail = ("自動趕路一律取最短路。" if tier == "off"
+            else "自動趕路只過濾途中經過的地點,目的地本身不受限。")
+    ui.message(f"路線偏好改為「{label}」—— {tail}", style="grey70")
+
+
 def action_travel(state: GameState, gamedata: GameData) -> str | None:
     char = state.player
-    topts = world.travel_options(char, gamedata)
-    adj = {dest for dest, _h in topts}
-    targets = ui._quest_target_location_set(char, gamedata)   # R125:進行中任務目標地(指路 ◎)
-    opts = [(dest, f"{'◎ ' if dest in targets else ''}{gamedata.location(dest)['name']}"
-                   f"（{h} 時{' · 任務' if dest in targets else ''})")
-            for dest, h in topts]
-    # R125 導航:前往任務目標捷徑(有可達的非相鄰任務目標時)——引擎 BFS 已就緒,只是過去 UI 不讓走
-    goal = [t for t in targets if t != char.location_id and t not in adj and world.route_to(char, gamedata, t)]
-    if goal:
-        opts.append(("__goal__", "🎯 前往任務目標(自動趕路)"))
-    opts.append(("__far__", "🧭 長途前往(城鎮/任務目標 · 沿途自動趕路)"))
-    dest = ui.menu("前往何處?", opts, allow_back=True)
-    if dest is None:
-        return None
-    if dest == "__goal__":
-        return _action_goal_travel(state, gamedata, goal)
-    if dest == "__far__":
-        return _action_long_travel(state, gamedata, adj)
-    return _travel_to(state, gamedata, dest)
+    while True:
+        topts = world.travel_options(char, gamedata)
+        adj = {dest for dest, _h in topts}
+        targets = ui._quest_target_location_set(char, gamedata)   # R125:進行中任務目標地(指路 ◎)
+        opts = [(dest, f"{'◎ ' if dest in targets else ''}{gamedata.location(dest)['name']}"
+                       f"（{h} 時{' · 任務' if dest in targets else ''})")
+                for dest, h in topts]
+        # R125 導航:前往任務目標捷徑(有可達的非相鄰任務目標時)——引擎 BFS 已就緒,只是過去 UI 不讓走。
+        # R180:以「不設限」的可達性決定要不要顯示,免得目標因避險設定而無聲消失(進去後會標明無路可通)。
+        goal = [t for t in targets if t != char.location_id and t not in adj
+                and world.route_to(char, gamedata, t, caution="off")]
+        if goal:
+            opts.append(("__goal__", "🎯 前往任務目標(自動趕路)"))
+        opts.append(("__far__", "🧭 長途前往(城鎮/任務目標 · 沿途自動趕路)"))
+        opts.append(_route_caution_option(char))
+        dest = ui.menu("前往何處?", opts, allow_back=True)
+        if dest == "__caution__":
+            _cycle_route_caution(char)
+            continue
+        if dest is None:
+            return None
+        if dest == "__goal__":
+            return _action_goal_travel(state, gamedata, goal)
+        if dest == "__far__":
+            return _action_long_travel(state, gamedata, adj)
+        return _travel_to(state, gamedata, dest)
 
 
 def action_map(state: GameState, gamedata: GameData) -> str | None:
@@ -1909,12 +1932,19 @@ def action_map(state: GameState, gamedata: GameData) -> str | None:
     → 走 `_travel_route`(R114D BFS 逐跳趕路,單跳亦正確)。抵達/途中遇襲中斷後迴圈以新位置重繪。"""
     while True:
         reach = world.routes_from(state.player, gamedata)      # 一次 BFS:{lid:(hops,hours)}
-        ui.world_map(state.player, gamedata, reach)            # emit map view(帶旅行中繼)
+        # R180:放寬到不限才到得了的地點 = 被路線偏好擋下 → 地圖標「避險設定下無路可通」(不給前往鍵)
+        blocked = (set(world.routes_from(state.player, gamedata, caution="off")) - set(reach)
+                   if world.route_caution(state.player) != "off" else set())
+        ui.world_map(state.player, gamedata, reach, blocked)   # emit map view(帶旅行中繼)
         extra = ["route:" + lid for lid in reach]              # 面板前往按鈕的合法 key(grouped extra_keys)
-        groups = [("", [("__list__", "📋 從清單前往(鍵盤模式)"), ("__back__", "← 返回")])]
+        groups = [("", [("__list__", "📋 從清單前往(鍵盤模式)"), _route_caution_option(state.player),
+                        ("__back__", "← 返回")])]
         choice = ui.grouped_menu("世界地圖 —— 點地點看設施,可直接前往", groups, extra_keys=extra)
         if choice == "__back__":
             return None
+        if choice == "__caution__":                            # 切換後以新偏好重算可達性並重繪
+            _cycle_route_caution(state.player)
+            continue
         if choice == "__list__":                               # 清單退路(鍵盤/無障礙):複用既有旅行選單
             if action_travel(state, gamedata) == "dead":
                 return "dead"
@@ -1934,13 +1964,16 @@ def _action_goal_travel(state: GameState, gamedata: GameData, targets: list) -> 
         loc, path = locs.get(t), world.route_to(char, gamedata, t)
         if loc and path:
             entries.append((t, loc, len(path), world.route_hours(char, gamedata, path)))
+        elif loc and world.route_blocked(char, gamedata, t):               # R180:照列,選了會說明原因
+            entries.append((t, loc, None, None))
     if not entries:
         ui.message("目前沒有可趕路前往的任務目標。", style="grey70")
         return None
-    entries.sort(key=lambda d: (d[2], d[1]["province"], d[1]["name"]))   # 近→省→名
+    entries.sort(key=lambda d: (d[2] is None, d[2] or 0, d[1]["province"], d[1]["name"]))   # 可達在前;近→省→名
     if len(entries) == 1:
         return _travel_route(state, gamedata, entries[0][0])
-    opts = [(t, f"◎ {loc['province']} · {loc['name']}（{hops} 段 · 約 {hrs} 時)")
+    opts = [(t, f"◎ {loc['province']} · {loc['name']}"
+                + (f"（{hops} 段 · 約 {hrs} 時)" if hops is not None else f"（{ROUTE_BLOCKED_NOTE})"))
             for t, loc, hops, hrs in entries]
     pick = ui.menu("前往哪個任務目標?(沿途遇襲/變故會停下)", opts, allow_back=True)
     return _travel_route(state, gamedata, pick) if pick else None
@@ -1962,13 +1995,16 @@ def _action_long_travel(state: GameState, gamedata: GameData, adj: set) -> str |
         path = world.route_to(char, gamedata, lid)
         if path:
             dests.append((lid, loc, len(path), world.route_hours(char, gamedata, path), lid in targets))
+        elif world.route_blocked(char, gamedata, lid):                     # R180:照列,選了會說明原因
+            dests.append((lid, loc, None, None, lid in targets))
     if not dests:
         ui.message("目前沒有可長途前往之處(近處請用一般旅行)。", style="grey70")
         return None
-    # 決定性:任務目標優先(◎)→省→跳數→名
-    dests.sort(key=lambda d: (not d[4], d[1]["province"], d[2], d[1]["name"]))
+    # 決定性:任務目標優先(◎)→省→可達在前→跳數→名
+    dests.sort(key=lambda d: (not d[4], d[1]["province"], d[2] is None, d[2] or 0, d[1]["name"]))
     opts = [(lid, f"{'◎ ' if tgt else ''}{loc['province']} · {loc['name']}"
-                  f"（{hops} 段 · 約 {hrs} 時{' · 任務' if tgt else ''})")
+                  + (f"（{hops} 段 · 約 {hrs} 時{' · 任務' if tgt else ''})" if hops is not None
+                     else f"（{ROUTE_BLOCKED_NOTE}{' · 任務' if tgt else ''})"))
             for lid, loc, hops, hrs, tgt in dests]
     pick = ui.menu("長途前往何處?(沿途遇襲/變故會停下)", opts, allow_back=True)
     if pick is None:
@@ -2061,7 +2097,15 @@ def _travel_route(state: GameState, gamedata: GameData, dest_final: str) -> str 
     交還控制,讓玩家歇息後再續);身亡則止。回 'dead' 或 None。"""
     path = world.route_to(state.player, gamedata, dest_final)
     if not path:
-        ui.message("你已在此地,或無路可通往那裡。", style="grey70")
+        if world.route_blocked(state.player, gamedata, dest_final):        # R180:不悄悄改走危險的路
+            label = world.ROUTE_CAUTION_LABEL[world.route_caution(state.player)]
+            stop = world.route_blocker(state.player, gamedata, dest_final)
+            via = (f"最短的路得穿過{gamedata.location(stop)['name']} —— 可以先前往那裡(目的地本身不受限),或"
+                   if stop else "可")
+            ui.message(f"{ROUTE_BLOCKED_NOTE}:依目前的路線偏好「{label}」,到不了{gamedata.location(dest_final)['name']}。"
+                       f"{via}在旅行選單或世界地圖切換「路線偏好」。", style="yellow")
+        else:
+            ui.message("你已在此地,或無路可通往那裡。", style="grey70")
         return None
     name = gamedata.location(dest_final)["name"]
     if len(path) > 1:

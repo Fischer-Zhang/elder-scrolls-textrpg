@@ -64,16 +64,63 @@ def travel_options(char: Character, gamedata: GameData) -> list[tuple[str, int]]
     return [(d, h) for d, h in loc.get("links", {}).items() if is_visible(char, gamedata, d)]
 
 
-def route_to(char: Character, gamedata: GameData, dest_id: str) -> list[str]:
+# ── R180 趕路避險:路線偏好(存在角色身上)──────────────────────────────────────────────
+# 只過濾「途中經過」的節點;起點與終點豁免(目的地本身是危險地城照樣可去)。
+# 過濾後到不了就是到不了(回 [] / 不入 routes_from),**絕不**悄悄改走危險的路 —— 由呼叫端提示。
+ROUTE_CAUTION = ("off", "dungeon", "danger")          # 不限 / 避開地城格 / 避開高危
+ROUTE_CAUTION_DANGER = 4                              # 「高危」門檻:danger ≥ 4(避開 ≥3 會讓六成聚落互不相通)
+ROUTE_CAUTION_LABEL = {"off": "不限(最短路)", "dungeon": "避開地城", "danger": "避開高危(危險度 4 以上)"}
+
+
+def route_caution(char: Character) -> str:
+    """角色目前的路線偏好;舊存檔/壞值一律視為 off(不限)。"""
+    v = getattr(char, "route_caution", "off")
+    return v if v in ROUTE_CAUTION else "off"
+
+
+def cycle_route_caution(char: Character) -> str:
+    """切到下一檔(不限 → 避開地城 → 避開高危 → 不限),回新檔位。"""
+    char.route_caution = ROUTE_CAUTION[(ROUTE_CAUTION.index(route_caution(char)) + 1) % len(ROUTE_CAUTION)]
+    return char.route_caution
+
+
+def _passable(loc: dict, caution: str) -> bool:
+    """能否把這個節點當「途中節點」穿越(不判斷起點/終點)。"""
+    if caution == "dungeon":
+        return loc.get("type") != "dungeon"
+    if caution == "danger":
+        return loc.get("danger", 0) < ROUTE_CAUTION_DANGER
+    return True
+
+
+def route_blocked(char: Character, gamedata: GameData, dest_id: str) -> bool:
+    """目的地是否「只因路線偏好」而到不了(放寬到不限就有路)。"""
+    if route_caution(char) == "off" or route_to(char, gamedata, dest_id):
+        return False
+    return bool(route_to(char, gamedata, dest_id, caution="off"))
+
+
+def route_blocker(char: Character, gamedata: GameData, dest_id: str) -> str | None:
+    """被路線偏好擋下時,最短路上第一個不能穿越的地點(給玩家「先去那裡」的線索);沒被擋 → None。"""
+    if not route_blocked(char, gamedata, dest_id):
+        return None
+    locs, caution = gamedata.world["locations"], route_caution(char)
+    return next((m for m in route_to(char, gamedata, dest_id, caution="off")[:-1]
+                 if not _passable(locs[m], caution)), None)
+
+
+def route_to(char: Character, gamedata: GameData, dest_id: str, caution: str | None = None) -> list[str]:
     """R114D 長途旅行:BFS 最短(跳數)路徑,回 [下一跳, …, dest_id](含終點·不含起點);
     已在該地或不可達 → []。**只經可見地點**(湮滅之門/神殿 gate 一致);純圖走、零 rng
-    → 決定性(links 為 JSON 插入序·BFS 逐層 → 等長路徑取穩定序)。"""
+    → 決定性(links 為 JSON 插入序·BFS 逐層 → 等長路徑取穩定序)。
+    R180:依路線偏好不穿越被避開的節點(`caution=None` 取角色設定;傳 "off" 可查不設限的路)。"""
     from collections import deque
     if dest_id == char.location_id or not is_visible(char, gamedata, dest_id):
         return []
     locs = gamedata.world["locations"]
     if dest_id not in locs:
         return []
+    caution = route_caution(char) if caution is None else caution
     prev: dict = {char.location_id: None}
     frontier = deque([char.location_id])
     while frontier:
@@ -83,8 +130,9 @@ def route_to(char: Character, gamedata: GameData, dest_id: str) -> list[str]:
         for d in locs[cur].get("links", {}):
             if d in prev or not is_visible(char, gamedata, d):
                 continue
-            prev[d] = cur
-            frontier.append(d)
+            prev[d] = cur                                     # 先記下:被避開的節點仍可以是「終點」
+            if _passable(locs[d], caution):                   # ……但不從它往外走
+                frontier.append(d)
     if dest_id not in prev:
         return []
     path: list[str] = []
@@ -106,14 +154,15 @@ def route_hours(char: Character, gamedata: GameData, path: list[str]) -> int:
     return total
 
 
-def routes_from(char: Character, gamedata: GameData) -> dict[str, tuple[int, int]]:
+def routes_from(char: Character, gamedata: GameData, caution: str | None = None) -> dict[str, tuple[int, int]]:
     """一次 BFS 回 {lid: (hops, hours)} —— 從當前地可達的所有可見地點(不含當前地)。
     等同對每個目的地各跑一次 `route_to`+`route_hours`,但攤成 O(V+E) 單趟(供互動地圖批量標
     「N 段·約 M 時」)。純圖走、零 rng、決定性(links 為 JSON 插入序、BFS 逐層 → 等長路徑穩定序;
-    hops/hours 語意與 route_to/route_hours 一致)。"""
+    hops/hours 語意與 route_to/route_hours 一致)。R180:同 route_to 的路線偏好過濾。"""
     from collections import deque
     locs = gamedata.world["locations"]
     start = char.location_id
+    caution = route_caution(char) if caution is None else caution
     prev: dict = {start: None}
     frontier = deque([start])
     while frontier:
@@ -122,7 +171,8 @@ def routes_from(char: Character, gamedata: GameData) -> dict[str, tuple[int, int
             if d in prev or not is_visible(char, gamedata, d):
                 continue
             prev[d] = cur
-            frontier.append(d)
+            if _passable(locs[d], caution):                   # 被避開的節點仍是可達的「終點」,只是不穿越
+                frontier.append(d)
     out: dict[str, tuple[int, int]] = {}
     for lid in prev:
         if lid == start:

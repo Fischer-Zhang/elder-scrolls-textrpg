@@ -245,6 +245,7 @@ PYTHONPATH=. python3 sim_assassin.py      # 平衡回歸模擬(改戰鬥常數�
 | R177 | 夏暮群島 Phase 2「風味與深度」:脈動 2 + NPC 委託 7 + 流言/秘密 + 重踞 4 + 地標 4 + 房產/馬廄 2 + 開局 3 + 幻術宗師;🔴 群島神殿只做地標(不設 shrine)·省級事件文字須海陸皆通·重踞變體不越階·在地任務目標須島內可達 | save-safe, content |
 | R178 | 獅鷲:野怪 danger 4 + 具名頭目「旋風」阿芙瑪 + 國王避風隘原地改地城 + 獅鷲掠空三選項皆檢定;🔴 具名頭目登場須標 boss.named·加在地非 solo 怪會洗牌該省領主委託·野外改地城先量過路風險 | re-sim, save-safe, content |
 | R179 | 獅鷲收尾:no_bounty 把獅鷲擋在委託素材池外 + 阿芙瑪加心智攻擊「懾魂長唳」(magic·恐懼);🔴 不宜懸賞的生物標 no_bounty·怪物 1 回合硬控對玩家實際不生效(既有引擎時序,待決) | re-sim, save-safe, content |
+| R180 | 自動趕路避險:角色存路線偏好三檔(不限/避開地城/避開高危 danger≥4),只過濾途中節點;🔴 起點終點豁免·到不了就明說絕不改走·入口共用 route_to/routes_from·預設 off 逐位元組不變 | save |
 
 ## 自動提交閘門 / 換 session 前檢查表
 

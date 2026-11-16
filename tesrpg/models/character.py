@@ -254,6 +254,7 @@ class Character:
     well_rested: bool = False                             # 精神飽滿現行快取(loop 頂端依 until 刷新;use_skill 讀;同 beast_form 模式)
     mounts_owned: list = field(default_factory=list)      # 已擁有的坐騎 id
     active_mount: str = ""                                # 現乘坐騎 id(""=步行;戰技/被動以此 + 是否騎乘語境為閘)
+    route_caution: str = "off"                            # R180 趕路避險:路線偏好(off 不限 / dungeon 避開地城 / danger 避開高危;world.ROUTE_CAUTION)
 
     is_player: bool = False
 
@@ -387,6 +388,7 @@ class Character:
             "house_upgrades": self.house_upgrades, "house_garden_at": self.house_garden_at,
             "well_rested_until": self.well_rested_until, "well_rested": self.well_rested,
             "mounts_owned": self.mounts_owned, "active_mount": self.active_mount,
+            "route_caution": self.route_caution,
             "companions": self.companions, "pending_companions": self.pending_companions,
             "companion_hp": self.companion_hp, "companion_bond": self.companion_bond,
             "companion_gear": self.companion_gear, "companion_build": self.companion_build,
@@ -404,4 +406,6 @@ class Character:
                 val.pop("armorer", None)
         if isinstance(d.get("major_skills"), list):   # 舊戰士/弓手主修含 armorer → 一併剝(免死資料回寫存檔)
             d["major_skills"] = [s for s in d["major_skills"] if s != "armorer"]
+        if d.get("route_caution", "off") not in ("off", "dungeon", "danger"):   # R180 防禦夾限(R03):未知檔位 → 不限
+            d["route_caution"] = "off"
         return cls(**d)

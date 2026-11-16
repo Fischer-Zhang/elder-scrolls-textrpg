@@ -806,7 +806,7 @@
       let s = `<span class="msf-lab">🔎 ${esc(activeSvc)}</span> · 全圖 ${matches.length} 處`;
       if (matches.some(function (n) { return n.here; })) s += ` · <span style="color:var(--green)">你所在地即有</span>`;
       else if (reach.length) s += ` · 最近 ${esc(reach[0].name)}（${reach[0].hops} 段 · 約 ${reach[0].hours} 時）<button class="msf-go" type="button">前往</button>`;
-      else s += ` · <span class="mi-hint">(暫無可達)</span>`;
+      else s += ` · <span class="mi-hint">${matches.some(function (n) { return n.blocked; }) ? "(避險設定下無路可通)" : "(暫無可達)"}</span>`;
       find.innerHTML = s;
       const go = find.querySelector(".msf-go");
       if (go) {
@@ -829,7 +829,8 @@
       // 面板內前往按鈕:可達(hops!=null)且非當前地才顯;在 .mapinfo(pan surface 之外)→ 零拖曳/選取衝突
       const go = (n.hops != null)
         ? ` <button class="mi-go" type="button">前往（${n.hops} 段 · 約 ${n.hours} 時）</button>`
-        : (n.here ? ' <span class="mi-hint">(你在此)</span>' : ' <span class="mi-hint">(暫無路可通)</span>');
+        : (n.here ? ' <span class="mi-hint">(你在此)</span>'
+           : (n.blocked ? ' <span class="mi-hint">(避險設定下無路可通)</span>' : ' <span class="mi-hint">(暫無路可通)</span>'));
       info.innerHTML = `${here}<b>${esc(n.name)}</b><span class="mi-type">·${esc(n.type_cn)}</span>${dg}${flag} ${svc}${go}`;
       const b = info.querySelector(".mi-go");
       if (b) {

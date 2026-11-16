@@ -202,7 +202,8 @@ def _dense_combat_prompt() -> dict:
 
 
 def _map_data() -> dict:
-    def node(node_id, name, x, y, province, *, here=False, guild=None, services=(), hops=None, hours=None):
+    def node(node_id, name, x, y, province, *, here=False, guild=None, services=(), hops=None, hours=None,
+             blocked=False):
         svc = [guild] if guild else []
         return {
             "id": node_id,
@@ -220,6 +221,7 @@ def _map_data() -> dict:
             "svc_all": svc + list(services),
             "hops": hops,
             "hours": hours,
+            "blocked": blocked,
         }
 
     return {
@@ -232,6 +234,8 @@ def _map_data() -> dict:
                 node("winterhold", "冬堡", 19, 5, "天際", guild="法師公會", services=("旅店",), hops=2, hours=12),
                 node("dawnstar", "晨星城", 13, 7, "天際", services=("商人",), hops=1, hours=5),
                 node("bruma", "布魯瑪", 16, 17, "西羅帝爾", guild="盜賊公會", services=("商人",), hops=1, hours=7),
+                node("riften", "裂谷城", 22, 14, "天際", services=("馬廄",), blocked=True),      # R180:被路線偏好擋下
+                node("falkreath", "佛克瑞斯", 7, 16, "天際", services=("告示板",)),               # 本來就沒路
             ],
             "edges": [
                 {"a": "whiterun", "b": "winterhold", "h": 6},
@@ -1130,6 +1134,44 @@ class BrowserRegression(unittest.TestCase):
 
         find.get_by_role("button", name="前往", exact=True).click()
         self.assertEqual(self.server.answer(), "route:winterhold")
+
+    def test_world_map_marks_destinations_blocked_by_route_caution_r180(self) -> None:
+        """R180:被路線偏好擋下的地點在面板標「避險設定下無路可通」、不給前往鍵;
+        與「本來就沒路」的字樣分開;服務篩選只剩被擋的地點時同樣說明原因。"""
+        self.server.emit(
+            blocks=[{"kind": "view", "name": "map", "data": _map_data()}],
+            prompt={
+                "type": "grouped",
+                "title": "世界地圖",
+                "groups": [{"header": "操作", "options": [
+                    {"key": "__caution__", "label": "🛡 路線偏好:避開地城(切換)"},
+                    {"key": "back", "label": "返回"}]}],
+                "extra_keys": ["route:winterhold", "route:bruma"],
+                "cta_keys": [],
+            },
+            hud=_hud(),
+        )
+        self._open(".mapstage")
+        info = self.page.locator(".mapinfo")
+
+        self.page.locator('.mmark[data-id="riften"]').click()
+        self.assertIn("裂谷城", info.inner_text())
+        self.assertIn("避險設定下無路可通", info.inner_text())
+        self.assertEqual(info.locator(".mi-go").count(), 0)
+
+        self.page.locator('.mmark[data-id="falkreath"]').click()
+        self.assertIn("暫無路可通", info.inner_text())
+        self.assertNotIn("避險設定", info.inner_text())
+
+        self.page.locator('.mmark[data-id="winterhold"]').click()
+        self.assertEqual(info.locator(".mi-go").count(), 1)
+        self.assertIn("2 段", info.inner_text())
+
+        self.page.get_by_role("button", name="馬廄", exact=True).click()       # 只有被擋的裂谷城有馬廄
+        self.assertIn("避險設定下無路可通", self.page.locator(".msvc-find").inner_text())
+
+        self.page.get_by_role("button", name="🛡 路線偏好:避開地城(切換)").click()
+        self.assertEqual(self.server.answer(), "__caution__")
 
 
 if __name__ == "__main__":
