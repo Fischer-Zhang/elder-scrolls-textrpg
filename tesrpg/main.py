@@ -1456,8 +1456,7 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
             # R137 格擋姿態=純減傷:resolve_attack 內自動套 _guard_stance_factor(不碰命中 →
             # 荊棘/反擊樹「被命中即觸發」照常發動)→ 此處不需任何格擋旗標/rng。
             e_atk = combat.choose_enemy_attack(e, state.rng, tgt)   # 怪物多攻擊模式選招(R134:嘲諷招對敵方退回基礎單招)
-            ev = combat.resolve_attack(e, tgt, gamedata, state.rng, attack=e_atk,
-                                       engaged=combat.engaged_foes(enemies))   # R185:閃身反打機率按在場敵數均分
+            ev = combat.resolve_attack(e, tgt, gamedata, state.rng, attack=e_atk)
             ui.combat_event(ev, gamedata)
             if ev.get("infected"):    # 疾病傳染:依種類分派到吸血鬼 / 狼人狀態機
                 kind = ev.get("infect_kind", "vampire")

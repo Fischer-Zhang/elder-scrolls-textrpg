@@ -433,12 +433,6 @@ def is_alive(actor) -> bool:
     return _get_hp(actor) > 0
 
 
-def engaged_foes(foes) -> int:
-    """R185:玩家面對的在場存活敵數(≥1)。供 resolve_attack(engaged=…)——閃身反打的反擊機率按此均分。
-    所有『敵方出手打玩家』的戰鬥迴圈(main.run_battle / sim_*)一律用此 helper 取值,別各自手算(防漏傳靜默高估)。"""
-    return max(1, sum(1 for f in foes if is_alive(f)))
-
-
 def _apply_dot_capped(target, eff) -> None:
     """對目標施加狀態效果;**dot 按元素設疊加上限**(防多次被擊時同元素 DoT 無限疊加→暴斃)。
     達 `formulas.DOT_STACK_CAP` 層時:新效果較強(magnitude×turns)→ 替換最弱同元素 dot,否則丟棄。
@@ -615,16 +609,13 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
                    defender_blocking: bool = False, sneak_attack: bool = False,
                    aimed: bool = False, mounted_charge: bool = False,
                    charge_spec: dict | None = None, attack: dict | None = None,
-                   damage_factor: float = 1.0, engaged: int = 1) -> dict:
+                   damage_factor: float = 1.0) -> dict:
     """attacker 攻擊 defender,套用傷害、發放玩家技能 xp。回傳事件 dict。
 
     sneak_attack:玩家開場偷襲(不察之敵)→ 傷害依潛行加倍、命中下限拉高、鍛鍊潛行。
     mounted_charge:坐騎「衝鋒」戰技(開場、僅野外遭遇)→ 長槍×高倍率 / 其他近戰追加坐騎踐踏;
     **絕不走 sneak_mult**(charge_spec 來自 mounts.charge_spec),對 solo boss 受獨立夾限。
     damage_factor(R136 箭雨):基礎武器傷害係數(<1=較弱的一箭);預設 1.0 → byte-identical。
-    engaged(R185):敵方出手打玩家時,玩家面對的在場存活敵數(用 `engaged_foes(敵方清單)` 取;預設 1=單挑)。
-        只用於閃身反打:反擊機率 ÷ engaged(以寡敵眾心神分散)→ 每回合期望反擊數不隨敵數放大;
-        回體力/閃避判定不受影響。呼叫端漏傳 → 當單挑算(靜默高估),故戰鬥迴圈須用 engaged_foes。
 
     事件:{"attacker","defender","hit":bool,"damage":int,"blocked":bool,
            "skill_events":[...], "defender_dead":bool, "sneak":倍率|None}
@@ -1238,15 +1229,13 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
         # R183(使用者拍板,取代 R34「每回合至多一次」):**每次**閃過都各自判定——回體力每次給、反擊每次各擲一次機率
         # (效果文本來就寫「每次閃過敵攻即回復」);N 隻怪同回合攻擊 → 最多 N 次反擊/N 個踉蹌。
         # 反擊仍限物理近戰:元素(龍息/法術/凝視)與標 ranged 的攻擊閃過無反擊(R145,回體力照給)。
-        # R185(使用者拍板 A 案):反擊機率 ÷ 在場存活敵數(被圍攻顧不過來)——每次閃過仍各自擲骰(R183 不變),
-        # 但期望反擊數不再隨敵數線性放大(N 隻 × 1/N);單挑(engaged=1)逐位元組同舊。
         oe = mastery.on_evade(defender, gamedata)
         if oe and not _is_player(attacker):
             if oe.get("restamina"):
                 defender.fatigue = min(defender.max_fatigue, defender.fatigue + oe["restamina"])
             if (oe.get("counter_frac") and is_alive(attacker)
                     and not (atk or {}).get("element") and not (atk or {}).get("ranged")   # R145:閃過龍息/弩矢搆不到人 → 無反擊(回氣照舊;落空分支 atk_element 未綁定 → 直讀 atk)
-                    and rng.chance(oe.get("counter_chance", 0.0) / max(1, engaged))):
+                    and rng.chance(oe.get("counter_chance", 0.0))):
                 # R137 審查修:閃身反打同為物理反擊 → 吃攻擊者物抗(同盾反擊·守 R127/R133 pen-免疫牆;
                 # 物抗 0 之敵 ×1.0 行為不變)
                 _cd = _player_counter_damage(defender, gamedata, rng) * oe["counter_frac"]

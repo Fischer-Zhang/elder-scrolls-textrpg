@@ -47,8 +47,7 @@ def _round(c, foes, rng, opening, used):
         combat.resolve_attack(c, tgt, gd, rng, sneak_attack=opening)
     for e in foes:                           # R71:敵人照常攻擊(隱遁不再無敵)
         if combat.is_alive(e) and c.health > 0 and not magic.is_incapacitated(e):
-            combat.resolve_attack(e, c, gd, rng, attack=combat.choose_attack(e, rng, c),   # 多攻擊模式選招
-                                  engaged=combat.engaged_foes(foes))   # R185:閃身反打機率按在場敵數均分(與 main.run_battle 對齊)
+            combat.resolve_attack(e, c, gd, rng, attack=combat.choose_attack(e, rng, c))   # 多攻擊模式選招
     return vanished
 
 
@@ -223,21 +222,3 @@ if __name__ == "__main__":
     print("\n== P4 反制覆核(契約②):4 敵群戰死亡率(apex 仍須承受真實風險)==")
     print(f"  4 bandit       apex 死亡率 {rate(apex, ['bandit'] * 4):5.1%}")
     print(f"  2 bandit+2wolf apex 死亡率 {rate(apex, ['bandit', 'bandit', 'wolf', 'wolf']):5.1%}")
-
-    # R185 守衛:輕甲 100 同層「風暴之舞 vs 幻影步」不得單側穩賺(R183 取消每回合額度後,群戰曾 4 山賊 46%→9%;
-    # 本 sim 的 apex 刺客不選閃身反打里程碑,看不到此維度 → 固定量一次)。反擊機率已 ÷ 在場敵數(R185)。
-    print("\n== R185 守衛:輕甲閃身反打群戰(輕甲100+雜技100;風暴之舞不得遠勝幻影步)==")
-    _lithe = {"light_armor_50": "lithe_evasion"}
-    _storm = lambda: assassin(light_armor=100, acrobatics=100, mastery_choices={**_lithe, "light_armor_100": "storm_dance"})
-    _phant = lambda: assassin(light_armor=100, acrobatics=100, mastery_choices={**_lithe, "light_armor_100": "phantom_step"})
-    for gname, gids in (("4 bandit", ["bandit"] * 4), ("2 bandit+2wolf", ["bandit", "bandit", "wolf", "wolf"])):
-        rs, rp = rate(_storm, gids, n=500), rate(_phant, gids, n=500)
-        # 雙向 + 相對比:絕對差>20pp,或(差>10pp 且風暴之舞死亡率不到幻影步一半)→ 風暴之舞穩賺;反向差>20pp → 淪為死選項。
-        # (審查發現:R183 退化態 2 bandit+2wolf 為 2.6% vs 18.2%=差 15.6pp,純絕對門檻會放行,故加相對條件。)
-        if rp - rs > 0.20 or (rp - rs > 0.10 and rs < 0.5 * rp):
-            flag = " ⚠風暴之舞單側穩賺"
-        elif rs - rp > 0.20:
-            flag = " ⚠風暴之舞淪為死選項"
-        else:
-            flag = " ✓有真權衡"
-        print(f"  {gname:15} 風暴之舞 {rs:5.1%}   幻影步 {rp:5.1%}{flag}")
