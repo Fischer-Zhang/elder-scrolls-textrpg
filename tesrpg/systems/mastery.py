@@ -120,11 +120,11 @@ def _defs(gamedata: GameData) -> list:
     return [_augment(o, n) for n in _nodes(gamedata) for o in _choosable_options(n)]
 
 
-def _chosen_options_by_kind(char, gamedata: GameData, kind: str) -> list:
-    """已達門檻、玩家『已選』、且為該 kind 的**所有** option(可能多來源,如 vanish_floor 來自
-    acrobatics+sneak、merchant_bonus 來自 illusion+mercantile)。"""
+def _chosen_node_options(char, gamedata: GameData, kinds) -> list:
+    """已達門檻、玩家『已選』、且 kind 屬於 kinds(str 或 tuple)的 [(node, option), ...];依 mastery.json 列序。"""
     if not hasattr(char, "base_skill"):
         return []
+    kinds = (kinds,) if isinstance(kinds, str) else tuple(kinds)
     choices = getattr(char, "mastery_choices", {}) or {}
     out = []
     for node in _nodes(gamedata):
@@ -134,9 +134,25 @@ def _chosen_options_by_kind(char, gamedata: GameData, kind: str) -> list:
         if oid is None:
             continue
         opt = next((o for o in node["options"] if o.get("opt_id") == oid), None)
-        if opt and opt.get("kind") == kind:
-            out.append(opt)
+        if opt and opt.get("kind") in kinds:
+            out.append((node, opt))
     return out
+
+
+def _chosen_options_by_kind(char, gamedata: GameData, kind: str) -> list:
+    """已達門檻、玩家『已選』、且為該 kind 的**所有** option(可能多來源,如 vanish_floor 來自
+    acrobatics+sneak、merchant_bonus 來自 illusion+mercantile)。依 mastery.json 列序(相加/取最大類 getter 用;
+    維持原列序 → 浮點相加順序不變 = 與舊版逐位元組同)。"""
+    return [o for _n, o in _chosen_node_options(char, gamedata, kind)]
+
+
+def _chosen_options_by_unlock(char, gamedata: GameData, kinds) -> list:
+    """同 _chosen_options_by_kind,但**依解鎖門檻由低到高**排序(同門檻保留列序;sorted 穩定)。
+    R184:供『單槽·取最後一個 = 後解鎖者覆蓋先前』的 getter 用(weapon_mod.on_hit_status / spell_on_hit)。
+    若改取 JSON 列序最後一個,低階節點排在檔案較後 → 低階反蓋高階(震盪/卸械被重擊/要害吃掉);
+    排序鍵必須是門檻,不是列序。"""
+    pairs = _chosen_node_options(char, gamedata, kinds)
+    return [o for _n, o in sorted(pairs, key=lambda p: p[0]["threshold"])]
 
 
 def _chosen_options_with_tree(char, gamedata: GameData, kind: str) -> list:
@@ -328,10 +344,11 @@ def spell_cost_factor(char, gamedata: GameData, school: str) -> float:
 
 
 def spell_on_hit(char, gamedata: GameData, school: str) -> dict | None:
-    """衝擊餘波:該學派傷害法術命中時附加的狀態 {kind, chance, magnitude?, turns?};無則 None(取最後一個)。"""
+    """衝擊餘波:該學派傷害法術命中時附加的狀態 {kind, chance, magnitude?, turns?};無則 None
+    (單槽,取最後一個;R184 起『最後』= 解鎖門檻最高者,後解鎖覆蓋先前,與列序無關)。"""
     last = None
-    for o in _chosen_spell_options(char, gamedata, school):
-        if o.get("on_hit"):
+    for o in _chosen_options_by_unlock(char, gamedata, ("spell_mod", "spell_overload")):
+        if o.get("school") == school and o.get("on_hit"):
             last = o["on_hit"]
     return last
 
@@ -734,7 +751,8 @@ def weapon_mod(char, gamedata: GameData, wpn_skill_id: str | None) -> dict:
     if not wpn_skill_id or not hasattr(char, "base_skill"):
         return {}
     # 合併同 target 的所有已選 weapon_mod option(廣度 pass:同武器技能可有兩節點,如 blade_50+blade_100)
-    # —— 數值參數相加、on_hit_status 取最後一個;否則前一節點會遮蔽後一節點(審查級正確性)。
+    # —— 數值參數相加(列序走訪,浮點順序不變)、on_hit_status 是單槽:取『解鎖門檻最高者』(R184:
+    #    後解鎖覆蓋先前,與 JSON 列序無關);否則前一節點會遮蔽後一節點(審查級正確性)。
     merged: dict = {}
     for opt in _chosen_options_by_kind(char, gamedata, "weapon_mod"):
         if opt.get("target") != wpn_skill_id:
@@ -742,7 +760,8 @@ def weapon_mod(char, gamedata: GameData, wpn_skill_id: str | None) -> dict:
         for k in ("hit", "power", "pen", "fatigue", "recoil", "poise_rate", "extra_shot", "exploit"):
             if k in opt:
                 merged[k] = merged.get(k, 0) + opt[k]
-        if "on_hit_status" in opt:
+    for opt in _chosen_options_by_unlock(char, gamedata, "weapon_mod"):
+        if opt.get("target") == wpn_skill_id and "on_hit_status" in opt:
             merged["on_hit_status"] = opt["on_hit_status"]
     return merged
 

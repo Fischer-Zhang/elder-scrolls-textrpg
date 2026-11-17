@@ -3020,6 +3020,13 @@ R88 讓**盜賊公會**拿到階級解鎖招牌動詞(斯庫瑪走私),但**戰�
 - 🔴 **鐵律**:① **閃身反打每次閃過近戰物理攻擊各自判定**,不再有回合額度;新增「閃過即觸發」類效果不得再引入每回合旗標(要限量改限機率/冷卻)。② **反擊界線 = 物理且非 `ranged`**(R145);新增元素/遠程招式照舊不可反擊。③ **回體力是每次閃過給**,`ON_EVADE_RESTAMINA_CAP` 的意義是單次上限;多怪群戰下回體力隨閃過次數累加(使用者知情接受)。④ **看平衡要看 `sim_builds` 之外的輕甲閃避構築**(13 個 build 沒有一個選風暴之舞/迴身反打,矩陣看不到)。
 - **前瞻**:① 閃身反打沒有任何日誌文字(反擊傷害與踉蹌靜默發生)。② 反擊限定「物理」的字面對應:效果文沒寫「元素/遠程無效」,可考慮補一句。③ **群戰實測過強**(見上驗證)→ 見 §6「風暴之舞穩賺」(使用者拍板:下個 session 修)。
 
+### R184 · 單槽附帶狀態「後解鎖覆蓋先前」:依解鎖門檻、不依 JSON 列序 [save-safe]
+- **起因**:里程碑全盤「單側穩賺」評估時,實跑發現 `weapon_mod.on_hit_status` 是單槽、取 `_chosen_options_by_kind` 走訪的**最後一個**,而走訪順序是 mastery.json 的節點列序——檔案裡 100/75 節點排在 50 前面,於是**低階反蓋高階**:鈍器 50「重擊」蓋掉 100「震盪」、徒手 50「要害」蓋掉 75「卸械」(40% 踉蹌整個失效)。使用者的既定原則是「後解鎖的蓋過先前的(機制過渡)」,實際行為與之相反 → 使用者拍板 **A 案:取值前先按解鎖門檻排序**。
+- **做了什麼**:`mastery.py` 新增 `_chosen_node_options`(回 [(node, option)],列序)與 `_chosen_options_by_unlock`(依 `node["threshold"]` 穩定排序);`_chosen_options_by_kind` 改為 `_chosen_node_options` 的薄包裝,**維持列序**(相加/取最大類 getter 的浮點相加順序不變)。`weapon_mod` 的數值參數仍走列序相加,`on_hit_status` 改走 `_chosen_options_by_unlock`;`spell_on_hit`(同為單槽取最後一個,目前只有 destruction_100 衝擊餘波單源)一併改走同一路徑,避免日後第二個來源再被列序反轉。
+- **驗證**:`tests/test_mastery.py` 新增 `test_on_hit_status_later_unlock_overrides_earlier_r184`(鈍器重擊→震盪、徒手要害→卸械高階生效;只選一側/無 on_hit 節點行為不變;pen/power 合併照舊相加)與 `test_on_hit_status_unlock_order_independent_of_json_order_r184`(把 `gd.mastery` 整個反轉列序,結果不變);**兩者已在未含此改動的碼上確認紅**。以 HEAD 舊版對所有武器技能的所有選擇組合窮舉對照(141 種):**僅 9 種改變,全為上述兩對(含夾帶無關節點的變體)**,非 on_hit_status 欄位逐位元組相同;destruction 全組合 54 種 `spell_on_hit` 零變動。`run_all` 137 模組全綠、`browser_ui` 18 全綠;未碰 combat/formulas/magic 數學 → sim 未觸發(刺客不選受影響節點)。
+- 🔴 **鐵律**:① **單槽、取最後一個的 getter,「最後」一律=解鎖門檻最高者**,排序鍵必須是門檻,不得依 mastery.json 列序(列序是編輯偶然,不是階級)。新增單槽 getter 走 `_chosen_options_by_unlock`;相加/取最大類維持 `_chosen_options_by_kind`(列序,保浮點順序)。② 實測影響:鈍器震盪/重擊兩側都弱(剩血差在雜訊內);徒手卸械被要害蓋掉才是真損失,現已修正。
+- **前瞻**:仍屬「跨層取最大」的冗餘(後階涵蓋前階的同軸選項,如盾擊⊂盾擊破勢、開鎖下限、威嚇下限、淬鍊免耗料、遁逃下限)不在本輪範圍;「屬性強化填充側」(swift_blade/field_brewer/focused_mind/mighty_arm 等)使用者暫不處理。
+
 ## 4. 開發節奏(ultracode 開著 → 每個功能都這樣做)
 
 > 完整五階段流程(評估 → 決定方向 → 實作 → 驗證 → 文件 + 提交)見 `CLAUDE.md`「開發流程」;以下是「驗證」段的細節。**驗證綠後依 R22 自動 `commit` & `push origin main`。**

@@ -1285,6 +1285,54 @@ def test_shield_recoil_r118():
     assert mastery.shield_recoil(a, gd) == 0.0   # 非變化 build → getter 0(短路·byte-identical)
 
 
+def test_on_hit_status_later_unlock_overrides_earlier_r184():
+    """R184:武器附帶狀態是單槽,『後解鎖(門檻較高)者覆蓋先前』——與 mastery.json 列序無關。
+    修前取 JSON 列序最後一個,而 100/75 節點排在 50 前面 → 低階反蓋高階(震盪/卸械被重擊/要害吃掉)。"""
+    # 鈍器:50 重擊(weaken 2 回合)→ 100 震盪(weaken 1 回合,0.15/30%):高階生效
+    gd, c = _char(blunt=100)
+    mastery.choose(c, gd, "blunt_50", "crippling")
+    assert mastery.weapon_mod(c, gd, "blunt")["on_hit_status"]["turns"] == 2     # 只有 50 → 重擊
+    mastery.choose(c, gd, "blunt_100", "concussion")
+    ohs = mastery.weapon_mod(c, gd, "blunt")["on_hit_status"]
+    assert ohs["kind"] == "weaken" and ohs["magnitude"] == 0.15 and ohs["chance"] == 0.3   # 100 震盪蓋過 50 重擊
+    # 徒手:50 要害(weaken)→ 75 卸械(stagger 40%):高階生效(原本卸械的踉蹌被要害吃掉)
+    gd, c = _char(hand_to_hand=100)
+    mastery.choose(c, gd, "hand_to_hand_50", "pressure_point")
+    assert mastery.weapon_mod(c, gd, "hand_to_hand")["on_hit_status"]["kind"] == "weaken"
+    mastery.choose(c, gd, "hand_to_hand_75", "disarm")
+    ohs = mastery.weapon_mod(c, gd, "hand_to_hand")["on_hit_status"]
+    assert ohs["kind"] == "stagger" and ohs["chance"] == 0.4
+    # 只選高階時行為不變;只選低階亦然(不被另一節點的『未選』干擾)
+    gd, c = _char(hand_to_hand=100)
+    mastery.choose(c, gd, "hand_to_hand_50", "grapple")                # 無 on_hit_status
+    mastery.choose(c, gd, "hand_to_hand_75", "disarm")
+    assert mastery.weapon_mod(c, gd, "hand_to_hand")["on_hit_status"]["kind"] == "stagger"
+    # 數值參數(hit/power/pen…)合併照舊相加,不受排序影響
+    gd, c = _char(blunt=100)
+    mastery.choose(c, gd, "blunt_50", "heavy_swing")                   # power 0.10
+    mastery.choose(c, gd, "blunt_75", "bone_crush")                    # pen 0.08
+    mastery.choose(c, gd, "blunt_100", "sunder")                       # pen 0.15
+    wm = mastery.weapon_mod(c, gd, "blunt")
+    assert abs(wm.get("pen", 0) - (0.08 + 0.15)) < 1e-9 and abs(wm.get("power", 0) - 0.10) < 1e-9
+    assert "on_hit_status" not in wm
+
+
+def test_on_hit_status_unlock_order_independent_of_json_order_r184():
+    """R184:即使把 mastery.json 的節點列序整個反轉,生效者仍是門檻最高者(排序鍵=門檻,非列序)。"""
+    import copy
+    gd, c = _char(blunt=100, hand_to_hand=100)
+    mastery.choose(c, gd, "blunt_50", "crippling")
+    mastery.choose(c, gd, "blunt_100", "concussion")
+    mastery.choose(c, gd, "hand_to_hand_50", "pressure_point")
+    mastery.choose(c, gd, "hand_to_hand_75", "disarm")
+    want_b = mastery.weapon_mod(c, gd, "blunt")["on_hit_status"]
+    want_h = mastery.weapon_mod(c, gd, "hand_to_hand")["on_hit_status"]
+    gd2 = copy.copy(gd)
+    gd2.mastery = list(reversed(gd.mastery)) if isinstance(gd.mastery, list) else gd.mastery
+    assert mastery.weapon_mod(c, gd2, "blunt")["on_hit_status"] == want_b
+    assert mastery.weapon_mod(c, gd2, "hand_to_hand")["on_hit_status"] == want_h
+
+
 def run():
     for name, fn in sorted(globals().items()):
         if name.startswith("test_") and callable(fn):
