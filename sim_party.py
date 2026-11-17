@@ -118,7 +118,8 @@ def fight_group(enemy_ids, seed, max_rounds=60, cast=True, focus_healer=True):
                 continue
             if cast and magic.enemy_support_act(e, enemies, gd) is not None:
                 continue
-            combat.resolve_attack(e, c, gd, rng, attack=combat.choose_attack(e, rng, c))
+            combat.resolve_attack(e, c, gd, rng, attack=combat.choose_attack(e, rng, c),
+                                  engaged=combat.engaged_foes(enemies))   # R185
             if c.health <= 0:
                 return "dead"
         sb._regen(c)

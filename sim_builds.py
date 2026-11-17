@@ -485,10 +485,12 @@ def fight(build_name, boss_id, seed, max_rounds=80):
         # R137 姿態=純減傷:在 resolve_attack 內自動套(_guard_stance_factor)→ 敵方側零改動。
         if not st["skip_boss"] and c.health > 0 and not magic.is_incapacitated(boss):
             if combat.try_boss_summon(boss, foes, gd, rng) is None:
-                combat.resolve_attack(boss, c, gd, rng, attack=combat.choose_attack(boss, rng, c))
+                combat.resolve_attack(boss, c, gd, rng, attack=combat.choose_attack(boss, rng, c),
+                                      engaged=combat.engaged_foes(foes))   # R185
         for a in foes[1:]:                              # R134 爪牙攻擊(嘲諷招對敵方退回基礎單招)
             if combat.is_alive(a) and c.health > 0 and not magic.is_incapacitated(a):
-                combat.resolve_attack(a, c, gd, rng, attack=combat.choose_enemy_attack(a, rng, c))
+                combat.resolve_attack(a, c, gd, rng, attack=combat.choose_enemy_attack(a, rng, c),
+                                      engaged=combat.engaged_foes(foes))   # R185
         # R137 格擋姿態無回合上繳(代價=攻擊稅·鏡像 run_battle)
         _regen(c)
         magic.tick_effects(c, gd)
