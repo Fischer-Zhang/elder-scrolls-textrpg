@@ -771,10 +771,17 @@ def _choose_combat_action(state: GameState, gamedata: GameData, enemies: list, a
     if (combat.afterimage_ready(player, gamedata, sum(1 for e in enemies if combat.is_alive(e)))
             and not getattr(player, "beast_form", False)):
         _ai_n = combat.afterimage_stacks(player)
+        _ai_k = combat.phantom_flurry_strikes(player, gamedata)      # 實際出手記數(氣勢不足時 < 層數)
+        _ai_m = combat.momentum(player, gamedata)
         _ai_pct = int(mastery.afterimage(player, gamedata)["strike_factor"] * 100)
-        opts.append(_combat_option("phantom_flurry",
-                                   f"殘影連襲（耗盡 {_ai_n} 層殘影 · 連擊最低血敵 · 各 {_ai_pct}% 傷害)",
-                                   f"{_ai_n}層·連擊最低血·各{_ai_pct}%"))
+        if combat.momentum_enabled(player, gamedata):                # R187 氣勢:第一擊免費、其餘每記耗 1 點(選單如實標示成本)
+            opts.append(_combat_option("phantom_flurry",
+                                       f"殘影連襲（耗盡 {_ai_n} 層殘影 · 連擊最低血敵 {_ai_k} 記 · 第 2 記起每記耗 1 氣勢〔現有 {_ai_m}〕 · 各 {_ai_pct}% 傷害)",
+                                       f"{_ai_k}擊·耗氣勢{max(0, _ai_k - 1)}/{_ai_m}·各{_ai_pct}%"))
+        else:
+            opts.append(_combat_option("phantom_flurry",
+                                       f"殘影連襲（耗盡 {_ai_n} 層殘影 · 連擊最低血敵 · 各 {_ai_pct}% 傷害)",
+                                       f"{_ai_n}層·連擊最低血·各{_ai_pct}%"))
     # 坐騎戰技(僅野外騎乘遭遇的第一回合;戰馬+近戰=衝鋒、獵馬+弓=騎射)
     if mounted and first_round and mounts.can_charge(player, gamedata, True):
         opts.append(_combat_option("charge", "🐎 衝鋒（坐騎開場突擊 · 長槍藉馬勢洞穿)", "開場突擊·長槍加成"))
@@ -944,7 +951,8 @@ def _choose_combat_action(state: GameState, gamedata: GameData, enemies: list, a
     return {"type": choice}
 
 
-def _prep_phase(state: GameState, gamedata: GameData, enemies, battle: dict, budget: int) -> None:
+def _prep_phase(state: GameState, gamedata: GameData, enemies, battle: dict, budget: int,
+                hurried: bool = False) -> None:
     """開戰前備戰(偵查掙得):花預算施增益/召喚(鎖高 scout)/喝藥/塗毒。
 
     增益走 active_effects(計時從第一回合 tick)、召喚 append battle["allies"](開場即在場、
@@ -953,7 +961,10 @@ def _prep_phase(state: GameState, gamedata: GameData, enemies, battle: dict, bud
     player = state.player
     SELF_BUFF = ("heal", "shield", "restore_fatigue", "apply_status")
     ui.rule("備戰")
-    ui.message(f"你搶得先機、從容布置 —— 可進行 {budget} 個準備。", style="bold green")
+    if hurried:   # R187 臨陣預判→臨危備戰:潛近失敗/遭伏擊 → 倉促備戰(訊息中性:兩種原因共用,不與前文「搶得先機」矛盾)
+        ui.message(f"局勢雖不如預期,你卻早已預判敵人的動向 —— 倉促備戰,可進行 {budget} 個準備。", style="bold yellow")
+    else:
+        ui.message(f"你搶得先機、從容布置 —— 可進行 {budget} 個準備。", style="bold green")
     cast_done: set[str] = set()
     while budget > 0:
         buffs = [s for s in player.spells
@@ -1042,7 +1053,8 @@ def _apply_companion_capstone_auras(char: Character, gamedata: GameData, roster:
 def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
                alerted: bool = False, prep_budget: int = 0, casualties: list | None = None,
                carry_allies: list | None = None, preserve_buffs: bool = False,
-               mounted: bool = False, flee_after_rounds: int | None = None) -> str:
+               mounted: bool = False, flee_after_rounds: int | None = None,
+               hurried_prep: bool = False) -> str:
     """團隊/多敵回合制戰鬥。階段制回合:玩家 → 同伴 → 敵人 → 結算。
 
     enemies:敵方 Creature 清單(也接受單一 Creature)。companions 未指定時用玩家隊伍。
@@ -1107,16 +1119,18 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
     # preserve_buffs(地城預施帶入):不全清,只剝 cascade/afterimage(戰鬥內累積層)+ 已過期效果。
     if preserve_buffs:
         player.active_effects[:] = [e for e in player.active_effects
-                                    if e.get("kind") not in ("cascade", "afterimage") and e.get("turns", 1) > 0]
+                                    if e.get("kind") not in ("cascade", "afterimage", "momentum") and e.get("turns", 1) > 0]
     else:
         player.active_effects.clear()
 
     # 偵查掙得的開戰前備戰空間:在第一個交戰回合「之前」進行(opening 因此保留;
     # buff/召喚的計時從第一回合照 tick,故不延長時效、只省下開場那一動)。
     if prep_budget > 0:
-        _prep_phase(state, gamedata, enemies, battle, prep_budget)
+        _prep_phase(state, gamedata, enemies, battle, prep_budget, hurried=hurried_prep)
         # 奧術連鎖不由「備戰施法」預堆(備戰只省開場一動、不送額外威力)→ 清連鎖層,保留 prep 的增益/召喚
-        player.active_effects[:] = [e for e in player.active_effects if e.get("kind") not in ("cascade", "afterimage")]
+        player.active_effects[:] = [e for e in player.active_effects if e.get("kind") not in ("cascade", "afterimage", "momentum")]
+
+    combat.momentum_reset(player, gamedata)   # R187 氣勢:開戰重置(未啟用 no-op);HUD 一開場即顯示
 
     def alive_e():
         return [e for e in enemies if combat.is_alive(e)]
@@ -1255,7 +1269,11 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
                                                           damage_factor=formulas.VOLLEY_DAMAGE_FACTOR * _df()),
                                     gamedata)
         elif action["type"] == "phantom_flurry":   # R186 幻影步:殘影連襲(逐斬戰報·🔴 永不吃偷襲倍率·疊格擋姿態攻擊稅)
-            _cmsg(f"你身形連閃,{combat.afterimage_stacks(player)} 道殘影一齊出手!", style="bold magenta")
+            _fn, _fk = combat.afterimage_stacks(player), combat.phantom_flurry_strikes(player, gamedata)
+            if _fk < _fn:   # 氣勢不足:如實告知實際出手數
+                _cmsg(f"你身形連閃,{_fn} 道殘影中只有 {_fk} 道得以出手(氣勢不足)!", style="bold magenta")
+            else:
+                _cmsg(f"你身形連閃,{_fn} 道殘影一齊出手!", style="bold magenta")
             for _fev in combat.phantom_flurry(player, enemies, gamedata, state.rng, damage_mult=_df):   # callable:耗體後才求姿態稅(同普攻序)
                 ui.combat_event(_fev, gamedata)
         elif action["type"] == "charge":   # 坐騎「衝鋒」(開場;近戰/長槍;不走偷襲倍率,受 solo 夾限)
@@ -1471,6 +1489,14 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
             e_atk = combat.choose_enemy_attack(e, state.rng, tgt)   # 怪物多攻擊模式選招(R134:嘲諷招對敵方退回基礎單招)
             ev = combat.resolve_attack(e, tgt, gamedata, state.rng, attack=e_atk)
             ui.combat_event(ev, gamedata)
+            if tgt is player:   # R187 借風騰挪:閃過 → 機率讓那一擊誤中另一名敵人(無里程碑/命中/無他敵 → 於任何 rng 之前返回)
+                _mev = combat.misdirect_redirect(player, e, enemies, gamedata, state.rng, ev, e_atk)
+                if _mev is not None:
+                    if _mev.get("hit"):   # 如實:誤傷可能落空;「另一名敵人」不是玩家同伴(審查發現原訊息誤稱同伴且不分命中)
+                        _cmsg(f"你翻身讓開 —— {e.name}那一擊誤中了另一名敵人!", style="cyan")
+                    else:
+                        _cmsg(f"你翻身讓開 —— {e.name}那一擊朝另一名敵人劈去,卻也落空。", style="cyan")
+                    ui.combat_event(_mev, gamedata)
             if ev.get("infected"):    # 疾病傳染:依種類分派到吸血鬼 / 狼人狀態機
                 kind = ev.get("infect_kind", "vampire")
                 if kind == "lycanthropy" and lycanthropy.infect(player, state):
@@ -1735,6 +1761,15 @@ def _scout_report(state: GameState, gamedata: GameData, enemies: list) -> None:
     ui.show_events(progression.use_skill(char, gamedata, "scout", formulas.COMBAT_SNEAK_XP), gamedata)
 
 
+def _approach_prep(char: Character, gamedata: GameData, got_drop: bool, surprise: bool = False) -> tuple[int, bool]:
+    """入戰前備戰預算(offer_battle / action_murder 共用單一出處):潛近成功且未被伏擊 → 偵查備戰(偵查技能 + 先機在握等 prep_bonus);
+    其餘(潛近失敗 / 遭伏擊)→ R187 臨危備戰 alert_prep(未選 = 0)。回傳 (預算, 是否倉促備戰)。兩條預算互斥、不疊加。"""
+    calm = got_drop and not surprise
+    pb = (formulas.prep_budget(char.skill("scout")) + mastery.prep_bonus(char, gamedata)) if calm \
+        else mastery.alert_prep(char, gamedata)
+    return pb, not calm
+
+
 def offer_battle(state: GameState, gamedata: GameData, enemies, ambush_chance: float = 0.25,
                  surprise: bool = False, mounted: bool = False, recruit: str | None = None) -> str | None:
     """呈現遭遇 → 接戰 / 偵查 / 潛行撤退。回傳結果或 None(撤退成功,未交戰)。
@@ -1813,8 +1848,9 @@ def offer_battle(state: GameState, gamedata: GameData, enemies, ambush_chance: f
         else:
             ui.message("你的接近被察覺了,沒能搶到偷襲的先機。", style="yellow")
         # 偵查掙得的備戰空間:潛近成功且未被伏擊時,依偵查技能換得開戰前準備
-        pb = (formulas.prep_budget(char.skill("scout")) + mastery.prep_bonus(char, gamedata)) if (got_drop and not surprise) else 0
-        return run_battle(state, gamedata, enemies, alerted=not got_drop, prep_budget=pb, mounted=mounted)
+        pb, hurried = _approach_prep(char, gamedata, got_drop, surprise)   # R187 臨危備戰(與先機在握互補、不疊加)
+        return run_battle(state, gamedata, enemies, alerted=not got_drop, prep_budget=pb, mounted=mounted,
+                          hurried_prep=hurried)
 
 
 def _maybe_sunburn(state: GameState, gamedata: GameData, hours: int) -> None:
@@ -5697,8 +5733,8 @@ def action_murder(state: GameState, gamedata: GameData, nid: str) -> str | None:
     got_drop = combat.try_stealth_approach(char, [victim], state.rng, gamedata, night, False, False)
     if got_drop:
         ui.message(f"你自{name}背後欺近,寒光一閃 ——", style="magenta")
-    pb = (formulas.prep_budget(char.skill("scout")) + mastery.prep_bonus(char, gamedata)) if got_drop else 0   # 潛殺成功也享偵查備戰
-    result = run_battle(state, gamedata, victim, alerted=not got_drop, prep_budget=pb)
+    pb, hurried = _approach_prep(char, gamedata, got_drop)   # 潛殺成功也享偵查備戰;R187 失敗則倉促備戰
+    result = run_battle(state, gamedata, victim, alerted=not got_drop, prep_budget=pb, hurried_prep=hurried)
     if result == "dead":
         return "dead"
     if result == "fled":

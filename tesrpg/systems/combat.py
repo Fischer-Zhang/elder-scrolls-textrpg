@@ -607,6 +607,68 @@ def afterimage_stacks(player) -> int:
     return eff["stacks"] if eff else 0
 
 
+# ---- R187 解法二「氣勢」:殘影擊每記耗 1 點氣勢;開戰自帶 start 點,親手斬殺一名敵人 +per_kill(夾 max)----
+# 為守終王牆(R186 殘影連襲對 solo 王/召喚爪牙的 solo 勝率提升超出牆):額外出手靠「斬獲」維持,久攻不下的巨物會耗盡。
+# 存成玩家的戰鬥內 active_effect(kind=momentum);**不存在 = 本場尚未動用 = start 點**(懶建立 → 各 sim 迴圈免初始化);
+# turns 用大數而非 99 哨兵:tick_effects 每回合 −1,過期就等於「不存在」= 白白回滿 start(原型實測踩過);
+# run_battle 入戰/離戰 clear() 與 preserve_buffs 剝除 → 戰鬥邊界必歸零。召喚爪牙(R134·不計擊殺)斬之不回氣勢。
+_MOMENTUM_TURNS = 10 ** 6
+
+
+def _momentum_eff(player):
+    return next((e for e in player.active_effects if e.get("kind") == "momentum"), None)
+
+
+def momentum_enabled(player, gamedata: GameData) -> bool:
+    return bool(mastery.momentum(player, gamedata))
+
+
+def momentum(player, gamedata: GameData) -> int:
+    """目前氣勢點數(未選/未啟用 → 0)。純讀、零 rng。"""
+    spec = mastery.momentum(player, gamedata)
+    if not spec:
+        return 0
+    eff = _momentum_eff(player)
+    return eff["stacks"] if eff else spec["start"]
+
+
+def _momentum_set(player, gamedata: GameData, value: int) -> None:
+    spec = mastery.momentum(player, gamedata)
+    eff = _momentum_eff(player)
+    if eff is None:
+        eff = {"kind": "momentum", "stacks": spec["start"], "turns": _MOMENTUM_TURNS}
+        player.active_effects.append(eff)
+    eff["stacks"] = max(0, min(spec["max"], value))
+    eff["turns"] = _MOMENTUM_TURNS
+
+
+def momentum_reset(player, gamedata: GameData) -> None:
+    """開戰重置為 start(run_battle 入戰呼叫 → HUD 一開場就看得到;sim 不呼叫也等同,因為「不存在 = start」)。"""
+    spec = mastery.momentum(player, gamedata)
+    if spec:
+        player.active_effects[:] = [e for e in player.active_effects if e.get("kind") != "momentum"]
+        _momentum_set(player, gamedata, spec["start"])
+
+
+def _momentum_spend(player, gamedata: GameData) -> bool:
+    """花 1 點氣勢出一記花招;未啟用 → 恆 True(行為同改前);氣勢為 0 → False(出不了手)。"""
+    if not momentum_enabled(player, gamedata):
+        return True
+    cur = momentum(player, gamedata)
+    if cur <= 0:
+        return False
+    _momentum_set(player, gamedata, cur - 1)
+    return True
+
+
+def momentum_on_kill(player, enemy, gamedata: GameData) -> None:
+    """玩家親手斬殺一名敵人 → 氣勢 +per_kill(夾 max)。召喚爪牙(summoned·R134 不計擊殺)不回;未啟用 no-op。"""
+    spec = mastery.momentum(player, gamedata)
+    if not spec or getattr(enemy, "summoned", False):
+        return
+    _momentum_set(player, gamedata, momentum(player, gamedata) + spec["per_kill"])
+
+
 def afterimage_gain(player, gamedata: GameData) -> None:
     """玩家閃過任何敵攻(含遠程/元素;與 R145 閃身反打「限物理近戰」不同)→ 凝一層殘影(夾 max_stacks)。
     無 afterimage 里程碑/穿重甲(R141)→ spec 為空 no-op。"""
@@ -635,7 +697,15 @@ def afterimage_ready(player, gamedata: GameData, n_alive: int) -> bool:
     """殘影連襲可用:殘影 ≥ min_stacks 且在場存活敵 ≥ min_foes(預設 1;資料可調成 2=單挑不開放)。
     選單與 sim 共用同一個閘,避免兩邊漂移。"""
     spec = mastery.afterimage(player, gamedata)
-    return bool(spec and afterimage_stacks(player) >= spec["min_stacks"] and n_alive >= spec["min_foes"])
+    return bool(spec and afterimage_stacks(player) >= spec["min_stacks"] and n_alive >= spec["min_foes"]
+                and (not momentum_enabled(player, gamedata) or momentum(player, gamedata) > 0))   # R187:沒氣勢 → 連襲開不了(殘影留著)
+
+
+def phantom_flurry_strikes(player, gamedata: GameData) -> int:
+    """此刻殘影連襲實際會出手的記數:第一擊免費、其餘每記耗 1 點氣勢 → min(層數, 1+氣勢);未啟用氣勢 → 層數。
+    選單標籤與戰報共用,避免高估(審查發現:原顯示「N 道殘影」但氣勢不足時實際出手較少)。"""
+    n = afterimage_stacks(player)
+    return min(n, 1 + momentum(player, gamedata)) if momentum_enabled(player, gamedata) else n
 
 
 def phantom_flurry(player, foes, gamedata: GameData, rng: RNG, damage_mult=1.0):
@@ -654,13 +724,36 @@ def phantom_flurry(player, foes, gamedata: GameData, rng: RNG, damage_mult=1.0):
     player.active_effects.remove(eff)             # 耗盡殘影(先移除再出手,途中被反傷打死也不留殘層)
     player_attack_cost(player, gamedata)
     mult = damage_mult() if callable(damage_mult) else damage_mult
-    for _ in range(n):
+    for i in range(n):
         alive = [e for e in foes if is_alive(e)]
         if not alive or not is_alive(player):
+            return
+        if i > 0 and not _momentum_spend(player, gamedata):   # R187 氣勢:第一擊=本體出手;其餘各層殘影擊各耗 1 點,耗盡即散
             return
         t = min(alive, key=lambda e: e.health)
         yield resolve_attack(player, t, gamedata, rng, sneak_attack=False,
                              damage_factor=spec["strike_factor"] * mult)
+
+
+# ---- R187 借風騰挪(雜技 100 wind_step·misdirect):閃過敵攻 → 讓那一擊誤中另一名敵人 ----
+def misdirect_redirect(player, attacker, foes, gamedata: GameData, rng: RNG, ev: dict, atk: dict | None):
+    """敵方階段每次 `resolve_attack(attacker→player)` 之後呼叫(main/sim 共用;與 R152 狂亂同為「roster 層」處理,
+    resolve_attack 不知道敵群)。落空(閃過)+ 有里程碑 + 場上另有存活敵 + 付得起體力 + 擲中機率 →
+    attacker 以**同一招**再對隨機另一敵出手一記(damage_factor;走一般命中/元素抗性結算,**on_hit 狀態不上同伴**)。
+    無里程碑/命中/無其他敵 → 在任何 rng 之前返回(既有構築 byte-identical)。回傳誤傷事件或 None。"""
+    if ev.get("hit") or not is_alive(player):
+        return None
+    spec = mastery.misdirect(player, gamedata)
+    if not spec or not is_alive(attacker):
+        return None
+    others = [f for f in foes if f is not attacker and is_alive(f)]
+    if not others or player.fatigue < spec["fatigue_cost"]:
+        return None
+    if not rng.chance(spec["chance"]):
+        return None
+    player.fatigue = max(0, player.fatigue - spec["fatigue_cost"])
+    victim = rng.choice(others)
+    return resolve_attack(attacker, victim, gamedata, rng, attack=atk, damage_factor=spec["factor"])
 
 
 def _gear_weapon_id(attacker):
@@ -935,6 +1028,8 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
             dmg = min(dmg, cap)
         dmg_done = int(round(dmg))
         _set_hp(defender, _get_hp(defender) - dmg_done)
+        if _is_player(attacker) and not is_alive(defender):   # R187 氣勢:親手斬殺回氣勢(未啟用/爪牙 → no-op·零 rng)
+            momentum_on_kill(attacker, defender, gamedata)
 
         # 里程碑「迅捷連斬」反作用:造成傷害的一部分回噬自身(代價,不致死 → 夾 ≥1)
         if _is_player(attacker) and wmod.get("recoil") and dmg_done > 0:

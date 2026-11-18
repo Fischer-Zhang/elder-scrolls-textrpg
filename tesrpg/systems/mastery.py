@@ -73,6 +73,8 @@ _IMPLEMENTED_KINDS = {
     # R120 神秘頂點:秘蝕(布林解鎖)—— 傷害法術削目標魔抗、輔助所有傷害魔法。
     "arcane_erosion",
     "afterimage",   # R186 輕甲 100 幻影步:閃過任何敵攻凝殘影層 → 主動「殘影連襲」
+    "alert_prep",   # R187 偵察 75 臨陣預判→臨危備戰:潛近失敗/遭伏擊仍有倉促備戰
+    "misdirect",    # R187 雜技 100 凌風身法→借風騰挪:閃過敵攻 → 機率讓那一擊誤中另一名敵人(耗體)
 }
 
 
@@ -472,7 +474,9 @@ def evasion_bonus(char, gamedata: GameData) -> float:
     """身輕如燕/翻滾卸勁/疾風:額外閃避(直接從敵命中率扣;多來源 acrobatics/athletics/light_armor 相加,夾 EVASION_BONUS_CAP)。
     R141 現實邏輯:light_armor 樹的閃避 perk(柔革閃身/身如鬼魅)穿著重甲不生效(雜技/運動樹不受影響)。"""
     srcs = (list(_chosen_options_with_tree(char, gamedata, "evasion_bonus"))
-            + list(_chosen_options_with_tree(char, gamedata, "afterimage")))   # R186:幻影步(afterimage)選項兼帶平調閃避 → 同源聚合,不得被 kind 遮蔽
+            + list(_chosen_options_with_tree(char, gamedata, "afterimage"))   # R186:幻影步(afterimage)選項兼帶平調閃避 → 同源聚合,不得被 kind 遮蔽
+            + list(_chosen_options_with_tree(char, gamedata, "misdirect"))     # R187:借風騰挪兼帶平調閃避(同源聚合)
+            + list(_chosen_options_with_tree(char, gamedata, "alert_prep")))   # R187:臨陣預判兼帶平調閃避(同源聚合)
     return min(EVASION_BONUS_CAP, sum(o.get("evasion_bonus", 0.0)
                for tree, o in srcs
                if _armor_tree_active(char, gamedata, tree)))
@@ -504,6 +508,28 @@ def afterimage(char, gamedata: GameData) -> dict:
             "min_stacks": min(o.get("min_stacks", 2) for o in opts),
             "min_foes": min(o.get("min_foes", 1) for o in opts),
             "strike_factor": max(o.get("strike_factor", 0.6) for o in opts)}
+
+
+def misdirect(char, gamedata: GameData) -> dict:
+    """R187 借風騰挪(雜技 100 wind_step):閃過敵攻 → 機率讓該擊誤中另一敵。雜技樹無護甲閘。
+    同源多節點聚合(機率/力道取最大、耗體取最小)。空 = {}。"""
+    opts = [o for tree, o in _chosen_options_with_tree(char, gamedata, "misdirect")
+            if _armor_tree_active(char, gamedata, tree)]
+    if not opts:
+        return {}
+    return {"chance": max(o.get("redirect_chance", 0.3) for o in opts),
+            "factor": max(o.get("redirect_factor", 0.7) for o in opts),
+            "fatigue_cost": min(o.get("fatigue_cost", 6) for o in opts)}
+
+
+def momentum(char, gamedata: GameData) -> dict:
+    """R187 解法二「氣勢」:殘影連襲的燃料參數 {start, per_kill, max}(資料在 phantom_step 選項的 momentum 欄)。
+    多源各欄取最大;輕甲樹 perk → 穿重甲不生效(R141);未選/資料無此欄 → {}(= 不啟用,行為同改前)。"""
+    specs = [o["momentum"] for tree, o in _chosen_options_with_tree(char, gamedata, "afterimage")
+             if o.get("momentum") and _armor_tree_active(char, gamedata, tree)]
+    if not specs:
+        return {}
+    return {k: max(int(sp.get(k, 0)) for sp in specs) for k in ("start", "per_kill", "max")}
 
 
 def vanish_floor(char, gamedata: GameData) -> float:
@@ -574,6 +600,12 @@ def armor_sneak_relief(char, gamedata: GameData) -> float:
     """無聲披掛:抵消護甲對偷襲的兩道懲罰(0~1,1=全免)。
     命中端=潛近噪音(stealth_approach_chance);傷害端=偷襲倍率重量折扣(R72,armor_sneak_mult_factor)。"""
     return _param(char, gamedata, "armor_sneak_relief", "relief", 0.0)
+
+
+def alert_prep(char, gamedata: GameData) -> int:
+    """R187 臨陣預判(偵察 75):潛近被識破(alerted)或遭伏擊(surprise)時仍可倉促備戰的動作數(與 prep_bonus 互補:
+    prep_bonus 只在潛近成功且未被伏擊時算;此值只在其餘情況算,兩者不疊加)。多來源相加;未選 → 0。"""
+    return int(sum(o.get("alert_prep", 0) for o in _chosen_options_by_kind(char, gamedata, "alert_prep")))
 
 
 def prep_bonus(char, gamedata: GameData) -> int:

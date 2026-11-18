@@ -783,7 +783,8 @@ def test_scout_prep_and_recon():
     assert abs(mastery.approach_bonus(c, gd) - (0.10 + 0.12)) < 1e-9   # 料敵機先+先聲奪人 approach 多源相加
     gd, c = _char(scout=75)
     mastery.choose(c, gd, "scout_75", "preempt")
-    assert mastery.evasion_bonus(c, gd) == 0.04                      # 臨陣預判閃避
+    assert mastery.alert_prep(c, gd) == 1                            # R187 臨陣預判=臨危備戰(主效果不再是平調閃避)
+    assert abs(mastery.evasion_bonus(c, gd) - 0.04) < 1e-9           # …但仍兼帶舊 +0.04 平調閃避(同源聚合,不讓未撐滿構築退步)
     gd, c = _char(scout=50)                                          # R35:scout_50 料敵判讀亦降弱點門檻 75→50
     assert mastery.recon_reveal_threshold(c, gd) == 75
     mastery.choose(c, gd, "scout_50", "threat_read")
@@ -953,10 +954,10 @@ def test_batch1_same_source_aggregation_no_shadow():
 def test_batch1_evasion_bonus_capped():
     """雜技/運動/輕甲三源閃避相加夾 EVASION_BONUS_CAP(對抗審查:0.24 會 trivialize 群戰)。"""
     gd, c = _char(acrobatics=100, light_armor=100, scout=100)   # R147:athletics 閃避已改調息 → 改用輕甲閃避源
-    for nid, oid in [("acrobatics_50", "tumbler"), ("acrobatics_75", "evasion"),
-                     ("light_armor_50", "lithe_evasion"), ("scout_75", "preempt")]:
+    for nid, oid in [("acrobatics_25", "tumble_basics"), ("acrobatics_50", "tumbler"), ("acrobatics_75", "evasion"),
+                     ("light_armor_50", "lithe_evasion")]:      # R187:scout_75 臨陣預判不再是閃避源 → 改用雜技 25 湊滿
         mastery.choose(c, gd, nid, oid)
-    raw = 0.04 + 0.05 + 0.05 + 0.04                         # 0.18 未夾
+    raw = 0.02 + 0.04 + 0.05 + 0.05                         # 0.16 未夾
     assert raw > mastery.EVASION_BONUS_CAP
     assert mastery.evasion_bonus(c, gd) == mastery.EVASION_BONUS_CAP   # 夾 0.15
 

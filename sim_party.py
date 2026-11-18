@@ -118,7 +118,9 @@ def fight_group(enemy_ids, seed, max_rounds=60, cast=True, focus_healer=True):
                 continue
             if cast and magic.enemy_support_act(e, enemies, gd) is not None:
                 continue
-            combat.resolve_attack(e, c, gd, rng, attack=combat.choose_attack(e, rng, c))
+            _atk = combat.choose_attack(e, rng, c)
+            _ev = combat.resolve_attack(e, c, gd, rng, attack=_atk)
+            combat.misdirect_redirect(c, e, enemies, gd, rng, _ev, _atk)   # R187 借風騰挪(沒選者在任何 rng 之前返回 → byte-identical)
             if c.health <= 0:
                 return "dead"
         sb._regen(c)

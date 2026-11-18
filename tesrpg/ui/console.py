@@ -2394,11 +2394,12 @@ _STATUS_TAG = {
     "ride_evasion": "疾避", "taunt": "嘲諷",   # R125 審查補:坐騎閃避(玩家)/召喚物嘲諷(拉仇恨)
     "guard_stance": "格擋姿態",   # R137:攻擊變緩·舉盾卸力減傷(常駐)
     "afterimage": "殘影",         # R186 幻影步:輕甲 100 殘影層(尾綴顯層數 ×N,見 _tag_num)
+    "momentum": "氣勢",           # R187 解法二:殘影擊燃料(尾綴顯點數 ×N,見 _tag_num)
 }
 _BUFF_KINDS = {"shield", "regen", "ward", "consecration", "empower", "berserk_buff",   # 增益(綠)
                "bound_weapon", "weapon_imbue", "resonance", "cascade",
                "battle_standard", "rally_banner", "shield_wall", "ride_evasion", "taunt", "guard_stance",
-               "afterimage"}
+               "afterimage", "momentum"}
 # 純內部記帳/冷卻標記 —— 不顯示於戰鬥卡片(避免 deathmark_cd/support_cd/atk_cooldown 等洩漏)
 _HIDDEN_TAG_KINDS = {"support_cd", "deathmark_cd", "atk_cooldown", "triage_ready", "prep_used"}
 _STANCE_MAINTAINED = 99   # 常駐光環維持中的 turns 哨兵 → 不顯示回合數
@@ -2406,7 +2407,7 @@ _STANCE_MAINTAINED = 99   # 常駐光環維持中的 turns 哨兵 → 不顯示�
 
 def _tag_num(e: dict) -> str:
     """狀態標籤尾綴:殘影(R186)顯層數 ×N;常駐光環(turns≥哨兵)不顯回合數;其餘顯剩餘回合數。"""
-    if e["kind"] == "afterimage":
+    if e["kind"] in ("afterimage", "momentum"):
         return f"×{e.get('stacks', 0)}"
     return "" if e["turns"] >= _STANCE_MAINTAINED else str(e["turns"])
 

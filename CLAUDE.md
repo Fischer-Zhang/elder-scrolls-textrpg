@@ -252,6 +252,7 @@ PYTHONPATH=. python3 sim_assassin.py      # 平衡回歸模擬(改戰鬥常數�
 | R185 | ~~閃身反打「圍攻分神」:反擊機率 ÷ 在場存活敵數(修風暴之舞單側穩賺)~~〔2026-11-17 使用者取消,程式碼已還原;風暴之舞維持 R183 行為,改由「修幻影步」補平差距;分析紀錄見 handoff §3 R185,守衛段原碼見 `fbac259`〕 | re-sim |
 | R184 | 單槽附帶狀態「後解鎖覆蓋先前」:weapon_mod.on_hit_status / spell_on_hit 依解鎖門檻排序、不依 JSON 列序(原低階反蓋高階);🔴 單槽取最後一個走 `_chosen_options_by_unlock`,相加/取最大維持列序保浮點順序 | save-safe |
 | R186 | 幻影步(輕甲 100 `phantom_step`)改「殘影連襲」:閃過**任何**敵攻凝殘影(≤3,被傷散一層)→ 主動耗盡連擊最低血敵;與保留的 +0.06 平調閃避並存(選項兼帶 evasion_bonus,由 getter 聚合,雜技線構築仍被 cap 擋);傷害 1.0(使用者拍板「兩者都做」);🔴 連襲每擊 sneak=False(不碰 solo 夾)·不碰任何上限/R132·殘影=戰鬥內 active_effect 邊界必清(含 preserve_buffs)·開放閘 `afterimage_ready` main/sim 共用;sim_assassin 既有輸出 byte-identical + 新增守衛段(風暴管物理近戰/幻影步管元素群) | re-sim |
+| R187 | 閃避上限遮蔽節點重設計(第一組):雜技 100 凌風身法→借風騰挪(閃過 30% 讓那一擊誤中另一敵·耗體)、偵察 75 臨陣預判→臨危備戰(潛近失敗仍備戰);兩者兼帶舊平調閃避(同源聚合仍夾 cap);+「氣勢」守終王牆(殘影擊耗氣勢·親手斬殺回氣勢·爪牙不計);🔴 不碰任何上限·改額外出手類機制必量 solo 終王牆(含 BOSS 召喚爪牙) | re-sim, save |
 
 ## 自動提交閘門 / 換 session 前檢查表
 

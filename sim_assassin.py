@@ -32,7 +32,7 @@ def assassin(sneak=70, blade=50, alchemy=40, scout=40, weapon="steel_dagger", du
     return c
 
 
-def _round(c, foes, rng, opening, used):
+def _round(c, foes, rng, opening, used, stam=False):
     """打一個回合:低血(<45%)且能隱遁就嘗試隱遁,否則攻最低血敵人。回傳新的 opening。
     R71:隱遁不再無敵 —— 成功只重置偷襲,敵人照常攻擊(防禦純靠 evasion)。"""
     alive = [e for e in foes if combat.is_alive(e)]
@@ -49,14 +49,18 @@ def _round(c, foes, rng, opening, used):
         vanished = True                      # R71:只重獲偷襲先機,不再讓敵人撲空
     else:
         tgt = min(alive, key=lambda e: e.health)
+        if stam:                             # R187:普攻也耗體(借風騰挪的核心代價是體力;fixture 預設普攻不耗體會失真)
+            combat.player_attack_cost(c, gd)
         combat.resolve_attack(c, tgt, gd, rng, sneak_attack=opening)
     for e in foes:                           # R71:敵人照常攻擊(隱遁不再無敵)
         if combat.is_alive(e) and c.health > 0 and not magic.is_incapacitated(e):
-            combat.resolve_attack(e, c, gd, rng, attack=combat.choose_attack(e, rng, c))   # 多攻擊模式選招
+            _atk = combat.choose_attack(e, rng, c)   # 多攻擊模式選招
+            _ev = combat.resolve_attack(e, c, gd, rng, attack=_atk)
+            combat.misdirect_redirect(c, e, foes, gd, rng, _ev, _atk)   # R187 借風騰挪(沒選此節點者在任何 rng 之前返回 → 既有輸出逐位元組不變)
     return vanished
 
 
-def fight(maker, enemy_ids, seed):
+def fight(maker, enemy_ids, seed, stam=False):
     c = maker()
     foes = [combat.spawn_creature(gd, t, RNG(seed * 9 + i)) for i, t in enumerate(enemy_ids)]
     rng = RNG(seed)
@@ -66,7 +70,7 @@ def fight(maker, enemy_ids, seed):
             return "win"
         if c.health <= 0:
             return "dead"
-        opening = _round(c, foes, rng, opening, used)
+        opening = _round(c, foes, rng, opening, used, stam)
         magic.tick_effects(c, gd)
         for e in foes:
             if combat.is_alive(e):
@@ -75,8 +79,8 @@ def fight(maker, enemy_ids, seed):
     return "win" if not any(combat.is_alive(e) for e in foes) else "timeout"
 
 
-def rate(maker, ids, outcome="dead", n=2000):
-    return sum(fight(maker, ids, s) == outcome for s in range(n)) / n
+def rate(maker, ids, outcome="dead", n=2000, stam=False):
+    return sum(fight(maker, ids, s, stam) == outcome for s in range(n)) / n
 
 
 def oneshot(maker, tid, n=2500):
@@ -252,3 +256,21 @@ if __name__ == "__main__":
         else:
             flag = "  (資訊·不判定)"
         print(f"  {gname:26} 風暴之舞 {rs:5.1%}   幻影步 {rp:5.1%}{flag}")
+
+    # R187 守衛:雜技 100「借風騰挪」(wind_step)vs 未選 vs 凌空奇襲(aerial_ambush)——閃避加成已撐滿的雜技閃避線構築
+    # (改前凌風身法 +0.06 被 EVASION_BONUS_CAP 遮蔽成 0;改後借風騰挪的 +0.06 仍被 cap 擋→不繞上限,效果來自「誤中另一名敵人」)。
+    # stam=True:普攻也耗體(借風騰挪每次耗 6 體力,長戰多敵會吃光體力;無此建模會高估)。判定:借風騰挪不得比「未選」更差超過 3pp
+    # (回歸守衛);凌空奇襲在輕構築只有約 2~3pp、完整構築惰性(R187 設計代理實測)——僅供對照。
+    # ⚠ 已知(設計代理量測):完整武僧打鬼火×8 借風騰挪比改前凌風身法差(體力稅);輕構築此守衛看不到,屬資訊,見 handoff R187。
+    print("\n== R187 守衛:雜技100 借風騰挪 vs 未選 vs 凌空奇襲(閃避已撐滿的雜技線構築·普攻耗體;判定:借風騰挪不得比未選更差>3pp)==")
+    _acro = {"acrobatics_25": "tumble_basics", "acrobatics_50": "tumbler", "acrobatics_75": "evasion", "light_armor_50": "lithe_evasion"}
+    _mk = lambda opt: (lambda: assassin(light_armor=100, acrobatics=100,
+                                        mastery_choices={**_acro, **({"acrobatics_100": opt} if opt else {})}))
+    for gname, gids in (("4 bandit", ["bandit"] * 4), ("2 bandit+2 wolf", ["bandit", "bandit", "wolf", "wolf"]),
+                        ("5 wolf(圍攻)", ["wolf"] * 5), ("4 moor_witch(純元素)", ["moor_witch"] * 4),
+                        ("4 ice_wraith(冰)", ["ice_wraith"] * 4), ("4 maormer_raider(遠程)", ["maormer_raider"] * 4),
+                        ("2 moor_witch+2 bandit(混合)", ["moor_witch", "moor_witch", "bandit", "bandit"]),
+                        ("1 dremora_lord(solo)", ["dremora_lord"])):
+        r0, ra, rm = (rate(_mk(o), gids, n=500, stam=True) for o in (None, "aerial_ambush", "wind_step"))
+        flag = " ✓不劣於未選" if rm <= r0 + 0.03 else " ⚠借風騰挪反比未選更差"
+        print(f"  {gname:28} 未選 {r0:5.1%}   凌空奇襲 {ra:5.1%}   借風騰挪 {rm:5.1%}{flag}")
