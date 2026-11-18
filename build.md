@@ -77,7 +77,7 @@
 |---|---|---|
 | 50 | 還擊架式(stagger 25%) | 鋒刃輕靈(命中+5%) |
 | 75 | 劍勢如虹(傷+8%) | 輕劍捷影(agility+4) |
-| 100 | 鋒芒畢露(命中+5%) | 迅捷連斬(傷+12%,自損 recoil+5%) |
+| 100 | 看破(打中踉蹌目標+20%傷·另附命中+5%) | 迅捷連斬(傷+12%,自損 recoil+5%) |
 
 **副軸流派(選一條當骨幹)**
 - **純爆發**:影刃+夜母聆聽者+雙持 glass/daedric+魔銳茲之刃+塗毒+迅捷連斬 → 非 solo 精英開場秒殺。
@@ -306,7 +306,7 @@ effective_cost = base × (1 − min(0.4, 學派技能/250)) × Π spell_cost_fac
 | 25 | 持劍入門(命中+2%·單選自動授予) | — |
 | 50 | 還擊架式(命中 25% 機率 stagger 敵 1 回) | 鋒刃輕靈(命中+5%) |
 | 75 | 劍勢如虹(傷+8%) | 輕劍捷影(agility+4·持久層) |
-| 100 | 鋒芒畢露(命中+5%) | 迅捷連斬(傷+12%·▼自損 recoil 5%·不致死) |
+| 100 | 看破(打中踉蹌目標+20%傷·另附命中+5%) | 迅捷連斬(傷+12%·▼自損 recoil 5%·不致死) |
 > 刀劍 archetype **無破甲**(`archetype_armor_pen('sword')=0.0`)。speed 因武器而異:sword 多 1.0(命中中性)、dawnfang 1.1(+0.01 命中)、daedric_spear 0.9(−0.01·spear 走 blade 技能但 archetype=spear)。傷害線最高 +0.20(blade_flow 0.08 + savage 0.12·同 target 多節點 weapon_mod **相加**)。
 > **sword 神器**:valor_blade 百戰勳刃(dmg22·regen 3/3 自 HoT·★戰士公會掌門武器)、dawnfang 黎明之牙(dmg24·fire+28·湮滅主線·全遊戲最高元素之一)、skyburner 焚天劍(dmg23·fire+26·龍喉巢穴)、daedric_sword 魔族長劍(dmg22·純物理)。spear 亦走 blade 技能:魔族長槍 dmg24(與黎明之牙並列最高近戰本體傷·純物理)。
 
