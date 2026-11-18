@@ -785,6 +785,15 @@ def _param(char, gamedata: GameData, kind: str, key: str, default):
 
 
 # --- P2 戰鬥系 getter ---------------------------------------------------
+def exploit_reader(char, gamedata: GameData) -> bool:
+    """R190:玩家是否持有「對目標狀態有加乘」的里程碑(獵手之眼/看破;任何帶 `exploit` 的 weapon_mod)。
+    由資料推導(不寫死 opt_id)→ 日後新增讀取端自動適用;HUD 只在持有者的敵方卡片顯示「破綻·X」餘韻標籤
+    (沒有讀取端的玩家看了無用,徒增雜訊)。"""
+    if not hasattr(char, "base_skill"):
+        return False
+    return any(o.get("exploit") for o in _chosen_options_by_kind(char, gamedata, "weapon_mod"))
+
+
 def weapon_mod(char, gamedata: GameData, wpn_skill_id: str | None) -> dict:
     """目前武器技能對應的『武器流派』已選 option(target 須與 wpn_skill_id 一致);無則 {}。
 
@@ -794,8 +803,8 @@ def weapon_mod(char, gamedata: GameData, wpn_skill_id: str | None) -> dict:
          extra_shot(R136 連珠箭:弓命中後追加一箭的機率;追加箭=普通射擊 sneak=False,main/sim 動作層讀)/
          exploit(R136 獵手之眼:目標帶控場狀態〔衰/踉/緩/凍麻/懼/麻痺〕→ 補傷 raw×exploit,
                  走 power_bonus 車道=偷襲倍率後相加·受 solo 夾 → 守紅線;combat 讀)/
-         exploit_kinds(R189 刀劍看破:自訂 exploit 認的頹勢狀態集〔["stagger"]〕;缺省=弓手六態;單槽取最後解鎖者)/
-         expose(R189:自己施加的踉蹌成功時,於敵身上另掛 turns=expose 的「破綻」標記 → exploit 下一擊讀得到;缺省=不掛)/
+         exploit_kinds(R189 刀劍看破:自訂 exploit 認的頹勢狀態集〔["stagger"]〕;缺省=弓手六態;單槽取最後解鎖者;
+                       R190:讀取一律走 combat.afflicted,實際狀態與餘韻皆算,對各來源一致)/
          on_hit_status({kind:stagger|weaken, chance, magnitude?, turns?})。
     """
     if not wpn_skill_id or not hasattr(char, "base_skill"):
@@ -807,7 +816,7 @@ def weapon_mod(char, gamedata: GameData, wpn_skill_id: str | None) -> dict:
     for opt in _chosen_options_by_kind(char, gamedata, "weapon_mod"):
         if opt.get("target") != wpn_skill_id:
             continue
-        for k in ("hit", "power", "pen", "fatigue", "recoil", "poise_rate", "extra_shot", "exploit", "expose"):
+        for k in ("hit", "power", "pen", "fatigue", "recoil", "poise_rate", "extra_shot", "exploit"):
             if k in opt:
                 merged[k] = merged.get(k, 0) + opt[k]
     for opt in _chosen_options_by_unlock(char, gamedata, "weapon_mod"):

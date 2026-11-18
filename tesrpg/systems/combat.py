@@ -760,16 +760,19 @@ def misdirect_redirect(player, attacker, foes, gamedata: GameData, rng: RNG, ev:
     return resolve_attack(attacker, victim, gamedata, rng, attack=atk, damage_factor=spec["factor"])
 
 
-def _mark_exposed(defender, turns: int) -> None:
-    """R189 看破「破綻」標記:玩家自己施加的踉蹌(還擊架式 / 偷襲殘響 turns:1)只撐過敵人那一次出手、回合末 tick 即歸零,
-    撐不到玩家下一擊 → 光靠踉蹌狀態本身讀不到。故命中施加踉蹌成功時另掛 `exposed`(turns=2 → tick 後下一擊仍 1)。
-    純敵方側的短命 active_effect(kind 不在任何控場集合 → 不影響命中/行動;turns 到期自清,不入檔、不洩漏到玩家)。
-    同標記只刷新不疊加。"""
-    for e in defender.active_effects:
-        if e.get("kind") == "exposed":
-            e["turns"] = max(e["turns"], turns)
-            return
-    defender.active_effects.append({"kind": "exposed", "turns": turns})
+def afflicted(target, kinds) -> bool:
+    """R190 狀態讀取的**唯一入口**:目標此刻是否處於 kinds 內任一狀態。任何「對某狀態有加乘」的程式(獵手之眼、
+    看破、日後新增者)一律呼叫本函式,**不得**自己掃 active_effects、不得讀來源或回合數。
+    讀「實際狀態」或其「餘韻」(magic.apply_control 於成功施加/被去重時統一留下,見 magic.ECHO_KINDS):
+    餘韻讓玩家階段 t1 控場(回合末即歸零)也能被下一擊讀到,與 t2+ 來源一致。
+    🔴 本函式只供「加乘」讀取;命中減益/失能(magic.is_staggered 等實際效果)不得改走這裡。"""
+    for e in getattr(target, "active_effects", []):
+        if e.get("turns", 0) <= 0:
+            continue
+        k = e.get("kind")
+        if k in kinds or (k == "echo" and e.get("of") in kinds):
+            return True
+    return False
 
 
 def _gear_weapon_id(attacker):
@@ -912,12 +915,10 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
         power_bonus = raw * (wmod.get("power", 0.0) + (formulas.AIMED_SHOT_POWER if aimed else 0.0))
         # R136 獵手之眼(marksman_100):目標陷入頹勢(控場狀態)→ 乘勢補傷(同 power_bonus 車道守紅線;
         # 非弓手/未選 exploit=0 → 不掃 → byte-identical)
-        # R189 刀劍「看破」(blade_100 precision):同引擎,但選項自帶頹勢集 exploit_kinds=["stagger"](只認踉蹌)+
-        # 破綻標記 exposed(自己震開的踉蹌 turns 1 撐不到下一擊 → 見 _mark_exposed)。未帶 exploit_kinds → 弓手原六態。
+        # R189 刀劍「看破」(blade_100 precision):同引擎,選項自帶頹勢集 exploit_kinds=["stagger"](只認踉蹌);
+        # 未帶 exploit_kinds → 弓手原六態。R190:一律走 afflicted()(實際狀態或餘韻),對各來源一致。
         if wmod.get("exploit"):
-            _xk = wmod.get("exploit_kinds") or _EXPLOIT_KINDS
-            if any((e.get("kind") in _xk or e.get("kind") == "exposed") and e.get("turns", 0) > 0
-                   for e in getattr(defender, "active_effects", [])):
+            if afflicted(defender, wmod.get("exploit_kinds") or _EXPLOIT_KINDS):
                 power_bonus += raw * wmod["exploit"]
         _se = _self_empower(attacker)   # 種族「狂暴/腎上腺」自身增傷(R61):同 power_bonus 模式,偷襲倍率後加 → 守紅線
         if _se:
@@ -1305,11 +1306,9 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
         if _is_player(attacker) and is_alive(defender):
             ohs = wmod.get("on_hit_status")
             if ohs and rng.chance(ohs.get("chance", 1.0)):   # 卸力擒拿 stagger / 震盪一擊 weaken / 牽制箭 slow → 集中 helper
-                _oa = magic.apply_control(defender, ohs["kind"], gamedata, rng,
-                                          magnitude=ohs.get("magnitude", 0.0),
-                                          turns=ohs.get("turns", 2 if ohs["kind"] == "slow" else 1))
-                if _oa == "applied" and ohs["kind"] == "stagger" and wmod.get("expose"):
-                    _mark_exposed(defender, int(wmod["expose"]))   # R189:未選看破 → wmod 無 expose → 不進分支(byte-identical)
+                magic.apply_control(defender, ohs["kind"], gamedata, rng,
+                                    magnitude=ohs.get("magnitude", 0.0),
+                                    turns=ohs.get("turns", 2 if ohs["kind"] == "slow" else 1))
         # 武器原型內建命中附狀態(釘錘/戰錘=控制流擊暈;斧走破甲不在此)→ 集中 helper
         # (R44 收斂:stagger 軟控不免 solo → 與里程碑/盾反/感電 stagger 一致,移除原 mace-only 的 _is_solo 免疫)
         if _is_player(attacker) and is_alive(defender):
@@ -1377,9 +1376,7 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
             staggered = bool(am.get("stagger"))
             bleed_mag = 0
             if staggered:
-                _sa = magic.apply_control(defender, "stagger", gamedata, rng, turns=1)   # R44:集中 helper
-                if _sa == "applied" and wmod.get("expose"):
-                    _mark_exposed(defender, int(wmod["expose"]))   # R189:偷襲震出的破綻撐到下一擊(未選看破 → 不進分支)
+                magic.apply_control(defender, "stagger", gamedata, rng, turns=1)   # R44:集中 helper(R190:餘韻由它統一留)
             if am.get("bleed"):
                 bleed_mag = formulas.sneak_bleed_magnitude(
                     attacker.skill("sneak"), attacker.skill("alchemy"))

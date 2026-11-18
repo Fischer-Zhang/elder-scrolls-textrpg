@@ -931,7 +931,41 @@ _HARD_CONTROL = ("fear", "paralyze", "frenzied")
 _CONTROL_KINDS = ("fear", "paralyze", "stagger", "slow", "weaken", "benumb", "calm", "frenzied")
 
 
+# R190 狀態「餘韻」echo(讀取一致化):對狀態有加乘的讀取端(刀劍看破/弓手獵手之眼)讀「目標是否處於某狀態」,
+# 但各來源給的回合數不一 —— 玩家階段施加的 `turns:1` 控場於回合末 tick 即歸零(它的實際作用=封住敵人下一次出手,
+# 這是對的),玩家下一擊讀不到;t2 以上的來源卻讀得到 → 同一狀態因來源不同而被不同對待。
+# 單一處理點:apply_control 成功施加**或被去重擋下且目標此刻仍處於該狀態**時,對非玩家目標另留一個
+# 純讀取用的餘韻 {"kind":"echo","of":<kind>,"turns":ECHO_TURNS}(同 of 刷新取最大):
+# ECHO_TURNS=2 → 任一階段施加,經回合末 tick 後仍剩 1,下一回合玩家出手時讀得到,該回合末歸零。
+# 🔴 餘韻只供讀取:命中減益/失能/tick/驅散/is_staggered 等實際效果邏輯一律不得讀它;不擲 rng。
+# 只建讀取端用得到的六態(安撫/狂亂目前無讀取端,不建)。resisted(被抵抗)不建。
+ECHO_KINDS = ("stagger", "weaken", "slow", "benumb", "fear", "paralyze")
+ECHO_TURNS = 2
+
+
+def _leave_echo(target, kind: str) -> None:
+    for e in target.active_effects:
+        if e.get("kind") == "echo" and e.get("of") == kind:
+            e["turns"] = max(e.get("turns", 0), ECHO_TURNS)
+            return
+    target.active_effects.append({"kind": "echo", "of": kind, "turns": ECHO_TURNS})
+
+
 def apply_control(target, kind, gamedata, rng, *, magnitude=0.0, turns=1, source=None, divine=False) -> str:
+    """控場施加的唯一入口(R44):判定交 `_apply_control`;R190 在此統一留「餘韻」供讀取端一致讀取
+    (applied 留;blocked 僅在目標此刻仍處於該狀態時刷新 —— 同源去重可跨狀態擋下,目標未必有該狀態,那時不留;
+    resisted 不留;玩家本人不留)。回傳值與判定同 `_apply_control`。"""
+    res = _apply_control(target, kind, gamedata, rng, magnitude=magnitude, turns=turns,
+                         source=source, divine=divine)
+    if kind in ECHO_KINDS and not isinstance(target, Character) and (
+            res == "applied"
+            or (res == "blocked" and any(e.get("kind") == kind and e.get("turns", 0) > 0
+                                         for e in target.active_effects))):
+        _leave_echo(target, kind)
+    return res
+
+
+def _apply_control(target, kind, gamedata, rng, *, magnitude=0.0, turns=1, source=None, divine=False) -> str:
     """集中施加「控場 debuff」到 target,統一 solo/willpower 抵抗與去重(R44 單一決策點)。回傳:
       'applied'  —— 實際施加
       'resisted' —— 被抵抗(玩家意志 resisted_mind / solo BOSS 機率減免)

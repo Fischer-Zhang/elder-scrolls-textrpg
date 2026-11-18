@@ -321,33 +321,50 @@ def _sheet_view(char: Character, gamedata: GameData) -> dict:
     }
 
 
-def _status_tags_list(entity) -> list:
+def _echo_label(entity, e: dict, seen: set) -> str | None:
+    """R190 餘韻標籤「破綻·踉」:僅當該狀態的實際效果已消失才顯示(否則與原標籤重複);同一 of 只顯一次。
+    餘韻是純讀取用標記(看破/獵手之眼的『下一擊仍算受制』窗口),讓玩家看得見為何補傷仍在。"""
+    of = e.get("of")
+    if of in seen or any(x.get("kind") == of and x.get("turns", 0) > 0 for x in entity.active_effects):
+        return None
+    seen.add(of)
+    return f"破綻·{_STATUS_TAG.get(of, of)}"
+
+
+def _status_tags_list(entity, echo: bool = False) -> list:
     out = []
+    seen: set = set()
     for e in entity.active_effects:
         if e.get("turns", 0) <= 0 or e["kind"] in _HIDDEN_TAG_KINDS:   # R125:略過純內部記帳標記
             continue
         kind = e["kind"]
+        if kind == "echo":                    # R190 餘韻:只在敵方卡片(echo=True)顯示
+            label = _echo_label(entity, e, seen) if echo else None
+            if label:
+                out.append({"s": label, "good": False})
+            continue
         good = True if kind in _BUFF_KINDS else (False if kind in _STATUS_TAG else None)
         out.append({"s": f"{_STATUS_TAG.get(kind, kind)}{_tag_num(e)}", "good": good})
     return out
 
 
-def _combatant(ent, idx=None, down=False) -> dict:
+def _combatant(ent, idx=None, down=False, echo: bool = False) -> dict:
     return {"name": ent.name, "idx": idx, "down": down,
             "hp": [max(0, int(ent.health)), int(ent.max_health)],
             "mp": [max(0, int(getattr(ent, "magicka", 0))), int(getattr(ent, "max_magicka", 0))],
             "fp": [int(getattr(ent, "fatigue", 0)), int(getattr(ent, "max_fatigue", 0))],
-            "tags": [] if down else _status_tags_list(ent)}
+            "tags": [] if down else _status_tags_list(ent, echo=echo)}
 
 
-def _combat_view(player: Character, allies: list, enemies: list) -> dict:
+def _combat_view(player: Character, allies: list, enemies: list, show_echo: bool = False) -> dict:
+    # R190 餘韻標籤「破綻·X」只給持有狀態加乘里程碑(mastery.exploit_reader)的玩家看;show_echo 由呼叫端依 gamedata 算。
     # 存活敵人先列(帶 0-based key 對齊 _choose_enemy_target 目標選單);已倒下者集中到末尾:
     # ≤2 具照列(strikethrough),>2 具收束成單列「☠ 已倒下 ×N」(D4:召喚波/群戰屍體不再洗版)。
     foes, n = [], 0
     for e in enemies:
         if e.health > 0:
             n += 1
-            foes.append({**_combatant(e, idx=n), "key": str(n - 1)})
+            foes.append({**_combatant(e, idx=n, echo=show_echo), "key": str(n - 1)})
     down_list = [e for e in enemies if e.health <= 0]
     if len(down_list) <= 2:
         foes += [_combatant(e, down=True) for e in down_list]
@@ -2370,7 +2387,7 @@ def combat_intro(creature, player: Character, gamedata: GameData) -> None:
 
 def combat_status(player: Character, creature, gamedata: GameData) -> None:
     if _web is not None:
-        _emit_view("combat", _combat_view(player, [], [creature]))
+        _emit_view("combat", _combat_view(player, [], [creature], show_echo=mastery.exploit_reader(player, gamedata)))
         return
     grid = Table.grid(padding=(0, 2))
     grid.add_row(Text(player.name, style="bold"), _bar(player.health, player.max_health, "red"),
@@ -2387,7 +2404,6 @@ _STATUS_TAG = {
     "dot": "蝕", "fear": "懼", "paralyze": "痺", "weaken": "弱", "soul_trap": "魂",
     "stagger": "踉", "slow": "緩", "benumb": "凍麻", "conduct": "導電", "erosion": "蝕抗",
     "calm": "安撫", "frenzied": "狂亂", "offbalance": "失衡", "deathmark": "烙印",
-    "exposed": "破綻",            # R189 看破:自己震開的踉蹌留下的破綻(敵方側·下一擊補傷)
     # 增益(綠)
     "shield": "盾", "regen": "生", "ward": "結界", "consecration": "聖化", "empower": "鼓舞",
     "berserk_buff": "狂暴", "bound_weapon": "束縛", "weapon_imbue": "灌注", "resonance": "共鳴",
@@ -2413,10 +2429,16 @@ def _tag_num(e: dict) -> str:
     return "" if e["turns"] >= _STANCE_MAINTAINED else str(e["turns"])
 
 
-def _status_tags(entity) -> str:
+def _status_tags(entity, echo: bool = False) -> str:
     tags = []
+    seen: set = set()
     for e in entity.active_effects:
         if e.get("turns", 0) <= 0 or e["kind"] in _HIDDEN_TAG_KINDS:
+            continue
+        if e["kind"] == "echo":               # R190 餘韻:僅敵方(echo=True)顯示
+            label = _echo_label(entity, e, seen) if echo else None
+            if label:
+                tags.append(label)
             continue
         tags.append(f"{_STATUS_TAG.get(e['kind'], e['kind'])}{_tag_num(e)}")
     return " ".join(tags)
@@ -2425,7 +2447,7 @@ def _status_tags(entity) -> str:
 def combat_status_group(player: Character, allies: list, enemies: list, gamedata: GameData) -> None:
     """團隊/多敵戰鬥狀態:我方(玩家+同伴)在上,敵方在下(編號供指定目標)。"""
     if _web is not None:
-        _emit_view("combat", _combat_view(player, allies, enemies))
+        _emit_view("combat", _combat_view(player, allies, enemies, show_echo=mastery.exploit_reader(player, gamedata)))
         return
     side = Table.grid(padding=(0, 2))
     side.add_row(Text(player.name, style="bold"), _bar(player.health, player.max_health, "red"),
@@ -2444,7 +2466,7 @@ def combat_status_group(player: Character, allies: list, enemies: list, gamedata
             n += 1
             foes.add_row(Text(f"{n}. {e.name}", style="bold red"),
                          _bar(e.health, e.max_health, "red"),
-                         Text(_status_tags(e), style="magenta"))
+                         Text(_status_tags(e, echo=mastery.exploit_reader(player, gamedata)), style="magenta"))
         else:
             foes.add_row(Text(f"   {e.name}(已倒下)", style="grey42"), Text(""), Text(""))
     console.print(foes)
