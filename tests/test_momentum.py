@@ -1,5 +1,5 @@
 """R187 解法二「氣勢」:殘影連襲(輕甲 100 phantom_step)的燃料——第一擊之外的每記殘影擊耗 1 點氣勢;
-開戰 start(3)點,親手斬殺一名敵人 +per_kill(3)、夾 max(6);召喚爪牙(R134·不計擊殺)斬之不回。
+開戰 start(2)點,親手斬殺一名敵人 +per_kill(3)、夾 max(6);召喚爪牙(R134·不計擊殺)斬之不回。
 氣勢 0 → 殘影連襲開不了(殘影留著)。為守終王牆:R186 殘影連襲讓武僧單挑達貢真身 9%→73%(handoff R187)。
 🔴 紅線:不碰閃避上限/偷襲倍率;未選節點 → 全部 no-op、零 rng;氣勢是戰鬥內 active_effect(不存在 = start)→ 戰鬥邊界必歸零。"""
 import io
@@ -44,8 +44,8 @@ def test_getter_and_neutral_when_unchosen():
     assert not combat.momentum_enabled(_hero(choose=False), gd)
     assert combat._momentum_spend(_hero(choose=False), gd) is True                      # 未啟用 → 恆 True(行為同改前)
     c = _hero()
-    assert mastery.momentum(c, gd) == {"start": 3, "per_kill": 3, "max": 6}
-    assert combat.momentum(c, gd) == 3                                                  # 不存在 = start(懶建立)
+    assert mastery.momentum(c, gd) == {"start": 2, "per_kill": 3, "max": 6}
+    assert combat.momentum(c, gd) == 2                                                  # 不存在 = start(懶建立)
     assert not any(e.get("kind") == "momentum" for e in c.active_effects)
 
 
@@ -73,7 +73,7 @@ def test_flurry_full_momentum_allows_all_three_strikes_and_spends_two():
     c = _hero()
     _stacks(c, 3)
     evs = list(combat.phantom_flurry(c, [_foe()], gd, RNG(2)))
-    assert len(evs) == 3 and combat.momentum(c, gd) == 3 - 2                            # 第一擊免費,其餘兩擊各 1 點
+    assert len(evs) == 3 and combat.momentum(c, gd) == 2 - 2                            # 第一擊免費,其餘兩擊各 1 點(開戰 2 點剛好一次完整連襲)
 
 
 def test_flurry_stops_midway_when_momentum_runs_out_and_stacks_are_spent():
@@ -168,7 +168,7 @@ def test_run_battle_resets_momentum_at_entry_and_clears_on_exit():
             seen.clear()
             c.active_effects.append({"kind": "momentum", "stacks": 0, "turns": 99})     # 上一場殘留(理論上不會有)
             main.run_battle(st, gd, [foe], preserve_buffs=preserve)
-            assert seen["m"] == 3 and "氣勢×3" in seen["tag"], (preserve, seen)
+            assert seen["m"] == 2 and "氣勢×2" in seen["tag"], (preserve, seen)
             assert not any(e.get("kind") == "momentum" for e in c.active_effects), "離戰必清"
     finally:
         main._choose_combat_action = orig
@@ -184,7 +184,7 @@ def test_momentum_does_not_refill_by_expiring_in_long_fights():
 
 
 def test_wall_regression_flurry_dries_up_against_a_single_huge_foe():
-    """終王牆守衛(單元版):對打不倒的巨物,連襲最多放行「開戰 3 點」的殘影擊,之後 afterimage_ready 恆 False
+    """終王牆守衛(單元版):對打不倒的巨物,連襲最多放行「開戰 2 點」的殘影擊,之後 afterimage_ready 恆 False
     ——不論殘影再怎麼堆。(整牆勝率見 handoff R187;sim_assassin 守衛段)"""
     c = _hero()
     boss = _foe(hp=10 ** 9)
@@ -194,7 +194,7 @@ def test_wall_regression_flurry_dries_up_against_a_single_huge_foe():
         if not combat.afterimage_ready(c, gd, 1):
             break
         strikes += len(list(combat.phantom_flurry(c, [boss], gd, RNG(rnd))))
-    assert strikes == 5, strikes        # 開戰 3 點:第一輪 3 擊(1 免費+2 耗)剩 1 點;第二輪 2 擊(1 免費+1 耗)歸零;之後開不了
+    assert strikes == 3, strikes        # 開戰 2 點:第一輪 3 擊(1 免費+2 耗)歸零;之後開不了(R187 續:原開戰 3 點為 5 擊=3+2)
     assert not combat.afterimage_ready(c, gd, 1)
     assert combat.momentum(c, gd) == 0
 
