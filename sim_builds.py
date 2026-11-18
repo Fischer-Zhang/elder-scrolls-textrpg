@@ -435,7 +435,7 @@ def _attack_act(c, boss, rng, st):
     # R137 格擋姿態(w1H/shield_reflect·st["use_stance"] 由 fight() 依 build 設):立姿態耗一回合,
     # 之後攻擊 ×TAX、來襲吃姿態卸力(resolve_attack 內自動套)。非盾 build 無旗標 → 行為不變。
     if st.get("use_stance") and not combat.has_guard_stance(c):
-        c.active_effects.append({"kind": "guard_stance", "turns": 99}); return
+        c.active_effects.append({"kind": "guard_stance", "turns": combat.PERSISTENT_TURNS}); return   # R188 對齊 main
     combat.player_attack_cost(c, gd)
     combat.resolve_attack(c, boss, gd, rng,
                           damage_factor=(formulas.GUARD_STANCE_DAMAGE_TAX

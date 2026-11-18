@@ -594,8 +594,12 @@ def _player_counter_damage(player, gamedata: GameData, rng: RNG) -> float:
 
 # ---- R186 幻影步(輕甲 100·afterimage):殘影蓄勢 / 殘影連襲 ----
 # 殘影層是「戰鬥內」記帳:存成 active_effects 的 afterimage(stacks),與 cascade/guard_stance 同慣例 →
-# 入戰/離戰整包清、不入存檔語意;層數歸零即移除(HUD 只在有層時顯示)。turns=99 為常駐哨兵(不顯示回合數)。
-_AFTERIMAGE_TURNS = 99
+# 入戰/離戰整包清、不入存檔語意;層數歸零即移除(HUD 只在有層時顯示)。turns 用常駐哨兵 PERSISTENT_TURNS(不顯示回合數)。
+# R188:戰鬥內「常駐」效果(格擋姿態/盾牆/戰旗/號令/殘影/氣勢)的 turns 哨兵。tick_effects 每回合 −1,
+# 原本用 99 → ①HUD 第 2 回合起顯示「格擋姿態98」倒數(違反 _STANCE_MAINTAINED「不顯示回合數」本意)
+# ②打滿 99 回合靜默失效。改大數後 ≥99 恆成立(HUD 不顯數字)、實務上永不過期;離戰一律 clear() 不殘留。
+PERSISTENT_TURNS = 10 ** 6
+_AFTERIMAGE_TURNS = PERSISTENT_TURNS
 
 
 def _afterimage_eff(player):
@@ -612,7 +616,7 @@ def afterimage_stacks(player) -> int:
 # 存成玩家的戰鬥內 active_effect(kind=momentum);**不存在 = 本場尚未動用 = start 點**(懶建立 → 各 sim 迴圈免初始化);
 # turns 用大數而非 99 哨兵:tick_effects 每回合 −1,過期就等於「不存在」= 白白回滿 start(原型實測踩過);
 # run_battle 入戰/離戰 clear() 與 preserve_buffs 剝除 → 戰鬥邊界必歸零。召喚爪牙(R134·不計擊殺)斬之不回氣勢。
-_MOMENTUM_TURNS = 10 ** 6
+_MOMENTUM_TURNS = PERSISTENT_TURNS
 
 
 def _momentum_eff(player):

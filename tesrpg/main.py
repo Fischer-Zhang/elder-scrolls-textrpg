@@ -1353,7 +1353,7 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
                 player.active_effects[:] = [e for e in player.active_effects if e.get("kind") != "guard_stance"]
                 _cmsg("你收起格擋姿態,全力搶攻。", style="grey70")
             else:
-                player.active_effects.append({"kind": "guard_stance", "turns": 99})
+                player.active_effects.append({"kind": "guard_stance", "turns": combat.PERSISTENT_TURNS})   # R188:常駐哨兵(原 99 會倒數顯示/99 回合失效)
                 if inventory.is_great_shield(gamedata, player.equipped.get("shield")):   # R138 可見性:重盾掩體效果立架即告知
                     _cmsg("你架穩重盾掩體 —— 攻勢放緩;盾面連烈焰亦能卸開(元素大減),盾後喘息緩緩回氣。", style="bold cyan")
                 else:
@@ -1364,16 +1364,16 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
                 _cmsg("你卸下盾牆,恢復機動。", style="grey70")
             else:
                 player.active_effects.append({"kind": "shield_wall",
-                                              "mitigation": SHIELD_WALL_MITIGATION, "turns": 99})
+                                              "mitigation": SHIELD_WALL_MITIGATION, "turns": combat.PERSISTENT_TURNS})
                 _cmsg("你舉盾結陣 —— 化身移動堡壘,敵火力盡向你而來。", style="bold cyan")
         elif action["type"] == "standard":        # 騎士:立戰旗(增傷光環 + 自身護甲,常駐)
             player.magicka = max(0, player.magicka - STANDARD_COST_MAGICKA)
             player.fatigue = max(0, player.fatigue - STANDARD_COST_FATIGUE)
-            player.active_effects.append({"kind": "battle_standard", "turns": 99})
+            player.active_effects.append({"kind": "battle_standard", "turns": combat.PERSISTENT_TURNS})
             _cmsg("你將戰旗插上戰場 —— 旗影所及,同袍士氣大振、敵膽皆寒。", style="bold cyan")
         elif action["type"] == "rally":           # 口才:立戰陣號令(增傷光環,常駐;純耗體,鼓舞他人)
             player.fatigue = max(0, player.fatigue - RALLY_FATIGUE)
-            player.active_effects.append({"kind": "rally_banner", "turns": 99})
+            player.active_effects.append({"kind": "rally_banner", "turns": combat.PERSISTENT_TURNS})
             _cmsg("你振臂高呼、鼓舞士氣 —— 號令所及,同袍鬥志昂揚、攻勢如潮。", style="bold cyan")
         elif action["type"] == "deathmark":       # 刺客:標記一敵(後續近戰破甲;開場偷襲不受惠)
             tgt = action["target"]
