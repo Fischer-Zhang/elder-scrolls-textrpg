@@ -186,8 +186,8 @@
 | 石膚反擊 shield_recoil(變化 100·R118) | 防守控場 | **作用中護膚盾**(`magic.active_shield>0`·橡木/石/鐵膚)時受近戰物理擊中 30% 震開攻方(stagger·`apply_control` 非遞迴);把被動 flesh 接上主動反噬。搭負重(敵 −20% 命中·見法術)=「物理操縱防禦控者」 |
 | 雙手重盾被動減傷 great_shield mitigation(R41) | 減傷 | 裝雙手重盾(`great_shield`)→ 受物理 ×(1−mitigation)(iron→daedric 5~8%·crusaders_ward 10%);套 `_shield_wall_factor` **後**乘性疊加、僅物理、獸形不套;重盾占雙手·普攻走盾擊(`bash_damage`·練 block) |
 | 生生不息 combat_regen | 續航 | 戰鬥中每回合末自癒 8(is_alive 守 → 不復活本回合被擊殺者) |
-| 身輕如燕 evasion_bonus | 命中(扣敵命中) | 多源相加 0.02~0.05,★硬夾 EVASION_BONUS_CAP=0.15 |
-| 殘影層 afterimage(R186·輕甲 100「身如鬼魅」phantom_step·戰鬥內 `afterimage` active_effect 不入檔;取代舊 +0.06 平調閃避〔雜技閃避線構築被 cap 遮蔽成 0;**未飽和構築原實得 +6pp,此為下修**〕) | 戰技蓄勢 | 閃過**任何**敵攻(含元素/遠程;與 R145 閃身反打限物理近戰不同)+1 層(上限 3)、被命中受傷 −1 層(歸零即移除);≥2 層可選「殘影連襲」:耗盡殘影,每層連擊**當下最低血**敵一記(武器傷 ×`strike_factor` 0.8·damage_factor 車道·附魔/副手額外傷不吃係數·武器不限·🔴 `sneak_attack=False` 永不吃偷襲倍率·疊 R137 姿態攻擊稅),整個動作只耗**一次**攻擊體力;`min_foes` 預設 1(solo 也可用,資料欄可調);輕甲樹 perk → 穿重甲不生效(R141);入戰/離戰/preserve_buffs 皆清 |
+| 身輕如燕 evasion_bonus | 命中(扣敵命中) | 多源相加 0.02~0.05(含幻影步 afterimage 選項兼帶的 +0.06),★硬夾 EVASION_BONUS_CAP=0.15 |
+| 殘影層 afterimage(R186·輕甲 100「身如鬼魅」phantom_step·戰鬥內 `afterimage` active_effect 不入檔;兼帶舊 +0.06 平調閃避〔選項的 `evasion_bonus` 欄,由 `mastery.evasion_bonus` 同源聚合、夾 EVASION_BONUS_CAP;雜技閃避線構築仍被 cap 擋成 0,上限不碰〕) | 戰技蓄勢 | 閃過**任何**敵攻(含元素/遠程;與 R145 閃身反打限物理近戰不同)+1 層(上限 3)、被命中受傷 −1 層(歸零即移除);≥2 層可選「殘影連襲」:耗盡殘影,每層連擊**當下最低血**敵一記(每擊 = 普通攻擊傷害〔`strike_factor` 1.0·damage_factor 車道;每擊各結算附魔/副手〕·武器不限·🔴 `sneak_attack=False` 永不吃偷襲倍率·疊 R137 姿態攻擊稅),整個動作只耗**一次**攻擊體力;`min_foes` 預設 1(solo 也可用,資料欄可調);輕甲樹 perk → 穿重甲不生效(R141);入戰/離戰/preserve_buffs 皆清 |
 | 盾陣/盾擊踉蹌 | 減傷/控場 | block_hit_penalty0.25;riposte stagger0.35 |
 | 懾意/懾心術/懾魂 fear_on_hit | 控場 | illusion 50/75/100:命中懼意,chance 相加夾30%、turns 取最(最長3);出手觸發(每回合一次);**solo BOSS 高機率抵抗**(R44) |
 | 不竭之軀 fatigue_cost_bonus | 續航 | 攻擊耗體×0.90 |

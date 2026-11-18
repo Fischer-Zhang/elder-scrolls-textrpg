@@ -471,8 +471,10 @@ FEAR_ON_HIT_CHANCE_CAP = 0.30   # 懾心術 fear_on_hit(illusion 50/75/100)多�
 def evasion_bonus(char, gamedata: GameData) -> float:
     """身輕如燕/翻滾卸勁/疾風:額外閃避(直接從敵命中率扣;多來源 acrobatics/athletics/light_armor 相加,夾 EVASION_BONUS_CAP)。
     R141 現實邏輯:light_armor 樹的閃避 perk(柔革閃身/身如鬼魅)穿著重甲不生效(雜技/運動樹不受影響)。"""
+    srcs = (list(_chosen_options_with_tree(char, gamedata, "evasion_bonus"))
+            + list(_chosen_options_with_tree(char, gamedata, "afterimage")))   # R186:幻影步(afterimage)選項兼帶平調閃避 → 同源聚合,不得被 kind 遮蔽
     return min(EVASION_BONUS_CAP, sum(o.get("evasion_bonus", 0.0)
-               for tree, o in _chosen_options_with_tree(char, gamedata, "evasion_bonus")
+               for tree, o in srcs
                if _armor_tree_active(char, gamedata, tree)))
 
 

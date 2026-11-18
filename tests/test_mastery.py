@@ -1011,11 +1011,12 @@ def test_dedup_nobrainer_wave():
     assert mastery.vanish_floor(c, gd) == 0.0
     gd, c = _char(acrobatics=100); mastery.choose(c, gd, "acrobatics_75", "tumble")
     assert mastery.vanish_floor(c, gd) == 0.10                            # 雜技 vanish_floor 僅留 75 tumble(唯一來源,不重複)
-    # (2) light_armor 弱邊改 evasion:50 lithe_evasion +0.05;R186 起 100 phantom_step 不再給平調閃避
-    #     (輕盈+雜技線下 +0.06 被 EVASION_BONUS_CAP 遮蔽成 0),改為 afterimage 殘影連襲(行為機制,見 test_afterimage)
+    # (2) light_armor 弱邊改 evasion:50 lithe_evasion +0.05、100 phantom_step +0.06(同源相加,不再是 flat armor 填充)
+    #     R186 起 phantom_step 的 kind 為 afterimage(殘影連襲,行為機制,見 test_afterimage),**仍兼帶** evasion_bonus 0.06
+    #     (由 mastery.evasion_bonus 聚合;雜技線構築仍被 EVASION_BONUS_CAP 夾住)
     gd, c = _char(light_armor=100)
     mastery.choose(c, gd, "light_armor_50", "lithe_evasion"); mastery.choose(c, gd, "light_armor_100", "phantom_step")
-    assert abs(mastery.evasion_bonus(c, gd) - 0.05) < 1e-9                # 只剩輕盈 +0.05;幻影步不再疊閃避
+    assert abs(mastery.evasion_bonus(c, gd) - (0.05 + 0.06)) < 1e-9
     assert mastery.afterimage(c, gd)["max_stacks"] == 3                   # 幻影步 = 殘影機制
     assert mastery.passive_armor_bonus(c, gd) == 0                        # 輕甲 50/100 弱邊不再貢獻 passive_armor
     # 反擊流路線仍在(50 riposte_step + 100 storm_dance);與閃避流為二選一

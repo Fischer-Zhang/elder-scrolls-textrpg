@@ -49,13 +49,32 @@ def _afterimage_effects(c):
 
 
 # ---------------------------------------------------------------- 資料 / getter
-def test_option_is_afterimage_kind_not_evasion():
+def test_option_is_afterimage_kind_with_flat_evasion_kept():
     c = _phantom()
     spec = mastery.afterimage(c, gd)
-    assert spec == {"max_stacks": 3, "min_stacks": 2, "min_foes": 1, "strike_factor": 0.8}
-    assert mastery.evasion_bonus(c, gd) == 0.0                 # 不再是平調閃避(舊 +0.06 被 cap 遮蔽成 0)
+    assert spec == {"max_stacks": 3, "min_stacks": 2, "min_foes": 1, "strike_factor": 1.0}
+    assert abs(mastery.evasion_bonus(c, gd) - 0.06) < 1e-9     # 兼帶舊 +0.06 平調閃避(R186 續:使用者拍板「兩者都做」)
     assert "afterimage" in mastery._IMPLEMENTED_KINDS
     assert mastery.afterimage(_phantom(choose=False), gd) == {}  # 未選 → 中性空 dict
+    assert mastery.evasion_bonus(_phantom(choose=False), gd) == 0.0
+
+
+def test_evasion_bonus_aggregates_afterimage_option_and_caps():
+    """🔴 同源多節點 getter 必聚合:afterimage 選項兼帶的 evasion_bonus 與輕盈(evasion_bonus kind)相加,
+    且仍夾 EVASION_BONUS_CAP——雜技閃避線構築 +0.06 被 cap 擋掉(不繞過任何上限)。"""
+    c = _phantom()
+    mastery.choose(c, gd, "light_armor_50", "lithe_evasion")   # +0.05(kind evasion_bonus)
+    assert abs(mastery.evasion_bonus(c, gd) - 0.11) < 1e-9     # 0.05 + 0.06 相加(兩種 kind 不互相遮蔽)
+    for nid, oid in (("acrobatics_25", "tumble_basics"), ("acrobatics_50", "tumbler"), ("acrobatics_75", "evasion")):
+        c.skills["acrobatics"] = 100
+        mastery.choose(c, gd, nid, oid)
+    assert mastery.evasion_bonus(c, gd) == mastery.EVASION_BONUS_CAP   # 雜技線+輕盈已撐滿 → 幻影步不再加(上限不碰)
+    c2 = _phantom(choose=False)
+    mastery.choose(c2, gd, "light_armor_50", "lithe_evasion")
+    for nid, oid in (("acrobatics_25", "tumble_basics"), ("acrobatics_50", "tumbler"), ("acrobatics_75", "evasion")):
+        c2.skills["acrobatics"] = 100
+        mastery.choose(c2, gd, nid, oid)
+    assert mastery.evasion_bonus(c2, gd) == mastery.EVASION_BONUS_CAP   # 無幻影步同樣 cap → 飽和構築零差(舊版遮蔽現象不變)
 
 
 def test_getter_gated_by_armor_tree():
@@ -65,6 +84,7 @@ def test_getter_gated_by_armor_tree():
     inventory.add_item(c, "steel_cuirass", 1)
     inventory.equip_armor(c, gd, "steel_cuirass")
     assert mastery.afterimage(c, gd) == {}
+    assert mastery.evasion_bonus(c, gd) == 0.0                 # 兼帶的 +0.06 閃避同受 R141 輕甲樹閘(重甲輕靈全失)
     combat.afterimage_gain(c, gd)                              # no-op
     assert combat.afterimage_stacks(c) == 0 and not _afterimage_effects(c)
 
