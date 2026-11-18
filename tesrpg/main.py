@@ -616,7 +616,7 @@ def _repeat_option(player, gamedata: GameData, enemies: list, allies: list, mem)
 # D2:戰鬥動作分桶(scannable);grouped_menu 連續編號、回同 key → 下方 dispatch 完全不變。
 _COMBAT_BUCKETS = {
     "repeat": "攻擊", "attack": "攻擊", "aimed": "攻擊", "crippling": "攻擊",
-    "skirmish": "攻擊", "volley": "攻擊", "charge": "攻擊", "skirmish_ride": "攻擊",
+    "skirmish": "攻擊", "volley": "攻擊", "phantom_flurry": "攻擊", "charge": "攻擊", "skirmish_ride": "攻擊",
     "cast": "威能·戰技", "power": "威能·戰技", "racial_power": "威能·戰技",
     "standard": "威能·戰技", "rally": "威能·戰技", "vampire_charm": "威能·戰技", "deathmark": "威能·戰技",
     "guard": "架式", "wall": "架式",
@@ -766,6 +766,15 @@ def _choose_combat_action(state: GameState, gamedata: GameData, enemies: list, a
             opts.append(_combat_option("skirmish", "散兵走位（射一箭後遁走)", "射後遁走"))
         if mastery.has_bow_technique(player, gamedata, "volley") and sum(1 for e in enemies if combat.is_alive(e)) >= 2:
             opts.append(_combat_option("volley", "箭雨（齊射全體 60% 傷害 · 倍耗體)", "全體60%·倍耗體"))   # R136:單敵時無意義 → 不顯示
+    # R186 幻影步(輕甲 100):殘影達門檻 → 殘影連襲(耗盡殘影,每層連斬當下最低血敵一記;只耗一次攻擊體力)
+    # —— 開放條件走 combat.afterimage_ready(與 sim 共用同一個閘);獸形無武器連斬 → 不開放。
+    if (combat.afterimage_ready(player, gamedata, sum(1 for e in enemies if combat.is_alive(e)))
+            and not getattr(player, "beast_form", False)):
+        _ai_n = combat.afterimage_stacks(player)
+        _ai_pct = int(mastery.afterimage(player, gamedata)["strike_factor"] * 100)
+        opts.append(_combat_option("phantom_flurry",
+                                   f"殘影連襲（耗盡 {_ai_n} 層殘影 · 連擊最低血敵 · 各 {_ai_pct}% 傷害)",
+                                   f"{_ai_n}層·連擊最低血·各{_ai_pct}%"))
     # 坐騎戰技(僅野外騎乘遭遇的第一回合;戰馬+近戰=衝鋒、獵馬+弓=騎射)
     if mounted and first_round and mounts.can_charge(player, gamedata, True):
         opts.append(_combat_option("charge", "🐎 衝鋒（坐騎開場突擊 · 長槍藉馬勢洞穿)", "開場突擊·長槍加成"))
@@ -1095,10 +1104,10 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
 
     # active_effects 是「戰鬥內」臨時效果 —— 進場先清,杜絕戰鬥外施法(如里程碑「聖光·溢盾」)
     # 殘留的護盾/效果洩漏進本場。必須在 _prep_phase「之前」清(備戰施放的增益在清除後才套用,照常保留)。
-    # preserve_buffs(地城預施帶入):不全清,只剝 cascade(戰鬥內累積層)+ 已過期效果。
+    # preserve_buffs(地城預施帶入):不全清,只剝 cascade/afterimage(戰鬥內累積層)+ 已過期效果。
     if preserve_buffs:
         player.active_effects[:] = [e for e in player.active_effects
-                                    if e.get("kind") != "cascade" and e.get("turns", 1) > 0]
+                                    if e.get("kind") not in ("cascade", "afterimage") and e.get("turns", 1) > 0]
     else:
         player.active_effects.clear()
 
@@ -1107,7 +1116,7 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
     if prep_budget > 0:
         _prep_phase(state, gamedata, enemies, battle, prep_budget)
         # 奧術連鎖不由「備戰施法」預堆(備戰只省開場一動、不送額外威力)→ 清連鎖層,保留 prep 的增益/召喚
-        player.active_effects[:] = [e for e in player.active_effects if e.get("kind") != "cascade"]
+        player.active_effects[:] = [e for e in player.active_effects if e.get("kind") not in ("cascade", "afterimage")]
 
     def alive_e():
         return [e for e in enemies if combat.is_alive(e)]
@@ -1245,6 +1254,10 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
                                                           sneak_attack=False,
                                                           damage_factor=formulas.VOLLEY_DAMAGE_FACTOR * _df()),
                                     gamedata)
+        elif action["type"] == "phantom_flurry":   # R186 幻影步:殘影連襲(逐斬戰報·🔴 永不吃偷襲倍率·疊格擋姿態攻擊稅)
+            _cmsg(f"你身形連閃,{combat.afterimage_stacks(player)} 道殘影一齊出手!", style="bold magenta")
+            for _fev in combat.phantom_flurry(player, enemies, gamedata, state.rng, damage_mult=_df):   # callable:耗體後才求姿態稅(同普攻序)
+                ui.combat_event(_fev, gamedata)
         elif action["type"] == "charge":   # 坐騎「衝鋒」(開場;近戰/長槍;不走偷襲倍率,受 solo 夾限)
             tgt = action["target"]
             if combat.is_alive(tgt):

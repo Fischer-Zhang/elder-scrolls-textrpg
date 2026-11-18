@@ -251,6 +251,7 @@ PYTHONPATH=. python3 sim_assassin.py      # 平衡回歸模擬(改戰鬥常數�
 | R183 | 閃身反打每次閃過各自判定(取代 R34 每回合一次):反擊機率與回體力每次各算;反擊仍限物理近戰(元素/遠程不反擊·R145);🔴 N 怪同回合最多 N 次反擊/踉蹌·輕甲閃避 build 不在 sim_builds 矩陣〔R185 曾試均分後已取消〕 | re-sim |
 | R185 | ~~閃身反打「圍攻分神」:反擊機率 ÷ 在場存活敵數(修風暴之舞單側穩賺)~~〔2026-11-17 使用者取消,程式碼已還原;風暴之舞維持 R183 行為,改由「修幻影步」補平差距;分析紀錄見 handoff §3 R185,守衛段原碼見 `fbac259`〕 | re-sim |
 | R184 | 單槽附帶狀態「後解鎖覆蓋先前」:weapon_mod.on_hit_status / spell_on_hit 依解鎖門檻排序、不依 JSON 列序(原低階反蓋高階);🔴 單槽取最後一個走 `_chosen_options_by_unlock`,相加/取最大維持列序保浮點順序 | save-safe |
+| R186 | 幻影步(輕甲 100 `phantom_step`)改「殘影連襲」:閃過**任何**敵攻凝殘影(≤3,被傷散一層)→ 主動耗盡連擊最低血敵;取代被 EVASION_BONUS_CAP 遮蔽成 0 的 +0.06;🔴 連襲每擊 sneak=False(不碰 solo 夾)·不碰任何上限/R132·殘影=戰鬥內 active_effect 邊界必清(含 preserve_buffs)·開放閘 `afterimage_ready` main/sim 共用;sim_assassin 既有輸出 byte-identical + 新增守衛段(風暴管物理近戰/幻影步管元素群) | re-sim |
 
 ## 自動提交閘門 / 換 session 前檢查表
 

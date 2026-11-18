@@ -328,8 +328,7 @@ def _status_tags_list(entity) -> list:
             continue
         kind = e["kind"]
         good = True if kind in _BUFF_KINDS else (False if kind in _STATUS_TAG else None)
-        tnum = "" if e["turns"] >= _STANCE_MAINTAINED else str(e["turns"])   # 常駐光環不顯回合數
-        out.append({"s": f"{_STATUS_TAG.get(kind, kind)}{tnum}", "good": good})
+        out.append({"s": f"{_STATUS_TAG.get(kind, kind)}{_tag_num(e)}", "good": good})
     return out
 
 
@@ -2394,13 +2393,22 @@ _STATUS_TAG = {
     "cascade": "連鎖", "battle_standard": "戰旗", "rally_banner": "號令", "shield_wall": "盾牆",
     "ride_evasion": "疾避", "taunt": "嘲諷",   # R125 審查補:坐騎閃避(玩家)/召喚物嘲諷(拉仇恨)
     "guard_stance": "格擋姿態",   # R137:攻擊變緩·舉盾卸力減傷(常駐)
+    "afterimage": "殘影",         # R186 幻影步:輕甲 100 殘影層(尾綴顯層數 ×N,見 _tag_num)
 }
 _BUFF_KINDS = {"shield", "regen", "ward", "consecration", "empower", "berserk_buff",   # 增益(綠)
                "bound_weapon", "weapon_imbue", "resonance", "cascade",
-               "battle_standard", "rally_banner", "shield_wall", "ride_evasion", "taunt", "guard_stance"}
+               "battle_standard", "rally_banner", "shield_wall", "ride_evasion", "taunt", "guard_stance",
+               "afterimage"}
 # 純內部記帳/冷卻標記 —— 不顯示於戰鬥卡片(避免 deathmark_cd/support_cd/atk_cooldown 等洩漏)
 _HIDDEN_TAG_KINDS = {"support_cd", "deathmark_cd", "atk_cooldown", "triage_ready", "prep_used"}
 _STANCE_MAINTAINED = 99   # 常駐光環維持中的 turns 哨兵 → 不顯示回合數
+
+
+def _tag_num(e: dict) -> str:
+    """狀態標籤尾綴:殘影(R186)顯層數 ×N;常駐光環(turns≥哨兵)不顯回合數;其餘顯剩餘回合數。"""
+    if e["kind"] == "afterimage":
+        return f"×{e.get('stacks', 0)}"
+    return "" if e["turns"] >= _STANCE_MAINTAINED else str(e["turns"])
 
 
 def _status_tags(entity) -> str:
@@ -2408,8 +2416,7 @@ def _status_tags(entity) -> str:
     for e in entity.active_effects:
         if e.get("turns", 0) <= 0 or e["kind"] in _HIDDEN_TAG_KINDS:
             continue
-        tnum = "" if e["turns"] >= _STANCE_MAINTAINED else str(e["turns"])
-        tags.append(f"{_STATUS_TAG.get(e['kind'], e['kind'])}{tnum}")
+        tags.append(f"{_STATUS_TAG.get(e['kind'], e['kind'])}{_tag_num(e)}")
     return " ".join(tags)
 
 

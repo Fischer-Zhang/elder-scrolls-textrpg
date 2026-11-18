@@ -592,6 +592,77 @@ def _player_counter_damage(player, gamedata: GameData, rng: RNG) -> float:
                                   rng.roll(_lo, formulas.DAMAGE_ROLL_HI), 1.0)
 
 
+# ---- R186 幻影步(輕甲 100·afterimage):殘影蓄勢 / 殘影連襲 ----
+# 殘影層是「戰鬥內」記帳:存成 active_effects 的 afterimage(stacks),與 cascade/guard_stance 同慣例 →
+# 入戰/離戰整包清、不入存檔語意;層數歸零即移除(HUD 只在有層時顯示)。turns=99 為常駐哨兵(不顯示回合數)。
+_AFTERIMAGE_TURNS = 99
+
+
+def _afterimage_eff(player):
+    return next((e for e in player.active_effects if e.get("kind") == "afterimage"), None)
+
+
+def afterimage_stacks(player) -> int:
+    eff = _afterimage_eff(player)
+    return eff["stacks"] if eff else 0
+
+
+def afterimage_gain(player, gamedata: GameData) -> None:
+    """玩家閃過任何敵攻(含遠程/元素;與 R145 閃身反打「限物理近戰」不同)→ 凝一層殘影(夾 max_stacks)。
+    無 afterimage 里程碑/穿重甲(R141)→ spec 為空 no-op。"""
+    spec = mastery.afterimage(player, gamedata)
+    if not spec:
+        return
+    eff = _afterimage_eff(player)
+    if eff is None:
+        eff = {"kind": "afterimage", "stacks": 0, "turns": _AFTERIMAGE_TURNS}
+        player.active_effects.append(eff)
+    eff["stacks"] = min(spec["max_stacks"], eff["stacks"] + 1)
+    eff["turns"] = _AFTERIMAGE_TURNS
+
+
+def afterimage_lose(player) -> None:
+    """被命中(造成傷害)→ 殘影散去一層;歸零即移除效果。"""
+    eff = _afterimage_eff(player)
+    if eff is None:
+        return
+    eff["stacks"] -= 1
+    if eff["stacks"] <= 0:
+        player.active_effects.remove(eff)
+
+
+def afterimage_ready(player, gamedata: GameData, n_alive: int) -> bool:
+    """殘影連襲可用:殘影 ≥ min_stacks 且在場存活敵 ≥ min_foes(預設 1;資料可調成 2=單挑不開放)。
+    選單與 sim 共用同一個閘,避免兩邊漂移。"""
+    spec = mastery.afterimage(player, gamedata)
+    return bool(spec and afterimage_stacks(player) >= spec["min_stacks"] and n_alive >= spec["min_foes"])
+
+
+def phantom_flurry(player, foes, gamedata: GameData, rng: RNG, damage_mult=1.0):
+    """殘影連襲(產生器,逐擊 yield resolve_attack 事件,呼叫端逐擊顯示;玩家倒下即停):
+    耗盡全部殘影,每層對**當下最低血**的存活敵出手一記(殺死即轉下一個=集火)。整個動作只耗一次攻擊的體力。
+    🔴 紅線:每擊 sneak_attack=False(普通擊,永不吃偷襲倍率 → 不碰 SOLO_SNEAK 夾)、武器傷 × strike_factor
+    (走 damage_factor 車道,同 R136 箭雨)。damage_mult 供呼叫端疊 R137 格擋姿態攻擊稅(姿態不可免稅):
+    可傳數值,或傳 callable(**在扣完體力之後**才求值,與普通攻擊「先耗體再算 _df()」同序——力竭時姿態稅整組暫停)。
+    ⚠ 附魔元素傷/on-hit proc/雙持副手傷每擊各結算一次、不吃 strike_factor(`raw *= damage_factor` 在其之前;
+    同箭雨既有行為,附魔流實得高於「武器傷八成」,見 R186 handoff)。武器不限:弓=連射、法杖=連擊(語意用「連擊」)。"""
+    spec = mastery.afterimage(player, gamedata)
+    eff = _afterimage_eff(player)
+    if not spec or eff is None or eff["stacks"] < spec["min_stacks"]:
+        return
+    n = eff["stacks"]
+    player.active_effects.remove(eff)             # 耗盡殘影(先移除再出手,途中被反傷打死也不留殘層)
+    player_attack_cost(player, gamedata)
+    mult = damage_mult() if callable(damage_mult) else damage_mult
+    for _ in range(n):
+        alive = [e for e in foes if is_alive(e)]
+        if not alive or not is_alive(player):
+            return
+        t = min(alive, key=lambda e: e.health)
+        yield resolve_attack(player, t, gamedata, rng, sneak_attack=False,
+                             damage_factor=spec["strike_factor"] * mult)
+
+
 def _gear_weapon_id(attacker):
     """攻擊者當前武器 id:玩家=裝備武器;同伴=生成時掛的 `_gear_weapon`;一般怪=None。"""
     return attacker.weapon if _is_player(attacker) else getattr(attacker, "_gear_weapon", None)
@@ -1211,6 +1282,8 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
             skill_events += progression.use_skill(attacker, gamedata, "sneak",
                                                   formulas.COMBAT_SNEAK_XP)
         if _is_player(defender):
+            if dmg_done > 0 and not _is_player(attacker):   # R186 幻影步:被命中(實際受傷)→ 殘影散去一層
+                afterimage_lose(defender)
             if inventory.dominant_weight_class(defender, gamedata) is not None:   # R141:裸身被打不練護甲(沒有甲可習)
                 skill_events += progression.use_skill(defender, gamedata,
                                                       _player_armor_skill(defender, gamedata),
@@ -1229,6 +1302,8 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
         # R183(使用者拍板,取代 R34「每回合至多一次」):**每次**閃過都各自判定——回體力每次給、反擊每次各擲一次機率
         # (效果文本來就寫「每次閃過敵攻即回復」);N 隻怪同回合攻擊 → 最多 N 次反擊/N 個踉蹌。
         # 反擊仍限物理近戰:元素(龍息/法術/凝視)與標 ranged 的攻擊閃過無反擊(R145,回體力照給)。
+        if not _is_player(attacker):   # R186 幻影步:閃過**任何**敵攻(含遠程/元素)皆凝殘影;無里程碑/穿重甲 → no-op、零 rng
+            afterimage_gain(defender, gamedata)
         oe = mastery.on_evade(defender, gamedata)
         if oe and not _is_player(attacker):
             if oe.get("restamina"):

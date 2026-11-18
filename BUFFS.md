@@ -187,6 +187,7 @@
 | 雙手重盾被動減傷 great_shield mitigation(R41) | 減傷 | 裝雙手重盾(`great_shield`)→ 受物理 ×(1−mitigation)(iron→daedric 5~8%·crusaders_ward 10%);套 `_shield_wall_factor` **後**乘性疊加、僅物理、獸形不套;重盾占雙手·普攻走盾擊(`bash_damage`·練 block) |
 | 生生不息 combat_regen | 續航 | 戰鬥中每回合末自癒 8(is_alive 守 → 不復活本回合被擊殺者) |
 | 身輕如燕 evasion_bonus | 命中(扣敵命中) | 多源相加 0.02~0.05,★硬夾 EVASION_BONUS_CAP=0.15 |
+| 殘影層 afterimage(R186·輕甲 100「身如鬼魅」phantom_step·戰鬥內 `afterimage` active_effect 不入檔;取代舊 +0.06 平調閃避〔雜技閃避線構築被 cap 遮蔽成 0;**未飽和構築原實得 +6pp,此為下修**〕) | 戰技蓄勢 | 閃過**任何**敵攻(含元素/遠程;與 R145 閃身反打限物理近戰不同)+1 層(上限 3)、被命中受傷 −1 層(歸零即移除);≥2 層可選「殘影連襲」:耗盡殘影,每層連擊**當下最低血**敵一記(武器傷 ×`strike_factor` 0.8·damage_factor 車道·附魔/副手額外傷不吃係數·武器不限·🔴 `sneak_attack=False` 永不吃偷襲倍率·疊 R137 姿態攻擊稅),整個動作只耗**一次**攻擊體力;`min_foes` 預設 1(solo 也可用,資料欄可調);輕甲樹 perk → 穿重甲不生效(R141);入戰/離戰/preserve_buffs 皆清 |
 | 盾陣/盾擊踉蹌 | 減傷/控場 | block_hit_penalty0.25;riposte stagger0.35 |
 | 懾意/懾心術/懾魂 fear_on_hit | 控場 | illusion 50/75/100:命中懼意,chance 相加夾30%、turns 取最(最長3);出手觸發(每回合一次);**solo BOSS 高機率抵抗**(R44) |
 | 不竭之軀 fatigue_cost_bonus | 續航 | 攻擊耗體×0.90 |
@@ -212,7 +213,7 @@
 | 復生 reanimate | 召喚物 HP | 基礎×0.85~1.15×(1+boon)×(1+hp_bonus)×力竭×0.6 | 🔴**不設 summon_power**(傷害不縮放·刻意·R106 Phase C「亡者統御」里程碑才吃成長);喚敵屍為限時盟 |
 | 召喚角色擴展(R106 Phase A)| 召喚物行為 | healer 施 heal_other(power 0.8)·terror on_hit fear/weaken·束縛兵刃 archetype | 支援召喚 `summoned_healer` 走 `magic.summon_support_act`(讀 bestiary spells·pool 含玩家·門檻 0.55/冷卻 2)治療全隊;控場召喚 `summoned_terror` on_hit(fear/weaken·apply_control solo/去重);**束縛兵刃 archetype 差異化**(bound active_effect `archetype`:釘錘 stagger·巨劍 mag20·斧 pen 對元素略過·甲=shield60);皆 innate·不吃玩家偷襲 |
 | 凝神 restore_fatigue | 資源(瞬時) | +40體力,不乘power |
-| 奧術連鎖 cascade / 戰地搶救 triage / 法力回擊 | 見③ | — | 戰鬥邊界清空 |
+| 奧術連鎖 cascade / 殘影層 afterimage(R186) / 戰地搶救 triage / 法力回擊 | 見③ | — | 戰鬥邊界清空 |
 | **同伴戰力(Tier 2 類玩家)** | 生成時導出 | 傷=`attack_damage(裝備傷+flat淬鍊, 同伴武器技能≤80, 同伴力量)`·甲=`worn_armor_base(裝備甲, 同伴護甲技能)`+flat淬鍊 | 🔴走**共用玩家公式**·生成時烘焙進 Creature(非新戰鬥軸);無裝→模板數(byte-identical)·武器傷不設天花板(技能≤80 為紅線閘·守單同伴孤立牆)·**附魔完全比照玩家**(`_gear_weapon_item` 派發·charges 共用玩家池);裝上裝備移出背包(sink) |
 | **同伴戰術傾向**(功能性·非數值)| 目標/仇恨 | bulwark→自施 taunt(吸火)·skirmisher→集火最低血敵·vanguard→隨機 | 羈絆階解鎖·永久(`companion_build`)·**零新戰鬥數值**(複用既有 taunt/目標選擇)·召喚物不適用 |
 

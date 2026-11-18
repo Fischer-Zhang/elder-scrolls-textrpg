@@ -72,6 +72,7 @@ _IMPLEMENTED_KINDS = {
     "soul_economy", "soul_harvest", "undead_mastery",
     # R120 神秘頂點:秘蝕(布林解鎖)—— 傷害法術削目標魔抗、輔助所有傷害魔法。
     "arcane_erosion",
+    "afterimage",   # R186 輕甲 100 幻影步:閃過任何敵攻凝殘影層 → 主動「殘影連襲」
 }
 
 
@@ -488,6 +489,19 @@ def on_evade(char, gamedata: GameData) -> dict:
         "counter_stagger": any(o.get("counter_stagger") for o in opts),
         "restamina": min(ON_EVADE_RESTAMINA_CAP, sum(o.get("restamina", 0) for o in opts)),
     }
+
+
+def afterimage(char, gamedata: GameData) -> dict:
+    """R186 幻影步(輕甲 100):殘影蓄勢/連襲參數(max_stacks/min_stacks/min_foes/strike_factor)。
+    輕甲樹 perk → 穿重甲不生效(R141);同源多節點聚合(層上限/威力取最大、門檻取最小)。空 = {}。"""
+    opts = [o for tree, o in _chosen_options_with_tree(char, gamedata, "afterimage")
+            if _armor_tree_active(char, gamedata, tree)]
+    if not opts:
+        return {}
+    return {"max_stacks": max(o.get("max_stacks", 3) for o in opts),
+            "min_stacks": min(o.get("min_stacks", 2) for o in opts),
+            "min_foes": min(o.get("min_foes", 1) for o in opts),
+            "strike_factor": max(o.get("strike_factor", 0.6) for o in opts)}
 
 
 def vanish_floor(char, gamedata: GameData) -> float:

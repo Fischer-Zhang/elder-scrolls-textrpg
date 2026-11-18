@@ -37,7 +37,12 @@ def _round(c, foes, rng, opening, used):
     R71:隱遁不再無敵 —— 成功只重置偷襲,敵人照常攻擊(防禦純靠 evasion)。"""
     alive = [e for e in foes if combat.is_alive(e)]
     vanished = False
-    if c.health < c.max_health * 0.45 and combat.can_vanish(c, gd) \
+    if not opening and combat.afterimage_ready(c, gd, len(alive)):
+        # R186 幻影步:殘影達門檻 → 殘影連襲(偷襲先機在手時先偷襲;與 main.run_battle 共用 afterimage_ready 閘)。
+        # 沒選此里程碑的構築 afterimage_ready 恆 False 且不擲 rng → 既有輸出逐位元組不變。
+        for _ in combat.phantom_flurry(c, foes, gd, rng):
+            pass
+    elif c.health < c.max_health * 0.45 and combat.can_vanish(c, gd) \
             and combat.try_vanish(c, len(alive), used[0], rng):
         used[0] += 1
         combat.player_vanish_cost(c)         # 保真:隱遁耗體力(連續隱遁會耗竭→後續命中下降),對齊 main.py
@@ -222,3 +227,27 @@ if __name__ == "__main__":
     print("\n== P4 反制覆核(契約②):4 敵群戰死亡率(apex 仍須承受真實風險)==")
     print(f"  4 bandit       apex 死亡率 {rate(apex, ['bandit'] * 4):5.1%}")
     print(f"  2 bandit+2wolf apex 死亡率 {rate(apex, ['bandit', 'bandit', 'wolf', 'wolf']):5.1%}")
+
+    # R186 守衛:輕甲 100 同層「風暴之舞 vs 幻影步(殘影連襲)」。R185 曾想削弱風暴之舞,被使用者否決;R186 改補強幻影步。
+    # 設計共識:風暴之舞=物理近戰群王者(反擊限物理近戰·R145);幻影步=閃過任何敵攻(含元素/法術)凝殘影 → 連襲。
+    # ⚠ 如實性(審查實測):幻影步只在「純元素群」勝過風暴之舞(風暴之舞對元素等同未選);混合/遠程群風暴之舞仍優——
+    #    所以判定列只守兩端(物理近戰→風暴之舞、純元素→幻影步),其餘列只印數字不下判定(資訊,供之後調 strike_factor 時對照)。
+    # 本 sim 的 apex 刺客不選輕甲里程碑 → 固定量一次;守衛構築(輕甲100+雜技100,無裝甲)比完整寫實構築脆。
+    print("\n== R186 守衛:輕甲100 風暴之舞 vs 幻影步(判定:物理近戰→風暴之舞、純元素群→幻影步;資訊列不判定)==")
+    _lithe = {"light_armor_50": "lithe_evasion"}
+    _storm = lambda: assassin(light_armor=100, acrobatics=100, mastery_choices={**_lithe, "light_armor_100": "storm_dance"})
+    _phant = lambda: assassin(light_armor=100, acrobatics=100, mastery_choices={**_lithe, "light_armor_100": "phantom_step"})
+    for gname, gids, home, n in (("4 bandit(物理近戰)", ["bandit"] * 4, "storm", 500),
+                                 ("2 bandit+2 wolf(物理近戰)", ["bandit", "bandit", "wolf", "wolf"], "storm", 500),
+                                 ("4 moor_witch(純元素)", ["moor_witch"] * 4, "phantom", 500),
+                                 ("4 maormer_raider(遠程)", ["maormer_raider"] * 4, None, 300),
+                                 ("4 ice_wraith(冰)", ["ice_wraith"] * 4, None, 300),
+                                 ("2 moor_witch+2 bandit(混合)", ["moor_witch", "moor_witch", "bandit", "bandit"], None, 300)):
+        rs, rp = rate(_storm, gids, n=n), rate(_phant, gids, n=n)
+        if home == "storm":      # 物理近戰:風暴之舞須不劣於幻影步(否則幻影步搶了它的招牌地盤)
+            flag = " ✓各擅勝場" if rs <= rp else " ⚠幻影步搶了風暴之舞的物理近戰地盤"
+        elif home == "phantom":  # 純元素群:幻影步須贏風暴之舞(否則幻影步退回「被上限遮蔽的死選項」)
+            flag = " ✓各擅勝場" if rp < rs else " ⚠幻影步贏不了純元素群(淪為死選項)"
+        else:
+            flag = "  (資訊·不判定)"
+        print(f"  {gname:26} 風暴之舞 {rs:5.1%}   幻影步 {rp:5.1%}{flag}")
