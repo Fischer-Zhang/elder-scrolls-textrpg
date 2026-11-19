@@ -616,7 +616,7 @@ def _repeat_option(player, gamedata: GameData, enemies: list, allies: list, mem)
 # D2:戰鬥動作分桶(scannable);grouped_menu 連續編號、回同 key → 下方 dispatch 完全不變。
 _COMBAT_BUCKETS = {
     "repeat": "攻擊", "attack": "攻擊", "aimed": "攻擊", "crippling": "攻擊",
-    "skirmish": "攻擊", "volley": "攻擊", "phantom_flurry": "攻擊", "charge": "攻擊", "skirmish_ride": "攻擊",
+    "skirmish": "攻擊", "volley": "攻擊", "phantom_flurry": "攻擊", "reckless": "攻擊", "charge": "攻擊", "skirmish_ride": "攻擊",
     "cast": "威能·戰技", "power": "威能·戰技", "racial_power": "威能·戰技",
     "standard": "威能·戰技", "rally": "威能·戰技", "vampire_charm": "威能·戰技", "deathmark": "威能·戰技",
     "guard": "架式", "wall": "架式",
@@ -782,6 +782,15 @@ def _choose_combat_action(state: GameState, gamedata: GameData, enemies: list, a
             opts.append(_combat_option("phantom_flurry",
                                        f"殘影連襲（耗盡 {_ai_n} 層殘影 · 連擊最低血敵 · 各 {_ai_pct}% 傷害)",
                                        f"{_ai_n}層·連擊最低血·各{_ai_pct}%"))
+    # R191 搏命連斬(刀劍 100 savage):主動戰技 —— 同一目標連斬,目標沒倒下會趁隙還擊 + 額外耗體。
+    # 開放條件走 combat.reckless_ready(與 sim 共用同一個閘);🔴 永不吃偷襲倍率(標籤如實告知)。
+    if combat.reckless_ready(player, gamedata):
+        _rk = combat.reckless_spec(player, gamedata)
+        _rk_pct = int(round(_rk["factor"] * 100))
+        opts.append(_combat_option("reckless",
+                                   f"搏命連斬（同一目標連斬 {_rk['strikes']} 記 · 第 2 記起 {_rk_pct}% · 不吃偷襲 · "
+                                   f"目標沒倒下會立刻還擊一記 · 還擊時你的閃避與格擋卸力不計 · 額外耗 {_rk['fatigue']} 體力)",
+                                   f"{_rk['strikes']}連斬·{_rk_pct}%·耗{_rk['fatigue']}體·會還擊"))   # 最大代價(還擊)放進可見 chip,不只藏 hover(R164)
     # 坐騎戰技(僅野外騎乘遭遇的第一回合;戰馬+近戰=衝鋒、獵馬+弓=騎射)
     if mounted and first_round and mounts.can_charge(player, gamedata, True):
         opts.append(_combat_option("charge", "🐎 衝鋒（坐騎開場突擊 · 長槍藉馬勢洞穿)", "開場突擊·長槍加成"))
@@ -915,7 +924,7 @@ def _choose_combat_action(state: GameState, gamedata: GameData, enemies: list, a
         else:
             target = None
         return {"type": "cast", "spell_id": sid, "target": target}
-    if choice in ("aimed", "crippling", "skirmish", "deathmark", "charge", "skirmish_ride", "vampire_charm"):   # 皆先選敵方目標(散兵武技 / 刺客烙印 / 坐騎戰技 / 吸血鬼魅惑)
+    if choice in ("aimed", "crippling", "skirmish", "deathmark", "charge", "skirmish_ride", "vampire_charm", "reckless"):   # 皆先選敵方目標(散兵武技 / 刺客烙印 / 坐騎戰技 / 吸血鬼魅惑)
         tgt = _choose_enemy_target(state, gamedata, enemies, allies, last=_last_tgt)
         if tgt is None:
             return _back()
@@ -1139,6 +1148,27 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
         if not combat.is_alive(e) and magic.has_soul_trap(e):
             trapped_kills.add(id(e))
 
+    def _infect_player(ev):
+        """疾病傳染:依種類分派到吸血鬼 / 狼人狀態機 / 疾病系統。敵方階段的攻擊與 R191 搏命連斬的還擊共用同一條分派
+        (還擊是真實的一擊,resolve_attack 已擲過傳染 rng,結果不得被丟棄)。"""
+        if not ev.get("infected"):
+            return
+        kind = ev.get("infect_kind", "vampire")
+        if kind == "lycanthropy" and lycanthropy.infect(player, state):
+            ui.message("利爪撕開你的皮肉 —— 傷口深處傳來灼燒的悸動。你染上了某種野性的熱症……",
+                       style="bold red")
+            _hint_once("curse_werewolf", "（潛伏數日後將轉化。想了解狼人的力量與代價、或如何在轉化前根治?"
+                       "查『人物 → 指南/圖鑑 📖 → 詛咒:狼人』。)")
+        elif kind == "vampire" and vampirism.infect(player, state):
+            ui.message("獠牙刺入你的頸側 —— 傷口隱隱發燙。你染上了某種不祥的熱症……",
+                       style="bold red")
+            _hint_once("curse_vampire", "（潛伏數日後將轉化。想了解吸血鬼的力量與代價、或如何在轉化前根治?"
+                       "查『人物 → 指南/圖鑑 📖 → 詛咒:吸血鬼』。)")
+        elif kind == "disease" and diseases.contract(player, state, gamedata, ev.get("disease_id")):
+            _spec = gamedata.diseases.get(ev.get("disease_id"), {})
+            ui.message(f"傷口紅腫發熱、隱隱作痛 —— 你染上了「{_spec.get('name', '某種疾病')}」。"
+                       f"{_spec.get('symptom', '')}", style="bold red")
+
     def _df():
         """R137 格擋姿態攻擊稅:姿態中玩家一切攻擊傷害 ×GUARD_STANCE_DAMAGE_TAX(獸形無姿態);
         走 damage_factor 車道(在偷襲倍率之前縮)→ solo 夾/紅線結構不變。非姿態 → 1.0(byte-identical)。
@@ -1276,6 +1306,16 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
                 _cmsg(f"你身形連閃,{_fn} 道殘影一齊出手!", style="bold magenta")
             for _fev in combat.phantom_flurry(player, enemies, gamedata, state.rng, damage_mult=_df):   # callable:耗體後才求姿態稅(同普攻序)
                 ui.combat_event(_fev, gamedata)
+        elif action["type"] == "reckless":   # R191 搏命連斬(逐擊戰報·🔴 每記 sneak_attack=False·疊格擋姿態攻擊稅)
+            tgt = action["target"]
+            if combat.is_alive(tgt):
+                _cmsg("你豁出全力,刀勢連綿搶攻!", style="bold red")
+                for _rkind, _rev in combat.reckless_flurry(player, tgt, gamedata, state.rng, damage_mult=_df):
+                    if _rkind == "counter":
+                        _cmsg(f"{tgt.name}趁你收勢不及,搶進還擊!", style="red")
+                    ui.combat_event(_rev, gamedata)
+                    if _rkind == "counter":
+                        _infect_player(_rev)   # 還擊是真實的一擊:可傳染(與敵方階段同一條分派)
         elif action["type"] == "charge":   # 坐騎「衝鋒」(開場;近戰/長槍;不走偷襲倍率,受 solo 夾限)
             tgt = action["target"]
             if combat.is_alive(tgt):
@@ -1408,6 +1448,12 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
         for e in enemies:
             note_trap(e)
 
+        # 玩家階段就可能致死(R191 搏命連斬的還擊、R117 敵方反傷):玩家已死 → 不再進同伴/敵人階段,
+        # 讓 while 條件收束戰鬥(→ "dead")。否則治療型同伴的援護術會把 HP=0 的玩家救活
+        # (敵方階段的死亡是終局,玩家階段的死亡也必須是;對齊下方 hregen 的 is_alive 閘)。
+        if not combat.is_alive(player):
+            continue
+
         # ---- 同伴階段(輔助型先試支援施法,否則攻擊一個隨機存活敵人)----
         for a in battle["allies"]:
             if not alive_e():
@@ -1497,22 +1543,7 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
                     else:
                         _cmsg(f"你翻身讓開 —— {e.name}那一擊朝另一名敵人劈去,卻也落空。", style="cyan")
                     ui.combat_event(_mev, gamedata)
-            if ev.get("infected"):    # 疾病傳染:依種類分派到吸血鬼 / 狼人狀態機
-                kind = ev.get("infect_kind", "vampire")
-                if kind == "lycanthropy" and lycanthropy.infect(player, state):
-                    ui.message("利爪撕開你的皮肉 —— 傷口深處傳來灼燒的悸動。你染上了某種野性的熱症……",
-                               style="bold red")
-                    _hint_once("curse_werewolf", "（潛伏數日後將轉化。想了解狼人的力量與代價、或如何在轉化前根治?"
-                               "查『人物 → 指南/圖鑑 📖 → 詛咒:狼人』。)")
-                elif kind == "vampire" and vampirism.infect(player, state):
-                    ui.message("獠牙刺入你的頸側 —— 傷口隱隱發燙。你染上了某種不祥的熱症……",
-                               style="bold red")
-                    _hint_once("curse_vampire", "（潛伏數日後將轉化。想了解吸血鬼的力量與代價、或如何在轉化前根治?"
-                               "查『人物 → 指南/圖鑑 📖 → 詛咒:吸血鬼』。)")
-                elif kind == "disease" and diseases.contract(player, state, gamedata, ev.get("disease_id")):
-                    _spec = gamedata.diseases.get(ev.get("disease_id"), {})
-                    ui.message(f"傷口紅腫發熱、隱隱作痛 —— 你染上了「{_spec.get('name', '某種疾病')}」。"
-                               f"{_spec.get('symptom', '')}", style="bold red")
+            _infect_player(ev)    # 疾病傳染:依種類分派(與 R191 搏命連斬的還擊共用)
         for e in enemies:          # 敵人階段可能因「重甲反震」反殺被擒魂的敵 → 補記擒魂(免漏靈魂石)
             note_trap(e)
 

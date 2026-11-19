@@ -449,18 +449,20 @@ def test_recompute_mastery_idempotent():
 # --- P2:戰鬥系內容 -----------------------------------------------------
 def test_weapon_mod_target_matches_weapon_skill():
     gd, c = _char(blade=100)
-    mastery.choose(c, gd, "blade_100", "savage")
-    assert mastery.weapon_mod(c, gd, "blade").get("power") == 0.12
+    mastery.choose(c, gd, "blade_75", "blade_flow")        # R191:savage 已改成主動戰技(不再有 power);改用刀勢如虹驗 target 過濾
+    assert mastery.weapon_mod(c, gd, "blade").get("power") == 0.08
     assert mastery.weapon_mod(c, gd, "blunt") == {}        # target 不符 → 不適用
     assert mastery.weapon_mod(c, gd, None) == {}
 
 
 def test_weapon_mod_power_increases_damage_with_recoil():
-    def dealt(savage, seed):
-        gd, c = _char(blade=100, strength=80)
-        c.weapon = "steel_dagger"
-        if savage:
-            mastery.choose(c, gd, "blade_100", "savage")
+    # 沉勁揮擊(blunt_50:power +10% / recoil 4%)——weapon_mod 的 power+recoil 機制由它守
+    # (R191 起刀劍 100 savage 改成主動戰技「搏命連斬」,不再走 power/recoil;見 tests/test_reckless_r191.py)
+    def dealt(swing, seed):
+        gd, c = _char(blunt=100, strength=80)
+        c.weapon = "iron_mace"
+        if swing:
+            mastery.choose(c, gd, "blunt_50", "heavy_swing")
         foe = combat.spawn_creature(gd, "giant_rat", RNG(1))
         foe.health = foe.max_health = 99999
         c.health = c.max_health
@@ -471,10 +473,10 @@ def test_weapon_mod_power_increases_damage_with_recoil():
         a = dealt(False, s)
         b = dealt(True, s)
         if a and b:
-            assert b[0] >= a[0]                  # 威力 +12% → 傷害不減
+            assert b[0] >= a[0]                  # 威力 +10% → 傷害不減
             if b[0] > a[0]:
                 more += 1
-            if b[1] > 0:                          # 迅捷連斬反作用 → 自損
+            if b[1] > 0:                          # 沉勁揮擊反作用 → 自損
                 recoiled += 1
     assert more >= 3 and recoiled >= 3
 
@@ -1130,8 +1132,16 @@ def test_batch2_gapfills_present_and_aggregate():
     assert abs(mastery.spell_cost_factor(c, gd, "destruction") - 0.85 * 1.30) < 1e-9
     # weapon_mod blade 50/75/100 合併(不遮蔽)
     gd, c = _char(blade=100)
+    mastery.choose(c, gd, "blade_50", "keen_edge"); mastery.choose(c, gd, "blade_75", "blade_flow")
+    mastery.choose(c, gd, "blade_100", "precision")
+    wm = mastery.weapon_mod(c, gd, "blade")
+    assert abs(wm.get("power", 0) - 0.08) < 1e-9                      # 刀勢如虹的 power 與
+    assert abs(wm.get("hit", 0) - (0.05 + 0.05)) < 1e-9               # 鋒刃輕靈 + 看破的命中 各自聚合、互不遮蔽
+    # R191:savage 已改成主動戰技(reckless 子欄),不再貢獻 power/recoil —— 換選 savage 後 power 只剩刀勢如虹的 0.08
+    gd, c = _char(blade=100)
     mastery.choose(c, gd, "blade_75", "blade_flow"); mastery.choose(c, gd, "blade_100", "savage")
-    assert abs(mastery.weapon_mod(c, gd, "blade").get("power", 0) - (0.08 + 0.12)) < 1e-9
+    wm = mastery.weapon_mod(c, gd, "blade")
+    assert abs(wm.get("power", 0) - 0.08) < 1e-9 and not wm.get("recoil"), wm
 
 
 def test_try_flee_runs():

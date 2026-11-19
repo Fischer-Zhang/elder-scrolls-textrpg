@@ -827,6 +827,22 @@ def weapon_mod(char, gamedata: GameData, wpn_skill_id: str | None) -> dict:
     return merged
 
 
+def reckless(char, gamedata: GameData, wpn_skill_id: str | None) -> dict:
+    """R191「搏命連斬」(blade_100 savage 的 `reckless` 子欄):主動戰技參數;無 → {}。
+    {strikes(連斬記數), factor(第 2 記起的武器傷係數), fatigue(額外耗體力)}。單槽:取解鎖門檻最高者(R184 同款)。
+    target 須與當前武器技能一致(獸形/束縛兵刃/重盾盾擊的 wpn_skill_id 不是 blade → 自然不開放)。"""
+    if not wpn_skill_id or not hasattr(char, "base_skill"):
+        return {}
+    spec = None
+    for opt in _chosen_options_by_unlock(char, gamedata, "weapon_mod"):
+        if opt.get("target") == wpn_skill_id and opt.get("reckless"):
+            spec = opt["reckless"]
+    if not spec:
+        return {}
+    return {"strikes": int(spec.get("strikes", 2)), "factor": float(spec.get("factor", 0.6)),
+            "fatigue": int(spec.get("fatigue", 30))}
+
+
 def block_riposte(char, gamedata: GameData) -> dict:
     """盾擊踉蹌/破勢/完美格擋:格擋來犯時的反制。多節點聚合(機率/削弱/反傷各取最),空 = 無。
     shield_bash(50)=踉蹌、盾擊破勢(75)+削弱敵下擊、盾威·完美格擋(100)+盾擊反傷。"""

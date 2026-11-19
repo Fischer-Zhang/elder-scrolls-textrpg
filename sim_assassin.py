@@ -108,6 +108,22 @@ def oneshot_with_followup(maker, tid, n=2500):
     return k / n
 
 
+def reckless_oneaction(maker, tid, n=800):
+    """R191 搏命連斬紅線:**不靠偷襲**、單一「搏命連斬」動作擊殺目標的比例(戰技 = 兩記普通擊,第 2 記 ×0.6,
+    每記 sneak_attack=False → 不吃偷襲倍率、不碰 SOLO_SNEAK 夾)。solo 王須 0%;精英僅供參考。
+    選了 savage 但戰技不可用(reckless_ready 假)→ 等同沒出手(回 0)。"""
+    k = 0
+    for i in range(n):
+        atk = maker()
+        boss = combat.spawn_creature(gd, tid, RNG(i + 1))
+        rng = RNG(i * 7 + 3)
+        if combat.reckless_ready(atk, gd):
+            for _ in combat.reckless_flurry(atk, boss, gd, rng):
+                pass
+        k += not combat.is_alive(boss)
+    return k / n
+
+
 if __name__ == "__main__":
     mid = lambda: assassin()
     mid_dual = lambda: assassin(dual=True)
@@ -125,14 +141,16 @@ if __name__ == "__main__":
         print(f"  {name:20} 單持 {rate(mid, ids):6.1%}   雙持 {rate(mid_dual, ids):6.1%}")
 
     # P2 里程碑:非潛行 weapon_mod 在偷襲倍率「之前」套 → 對精英秒殺率衝擊應極小
-    print("\n== P2 里程碑覆核:blade 迅捷連斬(power+0.12,以 flat 補傷加在偷襲倍率之後)==")
+    # R191:savage 已改成主動戰技「搏命連斬」(無 power/recoil)→ 這段現在守「已選 savage 時偷襲路徑不得被連動」;
+    # 戰技本身的紅線見下方「R191 搏命連斬紅線」,群戰規模/終王牆守衛見 sim_reckless.py。
+    print("\n== P2 里程碑覆核:blade 搏命連斬(已選;主動戰技·不改偷襲傷害)==")
     apex_blade = lambda: assassin(sneak=70, blade=100,
                                   mastery_choices={"blade_100": "savage"})
     for t in ["dremora", "frost_troll"]:
         base = oneshot(lambda: assassin(blade=100), t)
         mod = oneshot(apex_blade, t)
         flag = " ⚠破1.5%" if mod > 0.015 else ""
-        print(f"  {t:18} 無里程碑 {base:5.1%} → 迅捷連斬 {mod:5.1%}{flag}")
+        print(f"  {t:18} 無里程碑 {base:5.1%} → 搏命連斬 {mod:5.1%}{flag}")
 
     # P4 刺客 apex:影刃(sneak_mult ×1.5)→ 對小遭遇可無傷清場(刻意);反制=「>3 敵潛匿大減 + 隱遁耗體」
     import tesrpg.systems.combat as C
@@ -168,6 +186,27 @@ if __name__ == "__main__":
         r = oneshot_with_followup(apex_max, t)
         flag = " ⚠破紅線(應為 0%)" if r > 0.0 else " ✓存活"
         print(f"  {t:16} 偷襲+追擊秒殺 {r:5.1%}{flag}")
+
+    print("\n== R191 搏命連斬紅線:已選 savage 的最壞 apex(戰技每記 sneak_attack=False·第 2 記 ×0.6)==")
+    print("   ① 不靠偷襲、單一搏命動作擊殺 solo 王(應 0%);② 已選 savage 下偷襲+追擊(R63)仍 0%:")
+    # 已知限制(R191 對抗審查實測):夾具無自附魔(與本檔其他紅線段、sim_builds 同「刻意排除自附魔」)。加火附魔 24(主手+副手)後,
+    # flat 的附魔/副手補刀傷不吃 damage_factor、兩記各吃一次 → 單一搏命動作擊殺 maormer_captain(96 血)87.9%、vampire_lord 8.5%;
+    # 但同夾具「一回合兩記普通攻擊」(R63 追擊最壞)是 91.5% / 60.5% → 搏命沒有超出既有最壞上限。附魔流的 solo 秒殺面另案。
+    def apex_savage():
+        c = apex_max()
+        c.mastery_choices["blade_100"] = "savage"
+        return c
+    solo_ids = [bid for bid, b in gd.bestiary.items() if b.get("solo")]
+    rows = [(t, reckless_oneaction(apex_savage, t, 400)) for t in solo_ids]
+    bad = [(t, r) for t, r in rows if r > 0.0]
+    print(f"  solo 王 {len(rows)} 隻:單一搏命動作擊殺最大 {max(r for _, r in rows):5.1%}"
+          + (f" ⚠破紅線(應為 0%) {bad}" if bad else " ✓全 0%"))
+    for t in ["dremora_lord", "vampire_lord", "ancient_dragon", "mehrunes_dagon"]:
+        r = oneshot_with_followup(apex_savage, t, 800)
+        flag = " ⚠破紅線(應為 0%)" if r > 0.0 else " ✓存活"
+        print(f"  {t:16} 已選 savage:偷襲+追擊秒殺 {r:5.1%}{flag}")
+    for t in ["dremora", "frost_troll"]:
+        print(f"  精英 {t:14} 單一搏命動作擊殺 {reckless_oneaction(apex_savage, t, 400):5.1%}(資訊·非紅線)")
 
     print("\n== R37 鋒銳覆核:temper_power apex(全鋒銳 50/75/100 → cap6+power0.25 → 武器淬鍊 +15 vs apex_max +10)==")
     def apex_temper():

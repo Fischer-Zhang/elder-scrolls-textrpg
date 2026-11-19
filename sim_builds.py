@@ -368,6 +368,8 @@ def _paladin_act(c, boss, rng, st):
         for s in ("close_wounds", "heal", "minor_heal"):
             if magic.can_cast(c, gd, s):
                 magic.cast(c, gd, s, rng, target=boss, enemies=enemies_list); return   # 治療指向不死 → 灼燒
+    if _reckless_swing(c, boss, rng, st):                                       # R191 搏命連斬(paladin 選 savage)
+        return
     combat.player_attack_cost(c, gd); combat.resolve_attack(c, boss, gd, rng)   # 對活物:恢復系無魔攻 → 平砍
 
 
@@ -390,6 +392,8 @@ def _battlemage_act(c, boss, rng, st):
             best, best_dmg = sid, d
     if best and best_dmg >= 45:                       # 強元素核彈(否則 daedric_sword 近戰更划算)
         magic.cast(c, gd, best, rng, target=boss, enemies=[boss], battle={"allies": []}); return
+    if _reckless_swing(c, boss, rng, st):                                       # R191 搏命連斬(battlemage 選 savage)
+        return
     combat.player_attack_cost(c, gd); combat.resolve_attack(c, boss, gd, rng)
 
 
@@ -397,6 +401,69 @@ def _battlemage_act(c, boss, rng, st):
 # 反映遊戲新現實(近戰終於有中場續戰)→ 平衡工具不再低估近戰硬 boss 存活。法系另有治療術不靠藥。
 _MELEE_POT_BUILDS = {"warrior_1H", "warrior_2H", "monk", "assassin", "archer", "shield_reflect", "great_shield"}
 _COMBAT_POTIONS = 8   # 帶去硬仗的治療藥水疊(healing_potion·回50·固定不放大)
+
+
+# R191 搏命連斬「熟練」政策(blade_100 savage 已改成主動戰技;量測政策取自使用者拍板的設計階段 smart2):
+#   收頭(一刀不夠、兩刀夠)→ 用;目標被恐懼/麻痺(無還擊)→ 用,但長戰留體力底;
+#   場上有「打得很痛」的強敵(粗估一擊 > 15% 血)→ 其餘一律省(長戰保體力);否則人多(≥3)且目標打不痛 → 趁早用(留 15% 體力底)。
+# 未選 savage / 武器不符 / 體力不足 → combat.reckless_ready 假 → 回 False(零 rng、既有構築逐位元組不變)。
+# 群戰規模與終王牆的守衛見 sim_reckless.py(本檔只有 solo 單敵+爪牙)。
+RECKLESS_RESERVE = 0.15            # 一般用法的體力底(佔最大體力比例)
+RECKLESS_HELPLESS_RESERVE = 0.55   # 目標失能窗口的體力底(長戰別貪用,否則燒光體力 → 命中 −25%/閃避減半)
+RECKLESS_PAIN = 0.15               # 「打得很痛」門檻:敵人一擊粗估 > 此比例的最大血
+RECKLESS_CROWD = 3                 # 人多門檻:場上存活敵人 ≥ 此數才趁早用
+
+
+def _est_hit(c, tgt):
+    """玩家對 tgt 一記普通命中的期望傷害(骰 1.0;玩家由戰報即可得知的量級)。"""
+    wpn_dmg, wpn_skill, sid = combat._weapon_profile(c, gd)
+    wmod = mastery.weapon_mod(c, gd, sid)
+    raw = formulas.attack_damage(wpn_dmg, wpn_skill, combat._strength(c), 1.0, 1.0) * (1 + wmod.get("power", 0.0))
+    off = inventory.dual_wield_bonus_damage(c, gd)
+    if off:
+        raw += formulas.attack_damage(off, wpn_skill, combat._strength(c), 1.0, 1.0)
+    if combat.has_guard_stance(c) and c.fatigue > 0:
+        raw *= formulas.GUARD_STANCE_DAMAGE_TAX
+    wdef = gd.item(c.weapon)
+    pen = min(0.85, formulas.archetype_armor_pen(wdef.get("archetype")) + wmod.get("pen", 0))
+    dmg = formulas.damage_after_armor(raw, combat._armor_rating(tgt, gd), pen)
+    dmg *= formulas.resist_multiplier({"physical": magic.entity_resist(tgt, gd).get("physical", 0)}, "physical")
+    return dmg
+
+
+def _est_foe_hit(c, foe):
+    """foe 打中玩家一記的粗估傷害(基礎招;物理吃甲、元素不吃甲=保守高估)。玩家由戰報可得的量級。"""
+    atk = foe.attack
+    raw = formulas.attack_damage(atk.get("damage", 0), atk.get("skill", 50), combat._strength(foe), 1.0, 1.0)
+    if atk.get("element"):
+        return raw
+    return formulas.damage_after_armor(raw, combat._armor_rating(c, gd), 0.0)
+
+
+def _want_reckless(c, tgt, st):
+    if not combat.reckless_ready(c, gd):
+        return False
+    spec = combat.reckless_spec(c, gd)
+    alive = st.get("enemies") or [tgt]
+    one = _est_hit(c, tgt)
+    two = one * (1 + spec["factor"])
+    if tgt.health > one * 0.85 and tgt.health <= two * 0.9:      # 收頭:一刀不夠、兩刀夠
+        return True
+    after = c.fatigue - spec["fatigue"]
+    if magic.is_incapacitated(tgt):                              # 失能窗口:免還擊,但長戰要留體力
+        return after >= RECKLESS_HELPLESS_RESERVE * c.max_fatigue
+    if max(_est_foe_hit(c, e) for e in alive) > c.max_health * RECKLESS_PAIN:
+        return False                                             # 有打得很痛的強敵 → 其餘省著(長戰保體力)
+    return len(alive) >= RECKLESS_CROWD and after >= RECKLESS_RESERVE * c.max_fatigue
+
+
+def _reckless_swing(c, tgt, rng, st, damage_mult=1.0):
+    """政策要用就出搏命連斬並回 True;否則 False(呼叫端照舊普攻)。偷襲先機在手時呼叫端不該呼叫(連斬不吃偷襲)。"""
+    if not _want_reckless(c, tgt, st):
+        return False
+    for _ in combat.reckless_flurry(c, tgt, gd, rng, damage_mult=damage_mult):
+        pass
+    return True
 
 
 def _drink_if_low(c):
@@ -417,6 +484,8 @@ def _melee_sneak_act(c, boss, rng, st):
         # 保真:隱遁耗體力 + R71 隱遁不再無敵(對任何敵都不跳過攻擊)→ 純重置偷襲、照常挨打
         st["vanish"] += 1; combat.player_vanish_cost(c); st["opening"] = True
         st["skip_boss"] = False; return
+    if not st["opening"] and _reckless_swing(c, boss, rng, st):   # R191 搏命連斬(偷襲先機在手時不用:連斬不吃偷襲)
+        return                                                    # 戰技是獨立動作,不接 R136 連珠箭追加
     combat.player_attack_cost(c, gd)
     _ev = combat.resolve_attack(c, boss, gd, rng, sneak_attack=st["opening"])
     st["opening"] = False
@@ -436,6 +505,9 @@ def _attack_act(c, boss, rng, st):
     # 之後攻擊 ×TAX、來襲吃姿態卸力(resolve_attack 內自動套)。非盾 build 無旗標 → 行為不變。
     if st.get("use_stance") and not combat.has_guard_stance(c):
         c.active_effects.append({"kind": "guard_stance", "turns": combat.PERSISTENT_TURNS}); return   # R188 對齊 main
+    if _reckless_swing(c, boss, rng, st, damage_mult=lambda: (        # R191 搏命連斬(耗體後才求姿態稅,同 main)
+            formulas.GUARD_STANCE_DAMAGE_TAX if combat.has_guard_stance(c) and c.fatigue > 0 else 1.0)):
+        return
     combat.player_attack_cost(c, gd)
     combat.resolve_attack(c, boss, gd, rng,
                           damage_factor=(formulas.GUARD_STANCE_DAMAGE_TAX

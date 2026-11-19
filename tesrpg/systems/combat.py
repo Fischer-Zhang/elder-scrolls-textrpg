@@ -525,6 +525,8 @@ def _guard_stance_factor(defender, atk_element=None, gamedata=None) -> float:
     if not (_is_player(defender) and has_guard_stance(defender) and defender.fatigue > 0
             and not _is_beast(defender)):    # 審查修:獸形無盾 → 姿態卸力不套(鏡像重盾 _is_beast 閘)
         return 1.0
+    if _overextended(defender):  # R191 搏命連斬:還擊期間門戶大開 → 姿態卸力不計(與力竭暫停對稱)
+        return 1.0
     m = formulas.GUARD_STANCE_MITIGATION * min(1.0, defender.skill("block") / 100.0)
     m += divines.block_bonus(defender)   # R107 斯丹達爾之佑:原掛手動格擋(R137 移除)→ 遷入姿態卸力(+0.10)
     if atk_element:
@@ -548,6 +550,8 @@ def _shield_wall_factor(defender) -> float:
     """盾牆物理減傷倍率(<1.0 = 更耐打);非盾牆 → 1.0。"""
     e = next((e for e in getattr(defender, "active_effects", [])
               if e.get("kind") == "shield_wall" and e.get("turns", 0) > 0), None)
+    if e and _overextended(defender):   # R191 搏命連斬:還擊期間門戶大開 → 盾牆卸力不計
+        return 1.0
     return (1.0 - e.get("mitigation", 0.0)) if e else 1.0
 
 
@@ -775,6 +779,59 @@ def afflicted(target, kinds) -> bool:
     return False
 
 
+# ---- R191 搏命連斬(blade_100 savage·`reckless` 子欄;使用者拍板「以攻對攻」,第二記係數 0.6)----
+# 主動戰技(非被動數值):同一目標連斬 strikes 記(第 2 記起 ×factor),每記 sneak_attack=False(永不吃偷襲倍率 →
+# 不碰 SOLO_SNEAK 夾)、照常吃護甲/物抗(走 resolve_attack,無任何穿透)。
+# 代價:連斬後目標若沒倒下且能行動 → 立刻趁隙還擊你一記;這一記你的閃避歸零(閃過才有的閃身反打/殘影不觸發)、
+# 格擋姿態/盾牆卸力與格擋反擊不計。其餘敵人不受影響(之後照常行動)。被恐懼/麻痺/狂亂的目標不還擊(沒有門戶可趁)。
+# `overextended` 只存在於那一記還擊之內(加入 → resolve_attack → 移除):不跨回合、不入戰鬥內常駐、不需 PERSISTENT_TURNS;
+# 萬一中途例外殘留,turns:1 會在回合尾 tick 掉。🔴 純讀 getter:未選/武器不符 → reckless_ready False、零 rng,既有構築 byte-identical。
+def _overextended(char) -> bool:
+    """玩家此刻是否處於「搏命後門戶大開」(只在敵人那一記還擊期間為真)。"""
+    return any(e.get("kind") == "overextended" and e.get("turns", 0) > 0 for e in getattr(char, "active_effects", []))
+
+
+def reckless_spec(player, gamedata: GameData) -> dict:
+    """當前實際武器(獸形=獸爪/束縛兵刃=None/重盾=block)對應的搏命連斬參數;不適用 → {}。"""
+    if not _is_player(player):
+        return {}
+    return mastery.reckless(player, gamedata, _weapon_profile(player, gamedata)[2])
+
+
+def reckless_ready(player, gamedata: GameData) -> bool:
+    """搏命連斬可用(選單與 sim 共用同一個閘):已選 + 持對應武器 + 體力付得起額外耗體。"""
+    spec = reckless_spec(player, gamedata)
+    return bool(spec) and player.fatigue >= spec["fatigue"]
+
+
+def reckless_flurry(player, target, gamedata: GameData, rng: RNG, damage_mult=1.0):
+    """搏命連斬(產生器,逐事件 yield ("strike"|"counter", event);呼叫端逐擊顯示)。
+    damage_mult:同 phantom_flurry,可傳 callable(耗體之後才求值 → R137 姿態稅同普攻序)。"""
+    spec = reckless_spec(player, gamedata)
+    if not spec or not is_alive(target):
+        return
+    player_attack_cost(player, gamedata)
+    player.fatigue = max(0, player.fatigue - spec["fatigue"])
+    mult = damage_mult() if callable(damage_mult) else damage_mult
+    for i in range(spec["strikes"]):
+        if not is_alive(target) or not is_alive(player):
+            break
+        yield ("strike", resolve_attack(player, target, gamedata, rng, sneak_attack=False,
+                                        damage_factor=(1.0 if i == 0 else spec["factor"]) * mult))
+    if not is_alive(player):
+        return
+    if is_alive(target) and not magic.is_incapacitated(target) and not magic.is_frenzied(target):
+        eff = {"kind": "overextended", "turns": 1}
+        player.active_effects.append(eff)                       # 只在這一記還擊期間露出破綻
+        try:
+            atk = choose_enemy_attack(target, rng, player)
+            ev = resolve_attack(target, player, gamedata, rng, attack=atk)
+        finally:
+            if eff in player.active_effects:
+                player.active_effects.remove(eff)
+        yield ("counter", ev)
+
+
 def _gear_weapon_id(attacker):
     """攻擊者當前武器 id:玩家=裝備武器;同伴=生成時掛的 `_gear_weapon`;一般怪=None。"""
     return attacker.weapon if _is_player(attacker) else getattr(attacker, "_gear_weapon", None)
@@ -838,6 +895,9 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
                + _ride_evasion(defender)) if _is_player(defender) else 0.0   # 騎射閃避:聚合相加,不遮蔽
     if evasion and defender.fatigue <= 0:
         evasion *= 0.5   # R141 現實邏輯:力竭懲罰也打防端 —— 腿軟閃不動(原只罰攻/施法)
+    _ovx = _is_player(defender) and _overextended(defender)   # R191 搏命連斬:還擊期間門戶大開(純讀;無效果 → False)
+    if _ovx:
+        evasion = 0.0    # 來不及閃(只歸零玩家自己的閃避;命中上下限不動)
     block_pen = mastery.block_hit_penalty(defender, gamedata) if defender_blocking else formulas.BLOCK_HIT_PENALTY
     chance = formulas.hit_chance(wpn_skill, _agility(attacker), _agility(defender),
                                  fr, defender_blocking, defender_evasion=evasion,
@@ -1051,7 +1111,8 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
         if _is_player(attacker) and not is_alive(defender):   # R187 氣勢:親手斬殺回氣勢(未啟用/爪牙 → no-op·零 rng)
             momentum_on_kill(attacker, defender, gamedata)
 
-        # 里程碑「迅捷連斬」反作用:造成傷害的一部分回噬自身(代價,不致死 → 夾 ≥1)
+        # 里程碑「沉勁揮擊」(blunt_50 heavy_swing)反作用:造成傷害的一部分回噬自身(代價,不致死 → 夾 ≥1)
+        # (R191 起刀劍 100 savage 改成主動戰技搏命連斬,不再走 recoil;recoil 只剩沉勁揮擊)
         if _is_player(attacker) and wmod.get("recoil") and dmg_done > 0:
             attacker.health = max(1, attacker.health - int(round(dmg_done * wmod["recoil"])))
 
@@ -1337,6 +1398,7 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
         # 攻擊不觸發 → 元素攻擊仍是反擊/反傷流的天然反制。🔴 姿態不套用於獸形(利爪無盾·鏡像重盾)。
         if (_is_player(defender) and is_alive(attacker) and not atk_element
                 and not (atk or {}).get("ranged")   # R145:隔空盾擊不了弩手
+                and not _ovx                        # R191 搏命連斬:還擊期間門戶大開 → 來不及舉盾反擊
                 and (defender_blocking or (has_guard_stance(defender) and defender.fatigue > 0
                                            and not _is_beast(defender)))):
             rp = mastery.block_riposte(defender, gamedata)
@@ -1403,7 +1465,7 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
                 skill_events += progression.use_skill(defender, gamedata,
                                                       _player_armor_skill(defender, gamedata),
                                                       formulas.COMBAT_ARMOR_XP)
-            if defender_blocking or has_guard_stance(defender):   # R137:姿態中被命中也練 block(learn-by-doing)
+            if (defender_blocking or has_guard_stance(defender)) and not _ovx:   # R137:姿態中被命中也練 block(learn-by-doing);R191 門戶大開的還擊沒有舉盾 → 不練
                 skill_events += progression.use_skill(defender, gamedata, "block",
                                                       formulas.COMBAT_BLOCK_XP)
         if _is_player(attacker):           # 只夾限玩家資源;怪物 hp 已由 _set_hp 夾限
@@ -1411,15 +1473,16 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
         if _is_player(defender):
             stats.clamp_resources(defender)
     elif _is_player(defender):             # 敵人攻擊落空 + 防守方是玩家 → 成功閃避 → 鍛鍊雜技
-        skill_events += progression.use_skill(defender, gamedata, "acrobatics",
-                                              formulas.COMBAT_DODGE_XP)
+        if not _ovx:   # R191 搏命連斬:還擊期間閃避歸零、敵人落空是對方失手而非你閃過 → 不練雜技、不凝殘影、不反制
+            skill_events += progression.use_skill(defender, gamedata, "acrobatics",
+                                                  formulas.COMBAT_DODGE_XP)
         # 輕甲「迴身反打/風暴之舞」+ 雜技「凌空奇襲」:閃過敵攻即反制(只對敵)。
         # R183(使用者拍板,取代 R34「每回合至多一次」):**每次**閃過都各自判定——回體力每次給、反擊每次各擲一次機率
         # (效果文本來就寫「每次閃過敵攻即回復」);N 隻怪同回合攻擊 → 最多 N 次反擊/N 個踉蹌。
         # 反擊仍限物理近戰:元素(龍息/法術/凝視)與標 ranged 的攻擊閃過無反擊(R145,回體力照給)。
-        if not _is_player(attacker):   # R186 幻影步:閃過**任何**敵攻(含遠程/元素)皆凝殘影;無里程碑/穿重甲 → no-op、零 rng
+        if not _is_player(attacker) and not _ovx:   # R186 幻影步:閃過**任何**敵攻(含遠程/元素)皆凝殘影;無里程碑/穿重甲 → no-op、零 rng
             afterimage_gain(defender, gamedata)
-        oe = mastery.on_evade(defender, gamedata)
+        oe = None if _ovx else mastery.on_evade(defender, gamedata)
         if oe and not _is_player(attacker):
             if oe.get("restamina"):
                 defender.fatigue = min(defender.max_fatigue, defender.fatigue + oe["restamina"])
