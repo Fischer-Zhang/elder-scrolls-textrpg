@@ -135,7 +135,7 @@ scout 沒有 Bash,讀不了 git 歷史。`git log` 之類由主對話自己跑,�
 ## 11. 變更本指南
 
 - 換模型:改 `.claude/agents/*.md` 的 `model` 行,跑 `tests/test_agents.py` 與 §12 的現場驗證。
-- 改分工、O1–O5 或 H1–H3:同步 CLAUDE.md「協作分工」段與 handoff R171。
+- 改分工、O1–O5 或 H1–H3:同步 CLAUDE.md「協作分工」段與 handoff R171。改重型代理的派工規則(§14):同步 handoff R192。
 - 改 `.claude/hooks/ops_ledger.py`:跑 `python3 tests/test_ops_hook.py`(含 §13 接線 JSON 的驗證)。改接線(settings*.json 的 hooks 區塊)屬 O5。
 - 接線 JSON 的唯一來源是腳本內的 `WIRING`(`ops_ledger.py wiring` 印出);§13 的 JSON 區塊須與它一致,測試鎖死。改 matcher 或事件時只改 `WIRING`,再重貼 §13。
 
@@ -155,12 +155,13 @@ scout 沒有 Bash,讀不了 git 歷史。`git log` 之類由主對話自己跑,�
 
 ## 13. hook 帳本與「代理檢查」補數字(R172)
 
-PostToolUse 記帳,Stop 補「代理檢查」的實測數字。R175 起另偵測主對話自讀大文本(見「大文本自讀偵測」)。腳本 `.claude/hooks/ops_ledger.py`(只用 stdlib),測試 `tests/test_ops_hook.py`。
+PostToolUse 記帳,Stop 補「代理檢查」的實測數字。R175 起另偵測主對話自讀大文本(見「大文本自讀偵測」);R192 起在派重型代理「之前」用 PreToolUse 問使用者(見「重型代理派工閘」,規則本體在 §14)。腳本 `.claude/hooks/ops_ledger.py`(只用 stdlib),測試 `tests/test_ops_hook.py`。
 
 ### 運作
 
 | 事件 | 子命令 | 做什麼 |
 |---|---|---|
+| PreToolUse(`Agent\|Task`) | `pre` | R192:主對話派重型代理前,指定 Fable/Opus 或本輪第 2 個起 → 回 `permissionDecision: "ask"` 請使用者確認;重型派工記一筆 `PreAgent`(不存 prompt)。見「重型代理派工閘」 |
 | PostToolUse(`Read\|Edit\|Write\|Agent\|Bash\|Grep`) | `post` | 記一筆:路徑、Read 的 `numLines`、Agent 的 `subagent_type`、`model` 覆寫、解析後模型與派工標籤(`description` 前 60 字);不存檔案內容與 prompt。R175 加:Bash/Grep 輸出含中文長行時記字數,Read 大文本記中文長行字數,Edit/Write 的 repo 外腳本檔提到大文本時記檔名清單 |
 | PostToolUseFailure(`Bash`) | `post` | 失敗的 Bash(exit code 非 0)不走 PostToolUse,走這個事件,輸出在 payload 的 `error`;同一個子命令處理 |
 | UserPromptSubmit | `prompt` | 記「新一輪開始」標記 |
@@ -194,6 +195,20 @@ PostToolUse 記帳,Stop 補「代理檢查」的實測數字。R175 起另偵測
 - **已知盲點**:heredoc 臨時建立再執行的腳本(內容不經 Write/Edit,不 taint);`git add … && python …` 這類以 git 開頭的複合指令整條被豁免;輸出先導向檔案、再用路徑不含大文本檔名的 Read 讀(算不到);背景 Bash 的 `BashOutput`/`TaskOutput`、MCP 檔案讀取工具不在 matcher;單檔 grep 一個非大文本檔、搜尋樣式卻含大文本檔名時仍整條計入。指標只計「>40 字的中文長行」,所以用 `fold`/`cut` 切成 ≤40 字短行、每輪都低於 150 字的滴漏式小讀、`json.dumps` 預設把中文轉成 `\uXXXX` 的輸出,hook 都量不到,這幾種一樣違反 H2。盲點提示是補充訊號,不保證抓得到。
 - **已知誤報來源**:指令字串(含 heredoc 腳本的內文)只要提到大文本檔名,輸出的中文長行就整條計入,hook 分不出那是大文本內文還是你自己印的標籤。2026-11 在 R175 實測:同一輪 83 次 Bash/Read/Grep 裡,有 4 次(各 74–102 字)是我自己驗證腳本的中文標籤輸出或測試程式碼,逐一查證都不是大文本內文。緩解:驗證腳本的輸出每行 ≤40 字(或用 ASCII),就不會被計入;被誤報時在「代理檢查」行寫「大文本自讀:0 節(誤報:…)」。誤報太吵就調高 `BIGDOC_WARN`/`BIGDOC_ALARM` 或關掉開關。
 
+### 重型代理派工閘(R192)
+
+軟規則(記憶、本指南)擋不住「派工當下沒想到要問」,所以在派出**之前**放一道閘,把決定權交還使用者。規則本體與自檢清單見 §14。
+
+- **事件**:PreToolUse(`Agent|Task`)→ `pre`。只管主對話(`agent_type` 為空);子代理內的呼叫不管。
+- **重型的定義**:派工時指定的模型含 `fable` 或 `opus`(`fork` 忽略 `model` 覆寫,不算);或 `isolation` 為 `worktree`、`remote`。`scout`、`counsel` 豁免(各有 §3 的並行 ≤3、§4 的每里程碑 2 次)。輕型派工不入帳、不出聲,只付一次 hook 啟動成本。
+- **何時問**:① 指定重型模型 → 第 1 個就問;② 其他重型(例:只有 worktree)→ 本輪第 2 個起問,所以單一 worktree 審查代理(CLAUDE.md 開發流程 4e)照放行。問的方式是回 `permissionDecision: "ask"` 加理由,由使用者決定;**絕不回 deny**——這是 R172「hook 永不阻擋」唯一的例外,而且只是「詢問」不是「拒絕」。
+- **計數**:先記一筆 `PreAgent`(只存 `st`、`model`、`why`、`desc` 前 60 字、`tuid`,不存 prompt),再讀帳本數本輪不同 `tuid` 的 `PreAgent`(同 `tuid` 只算一次,hook 重跑不重複計)。平行派工是獨立行程:先記後數,所以同一批裡最後記完的那個一定看得到全部,最早的那個可能放行。
+- **fail-open**:內部錯誤只走 `systemMessage`,不問、不擋(與其他事件一致);帳本寫不了時,「指定重型模型就問」不受影響(不依賴帳本),只有「本輪第 2 個起」這條數不到。
+- **關閉**:環境變數 `SLG_OPS_GATE` 設成 `off`、`0`、`false` 或 `no`(不分大小寫):不問,仍記 `PreAgent`。測試不受這個變數影響(`_mod()`、`_run()` 會清掉它)。
+- **實測依據**(2026-11-19、Claude Code 2.1.327、隔離暫存專案〔獨立 settings 與帳本〕、`claude -p --model haiku`):讓模型派一個指定 `model: fable` 的 Agent → PreToolUse 觸發 `pre`、`ask` JSON 被接受、理由文字傳回模型、帳本有 `PreAgent`、**沒有** PostToolUse 的 Agent 記錄(代理沒被啟動,沒花到 Fable)。`-p` 沒有人可問,`ask` 等同未獲批准。
+- **試跑要確認(尚未驗)**:(e) `ask` 在**互動 session**(VS Code)與 **auto 模式**下是否真的跳出給使用者——auto 模式若由分類器代為決定,這道閘形同虛設;若確認如此,退路是改走 `additionalContext` 提醒或「deny 加使用者同意旗標」,須另開里程碑。(f) 同一則訊息平行派出的多個 Agent,PreToolUse 是否各自獨立觸發(程式已假設會、並以先記後數兜底)。(g) hook 與 settings 的變動要重啟 session 才載入。
+- **已知缺口(2026-11-19 counsel 審查指出,屬實)**:① 派工時**不指定 `model`**、而主對話本身跑在 Fable/Opus → 代理沿用重型模型,閘看不到(只剩 `isolation` 那條,且要同輪第 2 個才問)。目前主對話跑 Sonnet,此條不成立;換主模型時要重審。是否把「省略 model + 重型主模型」也算重型,待使用者定(須先查 hook payload 帶不帶得到主模型)。② 閘擋的是「派工參數」不是「成本本身」:被問後若模型改掉 `model`/`isolation` 再派,閘不再出聲;只靠 §14 自檢與使用者看得到的派工內容把關。③ `SendMessage` 續用既有重型代理不在 matcher(與 counsel 的缺口同源,見「已知限制」);其他可能派代理的工具名也不在。④ 「本輪」以使用者每次發話切:跨輪逐一派單一 worktree 代理永遠不會被問(單一審查代理放行的取捨);被使用者拒絕的派工已記 `PreAgent`,同輪重試會多算一次。⑤ hook 逾時或讀帳本失敗一律 fail-open 且無聲。
+
 ### 接線(試跑放 `.claude/settings.local.json`,已 gitignore)
 
 接線 JSON 的唯一來源是腳本內的 `WIRING`。`python3 .claude/hooks/ops_ledger.py wiring` 把它印到 stdout,不寫任何檔;`… wiring > .claude/settings.local.json` 會整檔覆寫,檔內已有其他設定就手動合併。下列區塊須與 `WIRING` 一致(測試鎖死)。
@@ -201,6 +216,18 @@ PostToolUse 記帳,Stop 補「代理檢查」的實測數字。R175 起另偵測
 ```json
 {
   "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Agent|Task",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/ops_ledger.py\" pre || exit 1",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
     "PostToolUse": [
       {
         "matcher": "Read|Edit|Write|Agent|Bash|Grep",
@@ -272,4 +299,21 @@ PostToolUse 記帳,Stop 補「代理檢查」的實測數字。R175 起另偵測
 - `SendMessage` 續用既有 counsel 子代理(又一輪 Opus)不入帳:matcher 不含它。是否算一次 counsel 待使用者定;若算,第二批把 `SendMessage` 加進 matcher 並記收件者(須先實測 PostToolUse 對這個延遲載入的工具是否觸發)。
 - 兩個同時的 Stop 行程(check-then-act 無鎖)只有在重複接線時才會雙雙提醒;第二次 Stop 有 `stop_hook_active`,不成迴圈。
 - repo 外的改檔(含 `~/.claude/settings.json`)不算實作輪。
-- 第二批(未做):counsel 第 3 次先問、切 Opus 提醒。須先用 `-p` 實測相關事件是否存在,以及 auto 模式下 `ask` 的行為。
+- 第二批(部分做):R192 已把 PreToolUse + `ask` 用在「重型代理派工閘」(見該節);**counsel 第 3 次先問、切 Opus 提醒仍未做**。auto 模式下 `ask` 的實際行為仍待驗(見該節 (e)),驗過再決定 counsel 要不要用同一機制。
+
+## 14. 重型代理派工前自檢(R192)
+
+**起因**:R191 設計階段,主對話一次派 3 個 Fable + worktree 設計代理——方案軸是我自己預設的(沒讓使用者或代理自提)、共用的量測工具被三個代理各重建一次、先花最貴的原型而非紙面方案、事前沒告知使用者成本。既有規則只管 scout(並行 ≤3,§3)與 counsel(§4),重型代理沒人管;「不替使用者預設方向」只存在記憶裡,派工當下沒有東西提醒。
+
+**重型代理** = 主對話派的 Agent,且指定 Fable/Opus 模型,或隔離 worktree/remote。scout、counsel 不算(各有 §3、§4 的上限)。
+
+派任何重型代理**之前**逐題自答;任一題答不出「是」,先停手問使用者,不要派:
+
+1. **方向誰定**:方案軸、機制家族是使用者指定,或代理自提的嗎?我預設的軸只能當「種子」,告知使用者時要明說「這是我的假設」,並允許代理回報「此軸沒有好方案」。
+2. **共用基礎設施**:有幾位代理要用同一套量測工具、fixture、harness?有就先建一份(入庫,或放暫存目錄供唯讀),再並行;別讓每位各重建一次(數字也才可比)。
+3. **階段**:設計類固定走「紙面方案 → 使用者刪減 → 只對選中的做原型」。沒過紙面關就開原型,等於先花掉最貴的、再讓使用者否決。
+4. **同意**:已告知使用者「幾位、什麼模型、做什麼、大約多貴」,並得到同意?使用者說「做 A」只授權里程碑與流程,不等於授權同時 N 位重型代理的成本。
+
+**單一 worktree 審查代理**(CLAUDE.md 開發流程 4e,預設一位 Sonnet)是既定流程,不必每次問;但多維 fan-out 仍須使用者明說(§9)。
+
+hook 的派工閘(§13「重型代理派工閘」)只是最後保險:它保證使用者在派出前被問到,**不保證**我問得對——問什麼仍由上面四題決定。閘跳出來時,理由文字就是這份清單的提醒。

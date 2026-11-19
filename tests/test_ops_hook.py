@@ -35,6 +35,7 @@ _seq = itertools.count(1)
 def _mod():
     # R175 審查 #3:SLG_OPS_BIGDOC=off 是使用者環境,in-process 測試的結果不得隨它變(否則使用者照文件把它關掉,run_all 閘門就紅)
     os.environ.pop("SLG_OPS_BIGDOC", None)
+    os.environ.pop("SLG_OPS_GATE", None)   # R192:同理,派工閘開關是使用者環境,不得左右測試
     spec = importlib.util.spec_from_file_location("ops_ledger_under_test", HOOK)
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
@@ -58,6 +59,7 @@ def _run(cmd, payload, ledger, raw=None, env_remove=(), hook=HOOK, env_set=None)
     env = dict(os.environ)
     env["SLG_OPS_LEDGER"] = ledger
     env.pop("SLG_OPS_BIGDOC", None)   # R175 kill switch:預設關閉狀態由各測試明確指定,不被外部環境汙染
+    env.pop("SLG_OPS_GATE", None)     # R192 派工閘開關:同理
     for k in env_remove:
         env.pop(k, None)
     env.update(env_set or {})
@@ -546,20 +548,25 @@ def test_ops_md_documents_ledger_hook_and_wiring_snippet_is_valid():
     for needle in ("SLG_OPS_LEDGER", "ops_ledger.py", "提交訊息開頭的 R##", "settings.local.json", "agent_type", "stop_hook_active",
                    "skip_no_msg", "SendMessage",
                    # R175:大文本自讀偵測的文件關鍵詞(門檻/關閉開關/失敗事件/產生接線的子命令)
-                   "PostToolUseFailure", "SLG_OPS_BIGDOC", "大文本自讀", "ops_ledger.py wiring", "persistedOutputSize"):
+                   "PostToolUseFailure", "SLG_OPS_BIGDOC", "大文本自讀", "ops_ledger.py wiring", "persistedOutputSize",
+                   # R192:重型代理派工閘的文件關鍵詞(事件/決策欄位/開關/章節標題)
+                   "PreToolUse", "permissionDecision", "SLG_OPS_GATE", "### 重型代理派工閘(R192)", "## 14. 重型代理派工前自檢"):
         assert needle in ops, f"ops.md 缺 hook 文件關鍵詞:{needle}"
     blocks = re.findall(r"```json\n(.*?)\n```", ops, re.S)
     wiring = [json.loads(b) for b in blocks if '"hooks"' in b]
     assert wiring, "ops.md 須附可複製的 hooks 接線 JSON(也是試跑時放進 settings.local.json 的內容)"
     hooks = wiring[0]["hooks"]
-    assert set(hooks) == {"PostToolUse", "PostToolUseFailure", "UserPromptSubmit", "Stop"}, sorted(hooks)
+    assert set(hooks) == {"PreToolUse", "PostToolUse", "PostToolUseFailure", "UserPromptSubmit", "Stop"}, sorted(hooks)
+    # R192:派工閘只接 Agent(舊名 Task 一併接);接到別的工具會對每個 Read/Bash 多付一次 hook 成本
+    assert set(hooks["PreToolUse"][0]["matcher"].split("|")) == {"Agent", "Task"}, hooks["PreToolUse"]
     post = hooks["PostToolUse"][0]
     # Bash/Grep 加進 matcher 是 R175 的偵測面(對應 ops.md H2 硬規則);少了就看不到「Bash 印大文本」
     assert set(post["matcher"].split("|")) == {"Read", "Edit", "Write", "Agent", "Bash", "Grep"}, post["matcher"]
     # 失敗的 Bash(exit≠0)走另一個事件,輸出在 payload 的 error 欄(2026-11 實測);只接 Bash
     assert set(hooks["PostToolUseFailure"][0]["matcher"].split("|")) == {"Bash"}, hooks["PostToolUseFailure"]
     assert wiring[0]["permissions"]["allow"] == ["Bash(python3 .claude/hooks/ops_ledger.py status)"], wiring[0].get("permissions")
-    for event, sub in (("PostToolUse", "post"), ("PostToolUseFailure", "post"), ("UserPromptSubmit", "prompt"), ("Stop", "stop")):
+    for event, sub in (("PreToolUse", "pre"), ("PostToolUse", "post"), ("PostToolUseFailure", "post"),
+                       ("UserPromptSubmit", "prompt"), ("Stop", "stop")):
         assert len(hooks[event]) == 1 and len(hooks[event][0]["hooks"]) == 1, f"{event} 應各只接一條"
         h = hooks[event][0]["hooks"][0]
         want = f'python3 "$CLAUDE_PROJECT_DIR/.claude/hooks/ops_ledger.py" {sub} || exit 1'
@@ -1545,6 +1552,172 @@ def test_ops_md_constants_match_the_hook():
                *sorted(mod.GIT_STAT_FLAGS), *sorted(mod.GIT_PATCH_FLAGS), *mod.GIT_PATCH_PREFIXES, *sorted(mod.ENV_OFF_VALUES)]
     missing = [n for n in needles if n not in sec]
     assert not missing, f"ops.md §13「大文本自讀偵測」缺 {missing}(hook 常數已改但文件沒跟上?)"
+
+
+# ── R192 重型代理派工閘(PreToolUse):事故=R191 一次派 3 個 Fable+worktree 設計代理,事前沒問使用者 ──────────
+
+def _pre(ti, sid="s1", pid="p1", tuid=None, agent_type=None, tool="Agent"):
+    p = {"hook_event_name": "PreToolUse", "session_id": sid, "prompt_id": pid, "tool_name": tool,
+         "tool_input": ti, "tool_use_id": tuid or f"tu-{next(_seq)}"}
+    if agent_type:
+        p["agent_type"] = agent_type
+        p["agent_id"] = "agent-1"
+    return p
+
+
+def _asked(out):
+    """解析 ask 回覆;回 (reason)。順手鎖死形狀:hookEventName 須與觸發事件一致、決策只能是 ask、絕不 deny。"""
+    j = json.loads(out)
+    h = j["hookSpecificOutput"]
+    assert h["hookEventName"] == "PreToolUse" and h["permissionDecision"] == "ask", j
+    assert "deny" not in out and "block" not in out, "派工閘只問不擋(R172 紅線:hook 永不阻擋)"
+    return h["permissionDecisionReason"]
+
+
+WT = {"subagent_type": "general-purpose", "isolation": "worktree", "description": "設計", "prompt": "PROMPT-BODY"}
+
+
+def test_pre_light_dispatches_are_silent_and_unrecorded():
+    with tempfile.TemporaryDirectory() as d:
+        led = os.path.join(d, "l.jsonl")
+        for ti in ({"subagent_type": "scout", "model": "haiku"},
+                   {"subagent_type": "scout", "isolation": "worktree"},          # scout 豁免(另有並行 ≤3)
+                   {"subagent_type": "counsel"},
+                   {"subagent_type": "counsel", "model": "opus", "isolation": "worktree"},   # counsel 豁免(另有每里程碑 2 次)
+                   {"description": "x"},
+                   {"subagent_type": "general-purpose", "model": "sonnet"},
+                   {"subagent_type": "general-purpose", "model": "haiku", "isolation": "none"},
+                   {"subagent_type": "fork", "model": "opus"}):                   # fork 忽略 model 覆寫
+            rc, out, err = _run("pre", _pre(dict(ti, prompt="PROMPT-BODY")), led)
+            assert rc == 0 and out == "", f"{ti}: rc={rc} out={out!r} err={err!r}"
+        assert [r for r in _records(led) if r["ev"] == "PreAgent"] == [], "輕型派工不該入帳"
+
+
+def test_pre_pricey_model_asks_even_for_the_very_first_dispatch():
+    for model in ("fable", "Fable", "opus", "claude-opus-5-5"):
+        with tempfile.TemporaryDirectory() as d:
+            led = os.path.join(d, "l.jsonl")
+            rc, out, _ = _run("pre", _pre({"subagent_type": "general-purpose", "model": model, "description": "設計",
+                                           "prompt": "PROMPT-BODY"}), led)
+            assert rc == 0
+            reason = _asked(out)
+            assert model.lower() in reason and "第 1 個" in reason and "ops.md §14" in reason, reason
+            recs = [r for r in _records(led) if r["ev"] == "PreAgent"]
+            assert len(recs) == 1 and recs[0]["model"] == model and recs[0]["st"] == "general-purpose", recs
+            assert "PROMPT-BODY" not in open(led, encoding="utf-8").read(), "帳本不得存 prompt 內文(隱私)"
+
+
+def test_pre_second_heavy_in_the_same_turn_asks_but_the_first_one_passes():
+    with tempfile.TemporaryDirectory() as d:
+        led = os.path.join(d, "l.jsonl")
+        rc, out, _ = _run("pre", _pre(WT), led)
+        assert rc == 0 and out == "", "第 1 個 worktree 代理(例:單一審查代理)照放行,別每次都煩使用者"
+        for k in (2, 3):
+            rc, out, _ = _run("pre", _pre(WT), led)
+            assert rc == 0 and f"第 {k} 個" in _asked(out), out
+        # 新一輪(UserPromptSubmit 標記)重新計數
+        _feed(led, [("prompt", _prompt(pid="p2"))])
+        rc, out, _ = _run("pre", _pre(WT, pid="p2"), led)
+        assert rc == 0 and out == "", "新一輪的第 1 個重型代理放行"
+        # 另一個 session 不互相洩漏
+        rc, out, _ = _run("pre", _pre(WT, sid="s2"), led)
+        assert rc == 0 and out == "", "另一個 session 的第 1 個放行"
+
+
+def test_pre_parallel_batch_last_appender_always_sees_the_whole_batch():
+    # 同一則訊息平行派出 3 個:各自獨立行程、先記後數。這裡模擬「3 個都先記完,才各自數」的最壞交錯:每個都該看到 3 個
+    mod = _mod()
+    with tempfile.TemporaryDirectory() as d:
+        led = os.path.join(d, "l.jsonl")
+        with _ledger_env(led):
+            for i in range(3):
+                mod.append_record({"ts": 1.0, "ev": "PreAgent", "sid": "s1", "pid": "p1", "tuid": f"b{i}", "at": None})
+            out = mod.handle_pre(_pre(WT, tuid="b2"))
+        assert out and "第 3 個" in out["hookSpecificOutput"]["permissionDecisionReason"], out
+
+
+def test_pre_same_tool_use_id_counts_once():
+    with tempfile.TemporaryDirectory() as d:
+        led = os.path.join(d, "l.jsonl")
+        for _ in range(3):   # hook 重跑(同一個 tool_use_id)不得把一次派工算成多個
+            rc, out, _ = _run("pre", _pre(WT, tuid="dup"), led)
+            assert rc == 0 and out == "", out
+
+
+def test_pre_ignores_subagents_and_odd_payloads():
+    with tempfile.TemporaryDirectory() as d:
+        led = os.path.join(d, "l.jsonl")
+        fable = {"subagent_type": "general-purpose", "model": "fable"}
+        for payload in (_pre(fable, agent_type="reviewer"),                      # 子代理內的呼叫不管
+                        _pre(fable, tool="Read"),                                # 非 Agent 工具
+                        {"hook_event_name": "PreToolUse"},                       # 沒有 tool_name
+                        _pre({"subagent_type": "general-purpose", "model": 123, "isolation": ["worktree"]}),   # 型別亂
+                        {**_pre(fable), "tool_input": "oops"},
+                        {**_pre(fable), "tool_input": None}):
+            rc, out, err = _run("pre", payload, led)
+            assert rc == 0 and out == "", f"{payload}: rc={rc} out={out!r} err={err!r}"
+        assert [r for r in _records(led) if r["ev"] == "PreAgent"] == []
+
+
+def test_pre_kill_switch_accepts_common_off_spellings_and_still_records():
+    fable = {"subagent_type": "general-purpose", "model": "fable"}
+    for v in ("off", "OFF", "0", "false", "no"):
+        with tempfile.TemporaryDirectory() as d:
+            led = os.path.join(d, "l.jsonl")
+            rc, out, _ = _run("pre", _pre(fable), led, env_set={"SLG_OPS_GATE": v})
+            assert rc == 0 and out == "", f"SLG_OPS_GATE={v} 應關掉派工閘:{out!r}"
+            assert len([r for r in _records(led) if r["ev"] == "PreAgent"]) == 1, "關閉後仍記帳(與 SLG_OPS_BIGDOC 同)"
+    with tempfile.TemporaryDirectory() as d:
+        led = os.path.join(d, "l.jsonl")
+        rc, out, _ = _run("pre", _pre(fable), led, env_set={"SLG_OPS_GATE": "on"})
+        assert rc == 0 and _asked(out)
+
+
+def test_pre_internal_error_fails_open_and_never_asks_or_denies():
+    with tempfile.TemporaryDirectory() as d:
+        led = os.path.join(d, "l.jsonl")
+        rc, out, _ = _run("pre", None, led, raw=b"{not json")
+        assert rc == 0, "hook 內部錯誤必須 exit 0(不擋人)"
+        j = json.loads(out)
+        assert "systemMessage" in j and "permissionDecision" not in out and "deny" not in out, j
+        assert "hookSpecificOutput" not in j, "pre 的錯誤通知只走 systemMessage(沒有 additionalContext 的事件名可套)"
+        rc, out, _ = _run("pre", None, led, raw=b"[1, 2]")   # 同 session 第二次:只記錄、不再通知
+        assert rc == 0 and out == "", out
+
+
+def test_pre_fork_model_override_is_ignored_but_its_isolation_counts():
+    with tempfile.TemporaryDirectory() as d:
+        led = os.path.join(d, "l.jsonl")
+        rc, out, _ = _run("pre", _pre({"subagent_type": "fork", "model": "opus", "isolation": "worktree"}), led)
+        assert rc == 0 and out == "", out   # 只有 worktree 這條成立 → 第 1 個放行
+        rec = [r for r in _records(led) if r["ev"] == "PreAgent"][0]
+        assert rec["why"] == "隔離 worktree", rec
+
+
+def test_heavy_reason_unit():
+    mod = _mod()
+    assert mod.heavy_reason({"subagent_type": "claude", "model": "Fable"}) == "指定模型 fable"
+    assert mod.heavy_reason({"model": "opus", "isolation": "worktree"}) == "指定模型 opus、隔離 worktree"
+    assert mod.heavy_reason({"isolation": "remote"}) == "隔離 remote"
+    for ti in ({}, {"model": "sonnet"}, {"model": "haiku"}, {"isolation": "none"}, {"isolation": None}, {"isolation": 5},
+               {"subagent_type": 7, "model": "fable"}, {"subagent_type": "scout", "model": "fable"},
+               {"subagent_type": "counsel", "isolation": "worktree"}):
+        assert mod.heavy_reason(ti) is None, ti
+    assert mod.pricey_model({"subagent_type": "fork", "model": "fable"}) is None
+
+
+def test_ops_md_gate_section_matches_the_hook_constants():
+    # 與 test_ops_md_constants_match_the_hook 同理:改了門檻/清單/開關,文件要跟著紅燈
+    mod = _mod()
+    ops = open(os.path.join(ROOT, "ops.md"), encoding="utf-8").read()
+    sec = ops.split("### 重型代理派工閘(R192)", 1)[1].split("\n## ", 1)[0].split("\n### ", 1)[0]
+    needles = [mod.ENV_GATE, f"第 {mod.GATE_CAP} 個", *mod.HEAVY_MODELS, *sorted(mod.HEAVY_ISOLATIONS),
+               *sorted(mod.GATE_EXEMPT_TYPES), "PreAgent", "ask", "fail-open"]
+    missing = [n for n in needles if n not in sec]
+    assert not missing, f"ops.md「重型代理派工閘(R192)」缺 {missing}(hook 常數已改但文件沒跟上?)"
+    chk = ops.split("## 14. 重型代理派工前自檢", 1)[1]
+    for needle in ("紙面", "共用", "預設", "同意"):   # 四題自檢的四個要點
+        assert needle in chk, f"ops.md §14 自檢清單缺要點:{needle}"
 
 
 def run():

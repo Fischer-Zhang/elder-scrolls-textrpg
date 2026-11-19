@@ -6,12 +6,17 @@
           R175:主對話用 Bash/Grep 把大文本(ops.md H2)的內文印進上下文時,累計「中文長行字數」,跨門檻當場提醒;
           Read 大文本只在 Stop 併入統計(Read 本身不當場提醒)
   prompt  UserPromptSubmit:記一筆「新一輪開始」標記(輪界)
-  stop    Stop:實作輪(或自讀大文本達門檻)缺「代理檢查」行 / 缺「大文本自讀」欄 → 回 decision=block 並附實測數字,讓模型同輪補一行(同輪最多一次)
+  pre     PreToolUse(Agent|Task):R192 重型代理派工閘——主對話派「重型」代理(指定 Fable/Opus 模型,或同輪第 2 個起的重型代理
+          〔隔離 worktree/remote 或指定重型模型〕)前,回 permissionDecision=ask 請使用者確認;scout/counsel 豁免(見 ops.md §14)
+  stop   Stop:實作輪(或自讀大文本達門檻)缺「代理檢查」行 / 缺「大文本自讀」欄 → 回 decision=block 並附實測數字,讓模型同輪補一行(同輪最多一次)
   status  給人看的摘要(/sync 用):帳本最後一筆時間、本里程碑 counsel 次數、大文本自讀、最近 StopCheck、錯誤筆數
   wiring  把接線 JSON 印到 stdout,讓使用者自己 redirect 成 .claude/settings.local.json(本腳本絕不寫 settings)
 
 紅線:
 - hook 永不阻擋工具、永遠 exit 0。內部錯誤寫帳本 Error 記錄,每個 session 只通知一次;不設 onFailure:"block"。
+  R192 唯一例外:`pre` 對重型代理派工回 permissionDecision="ask"(請使用者確認)。那是「詢問」不是「拒絕」:使用者同意就照派,
+  絕不回 deny;內部錯誤、SLG_OPS_GATE=off 時一律放行(fail-open)。「指定 Fable/Opus 就問」不依賴帳本;帳本寫不了時
+  只有「同輪第 2 個起」這條會因數不到而漏掉。
   R175 的當場提醒只用 additionalContext(給模型)與 systemMessage(給使用者);不用 updatedToolOutput(那等於沒收工具結果)。
 - 主對話統計只取 agent_type 為空的記錄:子代理內的 Read/Edit 也會觸發同一組 hook(agent_type 非空)。
   scout 讀大文本是它的本職,當場提醒與 Stop 納入都以 agent_type 為空作閘門。
@@ -60,6 +65,11 @@ PROSE_REC_MIN = 40        # 一次輸出的中文長行字數 < 此值就不記�
 BIGDOC_WARN = 150         # 本輪累計中文長行字數跨過 → 當場 additionalContext(只給模型,不吵使用者)
 BIGDOC_ALARM = 600        # 再跨過 → 另發 systemMessage(使用者看得到)
 ENV_BIGDOC = "SLG_OPS_BIGDOC"   # 設 off:不當場提醒、Stop 不納入(仍記帳);一鍵關掉誤報
+ENV_GATE = "SLG_OPS_GATE"       # R192:設 off 就關掉重型代理派工閘(仍記 PreAgent);一鍵關掉打擾
+GATE_CAP = 2                    # R192:同輪第 N 個重型代理起請使用者確認(ops.md §14)
+HEAVY_MODELS = ("fable", "opus")   # R192:派工時指定這些模型 → 一律先問(counsel 豁免;fork 忽略 model 覆寫)
+HEAVY_ISOLATIONS = frozenset({"worktree", "remote"})   # R192:隔離執行的代理算重型(各自複製一份工作樹/雲端環境)
+GATE_EXEMPT_TYPES = frozenset({"scout", "counsel"})    # R192:scout 另有「並行 ≤3」(§3)、counsel 另有每里程碑 2 次(§4)
 BD_TOKEN = "大文本自讀"   # 「代理檢查」行須含的欄位名
 CJK_RE = re.compile(r"[㐀-鿿豈-﫿]")
 GIT_EXEMPT_SUBS = frozenset({"status", "add", "commit", "push", "rev-list", "branch", "ls-files", "check-ignore"})
@@ -92,6 +102,8 @@ def _cmd(sub: str) -> str:
 # Grep 在 macOS/Linux/WSL 預設不存在(官方文件),列在 matcher 裡無害;Bash 的 grep 輸出走 Bash 的 matcher。
 WIRING = {
     "hooks": {
+        "PreToolUse": [{"matcher": "Agent|Task",
+                        "hooks": [{"type": "command", "command": _cmd("pre"), "timeout": 10}]}],
         "PostToolUse": [{"matcher": "Read|Edit|Write|Agent|Bash|Grep",
                          "hooks": [{"type": "command", "command": _cmd("post"), "timeout": 10}]}],
         "PostToolUseFailure": [{"matcher": "Bash",
@@ -679,6 +691,82 @@ def handle_prompt(payload: dict):
     return None
 
 
+# ── R192 重型代理派工閘 ─────────────────────────────────────────────────────
+# 事故(R191 設計階段):主對話一次派 3 個 Fable + worktree 設計代理,方案軸是自己預設的、共用量測工具被重建三次、
+# 事前沒告知使用者成本。軟規則(記憶、ops.md)擋不住,所以在派工「之前」放一道閘:回 ask,由使用者決定。
+
+def pricey_model(ti: dict) -> str | None:
+    """派工時指定了重型模型(Fable/Opus)→ 回模型名,否則 None。fork 忽略 model 覆寫(沿用主對話模型),不算。"""
+    st = ti.get("subagent_type")
+    model = ti.get("model")
+    if st == "fork" or not isinstance(model, str):
+        return None
+    m = model.strip().lower()
+    return m if any(h in m for h in HEAVY_MODELS) else None
+
+
+def heavy_reason(ti: dict) -> str | None:
+    """這次 Agent 派工算不算「重型」,回原因文字;輕型回 None。scout / counsel 豁免。"""
+    st = ti.get("subagent_type") or "general-purpose"
+    if not isinstance(st, str) or st in GATE_EXEMPT_TYPES:
+        return None
+    why = []
+    pm = pricey_model(ti)
+    if pm:
+        why.append(f"指定模型 {pm}")
+    iso = ti.get("isolation")
+    if isinstance(iso, str) and iso.strip().lower() in HEAVY_ISOLATIONS:
+        why.append(f"隔離 {iso.strip().lower()}")
+    return "、".join(why) or None
+
+
+def gate_enabled() -> bool:
+    return os.environ.get(ENV_GATE, "").strip().lower() not in ENV_OFF_VALUES
+
+
+def handle_pre(payload: dict):
+    """PreToolUse(Agent|Task):主對話的重型派工先記一筆 PreAgent,再數本輪重型代理數;
+    指定重型模型,或本輪已是第 GATE_CAP 個起 → 回 ask。只記 metadata(不存 prompt)。
+
+    先記後數:平行派工是獨立行程,可能同時進來;各自「先追加自己、再讀帳本」,後追加的那個一定看得到前面所有的,
+    所以同一批裡至少最後一個會被問到(最早的那個可能放行,因為它讀帳本時別人還沒寫)。"""
+    if payload.get("tool_name") not in ("Agent", "Task") or payload.get("agent_type"):
+        return None   # 只管主對話的派工
+    ti = payload.get("tool_input") if isinstance(payload.get("tool_input"), dict) else {}
+    why = heavy_reason(ti)
+    if why is None:
+        return None
+    rec = _base(payload)
+    tuid = payload.get("tool_use_id")
+    rec["tuid"] = tuid if isinstance(tuid, str) else None
+    model = ti.get("model")
+    rec.update(ev="PreAgent", st=ti.get("subagent_type") or "general-purpose",
+               model=model if isinstance(model, str) else None, why=why,
+               desc=str(ti.get("description") or "")[:60])
+    append_record(rec)
+    if not gate_enabled():
+        return None
+    turn = turn_records(load_records(), rec.get("sid"), rec.get("pid"))
+    ids: set = set()
+    anon = 0
+    for r in turn:
+        if r.get("ev") != "PreAgent" or r.get("at"):
+            continue
+        t = r.get("tuid")
+        if isinstance(t, str):
+            ids.add(t)
+        else:
+            anon += 1
+    n = len(ids) + anon
+    if not (pricey_model(ti) or n >= GATE_CAP):
+        return None
+    text = (f"[ops-hook] 重型代理派工閘(R192):{why};本輪第 {n} 個重型代理。"
+            "派工前須先告知使用者「幾位、什麼模型、做什麼、大約多貴」並取得同意(ops.md §14):"
+            "設計類先出紙面方案、由使用者刪減後才做原型;共用的量測工具先建一份再並行;方案軸/家族別自己預設。確認派出?")
+    return {"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "ask",
+                                   "permissionDecisionReason": text}}
+
+
 def _has_bd_field(msg: str) -> bool:
     """「代理檢查」行內含「大文本自讀」,或另起一行以「大文本自讀」開頭(Stop 補欄提示要求的形式)。
     正文別處提到這個詞不算(審查實測:原本整則訊息任何位置出現都放行)。"""
@@ -896,7 +984,7 @@ def status() -> int:
 
 # ── 進入點 ─────────────────────────────────────────────────────────────────
 
-HANDLERS = {"post": handle_post, "prompt": handle_prompt, "stop": handle_stop}
+HANDLERS = {"post": handle_post, "prompt": handle_prompt, "pre": handle_pre, "stop": handle_stop}
 
 
 def main(argv: list[str] | None = None) -> int:
