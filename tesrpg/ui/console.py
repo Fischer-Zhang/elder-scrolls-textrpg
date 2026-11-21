@@ -282,10 +282,11 @@ def _location_view(char: Character, gamedata: GameData, brief: bool = False) -> 
         v["ruler"] = {"title": ruler["title"], "name": ruler["name"]}
         v["faction"] = politics.stance_label(politics.faction_of(char, gamedata, char.location_id))
         v["bloc"] = ruler.get("bloc_label")
+    _f = world.travel_factor(char, gamedata)          # R197:出口時數 = 實際時數(與旅行選單 / 真正出發同源)
     for d, h in loc.get("links", {}).items():
         if not world.is_visible(char, gamedata, d):   # 隱藏地點(湮滅之門未開/已閉)不列為出口
             continue
-        v["exits"].append({"name": gamedata.location(d)["name"], "hours": h, "key": "go:" + d})
+        v["exits"].append({"name": gamedata.location(d)["name"], "hours": world.scaled_hours(h, _f), "key": "go:" + d})
     return v
 
 
@@ -732,6 +733,7 @@ def _map_view(char: Character, gamedata: GameData, reach: dict | None = None,
     blocked = blocked or set()   # R180:只因路線偏好而到不了的地點(前端標「避險設定下無路可通」)
     locs = gamedata.world["locations"]
     vis = {lid for lid in locs if world.is_visible(char, gamedata, lid)}   # 隱藏地點不上圖
+    _tf = world.travel_factor(char, gamedata)   # R197:邊標 / 出口時數 = 實際時數(reach 由呼叫端以 routes_from(actual=True) 傳入)
     _quest_target_locs = _quest_target_location_set(char, gamedata)
     now = _hud_state.time.absolute_hours() if _hud_state is not None else 0
     _reinfest_locs = {lid for lid, l in locs.items()
@@ -764,7 +766,8 @@ def _map_view(char: Character, gamedata: GameData, reach: dict | None = None,
                           "here": here, "visited": visited,
                           "danger": loc.get("danger", 0), "faction": fac, "landmark": lm,
                           "services": [_SERVICE_CN[s] for s in loc.get("services", []) if s in _SERVICE_CN],
-                          "exits": [{"name": locs[d]["name"], "hours": h} for d, h in loc.get("links", {}).items() if d in vis]})
+                          "exits": [{"name": locs[d]["name"], "hours": world.scaled_hours(h, _tf)}
+                                    for d, h in loc.get("links", {}).items() if d in vis]})
             _r = reach.get(lid)   # 互動地圖:可達則 (hops, hours),否則 None(當前地/不可達=None)
             grid_nodes.append({"id": lid, "name": loc["name"], "pos": loc.get("pos", [0, 0]),
                                "type": loc["type"], "type_cn": LOC_TYPE_NAME.get(loc["type"], ""),
@@ -796,7 +799,7 @@ def _map_view(char: Character, gamedata: GameData, reach: dict | None = None,
             if key in seen_e or dest not in vis:
                 continue
             seen_e.add(key)
-            edges.append({"a": lid, "b": dest, "h": h})
+            edges.append({"a": lid, "b": dest, "h": world.scaled_hours(h, _tf)})   # R197:邊標 = 實際時數
     return {"provinces": provs,
             "grid": {"cols": gm["cols"], "rows": gm["rows"],
                      "nodes": grid_nodes, "edges": edges}}

@@ -2016,6 +2016,13 @@ def _cycle_route_caution(char) -> None:
     ui.message(f"路線偏好改為「{label}」—— {tail}", style="grey70")
 
 
+def _travel_hours_label(char, gamedata: GameData, base_hours: int) -> str:
+    """R197 旅行選單的時數標示 = 實際時數(套用運動 / 坐騎 / 星座 / 同伴 / 神殿旅速;與真正出發同一個
+    `world.travel_hours` → 預覽 = 實擲);有差異才附「·原 N」(沒有加速來源 → 與 R197 前逐位元組同)。"""
+    actual = world.travel_hours(char, gamedata, base_hours)
+    return f"{actual} 時" if actual == base_hours else f"{actual} 時·原 {base_hours}"
+
+
 def action_travel(state: GameState, gamedata: GameData) -> str | None:
     char = state.player
     while True:
@@ -2023,7 +2030,7 @@ def action_travel(state: GameState, gamedata: GameData) -> str | None:
         adj = {dest for dest, _h in topts}
         targets = ui._quest_target_location_set(char, gamedata)   # R125:進行中任務目標地(指路 ◎)
         opts = [(dest, f"{'◎ ' if dest in targets else ''}{gamedata.location(dest)['name']}"
-                       f"（{h} 時{' · 任務' if dest in targets else ''})")
+                       f"（{_travel_hours_label(char, gamedata, h)}{' · 任務' if dest in targets else ''})")
                 for dest, h in topts]
         # R125 導航:前往任務目標捷徑(有可達的非相鄰任務目標時)——引擎 BFS 已就緒,只是過去 UI 不讓走。
         # R180:以「不設限」的可達性決定要不要顯示,免得目標因避險設定而無聲消失(進去後會標明無路可通)。
@@ -2053,7 +2060,7 @@ def action_map(state: GameState, gamedata: GameData) -> str | None:
     marker 只選取看設施(維持 showInfo/拖曳);旅行由 `.mapinfo` 面板按鈕觸發 → submit 'route:<lid>'
     → 走 `_travel_route`(R114D BFS 逐跳趕路,單跳亦正確)。抵達/途中遇襲中斷後迴圈以新位置重繪。"""
     while True:
-        reach = world.routes_from(state.player, gamedata)      # 一次 BFS:{lid:(hops,hours)}
+        reach = world.routes_from(state.player, gamedata, actual=True)   # 一次 BFS:{lid:(hops,實際 hours)}(R197:套旅速)
         # R180:放寬到不限才到得了的地點 = 被路線偏好擋下 → 地圖標「避險設定下無路可通」(不給前往鍵)
         blocked = (set(world.routes_from(state.player, gamedata, caution="off")) - set(reach)
                    if world.route_caution(state.player) != "off" else set())
@@ -2085,7 +2092,7 @@ def _action_goal_travel(state: GameState, gamedata: GameData, targets: list) -> 
     for t in targets:
         loc, path = locs.get(t), world.route_to(char, gamedata, t)
         if loc and path:
-            entries.append((t, loc, len(path), world.route_hours(char, gamedata, path)))
+            entries.append((t, loc, len(path), world.route_hours_actual(char, gamedata, path)))
         elif loc and world.route_blocked(char, gamedata, t):               # R180:照列,選了會說明原因
             entries.append((t, loc, None, None))
     if not entries:
@@ -2116,7 +2123,7 @@ def _action_long_travel(state: GameState, gamedata: GameData, adj: set) -> str |
             continue
         path = world.route_to(char, gamedata, lid)
         if path:
-            dests.append((lid, loc, len(path), world.route_hours(char, gamedata, path), lid in targets))
+            dests.append((lid, loc, len(path), world.route_hours_actual(char, gamedata, path), lid in targets))
         elif world.route_blocked(char, gamedata, lid):                     # R180:照列,選了會說明原因
             dests.append((lid, loc, None, None, lid in targets))
     if not dests:

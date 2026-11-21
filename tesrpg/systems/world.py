@@ -154,15 +154,55 @@ def route_hours(char: Character, gamedata: GameData, path: list[str]) -> int:
     return total
 
 
-def routes_from(char: Character, gamedata: GameData, caution: str | None = None) -> dict[str, tuple[int, int]]:
+def travel_factor(char: Character, gamedata: GameData) -> float:
+    """旅行耗時係數(越小越快;夾 floor 0.5)。純讀、零 rng。R197:自 `travel()` 抽出,**旅行選單 / 地點卡 / 地圖顯示的
+    實際時數與真正出發共用此式**(預覽 = 實擲)。來源:運動 + 運動 50「健步如飛」兼帶旅速(R195 前稱長途健步)+ 同伴「識途」+
+    坐騎 + 駿馬座疾行 + 凱娜瑞絲之佑(R107)。⚠ 各項相減的順序即浮點運算順序,勿重排(逐位元組同舊)。"""
+    from tesrpg.systems import birthsign_ability, divines, mastery, mounts, party
+    return max(0.5, formulas.athletics_travel_factor(char.skill("athletics"))
+               - mastery.travel_factor_bonus(char, gamedata)
+               - party.passive_capstone_factor(char, gamedata, "travel")
+               - mounts.travel_factor_bonus(char, gamedata)
+               - birthsign_ability.travel_factor_bonus(char, gamedata)
+               - divines.travel_factor_bonus(char, gamedata))
+
+
+def scaled_hours(base_hours: int, factor: float) -> int:
+    """一跳的實際耗時:max(1, round(名目 × 係數))(逐跳取整,與真實逐跳旅行同一個式子)。"""
+    return max(1, round(base_hours * factor))
+
+
+def travel_hours(char: Character, gamedata: GameData, base_hours: int) -> int:
+    """一跳 base_hours 名目時數 → 實際耗時(套用旅速係數)。`travel()` 與所有「實際時數」顯示共用(預覽 = 實擲)。"""
+    return scaled_hours(base_hours, travel_factor(char, gamedata))
+
+
+def route_hours_actual(char: Character, gamedata: GameData, path: list[str]) -> int:
+    """路徑實際總時數 = 逐跳旅行實際耗時之和(各跳各自取整,非「總和 × 係數」)。純讀。
+    以出發當下的技能計;途中運動升級若剛好跨過某個取整門檻,真實耗時可能差 1 時(極罕見)。
+    名目的 `route_hours` 不動(引擎 / 測試用)。"""
+    locs = gamedata.world["locations"]
+    factor = travel_factor(char, gamedata)
+    total, cur = 0, char.location_id
+    for hop in path:
+        base = (locs[cur].get("links", {}) or {}).get(hop, 0)
+        total += scaled_hours(base, factor) if base else 0
+        cur = hop
+    return total
+
+
+def routes_from(char: Character, gamedata: GameData, caution: str | None = None,
+                actual: bool = False) -> dict[str, tuple[int, int]]:
     """一次 BFS 回 {lid: (hops, hours)} —— 從當前地可達的所有可見地點(不含當前地)。
     等同對每個目的地各跑一次 `route_to`+`route_hours`,但攤成 O(V+E) 單趟(供互動地圖批量標
     「N 段·約 M 時」)。純圖走、零 rng、決定性(links 為 JSON 插入序、BFS 逐層 → 等長路徑穩定序;
-    hops/hours 語意與 route_to/route_hours 一致)。R180:同 route_to 的路線偏好過濾。"""
+    hops/hours 語意與 route_to/route_hours 一致)。R180:同 route_to 的路線偏好過濾。
+    R197:`actual=True` → hours 改為實際時數(= route_hours_actual,逐跳套旅速係數);預設 False = 名目(逐位元組同舊)。"""
     from collections import deque
     locs = gamedata.world["locations"]
     start = char.location_id
     caution = route_caution(char) if caution is None else caution
+    factor = travel_factor(char, gamedata) if actual else None
     prev: dict = {start: None}
     frontier = deque([start])
     while frontier:
@@ -183,9 +223,10 @@ def routes_from(char: Character, gamedata: GameData, caution: str | None = None)
             path.append(n)
             n = prev[n]
         path.reverse()
-        hours, cur = 0, start          # 沿路徑各跳 base 時數(同 route_hours)
+        hours, cur = 0, start          # 沿路徑各跳 base 時數(同 route_hours;actual → 逐跳套旅速係數,同 route_hours_actual)
         for hop in path:
-            hours += (locs[cur].get("links", {}) or {}).get(hop, 0)
+            base = (locs[cur].get("links", {}) or {}).get(hop, 0)
+            hours += base if factor is None else (scaled_hours(base, factor) if base else 0)
             cur = hop
         out[lid] = (len(path), hours)
     return out
@@ -206,16 +247,10 @@ def travel(char: Character, gamedata: GameData, dest_id: str, time, rng: RNG) ->
     回傳 {"foe":遭遇 Creature 或 None, "hours":實際耗時, "base_hours":名目耗時,
           "skill_events":運動升點事件}。遭遇尚未開打 —— 由上層決定接戰/逃避。
     """
-    from tesrpg.systems import birthsign_ability, divines, mastery, mounts, party, spellfx, vampirism
+    from tesrpg.systems import mounts, spellfx, vampirism
     links = current_location(char, gamedata).get("links", {})
     base_hours = links[dest_id]
-    travel_factor = max(0.5, formulas.athletics_travel_factor(char.skill("athletics"))
-                        - mastery.travel_factor_bonus(char, gamedata)
-                        - party.passive_capstone_factor(char, gamedata, "travel")
-                        - mounts.travel_factor_bonus(char, gamedata)
-                        - birthsign_ability.travel_factor_bonus(char, gamedata)
-                        - divines.travel_factor_bonus(char, gamedata))   # 「健步如飛」兼帶旅速(R195 前稱長途健步)+ 同伴「識途」+ 坐騎 + 駿馬座疾行 + 凱娜瑞絲之佑(R107),夾 floor 0.5
-    hours = max(1, round(base_hours * travel_factor))
+    hours = travel_hours(char, gamedata, base_hours)   # R197:與旅行選單 / 地點卡 / 地圖顯示的實際時數同一個函式(預覽 = 實擲)
     dest = gamedata.location(dest_id)
 
     foe = None
