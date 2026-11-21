@@ -496,7 +496,8 @@ ATHLETICS_FATIGUE_SCALE = 0.004  # 運動降低戰鬥體力消耗的係數
 
 
 def fatigue_cost_factor(athletics_skill: int) -> float:
-    """運動降低戰鬥(攻擊/格擋/施法)體力消耗:運動 0→×1.0、100→×0.6(最多省 40%)。"""
+    """運動降低戰鬥(攻擊/隱遁/施法)體力消耗:運動 0→×1.0、100→×0.6(最多省 40%)。
+    〔R195 查證:格擋的 `combat.player_block_cost` 無正式呼叫端(R137 格擋姿態取代整回合格擋),實際吃此係數者為攻擊/隱遁/施法。〕"""
     return max(0.6, 1.0 - athletics_skill * ATHLETICS_FATIGUE_SCALE)
 
 
@@ -652,8 +653,10 @@ FLEE_WIDTH = 0.30            # 緩肩寬度(獨立於 ceiling-knee → 過 200 �
 FLEE_ASYMPTOTE = 0.95        # 趨近、永不抵達
 
 
-def flee_chance(player_speed: int, player_agility: int, foe_speed: int) -> float:
-    chance = 0.45 + (player_speed + player_agility * 0.5 - foe_speed) * 0.006
+def flee_chance(player_speed: int, player_agility: int, foe_speed: int, bonus: float = 0.0) -> float:
+    """逃跑成功率。bonus = 運動 50 里程碑「健步如飛」(R195)的加成,加在緩肩(軟夾)**之前**:
+    慢手收益大、快手自然遞減(不硬頂)。預設 0.0 → 未選者逐位元組同舊版(x + 0.0 == x)。"""
+    chance = 0.45 + (player_speed + player_agility * 0.5 - foe_speed) * 0.006 + bonus
     return max(FLEE_FLOOR, _soft_ceiling(chance, FLEE_KNEE, FLEE_WIDTH, FLEE_ASYMPTOTE))
 
 
@@ -699,10 +702,12 @@ STEALTH_RETREAT_BASE = 0.55
 RETREAT_GROUP_PENALTY = 0.10      # 每多一個敵人,撤退更難
 
 
-def stealth_retreat_chance(sneak: int, speed: int, foe_speed: int, group_size: int) -> float:
-    """潛行撤退成功率:吃潛行與速度差,敵群越大越難。夾限 [0.10, 0.92](保留失敗率)。"""
+def stealth_retreat_chance(sneak: int, speed: int, foe_speed: int, group_size: int, bonus: float = 0.0) -> float:
+    """潛行撤退成功率:吃潛行與速度差,敵群越大越難。夾限 [0.10, 0.92](保留失敗率)。
+    bonus = 運動 50 里程碑「健步如飛」(R195)的加成,加在夾限之前(大群時也能從底部抬起;已貼 0.92 者無感)。
+    預設 0.0 → 未選者逐位元組同舊版。"""
     chance = (STEALTH_RETREAT_BASE + sneak * 0.004 + (speed - foe_speed) * 0.004
-              - max(0, group_size - 1) * RETREAT_GROUP_PENALTY)
+              - max(0, group_size - 1) * RETREAT_GROUP_PENALTY) + bonus
     return max(0.10, min(0.92, chance))
 
 

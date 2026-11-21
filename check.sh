@@ -2,7 +2,7 @@
 # 一鍵驗證鏈 — 流亡者 (tesrpg)。對應 CLAUDE.md「自動提交閘門」。
 # 用法:
 #   bash check.sh            # 編譯 → 全測試;若 git diff 動到戰鬥常數則自動跑平衡模擬
-#   bash check.sh --sim      # 強制跑 sim_assassin.py + sim_reckless.py + sim_monk.py + sim_dungeon.py(平衡回歸)
+#   bash check.sh --sim      # 強制跑 sim_assassin.py + sim_reckless.py + sim_monk.py + sim_dungeon.py + sim_flee.py(平衡回歸)
 #   bash check.sh --smoke    # 額外跑無頭煙霧(save/load 往返,只寫暫存目錄,不碰玩家存檔)
 #   bash check.sh --sim --smoke
 # 非零退出 = 有步驟未過。需要 python3 + git;真瀏覽器回歸另需 Playwright dev 依賴。
@@ -85,6 +85,15 @@ if [ "$RUN_SIM" = 1 ]; then
     echo "$DG_OUT" | grep '⚠'
   else
     echo "✓ 運動 100 守衛全過"
+  fi
+  step "sim_flee.py(R195 運動 50 健步如飛脫身加成:整趟地城最後一搏逃跑政策,量 死亡/逃走/通關 與節氣對照;約 1 分鐘)"
+  FL_OUT="$(PYTHONPATH=. python3 sim_flee.py)" || fail "sim_flee 執行失敗"
+  echo "$FL_OUT"
+  if echo "$FL_OUT" | grep -q '⚠ 守衛警示'; then
+    echo; echo "🔴 脫身守衛出現 ⚠(強度過頭/夾限失效/沒效果/反向 no-brainer),務必人眼覆核(print-only、不自動擋):"
+    echo "$FL_OUT" | grep '⚠'
+  else
+    echo "✓ 脫身守衛全過"
   fi
 fi
 

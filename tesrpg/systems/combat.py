@@ -1645,12 +1645,16 @@ def player_vanish_cost(player: Character) -> None:
     player.fatigue = max(0, player.fatigue - cost)
 
 
+def flee_probability(player: Character, creature: Creature, gamedata: GameData | None = None) -> float:
+    """逃跑成功率(純函式:try_flee 與守衛 sim 共用單一出處)。運動 50 里程碑「健步如飛」(R195)經
+    `mastery.escape_bonus` 加在緩肩之前;gamedata=None(舊呼叫端/測試)→ 0 加成 → 逐位元組同舊版。"""
+    bonus = mastery.escape_bonus(player, gamedata) if gamedata is not None else 0.0
+    chance = formulas.flee_chance(_speed(player), _agility(player), _speed(creature), bonus)
+    return min(0.95, chance + formulas.luck_fortune(player.attr("luck")))   # 幸運「時來運轉」
+
+
 def try_flee(player: Character, creature: Creature, rng: RNG, gamedata: GameData | None = None) -> bool:
-    chance = formulas.flee_chance(_speed(player), _agility(player), _speed(creature))
-    chance = min(0.95, chance + formulas.luck_fortune(player.attr("luck")))   # 幸運「時來運轉」
-    if gamedata is not None:                          # 里程碑「逃命好手」(運動):逃跑率加成
-        chance = min(0.95, chance)   # R147:逃跑加成里程碑(escape_artist)已移除
-    return rng.chance(chance)
+    return rng.chance(flee_probability(player, creature, gamedata))
 
 
 def can_vanish(player: Character, gamedata: GameData | None = None) -> bool:
@@ -1683,14 +1687,15 @@ def vanish_cap(player: Character, gamedata: GameData | None = None) -> int:
     return formulas.MAX_VANISHES_PER_BATTLE
 
 
-def stealth_retreat_chance(player: Character, enemies: list) -> float:
+def stealth_retreat_chance(player: Character, enemies: list, gamedata: GameData | None = None) -> float:
     foe_speed = max((e.speed for e in enemies), default=0)
+    bonus = mastery.escape_bonus(player, gamedata) if gamedata is not None else 0.0   # R195 健步如飛
     return formulas.stealth_retreat_chance(player.skill("sneak"), _speed(player),
-                                           foe_speed, len(enemies))
+                                           foe_speed, len(enemies), bonus)
 
 
-def try_stealth_retreat(player: Character, enemies: list, rng: RNG) -> bool:
-    return rng.chance(stealth_retreat_chance(player, enemies))
+def try_stealth_retreat(player: Character, enemies: list, rng: RNG, gamedata: GameData | None = None) -> bool:
+    return rng.chance(stealth_retreat_chance(player, enemies, gamedata))
 
 
 def stealth_approach_chance(player: Character, enemies: list, gamedata: GameData,

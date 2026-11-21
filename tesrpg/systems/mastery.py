@@ -61,10 +61,11 @@ _IMPLEMENTED_KINDS = {
     # (warrior 盾牆 / knight 戰旗 為戰鬥動作,非里程碑 kind;弓手散兵戰技 bow_technique 同屬戰鬥動作但走里程碑解鎖。)
     "cascade", "resonant_strike", "mana_on_hit", "triage_heal", "recon_reveal_floor", "bow_technique", "deathmark",
     # 廣度 pass:運動逃跑加成、重甲反傷、安全解陷保底。
-    "armor_reflect", "armor_stagger", "combat_regen", "trap_floor",   # R147:flee_bonus 隨 escape_artist 移除(逃跑加成孤兒化)
+    "armor_reflect", "armor_stagger", "combat_regen", "trap_floor",   # R147 曾移除舊 flee_bonus(75 escape_artist 軟 no-brainer);R195 以 escape_bonus 重接於 50 級(見下)
     "fatigue_ward",   # R193 徒手 100 鐵布衫:物理傷害一部分由體力代扣(替換舊 passive_armor +12)
     "second_breath", "fatigue_on_kill",   # R194 運動 100:一氣呵成(歸零免費回一次調息量·一場一次)/ 殺勢回體(親手擊殺回 pct 最大體力)
     "rest_bonus",   # R147 運動「調息」開源:主動調息(耗一回合換回體·自動解除姿態)回復量加成(SUM)
+    "escape_bonus",   # R195 運動 50「健步如飛」:逃跑(try_flee)與潛行撤退成功率加成(SUM·加在緩肩/夾限之前);兼帶 travel_bonus 欄
 
     "shield_recoil",   # 變化 100(R118):作用中護膚盾時被物理擊中→機率震開攻方(接被動 flesh 為主動反噬)
     "consecration_boost",   # 恢復 75(R122 聖騎士):聖化領域減傷幅度 +(施法時加在 magnitude 上·守護頂點)
@@ -911,8 +912,20 @@ def trap_floor(char, gamedata: GameData) -> float:
 
 
 def travel_factor_bonus(char, gamedata: GameData) -> float:
-    """長途健步:旅行耗時係數額外 −bonus(更快;world.travel 夾 floor 0.5)。"""
-    return _param(char, gamedata, "travel_factor_bonus", "bonus", 0.0)
+    """旅行耗時係數額外 −bonus(更快;world.travel 夾 floor 0.5)。R195:運動 50 選項改名「健步如飛」並改掛
+    escape_bonus kind,以兼帶 `travel_bonus` 欄保留原 −0.10 旅速(同 evasion_bonus 的兼帶模式、同源相加)→
+    存檔裡已選 marathon 的角色不失任何效果。多源**相加**(R35:不 first-wins 遮蔽;舊 kind 目前無資料使用,留作相容)。
+    未選 → 0.0。"""
+    return float(sum(o.get("bonus", 0.0) for o in _chosen_options_by_kind(char, gamedata, "travel_factor_bonus"))
+                 + sum(o.get("travel_bonus", 0.0) for o in _chosen_options_by_kind(char, gamedata, "escape_bonus")))
+
+
+def escape_bonus(char, gamedata: GameData) -> float:
+    """R195 運動 50「健步如飛」:逃跑(`combat.try_flee`)與潛行撤退(`combat.try_stealth_retreat`)成功率加成
+    (0.0 = 無)。多源相加(目前僅此一源;守同源 getter 聚合鐵律)。加在緩肩/夾限之前,由
+    `formulas.flee_chance / stealth_retreat_chance` 的 bonus 參數吃 → 慢手收益大、快手(已貼夾限者)自然遞減。
+    R147 曾因「75 escape_artist 軟 no-brainer」移除舊 flee_bonus;本次放 50 級與節氣對立,依原型分流(sim_flee.py 守衛)。"""
+    return float(sum(o.get("bonus", 0.0) for o in _chosen_options_by_kind(char, gamedata, "escape_bonus")))
 
 
 FATIGUE_COST_BONUS_CAP = 0.35   # R147 節流省體多節點相加上限(防三節點疊到動作近乎免費)

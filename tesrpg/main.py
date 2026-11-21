@@ -1863,7 +1863,7 @@ def offer_battle(state: GameState, gamedata: GameData, enemies, ambush_chance: f
             opts.append(("intimidate", f"威嚇喝退(口才,成功率 {ipct}%)"))
         if recruit and not factions.is_member(char, recruit):   # 教徒招募:口才說服可入會(否則開打)
             opts.append(("recruit", f"說服加入(口才,成功率 {int(dialogue.recruit_chance(char) * 100)}%)"))
-        rpct = int(combat.stealth_retreat_chance(char, enemies) * 100)
+        rpct = int(combat.stealth_retreat_chance(char, enemies, gamedata) * 100)   # R195:含健步如飛加成(預覽=實擲)
         opts.append(("retreat", f"潛行撤退（成功率 {rpct}%)"))
         choice = ui.menu(f"要與{name}交戰嗎?", opts)
         if choice == "scout":
@@ -1894,7 +1894,7 @@ def offer_battle(state: GameState, gamedata: GameData, enemies, ambush_chance: f
             ui.message("你的言辭未能取信 —— 信徒拔刀撲上!", style="red")
             return run_battle(state, gamedata, enemies, alerted=True, mounted=mounted)
         if choice == "retreat":
-            if combat.try_stealth_retreat(char, enemies, state.rng):
+            if combat.try_stealth_retreat(char, enemies, state.rng, gamedata):
                 ui.message("你悄無聲息地退入暗處,沒有驚動任何人。", style="grey70")
                 return None
             ui.message("撤退失敗 —— 敵人發現了你,且已有戒備!", style="red")

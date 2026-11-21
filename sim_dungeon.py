@@ -7,7 +7,7 @@
 
 構築:sim_builds 的 warrior_1H / monk / assassin(近戰前排與對照;法師的瓶頸是法力/生命、體力不構成限制 → 不入守衛)。運動技能 100。
 變體(同一節點 athletics_100 的兩個選項互斥,各自對「同線無 100 階」比):
-  open_no100 = 勻息+長途健步+深息;wind = open_no100 + 二次呼吸(一氣呵成:行動時體力 ≤ 25% → 免耗回合回一次調息量·一場一次)
+  open_no100 = 勻息+健步如飛〔marathon;R195 前稱長途健步,逃跑不在本 sim 路徑 → 對結果無影響〕+深息;wind = open_no100 + 二次呼吸(一氣呵成:行動時體力 ≤ 25% → 免耗回合回一次調息量·一場一次)
   slow_no100 = 勻息+節氣+省勁;     kill = slow_no100 + 無盡之軀(殺勢回體:親手擊殺回 3% 最大體力·爪牙不算)
 政策:玩家每次行動前呼叫 combat.second_breath_use(與 main.run_battle 共用同一個閘);體力占比 < REST_THETA(15%)時花一回合調息(所有變體一致);
 每場戰鬥開頭剝除 second_breath_spent(鏡像 main 入戰處理:地城怪格 preserve_buffs=True,姿態等常駐效果跨場保留)。終王牆 1v1 從體力 0 起手(整趟地城後的最壞情況)。

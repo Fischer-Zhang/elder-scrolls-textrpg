@@ -214,7 +214,7 @@ def travel(char: Character, gamedata: GameData, dest_id: str, time, rng: RNG) ->
                         - party.passive_capstone_factor(char, gamedata, "travel")
                         - mounts.travel_factor_bonus(char, gamedata)
                         - birthsign_ability.travel_factor_bonus(char, gamedata)
-                        - divines.travel_factor_bonus(char, gamedata))   # 「長途健步」+ 同伴「識途」+ 坐騎 + 駿馬座疾行 + 凱娜瑞絲之佑(R107),夾 floor 0.5
+                        - divines.travel_factor_bonus(char, gamedata))   # 「健步如飛」兼帶旅速(R195 前稱長途健步)+ 同伴「識途」+ 坐騎 + 駿馬座疾行 + 凱娜瑞絲之佑(R107),夾 floor 0.5
     hours = max(1, round(base_hours * travel_factor))
     dest = gamedata.location(dest_id)
 
