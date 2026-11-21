@@ -962,6 +962,7 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
     dmg_done = 0
     absorbed = False
     iron_absorbed = 0           # R193 鐵布衫:本擊由體力代扣的傷害(顯示用)
+    _iron_pending = 0.0         # R193 鐵布衫待扣體力(本擊所有反制/姿態閘讀完「受擊當下」的體力後才扣,見函式出口)
     status_applied = None
     poison_applied = None
     self_restored = None
@@ -1144,8 +1145,8 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
             _ward = mastery.fatigue_ward(defender, gamedata)
             if _ward:
                 _paid = min(dmg * _ward, max(0.0, defender.fatigue))
-                defender.fatigue = max(0, defender.fatigue - _paid)
-                dmg -= _paid
+                _iron_pending = _paid       # 🔴 延後到函式出口才扣體力:盾反/反震/姿態反擊的「fatigue>0」閘讀的是受擊當下的體力
+                dmg -= _paid                #    (對抗審查:先扣會讓被抽乾的那一擊 → 姿態減傷有算、反擊整組被取消,R137 對稱性破功)
                 iron_absorbed = int(round(_paid))
 
         # solo BOSS 反一刀:偷襲開場單擊夾在生命上限的固定比例 → 絕不一刀秒 boss
@@ -1551,6 +1552,9 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
                     # R181:turns:2 → 敵人階段對怪物施加的踉蹌須撐過回合末 tick,才在該怪「下一次出手」時生效
                     # (原 turns:1 實測施加 388 次、怪物下一擊讀到 0 次 = 死機制;與上方盾擊/荊棘同款時序修法)
                     magic.apply_control(attacker, "stagger", gamedata, rng, turns=2)   # R44:集中 helper
+
+    if _iron_pending:                               # R193:反制/姿態閘都讀完才扣(見上);不為負
+        defender.fatigue = max(0, defender.fatigue - _iron_pending)
 
     return {
         "attacker": _name(attacker), "defender": _name(defender),

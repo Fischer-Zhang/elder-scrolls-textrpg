@@ -1,5 +1,5 @@
 """R193 徒手 100「鐵布衫」(hand_to_hand_100 iron_shirt·kind fatigue_ward):體力化傷。
-受到的**物理**傷害(含遠程物理)在所有減傷之後,share(0.30)比例由體力 1:1 代扣,體力見底即停;
+受到的**物理**傷害(含遠程物理)在所有減傷之後,share(0.20)比例由體力 1:1 代扣,體力見底即停;
 元素/法術/DoT/反傷不吃、獸形無效、未選 → 零影響且無 rng(替換舊 passive_armor +12)。
 """
 import io
@@ -97,18 +97,71 @@ def test_ward_stops_when_fatigue_runs_out_and_never_goes_negative():
             assert ea["damage"] == eb["damage"] and ea["iron_absorbed"] == 0 and a.fatigue == 0
 
 
-def test_ward_is_applied_after_other_mitigation():
-    """格擋姿態(R137)等減傷先算,化傷吃減傷後的那份(不是原始傷害)。"""
-    stance = [{"kind": "guard_stance", "turns": combat.PERSISTENT_TURNS}]
-    seen = 0
-    for seed in range(120):
-        a, b, ea, eb, fa, fb = _pair(seed, effects=stance)
-        _, _, _, plain, _, _ = _pair(seed)
-        if ea["hit"] and eb["hit"] and plain["hit"] and eb["damage"] >= 4:
+# 高傷自訂攻擊:原 bandit 一擊僅 6–9 點,±1 容差會吞掉 0.6 內的偏差 → 審查以變異驗證抓到「化傷移到減傷之前/用 raw 算」全數倖存
+BIG = {"name": "重擊", "damage": 80, "skill": 60}
+
+
+def test_ward_is_applied_after_each_mitigation_layer_with_tight_tolerance():
+    """化的必須是『被姿態/盾牆/聖化減過之後』那一份(不是原始傷害)。高傷攻擊 + 容差 ≤1:順序一錯偏差 ≥9(審查變異 M1/M2/M3/M6)。"""
+    layers = {
+        "格擋姿態": [{"kind": "guard_stance", "turns": combat.PERSISTENT_TURNS}],
+        "盾牆": [{"kind": "shield_wall", "mitigation": 0.5, "turns": combat.PERSISTENT_TURNS}],
+        "聖化": [{"kind": "consecration", "magnitude": 0.4, "turns": 99}],
+    }
+    for name, effects in layers.items():
+        seen = 0
+        for seed in range(60):
+            a, b, ea, eb, fa, fb = _pair(seed, effects=effects, attack=BIG)
+            _, _, _, plain, _, _ = _pair(seed, attack=BIG)
+            if not (ea["hit"] and eb["hit"] and plain["hit"]):
+                continue
             seen += 1
-            assert eb["damage"] < plain["damage"]                    # 對照:姿態確實減傷(測試有偵測力)
-            assert abs(ea["iron_absorbed"] - SHARE * eb["damage"]) <= 1.0     # 化的是姿態後的份
-    assert seen >= 20
+            assert eb["damage"] < plain["damage"] - 5, (name, eb["damage"], plain["damage"])   # 對照:該減傷層確實生效(測試有偵測力)
+            assert abs(ea["iron_absorbed"] - SHARE * eb["damage"]) <= 1.0, (name, ea["iron_absorbed"], eb["damage"])
+            assert abs((ea["damage"] + ea["iron_absorbed"]) - eb["damage"]) <= 1
+        assert seen >= 15, name
+
+
+def test_share_value_is_pinned_by_a_tight_ratio():
+    """審查變異 M14/M16(share×1.25 / ×0.75)倖存:高傷下比例必須貼近 share。"""
+    seen = 0
+    for seed in range(60):
+        a, b, ea, eb, fa, fb = _pair(seed, attack=BIG)
+        if ea["hit"] and eb["hit"]:
+            seen += 1
+            assert abs(ea["iron_absorbed"] / eb["damage"] - SHARE) < 0.02, (ea["iron_absorbed"], eb["damage"])
+    assert seen >= 30
+
+
+def test_draining_hit_still_lets_stance_counters_resolve_like_a_normal_hit():
+    """審查 #2:被抽乾體力的那一擊,姿態/盾反的「fatigue>0」閘讀的是受擊當下的體力(體力延後到函式出口才扣)
+    → 與未選對照同 rng 序、同戰果(原先先扣體力 → 減傷有算、反擊整組被取消)。"""
+    def run(h100, seed):
+        c = _monk(h100=h100, fatigue=0.1)
+        c.skills["block"] = 100
+        for node, opt in (("block_50", "shield_bash"), ("block_75", "shield_break"), ("block_100", "perfect_block")):
+            mastery.choose(c, gd, node, opt)
+        stats.recompute_max_resources(c, gd, restore_full=True)
+        c.health = c.max_health = 6000
+        c.fatigue = 0.1
+        c.active_effects.append({"kind": "guard_stance", "turns": combat.PERSISTENT_TURNS})
+        foe = combat.spawn_creature(gd, "bandit", RNG(1))
+        rng = RNG(seed)
+        calls = []
+        orig = rng.chance
+        rng.chance = lambda p, _o=orig: (calls.append(p), _o(p))[1]
+        ev = combat.resolve_attack(foe, c, gd, rng, attack=foe.attack)
+        return ev, c, foe, calls
+    seen = 0
+    for seed in range(80):
+        ea, ca, fa, calla = run("iron_shirt", seed)
+        eb, cb, fb, callb = run(None, seed)
+        if not (ea["hit"] and eb["hit"]):
+            continue
+        seen += 1
+        assert len(calla) == len(callb) and fa.health == fb.health, (seed, len(calla), len(callb), fa.health, fb.health)
+        assert ca.fatigue == 0                                                  # 體力確實被抽乾(測試有偵測力)
+    assert seen >= 30
 
 
 # --- 範圍:只物理 ------------------------------------------------------------------
