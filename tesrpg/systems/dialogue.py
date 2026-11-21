@@ -510,8 +510,9 @@ def _apply_topic_effects(state, gamedata: GameData, effects: list, ctx: dict) ->
         else:
             passthru.append(ef)
     res = (events.apply_effects(state, gamedata, passthru, state.rng)
-           if passthru else {"messages": [], "combat": []})
-    return {"messages": msgs + res["messages"], "combat": res["combat"]}
+           if passthru else {"messages": [], "combat": [], "skill_events": []})
+    # R197:effects 內的 skill_xp / forage_pool 造成的升點通知一併往上傳(呼叫端 ui.show_events),不再靜默吞掉
+    return {"messages": msgs + res["messages"], "combat": res["combat"], "skill_events": res["skill_events"]}
 
 
 # --- 套話(speechcraft 第二用途)+ 報官 -------------------------------
@@ -561,6 +562,7 @@ def _do_pump(state, gamedata: GameData, npc_id: str, topic: dict, ctx: dict, rng
             if raw.get("effects") and _PUMP_PAID not in done:   # 一次性兌現(再套話只重述、不重發)
                 res = _apply_topic_effects(state, gamedata, raw["effects"], ctx)
                 messages, combat = res["messages"], res["combat"]
+                skill_events = skill_events + res["skill_events"]   # R197:撬出的效果若帶經驗,升點通知併入
                 done.append(_PUMP_PAID)
         else:
             text = _interp(raw, char, gamedata, npc_id, ctx)
@@ -595,7 +597,7 @@ def resolve_topic(state, gamedata: GameData, npc_id: str, topic: dict, ctx: dict
             done.append(tid)
     res = _apply_topic_effects(state, gamedata, effects, ctx)
     return {"text": text, "messages": res["messages"], "combat": res["combat"],
-            "hours": 0, "tired": False, "skill_events": [], "subtopics": topic.get("subtopics", [])}
+            "hours": 0, "tired": False, "skill_events": res["skill_events"], "subtopics": topic.get("subtopics", [])}
 
 
 def report_vampire(char: Character, gamedata: GameData) -> dict:

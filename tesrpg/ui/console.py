@@ -153,6 +153,12 @@ def _plain(markup: str) -> str:
         return markup
 
 
+def pct(p: float) -> int:
+    """R197:機率 → 顯示用整數百分比(四捨五入)。`int(p * 100)` 會因浮點誤差少顯示 1%(0.58 * 100 = 57.99999…)。
+    所有「給玩家看的機率」一律走此(事件檢定 chip、隱遁/撤退/威嚇/說服/開鎖/行竊…),同一機率不因畫面不同差 1%。"""
+    return round(p * 100)
+
+
 def _web_prompt(spec: dict):
     """沖出殘餘畫面 HTML(未轉換面板的裸 <span> 片段)+ 輸入規格,阻塞等回覆。"""
     html = console.export_html(inline_styles=True, code_format="{code}", clear=True)

@@ -180,9 +180,14 @@ def forage_pool_draw(char: Character, gamedata: GameData, pool_id: str, rng: RNG
 
 # --- 效果套用(combat 類延遲回傳給 main)--------------------------------
 def apply_effects(state, gamedata: GameData, effects: list, rng: RNG) -> dict:
+    """套用效果。回傳 {messages, combat, skill_events}。
+
+    skill_events = `progression.use_skill` 的升點 / 可升級 / 里程碑待選通知(R197:原本被丟棄 → 事件經驗造成的
+    升點完全無提示)。**呼叫端必須 `ui.show_events(res["skill_events"], gamedata)`**,否則等於又把通知吞掉。"""
     char = state.player
     messages: list[str] = []
     combat_foes: list[str] = []
+    skill_events: list[dict] = []
 
     for ef in effects or []:
         t = ef["type"]
@@ -198,7 +203,7 @@ def apply_effects(state, gamedata: GameData, effects: list, rng: RNG) -> dict:
                 inventory.remove_item(char, ef["item"], -qty)
                 messages.append(f"失去 {gamedata.item_name(ef['item'])} ×{-qty}")
         elif t == "skill_xp":
-            progression.use_skill(char, gamedata, ef["skill"], ef["amount"])
+            skill_events += progression.use_skill(char, gamedata, ef["skill"], ef["amount"])
         elif t == "heal":
             char.health = char.max_health if ef["amount"] == "full" else min(char.max_health, char.health + ef["amount"])
         elif t == "restore_magicka":
@@ -237,10 +242,10 @@ def apply_effects(state, gamedata: GameData, effects: list, rng: RNG) -> dict:
                     inventory.add_item(char, iid, qty)
                     messages.append(f"採得 {gamedata.item_name(iid)} ×{qty}")
                 # learn-by-doing:採集練偵查、辨識練煉金(空手不練)
-                progression.use_skill(char, gamedata, "scout", ef.get("scout_xp", 0.4))
-                progression.use_skill(char, gamedata, "alchemy", ef.get("alchemy_xp", 0.5))
+                skill_events += progression.use_skill(char, gamedata, "scout", ef.get("scout_xp", 0.4))
+                skill_events += progression.use_skill(char, gamedata, "alchemy", ef.get("alchemy_xp", 0.5))
             else:
                 messages.append("這一帶幾乎沒有可採的材料。")
 
     stats.clamp_resources(char)
-    return {"messages": messages, "combat": combat_foes}
+    return {"messages": messages, "combat": combat_foes, "skill_events": skill_events}

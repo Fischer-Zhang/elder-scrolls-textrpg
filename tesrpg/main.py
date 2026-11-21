@@ -749,7 +749,7 @@ def _choose_combat_action(state: GameState, gamedata: GameData, enemies: list, a
     vcap = combat.vanish_cap(player, gamedata)
     if combat.can_vanish(player, gamedata) and vanish_used < vcap:
         n_alive = len([e for e in enemies if combat.is_alive(e)])
-        pct = int(combat.vanish_chance(player, n_alive, vanish_used, gamedata) * 100)
+        pct = ui.pct(combat.vanish_chance(player, n_alive, vanish_used, gamedata))
         left = "∞" if vcap >= 99 else (vcap - vanish_used)
         # R71:隱遁不再閃避(敵照常攻擊)→ 純重獲偷襲先機;標籤如實說明
         opts.append(_combat_option("vanish", f"隱遁再襲（重獲偷襲·不閃避·成功率 {pct}%,剩 {left} 次)",
@@ -1746,8 +1746,7 @@ def _event_check_chips(state: GameState, opt: dict) -> list[dict] | None:
     chk = opt.get("check")
     if not chk:
         return None
-    pct = round(events.check_chance(state.player, chk) * 100)
-    return [{"text": f"成功率 {pct}%", "tone": "gold"}]
+    return [{"text": f"成功率 {ui.pct(events.check_chance(state.player, chk))}%", "tone": "gold"}]
 
 
 def run_event(state: GameState, gamedata: GameData, event_id: str) -> str | None:
@@ -1778,6 +1777,7 @@ def run_event(state: GameState, gamedata: GameData, event_id: str) -> str | None
 
     for m in result["messages"]:
         ui.message(m)
+    ui.show_events(result["skill_events"], gamedata)     # R197:事件經驗造成的升點 / 可升級 / 里程碑通知(原被吞掉)
     for tid in result["combat"]:
         foe = combat.spawn_creature(gamedata, tid, state.rng)
         ui.combat_intro(foe, state.player, gamedata)
@@ -1870,16 +1870,16 @@ def offer_battle(state: GameState, gamedata: GameData, enemies, ambush_chance: f
         scouted = True
         spellfx.consume_detect(char)
     while True:
-        apct = int(combat.stealth_approach_chance(char, enemies, gamedata, night, scouted, surprise) * 100)
+        apct = ui.pct(combat.stealth_approach_chance(char, enemies, gamedata, night, scouted, surprise))
         opts = [("fight", f"接戰（偷襲先機 {apct}%)")]
         if not scouted and not surprise:
             opts.append(("scout", "偵查敵情(看清敵情並提升偷襲先機)"))
         if dialogue.can_intimidate(gamedata, enemies):       # 全為弱人形敵(盜匪)→ 可口才喝退
-            ipct = int(dialogue.intimidate_chance(char, enemies, night, gamedata) * 100)
+            ipct = ui.pct(dialogue.intimidate_chance(char, enemies, night, gamedata))
             opts.append(("intimidate", f"威嚇喝退(口才,成功率 {ipct}%)"))
         if recruit and not factions.is_member(char, recruit):   # 教徒招募:口才說服可入會(否則開打)
-            opts.append(("recruit", f"說服加入(口才,成功率 {int(dialogue.recruit_chance(char) * 100)}%)"))
-        rpct = int(combat.stealth_retreat_chance(char, enemies, gamedata) * 100)   # R195:含健步如飛加成(預覽=實擲)
+            opts.append(("recruit", f"說服加入(口才,成功率 {ui.pct(dialogue.recruit_chance(char))}%)"))
+        rpct = ui.pct(combat.stealth_retreat_chance(char, enemies, gamedata))   # R195:含健步如飛加成(預覽=實擲)
         opts.append(("retreat", f"潛行撤退（成功率 {rpct}%)"))
         choice = ui.menu(f"要與{name}交戰嗎?", opts)
         if choice == "scout":
@@ -2259,7 +2259,7 @@ def _resolve_container(state: GameState, gamedata: GameData, container: dict, la
             ui.message(f"這個{label}上了鎖,而你沒有開鎖器 —— 撬不開(城鎮可買開鎖器)。", style="grey70")
             return
         ch = dungeon.effective_pick_lock_chance(state.player, gamedata, lock)
-        if not ui.confirm(f"發現一個上鎖的{label}(鎖難度 {lock},成功率約 {int(ch*100)}%,開鎖器 ×{picks}),嘗試撬鎖?"):
+        if not ui.confirm(f"發現一個上鎖的{label}(鎖難度 {lock},成功率約 {ui.pct(ch)}%,開鎖器 ×{picks}),嘗試撬鎖?"):
             return
         auto_pick = False                                # R113:失敗後可選「連試到底」免逐次確認
         while True:
@@ -2902,7 +2902,7 @@ def action_shop(state: GameState, gamedata: GameData) -> None:
                 continue
             opts = [(iid, f"{gamedata.item_name(iid)} ×{world.stock_qty(char, loc_id, iid)}"
                      f"（價值 {gamedata.item(iid)['value']})") for iid in avail]
-            iid = ui.menu(f"行竊哪件?(得手率約 {int(crime.steal_chance(char, gamedata)*100)}%)",
+            iid = ui.menu(f"行竊哪件?(得手率約 {ui.pct(crime.steal_chance(char, gamedata))}%)",
                           opts, allow_back=True)
             if iid is None:
                 continue
@@ -5691,7 +5691,7 @@ def action_talk(state: GameState, gamedata: GameData) -> str | None:
         if rumor and att != "hostile":
             tag = {"quest": "線索", "trial": "試煉"}.get(rumor["kind"], "指路")
             opts.append(("rumor", f"追問傳聞·{tag}:「{npc.get('rumor', '')[:16]}…」"))
-        pc = int(dialogue.persuade_chance(char, gamedata, nid) * 100)
+        pc = ui.pct(dialogue.persuade_chance(char, gamedata, nid))
         sp = gamedata.skills["speechcraft"]["practice"]   # 唯讀靜態價碼;勿呼叫 practice_cost(會扣體力)
         opts.append(("persuade", "說服(口才)",
                      [{"text": f"成功率 {pc}%", "tone": "gold"},
@@ -5865,7 +5865,7 @@ def guard_confrontation(state: GameState, gamedata: GameData) -> str | None:
         ]
         talk_cap = dialogue.TALK_DOWN_MAX + mastery.talk_down_mod(char, gamedata).get("cap_bonus", 0)   # 里程碑「巧言脫罪」抬高可說退賞金上限
         if not talked and b <= talk_cap:                 # 小額賞金可試以口才說退(大罪說不過去;巧言脫罪可化解更大的事)
-            tpct = int(dialogue.talk_down_chance(char, b, gamedata) * 100)
+            tpct = ui.pct(dialogue.talk_down_chance(char, b, gamedata))
             opts.insert(0, ("talk", f"說服衛兵(口才,成功率 {tpct}%)"))
         choice = ui.menu("如何應對?", opts)
         if choice == "talk":
