@@ -616,7 +616,7 @@ def _repeat_option(player, gamedata: GameData, enemies: list, allies: list, mem)
 # D2:戰鬥動作分桶(scannable);grouped_menu 連續編號、回同 key → 下方 dispatch 完全不變。
 _COMBAT_BUCKETS = {
     "repeat": "攻擊", "attack": "攻擊", "aimed": "攻擊", "crippling": "攻擊",
-    "skirmish": "攻擊", "volley": "攻擊", "phantom_flurry": "攻擊", "reckless": "攻擊", "charge": "攻擊", "skirmish_ride": "攻擊",
+    "skirmish": "攻擊", "volley": "攻擊", "phantom_flurry": "攻擊", "reckless": "攻擊", "release": "攻擊", "charge": "攻擊", "skirmish_ride": "攻擊",
     "cast": "威能·戰技", "power": "威能·戰技", "racial_power": "威能·戰技",
     "standard": "威能·戰技", "rally": "威能·戰技", "vampire_charm": "威能·戰技", "deathmark": "威能·戰技",
     "guard": "架式", "wall": "架式",
@@ -791,6 +791,15 @@ def _choose_combat_action(state: GameState, gamedata: GameData, enemies: list, a
                                    f"搏命連斬（同一目標連斬 {_rk['strikes']} 記 · 第 2 記起 {_rk_pct}% · 不吃偷襲 · "
                                    f"目標沒倒下會立刻還擊一記 · 還擊時你的閃避與格擋卸力不計 · 額外耗 {_rk['fatigue']} 體力)",
                                    f"{_rk['strikes']}連斬·{_rk_pct}%·耗{_rk['fatigue']}體·會還擊"))   # 最大代價(還擊)放進可見 chip,不只藏 hover(R164)
+    # R193 崩勁釋放(徒手 100 transcend_fist):主動戰技 —— 把目標累積的失衡層一口氣釋放成一記重擊。
+    # 開放條件走 combat.release_ready(與 sim 共用同一個閘:任一存活敵失衡達門檻);🔴 永不吃偷襲倍率。
+    _rl = combat.release_spec(player, gamedata)
+    if _rl and any(combat.release_ready(player, e, gamedata) for e in enemies):
+        _rl_pct = int(round(_rl["per_stack"] * 100))
+        opts.append(_combat_option("release",
+                                   f"崩勁（釋放目標全部失衡層數 · 一記重擊 每層 +{_rl_pct}% 傷害 · 需目標失衡達 {_rl['min_stacks']} 層 · "
+                                   f"不吃偷襲 · 命中後層數歸零、落空保留 · 額外耗 {_rl['fatigue']} 體力)",
+                                   f"失衡≥{_rl['min_stacks']}層·每層+{_rl_pct}%·耗{_rl['fatigue']}體"))
     # 坐騎戰技(僅野外騎乘遭遇的第一回合;戰馬+近戰=衝鋒、獵馬+弓=騎射)
     if mounted and first_round and mounts.can_charge(player, gamedata, True):
         opts.append(_combat_option("charge", "🐎 衝鋒（坐騎開場突擊 · 長槍藉馬勢洞穿)", "開場突擊·長槍加成"))
@@ -924,6 +933,12 @@ def _choose_combat_action(state: GameState, gamedata: GameData, enemies: list, a
         else:
             target = None
         return {"type": "cast", "spell_id": sid, "target": target}
+    if choice == "release":                     # R193 崩勁釋放:只列失衡層數達門檻的敵人(選單閘 = combat.release_ready)
+        _rl_targets = [e for e in enemies if combat.release_ready(state.player, e, gamedata)]
+        tgt = _choose_enemy_target(state, gamedata, _rl_targets, allies, last=_last_tgt)
+        if tgt is None:
+            return _back()
+        return {"type": "release", "target": tgt}
     if choice in ("aimed", "crippling", "skirmish", "deathmark", "charge", "skirmish_ride", "vampire_charm", "reckless"):   # 皆先選敵方目標(散兵武技 / 刺客烙印 / 坐騎戰技 / 吸血鬼魅惑)
         tgt = _choose_enemy_target(state, gamedata, enemies, allies, last=_last_tgt)
         if tgt is None:
@@ -1316,6 +1331,13 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
                     ui.combat_event(_rev, gamedata)
                     if _rkind == "counter":
                         _infect_player(_rev)   # 還擊是真實的一擊:可傳染(與敵方階段同一條分派)
+        elif action["type"] == "release":   # R193 崩勁釋放(徒手 100·🔴 sneak_attack=False·疊格擋姿態攻擊稅·命中清層)
+            tgt = action["target"]
+            if combat.is_alive(tgt):
+                _cmsg("你吐氣開聲,積蓄在對手身上的勁力一口氣崩出!", style="bold red")
+                _rev = combat.release_strike(player, tgt, gamedata, state.rng, damage_mult=_df)
+                if _rev is not None:
+                    ui.combat_event(_rev, gamedata)
         elif action["type"] == "charge":   # 坐騎「衝鋒」(開場;近戰/長槍;不走偷襲倍率,受 solo 夾限)
             tgt = action["target"]
             if combat.is_alive(tgt):

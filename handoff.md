@@ -3139,6 +3139,17 @@ R88 讓**盜賊公會**拿到階級解鎖招牌動詞(斯庫瑪走私),但**戰�
 - **接線(使用者步驟)**:WIRING 新增 PreToolUse 後,`settings.local.json` 未更新前 `test_wiring_subcommand_equals_constant_and_ops_md_snippet` 會紅(設計如此:提醒重跑 wiring)。執行 `python3 .claude/hooks/ops_ledger.py wiring > .claude/settings.local.json`(整檔覆寫;目前該檔內容恰為舊 WIRING,覆寫安全)。
 - **同批**:handoff §6 清掉兩條刪除線指標(風暴之舞原 :3176、怪物 1 回合硬控原 :3178;本體仍在「查無實作」清單的 3190/3187 對應條目)。
 
+### R193 · 徒手 100 逐選項功能化(第一波·子提交 1:化勁通玄 → 「崩勁釋放」;鐵布衫「體力化傷」為子提交 2,待做)
+
+- **起因**:使用者通則「所有 100 階要有改變行為的機制,純數值不算」,本輪明確判定標準 = **逐選項**(每個 100 階選項各自要有機制,不是每節點一個就好)。全盤點 22 節點 / 44 選項後選第一波 W1 = 徒手 + 運動;**量完體力經濟後使用者拍板 P3「這輪只做徒手」**——運動 100(二次呼吸 tidal_breath / 無盡之軀 frugal)延後:體力池約 290–320、一揮耗 3–7,sim 戰鬥體力最低點仍 74–95%(僅 1H 戰士對達貢 107 回合見底)→ 依賴體力吃緊的設計是死選項(見記憶 fatigue-economy-no-pressure)。
+- **機制(子提交 1)**:hand_to_hand_100 `transcend_fist`(opt_id 不變)由 +10% 徒手傷害改為主動戰技「**崩勁釋放**」:對失衡達 4 層以上的目標,一口氣釋放全部層數 → 一記重擊 ×(1+0.20×層數)(層數夾 `OFFBALANCE_MAX_STACKS`),額外耗 20 體力;**命中後層數歸零、落空保留**;釋放這一擊**不再累積失衡、不觸發踉蹌/擊倒**(`resolve_attack(offbalance_release=True)` 同時關掉 R102 ramp 與累積分支,不重複計算);需 hand_to_hand_25 失衡已解鎖且未穿重甲(沿 `_offbalance_active`)、非獸形、持徒手。資料在 mastery.json 的 `release` 子欄 {min_stacks, per_stack, fatigue};getter `mastery.release()`、combat `release_spec/release_ready/release_strike`;選單分桶「攻擊」,選目標只列 `release_ready` 的敵人。
+- **紅線**:每擊 `sneak_attack=False`(永不吃偷襲倍率·不碰 SOLO_SNEAK 夾)·不穿甲/不破物抗(照常吃護甲與物抗)·不用 `on_hit_status` 單槽(徒手 50/75 已占用)·未選/未達標/非徒手/獸形/重甲 → `release_strike` 回 None 且**零 rng**(既有構築 byte-identical)·不碰任何上限。
+- **兩邊差距(使用者「看兩邊差距」→ 實測決定)**:`sim_monk.py` 魔人×5 勝率 不選 51% / 舊 +10% 59% / **崩勁 62%**,平均回合 17.2 / 15.8 / **14.0**;崩勁 + 舊 +10% 兼帶只再 +4pp(66%)→ **取代**(不兼帶)。失衡層數只會是 0/5/8,故釋放門檻 4/5 等價、6/8 等價;canonical `RELEASE_AT=5`(在 8 層 25% 擊倒清層前釋放)。終王牆未破(達貢/真身增益 ≤ 5pp 線內;真身 0%)。舊 iron_shirt +12 護甲幾乎無效(55% vs 51%·回合同),其差距待子提交 2 實作體力化傷後重量。
+- **守衛**:新 `sim_monk.py`(群戰勝率 + 平均回合 + 剩餘生命 + 終王牆;旗標 ⚠輸給皆不選 < −3pp / 強度過頭 > +25pp / 破牆線 > +5pp;print-only)接進 check.sh(`--sim` 或動 combat/formulas 時);`sim_builds.py` 新增 `make_monk(h100)` 與 `monk_release`/`monk_shirt` 構築(完整徒手樹 + 輕甲 + 治療藥水疊)。
+- **對抗審查(單一 Sonnet·隔離 worktree·45 次工具呼叫)**:契約 1–8 皆成立、無阻擋性 bug;3 個小項已修:①體力閘只比額外耗體 20、沒算這一揮耗體 → 體力 20 時揮擊前被壓到 0(力竭命中罰 0.95→0.77·短付被 max(0) 吞)→ 閘改 `fatigue ≥ 20 + attack_fatigue_cost`(新純函式,player_attack_cost 重構共用;R191 reckless_ready 同款寫法未動,待另議);②測試空轉(變異 no_attack_cost / drop_mult 未被抓、main 三處接線無測試)→ 補閘邊界精確扣量、damage_mult 縮放與求值序、選單/選目標/派發(含姿態稅)測試,三種變異驗證皆被抓;③BUFFS.md 過期(徒手 0.15+0.10→0.15;blade 0.12+0.08→0.08 為 R191 遺留)已更新。另 sim_monk 對照變體 fist_old/rel_old 不入旗標(REFERENCE_ONLY);sim_builds 的 monk 基線由「選 transcend_fist(+10%)」變成「100 階皆不選」,sim_builds/sim_endgame 的 monk 列數字因此改變(預期)。
+- **驗證**:新 `tests/test_release_r193.py`(每個閘在隔離下逐一驗·零 rng 未就緒·倍率 ≈2.0×·命中清層/落空保留兩支都走到·不觸發控場且有對照組·spy 合約 sneak False/offbalance_release True·desc 數字與資料同步);`test_mastery.py` 同源聚合斷言改為 power 0.15(去掉 transcend_fist 的舊 0.10)。sim_assassin 與 HEAD 隔離 worktree 逐位元組一致(0 ⚠)。codex 補「崩勁釋放」條。
+- **剩餘純數值 100 階(待後續波次)**:徒手 iron_shirt(子提交 2)· 運動 tidal_breath/frugal(待重量體力壓力後再設計)· W2 召喚 + 交易 · W3 護甲/破甲類(與使用者延後的「護甲夾限整體重議」相撞,動前先問)· W4 其餘約 10 節點。
+
 ## 4. 開發節奏(ultracode 開著 → 每個功能都這樣做)
 
 > 完整五階段流程(評估 → 決定方向 → 實作 → 驗證 → 文件 + 提交)見 `CLAUDE.md`「開發流程」;以下是「驗證」段的細節。**驗證綠後依 R22 自動 `commit` & `push origin main`。**

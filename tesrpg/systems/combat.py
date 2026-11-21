@@ -832,6 +832,46 @@ def reckless_flurry(player, target, gamedata: GameData, rng: RNG, damage_mult=1.
         yield ("counter", ev)
 
 
+# ---- R193 崩勁釋放(hand_to_hand_100 transcend_fist·`release` 子欄;使用者拍板「崩勁釋放」方向)----
+# 主動戰技(非被動數值):徒手把目標身上累積的失衡層「一口氣釋放」成一記重擊,傷害 ×(1+per_stack×層數),命中後層數歸零。
+# 🔴 sneak_attack=False(永不吃偷襲倍率 → 不碰 SOLO_SNEAK 夾)、照常吃護甲/物抗(走 resolve_attack,無任何穿透)、
+# 不佔 on_hit_status 單槽;釋放這一擊 offbalance_release=True → 跳過 ramp(不重複計層數)與累積/踉蹌/擊倒(層數已用掉)。
+# 落空 → 層數保留(閃避已罰一次,不雙重懲罰),仍耗體力與回合。🔴 純讀 getter:未選/非徒手/獸形/重甲/未解鎖失衡 →
+# release_ready False、零 rng,既有構築 byte-identical。
+def release_spec(player, gamedata: GameData) -> dict:
+    """當前武器(徒手)對應的崩勁釋放參數;不適用(未選/非徒手/獸形/束縛兵刃)→ {}。"""
+    if not _is_player(player) or _is_beast(player):
+        return {}
+    return mastery.release(player, gamedata, _weapon_profile(player, gamedata)[2])
+
+
+def release_ready(player, target, gamedata: GameData) -> bool:
+    """崩勁可對 target 釋放(選單與 sim 共用同一個閘):已選 + 失衡有效(R103 解鎖且未穿重甲)+ 目標層數達門檻
+    + 體力付得起「額外耗體 + 這一揮本身的耗體」(對抗審查:原只比額外耗體,體力 20 時揮擊前就被壓到 0 →
+    力竭命中罰且短付被 max(0) 吞掉)。"""
+    spec = release_spec(player, gamedata)
+    return (bool(spec) and target is not None and is_alive(target) and _offbalance_active(player, gamedata)
+            and magic.offbalance_stacks(target) >= spec["min_stacks"]
+            and player.fatigue >= spec["fatigue"] + attack_fatigue_cost(player, gamedata))
+
+
+def release_strike(player, target, gamedata: GameData, rng: RNG, damage_mult=1.0):
+    """崩勁釋放:耗體 → 一記 ×(1+per_stack×層)重擊 → 命中則清層。回傳該擊事件(不可用 → None)。
+    damage_mult:同 reckless_flurry,可傳 callable(耗體之後才求值 → R137 姿態稅同普攻序)。"""
+    if not release_ready(player, target, gamedata):
+        return None
+    spec = release_spec(player, gamedata)
+    stacks = min(formulas.OFFBALANCE_MAX_STACKS, magic.offbalance_stacks(target))
+    player_attack_cost(player, gamedata)
+    player.fatigue = max(0, player.fatigue - spec["fatigue"])
+    mult = damage_mult() if callable(damage_mult) else damage_mult
+    ev = resolve_attack(player, target, gamedata, rng, sneak_attack=False,
+                        damage_factor=(1.0 + spec["per_stack"] * stacks) * mult, offbalance_release=True)
+    if ev.get("hit"):
+        magic.reset_offbalance(target)
+    return ev
+
+
 def _gear_weapon_id(attacker):
     """攻擊者當前武器 id:玩家=裝備武器;同伴=生成時掛的 `_gear_weapon`;一般怪=None。"""
     return attacker.weapon if _is_player(attacker) else getattr(attacker, "_gear_weapon", None)
@@ -849,7 +889,7 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
                    defender_blocking: bool = False, sneak_attack: bool = False,
                    aimed: bool = False, mounted_charge: bool = False,
                    charge_spec: dict | None = None, attack: dict | None = None,
-                   damage_factor: float = 1.0) -> dict:
+                   damage_factor: float = 1.0, offbalance_release: bool = False) -> dict:
     """attacker 攻擊 defender,套用傷害、發放玩家技能 xp。回傳事件 dict。
 
     sneak_attack:玩家開場偷襲(不察之敵)→ 傷害依潛行加倍、命中下限拉高、鍛鍊潛行。
@@ -1048,8 +1088,9 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
             # 徒手失衡 ramp:對已失衡之敵,(非偷襲)徒手傷害隨層數放大(讀本擊「前」層數=敵原已失衡)。
             # 🔴 not sneaking → 永不放大偷襲(守 R61 + solo 偷襲夾);徒手專屬+player+非獸形 → sim 持匕首 byte-identical。
             # R103:失衡須里程碑解鎖(hand_to_hand≥25)且未穿重甲;重甲/未解鎖時 stacks 恆 0,此處 ×1.0(冗餘但對稱明確)。
+            # R193 崩勁釋放那一擊(offbalance_release)自帶 ×(1+k×層) 係數,不再疊 ramp(避免層數效益重複計算)。
             if (_is_player(attacker) and wpn_skill_id == "hand_to_hand" and not beast and not sneaking
-                    and _offbalance_active(attacker, gamedata)):
+                    and not offbalance_release and _offbalance_active(attacker, gamedata)):
                 dmg *= formulas.offbalance_damage_multiplier(magic.offbalance_stacks(defender))
             # 武器附魔:額外元素傷害(無視護甲,受對方元素抗性)。獸形/重盾盾擊以非裝備武器戰鬥 → 無附魔。
             # 同伴深化:gate 由 `_is_player` 改讀 `_gear_weapon_item`(玩家 byte-identical·帶裝同伴納入·一般怪 None 略過)。
@@ -1380,8 +1421,9 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
         # 踉蹌(軟控·來源去重·不重置 ramp),滿頂罕見真擊倒(硬控·solo 機率抵抗 R44)+ 重置(防 lock-loop)。
         # 🔴 只玩家徒手(wpn_skill_id=="hand_to_hand")非獸形 → 匕首/法系/獸形/sim 永不觸發 → byte-identical。
         # R103:另須里程碑解鎖(hand_to_hand≥25)且未穿重甲(輕裝武僧)→ 重甲/未解鎖完全不累積失衡。
+        # R193:崩勁釋放那一擊不累積失衡、不觸發踉蹌/擊倒(層數已被這一擊消耗;命中後由 release_strike 清層)。
         if (_is_player(attacker) and wpn_skill_id == "hand_to_hand" and not beast and is_alive(defender)
-                and _offbalance_active(attacker, gamedata)):
+                and not offbalance_release and _offbalance_active(attacker, gamedata)):
             stacks = magic.add_offbalance(defender, formulas.offbalance_stack_gain(
                 attacker.skill("hand_to_hand"), wmod.get("poise_rate", 0.0)))
             if stacks >= formulas.OFFBALANCE_MAX_STACKS \
@@ -1513,6 +1555,11 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
 
 def player_attack_cost(player: Character, gamedata: GameData | None = None) -> None:
     """玩家攻擊一擊消耗體力(運動越高越省;慢重武器更耗、輕快武器更省)。"""
+    player.fatigue = max(0, player.fatigue - attack_fatigue_cost(player, gamedata))
+
+
+def attack_fatigue_cost(player: Character, gamedata: GameData | None = None) -> float:
+    """玩家一擊的體力耗量(純計算,不改狀態;player_attack_cost 與「付得起額外耗體」的閘共用)。"""
     speed = formulas.WEAPON_SPEED_DEFAULT
     if gamedata is not None:
         wid = "beast_claws" if getattr(player, "beast_form", False) else player.weapon
@@ -1529,7 +1576,7 @@ def player_attack_cost(player: Character, gamedata: GameData | None = None) -> N
         cost *= (1 - mastery.fatigue_cost_bonus(player, gamedata))   # 「不竭之軀」:戰鬥省體
         wsid = gamedata.item(wid).get("skill")     # 獸形用獸爪技能(hand_to_hand),非裝備武器
         cost += mastery.weapon_mod(player, gamedata, wsid).get("fatigue", 0)   # 「穿甲箭」draw_fatigue 代價
-    player.fatigue = max(0, player.fatigue - cost)
+    return cost
 
 
 def player_block_cost(player: Character) -> None:

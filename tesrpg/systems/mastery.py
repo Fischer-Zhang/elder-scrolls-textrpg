@@ -843,6 +843,22 @@ def reckless(char, gamedata: GameData, wpn_skill_id: str | None) -> dict:
             "fatigue": int(spec.get("fatigue", 30))}
 
 
+def release(char, gamedata: GameData, wpn_skill_id: str | None) -> dict:
+    """R193「崩勁釋放」(hand_to_hand_100 transcend_fist 的 `release` 子欄):主動戰技參數;無 → {}。
+    {min_stacks(門檻層數), per_stack(每層加成係數), fatigue(額外耗體力)}。單槽:取解鎖門檻最高者(R184/R191 同款)。
+    target 須與當前武器技能一致(只徒手;獸形/束縛兵刃的 wpn_skill_id 不是 hand_to_hand → 自然不開放)。"""
+    if not wpn_skill_id or not hasattr(char, "base_skill"):
+        return {}
+    spec = None
+    for opt in _chosen_options_by_unlock(char, gamedata, "weapon_mod"):
+        if opt.get("target") == wpn_skill_id and opt.get("release"):
+            spec = opt["release"]
+    if not spec:
+        return {}
+    return {"min_stacks": int(spec.get("min_stacks", 4)), "per_stack": float(spec.get("per_stack", 0.2)),
+            "fatigue": int(spec.get("fatigue", 20))}
+
+
 def block_riposte(char, gamedata: GameData) -> dict:
     """盾擊踉蹌/破勢/完美格擋:格擋來犯時的反制。多節點聚合(機率/削弱/反傷各取最),空 = 無。
     shield_bash(50)=踉蹌、盾擊破勢(75)+削弱敵下擊、盾威·完美格擋(100)+盾擊反傷。"""

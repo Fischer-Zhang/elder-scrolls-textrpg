@@ -17,6 +17,7 @@ bash check.sh                             # ★ 一鍵驗證:編譯 → 單元/�
 shopt -s globstar; python3 -m py_compile tesrpg/**/*.py tesrpg/*.py tests/*.py .claude/hooks/*.py   # 純編譯檢查(完整形;少了 tesrpg/*.py 會漏掉 main/state/formulas 等頂層模組)
 PYTHONPATH=. python3 sim_assassin.py      # 平衡回歸模擬(改戰鬥常數後必跑)
 PYTHONPATH=. python3 sim_reckless.py      # 搏命連斬群戰/終王牆守衛(R191;改戰鬥常數或搏命參數後跑,約 3 分鐘,⚠ 即警示)
+PYTHONPATH=. python3 sim_monk.py          # 徒手 100 崩勁釋放/鐵布衫群戰/終王牆守衛(R193;改徒手/失衡/崩勁參數後跑,約 1 分鐘,⚠ 即警示)
 ```
 - Python 3.12;遊戲 runtime 的 `rich` 可由系統套件提供(`python3-rich`);dev 工具走 `.[dev]`。sudo 需密碼、無 `jq`(寫 hook 要用 `python3` 解析 stdin)。
 - 真瀏覽器測試是 dev-only:安裝 `.[dev]` 後執行 `python3 -m playwright install --with-deps chromium`;遊戲 runtime 仍只有 `rich`。
@@ -261,6 +262,7 @@ PYTHONPATH=. python3 sim_reckless.py      # 搏命連斬群戰/終王牆守衛(R
 | R190 | 狀態讀取一致化:`magic.apply_control` 統一留 2 回合「餘韻」echo(applied/blocked 皆留·六態·敵方·只供讀取)+ `combat.afflicted` 唯一讀取入口(看破/獵手之眼);取代 R189 逐點 `exposed`;使用者通則:同一狀態不得因來源(t1/t2、誰施加)被不同對待(buff 同理);🔴 獵手之眼不縮·看破 R=0.20 知情接受三來源全疊極端構築 +5.8 | re-sim |
 | R191 | 刀劍 100 savage 改主動戰技「搏命連斬」(以攻對攻:連斬兩記·第二記 ×0.6·耗 30 體·目標沒倒下會還擊〔不可閃避/舉盾〕);🔴 每記 sneak=False·`overextended` 只存在於還擊內·未選零 rng·守衛 sim_reckless.py(群戰/牆/相當性 ⚠) | re-sim, save-safe |
 | R192 | 重型代理派工閘:ops.md §14 四題自檢(方向誰定/共用工具先建/紙面先於原型/告知成本得同意)+ PreToolUse `ask` 硬閘(指定 Fable/Opus 或同輪第 2 個重型代理;scout/counsel 豁免);🔴 只問不擋(R172「hook 永不阻擋」唯一例外·絕不 deny·fail-open·`SLG_OPS_GATE=off`);互動/auto 模式下 ask 行為待驗 | |
+| R193 | 徒手 100 逐選項功能化(使用者通則:100 階逐選項都要有機制):化勁通玄 → 主動戰技「崩勁釋放」(失衡≥4層一口氣釋放·每層+20%·耗20體;鐵布衫體力化傷待子提交2);🔴 sneak=False·命中清層落空保留·零 rng 未選·sim_monk.py 守衛 | re-sim, save-safe |
 
 ## 自動提交閘門 / 換 session 前檢查表
 

@@ -96,16 +96,20 @@ def make_warrior_2h():
     return c
 
 
-def make_monk():
+def make_monk(h100=None):
     """徒手「失衡」流(R##):純拳腳,連擊堆疊敵失衡層 → ramp 放大徒手傷害 + 門檻踉蹌/滿頂罕見真擊倒。
-    無偷襲/無附魔/無淬鍊(徒手劣勢由 ramp + 里程碑補)→ 對標 warrior_1H/2H 的近戰下界。"""
+    無偷襲/無附魔/無淬鍊(徒手劣勢由 ramp + 里程碑補)→ 對標 warrior_1H/2H 的近戰下界。
+    R193:h100 = hand_to_hand_100 的選擇(None=皆不選的基準線·"transcend_fist"=崩勁釋放·"iron_shirt"=鐵布衫)。
+    舊版預設選 transcend_fist(+10% 傷害);R193 起該節點改主動戰技,monk 基準線改為「100 階皆不選」(誠實對照)。"""
     c = build_character(gd, name="僧", sex="male", race="khajiit", birthsign="warrior", class_id="warrior")
     c.skills.update(hand_to_hand=100, light_armor=100, acrobatics=100, athletics=75, block=50)
     c.attributes.update(strength=100, agility=90, speed=80, endurance=100)
     c.weapon = "fists"
     _equip_set(c, "leather")     # 輕甲(失衡是徒手獨餵軸·與護甲無關;輕甲給閃避、貼 monk 身份)
-    _choices(c, {"hand_to_hand_100": "transcend_fist", "hand_to_hand_75": "iron_fists",
-                 "hand_to_hand_50": "grapple"})   # grapple = 失衡加速(poise_rate 0.6)
+    picks = {"hand_to_hand_75": "iron_fists", "hand_to_hand_50": "grapple"}   # grapple = 失衡加速(poise_rate 0.6)
+    if h100:
+        picks["hand_to_hand_100"] = h100
+    _choices(c, picks)
     stats.recompute_max_resources(c, gd, restore_full=True)
     return c
 
@@ -265,7 +269,10 @@ def _make_element_mage(pool):
 
 
 BUILDS = {"assassin": make_assassin, "archer": make_archer, "warrior_1H": make_warrior_sword,
-          "warrior_2H": make_warrior_2h, "monk": make_monk, "shield_reflect": make_shield_reflect,
+          "warrior_2H": make_warrior_2h, "monk": make_monk,
+          "monk_release": lambda: make_monk("transcend_fist"),    # R193 崩勁釋放(釋放政策 _release_act)
+          "monk_shirt": lambda: make_monk("iron_shirt"),          # R193 鐵布衫(子提交 2 前=+12 護甲舊數值·之後=體力化傷)
+          "shield_reflect": make_shield_reflect,
           "great_shield": make_great_shield,
           "mage_fire": _make_element_mage(_MAGE_ELEMENTS["mage_fire"]),
           "mage_frost": _make_element_mage(_MAGE_ELEMENTS["mage_frost"]),
@@ -399,7 +406,8 @@ def _battlemage_act(c, boss, rng, st):
 
 # R126 戰鬥中用藥模型(fidelity):近戰/潛行 build 帶治療藥水,低血喝(耗一回合=不攻擊)。
 # 反映遊戲新現實(近戰終於有中場續戰)→ 平衡工具不再低估近戰硬 boss 存活。法系另有治療術不靠藥。
-_MELEE_POT_BUILDS = {"warrior_1H", "warrior_2H", "monk", "assassin", "archer", "shield_reflect", "great_shield"}
+_MELEE_POT_BUILDS = {"warrior_1H", "warrior_2H", "monk", "monk_release", "monk_shirt", "assassin", "archer",
+                     "shield_reflect", "great_shield"}
 _COMBAT_POTIONS = 8   # 帶去硬仗的治療藥水疊(healing_potion·回50·固定不放大)
 
 
@@ -514,8 +522,24 @@ def _attack_act(c, boss, rng, st):
                                          if combat.has_guard_stance(c) and c.fatigue > 0 else 1.0))
 
 
+RELEASE_AT = 5   # R193 崩勁釋放政策:目標失衡達此層數就釋放。層數只會是 0/5/8(擒拿手每擊+5·滿層 8)→ 門檻 5 在
+                 # 滿層 25% 擊倒清層「之前」釋放(sim_monk n=500:5 層 魔人×5 勝率 62% ≥ 8 層 61%,回合 14.0 < 14.6)
+
+
+def _release_act(c, boss, rng, st):
+    """R193 徒手崩勁釋放政策:目標失衡層 ≥ RELEASE_AT 且 release_ready → 釋放(耗體+重擊+命中清層);否則普攻。
+    與 main 同一個閘(combat.release_strike 內部走 release_ready);monk 不用格擋姿態,故無姿態稅。"""
+    if _drink_if_low(c):
+        return
+    if magic.offbalance_stacks(boss) >= RELEASE_AT and combat.release_strike(c, boss, gd, rng) is not None:
+        return
+    combat.player_attack_cost(c, gd)
+    combat.resolve_attack(c, boss, gd, rng)
+
+
 _POLICY = {"assassin": _melee_sneak_act, "archer": _melee_sneak_act,
            "warrior_1H": _attack_act, "warrior_2H": _attack_act, "monk": _attack_act,
+           "monk_release": _release_act, "monk_shirt": _attack_act,
            "shield_reflect": _attack_act, "great_shield": _attack_act,
            "mage_fire": _mage_act, "mage_frost": _mage_act, "mage_shock": _mage_act,
            "arcanist": _mage_act,

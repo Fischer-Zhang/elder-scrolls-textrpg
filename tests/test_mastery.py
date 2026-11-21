@@ -940,8 +940,10 @@ def test_batch1_same_source_aggregation_no_shadow():
     assert mastery.lock_floor(c, gd) == 0.50                            # max(0.30,0.50)
     mastery.choose(c, gd, "acrobatics_50", "tumbler"); mastery.choose(c, gd, "acrobatics_75", "evasion")
     assert abs(mastery.evasion_bonus(c, gd) - (0.04 + 0.05)) < 1e-9   # 同源相加不遮蔽(acrobatics 50+75)
-    mastery.choose(c, gd, "hand_to_hand_75", "iron_fists"); mastery.choose(c, gd, "hand_to_hand_100", "transcend_fist")
-    assert abs(mastery.weapon_mod(c, gd, "hand_to_hand").get("power", 0) - (0.15 + 0.10)) < 1e-9  # weapon_mod 合併
+    mastery.choose(c, gd, "hand_to_hand_50", "grapple"); mastery.choose(c, gd, "hand_to_hand_75", "iron_fists")
+    mastery.choose(c, gd, "hand_to_hand_100", "transcend_fist")     # R193:100 階不再有 power(崩勁釋放走 release 子欄)
+    _wm = mastery.weapon_mod(c, gd, "hand_to_hand")                  # weapon_mod 合併:不同節點不同鍵皆保留、互不遮蔽
+    assert abs(_wm.get("power", 0) - 0.15) < 1e-9 and abs(_wm.get("poise_rate", 0) - 0.6) < 1e-9
     mastery.choose(c, gd, "alchemy_50", "toxin_master"); mastery.choose(c, gd, "alchemy_100", "venom_lord")
     assert mastery.poison_unlocks(c, gd) == {"weaken", "fear"}          # 多節點 union 不遮蔽(R31)
     mastery.choose(c, gd, "heavy_armor_100", "ironhide"); mastery.choose(c, gd, "block_75", "bracing")
