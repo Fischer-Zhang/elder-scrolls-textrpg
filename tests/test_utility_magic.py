@@ -100,7 +100,18 @@ def test_charm_boosts_all_six_social_facets():
     steal0 = crime.steal_chance(c, gd)
     buy0 = world.buy_price(c, gd, item)
     _cast(gd, c, st, "charm")
-    assert dialogue.persuade_chance(c, gd, npc) > p0
+    # R199:說服吃不吃魅惑是「待使用者拍板」的設計決定(會改實際機率)→ dialogue.PERSUADE_USES_CHARM 預設 False = 維持現行實擲
+    # (實擲原本就不含魅惑;預覽原本多算 → 預覽 ≠ 實擲)。預設:預覽 = 實擲 = 不含魅惑;旗標開:六面皆有加成(本測試原意)。
+    if dialogue.PERSUADE_USES_CHARM:               # 斷言隨旗標條件化:使用者拍板翻旗標後本測試不必改(預設釘死另在 test_r199)
+        assert dialogue.persuade_chance(c, gd, npc) > p0
+    else:
+        assert dialogue.persuade_chance(c, gd, npc) == p0
+    saved = dialogue.PERSUADE_USES_CHARM
+    dialogue.PERSUADE_USES_CHARM = True
+    try:
+        assert dialogue.persuade_chance(c, gd, npc) > p0       # 旗標開 → 六面皆有加成(本測試原意)
+    finally:
+        dialogue.PERSUADE_USES_CHARM = saved
     assert dialogue.talk_down_chance(c, 50, gd) > t0
     assert dialogue.pry_chance(c) > y0
     assert crime.steal_chance(c, gd) > steal0

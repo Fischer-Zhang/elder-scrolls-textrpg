@@ -45,15 +45,31 @@ def _adjust(char: Character, npc_id: str, delta: int) -> None:
     char.npc_disposition[npc_id] = char.npc_disposition.get(npc_id, 0) + delta
 
 
+# R199:魅惑(R56 吸血鬼社交魅惑 / R104 幻術魅惑術)算不算進「說服」成功率——**會改實際機率,屬設計決定**,未經使用者
+# 拍板前維持現行實擲(不含魅惑;同檔 talk_down_chance / pry_chance 本來就吃魅惑,說服原本沒有)。預覽與實擲共用
+# `_persuade_p`,翻轉此旗標兩邊一併改變,不會再出現預覽 ≠ 實擲(R197 審查證實;例:口才 40·魅力 45 的吸血鬼且魅惑中,
+# 舊預覽 74.5%、實擲 52.5%)。
+PERSUADE_USES_CHARM = False
+
+
+def _persuade_p(char: Character, skill: int) -> float:
+    """說服成功率的**單一出處**(預覽 `persuade_chance` 與實擲 `persuade` 共用)。
+
+    skill 由呼叫端傳入:persuade 用「練習前」的口才(升級在練習後才發生),維持舊行為逐位元組同。
+    """
+    p = 0.35 + (skill + char.attr("personality") - 50) * 0.005
+    if PERSUADE_USES_CHARM:
+        from tesrpg.systems import spellfx, vampirism
+        p = p + vampirism.charm_social_bonus(char)      # R56 吸血鬼魅惑
+        p = p + spellfx.charm_persuade_bonus(char)      # R104 幻術魅惑術
+    return formulas.persuade_curve(p)                   # R63 漸進(舊夾 0.9→漸近 0.95)
+
+
 def persuade_chance(char: Character, gamedata: GameData, npc_id: str) -> float:
-    """說服成功率(唯讀,供 UI 預示;與 persuade 公式單一來源)。折服里程碑 → 1.0。"""
+    """說服成功率(唯讀,供 UI 預示;與 persuade 單一來源 `_persuade_p`)。折服里程碑 → 1.0。"""
     if mastery.can_guaranteed_persuade(char, gamedata, npc_id):
         return 1.0
-    from tesrpg.systems import spellfx, vampirism
-    skill = char.skill("speechcraft")
-    return formulas.persuade_curve(0.35 + (skill + char.attr("personality") - 50) * 0.005
-                                   + vampirism.charm_social_bonus(char)      # R63 漸進(舊夾 0.9→漸近 0.95);R56 吸血鬼魅惑
-                                   + spellfx.charm_persuade_bonus(char))     # R104 幻術魅惑術
+    return _persuade_p(char, char.skill("speechcraft"))
 
 
 def persuade(char: Character, gamedata: GameData, npc_id: str, rng: RNG) -> dict:
@@ -72,7 +88,7 @@ def persuade(char: Character, gamedata: GameData, npc_id: str, rng: RNG) -> dict
         _adjust(char, npc_id, delta)
         return {"ok": True, "delta": delta, "charmed": True,
                 "hours": hours, "tired": tired, "skill_events": events}
-    chance = formulas.persuade_curve(0.35 + (skill + char.attr("personality") - 50) * 0.005)   # R63 漸進
+    chance = _persuade_p(char, skill)       # R199:與預覽 persuade_chance 同一出處(skill = 練習前的值,舊行為逐位元組同)
     if rng.chance(chance):
         _adjust(char, npc_id, delta)
         return {"ok": True, "delta": delta, "hours": hours, "tired": tired, "skill_events": events}

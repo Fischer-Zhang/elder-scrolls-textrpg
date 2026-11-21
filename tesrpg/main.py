@@ -2892,6 +2892,17 @@ SELL_CONFIRM_VALUE = 150
 DESTROY_CONFIRM_VALUE = 150
 
 
+_STEAL_KEY = "steal:"    # 行竊選單 key 命名空間(見 action_shop 行竊分支)
+
+
+def _steal_option_label(char, gamedata: GameData, iid: str, qty: int) -> str:
+    """R199 行竊選單每件的標籤:得手率逐件標示,取自與實擲 `crime.steal_item` 同一個 `crime.steal_chance(…, iid)`
+    (含 R144 依重量扣減,最多 −0.35)。原本標題只標「不帶物品」的得手率 → 沉重物品實際遠低於預覽
+    (例:偷襲 60·保全 40:舊標題 67%,重量 ≥23.4 的物品實際 32%)。"""
+    return (f"{gamedata.item_name(iid)} ×{qty}"
+            f"（價值 {gamedata.item(iid)['value']} · 得手 {ui.pct(crime.steal_chance(char, gamedata, iid))}%)")
+
+
 def action_shop(state: GameState, gamedata: GameData) -> None:
     char = state.player
     loc_id = char.location_id
@@ -2907,12 +2918,14 @@ def action_shop(state: GameState, gamedata: GameData) -> None:
             if not avail:
                 ui.message("貨架上空空如也,沒什麼好下手的。", style="grey70")
                 continue
-            opts = [(iid, f"{gamedata.item_name(iid)} ×{world.stock_qty(char, loc_id, iid)}"
-                     f"（價值 {gamedata.item(iid)['value']})") for iid in avail]
-            iid = ui.menu(f"行竊哪件?(得手率約 {ui.pct(crime.steal_chance(char, gamedata))}%)",
-                          opts, allow_back=True)
-            if iid is None:
+            # 🔴 key 一律帶 steal: 命名空間(比照 R113 go:*):裸 iid 會與畫面上殘留的買貨 / 賣貨面板列(data-key=iid)相撞,
+            # 前端 wireActionableRows 讓殘留面板列「接管」同 key 的選項、移除選單按鈕 → 每件的「得手 N%」整個被蓋掉(R199 審查 major)。
+            opts = [(f"{_STEAL_KEY}{iid}", _steal_option_label(char, gamedata, iid, world.stock_qty(char, loc_id, iid)))
+                    for iid in avail]
+            choice = ui.menu("行竊哪件?(重物更難得手)", opts, allow_back=True)
+            if choice is None:
                 continue
+            iid = choice.removeprefix(_STEAL_KEY)
             r = crime.steal_item(char, gamedata, iid, state.rng)
             state.time.advance(r["hours"])
             if r["ok"]:

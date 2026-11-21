@@ -70,7 +70,18 @@ def test_social_charm_raises_persuade_and_talk_down():
     base_persuade = dialogue.persuade_chance(c, gd, "any_npc")
     base_talk = dialogue.talk_down_chance(c, 60, gd)
     c.is_vampire = True
-    assert dialogue.persuade_chance(c, gd, "any_npc") > base_persuade   # 吸血鬼魅力 → 說服更易
+    # R199:說服吃不吃魅惑是「待使用者拍板」的設計決定(會改實際機率)→ dialogue.PERSUADE_USES_CHARM 預設 False = 維持現行實擲
+    # (實擲原本就不含魅惑;原預覽多算 → 預覽 ≠ 實擲)。預設:預覽 = 實擲 = 不含魅惑;旗標開:吸血鬼魅力 → 說服更易(本測試原意)。
+    if dialogue.PERSUADE_USES_CHARM:               # 斷言隨旗標條件化:使用者拍板翻旗標後本測試不必改(預設釘死另在 test_r199)
+        assert dialogue.persuade_chance(c, gd, "any_npc") > base_persuade
+    else:
+        assert dialogue.persuade_chance(c, gd, "any_npc") == base_persuade
+    saved = dialogue.PERSUADE_USES_CHARM
+    dialogue.PERSUADE_USES_CHARM = True
+    try:
+        assert dialogue.persuade_chance(c, gd, "any_npc") > base_persuade   # 吸血鬼魅力 → 說服更易
+    finally:
+        dialogue.PERSUADE_USES_CHARM = saved
     assert dialogue.talk_down_chance(c, 60, gd) > base_talk             # → 說退衛兵更易
 
 

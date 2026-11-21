@@ -344,6 +344,65 @@ class BrowserRegression(unittest.TestCase):
         self.page.goto(self.server.url, wait_until="domcontentloaded")
         self.page.locator(wait_for).wait_for(state="visible")
 
+    def test_steal_menu_keeps_per_item_rates_after_visiting_the_buy_panel_r199(self) -> None:
+        """R199 審查 major:買貨面板(列帶 data-key=物品 id)在「返回」後仍殘留於畫面;行竊選單若用裸物品 id 當 key,
+        前端 wireActionableRows 會讓殘留列「接管」同 key 選項並移除選單按鈕 → 每件的「得手 N%」整個消失
+        (實測:只剩「返回」+ 14 列舊面板)。走真 action_shop + 真 WebBackend + 真 Chromium:購買 → 返回 → 行竊 → 選一件。"""
+        import io
+        import threading
+
+        from rich.console import Console
+
+        import tesrpg.ui.console as ui
+        from tesrpg import main as game_main
+        from tesrpg.creation import build_character
+        from tesrpg.gamedata import get_gamedata
+        from tesrpg.rng import RNG
+        from tesrpg.state import GameState, GameTime
+        from tesrpg.systems import stats, world
+
+        gd = get_gamedata()
+        char = build_character(gd, name="客", sex="male", race="nord", birthsign="warrior", class_id="warrior")
+        char.skills.update(sneak=60, security=40)
+        stats.recompute_max_resources(char, gd, restore_full=True)
+        char.fatigue = char.max_fatigue
+        char.location_id = next(
+            loc for loc in gd.world["locations"]
+            if len({(gd.item(i).get("weight", 0) or 0) for i in world.merchant_catalog(gd, loc)}) >= 3)
+        char.gold = 500
+        state = GameState(player=char, time=GameTime(), rng=RNG(7))
+
+        saved = (ui.console, ui._web)
+        ui.use_web_backend(self.server.backend, Console(record=True, file=io.StringIO(), width=100))
+        self.addCleanup(lambda: (setattr(ui, "console", saved[0]), setattr(ui, "_web", saved[1])))
+        threading.Thread(target=game_main.action_shop, args=(state, gd), daemon=True).start()
+
+        def wait_text(text: str) -> None:
+            self.page.wait_for_function(
+                "t => document.querySelector('#prompt').innerText.includes(t)", arg=text, timeout=8000)
+
+        def click(text: str) -> None:
+            self.page.locator("#prompt button", has_text=text).first.click()
+
+        self.page.goto(self.server.url, wait_until="domcontentloaded")
+        wait_text("商店(你有")
+        click("購買")
+        wait_text("買什麼?")
+        click("返回")                                   # 回到商店選單;買貨面板仍殘留在畫面上
+        wait_text("商店(你有")
+        click("行竊")
+        wait_text("行竊哪件?")
+        self.page.wait_for_timeout(200)
+        buttons = self.page.locator("#prompt button").all_inner_texts()
+        rated = [t for t in buttons if "得手" in t]
+        self.assertGreaterEqual(len(rated), 3, f"行竊選單按鈕被殘留面板蓋掉:{buttons}")
+        self.assertEqual(self.page.locator(".tappable").count(), 0, "殘留的買貨面板列接管了行竊選項")
+        self.assertIn("重物更難得手", self.page.locator("#prompt").inner_text())
+        t0 = state.time.absolute_hours()
+        self.page.locator("#prompt button", has_text="得手").first.click()    # 選一件 → 真的行竊(推進時間)
+        wait_text("商店(你有")
+        self.assertGreater(state.time.absolute_hours(), t0)
+
     def test_combat_card_fatigue_and_second_breath_tags_with_hover_tips_r197(self) -> None:
         """R197:我方卡片的「體力不足 / 力竭」與「二次呼吸 可用 / 已用」標籤 —— 文字、好壞色階、滑鼠停留說明(title);
         一般狀態標籤(沒有 tip)不帶 title → 舊行為不變。"""
