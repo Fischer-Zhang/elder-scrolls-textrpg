@@ -269,6 +269,7 @@ PYTHONPATH=. python3 sim_flee.py          # 運動 50 健步如飛脫身加成�
 | R195 | 運動 50「長途健步」→「健步如飛」:逃跑/潛行撤退成功率 +0.15(`escape_bonus`·緩肩/夾限之前·兼帶舊 −0.10 旅速·opt_id marathon 不變零遷移;R147 移除的 flee_bonus 以此重接,與節氣對立);🔴 未選逐位元組不變·預覽=實擲·戰中逃跑對快手夾限無感=依原型分流;守衛 sim_flee.py(逃跑原不在任何 sim 路徑) | re-sim, save-safe |
 | R196 | 事件檢定:運動檢定首批 8 選項(附加尾端·失敗複製同事件既有檢定)+ 事件選項顯示成功率(金 chip·`events.check_chance` 單一出處 = 預覽=實擲·四捨五入);🔴 零存檔欄·sim 不走事件 → byte-identical 不當安全證據 | save-safe, content |
 | R198 | 事件資料整理:wild_beast 省份限定移進 trigger(+荒野)· 檢定成功必練同技能(41/41)· 標籤句尾 = 正典技能名;守衛擋死鍵/標點;🔴 純資料·零程式·sim 不走事件 | save-safe, content |
+| R197 | 可見性包:事件經驗升點提示(apply_effects→skill_events)· 體力懲罰 / 二次呼吸戰鬥卡片標籤(命中取真實命中鏈實際損失·`_hit_chain` 共用·預覽=實擲)· 旅行實際時數(`travel_hours` 單一出處)· `ui.pct` 取整;🔴 5 sim byte-identical | re-sim, save-safe |
 
 ## 自動提交閘門 / 換 session 前檢查表
 
