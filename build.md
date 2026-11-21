@@ -291,8 +291,8 @@ effective_cost = base × (1 − min(0.4, 學派技能/250)) × Π spell_cost_fac
 | **里程碑:被動護甲**(多源 SUM,無 MAX 遮蔽) | heavy_armor_25 重甲入門+6 · heavy_armor_100 銅皮鐵骨+18 · block_25 持盾入門+5 · block_75 撐架穩步+10 · block_100 銅牆鐵壁+12;另跨樹石膚等 | `mastery.py:297-300` SUM 相加進 armor_rating;**總減傷仍夾 85% 硬頂、不趨近免疫** |
 | **里程碑:重甲減傷/反控** | heavy_armor_75 **壁壘**(物理 ×0.85·▼代價攻擊耗體 ×1.2)vs 巍然不動(magic 抗+10);heavy_armor_50 **重甲反震**(反彈 12%·無耗體)vs 百戰不染(disease+25);heavy_armor_100 銅皮鐵骨(+18)vs **重壓**(被擊 22% 震開·stagger turns 2) | `mastery.json:46/278/387/389`;壁壘僅物理、元素穿透 |
 | **戰鬥動作:盾牆架勢**(非里程碑) | 立陣:物理受傷 **×0.70**(`SHIELD_WALL_MITIGATION=0.30`,僅物理、元素穿透)+ **嘲諷**(鎖敵火力到坦);門檻=持盾 + base block≥50;每回合上繳 6 體力(歸 0 落陣) | `main.py:1727-1730`;`combat.py:286-290,445,98`;與壁壘/盾反獨立疊乘 |
-| **里程碑:屬性 fortify** | enduring(athletics_75 end+5)·mighty_arm(blunt_75 str+4·屬鈍器分支取捨)·swift_blade(blade_75 agi+4·屬刀劍取捨) | 走 mastery_attr 層 SUM,絕不寫回 base |
-| **里程碑:續航 apex** | 生生不息(restoration_100 每回合自癒 8·is_alive 守不復活)·不屈祝禱(restoration_75 血<25% regen 4×3)·不竭之軀(athletics_50 攻擊耗體 ×0.90) | 跨職可取的續航層 |
+| **里程碑:屬性 fortify** | mighty_arm(blunt_75 str+4·屬鈍器分支取捨)·swift_blade(blade_75 agi+4·屬刀劍取捨) | 走 mastery_attr 層 SUM,絕不寫回 base |
+| **里程碑:續航 apex** | 生生不息(restoration_100 每回合自癒 8·is_alive 守不復活)·不屈祝禱(restoration_75 血<25% regen 4×3)·節氣/省勁(athletics_50/75 攻擊耗體 −10%/−12%·相加夾 0.35)·勻息/深息(athletics_25/75 調息多回 8/12)·二次呼吸(athletics_100 體力 ≤25% 免耗回合回一次調息量·一場一次)·無盡之軀(athletics_100 親手擊殺回 3% 最大體力) | 跨職可取的續航層 |
 | **消耗品** | restore_health(即時回血)·restore_fatigue(★回體力=直接餵盾牆/格擋/盾反的體力經濟,可釀材料最多)·`potion_potency`(煉金 75/100 ≤+0.35)放大藥效 | `alchemy.py:184-188`;**體力是戰士主要防禦資源天花板** |
 | **同伴增傷光環(★對 solo 戰士零自益)** | rally 戰陣號令(+0.15)·騎士戰旗 empower(0.20×illusion power);多源遞減疊加 `Σ mag×0.7^i`(`EMPOWER_STACK_RATIO=0.7`) | ⚠ `combat.py:395 not _is_player` 守門 → **只增益同伴**,純 solo bruiser by-design 無自益;僅戰旗 STANDARD_SELF_ARMOR+6 對自身有效(需 illusion≥50) |
 | ⚠ **限時藥水** | ★戰士幾乎無傷害增益:可釀 buff 池僅 `fattr_agility`/`fattr_willpower`/`resist_magic`/`fskill_alchemy` | ⚠ **無 fattr_strength/endurance、無 fskill_blade/blunt/block/heavy_armor 材料**(R30 排除 str+武器技能,本輪另確認 end 同無)→ 戰士最核心屬性皆釀不出;唯 `resist_magic`(整體魔法抗·涵蓋火/霜/電三系)限時可釀,無單一元素/毒/疾抗 |
