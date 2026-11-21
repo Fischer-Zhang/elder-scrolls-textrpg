@@ -1,14 +1,15 @@
-"""R199「預覽 = 實擲」第二批(上):行竊逐件預覽 + 說服預覽與實擲同源。**零實際機率改動**。
+"""R199「預覽 = 實擲」第二批(上):行竊逐件預覽 + 說服預覽與實擲同源。行竊零實際機率改動;說服於使用者拍板(2026-11-22)後吃魅惑。
 
 審查(R197)證實的兩個預覽 ≠ 實擲:
   ① 行竊:清單標題的「得手率」不帶物品,實擲 `steal_item` 帶物品並依重量扣減(R144,最多 −0.35)→ 沉重物品實際遠低於預覽。
      修:每件各自標「得手 N%」,取自與實擲同一個 `crime.steal_chance(char, gd, item_id)`。
   ② 說服:預覽 `persuade_chance` 含魅惑加成(吸血鬼社交魅惑 R56 / 幻術魅惑術 R104),實擲 `persuade` 自算、漏掉 →
-     魅惑對說服實際無效(talk_down 與 pry 現行都吃到)。魅惑要不要對說服生效是**設計決定**(會改實際機率)→ 未經使用者
-     拍板前不動:兩邊改為單一出處 `dialogue._persuade_p`(預覽 `persuade_chance` 與實擲 `persuade` 都呼叫它),
-     由 `PERSUADE_USES_CHARM`(預設 False = 維持現行實際機率)決定是否含魅惑。
+     魅惑對說服實際無效(talk_down 與 pry 現行都吃到)。魅惑要不要對說服生效是**設計決定**(會改實際機率)→ 先不動:
+     兩邊改為單一出處 `dialogue._persuade_p`(預覽 `persuade_chance` 與實擲 `persuade` 都呼叫它),由
+     `PERSUADE_USES_CHARM` 決定是否含魅惑(先預設 False 維持現行機率);**使用者拍板後預設翻 True**(對齊 R56 / R104 原設計)。
 🔴 守衛:預覽數字 == 真實擲骰 `rng.chance` 的引數(recording RNG),跨構築;PERSUADE_USES_CHARM 兩種狀態都同源;
-   False 時 persuade 的擲骰機率對舊內嵌算式逐位元組同;True 時對舊預覽式逐位元組同(含浮點加法順序)。
+   旗標關時 persuade 的擲骰機率對舊內嵌算式逐位元組同(回退路徑;無魅惑的玩家預設路徑也逐位元組同);
+   旗標開(預設)時對舊預覽式逐位元組同(含浮點加法順序)。
 🔴 審查 major(R199):行竊選單若用裸物品 id 當 key,會被畫面上殘留的買貨/賣貨面板列(data-key=iid)在前端「接管」,
    選單按鈕連同「得手 N%」標籤整個被移除 → key 必須帶 `steal:` 命名空間;單測把 ui.menu 換假函式看不到,
    所以另有「真 WebBackend 協定層」守衛與 tests/browser_ui.py 的真 Chromium 回歸。
@@ -341,31 +342,37 @@ def test_persuade_preview_equals_the_rolled_chance_in_both_charm_modes():
                     assert _preview(c, npc, flag) == _roll_chance(c, npc, flag), (speech, pers, flag, "魅惑中")
 
 
-def test_charm_is_ignored_by_default_and_counted_only_when_the_flag_is_on():
-    assert dialogue.PERSUADE_USES_CHARM is False                             # 預設 = 維持現行實際機率(未經使用者拍板不動)
+def test_charm_counts_by_default_and_the_flag_off_restores_the_old_roll():
+    """使用者拍板(2026-11-22):魅惑加成說服 → PERSUADE_USES_CHARM 預設 True(對齊 R56 / R104 原設計)。
+    旗標關 = 舊實擲行為(不含魅惑),可一行回退;沒有魅惑的玩家兩態完全相同。"""
+    assert dialogue.PERSUADE_USES_CHARM is True                              # 預設 = 使用者拍板的行為
     npc, c = _npc(), _char(speech=40, personality=45)
     base = _preview(c, npc, False)
+    assert _preview(c, npc, True) == base == dialogue.persuade_chance(c, gd, npc)   # 無魅惑 → 兩態同值(不受影響)
     with _Charm():
-        assert _preview(c, npc, False) == base                               # 預設:魅惑不影響(與現行實擲相同)
-        assert _preview(c, npc, True) > base                                 # 旗標開:預覽與實擲一併提高
-        assert _roll_chance(c, npc, True) > base
-        # 旗標一開 = R197 審查時的舊預覽(吸血鬼 R56 + 幻術魅惑 R104 兩項都算進去,不是只算其一)
+        assert _preview(c, npc, False) == base                               # 旗標關:魅惑不影響(舊實擲行為 = 回退路徑)
+        assert _roll_chance(c, npc, False) == base
+        assert _preview(c, npc, True) > base and _roll_chance(c, npc, True) > base   # 預設(開):預覽與實擲一併提高
+        assert dialogue.persuade_chance(c, gd, npc) == _preview(c, npc, True)        # 不覆寫旗標 = 預設 = 開
+        # 開 = R197 審查時的舊預覽(吸血鬼 R56 + 幻術魅惑 R104 兩項都算進去,不是只算其一)
         assert vampirism.charm_social_bonus(c) > 0 and spellfx.charm_persuade_bonus(c) > 0
         old_preview = formulas.persuade_curve(0.35 + (c.skill("speechcraft") + c.attr("personality") - 50) * 0.005
                                               + vampirism.charm_social_bonus(c) + spellfx.charm_persuade_bonus(c))
         assert _preview(c, npc, True) == old_preview == _roll_chance(c, npc, True)
 
 
-def test_persuade_roll_is_bytewise_identical_to_the_pre_r199_inline_formula_by_default():
+def test_persuade_roll_without_charm_is_bytewise_identical_to_the_pre_r199_inline_formula():
+    """沒有魅惑的玩家(絕大多數)完全不受影響:預設擲骰機率逐位元組同 R199 前的內嵌式;旗標關(回退路徑)連魅惑中也同舊。"""
     npc = _npc()
     n = 0
     for speech in (0, 10, 25, 50, 75, 100):
         for pers in (20, 40, 60, 80):
             c = _char(speech=speech, personality=pers)
             old = formulas.persuade_curve(0.35 + (c.skill("speechcraft") + c.attr("personality") - 50) * 0.005)
-            assert _roll_chance(c, npc, False) == old, (speech, pers)       # 現行實擲:不含魅惑、逐位元組同
+            assert _roll_chance(c, npc, True) == old, (speech, pers, "預設路徑·無魅惑")
+            assert _roll_chance(c, npc, False) == old, (speech, pers, "旗標關")
             with _Charm():
-                assert _roll_chance(c, npc, False) == old, (speech, pers, "魅惑中仍同現行")
+                assert _roll_chance(c, npc, False) == old, (speech, pers, "魅惑中、旗標關 → 仍同舊(回退路徑)")
             n += 1
     assert n == 24
 

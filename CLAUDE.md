@@ -270,7 +270,7 @@ PYTHONPATH=. python3 sim_flee.py          # 運動 50 健步如飛脫身加成�
 | R196 | 事件檢定:運動檢定首批 8 選項(附加尾端·失敗複製同事件既有檢定)+ 事件選項顯示成功率(金 chip·`events.check_chance` 單一出處 = 預覽=實擲·四捨五入);🔴 零存檔欄·sim 不走事件 → byte-identical 不當安全證據 | save-safe, content |
 | R198 | 事件資料整理:wild_beast 省份限定移進 trigger(+荒野)· 檢定成功必練同技能(41/41)· 標籤句尾 = 正典技能名;守衛擋死鍵/標點;🔴 純資料·零程式·sim 不走事件 | save-safe, content |
 | R197 | 可見性包:事件經驗升點提示(apply_effects→skill_events)· 體力懲罰 / 二次呼吸戰鬥卡片標籤(命中取真實命中鏈實際損失·`_hit_chain` 共用·預覽=實擲)· 旅行實際時數(`travel_hours` 單一出處)· `ui.pct` 取整;🔴 5 sim byte-identical | re-sim, save-safe |
-| R199 | 預覽 = 實擲第二批:說服預覽與實擲同源 `dialogue._persuade_p`(魅惑算不算進說服=待拍板·`PERSUADE_USES_CHARM=False`)+ 行竊逐件得手%·選單 key 帶 `steal:` 防殘留面板劫持;🔴 零機率改動·sim 不走此路徑故 byte-identical 非證據;審計清單見 handoff | save-safe |
+| R199 | 預覽 = 實擲第二批:說服預覽與實擲同源 `dialogue._persuade_p`(魅惑加成說服:使用者拍板翻 `PERSUADE_USES_CHARM=True`)+ 行竊逐件得手%·選單 key 帶 `steal:` 防殘留面板劫持;🔴 行竊零機率改動·說服只改吸血鬼/魅惑中玩家(+0.10/+0.12)·sim 不走此路徑故 byte-identical 非證據;審計清單見 handoff | save-safe |
 
 ## 自動提交閘門 / 換 session 前檢查表
 

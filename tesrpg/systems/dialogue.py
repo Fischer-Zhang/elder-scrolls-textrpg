@@ -45,11 +45,11 @@ def _adjust(char: Character, npc_id: str, delta: int) -> None:
     char.npc_disposition[npc_id] = char.npc_disposition.get(npc_id, 0) + delta
 
 
-# R199:魅惑(R56 吸血鬼社交魅惑 / R104 幻術魅惑術)算不算進「說服」成功率——**會改實際機率,屬設計決定**,未經使用者
-# 拍板前維持現行實擲(不含魅惑;同檔 talk_down_chance / pry_chance 本來就吃魅惑,說服原本沒有)。預覽與實擲共用
-# `_persuade_p`,翻轉此旗標兩邊一併改變,不會再出現預覽 ≠ 實擲(R197 審查證實;例:口才 40·魅力 45 的吸血鬼且魅惑中,
-# 舊預覽 74.5%、實擲 52.5%)。
-PERSUADE_USES_CHARM = False
+# R199:魅惑(R56 吸血鬼社交魅惑 +0.10 / R104 幻術魅惑術 +0.12)加成「說服」成功率。原本只有預覽含魅惑、實擲漏掉
+# (預覽 ≠ 實擲;例:口才 40·魅力 45 的吸血鬼且魅惑中,舊預覽 74.5%、實擲 52.5%)——會改實際機率,故先以本旗標閘住,
+# **使用者拍板(2026-11-22)後翻 True**(對齊 R56 / R104 原設計與同檔 talk_down_chance / pry_chance 本來就吃魅惑)。
+# 預覽與實擲共用 `_persuade_p`;設 False = 舊實擲行為(不含魅惑),可一行回退。
+PERSUADE_USES_CHARM = True
 
 
 def _persuade_p(char: Character, skill: int) -> float:
