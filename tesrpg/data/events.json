@@ -36,6 +36,11 @@
        {
         "type": "fame",
         "amount": 4
+       },
+       {
+        "type": "skill_xp",
+        "skill": "speechcraft",
+        "amount": 0.6
        }
       ]
      },
@@ -217,6 +222,11 @@
         "type": "skill_xp",
         "skill": "alteration",
         "amount": 2.0
+       },
+       {
+        "type": "skill_xp",
+        "skill": "speechcraft",
+        "amount": 0.4
        }
       ]
      },
@@ -374,7 +384,13 @@
      "difficulty": 35,
      "success": {
       "text": "你屏息潛入陰影,野狼悻悻離去。",
-      "effects": []
+      "effects": [
+       {
+        "type": "skill_xp",
+        "skill": "sneak",
+        "amount": 0.6
+       }
+      ]
      },
      "failure": {
       "text": "枯枝在腳下一響,野狼撲了上來!",
@@ -591,6 +607,11 @@
        {
         "type": "gold",
         "amount": 20
+       },
+       {
+        "type": "skill_xp",
+        "skill": "security",
+        "amount": 0.4
        }
       ]
      },
@@ -660,6 +681,11 @@
        {
         "type": "gold",
         "amount": 25
+       },
+       {
+        "type": "skill_xp",
+        "skill": "security",
+        "amount": 0.4
        }
       ]
      },
@@ -685,6 +711,12 @@
   "trigger": {
    "contexts": [
     "explore"
+   ],
+   "provinces": [
+    "天際"
+   ],
+   "location_types": [
+    "wilderness"
    ]
   },
   "title": "草叢異動",
@@ -706,7 +738,13 @@
      "difficulty": 30,
      "success": {
       "text": "你輕手輕腳地退開,那東西沒有追來。",
-      "effects": []
+      "effects": [
+       {
+        "type": "skill_xp",
+        "skill": "sneak",
+        "amount": 0.6
+       }
+      ]
      },
      "failure": {
       "text": "你踩斷了枯枝,牠撲了上來!",
@@ -745,9 +783,6 @@
      }
     }
    }
-  ],
-  "provinces": [
-   "天際"
   ]
  },
  "town_crier": {
@@ -1026,7 +1061,13 @@
      "difficulty": 35,
      "success": {
       "text": "你借著風雪掩護,悄然退開。",
-      "effects": []
+      "effects": [
+       {
+        "type": "skill_xp",
+        "skill": "sneak",
+        "amount": 0.6
+       }
+      ]
      },
      "failure": {
       "text": "牠嗅到了你的氣息,呼嘯而至!",
@@ -1233,7 +1274,13 @@
      "difficulty": 40,
      "success": {
       "text": "你看穿幽光的誘引,悄悄退出泥潭。",
-      "effects": []
+      "effects": [
+       {
+        "type": "skill_xp",
+        "skill": "sneak",
+        "amount": 0.6
+       }
+      ]
      },
      "failure": {
       "text": "你陷進爛泥,幽光趁機撲來!",
@@ -1527,7 +1574,13 @@
      "difficulty": 40,
      "success": {
       "text": "你壓低身形,任那掠食獸自沙下掠過。",
-      "effects": []
+      "effects": [
+       {
+        "type": "skill_xp",
+        "skill": "sneak",
+        "amount": 0.6
+       }
+      ]
      },
      "failure": {
       "text": "沙礫滑落驚動了牠,沙嘯獸破沙而出!",
@@ -1628,7 +1681,13 @@
      "difficulty": 42,
      "success": {
       "text": "你貼著石南匍匐而過,任那石影在霧裡重新沉睡。",
-      "effects": []
+      "effects": [
+       {
+        "type": "skill_xp",
+        "skill": "sneak",
+        "amount": 0.6
+       }
+      ]
      },
      "failure": {
       "text": "腳下碎石一響,石像鬼睜眼撲下!",
@@ -1703,7 +1762,13 @@
      "difficulty": 42,
      "success": {
       "text": "你貼著樹根匍匐而過,任那樹靈在綠蔭裡重新沉入巨木。",
-      "effects": []
+      "effects": [
+       {
+        "type": "skill_xp",
+        "skill": "sneak",
+        "amount": 0.6
+       }
+      ]
      },
      "failure": {
       "text": "踩斷的枯枝驚動了牠,樹靈的毒藤猛然纏來!",
@@ -1804,7 +1869,13 @@
      "difficulty": 44,
      "success": {
       "text": "你貼著草浪匍匐而過,任那巨虎在草海裡重新沉入潛伏。",
-      "effects": []
+      "effects": [
+       {
+        "type": "skill_xp",
+        "skill": "sneak",
+        "amount": 0.6
+       }
+      ]
      },
      "failure": {
       "text": "踩斷的枯草驚動了牠,森奇巨虎的毒爪猛然撲來!",
@@ -1998,7 +2069,7 @@
   "text": "荒原的霧靄裡浮起一圈青藍火光,幾名披斗篷的格倫莫利女巫圍著大鍋低吟。她們抬眼望向你,鍋中翻騰著不知名的東西——是要繞道,還是探個究竟?",
   "options": [
    {
-    "text": "悄悄潛近,偷聽她們的盤算",
+    "text": "悄悄潛近,偷聽她們的盤算(潛行)",
     "check": {
      "skill": "sneak",
      "difficulty": 30,
@@ -2013,6 +2084,11 @@
        {
         "type": "gold",
         "amount": 40
+       },
+       {
+        "type": "skill_xp",
+        "skill": "sneak",
+        "amount": 0.6
        }
       ]
      },
@@ -2061,7 +2137,7 @@
   "text": "兩名分屬匕落與坎洛恩的傳令官在岔路上狹路相逢,為了一面褪色的狼徽戰旗爭得面紅耳赤,眼看就要拔劍。一名認出你像是個外鄉劍客,高聲喚你來評理。",
   "options": [
    {
-    "text": "以言辭斡旋,勸兩家息怒",
+    "text": "以言辭斡旋,勸兩家息怒(口才)",
     "check": {
      "skill": "speechcraft",
      "difficulty": 35,
@@ -2075,6 +2151,11 @@
        {
         "type": "fame",
         "amount": 3
+       },
+       {
+        "type": "skill_xp",
+        "skill": "speechcraft",
+        "amount": 0.4
        }
       ]
      },
@@ -2111,7 +2192,7 @@
     "effects": [
      {
       "type": "message",
-      "text": "你聳聳肩,任他們去吵。割據諸王的恩怨，與一個流亡者何干。"
+      "text": "你聳聳肩,任他們去吵。割據諸王的恩怨,與一個流亡者何干。"
      }
     ]
    }
@@ -2131,7 +2212,7 @@
   "text": "一隊波斯莫獵手攔住去路,圍著火塘分食方才獵殺的強盜 —— 綠約戒律不許他們傷草木為食,凡所殺之敵皆須食盡。獵長將一塊血淋淋的肉舉向你:『循伊弗雷的法,與我們共食此敵,還是你嫌綠約之民的桌不潔?』",
   "options": [
    {
-    "text": "依綠約共食,以示敬意",
+    "text": "依綠約共食,以示敬意(口才)",
     "check": {
      "skill": "speechcraft",
      "difficulty": 35,
@@ -2146,6 +2227,11 @@
         "type": "item",
         "item": "wolf_pelt",
         "qty": 2
+       },
+       {
+        "type": "skill_xp",
+        "skill": "speechcraft",
+        "amount": 0.4
        }
       ]
      },
@@ -2205,7 +2291,7 @@
   "text": "腳下的大地驟然震顫,千年葛拉特巨橡正拔根遷徙 —— 隨季節而行的法林斯提王城正從林海深處踏過。樹根掀開的腐土間,露出一截被覆埋已久、鑲著月長石的綠約古匣。",
   "options": [
    {
-    "text": "趁巨根抬起的瞬間竄入取匣",
+    "text": "趁巨根抬起的瞬間竄入取匣(雜技)",
     "check": {
      "skill": "acrobatics",
      "difficulty": 40,
@@ -2220,6 +2306,11 @@
        {
         "type": "gold",
         "amount": 90
+       },
+       {
+        "type": "skill_xp",
+        "skill": "acrobatics",
+        "amount": 0.6
        }
       ]
      },
@@ -2239,7 +2330,7 @@
     "effects": [
      {
       "type": "message",
-      "text": "你伏低身子，看那株承載整座王城的巨橡緩緩遠去，足音如雷漸隱於翠幕。能親見行走的法林斯提，已是綠約之地少有的奇遇。"
+      "text": "你伏低身子,看那株承載整座王城的巨橡緩緩遠去,足音如雷漸隱於翠幕。能親見行走的法林斯提,已是綠約之地少有的奇遇。"
      },
      {
       "type": "fame",
@@ -2347,7 +2438,7 @@
     ]
    },
    {
-    "text": "默誦迦哈傑月之經緯驅散它(秘法)",
+    "text": "默誦迦哈傑月之經緯驅散它(神秘)",
     "check": {
      "skill": "mysticism",
      "difficulty": 45,
@@ -2920,7 +3011,13 @@
      "difficulty": 42,
      "success": {
       "text": "你貼著岩壁無聲退開,那道身影在亂石間失去了你的足跡。",
-      "effects": []
+      "effects": [
+       {
+        "type": "skill_xp",
+        "skill": "sneak",
+        "amount": 0.6
+       }
+      ]
      },
      "failure": {
       "text": "碎石的聲響暴露了你,突襲者低喝一聲撲了上來!",
@@ -3219,6 +3316,11 @@
        {
         "type": "fame",
         "amount": 3
+       },
+       {
+        "type": "skill_xp",
+        "skill": "speechcraft",
+        "amount": 0.6
        }
       ]
      },
