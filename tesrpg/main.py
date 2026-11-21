@@ -1143,7 +1143,7 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
     # preserve_buffs(地城預施帶入):不全清,只剝 cascade/afterimage(戰鬥內累積層)+ 已過期效果。
     if preserve_buffs:
         player.active_effects[:] = [e for e in player.active_effects
-                                    if e.get("kind") not in ("cascade", "afterimage", "momentum") and e.get("turns", 1) > 0]
+                                    if e.get("kind") not in ("cascade", "afterimage", "momentum", "second_breath_spent") and e.get("turns", 1) > 0]
     else:
         player.active_effects.clear()
 
@@ -1152,7 +1152,7 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
     if prep_budget > 0:
         _prep_phase(state, gamedata, enemies, battle, prep_budget, hurried=hurried_prep)
         # 奧術連鎖不由「備戰施法」預堆(備戰只省開場一動、不送額外威力)→ 清連鎖層,保留 prep 的增益/召喚
-        player.active_effects[:] = [e for e in player.active_effects if e.get("kind") not in ("cascade", "afterimage", "momentum")]
+        player.active_effects[:] = [e for e in player.active_effects if e.get("kind") not in ("cascade", "afterimage", "momentum", "second_breath_spent")]
 
     combat.momentum_reset(player, gamedata)   # R187 氣勢:開戰重置(未啟用 no-op);HUD 一開場即顯示
 
@@ -1226,6 +1226,11 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
             _cmsg(f"你因{why}而無法行動!", style="bold red")
             action = {"type": "incapacitated"}
         else:
+            # R194 運動 100「二次呼吸·一氣呵成」:行動時體力 ≤ 25% → 免耗回合回一次調息量(一場一次·未選 → 0·零 rng)。
+            # 放在選單「之前」→ 回氣後的體力/姿態/動作可用性立即反映在本回合選單。
+            _sw = combat.second_breath_use(player, gamedata)
+            if _sw:
+                _cmsg(f"一口氣湧上 —— 你喘過氣來,回復 {_sw} 點體力(免耗回合)!", style="green")
             action = _choose_combat_action(state, gamedata, enemies, battle["allies"], vanishes_done,
                                            mounted=mounted, first_round=(round_no == 1), charm_used=charm_used,
                                            mem=cmem)

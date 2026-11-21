@@ -63,6 +63,7 @@ _IMPLEMENTED_KINDS = {
     # 廣度 pass:運動逃跑加成、重甲反傷、安全解陷保底。
     "armor_reflect", "armor_stagger", "combat_regen", "trap_floor",   # R147:flee_bonus 隨 escape_artist 移除(逃跑加成孤兒化)
     "fatigue_ward",   # R193 徒手 100 鐵布衫:物理傷害一部分由體力代扣(替換舊 passive_armor +12)
+    "second_breath", "fatigue_on_kill",   # R194 運動 100:一氣呵成(歸零免費回一次調息量·一場一次)/ 殺勢回體(親手擊殺回 pct 最大體力)
     "rest_bonus",   # R147 運動「調息」開源:主動調息(耗一回合換回體·自動解除姿態)回復量加成(SUM)
 
     "shield_recoil",   # 變化 100(R118):作用中護膚盾時被物理擊中→機率震開攻方(接被動 flesh 為主動反噬)
@@ -917,13 +918,26 @@ def travel_factor_bonus(char, gamedata: GameData) -> float:
 FATIGUE_COST_BONUS_CAP = 0.35   # R147 節流省體多節點相加上限(防三節點疊到動作近乎免費)
 
 def fatigue_cost_bonus(char, gamedata: GameData) -> float:
-    """運動「節流」:戰鬥攻擊耗體額外 ×(1−bonus)。R147 改多源相加(運動 50/75/100 三節點可疊)、
+    """運動「節流」:戰鬥攻擊耗體額外 ×(1−bonus)。R147 改多源相加(運動 50 節氣 + 75 省勁 兩節點可疊;R194:100 階無盡之軀改殺勢回體 fatigue_on_kill,不再 −12%)、
     夾 FATIGUE_COST_BONUS_CAP(R35 防 first-wins 遮蔽 → 弱邊不製造隱形 no-brainer;單源時 SUM==原值 byte-identical)。"""
     return min(FATIGUE_COST_BONUS_CAP,
                sum(o.get("bonus", 0.0) for o in _chosen_options_by_kind(char, gamedata, "fatigue_cost_bonus")))
 
 
+def second_breath(char, gamedata: GameData) -> dict:
+    """R194 運動 100「二次呼吸·一氣呵成」:已選 → {"below": 體力占比門檻};未選 → {}。
+    每場戰鬥體力第一次降到 below×最大體力以下 → 免耗回合回一次調息量(觸發在 combat.second_breath_ready)。純讀、零 rng。"""
+    opts = _chosen_options_by_kind(char, gamedata, "second_breath")
+    return {"below": float(opts[0].get("below", 0.0))} if opts else {}
+
+
+def fatigue_on_kill(char, gamedata: GameData) -> float:
+    """R194 運動 100「無盡之軀·殺勢回體」:親手擊殺一名敵人回復的最大體力比例(0 = 無)。多源相加(目前僅此一源)。
+    召喚爪牙(summoned)/法術/同伴擊殺不算 —— 排除由 combat.fatigue_on_kill 把關。"""
+    return float(sum(o.get("pct", 0.0) for o in _chosen_options_by_kind(char, gamedata, "fatigue_on_kill")))
+
+
 def rest_bonus(char, gamedata: GameData) -> int:
     """R147 運動「調息·開源」:主動調息(耗一回合換回體)的里程碑回復量加成(0 = 無)。
-    多節點相加(25 地基 + 75/100 開源);base 回體量在 formulas.rest_fatigue_amount(運動技能)。"""
+    多節點相加(25 勻息 + 75 深息;R194:100 階二次呼吸改機制 second_breath,不再加量);base 回體量在 formulas.rest_fatigue_amount(運動技能)。"""
     return int(sum(o.get("rest_bonus", 0) for o in _chosen_options_by_kind(char, gamedata, "rest_bonus")))

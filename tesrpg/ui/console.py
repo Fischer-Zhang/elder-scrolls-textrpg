@@ -2418,7 +2418,7 @@ _BUFF_KINDS = {"shield", "regen", "ward", "consecration", "empower", "berserk_bu
                "battle_standard", "rally_banner", "shield_wall", "ride_evasion", "taunt", "guard_stance",
                "afterimage", "momentum"}
 # 純內部記帳/冷卻標記 —— 不顯示於戰鬥卡片(避免 deathmark_cd/support_cd/atk_cooldown 等洩漏)
-_HIDDEN_TAG_KINDS = {"support_cd", "deathmark_cd", "atk_cooldown", "triage_ready", "prep_used"}
+_HIDDEN_TAG_KINDS = {"support_cd", "deathmark_cd", "atk_cooldown", "triage_ready", "prep_used", "second_breath_spent"}   # R194 一氣呵成本場已用記帳
 _STANCE_MAINTAINED = 99   # 常駐光環維持中的 turns 哨兵 → 不顯示回合數
 
 

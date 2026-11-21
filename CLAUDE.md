@@ -18,6 +18,7 @@ shopt -s globstar; python3 -m py_compile tesrpg/**/*.py tesrpg/*.py tests/*.py .
 PYTHONPATH=. python3 sim_assassin.py      # 平衡回歸模擬(改戰鬥常數後必跑)
 PYTHONPATH=. python3 sim_reckless.py      # 搏命連斬群戰/終王牆守衛(R191;改戰鬥常數或搏命參數後跑,約 3 分鐘,⚠ 即警示)
 PYTHONPATH=. python3 sim_monk.py          # 徒手 100 崩勁釋放/鐵布衫群戰/終王牆守衛(R193;改徒手/失衡/崩勁參數後跑,約 1 分鐘,⚠ 即警示)
+PYTHONPATH=. python3 sim_dungeon.py       # 整趟地城全清+boss 與終王牆守衛(R194;改一氣呵成/殺勢回體/體力公式後跑,約 30 秒,⚠ 即警示;單場 sim 看不到體力壓力)
 ```
 - Python 3.12;遊戲 runtime 的 `rich` 可由系統套件提供(`python3-rich`);dev 工具走 `.[dev]`。sudo 需密碼、無 `jq`(寫 hook 要用 `python3` 解析 stdin)。
 - 真瀏覽器測試是 dev-only:安裝 `.[dev]` 後執行 `python3 -m playwright install --with-deps chromium`;遊戲 runtime 仍只有 `rich`。
@@ -263,6 +264,7 @@ PYTHONPATH=. python3 sim_monk.py          # 徒手 100 崩勁釋放/鐵布衫群
 | R191 | 刀劍 100 savage 改主動戰技「搏命連斬」(以攻對攻:連斬兩記·第二記 ×0.6·耗 30 體·目標沒倒下會還擊〔不可閃避/舉盾〕);🔴 每記 sneak=False·`overextended` 只存在於還擊內·未選零 rng·守衛 sim_reckless.py(群戰/牆/相當性 ⚠) | re-sim, save-safe |
 | R192 | 重型代理派工閘:ops.md §14 四題自檢(方向誰定/共用工具先建/紙面先於原型/告知成本得同意)+ PreToolUse `ask` 硬閘(指定 Fable/Opus 或同輪第 2 個重型代理;scout/counsel 豁免);🔴 只問不擋(R172「hook 永不阻擋」唯一例外·絕不 deny·fail-open·`SLG_OPS_GATE=off`);互動/auto 模式下 ask 行為待驗 | |
 | R193 | 徒手 100 逐選項功能化(使用者通則:100 階逐選項都要有機制):化勁通玄 → 主動戰技「崩勁釋放」(失衡≥4層一口氣釋放·每層+20%·耗20體)+ 鐵布衫 → 「體力化傷」(物理傷害 20% 由體力代扣·減傷後);🔴 sneak=False·零 rng 未選·sim_monk.py 守衛 | re-sim, save-safe |
+| R194 | 運動 100 逐選項功能化(R193 續·使用者拍板「開 R147 有限例外·照校準版」):二次呼吸=一氣呵成(行動時體力 ≤25% → 免耗回合回一次調息量·一場一次)/ 無盡之軀=殺勢回體(親手擊殺回 3% 最大體力·爪牙不算);🔴 免費但結構上有限·不碰力竭懸崖·零 rng·未選 byte-identical;新 sim_dungeon.py(整趟地城全清+boss·單場 sim 看不到體力壓力) | re-sim, save-safe |
 
 ## 自動提交閘門 / 換 session 前檢查表
 

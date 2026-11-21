@@ -34,8 +34,9 @@ def test_rest_bonus_sum():
     assert mastery.rest_bonus(c, gd) == 0                        # 未選 → 0
     mastery.choose(c, gd, "athletics_25", "steady_breath")
     mastery.choose(c, gd, "athletics_75", "deep_breath")
+    assert mastery.rest_bonus(c, gd) == 8 + 12                  # 25 勻息 + 75 深息 相加(開源)
     mastery.choose(c, gd, "athletics_100", "tidal_breath")
-    assert mastery.rest_bonus(c, gd) == 8 + 12 + 16             # 三節點相加(開源)
+    assert mastery.rest_bonus(c, gd) == 8 + 12                  # R194:二次呼吸改機制(一氣呵成),不再多回 16 點
 
 
 def test_rest_bonus_in_whitelist():
@@ -93,9 +94,9 @@ def test_fatigue_cost_bonus_sum_and_cap():
     c = _char(athletics=100)
     mastery.choose(c, gd, "athletics_50", "second_wind")        # 0.10
     mastery.choose(c, gd, "athletics_75", "sparing")            # 0.12
-    mastery.choose(c, gd, "athletics_100", "frugal")            # 0.12
+    mastery.choose(c, gd, "athletics_100", "frugal")            # R194:改機制(殺勢回體),不再 −0.12
     total = mastery.fatigue_cost_bonus(c, gd)
-    assert abs(total - min(mastery.FATIGUE_COST_BONUS_CAP, 0.10 + 0.12 + 0.12)) < 1e-9   # 相加夾 cap
+    assert abs(total - min(mastery.FATIGUE_COST_BONUS_CAP, 0.10 + 0.12)) < 1e-9          # 50 節氣 + 75 省勁 相加夾 cap
     # 單源 = 原值(byte-identical 保護)
     c2 = _char(athletics=75)
     mastery.choose(c2, gd, "athletics_50", "second_wind")

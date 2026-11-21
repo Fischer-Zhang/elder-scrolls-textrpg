@@ -677,6 +677,39 @@ def momentum_on_kill(player, enemy, gamedata: GameData) -> None:
     _momentum_set(player, gamedata, momentum(player, gamedata) + spec["per_kill"])
 
 
+# ---- R194 運動 100(使用者 2026-11-21 拍板「開有限例外·照校準版」;一氣呵成觸發 25% 以下、殺勢回體 3%):二次呼吸=一氣呵成 / 無盡之軀=殺勢回體 ----
+# 🔴 R147 鐵律「恢復必須付代價」的**有限例外**:這兩者是免費恢復,但結構上有限 —— 一氣呵成一場一次、殺勢回體只在親手擊殺時
+# (召喚爪牙不計·R134/R187 先例;法術/同伴擊殺不走 resolve_attack 玩家擊殺 hook → 不算)→ 無無限迴路;不碰力竭懸崖
+# (只加回復、不改力竭懲罰規則 —— 一氣呵成在體力降到 25% 以下時就先回氣,更少碰到懸崖);零 rng;未選 → getter 回 {}/0 → 既有構築 byte-identical。
+# 戰鬥內記帳 = active_effect second_breath_spent(PERSISTENT_TURNS·hidden tag):入戰/離戰整包清、preserve_buffs 剝除(同 momentum)。
+def second_breath_ready(player, gamedata: GameData) -> bool:
+    """一氣呵成可用(main 的玩家回合開頭與 sim 共用同一個閘):已選 + 行動時體力 ≤ below×最大體力(預設 25%)+ 本場尚未動用。
+    🔴 使用者 2026-11-21 拍板由「歸零」改「降到 25% 以下」:歸零對會提早調息的玩家(<15% 就喘氣)/重盾持架者(掩體 +2/回合永遠 ≥2)
+    永遠觸發不了 → 無增益(n=300 實測 47%→47%);25% 對兩種玩家都有用。門檻在 mastery.json 的 below,純改 JSON 可調。"""
+    spec = mastery.second_breath(player, gamedata)
+    return (_is_player(player) and bool(spec) and player.fatigue <= spec["below"] * player.max_fatigue
+            and not any(e.get("kind") == "second_breath_spent" for e in player.active_effects))
+
+
+def second_breath_use(player, gamedata: GameData) -> int:
+    """觸發一氣呵成:免耗回合回復一次調息量(= rest_fatigue_amount + rest_bonus,夾 max)並記帳本場已用。
+    回傳回復點數(不可用 → 0,零 rng、不動任何狀態)。"""
+    if not second_breath_ready(player, gamedata):
+        return 0
+    amount = formulas.rest_fatigue_amount(player.skill("athletics")) + mastery.rest_bonus(player, gamedata)
+    player.active_effects.append({"kind": "second_breath_spent", "turns": PERSISTENT_TURNS})
+    player.fatigue = min(player.max_fatigue, player.fatigue + amount)
+    return int(amount)
+
+
+def fatigue_on_kill(player, enemy, gamedata: GameData) -> None:
+    """殺勢回體:玩家親手斬殺一名敵人 → 回復 pct×最大體力(夾 max)。召喚爪牙(summoned)不回(同 momentum_on_kill);未啟用 no-op。"""
+    pct = mastery.fatigue_on_kill(player, gamedata)
+    if not pct or getattr(enemy, "summoned", False):
+        return
+    player.fatigue = min(player.max_fatigue, player.fatigue + pct * player.max_fatigue)
+
+
 def afterimage_gain(player, gamedata: GameData) -> None:
     """玩家閃過任何敵攻(含遠程/元素;與 R145 閃身反打「限物理近戰」不同)→ 凝一層殘影(夾 max_stacks)。
     無 afterimage 里程碑/穿重甲(R141)→ spec 為空 no-op。"""
@@ -959,6 +992,7 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
         chance = max(chance, formulas.SNEAK_ATTACK_HIT_FLOOR)
     skill_events: list[dict] = []
     hit = rng.chance(chance)
+    _was_alive = is_alive(defender)   # R194 審查:擊殺 = 這一擊使目標『活→死』(對屍體再打不重複計、含同擊內附魔補的最後一刀)
     dmg_done = 0
     absorbed = False
     iron_absorbed = 0           # R193 鐵布衫:本擊由體力代扣的傷害(顯示用)
@@ -1161,8 +1195,6 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
             dmg = min(dmg, cap)
         dmg_done = int(round(dmg))
         _set_hp(defender, _get_hp(defender) - dmg_done)
-        if _is_player(attacker) and not is_alive(defender):   # R187 氣勢:親手斬殺回氣勢(未啟用/爪牙 → no-op·零 rng)
-            momentum_on_kill(attacker, defender, gamedata)
 
         # 里程碑「沉勁揮擊」(blunt_50 heavy_swing)反作用:造成傷害的一部分回噬自身(代價,不致死 → 夾 ≥1)
         # (R191 起刀劍 100 savage 改成主動戰技搏命連斬,不再走 recoil;recoil 只剩沉勁揮擊)
@@ -1552,6 +1584,12 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
                     # R181:turns:2 → 敵人階段對怪物施加的踉蹌須撐過回合末 tick,才在該怪「下一次出手」時生效
                     # (原 turns:1 實測施加 388 次、怪物下一擊讀到 0 次 = 死機制;與上方盾擊/荊棘同款時序修法)
                     magic.apply_control(attacker, "stagger", gamedata, rng, turns=2)   # R44:集中 helper
+
+    # R187 氣勢 / R194 殺勢回體:玩家親手斬殺(活→死轉移;放在命中分支之後 → 武器附魔 absorb/瓦巴賈克補的最後一刀也算,
+    # 且對已死目標再打不會重複回)。召喚爪牙不回(各 hook 內判);未選/未啟用 → no-op·零 rng。
+    if hit and _was_alive and _is_player(attacker) and not is_alive(defender):
+        momentum_on_kill(attacker, defender, gamedata)
+        fatigue_on_kill(attacker, defender, gamedata)
 
     if _iron_pending:                               # R193:反制/姿態閘都讀完才扣(見上);不為負
         defender.fatigue = max(0, defender.fatigue - _iron_pending)
