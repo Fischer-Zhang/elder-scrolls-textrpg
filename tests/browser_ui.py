@@ -344,6 +344,37 @@ class BrowserRegression(unittest.TestCase):
         self.page.goto(self.server.url, wait_until="domcontentloaded")
         self.page.locator(wait_for).wait_for(state="visible")
 
+    def test_combat_card_fatigue_and_second_breath_tags_with_hover_tips_r197(self) -> None:
+        """R197:我方卡片的「體力不足 / 力竭」與「二次呼吸 可用 / 已用」標籤 —— 文字、好壞色階、滑鼠停留說明(title);
+        一般狀態標籤(沒有 tip)不帶 title → 舊行為不變。"""
+        data = _combat_data()
+        data["me"]["tags"] = [
+            {"s": "體力不足 命中−16% 法效−15%", "good": False,
+             "tip": "體力偏低的懲罰:普通攻擊命中率 −16 個百分點(出招會先耗體力再擲命中,故以出招後的體力計)、"
+                    "法術效果 −15%(以出招前的體力計)。體力恢復後消失。"},
+            {"s": "二次呼吸 可用", "good": True,
+             "tip": "運動 100 里程碑:每場戰鬥一次,體力降到 25% 以下時,於你的回合開頭免耗回合回一次調息量。"},
+            {"s": "護甲2", "good": True},
+        ]
+        self.server.emit(blocks=[{"kind": "view", "name": "combat", "data": data}], prompt=_combat_prompt(), hud=_hud())
+        self._open(".combat-flow")
+
+        tags = self.page.locator(".cbt.me .cname .ct")
+        self.assertEqual(tags.count(), 3)
+        self.assertEqual(tags.nth(0).inner_text(), "體力不足 命中−16% 法效−15%")
+        self.assertIn("debuff", tags.nth(0).get_attribute("class"))
+        self.assertIn("個百分點", tags.nth(0).get_attribute("title"))
+        self.assertEqual(tags.nth(1).inner_text(), "二次呼吸 可用")
+        self.assertNotIn("debuff", tags.nth(1).get_attribute("class"))
+        self.assertIn("buff", tags.nth(1).get_attribute("class"))
+        self.assertIn("調息量", tags.nth(1).get_attribute("title"))
+        self.assertIsNone(tags.nth(2).get_attribute("title"), "一般狀態標籤不該憑空帶 title")
+        self.assertIsNone(self.page.locator(".cbt.foe .cname .ct").first.get_attribute("title"))
+        self.assertTrue(
+            self.page.evaluate("document.documentElement.scrollWidth <= document.documentElement.clientWidth"),
+            "新增標籤造成水平溢出",
+        )
+
     def test_desktop_combat_render_submit_and_scroll(self) -> None:
         narrative = [
             {"kind": "log", "html": f"<span>旅程紀錄 {i:02d}:風雪仍未止息。</span>"}

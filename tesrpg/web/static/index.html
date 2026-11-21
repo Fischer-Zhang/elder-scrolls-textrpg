@@ -672,7 +672,7 @@
       const idx = c.idx != null ? `<span class="cidx">${c.idx}.</span> ` : "";
       const tags = (c.tags || []).map(function (t) {
         const cls = t.good === true ? "ct buff" : (t.good === false ? "ct debuff" : "ct");
-        return `<span class="${cls}">${esc(t.s)}</span>`;
+        return `<span class="${cls}"${t.tip ? ` title="${esc(t.tip)}"` : ""}>${esc(t.s)}</span>`;   // R197:tip = 滑鼠停留說明
       }).join(" ");
       const hpcls = kind === "ally" ? "mp" : "hp";
       let mp = "";

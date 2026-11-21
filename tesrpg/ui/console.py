@@ -362,6 +362,29 @@ def _combatant(ent, idx=None, down=False, echo: bool = False) -> dict:
             "tags": [] if down else _status_tags_list(ent, echo=echo)}
 
 
+def _player_state_tags(player, gamedata) -> list:
+    """R197 戰鬥卡片(我方)的可見性標籤:體力懲罰 + 二次呼吸狀態。數字一律取自 systems.combat 的純讀函式
+    (命中判定 / 施法實際用的同一組式子 → 預覽 = 實擲)。`tip` = 滑鼠停留說明(前端 title);敵方 / 同伴卡片不帶。"""
+    from tesrpg.systems import combat as _combat, mastery as _mastery   # 區域匯入(慣例:console 不在頂層依賴 systems)
+    out = []
+    fv = _combat.fatigue_penalty_view(player, gamedata)
+    if fv:
+        hit, power = pct(fv["hit"]), pct(fv["power"])
+        tip = (f"體力偏低的懲罰:普通攻擊命中率 −{hit} 個百分點(出招會先耗體力再擲命中,故以出招後的體力計)、"
+               f"法術效果 −{power}%(以出招前的體力計)。體力恢復後消失。")
+        if fv["exhausted"]:
+            tip += "力竭時另有:閃避減半、格擋姿態與盾牆暫停。"
+        out.append({"s": f"{'力竭' if fv['exhausted'] else '體力不足'} 命中−{hit}% 法效−{power}%",
+                    "good": False if (fv["exhausted"] or hit >= 15) else None, "tip": tip})
+    status = _combat.second_breath_status(player, gamedata) if gamedata is not None else None
+    if status:
+        below = pct(_mastery.second_breath(player, gamedata)["below"])
+        out.append({"s": "二次呼吸 " + ("可用" if status == "available" else "已用"),
+                    "good": True if status == "available" else None,
+                    "tip": f"運動 100 里程碑:每場戰鬥一次,體力降到 {below}% 以下時,於你的回合開頭免耗回合回一次調息量。"})
+    return out
+
+
 def _combat_view(player: Character, allies: list, enemies: list, show_echo: bool = False) -> dict:
     # R190 餘韻標籤「破綻·X」只給持有狀態加乘里程碑(mastery.exploit_reader)的玩家看;show_echo 由呼叫端依 gamedata 算。
     # 存活敵人先列(帶 0-based key 對齊 _choose_enemy_target 目標選單);已倒下者集中到末尾:
@@ -376,7 +399,9 @@ def _combat_view(player: Character, allies: list, enemies: list, show_echo: bool
         foes += [_combatant(e, down=True) for e in down_list]
     else:
         foes.append({"name": f"已倒下 ×{len(down_list)}", "down": True, "collapsed": True})
-    return {"me": _combatant(player), "has_fp": True,
+    me = _combatant(player)
+    me["tags"] = _player_state_tags(player, _hud_gamedata) + me["tags"]       # R197:體力懲罰 / 二次呼吸(只給玩家本人)
+    return {"me": me, "has_fp": True,
             "allies": [_combatant(a) for a in allies if a.health > 0], "enemies": foes}
 
 

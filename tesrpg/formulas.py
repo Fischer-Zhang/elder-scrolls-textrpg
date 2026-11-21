@@ -537,6 +537,20 @@ EVASION_TOTAL_CAP = 0.42
 HIT_CHANCE_FLOOR = 0.03   # 命中下限(R71:0.05→0.03·提高閃避上限·配「隱遁不再無敵」純靠 evasion)
 HIT_CHANCE_CEIL = 0.95    # 命中上限
 
+# R197:低體力懲罰的單一出處。`hit_chance`(命中判定)與戰鬥卡片「體力不足 / 力竭」標籤共用 → 預覽 = 實擲。
+# (原 hit_chance 內寫死的 0.25;值不變 → 既有行為逐位元組同。與 CAST_FATIGUE_POWER_PENALTY 鏡像:滿體 0、空體 −0.25。)
+FATIGUE_HIT_PENALTY = 0.25
+
+
+def fatigue_hit_penalty(fatigue_ratio: float) -> float:
+    """低體力造成的命中折減(百分點 / 100):滿體 0、空體 FATIGUE_HIT_PENALTY。"""
+    return (1.0 - max(0.0, min(1.0, fatigue_ratio))) * FATIGUE_HIT_PENALTY
+
+
+def fatigue_power_penalty(fatigue_ratio: float) -> float:
+    """低體力造成的法效折減比例(= 1 − cast_fatigue_power_factor):滿體 0、空體 CAST_FATIGUE_POWER_PENALTY。"""
+    return 1.0 - cast_fatigue_power_factor(fatigue_ratio)
+
 
 def hit_chance(atk_skill: int, atk_agility: int, def_agility: int,
                attacker_fatigue_ratio: float, defender_blocking: bool = False,
@@ -547,7 +561,7 @@ def hit_chance(atk_skill: int, atk_agility: int, def_agility: int,
     """
     chance = 0.50 + (atk_skill - 25) * 0.006        # 技能 25→0.5、75→0.8、100→0.95
     chance += (atk_agility - def_agility) * 0.004
-    chance -= (1.0 - max(0.0, min(1.0, attacker_fatigue_ratio))) * 0.25
+    chance -= fatigue_hit_penalty(attacker_fatigue_ratio)
     if defender_blocking:
         chance -= block_penalty
     # 閃避(僅玩家防守時):各來源已「單一投入遞減」(R132)→ 此處總量硬夾 EVASION_TOTAL_CAP 才扣命中

@@ -702,6 +702,37 @@ def second_breath_use(player, gamedata: GameData) -> int:
     return int(amount)
 
 
+def second_breath_status(player, gamedata: GameData) -> str | None:
+    """R197 戰鬥卡片標籤用(純讀):未選 / 非玩家 → None;本場已觸發 → "spent";否則 "available"
+    (「本場還有沒有」,與目前體力高低無關 —— 觸發本身仍由 second_breath_ready 決定)。與 second_breath_ready 共用同一個
+    本場已用記帳 second_breath_spent,故標籤永遠與實際行為一致。"""
+    if not _is_player(player) or not mastery.second_breath(player, gamedata):
+        return None
+    return "spent" if any(e.get("kind") == "second_breath_spent" for e in player.active_effects) else "available"
+
+
+# R197 低體力標籤的顯示門檻:命中折減 ≥ 5 個百分點(體力比 ≤ 80%)才標,滿體力附近不洗版。
+FATIGUE_TAG_MIN = 0.05
+
+
+def fatigue_penalty_view(player, gamedata: GameData | None = None) -> dict | None:
+    """R197 戰鬥卡片「體力不足 / 力竭」標籤用(純讀、零 rng)。非玩家 / 懲罰低於門檻 → None。
+
+    🔴 預覽 = 實擲:兩個數字各自對齊「真正會用的體力比例」——
+      · hit   = 下一次**普通攻擊**的命中折減。main 是先 player_attack_cost 扣體力、再 resolve_attack 擲命中,
+                所以命中用的是「出招後」的體力比例 max(0, 體力 − 一擊耗量) / 最大體力;
+      · power = 法效折減。magic.cast 以「出招前」的體力比例(fatigue_before)計,所以用現有比例。
+    式子取自 formulas.fatigue_hit_penalty / fatigue_power_penalty(命中判定與施法實際用的同一組)。"""
+    if not _is_player(player) or player.max_fatigue <= 0:
+        return None
+    ratio_swing = max(0.0, player.fatigue - attack_fatigue_cost(player, gamedata)) / player.max_fatigue
+    hit = formulas.fatigue_hit_penalty(ratio_swing)
+    power = formulas.fatigue_power_penalty(_fatigue_ratio(player))
+    if max(hit, power) < FATIGUE_TAG_MIN:
+        return None
+    return {"hit": hit, "power": power, "exhausted": player.fatigue <= 0}
+
+
 def fatigue_on_kill(player, enemy, gamedata: GameData) -> None:
     """殺勢回體:玩家親手斬殺一名敵人 → 回復 pct×最大體力(夾 max)。召喚爪牙(summoned)不回(同 momentum_on_kill);未啟用 no-op。"""
     pct = mastery.fatigue_on_kill(player, gamedata)
