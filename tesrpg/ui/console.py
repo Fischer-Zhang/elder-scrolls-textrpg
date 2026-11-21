@@ -363,20 +363,30 @@ def _combatant(ent, idx=None, down=False, echo: bool = False) -> dict:
             "tags": [] if down else _status_tags_list(ent, echo=echo)}
 
 
-def _player_state_tags(player, gamedata) -> list:
+def _player_state_tags(player, gamedata, enemies=()) -> list:
     """R197 戰鬥卡片(我方)的可見性標籤:體力懲罰 + 二次呼吸狀態。數字一律取自 systems.combat 的純讀函式
-    (命中判定 / 施法實際用的同一組式子 → 預覽 = 實擲)。`tip` = 滑鼠停留說明(前端 title);敵方 / 同伴卡片不帶。"""
+    (命中 = 真實命中鏈〔含武器速度 / 里程碑 / 0.95 上限〕的實際損失、法效 = 施法實際用的式子 → 預覽 = 實擲;
+    命中本就頂著上限的構築不亮「命中−N%」)。`tip` = 滑鼠停留說明(前端 title);敵方 / 同伴卡片不帶。"""
     from tesrpg.systems import combat as _combat, mastery as _mastery   # 區域匯入(慣例:console 不在頂層依賴 systems)
     out = []
-    fv = _combat.fatigue_penalty_view(player, gamedata)
+    fv = _combat.fatigue_penalty_view(player, gamedata, enemies)
     if fv:
         hit, power = pct(fv["hit"]), pct(fv["power"])
-        tip = (f"體力偏低的懲罰:普通攻擊命中率 −{hit} 個百分點(出招會先耗體力再擲命中,故以出招後的體力計)、"
-               f"法術效果 −{power}%(以出招前的體力計)。體力恢復後消失。")
-        if fv["exhausted"]:
-            tip += "力竭時另有:閃避減半、格擋姿態與盾牆暫停。"
-        out.append({"s": f"{'力竭' if fv['exhausted'] else '體力不足'} 命中−{hit}% 法效−{power}%",
-                    "good": False if (fv["exhausted"] or hit >= 15) else None, "tip": tip})
+        parts, tips = [], []
+        if hit >= 1:
+            parts.append(f"命中−{hit}%")
+            tips.append(f"普通攻擊命中率 −{hit} 個百分點(已計入武器速度、里程碑與 95% 命中上限後的實際損失,取在場敵人中最大者;"
+                        f"出招會先耗體力再擲命中,故以出招後的體力計)")
+        elif fv["hit_nominal"] >= _combat.FATIGUE_TAG_MIN:
+            tips.append(f"你的普通攻擊命中已頂著上限,體力不足(公式上 −{pct(fv['hit_nominal'])} 個百分點)對命中幾乎無損")
+        if fv["caster"] and power >= 1:
+            parts.append(f"法效−{power}%")
+            tips.append(f"法術效果 −{power}%(以出招前的體力計)")
+        tip = ("體力偏低的懲罰:" + ";".join(tips) + "。") if tips else ""
+        tip += ("力竭時另有:閃避減半、格擋姿態暫停、盾牆會落下(須重立)。" if fv["exhausted"] else "體力恢復後消失。")
+        red = fv["exhausted"] or fv["hit"] >= 0.15 or (fv["caster"] and fv["power"] >= 0.15)
+        out.append({"s": " ".join(["力竭" if fv["exhausted"] else "體力不足"] + parts),
+                    "good": False if red else None, "tip": tip})
     status = _combat.second_breath_status(player, gamedata) if gamedata is not None else None
     if status:
         below = pct(_mastery.second_breath(player, gamedata)["below"])
@@ -401,7 +411,7 @@ def _combat_view(player: Character, allies: list, enemies: list, show_echo: bool
     else:
         foes.append({"name": f"已倒下 ×{len(down_list)}", "down": True, "collapsed": True})
     me = _combatant(player)
-    me["tags"] = _player_state_tags(player, _hud_gamedata) + me["tags"]       # R197:體力懲罰 / 二次呼吸(只給玩家本人)
+    me["tags"] = _player_state_tags(player, _hud_gamedata, enemies) + me["tags"]   # R197:體力懲罰 / 二次呼吸(只給玩家本人)
     return {"me": me, "has_fp": True,
             "allies": [_combatant(a) for a in allies if a.health > 0], "enemies": foes}
 

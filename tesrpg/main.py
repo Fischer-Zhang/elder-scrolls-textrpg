@@ -2990,7 +2990,7 @@ def action_shop(state: GameState, gamedata: GameData) -> None:
                     total += world.sell_price(char, gamedata, iid)   # 隨交易技能微升,逐件結算
                     inventory.remove_item(char, iid, 1)
                     sold += 1
-                    progression.use_skill(char, gamedata, "mercantile", 0.3)
+                    ui.show_events(progression.use_skill(char, gamedata, "mercantile", 0.3), gamedata)   # R197 審查:賣貨升點原被丟棄
                 char.gold += total
                 # 賣掉最後一件會自動卸下;若是 fortify 護甲,須重算以移除其加成並夾限當前值
                 stats.recompute_max_resources(char, gamedata)
@@ -3470,7 +3470,7 @@ def action_fence(state: GameState, gamedata: GameData) -> None:
                     total += fsell(iid)
                     inventory.remove_item(char, iid, 1)
                     sold += 1
-                    progression.use_skill(char, gamedata, "mercantile", 0.3)
+                    ui.show_events(progression.use_skill(char, gamedata, "mercantile", 0.3), gamedata)   # R197 審查:賣貨升點原被丟棄
                 char.gold += total
                 stats.recompute_max_resources(char, gamedata)   # 銷掉穿戴中最後一件會自動卸下 → 重算
                 ui.message(f"銷出 {gamedata.item_name(iid)} ×{sold},得 {total} 金。", style="green")

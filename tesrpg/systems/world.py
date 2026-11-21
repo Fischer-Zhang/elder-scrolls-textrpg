@@ -179,8 +179,10 @@ def travel_hours(char: Character, gamedata: GameData, base_hours: int) -> int:
 
 def route_hours_actual(char: Character, gamedata: GameData, path: list[str]) -> int:
     """路徑實際總時數 = 逐跳旅行實際耗時之和(各跳各自取整,非「總和 × 係數」)。純讀。
-    以出發當下的技能計;途中運動升級若剛好跨過某個取整門檻,真實耗時可能差 1 時(極罕見)。
-    名目的 `route_hours` 不動(引擎 / 測試用)。"""
+    這是**估計值**(以出發當下的技能計):旅途中每跳都會練運動、常常升級,升級後旅速係數變小 → 真實耗時**永遠 ≤ 預測**,
+    只有升級恰好跨過取整門檻(例:運動 31→32 使 4 時連線變 3 時)才有差。審查實測:隨機等級下約 1.4% 的路線有差;
+    落在門檻等級的玩家,≥5 跳路線的不符率可達 26–58%(最大差數時)。故長途 / 任務目標選單標「約 M 時」。
+    單跳(旅行選單)的實際時數則是精確的(travel() 先算時數、後練技能)。名目的 `route_hours` 不動(引擎 / 測試用)。"""
     locs = gamedata.world["locations"]
     factor = travel_factor(char, gamedata)
     total, cur = 0, char.location_id

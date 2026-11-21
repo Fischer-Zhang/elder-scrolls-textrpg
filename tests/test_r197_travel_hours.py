@@ -228,14 +228,86 @@ def test_world_map_edges_exits_and_reach_use_actual_hours():
     for n in view["grid"]["nodes"]:
         if n["id"] in reach:
             assert (n["hops"], n["hours"]) == reach[n["id"]]
+    # 節點出口(province 視圖)也是實際時數 —— 逐節點對帳(審查:原只斷言 ≥ 1,改回名目不會紅)
+    assert len({l["name"] for l in LOCS.values()}) == len(LOCS), "地點名稱不唯一 → 無法以名稱對回 id"
+    name_to_lid = {l["name"]: lid for lid, l in LOCS.items()}
+    vis = {lid for lid in LOCS if world.is_visible(c, gd, lid)}
+    n_diff = 0
     for prov in view["provinces"]:
         for node in prov["nodes"]:
-            for ex in node["exits"]:
-                assert ex["hours"] >= 1
+            lid = name_to_lid[node["name"]]
+            want = [world.travel_hours(c, gd, h) for d, h in LOCS[lid]["links"].items() if d in vis]
+            assert [ex["hours"] for ex in node["exits"]] == want, node["name"]
+            n_diff += sum(w != h for w, h in zip(want, [LOCS[lid]["links"][d] for d in LOCS[lid]["links"] if d in vis]))
+    assert n_diff > 20, "節點出口必須真有「實際 < 名目」的,否則此斷言空轉"
     # 無加速:地圖資料與名目完全相同
     slow = _mk(athletics=5, start="bruma")
     sv = ui._map_view(slow, gd, world.routes_from(slow, gd, actual=True))
     assert all(e["h"] == LOCS[e["a"]]["links"][e["b"]] for e in sv["grid"]["edges"])
+
+
+def test_travel_factor_includes_every_speed_source():
+    """旅速係數的五個加速來源(里程碑 / 同伴識途 / 坐騎 / 星座 / 神殿)各自都真的被扣進去,且扣除順序同舊(浮點)。
+    審查:原夾具只有運動與里程碑 / 星座,漏掉其餘來源的突變不會紅。"""
+    sources = [(mastery, "travel_factor_bonus"), (party, "passive_capstone_factor"), (mounts, "travel_factor_bonus"),
+               (birthsign_ability, "travel_factor_bonus"), (divines, "travel_factor_bonus")]
+    saved = [(mod, name, getattr(mod, name)) for mod, name in sources]
+
+    def restore():
+        for mod, name, fn in saved:
+            setattr(mod, name, fn)
+    c = _mk(athletics=5)
+    base = world.travel_factor(c, gd)
+    try:
+        for i, (mod, name) in enumerate(sources):                          # 一次只讓一個來源回非零
+            restore()
+            bonus = 0.01 * (i + 2)
+            setattr(mod, name, lambda *a, _b=bonus, **k: _b)
+            assert abs(world.travel_factor(c, gd) - (base - bonus)) < 1e-12, (mod.__name__, name)
+        for i, (mod, name) in enumerate(sources):                          # 五個同時非零:與舊算式(扣除順序)逐位元組全等
+            setattr(mod, name, lambda *a, _b=0.01 * (i + 2), **k: _b)
+        want = max(0.5, formulas.athletics_travel_factor(5) - 0.02 - 0.03 - 0.04 - 0.05 - 0.06)
+        assert world.travel_factor(c, gd) == want
+    finally:
+        restore()
+    assert world.travel_factor(c, gd) == base
+
+
+def _capture_menu(fn, *args):
+    cap = {}
+    saved = ui.menu
+    ui.menu = lambda title, options, allow_back=False: (cap.setdefault("opts", list(options)), None)[1]
+    try:
+        fn(*args)
+    finally:
+        ui.menu = saved
+    return cap.get("opts")
+
+
+def test_long_and_goal_travel_menus_show_actual_route_hours():
+    """長途前往 / 任務目標兩個選單的「約 M 時」= route_hours_actual(審查:這兩個選單原本完全沒測)。"""
+    for ath, expect_diff in ((100, True), (5, False)):
+        c = _mk(athletics=ath, start="bruma")
+        st = GameState(player=c, time=GameTime())
+        far = [lid for lid, (hops, _h) in world.routes_from(c, gd).items()
+               if hops >= 4 and LOCS[lid]["type"] in ("city", "town")][:4]
+        assert len(far) >= 3
+        c.visited_locations = list(set(c.visited_locations) | set(far))
+        adj = {d for d, _ in world.travel_options(c, gd)}
+        opts = _capture_menu(M._action_long_travel, st, gd, adj)
+        assert opts
+        diff = 0
+        for lid, label in opts:
+            path = world.route_to(c, gd, lid)
+            want, nominal = world.route_hours_actual(c, gd, path), world.route_hours(c, gd, path)
+            assert f"約 {want} 時" in label, (lid, label)
+            diff += want != nominal
+        assert (diff > 0) == expect_diff, (ath, diff)
+        opts = _capture_menu(M._action_goal_travel, st, gd, far[:3])      # ≥ 2 個目標才出選單
+        assert opts and len(opts) == 3
+        for lid, label in opts:
+            path = world.route_to(c, gd, lid)
+            assert f"約 {world.route_hours_actual(c, gd, path)} 時" in label, (lid, label)
 
 
 def test_action_map_asks_for_actual_reach():

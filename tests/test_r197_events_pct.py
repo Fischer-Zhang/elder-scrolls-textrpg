@@ -71,10 +71,12 @@ def test_forage_pool_effect_returns_skill_events_too():
     c = _char()
     st = GameState(player=c, time=GameTime())
     _near_levelup(c, "scout", 20)
+    _near_levelup(c, "alchemy", 10)                                  # 採集同時練偵查與煉金(辨識材料)→ 兩者的升點都要回報
     seed = next((s for s in range(60) if events.forage_pool_draw(c, gd, "ashland", RNG(s))), None)
     assert seed is not None, "找不到會採到東西的種子 → 此測試會空轉"
     res = events.apply_effects(st, gd, [{"type": "forage_pool", "pool": "ashland"}], RNG(seed))
-    assert ("scout", 21) in _ups(res["skill_events"])               # 採集練偵查 → 升點通知
+    ups = _ups(res["skill_events"])
+    assert ("scout", 21) in ups and ("alchemy", 11) in ups, ups     # 審查:原只驗偵查,煉金那次被丟棄也不會紅
 
 
 # --- ① main.run_event 真的顯示 -----------------------------------------------
@@ -139,10 +141,36 @@ def test_pct_rounds_instead_of_truncating():
 def test_main_has_no_truncating_probability_display_left():
     """原始碼守衛:機率顯示一律 ui.pct;不得再有 int(<*_chance(...)> * 100) / int(ch*100) 這類截斷寫法。
     (非機率的 int(...*100),如卸力比例 / 加價 %,不在此限。)"""
+    import ast
     src = (ROOT / "tesrpg" / "main.py").read_text(encoding="utf-8")
-    bad = [ln.strip()[:90] for ln in src.splitlines() if re.search(r"int\((?:[\w.]*chance[\w]*\(|ch\s*\*)", ln)]
-    assert not bad, bad
+    tree = ast.parse(src)
+
+    def _is_100(n):
+        return isinstance(n, ast.Constant) and n.value == 100
+
+    def _prob_like(n):
+        """機率語意的運算元:呼叫名含 chance 的函式(combat.vanish_chance(...) 等),或變數 ch(開鎖機率)。"""
+        if isinstance(n, ast.Call):
+            f = n.func
+            name = f.attr if isinstance(f, ast.Attribute) else (f.id if isinstance(f, ast.Name) else "")
+            return "chance" in name
+        return isinstance(n, ast.Name) and n.id in ("ch", "chance", "p")
+
+    bad = []
+    for node in ast.walk(tree):                              # 語法樹掃描:int(<機率> * 100) / int(100 * <機率>) 一律不得出現
+        if (isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id == "int"
+                and len(node.args) == 1 and isinstance(node.args[0], ast.BinOp) and isinstance(node.args[0].op, ast.Mult)):
+            a, b = node.args[0].left, node.args[0].right
+            if (_is_100(b) and _prob_like(a)) or (_is_100(a) and _prob_like(b)):
+                bad.append(node.lineno)
+    assert not bad, f"main.py 仍有截斷式機率顯示(行 {bad}):請改 ui.pct"
     assert src.count("ui.pct(") >= 10                       # 9 處機率顯示 + 事件檢定 chip(R196)
+    # 守衛自身有效:對舊寫法會抓到
+    probe = ast.parse("x = int(combat.vanish_chance(p) * 100); y = int(ch*100); z = int(100 * dialogue.persuade_chance(c))")
+    hits = [n for n in ast.walk(probe) if isinstance(n, ast.Call) and isinstance(n.func, ast.Name) and n.func.id == "int"
+            and isinstance(n.args[0], ast.BinOp) and ((_is_100(n.args[0].right) and _prob_like(n.args[0].left))
+                                                      or (_is_100(n.args[0].left) and _prob_like(n.args[0].right)))]
+    assert len(hits) == 3
     # 事件 chip 與其他機率顯示同口徑
     c = _char()
     st = GameState(player=c, time=GameTime())

@@ -715,22 +715,35 @@ def second_breath_status(player, gamedata: GameData) -> str | None:
 FATIGUE_TAG_MIN = 0.05
 
 
-def fatigue_penalty_view(player, gamedata: GameData | None = None) -> dict | None:
-    """R197 戰鬥卡片「體力不足 / 力竭」標籤用(純讀、零 rng)。非玩家 / 懲罰低於門檻 → None。
+def fatigue_penalty_view(player, gamedata: GameData | None = None, enemies=()) -> dict | None:
+    """R197 戰鬥卡片「體力不足 / 力竭」標籤用(純讀、零 rng、不改狀態)。非玩家 / 無任何可標內容 → None。
 
-    🔴 預覽 = 實擲:兩個數字各自對齊「真正會用的體力比例」——
-      · hit   = 下一次**普通攻擊**的命中折減。main 是先 player_attack_cost 扣體力、再 resolve_attack 擲命中,
-                所以命中用的是「出招後」的體力比例 max(0, 體力 − 一擊耗量) / 最大體力;
-      · power = 法效折減。magic.cast 以「出招前」的體力比例(fatigue_before)計,所以用現有比例。
-    式子取自 formulas.fatigue_hit_penalty / fatigue_power_penalty(命中判定與施法實際用的同一組)。"""
+    🔴 預覽 = 實擲(審查發現:公式層的 −N% 會被武器速度 / 里程碑命中 / 0.95 二次夾限吸收,高階近戰、弓、徒手
+    本來就頂著命中上限 → 標籤紅字「命中−25%」實際幾乎無損)。所以兩個數字各自對齊「真正會發生的事」:
+      · hit   = 下一次**普通攻擊**的「實際」命中損失(對在場敵人取最大):以真實命中鏈 plain_attack_hit_chance
+                (resolve_attack 同一個 _hit_chain)比「滿體力」與「出招後體力」兩種比例的差。main 是先
+                player_attack_cost 扣體力、再 resolve_attack 擲命中 → 命中用「出招後」的體力比例。
+                `hit_nominal` = 公式層名目折減(上限前;說明文字用)。無 gamedata 或無在場敵人 → hit 退回名目值。
+      · power = 法效折減;magic.cast 以「出招前」比例(fatigue_before)計。只有會施法(有已學法術)的角色才算,
+                純近戰角色不被一個與己無關的「法效−N%」洗版。
+    出現條件:力竭 / 命中實際損失 ≥ FATIGUE_TAG_MIN / (會施法且法效折減 ≥ FATIGUE_TAG_MIN)。"""
     if not _is_player(player) or player.max_fatigue <= 0:
         return None
+    ratio_now = _fatigue_ratio(player)
     ratio_swing = max(0.0, player.fatigue - attack_fatigue_cost(player, gamedata)) / player.max_fatigue
-    hit = formulas.fatigue_hit_penalty(ratio_swing)
-    power = formulas.fatigue_power_penalty(_fatigue_ratio(player))
-    if max(hit, power) < FATIGUE_TAG_MIN:
+    hit_nominal = formulas.fatigue_hit_penalty(ratio_swing)
+    foes = [e for e in enemies if is_alive(e)]
+    if gamedata is not None and foes:
+        hit = max(plain_attack_hit_chance(player, e, gamedata, 1.0)
+                  - plain_attack_hit_chance(player, e, gamedata, ratio_swing) for e in foes)
+    else:
+        hit = hit_nominal
+    caster = bool(getattr(player, "spells", None))
+    power = formulas.fatigue_power_penalty(ratio_now) if caster else 0.0
+    exhausted = player.fatigue <= 0
+    if not (exhausted or hit >= FATIGUE_TAG_MIN or (caster and power >= FATIGUE_TAG_MIN)):
         return None
-    return {"hit": hit, "power": power, "exhausted": player.fatigue <= 0}
+    return {"hit": hit, "hit_nominal": hit_nominal, "power": power, "caster": caster, "exhausted": exhausted}
 
 
 def fatigue_on_kill(player, enemy, gamedata: GameData) -> None:
@@ -949,6 +962,67 @@ def _gear_weapon_item(attacker, gamedata: GameData):
     return gamedata.item(wid) if wid else None
 
 
+# --- R197:命中鏈共用(實擲 resolve_attack 與戰鬥卡片「命中−N%」預覽同一個出處 → 預覽 = 實擲)------------
+def _swing_context(attacker, gamedata: GameData):
+    """(beast, bound, great):三種「完全取代裝備武器」的戰鬥型態判定 —— resolve_attack 開頭與命中預覽共用。
+    beast 獸形:獸爪戰鬥,結構性略過裝備武器/附魔/淬鍊/副手/耐久。
+    bound 召喚「束縛兵刃」:凝出的法系武器「完全取代」裝備武器(比照獸形)→ 不吃裝備武器的塗毒/命中附魔/耐久/副手/archetype/
+          法杖命中回資源。存效果 dict(供下方 atk_element 取元素);無則 None。
+    great 雙手重盾:以盾擊作戰,手持武器戰中休眠(比照束縛兵刃,完全取代武器 → 無 archetype 破甲/控制、無附魔/塗毒)。"""
+    beast = _is_beast(attacker)
+    bound = (next((e for e in attacker.active_effects
+                   if e.get("kind") == "bound_weapon" and e.get("turns", 0) > 0), None)
+             if _is_player(attacker) and not beast else None)
+    great = (inventory.is_great_shield(gamedata, attacker.equipped.get("shield"))
+             if _is_player(attacker) and not beast and not bound else False)
+    return beast, bound, great
+
+
+def _swing_wdef(attacker, gamedata: GameData, beast, bound, great):
+    """玩家本次揮擊實際用的手持武器 item(獸形 / 束縛兵刃 / 重盾 / 非玩家 → None)。"""
+    return gamedata.item(attacker.weapon) if _is_player(attacker) and not beast and not bound and not great else None
+
+
+def _swing_speed(wdef) -> float:
+    return wdef.get("speed", formulas.WEAPON_SPEED_DEFAULT) if wdef else formulas.WEAPON_SPEED_DEFAULT
+
+
+def _hit_chain(attacker, defender, wpn_skill, speed, wmod, fr, defender_blocking, evasion, block_pen,
+               aimed: bool = False, sneaking: bool = False) -> float:
+    """一擊的最終命中率(純讀、零 rng):hit_chance → 武器速度 → 里程碑命中 → 瞄準射 → 踉蹌/遲緩/凍麻 → 偷襲下限。
+    自 resolve_attack 原樣搬出(逐位元組同舊);擲骰與戰鬥卡片預覽共用,二次夾限(0.95)也一併算入。"""
+    chance = formulas.hit_chance(wpn_skill, _agility(attacker), _agility(defender),
+                                 fr, defender_blocking, defender_evasion=evasion,
+                                 block_penalty=block_pen)
+    if _is_player(attacker):    # 武器速度:快武器更易命中、慢武器較難
+        chance = max(0.05, min(0.95, chance + formulas.weapon_speed_hit(speed)))
+    if wmod.get("hit"):         # 里程碑武器流派:命中加成(命中非傷害,不破偷襲紅線)
+        chance = max(0.05, min(0.95, chance + wmod["hit"]))
+    if aimed:                   # 弓手「瞄準射」:蓄力強擊命中加成
+        chance = max(0.05, min(0.95, chance + formulas.AIMED_SHOT_HIT))
+    if magic.is_staggered(attacker):   # 暗殺殘響:陣腳大亂的單位本回合更難命中
+        chance = max(0.05, chance - formulas.STAGGER_HIT_PENALTY)
+    if magic.is_slowed(attacker):      # 遲緩毒/負重(R31/R118):遲鈍 → 命中下降(magnitude 縮放·疊踉蹌各自夾 0.05)
+        chance = max(0.05, chance - formulas.slow_hit_penalty(magic.slow_factor(attacker)))
+    if (benumb := magic.benumb_hit_penalty(attacker)):   # 凍麻(冰系法術控場):純減命中(magnitude 驅動,各自夾 0.05)
+        chance = max(0.05, chance - benumb)
+    if sneaking:
+        chance = max(chance, formulas.SNEAK_ATTACK_HIT_FLOOR)
+    return chance
+
+
+def plain_attack_hit_chance(player, enemy, gamedata: GameData, fatigue_ratio: float) -> float:
+    """R197 命中預覽(純讀、零 rng、不改狀態):玩家對 enemy 發動「一次普通攻擊」,在體力比例 fatigue_ratio 下的最終命中率。
+    與 resolve_attack 共用 _swing_context / _swing_wdef / _swing_speed / _hit_chain(含武器速度 / 里程碑命中 /
+    踉蹌·遲緩·凍麻 與 0.95 二次夾限)→ 預覽 = 實擲;測試以真實 resolve_attack 的 rng.chance 引數逐構築對帳。
+    不含(普通攻擊的預設):瞄準射 / 偷襲下限 / 敵方格擋。"""
+    beast, bound, great = _swing_context(player, gamedata)
+    _dmg, wpn_skill, wpn_skill_id = _weapon_profile(player, gamedata, None)
+    wmod = mastery.weapon_mod(player, gamedata, wpn_skill_id)
+    speed = _swing_speed(_swing_wdef(player, gamedata, beast, bound, great))
+    return _hit_chain(player, enemy, wpn_skill, speed, wmod, fatigue_ratio, False, 0.0, formulas.BLOCK_HIT_PENALTY)
+
+
 def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
                    defender_blocking: bool = False, sneak_attack: bool = False,
                    aimed: bool = False, mounted_charge: bool = False,
@@ -967,18 +1041,11 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
     # 怪物的「選定招」(多攻擊模式 R43):呼叫端傳入 choose_attack 的結果;未傳則用單招 attack 後備。
     # 玩家無 .attack → atk=None(下方所有 atk 讀取點皆已 None-guard 或在 not-player 區塊內)。
     atk = (attack if attack is not None else attacker.attack) if not _is_player(attacker) else None
-    beast = _is_beast(attacker)     # 獸形:獸爪戰鬥,結構性略過裝備武器/附魔/淬鍊/副手/耐久
-    # 召喚「束縛兵刃」:凝出的法系武器「完全取代」裝備武器(比照獸形)→ 不吃裝備武器的塗毒/命中附魔/
-    # 耐久/副手/archetype/法杖命中回資源。存效果 dict(供下方 atk_element 取元素);無則 None。
-    bound = (next((e for e in attacker.active_effects
-                   if e.get("kind") == "bound_weapon" and e.get("turns", 0) > 0), None)
-             if _is_player(attacker) and not beast else None)
+    # 獸形 / 召喚「束縛兵刃」 / 雙手重盾(R197 抽成 _swing_context,與命中預覽共用同一組判定;語意見該函式)。
+    beast, bound, great = _swing_context(attacker, gamedata)
     # 🔴 紅線:獸形攻擊永不吃偷襲倍率(防禦縱深 —— 即便呼叫端誤傳 sneak_attack=True 亦然;
     # 變身破壞潛行 → solo boss 反一刀夾限不被觸碰)
     sneaking = sneak_attack and _is_player(attacker) and not beast
-    # 雙手重盾:以盾擊作戰,手持武器戰中休眠(比照束縛兵刃,完全取代武器 → 無 archetype 破甲/控制、無附魔/塗毒)。
-    great = (inventory.is_great_shield(gamedata, attacker.equipped.get("shield"))
-             if _is_player(attacker) and not beast and not bound else False)
     wpn_dmg, wpn_skill, wpn_skill_id = _weapon_profile(attacker, gamedata, atk)
     # 雙持副手傷害另計:作為一記「普通補刀」疊上,不吃偷襲倍率(避免偷襲秒精英)。獸形/束縛兵刃無副手。
     offhand_dmg = (inventory.dual_wield_bonus_damage(attacker, gamedata)
@@ -987,11 +1054,11 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
     # (與副手補刀傷害同一個折扣;非雙持為 None)。
     offhand_ench = (gamedata.item(attacker.offhand).get("enchant")
                     if offhand_dmg and getattr(attacker, "offhand", "") else None)
-    wdef = gamedata.item(attacker.weapon) if _is_player(attacker) and not beast and not bound and not great else None
+    wdef = _swing_wdef(attacker, gamedata, beast, bound, great)
     # R106 束縛兵刃 archetype 差異化:束縛以自身 archetype 取得原型身份(釘錘擊暈等·軟控只在下方 stagger 分支用;
     # 破甲對元素束縛無意義走元素分支略過);舊 bound_sword 無 archetype → None → 行為不變。
     archetype = (bound.get("archetype") if bound else (wdef.get("archetype") if wdef else None))
-    speed = wdef.get("speed", formulas.WEAPON_SPEED_DEFAULT) if wdef else formulas.WEAPON_SPEED_DEFAULT
+    speed = _swing_speed(wdef)
     fr = _fatigue_ratio(attacker)
     evasion = (formulas.dodge_evasion(defender.skill("acrobatics"))
                + mastery.evasion_bonus(defender, gamedata)
@@ -1003,24 +1070,10 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
     if _ovx:
         evasion = 0.0    # 來不及閃(只歸零玩家自己的閃避;命中上下限不動)
     block_pen = mastery.block_hit_penalty(defender, gamedata) if defender_blocking else formulas.BLOCK_HIT_PENALTY
-    chance = formulas.hit_chance(wpn_skill, _agility(attacker), _agility(defender),
-                                 fr, defender_blocking, defender_evasion=evasion,
-                                 block_penalty=block_pen)
     wmod = mastery.weapon_mod(attacker, gamedata, wpn_skill_id) if _is_player(attacker) else {}
-    if _is_player(attacker):    # 武器速度:快武器更易命中、慢武器較難
-        chance = max(0.05, min(0.95, chance + formulas.weapon_speed_hit(speed)))
-    if wmod.get("hit"):         # 里程碑武器流派:命中加成(命中非傷害,不破偷襲紅線)
-        chance = max(0.05, min(0.95, chance + wmod["hit"]))
-    if aimed:                   # 弓手「瞄準射」:蓄力強擊命中加成
-        chance = max(0.05, min(0.95, chance + formulas.AIMED_SHOT_HIT))
-    if magic.is_staggered(attacker):   # 暗殺殘響:陣腳大亂的單位本回合更難命中
-        chance = max(0.05, chance - formulas.STAGGER_HIT_PENALTY)
-    if magic.is_slowed(attacker):      # 遲緩毒/負重(R31/R118):遲鈍 → 命中下降(magnitude 縮放·疊踉蹌各自夾 0.05)
-        chance = max(0.05, chance - formulas.slow_hit_penalty(magic.slow_factor(attacker)))
-    if (benumb := magic.benumb_hit_penalty(attacker)):   # 凍麻(冰系法術控場):純減命中(magnitude 驅動,各自夾 0.05)
-        chance = max(0.05, chance - benumb)
-    if sneaking:
-        chance = max(chance, formulas.SNEAK_ATTACK_HIT_FLOOR)
+    # 最終命中率:原樣搬到 _hit_chain(R197;與戰鬥卡片「命中−N%」預覽共用 → 預覽 = 實擲;含 0.95 二次夾限)
+    chance = _hit_chain(attacker, defender, wpn_skill, speed, wmod, fr, defender_blocking, evasion, block_pen,
+                        aimed=aimed, sneaking=sneaking)
     skill_events: list[dict] = []
     hit = rng.chance(chance)
     _was_alive = is_alive(defender)   # R194 審查:擊殺 = 這一擊使目標『活→死』(對屍體再打不重複計、含同擊內附魔補的最後一刀)

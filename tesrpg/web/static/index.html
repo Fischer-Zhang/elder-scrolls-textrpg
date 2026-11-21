@@ -253,7 +253,7 @@
   .cline{display:flex;align-items:center;gap:8px;font-size:calc(12.5px*var(--fs-scale,1));margin-top:3px;}
   .clab{color:var(--muted);width:1.4em;flex:none;}
   .cval{flex:none;color:var(--ink);font-variant-numeric:tabular-nums;min-width:4.6em;text-align:right;white-space:nowrap;}
-  .ct{font-size:calc(11px*var(--fs-scale,1));color:var(--mag);border:1px solid #3a2f42;border-radius:9px;padding:0 7px;}
+  .ct{white-space:nowrap;font-size:calc(11px*var(--fs-scale,1));color:var(--mag);border:1px solid #3a2f42;border-radius:9px;padding:0 7px;}   /* R197:標籤變長(體力不足 命中−N% 法效−N%)→ 窄寬度整枚換行,不攔腰折斷 */
   .ct.buff{color:var(--green);border-color:#365a30;} .ct.debuff{color:var(--red);border-color:#5a302b;}
   .cbt.foe.tappable{cursor:pointer;}
   .cbt.foe.tappable:hover{border-color:var(--gold-soft);background:rgba(214,178,92,.07);}

@@ -355,12 +355,13 @@ class BrowserRegression(unittest.TestCase):
             {"s": "二次呼吸 可用", "good": True,
              "tip": "運動 100 里程碑:每場戰鬥一次,體力降到 25% 以下時,於你的回合開頭免耗回合回一次調息量。"},
             {"s": "護甲2", "good": True},
+            {"s": "跳脫測試", "good": None, "tip": '含"引號"與<b>粗體</b>&符號'},
         ]
         self.server.emit(blocks=[{"kind": "view", "name": "combat", "data": data}], prompt=_combat_prompt(), hud=_hud())
         self._open(".combat-flow")
 
         tags = self.page.locator(".cbt.me .cname .ct")
-        self.assertEqual(tags.count(), 3)
+        self.assertEqual(tags.count(), 4)
         self.assertEqual(tags.nth(0).inner_text(), "體力不足 命中−16% 法效−15%")
         self.assertIn("debuff", tags.nth(0).get_attribute("class"))
         self.assertIn("個百分點", tags.nth(0).get_attribute("title"))
@@ -369,10 +370,21 @@ class BrowserRegression(unittest.TestCase):
         self.assertIn("buff", tags.nth(1).get_attribute("class"))
         self.assertIn("調息量", tags.nth(1).get_attribute("title"))
         self.assertIsNone(tags.nth(2).get_attribute("title"), "一般狀態標籤不該憑空帶 title")
+        # tip 內的 " < > & 必須被轉義成屬性值:原樣出現在 title、且不可長出 <b> 元素(不破版 / 不注入)
+        self.assertEqual(tags.nth(3).get_attribute("title"), '含"引號"與<b>粗體</b>&符號')
+        self.assertEqual(self.page.locator(".cbt.me .cname b").count(), 0)
         self.assertIsNone(self.page.locator(".cbt.foe .cname .ct").first.get_attribute("title"))
         self.assertTrue(
             self.page.evaluate("document.documentElement.scrollWidth <= document.documentElement.clientWidth"),
             "新增標籤造成水平溢出",
+        )
+        # 窄寬度(手機 390px):標籤變長後必須整枚換行,不可攔腰折成兩行(.ct white-space:nowrap)
+        self.page.set_viewport_size({"width": 390, "height": 800})
+        for i in range(tags.count()):
+            self.assertEqual(tags.nth(i).evaluate("el => el.getClientRects().length"), 1, f"標籤 {i} 在窄寬度被折成多行")
+        self.assertTrue(
+            self.page.evaluate("document.documentElement.scrollWidth <= document.documentElement.clientWidth"),
+            "窄寬度出現水平溢出",
         )
 
     def test_desktop_combat_render_submit_and_scroll(self) -> None:
