@@ -1738,13 +1738,29 @@ def _report_quests(state: GameState, gamedata: GameData) -> None:
 # ======================================================================
 # 事件引擎(DESIGN 3.8)
 # ======================================================================
+def _event_check_chips(state: GameState, opt: dict) -> list[dict] | None:
+    """R196:有技能判定的事件選項附金色 chip「成功率 N%」(沿用說服選單先例)。
+
+    機率直接取 events.check_chance —— 與 resolve_check 實擲同一函式(預覽 = 實擲);
+    四捨五入顯示(int() 會把 0.58 顯示成 57%)。無檢定回 None → 維持 2-tuple 選項(逐位元組同舊)。"""
+    chk = opt.get("check")
+    if not chk:
+        return None
+    pct = round(events.check_chance(state.player, chk) * 100)
+    return [{"text": f"成功率 {pct}%", "tone": "gold"}]
+
+
 def run_event(state: GameState, gamedata: GameData, event_id: str) -> str | None:
     """呈現一個事件並結算所選選項。回傳 'dead'(若觸發的戰鬥致死)或 None。"""
     e = gamedata.events[event_id]
     ui.event_panel(e)
 
-    opts = [(str(i), opt["text"]) for i, opt in enumerate(e["options"])
-            if events.option_available(state.player, gamedata, opt)]
+    opts = []
+    for i, opt in enumerate(e["options"]):
+        if not events.option_available(state.player, gamedata, opt):
+            continue
+        chips = _event_check_chips(state, opt)
+        opts.append((str(i), opt["text"], chips) if chips else (str(i), opt["text"]))
     if not opts:                       # 全部選項都不符資格(理論上事件應留安全選項)
         ui.message("你權衡之後,選擇了離開。", style="grey70")
         return None

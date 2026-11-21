@@ -58,6 +58,32 @@
       "creature": "bandit"
      }
     ]
+   },
+   {
+    "text": "拔腿就跑(運動)",
+    "check": {
+     "skill": "athletics",
+     "difficulty": 40,
+     "success": {
+      "text": "你虛晃一步,轉身拔腿就跑。強盜扛著一身行頭追了半里路,終於喘著粗氣罵罵咧咧地放棄了。",
+      "effects": [
+       {
+        "type": "skill_xp",
+        "skill": "athletics",
+        "amount": 0.6
+       }
+      ]
+     },
+     "failure": {
+      "text": "你剛跑出幾步,就被他一把揪住衣領 —— 強盜拔刀撲來!",
+      "effects": [
+       {
+        "type": "combat",
+        "creature": "bandit"
+       }
+      ]
+     }
+    }
    }
   ]
  },
@@ -352,6 +378,32 @@
      },
      "failure": {
       "text": "枯枝在腳下一響,野狼撲了上來!",
+      "effects": [
+       {
+        "type": "combat",
+        "creature": "wolf"
+       }
+      ]
+     }
+    }
+   },
+   {
+    "text": "翻上高處躲避(運動)",
+    "check": {
+     "skill": "athletics",
+     "difficulty": 35,
+     "success": {
+      "text": "你抓起行囊,翻上營地旁最近的高處。野狼在下頭繞著火堆打轉,終於悻悻散去。",
+      "effects": [
+       {
+        "type": "skill_xp",
+        "skill": "athletics",
+        "amount": 0.6
+       }
+      ]
+     },
+     "failure": {
+      "text": "你腳下一滑,野狼已經撲到了跟前!",
       "effects": [
        {
         "type": "combat",
@@ -666,6 +718,32 @@
       ]
      }
     }
+   },
+   {
+    "text": "拔腿狂奔(運動)",
+    "check": {
+     "skill": "athletics",
+     "difficulty": 35,
+     "success": {
+      "text": "你轉身狂奔,一口氣衝出老遠。身後的窸窣聲漸漸遠去,那東西終究沒有追來。",
+      "effects": [
+       {
+        "type": "skill_xp",
+        "skill": "athletics",
+        "amount": 0.6
+       }
+      ]
+     },
+     "failure": {
+      "text": "你沒跑出幾步,那東西就從背後撲了上來!",
+      "effects": [
+       {
+        "type": "combat",
+        "creature": "frostbite_spider"
+       }
+      ]
+     }
+    }
    }
   ],
   "provinces": [
@@ -836,6 +914,32 @@
       "amount": -10
      }
     ]
+   },
+   {
+    "text": "拔腿追上去(運動)",
+    "check": {
+     "skill": "athletics",
+     "difficulty": 35,
+     "success": {
+      "text": "你拔腿追出兩條巷子,在轉角揪住那孩子的衣領,被摸走的錢一文不少地回到你手裡。",
+      "effects": [
+       {
+        "type": "skill_xp",
+        "skill": "athletics",
+        "amount": 0.4
+       }
+      ]
+     },
+     "failure": {
+      "text": "孩子七拐八彎地鑽過矮牆縫,等你追到巷口,連人影都不見了。",
+      "effects": [
+       {
+        "type": "gold",
+        "amount": -10
+       }
+      ]
+     }
+    }
    }
   ]
  },
@@ -934,6 +1038,32 @@
       ]
      }
     }
+   },
+   {
+    "text": "蹚雪疾奔(運動)",
+    "check": {
+     "skill": "athletics",
+     "difficulty": 35,
+     "success": {
+      "text": "你蹚著齊膝的積雪一路狂奔。冰魂在風雪裡盤旋了幾圈,終於失去了你的蹤跡。",
+      "effects": [
+       {
+        "type": "skill_xp",
+        "skill": "athletics",
+        "amount": 0.6
+       }
+      ]
+     },
+     "failure": {
+      "text": "積雪拖住了你的腿,冰魂呼嘯而至!",
+      "effects": [
+       {
+        "type": "combat",
+        "creature": "ice_wraith"
+       }
+      ]
+     }
+    }
    }
   ]
  },
@@ -972,6 +1102,32 @@
       "text": "你躲進岩屋背風處,直到天色重新泛紅。"
      }
     ]
+   },
+   {
+    "text": "疾行穿越風暴(運動)",
+    "check": {
+     "skill": "athletics",
+     "difficulty": 40,
+     "success": {
+      "text": "你壓低身子,掐準風勢的間隙一路疾行,穿出風暴時身上只沾了一層薄灰。",
+      "effects": [
+       {
+        "type": "skill_xp",
+        "skill": "athletics",
+        "amount": 0.6
+       }
+      ]
+     },
+     "failure": {
+      "text": "風暴猛然轉向,你被灰燼嗆得踉蹌了好幾步,皮膚被火山灰刮得生疼。",
+      "effects": [
+       {
+        "type": "damage",
+        "amount": 8
+       }
+      ]
+     }
+    }
    }
   ]
  },
@@ -1383,6 +1539,32 @@
       ]
      }
     }
+   },
+   {
+    "text": "奔向堅實的地面(運動)",
+    "check": {
+     "skill": "athletics",
+     "difficulty": 40,
+     "success": {
+      "text": "你拔腿奔向遠處堅實的岩地。沙嘯獸在鬆沙下撲了個空,悻悻沉入沙中。",
+      "effects": [
+       {
+        "type": "skill_xp",
+        "skill": "athletics",
+        "amount": 0.6
+       }
+      ]
+     },
+     "failure": {
+      "text": "鬆軟的黃沙吞掉了你的腳步,沙嘯獸破沙而出!",
+      "effects": [
+       {
+        "type": "combat",
+        "creature": "dune_ripper"
+       }
+      ]
+     }
+    }
    }
   ]
  },
@@ -1525,6 +1707,32 @@
      },
      "failure": {
       "text": "踩斷的枯枝驚動了牠,樹靈的毒藤猛然纏來!",
+      "effects": [
+       {
+        "type": "combat",
+        "creature": "spriggan"
+       }
+      ]
+     }
+    }
+   },
+   {
+    "text": "疾奔出林蔭(運動)",
+    "check": {
+     "skill": "athletics",
+     "difficulty": 42,
+     "success": {
+      "text": "你頭也不回地狂奔,穿過一道道藤蔓拉扯的樹隙,一口氣衝出了牠的地盤。",
+      "effects": [
+       {
+        "type": "skill_xp",
+        "skill": "athletics",
+        "amount": 0.6
+       }
+      ]
+     },
+     "failure": {
+      "text": "盤根絆住了你的腳,樹靈的毒藤猛然纏來!",
       "effects": [
        {
         "type": "combat",
