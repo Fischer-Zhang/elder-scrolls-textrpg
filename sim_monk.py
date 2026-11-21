@@ -5,14 +5,15 @@
 
 構築:SB.make_monk(h100)(完整徒手樹 25/50/75:失衡·擒拿手·鐵拳;輕甲 + 治療藥水疊,同 sim_builds)。
 變體(VARIANTS):none=100 階皆不選(基準線);fist_old=舊 +10% 傷害;relK=崩勁釋放·政策「目標失衡 ≥K 層就釋放」;
-  rel_old=崩勁 + 舊 +10%(兼帶);shirt_old=鐵布衫舊 +12 護甲(子提交 2 後改量體力化傷)。
+  rel_old=崩勁 + 舊 +10%(兼帶);shirt=鐵布衫體力化傷(資料 share)、shirt30/40=share 校準、shirt_arm=舊 +12 護甲(對照)。
 政策只用看得到的資訊(目標失衡層數);K 掃 4/5/6/8 取最佳者當 canonical(sim_builds.RELEASE_AT)。
 種子:每格 seed=0..n-1;怪 RNG = seed*9+1+i,戰鬥 RNG = seed。
 守衛(⚠;非自動閘門,改徒手/失衡/崩勁參數後人工看):
   1. 群戰輸給皆不選(增益 < -3pp) 2. 強度過頭(> +25pp) 3. 破牆線(達貢/真身 增益 > +5pp)
-對照變體 fist_old/rel_old 不是玩家可選組合 → 只印數字、不入旗標(REFERENCE_ONLY);shirt_old 是現存 iron_shirt → 照守衛。
+對照/校準變體(fist_old·rel_old·shirt30·shirt40·shirt_arm)不是玩家可選組合 → 只印數字、不入旗標(REFERENCE_ONLY);shirt=資料中的鐵布衫 → 照守衛。
 單格 95% 半寬:n=1000 約 ±3pp;差值再乘 1.4,小於此的差距不當訊號(同 sim_reckless)。
 """
+import copy
 import statistics as S
 import sys
 from multiprocessing import Pool
@@ -25,15 +26,19 @@ from tesrpg.systems import combat, inventory, magic, stats
 gd = SB.gd
 OLD_FIST_POWER = 0.10      # 舊 transcend_fist 的 +10% 徒手傷害(對照用:臨時補回 gd 的選項資料)
 
-# 變體名 → (hand_to_hand_100 選項, 崩勁釋放門檻層數|None, 是否補回舊 +10% 傷害)
+# 變體名 → (hand_to_hand_100 選項, 崩勁釋放門檻層數|None, 是否補回舊 +10% 傷害, 鐵布衫覆寫|None)
+# 鐵布衫覆寫:None=用資料(體力化傷 share 取 mastery.json)·("ward", s)=臨時改 share·"armor12"=舊被動護甲 +12(僅對照)
 VARIANTS = {
-    "none":      (None, None, False),
-    "fist_old":  ("transcend_fist", None, True),
+    "none":      (None, None, False, None),
+    "fist_old":  ("transcend_fist", None, True, None),
     # 失衡層數只會是 0/5/8(徒手 100·擒拿手:每擊 +5,滿層 8):門檻 4/5 等價、6/8 等價 → 只掃 5(避開滿層 25% 擊倒清層)與 8
-    "rel5":      ("transcend_fist", 5, False),
-    "rel8":      ("transcend_fist", 8, False),
-    "rel_old":   ("transcend_fist", 5, True),
-    "shirt_old": ("iron_shirt", None, False),
+    "rel5":      ("transcend_fist", 5, False, None),
+    "rel8":      ("transcend_fist", 8, False, None),
+    "rel_old":   ("transcend_fist", 5, True, None),
+    "shirt":     ("iron_shirt", None, False, None),               # 體力化傷(資料 share=0.20)
+    "shirt30":   ("iron_shirt", None, False, ("ward", 0.30)),     # share 校準掃描(0.20 為資料值;n=1000 魔人×5:崩勁 +10.5pp·0.20 +14pp·0.25 +16pp·0.30 +19pp)
+    "shirt40":   ("iron_shirt", None, False, ("ward", 0.40)),
+    "shirt_arm": ("iron_shirt", None, False, "armor12"),          # 舊 +12 護甲(僅對照)
 }
 
 
@@ -55,6 +60,21 @@ def _set_old_power(on):
         o.pop("power", None)
 
 
+_ORIG_SHIRT = copy.deepcopy(_find_opt("iron_shirt"))
+
+
+def _set_shirt(mode):
+    """臨時覆寫 iron_shirt 選項資料(同 _set_old_power:子行程各自一份 gd;None=還原成資料原值)。"""
+    o = _find_opt("iron_shirt")
+    o.clear()
+    o.update(copy.deepcopy(_ORIG_SHIRT))
+    if mode == "armor12":
+        o.pop("share", None)
+        o.update({"kind": "passive_armor", "armor_bonus": 12})
+    elif isinstance(mode, tuple) and mode[0] == "ward":
+        o["share"] = mode[1]
+
+
 def act(c, tgt, rng, st):
     """徒手政策:低血喝藥 → 目標失衡達 release_at 就崩勁釋放 → 否則普攻(monk 不用格擋姿態)。"""
     if SB._drink_if_low(c):
@@ -69,8 +89,9 @@ def act(c, tgt, rng, st):
 
 def fight(variant, enemy_ids, seed, max_rounds=80):
     """多主敵:群戰全滅才勝;solo 王殺王即勝(R134 召喚爪牙隨王潰散)。回 (結果, 回合數, 結束時生命比例)。"""
-    h100, release_at, old_power = VARIANTS[variant]
+    h100, release_at, old_power, shirt_mode = VARIANTS[variant]
     _set_old_power(old_power)
+    _set_shirt(shirt_mode)
     c = SB.make_monk(h100)
     inventory.add_item(c, "healing_potion", SB._COMBAT_POTIONS)
     prim = [combat.spawn_creature(gd, t, RNG(seed * 9 + 1 + i)) for i, t in enumerate(enemy_ids)]
@@ -128,7 +149,7 @@ GROUPS = [("魔人×3", DR(3)), ("魔人×4", DR(4)), ("魔人×5", DR(5)), ("�
 WALLS = [("達貢", ["mehrunes_dagon"]), ("真身", ["mehrunes_dagon_true"])]
 FLAG_LOSE, FLAG_TOO_STRONG, FLAG_WALL = 3.0, 25.0, 5.0
 # 只供對照、不是玩家可選的組合(舊數值/兼帶)→ 不入守衛旗標(審查:避免 check.sh --sim 長期被對照變體的抽樣雜訊誤報 ⚠)
-REFERENCE_ONLY = {"fist_old", "rel_old"}
+REFERENCE_ONLY = {"fist_old", "rel_old", "shirt30", "shirt40", "shirt_arm"}
 
 
 def guard(n_group=300, n_wall=300, variants=None):

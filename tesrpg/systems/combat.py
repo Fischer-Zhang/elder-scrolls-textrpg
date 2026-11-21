@@ -961,6 +961,7 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
     hit = rng.chance(chance)
     dmg_done = 0
     absorbed = False
+    iron_absorbed = 0           # R193 鐵布衫:本擊由體力代扣的傷害(顯示用)
     status_applied = None
     poison_applied = None
     self_restored = None
@@ -1136,6 +1137,16 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
         # (盾卸不全火焰 → 元素仍剋盾系·守終王包絡;反擊樹另行物理限定守 R127 牆)。
         # R138b:持雙手重盾時元素卸力係數 0.5→0.70(乘在姿態卸力上·元素恆 ≤ 物理;見 _guard_stance_factor)。
         dmg *= _guard_stance_factor(defender, atk_element, gamedata)
+        # R193 鐵布衫(hand_to_hand_100 iron_shirt,體力化傷):玩家受**物理**傷害(含遠程物理)時,share 比例由體力 1:1 代扣,
+        # 體力見底即停。🔴 放在所有減傷(護甲/物抗/壁壘/盾牆/重盾/姿態/聖化)之後 → 「化的是最終要扣血的那份」,不放大也不繞過任何
+        # 既有夾限;元素/法術(atk_element 真值)/DoT/反傷不走此處;獸形無效;無 rng。未選 → share=0 → 不動 byte-identical。
+        if _is_player(defender) and not atk_element and dmg > 0 and not _is_beast(defender):
+            _ward = mastery.fatigue_ward(defender, gamedata)
+            if _ward:
+                _paid = min(dmg * _ward, max(0.0, defender.fatigue))
+                defender.fatigue = max(0, defender.fatigue - _paid)
+                dmg -= _paid
+                iron_absorbed = int(round(_paid))
 
         # solo BOSS 反一刀:偷襲開場單擊夾在生命上限的固定比例 → 絕不一刀秒 boss
         # (apex 仍可隱遁循環無傷清,但須多刀;精英/小遭遇不受影響)。
@@ -1546,7 +1557,8 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
         "attack_name": atk.get("name") if atk else None,   # 怪物選定招名(玩家=None)→ 供 UI 顯示「使出【招】」
         "hit": hit, "damage": dmg_done, "blocked": defender_blocking,
         "skill_events": skill_events, "defender_dead": not is_alive(defender),
-        "absorbed": absorbed, "status_applied": status_applied, "poison_applied": poison_applied,
+        "absorbed": absorbed, "iron_absorbed": iron_absorbed,
+        "status_applied": status_applied, "poison_applied": poison_applied,
         "sneak": sneak_mult, "self_restored": self_restored, "infected": infected,
         "infect_kind": infect_kind, "disease_id": disease_id, "lifesteal": lifesteal,
         "aftermath": aftermath,

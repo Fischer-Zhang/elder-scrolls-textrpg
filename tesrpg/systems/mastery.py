@@ -62,6 +62,7 @@ _IMPLEMENTED_KINDS = {
     "cascade", "resonant_strike", "mana_on_hit", "triage_heal", "recon_reveal_floor", "bow_technique", "deathmark",
     # 廣度 pass:運動逃跑加成、重甲反傷、安全解陷保底。
     "armor_reflect", "armor_stagger", "combat_regen", "trap_floor",   # R147:flee_bonus 隨 escape_artist 移除(逃跑加成孤兒化)
+    "fatigue_ward",   # R193 徒手 100 鐵布衫:物理傷害一部分由體力代扣(替換舊 passive_armor +12)
     "rest_bonus",   # R147 運動「調息」開源:主動調息(耗一回合換回體·自動解除姿態)回復量加成(SUM)
 
     "shield_recoil",   # 變化 100(R118):作用中護膚盾時被物理擊中→機率震開攻方(接被動 flesh 為主動反噬)
@@ -393,6 +394,12 @@ def passive_armor_bonus(char, gamedata: GameData) -> int:
     return int(sum(o.get("armor_bonus", 0)
                    for tree, o in _chosen_options_with_tree(char, gamedata, "passive_armor")
                    if _armor_tree_active(char, gamedata, tree)))
+
+
+def fatigue_ward(char, gamedata: GameData) -> float:
+    """R193 徒手 100「鐵布衫」:受物理傷害時由體力代扣的比例(0 = 無)。多來源相加(目前僅此一源);
+    純讀 getter、不碰 rng。不做裝備前提(氣功護體與穿什麼無關;獸形由呼叫端排除)。"""
+    return sum(o.get("share", 0.0) for o in _chosen_options_by_kind(char, gamedata, "fatigue_ward"))
 
 
 def potion_potency(char, gamedata: GameData) -> float:

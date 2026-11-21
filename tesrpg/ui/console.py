@@ -2838,6 +2838,8 @@ def combat_event(ev: dict, gamedata: GameData) -> None:
     else:
         sneak_miss = "[magenta](偷襲落空!)[/] " if ev.get("sneak") else ""
         lines.append(f"{sneak_miss}[grey62]{ev['attacker']} {mv}的攻擊被 {ev['defender']} 閃過了。[/]")
+    if ev.get("iron_absorbed"):   # R193 鐵布衫:物理傷害由體力代扣
+        lines.append(f"[cyan]鐵布衫化去 {ev['iron_absorbed']} 點傷害(體力 −{ev['iron_absorbed']})[/]")
     if ev.get("status_applied"):
         sa = ev["status_applied"]
         if sa in _CC_CN:   # 控場 kind(R43):stagger/slow/weaken/fear/paralyze

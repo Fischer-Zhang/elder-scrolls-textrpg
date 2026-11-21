@@ -1092,8 +1092,10 @@ def test_capstone_apex_fix():
     from tesrpg.rng import RNG
     gd, c = _char(hand_to_hand=100, alteration=100, mysticism=100, alchemy=100, restoration=100, heavy_armor=100)
     mastery.choose(c, gd, "hand_to_hand_100", "iron_shirt")
-    # R118 mage_flesh→shield_recoil · R120 spectral_aegis→arcane_erosion(秘蝕·純攻)→ passive_armor 僅剩 iron_shirt(跨技能相加不遮蔽見 test_passive_armor_stacks_across_skills)
-    assert mastery.passive_armor_bonus(c, gd) == 12
+    # R118 mage_flesh→shield_recoil · R120 spectral_aegis→arcane_erosion(秘蝕·純攻)→ R193 iron_shirt 改體力化傷(fatigue_ward)
+    # → 此處 passive_armor 已無剩餘來源(跨技能相加不遮蔽見 test_passive_armor_stacks_across_skills)
+    assert mastery.passive_armor_bonus(c, gd) == 0
+    assert abs(mastery.fatigue_ward(c, gd) - 0.20) < 1e-9
     mastery.choose(c, gd, "alchemy_75", "concentrated"); mastery.choose(c, gd, "alchemy_100", "panacea")
     assert abs(mastery.potion_potency(c, gd) - 0.35) < 1e-9            # 0.20+0.15 聚合(原單源)
     mastery.choose(c, gd, "restoration_100", "everflow")
