@@ -592,14 +592,17 @@ def test_new_summons_spawn_and_lasting_summon_mastery():
         ev = magic.cast(c, gd, sid, RNG(0), battle=battle, enemies=[])
         assert ev["ok"] and len(battle["allies"]) == 1 and battle["allies"][0].name
     # R106C 持久召喚里程碑 → 召喚物多駐留 1 回合(取代舊雙重召喚)
+    # R203:改為「永契之僕」(opt_id 不變)—— 最先召出的戰鬥型召喚物成為契僕(不逾時),回合數不再 +1
     base = {"allies": []}
     magic.cast(c, gd, "conjure_storm_atronach", RNG(0), battle=base, enemies=[])
     base_turns = base["allies"][0].summon_turns
+    assert not getattr(base["allies"][0], "_anchor", False)
     mastery.choose(c, gd, "conjuration_100", "lasting_summon")
     battle = {"allies": []}
     magic.cast(c, gd, "conjure_storm_atronach", RNG(0), battle=battle, enemies=[])
     assert len(battle["allies"]) == 1
-    assert battle["allies"][0].summon_turns == base_turns + 1
+    assert battle["allies"][0].summon_turns == base_turns            # 不再 +1
+    assert battle["allies"][0]._anchor is True                       # 而是成為契僕
 
 
 def test_mass_soul_trap_marks_all_living_enemies():

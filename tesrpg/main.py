@@ -614,6 +614,18 @@ def _spell_token_suffix(char, gamedata: GameData, spell_id: str) -> str:
     return f" · 魂 {tc}{'(不足)' if getattr(char, 'soul_tokens', 0) < tc else ''}"
 
 
+def _summon_slot_suffix(char, gamedata: GameData, spell_id: str, allies) -> str:
+    """R203 施法選單:非亡者召喚法術的同場名額(場上 N/3)與「成為契僕(永駐)」預覽。
+    取自與實際召喚同一個 `magic.summon_outcome` / `nonundead_summon_count`(預覽 = 實擲);非召喚 / 亡者法術回空字串。"""
+    eff = gamedata.spells[spell_id].get("effect", {})
+    if eff.get("kind") != "summon" or eff.get("undead"):
+        return ""
+    battle = {"allies": list(allies or [])}
+    out = magic.summon_outcome(char, gamedata, eff, battle)
+    return (f" · 場上 {magic.nonundead_summon_count(battle)}/{formulas.SUMMON_FIELD_CAP}"
+            + (" · 成為契僕(永駐)" if out["anchor"] else ""))
+
+
 def _repeat_option(player, gamedata: GameData, enemies: list, allies: list, mem) -> str | None:
     """R113「↻ 再次」選項標籤:上次動作(attack/cast)當下仍可行才提供;否則 None。
     目標死亡不擋(選了會重開目標選單;僅剩一敵時自動選之,標籤如實顯示其名);
@@ -933,7 +945,7 @@ def _choose_combat_action(state: GameState, gamedata: GameData, enemies: list, a
         if ui._web is not None:    # web:blocks 每幀清空 → 選法術時重顯戰場,免「敵狀態丟失」
             ui.combat_status_group(player, allies, enemies, gamedata)
         spell_opts = [(s, f"{gamedata.spells[s]['name']}"
-                       f"（{magic.effective_cost(player, gamedata, s)} 法力{_spell_token_suffix(player, gamedata, s)}) · "
+                       f"（{magic.effective_cost(player, gamedata, s)} 法力{_spell_token_suffix(player, gamedata, s)}{_summon_slot_suffix(player, gamedata, s, allies)}) · "
                        f"{ui.spell_effect_summary(gamedata, s)}")
                       for s in castable]
         sid = ui.menu("施放哪道法術?", spell_opts, allow_back=True)
@@ -1055,7 +1067,7 @@ def _prep_phase(state: GameState, gamedata: GameData, enemies, battle: dict, bud
         if choice in ("buff", "summon"):
             pool = buffs if choice == "buff" else summons
             sid = ui.menu("施放哪道法術?",
-                          [(s, f"{gamedata.spells[s]['name']}（{magic.effective_cost(player, gamedata, s)} 法力{_spell_token_suffix(player, gamedata, s)})")
+                          [(s, f"{gamedata.spells[s]['name']}（{magic.effective_cost(player, gamedata, s)} 法力{_spell_token_suffix(player, gamedata, s)}{_summon_slot_suffix(player, gamedata, s, battle['allies'] if battle else [])})")
                            for s in pool], allow_back=True)
             if sid is not None:
                 res = magic.cast(player, gamedata, sid, state.rng, battle=battle, state=state)
@@ -4787,7 +4799,7 @@ def action_cast_self(state: GameState, gamedata: GameData, battle: dict | None =
     if not usable:
         ui.message("你沒有可施放的法術。", style="grey70")
         return
-    opts = [(s, f"{gamedata.spells[s]['name']}（{magic.effective_cost(char, gamedata, s)} 法力{_spell_token_suffix(char, gamedata, s)})"
+    opts = [(s, f"{gamedata.spells[s]['name']}（{magic.effective_cost(char, gamedata, s)} 法力{_spell_token_suffix(char, gamedata, s)}{_summon_slot_suffix(char, gamedata, s, battle['allies'] if battle else [])})"
              f" · {ui.spell_effect_summary(gamedata, s)}") for s in usable]
     sid = ui.menu(f"施放哪道法術?(法力 {int(char.magicka)}/{char.max_magicka})", opts, allow_back=True)
     if sid is None:

@@ -477,6 +477,22 @@ class BrowserRegression(unittest.TestCase):
         self.page.locator(".dgcell.tappable").nth(0).click()
         self.assertEqual(self.server.answer(), "go:n")
 
+    def test_hud_marks_the_anchored_servant_as_permanent_and_others_keep_their_turns_r203(self) -> None:
+        """R203b 永契之僕:契僕不逾時 → HUD 盟友列顯示「永駐」而非剩餘回合;一般召喚物仍顯示剩餘回合(行為不變)。"""
+        hud = _hud()
+        hud["allies"] = [{"name": "魔人", "hp": [70, 70], "turns": 5, "anchor": True},
+                         {"name": "火焰魔靈", "hp": [30, 30], "turns": 4, "anchor": False},
+                         {"name": "舊存檔召喚物", "hp": [20, 20], "turns": 3}]       # 無 anchor 欄(相容)
+        self.server.emit(blocks=[], prompt={"type": "menu", "title": "要做什麼?", "options": [{"key": "a", "label": "甲"}],
+                                            "extra_keys": [], "cta_keys": []}, hud=hud)
+        self._open(".h-team.summon >> nth=0")
+        rows = self.page.locator(".h-team.summon").all_inner_texts()
+        self.assertEqual(len(rows), 3, rows)
+        self.assertIn("魔人(召) 70/70 ·永駐", rows[0])
+        self.assertNotIn("5", rows[0].split("70/70")[1], "契僕不顯示剩餘回合數")
+        self.assertTrue(rows[1].endswith("·4"), rows[1])
+        self.assertTrue(rows[2].endswith("·3"), rows[2])
+
     def test_long_r202_menu_labels_stay_inside_the_viewport_on_desktop_and_phone_r202(self) -> None:
         """R202 可見性包把數字塞進選單標籤(祭壇「得…｜代價…」、行竊「得手 · 失手賞金」、淬鍊「傷害 +a→+b」、
         陷阱方位「^ 機關·閃避…」、附魔結果標籤)→ 標籤變長。用真標籤建構函式產生最長的幾條,桌面與手機寬度都不得橫向溢出,

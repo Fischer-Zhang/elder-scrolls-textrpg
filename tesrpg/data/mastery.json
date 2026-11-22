@@ -225,10 +225,10 @@
   "options": [
    {
     "opt_id": "lasting_summon",
-    "name": "持久召喚",
+    "name": "永契之僕",
     "kind": "summon_mod",
-    "turn_bonus": 1,
-    "desc": "召喚大師:所有召喚物與復生亡者多駐留 1 回合。"
+    "anchor": 1,
+    "desc": "召喚大師:你最先召出的一隻戰鬥型召喚物成為『契僕』,不會逾時消散,直到被擊殺;同時只能有一隻。(治療精靈與亡者不適用)"
    },
    {
     "opt_id": "undead_dominion",

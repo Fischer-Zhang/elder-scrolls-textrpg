@@ -29,6 +29,27 @@ _DISPELLABLE = ("fear", "paralyze", "dot", "weaken", "stagger", "slow")
 REANIMATE_HP_FACTOR = 0.6
 
 
+def has_anchor(battle: dict | None) -> bool:
+    """R203 場上是否已有存活的契僕(永契之僕:同時只能有一隻)。"""
+    from tesrpg.systems import combat
+    return bool(battle) and any(getattr(a, "_anchor", False) and combat.is_alive(a)
+                                for a in battle.get("allies", []))
+
+
+def summon_outcome(char, gamedata, eff: dict, battle: dict | None) -> dict:
+    """R203 召喚結果預算 {turns 駐留回合, anchor 是否成為契僕}(單一出處:`cast` 的實際召喚與施法選單預覽共用)。
+    turns = 法術回合 + 達貢之佑加成(boon×3)+ 里程碑 turn_bonus(舊持久召喚 +1 已由永契之僕取代,現無節點提供 → 0)。
+    anchor = 里程碑「永契之僕」(summon_mod.anchor)且 場上無存活契僕 且 召喚物為非亡者、非支援型
+    (bestiary 有 spells 者,如治療精靈;永駐的補師會讓整趟地城的生存壓力消失)。"""
+    from tesrpg.systems import factions
+    smod = mastery.summon_mod(char, gamedata)
+    boon = factions.conjure_boon(char, gamedata)
+    turns = eff["turns"] + int(boon * 3) + int(smod.get("turn_bonus", 0))
+    support = bool((gamedata.bestiary.get(eff.get("creature"), {}) or {}).get("spells"))
+    anchor = bool(smod.get("anchor")) and not eff.get("undead") and not support and not has_anchor(battle)
+    return {"turns": turns, "anchor": anchor}
+
+
 def nonundead_summon_count(battle: dict | None) -> int:
     """R203 戰場上存活、未逾時的**非亡者**召喚物數(供 formulas.SUMMON_FIELD_CAP 同場名額判定)。
     同伴(summon_turns 為 None)與真·亡者(_undead,另受軍團上限)不計;單一出處:法術召喚與種族威能共用。"""
@@ -661,8 +682,10 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
                 cre.health = cre.max_health
 
             _empower_summon(ally)
-            bonus_turns = int(boon * 3) + int(smod.get("turn_bonus", 0))
-            ally.summon_turns = eff["turns"] + bonus_turns
+            outcome = summon_outcome(char, gamedata, eff, battle)   # R203 單一出處:實際召喚與施法選單預覽共用
+            ally.summon_turns = outcome["turns"]
+            if outcome["anchor"]:
+                ally._anchor = True    # 契僕(暫態旗標,不入檔):combat.tick_summons 不遞減回合,直到被擊殺
             battle.setdefault("allies", []).append(ally)
             extra_msg = ""
             if smod.get("extra"):     # 雙重召喚:額外多召一隻較弱的盟友(現無節點提供 extra,保留相容)
@@ -676,7 +699,10 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
                 char.soul_tokens = getattr(char, "soul_tokens", 0) - tc
             blessed = "(達貢之佑加持)" if boon > 0 else ""
             token_msg = f"(靈魂 token −{tc},餘 {char.soul_tokens})" if tc > 0 else ""
-            msg = f"你召喚出了{ally.name}{blessed}{extra_msg}{token_msg},它將為你而戰({ally.summon_turns} 回合)。"
+            if outcome["anchor"]:
+                msg = f"你召喚出了{ally.name}{blessed}{extra_msg}{token_msg},它成為你的契僕,將追隨你直到被擊殺。"
+            else:
+                msg = f"你召喚出了{ally.name}{blessed}{extra_msg}{token_msg},它將為你而戰({ally.summon_turns} 回合)。"
 
     elif kind == "reanimate":   # 召喚/死靈「亡者復生」:把一具非 solo 敵屍喚為限時盟友(復用召喚物生命週期)
         if battle is None:

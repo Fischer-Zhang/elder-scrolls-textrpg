@@ -53,7 +53,7 @@ def _party_status(char, gamedata) -> list:
 def _allies_status(allies) -> list:
     """當前召喚物狀態(名稱 + HP + 剩餘回合),供持久狀態條。"""
     return [{"name": a.name, "hp": [max(0, int(a.health)), int(a.max_health)],
-             "turns": getattr(a, "summon_turns", None)}
+             "turns": getattr(a, "summon_turns", None), "anchor": bool(getattr(a, "_anchor", False))}
             for a in (allies or [])
             if a.health > 0 and (getattr(a, "summon_turns", None) is None or a.summon_turns > 0)]
 

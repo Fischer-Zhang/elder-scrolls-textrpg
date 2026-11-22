@@ -1504,7 +1504,7 @@
     const team = (d.party || []).map(function (p) {
       return `<span class="h-team${p.downed ? " down" : ""}">└ ${esc(p.name)} ${p.hp[0]}/${p.hp[1]}${p.downed ? " 負傷" : ""}</span>`;
     }).concat((d.allies || []).map(function (a) {
-      return `<span class="h-team summon">└ ${esc(a.name)}(召) ${a.hp[0]}/${a.hp[1]}${a.turns != null ? " ·" + a.turns : ""}</span>`;
+      return `<span class="h-team summon">└ ${esc(a.name)}(召) ${a.hp[0]}/${a.hp[1]}${a.anchor ? " ·永駐" : (a.turns != null ? " ·" + a.turns : "")}</span>`;
     })).join("");
     hudEl.innerHTML =
       `<span class="h-meta"><span class="h-name">❖ ${esc(d.name)}</span><span class="h-lv">Lv.${d.level}</span>`

@@ -600,9 +600,11 @@ def test_destruction_impact_staggers_on_hit():
 
 def test_conjuration_summon_mods():
     # R106C 里程碑改制:conjuration_100 = 持久召喚(通用 +1t)vs 亡者統御(真·亡者更強)
+    # R203:持久召喚(opt_id lasting_summon 不變)改為「永契之僕」—— 最先召出的戰鬥型召喚物成為不逾時的契僕,取代 +1 回合
     gd, c = _char(conjuration=100)
     mastery.choose(c, gd, "conjuration_100", "lasting_summon")
-    assert mastery.summon_mod(c, gd).get("turn_bonus") == 1
+    sm = mastery.summon_mod(c, gd)
+    assert sm.get("anchor") == 1 and not sm.get("turn_bonus")
     gd2, c2 = _char(conjuration=100)
     mastery.choose(c2, gd2, "conjuration_100", "undead_dominion")
     um = mastery.undead_mastery_mod(c2, gd2)
