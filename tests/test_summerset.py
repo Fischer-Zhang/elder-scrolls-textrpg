@@ -442,8 +442,8 @@ def test_r177_secrets_and_rumor_leads_pay_out_once():
     assert dialogue.offered_rumor(c, gd, "lillandril_archivist") == {"kind": "landmark", "id": "illumination_academy"}
     assert dialogue.offered_rumor(c, gd, "firsthold_sailor") == {"kind": "quest", "id": "rumor_dusk_keep"}
     assert dialogue.offered_rumor(c, gd, "cloudrest_stargazer") == {"kind": "quest", "id": "rumor_crystal_tower"}
-    c.cleared_dungeons.append("dusk_keep")                                 # 已肅清 → 不再派(防接取即完成)
-    assert dialogue.offered_rumor(c, gd, "firsthold_sailor") is None
+    c.cleared_dungeons.append("dusk_keep")                                 # R206:已肅清仍照派(回溯認列;與其餘 clear_dungeon 任務一致)
+    assert dialogue.offered_rumor(c, gd, "firsthold_sailor") == {"kind": "quest", "id": "rumor_dusk_keep"}
 
 
 def test_r177_province_events_are_wired_and_checks_use_real_skills():

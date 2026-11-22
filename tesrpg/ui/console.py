@@ -2963,7 +2963,7 @@ def dungeon_grid(grid: dict, z: int, cx: int, cy: int, explored: list, resolved:
 _ELEM_CN = {"fire": "火焰", "frost": "冰霜", "shock": "雷電", "poison": "毒素", "magic": "魔法", "bleed": "撕裂"}
 _STAT_CN = {"health": "生命", "magicka": "法力", "fatigue": "體力"}
 # 怪物控場命中(R43):status_applied 為 kind(非元素)→ 對應敘事
-_CC_CN = {"stagger": "陣腳大亂(下一擊更難命中)", "slow": "步伐遲滯(先攻與命中下降)",
+_CC_CN = {"stagger": "陣腳大亂(下一擊更難命中)", "slow": "步伐遲滯(命中下降、更難脫身)",
           "weaken": "體力被削(攻勢轉弱)", "fear": "心生恐懼(失去一次行動)",
           "paralyze": "僵立當場(麻痺,失去一次行動)"}   # R181:措辭對玩家(敵人階段上身→損失下一次行動)與召喚物打敵人(同回合敵階段即失能)皆成立
 _ARCHETYPE_CN = {"dagger": "匕首", "sword": "劍", "blunt": "鈍器", "bow": "弓",
@@ -3000,6 +3000,10 @@ def combat_event(ev: dict, gamedata: GameData) -> None:
         lines.append(f"[green]武器上的{ev['poison_applied']}滲入了{ev['defender']}的傷口![/]")
     if ev.get("lifesteal"):
         lines.append(f"[red]🩸 兵刃汲血,{ev['attacker']} 回復了 {ev['lifesteal']} 點生命。[/]")
+    if ev.get("counter"):   # R206 閃身反打(閃過後的反擊):原本只悄悄扣敵血、玩家看不到發生了什麼
+        ct = ev["counter"]
+        lines.append(f"[cyan]{ev['defender']} 閃身反打 {ev['attacker']},造成 {ct['damage']} 點傷害"
+                     f"{'(對方陣腳大亂)' if ct.get('stagger') else ''}![/]")
     if ev.get("aftermath"):
         am = ev["aftermath"]
         bits = []

@@ -278,6 +278,7 @@ PYTHONPATH=. CMP_N=120 python3 sim_conj_sides.py   # 召喚系三節點「兩側
 | R203 | 召喚 75/100 重新設計 a–d:非亡者名額 3 + tick_summons 出處 / 永契之僕(契僕不逾時)/ 瞬發契印(首道召喚免耗回合)/ 就地起屍(回合末自動起屍);🔴 政策上限引用規則常數·opt_id 不變零遷移 | re-sim, save-safe |
 | R204 | 束縛兵刃一致性 + 束縛騎士:巨劍/戰斧雙手形不配盾·重盾下束縛皆不可凝(堵達貢牆)·耗體用自身速度·反擊同屬元素·可備戰預凝;偷襲倍率維持會吃;🔴 刃傷只看召喚+力量 | re-sim, save-safe |
 | R205 | 召喚 50 換案:束縛精通→戰陣號令(玩家召喚物集火;`party.ally_target` 單一決策點·main/sim 共用);🔴 無節點逐位元組同·舊 opt_id 靠 ensure 清空重選·單王略差=設計代價·戰陣共鳴(冷卻−1)實測無效不做;束縛兵刃不再吃里程碑 | re-sim, save-safe |
+| R206 | 小問題清倉:流言線索回溯認列(拿掉已清守衛;🔴 日後勿把「已清地城接任務即時完成」當 bug,repeatable 除外)·閃身反打日誌(事件 `counter`)·死資料(per_level / escort)·遲緩文案·破折號守衛 | save-safe, content |
 
 ## 自動提交閘門 / 換 session 前檢查表
 

@@ -184,6 +184,16 @@ def test_event_texts_use_halfwidth_comma_and_bang():
     assert n > 500                                                        # 真的走過大量字串(非空轉)
 
 
+def test_event_dashes_have_spaces_on_both_sides_r206():
+    """R206:破折號慣例 ` —— ` 前後各一空格(R198 審查列出的 4 處既有違規已修;守衛補上,28 + 4 處全數合規)。"""
+    n = 0
+    for s in _strings(gd.events):
+        if "——" in s:
+            n += s.count("——")
+            assert not re.search("(?<! )——|——(?! )", s), s[:30]
+    assert n >= 30                                                        # 真的走過全部破折號(非空轉)
+
+
 def run():
     for name, fn in sorted(globals().items()):
         if name.startswith("test_") and callable(fn):

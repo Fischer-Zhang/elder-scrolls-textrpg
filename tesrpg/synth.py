@@ -191,7 +191,7 @@ def synthesize(item_id: str, gamedata) -> dict:
             value = max(20, a * b)
         elif kind == "slow":                                # a=遲緩百分比、b=回合
             status = {"status": "slow", "magnitude": a / 100.0, "turns": b}
-            name = f"遲緩毒(先攻/命中 −{a}% × {b} 回合)"
+            name = f"遲緩毒(速度 −{a}%、命中下降 × {b} 回合)"
             value = max(20, a * b)
         elif kind == "fear":                                # a=回合(b 未用)
             status = {"status": "fear", "turns": a}

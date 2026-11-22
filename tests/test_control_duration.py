@@ -290,6 +290,42 @@ def test_counter_rolls_on_every_dodge_r183():
     assert dodges >= 5, f"測試設定應產生足夠閃過(dodges={dodges})"
 
 
+def test_counter_event_carries_damage_and_is_logged_r206():
+    """R206:閃身反打的結果進回傳事件 `counter`({damage, stagger})並由 combat_event 印出一行;沒反擊 / 被命中 → counter 為 None。"""
+    import io
+    from rich.console import Console
+    gd = _gd()
+    p = _player()
+    foe = _foe({"name": "撲擊", "damage": 2, "skill": 100})
+    orig = _patched_on_evade({"counter_chance": 1.0, "counter_frac": 0.6, "counter_stagger": True, "restamina": 0})
+    found = None
+    try:
+        rng = RNG(11)
+        for _ in range(400):
+            foe.health = foe.max_health
+            ev = combat.resolve_attack(foe, p, gd, rng, attack=foe.attack)
+            if ev["hit"]:
+                assert ev["counter"] is None, "被命中時不得有反擊記錄"
+            elif found is None:
+                found = (ev, foe.max_health - foe.health)
+    finally:
+        mastery.on_evade = orig
+    assert found, "測試設定應產生閃過"
+    ev, lost = found
+    assert ev["counter"] == {"damage": lost, "stagger": True} and lost > 0, (ev["counter"], lost)
+    saved, ui.console = ui.console, Console(file=io.StringIO(), force_terminal=False, width=120)
+    try:
+        ui.combat_event(ev, gd)
+        out = ui.console.file.getvalue()
+    finally:
+        ui.console = saved
+    assert "閃身反打" in out and f"{lost} 點傷害" in out and "陣腳大亂" in out, out
+    # 沒有里程碑 → 閃過也沒有反擊記錄
+    p2 = _player(); foe2 = _foe({"name": "撲擊", "damage": 2, "skill": 100}); rng2 = RNG(11)
+    evs = [combat.resolve_attack(foe2, p2, gd, rng2, attack=foe2.attack) for _ in range(200)]
+    assert any(not e["hit"] for e in evs) and all(e["counter"] is None for e in evs)
+
+
 def test_restamina_on_every_dodge_r183():
     gd = _gd()
     p = _player()

@@ -1181,6 +1181,7 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
     disease_id = None      # R53:普通病感染的病種 id(僅 infect_kind=="disease" 時有值)
     lifesteal = 0          # 武器吸血附魔本擊回血量(供敘事)
     aftermath = None
+    counter = None         # R206:閃身反打(輕甲迴身反打 / 風暴之舞 / 雜技凌空奇襲)這一擊閃過後的反擊結果 {damage, stagger},供戰鬥日誌
     sneak_mult = (formulas.sneak_attack_multiplier(attacker.skill("sneak"))
                   * formulas.archetype_sneak_bonus(archetype)
                   * formulas.night_mother_sneak_bonus(attacker.factions.get("dark_brotherhood", -1))
@@ -1756,6 +1757,7 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
                 _cd = _player_counter_damage(defender, gamedata, rng) * oe["counter_frac"]
                 _cd *= formulas.resist_multiplier(magic.entity_resist(attacker, gamedata), _counter_resist_kind(defender))
                 _set_hp(attacker, _get_hp(attacker) - int(round(_cd)))
+                counter = {"damage": int(round(_cd)), "stagger": bool(oe.get("counter_stagger"))}   # R206:純記錄、不影響結算
                 if oe.get("counter_stagger"):
                     # R181:turns:2 → 敵人階段對怪物施加的踉蹌須撐過回合末 tick,才在該怪「下一次出手」時生效
                     # (原 turns:1 實測施加 388 次、怪物下一擊讀到 0 次 = 死機制;與上方盾擊/荊棘同款時序修法)
@@ -1779,7 +1781,7 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
         "status_applied": status_applied, "poison_applied": poison_applied,
         "sneak": sneak_mult, "self_restored": self_restored, "infected": infected,
         "infect_kind": infect_kind, "disease_id": disease_id, "lifesteal": lifesteal,
-        "aftermath": aftermath,
+        "aftermath": aftermath, "counter": counter,
     }
 
 

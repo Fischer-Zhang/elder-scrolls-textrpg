@@ -75,12 +75,22 @@ def test_offered_rumor_quest_and_lock():
     assert dialogue.offered_rumor(c, gd, nid) is None
 
 
-def test_offered_rumor_quest_skips_already_cleared():
+def test_offered_rumor_quest_still_offered_when_already_cleared_retroactive_credit_r206():
+    """R206(使用者 2026-11-22):早已肅清的地城,流言線索仍照給;接取即達成、照常結算獎勵;一次性鎖照舊(完成後不再提供)。
+    與告示板 / 公會 / 統治者任務一致 —— 一次性任務的總獎勵與先清後接 / 先接後清的順序無關(R79 的破口是 repeatable,另有 schema guard)。"""
     gd, c = _mk()
     nid = "marcus"
     _set_disp(c, gd, nid, 50)
-    c.cleared_dungeons.append("cedernoc_cave")        # 已肅清 → 不給(避免接取即時免費完成)
-    assert dialogue.offered_rumor(c, gd, nid) is None
+    c.cleared_dungeons.append("cedernoc_cave")        # 提早探索:已肅清
+    r = dialogue.offered_rumor(c, gd, nid)
+    assert r == {"kind": "quest", "id": "rumor_cedernoc"}, "已清地城不應讓玩家少拿這份線索任務"
+    quests.accept_quest(c, gd, r["id"])
+    assert quests.objective_met(c, gd, r["id"]), "接取即達成(回溯認列)"
+    gold0 = c.gold
+    done = quests.check_completion(c, gd)
+    assert any(e["type"] == "completed" and e["quest_id"] == "rumor_cedernoc" for e in done), done
+    assert "rumor_cedernoc" in c.completed_quests and c.gold > gold0, "照常結算獎勵"
+    assert dialogue.offered_rumor(c, gd, nid) is None, "完成後一次性鎖仍在"
 
 
 def test_rumor_disposition_gate():
