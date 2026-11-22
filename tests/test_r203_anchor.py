@@ -9,13 +9,18 @@
    ⑤ 未選者逐位元組同舊(回合數與 rng 軌跡)⑥ HUD 帶 anchor 旗標、施法選單預覽「場上 N/3 · 成為契僕(永駐)」。
 """
 import copy
+import io
+
+from rich.console import Console
 
 from tesrpg import main as M
 from tesrpg.creation import build_character
 from tesrpg.gamedata import get_gamedata
 from tesrpg.rng import RNG
+from tesrpg.state import GameState, GameTime
 from tesrpg.systems import combat, magic, mastery, stats
 import tesrpg.ui.console as ui
+ui.console = Console(file=io.StringIO(), force_terminal=True, width=100)   # 戰鬥戰報不洗版(同其他戰鬥測試)
 
 gd = get_gamedata()
 
@@ -230,6 +235,122 @@ def test_codex_and_buffs_catalog_name_the_three_r203_options_exactly_as_the_data
         assert names[opt] in buffs_text, f"BUFFS.md 缺「{names[opt]}」"
     for stale in ("持久召喚", "召喚精算", "亡者收集"):
         assert stale not in codex_text, f"codex 殘留舊名「{stale}」"
+
+
+# --- 地城跨戰(使用者 2026-11-22 拍板「寫回並跨戰留存」)---------------------------------------------
+def _dungeon_battle(c, script, dungeon_allies, kill=None):
+    """地城式呼叫 `run_battle(carry_allies=dungeon_allies, preserve_buffs=True)`;script 的每項是 action dict 或 callable(allies)→action。
+    kill = 敵人;腳本跑完後把它打死(走正常勝利收尾 → 寫回邏輯在迴圈結束後)。回傳 (結果, 每次提示當下的盟友清單快照)。"""
+    st = GameState(player=c, rng=RNG(3), time=GameTime())
+    foe = kill if kill is not None else combat.spawn_creature(gd, "bandit", RNG(1))
+    foe.health = foe.max_health = 10 ** 6
+    foe.resist = {}
+    foe.active_effects.append({"kind": "paralyze", "turns": 10 ** 6})              # 麻痺哨兵:敵方階段跳過 → 走向全由腳本決定
+    queue, seen = list(script), []
+    orig = M._choose_combat_action
+
+    def chooser(state, gamedata, enemies, allies, *a, **k):
+        seen.append(list(allies))
+        if queue:
+            step = queue.pop(0)
+            return step(allies) if callable(step) else step
+        foe.health = 0                                                              # 腳本用完:讓這一輪打死敵人 → 勝利
+        return {"type": "rest"}
+
+    M._choose_combat_action = chooser
+    try:
+        res = M.run_battle(st, gd, [foe], carry_allies=dungeon_allies, preserve_buffs=True)
+    finally:
+        M._choose_combat_action = orig
+    return res, seen
+
+
+def _sync(dungeon_allies):
+    """與 main 地城 sync_allies 同一條濾法(戰後只留存活且未逾時者)。"""
+    dungeon_allies[:] = [a for a in dungeon_allies if combat.is_alive(a) and (a.summon_turns is None or a.summon_turns > 0)]
+
+
+def test_anchor_summoned_during_a_dungeon_battle_is_written_back_and_fights_the_next_battle_too():
+    c = _mage()
+    dungeon_allies = []
+    res, seen = _dungeon_battle(c, [{"type": "cast", "spell_id": "conjure_dremora"}], dungeon_allies)
+    assert res == "victory"
+    anchors = [a for a in dungeon_allies if getattr(a, "_anchor", False)]
+    assert len(anchors) == 1 and combat.is_alive(anchors[0]), "戰鬥中召出、戰後存活的契僕寫回地城盟友清單"
+    turns0 = anchors[0].summon_turns
+    _sync(dungeon_allies)
+    assert dungeon_allies == [anchors[0]] and dungeon_allies[0] is anchors[0], "地城 sync_allies 濾法留得住它(回合不遞減 → 恆 > 0)"
+    res2, seen2 = _dungeon_battle(c, [], dungeon_allies)                            # 下一戰:契僕自動在場、回合仍不變
+    assert res2 == "victory" and any(a is anchors[0] for a in seen2[0]), "下一場開打時契僕已在戰列"
+    assert anchors[0].summon_turns == turns0
+    _sync(dungeon_allies)
+    assert any(a is anchors[0] for a in dungeon_allies), "直到被擊殺前一路跟著"
+    anchors[0].health = 0
+    _sync(dungeon_allies)
+    assert dungeon_allies == [], "被擊殺才離場"
+
+
+def test_only_a_living_anchor_is_written_back_not_plain_summons_nor_a_dead_anchor_and_never_twice():
+    c = _mage()
+    # 非契僕(第二隻元素 / 治療精靈 / 亡者)戰後照舊消散;契僕本身寫回一次
+    dungeon_allies = []
+    res, _ = _dungeon_battle(c, [{"type": "cast", "spell_id": "conjure_dremora"}, {"type": "cast", "spell_id": "conjure_flame_atronach"},
+                                 {"type": "cast", "spell_id": "conjure_healer"}, {"type": "cast", "spell_id": "raise_thrall"}], dungeon_allies)
+    assert res == "victory" and [bool(getattr(a, "_anchor", False)) for a in dungeon_allies] == [True], "只寫回契僕本身"
+    # 契僕在戰中陣亡 → 不寫回
+    dungeon_allies = []
+
+    def kill_anchor(allies):
+        for a in allies:
+            if getattr(a, "_anchor", False):
+                a.health = 0
+        return {"type": "rest"}
+
+    res, _ = _dungeon_battle(c, [{"type": "cast", "spell_id": "conjure_dremora"}, kill_anchor], dungeon_allies)
+    assert res == "victory" and dungeon_allies == []
+    # 預召喚的契僕本來就在清單 → 戰後清單裡仍恰好一份(不重複寫回)
+    dungeon_allies = []
+    pre = {"allies": dungeon_allies}
+    assert magic.cast(c, gd, "conjure_dremora", RNG(1), battle=pre)["ok"] and dungeon_allies[0]._anchor
+    res, _ = _dungeon_battle(c, [], dungeon_allies)
+    assert res == "victory" and len(dungeon_allies) == 1 and dungeon_allies[0]._anchor
+
+
+def test_write_back_compares_by_identity_not_by_dataclass_equality_and_wilderness_battles_do_not_write_back():
+    """Creature 是 dataclass:`x in list` 以欄位相等判斷。清單裡有一隻與新契僕「數值全同」的別隻時,仍要寫回新契僕。
+    孿生體必須在**最後一回合**才植入(之前植入會被後續回合改動而不再相等 → 測試空轉:曾有突變存活)。"""
+    import copy
+    c = _mage()
+    dungeon_allies = []
+    holder = {}
+    foe = combat.spawn_creature(gd, "bandit", RNG(1))
+
+    def plant_twin_then_win(allies):
+        anchor = next(a for a in allies if getattr(a, "_anchor", False))
+        twin = copy.copy(anchor)
+        twin.active_effects = list(anchor.active_effects)
+        del twin._anchor                                                             # 動態屬性不在 dataclass 欄位 → twin == anchor 為 True,但不是同一隻
+        dungeon_allies.append(twin)                                                  # 模擬地城清單裡已有一隻數值全同的普通召喚物
+        holder["anchor"], holder["twin"] = anchor, twin
+        foe.health = 0                                                               # 這一輪打死敵人 → 勝利收尾(寫回在迴圈結束後)
+        return {"type": "rest"}
+
+    res, _ = _dungeon_battle(c, [{"type": "cast", "spell_id": "conjure_dremora"}, plant_twin_then_win], dungeon_allies, kill=foe)
+    assert res == "victory"
+    assert holder["twin"] == holder["anchor"] and holder["twin"] is not holder["anchor"], "前提:收尾時兩者仍欄位相等(否則本測試空轉)"
+    assert any(a is holder["anchor"] for a in dungeon_allies), "身分比對:新契僕仍被寫回(相等判斷會誤以為已在清單)"
+    # 野外戰鬥:carry_allies=None → 不寫回、不出錯(召喚物隨戰鬥結束消散)
+    st = GameState(player=_mage(), rng=RNG(3), time=GameTime())
+    foe = combat.spawn_creature(gd, "bandit", RNG(1))
+    foe.health = foe.max_health = 10 ** 6
+    foe.active_effects.append({"kind": "paralyze", "turns": 10 ** 6})
+    queue = [{"type": "cast", "spell_id": "conjure_dremora"}]
+    orig = M._choose_combat_action
+    M._choose_combat_action = lambda state, gamedata, enemies, allies, *a, **k: queue.pop(0) if queue else (setattr(foe, "health", 0) or {"type": "rest"})
+    try:
+        assert M.run_battle(st, gd, [foe]) == "victory"
+    finally:
+        M._choose_combat_action = orig
 
 
 def run():

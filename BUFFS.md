@@ -170,7 +170,7 @@
 | 共鳴一擊 resonance | 傷害 | 🔴transfer0.5(下一近戰灌半數法力作元素傷)+dot4×3;加在 solo 夾限之前 |
 | 法力回擊 mana_on_hit | 資源回復 | 近戰命中 +4 魔力 |
 | 雙重/束縛召喚 summon_mod | 召喚 | twin:extra1隻×0.6血;bound_blade:hp+0.25/turn+1;**R203b 永契之僕**(`lasting_summon`)改 `anchor:1`(取代舊 +1 回合),見下列 |
-| 永契之僕 anchor(R203b·召喚 100) | 召喚物續存 | 場上無存活契僕時,下一隻**非亡者、非支援型**(bestiary 有 `spells` 者如治療精靈除外)召喚物成為契僕(暫態 `_anchor`·不入檔):`combat.tick_summons` 不遞減回合 → 戰鬥每輪 / 地城每走一格都不逾時;同時一隻·計入非亡者同場名額 `SUMMON_FIELD_CAP`=3;預覽 = 實擲共用 `magic.summon_outcome` |
+| 永契之僕 anchor(R203b·召喚 100) | 召喚物續存 | 場上無存活契僕時,下一隻**非亡者、非支援型**(bestiary 有 `spells` 者如治療精靈除外)召喚物成為契僕(暫態 `_anchor`·不入檔):`combat.tick_summons` 不遞減回合 → 戰鬥每輪 / 地城每走一格都不逾時;同時一隻·計入非亡者同場名額 `SUMMON_FIELD_CAP`=3;預覽 = 實擲共用 `magic.summon_outcome`;**地城跨戰**:`run_battle` 戰後把戰鬥中召出且存活的契僕寫回 `carry_allies`(身分比對),野外戰鬥照舊隨戰鬥結束消散 |
 | 瞬發契印 quick_seal(R203c·召喚 75 conj_efficiency) | 行動經濟(免費·有限) | 每場第一道**召喚系**(conjuration 學派:召喚/復生/亡者/束縛)法術選單階段當場施放、不耗回合並重新提示;成功才記帳(戰內 `quick_seal_spent`·PERSISTENT_TURNS·`BATTLE_LOCAL_KINDS` 入戰/離戰必清·HUD 隱藏,卡片標籤「瞬發契印 可用/已用」);非亡者召喚物**被擊殺**(逾時/亡者/同伴不算)→ 契印回補·最多存 1 次;失敗施法不耗契印不耗回合(安全閥 3 次);兼帶召喚術省魔 ×0.85 |
 | 就地起屍 auto_raise(R203d·召喚 75 soul_harvest) | 召喚(免費·有限) | 每場第一具符合資格(`magic.reanimate_candidate`:非 solo/已復生/BOSS 爪牙)的敵屍,回合末、召喚物計時之前自動起屍為真·亡者(參數取亡者奴役:滿血·回合 6+1);**不收法力/體力/token**;戰場須仍有存活敵人·亡者軍團未滿(滿了不耗掉那一次)·一場一次;兼帶每擊殺 +1 靈魂 token(`soul_harvest_bonus`) |
 | 戰地搶救 triage | 資源折扣 | 同伴<30%時下道治療 魔×0.15/體×0.25 |

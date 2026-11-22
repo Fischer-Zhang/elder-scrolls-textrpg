@@ -1732,6 +1732,14 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
         if combat.scatter_orphan_summons(enemies, gamedata):
             _cmsg("失去召主的爪牙化作餘燼,潰散於風中。", style="magenta")   # R167 方向1:統一分類(對齊玩家/同伴階段的 _cmsg)
 
+    # R203b 地城契僕跨戰(使用者 2026-11-22 拍板「寫回並跨戰留存」):戰鬥**中**召出、戰後仍存活的契僕,寫回呼叫端的盟友清單
+    # (carry_allies = 地城 battle["allies"] 本體;原本只有探索時預召喚者在清單裡 → 戰中召出者戰後即消失)。
+    # 野外戰鬥(carry_allies 為 None)不寫回:召喚物照舊隨戰鬥結束消散。必須以身分比對(Creature 是 dataclass,== 會把同數值的兩隻當同一隻)。
+    if carry_allies is not None and combat.is_alive(player):
+        for _a in battle["allies"]:
+            if getattr(_a, "_anchor", False) and combat.is_alive(_a) and all(_a is not _x for _x in carry_allies):
+                carry_allies.append(_a)
+                _cmsg(f"{_a.name}仍追隨在你身側 —— 契僕將隨你深入地城,直到被擊殺。", style="cyan")
     player.active_effects.clear()
     state.time.advance(1)
     if not combat.is_alive(player):
