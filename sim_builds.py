@@ -142,6 +142,37 @@ def make_arcanist():
     return c
 
 
+def _make_bound_knight(shield: bool):
+    """R204 束縛騎士(Fable 構築規劃 + 使用者 2026-11-22 採方案 A):束縛兵刃的「對的構築」—— 刃傷只看**召喚 + 力量**
+    (`formulas.attack_damage`:基礎 ×(0.5+召喚/100)×(0.75+力量/160)),智力 / 意志 / 法袍 / 法術威力 / 淬鍊 / 附魔都無效;
+    所以走獸人(力量 +10、狂暴)+ 戰士座 + 魔族重甲(法袍 HP 140 / 護甲 3 vs 重甲 HP 260 / 護甲 198)。續航靠恢復 50(治療術)+ 8 瓶藥水。
+    shield=False 雙手版(束縛巨劍;**不持盾**——巨劍 / 戰斧為雙手形,R204);shield=True 單手版(束縛長劍 + 盾 + 格擋姿態)。
+    節點:召喚 25 死靈感應〔自動〕/ 50 束縛精通 / 75 瞬發契印(首道免回合凝刃);重甲 50 重甲反震 / 100 銅皮鐵骨;單手版另 格擋 100 完美格擋。"""
+    c = build_character(gd, name="束", sex="male", race="orsimer", birthsign="warrior", class_id="battlemage")
+    c.skills.update(conjuration=100, heavy_armor=100, block=100 if shield else 25, athletics=75, alteration=75, restoration=50, acrobatics=45)
+    c.attributes.update(strength=100, endurance=100, intelligence=60, willpower=70, agility=60)
+    c.spells = ["bound_sword" if shield else "bound_greatsword", "close_wounds", "heal", "stoneflesh", "bound_armor"]
+    _equip_set(c, "daedric")
+    if shield:
+        inventory.add_item(c, "daedric_shield", 1)
+        inventory.equip_armor(c, gd, "daedric_shield")
+    ch = {"heavy_armor_50": "armor_reflect", "heavy_armor_100": "ironhide", "alteration_75": "stoneflesh",
+          "conjuration_50": "bound_mastery", "conjuration_75": "conj_efficiency"}
+    if shield:
+        ch["block_100"] = "perfect_block"
+    _choices(c, ch)
+    stats.recompute_max_resources(c, gd, restore_full=True)
+    return c
+
+
+def make_bound_knight():
+    return _make_bound_knight(False)
+
+
+def make_bound_knight_1h():
+    return _make_bound_knight(True)
+
+
 def make_paladin():
     """R132+ 現實派聖騎士(十字軍):恢復系對活人**零魔法輸出** → 真實 paladin 靠**近戰**打活人
     (daedric_sword+重甲+盾·knight 職業 str 主),restoration 100 保留聖光身份(smite 不死/自療/聖化領域)。
@@ -274,6 +305,8 @@ BUILDS = {"assassin": make_assassin, "archer": make_archer, "warrior_1H": make_w
           "monk_shirt": lambda: make_monk("iron_shirt"),          # R193 鐵布衫(子提交 2 前=+12 護甲舊數值·之後=體力化傷)
           "shield_reflect": make_shield_reflect,
           "great_shield": make_great_shield,
+          "bound_knight": make_bound_knight,           # R204 束縛騎士·雙手(束縛巨劍·無盾)
+          "bound_knight_1h": make_bound_knight_1h,     # R204 束縛騎士·單手(束縛長劍 + 盾 + 格擋姿態)
           "mage_fire": _make_element_mage(_MAGE_ELEMENTS["mage_fire"]),
           "mage_frost": _make_element_mage(_MAGE_ELEMENTS["mage_frost"]),
           "mage_shock": _make_element_mage(_MAGE_ELEMENTS["mage_shock"]),
@@ -299,7 +332,8 @@ _INCIDENTAL = {
     "paladin":        {"acrobatics": 45},   # 現實派十字軍穿重甲(heavy_armor 核心)→ 附帶只補閃避
     "battlemage":     {"acrobatics": 45, "athletics": 45, "restoration": 45},
 }
-_ARMOR_TEMPER_BUILDS = {"warrior_1H", "warrior_2H", "shield_reflect", "great_shield", "battlemage", "paladin"}
+_ARMOR_TEMPER_BUILDS = {"warrior_1H", "warrior_2H", "shield_reflect", "great_shield", "battlemage", "paladin",
+                        "bound_knight", "bound_knight_1h"}
 
 
 def _apply_realistic(name, c):
@@ -407,7 +441,7 @@ def _battlemage_act(c, boss, rng, st):
 # R126 戰鬥中用藥模型(fidelity):近戰/潛行 build 帶治療藥水,低血喝(耗一回合=不攻擊)。
 # 反映遊戲新現實(近戰終於有中場續戰)→ 平衡工具不再低估近戰硬 boss 存活。法系另有治療術不靠藥。
 _MELEE_POT_BUILDS = {"warrior_1H", "warrior_2H", "monk", "monk_release", "monk_shirt", "assassin", "archer",
-                     "shield_reflect", "great_shield"}
+                     "shield_reflect", "great_shield", "bound_knight", "bound_knight_1h"}
 _COMBAT_POTIONS = 8   # 帶去硬仗的治療藥水疊(healing_potion·回50·固定不放大)
 
 
@@ -522,6 +556,28 @@ def _attack_act(c, boss, rng, st):
                                          if combat.has_guard_stance(c) and c.fatigue > 0 else 1.0))
 
 
+def _bound_knight_act(c, boss, rng, st):
+    """R204 束縛騎士政策:血 <40% 先喝藥(耗一回合)→ close_wounds → 束縛兵刃失效就重施(束縛法術屬召喚系 → 回 "summon" 讓瞬發契印可免費施放;
+    sim_conj_sides 的 player_phase 讀這個回傳)→ 單手版立格擋姿態(同 _attack_act)→ 其餘揮砍(姿態稅同 main)。"""
+    if _drink_if_low(c):
+        return None
+    if c.health < c.max_health * 0.40 and magic.can_cast(c, gd, "close_wounds"):
+        magic.cast(c, gd, "close_wounds", rng)
+        return None
+    spell = "bound_sword" if "bound_sword" in c.spells else "bound_greatsword"
+    if not any(e.get("kind") == "bound_weapon" and e.get("turns", 0) > 0 for e in c.active_effects) and magic.can_cast(c, gd, spell):
+        magic.cast(c, gd, spell, rng, battle={"allies": []})
+        return "summon"
+    if st.get("use_stance") and not combat.has_guard_stance(c):
+        c.active_effects.append({"kind": "guard_stance", "turns": combat.PERSISTENT_TURNS})
+        return None
+    combat.player_attack_cost(c, gd)
+    combat.resolve_attack(c, boss, gd, rng,
+                          damage_factor=(formulas.GUARD_STANCE_DAMAGE_TAX
+                                         if combat.has_guard_stance(c) and c.fatigue > 0 else 1.0))
+    return None
+
+
 RELEASE_AT = 5   # R193 崩勁釋放政策:目標失衡達此層數就釋放。層數只會是 0/5/8(擒拿手每擊+5·滿層 8)→ 門檻 5 在
                  # 滿層 25% 擊倒清層「之前」釋放(sim_monk n=500:5 層 魔人×5 勝率 62% ≥ 8 層 61%,回合 14.0 < 14.6)
 
@@ -537,7 +593,8 @@ def _release_act(c, boss, rng, st):
     combat.resolve_attack(c, boss, gd, rng)
 
 
-_POLICY = {"assassin": _melee_sneak_act, "archer": _melee_sneak_act,
+_POLICY = {"bound_knight": _bound_knight_act, "bound_knight_1h": _bound_knight_act,
+           "assassin": _melee_sneak_act, "archer": _melee_sneak_act,
            "warrior_1H": _attack_act, "warrior_2H": _attack_act, "monk": _attack_act,
            "monk_release": _release_act, "monk_shirt": _attack_act,
            "shield_reflect": _attack_act, "great_shield": _attack_act,
@@ -547,7 +604,7 @@ _POLICY = {"assassin": _melee_sneak_act, "archer": _melee_sneak_act,
            "battlemage": _battlemage_act}
 
 
-_STANCE_BUILDS = {"warrior_1H", "great_shield"}   # R137/R138 格擋姿態 canonical policy(重盾=掩體常駐)。
+_STANCE_BUILDS = {"warrior_1H", "great_shield", "bound_knight_1h"}   # R137/R138 格擋姿態 canonical policy(重盾=掩體常駐)。
 # shield_reflect:設計上**相容**常駐姿態(不減命中 → 荊棘照觸發=使用者要求),但實測其續戰
 # 姿態 17% < 不姿態 35%(輸出稅拖慢殺速 → 藥水經濟惡化)→ 理性 canonical policy 不常駐;
 # 玩家仍可自選(對重物理 boss 情境有利)。

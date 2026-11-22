@@ -2166,7 +2166,7 @@ def spell_effect_summary(gamedata: GameData, spell_id: str, anchor: bool = False
         cn = gamedata.bestiary.get(e.get("creature"), {}).get("name", e.get("creature", ""))
         return f"召喚 {cn}（永駐 · 不逾時)" if anchor else f"召喚 {cn}（{turns} 回合)"
     if k == "bound_weapon":   # 召喚束縛兵刃
-        return f"束縛兵刃:傷害 {mag},無視護甲（{turns} 回合)"
+        return f"束縛兵刃:傷害 {mag},無視護甲{'·雙手' if e.get('two_handed') else ''}（{turns} 回合)"
     if k == "ward":           # 神秘結界
         ab = "・吸魔" if e.get("absorb") else ""
         return f"結界:吸收法術傷害 {mag}{ab}（{turns} 回合)"

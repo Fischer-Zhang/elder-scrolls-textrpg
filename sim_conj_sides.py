@@ -2,7 +2,7 @@
 用法(須在倉庫根目錄,sim_dungeon 讀相對路徑):`PYTHONPATH=. CMP_N=120 python3 sim_conj_sides.py`(並行 ~18 工,約 8 分鐘;CMP_N 預設 150)。
 
 節點:50 咒靈共鳴 vs 束縛精通 / 75 瞬發契印 vs 就地起屍(屍僕)/ 100 永契之僕 vs 亡者統御;每個節點另列「不選」。
-構築:S 激進 / S 保守(召喚師)、N 死靈師(夾具種 40 token)、N 缺魂(起手 4 token)、B 束縛法師(束縛大劍近戰)。
+構築:S 激進 / S 保守(召喚師)、N 死靈師(夾具種 40 token)、N 缺魂(起手 4 token)、B 騎士(束縛騎士·雙手束縛巨劍·無盾)、B 騎 1H(束縛騎士·束縛長劍 + 盾 + 姿態;R204 起取代舊的法袍 B 束縛夾具——那個夾具力量 30 + 法袍,刃傷只看召喚與力量,結論失真)。
 情境:王野 / 王城 = 古龍·烏瑪利單王(野外 / 地城預召喚×3);牆野 / 牆城剩血 = 達貢(胜率恆 0,看王剩餘血);群野 / 群城 = 5 種敵群平均;
       地城灰 / 地城龍 = 真實地城整趟(sim_dungeon 同一套規格:灰燼墓 15 怪格 + 魔人領主 / 龍巢;通關 = 打到終王倒下,進度 = 清掉的怪格比例;
       場間走 3 格、無休息無回魔、進格前自由預召喚、契僕 / 屍僕跨戰、token 收割照 main)。
@@ -16,44 +16,46 @@ sys.argv = _argv
 import sim_dungeon as D
 from concurrent.futures import ProcessPoolExecutor
 from tesrpg.rng import RNG
-from tesrpg.systems import combat, magic, necromancy, stats
+from tesrpg.systems import combat, inventory, magic, necromancy, stats
 sb, sp, gd = S.sb, S.sp, S.gd
 N = int(os.environ.get("CMP_N", "150"))
 
 # ---------- 構築與策略 ----------
-def make_bound():
-    c = sb.make_summoner()
-    c.spells = list(c.spells) + ["bound_greatsword", "bound_sword"]
-    return c
-
-def _has_bound(c):
+def _bound_present(c):
     return any(e.get("kind") == "bound_weapon" and e.get("turns", 0) > 0 for e in c.active_effects)
 
-def act_bound(c, boss, rng, battle, st):
-    """束縛法師:石肌一次、低血補血、束縛大劍(召喚系施法,回 "summon" 讓契印可免費施放)、其餘近戰揮砍。"""
-    if c.health < c.max_health * 0.4 and magic.can_cast(c, gd, "close_wounds"):
-        magic.cast(c, gd, "close_wounds", rng); return None
-    if not st.get("buffed") and magic.can_cast(c, gd, "stoneflesh"):
-        st["buffed"] = True; magic.cast(c, gd, "stoneflesh", rng); return None
-    if not _has_bound(c) and magic.can_cast(c, gd, "bound_greatsword"):
-        magic.cast(c, gd, "bound_greatsword", rng, battle=battle); return "summon"
-    combat.player_attack_cost(c, gd)
-    combat.resolve_attack(c, boss, gd, rng)
-    return None
+def _knight_maker(name):
+    """束縛騎士(sim_builds 夾具,R204)+ 戰鬥用藥水疊(同 sb.fight 對近戰構築的處理)。"""
+    def f():
+        c = sb.BUILDS[name]()
+        inventory.add_item(c, "healing_potion", sb._COMBAT_POTIONS)
+        return c
+    return f
 
-def act_bound_prep(c, boss, rng, battle, st):
-    """備戰(自由行動)只做施法:預凝束縛兵刃,不揮砍。"""
-    if not _has_bound(c) and magic.can_cast(c, gd, "bound_greatsword"):
-        magic.cast(c, gd, "bound_greatsword", rng, battle=battle); return "summon"
-    return None
-act_bound.prep = act_bound_prep
+def _knight_act(name):
+    """sim_builds 的束縛騎士策略(束縛兵刃失效就重施 → 回 "summon" 讓契印可免費施放)接成本工具的 (c, boss, rng, battle, st) 簽名。"""
+    pol = sb._POLICY[name]
+    def act(c, boss, rng, battle, st):
+        st.setdefault("use_stance", name in sb._STANCE_BUILDS)
+        return pol(c, boss, rng, st)
+    def prep(c, boss, rng, battle, st):      # 備戰(自由行動)只預凝束縛兵刃,不揮砍
+        spell = "bound_sword" if "bound_sword" in c.spells else "bound_greatsword"
+        if not _bound_present(c) and magic.can_cast(c, gd, spell):
+            magic.cast(c, gd, spell, rng, battle=battle)
+            return "summon"
+        return None
+    act.prep = prep
+    return act
 
 def make_necro_poor():
     c = sb.make_necromancer(); c.soul_tokens = 4        # token 緊張的死靈師(實戰靠打怪 + 回收積累;夾具預設 40 隔離稀缺,看不出免費起屍 / +1 token 的價值)
     return c
 
 ARCH = {"S激進": (sb.make_summoner, S.act_aggressive), "S保守": (sb.make_summoner, S.act_conservative),
-        "N死靈": (sb.make_necromancer, S.act_necro), "N缺魂": (make_necro_poor, S.act_necro), "B束縛": (make_bound, act_bound)}
+        "N死靈": (sb.make_necromancer, S.act_necro), "N缺魂": (make_necro_poor, S.act_necro),
+        "B騎士": (_knight_maker("bound_knight"), _knight_act("bound_knight")),            # 束縛騎士·雙手(束縛巨劍·無盾)
+        "B騎1H": (_knight_maker("bound_knight_1h"), _knight_act("bound_knight_1h"))}      # 束縛騎士·單手(束縛長劍 + 盾 + 姿態)
+
 OPTS = {"none": {}, "50共鳴": {"conjuration_50": "summon_casting"}, "50束縛": {"conjuration_50": "bound_mastery"},
         "75契印": {"conjuration_75": "conj_efficiency"}, "75起屍": {"conjuration_75": "soul_harvest"},
         "100永契": {"conjuration_100": "lasting_summon"}, "100統御": {"conjuration_100": "undead_dominion"}}

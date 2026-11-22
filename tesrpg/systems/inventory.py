@@ -265,6 +265,12 @@ def armor_equip_block(char: Character, gamedata: GameData, item_id: str) -> str 
         return "聖物戒律(違戒者不可裝)"
     if d["slot"] == "shield" and is_two_handed(gamedata, char.weapon):   # 雙手武器在手 → 不能裝盾
         return "雙手武器在手,裝不了盾"
+    if d["slot"] == "shield":   # R204:束縛兵刃在手(戰外預施的殘留效果)→ 雙手形不能裝任何盾、任何束縛都不能裝雙手重盾
+        bw = next((e for e in char.active_effects if e.get("kind") == "bound_weapon" and e.get("turns", 0) > 0), None)
+        if bw and bw.get("two_handed"):
+            return "雙手束縛兵刃在手,裝不了盾"
+        if bw and is_great_shield(gamedata, item_id):
+            return "束縛兵刃在手,裝不了雙手重盾"
     return None
 
 

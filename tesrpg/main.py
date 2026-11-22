@@ -643,6 +643,11 @@ def _spell_effect_text(char, gamedata: GameData, spell_id: str, allies) -> str:
     return ui.spell_effect_summary(gamedata, spell_id, anchor=_summon_will_anchor(char, gamedata, spell_id, allies))
 
 
+def _bound_grip_suffix(char, gamedata: GameData, spell_id: str) -> str:
+    """R204 施法選單:束縛兵刃握法衝突時標「需先卸下盾牌」(與實際施放共用 `magic.bound_conflict`;預覽 = 實擲)。"""
+    return " · ⚠需先卸下盾牌" if magic.bound_conflict(char, gamedata, spell_id) else ""
+
+
 def _quick_seal_suffix(char, gamedata: GameData, spell_id: str) -> str:
     """R203c 戰鬥施法選單:契印在手時,召喚系法術標「瞬發(不耗回合)」。與實際施放共用 `combat.quick_seal_ready`(預覽 = 實擲);
     契印已用 / 未選 / 非召喚系法術回空字串(已用狀態由戰鬥卡片標籤「瞬發契印 已用」呈現)。"""
@@ -784,8 +789,9 @@ def _choose_combat_action(state: GameState, gamedata: GameData, enemies: list, a
     _rep = _repeat_option(player, gamedata, enemies, allies, mem)   # R113:一鍵重複上次動作(置頂)
     if _rep is not None:
         opts.insert(0, ("repeat", _rep))
-    castable = [s for s in player.spells if magic.can_cast(player, gamedata, s)
-                and gamedata.spells[s]["effect"]["kind"] != "scry"]   # R121 靈視/靈識僅地城揭露·排除出戰鬥施法選單(否則誤選即退還但耗掉回合)
+    castable = _combat_castable(player, gamedata)   # R121 靈視/靈識僅地城揭露·排除;R204 握法衝突的束縛兵刃不列
+    if any(magic.bound_conflict(player, gamedata, s) for s in player.spells):
+        _hint_once("bound_grip", "（束縛兵刃的握法:雙手形〔束縛巨劍 / 戰斧〕不能與盾同持,雙手重盾下任何束縛兵刃都凝不出 —— 戰前先卸下盾牌。)")
     if castable and not player.beast_form:   # R144 現實邏輯:巨狼之爪無法結印施法
         opts.append(("cast", "施法"))
     if powers.usable_in(player, state, gamedata, "combat"):
@@ -1044,6 +1050,25 @@ def _choose_combat_action(state: GameState, gamedata: GameData, enemies: list, a
     return {"type": choice}
 
 
+_PREP_SELF_BUFF_KINDS = ("heal", "shield", "restore_fatigue", "apply_status", "bound_weapon")   # R204:束縛兵刃可備戰預凝(原缺 → 野外偵查備戰凝不了,地城預施可以)
+
+
+def _prep_buff_spells(player, gamedata: GameData, cast_done) -> list:
+    """備戰「增益」可選法術:自身目標、屬 `_PREP_SELF_BUFF_KINDS`、本場尚未施放、付得起;握法衝突的束縛兵刃不列(備戰時換不了裝)。"""
+    return [s for s in player.spells
+            if gamedata.spells[s]["target"] == "self"
+            and gamedata.spells[s]["effect"]["kind"] in _PREP_SELF_BUFF_KINDS
+            and s not in cast_done and magic.can_cast(player, gamedata, s)
+            and not magic.bound_conflict(player, gamedata, s)]
+
+
+def _combat_castable(player, gamedata: GameData) -> list:
+    """戰鬥「施法」選單可選法術:付得起、非靈視 / 靈識(R121)、非握法衝突的束縛兵刃(R204:戰中卸不了盾,選了只會白耗回合)。"""
+    return [s for s in player.spells if magic.can_cast(player, gamedata, s)
+            and gamedata.spells[s]["effect"]["kind"] != "scry"
+            and not magic.bound_conflict(player, gamedata, s)]
+
+
 def _prep_phase(state: GameState, gamedata: GameData, enemies, battle: dict, budget: int,
                 hurried: bool = False) -> None:
     """開戰前備戰(偵查掙得):花預算施增益/召喚(鎖高 scout)/喝藥/塗毒。
@@ -1052,7 +1077,6 @@ def _prep_phase(state: GameState, gamedata: GameData, enemies, battle: dict, bud
     免去首回合施法),皆不持久、戰後隨 run_battle 出口 clear,無存檔影響、不送永久強度。
     同一法術每場備戰不可重施(避免零成本疊滿同一護盾)。"""
     player = state.player
-    SELF_BUFF = ("heal", "shield", "restore_fatigue", "apply_status")
     ui.rule("備戰")
     if hurried:   # R187 臨陣預判→臨危備戰:潛近失敗/遭伏擊 → 倉促備戰(訊息中性:兩種原因共用,不與前文「搶得先機」矛盾)
         ui.message(f"局勢雖不如預期,你卻早已預判敵人的動向 —— 倉促備戰,可進行 {budget} 個準備。", style="bold yellow")
@@ -1060,10 +1084,7 @@ def _prep_phase(state: GameState, gamedata: GameData, enemies, battle: dict, bud
         ui.message(f"你搶得先機、從容布置 —— 可進行 {budget} 個準備。", style="bold green")
     cast_done: set[str] = set()
     while budget > 0:
-        buffs = [s for s in player.spells
-                 if gamedata.spells[s]["target"] == "self"
-                 and gamedata.spells[s]["effect"]["kind"] in SELF_BUFF
-                 and s not in cast_done and magic.can_cast(player, gamedata, s)]
+        buffs = _prep_buff_spells(player, gamedata, cast_done)
         summons = [s for s in player.spells
                    if gamedata.spells[s]["effect"]["kind"] == "summon"
                    and s not in cast_done and magic.can_cast(player, gamedata, s)] \
@@ -4862,7 +4883,7 @@ def action_cast_self(state: GameState, gamedata: GameData, battle: dict | None =
     if not usable:
         ui.message("你沒有可施放的法術。", style="grey70")
         return
-    opts = [(s, f"{gamedata.spells[s]['name']}（{magic.effective_cost(char, gamedata, s)} 法力{_spell_token_suffix(char, gamedata, s)}{_summon_slot_suffix(char, gamedata, s, battle['allies'] if battle else [])})"
+    opts = [(s, f"{gamedata.spells[s]['name']}（{magic.effective_cost(char, gamedata, s)} 法力{_spell_token_suffix(char, gamedata, s)}{_summon_slot_suffix(char, gamedata, s, battle['allies'] if battle else [])}{_bound_grip_suffix(char, gamedata, s)})"
              f" · {_spell_effect_text(char, gamedata, s, battle['allies'] if battle else [])}") for s in usable]
     sid = ui.menu(f"施放哪道法術?(法力 {int(char.magicka)}/{char.max_magicka})", opts, allow_back=True)
     if sid is None:

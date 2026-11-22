@@ -1675,7 +1675,7 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
                     # 🔴 R137 審查修:反擊=物理傷,**吃攻擊者物抗**(resist_multiplier·pen-免疫車道)——
                     # 否則直接扣血繞過 R127/R133 物理牆(實測 720 達貢 2%→12% 全由此洩;套抗後回包絡)。
                     cdmg = _player_counter_damage(defender, gamedata, rng) * rp["counter"]
-                    cdmg *= formulas.resist_multiplier(magic.entity_resist(attacker, gamedata), "physical")
+                    cdmg *= formulas.resist_multiplier(magic.entity_resist(attacker, gamedata), _counter_resist_kind(defender))
                     _set_hp(attacker, _get_hp(attacker) - int(round(cdmg)))
         # 里程碑「懾心術/懾意/懾魂」:玩家武器命中施加懼意(illusion 控場)→ 集中 helper(R44:solo 機率減免)
         if _is_player(attacker) and is_alive(defender):
@@ -1752,7 +1752,7 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
                 # R137 審查修:閃身反打同為物理反擊 → 吃攻擊者物抗(同盾反擊·守 R127/R133 pen-免疫牆;
                 # 物抗 0 之敵 ×1.0 行為不變)
                 _cd = _player_counter_damage(defender, gamedata, rng) * oe["counter_frac"]
-                _cd *= formulas.resist_multiplier(magic.entity_resist(attacker, gamedata), "physical")
+                _cd *= formulas.resist_multiplier(magic.entity_resist(attacker, gamedata), _counter_resist_kind(defender))
                 _set_hp(attacker, _get_hp(attacker) - int(round(_cd)))
                 if oe.get("counter_stagger"):
                     # R181:turns:2 → 敵人階段對怪物施加的踉蹌須撐過回合末 tick,才在該怪「下一次出手」時生效
@@ -1786,6 +1786,20 @@ def player_attack_cost(player: Character, gamedata: GameData | None = None) -> N
     player.fatigue = max(0, player.fatigue - attack_fatigue_cost(player, gamedata))
 
 
+def _bound_effect(player):
+    """玩家身上作用中的束縛兵刃效果 dict(無 / 獸形 / 非玩家 → None)。"""
+    if not _is_player(player) or getattr(player, "beast_form", False):
+        return None
+    return next((e for e in player.active_effects if e.get("kind") == "bound_weapon" and e.get("turns", 0) > 0), None)
+
+
+def _counter_resist_kind(player) -> str:
+    """反擊(盾牌完美格擋 / 輕甲閃身反打)傷害的抗性類別:持束縛兵刃時與一般揮擊同屬元素(預設 magic,只吃魔抗單層、無視物抗),
+    否則物理(R137:吃攻擊者物抗,守 R127/R133 pen-免疫物理牆)。R204:原本一律當物理 → 束縛反擊被物抗白白吃掉。"""
+    bw = _bound_effect(player)
+    return (bw.get("element") or "magic") if bw is not None else "physical"
+
+
 def attack_fatigue_cost(player: Character, gamedata: GameData | None = None) -> float:
     """玩家一擊的體力耗量(純計算,不改狀態;player_attack_cost 與「付得起額外耗體」的閘共用)。"""
     speed = formulas.WEAPON_SPEED_DEFAULT
@@ -1796,13 +1810,15 @@ def attack_fatigue_cost(player: Character, gamedata: GameData | None = None) -> 
         gsd = gamedata.item_or_none(gs) if gs else None
         if gsd and gsd.get("great_shield"):
             speed = gsd.get("speed", 0.85)   # R141 現實邏輯:盾擊耗體以重盾自身(慢重)計,非休眠中的手持武器
+        if _bound_effect(player) is not None:   # R204(同 R141):束縛兵刃完全取代裝備武器 → 耗體以它自身的速度計(法術 effect `speed`,無則預設),
+            speed = _bound_effect(player).get("speed") or formulas.WEAPON_SPEED_DEFAULT   # 不再讀休眠中的裝備武器(原:休眠匕首 3.5 / 休眠魔族戰斧 8.2)
     cost = (formulas.ATTACK_FATIGUE_COST
             * formulas.fatigue_cost_factor(player.skill("athletics"))
             * formulas.weapon_attack_fatigue_factor(speed))
     if gamedata is not None:                       # 里程碑「壁壘」同源代價:揮擊更耗體
         cost *= mastery.attack_fatigue_factor(player, gamedata)
         cost *= (1 - mastery.fatigue_cost_bonus(player, gamedata))   # 「不竭之軀」:戰鬥省體
-        wsid = gamedata.item(wid).get("skill")     # 獸形用獸爪技能(hand_to_hand),非裝備武器
+        wsid = None if _bound_effect(player) is not None else gamedata.item(wid).get("skill")   # 獸形用獸爪技能(hand_to_hand),非裝備武器;R204 束縛兵刃不吃休眠武器的里程碑耗體(weapon_mod(None) 回空)
         cost += mastery.weapon_mod(player, gamedata, wsid).get("fatigue", 0)   # 「穿甲箭」draw_fatigue 代價
     return cost
 

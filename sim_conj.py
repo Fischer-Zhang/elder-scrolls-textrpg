@@ -12,6 +12,7 @@ print-only,不自動擋;接進 check.sh:`--sim`,或 git diff 動到 formulas / c
   ② 名額規則探針:法力管夠連施 10 道召喚,場上非亡者召喚物不得超過 SUMMON_FIELD_CAP。⚠ 失效即警示。
   ③ conjuration 50 / 75 / 100 各選項 vs 全不選(S 激進、N base;古龍 / 烏瑪利):Δ勝率 pp。
      瞬發契印(75-a)以 `player_phase` 忠實建模:召喚系施法免耗回合 + 召喚物陣亡回補(`combat.quick_seal_*` 與 main 共用)。
+  ⑤ 束縛兵刃(R204):握法規則探針(單手盾下巨劍 / 戰斧不可凝、重盾下任何束縛皆不可)+ 束縛騎士(雙手 / 單手版)打達貢 ⚠ > 8%。
   ④ 群戰(R203c / R203d 的主場;單場 BOSS 戰沒有「第一具屍體」):S 激進 / S 保守 / N base × 8 種敵群(含同類會掉到 100% 以下的難組合);
      `fight_pack` 鏡像 main 回合結構,就地起屍走 `necromancy.auto_raise`。
      ⚠ 守衛口徑(R203 評估後改版,使用者 2026-11-22 拍板):裝上選項後的召喚師勝率 > 同敵群「最強同類」(PEERS:戰士 1H/2H、弓手、刺客、盾反;
@@ -365,10 +366,38 @@ def pack():
             print(f"   {label:7}| " + " | ".join(cells), flush=True)
 
 
+# ── ⑤ 束縛兵刃(R204):握法規則探針 + 束縛騎士打達貢牆 ────────────────────────────────────────────
+BOUND_WALL_FLAG_PCT = 8.0     # 束縛騎士(獸人底盤)打達貢 > 8% = 牆破了(R204 前:重盾 + 束縛巨劍 + 姿態 30~32%,同底盤他形 0%)
+
+
+def bound_guard():
+    print("\n== ⑤ 束縛兵刃:握法規則探針 + 束縛騎士打達貢牆 ==", flush=True)
+    c = sb.BUILDS["bound_knight_1h"]()                       # 持單手盾
+    c.spells = list(c.spells) + ["bound_greatsword", "bound_axe", "bound_mace"]
+    shield_ok = {sid: magic.bound_conflict(c, gd, sid) is None for sid in ("bound_sword", "bound_mace", "bound_greatsword", "bound_axe")}
+    if not (shield_ok["bound_sword"] and shield_ok["bound_mace"] and not shield_ok["bound_greatsword"] and not shield_ok["bound_axe"]):
+        flag(f"握法規則失效:持單手盾時 單手形 / 雙手形 可凝 = {shield_ok}(應為 劍·釘錘 可、巨劍·戰斧 不可)")
+    g = sb.BUILDS["bound_knight"]()
+    inventory.add_item(g, "daedric_great_shield", 1)
+    inventory.equip_armor(g, gd, "daedric_great_shield")
+    g.spells = list(g.spells) + ["bound_sword", "bound_mace", "bound_axe"]
+    great_ok = [sid for sid in ("bound_sword", "bound_mace", "bound_greatsword", "bound_axe") if magic.bound_conflict(g, gd, sid) is None]
+    if great_ok:
+        flag(f"握法規則失效:持雙手重盾時仍凝得出束縛兵刃 {great_ok}(重盾 + 束縛巨劍 + 姿態曾打穿達貢牆)")
+    print(f"   握法探針:單手盾下可凝 {[k for k, v in shield_ok.items() if v]};雙手重盾下可凝 {great_ok or '無'}", flush=True)
+    n_eff = max(40, N * 4 // 5)
+    for nm in ("bound_knight", "bound_knight_1h"):
+        w = sum(sb.fight(nm, WALL_BOSS, sd) == "win" for sd in range(n_eff)) * 100.0 / n_eff
+        print(f"   {nm:16} 打達貢 {w:5.1f}%(n={n_eff})", flush=True)
+        if w > BOUND_WALL_FLAG_PCT:
+            flag(f"{nm} 打達貢勝率 {w:.0f}% > {BOUND_WALL_FLAG_PCT:.0f}% —— 牆破了:檢查束縛兵刃握法規則 / 反擊抗性分類")
+
+
 if __name__ == "__main__":
     wall()
     probe()
     conj_options()
     pack()
+    bound_guard()
     print("\n⚠ 已知保真度邊界:政策是「合理」非「完美」;單場 + 預召喚不等於整趟地城(token 淨額、帶進 BOSS 格的軍團規模需 sim_dungeon 整趟模式)。", flush=True)
     print("✓ sim_conj 無警示" if not flags else f"⚠ sim_conj 共 {len(flags)} 項守衛警示(見上;print-only,務必人眼覆核)", flush=True)

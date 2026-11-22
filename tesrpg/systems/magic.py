@@ -267,6 +267,24 @@ def _support_cast(caster, spell_id, dests, gamedata, power=1.0, shield_turns_bon
             "message": f"{caster.name}施展「{sp['name']}」 —— {'、'.join(names)}{_ally_verb(sp['effect']['kind'])}。"}
 
 
+def bound_conflict(char, gamedata: GameData, spell_id: str) -> str | None:
+    """R204 束縛兵刃握法衝突的原因(單一出處:`cast` 與各施法選單共用;無衝突 / 非束縛兵刃法術 → None)。
+    使用者 2026-11-22 拍板「巨劍 / 斧為雙手形,不能配盾」:雙手束縛兵刃(spell effect `two_handed`)與任何盾互斥;
+    雙手重盾占住雙手 → 任何束縛兵刃都凝不出來(原本束縛優先於重盾,重盾 + 束縛巨劍 + 姿態打穿達貢牆:達貢 32%、同底盤他形 0%)。"""
+    eff = gamedata.spells.get(spell_id, {}).get("effect", {})
+    if eff.get("kind") != "bound_weapon":
+        return None
+    shield = char.equipped.get("shield")
+    if not shield:
+        return None
+    from tesrpg.systems import inventory
+    if inventory.is_great_shield(gamedata, shield):
+        return "雙手重盾占住了雙手,凝不出束縛兵刃 —— 先卸下重盾。"
+    if eff.get("two_handed"):
+        return f"「{gamedata.spells[spell_id]['name']}」須雙手持握,無法與盾同持 —— 先卸下盾牌。"
+    return None
+
+
 def reanimate_candidate(corpses, gamedata: GameData):
     """亡者復生可喚起的第一具敵屍(取敵群排列順序的第一具,非嚴格死亡先後);無 → None。
     排除:仍存活者、bestiary 無此模板、solo(首領級)、已復生過、BOSS 召喚爪牙(R134:法力構造無屍可掠,封 reanimate→token
@@ -523,13 +541,19 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
         # 存「基礎傷害」不乘 power:傷害在 combat._weapon_profile→attack_damage 隨咒術技能/力量縮放一次
         # (若此處再乘 power 會技能雙重縮放)。重施去重 → 不可疊成更強的刃。
         mag = eff["magnitude"]
+        why = bound_conflict(char, gamedata, spell_id)   # R204 握法:雙手形 + 盾 / 重盾 + 任何束縛 → 凝不出(退魔退體,不耗任何資源)
+        if why:
+            char.magicka += cost
+            char.fatigue = fatigue_before
+            return _fail(why)
         char.active_effects[:] = [e for e in char.active_effects if e.get("kind") != "bound_weapon"]
         # R106 束縛兵刃 archetype 差異化:存 archetype → combat 據此給原型身份(釘錘擊暈 stagger 等);
         # 仍走咒術技能傷害 + 元素(無視物理護甲)。無 archetype(舊 bound_sword)→ 行為不變。
         # R106 束縛精通:多駐留 turn_bonus 回合(無里程碑 → +0 不變)。
         bturns = eff["turns"] + mastery.bound_mastery_mod(char, gamedata).get("turn_bonus", 0)
         char.active_effects.append({"kind": "bound_weapon", "element": eff.get("element", "magic"),
-                                    "magnitude": mag, "turns": bturns, "archetype": eff.get("archetype")})
+                                    "magnitude": mag, "turns": bturns, "archetype": eff.get("archetype"),
+                                    "two_handed": bool(eff.get("two_handed")), "speed": eff.get("speed")})   # R204:握法與自身速度(耗體)
         msg = f"{sp['name']} —— 你手中凝出一柄束縛兵刃(基礎傷害 {mag},隨咒術精進,{bturns} 回合)。"
 
     elif kind in ("charm", "invisibility", "feather", "detect_life", "telekinesis"):   # R104 實用/幻術 + R121 念力:限時自我增益(戰鬥外社交/潛行/探索/地城)
