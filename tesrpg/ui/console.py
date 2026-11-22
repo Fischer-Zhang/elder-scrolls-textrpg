@@ -402,6 +402,12 @@ def _player_state_tags(player, gamedata, enemies=()) -> list:
         out.append({"s": "二次呼吸 " + ("可用" if status == "available" else "已用"),
                     "good": True if status == "available" else None,
                     "tip": f"運動 100 里程碑:每場戰鬥一次,體力降到 {below}% 以下時,於你的回合開頭免耗回合回一次調息量。"})
+    qs = _combat.quick_seal_status(player, gamedata) if gamedata is not None else None   # R203c 瞬發契印(與選單閘共用本場已用記帳)
+    if qs:
+        out.append({"s": "瞬發契印 " + ("可用" if qs == "available" else "已用"),
+                    "good": True if qs == "available" else None,
+                    "tip": "召喚 75 里程碑:每場戰鬥第一道召喚系法術(召喚 / 復生 / 束縛)不耗你的回合,施放後仍可行動;"
+                           "你的非亡者召喚物被擊殺後,契印重新凝聚(最多存一次)。"})
     return out
 
 
@@ -2515,7 +2521,8 @@ _BUFF_KINDS = {"shield", "regen", "ward", "consecration", "empower", "berserk_bu
                "battle_standard", "rally_banner", "shield_wall", "ride_evasion", "taunt", "guard_stance",
                "afterimage", "momentum"}
 # 純內部記帳/冷卻標記 —— 不顯示於戰鬥卡片(避免 deathmark_cd/support_cd/atk_cooldown 等洩漏)
-_HIDDEN_TAG_KINDS = {"support_cd", "deathmark_cd", "atk_cooldown", "triage_ready", "prep_used", "second_breath_spent"}   # R194 一氣呵成本場已用記帳
+_HIDDEN_TAG_KINDS = {"support_cd", "deathmark_cd", "atk_cooldown", "triage_ready", "prep_used", "second_breath_spent",   # R194 一氣呵成本場已用記帳
+                     "quick_seal_spent"}   # R203c 瞬發契印本場已用記帳(狀態由 _player_state_tags 的「瞬發契印 可用/已用」呈現)
 _STANCE_MAINTAINED = 99   # 常駐光環維持中的 turns 哨兵 → 不顯示回合數
 
 

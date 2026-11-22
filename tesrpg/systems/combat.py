@@ -461,6 +461,54 @@ def tick_summons(allies: list) -> tuple[list, list]:
     return keep, gone
 
 
+# ---- R203c 召喚 75「瞬發契印」(conjuration_75 · opt_id conj_efficiency;使用者 2026-11-22 拍板):每場第一道召喚系法術免耗回合 ----
+# 召喚系 = conjuration 學派(召喚 / 復生 / 束縛兵器 / 束縛護甲;亡者仍照付靈魂 token)。契印每場一次;你的**非亡者**召喚物被擊殺後
+# 重新凝聚(最多存 1 次)。🔴 免費但結構上有限:每場至多 1 + 非亡者召喚物陣亡數 次免費施法(召喚物受同場名額 3 → 名額要先被打掉才換得到
+# 下一次);施法失敗(名額已滿 / 無屍體…)不耗契印也不耗回合;零 rng;未選 → getter 回 False → 既有構築逐位元組不變。
+# 戰鬥內記帳 = active_effect quick_seal_spent(PERSISTENT_TURNS·hidden tag):入戰 / 離戰整包清、preserve_buffs 剝除(同 second_breath_spent)。
+QUICK_SEAL_SPENT = "quick_seal_spent"
+# 每場戰鬥重新開始時要剝掉的戰鬥內累積 / 記帳效果(main.run_battle 入戰與備戰後共用單一出處;新增同類記帳效果請加在這裡)
+BATTLE_LOCAL_KINDS = ("cascade", "afterimage", "momentum", "second_breath_spent", QUICK_SEAL_SPENT)
+
+
+def _quick_seal_used(player) -> bool:
+    return any(e.get("kind") == QUICK_SEAL_SPENT for e in player.active_effects)
+
+
+def quick_seal_ready(player, gamedata: GameData, spell_id: str) -> bool:
+    """這道法術能否以契印瞬發(main 的選單階段與 sim 共用同一個閘):已選 + 召喚系(conjuration 學派)+ 本場契印未用。"""
+    return (_is_player(player) and mastery.quick_seal(player, gamedata)
+            and gamedata.spells.get(spell_id, {}).get("school") == "conjuration"
+            and not _quick_seal_used(player))
+
+
+def quick_seal_spend(player) -> None:
+    """記帳契印已用(呼叫端須在施法成功後才呼叫;失敗的施法不耗契印)。"""
+    if not _quick_seal_used(player):
+        player.active_effects.append({"kind": QUICK_SEAL_SPENT, "turns": PERSISTENT_TURNS})
+
+
+def quick_seal_recharge(player, gamedata: GameData, gone: list) -> bool:
+    """契印重新凝聚:`tick_summons` 的離場者中有「陣亡的非亡者召喚物」(逾時消散不算;亡者 / 同伴不算;契僕被擊殺算)。
+    回傳是否真的回補(原本已用才算;最多存 1 次 → 結構上不會累積)。未選 / 非玩家 → False。"""
+    if not (_is_player(player) and mastery.quick_seal(player, gamedata)):
+        return False
+    if not any(getattr(a, "summon_turns", None) is not None and not is_alive(a)
+               and not getattr(a, "_undead", False) for a in gone):
+        return False
+    n = len(player.active_effects)
+    player.active_effects[:] = [e for e in player.active_effects if e.get("kind") != QUICK_SEAL_SPENT]
+    return len(player.active_effects) != n
+
+
+def quick_seal_status(player, gamedata: GameData) -> str | None:
+    """戰鬥卡片 / 選單標籤用(純讀):未選 / 非玩家 → None;本場契印已用 → "spent";否則 "available"。
+    與 quick_seal_ready 共用同一個本場已用記帳 → 標籤永遠與實際行為一致(預覽 = 實擲)。"""
+    if not (_is_player(player) and mastery.quick_seal(player, gamedata)):
+        return None
+    return "spent" if _quick_seal_used(player) else "available"
+
+
 def _apply_dot_capped(target, eff) -> None:
     """對目標施加狀態效果;**dot 按元素設疊加上限**(防多次被擊時同元素 DoT 無限疊加→暴斃)。
     達 `formulas.DOT_STACK_CAP` 層時:新效果較強(magnitude×turns)→ 替換最弱同元素 dot,否則丟棄。

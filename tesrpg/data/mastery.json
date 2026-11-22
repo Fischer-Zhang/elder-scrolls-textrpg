@@ -899,11 +899,12 @@
   "options": [
    {
     "opt_id": "conj_efficiency",
-    "name": "召喚精算",
+    "name": "瞬發契印",
     "kind": "spell_mod",
     "school": "conjuration",
     "cost_factor": 0.85,
-    "desc": "召喚法理爐火純青:召喚術施法省魔 15%(與其他省魔相乘)。"
+    "quick_seal": 1,
+    "desc": "每場戰鬥第一道召喚系法術(召喚/復生/束縛)瞬發,不耗你的回合 —— 施放後仍可行動;你的非亡者召喚物被擊殺後,契印重新凝聚(最多存一次)。兼帶:召喚術施法省魔 15%(與其他省魔相乘)。"
    },
    {
     "opt_id": "soul_harvest",

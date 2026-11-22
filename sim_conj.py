@@ -11,6 +11,7 @@ print-only,不自動擋;接進 check.sh:`--sim`,或 git diff 動到 formulas / c
      ⚠ 守衛警示:召喚師 / base 死靈師 勝率 > 5%(牆破了)。極致死靈師只印(使用者拍板「可破牆但難以推疊到極致」)。
   ② 名額規則探針:法力管夠連施 10 道召喚,場上非亡者召喚物不得超過 SUMMON_FIELD_CAP。⚠ 失效即警示。
   ③ conjuration 50 / 75 / 100 各選項 vs 全不選(S 激進、N base;古龍 / 烏瑪利):Δ勝率 pp。
+     瞬發契印(75-a)以 `player_phase` 忠實建模:召喚系施法免耗回合 + 召喚物陣亡回補(`combat.quick_seal_*` 與 main 共用)。
      ⚠ 守衛警示:選項比不選更差 > 8pp(輸給不選)或 > +25pp(強度過頭)。n 小時 ≤ 5pp 視為雜訊。
 ⚠ 已知保真度邊界:政策是「合理」非「完美」;單場 + 預召喚不等於整趟地城(token 淨額 / 帶進 BOSS 格的軍團規模需 sim_dungeon 整趟模式,後續補)。
 """
@@ -72,6 +73,16 @@ def act_necro(c, boss, rng, battle, st):
 
 
 # ── 戰鬥(鏡像 main.py:BOSS 爪牙 + 盟友隨機選敵 + 地城預召喚;回合結算走 combat.tick_summons)───────────────
+def player_phase(c, boss, rng, battle, st, act):
+    """玩家階段(鏡像 main.run_battle 選單階段):政策回 "summon" = 這回合施了召喚系(conjuration 學派)法術;
+    R203c 瞬發契印在手(`combat.quick_seal_ready`,與 main 同一個閘)→ 該施法免耗回合,同回合再行動一次。
+    未選契印者 quick_seal_ready 恆 False → 與改前逐位元組相同。"""
+    r = act(c, boss, rng, battle, st)
+    if r == "summon" and combat.quick_seal_ready(c, gd, "conjure_dremora"):
+        combat.quick_seal_spend(c)
+        act(c, boss, rng, battle, st)
+
+
 def fight(maker, act, boss_id, seed, presummon=0, max_rounds=80):
     c = maker()
     boss = combat.spawn_creature(gd, boss_id, RNG(seed * 9 + 1))
@@ -92,7 +103,7 @@ def fight(maker, act, boss_id, seed, presummon=0, max_rounds=80):
             return "dead", rounds, boss.health
         rounds += 1
         if not magic.is_incapacitated(c):
-            act(c, boss, rng, battle, st)
+            player_phase(c, boss, rng, battle, st, act)
         if not combat.is_alive(boss):
             return "win", rounds, 0
         alive_e = [e for e in enemies if combat.is_alive(e)]
@@ -121,6 +132,7 @@ def fight(maker, act, boss_id, seed, presummon=0, max_rounds=80):
             tgt = combat.pick_player_side_target(c, battle["allies"], rng)
             combat.resolve_attack(e, tgt, gd, rng, attack=combat.choose_enemy_attack(e, rng, tgt))
         battle["allies"], _gone = combat.tick_summons(battle["allies"])
+        combat.quick_seal_recharge(c, gd, _gone)            # R203c:非亡者召喚物陣亡 → 契印重新凝聚(同 main 回合末)
         sb._regen(c)
         magic.tick_effects(c, gd)
         for a in battle["allies"]:

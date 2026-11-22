@@ -626,6 +626,12 @@ def _summon_slot_suffix(char, gamedata: GameData, spell_id: str, allies) -> str:
             + (" · 成為契僕(永駐)" if out["anchor"] else ""))
 
 
+def _quick_seal_suffix(char, gamedata: GameData, spell_id: str) -> str:
+    """R203c 戰鬥施法選單:契印在手時,召喚系法術標「瞬發(不耗回合)」。與實際施放共用 `combat.quick_seal_ready`(預覽 = 實擲);
+    契印已用 / 未選 / 非召喚系法術回空字串(已用狀態由戰鬥卡片標籤「瞬發契印 已用」呈現)。"""
+    return " · 瞬發(不耗回合)" if combat.quick_seal_ready(char, gamedata, spell_id) else ""
+
+
 def _repeat_option(player, gamedata: GameData, enemies: list, allies: list, mem) -> str | None:
     """R113「↻ 再次」選項標籤:上次動作(attack/cast)當下仍可行才提供;否則 None。
     目標死亡不擋(選了會重開目標選單;僅剩一敵時自動選之,標籤如實顯示其名);
@@ -945,10 +951,12 @@ def _choose_combat_action(state: GameState, gamedata: GameData, enemies: list, a
         if ui._web is not None:    # web:blocks 每幀清空 → 選法術時重顯戰場,免「敵狀態丟失」
             ui.combat_status_group(player, allies, enemies, gamedata)
         spell_opts = [(s, f"{gamedata.spells[s]['name']}"
-                       f"（{magic.effective_cost(player, gamedata, s)} 法力{_spell_token_suffix(player, gamedata, s)}{_summon_slot_suffix(player, gamedata, s, allies)}) · "
+                       f"（{magic.effective_cost(player, gamedata, s)} 法力{_spell_token_suffix(player, gamedata, s)}{_summon_slot_suffix(player, gamedata, s, allies)}{_quick_seal_suffix(player, gamedata, s)}) · "
                        f"{ui.spell_effect_summary(gamedata, s)}")
                       for s in castable]
-        sid = ui.menu("施放哪道法術?", spell_opts, allow_back=True)
+        _qs = combat.quick_seal_status(player, gamedata)   # R203c 標題帶契印狀態(可用 / 已用;未選不顯示)
+        sid = ui.menu("施放哪道法術?" + {"available": "(瞬發契印:可用)", "spent": "(瞬發契印:已用)"}.get(_qs, ""),
+                      spell_opts, allow_back=True)
         if sid is None:
             return _back()   # 施法→返回重入(保 charm_used 等場內狀態,「每場一次」不重置)
         # R123 聖騎士:治療能量可灼燒不死 —— 場上有不死敵時,治療法術可選「治己」或「灼燒不死」
@@ -1187,7 +1195,7 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
     # preserve_buffs(地城預施帶入):不全清,只剝 cascade/afterimage(戰鬥內累積層)+ 已過期效果。
     if preserve_buffs:
         player.active_effects[:] = [e for e in player.active_effects
-                                    if e.get("kind") not in ("cascade", "afterimage", "momentum", "second_breath_spent") and e.get("turns", 1) > 0]
+                                    if e.get("kind") not in combat.BATTLE_LOCAL_KINDS and e.get("turns", 1) > 0]
     else:
         player.active_effects.clear()
 
@@ -1196,7 +1204,7 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
     if prep_budget > 0:
         _prep_phase(state, gamedata, enemies, battle, prep_budget, hurried=hurried_prep)
         # 奧術連鎖不由「備戰施法」預堆(備戰只省開場一動、不送額外威力)→ 清連鎖層,保留 prep 的增益/召喚
-        player.active_effects[:] = [e for e in player.active_effects if e.get("kind") not in ("cascade", "afterimage", "momentum", "second_breath_spent")]
+        player.active_effects[:] = [e for e in player.active_effects if e.get("kind") not in combat.BATTLE_LOCAL_KINDS]
 
     combat.momentum_reset(player, gamedata)   # R187 氣勢:開戰重置(未啟用 no-op);HUD 一開場即顯示
 
@@ -1206,6 +1214,16 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
     def note_trap(e):
         if not combat.is_alive(e) and magic.has_soul_trap(e):
             trapped_kills.add(id(e))
+
+    def _cast_action(act):
+        """戰鬥中施放一道法術(玩家階段的一般施法與 R203c 瞬發契印的免費施法共用同一份施放與戰報)。
+        亡者復生需見「完整」敵群(含已死屍體)→ corpses=enemies;存活清單仍走 enemies=alive_e()。"""
+        r = magic.cast(player, gamedata, act["spell_id"], state.rng,
+                       target=act.get("target"), battle=battle, enemies=alive_e(),
+                       corpses=enemies, mounted=mounted, state=state)
+        _cmsg(r["message"], style="cyan")
+        ui.show_events(r["skill_events"], gamedata, combat=True)   # R167 #6:戰鬥中施法技能升只進本回合
+        return r
 
     def _infect_player(ev):
         """疾病傳染:依種類分派到吸血鬼 / 狼人狀態機 / 疾病系統。敵方階段的攻擊與 R191 搏命連斬的還擊共用同一條分派
@@ -1275,20 +1293,33 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
             _sw = combat.second_breath_use(player, gamedata)
             if _sw:
                 _cmsg(f"一口氣湧上 —— 你喘過氣來,回復 {_sw} 點體力(免耗回合)!", style="green")
-            action = _choose_combat_action(state, gamedata, enemies, battle["allies"], vanishes_done,
-                                           mounted=mounted, first_round=(round_no == 1), charm_used=charm_used,
-                                           mem=cmem)
-            # R113 戰鬥記憶:attack/cast 可「↻ 再次」;任何帶敵目標的動作都更新目標記憶
-            if action["type"] == "attack":
-                cmem["last"] = {"type": "attack"}
-            elif action["type"] == "cast":
-                cmem["last"] = {"type": "cast", "spell_id": action["spell_id"]}
-            _t = action.get("target")
-            if _t is not None:
-                if _t in enemies:
-                    cmem["target"] = _t
-                elif _t in battle["allies"]:
-                    cmem["ally"] = _t
+            _qs_fails = 0   # R203c 本回合免費施法連續失敗次數(安全閥,見下)
+            while True:
+                action = _choose_combat_action(state, gamedata, enemies, battle["allies"], vanishes_done,
+                                               mounted=mounted, first_round=(round_no == 1), charm_used=charm_used,
+                                               mem=cmem)
+                # R113 戰鬥記憶:attack/cast 可「↻ 再次」;任何帶敵目標的動作都更新目標記憶
+                if action["type"] == "attack":
+                    cmem["last"] = {"type": "attack"}
+                elif action["type"] == "cast":
+                    cmem["last"] = {"type": "cast", "spell_id": action["spell_id"]}
+                _t = action.get("target")
+                if _t is not None:
+                    if _t in enemies:
+                        cmem["target"] = _t
+                    elif _t in battle["allies"]:
+                        cmem["ally"] = _t
+                # R203c 瞬發契印(召喚 75):契印在手 + 召喚系法術 → 當場施放、不耗回合,然後重新提示本回合的真正行動。
+                # 失敗的施法(名額已滿 / 無屍體 / 靈魂不足…)不耗契印也不耗回合;安全閥:同一回合連續 3 次失敗後,
+                # 之後的施法照一般施法結算(耗回合)—— 防自動作答驅動器對必敗施法無限空轉。未選 → 此段永不進入(零 rng、逐位元組同舊)。
+                if not (action["type"] == "cast" and _qs_fails < QUICK_SEAL_RETRY_CAP
+                        and combat.quick_seal_ready(player, gamedata, action["spell_id"])):
+                    break
+                if _cast_action(action)["ok"]:
+                    combat.quick_seal_spend(player)
+                    _cmsg("契印一閃 —— 這道召喚術瞬發,不耗你的回合,你仍可行動!", style="bold cyan")
+                else:
+                    _qs_fails += 1
 
         # ---- 玩家階段 ----
         if action["type"] == "flee":
@@ -1408,11 +1439,7 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
                 ui.combat_event(combat.resolve_attack(player, tgt, gamedata, state.rng,
                                                       sneak_attack=sneak), gamedata)
         elif action["type"] == "cast":
-            res = magic.cast(player, gamedata, action["spell_id"], state.rng,
-                             target=action.get("target"), battle=battle, enemies=alive_e(),
-                             corpses=enemies, mounted=mounted, state=state)   # 亡者復生需見「完整」敵群(含已死屍體);存活清單仍走 enemies=alive_e()
-            _cmsg(res["message"], style="cyan")
-            ui.show_events(res["skill_events"], gamedata, combat=True)   # R167 #6:戰鬥中施法技能升只進本回合
+            _cast_action(action)
         elif action["type"] == "item":   # R126 戰鬥中用藥(耗一回合;use_item 支援治療/續資源/淨疾/限時強化)
             _cmsg(inventory.use_item(player, gamedata, action["item_id"], state) or "你飲下藥水。", style="green")   # R167 方向1:戰鬥動作走本回合(不污染永久故事日誌)
         elif action["type"] == "rest":   # R147 運動「調息」:耗一回合換回體(不攻擊=唯一成本閘)
@@ -1677,6 +1704,8 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
         _apply_companion_capstone_auras(player, gamedata, roster, battle["allies"])   # 忠誠弧頂點:逐回合刷新盟友光環
         # 召喚物計時、移除陣亡/到期的同伴(R203 combat.tick_summons:與地城每格遞減同一出處)
         battle["allies"], _gone = combat.tick_summons(battle["allies"])
+        if combat.quick_seal_recharge(player, gamedata, _gone):   # R203c 非亡者召喚物陣亡 → 契印重新凝聚(逾時消散不算)
+            _cmsg("召喚物倒下了 —— 契印重新凝聚,下一道召喚系法術又能瞬發。", style="cyan")
         # R134 殺王=爪牙潰散:召主在本回合(敵階段反傷/回合末 DoT 等)死亡 → 存活爪牙即刻潰散
         # (自 enemies 移除 → 不進勝利結算 = 無戰利品/擒魂/擊殺計數;while 條件隨之收束戰鬥)。
         if combat.scatter_orphan_summons(enemies, gamedata):
@@ -3139,6 +3168,7 @@ RALLY_FATIGUE = 12             # 立號令體力代價(純耗體不耗魔;口才
 VAMPIRE_CHARM_FATIGUE = 10     # 吸血鬼「魅惑凝視」體力代價(每場一次;R56)
 VAMPIRE_CHARM_TURNS = 2        # 魅惑凝視:被迷惑之敵恐懼不進攻的回合數
 TRIAGE_ALLY_HP_RATIO = 0.30     # 同伴生命低於此 → 觸發治療師「戰地搶救」武裝
+QUICK_SEAL_RETRY_CAP = 3        # R203c 瞬發契印:同一回合免費施法連續失敗幾次後,改照一般施法結算(安全閥,非規則數值;防自動作答空轉)
 
 
 INN_REST_FEE = 10        # 旅店過夜費(金);扣款與所有選單標籤共用此常數(R200:原本 fee 與兩處標籤各寫一個 10)

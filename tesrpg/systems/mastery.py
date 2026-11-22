@@ -377,6 +377,12 @@ def bound_mastery_mod(char, gamedata: GameData) -> dict:
     return e if e else {}
 
 
+def quick_seal(char, gamedata: GameData) -> bool:
+    """R203c「瞬發契印」(conjuration 75 · opt_id conj_efficiency):每場第一道召喚系法術免耗回合。
+    掛在 conjuration 的 spell_mod option 上(兼帶舊 −15% 省魔 cost_factor);同源聚合:任一已選節點帶 quick_seal 即成立。"""
+    return any(o.get("quick_seal") for o in _chosen_spell_options(char, gamedata, "conjuration"))
+
+
 def soul_harvest_bonus(char, gamedata: GameData) -> int:
     """R106C「亡者收集」(conjuration 75):每擊殺額外 +N 靈魂 token(SUM 聚合,防未來多源遮蔽)。"""
     return int(sum(o.get("per_kill", 0)

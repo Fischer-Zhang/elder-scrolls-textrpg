@@ -171,7 +171,7 @@ def make_summoner():
     c.spells = ["conjure_dremora", "conjure_healer", "conjure_flame_atronach", "conjure_frost_atronach",
                 "conjure_storm_atronach", "fireball", "flames", "close_wounds", "stoneflesh"]
     _equip_set(c, "archmage", pieces=("hood", "robe", "gloves", "slippers"))
-    _choices(c, {"conjuration_100": "lasting_summon"})   # R106C 持久召喚:召喚物多駐留 1 回合
+    _choices(c, {"conjuration_100": "lasting_summon"})   # R203b 永契之僕:最先召出的戰鬥型召喚物成為不逾時的契僕(原 R106C 持久召喚 +1 回合)
     stats.recompute_max_resources(c, gd, restore_full=True)
     return c
 
