@@ -403,6 +403,80 @@ class BrowserRegression(unittest.TestCase):
         wait_text("商店(你有")
         self.assertGreater(state.time.absolute_hours(), t0)
 
+    def test_stale_panel_rows_never_take_over_a_later_menu_but_navigation_rows_stay_r201(self) -> None:
+        """R201(R199 D5 收尾):畫面上殘留(舊幀)的面板列不得接管之後純選單幀的同 key 選項。
+        R199 實測:買貨面板殘留 → 行竊選單用裸物品 id 當 key 相撞 → 選項按鈕連「得手 N%」標籤整個被移除。
+        前端 wireActionableRows 只接管「本幀重畫」的列;go:*(地城方位格 / 地點出口)導航列例外,殘留仍可點。
+        腳本幀(不靠遊戲碼):故意讓第二幀選單用「裸」物品 id(= R199 修前的行竊選單),驗證結構性防線本身。"""
+        inv = {
+            "items": [
+                {"key": "iron_sword", "kind": "weapon", "tier": "common", "label": "鐵劍"},
+                {"key": "healing_potion", "kind": "potion", "tier": "common", "label": "治療藥水 ×2"},
+            ],
+            "gold": 100, "weight": 3.0, "max": 120, "over": False,
+        }
+        # 幀 1:背包面板 + 選物品選單(同幀)→ 列接管選項(設計意圖,行為不變)
+        self.server.emit(
+            blocks=[{"kind": "view", "name": "inventory", "data": inv}],
+            prompt={"type": "menu", "title": "選擇物品(查看/操作)", "allow_back": True,
+                    "options": [{"key": "iron_sword", "label": "鐵劍"}, {"key": "healing_potion", "label": "治療藥水 ×2"}],
+                    "extra_keys": [], "cta_keys": []},
+            hud=_hud(),
+        )
+        self._open(".inv-row >> nth=0")
+        self.assertEqual(self.page.locator(".inv-row.tappable").count(), 2, "同幀面板列應接管選項(設計意圖)")
+        self.assertEqual(self.page.locator("#prompt button", has_text="鐵劍").count(), 0, "被接管的選項按鈕應被移除")
+        self.page.locator(".inv-row", has_text="鐵劍").click()
+        self.assertEqual(self.server.answer(), "iron_sword")
+
+        # 幀 2:純敘事 + 純選單幀(無狀態塊;背包面板仍殘留在畫面上),選項 key 與殘留列相同(裸 id)
+        self.server.emit(
+            blocks=[{"kind": "log", "html": "<span>你壓低身形,摸向貨架…</span>"}],
+            prompt={"type": "menu", "title": "行竊哪件?", "allow_back": True,
+                    "options": [{"key": "iron_sword", "label": "鐵劍 — 得手 52%"},
+                                {"key": "healing_potion", "label": "治療藥水 — 得手 81%"}],
+                    "extra_keys": [], "cta_keys": []},
+            hud=_hud(),
+        )
+        self.page.wait_for_function(
+            "t => document.querySelector('#prompt').innerText.includes(t)", arg="行竊哪件?", timeout=8000)
+        self.assertEqual(self.page.locator(".inv-row").count(), 2, "前提:殘留的舊面板仍在畫面上(否則本測試空轉)")
+        self.assertEqual(self.page.locator(".tappable").count(), 0, "殘留面板列不得接管之後選單的選項")
+        rated = [t for t in self.page.locator("#prompt button").all_inner_texts() if "得手" in t]
+        self.assertEqual(len(rated), 2, f"選單按鈕(含得手 N% 標籤)必須保留:{rated}")
+        self.page.locator("#prompt button", has_text="得手 81%").click()
+        self.assertEqual(self.server.answer(), "healing_potion")                 # 按鈕仍可作答
+
+        # 幀 3:地城格面板 + 選單(同幀)→ 方位格可點,方位按鈕保留(R113:go:* 不移除按鈕)
+        cur = {"icon": "@", "type": "empty", "explored": True, "current": True, "move": None}
+
+        def cell(move):
+            return {"icon": "·", "type": "empty", "explored": True, "current": False, "move": move}
+        grid = {"name": "測試地城", "n": 3, "layer": 1, "layers": 1, "legend": "@ 你",
+                "rows": [[cell(None), cell("go:n"), cell(None)],
+                         [cell("go:w"), cur, cell("go:e")],
+                         [cell(None), cell("go:s"), cell(None)]]}
+        dungeon_prompt = {"type": "menu", "title": "地城探索",
+                          "options": [{"key": "go:n", "label": "往北"}, {"key": "go:e", "label": "往東"},
+                                      {"key": "go:s", "label": "往南"}, {"key": "go:w", "label": "往西"}],
+                          "extra_keys": [], "cta_keys": []}
+        self.server.emit(blocks=[{"kind": "view", "name": "dungeon_grid", "data": grid}], prompt=dungeon_prompt, hud=_hud())
+        self.page.locator(".dgcell.tappable").first.wait_for()
+        self.assertEqual(self.page.locator(".dgcell.tappable").count(), 4)
+        self.assertEqual(self.page.locator("#prompt button", has_text="往北").count(), 1, "方位按鈕應保留")
+        self.page.locator("#prompt button", has_text="往北").click()
+        self.assertEqual(self.server.answer(), "go:n")
+
+        # 幀 4:同一張地城格殘留 + 純選單幀 → 導航列(go:*)跨幀仍可點(地城流程確實會出現這種幀),按鈕仍保留
+        self.server.emit(blocks=[{"kind": "log", "html": "<span>你往北走了一步。</span>"}], prompt=dungeon_prompt, hud=_hud())
+        self.page.wait_for_function(
+            "() => document.querySelectorAll('#log').length > 0 && document.querySelector('#log').innerText.includes('往北走了一步')",
+            timeout=8000)
+        self.assertEqual(self.page.locator(".dgcell.tappable").count(), 4, "go:* 導航列殘留時仍應可點")
+        self.assertEqual(self.page.locator("#prompt button", has_text="往北").count(), 1)
+        self.page.locator(".dgcell.tappable").nth(0).click()
+        self.assertEqual(self.server.answer(), "go:n")
+
     def test_combat_card_fatigue_and_second_breath_tags_with_hover_tips_r197(self) -> None:
         """R197:我方卡片的「體力不足 / 力竭」與「二次呼吸 可用 / 已用」標籤 —— 文字、好壞色階、滑鼠停留說明(title);
         一般狀態標籤(沒有 tip)不帶 title → 舊行為不變。"""

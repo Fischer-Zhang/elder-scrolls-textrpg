@@ -3253,6 +3253,16 @@ R88 讓**盜賊公會**拿到階級解鎖招牌動詞(斯庫瑪走私),但**戰�
 - **驗證**:py_compile ✓;`tests/run_all.py` 全綠(含新增模組);`tests/browser_ui.py` 真 Chromium 桌面回歸全綠(含新增角色卡提示回歸);check.sh 因動到 combat.py 自動跑的 sim(assassin / reckless / monk / dungeon / flee / worldwar)皆無 ⚠;無頭煙霧 ✓;5 個 sim(assassin / dungeon / flee / monk / reckless)對基準 HEAD 在隔離 worktree 逐位元組相同(動了 combat.py:姿態卸力 / 護甲分解重構 + 命中鏈夾限改引用常數,sim 輸出是真證據;但 sim 未必走到重盾姿態,該路徑以單元層格點逐位元組比對補足)。
 - **未動 / 後續**:D4 可見性缺口(監牢刑期、過夜回復量、附魔強度、淬鍊每級威力…)、D5 同類風險掃描(選單 key 與殘留面板 `data-key` 相撞;行竊標籤是否改金色 chip)仍待使用者決定;資料文字另有幾處內嵌數字**尚無一致性守衛**(`codex.json` 重盾係數 0.7 / 0.5 與 +2 體力、銷贓「上限 +45%」、`DESIGN.md` / `progression.py` 的「主修 ×1.5」)→ D3 延伸;換裝對比 / 物品卡的護甲仍是名目尺度(見 ②③)。
 
+### R201 · 選單 key 相撞掃描收尾 + 前端「只接管本幀面板列」結構性防線(R199 D5 落地;零 Python 遊戲碼 / 零存檔欄 / 零戰鬥行為改動)
+- **起因與範圍**:使用者「3、4 先修好,再提 1 的方案」(2026-11-22,承 §6 候選盤點)的第一項 = R199 審計 D5。🔴 R199 審查 major 的成因:前端 `wireActionableRows` 讓畫面上帶 `data-key` 的面板列「接管」key 相同的選單選項(移除選項按鈕、標籤消失);純敘事 / 純選單幀不重畫 `#screen`(`render()` 只在幀內有 view / html / clear 狀態塊時才 `renderScreen`)→ 殘留的舊面板列仍在,行竊選單用裸物品 id 當 key 時,「得手 N%」整個被殘留買貨面板蓋掉(當時只給行竊加 `steal:` 命名空間,其餘「未掃」)。
+- **掃描結果:現況零相撞(除已修的行竊)**:① 動態——新增 `tests/_stale_scan.py`,以真 `WebBackend` 驅動真 `game_loop` 做覆蓋導向隨機走訪(`Screen` 鏡像前端 `#screen` 語意,逐幀記錄「畫面列 key ∩ 選單選項 key」,分 FRESH〔同幀面板 + 同幀選單 = 設計意圖〕/ STALE〔殘留舊幀〕)。掃描當下一次性跑 30 趟 × 600 提示(11 職業 × 10 種族輪替、背包每種類型塞 4 件、金幣 3 萬;未入庫)→ FRESH 見 location / inventory / shop / combat / dungeon_grid;STALE 只有地城方位格 `go:*`(導航列,本就不移除按鈕)。② 靜態——`ui.menu(` 共 134 處(全在 main.py,grep 可重現);帶 data-key 列的面板只有 inventory / shop / board / location / combat / dungeon_grid / origins 七種(核對 index.html 各 renderXxx);`game_loop` 每圈頂端無條件重畫 `location_panel`,殘留面板活不過一個 action 函式;各 action 的迴圈頂端都重發自己的面板(戰鬥 `_choose_enemy_target` 還特意重發 `combat_status_group` 讓敵卡可點)。
+- **修法(結構性,取代逐點加命名空間)**:`index.html` `wireActionableRows(spec, redrawn)`——只接管「本幀才重畫」的面板列(`redrawn` = `stateBlocks.length > 0`;刻意不叫 `fresh`:`render()` 內已有日誌用的 `fresh`,語意不同)。例外 `go:*` 導航列(地點出口 / 地城方位格;地城流程確實會出現「同一張格圖殘留 + 純選單幀」,且 `go:*` 本就不移除按鈕),殘留仍可點。行為變化僅限「殘留列不再接管 / 不再可點」;同幀接管(背包 / 商店 / 戰鬥選目標 / 告示板 / 創角)不變。R199 的 `steal:` 命名空間保留(縱深防禦)。
+- **🔴 鐵律**:① 想讓面板列可點接管選單 → 面板必須與選單**同一幀**送出(重發面板);② 新增「帶 data-key 的面板」必補 `tests/_stale_scan.py` 的 `ROW_FIELDS`(對帳測試把關:ROW_FIELDS ↔ index.html 的 VIEWS / data-key 來源逐一相符,並擋 `setAttribute` / `dataset.key` 動態建構的盲區);③ 導航列一律 `go:` 前綴才享「殘留仍可點」。
+- **守衛**:`tests/test_r201_stale_rows.py`(5 測:`Screen` 鏡像對 FRESH / STALE / 導航列 / 清屏 / extra_keys 的合成幀分類;`next_frame` 分辨遊戲結束與卡住;ROW_FIELDS ↔ index.html 對帳;子進程動態掃描〔8 趟 × 500 提示、固定種子、`PYTHONHASHSEED=0`、`HOME` 隔離〕無殘留非導航相撞 + 非空轉〔FRESH 涵蓋五種面板〕;前端規則原始碼哨兵)+ `tests/browser_ui.py` 真 Chromium 新測(腳本幀:同幀接管不變 → 殘留幀裸 id 同 key 不接管、按鈕與標籤保留 → 地城格同幀可點且按鈕保留 → 殘留 `go:*` 仍可點)。突變驗證:還原前端規則(拿掉 redrawn 判斷)→ Chromium 紅(`2 != 0`)+ 哨兵紅;去掉 `go:*` 例外 → Chromium 紅(`0 != 4`);審查者把行竊 key 改回裸 iid → 動態掃描 8 × 500 即抓到 2 個非導航 STALE。
+- **審查**(1 位 Sonnet,隔離 worktree,65 次工具呼叫):0 major、1 minor、3 nit、1 推測 —— minor:掃描器把「角色死亡(`game_loop` 正常 return)」當 timeout,且對種子 / RNG 變動脆弱(約 80 趟中 4 趟早死,例:總攻確認後暴斃;固定設定未紅)→ 已修:`next_frame` 分辨 over / timeout,驗收改「無例外 + 無卡住 + 總提示 ≥ 2000」;nit:docstring 數字出處(職業應為 11;30 × 600 與「81 個裸變數」無入庫來源)→ 改為如實標明一次性 / 可 grep;ROW_FIELDS 對帳對 JS 動態建構 data-key 有盲區 → 加 `setAttribute` / `dataset.key` 守衛;參數名 `fresh` 與 `render()` 內日誌 `fresh` 同名異義 → 改名 `redrawn`;推測:到提示上限仍作答會留下殘餘遊戲 thread、可能闖進下一趟的新 backend → 改為上限時不作答(thread 永遠停在 `inbound.get()`)。動態實證:12 次固定設定 + 8 次負載下 + 4 輪 × 20 趟他種子(約 77 趟有效)全無殘留非導航相撞;整套 Chromium 22 項綠。
+- **驗證**:py_compile ✓;`tests/run_all.py` 全綠(含新模組);`tests/browser_ui.py` 真 Chromium 桌面回歸全綠(含新測);未碰 Python 遊戲碼 / combat / formulas → check.sh 不觸發 sim;零存檔欄。
+- **未動 / 後續**:據讀碼,`ui.dungeon_grid` 對未揭示的地城格也送出真實 `type`(前端只在 `explored` 時用它上色;資料層可見地城佈局,屬既有行為、與本題無關,未實測也未動)。
+
 ## 4. 開發節奏(ultracode 開著 → 每個功能都這樣做)
 
 > 完整五階段流程(評估 → 決定方向 → 實作 → 驗證 → 文件 + 提交)見 `CLAUDE.md`「開發流程」;以下是「驗證」段的細節。**驗證綠後依 R22 自動 `commit` & `push origin main`。**
@@ -3288,7 +3298,9 @@ R88 讓**盜賊公會**拿到階級解鎖招牌動詞(斯庫瑪走私),但**戰�
 
 ## 6. 下一步候選(依槓桿排序)
 
-### 2026-11-22 候選盤點(R200 之後)——使用者尚未選定
+### 2026-11-22 候選盤點(R200 之後)——使用者已選:先 3、4,再提 1 的紙面方案
+
+> **更新(同日下個 session)**:使用者回「3、4 先修好,在提 1 的方案」。**3 = R201 已完成**(見 §3);4 = R202 進行中(完成後本處再補註);1 的紙面方案在 3、4 都完成後才提(不寫程式、不派重型代理,ops.md §14)。以下為原盤點,保留供查。
 
 > **狀態**:2026-11-22 使用者看過這份清單後說「記錄下事項,我下個 session 處理」。**下個 session 開場先請使用者回編號,不要自行開工。** 編號 = 候選(1–10);選定後先交紙面規格(改動表 + 各決策點附建議),使用者點頭才動程式。
 > **來源**:三個 scout 讀本節舊條目與 §3 R176–R200 的未完事項,加主對話對 `mastery.json` / `events.json` / `main.py` / `sim_builds.py` 的機械盤點(HEAD `347f550`)。數量是當日快照,動工前重跑確認。
@@ -3304,7 +3316,7 @@ R88 讓**盜賊公會**拿到階級解鎖招牌動詞(斯庫瑪走私),但**戰�
 
 **B. R199 審計未收項**(R200 記「仍待使用者決定」;兩項皆零機率改動)
 
-3. **選單 key 相撞掃描(R199 D5)**:與行竊同類的問題——殘留面板的按鈕 key 與新選單同名,點下去變成別的動作。已知一例已修(`main.py` 的 `_STEAL_KEY`),其餘未掃。量:`main.py` 有 134 行 `ui.menu(` 呼叫;f-string 前綴 key 粗 grep 只見 `trial:` / `topic:` / `slot:` / `del:` / `capstone:` / `buy:` 六種。含 R199 審查提的行竊標籤金色 chip。
+3. 〔✓ R201 完成,見 §3〕**選單 key 相撞掃描(R199 D5)**:與行竊同類的問題——殘留面板的按鈕 key 與新選單同名,點下去變成別的動作。已知一例已修(`main.py` 的 `_STEAL_KEY`),其餘未掃。量:`main.py` 有 134 行 `ui.menu(` 呼叫;f-string 前綴 key 粗 grep 只見 `trial:` / `topic:` / `slot:` / `del:` / `capstone:` / `buy:` 六種。含 R199 審查提的行竊標籤金色 chip。
 4. **可見性缺口包(R199 D4)**:陷阱 / 謎題 / 祭壇成功率、監牢刑期、過夜回復量、行竊失手罰金、附魔強度與消耗、淬鍊每級威力。可併 R200 留下的兩項:換裝對比 / 物品卡的護甲仍是名目尺度(角色卡已是戰鬥實際值)→ 改顯示「換上後戰鬥護甲 A → B」;資料文字內嵌數字尚無一致性守衛(D3 延伸)。
 
 **C. 懸著的設計議題與修補**

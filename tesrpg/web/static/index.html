@@ -1561,7 +1561,11 @@
   // 可點內容列:view 列若帶 data-key 且該 key 是當前 prompt 的合法選項(含 extra_keys)→ 列可點。
   //  - 對應到某個選單按鈕的(optKey):移除重複按鈕,該列接管其數字鍵槽(如背包物品)。
   //  - 屬 extra_keys 的(無對應按鈕):只可點/觸控,不佔數字鍵(如地點出口,hub 按鈕數字維持原樣)。
-  function wireActionableRows(spec) {
+  //  - R201:只接管「本幀才畫的」列(redrawn = 這一幀帶 view/html/clear 狀態塊,#screen 剛重畫;與 render() 內日誌用的
+  //    `fresh` 無關)。純敘事 / 純選單幀會保留前畫面,殘留的舊面板列與新選單內容無關 → 不得接管同 key 選項
+  //    (R199:殘留買貨面板蓋掉行竊選單「得手 N%」標籤;裸物品 id 當 key 即相撞)。例外 go:*(地點出口 / 地城方位格):
+  //    導航列跨幀有效,殘留仍可點(go:* 本就不移除按鈕)。
+  function wireActionableRows(spec, redrawn) {
     screenEl.querySelectorAll("[data-action-key]").forEach(function (el) { el.disabled = true; });
     screenEl.querySelectorAll("[data-key]").forEach(function (el) {
       if (el._actionClick) el.removeEventListener("click", el._actionClick);
@@ -1581,7 +1585,7 @@
     let any = false;
     screenEl.querySelectorAll("[data-key]").forEach(function (el) {
       const k = el.getAttribute("data-key");
-      if ((optKey[k] || extra[k]) && !el._wired) {
+      if ((optKey[k] || extra[k]) && !el._wired && (redrawn || k.indexOf("go:") === 0)) {
         el._wired = true; el.classList.add("tappable"); el.setAttribute("tabindex", "0");
         el._actionClick = function () { submit(k, el, k); };
         el._actionKeydown = function (e) {
@@ -1664,7 +1668,7 @@
     }   // 重連重送(seq≤)由 seq gate 擋;int 越界重送(resend)由內容簽名擋
     curPid = frame.prompt_id; curSpec = frame.prompt;
     renderPrompt(frame.prompt);
-    wireActionableRows(frame.prompt);
+    wireActionableRows(frame.prompt, stateBlocks.length > 0);   // R201:#screen 本幀重畫者才可接管選項
     renderShortcutHelp(frame.prompt);
     if (samePrompt && prevVal != null) { const inp = promptEl.querySelector("input.field"); if (inp) inp.value = prevVal; }
     // R162 閱讀動線:行動後聚焦「資訊區」——捲回頁頂(HUD + #screen 敵我/狀態),不再置中動作選單。

@@ -272,6 +272,7 @@ PYTHONPATH=. python3 sim_flee.py          # 運動 50 健步如飛脫身加成�
 | R197 | 可見性包:事件經驗升點提示(apply_effects→skill_events)· 體力懲罰 / 二次呼吸戰鬥卡片標籤(命中取真實命中鏈實際損失·`_hit_chain` 共用·預覽=實擲)· 旅行實際時數(`travel_hours` 單一出處)· `ui.pct` 取整;🔴 5 sim byte-identical | re-sim, save-safe |
 | R199 | 預覽 = 實擲第二批:說服預覽與實擲同源 `dialogue._persuade_p`(魅惑加成說服:使用者拍板翻 `PERSUADE_USES_CHARM=True`)+ 行竊逐件得手%·選單 key 帶 `steal:` 防殘留面板劫持;🔴 行竊零機率改動·說服只改吸血鬼/魅惑中玩家(+0.10/+0.12)·sim 不走此路徑故 byte-identical 非證據;審計清單見 handoff | save-safe |
 | R200 | 預覽修正包 + 內嵌常數收斂(R199 審計 D2+D3 落地):重盾姿態 / 角色卡護甲值·負重 / 撬鎖塔之鑰 / 充能預覽改走單一出處(`combat.guard_stance_mitigation`·`armor_parts`、`inventory.max_weight_parts`、`dungeon.lock_key_kind`、`enchanting.recharge_outcome`);客棧費·箭雨%·命中上限(含命中鏈夾限)·×1.5·黑市價改引用常數;非機率百分比一律四捨五入(AST 守衛);🔴 零機率改動·5 sim byte-identical·角色卡護甲數字口徑改為戰鬥實際值 | re-sim, save-safe |
+| R201 | 選單 key 相撞掃描收尾:前端 wireActionableRows 只接管「本幀重畫」的面板列(go:* 導航列例外)+ 掃描器 tests/_stale_scan.py + Chromium 回歸;🔴 面板列要可點須與選單同幀送出·新面板補 ROW_FIELDS | save-safe |
 
 ## 自動提交閘門 / 換 session 前檢查表
 
