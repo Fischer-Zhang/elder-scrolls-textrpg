@@ -386,11 +386,31 @@ def bound_guard():
         flag(f"握法規則失效:持雙手重盾時仍凝得出束縛兵刃 {great_ok}(重盾 + 束縛巨劍 + 姿態曾打穿達貢牆)")
     print(f"   握法探針:單手盾下可凝 {[k for k, v in shield_ok.items() if v]};雙手重盾下可凝 {great_ok or '無'}", flush=True)
     n_eff = max(40, N * 4 // 5)
-    for nm in ("bound_knight", "bound_knight_1h"):
-        w = sum(sb.fight(nm, WALL_BOSS, sd) == "win" for sd in range(n_eff)) * 100.0 / n_eff
-        print(f"   {nm:16} 打達貢 {w:5.1f}%(n={n_eff})", flush=True)
-        if w > BOUND_WALL_FLAG_PCT:
-            flag(f"{nm} 打達貢勝率 {w:.0f}% > {BOUND_WALL_FLAG_PCT:.0f}% —— 牆破了:檢查束縛兵刃握法規則 / 反擊抗性分類")
+    # 規則禁止的組合(重盾 + 束縛巨劍 + 姿態):cast 應被拒 → 永不凝刃 → 應 ≈ 0%;握法**沒被強制執行**時它是 ~12%(獸人底盤)>> 門檻
+    # (R204 審查:只測謂詞 / 合法夾具的探針對「強制失效」空轉,故真的模擬這個違規組合)
+    def _gs_probe():
+        c = sb.BUILDS["bound_knight_1h"]()                   # 格擋 100 + 完美格擋 + 姿態底盤(重盾「掩體」優勢才發揮;原 R204 前打穿牆的組合)
+        c.equipped.pop("shield", None)
+        c.spells = ["bound_greatsword"] + [x for x in c.spells if x != "bound_sword"]
+        inventory.add_item(c, "daedric_great_shield", 1)
+        inventory.equip_armor(c, gd, "daedric_great_shield")
+        return sb._apply_realistic("bound_knight_1h", c)
+    sb.BUILDS["_bound_gs_probe"] = _gs_probe
+    sb._POLICY["_bound_gs_probe"] = sb._bound_knight_act
+    sb._STANCE_BUILDS.add("_bound_gs_probe")
+    sb._MELEE_POT_BUILDS.add("_bound_gs_probe")
+    try:
+        for nm in ("bound_knight", "bound_knight_1h", "_bound_gs_probe"):
+            w = sum(sb.fight(nm, WALL_BOSS, sd) == "win" for sd in range(n_eff)) * 100.0 / n_eff
+            label = "重盾+巨劍+姿態(違規組合)" if nm == "_bound_gs_probe" else nm
+            print(f"   {label:22} 打達貢 {w:5.1f}%(n={n_eff})", flush=True)
+            if w > BOUND_WALL_FLAG_PCT:
+                flag(f"{label} 打達貢勝率 {w:.0f}% > {BOUND_WALL_FLAG_PCT:.0f}% —— 牆破了:檢查束縛兵刃握法規則是否被強制執行 / 反擊抗性分類")
+    finally:
+        for reg in (sb.BUILDS, sb._POLICY):
+            reg.pop("_bound_gs_probe", None)
+        sb._STANCE_BUILDS.discard("_bound_gs_probe")
+        sb._MELEE_POT_BUILDS.discard("_bound_gs_probe")
 
 
 if __name__ == "__main__":

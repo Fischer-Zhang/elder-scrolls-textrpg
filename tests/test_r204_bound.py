@@ -210,6 +210,124 @@ def test_bound_weapon_still_eats_the_sneak_multiplier_but_never_one_shots_a_solo
     assert worst <= formulas.SOLO_SNEAK_DAMAGE_CAP_RATIO + 0.01, worst                          # 夾限 40% 最大血;整數血量四捨五入最多多出 ~0.5%
 
 
+# --- 審查補強(R204 對抗審查 minor-1/2/3 + 相鄰問題)-----------------------------------------------
+def test_evade_counter_call_site_also_uses_the_swing_type_not_always_physical():
+    """審查 minor-2:閃身反打的反擊呼叫點(combat 第二處)原沒有測試守衛;只改它突變仍全綠。"""
+    def kinds_seen(bound):
+        out, orig = [], formulas.resist_multiplier
+        foe = combat.spawn_creature(gd, "bandit", RNG(1))
+        foe.resist = {"physical": 40, "magic": 10}
+        foe.attack["skill"] = 1
+        foe.attack["damage"] = 3
+        formulas.resist_multiplier = lambda r, e, _f=foe: (out.append(e) if r == _f.resist else None) or orig(r, e)
+        try:
+            c = None
+            for sd in range(300):
+                if c is None or sd % 50 == 0:
+                    c = build_character(gd, name="閃", sex="male", race="khajiit", birthsign="warrior", class_id="warrior")
+                    c.skills.update(light_armor=100, acrobatics=100, conjuration=100)
+                    c.attributes.update(strength=100, agility=100)
+                    c.spells = ["bound_sword"]
+                    for slot in ("helmet", "cuirass", "gauntlets", "boots"):
+                        iid = f"leather_{slot}"
+                        if iid in gd.armor:
+                            inventory.add_item(c, iid, 1)
+                            inventory.equip_armor(c, gd, iid)
+                    mastery.choose(c, gd, "light_armor_50", "riposte_step")
+                    stats.recompute_max_resources(c, gd, restore_full=True)
+                    c.magicka = c.max_magicka = 500
+                    if bound:
+                        magic.cast(c, gd, "bound_sword", RNG(1), battle={"allies": []})
+                c.health = c.max_health
+                combat.resolve_attack(foe, c, gd, RNG(sd))
+        finally:
+            formulas.resist_multiplier = orig
+        return set(out)
+    assert kinds_seen(False) == {"physical"}, "沒有束縛:閃身反打吃物抗(R137 行為不變)"
+    assert kinds_seen(True) == {"magic"}, "持束縛:閃身反打與一般揮擊同屬元素"
+
+
+def test_refused_cast_trains_nothing_and_keeps_an_existing_bound_effect():
+    """審查 minor-3:衝突施放不練技能(用 conj 50,未滿級才看得出 XP)、不洗掉已凝出的束縛兵刃。"""
+    import copy
+    c = _char("daedric_shield", conjuration=50)
+    assert magic.cast(c, gd, "bound_sword", RNG(1), battle={"allies": []})["ok"]       # 合法:單手形可與盾同持
+    old = _bound(c)
+    assert old is not None and old["turns"] == 6
+    xp, eff, mana, fat = copy.deepcopy(c.skill_xp), copy.deepcopy(c.active_effects), c.magicka, c.fatigue
+    res = magic.cast(c, gd, "bound_greatsword", RNG(2), battle={"allies": []})          # 衝突:雙手形 + 盾
+    assert res["ok"] is False
+    assert c.skill_xp == xp and (c.magicka, c.fatigue) == (mana, fat), "不練技能、不耗資源"
+    assert c.active_effects == eff and _bound(c) is old, "已凝出的束縛長劍原封不動(沒被衝突施放洗掉)"
+    c2 = _char(None, conjuration=50)                                                    # 對照:合法施放確實會練技能(測試不空轉)
+    xp0 = copy.deepcopy(c2.skill_xp)
+    assert magic.cast(c2, gd, "bound_greatsword", RNG(2), battle={"allies": []})["ok"] and c2.skill_xp != xp0
+
+
+def test_leaving_the_dungeon_clears_a_pre_cast_bound_weapon_so_shields_are_not_blocked_forever():
+    """審查 minor-1:戰外無 tick,地城預凝後離場殘留的束縛效果會無限期擋住裝盾;action_dungeon 任何出口都要清掉它。"""
+    from tesrpg.state import GameState, GameTime
+    c = _char()
+    inventory.add_item(c, "daedric_shield", 1)
+    st = GameState(player=c, rng=RNG(3), time=GameTime())
+    orig = M._action_dungeon
+    try:
+        for raises in (False, True):
+            c.active_effects.clear()
+            assert magic.cast(c, gd, "bound_greatsword", RNG(1), battle={"allies": []})["ok"]
+            c.active_effects.append({"kind": "shield", "magnitude": 10, "turns": 3})
+            assert inventory.armor_equip_block(c, gd, "daedric_shield"), "前提:殘留雙手束縛下裝不了盾"
+            if raises:
+                def boom(state, gamedata):
+                    raise RuntimeError("離場途中例外")
+                M._action_dungeon = boom
+                try:
+                    M.action_dungeon(st, gd)
+                    assert False, "例外應照常拋出"
+                except RuntimeError:
+                    pass
+            else:
+                M._action_dungeon = lambda state, gamedata: "left"
+                assert M.action_dungeon(st, gd) == "left"
+            assert _bound(c) is None and inventory.armor_equip_block(c, gd, "daedric_shield") is None
+            assert any(e.get("kind") == "shield" for e in c.active_effects), "只清束縛,其他預施效果不動"
+    finally:
+        M._action_dungeon = orig
+
+
+def test_equip_refusal_message_names_the_real_reason_and_weapon_label_and_sneak_estimate_follow_the_bound_blade():
+    c = _char()
+    inventory.add_item(c, "daedric_shield", 1)
+    magic.cast(c, gd, "bound_greatsword", RNG(1), battle={"allies": []})
+    shown, orig = [], ui.message
+    ui.message = lambda text, style=None, **kw: shown.append(text)
+    try:
+        M._equip_refusal_message(c, gd, "daedric_shield")
+    finally:
+        ui.message = orig
+    assert shown and "雙手束縛兵刃在手" in shown[0], shown                              # 不再是泛用「你無法裝備X。」
+    plain = _char(weapon="iron_dagger")
+    assert combat.effective_weapon_name(plain, gd) == gd.item("iron_dagger")["name"]
+    bound = _char(weapon="iron_dagger")
+    magic.cast(bound, gd, "bound_greatsword", RNG(1), battle={"allies": []})
+    assert combat.effective_weapon_name(bound, gd) == "束縛巨劍", "攻擊鈕不再寫休眠中的匕首"
+    # 偵查用偷襲估算 ≈ 實擲平均(原:吃休眠匕首的 ×1.5 偷襲倍率 + 物抗 + 護甲 → 估 157 / 實擲 125)
+    bound.skills["sneak"] = 100
+    foe = combat.spawn_creature(gd, "bandit", RNG(5))
+    foe.armor_rating, foe.resist = 25, {"physical": 40}
+    est = combat.estimate_sneak_damage(bound, gd, foe)
+    tot = n = 0
+    for sd in range(400):
+        f = combat.spawn_creature(gd, "bandit", RNG(5))
+        f.armor_rating, f.resist = 25, {"physical": 40}
+        f.health = f.max_health = 10 ** 6
+        ev = combat.resolve_attack(bound, f, gd, RNG(sd), sneak_attack=True)
+        if ev.get("hit"):
+            tot += f.max_health - f.health
+            n += 1
+    assert n > 100 and abs(est - tot / n) <= 0.08 * (tot / n), (est, tot / n)
+
+
 def run():
     for name, fn in sorted(globals().items()):
         if name.startswith("test_") and callable(fn):

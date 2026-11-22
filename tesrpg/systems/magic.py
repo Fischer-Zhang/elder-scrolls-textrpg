@@ -553,7 +553,8 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
         bturns = eff["turns"] + mastery.bound_mastery_mod(char, gamedata).get("turn_bonus", 0)
         char.active_effects.append({"kind": "bound_weapon", "element": eff.get("element", "magic"),
                                     "magnitude": mag, "turns": bturns, "archetype": eff.get("archetype"),
-                                    "two_handed": bool(eff.get("two_handed")), "speed": eff.get("speed")})   # R204:握法與自身速度(耗體)
+                                    "two_handed": bool(eff.get("two_handed")), "speed": eff.get("speed"),
+                                    "name": sp["name"]})   # R204:握法 / 自身速度(耗體)/ 名稱(戰鬥選單「攻擊(束縛巨劍)」)
         msg = f"{sp['name']} —— 你手中凝出一柄束縛兵刃(基礎傷害 {mag},隨咒術精進,{bturns} 回合)。"
 
     elif kind in ("charm", "invisibility", "feather", "detect_life", "telekinesis"):   # R104 實用/幻術 + R121 念力:限時自我增益(戰鬥外社交/潛行/探索/地城)

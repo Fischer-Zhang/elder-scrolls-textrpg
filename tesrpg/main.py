@@ -2671,6 +2671,15 @@ def _apply_orb_curse(state: GameState, gamedata: GameData) -> None:
 
 
 def action_dungeon(state: GameState, gamedata: GameData) -> str | None:
+    """地城探索入口(包一層:任何出口離場都清掉預施的束縛兵刃)。審查 R204 minor-1:戰外沒有任何 tick,殘留的束縛效果會讓
+    `inventory.armor_equip_block` 無限期擋住裝盾(直到下一場戰鬥才清);其餘預施效果離場後本就無作用(進戰清空),只清束縛這一類有「握法」副作用者。"""
+    try:
+        return _action_dungeon(state, gamedata)
+    finally:
+        state.player.active_effects[:] = [e for e in state.player.active_effects if e.get("kind") != "bound_weapon"]
+
+
+def _action_dungeon(state: GameState, gamedata: GameData) -> str | None:
     """格子探索地城 —— **視為戰鬥情境**的自足子迴圈(維持盟友清單 + 回合制效果計時)。
 
     清空末層 boss = 肅清(record_dungeon_clear);離開/逃跑/死亡皆不計。
@@ -2972,7 +2981,9 @@ def _equip_refusal_message(char: Character, gamedata: GameData, item_id: str) ->
     elif inventory._vampire_locked(char, gamedata, item_id):
         ui.message(f"{d['name']}唯有血裔方能駕馭。", style="red")
     else:
-        ui.message(f"你無法裝備{d['name']}。", style="grey70")
+        why = (inventory.armor_equip_block(char, gamedata, item_id) if d.get("kind") == "armor"
+               else inventory.weapon_equip_block(char, gamedata, item_id))   # R202 單一出處:顯示真正原因(R204:束縛兵刃在手裝不了盾等)
+        ui.message(f"你無法裝備{d['name']}" + (f":{why}。" if why else "。"), style="grey70")
 
 
 def _item_actions(state: GameState, gamedata: GameData, item_id: str) -> None:

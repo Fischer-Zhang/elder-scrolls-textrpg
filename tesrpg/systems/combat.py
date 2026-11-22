@@ -377,7 +377,10 @@ def eff_weapon_id(player, gamedata: GameData | None = None) -> str:
 
 
 def effective_weapon_name(player, gamedata: GameData) -> str:
-    """玩家當前實際使用的武器名(獸形 → 獸爪;雙手重盾 → 盾;否則裝備武器)。供戰鬥/選單標籤。"""
+    """玩家當前實際使用的武器名(獸形 → 獸爪;束縛兵刃 → 該兵刃〔R204 審查:原寫休眠中的裝備武器〕;雙手重盾 → 盾;否則裝備武器)。供戰鬥/選單標籤。"""
+    bw = _bound_effect(player)
+    if bw is not None:
+        return bw.get("name") or "束縛兵刃"
     return gamedata.item(eff_weapon_id(player, gamedata))["name"]
 
 
@@ -1916,7 +1919,9 @@ def estimate_sneak_damage(player: Character, gamedata: GameData, creature: Creat
     beast = _is_beast(player)
     wpn_dmg, wpn_skill, wpn_skill_id = _weapon_profile(player, gamedata)
     offhand_dmg = 0.0 if beast else inventory.dual_wield_bonus_damage(player, gamedata)
-    archetype = gamedata.item(eff_weapon_id(player, gamedata)).get("archetype")
+    bound = _bound_effect(player)   # R204 審查:束縛兵刃 → archetype 取束縛自身(sword 偷襲 ×1.0)、走元素分支(無視護甲與物抗),與 resolve_attack 一致
+    archetype = (bound.get("archetype") if bound is not None
+                 else gamedata.item(eff_weapon_id(player, gamedata)).get("archetype"))
     wm = mastery.weapon_mod(player, gamedata, wpn_skill_id)   # 與 resolve_attack 一致
     raw = formulas.attack_damage(wpn_dmg, wpn_skill, _strength(player), 1.0)
     power_bonus = raw * wm.get("power", 0.0)                  # weapon_mod 威力:flat 補傷(不吃偷襲倍率)
@@ -1930,9 +1935,12 @@ def estimate_sneak_damage(player: Character, gamedata: GameData, creature: Creat
     raw += power_bonus
     if offhand_dmg:    # 副手補刀不吃偷襲倍率(與 resolve_attack 一致)
         raw += formulas.attack_damage(offhand_dmg, wpn_skill, _strength(player), 1.0)
-    pen = min(0.85, formulas.archetype_armor_pen(archetype) + wm.get("pen", 0))
-    est = formulas.damage_after_armor(raw, creature.armor_rating, pen)
-    est *= formulas.resist_multiplier(magic.entity_resist(creature, gamedata), "physical")  # R127 物理抗性(與 resolve_attack 一致;既有怪無物抗 → ×1.0 不變)
+    if bound is not None:   # 元素分支:無視物理護甲與物抗,只吃該元素(magic)抗性(resolve_attack 同)
+        est = raw * formulas.resist_multiplier(magic.entity_resist(creature, gamedata), bound.get("element") or "magic")
+    else:
+        pen = min(0.85, formulas.archetype_armor_pen(archetype) + wm.get("pen", 0))
+        est = formulas.damage_after_armor(raw, creature.armor_rating, pen)
+        est *= formulas.resist_multiplier(magic.entity_resist(creature, gamedata), "physical")  # R127 物理抗性(與 resolve_attack 一致;既有怪無物抗 → ×1.0 不變)
     if _is_solo(creature, gamedata):    # 與 resolve_attack 一致:solo boss 偷襲單擊夾限
         est = min(est, (getattr(creature, "max_health", 0) or creature.health)
                   * formulas.SOLO_SNEAK_DAMAGE_CAP_RATIO)
