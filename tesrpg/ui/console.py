@@ -3002,7 +3002,8 @@ def combat_event(ev: dict, gamedata: GameData) -> None:
         lines.append(f"[red]🩸 兵刃汲血,{ev['attacker']} 回復了 {ev['lifesteal']} 點生命。[/]")
     if ev.get("counter"):   # R206 閃身反打(閃過後的反擊):原本只悄悄扣敵血、玩家看不到發生了什麼
         ct = ev["counter"]
-        lines.append(f"[cyan]{ev['defender']} 閃身反打 {ev['attacker']},造成 {ct['damage']} 點傷害"
+        dmg_txt = f"造成 {ct['damage']} 點傷害" if ct["damage"] > 0 else "卻傷不了對方"
+        lines.append(f"[cyan]{ev['defender']} 閃身反打 {ev['attacker']},{dmg_txt}"
                      f"{'(對方陣腳大亂)' if ct.get('stagger') else ''}![/]")
     if ev.get("aftermath"):
         am = ev["aftermath"]

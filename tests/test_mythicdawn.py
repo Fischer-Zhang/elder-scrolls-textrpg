@@ -97,10 +97,12 @@ def test_contract_targets_exist_in_bestiary():
                     assert gd.npcs.get(nid, {}).get("combat_template") in gd.bestiary, f"{qid} 目標 {nid} 未置放/無戰鬥模板"
 
 
-def test_escort_target_exists():
+def test_escort_field_is_retired_r206():
+    """R206:`escort`(R109 移除合約系統的殘留,無程式讀取)已自 quests.json 刪除;原 test_escort_target_exists 在欄位刪除後迴圈不執行、
+    永遠通過(空轉)→ 改為守衛:任何任務都不得再帶 escort 欄位(防死資料重新長出來)。"""
     gd, _ = _state()
-    for eid in gd.quests["md4"].get("escort", []):
-        assert eid in gd.bestiary
+    assert gd.quests, "任務資料載入"
+    assert not [qid for qid, q in gd.quests.items() if "escort" in q], "escort 欄位已退役"
 
 
 # --- 達貢之佑 perk(召喚增幅)----------------------------------------

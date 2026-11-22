@@ -316,7 +316,7 @@ def _strength(actor) -> int:
 
 def _speed(actor) -> int:
     base = actor.attr("speed") if _is_player(actor) else actor.speed
-    sf = magic.slow_factor(actor)        # 遲緩毒(R31):降先攻(僅影響行動順序,不碰傷害)
+    sf = magic.slow_factor(actor)        # 遲緩毒(R31):降速度(影響逃跑 / 潛行撤退機率與 auto_resolve 先攻順序;不碰傷害)
     return max(1, int(round(base * (1.0 - sf)))) if sf else base
 
 
@@ -1756,8 +1756,10 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
                 # 物抗 0 之敵 ×1.0 行為不變)
                 _cd = _player_counter_damage(defender, gamedata, rng) * oe["counter_frac"]
                 _cd *= formulas.resist_multiplier(magic.entity_resist(attacker, gamedata), _counter_resist_kind(defender))
-                _set_hp(attacker, _get_hp(attacker) - int(round(_cd)))
-                counter = {"damage": int(round(_cd)), "stagger": bool(oe.get("counter_stagger"))}   # R206:純記錄、不影響結算
+                _hp_before = _get_hp(attacker)
+                _set_hp(attacker, _hp_before - int(round(_cd)))
+                counter = {"damage": int(round(_hp_before - _get_hp(attacker))),   # R206:記**實際**扣血(夾 0 / 物抗吃光 → 0),純記錄、不影響結算
+                           "stagger": bool(oe.get("counter_stagger"))}
                 if oe.get("counter_stagger"):
                     # R181:turns:2 → 敵人階段對怪物施加的踉蹌須撐過回合末 tick,才在該怪「下一次出手」時生效
                     # (原 turns:1 實測施加 388 次、怪物下一擊讀到 0 次 = 死機制;與上方盾擊/荊棘同款時序修法)

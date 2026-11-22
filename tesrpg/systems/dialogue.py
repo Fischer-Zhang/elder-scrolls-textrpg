@@ -128,7 +128,7 @@ def offered_rumor(char: Character, gamedata: GameData, npc_id: str) -> dict | No
     qid = npc.get("rumor_quest")
     if qid and qid not in char.quests and qid not in char.completed_quests:
         # R206 回溯認列(使用者 2026-11-22):線索指向的地城即使早已肅清,仍照給 —— 一次性任務的總獎勵與「先清後接 / 先接後清」
-        # 的順序無關(無刷錢空間;R79 的破口是 repeatable 委託,已由 schema guard 擋),守衛反而懲罰提早探索、與其餘 122 個
+        # 的順序無關(無刷錢空間;R79 的破口是 repeatable 委託,已由 schema guard 擋),守衛反而懲罰提早探索、與其餘
         # clear_dungeon 任務(告示板 / 公會 / 統治者 / NPC)行為不一致。接取即達成 → 回報時照常結算。
         return {"kind": "quest", "id": qid}
     loc = npc.get("rumor_landmark")

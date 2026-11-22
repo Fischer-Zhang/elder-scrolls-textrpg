@@ -320,6 +320,26 @@ def test_counter_event_carries_damage_and_is_logged_r206():
     finally:
         ui.console = saved
     assert "閃身反打" in out and f"{lost} 點傷害" in out and "陣腳大亂" in out, out
+    # 審查修:攻擊者只剩 1 HP → 記實際扣血(1),不是名義傷害;0 傷害不誤報
+    orig = _patched_on_evade({"counter_chance": 1.0, "counter_frac": 0.6, "counter_stagger": False, "restamina": 0})
+    try:
+        rng3, ev1 = RNG(11), None
+        for _ in range(400):
+            foe.health = 1
+            e = combat.resolve_attack(foe, p, gd, rng3, attack=foe.attack)
+            if not e["hit"]:
+                ev1 = e; break
+    finally:
+        mastery.on_evade = orig
+    assert ev1 and ev1["counter"]["damage"] == 1, ev1 and ev1["counter"]
+    zero = dict(ev1, counter={"damage": 0, "stagger": False})
+    saved, ui.console = ui.console, Console(file=io.StringIO(), force_terminal=False, width=120)
+    try:
+        ui.combat_event(zero, gd)
+        out0 = ui.console.file.getvalue()
+    finally:
+        ui.console = saved
+    assert "卻傷不了對方" in out0 and "造成 0 點" not in out0, out0
     # 沒有里程碑 → 閃過也沒有反擊記錄
     p2 = _player(); foe2 = _foe({"name": "撲擊", "damage": 2, "skill": 100}); rng2 = RNG(11)
     evs = [combat.resolve_attack(foe2, p2, gd, rng2, attack=foe2.attack) for _ in range(200)]

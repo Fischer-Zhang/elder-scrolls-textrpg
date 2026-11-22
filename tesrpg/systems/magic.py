@@ -860,7 +860,7 @@ def is_staggered(creature) -> bool:
 
 
 def is_slowed(creature) -> bool:
-    """中毒遲緩(R31 遲緩毒):降先攻 + 命中(非失能,仍會行動)。"""
+    """中毒遲緩(R31 遲緩毒):降速度 + 命中(非失能,仍會行動)。"""
     return any(e["kind"] == "slow" and e["turns"] > 0 for e in creature.active_effects)
 
 
