@@ -2328,7 +2328,7 @@ OS `prefers-reduced-motion:reduce` 與手動 `data-motion=off` 同時關閉所�
 - **入口**:`action_travel` 加「🧭 長途前往」→ `_action_long_travel` 列**已到訪+可達+非相鄰**的城/鎮(省·跳數·估時·`sort(省,跳數,名)` 決定性)→ 選一 → `_travel_route`。相鄰地點仍走一般選單單跳。
 - **驗證**:`run_all` **111**(新 `test_travel_route`:BFS 最短/相鄰鏈/決定性/邊界〔已在·未知·不可見〕/route_hours/逐跳走完/遇襲中斷停中間/**事件戰鬥經計數判 fought**/死亡停/不可達 no-op/長途清單含遠城);**sim byte-identical**(隔離 worktree·未碰 combat/formulas·route 零 rng·`battles_fought` 計數不擾 rng/戰鬥數學);煙霧綠。
 - **對抗審查(2 維 4 agent)→ MAJOR 已修**:**中途「非埋伏」戰鬥不中斷行程**(highwayman 事件/賞金衛兵盤查/詛咒圍捕走 run_battle 卻不設 fought → 傷兵被自動趕入下一段·違「變故會停下」承諾)——**改以 run_battle 計數偵測任何實戰**(單一計數點涵蓋全部·且繳罰金/撤退未交戰不誤停=審查點名的 naive-fix 陷阱天然避開);Finding 2「中途重定位 KeyError」**駁回**(親驗全庫僅 5 處寫 location_id·無一在旅途路徑·且 BFS 前跳 links 保 walkability 結構性不崩);route_hours ~2× 高估(`約` 已 hedge·高估安全向)/合併訊息(選單路徑不可達)= ship-as-is NIT。補 `test_travel_hop_fought_via_battle_counter`。
-- 🔴 **鐵律**:route_to 只經 `is_visible` 地點(路徑穿越 gate 一致);逐跳走 `_travel_hop`(對外 `_travel_to` 契約=dead/None 不可破);中途遇襲 fought 即停(不硬拖傷兵連戰);長途清單只列已到訪城鎮(玩家知道去哪)。**map marker 點擊旅行刻意延後**(web 地圖是 display view·markers 現有 showInfo/drag pointerup 與 data-key submit 會衝突·需另設計);**UI/UX 審計四包 A/B/C/D 全數完成**;剩獨立設計題「戰鬥中用藥水」(R30 刻意延後·動平衡需拍板+sim)。
+- 🔴 **鐵律**:route_to 只經 `is_visible` 地點(路徑穿越 gate 一致);逐跳走 `_travel_hop`(對外 `_travel_to` 契約=dead/None 不可破);中途遇襲 fought 即停(不硬拖傷兵連戰);長途清單只列已到訪城鎮(玩家知道去哪)。**map marker 點擊旅行刻意延後**(web 地圖是 display view·markers 現有 showInfo/drag pointerup 與 data-key submit 會衝突·需另設計);**UI/UX 審計四包 A/B/C/D 全數完成**;剩獨立設計題「戰鬥中用藥水」〔✓ 後由 R126 完成〕(R30 刻意延後·動平衡需拍板+sim)。
 
 ---
 
@@ -2346,7 +2346,7 @@ OS `prefers-reduced-motion:reduce` 與手動 `data-motion=off` 同時關閉所�
 - **🔴 城區子選單停留連逛**(cost#3b·唯一結構改動):game_loop 加 `_stay_district`——城區服務辦完且**未死**(`not died`)→ 下圈直接回該區子選單(商店→淬鍊→回爐免回 hub 重進);按返回或該區這圈消失(獸形/被排斥)→ 清旗回 hub。**iteration 基數不變**(仍 1 dispatch/圈)→ hub-top 更新(worldpulse/reinfest/vampire…)頻率同 HEAD;`died=="dead"` 照常 end_run(_stay 只在 `not died` 設)。
 - **驗證**:`run_all` **110**(新 `test_econ_qol`:賣全部/高價堆疊預設1/高價拒賣保留/倉庫全存全取/直達過夜/再煉一鍋/連訓/練習記憶捷徑/丟棄高價確認×拒受/低價免確認/**城區連逛驅動 game_loop 證不 trap**);`test_m14._patch_ui` 加 stub `ui.confirm→True`;**sim byte-identical**(隔離 worktree·純選單流·零 rng 消耗·零碰 combat/formulas);煙霧驅 main() 過城區連逛。
 - **對抗審查(3 維 6 agent·0 BLOCKER/0 MAJOR)**:district-loop 全維判定 SAFE(不 trap·`died` 照傳·**額外一圈 top-of-loop 更新皆 day/watermark gated 且 worldpulse 是唯一上頂 rng draw 又日閘 → 選單迴圈不消耗 rng·決定性守住**);「stay-loop 零測試」誤報被**駁回**(drive 測試已覆蓋)。confirmed 全 NIT 處置:① 高價**堆疊**仍 Enter 傾銷 → 高價堆疊預設 1(雜貨仍全部);② `_last_practice_skill` 跨角殘留 → game_loop 進入重置;③ 再煉全形括號 → ASCII;④ 宿一晚「10金」空格 → 「10 金」;⑤ 練習測試清理入 try/finally。**Conscious accept**:訓練師 +1 label 跨多 base 級(equip bonus·pre-existing 非本輪);多量賣仍無 yes/no(有數字預設閘·by-design)。
-- 🔴 **鐵律**:`_stay_district` 只在 `not died` 設(死亡照常結算);`_last_practice_skill` 是 session 暫態 UI 捷徑·絕不入檔;賣/丟/熔高價確認門檻 `SELL_CONFIRM_VALUE`/`DESTROY_CONFIRM_VALUE`(調整=改常數·純安全閘不碰經濟);**刻意不含**吸血鬼進食去確認(cost#7·進食有被撞見風險·保留)。**審計餘包 D 長途旅行 + 「戰鬥中用藥水」設計題留後續。**
+- 🔴 **鐵律**:`_stay_district` 只在 `not died` 設(死亡照常結算);`_last_practice_skill` 是 session 暫態 UI 捷徑·絕不入檔;賣/丟/熔高價確認門檻 `SELL_CONFIRM_VALUE`/`DESTROY_CONFIRM_VALUE`(調整=改常數·純安全閘不碰經濟);**刻意不含**吸血鬼進食去確認(cost#7·進食有被撞見風險·保留)。**審計餘包 D 長途旅行 + 「戰鬥中用藥水」〔✓ 後由 R126 完成〕設計題留後續。**
 
 ---
 
@@ -2363,7 +2363,7 @@ OS `prefers-reduced-motion:reduce` 與手動 `data-motion=off` 同時關閉所�
 - **F6 藥草園熟成無信號(MED-LOW)**:`housing.garden_ready_notice`(身處自有房產且藥圃熟 → 一次性提示·session seen 去重·比照 R111 reinfest)掛 game_loop。**F7 告示板無新委託計數(LOW)**:hub 標「告示板（N）」(複用 `available_quests` 同 action_board 過濾)。
 - **驗證**:`run_all` **109**(新 `test_infohud`:增益總覽帶剩時/blessing now-bug/狀態旗鏡像/疾病死碼接活/任務追蹤/商店負重〔含 over 正向〕/地圖旗〔reach 目標正向斷言〕/藥草園去重/HUD 組裝);node --check;**sim byte-identical**(隔離 worktree·純讀 view-model·零碰 combat/formulas);codex 同步。
 - **對抗審查(3 維 6 agent·0 BLOCKER/0 MAJOR)→ confirmed 全處置**:① 角色卡疾病顯示兩次(`_status_flags` 染病×N + `active_labels` 逐病明細)→ `_status_flags` 加 `include_disease` 參數·效果頁略去計數只留明細;② HUD `.h-chip.cyan` 無 CSS 規則(祝福/增益 chip 顯灰·pre-existing)→ 補 `.h-chip.cyan` 規則;③ 地圖節點同時任務+重踞只顯 ◎(三元遮蔽)→ 兩旗並存(金環頂右 ◎ / 紅角底右 ⚔ 不疊);④ 測試 F5/shop over 正向路徑未斷言(tautology)→ 補真任務目標入集合 + over=True 分支。**Conscious accept(NIT)**:board count 每 hub render 重算(非熱迴圈·單動作一次·parity 精確);float 負重長小數(pre-existing·同背包條);「潛伏」vs status_line「潛伏中」(HUD chip 刻意求短)。
-- 🔴 **鐵律**:增益/狀態顯示走 `_timed_buffs`/`_status_flags` 單一資料源(加新限時效果順手掛入);`blessing_label` 帶 now 才顯時數且需自查到期;HUD buffs 排除祝福(避免與專屬 chip 重複);純讀 view-model 零 char 變動 → sim byte-identical。**審計餘二包**(C 經濟 QoL/D 長途旅行)+「戰鬥中用藥水」設計題留後續。
+- 🔴 **鐵律**:增益/狀態顯示走 `_timed_buffs`/`_status_flags` 單一資料源(加新限時效果順手掛入);`blessing_label` 帶 now 才顯時數且需自查到期;HUD buffs 排除祝福(避免與專屬 chip 重複);純讀 view-model 零 char 變動 → sim byte-identical。**審計餘二包**(C 經濟 QoL/D 長途旅行)+「戰鬥中用藥水」〔✓ 後由 R126 完成〕設計題留後續。
 
 ---
 
@@ -2376,7 +2376,7 @@ OS `prefers-reduced-motion:reduce` 與手動 `data-motion=off` 同時關閉所�
 - **前端(index.html)**:① **方向鍵** ArrowUp/Down/Left/Right→`go:n/s/w/e`(查 `curSpec` 有該鍵才吃,**非地城情境方向鍵照常捲頁**);② **Esc=返回**(原 `"0"` else 分支為不可達死碼,順手移除);③ **智慧數字緩衝**:`buf×10 > 選項總數`(不可能再延伸)立即送出 → 城鎮 hub ≥10 鈕的 450ms 稅只剩「1 開頭」真多位數;④ `wireActionableRows` 對 `go:*` 鍵**不接管按鈕**(格子可點之餘保留「往北…」標籤按鈕與數字鍵 —— 修「方向標籤被格子接管後整組消失」);⑤ **閱讀動線**:帶新敘事的幀 → 選單 `scrollIntoView(center)`(上瞥狀態、下瞥 R112「本回合」皆可及;頁面塞得下時無感),純狀態幀維持捲頂 —— 修「每幀捲頂但敘事在頁底」。〔R174 註:已被 R162 續 III 取代——行動後改聚焦資訊區、捲回頁頂,不再置中選單;前端已無 `scrollIntoView`〕
 - **驗證**:`run_all` **108**(新 `test_combat_flow` 10 測:無 mem 零 repeat 相容/repeat 沿用存活目標零選單/死目標重開/castable 閘/上次標記唯一/返回保 flags/援護三修回歸);node --check + mock 測智慧緩衝與方向鍵對映;**sim byte-identical**(隔離 worktree;menu 流零 rng);測試 driver 兩處適配(test_dungeon `_run` 非「地城探索」選單改走 放棄/首項 不餵導航位置模型;test_practice_cost 撬鎖測試答「auto」)。
 - **對抗審查(3 維 6 agent)→ confirmed 全處置**:①(MAJOR)repeat 路徑援護選單「返回」未接 `_back()` → 帶 None 施放**燒掉一整回合**(與「取消不鎖死」目標直接矛盾)→ 鏡像手動路徑補 guard;②(MINOR)`cmem["ally"]` 可指向**已離場召喚物**(summon_turns 歸零但 health>0)→ 對虛空施法 → 補 `la in allies` 成員檢查;③(MINOR)援護型上次動作 + 無存活同伴 → repeat 置頂=一鍵保證浪費回合 → `_repeat_option` 加存活同伴閘;④(NIT)僅剩一敵時「(重選目標)」標籤不實 → 如實顯示自動選中的敵名;⑤(NIT)地圖邊界缺向的方向鍵捲頁(其餘方向移動)→ spec 含任一 `go:*` 即整組接管;⑥ 文件 `_combat_view` 正名 + 撬鎖測試 docstring 同步。**Conscious accept**:智慧緩衝對「不存在的兩位數」誤鍵首位即送(舊行為打字慢同樣觸發;修法=整組退回 450ms 稅);`_back()` 遞迴深度需連按返回數百次,不可達。
-- 🔴 **鐵律**:cmem=場內暫態絕不入檔;repeat 只覆蓋 attack/cast(一次性/每場限次動作刻意不 repeat);目標選單 key=存活索引須與 `console._combat_view` 卡片 key 對齊(動一邊必動另一邊);方向鍵只在 spec 含 `go:*` 時攔截;UI/UX 審計其餘三包(B 資訊可見性/C 經濟 QoL/D 長途旅行)+ 獨立設計題「戰鬥中用藥水」(R30 刻意延後·動平衡需拍板+sim)留後續。
+- 🔴 **鐵律**:cmem=場內暫態絕不入檔;repeat 只覆蓋 attack/cast(一次性/每場限次動作刻意不 repeat);目標選單 key=存活索引須與 `console._combat_view` 卡片 key 對齊(動一邊必動另一邊);方向鍵只在 spec 含 `go:*` 時攔截;UI/UX 審計其餘三包(B 資訊可見性/C 經濟 QoL/D 長途旅行)+ 獨立設計題「戰鬥中用藥水」〔✓ 後由 R126 完成〕(R30 刻意延後·動平衡需拍板+sim)留後續。
 
 ---
 
@@ -3323,7 +3323,16 @@ R88 讓**盜賊公會**拿到階級解鎖招牌動詞(斯庫瑪走私),但**戰�
 - **⑤ 破折號 4 處**:補前後空格(` —— ` 慣例,只補空格不改文意);`test_events_r198` 補守衛(全部 `——` 前後皆空格)。
 - **不做(使用者決定)**:自動存檔(核實為真缺口:全專案只有手動 / 隱退 / 初次三個存檔點,但使用者「不做」)。
 - **驗證**:三個守衛皆突變驗證(還原守衛 / 拿掉 counter 賦值 / 打回無空格破折號 → 各自轉紅);check.sh 全過;`sim_assassin` 與 HEAD snapshot 逐位元組相同。
-- **仍待使用者決定**:破折號以外的 R198 審查項(跨技能經驗平價)、極致死靈師對達貢 0%、R138 龜殼施法者(姿態鎖施法)、R175 兩項(滴漏小讀門檻 / 續問顧問是否計次)、`formulas.py` 速度屬性描述。
+- **〔R207 已逐項裁決,見 §3 R207〕仍待使用者決定(當時)**:破折號以外的 R198 審查項(跨技能經驗平價)、極致死靈師對達貢 0%、R138 龜殼施法者(姿態鎖施法)、R175 兩項(滴漏小讀門檻 / 續問顧問是否計次)、`formulas.py` 速度屬性描述。
+
+### R207 · 待決項裁決收尾(使用者 2026-11-22「照建議」) [content]
+
+- **速度屬性說明修正**:`formulas.ATTRIBUTE_FUNCTION["speed"]`(升級分配 / 角色卡玩家可見)「先攻·逃跑·旅行加速」→「追擊(過 100 後)·逃跑·潛行撤退」。兩處不實:先攻順序只在 `combat.auto_resolve`(單元測試 / 平衡用無 IO 對戰),互動戰鬥是階段制;旅行加速由**運動技能**決定(`world.travel_factor` 只讀 athletics),與速度屬性無關。實際效果 = 逃跑成功率 / 潛行撤退 / 速度過 100 後的追擊(額外行動,漸近 30%,`speed_extra_action_chance`)。
+- **跨技能經驗平價 → 裁決不處理**:事件檢定成功經驗 0.4–0.8(潛行 / 雜技固定 0.6,口才 0.4–0.8,安全 0.4–0.6),對照練習一小時 ≈ 0.55–0.6 xp;單次事件差距 ≤ 0.2 xp 且事件不常觸發,平價收益趨近零卻會動整體成長曲線。
+- **極致死靈師對達貢 0% → 裁決不處理**:R205 後 sim_conj 牆守衛,所有召喚構築(保守 / 激進 / 死靈師 / 極致)對達貢皆 0%(剩血 546–644 / 720);與既有「終王帶隊向」裁決一致,守衛對極致死靈師只印不警示。
+- **R175**:(a)「總量 / session 門檻」→ 不加硬門檻(多數累計屬「即將編輯的那一段」合理例外);(b) 續問顧問計次 → 催交報告不計、追問新問題才計(寫入 `ops.md` §4 上限段)。
+- **R138 龜殼施法者 → 排為下一個獨立里程碑(未動)**:先量測、再出紙面。現況事實:格擋姿態對玩家攻擊有 ×0.75 傷害稅(`GUARD_STANCE_DAMAGE_TAX`),換物理卸力 ≤ 38%(隨 block)、元素折扣(重盾 R138b 0.70);**法術不吃此稅**(`magic.cast` 無引用)→ 重盾 + 姿態 + 施法拿全額卸力卻不付輸出稅。當時「姿態鎖施法 / 戰技」評估原文**未入 handoff**(只在當時對話),須重新推導:A 姿態中施法同吃 ×0.75 / B 姿態鎖施法 / C 維持;量測夾具 arcanist + 重盾 + 姿態,於 現況 / A / B 下量三王與群戰。紅線區(戰鬥常數 → 必跑 sim_assassin;現實邏輯優先)。
+- **過期說明處理(示範)**:R113 / R114 段四處「戰鬥中用藥水 留後續」實已由 R126 完成 → 補〔✓ 後由 R126 完成〕註記(R174 慣例:註記不刪)。
 
 ## 4. 開發節奏(ultracode 開著 → 每個功能都這樣做)
 

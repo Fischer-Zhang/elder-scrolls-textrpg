@@ -45,7 +45,7 @@ ATTRIBUTE_FUNCTION = {
     "intelligence": "法力上限",
     "willpower": "施法續航(回魔)·抗恐懼麻痺·體力",
     "agility": "命中/閃避·體力",
-    "speed": "先攻·逃跑·旅行加速",
+    "speed": "追擊(過 100 後)·逃跑·潛行撤退",
     "endurance": "生命上限·體力",
     "personality": "說服/好感/喝退",
     "luck": "戰利豐厚·撬鎖/逃跑/事件運氣",
