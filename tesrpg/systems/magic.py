@@ -29,6 +29,17 @@ _DISPELLABLE = ("fear", "paralyze", "dot", "weaken", "stagger", "slow")
 REANIMATE_HP_FACTOR = 0.6
 
 
+def nonundead_summon_count(battle: dict | None) -> int:
+    """R203 戰場上存活、未逾時的**非亡者**召喚物數(供 formulas.SUMMON_FIELD_CAP 同場名額判定)。
+    同伴(summon_turns 為 None)與真·亡者(_undead,另受軍團上限)不計;單一出處:法術召喚與種族威能共用。"""
+    from tesrpg.systems import combat
+    if not battle:
+        return 0
+    return sum(1 for a in battle.get("allies", [])
+               if getattr(a, "summon_turns", None) is not None and a.summon_turns > 0
+               and not getattr(a, "_undead", False) and combat.is_alive(a))
+
+
 def _fail(message: str) -> dict:
     """施法失敗時的一致回傳格式(與成功時同樣帶 damage/killed)。"""
     return {"ok": False, "message": message, "damage": 0, "killed": False, "skill_events": []}
@@ -621,6 +632,10 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
                 char.magicka += cost
                 char.fatigue = fatigue_before
                 return _fail("你的亡者軍團已達上限,無法再喚起更多亡者。")
+            if not eff.get("undead") and nonundead_summon_count(battle) >= formulas.SUMMON_FIELD_CAP:
+                char.magicka += cost                       # R203 非亡者召喚物同場名額(比照亡者軍團:不收費、不耗體力、明說原因)
+                char.fatigue = fatigue_before
+                return _fail(f"你同時能駕馭的召喚物已達上限({formulas.SUMMON_FIELD_CAP} 隻),無法再召喚。")
             ally = combat.spawn_creature(gamedata, eff["creature"], rng)
             boon = factions.conjure_boon(char, gamedata)   # 神話黎明:達貢之佑強化召喚物
             smod = mastery.summon_mod(char, gamedata)      # 里程碑:持久召喚(turn_bonus)

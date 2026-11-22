@@ -419,6 +419,10 @@ MOUNTED_CHARGE_DAMAGE_CAP_RATIO = 0.45
 # ×(1+達貢之佑)× 力竭 成長,夾此上限防 apex spell-power 堆疊暴衝(「初始弱」靠 bestiary 基礎下修)。
 # 召喚物傷害仍走 resolve_attack(非玩家路徑·不吃偷襲);調此值或召喚基礎務必重跑 sim_party.py。
 SUMMON_POWER_CAP = 2.0
+# R203 非亡者召喚物同場名額(元素 / 魔人 / 魔靈伴 / 治療精靈 / 祖靈…;使用者拍板 2026-11-22,與亡者軍團 BASE_UNDEAD_CAP=3 對稱)。
+# 此前只有真·亡者受名額限制(magic.cast 的 undead 判定),非亡者無上限 → 貪婪 + 地城預召喚下召喚師可破終王牆(sim 政策鎖 3 隻遮住了)。
+# 調此值務必重跑 sim_conj.py(召喚師 / base 死靈師 vs 達貢應守牆;政策上限必須引用本常數,不可寫死數字)。
+SUMMON_FIELD_CAP = 3
 
 # 徒手「失衡 off-balance」warfare(R##:落實 skills.json 招牌「耗損對手體力」死機制)。
 # 鏡像 R75 conduct 疊層:玩家徒手命中堆疊敵失衡層(暫態 active_effects·不入檔),層數放大

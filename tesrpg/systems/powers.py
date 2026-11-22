@@ -232,6 +232,11 @@ def racial_use(char: Character, state, gamedata: GameData, target=None,
     name = pdef["name"]
     messages: list[str] = []
 
+    if "summon" in eff and battle is not None:   # R203 非亡者召喚物同場名額:滿額 → 不召喚、不燒當日冷卻(比照上方無威能防呆)
+        from tesrpg import formulas
+        if magic.nonundead_summon_count(battle) >= formulas.SUMMON_FIELD_CAP:
+            return {"messages": [f"{name},但你同時能駕馭的召喚物已達上限({formulas.SUMMON_FIELD_CAP} 隻)。"]}
+
     if "self_empower" in eff:   # 自身增傷 buff(combat._self_empower 讀 → 加在 power_bonus,偷襲倍率之後相加 → 守紅線)
         char.active_effects.append({"kind": "berserk_buff",
                                     "magnitude": eff["self_empower"],

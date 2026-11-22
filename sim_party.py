@@ -7,6 +7,7 @@ build 構築 + per-build policy,額外鏡像 main.run_battle 的**同伴階段**
 抵銷 boss DPS)③ 仍有真實死亡風險。每回合:玩家行動 → 同伴支援/攻擊 → boss 反擊(偏好玩家 55%)→
 回合末意志回魔 + tick_effects(全體)+ clamp。保真度邊界同 sim_builds(無走位/距離)。
 """
+from tesrpg import formulas
 from tesrpg.gamedata import get_gamedata
 from tesrpg.systems import combat, magic, necromancy, party, stats
 from tesrpg.rng import RNG
@@ -161,7 +162,7 @@ def _summoner_act(c, boss, rng, battle, st):
     best_cre = gd.spells[best_atro]["effect"]["creature"]
     n_atro = sum(1 for a in living if a.template_id == best_cre)
     have_healer = any(a.template_id == "summoned_healer" for a in living)
-    if len(living) < 3:
+    if magic.nonundead_summon_count(battle) < formulas.SUMMON_FIELD_CAP:   # R203:政策上限引用規則常數(原寫死 3 把「牆 0%」遮成假象;見 sim_conj.py)
         if not have_tank and magic.can_cast(c, gd, "conjure_dremora"):
             magic.cast(c, gd, "conjure_dremora", rng, battle=battle)
             return

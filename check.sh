@@ -2,7 +2,7 @@
 # 一鍵驗證鏈 — 流亡者 (tesrpg)。對應 CLAUDE.md「自動提交閘門」。
 # 用法:
 #   bash check.sh            # 編譯 → 全測試;若 git diff 動到戰鬥常數則自動跑平衡模擬
-#   bash check.sh --sim      # 強制跑 sim_assassin.py + sim_reckless.py + sim_monk.py + sim_dungeon.py + sim_flee.py(平衡回歸)
+#   bash check.sh --sim      # 強制跑 sim_assassin.py + sim_reckless.py + sim_monk.py + sim_dungeon.py + sim_flee.py + sim_conj.py(平衡回歸)
 #   bash check.sh --smoke    # 額外跑無頭煙霧(save/load 往返,只寫暫存目錄,不碰玩家存檔)
 #   bash check.sh --sim --smoke
 # 非零退出 = 有步驟未過。需要 python3 + git;真瀏覽器回歸另需 Playwright dev 依賴。
@@ -94,6 +94,25 @@ if [ "$RUN_SIM" = 1 ]; then
     echo "$FL_OUT" | grep '⚠'
   else
     echo "✓ 脫身守衛全過"
+  fi
+fi
+
+# 3a) 召喚守衛(R203):--sim,或 git diff 動到召喚相關檔就自動跑(sim_party 原不在 check.sh → 守衛只能手動跑、政策還曾遮住規則缺口)
+RUN_CONJ_SIM=$RUN_SIM
+if [ "$RUN_CONJ_SIM" = 0 ] && { git diff --name-only HEAD; git ls-files --others --exclude-standard; } 2>/dev/null \
+     | grep -qE 'tesrpg/formulas\.py|tesrpg/systems/(combat|magic|necromancy|mastery|powers)\.py|tesrpg/data/(mastery|spells)\.json|sim_conj\.py|sim_party\.py'; then
+  RUN_CONJ_SIM=1
+  echo "ℹ 偵測到召喚相關檔變更 → 自動跑召喚守衛 sim_conj.py"
+fi
+if [ "$RUN_CONJ_SIM" = 1 ]; then
+  step "sim_conj.py(R203 召喚守衛:非亡者同場名額規則探針 + 終王牆〔召喚師 / 死靈師打達貢,含爪牙·預召喚〕+ conjuration 選項 vs 不選;約 1–2 分鐘)"
+  CJ_OUT="$(PYTHONPATH=. python3 sim_conj.py)" || fail "sim_conj 執行失敗"
+  echo "$CJ_OUT"
+  if echo "$CJ_OUT" | grep -q '⚠ 守衛警示'; then
+    echo; echo "🔴 召喚守衛出現 ⚠(牆破了/名額規則失效/選項輸給不選/強度過頭),務必人眼覆核(print-only、不自動擋):"
+    echo "$CJ_OUT" | grep '⚠ 守衛警示'
+  else
+    echo "✓ 召喚守衛全過"
   fi
 fi
 

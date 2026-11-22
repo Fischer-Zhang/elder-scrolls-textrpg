@@ -1,0 +1,219 @@
+"""R203 召喚守衛:非亡者召喚物同場名額 + conjuration 里程碑選項(非測試;手動跑:PYTHONPATH=. python3 sim_conj.py [n]
+print-only,不自動擋;接進 check.sh:`--sim`,或 git diff 動到 formulas / combat / magic / necromancy / mastery / powers / mastery.json / spells.json 自動跑)。
+
+為什麼有這支(R203 前置發現,2026-11-22):`sim_party._summoner_act` 曾寫死「最多 3 隻」,遊戲規則卻沒有非亡者名額 →
+「召喚師打達貢 0%」是**政策的產物**;貪婪 + 地城預召喚下不選 21%、持久召喚 54%。同型舊案:R106C 的 `min(3, cap)` 遮蔽終王牆破口。
+本檔的政策**一律引用規則常數**(formulas.SUMMON_FIELD_CAP / necromancy.undead_field_cap),規則被移除或改大時守衛會亮 ⚠。
+
+量什麼(對達貢 720 HP,含 BOSS 爪牙 try_boss_summon、盟友隨機選敵 — 鏡像 main.py ally 階段):
+  ① 終王牆:S 召喚師(保守:坦克 + 治療 + 對系 atronach / 激進:全元素 atronach 填滿名額)、N base 死靈師、N 極致死靈師;
+     情境:單場 / 地城預召喚(自由行動、不回魔,進格 −1 回合)。
+     ⚠ 守衛警示:召喚師 / base 死靈師 勝率 > 5%(牆破了)。極致死靈師只印(使用者拍板「可破牆但難以推疊到極致」)。
+  ② 名額規則探針:法力管夠連施 10 道召喚,場上非亡者召喚物不得超過 SUMMON_FIELD_CAP。⚠ 失效即警示。
+  ③ conjuration 50 / 75 / 100 各選項 vs 全不選(S 激進、N base;古龍 / 烏瑪利):Δ勝率 pp。
+     ⚠ 守衛警示:選項比不選更差 > 8pp(輸給不選)或 > +25pp(強度過頭)。n 小時 ≤ 5pp 視為雜訊。
+⚠ 已知保真度邊界:政策是「合理」非「完美」;單場 + 預召喚不等於整趟地城(token 淨額 / 帶進 BOSS 格的軍團規模需 sim_dungeon 整趟模式,後續補)。
+"""
+import collections
+import sys
+import time
+
+import sim_builds as sb
+import sim_party as sp
+from tesrpg import formulas
+from tesrpg.rng import RNG
+from tesrpg.systems import combat, magic, mastery, necromancy, stats
+
+gd = sb.gd
+N = int(sys.argv[1]) if len(sys.argv) > 1 else 100
+NODES = ("conjuration_50", "conjuration_75", "conjuration_100")
+WALL_BOSS = "mehrunes_dagon"
+EFFECT_BOSSES = ("ancient_dragon", "umaril_the_unfeathered")
+WALL_FLAG_PCT = 5.0            # 召喚師 / base 死靈師打達貢 > 5% = 牆破了
+WORSE_FLAG_PP = 8.0            # 選項比不選差 > 8pp
+OVERPOWER_FLAG_PP = 25.0       # 選項比不選強 > 25pp
+flags: list[str] = []
+
+
+# ── 政策(上限一律引用規則常數)────────────────────────────────────────────────
+def act_conservative(c, boss, rng, battle, st):
+    """保守:sim_party 原召喚師政策(坦克 + 治療精靈 + 對系 atronach;上限已改引用 SUMMON_FIELD_CAP)。"""
+    n0 = len(battle["allies"])
+    sp._summoner_act(c, boss, rng, battle, st)
+    return "summon" if len(battle["allies"]) > n0 else None
+
+
+def act_aggressive(c, boss, rng, battle, st):
+    """激進:名額內全放對系 atronach(最大輸出);滿額後石肌 / 弱術 / 回魔。名額判定走規則函式,不寫死 3。"""
+    if magic.nonundead_summon_count(battle) < formulas.SUMMON_FIELD_CAP:
+        best = sp._best_atronach(boss)
+        if magic.can_cast(c, gd, best):
+            magic.cast(c, gd, best, rng, battle=battle)
+            return "summon"
+    if c.health < c.max_health * 0.4 and magic.can_cast(c, gd, "close_wounds"):
+        magic.cast(c, gd, "close_wounds", rng)
+        return None
+    if not st.get("buffed") and magic.can_cast(c, gd, "stoneflesh"):
+        st["buffed"] = True
+        magic.cast(c, gd, "stoneflesh", rng)
+        return None
+    for sid in ("fireball", "flames"):
+        if magic.can_cast(c, gd, sid):
+            magic.cast(c, gd, sid, rng, target=boss, enemies=[boss], battle=battle)
+            return None
+    sb._regen(c)
+    return None
+
+
+def act_necro(c, boss, rng, battle, st):
+    n0 = len(battle["allies"])
+    sp._necromancer_act(c, boss, rng, battle, st)
+    return "summon" if len(battle["allies"]) > n0 else None
+
+
+# ── 戰鬥(鏡像 main.py:BOSS 爪牙 + 盟友隨機選敵 + 地城預召喚;回合結算走 combat.tick_summons)───────────────
+def fight(maker, act, boss_id, seed, presummon=0, max_rounds=80):
+    c = maker()
+    boss = combat.spawn_creature(gd, boss_id, RNG(seed * 9 + 1))
+    enemies = [boss]
+    rng = RNG(seed)
+    battle = {"allies": []}
+    st = {"buffed": False}
+    for _ in range(presummon):                              # 地城預召喚:自由行動、不回魔;進 BOSS 格 −1 回合
+        if act(c, boss, rng, battle, st) != "summon":
+            break
+    if presummon:
+        battle["allies"], _gone = combat.tick_summons(battle["allies"])
+    rounds = 0
+    for _ in range(max_rounds):
+        if not combat.is_alive(boss):
+            return "win", rounds, 0
+        if c.health <= 0:
+            return "dead", rounds, boss.health
+        rounds += 1
+        if not magic.is_incapacitated(c):
+            act(c, boss, rng, battle, st)
+        if not combat.is_alive(boss):
+            return "win", rounds, 0
+        alive_e = [e for e in enemies if combat.is_alive(e)]
+        for a in sp._living_allies(battle):
+            if not combat.is_alive(boss):
+                break
+            if magic.is_incapacitated(a):
+                continue
+            if magic.summon_support_act(a, c, sp._living_allies(battle), gd) is not None:
+                continue
+            tgt = rng.choice([e for e in enemies if combat.is_alive(e)])
+            a_atk = combat.choose_attack(a, rng, tgt)
+            if a_atk.get("taunt"):
+                a.active_effects.append({"kind": "taunt", "turns": a_atk.get("turns", 3)})
+                continue
+            combat.resolve_attack(a, tgt, gd, rng, attack=a_atk)
+        if not combat.is_alive(boss):
+            return "win", rounds, 0
+        for e in list(enemies):
+            if c.health <= 0:
+                break
+            if not combat.is_alive(e) or magic.is_incapacitated(e):
+                continue
+            if combat.try_boss_summon(e, enemies, gd, rng) is not None:
+                continue
+            tgt = combat.pick_player_side_target(c, battle["allies"], rng)
+            combat.resolve_attack(e, tgt, gd, rng, attack=combat.choose_enemy_attack(e, rng, tgt))
+        battle["allies"], _gone = combat.tick_summons(battle["allies"])
+        sb._regen(c)
+        magic.tick_effects(c, gd)
+        for a in battle["allies"]:
+            if combat.is_alive(a):
+                magic.tick_effects(a, gd)
+        for e in enemies:
+            if combat.is_alive(e):
+                magic.tick_effects(e, gd)
+        stats.clamp_resources(c)
+    return ("win" if not combat.is_alive(boss) else "timeout"), rounds, max(0, boss.health)
+
+
+def rate(maker, act, boss_id, presummon=0, n=None):
+    n = n or N
+    res = [fight(maker, act, boss_id, s, presummon=presummon) for s in range(n)]
+    c = collections.Counter(r[0] for r in res)
+    return c["win"] * 100.0 / n, sum(r[1] for r in res) / n, sum(r[2] for r in res) / n
+
+
+def variant(mk, node=None, opt=None):
+    def f():
+        c = mk()
+        for nid in NODES:
+            c.mastery_choices.pop(nid, None)
+        if node:
+            c.mastery_choices[node] = opt
+        stats.recompute_max_resources(c, gd, restore_full=True)
+        return c
+    return f
+
+
+def flag(msg):
+    flags.append(msg)
+    print(f"  ⚠ 守衛警示:{msg}", flush=True)
+
+
+# ── ① 終王牆 ──────────────────────────────────────────────────────────────────
+def wall():
+    print(f"== ① 終王牆:對 {WALL_BOSS}(720 HP,含爪牙 / 盟友隨機選敵)  n={N}/格  格式 勝率% | 平均回合 | 王剩餘血 ==", flush=True)
+    rows = [("S 召喚師·保守", sb.make_summoner, act_conservative, (0, 20)),
+            ("S 召喚師·激進", sb.make_summoner, act_aggressive, (0, 20)),
+            ("N base 死靈師", sb.make_necromancer, act_necro, (0, 20)),
+            ("N 極致死靈師", sb.make_necromancer_maxed, act_necro, (0, 20))]
+    for label, mk, act, pres in rows:
+        for p in pres:
+            t = time.time()
+            win, rnd, left = rate(variant_keep(mk), act, WALL_BOSS, presummon=p)
+            print(f"{label:14} {'預召喚' if p else '單場  '}  {win:5.1f}% | {rnd:5.1f} | {left:4.0f}   ({time.time() - t:.0f}s)", flush=True)
+            if not label.startswith("N 極致") and win > WALL_FLAG_PCT:
+                flag(f"{label}({'預召喚' if p else '單場'})打達貢勝率 {win:.0f}% > {WALL_FLAG_PCT:.0f}% —— 牆破了:檢查 SUMMON_FIELD_CAP 是否被移除 / 政策是否繞過規則")
+
+
+def variant_keep(mk):
+    return mk                                               # 夾具原樣(含其內建的里程碑選擇)
+
+
+# ── ② 名額規則探針 ─────────────────────────────────────────────────────────────
+def probe():
+    c = sb.make_summoner()
+    c.max_magicka = c.magicka = 9999
+    battle = {"allies": []}
+    sids = ["conjure_dremora", "conjure_healer", "conjure_flame_atronach", "conjure_frost_atronach"]
+    for i in range(10):
+        magic.cast(c, gd, sids[i % 4], RNG(i), battle=battle)
+    n = magic.nonundead_summon_count(battle)
+    print(f"\n== ② 名額規則探針:連施 10 道召喚 → 場上非亡者召喚物 {n} 隻(規則上限 {formulas.SUMMON_FIELD_CAP}) ==", flush=True)
+    if n > formulas.SUMMON_FIELD_CAP:
+        flag(f"名額規則失效:場上 {n} 隻 > SUMMON_FIELD_CAP={formulas.SUMMON_FIELD_CAP}")
+
+
+# ── ③ 各選項 vs 全不選 ─────────────────────────────────────────────────────────
+def conj_options():
+    opts = [(n["id"], o["opt_id"]) for n in gd.mastery if n.get("skill") == "conjuration" and n["id"] in NODES
+            for o in n["options"]]
+    print(f"\n== ③ conjuration 選項 vs 全不選(n={max(60, N * 4 // 5)}/格)  格式 Δ勝率pp(對 {' / '.join(b[:8] for b in EFFECT_BOSSES)}) ==", flush=True)
+    n_eff = max(60, N * 4 // 5)
+    for label, mk, act in (("S 召喚師·激進", sb.make_summoner, act_aggressive), ("N base 死靈師", sb.make_necromancer, act_necro)):
+        base = [rate(variant(mk), act, b, n=n_eff)[0] for b in EFFECT_BOSSES]
+        print(f"{label:14} 不選 基準勝率: " + " / ".join(f"{x:4.0f}%" for x in base), flush=True)
+        for node, opt in opts:
+            vals = [rate(variant(mk, node, opt), act, b, n=n_eff)[0] for b in EFFECT_BOSSES]
+            deltas = [v - b for v, b in zip(vals, base)]
+            print(f"   {node[-3:]} {opt:16} " + " / ".join(f"{d:+5.1f}" for d in deltas), flush=True)
+            for b, d in zip(EFFECT_BOSSES, deltas):
+                if d < -WORSE_FLAG_PP:
+                    flag(f"{label} 選 {opt} 比不選差 {d:+.0f}pp(對 {b})—— 輸給不選")
+                elif d > OVERPOWER_FLAG_PP:
+                    flag(f"{label} 選 {opt} 強 {d:+.0f}pp(對 {b})—— 強度過頭")
+
+
+if __name__ == "__main__":
+    wall()
+    probe()
+    conj_options()
+    print("\n⚠ 已知保真度邊界:政策是「合理」非「完美」;單場 + 預召喚不等於整趟地城(token 淨額、帶進 BOSS 格的軍團規模需 sim_dungeon 整趟模式)。", flush=True)
+    print("✓ sim_conj 無警示" if not flags else f"⚠ sim_conj 共 {len(flags)} 項守衛警示(見上;print-only,務必人眼覆核)", flush=True)

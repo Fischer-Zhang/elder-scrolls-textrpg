@@ -1663,12 +1663,8 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
                 player.active_effects.append({"kind": "triage_ready", "turns": 2})
                 _cmsg("同袍命懸一線 —— 你的戰地醫者本能瞬間繃緊,下一道治療近乎免費。", style="bold green")   # R167 方向1:回合末戰鬥狀態走本回合
         _apply_companion_capstone_auras(player, gamedata, roster, battle["allies"])   # 忠誠弧頂點:逐回合刷新盟友光環
-        # 召喚物計時、移除陣亡/到期的同伴
-        for a in battle["allies"]:
-            if a.summon_turns is not None:
-                a.summon_turns -= 1
-        battle["allies"] = [a for a in battle["allies"]
-                            if combat.is_alive(a) and (a.summon_turns is None or a.summon_turns > 0)]
+        # 召喚物計時、移除陣亡/到期的同伴(R203 combat.tick_summons:與地城每格遞減同一出處)
+        battle["allies"], _gone = combat.tick_summons(battle["allies"])
         # R134 殺王=爪牙潰散:召主在本回合(敵階段反傷/回合末 DoT 等)死亡 → 存活爪牙即刻潰散
         # (自 enemies 移除 → 不進勝利結算 = 無戰利品/擒魂/擊殺計數;while 條件隨之收束戰鬥)。
         if combat.scatter_orphan_summons(enemies, gamedata):
@@ -2644,13 +2640,10 @@ def action_dungeon(state: GameState, gamedata: GameData) -> str | None:
         for a in battle["allies"]:
             for msg in magic.tick_effects(a, gamedata):   # 召喚物的 DoT/再生也報(與玩家 tick 對稱)
                 ui.message(msg, style="grey70")
-            if a.summon_turns is not None:
-                a.summon_turns -= 1
-        for a in [a for a in battle["allies"]
-                  if not combat.is_alive(a) or (a.summon_turns is not None and a.summon_turns <= 0)]:
+        keep, gone = combat.tick_summons(battle["allies"])   # R203:與戰鬥每輪遞減同一出處
+        for a in gone:
             ui.message(f"{a.name}的身影消散了。", style="grey70")
-        battle["allies"][:] = [a for a in battle["allies"]
-                               if combat.is_alive(a) and (a.summon_turns is None or a.summon_turns > 0)]
+        battle["allies"][:] = keep
         return not combat.is_alive(player)
 
     def sync_allies():

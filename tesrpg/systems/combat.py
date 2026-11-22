@@ -449,6 +449,18 @@ def is_alive(actor) -> bool:
     return _get_hp(actor) > 0
 
 
+def tick_summons(allies: list) -> tuple[list, list]:
+    """R203 召喚物回合結算(單一出處:戰鬥每輪 / 地城每走一格 / sim 共用,取代 main.py 兩處各寫一份的遞減)。
+    summon_turns 非 None 者 −1(None = 同伴,不遞減);回傳 (存活且未逾時者, 本次離場者〔陣亡或逾時〕),皆保持原順序。
+    呼叫端:戰鬥 `battle["allies"], gone = tick_summons(battle["allies"])`;地城 `…[:] = keep`,並對 gone 報「身影消散」。"""
+    for a in allies:
+        if a.summon_turns is not None:
+            a.summon_turns -= 1
+    keep = [a for a in allies if is_alive(a) and (a.summon_turns is None or a.summon_turns > 0)]
+    gone = [a for a in allies if not is_alive(a) or (a.summon_turns is not None and a.summon_turns <= 0)]
+    return keep, gone
+
+
 def _apply_dot_capped(target, eff) -> None:
     """對目標施加狀態效果;**dot 按元素設疊加上限**(防多次被擊時同元素 DoT 無限疊加→暴斃)。
     達 `formulas.DOT_STACK_CAP` 層時:新效果較強(magnitude×turns)→ 替換最弱同元素 dot,否則丟棄。
