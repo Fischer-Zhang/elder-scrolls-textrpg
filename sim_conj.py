@@ -12,8 +12,11 @@ print-only,不自動擋;接進 check.sh:`--sim`,或 git diff 動到 formulas / c
   ② 名額規則探針:法力管夠連施 10 道召喚,場上非亡者召喚物不得超過 SUMMON_FIELD_CAP。⚠ 失效即警示。
   ③ conjuration 50 / 75 / 100 各選項 vs 全不選(S 激進、N base;古龍 / 烏瑪利):Δ勝率 pp。
      瞬發契印(75-a)以 `player_phase` 忠實建模:召喚系施法免耗回合 + 召喚物陣亡回補(`combat.quick_seal_*` 與 main 共用)。
-  ④ 群戰(R203c / R203d 的主場;單場 BOSS 戰沒有「第一具屍體」):S 激進 / N base × 4×魔人(硬)/ 5×屍鬼(可起屍);
-     `fight_pack` 鏡像 main 回合結構,就地起屍走 `necromancy.auto_raise`。⚠ 守衛警示同 ③(輸給不選 > 8pp / 強過 25pp)。
+  ④ 群戰(R203c / R203d 的主場;單場 BOSS 戰沒有「第一具屍體」):S 激進 / S 保守 / N base × 8 種敵群(含同類會掉到 100% 以下的難組合);
+     `fight_pack` 鏡像 main 回合結構,就地起屍走 `necromancy.auto_raise`。
+     ⚠ 守衛口徑(R203 評估後改版,使用者 2026-11-22 拍板):裝上選項後的召喚師勝率 > 同敵群「最強同類」(PEERS:戰士 1H/2H、弓手、刺客、盾反;
+     sim_builds 標準策略 `solo_pack`)+ 5pp = 強度過頭;選項比不選差 > 8pp = 輸給不選。**不再用「同構築選項 vs 不選 > +25pp」**:起手慢的激進策略
+     不選時墊底(難敵群 4%),Δ 天然 +60,但裝上瞬發契印後仍低於戰士 1H / 弓手 / 刺客 —— 內比 Δ 會誤報(同類全 100% 的敵群不能判斷,故含難組合)。
      ⚠ 守衛警示:選項比不選更差 > 8pp(輸給不選)或 > +25pp(強度過頭)。n 小時 ≤ 5pp 視為雜訊。
 ⚠ 已知保真度邊界:政策是「合理」非「完美」;單場 + 預召喚不等於整趟地城(token 淨額 / 帶進 BOSS 格的軍團規模需 sim_dungeon 整趟模式,後續補)。
 """
@@ -25,7 +28,7 @@ import sim_builds as sb
 import sim_party as sp
 from tesrpg import formulas
 from tesrpg.rng import RNG
-from tesrpg.systems import combat, magic, mastery, necromancy, stats
+from tesrpg.systems import combat, inventory, magic, mastery, necromancy, stats
 
 gd = sb.gd
 N = int(sys.argv[1]) if len(sys.argv) > 1 else 100
@@ -226,7 +229,53 @@ def conj_options():
 
 
 # ── ④ 群戰(R203c 瞬發契印 / R203d 就地起屍的主場:單場 BOSS 戰看不到「第一具屍體」與「召喚物陣亡回補」)────────────────
-PACKS = (("4×魔人(硬·danger 5)", ("dremora",) * 4), ("5×屍鬼(中·可起屍)", ("draugr",) * 5))
+# 敵群含「同類也會掉到 100% 以下」的難組合(6×魔人 / 4×魔靈 / 3魔人+3風暴亞)—— 否則同類全 100%,「是否超過同類」成了空判斷。
+PACKS = (("4×魔人", ("dremora",) * 4), ("5×魔人", ("dremora",) * 5), ("4×巨魔", ("bog_troll",) * 4),
+         ("3魔人+2風暴亞", ("dremora",) * 3 + ("storm_atronach",) * 2), ("6×魔人", ("dremora",) * 6),
+         ("4×魔靈", ("daedroth",) * 4), ("3魔人+3風暴亞", ("dremora",) * 3 + ("storm_atronach",) * 3),
+         ("5×屍鬼(可起屍)", ("draugr",) * 5))
+# 同類參照 = sim_builds 的完整構築(其標準策略);守衛口徑 = 召喚師(含選項)勝率 vs 同敵群「最強同類」的絕對值,不再看「同構築選項 vs 不選」的內比 Δ
+# (R203 評估:起手慢的激進策略不選時墊底,Δ 天然 +60,但裝上後仍低於戰士 1H / 弓手 / 刺客 —— 內比 Δ 會誤報)。
+PEERS = ("warrior_1H", "warrior_2H", "archer", "assassin", "shield_reflect")
+PEER_MARGIN_PP = 5.0      # 召喚師(含選項)勝率 > 同敵群最強同類 + 5pp = 強度過頭
+
+
+def solo_pack(name, ids, seed, max_rounds=80):
+    """同類構築單挑敵群(鏡像 sim_builds.fight:標準策略 + 戰中用藥;敵人全體攻擊玩家;無召喚物)。回 'win' / 'dead' / 'timeout'。"""
+    c = sb.BUILDS[name]()
+    if name in sb._MELEE_POT_BUILDS:
+        inventory.add_item(c, "healing_potion", sb._COMBAT_POTIONS)
+    foes = [combat.spawn_creature(gd, e, RNG(seed * 13 + i + 1)) for i, e in enumerate(ids)]
+    rng = RNG(seed)
+    act = sb._POLICY[name]
+    st = {"opening": True, "vanish": 0, "aimed": name == "archer", "skip_boss": False, "use_stance": name in sb._STANCE_BUILDS}
+    for _ in range(max_rounds):
+        alive = [e for e in foes if combat.is_alive(e)]
+        if not alive:
+            return "win"
+        if c.health <= 0:
+            return "dead"
+        st["skip_boss"] = False
+        st["enemies"] = alive
+        tgt = min(alive, key=lambda e: e.health)
+        if not magic.is_incapacitated(c):
+            act(c, tgt, rng, st)
+        if not [e for e in foes if combat.is_alive(e)]:
+            return "win"
+        if not st["skip_boss"] and c.health > 0:
+            for e in [e for e in foes if combat.is_alive(e)]:
+                if magic.is_incapacitated(e):
+                    continue
+                atk = combat.choose_enemy_attack(e, rng, c)
+                ev = combat.resolve_attack(e, c, gd, rng, attack=atk)
+                combat.misdirect_redirect(c, e, foes, gd, rng, ev, atk)
+        sb._regen(c)
+        magic.tick_effects(c, gd)
+        for e in foes:
+            if combat.is_alive(e):
+                magic.tick_effects(e, gd)
+        stats.clamp_resources(c)
+    return "win" if not [e for e in foes if combat.is_alive(e)] else "timeout"
 
 
 def fight_pack(maker, act, enemy_ids, seed, max_rounds=60):
@@ -289,29 +338,31 @@ def fight_pack(maker, act, enemy_ids, seed, max_rounds=60):
 
 def pack():
     n_eff = max(60, N * 4 // 5)
-    print(f"\n== ④ 群戰:各 75 階選項 vs 全不選(n={n_eff}/格)  格式 勝率% | 平均回合 | 玩家剩血% ;Δ = 對「不選」的勝率差 pp ==", flush=True)
+    print(f"\n== ④ 群戰:召喚師(各 75 / 100 選項 vs 不選)對照同類最強者(n={n_eff}/格;勝率%;Δ = 對『不選』)  ==", flush=True)
+    print(f"   守衛口徑:裝上選項後的召喚師勝率 > 同敵群最強同類 + {PEER_MARGIN_PP:.0f}pp = ⚠ 強度過頭(內比 Δ 只列參考);選項比不選差 > {WORSE_FLAG_PP:.0f}pp = ⚠", flush=True)
     rows = (("不選", None, None), ("75 瞬發契印", "conjuration_75", "conj_efficiency"),
-            ("75 就地起屍", "conjuration_75", "soul_harvest"), ("100 亡者統御(對照)", "conjuration_100", "undead_dominion"))
+            ("75 就地起屍", "conjuration_75", "soul_harvest"), ("100 亡者統御", "conjuration_100", "undead_dominion"))
+    builds = (("S 激進", sb.make_summoner, act_aggressive), ("S 保守", sb.make_summoner, act_conservative), ("N base", sb.make_necromancer, act_necro))
     for plabel, ids in PACKS:
-        for label, mk, act in (("S 召喚師·激進", sb.make_summoner, act_aggressive), ("N base 死靈師", sb.make_necromancer, act_necro)):
-            print(f"{label:14} vs {plabel}", flush=True)
-            base_win = None
+        peers = {pn: sum(solo_pack(pn, ids, sd) == "win" for sd in range(n_eff)) * 100.0 / n_eff for pn in PEERS if pn in sb.BUILDS}
+        best_name, best = max(peers.items(), key=lambda kv: kv[1])
+        print(f"{plabel:14} 最強同類 {best_name} {best:3.0f}%  (" + " ".join(f"{k}{v:.0f}" for k, v in peers.items()) + ")", flush=True)
+        for label, mk, act in builds:
+            cells, base_win = [], None
             for name, node, opt in rows:
                 res = [fight_pack(variant(mk, node, opt), act, ids, sd) for sd in range(n_eff)]
-                cnt = collections.Counter(r[0] for r in res)
-                win = cnt["win"] * 100.0 / n_eff
-                rnd = sum(r[1] for r in res) / n_eff
-                left = sum(r[2] for r in res) / n_eff * 100
+                win = sum(r[0] == "win" for r in res) * 100.0 / n_eff
                 if base_win is None:
                     base_win = win
-                    print(f"   {name:16} {win:5.1f}% | {rnd:5.1f} | {left:4.0f}%", flush=True)
+                    cells.append(f"{name} {win:3.0f}%")
                     continue
                 d = win - base_win
-                print(f"   {name:16} {win:5.1f}% | {rnd:5.1f} | {left:4.0f}%   Δ{d:+5.1f}", flush=True)
+                cells.append(f"{name} {win:3.0f}%(Δ{d:+.0f})")
                 if d < -WORSE_FLAG_PP:
                     flag(f"{label} 群戰({plabel})選 {name} 比不選差 {d:+.0f}pp —— 輸給不選")
-                elif d > OVERPOWER_FLAG_PP:
-                    flag(f"{label} 群戰({plabel})選 {name} 強 {d:+.0f}pp —— 強度過頭")
+                if win > best + PEER_MARGIN_PP and d > 0:
+                    flag(f"{label} 群戰({plabel})選 {name} 勝率 {win:.0f}% 超過最強同類 {best_name} {best:.0f}% +{PEER_MARGIN_PP:.0f}pp —— 強度過頭")
+            print(f"   {label:7}| " + " | ".join(cells), flush=True)
 
 
 if __name__ == "__main__":
