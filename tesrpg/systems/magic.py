@@ -267,6 +267,44 @@ def _support_cast(caster, spell_id, dests, gamedata, power=1.0, shield_turns_bon
             "message": f"{caster.name}施展「{sp['name']}」 —— {'、'.join(names)}{_ally_verb(sp['effect']['kind'])}。"}
 
 
+def reanimate_candidate(corpses, gamedata: GameData):
+    """亡者復生可喚起的第一具敵屍(取敵群排列順序的第一具,非嚴格死亡先後);無 → None。
+    排除:仍存活者、bestiary 無此模板、solo(首領級)、已復生過、BOSS 召喚爪牙(R134:法力構造無屍可掠,封 reanimate→token
+    回收側門,對齊「戰利品 / 擒魂 / 擊殺計數」三重排除)。亡者復生法術與 R203d「就地起屍」共用同一份資格(單一出處)。"""
+    from tesrpg.systems import combat
+    return next((e for e in (corpses or [])
+                 if not combat.is_alive(e) and getattr(e, "template_id", None)
+                 and e.template_id in gamedata.bestiary
+                 and not gamedata.bestiary[e.template_id].get("solo")
+                 and not getattr(e, "_reanimated", False)
+                 and not getattr(e, "summoned", False)), None)
+
+
+def raise_corpse(char, gamedata: GameData, rng, battle: dict, corpse, eff: dict, fatigue_ratio: float):
+    """把一具敵屍喚為限時真·亡者盟友並加入戰列,回傳該盟友(亡者復生法術與 R203d「就地起屍」共用的單一公式出處)。
+    只負責「起屍」本身:收費(法力 / token)、軍團上限與資格由呼叫端先檢;eff 取復生法術的 effect 參數(turns / hp_factor / turn_bonus)。
+    搬移自 cast 的 reanimate 分支(逐行不變 → 既有復生逐位元組相同:rng 只在 spawn_creature 用一次)。"""
+    from tesrpg.systems import combat, necromancy
+    corpse._reanimated = True   # 同一具屍體不可反覆復生(封無限刷盟友)
+    ally = combat.spawn_creature(gamedata, corpse.template_id, rng)
+    boon = factions.conjure_boon(char, gamedata)
+    smod = mastery.summon_mod(char, gamedata)   # 刻意不讀 smod['extra']:復生綁定單屍(見 _reanimated),雙重召喚不適用
+    um = mastery.undead_mastery_mod(char, gamedata)   # R106C 亡者統御:復生的亡者恆真·亡者
+    fat_pen = formulas.cast_fatigue_power_factor(fatigue_ratio)
+    # base_factor:舊 spell 無 hp_factor 鍵 → REANIMATE_HP_FACTOR(0.6)逐位元組同;reanimate_thrall 帶 1.0 滿血
+    base_factor = eff.get("hp_factor", REANIMATE_HP_FACTOR)
+    uscale = necromancy.undead_conj_scale(char)   # 技能 → 生命(較緩·初始更弱)
+    # 虛弱化的亡魂;仍吃 boon/hp_bonus/力竭(與召喚對稱)+ 亡者統御 + conjuration 技能縮放(生命)
+    hp_mult = base_factor * (1 + boon) * (1 + smod.get("hp_bonus", 0.0)) * (1 + um.get("hp_bonus", 0.0)) * fat_pen * uscale
+    ally.max_health = max(1, round(ally.max_health * hp_mult)) + necromancy.undead_health_bonus(char)   # 亡者生命永久平坦加值
+    ally.health = ally.max_health
+    ally.summon_power = necromancy.undead_attack_scale(char, gamedata) * (1 + um.get("dmg_bonus", 0.0))   # 法術威力 → 攻擊(分軸)
+    ally.summon_turns = eff["turns"] + int(boon * 3) + int(smod.get("turn_bonus", 0)) + int(eff.get("turn_bonus", 0))
+    ally._undead = True   # 復生產物恆真·亡者:戰後回收 / 軍團上限 / 亡者統御
+    battle.setdefault("allies", []).append(ally)
+    return ally
+
+
 def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
          target=None, battle: dict | None = None, enemies: list | None = None,
          corpses: list | None = None, mounted: bool = False, state=None) -> dict:
@@ -659,7 +697,7 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
                 return _fail(f"你同時能駕馭的召喚物已達上限({formulas.SUMMON_FIELD_CAP} 隻),無法再召喚。")
             ally = combat.spawn_creature(gamedata, eff["creature"], rng)
             boon = factions.conjure_boon(char, gamedata)   # 神話黎明:達貢之佑強化召喚物
-            smod = mastery.summon_mod(char, gamedata)      # 里程碑:持久召喚(turn_bonus)
+            smod = mastery.summon_mod(char, gamedata)      # 里程碑:召喚調變(summon_mod:hp / turn_bonus;永契之僕改走 anchor,不再給回合)
             um = mastery.undead_mastery_mod(char, gamedata) if eff.get("undead") else {}   # R106C 亡者統御:真·亡者更強韌兇猛
             # R105 召喚師深化:召喚物強度(HP + 傷害)隨召喚主的 conjuration 威力成長。
             # `power`(:245)已 = _power(conjuration)〔技能+法術威力+智力+奧術連鎖〕× 力竭因子 → 直接複用;
@@ -710,12 +748,7 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
             char.fatigue = fatigue_before
             return _fail("亡者復生需要在戰鬥中施放。")
         from tesrpg.systems import combat, necromancy
-        corpse = next((e for e in (corpses or [])
-                       if not combat.is_alive(e) and getattr(e, "template_id", None)
-                       and e.template_id in gamedata.bestiary
-                       and not gamedata.bestiary[e.template_id].get("solo")
-                       and not getattr(e, "_reanimated", False)
-                       and not getattr(e, "summoned", False)), None)   # R134:BOSS 召喚爪牙=法力構造無屍可掠(封 reanimate→token 回收側門·對齊三重排除)
+        corpse = reanimate_candidate(corpses, gamedata)   # R134 / R203d:資格(含三重排除)為共用單一出處,見該函式
         if corpse is None:
             char.magicka += cost
             char.fatigue = fatigue_before
@@ -730,23 +763,7 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
             char.magicka += cost
             char.fatigue = fatigue_before
             return _fail("你的亡者軍團已達上限,無法再奴役更多亡者。")
-        corpse._reanimated = True   # 同一具屍體不可反覆復生(封無限刷盟友)
-        ally = combat.spawn_creature(gamedata, corpse.template_id, rng)
-        boon = factions.conjure_boon(char, gamedata)
-        smod = mastery.summon_mod(char, gamedata)   # 刻意不讀 smod['extra']:復生綁定單屍(見 _reanimated),雙重召喚不適用
-        um = mastery.undead_mastery_mod(char, gamedata)   # R106C 亡者統御:復生的亡者恆真·亡者
-        fat_pen = formulas.cast_fatigue_power_factor(fatigue_ratio)
-        # base_factor:舊 spell 無 hp_factor 鍵 → REANIMATE_HP_FACTOR(0.6)逐位元組同;reanimate_thrall 帶 1.0 滿血
-        base_factor = eff.get("hp_factor", REANIMATE_HP_FACTOR)
-        uscale = necromancy.undead_conj_scale(char)   # 技能 → 生命(較緩·初始更弱)
-        # 虛弱化的亡魂;仍吃 boon/hp_bonus/力竭(與召喚對稱)+ 亡者統御 + conjuration 技能縮放(生命)
-        hp_mult = base_factor * (1 + boon) * (1 + smod.get("hp_bonus", 0.0)) * (1 + um.get("hp_bonus", 0.0)) * fat_pen * uscale
-        ally.max_health = max(1, round(ally.max_health * hp_mult)) + necromancy.undead_health_bonus(char)   # 亡者生命永久平坦加值
-        ally.health = ally.max_health
-        ally.summon_power = necromancy.undead_attack_scale(char, gamedata) * (1 + um.get("dmg_bonus", 0.0))   # 法術威力 → 攻擊(分軸)
-        ally.summon_turns = eff["turns"] + int(boon * 3) + int(smod.get("turn_bonus", 0)) + int(eff.get("turn_bonus", 0))
-        ally._undead = True   # 復生產物恆真·亡者:戰後回收 / 軍團上限 / 亡者統御
-        battle.setdefault("allies", []).append(ally)
+        ally = raise_corpse(char, gamedata, rng, battle, corpse, eff, fatigue_ratio)   # R203d:與「就地起屍」共用同一份起屍公式
         if tc > 0:
             char.soul_tokens = getattr(char, "soul_tokens", 0) - tc
         token_msg = f"(靈魂 token −{tc},餘 {char.soul_tokens})" if tc > 0 else ""

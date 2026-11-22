@@ -12,6 +12,8 @@ print-only,不自動擋;接進 check.sh:`--sim`,或 git diff 動到 formulas / c
   ② 名額規則探針:法力管夠連施 10 道召喚,場上非亡者召喚物不得超過 SUMMON_FIELD_CAP。⚠ 失效即警示。
   ③ conjuration 50 / 75 / 100 各選項 vs 全不選(S 激進、N base;古龍 / 烏瑪利):Δ勝率 pp。
      瞬發契印(75-a)以 `player_phase` 忠實建模:召喚系施法免耗回合 + 召喚物陣亡回補(`combat.quick_seal_*` 與 main 共用)。
+  ④ 群戰(R203c / R203d 的主場;單場 BOSS 戰沒有「第一具屍體」):S 激進 / N base × 4×魔人(硬)/ 5×屍鬼(可起屍);
+     `fight_pack` 鏡像 main 回合結構,就地起屍走 `necromancy.auto_raise`。⚠ 守衛警示同 ③(輸給不選 > 8pp / 強過 25pp)。
      ⚠ 守衛警示:選項比不選更差 > 8pp(輸給不選)或 > +25pp(強度過頭)。n 小時 ≤ 5pp 視為雜訊。
 ⚠ 已知保真度邊界:政策是「合理」非「完美」;單場 + 預召喚不等於整趟地城(token 淨額 / 帶進 BOSS 格的軍團規模需 sim_dungeon 整趟模式,後續補)。
 """
@@ -223,9 +225,99 @@ def conj_options():
                     flag(f"{label} 選 {opt} 強 {d:+.0f}pp(對 {b})—— 強度過頭")
 
 
+# ── ④ 群戰(R203c 瞬發契印 / R203d 就地起屍的主場:單場 BOSS 戰看不到「第一具屍體」與「召喚物陣亡回補」)────────────────
+PACKS = (("4×魔人(硬·danger 5)", ("dremora",) * 4), ("5×屍鬼(中·可起屍)", ("draugr",) * 5))
+
+
+def fight_pack(maker, act, enemy_ids, seed, max_rounds=60):
+    """玩家 + 召喚物 vs 一群非首領敵人(鏡像 main.run_battle:玩家階段〔含瞬發契印〕→ 盟友 → 敵人 → 回合末就地起屍 → 召喚物計時 + 契印回補)。
+    回 (結果, 回合數, 玩家剩血比例)。就地起屍 / 瞬發契印共用 main 的同一批函式(necromancy.auto_raise / combat.quick_seal_*)。"""
+    c = maker()
+    enemies = [combat.spawn_creature(gd, eid, RNG(seed * 13 + i + 1)) for i, eid in enumerate(enemy_ids)]
+    rng = RNG(seed)
+    battle = {"allies": []}
+    st = {"buffed": False}
+    rounds = 0
+
+    def alive_en():
+        return [e for e in enemies if combat.is_alive(e)]
+
+    for _ in range(max_rounds):
+        if not alive_en():
+            return "win", rounds, max(0.0, c.health / c.max_health)
+        if c.health <= 0:
+            return "dead", rounds, 0.0
+        rounds += 1
+        if not magic.is_incapacitated(c):
+            player_phase(c, alive_en()[0], rng, battle, st, act)
+        if not alive_en():
+            return "win", rounds, max(0.0, c.health / c.max_health)
+        for a in sp._living_allies(battle):
+            if not alive_en():
+                break
+            if magic.is_incapacitated(a):
+                continue
+            if magic.summon_support_act(a, c, sp._living_allies(battle), gd) is not None:
+                continue
+            tgt = rng.choice(alive_en())
+            a_atk = combat.choose_attack(a, rng, tgt)
+            if a_atk.get("taunt"):
+                a.active_effects.append({"kind": "taunt", "turns": a_atk.get("turns", 3)})
+                continue
+            combat.resolve_attack(a, tgt, gd, rng, attack=a_atk)
+        for e in alive_en():
+            if c.health <= 0:
+                break
+            if magic.is_incapacitated(e):
+                continue
+            tgt = combat.pick_player_side_target(c, battle["allies"], rng)
+            combat.resolve_attack(e, tgt, gd, rng, attack=combat.choose_enemy_attack(e, rng, tgt))
+        necromancy.auto_raise(c, gd, rng, battle, enemies)             # R203d:回合末、召喚物計時之前(未選 → 零 rng 略過)
+        battle["allies"], _gone = combat.tick_summons(battle["allies"])
+        combat.quick_seal_recharge(c, gd, _gone)                       # R203c
+        sb._regen(c)
+        magic.tick_effects(c, gd)
+        for a in battle["allies"]:
+            if combat.is_alive(a):
+                magic.tick_effects(a, gd)
+        for e in enemies:
+            if combat.is_alive(e):
+                magic.tick_effects(e, gd)
+        stats.clamp_resources(c)
+    return ("win" if not alive_en() else "timeout"), rounds, max(0.0, c.health / c.max_health)
+
+
+def pack():
+    n_eff = max(60, N * 4 // 5)
+    print(f"\n== ④ 群戰:各 75 階選項 vs 全不選(n={n_eff}/格)  格式 勝率% | 平均回合 | 玩家剩血% ;Δ = 對「不選」的勝率差 pp ==", flush=True)
+    rows = (("不選", None, None), ("75 瞬發契印", "conjuration_75", "conj_efficiency"),
+            ("75 就地起屍", "conjuration_75", "soul_harvest"), ("100 亡者統御(對照)", "conjuration_100", "undead_dominion"))
+    for plabel, ids in PACKS:
+        for label, mk, act in (("S 召喚師·激進", sb.make_summoner, act_aggressive), ("N base 死靈師", sb.make_necromancer, act_necro)):
+            print(f"{label:14} vs {plabel}", flush=True)
+            base_win = None
+            for name, node, opt in rows:
+                res = [fight_pack(variant(mk, node, opt), act, ids, sd) for sd in range(n_eff)]
+                cnt = collections.Counter(r[0] for r in res)
+                win = cnt["win"] * 100.0 / n_eff
+                rnd = sum(r[1] for r in res) / n_eff
+                left = sum(r[2] for r in res) / n_eff * 100
+                if base_win is None:
+                    base_win = win
+                    print(f"   {name:16} {win:5.1f}% | {rnd:5.1f} | {left:4.0f}%", flush=True)
+                    continue
+                d = win - base_win
+                print(f"   {name:16} {win:5.1f}% | {rnd:5.1f} | {left:4.0f}%   Δ{d:+5.1f}", flush=True)
+                if d < -WORSE_FLAG_PP:
+                    flag(f"{label} 群戰({plabel})選 {name} 比不選差 {d:+.0f}pp —— 輸給不選")
+                elif d > OVERPOWER_FLAG_PP:
+                    flag(f"{label} 群戰({plabel})選 {name} 強 {d:+.0f}pp —— 強度過頭")
+
+
 if __name__ == "__main__":
     wall()
     probe()
     conj_options()
+    pack()
     print("\n⚠ 已知保真度邊界:政策是「合理」非「完美」;單場 + 預召喚不等於整趟地城(token 淨額、帶進 BOSS 格的軍團規模需 sim_dungeon 整趟模式)。", flush=True)
     print("✓ sim_conj 無警示" if not flags else f"⚠ sim_conj 共 {len(flags)} 項守衛警示(見上;print-only,務必人眼覆核)", flush=True)

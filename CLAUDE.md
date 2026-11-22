@@ -274,7 +274,7 @@ PYTHONPATH=. python3 sim_flee.py          # 運動 50 健步如飛脫身加成�
 | R200 | 預覽修正包 + 內嵌常數收斂(R199 審計 D2+D3 落地):重盾姿態 / 角色卡護甲值·負重 / 撬鎖塔之鑰 / 充能預覽改走單一出處(`combat.guard_stance_mitigation`·`armor_parts`、`inventory.max_weight_parts`、`dungeon.lock_key_kind`、`enchanting.recharge_outcome`);客棧費·箭雨%·命中上限(含命中鏈夾限)·×1.5·黑市價改引用常數;非機率百分比一律四捨五入(AST 守衛);🔴 零機率改動·5 sim byte-identical·角色卡護甲數字口徑改為戰鬥實際值 | re-sim, save-safe |
 | R201 | 選單 key 相撞掃描收尾:前端 wireActionableRows 只接管「本幀重畫」的面板列(go:* 導航列例外)+ 掃描器 tests/_stale_scan.py + Chromium 回歸;🔴 面板列要可點須與選單同幀送出·新面板補 ROW_FIELDS | save-safe |
 | R202 | 可見性缺口包(R199 D4):行竊失手賞金·監牢刑期·休息預估·淬鍊每級·換裝戰鬥護甲·附魔強度/消耗·陷阱/謎題/祭壇機率,皆走與實擲共用的單一出處;🔴 零機率改動·預覽=實擲對帳·資料文字數字有守衛 | save-safe |
-| R203 | 召喚 75/100 重新設計(a–d 子提交;a 已做):非亡者召喚物同場名額 3 + combat.tick_summons 單一出處 + sim_conj.py 守衛接 check.sh;🔴 政策上限一律引用規則常數·b–d(永契之僕 / 瞬發契印 / 就地起屍)進行中 | re-sim, save-safe |
+| R203 | 召喚 75/100 重新設計 a–d:非亡者名額 3 + tick_summons 出處 / 永契之僕(契僕不逾時)/ 瞬發契印(首道召喚免耗回合)/ 就地起屍(回合末自動起屍);🔴 政策上限引用規則常數·opt_id 不變零遷移 | re-sim, save-safe |
 
 ## 自動提交閘門 / 換 session 前檢查表
 

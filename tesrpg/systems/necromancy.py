@@ -3,7 +3,7 @@
 召喚師的一條**可管理的持久資源迴圈**,把「每次施法花法力」的一次性投入,升級成一條
 跨戰鬥經營的靈魂經濟:
 
-  打怪 → 積 `soul_tokens`(每擊殺 +1,里程碑「亡者收集」再 +1)
+  打怪 → 積 `soul_tokens`(每擊殺 +1,里程碑「就地起屍」兼帶再 +1)
   花 token → 造亡者軍團(`raise_thrall`)/ 強化 `reanimate` / 買永久死靈升級
   戰後 → 回收倖存的**真·亡者**(每具 +1 token)
 
@@ -94,6 +94,32 @@ def undead_count(battle: dict | None) -> int:
                if getattr(a, "_undead", False) and combat.is_alive(a))
 
 
+# --- R203d 就地起屍(conjuration 75-b · opt_id soul_harvest;使用者 2026-11-22 拍板)-------------------
+AUTO_RAISE_SPELL = "reanimate_thrall"   # 起屍參數(滿血 hp_factor 1.0 / 回合 6 + turn_bonus 1)取自「亡者奴役」,但**不收法力 / 體力 / token**
+
+
+def auto_raise(player, gamedata: GameData, rng, battle: dict, enemies: list):
+    """每場戰鬥第一具符合資格的敵屍,於回合末(召喚物計時之前)自動起屍為真·亡者盟友;回傳新盟友,不觸發 → None。
+    資格 = 亡者復生既有排除(`magic.reanimate_candidate`:solo 首領 / 已復生 / BOSS 爪牙 / 無此模板)+ 已選就地起屍 + 已解鎖死靈
+    經濟 + 本場尚未觸發(`battle["auto_raised"]`)+ 戰場上仍有存活敵人(戰局已定的起屍沒有意義,也不讓它白送勝利回收 token)
+    + 亡者軍團未滿(軍團上限滿 → 不耗掉本場那一次,等有空位再起)。取敵群排列順序的第一具(非嚴格死亡先後)。
+    🔴 零 rng 於不觸發路徑(未選 → 第一行就返回,逐位元組同舊);起屍公式走 `magic.raise_corpse`(與亡者復生法術同一出處)。"""
+    from tesrpg.systems import combat, magic, mastery
+    if not (mastery.auto_raise(player, gamedata) and mastery.has_soul_economy(player, gamedata)):
+        return None
+    if battle.get("auto_raised") or not any(combat.is_alive(e) for e in enemies):
+        return None
+    if undead_count(battle) >= undead_field_cap(player):
+        return None
+    corpse = magic.reanimate_candidate(enemies, gamedata)
+    if corpse is None:
+        return None
+    ratio = player.fatigue / player.max_fatigue if player.max_fatigue > 0 else 0.0
+    ally = magic.raise_corpse(player, gamedata, rng, battle, corpse, gamedata.spells[AUTO_RAISE_SPELL]["effect"], ratio)
+    battle["auto_raised"] = True
+    return ally
+
+
 # --- token 花費(真·亡者召喚/復生;吃喚魂精算折減)---------------------------
 def spend_cost(char: Character, base_cost: int) -> int:
     """真·亡者召喚/復生的實際 token 花費 = 基礎 − 喚魂精算(**可降至 0**·使用者拍板)。
@@ -133,7 +159,7 @@ def buy_upgrade(char: Character, gamedata: GameData, upgrade_id: str) -> dict:
 # --- 戰後結算:擊殺給予 + 倖存真·亡者回收 -----------------------------------
 def harvest_and_recover(player: Character, gamedata: GameData,
                         num_kills: int, allies: list) -> dict:
-    """勝利結算:擊殺給 token(含「亡者收集」)+ 回收倖存真·亡者。回傳 {gained, recovered, message}。"""
+    """勝利結算:擊殺給 token(含「就地起屍」兼帶的 +1)+ 回收倖存真·亡者。回傳 {gained, recovered, message}。"""
     from tesrpg.systems import combat, mastery
     if not mastery.has_soul_economy(player, gamedata):   # 死靈經濟里程碑未解鎖(召喚 25)→ 不積 token
         return {"gained": 0, "recovered": 0, "message": None}

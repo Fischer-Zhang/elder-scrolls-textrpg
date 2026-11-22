@@ -1702,6 +1702,10 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
                 player.active_effects.append({"kind": "triage_ready", "turns": 2})
                 _cmsg("同袍命懸一線 —— 你的戰地醫者本能瞬間繃緊,下一道治療近乎免費。", style="bold green")   # R167 方向1:回合末戰鬥狀態走本回合
         _apply_companion_capstone_auras(player, gamedata, roster, battle["allies"])   # 忠誠弧頂點:逐回合刷新盟友光環
+        # R203d 就地起屍:回合末、召喚物計時之前 —— 每場第一具符合資格的敵屍自動起屍(不耗行動 / 法力 / token;未選 → 零 rng 直接略過)
+        _raised = necromancy.auto_raise(player, gamedata, state.rng, battle, enemies)
+        if _raised is not None:
+            _cmsg(f"倒下的{_raised.name}在你的死靈術下重新站起,成為亡者為你而戰({_raised.summon_turns} 回合)!", style="magenta")
         # 召喚物計時、移除陣亡/到期的同伴(R203 combat.tick_summons:與地城每格遞減同一出處)
         battle["allies"], _gone = combat.tick_summons(battle["allies"])
         if combat.quick_seal_recharge(player, gamedata, _gone):   # R203c 非亡者召喚物陣亡 → 契印重新凝聚(逾時消散不算)
@@ -1735,7 +1739,7 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
                 ui.message(msg, style="magenta")
         quests.record_kill(player, e.template_id)
     ui.loot_report(total, gamedata)
-    # R106C 死靈經濟:擊殺收割靈魂 token(含「亡者收集」)+ 回收倖存的真·亡者(只 victory 給予,封逃跑刷)
+    # R106C 死靈經濟:擊殺收割靈魂 token(含「就地起屍」兼帶的 +1)+ 回收倖存的真·亡者(只 victory 給予,封逃跑刷)
     # R134:召喚爪牙不計 token(比照三重排除 —— 否則召喚王變 token 泵)
     harvest = necromancy.harvest_and_recover(
         player, gamedata, sum(1 for e in enemies if not getattr(e, "summoned", False)), battle["allies"])

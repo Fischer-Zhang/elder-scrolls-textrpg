@@ -71,7 +71,7 @@ _IMPLEMENTED_KINDS = {
     "consecration_boost",   # 恢復 75(R122 聖騎士):聖化領域減傷幅度 +(施法時加在 magnitude 上·守護頂點)
     # security 功能化(混合身份):盜賊行竊加成、地城賊眼窺探(布林解鎖)。
     "theft_skill", "dungeon_casing",
-    # R106C 死靈經濟:解鎖(召喚 25·取代省魔)、亡者收集(每擊殺多給 token)、亡者統御(真·亡者更強韌兇猛)。
+    # R106C 死靈經濟:解鎖(召喚 25·取代省魔)、就地起屍〔兼帶:每擊殺多給 token〕、亡者統御(真·亡者更強韌兇猛)。
     "soul_economy", "soul_harvest", "undead_mastery",
     # R120 神秘頂點:秘蝕(布林解鎖)—— 傷害法術削目標魔抗、輔助所有傷害魔法。
     "arcane_erosion",
@@ -384,9 +384,15 @@ def quick_seal(char, gamedata: GameData) -> bool:
 
 
 def soul_harvest_bonus(char, gamedata: GameData) -> int:
-    """R106C「亡者收集」(conjuration 75):每擊殺額外 +N 靈魂 token(SUM 聚合,防未來多源遮蔽)。"""
+    """R106C 亡者收集 → R203d 就地起屍的兼帶效果(conjuration 75 · soul_harvest):每擊殺額外 +N 靈魂 token(SUM 聚合,防未來多源遮蔽)。"""
     return int(sum(o.get("per_kill", 0)
                    for o in _chosen_options_by_kind(char, gamedata, "soul_harvest")))
+
+
+def auto_raise(char, gamedata: GameData) -> bool:
+    """R203d「就地起屍」(conjuration 75-b · opt_id soul_harvest):每場第一具符合資格的敵屍於回合末自動起屍為亡者
+    (兼帶舊 +1 token / 擊殺〔soul_harvest_bonus〕)。同源聚合:任一已選 soul_harvest 節點帶 auto_raise 即成立。"""
+    return any(o.get("auto_raise") for o in _chosen_options_by_kind(char, gamedata, "soul_harvest"))
 
 
 def undead_mastery_mod(char, gamedata: GameData) -> dict:

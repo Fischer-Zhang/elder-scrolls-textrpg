@@ -177,7 +177,7 @@ def make_summoner():
 
 
 def make_necromancer():
-    """死靈師(R106C):conjuration 100 + 亡者統御(真·亡者更強)/亡者收集·主力 = token 召的骷髏奴僕
+    """死靈師(R106C):conjuration 100 + 亡者統御(真·亡者更強)/就地起屍〔舊亡者收集〕·主力 = token 召的骷髏奴僕
     (raise_thrall)+ 強化復生。種子充足 soul_tokens → 隔離『token 稀缺』,測『軍團上限 + 終王牆』本身
     (即使 token 無限,同場真·亡者受 undead_field_cap 夾 → 不得堆軍團越過 dagon 720HP 牆)。"""
     c = build_character(gd, name="靈", sex="male", race="altmer", birthsign="mage", class_id="mage")

@@ -249,11 +249,11 @@ def test_soul_token_gain_per_kill_and_harvest():
     c.soul_tokens = 0
     r = necromancy.harvest_and_recover(c, gd, 3, [])
     assert c.soul_tokens == 3 and r["gained"] == 3 and r["recovered"] == 0
-    # 亡者收集 → 每擊殺額外 +1(共 ×2)
+    # 就地起屍(舊亡者收集)的兼帶 → 每擊殺額外 +1(共 ×2)
     mastery.choose(c, gd, "conjuration_75", "soul_harvest")
     c.soul_tokens = 0
     necromancy.harvest_and_recover(c, gd, 3, [])
-    assert c.soul_tokens == 6, "亡者收集:3 kills × (1+1)"
+    assert c.soul_tokens == 6, "就地起屍兼帶:3 kills × (1+1)"
 
 
 def test_soul_economy_unlocked_at_conjuration_25_milestone():
