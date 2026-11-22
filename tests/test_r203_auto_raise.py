@@ -184,11 +184,13 @@ def _drive(c, script, foes, carry=None):
         step = queue.pop(0) if queue else {"type": "leave"}
         return step(allies) if callable(step) else step
 
-    M._choose_combat_action = chooser
+    msgs, orig_cmsg = [], M._cmsg
+    M._choose_combat_action, M._cmsg = chooser, (lambda text, style="white": msgs.append(text))
     try:
         res = M.run_battle(st, gd, foes, carry_allies=carry)
     finally:
-        M._choose_combat_action = orig_choose
+        M._choose_combat_action, M._cmsg = orig_choose, orig_cmsg
+    _drive.msgs = msgs                                                             # 本場「本回合」戰報(供斷言文字)
     return snaps, res
 
 
@@ -213,6 +215,9 @@ def test_group_battle_first_fallen_enemy_rises_at_round_end_before_the_summon_cl
     assert len(snaps[0]["undead"]) == 0
     assert len(snaps[1]["undead"]) == 1 and snaps[1]["undead"][0].name == f1.name and f1._reanimated is True
     assert snaps[1]["undead_turns"] == [6], "起屍在回合末、計時之前:7 回合先起、同回合末 tick −1 = 6"
+    raised_msgs = [m for m in _drive.msgs if "重新站起" in m]
+    assert len(raised_msgs) == 1 and "(6 回合)" in raised_msgs[0], \
+        f"戰報的回合數 = 它實際還能出手的次數(審查 #1:舊版先印 7 後 −1):{raised_msgs}"
     assert not getattr(f2, "_reanimated", False) and len(snaps[2]["undead"]) == 1, "一場一次"
     assert snaps[1]["tokens"] == snaps[0]["tokens"] == 40, "免費:不收靈魂 token"
 

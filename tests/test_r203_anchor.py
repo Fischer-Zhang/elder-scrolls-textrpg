@@ -177,6 +177,61 @@ def test_hud_payload_flags_the_anchor_and_spell_labels_preview_slots_and_anchor(
     assert M._summon_slot_suffix(c, gd, "flames", []) == "", "非召喚法術不加後綴"
 
 
+def test_full_slots_label_drops_the_anchor_promise_and_effect_text_says_permanent_only_when_it_will_anchor():
+    """審查 #3:名額滿時實際施放會被拒,標籤不得預告「成為契僕」;作用摘要對將成為契僕者標「永駐」而非基礎回合數。"""
+    c = _mage()
+    full = [_ally(turns=8) for _ in range(3)]
+    lbl = M._summon_slot_suffix(c, gd, "conjure_dremora", full)
+    assert "場上 3/3" in lbl and "已滿" in lbl and "契僕" not in lbl, lbl
+    assert M._summon_will_anchor(c, gd, "conjure_dremora", full) is False
+    assert M._summon_will_anchor(c, gd, "conjure_dremora", []) is True
+    assert M._summon_will_anchor(c, gd, "conjure_dremora", [_ally(anchor=True)]) is False, "已有契僕 → 不會再成為契僕"
+    assert M._summon_will_anchor(c, gd, "conjure_healer", []) is False and M._summon_will_anchor(c, gd, "raise_thrall", []) is False
+    assert M._summon_will_anchor(_mage(None), gd, "conjure_dremora", []) is False
+    # 實際行為對帳:滿額被拒、有位才成為契僕
+    assert magic.cast(c, gd, "conjure_dremora", RNG(1), battle={"allies": list(full)})["ok"] is False
+    battle = {"allies": []}
+    assert magic.cast(c, gd, "conjure_dremora", RNG(1), battle=battle)["ok"] and battle["allies"][0]._anchor
+    # 作用摘要
+    t_anchor = M._spell_effect_text(c, gd, "conjure_dremora", [])
+    assert "永駐" in t_anchor and "回合" not in t_anchor, t_anchor
+    for sid, allies in (("conjure_dremora", [_ally(anchor=True)]), ("conjure_healer", []), ("conjure_dremora", full)):
+        t = M._spell_effect_text(c, gd, sid, allies)
+        assert "永駐" not in t and "回合" in t, (sid, t)
+    assert "回合" in M._spell_effect_text(_mage(None), gd, "conjure_dremora", [])
+    assert ui.spell_effect_summary(gd, "conjure_dremora") == M._spell_effect_text(_mage(None), gd, "conjure_dremora", []), "預設參數行為不變"
+
+
+def test_sim_party_summoner_loop_uses_the_shared_tick_so_anchors_do_not_expire_there():
+    """審查 #4:sim_party.fight_summoner 曾自寫遞減迴圈(不認契僕),R203 的 tick_summons 單一出處有第二份漏網。"""
+    import sim_party as sp
+    calls = []
+    orig = combat.tick_summons
+    combat.tick_summons = lambda allies: calls.append(len(allies)) or orig(allies)
+    try:
+        sp.fight_summoner("mehrunes_dagon", 3, max_rounds=3)
+    finally:
+        combat.tick_summons = orig
+    assert calls, "fight_summoner 的回合末召喚時效必須走 combat.tick_summons"
+
+
+def test_codex_and_buffs_catalog_name_the_three_r203_options_exactly_as_the_data_does():
+    """審查 #5:新機制要進 codex / BUFFS.md(同類 R194 有);名稱以 mastery.json 為準,日後改名這裡會亮燈。"""
+    import json
+    import os
+    names = {o["opt_id"]: o["name"] for n in gd.mastery if n["id"] in ("conjuration_75", "conjuration_100") for o in n["options"]}
+    for opt in ("lasting_summon", "conj_efficiency", "soul_harvest"):
+        assert names[opt] in ("永契之僕", "瞬發契印", "就地起屍"), names[opt]
+    codex_text = json.dumps(gd.codex, ensure_ascii=False)
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    buffs_text = open(os.path.join(root, "BUFFS.md"), encoding="utf-8").read()
+    for opt in ("lasting_summon", "conj_efficiency", "soul_harvest"):
+        assert names[opt] in codex_text, f"codex 缺「{names[opt]}」"
+        assert names[opt] in buffs_text, f"BUFFS.md 缺「{names[opt]}」"
+    for stale in ("持久召喚", "召喚精算", "亡者收集"):
+        assert stale not in codex_text, f"codex 殘留舊名「{stale}」"
+
+
 def run():
     for name, fn in sorted(globals().items()):
         if name.startswith("test_") and callable(fn):

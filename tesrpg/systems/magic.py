@@ -738,7 +738,7 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
             blessed = "(達貢之佑加持)" if boon > 0 else ""
             token_msg = f"(靈魂 token −{tc},餘 {char.soul_tokens})" if tc > 0 else ""
             if outcome["anchor"]:
-                msg = f"你召喚出了{ally.name}{blessed}{extra_msg}{token_msg},它成為你的契僕,將追隨你直到被擊殺。"
+                msg = f"你召喚出了{ally.name}{blessed}{extra_msg}{token_msg},它成為你的契僕,不會逾時消散。"
             else:
                 msg = f"你召喚出了{ally.name}{blessed}{extra_msg}{token_msg},它將為你而戰({ally.summon_turns} 回合)。"
 

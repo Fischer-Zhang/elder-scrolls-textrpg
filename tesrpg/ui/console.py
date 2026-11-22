@@ -2104,9 +2104,9 @@ def school_name(school: str) -> str:
     return _SCHOOL_CN.get(school, school)
 
 
-def spell_effect_summary(gamedata: GameData, spell_id: str) -> str:
+def spell_effect_summary(gamedata: GameData, spell_id: str, anchor: bool = False) -> str:
     """把法術 effect 結構渲染成一行可讀「作用」(資料驅動,直接讀 effect 結構顯示基礎效果;
-    施法者加成如達貢之佑增幅召喚不計入此基礎摘要)。"""
+    施法者加成如達貢之佑增幅召喚不計入此基礎摘要)。anchor=True(R203b 永契之僕:這隻召喚物會成為契僕)→ 召喚改標「永駐」。"""
     sp = gamedata.spells[spell_id]
     e = sp["effect"]
     k = e["kind"]
@@ -2158,7 +2158,7 @@ def spell_effect_summary(gamedata: GameData, spell_id: str) -> str:
         return f"擒魂:死亡時捕獲靈魂（{turns} 回合)"
     if k == "summon":
         cn = gamedata.bestiary.get(e.get("creature"), {}).get("name", e.get("creature", ""))
-        return f"召喚 {cn}（{turns} 回合)"
+        return f"召喚 {cn}（永駐 · 不逾時)" if anchor else f"召喚 {cn}（{turns} 回合)"
     if k == "bound_weapon":   # 召喚束縛兵刃
         return f"束縛兵刃:傷害 {mag},無視護甲（{turns} 回合)"
     if k == "ward":           # 神秘結界

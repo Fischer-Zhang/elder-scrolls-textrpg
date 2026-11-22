@@ -620,10 +620,27 @@ def _summon_slot_suffix(char, gamedata: GameData, spell_id: str, allies) -> str:
     eff = gamedata.spells[spell_id].get("effect", {})
     if eff.get("kind") != "summon" or eff.get("undead"):
         return ""
+    n = magic.nonundead_summon_count({"allies": list(allies or [])})
+    if n >= formulas.SUMMON_FIELD_CAP:   # 名額已滿 → 實際施放會被拒,不預告契僕(審查 #3)
+        return f" · 場上 {n}/{formulas.SUMMON_FIELD_CAP}〔已滿〕"
+    return (f" · 場上 {n}/{formulas.SUMMON_FIELD_CAP}"
+            + (" · 成為契僕(永駐)" if _summon_will_anchor(char, gamedata, spell_id, allies) else ""))
+
+
+def _summon_will_anchor(char, gamedata: GameData, spell_id: str, allies) -> bool:
+    """這道召喚法術現在施放會不會讓召喚物成為契僕(名額未滿 + `magic.summon_outcome` 判定;與實際召喚同一出處)。"""
+    eff = gamedata.spells[spell_id].get("effect", {})
+    if eff.get("kind") != "summon" or eff.get("undead"):
+        return False
     battle = {"allies": list(allies or [])}
-    out = magic.summon_outcome(char, gamedata, eff, battle)
-    return (f" · 場上 {magic.nonundead_summon_count(battle)}/{formulas.SUMMON_FIELD_CAP}"
-            + (" · 成為契僕(永駐)" if out["anchor"] else ""))
+    if magic.nonundead_summon_count(battle) >= formulas.SUMMON_FIELD_CAP:
+        return False
+    return bool(magic.summon_outcome(char, gamedata, eff, battle)["anchor"])
+
+
+def _spell_effect_text(char, gamedata: GameData, spell_id: str, allies) -> str:
+    """施法選單的「作用」摘要:將成為契僕的召喚法術標「永駐」而非基礎回合數(審查 #3:舊版仍寫「(5 回合)」與同行「永駐」自相矛盾)。"""
+    return ui.spell_effect_summary(gamedata, spell_id, anchor=_summon_will_anchor(char, gamedata, spell_id, allies))
 
 
 def _quick_seal_suffix(char, gamedata: GameData, spell_id: str) -> str:
@@ -952,7 +969,7 @@ def _choose_combat_action(state: GameState, gamedata: GameData, enemies: list, a
             ui.combat_status_group(player, allies, enemies, gamedata)
         spell_opts = [(s, f"{gamedata.spells[s]['name']}"
                        f"（{magic.effective_cost(player, gamedata, s)} 法力{_spell_token_suffix(player, gamedata, s)}{_summon_slot_suffix(player, gamedata, s, allies)}{_quick_seal_suffix(player, gamedata, s)}) · "
-                       f"{ui.spell_effect_summary(gamedata, s)}")
+                       f"{_spell_effect_text(player, gamedata, s, allies)}")
                       for s in castable]
         _qs = combat.quick_seal_status(player, gamedata)   # R203c 標題帶契印狀態(可用 / 已用;未選不顯示)
         sid = ui.menu("施放哪道法術?" + {"available": "(瞬發契印:可用)", "spent": "(瞬發契印:已用)"}.get(_qs, ""),
@@ -1704,10 +1721,10 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
         _apply_companion_capstone_auras(player, gamedata, roster, battle["allies"])   # 忠誠弧頂點:逐回合刷新盟友光環
         # R203d 就地起屍:回合末、召喚物計時之前 —— 每場第一具符合資格的敵屍自動起屍(不耗行動 / 法力 / token;未選 → 零 rng 直接略過)
         _raised = necromancy.auto_raise(player, gamedata, state.rng, battle, enemies)
-        if _raised is not None:
-            _cmsg(f"倒下的{_raised.name}在你的死靈術下重新站起,成為亡者為你而戰({_raised.summon_turns} 回合)!", style="magenta")
         # 召喚物計時、移除陣亡/到期的同伴(R203 combat.tick_summons:與地城每格遞減同一出處)
         battle["allies"], _gone = combat.tick_summons(battle["allies"])
+        if _raised is not None:   # 戰報在計時「之後」印:新亡者同回合末已 −1,玩家看到的回合數 = 它實際還能出手的次數(審查 #1)
+            _cmsg(f"倒下的{_raised.name}在你的死靈術下重新站起,成為亡者為你而戰({_raised.summon_turns} 回合)!", style="magenta")
         if combat.quick_seal_recharge(player, gamedata, _gone):   # R203c 非亡者召喚物陣亡 → 契印重新凝聚(逾時消散不算)
             _cmsg("召喚物倒下了 —— 契印重新凝聚,下一道召喚系法術又能瞬發。", style="cyan")
         # R134 殺王=爪牙潰散:召主在本回合(敵階段反傷/回合末 DoT 等)死亡 → 存活爪牙即刻潰散
@@ -4834,7 +4851,7 @@ def action_cast_self(state: GameState, gamedata: GameData, battle: dict | None =
         ui.message("你沒有可施放的法術。", style="grey70")
         return
     opts = [(s, f"{gamedata.spells[s]['name']}（{magic.effective_cost(char, gamedata, s)} 法力{_spell_token_suffix(char, gamedata, s)}{_summon_slot_suffix(char, gamedata, s, battle['allies'] if battle else [])})"
-             f" · {ui.spell_effect_summary(gamedata, s)}") for s in usable]
+             f" · {_spell_effect_text(char, gamedata, s, battle['allies'] if battle else [])}") for s in usable]
     sid = ui.menu(f"施放哪道法術?(法力 {int(char.magicka)}/{char.max_magicka})", opts, allow_back=True)
     if sid is None:
         return

@@ -246,10 +246,7 @@ def fight_summoner(boss_id, seed, max_rounds=80, maker=None, act=None):
             return "win"
         tgt = combat.pick_player_side_target(c, battle["allies"], rng)   # boss 反擊(嘲諷 aggro 生效)
         combat.resolve_attack(boss, tgt, gd, rng, attack=combat.choose_attack(boss, rng, tgt))
-        for a in battle["allies"]:                    # 回合末:召喚時效 + tick
-            if a.summon_turns is not None:
-                a.summon_turns -= 1
-        battle["allies"][:] = _living_allies(battle)
+        battle["allies"], _gone = combat.tick_summons(battle["allies"])   # 回合末:召喚時效(R203 單一出處,含契僕不遞減;原自寫遞減漏認契僕)
         sb._regen(c)
         magic.tick_effects(c, gd)
         for a in battle["allies"]:
