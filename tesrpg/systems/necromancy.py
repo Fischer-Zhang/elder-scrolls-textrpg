@@ -103,7 +103,9 @@ def auto_raise(player, gamedata: GameData, rng, battle: dict, enemies: list):
     資格 = 亡者復生既有排除(`magic.reanimate_candidate`:solo 首領 / 已復生 / BOSS 爪牙 / 無此模板)+ 已選就地起屍 + 已解鎖死靈
     經濟 + 本場尚未觸發(`battle["auto_raised"]`)+ 戰場上仍有存活敵人(戰局已定的起屍沒有意義,也不讓它白送勝利回收 token)
     + 亡者軍團未滿(軍團上限滿 → 不耗掉本場那一次,等有空位再起)。取敵群排列順序的第一具(非嚴格死亡先後)。
-    🔴 零 rng 於不觸發路徑(未選 → 第一行就返回,逐位元組同舊);起屍公式走 `magic.raise_corpse`(與亡者復生法術同一出處)。"""
+    🔴 零 rng 於不觸發路徑(未選 → 第一行就返回,逐位元組同舊);起屍公式走 `magic.raise_corpse`(與亡者復生法術同一出處)。
+    使用者 2026-11-22 拍板「屍僕」:起出的亡者成為屍僕(`_servant`:不逾時、地城戰後寫回盟友清單跨戰、直到被擊殺;同時一具、獨立於
+    契僕名額、仍計入亡者軍團上限);所有自動起屍的亡者標 `_free_raised` → 存活不回收 token。"""
     from tesrpg.systems import combat, magic, mastery
     if not (mastery.auto_raise(player, gamedata) and mastery.has_soul_economy(player, gamedata)):
         return None
@@ -116,6 +118,9 @@ def auto_raise(player, gamedata: GameData, rng, battle: dict, enemies: list):
         return None
     ratio = player.fatigue / player.max_fatigue if player.max_fatigue > 0 else 0.0
     ally = magic.raise_corpse(player, gamedata, rng, battle, corpse, gamedata.spells[AUTO_RAISE_SPELL]["effect"], ratio)
+    ally._free_raised = True   # 免費產物:存活不回收 token(未付費就沒有退款;否則不逾時的屍僕等於每場白送 1 token)
+    if not any(getattr(a, "_servant", False) and combat.is_alive(a) for a in battle.get("allies", []) if a is not ally):
+        ally._servant = True   # 屍僕:不逾時、可跨地城戰鬥(戰後寫回盟友清單);同時一具,獨立於契僕名額;已有屍僕時這具是普通限時亡者
     battle["auto_raised"] = True
     return ally
 
@@ -166,7 +171,8 @@ def harvest_and_recover(player: Character, gamedata: GameData,
     per_kill = 1 + mastery.soul_harvest_bonus(player, gamedata)
     gained = max(0, num_kills) * per_kill
     recovered = sum(1 for a in (allies or [])
-                    if getattr(a, "_undead", False) and combat.is_alive(a))
+                    if getattr(a, "_undead", False) and combat.is_alive(a)
+                    and not getattr(a, "_free_raised", False))   # R203d 就地起屍的免費亡者不回收(沒付 token 就沒有退款)
     total = gained + recovered
     if total <= 0:
         return {"gained": 0, "recovered": 0, "message": None}

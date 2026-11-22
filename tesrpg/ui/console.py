@@ -50,10 +50,16 @@ def _party_status(char, gamedata) -> list:
     return out
 
 
+def _is_persistent_servant(a) -> bool:
+    """HUD「永駐」標記:契僕(R203b)或屍僕(R203d)——不逾時者。單一出處在 systems.combat.is_persistent_servant(console 不在頂層依賴 systems)。"""
+    from tesrpg.systems import combat as _combat
+    return _combat.is_persistent_servant(a)
+
+
 def _allies_status(allies) -> list:
     """當前召喚物狀態(名稱 + HP + 剩餘回合),供持久狀態條。"""
     return [{"name": a.name, "hp": [max(0, int(a.health)), int(a.max_health)],
-             "turns": getattr(a, "summon_turns", None), "anchor": bool(getattr(a, "_anchor", False))}
+             "turns": getattr(a, "summon_turns", None), "anchor": _is_persistent_servant(a)}
             for a in (allies or [])
             if a.health > 0 and (getattr(a, "summon_turns", None) is None or a.summon_turns > 0)]
 

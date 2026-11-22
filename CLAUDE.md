@@ -20,6 +20,7 @@ PYTHONPATH=. python3 sim_reckless.py      # 搏命連斬群戰/終王牆守衛(R
 PYTHONPATH=. python3 sim_monk.py          # 徒手 100 崩勁釋放/鐵布衫群戰/終王牆守衛(R193;改徒手/失衡/崩勁參數後跑,約 1 分鐘,⚠ 即警示)
 PYTHONPATH=. python3 sim_dungeon.py       # 整趟地城全清+boss 與終王牆守衛(R194;改一氣呵成/殺勢回體/體力公式後跑,約 30 秒,⚠ 即警示;單場 sim 看不到體力壓力)
 PYTHONPATH=. python3 sim_flee.py          # 運動 50 健步如飛脫身加成守衛(R195;整趟地城最後一搏逃跑政策,量死亡/逃走/通關 vs 節氣,約 1 分鐘,⚠ 即警示;逃跑原不在其他 sim 路徑)
+PYTHONPATH=. CMP_N=120 python3 sim_conj_sides.py   # 召喚系三節點「兩側」分情境對照(R203 後;手動工具·print-only·不接 check.sh·約 8 分鐘):確認每節點兩個選項差距不大、各有選擇理由(被支配 = 沒有理由);須在倉庫根目錄跑
 ```
 - Python 3.12;遊戲 runtime 的 `rich` 可由系統套件提供(`python3-rich`);dev 工具走 `.[dev]`。sudo 需密碼、無 `jq`(寫 hook 要用 `python3` 解析 stdin)。
 - 真瀏覽器測試是 dev-only:安裝 `.[dev]` 後執行 `python3 -m playwright install --with-deps chromium`;遊戲 runtime 仍只有 `rich`。

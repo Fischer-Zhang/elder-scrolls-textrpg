@@ -3,6 +3,8 @@
 規則:每場戰鬥,第一具符合資格的敵屍在**回合末、召喚物計時之前**自動起屍為你的真·亡者盟友 —— 不耗行動、法力、體力與靈魂 token;
 資格 = 亡者復生既有排除(solo 首領 / 已復生 / BOSS 爪牙 / 無此模板)+ 戰場上仍有存活敵人 + 亡者軍團未滿(滿了不耗掉本場那一次)。
 一場一次;取敵群排列順序的第一具;起屍參數取「亡者奴役」(滿血、回合 6 + 1)。兼帶舊 +1 token / 擊殺(Q5)。
+使用者 2026-11-22「改成屍僕」:起出的亡者成為屍僕(`_servant`)—— 不逾時、地城戰後寫回盟友清單跨戰、直到被擊殺;同時一具、獨立於契僕名額、
+仍計入亡者軍團上限;已有屍僕時再起出的是普通限時亡者;所有自動起屍亡者標 `_free_raised` → 存活不回收 token(免費產物不退款)。
 
 🔴 守衛:① 資料 / getter(opt_id 不變、兼帶 per_kill、未選回 False)② 重構不改既有復生:`magic.reanimate_candidate` /
    `raise_corpse` 搬移自 cast 分支,對 HEAD 原樹差分逐位元組同(52 場景)+ 此處黃金值 ③ `necromancy.auto_raise` 資格與一次性、
@@ -205,7 +207,7 @@ def _flames(target):
     return {"type": "cast", "spell_id": "flames", "target": target}
 
 
-def test_group_battle_first_fallen_enemy_rises_at_round_end_before_the_summon_clock_and_only_once():
+def test_group_battle_first_fallen_enemy_rises_at_round_end_as_a_servant_that_never_expires_and_only_once():
     c = _mage()
     f1, f2, f3 = _live(), _live(), _live("draugr")
     snaps, res = _drive(c, [_kill_then_flames(f1, f2),                              # 第 1 回合:f1 倒下
@@ -214,12 +216,102 @@ def test_group_battle_first_fallen_enemy_rises_at_round_end_before_the_summon_cl
     assert res == "fled"
     assert len(snaps[0]["undead"]) == 0
     assert len(snaps[1]["undead"]) == 1 and snaps[1]["undead"][0].name == f1.name and f1._reanimated is True
-    assert snaps[1]["undead_turns"] == [6], "起屍在回合末、計時之前:7 回合先起、同回合末 tick −1 = 6"
+    assert snaps[1]["undead_turns"] == [7], "屍僕不遞減:起手 6+1 回合,同回合末 tick 不扣、之後每輪也不扣"
+    assert snaps[2]["undead_turns"] == [7] and snaps[3]["undead_turns"] == [7]
     raised_msgs = [m for m in _drive.msgs if "重新站起" in m]
-    assert len(raised_msgs) == 1 and "(6 回合)" in raised_msgs[0], \
-        f"戰報的回合數 = 它實際還能出手的次數(審查 #1:舊版先印 7 後 −1):{raised_msgs}"
+    assert len(raised_msgs) == 1 and "屍僕" in raised_msgs[0] and "回合" not in raised_msgs[0], raised_msgs
     assert not getattr(f2, "_reanimated", False) and len(snaps[2]["undead"]) == 1, "一場一次"
     assert snaps[1]["tokens"] == snaps[0]["tokens"] == 40, "免費:不收靈魂 token"
+
+
+def test_when_a_servant_already_stands_the_new_raise_is_an_ordinary_timed_undead_raised_before_the_clock():
+    """屍僕同時一具:場上已有存活屍僕 → 這次起出的是普通限時亡者(審查 #1 的「計時之前」語意:7 回合先起、同回合末 −1 = 6;戰報印 6)。"""
+    c = _mage()
+    old_servant = _undead_ally()
+    old_servant._servant = True
+    f1, f2 = _live(), _live()
+    snaps, _ = _drive(c, [_kill_then_flames(f1, f2), _flames(f2), {"type": "leave"}], [f1, f2], carry=[old_servant])
+    new = [x for x in snaps[1]["undead"] if x is not old_servant]
+    assert len(new) == 1 and not getattr(new[0], "_servant", False) and getattr(new[0], "_free_raised", False)
+    assert snaps[1]["undead_turns"] == [10, 6], "既有屍僕 10 不動;新起的普通亡者 7 −1 = 6"
+    raised_msgs = [m for m in _drive.msgs if "重新站起" in m]
+    assert len(raised_msgs) == 1 and "(6 回合)" in raised_msgs[0] and "屍僕" not in raised_msgs[0], raised_msgs
+
+
+def test_servant_flags_slot_independence_and_cap_accounting():
+    c = _mage()
+    b = {"allies": []}
+    first = necromancy.auto_raise(c, gd, RNG(3), b, [_live(), _corpse("bandit")])
+    assert first._servant is True and first._free_raised is True and first._undead is True
+    b["auto_raised"] = False                                                        # 模擬下一場(戰列保留屍僕、旗標重置)
+    second = necromancy.auto_raise(c, gd, RNG(3), b, [_live(), _corpse("draugr")])
+    assert second is not None and not getattr(second, "_servant", False) and second._free_raised is True
+    assert necromancy.undead_count(b) == 2, "屍僕與普通亡者都計入亡者軍團上限"
+    assert magic.nonundead_summon_count(b) == 0, "屍僕是亡者:不佔非亡者同場名額 3"
+    assert not magic.has_anchor(b), "屍僕不佔契僕名額(獨立)"
+    c2 = _mage("soul_harvest", "lasting_summon")                                    # 同時選 75 起屍 + 100 永契:契僕與屍僕可各一
+    b2 = {"allies": []}
+    assert magic.cast(c2, gd, "conjure_dremora", RNG(1), battle=b2)["ok"] and magic.has_anchor(b2)
+    s2 = necromancy.auto_raise(c2, gd, RNG(3), b2, [_live(), _corpse()])
+    assert s2._servant is True and magic.has_anchor(b2), "屍僕不被契僕擠掉,契僕也不被屍僕擠掉"
+
+
+def test_servants_never_tick_down_but_die_normally_and_are_not_refunded_tokens_at_victory():
+    from tesrpg.systems import combat
+    servant = _undead_ally(turns=3)
+    servant._servant = True
+    servant._free_raised = True
+    plain = _undead_ally(turns=3)
+    has = lambda lst, x: any(a is x for a in lst)                                 # 身分比對(兩隻數值全同,== 會誤判)
+    allies, ever_gone = [servant, plain], []
+    for _ in range(20):
+        allies, gone = combat.tick_summons(allies)
+        ever_gone += gone
+    assert has(allies, servant) and servant.summon_turns == 3, "屍僕不逾時、回合不動"
+    assert not has(allies, plain) and has(ever_gone, plain), "普通亡者照舊逾時離場"
+    servant.health = 0
+    allies, gone = combat.tick_summons(allies)
+    assert has(gone, servant) and allies == [], "被擊殺才離場"
+    # 勝利回收:付費亡者 +1、免費自動起屍亡者 +0
+    c = _mage()
+    t0 = c.soul_tokens
+    paid, free = _undead_ally(), _undead_ally()
+    free._free_raised = True
+    out = necromancy.harvest_and_recover(c, gd, 0, [paid, free])
+    assert out["recovered"] == 1 and c.soul_tokens == t0 + 1, out
+    out = necromancy.harvest_and_recover(c, gd, 0, [free])
+    assert out["recovered"] == 0 and c.soul_tokens == t0 + 1, "只剩免費亡者 → 不回收、不加 token"
+
+
+def test_servant_raised_in_a_dungeon_battle_is_written_back_fights_the_next_battle_and_hud_marks_it():
+    import tesrpg.ui.console as ui_mod
+    c = _mage()
+    dungeon_allies = []
+    f1, f2 = _live(), _live()
+    st = GameState(player=c, rng=RNG(3), time=GameTime())
+    queue = [_kill_then_flames(f1, f2), lambda allies: (setattr(f2, "health", 0) or {"type": "rest"})]
+    seen = []
+    orig = M._choose_combat_action
+    M._choose_combat_action = lambda state, gamedata, enemies, allies, *a, **k: (seen.append(list(allies)) or queue.pop(0)(allies) if queue else {"type": "leave"})
+    try:
+        res = M.run_battle(st, gd, [f1, f2], carry_allies=dungeon_allies, preserve_buffs=True)
+    finally:
+        M._choose_combat_action = orig
+    assert res == "victory"
+    servants = [a for a in dungeon_allies if getattr(a, "_servant", False)]
+    assert len(servants) == 1 and combat.is_alive(servants[0]), "地城戰後存活的屍僕寫回盟友清單"
+    assert ui_mod._allies_status(servants)[0]["anchor"] is True, "HUD 與契僕同樣顯永駐"
+    t_before = c.soul_tokens
+    g1, g2 = _live(), _live()
+    seen2 = []
+    queue2 = [lambda allies: (seen2.append(list(allies)) or setattr(g1, "health", 0) or {"type": "cast", "spell_id": "flames", "target": g2}),
+              lambda allies: (setattr(g2, "health", 0) or {"type": "rest"})]
+    M._choose_combat_action = lambda state, gamedata, enemies, allies, *a, **k: queue2.pop(0)(allies) if queue2 else {"type": "leave"}
+    try:
+        res2 = M.run_battle(st, gd, [g1, g2], carry_allies=dungeon_allies, preserve_buffs=True)
+    finally:
+        M._choose_combat_action = orig
+    assert res2 == "victory" and any(a is servants[0] for a in seen2[0]), "下一場開打時屍僕已在戰列"
 
 
 def test_lone_enemy_never_rises_unselected_never_rises_and_boss_corpse_is_skipped_for_the_next_one():

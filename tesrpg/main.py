@@ -1723,8 +1723,11 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
         _raised = necromancy.auto_raise(player, gamedata, state.rng, battle, enemies)
         # 召喚物計時、移除陣亡/到期的同伴(R203 combat.tick_summons:與地城每格遞減同一出處)
         battle["allies"], _gone = combat.tick_summons(battle["allies"])
-        if _raised is not None:   # 戰報在計時「之後」印:新亡者同回合末已 −1,玩家看到的回合數 = 它實際還能出手的次數(審查 #1)
-            _cmsg(f"倒下的{_raised.name}在你的死靈術下重新站起,成為亡者為你而戰({_raised.summon_turns} 回合)!", style="magenta")
+        if _raised is not None:   # 戰報在計時「之後」印:新亡者同回合末已 −1,玩家看到的回合數 = 它實際還能出手的次數(審查 #1);屍僕不遞減 → 不顯回合
+            if getattr(_raised, "_servant", False):
+                _cmsg(f"倒下的{_raised.name}在你的死靈術下重新站起,成為你的屍僕 —— 不會逾時消散!", style="magenta")
+            else:
+                _cmsg(f"倒下的{_raised.name}在你的死靈術下重新站起,成為亡者為你而戰({_raised.summon_turns} 回合)!", style="magenta")
         if combat.quick_seal_recharge(player, gamedata, _gone):   # R203c 非亡者召喚物陣亡 → 契印重新凝聚(逾時消散不算)
             _cmsg("召喚物倒下了 —— 契印重新凝聚,下一道召喚系法術又能瞬發。", style="cyan")
         # R134 殺王=爪牙潰散:召主在本回合(敵階段反傷/回合末 DoT 等)死亡 → 存活爪牙即刻潰散
@@ -1737,9 +1740,10 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
     # 野外戰鬥(carry_allies 為 None)不寫回:召喚物照舊隨戰鬥結束消散。必須以身分比對(Creature 是 dataclass,== 會把同數值的兩隻當同一隻)。
     if carry_allies is not None and combat.is_alive(player):
         for _a in battle["allies"]:
-            if getattr(_a, "_anchor", False) and combat.is_alive(_a) and all(_a is not _x for _x in carry_allies):
+            if combat.is_persistent_servant(_a) and combat.is_alive(_a) and all(_a is not _x for _x in carry_allies):
                 carry_allies.append(_a)
-                _cmsg(f"{_a.name}仍追隨在你身側 —— 契僕將隨你深入地城,直到被擊殺。", style="cyan")
+                _who = "屍僕" if getattr(_a, "_servant", False) else "契僕"
+                _cmsg(f"{_a.name}仍追隨在你身側 —— {_who}將隨你深入地城,直到被擊殺。", style="cyan")
     player.active_effects.clear()
     state.time.advance(1)
     if not combat.is_alive(player):
