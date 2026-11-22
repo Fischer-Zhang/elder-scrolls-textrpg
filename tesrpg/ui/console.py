@@ -2658,9 +2658,35 @@ def inventory_panel(char: Character, gamedata: GameData) -> None:
 _TIER_CN = {"common": "凡品", "uncommon": "精良", "rare": "稀有", "legendary": "傳奇"}
 
 
+def _armor_after_equip(char: Character, gamedata: GameData, slot: str, item_id: str) -> int:
+    """R202 換上 `item_id` 於 `slot` 之後的**戰鬥護甲**:單一出處 `_armor_display`(→ `combat._armor_rating`,與角色卡同一個數);
+    淺拷角色只換 equipped(與 `inventory.equip_armor` 對 equipped 的寫入同形),不改本體。"""
+    import copy
+    from tesrpg.systems import stats
+    ghost = copy.copy(char)
+    ghost.equipped = {**char.equipped, slot: item_id}
+    if not _has_corrupt_equipment(ghost, gamedata):
+        # 真流程穿完會 recompute(鐵律):強化重 / 輕甲的附魔、帶技能加成的套裝,其 equip_skill_bonus 也要跟著換
+        # (R202 審查 F1:只換 equipped 會讓「強化重甲 +30」的換上 / 卸下顯示持平)。recompute_equipment 只重指派 ghost 自己的
+        # equip_* 屬性(新 dict),不動本體。
+        stats.recompute_equipment(ghost, gamedata)
+    return _armor_display(ghost, gamedata)
+
+
+def _weapon_damage_display(char: Character, gamedata: GameData, weapon_id: str) -> int:
+    """武器「含淬鍊」傷害 = 物品傷害 + 該武器在手時的淬鍊加傷(`smithing.weapon_temper_bonus`,與戰鬥讀取鉤同一個)。"""
+    import copy
+    from tesrpg.systems import smithing
+    ghost = copy.copy(char)
+    ghost.weapon = weapon_id
+    return gamedata.item(weapon_id)["damage"] + smithing.weapon_temper_bonus(ghost, gamedata)
+
+
 def item_compare_panel(char: Character, gamedata: GameData, item_id: str) -> None:
     """換裝對比:選了可換裝的武器/護甲時,先呈現「此物 vs 當前同位裝備」的傷害/護甲增減
-    (供 main._item_actions 在動作選單前呼叫;純呈現,不改狀態)。"""
+    (供 main._item_actions 在動作選單前呼叫;純呈現,不改狀態)。
+    R202:護甲另列「戰鬥護甲 A → B」(換上後角色卡 / 戰鬥實際用的值,含護甲技能折算 / 被動 / 淬鍊…);
+    武器若有淬鍊差異另列「含淬鍊傷害」。「護甲 / 傷害」列仍是物品自身的名目值。"""
     d = gamedata.item(item_id)
 
     def _delta(new: int, old: int) -> str:
@@ -2671,6 +2697,13 @@ def item_compare_panel(char: Character, gamedata: GameData, item_id: str) -> Non
     if d["kind"] == "weapon":
         cur = gamedata.item(char.weapon)
         rows.append({"t": "kv", "k": "傷害", "v": f"{d['damage']}　·　手持 {cur['damage']} {_delta(d['damage'], cur['damage'])}"})
+        from tesrpg.systems import inventory as _inv
+        block = _inv.weapon_equip_block(char, gamedata, item_id)    # 與 equip_weapon 同一個阻擋判定
+        cur_eff, new_eff = _weapon_damage_display(char, gamedata, char.weapon), _weapon_damage_display(char, gamedata, item_id)
+        if block:
+            rows.append({"t": "kv", "k": "含淬鍊傷害", "v": f"目前無法裝備({block})"})
+        elif cur_eff != cur["damage"] or new_eff != d["damage"]:   # 有淬鍊差異才列(否則與上列重複)
+            rows.append({"t": "kv", "k": "含淬鍊傷害", "v": f"手持 {cur_eff} → 換上 {new_eff} {_delta(new_eff, cur_eff)}"})
         rows.append({"t": "kv", "k": "技能", "v": gamedata.skill_name(d["skill"])})
         arch = _ARCHETYPE_CN.get(d.get("archetype"))
         if arch:
@@ -2681,6 +2714,13 @@ def item_compare_panel(char: Character, gamedata: GameData, item_id: str) -> Non
         cur_r = gamedata.item(cur_id)["armor_rating"] if cur_id else 0
         cur_n = gamedata.item(cur_id)["name"] if cur_id else "未穿戴"
         rows.append({"t": "kv", "k": "護甲", "v": f"{d['armor_rating']}　·　該位現 {cur_r} {_delta(d['armor_rating'], cur_r)}"})
+        from tesrpg.systems import inventory as _inv
+        block = _inv.armor_equip_block(char, gamedata, item_id)     # 與 equip_armor 同一個阻擋判定:穿不上就不宣稱數字
+        if block:
+            rows.append({"t": "kv", "k": "戰鬥護甲", "v": f"目前無法穿戴({block})"})
+        else:
+            before, after = _armor_display(char, gamedata), _armor_after_equip(char, gamedata, slot, item_id)
+            rows.append({"t": "kv", "k": "戰鬥護甲", "v": f"{before} → {after} {_delta(after, before)}"})
         rows.append({"t": "kv", "k": "現穿", "v": cur_n})
     if d.get("value"):
         rows.append({"t": "kv", "k": "價值", "v": f"{d['value']} 金"})

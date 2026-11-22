@@ -477,6 +477,49 @@ class BrowserRegression(unittest.TestCase):
         self.page.locator(".dgcell.tappable").nth(0).click()
         self.assertEqual(self.server.answer(), "go:n")
 
+    def test_long_r202_menu_labels_stay_inside_the_viewport_on_desktop_and_phone_r202(self) -> None:
+        """R202 可見性包把數字塞進選單標籤(祭壇「得…｜代價…」、行竊「得手 · 失手賞金」、淬鍊「傷害 +a→+b」、
+        陷阱方位「^ 機關·閃避…」、附魔結果標籤)→ 標籤變長。用真標籤建構函式產生最長的幾條,桌面與手機寬度都不得橫向溢出,
+        且每個按鈕的右緣不超出視窗(審查:本測試量的是版面溢出,不證明文字未被截;長標籤在窄寬度會折行,純視覺)。"""
+        from tesrpg import main as game_main
+        from tesrpg.creation import build_character
+        from tesrpg.gamedata import get_gamedata
+        from tesrpg.systems import enchanting
+
+        gd = get_gamedata()
+        char = build_character(gd, name="客", sex="male", race="nord", birthsign="warrior", class_id="warrior")
+        shrine_labels = [game_main._shrine_offer_label(char, gd, o)
+                         for f in gd.dungeon_features.values() if isinstance(f, dict) and f.get("kind") == "shrine"
+                         for o in f["offers"]]
+        dear = max(gd.items, key=lambda i: (gd.item(i).get("value") or 0, len(gd.item_name(i))))
+        gem = next(i for i in gd.items if gd.item(i).get("kind") == "soul_gem")
+        labels = [
+            max(shrine_labels, key=len),
+            game_main._steal_option_label(char, gd, dear, 12),
+            f"{gd.item_name('iron_sword')} +4/5({game_main._temper_effect_text(char, gd, 'iron_sword', 5)})　需 {gd.item_name('iron_ingot')}(有 12)",
+            "往東 →" + game_main._trap_step_hint(char, gd, {"damage": [12, 24]}),
+            f"荊棘反傷 → {enchanting.preview_label(char, gd, 'armor', 'thorns', '', gem)}",
+            f"強化刀劍 +99 / 抗火焰 +25%",
+        ]
+        self.assertGreater(len(max(labels, key=len)), 40, "夾具要真的產生長標籤")
+        self.server.emit(
+            blocks=[],
+            prompt={"type": "menu", "title": "R202 長標籤", "allow_back": True,
+                    "options": [{"key": f"k{i}", "label": lbl} for i, lbl in enumerate(labels)],
+                    "extra_keys": [], "cta_keys": []},
+            hud=_hud(),
+        )
+        self._open("#prompt button >> nth=0")
+        for width in (1280, 390):
+            self.page.set_viewport_size({"width": width, "height": 800})
+            self.page.wait_for_timeout(150)
+            overflow = self.page.evaluate("() => document.documentElement.scrollWidth - document.documentElement.clientWidth")
+            self.assertLessEqual(overflow, 0, f"寬 {width}:頁面橫向溢出 {overflow}px")
+            rights = self.page.evaluate(
+                "() => Array.from(document.querySelectorAll('#prompt button')).map(b => b.getBoundingClientRect().right)")
+            self.assertGreaterEqual(len(rights), len(labels))
+            self.assertLessEqual(max(rights), width + 1, f"寬 {width}:有按鈕超出視窗右緣")
+
     def test_combat_card_fatigue_and_second_breath_tags_with_hover_tips_r197(self) -> None:
         """R197:我方卡片的「體力不足 / 力竭」與「二次呼吸 可用 / 已用」標籤 —— 文字、好壞色階、滑鼠停留說明(title);
         一般狀態標籤(沒有 tip)不帶 title → 舊行為不變。"""

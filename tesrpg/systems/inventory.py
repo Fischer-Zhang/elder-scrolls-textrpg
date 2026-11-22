@@ -186,13 +186,21 @@ def shed_virtue_locked(char: Character, gamedata: GameData) -> None:
     _shed_by_flag(char, gamedata, "requires_virtue")
 
 
-def equip_weapon(char: Character, gamedata: GameData, item_id: str) -> bool:
+def weapon_equip_block(char: Character, gamedata: GameData, item_id: str) -> str | None:
+    """R202 裝備武器的阻擋原因(單一出處:`equip_weapon` 與換裝對比預覽共用);可裝 → None。"""
     if getattr(char, "beast_form", False):
-        return False   # R144:巨狼之爪無法穿脫裝備
-    if gamedata.item(item_id).get("kind") != "weapon":
-        return False
-    if (count_item(char, item_id) <= 0 or _vampire_locked(char, gamedata, item_id)
-            or _virtue_locked(char, gamedata, item_id)):
+        return "獸形無法穿脫裝備"   # R144:巨狼之爪無法穿脫裝備
+    if gamedata.item(item_id).get("kind") != "weapon" or count_item(char, item_id) <= 0:
+        return "無法裝備"
+    if _vampire_locked(char, gamedata, item_id):
+        return "吸血鬼專屬"
+    if _virtue_locked(char, gamedata, item_id):
+        return "聖物戒律(違戒者不可裝)"
+    return None
+
+
+def equip_weapon(char: Character, gamedata: GameData, item_id: str) -> bool:
+    if weapon_equip_block(char, gamedata, item_id) is not None:
         return False
     char.weapon = item_id
     if is_two_handed(gamedata, item_id):    # 雙手握持 → 自動卸下盾與副手(沿用 remove_item 自動卸裝風格)
@@ -244,15 +252,26 @@ def unequip_offhand(char: Character) -> None:
     char.offhand = ""
 
 
-def equip_armor(char: Character, gamedata: GameData, item_id: str) -> bool:
+def armor_equip_block(char: Character, gamedata: GameData, item_id: str) -> str | None:
+    """R202 穿戴護甲的阻擋原因(單一出處:`equip_armor` 與換裝對比預覽共用);可穿 → None。"""
     if getattr(char, "beast_form", False):
-        return False   # R144:巨狼之爪無法穿脫裝備
+        return "獸形無法穿脫裝備"   # R144:巨狼之爪無法穿脫裝備
     d = gamedata.item(item_id)
-    if (d.get("kind") != "armor" or count_item(char, item_id) <= 0
-            or _vampire_locked(char, gamedata, item_id) or _virtue_locked(char, gamedata, item_id)):
-        return False
+    if d.get("kind") != "armor" or count_item(char, item_id) <= 0:
+        return "無法穿戴"
+    if _vampire_locked(char, gamedata, item_id):
+        return "吸血鬼專屬"
+    if _virtue_locked(char, gamedata, item_id):
+        return "聖物戒律(違戒者不可裝)"
     if d["slot"] == "shield" and is_two_handed(gamedata, char.weapon):   # 雙手武器在手 → 不能裝盾
+        return "雙手武器在手,裝不了盾"
+    return None
+
+
+def equip_armor(char: Character, gamedata: GameData, item_id: str) -> bool:
+    if armor_equip_block(char, gamedata, item_id) is not None:
         return False
+    d = gamedata.item(item_id)
     char.equipped[d["slot"]] = item_id
     if d["slot"] == "shield" and is_great_shield(gamedata, item_id):   # 雙手重盾占雙手 → 卸副手(手持武器戰中休眠)
         char.offhand = ""

@@ -61,6 +61,15 @@ def steal_chance(char: Character, gamedata: GameData, item_id: str | None = None
     return max(0.05, min(0.95, base))
 
 
+def steal_fine(char: Character, gamedata: GameData, item_id: str) -> int:
+    """R202 行竊失手的賞金增量(單一出處:選單預覽「失手賞金 +N」與實擲 `steal_item` 共用)。
+    max(20, 價值×2) × 「順手牽羊」失風賞金減免(mastery.theft_bonus)× 幻術魅惑術失風賞金 ×0.7(R104)。"""
+    from tesrpg.systems import mastery, spellfx
+    value = gamedata.item(item_id)["value"]
+    bf = mastery.theft_bonus(char, gamedata).get("bounty_factor", 1.0)   # 「順手牽羊」失風賞金減免
+    return int(round(max(20, value * 2) * bf * spellfx.charm_bounty_factor(char)))   # R104 幻術魅惑術:失風賞金 ×0.7
+
+
 def steal_item(char: Character, gamedata: GameData, item_id: str, rng: RNG) -> dict:
     """嘗試從商店順手牽羊。回傳 {ok, caught, bounty_added, hours, tired, skill_events}。
 
@@ -68,17 +77,15 @@ def steal_item(char: Character, gamedata: GameData, item_id: str, rng: RNG) -> d
     讓行竊不再繞過正規訓練的代價;且**得手才學到手藝**(被抓不給潛行 xp →
     杜絕「故意被抓刷潛行」)。
     """
-    from tesrpg.systems import inventory, mastery, spellfx
+    from tesrpg.systems import inventory
     province = province_of(char, gamedata)
-    value = gamedata.item(item_id)["value"]
     xp, hours, tired = progression.practice_cost(char, gamedata, "sneak")
     if rng.chance(steal_chance(char, gamedata, item_id)):
         inventory.add_item(char, item_id, 1)
         events = progression.use_skill(char, gamedata, "sneak", xp)
         return {"ok": True, "caught": False, "bounty_added": 0,
                 "hours": hours, "tired": tired, "skill_events": events}
-    bf = mastery.theft_bonus(char, gamedata).get("bounty_factor", 1.0)   # 「順手牽羊」失風賞金減免
-    fine = int(round(max(20, value * 2) * bf * spellfx.charm_bounty_factor(char)))   # R104 幻術魅惑術:失風賞金 ×0.7
+    fine = steal_fine(char, gamedata, item_id)
     add_bounty(char, province, fine)
     return {"ok": False, "caught": True, "bounty_added": fine,
             "hours": hours, "tired": tired, "skill_events": []}

@@ -136,6 +136,55 @@ def jewelry_magnitude(kind: str, soul: int, mysticism_skill: int, param: str | N
     return max(1, round(soul * factor * base))
 
 
+# --- R202 強度報價(單一出處:各 enchant_* 的實擲與附魔選單預覽共用;算式原樣搬出,零行為改動)-------------
+def quote_jewelry(char: Character, gamedata: GameData, kind: str, param: str, gem_id: str) -> int:
+    from tesrpg.systems import mastery
+    soul = gamedata.item(gem_id).get("soul", 1)
+    return round(jewelry_magnitude(kind, soul, char.skill("mysticism"), param) * (1 + mastery.enchant_potency(char, gamedata)))
+
+
+def quote_weapon_element(char: Character, gamedata: GameData, gem_id: str) -> int:
+    from tesrpg.systems import mastery
+    soul = gamedata.item(gem_id).get("soul", 1)
+    return round(enchant_magnitude(soul, char.skill("mysticism")) * (1 + mastery.enchant_potency(char, gamedata)))
+
+
+def quote_armor(char: Character, gamedata: GameData, kind: str, param: str, gem_id: str) -> int:
+    from tesrpg.systems import mastery
+    soul = gamedata.item(gem_id).get("soul", 1)
+    if kind == "thorns":   # 荊棘:純靈魂石階%、不吃 enchant_potency
+        return armor_magnitude(kind, soul, char.skill("mysticism"))
+    return round(armor_magnitude(kind, soul, char.skill("mysticism"), param) * (1 + mastery.enchant_potency(char, gamedata)))
+
+
+def quote_weapon_status(char: Character, gamedata: GameData, status: str, gem_id: str) -> tuple[int, int]:
+    from tesrpg.systems import mastery
+    soul = gamedata.item(gem_id).get("soul", 1)
+    pot = 1 + mastery.enchant_potency(char, gamedata)
+    return weapon_status_magnitude(status, soul, char.skill("mysticism"), pot)
+
+
+def preview_label(char: Character, gamedata: GameData, domain: str, kind: str, param: str, gem_id: str) -> str:
+    """R202 附魔選單預覽:選這個效果會得到的附魔標籤 —— 與結果物品名稱括號內的字**同字**(`synth.*_label` 單一出處)。
+    domain:weapon_element(kind=元素)/ weapon_status(kind=觸發狀態)/ armor / jewelry(kind + param)。"""
+    if domain == "weapon_element":
+        return synth.weapon_element_label(kind, quote_weapon_element(char, gamedata, gem_id))
+    if domain == "weapon_status":
+        mag, turns = quote_weapon_status(char, gamedata, kind, gem_id)
+        return synth.weapon_status_label(kind, mag, turns)
+    if domain == "armor":
+        return synth.armor_enchant_label(kind, param, quote_armor(char, gamedata, kind, param, gem_id), gamedata)
+    return synth.jewelry_enchant_label(kind, param, quote_jewelry(char, gamedata, kind, param, gem_id), gamedata)
+
+
+def cost_text(char: Character, gamedata: GameData, gem_id: str, base_id: str) -> str:
+    """R202 附魔消耗:魂石 ×1 + 基底物 ×1(轉為附魔品)· 神秘練習的耗時 / 體力(取自 `progression.practice_quote`,
+    與實擲 `practice_cost` 同一份報價;體力不足 → 練習 xp 減半)。"""
+    _xp, hours, tired, fatigue = progression.practice_quote(char, gamedata, "mysticism")
+    text = f"耗 {gamedata.item_name(gem_id)} ×1 + {gamedata.item_name(base_id)} ×1 · {hours} 小時 · 體力 −{fatigue}"
+    return text + ("(體力不足:神秘練習 xp 減半)" if tired else "")
+
+
 def enchant_jewelry(char: Character, gamedata: GameData, base_jewelry: str,
                     kind: str, param: str, gem_id: str) -> dict:
     """為飾品附上 強化技能/屬性/抗元素/強化資源。回傳同 enchant_weapon。"""
@@ -144,9 +193,7 @@ def enchant_jewelry(char: Character, gamedata: GameData, base_jewelry: str,
     if kind not in ("skill", "attr", "resist", "res"):
         return {"ok": False, "message": "未知的附魔型別。", "hours": 0, "tired": False, "skill_events": []}
 
-    soul = gamedata.item(gem_id).get("soul", 1)
-    from tesrpg.systems import mastery
-    mag = round(jewelry_magnitude(kind, soul, char.skill("mysticism"), param) * (1 + mastery.enchant_potency(char, gamedata)))
+    mag = quote_jewelry(char, gamedata, kind, param, gem_id)
 
     inventory.remove_item(char, base_jewelry, 1)
     inventory.remove_item(char, gem_id, 1)
@@ -166,9 +213,7 @@ def enchant_weapon(char: Character, gamedata: GameData, base_weapon: str,
     if element not in ELEMENTS:
         return {"ok": False, "message": "未知的元素。", "hours": 0, "tired": False, "skill_events": []}
 
-    soul = gamedata.item(gem_id).get("soul", 1)
-    from tesrpg.systems import mastery
-    mag = round(enchant_magnitude(soul, char.skill("mysticism")) * (1 + mastery.enchant_potency(char, gamedata)))
+    mag = quote_weapon_element(char, gamedata, gem_id)
 
     inventory.remove_item(char, base_weapon, 1)
     inventory.remove_item(char, gem_id, 1)
@@ -201,12 +246,7 @@ def enchant_armor(char: Character, gamedata: GameData, base_armor: str,
     if kind not in ("res", "skill", "resist", "thorns"):
         return {"ok": False, "message": "未知的附魔型別。", "hours": 0, "tired": False, "skill_events": []}
 
-    soul = gamedata.item(gem_id).get("soul", 1)
-    from tesrpg.systems import mastery
-    if kind == "thorns":   # 荊棘:純靈魂石階%、不吃 enchant_potency
-        mag = armor_magnitude(kind, soul, char.skill("mysticism"))
-    else:
-        mag = round(armor_magnitude(kind, soul, char.skill("mysticism"), param) * (1 + mastery.enchant_potency(char, gamedata)))
+    mag = quote_armor(char, gamedata, kind, param, gem_id)
 
     inventory.remove_item(char, base_armor, 1)
     inventory.remove_item(char, gem_id, 1)
@@ -245,10 +285,7 @@ def enchant_weapon_status(char: Character, gamedata: GameData, base_weapon: str,
     if status not in _WEAPON_STATUSES:
         return {"ok": False, "message": "未知的觸發效果。", "hours": 0, "tired": False, "skill_events": []}
 
-    soul = gamedata.item(gem_id).get("soul", 1)
-    from tesrpg.systems import mastery
-    pot = 1 + mastery.enchant_potency(char, gamedata)
-    mag, turns = weapon_status_magnitude(status, soul, char.skill("mysticism"), pot)
+    mag, turns = quote_weapon_status(char, gamedata, status, gem_id)
 
     inventory.remove_item(char, base_weapon, 1)
     inventory.remove_item(char, gem_id, 1)

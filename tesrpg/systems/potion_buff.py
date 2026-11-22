@@ -78,6 +78,11 @@ def _buff_label(kind: str, param: str, magnitude: int, gamedata: GameData) -> st
     return ""
 
 
+def buff_label(kind: str, param: str, magnitude: int, gamedata: GameData) -> str:
+    """R202 公開:增益的人類可讀標籤(「強化耐力 +12」「抗火焰 +25%」)。祭壇選項預覽與 `apply_buff` 回傳是同一個函式。"""
+    return _buff_label(kind, param, magnitude, gamedata)
+
+
 # ======================================================================
 # 飲用 / 每圈 update / 存檔遷移
 # ======================================================================

@@ -389,23 +389,55 @@ def action_practice(state: GameState, gamedata: GameData) -> None:
                    style="grey70")
 
 
-def action_rest(state: GameState, gamedata: GameData) -> str | None:
-    hours = ui.ask_int("休息幾小時?", default=8, lo=1, hi=24)
-    char = state.player
-    no_magicka_regen = char.birthsign == "atronach"
+REST_PREVIEW_HOURS = (4, 8, 24)   # R202:休息提示列出的預估時數(小憩 / 預設 / 上限)
 
-    char.fatigue = min(char.max_fatigue, char.fatigue + char.max_fatigue * hours / 8)
-    # 亞龍癒膚(R61):休息 HP 回復加成(非亞龍 ×1 → 不變)
-    char.health = min(char.max_health, char.health
-                      + char.max_health * hours / 24 * (1 + race_ability.histskin_factor(char, gamedata)))
-    if not no_magicka_regen:   # 意志「施法續航」:回魔速率隨意志(base-40 中性 ×1.0)。高精靈高貴血脈再乘加成(非高精靈 ×1)
+
+def rest_outcome(char, gamedata: GameData, hours: int) -> dict:
+    """R202 原地休息 `hours` 小時後的 {fatigue, health, magicka} 新值(含上限夾限)。
+    單一出處:`action_rest` 的實際回復與休息提示的「預估回復」共用,預覽不自己重算公式層。
+    體力 = 最大體力 × 時數/8;生命 = 最大生命 × 時數/24 ×(1 + 亞龍癒膚 R61);法力(非巨魔像座)= 最大法力 × 時數/12 ×
+    意志「施法續航」係數(base-40 中性 ×1.0)× 高精靈高貴血脈係數(非高精靈 ×1)。"""
+    fatigue = min(char.max_fatigue, char.fatigue + char.max_fatigue * hours / 8)
+    health = min(char.max_health, char.health
+                 + char.max_health * hours / 24 * (1 + race_ability.histskin_factor(char, gamedata)))
+    magicka = char.magicka
+    if char.birthsign != "atronach":   # 巨魔像座:法力不會自然回復
         rate = (hours / 12 * formulas.magicka_regen_rest_factor(char.attr("willpower"))
                 * race_ability.magicka_regen_factor(char, gamedata))
-        char.magicka = min(char.max_magicka, char.magicka + char.max_magicka * rate)
+        magicka = min(char.max_magicka, char.magicka + char.max_magicka * rate)
+    return {"fatigue": fatigue, "health": health, "magicka": magicka}
+
+
+def _rest_gain_text(char, new: dict) -> str:
+    """回復量文字:新值 − 現值(四捨五入);已滿標「滿」;巨魔像座不列法力(不會回)。"""
+    def seg(label, cur, nxt, cap):
+        gain = round(nxt - cur)
+        return f"{label}+{gain}" if gain > 0 else (f"{label}滿" if cur >= cap else f"{label}+0")
+    parts = [seg("體力", char.fatigue, new["fatigue"], char.max_fatigue),
+             seg("生命", char.health, new["health"], char.max_health)]
+    if char.birthsign != "atronach":
+        parts.append(seg("法力", char.magicka, new["magicka"], char.max_magicka))
+    return " ".join(parts)
+
+
+def rest_prompt(char, gamedata: GameData) -> str:
+    """R202 「休息幾小時?」提示:附 4 / 8 / 24 小時各自的預估回復(取自與實際休息同一個 `rest_outcome`)。"""
+    parts = [f"{h} 小時:{_rest_gain_text(char, rest_outcome(char, gamedata, h))}" for h in REST_PREVIEW_HOURS]
+    return "休息幾小時?(預估回復 — " + " ｜ ".join(parts) + ")"
+
+
+def action_rest(state: GameState, gamedata: GameData) -> str | None:
+    char = state.player
+    hours = ui.ask_int(rest_prompt(char, gamedata), default=8, lo=1, hi=24)
+    no_magicka_regen = char.birthsign == "atronach"
+
+    out = rest_outcome(char, gamedata, hours)
+    gained = _rest_gain_text(char, out)              # 先取回復量(新值 − 現值),再寫回
+    char.fatigue, char.health, char.magicka = out["fatigue"], out["health"], out["magicka"]
 
     party.heal(char, gamedata, hours / 24)   # 同伴隨休息回復(負傷者康復後可再上陣)
     state.time.advance(hours)
-    ui.message(f"你休息了 {hours} 小時,神清氣爽。")
+    ui.message(f"你休息了 {hours} 小時,神清氣爽。({gained})")
     if no_magicka_regen:
         ui.message("（巨魔像座:法力不會自然回復,需靠吸收魔法補充。)", style="grey70")
 
@@ -2304,6 +2336,36 @@ def _resolve_container(state: GameState, gamedata: GameData, container: dict, la
     ui.loot_report(spoils, gamedata)
 
 
+def _trap_dodge_chance(char, gamedata: GameData) -> float:
+    """R202 陷阱規避率(單一出處:`_resolve_trap` 的實擲與移動選項 / 結果訊息的預覽共用)。
+    敏捷 / 安全 / 幸運為底(上限 0.9),里程碑「機關通曉」避陷保底。念力術(R121)不擲骰、直接免傷 → 呼叫端先判。"""
+    dodge = min(0.9, 0.30 + (char.attr("agility") - 40) * 0.01 + char.skill("security") * 0.003
+                + formulas.luck_fortune(char.attr("luck")))
+    return max(dodge, mastery.trap_floor(char, gamedata))   # 里程碑「機關通曉」:避陷保底
+
+
+def _trap_step_hint(char, gamedata: GameData, trap: dict) -> str:
+    """R202 已揭示未結算的陷阱格(UI 顯 ^):移動前就看到閃避率與失手傷害範圍(念力術 → 免傷)。"""
+    if spellfx.is_telekinetic(char):
+        return "(^ 機關·念力:免傷)"
+    lo, hi = trap.get("damage", [4, 8])
+    return f"(^ 機關·閃避 {ui.pct(_trap_dodge_chance(char, gamedata))}%·失手 {lo}–{hi} 傷)"
+
+
+def _dungeon_move_options(player, gamedata: GameData, grid: dict, z: int, x: int, y: int,
+                          explored: list, resolved: list) -> list:
+    """地城探索選單的方位選項 [("go:<key>", "往<方位>[(^ 機關·閃避 N%·失手 a–b 傷)]")]。
+    R202:已揭示未結算的陷阱格(小地圖顯 ^)→ 移動選項先標閃避率與失手傷害,踏上去前就能評估;
+    未揭示的鄰格不標(不洩漏未探明內容),已結算者不標。"""
+    opts = []
+    for key, label, nx, ny in dungeoncrawl.neighbors(grid, x, y):
+        ncell = dungeoncrawl.cell_at(grid, z, nx, ny)
+        hint = (_trap_step_hint(player, gamedata, ncell["trap"])
+                if explored[z][ny][nx] and not resolved[z][ny][nx] and ncell["type"] == dungeoncrawl.TRAP else "")
+        opts.append(("go:" + key, f"往{label}{hint}"))
+    return opts
+
+
 def _resolve_trap(state: GameState, gamedata: GameData, trap: dict) -> None:
     """陷阱格:擲 敏捷/安全/幸運 規避;失敗受少量傷(可被治療,刻意非高致命;極低血才可能致死)。
     避陷/觸發皆鍛鍊 security(learn-by-doing:避陷=用技能 full xp,觸發=從失誤學 少量 xp)。"""
@@ -2313,17 +2375,15 @@ def _resolve_trap(state: GameState, gamedata: GameData, trap: dict) -> None:
         ui.message("你以念力隔空撥開了機關的機栝,毫髮無傷地越了過去。", style="green")
         ui.show_events(progression.use_skill(char, gamedata, "security", base_xp), gamedata)
         return
-    dodge = min(0.9, 0.30 + (char.attr("agility") - 40) * 0.01 + char.skill("security") * 0.003
-                + formulas.luck_fortune(char.attr("luck")))
-    dodge = max(dodge, mastery.trap_floor(char, gamedata))   # 里程碑「機關通曉」:避陷保底
+    dodge = _trap_dodge_chance(char, gamedata)
     if state.rng.chance(dodge):
-        ui.message("你察覺地面的機關,及時閃避。", style="green")
+        ui.message(f"你察覺地面的機關,及時閃避(閃避率 {ui.pct(dodge)}%)。", style="green")
         ui.show_events(progression.use_skill(char, gamedata, "security", base_xp), gamedata)
         return
     lo, hi = trap.get("damage", [4, 8])
     dmg = state.rng.randint(lo, hi)
     char.health = max(0, char.health - dmg)
-    ui.message(f"機關觸發 —— 你閃避不及,受了 {dmg} 點傷害!", style="red")
+    ui.message(f"機關觸發 —— 你閃避不及(閃避率 {ui.pct(dodge)}%),受了 {dmg} 點傷害!", style="red")
     if combat.is_alive(char):   # 對抗審查:陷阱致死則不給 xp(鏡像 R34 combat_regen「復活死人」守:死人不成長)
         ui.show_events(progression.use_skill(char, gamedata, "security", base_xp * formulas.SECURITY_FAIL_XP_FRAC), gamedata)
 
@@ -2343,9 +2403,32 @@ def _apply_feature_risk(state: GameState, gamedata: GameData, risk: dict) -> Non
         if curse is None:
             curse = char._dungeon_curse = {}
         sid = risk["skill"]
-        pen = min(char.base_skill(sid), risk.get("magnitude", 20))   # 夾:不使技能低於 0
+        pen = _curse_penalty(char, risk)
         curse[sid] = curse.get(sid, 0) - pen
         ui.message(risk.get("text", f"你的【{gamedata.skills[sid]['name']}】一時遲鈍(−{pen})。"), style="red")
+
+
+def _curse_penalty(char, risk: dict) -> int:
+    """詛咒型風險實際扣多少:magnitude 夾在現有基礎技能內(不使技能低於 0)。`_apply_feature_risk` 與祭壇預覽共用。"""
+    return min(char.base_skill(risk["skill"]), risk.get("magnitude", 20))
+
+
+def _risk_preview_text(char, gamedata: GameData, risk: dict) -> str:
+    """R202 祭壇 / 機關失敗代價預覽:damage → 「損血 lo–hi」;curse → 「【技能】−N 直到離開地城」(N 與實際同夾法)。"""
+    if risk.get("type") == "damage":
+        lo, hi = risk["amount"]
+        return f"損血 {lo}–{hi}"
+    if risk.get("type") == "curse":
+        return f"【{gamedata.skills[risk['skill']]['name']}】−{_curse_penalty(char, risk)} 直到離開地城"
+    return ""
+
+
+def _shrine_offer_label(char, gamedata: GameData, offer: dict) -> str:
+    """R202 祭壇選項標籤:原敘述 + 「得 增益標籤·時數 ｜ 代價」(增益標籤取自與 `apply_buff` 同一個 `potion_buff.buff_label`)。"""
+    b = offer["buff"]
+    gain = f"{potion_buff.buff_label(b['kind'], b['param'], b['magnitude'], gamedata)}·{b['hours']} 小時"
+    cost = _risk_preview_text(char, gamedata, offer["risk"]) if offer.get("risk") else "無"
+    return f"{offer['label']} —— 得 {gain} ｜ 代價 {cost}"
 
 
 def _resolve_shrine(state: GameState, gamedata: GameData, feat: dict) -> None:
@@ -2355,7 +2438,7 @@ def _resolve_shrine(state: GameState, gamedata: GameData, feat: dict) -> None:
     ui.message(feat.get("text", ""), style="magenta")
     offers = feat.get("offers") or []
     choice = ui.menu(feat.get("prompt", "祭壇前,你要?"),
-                     [(o["key"], o["label"]) for o in offers], allow_back=True)
+                     [(o["key"], _shrine_offer_label(char, gamedata, o)) for o in offers], allow_back=True)
     if choice is None:
         ui.message("你決定不去驚動它,轉身離開。", style="grey70")
         return
@@ -2368,17 +2451,24 @@ def _resolve_shrine(state: GameState, gamedata: GameData, feat: dict) -> None:
         _apply_feature_risk(state, gamedata, off["risk"])
 
 
+def _puzzle_chance(char, gamedata: GameData, feat: dict) -> float:
+    """R202 機關謎題檢定成功率(單一出處:`_resolve_puzzle` 的實擲與擲骰前的成功率提示共用)。"""
+    sid = feat["check"]
+    attr_id = gamedata.skills[sid]["attr"]
+    diff = feat.get("difficulty", 50)
+    return min(0.95, max(0.05,
+                         0.30 + (char.attr(attr_id) - 40) * 0.008 + char.skill(sid) * 0.004
+                         + formulas.luck_fortune(char.attr("luck")) - diff * 0.006))
+
+
 def _resolve_puzzle(state: GameState, gamedata: GameData, feat: dict) -> None:
     """機關=技能檢定(比照 _resolve_trap):成功→ open_container 式獎勵 + full xp;失敗→ 風險 + 少量 xp。"""
     char = state.player
     ui.message(feat.get("text", ""), style="cyan")
     sid = feat["check"]
-    attr_id = gamedata.skills[sid]["attr"]
     base_xp = gamedata.skills[sid]["practice"]["xp"]
-    diff = feat.get("difficulty", 50)
-    chance = min(0.95, max(0.05,
-                 0.30 + (char.attr(attr_id) - 40) * 0.008 + char.skill(sid) * 0.004
-                 + formulas.luck_fortune(char.attr("luck")) - diff * 0.006))
+    chance = _puzzle_chance(char, gamedata, feat)
+    ui.message(f"〔{gamedata.skills[sid]['name']}檢定 · 難度 {feat.get('difficulty', 50)} — 成功率 {ui.pct(chance)}%〕", style="grey70")
     if state.rng.chance(chance):
         ui.message(feat.get("success_text", "機關順利解開。"), style="green")
         spoils = dungeon.open_container(char, gamedata,
@@ -2669,7 +2759,7 @@ def action_dungeon(state: GameState, gamedata: GameData) -> str | None:
         if combat_cell:                                    # R167 未解3:戰後 #screen 停在戰況卡 → 重畫小地圖供探索選單
             ui.status_line(state, gamedata, allies=battle["allies"])   # 持久狀態條:英雄 + 夥伴 + 召喚物
             ui.dungeon_grid(grid, z, x, y, explored, resolved)  # 小地圖 + 當前格(偵查揭示鄰格內容)
-        opts = [("go:" + key, f"往{label}") for key, label, _nx, _ny in dungeoncrawl.neighbors(grid, x, y)]
+        opts = _dungeon_move_options(player, gamedata, grid, z, x, y, explored, resolved)
         if any(gamedata.spells[s]["target"] == "self" and gamedata.spells[s]["effect"]["kind"] not in ("reanimate", "scry")
                for s in player.spells) and not player.beast_form:    # 僅當有可施的 self 法術才列 cast;獸形不可結印(R144)
             opts.append(("cast", "施法(預施/預召喚)"))
@@ -2901,9 +2991,11 @@ _STEAL_KEY = "steal:"    # 行竊選單 key 命名空間(見 action_shop 行竊�
 def _steal_option_label(char, gamedata: GameData, iid: str, qty: int) -> str:
     """R199 行竊選單每件的標籤:得手率逐件標示,取自與實擲 `crime.steal_item` 同一個 `crime.steal_chance(…, iid)`
     (含 R144 依重量扣減,最多 −0.35)。原本標題只標「不帶物品」的得手率 → 沉重物品實際遠低於預覽
-    (例:偷襲 60·保全 40:舊標題 67%,重量 ≥23.4 的物品實際 32%)。"""
+    (例:偷襲 60·保全 40:舊標題 67%,重量 ≥23.4 的物品實際 32%)。
+    R202:再標「失手賞金 +N」,取自與實擲同一個 `crime.steal_fine`(失手才會加到當地賞金)。"""
     return (f"{gamedata.item_name(iid)} ×{qty}"
-            f"（價值 {gamedata.item(iid)['value']} · 得手 {ui.pct(crime.steal_chance(char, gamedata, iid))}%)")
+            f"（價值 {gamedata.item(iid)['value']} · 得手 {ui.pct(crime.steal_chance(char, gamedata, iid))}%"
+            f" · 失手賞金 +{crime.steal_fine(char, gamedata, iid)})")
 
 
 def action_shop(state: GameState, gamedata: GameData) -> None:
@@ -4887,7 +4979,7 @@ def action_enchant(state: GameState, gamedata: GameData) -> None:
                           [(w, gamedata.item_name(w)) for w in weapons], allow_back=True)
             if wid is None:
                 return
-            fam = ui.menu("附魔效果?", [
+            fam = ui.menu(f"附魔效果?({enchanting.cost_text(char, gamedata, gem, wid)})", [
                 ("element", "元素傷害(即時)"),
                 ("dot", "元素持續(DoT + 異常)"),
                 ("absorb", "命中吸取(生命 / 法力 / 體力)"),
@@ -4896,15 +4988,20 @@ def action_enchant(state: GameState, gamedata: GameData) -> None:
             if fam is None:
                 return
             if fam == "element":
-                elem = ui.menu("附上哪種元素?", [("fire", "烈焰"), ("frost", "冰霜"), ("shock", "雷電")],
+                # R202:每個選項標出「結果標籤」(= 附魔品名稱括號內的字;強度取自與實擲同一個 quote_*)
+                elem = ui.menu("附上哪種元素?",
+                               [(e, enchanting.preview_label(char, gamedata, "weapon_element", e, "", gem))
+                                for e in ("fire", "frost", "shock")],
                                allow_back=True)
                 if elem is None:
                     return
                 res = enchanting.enchant_weapon(char, gamedata, wid, elem, gem)
             else:
+                kinds_of = {"dot": enchanting.WEAPON_DOT_KINDS, "absorb": enchanting.WEAPON_ABSORB_KINDS,
+                            "trigger": enchanting.WEAPON_TRIGGER_KINDS}[fam]
                 st = ui.menu("選擇效果?",
-                             {"dot": enchanting.WEAPON_DOT_KINDS, "absorb": enchanting.WEAPON_ABSORB_KINDS,
-                              "trigger": enchanting.WEAPON_TRIGGER_KINDS}[fam], allow_back=True)
+                             [(k, f"{n} → {enchanting.preview_label(char, gamedata, 'weapon_status', k, '', gem)}")
+                              for k, n in kinds_of], allow_back=True)
                 if st is None:
                     return
                 res = enchanting.enchant_weapon_status(char, gamedata, wid, st, gem)
@@ -4913,7 +5010,10 @@ def action_enchant(state: GameState, gamedata: GameData) -> None:
                           [(a, gamedata.item_name(a)) for a in armors], allow_back=True)
             if aid is None:
                 return
-            akind = ui.menu("附魔型別?", enchanting.ARMOR_KINDS, allow_back=True)
+            akind = ui.menu(f"附魔型別?({enchanting.cost_text(char, gamedata, gem, aid)})",
+                            [(k, n if k != "thorns" else
+                              f"{n} → {enchanting.preview_label(char, gamedata, 'armor', 'thorns', '', gem)}")
+                             for k, n in enchanting.ARMOR_KINDS], allow_back=True)
             if akind is None:
                 return
             if akind == "thorns":   # 荊棘無 param(純反傷%,靈魂石階決定)
@@ -4926,7 +5026,10 @@ def action_enchant(state: GameState, gamedata: GameData) -> None:
                                    ("poison", "毒素"), ("magic", "魔法")]
                 else:  # res
                     aparam_opts = [("health", "生命"), ("magicka", "法力"), ("fatigue", "體力")]
-                aparam = ui.menu("強化哪一項?", aparam_opts, allow_back=True)
+                # R202:選項直接標「結果標籤」(如「強化刀劍 +9」「抗火焰 +12%」)
+                aparam = ui.menu("強化哪一項?",
+                                 [(v, enchanting.preview_label(char, gamedata, "armor", akind, v, gem))
+                                  for v, _n in aparam_opts], allow_back=True)
                 if aparam is None:
                     return
             res = enchanting.enchant_armor(char, gamedata, aid, akind, aparam, gem)
@@ -4935,7 +5038,8 @@ def action_enchant(state: GameState, gamedata: GameData) -> None:
                           [(j, gamedata.item_name(j)) for j in jewels], allow_back=True)
             if jid is None:
                 return
-            jkind = ui.menu("附魔型別?", enchanting.JEWELRY_KINDS, allow_back=True)
+            jkind = ui.menu(f"附魔型別?({enchanting.cost_text(char, gamedata, gem, jid)})",
+                            enchanting.JEWELRY_KINDS, allow_back=True)
             if jkind is None:
                 return
             if jkind == "skill":
@@ -4948,7 +5052,9 @@ def action_enchant(state: GameState, gamedata: GameData) -> None:
                                ("poison", "毒素"), ("magic", "魔法")]]
             else:  # res
                 param_opts = [("health", "生命"), ("magicka", "法力"), ("fatigue", "體力")]
-            param = ui.menu("強化哪一項?", param_opts, allow_back=True)
+            param = ui.menu("強化哪一項?",
+                            [(v, enchanting.preview_label(char, gamedata, "jewelry", jkind, v, gem))
+                             for v, _n in param_opts], allow_back=True)
             if param is None:
                 return
             res = enchanting.enchant_jewelry(char, gamedata, jid, jkind, param, gem)
@@ -4956,7 +5062,7 @@ def action_enchant(state: GameState, gamedata: GameData) -> None:
         state.time.advance(res["hours"])
         ui.message(res["message"], style="bold green" if res["ok"] else "red")
         if res["tired"]:
-            ui.message("精神衰弱,難以將靈魂束入符文,成效減半。", style="yellow")
+            ui.message("精神衰弱,難以將靈魂束入符文,神秘練習的經驗減半。", style="yellow")   # 只減半 xp,附魔強度不受影響(R202 審查 F4)
         ui.show_events(res["skill_events"], gamedata)
 
 
@@ -5016,6 +5122,17 @@ def _craft_series(state: GameState, gamedata: GameData, mat: str, rids: list) ->
         ui.show_events(res["skill_events"], gamedata)
 
 
+def _temper_effect_text(char, gamedata: GameData, iid: str, cap: int) -> str:
+    """R202 淬鍊選單每件的效果預覽:淬鍊後實際加成(傷害 / 護甲加成合計)現值 → 再一級。取自 `smithing.temper_preview`
+    (與戰鬥讀取鉤同一條 `_scaled` 算式;每級增量因 int 截斷不是常數)。已達上限只列現值。"""
+    pv = smithing.temper_preview(char, gamedata, iid)
+    # 護甲是「全身穿戴件淬鍊加成的合計」(每件顯示同一個數);標「合計」免被讀成單件加成(R202 審查 F3)
+    stat = "傷害" if pv["stat"] == "damage" else "護甲淬鍊合計"
+    if smithing.current_temper(char, gamedata, iid) >= cap:
+        return f"{stat} +{pv['now']}·已達上限"
+    return f"{stat} +{pv['now']}→+{pv['after']}"
+
+
 def action_temper(state: GameState, gamedata: GameData) -> None:
     """淬鍊強化:在鐵匠處消耗對應材質的錠,把手持武器/穿戴護甲永久淬鍊一級(練鍛造)。"""
     if state.player.beast_form:   # R144 現實邏輯:獸形無法使用精細服務
@@ -5045,7 +5162,8 @@ def action_temper(state: GameState, gamedata: GameData) -> None:
             ingot = smithing.required_ingot(gamedata, iid)
             have = inventory.count_item(char, ingot)
             ok, _ = smithing.can_temper(char, gamedata, iid)
-            opts.append((iid, f"{gamedata.item_name(iid)} +{lvl}/{cap}　需 {gamedata.item_name(ingot)}(有 {have}){'' if ok else ' ✗'}"))
+            opts.append((iid, f"{gamedata.item_name(iid)} +{lvl}/{cap}({_temper_effect_text(char, gamedata, iid, cap)})"
+                              f"　需 {gamedata.item_name(ingot)}(有 {have}){'' if ok else ' ✗'}"))
         iid = ui.menu(f"淬鍊強化哪件?(鍛造 {char.skill('smithing')} 級 → 上限 +{cap})", opts, allow_back=True)
         if iid is None:
             return
@@ -5357,7 +5475,8 @@ def _guild_armory_temper(state: GameState, gamedata: GameData) -> None:
         for iid in ids:
             lvl = smithing.current_temper(char, gamedata, iid)
             ok, _ = smithing.can_temper(char, gamedata, iid, guild_free=True)
-            opts.append((iid, f"{gamedata.item_name(iid)} +{lvl}/{cap}{'' if ok else ' ✗(已達上限)'}"))
+            opts.append((iid, f"{gamedata.item_name(iid)} +{lvl}/{cap}({_temper_effect_text(char, gamedata, iid, cap)})"
+                              f"{'' if ok else ' ✗(已達上限)'}"))
         iid = ui.menu(f"軍械庫淬鍊哪件?(公會供料免材料 · 鍛造 {char.skill('smithing')} 級 → 上限 +{cap})",
                       opts, allow_back=True)
         if iid is None:
@@ -5895,7 +6014,7 @@ def guard_confrontation(state: GameState, gamedata: GameData) -> str | None:
         b = crime.bounty(char, province)
         opts = [
             ("pay", f"繳清罰金({b} 金)"),
-            ("jail", "乖乖入獄服刑"),
+            ("jail", f"乖乖入獄服刑(關 {crime.jail_hours(b)} 小時,賞金一筆勾銷)"),   # R202:刑期取自與 serve_sentence 同一個 jail_hours
             ("resist", "拔劍反抗(與衛兵開戰)"),
         ]
         talk_cap = dialogue.TALK_DOWN_MAX + mastery.talk_down_mod(char, gamedata).get("cap_bonus", 0)   # 里程碑「巧言脫罪」抬高可說退賞金上限

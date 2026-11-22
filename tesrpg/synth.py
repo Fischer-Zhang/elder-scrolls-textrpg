@@ -126,6 +126,23 @@ def _weapon_status_enchant(status: str, mag: int, turns: int) -> tuple[dict, str
     return ench, label
 
 
+# --- 附魔效果標籤(R202 單一出處:結果物品名稱括號內的字 == 附魔選單預覽)-------------------------------
+def weapon_element_label(element: str, mag: int) -> str:
+    return f"{_ELEMENT_NAME.get(element, element)}附魔 +{mag}"
+
+
+def armor_enchant_label(kind: str, param: str, mag: int, gamedata) -> str:
+    return _armor_enchant(kind, param, mag, gamedata)[1]
+
+
+def jewelry_enchant_label(kind: str, param: str, mag: int, gamedata) -> str:
+    return _jewelry_enchant(kind, param, mag, gamedata)[1]
+
+
+def weapon_status_label(status: str, mag: int, turns: int) -> str:
+    return _weapon_status_enchant(status, mag, turns)[1]
+
+
 def synthesize(item_id: str, gamedata) -> dict:
     """由合成 id 重建物品定義。"""
     parts = item_id.split(SEP)
@@ -191,7 +208,7 @@ def synthesize(item_id: str, gamedata) -> dict:
         mag = int(mag)
         base_def = gamedata.weapons[base]
         return {**base_def, "kind": "weapon",
-                "name": f"{base_def['name']}（{_ELEMENT_NAME.get(element, element)}附魔 +{mag})",
+                "name": f"{base_def['name']}（{weapon_element_label(element, mag)})",
                 "enchant": {"kind": "weapon_element", "element": element, "magnitude": mag},
                 "value": base_def["value"] + mag * 25}
 

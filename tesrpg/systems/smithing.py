@@ -183,18 +183,36 @@ def meltdown(char: Character, gamedata: GameData, item_id: str) -> dict:
 
 
 # --- 讀取鉤(combat,僅玩家)------------------------------------------------
+def _scaled(char: Character, gamedata: GameData, flat: int) -> int:
+    """淬鍊 flat 加成 × (1 + 鋒銳里程碑 temper_power),int 截斷(截斷落在**總和**上,不是逐級)。"""
+    from tesrpg.systems import mastery
+    return int(flat * (1 + mastery.temper_power(char, gamedata)))
+
+
 def weapon_temper_bonus(char: Character, gamedata: GameData) -> int:
     """玩家當前手持武器的淬鍊加傷(0 = 未淬鍊;徒手/未知 id 自動為 0)。
     含鋒銳里程碑 temper_power 倍率 ×(1+power)(smithing 50/100;未選 → 0)。"""
-    from tesrpg.systems import mastery
-    flat = getattr(char, "weapon_temper", {}).get(char.weapon, 0) * TEMPER_WEAPON_PER
-    return int(flat * (1 + mastery.temper_power(char, gamedata)))
+    return _scaled(char, gamedata, getattr(char, "weapon_temper", {}).get(char.weapon, 0) * TEMPER_WEAPON_PER)
 
 
 def armor_temper_bonus(char: Character, gamedata: GameData) -> int:
     """玩家穿戴中各護甲件的淬鍊加護甲值總和(含鋒銳里程碑 temper_power 倍率)。"""
-    from tesrpg.systems import mastery
     worn = set(char.equipped.values())
     flat = sum(lvl for iid, lvl in getattr(char, "armor_temper", {}).items()
                if iid in worn) * TEMPER_ARMOR_PER
-    return int(flat * (1 + mastery.temper_power(char, gamedata)))
+    return _scaled(char, gamedata, flat)
+
+
+def temper_preview(char: Character, gamedata: GameData, item_id: str) -> dict:
+    """R202 再淬鍊一級的預覽 {stat, now, after}(單一出處:與上面兩個戰鬥讀取鉤共用 `_scaled`,
+    預覽 = 淬鍊後 `weapon_temper_bonus` / `armor_temper_bonus` 的實際回傳值)。
+    stat = "damage"(手持武器加傷)/ "armor"(穿戴護甲各件淬鍊加護甲值的**總和**)。
+    ⚠ 每級增量不是常數:int 截斷落在總和上(temper_power 非 0 時 +2、+1、+2 交錯),所以預覽必須走同一條算式。"""
+    if _is_weapon(gamedata, item_id):
+        flat = current_temper(char, gamedata, item_id) * TEMPER_WEAPON_PER
+        return {"stat": "damage", "now": _scaled(char, gamedata, flat),
+                "after": _scaled(char, gamedata, flat + TEMPER_WEAPON_PER)}
+    worn = set(char.equipped.values()) | {item_id}   # 穿著才算;選單只列穿戴件,未穿者視為「穿上後」
+    flat = sum(lvl for iid, lvl in getattr(char, "armor_temper", {}).items() if iid in worn) * TEMPER_ARMOR_PER
+    return {"stat": "armor", "now": _scaled(char, gamedata, flat),
+            "after": _scaled(char, gamedata, flat + TEMPER_ARMOR_PER)}

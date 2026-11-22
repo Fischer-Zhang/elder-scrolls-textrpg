@@ -63,6 +63,15 @@ def ensure_mastery_choices(char: Character, gamedata: GameData) -> None:
     stats.recompute_mastery_bonuses(char, gamedata)
 
 
+def practice_quote(char: Character, gamedata: GameData, skill_id: str) -> tuple[float, int, bool, int]:
+    """R202 練習成本的**純函式報價** (xp, hours, tired, fatigue_cost):不扣體力、不改任何狀態。
+    單一出處:`practice_cost`(實擲,在此之上扣體力)與選單預覽(附魔「耗 N 小時 · 體力 −M」)共用。
+    tired = 現有體力不足以付 fatigue_cost → xp 減半。"""
+    pdef = gamedata.skills[skill_id]["practice"]
+    tired = char.fatigue < pdef["fatigue"]
+    return pdef["xp"] * (0.5 if tired else 1.0), pdef["hours"], tired, pdef["fatigue"]
+
+
 def practice_cost(char: Character, gamedata: GameData, skill_id: str) -> tuple[float, int, bool]:
     """套用該技能 data/skills.json 的 practice 體力成本,算出本次 xp 與耗時。
 
@@ -70,11 +79,9 @@ def practice_cost(char: Character, gamedata: GameData, skill_id: str) -> tuple[f
     (行竊/撬鎖/說服)不再繞過正規訓練的代價:扣體力、體力不濟時 xp 減半。
     回傳 (xp, hours, tired);**呼叫端**負責推進時間(state.time)與授予 xp(use_skill)。
     """
-    pdef = gamedata.skills[skill_id]["practice"]
-    tired = char.fatigue < pdef["fatigue"]
-    xp = pdef["xp"] * (0.5 if tired else 1.0)
-    char.fatigue = max(0, char.fatigue - pdef["fatigue"])
-    return xp, pdef["hours"], tired
+    xp, hours, tired, fatigue_cost = practice_quote(char, gamedata, skill_id)
+    char.fatigue = max(0, char.fatigue - fatigue_cost)
+    return xp, hours, tired
 
 
 def use_skill(char: Character, gamedata: GameData, skill_id: str, xp: float) -> list[dict]:
