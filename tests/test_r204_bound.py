@@ -330,16 +330,16 @@ def test_equip_refusal_message_names_the_real_reason_and_weapon_label_and_sneak_
     assert n > 100 and abs(est - tot / n) <= 0.08 * (tot / n), (est, tot / n)
 
 
-def test_bound_mastery_adds_four_turns_and_fifteen_percent_and_the_conjurer_description_no_longer_promises_bound_weapons():
-    """使用者 2026-11-22(利基定位):束縛精通持續 +2 → +4(降重施稅);召喚師職業描述改為與實際一致(召喚物,不再承諾束縛兵刃)。"""
-    opt = next(o for n in gd.mastery if n["id"] == "conjuration_50" for o in n["options"] if o["opt_id"] == "bound_mastery")
-    assert opt["turn_bonus"] == 4 and opt["dmg_bonus"] == 0.15 and "4 回合" in opt["desc"] and "+15%" in opt["desc"]
+def test_bound_weapon_turns_are_the_spell_turns_and_the_conjurer_description_no_longer_promises_bound_weapons():
+    """R205:束縛精通(+4 回合 / +15% 傷)已由戰陣號令取代 —— 束縛兵刃駐留回合就是法術本身的 turns,舊檔殘留的 bound_mastery 選擇不再有任何作用;
+    召喚師職業描述維持與實際一致(召喚物,不再承諾束縛兵刃)。"""
+    assert not any(o["opt_id"] == "bound_mastery" for n in gd.mastery if n["id"] == "conjuration_50" for o in n["options"])
     for spell in ("bound_sword", "bound_mace", "bound_greatsword", "bound_axe"):
-        base_c, mast_c = _char(), _char()
-        mast_c.mastery_choices["conjuration_50"] = "bound_mastery"
+        base_c, legacy_c = _char(), _char()
+        legacy_c.mastery_choices["conjuration_50"] = "bound_mastery"   # 舊檔懸空選擇(未經 ensure):getter 必須忽略
         magic.cast(base_c, gd, spell, RNG(1), battle={"allies": []})
-        magic.cast(mast_c, gd, spell, RNG(1), battle={"allies": []})
-        assert _bound(mast_c)["turns"] == _bound(base_c)["turns"] + 4 == gd.spells[spell]["effect"]["turns"] + 4, spell
+        magic.cast(legacy_c, gd, spell, RNG(1), battle={"allies": []})
+        assert _bound(base_c)["turns"] == _bound(legacy_c)["turns"] == gd.spells[spell]["effect"]["turns"], spell
     desc = gd.classes["conjurer"].get("description") or gd.classes["conjurer"].get("desc")
     assert "束縛" not in desc and "召喚物" in desc, desc
 

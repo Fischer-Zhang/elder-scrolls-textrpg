@@ -201,27 +201,51 @@ def test_bound_greatsword_hits_harder_than_sword():
     assert _maxdmg("bound_greatsword") > _maxdmg("bound_sword"), "束縛巨劍(mag20)應比束縛長劍(mag14)痛"
 
 
-# --- R106 Phase B:conjuration 50 身份分岔(咒靈共鳴 / 束縛精通)--------------
-def test_bound_mastery_amps_damage_and_duration():
-    from tesrpg.systems import mastery
+# --- R106 Phase B → R205:conjuration 50 身份分岔(咒靈共鳴 / 戰陣號令;原束縛精通已取代)--------------
+def test_battle_command_makes_player_summons_focus_fire_and_leaves_companions_alone():
+    """R205 戰陣號令:持有者的玩家召喚物(summon_turns 非 None)選目標改集火(先治療者、其次最低血;零 rng);
+    未選 → 與原行為逐位元組同(同一次 rng.choice);同伴(summon_turns None)永不受此節點影響。"""
+    from tesrpg.systems import mastery, party
+    gd, c = _summoner(100)
+    assert mastery.summon_focus(c, gd) is False
+    enemies = [combat.spawn_creature(gd, "bandit", RNG(i)) for i in range(4)]
+    for e, hp in zip(enemies, (30, 12, 25, 40)):
+        e.health = hp
+    summon = combat.spawn_creature(gd, "summoned_atronach", RNG(1)); summon.summon_turns = 5
+    comp = combat.spawn_creature(gd, "bandit", RNG(2)); comp.summon_turns = None
 
-    def _bound(pick):
-        _, cc = _summoner(80)
-        if pick:
-            mastery.choose(cc, get_gamedata(), "conjuration_50", pick)
-        cc.active_effects = []
-        magic.cast(cc, get_gamedata(), "bound_sword", RNG(1), state=None)
-        bw = [e for e in cc.active_effects if e["kind"] == "bound_weapon"][0]
-        best = 0
-        for s in range(40):
-            e = combat.spawn_creature(get_gamedata(), "bandit", RNG(s)); e.max_health = e.health = 9999
-            combat.resolve_attack(cc, e, get_gamedata(), RNG(s + 300)); best = max(best, 9999 - e.health)
-        return bw["turns"], best
+    # 未選:與直接 rng.choice 同值、同消耗
+    r1, r2 = RNG(77), RNG(77)
+    assert party.ally_target(c, summon, enemies, gd, r1) is r2.choice(enemies)
+    assert r1.random() == r2.random(), "未選時 rng 消耗必與原行為相同"
 
-    t0, d0 = _bound(None)
-    t1, d1 = _bound("bound_mastery")
-    assert t1 == t0 + 4, "束縛精通 +4 回合時程(使用者 2026-11-22 利基定位:+2 → +4 降重施稅)"
-    assert d1 > d0, "束縛精通 +傷害"
+    mastery.choose(c, gd, "conjuration_50", "battle_command")
+    assert mastery.summon_focus(c, gd) is True
+    r3 = RNG(77)
+    assert party.ally_target(c, summon, enemies, gd, r3) is enemies[1], "集火最低血(12)"
+    assert r3.random() == RNG(77).random(), "集火零 rng 消耗"
+    # 同伴不受影響:仍走 rng.choice
+    r4, r5 = RNG(5), RNG(5)
+    assert party.ally_target(c, comp, enemies, gd, r4) is r5.choice(enemies)
+    # 游擊同伴 tactic="focus" 仍照舊集火(與此節點無關)
+    assert party.ally_target(c, comp, enemies, gd, RNG(5), "focus") is enemies[1]
+    # 先治療者:找一隻真實的支援施法者放進敵陣
+    healer_id = next((k for k in gd.bestiary if party.is_support_caster(combat.spawn_creature(gd, k, RNG(1)), gd)), None)
+    if healer_id:
+        h = combat.spawn_creature(gd, healer_id, RNG(3)); h.health = 99
+        assert party.ally_target(c, summon, enemies + [h], gd, RNG(1)) is h, "先點治療者"
+
+
+def test_bound_mastery_is_retired_old_choice_returns_to_pending_and_bound_weapons_are_unchanged():
+    """R205:束縛精通已由戰陣號令取代(舊 opt_id 走 ensure 退 pending 可重選;束縛兵刃不再吃任何里程碑加成)。"""
+    from tesrpg.systems import mastery, progression
+    gd, c = _summoner(100)
+    assert not any(o["opt_id"] == "bound_mastery" for n in gd.mastery if n["id"] == "conjuration_50" for o in n["options"])
+    assert not hasattr(mastery, "bound_mastery_mod")
+    c.mastery_choices["conjuration_50"] = "bound_mastery"   # 舊檔已選
+    progression.ensure_mastery_choices(c, gd)
+    assert "conjuration_50" not in c.mastery_choices, "舊束縛精通選擇應退 pending(可重選)"
+    assert any(n["id"] == "conjuration_50" for n in mastery.pending_choices(c, gd)), "清掉後節點列為待選"
 
 
 def test_summon_casting_boosts_support_power_and_cooldown():

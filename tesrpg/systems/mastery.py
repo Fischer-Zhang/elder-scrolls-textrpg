@@ -45,7 +45,7 @@ _IMPLEMENTED_KINDS = {
     "offbalance_unlock",   # 徒手 25(R103):解鎖失衡累積(單一 perk 自動授予;gate 走 has_offbalance_unlock=門檻已達 + 非重甲)
     # P3 魔法系:法術調變(學派 power/cost/命中附狀態,吸收 spell_overload)、召喚調變、
     # 被動護甲、煉金/附魔增幅、塗毒次數、命中懼意、低血再生、商貿議價。
-    "spell_mod", "summon_mod", "summon_casting", "bound_mastery", "passive_armor", "potion_potency", "poison_charge_bonus",
+    "spell_mod", "summon_mod", "summon_casting", "summon_focus", "passive_armor", "potion_potency", "poison_charge_bonus",
     "enchant_potency", "fear_on_hit", "regen_on_low", "merchant_bonus",
     "poison_unlock",   # 煉金深化(R31):解鎖特殊毒型家族(weaken/slow/fear)+ 毒效延長
 
@@ -371,10 +371,10 @@ def summon_casting_mod(char, gamedata: GameData) -> dict:
     return e if e else {}
 
 
-def bound_mastery_mod(char, gamedata: GameData) -> dict:
-    """R106「束縛精通」(conjuration 50):束縛兵刃 {dmg_bonus, turn_bonus};無則 {}。"""
-    e = _chosen_option_by_kind(char, gamedata, "bound_mastery")
-    return e if e else {}
+def summon_focus(char, gamedata: GameData) -> bool:
+    """R205「戰陣號令」(conjuration 50 · opt_id battle_command,取代 R106 束縛精通):玩家召喚物選目標改集火
+    (先治療者、其次最低血;`party.ally_target` 為單一決策點)。同源聚合:任一已選 summon_focus 節點帶 focus 即成立。"""
+    return any(o.get("focus") for o in _chosen_options_by_kind(char, gamedata, "summon_focus"))
 
 
 def quick_seal(char, gamedata: GameData) -> bool:

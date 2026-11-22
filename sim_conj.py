@@ -29,7 +29,7 @@ import sim_builds as sb
 import sim_party as sp
 from tesrpg import formulas
 from tesrpg.rng import RNG
-from tesrpg.systems import combat, inventory, magic, mastery, necromancy, stats
+from tesrpg.systems import combat, inventory, magic, mastery, necromancy, party, stats
 
 gd = sb.gd
 N = int(sys.argv[1]) if len(sys.argv) > 1 else 100
@@ -120,7 +120,7 @@ def fight(maker, act, boss_id, seed, presummon=0, max_rounds=80):
                 continue
             if magic.summon_support_act(a, c, sp._living_allies(battle), gd) is not None:
                 continue
-            tgt = rng.choice([e for e in enemies if combat.is_alive(e)])
+            tgt = party.ally_target(c, a, [e for e in enemies if combat.is_alive(e)], gd, rng)   # R205 單一決策點
             a_atk = combat.choose_attack(a, rng, tgt)
             if a_atk.get("taunt"):
                 a.active_effects.append({"kind": "taunt", "turns": a_atk.get("turns", 3)})
@@ -309,7 +309,7 @@ def fight_pack(maker, act, enemy_ids, seed, max_rounds=60):
                 continue
             if magic.summon_support_act(a, c, sp._living_allies(battle), gd) is not None:
                 continue
-            tgt = rng.choice(alive_en())
+            tgt = party.ally_target(c, a, alive_en(), gd, rng)   # R205 單一決策點
             a_atk = combat.choose_attack(a, rng, tgt)
             if a_atk.get("taunt"):
                 a.active_effects.append({"kind": "taunt", "turns": a_atk.get("turns", 3)})

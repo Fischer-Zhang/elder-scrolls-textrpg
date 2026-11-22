@@ -147,7 +147,7 @@ def _make_bound_knight(shield: bool):
     (`formulas.attack_damage`:基礎 ×(0.5+召喚/100)×(0.75+力量/160)),智力 / 意志 / 法袍 / 法術威力 / 淬鍊 / 附魔都無效;
     所以走獸人(力量 +10、狂暴)+ 戰士座 + 魔族重甲(法袍 HP 140 / 護甲 3 vs 重甲 HP 260 / 護甲 198)。續航靠恢復 50(治療術)+ 8 瓶藥水。
     shield=False 雙手版(束縛巨劍;**不持盾**——巨劍 / 戰斧為雙手形,R204);shield=True 單手版(束縛長劍 + 盾 + 格擋姿態)。
-    節點:召喚 25 死靈感應〔自動〕/ 50 束縛精通 / 75 瞬發契印(首道免回合凝刃);重甲 50 重甲反震 / 100 銅皮鐵骨;單手版另 格擋 100 完美格擋。"""
+    節點:召喚 25 死靈感應〔自動〕/ 50 不選(束縛騎士不召喚物;R205 起 50 為咒靈共鳴 vs 戰陣號令,皆不服務束縛兵刃)/ 75 瞬發契印(首道免回合凝刃);重甲 50 重甲反震 / 100 銅皮鐵骨;單手版另 格擋 100 完美格擋。"""
     c = build_character(gd, name="束", sex="male", race="orsimer", birthsign="warrior", class_id="battlemage")
     c.skills.update(conjuration=100, heavy_armor=100, block=100 if shield else 25, athletics=75, alteration=75, restoration=50, acrobatics=45)
     c.attributes.update(strength=100, endurance=100, intelligence=60, willpower=70, agility=60)
@@ -157,7 +157,7 @@ def _make_bound_knight(shield: bool):
         inventory.add_item(c, "daedric_shield", 1)
         inventory.equip_armor(c, gd, "daedric_shield")
     ch = {"heavy_armor_50": "armor_reflect", "heavy_armor_100": "ironhide", "alteration_75": "stoneflesh",
-          "conjuration_50": "bound_mastery", "conjuration_75": "conj_efficiency"}
+          "conjuration_75": "conj_efficiency"}
     if shield:
         ch["block_100"] = "perfect_block"
     _choices(c, ch)

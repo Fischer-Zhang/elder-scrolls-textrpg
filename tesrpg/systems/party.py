@@ -412,6 +412,20 @@ def focus_target(enemies: list, gamedata: GameData):
     return min(healers or enemies, key=lambda e: e.health)
 
 
+def ally_target(player, ally, enemies: list, gamedata: GameData, rng, tactic: str | None = None):
+    """同伴 / 召喚物選目標的**單一決策點**(main.run_battle 與各 sim 共用)。
+
+    - `tactic == "focus"`(游擊同伴)→ 集火(先治療者、其次最低血;零 rng)。
+    - R205 戰陣號令(conjuration 50):玩家**召喚物**(`summon_turns` 非 None;同伴 = None 不適用)持有該里程碑
+      → 同樣集火。其餘 → `rng.choice(enemies)`(與原行為逐位元組同:同一次抽)。
+    enemies 須非空(呼叫端已保證存活敵人非空)。"""
+    if tactic is None and getattr(ally, "summon_turns", None) is not None:
+        from tesrpg.systems import mastery
+        if mastery.summon_focus(player, gamedata):
+            tactic = "focus"
+    return focus_target(enemies, gamedata) if tactic == "focus" else rng.choice(enemies)
+
+
 def build_label(char: Character, cid: str) -> str | None:
     bid = char.companion_build.get(cid)
     return TACTICS[bid]["label"] if bid in TACTICS else None

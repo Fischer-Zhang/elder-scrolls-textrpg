@@ -549,8 +549,8 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
         char.active_effects[:] = [e for e in char.active_effects if e.get("kind") != "bound_weapon"]
         # R106 束縛兵刃 archetype 差異化:存 archetype → combat 據此給原型身份(釘錘擊暈 stagger 等);
         # 仍走咒術技能傷害 + 元素(無視物理護甲)。無 archetype(舊 bound_sword)→ 行為不變。
-        # R106 束縛精通:多駐留 turn_bonus 回合(無里程碑 → +0 不變)。
-        bturns = eff["turns"] + mastery.bound_mastery_mod(char, gamedata).get("turn_bonus", 0)
+        # R205:R106 束縛精通(+回合)已由「戰陣號令」取代;束縛兵刃駐留回合就是法術本身的 turns。
+        bturns = eff["turns"]
         char.active_effects.append({"kind": "bound_weapon", "element": eff.get("element", "magic"),
                                     "magnitude": mag, "turns": bturns, "archetype": eff.get("archetype"),
                                     "two_handed": bool(eff.get("two_handed")), "speed": eff.get("speed"),

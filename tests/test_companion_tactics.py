@@ -101,6 +101,56 @@ def test_skirmisher_companion_focus_fires_healer():
     assert hits[0] == "moor_witch", f"游擊未先集火治療者:{hits[:3]}"
 
 
+# --- R205 戰陣號令:run_battle 的召喚物同伴階段真的走單一決策點 ---------------------
+class _StopBattle(Exception):
+    pass
+
+
+def _summon_targets_in_battle(with_node):
+    """持有(或不持有)戰陣號令的玩家帶一隻預召喚物進戰;記錄 run_battle 同伴階段替它選的目標(取第一次即中止戰鬥)。"""
+    from tesrpg.systems import mastery
+    c = build_character(gd, name="召", sex="male", race="orsimer", birthsign="warrior", class_id="warrior")
+    c.skills.update(conjuration=60)
+    if with_node:
+        assert mastery.choose(c, gd, "conjuration_50", "battle_command")
+    st = GameState(player=c, rng=RNG(11), time=GameTime())
+    tank, weak = _dummy("bandit", 400), _dummy("bandit", 20)       # 列首是高血量,最低血在第二位
+    summon = combat.spawn_creature(gd, "summoned_atronach", RNG(2)); summon.summon_turns = 9
+    seen = []
+    orig = party.ally_target
+
+    def spy(player, ally, enemies, gamedata, rng, tactic=None):
+        tgt = orig(player, ally, enemies, gamedata, rng, tactic)
+        if ally is summon:
+            seen.append(tgt)
+            raise _StopBattle
+        return tgt
+    party.ally_target = spy
+    saved = (ui.menu, ui.console, ui.message)
+    ui.menu = _menu
+    ui.console = Console(file=io.StringIO(), force_terminal=True, width=100)
+    ui.message = lambda *a, **k: None
+    try:
+        main.run_battle(st, gd, [tank, weak], carry_allies=[summon])
+    except _StopBattle:
+        pass
+    finally:
+        party.ally_target = orig
+        ui.menu, ui.console, ui.message = saved
+    assert seen, "run_battle 同伴階段沒有替召喚物呼叫 party.ally_target(單一決策點被繞過)"
+    return seen[0], tank, weak
+
+
+def test_battle_command_summon_focuses_lowest_hp_in_run_battle():
+    tgt, tank, weak = _summon_targets_in_battle(True)
+    assert tgt is weak, "持有戰陣號令:召喚物應集火最低血的敵人"
+
+
+def test_summon_without_battle_command_still_picks_via_rng_in_run_battle():
+    tgt, tank, weak = _summon_targets_in_battle(False)
+    assert tgt in (tank, weak)         # 未選:走 rng.choice(不保證是最低血;只驗決策點仍被呼叫且回傳合法敵人)
+
+
 def run():
     for name, fn in sorted(globals().items()):
         if name.startswith("test_") and callable(fn):

@@ -1,7 +1,7 @@
 """召喚系三節點「兩側」強度對照(R203 後新增;手動工具·print-only·不接 check.sh):確認每個節點的兩個選項差距不會太大、各有被選擇的理由。
 用法(須在倉庫根目錄,sim_dungeon 讀相對路徑):`PYTHONPATH=. CMP_N=120 python3 sim_conj_sides.py`(並行 ~18 工,約 8 分鐘;CMP_N 預設 150)。
 
-節點:50 咒靈共鳴 vs 束縛精通 / 75 瞬發契印 vs 就地起屍(屍僕)/ 100 永契之僕 vs 亡者統御;每個節點另列「不選」。
+節點:50 咒靈共鳴 vs 戰陣號令(R205 取代束縛精通)/ 75 瞬發契印 vs 就地起屍(屍僕)/ 100 永契之僕 vs 亡者統御;每個節點另列「不選」。
 構築:S 激進 / S 保守(召喚師)、N 死靈師(夾具種 40 token)、N 缺魂(起手 4 token)、B 騎士(束縛騎士·雙手束縛巨劍·無盾)、B 騎 1H(束縛騎士·束縛長劍 + 盾 + 姿態;R204 起取代舊的法袍 B 束縛夾具——那個夾具力量 30 + 法袍,刃傷只看召喚與力量,結論失真)。
 情境:王野 / 王城 = 古龍·烏瑪利單王(野外 / 地城預召喚×3);牆野 / 牆城剩血 = 達貢(胜率恆 0,看王剩餘血);群野 / 群城 = 5 種敵群平均;
       地城灰 / 地城龍 = 真實地城整趟(sim_dungeon 同一套規格:灰燼墓 15 怪格 + 魔人領主 / 龍巢;通關 = 打到終王倒下,進度 = 清掉的怪格比例;
@@ -16,7 +16,7 @@ sys.argv = _argv
 import sim_dungeon as D
 from concurrent.futures import ProcessPoolExecutor
 from tesrpg.rng import RNG
-from tesrpg.systems import combat, inventory, magic, necromancy, stats
+from tesrpg.systems import combat, inventory, magic, necromancy, party, stats
 sb, sp, gd = S.sb, S.sp, S.gd
 N = int(os.environ.get("CMP_N", "150"))
 
@@ -56,10 +56,10 @@ ARCH = {"S激進": (sb.make_summoner, S.act_aggressive), "S保守": (sb.make_sum
         "B騎士": (_knight_maker("bound_knight"), _knight_act("bound_knight")),            # 束縛騎士·雙手(束縛巨劍·無盾)
         "B騎1H": (_knight_maker("bound_knight_1h"), _knight_act("bound_knight_1h"))}      # 束縛騎士·單手(束縛長劍 + 盾 + 姿態)
 
-OPTS = {"none": {}, "50共鳴": {"conjuration_50": "summon_casting"}, "50束縛": {"conjuration_50": "bound_mastery"},
+OPTS = {"none": {}, "50共鳴": {"conjuration_50": "summon_casting"}, "50號令": {"conjuration_50": "battle_command"},
         "75契印": {"conjuration_75": "conj_efficiency"}, "75起屍": {"conjuration_75": "soul_harvest"},
         "100永契": {"conjuration_100": "lasting_summon"}, "100統御": {"conjuration_100": "undead_dominion"}}
-NODES = {"50": ("50共鳴", "50束縛"), "75": ("75契印", "75起屍"), "100": ("100永契", "100統御")}
+NODES = {"50": ("50共鳴", "50號令"), "75": ("75契印", "75起屍"), "100": ("100永契", "100統御")}
 
 def mk_with(mk, choices):
     def f():
@@ -91,7 +91,7 @@ def battle_loop(c, act, enemies, battle, st, rng, boss=None, max_rounds=60):
             if not alive_en(): break
             if magic.is_incapacitated(a): continue
             if magic.summon_support_act(a, c, sp._living_allies(battle), gd) is not None: continue
-            tgt = rng.choice(alive_en()); atk = combat.choose_attack(a, rng, tgt)
+            tgt = party.ally_target(c, a, alive_en(), gd, rng); atk = combat.choose_attack(a, rng, tgt)   # R205 單一決策點
             if atk.get("taunt"):
                 a.active_effects.append({"kind": "taunt", "turns": atk.get("turns", 3)}); continue
             combat.resolve_attack(a, tgt, gd, rng, attack=atk)

@@ -1619,8 +1619,7 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
                 a.active_effects.append({"kind": "taunt", "turns": 2})
                 _cmsg(f"{a.name}穩住陣腳、吸引敵人火力,護住同袍。", style="bold cyan")
                 continue
-            tgt = (party.focus_target(alive_e(), gamedata) if tactic == "focus"
-                   else state.rng.choice(alive_e()))
+            tgt = party.ally_target(player, a, alive_e(), gamedata, state.rng, tactic)   # R205 單一決策點(游擊集火 / 戰陣號令集火 / 隨機)
             a_atk = combat.choose_attack(a, state.rng, tgt)   # 同伴多攻擊模式(無曲目 → 後備單招,行為不變)
             if a_atk.get("taunt"):   # R105 坦克召喚(魔人/魔靈伴)嘲諷 action:掛嘲諷態 → 敵人幾回合內機率改打它(pick_player_side_target)
                 a.active_effects.append({"kind": "taunt", "turns": a_atk.get("turns", 3)})
