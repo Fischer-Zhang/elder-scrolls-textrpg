@@ -76,12 +76,21 @@ def total_weight(char: Character, gamedata: GameData) -> float:
 def max_weight(char: Character, gamedata: GameData | None = None) -> int:
     """負重上限 = 力量×5 +(若現乘坐騎)鞍袋加成。鞍袋即時計算、非資源 → 不進
     recompute_max_resources、不寫 base;帶 gamedata 時才計入(無 gamedata 維持基底,向後相容)。"""
+    p = max_weight_parts(char, gamedata)
+    return p["base"] + p["feather"] + p["saddlebag"]
+
+
+def max_weight_parts(char: Character, gamedata: GameData | None = None) -> dict:
+    """R200 負重上限的**分解**(單一出處:`max_weight` 的總和由此而來;角色卡顯示 / 提示共用,不再只讀力量×5 的公式層)。
+    {base 力量×5, feather 羽落術限時加成, saddlebag 鞍袋(無 gamedata / 未乘坐騎 → 0)}。"""
     from tesrpg.systems import spellfx
-    base = formulas.max_encumbrance(char.attr("strength")) + spellfx.feather_bonus(char)   # R104 羽落術:限時 +負重(無 feather → +0 逐位元組同)
+    parts = {"base": formulas.max_encumbrance(char.attr("strength")),
+             "feather": spellfx.feather_bonus(char),     # R104 羽落術:限時 +負重(無 feather → +0 逐位元組同)
+             "saddlebag": 0}
     if gamedata is not None:
         from tesrpg.systems import mounts
-        base += mounts.saddlebag_bonus(char, gamedata)
-    return base
+        parts["saddlebag"] = mounts.saddlebag_bonus(char, gamedata)
+    return parts
 
 
 def can_carry(char: Character, gamedata: GameData, item_id: str, qty: int = 1) -> bool:

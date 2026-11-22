@@ -740,10 +740,9 @@ def _choose_combat_action(state: GameState, gamedata: GameData, enemies: list, a
         if combat.has_guard_stance(player):
             opts.append(_combat_option("guard", "收起格擋姿態（恢復全力攻擊)", "恢復全力攻擊"))   # R137:取代整回合格擋動作(純減傷·不碰命中)
         elif inventory.is_great_shield(gamedata, player.equipped.get("shield")):
-            _m = formulas.GUARD_STANCE_MITIGATION * min(1.0, player.skill("block") / 100.0)
-            _gpct = int(_m * formulas.GREAT_SHIELD_ELEMENTAL_FACTOR * 100)   # R138b:元素=卸力×0.7(恆≤物理)
-            _guard_detail = f"攻擊變緩·卸力-{int(_m * 100)}%·元素-{_gpct}%·回氣+{formulas.GREAT_SHIELD_BUNKER_FATIGUE}/回"
-            opts.append(_combat_option("guard", f"重盾掩體（攻擊變緩 · 卸力-{int(_m * 100)}% · 元素-{_gpct}% · 回氣+{formulas.GREAT_SHIELD_BUNKER_FATIGUE}/回)", _guard_detail))   # R138 可見性:持重盾時姿態效果直接標在選項上
+            _gp, _ge = ui.guard_stance_numbers(player, gamedata)   # R200:與實擲 _guard_stance_factor 同一出處(含斯丹達爾之佑與總夾 0.60);R138b 元素 ≤ 物理
+            _guard_detail = f"攻擊變緩·卸力-{_gp}%·元素-{_ge}%·回氣+{formulas.GREAT_SHIELD_BUNKER_FATIGUE}/回"
+            opts.append(_combat_option("guard", f"重盾掩體（攻擊變緩 · 卸力-{_gp}% · 元素-{_ge}% · 回氣+{formulas.GREAT_SHIELD_BUNKER_FATIGUE}/回)", _guard_detail))   # R138 可見性:持重盾時姿態效果直接標在選項上
         else:
             opts.append(_combat_option("guard", "格擋姿態（攻擊變緩 · 舉盾卸力減傷)", "攻擊變緩·舉盾卸力"))
     vcap = combat.vanish_cap(player, gamedata)
@@ -765,7 +764,8 @@ def _choose_combat_action(state: GameState, gamedata: GameData, enemies: list, a
         if mastery.has_bow_technique(player, gamedata, "skirmish") and vanish_used < vcap:
             opts.append(_combat_option("skirmish", "散兵走位（射一箭後遁走)", "射後遁走"))
         if mastery.has_bow_technique(player, gamedata, "volley") and sum(1 for e in enemies if combat.is_alive(e)) >= 2:
-            opts.append(_combat_option("volley", "箭雨（齊射全體 60% 傷害 · 倍耗體)", "全體60%·倍耗體"))   # R136:單敵時無意義 → 不顯示
+            _vp = ui.pct(formulas.VOLLEY_DAMAGE_FACTOR)      # R200:取自常數,不再寫死 60%
+            opts.append(_combat_option("volley", f"箭雨（齊射全體 {_vp}% 傷害 · 倍耗體)", f"全體{_vp}%·倍耗體"))   # R136:單敵時無意義 → 不顯示
     # R186 幻影步(輕甲 100):殘影達門檻 → 殘影連襲(耗盡殘影,每層連斬當下最低血敵一記;只耗一次攻擊體力)
     # —— 開放條件走 combat.afterimage_ready(與 sim 共用同一個閘);獸形無武器連斬 → 不開放。
     if (combat.afterimage_ready(player, gamedata, sum(1 for e in enemies if combat.is_alive(e)))
@@ -773,7 +773,7 @@ def _choose_combat_action(state: GameState, gamedata: GameData, enemies: list, a
         _ai_n = combat.afterimage_stacks(player)
         _ai_k = combat.phantom_flurry_strikes(player, gamedata)      # 實際出手記數(氣勢不足時 < 層數)
         _ai_m = combat.momentum(player, gamedata)
-        _ai_pct = int(mastery.afterimage(player, gamedata)["strike_factor"] * 100)
+        _ai_pct = ui.pct(mastery.afterimage(player, gamedata)["strike_factor"])
         if combat.momentum_enabled(player, gamedata):                # R187 氣勢:第一擊免費、其餘每記耗 1 點(選單如實標示成本)
             opts.append(_combat_option("phantom_flurry",
                                        f"殘影連襲（耗盡 {_ai_n} 層殘影 · 連擊最低血敵 {_ai_k} 記 · 第 2 記起每記耗 1 氣勢〔現有 {_ai_m}〕 · 各 {_ai_pct}% 傷害)",
@@ -1308,7 +1308,7 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
                         _cmsg("你射後欲走,卻被敵人緊咬不放。", style="grey70")
                 if action["type"] in ("aimed", "crippling"):
                     _rapid_extra_arrow(tgt, _tech_ev)   # R136 連珠箭:單體射擊技命中後也可觸發(散兵/箭雨不觸發)
-        elif action["type"] == "volley":   # R136 箭雨:齊射全體(每箭 60% 傷害·倍耗體·🔴 永不吃偷襲倍率)
+        elif action["type"] == "volley":   # R136 箭雨:齊射全體(每箭 VOLLEY_DAMAGE_FACTOR 倍傷害·倍耗體·🔴 永不吃偷襲倍率)
             combat.player_attack_cost(player, gamedata)
             combat.player_attack_cost(player, gamedata)       # 倍耗體(同瞄準射蓄力)
             _cmsg("你張弓連珠,一輪箭雨傾瀉而下!", style="bold cyan")
@@ -2262,11 +2262,14 @@ def _resolve_container(state: GameState, gamedata: GameData, container: dict, la
             ui.message("巨狼的利爪捏不住細巧的開鎖器 —— 這鎖只能留給人形的你。", style="grey70")
             return
         picks = inventory.count_item(state.player, "lockpick")
-        if picks <= 0 and not state.player.tower_key_charge and not dungeon.has_skeleton_key(state.player, gamedata):
+        key = dungeon.lock_key_kind(state.player, gamedata)         # R200:免擲骰的鑰(塔之鑰充能 > 骷髏鑰匙),與 pick_lock 同一判定
+        if picks <= 0 and not key:
             ui.message(f"這個{label}上了鎖,而你沒有開鎖器 —— 撬不開(城鎮可買開鎖器)。", style="grey70")
             return
         ch = dungeon.effective_pick_lock_chance(state.player, gamedata, lock)
-        if not ui.confirm(f"發現一個上鎖的{label}(鎖難度 {lock},成功率約 {ui.pct(ch)}%,開鎖器 ×{picks}),嘗試撬鎖?"):
+        how = {"tower": "塔之鑰已蓄勢:必定成功,用掉這次蓄勢", "skeleton": "骷髏鑰匙:必定成功,不耗開鎖器"}.get(key) \
+            or f"成功率約 {ui.pct(ch)}%,開鎖器 ×{picks}"
+        if not ui.confirm(f"發現一個上鎖的{label}(鎖難度 {lock},{how}),嘗試撬鎖?"):
             return
         auto_pick = False                                # R113:失敗後可選「連試到底」免逐次確認
         while True:
@@ -3041,10 +3044,13 @@ VAMPIRE_CHARM_TURNS = 2        # 魅惑凝視:被迷惑之敵恐懼不進攻的�
 TRIAGE_ALLY_HP_RATIO = 0.30     # 同伴生命低於此 → 觸發治療師「戰地搶救」武裝
 
 
+INN_REST_FEE = 10        # 旅店過夜費(金);扣款與所有選單標籤共用此常數(R200:原本 fee 與兩處標籤各寫一個 10)
+
+
 def _inn_rest(state: GameState, gamedata: GameData) -> None:
-    """過夜:10 金完全回復(玩家+同伴)+ 推進 8 時。R114C:hub 直達與旅店選單共用。"""
+    """過夜:完全回復(玩家+同伴)+ 推進 8 時,費用 INN_REST_FEE。R114C:hub 直達與旅店選單共用。"""
     char = state.player
-    fee = 10
+    fee = INN_REST_FEE
     if char.gold < fee:
         ui.message(f"住一晚要 {fee} 金,你付不起。", style="red")
         return
@@ -3059,7 +3065,7 @@ def action_inn(state: GameState, gamedata: GameData) -> None:
     char = state.player
     while True:
         roster_str = "、".join(_party_label(char, gamedata, c) for c in char.companions) or "無"
-        opts = [("rest", "過夜(10 金,完全回復)"), ("hire", "雇用傭兵同伴")]
+        opts = [("rest", f"過夜({INN_REST_FEE} 金,完全回復)"), ("hire", "雇用傭兵同伴")]
         if char.companions:
             opts.append(("dismiss", "解散傭兵"))
         choice = ui.menu(f"旅店(目前隊伍:{roster_str})", opts, allow_back=True)
@@ -3449,8 +3455,11 @@ def action_fence(state: GameState, gamedata: GameData) -> None:
     def fsell(iid):                                 # 銷贓價(加價);buy 端用它築地板
         return int(world.sell_price(char, gamedata, iid) * (1 + bonus))
 
+    def bm_price(iid):                              # R200 黑市買價單一出處:選單標籤與扣款共用(防套利地板:恆 > 銷贓價)
+        return max(world.buy_price(char, gamedata, iid), fsell(iid) + 1)
+
     while True:
-        choice = ui.menu(f"銷贓窩點(加價 +{int(bonus * 100)}%)",
+        choice = ui.menu(f"銷贓窩點(加價 +{ui.pct(bonus)}%)",
                          [("sell", "銷贓(賣出贓物/雜物)"), ("buy", "購入黑市貨")], allow_back=True)
         if choice is None:
             return
@@ -3489,12 +3498,11 @@ def action_fence(state: GameState, gamedata: GameData) -> None:
                 ui.message(f"銷出 {gamedata.item_name(iid)} ×{sold},得 {total} 金。", style="green")
         elif choice == "buy":
             while True:
-                opts = [(iid, f"{gamedata.item_name(iid)} — {max(world.buy_price(char, gamedata, iid), fsell(iid) + 1)} 金")
-                        for iid in _BLACK_MARKET]
+                opts = [(iid, f"{gamedata.item_name(iid)} — {bm_price(iid)} 金") for iid in _BLACK_MARKET]
                 iid = ui.menu(f"購入什麼?(你有 {char.gold} 金)", opts, allow_back=True)
                 if iid is None:
                     break
-                price = max(world.buy_price(char, gamedata, iid), fsell(iid) + 1)   # 防套利地板:恆 > 銷贓價
+                price = bm_price(iid)
                 if char.gold < price:
                     ui.message("錢不夠。", style="yellow")
                     continue
@@ -4731,7 +4739,7 @@ def action_spell_vendor(state: GameState, gamedata: GameData) -> None:
         def _sp(s):
             return max(1, round(world.spell_price(gamedata, s) * (1 - disc)))
         label = f"學習法術(你有 {char.gold} 金"
-        label += f",會員 -{int(disc*100)}%)" if disc else ")"
+        label += f",會員 -{ui.pct(disc)}%)" if disc else ")"
         opts = [(s, f"{gamedata.spells[s]['name']}（{ui.school_name(gamedata.spells[s]['school'])}) — {_sp(s)} 金"
                  f" · {ui.spell_effect_summary(gamedata, s)}") for s in for_sale]
         sid = ui.menu(label, opts, allow_back=True)
@@ -5131,6 +5139,14 @@ def action_coat_weapon(state: GameState, gamedata: GameData) -> None:
                    style="green")
 
 
+def _recharge_gem_label(char, gamedata: GameData, wid: str, gem: str) -> str:
+    """R200 充能選單每顆靈魂石的標籤:顯示**實際**充入量(夾在容量內),近滿時標出溢出白耗
+    (原本只顯示未夾上限的名義增量 → 近滿時高估、大魂石可能白耗)。與實際結算共用 enchanting.recharge_outcome。"""
+    o = enchanting.recharge_outcome(char, gamedata, wid, gem)
+    return (f"{gamedata.item_name(gem)}(靈魂 {gamedata.item(gem)['soul']} → +{o['applied']} 充能"
+            + (f"·溢出 {o['wasted']} 白耗" if o["wasted"] else "") + ")")
+
+
 def action_recharge_enchant(state: GameState, gamedata: GameData) -> None:
     """以靈魂石為「充能型」附魔武器(命中擒魂 / 麻痺)回充使用次數。"""
     char = state.player
@@ -5155,15 +5171,14 @@ def action_recharge_enchant(state: GameState, gamedata: GameData) -> None:
         ui.message("此武器充能已滿。", style="grey70")
         return
     gem = ui.menu("用哪顆靈魂石灌注?",
-                  [(g, f"{gamedata.item_name(g)}(靈魂 {gamedata.item(g)['soul']} → +"
-                       f"{gamedata.item(g)['soul'] * formulas.CHARGE_PER_SOUL} 充能)") for g in gems],
-                  allow_back=True)
+                  [(g, _recharge_gem_label(char, gamedata, wid, g)) for g in gems], allow_back=True)
     if gem is None:
         return
-    gain = gamedata.item(gem)["soul"] * formulas.CHARGE_PER_SOUL
+    out = enchanting.recharge_outcome(char, gamedata, wid, gem)     # R200:預覽與實際結算同一出處
     inventory.remove_item(char, gem, 1)
-    char.enchant_charges[wid] = min(cap, char.enchant_charges.get(wid, cap) + gain)
-    ui.message(f"靈魂石碎裂,{gamedata.item_name(wid)} 重獲鋒芒(充能 {char.enchant_charges[wid]}/{cap})。",
+    char.enchant_charges[wid] = out["new"]
+    ui.message(f"靈魂石碎裂,{gamedata.item_name(wid)} 重獲鋒芒(充能 {char.enchant_charges[wid]}/{cap})。"
+               + (f"(溢出 {out['wasted']} 點白耗)" if out["wasted"] else ""),
                style="bold green")
 
 
@@ -6395,7 +6410,7 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
             owned = housing.owns(player, player.location_id)
             plaza.append(("house", "🏠 我的房產" if owned else "🏠 房產仲介(置產)"))
         if "inn" in services and not shunned:
-            plaza.append(("inn_rest", "🛏 宿一晚(10 金,完全回復)"))   # R114C:過夜直達(9 成情境只過夜,免進旅店選單再退)
+            plaza.append(("inn_rest", f"🛏 宿一晚({INN_REST_FEE} 金,完全回復)"))   # R114C:過夜直達(9 成情境只過夜,免進旅店選單再退)
             plaza.append(("inn", "旅店(雇用/解散傭兵)"))
         if "trainer" in services and not shunned:
             plaza.append(("trainer", "訓練師"))

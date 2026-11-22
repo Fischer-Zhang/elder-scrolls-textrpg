@@ -159,6 +159,14 @@ def pct(p: float) -> int:
     return round(p * 100)
 
 
+def guard_stance_numbers(char: Character, gamedata: GameData) -> tuple[int, int]:
+    """R200 格擋姿態的顯示數字 (物理卸力%, 元素卸力%):取自 `combat.guard_stance_mitigation`(與實擲 `_guard_stance_factor`
+    同一出處;含 R107 斯丹達爾之佑與總夾 0.60),戰鬥選單標籤與角色卡武器行共用;四捨五入(`pct`)。"""
+    from tesrpg.systems import combat
+    return (pct(combat.guard_stance_mitigation(char, gamedata, False)),
+            pct(combat.guard_stance_mitigation(char, gamedata, True)))
+
+
 def _web_prompt(spec: dict):
     """沖出殘餘畫面 HTML(未轉換面板的裸 <span> 片段)+ 輸入規格,阻塞等回覆。"""
     html = console.export_html(inline_styles=True, code_format="{code}", clear=True)
@@ -304,9 +312,10 @@ def _sheet_view(char: Character, gamedata: GameData) -> dict:
         "hp": [int(char.health), int(char.max_health)],
         "mp": [int(char.magicka), int(char.max_magicka)],
         "fp": [int(char.fatigue), int(char.max_fatigue)],
-        "encumbrance": formulas.max_encumbrance(char.attr("strength")),
+        "encumbrance": _inv.max_weight(char, gamedata),     # R200:含羽落術 / 鞍袋(原只讀力量×5 → 有加成時顯示偏低)
+        "encumbrance_tip": _carry_tip(char, gamedata),
         "gold": char.gold, "weapon": _plain(weapon_line(char, gamedata)),
-        "armor": _armor_display(char, gamedata),
+        "armor": _armor_display(char, gamedata), "armor_tip": _armor_tip(char, gamedata),
 
         "resist": _resist_summary(char, gamedata),
         "fame": char.fame, "infamy": char.infamy, "bounty": sum(char.bounties.values()),
@@ -375,7 +384,7 @@ def _player_state_tags(player, gamedata, enemies=()) -> list:
         parts, tips = [], []
         if hit >= 1:
             parts.append(f"命中−{hit}%")
-            tips.append(f"普通攻擊命中率 −{hit} 個百分點(已計入武器速度、里程碑與 95% 命中上限後的實際損失,取在場敵人中最大者;"
+            tips.append(f"普通攻擊命中率 −{hit} 個百分點(已計入武器速度、里程碑與 {pct(formulas.HIT_CHANCE_CEIL)}% 命中上限後的實際損失,取在場敵人中最大者;"
                         f"出招會先耗體力再擲命中,故以出招後的體力計)")
         elif fv["hit_nominal"] >= _combat.FATIGUE_TAG_MIN:
             tips.append(f"你的普通攻擊命中已頂著上限,體力不足(公式上 −{pct(fv['hit_nominal'])} 個百分點)對命中幾乎無損")
@@ -949,7 +958,7 @@ def _effect_label(e: dict) -> str:
     names = {"shield": f"護盾 +{mag}", "regen": f"再生 +{mag}/回合",
              "dot": f"{elem}侵蝕 {mag}/回合", "fear": "恐懼", "paralyze": "麻痺",
              "weaken": "衰弱", "stagger": "踉蹌", "soul_trap": "擒魂",
-             "berserk_buff": f"狂暴 +{int(mag * 100)}%傷"}
+             "berserk_buff": f"狂暴 +{pct(mag)}%傷"}
     base = names.get(k, k or "效果")
     return f"{base}（{turns} 回合)" if turns else base
 
@@ -1042,6 +1051,7 @@ def character_sheet(char: Character, gamedata: GameData) -> None:
     if _web is not None:
         _emit_view("sheet", _sheet_view(char, gamedata))
         return
+    from tesrpg.systems import inventory as _inv_cap
     race = gamedata.races[char.race]["name"]
     sign = gamedata.birthsigns[char.birthsign]["name"]
     cls = ("自訂" if char.class_id == "custom"
@@ -1062,7 +1072,7 @@ def character_sheet(char: Character, gamedata: GameData) -> None:
     res.add_row(Text("法力", style="cyan"), _bar(char.magicka, char.max_magicka, "cyan"))
     res.add_row(Text("體力", style="green"), _bar(char.fatigue, char.max_fatigue, "green"))
     res.add_row(Text("負重", style=GOLD),
-                Text(f"上限 {formulas.max_encumbrance(char.attr('strength'))}", style=INK))
+                Text(f"上限 {_inv_cap.max_weight(char, gamedata)}", style=INK))
     res.add_row(Text("金幣", style=GOLD), Text(str(char.gold), style=PARCH))
     _od = gamedata.origins.get(char.origin)
     if _od:
@@ -1133,7 +1143,7 @@ def skill_table(char: Character, gamedata: GameData) -> None:
         tbl.add_row(*cells)
 
     console.print(_panel(tbl, title="技能"))
-    console.print(f"  [{FAINT}]✦ = 主修技能(升點給 ×1.5 等級經驗);右欄為技能等級[/]")
+    console.print(f"  [{FAINT}]✦ = 主修技能(升點給 ×{formulas.MAJOR_SKILL_XP_MULT:g} 等級經驗);右欄為技能等級[/]")
     unlocked = mastery.unlocked(char, gamedata)
     if unlocked:
         lines = Text()
@@ -1645,7 +1655,10 @@ def sheet_equipment(char: Character, gamedata: GameData) -> None:
             if iid:
                 rows.append(_kv(_SLOT_CN[slot], gamedata.item_name(iid)
                                 + _temper_suffix(char, iid) + _ench_suffix(gamedata, iid)))
-        rows.append(_kv("護甲值", f"{_armor_display(char, gamedata)}"))  # 含永久淬鍊 → 淬甲後護甲值上升
+        rows.append(_kv("護甲值", f"{_armor_display(char, gamedata)}"))  # R200:戰鬥實際護甲值(淬鍊 / 護甲技能折算都算進去)
+        _atip = _armor_tip(char, gamedata, short=True)
+        if _atip:
+            rows.append(_ln(f"　{_atip}", "faint"))      # 分解(總值不再等於上列各件名目值相加)
         _smat, _scnt, _sb = inventory.set_progress(char, gamedata)
         if _scnt == 4 and _sb:                          # 穿滿四件同材質 → 套裝啟用
             _sn = gamedata.armor_sets.get(_smat, {}).get("name", "整套同材質")
@@ -1674,7 +1687,10 @@ def sheet_equipment(char: Character, gamedata: GameData) -> None:
             body.append(f"{_SLOT_CN[slot]}  ", style=GOLD)
             body.append(gamedata.item_name(iid) + _temper_suffix(char, iid)
                         + _ench_suffix(gamedata, iid) + "\n", style=PARCH)
-    body.append(f"護甲值  {_armor_display(char, gamedata)}\n", style=INK)  # 含永久淬鍊 → 淬甲後護甲值上升
+    body.append(f"護甲值  {_armor_display(char, gamedata)}\n", style=INK)  # R200:戰鬥實際護甲值
+    _atip = _armor_tip(char, gamedata, short=True)
+    if _atip:
+        body.append(f"        {_atip}\n", style=FAINT)
     _smat, _scnt, _sb = inventory.set_progress(char, gamedata)
     if _scnt == 4 and _sb:                              # 穿滿四件同材質 → 套裝啟用(顯示實際效果)
         _setname = gamedata.armor_sets.get(_smat, {}).get("name", "整套同材質")
@@ -2031,14 +2047,14 @@ def sheet_skill_detail(char: Character, gamedata: GameData, skill_id: str) -> No
         rows = [_hd(f"{sd['name']}（{formulas.SPEC_NAMES.get(sd['spec'], sd['spec'])}）　等級 {eff}"
                     + (f"(基礎 {base})" if eff != base else ""))]
         if char.is_major_skill(skill_id):
-            rows.append(_ln("✦ 主修技能(升點給 ×1.5 等級經驗)", "magenta"))
+            rows.append(_ln(f"✦ 主修技能(升點給 ×{formulas.MAJOR_SKILL_XP_MULT:g} 等級經驗)", "magenta"))
         if sd.get("desc"):
             rows.append(_ln(sd["desc"], "muted"))
         if sd.get("mechanic"):
             rows.append(_kv("作用", sd["mechanic"]))
         need = formulas.skill_threshold(base)
         cur = char.skill_xp.get(skill_id, 0.0)
-        pct = int(cur / need * 100) if need > 0 else 0
+        pct = int(cur / need * 100) if need > 0 else 0   # trunc-ok:進度百分比刻意截斷(未滿不顯示 100%)
         rows.append(_kv("熟練進度", f"{pct}%（{cur:.1f}/{need:.1f} → {base + 1} 級)"))
         nxt = mastery.next_threshold(char, gamedata, skill_id)
         if nxt:
@@ -2053,7 +2069,7 @@ def sheet_skill_detail(char: Character, gamedata: GameData, skill_id: str) -> No
     body.append(f"{sd['name']}（{formulas.SPEC_NAMES.get(sd['spec'], sd['spec'])}）", style=f"bold {GOLD}")
     body.append(f"   等級 {eff}" + (f"(基礎 {base})" if eff != base else "") + "\n", style=PARCH)
     if char.is_major_skill(skill_id):
-        body.append("✦ 主修技能(升點給 ×1.5 等級經驗)\n", style="bold magenta")
+        body.append(f"✦ 主修技能(升點給 ×{formulas.MAJOR_SKILL_XP_MULT:g} 等級經驗)\n", style="bold magenta")
     if sd.get("desc"):
         body.append(sd["desc"] + "\n", style=INK)
     if sd.get("mechanic"):
@@ -2061,7 +2077,7 @@ def sheet_skill_detail(char: Character, gamedata: GameData, skill_id: str) -> No
         body.append(sd["mechanic"] + "\n", style=PARCH)
     need = formulas.skill_threshold(base)
     cur = char.skill_xp.get(skill_id, 0.0)
-    pct = int(cur / need * 100) if need > 0 else 0
+    pct = int(cur / need * 100) if need > 0 else 0   # trunc-ok:進度百分比刻意截斷(未滿不顯示 100%)
     body.append(f"熟練進度  {pct}%（{cur:.1f}/{need:.1f} → {base + 1} 級)\n", style=INK)
     nxt = mastery.next_threshold(char, gamedata, skill_id)
     if nxt:
@@ -2103,9 +2119,9 @@ def spell_effect_summary(gamedata: GameData, spell_id: str) -> str:
         return {"dot": f"{el}持續傷害 {m}/回合×{t}", "regen": f"再生 +{m}/回合×{t}",
                 "paralyze": f"麻痺 {t} 回合", "fear": f"恐懼 {t} 回合",
                 "soul_trap": f"擒魂 {t} 回合", "stagger": f"踉蹌 {t} 回合",
-                "weaken": f"衰弱 {int(m * 100)}%·{t} 回合", "slow": f"遲緩 {t} 回合",
+                "weaken": f"衰弱 {pct(m)}%·{t} 回合", "slow": f"遲緩 {t} 回合",
                 "benumb": f"凍麻(降命中){t} 回合", "calm": f"安撫 {t} 回合",
-                "consecration": f"聖化減傷 {int(m * 100)}%·{t} 回合"}.get(s, "狀態")
+                "consecration": f"聖化減傷 {pct(m)}%·{t} 回合"}.get(s, "狀態")
 
     if k == "damage":
         return f"{elem}傷害 {mag}"
@@ -2378,10 +2394,48 @@ def _temper_suffix(char: Character, item_id: str) -> str:
 
 
 def _armor_display(char: Character, gamedata: GameData) -> int:
-    """UI 顯示用護甲值(含永久淬鍊 flat 加成)。
-    淬鍊不隨耐久折損;戰鬥側 base 另在 combat._armor_rating 計入,顯示與戰鬥互不重複。"""
-    from tesrpg.systems import inventory as _inv, smithing
-    return _inv.worn_armor_rating(char, gamedata) + smithing.armor_temper_bonus(char, gamedata)
+    """UI 顯示用護甲值 = **戰鬥實際使用的護甲值**(單一出處 `combat._armor_rating`)。
+    R200:原本只顯示「穿戴值 + 淬鍊」,戰鬥實際用的是 穿戴值×(0.5+護甲技能/100) + 被動護甲 + 淬鍊 + 護盾術 + 亡者護甲
+    → 同名「護甲值」兩個口徑(技能 0 時戰鬥值約為顯示的一半、技能 100 時 1.5 倍)。分解見 `_armor_tip`。"""
+    from tesrpg.systems import combat as _cb
+    if _has_corrupt_equipment(char, gamedata):   # 毀損存檔防呆(equipped 含未知 id):戰鬥路徑本來就會在此崩,但角色卡不可崩 → 退回名目值
+        from tesrpg.systems import inventory as _inv, smithing
+        return _inv.worn_armor_rating(char, gamedata) + smithing.armor_temper_bonus(char, gamedata)
+    return _cb._armor_rating(char, gamedata)
+
+
+def _has_corrupt_equipment(char: Character, gamedata: GameData) -> bool:
+    """equipped 是否含未知物品 id(毀損 / 舊版存檔)。明確檢查,不用 except KeyError 吞掉 armor_parts 內可能的真 bug。"""
+    return any(gamedata.item_or_none(i) is None for i in char.equipped.values())
+
+
+def _armor_tip(char: Character, gamedata: GameData, short: bool = False) -> str:
+    """R200 護甲值分解(hover 提示 / 穿戴面板分解行):與 `_armor_display` 同一出處 `combat.armor_parts`,各項相加 = 顯示值。
+    short=True → 不帶「戰鬥護甲 N:」前綴(穿戴面板已有「護甲值 N」那一列)。"""
+    from tesrpg.systems import combat as _cb
+    if _has_corrupt_equipment(char, gamedata):   # 毀損存檔防呆(見 _armor_display):不給分解
+        return ""
+    p = _cb.armor_parts(char, gamedata)
+    if "beast" in p:
+        body = "獸形脫去穿戴護甲,只剩野獸厚皮"
+    else:
+        head = (f"穿戴 {p['worn']} → 護甲技能折算 {p['base']}" if p["worn"] else f"未穿甲:技能基礎 {p['base']}")
+        extras = [f"{n} +{p[k]}" for k, n in (("passive", "被動護甲"), ("temper", "淬鍊"), ("shield", "護盾"),
+                                              ("undead", "亡者護甲")) if p[k]]
+        body = " · ".join([head] + extras)
+    return body if short else f"戰鬥護甲 {_cb._armor_rating(char, gamedata)}:{body}"
+
+
+def _carry_tip(char: Character, gamedata: GameData) -> str:
+    """R200 負重上限分解(hover 提示):與顯示值同一出處 `inventory.max_weight_parts`。"""
+    from tesrpg.systems import inventory as _inv
+    p = _inv.max_weight_parts(char, gamedata)
+    parts = [f"力量 {char.attr('strength')} → {p['base']}"]
+    if p["feather"]:
+        parts.append(f"羽落術 +{p['feather']}")
+    if p["saddlebag"]:
+        parts.append(f"鞍袋 +{p['saddlebag']}")
+    return f"負重上限 {_inv.max_weight(char, gamedata)}:" + " · ".join(parts)
 
 
 def weapon_line(char: Character, gamedata: GameData) -> str:
@@ -2390,11 +2444,10 @@ def weapon_line(char: Character, gamedata: GameData) -> str:
     if inventory.is_great_shield(gamedata, gs):    # 雙手重盾:以盾擊作戰(手持武器休眠)
         sd = gamedata.item(gs)
         from tesrpg import formulas as _f   # R138 可見性:重盾掩體特性(卸力隨格擋技能·元素=卸力×0.7·回氣)標在武器行
-        _m = _f.GUARD_STANCE_MITIGATION * min(1.0, char.skill("block") / 100.0)
-        _gpct = int(_m * _f.GREAT_SHIELD_ELEMENTAL_FACTOR * 100)
+        _gp, _gpct = guard_stance_numbers(char, gamedata)   # R200:與實擲同一出處(含斯丹達爾之佑與總夾 0.60)
         return (f"{sd['name']}（盾擊 傷害 {sd.get('bash_damage', 0)} · "
-                f"{gamedata.skill_name('block')} {char.skill('block')} · 卸力 {int(sd.get('mitigation', 0) * 100)}% · "
-                f"掩體姿態:物理-{int(_m * 100)}%·元素-{_gpct}%·回氣+{_f.GREAT_SHIELD_BUNKER_FATIGUE}/回·雙手重盾)")
+                f"{gamedata.skill_name('block')} {char.skill('block')} · 卸力 {pct(sd.get('mitigation', 0))}% · "
+                f"掩體姿態:物理-{_gp}%·元素-{_gpct}%·回氣+{_f.GREAT_SHIELD_BUNKER_FATIGUE}/回·雙手重盾)")
     wp = gamedata.item_or_none(char.weapon)
     if wp is None:                       # 毀損/未知武器 id → 顯示原 id,不崩潰(防毀損存檔)
         return f"{char.weapon}(未知武器)"

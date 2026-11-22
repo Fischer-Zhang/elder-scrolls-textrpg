@@ -622,9 +622,10 @@
   }
   function renderSheet(d) {
     const right = [];
-    right.push(`<div class="kv"><span class="lab">負重</span>上限 ${d.encumbrance}　<span class="lab">金幣</span>${d.gold}</div>`);
+    const tipAttr = function (t) { return t ? ` title="${esc(t)}"` : ""; };   // R200:負重 / 護甲的分解提示(hover)
+    right.push(`<div class="kv"><span${tipAttr(d.encumbrance_tip)}><span class="lab">負重</span>上限 ${d.encumbrance}</span>　<span class="lab">金幣</span>${d.gold}</div>`);
     right.push(`<div class="kv"><span class="lab">武器</span>${esc(d.weapon)}</div>`);
-    if (d.armor) right.push(`<div class="kv"><span class="lab">護甲</span>${d.armor}</div>`);
+    if (d.armor) right.push(`<div class="kv"${tipAttr(d.armor_tip)}><span class="lab">護甲</span>${d.armor}</div>`);
     if (d.resist) right.push(`<div class="kv"><span class="lab">抗性</span>${esc(d.resist)}</div>`);
     right.push(`<div class="kv"><span class="lab">聲望</span>${d.fame}${d.infamy ? "　惡名 " + d.infamy : ""}${d.bounty ? "　<span style='color:#e08b82'>通緝 " + d.bounty + "</span>" : ""}</div>`);
 

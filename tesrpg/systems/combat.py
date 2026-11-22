@@ -385,9 +385,24 @@ def _armor_rating(actor, gamedata: GameData) -> int:
     if not _is_player(actor):
         # 同伴也吃 active_shield(盾牆護同袍光環 / 盟友指向護盾術才真生效);敵人無護盾效果 → +0 不變(sim 零位移)
         return actor.armor_rating + magic.active_shield(actor)
-    if _is_beast(actor):     # 獸形:脫去穿戴護甲,只剩野獸厚皮的微薄防護(權衡:易受擊,靠巨量血量扛)
+    p = armor_parts(actor, gamedata)
+    if "beast" in p:     # 獸形:脫去穿戴護甲,只剩野獸厚皮的微薄防護(權衡:易受擊,靠巨量血量扛)
+        return p["beast"]
+    return (p["base"] + p["passive"] + p["temper"] + p["shield"]
+            + p["undead"])   # 淬鍊 + 變化系護盾 + 亡者護甲疊加(同舊式的加總次序)
+
+
+def armor_parts(actor, gamedata: GameData) -> dict:
+    """R200 玩家護甲值的**分解**(單一出處:`_armor_rating` 的總和由此而來;角色卡顯示 / 提示共用,不再各算各的)。
+    獸形 → {"beast": N};否則 {worn 穿戴值, base 經護甲技能折算(或未穿甲的技能基礎), passive 被動護甲, temper 淬鍊,
+    shield 護盾(護盾術 / 光環等 kind=shield 效果), undead 亡者護甲}。非玩家(敵人 / 同伴)→ 同形分解:base = 其護甲值,
+    shield = 護盾,其餘 0(= `_armor_rating` 的非玩家分支)。"""
+    if not _is_player(actor):
+        return {"worn": 0, "base": actor.armor_rating, "passive": 0, "temper": 0,
+                "shield": magic.active_shield(actor), "undead": 0}
+    if _is_beast(actor):
         from tesrpg.systems import lycanthropy
-        return lycanthropy.BEAST_ARMOR
+        return {"beast": lycanthropy.BEAST_ARMOR}
     worn = inventory.worn_armor_rating(actor, gamedata)
     wc = inventory.dominant_weight_class(actor, gamedata)
     if worn == 0 or wc is None:
@@ -401,8 +416,9 @@ def _armor_rating(actor, gamedata: GameData) -> int:
     # R106C 亡者護甲:花 soul_token 買的永久全域護甲(獨立層·夾 NECRO_ARMOR_CAP·絕不寫 base;
     # necro_upgrades 空 → 0 → 刺客/非死靈師 byte-identical)
     from tesrpg.systems import necromancy
-    return (base + passive + smithing.armor_temper_bonus(actor, gamedata) + magic.active_shield(actor)
-            + necromancy.undead_armor_bonus(actor))   # 淬鍊 + 變化系護盾 + 亡者護甲疊加
+    return {"worn": worn, "base": base, "passive": passive,
+            "temper": smithing.armor_temper_bonus(actor, gamedata), "shield": magic.active_shield(actor),
+            "undead": necromancy.undead_armor_bonus(actor)}
 
 
 def _player_armor_skill(actor, gamedata: GameData) -> str:
@@ -527,13 +543,21 @@ def _guard_stance_factor(defender, atk_element=None, gamedata=None) -> float:
         return 1.0
     if _overextended(defender):  # R191 搏命連斬:還擊期間門戶大開 → 姿態卸力不計(與力竭暫停對稱)
         return 1.0
+    return 1.0 - guard_stance_mitigation(defender, gamedata, bool(atk_element))
+
+
+def guard_stance_mitigation(defender, gamedata=None, element: bool = False) -> float:
+    """R200 格擋姿態「舉盾卸力」量(0..0.60;**未套**姿態 / 力竭 / 獸形 / 搏命還擊等前提閘 —— 那些在 _guard_stance_factor)。
+    **單一出處**:實擲 `_guard_stance_factor`(= 1 − 本值)與 UI 預覽(戰鬥選單標籤 / 角色卡武器行)共用,
+    預覽不再自己重算公式層(原預覽漏掉 R107 斯丹達爾之佑 +0.10 與總夾 0.60)。element=True → 元素卸力
+    (重盾 R138b ×0.70,其餘 ×0.5;乘在夾限**之前**,與舊式同序)。"""
     m = formulas.GUARD_STANCE_MITIGATION * min(1.0, defender.skill("block") / 100.0)
     m += divines.block_bonus(defender)   # R107 斯丹達爾之佑:原掛手動格擋(R137 移除)→ 遷入姿態卸力(+0.10)
-    if atk_element:
+    if element:
         m *= (formulas.GREAT_SHIELD_ELEMENTAL_FACTOR
               if gamedata is not None and _wields_great_shield(defender, gamedata)
               else formulas.GUARD_STANCE_ELEMENTAL_FACTOR)
-    return 1.0 - min(0.60, m)            # 防呆總夾(祝福/未來源疊加也不至近免傷)
+    return min(0.60, m)                  # 防呆總夾(祝福/未來源疊加也不至近免傷)
 
 
 def bunker_fatigue_regen(char, gamedata: GameData) -> int:
@@ -990,16 +1014,16 @@ def _swing_speed(wdef) -> float:
 def _hit_chain(attacker, defender, wpn_skill, speed, wmod, fr, defender_blocking, evasion, block_pen,
                aimed: bool = False, sneaking: bool = False) -> float:
     """一擊的最終命中率(純讀、零 rng):hit_chance → 武器速度 → 里程碑命中 → 瞄準射 → 踉蹌/遲緩/凍麻 → 偷襲下限。
-    自 resolve_attack 原樣搬出(逐位元組同舊);擲骰與戰鬥卡片預覽共用,二次夾限(0.95)也一併算入。"""
+    自 resolve_attack 原樣搬出(逐位元組同舊);擲骰與戰鬥卡片預覽共用,二次夾限(上界 = formulas.HIT_CHANCE_CEIL〔R200 起引用常數,原為寫死 0.95〕;下界 0.05)也一併算入。"""
     chance = formulas.hit_chance(wpn_skill, _agility(attacker), _agility(defender),
                                  fr, defender_blocking, defender_evasion=evasion,
                                  block_penalty=block_pen)
     if _is_player(attacker):    # 武器速度:快武器更易命中、慢武器較難
-        chance = max(0.05, min(0.95, chance + formulas.weapon_speed_hit(speed)))
+        chance = max(0.05, min(formulas.HIT_CHANCE_CEIL, chance + formulas.weapon_speed_hit(speed)))
     if wmod.get("hit"):         # 里程碑武器流派:命中加成(命中非傷害,不破偷襲紅線)
-        chance = max(0.05, min(0.95, chance + wmod["hit"]))
+        chance = max(0.05, min(formulas.HIT_CHANCE_CEIL, chance + wmod["hit"]))
     if aimed:                   # 弓手「瞄準射」:蓄力強擊命中加成
-        chance = max(0.05, min(0.95, chance + formulas.AIMED_SHOT_HIT))
+        chance = max(0.05, min(formulas.HIT_CHANCE_CEIL, chance + formulas.AIMED_SHOT_HIT))
     if magic.is_staggered(attacker):   # 暗殺殘響:陣腳大亂的單位本回合更難命中
         chance = max(0.05, chance - formulas.STAGGER_HIT_PENALTY)
     if magic.is_slowed(attacker):      # 遲緩毒/負重(R31/R118):遲鈍 → 命中下降(magnitude 縮放·疊踉蹌各自夾 0.05)

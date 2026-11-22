@@ -36,7 +36,7 @@ def atk_line(a):
     oh = a.get("on_hit")
     if oh:
         st = oh.get("status")
-        ch = int(oh.get("chance", 1) * 100)
+        ch = round(oh.get("chance", 1) * 100)
         if st == "dot":
             s += f"·{EL.get(oh.get('element'), '?')}DoT {oh.get('magnitude')}×{oh.get('turns')}@{ch}%"
         else:
@@ -44,10 +44,10 @@ def atk_line(a):
             s += f"·{CC.get(st, st)}{mag}@{ch}%"
     if a.get("infect"):
         kind = "狼化" if a.get("infect_kind") == "lycanthropy" else "吸血"
-        s += f"·感染{kind}{int(a['infect'] * 100)}%"
+        s += f"·感染{kind}{round(a['infect'] * 100)}%"
     if a.get("when"):
         w = a["when"]
-        s += f" [血<{int(w['hp_below'] * 100)}%]" if "hp_below" in w else f" [血>{int(w['hp_above'] * 100)}%]"
+        s += f" [血<{round(w['hp_below'] * 100)}%]" if "hp_below" in w else f" [血>{round(w['hp_above'] * 100)}%]"
     if a.get("cooldown"):
         s += f" [冷卻{a['cooldown']}]"
     if a.get("weight", 1) != 1:
@@ -59,7 +59,7 @@ def loot_line(v):
     g = v.get("loot_gold", [0, 0])
     parts = [f"金幣 {g[0]}–{g[1]}"] if (g[0] or g[1]) else ["金幣 0"]
     for e in v.get("loot", []):
-        parts.append(f"{iname(e['item'])}({int(e.get('chance', 0) * 100)}%)")
+        parts.append(f"{iname(e['item'])}({round(e.get('chance', 0) * 100)}%)")
     return " · ".join(parts)
 
 

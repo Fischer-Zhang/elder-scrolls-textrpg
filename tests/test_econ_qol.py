@@ -301,7 +301,7 @@ def test_district_stay_reenters_without_hub():
     # 廣場子選單被進入兩次(首次過夜 + stay 再入才返回),而 grouped_menu 於這兩圈間「不」被重呼
     assert plaza_calls[0] == 2, f"stay 應讓廣場子選單再入一次(實際 {plaza_calls[0]})"
     assert reached.get("stop"), "返回後應回 hub(grouped_menu 再被呼叫→_Stop)"
-    assert c.gold == 490                                  # 只過夜一次(stay 再入是返回,不重複過夜)
+    assert c.gold == 500 - M.INN_REST_FEE                 # 只過夜一次(stay 再入是返回,不重複過夜;費用取自常數)
 
 
 def run():

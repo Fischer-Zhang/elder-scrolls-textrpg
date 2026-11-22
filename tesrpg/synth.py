@@ -118,7 +118,7 @@ def _weapon_status_enchant(status: str, mag: int, turns: int) -> tuple[dict, str
     elif status == "soul_trap":                         # 命中擒魂(充能型)
         label = f"命中擒魂(充能 {mag})" if mag > 0 else "命中擒魂"
     elif status == "vampiric":
-        label = f"吸血(造成傷害 {int(formulas.WEAPON_VAMPIRIC_FRACTION * 100)}% 回血)"
+        label = f"吸血(造成傷害 {round(formulas.WEAPON_VAMPIRIC_FRACTION * 100)}% 回血)"
     elif status == "regen":
         label = f"再生(命中 +{mag}×{turns} 回合)"
     else:  # paralyze(充能型;舊式 mag=0 為 legacy 無限)

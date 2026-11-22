@@ -66,6 +66,17 @@ def charge_capacity(gamedata: GameData, item_id: str) -> int:
     return int(gamedata.item(item_id)["enchant"]["magnitude"])
 
 
+def recharge_outcome(char: Character, gamedata: GameData, item_id: str, gem_id: str) -> dict:
+    """R200 以靈魂石為武器充能的**結果預算**(單一出處:main 的實際充能與選單預覽共用;預覽不再只顯示未夾上限的名義增量)。
+    gain = 魂石 soul × CHARGE_PER_SOUL;實際 new = min(容量, 現有 + gain);魂石照耗,溢出的部分白耗。
+    回傳 {cur 現有, cap 容量, gain 名義增量, new 充後, applied 實際充入, wasted 溢出白耗}。"""
+    cap = charge_capacity(gamedata, item_id)
+    cur = char.enchant_charges.get(item_id, cap)
+    gain = gamedata.item(gem_id)["soul"] * formulas.CHARGE_PER_SOUL
+    new = min(cap, cur + gain)
+    return {"cur": cur, "cap": cap, "gain": gain, "new": new, "applied": new - cur, "wasted": gain - (new - cur)}
+
+
 def recharge_full(char: Character, gamedata: GameData, item_id: str) -> bool:
     """把該充能型武器回充至滿(免靈魂石;供 R89 法師公會奧術回充共用)。回傳是否有變(已滿則 False)。"""
     cap = charge_capacity(gamedata, item_id)

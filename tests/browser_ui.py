@@ -557,6 +557,51 @@ class BrowserRegression(unittest.TestCase):
         self.assertNotIn("旅店睡了一晚", turnlog2)                              # 敘事不污染本回合
         self.assertNotIn("擊敗了強盜", turnlog2)                                # 切非戰鬥畫面 → 上一戰報已清
 
+    def test_sheet_armor_and_carry_rows_show_real_values_with_breakdown_tips_r200(self) -> None:
+        """R200:角色卡「護甲 / 負重上限」顯示戰鬥實際值,hover 提示附分解(真 view-model → 真前端);
+        title 屬性須正確轉義(提示文字含引號 / 角括號時不得破壞屬性或注入元素)。"""
+        import tesrpg.ui.console as ui
+        from tesrpg.creation import build_character
+        from tesrpg.gamedata import get_gamedata
+        from tesrpg.systems import combat, inventory, stats
+
+        gd = get_gamedata()
+        char = build_character(gd, name="客", sex="male", race="nord", birthsign="warrior", class_id="warrior")
+        char.skills.update(heavy_armor=100)
+        char.equipped = {"helmet": "iron_helmet", "cuirass": "iron_cuirass"}
+        char.spell_effects = [{"kind": "feather", "magnitude": 1.0, "expires_at": 10 ** 9}]
+        char.active_mount = "warhorse"
+        stats.recompute_max_resources(char, gd, restore_full=True)
+        data = ui._sheet_view(char, gd)
+        self.assertEqual(data["armor"], combat._armor_rating(char, gd))
+        self.assertEqual(data["encumbrance"], inventory.max_weight(char, gd))
+        self.assertIn("護甲技能折算", data["armor_tip"])
+        self.assertIn("羽落術", data["encumbrance_tip"])
+        self.assertIn("鞍袋", data["encumbrance_tip"])
+
+        def show(d: dict) -> None:
+            self.server.emit(
+                blocks=[{"kind": "view", "name": "sheet", "data": d}],
+                prompt={"type": "menu", "title": "角色資訊", "options": [{"key": "__back__", "label": "返回"}],
+                        "extra_keys": [], "cta_keys": []},
+                hud=_hud(),
+            )
+
+        show(data)
+        self._open(".skills")
+        armor_row = self.page.locator(".kv:has(> .lab:text-is('護甲'))").first
+        self.assertEqual(armor_row.get_attribute("title"), data["armor_tip"])
+        self.assertIn(str(data["armor"]), armor_row.inner_text())
+        carry = self.page.locator("span[title]:has(> .lab:text-is('負重'))").first
+        self.assertEqual(carry.get_attribute("title"), data["encumbrance_tip"])
+        self.assertIn(f"上限 {data['encumbrance']}", carry.inner_text())
+
+        nasty = '戰鬥護甲 9:"引號" <b>粗體</b> & 符號'
+        show(dict(data, armor_tip=nasty, encumbrance_tip=nasty))
+        self.page.wait_for_function(
+            "t => { const r = document.querySelector('.kv[title]'); return r && r.getAttribute('title') === t; }", arg=nasty)
+        self.assertEqual(self.page.locator(".kv:has(> .lab:text-is('護甲'))").first.locator("b").count(), 0)
+
     def test_sheet_skill_columns_stay_vertical_r169(self) -> None:
         """R169:角色卡三技能欄各自單欄縱列(桌面寬)。R164 的裸 .combat 戰況雙欄選擇器
         曾誤傷 .skcol.combat(戰鬥技能被拉成 3 欄 grid 散版);收斂為 .card.combat 後此測雙向守:

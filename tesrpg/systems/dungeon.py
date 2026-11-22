@@ -125,10 +125,21 @@ def has_skeleton_key(char: Character, gamedata: GameData) -> bool:
                for i in getattr(char, "equipped", {}).values())
 
 
+def lock_key_kind(char: Character, gamedata: GameData) -> str | None:
+    """R200 撬鎖「免擲骰的鑰」:塔之鑰充能優先(pick_lock 先消耗它),其次骷髏鑰匙;都沒有 → None。
+    預覽(確認文字 / 成功率)與 pick_lock 共用同一個判定與優先序,不再各自判(pick_lock 以它分支)。"""
+    if char.tower_key_charge:
+        return "tower"
+    if has_skeleton_key(char, gamedata):
+        return "skeleton"
+    return None
+
+
 def effective_pick_lock_chance(char: Character, gamedata: GameData, lock_level: int) -> float:
     """含里程碑「撬鎖名家」下限的實際撬鎖成功率(顯示與擲骰共用,確保一致)。
-    骷髏鑰匙 → 恆 100%;幸運「時來運轉」微升成功率(base-40 中性 +0)。"""
-    if has_skeleton_key(char, gamedata):
+    骷髏鑰匙 / 塔之鑰充能 → 恆 100%(R200:原本只認骷髏鑰匙,塔之鑰在身時預覽仍顯示一般機率);
+    幸運「時來運轉」微升成功率(base-40 中性 +0)。"""
+    if lock_key_kind(char, gamedata):
         return 1.0
     from tesrpg import formulas
     chance = min(0.95, pick_lock_chance(char.skill("security"), lock_level)
@@ -150,12 +161,13 @@ def pick_lock(char: Character, gamedata: GameData, lock_level: int, rng: RNG) ->
     """
     chance = effective_pick_lock_chance(char, gamedata, lock_level)
     base_xp = gamedata.skills["security"]["practice"]["xp"]
-    if char.tower_key_charge:
+    key = lock_key_kind(char, gamedata)      # R200:與預覽同一個判定(塔之鑰充能 > 骷髏鑰匙)
+    if key == "tower":
         char.tower_key_charge = False
         skill_events = progression.use_skill(char, gamedata, "security", base_xp)
         return {"success": True, "chance": 1.0, "tower_key": True, "no_pick": False,
                 "broke_pick": False, "hours": 0, "tired": False, "skill_events": skill_events}
-    if has_skeleton_key(char, gamedata):     # 骷髏鑰匙:必成、不耗開鎖器/體力;刻意不給 security xp(非親手習得 → 防免費刷技能)
+    if key == "skeleton":                    # 骷髏鑰匙:必成、不耗開鎖器/體力;刻意不給 security xp(非親手習得 → 防免費刷技能)
         return {"success": True, "chance": 1.0, "tower_key": False, "skeleton_key": True,
                 "no_pick": False, "broke_pick": False, "hours": 0, "tired": False, "skill_events": []}
     if inventory.count_item(char, LOCKPICK_ITEM) <= 0:            # 沒有開鎖器 → 撬不了
