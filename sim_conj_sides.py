@@ -39,7 +39,7 @@ def _knight_act(name):
         st.setdefault("use_stance", name in sb._STANCE_BUILDS)
         return pol(c, boss, rng, st)
     def prep(c, boss, rng, battle, st):      # 備戰(自由行動)只預凝束縛兵刃,不揮砍
-        spell = "bound_sword" if "bound_sword" in c.spells else "bound_greatsword"
+        spell = next(s for s in ("bound_sword", "bound_mace", "bound_axe", "bound_greatsword") if s in c.spells)
         if not _bound_present(c) and magic.can_cast(c, gd, spell):
             magic.cast(c, gd, spell, rng, battle=battle)
             return "summon"

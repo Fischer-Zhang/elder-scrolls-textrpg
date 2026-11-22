@@ -220,7 +220,7 @@ def test_bound_mastery_amps_damage_and_duration():
 
     t0, d0 = _bound(None)
     t1, d1 = _bound("bound_mastery")
-    assert t1 == t0 + 2, "束縛精通 +2 回合時程"
+    assert t1 == t0 + 4, "束縛精通 +4 回合時程(使用者 2026-11-22 利基定位:+2 → +4 降重施稅)"
     assert d1 > d0, "束縛精通 +傷害"
 
 

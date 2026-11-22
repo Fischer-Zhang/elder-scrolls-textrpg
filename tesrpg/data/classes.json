@@ -25,7 +25,7 @@
                  "desc": "百步穿楊的遠程獵手。"},
   "conjurer":   {"name": "召喚師", "spec": "magic", "favored_attributes": ["intelligence", "willpower"],
                  "major_skills": ["conjuration", "destruction", "alteration", "restoration", "mysticism", "alchemy", "light_armor"],
-                 "desc": "以元素精魄與束縛兵刃為戰的召喚法師。"},
+                 "desc": "以元素精魄與召喚物為戰的召喚法師。"},
   "necromancer": {"name": "死靈法師", "spec": "magic", "favored_attributes": ["intelligence", "willpower"],
                  "major_skills": ["conjuration", "mysticism", "sneak", "illusion", "destruction", "restoration", "alchemy"],
                  "desc": "收割亡魂、驅役屍骸的暗影死靈師(起手即通死靈經濟,招牌喚起亡者奴僕)。"},

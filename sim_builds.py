@@ -564,7 +564,7 @@ def _bound_knight_act(c, boss, rng, st):
     if c.health < c.max_health * 0.40 and magic.can_cast(c, gd, "close_wounds"):
         magic.cast(c, gd, "close_wounds", rng)
         return None
-    spell = "bound_sword" if "bound_sword" in c.spells else "bound_greatsword"
+    spell = next(s for s in ("bound_sword", "bound_mace", "bound_axe", "bound_greatsword") if s in c.spells)   # 夾具擁有的那一把束縛兵刃
     if not any(e.get("kind") == "bound_weapon" and e.get("turns", 0) > 0 for e in c.active_effects) and magic.can_cast(c, gd, spell):
         magic.cast(c, gd, spell, rng, battle={"allies": []})
         return "summon"

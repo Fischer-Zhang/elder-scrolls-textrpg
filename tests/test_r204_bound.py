@@ -51,7 +51,9 @@ def test_spell_data_two_handed_forms_and_own_speed():
     assert eff["bound_greatsword"]["two_handed"] is True and eff["bound_axe"]["two_handed"] is True
     assert not eff["bound_sword"].get("two_handed") and not eff["bound_mace"].get("two_handed"), "劍 / 釘錘仍是單手"
     assert eff["bound_greatsword"]["speed"] < formulas.WEAPON_SPEED_DEFAULT and eff["bound_axe"]["speed"] < formulas.WEAPON_SPEED_DEFAULT
-    assert "speed" not in eff["bound_sword"] and "speed" not in eff["bound_mace"], "單手形用預設速度(不憑空新增平衡數字)"
+    # 四形身份:長劍輕快耐久(速度 1.2、持續 8 回合 → 更省體力、少重施)、釘錘擊晕控場(預設速度與回合)、巨劍 / 戰斧雙手高傷(慢重)
+    assert eff["bound_sword"]["speed"] == 1.2 and eff["bound_sword"]["turns"] == 8 and eff["bound_sword"]["magnitude"] == 14
+    assert "speed" not in eff["bound_mace"] and eff["bound_mace"]["turns"] == 6 and eff["bound_mace"]["archetype"] == "mace"
     assert "雙手" in ui.spell_effect_summary(gd, "bound_greatsword") and "雙手" not in ui.spell_effect_summary(gd, "bound_sword")
     assert gd.spells["bound_armor"]["effect"]["kind"] == "shield", "束縛甲冑不是武器,不受握法限制"
 
@@ -112,20 +114,20 @@ def test_swing_fatigue_uses_the_bound_weapons_own_speed_not_the_dormant_equipped
         return combat.attack_fatigue_cost(c, gd)
     dagger, axe2h = "iron_dagger", "iron_warhammer"
     assert cost(dagger) != cost(axe2h), "前提:沒有束縛時,耗體隨裝備武器速度而異"
-    for spell, speed in (("bound_greatsword", 0.8), ("bound_axe", 0.85), ("bound_sword", formulas.WEAPON_SPEED_DEFAULT),
+    for spell, speed in (("bound_greatsword", 0.8), ("bound_axe", 0.85), ("bound_sword", 1.2),
                          ("bound_mace", formulas.WEAPON_SPEED_DEFAULT)):
         a, b = cost(dagger, spell), cost(axe2h, spell)
         c = _char()
         want = (formulas.ATTACK_FATIGUE_COST * formulas.fatigue_cost_factor(c.skill("athletics"))
                 * formulas.weapon_attack_fatigue_factor(speed))
         assert abs(a - want) < 1e-9 and abs(b - want) < 1e-9, (spell, a, b, want)   # 與休眠武器無關,只由束縛自身速度決定
-    assert cost(dagger, "bound_greatsword") > cost(dagger, "bound_sword"), "巨劍(雙手慢重)比長劍更耗體"
+    assert cost(dagger, "bound_greatsword") > cost(dagger, "bound_mace") > cost(dagger, "bound_sword"), "巨劍(雙手慢重)> 釘錘 > 長劍(輕快)的揮擊耗體"
     # 休眠武器的里程碑耗體(如「穿甲箭」draw_fatigue,經 weapon_mod(該武器技能))不該算到束縛揮擊上
     plain_c, bound_c = _char(weapon=dagger), _char(weapon=dagger)
     magic.cast(bound_c, gd, "bound_sword", RNG(1), battle={"allies": []})
     plain_off = combat.attack_fatigue_cost(plain_c, gd)
     want = (formulas.ATTACK_FATIGUE_COST * formulas.fatigue_cost_factor(bound_c.skill("athletics"))
-            * formulas.weapon_attack_fatigue_factor(formulas.WEAPON_SPEED_DEFAULT))
+            * formulas.weapon_attack_fatigue_factor(gd.spells["bound_sword"]["effect"]["speed"]))   # 長劍自身速度 1.2
     orig = mastery.weapon_mod
     mastery.weapon_mod = lambda c, g, sk: {"fatigue": 5.0} if sk else {}
     try:
@@ -253,7 +255,7 @@ def test_refused_cast_trains_nothing_and_keeps_an_existing_bound_effect():
     c = _char("daedric_shield", conjuration=50)
     assert magic.cast(c, gd, "bound_sword", RNG(1), battle={"allies": []})["ok"]       # 合法:單手形可與盾同持
     old = _bound(c)
-    assert old is not None and old["turns"] == 6
+    assert old is not None and old["turns"] == gd.spells["bound_sword"]["effect"]["turns"]
     xp, eff, mana, fat = copy.deepcopy(c.skill_xp), copy.deepcopy(c.active_effects), c.magicka, c.fatigue
     res = magic.cast(c, gd, "bound_greatsword", RNG(2), battle={"allies": []})          # 衝突:雙手形 + 盾
     assert res["ok"] is False
@@ -326,6 +328,20 @@ def test_equip_refusal_message_names_the_real_reason_and_weapon_label_and_sneak_
             tot += f.max_health - f.health
             n += 1
     assert n > 100 and abs(est - tot / n) <= 0.08 * (tot / n), (est, tot / n)
+
+
+def test_bound_mastery_adds_four_turns_and_fifteen_percent_and_the_conjurer_description_no_longer_promises_bound_weapons():
+    """使用者 2026-11-22(利基定位):束縛精通持續 +2 → +4(降重施稅);召喚師職業描述改為與實際一致(召喚物,不再承諾束縛兵刃)。"""
+    opt = next(o for n in gd.mastery if n["id"] == "conjuration_50" for o in n["options"] if o["opt_id"] == "bound_mastery")
+    assert opt["turn_bonus"] == 4 and opt["dmg_bonus"] == 0.15 and "4 回合" in opt["desc"] and "+15%" in opt["desc"]
+    for spell in ("bound_sword", "bound_mace", "bound_greatsword", "bound_axe"):
+        base_c, mast_c = _char(), _char()
+        mast_c.mastery_choices["conjuration_50"] = "bound_mastery"
+        magic.cast(base_c, gd, spell, RNG(1), battle={"allies": []})
+        magic.cast(mast_c, gd, spell, RNG(1), battle={"allies": []})
+        assert _bound(mast_c)["turns"] == _bound(base_c)["turns"] + 4 == gd.spells[spell]["effect"]["turns"] + 4, spell
+    desc = gd.classes["conjurer"].get("description") or gd.classes["conjurer"].get("desc")
+    assert "束縛" not in desc and "召喚物" in desc, desc
 
 
 def run():
