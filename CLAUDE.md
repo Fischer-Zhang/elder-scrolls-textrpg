@@ -241,7 +241,7 @@ PYTHONPATH=. CMP_N=120 python3 sim_conj_sides.py   # 召喚系三節點「兩側
 | R70 | 偷襲倍率全面重構:基倍效益遞減 + 各因子下修；🔴 sim_assassin 全綠:solo 偷襲秒殺 0% ✓(降倍率更安全)·R63 追擊 0%… | re-sim |
 | R69 | 反風箏:閃避效益遞減(全域)+ vanish 不躲 solo BOSS；🔴 sim_assassin 全綠:solo 偷襲秒殺 0%(evasion/vanish 不碰偷襲… | re-sim |
 | R68 | 法袍三階套裝再平衡:新增「法術威力」set-bonus 機制 + 魔抗分級；🔴 sim_assassin byte-identical(刺客穿皮甲非法袍·永不施法→_power… | re-sim |
-| R67 | 智力法術威力大改:int100=+30%(50→100 線性)+ >100 才 softcap(總漸近 +45%)；🔴 sim_assassin byte-identical(虎人 int≤50 且永不施法→公式零呼… | re-sim |
+| R67 | 智力法術威力大改〔R214 部分取代:曲線仍有效、屬性改依學派〕:int100=+30%(50→100 線性)+ >100 才 softcap(總漸近 +45%)；🔴 sim_assassin byte-identical(虎人 int≤50 且永不施法→公式零呼… | re-sim |
 | R66 | resist 附魔再平衡:soul^0.7 非線性 + 魔抗/單元素分流(承魔抗免疫評估)；🔴 sim_assassin byte-identical(刺客無 resist 附魔·隔離 wor… | save |
 | R171 | 四原則分工:scout(Haiku 唯讀檢索/長文摘要)/ counsel(Opus 唯讀顧問,紅線區設計取捨才找,每里程碑 ≤2)+ 作業指南 ops.md;共享工作樹禁改 git 狀態 | |
 | R172 | 代理使用帳本 hook:PostToolUse 記帳(主對話=agent_type 空)+ Stop 補「代理檢查」實測數字(同輪最多一次);hook 永不擋人、exit 0;里程碑=R## | |
@@ -286,6 +286,7 @@ PYTHONPATH=. CMP_N=120 python3 sim_conj_sides.py   # 召喚系三節點「兩側
 | R211 | 法術附魔 / 法術護盾單槽:`weapon_imbue` 全元素單槽·護盾法術以 `source=spell_shield` 單槽(他源 shield 不動);堵地城預施(自由行動)疊 27 層=×6.8;~~🔴 生機 renewal 仍可疊(待決)~~〔R212 已修〕 | re-sim, save-safe |
 | R212 | 法術回復單槽:生機 / 生機共鳴(含盟友路徑)以 `source=spell_regen` 單槽,他源 regen(附魔再生/堅毅/宗師光環)不動;自我增益類至此皆單槽 | re-sim, save-safe |
 | R213 | 變化系護盾三階處處高階勝:橡木膚 30×4 回合/19 魔·鐵膚 75×6/35 魔·**石膚 55×5/30 不動**(sim 基準);階層守衛 test_shield_tiers_r213;變化系文字去「開鎖」;BUFFS 補 R211/R212 同步 | content, save-safe |
+| R214 | 法術威力的屬性依學派(`skills.json` `attr` 單一來源:毀滅/召喚=智力·恢復/變化/神秘=意志·幻術=魅力);R67 曲線不變(R67 部分取代);戰法師偏好改力量/意志;🔴 聖騎+18%·戰法師−9%·束縛騎士+6% 須重跑 sim(未跑) | re-sim, content |
 
 ## 自動提交閘門 / 換 session 前檢查表
 

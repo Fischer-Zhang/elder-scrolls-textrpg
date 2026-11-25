@@ -14,7 +14,7 @@
   "knight":     {"name": "騎士", "spec": "combat",  "favored_attributes": ["strength", "personality"],
                  "major_skills": ["blade", "block", "heavy_armor", "blunt", "speechcraft", "illusion", "hand_to_hand"],
                  "desc": "兼具武勇與風範的貴族戰士。"},
-  "battlemage": {"name": "戰法師", "spec": "magic", "favored_attributes": ["strength", "intelligence"],
+  "battlemage": {"name": "戰法師", "spec": "magic", "favored_attributes": ["strength", "willpower"],
                  "major_skills": ["blade", "blunt", "destruction", "alteration", "conjuration", "mysticism", "alchemy"],
                  "starting_spells": ["flame_blade", "oakflesh", "minor_heal", "restore_mind"],
                  "desc": "一手持劍、一手御火的全能戰士。"},

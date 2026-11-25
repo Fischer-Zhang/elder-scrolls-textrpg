@@ -97,12 +97,19 @@ def effective_cost(char: Character, gamedata: GameData, spell_id: str) -> int:
     return max(1, round(cost))                                       # max(1) 地板 → 永不免費施法
 
 
+def power_attribute(gamedata: GameData | None, school: str) -> str:
+    """R214 該學派法術威力吃的屬性 = skills.json 該技能的 `attr`(單一來源,不再寫死智力):
+    毀滅 / 召喚 = 智力、恢復 / 變化 / 神秘 = 意志、幻術 = 魅力。gamedata 缺 → 回舊行為(智力)。"""
+    return gamedata.skills[school]["attr"] if gamedata is not None else "intelligence"
+
+
 def _power(char: Character, gamedata: GameData, school: str) -> float:
-    """學派技能對效果強度的加成(0.7x ~ 1.37x);里程碑「過載」+「奧術連鎖」+ R63 智力威力 + R68 法袍套裝威力再疊加。"""
+    """學派技能對效果強度的加成(0.7x ~ 1.37x);里程碑「過載」+「奧術連鎖」+ 屬性威力(R67 曲線·R214 依學派選屬性)+ R68 法袍套裝威力再疊加。"""
     from tesrpg.systems import inventory   # 區域匯入避免循環(同 spell_fatigue_cost)
     return ((0.7 + char.skill(school) / 150.0 + mastery.spell_power_bonus(char, gamedata, school)
              + mastery.cascade_power(char, gamedata))   # 法師「奧術連鎖」:連續施法漸增威力
-            * formulas.intelligence_spell_potency(char.attr("intelligence"))   # R63 智力 → 法術威力(過 100 漸近)
+            # R67 曲線(≤50 中性 → 100 = +30% → 過 100 漸近);R214:曲線不變,屬性依學派(power_attribute),函式名沿用舊稱
+            * formulas.intelligence_spell_potency(char.attr(power_attribute(gamedata, school)))
             * (1.0 + inventory.set_spell_power_bonus(char, gamedata)           # R68 法袍套裝:法術威力(乘性,與智力威力疊乘)
                    + inventory.staff_spell_power(char, gamedata)              # R77 持杖施法焦點:法術威力(與套裝相加)
                    + getattr(char, "boon_spell_power", 0.0)))                 # R78b 大法師通悟誓福:法術威力(與套裝/法杖相加)
