@@ -130,10 +130,10 @@ def apply_origin(gamedata: GameData, char: Character, origin_id: str | None) -> 
         item_id, qty = entry[0], (entry[1] if len(entry) > 1 else 1)
         inventory.add_item(char, item_id, qty)
 
-    # 武器:加進背包;一般職業裝備上(取代依技能配發的起始武器)。
-    # 例外——「純施法者」(無任何武器系主修,如法師/治療師)選到非施法武器時只追加不換手:保留依
-    # 技能配發的起始武器,免得被塞一把用不上的近戰武器(身分與本事打架)。法杖等施法武器、以及戰法師
-    # 等有武器主修(吃得下近戰升級)的混合職仍照常換手裝上。
+    # 武器:一律加進背包;是否裝備上手由 _equips_origin_weapon 決定。
+    # R217:職業有固定起手武器(classes.json `starting_weapon`,R208 / R209 = 身分)→ 出身武器只在「同系升級」
+    # (獵弓換長弓、鐵匕首換鋼匕首、法杖換更好的法杖)才換手;異系(弓手持劍、盜賊持弓…)只進背包,不蓋掉身分武器。
+    # 沒有固定起手武器的職業(戰士 / 騎士 / 戰法師 / 自訂職業)維持舊規則:法杖永遠裝、有武器系主修就換手。
     weapon_id = odef.get("weapon")
     if weapon_id:
         inventory.add_item(char, weapon_id, 1)
@@ -192,9 +192,23 @@ def _is_caster_weapon(gamedata: GameData, weapon_id: str) -> bool:
     return bool(skill and gamedata.skills.get(skill, {}).get("spec") == "magic")
 
 
+def _weapon_family(gamedata: GameData, weapon_id: str) -> tuple:
+    """武器「同系」判定(R217):施法武器(法杖 / 魔法學派武器)一律同系;其餘以 (武器技能, 型態) 為準——
+    獵弓與長弓同系、鐵匕首與鋼匕首同系,但劍 ≠ 匕首、弓 ≠ 劍。"""
+    if _is_caster_weapon(gamedata, weapon_id):
+        return ("caster",)
+    w = gamedata.item(weapon_id)
+    return (w.get("skill"), w.get("archetype"))
+
+
 def _equips_origin_weapon(char: Character, gamedata: GameData, weapon_id: str) -> bool:
-    """開局是否把出身武器裝上手:施法武器(法杖)永遠裝;否則只有「純施法者」(無任何武器系主修)
-    才不換手(保留依技能配發的起始武器)——戰士/盜賊/弓手乃至戰法師等有武器主修的職業照常升級。"""
+    """開局是否把出身武器裝上手(不論裝不裝,出身武器都已進背包)。
+    R217:職業有固定起手武器(classes.json `starting_weapon` = 身分)→ 只有「同系升級」才換手——弓手 / 斥候換更好的弓、
+    刺客 / 盜賊換更好的匕首、法系換更好的法杖;異系(弓手持劍、盜賊持弓…)只進背包,不蓋掉身分武器。
+    沒有固定起手武器的職業(戰士 / 騎士 / 戰法師 / 自訂職業)維持舊規則:施法武器永遠裝,否則有武器系主修就換手。"""
+    fixed = gamedata.classes.get(char.class_id, {}).get("starting_weapon")
+    if fixed and fixed in gamedata.weapons:
+        return _weapon_family(gamedata, weapon_id) == _weapon_family(gamedata, fixed)
     if _is_caster_weapon(gamedata, weapon_id):
         return True
     return any(sid in char.major_skills for sid in formulas.WEAPON_SKILL_IDS)
@@ -211,7 +225,7 @@ _WEAPON_FOR_SKILL = {
 
 def _starting_weapon(gamedata: GameData, skills: dict[str, int], class_id: str = "") -> str:
     """配發起始武器:職業在 classes.json 寫了 `starting_weapon`(R208)就固定給那把——身分優先,
-    且不受種族技能加成造成的「同分取 blade」平手影響;沒寫(戰士/騎士/戰法師/斥候/自訂職業)才依
+    且不受種族技能加成造成的「同分取 blade」平手影響;沒寫(戰士/騎士/戰法師/自訂職業)才依
     角色最擅長的武器技能配發(舊規則,逐位元組同)。"""
     fixed = gamedata.classes.get(class_id, {}).get("starting_weapon")
     if fixed and fixed in gamedata.weapons:
