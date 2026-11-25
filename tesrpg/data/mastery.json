@@ -880,7 +880,7 @@
     "kind": "spell_mod",
     "school": "alteration",
     "cost_factor": 0.85,
-    "desc": "變化術駕輕就熟:施法省魔 15%(護盾/開鎖更頻繁可用)。"
+    "desc": "變化術駕輕就熟:施法省魔 15%(護盾/元素刃更頻繁可用)。"
    },
    {
     "opt_id": "shield_focus",

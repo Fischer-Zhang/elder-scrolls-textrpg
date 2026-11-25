@@ -285,6 +285,7 @@ PYTHONPATH=. CMP_N=120 python3 sim_conj_sides.py   # 召喚系三節點「兩側
 | R210 | 法師系起手法術重排:classes.json `starting_spells` 完整清單(法師/戰法師/治療師/死靈法師);擒魂術只給召喚師/死靈法師·魔靈伴只給召喚師·亡者復生不起手;~~🔴 weapon_imbue 無重施去重(待決)~~〔R211 已修〕 | content, save-safe |
 | R211 | 法術附魔 / 法術護盾單槽:`weapon_imbue` 全元素單槽·護盾法術以 `source=spell_shield` 單槽(他源 shield 不動);堵地城預施(自由行動)疊 27 層=×6.8;~~🔴 生機 renewal 仍可疊(待決)~~〔R212 已修〕 | re-sim, save-safe |
 | R212 | 法術回復單槽:生機 / 生機共鳴(含盟友路徑)以 `source=spell_regen` 單槽,他源 regen(附魔再生/堅毅/宗師光環)不動;自我增益類至此皆單槽 | re-sim, save-safe |
+| R213 | 變化系護盾三階處處高階勝:橡木膚 30×4 回合/19 魔·鐵膚 75×6/35 魔·**石膚 55×5/30 不動**(sim 基準);階層守衛 test_shield_tiers_r213;變化系文字去「開鎖」;BUFFS 補 R211/R212 同步 | content, save-safe |
 
 ## 自動提交閘門 / 換 session 前檢查表
 

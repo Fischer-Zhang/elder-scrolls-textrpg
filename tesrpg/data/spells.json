@@ -84,12 +84,12 @@
   "oakflesh": {
     "name": "橡木膚",
     "school": "alteration",
-    "cost": 16,
+    "cost": 19,
     "target": "self",
     "effect": {
       "kind": "shield",
       "magnitude": 30,
-      "turns": 5
+      "turns": 4
     }
   },
   "stoneflesh": {
@@ -240,12 +240,12 @@
   "ironflesh": {
     "name": "鐵膚",
     "school": "alteration",
-    "cost": 42,
+    "cost": 35,
     "target": "self",
     "effect": {
       "kind": "shield",
       "magnitude": 75,
-      "turns": 5
+      "turns": 6
     }
   },
   "ignite": {

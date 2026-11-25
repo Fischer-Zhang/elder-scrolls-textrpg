@@ -215,11 +215,11 @@
 ### 自我增益
 | 效果 | kind | 數值 | 疊加 |
 |---|---|---|---|
-| 再生 HoT(renewal/regen_aura/ench_regen/steadfast) | 續航回復 | renewal +10×4、aura +8×4(全同伴)、steadfast 4×3 | 各一條可同掛;ench_regen/steadfast 各 source 去重;tick 為 flat 不乘 power |
-| 變化護盾(oak/stone/iron-flesh、ward_ally) | 減傷 | round(mag×power):30/55/75、ward_ally40;turns5 | ★聚合相加進 armor_rating;**只擋物理** |
+| 再生 HoT(renewal/regen_aura/ench_regen/steadfast) | 續航回復 | renewal +10×4、aura +8×4(全同伴)、steadfast 4×3 | 🔴**R212 法術回復單槽**:renewal / regen_aura 以 `source=spell_regen` 重施取代舊的(含盟友路徑;預施連放原可疊 27 層=每回合 528);ench_regen/steadfast/宗師光環各 source 去重、各一條可同掛;tick 為 flat 不乘 power |
+| 變化護盾(oak/stone/iron-flesh、ward_ally) | 減傷 | round(mag×power):橡木膚 **30×4 回合(19 魔)**/石膚 **55×5(30 魔·sim 基準不可動)**/鐵膚 **75×6(35 魔)**(R213 S1');ward_ally 40×5 | ★聚合相加進 armor_rating;**只擋物理**;🔴**R211 法術護盾單槽**:`source=spell_shield`,重施 / 換施取代舊的(連放原可疊:橡木膚×6=278),他源 shield(聖光溢盾/戰旗/盾牆/宗師光環)不動;**R213 階層守衛**:處處「每次施放」與「每魔力效率」皆高階勝(底甲 3–400 × 威力 0.55–3.5) |
 | 溢盾 overheal_ward | 減傷 | 溢治60%轉盾,夾生命×0.5,turns4 | source去重夾cap |
 | 秘術結界 ward/greater/absorb | 抗性吸收池 | 40/90/70(absorb0.5回魔);turns5 可耗盡池 | 重施去重;**只吃法術/元素傷** |
-| 奧術灌注(flame/frost/storm_blade) | 傷害 | round(8×power)元素傷/命中;turns5 | 🔴多元素並掛逐一加;加在 solo 夾限**之前**;獸形/束縛不吃 |
+| 奧術灌注(flame/frost/storm_blade) | 傷害 | round(8×power)元素傷/命中;turns5 | 🔴**R211 法術附魔單槽(全元素)**:同時至多一道,新的取代舊的(含 rider;原可疊:預施 27 層=每擊 +323、×6.8,為最強真附魔的 14 倍);可與**真附魔**(附魔台,每把一個、副手×0.6)共存;加在 solo 夾限**之前**;獸形/束縛不吃 |
 | 共鳴一擊 resonance | 傷害 | 半數實際法傷+引燃dot;turns2 | 🔴重施去重;偷襲不放大、solo受夾 |
 | 束縛兵刃 bound_weapon | 武器替換 | 基礎傷14(magic),不乘power;turns6 | 重施去重;取代裝備(不吃淬鍊/附魔/塗毒/副手) |
 | 召喚 summon(R105 成長)| 召喚物 HP+傷害 | **scale=min(SUMMON_POWER_CAP=2.0, _power(conjuration)×(1+boon))×力竭**;HP=基礎×0.85~1.15×scale×(1+hp_bonus)·傷害 raw×`summon_power`(=scale) | 🔴R105:召喚物**隨召喚主 conjuration 技能/法術威力/智力成長**(推翻舊「不吃_power」)·初始弱靠 bestiary 基礎·CAP 防暴衝·傷害走 resolve_attack **不吃玩家偷襲**·角色定位(魔人/魔靈伴坦克·火冰雷法師玻璃大砲)+ 元素 on_hit(火 dot/冰 benumb/雷 stagger)+ 坦克嘲諷(TAUNT_AGGRO 0.6);加入 battle["allies"](R08)|
