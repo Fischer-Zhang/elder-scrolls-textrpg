@@ -69,6 +69,8 @@ def test_every_spell_is_reachable():
         reachable |= set(loc.get("spell_stock", []))
     reachable |= set(creation._SPELL_FOR_SCHOOL.values())
     reachable |= set(creation._CLASS_SIGNATURE_SPELL.values())
+    for cdef in gd.classes.values():                     # R210:職業指定的完整起手清單(classes.json starting_spells)
+        reachable |= set(cdef.get("starting_spells", []))
     import json
     import os
     odata = json.load(open(os.path.join(os.path.dirname(__file__), "..", "tesrpg", "data", "origins.json")))

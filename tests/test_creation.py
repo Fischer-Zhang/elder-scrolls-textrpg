@@ -189,27 +189,50 @@ def test_thief_favors_agility_personality_and_assassin_pack_is_pinned():
     assert c.attributes["speed"] == w.attributes["speed"]                       # 速度不再是偏好
 
 
-def test_conjuration_starter_spell_only_for_conjuration_family():
-    """魔靈伴(conjure_familiar)只留給召喚系職業:召喚師 / 死靈法師(第 1 回合與無屍可復生時的召喚手段)保留;
-    法師 / 戰法師以 no_starter_schools 略過;其餘學派的入門法術不受影響;自訂職業不受影響(R209 C1)。"""
+def test_r210_starting_spell_lists_are_pinned():
+    """R210:法師 / 戰法師 / 治療師 / 死靈法師的起手法術由 classes.json `starting_spells` 完整指定(取代推導);
+    召喚師 / 騎士 / 非施法職業仍走「主修學派入門 + 簽名」推導;全種族結果相同。
+    (取代 R209 C1「魔靈伴只留給召喚系 + 死靈法師保留」:死靈法師改喚起亡者奴僕 + 束縛長劍,亡者復生是上級法術不起手給。)"""
     gd = get_gamedata()
-    for cid in ("conjurer", "necromancer"):
-        assert "conjure_familiar" in _mk(gd, "imperial", cid).spells, cid
-    for cid in ("mage", "battlemage"):
-        assert gd.classes[cid]["no_starter_schools"] == ["conjuration"]
-        assert "conjure_familiar" not in _mk(gd, "imperial", cid).spells, cid
-    m = _mk(gd, "imperial", "mage").spells
-    assert {"flames", "minor_heal", "oakflesh", "fear", "soul_trap"} <= set(m)   # 其餘五學派入門法術仍在
-    assert "conjure_familiar" in _mk(gd, "imperial", "conjurer").spells and "fear" not in _mk(gd, "imperial", "conjurer").spells
+    expect = {
+        "mage": {"flames", "minor_heal", "oakflesh", "fear"},
+        "battlemage": {"flame_blade", "oakflesh", "minor_heal", "restore_mind"},
+        "healer": {"arcane_bolt", "minor_heal", "oakflesh", "dispel", "heal_other"},
+        "necromancer": {"flames", "minor_heal", "fear", "soul_trap", "raise_thrall", "bound_sword"},
+        "conjurer": {"flames", "minor_heal", "oakflesh", "conjure_familiar", "soul_trap"},     # 推導路徑,未變
+        "knight": {"fear", "minor_heal", "rally"},                                              # 推導路徑,未變
+    }
+    for cid, want in expect.items():
+        for race in ("imperial", "altmer", "orsimer"):
+            assert set(_mk(gd, race, cid).spells) == want, f"{cid}/{race}:{_mk(gd, race, cid).spells}"
+    for cid in ("warrior", "thief", "assassin", "archer", "scout"):
+        assert _mk(gd, "imperial", cid).spells == ["minor_heal"], cid
+
+
+def test_r210_soul_trap_and_familiar_ownership_and_list_validity():
+    """守衛:擒魂術只給召喚師 / 死靈法師;魔靈伴只給召喚師;亡者復生(上級法術)不再起手給任何職業;
+    自訂職業仍走推導;`starting_spells` 內 id 必存在、含次級治療、無重複,且學派須為該職業主修(次級治療例外)。"""
+    gd = get_gamedata()
+    for cid in gd.classes:
+        sp = set(_mk(gd, "imperial", cid).spells)
+        assert ("soul_trap" in sp) == (cid in {"conjurer", "necromancer"}), f"擒魂術歸屬:{cid}"
+        assert ("conjure_familiar" in sp) == (cid == "conjurer"), f"魔靈伴歸屬:{cid}"
+        assert "reanimate_corpse" not in sp, f"{cid} 不應起手有亡者復生"
     custom = {"specialization": "magic", "favored_attributes": ["intelligence", "willpower"],
               "major_skills": ["conjuration", "destruction", "alteration", "restoration", "mysticism", "alchemy", "illusion"]}
     c = build_character(gd, name="C", sex="male", race="imperial", birthsign="shadow",
                         class_id="custom", custom_class=custom)
-    assert "conjure_familiar" in c.spells
-    # 資料守衛:略過的學派必須是該職業的主修(寫錯學派 = 靜默無效)
+    assert {"conjure_familiar", "soul_trap"} <= set(c.spells)          # 自訂職業:舊推導規則不變
     for cid, cdef in gd.classes.items():
-        for school in cdef.get("no_starter_schools", []):
-            assert school in cdef["major_skills"], f"{cid} 略過的 {school} 不在主修"
+        lst = cdef.get("starting_spells")
+        if not lst:
+            continue
+        assert len(lst) == len(set(lst)), f"{cid} starting_spells 有重複"
+        assert "minor_heal" in lst, f"{cid} 人人至少會次級治療"
+        for sid in lst:
+            assert sid in gd.spells, f"{cid} 起手法術 {sid} 不存在"
+            assert gd.spells[sid]["school"] in cdef["major_skills"] or sid == "minor_heal", \
+                f"{cid} 起手法術 {sid}({gd.spells[sid]['school']})不在其主修學派"
 
 
 def run():

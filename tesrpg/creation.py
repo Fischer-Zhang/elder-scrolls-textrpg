@@ -85,7 +85,7 @@ def build_character(
     char.visited_locations = [char.location_id]
     char.weapon = _starting_weapon(gamedata, skills, class_id)
     char.spells = _starting_spells(majors, class_id,
-                                   gamedata.classes.get(class_id, {}).get("no_starter_schools", ()))
+                                   gamedata.classes.get(class_id, {}).get("starting_spells"))
 
     # --- 起始背包 --------------------------------------------------------
     if char.weapon != "fists":
@@ -227,19 +227,19 @@ _SPELL_FOR_SCHOOL = {
 }
 
 
-# 身份職業的招牌起手法術(功能性區分):戰法師奧術灌注 / 治療師援護 / 騎士號令 / 死靈法師亡者復生
-# (R106C:necromancer 內建 reanimate_corpse〔復生擊殺的敵屍·1 soul_token/具〕·conjure_familiar 補 turn-1/無屍時)
-_CLASS_SIGNATURE_SPELL = {"battlemage": "flame_blade", "healer": "heal_other", "knight": "rally",
-                          "necromancer": "reanimate_corpse"}
-# R209 召喚師的辨識度:不另給簽名法術,而是讓「魔靈伴」只留給召喚系職業(召喚師·死靈法師)——
-# 法師 / 戰法師在 classes.json 以 `no_starter_schools: ["conjuration"]` 略過召喚學派的入門法術
-# (主修仍在、法術可日後向城鎮購買;死靈法師不略過:魔靈伴是它第 1 回合 / 無屍可復生時的召喚手段)。
+# 身份職業的招牌起手法術(功能性區分;走「主修學派入門 + 簽名」推導路徑者):目前只剩騎士號令。
+# R210:法師 / 戰法師 / 治療師 / 死靈法師改在 classes.json 以 `starting_spells`(完整清單,含各自簽名)
+# 取代推導——召喚師 / 騎士 / 非施法職業與自訂職業仍走推導。(R209 的 `no_starter_schools` 與
+# 死靈法師「保留魔靈伴 + 亡者復生」已被 R210 取代:死靈法師起手改喚起亡者奴僕 + 束縛長劍。)
+_CLASS_SIGNATURE_SPELL = {"knight": "rally"}
 
 
-def _starting_spells(majors: list[str], class_id: str = "", skip_schools=()) -> list[str]:
+def _starting_spells(majors: list[str], class_id: str = "", explicit=None) -> list[str]:
+    if explicit:                       # R210 職業指定的完整起手清單(取代推導;順序即清單順序)
+        return list(explicit)
     spells = []
     for school, spell in _SPELL_FOR_SCHOOL.items():
-        if school in majors and school not in skip_schools:
+        if school in majors:
             spells.append(spell)
     if "minor_heal" not in spells:
         spells.append("minor_heal")
