@@ -282,7 +282,8 @@ PYTHONPATH=. CMP_N=120 python3 sim_conj_sides.py   # 召喚系三節點「兩側
 | R207 | 待決項裁決收尾:速度屬性說明改「追擊·逃跑·潛行撤退」·跨技能經驗平價 / 極致死靈師對達貢=不處理·R175 續問規則(催交報告不計次,見 ops.md)·R138 龜殼施法者排下一個獨立里程碑(先量測);過期說明=註記不刪 | content |
 | R208 | 起手包定位:弓手專精→潛行系 + classes.json `starting_weapon` 固定起手武器(刺客/盜賊匕首·弓手弓·四純施法學徒法杖〔素杖無焦點〕);🔴 改技能 spec 歸類全存檔回溯·刪職業 id 舊檔崩·改刺客包 sim 非 byte-id | save-safe, content |
 | R209 | 職業差異化:盜賊偏好→敏捷+魅力·~~魔靈伴只留召喚系(`no_starter_schools`,死靈法師保留)~~〔R210 取代〕·斥候起手弓·出身推薦補強;🔴 刺客起手包(偏好/專精/主修)不動=sim_assassin byte-id | save-safe, content |
-| R210 | 法師系起手法術重排:classes.json `starting_spells` 完整清單(法師/戰法師/治療師/死靈法師);擒魂術只給召喚師/死靈法師·魔靈伴只給召喚師·亡者復生不起手;🔴 weapon_imbue 無重施去重(待決) | content, save-safe |
+| R210 | 法師系起手法術重排:classes.json `starting_spells` 完整清單(法師/戰法師/治療師/死靈法師);擒魂術只給召喚師/死靈法師·魔靈伴只給召喚師·亡者復生不起手;~~🔴 weapon_imbue 無重施去重(待決)~~〔R211 已修〕 | content, save-safe |
+| R211 | 法術附魔 / 法術護盾單槽:`weapon_imbue` 全元素單槽·護盾法術以 `source=spell_shield` 單槽(他源 shield 不動);堵地城預施(自由行動)疊 27 層=×6.8;🔴 生機 renewal 仍可疊(待決) | re-sim, save-safe |
 
 ## 自動提交閘門 / 換 session 前檢查表
 

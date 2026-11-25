@@ -27,6 +27,15 @@ BLACK_SOUL_INFAMY = 2                                 # 囚禁有靈之魂=黑�
 _DISPELLABLE = ("fear", "paralyze", "dot", "weaken", "stagger", "slow")
 # 亡者復生:起出的屍體是「虛弱化的亡魂」→ 以原 HP 的此比例復生(避免滿血復生高 HP 精英遠超召喚物階)
 REANIMATE_HP_FACTOR = 0.6
+# R211 單槽:「法術施放的護盾」(橡木膚 / 石膚 / 鐵膚 / 束縛甲冑 / 庇護術)以此 source 標記 → 重施或換施另一道護盾法術時
+# 取代舊的(比照結界 / 束縛兵刃的重施去重);只動帶此標記者,戰旗 / 盾牆 / 聖光溢盾 / 宗師光環等其他來源的 shield 不受影響。
+SPELL_SHIELD_SOURCE = "spell_shield"
+
+
+def drop_spell_shields(entity) -> None:
+    """移除該單位身上「法術施放的護盾」(R211 單槽:新護盾取代舊護盾);其他來源的 shield 不動。"""
+    entity.active_effects[:] = [e for e in entity.active_effects
+                                if not (e.get("kind") == "shield" and e.get("source") == SPELL_SHIELD_SOURCE)]
 
 
 def has_anchor(battle: dict | None) -> bool:
@@ -115,8 +124,10 @@ def _apply_to_allies(kind: str, eff: dict, power: float, dests: list, shield_tur
         if kind == "heal":
             d.health = min(d.max_health, d.health + round(eff["magnitude"] * power))
         elif kind == "shield":
+            drop_spell_shields(d)                       # R211 單槽:同伴身上新護盾法術取代舊的(不疊)
             d.active_effects.append({"kind": "shield", "magnitude": round(eff["magnitude"] * power),
-                                     "turns": eff["turns"] + shield_turns_bonus})
+                                     "turns": eff["turns"] + shield_turns_bonus,
+                                     "source": SPELL_SHIELD_SOURCE})
         elif kind == "apply_status":
             d.active_effects.append(make_status_effect(_scaled_status(eff["status"], power)))   # R76 HoT/DoT 吃威力
         elif kind == "empower":
@@ -513,7 +524,9 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
 
     elif kind == "shield":
         mag = round(eff["magnitude"] * power)
-        char.active_effects.append({"kind": "shield", "magnitude": mag, "turns": eff["turns"]})
+        drop_spell_shields(char)                       # R211 單槽:新護盾法術取代舊的(連放不疊;其他來源的護盾不動)
+        char.active_effects.append({"kind": "shield", "magnitude": mag, "turns": eff["turns"],
+                                    "source": SPELL_SHIELD_SOURCE})
         msg = f"{sp['name']}在你身上凝成護盾(護甲 +{mag},{eff['turns']} 回合)。"
 
     elif kind == "ward":   # 神秘「結界」:吸收來襲法術/元素傷害的可耗盡池(吸魔變體按吸收量回魔)
@@ -533,6 +546,9 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
         # 帶入 active_effect,命中時由 combat 施加(見 combat._apply_imbue_rider),給「選哪一系刃」戰術身份。
         if eff.get("rider"):
             entry["rider"] = eff["rider"]
+        # R211 單槽(全元素):同時至多一道法術附魔,新的取代舊的(實測:無去重時地城預施〔自由行動〕可疊 27 層 →
+        # 每擊 ×6.8,連最強真附魔〔大魂石·神秘 100 ≈ +24〕的 14 倍;戰鬥內重施本就不划算,漏洞全在免回合的預施 / 備戰)。
+        char.active_effects[:] = [e for e in char.active_effects if e.get("kind") != "weapon_imbue"]
         char.active_effects.append(entry)
         rider_cn = _IMBUE_RIDER_CN.get((eff.get("rider") or {}).get("status"), "")
         msg = f"{sp['name']} —— 你的兵刃纏上了{_ELEMENT_CN.get(eff['element'], '')}之力(每擊 +{mag}{rider_cn},{eff['turns']} 回合)。"
