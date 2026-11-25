@@ -185,7 +185,7 @@ def test_gate_only_self_shield_spells_once_per_battle_and_not_for_others():
     c = _mage()
     for sid in SELF_SHIELDS:
         assert combat.is_self_shield_spell(gd, sid) and combat.quick_ward_ready(c, gd, sid), sid
-    for sid in ("ward_ally", "flame_blade", "heal", "fireball", "no_such_spell"):       # 同伴護盾 / 元素刃 / 治療 / 傷害法術都不算
+    for sid in ("ward_ally", "flame_blade", "heal", "fireball", "bound_armor", "no_such_spell"):       # 同伴護盾 / 元素刃 / 治療 / 傷害法術 / 召喚系自我護盾(束縛護甲)都不算
         assert not combat.is_self_shield_spell(gd, sid) and not combat.quick_ward_ready(c, gd, sid), sid
     assert combat.quick_ward_status(c, gd) == "available"
     combat.quick_ward_spend(c)
@@ -197,6 +197,19 @@ def test_gate_only_self_shield_spells_once_per_battle_and_not_for_others():
     foe = combat.spawn_creature(gd, "bandit", RNG(1))
     assert not combat.quick_ward_ready(foe, gd, "stoneflesh") and combat.quick_ward_status(foe, gd) is None
     assert combat.QUICK_WARD_SPENT in combat.BATTLE_LOCAL_KINDS and combat.QUICK_SEAL_SPENT in combat.BATTLE_LOCAL_KINDS
+
+
+def test_instant_ward_is_alteration_only_a_conjuration_self_shield_does_not_qualify():
+    """審查補洞(R216):文件宣稱瞬發護體「僅變化系」,但負向清單原本沒有召喚系的自我護盾(束縛護甲 bound_armor)——
+    拿掉 is_self_shield_spell 的學派檢查,舊測試仍全綠(突變存活)。現釘死:束縛護甲不是瞬發護體的資格,也不動免費額度。"""
+    sp = gd.spells["bound_armor"]
+    assert sp["school"] == "conjuration" and sp["target"] == "self" and (sp.get("effect") or {}).get("kind") == "shield", \
+        "前提:束縛護甲確實是自我護盾(否則這條守衛沒意義)"
+    c = _mage()
+    c.spells.append("bound_armor")
+    assert not combat.is_self_shield_spell(gd, "bound_armor")
+    assert not combat.quick_ward_ready(c, gd, "bound_armor")
+    assert combat.quick_ward_status(c, gd) == "available", "施放束縛護甲前後都不動免費額度"
 
 
 def test_seal_and_ward_bookkeeping_are_independent():

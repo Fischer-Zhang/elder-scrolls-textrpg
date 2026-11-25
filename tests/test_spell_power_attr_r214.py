@@ -88,6 +88,20 @@ def test_skill_mechanic_text_names_the_power_attribute():
         assert _CN[attr] in gd.skills[school]["mechanic"], f"{school} 的機制說明須點名威力屬性 {_CN[attr]}"
 
 
+def test_level_up_attribute_text_names_the_schools_whose_power_it_drives():
+    """審查補洞(R216):升級配點選單(formulas.ATTRIBUTE_FUNCTION)原本看不到「智力 vs 意志」的法術威力取捨(R214 只改了
+    學派說明與 codex)。文字須點名「威力吃該屬性的學派」——學派清單由 _EXPECT(= skills.json attr)導出,不另寫死;
+    非施法屬性不得混進「法術威力」。"""
+    gd = get_gamedata()
+    for attr in _ATTRS:
+        text = formulas.ATTRIBUTE_FUNCTION[attr]
+        assert "法術威力" in text, attr
+        for school in (s for s, a in _EXPECT.items() if a == attr):
+            assert gd.skills[school]["name"] in text, f"{attr} 的配點說明須點名 {gd.skills[school]['name']}"
+    for attr in ("strength", "agility", "speed", "endurance", "luck"):
+        assert "法術威力" not in formulas.ATTRIBUTE_FUNCTION[attr], attr
+
+
 def run():
     for name, fn in sorted(globals().items()):
         if name.startswith("test_") and callable(fn):

@@ -93,7 +93,7 @@ def test_precast_stack_exploit_closed_damage_equals_single_cast():
         out = []
         for c in (c1, c20):
             p = copy.deepcopy(c)
-            foe = combat.spawn_creature(gd, "bandit", RNG(s)); foe.resist = {}; foe.armor = 0
+            foe = combat.spawn_creature(gd, "bandit", RNG(s)); foe.resist = {}; foe.armor_rating = 0
             out.append(combat.resolve_attack(p, foe, gd, RNG(s))["damage"])
         assert out[0] == out[1], (s, out)
 
@@ -110,7 +110,7 @@ def test_real_enchant_and_single_imbue_still_coexist():
             p = copy.deepcopy(c)
             p.weapon = weapon
             p.active_effects[:] = [dict(imbue_entry)] if imbue else []
-            foe = combat.spawn_creature(gd, "bandit", RNG(s)); foe.resist = {}; foe.armor = 0
+            foe = combat.spawn_creature(gd, "bandit", RNG(s)); foe.resist = {}; foe.armor_rating = 0
             tot.append(combat.resolve_attack(p, foe, gd, RNG(s))["damage"])
         return statistics.mean(tot)
 
@@ -160,7 +160,8 @@ def test_ally_spell_shield_single_slot_other_sources_untouched():
 
 
 def test_ward_dedupe_unchanged_and_support_ai_gate_unchanged():
-    """既有行為不變:結界仍單槽;AI 支援者只對『沒有任何護盾』的目標施放(不因 R211 改變)。"""
+    """既有行為不變:結界(ward)仍單槽,連放 4 次只留 1 道。(支援 AI『目標已有護盾就不重施』的閘門不在此測,
+    由 test_companion_cast::test_buff_dedup_skips_if_already_buffed 涵蓋。)"""
     gd, c = _bm()
     c.spells.append("ward")
     _cast(gd, c, "ward", n=4)

@@ -42,12 +42,12 @@ ATTRIBUTE_NAMES = {
 # 每屬性的機制作用(供升級分配/角色卡顯示,讓玩家知道每點的意義)
 ATTRIBUTE_FUNCTION = {
     "strength": "近戰傷害·負重·體力",
-    "intelligence": "法力上限",
-    "willpower": "施法續航(回魔)·抗恐懼麻痺·體力",
+    "intelligence": "法力上限·毀滅/召喚法術威力",
+    "willpower": "施法續航(回魔)·恢復/變化/神秘法術威力·抗恐懼麻痺·體力",
     "agility": "命中/閃避·體力",
     "speed": "追擊(過 100 後)·逃跑·潛行撤退",
     "endurance": "生命上限·體力",
-    "personality": "說服/好感/喝退",
+    "personality": "說服/好感/喝退·幻術法術威力",
     "luck": "戰利豐厚·撬鎖/逃跑/事件運氣",
 }
 
@@ -247,7 +247,8 @@ def luck_wabbajack_save(luck: int) -> float:
 # --- 屬性第二段效果函式(R63):皆「閾以下中性 → 過閾漸近 cap」(_soft_cap knee=0) -------
 def intelligence_spell_potency(intelligence: int) -> float:
     """智力 → 法術威力倍率(R67):≤50 → ×1.0(低智力中性);50→100 線性爬升至 +30%;>100 才套 softcap 漸近(總漸近 +45%)。
-    乘進 magic._power → 同步抬升傷害/治療/護盾/結界(召喚與束縛兵刃 HP 不吃 power → 不受影響);
+    乘進 magic._power(R214:輸入改為「該學派的威力屬性」——skills.json 的 attr:毀滅/召喚=智力、恢復/變化/神秘=意志、幻術=魅力,
+    見 magic.power_attribute;函式名沿用、曲線不變)→ 同步抬升傷害/治療/護盾/結界(召喚與束縛兵刃 HP 不吃 power → 不受影響);
     只有投資智力 >50 的施法者受惠,刺客等低智力 build(≤50)零位移。"""
     if intelligence <= INTELLIGENCE_POTENCY_KNEE:
         return 1.0
