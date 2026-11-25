@@ -38,6 +38,18 @@ def drop_spell_shields(entity) -> None:
                                 if not (e.get("kind") == "shield" and e.get("source") == SPELL_SHIELD_SOURCE)]
 
 
+# R212 單槽:「法術施放的持續回復」(生機 / 生機共鳴)以此 source 標記 → 重施取代舊的。玩家路徑原本無去重:地城預施
+# (自由行動)連放 → N 道並存(法師夾具預施 27 層 = 每回合回 528 點 = 生命上限 377%);同伴 / 敵方 / 召喚物支援 AI 本就
+# 「無人持有才施」、武器再生附魔與堅毅以 source 去重。只動帶此標記者,其他來源的 regen 不受影響。
+SPELL_REGEN_SOURCE = "spell_regen"
+
+
+def drop_spell_regen(entity) -> None:
+    """移除該單位身上「法術施放的持續回復」(R212 單槽:新的取代舊的);其他來源的 regen 不動。"""
+    entity.active_effects[:] = [e for e in entity.active_effects
+                                if not (e.get("kind") == "regen" and e.get("source") == SPELL_REGEN_SOURCE)]
+
+
 def has_anchor(battle: dict | None) -> bool:
     """R203 場上是否已有存活的契僕(永契之僕:同時只能有一隻)。"""
     from tesrpg.systems import combat
@@ -129,7 +141,11 @@ def _apply_to_allies(kind: str, eff: dict, power: float, dests: list, shield_tur
                                      "turns": eff["turns"] + shield_turns_bonus,
                                      "source": SPELL_SHIELD_SOURCE})
         elif kind == "apply_status":
-            d.active_effects.append(make_status_effect(_scaled_status(eff["status"], power)))   # R76 HoT/DoT 吃威力
+            entry = make_status_effect(_scaled_status(eff["status"], power))   # R76 HoT/DoT 吃威力
+            if entry["kind"] == "regen":                  # R212 單槽:同伴身上新的法術回復取代舊的(不疊)
+                drop_spell_regen(d)
+                entry["source"] = SPELL_REGEN_SOURCE
+            d.active_effects.append(entry)
         elif kind == "empower":
             # 號令增傷比照 heal/shield 吃施法 power(學派技能 + 力竭)→ 投資越深、鼓舞越強;
             # 維持分數型(不取整,否則 0.25 會被 round 成 0)。combat 端以 max 聚合,封堆疊暴衝。
@@ -644,7 +660,11 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
                         st2 = {**st2, "magnitude": round(st2.get("magnitude", 0.0) + cb, 3)}
                     # 刷新非疊加:重施覆蓋舊光環(避免兩道並存→舊者到期誤報「黯淡」+ 減傷不疊加,審查 nit)
                     dest.active_effects[:] = [e for e in dest.active_effects if e.get("kind") != "consecration"]
-                dest.active_effects.append(make_status_effect(st2))
+                entry = make_status_effect(st2)
+                if entry["kind"] == "regen":               # R212 單槽:重施生機取代舊的(連放不疊;他源 regen 不動)
+                    drop_spell_regen(dest)
+                    entry["source"] = SPELL_REGEN_SOURCE
+                dest.active_effects.append(entry)
                 who = "你" if dest is char else dest.name
                 msg = f"{sp['name']} —— {who}{_status_verb(st)}。"
 
