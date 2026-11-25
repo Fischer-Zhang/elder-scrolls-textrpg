@@ -205,16 +205,14 @@
     "opt_id": "stoneflesh",
     "name": "石膚",
     "kind": "passive_armor",
-    "armor_bonus": 20,
-    "desc": "變化宗師:石化之膚常駐如磐石(被動護甲 +20)。"
+    "armor_bonus": 30,
+    "desc": "變化宗師:石化之膚常駐如磐石(被動護甲 +30;不必施法、全程有效,護盾期間照樣疊加)。"
    },
    {
-    "opt_id": "spell_reach",
-    "name": "術法增幅",
-    "kind": "spell_mod",
-    "school": "alteration",
-    "power_bonus": 0.15,
-    "desc": "變化術法的護盾/變形效果增強 15%。"
+    "opt_id": "quick_ward",
+    "name": "瞬發護體",
+    "kind": "quick_ward",
+    "desc": "變化宗師:每場戰鬥第一道自我護盾(橡木膚/石膚/鐵膚)瞬發 —— 不耗你的回合,施放後仍可行動(一場一次;短戰鬥最划算)。"
    }
   ]
  },
@@ -888,7 +886,7 @@
     "kind": "spell_mod",
     "school": "alteration",
     "power_bonus": 0.1,
-    "desc": "變化系術法效力 +10%(吃 _power → 護盾更厚、附魔之刃〔火/霜/電刃〕元素傷更高;與術法增幅/精純相加)。"
+    "desc": "變化系術法效力 +10%(吃 _power → 護盾更厚、附魔之刃〔火/霜/電刃〕元素傷更高;與其他變化威力加成相加)。"
    }
   ]
  },
@@ -1187,12 +1185,11 @@
   "threshold": 100,
   "options": [
    {
-    "opt_id": "pure_form",
-    "name": "術法精純",
-    "kind": "spell_mod",
-    "school": "alteration",
-    "power_bonus": 0.15,
-    "desc": "變化登峰:護盾/變形術法效力 +15%(與術法增幅相加)。"
+    "opt_id": "elemental_ward",
+    "name": "元素護膚",
+    "kind": "shield_elemental",
+    "factor": 0.3,
+    "desc": "變化登峰:護膚盾(橡木/石/鐵膚)作用中,護盾值的 30% 也當作對火/霜/電的減傷(乘在元素抗性與魔抗之後;吃威力、護盾越厚越有效;護盾為單槽,不疊加)。"
    },
    {
     "opt_id": "warding_recoil",

@@ -145,7 +145,7 @@
 | skill_fortify | 技能 | +6~+10(*_75多+8、*_100 +10) |
 | attr_fortify | 屬性 | +4~+6(*_100如 iron_body str+5、tireless speed+6) |
 | resist_fortify | 抗性 | magic +10~+15、disease +25~+30 |
-| passive_armor | 減傷 | 多源相加 4~20(石膚20、銅皮鐵骨18…〔R193:鐵布衫 12 已改體力化傷,見 fatigue_ward 列〕;總減傷夾 85% 硬頂+遞減,不趨近免疫)〔R118:變化魔皮14→shield_recoil·R120:靈光護壁 spectral_aegis→arcane_erosion 秘蝕(破抗 debuff·非護甲)〕 |
+| passive_armor | 減傷 | 多源相加 4~30(石膚30〔R215:20→30,與瞬發護體對位·被動常駐 vs 節奏〕、銅皮鐵骨18…〔R193:鐵布衫 12 已改體力化傷,見 fatigue_ward 列〕;總減傷夾 85% 硬頂+遞減,不趨近免疫)〔R118:變化魔皮14→shield_recoil·R120:靈光護壁 spectral_aegis→arcane_erosion 秘蝕(破抗 debuff·非護甲)〕 |
 
 ### 偷襲/刺客鏈(🔴詳見第④紅線小節)
 | perk | kind | 數值 | 疊加 |
@@ -163,7 +163,7 @@
 ### 法師/施法(🔴改施法常數 R10/R14 須跑 sim)
 | perk | kind | 數值 |
 |---|---|---|
-| 過載/各省魔/凝練 spell_mod+overload | 傷害/續航/護盾 | power+:destruction0.20/alteration0.15+0.10/restoration0.20+0.10〔divine_grace+holy_zeal·R122〕/mysticism0.10+0.15(相加,吃 _power → 傷害·護盾·結界·聖光);cost:0.92/0.85/過載1.30(相乘);impact stagger0.35 |
+| 過載/各省魔/凝練 spell_mod+overload | 傷害/續航/護盾 | power+:destruction0.20/alteration0.10〔R215:75 術法增幅 0.15 與 100 術法精純 0.15 已退場,只剩 50 術法凝練〕/restoration0.20+0.10〔divine_grace+holy_zeal·R122〕/mysticism0.10+0.15(相加,吃 _power → 傷害·護盾·結界·聖光);cost:0.92/0.85/過載1.30(相乘);impact stagger0.35 |
 | 聖騎士反死靈 smite/radiant(R123·恢復) | 傷害/專精 | **治療傷害不死**:minor_heal/heal/close_wounds〔smite_undead〕指向不死敵造傷=回復量×`HEAL_SMITE_FACTOR`=0.5×威力(element magic·吃 magic 抗);**對活物零傷害**(恢復系對活人零遠程輸出→靠近戰)。驅散亡者(turn_undead·holy 控場只對不死)。終極 **破曉之光**(radiant·治全隊 heal55×威力 + 灼燒全體不死 mag38×威力·經聖光試煉取得) |
 | 聖化領域 consecration(R122·恢復) | 減傷守護 | 自身限時光環·來襲傷害(物理+元素)×(1−mag)·mag 0.20(+聖化壁壘 sacred_bulwark 0.10=0.30)·turns3·gated 玩家·刷新非疊加 |
 | 奧術連鎖 cascade | 傷害/續航 | power+8%/層、省體×(1−0.12/層,夾≥0.4)、max_depth2(最高+16%/省24%);停手即散 |
@@ -173,6 +173,7 @@
 | 永契之僕 anchor(R203b·召喚 100) | 召喚物續存 | 場上無存活契僕時,下一隻**非亡者、非支援型**(bestiary 有 `spells` 者如治療精靈除外)召喚物成為契僕(暫態 `_anchor`·不入檔):`combat.tick_summons` 不遞減回合 → 戰鬥每輪 / 地城每走一格都不逾時;同時一隻·計入非亡者同場名額 `SUMMON_FIELD_CAP`=3;預覽 = 實擲共用 `magic.summon_outcome`;**地城跨戰**:`run_battle` 戰後把戰鬥中召出且存活的契僕寫回 `carry_allies`(身分比對),野外戰鬥照舊隨戰鬥結束消散 |
 | 束縛兵刃 bound_weapon(R106 / R204·召喚學派) | 近戰武器取代 | 凝出法系近戰武器**完全取代**裝備武器(`combat._swing_context` bound):固定基礎傷害(劍 14 / 釘錘 14 / 戰斧 17 / 巨劍 20)× `(0.5+召喚/100)×(0.75+力量/160)`,元素 magic〔無視護甲與物抗,只吃魔抗單層〕,不吃法術威力 / 淬鍊 / 附魔 / 塗毒;持續 6 回合(長劍 8 回合;R205 起不吃任何里程碑加成,原「束縛精通」已由召喚 50「戰陣號令」取代);**會吃偷襲倍率**(使用者 2026-11-22 拍板維持;solo 首領仍受 `SOLO_SNEAK_DAMAGE_CAP_RATIO` 夾限,`test_r204_bound` 掃全部 solo 首領守住)。**R204 握法**:巨劍 / 戰斧為雙手形(`two_handed`),不能與任何盾同持;雙手重盾下任何束縛兵刃凝不出(`magic.bound_conflict` 單一出處:`cast` 退魔退體 + 選單標「需先卸下盾牌」/ 戰鬥與備戰選單不列);`inventory.armor_equip_block` 擋戰外殘留效果下裝盾。**揮擊耗體**以束縛自身速度計(spell effect `speed`:巨劍 0.8 / 戰斧 0.85 / 長劍 1.2〔輕快耐久:持續 8 回合〕,釘錘預設 1.0〔擊晕控場〕),不讀休眠中的裝備武器;**反擊**(盾牌完美格擋 / 輕甲閃身反打)與一般揮擊同屬元素(`combat._counter_resist_kind`);偵查備戰可預凝。對的構築:獸人 / 戰士座 + 力量 100 / 重甲 100 + 恢復 50 + 8 瓶藥水(`sim_builds` `bound_knight` 雙手 / `bound_knight_1h` 單手 + 盾 + 姿態)—— 對 6 魔人 / 5 巨魔 / 古龍 / 烏瑪利 ≈ 100%,達貢 ≤ 1%;法袍法師版(力量 30)刃傷只有騎士的 ~2/3 且 HP 140 → 0~13% |
 | 瞬發契印 quick_seal(R203c·召喚 75 conj_efficiency) | 行動經濟(免費·有限) | 每場第一道**召喚系**(conjuration 學派:召喚/復生/亡者/束縛)法術選單階段當場施放、不耗回合並重新提示;成功才記帳(戰內 `quick_seal_spent`·PERSISTENT_TURNS·`BATTLE_LOCAL_KINDS` 入戰/離戰必清·HUD 隱藏,卡片標籤「瞬發契印 可用/已用」);非亡者召喚物**被擊殺**(逾時/亡者/同伴不算)→ 契印回補·最多存 1 次;失敗施法不耗契印不耗回合(安全閥 3 次);兼帶召喚術省魔 ×0.85 |
+| 瞬發護體 quick_ward(R215·變化 75 quick_ward,取代術法增幅) | 行動經濟(免費·有限) | 每場第一道**自我護盾**(`combat.is_self_shield_spell`:alteration + shield + target self = 橡木膚/石膚/鐵膚;庇護術〔同伴〕不算)選單階段當場施放、不耗回合並重新提示;成功才記帳(戰內 `quick_ward_spent`·PERSISTENT_TURNS·`BATTLE_LOCAL_KINDS` 入戰/離戰必清·HUD 隱藏,卡片標籤「瞬發護體 可用/已用」);🔴**一場一次、不回補**(護盾不陣亡,與契印的召喚物陣亡回補刻意不同);護盾單槽(R211)→ 免費那道只取代舊盾;失敗施法不耗記帳也不耗回合;與契印記帳獨立(資格互斥:召喚系 / 護盾)。短戰鬥最划算(穩態模型估算:戰鬥 4–6 回合約少受 25–29% 物理傷,約 10 回合持平,更長則被石膚 +30 追過) |
 | 就地起屍 auto_raise(R203d·召喚 75 soul_harvest) | 召喚(免費·有限) | 每場第一具符合資格(`magic.reanimate_candidate`:非 solo/已復生/BOSS 爪牙)的敵屍,回合末、召喚物計時之前自動起屍為真·亡者(參數取亡者奴役:滿血·回合 6+1);**不收法力/體力/token**;戰場須仍有存活敵人·亡者軍團未滿(滿了不耗掉那一次)·一場一次;兼帶每擊殺 +1 靈魂 token(`soul_harvest_bonus`)。**屍僕(使用者 2026-11-22 拍板)**:起出的亡者成為屍僕 `_servant` —— 不遞減回合(`combat.is_persistent_servant`,與契僕共用不逾時 / HUD「永駐」/ 地城戰後寫回邏輯)、直到被擊殺;同時一具、**獨立於契僕名額**(可與永契之僕並存)、仍計入亡者軍團上限;已有屍僕時起出的是普通限時亡者;所有自動起屍亡者標 `_free_raised` → 存活不回收 token(免費產物不退款,否則不逾時屍僕每場白送 1 token) |
 | 戰地搶救 triage | 資源折扣 | 同伴<30%時下道治療 魔×0.15/體×0.25 |
 | 靈魂虹吸 enchant_potency | 增幅 | 🔴附魔強度×1.2(製作乘子,R15) |
@@ -191,6 +192,7 @@
 | 殺勢回體 fatigue_on_kill(R194·運動 100 無盡之軀) | 續航(免費·有限) | 親手擊殺(玩家武器攻擊 `resolve_attack`·活→死轉移)回 3% 最大體力(夾 max) —— 召喚爪牙(`summoned`·R134/R187 先例)不算;法術/同伴擊殺不走該 hook 不算;**效果對係數敏感**(n=300 單手劍終局抵達 boss:2% +22pp、3% +30pp、5% +38pp)→ 改 pct/below 必跑 `sim_dungeon.py` |
 | 重壓 armor_stagger | 防守控場 | 受近戰物理擊中 22% 震開攻擊者(stagger turns:2 → 撐過回合末 tick,對敵下次出手生效) |
 | 石膚反擊 shield_recoil(變化 100·R118) | 防守控場 | **作用中護膚盾**(`magic.active_shield>0`·橡木/石/鐵膚)時受近戰物理擊中 30% 震開攻方(stagger·`apply_control` 非遞迴);把被動 flesh 接上主動反噬。搭負重(敵 −20% 命中·見法術)=「物理操縱防禦控者」 |
+| 元素護膚 shield_elemental(R215·變化 100 elemental_ward,取代術法精純) | 減傷(元素) | **作用中護盾**的 30%(`factor 0.3`)當作對**火/霜/電**的元素護甲:`formulas.shield_elemental_multiplier` = 1 − e/(e+100),e = 護盾值×0.3(後期石膚 112 → 25%、鐵膚 153 → 31%);**只算護盾本身**(不含穿戴/被動護甲)→ 恆小於同盾物理減傷(R138b);乘在元素抗性×魔抗**之後**(獨立第三層,`combat` 元素分支 `mult *= magic.shield_elemental_factor`);範圍=敵方直擊元素傷害(毒/疾病/魔法元素/DoT 跳傷不吃);只玩家;任何來源的護盾同一對待(R190);k 為單一常數(JSON `factor`),0.3 = 使用者 2026-11-25 拍板(評估 0.3/0.35/0.4:0.3 使龍祭司袍疊魔抗時元素總減傷 63% < 選石膚路徑的物理 65.5%)。與石膚反擊對位:持續減傷 vs 近戰物理踉蹌 |
 | 雙手重盾被動減傷 great_shield mitigation(R41) | 減傷 | 裝雙手重盾(`great_shield`)→ 受物理 ×(1−mitigation)(iron→daedric 5~8%·crusaders_ward 10%);套 `_shield_wall_factor` **後**乘性疊加、僅物理、獸形不套;重盾占雙手·普攻走盾擊(`bash_damage`·練 block) |
 | 生生不息 combat_regen | 續航 | 戰鬥中每回合末自癒 8(is_alive 守 → 不復活本回合被擊殺者) |
 | 身輕如燕 evasion_bonus | 命中(扣敵命中) | 多源相加 0.02~0.05(含幻影步 afterimage +0.06、借風騰挪 misdirect +0.06、臨陣預判 alert_prep +0.04 這三個選項兼帶的平調閃避,同源聚合),★硬夾 EVASION_BONUS_CAP=0.15 |
@@ -216,7 +218,7 @@
 | 效果 | kind | 數值 | 疊加 |
 |---|---|---|---|
 | 再生 HoT(renewal/regen_aura/ench_regen/steadfast) | 續航回復 | renewal +10×4、aura +8×4(全同伴)、steadfast 4×3 | 🔴**R212 法術回復單槽**:renewal / regen_aura 以 `source=spell_regen` 重施取代舊的(含盟友路徑;預施連放原可疊 27 層=每回合 528);ench_regen/steadfast/宗師光環各 source 去重、各一條可同掛;tick 為 flat 不乘 power |
-| 變化護盾(oak/stone/iron-flesh、ward_ally) | 減傷 | round(mag×power):橡木膚 **30×4 回合(19 魔)**/石膚 **55×5(30 魔·sim 基準不可動)**/鐵膚 **75×6(35 魔)**(R213 S1');ward_ally 40×5 | ★聚合相加進 armor_rating;**只擋物理**;🔴**R211 法術護盾單槽**:`source=spell_shield`,重施 / 換施取代舊的(連放原可疊:橡木膚×6=278),他源 shield(聖光溢盾/戰旗/盾牆/宗師光環)不動;**R213 階層守衛**:處處「每次施放」與「每魔力效率」皆高階勝(底甲 3–400 × 威力 0.55–3.5) |
+| 變化護盾(oak/stone/iron-flesh、ward_ally) | 減傷 | round(mag×power):橡木膚 **30×4 回合(19 魔)**/石膚 **55×5(30 魔·sim 基準不可動)**/鐵膚 **75×6(35 魔)**(R213 S1');ward_ally 40×5 | ★聚合相加進 armor_rating;**只擋物理**(R215 起 變化 100「元素護膚」另算一層火/霜/電減傷,見該列);🔴**R211 法術護盾單槽**:`source=spell_shield`,重施 / 換施取代舊的(連放原可疊:橡木膚×6=278),他源 shield(聖光溢盾/戰旗/盾牆/宗師光環)不動;**R213 階層守衛**:處處「每次施放」與「每魔力效率」皆高階勝(底甲 3–400 × 威力 0.55–3.5) |
 | 溢盾 overheal_ward | 減傷 | 溢治60%轉盾,夾生命×0.5,turns4 | source去重夾cap |
 | 秘術結界 ward/greater/absorb | 抗性吸收池 | 40/90/70(absorb0.5回魔);turns5 可耗盡池 | 重施去重;**只吃法術/元素傷** |
 | 奧術灌注(flame/frost/storm_blade) | 傷害 | round(8×power)元素傷/命中;turns5 | 🔴**R211 法術附魔單槽(全元素)**:同時至多一道,新的取代舊的(含 rider;原可疊:預施 27 層=每擊 +323、×6.8,為最強真附魔的 14 倍);可與**真附魔**(附魔台,每把一個、副手×0.6)共存;加在 solo 夾限**之前**;獸形/束縛不吃 |

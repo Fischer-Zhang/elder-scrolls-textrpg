@@ -68,6 +68,8 @@ _IMPLEMENTED_KINDS = {
     "escape_bonus",   # R195 運動 50「健步如飛」:逃跑(try_flee)與潛行撤退成功率加成(SUM·加在緩肩/夾限之前);兼帶 travel_bonus 欄
 
     "shield_recoil",   # 變化 100(R118):作用中護膚盾時被物理擊中→機率震開攻方(接被動 flesh 為主動反噬)
+    "quick_ward",      # 變化 75(R215 瞬發護體,取代舊術法增幅):每場第一道自我護盾法術免耗回合(比照 R203c 瞬發契印)
+    "shield_elemental",   # 變化 100(R215 元素護膚,取代舊術法精純):作用中護盾值 × factor 也當作對火/霜/電的減傷(第三層)
     "consecration_boost",   # 恢復 75(R122 聖騎士):聖化領域減傷幅度 +(施法時加在 magnitude 上·守護頂點)
     # security 功能化(混合身份):盜賊行竊加成、地城賊眼窺探(布林解鎖)。
     "theft_skill", "dungeon_casing",
@@ -328,7 +330,7 @@ def attack_fatigue_factor(char, gamedata: GameData) -> float:
 
 def _chosen_spell_options(char, gamedata: GameData, school: str) -> list:
     """已選、影響該學派的**所有**法術系 option(spell_overload / spell_mod);school 須一致。
-    可跨多節點(廣度 pass:alteration_50 efficient_shield + alteration_75 spell_reach),須聚合不遮蔽。"""
+    可跨多節點(廣度 pass:alteration_25 alt_basics〔省魔〕+ alteration_50 shield_focus〔威力〕),須聚合不遮蔽。"""
     return [o for o in _chosen_options_by_kind(char, gamedata, "spell_mod")
             if o.get("school") == school] + \
            [o for o in _chosen_options_by_kind(char, gamedata, "spell_overload")
@@ -425,6 +427,22 @@ def potion_potency(char, gamedata: GameData) -> float:
 def armor_stagger(char, gamedata: GameData) -> float:
     """重壓:被近戰物理擊中時,震開攻擊者(使其踉蹌)的機率(0 = 無)。"""
     return _param(char, gamedata, "armor_stagger", "chance", 0.0)
+
+
+def quick_ward(char, gamedata: GameData) -> bool:
+    """R215「瞬發護體」(alteration 75 · opt_id quick_ward):每場第一道自我護盾法術免耗回合(結構同 R203c 瞬發契印,
+    但護盾不會陣亡,所以沒有「回補」:一場一次)。同源聚合:任一已選節點帶 quick_ward kind 即成立。"""
+    if not hasattr(char, "base_skill"):
+        return False
+    return bool(_chosen_options_by_kind(char, gamedata, "quick_ward"))
+
+
+def shield_elemental(char, gamedata: GameData) -> float:
+    """R215「元素護膚」(alteration 100 · opt_id elemental_ward):作用中護盾值 × 此係數 = 對火/霜/電的「元素護甲」
+    (`formulas.shield_elemental_multiplier`)。0.0 = 無。多來源相加(目前僅此一源;SUM 防日後多源遮蔽)。"""
+    if not hasattr(char, "base_skill"):
+        return 0.0
+    return sum(o.get("factor", 0.0) for o in _chosen_options_by_kind(char, gamedata, "shield_elemental"))
 
 
 def shield_recoil(char, gamedata: GameData) -> float:

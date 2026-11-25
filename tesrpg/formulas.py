@@ -617,6 +617,19 @@ def damage_after_armor(damage: float, armor_rating: int, armor_pen: float = 0.0)
     return max(1.0, damage * (1.0 - reduction))
 
 
+def shield_elemental_multiplier(shield: float, factor: float) -> float:
+    """R215 變化 100「元素護膚」:作用中護盾對火/霜/電的額外減傷 → 傷害係數(1.0 = 無減傷)。
+
+    把護盾值的 `factor`(0.3)當作「對元素的護甲」,套同一條護甲曲線 `eff/(eff+100)`:
+    **只算護盾本身**(不含穿戴護甲 / 被動護甲),所以永遠小於同盾的物理減傷(R138b:元素 ≤ 物理)。
+    乘在元素抗性 × 魔抗兩層之後(獨立第三層,不與魔抗相加);無盾 / 未選(factor ≤ 0)→ 1.0,不產生任何浮點差。
+    """
+    if shield <= 0 or factor <= 0:
+        return 1.0
+    eff = shield * factor
+    return 1.0 - eff / (eff + 100.0)
+
+
 # --- 武器流派(B:讓武器選擇是 build 而非純傷害數字)--------------------
 WEAPON_SPEED_DEFAULT = 1.0
 _ARCHETYPE_ARMOR_PEN = {"axe": 0.30}            # 斧破甲:無視 30% 護甲(鈍器分流:斧=破甲流,釘錘=控制流)

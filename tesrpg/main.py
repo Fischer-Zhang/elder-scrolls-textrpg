@@ -649,9 +649,11 @@ def _bound_grip_suffix(char, gamedata: GameData, spell_id: str) -> str:
 
 
 def _quick_seal_suffix(char, gamedata: GameData, spell_id: str) -> str:
-    """R203c 戰鬥施法選單:契印在手時,召喚系法術標「瞬發(不耗回合)」。與實際施放共用 `combat.quick_seal_ready`(預覽 = 實擲);
-    契印已用 / 未選 / 非召喚系法術回空字串(已用狀態由戰鬥卡片標籤「瞬發契印 已用」呈現)。"""
-    return " · 瞬發(不耗回合)" if combat.quick_seal_ready(char, gamedata, spell_id) else ""
+    """R203c 戰鬥施法選單:契印在手時,召喚系法術標「瞬發(不耗回合)」;R215 瞬發護體在手時,自我護盾法術同標。
+    與實際施放共用 `combat.quick_seal_ready` / `combat.quick_ward_ready`(預覽 = 實擲);已用 / 未選 / 不符資格的法術回空字串
+    (已用狀態由戰鬥卡片標籤「瞬發契印 / 瞬發護體 已用」呈現)。"""
+    return (" · 瞬發(不耗回合)" if (combat.quick_seal_ready(char, gamedata, spell_id)
+                                  or combat.quick_ward_ready(char, gamedata, spell_id)) else "")
 
 
 def _repeat_option(player, gamedata: GameData, enemies: list, allies: list, mem) -> str | None:
@@ -978,7 +980,9 @@ def _choose_combat_action(state: GameState, gamedata: GameData, enemies: list, a
                        f"{_spell_effect_text(player, gamedata, s, allies)}")
                       for s in castable]
         _qs = combat.quick_seal_status(player, gamedata)   # R203c 標題帶契印狀態(可用 / 已用;未選不顯示)
-        sid = ui.menu("施放哪道法術?" + {"available": "(瞬發契印:可用)", "spent": "(瞬發契印:已用)"}.get(_qs, ""),
+        _qw = combat.quick_ward_status(player, gamedata)   # R215 瞬發護體同理(兩者可同時持有,各自標示)
+        sid = ui.menu("施放哪道法術?" + {"available": "(瞬發契印:可用)", "spent": "(瞬發契印:已用)"}.get(_qs, "")
+                      + {"available": "(瞬發護體:可用)", "spent": "(瞬發護體:已用)"}.get(_qw, ""),
                       spell_opts, allow_back=True)
         if sid is None:
             return _back()   # 施法→返回重入(保 charm_used 等場內狀態,「每場一次」不重置)
@@ -1348,14 +1352,24 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
                     elif _t in battle["allies"]:
                         cmem["ally"] = _t
                 # R203c 瞬發契印(召喚 75):契印在手 + 召喚系法術 → 當場施放、不耗回合,然後重新提示本回合的真正行動。
-                # 失敗的施法(名額已滿 / 無屍體 / 靈魂不足…)不耗契印也不耗回合;安全閥:同一回合連續 3 次失敗後,
-                # 之後的施法照一般施法結算(耗回合)—— 防自動作答驅動器對必敗施法無限空轉。未選 → 此段永不進入(零 rng、逐位元組同舊)。
-                if not (action["type"] == "cast" and _qs_fails < QUICK_SEAL_RETRY_CAP
-                        and combat.quick_seal_ready(player, gamedata, action["spell_id"])):
+                # R215 瞬發護體(變化 75)同一條路:護體在手 + 自我護盾法術 → 同樣當場施放、不耗回合(記帳各自獨立;兩者資格互斥〔召喚系 / 護盾〕)。
+                # 失敗的施法(名額已滿 / 無屍體 / 靈魂不足…)不耗記帳也不耗回合;安全閥:同一回合連續 3 次失敗後,
+                # 之後的施法照一般施法結算(耗回合)—— 防自動作答驅動器對必敗施法無限空轉。兩者皆未選 → 此段永不進入(零 rng、逐位元組同舊)。
+                _free = None
+                if action["type"] == "cast" and _qs_fails < QUICK_SEAL_RETRY_CAP:
+                    if combat.quick_seal_ready(player, gamedata, action["spell_id"]):
+                        _free = "seal"
+                    elif combat.quick_ward_ready(player, gamedata, action["spell_id"]):
+                        _free = "ward"
+                if _free is None:
                     break
                 if _cast_action(action)["ok"]:
-                    combat.quick_seal_spend(player)
-                    _cmsg("契印一閃 —— 這道召喚術瞬發,不耗你的回合,你仍可行動!", style="bold cyan")
+                    if _free == "seal":
+                        combat.quick_seal_spend(player)
+                        _cmsg("契印一閃 —— 這道召喚術瞬發,不耗你的回合,你仍可行動!", style="bold cyan")
+                    else:
+                        combat.quick_ward_spend(player)
+                        _cmsg("護體隨念成形 —— 這道護盾瞬發,不耗你的回合,你仍可行動!", style="bold cyan")
                 else:
                     _qs_fails += 1
 

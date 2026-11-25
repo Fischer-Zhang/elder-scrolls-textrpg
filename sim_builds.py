@@ -365,7 +365,13 @@ def _regen(c):
 def _mage_act(c, boss, rng, st):
     # 開場先上石肌護盾(物理減傷;maxed 法師會預 buff)
     if not st.get("buffed") and magic.can_cast(c, gd, "stoneflesh"):
-        st["buffed"] = True; magic.cast(c, gd, "stoneflesh", rng); return
+        st["buffed"] = True
+        free = combat.quick_ward_ready(c, gd, "stoneflesh")   # R215 變化 75 瞬發護體(與 main 同一個閘):開場護盾免耗回合 → 同回合照常行動
+        res = magic.cast(c, gd, "stoneflesh", rng)
+        if free and res.get("ok", True):
+            combat.quick_ward_spend(c)
+        else:
+            return
     # 低血治療(撐得起就治)
     if c.health < c.max_health * 0.35:
         for h in ("close_wounds", "heal"):

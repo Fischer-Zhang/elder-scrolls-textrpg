@@ -3412,6 +3412,26 @@ R88 讓**盜賊公會**拿到階級解鎖招牌動詞(斯庫瑪走私),但**戰�
 - **未做 / 後續**:`formulas.ATTRIBUTE_FUNCTION`(角色卡 / 升級分配的屬性說明:智力「法力上限」、意志「施法續航…」)尚未補「威力」說明——該常數在 `formulas.py`,動它會讓 `check.sh` 自動跑 sim,留待下個會跑 sim 的里程碑一併做。「治療威力壓縮(k 值)」使用者決定之後再議。
 - **驗證**:`PYTHONUSERBASE=/home/fischer/.local bash check.sh` 全綠(編譯 ✓ · 167 個測試模組 ✓〔含新增 `test_spell_power_attr_r214`〕· Chromium 24 項 ✓,真實結束碼 0;未動 `formulas.py` / `combat.py` → 未自動觸發 sim)。既有測試零紅燈。**未做**:對抗審查子代理(改動集中於 `_power` 一處 + 資料 + 文件;重型代理須先得使用者同意)→ 主對話自審代替,誠實標註。
 
+### R215 · 變化系里程碑重設計:瞬發護體 / 元素護膚(使用者 2026-11-25 拍板:石膚選 A、k = 0.3) [re-sim] [save]
+
+- **緣起**:評估「治療相對護盾過強」時,以消融量測(sim_builds 法師夾具·15 個未飽和王·單行程)證實:拿掉治療 arcanist 勝率 −26 pt,拿掉護盾只 −0.2 pt;護盾的缺口有二——**只擋物理**(`combat` 元素分支無視護甲,約一半怪攻擊是元素)與**上盾要花一回合**。使用者決定整個變化系里程碑重新設計(削治療留待下一個里程碑,待護盾可行後再量)。
+- **新節點表**(25 / 50 不動):
+
+  | 節點 | A | B |
+  |---|---|---|
+  | 75 | **瞬發護體**(`quick_ward`,取代術法增幅) | **石膚**(被動護甲 +20 → **+30**) |
+  | 100 | **元素護膚**(`elemental_ward`,取代術法精純) | 石膚反擊(不動) |
+
+- **瞬發護體**:每場戰鬥第一道**自我護盾**(`combat.is_self_shield_spell`:alteration + shield + target self = 橡木膚 / 石膚 / 鐵膚;庇護術〔同伴〕不算)選單階段當場施放、不耗回合、施放後重新提示本回合行動。**比照 R203c 瞬發契印**(同一段 `run_battle` 免費施法迴圈、同安全閥 `QUICK_SEAL_RETRY_CAP`),但 🔴 **一場一次、不回補**(護盾不陣亡;免費重上 = 永久開盾 ≈ 一套重甲的物理減傷,且只省約 17% 行動)。記帳 `quick_ward_spent`(PERSISTENT_TURNS · hidden tag · 入 `BATTLE_LOCAL_KINDS`),與契印記帳獨立;護盾單槽(R211)→ 免費那道只取代舊盾。
+- **元素護膚**:作用中護盾值 × `factor`(**0.3**,JSON 單一常數)當「元素護甲」,套同一條曲線 `formulas.shield_elemental_multiplier` = 1 − e/(e+100)(e = 盾×0.3;後期石膚 112 → 25%、鐵膚 153 → 31%)。**只算護盾本身**(不含穿戴 / 被動護甲)→ 恆小於同盾物理減傷(R138b;測試掃 s=1..500 鎖死);乘在元素抗性 × 魔抗**之後**(獨立第三層:`combat` 元素分支 `mult *= magic.shield_elemental_factor(...)`)。範圍 = 敵方**直擊**火 / 霜 / 電;毒 / 疾病 / 魔法元素 / DoT 跳傷不吃;只玩家;任何來源的護盾同一對待(R190)。
+- **k 的取捨(紀錄)**:原提 0.5 → 0.4(大法師袍 + 意志魔抗 36%:0.5 時元素總減傷 63.7% > 物理 61.5%)→ 使用者評估 0.3 / 0.35 / 0.4 後選 **0.3**(龍祭司袍魔抗 46% 時元素總減傷 63.0% < 選石膚路徑的物理 65.5%;石膚護盾約與石膚反擊持平、鐵膚約 1.4×;每次上鐵膚約抵一次治療的 82%〔D=60〕)。k 是單一常數,日後可掃檔。
+- **存檔**:新 opt_id(`quick_ward` / `elemental_ward`),舊 `spell_reach` / `pure_form` 被 `ensure_mastery_choices` 清成 pending → 玩家下次可重選(測試鎖死);變化威力加成只剩 50 的術法凝練 +10%(75 / 100 的 +15% 退場)。
+- **實測(單行程·N=300)**:🔴 `sim_assassin` 與 HEAD **逐位元組一致**(96 行·0 ⚠);`sim_conj` 0 警示。束縛騎士(選石膚 +20 → +30)48 王合計 +7 / +9 場(+0.05 / +0.06 pt)、達貢真身 96 → 104 / 74 → 78、達貢 720 維持 0%。法師 arcanist 15 王(基準 95.0%):瞬發護體 **+2.1 pt**(物理王 malacath 275 → 298)、元素護膚(開場一次)+1.0 pt(fused_archmage 275 → 288、ancient_dragon 276 → 287)、元素護膚 + 失效重上〔耗回合〕±0、瞬發 + 元素 + 重上 +1.8 pt、石膚 +30 +1.6 pt;**瞬發 vs 石膚差 0.5 pt**(< 10 pt 守衛);mage_fire 幾乎飽和(±)。終王牆:達貢(720)四種元素法師 × 全變體恆 0%;達貢真身只有奧術師能勝(基準 226 → 最高 244,+6.0 pt ≤ +10 守衛)、三元素法師 0%。→ 元素護膚不過強:持續減傷僅小幅推動依賴治療的格子,失效重上仍不划算(上盾那一回合的成本還在)。
+- **評估紀錄(紙面模型,非實測)**:整場少受物理傷害——瞬發護體 戰鬥 4–6 回合 25–29%、約 10 回合持平、更長被石膚 +30 追過(+20 在 ≤8 回合只有 8–12%,故上調到 +30);元素護膚每次上鐵膚約等於一次治療(D=60:87 HP 對治療有效量 88,k=0.4 時;k=0.3 為 72)。
+- **測試**:新增 `tests/test_r215_alteration_nodes.py`(16 測):資料釘死 + 舊選項退場 + 100 階無純數值 · getter 中性值 · 公式(含 R138b 掃描)· 範圍(只玩家 / 火霜電 / 需盾 / 來源同待)· 同種子對照元素擊少受正確比例、物理 / 毒擊不動 · 乘性第三層 · 閘門 / 記帳獨立 · `run_battle` 接線(免費不結束回合 / 第二道耗回合 / 失敗不耗 / 安全閥 / 每場重置)· 預覽 = 實擲(選單標題 / 標籤 / 卡片標籤)· 舊存檔清成 pending。同步改 `test_mastery`(石膚 +30;跨節點聚合改以 25 + 50 驗證)。
+- **文件 / 圖鑑**:BUFFS.md(石膚 +30、威力列、護盾列補元素層、新增瞬發護體 / 元素護膚兩列);`codex.json` 補「變化的深化」段;`sim_builds._mage_act` 開場護盾支援瞬發(未選者逐位元組同)。`build.md` 為 R173 標註的快照,未更新。
+- **未跑 / 未做**:`sim_reckless` / `sim_monk` / `sim_dungeon` / `sim_flee` 本輪未跑——夾具皆不含變化系節點,新增邏輯對未選者恆等(元素分支 `mult *= 1.0` 零浮點差),以 `sim_assassin` byte-identical 為證;`bash check.sh` 整支未跑(它會自動觸發上述四支),改逐段跑(編譯 ✓ · 168 個測試模組 ✓ · Chromium 24 項 ✓ · 上述 sim)。**未做**:元素總減傷上限(魔抗裝備疊乘仍可超過物理;k = 0.3 + 選石膚路徑下龍祭司袍仍低於物理,選瞬發路徑則高 1.5 pt)、石膚反擊微調(尚未量其單獨效果)、**削治療**(下一個里程碑,待使用者決定方向)。
+
 ## 4. 開發節奏(ultracode 開著 → 每個功能都這樣做)
 
 > 完整五階段流程(評估 → 決定方向 → 實作 → 驗證 → 文件 + 提交)見 `CLAUDE.md`「開發流程」;以下是「驗證」段的細節。**驗證綠後依 R22 自動 `commit` & `push origin main`。**
@@ -3457,7 +3477,7 @@ R88 讓**盜賊公會**拿到階級解鎖招牌動詞(斯庫瑪走私),但**戰�
 
 **A. 通則續作:100 階逐選項功能化**(通則見 §3 R189 / R193;波次 W2–W4 見 R193)
 
-依效果鍵判讀(未逐條讀效果文),22 節點 44 選項中約 19 個選項仍是純數值,分布在 15 個技能:`alchemy_100 panacea`、`alteration_100 pure_form`、`block_100 iron_bastion`、`blunt_100 sunder`、`conjuration_100 lasting_summon` / `undead_dominion`、`destruction_100 overload`(威力 +20% 換耗魔 ×1.3 的取捨型,算不算純數值待使用者認定)、`heavy_armor_100 ironhide`、`illusion_100 mind_mastery`、`mercantile_100 master_trader` / `charisma`、`mysticism_100 soul_siphon`、`restoration_100 divine_grace`、`scout_100 battle_master` / `first_blood`、`security_100 master_thief`、`smithing_100 legendary_smith` / `temper_mastery`、`sneak_100 shadowblade`。邊緣另 3 個:`sneak_100 shadowstep`、`restoration_100 everflow`、`acrobatics_100 aerial_ambush`。
+依效果鍵判讀(未逐條讀效果文),22 節點 44 選項中約 19 個選項仍是純數值,分布在 15 個技能:`alchemy_100 panacea`、~~`alteration_100 pure_form`~~〔R215 已功能化為「元素護膚」〕、`block_100 iron_bastion`、`blunt_100 sunder`、`conjuration_100 lasting_summon` / `undead_dominion`、`destruction_100 overload`(威力 +20% 換耗魔 ×1.3 的取捨型,算不算純數值待使用者認定)、`heavy_armor_100 ironhide`、`illusion_100 mind_mastery`、`mercantile_100 master_trader` / `charisma`、`mysticism_100 soul_siphon`、`restoration_100 divine_grace`、`scout_100 battle_master` / `first_blood`、`security_100 master_thief`、`smithing_100 legendary_smith` / `temper_mastery`、`sneak_100 shadowblade`。邊緣另 3 個:`sneak_100 shadowstep`、`restoration_100 everflow`、`acrobatics_100 aerial_ambush`。
 
 1. **召喚 100 功能化**:兩側皆純數值——`lasting_summon`(`turn_bonus` 1)、`undead_dominion`(`hp_bonus` 0.3、`dmg_bonus` 0.2)。動戰鬥,必跑 sim;`sim_builds.py` 已有 `make_summoner` / `make_necromancer` / `make_necromancer_maxed`。流程:紙面先出每側 ≥3 個機制家族給使用者刪減,此步不寫程式、不派重型代理(ops.md §14)。
 2. **交易 100 功能化**:兩側皆純數值——`master_trader`(`disposition_bonus` 0.1)、`charisma`(`personality` +5)。不碰戰鬥,不需 sim。

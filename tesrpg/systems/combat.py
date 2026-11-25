@@ -475,8 +475,10 @@ def tick_summons(allies: list) -> tuple[list, list]:
 # 下一次);施法失敗(名額已滿 / 無屍體…)不耗契印也不耗回合;零 rng;未選 → getter 回 False → 既有構築逐位元組不變。
 # 戰鬥內記帳 = active_effect quick_seal_spent(PERSISTENT_TURNS·hidden tag):入戰 / 離戰整包清、preserve_buffs 剝除(同 second_breath_spent)。
 QUICK_SEAL_SPENT = "quick_seal_spent"
+# R215 變化 75「瞬發護體」(alteration_75 · opt_id quick_ward;使用者 2026-11-25 拍板):每場第一道**自我護盾**法術免耗回合,結構同上、記帳獨立
+QUICK_WARD_SPENT = "quick_ward_spent"
 # 每場戰鬥重新開始時要剝掉的戰鬥內累積 / 記帳效果(main.run_battle 入戰與備戰後共用單一出處;新增同類記帳效果請加在這裡)
-BATTLE_LOCAL_KINDS = ("cascade", "afterimage", "momentum", "second_breath_spent", QUICK_SEAL_SPENT)
+BATTLE_LOCAL_KINDS = ("cascade", "afterimage", "momentum", "second_breath_spent", QUICK_SEAL_SPENT, QUICK_WARD_SPENT)
 
 
 def _quick_seal_used(player) -> bool:
@@ -515,6 +517,42 @@ def quick_seal_status(player, gamedata: GameData) -> str | None:
     if not (_is_player(player) and mastery.quick_seal(player, gamedata)):
         return None
     return "spent" if _quick_seal_used(player) else "available"
+
+
+# ---- R215 變化 75「瞬發護體」:每場第一道自我護盾法術免耗回合 ----
+# 護盾法術 = alteration 學派、effect.kind == "shield"、target == "self"(橡木膚 / 石膚 / 鐵膚;庇護術〔同伴〕不算)。
+# 🔴 一場一次、不回補(護盾不陣亡;與瞬發契印的「召喚物陣亡回補」刻意不同)→ 結構上有限;護盾為單槽(R211),免費那道只是取代舊盾、不疊加。
+# 施法失敗不耗記帳也不耗回合;零 rng;未選 → getter 回 False → 既有構築逐位元組不變。記帳 = active_effect quick_ward_spent(同 quick_seal_spent:
+# PERSISTENT_TURNS·hidden tag·入戰 / 離戰整包清·preserve_buffs 剝除)。
+def _quick_ward_used(player) -> bool:
+    return any(e.get("kind") == QUICK_WARD_SPENT for e in player.active_effects)
+
+
+def is_self_shield_spell(gamedata: GameData, spell_id: str) -> bool:
+    """自我護盾法術判定(瞬發護體的資格;單一出處 → 閘門 / 選單標籤 / sim 共用):alteration + shield + 自身目標。"""
+    sp = gamedata.spells.get(spell_id)
+    return bool(sp and sp.get("school") == "alteration" and sp.get("target") == "self"
+                and (sp.get("effect") or {}).get("kind") == "shield")
+
+
+def quick_ward_ready(player, gamedata: GameData, spell_id: str) -> bool:
+    """這道法術能否以瞬發護體施放(main 的選單階段與 sim 共用同一個閘):已選 + 自我護盾法術 + 本場尚未用過。"""
+    return (_is_player(player) and mastery.quick_ward(player, gamedata)
+            and is_self_shield_spell(gamedata, spell_id)
+            and not _quick_ward_used(player))
+
+
+def quick_ward_spend(player) -> None:
+    """記帳瞬發護體已用(呼叫端須在施法成功後才呼叫;失敗的施法不耗)。"""
+    if not _quick_ward_used(player):
+        player.active_effects.append({"kind": QUICK_WARD_SPENT, "turns": PERSISTENT_TURNS})
+
+
+def quick_ward_status(player, gamedata: GameData) -> str | None:
+    """戰鬥卡片 / 選單標題用(純讀):未選 / 非玩家 → None;本場已用 → "spent";否則 "available"(與 quick_ward_ready 共用記帳 → 預覽 = 實擲)。"""
+    if not (_is_player(player) and mastery.quick_ward(player, gamedata)):
+        return None
+    return "spent" if _quick_ward_used(player) else "available"
 
 
 def _apply_dot_capped(target, eff) -> None:
@@ -1272,6 +1310,10 @@ def resolve_attack(attacker, defender, gamedata: GameData, rng: RNG,
                 dmg = 0.0
             else:
                 mult = formulas.resist_multiplier(magic.entity_resist(defender, gamedata), atk_element)
+                # R215 變化 100「元素護膚」:作用中護盾對火/霜/電再乘一層(護盾值×factor 當元素護甲;第三層,乘在抗性×魔抗之後)。
+                # 🔴 未選 / 無盾 / 非玩家 / 非火霜電 → 因子恆為 1.0(`mult * 1.0` 零浮點差 → 既有構築逐位元組不變)。
+                # 範圍 = 敵方直擊的元素傷害;DoT 跳傷 / 毒 / 疾病 / 魔法元素不走此路徑。
+                mult *= magic.shield_elemental_factor(defender, gamedata, atk_element)
                 dmg = magic._scaled_damage(raw, mult)
                 if _is_player(defender):   # 神秘「結界」:先吃法術/元素傷,吸魔結界按吸收量回魔(可耗盡池)
                     dmg, refunded = magic.consume_ward(defender, dmg)

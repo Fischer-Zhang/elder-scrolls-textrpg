@@ -851,6 +851,18 @@ def active_shield(char: Character) -> int:
     return sum(e["magnitude"] for e in char.active_effects if e["kind"] == "shield")
 
 
+def shield_elemental_factor(char, gamedata: GameData, element: str | None) -> float:
+    """R215 變化 100「元素護膚」:護盾對火/霜/電的額外減傷係數(1.0 = 無)。戰鬥元素分支把它乘進元素係數。
+    🔴 只玩家(怪物/同伴不讀)· 只 `formulas.MAGIC_ELEMENTS`(毒 / 疾病 / 魔法元素不吃)· 需有作用中護盾 · 未選 → 1.0 零浮點差(byte-identical)。
+    護盾值取 `active_shield`(與護甲端 `armor_parts["shield"]` 同源:任何來源的 shield 效果同一對待,R190 精神)。"""
+    if element not in formulas.MAGIC_ELEMENTS or not isinstance(char, Character):
+        return 1.0
+    k = mastery.shield_elemental(char, gamedata)
+    if k <= 0:
+        return 1.0
+    return formulas.shield_elemental_multiplier(active_shield(char), k)
+
+
 def consume_ward(char, dmg: float) -> tuple[float, int]:
     """神秘結界:吸收來襲法術/元素傷害。扣減 ward magnitude(耗盡即失效),回傳
     (剩餘傷害, 吸魔回魔量)。cast 端已重施去重 → 至多一道,取第一道未耗盡者。

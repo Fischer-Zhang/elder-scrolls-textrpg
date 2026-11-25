@@ -614,13 +614,13 @@ def test_conjuration_summon_mods():
 def test_alteration_stoneflesh_passive_armor():
     gd, c = _char(alteration=75)
     mastery.choose(c, gd, "alteration_75", "stoneflesh")
-    assert mastery.passive_armor_bonus(c, gd) == 20
+    assert mastery.passive_armor_bonus(c, gd) == 30                         # R215:+20 → +30(與瞬發護體對位,見 test_r215)
     c.magicka = 10
     a_with = combat._armor_rating(c, gd)
     c.magicka = 0
     a_without = combat._armor_rating(c, gd)
     assert a_with == a_without                            # 被動護甲改無條件(對抗審查:物理 stance 不綁法力)
-    assert a_without >= 20                                # 法力 0 仍含 +20
+    assert a_without >= 30                                # 法力 0 仍含 +30
 
 
 def test_alchemy_potion_potency_and_poison_unlocks():
@@ -1229,12 +1229,13 @@ def test_temper_power_aggregates_and_applies():
 
 def test_same_source_masking_fixed_spell_poison_evasion_passive():
     """對抗審查修正:廣度 pass 使多 getter 出現同源多節點 → 須聚合不遮蔽。"""
-    # spell_mod:alteration_50 efficient_shield(cost 0.85)+ alteration_75 spell_reach(power 0.15)同時生效
+    # spell_mod:alteration_25 alt_basics(cost 0.92)+ alteration_50 shield_focus(power 0.10)同時生效
+    # (R215 起 alteration_75 / 100 不再有威力節點 → 改以 25 + 50 驗證跨節點同源聚合)
     gd, c = _char(alteration=100)
-    mastery.choose(c, gd, "alteration_50", "efficient_shield")
-    mastery.choose(c, gd, "alteration_75", "spell_reach")
-    assert abs(mastery.spell_cost_factor(c, gd, "alteration") - 0.85) < 1e-9
-    assert abs(mastery.spell_power_bonus(c, gd, "alteration") - 0.15) < 1e-9
+    mastery.choose(c, gd, "alteration_25", "alt_basics")
+    mastery.choose(c, gd, "alteration_50", "shield_focus")
+    assert abs(mastery.spell_cost_factor(c, gd, "alteration") - 0.92) < 1e-9
+    assert abs(mastery.spell_power_bonus(c, gd, "alteration") - 0.10) < 1e-9
     # poison_unlock:alchemy_50(weaken)+ alchemy_75(slow,+1延長)→ union 不遮蔽(R31)
     gd2, c2 = _char(alchemy=100)
     mastery.choose(c2, gd2, "alchemy_50", "toxin_master")
