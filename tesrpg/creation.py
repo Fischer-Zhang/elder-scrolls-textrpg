@@ -83,7 +83,7 @@ def build_character(
 
     char.location_id = gamedata.world["start_location"]
     char.visited_locations = [char.location_id]
-    char.weapon = _starting_weapon(gamedata, skills)
+    char.weapon = _starting_weapon(gamedata, skills, class_id)
     char.spells = _starting_spells(majors, class_id)
 
     # --- 起始背包 --------------------------------------------------------
@@ -208,8 +208,13 @@ _WEAPON_FOR_SKILL = {
 }
 
 
-def _starting_weapon(gamedata: GameData, skills: dict[str, int]) -> str:
-    """依角色最擅長的武器技能,配發一把起始武器。"""
+def _starting_weapon(gamedata: GameData, skills: dict[str, int], class_id: str = "") -> str:
+    """配發起始武器:職業在 classes.json 寫了 `starting_weapon`(R208)就固定給那把——身分優先,
+    且不受種族技能加成造成的「同分取 blade」平手影響;沒寫(戰士/騎士/戰法師/斥候/自訂職業)才依
+    角色最擅長的武器技能配發(舊規則,逐位元組同)。"""
+    fixed = gamedata.classes.get(class_id, {}).get("starting_weapon")
+    if fixed and fixed in gamedata.weapons:
+        return fixed
     best = max(formulas.WEAPON_SKILL_IDS, key=lambda s: skills.get(s, 0))
     return _WEAPON_FOR_SKILL.get(best, "iron_dagger")
 

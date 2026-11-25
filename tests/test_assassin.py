@@ -102,7 +102,9 @@ def test_equip_offhand_dagger_rules():
     from tesrpg.systems import inventory
     from tesrpg.models import Character
     gd, c = _assassin(weapon="iron_dagger")
-    inventory.add_item(c, "iron_dagger", 1)        # 主手 1 把,需第 2 把才能同型雙持
+    if inventory.count_item(c, "iron_dagger") < 1:  # R208:刺客起手背包已含 1 把鐵匕首,不假設背包為空
+        inventory.add_item(c, "iron_dagger", 1)    # 主手 1 把,需第 2 把才能同型雙持
+    assert inventory.count_item(c, "iron_dagger") == 1
     assert not inventory.equip_offhand(c, gd, "iron_dagger")   # 只有 1 把 → 不行
     inventory.add_item(c, "iron_dagger", 1)        # 現在共 2 把
     assert inventory.equip_offhand(c, gd, "iron_dagger")
@@ -131,7 +133,10 @@ def test_equip_offhand_dagger_rules():
 def test_drop_breaks_pair_ends_dualwield():
     from tesrpg.systems import inventory
     gd, c = _assassin(weapon="iron_dagger")
-    inventory.add_item(c, "iron_dagger", 2)          # 主手+副手共 2 把
+    # R208:刺客起手背包已含 1 把鐵匕首 → 不假設起手背包為空,補到「恰好 2 把」(主手+副手)
+    if inventory.count_item(c, "iron_dagger") < 2:
+        inventory.add_item(c, "iron_dagger", 2 - inventory.count_item(c, "iron_dagger"))
+    assert inventory.count_item(c, "iron_dagger") == 2
     assert inventory.equip_offhand(c, gd, "iron_dagger")
     assert inventory.is_dual_wielding(c, gd)
     inventory.remove_item(c, "iron_dagger", 1)        # 只剩 1 把

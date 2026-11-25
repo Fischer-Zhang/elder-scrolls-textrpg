@@ -3334,6 +3334,17 @@ R88 讓**盜賊公會**拿到階級解鎖招牌動詞(斯庫瑪走私),但**戰�
 - **R138 龜殼施法者 → 排為下一個獨立里程碑(未動)**:先量測、再出紙面。現況事實:格擋姿態對玩家攻擊有 ×0.75 傷害稅(`GUARD_STANCE_DAMAGE_TAX`),換物理卸力 ≤ 38%(隨 block)、元素折扣(重盾 R138b 0.70);**法術不吃此稅**(`magic.cast` 無引用)→ 重盾 + 姿態 + 施法拿全額卸力卻不付輸出稅。當時「姿態鎖施法 / 戰技」評估原文**未入 handoff**(只在當時對話),須重新推導:A 姿態中施法同吃 ×0.75 / B 姿態鎖施法 / C 維持;量測夾具 arcanist + 重盾 + 姿態,於 現況 / A / B 下量三王與群戰。紅線區(戰鬥常數 → 必跑 sim_assassin;現實邏輯優先)。
 - **過期說明處理(示範)**:R113 / R114 段四處「戰鬥中用藥水 留後續」實已由 R126 完成 → 補〔✓ 後由 R126 完成〕註記(R174 慣例:註記不刪)。
 
+### R208 · 起手包定位:弓手專精改潛行系 + 職業固定起手武器(使用者 2026-11-25 拍板) [save-safe] [content]
+
+- **緣起**:職業強度/定位審查(顧問 ×2 + scout ×3,未跑 sim)。事實:職業只在創角起作用——偏好屬性 +5、主修技能起始 +20 且升點 ×1.5 等級 XP、與專精同系技能起始 +5 且練功 ×1.2(`progression.py` 讀 `char.specialization` 比對 `skill.spec`);專精**不進任何戰鬥公式**,故完全體強度與專精無關,差別只在開局到中期的練功節奏(核心技能快 1/1.2≈16.7%)。`class_id` 全專案只用於創角與顯示;存檔已存 `specialization / favored_attributes / major_skills`,創角後不回讀 classes.json(只剩顯示職業名的硬索引 `legacy.py:111`、`console.py:310/1069`)。
+- **弓手專精 combat → stealth**(classes.json 一欄):射術 / 潛行 / 輕甲(弓手核心,原本全不在戰鬥系)得專精 +5 起始與 ×1.2 練功;刀劍等戰鬥系失去加成。潛行系職業變 4 個(盜賊 / 刺客 / 斥候 / 弓手)。
+- **職業固定起手武器**:classes.json 新增**選用**欄位 `starting_weapon`——刺客 / 盜賊 = `iron_dagger`、弓手 = `hunting_bow`、法師 / 治療師 / 召喚師 / 死靈法師(四個無武器系主修的純施法職業)= `apprentice_staff`;戰士 / 騎士 / 戰法師 / 斥候與自訂職業**不寫** → 沿用舊「最高武器技能」規則(逐位元組同)。`creation._starting_weapon(gamedata, skills, class_id)` 先看欄位。修掉舊規則的兩個失真:全武器技能同分(純施法)→ 取清單首位 blade → 起手鐵劍;種族刀劍加成造成平手 → 刺客 / 斥候隨種族配劍或弓、從不配匕首。
+- **新武器 `apprentice_staff` 學徒法杖**(`weapons.json`:destruction·傷 5·價 20·重 7·speed 1.0;**無** enchant / spell_focus / on_hit_self → `inventory.staff_spell_focus` 回 `{}` → 不改施法強度;使用者選方案 A「新增素杖」,不借既有附魔法杖〔最便宜的 flame/frost 260 金附 12 元素傷、法力法杖 +10% 施法威力,皆非起手檔〕)。守衛測試鎖死「素杖」與「純施法職業必配法杖」。
+- **未動 / 已知**:① `_WEAPON_FOR_SKILL.get(best,"iron_dagger")` 備援仍不可達(四武器技能全在對照表);② 斥候在有刀劍加成的種族仍會因平手配劍(使用者未要求固定);③ 專精歸類(speechcraft / mercantile 屬潛行系 → 騎士、治療師的口才無專精加成)、盜賊 vs 刺客重疊(偏好屬性相同·主修共 5/7)、法師 / 召喚師 / 死靈法師重疊、斥候偏好耐力與主修無對應、出身推薦池偏薄(死靈 1·斥候 / 弓手 / 召喚師各 2·戰士 12)→ **待使用者另拍板**。顧問結論:🔴 改**技能 spec 歸類**會即時回溯所有存檔(`skills.json` 讀檔後即時讀)並牽動 R29 訓練師推導(`world.py` `skills_by_spec`)、竊賊座練功加速(只乘 XP,不進戰鬥)與練功選單分組;🔴 刪 / 併職業 id → 舊檔在上述三處硬索引 KeyError;🔴 改刺客的 favored / major / spec → `sim_assassin.py` 只覆寫 sneak / blade / alchemy / scout 與武器、其餘吃起手包 → 輸出不再 byte-identical(須使用者明說才跑);只改盜賊則不碰 sim_assassin(BUILDS 也無盜賊 fixture)。
+- **測試**:`tests/test_creation.py` 新增四測——全種族固定起手武器(刺客 / 盜賊匕首·弓手弓·四純施法學徒法杖,且在背包)·資料有效 + 純施法必配法杖 + 素杖無焦點·弓手潛行系且射術 / 潛行 / 輕甲 = 5+20+5+種族加成·未固定職業與自訂職業沿用舊規則。既有 `test_origins` 純施法者出身武器斷言不變(法師公會烈焰法杖仍裝上、戰友團鋼劍仍只進背包)。
+- **sim**:未碰 combat / formulas / magic → 依本專案慣例未跑 sim。sim_assassin 用 class `assassin`、之後 `c.weapon` 被覆寫,只有「背包內起手物品」由弓 / 劍變匕首(重量差 ≤6、`is_overencumbered` 為閾值判定、起手背包離上限遠)→ 預期 byte-identical,**未實跑驗證**(使用者電腦跑 sim 會當機,須明說才跑)。
+- **驗證**:`check.sh` 全綠——編譯 ✓ · `run_all.py` 163 個測試模組 ✓ · Chromium 24 項 ✓;sim 未觸發(未動 combat / formulas)。**驗證時揪出兩個隱含假設**:`test_assassin` 的 `test_drop_breaks_pair_ends_dualwield` / `test_equip_offhand_dagger_rules` 假設刺客起手背包**不含**鐵匕首(原本起手是弓或劍),R208 後起手即 1 把 → 改為「補到恰好 N 把」不依賴起手背包內容(🔴 日後測試別假設起手背包的武器欄位)。**環境註記**:本機 Python 3.10.12、`rich` 裝在使用者目錄(`~/.local`);`test_r201_stale_rows` 子程序為隔離真實存檔把 `HOME` 換成暫存目錄 → 看不到使用者目錄的 `rich` 而 `ModuleNotFoundError`(與程式碼無關,暫存 HOME 下單獨 `import rich` 即重現)→ 驗證時帶 `PYTHONUSERBASE=/home/fischer/.local`(系統套件版 `python3-rich` 不受影響)。**未做**:對抗審查子代理(改動小、無平衡面,且重型代理須先得使用者同意)→ 由主對話自審代替,誠實標註。
+
 ## 4. 開發節奏(ultracode 開著 → 每個功能都這樣做)
 
 > 完整五階段流程(評估 → 決定方向 → 實作 → 驗證 → 文件 + 提交)見 `CLAUDE.md`「開發流程」;以下是「驗證」段的細節。**驗證綠後依 R22 自動 `commit` & `push origin main`。**

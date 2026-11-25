@@ -152,6 +152,15 @@
   "archetype": "bow",
   "speed": 0.9
  },
+ "apprentice_staff": {
+  "name": "學徒法杖",
+  "skill": "destruction",
+  "damage": 5,
+  "value": 20,
+  "weight": 7,
+  "archetype": "staff",
+  "speed": 1.0
+ },
  "flame_staff": {
   "name": "烈焰法杖",
   "skill": "destruction",

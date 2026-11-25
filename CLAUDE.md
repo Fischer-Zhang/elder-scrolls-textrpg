@@ -280,6 +280,7 @@ PYTHONPATH=. CMP_N=120 python3 sim_conj_sides.py   # 召喚系三節點「兩側
 | R205 | 召喚 50 換案:束縛精通→戰陣號令(玩家召喚物集火;`party.ally_target` 單一決策點·main/sim 共用);🔴 無節點逐位元組同·舊 opt_id 靠 ensure 清空重選·單王略差=設計代價·戰陣共鳴(冷卻−1)實測無效不做;束縛兵刃不再吃里程碑 | re-sim, save-safe |
 | R206 | 小問題清倉:流言線索回溯認列(拿掉已清守衛;🔴 日後勿把「已清地城接任務即時完成」當 bug,repeatable 除外)·閃身反打日誌(事件 `counter`)·死資料(per_level / escort)·遲緩文案·破折號守衛 | re-sim, save-safe, content |
 | R207 | 待決項裁決收尾:速度屬性說明改「追擊·逃跑·潛行撤退」·跨技能經驗平價 / 極致死靈師對達貢=不處理·R175 續問規則(催交報告不計次,見 ops.md)·R138 龜殼施法者排下一個獨立里程碑(先量測);過期說明=註記不刪 | content |
+| R208 | 起手包定位:弓手專精→潛行系 + classes.json `starting_weapon` 固定起手武器(刺客/盜賊匕首·弓手弓·四純施法學徒法杖〔素杖無焦點〕);🔴 改技能 spec 歸類全存檔回溯·刪職業 id 舊檔崩·改刺客包 sim 非 byte-id | save-safe, content |
 
 ## 自動提交閘門 / 換 session 前檢查表
 
