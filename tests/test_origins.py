@@ -165,6 +165,19 @@ def test_origin_class_recommendations():
         assert not gd.origins[oid].get("classes"), f"{oid} 不應綁定推薦職業"
 
 
+def test_every_class_is_recommended_by_enough_origins():
+    """R209 E1 守衛:每個預設職業至少被 3 個出身推薦(隨機創角抽職業時走這個池;推薦池過薄 = 該職業
+    幾乎抽不到、創角也少有契合的開局);出身推薦的職業 id 必須存在(寫錯 id 靜默無效)。"""
+    gd = get_gamedata()
+    count = {cid: 0 for cid in gd.classes}
+    for oid, odef in gd.origins.items():
+        for cid in odef.get("classes", []):
+            assert cid in gd.classes, f"{oid} 推薦了不存在的職業 {cid}"
+            count[cid] += 1
+    thin = {cid: n for cid, n in count.items() if n < 3}
+    assert not thin, f"被推薦的出身數不足 3 的職業:{thin}"
+
+
 def test_caster_origin_weapon_not_force_equipped():
     """純施法者(無武器系主修:法師/治療師)選近戰出身 → 近戰武器只進背包、不換手(保留依技能
     配發的起始武器);施法武器(法杖)仍裝上;有武器主修的職業(戰士/戰法師)照常換上出身武器升級。"""

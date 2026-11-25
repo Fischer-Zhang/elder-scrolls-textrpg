@@ -5,8 +5,9 @@
   "mage":       {"name": "法師", "spec": "magic",   "favored_attributes": ["intelligence", "willpower"],
                  "major_skills": ["destruction", "restoration", "alteration", "conjuration", "illusion", "mysticism", "alchemy"],
                  "starting_weapon": "apprentice_staff",
+                 "no_starter_schools": ["conjuration"],
                  "desc": "鑽研六大魔法學派的施法者。"},
-  "thief":      {"name": "盜賊", "spec": "stealth", "favored_attributes": ["agility", "speed"],
+  "thief":      {"name": "盜賊", "spec": "stealth", "favored_attributes": ["agility", "personality"],
                  "major_skills": ["security", "sneak", "marksman", "acrobatics", "light_armor", "mercantile", "speechcraft"],
                  "starting_weapon": "iron_dagger",
                  "desc": "潛行、開鎖、扒竊的暗影行家。"},
@@ -15,6 +16,7 @@
                  "desc": "兼具武勇與風範的貴族戰士。"},
   "battlemage": {"name": "戰法師", "spec": "magic", "favored_attributes": ["strength", "intelligence"],
                  "major_skills": ["blade", "blunt", "destruction", "alteration", "conjuration", "mysticism", "alchemy"],
+                 "no_starter_schools": ["conjuration"],
                  "desc": "一手持劍、一手御火的全能戰士。"},
   "assassin":   {"name": "刺客", "spec": "stealth", "favored_attributes": ["speed", "agility"],
                  "major_skills": ["blade", "marksman", "sneak", "security", "light_armor", "acrobatics", "alchemy"],
@@ -38,5 +40,6 @@
                  "desc": "收割亡魂、驅役屍骸的暗影死靈師(起手即通死靈經濟,招牌喚起亡者奴僕)。"},
   "scout":      {"name": "斥候", "spec": "stealth", "favored_attributes": ["agility", "endurance"],
                  "major_skills": ["scout", "marksman", "sneak", "athletics", "light_armor", "security", "blade"],
+                 "starting_weapon": "hunting_bow",
                  "desc": "精於偵查、遠射與潛行的荒野遊俠。"}
 }

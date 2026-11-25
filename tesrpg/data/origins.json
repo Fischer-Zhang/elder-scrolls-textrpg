@@ -181,7 +181,7 @@
     "equip": ["leather_cuirass"],
     "items": [["minor_healing_potion", 2]],
     "quest": "origin_caravan_guard",
-    "classes": ["warrior"]
+    "classes": ["warrior", "archer"]
   },
   "tomb_seeker": {
     "name": "尋墓探寶者",
@@ -191,7 +191,7 @@
     "weapon": "iron_sword",
     "items": [["minor_healing_potion", 2], ["lockpick", 4]],
     "quest": "origin_tomb_seeker",
-    "classes": ["thief", "assassin"]
+    "classes": ["thief", "assassin", "necromancer"]
   },
   "ashlander": {
     "name": "灰民部族子弟",
@@ -201,7 +201,7 @@
     "weapon": "iron_spear",
     "items": [["minor_healing_potion", 1], ["ash_yam", 1]],
     "quest": "origin_ashlander",
-    "classes": ["warrior"]
+    "classes": ["warrior", "scout"]
   },
   "reach_witch": {
     "name": "拒誓者女巫",
@@ -211,7 +211,7 @@
     "spells": ["fear"],
     "items": [["minor_magicka_potion", 2]],
     "quest": "origin_reach_witch",
-    "classes": ["mage", "healer"]
+    "classes": ["mage", "healer", "conjurer"]
   },
   "knight_aspirant": {
     "name": "騎士見習",
@@ -275,7 +275,7 @@
     "equip": ["leather_cuirass"],
     "items": [["minor_healing_potion", 2]],
     "quest": "origin_hist_warden",
-    "classes": ["warrior"]
+    "classes": ["warrior", "scout"]
   },
   "marsh_conjurer": {
     "name": "沼澤招魂者",
@@ -286,7 +286,7 @@
     "spells": ["conjure_familiar"],
     "items": [["minor_magicka_potion", 2]],
     "quest": "origin_marsh_conjurer",
-    "classes": ["conjurer", "mage", "battlemage"]
+    "classes": ["conjurer", "mage", "battlemage", "necromancer"]
   },
   "apprentice_necromancer": {
     "name": "招魂學徒",
@@ -389,7 +389,7 @@
     "equip": ["leather_cuirass", "iron_shield"],
     "items": [["minor_healing_potion", 2]],
     "quest": "origin_sunhold_marine",
-    "classes": ["warrior", "knight"]
+    "classes": ["warrior", "knight", "archer"]
   },
   "skywatch_runner": {
     "name": "天空守望的跑腿",

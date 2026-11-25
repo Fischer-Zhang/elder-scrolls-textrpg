@@ -3345,6 +3345,17 @@ R88 讓**盜賊公會**拿到階級解鎖招牌動詞(斯庫瑪走私),但**戰�
 - **sim**:未碰 combat / formulas / magic → 依本專案慣例未跑 sim。sim_assassin 用 class `assassin`、之後 `c.weapon` 被覆寫,只有「背包內起手物品」由弓 / 劍變匕首(重量差 ≤6、`is_overencumbered` 為閾值判定、起手背包離上限遠)→ 預期 byte-identical,**未實跑驗證**(使用者電腦跑 sim 會當機,須明說才跑)。
 - **驗證**:`check.sh` 全綠——編譯 ✓ · `run_all.py` 163 個測試模組 ✓ · Chromium 24 項 ✓;sim 未觸發(未動 combat / formulas)。**驗證時揪出兩個隱含假設**:`test_assassin` 的 `test_drop_breaks_pair_ends_dualwield` / `test_equip_offhand_dagger_rules` 假設刺客起手背包**不含**鐵匕首(原本起手是弓或劍),R208 後起手即 1 把 → 改為「補到恰好 N 把」不依賴起手背包內容(🔴 日後測試別假設起手背包的武器欄位)。**環境註記**:本機 Python 3.10.12、`rich` 裝在使用者目錄(`~/.local`);`test_r201_stale_rows` 子程序為隔離真實存檔把 `HOME` 換成暫存目錄 → 看不到使用者目錄的 `rich` 而 `ModuleNotFoundError`(與程式碼無關,暫存 HOME 下單獨 `import rich` 即重現)→ 驗證時帶 `PYTHONUSERBASE=/home/fischer/.local`(系統套件版 `python3-rich` 不受影響)。**未做**:對抗審查子代理(改動小、無平衡面,且重型代理須先得使用者同意)→ 由主對話自審代替,誠實標註。
 
+### R209 · 職業差異化:盜賊偏好 / 魔靈伴只留給召喚系 / 斥候起手弓 / 出身推薦補強(使用者 2026-11-25 拍板 A 不動·B1·C1 改案·D1·E1) [save-safe] [content]
+
+- **緣起**:R208 後職業定位審查的剩餘項,使用者逐項拍板:A 口才 / 交易屬潛行系 → **不動**;B1 只調盜賊;C1 召喚師辨識度;D1 斥候固定起手弓;E1 出身推薦補強。F(單一主修技能:交易 / 偵查 / 鍛造各僅一職)未處理(影響小)。
+- **B1 盜賊偏好** `[agility, speed]` → `[agility, personality]`:對應 mercantile / speechcraft 主修;與刺客只共享敏捷;盜賊起手速度 −5、魅力 +5(速度管追擊 / 逃跑 / 潛行撤退,魅力管說服 / 好感 / 喝退)。🔴 **刺客起手包(偏好 / 專精 / 主修)不動**:`sim_assassin.py` 只覆寫 sneak / blade / alchemy / scout 與武器,其餘吃起手包 → 動刺客這三欄輸出就不再 byte-identical(須使用者同意才重跑);新增守衛測試釘死。`sim_builds` 無盜賊 fixture → sim 不受影響。
+- **C1 魔靈伴只留給召喚系**(原提案「召喚師加簽名法術」,使用者改為「評估:其他法師不加魔靈伴」):不另給簽名法術;classes.json 新選用欄位 `no_starter_schools`(mage / battlemage = `["conjuration"]`),`creation._starting_spells(majors, class_id, skip_schools)` 略過該學派入門法術。主修仍在、法術可日後城鎮購買(world.json 販售)。召喚師 vs 法師的起手差別 = 魔靈伴 ↔ 恐懼(其餘學派入門法術不變)。**死靈法師刻意不略過**(評估結論,與使用者字面「其他法師」有出入):creation.py 註解寫明魔靈伴是它第 1 回合 / 無屍可復生時的召喚手段(R106C),且創角不給靈魂代幣 → 略過會讓死靈法師開局無可用召喚;若要連它也略過,於其 classes.json 加同欄位一行即可,但須先補 turn-1 替代。評估:所有 sim 夾具皆明確 `c.spells = [...]`、`sim_*.py` 零引用 `conjure_familiar` → sim 不受影響;出身 `marsh_conjurer` / `apprentice_necromancer` 仍額外給魔靈伴。
+- **D1 斥候** `starting_weapon: hunting_bow`:有刀劍加成的種族不再平手配劍;綠約遊俠出身長弓照常覆蓋。
+- **E1 出身推薦補強**(純 UI 推薦,R18 不碰屬性 / 技能):死靈法師 1→3(+沼澤招魂者·尋墓探寶者)、召喚師 2→3(+拒誓者女巫)、斥候 2→4(+希斯特守林者·灰民部族子弟)、弓手 2→4(+商隊護衛·日堡的海防哨兵)。影響隨機創角(`main._quick_character` 從出身推薦清單均勻抽職業):例如希斯特守林者由 100% 戰士變約一半斥候。
+- **測試**:`test_creation` 新增二測(盜賊偏好 + 刺客起手包釘死 / 魔靈伴只留給召喚系 + 略過學派必為主修的資料守衛),並調整 R208 二測(斥候由「沿用舊規則」移到「固定起手武器」);`test_origins` 新增「每個預設職業至少被 3 個出身推薦 + 推薦的職業 id 必須存在」守衛。
+- **sim**:未碰 combat / formulas / magic → 未跑;sim_assassin 預期 byte-identical(刺客資料零改,背包武器已於 R208 變匕首),**未實跑驗證**。
+- **驗證**:`PYTHONUSERBASE=/home/fischer/.local bash check.sh` 全綠(編譯 ✓ · 163 個測試模組 ✓ · Chromium 24 項 ✓,真實結束碼 0;環境註記見 R208)。**未做**:對抗審查子代理(改動為資料 + 一個小函式參數,無平衡面;重型代理須先得使用者同意)→ 主對話自審代替,誠實標註。
+
 ## 4. 開發節奏(ultracode 開著 → 每個功能都這樣做)
 
 > 完整五階段流程(評估 → 決定方向 → 實作 → 驗證 → 文件 + 提交)見 `CLAUDE.md`「開發流程」;以下是「驗證」段的細節。**驗證綠後依 R22 自動 `commit` & `push origin main`。**

@@ -84,7 +84,8 @@ def build_character(
     char.location_id = gamedata.world["start_location"]
     char.visited_locations = [char.location_id]
     char.weapon = _starting_weapon(gamedata, skills, class_id)
-    char.spells = _starting_spells(majors, class_id)
+    char.spells = _starting_spells(majors, class_id,
+                                   gamedata.classes.get(class_id, {}).get("no_starter_schools", ()))
 
     # --- 起始背包 --------------------------------------------------------
     if char.weapon != "fists":
@@ -230,12 +231,15 @@ _SPELL_FOR_SCHOOL = {
 # (R106C:necromancer 內建 reanimate_corpse〔復生擊殺的敵屍·1 soul_token/具〕·conjure_familiar 補 turn-1/無屍時)
 _CLASS_SIGNATURE_SPELL = {"battlemage": "flame_blade", "healer": "heal_other", "knight": "rally",
                           "necromancer": "reanimate_corpse"}
+# R209 召喚師的辨識度:不另給簽名法術,而是讓「魔靈伴」只留給召喚系職業(召喚師·死靈法師)——
+# 法師 / 戰法師在 classes.json 以 `no_starter_schools: ["conjuration"]` 略過召喚學派的入門法術
+# (主修仍在、法術可日後向城鎮購買;死靈法師不略過:魔靈伴是它第 1 回合 / 無屍可復生時的召喚手段)。
 
 
-def _starting_spells(majors: list[str], class_id: str = "") -> list[str]:
+def _starting_spells(majors: list[str], class_id: str = "", skip_schools=()) -> list[str]:
     spells = []
     for school, spell in _SPELL_FOR_SCHOOL.items():
-        if school in majors:
+        if school in majors and school not in skip_schools:
             spells.append(spell)
     if "minor_heal" not in spells:
         spells.append("minor_heal")

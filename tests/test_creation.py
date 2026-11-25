@@ -107,11 +107,12 @@ def _mk(gd, race, class_id):
 
 
 def test_class_fixed_starting_weapon_ignores_race_ties():
-    """職業寫了 starting_weapon 就固定給(刺客/盜賊=匕首·弓手=獵弓·四個純施法=學徒法杖),
-    全種族皆然——不再因種族刀劍加成平手而退回鐵劍(R208 前:同分取 blade)。"""
+    """職業寫了 starting_weapon 就固定給(刺客/盜賊=匕首·弓手/斥候=獵弓·四個純施法=學徒法杖),
+    全種族皆然——不再因種族刀劍加成平手而退回鐵劍(R208 前:同分取 blade;R209 補斥候)。"""
     from tesrpg.systems import inventory
     gd = get_gamedata()
     expect = {"assassin": "iron_dagger", "thief": "iron_dagger", "archer": "hunting_bow",
+              "scout": "hunting_bow",
               "mage": "apprentice_staff", "healer": "apprentice_staff",
               "conjurer": "apprentice_staff", "necromancer": "apprentice_staff"}
     for cid, wid in expect.items():
@@ -154,10 +155,10 @@ def test_archer_is_stealth_spec_core_skills_get_spec_bonus():
 
 
 def test_classes_without_fixed_weapon_keep_skill_rule():
-    """沒寫 starting_weapon 的職業(戰士/騎士/戰法師/斥候)與自訂職業維持舊的『最高武器技能』規則。"""
+    """沒寫 starting_weapon 的職業(戰士/騎士/戰法師)與自訂職業維持舊的『最高武器技能』規則。"""
     from tesrpg.creation import _starting_weapon
     gd = get_gamedata()
-    for cid in ("warrior", "knight", "battlemage", "scout"):
+    for cid in ("warrior", "knight", "battlemage"):
         assert "starting_weapon" not in gd.classes[cid]
         for race in ("imperial", "nord", "khajiit"):
             c = _mk(gd, race, cid)
@@ -168,6 +169,47 @@ def test_classes_without_fixed_weapon_keep_skill_rule():
     c = build_character(gd, name="C", sex="male", race="imperial", birthsign="shadow",
                         class_id="custom", custom_class=custom)
     assert c.weapon == _starting_weapon(gd, c.skills)
+
+
+# --- R209 職業差異化:盜賊偏好 / 魔靈伴只留給召喚系職業 ----------------------------------
+
+def test_thief_favors_agility_personality_and_assassin_pack_is_pinned():
+    """盜賊偏好 = 敏捷 + 魅力(對應交易 / 口才主修),與刺客只共享敏捷(R209 B1)。
+    🔴 同時釘死刺客起手包(偏好 / 專精 / 主修):sim_assassin 只覆寫 sneak/blade/alchemy/scout 與武器,
+    其餘吃起手包——誰動了刺客的這三欄,sim_assassin 輸出就不再 byte-identical(須使用者同意才重跑)。"""
+    gd = get_gamedata()
+    t, a = gd.classes["thief"], gd.classes["assassin"]
+    assert t["favored_attributes"] == ["agility", "personality"]
+    assert set(t["favored_attributes"]) & set(a["favored_attributes"]) == {"agility"}
+    assert a["favored_attributes"] == ["speed", "agility"] and a["spec"] == "stealth"
+    assert a["major_skills"] == ["blade", "marksman", "sneak", "security", "light_armor", "acrobatics", "alchemy"]
+    c = _mk(gd, "imperial", "thief")
+    w = _mk(gd, "imperial", "warrior")        # 非偏好魅力 → 基準
+    assert c.attributes["personality"] == w.attributes["personality"] + formulas.FAVORED_ATTR_BONUS
+    assert c.attributes["speed"] == w.attributes["speed"]                       # 速度不再是偏好
+
+
+def test_conjuration_starter_spell_only_for_conjuration_family():
+    """魔靈伴(conjure_familiar)只留給召喚系職業:召喚師 / 死靈法師(第 1 回合與無屍可復生時的召喚手段)保留;
+    法師 / 戰法師以 no_starter_schools 略過;其餘學派的入門法術不受影響;自訂職業不受影響(R209 C1)。"""
+    gd = get_gamedata()
+    for cid in ("conjurer", "necromancer"):
+        assert "conjure_familiar" in _mk(gd, "imperial", cid).spells, cid
+    for cid in ("mage", "battlemage"):
+        assert gd.classes[cid]["no_starter_schools"] == ["conjuration"]
+        assert "conjure_familiar" not in _mk(gd, "imperial", cid).spells, cid
+    m = _mk(gd, "imperial", "mage").spells
+    assert {"flames", "minor_heal", "oakflesh", "fear", "soul_trap"} <= set(m)   # 其餘五學派入門法術仍在
+    assert "conjure_familiar" in _mk(gd, "imperial", "conjurer").spells and "fear" not in _mk(gd, "imperial", "conjurer").spells
+    custom = {"specialization": "magic", "favored_attributes": ["intelligence", "willpower"],
+              "major_skills": ["conjuration", "destruction", "alteration", "restoration", "mysticism", "alchemy", "illusion"]}
+    c = build_character(gd, name="C", sex="male", race="imperial", birthsign="shadow",
+                        class_id="custom", custom_class=custom)
+    assert "conjure_familiar" in c.spells
+    # 資料守衛:略過的學派必須是該職業的主修(寫錯學派 = 靜默無效)
+    for cid, cdef in gd.classes.items():
+        for school in cdef.get("no_starter_schools", []):
+            assert school in cdef["major_skills"], f"{cid} 略過的 {school} 不在主修"
 
 
 def run():
