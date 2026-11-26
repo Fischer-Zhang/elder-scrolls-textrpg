@@ -197,8 +197,10 @@ def test_guard_option_label_and_weapon_line_show_the_shared_numbers():
         guard = next(o for o in opts if o[0] == "guard")
         gp, ge = ui.guard_stance_numbers(c, gd)
         bf = formulas.GREAT_SHIELD_BUNKER_FATIGUE
-        assert guard[2]["chips"][0]["text"] == f"攻擊變緩·卸力-{gp}%·元素-{ge}%·回氣+{bf}/回", (bless, guard)   # chip 與 note 分開逐字比對
-        assert guard[2]["note"] == f"重盾掩體（攻擊變緩 · 卸力-{gp}% · 元素-{ge}% · 回氣+{bf}/回)", (bless, guard)
+        # R220:會施法者(c.spells 非空)的重盾掩體標籤多一段「架著無法施法」(姿態鎖施法的立架前預警);不會施法者逐字同舊
+        lock_chip, lock_note = ("·架著無法施法", " · 架著無法施法") if c.spells else ("", "")
+        assert guard[2]["chips"][0]["text"] == f"攻擊變緩·卸力-{gp}%·元素-{ge}%·回氣+{bf}/回{lock_chip}", (bless, guard)   # chip 與 note 分開逐字比對
+        assert guard[2]["note"] == f"重盾掩體（攻擊變緩 · 卸力-{gp}% · 元素-{ge}% · 回氣+{bf}/回{lock_note})", (bless, guard)
         line = ui.weapon_line(c, gd)
         assert f"物理-{gp}%" in line and f"元素-{ge}%" in line, (bless, line)
     sd = gd.items["iron_great_shield"]                                           # 盾牌自帶「卸力 N%」也要四捨五入

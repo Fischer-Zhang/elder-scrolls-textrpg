@@ -676,6 +676,17 @@ def bunker_fatigue_regen(char, gamedata: GameData) -> int:
     return 0
 
 
+def casting_locked(char, gamedata: GameData) -> bool:
+    """R220 姿態鎖施法(使用者 2026-11-26 拍板 B·只鎖雙手重盾姿態;R138 龜殼施法者量測):持**雙手重盾**且立著格擋姿態 → 雙手占滿,結不了印。
+    單一決策點(`magic.cast` 的閘 / 戰鬥選單標籤 / ↻ 再施 / 備戰共用 → 預覽 = 實擲)。
+    🔴 範圍:只鎖「雙手重盾 + 姿態」——輕盾姿態、無姿態、獸形(本就不能施法)、非玩家一律不受影響;**不依 fatigue>0 閘**
+    (姿態旗標還在就是還架著;力竭只暫停卸力 / 稅,不等於收了架)。要施法須先收起姿態(收架本身就是一個回合)。
+    量測(sim_builds 夾具·48 solo 王 × 300 + 群戰 n=400):姿態專屬優勢集中在『沒堆節點的基本龜殼』(魔人×8 62% vs 不立姿態 24%)
+    與融合大法師(+13pp);鎖後等同「持盾不立姿態」。"""
+    return (_is_player(char) and has_guard_stance(char) and not _is_beast(char)
+            and _wields_great_shield(char, gamedata))
+
+
 def _shield_wall_factor(defender) -> float:
     """盾牆物理減傷倍率(<1.0 = 更耐打);非盾牆 → 1.0。"""
     e = next((e for e in getattr(defender, "active_effects", [])

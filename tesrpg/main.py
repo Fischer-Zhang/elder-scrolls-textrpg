@@ -698,8 +698,8 @@ def _repeat_option(player, gamedata: GameData, enemies: list, allies: list, mem)
         return f"↻ 再攻{_enemy_where(':')}"
     if last["type"] == "cast":
         sid = last["spell_id"]
-        if sid not in player.spells or not magic.can_cast(player, gamedata, sid):
-            return None
+        if sid not in player.spells or not magic.can_cast(player, gamedata, sid) or combat.casting_locked(player, gamedata):
+            return None   # R220:雙手重盾姿態中結不了印 → 不給「↻ 再施」(否則置頂一鍵 = 保證失敗)
         name = gamedata.spells[sid]["name"]
         tk = gamedata.spells[sid]["target"]
         hint = _repeat_cast_hint(player, gamedata, sid)
@@ -819,7 +819,10 @@ def _choose_combat_action(state: GameState, gamedata: GameData, enemies: list, a
     if any(magic.bound_conflict(player, gamedata, s) for s in player.spells):
         _hint_once("bound_grip", "（束縛兵刃的握法:雙手形〔束縛巨劍 / 戰斧〕不能與盾同持,雙手重盾下任何束縛兵刃都凝不出 —— 戰前先卸下盾牌。)")
     if castable and not player.beast_form:   # R144 現實邏輯:巨狼之爪無法結印施法
-        opts.append(("cast", "施法"))
+        if combat.casting_locked(player, gamedata):   # R220:雙手重盾姿態 → 仍列出但標「鎖定」(選了只會告知原因、不耗回合;與 magic.cast 的閘同一個判定)
+            opts.append(("cast", "施法（鎖定 · 先收起格擋姿態)"))
+        else:
+            opts.append(("cast", "施法"))
     if powers.usable_in(player, state, gamedata, "combat"):
         pid = powers.power_id(player, gamedata)
         if pid == "beast_form":
@@ -841,7 +844,9 @@ def _choose_combat_action(state: GameState, gamedata: GameData, enemies: list, a
         elif inventory.is_great_shield(gamedata, player.equipped.get("shield")):
             _gp, _ge = ui.guard_stance_numbers(player, gamedata)   # R200:與實擲 _guard_stance_factor 同一出處(含斯丹達爾之佑與總夾 0.60);R138b 元素 ≤ 物理
             _guard_detail = f"攻擊變緩·卸力-{_gp}%·元素-{_ge}%·回氣+{formulas.GREAT_SHIELD_BUNKER_FATIGUE}/回"
-            opts.append(_combat_option("guard", f"重盾掩體（攻擊變緩 · 卸力-{_gp}% · 元素-{_ge}% · 回氣+{formulas.GREAT_SHIELD_BUNKER_FATIGUE}/回)", _guard_detail))   # R138 可見性:持重盾時姿態效果直接標在選項上
+            _guard_lock = " · 架著無法施法" if player.spells and not player.beast_form else ""   # R220:會施法的人立架前就看得到代價(無法施法者不顯示)
+            opts.append(_combat_option("guard", f"重盾掩體（攻擊變緩 · 卸力-{_gp}% · 元素-{_ge}% · 回氣+{formulas.GREAT_SHIELD_BUNKER_FATIGUE}/回{_guard_lock})",
+                                       _guard_detail + _guard_lock.replace(" · ", "·")))   # R138 可見性:持重盾時姿態效果直接標在選項上
         else:
             opts.append(_combat_option("guard", "格擋姿態（攻擊變緩 · 舉盾卸力減傷)", "攻擊變緩·舉盾卸力"))
     vcap = combat.vanish_cap(player, gamedata)
@@ -997,6 +1002,10 @@ def _choose_combat_action(state: GameState, gamedata: GameData, enemies: list, a
             return _back()
         return {"type": "attack", "target": tgt}
     if choice == "cast":
+        _lock = magic.stance_cast_conflict(player, gamedata)
+        if _lock:   # R220:告知原因、不耗回合,退回行動選單(與 magic.cast 的閘同一個出處)
+            ui.message(_lock, style="grey70")
+            return _back()
         if ui._web is not None:    # web:blocks 每幀清空 → 選法術時重顯戰場,免「敵狀態丟失」
             ui.combat_status_group(player, allies, enemies, gamedata)
         spell_opts = [(s, f"{gamedata.spells[s]['name']}"
@@ -1569,7 +1578,8 @@ def run_battle(state: GameState, gamedata: GameData, enemies, companions=None,
             else:
                 player.active_effects.append({"kind": "guard_stance", "turns": combat.PERSISTENT_TURNS})   # R188:常駐哨兵(原 99 會倒數顯示/99 回合失效)
                 if inventory.is_great_shield(gamedata, player.equipped.get("shield")):   # R138 可見性:重盾掩體效果立架即告知
-                    _cmsg("你架穩重盾掩體 —— 攻勢放緩;盾面連烈焰亦能卸開(元素大減),盾後喘息緩緩回氣。", style="bold cyan")
+                    _cmsg("你架穩重盾掩體 —— 攻勢放緩;盾面連烈焰亦能卸開(元素大減),盾後喘息緩緩回氣。"
+                          + ("雙手占滿,架著結不了印(要施法得先收起姿態)。" if player.spells else ""), style="bold cyan")   # R220
                 else:
                     _cmsg("你側身舉盾入架 —— 攻勢放緩,盾面隨時準備接下來襲。", style="bold cyan")
         elif action["type"] == "wall":            # 戰士:立/撤盾牆架勢(常駐 stance)

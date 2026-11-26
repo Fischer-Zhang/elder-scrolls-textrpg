@@ -364,6 +364,15 @@ def bound_conflict(char, gamedata: GameData, spell_id: str) -> str | None:
     return None
 
 
+def stance_cast_conflict(char, gamedata: GameData) -> str | None:
+    """R220 姿態鎖施法的原因(單一出處:`cast` 的閘與戰鬥選單 / ↻ 共用;未鎖 → None)。
+    規則本體在 `combat.casting_locked`(只鎖雙手重盾 + 格擋姿態);R204 `bound_conflict` 是同型先例(重盾占雙手 → 凝不出束縛兵刃)。"""
+    from tesrpg.systems import combat
+    if combat.casting_locked(char, gamedata):
+        return "你架著雙手重盾的姿態 —— 雙手占滿,結不了印。先收起姿態再施法。"
+    return None
+
+
 def reanimate_candidate(corpses, gamedata: GameData):
     """亡者復生可喚起的第一具敵屍(取敵群排列順序的第一具,非嚴格死亡先後);無 → None。
     排除:仍存活者、bestiary 無此模板、solo(首領級)、已復生過、BOSS 召喚爪牙(R134:法力構造無屍可掠,封 reanimate→token
@@ -412,6 +421,9 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
     battle 為戰鬥情境字典(供召喚加入盟友);非戰鬥可為 None。
     """
     sp = gamedata.spells[spell_id]
+    _locked = stance_cast_conflict(char, gamedata)   # R220:雙手重盾姿態中結不了印 —— 在任何扣費之前擋下(不耗魔 / 體 / 靈魂,無須退費)
+    if _locked:
+        return _fail(_locked)
     cost = effective_cost(char, gamedata, spell_id)
     # 治療師「戰地搶救」:武裝中 + 施治療/援護術 → 本道近乎免費(覆寫成本,非注入額外行動)。
     triage_heal = (sp["effect"]["kind"] == "heal" or sp["target"] in ("ally", "allies"))
