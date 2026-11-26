@@ -163,45 +163,68 @@ def is_equipped(char: Character, item_id: str) -> bool:
             or item_id in char.equipped.values())
 
 
-def _stash_add(char: Character, loc_id: str, item_id: str, qty: int) -> None:
+def stash_stolen(char: Character, loc_id: str, item_id: str) -> int:
+    """該倉庫裡這款物品算作贓物的件數(R223:倉庫每一疊自己記;無 → 0)。"""
+    return sum(min(s.get("stolen", 0), s["qty"]) for s in char.house_stash.get(loc_id, []) if s["id"] == item_id)
+
+
+def _stash_add(char: Character, loc_id: str, item_id: str, qty: int, stolen: int = 0) -> None:
+    """stolen:這批裡有幾件是贓物(R223;存入時贓物先存,件數由 deposit 算好傳進來)。"""
     lst = stash(char, loc_id)
     for s in lst:
         if s["id"] == item_id:
             s["qty"] += qty
+            if stolen:
+                s["stolen"] = s.get("stolen", 0) + stolen
             return
-    lst.append({"id": item_id, "qty": qty})
+    entry = {"id": item_id, "qty": qty}
+    if stolen:
+        entry["stolen"] = stolen
+    lst.append(entry)
 
 
-def _stash_remove(char: Character, loc_id: str, item_id: str, qty: int) -> None:
+def _stash_remove(char: Character, loc_id: str, item_id: str, qty: int) -> int:
+    """取出 qty 件,回傳其中有幾件是贓物(R223:乾淨的先取,乾淨的不夠才動到贓物)。"""
     lst = char.house_stash.get(loc_id, [])
     for s in lst:
         if s["id"] == item_id:
+            hot = min(s.get("stolen", 0), s["qty"])
+            taken = max(0, qty - (s["qty"] - hot))
             s["qty"] -= qty
+            if hot - taken > 0:
+                s["stolen"] = hot - taken
+            else:
+                s.pop("stolen", None)
             if s["qty"] <= 0:
                 lst.remove(s)
-            return
+            return taken
+    return 0
 
 
 def deposit(char: Character, gamedata: GameData, loc_id: str, item_id: str, qty: int = 1) -> bool:
-    """背包 → 倉庫。禁存正穿戴/手持裝備;背包數量不足則失敗。"""
+    """背包 → 倉庫。禁存正穿戴/手持裝備;背包數量不足則失敗。
+    R223:贓物先存(離開背包一律贓物先走),件數跟著移到這一疊。"""
     if is_equipped(char, item_id):
         return False
     if inventory.count_item(char, item_id) < qty:
         return False
-    inventory.remove_item(char, item_id, qty)
-    _stash_add(char, loc_id, item_id, qty)
+    hot = min(qty, inventory.stolen_on_person(char, item_id))
+    inventory.remove_item(char, item_id, qty)           # 贓物先走:身上的記錄在 remove_item 裡扣掉 hot 件
+    _stash_add(char, loc_id, item_id, qty, stolen=hot)
     return True
 
 
 def withdraw(char: Character, gamedata: GameData, loc_id: str, item_id: str, qty: int = 1) -> bool:
-    """倉庫 → 背包(以負重為閘,含鞍袋)。"""
+    """倉庫 → 背包(以負重為閘,含鞍袋)。R223:乾淨的先取;取到贓物時把件數記回身上。"""
     if stash_count(char, loc_id, item_id) < qty:
         return False
     # 毀損/未知 id(內容被移除的舊存檔)→ 略過負重檢查(無重量),仍可取回背包,不崩潰
     if gamedata.item_or_none(item_id) is not None and not inventory.can_carry(char, gamedata, item_id, qty):
         return False
-    _stash_remove(char, loc_id, item_id, qty)
-    inventory.add_item(char, item_id, qty, transfer=True)   # R223:自己的東西搬回背包,贓物記錄不動
+    hot = _stash_remove(char, loc_id, item_id, qty)
+    inventory.add_item(char, item_id, qty)
+    if hot:
+        inventory.mark_stolen(char, item_id, hot)
     return True
 
 

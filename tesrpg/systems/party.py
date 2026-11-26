@@ -123,10 +123,10 @@ def heal_full(char: Character, gamedata: GameData) -> None:
 
 def forget(char: Character, cid: str) -> None:
     """同伴永久離隊(解散泛用傭兵/陣亡)→ 清其持久狀態,避免殘留污染;穿戴裝備退回背包(不遺失)。"""
-    from tesrpg.systems import inventory
-    for iid in list(char.companion_gear.get(cid, {}).values()):
-        inventory.add_item(char, iid, 1, transfer=True)   # R223:同伴身上的裝備退回背包 = 搬動,贓物記錄不動
+    for slot, iid in list(char.companion_gear.get(cid, {}).items()):
+        _return_gear(char, cid, slot, iid)               # R223:贓物記號跟著回背包
     char.companion_gear.pop(cid, None)
+    char.companion_gear_stolen.pop(cid, None)
     char.companion_build.pop(cid, None)
     char.companion_hp.pop(cid, None)
     char.companion_bond.pop(cid, None)
@@ -301,27 +301,54 @@ def equippable_for(char: Character, gamedata: GameData, slot: str) -> list:
     return out
 
 
+# R223 贓物:同伴身上每槽一件,所以用「哪幾個槽是贓物」記(char.companion_gear_stolen = {cid: [槽位, ...]})。
+def gear_stolen(char: Character, cid: str, slot: str) -> bool:
+    """該同伴該槽的裝備是不是贓物(純讀)。"""
+    return slot in getattr(char, "companion_gear_stolen", {}).get(cid, ())
+
+
+def _set_gear_stolen(char: Character, cid: str, slot: str, hot: bool) -> None:
+    flags = [s for s in char.companion_gear_stolen.get(cid, []) if s != slot]
+    if hot:
+        flags.append(slot)
+    if flags:
+        char.companion_gear_stolen[cid] = flags
+    else:
+        char.companion_gear_stolen.pop(cid, None)
+
+
+def _return_gear(char: Character, cid: str, slot: str, item_id: str) -> None:
+    """同伴槽 → 背包:東西加回背包;是贓物的話件數記回背包、清掉該槽的記號。不動 companion_gear 本身。"""
+    from tesrpg.systems import inventory
+    inventory.add_item(char, item_id, 1)
+    if gear_stolen(char, cid, slot):
+        inventory.mark_stolen(char, item_id, 1)
+        _set_gear_stolen(char, cid, slot, False)
+
+
 def equip_gear(char: Character, gamedata: GameData, cid: str, item_id: str) -> bool:
-    """把背包中一件武器/護甲裝到同伴(移出背包 = 戰利品 sink;保留淬鍊)。舊裝退回背包。"""
+    """把背包中一件武器/護甲裝到同伴(移出背包 = 戰利品 sink;保留淬鍊)。舊裝退回背包。
+    R223:離開背包贓物先走 → 背包裡有這款的贓物時,交出去的這件就是贓物,記號跟著到同伴身上。"""
     from tesrpg.systems import inventory
     slot = _slot_for_item(gamedata, item_id)
     if slot is None or inventory.count_item(char, item_id) <= 0:
         return False
     old = char.companion_gear.get(cid, {}).get(slot)
     if old:
-        inventory.add_item(char, old, 1, transfer=True)
-    inventory.remove_item(char, item_id, 1, keep_temper=True)   # 移轉非銷毀 → 不清淬鍊
+        _return_gear(char, cid, slot, old)
+    hot = inventory.stolen_on_person(char, item_id) > 0
+    inventory.remove_item(char, item_id, 1, keep_temper=True)   # 移轉非銷毀 → 不清淬鍊;贓物先走(背包記錄在此扣)
     char.companion_gear.setdefault(cid, {})[slot] = item_id
+    _set_gear_stolen(char, cid, slot, hot)
     return True
 
 
 def unequip_gear(char: Character, gamedata: GameData, cid: str, slot: str) -> bool:
-    """卸下同伴某槽裝備 → 退回背包。"""
-    from tesrpg.systems import inventory
+    """卸下同伴某槽裝備 → 退回背包(贓物記號跟著回來)。"""
     iid = char.companion_gear.get(cid, {}).get(slot)
     if not iid:
         return False
-    inventory.add_item(char, iid, 1, transfer=True)
+    _return_gear(char, cid, slot, iid)
     del char.companion_gear[cid][slot]
     if not char.companion_gear[cid]:
         del char.companion_gear[cid]
@@ -433,7 +460,8 @@ def build_label(char: Character, cid: str) -> str | None:
 
 # --- 存檔遷移(R03:coerce + 防呆剔陳舊;不遺失裝備)------------------------
 def ensure_companion_gear(char: Character, gamedata: GameData) -> None:
-    from tesrpg.systems import inventory
+    if not isinstance(getattr(char, "companion_gear_stolen", None), dict):   # R223 贓物記號欄(壞值 → 空;細部清理在 inventory.ensure_stolen)
+        char.companion_gear_stolen = {}
     g = getattr(char, "companion_gear", None)
     if not isinstance(g, dict):
         char.companion_gear = {}
@@ -441,17 +469,20 @@ def ensure_companion_gear(char: Character, gamedata: GameData) -> None:
     for cid in list(g.keys()):
         slots = g[cid]
         if not isinstance(slots, dict) or cid not in gamedata.companions:
-            if isinstance(slots, dict):                 # 無效同伴 → 裝備退回背包不遺失
-                for iid in slots.values():
+            if isinstance(slots, dict):                 # 無效同伴 → 裝備退回背包不遺失(贓物記號跟著回來)
+                for slot, iid in list(slots.items()):
                     if gamedata.item_or_none(iid):
-                        inventory.add_item(char, iid, 1, transfer=True)
+                        _return_gear(char, cid, slot, iid)
             del g[cid]
+            char.companion_gear_stolen.pop(cid, None)
             continue
         for slot in list(slots.keys()):
             if slot not in ("weapon", "armor") or _slot_for_item(gamedata, slots[slot]) != slot:
-                iid = slots.pop(slot)                   # 陳舊/型別不符 → 退回背包
+                iid = slots[slot]                       # 陳舊/型別不符 → 退回背包
                 if gamedata.item_or_none(iid):
-                    inventory.add_item(char, iid, 1, transfer=True)
+                    _return_gear(char, cid, slot, iid)
+                del slots[slot]
+                _set_gear_stolen(char, cid, slot, False)
         if not slots:
             del g[cid]
 

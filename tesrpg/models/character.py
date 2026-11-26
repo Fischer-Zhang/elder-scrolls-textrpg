@@ -248,7 +248,8 @@ class Character:
     # 房產 & 坐騎(家園與後勤;見 systems/housing.py、systems/mounts.py)。皆走 dataclass 預設向後相容。
     houses_owned: list = field(default_factory=list)      # 已購置房產的 loc_id(權威)
     house_stash: dict = field(default_factory=dict)       # loc_id -> [{"id","qty"}](家中倉庫;不計隨身負重)
-    stolen: dict = field(default_factory=dict)            # R223 item_id -> 名下贓物件數(背包 + 倉庫 + 同伴身上;見 systems/inventory.py 贓物段)
+    stolen: dict = field(default_factory=dict)            # R223 item_id -> 背包裡的贓物件數(倉庫每疊自帶 "stolen";見 systems/inventory.py 贓物段)
+    companion_gear_stolen: dict = field(default_factory=dict)   # R223 cid -> [槽位, ...]:同伴身上哪幾件是贓物(見 systems/party.py)
     house_upgrades: dict = field(default_factory=dict)    # loc_id -> [upgrade_id](已購擴建;權威;R110)
     house_garden_at: dict = field(default_factory=dict)   # loc_id -> 下次可採收的絕對小時(tax_due_at 模式;R110)
     well_rested_until: int = 0                            # 「精神飽滿」到期絕對小時(0=無;最佳休息設;同 skooma_high_until 模式)
@@ -386,7 +387,7 @@ class Character:
             "soldiers": self.soldiers, "camp": self.camp,
             "wage_due_at": self.wage_due_at,
             "houses_owned": self.houses_owned, "house_stash": self.house_stash,
-            "stolen": self.stolen,
+            "stolen": self.stolen, "companion_gear_stolen": self.companion_gear_stolen,
             "house_upgrades": self.house_upgrades, "house_garden_at": self.house_garden_at,
             "well_rested_until": self.well_rested_until, "well_rested": self.well_rested,
             "mounts_owned": self.mounts_owned, "active_mount": self.active_mount,

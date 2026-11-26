@@ -3258,7 +3258,7 @@ def action_shop(state: GameState, gamedata: GameData) -> None:
                     if inventory.clean_count(char, iid) <= 0:
                         break
                     total += world.sell_price(char, gamedata, iid)   # 隨交易技能微升,逐件結算
-                    inventory.remove_item(char, iid, 1)
+                    inventory.remove_item(char, iid, 1, clean=True)   # R223:商人只收乾淨的(贓物記錄不動)
                     sold += 1
                     ui.show_events(progression.use_skill(char, gamedata, "mercantile", 0.3), gamedata)   # R197 審查:賣貨升點原被丟棄
                 char.gold += total
@@ -3508,12 +3508,21 @@ def _stash_transfer(state: GameState, gamedata: GameData, loc_id: str, deposit: 
         else:
             rows = [(s["id"], s["qty"]) for s in char.house_stash.get(loc_id, [])]
             title = "取出哪件?"
+
+        def hot_of(iid):          # R223:這一側這款物品有幾件是贓物(存入看背包、取出看這個倉庫)
+            return inventory.stolen_on_person(char, iid) if deposit else housing.stash_stolen(char, loc_id, iid)
+
+        def hot_tag(n, of):
+            return "" if not n else ("(贓物)" if n >= of else f"(其中贓物 ×{n})")
+        if any(hot_of(iid) for iid, _q in rows):      # 有贓物才提示搬動規則(沒有時標題逐字同舊)
+            title = ("存入哪件?(穿戴/手持中的裝備須先卸下;贓物會先存入)" if deposit
+                     else "取出哪件?(乾淨的先取出)")
         if not rows:
             ui.message("沒有可" + ("存入" if deposit else "取出") + "的物品。", style="grey70")
             return
         # R114C:一鍵「全部存入/取出」(免逐件操作;取出以負重為閘,能背多少算多少)
         opts = [("__all__", "⇊ 全部存入(非穿戴)" if deposit else "⇈ 全部取出(至負重上限)")]
-        opts += [(iid, f"{gamedata.item_name(iid)} ×{qty}") for iid, qty in rows]
+        opts += [(iid, f"{gamedata.item_name(iid)} ×{qty}{hot_tag(min(hot_of(iid), qty), qty)}") for iid, qty in rows]
         pick = ui.menu(title, opts, allow_back=True)
         if pick is None:
             return
@@ -3531,13 +3540,15 @@ def _stash_transfer(state: GameState, gamedata: GameData, loc_id: str, deposit: 
             continue
         avail = dict(rows)[pick]
         n = 1 if avail == 1 else ui.ask_int(f"幾個?(上限 {avail})", default=avail, lo=1, hi=avail)
+        # R223:這次搬動裡有幾件贓物(存入 = 贓物先存;取出 = 乾淨的先取)—— 與 housing.deposit / withdraw 同一套算法
+        moving = min(n, hot_of(pick)) if deposit else max(0, n - (avail - hot_of(pick)))
         if deposit:
             ok = housing.deposit(char, gamedata, loc_id, pick, n)
-            ui.message(f"存入 {gamedata.item_name(pick)} ×{n}。" if ok else "無法存入此物。",
+            ui.message(f"存入 {gamedata.item_name(pick)} ×{n}{hot_tag(moving, n)}。" if ok else "無法存入此物。",
                        style="green" if ok else "red")
         else:
             ok = housing.withdraw(char, gamedata, loc_id, pick, n)
-            ui.message(f"取出 {gamedata.item_name(pick)} ×{n}。" if ok else "負重不足,取不出這麼多。",
+            ui.message(f"取出 {gamedata.item_name(pick)} ×{n}{hot_tag(moving, n)}。" if ok else "負重不足,取不出這麼多。",
                        style="green" if ok else "red")
 
 
@@ -3745,8 +3756,7 @@ def action_fence(state: GameState, gamedata: GameData) -> None:
                     if inventory.count_item(char, iid) <= 0:
                         break
                     total += fsell(iid)
-                    inventory.fence_stolen(char, iid, 1)             # R223:銷贓時贓物先出(名下贓物 −1;沒有贓物則不動)
-                    inventory.remove_item(char, iid, 1)
+                    inventory.remove_item(char, iid, 1)              # R223:離開背包一律贓物先走(記錄在 remove_item 裡扣)
                     sold += 1
                     ui.show_events(progression.use_skill(char, gamedata, "mercantile", 0.3), gamedata)   # R197 審查:賣貨升點原被丟棄
                 char.gold += total
