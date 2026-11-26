@@ -22,7 +22,8 @@ train_cost / spell_price / merchant_catalog / _restock_qty),地城收入用真�
   收入:72 地城一次 ≈ 9.7 萬金 + 物品底價 ≈ 30.8 萬(賣掉實得 11.8 ~ 24.7 萬);
        425 個一次性任務(含執行時生成的領主委託)金幣 ≈ 8.9 萬;商店架上貨每家每次補貨底價中位數 ≈ 1,376。
   去處:22 技能全訓練到 75 = 43.6 萬金(角色 44 級);只靠訓練 1 → 5 級 2,848 金、→ 10 級 11,560 金、→ 20 級 59,288 金;
-       免費練習 5 → 75 約 529 小時;房產 16 棟 6.8 萬 + 擴建最多 4.96 萬;法術全買 2.9 萬;坐騎 0.64 萬。
+       免費練習只能到 50(R224;5 → 50 約 259 小時,只靠練習全技能到 50 = 角色 31 級);訓練師獨有的 50 → 75 每技能
+       12,400 金、22 個技能共 27.3 萬;房產 16 棟 6.8 萬 + 擴建最多 4.96 萬;法術全買 2.9 萬;坐騎 0.64 萬。
   配方:原料買得到、買料製作再賣有賺的只剩鞣製皮革系(產出底價是原料的 1.33 倍):受庫存限制後每城每次補貨最多
        9 ~ 15 金,且每件要花一小時與體力 → 微利,使用者 R223 裁定不處理(RESALE_FLAG = 50 金以下不列警示)。
        R222 當時另有 130 組只在銷贓有賺(跨攤位倒掛經製作放大),R223 的全域規則一併關掉。
@@ -33,6 +34,7 @@ train_cost / spell_price / merchant_catalog / _restock_qty),地城收入用真�
   3. 跨攤位倒掛:任一物品 銷贓價 ≥ 一般商店買價(商店買、銷贓賣可獲利或打平)。R223 起應恆為 0
      (world.fence_sell_price 夾在 world.min_buy_price − 1);亮了 = 全域「賣出價 < 買入價」規則破了。
   4. 配方轉賣:原料全都買得到的配方,買料製作再賣,受庫存限制後每城每次補貨的期望利潤 ≥ RESALE_FLAG(50 金)。
+  5. 練習上限 ≥ 訓練師上限:免費練習就能到訓練師賣的等級 → 訓練師沒有獨有的區段(R224)。
 """
 import statistics as S
 import sys
@@ -255,6 +257,17 @@ def buy_levels(target_levels=(5, 10, 20)):
     return {lv: marks[lv] for lv in target_levels if lv in marks}, spent, c.level
 
 
+def level_if_all_skills_reach(cap: int) -> int:
+    """全部技能都升到 cap 時的角色等級(不論靠練習或訓練,升點給的等級經驗相同)。全走真實 progression。"""
+    c = build_character(gd, name="徒", sex="male", race="imperial", birthsign="warrior", class_id="warrior")
+    for sid in gd.skills:
+        while c.skills.get(sid, formulas.SKILL_BASE) < cap:
+            progression.use_skill(c, gd, sid, formulas.skill_threshold(c.skills.get(sid, formulas.SKILL_BASE)))
+            while c.can_level_up():
+                progression.apply_level_up(c, gd, {"endurance": formulas.LEVELUP_ATTRIBUTE_POINTS})
+    return c.level
+
+
 def practice_hours(lo: int, hi: int):
     """各技能靠免費練習從 lo 到 hi 需要的遊戲小時(不計體力不足的減半)。回傳 list。"""
     need = sum(formulas.skill_threshold(level) for level in range(lo, hi))
@@ -362,10 +375,14 @@ def main() -> None:
     print(f"只靠訓練買角色等級(永遠訓練最低的技能):"
           + "、".join(f"{lv} 級 {gold} 金" for lv, gold in marks.items())
           + f";{len(gd.skills)} 個技能全到 {cap} 共 {all_cost} 金(角色 {final_level} 級)")
-    for lo, hi in ((base, cap), (cap, formulas.SKILL_CAP)):
-        hrs = practice_hours(lo, hi)
-        print(f"免費練習 {lo}→{hi}:中位數 {S.median(hrs):.0f} 小時(約 {S.median(hrs) / 24:.0f} 遊戲日),"
-              f"換算訓練等於每小時 {train_total(lo, hi) / S.median(hrs):.0f} 金")
+    pcap = formulas.PRACTICE_CAP
+    hrs = S.median(practice_hours(base, pcap))
+    print(f"免費練習只能到 {pcap}(R224):{base}→{pcap} 中位數 {hrs:.0f} 小時(約 {hrs / 24:.0f} 遊戲日),"
+          f"同一段訓練師收 {train_total(base, pcap)} 金;只靠練習(零風險)全技能到 {pcap} → 角色 {level_if_all_skills_reach(pcap)} 級")
+    print(f"訓練師獨有的區段 {pcap}→{cap}:每技能 {train_total(pcap, cap)} 金,{len(gd.skills)} 個技能共 "
+          f"{len(gd.skills) * train_total(pcap, cap)} 金")
+    if pcap >= cap:
+        flags.append(f"⚠練習上限 {pcap} ≥ 訓練師上限 {cap}:訓練師沒有獨有的區段(免費練習就能到同樣的等級)")
     sk = sinks()
     print(f"房產 {len(gd.houses)} 棟 {sk['houses']} 金 + 擴建(格位裝滿)最多 {sk['upgrades']} 金;"
           f"法術 {len(gd.spells)} 道全買 {sk['spells']} 金;坐騎 {sk['mounts']} 金;宗師技能 {sk['masters']} 個")
@@ -397,7 +414,7 @@ def main() -> None:
     if flags:                                    # 只有真的有警示才印「⚠ 守衛警示」(check.sh 以此行 grep)
         print("\n⚠ 守衛警示:\n  " + "\n  ".join(flags))
     else:
-        print("\n✓ 經濟守衛全過(無同店 / 黑市 / 跨攤位倒掛;配方轉賣都在微利門檻之下)")
+        print("\n✓ 經濟守衛全過(無同店 / 黑市 / 跨攤位倒掛;配方轉賣都在微利門檻之下;練習上限低於訓練師上限)")
 
 
 if __name__ == "__main__":

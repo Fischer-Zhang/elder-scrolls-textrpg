@@ -352,7 +352,7 @@ def test_practice_stops_at_skill_cap():
     from tesrpg import formulas
     gd, state = _smoke_state()
     c = state.player
-    c.skills["blade"] = formulas.SKILL_CAP
+    c.skills["blade"] = formulas.PRACTICE_CAP   # R224:練習只能練到 PRACTICE_CAP(原為 SKILL_CAP)
     c.fatigue = c.max_fatigue
     t0, f0 = state.time.absolute_hours(), c.fatigue
     restore = _patch_practice_ui("blade", 5)

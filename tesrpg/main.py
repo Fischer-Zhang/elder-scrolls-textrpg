@@ -326,50 +326,65 @@ def _hint_once(key: str, msg: str) -> None:
     ui.message(msg, style="grey70")
 
 
+def _practice_option_label(char, gamedata: GameData, sid: str) -> str:
+    """R224 練習選單每個技能的標籤:現在不能練的附上原因(與實際拒絕同一個出處 `progression.practice_block`)。"""
+    s = gamedata.skills[sid]
+    why = progression.practice_block(char, gamedata, sid)
+    head = f"{s['name']} (Lv {char.skill(sid)}) — "
+    return head + (s["practice"]["label"] if why is None else f"〔現在不能練:{why}〕")
+
+
 def action_practice(state: GameState, gamedata: GameData) -> None:
+    """練習:免費、只花時間與體力。R224:只能練到 formulas.PRACTICE_CAP,而且要符合技能自己的描述
+    (場地 / 器材 / 材料 / 法術,見 progression.practice_block);再上去是訓練師、宗師與實戰的事。"""
     global _last_practice_skill
     char = state.player
     sid = None
-    # R114C 再練上次:上次練的技能仍未滿級 → 一鍵直達時數(跳過 類別→技能 兩層純重複)
+    # R114C 再練上次:上次練的技能現在還能練 → 一鍵直達時數(跳過 類別→技能 兩層純重複)
     lp = _last_practice_skill
-    if lp in gamedata.skills and char.base_skill(lp) < formulas.SKILL_CAP:
+    if lp in gamedata.skills and progression.practice_block(char, gamedata, lp) is None:
         pick = ui.menu("要練什麼?", [("__last__", f"↻ 再練 {gamedata.skill_name(lp)}(Lv {char.skill(lp)})"),
                                      ("__pick__", "選其他技能")], allow_back=True)
         if pick is None:
             return
         if pick == "__last__":
             sid = lp
-    if sid is None:
+    while sid is None:
         spec = ui.menu("要練哪一類?", [
             ("combat", "戰鬥技能"), ("magic", "魔法技能"), ("stealth", "潛行技能"),
         ], allow_back=True)
         if spec is None:
             return
-        opts = []
-        for _sid in gamedata.skills_by_spec(spec):
-            s = gamedata.skills[_sid]
-            opts.append((_sid, f"{s['name']} (Lv {char.skill(_sid)}) — {s['practice']['label']}"))
-        sid = ui.menu("練習哪項技能?", opts, allow_back=True)
-        if sid is None:
+        opts = [(_sid, _practice_option_label(char, gamedata, _sid)) for _sid in gamedata.skills_by_spec(spec)]
+        pick = ui.menu("練習哪項技能?", opts, allow_back=True)
+        if pick is None:
             return
+        why = progression.practice_block(char, gamedata, pick)
+        if why:                                  # 選了現在不能練的 → 說明原因,回到類別選單(不耗時間)
+            ui.message(f"{gamedata.skill_name(pick)}:{why}。", style="yellow")
+            continue
+        sid = pick
     _last_practice_skill = sid           # 記住供下次一鍵重練(session 暫態·不入檔)
 
     pdef = gamedata.skills[sid]["practice"]
-    if char.base_skill(sid) >= formulas.SKILL_CAP:
-        ui.message(f"{gamedata.skill_name(sid)} 已達上限,無法再從練習中精進。", style="grey70")
-        return
-
     # 一次可練多小時:每小時 = 一輪 practice;體力足以全效的小時數當預設,之後成效遞減
     fat_cost = pdef["fatigue"]
     fresh = max(1, char.fatigue // fat_cost) if fat_cost > 0 else 24
+    supply = progression.practice_supply(char, gamedata, sid)     # R224:每小時要耗的材料(安全 = 開鎖器、煉金 = 材料)
+    hi = 24 if supply is None else max(1, min(24, supply[1]))
+    note = "" if supply is None else f";每小時耗 1 件{supply[0]},手邊有 {supply[1]} 件"
     hours = ui.ask_int(
-        f"練習幾小時?(每小時耗 {fat_cost} 體力;體力足以全效約 {min(fresh, 24)} 小時,之後成效減半)",
-        default=min(fresh, 24), lo=1, hi=24)
+        f"練習幾小時?(每小時耗 {fat_cost} 體力;體力足以全效約 {min(fresh, hi)} 小時,之後成效減半{note})",
+        default=min(fresh, hi), lo=1, hi=hi)
 
-    total_hours, tired_hours, events = 0, 0, []
+    total_hours, tired_hours, events, used, stopped = 0, 0, [], {}, None
     for _ in range(hours):
-        if char.base_skill(sid) >= formulas.SKILL_CAP:       # 練到滿級就停,不空耗時間/體力
+        stopped = progression.practice_block(char, gamedata, sid)   # 練到頂 / 材料用完 → 停,不空耗時間與體力
+        if stopped:
             break
+        item = progression.practice_consume(char, gamedata, sid)
+        if item:
+            used[item] = used.get(item, 0) + 1
         xp, hrs, tired = progression.practice_cost(char, gamedata, sid)
         events += progression.use_skill(char, gamedata, sid, xp)
         state.time.advance(hrs)
@@ -377,11 +392,16 @@ def action_practice(state: GameState, gamedata: GameData) -> None:
         tired_hours += 1 if tired else 0
 
     ui.message(f"你{pdef['label']}……(共 {total_hours} 小時)")
+    if used:
+        ui.message("用掉了" + "、".join(f"{gamedata.item_name(i)} ×{n}" for i, n in used.items()) + "。", style="grey70")
     if tired_hours:
         ui.message(f"其中 {tired_hours} 小時體力不濟、成效減半 —— 先休息會更有效率。", style="yellow")
     ui.show_events(events, gamedata)
-    if char.base_skill(sid) >= formulas.SKILL_CAP:
-        ui.message(f"{gamedata.skill_name(sid)} 已練至上限。", style="green")
+    if char.base_skill(sid) >= formulas.PRACTICE_CAP:
+        ui.message(f"{gamedata.skill_name(sid)} 已練到自學的上限({formulas.PRACTICE_CAP})—— 再上去得找訓練師,或在實戰中磨練。",
+                   style="green")
+    elif stopped:
+        ui.message(f"中途停下:{stopped}。", style="yellow")
     elif not events:
         need = formulas.skill_threshold(char.skill(sid))
         prog = char.skill_xp.get(sid, 0.0)

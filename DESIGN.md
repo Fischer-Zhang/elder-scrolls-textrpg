@@ -92,7 +92,7 @@ Faction       data/factions.json   公會
 - **升級給予**(R64):**`LEVELUP_ATTRIBUTE_POINTS`(=5)點屬性點自由分配**(含 Luck),**無倍率**;升級回滿三資源。生命/魔力/體力**全由屬性驅動**(耐力→生命〔R63 live 耦合〕·智力→魔力·力量/意志/敏捷/耐力→體力),不再有「資源三選一」(舊 `resource_levels` 僅為存檔相容遺留)。
 - **衍生數值**:`max_health = 創建耐力×2 + resource_levels[health]`(**不隨耐力逐級長**)、`max_magicka = 智力×2 + 種族/星座 + resource_levels[magicka]`、`max_fatigue = 力+意+敏+耐 + resource_levels[fatigue]`(均再疊加護甲 fortify)、負重上限 = f(strength)。
 - **改版動機**:舊 Oblivion 式(主修觸發升級 + 練功倍率)有兩個量化驗證過的結構缺陷 —— **屬性倍率 min-max**(囤非主修升點換 +5/+5/+5)與**耐力時機陷阱**(早衝耐力多賺終身血)。混合制把「升級觸發 / 屬性成長 / 血量成長」全部解耦點數化,一次消除兩者,並讓 Luck 可投資。
-- 訓練師(城鎮服務)可付錢直接練技能(技能升點同樣餵 `level_xp`),作為 learn-by-doing 的補充。
+- 訓練師(城鎮服務)可付錢直接練技能(技能升點同樣餵 `level_xp`),作為 learn-by-doing 的補充。分工(R224):自己練習免費,但只能練到 50,而且要符合該技能描述的條件(場地 / 器材 / 材料 / 法術);訓練師付費教到 75;宗師教到 100;實戰不設限。
 
 ### 3.2 角色塑造與創建 (Character Creation)
 - 流程:**姓名/性別 → 種族 → 出生星座 → 職業**

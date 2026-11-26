@@ -84,6 +84,91 @@ def practice_cost(char: Character, gamedata: GameData, skill_id: str) -> tuple[f
     return xp, hours, tired
 
 
+# --- 練習的上限與條件(R224)--------------------------------------------------
+#   練習 = 免費打底:只花時間與體力,所以只能把技能練到 formulas.PRACTICE_CAP(50)。再上去是訓練師賣的區段
+#   (到 TRAINER_CAP 75)、宗師(到 100)或實戰 —— 兩者上限相同時,免費的練習會讓付費的訓練師毫無價值
+#   (遊戲時間沒有代價;使用者 2026-11-26 裁決 A)。
+#   練習也要符合它自己的描述:data/skills.json 的 practice.requires 寫明需要的場地 / 器材 / 材料 / 法術:
+#     {"service": "merchant"}      所在地要有這項服務(交易 = 商店、口才 = 旅店、鍛造 = 鐵匠)
+#     {"weapon": true}             手持的武器要屬於這項技能(刀劍 / 鈍器 / 射術)
+#     {"shield": true}             要裝備盾牌(格擋)
+#     {"armor_class": "heavy"}     至少穿一件該類護甲(重甲 / 輕甲)
+#     {"consume": "lockpick"}      每小時耗一件該物品(安全)
+#     {"consume_kind": "ingredient"}  每小時耗一件該類物品,挑最便宜的(煉金)
+#     {"spell_school": true}       要會這個學派至少一道法術(六系魔法)
+#   這些條件只管「練習」這個動作;實戰與製作沿用的 practice_cost(體力 / 時數價碼)不受影響。
+_PRACTICE_SERVICE_NAMES = {"merchant": "商店", "inn": "旅店", "armorer": "鐵匠"}
+_PRACTICE_ARMOR_NAMES = {"heavy": "重甲", "light": "輕甲"}
+_PRACTICE_KIND_NAMES = {"ingredient": "煉金材料"}
+
+
+def _practice_requires(gamedata: GameData, skill_id: str) -> dict:
+    return gamedata.skills[skill_id]["practice"].get("requires") or {}
+
+
+def _practice_stock(char: Character, gamedata: GameData, skill_id: str) -> list[tuple[str, int]]:
+    """這項練習會消耗的材料堆疊 [(item_id, 件數)],依「先用哪一件」排序(同類挑最便宜的);不耗材料 → []。"""
+    req = _practice_requires(gamedata, skill_id)
+    if "consume" in req:
+        n = sum(st["qty"] for st in char.inventory if st["id"] == req["consume"])
+        return [(req["consume"], n)] if n > 0 else []
+    if "consume_kind" in req:
+        rows = [(st["id"], st["qty"]) for st in char.inventory
+                if (gamedata.item_or_none(st["id"]) or {}).get("kind") == req["consume_kind"] and st["qty"] > 0]
+        return sorted(rows, key=lambda r: (gamedata.item(r[0]).get("value", 0), r[0]))
+    return []
+
+
+def practice_supply(char: Character, gamedata: GameData, skill_id: str) -> tuple[str, int] | None:
+    """這項練習每小時要耗的材料 (名稱, 手邊共幾件);不耗材料 → None。純讀:時數上限與提示用,
+    與實際消耗(practice_consume)同一個出處 `_practice_stock`。"""
+    req = _practice_requires(gamedata, skill_id)
+    if "consume" in req:
+        name = gamedata.item_name(req["consume"])
+    elif "consume_kind" in req:
+        name = _PRACTICE_KIND_NAMES.get(req["consume_kind"], req["consume_kind"])
+    else:
+        return None
+    return name, sum(n for _iid, n in _practice_stock(char, gamedata, skill_id))
+
+
+def practice_block(char: Character, gamedata: GameData, skill_id: str) -> str | None:
+    """現在不能練這項技能的原因(給玩家看的一句話);可以練 → None。
+    選單上的標示、開始前的檢查、每小時的檢查(材料用完 / 練到頂)都呼叫這一個函式。"""
+    if char.base_skill(skill_id) >= formulas.PRACTICE_CAP:
+        return f"自己練已經到頂(練習上限 {formulas.PRACTICE_CAP}),再上去得找訓練師或在實戰中磨練"
+    req = _practice_requires(gamedata, skill_id)
+    name = gamedata.skill_name(skill_id)
+    if "service" in req:
+        loc = gamedata.world["locations"].get(getattr(char, "location_id", ""), {})
+        if req["service"] not in loc.get("services", []):
+            return f"這裡沒有{_PRACTICE_SERVICE_NAMES.get(req['service'], req['service'])}"
+    if req.get("weapon") and (gamedata.item_or_none(char.weapon) or {}).get("skill") != skill_id:
+        return f"要手持{name}類的武器"
+    if req.get("shield") and not char.equipped.get("shield"):
+        return "要裝備盾牌"
+    if "armor_class" in req and not any(
+            (gamedata.item_or_none(iid) or {}).get("weight_class") == req["armor_class"] for iid in char.equipped.values()):
+        return f"要穿著至少一件{_PRACTICE_ARMOR_NAMES.get(req['armor_class'], req['armor_class'])}"
+    if ("consume" in req or "consume_kind" in req) and not _practice_stock(char, gamedata, skill_id):
+        return f"手邊沒有{practice_supply(char, gamedata, skill_id)[0]}"
+    if req.get("spell_school") and not any(
+            gamedata.spells.get(sid, {}).get("school") == skill_id for sid in getattr(char, "spells", [])):
+        return f"還不會任何{name}系法術"
+    return None
+
+
+def practice_consume(char: Character, gamedata: GameData, skill_id: str) -> str | None:
+    """練一小時要耗的材料:扣一件(同類挑最便宜的),回傳扣掉的 item_id;不耗材料 → None。
+    呼叫端須先確認 practice_block 為 None。"""
+    stock = _practice_stock(char, gamedata, skill_id)
+    if not stock:
+        return None
+    from tesrpg.systems import inventory
+    inventory.remove_item(char, stock[0][0], 1)
+    return stock[0][0]
+
+
 def use_skill(char: Character, gamedata: GameData, skill_id: str, xp: float) -> list[dict]:
     """對某技能灌注 xp,結算升點。回傳事件列表(供 UI 呈現)。
 

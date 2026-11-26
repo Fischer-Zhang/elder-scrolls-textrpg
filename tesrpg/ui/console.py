@@ -2058,6 +2058,16 @@ def sheet_skooma(char: Character, state: GameState, gamedata: GameData) -> None:
     console.print(_panel(body, title="斯庫瑪/月糖狀態"))
 
 
+def _practice_note(char: Character, gamedata: GameData, skill_id: str) -> str:
+    """R224 技能詳情的「練習」一行:做什麼、練得到哪裡、現在能不能練(原因取自 `progression.practice_block`,
+    與練習選單、實際拒絕同一個出處)。"""
+    from tesrpg.systems import progression
+    label = gamedata.skills[skill_id].get("practice", {}).get("label", "")
+    why = progression.practice_block(char, gamedata, skill_id)
+    return (f"{label}(只能練到 {formulas.PRACTICE_CAP} 級,再上去靠訓練師或實戰)"
+            + (f" —— 現在不能練:{why}" if why else ""))
+
+
 def sheet_skill_detail(char: Character, gamedata: GameData, skill_id: str) -> None:
     sd = gamedata.skills[skill_id]
     eff, base = char.skill(skill_id), char.base_skill(skill_id)
@@ -2081,6 +2091,7 @@ def sheet_skill_detail(char: Character, gamedata: GameData, skill_id: str) -> No
         if p:
             rows.append(_kv("練習成本", f"體力 {p.get('fatigue', '?')} · {p.get('hours', '?')} 小時 · "
                                        f"+{p.get('xp', 0):.2f} xp(體力不足時 xp 減半)"))
+            rows.append(_kv("練習", _practice_note(char, gamedata, skill_id)))     # R224:上限與條件
         _emit_panel("技能詳情", rows)
         return
     body = Text()
@@ -2103,7 +2114,8 @@ def sheet_skill_detail(char: Character, gamedata: GameData, skill_id: str) -> No
     p = sd.get("practice", {})       # 唯讀:直接讀靜態 practice 價碼(切勿呼叫 progression.practice_cost,它會扣體力)
     if p:
         body.append(f"練習成本  體力 {p.get('fatigue', '?')} · {p.get('hours', '?')} 小時 · "
-                    f"+{p.get('xp', 0):.2f} xp(體力不足時 xp 減半)", style=INK)
+                    f"+{p.get('xp', 0):.2f} xp(體力不足時 xp 減半)\n", style=INK)
+        body.append(f"練習  {_practice_note(char, gamedata, skill_id)}", style=INK)
     console.print(_panel(body, title="技能詳情"))
 
 

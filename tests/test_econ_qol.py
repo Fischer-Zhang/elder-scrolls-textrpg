@@ -180,13 +180,13 @@ def test_practice_remembers_last_skill():
     saved_last = M._last_practice_skill
     M._last_practice_skill = None
     try:
-        # 第一次:類別→技能→時數(1 小時);記住 blade
-        restore, seen = _patch(menu_seq=["combat", "blade"], ask_int_returns_default=False)
+        # 第一次:類別→技能→時數(1 小時);記住 athletics(R224 起刀劍要手持刀劍才能練;這裡只測「記住上次」,改用不設條件的運動)
+        restore, seen = _patch(menu_seq=["combat", "athletics"], ask_int_returns_default=False)
         try:
             M.action_practice(st, gd)
         finally:
             restore()
-        assert M._last_practice_skill == "blade"
+        assert M._last_practice_skill == "athletics"
         # 第二次:應先出「再練上次」捷徑選單
         restore, seen = _patch(menu_seq=["__last__"], ask_int_returns_default=False)
         try:

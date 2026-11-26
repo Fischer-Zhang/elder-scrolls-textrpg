@@ -12,6 +12,7 @@ BASE_ATTRIBUTE = 40          # 所有屬性的起始基準(再加種族/星座�
 ATTRIBUTE_CAP = 100
 SKILL_CAP = 100
 TRAINER_CAP = 75             # 一般訓練師付費指點的上限;招牌城「宗師」對其招牌技可破此線(見 systems/world.trainer_cap)
+PRACTICE_CAP = 50            # R224 練習(免費、只花時間)只能把技能練到這裡;再上去靠訓練師(TRAINER_CAP)、宗師或實戰
                             # 76–SKILL_CAP 一律靠 learn-by-doing 或宗師,杜絕「就近一站買滿」(城鎮服務專精化,handoff R29)
 SKILL_BASE = 5               # 角色創建時每個技能的底值
 SKILL_MAJOR_BONUS = 20       # 主修技能額外起始值(→ 25)
