@@ -89,6 +89,58 @@
       ]
      }
     }
+   },
+   {
+    "text": "幻出數道人影唬他(幻術)",
+    "check": {
+     "skill": "illusion",
+     "difficulty": 42,
+     "success": {
+      "text": "你袖中法光一閃,路旁憑空多出幾道持刃人影。強盜臉色大變,頭也不回地逃進了林子。",
+      "effects": [
+       {
+        "type": "skill_xp",
+        "skill": "illusion",
+        "amount": 0.6
+       }
+      ]
+     },
+     "failure": {
+      "text": "幻影晃了兩晃就散了,強盜獰笑著拔刀撲來!",
+      "effects": [
+       {
+        "type": "combat",
+        "creature": "bandit"
+       }
+      ]
+     }
+    }
+   },
+   {
+    "text": "召出魔靈嚇阻(召喚)",
+    "check": {
+     "skill": "conjuration",
+     "difficulty": 40,
+     "success": {
+      "text": "你低聲唸咒,一頭魔靈在路中央現身。強盜連滾帶爬地逃遠了。",
+      "effects": [
+       {
+        "type": "skill_xp",
+        "skill": "conjuration",
+        "amount": 0.6
+       }
+      ]
+     },
+     "failure": {
+      "text": "召喚的光芒閃了閃就熄了,強盜怒吼著拔刀撲來!",
+      "effects": [
+       {
+        "type": "combat",
+        "creature": "bandit"
+       }
+      ]
+     }
+    }
    }
   ]
  },
@@ -176,6 +228,35 @@
       "text": "你別過頭,加快了腳步。"
      }
     ]
+   },
+   {
+    "text": "以恢復術為他療傷(恢復)",
+    "check": {
+     "skill": "restoration",
+     "difficulty": 35,
+     "success": {
+      "text": "掌心的柔光淌過傷口,血肉緩緩癒合。傷者感激涕零,塞給你一小袋金幣。",
+      "effects": [
+       {
+        "type": "gold",
+        "amount": 25
+       },
+       {
+        "type": "fame",
+        "amount": 4
+       },
+       {
+        "type": "skill_xp",
+        "skill": "restoration",
+        "amount": 0.6
+       }
+      ]
+     },
+     "failure": {
+      "text": "傷口太深,你的法力只止住了血。傷者勉強向你點頭致意。",
+      "effects": []
+     }
+    }
    }
   ]
  },
@@ -351,6 +432,39 @@
    {
     "text": "繼續趕路",
     "effects": []
+   },
+   {
+    "text": "討價還價(交易)",
+    "requirements": {
+     "gold_min": 24
+    },
+    "check": {
+     "skill": "mercantile",
+     "difficulty": 35,
+     "success": {
+      "text": "你一口氣報出幾個行情,商人抹著汗讓了價:「就依你,二十四枚。」",
+      "effects": [
+       {
+        "type": "gold",
+        "amount": -24
+       },
+       {
+        "type": "item",
+        "item": "healing_potion",
+        "qty": 1
+       },
+       {
+        "type": "skill_xp",
+        "skill": "mercantile",
+        "amount": 0.6
+       }
+      ]
+     },
+     "failure": {
+      "text": "商人堅持原價,連連搖頭 —— 你只好作罷。",
+      "effects": []
+     }
+    }
    }
   ]
  },
@@ -420,6 +534,58 @@
      },
      "failure": {
       "text": "你腳下一滑,野狼已經撲到了跟前!",
+      "effects": [
+       {
+        "type": "combat",
+        "creature": "wolf"
+       }
+      ]
+     }
+    }
+   },
+   {
+    "text": "舉臂格開撲咬(格擋)",
+    "check": {
+     "skill": "block",
+     "difficulty": 35,
+     "success": {
+      "text": "你側身舉臂,硬生生格開野狼的第一撲。牠嗚咽著退了兩步,夾著尾巴消失在黑暗裡。",
+      "effects": [
+       {
+        "type": "skill_xp",
+        "skill": "block",
+        "amount": 0.6
+       }
+      ]
+     },
+     "failure": {
+      "text": "野狼一口咬住你的衣袖,硬把你拖出了火堆!",
+      "effects": [
+       {
+        "type": "combat",
+        "creature": "wolf"
+       }
+      ]
+     }
+    }
+   },
+   {
+    "text": "擲出一團火球逼退牠(毀滅)",
+    "check": {
+     "skill": "destruction",
+     "difficulty": 38,
+     "success": {
+      "text": "火球擦著野狼的鼻尖炸開,牠哀嚎一聲,頭也不回地逃進夜色。",
+      "effects": [
+       {
+        "type": "skill_xp",
+        "skill": "destruction",
+        "amount": 0.6
+       }
+      ]
+     },
+     "failure": {
+      "text": "火球偏了準頭,只燎焦了牠的毛 —— 野狼被徹底激怒了!",
       "effects": [
        {
         "type": "combat",
@@ -703,6 +869,36 @@
    {
     "text": "放著別碰",
     "effects": []
+   },
+   {
+    "text": "以匠人之眼拆解機關(鍛造)",
+    "check": {
+     "skill": "smithing",
+     "difficulty": 38,
+     "success": {
+      "text": "你辨出機關的做工,三兩下卸掉了符文鎖。",
+      "effects": [
+       {
+        "type": "gold",
+        "amount": 25
+       },
+       {
+        "type": "skill_xp",
+        "skill": "smithing",
+        "amount": 0.6
+       }
+      ]
+     },
+     "failure": {
+      "text": "你判斷錯了機關的構造 —— 箱裡的符文炸開。",
+      "effects": [
+       {
+        "type": "damage",
+        "amount": 12
+       }
+      ]
+     }
+    }
    }
   ]
  },
@@ -774,6 +970,58 @@
      },
      "failure": {
       "text": "你沒跑出幾步,那東西就從背後撲了上來!",
+      "effects": [
+       {
+        "type": "combat",
+        "creature": "frostbite_spider"
+       }
+      ]
+     }
+    }
+   },
+   {
+    "text": "抄起粗木棍逼退牠(鈍器)",
+    "check": {
+     "skill": "blunt",
+     "difficulty": 38,
+     "success": {
+      "text": "你掄起木棍朝地面重重一砸,碎石四濺。那東西被震得縮回灌木深處,不敢再近。",
+      "effects": [
+       {
+        "type": "skill_xp",
+        "skill": "blunt",
+        "amount": 0.6
+       }
+      ]
+     },
+     "failure": {
+      "text": "木棍在手裡斷成兩截,那東西撲了上來!",
+      "effects": [
+       {
+        "type": "combat",
+        "creature": "frostbite_spider"
+       }
+      ]
+     }
+    }
+   },
+   {
+    "text": "瞄準牠的眼睛擲出石子(射術)",
+    "check": {
+     "skill": "marksman",
+     "difficulty": 38,
+     "success": {
+      "text": "石子又快又準,正中那對泛光的眼睛。那東西吃痛地竄回灌木深處。",
+      "effects": [
+       {
+        "type": "skill_xp",
+        "skill": "marksman",
+        "amount": 0.6
+       }
+      ]
+     },
+     "failure": {
+      "text": "石子偏了半尺,只激得那東西撲了上來!",
       "effects": [
        {
         "type": "combat",
@@ -975,6 +1223,32 @@
       ]
      }
     }
+   },
+   {
+    "text": "反手扣住他的肩膀(徒手)",
+    "check": {
+     "skill": "hand_to_hand",
+     "difficulty": 35,
+     "success": {
+      "text": "你反手一擰扣住孩子的肩膀,他吃痛鬆開手,被摸走的錢一文不少地回到你手裡。",
+      "effects": [
+       {
+        "type": "skill_xp",
+        "skill": "hand_to_hand",
+        "amount": 0.4
+       }
+      ]
+     },
+     "failure": {
+      "text": "孩子泥鰍般一扭,從你指間滑了出去,眨眼就沒了蹤影。",
+      "effects": [
+       {
+        "type": "gold",
+        "amount": -10
+       }
+      ]
+     }
+    }
    }
   ]
  },
@@ -1026,6 +1300,32 @@
       "text": "你蜷在背風處,等風雪稍歇才再上路。"
      }
     ]
+   },
+   {
+    "text": "以護體術隔開風雪(變化)",
+    "check": {
+     "skill": "alteration",
+     "difficulty": 38,
+     "success": {
+      "text": "一層無形的暖障在你周身展開,風雪被擋在三尺之外。你從容穿過了這場暴風雪。",
+      "effects": [
+       {
+        "type": "skill_xp",
+        "skill": "alteration",
+        "amount": 0.6
+       }
+      ]
+     },
+     "failure": {
+      "text": "護體術被狂風撕得七零八落,刺骨寒風凍得你直打哆嗦。",
+      "effects": [
+       {
+        "type": "damage",
+        "amount": 6
+       }
+      ]
+     }
+    }
    }
   ]
  },
@@ -1161,6 +1461,32 @@
      },
      "failure": {
       "text": "風暴猛然轉向,你被灰燼嗆得踉蹌了好幾步,皮膚被火山灰刮得生疼。",
+      "effects": [
+       {
+        "type": "damage",
+        "amount": 8
+       }
+      ]
+     }
+    }
+   },
+   {
+    "text": "披著甲冑硬扛灰燼(重甲)",
+    "check": {
+     "skill": "heavy_armor",
+     "difficulty": 38,
+     "success": {
+      "text": "沉重的甲冑擋下了刮人的灰燼。你頂著風暴一步步走出去,毫髮無傷。",
+      "effects": [
+       {
+        "type": "skill_xp",
+        "skill": "heavy_armor",
+        "amount": 0.6
+       }
+      ]
+     },
+     "failure": {
+      "text": "灰燼灌進了甲縫,悶熱與刺痛讓你踉蹌了好幾步。",
       "effects": [
        {
         "type": "damage",
@@ -1320,6 +1646,41 @@
    {
     "text": "沒興趣",
     "effects": []
+   },
+   {
+    "text": "辨識毒性再採(煉金)",
+    "check": {
+     "skill": "alchemy",
+     "difficulty": 38,
+     "success": {
+      "text": "你一眼辨出哪些是毒傘菌、哪些只是看起來嚇人 —— 連泥水裡的好東西也一併撈了起來。",
+      "effects": [
+       {
+        "type": "forage_pool",
+        "pool": "swamp"
+       },
+       {
+        "type": "item",
+        "item": "nightshade",
+        "qty": 1
+       },
+       {
+        "type": "skill_xp",
+        "skill": "alchemy",
+        "amount": 0.6
+       }
+      ]
+     },
+     "failure": {
+      "text": "毒茄參的汁液濺上手背,火辣辣地疼。",
+      "effects": [
+       {
+        "type": "damage",
+        "amount": 6
+       }
+      ]
+     }
+    }
    }
   ]
  },
@@ -1610,6 +1971,32 @@
      },
      "failure": {
       "text": "鬆軟的黃沙吞掉了你的腳步,沙嘯獸破沙而出!",
+      "effects": [
+       {
+        "type": "combat",
+        "creature": "dune_ripper"
+       }
+      ]
+     }
+    }
+   },
+   {
+    "text": "輕裝疾踏沙面(輕甲)",
+    "check": {
+     "skill": "light_armor",
+     "difficulty": 40,
+     "success": {
+      "text": "你身披輕甲,腳步輕得像貼著沙面滑行,幾個起落便踏上了堅實的地面。沙嘯獸連你的影子都沒摸到。",
+      "effects": [
+       {
+        "type": "skill_xp",
+        "skill": "light_armor",
+        "amount": 0.6
+       }
+      ]
+     },
+     "failure": {
+      "text": "輕靈的腳步仍驚動了沙下的東西,沙嘯獸破沙而出!",
       "effects": [
        {
         "type": "combat",

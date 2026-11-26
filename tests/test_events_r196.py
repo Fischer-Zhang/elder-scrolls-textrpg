@@ -1,8 +1,9 @@
 """R196 事件檢定:運動檢定首批 8 選項 + 事件選項顯示成功率(金 chip · 預覽 = 實擲)。
 
 🔴 核心紅線:
-  ① 8 個事件各附加 1 個運動檢定選項,一律在選項**尾端**(既有選項的文字與順序不動、數字鍵不位移;
+  ① 8 個事件各附加 1 個運動檢定選項,附加在 R196 前既有選項之後(索引 = len(olds);既有選項的文字與順序不動、數字鍵不位移;
      既有選項「內容」未被改動由實作時的 git diff 純新增(+208/−0)與審查腳本比對把關,不在此永久釘死)。
+     R221 起後續批次(事件檢定第二批)可往這個選項的**後面**繼續附加 → 本檔一律以固定索引 len(olds) 定位運動選項,不再假設它是最後一個。
   ② 失敗分支比照同事件既有檢定(戰鬥 / 失金);灰燼風暴無既有檢定 → 受傷 8(> 「趕路」固定 5)。
   ③ 成功率 chip 取 events.check_chance(單一出處)→ 預覽 = 實擲(端到端:實擲收到的 p == chip 數字);
      四捨五入(int() 在難度 35/40/42 × 技能 0..100 的 303 個組合裡有 17 個會少顯示 1%)。
@@ -117,8 +118,9 @@ def _drive(c, eid, pick, result=True):
     return {"opts": cap["opts"], "ps": st.rng.ps, "battles": battles, "xp": xp_calls, "ret": ret}
 
 
-def _last(opts):
-    return opts[-1][0]
+def _ath(olds):
+    """選單作答函式:選 R196 的運動選項(固定在 R196 前既有選項之後 = 索引 len(olds);R221 起其後還有別的選項,不能再選「最後一個」)。"""
+    return lambda opts: str(len(olds))
 
 
 # --- ① 資料形狀:8 個新選項 ----------------------------------------------
@@ -126,8 +128,9 @@ def test_eight_athletics_options_shape_and_position():
     for eid, label, diff, xp, olds, sib in _R196:
         e = gd.events[eid]
         opts = e["options"]
-        assert len(opts) == len(olds) + 1, f"{eid}:只應多 1 個選項"
-        new = opts[-1]                                           # 尾端 → 既有數字鍵不位移
+        assert len(opts) >= len(olds) + 1, f"{eid}:至少多 1 個選項(運動)"
+        assert [o["text"] for o in opts[:len(olds)]] == olds, eid       # 既有選項文字與順序不動 → 數字鍵不位移
+        new = opts[len(olds)]                                    # 附加在既有選項之後 → 既有數字鍵不位移
         assert new["text"] == label and label.endswith("(運動)"), eid
         assert "requirements" not in new and "effects" not in new, eid
         chk = new["check"]
@@ -144,8 +147,8 @@ def test_eight_athletics_options_shape_and_position():
 
 def test_failure_mirrors_the_sibling_check_in_the_same_event():
     for eid, label, diff, xp, olds, sib in _R196:
-        siblings = [o["check"] for o in gd.events[eid]["options"][:-1] if "check" in o]
-        new = gd.events[eid]["options"][-1]["check"]
+        siblings = [o["check"] for o in gd.events[eid]["options"][:len(olds)] if "check" in o]
+        new = gd.events[eid]["options"][len(olds)]["check"]
         if sib is None:                                          # 灰燼風暴:無既有檢定 → 受傷 8 > 「趕路」固定 5
             assert siblings == [], eid
             walk = gd.events[eid]["options"][0]["effects"]
@@ -158,7 +161,7 @@ def test_failure_mirrors_the_sibling_check_in_the_same_event():
 
 def test_existing_options_untouched():
     for eid, label, diff, xp, olds, sib in _R196:
-        assert [o["text"] for o in gd.events[eid]["options"][:-1]] == olds, eid
+        assert [o["text"] for o in gd.events[eid]["options"][:len(olds)]] == olds, eid
 
 
 # --- ③ 預覽 = 實擲(端到端)-----------------------------------------------
@@ -169,20 +172,21 @@ def test_event_menu_chip_equals_the_probability_actually_rolled():
         for ath in (0, 1, 37, 43, 100):                          # 1 / 43 會踩到 int() 浮點截斷(難度 35 → 16% / 58%)
             for eid, label, diff, xp, olds, sib in _R196:
                 c = _char(luck=luck, athletics=ath)
-                chk = gd.events[eid]["options"][-1]["check"]
+                chk = gd.events[eid]["options"][len(olds)]["check"]
                 want = events.check_chance(c, chk)               # 先算(run_event 會練運動,可能升級)
-                r = _drive(c, eid, _last, result=True)
+                r = _drive(c, eid, _ath(olds), result=True)
                 assert r["ps"] and r["ps"][0] == want, (eid, luck, ath)    # 實擲收到的機率 == check_chance
-                assert r["opts"][-1][2] == [{"text": f"成功率 {round(want * 100)}%", "tone": "gold"}], (eid, luck, ath)
+                chips = next(t for t in r["opts"] if t[0] == str(len(olds)))[2]    # 運動選項那一列的 chip
+                assert chips == [{"text": f"成功率 {round(want * 100)}%", "tone": "gold"}], (eid, luck, ath)
     c40, c80 = _char(luck=40, athletics=30), _char(luck=80, athletics=30)   # 非空轉證明:同技能,幸運高 → 機率高
-    chk = gd.events["highwayman"]["options"][-1]["check"]
+    chk = gd.events["highwayman"]["options"][3]["check"]          # 運動選項在原索引 3
     assert events.check_chance(c80, chk) > events.check_chance(c40, chk)
 
 
 def test_every_option_in_the_menu_gets_a_chip_iff_it_has_a_check():
     for eid, label, diff, xp, olds, sib in _R196:
         c = _char(athletics=40)
-        r = _drive(c, eid, _last, result=True)
+        r = _drive(c, eid, _ath(olds), result=True)
         e = gd.events[eid]
         assert [o[0] for o in r["opts"]] == [str(i) for i in range(len(e["options"]))], eid   # 全數可選、鍵 = 原索引
         for tup in r["opts"]:
@@ -197,16 +201,17 @@ def test_every_option_in_the_menu_gets_a_chip_iff_it_has_a_check():
 def test_requirement_filtered_option_keeps_original_index_keys():
     """highwayman 的「付過路費」需 50 金:金幣不足時被濾掉,其餘選項的鍵仍是原索引(不重新編號),
     且選到的鍵確實對應到原選項(新運動選項在原索引 3)。"""
+    pick3 = lambda opts: "3"                                     # 運動選項固定在原索引 3(R221 起其後另有幻術 / 召喚兩個選項)
     c = _char(athletics=40)
     c.gold = 49
-    r = _drive(c, "highwayman", _last, result=True)
-    assert [t[0] for t in r["opts"]] == ["1", "2", "3"]          # 0 被濾掉;不重編號
-    assert [len(t) for t in r["opts"]] == [3, 2, 3]              # 口才檢定(chip)/ 拔劍(無)/ 運動檢定(chip)
-    assert r["xp"] == [("athletics", 0.6)] and r["battles"] == []   # 鍵 "3" → 原索引 3 = 新運動選項
+    r = _drive(c, "highwayman", pick3, result=True)
+    assert [t[0] for t in r["opts"]] == ["1", "2", "3", "4", "5"]   # 0 被濾掉;不重編號
+    assert [len(t) for t in r["opts"]] == [3, 2, 3, 3, 3]        # 口才檢定(chip)/ 拔劍(無)/ 運動 / 幻術 / 召喚(chip)
+    assert r["xp"] == [("athletics", 0.6)] and r["battles"] == []   # 鍵 "3" → 原索引 3 = 運動選項
     c = _char(athletics=40)
-    c.gold = 50                                                  # 剛好夠 → 全部 4 個都在
-    r = _drive(c, "highwayman", _last, result=True)
-    assert [t[0] for t in r["opts"]] == ["0", "1", "2", "3"]
+    c.gold = 50                                                  # 剛好夠 → 全部都在
+    r = _drive(c, "highwayman", pick3, result=True)
+    assert [t[0] for t in r["opts"]] == ["0", "1", "2", "3", "4", "5"]
 
 
 def test_checkless_event_menu_is_unchanged_two_tuples():
@@ -218,7 +223,7 @@ def test_checkless_event_menu_is_unchanged_two_tuples():
 
 
 def test_chip_rounds_instead_of_truncating():
-    chk = gd.events["wild_beast"]["options"][-1]["check"]        # 難度 35
+    chk = gd.events["wild_beast"]["options"][2]["check"]         # 運動選項(原索引 2)· 難度 35
     c = _char()
     st = GameState(player=c, time=GameTime())
     found = []
@@ -248,7 +253,7 @@ def test_success_branch_trains_athletics_and_takes_no_cost():
     for eid, label, diff, xp, olds, sib in _R196:
         c = _char(athletics=40)
         hp, gold = c.health, c.gold
-        r = _drive(c, eid, _last, result=True)
+        r = _drive(c, eid, _ath(olds), result=True)
         assert r["xp"] == [("athletics", xp)], eid               # 成功 = 脫身 + 運動經驗
         assert r["battles"] == [] and c.health == hp and c.gold == gold and r["ret"] is None, eid
 
@@ -257,7 +262,7 @@ def test_failure_branch_mirrors_sibling_cost():
     for eid, label, diff, xp, olds, sib in _R196:
         c = _char(athletics=40)
         hp, gold = c.health, c.gold
-        r = _drive(c, eid, _last, result=False)
+        r = _drive(c, eid, _ath(olds), result=False)
         want = _R196_FAIL[eid]
         assert r["xp"] == [], eid                                # 失敗不給經驗
         assert r["battles"] == [e["creature"] for e in want if e["type"] == "combat"], eid
