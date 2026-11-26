@@ -113,6 +113,51 @@ def is_great_shield(gamedata: GameData, item_id) -> bool:
     return bool(item_id and (gamedata.item_or_none(item_id) or {}).get("great_shield"))
 
 
+# ---- R219 握法不變量「最後裝的贏」(使用者 2026-11-26 拍板;承 R41 雙手握法、R138 雙手重盾) ----
+# 兩隻手只有兩隻:雙手武器(戰錘 / 戰斧 / 弓)與雙手重盾各占雙手,盾與副手同占副手側。最後裝上的那件贏,被擠掉的收回背包:
+#   ① 裝雙手武器        → 收起盾與副手(R41 舊規則,弓自 R219 起也是雙手)
+#   ② 裝非雙手武器      → 若持雙手重盾,收起重盾(新)
+#   ③ 裝雙手重盾        → 收起手持武器(變空手)與副手(新;原本只清副手,武器「休眠」→ 弓技 / 法杖焦點 / 騎射漏洞)
+#   ④ 裝輕盾            → 收起副手(新;原可雙持 + 持盾並存:盾的被動護甲 / 荊棘 + 雙持加傷)
+#   ⑤ 裝副手匕首        → 收起盾(新;對稱 ④,選單原本只在雙持時藏格擋,盾本身仍算)
+# `grip_displaced` 是「會被收起什麼」的單一出處:equip_* 套用、換裝對比預覽、裝備訊息共用(預覽 = 實擲)。
+# 不碰任何數值 / rng;存檔載入由 `ensure_grip` 套同一組不變量。
+def grip_displaced(char: Character, gamedata: GameData, item_id: str, role: str) -> list[tuple[str, str]]:
+    """裝上 `item_id`(role = "weapon" 手持武器 / "shield" 盾 / "offhand" 副手匕首)時會被收起的 [(槽, 物品 id)](槽 = weapon / shield / offhand)。
+    純讀;只列「現在真的有東西」的槽;不含阻擋判定(那是 `weapon_equip_block` / `armor_equip_block`)。"""
+    shield = getattr(char, "equipped", {}).get("shield")
+    offhand = getattr(char, "offhand", "")
+    out: list[tuple[str, str]] = []
+    if role == "weapon":
+        if is_two_handed(gamedata, item_id):
+            if shield:
+                out.append(("shield", shield))
+            if offhand:
+                out.append(("offhand", offhand))
+        elif shield and is_great_shield(gamedata, shield):
+            out.append(("shield", shield))
+    elif role == "shield":
+        if is_great_shield(gamedata, item_id) and getattr(char, "weapon", "fists") != "fists":
+            out.append(("weapon", char.weapon))
+        if offhand:
+            out.append(("offhand", offhand))
+    elif role == "offhand":
+        if shield:
+            out.append(("shield", shield))
+    return out
+
+
+def _put_away(char: Character, gone: list[tuple[str, str]]) -> None:
+    """套用 `grip_displaced`:被收起的物品仍在背包(只是不再裝備)。"""
+    for slot, _iid in gone:
+        if slot == "weapon":
+            char.weapon = "fists"
+        elif slot == "shield":
+            char.equipped.pop("shield", None)
+        elif slot == "offhand":
+            char.offhand = ""
+
+
 def thorns_reflect(char: Character, gamedata: GameData) -> float:
     """荊棘附魔反傷比例(R42):盔/胸/手/靴/盾各可附一條,magnitude=反傷%(靈魂石階 1~5),聚合相加後 /100。"""
     if getattr(char, "beast_form", False):
@@ -202,10 +247,9 @@ def weapon_equip_block(char: Character, gamedata: GameData, item_id: str) -> str
 def equip_weapon(char: Character, gamedata: GameData, item_id: str) -> bool:
     if weapon_equip_block(char, gamedata, item_id) is not None:
         return False
+    gone = grip_displaced(char, gamedata, item_id, "weapon")   # R219 最後裝的贏:雙手武器收盾與副手;非雙手武器收雙手重盾
     char.weapon = item_id
-    if is_two_handed(gamedata, item_id):    # 雙手握持 → 自動卸下盾與副手(沿用 remove_item 自動卸裝風格)
-        char.offhand = ""
-        char.equipped.pop("shield", None)
+    _put_away(char, gone)
     return True
 
 
@@ -244,7 +288,9 @@ def equip_offhand(char: Character, gamedata: GameData, item_id: str) -> bool:
     need = 2 if item_id == char.weapon else 1
     if count_item(char, item_id) < need:
         return False
+    gone = grip_displaced(char, gamedata, item_id, "offhand")   # R219:副手與盾同占副手側 → 收起盾
     char.offhand = item_id
+    _put_away(char, gone)
     return True
 
 
@@ -263,8 +309,8 @@ def armor_equip_block(char: Character, gamedata: GameData, item_id: str) -> str 
         return "吸血鬼專屬"
     if _virtue_locked(char, gamedata, item_id):
         return "聖物戒律(違戒者不可裝)"
-    if d["slot"] == "shield" and is_two_handed(gamedata, char.weapon):   # 雙手武器在手 → 不能裝盾
-        return "雙手武器在手,裝不了盾"
+    if d["slot"] == "shield" and is_two_handed(gamedata, char.weapon) and not is_great_shield(gamedata, item_id):   # 雙手武器在手 → 不能裝(輕)盾
+        return "雙手武器在手,裝不了盾"                                                                              # R219:雙手重盾不擋——它與武器「最後裝的贏」,會收起手持武器
     if d["slot"] == "shield":   # R204:束縛兵刃在手(戰外預施的殘留效果)→ 雙手形不能裝任何盾、任何束縛都不能裝雙手重盾
         bw = next((e for e in char.active_effects if e.get("kind") == "bound_weapon" and e.get("turns", 0) > 0), None)
         if bw and bw.get("two_handed"):
@@ -278,19 +324,24 @@ def equip_armor(char: Character, gamedata: GameData, item_id: str) -> bool:
     if armor_equip_block(char, gamedata, item_id) is not None:
         return False
     d = gamedata.item(item_id)
+    gone = grip_displaced(char, gamedata, item_id, "shield") if d["slot"] == "shield" else []   # R219:重盾收武器與副手;輕盾收副手
     char.equipped[d["slot"]] = item_id
-    if d["slot"] == "shield" and is_great_shield(gamedata, item_id):   # 雙手重盾占雙手 → 卸副手(手持武器戰中休眠)
-        char.offhand = ""
+    _put_away(char, gone)
     return True
 
 
 def ensure_grip(char: Character, gamedata: GameData) -> None:
-    """握法正規化(載入路徑;idempotent):雙手武器在手 → 清殘留盾與副手;雙手重盾在手 → 清殘留副手
-    (處理舊存檔『雙手武器/重盾 + 並存』的情形)。無新存檔欄位。"""
+    """握法正規化(載入路徑;idempotent;與 equip_* 同一組不變量,R219 擴充):雙手武器(含弓)在手 → 清殘留盾與副手;
+    雙手重盾在手 → 清殘留副手並收起手持武器(變空手);輕盾 + 副手並存 → 清副手(留盾)。
+    處理舊存檔的並存情形;被收起的物品都還在背包。無新存檔欄位。"""
+    shield = getattr(char, "equipped", {}).get("shield")
     if is_two_handed(gamedata, getattr(char, "weapon", "")):
         char.offhand = ""
         char.equipped.pop("shield", None)
-    elif is_great_shield(gamedata, getattr(char, "equipped", {}).get("shield")):
+    elif is_great_shield(gamedata, shield):
+        char.offhand = ""
+        char.weapon = "fists"
+    elif shield and getattr(char, "offhand", ""):
         char.offhand = ""
 
 

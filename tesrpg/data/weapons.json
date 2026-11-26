@@ -69,7 +69,8 @@
   "value": 30,
   "weight": 7,
   "archetype": "bow",
-  "speed": 0.9
+  "speed": 0.9,
+  "two_handed": true
  },
  "steel_dagger": {
   "name": "鋼匕首",
@@ -105,7 +106,8 @@
   "value": 100,
   "weight": 9,
   "archetype": "bow",
-  "speed": 0.9
+  "speed": 0.9,
+  "two_handed": true
  },
  "glass_dagger": {
   "name": "玻璃匕首",
@@ -150,7 +152,8 @@
   "value": 270,
   "weight": 9,
   "archetype": "bow",
-  "speed": 0.9
+  "speed": 0.9,
+  "two_handed": true
  },
  "apprentice_staff": {
   "name": "學徒法杖",
@@ -414,7 +417,8 @@
   "weight": 12,
   "archetype": "bow",
   "speed": 0.9,
-  "material": "daedric"
+  "material": "daedric",
+  "two_handed": true
  },
  "daedric_spear": {
   "name": "魔族長槍",
@@ -678,7 +682,8 @@
   "value": 50,
   "weight": 10,
   "archetype": "bow",
-  "speed": 0.9
+  "speed": 0.9,
+  "two_handed": true
  },
  "steel_bow": {
   "name": "鋼弓",
@@ -687,7 +692,8 @@
   "value": 130,
   "weight": 10,
   "archetype": "bow",
-  "speed": 0.9
+  "speed": 0.9,
+  "two_handed": true
  },
  "dwarven_bow": {
   "name": "矮人弓",
@@ -696,7 +702,8 @@
   "value": 290,
   "weight": 11,
   "archetype": "bow",
-  "speed": 0.9
+  "speed": 0.9,
+  "two_handed": true
  },
  "glass_bow": {
   "name": "玻璃弓",
@@ -705,7 +712,8 @@
   "value": 300,
   "weight": 8,
   "archetype": "bow",
-  "speed": 0.9
+  "speed": 0.9,
+  "two_handed": true
  },
  "ebony_bow": {
   "name": "黑檀弓",
@@ -714,7 +722,8 @@
   "value": 560,
   "weight": 11,
   "archetype": "bow",
-  "speed": 0.9
+  "speed": 0.9,
+  "two_handed": true
  },
  "elven_dagger": {
   "name": "精靈匕首",

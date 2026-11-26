@@ -17,14 +17,22 @@ def test_two_handed_auto_doffs_shield_and_offhand():
     gd, c = _char()
     for iid in ("iron_shield", "iron_dagger", "steel_dagger"):
         inventory.add_item(c, iid, 2)
-    inventory.equip_armor(c, gd, "iron_shield")
+    inventory.add_item(c, "steel_warhammer", 1)
+    # R219:盾與副手已不可並存(「最後裝的贏」)→ 分兩條可達路徑各測一次;舊前置「盾 + 副手並存」就是 R219 封掉的異常
     inventory.equip_weapon(c, gd, "iron_dagger")
     inventory.equip_offhand(c, gd, "steel_dagger")
-    assert c.equipped.get("shield") == "iron_shield" and c.offhand == "steel_dagger"
-    # 裝雙手戰錘 → 自動卸盾與副手
-    inventory.add_item(c, "steel_warhammer", 1)
+    assert c.offhand == "steel_dagger" and c.equipped.get("shield") is None
+    assert inventory.equip_weapon(c, gd, "steel_warhammer")           # 裝雙手戰錘 → 自動卸副手
+    assert c.weapon == "steel_warhammer" and c.offhand == ""
+    inventory.equip_weapon(c, gd, "iron_dagger")
+    inventory.equip_armor(c, gd, "iron_shield")
+    assert c.equipped.get("shield") == "iron_shield" and c.offhand == ""
+    assert inventory.equip_weapon(c, gd, "steel_warhammer")           # 裝雙手戰錘 → 自動卸盾
+    assert c.weapon == "steel_warhammer" and c.equipped.get("shield") is None
+    # 舊存檔殘留的並存狀態(直接賦值模擬)→ 裝雙手武器兩者皆清
+    inventory.equip_weapon(c, gd, "iron_dagger")
+    c.equipped["shield"], c.offhand = "iron_shield", "steel_dagger"
     assert inventory.equip_weapon(c, gd, "steel_warhammer")
-    assert c.weapon == "steel_warhammer"
     assert c.offhand == "" and c.equipped.get("shield") is None
 
 

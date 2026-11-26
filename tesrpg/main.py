@@ -3023,6 +3023,11 @@ def _equip_refusal_message(char: Character, gamedata: GameData, item_id: str) ->
         ui.message(f"你無法裝備{d['name']}" + (f":{why}。" if why else "。"), style="grey70")
 
 
+def _grip_gone_text(gamedata: GameData, gone: list) -> str:
+    """R219 裝備訊息:被收起的東西(`inventory.grip_displaced` 的結果;預覽 = 實擲)→「收起了魔族重盾、鋼匕首」;沒有 → ""。"""
+    return ("收起了" + "、".join(gamedata.item_name(iid) for _slot, iid in gone)) if gone else ""
+
+
 def _item_actions(state: GameState, gamedata: GameData, item_id: str) -> None:
     char = state.player
     d = gamedata.item(item_id)
@@ -3054,29 +3059,34 @@ def _item_actions(state: GameState, gamedata: GameData, item_id: str) -> None:
         ui.item_compare_panel(char, gamedata, item_id)
     act = ui.menu(d["name"], acts, allow_back=True)
     if act == "equip_w":
+        gone = inventory.grip_displaced(char, gamedata, item_id, "weapon")   # R219:先算會收起什麼(裝完就看不到了)
         if not inventory.equip_weapon(char, gamedata, item_id):
             _equip_refusal_message(char, gamedata, item_id)   # R108/R56:鎖裝拒絕(修「假成功」訊息)
         else:
             stats.recompute_max_resources(char, gamedata)   # R05:雙手武器自動卸盾 → 沖掉盾的 fortify/resist 幽靈值
-            if inventory.is_two_handed(gamedata, item_id):
-                ui.message(f"你雙手握起了{d['name']},卸下了盾與副手。", style="green")
-            else:
-                ui.message(f"你握起了{d['name']}。", style="green")
+            lead = "你雙手握起了" if inventory.is_two_handed(gamedata, item_id) else "你握起了"
+            _gt = _grip_gone_text(gamedata, gone)
+            ui.message(f"{lead}{d['name']}" + (f",{_gt}" if _gt else "") + "。", style="green")
     elif act == "equip_off":
+        gone = inventory.grip_displaced(char, gamedata, item_id, "offhand")
         if not inventory.equip_offhand(char, gamedata, item_id):
             _equip_refusal_message(char, gamedata, item_id)
         else:
-            ui.message(f"你以副手握起了另一把{d['name']},擺出雙持架式 —— 傷害大增,但無法再格擋。",
-                       style="green")
+            stats.recompute_max_resources(char, gamedata)   # R219:雙持收起了盾 → 沖掉盾的 fortify/resist
+            _gt = _grip_gone_text(gamedata, gone)
+            ui.message(f"你以副手握起了另一把{d['name']},擺出雙持架式 —— 傷害大增,但無法再格擋。"
+                       + (f"同時{_gt}。" if _gt else ""), style="green")
     elif act == "unequip_off":
         inventory.unequip_offhand(char)
         ui.message("你收起了副手匕首。", style="grey70")
     elif act == "equip_a":
+        gone = inventory.grip_displaced(char, gamedata, item_id, "shield") if d.get("slot") == "shield" else []   # R219
         if not inventory.equip_armor(char, gamedata, item_id):
             _equip_refusal_message(char, gamedata, item_id)
         else:
             stats.recompute_max_resources(char, gamedata)   # 套用護甲 fortify/套裝
-            ui.message(f"你穿上了{d['name']}。", style="green")
+            _gt = _grip_gone_text(gamedata, gone)
+            ui.message(f"你穿上了{d['name']}" + (f",{_gt}" if _gt else "") + "。", style="green")
     elif act == "equip_j":
         if inventory.equip_jewelry(char, gamedata, item_id) is None:
             _equip_refusal_message(char, gamedata, item_id)

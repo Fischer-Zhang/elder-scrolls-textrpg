@@ -291,6 +291,7 @@ PYTHONPATH=. CMP_N=120 python3 sim_conj_sides.py   # 召喚系三節點「兩側
 | R216 | R208–R215 補驗收:對抗審查無邏輯 bug·7 支 sim 0 警示·R214 前後量測無破牆·assassin R207==現況 byte-id;補配點文字 / bound_armor 守衛;待裁項(出身武器覆蓋固定起手武器·R138b 元素護膚邊際)已於 R217 處理 | re-sim, content |
 | R217 | 起手武器身分優先 + R138b 措辭精確化(R216 A1/A2,使用者「照建議」):固定武器職業的出身武器只在同系升級才換手(304 組開局 94 組還原為職業武器;戰士/騎士/戰法師/自訂不變);「元素護膚恆弱」→「一般情況弱」;🔴 守衛 test_origin_weapon_r217 + 突變矩陣 | content, save-safe |
 | R218 | 單槽取代可見性(R216 B4 UX):`magic.occupied_slot`/`spell_slot`/`replaced_slot` 純讀單一出處 → 戰報補「取代了原有的 X」(護盾/結界/兵刃灌注/束縛兵刃/持續回復)+「↻ 再施」標籤附「瞬發·不耗回合 / 耗回合 / 取代原有 X」;🔴 只動字串·零 rng 零數值·槽內無舊效果時逐字同舊·他源不被取代也不提·守衛 test_replace_report_r218 + 7 突變 | save-safe |
+| R219 | 握法不變量「最後裝的贏」+ 弓改雙手:`inventory.grip_displaced` 單一出處(裝重盾收手持武器與副手/裝非雙手武器收重盾/裝輕盾收副手/裝副手收盾;雙手武器含弓收盾與副手)+ `ensure_grip` 載入同一組;封掉「重盾休眠武器」漏洞(弓技/騎射/杖焦點);🔴 輕盾仍被雙手武器擋·重盾改互換·被收起者留背包·零戰鬥計算改動·守衛 test_grip_r219(729 序列)+ 14 突變 | save-safe, content |
 
 ## 自動提交閘門 / 換 session 前檢查表
 

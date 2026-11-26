@@ -2474,7 +2474,7 @@ def weapon_line(char: Character, gamedata: GameData) -> str:
     arch = _ARCHETYPE_CN.get(wp.get("archetype"), "")
     arch_tag = f"·{arch}" if arch and char.weapon != "fists" else ""
     if wp.get("two_handed"):
-        arch_tag += "·雙手"          # 戰錘/戰斧:雙手握法(占雙手,無盾/副手/格擋)
+        arch_tag += "·雙手"          # 戰錘/戰斧/弓(R219 起):雙手握法(占雙手,無盾/副手/格擋)
     from tesrpg.systems import inventory, smithing
     if inventory.is_dual_wielding(char, gamedata):
         oh_bonus = int(round(inventory.dual_wield_bonus_damage(char, gamedata)))   # 副手 ×0.6 補刀 → 顯示有效加傷
@@ -2723,6 +2723,10 @@ def item_compare_panel(char: Character, gamedata: GameData, item_id: str) -> Non
             rows.append({"t": "kv", "k": "含淬鍊傷害", "v": f"目前無法裝備({block})"})
         elif cur_eff != cur["damage"] or new_eff != d["damage"]:   # 有淬鍊差異才列(否則與上列重複)
             rows.append({"t": "kv", "k": "含淬鍊傷害", "v": f"手持 {cur_eff} → 換上 {new_eff} {_delta(new_eff, cur_eff)}"})
+        if not block:   # R219 握法「最後裝的贏」:換上這把會一併收起什麼(與 equip_weapon 同一個單一出處 → 預覽 = 實擲)
+            _gone = _inv.grip_displaced(char, gamedata, item_id, "weapon")
+            if _gone:
+                rows.append({"t": "kv", "k": "同時收起", "v": "、".join(gamedata.item_name(i) for _s, i in _gone)})
         rows.append({"t": "kv", "k": "技能", "v": gamedata.skill_name(d["skill"])})
         arch = _ARCHETYPE_CN.get(d.get("archetype"))
         if arch:
@@ -2740,6 +2744,10 @@ def item_compare_panel(char: Character, gamedata: GameData, item_id: str) -> Non
         else:
             before, after = _armor_display(char, gamedata), _armor_after_equip(char, gamedata, slot, item_id)
             rows.append({"t": "kv", "k": "戰鬥護甲", "v": f"{before} → {after} {_delta(after, before)}"})
+            if slot == "shield":   # R219:換盾會收起副手 / (雙手重盾)手持武器 —— 同一個單一出處
+                _gone = _inv.grip_displaced(char, gamedata, item_id, "shield")
+                if _gone:
+                    rows.append({"t": "kv", "k": "同時收起", "v": "、".join(gamedata.item_name(i) for _s, i in _gone)})
         rows.append({"t": "kv", "k": "現穿", "v": cur_n})
     if d.get("value"):
         rows.append({"t": "kv", "k": "價值", "v": f"{d['value']} 金"})
