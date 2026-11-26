@@ -497,6 +497,14 @@ def regen_on_low(char, gamedata: GameData) -> dict | None:
     return _chosen_option_by_kind(char, gamedata, "regen_on_low")
 
 
+def merchant_bonus_sources(char, gamedata: GameData) -> list[tuple[str, float]]:
+    """已選的議價加成節點逐一列出 [(選項名稱, 加成)],順序同 `merchant_bonus` 的相加順序
+    (R222:議價來源分解的顯示用;加成為 0 的不列)。"""
+    return [(o.get("name", ""), o.get("disposition_bonus", 0.0))
+            for o in _chosen_options_by_kind(char, gamedata, "merchant_bonus")
+            if o.get("disposition_bonus", 0.0)]
+
+
 def merchant_bonus(char, gamedata: GameData) -> float:
     """精算買賣/魅惑交易:商店議價係數加成(多來源相加:illusion 魅惑 + mercantile 精算)。"""
     return sum(o.get("disposition_bonus", 0.0)

@@ -3159,7 +3159,7 @@ def action_shop(state: GameState, gamedata: GameData) -> None:
     loc_id = char.location_id
     world.ensure_stock(char, gamedata, loc_id, state.time, state.rng)   # 首訪/逾期 → 補貨
     while True:
-        mode = ui.menu(f"商店(你有 {char.gold} 金幣)", [
+        mode = ui.menu(f"商店(你有 {char.gold} 金幣 · {ui.barter_line(char, gamedata)})", [   # R222:議價看得見
             ("buy", "購買"), ("sell", "出售"), ("steal", "行竊(觸法)"),
         ], allow_back=True)
         if mode is None:
@@ -3701,11 +3701,11 @@ def action_fence(state: GameState, gamedata: GameData) -> None:
     char = state.player
     bonus = crime.fence_bonus(char)
 
-    def fsell(iid):                                 # 銷贓價(加價);buy 端用它築地板
-        return int(world.sell_price(char, gamedata, iid) * (1 + bonus))
+    def fsell(iid):                                 # 銷贓價(加價);R222:式子搬到 world.fence_sell_price(sim_economy 共用)
+        return world.fence_sell_price(char, gamedata, iid)
 
     def bm_price(iid):                              # R200 黑市買價單一出處:選單標籤與扣款共用(防套利地板:恆 > 銷贓價)
-        return max(world.buy_price(char, gamedata, iid), fsell(iid) + 1)
+        return world.black_market_price(char, gamedata, iid)
 
     while True:
         choice = ui.menu(f"銷贓窩點(加價 +{ui.pct(bonus)}%)",

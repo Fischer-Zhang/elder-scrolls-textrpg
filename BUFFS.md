@@ -150,7 +150,7 @@
 ### 偷襲/刺客鏈(🔴詳見第④紅線小節)
 | perk | kind | 數值 | 疊加 |
 |---|---|---|---|
-| 影刃·暗殺宗師 | 偷襲倍率 | mult_bonus 0.50→×1.5 | 🔴乘進 sneak_mult 鏈 |
+| 影刃·暗殺宗師 | 偷襲倍率 | mult_bonus 0.20→×1.2(R70 下修;R222 校正本表與里程碑說明原寫的 0.50 / ×1.5) | 🔴乘進 sneak_mult 鏈 |
 | 致命烙印 deathmark | 破甲+耗體 | pen +0.35、fatigue15、turns4、cd6 | 🔴僅 follow-up(`not sneaking` 閘);最終 pen 夾0.85 |
 | approach_bonus | 偷襲機率 | 各 0.10/0.10/0.12(相加最高0.22) | 只動搶開場頻率,夾[0.05,0.97] |
 | 武器流派 weapon_mod | 傷害/命中/破甲 | power(偷襲前套)blade0.08(R191:刀劍 100 savage +0.12 已改主動戰技搏命連斬)、鈍器0.10、徒手0.15(R103:25 節點 fist_basics +0.05 已移除→改授 offbalance_unlock;R193:徒手 100 transcend_fist +0.10 已改主動戰技崩勁釋放,見失衡 ramp 列);hit/pen/recoil/fatigue/poise_rate(擒拿手0.6 加速徒手失衡)/on_hit | 🔴power 偷襲倍率**之前**算但不吃倍率;同 target 相加、on_hit 取最後;poise_rate 僅 hand_to_hand 命中時讀 |
@@ -294,13 +294,13 @@
 ## 🔴 餵進偷襲倍率 / 碰戰鬥紅線的增益(專節)
 
 ### sneak_mult 鏈(combat.py:352-357,**相乘**)
-`base = sneak_attack_multiplier(sneak) × archetype_sneak_bonus × night_mother × (1+影刃0.50) × armor_sneak_mult_factor`
+`base = sneak_attack_multiplier(sneak) × archetype_sneak_bonus × night_mother × (1+影刃0.20) × armor_sneak_mult_factor`
 
 | 來源 | 數值 | 性質 |
 |---|---|---|
 | 武器流派 archetype_sneak_bonus | 匕首×1.6、弓×1.3、其餘×1.0 | 乘進鏈 |
 | 夜母祝福 night_mother | ×(1+0.03×db_rank),聆聽者×1.18 | 乘進鏈 |
-| 影刃·暗殺宗師 mult_bonus | ×1.5 | 乘進鏈核心(消費於 combat.py:355/738) |
+| 影刃·暗殺宗師 mult_bonus | ×1.2 | 乘進鏈核心(消費於 combat.py 的 `mastery.sneak_mult_bonus` 兩處呼叫) |
 
 ### 三道煞車(缺一不可,守 R07/R15)
 1. **>3 敵潛匿大減** — 群體規模反制;

@@ -21,6 +21,7 @@ PYTHONPATH=. python3 sim_monk.py          # 徒手 100 崩勁釋放/鐵布衫群
 PYTHONPATH=. python3 sim_dungeon.py       # 整趟地城全清+boss 與終王牆守衛(R194;改一氣呵成/殺勢回體/體力公式後跑,約 30 秒,⚠ 即警示;單場 sim 看不到體力壓力)
 PYTHONPATH=. python3 sim_flee.py          # 運動 50 健步如飛脫身加成守衛(R195;整趟地城最後一搏逃跑政策,量死亡/逃走/通關 vs 節氣,約 1 分鐘,⚠ 即警示;逃跑原不在其他 sim 路徑)
 PYTHONPATH=. CMP_N=120 python3 sim_conj_sides.py   # 召喚系三節點「兩側」分情境對照(R203 後;手動工具·print-only·不接 check.sh·約 8 分鐘):確認每節點兩個選項差距不大、各有選擇理由(被支配 = 沒有理由);須在倉庫根目錄跑
+PYTHONPATH=. python3 sim_economy.py       # 經濟量測(R222;不到 1 秒,⚠ 即警示):議價倍率 / 套利掃描 / 地城與任務收入 / 訓練等去處 / 配方轉賣;改價格、折扣、銷贓、配方、物品底價後跑(check.sh 偵測到相關檔會自動跑)
 ```
 - Python 3.12;遊戲 runtime 的 `rich` 可由系統套件提供(`python3-rich`);dev 工具走 `.[dev]`。sudo 需密碼、無 `jq`(寫 hook 要用 `python3` 解析 stdin)。
 - 真瀏覽器測試是 dev-only:安裝 `.[dev]` 後執行 `python3 -m playwright install --with-deps chromium`;遊戲 runtime 仍只有 `rich`。
@@ -294,6 +295,7 @@ PYTHONPATH=. CMP_N=120 python3 sim_conj_sides.py   # 召喚系三節點「兩側
 | R219 | 握法不變量「最後裝的贏」+ 弓改雙手:`inventory.grip_displaced` 單一出處(裝重盾收手持武器與副手/裝非雙手武器收重盾/裝輕盾收副手/裝副手收盾;雙手武器含弓收盾與副手)+ `ensure_grip` 載入同一組;封掉「重盾休眠武器」漏洞(弓技/騎射/杖焦點);🔴 輕盾仍被雙手武器擋·重盾改互換·被收起者留背包·零戰鬥計算改動·守衛 test_grip_r219(729 序列)+ 14 突變 | save-safe, content |
 | R220 | 姿態鎖施法(R138 龜殼施法者收尾;使用者拍板 B·只鎖雙手重盾姿態):`combat.casting_locked`(玩家+姿態+雙手重盾+非獸形;不依 fatigue>0)單一決策點 → `magic.cast` 閘(任何扣費前擋下)/ 戰鬥選單「施法」標鎖定(選了不耗回合)/ ↻ 再施不給 / 立架前標「架著無法施法」;🔴 輕盾姿態·無姿態·獸形不受影響·量測依據見 handoff R219·守衛 test_stance_lock_r220 + 9 突變 | re-sim |
 | R221 | 事件檢定第二批:14 個零檢定技能各補 1 個事件檢定(純改 events.json·+387/−0·附加在 11 個既有事件尾端,每事件 ≤2 個,既有數字鍵不位移);化解型 11 個失敗複製同事件既有檢定、增益型 3 個(恢復/交易/煉金)不被支配;🔴 **22 個技能每個至少 1 個事件檢定(新契約:新增技能須同時補一個)**·措辭不依賴裝備·R196 測試改固定索引 `len(olds)`(抓到 1 個空轉)·守衛 test_events_r221 + 13 突變 | save-safe, content |
+| R222 | 經濟量測 + 議價看得見(零機制):`sim_economy.py`(價格全走真實函式·地城用真實生成器)+ `world.barter_breakdown` 單一出處 → 角色卡「議價」列 / 商店標題;銷贓價與黑市價收成 `world.fence_sell_price` / `black_market_price`;影刃說明 ×1.5→×1.2;🔴 價格逐金幣不變(對 HEAD 55.9 萬筆)·議價各項相加順序不得動·經濟提案先過「時間免費」檢驗(時間型限制 = 多點幾下);路線 R223–R226 見 handoff §6 | re-sim |
 
 ## 自動提交閘門 / 換 session 前檢查表
 
@@ -301,6 +303,7 @@ PYTHONPATH=. CMP_N=120 python3 sim_conj_sides.py   # 召喚系三節點「兩側
 - [ ] `python3 tests/run_all.py` 全綠(讀結尾印的模組數,勿信文件數字)
 - [ ] `python3 tests/browser_ui.py` 真 Chromium 桌面 UI 回歸全綠(不可 skip)
 - [ ] 觸戰鬥/施法/刺客/附魔常數 → `PYTHONPATH=. python3 sim_assassin.py`(或 `./check.sh --sim`)
+- [ ] 觸價格 / 折扣 / 銷贓 / 配方 / 物品底價 → `PYTHONPATH=. python3 sim_economy.py`(`check.sh` 偵測到相關檔會自動跑;看 ⚠ 行)
 - [ ] 編譯檢查通過(`check.sh` 已含完整 `py_compile`)
 - [ ] `~/.tesrpg/` 是真實存檔:`check.sh`(含 `--smoke`)不碰,也不要用腳本清
 - [ ] 改了規則/數量/現況 → 同步 `handoff.md`(§3 鐵律 R## / §1 現況)
@@ -310,7 +313,7 @@ PYTHONPATH=. CMP_N=120 python3 sim_conj_sides.py   # 召喚系三節點「兩側
 
 ## 自動化(`.claude/` 已配置)
 
-- `check.sh` — 單指令驗證鏈(完整 `py_compile` → `run_all.py` → Playwright/Chromium 桌面 UI 硬閘門 → 偵測到改 `formulas.py`/`combat.py` 或 `--sim` 才跑 sim 並標出 `⚠` 行 → `--smoke` 才跑煙霧,只寫暫存目錄,不碰玩家存檔)。
+- `check.sh` — 單指令驗證鏈(完整 `py_compile` → `run_all.py` → Playwright/Chromium 桌面 UI 硬閘門 → 偵測到改 `formulas.py`/`combat.py` 或 `--sim` 才跑 sim 並標出 `⚠` 行;改到價格 / 銷贓 / 配方 / 物品底價相關檔則自動跑 `sim_economy.py`(R222)→ `--smoke` 才跑煙霧,只寫暫存目錄,不碰玩家存檔)。
 - `/check` slash-command = `bash check.sh`;`/sync` = 跑 `check.sh --smoke` + 印換 session 檢查表 + 提示更新 handoff.md。
 - `.claude/hooks/ops_ledger.py` — 代理使用帳本 + Stop 補「代理檢查」數字(R172,設計與接線 JSON 見 ops.md §13);試跑階段接在 gitignore 的 `settings.local.json`,數字驗證後才升格 `settings.json`。帳本 `.claude/ledger/`(gitignore)。R175 加主對話自讀大文本偵測(Bash/Grep/Read 的中文長行字數;`SLG_OPS_BIGDOC=off` 關閉);R192 加 PreToolUse 重型代理派工閘(`pre` 子命令;`SLG_OPS_GATE=off` 關閉;規則見 ops.md §14);接線由 `python3 .claude/hooks/ops_ledger.py wiring` 產生,使用者自行寫入 settings(WIRING 新增 PreToolUse 後,`test_wiring_subcommand_equals_constant_and_ops_md_snippet` 會在 settings.local.json 未更新前紅燈——重跑 wiring 即可)。
 - `.claude/settings.json` 已預許可唯讀測試/sim/git 指令(減少權限詢問)。`git commit`/`push` **不**預許可(刻意保留可見),但依本專案慣例驗證綠後仍自動執行(見上「自動提交閘門」/ handoff §3 R22)。

@@ -277,25 +277,45 @@ def travel(char: Character, gamedata: GameData, dest_id: str, time, rng: RNG) ->
 
 
 # --- 商店定價(受 交易 + 魅力 影響)-----------------------------------
-def _disposition_factor(char: Character, gamedata: GameData | None = None) -> float:
+# R222:定價常數具名(值不變),讓價格函式與「議價來源分解」(barter_breakdown)共用同一組數字。
+BARTER_CAP = 1.0               # 議價係數上限:技能 + 魅力 + 各加成「相加之後」才夾限(交易 100 + 魅力 100 即頂到)
+BARTER_SKILL_DIVISOR = 150.0   # 議價係數基底 = (交易 + 魅力 × BARTER_ATTR_WEIGHT) / 此值
+BARTER_ATTR_WEIGHT = 0.5
+BUY_BASE_MULT = 2.2            # 買價 = 底價 × (BUY_BASE_MULT − 議價係數) → 2.2 ~ 1.2 倍
+SELL_BASE_MULT = 0.3           # 賣價 = 底價 × (SELL_BASE_MULT + 議價係數 × SELL_BARTER_MULT) → 0.3 ~ 0.8 倍
+SELL_BARTER_MULT = 0.5
+
+
+def _barter_parts(char: Character, gamedata: GameData | None = None) -> list[tuple[str, float]]:
+    """議價係數的各項來源,**依相加順序**排列。`_disposition_factor` 就是把它們照序相加再夾限,
+    所以顯示用的分解(barter_breakdown)與實際價格同源;順序也不得更動(浮點相加順序 = 既有物價逐位元組同)。"""
     from tesrpg.systems import spellfx
-    base = (char.skill("mercantile") + char.attr("personality") * 0.5) / 150.0
-    base += spellfx.charm_barter_bonus(char)       # R104 幻術魅惑術:議價更划算(無 charm → +0 → 既有物價逐位元組同)
-    if gamedata is not None:                       # 里程碑「精算買賣/魅惑交易」議價加成 + 同伴忠誠頂點
+    parts = [("base", (char.skill("mercantile") + char.attr("personality") * BARTER_ATTR_WEIGHT) / BARTER_SKILL_DIVISOR),
+             ("charm", spellfx.charm_barter_bonus(char))]   # R104 幻術魅惑術:議價更划算(無 charm → +0)
+    if gamedata is not None:                                # 里程碑「精算買賣/魅惑交易」議價加成 + 同伴忠誠頂點
         from tesrpg.systems import mastery, party
-        base += mastery.merchant_bonus(char, gamedata)
-        base += party.passive_capstone_factor(char, gamedata, "barter")   # 同伴「人脈/巧手」忠誠頂點:議價
-    return max(0.0, min(1.0, base))
+        parts.append(("mastery", mastery.merchant_bonus(char, gamedata)))
+        parts.append(("companion", party.passive_capstone_factor(char, gamedata, "barter")))   # 同伴「人脈/巧手」忠誠頂點
+    return parts
+
+
+def _disposition_factor(char: Character, gamedata: GameData | None = None) -> float:
+    parts = _barter_parts(char, gamedata)
+    base = parts[0][1]
+    for _key, value in parts[1:]:
+        base += value
+    return max(0.0, min(BARTER_CAP, base))
 
 
 LOCKPICK_OUTSIDER_MARKUP = 2.0   # 開鎖器是盜賊公會的營生:非會員(含敵對)買得到但被坑這麼多倍
 HUNT_ENCOUNTER_CHANCE = 0.6      # R109 任務條件式狩獵:接了以劇情敵為目標的 kill 任務時,在對省野外撞見目標的機率(高)
 
 
-def buy_price(char: Character, gamedata: GameData, item_id: str) -> int:
+def _buy_chain(char: Character, gamedata: GameData, item_id: str, item: dict) -> float:
+    """買價連乘(取整與反套利地板之前)。buy_price 與 barter_breakdown 的「實際倍率」共用同一條鏈(R222 抽出;
+    運算順序不變 → 既有物價逐位元組同)。item 只讀 value / damage / armor_rating。"""
     from tesrpg.systems import factions
-    item = gamedata.item(item_id)
-    price = item["value"] * (2.2 - _disposition_factor(char, gamedata))
+    price = item["value"] * (BUY_BASE_MULT - _disposition_factor(char, gamedata))
     # 開鎖器只在有盜賊公會的城販售;會員按常價,外人/敵對加價(仍買得到,但較貴)
     if item_id == "lockpick" and not factions.is_member(char, "thieves_guild"):
         price *= LOCKPICK_OUTSIDER_MARKUP
@@ -312,16 +332,72 @@ def buy_price(char: Character, gamedata: GameData, item_id: str) -> int:
     # 只動買價·賣價不碰;插在反套利地板之前 → 任何疊加皆不可能倒掛)
     from tesrpg.systems import housing
     price *= 1 - housing.province_discount(char, gamedata)
+    return price
+
+
+def buy_price(char: Character, gamedata: GameData, item_id: str) -> int:
+    item = gamedata.item(item_id)
     # 反套利鐵則:同物買價恆 > 賣價(極端議價 + 滿階軍械庫折扣下,折扣不得倒掛成金幣泵)
-    return max(1, round(price), sell_price(char, gamedata, item_id) + 1)
+    return max(1, round(_buy_chain(char, gamedata, item_id, item)), sell_price(char, gamedata, item_id) + 1)
+
+
+def _sell_chain(char: Character, gamedata: GameData, value: float) -> float:
+    """賣價連乘(取整之前)。sell_price 與 barter_breakdown 的「實際倍率」共用(R222 抽出;運算順序不變)。"""
+    from tesrpg.systems import factions
+    base = value * (SELL_BASE_MULT + _disposition_factor(char, gamedata) * SELL_BARTER_MULT)
+    base *= 1 + factions.sell_bonus(char, gamedata)   # 盜賊公會銷贓加成(階級越高越多)
+    return base
 
 
 def sell_price(char: Character, gamedata: GameData, item_id: str) -> int:
-    from tesrpg.systems import factions
-    value = gamedata.item(item_id)["value"]
-    base = value * (0.3 + _disposition_factor(char, gamedata) * 0.5)
-    base *= 1 + factions.sell_bonus(char, gamedata)   # 盜賊公會銷贓加成(階級越高越多)
-    return max(1, round(base))
+    return max(1, round(_sell_chain(char, gamedata, gamedata.item(item_id)["value"])))
+
+
+def fence_sell_price(char: Character, gamedata: GameData, item_id: str) -> int:
+    """銷贓價(R84):一般賣價 ×(1 + 惡名分級加價)。銷贓選單的標籤、實際收款與 sim_economy 共用
+    (R222 自 main.action_fence 抽出,式子不變)。"""
+    from tesrpg.systems import crime
+    return int(sell_price(char, gamedata, item_id) * (1 + crime.fence_bonus(char)))
+
+
+def black_market_price(char: Character, gamedata: GameData, item_id: str) -> int:
+    """黑市買價(R84 / R200):恆 > 銷贓價 → 買來回銷必虧。選單標籤與扣款共用。"""
+    return max(buy_price(char, gamedata, item_id), fence_sell_price(char, gamedata, item_id) + 1)
+
+
+def barter_breakdown(char: Character, gamedata: GameData) -> dict:
+    """議價係數的來源分解(R222;商店標題、角色卡、sim_economy 共用)。
+
+    係數 d 與買賣倍率取自與 buy_price / sell_price 同一組函式(預覽 = 實價):
+      - buy_mult / sell_mult:只算議價的倍率(底價 × 多少)。
+      - buy_goods / buy_gear / sell_all:一般貨、武器護甲、賣出的「實際倍率」——走真實的連乘鏈
+        (聲望、神恩、商誼、公會折扣都算進去),只差取整與「買價至少比賣價多 1」的地板。
+    rows 只供顯示:基底拆成交易與魅力兩列、里程碑拆成各選項;各列相加 = raw。
+    wasted = 被上限吃掉的部分(raw 超過 BARTER_CAP 的量)。"""
+    from tesrpg.systems import mastery
+    parts = _barter_parts(char, gamedata)
+    by_key = dict(parts)
+    merc, pers = char.skill("mercantile"), char.attr("personality")
+    rows = [{"key": "mercantile", "label": f"交易 {merc}", "value": merc / BARTER_SKILL_DIVISOR},
+            {"key": "personality", "label": f"魅力 {pers}",
+             "value": pers * BARTER_ATTR_WEIGHT / BARTER_SKILL_DIVISOR}]
+    for name, value in mastery.merchant_bonus_sources(char, gamedata):
+        rows.append({"key": "mastery", "label": name, "value": value})
+    if by_key.get("charm"):
+        rows.append({"key": "charm", "label": "魅惑術", "value": by_key["charm"]})
+    if by_key.get("companion"):
+        rows.append({"key": "companion", "label": "同伴", "value": by_key["companion"]})
+    raw = parts[0][1]
+    for _key, value in parts[1:]:
+        raw += value
+    d = _disposition_factor(char, gamedata)
+    return {
+        "rows": rows, "raw": raw, "cap": BARTER_CAP, "d": d, "wasted": max(0.0, raw - BARTER_CAP),
+        "buy_mult": BUY_BASE_MULT - d, "sell_mult": SELL_BASE_MULT + d * SELL_BARTER_MULT,
+        "buy_goods": _buy_chain(char, gamedata, "", {"value": 1.0}),
+        "buy_gear": _buy_chain(char, gamedata, "", {"value": 1.0, "damage": 0}),
+        "sell_all": _sell_chain(char, gamedata, 1.0),
+    }
 
 
 # --- 商店庫存(Skyrim 式:每商人有限數量 + 定時補貨 + 補貨品項有變化)------

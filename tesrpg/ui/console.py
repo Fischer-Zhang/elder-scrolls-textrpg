@@ -322,6 +322,7 @@ def _sheet_view(char: Character, gamedata: GameData) -> dict:
         "encumbrance_tip": _carry_tip(char, gamedata),
         "gold": char.gold, "weapon": _plain(weapon_line(char, gamedata)),
         "armor": _armor_display(char, gamedata), "armor_tip": _armor_tip(char, gamedata),
+        "barter": _barter_display(char, gamedata), "barter_tip": _barter_tip(char, gamedata),   # R222:議價看得見
 
         "resist": _resist_summary(char, gamedata),
         "fame": char.fame, "infamy": char.infamy, "bounty": sum(char.bounties.values()),
@@ -2453,6 +2454,51 @@ def _carry_tip(char: Character, gamedata: GameData) -> str:
     if p["saddlebag"]:
         parts.append(f"鞍袋 +{p['saddlebag']}")
     return f"負重上限 {_inv.max_weight(char, gamedata)}:" + " · ".join(parts)
+
+
+def _barter_shown(char: Character, gamedata: GameData) -> dict:
+    """R222 議價顯示用的數字:全部取自 `world.barter_breakdown`(與 buy_price / sell_price 同一條鏈)。
+    買價倍率再套「買價至少比賣價高」的地板(world.buy_price 的反套利鐵則)——折扣疊到比賣價還低時,
+    實際買價會被地板抬回賣價之上,顯示也跟著抬,不印出一個買不到的倍率。"""
+    from tesrpg.systems import world as _w
+    b = _w.barter_breakdown(char, gamedata)
+    b["buy_shown"] = max(b["buy_goods"], b["sell_all"])
+    b["gear_shown"] = max(b["buy_gear"], b["sell_all"])
+    b["capped"] = b["raw"] >= b["cap"]
+    return b
+
+
+def barter_line(char: Character, gamedata: GameData) -> str:
+    """R222 商店標題用的一句話:議價係數與實際買賣倍率(底價 × 多少)。"""
+    b = _barter_shown(char, gamedata)
+    return (f"議價 {b['d']:.2f}{' 已達上限' if b['capped'] else ''}:"
+            f"買 ×{b['buy_shown']:.2f}、賣 ×{b['sell_all']:.2f}")
+
+
+def _barter_display(char: Character, gamedata: GameData) -> str:
+    """R222 角色卡「議價」列的值:一般貨的實際買賣倍率。來源分解見 `_barter_tip`。"""
+    b = _barter_shown(char, gamedata)
+    return f"買 ×{b['buy_shown']:.2f}　賣 ×{b['sell_all']:.2f}"
+
+
+def _barter_tip(char: Character, gamedata: GameData) -> str:
+    """R222 議價來源分解(hover 提示):各來源加了多少、多少被上限吃掉、公式,以及議價以外的修正。"""
+    from tesrpg.systems import world as _w
+    b = _barter_shown(char, gamedata)
+    rows = [f"{r['label']} +{r['value']:.2f}" for r in b["rows"]]
+    if b["wasted"] > 0.004:
+        rows.append(f"超出上限的 {b['wasted']:.2f} 無效")
+    tip = (f"議價係數 {b['d']:.2f}(上限 {b['cap']:.2f}):" + " · ".join(rows)
+           + f"。買價 = 底價 ×({_w.BUY_BASE_MULT} − 係數),賣價 = 底價 ×({_w.SELL_BASE_MULT} + 係數 × {_w.SELL_BARTER_MULT})")
+    if abs(b["buy_goods"] - b["buy_mult"]) > 1e-9:
+        tip += f";聲望、神恩、商誼使買價再 ×{b['buy_goods'] / b['buy_mult']:.2f}"
+    if abs(b["buy_gear"] - b["buy_goods"]) > 1e-9:
+        tip += f";武器護甲買 ×{b['gear_shown']:.2f}"
+    if abs(b["sell_all"] - b["sell_mult"]) > 1e-9:
+        tip += f";公會使賣價再 ×{b['sell_all'] / b['sell_mult']:.2f}"
+    if b["buy_shown"] > b["buy_goods"] + 1e-9:
+        tip += ";折扣已低於賣價,買價以賣價為底"
+    return tip
 
 
 def weapon_line(char: Character, gamedata: GameData) -> str:

@@ -628,6 +628,7 @@
     if (d.armor) right.push(`<div class="kv"${tipAttr(d.armor_tip)}><span class="lab">護甲</span>${d.armor}</div>`);
     if (d.resist) right.push(`<div class="kv"><span class="lab">抗性</span>${esc(d.resist)}</div>`);
     right.push(`<div class="kv"><span class="lab">聲望</span>${d.fame}${d.infamy ? "　惡名 " + d.infamy : ""}${d.bounty ? "　<span style='color:#e08b82'>通緝 " + d.bounty + "</span>" : ""}</div>`);
+    if (d.barter) right.push(`<div class="kv"${tipAttr(d.barter_tip)}><span class="lab">議價</span>${esc(d.barter)}</div>`);   // R222:買賣倍率 + 來源分解提示
 
     const attrs = `<div class="attrs">` + d.attrs.map(function (a) {
       return `<div class="attr"><span>${a.favored ? '<span class="star">★</span>' : ""}${esc(a.name)}</span><span class="v">${a.value}</span></div>`;

@@ -735,6 +735,52 @@ class BrowserRegression(unittest.TestCase):
             "t => { const r = document.querySelector('.kv[title]'); return r && r.getAttribute('title') === t; }", arg=nasty)
         self.assertEqual(self.page.locator(".kv:has(> .lab:text-is('護甲'))").first.locator("b").count(), 0)
 
+    def test_sheet_barter_row_shows_multipliers_with_breakdown_tip_r222(self) -> None:
+        """R222:角色卡「議價」列顯示實際買賣倍率,hover 提示附來源分解(真 view-model → 真前端);
+        值與 title 都須正確轉義(文字含引號 / 角括號時不得破壞屬性或注入元素)。"""
+        import tesrpg.ui.console as ui
+        from tesrpg.creation import build_character
+        from tesrpg.gamedata import get_gamedata
+
+        gd = get_gamedata()
+        char = build_character(gd, name="商", sex="male", race="imperial", birthsign="warrior", class_id="warrior")
+        char.skills.update(mercantile=100)
+        char.attributes.update(personality=100)
+        char.spell_effects = [{"kind": "charm", "magnitude": 1.0, "expires_at": 10 ** 9}]
+        data = ui._sheet_view(char, gd)
+        self.assertEqual(data["barter"], "買 ×1.20　賣 ×0.80")                 # 交易 100 + 魅力 100 = 係數頂到上限
+        self.assertIn("魅惑術 +0.08", data["barter_tip"])
+        self.assertIn("超出上限的 0.08 無效", data["barter_tip"])               # 上限遮蔽看得見
+
+        def show(d: dict) -> None:
+            self.server.emit(
+                blocks=[{"kind": "view", "name": "sheet", "data": d}],
+                prompt={"type": "menu", "title": "角色資訊", "options": [{"key": "__back__", "label": "返回"}],
+                        "extra_keys": [], "cta_keys": []},
+                hud=_hud(),
+            )
+
+        find_row = ("t => { const r = [...document.querySelectorAll('.kv')].find(e => { const l = e.querySelector(':scope > .lab');"
+                    " return l && l.textContent === '議價'; }); return r && r.getAttribute('title') === t; }")
+        show(data)
+        self._open(".skills")
+        self.page.wait_for_function(find_row, arg=data["barter_tip"])
+        row = self.page.locator(".kv:has(> .lab:text-is('議價'))").first
+        self.assertEqual(row.get_attribute("title"), data["barter_tip"])
+        self.assertIn("買 ×1.20", row.inner_text())
+        self.assertIn("賣 ×0.80", row.inner_text())
+
+        nasty = '議價 "引號" <b>粗體</b> & 符號'
+        show(dict(data, barter=nasty, barter_tip=nasty))
+        self.page.wait_for_function(find_row, arg=nasty)
+        row = self.page.locator(".kv:has(> .lab:text-is('議價'))").first
+        self.assertEqual(row.locator("b").count(), 0)                          # 值不得被當成 HTML
+        self.assertIn("<b>粗體</b>", row.inner_text())
+
+        show(dict(data, barter="", barter_tip=""))                              # 舊 view(無議價鍵)不畫空列
+        self.page.wait_for_function(
+            "() => ![...document.querySelectorAll('.kv > .lab')].some(l => l.textContent === '議價')")
+
     def test_sheet_skill_columns_stay_vertical_r169(self) -> None:
         """R169:角色卡三技能欄各自單欄縱列(桌面寬)。R164 的裸 .combat 戰況雙欄選擇器
         曾誤傷 .skcol.combat(戰鬥技能被拉成 3 欄 grid 散版);收斂為 .card.combat 後此測雙向守:
