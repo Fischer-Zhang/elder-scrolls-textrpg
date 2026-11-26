@@ -41,3 +41,4 @@ def run_load_migrations(player, time, gamedata) -> None:
     dungeon.ensure_reinfest_fields(player, gamedata, time.absolute_hours())  # 地城再滋擾:補欄 + 舊檔回填一輪後滋擾(R111)
     party.ensure_companion_gear(player, gamedata)               # 同伴裝備:補欄 + 剔陳舊(退回背包不遺失)/型別自癒
     party.ensure_companion_build(player, gamedata)              # 同伴戰術傾向:補欄 + 剔陳舊 cid/build_id
+    inventory.ensure_stolen(player, gamedata)                    # 贓物記錄夾到名下總件數、清壞值(R223;須在同伴裝備 / 倉庫整理之後)

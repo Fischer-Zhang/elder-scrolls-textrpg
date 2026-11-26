@@ -11,8 +11,8 @@
   3. 上限遮蔽看得見:超出上限的量如實列出(wasted)、商店標題標「已達上限」。
   4. 單一出處:銷贓價 / 黑市買價只有 world.fence_sell_price / black_market_price 一份,main.action_fence 不得自帶算式。
   5. 介面:角色卡 view-model 有議價列與分解提示;商店標題帶議價一句話(真流程 action_shop)。
-  6. 量測腳本:同店 / 黑市倒掛恆為 0(硬斷言);跨攤位套利為已知現況(R223 修掉後改斷言為 0);物品池不重複;
-     任務金幣含執行時生成的領主委託。
+  6. 量測腳本:同店 / 黑市 / 跨攤位倒掛恆為 0(硬斷言;跨攤位那條 R222 時是已知漏洞,R223 加全域規則後歸零);
+     物品池不重複;任務金幣含執行時生成的領主委託。
   7. 影刃說明的倍率與資料一致(原寫 ×1.5,R70 起實際 ×1.2)。
   8. 上述守衛在突變下會紅(就地突變:改上限 / 改賣價係數 / 銷贓價漏加成 / 分解漏一項 / 拿掉同店地板)。
   9. check.sh 的「動到相關檔就跑 sim」偵測在 pipefail + 有未追蹤新檔時不得漏判(舊寫法會靜默不跑 sim)。
@@ -99,17 +99,20 @@ def test_prices_equal_frozen_pre_r222_formula_across_grid():
 
 
 def test_golden_prices_and_multipliers():
-    """黃金值(R222 落地當下的實際輸出):(買, 賣, 銷贓, 黑市買)。"""
+    """黃金值:(買, 賣, 銷贓, 黑市買)。買 / 賣自 R222 起未變;銷贓 / 黑市在 R223 加全域規則後,
+    只有「銷贓價原本會追上買價」的角色(thief / stacked)變了,一般亡命徒(outlaw)逐值同 R222。"""
     gold = {
         "novice": (dict(mercantile=5, personality=40),
                    {"ebony_sword": (1464, 276, 276, 1464), "ruby": (102, 19, 19, 102), "lockpick": (24, 2, 2, 24)}),
         "maxed": (dict(mercantile=100, personality=100),
                   {"ebony_sword": (864, 576, 576, 864), "ruby": (60, 40, 40, 60), "iron_ingot": (24, 16, 16, 24)}),
         "thief": (dict(mercantile=100, personality=100, thieves=E.TOP_THIEF, infamy=50),
-                  {"ebony_sword": (899, 778, 1128, 1129), "ruby": (62, 54, 78, 79), "lockpick": (7, 6, 8, 9)}),
+                  {"ebony_sword": (899, 778, 898, 899), "ruby": (62, 54, 61, 62), "lockpick": (7, 6, 6, 7)}),   # R223:銷贓價夾在最低買價之下
+        "outlaw": (dict(mercantile=100, personality=100, infamy=50),                                              # 一般亡命徒不受夾限影響(同 R222)
+                   {"ebony_sword": (899, 576, 835, 899), "ruby": (62, 40, 58, 62)}),
         "stacked": (dict(mercantile=100, personality=100, thieves=E.TOP_THIEF, fighters=E.TOP_FIGHTER,
                          infamy=50, fame=700, blessing=True, pact=True),
-                    {"ebony_sword": (779, 778, 1128, 1129), "healing_potion": (44, 43, 62, 63)}),
+                    {"ebony_sword": (779, 778, 778, 779), "healing_potion": (44, 43, 43, 44)}),
         "mid": (dict(mercantile=37, personality=55, fame=150, charm=True),
                 {"ebony_sword": (1144, 400, 400, 1144), "healing_potion": (64, 22, 22, 64)}),
     }
@@ -187,8 +190,10 @@ def test_merchant_bonus_sources_sum_to_the_bonus():
 def test_fence_and_black_market_prices_have_one_source():
     for c in _grid():
         for iid in _ITEMS:
-            fence = world.fence_sell_price(c, gd, iid)
-            assert fence == int(world.sell_price(c, gd, iid) * (1 + crime.fence_bonus(c)))
+            fence, shop = world.fence_sell_price(c, gd, iid), world.sell_price(c, gd, iid)
+            raw = int(shop * (1 + crime.fence_bonus(c)))                   # R84 的加價
+            assert fence == max(shop, min(raw, world.min_buy_price(c, gd, iid) - 1))   # R223 全域規則
+            assert shop <= fence < world.min_buy_price(c, gd, iid) <= world.buy_price(c, gd, iid)
             assert world.black_market_price(c, gd, iid) == max(world.buy_price(c, gd, iid), fence + 1)
     src = inspect.getsource(M.action_fence)
     assert "world.fence_sell_price(" in src and "world.black_market_price(" in src
@@ -225,7 +230,7 @@ def test_shop_title_shows_barter_line_in_the_real_flow():
 
 
 # --- 6 量測腳本 -------------------------------------------------------------
-def test_scanner_hard_invariants_and_known_cross_vendor_hole():
+def test_scanner_hard_invariants_hold_for_every_profile():
     assert len(E.POOL) == len(set(E.POOL)) and all(gd.item(i)["value"] > 0 for i in E.POOL)
     rows = E.arbitrage_scan()
     assert len(rows) == len(E.PROFILES)
@@ -235,10 +240,9 @@ def test_scanner_hard_invariants_and_known_cross_vendor_hole():
         assert r["profit"] <= r["cross"] <= len(E.POOL)
     by = {r["label"]: r for r in rows}
     assert by["議價滿"]["cross"] == 0 and by["新手(交易 5·魅力 40)"]["cross"] == 0
-    # 已知現況(handoff R110 記為既有):議價滿 + 盜賊公會頂階 + 惡名 50 時,商店買、銷贓賣有賺。
-    # R223 加上全域「賣出價 < 買入價」規則後,把下面兩行改成 == 0。
-    assert by["議價滿 + 盜賊公會頂階 + 惡名 50"]["profit"] > 150
-    assert by["議價滿 + 惡名 50 + 聲望 700"]["profit"] > 100
+    # R222 當時這兩個情境有 206 / 175 種物品「商店買、銷贓賣」有賺(handoff R110 記為既有);
+    # R223 的全域「賣出價 < 買入價」規則之後,任何情境都必須是 0(含打平)。
+    assert all(r["cross"] == 0 and r["profit"] == 0 for r in rows), [r for r in rows if r["cross"]]
 
 
 def test_income_and_sink_measurements_run_on_real_data():
@@ -287,7 +291,13 @@ def test_guards_bite_under_in_process_mutations():
     try:
         assert _expect_fail(test_fence_and_black_market_prices_have_one_source)
         assert _expect_fail(test_golden_prices_and_multipliers)
-        assert _expect_fail(test_scanner_hard_invariants_and_known_cross_vendor_hole)   # 掃描器看不到已知漏洞 = 空轉
+    finally:
+        world.fence_sell_price = real
+    world.fence_sell_price = lambda c, g, i: int(world.sell_price(c, g, i) * (1 + crime.fence_bonus(c)))   # 突變 3b:拿掉全域夾限(退回 R222)
+    try:
+        assert _expect_fail(test_fence_and_black_market_prices_have_one_source)
+        assert _expect_fail(test_golden_prices_and_multipliers)
+        assert _expect_fail(test_scanner_hard_invariants_hold_for_every_profile)        # 掃描器抓得到跨攤位套利(非空轉)
     finally:
         world.fence_sell_price = real
     real = mastery.merchant_bonus_sources
@@ -300,7 +310,7 @@ def test_guards_bite_under_in_process_mutations():
     real = world.buy_price
     world.buy_price = lambda c, g, i: max(1, round(world._buy_chain(c, g, i, g.item(i))))   # 突變 5:拿掉同店地板
     try:
-        assert _expect_fail(test_scanner_hard_invariants_and_known_cross_vendor_hole)
+        assert _expect_fail(test_scanner_hard_invariants_hold_for_every_profile)
         assert _expect_fail(test_shown_buy_multiplier_follows_the_anti_arbitrage_floor)
     finally:
         world.buy_price = real

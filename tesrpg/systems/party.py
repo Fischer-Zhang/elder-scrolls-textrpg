@@ -125,7 +125,7 @@ def forget(char: Character, cid: str) -> None:
     """同伴永久離隊(解散泛用傭兵/陣亡)→ 清其持久狀態,避免殘留污染;穿戴裝備退回背包(不遺失)。"""
     from tesrpg.systems import inventory
     for iid in list(char.companion_gear.get(cid, {}).values()):
-        inventory.add_item(char, iid, 1)
+        inventory.add_item(char, iid, 1, transfer=True)   # R223:同伴身上的裝備退回背包 = 搬動,贓物記錄不動
     char.companion_gear.pop(cid, None)
     char.companion_build.pop(cid, None)
     char.companion_hp.pop(cid, None)
@@ -309,7 +309,7 @@ def equip_gear(char: Character, gamedata: GameData, cid: str, item_id: str) -> b
         return False
     old = char.companion_gear.get(cid, {}).get(slot)
     if old:
-        inventory.add_item(char, old, 1)
+        inventory.add_item(char, old, 1, transfer=True)
     inventory.remove_item(char, item_id, 1, keep_temper=True)   # 移轉非銷毀 → 不清淬鍊
     char.companion_gear.setdefault(cid, {})[slot] = item_id
     return True
@@ -321,7 +321,7 @@ def unequip_gear(char: Character, gamedata: GameData, cid: str, slot: str) -> bo
     iid = char.companion_gear.get(cid, {}).get(slot)
     if not iid:
         return False
-    inventory.add_item(char, iid, 1)
+    inventory.add_item(char, iid, 1, transfer=True)
     del char.companion_gear[cid][slot]
     if not char.companion_gear[cid]:
         del char.companion_gear[cid]
@@ -444,14 +444,14 @@ def ensure_companion_gear(char: Character, gamedata: GameData) -> None:
             if isinstance(slots, dict):                 # 無效同伴 → 裝備退回背包不遺失
                 for iid in slots.values():
                     if gamedata.item_or_none(iid):
-                        inventory.add_item(char, iid, 1)
+                        inventory.add_item(char, iid, 1, transfer=True)
             del g[cid]
             continue
         for slot in list(slots.keys()):
             if slot not in ("weapon", "armor") or _slot_for_item(gamedata, slots[slot]) != slot:
                 iid = slots.pop(slot)                   # 陳舊/型別不符 → 退回背包
                 if gamedata.item_or_none(iid):
-                    inventory.add_item(char, iid, 1)
+                    inventory.add_item(char, iid, 1, transfer=True)
         if not slots:
             del g[cid]
 

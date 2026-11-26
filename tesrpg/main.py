@@ -3181,7 +3181,8 @@ def action_shop(state: GameState, gamedata: GameData) -> None:
             state.time.advance(r["hours"])
             if r["ok"]:
                 world.take_stock(char, loc_id, iid)
-                ui.message(f"你神不知鬼不覺地摸走了{gamedata.item_name(iid)}。", style="green")
+                ui.message(f"你神不知鬼不覺地摸走了{gamedata.item_name(iid)}。"
+                           "(贓物:一般商店不收,得找銷贓的門路;被衛兵逮到會沒收)", style="green")   # R223
             else:
                 ui.message(f"「住手!小偷!」 —— 你被逮個正著,賞金 +{r['bounty_added']}。", style="red")
             if r["tired"]:
@@ -3224,10 +3225,13 @@ def action_shop(state: GameState, gamedata: GameData) -> None:
                         ui.message("背負不下,太重了。", style="red")
         else:
             while True:                          # 停留在賣貨清單 → 可連續賣多樣不同商品
-                sellable = [s for s in char.inventory
-                            if gamedata.item(s["id"])["value"] > 0 and not gamedata.item(s["id"]).get("no_sell")]   # R108:聖物不可賣(可存倉庫)
+                valued = [s for s in char.inventory
+                          if gamedata.item(s["id"])["value"] > 0 and not gamedata.item(s["id"]).get("no_sell")]   # R108:聖物不可賣(可存倉庫)
+                # R223:一般商店不收贓物 —— 只列「還有乾淨件數」的堆疊;全是贓物的那幾樣不出現在清單上
+                sellable = [s for s in valued if inventory.clean_count(char, s["id"]) > 0]
                 if not sellable:
-                    ui.message("沒有可賣的東西。", style="grey70")
+                    ui.message("剩下的都是贓物,商人不收 —— 得找銷贓的門路。" if valued else "沒有可賣的東西。",
+                               style="grey70")
                     break
                 opts = [(s["id"], f"{ui.item_label(gamedata, char, s['id'], s['qty'])} — 售 "
                          f"{world.sell_price(char, gamedata, s['id'])} 金") for s in sellable]
@@ -3235,7 +3239,7 @@ def action_shop(state: GameState, gamedata: GameData) -> None:
                 iid = ui.menu(f"賣什麼?(你有 {char.gold} 金)", opts, allow_back=True)
                 if iid is None:
                     break
-                owned = inventory.count_item(char, iid)
+                owned = inventory.clean_count(char, iid)        # R223:可賣件數 = 背包件數 − 身上的贓物
                 # R114C:預設賣「全部」(免手打數字);僅有一件的高價品加確認(防誤點賣掉精品)
                 if owned <= 1:
                     if (gamedata.item(iid)["value"] >= SELL_CONFIRM_VALUE
@@ -3246,10 +3250,12 @@ def action_shop(state: GameState, gamedata: GameData) -> None:
                 else:
                     # 高價品堆疊預設賣 1(防 Enter 誤傾銷精品堆);一般雜貨預設全部
                     dflt = 1 if gamedata.item(iid)["value"] >= SELL_CONFIRM_VALUE else owned
-                    qty = ui.ask_int(f"賣幾個?(共 {owned})", dflt, 1, owned)
+                    hot = inventory.stolen_on_person(char, iid)
+                    qty = ui.ask_int(f"賣幾個?(共 {owned}" + (f";另有 {hot} 件贓物商人不收" if hot else "") + ")",
+                                     dflt, 1, owned)
                 total = sold = 0
                 for _ in range(qty):
-                    if inventory.count_item(char, iid) <= 0:
+                    if inventory.clean_count(char, iid) <= 0:
                         break
                     total += world.sell_price(char, gamedata, iid)   # 隨交易技能微升,逐件結算
                     inventory.remove_item(char, iid, 1)
@@ -3739,6 +3745,7 @@ def action_fence(state: GameState, gamedata: GameData) -> None:
                     if inventory.count_item(char, iid) <= 0:
                         break
                     total += fsell(iid)
+                    inventory.fence_stolen(char, iid, 1)             # R223:銷贓時贓物先出(名下贓物 −1;沒有贓物則不動)
                     inventory.remove_item(char, iid, 1)
                     sold += 1
                     ui.show_events(progression.use_skill(char, gamedata, "mercantile", 0.3), gamedata)   # R197 審查:賣貨升點原被丟棄
@@ -6148,6 +6155,13 @@ def action_murder(state: GameState, gamedata: GameData, nid: str) -> str | None:
     return None
 
 
+def _report_confiscated(gamedata: GameData, pairs: list) -> None:
+    """R223 被捕後的沒收訊息:「金戒指 ×2、紅寶石」(pairs = crime.pay_fine / serve_sentence 回傳的 confiscated)。"""
+    if pairs:
+        names = "、".join(gamedata.item_name(i) + (f" ×{n}" if n > 1 else "") for i, n in pairs)
+        ui.message(f"衛兵搜了你的身,沒收了贓物:{names}。", style="red")
+
+
 def guard_confrontation(state: GameState, gamedata: GameData) -> str | None:
     """城門衛兵盤查(帶賞金進城)。回 'dead'(反抗身亡)/ 'confronted'(真被攔下盤問並處置:
     繳金/服刑/反抗/說退 → R114D 長途據此中斷·不繞過處罰)/ None(隱形溜過 或 武士特權放行:
@@ -6169,9 +6183,12 @@ def guard_confrontation(state: GameState, gamedata: GameData) -> str | None:
     talked = False
     while crime.bounty(char, province) > 0:
         b = crime.bounty(char, province)
+        # R223:被捕(繳罰金 / 入獄)會沒收身上的贓物 —— 選項上先講清楚(件數與實際沒收同一個出處)
+        n_loot = sum(n for _iid, n in inventory.stolen_on_person_list(char))
+        seize = f";身上 {n_loot} 件贓物會被沒收" if n_loot else ""
         opts = [
-            ("pay", f"繳清罰金({b} 金)"),
-            ("jail", f"乖乖入獄服刑(關 {crime.jail_hours(b)} 小時,賞金一筆勾銷)"),   # R202:刑期取自與 serve_sentence 同一個 jail_hours
+            ("pay", f"繳清罰金({b} 金{seize})"),
+            ("jail", f"乖乖入獄服刑(關 {crime.jail_hours(b)} 小時,賞金一筆勾銷{seize})"),   # R202:刑期取自與 serve_sentence 同一個 jail_hours
             ("resist", "拔劍反抗(與衛兵開戰)"),
         ]
         talk_cap = dialogue.TALK_DOWN_MAX + mastery.talk_down_mod(char, gamedata).get("cap_bonus", 0)   # 里程碑「巧言脫罪」抬高可說退賞金上限
@@ -6194,11 +6211,13 @@ def guard_confrontation(state: GameState, gamedata: GameData) -> str | None:
             r = crime.pay_fine(char, gamedata)
             if r["ok"]:
                 ui.message(f"你繳清了 {r['paid']} 金罰金,衛兵讓開了路。", style="green")
+                _report_confiscated(gamedata, r["confiscated"])
             else:
                 ui.message(f"你付不起 {r['owed']} 金 —— 只能服刑或反抗。", style="yellow")
         elif choice == "jail":
             r = crime.serve_sentence(char, gamedata, state.time)
             ui.message(f"你被關押了 {r['hours']} 小時,{province}的賞金一筆勾銷。", style="grey70")
+            _report_confiscated(gamedata, r["confiscated"])
         elif choice == "resist":
             # 賞金越高,出動的衛兵越多(1–3 名);省賞金達 T3 → 一名換成衛兵隊長(R84 城門升級)
             n = 1 + min(2, crime.bounty(char, province) // 80)

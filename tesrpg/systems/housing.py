@@ -201,7 +201,7 @@ def withdraw(char: Character, gamedata: GameData, loc_id: str, item_id: str, qty
     if gamedata.item_or_none(item_id) is not None and not inventory.can_carry(char, gamedata, item_id, qty):
         return False
     _stash_remove(char, loc_id, item_id, qty)
-    inventory.add_item(char, item_id, qty)
+    inventory.add_item(char, item_id, qty, transfer=True)   # R223:自己的東西搬回背包,贓物記錄不動
     return True
 
 
@@ -237,6 +237,16 @@ def province_discount(char: Character, gamedata: GameData) -> float:
     for lid in getattr(char, "houses_owned", []):
         if (has_upgrade(char, gamedata, lid, "trade_pact")
                 and (locs.get(lid) or {}).get("province") == here):
+            return TRADE_PACT_DISCOUNT
+    return 0.0
+
+
+def best_province_discount(char: Character, gamedata: GameData) -> float:
+    """名下任一房產有「在地商誼」→ TRADE_PACT_DISCOUNT,否則 0.0(不看目前人在哪一省)。
+    R223:算「這個角色在任何一般商店買得到的最低價」用——商誼是買價鏈裡唯一隨地點變的一項,
+    玩家走到那一省就拿得到,所以全域「賣出價 < 買入價」規則要以最好的情況計。"""
+    for lid in getattr(char, "houses_owned", []):
+        if has_upgrade(char, gamedata, lid, "trade_pact"):
             return TRADE_PACT_DISCOUNT
     return 0.0
 

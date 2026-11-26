@@ -311,7 +311,8 @@ LOCKPICK_OUTSIDER_MARKUP = 2.0   # 開鎖器是盜賊公會的營生:非會員(�
 HUNT_ENCOUNTER_CHANCE = 0.6      # R109 任務條件式狩獵:接了以劇情敵為目標的 kill 任務時,在對省野外撞見目標的機率(高)
 
 
-def _buy_chain(char: Character, gamedata: GameData, item_id: str, item: dict) -> float:
+def _buy_chain(char: Character, gamedata: GameData, item_id: str, item: dict,
+               pact_discount: float | None = None) -> float:
     """買價連乘(取整與反套利地板之前)。buy_price 與 barter_breakdown 的「實際倍率」共用同一條鏈(R222 抽出;
     運算順序不變 → 既有物價逐位元組同)。item 只讀 value / damage / armor_rating。"""
     from tesrpg.systems import factions
@@ -330,8 +331,9 @@ def _buy_chain(char: Character, gamedata: GameData, item_id: str, item: dict) ->
     price *= divines.buy_price_factor(char)
     # R110 在地商誼:本省有「已購在地商誼」的自有房產 → 買價折扣(無 → ×1.0 逐位元組同;
     # 只動買價·賣價不碰;插在反套利地板之前 → 任何疊加皆不可能倒掛)
+    # pact_discount:None = 依目前所在省(一般買價);給值 = 指定商誼折扣(R223 算「任何商店的最低買價」用)
     from tesrpg.systems import housing
-    price *= 1 - housing.province_discount(char, gamedata)
+    price *= 1 - (housing.province_discount(char, gamedata) if pact_discount is None else pact_discount)
     return price
 
 
@@ -353,11 +355,25 @@ def sell_price(char: Character, gamedata: GameData, item_id: str) -> int:
     return max(1, round(_sell_chain(char, gamedata, gamedata.item(item_id)["value"])))
 
 
+def min_buy_price(char: Character, gamedata: GameData, item_id: str) -> int:
+    """這個角色在「任何」一般商店買到此物的最低價(R223)。買價鏈裡唯一隨地點變的是在地商誼,
+    所以以「名下任一商誼」計;其餘(議價、公會、聲望、神恩)都跟著角色走。
+    全域規則「任何攤位的賣出價都低於任何攤位的買入價」以它為界。"""
+    from tesrpg.systems import housing
+    chain = _buy_chain(char, gamedata, item_id, gamedata.item(item_id),
+                       pact_discount=housing.best_province_discount(char, gamedata))
+    return max(1, round(chain), sell_price(char, gamedata, item_id) + 1)
+
+
 def fence_sell_price(char: Character, gamedata: GameData, item_id: str) -> int:
-    """銷贓價(R84):一般賣價 ×(1 + 惡名分級加價)。銷贓選單的標籤、實際收款與 sim_economy 共用
-    (R222 自 main.action_fence 抽出,式子不變)。"""
+    """銷贓價(R84):一般賣價 ×(1 + 惡名分級加價),再受全域規則約束(R223):必須低於這個角色
+    買得到的最低價(`min_buy_price`)——「商店買、銷贓賣」不得有利可圖,也不得打平。
+    夾的是賣出價,不抬任何買價(R110 否決過抬買價)。下限是一般賣價(銷贓不會比賣給商店差)。
+    銷贓選單的標籤、實際收款與 sim_economy 共用這一個函式。"""
     from tesrpg.systems import crime
-    return int(sell_price(char, gamedata, item_id) * (1 + crime.fence_bonus(char)))
+    shop = sell_price(char, gamedata, item_id)
+    raw = int(shop * (1 + crime.fence_bonus(char)))
+    return max(shop, min(raw, min_buy_price(char, gamedata, item_id) - 1))
 
 
 def black_market_price(char: Character, gamedata: GameData, item_id: str) -> int:

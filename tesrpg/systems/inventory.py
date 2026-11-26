@@ -20,7 +20,11 @@ SET_SLOTS = ["helmet", "cuirass", "gauntlets", "boots"]   # 判定「同材質�
 
 
 # --- 增減 ---------------------------------------------------------------
-def add_item(char: Character, item_id: str, qty: int = 1) -> None:
+def add_item(char: Character, item_id: str, qty: int = 1, *, transfer: bool = False) -> None:
+    """物品入背包。transfer=True:這批是玩家名下的東西在「倉庫 / 同伴身上 ↔ 背包」之間搬動,不是新入手
+    (R223:贓物記錄不得因搬動而變動;新入手則先把記錄夾回目前名下的贓物數,見下方贓物段)。"""
+    if not transfer and item_id in getattr(char, "stolen", {}):
+        _set_stolen(char, item_id, stolen_count(char, item_id))   # 新貨不是贓物:舊記錄不得「復活」到新貨上
     for stack in char.inventory:
         if stack["id"] == item_id:
             stack["qty"] += qty
@@ -30,6 +34,99 @@ def add_item(char: Character, item_id: str, qty: int = 1) -> None:
 
 def count_item(char: Character, item_id: str) -> int:
     return sum(s["qty"] for s in char.inventory if s["id"] == item_id)
+
+
+# --- 贓物(R223)-----------------------------------------------------------
+#   char.stolen = {item_id: 件數}:玩家「名下」該物品裡來路不明的件數。同款物品分不出哪一件是偷的,所以只記件數;
+#   「名下」= 背包 + 各房產倉庫 + 同伴身上的裝備,所以存進倉庫、交給同伴再拿回來,記錄不變(洗不掉)。
+#   只有四個地方會寫這個欄位:行竊得手(+)、銷贓賣出(−)、被捕沒收(−)、新貨入手時把舊記錄夾回現況(add_item)。
+#   其餘一律「讀取時」取 min(記錄, 名下總件數):用掉、丟掉、熔毀、附魔、煉製、交任務只是讓名下總件數下降,
+#   不必也不該掛在三十幾個 remove_item 呼叫點上(漏一個就帳不平)。乾淨的先離開——剩下的仍算贓物,
+#   直到名下總件數低於記錄為止(加工成別的東西 = 洗白,使用者裁決)。
+#   贓物一律先算在「身上」:衛兵搜身與商人拒收都從嚴認定(同款的分不出來)。
+def owned_total(char: Character, item_id: str) -> int:
+    """玩家名下該物品的總件數:背包 + 各房產倉庫 + 同伴身上的裝備。"""
+    n = count_item(char, item_id)
+    for stacks in getattr(char, "house_stash", {}).values():
+        n += sum(s.get("qty", 0) for s in stacks if isinstance(s, dict) and s.get("id") == item_id)
+    for slots in getattr(char, "companion_gear", {}).values():
+        if isinstance(slots, dict):
+            n += sum(1 for v in slots.values() if v == item_id)
+    return n
+
+
+def stolen_count(char: Character, item_id: str) -> int:
+    """名下該物品中算作贓物的件數(純讀):min(記錄的件數, 名下總件數)。"""
+    n = getattr(char, "stolen", {}).get(item_id, 0)
+    return min(n, owned_total(char, item_id)) if isinstance(n, int) and n > 0 else 0
+
+
+def stolen_on_person(char: Character, item_id: str) -> int:
+    """背包裡算作贓物的件數(贓物先算在身上)。被捕時沒收的、一般商店不收的,就是這幾件。"""
+    return min(stolen_count(char, item_id), count_item(char, item_id))
+
+
+def clean_count(char: Character, item_id: str) -> int:
+    """一般商店肯收的件數 = 背包件數 − 身上的贓物。"""
+    return count_item(char, item_id) - stolen_on_person(char, item_id)
+
+
+def _set_stolen(char: Character, item_id: str, n: int) -> None:
+    if n > 0:
+        char.stolen[item_id] = n
+    else:
+        char.stolen.pop(item_id, None)
+
+
+def mark_stolen(char: Character, item_id: str, qty: int = 1) -> None:
+    """行竊得手:名下贓物 +qty。呼叫端須已先 add_item(那一步同時把舊記錄夾回現況)。"""
+    _set_stolen(char, item_id, min(char.stolen.get(item_id, 0) + qty, owned_total(char, item_id)))
+
+
+def fence_stolen(char: Character, item_id: str, qty: int = 1) -> int:
+    """銷贓賣出 qty 件:贓物先出。在 remove_item **之前**呼叫;回傳其中算作贓物的件數。"""
+    n = stolen_count(char, item_id)
+    gone = min(n, qty)
+    _set_stolen(char, item_id, n - gone)
+    return gone
+
+
+def stolen_on_person_list(char: Character) -> list[tuple[str, int]]:
+    """身上的贓物 [(item_id, 件數)](純讀;依記錄順序)。"""
+    out = []
+    for item_id in getattr(char, "stolen", {}):
+        n = stolen_on_person(char, item_id)
+        if n > 0:
+            out.append((item_id, n))
+    return out
+
+
+def confiscate_stolen(char: Character, gamedata: GameData) -> list[tuple[str, int]]:
+    """被捕(繳罰金 / 入獄):沒收身上的贓物,回傳 [(item_id, 件數)]。倉庫裡與同伴身上的不搜(記錄留著)。
+    沒收到穿戴中的最後一件會自動卸下 → 依紅線重算資源上限。"""
+    taken = stolen_on_person_list(char)
+    for item_id, n in taken:
+        total = stolen_count(char, item_id)
+        remove_item(char, item_id, n)
+        _set_stolen(char, item_id, total - n)
+    if taken:
+        stats.recompute_max_resources(char, gamedata)
+    return taken
+
+
+def ensure_stolen(char: Character, gamedata: GameData | None = None) -> None:
+    """載入防呆:欄位缺漏 / 型別不對 → 空;逐項夾到名下總件數,清掉 0 與壞值(冪等)。"""
+    raw = getattr(char, "stolen", None)
+    if not isinstance(raw, dict):
+        char.stolen = {}
+        return
+    clean = {}
+    for item_id, n in raw.items():
+        if isinstance(item_id, str) and isinstance(n, int) and not isinstance(n, bool) and n > 0:
+            kept = min(n, owned_total(char, item_id))
+            if kept > 0:
+                clean[item_id] = kept
+    char.stolen = clean
 
 
 def _worn_by_companion(char: Character, item_id: str) -> bool:

@@ -2681,6 +2681,10 @@ def item_label(gamedata: GameData, char: Character, item_id: str, qty: int = 1) 
         tag = " [yellow](手持)[/]"
     elif item_id in char.equipped.values():
         tag = " [green](穿戴)[/]"
+    from tesrpg.systems import inventory as _inv
+    hot = _inv.stolen_on_person(char, item_id)        # R223:身上算作贓物的件數(一般商店不收、被捕會沒收)
+    if hot:
+        tag += " [red](贓物)[/]" if hot >= qty else f" [red](其中贓物 ×{hot})[/]"
     extra = ""
     if d["kind"] == "weapon":
         arch = _ARCHETYPE_CN.get(d.get("archetype"), "")

@@ -82,6 +82,7 @@ def steal_item(char: Character, gamedata: GameData, item_id: str, rng: RNG) -> d
     xp, hours, tired = progression.practice_cost(char, gamedata, "sneak")
     if rng.chance(steal_chance(char, gamedata, item_id)):
         inventory.add_item(char, item_id, 1)
+        inventory.mark_stolen(char, item_id, 1)      # R223:偷來的是贓物(一般商店不收、被捕會沒收)
         events = progression.use_skill(char, gamedata, "sneak", xp)
         return {"ok": True, "caught": False, "bounty_added": 0,
                 "hours": hours, "tired": tired, "skill_events": events}
@@ -97,23 +98,26 @@ def jail_hours(amount: int) -> int:
 
 
 def serve_sentence(char: Character, gamedata: GameData, time) -> dict:
-    """入獄服刑:清空當地賞金、推進時間。"""
+    """入獄服刑:清空當地賞金、推進時間。R223:被捕 → 身上的贓物一併沒收(`confiscated` = [(item_id, 件數)])。"""
+    from tesrpg.systems import inventory
     province = province_of(char, gamedata)
     amt = bounty(char, province)
     hours = jail_hours(amt)
     time.advance(hours)
     clear_bounty(char, province)
-    return {"hours": hours, "cleared": amt}
+    return {"hours": hours, "cleared": amt, "confiscated": inventory.confiscate_stolen(char, gamedata)}
 
 
 def pay_fine(char: Character, gamedata: GameData) -> dict:
+    """繳清當地罰金。付不起 → ok False、什麼都不動。R223:繳了罰金也算被捕 → 身上的贓物一併沒收。"""
+    from tesrpg.systems import inventory
     province = province_of(char, gamedata)
     amt = bounty(char, province)
     if char.gold < amt:
         return {"ok": False, "owed": amt}
     char.gold -= amt
     clear_bounty(char, province)
-    return {"ok": True, "paid": amt}
+    return {"ok": True, "paid": amt, "confiscated": inventory.confiscate_stolen(char, gamedata)}
 
 
 # --- 通緝身份(純衍生·零存檔欄)------------------------------------------------

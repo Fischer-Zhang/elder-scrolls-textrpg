@@ -1,4 +1,4 @@
-"""R222 經濟量測(非測試;手動跑:PYTHONPATH=. python3 sim_economy.py [seeds=20];不到 1 秒)
+"""經濟量測(R222 建立、R223 起跨攤位倒掛應為 0;非測試;手動跑:PYTHONPATH=. python3 sim_economy.py [seeds=20];不到 1 秒)
 
 為什麼另寫:既有 sim 全是戰鬥,金幣流動從來沒有量測。R222 評估經濟時的數字(價格、套利、收入、去處)原本都是臨時腳本量的,
 而之後四個里程碑(銷贓與贓物 / 練習與訓練 / 商人玩法 / 交易 100)每次動數值都要重量 → 收成一支固定工具。
@@ -16,22 +16,23 @@ train_cost / spell_price / merchant_catalog / _restock_qty),地城收入用真�
 基準(R222·2026-11-26·seeds=20):
   議價:交易 5 魅力 40 → 買 ×2.03 賣 ×0.38;交易 100 魅力 100 → 買 ×1.20 賣 ×0.80(係數頂到上限 1.00)。
        七個加成來源合計 0.56,但交易 100 魅力 40 時只剩 0.20 空間、魅力 100 時空間為 0。
-  套利:230 種可賣物品;同店 / 黑市倒掛全為 0。
-       「議價滿 + 盜賊公會頂階 + 惡名 50」223 種銷贓價 ≥ 商店買價、其中 206 種有賺(每件約賺底價的 32%),
-       把貨架買光拿去銷贓,每城每次補貨的期望利潤中位數 418 金;「議價滿 + 惡名 50 + 聲望 700」205 / 175 種(約 6%)、65 金。
+  套利:230 種可賣物品;同店 / 黑市 / 跨攤位倒掛全為 0(R223 起:銷贓價夾在該角色最低買價之下)。
+       R222 當時(未夾):「議價滿 + 盜賊公會頂階 + 惡名 50」223 種銷贓價 ≥ 商店買價、206 種有賺(每件約底價的 32%),
+       把貨架買光拿去銷贓每城每次補貨期望 418 金;「議價滿 + 惡名 50 + 聲望 700」205 / 175 種(約 6%)、65 金。
   收入:72 地城一次 ≈ 9.7 萬金 + 物品底價 ≈ 30.8 萬(賣掉實得 11.8 ~ 24.7 萬);
        425 個一次性任務(含執行時生成的領主委託)金幣 ≈ 8.9 萬;商店架上貨每家每次補貨底價中位數 ≈ 1,376。
   去處:22 技能全訓練到 75 = 43.6 萬金(角色 44 級);只靠訓練 1 → 5 級 2,848 金、→ 10 級 11,560 金、→ 20 級 59,288 金;
        免費練習 5 → 75 約 529 小時;房產 16 棟 6.8 萬 + 擴建最多 4.96 萬;法術全買 2.9 萬;坐騎 0.64 萬。
-  配方:原料買得到的配方中,賣商店就有賺的只有鞣製皮胸甲(盜賊公會頂階時每件 +8 金,共 3 組情境);
-       只在銷贓有賺的 130 組,是跨攤位倒掛經製作再放大。
+  配方:原料買得到、買料製作再賣有賺的只剩鞣製皮革系(產出底價是原料的 1.33 倍):受庫存限制後每城每次補貨最多
+       9 ~ 15 金,且每件要花一小時與體力 → 微利,使用者 R223 裁定不處理(RESALE_FLAG = 50 金以下不列警示)。
+       R222 當時另有 130 組只在銷贓有賺(跨攤位倒掛經製作放大),R223 的全域規則一併關掉。
 
 守衛(⚠;非自動閘門,改價格 / 折扣 / 銷贓 / 配方 / 物品底價後人工看):
   1. 同店倒掛:任一物品 一般商店買價 ≤ 同店賣價(world.buy_price 的反套利鐵則破了)。
   2. 黑市倒掛:任一物品 黑市買價 ≤ 銷贓價(R84 地板破了)。
-  3. 跨攤位倒掛:任一物品 銷贓價 ≥ 一般商店買價(商店買、銷贓賣可獲利)。R222 當下**已知會亮**(handoff R110 記為既有、
-     當時接受不修);R223 加上全域「賣出價 < 買入價」規則後應歸零。
-  4. 配方轉賣:原料全都買得到的配方,成品賣價 > 原料買價總和。
+  3. 跨攤位倒掛:任一物品 銷贓價 ≥ 一般商店買價(商店買、銷贓賣可獲利或打平)。R223 起應恆為 0
+     (world.fence_sell_price 夾在 world.min_buy_price − 1);亮了 = 全域「賣出價 < 買入價」規則破了。
+  4. 配方轉賣:原料全都買得到的配方,買料製作再賣,受庫存限制後每城每次補貨的期望利潤 ≥ RESALE_FLAG(50 金)。
 """
 import statistics as S
 import sys
@@ -276,10 +277,14 @@ def sinks():
 
 
 # --- 5 配方轉賣 -------------------------------------------------------------
+RESALE_FLAG = 50      # 配方轉賣:受庫存限制後「每城每次補貨的期望利潤」達此金額才算警示(低於此 = 微利,使用者 R223 裁定不處理)
+
+
 def recipe_resale():
     """原料全都買得到的配方:買料 → 製作 → 賣成品的利潤。
-    回傳 [(profile_label, recipe_id, 原料買價, 賣給商店的收入, 賣給銷贓的收入)](只列至少一邊有利可圖者)。
-    分開列商店與銷贓:銷贓那邊的利潤多半只是「跨攤位倒掛」經過製作再放大;商店那邊若還有賺,才是配方本身的問題。"""
+    回傳 [(profile_label, recipe_id, 原料買價, 賣給商店的收入, 賣給銷贓的收入, 每城每次補貨的期望利潤)](只列有利可圖者)。
+    期望利潤 = 一次補貨買得到的原料做得出幾件(最缺的那種原料決定)× 每件利潤 —— 商店限量供貨,這才是實際賺得到的錢。
+    另外每做一件還要花一小時與體力(crafting.craft 付該技能的 practice 成本),這裡沒有折算。"""
     buyable = {i for lid in SHOP_LOCS for i in world.merchant_catalog(gd, lid)}
     out = []
     for label, kw in PROFILES:
@@ -291,7 +296,8 @@ def recipe_resale():
             o, n = r["output"], r.get("output_qty", 1)
             shop, fence = world.sell_price(c, gd, o) * n, world.fence_sell_price(c, gd, o) * n
             if max(shop, fence) > cost:
-                out.append((label, rid, cost, shop, fence))
+                crafts = min(expected_restock(i) / q for i, q in r["inputs"].items())
+                out.append((label, rid, cost, shop, fence, crafts * (max(shop, fence) - cost)))
     return out
 
 
@@ -326,7 +332,7 @@ def main() -> None:
             flags.append(f"⚠黑市倒掛 {r['label']}:{r['black_market']} 種物品黑市買價 ≤ 銷贓價")
         if r["cross"]:
             flags.append(f"⚠跨攤位倒掛 {r['label']}:{r['cross']} 種物品銷贓價 ≥ 商店買價,其中 {r['profit']} 種有賺"
-                         f"(每城每次補貨約 {r['per_city']:.0f} 金;已知,R223 處理)")
+                         f"(每城每次補貨約 {r['per_city']:.0f} 金)—— 全域「賣出價 < 買入價」規則破了")
 
     print(f"\n== 3 收入(地城用真實生成器 × {seeds} 組種子)==")
     inc = dungeon_income(seeds)
@@ -371,28 +377,27 @@ def main() -> None:
     print("\n== 5 配方轉賣(原料全都買得到的配方)==")
     resale = recipe_resale()
     if resale:
-        print(f"{'情境':34}{'賣商店有賺':>8}{'賣銷贓有賺':>8}{'最賺的一組':>10}")
+        print(f"{'情境':34}{'有賺的配方':>8}{'每城每次補貨最多賺':>14}   最賺的一組")
         for label, _kw in PROFILES:
             rows = [x for x in resale if x[0] == label]
             if not rows:
                 continue
-            shop_n = sum(1 for x in rows if x[3] > x[2])
-            fence_n = sum(1 for x in rows if x[4] > x[2])
-            best = max(rows, key=lambda x: max(x[3], x[4]) - x[2])
-            print(f"{label:34}{shop_n:>10}{fence_n:>12}    {best[1]} 原料 {best[2]} → 商店 {best[3]} / 銷贓 {best[4]}")
-        shop_total = sum(1 for x in resale if x[3] > x[2])
-        fence_only = len(resale) - shop_total
-        if shop_total:
-            flags.append(f"⚠配方轉賣 {shop_total} 組(情境 × 配方)買料製作後賣給商店就有賺(配方本身的問題)")
-        if fence_only:
-            flags.append(f"⚠配方轉賣 {fence_only} 組只在賣給銷贓時有賺(跨攤位倒掛經製作放大;已知,R223 處理)")
+            best = max(rows, key=lambda x: x[5])
+            print(f"{label:34}{len(rows):>10}{best[5]:>18.0f}   {best[1]} 原料 {best[2]} → 商店 {best[3]} / 銷贓 {best[4]}")
+        big = [x for x in resale if x[5] >= RESALE_FLAG]
+        if big:
+            worst = max(big, key=lambda x: x[5])
+            flags.append(f"⚠配方轉賣 {len(big)} 組(情境 × 配方)每城每次補貨期望利潤 ≥ {RESALE_FLAG} 金"
+                         f"(最多 {worst[5]:.0f}:{worst[0]} 的 {worst[1]})")
+        else:
+            print(f"  以上都是微利(每城每次補貨不到 {RESALE_FLAG} 金,且每件還要花一小時與體力)→ 不列警示")
     else:
         print("  沒有任何情境 × 配方有利可圖")
 
     if flags:                                    # 只有真的有警示才印「⚠ 守衛警示」(check.sh 以此行 grep)
         print("\n⚠ 守衛警示:\n  " + "\n  ".join(flags))
     else:
-        print("\n✓ 經濟守衛全過(無同店 / 黑市 / 跨攤位倒掛,無配方轉賣)")
+        print("\n✓ 經濟守衛全過(無同店 / 黑市 / 跨攤位倒掛;配方轉賣都在微利門檻之下)")
 
 
 if __name__ == "__main__":
