@@ -50,6 +50,51 @@ def drop_spell_regen(entity) -> None:
                                 if not (e.get("kind") == "regen" and e.get("source") == SPELL_REGEN_SOURCE)]
 
 
+# R218 單槽取代的可見性(R216 B4):下列「同槽」效果重施 / 換施時舊的被新的取代(R211 護盾 / 灌注、R212 回復、結界 / 束縛兵刃的重施去重),
+# 過去戰報一字不提。戰報(cast 的 msg)與選單「↻ 再施」標籤共用 `occupied_slot` / `replaced_slot` 同一個判定(預覽 = 實擲);
+# 純讀、零 rng、不改任何數值;槽內沒有舊效果時戰報逐字不變。鍵 = active_effects 的 kind。
+_SLOT_NAMES = {"shield": "護盾", "ward": "結界", "weapon_imbue": "兵刃灌注", "bound_weapon": "束縛兵刃", "regen": "持續回復"}
+_SELF_SLOT_KINDS = ("shield", "ward", "weapon_imbue", "bound_weapon")
+
+
+def occupied_slot(entity, slot: str) -> str:
+    """該單位身上該單槽是否已有生效中的舊效果:有 → 其中文名(「取代了原有的 X」/ 「取代原有 X」共用),沒有 → ""。
+    shield 只認法術護盾(source=spell_shield)、regen 只認法術回復(source=spell_regen):他源(戰旗 / 盾牆 / 附魔再生…)不會被取代,也就不提。
+    已耗盡的護盾(magnitude≤0)/ 已到期(turns≤0)不算佔槽。"""
+    src = {"shield": SPELL_SHIELD_SOURCE, "regen": SPELL_REGEN_SOURCE}.get(slot)
+    for e in entity.active_effects:
+        if e.get("kind") != slot or (src is not None and e.get("source") != src):
+            continue
+        if e.get("turns", 1) <= 0 or (slot == "shield" and e.get("magnitude", 1) <= 0):
+            continue
+        return _SLOT_NAMES.get(slot, "")
+    return ""
+
+
+def spell_slot(sp: dict) -> str | None:
+    """這道法術施放後佔用的單槽鍵(= active_effects 的 kind);只算自身目標(施在同伴身上的不取代你的);非單槽法術 → None。"""
+    if sp.get("target") != "self":
+        return None
+    eff = sp.get("effect") or {}
+    kind = eff.get("kind")
+    if kind in _SELF_SLOT_KINDS:
+        return kind
+    if kind == "apply_status" and (eff.get("status") or {}).get("status") == "regen":
+        return "regen"
+    return None
+
+
+def replaced_slot(char, gamedata, spell_id: str) -> str:
+    """若現在施放這道法術,會取代掉身上哪個舊效果(中文名);沒有 → ""。選單標籤的預覽;cast 內的戰報用同一個 `occupied_slot`。"""
+    slot = spell_slot(gamedata.spells.get(spell_id) or {})
+    return occupied_slot(char, slot) if slot else ""
+
+
+def _replaced_note(old: str) -> str:
+    """戰報尾註:槽內原有舊效果被取代時 → 「取代了原有的 X。」;沒有舊效果 → ""(戰報逐字同舊)。"""
+    return f"　取代了原有的{old}。" if old else ""
+
+
 def has_anchor(battle: dict | None) -> bool:
     """R203 場上是否已有存活的契僕(永契之僕:同時只能有一隻)。"""
     from tesrpg.systems import combat
@@ -547,20 +592,22 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
 
     elif kind == "shield":
         mag = round(eff["magnitude"] * power)
+        old = occupied_slot(char, "shield")            # R218 取代前先看槽(戰報補「取代了原有的護盾」)
         drop_spell_shields(char)                       # R211 單槽:新護盾法術取代舊的(連放不疊;其他來源的護盾不動)
         char.active_effects.append({"kind": "shield", "magnitude": mag, "turns": eff["turns"],
                                     "source": SPELL_SHIELD_SOURCE})
-        msg = f"{sp['name']}在你身上凝成護盾(護甲 +{mag},{eff['turns']} 回合)。"
+        msg = f"{sp['name']}在你身上凝成護盾(護甲 +{mag},{eff['turns']} 回合)。" + _replaced_note(old)
 
     elif kind == "ward":   # 神秘「結界」:吸收來襲法術/元素傷害的可耗盡池(吸魔變體按吸收量回魔)
         mag = round(eff["magnitude"] * power)
+        old = occupied_slot(char, "ward")              # R218
         char.active_effects[:] = [e for e in char.active_effects if e.get("kind") != "ward"]  # 重施去重 → 不疊無敵
         entry = {"kind": "ward", "magnitude": mag, "turns": eff["turns"]}
         if eff.get("absorb"):
             entry["absorb"] = eff["absorb"]
         char.active_effects.append(entry)
         extra = "・吸收部分法力" if eff.get("absorb") else ""
-        msg = f"{sp['name']} —— 一道結界護住了你(可吸收 {mag} 點法術傷害{extra},{eff['turns']} 回合)。"
+        msg = f"{sp['name']} —— 一道結界護住了你(可吸收 {mag} 點法術傷害{extra},{eff['turns']} 回合)。" + _replaced_note(old)
 
     elif kind == "weapon_imbue":   # 戰法師「奧術灌注」:自我增益 → 近戰加元素傷害(比照附魔,戰鬥內讀取)
         mag = round(eff["magnitude"] * power)
@@ -571,10 +618,12 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
             entry["rider"] = eff["rider"]
         # R211 單槽(全元素):同時至多一道法術附魔,新的取代舊的(實測:無去重時地城預施〔自由行動〕可疊 27 層 →
         # 每擊 ×6.8,連最強真附魔〔大魂石·神秘 100 ≈ +24〕的 14 倍;戰鬥內重施本就不划算,漏洞全在免回合的預施 / 備戰)。
+        old = occupied_slot(char, "weapon_imbue")      # R218
         char.active_effects[:] = [e for e in char.active_effects if e.get("kind") != "weapon_imbue"]
         char.active_effects.append(entry)
         rider_cn = _IMBUE_RIDER_CN.get((eff.get("rider") or {}).get("status"), "")
-        msg = f"{sp['name']} —— 你的兵刃纏上了{_ELEMENT_CN.get(eff['element'], '')}之力(每擊 +{mag}{rider_cn},{eff['turns']} 回合)。"
+        msg = (f"{sp['name']} —— 你的兵刃纏上了{_ELEMENT_CN.get(eff['element'], '')}之力(每擊 +{mag}{rider_cn},{eff['turns']} 回合)。"
+               + _replaced_note(old))
 
     elif kind == "bound_weapon":   # 召喚「束縛兵刃」:凝出法系近戰武器,取代裝備武器(無視物理護甲、可空手)
         # 存「基礎傷害」不乘 power:傷害在 combat._weapon_profile→attack_damage 隨咒術技能/力量縮放一次
@@ -585,6 +634,7 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
             char.magicka += cost
             char.fatigue = fatigue_before
             return _fail(why)
+        old = occupied_slot(char, "bound_weapon")      # R218
         char.active_effects[:] = [e for e in char.active_effects if e.get("kind") != "bound_weapon"]
         # R106 束縛兵刃 archetype 差異化:存 archetype → combat 據此給原型身份(釘錘擊暈 stagger 等);
         # 仍走咒術技能傷害 + 元素(無視物理護甲)。無 archetype(舊 bound_sword)→ 行為不變。
@@ -594,7 +644,7 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
                                     "magnitude": mag, "turns": bturns, "archetype": eff.get("archetype"),
                                     "two_handed": bool(eff.get("two_handed")), "speed": eff.get("speed"),
                                     "name": sp["name"]})   # R204:握法 / 自身速度(耗體)/ 名稱(戰鬥選單「攻擊(束縛巨劍)」)
-        msg = f"{sp['name']} —— 你手中凝出一柄束縛兵刃(基礎傷害 {mag},隨咒術精進,{bturns} 回合)。"
+        msg = f"{sp['name']} —— 你手中凝出一柄束縛兵刃(基礎傷害 {mag},隨咒術精進,{bturns} 回合)。" + _replaced_note(old)
 
     elif kind in ("charm", "invisibility", "feather", "detect_life", "telekinesis"):   # R104 實用/幻術 + R121 念力:限時自我增益(戰鬥外社交/潛行/探索/地城)
         from tesrpg.systems import spellfx
@@ -668,12 +718,14 @@ def cast(char: Character, gamedata: GameData, spell_id: str, rng: RNG,
                     # 刷新非疊加:重施覆蓋舊光環(避免兩道並存→舊者到期誤報「黯淡」+ 減傷不疊加,審查 nit)
                     dest.active_effects[:] = [e for e in dest.active_effects if e.get("kind") != "consecration"]
                 entry = make_status_effect(st2)
+                old = ""
                 if entry["kind"] == "regen":               # R212 單槽:重施生機取代舊的(連放不疊;他源 regen 不動)
+                    old = occupied_slot(dest, "regen")     # R218 取代前先看槽
                     drop_spell_regen(dest)
                     entry["source"] = SPELL_REGEN_SOURCE
                 dest.active_effects.append(entry)
                 who = "你" if dest is char else dest.name
-                msg = f"{sp['name']} —— {who}{_status_verb(st)}。"
+                msg = f"{sp['name']} —— {who}{_status_verb(st)}。" + _replaced_note(old)
 
     elif kind == "dispel":   # 神秘「驅散」:淨化自身的不良控場/侵蝕效果(不動護盾/再生等增益)
         removed = [e for e in char.active_effects if e.get("kind") in _DISPELLABLE]

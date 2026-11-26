@@ -656,20 +656,43 @@ def _quick_seal_suffix(char, gamedata: GameData, spell_id: str) -> str:
                                   or combat.quick_ward_ready(char, gamedata, spell_id)) else "")
 
 
+def _repeat_cast_hint(player, gamedata: GameData, spell_id: str) -> str:
+    """R218「↻ 再施」附註(預覽 = 實擲;零 rng、純讀):讓一鍵重複不再悄悄耗回合 / 悄悄換掉現有效果(R216 B4)。
+    · 瞬發資格仍在手(契印 / 護體未用)→「瞬發·不耗回合」(與施法選單 `_quick_seal_suffix` 同一個閘);
+    · 此法術本屬瞬發類、但本場那道免費額度已用掉(剛瞬發完再按 ↻ 的情形)→「耗回合」;
+    · 施放會取代身上單槽舊效果(R211 護盾 / 灌注、R212 回復、結界、束縛兵刃;`magic.replaced_slot`,與戰報同源)→「取代原有 X」。
+    都不適用 → 空字串(標籤逐字同舊)。"""
+    parts = []
+    if combat.quick_seal_ready(player, gamedata, spell_id) or combat.quick_ward_ready(player, gamedata, spell_id):
+        parts.append("瞬發·不耗回合")
+    elif ((gamedata.spells[spell_id].get("school") == "conjuration" and combat.quick_seal_status(player, gamedata) == "spent")
+          or (combat.is_self_shield_spell(gamedata, spell_id) and combat.quick_ward_status(player, gamedata) == "spent")):
+        parts.append("耗回合")
+    old = magic.replaced_slot(player, gamedata, spell_id)
+    if old:
+        parts.append(f"取代原有{old}")
+    return "·".join(parts)
+
+
 def _repeat_option(player, gamedata: GameData, enemies: list, allies: list, mem) -> str | None:
     """R113「↻ 再次」選項標籤:上次動作(attack/cast)當下仍可行才提供;否則 None。
     目標死亡不擋(選了會重開目標選單;僅剩一敵時自動選之,標籤如實顯示其名);
-    cast 需仍 can_cast;援護型法術需仍有存活同伴(否則 repeat 置頂=一鍵保證浪費回合)。"""
+    cast 需仍 can_cast;援護型法術需仍有存活同伴(否則 repeat 置頂=一鍵保證浪費回合)。
+    R218:施法標籤可帶附註(瞬發 / 耗回合 / 取代原有 X,見 `_repeat_cast_hint`)—— 併進同一組括號,`_split_combat_label` 拆成 chip。"""
     last = (mem or {}).get("last")
     if not last:
         return None
 
-    def _enemy_where(prefix: str) -> str:
+    def _enemy_where(prefix: str, extra: str = "") -> str:
         tgt = mem.get("target")
-        if tgt is not None and combat.is_alive(tgt):
-            return f"{prefix}{tgt.name}"
         alive = [e for e in enemies if combat.is_alive(e)]
-        return f"{prefix}{alive[0].name}" if len(alive) == 1 else "（重選目標)"
+        if tgt is not None and combat.is_alive(tgt):
+            who = tgt.name
+        elif len(alive) == 1:
+            who = alive[0].name
+        else:
+            return f"（重選目標{'·' + extra if extra else ''})"
+        return f"{prefix}{who}" + (f"（{extra})" if extra else "")
 
     if last["type"] == "attack":
         return f"↻ 再攻{_enemy_where(':')}"
@@ -679,11 +702,12 @@ def _repeat_option(player, gamedata: GameData, enemies: list, allies: list, mem)
             return None
         name = gamedata.spells[sid]["name"]
         tk = gamedata.spells[sid]["target"]
+        hint = _repeat_cast_hint(player, gamedata, sid)
         if tk == "enemy":
-            return f"↻ 再施:{name}{_enemy_where('→')}"
+            return f"↻ 再施:{name}{_enemy_where('→', hint)}"
         if tk == "ally" and not any(combat.is_alive(a) for a in allies):
             return None   # 無存活同伴 → 援護必然落空,不給 repeat(手動路徑仍可選=舊語意)
-        return f"↻ 再施:{name}"
+        return f"↻ 再施:{name}" + (f"（{hint})" if hint else "")
     return None
 
 
