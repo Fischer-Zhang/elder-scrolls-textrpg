@@ -6525,6 +6525,15 @@ def _try_discover(state: GameState, gamedata: GameData, loc_id: str) -> None:
         ui.landmark_discovery(res)
 
 
+def _announce_pulse(ev: dict, gamedata: GameData) -> None:
+    """脈動廣播(「四方傳聞」橫幅 + 新聞);有行情的脈動順帶播報一句(R225 ③;商店入口也會再提醒)。"""
+    ui.rule("四方傳聞")
+    ui.message(ev["news"], style="cyan")
+    _mn = world.pulse_market_news(gamedata, ev["id"])
+    if _mn:
+        ui.message(_mn, style="yellow")
+
+
 def game_loop(state: GameState, gamedata: GameData) -> None:
     global _last_practice_skill, _onset_hinted
     _last_practice_skill = None   # 每趟冒險起(含同進程換角/讀檔)重置練習捷徑,免跨角殘留(審查 NIT)
@@ -6622,11 +6631,7 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
         # 常態世界脈動(動態新聞層):主線後世界不靜默,持續廣播在地新聞;部分聚光某省可重複委託一段時間。
         # 別於 worldstate「天下大勢」(政權劇變):脈動是常態餘響,以「四方傳聞」橫幅 + 別色區隔。
         for ev in worldpulse.update(state, gamedata):
-            ui.rule("四方傳聞")
-            ui.message(ev["news"], style="cyan")
-            _mn = world.pulse_market_news(gamedata, ev["id"])   # R225 ③:有行情的脈動順帶播報(商店入口也會再提醒)
-            if _mn:
-                ui.message(_mn, style="yellow")
+            _announce_pulse(ev, gamedata)
         # 地城再滋擾傳聞(R111):本省已清地城被重踞 → 一次性播報(session 暫態去重,每輪至多一報)
         for msg in dungeon.reinfest_notices(state.player, gamedata, state.time.absolute_hours(), _reinfest_seen):
             ui.message(msg, style="cyan")

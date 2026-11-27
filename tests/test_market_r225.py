@@ -224,6 +224,47 @@ def test_shop_sell_path_does_not_use_the_base_sell_price():
 
 
 # --- 7 介面 -------------------------------------------------------------------
+def test_game_loop_really_broadcasts_the_market_sentence():
+    """廣播函式本身 + game_loop 真的有呼叫它(R225 審查:原先只測 pulse_market_news,刪掉 game_loop 那幾行測試仍綠)。"""
+    msgs, rules = [], []
+    real = (ui.message, ui.rule)
+    ui.message = lambda text, **kw: msgs.append((text, kw.get("style")))
+    ui.rule = lambda text="", **kw: rules.append(text)
+    try:
+        M._announce_pulse({"id": "pulse_cyrodiil_banditry", "news": "測試新聞"}, gd)
+        assert rules == ["四方傳聞"] and msgs[0] == ("測試新聞", "cyan")
+        assert len(msgs) == 2 and msgs[1][1] == "yellow" and "武器" in msgs[1][0] and "+30%" in msgs[1][0], msgs
+        msgs.clear()
+        M._announce_pulse({"id": "pulse_cyrodiil_underworld", "news": "沒有行情的新聞"}, gd)
+        assert [m[0] for m in msgs] == ["沒有行情的新聞"]                      # 沒有 market 的脈動不附
+    finally:
+        ui.message, ui.rule = real
+    src = inspect.getsource(M.game_loop)
+    assert "_announce_pulse(ev, gamedata)" in src and "worldpulse.update(" in src
+
+
+def test_scan_catches_a_clamp_that_uses_the_local_buy_price():
+    """R225 審查:把夾限從 min_buy_price 改成「所在地買價」時,舊掃描(持商誼角色只站在商誼省)抓不到。"""
+    assert all(bad == 0 for _l, bad, _e in E.market_scan())
+
+    def local_clamp(char, gamedata, iid, loc, today):
+        f = world.market_factor(char, gamedata, loc, iid, today)
+        base = world.sell_price(char, gamedata, iid)
+        if f == 1.0:
+            return base
+        chain = world._sell_chain(char, gamedata, gamedata.item(iid)["value"])
+        if f > 1.0:
+            return max(base, min(round(chain * f), world.buy_price(char, gamedata, iid) - 1))
+        return max(1, round(chain * f))
+    real = world.shop_sell_price
+    world.shop_sell_price = local_clamp
+    try:
+        scan = E.market_scan()
+    finally:
+        world.shop_sell_price = real
+    assert any(bad > 0 for _l, bad, _e in scan), scan
+
+
 def test_pulse_broadcast_carries_the_market_sentence():
     s = world.pulse_market_news(gd, "pulse_cyrodiil_banditry")
     assert "賽羅迪爾" in s and "武器" in s and "+30%" in s and "8 天" in s

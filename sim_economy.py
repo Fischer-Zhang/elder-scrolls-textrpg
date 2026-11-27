@@ -1,4 +1,4 @@
-"""經濟量測(R222 建立、R223 起跨攤位倒掛應為 0;非測試;手動跑:PYTHONPATH=. python3 sim_economy.py [seeds=20];約 4 秒)
+"""經濟量測(R222 建立、R223 起跨攤位倒掛應為 0;非測試;手動跑:PYTHONPATH=. python3 sim_economy.py [seeds=20];約 5 秒)
 
 為什麼另寫:既有 sim 全是戰鬥,金幣流動從來沒有量測。R222 評估經濟時的數字(價格、套利、收入、去處)原本都是臨時腳本量的,
 而之後四個里程碑(銷贓與贓物 / 練習與訓練 / 商人玩法 / 交易 100)每次動數值都要重量 → 收成一支固定工具。
@@ -327,18 +327,26 @@ def market_scan():
     賣給商店的價錢(world.shop_sell_price)必須仍低於這個角色買得到的最低價(world.min_buy_price)——
     R223 全域規則不得被行情破壞。回傳 [(情境, 倒掛件數(商店 × 物品), 例)]。"""
     out = []
-    for label, kw in PROFILES:
+    # 另加一個只有商誼折扣的情境:「全折扣疊滿」的買價被 sell+1 地板頂住,商誼折扣在那裡沒作用,掃不出「夾限誤用所在地買價」的退化
+    for label, kw in PROFILES + [("議價滿 + 在地商誼", dict(MAXED, pact=True))]:
         c = make_char(**kw)
         for pid in gd.world_pulse:
             c.world_pulse_day[pid] = 0              # 全部脈動在 today=0 同時生效
         bad, example = 0, ""
-        for lid in PROVINCE_SHOPS:                  # 同省商店的行情完全相同 → 每省掃一家代表店即可(72 家全掃要 20 秒)
-            for iid in POOL:
-                shop = world.shop_sell_price(c, gd, iid, lid, 0)
-                boosted = world.market_factor(c, gd, lid, iid, 0) > 1.0
-                if shop >= world.min_buy_price(c, gd, iid) or (boosted and shop < world.sell_price(c, gd, iid)):
-                    bad += 1
-                    example = example or f"{lid}/{iid}"
+        here = [c.location_id]                      # 角色所在地(有商誼的情境 = 商誼所在省)
+        if kw.get("pact"):                          # 持商誼的角色也要站在「別的省」掃一次:商誼折扣只在所在省生效,
+            away = next(lid for lid in PROVINCE_SHOPS if gd.world["locations"][lid]["province"]
+                        != gd.world["locations"][HOUSE_LOC]["province"])
+            here.append(away)                       # 站別省時 buy_price 比 min_buy_price 高 → 夾限若誤用所在地買價就會漏出倒掛(R225 審查)
+        for at in here:
+            c.location_id = at
+            for lid in PROVINCE_SHOPS:              # 同省商店的行情完全相同 → 每省掃一家代表店即可(72 家全掃要 20 秒)
+                for iid in POOL:
+                    shop = world.shop_sell_price(c, gd, iid, lid, 0)
+                    boosted = world.market_factor(c, gd, lid, iid, 0) > 1.0
+                    if shop >= world.min_buy_price(c, gd, iid) or (boosted and shop < world.sell_price(c, gd, iid)):
+                        bad += 1
+                        example = example or f"{lid}/{iid}(角色在 {at})"
         out.append((label, bad, example))
     return out
 

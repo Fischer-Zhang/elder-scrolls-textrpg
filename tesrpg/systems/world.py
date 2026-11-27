@@ -333,10 +333,16 @@ def service_price(char: Character, gamedata: GameData, base: float, guild_discou
     return max(1, round(base * (1 - guild_discount) * (1 - service_rebate(char, gamedata))))
 
 
+def rebate_pct_text(rebate: float) -> str:
+    """折抵率 → 百分比字串(不含正負號):≥ 1% 取整,不到 1% 留一位小數(免得實際有折扣卻顯示「0%」)。"""
+    pct = rebate * 100
+    return f"{round(pct)}%" if pct >= 1 else f"{pct:.1f}%"
+
+
 def rebate_note(char: Character, gamedata: GameData | None = None) -> str:
     """選單標題用的一小段:有折抵才出字(例:「議價折抵 −10%」),沒有就回空字串。"""
     r = service_rebate(char, gamedata)
-    return f"議價折抵 −{round(r * 100)}%" if r > 0 else ""
+    return f"議價折抵 −{rebate_pct_text(r)}" if r > 0 else ""
 
 
 LOCKPICK_OUTSIDER_MARKUP = 2.0  # 開鎖器是盜賊公會的營生:非會員(含敵對)買得到但被坑這麼多倍
@@ -619,7 +625,7 @@ def merchant_catalog(gamedata: GameData, loc_id: str, tier: int = 0) -> list[str
 # 第 2 階「大城貨源」:再開始賣大城才有的貨(高級錠材;法師城另有大型 / 黑色空魂石)。
 # 刻意**不給賣價加成**(永久賣價加成 = 算得回本的理財商品);價錢吃 ① 的議價折抵(`service_price`)。
 SHOP_INVEST_TIERS = (
-    {"name": "擴充貨架", "price": 1000, "desc": "補貨量加倍,每樣貨補貨時至少一件(不再缺貨)"},
+    {"name": "擴充貨架", "price": 1000, "desc": "補貨量加倍,每樣貨至少補兩件(不再缺貨)"},
     {"name": "大城貨源", "price": 3000, "desc": "另賣大城才有的貨:高級錠材,法師城另有大型與黑色空魂石"},
 )
 SHOP_INVEST_RESTOCK_MULT = 2
@@ -630,7 +636,7 @@ def shop_tier(char: Character, loc_id: str) -> int:
     """這家店目前的投資階數(0 ~ len(SHOP_INVEST_TIERS));存檔裡的壞值一律夾回範圍。"""
     try:
         t = int(char.shop_invest.get(loc_id, 0))
-    except (TypeError, ValueError):
+    except (TypeError, ValueError, OverflowError):   # 手改存檔的 Infinity / NaN / 字串 / None → 當作沒投資
         return 0
     return max(0, min(len(SHOP_INVEST_TIERS), t))
 

@@ -204,7 +204,9 @@ def test_each_shop_keeps_its_own_tier():
 
 def test_bad_saved_values_are_clamped_on_read():
     c = _char()
-    for raw, want in ((2, 2), (1, 1), (0, 0), (-3, 0), (99, 2), ("2", 2), ("x", 0), (None, 0), (1.9, 1), ([], 0)):
+    inf, nan = float("inf"), float("nan")
+    for raw, want in ((2, 2), (1, 1), (0, 0), (-3, 0), (99, 2), ("2", 2), ("x", 0), (None, 0), (1.9, 1), ([], 0),
+                      (inf, 0), (-inf, 0), (nan, 0)):                       # 手改存檔的 Infinity / NaN(int() 會丟 OverflowError / ValueError)
         c.shop_invest = {_MAGE_CITY: raw}
         assert world.shop_tier(c, _MAGE_CITY) == want, raw
 
@@ -222,6 +224,14 @@ def test_save_round_trip_and_old_saves_without_the_field():
     bad = dict(d)
     bad["shop_invest"] = ["junk"]
     assert Character.from_dict(bad).shop_invest == {}                   # 壞型別 → 無投資
+
+
+def test_tier_descriptions_match_the_real_restock_numbers():
+    """玩家看到的說明不得與實際補貨量不符(R225 審查:原寫「至少一件」,實際 max(1,q)×2 = 至少兩件)。"""
+    floor = world.shop_qty(0, 1, 1.0)
+    assert floor == 2 == max(1, 0) * world.SHOP_INVEST_RESTOCK_MULT
+    assert "至少補兩件" in world.SHOP_INVEST_TIERS[0]["desc"] and "加倍" in world.SHOP_INVEST_TIERS[0]["desc"]
+    assert "一件" not in world.SHOP_INVEST_TIERS[0]["desc"]
 
 
 # --- 6 真流程 -----------------------------------------------------------------

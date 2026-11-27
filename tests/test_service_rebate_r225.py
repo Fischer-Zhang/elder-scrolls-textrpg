@@ -143,6 +143,10 @@ def _state(name, loc=_LOC, gold=500000):
     return GameState(player=c, rng=RNG(seed=1), game_mode="adventure")
 
 
+def _titles_have_note(script) -> bool:
+    return any("議價折抵" in title for title, _opts in script.menus)
+
+
 def _label(script, key, menu_index=0):
     for opt in script.menus[menu_index][1]:
         if opt[0] == key:
@@ -183,6 +187,7 @@ def test_trainer_label_equals_charge_and_repeat_prompt_price():
         assert _price_in(_label(script, sid, 1 if len(specs) > 1 else 0)) == want == 500000 - c.gold, name
         nxt = world.service_price(c, gd, world.train_cost(c.skill(sid)))
         assert any(f"{nxt} 金" in p for p in script.confirms), (name, script.confirms)   # ↻ 再訓練的價也走同一出處
+        assert _titles_have_note(script) == (name != "none_high"), name                  # 訓練選單標題標「議價折抵」(R225 審查)
 
 
 def test_stable_label_equals_charge():
@@ -192,6 +197,7 @@ def test_stable_label_equals_charge():
         _run(M.action_stable, st, script)
         want = world.service_price(st.player, gd, gd.mount("warhorse")["price"])
         assert _price_in(_label(script, "buy:warhorse")) == want == 500000 - st.player.gold, name
+        assert _titles_have_note(script) == (name != "none_high"), name                  # 馬廄標題
 
 
 def test_house_purchase_and_upgrade_prompts_equal_charge():
@@ -212,6 +218,7 @@ def test_house_purchase_and_upgrade_prompts_equal_charge():
         up_menu = [m for m in script.menus if m[0].startswith("添置哪項設施")][0]
         assert _price_in(dict((o[0], o[1]) for o in up_menu[1])["garden"]) == uw == gold - c.gold, name
         assert any(f"以 {uw} 金添置" in p for p in script.confirms)
+        assert ("議價折抵" in up_menu[0]) == (name != "none_high"), name                  # 擴建選單標題
 
 
 def test_mercenary_label_equals_charge_with_guild_discount():
@@ -226,6 +233,7 @@ def test_mercenary_label_equals_charge_with_guild_discount():
         want = world.service_price(c, gd, gd.companions[cid]["cost"], disc)
         assert cid in c.companions and 500000 - c.gold == want, name
         assert _price_in(_label(script, cid)) == want, name
+        assert _titles_have_note(script) == (name != "none_high"), name                  # 雇用選單標題
 
 
 # --- 5 不適用 ---------------------------------------------------------------
@@ -236,8 +244,30 @@ def test_inn_fee_is_not_discounted():
 
 
 # --- 6 介面 -----------------------------------------------------------------
+def test_small_rebates_are_never_shown_as_zero_percent():
+    """溢出極小時折抵不到 1%,顯示一位小數而不是「−0%」(R225 審查);≥ 1% 仍取整。"""
+    assert world.rebate_pct_text(0.1) == "10%" and world.rebate_pct_text(0.2) == "20%" and world.rebate_pct_text(0.01) == "1%"
+    assert world.rebate_pct_text(0.0017) == "0.2%" and world.rebate_pct_text(0.0049) == "0.5%"
+    real = world.barter_overflow
+    world.barter_overflow = lambda char, gamedata=None: 0.0034            # 溢出 0.0034 → 折抵 0.0017(0.17%)
+    try:
+        c = _char("none_high")
+        assert world.service_rebate(c, gd) == 0.0017
+        assert world.rebate_note(c, gd) == "議價折抵 −0.2%"
+        assert "−0%" not in world.rebate_note(c, gd)
+    finally:
+        world.barter_overflow = real
+    small = E.make_char(mercantile=91, personality=99, charm=True)        # 真實小溢出:(91 + 49.5)/150 + 0.08 − 1 ≈ 0.0167 → 折抵 ≈ 0.8%
+    assert 0.01 < world.barter_overflow(small, gd) < 0.03 and world.service_rebate(small, gd) < 0.01
+    tip = ui._barter_tip(small, gd)
+    assert "折抵服務價 −0.8%" in tip and "−0%" not in tip, tip
+    for name in ("half", "cap", "over"):
+        assert "−0%" not in world.rebate_note(_char(name), gd)
+
+
 def test_barter_tip_explains_the_overflow_conversion():
     tip = ui._barter_tip(_char("half"), gd)
+    assert "投資商店" in tip                                              # 適用清單含投資商店(投資價吃折抵;R225 審查)
     assert "折抵服務價 −10%" in tip and "無效" not in tip, tip
     assert "折抵服務價" not in ui._barter_tip(_char("none_high"), gd)
     assert world.rebate_note(_char("half"), gd) == "議價折抵 −10%" and world.rebate_note(_char("cap"), gd) == "議價折抵 −20%"
