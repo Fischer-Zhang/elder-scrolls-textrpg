@@ -413,6 +413,110 @@ def black_market_price(char: Character, gamedata: GameData, item_id: str) -> int
     return max(buy_price(char, gamedata, item_id), fence_sell_price(char, gamedata, item_id) + 1)
 
 
+# --- R225 ③ 行情:各省固定偏好 + 脈動帶來的短期行情,只動「賣給一般商店」的價錢 ----------------
+# 固定偏好(data/market.json 每省一類 ×1.2、一類 ×0.9);短期行情(data/world_pulse.json 的 market,通常 ×1.3,
+# 在該脈動的聚光視窗內)。兩者相乘;同類多筆短期行情取最大。
+# 🔴 全域規則(R223)不得破:`sell_price` 維持「無行情基準價」(銷贓、買價地板、min_buy_price 都只看它),
+# 帶行情的賣價 = min(round(基準連乘 × 行情), min_buy_price − 1);行情 < 1 沒有套利問題,只下限 1 金。
+MARKET_FAVORED_MULT = 1.2
+MARKET_GLUTTED_MULT = 0.9
+
+
+def item_market_category(gamedata: GameData, item_id: str) -> str | None:
+    """物品所屬的市場類別(依 kind 或明列 id);不屬於任何類別 → None(不受行情影響)。每件至多一類(守衛驗證)。"""
+    item = gamedata.item(item_id)
+    for cid, cat in gamedata.market["categories"].items():
+        if item_id in cat.get("items", ()) or item["kind"] in cat.get("kinds", ()):
+            return cid
+    return None
+
+
+def market_state(char: Character, gamedata: GameData, loc_id: str, today: int) -> dict:
+    """該地商店此刻的行情:{類別 id: {"fixed": 固定倍率, "pulse": 短期倍率, "mult": 相乘, "days_left", "note"}}(只列有行情的類別)。"""
+    from tesrpg.systems import worldpulse
+    province = gamedata.location(loc_id).get("province")
+    pref = gamedata.market["provinces"].get(province, {})
+    out: dict = {}
+    if pref.get("favored"):
+        out[pref["favored"]] = {"fixed": MARKET_FAVORED_MULT, "pulse": 1.0}
+    if pref.get("glutted"):
+        out[pref["glutted"]] = {"fixed": MARKET_GLUTTED_MULT, "pulse": 1.0}
+    for cid, m in worldpulse.active_markets(char, gamedata, province, today).items():
+        row = out.setdefault(cid, {"fixed": 1.0, "pulse": 1.0})
+        row.update(pulse=m["mult"], days_left=m["days_left"], note=m["note"])
+    for row in out.values():
+        row["mult"] = row["fixed"] * row["pulse"]
+    return out
+
+
+def market_factor(char: Character, gamedata: GameData, loc_id: str, item_id: str, today: int) -> float:
+    cat = item_market_category(gamedata, item_id)
+    return market_state(char, gamedata, loc_id, today).get(cat, {}).get("mult", 1.0) if cat else 1.0
+
+
+def shop_sell_price(char: Character, gamedata: GameData, item_id: str, loc_id: str, today: int) -> int:
+    """賣給這地方一般商店的實際價:`sell_price`(基準)× 行情,上限受全域規則夾住。
+    沒有行情(倍率恰為 1.0)→ 與 `sell_price` 逐位元組相同。選單標籤、確認句與實收共用這一個函式。"""
+    f = market_factor(char, gamedata, loc_id, item_id, today)
+    base = sell_price(char, gamedata, item_id)
+    if f == 1.0:
+        return base
+    chain = _sell_chain(char, gamedata, gamedata.item(item_id)["value"])
+    if f > 1.0:
+        return max(base, min(round(chain * f), min_buy_price(char, gamedata, item_id) - 1))
+    return max(1, round(chain * f))
+
+
+def pulse_market_news(gamedata: GameData, pulse_id: str) -> str:
+    """脈動廣播時附帶的行情一句話(該脈動沒有 market → 空字串)。例:行情:賽羅迪爾的商人收購武器價 +30%(約 8 天)—— 原因。"""
+    from tesrpg.systems import worldpulse
+    p = gamedata.world_pulse[pulse_id]
+    m = p.get("market")
+    if not m:
+        return ""
+    name = gamedata.market["categories"][m["category"]]["name"]
+    return (f"行情:{p['province']}的商人收購{name}的價錢 {_signed_pct(m['mult'])}"
+            f"(約 {p.get('active_window_days', worldpulse.DEFAULT_ACTIVE_WINDOW)} 天)—— {m.get('note', '')}")
+
+
+def _signed_pct(ratio: float) -> str:
+    """倍率 → 帶正負號的百分比字串(例 1.2 → 「+20%」、0.9 → 「−10%」)。"""
+    n = round((ratio - 1) * 100)
+    return f"{'+' if n >= 0 else '−'}{abs(n)}%"
+
+
+def market_tag(char: Character, gamedata: GameData, item_id: str, loc_id: str, today: int) -> str:
+    """賣貨清單單列的行情標示:例「行情 +20%」(行情本身的百分比,免得便宜貨的整數取整讓數字失真);
+    被全域規則夾住(賣價已頂到買價之下)時,改標實際漲幅並註明;沒有行情 → 空字串。"""
+    f = market_factor(char, gamedata, loc_id, item_id, today)
+    if f == 1.0:
+        return ""
+    base, shop = sell_price(char, gamedata, item_id), shop_sell_price(char, gamedata, item_id, loc_id, today)
+    if f > 1.0 and shop < round(_sell_chain(char, gamedata, gamedata.item(item_id)["value"]) * f):
+        return f"行情 {_signed_pct(shop / base)},已頂到買價上限"
+    return f"行情 {_signed_pct(f)}"
+
+
+def market_line(char: Character, gamedata: GameData, loc_id: str, today: int) -> str:
+    """商店入口的一句話:本地行情(固定偏好 + 短期行情);沒有任何行情 → 空字串。"""
+    state = market_state(char, gamedata, loc_id, today)
+    if not state:
+        return ""
+    cats = gamedata.market["categories"]
+    fixed, pulse = [], []
+    for cid, row in state.items():
+        if row["fixed"] != 1.0:
+            fixed.append(f"{cats[cid]['name']} {_signed_pct(row['fixed'])}")
+        if row["pulse"] != 1.0:
+            pulse.append(f"{cats[cid]['name']} {_signed_pct(row['pulse'])}(餘 {row['days_left']} 天)")
+    parts = []
+    if fixed:
+        parts.append("、".join(fixed))
+    if pulse:
+        parts.append("短期行情:" + "、".join(pulse))
+    return "本地商人收購行情 —— " + ";".join(parts) + "(只動賣給商店的價錢;買價與銷贓不受影響)"
+
+
 def barter_breakdown(char: Character, gamedata: GameData) -> dict:
     """議價係數的來源分解(R222;商店標題、角色卡、sim_economy 共用)。
 

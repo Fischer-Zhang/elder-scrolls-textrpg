@@ -6,6 +6,7 @@
     "active_window_days": 8,
     "min_day": 4,
     "spotlight_quests": ["comm_cyrodiil_bandit", "comm_cyrodiil_minotaur", "comm_cyrodiil_relics"],
+    "market": {"category": "weapon", "mult": 1.3, "note": "盜匪橫行、牛魔作亂,守備營與商隊搶購兵器"},
     "news": "帝國大道近來不寧 —— 盜匪橫行、腹地遺跡有牛魔作亂,沿途村鎮的告示板貼滿了懸賞與供應委託。"
   },
   "pulse_cyrodiil_underworld": {
@@ -42,6 +43,7 @@
     "active_window_days": 8,
     "min_day": 4,
     "spotlight_quests": ["comm_skyrim_wolf", "comm_skyrim_troll", "comm_skyrim_glowdust"],
+    "market": {"category": "armor", "mult": 1.3, "note": "餓狼下山、霜巨魔擋道,獵戶與領主的人馬都在添購禦寒的甲冑"},
     "news": "天際雪原入冬,餓狼下山、霜巨魔擋道,各地領主與冬堡學徒在告示板貼出獵殺與採集委託。"
   },
   "pulse_morrowind_ashland": {
@@ -51,6 +53,7 @@
     "active_window_days": 8,
     "min_day": 5,
     "spotlight_quests": ["comm_morrowind_ash", "comm_morrowind_daedra", "comm_morrowind_ashyam", "cint_morrowind_agents"],
+    "market": {"category": "herb", "mult": 1.3, "note": "灰原蟲群異動、紅山裂隙湧出魔人,大家族與煉金師高價收藥材"},
     "news": "晨風灰原蟲群異動、紅山裂隙湧出魔人,瓦登費爾的大家族與煉金師貼出多項懸賞與供應委託。"
   },
   "pulse_hammerfell_raiders": {
@@ -60,6 +63,7 @@
     "active_window_days": 8,
     "min_day": 5,
     "spotlight_quests": ["comm_hammerfell_scorpion", "comm_hammerfell_lamia", "comm_hammerfell_patrol"],
+    "market": {"category": "weapon", "mult": 1.3, "note": "沙海商道頻遭侵擾,商隊與護路的人手搶購兵器"},
     "news": "漢默法爾沙海商道頻遭沙蠍與拉米亞侵擾,森塔商隊在各綠洲城鎮張貼護路與巡剿委託。"
   },
   "pulse_highrock_hagraven": {
@@ -69,6 +73,7 @@
     "active_window_days": 8,
     "min_day": 5,
     "spotlight_quests": ["comm_highrock_witch", "comm_highrock_barrow", "comm_highrock_nightshade", "cint_highrock_moles"],
+    "market": {"category": "soul", "mult": 1.3, "note": "女巫蹤跡再現、古墓鐵衛甦醒,剿巫的法師與煉金師收購魂石"},
     "news": "高岩荒沼間女巫蹤跡再現、古墓鐵衛甦醒,匕落領主與威岩煉金師貼出剿巫、破墓與採集委託。"
   },
   "pulse_valenwood_stranglers": {
@@ -78,6 +83,7 @@
     "active_window_days": 8,
     "min_day": 5,
     "spotlight_quests": ["comm_valenwood_vine", "comm_valenwood_spider", "comm_valenwood_eggs", "cint_valenwood_agents"],
+    "market": {"category": "herb", "mult": 1.3, "note": "絞殺藤瘋長、巨蛛織網,獵手與藥師高價收藥材"},
     "news": "瓦倫森林綠徑絞殺藤瘋長、巨蛛織網捕人,法林斯提的獵手在沿線貼出清藤、獵蛛與取卵委託。"
   },
   "pulse_elsweyr_skooma": {
@@ -87,6 +93,7 @@
     "active_window_days": 8,
     "min_day": 6,
     "spotlight_quests": ["comm_elsweyr_senche", "comm_elsweyr_tiger", "comm_elsweyr_hunt", "cint_elsweyr_spies"],
+    "market": {"category": "herb", "mult": 1.3, "note": "月糖黑市猖獗,私梟與藥販搶收藥材"},
     "news": "艾爾斯維爾月糖黑市猖獗、森奇巨虎下山,瑞門各城張貼平亂、獵虎與草原清剿委託。"
   },
   "pulse_elsweyr_smuggle": {
@@ -105,6 +112,7 @@
     "active_window_days": 8,
     "min_day": 5,
     "spotlight_quests": ["comm_blackmarsh_lizard", "comm_blackmarsh_troll", "comm_blackmarsh_deathbell", "cint_blackmarsh_informers"],
+    "market": {"category": "material", "mult": 1.3, "note": "濕地水漲、村落受淹,各村搶購修築用的礦材與皮料"},
     "news": "黑沼澤濕地水漲,沼蜥侵村、泥沼巨魔潛伏,吉迪恩的告示板貼出獵蜥、獵魔與供應委託。"
   },
   "pulse_summerset_searaid": {
@@ -114,6 +122,7 @@
     "active_window_days": 8,
     "min_day": 5,
     "spotlight_quests": ["comm_summerset_raider", "comm_summerset_serpent", "comm_summerset_pearl"],
+    "market": {"category": "weapon", "mult": 1.3, "note": "海精靈的蛇艏船夜襲沿岸,各港與王廷加購兵器"},
     "news": "夏暮沿岸烽火頻傳 —— 海精靈的蛇艏船趁夜襲岸、巨蛇尾隨而至,阿林諾爾王廷與各港的告示板貼滿了剿寇、獵蛇與收珠委託。"
   },
   "pulse_summerset_deepstir": {
@@ -123,6 +132,7 @@
     "active_window_days": 8,
     "min_day": 6,
     "spotlight_quests": ["comm_summerset_sload", "comm_summerset_yaghra", "comm_summerset_moth"],
+    "market": {"category": "soul", "mult": 1.3, "note": "深水有了動靜,智者學院與南岸守望收購魂石"},
     "news": "夏暮近海的深水有了動靜 —— 斯洛德的黏影貼著礁岸蠕行、亞格拉成群上灘,智者學院與南岸守望在告示板貼出獵殺與供應委託。"
   }
 }

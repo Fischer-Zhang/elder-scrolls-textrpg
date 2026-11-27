@@ -1,4 +1,4 @@
-"""經濟量測(R222 建立、R223 起跨攤位倒掛應為 0;非測試;手動跑:PYTHONPATH=. python3 sim_economy.py [seeds=20];不到 1 秒)
+"""經濟量測(R222 建立、R223 起跨攤位倒掛應為 0;非測試;手動跑:PYTHONPATH=. python3 sim_economy.py [seeds=20];約 4 秒)
 
 為什麼另寫:既有 sim 全是戰鬥,金幣流動從來沒有量測。R222 評估經濟時的數字(價格、套利、收入、去處)原本都是臨時腳本量的,
 而之後四個里程碑(銷贓與贓物 / 練習與訓練 / 商人玩法 / 交易 100)每次動數值都要重量 → 收成一支固定工具。
@@ -6,7 +6,7 @@
 train_cost / spell_price / merchant_catalog / _restock_qty),地城收入用真實生成器 dungeoncrawl.generate + loot.resolve_loot
 擲 N 組種子;腳本本身不重寫任何公式。
 
-輸出五段:
+輸出六段(6 行情見守衛 7):
   1 議價:係數 → 買賣倍率表;各加成來源與上限(加成合計遠大於上限留下的空間 = 上限遮蔽)。
   2 套利掃描:各種折扣組合下,逐一比對每種可賣物品的「一般商店買價」與「同店賣價 / 銷贓價 / 黑市買價」。
   3 收入:72 座地城各清一次的金幣與物品底價(依危險度)、一次性任務金幣、商店架上貨。
@@ -35,6 +35,7 @@ train_cost / spell_price / merchant_catalog / _restock_qty),地城收入用真�
      (world.fence_sell_price 夾在 world.min_buy_price − 1);亮了 = 全域「賣出價 < 買入價」規則破了。
   4. 配方轉賣:原料全都買得到的配方,買料製作再賣,受庫存限制後每城每次補貨的期望利潤 ≥ RESALE_FLAG(50 金)。
   5. 練習上限 ≥ 訓練師上限:免費練習就能到訓練師賣的等級 → 訓練師沒有獨有的區段(R224)。
+  7. 行情倒掛(R225 ③):所有脈動行情同時生效時,賣給商店的價錢仍須低於最低買價(R223 全域規則)。
   6. 配方轉賣(商店投資後):全部商店投資到第 1 / 2 階(補貨加倍、不缺貨、另賣大城貨)時,守衛 4 的同一個門檻(R225 ②)。
 """
 import statistics as S
@@ -317,6 +318,43 @@ def recipe_resale(tier: int = 0):
     return out
 
 
+# --- 6 行情(R225 ③)------------------------------------------------------------
+PROVINCE_SHOPS = list({gd.world["locations"][lid]["province"]: lid for lid in reversed(SHOP_LOCS)}.values())   # 每省一家商店
+
+
+def market_scan():
+    """行情倒掛掃描:每個情境 × 每家商店 × 每種可賣物品,在「所有脈動行情同時生效」的最壞情況下,
+    賣給商店的價錢(world.shop_sell_price)必須仍低於這個角色買得到的最低價(world.min_buy_price)——
+    R223 全域規則不得被行情破壞。回傳 [(情境, 倒掛件數(商店 × 物品), 例)]。"""
+    out = []
+    for label, kw in PROFILES:
+        c = make_char(**kw)
+        for pid in gd.world_pulse:
+            c.world_pulse_day[pid] = 0              # 全部脈動在 today=0 同時生效
+        bad, example = 0, ""
+        for lid in PROVINCE_SHOPS:                  # 同省商店的行情完全相同 → 每省掃一家代表店即可(72 家全掃要 20 秒)
+            for iid in POOL:
+                shop = world.shop_sell_price(c, gd, iid, lid, 0)
+                boosted = world.market_factor(c, gd, lid, iid, 0) > 1.0
+                if shop >= world.min_buy_price(c, gd, iid) or (boosted and shop < world.sell_price(c, gd, iid)):
+                    bad += 1
+                    example = example or f"{lid}/{iid}"
+        out.append((label, bad, example))
+    return out
+
+
+def market_uplift(province_loc: str, category: str, pulses=()):
+    """各情境在某地賣出某市場類別物品的「賣價 ÷ 基準價」(平均;看議價高低讓行情的實際效益差多少)。"""
+    ids = [i for i in POOL if world.item_market_category(gd, i) == category]
+    out = []
+    for label, kw in PROFILES:
+        c = make_char(**kw)
+        for pid in pulses:
+            c.world_pulse_day[pid] = 0
+        out.append((label, S.mean(world.shop_sell_price(c, gd, i, province_loc, 0) / world.sell_price(c, gd, i) for i in ids)))
+    return out
+
+
 # --- 報告 -----------------------------------------------------------------
 def main() -> None:
     seeds = int(sys.argv[1]) if len(sys.argv) > 1 else SEEDS
@@ -429,6 +467,26 @@ def main() -> None:
         if best and best[5] >= RESALE_FLAG:
             flags.append(f"⚠配方轉賣(商店投資第 {t} 階後)每城每次補貨期望利潤 ≥ {RESALE_FLAG} 金"
                          f"(最多 {best[5]:.0f}:{best[0]} 的 {best[1]})")
+
+    print("\n== 6 行情(R225 ③:各省固定偏好 ×1.2 / ×0.9 + 脈動短期行情 ×1.3;只動賣給商店的價錢)==")
+    cats = gd.market["categories"]
+    print("市場類別:" + "、".join(f"{c['name']} {sum(1 for i in POOL if world.item_market_category(gd, i) == cid)} 種"
+                                for cid, c in cats.items())
+          + f";不屬任何類別 {sum(1 for i in POOL if world.item_market_category(gd, i) is None)} 種(不受行情影響)")
+    scan = market_scan()
+    for label, bad, example in scan:
+        if bad:
+            flags.append(f"⚠行情倒掛 {label}:{bad} 組(商店 × 物品)賣給商店的價錢 ≥ 最低買價,如 {example}(R223 全域規則被行情破壞)")
+    print(f"倒掛掃描(所有脈動行情同時生效 × {len(PROVINCE_SHOPS)} 省各一家商店 × {len(POOL)} 種物品 × {len(scan)} 個情境):"
+          + ("全為 0" if not any(b for _l, b, _e in scan) else "有倒掛,見警示"))
+    boosted = [(pid, p["market"]["category"]) for pid, p in sorted(gd.world_pulse.items()) if p.get("market")]
+    print(f"有行情的脈動 {len(boosted)} / {len(gd.world_pulse)};各省固定偏好 {len(gd.market['provinces'])} 省")
+    print("實際效益(賣價 ÷ 基準價;議價越高、行情越容易頂到「賣價必須低於買價」的上限):")
+    print(f"  {'情境':34}{'武器·天際 固定 ×1.2':>20}{'魂石·夏暮 固定+行情 ×1.56':>26}")
+    fixed = dict(market_uplift("whiterun", "weapon"))
+    stack = dict(market_uplift("alinor", "soul", ("pulse_summerset_deepstir",)))
+    for label, _kw in PROFILES:
+        print(f"  {label:34}{fixed[label]:>20.3f}{stack[label]:>26.3f}")
 
     if flags:                                    # 只有真的有警示才印「⚠ 守衛警示」(check.sh 以此行 grep)
         print("\n⚠ 守衛警示:\n  " + "\n  ".join(flags))

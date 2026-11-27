@@ -3178,6 +3178,9 @@ def action_shop(state: GameState, gamedata: GameData) -> None:
     char = state.player
     loc_id = char.location_id
     world.ensure_stock(char, gamedata, loc_id, state.time, state.rng)   # 首訪/逾期 → 補貨
+    _ml = world.market_line(char, gamedata, loc_id, worldpulse.day_index(state))   # R225 ③:本地行情(進店一次)
+    if _ml:
+        ui.message(_ml, style="yellow")
     while True:
         # R225 ②:投資商店 —— 付錢永久升級這家店(補貨加倍不缺貨 / 另賣大城貨);價錢吃 ① 的議價折抵
         nxt = world.shop_invest_next(char, gamedata, loc_id)
@@ -3272,8 +3275,11 @@ def action_shop(state: GameState, gamedata: GameData) -> None:
                     ui.message("剩下的都是贓物,商人不收 —— 得找銷贓的門路。" if valued else "沒有可賣的東西。",
                                style="grey70")
                     break
+                today = worldpulse.day_index(state)     # R225 ③:賣價吃本地行情(固定偏好 + 脈動短期行情)
                 opts = [(s["id"], f"{ui.item_label(gamedata, char, s['id'], s['qty'])} — 售 "
-                         f"{world.sell_price(char, gamedata, s['id'])} 金") for s in sellable]
+                         f"{world.shop_sell_price(char, gamedata, s['id'], loc_id, today)} 金"
+                         + (f"({_t})" if (_t := world.market_tag(char, gamedata, s['id'], loc_id, today)) else ""))
+                        for s in sellable]
                 ui.inventory_panel(char, gamedata)    # web:複用背包面板,可賣列(key=stack id)可點
                 iid = ui.menu(f"賣什麼?(你有 {char.gold} 金)", opts, allow_back=True)
                 if iid is None:
@@ -3283,7 +3289,7 @@ def action_shop(state: GameState, gamedata: GameData) -> None:
                 if owned <= 1:
                     if (gamedata.item(iid)["value"] >= SELL_CONFIRM_VALUE
                             and not ui.confirm(f"賣出你僅有的{gamedata.item_name(iid)}"
-                                               f"(售 {world.sell_price(char, gamedata, iid)} 金)?")):
+                                               f"(售 {world.shop_sell_price(char, gamedata, iid, loc_id, today)} 金)?")):
                         continue
                     qty = 1
                 else:
@@ -3296,7 +3302,7 @@ def action_shop(state: GameState, gamedata: GameData) -> None:
                 for _ in range(qty):
                     if inventory.clean_count(char, iid) <= 0:
                         break
-                    total += world.sell_price(char, gamedata, iid)   # 隨交易技能微升,逐件結算
+                    total += world.shop_sell_price(char, gamedata, iid, loc_id, today)   # 隨交易技能微升,逐件結算(含行情)
                     inventory.remove_item(char, iid, 1, clean=True)   # R223:商人只收乾淨的(贓物記錄不動)
                     sold += 1
                     ui.show_events(progression.use_skill(char, gamedata, "mercantile", 0.3), gamedata)   # R197 審查:賣貨升點原被丟棄
@@ -6618,6 +6624,9 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
         for ev in worldpulse.update(state, gamedata):
             ui.rule("四方傳聞")
             ui.message(ev["news"], style="cyan")
+            _mn = world.pulse_market_news(gamedata, ev["id"])   # R225 ③:有行情的脈動順帶播報(商店入口也會再提醒)
+            if _mn:
+                ui.message(_mn, style="yellow")
         # 地城再滋擾傳聞(R111):本省已清地城被重踞 → 一次性播報(session 暫態去重,每輪至多一報)
         for msg in dungeon.reinfest_notices(state.player, gamedata, state.time.absolute_hours(), _reinfest_seen):
             ui.message(msg, style="cyan")

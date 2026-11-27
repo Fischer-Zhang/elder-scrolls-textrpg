@@ -1,0 +1,106 @@
+{
+ "_doc": "R225 ③ 行情。categories:可賣物品的市場類別(依 kind 或明列 id;沒進任何類別的物品不受行情影響);provinces:各省固定偏好——favored 類別收購價 ×1.2、glutted 類別(供過於求 / 需求低)收購價 ×0.9;只動「賣給一般商店」的價錢,買價 / 銷贓 / 黑市不受影響(world.shop_sell_price)。倍率常數在 world.MARKET_*,這裡只放內容。",
+ "categories": {
+  "weapon": {
+   "name": "武器",
+   "kinds": [
+    "weapon"
+   ]
+  },
+  "armor": {
+   "name": "護甲",
+   "kinds": [
+    "armor"
+   ]
+  },
+  "herb": {
+   "name": "藥材",
+   "kinds": [
+    "ingredient"
+   ]
+  },
+  "material": {
+   "name": "礦材皮料",
+   "items": [
+    "iron_ingot",
+    "steel_ingot",
+    "gold_ingot",
+    "moonstone_ingot",
+    "dwarven_ingot",
+    "malachite_ingot",
+    "ebony_ingot",
+    "wolf_pelt",
+    "bolt_of_cloth",
+    "dragon_scale"
+   ]
+  },
+  "jewelry": {
+   "name": "珠寶",
+   "kinds": [
+    "jewelry"
+   ],
+   "items": [
+    "ruby"
+   ]
+  },
+  "soul": {
+   "name": "靈魂石",
+   "kinds": [
+    "soul_gem",
+    "soul_gem_empty"
+   ]
+  }
+ },
+ "provinces": {
+  "天際": {
+   "favored": "weapon",
+   "glutted": "material",
+   "note": "內戰與諾德尚武,兵器供不應求;毛皮與礦脈盛產,料價低"
+  },
+  "賽羅迪爾": {
+   "favored": "jewelry",
+   "glutted": "herb",
+   "note": "帝都貴族與商會愛珠寶;大森林與尼本谷的藥草滿坑滿谷"
+  },
+  "晨風": {
+   "favored": "soul",
+   "glutted": "material",
+   "note": "泰爾凡尼巫師的魂石傳統;灰燼地與紅山礦脈盛產"
+  },
+  "漢默法爾": {
+   "favored": "herb",
+   "glutted": "weapon",
+   "note": "沙漠缺藥草;瑞德加的彎刀工坊產量大"
+  },
+  "高岩": {
+   "favored": "material",
+   "glutted": "armor",
+   "note": "奧辛尼姆的獸人鐵匠缺料;獸人與布萊頓工坊的甲冑產量大"
+  },
+  "瓦倫森林": {
+   "favored": "armor",
+   "glutted": "weapon",
+   "note": "林地沒有鍛造傳統,甲冑靠進口;博斯默的弓遍地都是"
+  },
+  "艾爾斯維爾": {
+   "favored": "armor",
+   "glutted": "herb",
+   "note": "商隊與傭兵需要護甲;月糖與草藥產量大"
+  },
+  "黑沼澤": {
+   "favored": "weapon",
+   "glutted": "herb",
+   "note": "沼澤缺金屬,兵器要從外面運;濕地的草藥採不完"
+  },
+  "夏暮群島": {
+   "favored": "soul",
+   "glutted": "jewelry",
+   "note": "奧爾德姆里的魔法傳統與智者學院用量大;近海採珠與水晶工藝使珠寶供過於求"
+  },
+  "邊境": {
+   "favored": "weapon",
+   "glutted": "soul",
+   "note": "戍堡與哨所的軍需;守軍用不上魂石"
+  }
+ }
+}

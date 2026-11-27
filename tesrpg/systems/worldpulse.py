@@ -78,6 +78,24 @@ def active_pulses(char, gamedata: GameData, today: int) -> set:
     return out
 
 
+def active_markets(char, gamedata: GameData, province: str, today: int) -> dict:
+    """該省目前 active 脈動帶來的短期行情(R225 ③):{市場類別 id: {"mult", "note", "days_left", "pulse"}}。
+    純推導(同 active_pulses,零存檔欄、不碰 rng);同一類別多筆 active 取倍率最大者(不疊乘,同源多節點取最)。
+    聚光視窗 = 該脈動自己的 active_window_days(8 或 10 天),行情與聚光委託同進同出。"""
+    out: dict = {}
+    for pid in sorted(active_pulses(char, gamedata, today)):         # sorted:同倍率時取字典序先者 → 決定性
+        p = gamedata.world_pulse[pid]
+        m = p.get("market")
+        if not m or p.get("province") != province:
+            continue
+        win = p.get("active_window_days", DEFAULT_ACTIVE_WINDOW)
+        cur = out.get(m["category"])
+        if cur is None or m["mult"] > cur["mult"]:
+            out[m["category"]] = {"mult": m["mult"], "note": m.get("note", ""), "pulse": pid,
+                                  "days_left": win - (today - char.world_pulse_day[pid])}
+    return out
+
+
 def spotlighted_board_quests(char, gamedata: GameData, province: str, today: int) -> set:
     """該省目前 active 脈動所聚光的可重複委託 id 集合(供 quests.available_quests 的 board gate 用)。"""
     out = set()
