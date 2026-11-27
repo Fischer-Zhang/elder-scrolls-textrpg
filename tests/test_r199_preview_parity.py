@@ -170,6 +170,7 @@ def test_shop_steal_menu_end_to_end_label_equals_the_roll_of_that_item():
                 weight = lambda k: gd.item(iid_of(k)).get("weight", 0) or 0
                 ids = [k for k, _ in opts]
                 seen["picked"] = max(ids, key=weight) if pick_heaviest else min(ids, key=weight)
+                seen["p"] = crime.steal_chance(c, gd, iid_of(seen["picked"]))   # 下手「之前」的機率(R225 ④:偷完後同店得手率會衰減)
                 return seen["picked"]
             return None
 
@@ -187,7 +188,8 @@ def test_shop_steal_menu_end_to_end_label_equals_the_roll_of_that_item():
         picked = seen["picked"].removeprefix(M._STEAL_KEY)
         assert st.rng.ps, "沒有擲骰 → 流程沒走到行竊"
         shown = ui.pct(st.rng.ps[0])
-        assert st.rng.ps[0] == crime.steal_chance(c, gd, picked)
+        assert st.rng.ps[0] == seen["p"]                                          # 實擲 = 下手前的預覽機率
+        assert crime.steal_chance(c, gd, picked) == seen["p"] * crime.SHOP_THEFT_DECAY   # 這次下手後,同店下一次 ×衰減(R225 ④)
         assert f"得手 {shown}%" in label, (label, st.rng.ps[0])
         seen_rates.add(shown)
         assert len({lbl.split("得手 ")[1] for _, lbl in seen["opts"]}) >= 2     # 選單內各件得手率不全相同(重物較低)

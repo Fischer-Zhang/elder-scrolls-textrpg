@@ -377,20 +377,44 @@ def _buy_chain(char: Character, gamedata: GameData, item_id: str, item: dict,
 
 def buy_price(char: Character, gamedata: GameData, item_id: str) -> int:
     item = gamedata.item(item_id)
-    # 反套利鐵則:同物買價恆 > 賣價(極端議價 + 滿階軍械庫折扣下,折扣不得倒掛成金幣泵)
-    return max(1, round(_buy_chain(char, gamedata, item_id, item)), sell_price(char, gamedata, item_id) + 1)
+    # 反套利鐵則:同物買價恆 > 賣價(極端議價 + 滿階軍械庫折扣下,折扣不得倒掛成金幣泵)。
+    # R225 ④:地板只看「基準賣價」(不含盜賊公會銷貨加成)——公會加成不得把買價也拖高(原 sell_price + 1 會讓盜賊頂階買貨 +20%)。
+    return max(1, round(_buy_chain(char, gamedata, item_id, item)), base_sell_price(char, gamedata, item_id) + 1)
+
+
+def _base_sell_chain(char: Character, gamedata: GameData, value: float) -> float:
+    """基準賣價連乘(取整之前):只有議價,不含公會銷貨加成。買價地板與 `min_buy_price` 只看它(R225 ④)。"""
+    return value * (SELL_BASE_MULT + _disposition_factor(char, gamedata) * SELL_BARTER_MULT)
 
 
 def _sell_chain(char: Character, gamedata: GameData, value: float) -> float:
-    """賣價連乘(取整之前)。sell_price 與 barter_breakdown 的「實際倍率」共用(R222 抽出;運算順序不變)。"""
+    """名目賣價連乘(取整之前,含盜賊公會銷貨加成,尚未夾限)。sell_price / shop_sell_price / 銷贓價與
+    barter_breakdown 的「名目倍率」共用(R222 抽出;運算順序不變)。"""
     from tesrpg.systems import factions
-    base = value * (SELL_BASE_MULT + _disposition_factor(char, gamedata) * SELL_BARTER_MULT)
+    base = _base_sell_chain(char, gamedata, value)
     base *= 1 + factions.sell_bonus(char, gamedata)   # 盜賊公會銷贓加成(階級越高越多)
     return base
 
 
-def sell_price(char: Character, gamedata: GameData, item_id: str) -> int:
+def base_sell_price(char: Character, gamedata: GameData, item_id: str) -> int:
+    """基準賣價(R225 ④):議價決定,不含公會加成。買價地板(+1)、最低買價與賣價夾限的下限都以它為準。"""
+    return max(1, round(_base_sell_chain(char, gamedata, gamedata.item(item_id)["value"])))
+
+
+def nominal_sell_price(char: Character, gamedata: GameData, item_id: str) -> int:
+    """名目賣價:含公會銷貨加成、未夾限(R225 ④ 之前的 sell_price 語意)。銷贓價與贓物價的起算點。"""
     return max(1, round(_sell_chain(char, gamedata, gamedata.item(item_id)["value"])))
+
+
+def sell_price(char: Character, gamedata: GameData, item_id: str) -> int:
+    """賣給一般商店的價(無行情):名目賣價,夾在「最低買價 − 1」以下(R223 全域規則:賣出價 < 買入價)。
+    沒有公會加成 → 名目 = 基準 → 逐位元組同舊。公會加成與買價折扣共用同一份價差:折扣疊越多,加成被夾得越多。
+    依賴順序:base_sell_price → min_buy_price → sell_price(無循環)。"""
+    base = base_sell_price(char, gamedata, item_id)
+    nominal = nominal_sell_price(char, gamedata, item_id)
+    if nominal <= base:
+        return base
+    return max(base, min(nominal, min_buy_price(char, gamedata, item_id) - 1))
 
 
 def min_buy_price(char: Character, gamedata: GameData, item_id: str) -> int:
@@ -400,18 +424,49 @@ def min_buy_price(char: Character, gamedata: GameData, item_id: str) -> int:
     from tesrpg.systems import housing
     chain = _buy_chain(char, gamedata, item_id, gamedata.item(item_id),
                        pact_discount=housing.best_province_discount(char, gamedata))
-    return max(1, round(chain), sell_price(char, gamedata, item_id) + 1)
+    return max(1, round(chain), base_sell_price(char, gamedata, item_id) + 1)
 
 
 def fence_sell_price(char: Character, gamedata: GameData, item_id: str) -> int:
-    """銷贓價(R84):一般賣價 ×(1 + 惡名分級加價),再受全域規則約束(R223):必須低於這個角色
+    """銷贓價(R84,一般貨):名目賣價 ×(1 + 惡名分級加價),再受全域規則約束(R223):必須低於這個角色
     買得到的最低價(`min_buy_price`)——「商店買、銷贓賣」不得有利可圖,也不得打平。
     夾的是賣出價,不抬任何買價(R110 否決過抬買價)。下限是一般賣價(銷贓不會比賣給商店差)。
-    銷贓選單的標籤、實際收款與 sim_economy 共用這一個函式。"""
+    **贓物另有 `fence_stolen_price`(R225 ④ 贓物例外)。** 銷贓選單的標籤、實際收款與 sim_economy 共用。"""
     from tesrpg.systems import crime
     shop = sell_price(char, gamedata, item_id)
-    raw = int(shop * (1 + crime.fence_bonus(char)))
+    raw = int(nominal_sell_price(char, gamedata, item_id) * (1 + crime.fence_bonus(char)))
     return max(shop, min(raw, min_buy_price(char, gamedata, item_id) - 1))
+
+
+# R225 ④ 贓物例外:贓物(inventory 的贓物件數;只能偷到、買不到)不受「買價折扣」夾限——「商店買、銷贓賣」的迴圈對它不成立。
+# 改夾在「底價固定倍數」的上限(不隨議價升高而降低;議價溢出越多上限越高),使用者鐵令:一般貨仍守 R223。
+STOLEN_CEIL_BASE = 1.20             # 贓物銷贓價上限 = 底價 ×(此值 + STOLEN_CEIL_PER_OVERFLOW × min(議價溢出, STOLEN_CEIL_MAX_OVERFLOW))
+STOLEN_CEIL_PER_OVERFLOW = 0.5
+STOLEN_CEIL_MAX_OVERFLOW = 0.40     # 溢出 0.40 → ×1.40(最高)
+
+
+def stolen_ceiling(char: Character, gamedata: GameData, item_id: str) -> int:
+    value = gamedata.item(item_id)["value"]
+    return int(value * (STOLEN_CEIL_BASE + STOLEN_CEIL_PER_OVERFLOW * min(barter_overflow(char, gamedata), STOLEN_CEIL_MAX_OVERFLOW)))
+
+
+def fence_stolen_price(char: Character, gamedata: GameData, item_id: str) -> int:
+    """贓物的銷贓價(R225 ④):名目賣價 ×(1 + 惡名加價),夾在贓物上限(`stolen_ceiling`)以下,不看買價折扣;
+    永不低於一般銷贓價。贓物只能由 `crime.steal_item` 產生(`inventory.mark_stolen`),所以沒有套利迴圈。"""
+    from tesrpg.systems import crime
+    raw = int(nominal_sell_price(char, gamedata, item_id) * (1 + crime.fence_bonus(char)))
+    return max(fence_sell_price(char, gamedata, item_id), min(raw, stolen_ceiling(char, gamedata, item_id)))
+
+
+def fence_quote(char: Character, gamedata: GameData, item_id: str, qty: int) -> dict:
+    """銷贓報價單一出處(R225 ④):賣 qty 件的總價。身上的贓物先出(`inventory.remove_item` 的順序),贓物用 `fence_stolen_price`,
+    其餘用 `fence_sell_price`;價錢在報價當下就固定(逐件結算時的交易經驗微升不再讓實收與預覽分家)。
+    回傳 {total, hot, hot_price, clean_price}(hot = 其中的贓物件數)。選單標籤、確認句與實收共用這一個函式。"""
+    from tesrpg.systems import inventory
+    hot = max(0, min(qty, inventory.stolen_on_person(char, item_id)))
+    clean_price = fence_sell_price(char, gamedata, item_id)
+    hot_price = fence_stolen_price(char, gamedata, item_id) if hot else clean_price
+    return {"total": hot * hot_price + (qty - hot) * clean_price, "hot": hot, "hot_price": hot_price, "clean_price": clean_price}
 
 
 def black_market_price(char: Character, gamedata: GameData, item_id: str) -> int:
@@ -464,13 +519,13 @@ def shop_sell_price(char: Character, gamedata: GameData, item_id: str, loc_id: s
     """賣給這地方一般商店的實際價:`sell_price`(基準)× 行情,上限受全域規則夾住。
     沒有行情(倍率恰為 1.0)→ 與 `sell_price` 逐位元組相同。選單標籤、確認句與實收共用這一個函式。"""
     f = market_factor(char, gamedata, loc_id, item_id, today)
-    base = sell_price(char, gamedata, item_id)
     if f == 1.0:
-        return base
+        return sell_price(char, gamedata, item_id)
     chain = _sell_chain(char, gamedata, gamedata.item(item_id)["value"])
-    if f > 1.0:
-        return max(base, min(round(chain * f), min_buy_price(char, gamedata, item_id) - 1))
-    return max(1, round(chain * f))
+    capped = min(round(chain * f), min_buy_price(char, gamedata, item_id) - 1)    # 行情 > 1 與 < 1 兩個分支都夾限(R225 ④ 審查:
+    if f > 1.0:                                                                    # 公會加成 × 滯銷行情也可能高於最低買價)
+        return max(base_sell_price(char, gamedata, item_id), capped)
+    return max(1, capped)
 
 
 def pulse_market_news(gamedata: GameData, pulse_id: str) -> str:
@@ -498,7 +553,9 @@ def market_tag(char: Character, gamedata: GameData, item_id: str, loc_id: str, t
     if f == 1.0:
         return ""
     base, shop = sell_price(char, gamedata, item_id), shop_sell_price(char, gamedata, item_id, loc_id, today)
-    if f > 1.0 and shop < round(_sell_chain(char, gamedata, gamedata.item(item_id)["value"]) * f):
+    if shop == base:
+        return ""                                                      # 被夾到和沒有行情一樣 → 不標(免得寫「−10%」實際沒動)
+    if shop < round(_sell_chain(char, gamedata, gamedata.item(item_id)["value"]) * f):
         return f"行情 {_signed_pct(shop / base)},已頂到買價上限"
     return f"行情 {_signed_pct(f)}"
 
@@ -530,6 +587,8 @@ def barter_breakdown(char: Character, gamedata: GameData) -> dict:
       - buy_mult / sell_mult:只算議價的倍率(底價 × 多少)。
       - buy_goods / buy_gear / sell_all:一般貨、武器護甲、賣出的「實際倍率」——走真實的連乘鏈
         (聲望、神恩、商誼、公會折扣都算進去),只差取整與「買價至少比賣價多 1」的地板。
+        sell_all / sell_gear = 公會加成後、夾在最低買價以下的賣價倍率(一般貨 / 武器護甲;R225 ④);sell_base = 不含公會加成的基準賣價倍率(買價地板用它);
+        sell_nominal = 公會加成後、尚未夾限的名目倍率。
     rows 只供顯示:基底拆成交易與魅力兩列、里程碑拆成各選項;各列相加 = raw。
     wasted = 被上限吃掉的部分(raw 超過 BARTER_CAP 的量)。"""
     from tesrpg.systems import mastery
@@ -549,13 +608,21 @@ def barter_breakdown(char: Character, gamedata: GameData) -> dict:
     for _key, value in parts[1:]:
         raw += value
     d = _disposition_factor(char, gamedata)
+    from tesrpg.systems import housing
+    sell_base = _base_sell_chain(char, gamedata, 1.0)
+    sell_nominal = _sell_chain(char, gamedata, 1.0)
+    best_pact = housing.best_province_discount(char, gamedata)
+    best_buy = _buy_chain(char, gamedata, "", {"value": 1.0}, pact_discount=best_pact)
+    best_buy_gear = _buy_chain(char, gamedata, "", {"value": 1.0, "damage": 0}, pact_discount=best_pact)
     return {
         "rows": rows, "raw": raw, "cap": BARTER_CAP, "d": d, "wasted": max(0.0, raw - BARTER_CAP),
         "service_rebate": service_rebate(char, gamedata),   # R225:溢出折抵的服務價折扣
         "buy_mult": BUY_BASE_MULT - d, "sell_mult": SELL_BASE_MULT + d * SELL_BARTER_MULT,
         "buy_goods": _buy_chain(char, gamedata, "", {"value": 1.0}),
         "buy_gear": _buy_chain(char, gamedata, "", {"value": 1.0, "damage": 0}),
-        "sell_all": _sell_chain(char, gamedata, 1.0),
+        "sell_all": max(sell_base, min(sell_nominal, best_buy)),
+        "sell_gear": max(sell_base, min(sell_nominal, best_buy_gear)),   # 武器護甲:軍械庫折扣讓最低買價更低 → 賣價夾得更緊
+        "sell_base": sell_base, "sell_nominal": sell_nominal,
     }
 
 
@@ -689,6 +756,8 @@ def ensure_stock(char: Character, gamedata: GameData, loc_id: str, time, rng: RN
         return shop_qty(q, tier, rmult)                         # tier 0:保留「擲 0 = 缺貨」的稀缺性(反套利)
     char.shop_stock[loc_id] = {iid: _qty(iid) for iid in merchant_catalog(gamedata, loc_id, tier)}
     char.shop_restock_at[loc_id] = now + RESTOCK_HOURS
+    if isinstance(char.shop_thefts, dict):
+        char.shop_thefts.pop(loc_id, None)                      # R225 ④:店家重新上貨 → 戒心歸零(含投資落成的重補)
 
 
 def stock_qty(char: Character, loc_id: str, item_id: str) -> int:

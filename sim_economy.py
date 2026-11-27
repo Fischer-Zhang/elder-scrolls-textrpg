@@ -35,6 +35,7 @@ train_cost / spell_price / merchant_catalog / _restock_qty),地城收入用真�
      (world.fence_sell_price 夾在 world.min_buy_price − 1);亮了 = 全域「賣出價 < 買入價」規則破了。
   4. 配方轉賣:原料全都買得到的配方,買料製作再賣,受庫存限制後每城每次補貨的期望利潤 ≥ RESALE_FLAG(50 金)。
   5. 練習上限 ≥ 訓練師上限:免費練習就能到訓練師賣的等級 → 訓練師沒有獨有的區段(R224)。
+  8. 盜賊加成抬高買價 / 贓物價越界 / 行竊衰減太鬆(R225 ④):第 7 段。
   7. 行情倒掛(R225 ③):所有脈動行情同時生效時,賣給商店的價錢仍須低於最低買價(R223 全域規則)。
   6. 配方轉賣(商店投資後):全部商店投資到第 1 / 2 階(補貨加倍、不缺貨、另賣大城貨)時,守衛 4 的同一個門檻(R225 ②)。
 """
@@ -363,6 +364,40 @@ def market_uplift(province_loc: str, category: str, pulses=()):
     return out
 
 
+# --- 7 贓物與行竊(R225 ④)-------------------------------------------------------
+def thief_buy_scan():
+    """盜賊公會加成不得抬高買價:每個有盜賊加成的情境,把「盜賊公會階級」拿掉後,買價必須完全相同
+    (R225 ④ 之前買價地板看含公會加成的賣價 → 盜賊頂階買貨 +20%、買武甲 +35%)。開鎖器例外(會員免 ×2 外人加價,另一項公會福利)。
+    回傳 [(情境, 買價不同的件數, 例)]。"""
+    out = []
+    for label, kw in PROFILES:
+        if kw.get("thieves") is None:
+            continue
+        c, plain = make_char(**kw), make_char(**dict(kw, thieves=None))
+        bad = [i for i in POOL if i != "lockpick" and world.buy_price(c, gd, i) != world.buy_price(plain, gd, i)]
+        out.append((label, len(bad), bad[0] if bad else ""))
+    return out
+
+
+def stolen_scan():
+    """贓物價(world.fence_stolen_price)對每個情境 × 每種物品:≥ 一般銷贓價;> 一般銷贓價的部分不超過上限(stolen_ceiling)。
+    回傳 [(情境, 違反件數, 贓物價 ÷ 一般銷贓價 的平均, 有溢價的件數)]。"""
+    from tesrpg.systems import crime
+    out = []
+    for label, kw in PROFILES:
+        c = make_char(**kw)
+        bad = prem = 0
+        ratios = []
+        for iid in POOL:
+            clean, stolen = world.fence_sell_price(c, gd, iid), world.fence_stolen_price(c, gd, iid)
+            if stolen < clean or stolen > max(clean, world.stolen_ceiling(c, gd, iid)):
+                bad += 1
+            prem += stolen > clean
+            ratios.append(stolen / clean)
+        out.append((label, bad, S.mean(ratios), prem))
+    return out
+
+
 # --- 報告 -----------------------------------------------------------------
 def main() -> None:
     seeds = int(sys.argv[1]) if len(sys.argv) > 1 else SEEDS
@@ -495,6 +530,24 @@ def main() -> None:
     stack = dict(market_uplift("alinor", "soul", ("pulse_summerset_deepstir",)))
     for label, _kw in PROFILES:
         print(f"  {label:34}{fixed[label]:>20.3f}{stack[label]:>26.3f}")
+
+    print("\n== 7 贓物與行竊(R225 ④:盜賊加成不抬買價 / 贓物例外 / 行竊衰減)==")
+    from tesrpg.systems import crime
+    for label, bad, example in thief_buy_scan():
+        if bad:
+            flags.append(f"⚠盜賊加成抬高買價 {label}:{bad} 種物品的買價與「沒有盜賊公會」的同款情境不同,如 {example}")
+    print("盜賊情境的買價與「拿掉盜賊公會」後逐件相同:" + ("全部相同" if not any(b for _l, b, _e in thief_buy_scan()) else "有差異,見警示"))
+    print(f"{'情境':36}{'贓物價 ÷ 一般銷贓價':>20}{'有溢價的件數':>12}")
+    for label, bad, ratio, prem in stolen_scan():
+        print(f"{label:36}{ratio:>20.2f}{prem:>9}/{len(POOL)}")
+        if bad:
+            flags.append(f"⚠贓物價越界 {label}:{bad} 種物品的贓物價低於一般銷贓價或超過贓物上限")
+    g = crime.SHOP_THEFT_DECAY
+    cap = 0.95 / (1 - g)
+    print(f"行竊衰減:同店同補貨期每次下手(含失手)得手率 ×{g};單一貨品期望得手上限 = 0.95 /(1 − {g}) = {cap:.1f} 件"
+          f"(店家重補貨歸零);贓物價上限 = 底價 ×(1.20 + 0.5 × min(溢出, 0.40)),最高 ×1.40")
+    if cap > 20:
+        flags.append(f"⚠行竊衰減太鬆:期望得手上限 {cap:.1f} 件 > 20(SHOP_THEFT_DECAY = {g})")
 
     if flags:                                    # 只有真的有警示才印「⚠ 守衛警示」(check.sh 以此行 grep)
         print("\n⚠ 守衛警示:\n  " + "\n  ".join(flags))

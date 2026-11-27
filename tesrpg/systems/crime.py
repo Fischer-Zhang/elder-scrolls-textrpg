@@ -48,6 +48,26 @@ def clear_bounty(char: Character, province: str) -> None:
 
 
 # --- 行竊 ---------------------------------------------------------------
+# R225 ④ 行竊衰減:同一家店、同一個補貨期內,你下手越多次,店家越提防 —— 得手率每次 ×SHOP_THEFT_DECAY。
+# 🔴 失手也計次(`shop_thefts` = 本補貨期行竊「次數」,含失手):只計得手的話,賞金可規避(隱形 / 武士特權 / 口才說退)的小偷
+#    失手不痛不癢、可一直重試到得手,衰減就不是上限(量測:只計得手 → 一個補貨期偷 63 件、1.2 萬金;計每次嘗試 → 上限約 13 件)。
+#    期望得手上限 = 得手率 /(1 − 衰減)(0.95 / 0.07 ≈ 13.6 件)。店家重新補貨(含投資落成)時歸零。
+SHOP_THEFT_DECAY = 0.93
+THEFT_COUNT_MAX = 1000          # 讀取端夾限(壞存檔 / 手改);0.93 ** 1000 早已 ≈ 0
+
+
+def theft_count(char: Character, loc_id: str | None) -> int:
+    """這家店本補貨期內的行竊次數(含失手;存檔裡的壞值一律夾成 0 ~ THEFT_COUNT_MAX 的整數)。"""
+    raw = getattr(char, "shop_thefts", None)
+    if not isinstance(raw, dict) or loc_id is None:
+        return 0
+    try:
+        n = int(raw.get(loc_id, 0))
+    except (TypeError, ValueError, OverflowError):
+        return 0
+    return max(0, min(THEFT_COUNT_MAX, n))
+
+
 def steal_chance(char: Character, gamedata: GameData, item_id: str | None = None) -> float:
     """得手機率:潛行 + 安全為主 + 里程碑「順手牽羊」加成(theft_skill)。夾 [0.05, 0.95]。
     R144 現實邏輯:贓物越大越重越難藏(順走雙手戰斧 ≠ 摸走戒指)—— 帶 item_id 時
@@ -58,7 +78,11 @@ def steal_chance(char: Character, gamedata: GameData, item_id: str | None = None
             + spellfx.charm_steal_bonus(char))   # R104 幻術魅惑術:降低偷竊風險(提高得手率)
     if item_id is not None:
         base -= min(0.35, (gamedata.item(item_id).get("weight", 0) or 0) * 0.015)
-    return max(0.05, min(0.95, base))
+    p = max(0.05, min(0.95, base))
+    n = theft_count(char, getattr(char, "location_id", None))
+    if n:                                           # R225 ④:本補貨期在這家店下手越多次越難(n = 0 → 不做任何運算,逐位元組同舊)
+        p *= SHOP_THEFT_DECAY ** n
+    return p
 
 
 def steal_fine(char: Character, gamedata: GameData, item_id: str) -> int:
@@ -80,7 +104,10 @@ def steal_item(char: Character, gamedata: GameData, item_id: str, rng: RNG) -> d
     from tesrpg.systems import inventory
     province = province_of(char, gamedata)
     xp, hours, tired = progression.practice_cost(char, gamedata, "sneak")
-    if rng.chance(steal_chance(char, gamedata, item_id)):
+    success = rng.chance(steal_chance(char, gamedata, item_id))            # 擲骰順序與機率函式同舊(先擲、後記次數)
+    if isinstance(getattr(char, "shop_thefts", None), dict) and getattr(char, "location_id", None):
+        char.shop_thefts[char.location_id] = theft_count(char, char.location_id) + 1   # R225 ④:不論得手與否都記一次
+    if success:
         inventory.add_item(char, item_id, 1)
         inventory.mark_stolen(char, item_id, 1)      # R223:偷來的是贓物(一般商店不收、被捕會沒收)
         events = progression.use_skill(char, gamedata, "sneak", xp)

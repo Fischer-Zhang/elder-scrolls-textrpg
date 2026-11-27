@@ -74,13 +74,28 @@ def _grid():
                           blessing=blessing, pact=pact, charm=charm, nodes=nodes)
 
 
+def _old_base_sell(c, iid):
+    """舊式的「不含公會加成」賣價(R225 ④ 之後的買價地板基準)。"""
+    return max(1, round(gd.item(iid)["value"] * (0.3 + _old_disposition(c) * 0.5)))
+
+
 def _prices_match_frozen_reference():
+    """沒有盜賊公會加成的角色:買 / 賣價與凍結舊式逐位元組相同。有盜賊加成(R225 ④ 改了買價地板與賣價夾限)的角色:
+    ① 買價不會比舊式高、賣價不會比舊式高、賣價不低於不含加成的基準;② 舊式的買價地板沒咬住時(沒有被加成拖高),新舊相同。"""
     n = 0
     for c in _grid():
         assert world._disposition_factor(c, gd) == _old_disposition(c)
+        thief = factions.sell_bonus(c, gd) > 0
         for iid in _ITEMS:
-            assert world.buy_price(c, gd, iid) == _old_buy(c, iid), (iid, c.skills["mercantile"])
-            assert world.sell_price(c, gd, iid) == _old_sell(c, iid), (iid, c.skills["mercantile"])
+            nb, ns = world.buy_price(c, gd, iid), world.sell_price(c, gd, iid)
+            ob, os_ = _old_buy(c, iid), _old_sell(c, iid)
+            if not thief:
+                assert nb == ob, (iid, c.skills["mercantile"])
+                assert ns == os_, (iid, c.skills["mercantile"])
+            else:
+                assert nb <= ob and ns <= os_ and ns >= _old_base_sell(c, iid), (iid, c.skills["mercantile"])
+                if nb == ob:                                   # 買價沒變 → 賣價只可能被夾低(夾在最低買價 − 1)
+                    assert ns == os_ or ns == world.min_buy_price(c, gd, iid) - 1, (iid, c.skills["mercantile"])
             n += 1
     return n
 
@@ -112,7 +127,7 @@ def test_golden_prices_and_multipliers():
                    {"ebony_sword": (899, 576, 835, 899), "ruby": (62, 40, 58, 62)}),
         "stacked": (dict(mercantile=100, personality=100, thieves=E.TOP_THIEF, fighters=E.TOP_FIGHTER,
                          infamy=50, fame=700, blessing=True, pact=True),
-                    {"ebony_sword": (779, 778, 778, 779), "healing_potion": (44, 43, 43, 44)}),
+                    {"ebony_sword": (577, 576, 576, 577), "healing_potion": (38, 37, 37, 38)}),   # R225 ④:買價地板看基準賣價 → 盜賊加成不再把買價也拖高(舊 779/778/778/779、44/43/43/44);疊滿時公會加成被夾光
         "mid": (dict(mercantile=37, personality=55, fame=150, charm=True),
                 {"ebony_sword": (1144, 400, 400, 1144), "healing_potion": (64, 22, 22, 64)}),
     }
@@ -138,12 +153,14 @@ def test_breakdown_shares_the_price_chain():
         assert abs(b["wasted"] - max(0.0, b["raw"] - world.BARTER_CAP)) < 1e-12
         assert b["buy_mult"] == world.BUY_BASE_MULT - b["d"]
         assert b["sell_mult"] == world.SELL_BASE_MULT + b["d"] * world.SELL_BARTER_MULT
-        for iid, key in (("ruby", "buy_goods"), ("gold_ring", "buy_goods"), ("ebony_sword", "buy_gear"),
-                         ("leather_cuirass", "buy_gear")):
+        for iid, key, skey in (("ruby", "buy_goods", "sell_all"), ("gold_ring", "buy_goods", "sell_all"),
+                               ("ebony_sword", "buy_gear", "sell_gear"), ("leather_cuirass", "buy_gear", "sell_gear")):
             v = gd.item(iid)["value"]
             sell = world.sell_price(c, gd, iid)
-            assert abs(sell - max(1, round(v * b["sell_all"]))) <= 1, (iid, sell, v * b["sell_all"])
-            want_buy = max(1, round(v * b[key]), sell + 1)
+            # R225 ④:顯示的賣價倍率 = 公會加成後、夾在最低買價以下(夾限 −1 金 → 允許差 1 金的取整);武甲另看 sell_gear
+            assert abs(sell - max(1, round(v * b[skey]))) <= 1, (iid, sell, v * b[skey])
+            base = max(1, round(v * b["sell_base"]))                                  # 買價地板只看基準賣價(不含公會加成)
+            want_buy = max(1, round(v * b[key]), base + 1)
             assert abs(world.buy_price(c, gd, iid) - want_buy) <= 1, (iid, key)
 
 
@@ -151,10 +168,11 @@ def test_shown_buy_multiplier_follows_the_anti_arbitrage_floor():
     stacked = E.make_char(mercantile=100, personality=100, thieves=E.TOP_THIEF, fighters=E.TOP_FIGHTER,
                           infamy=50, fame=700, blessing=True, pact=True)
     b = ui._barter_shown(stacked, gd)
-    assert b["buy_goods"] < b["sell_all"]                       # 折扣疊到比賣價還低(夾具有效性)
-    assert b["buy_shown"] == b["sell_all"] and b["gear_shown"] == b["sell_all"]
-    assert world.buy_price(stacked, gd, "ruby") == world.sell_price(stacked, gd, "ruby") + 1   # 實價:地板咬住
-    assert "買價以賣價為底" in ui._barter_tip(stacked, gd)
+    # R225 ④:地板看「基準賣價」(不含公會加成)。一般貨的折扣疊滿仍高於它;武器護甲(軍械庫 −35%)才被地板抬回
+    assert b["buy_goods"] > b["sell_base"] and b["buy_shown"] == b["buy_goods"]
+    assert b["buy_gear"] < b["sell_base"] and b["gear_shown"] == b["sell_base"]            # 夾具有效性:武甲折扣疊到比基準賣價還低
+    assert world.buy_price(stacked, gd, "ebony_sword") == world.base_sell_price(stacked, gd, "ebony_sword") + 1   # 實價:地板咬住
+    assert "武器護甲買 ×" in ui._barter_tip(stacked, gd)
     plain = ui._barter_shown(E.make_char(50, 40), gd)
     assert plain["buy_shown"] == plain["buy_goods"] > plain["sell_all"]
     assert "買價以賣價為底" not in ui._barter_tip(E.make_char(50, 40), gd)

@@ -3169,8 +3169,10 @@ def _steal_option_label(char, gamedata: GameData, iid: str, qty: int) -> str:
     (含 R144 依重量扣減,最多 −0.35)。原本標題只標「不帶物品」的得手率 → 沉重物品實際遠低於預覽
     (例:偷襲 60·保全 40:舊標題 67%,重量 ≥23.4 的物品實際 32%)。
     R202:再標「失手賞金 +N」,取自與實擲同一個 `crime.steal_fine`(失手才會加到當地賞金)。"""
+    p = crime.steal_chance(char, gamedata, iid)
+    shown = "<1" if 0 < p < 0.005 else ui.pct(p)        # R225 ④:衰減後極小的機率不顯示成「0%」(實際仍大於 0)
     return (f"{gamedata.item_name(iid)} ×{qty}"
-            f"（價值 {gamedata.item(iid)['value']} · 得手 {ui.pct(crime.steal_chance(char, gamedata, iid))}%"
+            f"（價值 {gamedata.item(iid)['value']} · 得手 {shown}%"
             f" · 失手賞金 +{crime.steal_fine(char, gamedata, iid)})")
 
 
@@ -3215,7 +3217,10 @@ def action_shop(state: GameState, gamedata: GameData) -> None:
             # 前端 wireActionableRows 讓殘留面板列「接管」同 key 的選項、移除選單按鈕 → 每件的「得手 N%」整個被蓋掉(R199 審查 major)。
             opts = [(f"{_STEAL_KEY}{iid}", _steal_option_label(char, gamedata, iid, world.stock_qty(char, loc_id, iid)))
                     for iid in avail]
-            choice = ui.menu("行竊哪件?(重物更難得手)", opts, allow_back=True)
+            _n = crime.theft_count(char, loc_id)
+            choice = ui.menu("行竊哪件?(重物更難得手)"
+                             + (f" · 店家已有戒心(本補貨期下手 {_n} 次,得手率 ×{crime.SHOP_THEFT_DECAY ** _n:.2f})" if _n else ""),
+                             opts, allow_back=True)
             if choice is None:
                 continue
             iid = choice.removeprefix(_STEAL_KEY)
@@ -3768,8 +3773,12 @@ def action_fence(state: GameState, gamedata: GameData) -> None:
     char = state.player
     bonus = crime.fence_bonus(char)
 
-    def fsell(iid):                                 # 銷贓價(加價);R222:式子搬到 world.fence_sell_price(sim_economy 共用)
-        return world.fence_sell_price(char, gamedata, iid)
+    def fprice_text(iid):                           # R225 ④:選單標籤的銷贓價(有贓物件數時分贓物 / 一般兩個價;單一出處 = world.fence_*)
+        hot = inventory.stolen_on_person(char, iid)
+        if not hot:
+            return f"銷 {world.fence_sell_price(char, gamedata, iid)} 金"
+        return (f"銷 贓物 {world.fence_stolen_price(char, gamedata, iid)} 金(×{hot})"
+                f" · 一般 {world.fence_sell_price(char, gamedata, iid)} 金")
 
     def bm_price(iid):                              # R200 黑市買價單一出處:選單標籤與扣款共用(防套利地板:恆 > 銷贓價)
         return world.black_market_price(char, gamedata, iid)
@@ -3786,7 +3795,7 @@ def action_fence(state: GameState, gamedata: GameData) -> None:
                 if not sellable:
                     ui.message("沒有可銷的東西。", style="grey70")
                     break
-                opts = [(s["id"], f"{ui.item_label(gamedata, char, s['id'], s['qty'])} — 銷 {fsell(s['id'])} 金")
+                opts = [(s["id"], f"{ui.item_label(gamedata, char, s['id'], s['qty'])} — {fprice_text(s['id'])}")
                         for s in sellable]
                 iid = ui.menu(f"銷什麼?(你有 {char.gold} 金)", opts, allow_back=True)
                 if iid is None:
@@ -3795,23 +3804,30 @@ def action_fence(state: GameState, gamedata: GameData) -> None:
                 # R114C:預設銷「全部」;僅有一件的高價品加確認
                 if owned <= 1:
                     if (gamedata.item(iid)["value"] >= SELL_CONFIRM_VALUE
-                            and not ui.confirm(f"銷出你僅有的{gamedata.item_name(iid)}(銷 {fsell(iid)} 金)?")):
+                            and not ui.confirm(f"銷出你僅有的{gamedata.item_name(iid)}"
+                                               f"(銷 {world.fence_quote(char, gamedata, iid, 1)['total']} 金)?")):
                         continue
                     qty = 1
                 else:
                     dflt = 1 if gamedata.item(iid)["value"] >= SELL_CONFIRM_VALUE else owned
-                    qty = ui.ask_int(f"銷幾個?(共 {owned})", dflt, 1, owned)
-                total = sold = 0
+                    _hot = inventory.stolen_on_person(char, iid)
+                    qty = ui.ask_int(f"銷幾個?(共 {owned}" + (f";其中 {_hot} 件贓物,先出" if _hot else "") + ")", dflt, 1, owned)
+                # R225 ④:報價在迴圈前一次算定(贓物先出、價錢固定),實收 = 報價;逐件的交易經驗微升不再讓實收與預覽分家
+                quote = world.fence_quote(char, gamedata, iid, qty)
+                unit_prices = [quote["hot_price"]] * quote["hot"] + [quote["clean_price"]] * (qty - quote["hot"])
+                sold = 0
                 for _ in range(qty):
                     if inventory.count_item(char, iid) <= 0:
                         break
-                    total += fsell(iid)
                     inventory.remove_item(char, iid, 1)              # R223:離開背包一律贓物先走(記錄在 remove_item 裡扣)
                     sold += 1
                     ui.show_events(progression.use_skill(char, gamedata, "mercantile", 0.3), gamedata)   # R197 審查:賣貨升點原被丟棄
+                total = sum(unit_prices[:sold])
                 char.gold += total
                 stats.recompute_max_resources(char, gamedata)   # 銷掉穿戴中最後一件會自動卸下 → 重算
-                ui.message(f"銷出 {gamedata.item_name(iid)} ×{sold},得 {total} 金。", style="green")
+                ui.message(f"銷出 {gamedata.item_name(iid)} ×{sold},得 {total} 金"
+                           + (f"(其中贓物 {min(quote['hot'], sold)} 件,每件 {quote['hot_price']} 金)" if quote["hot"] else "") + "。",
+                           style="green")
         elif choice == "buy":
             while True:
                 opts = [(iid, f"{gamedata.item_name(iid)} — {bm_price(iid)} 金") for iid in _BLACK_MARKET]

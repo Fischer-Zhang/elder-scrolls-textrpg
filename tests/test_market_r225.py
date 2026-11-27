@@ -155,7 +155,11 @@ def test_direction_of_market_prices():
 def test_capped_rows_are_tagged_with_the_real_change():
     c = E.make_char(100, 100, thieves=E.TOP_THIEF, fighters=E.TOP_FIGHTER, infamy=50, fame=700, blessing=True, pact=True)
     assert world.shop_sell_price(c, gd, "iron_sword", "whiterun", 0) == world.sell_price(c, gd, "iron_sword")   # 已頂到上限:沒有加成
-    assert "已頂到買價上限" in world.market_tag(c, gd, "iron_sword", "whiterun", 0)
+    assert world.market_tag(c, gd, "iron_sword", "whiterun", 0) == ""            # 被夾到和沒有行情一樣 → 不標(R225 ④:免得寫「+20%」實際沒動)
+    part = E.make_char(100, 100, fame=700, blessing=True, pact=True)              # 部分被夾:有加成但沒到名目 ×1.2
+    sp, base = world.shop_sell_price(part, gd, "iron_sword", "whiterun", 0), world.sell_price(part, gd, "iron_sword")
+    assert base < sp < round(world._sell_chain(part, gd, gd.item("iron_sword")["value"]) * 1.2)
+    assert "已頂到買價上限" in world.market_tag(part, gd, "iron_sword", "whiterun", 0)
     assert world.market_tag(_novice(), gd, "iron_sword", "whiterun", 0) == "行情 +20%"
     assert world.market_tag(_novice(), gd, "iron_ingot", "whiterun", 0) == "行情 −10%"
     assert world.market_tag(_novice(), gd, "healing_potion", "whiterun", 0) == ""

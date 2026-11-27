@@ -2474,8 +2474,8 @@ def _barter_shown(char: Character, gamedata: GameData) -> dict:
     實際買價會被地板抬回賣價之上,顯示也跟著抬,不印出一個買不到的倍率。"""
     from tesrpg.systems import world as _w
     b = _w.barter_breakdown(char, gamedata)
-    b["buy_shown"] = max(b["buy_goods"], b["sell_all"])
-    b["gear_shown"] = max(b["buy_gear"], b["sell_all"])
+    b["buy_shown"] = max(b["buy_goods"], b["sell_base"])        # R225 ④:買價地板看基準賣價(不含公會加成)
+    b["gear_shown"] = max(b["buy_gear"], b["sell_base"])
     b["capped"] = b["raw"] >= b["cap"]
     return b
 
@@ -2507,8 +2507,10 @@ def _barter_tip(char: Character, gamedata: GameData) -> str:
         tip += f";聲望、神恩、商誼使買價再 ×{b['buy_goods'] / b['buy_mult']:.2f}"
     if abs(b["buy_gear"] - b["buy_goods"]) > 1e-9:
         tip += f";武器護甲買 ×{b['gear_shown']:.2f}"
-    if abs(b["sell_all"] - b["sell_mult"]) > 1e-9:
+    if abs(b["sell_all"] - b["sell_mult"]) > 1e-9 or b["sell_nominal"] > b["sell_all"] + 1e-9:
         tip += f";公會使賣價再 ×{b['sell_all'] / b['sell_mult']:.2f}"
+        if b["sell_nominal"] > b["sell_all"] + 1e-9:
+            tip += f"(名目 ×{b['sell_nominal'] / b['sell_mult']:.2f},買價折扣疊太多時被夾在買價之下)"
     if b["buy_shown"] > b["buy_goods"] + 1e-9:
         tip += ";折扣已低於賣價,買價以賣價為底"
     return tip
