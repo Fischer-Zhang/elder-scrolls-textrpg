@@ -3365,20 +3365,22 @@ def action_stable(state: GameState, gamedata: GameData) -> None:
         opts: list = []
         for mid, m in gamedata.mounts.items():        # 購買尚未擁有的坐騎
             if not mounts.owns(char, mid):
-                opts.append((f"buy:{mid}", f"購買{m['name']}({m['price']} 金) · {m['desc']}"))
+                opts.append((f"buy:{mid}", f"購買{m['name']}({world.service_price(char, gamedata, m['price'])} 金) · {m['desc']}"))
         if char.mounts_owned:
             opts.append(("switch", "切換現乘坐騎"))
         opts.append(("spear", "選購長槍(騎兵武器)"))
-        choice = ui.menu(f"馬廄(現乘:{cur['name'] if cur else '步行'})", opts, allow_back=True)
+        _rn = world.rebate_note(char, gamedata)
+        choice = ui.menu(f"馬廄(現乘:{cur['name'] if cur else '步行'}" + (f"·{_rn}" if _rn else "") + ")", opts, allow_back=True)
         if choice is None:
             return
         if choice.startswith("buy:"):
             mid = choice[4:]
             m = gamedata.mount(mid)
-            if char.gold < m["price"]:
+            mprice = world.service_price(char, gamedata, m["price"])
+            if char.gold < mprice:
                 ui.message("金幣不足,買不起這匹坐騎。", style="red")
                 continue
-            char.gold -= m["price"]
+            char.gold -= mprice
             mounts.buy(char, gamedata, mid)
             ui.message(f"你購得{m['name']},翻身上馬 —— 從此趕路更快、馱載更多。", style="bold green")
         elif choice == "switch":
@@ -3434,12 +3436,13 @@ def action_house(state: GameState, gamedata: GameData) -> None:
         ui.message(f"規格:{housing.tier_name(gamedata, loc_id)}"
                    f"(可添置 {housing.slots(gamedata, loc_id)} 格設施 —— 藥草園、臥房、商誼)",
                    style="grey70")
-        if char.gold < h["price"]:
-            ui.message(f"「{h['name']}」售價 {h['price']} 金,你的金幣不足。", style="red")
+        hprice = world.service_price(char, gamedata, h["price"])
+        if char.gold < hprice:
+            ui.message(f"「{h['name']}」售價 {hprice} 金,你的金幣不足。", style="red")
             return
-        if not ui.confirm(f"以 {h['price']} 金購置「{h['name']}」嗎?"):
+        if not ui.confirm(f"以 {hprice} 金購置「{h['name']}」嗎?"):
             return
-        char.gold -= h["price"]
+        char.gold -= hprice
         housing.buy(char, gamedata, loc_id)
         ui.message(f"你購置了「{h['name']}」—— 從此在此地有了一個家。", style="bold green")
         return
@@ -3500,20 +3503,22 @@ def _house_upgrade_menu(state: GameState, gamedata: GameData, loc_id: str) -> No
         opts = []
         for uid in avail:
             u = gamedata.house_upgrades[uid]
-            opts.append((uid, f"{u.get('icon', '')} {u['name']}({u['price']} 金)—— {u['desc']}"))
-        pick = ui.menu("添置哪項設施?", opts, allow_back=True)
+            opts.append((uid, f"{u.get('icon', '')} {u['name']}({world.service_price(char, gamedata, u['price'])} 金)—— {u['desc']}"))
+        _rn = world.rebate_note(char, gamedata)
+        pick = ui.menu("添置哪項設施?" + (f"({_rn})" if _rn else ""), opts, allow_back=True)
         if pick is None:
             return
         u = gamedata.house_upgrades[pick]
-        if char.gold < u["price"]:
+        uprice = world.service_price(char, gamedata, u["price"])
+        if char.gold < uprice:
             ui.message("金幣不足。", style="red")
             continue
-        if not ui.confirm(f"以 {u['price']} 金添置「{u['name']}」嗎?"):
+        if not ui.confirm(f"以 {uprice} 金添置「{u['name']}」嗎?"):
             continue
         # 成功才扣款(buy_upgrade 可能 False → 不靜默沉金;比購房嚴,因升級閘可失敗)
         if not housing.buy_upgrade(char, gamedata, loc_id, pick, state.time.absolute_hours()):
             continue
-        char.gold -= u["price"]
+        char.gold -= uprice
         ui.message(f"「{u['name']}」落成 —— {u['desc']}", style="bold green")
 
 
@@ -4334,10 +4339,11 @@ def _hire_mercenary(state: GameState, gamedata: GameData) -> None:
              and not gamedata.companions[cid].get("recruit_quest")]  # 具名招募同伴唯任務取得(非花錢即得)
     disc = factions.merc_discount(char, gamedata)               # 戰友團「盾袍之誼」:招募折扣
     def _merc_price(cid: str) -> int:
-        return int(round(gamedata.companions[cid]["cost"] * (1 - disc)))
+        return world.service_price(char, gamedata, gamedata.companions[cid]["cost"], disc)
     opts = [(cid, f"{gamedata.companions[cid]['name']} — {_merc_price(cid)} 金:"
              f"{gamedata.companions[cid]['blurb']}") for cid in avail]
-    cid = ui.menu(f"雇用哪位?(你有 {char.gold} 金)", opts, allow_back=True)
+    _rn = world.rebate_note(char, gamedata)
+    cid = ui.menu(f"雇用哪位?(你有 {char.gold} 金" + (f",{_rn}" if _rn else "") + ")", opts, allow_back=True)
     if cid is None:
         return
     cost = _merc_price(cid)
@@ -4565,7 +4571,7 @@ def action_trainer(state: GameState, gamedata: GameData) -> None:
                 return
         opts = []
         for sid in world.trainer_skills(gamedata, loc_id, spec):
-            cost = world.train_cost(char.skill(sid))
+            cost = world.service_price(char, gamedata, world.train_cost(char.skill(sid)))
             cap = world.trainer_cap(gamedata, loc_id, sid)
             label = f"{gamedata.skill_name(sid)} (Lv {char.skill(sid)}) — {cost} 金 +1"
             tags = []
@@ -4575,7 +4581,8 @@ def action_trainer(state: GameState, gamedata: GameData) -> None:
             if nxt:
                 tags.append({"text": f"距 {nxt['name']} 還 {nxt['remaining']} 級", "tone": "mag"})
             opts.append((sid, label, tags) if tags else (sid, label))
-        sid = ui.menu("訓練哪項技能?", opts, allow_back=True)
+        _rn = world.rebate_note(char, gamedata)
+        sid = ui.menu("訓練哪項技能?" + (f"({_rn})" if _rn else ""), opts, allow_back=True)
         if sid is None:
             if len(specs) == 1:
                 return                                  # 單系:技能選單即頂層,返回=離開
@@ -4587,7 +4594,7 @@ def action_trainer(state: GameState, gamedata: GameData) -> None:
             else:
                 ui.message("此技能已臻化境,無需再學。", style="grey70")
             continue
-        cost = world.train_cost(char.skill(sid))
+        cost = world.service_price(char, gamedata, world.train_cost(char.skill(sid)))
         if char.gold < cost:
             ui.message("金幣不足。", style="red")
             continue
@@ -4597,7 +4604,7 @@ def action_trainer(state: GameState, gamedata: GameData) -> None:
         ui.show_events(events, gamedata)
         # R114C:連續 +1 免每級重選類別/技能(達 cap 或錢不足即止;確認式)
         while char.skill(sid) < cap:
-            nc = world.train_cost(char.skill(sid))
+            nc = world.service_price(char, gamedata, world.train_cost(char.skill(sid)))
             if char.gold < nc or not ui.confirm(f"↻ 再訓練 {gamedata.skill_name(sid)}(+1,{nc} 金)?"):
                 break
             char.gold -= nc
@@ -5023,9 +5030,12 @@ def action_spell_vendor(state: GameState, gamedata: GameData) -> None:
         disc = factions.spell_discount(char, gamedata)   # 法師公會階級折扣
 
         def _sp(s):
-            return max(1, round(world.spell_price(gamedata, s) * (1 - disc)))
+            return world.service_price(char, gamedata, world.spell_price(gamedata, s), disc)
         label = f"學習法術(你有 {char.gold} 金"
         label += f",會員 -{ui.pct(disc)}%)" if disc else ")"
+        _rn = world.rebate_note(char, gamedata)
+        if _rn:
+            label = label[:-1] + f",{_rn})"
         opts = [(s, f"{gamedata.spells[s]['name']}（{ui.school_name(gamedata.spells[s]['school'])}) — {_sp(s)} 金"
                  f" · {ui.spell_effect_summary(gamedata, s)}") for s in for_sale]
         sid = ui.menu(label, opts, allow_back=True)

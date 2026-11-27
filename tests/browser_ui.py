@@ -750,7 +750,7 @@ class BrowserRegression(unittest.TestCase):
         data = ui._sheet_view(char, gd)
         self.assertEqual(data["barter"], "買 ×1.20　賣 ×0.80")                 # 交易 100 + 魅力 100 = 係數頂到上限
         self.assertIn("魅惑術 +0.08", data["barter_tip"])
-        self.assertIn("超出上限的 0.08 無效", data["barter_tip"])               # 上限遮蔽看得見
+        self.assertIn("超出上限的 0.08 折抵服務價 −4%", data["barter_tip"])     # 上限遮蔽看得見(R225:溢出折成服務價折扣)
 
         def show(d: dict) -> None:
             self.server.emit(

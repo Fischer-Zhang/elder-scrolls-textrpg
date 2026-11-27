@@ -307,7 +307,39 @@ def _disposition_factor(char: Character, gamedata: GameData | None = None) -> fl
     return max(0.0, min(BARTER_CAP, base))
 
 
-LOCKPICK_OUTSIDER_MARKUP = 2.0   # 開鎖器是盜賊公會的營生:非會員(含敵對)買得到但被坑這麼多倍
+# R225 ① 議價溢出折抵服務價:議價超過上限(被夾掉的那一截)不再白耗,折成「服務價」折扣。
+# 服務 = 訓練、法術、房產與擴建、坐騎、雇用傭兵(固定價目、不吃買賣倍率的付費項目);罰金 / 旅店不適用。
+SERVICE_REBATE_PER_OVERFLOW = 0.5   # 溢出每 1.0 折 50%(= 每 0.1 折 5%)
+SERVICE_REBATE_CAP = 0.20           # 折抵上限 20%(溢出 0.40 即頂到)
+
+
+def barter_overflow(char: Character, gamedata: GameData | None = None) -> float:
+    """議價被上限吃掉的量(raw 超過 BARTER_CAP 的部分);與 `_disposition_factor` 同源、同相加順序。"""
+    parts = _barter_parts(char, gamedata)
+    raw = parts[0][1]
+    for _key, value in parts[1:]:
+        raw += value
+    return max(0.0, raw - BARTER_CAP)
+
+
+def service_rebate(char: Character, gamedata: GameData | None = None) -> float:
+    """溢出折抵的服務價折扣(0 ~ SERVICE_REBATE_CAP)。取到萬分位,免得浮點雜訊讓「零溢出」變成 0.9999…。"""
+    return round(min(SERVICE_REBATE_CAP, barter_overflow(char, gamedata) * SERVICE_REBATE_PER_OVERFLOW), 4)
+
+
+def service_price(char: Character, gamedata: GameData, base: float, guild_discount: float = 0.0) -> int:
+    """服務價單一出處(R225):底價 ×(1 − 公會折扣)×(1 − 議價溢出折抵)。
+    選單標籤、確認句、扣款一律走這個(預覽 = 實扣);無溢出、無公會折扣 → 逐位元組同舊價。"""
+    return max(1, round(base * (1 - guild_discount) * (1 - service_rebate(char, gamedata))))
+
+
+def rebate_note(char: Character, gamedata: GameData | None = None) -> str:
+    """選單標題用的一小段:有折抵才出字(例:「議價折抵 −10%」),沒有就回空字串。"""
+    r = service_rebate(char, gamedata)
+    return f"議價折抵 −{round(r * 100)}%" if r > 0 else ""
+
+
+LOCKPICK_OUTSIDER_MARKUP = 2.0  # 開鎖器是盜賊公會的營生:非會員(含敵對)買得到但被坑這麼多倍
 HUNT_ENCOUNTER_CHANCE = 0.6      # R109 任務條件式狩獵:接了以劇情敵為目標的 kill 任務時,在對省野外撞見目標的機率(高)
 
 
@@ -409,6 +441,7 @@ def barter_breakdown(char: Character, gamedata: GameData) -> dict:
     d = _disposition_factor(char, gamedata)
     return {
         "rows": rows, "raw": raw, "cap": BARTER_CAP, "d": d, "wasted": max(0.0, raw - BARTER_CAP),
+        "service_rebate": service_rebate(char, gamedata),   # R225:溢出折抵的服務價折扣
         "buy_mult": BUY_BASE_MULT - d, "sell_mult": SELL_BASE_MULT + d * SELL_BARTER_MULT,
         "buy_goods": _buy_chain(char, gamedata, "", {"value": 1.0}),
         "buy_gear": _buy_chain(char, gamedata, "", {"value": 1.0, "damage": 0}),

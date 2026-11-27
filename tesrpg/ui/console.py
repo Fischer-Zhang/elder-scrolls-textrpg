@@ -2499,7 +2499,8 @@ def _barter_tip(char: Character, gamedata: GameData) -> str:
     b = _barter_shown(char, gamedata)
     rows = [f"{r['label']} +{r['value']:.2f}" for r in b["rows"]]
     if b["wasted"] > 0.004:
-        rows.append(f"超出上限的 {b['wasted']:.2f} 無效")
+        rows.append(f"超出上限的 {b['wasted']:.2f} 折抵服務價 −{round(b['service_rebate'] * 100)}%"
+                    f"(訓練、法術、房產、坐騎、雇傭兵)")
     tip = (f"議價係數 {b['d']:.2f}(上限 {b['cap']:.2f}):" + " · ".join(rows)
            + f"。買價 = 底價 ×({_w.BUY_BASE_MULT} − 係數),賣價 = 底價 ×({_w.SELL_BASE_MULT} + 係數 × {_w.SELL_BARTER_MULT})")
     if abs(b["buy_goods"] - b["buy_mult"]) > 1e-9:

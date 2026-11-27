@@ -298,6 +298,7 @@ PYTHONPATH=. python3 sim_economy.py       # 經濟量測(R222;不到 1 秒,⚠ �
 | R222 | 經濟量測 + 議價看得見(零機制):`sim_economy.py`(價格全走真實函式·地城用真實生成器)+ `world.barter_breakdown` 單一出處 → 角色卡「議價」列 / 商店標題;銷贓價與黑市價收成 `world.fence_sell_price` / `black_market_price`;影刃說明 ×1.5→×1.2;🔴 價格逐金幣不變(對 HEAD 55.9 萬筆)·議價各項相加順序不得動·經濟提案先過「時間免費」檢驗(時間型限制 = 多點幾下);路線 R223–R226 見 handoff §6 | re-sim |
 | R223 | 銷贓與贓物:全域「任何賣出價 < `world.min_buy_price`」(夾銷贓價·不抬買價;商誼以名下最好的計)+ 贓物件數各地方各記各的(背包 `char.stolen`·倉庫每疊 `stolen`·同伴每槽記號)→ 賣商店只收乾淨的(持有數 = 贓物數就不收)·其餘離開背包一律贓物先走·被捕(繳罰金 / 入獄)沒收背包裡的;🔴 進出背包只走 `add_item` / `remove_item`·東西搬到別處存放必帶贓物件數·新賣出管道必受全域規則約束 | re-sim, save |
 | R224 | 練習與訓練師分工:練習只能練到 `formulas.PRACTICE_CAP`(50)且要符合描述(`skills.json` `practice.requires`:場地 / 手持武器 / 盾 / 護甲類 / 每小時耗材 / 會該系法術;運動·雜技·潛行·偵查·徒手不設)·訓練師 75·宗師 100·實戰不限;`progression.practice_block` 單一出處;🔴 練習上限必 < 訓練師上限·條件只管練習動作(practice_cost 不加條件)·新技能的描述與 requires 要一致 | re-sim, content |
+| R225 | 商人玩法 ① 議價溢出折抵服務價:溢出每 0.1 折 5%·上限 20%;`world.service_price` 單一出處(訓練/法術/房產/擴建/坐騎/雇傭兵,預覽=實扣);🔴 只進服務價·買賣價與議價夾限不動·旅店罰金不適用·②投資商店③行情未做 | re-sim, save-safe |
 
 ## 自動提交閘門 / 換 session 前檢查表
 
