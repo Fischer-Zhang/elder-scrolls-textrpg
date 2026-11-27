@@ -491,18 +491,75 @@ _EMPTY_GEM_STOCK = ("empty_petty_soul_gem", "empty_lesser_soul_gem",
 _EMPTY_GEM_STOCK_MAJOR = ("empty_grand_soul_gem", "empty_black_soul_gem")  # 大城另售空大/黑魂石
 
 
-def merchant_catalog(gamedata: GameData, loc_id: str) -> list[str]:
+def merchant_catalog(gamedata: GameData, loc_id: str, tier: int = 0) -> list[str]:
     """該地商人「可能販售」的完整品項目錄:world.json 的 merchant_stock + 鍛造材料分級供給 + 法師城空魂石。
-    每座 type=city 自動供應一般材料(_COMMON_MATERIALS);大城(MAJOR_CITIES)另供高級材料;法師城供空魂石(填充燃料)。"""
+    每座 type=city 自動供應一般材料(_COMMON_MATERIALS);大城(MAJOR_CITIES)另供高級材料;法師城供空魂石(填充燃料)。
+    tier = 這家店的投資階數(R225 ②;char.shop_invest):第 2 階起比照大城,另供高級材料與(法師城)大型 / 黑色空魂石。
+    預設 0 = 原目錄(逐項同序同舊)。"""
     loc = gamedata.location(loc_id)
     catalog = list(loc.get("merchant_stock", []))
+    major = loc_id in MAJOR_CITIES or tier >= SHOP_SUPPLY_TIER
     if loc.get("type") == "city":
-        extra = list(_COMMON_MATERIALS) + (list(_HIGH_MATERIALS) if loc_id in MAJOR_CITIES else [])
+        extra = list(_COMMON_MATERIALS) + (list(_HIGH_MATERIALS) if major else [])
         catalog += [iid for iid in extra if iid not in catalog]   # 去重:既有明列者不重複
+    elif tier >= SHOP_SUPPLY_TIER:                                # 投資後的鎮:只補高級材料(一般材料原本就不賣,不憑空多賣)
+        catalog += [iid for iid in _HIGH_MATERIALS if iid not in catalog]
     if "mages_guild" in loc.get("services", []):                  # 填充循環燃料:法師城供空魂石
-        gems = list(_EMPTY_GEM_STOCK) + (list(_EMPTY_GEM_STOCK_MAJOR) if loc_id in MAJOR_CITIES else [])
+        gems = list(_EMPTY_GEM_STOCK) + (list(_EMPTY_GEM_STOCK_MAJOR) if major else [])
         catalog += [iid for iid in gems if iid not in catalog]
     return catalog
+
+
+# --- R225 ② 投資商店:在任一家商店付錢、永久升級那家店(兩階;存在 char.shop_invest[loc_id])---------------
+# 第 1 階「擴充貨架」:補貨量加倍,且每樣貨補貨時至少 1 件(原本高價貨常常補 0 件=缺貨)。
+# 第 2 階「大城貨源」:再開始賣大城才有的貨(高級錠材;法師城另有大型 / 黑色空魂石)。
+# 刻意**不給賣價加成**(永久賣價加成 = 算得回本的理財商品);價錢吃 ① 的議價折抵(`service_price`)。
+SHOP_INVEST_TIERS = (
+    {"name": "擴充貨架", "price": 1000, "desc": "補貨量加倍,每樣貨補貨時至少一件(不再缺貨)"},
+    {"name": "大城貨源", "price": 3000, "desc": "另賣大城才有的貨:高級錠材,法師城另有大型與黑色空魂石"},
+)
+SHOP_INVEST_RESTOCK_MULT = 2
+SHOP_SUPPLY_TIER = 2          # 達此階才擴大目錄
+
+
+def shop_tier(char: Character, loc_id: str) -> int:
+    """這家店目前的投資階數(0 ~ len(SHOP_INVEST_TIERS));存檔裡的壞值一律夾回範圍。"""
+    try:
+        t = int(char.shop_invest.get(loc_id, 0))
+    except (TypeError, ValueError):
+        return 0
+    return max(0, min(len(SHOP_INVEST_TIERS), t))
+
+
+def shop_invest_next(char: Character, gamedata: GameData, loc_id: str) -> dict | None:
+    """下一階的投資資訊 {tier, name, desc, price};價錢已吃議價折抵。已到頂 / 此地沒有商店 → None。
+    選單標籤、確認句與扣款共用這一個函式(預覽 = 實扣)。"""
+    t = shop_tier(char, loc_id)
+    if t >= len(SHOP_INVEST_TIERS) or not merchant_catalog(gamedata, loc_id):
+        return None
+    d = SHOP_INVEST_TIERS[t]
+    return {"tier": t + 1, "name": d["name"], "desc": d["desc"],
+            "price": service_price(char, gamedata, d["price"])}
+
+
+def invest_shop(char: Character, gamedata: GameData, loc_id: str) -> int | None:
+    """付錢升一階。成功回實付金額;已到頂 / 金幣不足 → None(不動任何狀態)。
+    升級視為落成當下重新補貨一次(清掉補貨時點,呼叫端接著 ensure_stock),不然付了錢卻要等 3 天才看得到。"""
+    nxt = shop_invest_next(char, gamedata, loc_id)
+    if nxt is None or char.gold < nxt["price"]:
+        return None
+    char.gold -= nxt["price"]
+    char.shop_invest[loc_id] = nxt["tier"]
+    char.shop_restock_at.pop(loc_id, None)
+    return nxt["price"]
+
+
+def shop_qty(q: int, tier: int, rmult: float) -> int:
+    """補貨抽到 q 之後的最終數量。tier 0:擲 0 = 缺貨(保留稀缺性 = 反套利),其餘照「行商人脈」倍率;
+    tier ≥ 1:至少 1 件再 ×SHOP_INVEST_RESTOCK_MULT,最後同樣乘倍率。擲骰次數與 tier 無關(rng 序列不變)。"""
+    if tier >= 1:
+        return max(1, round(max(1, q) * SHOP_INVEST_RESTOCK_MULT * rmult))
+    return 0 if q == 0 else max(1, round(q * rmult))
 
 
 def ensure_stock(char: Character, gamedata: GameData, loc_id: str, time, rng: RNG) -> None:
@@ -515,11 +572,12 @@ def ensure_stock(char: Character, gamedata: GameData, loc_id: str, time, rng: RN
     from tesrpg.systems import mastery
     rmult = mastery.restock_mult(char, gamedata)                # 「行商人脈」補貨量倍率
     mats = _crafting_material_ids(gamedata)                     # 鍛造材料 → 足量補貨
+    tier = shop_tier(char, loc_id)                              # R225 ②:這家店的投資階數
 
     def _qty(iid):
         q = _restock_qty(gamedata.item(iid)["value"], rng, material=iid in mats)
-        return 0 if q == 0 else max(1, round(q * rmult))        # 保留「擲 0 = 缺貨」的稀缺性(反套利)
-    char.shop_stock[loc_id] = {iid: _qty(iid) for iid in merchant_catalog(gamedata, loc_id)}
+        return shop_qty(q, tier, rmult)                         # tier 0:保留「擲 0 = 缺貨」的稀缺性(反套利)
+    char.shop_stock[loc_id] = {iid: _qty(iid) for iid in merchant_catalog(gamedata, loc_id, tier)}
     char.shop_restock_at[loc_id] = now + RESTOCK_HOURS
 
 
@@ -536,7 +594,7 @@ def take_stock(char: Character, loc_id: str, item_id: str, n: int = 1) -> None:
 
 def in_stock_items(char: Character, gamedata: GameData, loc_id: str) -> list[str]:
     """目錄中目前仍有貨(數量>0)的品項,維持目錄原順序。"""
-    return [iid for iid in merchant_catalog(gamedata, loc_id) if stock_qty(char, loc_id, iid) > 0]
+    return [iid for iid in merchant_catalog(gamedata, loc_id, shop_tier(char, loc_id)) if stock_qty(char, loc_id, iid) > 0]
 
 
 # --- 訓練師 -------------------------------------------------------------

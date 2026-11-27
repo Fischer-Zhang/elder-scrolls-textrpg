@@ -35,6 +35,7 @@ train_cost / spell_price / merchant_catalog / _restock_qty),地城收入用真�
      (world.fence_sell_price 夾在 world.min_buy_price − 1);亮了 = 全域「賣出價 < 買入價」規則破了。
   4. 配方轉賣:原料全都買得到的配方,買料製作再賣,受庫存限制後每城每次補貨的期望利潤 ≥ RESALE_FLAG(50 金)。
   5. 練習上限 ≥ 訓練師上限:免費練習就能到訓練師賣的等級 → 訓練師沒有獨有的區段(R224)。
+  6. 配方轉賣(商店投資後):全部商店投資到第 1 / 2 階(補貨加倍、不缺貨、另賣大城貨)時,守衛 4 的同一個門檻(R225 ②)。
 """
 import statistics as S
 import sys
@@ -123,14 +124,16 @@ def barter_sources():
 _QTY_CACHE: dict = {}
 
 
-def expected_restock(item_id: str) -> float:
-    """一次補貨的期望數量:對真實的 world._restock_qty 取樣平均(不重寫補貨規則)。"""
+def expected_restock(item_id: str, tier: int = 0) -> float:
+    """一次補貨的期望數量:對真實的 world._restock_qty 取樣、再經真實的 world.shop_qty(店面投資階數 tier,R225)取平均
+    (不重寫補貨規則;tier 0 = 一般商店)。"""
     value = gd.item(item_id)["value"]
     material = item_id in world._crafting_material_ids(gd)
-    key = (material, 0 if value <= 10 else 1 if value <= 80 else 2)
+    key = (material, 0 if value <= 10 else 1 if value <= 80 else 2, tier)
     if key not in _QTY_CACHE:
         rng = RNG(7)
-        _QTY_CACHE[key] = S.mean(world._restock_qty(value, rng, material=material) for _ in range(600))
+        _QTY_CACHE[key] = S.mean(world.shop_qty(world._restock_qty(value, rng, material=material), tier, 1.0)
+                                 for _ in range(600))
     return _QTY_CACHE[key]
 
 
@@ -225,9 +228,9 @@ def quest_gold():
     return once, (S.median(repeat) if repeat else 0)
 
 
-def shelf_values():
-    """各店一次補貨的期望架上貨底價。"""
-    return [sum(expected_restock(i) * gd.item(i)["value"] for i in world.merchant_catalog(gd, lid))
+def shelf_values(tier: int = 0):
+    """各店一次補貨的期望架上貨底價(tier = 全部商店都投資到第幾階,R225)。"""
+    return [sum(expected_restock(i, tier) * gd.item(i)["value"] for i in world.merchant_catalog(gd, lid, tier))
             for lid in SHOP_LOCS]
 
 
@@ -293,12 +296,12 @@ def sinks():
 RESALE_FLAG = 50      # 配方轉賣:受庫存限制後「每城每次補貨的期望利潤」達此金額才算警示(低於此 = 微利,使用者 R223 裁定不處理)
 
 
-def recipe_resale():
+def recipe_resale(tier: int = 0):
     """原料全都買得到的配方:買料 → 製作 → 賣成品的利潤。
     回傳 [(profile_label, recipe_id, 原料買價, 賣給商店的收入, 賣給銷贓的收入, 每城每次補貨的期望利潤)](只列有利可圖者)。
     期望利潤 = 一次補貨買得到的原料做得出幾件(最缺的那種原料決定)× 每件利潤 —— 商店限量供貨,這才是實際賺得到的錢。
     另外每做一件還要花一小時與體力(crafting.craft 付該技能的 practice 成本),這裡沒有折算。"""
-    buyable = {i for lid in SHOP_LOCS for i in world.merchant_catalog(gd, lid)}
+    buyable = {i for lid in SHOP_LOCS for i in world.merchant_catalog(gd, lid, tier)}
     out = []
     for label, kw in PROFILES:
         c = make_char(**kw)
@@ -309,7 +312,7 @@ def recipe_resale():
             o, n = r["output"], r.get("output_qty", 1)
             shop, fence = world.sell_price(c, gd, o) * n, world.fence_sell_price(c, gd, o) * n
             if max(shop, fence) > cost:
-                crafts = min(expected_restock(i) / q for i, q in r["inputs"].items())
+                crafts = min(expected_restock(i, tier) / q for i, q in r["inputs"].items())
                 out.append((label, rid, cost, shop, fence, crafts * (max(shop, fence) - cost)))
     return out
 
@@ -331,7 +334,8 @@ def main() -> None:
         b = world.barter_breakdown(make_char(merc, pers), gd)
         print(f"  交易 {merc} 魅力 {pers}:基底 {b['raw']:.2f} → 還有 {max(0.0, world.BARTER_CAP - b['raw']):.2f} 空間給加成")
     b = world.barter_breakdown(make_char(100, 100, nodes=True, charm=True), gd)
-    print(f"  交易 100 魅力 100 + 全部里程碑 + 魅惑術:相加 {b['raw']:.2f},超出上限的 {b['wasted']:.2f} 無效")
+    print(f"  交易 100 魅力 100 + 全部里程碑 + 魅惑術:相加 {b['raw']:.2f},超出上限的 {b['wasted']:.2f} "
+          f"折抵服務價 −{b['service_rebate']:.0%}(R225;每溢出 0.1 折 5%、上限 20%)")
 
     print(f"\n== 2 套利掃描({len(POOL)} 種可賣物品;倒掛 = 件數)==")
     print(f"{'情境':34}{'同店':>5}{'黑市':>5}{'跨攤位':>7}{'有賺':>5}{'每件最多賺':>12}{'每城每次補貨':>14}")
@@ -366,6 +370,10 @@ def main() -> None:
         print(f"  {source:10}{n:>4} 個 {tot:>7}")
     shelves = shelf_values()
     print(f"商店 {len(shelves)} 家,一次補貨的架上貨底價:中位數 {S.median(shelves):.0f}、合計 {sum(shelves):.0f}")
+    for t, tdef in enumerate(world.SHOP_INVEST_TIERS, 1):       # R225 ②:商店投資後的架上貨(行竊 / 銷贓的上界)
+        sv = shelf_values(t)
+        print(f"  全部商店投資到第 {t} 階「{tdef['name']}」:中位數 {S.median(sv):.0f}"
+              f"(×{S.median(sv) / S.median(shelves):.1f})、合計 {sum(sv):.0f}")
 
     print("\n== 4 去處 ==")
     base, cap = formulas.SKILL_BASE, formulas.TRAINER_CAP
@@ -384,6 +392,9 @@ def main() -> None:
     if pcap >= cap:
         flags.append(f"⚠練習上限 {pcap} ≥ 訓練師上限 {cap}:訓練師沒有獨有的區段(免費練習就能到同樣的等級)")
     sk = sinks()
+    invest = sum(d["price"] for d in world.SHOP_INVEST_TIERS)
+    print(f"投資商店(R225 ②):每家 {' + '.join(str(d['price']) for d in world.SHOP_INVEST_TIERS)} = {invest} 金,"
+          f"{len(SHOP_LOCS)} 家全投資 {invest * len(SHOP_LOCS)} 金(不含議價折抵)")
     print(f"房產 {len(gd.houses)} 棟 {sk['houses']} 金 + 擴建(格位裝滿)最多 {sk['upgrades']} 金;"
           f"法術 {len(gd.spells)} 道全買 {sk['spells']} 金;坐騎 {sk['mounts']} 金;宗師技能 {sk['masters']} 個")
     master_extra = sk["masters"] * train_total(cap, formulas.SKILL_CAP)
@@ -410,6 +421,14 @@ def main() -> None:
             print(f"  以上都是微利(每城每次補貨不到 {RESALE_FLAG} 金,且每件還要花一小時與體力)→ 不列警示")
     else:
         print("  沒有任何情境 × 配方有利可圖")
+    for t, tdef in enumerate(world.SHOP_INVEST_TIERS, 1):       # R225 ②:補貨加倍會放大「買料製作再賣」的量 → 投資後再量一次
+        rs = recipe_resale(t)
+        best = max(rs, key=lambda x: x[5], default=None)
+        print(f"  全部商店投資到第 {t} 階「{tdef['name']}」:有賺的組合 {len(rs)} 組,每城每次補貨最多賺 "
+              + (f"{best[5]:.0f}({best[0]} 的 {best[1]})" if best else "—"))
+        if best and best[5] >= RESALE_FLAG:
+            flags.append(f"⚠配方轉賣(商店投資第 {t} 階後)每城每次補貨期望利潤 ≥ {RESALE_FLAG} 金"
+                         f"(最多 {best[5]:.0f}:{best[0]} 的 {best[1]})")
 
     if flags:                                    # 只有真的有警示才印「⚠ 守衛警示」(check.sh 以此行 grep)
         print("\n⚠ 守衛警示:\n  " + "\n  ".join(flags))

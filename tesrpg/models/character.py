@@ -209,6 +209,7 @@ class Character:
     # 舊存檔缺此二欄 → dataclass 預設空 dict;首次造訪該商店即依目錄初始化。
     shop_stock: dict = field(default_factory=dict)        # loc_id -> {item_id: 剩餘數量}
     shop_restock_at: dict = field(default_factory=dict)   # loc_id -> 下次補貨的絕對小時
+    shop_invest: dict = field(default_factory=dict)       # R225 ② 投資商店:loc_id -> 階數(1 擴充貨架 / 2 大城貨源;缺 = 0)
 
     # 領主區(宮廷)Phase 2:領主委託功勳 + 武士冊封(Thaneship)。詳見 systems/court.py。
     city_standing: dict = field(default_factory=dict)     # loc_id -> 城邦功勳(完成領主委託累積)
@@ -375,6 +376,7 @@ class Character:
             "discovered_landmarks": self.discovered_landmarks,
             "power_last_day": self.power_last_day, "tower_key_charge": self.tower_key_charge,
             "shop_stock": self.shop_stock, "shop_restock_at": self.shop_restock_at,
+            "shop_invest": self.shop_invest,
             "city_standing": self.city_standing, "thaneships": self.thaneships,
             "allegiance": self.allegiance, "faction_standing": self.faction_standing,
             "dialogue_done": self.dialogue_done,
@@ -409,6 +411,8 @@ class Character:
                 val.pop("armorer", None)
         if isinstance(d.get("major_skills"), list):   # 舊戰士/弓手主修含 armorer → 一併剝(免死資料回寫存檔)
             d["major_skills"] = [s for s in d["major_skills"] if s != "armorer"]
+        if not isinstance(d.get("shop_invest", {}), dict):   # R225 防禦夾限(R03):壞型別 → 無投資;階數於讀取端再夾 0~2
+            d["shop_invest"] = {}
         if d.get("route_caution", "off") not in ("off", "dungeon", "danger"):   # R180 防禦夾限(R03):未知檔位 → 不限
             d["route_caution"] = "off"
         return cls(**d)

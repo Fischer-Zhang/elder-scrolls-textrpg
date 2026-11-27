@@ -3179,11 +3179,30 @@ def action_shop(state: GameState, gamedata: GameData) -> None:
     loc_id = char.location_id
     world.ensure_stock(char, gamedata, loc_id, state.time, state.rng)   # 首訪/逾期 → 補貨
     while True:
-        mode = ui.menu(f"商店(你有 {char.gold} 金幣 · {ui.barter_line(char, gamedata)})", [   # R222:議價看得見
-            ("buy", "購買"), ("sell", "出售"), ("steal", "行竊(觸法)"),
-        ], allow_back=True)
+        # R225 ②:投資商店 —— 付錢永久升級這家店(補貨加倍不缺貨 / 另賣大城貨);價錢吃 ① 的議價折抵
+        nxt = world.shop_invest_next(char, gamedata, loc_id)
+        tier = world.shop_tier(char, loc_id)
+        modes = [("buy", "購買"), ("sell", "出售"), ("steal", "行竊(觸法)")]
+        if nxt:
+            modes.append(("invest", f"投資這家店:{nxt['name']}({nxt['price']} 金)—— {nxt['desc']}"))
+        mode = ui.menu(f"商店(你有 {char.gold} 金幣 · {ui.barter_line(char, gamedata)})"   # R222:議價看得見
+                       + (f" · 店面:{world.SHOP_INVEST_TIERS[tier - 1]['name']}" if tier else ""),
+                       modes, allow_back=True)
         if mode is None:
             return
+        if mode == "invest":
+            if nxt is None:
+                continue
+            if char.gold < nxt["price"]:
+                ui.message(f"投資「{nxt['name']}」要 {nxt['price']} 金,你的金幣不足。", style="red")
+                continue
+            if not ui.confirm(f"以 {nxt['price']} 金投資「{nxt['name']}」嗎?({nxt['desc']};"
+                              "此店永久升級、不退款,落成當下重新補貨一次)"):
+                continue
+            paid = world.invest_shop(char, gamedata, loc_id)
+            world.ensure_stock(char, gamedata, loc_id, state.time, state.rng)   # 清了補貨時點 → 立刻照新階數補貨
+            ui.message(f"你出資 {paid} 金整修店面 —— 「{nxt['name']}」落成,貨架重新上滿了。", style="bold green")
+            continue
         if mode == "steal":
             avail = world.in_stock_items(char, gamedata, loc_id)
             if not avail:
