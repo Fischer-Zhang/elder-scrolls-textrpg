@@ -269,6 +269,7 @@ def test_each_attempt_decays_the_next_one_and_failures_count_too():
 def test_expected_successes_per_window_have_a_hard_ceiling():
     """失手也計次 → 不論賞金能不能規避,期望得手數 ≤ p0 /(1 − 衰減)(只計得手的話,失手不痛不癢的小偷可無限重試)。"""
     g = crime.SHOP_THEFT_DECAY
+    assert 0 < g < 1, g                                                      # 衰減必須是真的衰減(=1 會變成無上限;審查:突變曾被除以零意外抓到)
     c = _thief_char()
     p0 = crime.steal_chance(c, gd, "ruby")
     total = 0.0
@@ -305,6 +306,27 @@ def test_bad_saved_theft_counts_are_clamped():
         assert 0 <= crime.steal_chance(c, gd, "ruby") <= 0.95
     c.shop_thefts = "junk"
     assert crime.theft_count(c, "whiterun") == 0 and crime.steal_chance(c, gd, "ruby") == _old_steal_chance(c, "ruby")
+
+
+def test_codex_tells_players_about_the_stolen_goods_exception():
+    """R225 ④ 審查:圖鑑「銷贓窩點」原寫「賣價不會高過你在商店買得到的最低價」,對贓物已不成立 → 文字必須提到例外。"""
+    import json
+    codex = json.load(open(pathlib.Path(__file__).resolve().parent.parent / "tesrpg" / "data" / "codex.json", encoding="utf-8"))
+    texts = []
+
+    def walk(x):
+        if isinstance(x, dict):
+            for v in x.values():
+                walk(v)
+        elif isinstance(x, list):
+            if len(x) == 2 and x[0] == "銷贓窩點" and isinstance(x[1], str):
+                texts.append(x[1])
+            for v in x:
+                walk(v)
+    walk(codex)
+    assert len(texts) == 1, texts
+    assert "例外" in texts[0] and "贓物" in texts[0] and "1.4" in texts[0], texts[0]
+    assert texts[0].count("不會高過你在商店買得到的最低價") == 1 and "一般貨" in texts[0]       # 原句保留,但限定在一般貨
 
 
 def test_save_round_trip_and_old_saves():
@@ -363,7 +385,7 @@ def _swap(obj, name, value, probes):
     try:
         for probe in probes:
             probe()
-    except Exception:                                  # 斷言失敗或除以零等:守衛有咬到(突變沒有被悄悄吞掉)
+    except AssertionError:                             # 只認斷言失敗(審查:吞掉任何例外會讓突變被「除以零」之類意外抓到,不是守衛真的有咬)
         return False
     finally:
         setattr(obj, name, old)

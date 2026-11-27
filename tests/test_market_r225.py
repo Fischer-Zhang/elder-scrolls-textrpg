@@ -165,6 +165,27 @@ def test_capped_rows_are_tagged_with_the_real_change():
     assert world.market_tag(_novice(), gd, "healing_potion", "whiterun", 0) == ""
 
 
+def test_tags_report_the_real_change_when_the_guild_bonus_is_clamped():
+    """R225 ④ 審查:公會加成被夾後,滯銷行情(f < 1)只再削一點,不可標名目「−10%」;被夾到不足 0.5% 時不標「+0%」。"""
+    c = E.make_char(**dict(E.MAXED, thieves=E.TOP_THIEF, blessing=True, pact=True))
+    iid, loc = "steel_ingot", "whiterun"
+    f, base, shop = world.market_factor(c, gd, loc, iid, 0), world.sell_price(c, gd, iid), world.shop_sell_price(c, gd, iid, loc, 0)
+    assert f < 1.0 and shop < base < world.nominal_sell_price(c, gd, iid)           # 重現審查腳本的情境(54 → 夾到 50,行情再削到 49)
+    tag = world.market_tag(c, gd, iid, loc, 0)
+    assert "−10%" not in tag and tag == f"行情 {world._signed_pct(shop / base)},已頂到買價上限", tag
+    n = 0
+    for kw in (dict(mercantile=60, personality=100, thieves=E.TOP_THIEF, fighters=E.TOP_FIGHTER, pact=True),
+               dict(E.MAXED, thieves=E.TOP_THIEF, fighters=E.TOP_FIGHTER, pact=True),
+               dict(E.MAXED, thieves=E.TOP_THIEF, fame=700, blessing=True, pact=True), dict(E.MAXED, fame=700, blessing=True, pact=True)):
+        ch = E.make_char(**kw)
+        for lid in ("whiterun", "bruma", "alinor", "kvatch", "imperial_city"):
+            for i in E.POOL:
+                t = world.market_tag(ch, gd, i, lid, 0)
+                assert "+0%" not in t and "−0%" not in t, (kw, lid, i, t)
+                n += bool(t)
+    assert n > 100                                                                  # 掃描有涵蓋到大量有標籤的列(非空轉)
+
+
 # --- 5 範圍 -------------------------------------------------------------------
 def test_market_changes_no_other_price():
     ids = ("iron_sword", "ebony_sword", "ruby", "iron_ingot", "healing_potion", "filled_grand_soul_gem", "leather_cuirass")

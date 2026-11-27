@@ -69,7 +69,8 @@ def theft_count(char: Character, loc_id: str | None) -> int:
 
 
 def steal_chance(char: Character, gamedata: GameData, item_id: str | None = None) -> float:
-    """得手機率:潛行 + 安全為主 + 里程碑「順手牽羊」加成(theft_skill)。夾 [0.05, 0.95]。
+    """得手機率:潛行 + 安全為主 + 里程碑「順手牽羊」加成(theft_skill)。基礎值夾 [0.05, 0.95];
+    R225 ④:再乘「本補貨期在這家店已下手次數」的衰減 SHOP_THEFT_DECAY ** n(n > 0 時結果可低於 0.05)。
     R144 現實邏輯:贓物越大越重越難藏(順走雙手戰斧 ≠ 摸走戒指)—— 帶 item_id 時
     依重量扣減(0.015/重·夾 0.35);item_id=None(舊呼叫端)→ 原公式 byte-identical。"""
     from tesrpg.systems import mastery, spellfx

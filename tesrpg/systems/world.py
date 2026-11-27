@@ -555,9 +555,13 @@ def market_tag(char: Character, gamedata: GameData, item_id: str, loc_id: str, t
     base, shop = sell_price(char, gamedata, item_id), shop_sell_price(char, gamedata, item_id, loc_id, today)
     if shop == base:
         return ""                                                      # 被夾到和沒有行情一樣 → 不標(免得寫「−10%」實際沒動)
-    if shop < round(_sell_chain(char, gamedata, gamedata.item(item_id)["value"]) * f):
-        return f"行情 {_signed_pct(shop / base)},已頂到買價上限"
-    return f"行情 {_signed_pct(f)}"
+    raw = round(_sell_chain(char, gamedata, gamedata.item(item_id)["value"]) * f)
+    if base == nominal_sell_price(char, gamedata, item_id) and shop == raw:
+        return f"行情 {_signed_pct(f)}"                                 # 沒有任何夾限在作用 → 標行情本身的百分比
+    pct = _signed_pct(shop / base)                                     # 公會加成或行情被夾(R225 ④ 審查:f<1 時公會加成已被夾,
+    if pct == "+0%":                                                   # 滯銷只再削一點,不可標名目 −10%)→ 標實際差距;不到 0.5% 就不標
+        return ""
+    return f"行情 {pct},已頂到買價上限"
 
 
 def market_line(char: Character, gamedata: GameData, loc_id: str, today: int) -> str:
