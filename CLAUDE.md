@@ -302,7 +302,7 @@ PYTHONPATH=. python3 sim_arrest.py        # 抓捕 / 行竊 / 收入量測(R227 
 | R225 | 商人玩法三步:① 議價溢出折抵服務價(每 0.1 折 5%·上限 20%;`world.service_price`)② 投資商店兩階 1,000/3,000(`char.shop_invest`·不給賣價加成)③ 行情(`market.json` 各省 ×1.2/×0.9 + 脈動 `market` ×1.3;`world.shop_sell_price`);🔴 階數 0 逐位元組同舊·折抵只進服務價·行情只動賣給商店且夾在 `min_buy_price−1`(R223)·買價不動 | re-sim, save |
 | R225 ④ | 盜賊賣價與行竊衰減(審查後續):買價地板改看不含公會加成的基準賣價(盜賊加成不再抬高買價)·`fence_stolen_price` 贓物例外(封頂底價 ×1.2~1.4·不受買價折扣夾限)·`fence_quote` 報價單一出處;行竊同店同補貨期每次下手(含失手)得手率 ×0.93(`char.shop_thefts`);🔴 賣方加成一律夾 `min_buy−1`(f>1/f<1 皆夾)·`mark_stolen` 呼叫端只限 crime/housing/party/inventory·失手也計次 | re-sim, save |
 | R226 | 抓捕與封店:行竊失手衛兵趕到(`guard_confrontation(context=caught)`;隱形撲空、武士放行不離店)+ 賞金 ≥300(= 獵人 tier 2)`crime.shop_refuses` → `action_shop` 拒絕服務(銷贓/黑市/旅店/訓練不擋)+ 廣場「向衛兵自首」(無反抗·可離開);原 R226 交易 100 順延 R228;🔴 封店只讀賞金(不讀戰鬥力/隱形/倉庫)·封店線須 > 說退上限與武士線(sim_economy 守衛 9)·用「每點擊收入」比較(每期收入會誤導)·反抗打死衛兵每名 +700 賞金 +2 惡名(只計打死的;不計謀殺數:血債招募讀它,另記 `guard_kills` 存檔欄 → 角色卡 + 一生傳奇) | re-sim, save |
-| R227 | 訓練每級限次:訓練師每個角色等級最多教 5 次(`formulas.TRAININGS_PER_LEVEL`·每次 +1 級·宗師同額度·`apply_level_up` 成功路徑歸零;`Character.trainings_this_level` 存檔欄);`world.trainings_left`/`record_training` 單一出處(選單額度顯示 = 擋下 = ↻ 停止條件);限制金幣換實力(sim_arrest 第 4 段:加速 4.4~5.5× → 1.4~1.6×);原 R227 交易 100 順延 R228;🔴 新訓練購買路徑必走 trainings_left·重置只在升級確認 | re-sim, save |
+| R227 | 訓練每級限次:訓練師每個角色等級最多教 5 次(`formulas.TRAININGS_PER_LEVEL`·每次剛好 +1 級〔訓練走 `use_skill(raw=True)` 不吃睡飽 / 專精 / 竊賊座倍率〕·宗師同額度·`apply_level_up` 成功路徑歸零;`Character.trainings_this_level` 存檔欄);`world.trainings_left`/`record_training` 單一出處(選單額度顯示 = 擋下 = ↻ 停止條件);限制金幣換實力(sim_arrest 第 4 段:加速 4.4~5.5× → 1.4~1.6×);原 R227 交易 100 順延 R228;🔴 新訓練購買路徑必走 trainings_left·重置只在升級確認 | re-sim, save |
 
 ## 自動提交閘門 / 換 session 前檢查表
 

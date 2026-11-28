@@ -471,7 +471,7 @@ def progress(clicks_max, rates, g=0.0, buy=False, batch=20, limit=None):
                 break
             gold -= cost
             trained += 1
-            progression.use_skill(c, gd, sid, formulas.skill_threshold(lv))
+            progression.use_skill(c, gd, sid, formulas.skill_threshold(lv), raw=True)      # 與 action_trainer 同:剛好 +1 級、不吃倍率
         while c.can_level_up():
             progression.apply_level_up(c, gd, {"endurance": formulas.LEVELUP_ATTRIBUTE_POINTS})
             reach[c.level] = t

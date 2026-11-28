@@ -257,7 +257,7 @@ def buy_levels(target_levels=(5, 10, 20)):
         sid = min(cand, key=lambda k: c.skills.get(k, formulas.SKILL_BASE))
         level = c.skills.get(sid, formulas.SKILL_BASE)
         spent += world.train_cost(level)
-        progression.use_skill(c, gd, sid, formulas.skill_threshold(level))
+        progression.use_skill(c, gd, sid, formulas.skill_threshold(level), raw=True)   # 與 action_trainer 同:訓練剛好 +1 級(R227 審查 F1)
         while c.can_level_up():
             progression.apply_level_up(c, gd, {"endurance": formulas.LEVELUP_ATTRIBUTE_POINTS})
             marks[c.level] = spent

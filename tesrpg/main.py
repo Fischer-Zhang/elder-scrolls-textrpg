@@ -4696,7 +4696,7 @@ def action_trainer(state: GameState, gamedata: GameData) -> None:
             continue
         char.gold -= cost
         world.record_training(char)
-        events = progression.use_skill(char, gamedata, sid, formulas.skill_threshold(char.skill(sid)))
+        events = progression.use_skill(char, gamedata, sid, formulas.skill_threshold(char.skill(sid)), raw=True)   # R227 審查 F1:剛好 +1 級,不吃倍率
         ui.message(f"訓練師指點了你的{gamedata.skill_name(sid)}。", style="green")
         ui.show_events(events, gamedata)
         # R114C:連續 +1 免每級重選類別/技能(達 cap 或錢不足即止;確認式)
@@ -4709,7 +4709,7 @@ def action_trainer(state: GameState, gamedata: GameData) -> None:
                 break
             char.gold -= nc
             world.record_training(char)
-            ui.show_events(progression.use_skill(char, gamedata, sid, formulas.skill_threshold(char.skill(sid))), gamedata)
+            ui.show_events(progression.use_skill(char, gamedata, sid, formulas.skill_threshold(char.skill(sid)), raw=True), gamedata)   # 同上:剛好 +1
 
 
 # ======================================================================

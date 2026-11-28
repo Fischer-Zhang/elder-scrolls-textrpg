@@ -35,7 +35,6 @@ LOC = "whiterun"
 def _state(gold=100000, loc=LOC):
     c = build_character(gd, name="學", sex="male", race="imperial", birthsign="warrior", class_id="warrior")
     c.location_id, c.gold = loc, gold
-    c.specialization, c.well_rested = None, False       # 技能經驗倍率中性(專精 ×1.2 / 睡飽 ×1.25 / 竊賊座;見審查 F1):本檔測「次數限制」,不測倍率
     return GameState(player=c, time=GameTime(), rng=RNG(3)), c
 
 
@@ -199,6 +198,56 @@ def test_only_a_confirmed_level_up_restores_the_allowance():
     assert c.gold < gold and c.trainings_this_level == 5
 
 
+def test_a_training_is_exactly_one_level_whatever_the_xp_multipliers():
+    """R227 審查 F1:訓練灌的 xp 曾被睡飽 ×1.25 / 專精 ×1.2 / 竊賊座放大 → 5 次實得 +6~+8 級、還能衝過訓練師上限 75。現在剛好 +1。"""
+    spec, sid = _trainable()
+    for wr in (False, True):
+        for specz in (None, "combat", "magic", "stealth"):
+            st, c = _state()
+            c.well_rested, c.specialization = wr, specz
+            base, xp0 = c.skill(sid), c.skill_xp.get(sid, 0.0)
+            _run_trainer(st, LOC, spec, sid)
+            assert c.skill(sid) == base + 5 and c.trainings_this_level == 5, (wr, specz, c.skill(sid) - base)
+            assert abs(c.skill_xp.get(sid, 0.0) - xp0) < 1e-9, (wr, specz)          # 餘量不被放大、也不憑空增減
+    # 已有大量餘量(離下一級只差一點)+ 睡飽:買 1 次仍只 +1(舊行為會 +2)
+    st, c = _state()
+    c.well_rested = True
+    c.skill_xp[sid] = formulas.skill_threshold(c.skill(sid)) - 0.01
+    base = c.skill(sid)
+    c.trainings_this_level = formulas.TRAININGS_PER_LEVEL - 1                         # 只剩 1 次額度 → 恰好買 1 次
+    _run_trainer(st, LOC, spec, sid)
+    assert c.skill(sid) == base + 1, c.skill(sid) - base
+    # 不會衝過訓練師上限:技能 74、餘量 0.6 個門檻、睡飽 → 買 1 次到 75 為止(舊行為 76)
+    loc, mspec, msid = LOC, spec, sid
+    st, c = _state()
+    c.well_rested = True
+    c.skills[sid] = formulas.TRAINER_CAP - 1
+    c.skill_xp[sid] = 0.6 * formulas.skill_threshold(formulas.TRAINER_CAP - 1)
+    cap = world.trainer_cap(gd, LOC, sid)
+    if cap == formulas.TRAINER_CAP:                                                    # 此城對該技能沒有宗師 → 走一般上限
+        _run_trainer(st, LOC, spec, sid)
+        assert c.skill(sid) == formulas.TRAINER_CAP, c.skill(sid)
+
+
+def test_the_raw_flag_only_skips_the_multipliers_play_xp_is_unchanged():
+    """`raw=True` 只給訓練師用;做事給 xp 的呼叫端(預設 raw=False)倍率照舊。"""
+    st, c = _state()
+    spec, sid = _trainable()
+    sk_spec = gd.skills[sid].get("spec")
+    assert sk_spec is not None                                                          # 前提:該技能有專精系(否則 None == None 會誤中專精倍率)
+    c.well_rested, c.specialization = True, None
+    c.skill_xp[sid] = 0.0
+    progression.use_skill(c, gd, sid, 1.0)
+    assert abs(c.skill_xp[sid] - formulas.WELL_RESTED_XP_MULT) < 1e-9, c.skill_xp[sid]   # 只睡飽:×1.25(非竊賊座 → 潛行系也 ×1.0)
+    c.skill_xp[sid] = 0.0
+    progression.use_skill(c, gd, sid, 1.0, raw=True)
+    assert abs(c.skill_xp[sid] - 1.0) < 1e-9                                           # raw:不乘任何倍率
+    c.well_rested, c.specialization = True, sk_spec
+    c.skill_xp[sid] = 0.0
+    progression.use_skill(c, gd, sid, 1.0)
+    assert c.skill_xp[sid] > formulas.WELL_RESTED_XP_MULT - 1e-9                       # 預設:睡飽 × 專精 都乘(play 路徑不變)
+
+
 def test_being_too_poor_does_not_burn_an_allowance_slot():
     """審查 F4:金幣不足的那一下不得扣額度(窮的時候點一下就白白燒掉一次)。"""
     st, c = _state(gold=0)
@@ -275,6 +324,11 @@ def test_guards_fail_under_mutation():
     assert not _swap(M, "_training_note", lambda char: "", (test_menu_titles_show_the_remaining_allowance_and_equal_the_function,))   # 標題不顯示額度
     real_up = progression.apply_level_up
 
+    real_use = progression.use_skill
+
+    def _ignores_raw(char, gamedata, skill_id, xp, raw=False):                    # 訓練又吃倍率(F1 修前行為)
+        return real_use(char, gamedata, skill_id, xp)
+    assert not _swap(progression, "use_skill", _ignores_raw, (test_a_training_is_exactly_one_level_whatever_the_xp_multipliers,))
     def _no_reset(char, gamedata, attribute_points):
         keep = char.trainings_this_level
         r = real_up(char, gamedata, attribute_points)
