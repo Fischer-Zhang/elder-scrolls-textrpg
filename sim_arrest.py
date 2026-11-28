@@ -13,6 +13,8 @@ loot.resolve_loot / world.train_cost / progression),唯一抽象是「點擊成�
   每場衛兵戰後假設完整治療(時間免費)。
 2 行竊 vs 其他途徑(A2)——每點擊收入並列:行竊(R226 現行 / 之前)、地城全清(用真實生成器取格數與戰利品、用真實戰鬥取回合數;點擊 = 移動 + 開箱 + 戰鬥回合,
   移動給樂觀 / 悲觀兩個估計)、配方轉賣上界。底價與「實得」(行竊贓物走銷贓 ×1.2~1.4、地城戰利品賣商店 ×0.38~0.80)並列。
+4 金幣換實力 vs 親自玩(A3',使用者判準:同點擊預算下金幣路徑比親自玩更快 = 過度)——用真實戰鬥量親自玩的每點擊技能經驗,餵真實 progression;
+  對照純賺錢買訓練、玩 + 賺錢買訓練;並算臨界收入。
 3 訓練收入減支出(A3)——依危險度由低到高累積收入(金幣 + 戰利品實得)vs 純靠訓練能買到的角色等級 vs 自然等級;並列全部一次性去處的總價。
 
 基準(R227 前置·2026-11-28·n=60):見 handoff §3 R226 續與 §6。
@@ -320,7 +322,7 @@ def section2(pool):
         opt = S.mean(x[1] for x in xs) + rounds + cont
         pess = S.mean(x[2] for x in xs) + rounds + cont
         danger, gold, val = inc[dk]
-        per[dk] = (danger, gold, val, opt, pess)
+        per[dk] = (danger, gold, val, opt, pess, rounds, S.mean(x[1] for x in xs), S.mean(x[2] for x in xs), cont)
     print(f"\n地城全清(每座 {D_SEEDS} 組種子;點擊 = 移動 + 開箱 + 戰鬥回合;刺客完全體,每場新角色):")
     print(f"{'危險度':>6}{'座數':>5}{'金幣':>8}{'戰利品底價':>11}{'點擊(樂/悲)':>14}{'底價 金/點擊(悲~樂)':>22}{'實得 金/點擊(悲·新手~樂·議價滿)':>34}")
     dung_pc = {}
@@ -396,6 +398,154 @@ def section3(per):
           f"(地城重踞 / 可重複任務 / 行竊另計。)")
 
 
+# ---------------------------------------------------------------- 4 金幣換實力 vs 親自玩(使用者判準:金幣路徑比親自玩更快 = 過度)
+PLAY_SKILLS = ("blade", "light_armor", "acrobatics", "scout", "sneak", "security", "athletics", "speechcraft")
+
+
+def play_xp_rates(per, n=150):
+    """親自玩(清地城)每點擊的技能經驗(依技能)。戰鬥部分用真實戰鬥量:中階小偷構築打危險度 3~4 地城的怪物池,
+    攔截 progression.use_skill 記每回合各技能經驗(combat.resolve_attack 內部發命中 / 被擊中 / 閃避 / 格擋經驗);
+    再依 A2 的地城點擊組成(戰鬥回合 / 移動 / 開箱)換成每點擊。回 (每點擊各技能 xp, 總 xp/點擊, 戰鬥回合占點擊比例)。"""
+    from tesrpg.systems import progression
+    pools = [spec["monsters"] for spec in SD.SPECS.values() if spec["danger"] in (3, 4)]
+    got, rounds = {}, 0
+    holder = {}
+    real_use = progression.use_skill
+
+    def counted(char, gdata, sid, xp):
+        if char is holder.get("c"):
+            got[sid] = got.get(sid, 0.0) + xp
+        return real_use(char, gdata, sid, xp)
+    progression.use_skill = counted
+    try:
+        for i in range(n):
+            r = RNG(7000 + i)
+            pool = pools[i % len(pools)]
+            ids = [pool[r.randint(0, len(pool) - 1)] for _ in range(1 + i % 2)]
+            c = make_mid_fighter()
+            holder["c"] = c
+            foes = [combat.spawn_creature(gd, t, RNG(i * 9 + j)) for j, t in enumerate(ids)]
+            rng, opening, used = RNG(i), False, [0]
+            for _ in range(60):
+                if not any(combat.is_alive(e) for e in foes) or c.health <= 0:
+                    break
+                opening = SA._round(c, foes, rng, opening, used, False)
+                rounds += 1
+                magic.tick_effects(c, gd)
+                for e in foes:
+                    if combat.is_alive(e):
+                        magic.tick_effects(e, gd)
+                stats.clamp_resources(c)
+    finally:
+        progression.use_skill = real_use
+    per_round = {k: v / rounds for k, v in got.items()}
+    tot_r = sum(v[5] for v in per.values())
+    tot_o = sum(v[3] for v in per.values())
+    tot_p = sum(v[4] for v in per.values())
+    f_r = (tot_r / tot_o + tot_r / tot_p) / 2                         # 戰鬥回合占點擊(樂觀 / 悲觀組成取平均)
+    moves_frac = 1 - f_r - sum(v[8] for v in per.values()) / ((tot_o + tot_p) / 2)
+    rate = {k: v * f_r for k, v in per_round.items()}
+    rate["scout"] = rate.get("scout", 0.0) + 0.12 * max(0.0, moves_frac)       # 地城每探明一格 → 偵查 xp
+    return rate, sum(rate.values()), f_r
+
+
+def progress(clicks_max, rates, g=0.0, buy=False, batch=20, limit=None):
+    """真實 progression 逐批推進:每批把 rates(每點擊各技能 xp)× batch 灌進技能,金幣 += g × batch,
+    buy = True 則把金幣拿去付費訓練(永遠訓練當下最低的技能,同 sim_economy.buy_levels);limit = 每個角色等級最多訓練幾次(Skyrim 式限次;None = 不限,現行規則)。回 {角色等級: 達到時的點擊數}。"""
+    from tesrpg.systems import progression
+    c = build_character(gd, name="徒", sex="male", race="khajiit", birthsign="shadow", class_id="assassin")
+    gold, reach, t, trained = 0.0, {c.level: 0}, 0, 0
+    while t < clicks_max:
+        for sid, r in rates.items():
+            progression.use_skill(c, gd, sid, r * batch)
+        gold += g * batch
+        t += batch
+        while buy:
+            cand = [x for x in gd.skills if c.skills.get(x, formulas.SKILL_BASE) < formulas.TRAINER_CAP]
+            if not cand:
+                break
+            sid = min(cand, key=lambda k: c.skills.get(k, formulas.SKILL_BASE))
+            lv = c.skills.get(sid, formulas.SKILL_BASE)
+            cost = world.train_cost(lv)
+            if gold < cost or (limit is not None and trained >= limit):
+                break
+            gold -= cost
+            trained += 1
+            progression.use_skill(c, gd, sid, formulas.skill_threshold(lv))
+        while c.can_level_up():
+            progression.apply_level_up(c, gd, {"endurance": formulas.LEVELUP_ATTRIBUTE_POINTS})
+            reach[c.level] = t
+            trained = 0                                                      # 升級後本級的訓練額度重置
+    return reach
+
+
+def clicks_to(reach, level):
+    ok = [t for lv, t in reach.items() if lv >= level]
+    return min(ok) if ok else None
+
+
+def section4(per):
+    print("\n== 4 金幣換實力 vs 親自玩(判準:同點擊預算下,金幣路徑比親自玩更快 = 金幣過度影響實力)==")
+    rate, total, f_r = play_xp_rates(per)
+    top = ", ".join(f"{k} {v:.3f}" for k, v in sorted(rate.items(), key=lambda kv: -kv[1])[:5])
+    print(f"親自玩(清地城)每點擊技能經驗:合計 {total:.3f} xp/點擊(戰鬥回合占點擊 {f_r:.0%});前幾名:{top}")
+    horizon = 60000
+    even = {sid: total / len(PLAY_SKILLS) for sid in PLAY_SKILLS}            # 慷慨版:同樣的總經驗平均灌進 8 個技能(玩家把各項都練到)
+    fight_rate = {k: v / f_r for k, v in rate.items() if k != "scout"}      # 上限版:每個點擊都是戰鬥回合(例如連續探索狩獵)
+    fight_even = {sid: sum(fight_rate.values()) / len(PLAY_SKILLS) for sid in PLAY_SKILLS}
+    paths = {
+        "親自玩·實測分佈": progress(horizon, rate),
+        "親自玩·8 技能平均": progress(horizon, even),
+        "親自玩·純戰鬥(上限)": progress(horizon, fight_rate),
+        "親自玩·純戰鬥 8 技能(上限)": progress(horizon, fight_even),
+    }
+    marks, all_cost, final = E.buy_levels(tuple(range(2, 120)))
+    levels = (5, 10, 20, 30, 40)
+    print(f"\n到達角色等級所需點擊(--- = 預算 {horizon} 點擊內到不了;純靠訓練上限 = 全技能 75 → 角色約 {final} 級):")
+    print(f"{'路徑':26}" + "".join(f"{'Lv' + str(L):>9}" for L in levels))
+    for name, reach in paths.items():
+        print(f"{name:26}" + "".join(f"{(clicks_to(reach, L) or '---'):>9}" for L in levels))
+    for g in (10, 30, 70):
+        reach = progress(horizon, {}, g=g, buy=True)
+        paths[f"純賺錢買訓練 {g} 金/點擊"] = reach
+        print(f"{'純賺錢買訓練 ' + str(g) + ' 金/點擊':26}" + "".join(f"{(clicks_to(reach, L) or '---'):>9}" for L in levels))
+    for g in (15, 40, 75):
+        reach = progress(horizon, even, g=g, buy=True)
+        paths[f"玩 + 賺錢買訓練 {g}"] = reach
+        print(f"{'玩(8技能)+地城賺錢買 ' + str(g):26}" + "".join(f"{(clicks_to(reach, L) or '---'):>9}" for L in levels))
+    print("\n臨界收入(金/點擊):純賺錢買訓練的速度剛好追平「親自玩」所需的收入 = 買到該等級的總價 / 親自玩到該等級的點擊;"
+          "實際收入高於它,金幣路徑就比親自玩快。")
+    print(f"{'親自玩版本':26}" + "".join(f"{'Lv' + str(L):>9}" for L in levels))
+    for name in ("親自玩·實測分佈", "親自玩·8 技能平均", "親自玩·純戰鬥(上限)", "親自玩·純戰鬥 8 技能(上限)"):
+        row = ""
+        for L in levels:
+            t = clicks_to(paths[name], L)
+            row += f"{(marks.get(L, 0) / t if t and L in marks else float('nan')):>9.1f}"
+        print(f"{name:26}{row}")
+    print("\n金幣加速倍率(= 親自玩到該等級的點擊 / 玩 + 地城賺錢買訓練〔40 金/點擊〕到該等級的點擊;> 1 = 買訓練讓你更快):")
+    print(f"{'親自玩版本':26}" + "".join(f"{'Lv' + str(L):>9}" for L in levels))
+    for name in ("親自玩·8 技能平均", "親自玩·純戰鬥 8 技能(上限)"):
+        sp = progress(horizon, even if "純戰鬥" not in name else fight_even, g=40, buy=True)
+        row = ""
+        for L in levels:
+            a, b = clicks_to(paths[name], L), clicks_to(sp, L)
+            row += f"{(a / b if a and b else float('nan')):>8.1f}x"
+        print(f"{name:26}{row}")
+    print("\n訓練「每個角色等級最多 N 次」的效果(設計用敏感度;玩 8 技能 + 地城賺錢 40 金/點擊;加速倍率 = 親自玩的點擊 / 該路徑的點擊):")
+    print(f"{'每級限次':14}" + "".join(f"{'Lv' + str(L):>9}" for L in levels))
+    for lim in (None, 5, 3, 2, 1):
+        sp = progress(horizon, even, g=40, buy=True, limit=lim)
+        row = ""
+        for L in levels:
+            a, b = clicks_to(paths["親自玩·8 技能平均"], L), clicks_to(sp, L)
+            row += f"{(a / b if a and b else float('nan')):>8.1f}x"
+        print(f"{('不限(現行)' if lim is None else str(lim) + ' 次/級'):14}{row}")
+    print("對照實得收入(金/點擊,A2):頂級·階 2 行竊 %.0f;地城 %s;中階 / 新手小偷 4~12 / 2~7;配方轉賣 ≤ 5。"
+          % (THEFT[("top", 2, "current")] * 1.20, "全部 18~89、危險度 4~5 為 14~73"))
+    print("⚠ 限制:每點擊經驗為中階構築 + 地城組成的估計(固定值,不隨等級變);純賺錢那條假設從第 1 點擊就有該收入(對金幣路徑慷慨);"
+          "親自玩沒算旅行 / 休息 / 練習 / 事件等其他經驗來源;訓練上限 75(76 以上只能實戰)。")
+
+
 if __name__ == "__main__":
     with Pool(NPROC) as pool:
         for key, wr in pool.map(_fight_job, [(a, c) for a in FIGHTERS for c in GUARD_CFG]):
@@ -408,3 +558,4 @@ if __name__ == "__main__":
         section1(pool)
         per = section2(pool)
     section3(per)
+    section4(per)
