@@ -4658,7 +4658,7 @@ def action_trainer(state: GameState, gamedata: GameData) -> None:
         if len(specs) == 1:
             spec = specs[0]                             # 單系城直接列技能,免空選單
         else:
-            spec = ui.menu(f"向訓練師學哪一類?({_training_note(char)})",
+            spec = ui.menu(f"向訓練師學哪一類? · {_training_note(char)}",
                            [(sp, _TRAINER_SPEC_LABEL[sp]) for sp in specs], allow_back=True)
             if spec is None:
                 return
