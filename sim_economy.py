@@ -565,6 +565,12 @@ def main() -> None:
         shares.append(hot / tot if tot else 0.0)
     print(f"賞金封店(R226):該省賞金 ≥ {T} → 一般商店拒絕服務(= 路途獵殺 tier 2);單筆失手罰金 ≥ {T} 的貨佔架上價值:"
           f"階 0 {shares[0]:.0%} · 階 2 {shares[1]:.0%}(這些貨一次失手就被轟出);說退上限 {dialogue.TALK_DOWN_MAX} · 武士放行線 {court.THANE_BOUNTY_FORGIVE}")
+    lever = sum(o.get("cap_bonus", 0) for n in gd.mastery for o in n["options"] if o.get("kind") == "talk_down_lever")
+    mask = max([(it.get("enchant") or {}).get("cap_bonus", 0) for it in gd.items.values()
+                if (it.get("enchant") or {}).get("kind") == "talk_down_cap"] or [0])
+    max_cap = dialogue.TALK_DOWN_MAX + lever + mask                  # 說退上限:基礎 + 里程碑「巧言脫罪」+ 灰狐面具(mastery.talk_down_mod 的兩個來源)
+    print(f"  說退上限:基礎 {dialogue.TALK_DOWN_MAX} · 滿加成 {max_cap}(里程碑 +{lever}、灰狐面具 +{mask})"
+          + (f" → 滿加成構築可嘗試說退 {T}~{max_cap} 的賞金(機率有下限、失敗強制處置;R226 審查知情接受)" if T <= max_cap else ""))
     if T <= max(dialogue.TALK_DOWN_MAX, court.THANE_BOUNTY_FORGIVE):
         flags.append(f"⚠賞金封店線 {T} ≤ 說退上限 {dialogue.TALK_DOWN_MAX} / 武士放行線 {court.THANE_BOUNTY_FORGIVE}:小額賞金還沒機會化解就封店")
 
