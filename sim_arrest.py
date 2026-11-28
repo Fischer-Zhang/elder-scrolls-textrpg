@@ -508,11 +508,11 @@ def section4(per):
     for g in (10, 30, 70):
         reach = progress(horizon, {}, g=g, buy=True)
         paths[f"純賺錢買訓練 {g} 金/點擊"] = reach
-        print(f"{'純賺錢(R227前不限次)' + str(g):26}" + "".join(f"{(clicks_to(reach, L) or '---'):>9}" for L in levels))
+        print(f"{'純賺錢(R227前)' + str(g) + ' 金/點擊':26}" + "".join(f"{(clicks_to(reach, L) or '---'):>9}" for L in levels))
     for g in (15, 40, 75):
         reach = progress(horizon, even, g=g, buy=True)
         paths[f"玩 + 賺錢買訓練 {g}"] = reach
-        print(f"{'玩+賺錢買(R227前)' + str(g):26}" + "".join(f"{(clicks_to(reach, L) or '---'):>9}" for L in levels))
+        print(f"{'玩+賺錢買(R227前)' + str(g) + ' 金':26}" + "".join(f"{(clicks_to(reach, L) or '---'):>9}" for L in levels))
     print("\n臨界收入(金/點擊):純賺錢買訓練的速度剛好追平「親自玩」所需的收入 = 買到該等級的總價 / 親自玩到該等級的點擊;"
           "實際收入高於它,金幣路徑就比親自玩快。")
     print(f"{'親自玩版本':26}" + "".join(f"{'Lv' + str(L):>9}" for L in levels))

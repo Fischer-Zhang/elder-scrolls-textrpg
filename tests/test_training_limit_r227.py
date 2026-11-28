@@ -35,6 +35,7 @@ LOC = "whiterun"
 def _state(gold=100000, loc=LOC):
     c = build_character(gd, name="學", sex="male", race="imperial", birthsign="warrior", class_id="warrior")
     c.location_id, c.gold = loc, gold
+    c.specialization, c.well_rested = None, False       # 技能經驗倍率中性(專精 ×1.2 / 睡飽 ×1.25 / 竊賊座;見審查 F1):本檔測「次數限制」,不測倍率
     return GameState(player=c, time=GameTime(), rng=RNG(3)), c
 
 
@@ -196,6 +197,33 @@ def test_only_a_confirmed_level_up_restores_the_allowance():
     gold = c.gold
     _run_trainer(st, LOC, spec, sid)                                           # 新的一級又能訓練
     assert c.gold < gold and c.trainings_this_level == 5
+
+
+def test_being_too_poor_does_not_burn_an_allowance_slot():
+    """審查 F4:金幣不足的那一下不得扣額度(窮的時候點一下就白白燒掉一次)。"""
+    st, c = _state(gold=0)
+    spec, sid = _trainable()
+    lv = c.skill(sid)
+    script = _run_trainer(st, LOC, spec, sid)
+    assert any("金幣不足" in m for m in script.msgs)
+    assert c.skill(sid) == lv and c.trainings_this_level == 0 and world.trainings_left(c) == 5
+
+
+def test_each_confirmed_level_up_restores_the_allowance_even_when_two_are_pending():
+    """審查 F4:連升兩級時,每一次升級確認各自歸零(不是「全升完才歸零」)。"""
+    st, c = _state()
+    spec, sid = _trainable()
+    _run_trainer(st, LOC, spec, sid)
+    assert world.trainings_left(c) == 0
+    progression.ensure_level_xp(c)
+    c.level_xp = formulas.levelup_xp_threshold(c.level) + formulas.levelup_xp_threshold(c.level + 1)   # 兩級的量
+    progression.apply_level_up(c, gd, {"endurance": 5})
+    assert c.can_level_up(), "前提:第一次升級後仍可再升一級"
+    assert c.trainings_this_level == 0                                                  # 第一級就恢復
+    _run_trainer(st, LOC, spec, sid)
+    assert c.trainings_this_level == 5
+    progression.apply_level_up(c, gd, {"endurance": 5})
+    assert c.trainings_this_level == 0                                                  # 第二級再恢復
 
 
 # --- D 存檔 -------------------------------------------------------------------------
