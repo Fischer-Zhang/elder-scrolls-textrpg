@@ -180,7 +180,8 @@ def test_shop_steal_menu_end_to_end_label_equals_the_roll_of_that_item():
             M.action_shop(st, gd)
         finally:
             M.ui.menu, M.ui.message, M.ui.show_events = saved
-        assert seen["title"] == "行竊哪件?(重物更難得手)", seen["title"]
+        assert seen["title"].startswith("行竊哪件?(重物更難得手)"), seen["title"]
+        assert seen["title"].endswith(f"失手衛兵會趕來;賞金 0/{crime.SHOP_REFUSE_BOUNTY},滿了店家拒絕服務"), seen["title"]   # R226
         assert len(seen["opts"]) >= 3
         assert dict(seen["opts"]) == seen["expected"]                      # 每件都由同一個標籤函式、用當時的庫存數產生(接線)
         assert M._STEAL_KEY and all(k.startswith(M._STEAL_KEY) for k, _ in seen["opts"])   # key 一律帶命名空間(見碰撞守衛)

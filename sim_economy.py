@@ -38,6 +38,8 @@ train_cost / spell_price / merchant_catalog / _restock_qty),地城收入用真�
   6. 配方轉賣(商店投資後):全部商店投資到第 1 / 2 階(補貨加倍、不缺貨、另賣大城貨)時,守衛 4 的同一個門檻(R225 ②)。
   7. 行情倒掛(R225 ③):所有脈動行情同時生效時,賣給商店的價錢仍須低於最低買價(R223 全域規則)。
   8. 盜賊加成抬高買價 / 贓物價越界 / 行竊衰減太鬆(R225 ④):第 7 段。
+  9. 賞金封店線(R226):SHOP_REFUSE_BOUNTY 不得 ≤ 說退上限 / 武士放行線(否則小額賞金一碰就封店,說退與武士特權失去意義);
+     同時印出「單筆失手罰金 ≥ 封店線的貨」佔架上價值的比例(階 0 / 階 2,那些貨一次失手就被轟出)。
 """
 import statistics as S
 import sys
@@ -548,6 +550,23 @@ def main() -> None:
           f"(店家重補貨歸零);贓物價上限 = 底價 ×(1.20 + 0.5 × min(溢出, 0.40)),最高 ×1.40")
     if cap > 20:
         flags.append(f"⚠行竊衰減太鬆:期望得手上限 {cap:.1f} 件 > 20(SHOP_THEFT_DECAY = {g})")
+
+    from tesrpg.systems import court, dialogue
+    T = crime.SHOP_REFUSE_BOUNTY                 # R226 賞金封店線
+    c0 = make_char()
+    shares = []
+    for tier in (0, 2):
+        tot = hot = 0.0
+        for lid in SHOP_LOCS:
+            for iid in world.merchant_catalog(gd, lid, tier):
+                w = expected_restock(iid, tier) * gd.item(iid)["value"]
+                tot += w
+                hot += w * (crime.steal_fine(c0, gd, iid) >= T)
+        shares.append(hot / tot if tot else 0.0)
+    print(f"賞金封店(R226):該省賞金 ≥ {T} → 一般商店拒絕服務(= 路途獵殺 tier 2);單筆失手罰金 ≥ {T} 的貨佔架上價值:"
+          f"階 0 {shares[0]:.0%} · 階 2 {shares[1]:.0%}(這些貨一次失手就被轟出);說退上限 {dialogue.TALK_DOWN_MAX} · 武士放行線 {court.THANE_BOUNTY_FORGIVE}")
+    if T <= max(dialogue.TALK_DOWN_MAX, court.THANE_BOUNTY_FORGIVE):
+        flags.append(f"⚠賞金封店線 {T} ≤ 說退上限 {dialogue.TALK_DOWN_MAX} / 武士放行線 {court.THANE_BOUNTY_FORGIVE}:小額賞金還沒機會化解就封店")
 
     if flags:                                    # 只有真的有警示才印「⚠ 守衛警示」(check.sh 以此行 grep)
         print("\n⚠ 守衛警示:\n  " + "\n  ".join(flags))

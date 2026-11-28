@@ -3176,9 +3176,46 @@ def _steal_option_label(char, gamedata: GameData, iid: str, qty: int) -> str:
             f" · 失手賞金 +{crime.steal_fine(char, gamedata, iid)})")
 
 
-def action_shop(state: GameState, gamedata: GameData) -> None:
+_SHOP_REFUSE_LINE = "店主把你擋在門外:「通緝犯,我們不做你的生意!」(賞金 {b} 金 ≥ {t};去向衛兵自首、說退或洗清賞金再來)"
+
+
+def _shop_theft_aftermath(state: GameState, gamedata: GameData) -> str | None:
+    """R226 行竊失手後(賞金已加):衛兵聞聲趕到 → 盤查;賞金達封店線 → 店家把你轟出去。
+    回 'dead'(反抗身亡)/ 'leave'(這次進店到此為止)/ None(繼續逛:武士放行小額賞金)。
+    隱形者:衛兵撲空(不盤查),但賞金照加 → 由封店線兜底(隱形擋得住衛兵,擋不住店家記恨)。"""
+    char = state.player
+    province = crime.province_of(char, gamedata)
+    if spellfx.is_invisible(char):
+        ui.message("你隱著身形 —— 衛兵循聲趕來,卻只撲了個空。", style="grey70")
+    else:
+        gc = guard_confrontation(state, gamedata, context="caught")
+        if gc == "dead":
+            return "dead"
+        if gc == "confronted":          # 繳罰金 / 入獄 / 反抗 / 說退:被帶離商店
+            return "leave"
+    if crime.shop_refuses(char, province):
+        ui.message(_SHOP_REFUSE_LINE.format(b=crime.bounty(char, province), t=crime.SHOP_REFUSE_BOUNTY), style="red")
+        return "leave"
+    return None
+
+
+def action_surrender(state: GameState, gamedata: GameData) -> str | None:
+    """R226 廣場動作:向衛兵自首 / 繳罰金(清當地賞金的就地出口;沿用盤查選單,但沒有「反抗」、可轉身離開)。"""
+    char = state.player
+    province = crime.province_of(char, gamedata)
+    if crime.bounty(char, province) <= 0:
+        ui.message("衛兵翻了翻通緝名冊:「你在這裡沒有案底。」", style="grey70")
+        return None
+    return "dead" if guard_confrontation(state, gamedata, context="surrender") == "dead" else None
+
+
+def action_shop(state: GameState, gamedata: GameData) -> str | None:
     char = state.player
     loc_id = char.location_id
+    _prov = crime.province_of(char, gamedata)
+    if crime.shop_refuses(char, _prov):      # R226 通緝中 → 一般商店拒絕服務(銷贓 / 黑市 / 旅店 / 訓練不受影響)
+        ui.message(_SHOP_REFUSE_LINE.format(b=crime.bounty(char, _prov), t=crime.SHOP_REFUSE_BOUNTY), style="red")
+        return None
     world.ensure_stock(char, gamedata, loc_id, state.time, state.rng)   # 首訪/逾期 → 補貨
     _ml = world.market_line(char, gamedata, loc_id, worldpulse.day_index(state))   # R225 ③:本地行情(進店一次)
     if _ml:
@@ -3219,7 +3256,8 @@ def action_shop(state: GameState, gamedata: GameData) -> None:
                     for iid in avail]
             _n = crime.theft_count(char, loc_id)
             choice = ui.menu("行竊哪件?(重物更難得手)"
-                             + (f" · 店家已有戒心(本補貨期下手 {_n} 次,得手率 ×{crime.SHOP_THEFT_DECAY ** _n:.2f})" if _n else ""),
+                             + (f" · 店家已有戒心(本補貨期下手 {_n} 次,得手率 ×{crime.SHOP_THEFT_DECAY ** _n:.2f})" if _n else "")
+                             + f" · 失手衛兵會趕來;賞金 {crime.bounty(char, _prov)}/{crime.SHOP_REFUSE_BOUNTY},滿了店家拒絕服務",   # R226
                              opts, allow_back=True)
             if choice is None:
                 continue
@@ -3235,6 +3273,12 @@ def action_shop(state: GameState, gamedata: GameData) -> None:
             if r["tired"]:
                 ui.message("體力不濟,手腳不聽使喚,差點失風。", style="yellow")
             ui.show_events(r["skill_events"], gamedata)
+            if not r["ok"]:                      # R226:當場失手 → 衛兵趕來 / 賞金達線被轟出
+                _after = _shop_theft_aftermath(state, gamedata)
+                if _after == "dead":
+                    return "dead"
+                if _after == "leave":
+                    return None
             continue
         if mode == "buy":
             while True:                          # 停留在買貨清單 → 可連續買多樣不同商品
@@ -6243,13 +6287,18 @@ def _report_confiscated(gamedata: GameData, pairs: list) -> None:
         ui.message(f"衛兵搜了你的身,沒收了贓物:{names}。", style="red")
 
 
-def guard_confrontation(state: GameState, gamedata: GameData) -> str | None:
-    """城門衛兵盤查(帶賞金進城)。回 'dead'(反抗身亡)/ 'confronted'(真被攔下盤問並處置:
+def guard_confrontation(state: GameState, gamedata: GameData, context: str = "gate") -> str | None:
+    """衛兵盤查。回 'dead'(反抗身亡)/ 'confronted'(真被攔下盤問並處置:
     繳金/服刑/反抗/說退 → R114D 長途據此中斷·不繞過處罰)/ None(隱形溜過 或 武士特權放行:
-    未受懲罰,不中斷長途)。"""
+    未受懲罰,不中斷長途;自首時轉身離開也回 None)。
+
+    context(R226):
+      "gate"      城門盤查(帶賞金入城;預設,逐字同舊)
+      "caught"    行竊當場失手 → 衛兵聞聲趕到(隱形者由呼叫端先擋:撲空;此處不再判隱形)
+      "surrender" 玩家主動向衛兵自首 / 繳罰金:不被隱形跳過、不給「反抗」、可轉身離開"""
     char = state.player
     province = crime.province_of(char, gamedata)
-    if spellfx.is_invisible(char):   # R104 隱形:隱形時效內悄然穿過城門盤查(不消耗;3 小時窗自然收束)
+    if context == "gate" and spellfx.is_invisible(char):   # R104 隱形:隱形時效內悄然穿過城門盤查(不消耗;3 小時窗自然收束)
         ui.message("你隱於無形,悄無聲息地穿過了城門的盤查。", style="grey70")
         return None
     # 武士特權:身為本省某城武士,小額賞金衛兵放行(大罪仍追緝)—— 特權放行=未受罰,不中斷長途
@@ -6259,8 +6308,14 @@ def guard_confrontation(state: GameState, gamedata: GameData) -> str | None:
                    style="green")
         crime.clear_bounty(char, province)
         return None
-    ui.message(f"城門衛兵攔住了你:「你在{province}的賞金是 {crime.bounty(char, province)} 金 —— 束手就擒!」",
-               style="red")
+    if context == "caught":
+        ui.message(f"衛兵聞聲趕到:「你在{province}的賞金是 {crime.bounty(char, province)} 金 —— 束手就擒!」", style="red")
+    elif context == "surrender":
+        ui.message(f"你走向街角的衛兵,報上名號:「我在{province}有案底,賞金 {crime.bounty(char, province)} 金。」",
+                   style="grey70")
+    else:
+        ui.message(f"城門衛兵攔住了你:「你在{province}的賞金是 {crime.bounty(char, province)} 金 —— 束手就擒!」",
+                   style="red")
     talked = False
     while crime.bounty(char, province) > 0:
         b = crime.bounty(char, province)
@@ -6270,13 +6325,18 @@ def guard_confrontation(state: GameState, gamedata: GameData) -> str | None:
         opts = [
             ("pay", f"繳清罰金({b} 金{seize})"),
             ("jail", f"乖乖入獄服刑(關 {crime.jail_hours(b)} 小時,賞金一筆勾銷{seize})"),   # R202:刑期取自與 serve_sentence 同一個 jail_hours
-            ("resist", "拔劍反抗(與衛兵開戰)"),
         ]
+        if context == "surrender":
+            opts.append(("leave", "轉身離開(賞金不變)"))        # R226 自首:你是自己走來的 → 沒有「反抗」,但可以反悔
+        else:
+            opts.append(("resist", "拔劍反抗(與衛兵開戰)"))
         talk_cap = dialogue.TALK_DOWN_MAX + mastery.talk_down_mod(char, gamedata).get("cap_bonus", 0)   # 里程碑「巧言脫罪」抬高可說退賞金上限
         if not talked and b <= talk_cap:                 # 小額賞金可試以口才說退(大罪說不過去;巧言脫罪可化解更大的事)
             tpct = ui.pct(dialogue.talk_down_chance(char, b, gamedata))
             opts.insert(0, ("talk", f"說服衛兵(口才,成功率 {tpct}%)"))
         choice = ui.menu("如何應對?", opts)
+        if choice in (None, "leave"):     # None = 無選擇(腳本化 / 異常環境)→ 當作離開,絕不空轉(R226:盤查迴圈現在也在店內被呼叫)
+            return None
         if choice == "talk":
             r = dialogue.talk_down_guard(char, gamedata, province, state.rng)
             state.time.advance(r["hours"])
@@ -6753,8 +6813,10 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
         market: list = []     # 市集區:商業
         guilds: list = []     # 公會區:各公會分部 / 聖所
         plaza: list = []      # 廣場:旅店 / 訓練 / 告示 / 攀談 / 進食
+        _wanted_here = crime.bounty(player, crime.province_of(player, gamedata))     # R226 通緝中的當地賞金
         if "merchant" in services and not shunned:
-            market.append(("shop", "商店"))
+            market.append(("shop", "商店 🚫(通緝中,店家拒絕服務)" if crime.shop_refuses(player, crime.province_of(player, gamedata))
+                           else "商店"))
         if "armorer" in services:
             market.append(("craft", "鍛造工坊 🛠"))
             market.append(("temper", "淬鍊強化 ⚒"))
@@ -6780,6 +6842,8 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
         if ("knights_nine" in services
                 and politics.DAEDRIC_UNLOCK_EVENT in getattr(player, "world_events_fired", [])):
             guilds.append(("kn_hall", "九神騎士團 ⚜"))
+        if _wanted_here > 0 and loc["type"] in ("town", "city") and not beast_in_town:   # R226:就地清賞金的出口(沿用盤查選單)
+            plaza.append(("surrender", f"⚖ 向衛兵自首 / 繳罰金(賞金 {_wanted_here})"))
         if player.is_vampire and loc["type"] in ("town", "city"):
             plaza.append(("feed", "🩸 吸血進食(獵取活人,重置飢餓)"))
         if skooma.is_addicted(player) and loc["type"] in ("town", "city") and not shunned:
@@ -6900,7 +6964,9 @@ def game_loop(state: GameState, gamedata: GameData) -> None:
         elif choice == "travel":
             died = action_travel(state, gamedata)
         elif choice == "shop":
-            action_shop(state, gamedata)
+            died = action_shop(state, gamedata)          # R226:行竊失手反抗衛兵可能身亡
+        elif choice == "surrender":
+            died = action_surrender(state, gamedata)
         elif choice == "inn":
             action_inn(state, gamedata)
         elif choice == "inn_rest":

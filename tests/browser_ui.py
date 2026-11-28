@@ -400,8 +400,49 @@ class BrowserRegression(unittest.TestCase):
         self.assertIn("重物更難得手", self.page.locator("#prompt").inner_text())
         t0 = state.time.absolute_hours()
         self.page.locator("#prompt button", has_text="得手").first.click()    # 選一件 → 真的行竊(推進時間)
-        wait_text("商店(你有")
+        # R226:失手時衛兵會趕到(盤查選單),得手則回商店選單 —— 兩種結局都算「選單接得上」(本測試固定種子下恰好失手)
+        self.page.wait_for_function(
+            "() => { const t = document.querySelector('#prompt').innerText;"
+            " return t.includes('商店(你有') || t.includes('如何應對?'); }", timeout=8000)
         self.assertGreater(state.time.absolute_hours(), t0)
+
+    def test_surrender_menu_has_leave_and_no_resist_r226(self) -> None:
+        """R226:廣場「向衛兵自首」的盤查選單 —— 有「轉身離開」、沒有「拔劍反抗」;選離開後賞金不變、選繳罰金後清零(真 Chromium)。"""
+        import io
+        import threading
+
+        from rich.console import Console
+
+        import tesrpg.ui.console as ui
+        from tesrpg import main as game_main
+        from tesrpg.creation import build_character
+        from tesrpg.gamedata import get_gamedata
+        from tesrpg.rng import RNG
+        from tesrpg.state import GameState, GameTime
+        from tesrpg.systems import crime
+
+        gd = get_gamedata()
+        char = build_character(gd, name="客", sex="male", race="nord", birthsign="warrior", class_id="warrior")
+        char.location_id, char.gold = "whiterun", 500
+        prov = crime.province_of(char, gd)
+        char.bounties[prov] = 150
+        state = GameState(player=char, time=GameTime(), rng=RNG(7))
+        saved = (ui.console, ui._web)
+        ui.use_web_backend(self.server.backend, Console(record=True, file=io.StringIO(), width=100))
+        self.addCleanup(lambda: (setattr(ui, "console", saved[0]), setattr(ui, "_web", saved[1])))
+        th = threading.Thread(target=game_main.action_surrender, args=(state, gd), daemon=True)
+        th.start()
+        self.page.goto(self.server.url, wait_until="domcontentloaded")
+        self.page.wait_for_function(
+            "t => document.querySelector('#prompt').innerText.includes(t)", arg="如何應對?", timeout=8000)
+        buttons = " | ".join(self.page.locator("#prompt button").all_inner_texts())
+        self.assertIn("轉身離開", buttons)
+        self.assertIn("繳清罰金", buttons)
+        self.assertNotIn("拔劍反抗", buttons)
+        self.page.locator("#prompt button", has_text="轉身離開").click()
+        th.join(8)                                                              # 函式結束後網頁不會再送新選單(舊選單留在畫面上)→ 等行程收尾
+        self.assertFalse(th.is_alive(), "選「轉身離開」後 action_surrender 應立即結束")
+        self.assertEqual(crime.bounty(char, prov), 150)                         # 反悔:賞金不變
 
     def test_stale_panel_rows_never_take_over_a_later_menu_but_navigation_rows_stay_r201(self) -> None:
         """R201(R199 D5 收尾):畫面上殘留(舊幀)的面板列不得接管之後純選單幀的同 key 選項。

@@ -158,6 +158,17 @@ OUTLAW_THRESHOLDS = (5, 20, 50)              # 累積惡名 → 地下身份 tie
 _NOTORIETY_TITLES = ("", "通緝犯", "惡名昭彰", "江湖鬼影")   # outlaw_standing 對應稱號
 FENCE_BONUS_BY_TIER = (0.0, 0.15, 0.30, 0.45)   # 銷贓加價(對標盜賊公會 0.40·上限 0.45)
 
+# R226 賞金封店:該省賞金 ≥ 此值 → 一般商店(action_shop:買 / 賣 / 行竊 / 投資)不讓你進;銷贓 / 黑市 / 旅店 / 訓練等不受影響。
+# 沿用路途獵殺 tier 2 的門檻(= 不新增常數;高於說退上限 TALK_DOWN_MAX 與武士放行線 → 小額賞金仍可由說退 / 武士化解,不會一碰就封店)。
+# 只看賞金,不看戰鬥力 / 隱形 / 倉庫 → 補上「當場被抓」(衛兵來抓)會被打得過衛兵者、隱形者繞過的缺口(R226 量測)。
+# 解除 = 清賞金:入城被捕 / 向衛兵自首(廣場動作)/ 說退 / 武士放行 / 兄弟會洗白;單一判斷點 = 這個函式。
+SHOP_REFUSE_BOUNTY = ACTIVE_HEAT_THRESHOLDS[1]
+
+
+def shop_refuses(char: Character, province: str) -> bool:
+    """該省的一般商店是否拒絕為你服務(通緝中:賞金 ≥ SHOP_REFUSE_BOUNTY)。"""
+    return bounty(char, province) >= SHOP_REFUSE_BOUNTY
+
 
 def max_bounty(char: Character) -> int:
     """玩家當前最高的「單一行省」賞金(取最大·非加總)。無賞金 → 0。"""
