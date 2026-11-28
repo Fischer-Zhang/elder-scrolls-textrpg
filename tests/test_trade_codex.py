@@ -58,8 +58,12 @@ def test_price_formula_numbers_equal_the_real_constants():
 def test_milestone_names_and_values_exist_in_the_data():
     t = _topic_text()
     opts = {o["name"]: o for n in gd.mastery for o in n["options"]}
-    for name in ("議價入門", "精算買賣", "行商人脈", "頂級議價", "口才入門", "魅惑交易"):
+    for name in ("議價入門", "精算買賣", "行商人脈", "頂級議價", "八面玲瓏", "口才入門", "魅惑交易", "懾心術"):
         assert name in opts and name in t, name
+    node = {n["id"]: [o["name"] for o in n["options"]] for n in gd.mastery}          # 哪些是二選一、哪些自動取得
+    assert len(node["mercantile_25"]) == 1 and len(node["speechcraft_25"]) == 1
+    assert len(node["mercantile_50"]) == len(node["mercantile_100"]) == len(node["illusion_75"]) == 2
+    assert f"魅力 +{opts['八面玲瓏']['attr']['personality']}" in t and f"議價 +{opts['頂級議價']['disposition_bonus']:.2f}" in t
     assert f"議價 +{opts['精算買賣']['disposition_bonus']}" in t
     assert f"補貨量 ×{opts['行商人脈']['restock_mult']}" in t
 
@@ -90,7 +94,21 @@ def test_market_numbers_equal_the_real_constants_and_data():
             for x in o:
                 walk(x)
     walk(gd.world_pulse)
-    assert pulses and S.mode(pulses) == 1.3 and "通常 +30%" in t                      # 「通常 +30%」= 脈動行情最常見的倍率
+    assert pulses and set(pulses) == {1.3} and "目前一律 +30%" in t                  # 全部脈動行情都是 ×1.3(不是「通常」)
+    windows = set()
+
+    def walk_w(o):
+        if isinstance(o, dict):
+            if isinstance(o.get("market"), dict):
+                windows.add(o.get("active_window_days"))
+            for v in o.values():
+                walk_w(v)
+        elif isinstance(o, list):
+            for x in o:
+                walk_w(x)
+    walk_w(gd.world_pulse)
+    assert windows == {8} and "約 8 天" in t, windows                                  # 行情聚光視窗 8 天
+    assert "四方傳聞" in t and "節慶" not in t and "戰事" not in t                      # 脈動資料裡沒有節慶 / 戰事類(R227 查證:曾寫錯)
     st_char = E.make_char(**E.MAXED)
     prov_with_pref = next(p for p, v in gd.market["provinces"].items() if v.get("favored"))
     loc = next(lid for lid, d in gd.world["locations"].items() if d.get("province") == prov_with_pref and d.get("merchant_stock"))
@@ -106,6 +124,15 @@ def test_restock_and_investment_numbers_equal_the_real_constants():
     assert world.SHOP_SUPPLY_TIER == 2                                                # 第二階才擴大目錄
     # 「每樣貨至少補兩件」:第一階 tier 1 最少 2 件
     assert min(world.shop_qty(q, 1, 1.0) for q in range(0, 8)) >= 2
+
+
+def test_investing_tier_two_adds_nothing_in_the_province_capitals_and_names_match():
+    """文字說「各省的省城本來就是大城,在那裡投資第二階不會多出新貨」—— 資料層守住這句話;空魂石用遊戲內名稱。"""
+    for city in world.MAJOR_CITIES:
+        assert world.merchant_catalog(gd, city, 2) == world.merchant_catalog(gd, city, 0), city
+    t = _topic_text()
+    assert f"{gd.item_name('empty_grand_soul_gem')}與{gd.item_name('empty_black_soul_gem').split('(')[0]}" in t
+    assert "省城本來就是大城" in t
 
 
 def test_service_rebate_numbers_equal_the_real_constants():
@@ -125,6 +152,8 @@ def test_readme_trade_bullet_matches_the_constants():
     assert f"{one['price']:,} / {two['price']:,} 金" in r
     assert f"+{_pct(b.MARKET_FAVORED_MULT - 1)} / −{_pct(1 - b.MARKET_GLUTTED_MULT)}" in r
     assert "買賣、議價與行情" in r
+    assert "四方傳聞" in r and "脈動時另有" not in r                                    # 玩家看到的名稱是「四方傳聞」,不是「脈動」
+    assert "偷來的贓物除外" in r                                                        # 贓物是明文例外(fence_stolen_price)
 
 
 def run():
