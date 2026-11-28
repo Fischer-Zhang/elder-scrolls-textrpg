@@ -785,6 +785,25 @@ def train_cost(skill_level: int) -> int:
     return max(20, skill_level * 8)
 
 
+def trainings_left(char: Character) -> int:
+    """R227:這個角色等級還能向訓練師買幾次(每個角色等級最多 formulas.TRAININGS_PER_LEVEL 次;升級確認時歸零)。
+    訓練師選單的額度顯示、選了之後的擋下、↻ 連續訓練的停止條件都讀這一個函式(預覽 = 實扣);存檔壞值一律夾回範圍。"""
+    try:
+        used = int(char.trainings_this_level)
+    except (TypeError, ValueError, OverflowError):
+        used = 0
+    return max(0, formulas.TRAININGS_PER_LEVEL - max(0, used))
+
+
+def record_training(char: Character) -> None:
+    """R227:買了一個技能等級 → 本級額度 −1(呼叫端在扣款後立刻記;首次購買與 ↻ 連續訓練共用)。"""
+    try:
+        used = max(0, int(char.trainings_this_level))
+    except (TypeError, ValueError, OverflowError):
+        used = 0
+    char.trainings_this_level = used + 1
+
+
 # --- 城鎮服務專精化:訓練師依公會/lore 只教部分技能(handoff R29)----------
 # 每座城的訓練師不再教全部 23 技;可教範圍 =
 #   ① data/trainers.json 的 "skills" 覆寫(系 id 或顯式技能 id;招牌城手工點綴)

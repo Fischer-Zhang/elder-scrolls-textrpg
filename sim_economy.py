@@ -245,7 +245,7 @@ def train_total(lo: int, hi: int) -> int:
 
 
 def buy_levels(target_levels=(5, 10, 20)):
-    """只靠付費訓練買角色等級:永遠訓練當下最便宜(等級最低)的技能,到訓練師上限為止。
+    """只靠付費訓練買角色等級:永遠訓練當下最便宜(等級最低)的技能,到訓練師上限為止。(理論價:不計 R227 每級 formulas.TRAININGS_PER_LEVEL 次的限制,實際光靠訓練升不了級)
     回傳 ({角色等級: 累計金幣}, 全部技能到訓練師上限的總價, 最終角色等級)。全走真實 progression。"""
     c = build_character(gd, name="徒", sex="male", race="imperial", birthsign="warrior", class_id="warrior")
     spent = 0
@@ -463,7 +463,7 @@ def main() -> None:
     print(f"訓練單價 = max(20, 8 × 技能等級);單一技能 {base}→{cap}:{train_total(base, cap)} 金,"
           f"{cap}→{formulas.SKILL_CAP}(僅宗師技能):{train_total(cap, formulas.SKILL_CAP)} 金")
     marks, all_cost, final_level = buy_levels()
-    print(f"只靠訓練買角色等級(永遠訓練最低的技能):"
+    print(f"只靠訓練買角色等級(理論價,不計 R227 每級 {formulas.TRAININGS_PER_LEVEL} 次限制;永遠訓練最低的技能):"
           + "、".join(f"{lv} 級 {gold} 金" for lv, gold in marks.items())
           + f";{len(gd.skills)} 個技能全到 {cap} 共 {all_cost} 金(角色 {final_level} 級)")
     pcap = formulas.PRACTICE_CAP

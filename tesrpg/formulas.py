@@ -14,6 +14,8 @@ SKILL_CAP = 100
 TRAINER_CAP = 75             # 一般訓練師付費指點的上限;招牌城「宗師」對其招牌技可破此線(見 systems/world.trainer_cap)
 PRACTICE_CAP = 50            # R224 練習(免費、只花時間)只能把技能練到這裡;再上去靠訓練師(TRAINER_CAP)、宗師或實戰
                             # 76–SKILL_CAP 一律靠 learn-by-doing 或宗師,杜絕「就近一站買滿」(城鎮服務專精化,handoff R29)
+TRAININGS_PER_LEVEL = 5       # R227 訓練師每個角色等級最多買幾個技能等級(每次 +1 級算 1 次;升級時歸零)——限制「金幣換實力」:
+                            # R227 前置量測(sim_arrest 第 4 段)不限次時『玩 + 賺錢買訓練』比純親自玩快 4.4~5.5 倍,5 次/級壓到約 1.4~1.6 倍
 SKILL_BASE = 5               # 角色創建時每個技能的底值
 SKILL_MAJOR_BONUS = 20       # 主修技能額外起始值(→ 25)
 SKILL_SPEC_BONUS = 5         # 與職業專精同類的技能額外起始值

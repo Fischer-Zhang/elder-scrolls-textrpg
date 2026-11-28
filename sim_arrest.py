@@ -13,7 +13,7 @@ loot.resolve_loot / world.train_cost / progression),唯一抽象是「點擊成�
   每場衛兵戰後假設完整治療(時間免費)。
 2 行竊 vs 其他途徑(A2)——每點擊收入並列:行竊(R226 現行 / 之前)、地城全清(用真實生成器取格數與戰利品、用真實戰鬥取回合數;點擊 = 移動 + 開箱 + 戰鬥回合,
   移動給樂觀 / 悲觀兩個估計)、配方轉賣上界。底價與「實得」(行竊贓物走銷贓 ×1.2~1.4、地城戰利品賣商店 ×0.38~0.80)並列。
-4 金幣換實力 vs 親自玩(A3',使用者判準:同點擊預算下金幣路徑比親自玩更快 = 過度)——用真實戰鬥量親自玩的每點擊技能經驗,餵真實 progression;
+4 金幣換實力 vs 親自玩(A3';R227 起「現行」= 每級 formulas.TRAININGS_PER_LEVEL 次;使用者判準:同點擊預算下金幣路徑比親自玩更快 = 過度)——用真實戰鬥量親自玩的每點擊技能經驗,餵真實 progression;
   對照純賺錢買訓練、玩 + 賺錢買訓練;並算臨界收入。
 3 訓練收入減支出(A3)——依危險度由低到高累積收入(金幣 + 戰利品實得)vs 純靠訓練能買到的角色等級 vs 自然等級;並列全部一次性去處的總價。
 
@@ -508,11 +508,11 @@ def section4(per):
     for g in (10, 30, 70):
         reach = progress(horizon, {}, g=g, buy=True)
         paths[f"純賺錢買訓練 {g} 金/點擊"] = reach
-        print(f"{'純賺錢買訓練 ' + str(g) + ' 金/點擊':26}" + "".join(f"{(clicks_to(reach, L) or '---'):>9}" for L in levels))
+        print(f"{'純賺錢(R227前不限次)' + str(g):26}" + "".join(f"{(clicks_to(reach, L) or '---'):>9}" for L in levels))
     for g in (15, 40, 75):
         reach = progress(horizon, even, g=g, buy=True)
         paths[f"玩 + 賺錢買訓練 {g}"] = reach
-        print(f"{'玩(8技能)+地城賺錢買 ' + str(g):26}" + "".join(f"{(clicks_to(reach, L) or '---'):>9}" for L in levels))
+        print(f"{'玩+賺錢買(R227前)' + str(g):26}" + "".join(f"{(clicks_to(reach, L) or '---'):>9}" for L in levels))
     print("\n臨界收入(金/點擊):純賺錢買訓練的速度剛好追平「親自玩」所需的收入 = 買到該等級的總價 / 親自玩到該等級的點擊;"
           "實際收入高於它,金幣路徑就比親自玩快。")
     print(f"{'親自玩版本':26}" + "".join(f"{'Lv' + str(L):>9}" for L in levels))
@@ -532,14 +532,17 @@ def section4(per):
             row += f"{(a / b if a and b else float('nan')):>8.1f}x"
         print(f"{name:26}{row}")
     print("\n訓練「每個角色等級最多 N 次」的效果(設計用敏感度;玩 8 技能 + 地城賺錢 40 金/點擊;加速倍率 = 親自玩的點擊 / 該路徑的點擊):")
-    print(f"{'每級限次':14}" + "".join(f"{'Lv' + str(L):>9}" for L in levels))
-    for lim in (None, 5, 3, 2, 1):
+    print(f"{'每級限次':20}" + "".join(f"{'Lv' + str(L):>9}" for L in levels))
+    for lim in (None, formulas.TRAININGS_PER_LEVEL, 3, 2, 1):
         sp = progress(horizon, even, g=40, buy=True, limit=lim)
         row = ""
         for L in levels:
             a, b = clicks_to(paths["親自玩·8 技能平均"], L), clicks_to(sp, L)
             row += f"{(a / b if a and b else float('nan')):>8.1f}x"
-        print(f"{('不限(現行)' if lim is None else str(lim) + ' 次/級'):14}{row}")
+        print(f"{('不限(R227 前)' if lim is None else str(lim) + ' 次/級' + ('(R227 現行)' if lim == formulas.TRAININGS_PER_LEVEL else '')):20}{row}")
+    stuck = progress(horizon, {}, g=70, buy=True, limit=formulas.TRAININGS_PER_LEVEL)
+    print(f"R227 現行規則(每級 {formulas.TRAININGS_PER_LEVEL} 次)下純賺錢買訓練(70 金/點擊、{horizon} 點擊):最高只到 Lv{max(stuck)}"
+          f"(每級最多 {formulas.TRAININGS_PER_LEVEL} 個技能點,不夠升級所需 → 光靠金幣升不了級)。")
     print("對照實得收入(金/點擊,A2):頂級·階 2 行竊 %.0f;地城 %s;中階 / 新手小偷 4~12 / 2~7;配方轉賣 ≤ 5。"
           % (THEFT[("top", 2, "current")] * 1.20, "全部 18~89、危險度 4~5 為 14~73"))
     print("⚠ 限制:每點擊經驗為中階構築 + 地城組成的估計(固定值,不隨等級變);純賺錢那條假設從第 1 點擊就有該收入(對金幣路徑慷慨);"

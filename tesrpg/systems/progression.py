@@ -260,6 +260,7 @@ def apply_level_up(char: Character, gamedata: GameData,
             attr_gains[attr] = applied
 
     char.level_xp -= formulas.levelup_xp_threshold(char.level)  # 保留溢出
+    char.trainings_this_level = 0                               # R227:升級後訓練額度恢復(formulas.TRAININGS_PER_LEVEL)
     char.level += 1
     stats.ensure_base_health(char)
     stats.recompute_max_resources(char, gamedata, restore_full=True)  # 升級回滿三資源

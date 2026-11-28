@@ -4641,6 +4641,12 @@ def action_party(state: GameState, gamedata: GameData) -> None:
 _TRAINER_SPEC_LABEL = {"combat": "戰鬥", "magic": "魔法", "stealth": "潛行"}
 
 
+def _training_note(char) -> str:
+    """R227 訓練師選單的額度顯示(與擋下 / 計次共用 world.trainings_left → 預覽 = 實扣)。"""
+    left = world.trainings_left(char)
+    return f"本級訓練額度 剩 {left}/{formulas.TRAININGS_PER_LEVEL}" + ("(用完了,升級後恢復)" if left <= 0 else "")
+
+
 def action_trainer(state: GameState, gamedata: GameData) -> None:
     char = state.player
     loc_id = char.location_id
@@ -4652,7 +4658,7 @@ def action_trainer(state: GameState, gamedata: GameData) -> None:
         if len(specs) == 1:
             spec = specs[0]                             # 單系城直接列技能,免空選單
         else:
-            spec = ui.menu("向訓練師學哪一類?",
+            spec = ui.menu(f"向訓練師學哪一類?({_training_note(char)})",
                            [(sp, _TRAINER_SPEC_LABEL[sp]) for sp in specs], allow_back=True)
             if spec is None:
                 return
@@ -4669,7 +4675,7 @@ def action_trainer(state: GameState, gamedata: GameData) -> None:
                 tags.append({"text": f"距 {nxt['name']} 還 {nxt['remaining']} 級", "tone": "mag"})
             opts.append((sid, label, tags) if tags else (sid, label))
         _rn = world.rebate_note(char, gamedata)
-        sid = ui.menu("訓練哪項技能?" + (f"({_rn})" if _rn else ""), opts, allow_back=True)
+        sid = ui.menu("訓練哪項技能?" + (f"({_rn})" if _rn else "") + f" · {_training_note(char)}", opts, allow_back=True)
         if sid is None:
             if len(specs) == 1:
                 return                                  # 單系:技能選單即頂層,返回=離開
@@ -4681,20 +4687,28 @@ def action_trainer(state: GameState, gamedata: GameData) -> None:
             else:
                 ui.message("此技能已臻化境,無需再學。", style="grey70")
             continue
+        if world.trainings_left(char) <= 0:             # R227:每個角色等級最多 formulas.TRAININGS_PER_LEVEL 次(限制金幣換實力)
+            ui.message("這一級你的學習已到極限 —— 先消化所學(升級)再來。", style="grey70")
+            continue
         cost = world.service_price(char, gamedata, world.train_cost(char.skill(sid)))
         if char.gold < cost:
             ui.message("金幣不足。", style="red")
             continue
         char.gold -= cost
+        world.record_training(char)
         events = progression.use_skill(char, gamedata, sid, formulas.skill_threshold(char.skill(sid)))
         ui.message(f"訓練師指點了你的{gamedata.skill_name(sid)}。", style="green")
         ui.show_events(events, gamedata)
         # R114C:連續 +1 免每級重選類別/技能(達 cap 或錢不足即止;確認式)
         while char.skill(sid) < cap:
+            if world.trainings_left(char) <= 0:
+                ui.message("本級訓練額度用完了 —— 升級後再來。", style="grey70")
+                break
             nc = world.service_price(char, gamedata, world.train_cost(char.skill(sid)))
-            if char.gold < nc or not ui.confirm(f"↻ 再訓練 {gamedata.skill_name(sid)}(+1,{nc} 金)?"):
+            if char.gold < nc or not ui.confirm(f"↻ 再訓練 {gamedata.skill_name(sid)}(+1,{nc} 金;本級額度剩 {world.trainings_left(char)} 次)?"):
                 break
             char.gold -= nc
+            world.record_training(char)
             ui.show_events(progression.use_skill(char, gamedata, sid, formulas.skill_threshold(char.skill(sid))), gamedata)
 
 
