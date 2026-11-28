@@ -171,6 +171,32 @@ def shop_refuses(char: Character, province: str) -> bool:
     return bounty(char, province) >= SHOP_REFUSE_BOUNTY
 
 
+# R226 續:拔劍反抗、打死衛兵 = 殺官重罪 —— 每「打死」一名衛兵 +GUARD_KILL_BOUNTY 賞金、+GUARD_KILL_INFAMY 惡名
+# (使用者拍板 700;對照:當眾謀殺一名平民 500 / +2,見 brotherhood.MURDER_BOUNTY)。700 = 路途獵殺 tier 3 門檻 → 打死一名就直達
+# 最高獵殺階,並越過封店線。只計打死的(逃走留下活的衛兵不算);隊長算一名。
+# 🔴 不計 char.murders:那個欄位是「謀殺無辜者」—— 血債招募(BLOOD_DEBT_THRESHOLD = 1)、成就「血債累累」、一生傳奇標籤都讀它,
+#    計入會讓贏一場拒捕戰就觸發夜母使者招募。使用者拍板(b):另記 char.guard_kills(殺官數),顯示在角色卡與一生傳奇,不影響上述三處。
+GUARD_KILL_BOUNTY = 700
+GUARD_KILL_INFAMY = 2
+
+
+def guard_kill_penalty(char: Character, province: str, killed: int) -> int:
+    """拒捕戰後依「打死的衛兵數」加賞金與惡名;回實際加的賞金(0 = 沒打死任何一名,什麼都不動)。"""
+    if killed <= 0:
+        return 0
+    amount = killed * GUARD_KILL_BOUNTY
+    add_bounty(char, province, amount)
+    char.infamy += killed * GUARD_KILL_INFAMY
+    char.guard_kills += killed            # 殺官數:另記一欄(使用者拍板 b),不碰 murders → 不觸發兄弟會招募 / 不計成就「血債累累」
+    return amount
+
+
+def legacy_label(char: Character) -> str | None:
+    """一生傳奇「血業」的殺官事蹟(與兄弟會的謀殺標籤併列;沒打死過衛兵 → None)。"""
+    n = getattr(char, "guard_kills", 0)
+    return f"殺官重犯(打死衛兵 {n} 名)" if n > 0 else None
+
+
 def max_bounty(char: Character) -> int:
     """玩家當前最高的「單一行省」賞金(取最大·非加總)。無賞金 → 0。"""
     return max(getattr(char, "bounties", {}).values(), default=0)

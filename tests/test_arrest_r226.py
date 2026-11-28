@@ -30,7 +30,8 @@ from tesrpg.creation import build_character
 from tesrpg.gamedata import get_gamedata
 from tesrpg.rng import RNG
 from tesrpg.state import GameState, GameTime
-from tesrpg.systems import court, crime, dialogue, inventory, spellfx, world
+from tesrpg.models.character import Character
+from tesrpg.systems import brotherhood, court, crime, dialogue, inventory, legacy, spellfx, world
 
 gd = get_gamedata()
 LOC = "whiterun"
@@ -93,6 +94,13 @@ def _run(fn, picks, *a, patches=None, **kw):
         for o, n, old in saved:
             setattr(o, n, old)
     return ret, script
+
+
+def _kills_all(state, gamedata, guards, *a, **k):
+    """假的 run_battle:把傳入的衛兵全部打死(health = 0),回 victory —— 殺官重罪只看「打死的」。"""
+    for g in guards:
+        g.health = 0
+    return "victory"
 
 
 def _always_fail():
@@ -188,10 +196,11 @@ def test_resisting_the_guards_in_the_shop_keeps_the_loot_and_bounty_and_death_pr
     iid = _cheap_item(st, c)
     fine = crime.steal_fine(c, gd, iid)
     patches = dict(_always_fail())
-    patches[(M, "run_battle")] = lambda *a, **k: "victory"
+    patches[(M, "run_battle")] = _kills_all
     ret, script = _run(M.action_shop, ["steal", _steal(iid), "resist"], st, gd, patches=patches)
     assert ret is None and len(script.menus) == 3
-    assert crime.bounty(c, prov) == fine + 40 and inventory.count_item(c, "ruby") == 1   # 反抗贏:賞金 +40、贓物不沒收、仍被帶離
+    n = 1 + min(2, fine // 80)                                               # 衛兵數(賞金越高越多)
+    assert crime.bounty(c, prov) == fine + 40 + n * 700 and inventory.count_item(c, "ruby") == 1   # 反抗贏:+40 拒捕 + 每名 700 殺官、贓物不沒收、仍被帶離
     st, c, prov = _state()
     iid = _cheap_item(st, c)
     patches[(M, "run_battle")] = lambda *a, **k: "dead"
@@ -407,6 +416,124 @@ def test_game_loop_ends_the_run_when_the_shop_reports_death():
     assert ended == ["death"], ended
 
 
+# --- C3 殺官重罪(R226 續:每打死一名衛兵 +700 賞金 +2 惡名;不計謀殺數)----------------------------------
+def test_killing_guards_in_a_resist_is_a_capital_crime_per_guard_killed():
+    # 閘道盤查 / 行竊當場共用同一個反抗分支:賞金 0 → 1 名衛兵
+    st, c, prov = _state(bounty=50)
+    infamy0 = c.infamy
+    ret, script = _run(M.guard_confrontation, ["resist"], st, gd, patches={(M, "run_battle"): _kills_all})
+    assert ret == "confronted"
+    assert crime.bounty(c, prov) == 50 + 40 + 1 * 700 and c.infamy == infamy0 + 2          # 1 名:+40 拒捕 +700 殺官、+2 惡名
+    assert crime.active_heat(c) == 3 and crime.shop_refuses(c, prov)                       # 直達獵殺 tier 3 並越過封店線
+    assert script.said("殺官重罪") and script.said("+700")
+    # 賞金 200 → 3 名衛兵:每名各 700
+    st, c, prov = _state(bounty=200)
+    infamy0 = c.infamy
+    ret, script = _run(M.guard_confrontation, ["resist"], st, gd, patches={(M, "run_battle"): _kills_all})
+    assert crime.bounty(c, prov) == 200 + 40 + 3 * 700 and c.infamy == infamy0 + 6
+    # 賞金 ≥700:隊長 + 2 衛兵,隊長也只算一名
+    st, c, prov = _state(bounty=800)
+    ret, script = _run(M.guard_confrontation, ["resist"], st, gd, patches={(M, "run_battle"): _kills_all})
+    assert crime.bounty(c, prov) == 800 + 40 + 3 * 700
+
+
+def test_fleeing_the_fight_leaves_no_kill_penalty_and_murder_count_never_moves():
+    st, c, prov = _state(bounty=50)
+    infamy0 = c.infamy
+    ret, script = _run(M.guard_confrontation, ["resist"], st, gd, patches={(M, "run_battle"): lambda *a, **k: "fled"})
+    assert crime.bounty(c, prov) == 50 + 40 and c.infamy == infamy0                        # 沒打死 = 只有 +40 拒捕
+    assert script.said("擊退衛兵") and not script.said("殺官重罪")
+    # 打死了:不計「謀殺無辜者」—— 血債招募 / 成就 / 傳奇標籤都讀 murders(使用者問過;計入須另行拍板)
+    from tesrpg.systems import brotherhood
+    st, c, prov = _state(bounty=50)
+    ret, script = _run(M.guard_confrontation, ["resist"], st, gd, patches={(M, "run_battle"): _kills_all})
+    assert c.murders == 0 and not brotherhood.has_blood_debt(c) and not brotherhood.should_recruit(c, gd)
+    # 部分打死(打倒一名後逃走):只算打死的那一名
+    def _kill_first_then_flee(state, gamedata, guards, *a, **k):
+        guards[0].health = 0
+        return "fled"
+    st, c, prov = _state(bounty=200)                                                       # 3 名衛兵
+    ret, script = _run(M.guard_confrontation, ["resist"], st, gd, patches={(M, "run_battle"): _kill_first_then_flee})
+    assert crime.bounty(c, prov) == 200 + 40 + 700
+
+
+def test_guard_kill_penalty_function_contract():
+    st, c, prov = _state()
+    infamy0 = c.infamy
+    assert crime.guard_kill_penalty(c, prov, 0) == 0 and crime.guard_kill_penalty(c, prov, -2) == 0
+    assert crime.bounty(c, prov) == 0 and c.infamy == infamy0
+    assert crime.guard_kill_penalty(c, prov, 2) == 1400 and crime.bounty(c, prov) == 1400 and c.infamy == infamy0 + 4
+    assert crime.GUARD_KILL_BOUNTY == 700 and crime.GUARD_KILL_BOUNTY > 500                  # 比謀殺平民(500)重;使用者拍板 700
+
+
+def test_guard_kills_are_recorded_in_their_own_field_not_in_murders():
+    """使用者拍板 b:另記「殺官數」(char.guard_kills),不碰 murders(血債招募 / 成就 / 傳奇標籤讀它)。"""
+    st, c, prov = _state(bounty=200)                                         # 3 名衛兵
+    ret, script = _run(M.guard_confrontation, ["resist"], st, gd, patches={(M, "run_battle"): _kills_all})
+    assert c.guard_kills == 3 and c.murders == 0 and not brotherhood.should_recruit(c, gd)
+    st, c, prov = _state(bounty=50)
+    ret, script = _run(M.guard_confrontation, ["resist"], st, gd, patches={(M, "run_battle"): lambda *a, **k: "fled"})
+    assert c.guard_kills == 0                                                # 逃走沒打死 = 不計
+
+    def _kill_first_then_flee(state, gamedata, guards, *a, **k):
+        guards[0].health = 0
+        return "fled"
+    st, c, prov = _state(bounty=200)
+    ret, script = _run(M.guard_confrontation, ["resist"], st, gd, patches={(M, "run_battle"): _kill_first_then_flee})
+    assert c.guard_kills == 1
+    # 累計
+    st, c, prov = _state()
+    crime.guard_kill_penalty(c, prov, 2)
+    crime.guard_kill_penalty(c, prov, 1)
+    crime.guard_kill_penalty(c, prov, 0)
+    assert c.guard_kills == 3 and c.murders == 0
+
+
+def test_guard_kills_save_round_trip_old_saves_and_bad_values():
+    st, c, prov = _state()
+    assert Character.from_dict(c.to_dict()).guard_kills == 0
+    c.guard_kills = 5
+    assert Character.from_dict(c.to_dict()).guard_kills == 5                 # 往返
+    d = c.to_dict()
+    d.pop("guard_kills")
+    assert Character.from_dict(d).guard_kills == 0                           # 舊存檔沒有這欄 → 預設 0
+    for bad in (-3, "x", 2.5, None, True, [1]):                              # 壞值一律夾回 0(R03)
+        d = c.to_dict()
+        d["guard_kills"] = bad
+        assert Character.from_dict(d).guard_kills == 0, bad
+
+
+def test_guard_kills_show_on_the_character_card_and_in_the_life_legend():
+    # 一生傳奇「血業」:殺官與兄弟會標籤併列;沒殺過 → 沒有殺官字樣
+    st, c, prov = _state()
+    assert crime.legacy_label(c) is None
+    assert "殺官" not in (legacy.compute(st, gd)["dark_deeds"] or "")
+    c.guard_kills = 4
+    assert crime.legacy_label(c) == "殺官重犯(打死衛兵 4 名)"
+    assert "殺官重犯(打死衛兵 4 名)" in legacy.compute(st, gd)["dark_deeds"]
+    c.murders = 2
+    both = legacy.compute(st, gd)["dark_deeds"]
+    assert "殺官重犯(打死衛兵 4 名)" in both and "謀殺 2 人" in both        # 兩個標籤併列,互不覆蓋
+    # 角色卡「聲望與通緝」:web 版有一列「殺官」,沒紀錄就沒有;文字版同
+    rows_seen = []
+    real = (ui._web, ui._emit_panel)
+    ui._web, ui._emit_panel = object(), (lambda title, rows: rows_seen.append((title, rows)))
+    try:
+        ui.sheet_bounty(c, gd)
+        c.guard_kills = 0
+        ui.sheet_bounty(c, gd)
+    finally:
+        ui._web, ui._emit_panel = real
+    with_kills, without = rows_seen[0][1], rows_seen[1][1]
+    assert {"t": "kv", "k": "殺官", "v": "4 名"} in with_kills
+    assert not any(r.get("k") == "殺官" for r in without)
+    c.guard_kills = 4
+    ui.console.file.truncate(0)
+    ui.console.file.seek(0)
+    ui.sheet_bounty(c, gd)
+    assert "殺官 4 名" in ui.console.file.getvalue()
+
+
 # --- F 玩家看得到的文字 ----------------------------------------------------------------
 def test_player_facing_text_matches_the_constant_and_the_rules():
     root = pathlib.Path(__file__).resolve().parent.parent
@@ -416,6 +543,7 @@ def test_player_facing_text_matches_the_constant_and_the_rules():
     assert needle in codex and needle in readme, needle                   # 常數改了文字沒改 → 紅燈
     for must in ("向衛兵自首", "銷贓、黑市、旅店、訓練不受影響", "隱形時衛兵撲個空"):
         assert must in codex, must
+    assert f"每打死一名衛兵 +{crime.GUARD_KILL_BOUNTY} 賞金" in codex and f"每名 +{crime.GUARD_KILL_BOUNTY} 賞金" in readme   # 殺官重罪數字
 
 
 # --- E 突變 -----------------------------------------------------------------------
@@ -462,6 +590,26 @@ def test_guards_fail_under_mutation():
     assert not _swap(M, "guard_confrontation", lambda state, gamedata, context="gate": real_gc(state, gamedata, "caught" if context == "surrender" else context),
                      (test_surrender_action_options_and_outcomes,))
     assert not _swap(crime, "SHOP_REFUSE_BOUNTY", 301, (test_player_facing_text_matches_the_constant_and_the_rules,))   # 文字與常數脫鉤
+    kill = (test_killing_guards_in_a_resist_is_a_capital_crime_per_guard_killed,
+            test_fleeing_the_fight_leaves_no_kill_penalty_and_murder_count_never_moves)
+    assert not _swap(crime, "GUARD_KILL_BOUNTY", 40, kill)                                   # 殺官罰金被調回 +40
+    assert not _swap(crime, "GUARD_KILL_BOUNTY", 701, (test_player_facing_text_matches_the_constant_and_the_rules,))
+    assert not _swap(crime, "guard_kill_penalty", lambda char, province, killed: 0, kill)    # 完全不罰
+    real_pen = crime.guard_kill_penalty
+
+    def _counts_murders(char, province, killed):             # 偷偷把衛兵算成「謀殺無辜者」→ 血債招募被誤觸
+        char.murders += killed
+        return real_pen(char, province, killed)
+    assert not _swap(crime, "guard_kill_penalty", _counts_murders, (test_fleeing_the_fight_leaves_no_kill_penalty_and_murder_count_never_moves,))
+
+    def _forgets_kills(char, province, killed):               # 罰了賞金卻不記殺官數
+        n0 = char.guard_kills
+        amount = real_pen(char, province, killed)
+        char.guard_kills = n0
+        return amount
+    assert not _swap(crime, "guard_kill_penalty", _forgets_kills, (test_guard_kills_are_recorded_in_their_own_field_not_in_murders,))
+    assert not _swap(crime, "legacy_label", lambda char: None, (test_guard_kills_show_on_the_character_card_and_in_the_life_legend,))
+    # 「逃走也算殺人 / 沒打死也計」是 main.py 的計數錯誤,函式層突變碰不到 → 以磁碟突變驗證(見 handoff R226 續)
     # 失手後沒加賞金(steal_item 改壞)
     real_steal = crime.steal_item
 

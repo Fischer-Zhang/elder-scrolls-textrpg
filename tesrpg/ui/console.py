@@ -1612,6 +1612,8 @@ def sheet_bounty(char: Character, gamedata: GameData) -> None:
     total = sum(char.bounties.values())
     if _web is not None:
         rows = [_kv("聲望", char.fame), _kv("惡名", char.infamy)]
+        if getattr(char, "guard_kills", 0):                     # R226 續:殺官數(拔劍打死的衛兵;有紀錄才顯示)
+            rows.append(_kv("殺官", f"{char.guard_kills} 名"))
         if total:
             rows.append(_ln(f"通緝總額 {total} 金", "red"))
             for prov, amt in sorted(char.bounties.items()):
@@ -1623,6 +1625,8 @@ def sheet_bounty(char: Character, gamedata: GameData) -> None:
         return
     body = Text()
     body.append(f"聲望 {char.fame}    惡名 {char.infamy}\n", style=PARCH)
+    if getattr(char, "guard_kills", 0):
+        body.append(f"殺官 {char.guard_kills} 名\n", style="red")
     if total:
         body.append(f"通緝總額 {total} 金\n", style="red")
         for prov, amt in sorted(char.bounties.items()):

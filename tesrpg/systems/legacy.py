@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from tesrpg import formulas
 from tesrpg.gamedata import GameData
-from tesrpg.systems import (achievements, brotherhood, lycanthropy, mastery, party, politics,
+from tesrpg.systems import (achievements, brotherhood, crime, lycanthropy, mastery, party, politics,
                             skooma, vampirism)
 
 DAYS_PER_YEAR = 360   # 12 月 × 30 天
@@ -117,7 +117,7 @@ def compute(state, gamedata: GameData, ending: str = "death") -> dict:
         "condition": vampirism.legacy_label(char),   # 吸血鬼身分(否則 None)
         "lycanthropy": lycanthropy.legacy_label(char),   # 狼人身分(否則 None)
         "addiction": skooma.legacy_label(char),       # 斯庫瑪/月糖成癮(否則 None)
-        "dark_deeds": brotherhood.legacy_label(char, gamedata),   # 黑暗兄弟會/謀殺事蹟(否則 None)
+        "dark_deeds": " · ".join(x for x in (brotherhood.legacy_label(char, gamedata), crime.legacy_label(char)) if x) or None,   # 黑暗兄弟會 / 謀殺 / 殺官事蹟(否則 None)
         "dominion": dominion_label(char, gamedata, cities_held, thanes),  # 領地/統帥功業(否則 None)
         "homestead": homestead_label(houses_count, upgrades_count),  # 家園置業(R110;否則 None)
         "comrade": party.legacy_label(char, gamedata),   # 最深羈絆的同伴(否則 None)

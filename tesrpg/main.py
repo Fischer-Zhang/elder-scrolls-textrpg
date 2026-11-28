@@ -6373,7 +6373,13 @@ def guard_confrontation(state: GameState, gamedata: GameData, context: str = "ga
             if run_battle(state, gamedata, guards) == "dead":
                 return "dead"
             crime.add_bounty(char, province, 40)   # 拒捕罪加一等
-            ui.message("你殺出重圍逃進巷弄 —— 但賞金又添了一筆,你仍是通緝犯。", style="red")
+            killed = sum(1 for g in guards if not combat.is_alive(g))   # R226 續:「打死」的才算殺官(逃走留下活的衛兵不算)
+            if killed:
+                added = crime.guard_kill_penalty(char, province, killed)
+                ui.message(f"你殺出重圍逃進巷弄 —— 但倒下的 {killed} 名衛兵,讓你背上殺官重罪(賞金 +{added}、惡名 +{killed * crime.GUARD_KILL_INFAMY})。"
+                           f"通緝令傳遍{province}。", style="bold red")
+            else:
+                ui.message("你擊退衛兵逃進巷弄 —— 但賞金又添了一筆,你仍是通緝犯。", style="red")
             return "confronted"
     return "confronted"
 

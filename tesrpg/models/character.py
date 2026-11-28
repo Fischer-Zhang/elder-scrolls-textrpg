@@ -151,6 +151,7 @@ class Character:
     # 階級存在 factions["dark_brotherhood"];此處只記入會「前」的狀態機欄位:
     murders: int = 0                # 謀殺無辜者的次數(血債);達門檻 → 夜母遣使招募
     db_invited: bool = False        # 黑暗兄弟會使者是否已現身招募過(避免每次休息重複觸發)
+    guard_kills: int = 0            # R226 續:拔劍反抗「打死」的衛兵總數(殺官重罪;與 murders 分開:murders 只計無辜者,會觸發兄弟會招募)
     murdered_npcs: list = field(default_factory=list)     # 已被你滅口的具名 NPC(從可攀談名單消失)
     active_effects: list = field(default_factory=list)
     fame: int = 0
@@ -356,7 +357,7 @@ class Character:
             "diseases": self.diseases, "disease_attr_penalty": self.disease_attr_penalty,
             "disease_skill_penalty": self.disease_skill_penalty,
             "factions": self.factions,
-            "murders": self.murders, "db_invited": self.db_invited,
+            "murders": self.murders, "db_invited": self.db_invited, "guard_kills": self.guard_kills,
             "murdered_npcs": self.murdered_npcs,
             # active_effects 是「戰鬥內」臨時效果(護盾/中毒/再生),不寫入存檔,
             # 載入時由 dataclass 預設為空 list(避免臨時效果被永久化)。
@@ -416,6 +417,9 @@ class Character:
             d["shop_invest"] = {}
         if not isinstance(d.get("shop_thefts", {}), dict):   # R225 ④:壞型別 → 無記錄;次數於讀取端(crime.theft_count)再夾
             d["shop_thefts"] = {}
+        _gk = d.get("guard_kills", 0)
+        if isinstance(_gk, bool) or not isinstance(_gk, int) or _gk < 0:   # R226 續 防禦夾限(R03):壞值 → 0
+            d["guard_kills"] = 0
         if d.get("route_caution", "off") not in ("off", "dungeon", "danger"):   # R180 防禦夾限(R03):未知檔位 → 不限
             d["route_caution"] = "off"
         return cls(**d)
