@@ -64,6 +64,7 @@ class _UI:
 
     def menu(self, title, options, allow_back=False, **kw):
         self.menus.append((title, [o[0] for o in options], {o[0]: o[1] for o in options}))
+        assert len(self.menus) <= 60, "選單被反覆開啟 60 次以上 = 流程空轉(盤查迴圈遇到空選單不得空轉)"
         return self.picks.pop(0) if self.picks else None
 
     def titles(self):
@@ -328,6 +329,82 @@ def test_market_label_and_plaza_surrender_entry_wiring():
     finally:
         M.action_surrender = real
     assert called == [1]
+
+
+# --- C2 審查補強(R226 對抗審查 F1 / F2 / F3)-----------------------------------------------
+FAIL_TALK = {(dialogue, "talk_down_chance"): lambda *a, **k: 0.0}
+
+
+def test_surrender_talk_cannot_be_retried_by_walking_away_after_a_failure():
+    """🔴 F1:說退失敗後「轉身離開」再開一次自首 → talked 歸零 → 可無限重試說退(零金幣、不沒收)。失敗必須強制處置。"""
+    st, c, prov = _state(bounty=60, loot=2)
+    ret, script = _run(M.action_surrender, ["talk", "pay"], st, gd, patches=FAIL_TALK)
+    assert script.menus[0][1] == ["talk", "pay", "jail", "leave"], script.menus[0][1]    # 先說退:此刻還能反悔
+    assert script.menus[1][1] == ["pay", "jail"], script.menus[1][1]                      # 失敗後:沒有說退、沒有離開
+    assert crime.bounty(c, prov) == 0 and c.gold == 500 - 60 and inventory.count_item(c, "ruby") == 0   # 只能付錢(沒收)
+    st, c, prov = _state(bounty=60, loot=2)
+    ret, script = _run(M.action_surrender, ["talk", "jail"], st, gd, patches=FAIL_TALK)
+    assert script.menus[1][1] == ["pay", "jail"] and crime.bounty(c, prov) == 0 and inventory.count_item(c, "ruby") == 0
+    # 一次都沒說退就離開 = 自由進出(沒有代價也沒有好處)
+    st, c, prov = _state(bounty=60, loot=2)
+    for _ in range(3):
+        ret, script = _run(M.action_surrender, ["leave"], st, gd)
+        assert script.menus[0][1][-1] == "leave" and crime.bounty(c, prov) == 60 and inventory.count_item(c, "ruby") == 2
+
+
+def test_failed_talk_removes_the_talk_option_at_the_gate_and_when_caught():
+    st, c, prov = _state(bounty=60)
+    ret, script = _run(M.guard_confrontation, ["talk", "pay"], st, gd, patches=FAIL_TALK)
+    assert script.menus[0][1][0] == "talk" and script.menus[1][1] == ["pay", "jail", "resist"], [m[1] for m in script.menus]
+    st, c, prov = _state(bounty=60)
+    ret, script = _run(M.guard_confrontation, ["talk", "pay"], st, gd, context="caught", patches=FAIL_TALK)
+    assert script.menus[1][1] == ["pay", "jail", "resist"], script.menus[1][1]
+
+
+def test_an_empty_guard_menu_never_spins_and_a_caught_thief_is_still_taken_out_of_the_shop():
+    """F3:選單沒答案(腳本化 / 異常環境)→ 盤查迴圈不空轉;當場被抓沒有「離開」選項,賞金還在就不能當成武士放行繼續逛。"""
+    for ctx in ("gate", "caught", "surrender"):
+        st, c, prov = _state(bounty=50)
+        ret, script = _run(M.guard_confrontation, [], st, gd, context=ctx)
+        assert ret is None and len(script.menus) == 1, (ctx, len(script.menus))
+    st, c, prov = _state()
+    iid = _cheap_item(st, c)
+    ret, script = _run(M.action_shop, ["steal", _steal(iid)], st, gd, patches=_always_fail())    # 盤查選單拿到 None
+    assert ret is None and len(script.menus) == 3, script.titles()                           # 被帶離:沒有第 4 個(商店主選單)
+    assert crime.bounty(c, prov) > 0
+
+
+def test_game_loop_ends_the_run_when_the_shop_reports_death():
+    """F2:`died = action_shop(...)` 的接線(商店內反抗衛兵身亡)—— 少了這個賦值,玩家帶著死亡狀態繼續玩。"""
+    st, c, prov = _state()
+    ended, answered = [], [0]
+    saved = (ui.grouped_menu, ui.menu, ui.confirm, ui.message, ui.rule, ui.status_line, ui.location_panel, ui.show_events,
+             M.action_shop, M.end_run, M._onset_hinted)
+    ui.message = ui.rule = ui.status_line = ui.location_panel = ui.show_events = lambda *a, **k: None
+    calls = [0]
+
+    def _grouped(title, groups, **k):
+        calls[0] += 1
+        if calls[0] == 1:
+            return "_market"
+        raise _Stop()                                   # 若沒有結束遊戲,下一圈會回到這裡
+
+    def _menu(title, options, allow_back=False, **k):
+        if "shop" in [o[0] for o in options]:
+            answered[0] += 1
+            return "shop" if answered[0] == 1 else None
+        return None
+    ui.grouped_menu, ui.menu, ui.confirm = _grouped, _menu, (lambda *a, **k: True)
+    M.action_shop = lambda state, gamedata: "dead"
+    M.end_run = lambda state, gamedata, reason, *a, **k: ended.append(reason)
+    try:
+        M.game_loop(st, gd)
+    except _Stop:
+        pass
+    finally:
+        (ui.grouped_menu, ui.menu, ui.confirm, ui.message, ui.rule, ui.status_line, ui.location_panel, ui.show_events,
+         M.action_shop, M.end_run, M._onset_hinted) = saved
+    assert ended == ["death"], ended
 
 
 # --- F 玩家看得到的文字 ----------------------------------------------------------------

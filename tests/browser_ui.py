@@ -407,7 +407,7 @@ class BrowserRegression(unittest.TestCase):
         self.assertGreater(state.time.absolute_hours(), t0)
 
     def test_surrender_menu_has_leave_and_no_resist_r226(self) -> None:
-        """R226:廣場「向衛兵自首」的盤查選單 —— 有「轉身離開」、沒有「拔劍反抗」;選離開後賞金不變、選繳罰金後清零(真 Chromium)。"""
+        """R226:廣場「向衛兵自首」的盤查選單 —— 有「轉身離開」、沒有「拔劍反抗」;選離開後賞金不變、函式立即結束(真 Chromium)。"""
         import io
         import threading
 

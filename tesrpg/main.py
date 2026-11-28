@@ -3176,7 +3176,7 @@ def _steal_option_label(char, gamedata: GameData, iid: str, qty: int) -> str:
             f" · 失手賞金 +{crime.steal_fine(char, gamedata, iid)})")
 
 
-_SHOP_REFUSE_LINE = "店主把你擋在門外:「通緝犯,我們不做你的生意!」(賞金 {b} 金 ≥ {t};去向衛兵自首、說退或洗清賞金再來)"
+_SHOP_REFUSE_LINE = "店主把你擋在門外:「通緝犯,我們不做你的生意!」(賞金 {b} 金 ≥ {t};去向衛兵自首或洗清賞金再來)"
 
 
 def _shop_theft_aftermath(state: GameState, gamedata: GameData) -> str | None:
@@ -3191,7 +3191,9 @@ def _shop_theft_aftermath(state: GameState, gamedata: GameData) -> str | None:
         gc = guard_confrontation(state, gamedata, context="caught")
         if gc == "dead":
             return "dead"
-        if gc == "confronted":          # 繳罰金 / 入獄 / 反抗 / 說退:被帶離商店
+        # 繳罰金 / 入獄 / 反抗 / 說退:被帶離商店;None 且賞金還在 = 沒有真正處置(只有腳本化 / 異常環境的空選單會走到,
+        # 當場被抓沒有「離開」選項)→ 一樣帶離,不當成武士放行;武士放行賞金已歸零,才繼續逛
+        if gc == "confronted" or crime.bounty(char, province) > 0:
             return "leave"
     if crime.shop_refuses(char, province):
         ui.message(_SHOP_REFUSE_LINE.format(b=crime.bounty(char, province), t=crime.SHOP_REFUSE_BOUNTY), style="red")
@@ -6327,7 +6329,10 @@ def guard_confrontation(state: GameState, gamedata: GameData, context: str = "ga
             ("jail", f"乖乖入獄服刑(關 {crime.jail_hours(b)} 小時,賞金一筆勾銷{seize})"),   # R202:刑期取自與 serve_sentence 同一個 jail_hours
         ]
         if context == "surrender":
-            opts.append(("leave", "轉身離開(賞金不變)"))        # R226 自首:你是自己走來的 → 沒有「反抗」,但可以反悔
+            # R226 自首:你是自己走來的 → 沒有「反抗」,但可以反悔。🔴 說退失敗後不再給「轉身離開」:talked 只活在這次盤查內,
+            # 若失敗後還能離開、再開一次自首,就能無限重試說退(零金幣、不沒收贓物);失敗即強制處置 = 與城門 / 當場被抓同規則
+            if not talked:
+                opts.append(("leave", "轉身離開(賞金不變)"))
         else:
             opts.append(("resist", "拔劍反抗(與衛兵開戰)"))
         talk_cap = dialogue.TALK_DOWN_MAX + mastery.talk_down_mod(char, gamedata).get("cap_bonus", 0)   # 里程碑「巧言脫罪」抬高可說退賞金上限
